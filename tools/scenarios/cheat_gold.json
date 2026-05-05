@@ -1,0 +1,12 @@
+{
+  "name": "cheat_gold",
+  "description": "F10 → G adds 5000 gold.",
+  "setup": { "seed": 1, "class": "knight", "name": "Bot", "difficulty": "easy" },
+  "tags": ["smoke", "fast", "cheat"],
+  "max_seconds": 30,
+  "steps": [
+    { "step": "snapshot_baseline", "as": "base" },
+    { "step": "cheat", "letter": "G" },
+    { "step": "assert_ge", "path": "stats.gold", "ref_baseline": "base", "field": "gold", "delta": 1 }
+  ]
+}

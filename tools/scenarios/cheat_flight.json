@@ -1,0 +1,11 @@
+{
+  "name": "cheat_flight",
+  "description": "F10 → F grants flight (mount=fly).",
+  "setup": { "seed": 1, "class": "knight", "name": "Bot", "difficulty": "easy" },
+  "tags": ["smoke", "fast", "cheat", "mount"],
+  "max_seconds": 30,
+  "steps": [
+    { "step": "cheat", "letter": "F" },
+    { "step": "assert", "path": "character.mount", "op": "==", "value": "fly" }
+  ]
+}

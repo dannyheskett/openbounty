@@ -1,0 +1,12 @@
+{
+  "name": "startup_paladin",
+  "description": "Title flow → Paladin class.",
+  "setup": { "seed": 1, "class": "paladin", "name": "Pala", "difficulty": "easy" },
+  "tags": ["smoke", "fast", "startup"],
+  "max_seconds": 30,
+  "steps": [
+    { "step": "assert", "path": "mode",            "op": "==", "value": "adventure" },
+    { "step": "assert", "path": "character.class", "op": "==", "value": "paladin" },
+    { "step": "assert", "path": "stats.gold",      "op": ">=", "value": 1 }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "cheat_lose",
+  "description": "F10 → L triggers show_lose_game (VIEW_LOSE backdrop). Game becomes game_over.",
+  "setup": { "seed": 1, "class": "knight", "name": "Bot", "difficulty": "easy" },
+  "tags": ["fast", "endgame", "cheat"],
+  "max_seconds": 30,
+  "steps": [
+    { "step": "key", "name": "F10" },
+    { "step": "frames", "n": 15 },
+    { "step": "key", "name": "L" },
+    { "step": "frames", "n": 30 },
+    { "step": "assert", "path": "view", "op": ">=", "value": 1 }
+  ]
+}

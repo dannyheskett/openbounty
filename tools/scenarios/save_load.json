@@ -1,0 +1,19 @@
+{
+  "name": "save_load",
+  "description": "Cheat to a known state, save, mutate state more, load, assert original state restored. Validates harness save:/load: commands and SaveGameRead/Write parity in-process.",
+  "setup": { "seed": 1, "class": "knight", "name": "Bot", "difficulty": "easy" },
+  "tags": ["smoke", "fast", "save"],
+  "max_seconds": 60,
+  "steps": [
+    { "step": "snapshot_baseline", "as": "before_cheat" },
+    { "step": "cheat", "letter": "G" },
+    { "step": "snapshot_baseline", "as": "after_cheat" },
+    { "step": "save", "name": "/tmp/playtest-save-load.save" },
+    { "step": "cheat", "letter": "G" },
+    { "step": "cheat", "letter": "V" },
+    { "step": "load", "name": "/tmp/playtest-save-load.save" },
+    { "step": "assert_ge", "path": "stats.gold",                "ref_baseline": "after_cheat",  "field": "gold" },
+    { "step": "assert",    "path": "stats.gold",                "op": "<=", "value": 12500 },
+    { "step": "assert_ge", "path": "stats.leadership_current",  "ref_baseline": "before_cheat", "field": "leadership" }
+  ]
+}

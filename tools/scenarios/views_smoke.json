@@ -1,0 +1,16 @@
+{
+  "name": "views_smoke",
+  "description": "Open and dismiss each adventure-mode view (Army, Character, Spells, Contract, Puzzle, Worldmap, Options) — smoke test for view stack regressions.",
+  "setup": { "seed": 1, "class": "knight", "name": "Bot", "difficulty": "easy" },
+  "tags": ["smoke", "fast", "views"],
+  "max_seconds": 60,
+  "steps": [
+    { "step": "open_view", "name": "A" }, { "step": "dismiss_view" },
+    { "step": "open_view", "name": "V" }, { "step": "dismiss_view" },
+    { "step": "open_view", "name": "I" }, { "step": "dismiss_view" },
+    { "step": "open_view", "name": "P" }, { "step": "dismiss_view" },
+    { "step": "open_view", "name": "M" }, { "step": "dismiss_view" },
+    { "step": "open_view", "name": "C" }, { "step": "dismiss_view" },
+    { "step": "assert_overworld" }
+  ]
+}

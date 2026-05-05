@@ -1,0 +1,15 @@
+{
+  "name": "startup_knight",
+  "description": "Title flow → Knight class. Verify class stats land correctly.",
+  "setup": { "seed": 1, "class": "knight", "name": "Sir", "difficulty": "easy", "auto_combat": false },
+  "tags": ["smoke", "fast", "startup"],
+  "max_seconds": 30,
+  "steps": [
+    { "step": "assert", "path": "mode",                     "op": "==", "value": "adventure" },
+    { "step": "assert", "path": "character.class",          "op": "==", "value": "knight" },
+    { "step": "assert", "path": "character.name",           "op": "==", "value": "Sir" },
+    { "step": "assert", "path": "stats.game_over",          "op": "==", "value": false },
+    { "step": "assert", "path": "stats.gold",               "op": ">=", "value": 1 },
+    { "step": "assert", "path": "stats.leadership_current", "op": ">=", "value": 1 }
+  ]
+}

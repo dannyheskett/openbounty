@@ -1,0 +1,13 @@
+{
+  "name": "town_visit",
+  "description": "BFS to a tile adjacent to Hunterville town, step into the town tile to open VIEW_TOWN, then ESC out. Asserts view becomes 0 again.",
+  "setup": { "seed": 42, "class": "knight", "name": "Bot", "difficulty": "easy", "auto_combat": true },
+  "tags": ["smoke", "fast", "town"],
+  "max_seconds": 60,
+  "steps": [
+    { "step": "let_town", "id": "hunterville", "as": "T" },
+    { "step": "bfs_to_replan", "ref": "T", "max_hops": 10, "on_foe": "auto_combat", "on_chest": "take_a", "on_dialog": "drain" },
+    { "step": "dismiss_view" },
+    { "step": "assert_overworld" }
+  ]
+}

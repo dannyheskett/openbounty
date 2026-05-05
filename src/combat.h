@@ -1,0 +1,177 @@
+#ifndef KB_COMBAT_H
+#define KB_COMBAT_H
+
+#include <stdbool.h>
+#include <stdint.h>
+#include "game.h"
+#include "sprites.h"
+
+// Combat module. The data model mirrors KBcombat / KBunit
+// (, lines 5155–5196) but uses OPENBOUNTY-native
+// types: troop catalog indices instead of byte ids, Game* for the
+// player-side hero, and a separate per-combat LCG so rolling combat
+// RNG cannot perturb world-init RNG.
+//
+// Public surface (RunCombat + the three enums + CombatTarget) is the
+// stable contract for main.c; everything in the Combat struct is
+// engine-internal but exposed because the renderer (combat_render.c)
+// reads it.
+
+// ----- Public outcome --------------------------------------------------------
+typedef enum {
+    COMBAT_RESULT_WIN = 0,
+    COMBAT_RESULT_LOSS,
+    COMBAT_RESULT_FLEE,     // player gave up — surrender
+} CombatResult;
+
+typedef enum {
+    COMBAT_MODE_CASTLE = 0, // siege — castle layout, walls, no field obstacles
+    COMBAT_MODE_FOE    = 1, // overworld foe stack — open field, scattered obstacles
+} CombatMode;
+
+typedef struct {
+    const char *name;          // display string for banner / dialogs
+    const Unit *garrison;      // defender's stacks; may be NULL
+    int         garrison_slots;
+} CombatTarget;
+
+// ----- Battlefield constants -------------------------------------------------
+//  lines 809–824; OPENBOUNTY  lines 528–535.
+#define COMBAT_W       6
+#define COMBAT_H       5
+#define COMBAT_SIDES   2
+#define COMBAT_SLOTS   5
+
+// Side identifiers.  line 5170.
+#define COMBAT_SIDE_PLAYER  0
+#define COMBAT_SIDE_AI      1
+
+// Per-side artifact power bits used during combat. Translated from
+// the player's found-artifact set at prepare time. Bit values are
+// internal — never serialized.  step 3 (lines 5360–5366).
+#define COMBAT_POWER_INCREASED_DAMAGE   (1 << 0)  // ×1.5 damage dealt
+#define COMBAT_POWER_QUARTER_PROTECTION (1 << 1)  // damage taken × 3/4
+
+// Banner / log sizing.
+#define COMBAT_BANNER_LEN     80
+#define COMBAT_LOG_LINES       8
+#define COMBAT_LOG_LINE_LEN   80
+
+// ----- Per-unit state --------------------------------------------------------
+// Mirrors KBunit (, lines 5180–5195). One slot per
+// (side, id). troop_idx == -1 means the slot is empty.
+typedef struct CombatUnit {
+    int  troop_idx;       // index into troop catalog; -1 = empty
+    int  count;           // current creatures in the stack
+    int  turn_count;      // snapshot at start of unit's turn (for retaliation)
+    int  max_count;       // snapshot at combat start (cap for ABSORB / LEECH)
+    bool dead;            // marked when count reaches 0; cleared by compact
+    int  frame;           // 0..3 idle anim
+    int  injury;          // residual sub-HP damage
+    bool acted;           // turn already taken
+    bool retaliated;      // has retaliated this round (resets on next turn)
+    int  moves;           // ground move budget remaining
+    int  shots;           // ranged ammo remaining
+    int  flights;         // airborne move budget (FLY) remaining
+    bool frozen;          // skips next turn (cleared on reset_turn)
+    bool out_of_control;  // leadership exceeded — attacks own side
+    int  x, y;            // grid position (0..COMBAT_W-1, 0..COMBAT_H-1)
+    // Damage-burst overlay — set when this unit takes a hit, decremented
+    // by combat_tick_anim. While >0 the renderer paints comtile frame 4
+    // (orange splat) over the unit's cell, matching DOS kb_037/40/44.
+    int  hit_flash;
+} CombatUnit;
+
+// ----- Match state -----------------------------------------------------------
+// Mirrors KBcombat (, lines 5159–5172). umap and omap
+// are sized [H+1][W+1] per spec line 5174 — the +1 row/column padding
+// guards against off-by-one in distance and adjacency math.
+typedef struct Combat {
+    CombatUnit    units[COMBAT_SIDES][COMBAT_SLOTS];
+    unsigned char omap [COMBAT_H + 1][COMBAT_W + 1];   // obstacle tile codes (0 = open)
+    unsigned char umap [COMBAT_H + 1][COMBAT_W + 1];   // packed UID = side*5 + id + 1, 0 = empty
+    int           spoils[COMBAT_SIDES];                 // accumulated per side
+    unsigned char powers[COMBAT_SIDES];                 // COMBAT_POWER_* bits
+    Game         *heroes[COMBAT_SIDES];                 // [PLAYER] = g, [AI] = NULL
+    int           turn;
+    int           phase;                                // 0 or 1 (next_unit wrap counter)
+    int           spells_this_round;                    // ≤ 1
+    int           side;                                 // currently acting side
+    int           unit_id;                              // currently acting unit slot
+    bool          castle;                               // siege layout vs open field
+    // Title-bar mode: pre-first-kill shows "Options / <Actor> M<n>",
+    // post-first-kill shows "<Player> vs <Foe> killing <N>". See COMBAT-PLAN .
+    bool          first_kill_seen;
+    int           stacks_destroyed;
+    // RNG (separate from world LCG). See Phase 3.
+    uint64_t      rng_state;
+    // UI / log.
+    char          banner[COMBAT_BANNER_LEN];
+    char          log_lines[COMBAT_LOG_LINES][COMBAT_LOG_LINE_LEN];
+    int           log_count;
+    // Cursor / pick state. Filled by Phase 7 (input) and Phase 9 (target picker).
+    int           cursor_x, cursor_y;
+    int           target_filter;                        //  line 6082
+    // True only while a target picker (shoot, spell) is in its modal
+    // input loop. The cursor ring (frames 11..14) is drawn by the
+    // renderer iff this is set — DOS combat does not show a cursor
+    // during normal turns (kb_029-044).
+    bool          picker_active;
+    // Cursor anim frame, 0..3 — cycles 11..14 of the combat tileset
+    // when picker_active is true. Advanced by combat_tick_anim alongside
+    // the unit-frame animation.
+    int           cursor_frame;
+    // Outcome scratch.
+    int           result;                               // 0 = running, 1 = player win, 2 = AI win
+    char          villain_id[24];                       // for victory dialog substitution; empty = none
+    // Mode metadata captured at entry, kept so end-of-combat can route.
+    CombatMode    mode;
+    char          target_name[48];
+} Combat;
+
+// ----- Public entry point ----------------------------------------------------
+// Runs a battle. Currently the implementation is the same scouts-banner
+// dialog as the previous stub plus the new combat data-model scaffold;
+// it concedes WIN immediately. Phases 2–14 fill in real behavior.
+// render_target is the offscreen RenderTexture2D the rest of the
+// game renders into; we render combat into the same target so the
+// outer scaling / letterbox logic in main.c is unchanged. Pass in
+// as a void* to keep combat.h free of raylib.h.
+CombatResult RunCombat(Game *g, const Sprites *sprites,
+                       void *render_target,
+                       CombatMode mode, const CombatTarget *target);
+
+// ----- Test / determinism harness (Phase 14) ---------------------------------
+// Runs a deterministic scripted combat scenario and prints a one-line
+// digest (RNG seed, hit counts per side, final state hash). Used by the
+// `make combat-test` target to catch regressions in the damage formula.
+//
+// Returns the digest hash; identical inputs must produce identical
+// digests across builds. No raylib calls — safe to invoke headlessly.
+uint64_t combat_test_digest(uint64_t seed,
+                            const char *attacker_id,
+                            int attacker_count,
+                            const char *defender_id,
+                            int defender_count,
+                            int rounds);
+
+// Headless combat for the playtest binary. Drives both sides with
+// combat_ai_action — no raylib, no input, no animation timer. Mirrors
+// RunCombat's setup + writeback so g->army reflects losses on win, and
+// gold gains spoils. Used in tests/playtest/ to fight foes/villains
+// without a render context. cap_rounds guards against infinite loops
+// from edge cases (returns FLEE if exceeded).
+CombatResult combat_run_headless(Game *g, CombatMode mode,
+                                 const CombatTarget *target,
+                                 int cap_rounds);
+
+// Auto-combat toggle. When on, RunCombat drives the player's turns
+// through combat_ai_action (skipping the modal player-input flow).
+// Persists across fights until cleared. Used by the harness so a
+// scripted driver can run a full playthrough without authoring per-
+// fight key sequences. No effect on combat_run_headless (already AI
+// vs AI by definition).
+void combat_set_auto_player(bool on);
+bool combat_auto_player(void);
+
+#endif

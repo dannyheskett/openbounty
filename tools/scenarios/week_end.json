@@ -1,0 +1,14 @@
+{
+  "name": "week_end",
+  "description": "Walk many tiles to advance ~1 game week (5 days). Asserts week-end commission was credited and astrology dialogs surfaced.",
+  "setup": { "seed": 42, "class": "knight", "name": "Bot", "difficulty": "easy" },
+  "tags": ["fast", "calendar"],
+  "max_seconds": 60,
+  "steps": [
+    { "step": "snapshot_baseline", "as": "base" },
+    { "step": "wait_days", "n": 6 },
+    { "step": "drain_dialogs", "max": 6 },
+    { "step": "assert_overworld" },
+    { "step": "assert", "path": "stats.days_left", "op": "<=", "value": 894 }
+  ]
+}

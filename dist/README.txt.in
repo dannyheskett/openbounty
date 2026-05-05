@@ -1,0 +1,49 @@
+OpenBounty <version>
+====================
+
+OpenBounty is an open-source reimplementation of the 1990 strategy game
+King's Bounty. The engine ships without game data; you must supply your
+own asset pack.
+
+
+INSTALL
+
+  Linux:    extract the tarball and run ./openbounty
+  Windows:  extract the zip and double-click openbounty.exe
+  macOS:    extract the zip; first launch will be blocked by Gatekeeper.
+            Right-click openbounty in Finder, choose Open, then click
+            Open in the dialog. Or, from a terminal:
+              xattr -dr com.apple.quarantine ./openbounty
+
+
+ASSET PACK
+
+  OpenBounty looks for a *.openbounty file next to the binary, or in
+  your user packs directory. To create a pack from your own copy of
+  the King's Bounty DOS distribution:
+
+      ./openbounty --extract /path/to/KB.EXE
+
+  This produces a .openbounty file you can keep next to the binary.
+
+
+CONTROLS
+
+  Movement:   Arrow keys or numpad (8 directions on numpad)
+  View army:  A         View character: V         Map: M
+  Spells:     U         Contract:       I         Puzzle: P
+  End week:   W         Search:         S
+  Save+quit:  Q         Fast quit: Ctrl+Q
+  Cheat menu: F10
+  Exit menu:  Esc
+
+
+LICENSE
+
+  See LICENSE for OpenBounty's MIT license, and NOTICES.md for the
+  third-party libraries it incorporates.
+
+
+SUPPORT
+
+  https://github.com/danheskett/openbounty
