@@ -189,24 +189,16 @@ typedef struct {
 
 static void scan_slots(SlotSet *s) {
     memset(s, 0, sizeof(*s));
+    const Resources *r = resources_current();
+    const char *pid = (r && r->pack_id[0]) ? r->pack_id : NULL;
     for (int i = 0; i < SAVE_SLOT_COUNT; i++) {
         char path[512];
-        if (!SavePathGetSlot(i, path, sizeof(path))) continue;
+        if (!SavePathGetSlot(pid, i, path, sizeof(path))) continue;
         if (SaveGameReadHeader(path, &s->hdrs[i]) == SAVE_OK &&
             s->hdrs[i].exists) {
             s->existing++;
         }
     }
-}
-
-// True if a save in this slot belongs to a different pack than the
-// active one. Empty pack_ids match anything (legacy / packless saves).
-static bool slot_pack_mismatch(const SaveHeader *h) {
-    if (!h->exists) return false;
-    const Resources *r = resources_current();
-    if (!r || !r->pack_id[0]) return false;
-    if (!h->pack_id[0]) return false;
-    return strcmp(h->pack_id, r->pack_id) != 0;
 }
 
 static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
@@ -219,14 +211,12 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
     int row_count = SAVE_SLOT_COUNT + 1;
     int new_row   = SAVE_SLOT_COUNT;
 
-    // Put cursor on the first existing slot that matches the active
-    // pack, else on "New". Mismatched-pack slots are still selectable
-    // (cursor will land on them when navigating) but Enter no-ops.
+    // Cursor lands on the first existing slot, else on "New". Saves are
+    // physically segregated by pack (<user-data>/openbounty/saves/<pack_id>/),
+    // so every slot we see here belongs to the active pack.
     cursor = new_row;
     for (int i = 0; i < SAVE_SLOT_COUNT; i++) {
-        if (slots.hdrs[i].exists && !slot_pack_mismatch(&slots.hdrs[i])) {
-            cursor = i; break;
-        }
+        if (slots.hdrs[i].exists) { cursor = i; break; }
     }
 
     while (!WindowShouldClose()) {
@@ -260,11 +250,6 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
                 return true;
             }
             if (slots.hdrs[cursor].exists) {
-                if (slot_pack_mismatch(&slots.hdrs[cursor])) {
-                    // Belongs to a different pack — refuse silently.
-                    advance_input_frame();
-                    continue;
-                }
                 out->action = STARTUP_LOAD;
                 out->slot   = cursor;
                 return true;
@@ -302,29 +287,15 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
 
         const char *empty_lbl = ui ? ui->startup_save_picker_empty : "(empty)";
         for (int i = 0; i < SAVE_SLOT_COUNT; i++) {
-            bool mismatch = slot_pack_mismatch(&slots.hdrs[i]);
-            Color fg;
-            if (mismatch) {
-                fg = PAL_CLR(GREY);
-            } else if (i == cursor) {
-                fg = PAL_CLR(YELLOW);
-            } else {
-                fg = PAL_CLR(WHITE);
-            }
+            Color fg = (i == cursor) ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
             char line[80];
             if (slots.hdrs[i].exists) {
-                if (mismatch) {
-                    snprintf(line, sizeof(line),
-                             "%2d. %-10s  (other pack)",
-                             i + 1, slots.hdrs[i].name);
-                } else {
-                    snprintf(line, sizeof(line),
-                             "%2d. %-10s  %-9s  %3dd",
-                             i + 1,
-                             slots.hdrs[i].name,
-                             slots.hdrs[i].rank_title,
-                             slots.hdrs[i].days_left);
-                }
+                snprintf(line, sizeof(line),
+                         "%2d. %-10s  %-9s  %3dd",
+                         i + 1,
+                         slots.hdrs[i].name,
+                         slots.hdrs[i].rank_title,
+                         slots.hdrs[i].days_left);
             } else {
                 snprintf(line, sizeof(line), "%2d. %s", i + 1, empty_lbl);
             }

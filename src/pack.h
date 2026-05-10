@@ -59,15 +59,18 @@ typedef struct {
     char name[PACK_ENTRY_NAME_MAX];   // filename without extension
 } PackEntry;
 
-// Scan cwd, then the user packs dir (SavePathGetPacksDir), for
-// "*.openbounty" files. Fills `out` up to `cap` entries. Same filename
-// in both dirs: cwd wins (the duplicate is skipped). Returns count.
+// Scan, in order, for available packs:
+//   1. cwd/*.openbounty
+//   2. <user-data>/openbounty/*.openbounty
+//   3. <exe-dir>/assets/*.openbounty       (bundled with the binary)
+// Earlier source wins on duplicate names. Fills `out` up to `cap` entries.
+// Returns the count discovered.
 int pack_discover(PackEntry *out, int cap);
 
 // Resolve a `--pack <arg>` CLI value to an absolute path.
 // - If `arg` contains '/' or '\' or ends in ".openbounty" → treat as
 //   path; verify it exists.
-// - Otherwise (bare name) → search cwd then user packs dir for
+// - Otherwise (bare name) → search the same roots as pack_discover for
 //   "<arg>" or "<arg>.openbounty" (file or directory).
 // Returns true and fills `out` on success; false otherwise.
 bool pack_resolve_arg(const char *arg, char *out, size_t cap);

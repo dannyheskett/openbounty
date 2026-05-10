@@ -1,3 +1,9 @@
+// readlink, _NSGetExecutablePath etc. need POSIX/BSD feature flags
+// before the system headers are pulled in.
+#if !defined(_WIN32) && !defined(_DEFAULT_SOURCE)
+#define _DEFAULT_SOURCE
+#endif
+
 #include "savepath.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,8 +13,14 @@
 
 #ifdef _WIN32
 #include <direct.h>
+#include <windows.h>
 #define MKDIR(p) _mkdir(p)
 #define PATHSEP '\\'
+#elif defined(__APPLE__)
+#include <unistd.h>
+#include <mach-o/dyld.h>
+#define MKDIR(p) mkdir((p), 0755)
+#define PATHSEP '/'
 #else
 #include <unistd.h>
 #define MKDIR(p) mkdir((p), 0755)
@@ -19,6 +31,25 @@ static bool ensure_dir(const char *path) {
     struct stat st;
     if (stat(path, &st) == 0) return S_ISDIR(st.st_mode);
     return MKDIR(path) == 0;
+}
+
+// Make every parent of `path` (and `path` itself) exist. Treats both
+// '/' and '\\' as separators so the same code works on every OS.
+static bool ensure_dir_recursive(const char *path) {
+    if (!path || !*path) return false;
+    char buf[1024];
+    size_t n = strlen(path);
+    if (n + 1 > sizeof buf) return false;
+    memcpy(buf, path, n + 1);
+    for (size_t i = 1; i < n; i++) {
+        if (buf[i] == '/' || buf[i] == '\\') {
+            char saved = buf[i];
+            buf[i] = '\0';
+            if (!ensure_dir(buf)) return false;
+            buf[i] = saved;
+        }
+    }
+    return ensure_dir(buf);
 }
 
 static char s_dir_override[512] = {0};
@@ -85,29 +116,67 @@ bool SavePathGetDir(char *out, size_t out_size) {
     return true;
 }
 
-bool SavePathGetPacksDir(char *out, size_t out_size) {
+bool SavePathGetSlot(const char *pack_id, int slot, char *out, size_t out_size) {
+    if (slot < 0 || slot >= SAVE_SLOT_COUNT) return false;
+    if (!out || out_size == 0) return false;
+
+    // --save-dir override is flat: caller picked the exact dir, so we
+    // don't interpolate pack_id under it. Useful for harness/tests.
+    if (s_dir_override[0]) {
+        if (!ensure_dir(s_dir_override)) return false;
+        snprintf(out, out_size, "%s%csave_%d.dat",
+                 s_dir_override, PATHSEP, slot);
+        return true;
+    }
+
     char base[512];
     if (!SavePathGetDir(base, sizeof base)) return false;
-    char full[600];
-    snprintf(full, sizeof full, "%s%cpacks", base, PATHSEP);
-    if (!ensure_dir(full)) {
-        fprintf(stderr, "SavePathGetPacksDir: cannot create %s\n", full);
+
+    // Default layout: <user-data>/openbounty/saves/<pack_id>/save_N.dat.
+    // Empty pack_id is treated as "unknown"; saves still need *some*
+    // bucket so they don't collide with packed games. This shouldn't
+    // happen in practice — a pack must be loaded before saving.
+    const char *pid = (pack_id && pack_id[0]) ? pack_id : "_unknown";
+    char dir[768];
+    snprintf(dir, sizeof dir, "%s%csaves%c%s",
+             base, PATHSEP, PATHSEP, pid);
+    if (!ensure_dir_recursive(dir)) {
+        fprintf(stderr, "SavePathGetSlot: cannot create %s\n", dir);
         return false;
     }
-    size_t n = strlen(full);
-    if (n + 1 > out_size) return false;
-    memcpy(out, full, n + 1);
-    return true;
-}
-
-bool SavePathGetSlot(int slot, char *out, size_t out_size) {
-    if (slot < 0 || slot >= SAVE_SLOT_COUNT) return false;
-    char dir[512];
-    if (!SavePathGetDir(dir, sizeof(dir))) return false;
     snprintf(out, out_size, "%s%csave_%d.dat", dir, PATHSEP, slot);
     return true;
 }
 
-bool SavePathGet(char *out, size_t out_size) {
-    return SavePathGetSlot(0, out, out_size);
+bool SavePathGetExeDir(char *out, size_t out_size) {
+    if (!out || out_size == 0) return false;
+    char path[1024] = {0};
+
+#if defined(_WIN32)
+    DWORD n = GetModuleFileNameA(NULL, path, sizeof path);
+    if (n == 0 || n >= sizeof path) return false;
+#elif defined(__APPLE__)
+    uint32_t sz = sizeof path;
+    if (_NSGetExecutablePath(path, &sz) != 0) return false;
+#else
+    ssize_t n = readlink("/proc/self/exe", path, sizeof path - 1);
+    if (n <= 0) return false;
+    path[n] = '\0';
+#endif
+
+    char *sep = strrchr(path, PATHSEP);
+#if !defined(_WIN32)
+    // On POSIX a backslash is a legal filename character — only '/'
+    // separates components. On Windows strrchr already finds '\\', so
+    // we don't need a second pass.
+#else
+    char *fwd = strrchr(path, '/');
+    if (fwd && (!sep || fwd > sep)) sep = fwd;
+#endif
+    if (!sep) return false;
+    *sep = '\0';
+    size_t n2 = strlen(path);
+    if (n2 + 1 > out_size) return false;
+    memcpy(out, path, n2 + 1);
+    return true;
 }

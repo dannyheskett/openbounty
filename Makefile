@@ -37,10 +37,11 @@ OUT := build/openbounty
 OUT_RELEASE := build/openbounty-release
 
 # Pack zips: one per top-level dir under assets/. Each becomes
-# build/<name>.openbounty next to the binary for distribution. Today
-# only assets/kings-bounty/ exists, but the pattern handles N games.
+# build/assets/<name>.openbounty next to the binary so discovery step 3
+# (<exe-dir>/assets/*.openbounty) finds them from any cwd. Today only
+# assets/kings-bounty/ exists, but the pattern handles N games.
 PACK_NAMES := $(notdir $(patsubst %/,%,$(wildcard assets/*/)))
-PACKS := $(addprefix build/,$(addsuffix .openbounty,$(PACK_NAMES)))
+PACKS := $(addprefix build/assets/,$(addsuffix .openbounty,$(PACK_NAMES)))
 
 all: $(OUT) $(PACKS)
 
@@ -67,9 +68,12 @@ build/mkpack: tools/mkpack.c third_party/miniz/miniz.c | build
 # Each pack zip rebuilds when any file under its assets/<name>/ tree
 # changes. Using $(shell find) at parse time means: run `make` after
 # editing assets to repackage; touching a single asset is enough.
+build/assets:
+	mkdir -p build/assets
+
 define PACK_RULE
-build/$(1).openbounty: $$(shell find assets/$(1) -type f \! -name '*.xcf' \! -name '*.psd' \! -name '*:Zone.Identifier' 2>/dev/null) build/mkpack | build
-	./build/mkpack assets/$(1) build/$(1).openbounty
+build/assets/$(1).openbounty: $$(shell find assets/$(1) -type f \! -name '*.xcf' \! -name '*.psd' \! -name '*:Zone.Identifier' 2>/dev/null) build/mkpack | build/assets
+	./build/mkpack assets/$(1) build/assets/$(1).openbounty
 endef
 $(foreach pn,$(PACK_NAMES),$(eval $(call PACK_RULE,$(pn))))
 
@@ -87,7 +91,7 @@ run: $(OUT)
 
 # Release build: same engine binary as `all`, just under a different
 # name. Assets are no longer embedded — they ride alongside as
-# build/<game>.openbounty.
+# build/assets/<game>.openbounty.
 release: $(OUT_RELEASE) $(PACKS)
 
 $(OUT_RELEASE): $(SRC) build/version.h | build

@@ -467,14 +467,35 @@ static int scan_one_dir(const char *dir, PackEntry *out, int filled, int cap) {
     return filled;
 }
 
+// Discovery order (earlier source wins on duplicate names):
+//   1. cwd/*.openbounty
+//   2. <user-data>/openbounty/*.openbounty   (flat, no subdir)
+//   3. <exe-dir>/assets/*.openbounty         (bundled-with-binary)
+// `--pack <arg>` short-circuits this entirely (handled by caller).
 int pack_discover(PackEntry *out, int cap) {
     if (!out || cap <= 0) return 0;
     int n = 0;
+
+    // 1. cwd zips
     n = scan_one_dir(".", out, n, cap);
+
+    // 2. user-data root zips (flat at <user-data>/openbounty/)
     char user_dir[PACK_ENTRY_PATH_MAX];
-    if (SavePathGetPacksDir(user_dir, sizeof user_dir)) {
+    if (SavePathGetDir(user_dir, sizeof user_dir)) {
         n = scan_one_dir(user_dir, out, n, cap);
     }
+
+    // 3. <exe-dir>/assets/*.openbounty
+    char exe_dir[PACK_ENTRY_PATH_MAX];
+    if (SavePathGetExeDir(exe_dir, sizeof exe_dir)) {
+        char assets[PACK_ENTRY_PATH_MAX + 16];
+        snprintf(assets, sizeof assets, "%s%cassets", exe_dir, PATHSEP);
+        struct stat ast;
+        if (stat(assets, &ast) == 0 && S_ISDIR(ast.st_mode)) {
+            n = scan_one_dir(assets, out, n, cap);
+        }
+    }
+
     return n;
 }
 
@@ -625,14 +646,26 @@ bool pack_resolve_arg(const char *arg, char *out, size_t cap) {
         return true;
     }
 
-    // Bare name. Search cwd then user dir, with-or-without extension.
-    const char *roots[2] = { ".", NULL };
+    // Bare name. Walk the same roots as pack_discover, in order, looking
+    // for "<arg>.openbounty" (zip) or "<arg>" (loose dir with game.json).
     char user_dir[PACK_ENTRY_PATH_MAX];
-    if (SavePathGetPacksDir(user_dir, sizeof user_dir)) {
-        roots[1] = user_dir;
+    char exe_dir[PACK_ENTRY_PATH_MAX];
+    char assets_dir[PACK_ENTRY_PATH_MAX + 16];
+    const char *roots[4] = { ".", NULL, NULL, NULL };
+    int n_roots = 1;
+    if (SavePathGetDir(user_dir, sizeof user_dir)) {
+        roots[n_roots++] = user_dir;
     }
-    for (int i = 0; i < 2; i++) {
-        if (!roots[i]) continue;
+    if (SavePathGetExeDir(exe_dir, sizeof exe_dir)) {
+        snprintf(assets_dir, sizeof assets_dir, "%s%cassets",
+                 exe_dir, PATHSEP);
+        struct stat ast;
+        if (stat(assets_dir, &ast) == 0 && S_ISDIR(ast.st_mode)) {
+            roots[n_roots++] = assets_dir;
+        }
+    }
+
+    for (int i = 0; i < n_roots; i++) {
         const char *suffixes[2] = { ".openbounty", "" };
         for (int j = 0; j < 2; j++) {
             char candidate[PACK_ENTRY_PATH_MAX];
@@ -645,6 +678,7 @@ bool pack_resolve_arg(const char *arg, char *out, size_t cap) {
             }
         }
     }
-    fprintf(stderr, "pack: '%s' not found in cwd or user packs dir\n", arg);
+    fprintf(stderr, "pack: '%s' not found in cwd, user data dir, "
+                    "or <exe>/assets\n", arg);
     return false;
 }

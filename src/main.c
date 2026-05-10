@@ -94,7 +94,8 @@ static void toast_with_reason(const char *template_, const char *reason) {
 static bool menu_save(void *ud) {
     MenuCtx *c = (MenuCtx *)ud;
     char path[1024];
-    if (!SavePathGet(path, sizeof(path))) {
+    const char *pid = c->res->pack_id[0] ? c->res->pack_id : NULL;
+    if (!SavePathGetSlot(pid, 0, path, sizeof(path))) {
         toast_show(c->res->ui.toast_save_cancelled);
         return true;
     }
@@ -107,7 +108,8 @@ static bool menu_save(void *ud) {
 static bool menu_load(void *ud) {
     MenuCtx *c = (MenuCtx *)ud;
     char path[1024];
-    if (!SavePathGet(path, sizeof(path))) {
+    const char *pid = c->res->pack_id[0] ? c->res->pack_id : NULL;
+    if (!SavePathGetSlot(pid, 0, path, sizeof(path))) {
         toast_show(c->res->ui.toast_load_cancelled);
         return false;
     }
@@ -479,8 +481,9 @@ int main(int argc, char **argv) {
     // --extract: produce a .openbounty pack (or, with --out-dir, a
     // loose tree) from the user's KB.EXE distribution. Inputs come from
     // cwd's legacy/bin/ subdir to match the standalone tool's contract;
-    // if that's missing, the engine looks in cwd directly. Output is the
-    // user packs dir's <pack_id>.openbounty, unless --out-dir is given.
+    // if that's missing, the engine looks in cwd directly. Output is
+    // <user-data>/openbounty/<pack_id>.openbounty, unless --out-dir is
+    // given.
     if (extract_mode) {
         const char *in_dir = "legacy/bin";
         struct stat sst;
@@ -498,13 +501,13 @@ int main(int argc, char **argv) {
             int rc = extract_run(in_dir, extract_out_dir);
             return rc == 0 ? 0 : 1;
         }
-        char user_packs[PACK_ENTRY_PATH_MAX];
-        if (!SavePathGetPacksDir(user_packs, sizeof user_packs)) {
-            fprintf(stderr, "extract: cannot resolve user packs dir\n");
+        char user_dir[PACK_ENTRY_PATH_MAX];
+        if (!SavePathGetDir(user_dir, sizeof user_dir)) {
+            fprintf(stderr, "extract: cannot resolve user data dir\n");
             return 1;
         }
         char tmp_dir[PACK_ENTRY_PATH_MAX + 32];
-        snprintf(tmp_dir, sizeof tmp_dir, "%s/.tmp-extract", user_packs);
+        snprintf(tmp_dir, sizeof tmp_dir, "%s/.tmp-extract", user_dir);
         pack_rmtree(tmp_dir);
         int rc = extract_run(in_dir, tmp_dir);
         if (rc != 0) {
@@ -524,7 +527,7 @@ int main(int argc, char **argv) {
         }
         char out_zip[PACK_ENTRY_PATH_MAX + 96];
         snprintf(out_zip, sizeof out_zip, "%s/%s.openbounty",
-                 user_packs, pid);
+                 user_dir, pid);
         if (!pack_zip_dir(tmp_dir, out_zip)) {
             fprintf(stderr, "extract: failed to write %s\n", out_zip);
             pack_rmtree(tmp_dir);
@@ -535,9 +538,11 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    // Resolve --pack <name|path>, or auto-discover. Discovery scans cwd
-    // first, then the user packs dir. 0 packs → exit gracefully (the
-    // first-run KB.EXE auto-extract is wired in a later phase).
+    // Resolve --pack <name|path>, or auto-discover. Discovery walks (in
+    // order): cwd zips, <user-data>/openbounty zips, <exe>/assets zips,
+    // <exe>/assets/<sub>/game.json loose trees. If nothing is found we
+    // try a first-run KB.EXE extraction in cwd; failing that, error out
+    // with a platform-specific dialog explaining the install steps.
     char pack_path[PACK_ENTRY_PATH_MAX];
     if (pack_arg && pack_arg[0]) {
         if (!pack_resolve_arg(pack_arg, pack_path, sizeof pack_path)) {
@@ -554,118 +559,111 @@ int main(int argc, char **argv) {
         PackEntry entries[PACK_DISCOVER_MAX];
         int n = pack_discover(entries, PACK_DISCOVER_MAX);
         if (n == 0) {
+            // Final fallback: a fresh first-run KB.EXE extract from cwd.
+            // Output goes to <user-data>/openbounty/<id>.openbounty so
+            // future launches will find it via discovery step 2.
             struct stat st;
-            // Dev convenience: a loose pack at ./assets/kings-bounty/
-            // next to the engine wins over auto-extract. Useful while
-            // editing assets without a zip rebuild.
-            if (stat("assets/kings-bounty", &st) == 0 && S_ISDIR(st.st_mode)) {
-                snprintf(pack_path, sizeof pack_path, "assets/kings-bounty");
-            } else {
-                // First-run: if KB.EXE is sitting nearby, extract it
-                // into the user packs dir and continue. Mirrors the
-                // --extract path but silent on success.
-                const char *in_dir = NULL;
-                if (stat("legacy/bin", &st) == 0 && S_ISDIR(st.st_mode))
-                    in_dir = "legacy/bin";
-                else if (stat("KB.EXE", &st) == 0)
-                    in_dir = ".";
-                if (!in_dir) {
-                    // Build a platform-specific message. Tell the user
-                    // (a) why nothing happened, (b) where the engine
-                    // looks for packs, (c) how to make one from their
-                    // own KB.EXE. The body has to stand alone — on
-                    // Windows GUI builds this dialog is the only thing
-                    // the user ever sees.
-                    char user_packs[PACK_ENTRY_PATH_MAX];
-                    if (!SavePathGetPacksDir(user_packs, sizeof user_packs)) {
-                        user_packs[0] = '\0';
-                    }
-                    char body[2048];
+            const char *in_dir = NULL;
+            if (stat("legacy/bin", &st) == 0 && S_ISDIR(st.st_mode))
+                in_dir = "legacy/bin";
+            else if (stat("KB.EXE", &st) == 0)
+                in_dir = ".";
+            if (!in_dir) {
+                // Build a platform-specific message. Tell the user
+                // (a) why nothing happened, (b) where the engine
+                // looks for packs, (c) how to make one from their
+                // own KB.EXE. The body has to stand alone — on
+                // Windows GUI builds this dialog is the only thing
+                // the user ever sees.
+                char user_dir[PACK_ENTRY_PATH_MAX];
+                if (!SavePathGetDir(user_dir, sizeof user_dir)) {
+                    user_dir[0] = '\0';
+                }
+                char body[2048];
 #ifdef _WIN32
-                    // Windows MessageBox does its own word-wrapping; keep
-                    // prose as single lines and use \n only for paragraph
-                    // breaks and list items. Hard-wrapped prose otherwise
-                    // produces ragged short lines because MessageBox
-                    // honors the literal newlines.
-                    snprintf(body, sizeof body,
-                        "OpenBounty cannot start because no game pack was found.\n\n"
-                        "OpenBounty is a reimplementation of King's Bounty (1990) and ships without game data. To play, you must supply your own asset pack derived from a legally-owned copy of the original game.\n\n"
-                        "How to fix this:\n\n"
-                        "1. Place a *.openbounty pack file in either of these folders:\n"
-                        "     %s\n"
-                        "     (or the folder containing openbounty.exe)\n\n"
-                        "2. Or, place KB.EXE next to openbounty.exe and re-run; the engine will extract a pack on first launch.\n\n"
-                        "3. Or, from a command prompt:\n"
-                        "     openbounty.exe --pack <path-to-pack-or-KB.EXE-folder>\n\n"
-                        "See README.txt for the full instructions.",
-                        user_packs[0] ? user_packs : "(your AppData\\OpenBounty\\packs folder)");
+                // Windows MessageBox does its own word-wrapping; keep
+                // prose as single lines and use \n only for paragraph
+                // breaks and list items. Hard-wrapped prose otherwise
+                // produces ragged short lines because MessageBox
+                // honors the literal newlines.
+                snprintf(body, sizeof body,
+                    "OpenBounty cannot start because no game pack was found.\n\n"
+                    "OpenBounty is a reimplementation of King's Bounty (1990) and ships without game data. To play, you must supply your own asset pack derived from a legally-owned copy of the original game.\n\n"
+                    "How to fix this:\n\n"
+                    "1. Place a *.openbounty pack file in either of these folders:\n"
+                    "     %s\n"
+                    "     (or the folder containing openbounty.exe)\n\n"
+                    "2. Or, place KB.EXE next to openbounty.exe and re-run; the engine will extract a pack on first launch.\n\n"
+                    "3. Or, from a command prompt:\n"
+                    "     openbounty.exe --pack <path-to-pack-or-KB.EXE-folder>\n\n"
+                    "See README.txt for the full instructions.",
+                    user_dir[0] ? user_dir : "(your AppData\\OpenBounty folder)");
 #elif defined(__APPLE__)
-                    snprintf(body, sizeof body,
-                        "OpenBounty cannot start because no game pack was found.\n\n"
-                        "OpenBounty is a reimplementation of King's Bounty (1990) and "
-                        "ships without game data. To play, you must supply your own "
-                        "asset pack derived from a legally-owned copy of the original game.\n\n"
-                        "How to fix this:\n\n"
-                        "1. Place a *.openbounty pack file in:\n"
-                        "     %s\n"
-                        "   or in the folder containing the openbounty binary.\n\n"
-                        "2. Or, from a Terminal, run:\n"
-                        "     ./openbounty --extract /path/to/KB.EXE\n"
-                        "   to generate a pack from your own copy of the game.\n\n"
-                        "See README.txt for the full instructions.",
-                        user_packs[0] ? user_packs : "~/Library/Application Support/OpenBounty/packs");
+                snprintf(body, sizeof body,
+                    "OpenBounty cannot start because no game pack was found.\n\n"
+                    "OpenBounty is a reimplementation of King's Bounty (1990) and "
+                    "ships without game data. To play, you must supply your own "
+                    "asset pack derived from a legally-owned copy of the original game.\n\n"
+                    "How to fix this:\n\n"
+                    "1. Place a *.openbounty pack file in:\n"
+                    "     %s\n"
+                    "   or in the folder containing the openbounty binary.\n\n"
+                    "2. Or, from a Terminal, run:\n"
+                    "     ./openbounty --extract /path/to/KB.EXE\n"
+                    "   to generate a pack from your own copy of the game.\n\n"
+                    "See README.txt for the full instructions.",
+                    user_dir[0] ? user_dir : "~/Library/Application Support/OpenBounty");
 #else
-                    snprintf(body, sizeof body,
-                        "OpenBounty cannot start because no game pack was found.\n\n"
-                        "OpenBounty is a reimplementation of King's Bounty (1990) and "
-                        "ships without game data. To play, you must supply your own "
-                        "asset pack derived from a legally-owned copy of the original game.\n\n"
-                        "How to fix this:\n\n"
-                        "1. Place a *.openbounty pack file in:\n"
-                        "     %s\n"
-                        "   or in the directory you run openbounty from.\n\n"
-                        "2. Or, run:\n"
-                        "     ./openbounty --extract /path/to/KB.EXE\n"
-                        "   to generate a pack from your own copy of the game.\n\n"
-                        "See README.txt for the full instructions.",
-                        user_packs[0] ? user_packs : "$XDG_DATA_HOME/openbounty/packs (default ~/.local/share/openbounty/packs)");
+                snprintf(body, sizeof body,
+                    "OpenBounty cannot start because no game pack was found.\n\n"
+                    "OpenBounty is a reimplementation of King's Bounty (1990) and "
+                    "ships without game data. To play, you must supply your own "
+                    "asset pack derived from a legally-owned copy of the original game.\n\n"
+                    "How to fix this:\n\n"
+                    "1. Place a *.openbounty pack file in:\n"
+                    "     %s\n"
+                    "   or in the directory you run openbounty from.\n\n"
+                    "2. Or, run:\n"
+                    "     ./openbounty --extract /path/to/KB.EXE\n"
+                    "   to generate a pack from your own copy of the game.\n\n"
+                    "See README.txt for the full instructions.",
+                    user_dir[0] ? user_dir : "$XDG_DATA_HOME/openbounty (default ~/.local/share/openbounty)");
 #endif
-                    fatal_user_error("OpenBounty: no game pack found", body);
-                    return 1;
-                }
-                fprintf(stderr, "[extract] no pack found; running first-run extraction from %s\n", in_dir);
-                char user_packs[PACK_ENTRY_PATH_MAX];
-                if (!SavePathGetPacksDir(user_packs, sizeof user_packs)) return 1;
-                char tmp_dir[PACK_ENTRY_PATH_MAX + 32];
-                snprintf(tmp_dir, sizeof tmp_dir, "%s/.tmp-extract", user_packs);
-                pack_rmtree(tmp_dir);
-                if (extract_run(in_dir, tmp_dir) != 0) {
-                    pack_rmtree(tmp_dir);
-                    return 1;
-                }
-                char pid[64] = "kings-bounty";
-                {
-                    Pack *p = pack_open(tmp_dir);
-                    if (p) {
-                        const char *id = pack_id(p);
-                        if (id && id[0]) snprintf(pid, sizeof pid, "%s", id);
-                        pack_close(p);
-                    }
-                }
-                char wide_zip[PACK_ENTRY_PATH_MAX + 96];
-                snprintf(wide_zip, sizeof wide_zip,
-                         "%s/%s.openbounty", user_packs, pid);
-                if (!pack_zip_dir(tmp_dir, wide_zip)) {
-                    pack_rmtree(tmp_dir);
-                    return 1;
-                }
-                pack_rmtree(tmp_dir);
-                fprintf(stderr, "[extract] wrote %s\n", wide_zip);
-                size_t wzn = strlen(wide_zip);
-                if (wzn >= sizeof pack_path) wzn = sizeof pack_path - 1;
-                memcpy(pack_path, wide_zip, wzn);
-                pack_path[wzn] = '\0';
+                fatal_user_error("OpenBounty: no game pack found", body);
+                return 1;
             }
+            fprintf(stderr, "[extract] no pack found; running first-run extraction from %s\n", in_dir);
+            char user_dir[PACK_ENTRY_PATH_MAX];
+            if (!SavePathGetDir(user_dir, sizeof user_dir)) return 1;
+            char tmp_dir[PACK_ENTRY_PATH_MAX + 32];
+            snprintf(tmp_dir, sizeof tmp_dir, "%s/.tmp-extract", user_dir);
+            pack_rmtree(tmp_dir);
+            if (extract_run(in_dir, tmp_dir) != 0) {
+                pack_rmtree(tmp_dir);
+                return 1;
+            }
+            char pid[64] = "kings-bounty";
+            {
+                Pack *p = pack_open(tmp_dir);
+                if (p) {
+                    const char *id = pack_id(p);
+                    if (id && id[0]) snprintf(pid, sizeof pid, "%s", id);
+                    pack_close(p);
+                }
+            }
+            char wide_zip[PACK_ENTRY_PATH_MAX + 96];
+            snprintf(wide_zip, sizeof wide_zip,
+                     "%s/%s.openbounty", user_dir, pid);
+            if (!pack_zip_dir(tmp_dir, wide_zip)) {
+                pack_rmtree(tmp_dir);
+                return 1;
+            }
+            pack_rmtree(tmp_dir);
+            fprintf(stderr, "[extract] wrote %s\n", wide_zip);
+            size_t wzn = strlen(wide_zip);
+            if (wzn >= sizeof pack_path) wzn = sizeof pack_path - 1;
+            memcpy(pack_path, wide_zip, wzn);
+            pack_path[wzn] = '\0';
         } else if (n == 1) {
             snprintf(pack_path, sizeof pack_path, "%s", entries[0].path);
         } else {
@@ -822,7 +820,8 @@ int main(int argc, char **argv) {
         // defaults so all fields have sane values the loader can overwrite.
         GameInit(&game, "Hero", 0, DIFFICULTY_NORMAL, NULL);
         char path[512];
-        if (SavePathGetSlot(choice.slot, path, sizeof(path))) {
+        const char *pid = res.pack_id[0] ? res.pack_id : NULL;
+        if (SavePathGetSlot(pid, choice.slot, path, sizeof(path))) {
             SaveResult r = SaveGameRead(path, &game, &map, &fog);
             if (r != SAVE_OK) {
                 fprintf(stderr, "Load slot %d failed: %s\n",
@@ -1865,7 +1864,8 @@ int main(int argc, char **argv) {
                     // dialog handler at the bottom of the main loop
                     // already watches Ctrl-Q to exit.
                     char path[1024];
-                    if (SavePathGet(path, sizeof(path))) {
+                    const char *pid = res.pack_id[0] ? res.pack_id : NULL;
+                    if (SavePathGetSlot(pid, 0, path, sizeof(path))) {
                         SaveGameWrite(path, &game, &map, &fog);
                     }
                     {
