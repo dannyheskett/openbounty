@@ -4,8 +4,8 @@
 //   - whom == 0: listening for letter A..E and SYN ticks
 //   - whom != 0: inline numeric count entry on the right column
 
-#ifndef SCREENS_RECRUIT_SOLDIERS_H
-#define SCREENS_RECRUIT_SOLDIERS_H
+#ifndef OB_SCREENS_RECRUIT_SOLDIERS_H
+#define OB_SCREENS_RECRUIT_SOLDIERS_H
 
 #include "../game.h"
 #include "../sprites.h"

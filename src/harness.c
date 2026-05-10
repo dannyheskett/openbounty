@@ -9,7 +9,7 @@
 // loop owns the rendering; the harness only synthesizes input and
 // reads game state.
 
-#define BNT_HARNESS_INPUT_INTERNAL  // we forward to raylib for snap
+#define OB_HARNESS_INPUT_INTERNAL_H  // we forward to raylib for snap
 #include "harness.h"
 #include "harness_input.h"
 #include "game.h"

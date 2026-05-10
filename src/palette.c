@@ -2,9 +2,9 @@
 #include "assets.h"
 #include <stddef.h>
 
-// Canonical first-16 color fallback.  PAL_* constants
-// and is used when palette_init fails to load the 256-color table from
-// MCGA.DRV — the chrome still renders correctly with just these.
+// Canonical first-16 color fallback. Used when palette_init fails to
+// load the 256-color table from the pack -- the chrome still renders
+// correctly with just these.
 static const Color FALLBACK_16[16] = {
     {   0,   0,   0, 255 }, {   0,   0, 170, 255 },
     {   0, 170,   0, 255 }, {   0, 170, 170, 255 },

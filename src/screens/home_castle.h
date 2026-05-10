@@ -11,8 +11,8 @@
 //   B) → audience modal popup over the backdrop (run_audience_dialog).
 //   ESC → returns to the overworld (pops VIEW_HOME_CASTLE).
 
-#ifndef SCREENS_HOME_CASTLE_H
-#define SCREENS_HOME_CASTLE_H
+#ifndef OB_SCREENS_HOME_CASTLE_H
+#define OB_SCREENS_HOME_CASTLE_H
 
 #include "../game.h"
 #include "../sprites.h"

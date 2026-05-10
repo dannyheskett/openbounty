@@ -1,5 +1,5 @@
-#ifndef BNT_RECORDER_H
-#define BNT_RECORDER_H
+#ifndef OB_RECORDER_H
+#define OB_RECORDER_H
 
 #include <stdbool.h>
 #include <stddef.h>

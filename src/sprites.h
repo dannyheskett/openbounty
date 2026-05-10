@@ -1,5 +1,5 @@
-#ifndef SPRITES_H
-#define SPRITES_H
+#ifndef OB_SPRITES_H
+#define OB_SPRITES_H
 
 #include "raylib.h"
 

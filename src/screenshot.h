@@ -1,5 +1,5 @@
-#ifndef SCREENSHOT_H
-#define SCREENSHOT_H
+#ifndef OB_SCREENSHOT_H
+#define OB_SCREENSHOT_H
 
 #include "raylib.h"
 

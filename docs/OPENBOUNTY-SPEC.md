@@ -11,13 +11,11 @@ is documented inline as the authoritative behavior.
 
 **Tiebreaker:** when this spec disagrees with the source code, the
 source code wins and this spec is updated to match. When the source
-code disagrees with OpenKB, `docs/OPENKB-SPEC.md` and OpenKB sources
-under `/home/danheskett/personal/openkb-reference/src/` are the
-intended target — but the OpenBounty code as it currently stands is
-what this document describes.
+code disagrees with OpenKB, `docs/OPENKB-SPEC.md` and the OpenKB
+sources are the intended target -- but the OpenBounty code as it
+currently stands is what this document describes.
 
-**Scope:** this is a snapshot of the code in `src/`,
-`assets/kings-bounty/`, and `docs/` as of 2026-04-26.
+**Scope:** the code in `src/`, `assets/kings-bounty/`, and `docs/`.
 
 ---
 
@@ -6863,247 +6861,247 @@ its file:line. Generated from `grep` over `src/*.h` and
 ### U.1 `game.h` — game state mutators
 
 ```c
-254:void GameInit(Game *g, const char *name, int pclass, int difficulty, const unsigned char *land);
-257:void refill_rules(void);
-258:void refill_names(void);
-261:void player_accept_rank(Game *g);
-266:void GameCastTimeStop(Game *g);
-267:void GameCastFindVillain(Game *g);
-271:void GameAddPlacement(Game *g, const char *zone, int x, int y, int kind, const char *id);
-274:void salt_spells(Game *g);
-278:void salt_continent(Game *g, int continent, int artifacts, int navmaps, int orbs, int telecaves, int dwellings, int friendly_foes);
-279:void furnish_map(Game *g);
-280:void clear_fog(Game *g);
-284:void bury_scepter(Game *g, int continent);
-292:void salt_villains(Game *g);
-293:void repopulate_castle(Game *g, int castle_id);
-306:bool GameIsOver(const Game *g);
-312:int  GameSpendDays(Game *g, int days, int *total_commission);
-317:int  GameSpendWeek(Game *g, int *total_commission);
-352:void GameAcceptChestGold(Game *g, int gold);
-353:void GameAcceptChestLeadership(Game *g, int leadership);
-366:int GameBuyTroop(Game *g, const char *troop_id, int count);
-370:int GameAddTroop(Game *g, const char *troop_id, int count);
-377:int GameGarrisonTroop(Game *g, const char *castle_id, int slot);
-383:int GameUngarrisonTroop(Game *g, const char *castle_id, int slot);
-386:int GameMaxRecruitable(const Game *g, const char *troop_id);
-396:void GameGrowDwellings(Game *g);
-404:const char *GameApplyAstrology(Game *g, int troop_idx);
-410:int GamePickAstrologyCreature(const Game *g, int week_id);
-415:bool GameSwitchZone(Game *g, Map *map, Fog *fog, const char *zone_id);
-421:bool GameFulfillContract(Game *g, const char *villain_id);
-426:const char *GameNumberName(const Game *g, int count);
-432:bool GamePlayerCanFly(const Game *g);
-435:CastleRecord *GameFindCastle(Game *g, const char *castle_id);
-436:const CastleRecord *GameFindCastleConst(const Game *g, const char *castle_id);
-441:bool GameClaimArtifact(Game *g, int idx);
-444:bool GameHasPower(const Game *g, ArtifactPower power);
-448:void GameAddConsumed(Game *g, const char *zone, int x, int y);
-454:void GameApplyTileMutations(const Game *g, Map *map, const char *zone);
-457:int  GameKnownSpells(const Game *g);
-460:int  GameBoatCost(const Game *g);
-465:TownRecord *GameTouchTown(Game *g, const char *town_id);
-471:const char *GameTakeNextContract(Game *g);
-475:bool GameMaybeRankUp(Game *g);
-478:int  GameArmyTotalLeadership(const Game *g);     // sum of troop->hp * count for all stacks
-479:int  GameArmyStackCount(const Game *g);          // number of non-empty stacks
-482:int  GameVillainsCaught(const Game *g);
-483:int  GameArtifactsFound(const Game *g);
-484:int  GameCastlesOwned(const Game *g);
-491:int  GameComputeScore(const Game *g);
-496:FoeState *GameFindFoe(Game *g, const char *placement_id);
-497:const FoeState *GameFindFoeConst(const Game *g, const char *placement_id);
-506:int GameFoesFollow(Game *g, Map *map);
+void GameInit(Game *g, const char *name, int pclass, int difficulty, const unsigned char *land);
+void refill_rules(void);
+void refill_names(void);
+void player_accept_rank(Game *g);
+void GameCastTimeStop(Game *g);
+void GameCastFindVillain(Game *g);
+void GameAddPlacement(Game *g, const char *zone, int x, int y, int kind, const char *id);
+void salt_spells(Game *g);
+void salt_continent(Game *g, int continent, int artifacts, int navmaps, int orbs, int telecaves, int dwellings, int friendly_foes);
+void furnish_map(Game *g);
+void clear_fog(Game *g);
+void bury_scepter(Game *g, int continent);
+void salt_villains(Game *g);
+void repopulate_castle(Game *g, int castle_id);
+bool GameIsOver(const Game *g);
+int  GameSpendDays(Game *g, int days, int *total_commission);
+int  GameSpendWeek(Game *g, int *total_commission);
+void GameAcceptChestGold(Game *g, int gold);
+void GameAcceptChestLeadership(Game *g, int leadership);
+int GameBuyTroop(Game *g, const char *troop_id, int count);
+int GameAddTroop(Game *g, const char *troop_id, int count);
+int GameGarrisonTroop(Game *g, const char *castle_id, int slot);
+int GameUngarrisonTroop(Game *g, const char *castle_id, int slot);
+int GameMaxRecruitable(const Game *g, const char *troop_id);
+void GameGrowDwellings(Game *g);
+const char *GameApplyAstrology(Game *g, int troop_idx);
+int GamePickAstrologyCreature(const Game *g, int week_id);
+bool GameSwitchZone(Game *g, Map *map, Fog *fog, const char *zone_id);
+bool GameFulfillContract(Game *g, const char *villain_id);
+const char *GameNumberName(const Game *g, int count);
+bool GamePlayerCanFly(const Game *g);
+CastleRecord *GameFindCastle(Game *g, const char *castle_id);
+const CastleRecord *GameFindCastleConst(const Game *g, const char *castle_id);
+bool GameClaimArtifact(Game *g, int idx);
+bool GameHasPower(const Game *g, ArtifactPower power);
+void GameAddConsumed(Game *g, const char *zone, int x, int y);
+void GameApplyTileMutations(const Game *g, Map *map, const char *zone);
+int  GameKnownSpells(const Game *g);
+int  GameBoatCost(const Game *g);
+TownRecord *GameTouchTown(Game *g, const char *town_id);
+const char *GameTakeNextContract(Game *g);
+bool GameMaybeRankUp(Game *g);
+int  GameArmyTotalLeadership(const Game *g);     // sum of troop->hp * count for all stacks
+int  GameArmyStackCount(const Game *g);          // number of non-empty stacks
+int  GameVillainsCaught(const Game *g);
+int  GameArtifactsFound(const Game *g);
+int  GameCastlesOwned(const Game *g);
+int  GameComputeScore(const Game *g);
+FoeState *GameFindFoe(Game *g, const char *placement_id);
+const FoeState *GameFindFoeConst(const Game *g, const char *placement_id);
+int GameFoesFollow(Game *g, Map *map);
 ```
 
 ### U.2 `map.h` — map management
 
 ```c
-53:bool MapLoadZone(Map *map, const Resources *res, const char *zone_id);
-64:const Tile *MapGetTile(const Map *map, int x, int y);
-65:bool MapInBounds(const Map *map, int x, int y);
-66:bool MapWalkable(const Map *map, int x, int y);
-71:void MapClearInteractive(Map *map, int x, int y);
+bool MapLoadZone(Map *map, const Resources *res, const char *zone_id);
+const Tile *MapGetTile(const Map *map, int x, int y);
+bool MapInBounds(const Map *map, int x, int y);
+bool MapWalkable(const Map *map, int x, int y);
+void MapClearInteractive(Map *map, int x, int y);
 ```
 
 ### U.3 `resources.h` — resource catalog
 
 ```c
-825:bool resources_load(Resources *res, const char *manifest_path);
-829:void resources_free(Resources *res);
-834:const Resources *resources_current(void);
-842:const ResTown   *resources_town_by_id(const Resources *r, const char *id);
-843:const ResTown   *resources_town_by_index(const Resources *r, int index);
-847:const ResCastle *resources_castle_by_id(const Resources *r, const char *id);
-849:const ResZone   *resources_zone_by_id(const Resources *r, const char *id);
+bool resources_load(Resources *res, const char *manifest_path);
+void resources_free(Resources *res);
+const Resources *resources_current(void);
+const ResTown   *resources_town_by_id(const Resources *r, const char *id);
+const ResTown   *resources_town_by_index(const Resources *r, int index);
+const ResCastle *resources_castle_by_id(const Resources *r, const char *id);
+const ResZone   *resources_zone_by_id(const Resources *r, const char *id);
 ```
 
 ### U.4 `tables.h` — catalog lookup
 
 ```c
-62:const TroopDef *troop_by_id(const char *id);
-63:const TroopDef *troop_by_index(int idx);
-64:int             troops_count(void);
-81:const SpellDef *spell_by_id(const char *id);
-82:const SpellDef *spell_by_index(int idx);
-83:int             spells_count(void);
-89:int             spell_index_by_id(const char *id);
-117:const ClassDef *class_by_id(const char *id);
-118:const ClassDef *class_by_index(int idx);
-119:int             classes_count(void);
-141:const VillainDef *villain_by_id(const char *id);
-142:const VillainDef *villain_by_index(int idx);
-143:int               villains_count(void);
-170:const ArtifactDef *artifact_by_id(const char *id);
-171:const ArtifactDef *artifact_by_index(int idx);
-172:int                artifacts_count(void);
-176:int artifact_index_for_tile(const char *zone, int local_idx);
-181:char morale_result(char my_group, char their_group);
+const TroopDef *troop_by_id(const char *id);
+const TroopDef *troop_by_index(int idx);
+int             troops_count(void);
+const SpellDef *spell_by_id(const char *id);
+const SpellDef *spell_by_index(int idx);
+int             spells_count(void);
+int             spell_index_by_id(const char *id);
+const ClassDef *class_by_id(const char *id);
+const ClassDef *class_by_index(int idx);
+int             classes_count(void);
+const VillainDef *villain_by_id(const char *id);
+const VillainDef *villain_by_index(int idx);
+int               villains_count(void);
+const ArtifactDef *artifact_by_id(const char *id);
+const ArtifactDef *artifact_by_index(int idx);
+int                artifacts_count(void);
+int artifact_index_for_tile(const char *zone, int local_idx);
+char morale_result(char my_group, char their_group);
 ```
 
 ### U.5 `adventure.h` — adventure-screen interactions
 
 ```c
-9:bool adventure_walkable_on_foot(const Tile *t);
-10:bool adventure_walkable_in_boat(const Tile *t);
-11:bool adventure_walkable_in_flight(const Tile *t);
-46:InteractResult adventure_handle_interact(const Tile *t, const char *zone);
+bool adventure_walkable_on_foot(const Tile *t);
+bool adventure_walkable_in_boat(const Tile *t);
+bool adventure_walkable_in_flight(const Tile *t);
+InteractResult adventure_handle_interact(const Tile *t, const char *zone);
 ```
 
 ### U.6 `combat.h` — combat module (stub)
 
 ```c
-35:CombatResult RunCombatStub(Game *g, CombatMode mode, const CombatTarget *target);
+CombatResult RunCombatStub(Game *g, CombatMode mode, const CombatTarget *target);
 ```
 
 ### U.7 `views.h` — view stack and view rendering
 
 ```c
-55:ViewKind views_active(void);
-56:void     views_set(ViewKind v);   // Replace stack with [v] (or empty if VIEW_NONE).
-57:void     views_dismiss(void);     // Pop top; if stack empty, do nothing.
-61:void     views_push(ViewKind v);
-66:bool     views_wants_exit_hint(void);
-71:bool     views_menu_update(const MenuCallbacks *cbs, void *userdata);
-81:bool     views_town_update(Game *g);
-89:const char *views_menu_title(void);
-92:int  views_menu_entry_count(void);
-96:const char *views_menu_entry_label(int i);
-100:bool views_menu_entry_is_submenu(int i);
-104:int  views_menu_cursor(void);
-107:const char *views_town_display_name(void);
-115:int  views_town_row_count(void);
-119:const char *views_town_info_text(void);
-122:int  views_town_cursor(void);
-126:int  views_controls_cursor(void);
-127:void views_controls_set_cursor(int r);
-130:void views_controls_advance(struct Game *g, int row);
-134:void views_spells_set_mode(bool cast_mode);
-137:int  views_spells_chosen(void);
-140:bool views_spells_update(void);
+ViewKind views_active(void);
+void     views_set(ViewKind v);   // Replace stack with [v] (or empty if VIEW_NONE).
+void     views_dismiss(void);     // Pop top; if stack empty, do nothing.
+void     views_push(ViewKind v);
+bool     views_wants_exit_hint(void);
+bool     views_menu_update(const MenuCallbacks *cbs, void *userdata);
+bool     views_town_update(Game *g);
+const char *views_menu_title(void);
+int  views_menu_entry_count(void);
+const char *views_menu_entry_label(int i);
+bool views_menu_entry_is_submenu(int i);
+int  views_menu_cursor(void);
+const char *views_town_display_name(void);
+int  views_town_row_count(void);
+const char *views_town_info_text(void);
+int  views_town_cursor(void);
+int  views_controls_cursor(void);
+void views_controls_set_cursor(int r);
+void views_controls_advance(struct Game *g, int row);
+void views_spells_set_mode(bool cast_mode);
+int  views_spells_chosen(void);
+bool views_spells_update(void);
 ```
 
 ### U.8 `ui.h` — dialog system
 
 ```c
-18:void open_dialog(const char *header, const char *body);
-32:void open_dialog_flags(const char *header, const char *body, int flags);
-34:bool dialog_is_active(void);
-35:void dialog_dismiss(void);
-38:const char *dialog_header_text(void);
-39:const char *dialog_body_text(void);
-42:int  dialog_page_current(void);
-43:void dialog_page_next(void);
-44:bool dialog_advance(void);  // Advance to next page if available; returns true if advanced
-47:const char *toast_text_current(void);   // NULL if no active toast
-51:void toast_show(const char *msg);
-56:bool ui_any_key_pressed(void);
+void open_dialog(const char *header, const char *body);
+void open_dialog_flags(const char *header, const char *body, int flags);
+bool dialog_is_active(void);
+void dialog_dismiss(void);
+const char *dialog_header_text(void);
+const char *dialog_body_text(void);
+int  dialog_page_current(void);
+void dialog_page_next(void);
+bool dialog_advance(void);  // Advance to next page if available; returns true if advanced
+const char *toast_text_current(void);   // NULL if no active toast
+void toast_show(const char *msg);
+bool ui_any_key_pressed(void);
 ```
 
 ### U.9 `savegame.h` / `savepath.h`
 
 ```c
-/home/danheskett/personal/openbounty/src/savegame.h:35:const char *SaveResultText(SaveResult r);
-/home/danheskett/personal/openbounty/src/savegame.h:48:SaveResult SaveGameReadHeader(const char *path, SaveHeader *out);
-/home/danheskett/personal/openbounty/src/savepath.h:10:bool SavePathGetSlot(int slot, char *out, size_t out_size);
-/home/danheskett/personal/openbounty/src/savepath.h:15:bool SavePathGet(char *out, size_t out_size);
-/home/danheskett/personal/openbounty/src/savepath.h:18:bool SavePathGetDir(char *out, size_t out_size);
+const char *SaveResultText(SaveResult r);
+SaveResult SaveGameReadHeader(const char *path, SaveHeader *out);
+bool SavePathGetSlot(int slot, char *out, size_t out_size);
+bool SavePathGet(char *out, size_t out_size);
+bool SavePathGetDir(char *out, size_t out_size);
 ```
 
 ### U.10 `bfont.h` — bitmap font
 
 ```c
-13:bool    bfont_init(const char *png_path);
-14:void    bfont_shutdown(void);
-15:bool    bfont_ready(void);
-19:void    bfont_draw(const char *text, int x, int y, Color c);
-20:void    bfont_draw_centered(const char *text, int cx, int y, Color c);
-21:Vector2 bfont_measure(const char *text);
-22:int     bfont_line_height(void);
+bool    bfont_init(const char *png_path);
+void    bfont_shutdown(void);
+bool    bfont_ready(void);
+void    bfont_draw(const char *text, int x, int y, Color c);
+void    bfont_draw_centered(const char *text, int cx, int y, Color c);
+Vector2 bfont_measure(const char *text);
+int     bfont_line_height(void);
 ```
 
 ### U.11 `sprites.h` — sprite catalog
 
 ```c
-63:void sprites_load(Sprites *s, const Resources *res);
-64:void sprites_unload(Sprites *s);
+void sprites_load(Sprites *s, const Resources *res);
+void sprites_unload(Sprites *s);
 ```
 
 ### U.12 `fog.h` — fog of war
 
 ```c
-11:void FogInit(Fog *fog);
-12:void FogReveal(Fog *fog, const Map *map, int cx, int cy, int radius);
-13:bool FogSeen(const Fog *fog, int x, int y);
+void FogInit(Fog *fog);
+void FogReveal(Fog *fog, const Map *map, int cx, int cy, int radius);
+bool FogSeen(const Fog *fog, int x, int y);
 ```
 
 ### U.13 `tile.h` / `tile_cache.h`
 
 ```c
-/home/danheskett/personal/openbounty/src/tile.h:37:Terrain TerrainFromArt(const char *art);
-/home/danheskett/personal/openbounty/src/tile.h:41:bool ArtBlocksFoot(const char *art);
-/home/danheskett/personal/openbounty/src/tile.h:44:bool ArtIsBridge(const char *art);
-/home/danheskett/personal/openbounty/src/tile.h:47:Interact InteractFromString(const char *s);
-/home/danheskett/personal/openbounty/src/tile.h:48:const char *InteractToString(Interact i);
-/home/danheskett/personal/openbounty/src/tile.h:50:bool TerrainWalkable(Terrain t);
-/home/danheskett/personal/openbounty/src/tile.h:51:int  TerrainMoveCost(Terrain t);
-/home/danheskett/personal/openbounty/src/tile.h:53:const char *TerrainName(Terrain t);
-/home/danheskett/personal/openbounty/src/tile_cache.h:11:void      tile_cache_shutdown(void);
-/home/danheskett/personal/openbounty/src/tile_cache.h:12:Texture2D tile_cache_get(const char *art);
+Terrain TerrainFromArt(const char *art);
+bool ArtBlocksFoot(const char *art);
+bool ArtIsBridge(const char *art);
+Interact InteractFromString(const char *s);
+const char *InteractToString(Interact i);
+bool TerrainWalkable(Terrain t);
+int  TerrainMoveCost(Terrain t);
+const char *TerrainName(Terrain t);
+void      tile_cache_shutdown(void);
+Texture2D tile_cache_get(const char *art);
 ```
 
 ### U.14 `classic/*.h` — view layer
 
 ```c
-/home/danheskett/personal/openbounty/src/classic/chrome.h:11:void classic_chrome_draw(const Game *g, const Sprites *s);
-/home/danheskett/personal/openbounty/src/classic/input.h:60:ClassicInput classic_input_poll(void);
-/home/danheskett/personal/openbounty/src/classic/views.h:16:void classic_views_worldmap_toggle_hero_only(void);
-/home/danheskett/personal/openbounty/src/classic/prompt.h:32:void prompt_yes_no_open(const char *header, const char *body);
-/home/danheskett/personal/openbounty/src/classic/prompt.h:36:void prompt_numeric_open(const char *header, const char *body, int max_choice);
-/home/danheskett/personal/openbounty/src/classic/prompt.h:42:void prompt_ab_open(const char *header, const char *body);
-/home/danheskett/personal/openbounty/src/classic/prompt.h:52:int  prompt_text_input_value(void);
-/home/danheskett/personal/openbounty/src/classic/prompt.h:54:bool prompt_is_active(void);
-/home/danheskett/personal/openbounty/src/classic/prompt.h:55:void prompt_dismiss(void);
-/home/danheskett/personal/openbounty/src/classic/prompt.h:59:PromptResult prompt_update(void);
-/home/danheskett/personal/openbounty/src/classic/prompt.h:63:void prompt_draw(void);
-/home/danheskett/personal/openbounty/src/classic/screens/own_castle.h:23:void screen_own_castle_open(Game *g, const char *castle_id);
-/home/danheskett/personal/openbounty/src/classic/screens/own_castle.h:26:void screen_own_castle_draw(const Game *g, const Sprites *s);
-/home/danheskett/personal/openbounty/src/classic/screens/own_castle.h:31:bool screen_own_castle_is_garrison_mode(void);
-/home/danheskett/personal/openbounty/src/classic/screens/own_castle.h:34:void screen_own_castle_toggle_mode(void);
-/home/danheskett/personal/openbounty/src/classic/screens/own_castle.h:38:const char *screen_own_castle_castle_id(void);
-/home/danheskett/personal/openbounty/src/classic/hud.h:10:void classic_hud_draw(const Game *g, const Sprites *s);
-/home/danheskett/personal/openbounty/src/classic/palette.h:44:bool palette_init(const char *path);
-/home/danheskett/personal/openbounty/src/classic/screens/recruit_soldiers.h:17:void screen_recruit_soldiers_open(Game *g);
-/home/danheskett/personal/openbounty/src/classic/screens/recruit_soldiers.h:22:bool screen_recruit_soldiers_update(Game *g);
-/home/danheskett/personal/openbounty/src/classic/screens/recruit_soldiers.h:24:void screen_recruit_soldiers_draw(const Game *g, const Sprites *s);
-/home/danheskett/personal/openbounty/src/classic/screens/dwelling.h:44:void screen_dwelling_draw(const Game *g, const Sprites *s);
-/home/danheskett/personal/openbounty/src/classic/screens/dwelling.h:48:void screen_dwelling_refresh(int dwelling_pop, int gold, int cap);
-/home/danheskett/personal/openbounty/src/classic/screens/alcove.h:22:void screen_alcove_open(Game *g);
-/home/danheskett/personal/openbounty/src/classic/screens/alcove.h:23:void screen_alcove_draw(const Game *g, const Sprites *s);
-/home/danheskett/personal/openbounty/src/classic/screens/end_game.h:34:void screen_end_game_open(bool won, const char *body);
-/home/danheskett/personal/openbounty/src/classic/screens/end_game.h:36:void screen_end_game_draw(const Game *g, const Sprites *s);
-/home/danheskett/personal/openbounty/src/classic/screens/home_castle.h:24:void screen_home_castle_open(Game *g);
-/home/danheskett/personal/openbounty/src/classic/screens/home_castle.h:30:void screen_home_castle_draw(const Game *g, const Sprites *s);
+void classic_chrome_draw(const Game *g, const Sprites *s);
+ClassicInput classic_input_poll(void);
+void classic_views_worldmap_toggle_hero_only(void);
+void prompt_yes_no_open(const char *header, const char *body);
+void prompt_numeric_open(const char *header, const char *body, int max_choice);
+void prompt_ab_open(const char *header, const char *body);
+int  prompt_text_input_value(void);
+bool prompt_is_active(void);
+void prompt_dismiss(void);
+PromptResult prompt_update(void);
+void prompt_draw(void);
+void screen_own_castle_open(Game *g, const char *castle_id);
+void screen_own_castle_draw(const Game *g, const Sprites *s);
+bool screen_own_castle_is_garrison_mode(void);
+void screen_own_castle_toggle_mode(void);
+const char *screen_own_castle_castle_id(void);
+void classic_hud_draw(const Game *g, const Sprites *s);
+bool palette_init(const char *path);
+void screen_recruit_soldiers_open(Game *g);
+bool screen_recruit_soldiers_update(Game *g);
+void screen_recruit_soldiers_draw(const Game *g, const Sprites *s);
+void screen_dwelling_draw(const Game *g, const Sprites *s);
+void screen_dwelling_refresh(int dwelling_pop, int gold, int cap);
+void screen_alcove_open(Game *g);
+void screen_alcove_draw(const Game *g, const Sprites *s);
+void screen_end_game_open(bool won, const char *body);
+void screen_end_game_draw(const Game *g, const Sprites *s);
+void screen_home_castle_open(Game *g);
+void screen_home_castle_draw(const Game *g, const Sprites *s);
 ```
 
 ---

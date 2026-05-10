@@ -254,12 +254,10 @@ static void draw_army(const Game *g, const Sprites *s) {
                  ui->army_move,  t->move_rate);
         bfont_draw(buf, tx, ty + GH, PAL_CLR(WHITE));
         // OOC test, per-row (matches unit_under_control in combat.c):
-        //   hp * count > leadership  → out of control
-        // Boundary (hp*count == leadership) is NOT OOC. This matches
-        // DOS King's Bounty empirically: a Knight (lead=100) can fully
-        // recruit up to 10 Pikemen (10*10=100) and they remain under
-        // control. The "<= 0" check is overly strict; DOS
-        // permits the exact-fill case.
+        //   hp * count > leadership  -> out of control
+        // Boundary (hp*count == leadership) is NOT OOC: a Knight
+        // (lead=100) can fully recruit up to 10 Pikemen (10*10=100)
+        // and they remain under control.
         Color morale_color = PAL_CLR(WHITE);
         int free_lead = g->stats.leadership_current
                       - t->hit_points * g->army[i].count;

@@ -1,5 +1,5 @@
-#ifndef PROMPT_H
-#define PROMPT_H
+#ifndef OB_PROMPT_H
+#define OB_PROMPT_H
 
 #include <stdbool.h>
 #include "game.h"

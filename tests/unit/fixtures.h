@@ -1,8 +1,8 @@
 // Shared test fixtures used by multiple suites. Keeps test bodies
 // short and fixes a single asset path / seed convention.
 
-#ifndef BNT_TEST_FIXTURES_H
-#define BNT_TEST_FIXTURES_H
+#ifndef OB_TEST_FIXTURES_H
+#define OB_TEST_FIXTURES_H
 
 #include "game.h"
 #include "map.h"

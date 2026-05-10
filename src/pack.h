@@ -10,9 +10,8 @@
 // borrowed pointers that callers MUST NOT free. Pointers stay valid
 // until pack_close.
 //
-// The engine maintains a global pack stack. Today depth is 1; future DLC
-// would push additional packs and let later entries override earlier
-// ones (last-wins lookup).
+// The engine maintains a global pack stack with last-wins lookup, so
+// later-pushed packs override earlier entries.
 
 typedef struct Pack Pack;
 
@@ -36,8 +35,8 @@ const char *pack_path(const Pack *p);
 
 // Whole-pack content hash (FNV1a-64 over the zip file bytes), as a
 // 16-char lowercase hex string. Empty for loose-directory packs (dev
-// mode). Advisory only — saves embed this for future use; nothing
-// currently gates on it.
+// mode). Advisory only -- saves embed it for diagnostic purposes;
+// nothing currently gates on it.
 const char *pack_hash(const Pack *p);
 
 // ---- Global pack stack -----------------------------------------------------

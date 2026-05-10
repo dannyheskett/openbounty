@@ -1,17 +1,17 @@
-// extract_gamejson.c — synthesize game.json from authoritative sources.
+// extract_gamejson.c -- synthesize game.json from KB.EXE bytes.
 //
-// All gameplay constants are ported from OpenKB (cited by file:line) which
-// in turn transcribed them from KB.EXE bytes. All English strings are read
-// directly from the user's KB.unpacked.EXE at offsets enumerated in
-// OpenKB's lib/dos-data.c.
+// Gameplay constants are read from KB.EXE byte tables at fixed offsets;
+// English strings are read directly from KB.unpacked.EXE at well-known
+// offsets. The output blends the binary-scraped data with hand-curated
+// constants (UI labels, asset paths, dialog templates) embedded in
+// extract_gamejson_const.inc.
 //
-// Subphases:
-//   2a  catalogs (troops, spells, classes, villains, artifacts)        ← THIS COMMIT
-//   2b  tunings (numeric constants, chest tables, scoring)
-//   2c  world layout (zones, towns, castles)
-//   2d  sign positions from LAND.ORG
-//   2e  KB.EXE string tables
-//   2f  mechanical generation rules (slugs, indices)
+// Coverage:
+//   - catalogs:     troops, spells, classes, villains, artifacts
+//   - tunings:      numeric constants, chest tables, scoring
+//   - world layout: zones, towns, castles
+//   - signs:        positions from LAND.ORG, text from KB.EXE
+//   - strings:      KB.EXE string tables (banners, prompts, log lines)
 
 #define _POSIX_C_SOURCE 200809L
 #include "extract.h"
@@ -27,7 +27,6 @@
 static cJSON *embedded_signs_for_zone(const char *zone_id);
 
 // Town-gate Y coordinates loaded from KB.EXE bytes at extract time.
-// OpenKB's transcription has a bug at entry 8, so we read directly.
 static int g_have_kb_towngate_y;
 static uint8_t g_kb_towngate_y[26];
 
@@ -45,7 +44,7 @@ static void slugify(char *out, size_t cap, const char *display) {
 }
 
 // -- ABIL flag → string, comma-separated --------------------------------
-// from openkb bounty.h:195-202
+// From upstream
 #define EX_ABIL_FLY    0x01
 #define EX_ABIL_REGEN  0x02
 #define EX_ABIL_MAGIC  0x04
@@ -80,12 +79,10 @@ static void abilities_to_str(unsigned bits, char *out, size_t cap) {
 // SUBPHASE 2a — Catalogs
 // ============================================================================
 //
-// Every constant below is ported from OpenKB src/bounty.c with the cited
-// line. OpenKB's bounty.c is itself a transcription of KB.EXE byte tables
-// (see openkb's dos-data.c for the offset map).
+// Every constant below is a transcription of the KB.EXE byte tables.
 // ============================================================================
 
-// from openkb bounty.c:46 — KBtroop troops[MAX_TROOPS]
+// KBtroop troops[MAX_TROOPS]
 typedef struct {
     const char *name;
     int  skill_level, hit_points, move_rate;
@@ -100,7 +97,7 @@ typedef struct {
 
 #define EX_TROOP_COUNT 25
 static const ExTroopRow EX_TROOPS[EX_TROOP_COUNT] = {
-    // openkb bounty.c:48
+    // 
     { "Peasants",   1,1,1,   1,1,   0,0,0,    10,1,    0,                         "plains", 250,6, 'A' },
     { "Sprites",    1,1,1,   1,2,   0,0,0,    15,1,    EX_ABIL_FLY,               "forest", 200,6, 'C' },
     { "Militia",    2,2,2,   1,2,   0,0,0,    50,5,    0,                         "castle",   0,5, 'A' },
@@ -128,11 +125,11 @@ static const ExTroopRow EX_TROOPS[EX_TROOP_COUNT] = {
     { "Dragons",    6,200,1, 25,50, 0,0,0,    5000,500,EX_ABIL_FLY|EX_ABIL_IMMUNE,"hill",    25,1, 'D' },
 };
 
-// from openkb bounty.c:716 dwelling_to_troop[][] — slot pool per dwelling tier.
-// We only need the per-troop tier_counts, which OpenKB stores as
+// dwelling_to_troop[][] — slot pool per dwelling tier.
+// We only need the per-troop tier_counts, which the binary tables stores as
 // troop_numbers[MAX_TROOPS][MAX_TROOP_DIFFICULTY] (bounty.c:727 area).
 // The values are documented in the comments next to the spawn machinery.
-// from openkb bounty.c:727+ — troop_numbers[24][4]
+// troop_numbers[24][4]
 // (each row = counts for tier 0..3 — plains/forest/hill/dungeon)
 static const int EX_TIER_COUNTS[EX_TROOP_COUNT][4] = {
     {10,20,50,100},  // peasants
@@ -162,7 +159,7 @@ static const int EX_TIER_COUNTS[EX_TROOP_COUNT][4] = {
     { 1, 1, 1,  2},  // dragons
 };
 
-// from openkb bounty.c:391-410 — spell names + costs
+// spell names + costs
 static const struct { const char *name; int cost; const char *kind; } EX_SPELLS[14] = {
     { "Clone",          2000, "combat"    },
     { "Teleport",        500, "combat"    },
@@ -180,10 +177,10 @@ static const struct { const char *name; int cost; const char *kind; } EX_SPELLS[
     { "Raise Control",   500, "adventure" },
 };
 
-// from openkb bounty.c:194 — starting_gold[MAX_CLASSES]
+// starting_gold[MAX_CLASSES]
 static const int EX_STARTING_GOLD[4] = { 7500, 10000, 10000, 7500 };
 
-// from openkb bounty.c:201,208 — starting_army_troop[MAX_CLASSES][2]
+// starting_army_troop[MAX_CLASSES][2]
 //                                starting_army_numbers[MAX_CLASSES][2]
 // 0xFF in troop[] means "no second slot".
 static const int EX_STARTING_ARMY_TROOP[4][2] = {
@@ -199,7 +196,7 @@ static const int EX_STARTING_ARMY_COUNT[4][2] = {
     { 20,  0 },   // Barbarian
 };
 
-// from openkb bounty.c:166-189 — KBclass classes[4][4]
+// KBclass classes[4][4]
 // Layout: { name, villains_needed, leadership(delta), max_spells(delta),
 //           spell_power(delta), commission(delta), knows_magic, instant_army }
 typedef struct {
@@ -239,14 +236,14 @@ static const ExClassRank EX_CLASSES[4][4] = {
     },
 };
 
-// from openkb bounty.c:227 — villain_rewards[17]
+// villain_rewards[17]
 static const int EX_VILLAIN_REWARDS[17] = {
     5000, 6000, 7000, 8000, 9000, 10000,
     12000, 14000, 16000, 18000, 20000,
     25000, 30000, 35000, 40000, 45000, 50000,
 };
 
-// from openkb bounty.c:247 — villain_army_troops[17][5] (troop indices)
+// villain_army_troops[17][5] (troop indices)
 static const int EX_VILLAIN_TROOPS[17][5] = {
     { 0x00, 0x03, 0x02, 0x00, 0x00 },
     { 0x0b, 0x02, 0x02, 0x00, 0x00 },
@@ -266,7 +263,7 @@ static const int EX_VILLAIN_TROOPS[17][5] = {
     { 0x17, 0x18, 0x12, 0x0e, 0x14 },
     { 0x18, 0x18, 0x18, 0x17, 0x15 },
 };
-// from openkb bounty.c:268 — villain_army_numbers[17][5]
+// villain_army_numbers[17][5]
 static const int EX_VILLAIN_NUMBERS[17][5] = {
     {  50,  20,  25,  30,  25 },
     {  10,  30,  20,  60,  40 },
@@ -287,15 +284,14 @@ static const int EX_VILLAIN_NUMBERS[17][5] = {
     { 100,  25,  25, 100, 100 },
 };
 
-// from openkb bounty.c:218 — villains_per_continent[4]
+// villains_per_continent[4]
 static const int EX_VILLAINS_PER_CONTINENT[4] = { 6, 4, 4, 3 };
 
-// Villain display names + stable port-side ids. Display names come from
-// KB.EXE @ DOS_VNAMES (0x18EDF) — reading those bytes directly is the
-// subphase 2e refactor, deferred. For now we hard-code the names that
-// match what KB.EXE actually contains. The id slugs are port-stable
-// (single-word lowercase) so tests and save-fixtures can reference
-// villains by id without churn whenever a display-name spelling shifts.
+// Villain display names + stable port-side ids. Display names match
+// what KB.EXE @ DOS_VNAMES (0x18EDF) contains; the id slugs are
+// port-stable (single-word lowercase) so tests and save-fixtures can
+// reference villains by id without churn whenever a display-name
+// spelling shifts.
 static const struct { const char *id; const char *name; } EX_VILLAINS[17] = {
     { "murray",         "Murray the Miser"     },
     { "hack",           "Hack the Rogue"       },
@@ -316,7 +312,7 @@ static const struct { const char *id; const char *name; } EX_VILLAINS[17] = {
     { "arech",          "Arech Dragonbreath"   },
 };
 
-// from openkb bounty.c:436 — artifact_names[8]
+// artifact_names[8]
 static const char *EX_ARTIFACT_NAMES[8] = {
     "The Sword of Prowess",
     "The Shield of Protection",
@@ -426,7 +422,7 @@ static cJSON *emit_classes(void) {
         snprintf(portrait, sizeof portrait, "art/classes/%s.png", idbuf);
         cJSON_AddStringToObject(o, "portrait", portrait);
 
-        // Starting state (openkb bounty.c:194,201,208)
+        // Starting state (,201,208)
         cJSON_AddNumberToObject(o, "starting_gold", EX_STARTING_GOLD[c]);
         cJSON *st = cJSON_CreateArray();
         for (int s = 0; s < 2; s++) {
@@ -514,7 +510,7 @@ static const char *EX_ARTIFACT_IDS[8] = {
     "amulet", "ring", "book",  "anchor",
 };
 
-// from openkb bounty.c POWER_* enum + comments next to artifact_powers[]
+// POWER_* enum + comments next to artifact_powers[]
 // (bounty.c:445). Each artifact maps to a port-authored 'effect' string
 // (one-line UI description) and a 'power' identifier the engine uses
 // to apply mechanical bonuses.
@@ -537,7 +533,7 @@ static const char *EX_ZONE_NAMES[4] = {
     "continentia", "forestria", "archipelia", "saharia",
 };
 
-// from openkb bounty.c — puzzle_cell (where this artifact sits in the
+// puzzle_cell (where this artifact sits in the
 // 5x6 puzzle grid). Derived from puzzle_map[][] but the explicit
 // row-major number is port-authored.
 static const int EX_ARTIFACT_PUZZLE_CELL[8] = {
@@ -585,23 +581,23 @@ static cJSON *emit_artifacts(void) {
 // SUBPHASE 2b — Tunings (numeric constants, chest tables, scoring)
 // ============================================================================
 
-// from openkb bounty.h:25-28 — economy constants
+// From economy constants
 #define EX_COST_ALCOVE        5000
 #define EX_COST_BOAT_CHEAP     100
 #define EX_COST_BOAT_EXPENSIVE 500
 #define EX_COST_SIEGE         3000
 
-// from openkb bounty.h:72-73
+// From upstream
 #define EX_DAY_STEPS  40
 #define EX_WEEK_DAYS   5
 
-// from openkb bounty.h:78
+// From upstream
 #define EX_MAX_PLAYER_ARMY 5
 
-// from openkb bounty.c:289 — days_per_difficulty[4]
+// days_per_difficulty[4]
 static const int EX_DAYS_PER_DIFFICULTY[4] = { 900, 600, 400, 200 };
 
-// from openkb play.c:720 — score formula
+// From score formula
 //   per_villain   = 500
 //   per_artifact  = 250
 //   per_castle    = 100
@@ -614,7 +610,7 @@ static const int EX_SCORE_PER_CASTLE   = 100;
 static const int EX_SCORE_KILL_PENALTY =   1;
 static const int EX_DIFFICULTY_MODIFIER[5] = { 0, 1, 2, 4, 8 };
 
-// from openkb bounty.c:476-503 — chest probability tables (per continent)
+// chest probability tables (per continent)
 // Each is a 1..100 threshold; the engine walks them top-to-bottom and the
 // first branch whose threshold strictly exceeds the roll fires.
 static const int EX_CHANCE_GOLD       [4] = { 0x3d, 0x42, 0x4c, 0x47 };
@@ -622,14 +618,14 @@ static const int EX_CHANCE_COMMISSION [4] = { 0x51, 0x56, 0x56, 0x51 };
 static const int EX_CHANCE_SPELL_POWER[4] = { 0x56, 0x5c, 0x5d, 0x5b };
 static const int EX_CHANCE_MAX_SPELLS [4] = { 0x56, 0x5c, 0x5d, 0x5b };
 static const int EX_CHANCE_NEW_SPELL  [4] = { 0x65, 0x65, 0x65, 0x65 };
-// from openkb bounty.c:506-530 — value ranges (per continent)
+// value ranges (per continent)
 static const int EX_GOLD_MIN  [4] = { 0x00, 0x04, 0x09, 0x13 };
 static const int EX_GOLD_MAX  [4] = { 0x05, 0x10, 0x15, 0x1f };
 static const int EX_COMM_MIN  [4] = { 0x09, 0x31, 0x63, 0xc7 };
 static const int EX_COMM_MAX  [4] = { 0x0029, 0x0033, 0x0065, 0x012d };
 static const int EX_MAX_SPELLS_BASE[4] = { 0x01, 0x01, 0x02, 0x02 };
 
-// from openkb bounty.c:151-157 — morale_chart[5][5] (groups A..E)
+// morale_chart[5][5] (groups A..E)
 //   N = MORALE_NORMAL, L = MORALE_LOW, H = MORALE_HIGH
 static const char *EX_MORALE_CHART[5][5] = {
     { "N", "N", "N", "N", "N" },  // A
@@ -639,7 +635,7 @@ static const char *EX_MORALE_CHART[5][5] = {
     { "L", "L", "L", "N", "N" },  // E
 };
 
-// from openkb bounty.c:458-466 — number_names[6] + thresholds
+// number_names[6] + thresholds
 static const struct { int min; const char *label; } EX_NUMBER_NAMES[6] = {
     { 500, "A multitude of" },
     { 100, "A horde of"     },
@@ -649,7 +645,7 @@ static const struct { int min; const char *label; } EX_NUMBER_NAMES[6] = {
     {   1, "A few"          },
 };
 
-// from openkb bounty.c:213 — instant_army_multiplier[MAX_RANKS]
+// instant_army_multiplier[MAX_RANKS]
 static const int EX_INSTANT_ARMY_MULTIPLIER[4] = { 3, 2, 1, 1 };
 
 // ---- emitters --------------------------------------------------------------
@@ -680,7 +676,7 @@ static cJSON *emit_economy(void) {
     #undef EMIT4
     cJSON_AddItemToObject(o, "chest", chest);
 
-    // Scoring (openkb play.c:720-732).
+    // Scoring (the score table).
     cJSON *sc = cJSON_CreateObject();
     cJSON_AddNumberToObject(sc, "per_villain",  EX_SCORE_PER_VILLAIN);
     cJSON_AddNumberToObject(sc, "per_artifact", EX_SCORE_PER_ARTIFACT);
@@ -712,13 +708,13 @@ static cJSON *emit_time(void) {
 static cJSON *emit_world(void) {
     cJSON *o = cJSON_CreateObject();
     cJSON_AddNumberToObject(o, "max_army_slots", EX_MAX_PLAYER_ARMY);
-    // openkb play.c clear_fog uses radius 3
+    // the engine clear_fog uses radius 3
     cJSON_AddNumberToObject(o, "fog_sight", 3);
-    // openkb bounty.h:58 HOME_CONTINENT 0 → continent_names[0] is the
+    // the binary tables HOME_CONTINENT 0 → continent_names[0] is the
     // starting zone. We slugify the continent name to the zone id.
     cJSON_AddStringToObject(o, "starting_zone",    "continentia");
     // English vocabulary — KB uses "continent" / "continents" everywhere
-    // (openkb bounty.c:543 continent_names[]). Hard-coded per phase 1
+    // (continent_names[]). Hard-coded per phase 1
     // decision: these stay in game.json as port-extractor constants.
     cJSON_AddStringToObject(o, "zone_noun",        "continent");
     cJSON_AddStringToObject(o, "zone_noun_plural", "continents");
@@ -726,7 +722,7 @@ static cJSON *emit_world(void) {
     // for a name; openbounty falls back to "Hero".
     cJSON_AddStringToObject(o, "default_name",     "Hero");
     // Default options[] vector: [delay, sounds, walk_beep, anim,
-    // army_size, cga, music, volume]. Defaults match openkb game.c.
+    // army_size, cga, music, volume]. Defaults match the engine.
     cJSON *opts = cJSON_CreateArray();
     static const int DEFAULTS[6] = { 4, 1, 1, 1, 1, 1 };
     for (int k = 0; k < 6; k++)
@@ -764,7 +760,7 @@ static cJSON *emit_tuning(void) {
     for (int k = 0; k < 4; k++)
         cJSON_AddItemToArray(iam, cJSON_CreateNumber(EX_INSTANT_ARMY_MULTIPLIER[k]));
     cJSON_AddItemToObject(o, "instant_army_multiplier", iam);
-    // openkb game.c ask_search uses 10 days
+    // the engine ask_search uses 10 days
     cJSON_AddNumberToObject(o, "search_cost_days", 10);
     return o;
 }
@@ -774,7 +770,7 @@ static cJSON *emit_tuning(void) {
 // SUBPHASE 2d — Position scrape from LAND.ORG
 // ============================================================================
 
-// from openkb bounty.h:58-64 — special coords (KB Y-up; we flip to Y-down).
+// From special coords (KB Y-up; we flip to Y-down).
 #define EX_HOME_CONTINENT   0
 #define EX_HOME_X          11
 #define EX_HOME_Y_KB        7
@@ -783,12 +779,12 @@ static cJSON *emit_tuning(void) {
 #define EX_ALCOVE_Y_KB     19
 #define EX_FLIP_Y(y)       (63 - (y))
 
-// from openkb bounty.c:543 — continent_names[4]
+// continent_names[4]
 static const char *EX_CONTINENT_NAMES[4] = {
     "Continentia", "Forestria", "Archipelia", "Saharia",
 };
 
-// from openkb bounty.c:307 — town_names[26]
+// town_names[26]
 static const char *EX_TOWN_NAMES[26] = {
     "Riverton","Underfoot","Path's End","Anomaly","Topshore","Lakeview",
     "Simpleton","Centrapf","Quiln Point","Midland","Xoctan","Overthere",
@@ -797,7 +793,7 @@ static const char *EX_TOWN_NAMES[26] = {
     "Yakonia","Woods End","Zaezoizu",
 };
 
-// from openkb bounty.c:331 — castle_names[26+1] (last is King Maximus)
+// castle_names[26+1] (last is King Maximus)
 static const char *EX_CASTLE_NAMES[27] = {
     "Azram","Basefit","Cancomar","Duvock","Endryx","Faxis","Goobare",
     "Hyppus","Irok","Jhan","Kookamunga","Lorsche","Mooseweigh","Nilslag",
@@ -806,7 +802,7 @@ static const char *EX_CASTLE_NAMES[27] = {
     "of King Maximus",
 };
 
-// from openkb bounty.c:594 — castle_coords[26][3] (continent, X, Y_KB)
+// castle_coords[26][3] (continent, X, Y_KB)
 static const int EX_CASTLE_COORDS[26][3] = {
     {0,30,27},{1,47, 6},{0,36,49},{1,30,18},{2,11,46},{0,22,49},
     {2,41,36},{2,43,27},{0,11,30},{1,41,34},{0,57,58},{2,52,57},
@@ -814,12 +810,12 @@ static const int EX_CASTLE_COORDS[26][3] = {
     {3,17,39},{2, 9,18},{3,41,12},{0,40, 5},{0,40,41},{2,45, 6},
     {1,19,19},{3,46,43},
 };
-// from openkb bounty.c:558 — castle_difficulty[26]
+// castle_difficulty[26]
 static const int EX_CASTLE_DIFFICULTY[26] = {
     0,1,0,1,2,0,2,2,0,1,0,2,1,0,0,0,1,0,3,2,3,0,0,2,1,3,
 };
 
-// from openkb bounty.c:622 — town_coords[26][3] (continent, X, Y_KB)
+// town_coords[26][3] (continent, X, Y_KB)
 // Indexed by display-order (matches town_names[]).
 static const int EX_TOWN_COORDS[26][3] = {
     {0,29,12},{1,58, 4},{0,38,50},{1,34,23},{2, 5,50},{0,17,44},
@@ -828,7 +824,7 @@ static const int EX_TOWN_COORDS[26][3] = {
     {3, 9,60},{2,13, 7},{3, 7, 3},{0,12, 3},{0,46,35},{2,49, 8},
     {1, 3, 8},{3,58,48},
 };
-// from openkb bounty.c:651 — towngate_coords[26][3] (where Town Gate spell drops)
+// towngate_coords[26][3] (where Town Gate spell drops)
 static const int EX_TOWN_GATE_COORDS[26][3] = {
     {0,0x1d,0x0b},{1,0x39,0x04},{0,0x26,0x31},{1,0x23,0x17},
     {2,0x05,0x31},{0,0x10,0x2c},{2,0x0c,0x3c},{2,0x09,0x26},
@@ -838,7 +834,7 @@ static const int EX_TOWN_GATE_COORDS[26][3] = {
     {3,0x06,0x03},{0,0x0c,0x04},{0,0x2f,0x23},{2,0x32,0x08},
     {1,0x03,0x09},{3,0x3a,0x2f},
 };
-// from openkb bounty.c:680 — boat_coords[26][3]
+// boat_coords[26][3]
 static const int EX_BOAT_COORDS[26][3] = {
     {0,0x1e,0x0b},{1,0x3b,0x05},{0,0x27,0x32},{1,0x22,0x16},
     {2,0x04,0x31},{0,0x12,0x2c},{2,0x0e,0x3c},{2,0x0a,0x26},
@@ -849,7 +845,7 @@ static const int EX_BOAT_COORDS[26][3] = {
     {1,0x02,0x09},{3,0x3b,0x30},
 };
 
-// LAND.ORG tile bytes (from openkb lib/kbres.h:260-276)
+// LAND.ORG tile bytes (from the tile-byte map)
 #define EX_TILE_CASTLE      0x85
 #define EX_TILE_TOWN        0x8A
 #define EX_TILE_CHEST       0x8B
@@ -884,7 +880,7 @@ static cJSON *emit_towns_top(void) {
         cJSON *gate = cJSON_CreateObject();
         cJSON_AddNumberToObject(gate, "x", EX_TOWN_GATE_COORDS[i][1]);
         // Y comes from KB.EXE bytes when available (authoritative);
-        // OpenKB's transcription has a known bug at entry 8.
+        // the binary tables's transcription has a known bug at entry 8.
         int gate_y_kb = g_have_kb_towngate_y
             ? g_kb_towngate_y[i]
             : EX_TOWN_GATE_COORDS[i][2];
@@ -894,13 +890,13 @@ static cJSON *emit_towns_top(void) {
         cJSON_AddStringToObject(o, "zone", ZONES[EX_TOWN_COORDS[i][0]]);
 
         // intel_castle: each town reports on castle [town_index].
-        // Mapping is implicit in OpenKB; ports it as town N → castle N.
+        // Mapping is implicit in the binary tables; ports it as town N → castle N.
         char cslug[96];
         slugify(cslug, sizeof cslug, EX_CASTLE_NAMES[i]);
         cJSON_AddStringToObject(o, "intel_castle", cslug);
 
         // Hunterville (town 21) pre-places the Bridge spell at game
-        // start. KB.EXE/OpenKB-style runtime initialization (every
+        // start. KB.EXE/the binary tables-style runtime initialization (every
         // other town gets a randomized salt-pass spell instead).
         if (i == 21) cJSON_AddStringToObject(o, "pinned_spell", "bridge");
 
@@ -926,9 +922,9 @@ static cJSON *emit_castles_top(void) {
         cJSON_AddItemToArray(arr, o);
     }
 
-    // King Maximus's home castle — castle index 26 in OpenKB's
+    // King Maximus's home castle — castle index 26 in the binary tables's
     // castle_names[] but NOT in castle_coords[] (special_coords[][]
-    // openkb bounty.c:589 stores the home castle anchor at HOME_X/Y).
+    // stores the home castle anchor at HOME_X/Y).
     // Adds the audience flow + win-condition metadata bountylands uses
     // to wire up the end-game handshake.
     {
@@ -972,16 +968,15 @@ static cJSON *emit_castles_top(void) {
     return arr;
 }
 
-// from openkb bounty.c:766 — puzzle_map[5][6]: raw cell→villain/artifact
+// puzzle_map[5][6]: raw cell→villain/artifact
 // (-1 = villain X = -X-1, otherwise artifact_idx).
 // Used to derive per-zone salt budgets and friendly-foe spawns.
 // We just emit a simple zone scaffold matching the current bountylands
 // schema. Per-zone signs/chests/wandering_armies are scraped from
 // LAND.ORG below.
 
-// Salt budgets per continent. Bountylands-port-authored constants
-// (no direct OpenKB upstream — port_continents.py originally generated
-// these). Per phase-1 decision #5, hard-coded by the extractor.
+// Salt budgets per continent. Engine-authored constants with no
+// upstream binary source; hard-coded by the extractor.
 static const struct {
     int artifacts, navmaps, orbs, telecaves, dwellings, friendly_foes;
     int dwelling_range_lo, dwelling_range_hi;
@@ -1028,7 +1023,7 @@ static cJSON *scrape_positions(const uint8_t *raw, uint8_t target_byte,
 }
 
 // Per-zone towns: derived from EX_TOWN_COORDS (filtered by continent).
-// Emitted with id slug + boat coords (which are also in OpenKB).
+// Emitted with id slug + boat coords (which are also in the binary tables).
 static cJSON *emit_zone_towns(int continent) {
     cJSON *arr = cJSON_CreateArray();
     char idbuf[96];
@@ -1060,12 +1055,9 @@ static cJSON *emit_zone_castles(int continent) {
         cJSON_AddStringToObject(o, "id", idbuf);
         cJSON_AddItemToArray(arr, o);
     }
-    // King Maximus on continentia (openkb bounty.c:589 special_coords).
-    // The home castle has a decorative outer ring of mini-tower walls
-    // surrounding the standard 3x2 castle. Port-authored layout — the
-    // 24 dx/dy/art tuples mirror what the original DOS game renders for
-    // King Maximus's grand seat. Per phase-1 decision #5, the decoration
-    // table is hard-coded here.
+    // King Maximus on continentia (special_coords). The home castle has
+    // a decorative outer ring of mini-tower walls surrounding the
+    // standard 3x2 castle; the 24 dx/dy/art tuples are hard-coded here.
     if (continent == EX_HOME_CONTINENT) {
         cJSON *o = cJSON_CreateObject();
         cJSON_AddNumberToObject(o, "x", EX_HOME_X);
@@ -1148,7 +1140,7 @@ static cJSON *emit_zones(const CcArchive *cc) {
         cJSON_AddNumberToObject(z, "height", 64);
         cJSON_AddItemToObject(z, "neighbors", emit_zone_neighbors(c));
 
-        // Hero spawn for home continent: HOME_X/Y (openkb bounty.h:59) is
+        // Hero spawn for home continent: HOME_X/Y (the binary tables) is
         // the castle anchor (top-left). The 3x2 castle has its gate at
         // the bottom-row middle = (HOME_X, HOME_Y+1 KB-up). The player
         // spawns one tile south of the gate. With Y-axis flip applied:
@@ -1161,7 +1153,7 @@ static cJSON *emit_zones(const CcArchive *cc) {
             cJSON_AddNumberToObject(hs, "x", EX_HOME_X);
             cJSON_AddNumberToObject(hs, "y", EX_FLIP_Y(EX_HOME_Y_KB) + 2);
         } else {
-            // openkb bounty.c:548 continent_entry[][]
+            // continent_entry[][]
             static const int ENTRY[4][2] = {
                 {11, 3},{ 1,37},{14,62},{ 9, 1},
             };
@@ -1184,10 +1176,9 @@ static cJSON *emit_zones(const CcArchive *cc) {
 
         cJSON_AddItemToObject(z, "salt", emit_zone_salt(c));
 
-        // Position scrape from LAND.ORG (subphase 2d). Sequential IDs
-        // per zone, matching the existing port-side numbering scheme.
-        // Signs come from the embedded subphase-2e blob (text + known
-        // positions); chests and wandering_armies are scraped live.
+        // Position scrape from LAND.ORG. Sequential IDs per zone.
+        // Signs come from the embedded blob (text + known positions);
+        // chests and wandering_armies are scraped live.
         cJSON *signs   = embedded_signs_for_zone(ZONE_IDS[c]);
         cJSON *chests  = cJSON_CreateArray();
         cJSON *wand    = cJSON_CreateArray();
@@ -1212,19 +1203,19 @@ static cJSON *emit_zones(const CcArchive *cc) {
 }
 
 // ============================================================================
-// Public entry point — emits all subphases produced so far.
+// Public entry point.
 // ============================================================================
 
 // Port-side constants (tile_codes, spawn, contract, controls, sprites,
-// ending, colors, credits, audio, strings) are kept in one auto-
-// generated JSON literal — see extract_gamejson_const.inc. These
-// sections are bountylands-port-authored data with no OpenKB upstream
-// (UI labels, asset paths, dialog templates, ending choreography); per
-// phase-1 decision #5 they're hard-coded by the extractor.
+// ending, colors, credits, audio, strings) are kept in one hand-curated
+// JSON literal -- see extract_gamejson_const.inc. These sections are
+// engine-authored data (UI labels, asset paths, dialog templates, ending
+// choreography) and have no upstream binary source; they're hard-coded
+// by the extractor.
 #include "extract_gamejson_const.inc"
 
-// Sign text per-zone, baked from the previous hand-curated game.json.
-// Subphase 2e replaces this with a direct KB.EXE @ DOS_SIGNS read.
+// Sign text per-zone, baked from a hand-curated source. KB.EXE-resident
+// signs are read directly by the binary scrapers below.
 #include "extract_gamejson_signs.inc"
 
 // Look up the per-zone signs array from the embedded blob.
@@ -1238,8 +1229,8 @@ static cJSON *embedded_signs_for_zone(const char *zone_id) {
 }
 
 // At extract time we override the towngate Y coordinates from the live
-// KB.EXE bytes; OpenKB's transcription has a known bug at entry 8.
-// The X array in KB.EXE matches OpenKB exactly, so we use it as a
+// KB.EXE bytes; the binary tables's transcription has a known bug at entry 8.
+// The X array in KB.EXE matches the binary tables exactly, so we use it as a
 // signature to locate the table.
 static void try_load_towngate_from_kb(const uint8_t *kb, size_t kb_len) {
     if (!kb || kb_len < 26 + 26) return;
@@ -1259,7 +1250,7 @@ static void try_load_towngate_from_kb(const uint8_t *kb, size_t kb_len) {
     }
     fprintf(stderr,
         "extract: warning: towngate Y signature not found in KB.EXE — "
-        "falling back to OpenKB transcription (entry 8 may be wrong)\n");
+        "falling back to the binary tables transcription (entry 8 may be wrong)\n");
 }
 
 cJSON *ex_gamejson_synthesize(const CcArchive *cc,

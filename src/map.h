@@ -1,5 +1,5 @@
-#ifndef MAP_H
-#define MAP_H
+#ifndef OB_MAP_H
+#define OB_MAP_H
 
 #include <stdbool.h>
 #include "tile.h"

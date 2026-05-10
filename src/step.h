@@ -1,5 +1,5 @@
-#ifndef STEP_H
-#define STEP_H
+#ifndef OB_STEP_H
+#define OB_STEP_H
 
 #include <stdbool.h>
 
@@ -14,9 +14,6 @@
 // foes). Performs all post-step bookkeeping: fog reveal, interactive
 // tile dispatch, foes_follow advancement, day/week tick, week-end
 // scheduling, and lose-game on day exhaustion.
-//
-// Extracted from main.c (try_step) on the main_refactor branch. The
-// signature is preserved 1:1 so the refactor is purely structural.
 bool step_try(Game *game, Map *map, Fog *fog,
               const Resources *res, int dx, int dy);
 

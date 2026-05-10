@@ -1,5 +1,5 @@
-#ifndef KB_TILE_H
-#define KB_TILE_H
+#ifndef OB_TILE_H
+#define OB_TILE_H
 
 #include <stdbool.h>
 

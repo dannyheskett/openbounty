@@ -1,6 +1,5 @@
-// Fog of war tests. FogReveal stamps a 5×5 square around (cx, cy)
-// (OpenKB clear_fog parity), clamping at map edges. The radius arg
-// is intentionally ignored.
+// Fog of war tests. FogReveal stamps a 5x5 square around (cx, cy),
+// clamping at map edges. The radius arg is intentionally ignored.
 
 #include "greatest.h"
 #include "fog.h"

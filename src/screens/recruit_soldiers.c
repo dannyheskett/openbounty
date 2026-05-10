@@ -1,6 +1,6 @@
-// 
+// Recruit-soldiers screen.
 //
-// Source structure preserved:
+// Structure:
 //   - home_troops[5] = troops with dwells == DWELLING_CASTLE
 //   - twirl glyphs cycle on SYN tick
 //   - state variable `whom`: 0 = idle (twirl on right), 1..5 = letter
@@ -8,9 +8,9 @@
 //   - max recomputed on letter pick AND after each successful purchase
 //   - inline text input at right column when whom != 0
 //   - silent clamp `if (number > max) number = max`
-//   - errors use  banners
+//   - errors use bottom-banner pause boxes
 //
-// The screen owns its own input handling. Main.c just calls
+// The screen owns its own input handling. main.c just calls
 // screen_recruit_soldiers_update() each frame and the screen returns
 // SCREEN_RESULT_DISMISS when ESC is pressed at idle.
 
@@ -35,44 +35,42 @@ extern void screens_draw_location_backdrop(const Game *g, const Sprites *s,
                                            int troop_frame);
 #define SCREEN_LOC_CASTLE 1
 
-// Source line 2123-2129: home_troops filtered by dwells==DWELLING_CASTLE.
-// OpenBounty stores `dwelling` as a string; "castle" is the equivalent.
+// home_troops filtered by dwelling=="castle".
 #define RECRUIT_SLOTS 5
 static int s_pool[RECRUIT_SLOTS];   // catalog indices, in pool-order
 static int s_pool_count = 0;
 
-// Source line 2266: random_troop chosen once at home-castle entry.
-// Stays stable for the whole visit. The recruit screen inherits it.
+// Animated troop, chosen once at home-castle entry. Stays stable for
+// the whole visit; the recruit screen inherits it.
 static int s_anim_troop_idx = -1;
 
-// Source line 2137: byte whom = 0
-//   0 = idle, listening for letters, twirl on right
+// `whom` state:
+//   0    = idle, listening for letters, twirl on right
 //   1..5 = letter pressed, count entry on right
 static int s_whom = 0;
 
-// Source line 2132: int max = 9999
-// Recomputed on letter pick and on each successful purchase.
+// Max recruitable for the currently selected troop. Recomputed on
+// letter pick and on each successful purchase.
 static int s_max = 9999;
 
-// Source line 2148: troop_frame for animation (0..3)
-// Source line 2135: twirl_pos for cursor (0..3)
-// Source line 2149: troop_delay throttles troop_frame to 1/3 the rate
-//   of twirl_pos (advances twirl 3x faster than the troop frame).
+// troop_frame: 0..3 unit-anim frame.
+// twirl_pos:   0..3 cursor twirl.
+// troop_delay throttles troop_frame to 1/3 the rate of twirl_pos
+//   (twirl advances 3x faster than the troop frame).
 static int s_troop_frame = 3;
 static int s_twirl_pos   = 0;
 static int s_troop_delay = 0;
 static double s_last_tick = 0.0;
 
 // Inline text-input buffer, used when s_whom != 0.
-// Source line 2222: text_input(6, 1, ...) — 6 digits max, numeric only.
+// 6 digits max, numeric only.
 #define INPUT_MAX_LEN 6
 static char s_input_buf[INPUT_MAX_LEN + 1] = { 0 };
 static int  s_input_len = 0;
 
-// Source 2234-2235: error banners are KB_BottomBox(..., MSG_PAUSE) —
-// synchronous, blocks until any key. We render the error inline by
-// temporarily replacing the panel content, then any-key clears it.
-// Empty string = no error pending.
+// Error banners are synchronous: they block until any key is pressed.
+// We render the error inline by temporarily replacing the panel
+// content, then any-key clears it. Empty string = no error pending.
 static char s_error_msg[64] = { 0 };
 // One-shot edge-detect: don't dismiss the error on the same frame
 // it's set (the key that triggered it would also clear it instantly).
@@ -81,13 +79,11 @@ static bool s_error_just_set = false;
 void screen_recruit_soldiers_open(Game *g) {
     if (!g) return;
 
-    // Source 2123-2129: build home_troops[5]. iterates the
-    // troop catalog and picks all DWELLING_CASTLE entries in order.
-    // The DOS reference (kb_024) shows the recruit list ordered by
-    // ascending recruit_cost (Militia 50 → Archers 250 → Pikemen 300
-    // → Cavalry 800 → Knights 1000), which catalog order
-    // happens to break for Knights (cost 1000, listed before Cavalry
-    // at 800). Sort by recruit_cost so the rendered list matches DOS.
+    // Build home_troops[5]: iterate the troop catalog and pick all
+    // dwelling="castle" entries. The recruit list is rendered in
+    // ascending recruit_cost order (Militia 50 -> Archers 250 ->
+    // Pikemen 300 -> Cavalry 800 -> Knights 1000), so we sort here
+    // since catalog order does not guarantee that.
     s_pool_count = 0;
     int total = troops_count();
     for (int i = 0; i < total && s_pool_count < RECRUIT_SLOTS; i++) {
@@ -97,7 +93,7 @@ void screen_recruit_soldiers_open(Game *g) {
             s_pool[s_pool_count++] = i;
         }
     }
-    // Insertion sort by recruit_cost ascending — n ≤ 5, trivial.
+    // Insertion sort by recruit_cost ascending -- n <= 5, trivial.
     for (int i = 1; i < s_pool_count; i++) {
         int key = s_pool[i];
         const TroopDef *kt = troop_by_index(key);
@@ -113,8 +109,9 @@ void screen_recruit_soldiers_open(Game *g) {
         s_pool[j + 1] = key;
     }
 
-    // Source 2266 (visit_home_castle): random_troop = home_troops[rand()%5].
-    // OpenBounty deterministic-seed equivalent.
+    // Pick a deterministic random troop from the pool, seeded from the
+    // game seed + days-left so revisiting the same castle on the same
+    // day produces the same animated troop.
     if (s_pool_count > 0) {
         unsigned long h = (unsigned long)g->seed ^ 0xC451E11Au;
         h ^= (unsigned long)g->stats.days_left;
@@ -135,11 +132,8 @@ void screen_recruit_soldiers_open(Game *g) {
     views_push(VIEW_RECRUIT_SOLDIERS);
 }
 
-// Source line 2210/2238: max = army_leadership(troop) / hp.
-// GameMaxRecruitable returns (leadership_current - total_army_leadership) / hp,
-// enforcing the global leadership cap so recruiting one troop type can't
-// bypass the limits set by another (deviates from , which
-// has a documented quirk that ignores other troops' consumption).
+// max = (leadership_current - same_troop_leadership) / hp. Other
+// troop types do NOT reduce this cap (matches GameMaxRecruitable).
 static int recompute_max(const Game *g, int slot) {
     if (slot < 0 || slot >= s_pool_count) return 0;
     const TroopDef *t = troop_by_index(s_pool[slot]);
@@ -149,11 +143,7 @@ static int recompute_max(const Game *g, int slot) {
     return m;
 }
 
-// Source 2200: KB_event(&five_choices) returns 1..5 for letters,
-// 6 for SYN tick, 0xFF for ESC. We translate raylib keys into the
-// same shape.
-//
-// Returns:
+// Idle-state input poll. Returns:
 //   1..5 letter pressed, A=1
 //   6    SYN tick (animation only)
 //   -1   ESC
@@ -163,7 +153,7 @@ static int poll_idle_input(void) {
     for (int i = 0; i < 5; i++) {
         if (harness_key_pressed(KEY_A + i)) return i + 1;
     }
-    // SYN tick at the source's 90ms cadence (five_choices KFLAG_TIMER 90).
+    // SYN tick at 90ms cadence drives the twirl animation.
     double now = GetTime();
     if (now - s_last_tick >= 0.090) {
         s_last_tick = now;
@@ -172,11 +162,11 @@ static int poll_idle_input(void) {
     return 0;
 }
 
-// Source 2222: text_input(6, 1, ...) inline at right column.
-// We accept digits, backspace, ENTER (commit), ESC (cancel = NULL).
+// Numeric text-input poll, inline at right column.
+// Accepts digits, backspace, ENTER (commit), ESC (cancel).
 // Returns:
 //   1  ENTER pressed: digits in s_input_buf are the value
-//   2  ESC pressed: cancel (whom→0)
+//   2  ESC pressed: cancel (whom -> 0)
 //   0  still entering / nothing this frame
 static int poll_count_input(void) {
     if (harness_key_pressed(KEY_ESCAPE)) return 2;
@@ -195,10 +185,10 @@ static int poll_count_input(void) {
     return 0;
 }
 
-// Set a pending synchronous error popup. Source 2234-2235:
-// KB_BottomBox(..., MSG_PAUSE) blocks until any key is pressed. We
-// model that with a single screen-owned message string + an edge
-// flag so the dismissing key isn't the same one that opened it.
+// Set a pending synchronous error popup. The popup blocks until any
+// key is pressed; we model that with a single screen-owned message
+// string + an edge flag so the dismissing key isn't the same one that
+// opened it.
 static void set_error(const char *msg) {
     if (!msg) { s_error_msg[0] = '\0'; return; }
     size_t n = 0;
@@ -215,7 +205,7 @@ static void set_error(const char *msg) {
 bool screen_recruit_soldiers_update(Game *g) {
     if (!g) return true;
 
-    // Source 2234-2235: if an error popup is up, swallow input until
+    // if an error popup is up, swallow input until
     // the player presses any key. Don't consume the key on the same
     // frame the popup opened.
     if (s_error_msg[0]) {
@@ -228,11 +218,11 @@ bool screen_recruit_soldiers_update(Game *g) {
     }
 
     if (s_whom == 0) {
-        // Source 2198-2219: listen for letter or SYN.
+        // listen for letter or SYN.
         int key = poll_idle_input();
         if (key == -1) return true;             // ESC: dismiss
         if (key >= 1 && key <= 5) {
-            // Source 2206-2210: pick letter, recompute max.
+            // pick letter, recompute max.
             // Slot must exist (s_pool_count covers it). 
             // (extended) gates on the same `total_leadership < hp*6`
             // rule the row uses to print "n/a" — unreachable rows
@@ -252,7 +242,7 @@ bool screen_recruit_soldiers_update(Game *g) {
                 }
             }
         } else if (key == 6) {
-            // Source 2212-2218: advance twirl every tick, troop_frame
+            // advance twirl every tick, troop_frame
             // every 3 ticks.
             s_twirl_pos++;
             if (s_twirl_pos > 3) s_twirl_pos = 0;
@@ -264,7 +254,7 @@ bool screen_recruit_soldiers_update(Game *g) {
             }
         }
     } else {
-        // Source 2222-2241: inline numeric input.
+        // inline numeric input.
         int r = poll_count_input();
         if (r == 2) {
             // ESC: cancel back to idle (source: enter == NULL).
@@ -274,13 +264,13 @@ bool screen_recruit_soldiers_update(Game *g) {
         } else if (r == 1) {
             // ENTER: commit purchase (source: atoi → clamp → buy_troop).
             int number = (s_input_len > 0) ? atoi(s_input_buf) : 0;
-            // Source 2228: silent clamp.
+            // silent clamp.
             if (number > s_max) number = s_max;
             if (number > 0 && s_whom - 1 < s_pool_count) {
                 const TroopDef *t = troop_by_index(s_pool[s_whom - 1]);
                 if (t) {
                     int rc = GameBuyTroop(g, t->id, number);
-                    // Source 2234-2235: errors via KB_BottomBox MSG_PAUSE.
+                    // errors via KB_BottomBox MSG_PAUSE.
                     // Inline synchronous popup — see set_error / draw.
                     if (rc == 1) {
                         const char *m = (g->res &&
@@ -296,12 +286,12 @@ bool screen_recruit_soldiers_update(Game *g) {
                         set_error(m);
                     }
                 }
-                // Source 2238: recompute max after purchase.
+                // recompute max after purchase.
                 s_max = recompute_max(g, s_whom - 1);
             }
             // UX deviation from source: after committing a count, return
             // to the letter-select state instead of staying in count
-            // entry for the same troop. Source 2222-2241 keeps `whom`
+            // entry for the same troop. The state machine keeps `whom`
             // set so the user types another count for the same troop;
             // we reset to idle so the player picks a fresh letter.
             s_whom = 0;
@@ -313,7 +303,7 @@ bool screen_recruit_soldiers_update(Game *g) {
 }
 
 void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
-    // Source 2153: backdrop with animated troop (random_troop, frame).
+    // backdrop with animated troop (random_troop, frame).
     screens_draw_location_backdrop(g, s, SCREEN_LOC_CASTLE,
                                    s_anim_troop_idx, s_troop_frame);
 
@@ -330,7 +320,7 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
     int tx = x + pad;
     int ty = y + pad;
 
-    // Source 2234-2235: when an error popup is up the panel content is
+    // when an error popup is up the panel content is
     // replaced by the error text (KB_BottomBox MSG_PAUSE semantics).
     // Body is rendered with 3 leading blank rows ( padding) for
     // the gold error; the slots error fills the panel as-is.
@@ -348,24 +338,17 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
     bfont_draw(ui ? ui->recruit_soldiers_title : "Recruit Soldiers",
                tx, ty, PAL_CLR(WHITE));
 
-    // Source 2164-2171: 5 troop rows starting at text->y + fs->h/4
+    // 5 troop rows starting at text->y + fs->h/4
     // (one row gap after the title), formatted "%c) %-11s%d".
     //
-    //  (extended): show "n/a" only when this troop is
-    // fundamentally out of reach for the current rank — i.e. total
-    // leadership can't fit even ONE, ignoring whatever's already in
-    // the army. Once you've recruited the max, the row keeps showing
-    // the cost (you just can't buy more). This matches DOS binary
-    // behavior on a fresh start (Knights/Cavalry too big for the 100-
-    // leadership Knight rank → "n/a"; Militia/Archers/Pikemen fit at
-    // least one → cost displayed even after you bought all you can).
-    //  (extended): show "n/a" when the player's total
-    // leadership can't fit at least 6 of this troop. DOS-binary rule
-    // empirically observed across Knight/Paladin/Sorceress rank 0:
-    //   total_leadership < hp * 6  →  "n/a"
-    // (Knight 100 / Paladin 80 / Sorceress 60 leadership all show
-    // Cavalry HP=20 and Knights HP=35 as "n/a"; Pikemen HP=10 and
-    // smaller always show their cost.)
+    // Show "n/a" when the player's total leadership can't fit at least
+    // 6 of this troop:
+    //   total_leadership < hp * 6  ->  "n/a"
+    // Otherwise show the cost (even after the player has bought all
+    // they can with current leadership). On fresh starts: Knight 100 /
+    // Paladin 80 / Sorceress 60 leadership all flag Cavalry HP=20 and
+    // Knights HP=35 as "n/a"; Pikemen HP=10 and smaller always show
+    // their cost.
     int troop_ty = ty + row_h + 1;
     int total_lead = g->stats.leadership_current;
     for (int i = 0; i < 5; i++) {
@@ -386,20 +369,19 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
     }
 
     // ---- RIGHT SIDE ---------------------------------------------------
-    // Source 2175-2192: right column at text->x + fs->w * 20.
+    // right column at text->x + fs->w * 20.
     int rx = tx + 20 * BFONT_GLYPH_W;
 
-    // Source 2176: GP=NK header at the same y as title.
+    // GP=NK header at the same y as title.
     char gp[32];
     snprintf(gp, sizeof(gp), "GP=%dK", (int)(g->stats.gold / 1000));
     bfont_draw(gp, rx, ty, PAL_CLR(WHITE));
 
-    // Source 2179-2192: body starts at text->y + fs->h/4 with a leading
+    // body starts at text->y + fs->h/4 with a leading
     // "\n\n" → the (A-C) row is 2 rows below the GP=NK header.
     int rby = ty + row_h + 1 + row_h;   // GP row + 1 gap + 1 blank line
 
-    // Source 2183: literal "(A-C) " — hardcoded in the source. The DOS
-    // binary screenshots match. We render it verbatim.
+    // Literal "(A-C) " hint string, rendered verbatim.
     bfont_draw("(A-C) ", rx, rby, PAL_CLR(WHITE));
     int after_hint_x = rx + 6 * BFONT_GLYPH_W;   // after "(A-C) "
 
@@ -410,9 +392,9 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
         const char twirl[] = "\x1D\x05\x1F\x1C";
         char tw[2] = { twirl[s_twirl_pos & 3], '\0' };
         bfont_draw(tw, after_hint_x, rby, PAL_CLR(WHITE));
-        // Source 2186: 3 blank padded lines — nothing more to render.
+        // 3 blank padded lines — nothing more to render.
     } else {
-        // Source 2188-2191: letter, Max=N, How Many, blank.
+        // letter, Max=N, How Many, blank.
         char letter[2] = { (char)('A' + s_whom - 1), '\0' };
         bfont_draw(letter, after_hint_x, rby, PAL_CLR(WHITE));
 
@@ -423,9 +405,9 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
         bfont_draw(ui ? ui->recruit_soldiers_how_many : "How Many",
                    rx, rby + 2 * row_h, PAL_CLR(WHITE));
 
-        // Source 2222: text_input cursor inline at right column,
+        // text_input cursor inline at right column,
         // 4 rows below the start of the body (right at the "blank
-        // line" Source line 2191 reserved).
+        // line reserved).
         char buf_with_cursor[INPUT_MAX_LEN + 4];
         snprintf(buf_with_cursor, sizeof(buf_with_cursor), "%s_",
                  s_input_buf);

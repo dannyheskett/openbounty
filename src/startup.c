@@ -741,14 +741,12 @@ static bool run_credits(RenderTexture2D *rt, const Resources *res,
     int cn = res->credits.copyright_count;
     if (gn == 0 && cn == 0) return true;
 
-    // Reproduces the original DOS title-page credit layout: a yellow-
-    // chrome bordered blue panel sitting over the title splash, with
-    // group labels left-aligned, names indented one space, the cls-
-    // select highlight sprite inset on the right, and copyright lines
-    // centered at the bottom.
+    // Title-page credit layout: a yellow-chrome bordered blue panel
+    // sitting over the title splash, with group labels left-aligned,
+    // names indented one space, the class-select highlight sprite inset
+    // on the right, and copyright lines centered at the bottom.
 
-    // Panel is sized roughly to fit the screen with margin. The actual
-    // measurements mirror the proportions in the screenshot.
+    // Panel is sized to fit the screen with margin.
     int line_h = GH + 1;
     int pad    = 6;
 
@@ -808,8 +806,8 @@ static bool run_credits(RenderTexture2D *rt, const Resources *res,
 
         frame_begin(rt);
 
-        // Backdrop: the class-select cartoon (matches the original DOS
-        // sequence — credits drape over the character-pick screen).
+        // Backdrop: the class-select cartoon -- credits drape over the
+        // character-pick screen.
         draw_class_picker_backdrop(sprites);
         draw_class_picker_status_hint(res);
 
@@ -840,8 +838,7 @@ static bool run_credits(RenderTexture2D *rt, const Resources *res,
         }
 
         // Inset image (re-using class_select_highlight). Vertically
-        // centered against the group block, with a thin green outline
-        // matching the original DOS title-page detail.
+        // centered against the group block, with a thin green outline.
         if (image_w) {
             int ix = px + panel_w - pad - image_w;
             int iy = py + pad + line_h;

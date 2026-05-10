@@ -251,9 +251,8 @@ cJSON *state_build_snapshot(const Game *g,
     // Tag the save with the active pack id so the loader can refuse a
     // cross-pack load (where troop / spell / villain ids from the
     // other pack would resolve to bogus catalog entries here).
-    // pack_hash is the FNV1a-64 of the whole pack zip — advisory only,
-    // recorded for future use (e.g. detecting same-id-different-content).
-    // Nothing currently gates on it.
+    // pack_hash is the FNV1a-64 of the whole pack zip -- advisory only;
+    // nothing currently gates on it.
     if (g->res && g->res->pack_id[0]) {
         cJSON_AddStringToObject(root, "pack_id", g->res->pack_id);
     }
@@ -618,7 +617,7 @@ cJSON *state_build_snapshot(const Game *g,
             cJSON_AddStringToObject(p, "kind", "yes_no");
             cJSON_AddStringToObject(p, "title", "fast_quit");
             cJSON_AddStringToObject(p, "body",
-                "Quit to DOS without saving (y/n)");
+                "Quit without saving (y/n)");
             cJSON_AddItemToObject(root, "fast_quit_prompt", p);
         }
     }

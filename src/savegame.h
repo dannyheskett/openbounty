@@ -1,5 +1,5 @@
-#ifndef SAVEGAME_H
-#define SAVEGAME_H
+#ifndef OB_SAVEGAME_H
+#define OB_SAVEGAME_H
 
 #include <stdbool.h>
 #include <stdint.h>

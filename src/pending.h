@@ -1,5 +1,5 @@
-#ifndef PENDING_H
-#define PENDING_H
+#ifndef OB_PENDING_H
+#define OB_PENDING_H
 
 // Prompt-flow scratch state shared across modules. These were originally
 // file-local statics in main.c; extraction of try_step into step.c forced

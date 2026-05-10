@@ -1,5 +1,5 @@
-#ifndef GAME_H
-#define GAME_H
+#ifndef OB_GAME_H
+#define OB_GAME_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -258,11 +258,7 @@ typedef struct Game {
 // Populates all game state: character, stats, army, castles, villains, scepter, etc.
 void GameInit(Game *g, const char *name, int pclass, int difficulty, const unsigned char *land);
 
-// Refill global rule/name arrays 
-void refill_rules(void);
-void refill_names(void);
-
-// Rank initialization 
+// Rank initialization.
 void player_accept_rank(Game *g);
 
 // Adventure-mode spell effects. Each consumes one charge from
@@ -275,11 +271,11 @@ void GameCastFindVillain(Game *g);
 // `kind` is an Interact enum value.
 void GameAddPlacement(Game *g, const char *zone, int x, int y, int kind, const char *id);
 
-// Phase 2/3/4: Map and object initialization 
+// Map and object initialization.
 void salt_spells(Game *g);
-// Salt randomized objects into a zone. has no hostile-foe budget;
-// hostiles come from static `armies[]` placements in the zone definition,
-// which this function also registers as foes.
+// Salt randomized objects into a zone. Hostiles come from static
+// `armies[]` placements in the zone definition, which this function
+// also registers as foes.
 void salt_continent(Game *g, int continent, int artifacts, int navmaps, int orbs, int telecaves, int dwellings, int friendly_foes);
 void furnish_map(Game *g);
 void clear_fog(Game *g);
@@ -458,9 +454,9 @@ bool GameHasPower(const Game *g, ArtifactPower power);
 void GameAddConsumed(Game *g, const char *zone, int x, int y);
 
 // Apply every consumed-tile record that matches the given zone id to
-// `map` by clearing its interactive overlay. Call once after loading the
-// map for the hero's current zone (on new game, save load, or any
-// future zone switch).
+// `map` by clearing its interactive overlay. Call once after loading
+// the map for the hero's current zone (on new game, save load, or zone
+// switch).
 void GameApplyTileMutations(const Game *g, Map *map, const char *zone);
 
 // Total number of spell charges the hero is carrying (sum of counts[]).

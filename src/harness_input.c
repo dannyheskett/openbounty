@@ -1,6 +1,6 @@
 // OpenBounty input shim — see harness_input.h.
 
-#define BNT_HARNESS_INPUT_INTERNAL
+#define OB_HARNESS_INPUT_INTERNAL_H
 #include "harness_input.h"
 #include "raylib.h"
 #include <string.h>

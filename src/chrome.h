@@ -1,13 +1,13 @@
-#ifndef CHROME_H
-#define CHROME_H
+#ifndef OB_CHROME_H
+#define OB_CHROME_H
 
 #include "game.h"
 #include "sprites.h"
 
-// Paint  DOS frame: top / bottom / left / right borders, status
-// strip, and the horizontal bar below status. Called once per frame before
-// map and sidebar rendering. All drawing happens in the 320x200 design
-// target at integer coords.
+// Paint the screen frame: top / bottom / left / right borders, status
+// strip, and the horizontal bar below status. Called once per frame
+// before map and sidebar rendering. All drawing happens in the 320x200
+// design target at integer coords.
 void chrome_draw(const Game *g, const Sprites *s);
 
 // Combat / sub-screen variant: same chrome (status fill, bar strip,

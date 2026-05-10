@@ -325,13 +325,10 @@ void screens_draw_location_backdrop(const Game *g, const Sprites *s,
 
 static int town_backdrop_troop(const Game *g, const char *key) {
     // Deterministic pick per (seed, town id). Limit the pool to troops
-    // that dwell at castles (militia/archers/pikemen/cavalry/knights) —
+    // that dwell at castles (militia/archers/pikemen/cavalry/knights) --
     // the "civilian" army that would idle in a human town. Matches the
-    // home_troops[] filter used for recruit_soldiers (
-    // `if (troops[i].dwells == DWELLING_CASTLE) home_troops[off++] = i;`).
-    // (visit_town would otherwise pick `rand() % MAX_TROOPS` unfiltered — almost
-    // certainly a bug compared to the DOS original, which the recruit
-    // flow shows the intended filter for.
+    // home_troops[] filter used for recruit_soldiers
+    // (dwells == DWELLING_CASTLE).
     int nt = troops_count();
     int pool[32];
     int npool = 0;
@@ -477,9 +474,9 @@ static void draw_options(const Game *g) {
     int tx = x + pad;
     int ty = y + pad;
 
-    // Movement reference ( intro lines).
+    // Movement reference.
     static const struct { const char *keys; const char *label; } mv[8] = {
-        { "\x18 or 2",   "Move Down"      },  // up-arrow glyph in DOS, plus numpad 2
+        { "\x18 or 2",   "Move Down"      },  // arrow-glyph codepoint, plus numpad 2
         { "\x1B or 4",   "Move Left"      },
         { "\x1A or 6",   "Move Right"     },
         { "\x19 or 8",   "Move Up"        },

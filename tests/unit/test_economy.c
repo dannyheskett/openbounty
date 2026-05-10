@@ -99,10 +99,10 @@ TEST buy_troop_stacks_on_matching_slot(void) {
 }
 
 TEST max_recruitable_ignores_other_troops(void) {
-    // DOS King's Bounty / OpenKB §35.31: per-troop cap only subtracts
-    // the SAME troop's leadership consumption, not other stacks. This
-    // is what lets a fresh Knight recruit 30 Militia + 8 Archers + 10
-    // Pikemen even though the totals exceed leadership 100.
+    // Per-troop cap only subtracts the SAME troop's leadership
+    // consumption, not other stacks. This is what lets a fresh Knight
+    // recruit 30 Militia + 8 Archers + 10 Pikemen even though the
+    // totals exceed leadership 100.
     Resources *res; Game *g; Map *m; Fog *f;
     ASSERT(fx_init_game_full(&res, &g, &m, &f, NULL, FIXTURE_SEED));
 

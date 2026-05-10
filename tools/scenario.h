@@ -3,8 +3,8 @@
 // game per scenario, drives the title flow per `setup`, then walks the
 // steps array.
 
-#ifndef SCENARIO_H
-#define SCENARIO_H
+#ifndef OB_SCENARIO_H
+#define OB_SCENARIO_H
 
 #define _POSIX_C_SOURCE 200809L
 #include <stdbool.h>

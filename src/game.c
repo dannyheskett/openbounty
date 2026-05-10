@@ -16,9 +16,10 @@ static DwellingState *enforce_dwelling_pinned(Game *g, const char *zone,
                                               int x, int y,
                                               const char *troop_id);
 
-// Seeded random helper for deterministic scepter placement (Gap #3.2, Phase 4).
-// Uses uint64_t so the LCG behaves identically on 32-bit and 64-bit platforms
-// (unsigned long is 32-bit on Windows and breaks the >>32 shift).
+// Seeded random helper for deterministic scepter placement.
+// Uses uint64_t so the LCG behaves identically on 32-bit and 64-bit
+// platforms (unsigned long is 32-bit on Windows and breaks the >>32
+// shift).
 static uint64_t game_rng_state = 0;
 
 static void game_rng_seed(uint64_t seed) {
@@ -63,9 +64,8 @@ void GameInit(Game *g, const char *name, int pclass, int difficulty, const unsig
     uint64_t seed_saved = g->seed;
     memset(g, 0, sizeof(*g));
     g->res = res_saved;
-    (void)land;   // The world byte-map would be memcpy'd here in the
-                  // DOS engine; we load zone maps lazily via
-                  // MapLoadZoneWithPlacements instead.
+    (void)land;   // World byte-map is unused; we load zone maps lazily
+                  // via MapLoadZoneWithPlacements instead.
 
     if (seed_saved != 0) {
         g->seed = seed_saved;
@@ -698,11 +698,9 @@ void clear_fog(Game *g) {
 }
 
 void bury_scepter(Game *g, int continent) {
-    //  bury_scepter walks the continent's tile grid
-    // row-major, counts plain-grass tiles (0x00 / 0x80), and buries
-    // the scepter on the Nth one. We mirror that, treating grass tiles
-    // as TERRAIN_GRASS with no interactive overlay. The DOS bug
-    // (`scepter_y = i`) is fixed here so the buried tile is reachable.
+    // Walk the continent's tile grid row-major, count plain-grass tiles,
+    // and bury the scepter on the Nth one (treating grass tiles as
+    // TERRAIN_GRASS with no interactive overlay).
     if (!g || !g->res) return;
     if (continent < 0 || continent >= g->res->zone_count) return;
     const ResZone *z = &g->res->zones[continent];
@@ -748,13 +746,6 @@ void bury_scepter(Game *g, int continent) {
     }
     free(m);
 }
-
-// refill_rules / refill_names repopulate global rule/name arrays
-// from table data. OpenBounty reads catalogs through the Resources
-// pointer directly, so the arrays don't need a refill step. These stubs
-// remain only so the spawn_game call sequence 
-void refill_rules(void) { }
-void refill_names(void) { }
 
 // player_accept_rank bumps leadership / spells / commission
 // when the player ranks up. OpenBounty does the equivalent inline in
@@ -999,8 +990,8 @@ void GameOnStep(Game *g, bool terrain_is_desert,
         g->stats.steps_left_today--;
     }
 
-    // Handle any day rollovers. Desert only zeroes once, but the loop is
-    // resilient to future effects that might push steps deeper negative.
+    // Handle any day rollovers. Desert only zeroes once, but the loop
+    // tolerates effects that push steps further negative.
     while (g->stats.steps_left_today <= 0 && !g->stats.game_over) {
         bool we = false;
         int  paid = 0;
@@ -1482,20 +1473,15 @@ const TroopDef *GameDwellingTroopAt(const Game *g, const char *dwelling_kind,
 //
 // Only the slot already holding `troop_id` is subtracted; other troops
 // are ignored. The recruit ceiling is `free_leadership / hp`.
-//
-// Earlier openbounty subtracted every other troop's leadership too —
-// that's an invention not in the spec, and produced lower max counts
-// than the DOS binary allows.
 int GameMaxRecruitable(const Game *g, const char *troop_id) {
     if (!g || !troop_id) return 0;
     const TroopDef *t = troop_by_id(troop_id);
     if (!t || t->hit_points <= 0) return 0;
-    //  / DOS King's Bounty: the recruit cap is
-    //   (leadership_current - same_troop_leadership) / hp
+    // Recruit cap: (leadership_current - same_troop_leadership) / hp
     // Crucially, *other* troop slots do NOT reduce the cap. This is
     // why a fresh Knight on Easy can recruit 30 Militia + 8 Archers
-    // + 10 Pikemen all at once even though the totals exceed
-    // leadership 100 — each troop type is checked independently.
+    // + 10 Pikemen all at once even though the totals exceed leadership
+    // 100 -- each troop type is checked independently.
     int same_troop_consumed = 0;
     for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
         if (strcmp(g->army[i].id, troop_id) == 0) {
@@ -1542,7 +1528,7 @@ static DwellingState *enforce_dwelling(Game *g, const char *zone, int x, int y,
     if (t) {
         copy_id(d->troop_id, sizeof(d->troop_id), t->id);
         d->max_population = t->max_population;
-        // We start at max (DOS engine starts at a fraction).
+        // Dwellings start at full population.
         d->count = t->max_population;
     }
     return d;

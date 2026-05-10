@@ -1484,7 +1484,7 @@ static void load_ui_defaults(ResUI *ui) {
     copy_str(ui->press_esc_to_exit, sizeof(ui->press_esc_to_exit),
              "Press 'ESC' to exit");
     copy_str(ui->quit_to_dos_prompt, sizeof(ui->quit_to_dos_prompt),
-             " Quit to DOS without saving (y/n) ");
+             " Quit without saving (y/n) ");
     copy_str(ui->out_of_control, sizeof(ui->out_of_control),
              "OUT OF CONTROL");
     copy_str(ui->worldmap_hint_your_map, sizeof(ui->worldmap_hint_your_map),
@@ -1571,8 +1571,8 @@ static void load_ui_defaults(ResUI *ui) {
                  sizeof(ui->difficulty[i].score_mult), diff_def[i].m);
     }
 
-    // Default keybinds — overlay.c options panel order.
-    static const struct { const char *k; const char *l; } kb_def[] = {
+    // Default keybinds -- overlay.c options panel order.
+    static const struct { const char *k; const char *l; } keybind_defaults[] = {
         { "Dn",   "Move Down"      }, { "Lf",   "Move Left"      },
         { "Rt",   "Move Right"     }, { "Up",   "Move Up"        },
         { "End",  "Down Left"      }, { "PgDn", "Down Right"     },
@@ -1584,12 +1584,12 @@ static void load_ui_defaults(ResUI *ui) {
         { "U",    "Use Magic"      }, { "V",    "View Character" },
         { "W",    "Wait End Week"  }, { "Q",    "Quit and Save"  },
     };
-    int kb_n = (int)(sizeof(kb_def) / sizeof(kb_def[0]));
-    if (kb_n > RES_MAX_KEYBINDS) kb_n = RES_MAX_KEYBINDS;
-    ui->keybind_count = kb_n;
-    for (int i = 0; i < kb_n; i++) {
-        copy_str(ui->keybinds[i].key,   sizeof(ui->keybinds[i].key),   kb_def[i].k);
-        copy_str(ui->keybinds[i].label, sizeof(ui->keybinds[i].label), kb_def[i].l);
+    int n = (int)(sizeof(keybind_defaults) / sizeof(keybind_defaults[0]));
+    if (n > RES_MAX_KEYBINDS) n = RES_MAX_KEYBINDS;
+    ui->keybind_count = n;
+    for (int i = 0; i < n; i++) {
+        copy_str(ui->keybinds[i].key,   sizeof(ui->keybinds[i].key),   keybind_defaults[i].k);
+        copy_str(ui->keybinds[i].label, sizeof(ui->keybinds[i].label), keybind_defaults[i].l);
     }
 
     copy_str(ui->startup_controls_hint, sizeof(ui->startup_controls_hint),
@@ -2178,8 +2178,8 @@ bool resources_load(Resources *res, const char *manifest_path) {
         }
     }
 
-    // Score formula (). Defaults match the original game
-    // so omitting the JSON block leaves balance unchanged.
+    // Score formula. Defaults match the canonical balance so omitting
+    // the JSON block leaves balance unchanged.
     {
         ResScoring *sc = &res->economy.scoring;
         sc->per_villain  = 500;

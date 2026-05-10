@@ -1,5 +1,5 @@
-#ifndef END_CARTOON_H
-#define END_CARTOON_H
+#ifndef OB_END_CARTOON_H
+#define OB_END_CARTOON_H
 
 #include "raylib.h"
 #include "resources.h"

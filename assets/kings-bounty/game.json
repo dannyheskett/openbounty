@@ -4757,7 +4757,7 @@
 		},
 		"ui":	{
 			"press_esc_to_exit":	"Press 'ESC' to exit",
-			"quit_to_dos_prompt":	" Quit to DOS without saving (y/n) ",
+			"quit_to_dos_prompt":	" Quit without saving (y/n) ",
 			"out_of_control":	"OUT OF CONTROL",
 			"worldmap_hint_your_map":	"'ESC' to exit / 'SPC' your map",
 			"worldmap_hint_whole_map":	"'ESC' to exit / 'SPC' whole map",

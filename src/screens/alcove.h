@@ -11,8 +11,8 @@
 // the prompt resolves (success path or no path), or pops with the
 // "Begone" dialog still up if the player can't afford.
 
-#ifndef SCREENS_ALCOVE_H
-#define SCREENS_ALCOVE_H
+#ifndef OB_SCREENS_ALCOVE_H
+#define OB_SCREENS_ALCOVE_H
 
 #include "../game.h"
 #include "../sprites.h"

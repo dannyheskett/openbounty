@@ -52,7 +52,7 @@ all: $(OUT) $(PACKS)
 .PHONY: FORCE
 FORCE:
 build/version.h: FORCE | build
-	@printf '#ifndef OPENBOUNTY_VERSION_H\n#define OPENBOUNTY_VERSION_H\n#define OPENBOUNTY_VERSION "%s"\n#endif\n' "$(OPENBOUNTY_VERSION)" > $@.tmp
+	@printf '#ifndef OB_VERSION_H\n#define OB_VERSION_H\n#define OPENBOUNTY_VERSION "%s"\n#endif\n' "$(OPENBOUNTY_VERSION)" > $@.tmp
 	@if ! cmp -s $@.tmp $@ 2>/dev/null; then mv $@.tmp $@; else rm $@.tmp; fi
 
 # The main binary depends on tests passing — `make` runs the unit

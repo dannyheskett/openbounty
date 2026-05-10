@@ -3,8 +3,8 @@
 // extract_vga.c, extract_png.c) and pulls only what it needs from
 // here.
 
-#ifndef EXTRACT_H
-#define EXTRACT_H
+#ifndef OB_EXTRACT_H
+#define OB_EXTRACT_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -61,9 +61,8 @@ int ex_emit_wavs     (const uint8_t *kb_unpacked, size_t kb_len,
 int ex_emit_graphics (const CcArchive *cc, const CcArchive *cc416,
                       const char *out_dir);
 
-// (8) Synthesize port-only assets that have no DOS source: the 9x6
-// puzzle_cover tile (palette-aware: black border + red interior, mirrors
-// OpenKB's GR_PIECE in src/lib/dos-data.c:1079).
+// (8) Synthesize port-only assets that have no source-binary equivalent:
+// the 9x6 puzzle_cover tile (palette-aware: black border + red interior).
 int ex_emit_synth    (const CcArchive *cc, const char *out_dir);
 
 // (9) Cleanroom procedural chrome_overworld.png. Lives in extract_chrome.c.
@@ -97,8 +96,8 @@ int ex_vga_frame_count(const uint8_t *file_data, size_t file_len);
 //
 // `cc` is the loaded 256.CC archive (provides MCGA.DRV, KB.CH, LAND.ORG).
 // `kb` is the unpacked KB.EXE bytes (or NULL); some entries (notably
-// town-gate Y for entry 8) are read directly from KB.EXE because OpenKB
-// has a transcription bug there. Pass NULL to fall back to constants.
+// town-gate Y for entry 8) are read directly from KB.EXE for accuracy.
+// Pass NULL to fall back to constants.
 struct cJSON;
 struct cJSON *ex_gamejson_synthesize(const CcArchive *cc,
                                      const uint8_t *kb, size_t kb_len);

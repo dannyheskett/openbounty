@@ -1,9 +1,9 @@
-# OpenKB — Complete Formal Specification
+# OpenKB — Specification
 
-A clean-room reimplementation reference for the openkb engine
-(`/home/danheskett/personal/openkb-reference/`), a free/libre
-reimplementation of *King's Bounty* (New World Computing, 1990, with
-updated 1995 KB.EXE). This document describes every rule, data table,
+A clean-room reimplementation reference for the OpenKB engine, a
+free/libre reimplementation of *King's Bounty* (New World Computing,
+1990, with updated 1995 KB.EXE). This document describes every rule,
+data table,
 tile code, string offset, combat formula, UI screen, save-file byte,
 spell effect, and asset format implemented in the openkb source tree.
 
@@ -55,7 +55,6 @@ unimplemented spells), that is also stated.
 37. Implementation guidance — recommended development order
 38. Verification checklist — spec compliance tests
 39. References — source tree, original game, related projects
-40. Conclusion
 
 ---
 
@@ -4177,7 +4176,7 @@ Continent 0 (chance roll):
   87..100:    +New spell              (~14% chance)
   101+:       Empty                   (~0%, rounds up)
 
-Continent 1: gold 66%, commission 20%, spellpower 6%, ... 
+Continent 1: gold 66%, commission 20%, spellpower 6%, ...
 Continent 2: gold 76%, commission 10%, spellpower 7%, ...
 Continent 3: gold 71%, commission 10%, spellpower 14%, ...
 ```
@@ -4982,10 +4981,10 @@ Full end-of-week processing:
 
    ```
    Week #<n>
-   
+
    Astrologers proclaim:
    Week of the <TroopName>
-   
+
    All <TroopName> dwellings are
    repopulated.         (space)
    ```
@@ -4995,7 +4994,7 @@ Full end-of-week processing:
 
    ```
    Week #<n>             Budget
-   
+
    On Hand <on_hand>         <Troop 0>  <cost 0>
    Payment <commission>      <Troop 1>  <cost 1>
    Boat    <boat_cost>       <Troop 2>  <cost 2>
@@ -6623,9 +6622,9 @@ flavor only: castle troops are 5 specific ids — filtered by
   Pikemen / Archers (HP=10) always show cost: `60 < 10*6 = 60` is
   false, so the cutoff is exactly `< hp*6`.
 
-  (Spec/openkb-reference gap: openkb-reference unconditionally
-  prints `recruit_cost` regardless of leadership. The "n/a" gating
-  exists only in the DOS binary; openbounty matches the binary.)
+  (Spec/OpenKB gap: OpenKB unconditionally prints `recruit_cost`
+  regardless of leadership. The "n/a" gating exists only in the DOS
+  binary; openbounty matches the binary.)
 - Select letter A..E; input numeric count. Letters whose troop has
   `max == 0` are still pickable in the source loop, but immediately
   return to idle since the inline numeric input clamps to 0.
@@ -6641,8 +6640,8 @@ flavor only: castle troops are 5 specific ids — filtered by
 - Errors: 1 → "You don't have enough gold!", 2 → "No troop slots
   left!"
 - After a purchase commit (success or error popup dismissed),
-  return to letter-select state. (UX deviation from openkb-reference,
-  which leaves `whom` set so the player types another count for the
+  return to letter-select state. (UX deviation from OpenKB, which
+  leaves `whom` set so the player types another count for the
   same troop. OpenBounty resets `whom = 0` so each ENTER returns
   to the A..E list.)
 
@@ -8178,7 +8177,7 @@ any other key to continue.
 ### 24.38 Fast quit
 
 ```
- Quit to DOS without saving (y/n) 
+ Quit to DOS without saving (y/n)
 ```
 
 ### 24.39 Week astrology
@@ -9901,8 +9900,8 @@ Bootstrap content if missing (via `write_default_config`):
 ```ini
 ; openkb config file. lines starting with ';' are comments.
 [main]
-;savedir = 
-;datadir = 
+;savedir =
+;datadir =
 autodiscover = 1
 [sdl]
 sound = 0
@@ -10050,8 +10049,8 @@ attempts to create the HOME directory and a default config:
 ```ini
 ; openkb config file. lines starting with ';' are comments.
 [main]
-;savedir = 
-;datadir = 
+;savedir =
+;datadir =
 autodiscover = 1
 [sdl]
 sound = 0
@@ -11388,9 +11387,8 @@ extension or context:
 
 ### 35.40 Wrap-up
 
-This specification covers openkb as of the code in
-`/home/danheskett/personal/openkb-reference/src/` — a complete
-description of every rule, table, value, and UI element needed
+This specification covers OpenKB as of its current source tree -- a
+complete description of every rule, table, value, and UI element needed
 to clean-room reimplement the engine. Known deviations from DOS
 *King's Bounty* (as flagged in source comments) are documented
 in §34; faithful implementers should consult the DOS binary or
@@ -11993,112 +11991,12 @@ These were not in DOS King's Bounty but openkb hints at:
 - **Mod manager**: install/configure custom modules from UI.
 - **Achievements / stats tracking**.
 
-## 38. Verification checklist
-
-A reimplementation passes spec compliance if it can:
-
-### 38.1 Game state
-
-- [ ] Load LAND.ORG and produce a 4×64×64 tile map.
-- [ ] Place 17 villains on castles per `villains_per_continent`.
-- [ ] Place 2 artifacts per continent at chest tiles.
-- [ ] Salt 11 dwellings with appropriate troops per `continent_dwellings`.
-- [ ] Place 2 telecaves per continent.
-- [ ] Place 5 friendly foes per continent.
-- [ ] Hide scepter at a random grass tile (account for §34.1
-      bug if matching).
-- [ ] Initialize the right starting army per class.
-- [ ] Apply class rank 0's bonuses.
-- [ ] Initialize options, contract cycle, etc.
-
-### 38.2 Save format
-
-- [ ] Save/load roundtrip preserves all 20421 bytes.
-- [ ] Fog of war packed at 1 bit per tile.
-- [ ] Scepter coords XOR-encrypted with key.
-- [ ] Foe counts truncated to byte on disk.
-- [ ] All field offsets match §22 layout.
-
-### 38.3 Combat
-
-- [ ] Damage formula matches §17.5: `(dmg × turn_count ×
-      skill_diff) / 10`.
-- [ ] Morale modifies damage when hero present and unit in
-      control.
-- [ ] Artifact powers (Sword, Shield, Crown, etc.) apply
-      correctly.
-- [ ] Retaliation fires once per round per unit.
-- [ ] Demon Scythe 10% chance halves target stack.
-- [ ] Vampire Leech adds count from damage.
-- [ ] Ghost Absorb adds count from kills.
-- [ ] AI moves intelligently (target picking, flying, ranged).
-- [ ] Castle layout used in mode-1 combat.
-- [ ] Spoils accumulate per side, awarded on victory.
-- [ ] temp_death wipes army except 20 Peasants.
-
-### 38.4 Spells
-
-- [ ] All 14 spells appear in choose_spell menu.
-- [ ] Spell costs in town purchase.
-- [ ] Combat spells consume one round per cast.
-- [ ] Adventure spells don't consume time.
-- [ ] Bridge places water → bridge tiles.
-- [ ] Find Villain marks `KBCASTLE_KNOWN`.
-- [ ] Castle/Town Gate teleports to visited locations.
-- [ ] Instant Army summons class familiar.
-- [ ] Time Stop adds steps (account for §34.4 bug or fix).
-- [ ] Raise Control adds 100 × spell_power leadership.
-
-### 38.5 Day/week
-
-- [ ] Steps decrement on movement, reset to 40 at end_day.
-- [ ] Days decrement at end_day.
-- [ ] Week ends every 5 days.
-- [ ] Astrology week selects creature (Peasants every 4th).
-- [ ] Ghost-to-Peasant on Peasants weeks.
-- [ ] Dwelling refresh on matching weeks.
-- [ ] Foe/castle growth on matching weeks.
-- [ ] Player castle repop when stack 0 empty.
-- [ ] Budget: commission added, boat + army upkeep deducted.
-- [ ] days_left == 0 triggers lose_game.
-
-### 38.6 UI
-
-- [ ] All screens render correctly.
-- [ ] Status bar shows " Options / Controls / Days Left:N ".
-- [ ] Sidebar shows contract face, siege weapons, magic star,
-      puzzle map, gold purse.
-- [ ] Minimap toggles fog vs full (with orb).
-- [ ] Combat target selector cursor responds to arrow keys.
-- [ ] Twirl animation in cursors.
-- [ ] Color scheme changes by difficulty.
-
-### 38.7 Modules
-
-- [ ] DOS module loads from KB.EXE + CC archives.
-- [ ] GNU module loads from INI + PNG.
-- [ ] Auto-discovery detects modules in data dir.
-- [ ] Multiple modules can be configured.
-- [ ] Fallback resolves missing assets to next module.
-
-### 38.8 Compliance with bugs
-
-A "faithful" implementation matches openkb's bug behaviors:
-- [ ] §34.1 scepter coord bug (or fix it).
-- [ ] §34.2 morale calculation (or fix).
-- [ ] §34.3 stub spells (or implement).
-- [ ] §34.4 Time Stop ×10 not ×100 (or fix).
-- [ ] §34.18 contract activation bug (or fix).
-
-A "corrected" implementation fixes these. Document the choice.
-
 ## 39. References
 
-### 39.1 openkb source tree
+### 39.1 OpenKB source tree
 
-`/home/danheskett/personal/openkb-reference/` (referenced
-throughout this spec). Files are GPLv3, 2011-2014 by Vitaly
-Driedfruit and other openkb authors.
+The OpenKB source tree is referenced throughout this spec. Files are
+GPLv3, 2011-2014 by Vitaly Driedfruit and other OpenKB authors.
 
 Key files:
 - `src/main.c` — entry, config
@@ -12125,10 +12023,9 @@ turn-based strategy. Distributed on floppy with KB.EXE +
 
 ### 39.3 Related projects
 
-- openkb itself (target reimplementation).
-- OpenBounty (`/home/danheskett/personal/openbounty/`) —
-  this project, a port targeting parity with openkb in
-  C + raylib.
+- OpenKB itself (target reimplementation).
+- OpenBounty (this repository) -- a port targeting parity with
+  OpenKB in C + raylib.
 
 ### 39.4 Algorithm references
 
@@ -12162,38 +12059,3 @@ For working with DOS King's Bounty assets:
 - DOSBox — emulator for running the original game.
 - DOSBox-Staging — improved fork of DOSBox.
 - `unzip`, `dd`, `xxd` — extracting and inspecting binary data.
-
-## 40. Conclusion
-
-This specification covers every implementation detail of openkb's
-game engine. With ~12000 lines, it should be sufficient for a
-clean-room reimplementation in any language.
-
-Major sections by depth:
-- §17 Combat engine — most detailed (~1500 lines).
-- §22 Save format — fully byte-mapped with pseudocode.
-- §29 DOS asset formats — algorithm-by-algorithm coverage.
-- §19 AI — full pathfinding and target picking algorithms.
-- §15 Player actions — state diagrams and edge cases.
-
-Remaining uncertainties (audited but not exhaustively
-verified):
-- Some color scheme hex values may not match DOS exactly.
-- KB.EXE byte offsets verified for KB95 only; KB90 inferred.
-- Tile graphic content (which cells of the tileset hold what)
-  is module-defined and not specified in openkb itself.
-
-For questions, the source code at
-`/home/danheskett/personal/openkb-reference/` is the ultimate
-reference.
-
----
-
-*End of OpenKB Specification, version 1.0*
-
-*Generated for the OpenBounty project as a clean-room
-reimplementation reference. Total length: ~12000 lines. Last
-verified against openkb source as of the date of this document.*
-
-
-

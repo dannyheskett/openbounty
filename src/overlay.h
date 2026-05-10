@@ -1,5 +1,5 @@
-#ifndef OVERLAY_H
-#define OVERLAY_H
+#ifndef OB_OVERLAY_H
+#define OB_OVERLAY_H
 
 #include "game.h"
 #include "map.h"

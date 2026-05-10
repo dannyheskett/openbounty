@@ -1,5 +1,5 @@
-#ifndef BFONT_H
-#define BFONT_H
+#ifndef OB_BFONT_H
+#define OB_BFONT_H
 
 #include "raylib.h"
 

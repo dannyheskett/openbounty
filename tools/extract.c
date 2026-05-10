@@ -15,11 +15,8 @@
 //   art/font/kb-font.png
 //   art/{classes,combat,sprites,tiles,troops,ui,villains}/<name>.png
 //
-// We do NOT generate game.json or the OGG music — those ship with
-// openbounty. The OGGs are modern recordings, not derivable from
-// KB.EXE; game.json is hand-curated. A future iteration of this tool
-// could emit a starter game.json by reading catalogs / strings out of
-// KB.EXE; the OutputRow tables make that a pure addition.
+// We do NOT generate the OGG music -- those ship with openbounty.
+// The OGGs are modern recordings, not derivable from KB.EXE.
 //
 // Port-only assets (extractor does NOT emit these; shipped with the
 // pack):
@@ -32,14 +29,12 @@
 // obvious place:
 //   end_{win,lose}_screen.png    — endpic.256 in 416.CC (NOT 256.CC).
 //                                   Frame 0 = won, frame 1 = lost.
-//   puzzle_cover.png             — synthesized procedurally (ex_emit_synth);
+//   puzzle_cover.png             -- synthesized procedurally (ex_emit_synth);
 //                                   9x6 black border + palette-color-4
-//                                   interior, mirroring OpenKB GR_PIECE.
-//   throne_backdrop              — game.json points throne_backdrop at
-//                                   end_lose_screen.png (the original DOS
-//                                   game has no separate throne art and
-//                                   the openbounty port had used a
-//                                   pixel-identical copy).
+//                                   interior.
+//   throne_backdrop              -- game.json points throne_backdrop at
+//                                   end_lose_screen.png; there is no
+//                                   separate throne art.
 //
 // Build:  gcc -std=c99 -O2 -Ithird_party/miniz tools/extract*.c
 //             third_party/miniz/miniz.c -o build/extract
@@ -172,17 +167,6 @@ int extract_run(const char *in_dir, const char *out_dir) {
     return 0;
 }
 
-// ---- temporary stubs for stages whose TU isn't written yet ----------
-//
-// We compile the scaffold today so the dispatch flow is verifiable as
-// each TU lands. Each stub prints a "[skip] not implemented" line and
-// returns 0. As the real implementations land, the stub here gets
-// removed and the symbol is provided by the dedicated TU.
-
-#define STUB(name) \
-    int name() { fprintf(stderr, "extract: [skip] " #name " — not implemented\n"); return 0; }
-
-
 // ---- Stage (3): palette ---------------------------------------------
 //
 // MCGA.DRV @ 0x032D, 768 bytes (256 × 6-bit RGB). The engine expands
@@ -195,9 +179,8 @@ int ex_emit_palette(const CcArchive *cc, const char *out_dir) {
         fprintf(stderr, "extract: MCGA.DRV too small (%zu)\n", mcga->size);
         return -1;
     }
-    // 6-bit VGA triples expanded to 8-bit via DOS_ReadPalette_RW formula
-    // (OpenKB src/lib/dos-data.c:183): out = in * 255 / 63. The engine
-    // (src/classic/palette.c:38) reads 8-bit values directly.
+    // 6-bit VGA triples expanded to 8-bit: out = in * 255 / 63. The
+    // engine (src/palette.c) reads 8-bit values directly.
     unsigned char out[768];
     const unsigned char *src = mcga->data + 0x032D;
     for (int i = 0; i < 768; i++) out[i] = (unsigned char)((src[i] * 255) / 63);
@@ -634,13 +617,12 @@ int ex_emit_wavs(const uint8_t *kb, size_t klen, const char *out_dir) {
 // because golden tile PNGs are fully opaque (a hand-edit applied
 // during the original port).
 //
-// Frames not listed here are silently skipped — they're variants the
+// Frames not listed here are silently skipped -- they're variants the
 // engine doesn't reference (alternate tilesets, sub-cursors, etc.).
-// 14 view.256 hud-icon frames are not in the table because the
-// raw→hud filename mapping was applied by hand in the original port
-// and we haven't recovered it; they're left as a TODO. The user can
-// manually copy from the rendered intermediates if they need exact
-// hud art parity, or substitute their own.
+// 14 view.256 hud-icon frames are not in the table because the raw to
+// hud filename mapping was applied by hand at port time and is not
+// recovered automatically; users wanting exact hud art parity can copy
+// from the rendered intermediates manually, or substitute their own.
 
 typedef struct {
     const char *raw;       // CC entry name ("arcr.256")
@@ -703,11 +685,9 @@ int ex_emit_graphics(const CcArchive *cc, const CcArchive *cc416,
 
 // ---- Stage (8): synthesized port-only assets ------------------------
 //
-// puzzle_cover.png — 9x6 black-bordered red fill. OpenKB's GR_PIECE
-// generates the same surface procedurally (src/lib/dos-data.c:1079):
+// puzzle_cover.png -- 9x6 black-bordered red fill. Generated as a
 // 9x6 palette surface, black (color 0) outline, interior filled with
-// palette color 4 (red in 256-color mode, magenta in CGA). We use the
-// 256-color value: palette index 4.
+// palette color 4 (red in 256-color mode).
 
 int ex_emit_synth(const CcArchive *cc, const char *out_dir) {
     const CcEntry *mcga = ex_cc_find(cc, "MCGA.DRV");

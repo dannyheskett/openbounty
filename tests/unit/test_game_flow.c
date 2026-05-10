@@ -121,8 +121,8 @@ TEST switch_zone_updates_position_zone(void) {
 
 TEST switch_zone_preserves_fog_on_return(void) {
     // Verify that fog of a discovered continent is restored when the
-    // hero returns. OpenKB-SPEC: fog is per-continent, kept across
-    // boat trips between continents.
+    // hero returns. Fog is per-continent, kept across boat trips
+    // between continents.
     Resources *res; Game *g; Map *m; Fog *f;
     ASSERT(fx_init_game_full(&res, &g, &m, &f, "continentia", FIXTURE_SEED));
 

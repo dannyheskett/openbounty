@@ -55,10 +55,10 @@
 #include "flows.h"
 
 // Fast-quit (Ctrl+Q) status-bar prompt.
-// ask_fast_quit (game.c:6243): the "Quit to DOS without saving (y/n)"
-// string is rendered into the top status bar via KB_TopBox, NOT a
-// bottom dialog. While active, chrome substitutes the prompt for the
-// usual "Days Left:N" status. Y → quit. N or any other key → clear.
+// The "Quit without saving (y/n)" string is rendered into the top status
+// bar, NOT a bottom dialog. While active, chrome substitutes the prompt
+// for the usual "Days Left:N" status. Y -> quit. N or any other key ->
+// clear.
 static bool         fast_quit_active = false;
 
 // Public getter for chrome.c — keeps the flag a static here.
@@ -405,7 +405,7 @@ static void run_audience_dialog(Game *game, const ResCastle *rc) {
 // visit re-rolls deterministically.
 
 // ===========================================================================
-// Classic mode render path. Draws into the 320x200 target at 1x.
+// Render path. Draws into the 320x200 target at 1x.
 // ===========================================================================
 
 static void draw_frame(const Game *game, const Map *map, const Fog *fog,
@@ -477,9 +477,9 @@ int main(int argc, char **argv) {
     }
 
     // --extract: produce a .openbounty pack (or, with --out-dir, a
-    // loose tree) from the user's DOS files. Inputs come from cwd's
-    // legacy/bin/ subdir to match the standalone tool's contract; if
-    // that's missing, the engine looks in cwd directly. Output is the
+    // loose tree) from the user's KB.EXE distribution. Inputs come from
+    // cwd's legacy/bin/ subdir to match the standalone tool's contract;
+    // if that's missing, the engine looks in cwd directly. Output is the
     // user packs dir's <pack_id>.openbounty, unless --out-dir is given.
     if (extract_mode) {
         const char *in_dir = "legacy/bin";
@@ -489,7 +489,7 @@ int main(int argc, char **argv) {
             if (stat("KB.EXE", &sst) == 0) in_dir = ".";
             else {
                 fprintf(stderr,
-                        "extract: KB.EXE not found. Place your DOS distribution "
+                        "extract: KB.EXE not found. Place your game files "
                         "in legacy/bin/ or in the current directory.\n");
                 return 2;
             }
@@ -589,7 +589,7 @@ int main(int argc, char **argv) {
                     // honors the literal newlines.
                     snprintf(body, sizeof body,
                         "OpenBounty cannot start because no game pack was found.\n\n"
-                        "OpenBounty is a reimplementation of King's Bounty (1990) and ships without game data. To play, you must supply your own asset pack derived from a legally-owned copy of the original DOS game.\n\n"
+                        "OpenBounty is a reimplementation of King's Bounty (1990) and ships without game data. To play, you must supply your own asset pack derived from a legally-owned copy of the original game.\n\n"
                         "How to fix this:\n\n"
                         "1. Place a *.openbounty pack file in either of these folders:\n"
                         "     %s\n"
@@ -604,15 +604,14 @@ int main(int argc, char **argv) {
                         "OpenBounty cannot start because no game pack was found.\n\n"
                         "OpenBounty is a reimplementation of King's Bounty (1990) and "
                         "ships without game data. To play, you must supply your own "
-                        "asset pack derived from a legally-owned copy of the original "
-                        "DOS game.\n\n"
+                        "asset pack derived from a legally-owned copy of the original game.\n\n"
                         "How to fix this:\n\n"
                         "1. Place a *.openbounty pack file in:\n"
                         "     %s\n"
                         "   or in the folder containing the openbounty binary.\n\n"
                         "2. Or, from a Terminal, run:\n"
                         "     ./openbounty --extract /path/to/KB.EXE\n"
-                        "   to generate a pack from your own copy of the DOS game.\n\n"
+                        "   to generate a pack from your own copy of the game.\n\n"
                         "See README.txt for the full instructions.",
                         user_packs[0] ? user_packs : "~/Library/Application Support/OpenBounty/packs");
 #else
@@ -620,15 +619,14 @@ int main(int argc, char **argv) {
                         "OpenBounty cannot start because no game pack was found.\n\n"
                         "OpenBounty is a reimplementation of King's Bounty (1990) and "
                         "ships without game data. To play, you must supply your own "
-                        "asset pack derived from a legally-owned copy of the original "
-                        "DOS game.\n\n"
+                        "asset pack derived from a legally-owned copy of the original game.\n\n"
                         "How to fix this:\n\n"
                         "1. Place a *.openbounty pack file in:\n"
                         "     %s\n"
                         "   or in the directory you run openbounty from.\n\n"
                         "2. Or, run:\n"
                         "     ./openbounty --extract /path/to/KB.EXE\n"
-                        "   to generate a pack from your own copy of the DOS game.\n\n"
+                        "   to generate a pack from your own copy of the game.\n\n"
                         "See README.txt for the full instructions.",
                         user_packs[0] ? user_packs : "$XDG_DATA_HOME/openbounty/packs (default ~/.local/share/openbounty/packs)");
 #endif
@@ -695,7 +693,7 @@ int main(int argc, char **argv) {
     pack_stack_push(pack);
 
     if (combat_test) {
-        // Headless determinism harness (Phase 14). Parses the colon-
+        // Headless determinism harness. Parses the colon-
         // separated arg, loads resources, runs combat_test_digest, prints
         // the digest, and exits without opening a window.
         Resources tres;
@@ -772,7 +770,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    // Classic pre-game flow: pick slot + new-game wizard.
+    // Pre-game flow: pick slot + new-game wizard.
     StartupChoice choice = { 0 };
     if (!startup_flow(&res, &sprites,
                               &render_target_startup, &choice)) {
@@ -889,7 +887,7 @@ int main(int argc, char **argv) {
         .on_new  = menu_new,  .on_quit = menu_quit,
     };
 
-    // Classic render target was allocated above (render_target_startup)
+    // Render target was allocated above (render_target_startup)
     // so the pre-game flow can draw into it; reuse here.
     RenderTexture2D render_target = render_target_startup;
 
@@ -1070,10 +1068,10 @@ int main(int argc, char **argv) {
 
         // ==== Input ====
 
-        // Fast-quit (Ctrl+Q) status-bar prompt. this
-        // is a modal y/n read directly off the keyboard while the
-        // status bar shows "Quit to DOS without saving (y/n)". No
-        // bottom dialog. Y → quit; N or any other key → clear flag.
+        // Fast-quit (Ctrl+Q) status-bar prompt. Modal y/n read directly
+        // off the keyboard while the status bar shows "Quit without
+        // saving (y/n)". No bottom dialog. Y -> quit; N or any other
+        // key -> clear flag.
         if (fast_quit_active) {
             if (harness_key_pressed(KEY_Y)) {
                 quit_requested = true;
@@ -1086,7 +1084,7 @@ int main(int argc, char **argv) {
         }
 
         if (prompt_is_active()) {
-            // Classic bottom-frame prompt (yes/no or numeric). When it
+            // Bottom-frame prompt (yes/no or numeric). When it
             // returns a result, dispatch based on pending_flow.
             PromptResult r = prompt_update();
             if (r != PROMPT_RESULT_NONE) {
@@ -1255,9 +1253,8 @@ int main(int argc, char **argv) {
                                     cr->garrison[s].count = 0;
                                 }
 
-                                // OpenKB-faithful contract semantics
-                                // (openkb-reference/src/game.c:3550-3558):
-                                // only fulfill when the active contract
+                                // Contract semantics: only fulfill when
+                                // the active contract
                                 // matches the captured villain. Without a
                                 // matching contract, no bounty is paid and
                                 // the villain is "set free" — castle becomes
@@ -1672,7 +1669,7 @@ int main(int argc, char **argv) {
         } else if (dialog_is_active()) {
             // Handle bridge direction input if waiting for it
             if (bridge_state == BRIDGE_STATE_DIRECTION) {
-                ClassicInput in = input_poll();
+                InputState in = input_poll();
                 if (in.dx != 0 || in.dy != 0) {
                     int built = try_build_bridge(&game, &map, in.dx, in.dy);
                     bridge_state = BRIDGE_STATE_NONE;
@@ -1821,14 +1818,14 @@ int main(int argc, char **argv) {
         } else {
             // Standard adventure-mode bindings. No ESC→menu,
             // no TAB, no Space→HUD.
-            ClassicInput in = input_poll();
+            InputState in = input_poll();
             switch (in.action) {
-                case CL_ACTION_VIEW_ARMY:       views_set(VIEW_ARMY);      break;
-                case CL_ACTION_VIEW_CHARACTER:  views_set(VIEW_CHARACTER); break;
-                case CL_ACTION_VIEW_CONTRACT:   views_set(VIEW_CONTRACT);  break;
-                case CL_ACTION_VIEW_PUZZLE:     views_set(VIEW_PUZZLE);    break;
-                case CL_ACTION_VIEW_MAP:        views_set(VIEW_WORLDMAP);  break;
-                case CL_ACTION_CAST_SPELL:
+                case INPUT_ACTION_VIEW_ARMY:       views_set(VIEW_ARMY);      break;
+                case INPUT_ACTION_VIEW_CHARACTER:  views_set(VIEW_CHARACTER); break;
+                case INPUT_ACTION_VIEW_CONTRACT:   views_set(VIEW_CONTRACT);  break;
+                case INPUT_ACTION_VIEW_PUZZLE:     views_set(VIEW_PUZZLE);    break;
+                case INPUT_ACTION_VIEW_MAP:        views_set(VIEW_WORLDMAP);  break;
+                case INPUT_ACTION_CAST_SPELL:
                     // no_spell_banner pops if the
                     // player doesn't know magic yet. Substitute the
                     // alcove location from data so the banner stays in
@@ -1860,8 +1857,8 @@ int main(int argc, char **argv) {
                         views_spells_set_mode(true);
                     }
                     break;
-                case CL_ACTION_OPTIONS_MENU:    views_set(VIEW_OPTIONS);   break;
-                case CL_ACTION_SAVE_QUIT: {
+                case INPUT_ACTION_OPTIONS_MENU:    views_set(VIEW_OPTIONS);   break;
+                case INPUT_ACTION_SAVE_QUIT: {
                     // : Q saves
                     // unconditionally, then displays a "Press Ctrl-Q to
                     // Quit / any other key to continue" dialog. The
@@ -1883,7 +1880,7 @@ int main(int argc, char **argv) {
                     }
                     break;
                 }
-                case CL_ACTION_FAST_QUIT:
+                case INPUT_ACTION_FAST_QUIT:
                     //  / :
                     // status-bar prompt, NOT a bottom dialog. Set the
                     // flag; chrome.c renders the prompt string in the
@@ -1892,7 +1889,7 @@ int main(int argc, char **argv) {
                     fast_quit_active = true;
                     break;
 
-                case CL_ACTION_END_WEEK: {
+                case INPUT_ACTION_END_WEEK: {
                     // spend_week: advance to next week boundary.
                     // After the advance, schedule_week_end() queues the
                     // astrology + budget dialogs (end_of_week, game.c:3673).
@@ -1906,7 +1903,7 @@ int main(int argc, char **argv) {
                     }
                     break;
                 }
-                case CL_ACTION_SEARCH: {
+                case INPUT_ACTION_SEARCH: {
                     // : "It will take 10
                     // days to do a search of this area. Search (y/n)?"
                     pending_flow = FLOW_SEARCH;
@@ -1922,7 +1919,7 @@ int main(int argc, char **argv) {
                     }
                     break;
                 }
-                case CL_ACTION_DISMISS_ARMY: {
+                case INPUT_ACTION_DISMISS_ARMY: {
                     // pick a slot (1..5) to dismiss one troop stack.
                     int n_slots = 0;
                     for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
@@ -1940,7 +1937,7 @@ int main(int argc, char **argv) {
                     }
                     break;
                 }
-                case CL_ACTION_FLY:
+                case INPUT_ACTION_FLY:
                     // allowed only from RIDE; every
                     // army stack must contain a flying troop with skill_
                     // level >= 2 (player_can_fly). Silent on failure.
@@ -1949,7 +1946,7 @@ int main(int argc, char **argv) {
                         game.character.mount = MOUNT_FLY;
                     }
                     break;
-                case CL_ACTION_LAND: {
+                case INPUT_ACTION_LAND: {
                     // from FLY, land only on plain
                     // grass (map byte 0x00 — terrain=GRASS, no interactive).
                     if (game.character.mount != MOUNT_FLY) break;
@@ -1964,7 +1961,7 @@ int main(int argc, char **argv) {
                     }
                     break;
                 }
-                case CL_ACTION_NEW_CONTINENT: {
+                case INPUT_ACTION_NEW_CONTINENT: {
                     // : on water,
                     // show "Go to which continent?" with the discovered
                     // continents numbered 1..N; player picks a digit and
@@ -2021,11 +2018,11 @@ int main(int argc, char **argv) {
                                         body, pending_nav_count);
                     break;
                 }
-                case CL_ACTION_VIEW_CONTROLS:
+                case INPUT_ACTION_VIEW_CONTROLS:
                     // controls_menu.
                     views_set(VIEW_CONTROLS);
                     break;
-                case CL_ACTION_REST: {
+                case INPUT_ACTION_REST: {
                     // numpad 5 rests one day (one step worth) in
                     // place. Drives day/week tick the same way a real step
                     // does.
@@ -2037,10 +2034,10 @@ int main(int argc, char **argv) {
                     if (game.stats.game_over) show_lose_game(&game, &res);
                     break;
                 }
-                case CL_ACTION_NONE:
+                case INPUT_ACTION_NONE:
                 default: break;
             }
-            if (in.action == CL_ACTION_NONE && (in.dx || in.dy)) {
+            if (in.action == INPUT_ACTION_NONE && (in.dx || in.dy)) {
                 if (step_try(&game, &map, &fog, &res, in.dx, in.dy)) {
                     last_step_time = GetTime();
                 }

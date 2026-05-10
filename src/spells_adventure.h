@@ -1,5 +1,5 @@
-#ifndef SPELLS_ADVENTURE_H
-#define SPELLS_ADVENTURE_H
+#ifndef OB_SPELLS_ADVENTURE_H
+#define OB_SPELLS_ADVENTURE_H
 
 #include "game.h"
 #include "map.h"

@@ -1,5 +1,5 @@
-#ifndef LAYOUT_H
-#define LAYOUT_H
+#ifndef OB_LAYOUT_H
+#define OB_LAYOUT_H
 
 #include "raylib.h"
 

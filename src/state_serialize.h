@@ -1,5 +1,5 @@
-#ifndef BNT_STATE_SERIALIZE_H
-#define BNT_STATE_SERIALIZE_H
+#ifndef OB_STATE_SERIALIZE_H
+#define OB_STATE_SERIALIZE_H
 
 #include <stdint.h>
 #include "cJSON.h"

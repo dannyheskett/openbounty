@@ -1,5 +1,5 @@
-#ifndef TABLES_H
-#define TABLES_H
+#ifndef OB_TABLES_H
+#define OB_TABLES_H
 
 // Catalog records for troops, spells, classes, villains, artifacts. The
 // actual data lives in assets/<game>/game.json and is loaded by

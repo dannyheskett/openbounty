@@ -1,5 +1,5 @@
-#ifndef BNT_AUDIO_H
-#define BNT_AUDIO_H
+#ifndef OB_AUDIO_H
+#define OB_AUDIO_H
 
 #include <stdbool.h>
 

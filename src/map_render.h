@@ -1,5 +1,5 @@
-#ifndef MAP_RENDER_H
-#define MAP_RENDER_H
+#ifndef OB_MAP_RENDER_H
+#define OB_MAP_RENDER_H
 
 #include "game.h"
 #include "map.h"

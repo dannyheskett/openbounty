@@ -1,14 +1,13 @@
-#ifndef PALETTE_H
-#define PALETTE_H
+#ifndef OB_PALETTE_H
+#define OB_PALETTE_H
 
 #include "raylib.h"
 
-// 256-color palette loaded from the DOS game's MCGA.DRV at startup
-// (see tools/extract_vga_palette.py and tools/data/kb_vga.pal).
-// Initialized by palette_init() before any rendering. Index 0..15 are
-// the canonical first-16 entries references through its
-// PAL_* constants below; 16..255 are the remaining VGA colors used
-// by sprites, tiles, and backdrops.
+// 256-color VGA palette loaded from the asset pack at startup. Initialized
+// by palette_init() before any rendering. Index 0..15 are the canonical
+// first-16 entries used by chrome/text rendering through the PAL_*
+// constants below; 16..255 are the remaining VGA colors used by sprites,
+// tiles, and backdrops.
 
 #define PAL_SIZE 256
 
@@ -37,9 +36,9 @@ typedef enum {
 extern Color PAL[PAL_SIZE];
 
 // Load the 256-color palette from the given path (768 raw bytes, 8-bit
-// RGB triples produced by tools/extract_vga_palette.py). Returns true
-// on success; on failure the canonical first-16 fallback is installed
-// and rendering still works with the chrome-only color set.
+// RGB triples). Returns true on success; on failure the canonical
+// first-16 fallback is installed and rendering still works with the
+// chrome-only color set.
 bool palette_init(const char *path);
 
 // Named accessors for render code. PAL_CLR(YELLOW), PAL_CLR(DRED), etc.

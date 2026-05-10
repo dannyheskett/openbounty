@@ -14,8 +14,8 @@
 // pipeline. The screen just owns the backdrop and the static info
 // panel; the prompt overlays both.
 
-#ifndef SCREENS_DWELLING_H
-#define SCREENS_DWELLING_H
+#ifndef OB_SCREENS_DWELLING_H
+#define OB_SCREENS_DWELLING_H
 
 #include "../game.h"
 #include "../sprites.h"

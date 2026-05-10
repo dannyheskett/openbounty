@@ -10,8 +10,8 @@
 //     - "There are no open slots\nor any of this army type!" (rc==1
 //       from GameGarrisonTroop / GameUngarrisonTroop — no fitting slot)
 
-#ifndef SCREENS_OWN_CASTLE_H
-#define SCREENS_OWN_CASTLE_H
+#ifndef OB_SCREENS_OWN_CASTLE_H
+#define OB_SCREENS_OWN_CASTLE_H
 
 #include "../game.h"
 #include "../sprites.h"

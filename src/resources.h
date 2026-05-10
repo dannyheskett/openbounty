@@ -1,5 +1,5 @@
-#ifndef RESOURCES_H
-#define RESOURCES_H
+#ifndef OB_RESOURCES_H
+#define OB_RESOURCES_H
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -140,7 +140,7 @@ typedef struct {
                                   // Empty = no pin (any town may pin in mods).
 } ResTown;
 
-// Special-castle behavior (King Maximus + future quest castles).
+// Special-castle behavior (King Maximus and other quest castles).
 // Empty flow ("") means a normal castle (siege/audience by owner_kind).
 typedef struct {
     char flow[RES_ID_LEN];           // "" / "audience" / ...
@@ -198,9 +198,9 @@ typedef struct {
 } ResZoneTown;
 
 // One decorative tile relative to a castle's gate position. Painted by
-// stamp_objects after the standard 3×2 castle footprint; lets a castle
+// stamp_objects after the standard 3x2 castle footprint; lets a castle
 // declare extra wall pieces (e.g. the home castle's surrounding mini-
-// towers in the original DOS layout). Not interactive; blocks_foot.
+// tower complex). Not interactive; blocks_foot.
 typedef struct {
     int  dx, dy;
     char art[RES_ID_LEN];
@@ -364,7 +364,7 @@ typedef struct {
     char astrology_body[RES_BANNER_LEN];
     char temp_death[RES_BANNER_LEN];
 
-    // Pre-combat scout report (combat.c stub). Substitutions: %COUNT% %TROOP%.
+    // Pre-combat scout report. Substitutions: %COUNT% %TROOP%.
     char combat_scouts_header[RES_BANNER_LEN];
     char combat_scouts_count[RES_BANNER_LEN];
     char combat_scouts_small_band[RES_BANNER_LEN];
@@ -804,11 +804,10 @@ typedef struct {
     // COMBAT-PLAN.md  for the canonical key set and provenance.
     ResCombatLog combat_log;
 
-    // Credits screen . Shown once
-    // between the title splash and the class picker. Reproduces the
-    // original DOS title-page layout: a series of "Label / names…"
-    // groups, then a centered copyright block, with an inset image
-    // on the right. Modpacks override per game pack.
+    // Credits screen. Shown once between the title splash and the class
+    // picker. Layout: a series of "Label / names..." groups, then a
+    // centered copyright block, with an inset image on the right.
+    // Modpacks override per game pack.
     struct {
         char image[RES_PATH_LEN];     // path to the inset sprite, or ""
         struct {
@@ -906,8 +905,8 @@ void resources_resolve_path(const Resources *res, const char *rel,
 // failure and leaves `*res` in an indeterminate state.
 bool resources_load(Resources *res, const char *manifest_path);
 
-// Currently a no-op (all storage is inline), but kept as a proper teardown
-// point so future tables holding heap strings can free here.
+// Currently a no-op (all storage is inline). Kept as the proper teardown
+// hook in case any catalog-table allocation grows beyond inline storage.
 void resources_free(Resources *res);
 
 // Return the most-recently loaded Resources pointer (set by resources_load)

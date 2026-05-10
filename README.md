@@ -55,53 +55,85 @@ maintainer's release procedure.
 
 ```
 .
-├── Makefile                  # Linux + Windows cross-compile targets
+├── Makefile                  # Linux + Windows + macOS cross-compile targets
 ├── run.sh                    # `make && ./build/openbounty`
-├── src/                      # All C source
-│   ├── main.c                # Bootstrap, main game loop
+├── src/                      # All C source (single flat tree, no subdirs
+│                             #   except src/screens/)
+│   ├── main.c                # Bootstrap, main game loop, --extract path
 │   ├── game.{c,h}            # Game state, init, salting, mechanics
 │   ├── map.{c,h}             # Tile grid, .dat parsing, placement stamping
-│   ├── fog.{c,h}             # Per-tile visibility
+│   ├── fog.{c,h}             # Per-tile visibility (per continent)
 │   ├── adventure.{c,h}       # Walkability + tile-step interact dispatch
+│   ├── step.{c,h}            # `step_try` -- one-tile movement + bookkeeping
+│   ├── flows.{c,h}           # Encounter / week-end / endgame entry points
 │   ├── savegame.{c,h}        # JSON save (read/write)
 │   ├── savepath.{c,h}        # OS-aware save dir resolution
+│   ├── state_serialize.{c,h} # Full-state JSON snapshot (recorder + tests)
 │   ├── tables.{c,h}          # Lookup helpers (troops/spells/artifacts/etc.)
 │   ├── resources.{c,h}       # game.json parser + ResZone/ResTown/etc.
 │   ├── tile.{c,h}            # Terrain + interactive enums
-│   ├── sprites.{c,h}         # Sprite sheet loading
 │   ├── tile_cache.{c,h}      # Texture cache for map tiles
-│   ├── views.{c,h}           # Town / overlay views
+│   ├── sprites.{c,h}         # Sprite sheet loading
+│   ├── views.{c,h}           # Town / overlay view-stack manager
+│   ├── views_render.{c,h}    # Per-view rendering
+│   ├── overlay.{c,h}         # Options / controls / character overlays
+│   ├── hud.{c,h}             # Sidebar HUD (gold, contract, magic icons)
+│   ├── chrome.{c,h}          # Outerworld frame + status bar
+│   ├── map_render.{c,h}      # 5x5 tile viewport with hero centered
+│   ├── layout.h              # Pixel constants (320x200 design space)
+│   ├── palette.{c,h}         # 256-color VGA palette
+│   ├── bfont.{c,h}           # 8x8 bitmap font
 │   ├── ui.{c,h}              # Bottom-frame dialog primitives
-│   ├── bfont.{c,h}           # Bitmap font (KB-style 8×8)
+│   ├── prompt.{c,h}          # Bottom-frame yes-no / numeric / text input
+│   ├── input.{c,h}           # Overworld keybindings + gamepad mapping
+│   ├── startup.{c,h}         # Splash -> title -> credits -> class -> name
+│   ├── end_cartoon.{c,h}     # Victory cartoon
+│   ├── pending.{c,h}         # Queued banner / one-shot dialog state
+│   ├── spells_adventure.{c,h}# Out-of-combat spell effects
+│   ├── combat.{c,h}          # Combat module (turn loop, AI, spells, RNG)
+│   ├── combat_render.{c,h}   # Combat field renderer
+│   ├── pack.{c,h}            # Asset-pack open / read (zip + loose tree)
+│   ├── pack_select.{c,h}     # Pack picker UI
 │   ├── assets.{c,h}          # File-or-embedded asset loader
+│   ├── audio.{c,h}           # Music + sfx mixer
 │   ├── screenshot.{c,h}      # Backtick screenshot helper
-│   ├── combat.{c,h}          # Combat module STUB (auto-win)
-│   └── classic/              # Classic mode (320×200) renderer + input
-│       ├── layout.h          # Pixel constants
-│       ├── palette.{c,h}     # 256-color VGA palette (MCGA.DRV)
-│       ├── chrome.{c,h}      # Top status bar + side frame
-│       ├── hud.{c,h}         # Sidebar HUD
-│       ├── map_render.{c,h}  # 5×5 tile viewport with hero centered
-│       ├── overlay.{c,h}     # Per-view screen overlays
-│       ├── views.{c,h}       # Character / Army / Contract / etc.
-│       ├── input.{c,h}       # Adventure-mode keybindings
-│       ├── prompt.{c,h}      # Bottom-frame yes-no / numeric / text input
-│       ├── startup.{c,h}     # Splash → title → credits → class → name
-│       └── end_cartoon.{c,h} # Victory cartoon
+│   ├── recorder.{c,h}        # State+frame ring for tests / replay
+│   ├── harness.{c,h}         # Headless test harness (Unix socket protocol)
+│   ├── harness_input.{c,h}   # Input shim that swaps raylib for harness
+│   ├── encode_dialog.{c,h}   # MP4 record dialog
+│   ├── encode_mp4*.c         # H.264 encoder + MP4 muxer
+│   ├── fatal.{c,h}           # User-friendly fatal-error dialog
+│   └── screens/              # Screen-flow modules (one per location/dialog)
+│       ├── home_castle.{c,h}
+│       ├── own_castle.{c,h}
+│       ├── recruit_soldiers.{c,h}
+│       ├── dwelling.{c,h}
+│       ├── alcove.{c,h}
+│       └── end_game.{c,h}
 ├── assets/kings-bounty/
 │   ├── game.json             # All gameplay data (see §3)
 │   ├── data/palette.bin      # 768-byte VGA palette
+│   ├── audio/                # OGG music + WAV sfx
 │   ├── art/                  # Sprites, tiles, fonts, UI chrome
 │   └── maps/*.dat            # ASCII tile-code map files
 ├── third_party/
 │   ├── cjson/                # cJSON library (vendored)
+│   ├── miniz/                # ZIP read/write (for .openbounty packs)
+│   ├── greatest/             # Single-header test framework
+│   ├── minih264 / minimp4/   # MP4 record encoder
 │   ├── raylib/               # raylib source (for reference)
-│   └── raylib-install*/      # Prebuilt raylib for linux + win64 + win32
-├── tools/                    # Python asset extraction / conversion utilities
-├── scripts/embed_assets.sh   # Generates build/embedded.{c,h} for release builds
-├── legacy/                   # Asset extraction artifacts (DOS originals)
+│   └── raylib-install*/      # Prebuilt raylib for linux + win64 + win32 + mac
+├── tools/                    # C-only asset extraction + test tooling
+│   ├── extract*.c            # Pack extractor (KB.EXE -> .openbounty)
+│   ├── mkpack.c              # Loose tree -> .openbounty zip
+│   ├── playtest.c            # Scenario runner against the harness
+│   └── scenarios/*.json      # Scripted test scenarios
+├── tests/unit/               # Unit tests (greatest framework)
+├── scripts/                  # raylib build scripts + combat regression runner
+├── dist/                     # Release-staging templates
+├── legacy/bin/               # Default extractor input dir (DOS distribution)
 ├── screenshots/              # Manual backtick captures
-└── docs/                     # Internal development notes
+└── docs/                     # Internal development notes (specs, plans)
 ```
 
 ---
@@ -374,7 +406,7 @@ On each step:
 | Turn Undead (2000) | Raise Control (500) |
 
 Cast via `U` on the overworld (adventure spells only). Combat spells
-fire from the (currently stubbed) combat module.
+fire from the in-combat spells menu.
 
 Adventure spells implemented:
 
@@ -420,8 +452,8 @@ Powers are applied on pickup in `GameClaimArtifact`. Querying with
   leadership / gold checks.
 - **Garrison castle** (own non-home castle): swap troops between army
   and garrison.
-- **Siege castle** (enemy): "Lay siege (y/n)?" → combat (currently
-  always wins via `RunCombatStub`).
+- **Siege castle** (enemy): "Lay siege (y/n)?" -> dispatches to the
+  combat module (`src/combat.c`).
 - **Visit town**: A) New contract / B) Rent boat (500 / 1 week) /
   C) Gather information / D) Buy spell / E) Buy siege weapons (3000).
 - **Visit dwelling**: numeric prompt for troop count, capped by
@@ -527,7 +559,7 @@ Two flavors:
   optional header line + multi-line body. Dismissed by any key.
   Supports paginated body (split on form-feed `\f`).
 - **`prompt_yes_no_open` / `prompt_numeric_open` / `prompt_text_input_open`**
-  (`src/classic/prompt.c`): block input until the prompt resolves;
+  (`src/prompt.c`): block input until the prompt resolves;
   result dispatched via `pending_flow` state machine in `main.c`.
 
 ### View screens
@@ -576,33 +608,35 @@ zone's JSON arrays + the salt-time placements at zone load.
 
 ## 12. Tools (`tools/`)
 
-Python utilities, mostly one-shot asset extraction:
+C-only utilities. Build with `make tools` (or implicitly via `make
+extract`).
 
-| Script | Purpose |
+| Binary           | Purpose |
 |---|---|
-| `assemble_game_json.py` | Builds `game.json` from extracted catalogs |
-| `add_sprites_section.py` | Appends sprite metadata into `game.json` |
-| `add_strings_section.py` | Appends localized strings |
-| `convert_map.py` | Converts DOS `.land` binary maps to openbounty `.dat` ASCII |
-| `extract_chrome.py` | Extracts UI chrome from DOS resources |
-| `extract_kb_font.py` | Extracts the 8×8 KB font |
-| `extract_vga_palette.py` | Extracts the 256-color palette from MCGA.DRV |
-| `export_catalogs.py` | Dumps troops/spells/artifacts catalogs |
-| `generate_stub_zones.py` | Creates skeleton zone JSON for new continents |
-| `compare_pixels.py` | Pixel diff helper for screenshot comparison |
+| `extract`        | Reads a KB.EXE distribution and writes a complete `.openbounty` pack (palette, font, sprites, tiles, chrome, audio metadata, game.json). Invoked from the engine via `--extract`. |
+| `mkpack`         | Packs a loose asset tree into a `.openbounty` zip. |
+| `playtest`       | Drives the engine through the harness socket using JSON scenarios under `tools/scenarios/`. |
 
-These are not part of the build — they're run manually when
-regenerating data from DOS sources.
+The extractor is broken into one TU per pipeline stage
+(`extract_unpack.c`, `extract_lzw.c`, `extract_vga.c`, `extract_png.c`,
+`extract_chrome.c`, `extract_gamejson.c`) plus the dispatcher
+(`extract.c`).
+
+There is no Python in this project; the legacy Python scripts have all
+been ported to C and folded into `extract`.
 
 ---
 
 ## 13. Where to look first
 
 - **Adding a feature**: start in `src/game.c` for state changes,
-  `src/main.c` for input/flow, `src/classic/views.c` for screens.
+  `src/main.c` for input/flow, `src/views.c` and `src/screens/` for
+  screens.
 - **Fixing a dialog text bug**: find the literal in `src/main.c` or
-  `src/views.c` (or `assets/kings-bounty/game.json` `strings` section).
-- **Debugging movement**: `src/main.c try_step` is the entry point;
+  `src/views.c`, or in `assets/kings-bounty/game.json` (`strings`
+  section). User-facing text is loaded through `src/resources.c`, so
+  most strings are pack-overridable.
+- **Debugging movement**: `src/step.c step_try` is the entry point;
   `src/adventure.c adventure_walkable_*` controls what's passable.
 - **Debugging an interact**: `src/adventure.c adventure_handle_interact`
   classifies the tile; `src/main.c` reads the result and dispatches.

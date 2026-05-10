@@ -13,8 +13,8 @@
 // The pre-screen cartoon is owned by run_end_cartoon() in
 // end_cartoon.c and runs to completion before the screen is pushed.
 
-#ifndef SCREENS_END_GAME_H
-#define SCREENS_END_GAME_H
+#ifndef OB_SCREENS_END_GAME_H
+#define OB_SCREENS_END_GAME_H
 
 #include "../game.h"
 #include "../sprites.h"

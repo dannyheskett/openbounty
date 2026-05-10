@@ -1,5 +1,5 @@
-#ifndef ASSETS_H
-#define ASSETS_H
+#ifndef OB_ASSETS_H
+#define OB_ASSETS_H
 
 #include <stddef.h>
 #include "raylib.h"

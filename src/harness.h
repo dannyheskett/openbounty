@@ -1,5 +1,5 @@
-#ifndef BNT_HARNESS_H
-#define BNT_HARNESS_H
+#ifndef OB_HARNESS_H
+#define OB_HARNESS_H
 
 #include <stdbool.h>
 

@@ -1,5 +1,5 @@
-#ifndef BNT_ENCODE_MP4_H
-#define BNT_ENCODE_MP4_H
+#ifndef OB_ENCODE_MP4_H
+#define OB_ENCODE_MP4_H
 
 #include <stdbool.h>
 #include <stddef.h>

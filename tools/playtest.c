@@ -1,10 +1,10 @@
 // playtest: scenario runner for the openbounty harness.
 //
-// Phase 0 of the testing refactor: the original hardcoded scenario
-// (drive title → BFS to a villain castle → siege → assert) lives here
-// inline and uses the primitives from playshow_lib. Subsequent phases
-// move this scenario into a JSON file under tools/scenarios/ and add a
-// scenario interpreter; this file shrinks to a thin runner.
+// Drives the harness to play through a scenario (title -> BFS to a
+// villain castle -> siege -> assert) using the primitives in
+// playshow_lib. Scenarios are authored as JSON under tools/scenarios/
+// and dispatched through the scenario interpreter. The legacy hardcoded
+// scenario remains available as a default invocation.
 
 #define _POSIX_C_SOURCE 200809L
 #include <stdbool.h>
@@ -30,9 +30,9 @@ static void cleanup(int sig) {
     _exit(1);
 }
 
-// Phase-0 hardcoded scenario: same flow as the original playtest. Phase 1
-// moves this into tools/scenarios/win_one_castle.json and replaces the
-// body with a scenario_run() call.
+// Hardcoded legacy scenario, kept as the default when no JSON scenario
+// is named on the command line. Equivalent to running
+// tools/scenarios/win_one_castle.json through scenario_run().
 static int run_legacy_scenario(int fd) {
     RunStats rs = { 0 };
 
@@ -302,7 +302,7 @@ int main(int argc, char **argv) {
         return run_suite(suite_dir, filter, seed_arg, keep_going);
     }
 
-    // Legacy default: run the hardcoded Phase-0 scenario.
+    // Legacy default: run the hardcoded scenario.
     if (pt_spawn_game(seed_arg, NULL, SOCK_PATH, &g_gp) != 0) {
         pt_say("FATAL: could not spawn game");
         return 2;

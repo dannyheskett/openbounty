@@ -1,5 +1,5 @@
-#ifndef HUD_H
-#define HUD_H
+#ifndef OB_HUD_H
+#define OB_HUD_H
 
 #include "game.h"
 #include "sprites.h"

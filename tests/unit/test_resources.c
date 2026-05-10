@@ -12,7 +12,7 @@ TEST troops_catalog_nonempty(void) {
     ASSERT(r);
     int n = troops_count();
     ASSERT(n > 0);
-    ASSERT(n >= 20);  // OpenKB ships ~25 troops
+    ASSERT(n >= 20);  // The catalog ships ~25 troops
     resources_free(r); free(r);
     PASS();
 }
@@ -20,7 +20,7 @@ TEST troops_catalog_nonempty(void) {
 TEST spells_catalog_complete(void) {
     Resources *r = fx_load_resources();
     ASSERT(r);
-    // OpenKB has 14 spells (7 combat + 7 adventure).
+    // 14 spells: 7 combat + 7 adventure.
     ASSERT_EQ(14, spells_count());
     resources_free(r); free(r);
     PASS();
@@ -42,7 +42,7 @@ TEST classes_catalog_four(void) {
 TEST villains_count_seventeen(void) {
     Resources *r = fx_load_resources();
     ASSERT(r);
-    // OpenKB has 17 villains.
+    // 17 villains.
     ASSERT_EQ(17, villains_count());
     resources_free(r); free(r);
     PASS();

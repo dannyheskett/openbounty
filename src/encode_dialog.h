@@ -1,5 +1,5 @@
-#ifndef BNT_ENCODE_DIALOG_H
-#define BNT_ENCODE_DIALOG_H
+#ifndef OB_ENCODE_DIALOG_H
+#define OB_ENCODE_DIALOG_H
 
 #include "raylib.h"
 

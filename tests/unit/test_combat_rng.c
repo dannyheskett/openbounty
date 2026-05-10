@@ -1,4 +1,4 @@
-// Tests for the combat RNG (kb_rand) and combat seeding.
+// Tests for the combat RNG (combat_rand) and combat seeding.
 
 #include "greatest.h"
 #include "combat_internal.h"
@@ -13,7 +13,7 @@ TEST kb_rand_deterministic_for_same_seed(void) {
     a.rng_state = 12345ULL;
     b.rng_state = 12345ULL;
     for (int i = 0; i < 20; i++) {
-        ASSERT_EQ(kb_rand(&a, 0, 100), kb_rand(&b, 0, 100));
+        ASSERT_EQ(combat_rand(&a, 0, 100), combat_rand(&b, 0, 100));
     }
     PASS();
 }
@@ -22,7 +22,7 @@ TEST kb_rand_respects_range(void) {
     Combat c = { 0 };
     c.rng_state = 7ULL;
     for (int i = 0; i < 200; i++) {
-        int v = kb_rand(&c, 5, 10);
+        int v = combat_rand(&c, 5, 10);
         ASSERT(v >= 5);
         ASSERT(v <= 10);
     }
@@ -30,7 +30,7 @@ TEST kb_rand_respects_range(void) {
 }
 
 TEST kb_rand_actually_varies(void) {
-    // A broken kb_rand stuck at min would still satisfy the
+    // A broken combat_rand stuck at min would still satisfy the
     // determinism + range tests above. Assert we see ≥3 distinct
     // values across 50 calls in a 1..10 range.
     Combat c = { 0 };
@@ -38,7 +38,7 @@ TEST kb_rand_actually_varies(void) {
     int seen[11] = { 0 };
     int distinct = 0;
     for (int i = 0; i < 50; i++) {
-        int v = kb_rand(&c, 1, 10);
+        int v = combat_rand(&c, 1, 10);
         if (!seen[v]) { seen[v] = 1; distinct++; }
     }
     ASSERT(distinct >= 3);
@@ -48,8 +48,8 @@ TEST kb_rand_actually_varies(void) {
 TEST kb_rand_min_equals_max_returns_min(void) {
     Combat c = { 0 };
     c.rng_state = 1ULL;
-    ASSERT_EQ(7, kb_rand(&c, 7, 7));
-    ASSERT_EQ(0, kb_rand(&c, 0, 0));
+    ASSERT_EQ(7, combat_rand(&c, 7, 7));
+    ASSERT_EQ(0, combat_rand(&c, 0, 0));
     PASS();
 }
 

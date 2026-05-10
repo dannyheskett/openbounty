@@ -1,5 +1,5 @@
-#ifndef BNT_HARNESS_INPUT_H
-#define BNT_HARNESS_INPUT_H
+#ifndef OB_HARNESS_INPUT_H
+#define OB_HARNESS_INPUT_H
 
 #include <stdbool.h>
 
@@ -32,9 +32,9 @@ void harness_frame_end(void);              // clear one-shot queues
 // IsKeyPressed/IsKeyDown/GetKeyPressed/GetCharPressed directly. Defining
 // these as undefined references catches any miss at link time, since
 // gcc lacks a portable "function call forbidden" attribute. The shim
-// itself defines BNT_HARNESS_INPUT_INTERNAL before including raylib so
+// itself defines OB_HARNESS_INPUT_INTERNAL_H before including raylib so
 // it can call the real functions.
-#ifndef BNT_HARNESS_INPUT_INTERNAL
+#ifndef OB_HARNESS_INPUT_INTERNAL_H
 #define IsKeyPressed(k)   _openbounty_use_harness_key_pressed_instead
 #define IsKeyDown(k)      _openbounty_use_harness_key_down_instead
 #define GetKeyPressed()   _openbounty_use_harness_get_key_pressed_instead

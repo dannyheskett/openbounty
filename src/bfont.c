@@ -12,10 +12,10 @@ static bool      g_ready = false;
 //   \x1F dash (twirl -)
 //   \x1C backslash (twirl \)
 //
-// The DOS font has those slots populated; openbounty' font PNG leaves
-// them blank. Patch the texture in-place by copying the printable
+// The source font's glyphs at those slots are not exported by the
+// pack's font PNG. Patch the texture in-place by copying the printable
 // '|', '/', '-', '\\' glyphs into the control-char slots so any string
-// that contains  codepoints renders the right shape.
+// that uses those codepoints renders the right shape.
 static void bfont_patch_twirl_glyphs(Image *img) {
     struct { int dst_code; int src_code; } pairs[] = {
         { 0x1D, '|' },   // pipe

@@ -11,8 +11,8 @@
 // The function returns; it is the caller's job to exit. This way the
 // caller controls the exit code and any cleanup.
 
-#ifndef OPENBOUNTY_FATAL_H
-#define OPENBOUNTY_FATAL_H
+#ifndef OB_FATAL_H
+#define OB_FATAL_H
 
 void fatal_user_error(const char *title, const char *body);
 

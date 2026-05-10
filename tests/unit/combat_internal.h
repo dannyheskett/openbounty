@@ -3,14 +3,14 @@
 // in combat.c instead of `static`. Production code does not depend
 // on this header.
 
-#ifndef BNT_TEST_COMBAT_INTERNAL_H
-#define BNT_TEST_COMBAT_INTERNAL_H
+#ifndef OB_TEST_COMBAT_INTERNAL_H
+#define OB_TEST_COMBAT_INTERNAL_H
 
 #include "combat.h"
 #include "game.h"
 
 // RNG helpers
-int  kb_rand(Combat *c, int min, int max);
+int  combat_rand(Combat *c, int min, int max);
 void combat_seed_rng(Combat *c, const Game *g, CombatMode mode,
                      const CombatTarget *target);
 

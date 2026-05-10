@@ -737,7 +737,7 @@ bool views_town_update(Game *g) {
 }
 
 // ===========================================================================
-//  Classic-mode accessors (read-only views of menu / town internal state)
+//  View-state accessors (read-only views of menu / town internal state)
 // ===========================================================================
 
 const char *views_menu_title(void) {

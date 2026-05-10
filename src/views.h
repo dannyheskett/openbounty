@@ -1,5 +1,5 @@
-#ifndef VIEWS_H
-#define VIEWS_H
+#ifndef OB_VIEWS_H
+#define OB_VIEWS_H
 
 #include "game.h"
 #include "map.h"
@@ -84,7 +84,7 @@ void     views_open_town(const char *display_name, const char *record_key,
 // Town input: cursor movement and A-E action keys. Mutates `g` directly.
 bool     views_town_update(Game *g);
 
-// --- Classic-mode accessors -------------------------------------------------
+// --- View-state accessors -------------------------------------------------
 // Read-only access to menu/town internal state for -style
 // renderer in src/.
 

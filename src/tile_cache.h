@@ -1,5 +1,5 @@
-#ifndef TILE_CACHE_H
-#define TILE_CACHE_H
+#ifndef OB_TILE_CACHE_H
+#define OB_TILE_CACHE_H
 
 #include "raylib.h"
 

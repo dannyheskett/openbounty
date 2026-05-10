@@ -1,5 +1,5 @@
-#ifndef VIEWS_RENDER_H
-#define VIEWS_RENDER_H
+#ifndef OB_VIEWS_RENDER_H
+#define OB_VIEWS_RENDER_H
 
 #include "game.h"
 #include "map.h"

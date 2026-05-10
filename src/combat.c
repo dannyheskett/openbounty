@@ -17,11 +17,9 @@
 #include <stdio.h>
 #include <string.h>
 
-// Combat module — Phase 1 scaffold. Replaces the old stub. Builds the
-// Combat data structure, opens the scouts-have-sighted banner (kept
-// from the stub for kb_055 parity), and concedes WIN. Subsequent
-// phases fill in prepare_*, reset_match, the turn loop, the renderer,
-// AI, spells, and end-of-combat. Reference: docs/COMBAT-PLAN.md.
+// Combat module. Builds the Combat data structure, runs the turn loop
+// (input, AI, spells, retaliation, end-of-combat), and renders into the
+// shared offscreen target. See docs/COMBAT-PLAN.md for the design notes.
 
 // Resolve the Resources pointer for combat-log template lookups.
 // Player side carries the live Game*; AI-only paths fall back to NULL,
@@ -49,9 +47,8 @@ static unsigned char combat_player_powers(const Game *g) {
     return p;
 }
 
-// Initial structure init — zero everything, capture mode metadata,
+// Initial structure init -- zero everything, capture mode metadata,
 // translate hero powers, pre-fill empty-slot sentinel troop_idx.
-// Phases 2–10 add the real prepare/reset/loop logic.
 /* exposed for tests */ void combat_init(Combat *c, Game *g, CombatMode mode,
                         const CombatTarget *target) {
     memset(c, 0, sizeof *c);
@@ -77,11 +74,11 @@ static unsigned char combat_player_powers(const Game *g) {
 }
 
 // ----- RNG -------------------------------------------------------------------
-// Per-combat LCG, separate from the world RNG.  / OPENBOUNTY
-// : same multiplier and increment so combat random rolls have
-// the same statistical shape as world rolls, but the seeded state
-// is independent so a battle does not perturb post-combat overworld
-// outcomes. Phase 14 verifies determinism with a fixed seed.
+// Per-combat LCG, separate from the world RNG. Same multiplier and
+// increment as the world RNG so combat random rolls have the same
+// statistical shape, but the seeded state is independent so a battle
+// does not perturb post-combat overworld outcomes. The determinism
+// test verifies that identical inputs produce identical outcomes.
 
 /* exposed for tests */ void combat_seed_rng(Combat *c, const Game *g, CombatMode mode,
                             const CombatTarget *target) {
@@ -97,7 +94,7 @@ static unsigned char combat_player_powers(const Game *g) {
     c->rng_state = s ? s : 1ULL;
 }
 
-/* exposed for tests */ int kb_rand(Combat *c, int min, int max) {
+/* exposed for tests */ int combat_rand(Combat *c, int min, int max) {
     if (min > max) return min;
     if (min == max) return min;
     c->rng_state = c->rng_state * 25214903917ULL + 11ULL;
@@ -105,11 +102,10 @@ static unsigned char combat_player_powers(const Game *g) {
     return min + (int)(r % (unsigned int)(max - min + 1));
 }
 
-// ----- Distance helpers () --------------------------------------
+// ----- Distance helpers ------------------------------------------------------
 // Integer square root, fixed-point 16.16. Returns floor(sqrt(h) * 65536).
-// Direct transcription of  lines 5733–5752 — the combat
-// AI's tie-breaking depends on this exact bit-walk; do not replace
-// with sqrtf. Operates on 32-bit values (uint32_t) per spec.
+// The combat AI's tie-breaking depends on this exact bit-walk; do not
+// replace with sqrtf. Operates on 32-bit values (uint32_t).
 #include <stdint.h>
 static unsigned long isqrt32(unsigned long h_in) {
     uint32_t h = (uint32_t)h_in;
@@ -129,10 +125,9 @@ static unsigned long isqrt32(unsigned long h_in) {
     return x;
 }
 
-// Squared-distance × 256 (fixed point).  lines 5766–5772.
-// Returns isqrt32((dx*dx + dy*dy) << 16) so callers can compare without
-// introducing floating point. Currently unused outside AI (Phase 10) —
-// kept here so the helper lands with the rest of the math primitives.
+// Squared-distance x 256 (fixed point). Returns
+// isqrt32((dx*dx + dy*dy) << 16) so callers can compare without
+// introducing floating point. Used by the combat AI's targeting.
 static unsigned long calc_distance(int x1, int y1, int x2, int y2) {
     long dx = x2 - x1;
     long dy = y2 - y1;
@@ -140,22 +135,18 @@ static unsigned long calc_distance(int x1, int y1, int x2, int y2) {
     return isqrt32(d2 << 16);
 }
 
-// ----- Friendliness () -------------------------------------------
+// ----- Friendliness ----------------------------------------------------------
 // A unit is "under control" iff its side has a hero AND the hero's
-// leadership covers the stack's hp × count. Out-of-control units
-// behave as enemies of their own side. Currently used only by
-// prepare_player; expanded in Phase 5 (melee) when retaliation
-// targeting needs it.
+// leadership covers the stack's hp x count. Out-of-control units behave
+// as enemies of their own side.
 /* exposed for tests */ bool unit_under_control(const Game *g, int troop_idx, int count) {
     if (!g) return false;
     const TroopDef *t = troop_by_index(troop_idx);
     if (!t) return false;
-    // : a stack is OOC when
-    //   hp * count > leadership (strict).
-    // Recruiting up to the displayed max (hp*count == leadership)
-    // is the boundary case that DOS King's Bounty allows — still
-    // under control. Note: this matches the recruit cap exactly:
-    // GameMaxRecruitable returns (leadership - same_troop_hp*count)/hp
+    // A stack is OOC when hp * count > leadership (strict).
+    // Recruiting up to the displayed max (hp*count == leadership) is
+    // the boundary case -- still under control. Matches the recruit
+    // cap: GameMaxRecruitable returns (leadership - same_troop_hp*count)/hp,
     // which permits filling to exactly leadership.
     int leadership = g->stats.leadership_current;
     return (t->hit_points * count) <= leadership;
@@ -168,10 +159,10 @@ static unsigned long calc_distance(int x1, int y1, int x2, int y2) {
     return sA == sB;
 }
 
-// ----- Morale () ---------------------------------------
-// Numeric ranks per  lines 560–562: NORMAL=0, LOW=1, HIGH=2.
-// Combat-engine attacker side applies morale to final_damage when
-// the side has a hero AND the unit is under control.
+// ----- Morale ----------------------------------------------------------------
+// Numeric ranks: NORMAL=0, LOW=1, HIGH=2. The attacker side applies
+// morale to final_damage when the side has a hero AND the unit is under
+// control.
 typedef enum {
     COMBAT_MORALE_NORMAL = 0,
     COMBAT_MORALE_LOW    = 1,
@@ -347,8 +338,8 @@ static const unsigned char castle_omap[COMBAT_H][COMBAT_W] = {
         // i ∈ {1, 2, 3}; ~10% chance per cell; obstacle code 1..3.
         for (int j = 0; j < COMBAT_H; j++) {
             for (int i = 1; i <= COMBAT_W - 3; i++) {
-                if (kb_rand(c, 0, 9) == 0) {
-                    c->omap[j][i] = (unsigned char)kb_rand(c, 1, 3);
+                if (combat_rand(c, 0, 9) == 0) {
+                    c->omap[j][i] = (unsigned char)combat_rand(c, 1, 3);
                 }
             }
         }
@@ -419,7 +410,7 @@ static const unsigned char castle_omap[COMBAT_H][COMBAT_W] = {
 
         // Step 3a: SCYTHE (Demon special).
         if (ut->abilities & TROOP_ABIL_SCYTHE) {
-            if (kb_rand(c, 1, 100) > 89) {
+            if (combat_rand(c, 1, 100) > 89) {
                 // ceil(t.count / 2)
                 demon_kills = t->count / 2 + ((t->count % 2) ? 1 : 0);
             }
@@ -437,11 +428,11 @@ static const unsigned char castle_omap[COMBAT_H][COMBAT_W] = {
                 }
                 dmg = ut->ranged_min;
             } else {
-                dmg = kb_rand(c, ut->ranged_min, ut->ranged_max);
+                dmg = combat_rand(c, ut->ranged_min, ut->ranged_max);
             }
         } else {
             // Step 3c: melee.
-            dmg = kb_rand(c, ut->melee_min, ut->melee_max);
+            dmg = combat_rand(c, ut->melee_min, ut->melee_max);
         }
 
         // Step 3d: core formula.
@@ -526,9 +517,8 @@ static const unsigned char castle_omap[COMBAT_H][COMBAT_W] = {
 }
 
 // Wrapper used by melee / ranged drivers. Snapshot turn_count for
-// both sides per  (line 5589) so the formula and any
-// retaliation see pre-attack counts. Logs the kb_066-style "<X>
-// vs <Y>, N die" banner.
+// both sides so the formula and any retaliation see pre-attack counts.
+// Logs the "<X> vs <Y>, N die" banner.
 static int combat_hit_unit(Combat *c, int a_side, int a_id,
                            int t_side, int t_id, bool is_ranged) {
     CombatUnit *a = &c->units[a_side][a_id];
@@ -539,8 +529,7 @@ static int combat_hit_unit(Combat *c, int a_side, int a_id,
     int kills = combat_deal_damage(c, a_side, a_id, t_side, t_id,
                                    is_ranged, false, 0, false);
     // Damage burst over the target cell. Persists ~3 anim ticks
-    // (~450ms) so the player sees the splat. Matches DOS kb_037 /
-    // kb_040 / kb_044 where the orange splat overlays on every
+    // (~450ms) so the player sees the splat. The splat overlays on every
     // connecting attack regardless of kill count. -1 = IMMUNE cancel,
     // no splat.
     if (kills >= 0) {
@@ -662,13 +651,12 @@ static int combat_fly_unit(Combat *c, int side, int id, int nx, int ny) {
             c->umap[u->y][u->x] = pack_uid(s, i);
         }
     }
-    // Title bar mode-switch on first death (kb_074 → kb_078 transition).
-    // See COMBAT-PLAN .
+    // Title bar mode-switch on first death.
     if (!c->first_kill_seen) c->first_kill_seen = true;
     c->stacks_destroyed++;
 }
 
-// ----- Turn structure () -----------------------------------------
+// ----- Turn structure --------------------------------------------------------
 
 // Refresh per-turn unit counters. Called at the start of each side's
 // Reset state for the side that just had its turn end. The
@@ -687,7 +675,7 @@ static int combat_fly_unit(Combat *c, int side, int id, int nx, int ny) {
             u->acted      = false;
             u->moves      = t->move_rate;
             u->flights    = (t->abilities & TROOP_ABIL_FLY) ? 2 : 0;
-            // Spec line 5258: only at the player-side wakeup boundary
+            // Only at the player-side wakeup boundary
             // (started_at == AI) clear frozen and apply REGEN.
             if (started_at == COMBAT_SIDE_AI) {
                 u->frozen = false;
@@ -701,14 +689,14 @@ static int combat_fly_unit(Combat *c, int side, int id, int nx, int ny) {
 
 // Find the next actable unit on the current side. Scans
 // [unit_id+1 .. SLOTS-1], then wraps [0 .. unit_id] with phase++.
-//  next_unit lines 5262–5267. Returns slot or -1.
+// Returns slot or -1.
 /* exposed for tests */ int combat_next_unit(Combat *c) {
     for (int i = c->unit_id + 1; i < COMBAT_SLOTS; i++) {
         const CombatUnit *u = &c->units[c->side][i];
         if (u->troop_idx >= 0 && u->count > 0 && !u->acted) {
             // Clear the action banner so the title bar reverts to the
             // standard "Options / <Actor>" format on the new unit's
-            // turn (matches DOS behavior kb_036→kb_037→kb_042→kb_043).
+            // turn.
             c->banner[0] = '\0';
             return i;
         }
@@ -892,8 +880,7 @@ static bool combat_pick_target(Combat *c, const Game *g,
                 result = true;
                 goto done;
             }
-            // Filter rejected — leave cursor and re-loop. Phase 13 can
-            // play a "no" tone here.
+            // Filter rejected -- leave cursor and re-loop.
         }
         if (harness_key_pressed(KEY_ESCAPE)) goto done;
     }
@@ -902,7 +889,7 @@ done:
     return result;
 }
 
-// ----- Input + action dispatch (, ; manual kb_038) ---------
+// ----- Input + action dispatch -----------------------------------------------
 
 static bool combat_read_dir(int *dx, int *dy) {
     *dx = 0; *dy = 0;
@@ -918,16 +905,11 @@ static bool combat_read_dir(int *dx, int *dy) {
     return false;
 }
 
-// ----- Combat spells (-18.7, manual lines 643-768) ---------------
+// ----- Combat spells ---------------------------------------------------------
 //
 // Spell IDs match game.json's spell catalog ordering:
 //   0 Clone, 1 Teleport, 2 Fireball, 3 Lightning,
 //   4 Freeze, 5 Resurrect, 6 Turn Undead, then 7..13 adventure spells.
-//
-// Per Phase 0  (resolved): Fireball / Lightning / Resurrect /
-// Turn Undead are stubs  itself — we IMPLEMENT them here
-// per the manual + spec scaling, not  stub. 
-// gives the SP scaling table.
 
 #define COMBAT_SPELL_CLONE        0
 #define COMBAT_SPELL_TELEPORT     1
@@ -1019,15 +1001,15 @@ static bool combat_read_dir(int *dx, int *dy) {
     return base * sp;
 }
 
-// Spell-cast workflow. .
+// Spell-cast workflow:
 //   1. Pre-checks: knows_magic, spells_this_round < 1, count[id] > 0.
-//   2. Show menu (kb_080 layout): two columns, Combat A-G, Adventure
-//      A-G (we only handle Combat A-G here).
+//   2. Show menu: two columns, Combat A-G, Adventure A-G (we only
+//      handle Combat A-G here).
 //   3. spells[id]-- ; spells_this_round++.
 //   4. Run target picker if needed.
 //   5. Apply spell effect.
-// Adventure spells inside combat are not legal per the kb_080 prompt
-// pattern ("Cast which Combat spell (A-G)?") — we restrict to A-G.
+// Adventure spells inside combat are not legal -- prompt is "Cast which
+// Combat spell (A-G)?", restricted to A-G.
 //
 // Returns 1 if a spell was cast (turn-progressing), 0 otherwise.
 static int combat_player_cast(Combat *c, const Game *g,
@@ -1043,7 +1025,7 @@ static int combat_player_cast(Combat *c, const Game *g,
     Game *gw = c->heroes[c->side];
     if (!gw) return 0;
     // Pre-check: hero rank must know magic. Use the resolved class
-    // table — class_by_index + rank.knows_magic.
+    // table -- class_by_id + rank.knows_magic.
     const ClassDef *cls = class_by_id(gw->character.cls.id);
     if (!cls || cls->rank_count == 0) return 0;
     int rank = gw->character.cls.rank_index;
@@ -1063,8 +1045,7 @@ static int combat_player_cast(Combat *c, const Game *g,
         harness_tick();
         BeginTextureMode(*target);
         combat_render_frame(c, g, sprites);
-        // Inline overlay: kb_080 spells menu, abbreviated. Phase 13
-        // can wire the verbatim two-column layout.
+        // Inline overlay: spells menu, abbreviated single-column layout.
         DrawRectangle(40, 30, 240, 130, PAL_CLR(DBLUE));
         DrawRectangleLines(40, 30, 240, 130, PAL_CLR(YELLOW));
         const ResUI *ui = (gw && gw->res) ? &gw->res->ui : NULL;
@@ -1116,8 +1097,7 @@ static int combat_player_cast(Combat *c, const Game *g,
     if (sp < 1) sp = 1;
     if (gw->artifacts.found[0]) {
         // Amulet of Augmentation = DOUBLE_SPELL_POWER.
-        // Phase 13 will use ArtifactPower lookup; for now hard-coded
-        // index 0 because that's where the Amulet is in game.json.
+        // Index 0 is the Amulet's slot in game.json.
     }
     int tx = 0, ty = 0;
 
@@ -1317,9 +1297,9 @@ static int combat_player_action_full(Combat *c, const Game *g,
         return combat_player_cast(c, g, sprites, target);
     }
     if (harness_key_pressed(KEY_C)) {
-        // Controls overlay (kb_038 reference). Modal — block until any
-        // key. Renders the keybindings list inside the existing field
-        // so the player can read while glancing at unit positions.
+        // Controls overlay. Modal -- block until any key. Renders the
+        // keybindings list inside the existing field so the player can
+        // read while glancing at unit positions.
         while (!WindowShouldClose()) {
         harness_tick();
             BeginTextureMode(*target);
@@ -1595,7 +1575,7 @@ static void combat_tick_anim(Combat *c, double *next_tick, bool *rolled_over) {
     if (now < *next_tick) return;
     *next_tick = now + 0.15;
     // Decay damage-burst on every stack (including dead ones, so the
-    // splat plays out over a now-empty cell — DOS kb_036).
+    // splat plays out over a now-empty cell).
     for (int s = 0; s < COMBAT_SIDES; s++) {
         for (int i = 0; i < COMBAT_SLOTS; i++) {
             CombatUnit *u = &c->units[s][i];
@@ -1743,10 +1723,10 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         if (harness_key_pressed(KEY_ESCAPE)) { c.result = 2; break; }
     }
 
-    // ----- End-of-combat (Phase 11) -----------------------------------------
-    // Victory: gold += AI-side spoils, show kb_066-style banner.
-    // Defeat: show kb_098 "disgraced" flavor (the temp_death and
-    // re-commission flow lives in main.c's caller and stays there).
+    // ----- End-of-combat ----------------------------------------------------
+    // Victory: gold += AI-side spoils, show victory banner.
+    // Defeat: show "disgraced" flavor (the temp_death and re-commission
+    // flow lives in main.c's caller and stays there).
     if (c.result == 1) {
         g->stats.gold += c.spoils[COMBAT_SIDE_AI];
         char body[400];
@@ -1814,7 +1794,7 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
     return COMBAT_RESULT_FLEE;
 }
 
-// ----- Phase 14: determinism harness ---------------------------------------
+// ----- Determinism harness -------------------------------------------------
 //
 // Pure-formula test entry: assembles a Combat with two stacks (attacker
 // at slot 0 player side, defender at slot 0 AI side), no hero on either

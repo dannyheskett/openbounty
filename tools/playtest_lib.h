@@ -5,8 +5,8 @@
 // Threading model: single-threaded. The lib owns a per-call cJSON parse
 // (callers don't need to free).
 
-#ifndef PLAYSHOW_LIB_H
-#define PLAYSHOW_LIB_H
+#ifndef OB_PLAYSHOW_LIB_H
+#define OB_PLAYSHOW_LIB_H
 
 #define _POSIX_C_SOURCE 200809L
 #include <stdbool.h>

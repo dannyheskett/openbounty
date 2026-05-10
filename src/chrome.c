@@ -12,17 +12,15 @@
 // fast-quit prompt in the status bar.
 extern bool main_fast_quit_active(void);
 
-// Outerworld chrome: a pixel-exact 320x200 bitmap extracted from the
-// authoritative DOS reference screenshot. The bitmap carries the outer
-// frame (left/right 16px, top 8px, bottom 8px) with transparent interior.
-// Status bar background, bar strip, and status text are painted
+// Outerworld chrome: a pixel-exact 320x200 bitmap. The bitmap carries
+// the outer frame (left/right 16px, top 8px, bottom 8px) with transparent
+// interior. Status bar background, bar strip, and status text are painted
 // procedurally on top because they're dynamic (difficulty color, text
 // contents, mode).
 
 // Status bar background color, sourced from res->colors.difficulty_*
-// (game.json colors.difficulty_bar). Defaults match EGA RGB
-// values so openbounty renders the original Easy/Normal/Hard/Impossible
-// bars unless a mod overrides.
+// (game.json colors.difficulty_bar). Defaults match the canonical
+// Easy/Normal/Hard/Impossible bar colors unless a mod overrides.
 static Color color_from_packed(unsigned int v) {
     return (Color){
         (unsigned char)((v >> 16) & 0xFF),
@@ -129,19 +127,18 @@ void chrome_draw(const Game *g, const Sprites *s) {
     }
 
     // Status text (white, on top of the fill). Three modes:
-    //   - Fast-quit (Ctrl+Q): "Quit to DOS without saving (y/n)" per
-    //     . Highest priority — it's a modal status-bar
-    //     prompt that overrides everything else until the player
-    //     answers y/n.
-    //   - Special screens (views_wants_exit_hint): centered "Press
-    //     'ESC' to exit" —  KB_TopBox(MSG_CENTERED).
+    //   - Fast-quit (Ctrl+Q): "Quit without saving (y/n)". Highest
+    //     priority -- a modal status-bar prompt that overrides
+    //     everything else until the player answers y/n.
+    //   - Special screens (views_wants_exit_hint): centered
+    //     "Press 'ESC' to exit".
     //   - Adventure mode (default): "Days Left:N" / "Time Stop:N".
     if (g) {
         const ResUI *ui = (g->res) ? &g->res->ui : NULL;
         if (main_fast_quit_active()) {
             const char *txt = (ui && ui->quit_to_dos_prompt[0])
                               ? ui->quit_to_dos_prompt
-                              : " Quit to DOS without saving (y/n) ";
+                              : " Quit without saving (y/n) ";
             bfont_draw_centered(txt,
                                 CL_STATUS_X + CL_STATUS_W / 2,
                                 CL_STATUS_Y + 1,

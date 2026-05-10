@@ -1,5 +1,5 @@
-#ifndef ADVENTURE_H
-#define ADVENTURE_H
+#ifndef OB_ADVENTURE_H
+#define OB_ADVENTURE_H
 
 #include <stdbool.h>
 #include "map.h"   // Tile struct and interact/terrain enums

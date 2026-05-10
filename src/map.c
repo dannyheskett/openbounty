@@ -152,8 +152,8 @@ static void stamp_objects(Map *map, const ResZone *z) {
         //   (x-1, y-1)=tl   (x, y-1)=br_top   (x+1, y-1)=tr
         //   (x-1, y  )=ml   (x, y  )=GATE     (x+1, y  )=mr
         //
-        // (The 'br' suffix is misleading — it sits at the top-middle in
-        // the original DOS art layout. We preserve the asset names.)
+        // (The 'br' suffix is misleading -- it sits at the top-middle in
+        // the source art. We preserve the asset names.)
         // The 5 wall tiles are decorative-only (no interactive flag) and
         // block player movement; the gate carries the interactive flag.
         int cx = z->castles[i].x;
@@ -181,9 +181,9 @@ static void stamp_objects(Map *map, const ResZone *z) {
             }
         }
         // Optional decorations: extra wall pieces declared per-castle in
-        // JSON (used by the home castle to recreate the DOS-original
-        // surrounding mini-tower complex). Same blocks_foot semantics as
-        // the standard walls; never interactive.
+        // JSON (used by the home castle for its surrounding mini-tower
+        // complex). Same blocks_foot semantics as the standard walls;
+        // never interactive.
         for (int p = 0; p < z->castles[i].decor_count; p++) {
             const ResCastleDecor *d = &z->castles[i].decorations[p];
             Tile *t = tile_at(map, cx + d->dx, cy + d->dy);
@@ -204,9 +204,9 @@ static void stamp_objects(Map *map, const ResZone *z) {
         if (!t) continue;
         t->interactive = INTERACT_ARTIFACT;
         copy_string(t->id, sizeof(t->id), z->artifacts[i].id);
-        // Per  both artifact tile bytes (0x92/0x93) display
-        // the same chest-style art; the artifact identity is reveal-on-
-        // pickup, not from the world tile.
+        // Both artifact tile bytes (0x92/0x93) display the same
+        // chest-style art; the artifact identity is reveal-on-pickup,
+        // not from the world tile.
         copy_string(t->art, sizeof(t->art), "artifact_chest");
     }
     for (int i = 0; i < z->dwelling_count; i++) {
@@ -228,23 +228,22 @@ static void stamp_objects(Map *map, const ResZone *z) {
         }
         copy_string(t->id, sizeof(t->id), z->dwellings[i].id);
     }
-    // Archmage Aurange's alcove .
-    // Rendered with the hills-dwelling sprite (matches the original DOS
-    // game, which reuses the hill-cave art for the alcove). Walking
-    // here triggers the spell-teaching flow in step.c. The interactive
-    // flag also lets render code distinguish alcove tiles from regular
-    // hills dwellings if it ever wants to differentiate.
+    // Archmage Aurange's alcove. Rendered with the hills-dwelling sprite
+    // (the alcove reuses the hill-cave art). Walking here triggers the
+    // spell-teaching flow in step.c. The interactive flag also lets
+    // render code distinguish alcove tiles from regular hills dwellings
+    // if it ever wants to differentiate.
     if (z->magic_alcove_x >= 0 && z->magic_alcove_y >= 0) {
         Tile *t = tile_at(map, z->magic_alcove_x, z->magic_alcove_y);
         if (t) {
             t->interactive = INTERACT_ALCOVE;
             copy_string(t->art, sizeof(t->art), "dwelling_hills");
             copy_string(t->id,  sizeof(t->id),  "alcove");
-            // The original DOS map places the alcove on a mountain-edge
-            // tile; force it walkable so the player can step on it (the
-            // sprite implies a passable cave entrance regardless of the
-            // underlying terrain). Mirrors how castle gates override
-            // their decorative wall surroundings.
+            // The alcove sits on a mountain-edge tile; force it walkable
+            // so the player can step on it (the sprite implies a passable
+            // cave entrance regardless of the underlying terrain).
+            // Mirrors how castle gates override their decorative wall
+            // surroundings.
             t->blocks_foot = false;
         }
     }

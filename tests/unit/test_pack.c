@@ -22,8 +22,7 @@ TEST pack_open_dir_reads_known_entry(void) {
     ASSERT(bytes != NULL);
     ASSERT(sz > 100);  // game.json is many KB; sanity check
 
-    // Identity is parsed from game.json. May be empty if pack_id field
-    // hasn't been added yet (Phase 6); accept either way.
+    // Identity is parsed from game.json. May be empty; accept either way.
     ASSERT(pack_id(p) != NULL);
 
     pack_close(p);

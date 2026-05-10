@@ -1,5 +1,5 @@
-#ifndef SAVEPATH_H
-#define SAVEPATH_H
+#ifndef OB_SAVEPATH_H
+#define OB_SAVEPATH_H
 
 #include <stdbool.h>
 #include <stddef.h>

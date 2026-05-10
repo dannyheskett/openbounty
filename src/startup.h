@@ -1,5 +1,5 @@
-#ifndef STARTUP_H
-#define STARTUP_H
+#ifndef OB_STARTUP_H
+#define OB_STARTUP_H
 
 #include <stdbool.h>
 #include "game.h"
