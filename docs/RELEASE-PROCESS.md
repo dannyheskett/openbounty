@@ -23,13 +23,11 @@ semver, no suffixes.
    `VERSION` file, commits the bump back to `main` with a `[skip ci]`
    marker, builds the binaries, and publishes the GitHub Release.
 
-3. Watch the workflow run at
-   `https://github.com/dannyheskett/openbounty/actions`. Total time
-   is about 3 minutes.
+3. Watch the workflow run on the repo's GitHub Actions page. Total
+   time is about 3 minutes.
 
-4. The release lands at
-   `https://github.com/dannyheskett/openbounty/releases/tag/v3`
-   with four artifacts attached:
+4. The release lands on the repo's GitHub Releases page under the new
+   tag, with four artifacts attached:
 
    - `openbounty-build-3-linux-x86_64.tar.gz`
    - `openbounty-build-3-windows-x86_64.zip`
@@ -96,7 +94,7 @@ git push origin :refs/tags/v3
 git tag -d v3
 
 # if the workflow's publish step did create a release, delete that too
-gh release delete v3 --repo dannyheskett/openbounty --yes
+gh release delete v3 --yes
 ```
 
 Then fix the underlying issue, commit, re-tag, and push.
