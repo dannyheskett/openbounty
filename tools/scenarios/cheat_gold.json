@@ -1,6 +1,6 @@
 {
   "name": "cheat_gold",
-  "description": "F10 → G adds 5000 gold.",
+  "description": "F10 → G adds 50000 gold.",
   "setup": { "seed": 1, "class": "knight", "name": "Bot", "difficulty": "easy" },
   "tags": ["smoke", "fast", "cheat"],
   "max_seconds": 30,

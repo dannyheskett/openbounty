@@ -13,7 +13,9 @@
 #include "chrome.h"
 #include "palette.h"
 #include "overlay.h"
+#include "prompt.h"
 #include "screenshot.h"
+#include "views.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -1261,8 +1263,14 @@ static int combat_player_action_full(Combat *c, const Game *g,
         return 1;
     }
     if (harness_key_pressed(KEY_G)) {
-        c->result = 2;
-        return 1;
+        // OpenKB ask_giveup (game.c:4519). Open a y/n confirm; the
+        // outer combat loop polls prompt_update() and writes c->result
+        // to 2 on YES.
+        if (g && g->res) {
+            prompt_yes_no_open(g->res->banners.combat_give_up_header,
+                               g->res->banners.combat_give_up_body);
+        }
+        return 0;
     }
     if (harness_key_pressed(KEY_S)) {
         // Shoot. Pick enemy, ranged damage.
@@ -1297,56 +1305,10 @@ static int combat_player_action_full(Combat *c, const Game *g,
         return combat_player_cast(c, g, sprites, target);
     }
     if (harness_key_pressed(KEY_C)) {
-        // Controls overlay. Modal -- block until any key. Renders the
-        // keybindings list inside the existing field so the player can
-        // read while glancing at unit positions.
-        while (!WindowShouldClose()) {
-        harness_tick();
-            BeginTextureMode(*target);
-            combat_render_frame(c, g, sprites);
-            DrawRectangle(8, 18, 220, 170, PAL_CLR(DBLUE));
-            DrawRectangleLines(8, 18, 220, 170, PAL_CLR(YELLOW));
-            int y = 22;
-            const char *lines[] = {
-                "Combat Controls",
-                "",
-                "Arrows / Numpad  Move",
-                "HOME 7  PGUP 9   diag up",
-                "END  1  PGDN 3   diag down",
-                "A or C   View Army / Confirm",
-                "C        Controls",
-                "S        Shoot",
-                "U        Use Magic",
-                "V        View Char",
-                "W        Wait",
-                "G        Give Up",
-                "SPC      Pass",
-                "ESC      Surrender",
-                "",
-                "Press any key to return",
-            };
-            int n = sizeof(lines) / sizeof(lines[0]);
-            for (int i = 0; i < n; i++) {
-                bfont_draw(lines[i], 14, y, PAL_CLR(WHITE));
-                y += 10;
-            }
-            EndTextureMode();
-            BeginDrawing();
-            ClearBackground(BLACK);
-            int win_w = GetScreenWidth(), win_h = GetScreenHeight();
-            int sx = win_w / CL_SCREEN_W, sy = win_h / CL_SCREEN_H;
-            int sc = (sx < sy) ? sx : sy; if (sc < 2) sc = 2;
-            int dst_w = CL_SCREEN_W * sc, dst_h = CL_SCREEN_H * sc;
-            int dst_x = (win_w - dst_w) / 2, dst_y = (win_h - dst_h) / 2;
-            Rectangle src = { 0, 0, (float)target->texture.width,
-                              -(float)target->texture.height };
-            Rectangle dst = { (float)dst_x, (float)dst_y,
-                              (float)dst_w, (float)dst_h };
-            DrawTexturePro(target->texture, src, dst,
-                           (Vector2){ 0, 0 }, 0.0f, WHITE);
-            EndDrawing();
-            if (harness_get_key_pressed() != 0) break;
-        }
+        // OpenKB controls_menu (game.c:5276). Opening a view pauses
+        // combat in the outer loop; the view handles its own input and
+        // dismissal. The C↔O swap is implemented there too.
+        views_set(VIEW_CONTROLS);
         return 0;
     }
     return 0;
@@ -1537,11 +1499,23 @@ static void combat_present(const Combat *c, const Game *g,
                            RenderTexture2D *target) {
     BeginTextureMode(*target);
     combat_render_frame(c, g, sprites);
+    // Open view (Options / Controls / Army / Character) draws over the
+    // battlefield. OpenKB: combat_options_menu / controls_menu both
+    // render on top of the still-visible field (game.c:5076-5113).
+    // map/fog are NULL because the views combat can open never read
+    // them (WORLDMAP isn't reachable from combat).
+    if (views_active() != VIEW_NONE) {
+        overlay_draw(g, NULL, NULL, sprites);
+    }
     // Victory dialog : centered modal
     // floating over the still-rendered battlefield. Defeat does not
     // draw here — combat exits silently and perform_temp_death shows
     // the disgrace message at the home castle ().
     if (dialog_is_active()) overlay_draw_dialog_centered();
+    // Give-up confirm and any other y/n / numeric prompt draws on top
+    // of everything else, matching OpenKB ask_giveup's bottom-frame
+    // modal (game.c:4519-4544).
+    if (prompt_is_active()) prompt_draw();
     EndTextureMode();
 
     BeginDrawing();
@@ -1680,6 +1654,54 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         audio_tick();
         combat_present(&c, g, sprites, rt);
 
+        // Modal prompts (give-up confirm) take priority over every
+        // other input path and pause combat. Mirrors OpenKB ask_giveup,
+        // which is a blocking call inside the dispatch (game.c:6088).
+        if (prompt_is_active()) {
+            PromptResult pr = prompt_update();
+            if (pr == PROMPT_RESULT_YES) {
+                c.result = 2;
+                break;
+            }
+            // NO / CANCEL / NONE: stay in combat, swallow the frame.
+            continue;
+        }
+
+        // ESC is cancel-only in combat (OpenKB: ESC inside a menu just
+        // closes it; ESC with no menu open is a no-op). Take this
+        // *before* views eat their own input so dismissing always
+        // works from the outer loop.
+        if (harness_key_pressed(KEY_ESCAPE)) {
+            if (views_active() != VIEW_NONE) {
+                views_dismiss();
+            }
+            continue;
+        }
+
+        // While a view is open, combat is paused: no AI advancement,
+        // no animation frame ticks driving acts. The view handles its
+        // own input (and number-key cycling for Controls — see below).
+        if (views_active() != VIEW_NONE) {
+            // Swap between Options and Controls without leaving the
+            // menu, mirroring OpenKB game.c:6015-6027.
+            if (views_active() == VIEW_OPTIONS && harness_key_pressed(KEY_C)) {
+                views_set(VIEW_CONTROLS);
+            } else if (views_active() == VIEW_CONTROLS &&
+                       harness_key_pressed(KEY_O)) {
+                views_set(VIEW_OPTIONS);
+            } else if (views_active() == VIEW_CONTROLS) {
+                // Number keys 1..N cycle the corresponding control row.
+                // Mirrors OpenKB controls_menu (game.c:5422-5436).
+                for (int i = 0; i < 9; i++) {
+                    if (harness_key_pressed(KEY_ONE + i)) {
+                        views_controls_advance(g, i);
+                        break;
+                    }
+                }
+            }
+            continue;
+        }
+
         bool frame_rollover;
         combat_tick_anim(&c, &next_tick, &frame_rollover);
 
@@ -1689,6 +1711,22 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
                 c.cursor_x = act->x;
                 c.cursor_y = act->y;
             }
+        }
+
+        // Top-level view openers. Player can open these even on AI's
+        // turn (matching OpenKB: input is discarded for moves during
+        // AI turn, but menu keys still resolve).
+        if (harness_key_pressed(KEY_O)) {
+            views_set(VIEW_OPTIONS);
+            continue;
+        }
+        if (harness_key_pressed(KEY_A)) {
+            views_set(VIEW_ARMY);
+            continue;
+        }
+        if (harness_key_pressed(KEY_V)) {
+            views_set(VIEW_CHARACTER);
+            continue;
         }
 
         int acted = 0;
@@ -1719,8 +1757,6 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
             if (n < 0) combat_next_turn(&c);
             else        c.unit_id = n;
         }
-
-        if (harness_key_pressed(KEY_ESCAPE)) { c.result = 2; break; }
     }
 
     // ----- End-of-combat ----------------------------------------------------
@@ -1787,11 +1823,13 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         audio_set_track(AUDIO_TRACK_OPENWORLD);
         return COMBAT_RESULT_LOSS;
     }
+    // Unreachable in normal play: the loop only exits via WIN or LOSS.
+    // Kept as a defensive return so the function is total.
     harness_attach_combat(NULL);
     recorder_attach_combat(NULL);
-    recorder_capture("combat:end:flee");
+    recorder_capture("combat:end:loss");
     audio_set_track(AUDIO_TRACK_OPENWORLD);
-    return COMBAT_RESULT_FLEE;
+    return COMBAT_RESULT_LOSS;
 }
 
 // ----- Determinism harness -------------------------------------------------
@@ -1920,5 +1958,7 @@ CombatResult combat_run_headless(Game *g, CombatMode mode,
         return COMBAT_RESULT_WIN;
     }
     if (c.result == 2) return COMBAT_RESULT_LOSS;
-    return COMBAT_RESULT_FLEE;
+    // Headless harness exhausted max_actions without a winner. Treat as
+    // LOSS so callers always see a definitive outcome.
+    return COMBAT_RESULT_LOSS;
 }

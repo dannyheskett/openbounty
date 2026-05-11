@@ -31,6 +31,7 @@ SUITE_EXTERN(fog_suite);
 SUITE_EXTERN(map_overlay_suite);
 SUITE_EXTERN(state_json_suite);
 SUITE_EXTERN(tables_defensive_suite);
+SUITE_EXTERN(combat_input_suite);
 SUITE_EXTERN(pack_suite);
 
 int main(int argc, char **argv) {
@@ -59,6 +60,7 @@ int main(int argc, char **argv) {
     RUN_SUITE(map_overlay_suite);
     RUN_SUITE(state_json_suite);
     RUN_SUITE(tables_defensive_suite);
+    RUN_SUITE(combat_input_suite);
     RUN_SUITE(pack_suite);
     GREATEST_MAIN_END();
 }

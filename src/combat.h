@@ -19,7 +19,6 @@
 typedef enum {
     COMBAT_RESULT_WIN = 0,
     COMBAT_RESULT_LOSS,
-    COMBAT_RESULT_FLEE,     // player gave up -- surrender
 } CombatResult;
 
 typedef enum {

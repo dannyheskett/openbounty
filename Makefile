@@ -253,7 +253,8 @@ TEST_SRC := $(filter-out src/main.c,$(SRC)) \
             tests/unit/test_map_overlay.c \
             tests/unit/test_state_json.c \
             tests/unit/test_tables_defensive.c \
-            tests/unit/test_pack.c
+            tests/unit/test_pack.c \
+            tests/unit/test_combat_input.c
 
 OUT_TEST := build/openbounty-test
 

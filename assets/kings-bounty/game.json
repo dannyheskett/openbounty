@@ -4686,6 +4686,8 @@
 			"astrology_header":	"Week #%WEEK%",
 			"astrology_body":	"Astrologers proclaim:\nWeek of the %TROOP%\n\nAll %TROOP% dwellings are\nrepopulated.         (space)",
 			"temp_death":	"After being disgraced on the\nfield of battle, King\nMaximus summons you to his\ncastle. After a lesson in\ntactics, he reluctantly re-\nissues your commission and\nsends you on your way.",
+			"combat_give_up_header":	"Press ESC to exit",
+			"combat_give_up_body":	"Giving up will forfeit your\narmies and send you back to\nthe King. Give up",
 			"combat_scouts_header":	"Your scouts have sighted:\n",
 			"combat_scouts_count":	"  %COUNT% %TROOP%\n",
 			"combat_scouts_small_band":	"  (a small band)\n",
