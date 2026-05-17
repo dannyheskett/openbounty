@@ -4,16 +4,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "game.h"
-#include "sprites.h"
 
-// Combat module. Uses OpenBounty-native types: troop catalog indices
-// instead of byte ids, Game* for the player-side hero, and a separate
-// per-combat LCG so rolling combat RNG cannot perturb world-init RNG.
+// Combat module. Engine-side data and headless entry points.
 //
-// Public surface (RunCombat + the three enums + CombatTarget) is the
-// stable contract for main.c; everything in the Combat struct is
-// engine-internal but exposed because the renderer (combat_render.c)
-// reads it.
+// The shell-side rendered loop (RunCombat) lives in src/combat_loop.h
+// and uses the same Combat struct defined here. The renderer reads
+// from it; engine code mutates it through the step/AI functions.
 
 // ----- Public outcome --------------------------------------------------------
 typedef enum {
@@ -122,15 +118,6 @@ typedef struct Combat {
     char          target_name[48];
 } Combat;
 
-// ----- Public entry point ----------------------------------------------------
-// Runs a battle. render_target is the offscreen RenderTexture2D the rest
-// of the game renders into; we render combat into the same target so the
-// outer scaling / letterbox logic in main.c is unchanged. Passed as void*
-// to keep combat.h free of raylib.h.
-CombatResult RunCombat(Game *g, const Sprites *sprites,
-                       void *render_target,
-                       CombatMode mode, const CombatTarget *target);
-
 // ----- Test / determinism harness --------------------------------------------
 // Runs a deterministic scripted combat scenario and prints a one-line
 // digest (RNG seed, hit counts per side, final state hash). Used by the
@@ -154,14 +141,5 @@ uint64_t combat_test_digest(uint64_t seed,
 CombatResult combat_run_headless(Game *g, CombatMode mode,
                                  const CombatTarget *target,
                                  int cap_rounds);
-
-// Auto-combat toggle. When on, RunCombat drives the player's turns
-// through combat_ai_action (skipping the modal player-input flow).
-// Persists across fights until cleared. Used by the harness so a
-// scripted driver can run a full playthrough without authoring per-
-// fight key sequences. No effect on combat_run_headless (already AI
-// vs AI by definition).
-void combat_set_auto_player(bool on);
-bool combat_auto_player(void);
 
 #endif

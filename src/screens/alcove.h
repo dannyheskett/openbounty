@@ -14,8 +14,8 @@
 #ifndef OB_SCREENS_ALCOVE_H
 #define OB_SCREENS_ALCOVE_H
 
-#include "../game.h"
-#include "../sprites.h"
+#include "game.h"
+#include "sprites.h"
 
 void screen_alcove_open(Game *g);
 void screen_alcove_draw(const Game *g, const Sprites *s);

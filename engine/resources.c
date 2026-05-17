@@ -1173,9 +1173,9 @@ static void load_banner_defaults(ResBanners *b) {
         "issues your commission and\n"
         "sends you on your way.");
 
-    // OpenKB ask_giveup (game.c:4519-4544). The body text is verbatim
-    // from the DOS game; the header doubles as the OpenKB "Press ESC to
-    // exit" hint shown at the top of the prompt frame.
+    // Mid-combat give-up confirm. Body text is verbatim from the DOS
+    // game; the header doubles as the "Press ESC to exit" hint shown
+    // at the top of the prompt frame.
     copy_str(b->combat_give_up_header, sizeof(b->combat_give_up_header),
         "Press ESC to exit");
     copy_str(b->combat_give_up_body, sizeof(b->combat_give_up_body),

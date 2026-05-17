@@ -1,8 +1,8 @@
 #include "end_game.h"
-#include "../layout.h"
-#include "../palette.h"
-#include "../bfont.h"
-#include "../views.h"
+#include "layout.h"
+#include "palette.h"
+#include "bfont.h"
+#include "views.h"
 #include "raylib.h"
 #include <string.h>
 #include <stdio.h>

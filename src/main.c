@@ -41,6 +41,7 @@
 #include "screens/alcove.h"
 #include "screens/end_game.h"
 #include "combat.h"
+#include "combat_loop.h"
 #include <time.h>
 #include "views_render.h"
 #include <stdio.h>
@@ -429,6 +430,8 @@ int main(int argc, char **argv) {
     const char *pack_arg = NULL;     // --pack <name|path>
     bool extract_mode = false;        // --extract: build pack from KB.EXE then exit
     const char *extract_out_dir = NULL; // --out-dir <dir>: extract to loose tree
+    const char *pack_dir_src = NULL;  // --pack-dir <src> <dst>: zip a loose asset tree
+    const char *pack_dir_dst = NULL;
     bool combat_test = false;
     const char *combat_test_arg = NULL;
     const char *harness_socket = NULL;
@@ -449,8 +452,9 @@ int main(int argc, char **argv) {
             printf("openbounty build %s\n"
                    "Usage: %s [--fullscreen] [--pack <name|path>] [--save-dir <dir>] [--extract [--out-dir <dir>]]\n"
                    "       %*s [--harness <sock>] [--record <dir>] [--record-cap N] [--encode-movie] [--seed N] [--version]\n"
-                   "       %s --combat-test SEED:ATTACKER:N:DEFENDER:N:ROUNDS\n",
-                   OPENBOUNTY_VERSION, argv[0], (int)strlen(argv[0]), "", argv[0]);
+                   "       %s --combat-test SEED:ATTACKER:N:DEFENDER:N:ROUNDS\n"
+                   "       %s --pack-dir <src_dir> <out_zip>\n",
+                   OPENBOUNTY_VERSION, argv[0], (int)strlen(argv[0]), "", argv[0], argv[0]);
             return 0;
         } else if (strcmp(a, "--fullscreen") == 0) {
             want_fullscreen = true;
@@ -475,7 +479,21 @@ int main(int argc, char **argv) {
             forced_seed = strtoull(argv[++i], NULL, 0);
         } else if (strcmp(a, "--save-dir") == 0 && i + 1 < argc) {
             SavePathSetDirOverride(argv[++i]);
+        } else if (strcmp(a, "--pack-dir") == 0 && i + 2 < argc) {
+            pack_dir_src = argv[++i];
+            pack_dir_dst = argv[++i];
         }
+    }
+
+    // --pack-dir <src> <dst>: zip a pre-extracted asset tree into a
+    // .openbounty archive. Used by the Makefile to build the shipped
+    // pack from assets/<name>/. No window.
+    if (pack_dir_src) {
+        if (!pack_zip_dir(pack_dir_src, pack_dir_dst)) {
+            fprintf(stderr, "pack-dir: failed to write %s\n", pack_dir_dst);
+            return 1;
+        }
+        return 0;
     }
 
     // --extract: produce a .openbounty pack (or, with --out-dir, a
@@ -1035,7 +1053,8 @@ int main(int argc, char **argv) {
                 case 'W':
                     cheat_menu_active = false;
                     dialog_dismiss();
-                    show_win_game(&game, &res, &render_target, &sprites);
+                    run_end_cartoon(&render_target, &res, &sprites);
+                    show_win_game(&game, &res);
                     continue;
                 case 'L':
                     cheat_menu_active = false;
@@ -1099,8 +1118,8 @@ int main(int argc, char **argv) {
                                  game.scepter.x == game.position.x &&
                                  game.scepter.y == game.position.y);
                             if (on_scepter) {
-                                show_win_game(&game, &res,
-                                              &render_target, &sprites);
+                                run_end_cartoon(&render_target, &res, &sprites);
+                                show_win_game(&game, &res);
                             } else {
                                 //  spends
                                 // 10 days. If the period crosses a week

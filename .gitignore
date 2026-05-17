@@ -21,22 +21,7 @@ dist/*.zip
 # the only thing the build actually needs).
 third_party/raylib/
 
-# Reference material from the 1990 game — NOT distributed. These paths
-# are symlinks into ../openbounty-reference/ on the dev machine; the
-# reference dir is kept outside the repo (copyrighted assets + extracted
-# PNGs + manuals + screenshots). Only legacy/scripts/ is committed.
-legacy/artifacts
-legacy/bin
-legacy/manuals
-legacy/maps
-legacy/screenshots
-
-# DOS reference binary copied locally for ./dos.sh playtest.
-# Same copyright-restricted bytes as legacy/bin — do not commit.
-kb-legacy/
-
-# OpenKB source clone lives at ../openkb-reference/ on the dev machine,
-# outside the repo. Any in-tree tmp/ is ignored.
+# Scratch dir.
 tmp/
 
 # Editor / OS

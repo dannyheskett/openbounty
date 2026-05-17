@@ -1,23 +1,32 @@
 #include "combat.h"
-#include "combat_render.h"
 #include "tables.h"
 #include "resources.h"
-#include "ui.h"
-#include "raylib.h"
-#include "harness_input.h"
-#include "harness.h"
-#include "recorder.h"
-#include "audio.h"
-#include "bfont.h"
-#include "layout.h"
-#include "chrome.h"
-#include "palette.h"
-#include "overlay.h"
-#include "prompt.h"
-#include "screenshot.h"
-#include "views.h"
 #include <stdio.h>
 #include <string.h>
+
+// The shell-side combat loop and its renderer/audio/input dependencies
+// are gated so this file can compile into the engine library without
+// raylib. The library defines OB_HEADLESS; the game build does not.
+#ifdef OB_HEADLESS
+#  include "ui_host.h"   // host callbacks: recorder_capture, etc.
+#else
+#  include "combat_loop.h"
+#  include "combat_render.h"
+#  include "ui.h"
+#  include "raylib.h"
+#  include "harness_input.h"
+#  include "harness.h"
+#  include "recorder.h"
+#  include "audio.h"
+#  include "bfont.h"
+#  include "layout.h"
+#  include "chrome.h"
+#  include "palette.h"
+#  include "overlay.h"
+#  include "prompt.h"
+#  include "screenshot.h"
+#  include "views.h"
+#endif
 
 // Combat module. Builds the Combat data structure, runs the turn loop
 // (input, AI, spells, retaliation, end-of-combat), and renders into the
@@ -818,6 +827,7 @@ typedef enum {
 // have set c->cursor_{x,y} to the desired starting cell. The active
 // unit's `acted` flag is NOT set here; callers decide whether the
 // pick consumes the turn. Pumps the renderer so the cursor animates.
+#ifndef OB_HEADLESS
 static bool combat_pick_target(Combat *c, const Game *g,
                                const Sprites *sprites,
                                RenderTexture2D *target,
@@ -906,6 +916,7 @@ static bool combat_read_dir(int *dx, int *dy) {
     if (harness_key_pressed(KEY_PAGE_DOWN) || harness_key_pressed(KEY_KP_3)) { *dx =  1; *dy =  1; return true; }
     return false;
 }
+#endif // OB_HEADLESS
 
 // ----- Combat spells ---------------------------------------------------------
 //
@@ -1014,6 +1025,7 @@ static bool combat_read_dir(int *dx, int *dy) {
 // Combat spell (A-G)?", restricted to A-G.
 //
 // Returns 1 if a spell was cast (turn-progressing), 0 otherwise.
+#ifndef OB_HEADLESS
 static int combat_player_cast(Combat *c, const Game *g,
                               const Sprites *sprites,
                               RenderTexture2D *target) {
@@ -1263,9 +1275,8 @@ static int combat_player_action_full(Combat *c, const Game *g,
         return 1;
     }
     if (harness_key_pressed(KEY_G)) {
-        // OpenKB ask_giveup (game.c:4519). Open a y/n confirm; the
-        // outer combat loop polls prompt_update() and writes c->result
-        // to 2 on YES.
+        // Open a y/n give-up confirm; the outer combat loop polls
+        // prompt_update() and writes c->result to 2 on YES.
         if (g && g->res) {
             prompt_yes_no_open(g->res->banners.combat_give_up_header,
                                g->res->banners.combat_give_up_body);
@@ -1305,14 +1316,15 @@ static int combat_player_action_full(Combat *c, const Game *g,
         return combat_player_cast(c, g, sprites, target);
     }
     if (harness_key_pressed(KEY_C)) {
-        // OpenKB controls_menu (game.c:5276). Opening a view pauses
-        // combat in the outer loop; the view handles its own input and
-        // dismissal. The C↔O swap is implemented there too.
+        // Opening a view pauses combat in the outer loop; the view
+        // handles its own input and dismissal. The C↔O swap is
+        // implemented there too.
         views_set(VIEW_CONTROLS);
         return 0;
     }
     return 0;
 }
+#endif // OB_HEADLESS
 
 
 // ----- Combat AI (-19.4) -----------------------------------------
@@ -1494,16 +1506,16 @@ static int combat_player_action_full(Combat *c, const Game *g,
     return 1;
 }
 
+#ifndef OB_HEADLESS
 static void combat_present(const Combat *c, const Game *g,
                            const Sprites *sprites,
                            RenderTexture2D *target) {
     BeginTextureMode(*target);
     combat_render_frame(c, g, sprites);
     // Open view (Options / Controls / Army / Character) draws over the
-    // battlefield. OpenKB: combat_options_menu / controls_menu both
-    // render on top of the still-visible field (game.c:5076-5113).
-    // map/fog are NULL because the views combat can open never read
-    // them (WORLDMAP isn't reachable from combat).
+    // battlefield, on top of the still-visible field. map/fog are NULL
+    // because the views combat can open never read them (WORLDMAP isn't
+    // reachable from combat).
     if (views_active() != VIEW_NONE) {
         overlay_draw(g, NULL, NULL, sprites);
     }
@@ -1513,8 +1525,7 @@ static void combat_present(const Combat *c, const Game *g,
     // the disgrace message at the home castle ().
     if (dialog_is_active()) overlay_draw_dialog_centered();
     // Give-up confirm and any other y/n / numeric prompt draws on top
-    // of everything else, matching OpenKB ask_giveup's bottom-frame
-    // modal (game.c:4519-4544).
+    // of everything else as a bottom-frame modal.
     if (prompt_is_active()) prompt_draw();
     EndTextureMode();
 
@@ -1655,8 +1666,8 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         combat_present(&c, g, sprites, rt);
 
         // Modal prompts (give-up confirm) take priority over every
-        // other input path and pause combat. Mirrors OpenKB ask_giveup,
-        // which is a blocking call inside the dispatch (game.c:6088).
+        // other input path and pause combat — a blocking call inside
+        // the dispatch.
         if (prompt_is_active()) {
             PromptResult pr = prompt_update();
             if (pr == PROMPT_RESULT_YES) {
@@ -1667,10 +1678,10 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
             continue;
         }
 
-        // ESC is cancel-only in combat (OpenKB: ESC inside a menu just
-        // closes it; ESC with no menu open is a no-op). Take this
-        // *before* views eat their own input so dismissing always
-        // works from the outer loop.
+        // ESC is cancel-only in combat: ESC inside a menu just closes
+        // it; ESC with no menu open is a no-op. Take this *before*
+        // views eat their own input so dismissing always works from the
+        // outer loop.
         if (harness_key_pressed(KEY_ESCAPE)) {
             if (views_active() != VIEW_NONE) {
                 views_dismiss();
@@ -1682,8 +1693,7 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         // no animation frame ticks driving acts. The view handles its
         // own input (and number-key cycling for Controls — see below).
         if (views_active() != VIEW_NONE) {
-            // Swap between Options and Controls without leaving the
-            // menu, mirroring OpenKB game.c:6015-6027.
+            // Swap between Options and Controls without leaving the menu.
             if (views_active() == VIEW_OPTIONS && harness_key_pressed(KEY_C)) {
                 views_set(VIEW_CONTROLS);
             } else if (views_active() == VIEW_CONTROLS &&
@@ -1691,7 +1701,6 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
                 views_set(VIEW_OPTIONS);
             } else if (views_active() == VIEW_CONTROLS) {
                 // Number keys 1..N cycle the corresponding control row.
-                // Mirrors OpenKB controls_menu (game.c:5422-5436).
                 for (int i = 0; i < 9; i++) {
                     if (harness_key_pressed(KEY_ONE + i)) {
                         views_controls_advance(g, i);
@@ -1714,8 +1723,8 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         }
 
         // Top-level view openers. Player can open these even on AI's
-        // turn (matching OpenKB: input is discarded for moves during
-        // AI turn, but menu keys still resolve).
+        // turn: input is discarded for moves during AI turn, but menu
+        // keys still resolve.
         if (harness_key_pressed(KEY_O)) {
             views_set(VIEW_OPTIONS);
             continue;
@@ -1831,6 +1840,7 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
     audio_set_track(AUDIO_TRACK_OPENWORLD);
     return COMBAT_RESULT_LOSS;
 }
+#endif // OB_HEADLESS
 
 // ----- Determinism harness -------------------------------------------------
 //

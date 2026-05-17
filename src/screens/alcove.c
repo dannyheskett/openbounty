@@ -1,9 +1,9 @@
 #include "alcove.h"
-#include "../layout.h"
-#include "../palette.h"
-#include "../bfont.h"
-#include "../views.h"
-#include "../tables.h"
+#include "layout.h"
+#include "palette.h"
+#include "bfont.h"
+#include "views.h"
+#include "tables.h"
 #include "raylib.h"
 #include <string.h>
 

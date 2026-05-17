@@ -21,10 +21,4 @@ Texture2D LoadAssetTexture(const char *path) {
     return tex;
 }
 
-const unsigned char *LoadAssetBytes(const char *path, size_t *out_size) {
-    return pack_stack_read(path, out_size);
-}
-
-void UnloadAssetBytes(const unsigned char *data) {
-    (void)data;  // bytes owned by pack
-}
+// LoadAssetBytes / UnloadAssetBytes moved to engine/assets_bytes.c.

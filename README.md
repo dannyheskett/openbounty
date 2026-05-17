@@ -125,7 +125,6 @@ maintainer's release procedure.
 │   └── raylib-install*/      # Prebuilt raylib for linux + win64 + win32 + mac
 ├── tools/                    # C-only asset extraction + test tooling
 │   ├── extract*.c            # Pack extractor (KB.EXE -> .openbounty)
-│   ├── mkpack.c              # Loose tree -> .openbounty zip
 │   ├── playtest.c            # Scenario runner against the harness
 │   └── scenarios/*.json      # Scripted test scenarios
 ├── tests/unit/               # Unit tests (greatest framework)
@@ -614,8 +613,9 @@ extract`).
 | Binary           | Purpose |
 |---|---|
 | `extract`        | Reads a KB.EXE distribution and writes a complete `.openbounty` pack (palette, font, sprites, tiles, chrome, audio metadata, game.json). Invoked from the engine via `--extract`. |
-| `mkpack`         | Packs a loose asset tree into a `.openbounty` zip. |
 | `playtest`       | Drives the engine through the harness socket using JSON scenarios under `tools/scenarios/`. |
+
+Packing a loose asset tree into a `.openbounty` zip is done by the engine itself: `./build/openbounty --pack-dir <src> <out_zip>`.
 
 The extractor is broken into one TU per pipeline stage
 (`extract_unpack.c`, `extract_lzw.c`, `extract_vga.c`, `extract_png.c`,

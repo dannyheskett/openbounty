@@ -19,7 +19,7 @@ OPENBOUNTY_VERSION         ?= $(shell git tag --list 'release-*' 2>/dev/null | s
 OPENBOUNTY_VERSION_DISPLAY := build $(OPENBOUNTY_VERSION)
 OPENBOUNTY_VERSION_SLUG    := build-$(OPENBOUNTY_VERSION)
 
-CFLAGS  := -std=c99 -Wall -Wextra -O2 -I$(RAYLIB)/include -I$(MINIH264_INC) -I$(MINIMP4_INC) -Isrc -Itools -Ibuild -Ithird_party/cjson -Ithird_party/miniz
+CFLAGS  := -std=c99 -Wall -Wextra -O2 -I$(RAYLIB)/include -I$(MINIH264_INC) -I$(MINIMP4_INC) -Isrc -Iengine/include -Itools -Ibuild -Ithird_party/cjson -Ithird_party/miniz
 LDFLAGS := -L$(RAYLIB)/lib -lraylib -lm -lpthread -ldl -lrt -lX11
 # Linux release: same CFLAGS as dev, but link libgcc statically so the
 # binary runs on glibc systems without matching toolchain installed.
@@ -31,7 +31,12 @@ LDFLAGS_RELEASE := -L$(RAYLIB)/lib -lraylib -lm -lpthread -ldl -lrt \
                    -lasound \
                    -static-libgcc -Wl,-Bsymbolic
 
-SRC := src/main.c src/map.c src/fog.c src/assets.c src/pack.c src/pack_select.c src/tile.c src/savegame.c src/state_serialize.c src/recorder.c src/audio.c src/encode_mp4.c src/encode_mp4_h264.c src/encode_mp4_mux.c src/encode_dialog.c src/savepath.c src/tables.c src/game.c src/bfont.c src/tile_cache.c src/sprites.c src/adventure.c src/views.c src/ui.c src/resources.c src/screenshot.c src/harness_input.c src/harness.c src/combat.c src/combat_render.c src/pending.c src/flows.c src/step.c src/spells_adventure.c src/palette.c src/chrome.c src/hud.c src/map_render.c src/overlay.c src/views_render.c src/input.c src/prompt.c src/startup.c src/end_cartoon.c src/fatal.c src/screens/home_castle.c src/screens/recruit_soldiers.c src/screens/own_castle.c src/screens/dwelling.c src/screens/alcove.c src/screens/end_game.c tools/extract.c tools/extract_io.c tools/extract_unpack.c tools/extract_lzw.c tools/extract_vga.c tools/extract_png.c tools/extract_chrome.c tools/extract_gamejson.c third_party/cjson/cJSON.c third_party/miniz/miniz.c
+ENGINE_SRC := engine/game.c engine/map.c engine/fog.c engine/pack.c engine/tile.c engine/savegame.c engine/state_serialize.c engine/savepath.c engine/tables.c engine/adventure.c engine/resources.c engine/pending.c engine/flows.c engine/step.c engine/spells_adventure.c engine/fatal.c engine/assets_bytes.c src/combat.c
+SHELL_SRC  := src/main.c src/assets.c src/pack_select.c src/recorder.c src/audio.c src/encode_mp4.c src/encode_mp4_h264.c src/encode_mp4_mux.c src/encode_dialog.c src/bfont.c src/tile_cache.c src/sprites.c src/views.c src/ui.c src/screenshot.c src/harness_input.c src/harness.c src/combat_render.c src/palette.c src/chrome.c src/hud.c src/map_render.c src/overlay.c src/views_render.c src/input.c src/prompt.c src/startup.c src/end_cartoon.c src/screens/home_castle.c src/screens/recruit_soldiers.c src/screens/own_castle.c src/screens/dwelling.c src/screens/alcove.c src/screens/end_game.c
+TOOL_SRC   := tools/extract.c tools/extract_io.c tools/extract_unpack.c tools/extract_lzw.c tools/extract_vga.c tools/extract_png.c tools/extract_chrome.c tools/extract_gamejson.c
+VENDOR_SRC := third_party/cjson/cJSON.c third_party/miniz/miniz.c
+
+SRC := $(SHELL_SRC) $(ENGINE_SRC) $(TOOL_SRC) $(VENDOR_SRC)
 SRC_DEV := $(SRC)
 OUT := build/openbounty
 OUT_RELEASE := build/openbounty-release
@@ -43,7 +48,12 @@ OUT_RELEASE := build/openbounty-release
 PACK_NAMES := $(notdir $(patsubst %/,%,$(wildcard assets/*/)))
 PACKS := $(addprefix build/assets/,$(addsuffix .openbounty,$(PACK_NAMES)))
 
-all: $(OUT) $(PACKS)
+OUT_UNITTEST := build/openbounty-unittest
+OUT_PLAYTEST := build/openbounty-playtest
+OUT_ENGPLAY  := build/openbounty-engplay
+OUT_ENGLIB   := build/libobengine.a
+
+all: $(OUT) $(OUT_UNITTEST) $(OUT_PLAYTEST) $(OUT_ENGPLAY) $(OUT_ENGLIB) $(PACKS)
 
 # Generate build/version.h from $(OPENBOUNTY_VERSION). Marked .PHONY-style
 # (FORCE prereq) so it always runs — the cmp/mv inside only rewrites the
@@ -61,26 +71,23 @@ build/version.h: FORCE | build
 $(OUT): $(SRC_DEV) build/version.h build/test-pass.stamp | build
 	gcc $(CFLAGS) $(SRC_DEV) -o $(OUT) $(LDFLAGS)
 
-build/mkpack: tools/mkpack.c third_party/miniz/miniz.c | build
-	gcc -std=c99 -Wall -Wextra -O2 -Ithird_party/miniz \
-	    tools/mkpack.c third_party/miniz/miniz.c -o $@
-
 # Each pack zip rebuilds when any file under its assets/<name>/ tree
 # changes. Using $(shell find) at parse time means: run `make` after
 # editing assets to repackage; touching a single asset is enough.
+# The engine binary itself does the zipping via --pack-dir.
 build/assets:
 	mkdir -p build/assets
 
 define PACK_RULE
-build/assets/$(1).openbounty: $$(shell find assets/$(1) -type f \! -name '*.xcf' \! -name '*.psd' \! -name '*:Zone.Identifier' 2>/dev/null) build/mkpack | build/assets
-	./build/mkpack assets/$(1) build/assets/$(1).openbounty
+build/assets/$(1).openbounty: $$(shell find assets/$(1) -type f \! -name '*.xcf' \! -name '*.psd' \! -name '*:Zone.Identifier' 2>/dev/null) $(OUT) | build/assets
+	./$(OUT) --pack-dir assets/$(1) build/assets/$(1).openbounty
 endef
 $(foreach pn,$(PACK_NAMES),$(eval $(call PACK_RULE,$(pn))))
 
 # Internal stamp: builds the test binary (rule below), runs it,
 # touches a marker on success. Re-runs only when sources change.
-build/test-pass.stamp: build/openbounty-test
-	@./build/openbounty-test >/dev/null
+build/test-pass.stamp: $(OUT_UNITTEST)
+	@./$(OUT_UNITTEST) >/dev/null
 	@touch $@
 
 build:
@@ -103,7 +110,7 @@ run-release: $(OUT_RELEASE)
 # ---------------------------------------------------------------------------
 # Windows cross-compile (x64 + x86, static, single-binary with embedded assets)
 # ---------------------------------------------------------------------------
-WIN_CFLAGS_COMMON := -std=c99 -Wall -Wextra -O2 -Isrc -Itools -Ibuild -Ithird_party/cjson -Ithird_party/miniz -I$(MINIH264_INC) -I$(MINIMP4_INC) -DWIN32 -D_WIN32
+WIN_CFLAGS_COMMON := -std=c99 -Wall -Wextra -O2 -Isrc -Iengine/include -Itools -Ibuild -Ithird_party/cjson -Ithird_party/miniz -I$(MINIH264_INC) -I$(MINIMP4_INC) -DWIN32 -D_WIN32
 # -mwindows hides the console; keep it for a GUI app.
 # -static links libgcc/libstdc++/winpthread statically so no DLLs are needed.
 # --stack=8MB matches the Linux default. Several main.c locals are big
@@ -158,7 +165,7 @@ MAC_CC      := clang
 MAC_ARCHES  := -arch arm64 -arch x86_64
 MAC_CFLAGS  := -std=c99 -Wall -Wextra -O2 $(MAC_ARCHES) \
                -I$(RAYLIB_MAC)/include -I$(MINIH264_INC) -I$(MINIMP4_INC) \
-               -Isrc -Itools -Ibuild -Ithird_party/cjson -Ithird_party/miniz
+               -Isrc -Iengine/include -Itools -Ibuild -Ithird_party/cjson -Ithird_party/miniz
 # -Itools is required for src/main.c's #include "extract.h".
 # (Linux/Windows CFLAGS already have it; mac was missing.)
 # raylib on macOS links against several system frameworks for windowing,
@@ -256,10 +263,8 @@ TEST_SRC := $(filter-out src/main.c,$(SRC)) \
             tests/unit/test_pack.c \
             tests/unit/test_combat_input.c
 
-OUT_TEST := build/openbounty-test
-
-$(OUT_TEST): $(TEST_SRC) build/version.h | build
-	gcc $(CFLAGS) -Ithird_party/greatest -Itests/unit $(TEST_SRC) -o $(OUT_TEST) $(LDFLAGS)
+$(OUT_UNITTEST): $(TEST_SRC) build/version.h | build
+	gcc $(CFLAGS) -Ithird_party/greatest -Itests/unit $(TEST_SRC) -o $(OUT_UNITTEST) $(LDFLAGS)
 
 # ---------------------------------------------------------------------------
 # Tests:
@@ -268,28 +273,66 @@ $(OUT_TEST): $(TEST_SRC) build/version.h | build
 #   make test-scenario FILE=path — runs one scenario file. SLOW=1 paces input
 #                                  to ~600ms/key so you can watch the window.
 # ---------------------------------------------------------------------------
-build/openbounty-playtest: tools/playtest.c tools/playtest_lib.c tools/scenario.c third_party/cjson/cJSON.c | build
+$(OUT_PLAYTEST): tools/playtest.c tools/playtest_lib.c tools/scenario.c third_party/cjson/cJSON.c | build
 	gcc -std=c99 -Wall -Wextra -O2 -Ithird_party/cjson -Itools \
 	    tools/playtest.c tools/playtest_lib.c tools/scenario.c \
 	    third_party/cjson/cJSON.c \
-	    -o build/openbounty-playtest
+	    -o $(OUT_PLAYTEST)
+
+# ---------------------------------------------------------------------------
+# Engine playtest: links the game source directly against a raylib stub,
+# drives the engine via function calls — no socket, no fork, no window.
+# -Iengine in front of the real raylib include resolves `raylib.h` to the
+# stub at engine/raylib.h.
+# ---------------------------------------------------------------------------
+ENGPLAY_SRC := $(filter-out src/main.c,$(SRC)) tools/playtest_engine.c tests/unit/stubs.c
+ENGPLAY_CFLAGS := -std=c99 -Wall -Wextra -O2 -Iengine/headless -Iengine/include -I$(MINIH264_INC) -I$(MINIMP4_INC) -Isrc -Itools -Ibuild -Ithird_party/cjson -Ithird_party/miniz -DOB_HEADLESS
+# No raylib in LDFLAGS; the stub is header-only. Audio/X11 deps drop too.
+ENGPLAY_LDFLAGS := -lm -lpthread
+
+$(OUT_ENGPLAY): $(ENGPLAY_SRC) build/version.h | build
+	gcc $(ENGPLAY_CFLAGS) $(ENGPLAY_SRC) -o $(OUT_ENGPLAY) $(ENGPLAY_LDFLAGS)
+
+# ---------------------------------------------------------------------------
+# libobengine.a — engine compiled as a static archive. Consumers link
+# against this + their own renderer. cJSON and miniz are vendored inside
+# (the archive is self-contained). External consumers add
+# -Iengine/include and link -lobengine.
+#
+# Engine sources compile against engine/headless/raylib.h (the stub) so
+# the library itself has no raylib dependency.
+# ---------------------------------------------------------------------------
+ENGLIB_SRC := $(ENGINE_SRC) $(VENDOR_SRC)
+ENGLIB_OBJ_DIR := build/objs/englib
+ENGLIB_OBJ := $(patsubst %.c,$(ENGLIB_OBJ_DIR)/%.o,$(ENGLIB_SRC))
+ENGLIB_CFLAGS := -std=c99 -Wall -Wextra -O2 -fPIC -Iengine/headless -Iengine/include -Isrc -Ibuild -Ithird_party/cjson -Ithird_party/miniz -DOB_HEADLESS
+
+$(ENGLIB_OBJ_DIR)/%.o: %.c | $(ENGLIB_OBJ_DIR) build/version.h
+	@mkdir -p $(dir $@)
+	gcc $(ENGLIB_CFLAGS) -c $< -o $@
+
+$(ENGLIB_OBJ_DIR):
+	mkdir -p $@
+
+$(OUT_ENGLIB): $(ENGLIB_OBJ) | build
+	ar rcs $@ $(ENGLIB_OBJ)
 
 # Default `test` runs the fast unit suite only. Use `test-combat` for
 # the combat digest checks, `test-scenarios` for scripted full-game
 # scenarios, or `test-all` to run all three in sequence.
-test: $(OUT_TEST)
-	@./$(OUT_TEST)
+test: $(OUT_UNITTEST)
+	@./$(OUT_UNITTEST)
 
 test-combat: $(OUT)
 	@./scripts/combat_regression.sh
 
-test-scenarios: $(OUT) build/openbounty-playtest
-	@./build/openbounty-playtest --suite tools/scenarios --filter '!nightly,!flaky'
+test-scenarios: $(OUT) $(OUT_PLAYTEST)
+	@./$(OUT_PLAYTEST) --suite tools/scenarios --filter '!nightly,!flaky'
 
 test-all: test test-combat test-scenarios
 
-test-scenario: $(OUT) build/openbounty-playtest
-	@./build/openbounty-playtest --scenario $(FILE) $(if $(SLOW),--slow,)
+test-scenario: $(OUT) $(OUT_PLAYTEST)
+	@./$(OUT_PLAYTEST) --scenario $(FILE) $(if $(SLOW),--slow,)
 
 # ---------------------------------------------------------------------------
 # extract — produce a .openbounty pack (or a loose tree, with --out-dir)

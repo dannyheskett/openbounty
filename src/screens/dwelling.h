@@ -17,8 +17,8 @@
 #ifndef OB_SCREENS_DWELLING_H
 #define OB_SCREENS_DWELLING_H
 
-#include "../game.h"
-#include "../sprites.h"
+#include "game.h"
+#include "sprites.h"
 
 // Dwelling kind enum mirrors what the screen wants to render.
 typedef enum {

@@ -77,8 +77,8 @@ bool pack_resolve_arg(const char *arg, char *out, size_t cap);
 
 // Zip every file under `src_dir` into `out_zip` (a `.openbounty`
 // archive). Skips editor scratch files. Returns true on success.
-// Used by --extract to package the just-emitted loose tree, and by
-// the standalone tools/mkpack.c command-line equivalent.
+// Used by --extract (to package the just-emitted loose tree) and by
+// --pack-dir (to package an already-extracted assets/<name>/ tree).
 bool pack_zip_dir(const char *src_dir, const char *out_zip);
 
 // Recursively delete a directory tree. Used to clean up the temp

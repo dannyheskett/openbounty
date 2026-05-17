@@ -16,8 +16,8 @@
 #ifndef OB_SCREENS_END_GAME_H
 #define OB_SCREENS_END_GAME_H
 
-#include "../game.h"
-#include "../sprites.h"
+#include "game.h"
+#include "sprites.h"
 #include <stdbool.h>
 
 // Open the win or lose screen. Caches the formatted body text so the

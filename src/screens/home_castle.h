@@ -14,8 +14,8 @@
 #ifndef OB_SCREENS_HOME_CASTLE_H
 #define OB_SCREENS_HOME_CASTLE_H
 
-#include "../game.h"
-#include "../sprites.h"
+#include "game.h"
+#include "sprites.h"
 
 // Open the home-castle screen. Pushes VIEW_HOME_CASTLE on the view
 // stack and primes the controller's internal state (random animated

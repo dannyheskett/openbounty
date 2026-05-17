@@ -1,10 +1,10 @@
 #include "own_castle.h"
-#include "../layout.h"
-#include "../palette.h"
-#include "../bfont.h"
-#include "../views.h"
-#include "../tables.h"
-#include "../resources.h"
+#include "layout.h"
+#include "palette.h"
+#include "bfont.h"
+#include "views.h"
+#include "tables.h"
+#include "resources.h"
 #include "raylib.h"
 #include <stdio.h>
 #include <string.h>

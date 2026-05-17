@@ -7,8 +7,8 @@
 #ifndef OB_SCREENS_RECRUIT_SOLDIERS_H
 #define OB_SCREENS_RECRUIT_SOLDIERS_H
 
-#include "../game.h"
-#include "../sprites.h"
+#include "game.h"
+#include "sprites.h"
 #include <stdbool.h>
 
 // Initialise state and push VIEW_RECRUIT_SOLDIERS.

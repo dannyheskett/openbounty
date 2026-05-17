@@ -364,8 +364,8 @@ typedef struct {
     char astrology_body[RES_BANNER_LEN];
     char temp_death[RES_BANNER_LEN];
 
-    // Mid-combat give-up confirm (OpenKB ask_giveup, game.c:4519). No
-    // substitutions. The prompt itself adds " (y/n)?" automatically.
+    // Mid-combat give-up confirm. No substitutions. The prompt itself
+    // adds " (y/n)?" automatically.
     char combat_give_up_header[RES_BANNER_LEN];
     char combat_give_up_body[RES_BANNER_LEN];
 

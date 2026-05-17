@@ -13,8 +13,8 @@
 #ifndef OB_SCREENS_OWN_CASTLE_H
 #define OB_SCREENS_OWN_CASTLE_H
 
-#include "../game.h"
-#include "../sprites.h"
+#include "game.h"
+#include "sprites.h"
 #include <stdbool.h>
 
 // Open the screen for the given castle. Stashes castle_id internally

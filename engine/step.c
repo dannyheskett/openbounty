@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "raylib.h"
 #include "adventure.h"
 #include "audio.h"
 #include "recorder.h"

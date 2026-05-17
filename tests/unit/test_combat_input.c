@@ -19,20 +19,19 @@
 // The combat loop opens a yes/no prompt seeded from
 // res.banners.combat_give_up_{header,body}. On PROMPT_RESULT_YES it sets
 // c.result = 2; NO/CANCEL resumes combat. These tests pin the resource
-// text (so future game.json edits don't silently break parity with
-// OpenKB ask_giveup) and the prompt API contract the loop depends on.
+// text (so future game.json edits don't silently break the give-up flow)
+// and the prompt API contract the loop depends on.
 
-TEST give_up_banner_strings_match_openkb(void) {
+TEST give_up_banner_strings_match_expected(void) {
     Resources *res = fx_load_resources();
     ASSERT(res);
 
-    // Header is OpenKB's "Press 'ESC' to exit" hint (game.c:4525).
+    // Header is the "Press 'ESC' to exit" hint.
     ASSERT_STR_EQ("Press ESC to exit",
                   res->banners.combat_give_up_header);
 
-    // Body must contain the OpenKB phrasing (game.c:4530-4533). We
-    // don't pin exact whitespace because the prompt renderer adds
-    // "(y/n)?" itself.
+    // Body must contain the expected phrasing. We don't pin exact
+    // whitespace because the prompt renderer adds "(y/n)?" itself.
     ASSERT(strstr(res->banners.combat_give_up_body,
                   "Giving up will forfeit your") != NULL);
     ASSERT(strstr(res->banners.combat_give_up_body,
@@ -99,8 +98,7 @@ TEST view_swap_replaces_top(void) {
 //
 // Combat dispatches number keys 1..N inside VIEW_CONTROLS to
 // views_controls_advance, which cycles stats.options[row] within the
-// row's declared range. Mirrors OpenKB controls_menu's wrap-on-overflow
-// behavior (game.c:5424-5436).
+// row's declared range (wrap-on-overflow).
 
 TEST controls_advance_cycles_within_range(void) {
     Resources *res = fx_load_resources();
@@ -166,7 +164,7 @@ TEST controls_advance_rejects_out_of_range_row(void) {
 }
 
 SUITE(combat_input_suite) {
-    RUN_TEST(give_up_banner_strings_match_openkb);
+    RUN_TEST(give_up_banner_strings_match_expected);
     RUN_TEST(give_up_prompt_opens_and_dismisses);
     RUN_TEST(view_swap_replaces_top);
     RUN_TEST(controls_advance_cycles_within_range);

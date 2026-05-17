@@ -15,16 +15,16 @@
 // SCREEN_RESULT_DISMISS when ESC is pressed at idle.
 
 #include "recruit_soldiers.h"
-#include "../layout.h"
-#include "../palette.h"
-#include "../bfont.h"
-#include "../views.h"
-#include "../tables.h"
-#include "../resources.h"
-#include "../game.h"
-#include "../ui.h"
+#include "layout.h"
+#include "palette.h"
+#include "bfont.h"
+#include "views.h"
+#include "tables.h"
+#include "resources.h"
+#include "game.h"
+#include "ui.h"
 #include "raylib.h"
-#include "../harness_input.h"
+#include "harness_input.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

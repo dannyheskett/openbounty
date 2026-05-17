@@ -14,6 +14,7 @@
 #include "harness_input.h"
 #include "game.h"
 #include "combat.h"
+#include "combat_loop.h"
 #include "tables.h"
 #include "map.h"
 #include "fog.h"

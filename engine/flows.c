@@ -7,8 +7,7 @@
 #include "ui.h"
 #include "pending.h"
 #include "prompt.h"
-#include "end_cartoon.h"
-#include "screens/end_game.h"
+#include "end_screen.h"
 
 // Substitute %NAME% / %RANK% / %SCORE% in an end-of-game text template.
 static void format_end_text(char *out, int out_sz, const char *src,
@@ -68,16 +67,15 @@ void show_lose_game(const Game *g, const Resources *res) {
     screen_end_game_open(false, composed);
 }
 
-void show_win_game(Game *g, const Resources *res,
-                   RenderTexture2D *rt, const Sprites *sprites) {
-    //  / :
-    //   1. display_cartoon (hero walking the bridge cutscene).
-    //   2. Push VIEW_WIN — fullscreen ending image (sub_id 0) on the
-    //      right half + DBLUE on the left + rendered text. Status bar
-    //      auto-swaps to "Press 'ESC' to exit" via views_wants_exit_hint.
-    if (rt && sprites) {
-        run_end_cartoon(rt, res, sprites);
-    }
+void show_win_game(Game *g, const Resources *res) {
+    // Composes the verdict text and opens VIEW_WIN — fullscreen ending
+    // image (sub_id 0) on the right half + DBLUE on the left + rendered
+    // text. Status bar auto-swaps to "Press 'ESC' to exit" via
+    // views_wants_exit_hint.
+    //
+    // The animated win cartoon (hero walking the bridge cutscene) is a
+    // render-layer effect; shell code that wants it must call
+    // run_end_cartoon (src/end_cartoon.h) *before* this function.
 
     char header[128];
     char tmp_body[RES_END_BODY_LEN];
