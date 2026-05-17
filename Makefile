@@ -300,8 +300,16 @@ test: $(OUT_TEST)
 LIBTEST_CFLAGS := -std=c99 -Wall -Wextra -O2 -Iengine/headless -Iengine/include -Ithird_party/cjson
 LIBTEST_LDFLAGS := -lm -lpthread
 
+# --whole-archive forces every .o in libobengine.a to be pulled into
+# the link, even if the consumer doesn't reference it. Without this,
+# dead engine code that calls shell symbols would slip through because
+# static-archive linking only pulls referenced objects. The boundary
+# check needs to verify EVERY engine object resolves with only host
+# callbacks; --whole-archive makes that comprehensive.
 $(LIBTEST_STAMP): tests/library/consumer.c engine/host_noop.c $(OUT_ENGLIB) | build
-	@gcc $(LIBTEST_CFLAGS) tests/library/consumer.c engine/host_noop.c $(OUT_ENGLIB) -o $@.tmp $(LIBTEST_LDFLAGS)
+	gcc $(LIBTEST_CFLAGS) tests/library/consumer.c engine/host_noop.c \
+	    -Wl,--whole-archive $(OUT_ENGLIB) -Wl,--no-whole-archive \
+	    -o $@.tmp $(LIBTEST_LDFLAGS)
 	@rm -f $@.tmp
 	@touch $@
 
