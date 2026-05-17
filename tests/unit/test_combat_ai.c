@@ -197,7 +197,7 @@ TEST move_offset_no_target_returns_zero_when_blocked(void) {
     PASS();
 }
 
-SUITE(combat_ai_suite) {
+SUITE(unit_combat_ai_suite) {
     RUN_TEST(ai_pick_target_returns_zero_when_no_enemies);
     RUN_TEST(ai_pick_target_nearby_only_picks_adjacent);
     RUN_TEST(ai_pick_target_far_prefers_shooters);

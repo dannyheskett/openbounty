@@ -103,7 +103,7 @@ TEST snapshot_includes_character_block(void) {
     PASS();
 }
 
-SUITE(state_suite) {
+SUITE(unit_state_suite) {
     RUN_TEST(snapshot_is_deterministic_for_same_seed);
     RUN_TEST(snapshot_differs_for_different_seed);
     RUN_TEST(snapshot_includes_character_block);

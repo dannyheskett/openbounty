@@ -48,7 +48,7 @@ TEST villains_count_seventeen(void) {
     PASS();
 }
 
-SUITE(resources_suite) {
+SUITE(unit_resources_suite) {
     RUN_TEST(troops_catalog_nonempty);
     RUN_TEST(spells_catalog_complete);
     RUN_TEST(classes_catalog_four);

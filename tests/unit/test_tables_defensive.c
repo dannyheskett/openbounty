@@ -101,7 +101,7 @@ TEST class_stats_at_rank_zero_yields_base_values(void) {
     resources_free(res); free(res); PASS();
 }
 
-SUITE(tables_defensive_suite) {
+SUITE(unit_tables_defensive_suite) {
     RUN_TEST(troop_by_id_unknown_returns_null);
     RUN_TEST(troop_by_index_out_of_range_returns_null);
     RUN_TEST(troop_by_index_in_range_returns_def);

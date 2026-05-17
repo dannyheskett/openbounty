@@ -107,7 +107,7 @@ TEST rank_up_recomputes_leadership(void) {
     PASS();
 }
 
-SUITE(contract_suite) {
+SUITE(e2e_contract_suite) {
     RUN_TEST(fulfill_contract_pays_reward_and_marks_caught);
     RUN_TEST(fulfill_contract_clears_active_when_match);
     RUN_TEST(fulfill_contract_unknown_id_returns_false);

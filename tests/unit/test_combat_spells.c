@@ -165,7 +165,7 @@ TEST spell_resurrect_skips_dead_stack(void) {
     resources_free(res); free(res); PASS();
 }
 
-SUITE(combat_spells_suite) {
+SUITE(unit_combat_spells_suite) {
     RUN_TEST(spell_damage_value_scales_with_sp);
     RUN_TEST(spell_damage_value_clamps_low_sp);
     RUN_TEST(spell_damage_value_zero_base);

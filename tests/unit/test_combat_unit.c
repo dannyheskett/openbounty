@@ -83,7 +83,7 @@ TEST under_control_invalid_troop_returns_false(void) {
     PASS();
 }
 
-SUITE(combat_unit_suite) {
+SUITE(unit_combat_unit_suite) {
     RUN_TEST(init_unit_sets_count_and_max);
     RUN_TEST(init_unit_zero_count);
     RUN_TEST(morale_to_rank_low_high_default);

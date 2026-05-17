@@ -109,12 +109,12 @@ TEST combat_digest_case(size_t idx) {
     PASS();
 }
 
-SUITE(combat_digests_suite) {
+SUITE(regression_combat_digests_suite) {
     // Lazy-load resources so troop_by_id() can resolve catalog entries.
     Resources *res = fx_load_resources();
     if (!res) {
         fprintf(stderr,
-                "combat_digests_suite: fx_load_resources failed\n");
+                "regression_combat_digests_suite: fx_load_resources failed\n");
         return;
     }
     for (size_t i = 0; i < CASE_COUNT; i++) {

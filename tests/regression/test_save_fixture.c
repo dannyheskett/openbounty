@@ -48,6 +48,6 @@ TEST load_fixture_state_matches_minted_values(void) {
     PASS();
 }
 
-SUITE(save_fixture_suite) {
+SUITE(regression_save_fixture_suite) {
     RUN_TEST(load_fixture_state_matches_minted_values);
 }

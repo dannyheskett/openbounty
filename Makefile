@@ -242,45 +242,20 @@ dist-mac: $(OUT_MAC)
 
 # ---------------------------------------------------------------------------
 # Unit tests (second binary, links the same SRC minus main.c plus
-# tests/unit/*.c with greatest as the framework).
+# tests/{unit,regression,e2e}/*.c with greatest as the framework).
 # ---------------------------------------------------------------------------
-TEST_ONLY_SRC := tests/unit/stubs.c \
-                 tests/unit/fixtures.c \
-                 tests/unit/main.c \
-                 tests/unit/test_terrain.c \
-                 tests/unit/test_map.c \
-                 tests/unit/test_chest.c \
-                 tests/unit/test_save.c \
-                 tests/unit/test_tables.c \
-                 tests/unit/test_state.c \
-                 tests/unit/test_combat_rng.c \
-                 tests/unit/test_combat_unit.c \
-                 tests/unit/test_combat_geom.c \
-                 tests/unit/test_combat_damage.c \
-                 tests/unit/test_combat_spells.c \
-                 tests/unit/test_resources.c \
-                 tests/unit/test_save_more.c \
-                 tests/unit/test_map_more.c \
-                 tests/unit/test_score.c \
-                 tests/unit/test_game_flow.c \
-                 tests/unit/test_combat_ai.c \
-                 tests/unit/test_save_fixture.c \
-                 tests/unit/test_contract.c \
-                 tests/unit/test_economy.c \
-                 tests/unit/test_fog.c \
-                 tests/unit/test_map_overlay.c \
-                 tests/unit/test_state_json.c \
-                 tests/unit/test_tables_defensive.c \
-                 tests/unit/test_pack.c \
-                 tests/unit/test_combat_input.c \
-                 tests/unit/test_combat_digests.c
+TEST_SHARED  := tests/stubs.c tests/fixtures.c tests/main.c
+TEST_UNIT    := $(wildcard tests/unit/*.c)
+TEST_REGR    := $(wildcard tests/regression/*.c)
+TEST_E2E     := $(wildcard tests/e2e/*.c)
+TEST_ONLY_SRC := $(TEST_SHARED) $(TEST_UNIT) $(TEST_REGR) $(TEST_E2E)
 
 # Unit-test binary: shell sources (minus main.c) + test sources +
 # libobengine.a. Same model as the game binary; tests link the library.
 TEST_SRC := $(filter-out src/main.c,$(SHELL_SRC)) $(TOOL_SRC) $(TEST_ONLY_SRC)
 
 $(OUT_TEST): $(TEST_SRC) $(OUT_ENGLIB) build/version.h | build
-	gcc $(CFLAGS) -Ithird_party/greatest -Itests/unit $(TEST_SRC) $(OUT_ENGLIB) -o $(OUT_TEST) $(LDFLAGS)
+	gcc $(CFLAGS) -Ithird_party/greatest -Itests $(TEST_SRC) $(OUT_ENGLIB) -o $(OUT_TEST) $(LDFLAGS)
 
 # ---------------------------------------------------------------------------
 # libobengine.a — engine compiled as a static archive. Consumers link

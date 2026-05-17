@@ -213,9 +213,17 @@ Normal play: `./build/openbounty` (no flags).
 ### `build/openbounty-test` — test runner
 
 Driven by the [greatest](https://github.com/silentbicycle/greatest)
-single-header framework. 171 tests across 27 suites: unit tests for
-engine state/AI/combat/map/fog/save/etc., plus the combat-formula
-golden-digest suite.
+single-header framework. 171 tests across 27 suites, layered:
+
+| Layer | Suites | Tests | What it covers |
+|---|---:|---:|---|
+| **unit** (`tests/unit/`) | 17 | 103 | Single-function or small-scope state checks: combat math, RNG, map/fog/tile state, table lookups, JSON serialization. |
+| **regression** (`tests/regression/`) | 2 | 26 | Pinned golden outputs: combat-formula digests, save-file fixture round-trips. A failure means behavior changed; investigation decides intent vs bug. |
+| **e2e** (`tests/e2e/`) | 8 | 42 | Multi-step flows across systems: game flow, chest, contract, economy, score, combat input, save round-trips. |
+
+Suite names carry their layer as a prefix (`unit_terrain_suite`,
+`regression_combat_digests_suite`, `e2e_game_flow_suite`), so
+greatest's `-s` substring filter selects a layer.
 
 | Flag | Argument | Effect |
 |---|---|---|
@@ -231,12 +239,14 @@ golden-digest suite.
 
 Examples:
 ```
-./build/openbounty-test                     # run everything
-./build/openbounty-test -l                  # list tests
-./build/openbounty-test -s combat_rng       # one suite
-./build/openbounty-test -t damage -v        # one test, verbose
-./build/openbounty-test -s combat_digests   # just the formula goldens
-./build/openbounty-test -f                  # stop on first failure
+./build/openbounty-test                       # run everything (171 tests)
+./build/openbounty-test -s unit_              # 103 unit tests
+./build/openbounty-test -s regression_        # 26 regression tests
+./build/openbounty-test -s e2e_               # 42 e2e tests
+./build/openbounty-test -s combat_            # all combat (any layer)
+./build/openbounty-test -t damage -v          # one test, verbose
+./build/openbounty-test -l                    # list everything
+./build/openbounty-test -f                    # stop on first failure
 ```
 
 ### Library boundary check (no binary emitted)

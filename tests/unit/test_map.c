@@ -75,7 +75,7 @@ TEST get_tile_at_known_chest_position(void) {
     PASS();
 }
 
-SUITE(map_suite) {
+SUITE(unit_map_suite) {
     RUN_TEST(in_bounds_corners_and_outside);
     RUN_TEST(load_continentia_succeeds);
     RUN_TEST(get_tile_at_known_chest_position);

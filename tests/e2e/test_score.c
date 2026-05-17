@@ -54,7 +54,7 @@ TEST artifacts_found_reflects_state(void) {
     PASS();
 }
 
-SUITE(score_suite) {
+SUITE(e2e_score_suite) {
     RUN_TEST(compute_score_starts_at_zero_villains);
     RUN_TEST(villains_caught_reflects_state);
     RUN_TEST(artifacts_found_reflects_state);

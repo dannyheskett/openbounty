@@ -163,7 +163,7 @@ TEST controls_advance_rejects_out_of_range_row(void) {
     PASS();
 }
 
-SUITE(combat_input_suite) {
+SUITE(e2e_combat_input_suite) {
     RUN_TEST(give_up_banner_strings_match_expected);
     RUN_TEST(give_up_prompt_opens_and_dismisses);
     RUN_TEST(view_swap_replaces_top);

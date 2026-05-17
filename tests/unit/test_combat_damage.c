@@ -186,7 +186,7 @@ TEST damage_seed_determinism(void) {
     PASS();
 }
 
-SUITE(combat_damage_suite) {
+SUITE(unit_combat_damage_suite) {
     RUN_TEST(damage_reduces_target_count);
     RUN_TEST(damage_sets_retaliation_flag);
     RUN_TEST(damage_external_spell_kills_count);

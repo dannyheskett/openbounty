@@ -133,7 +133,7 @@ TEST save_load_save_state_identical(void) {
     PASS();
 }
 
-SUITE(save_more_suite) {
+SUITE(e2e_save_more_suite) {
     RUN_TEST(save_preserves_army_contents);
     RUN_TEST(save_preserves_consumed_list);
     RUN_TEST(save_preserves_villains_caught);

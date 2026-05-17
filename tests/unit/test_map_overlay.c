@@ -97,7 +97,7 @@ TEST hero_spawn_coords_present(void) {
     PASS();
 }
 
-SUITE(map_overlay_suite) {
+SUITE(unit_map_overlay_suite) {
     RUN_TEST(sign_at_known_coord_has_expected_title);
     RUN_TEST(get_tile_in_bounds_returns_non_null);
     RUN_TEST(get_tile_out_of_bounds_returns_null);

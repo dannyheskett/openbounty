@@ -92,7 +92,7 @@ TEST map_walkable_matches_adventure_predicate(void) {
     PASS();
 }
 
-SUITE(map_more_suite) {
+SUITE(unit_map_more_suite) {
     RUN_TEST(clear_interactive_removes_overlay);
     RUN_TEST(load_all_four_zones_succeeds);
     RUN_TEST(get_tile_out_of_bounds_returns_null);

@@ -41,7 +41,7 @@ TEST walkable_in_flight_ignores_water(void) {
     PASS();
 }
 
-SUITE(terrain_suite) {
+SUITE(unit_terrain_suite) {
     RUN_TEST(walkable_grass_passes);
     RUN_TEST(walkable_water_blocks_on_foot);
     RUN_TEST(walkable_water_passes_in_boat);

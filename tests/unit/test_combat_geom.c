@@ -66,7 +66,7 @@ TEST cell_filter_any_passes_anything(void) {
     PASS();
 }
 
-SUITE(combat_geom_suite) {
+SUITE(unit_combat_geom_suite) {
     RUN_TEST(touching_orthogonal_neighbors);
     RUN_TEST(touching_diagonals);
     RUN_TEST(touching_same_cell);

@@ -114,7 +114,7 @@ TEST fog_survives_save_load_round_trip(void) {
     PASS();
 }
 
-SUITE(fog_suite) {
+SUITE(unit_fog_suite) {
     RUN_TEST(init_starts_with_no_tiles_seen);
     RUN_TEST(reveal_marks_5x5_square);
     RUN_TEST(reveal_clamps_at_map_edges);

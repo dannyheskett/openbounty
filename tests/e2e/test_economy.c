@@ -224,7 +224,7 @@ TEST compact_army_already_dense_unchanged(void) {
     PASS();
 }
 
-SUITE(economy_suite) {
+SUITE(e2e_economy_suite) {
     RUN_TEST(buy_troop_drains_gold);
     RUN_TEST(buy_troop_refuses_when_broke);
     RUN_TEST(buy_troop_refuses_over_leadership);

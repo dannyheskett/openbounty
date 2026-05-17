@@ -76,7 +76,7 @@ TEST combat_seed_rng_same_inputs_same_state(void) {
     PASS();
 }
 
-SUITE(combat_rng_suite) {
+SUITE(unit_combat_rng_suite) {
     RUN_TEST(kb_rand_deterministic_for_same_seed);
     RUN_TEST(kb_rand_respects_range);
     RUN_TEST(kb_rand_actually_varies);

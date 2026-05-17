@@ -136,7 +136,7 @@ TEST pack_stack_top_wins(void) {
     PASS();
 }
 
-SUITE(pack_suite) {
+SUITE(unit_pack_suite) {
     RUN_TEST(pack_open_dir_reads_known_entry);
     RUN_TEST(pack_lookup_missing_returns_null);
     RUN_TEST(pack_open_zip_reads_entries_and_identity);

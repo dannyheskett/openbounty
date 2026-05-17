@@ -54,7 +54,7 @@ TEST villain_by_id_unknown_returns_null(void) {
     PASS();
 }
 
-SUITE(tables_suite) {
+SUITE(unit_tables_suite) {
     RUN_TEST(troop_by_id_known_returns_def);
     RUN_TEST(troop_by_id_unknown_returns_null);
     RUN_TEST(class_by_id_knight_returns_def);

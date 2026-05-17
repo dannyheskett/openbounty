@@ -46,7 +46,7 @@ TEST add_consumed_dedupes(void) {
     PASS();
 }
 
-SUITE(chest_suite) {
+SUITE(e2e_chest_suite) {
     RUN_TEST(accept_gold_increments_stat);
     RUN_TEST(accept_gold_zero_is_noop);
     RUN_TEST(accept_leadership_increments_both_stats);

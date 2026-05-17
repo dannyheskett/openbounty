@@ -18,7 +18,7 @@ static void close_test_pack(void) {
 }
 
 static bool ensure_test_pack(void) {
-    // Re-push if pack_suite (or another test) cleared the stack between
+    // Re-push if unit_pack_suite (or another test) cleared the stack between
     // suites. s_test_pack stays open across the process; only the stack
     // membership changes.
     if (!pack_stack_top()) {

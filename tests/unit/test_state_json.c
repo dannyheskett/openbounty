@@ -146,7 +146,7 @@ TEST snapshot_serializes_to_valid_json_string(void) {
     PASS();
 }
 
-SUITE(state_json_suite) {
+SUITE(unit_state_json_suite) {
     RUN_TEST(snapshot_has_expected_top_level_keys);
     RUN_TEST(snapshot_mode_is_adventure_when_no_combat);
     RUN_TEST(snapshot_seed_matches_game);

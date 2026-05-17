@@ -83,7 +83,7 @@ TEST roundtrip_preserves_seed(void) {
     PASS();
 }
 
-SUITE(save_suite) {
+SUITE(e2e_save_suite) {
     RUN_TEST(roundtrip_preserves_position);
     RUN_TEST(roundtrip_preserves_seed);
 }

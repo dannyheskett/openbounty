@@ -205,7 +205,7 @@ TEST snapshot_after_state_change(void) {
     PASS();
 }
 
-SUITE(game_flow_suite) {
+SUITE(e2e_game_flow_suite) {
     RUN_TEST(walk_save_load_walk_continues);
     RUN_TEST(chest_consumed_persists_across_save);
     RUN_TEST(switch_zone_updates_position_zone);
