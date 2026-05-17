@@ -207,7 +207,6 @@ modes (extractor, pack builder, headless combat digest).
 | `--extract` | — | Build an asset pack from a user's DOS distribution and exit. Input: `legacy/bin/KB.EXE` if present, else `./KB.EXE`. Output: `<user-data>/openbounty/<pack_id>.openbounty`. |
 | `--out-dir` | `<dir>` | Modifier for `--extract`: emit a loose asset tree to `<dir>` instead of a zip. |
 | `--pack-dir` | `<src> <dst>` | Zip a pre-extracted asset tree into a `.openbounty` archive. Used by the Makefile to build the shipped pack. |
-| `--combat-test` | `SEED:ATTACKER:N:DEFENDER:N:ROUNDS` | Headless combat-digest mode. Loads resources, runs a deterministic scripted battle, prints a 64-bit hex digest, exits. No window. Same formula the in-binary `combat_digests_suite` tests pin in CI. |
 
 Normal play: `./build/openbounty` (no flags).
 

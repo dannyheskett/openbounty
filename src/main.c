@@ -430,8 +430,6 @@ int main(int argc, char **argv) {
     const char *extract_out_dir = NULL; // --out-dir <dir>: extract to loose tree
     const char *pack_dir_src = NULL;  // --pack-dir <src> <dst>: zip a loose asset tree
     const char *pack_dir_dst = NULL;
-    bool combat_test = false;
-    const char *combat_test_arg = NULL;
     int record_cap = 0;          // 0 → recorder_init uses default
     const char *record_dir = NULL;
     bool encode_movie = false;
@@ -447,9 +445,8 @@ int main(int argc, char **argv) {
             printf("openbounty build %s\n"
                    "Usage: %s [--fullscreen] [--pack <name|path>] [--save-dir <dir>] [--extract [--out-dir <dir>]]\n"
                    "       %*s [--record <dir>] [--record-cap N] [--encode-movie] [--seed N] [--version]\n"
-                   "       %s --combat-test SEED:ATTACKER:N:DEFENDER:N:ROUNDS\n"
                    "       %s --pack-dir <src_dir> <out_zip>\n",
-                   OPENBOUNTY_VERSION, argv[0], (int)strlen(argv[0]), "", argv[0], argv[0]);
+                   OPENBOUNTY_VERSION, argv[0], (int)strlen(argv[0]), "", argv[0]);
             return 0;
         } else if (strcmp(a, "--fullscreen") == 0) {
             want_fullscreen = true;
@@ -459,9 +456,6 @@ int main(int argc, char **argv) {
             extract_mode = true;
         } else if (strcmp(a, "--out-dir") == 0 && i + 1 < argc) {
             extract_out_dir = argv[++i];
-        } else if (strcmp(a, "--combat-test") == 0 && i + 1 < argc) {
-            combat_test = true;
-            combat_test_arg = argv[++i];
         } else if (strcmp(a, "--record") == 0 && i + 1 < argc) {
             record_dir = argv[++i];
         } else if (strcmp(a, "--record-cap") == 0 && i + 1 < argc) {
@@ -700,36 +694,6 @@ int main(int argc, char **argv) {
         return 1;
     }
     pack_stack_push(pack);
-
-    if (combat_test) {
-        // Headless determinism harness. Parses the colon-
-        // separated arg, loads resources, runs combat_test_digest, prints
-        // the digest, and exits without opening a window.
-        Resources tres;
-        if (!resources_load(&tres, "game.json")) {
-            fprintf(stderr, "Failed to load resources from %s.\n", pack_path);
-            pack_stack_clear();
-            return 2;
-        }
-        char buf[256];
-        snprintf(buf, sizeof buf, "%s", combat_test_arg);
-        unsigned long seed = 0;
-        char attacker[64] = "", defender[64] = "";
-        int an = 0, dn = 0, rounds = 0;
-        if (sscanf(buf, "%lu:%63[^:]:%d:%63[^:]:%d:%d",
-                   &seed, attacker, &an, defender, &dn, &rounds) != 6) {
-            fprintf(stderr,
-                    "combat-test: expected SEED:ATTACKER:N:DEFENDER:N:ROUNDS\n");
-            return 2;
-        }
-        uint64_t d = combat_test_digest((uint64_t)seed, attacker, an,
-                                        defender, dn, rounds);
-        printf("digest %016llx seed=%lu %s(%d) vs %s(%d) rounds=%d\n",
-               (unsigned long long)d, seed, attacker, an, defender, dn, rounds);
-        resources_free(&tres);
-        pack_stack_clear();
-        return 0;
-    }
 
     // Silence raylib's per-asset INFO chatter; keep warnings + errors.
     SetTraceLogLevel(LOG_WARNING);
