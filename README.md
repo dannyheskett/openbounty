@@ -240,31 +240,6 @@ Examples:
 ./build/openbounty-test -f                  # stop on first failure
 ```
 
-### `build/openbounty-engplay` — headless playtest driver
-
-Drives the engine via direct function calls — no window, no audio, no
-60 fps wallclock pacing. Links the raylib stub so no graphics deps are
-needed at runtime.
-
-| Flag | Argument | Effect |
-|---|---|---|
-| `-h`, `--help` | — | Print usage and exit. |
-| `--pack` | `<dir>` | Pack directory. Default `assets/kings-bounty`. |
-| `--seed` | `N` | Deterministic seed. Default 42. |
-| `--class` | `0..3` | 0=knight, 1=paladin, 2=sorceress, 3=barbarian. Default 0. |
-| `--name` | `<s>` | Hero name. Default `Bot`. |
-| `--difficulty` | `0..3` | 0=easy, 1=normal, 2=hard, 3=impossible. Default 1. |
-| `--steps` | `DIR:N` | Walk N tiles in direction DIR. DIR is one of `U`, `D`, `L`, `R`, `NE`, `NW`, `SE`, `SW`. May repeat to chain batches. |
-| `--dump` | — | Print full state JSON on stdout at end. |
-| `--quiet` | — | Suppress per-step progress on stderr. |
-
-Examples:
-```
-./build/openbounty-engplay                                       # init game, do nothing
-./build/openbounty-engplay --steps R:10 --steps D:5 --dump       # walk and dump state
-./build/openbounty-engplay --seed 100 --class 2 --name Mage      # different setup
-```
-
 ### Library boundary check (no binary emitted)
 
 `make all` runs a compile-only verification: `tests/library/consumer.c`
@@ -281,7 +256,7 @@ depending on shell headers or shell symbols, this build step fails and
 
 | Target | What it does |
 |---|---|
-| `make` / `make all` | Builds all three binaries (`openbounty`, `openbounty-test`, `openbounty-engplay`) + `libobengine.a` + library boundary check + pack zips. |
+| `make` / `make all` | Builds the two binaries (`openbounty`, `openbounty-test`) + `libobengine.a` + library boundary check + pack zips. |
 | `make test` | Runs `build/openbounty-test`: 171 tests via greatest, including the combat-formula golden digests. |
 | `make release` | `build/openbounty-release`, `-O2` stripped. |
 | `make windows` | Cross-compile `openbounty-x64.exe` and `openbounty-x86.exe`. |

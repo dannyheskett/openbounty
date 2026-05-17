@@ -48,12 +48,11 @@ OUT_RELEASE := build/openbounty-release
 PACK_NAMES := $(notdir $(patsubst %/,%,$(wildcard assets/*/)))
 PACKS := $(addprefix build/assets/,$(addsuffix .openbounty,$(PACK_NAMES)))
 
-OUT_TEST    := build/openbounty-test
-OUT_ENGPLAY := build/openbounty-engplay
-OUT_ENGLIB  := build/libobengine.a
+OUT_TEST      := build/openbounty-test
+OUT_ENGLIB    := build/libobengine.a
 LIBTEST_STAMP := build/libtest-pass.stamp
 
-all: $(OUT) $(OUT_TEST) $(OUT_ENGPLAY) $(OUT_ENGLIB) $(LIBTEST_STAMP) $(PACKS)
+all: $(OUT) $(OUT_TEST) $(OUT_ENGLIB) $(LIBTEST_STAMP) $(PACKS)
 
 # Generate build/version.h from $(OPENBOUNTY_VERSION). Marked .PHONY-style
 # (FORCE prereq) so it always runs — the cmp/mv inside only rewrites the
@@ -282,21 +281,6 @@ TEST_SRC := $(filter-out src/main.c,$(SHELL_SRC)) $(TOOL_SRC) $(TEST_ONLY_SRC)
 
 $(OUT_TEST): $(TEST_SRC) $(OUT_ENGLIB) build/version.h | build
 	gcc $(CFLAGS) -Ithird_party/greatest -Itests/unit $(TEST_SRC) $(OUT_ENGLIB) -o $(OUT_TEST) $(LDFLAGS)
-
-# ---------------------------------------------------------------------------
-# Engine playtest: links libobengine.a + the shell sources (compiled
-# against the raylib stub) + the playtest driver. No socket, no fork,
-# no window. -Iengine/headless ahead of any real raylib include path
-# resolves `raylib.h` to the stub at engine/headless/raylib.h.
-# ---------------------------------------------------------------------------
-ENGPLAY_SHELL_SRC := $(filter-out src/main.c src/combat_loop.c,$(SHELL_SRC)) $(TOOL_SRC)
-ENGPLAY_SRC := $(ENGPLAY_SHELL_SRC) tools/playtest_engine.c tests/unit/stubs.c
-ENGPLAY_CFLAGS := -std=c99 -Wall -Wextra -O2 -Iengine/headless -Iengine/include -I$(MINIH264_INC) -I$(MINIMP4_INC) -Isrc -Itools -Ibuild -Ithird_party/cjson -Ithird_party/miniz -DOB_HEADLESS
-# No raylib in LDFLAGS; the stub is header-only. Audio/X11 deps drop too.
-ENGPLAY_LDFLAGS := -lm -lpthread
-
-$(OUT_ENGPLAY): $(ENGPLAY_SRC) $(OUT_ENGLIB) build/version.h | build
-	gcc $(ENGPLAY_CFLAGS) $(ENGPLAY_SRC) $(OUT_ENGLIB) -o $(OUT_ENGPLAY) $(ENGPLAY_LDFLAGS)
 
 # ---------------------------------------------------------------------------
 # libobengine.a — engine compiled as a static archive. Consumers link

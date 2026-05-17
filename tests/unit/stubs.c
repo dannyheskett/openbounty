@@ -8,11 +8,3 @@
 // state_serialize. Tests never enter the fast-quit flow.
 bool main_fast_quit_active(void) { return false; }
 
-// Combat shell-only functions. src/harness.c references the auto-
-// player toggle which lives in src/combat_loop.c. The unit-test build
-// links combat_loop.c so the real symbols resolve; the engplay build
-// excludes combat_loop.c and gets these stubs.
-#ifdef OB_HEADLESS
-void combat_set_auto_player(bool on) { (void)on; }
-bool combat_auto_player(void) { return false; }
-#endif
