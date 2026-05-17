@@ -265,13 +265,15 @@ Examples:
 ./build/openbounty-engplay --seed 100 --class 2 --name Mage      # different setup
 ```
 
-### `build/openbounty-libtest` — library boundary build artifact
+### Library boundary check (no binary emitted)
 
-Built by `make all`. Verifies the engine library is consumable in
-isolation: links only `libobengine.a` + `host_noop.c`, no `-Isrc`,
-no raylib. **The compile + link IS the test** — if the engine starts
-depending on shell code, this build target fails and `make all`
-fails. There is no runtime invocation.
+`make all` runs a compile-only verification: `tests/library/consumer.c`
++ `engine/host_noop.c` + `libobengine.a` are linked with **only**
+`-Iengine/headless -Iengine/include` (no `-Isrc`) and **only**
+`-lm -lpthread` (no raylib, no X11). The output binary is discarded;
+`build/libtest-pass.stamp` is touched on success. If the engine starts
+depending on shell headers or shell symbols, this build step fails and
+`make all` fails. There is no runtime test binary.
 
 ---
 
@@ -279,7 +281,7 @@ fails. There is no runtime invocation.
 
 | Target | What it does |
 |---|---|
-| `make` / `make all` | Builds all four binaries + `libobengine.a` + libtest boundary check + pack zips. |
+| `make` / `make all` | Builds all three binaries (`openbounty`, `openbounty-test`, `openbounty-engplay`) + `libobengine.a` + library boundary check + pack zips. |
 | `make test` | Runs `build/openbounty-test`: 171 tests via greatest, including the combat-formula golden digests. |
 | `make release` | `build/openbounty-release`, `-O2` stripped. |
 | `make windows` | Cross-compile `openbounty-x64.exe` and `openbounty-x86.exe`. |

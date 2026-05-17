@@ -51,9 +51,9 @@ PACKS := $(addprefix build/assets/,$(addsuffix .openbounty,$(PACK_NAMES)))
 OUT_TEST    := build/openbounty-test
 OUT_ENGPLAY := build/openbounty-engplay
 OUT_ENGLIB  := build/libobengine.a
-OUT_LIBTEST := build/openbounty-libtest
+LIBTEST_STAMP := build/libtest-pass.stamp
 
-all: $(OUT) $(OUT_TEST) $(OUT_ENGPLAY) $(OUT_ENGLIB) $(OUT_LIBTEST) $(PACKS)
+all: $(OUT) $(OUT_TEST) $(OUT_ENGPLAY) $(OUT_ENGLIB) $(LIBTEST_STAMP) $(PACKS)
 
 # Generate build/version.h from $(OPENBOUNTY_VERSION). Marked .PHONY-style
 # (FORCE prereq) so it always runs — the cmp/mv inside only rewrites the
@@ -324,24 +324,27 @@ $(OUT_ENGLIB): $(ENGLIB_OBJ) | build
 
 # Single test command. greatest runs the entire suite: unit tests,
 # combat-formula digests, everything. The library-boundary check is a
-# build-time link verification — $(OUT_LIBTEST) is in $(all) so a
+# build-time link verification — $(LIBTEST_STAMP) is in $(all) so a
 # regression where engine code depends on shell headers will fail at
 # `make all` time.
 test: $(OUT_TEST)
 	@./$(OUT_TEST)
 
 # ---------------------------------------------------------------------------
-# Library boundary check. Builds a minimal consumer that links
+# Library boundary check. Compiles a minimal consumer against
 # libobengine.a + engine/host_noop.c using ONLY engine include paths
 # (no -Isrc) and only -lm -lpthread (no raylib, no X11). If the engine
-# starts depending on shell headers or shell symbols, this link fails
-# and `make all` fails. No runtime invocation — the link IS the test.
+# starts depending on shell headers or shell symbols, this build fails
+# and `make all` fails. No binary is emitted — the link verifies symbol
+# resolution and is discarded; a stamp file records success.
 # ---------------------------------------------------------------------------
 LIBTEST_CFLAGS := -std=c99 -Wall -Wextra -O2 -Iengine/headless -Iengine/include -Ithird_party/cjson
 LIBTEST_LDFLAGS := -lm -lpthread
 
-$(OUT_LIBTEST): tests/library/consumer.c engine/host_noop.c $(OUT_ENGLIB) | build
-	gcc $(LIBTEST_CFLAGS) tests/library/consumer.c engine/host_noop.c $(OUT_ENGLIB) -o $(OUT_LIBTEST) $(LIBTEST_LDFLAGS)
+$(LIBTEST_STAMP): tests/library/consumer.c engine/host_noop.c $(OUT_ENGLIB) | build
+	@gcc $(LIBTEST_CFLAGS) tests/library/consumer.c engine/host_noop.c $(OUT_ENGLIB) -o $@.tmp $(LIBTEST_LDFLAGS)
+	@rm -f $@.tmp
+	@touch $@
 
 # ---------------------------------------------------------------------------
 # extract — produce a .openbounty pack (or a loose tree, with --out-dir)
