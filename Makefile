@@ -31,8 +31,8 @@ LDFLAGS_RELEASE := -L$(RAYLIB)/lib -lraylib -lm -lpthread -ldl -lrt \
                    -lasound \
                    -static-libgcc -Wl,-Bsymbolic
 
-ENGINE_SRC := engine/game.c engine/map.c engine/fog.c engine/pack.c engine/tile.c engine/savegame.c engine/state_serialize.c engine/savepath.c engine/tables.c engine/adventure.c engine/resources.c engine/pending.c engine/flows.c engine/step.c engine/spells_adventure.c engine/fatal.c engine/assets_bytes.c src/combat.c
-SHELL_SRC  := src/main.c src/assets.c src/pack_select.c src/recorder.c src/audio.c src/encode_mp4.c src/encode_mp4_h264.c src/encode_mp4_mux.c src/encode_dialog.c src/bfont.c src/tile_cache.c src/sprites.c src/views.c src/ui.c src/screenshot.c src/harness_input.c src/harness.c src/combat_render.c src/palette.c src/chrome.c src/hud.c src/map_render.c src/overlay.c src/views_render.c src/input.c src/prompt.c src/startup.c src/end_cartoon.c src/screens/home_castle.c src/screens/recruit_soldiers.c src/screens/own_castle.c src/screens/dwelling.c src/screens/alcove.c src/screens/end_game.c
+ENGINE_SRC := engine/game.c engine/map.c engine/fog.c engine/pack.c engine/tile.c engine/savegame.c engine/state_serialize.c engine/savepath.c engine/tables.c engine/adventure.c engine/resources.c engine/pending.c engine/flows.c engine/step.c engine/spells_adventure.c engine/fatal.c engine/assets_bytes.c engine/combat.c engine/combat_log.c
+SHELL_SRC  := src/main.c src/assets.c src/pack_select.c src/recorder.c src/audio.c src/encode_mp4.c src/encode_mp4_h264.c src/encode_mp4_mux.c src/encode_dialog.c src/bfont.c src/tile_cache.c src/sprites.c src/views.c src/ui.c src/screenshot.c src/combat_loop.c src/combat_render.c src/palette.c src/chrome.c src/hud.c src/map_render.c src/overlay.c src/views_render.c src/input.c src/prompt.c src/startup.c src/end_cartoon.c src/screens/home_castle.c src/screens/recruit_soldiers.c src/screens/own_castle.c src/screens/dwelling.c src/screens/alcove.c src/screens/end_game.c
 TOOL_SRC   := tools/extract.c tools/extract_io.c tools/extract_unpack.c tools/extract_lzw.c tools/extract_vga.c tools/extract_png.c tools/extract_chrome.c tools/extract_gamejson.c
 VENDOR_SRC := third_party/cjson/cJSON.c third_party/miniz/miniz.c
 
@@ -48,12 +48,12 @@ OUT_RELEASE := build/openbounty-release
 PACK_NAMES := $(notdir $(patsubst %/,%,$(wildcard assets/*/)))
 PACKS := $(addprefix build/assets/,$(addsuffix .openbounty,$(PACK_NAMES)))
 
-OUT_UNITTEST := build/openbounty-unittest
-OUT_PLAYTEST := build/openbounty-playtest
-OUT_ENGPLAY  := build/openbounty-engplay
-OUT_ENGLIB   := build/libobengine.a
+OUT_TEST    := build/openbounty-test
+OUT_ENGPLAY := build/openbounty-engplay
+OUT_ENGLIB  := build/libobengine.a
+OUT_LIBTEST := build/openbounty-libtest
 
-all: $(OUT) $(OUT_UNITTEST) $(OUT_PLAYTEST) $(OUT_ENGPLAY) $(OUT_ENGLIB) $(PACKS)
+all: $(OUT) $(OUT_TEST) $(OUT_ENGPLAY) $(OUT_ENGLIB) $(OUT_LIBTEST) $(PACKS)
 
 # Generate build/version.h from $(OPENBOUNTY_VERSION). Marked .PHONY-style
 # (FORCE prereq) so it always runs — the cmp/mv inside only rewrites the
@@ -66,10 +66,23 @@ build/version.h: FORCE | build
 	@printf '#ifndef OB_VERSION_H\n#define OB_VERSION_H\n#define OPENBOUNTY_VERSION "%s"\n#endif\n' "$(OPENBOUNTY_VERSION)" > $@.tmp
 	@if ! cmp -s $@.tmp $@ 2>/dev/null; then mv $@.tmp $@; else rm $@.tmp; fi
 
+# Shell + tool object files. Compiled once, linked into each binary.
+# Pattern rule below keeps the build incremental — touching one shell
+# .c file rebuilds only that object plus the dependent binaries.
+SHELL_OBJ := $(patsubst %.c,build/objs/shell/%.o,$(SHELL_SRC))
+TOOL_OBJ  := $(patsubst %.c,build/objs/shell/%.o,$(TOOL_SRC))
+
+build/objs/shell/%.o: %.c build/version.h | build
+	@mkdir -p $(dir $@)
+	gcc $(CFLAGS) -c $< -o $@
+
 # The main binary depends on tests passing — `make` runs the unit
 # suite before linking the game. A test failure stops the build.
-$(OUT): $(SRC_DEV) build/version.h build/test-pass.stamp | build
-	gcc $(CFLAGS) $(SRC_DEV) -o $(OUT) $(LDFLAGS)
+#
+# Game = libobengine.a (engine + vendored cJSON/miniz) + shell objects
+# + tool objects (extract). No recompile of engine sources for the game.
+$(OUT): $(SHELL_OBJ) $(TOOL_OBJ) $(OUT_ENGLIB) build/version.h build/test-pass.stamp | build
+	gcc $(CFLAGS) $(SHELL_OBJ) $(TOOL_OBJ) $(OUT_ENGLIB) -o $(OUT) $(LDFLAGS)
 
 # Each pack zip rebuilds when any file under its assets/<name>/ tree
 # changes. Using $(shell find) at parse time means: run `make` after
@@ -86,8 +99,8 @@ $(foreach pn,$(PACK_NAMES),$(eval $(call PACK_RULE,$(pn))))
 
 # Internal stamp: builds the test binary (rule below), runs it,
 # touches a marker on success. Re-runs only when sources change.
-build/test-pass.stamp: $(OUT_UNITTEST)
-	@./$(OUT_UNITTEST) >/dev/null
+build/test-pass.stamp: $(OUT_TEST)
+	@./$(OUT_TEST) >/dev/null
 	@touch $@
 
 build:
@@ -101,8 +114,8 @@ run: $(OUT)
 # build/assets/<game>.openbounty.
 release: $(OUT_RELEASE) $(PACKS)
 
-$(OUT_RELEASE): $(SRC) build/version.h | build
-	gcc $(CFLAGS) $(SRC) -o $(OUT_RELEASE) $(LDFLAGS_RELEASE)
+$(OUT_RELEASE): $(SHELL_OBJ) $(TOOL_OBJ) $(OUT_ENGLIB) build/version.h | build
+	gcc $(CFLAGS) $(SHELL_OBJ) $(TOOL_OBJ) $(OUT_ENGLIB) -o $(OUT_RELEASE) $(LDFLAGS_RELEASE)
 
 run-release: $(OUT_RELEASE)
 	./$(OUT_RELEASE)
@@ -232,66 +245,58 @@ dist-mac: $(OUT_MAC)
 # Unit tests (second binary, links the same SRC minus main.c plus
 # tests/unit/*.c with greatest as the framework).
 # ---------------------------------------------------------------------------
-TEST_SRC := $(filter-out src/main.c,$(SRC)) \
-            tests/unit/stubs.c \
-            tests/unit/fixtures.c \
-            tests/unit/main.c \
-            tests/unit/test_terrain.c \
-            tests/unit/test_map.c \
-            tests/unit/test_chest.c \
-            tests/unit/test_save.c \
-            tests/unit/test_tables.c \
-            tests/unit/test_state.c \
-            tests/unit/test_combat_rng.c \
-            tests/unit/test_combat_unit.c \
-            tests/unit/test_combat_geom.c \
-            tests/unit/test_combat_damage.c \
-            tests/unit/test_combat_spells.c \
-            tests/unit/test_resources.c \
-            tests/unit/test_save_more.c \
-            tests/unit/test_map_more.c \
-            tests/unit/test_score.c \
-            tests/unit/test_game_flow.c \
-            tests/unit/test_combat_ai.c \
-            tests/unit/test_save_fixture.c \
-            tests/unit/test_contract.c \
-            tests/unit/test_economy.c \
-            tests/unit/test_fog.c \
-            tests/unit/test_map_overlay.c \
-            tests/unit/test_state_json.c \
-            tests/unit/test_tables_defensive.c \
-            tests/unit/test_pack.c \
-            tests/unit/test_combat_input.c
+TEST_ONLY_SRC := tests/unit/stubs.c \
+                 tests/unit/fixtures.c \
+                 tests/unit/main.c \
+                 tests/unit/test_terrain.c \
+                 tests/unit/test_map.c \
+                 tests/unit/test_chest.c \
+                 tests/unit/test_save.c \
+                 tests/unit/test_tables.c \
+                 tests/unit/test_state.c \
+                 tests/unit/test_combat_rng.c \
+                 tests/unit/test_combat_unit.c \
+                 tests/unit/test_combat_geom.c \
+                 tests/unit/test_combat_damage.c \
+                 tests/unit/test_combat_spells.c \
+                 tests/unit/test_resources.c \
+                 tests/unit/test_save_more.c \
+                 tests/unit/test_map_more.c \
+                 tests/unit/test_score.c \
+                 tests/unit/test_game_flow.c \
+                 tests/unit/test_combat_ai.c \
+                 tests/unit/test_save_fixture.c \
+                 tests/unit/test_contract.c \
+                 tests/unit/test_economy.c \
+                 tests/unit/test_fog.c \
+                 tests/unit/test_map_overlay.c \
+                 tests/unit/test_state_json.c \
+                 tests/unit/test_tables_defensive.c \
+                 tests/unit/test_pack.c \
+                 tests/unit/test_combat_input.c \
+                 tests/unit/test_combat_digests.c
 
-$(OUT_UNITTEST): $(TEST_SRC) build/version.h | build
-	gcc $(CFLAGS) -Ithird_party/greatest -Itests/unit $(TEST_SRC) -o $(OUT_UNITTEST) $(LDFLAGS)
+# Unit-test binary: shell sources (minus main.c) + test sources +
+# libobengine.a. Same model as the game binary; tests link the library.
+TEST_SRC := $(filter-out src/main.c,$(SHELL_SRC)) $(TOOL_SRC) $(TEST_ONLY_SRC)
 
-# ---------------------------------------------------------------------------
-# Tests:
-#   make test                    — runs everything: unit suite, combat digest,
-#                                  and every scenario under tools/scenarios/.
-#   make test-scenario FILE=path — runs one scenario file. SLOW=1 paces input
-#                                  to ~600ms/key so you can watch the window.
-# ---------------------------------------------------------------------------
-$(OUT_PLAYTEST): tools/playtest.c tools/playtest_lib.c tools/scenario.c third_party/cjson/cJSON.c | build
-	gcc -std=c99 -Wall -Wextra -O2 -Ithird_party/cjson -Itools \
-	    tools/playtest.c tools/playtest_lib.c tools/scenario.c \
-	    third_party/cjson/cJSON.c \
-	    -o $(OUT_PLAYTEST)
+$(OUT_TEST): $(TEST_SRC) $(OUT_ENGLIB) build/version.h | build
+	gcc $(CFLAGS) -Ithird_party/greatest -Itests/unit $(TEST_SRC) $(OUT_ENGLIB) -o $(OUT_TEST) $(LDFLAGS)
 
 # ---------------------------------------------------------------------------
-# Engine playtest: links the game source directly against a raylib stub,
-# drives the engine via function calls — no socket, no fork, no window.
-# -Iengine in front of the real raylib include resolves `raylib.h` to the
-# stub at engine/raylib.h.
+# Engine playtest: links libobengine.a + the shell sources (compiled
+# against the raylib stub) + the playtest driver. No socket, no fork,
+# no window. -Iengine/headless ahead of any real raylib include path
+# resolves `raylib.h` to the stub at engine/headless/raylib.h.
 # ---------------------------------------------------------------------------
-ENGPLAY_SRC := $(filter-out src/main.c,$(SRC)) tools/playtest_engine.c tests/unit/stubs.c
+ENGPLAY_SHELL_SRC := $(filter-out src/main.c src/combat_loop.c,$(SHELL_SRC)) $(TOOL_SRC)
+ENGPLAY_SRC := $(ENGPLAY_SHELL_SRC) tools/playtest_engine.c tests/unit/stubs.c
 ENGPLAY_CFLAGS := -std=c99 -Wall -Wextra -O2 -Iengine/headless -Iengine/include -I$(MINIH264_INC) -I$(MINIMP4_INC) -Isrc -Itools -Ibuild -Ithird_party/cjson -Ithird_party/miniz -DOB_HEADLESS
 # No raylib in LDFLAGS; the stub is header-only. Audio/X11 deps drop too.
 ENGPLAY_LDFLAGS := -lm -lpthread
 
-$(OUT_ENGPLAY): $(ENGPLAY_SRC) build/version.h | build
-	gcc $(ENGPLAY_CFLAGS) $(ENGPLAY_SRC) -o $(OUT_ENGPLAY) $(ENGPLAY_LDFLAGS)
+$(OUT_ENGPLAY): $(ENGPLAY_SRC) $(OUT_ENGLIB) build/version.h | build
+	gcc $(ENGPLAY_CFLAGS) $(ENGPLAY_SRC) $(OUT_ENGLIB) -o $(OUT_ENGPLAY) $(ENGPLAY_LDFLAGS)
 
 # ---------------------------------------------------------------------------
 # libobengine.a — engine compiled as a static archive. Consumers link
@@ -317,22 +322,26 @@ $(ENGLIB_OBJ_DIR):
 $(OUT_ENGLIB): $(ENGLIB_OBJ) | build
 	ar rcs $@ $(ENGLIB_OBJ)
 
-# Default `test` runs the fast unit suite only. Use `test-combat` for
-# the combat digest checks, `test-scenarios` for scripted full-game
-# scenarios, or `test-all` to run all three in sequence.
-test: $(OUT_UNITTEST)
-	@./$(OUT_UNITTEST)
+# Single test command. greatest runs the entire suite: unit tests,
+# combat-formula digests, everything. The library-boundary check is a
+# build-time link verification — $(OUT_LIBTEST) is in $(all) so a
+# regression where engine code depends on shell headers will fail at
+# `make all` time.
+test: $(OUT_TEST)
+	@./$(OUT_TEST)
 
-test-combat: $(OUT)
-	@./scripts/combat_regression.sh
+# ---------------------------------------------------------------------------
+# Library boundary check. Builds a minimal consumer that links
+# libobengine.a + engine/host_noop.c using ONLY engine include paths
+# (no -Isrc) and only -lm -lpthread (no raylib, no X11). If the engine
+# starts depending on shell headers or shell symbols, this link fails
+# and `make all` fails. No runtime invocation — the link IS the test.
+# ---------------------------------------------------------------------------
+LIBTEST_CFLAGS := -std=c99 -Wall -Wextra -O2 -Iengine/headless -Iengine/include -Ithird_party/cjson
+LIBTEST_LDFLAGS := -lm -lpthread
 
-test-scenarios: $(OUT) $(OUT_PLAYTEST)
-	@./$(OUT_PLAYTEST) --suite tools/scenarios --filter '!nightly,!flaky'
-
-test-all: test test-combat test-scenarios
-
-test-scenario: $(OUT) $(OUT_PLAYTEST)
-	@./$(OUT_PLAYTEST) --scenario $(FILE) $(if $(SLOW),--slow,)
+$(OUT_LIBTEST): tests/library/consumer.c engine/host_noop.c $(OUT_ENGLIB) | build
+	gcc $(LIBTEST_CFLAGS) tests/library/consumer.c engine/host_noop.c $(OUT_ENGLIB) -o $(OUT_LIBTEST) $(LIBTEST_LDFLAGS)
 
 # ---------------------------------------------------------------------------
 # extract — produce a .openbounty pack (or a loose tree, with --out-dir)
@@ -357,4 +366,4 @@ clean:
 	rm -rf build
 	rm -f dist/*.tar.gz dist/*.zip
 
-.PHONY: all run release run-release windows windows-debug mac clean test test-combat test-scenarios test-all test-scenario extract extract-pack dist dist-linux dist-windows dist-mac
+.PHONY: all run release run-release windows windows-debug mac clean test extract extract-pack dist dist-linux dist-windows dist-mac

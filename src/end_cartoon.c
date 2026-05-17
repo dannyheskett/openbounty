@@ -3,8 +3,6 @@
 #include "screenshot.h"
 #include "ui.h"
 #include "tables.h"
-#include "harness_input.h"
-#include "harness.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -21,12 +19,12 @@
 // ticks; any keypress short-circuits the animation.
 
 static bool any_key_pressed(void) {
-    int k = harness_get_key_pressed();
+    int k = GetKeyPressed();
     while (k != 0) {
         if (k != KEY_LEFT_SHIFT && k != KEY_RIGHT_SHIFT &&
             k != KEY_LEFT_CONTROL && k != KEY_RIGHT_CONTROL &&
             k != KEY_LEFT_ALT && k != KEY_RIGHT_ALT) return true;
-        k = harness_get_key_pressed();
+        k = GetKeyPressed();
     }
     return false;
 }
@@ -136,7 +134,6 @@ void run_end_cartoon(RenderTexture2D *rt,
                                    // ~60Hz timer advancing through tick 0..3.
 
     while (!WindowShouldClose() && !done) {
-        harness_tick();
         if (any_key_pressed()) { done = true; break; }
 
         if (GetTime() - last_advance >= tick_interval) {

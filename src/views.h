@@ -5,41 +5,7 @@
 #include "map.h"
 #include "fog.h"
 #include "sprites.h"
-
-// Adventure-screen "view" overlays. Views are stacked (depth ≤ 4) so that
-// sub-screens like VIEW_RECRUIT_SOLDIERS can push on top of VIEW_HOME_CASTLE
-// and ESC pops back to the parent. The top of the stack is the "active" view.
-//
-// Views split into three categories:
-//   - Modal overlays (CHARACTER, ARMY, SPELLS, CONTRACT, PUZZLE, WORLDMAP,
-//     OPTIONS, CONTROLS, MENU): full-screen panels over the adventure map.
-//   - Location-backdrop screens (TOWN, HOME_CASTLE, OWN_CASTLE, DWELLING,
-//     ALCOVE, RECRUIT_SOLDIERS): replace the map area with a backdrop PNG;
-//     status bar swaps to "Press 'ESC' to exit".
-//   - End-game (WIN, LOSE): full-screen ending art.
-typedef enum {
-    VIEW_NONE = 0,
-    // Modal overlays
-    VIEW_MENU,        // Esc / O - unified Game Menu (view switch + save/load/quit)
-    VIEW_CHARACTER,   // V - portrait + stats + inventory belt
-    VIEW_ARMY,        // A - 5 troop rows with counts & stats
-    VIEW_SPELLS,      // U - spellbook, combat vs adventuring columns
-    VIEW_CONTRACT,    // I - wanted villain's portrait + bounty
-    VIEW_PUZZLE,      // P - 5x5 puzzle grid (villain/artifact covers)
-    VIEW_WORLDMAP,    // M / TAB - full-continent minimap modal
-    VIEW_OPTIONS,     // O - keybind reference screen
-    VIEW_CONTROLS,    // C - Controls settings panel (delay/sounds/etc.)
-    // Location-backdrop screens (status bar shows "Press 'ESC' to exit")
-    VIEW_TOWN,             // in-town menu (contract / boat / info / spell / siege)
-    VIEW_HOME_CASTLE,      // Castle of King Maximus: Recruit / Audience
-    VIEW_OWN_CASTLE,       // Garrison / Remove troops in a player castle
-    VIEW_DWELLING,         // Recruit at outdoor dwelling (Plains/Forest/Hill/Dungeon)
-    VIEW_ALCOVE,           // Archmage Aurange offer
-    VIEW_RECRUIT_SOLDIERS, // Sub-screen of HOME_CASTLE
-    // End game
-    VIEW_WIN,
-    VIEW_LOSE,
-} ViewKind;
+#include "view_kind.h"  // engine-shared ViewKind enum
 
 #define VIEWS_STACK_MAX 4
 
@@ -52,7 +18,8 @@ typedef struct {
     bool (*on_quit)(void *userdata);
 } MenuCallbacks;
 
-ViewKind views_active(void);
+// views_active() is declared in engine/include/ui_host.h since engine
+// code (state_serialize, flows) also calls it.
 void     views_set(ViewKind v);   // Replace stack with [v] (or empty if VIEW_NONE).
 void     views_dismiss(void);     // Pop top; if stack empty, do nothing.
 
@@ -78,8 +45,9 @@ bool     views_menu_update(const MenuCallbacks *cbs, void *userdata);
 //   display_name: human-readable ("Riverton"), resolved from the resource pack.
 //   record_key:   map-local id ("town_000"), key into Game.towns[].
 //   boat_x/y:     where a rented boat should spawn.
-void     views_open_town(const char *display_name, const char *record_key,
-                         int boat_x, int boat_y);
+//
+// Declaration moved to engine/include/ui_host.h (engine step.c calls
+// it). The shell defines it in src/views.c.
 
 // Town input: cursor movement and A-E action keys. Mutates `g` directly.
 bool     views_town_update(Game *g);

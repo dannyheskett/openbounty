@@ -1,13 +1,12 @@
 #include "ui.h"
 #include "raylib.h"
-#include "harness_input.h"
 #include "recorder.h"
 #include <string.h>
 #include <stdio.h>
 
 // ---- any-key helper --------------------------------------------------------
 bool ui_any_key_pressed(void) {
-    int k = harness_get_key_pressed();
+    int k = GetKeyPressed();
     while (k != 0) {
         if (k != KEY_LEFT_SHIFT && k != KEY_RIGHT_SHIFT &&
             k != KEY_LEFT_CONTROL && k != KEY_RIGHT_CONTROL &&
@@ -16,7 +15,7 @@ bool ui_any_key_pressed(void) {
             k != KEY_CAPS_LOCK && k != KEY_NUM_LOCK && k != KEY_SCROLL_LOCK) {
             return true;
         }
-        k = harness_get_key_pressed();
+        k = GetKeyPressed();
     }
     return false;
 }

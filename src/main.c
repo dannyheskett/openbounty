@@ -1,6 +1,4 @@
 #include "raylib.h"
-#include "harness_input.h"
-#include "harness.h"
 #include "recorder.h"
 #include "audio.h"
 #include "encode_dialog.h"
@@ -434,14 +432,11 @@ int main(int argc, char **argv) {
     const char *pack_dir_dst = NULL;
     bool combat_test = false;
     const char *combat_test_arg = NULL;
-    const char *harness_socket = NULL;
     int record_cap = 0;          // 0 → recorder_init uses default
     const char *record_dir = NULL;
     bool encode_movie = false;
     // 0 means "derive from time + name + class" (default). Non-zero
-    // forces a deterministic per-game seed so external drivers (the
-    // playtest harness, replay tools, regression scripts) can
-    // reproduce a specific playthrough.
+    // forces a deterministic per-game seed for reproducible runs.
     uint64_t forced_seed = 0;
     for (int i = 1; i < argc; i++) {
         const char *a = argv[i];
@@ -451,7 +446,7 @@ int main(int argc, char **argv) {
         } else if (strcmp(a, "--help") == 0 || strcmp(a, "-h") == 0) {
             printf("openbounty build %s\n"
                    "Usage: %s [--fullscreen] [--pack <name|path>] [--save-dir <dir>] [--extract [--out-dir <dir>]]\n"
-                   "       %*s [--harness <sock>] [--record <dir>] [--record-cap N] [--encode-movie] [--seed N] [--version]\n"
+                   "       %*s [--record <dir>] [--record-cap N] [--encode-movie] [--seed N] [--version]\n"
                    "       %s --combat-test SEED:ATTACKER:N:DEFENDER:N:ROUNDS\n"
                    "       %s --pack-dir <src_dir> <out_zip>\n",
                    OPENBOUNTY_VERSION, argv[0], (int)strlen(argv[0]), "", argv[0], argv[0]);
@@ -467,8 +462,6 @@ int main(int argc, char **argv) {
         } else if (strcmp(a, "--combat-test") == 0 && i + 1 < argc) {
             combat_test = true;
             combat_test_arg = argv[++i];
-        } else if (strcmp(a, "--harness") == 0 && i + 1 < argc) {
-            harness_socket = argv[++i];
         } else if (strcmp(a, "--record") == 0 && i + 1 < argc) {
             record_dir = argv[++i];
         } else if (strcmp(a, "--record-cap") == 0 && i + 1 < argc) {
@@ -773,19 +766,6 @@ int main(int argc, char **argv) {
         LoadRenderTexture(CL_SCREEN_W, CL_SCREEN_H);
     SetTextureFilter(render_target_startup.texture, TEXTURE_FILTER_POINT);
 
-    // Init harness BEFORE the startup flow so external commands can
-    // drive character pick + difficulty + name entry. Game pointer
-    // attaches later when the Game struct exists; the RT pointer is
-    // good now.
-    if (harness_socket) {
-        if (harness_init(harness_socket)) {
-            harness_attach_render_target(&render_target_startup);
-        } else {
-            fprintf(stderr, "[harness] failed to bind %s; continuing without\n",
-                    harness_socket);
-        }
-    }
-
     // Pre-game flow: pick slot + new-game wizard.
     StartupChoice choice = { 0 };
     if (!startup_flow(&res, &sprites,
@@ -908,17 +888,6 @@ int main(int argc, char **argv) {
     // so the pre-game flow can draw into it; reuse here.
     RenderTexture2D render_target = render_target_startup;
 
-    // Harness wiring. The socket was opened back when the startup flow
-    // started, so external commands could drive char-pick + name entry.
-    // Now we have a Game struct and a stable RT — attach both so `state`
-    // and `snap` work for adventure + combat.
-    if (harness_socket) {
-        harness_attach_game(&game);
-        harness_attach_map(&map);
-        harness_attach_fog(&fog);
-        harness_attach_render_target(&render_target);
-    }
-
     // Recorder: in-memory ring of (state JSON + framebuffer PNG)
     // snapshots, captured on logical-tick mutations (steps, combat
     // actions, dialogs, view changes). Disk dump is opt-in via
@@ -950,16 +919,13 @@ int main(int argc, char **argv) {
     bool prev_overlay = false;
 
     while (!WindowShouldClose() && !quit_requested) {
-        // Harness drives input via the shim. harness_tick clears stale
-        // queues from last frame, then polls one new command this frame.
-        if (harness_socket && harness_tick()) quit_requested = true;
         // Audio: drive music streaming + react to live toggle changes.
         audio_set_sounds_enabled(game.stats.options[1] != 0);
         audio_set_music_enabled (game.stats.options[6] != 0);
         audio_set_master_volume (game.stats.options[7]);
         audio_tick();
-        if ((harness_key_down(KEY_LEFT_ALT) || harness_key_down(KEY_RIGHT_ALT)) &&
-            harness_key_pressed(KEY_ENTER)) {
+        if ((IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) &&
+            IsKeyPressed(KEY_ENTER)) {
             ToggleFullscreen();
         }
 
@@ -974,14 +940,14 @@ int main(int argc, char **argv) {
             "S  Siege\n"
             "F  Flight\n"
             "F10/ESC  close";
-        if (harness_key_pressed(KEY_F10) && !cheat_menu_active) {
+        if (IsKeyPressed(KEY_F10) && !cheat_menu_active) {
             cheat_menu_active = true;
             open_dialog("Debug menu", cheat_menu_body);
             // Drain the keypress queue so the same-frame F10 doesn't
             // immediately close the menu we just opened.
-            while (harness_get_key_pressed() != 0) { }
+            while (GetKeyPressed() != 0) { }
         } else if (cheat_menu_active) {
-            int ck = harness_get_key_pressed();
+            int ck = GetKeyPressed();
             if (ck == KEY_ESCAPE || ck == KEY_F10) {
                 cheat_menu_active = false;
                 dialog_dismiss();
@@ -1091,10 +1057,10 @@ int main(int argc, char **argv) {
         // saving (y/n)". No bottom dialog. Y -> quit; N or any other
         // key -> clear flag.
         if (fast_quit_active) {
-            if (harness_key_pressed(KEY_Y)) {
+            if (IsKeyPressed(KEY_Y)) {
                 quit_requested = true;
                 fast_quit_active = false;
-            } else if (harness_key_pressed(KEY_N) || harness_key_pressed(KEY_ESCAPE)
+            } else if (IsKeyPressed(KEY_N) || IsKeyPressed(KEY_ESCAPE)
                        || gamepad_pressed_cancel()) {
                 fast_quit_active = false;
             }
@@ -1554,25 +1520,25 @@ int main(int argc, char **argv) {
             }
             int cur = views_controls_cursor();
             if (count > 0) {
-                if (harness_key_pressed(KEY_UP) || harness_key_pressed(KEY_KP_8)) {
+                if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_KP_8)) {
                     cur = (cur - 1 + count) % count;
                     views_controls_set_cursor(cur);
-                } else if (harness_key_pressed(KEY_DOWN) || harness_key_pressed(KEY_KP_2)) {
+                } else if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_KP_2)) {
                     cur = (cur + 1) % count;
                     views_controls_set_cursor(cur);
-                } else if (harness_key_pressed(KEY_ENTER) ||
-                           harness_key_pressed(KEY_KP_ENTER) ||
-                           harness_key_pressed(KEY_SPACE)) {
+                } else if (IsKeyPressed(KEY_ENTER) ||
+                           IsKeyPressed(KEY_KP_ENTER) ||
+                           IsKeyPressed(KEY_SPACE)) {
                     // Advance the value of the selected setting.
                     views_controls_advance(&game, vis_map[cur]);
-                } else if (harness_key_pressed(KEY_ESCAPE) ||
-                           harness_key_pressed(KEY_C) ||
+                } else if (IsKeyPressed(KEY_ESCAPE) ||
+                           IsKeyPressed(KEY_C) ||
                            gamepad_pressed_cancel()) {
                     views_dismiss();
                 } else {
                     // Digit 1..count selects and advances that row.
                     for (int k = 0; k < count && k < 9; k++) {
-                        if (harness_key_pressed(KEY_ONE + k)) {
+                        if (IsKeyPressed(KEY_ONE + k)) {
                             views_controls_set_cursor(k);
                             views_controls_advance(&game, vis_map[k]);
                             break;
@@ -1601,14 +1567,14 @@ int main(int argc, char **argv) {
             // (run_audience_dialog → open_dialog) is handled by the
             // downstream dialog branch instead — dialog has its own
             // SPACE-to-advance flow over the persistent backdrop.
-            if (harness_key_pressed(KEY_ESCAPE) || gamepad_pressed_cancel()) {
+            if (IsKeyPressed(KEY_ESCAPE) || gamepad_pressed_cancel()) {
                 views_dismiss();
                 pending_castle_id[0] = '\0';
-            } else if (harness_key_pressed(KEY_A)) {
+            } else if (IsKeyPressed(KEY_A)) {
                 // A) Recruit Soldiers — push the dedicated recruit
                 // sub-screen (5 troops + gold + key hint).
                 screen_recruit_soldiers_open(&game);
-            } else if (harness_key_pressed(KEY_B)) {
+            } else if (IsKeyPressed(KEY_B)) {
                 // B) Audience with the King — modal popup over the
                 // castle backdrop. Run after panel render so it overlays.
                 const ResCastle *rc2 =
@@ -1628,14 +1594,14 @@ int main(int argc, char **argv) {
             // SPACE toggles GARRISON/REMOVE; A..E moves the chosen
             // slot via GameGarrisonTroop / GameUngarrisonTroop. ESC
             // returns to the overworld. Errors per .
-            if (harness_key_pressed(KEY_ESCAPE) || gamepad_pressed_cancel()) {
+            if (IsKeyPressed(KEY_ESCAPE) || gamepad_pressed_cancel()) {
                 views_dismiss();
                 pending_castle_id[0] = '\0';
-            } else if (harness_key_pressed(KEY_SPACE)) {
+            } else if (IsKeyPressed(KEY_SPACE)) {
                 screen_own_castle_toggle_mode();
             } else {
                 for (int k = 0; k < 5; k++) {
-                    if (!harness_key_pressed(KEY_A + k)) continue;
+                    if (!IsKeyPressed(KEY_A + k)) continue;
                     const char *cid = screen_own_castle_castle_id();
                     int rc;
                     if (screen_own_castle_is_garrison_mode()) {
@@ -1667,7 +1633,7 @@ int main(int argc, char **argv) {
             // a persistent view (e.g. audience-with-king over
             // VIEW_HOME_CASTLE) doesn't have its dismiss key also tear
             // down the underlying view.
-            if (views_active() == VIEW_WORLDMAP && harness_key_pressed(KEY_SPACE)) {
+            if (views_active() == VIEW_WORLDMAP && IsKeyPressed(KEY_SPACE)) {
                 int zi = -1;
                 for (int i = 0; i < res.zone_count; i++) {
                     if (strcmp(res.zones[i].id, game.position.zone) == 0) {
@@ -1711,7 +1677,7 @@ int main(int argc, char **argv) {
                         dialog_dismiss();
                         open_dialog(spell_header("bridge", "Bridge"), msg);
                     }
-                } else if (harness_key_pressed(KEY_ESCAPE) || gamepad_pressed_cancel()) {
+                } else if (IsKeyPressed(KEY_ESCAPE) || gamepad_pressed_cancel()) {
                     bridge_state = BRIDGE_STATE_NONE;
                     dialog_dismiss();
                 }
@@ -1719,7 +1685,7 @@ int main(int argc, char **argv) {
                 // Handle gate destination selection (A-Z or ESC).
                 // matches the typed letter to the destination's first
                 // letter (not its catalog index).
-                int key = harness_get_key_pressed();
+                int key = GetKeyPressed();
                 if (key == 0) {
                     // No key pressed
                 } else if (key == KEY_ESCAPE) {
@@ -1804,8 +1770,8 @@ int main(int argc, char **argv) {
                 // ask_quit dialog handling: Ctrl-Q exits, any other key
                 // advances page or dismisses. Since Ctrl-Q is the only post-dialog action, we
                 // check it here for all dialogs (harmless elsewhere).
-                bool ctrl = harness_key_down(KEY_LEFT_CONTROL) || harness_key_down(KEY_RIGHT_CONTROL);
-                if (ctrl && harness_key_pressed(KEY_Q)) {
+                bool ctrl = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL);
+                if (ctrl && IsKeyPressed(KEY_Q)) {
                     dialog_dismiss();
                     quit_requested = true;
                 } else if (ui_any_key_pressed()) {
@@ -2142,7 +2108,6 @@ int main(int argc, char **argv) {
     }
 
     audio_shutdown();
-    if (harness_socket) harness_shutdown();
     recorder_shutdown();
     UnloadRenderTexture(render_target);
     bfont_shutdown();

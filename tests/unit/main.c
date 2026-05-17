@@ -33,6 +33,7 @@ SUITE_EXTERN(state_json_suite);
 SUITE_EXTERN(tables_defensive_suite);
 SUITE_EXTERN(combat_input_suite);
 SUITE_EXTERN(pack_suite);
+SUITE_EXTERN(combat_digests_suite);
 
 int main(int argc, char **argv) {
     GREATEST_MAIN_BEGIN();
@@ -62,5 +63,6 @@ int main(int argc, char **argv) {
     RUN_SUITE(tables_defensive_suite);
     RUN_SUITE(combat_input_suite);
     RUN_SUITE(pack_suite);
+    RUN_SUITE(combat_digests_suite);
     GREATEST_MAIN_END();
 }

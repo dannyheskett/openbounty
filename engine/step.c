@@ -4,21 +4,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Engine headers
 #include "adventure.h"
-#include "audio.h"
-#include "recorder.h"
 #include "tile.h"
-#include "ui.h"
-#include "views.h"
 #include "tables.h"
 #include "flows.h"
 #include "pending.h"
 
-#include "prompt.h"
-#include "screens/home_castle.h"
-#include "screens/own_castle.h"
-#include "screens/dwelling.h"
-#include "screens/alcove.h"
+// Shell callbacks invoked by step_try (audio events, recorder pings,
+// prompt/dialog/screen openers). The host implements these; engine
+// just emits via the signatures declared in ui_host.h.
+#include "ui_host.h"
 
 bool step_try(Game *game, Map *map, Fog *fog,
               const Resources *res, int dx, int dy) {

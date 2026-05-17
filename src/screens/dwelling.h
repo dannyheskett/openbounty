@@ -19,14 +19,7 @@
 
 #include "game.h"
 #include "sprites.h"
-
-// Dwelling kind enum mirrors what the screen wants to render.
-typedef enum {
-    DWELLING_KIND_PLAINS = 0,
-    DWELLING_KIND_FOREST,
-    DWELLING_KIND_HILL,
-    DWELLING_KIND_DUNGEON,
-} DwellingKind;
+#include "dwelling_kind.h"  // engine-shared DwellingKind enum
 
 // Open the screen. Caches the dwelling kind, troop id (for the
 // animated troop sprite), and the static banner contents (pop / cost

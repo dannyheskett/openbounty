@@ -5,14 +5,9 @@
 // function calls — no socket, no fork, no rendered window, no 60fps
 // wallclock pacing.
 //
-// This is the headless companion to tools/playtest.c (which spawns
-// build/openbounty as a child and drives it over an AF_UNIX socket).
-// The two share the JSON scenario format (tools/scenario.c) but not
-// the execution model.
-//
-// First cut: minimal CLI that initialises a game, runs a fixed number
-// of step attempts in a direction, and dumps state. Once that's
-// working, scenario JSON dispatch can be wired in.
+// Builds to build/openbounty-engplay. Minimal CLI that initialises a
+// game, runs a fixed number of step attempts in a direction, and dumps
+// state.
 
 #define _POSIX_C_SOURCE 200809L
 #include <stdbool.h>

@@ -186,14 +186,109 @@ Used for both the Linux release binary and all Windows builds.
 
 ## 3. Command-line flags
 
-The game takes no command-line flags.
+The build produces four primary binaries. Each has its own CLI surface.
 
+### `build/openbounty` — the game
+
+The game binary covers normal play plus a few build-time / data-prep
+modes (extractor, pack builder, headless combat digest).
+
+| Flag | Argument | Effect |
+|---|---|---|
+| `--version`, `-v` | — | Print `openbounty build <N>` and exit. |
+| `--help`, `-h` | — | Print usage and exit. |
+| `--fullscreen` | — | Toggle fullscreen after window creation. |
+| `--pack` | `<name\|path>` | Select a pack: bare name resolves via pack discovery, path opens a `.openbounty` zip or directory containing `game.json`. |
+| `--save-dir` | `<dir>` | Override the user save directory (where saves and discovered packs live). |
+| `--seed` | `N` | Force a deterministic per-game RNG seed. Default derives from time + name + class. Useful for reproducible runs. |
+| `--record` | `<dir>` | Recorder dumps captures (state JSON + framebuffer PNG) to `<dir>`. Without this flag captures stay in memory only. |
+| `--record-cap` | `N` | Override the recorder's in-memory ring-buffer size. |
+| `--encode-movie` | — | After the session ends, mux captured frames into an MP4 (uses `<record-dir>`). |
+| `--extract` | — | Build an asset pack from a user's DOS distribution and exit. Input: `legacy/bin/KB.EXE` if present, else `./KB.EXE`. Output: `<user-data>/openbounty/<pack_id>.openbounty`. |
+| `--out-dir` | `<dir>` | Modifier for `--extract`: emit a loose asset tree to `<dir>` instead of a zip. |
+| `--pack-dir` | `<src> <dst>` | Zip a pre-extracted asset tree into a `.openbounty` archive. Used by the Makefile to build the shipped pack. |
+| `--combat-test` | `SEED:ATTACKER:N:DEFENDER:N:ROUNDS` | Headless combat-digest mode. Loads resources, runs a deterministic scripted battle, prints a 64-bit hex digest, exits. No window. Same formula the in-binary `combat_digests_suite` tests pin in CI. |
+
+Normal play: `./build/openbounty` (no flags).
+
+### `build/openbounty-test` — test runner
+
+Driven by the [greatest](https://github.com/silentbicycle/greatest)
+single-header framework. 171 tests across 27 suites: unit tests for
+engine state/AI/combat/map/fog/save/etc., plus the combat-formula
+golden-digest suite.
+
+| Flag | Argument | Effect |
+|---|---|---|
+| `-h`, `--help` | — | Print usage and exit. |
+| `-l` | — | List all suites and tests (dry run), then exit. |
+| `-f` | — | Stop the runner after the first failure. |
+| `-a` | — | Abort on first failure (implies `-f`). |
+| `-v` | — | Verbose output (per-test status, timings). |
+| `-s` | `SUITE` | Only run suites whose name contains the substring. |
+| `-t` | `TEST` | Only run tests whose name contains the substring. |
+| `-e` | — | Require exact-name match for `-s` / `-t` instead of substring. |
+| `-x` | `EXCLUDE` | Exclude tests whose name contains the substring. |
+
+Examples:
 ```
-./build/openbounty
+./build/openbounty-test                     # run everything
+./build/openbounty-test -l                  # list tests
+./build/openbounty-test -s combat_rng       # one suite
+./build/openbounty-test -t damage -v        # one test, verbose
+./build/openbounty-test -s combat_digests   # just the formula goldens
+./build/openbounty-test -f                  # stop on first failure
 ```
 
-No verbosity, no save-slot override, no window-size override, no
-debug toggle.
+### `build/openbounty-engplay` — headless playtest driver
+
+Drives the engine via direct function calls — no window, no audio, no
+60 fps wallclock pacing. Links the raylib stub so no graphics deps are
+needed at runtime.
+
+| Flag | Argument | Effect |
+|---|---|---|
+| `-h`, `--help` | — | Print usage and exit. |
+| `--pack` | `<dir>` | Pack directory. Default `assets/kings-bounty`. |
+| `--seed` | `N` | Deterministic seed. Default 42. |
+| `--class` | `0..3` | 0=knight, 1=paladin, 2=sorceress, 3=barbarian. Default 0. |
+| `--name` | `<s>` | Hero name. Default `Bot`. |
+| `--difficulty` | `0..3` | 0=easy, 1=normal, 2=hard, 3=impossible. Default 1. |
+| `--steps` | `DIR:N` | Walk N tiles in direction DIR. DIR is one of `U`, `D`, `L`, `R`, `NE`, `NW`, `SE`, `SW`. May repeat to chain batches. |
+| `--dump` | — | Print full state JSON on stdout at end. |
+| `--quiet` | — | Suppress per-step progress on stderr. |
+
+Examples:
+```
+./build/openbounty-engplay                                       # init game, do nothing
+./build/openbounty-engplay --steps R:10 --steps D:5 --dump       # walk and dump state
+./build/openbounty-engplay --seed 100 --class 2 --name Mage      # different setup
+```
+
+### `build/openbounty-libtest` — library boundary build artifact
+
+Built by `make all`. Verifies the engine library is consumable in
+isolation: links only `libobengine.a` + `host_noop.c`, no `-Isrc`,
+no raylib. **The compile + link IS the test** — if the engine starts
+depending on shell code, this build target fails and `make all`
+fails. There is no runtime invocation.
+
+---
+
+### Recap of make targets
+
+| Target | What it does |
+|---|---|
+| `make` / `make all` | Builds all four binaries + `libobengine.a` + libtest boundary check + pack zips. |
+| `make test` | Runs `build/openbounty-test`: 171 tests via greatest, including the combat-formula golden digests. |
+| `make release` | `build/openbounty-release`, `-O2` stripped. |
+| `make windows` | Cross-compile `openbounty-x64.exe` and `openbounty-x86.exe`. |
+| `make windows-debug` | Same with console attached for stderr. |
+| `make mac` | Cross-compile `openbounty-mac` (universal binary). |
+| `make extract` | Wrapper for `./build/openbounty --extract`. |
+| `make extract-pack` | Regenerates `assets/kings-bounty/` from a user's DOS files. |
+| `make dist-{linux,windows,mac}` | Build distribution archives. |
+| `make clean` | Removes `build/` and `dist/` archives. |
 
 ---
 

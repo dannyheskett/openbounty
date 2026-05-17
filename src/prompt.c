@@ -5,7 +5,6 @@
 #include "resources.h"
 #include "recorder.h"
 #include "raylib.h"
-#include "harness_input.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -111,16 +110,16 @@ void prompt_dismiss(void) {
 PromptResult prompt_update(void) {
     if (g_kind == PK_NONE) return PROMPT_RESULT_NONE;
 
-    if (harness_key_pressed(KEY_ESCAPE)) {
+    if (IsKeyPressed(KEY_ESCAPE)) {
         prompt_dismiss();
         return PROMPT_RESULT_CANCEL;
     }
 
     if (g_kind == PK_YES_NO) {
-        if (harness_key_pressed(KEY_Y)) { prompt_dismiss(); return PROMPT_RESULT_YES; }
-        if (harness_key_pressed(KEY_N)) { prompt_dismiss(); return PROMPT_RESULT_NO;  }
+        if (IsKeyPressed(KEY_Y)) { prompt_dismiss(); return PROMPT_RESULT_YES; }
+        if (IsKeyPressed(KEY_N)) { prompt_dismiss(); return PROMPT_RESULT_NO;  }
         // also accepts Enter as "yes" in some prompts.
-        if (harness_key_pressed(KEY_ENTER) || harness_key_pressed(KEY_KP_ENTER)) {
+        if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER)) {
             prompt_dismiss();
             return PROMPT_RESULT_YES;
         }
@@ -130,11 +129,11 @@ PromptResult prompt_update(void) {
     if (g_kind == PK_NUMERIC) {
         // KEY_ONE..KEY_FIVE are contiguous in raylib.
         for (int i = 0; i < g_max_choice; i++) {
-            if (harness_key_pressed(KEY_ONE + i)) {
+            if (IsKeyPressed(KEY_ONE + i)) {
                 prompt_dismiss();
                 return (PromptResult)(PROMPT_RESULT_1 + i);
             }
-            if (harness_key_pressed(KEY_KP_1 + i)) {
+            if (IsKeyPressed(KEY_KP_1 + i)) {
                 prompt_dismiss();
                 return (PromptResult)(PROMPT_RESULT_1 + i);
             }
@@ -143,8 +142,8 @@ PromptResult prompt_update(void) {
     }
 
     if (g_kind == PK_AB_CHOICE) {
-        if (harness_key_pressed(KEY_A)) { prompt_dismiss(); return PROMPT_RESULT_1; }
-        if (harness_key_pressed(KEY_B)) { prompt_dismiss(); return PROMPT_RESULT_2; }
+        if (IsKeyPressed(KEY_A)) { prompt_dismiss(); return PROMPT_RESULT_1; }
+        if (IsKeyPressed(KEY_B)) { prompt_dismiss(); return PROMPT_RESULT_2; }
         return PROMPT_RESULT_NONE;
     }
 
@@ -152,8 +151,8 @@ PromptResult prompt_update(void) {
         // Digit keys — append if room and the candidate number wouldn't
         // exceed max_value.
         for (int d = 0; d < 10; d++) {
-            bool pressed = harness_key_pressed(KEY_ZERO + d) ||
-                           harness_key_pressed(KEY_KP_0 + d);
+            bool pressed = IsKeyPressed(KEY_ZERO + d) ||
+                           IsKeyPressed(KEY_KP_0 + d);
             if (!pressed) continue;
             if (g_text_len >= g_text_max_digits) break;
             // Build candidate and test.
@@ -166,11 +165,11 @@ PromptResult prompt_update(void) {
             g_text_buf[g_text_len] = '\0';
             break;
         }
-        if (harness_key_pressed(KEY_BACKSPACE) && g_text_len > 0) {
+        if (IsKeyPressed(KEY_BACKSPACE) && g_text_len > 0) {
             g_text_len--;
             g_text_buf[g_text_len] = '\0';
         }
-        if (harness_key_pressed(KEY_ENTER) || harness_key_pressed(KEY_KP_ENTER)) {
+        if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER)) {
             // Value committed; caller reads via prompt_text_input_value()
             // BEFORE dismissal clears the buffer. We leave the state
             // intact and have prompt_dismiss() clear it afterwards — so

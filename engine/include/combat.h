@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "game.h"
+#include "resources.h"  // ResCombatLog used by combat_log_strings()
 
 // Combat module. Engine-side data and headless entry points.
 //
@@ -141,5 +142,92 @@ uint64_t combat_test_digest(uint64_t seed,
 CombatResult combat_run_headless(Game *g, CombatMode mode,
                                  const CombatTarget *target,
                                  int cap_rounds);
+
+// ----- Engine helpers used by both engine/combat.c and src/combat_loop.c.
+// These were file-static when both halves lived in src/combat.c; the
+// split required them to cross translation units. Engine-only callers
+// should still prefer the higher-level entry points above.
+
+const ResCombatLog *combat_log_strings(const Combat *c);
+unsigned char combat_player_powers(const Game *g);
+int  combat_hit_unit(Combat *c, int a_side, int a_id,
+                     int t_side, int t_id, bool is_ranged);
+bool combat_in_bounds(int x, int y);
+int  combat_move_unit(Combat *c, int side, int id, int dx, int dy);
+int  combat_fly_unit(Combat *c, int side, int id, int nx, int ny);
+
+// Target-picker filter values used by combat_cell_passes_filter and
+// the shell-side combat_pick_target. 0 = any tile, 1 = empty + no
+// obstacle, 2 = any unit, 3 = friendly (under control), 4 = enemy,
+// 5 = enemy undead.
+typedef enum {
+    PICK_FILTER_ANY        = 0,
+    PICK_FILTER_EMPTY      = 1,
+    PICK_FILTER_ANY_UNIT   = 2,
+    PICK_FILTER_FRIENDLY   = 3,
+    PICK_FILTER_ENEMY      = 4,
+    PICK_FILTER_UNDEAD     = 5,
+} PickFilter;
+
+// Append a line to the combat log + banner. Format-string flavor.
+void combat_log(Combat *c, const char *fmt, ...);
+
+// Same, but expanding a %TOKEN%-style template (typically a field of
+// Resources.combat_log).
+void combat_log_template(Combat *c, const char *template_str,
+                         const ResTemplateVar *vars, int nvars);
+
+// ----- Engine API: state machine + AI + spells.
+// Used by src/combat_loop.c (the rendered loop) and by unit tests.
+
+// State init / RNG
+void combat_init(Combat *c, Game *g, CombatMode mode,
+                 const CombatTarget *target);
+void combat_seed_rng(Combat *c, const Game *g, CombatMode mode,
+                     const CombatTarget *target);
+int  combat_rand(Combat *c, int min, int max);
+
+// Unit init / control / morale
+void combat_init_unit(CombatUnit *u, int troop_idx, int count);
+bool unit_under_control(const Game *g, int troop_idx, int count);
+bool units_are_friendly(const Combat *c, int sA, int iA, int sB, int iB);
+int  morale_to_rank(char r);
+
+// Match / turn machinery
+void combat_prepare_player(Combat *c, const Game *g);
+void combat_prepare_foe(Combat *c, const CombatTarget *target);
+void combat_prepare_castle(Combat *c, const CombatTarget *target);
+void combat_reset_match(Combat *c);
+void combat_reset_turn(Combat *c, int started_at);
+int  combat_next_unit(Combat *c);
+void combat_next_turn(Combat *c);
+void combat_compact(Combat *c);
+
+// State predicates
+bool combat_test_dead(const Combat *c, int side);
+bool combat_unit_surrounded(const Combat *c, int side, int slot);
+bool combat_cell_passes_filter(const Combat *c, int x, int y,
+                               int caster_side, int filter);
+bool unit_touching(const CombatUnit *a, const CombatUnit *b);
+
+// AI
+unsigned char ai_pick_target(const Combat *c, int side, int slot, bool nearby);
+void          unit_move_offset(const Combat *c, const CombatUnit *self,
+                               int tx, int ty, int *ox, int *oy);
+int           combat_ai_action(Combat *c);
+
+// Damage core. Returns kill count.
+int  combat_deal_damage(Combat *c, int a_side, int a_id,
+                        int t_side, int t_id,
+                        bool is_ranged, bool is_external,
+                        int  external_damage, bool retaliation);
+
+// Spells
+int  spell_damage_value(int base, int sp);
+int  spell_damage(Combat *c, int t_side, int t_slot, int dmg);
+void spell_clone(Combat *c, int t_side, int t_slot, int sp);
+void spell_teleport(Combat *c, int from_side, int from_slot, int to_x, int to_y);
+int  spell_freeze(Combat *c, int t_side, int t_slot);
+void spell_resurrect(Combat *c, int t_side, int t_slot, int sp);
 
 #endif

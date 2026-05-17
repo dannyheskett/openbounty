@@ -8,8 +8,6 @@
 #include "tables.h"
 #include "resources.h"
 #include "raylib.h"
-#include "harness_input.h"
-#include "harness.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -97,10 +95,10 @@ static void panel(int x, int y, int w, int h) {
 // save-picker shortcuts) so the next screen's name/text input doesn't
 // receive the committing keystroke.
 static void drain_char_queue(void) {
-    while (harness_get_char_pressed() != 0) { /* discard */ }
+    while (GetCharPressed() != 0) { /* discard */ }
 }
 
-// Cycle raylib's key-edge state to the next frame. harness_key_pressed() compares
+// Cycle raylib's key-edge state to the next frame. IsKeyPressed() compares
 // currentKeyState against previousKeyState; both are refreshed on
 // PollInputEvents(). Without this call, a key handled in one while-loop
 // would still register as "pressed" in the next screen's first iteration
@@ -113,7 +111,7 @@ static void advance_input_frame(void) {
 // Helper: true if any key was pressed this frame (other than pure
 // modifier keys).  behavior.
 static bool any_key_pressed(void) {
-    int k = harness_get_key_pressed();
+    int k = GetKeyPressed();
     while (k != 0) {
         if (k != KEY_LEFT_SHIFT && k != KEY_RIGHT_SHIFT &&
             k != KEY_LEFT_CONTROL && k != KEY_RIGHT_CONTROL &&
@@ -122,7 +120,7 @@ static bool any_key_pressed(void) {
             k != KEY_CAPS_LOCK && k != KEY_NUM_LOCK && k != KEY_SCROLL_LOCK) {
             return true;
         }
-        k = harness_get_key_pressed();
+        k = GetKeyPressed();
     }
     return false;
 }
@@ -136,7 +134,6 @@ static bool run_splash(RenderTexture2D *rt,
     double start_time = GetTime();
     double timeout = 2.5;
     while (!WindowShouldClose()) {
-        harness_tick();
         // Auto-advance after 2 seconds or on any key press
         if (GetTime() - start_time >= timeout || any_key_pressed()) return true;
 
@@ -220,22 +217,21 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
     }
 
     while (!WindowShouldClose()) {
-        harness_tick();
         // ---- Input ---------------------------------------------------
-        if (harness_key_pressed(KEY_ESCAPE)) {
+        if (IsKeyPressed(KEY_ESCAPE)) {
             // ESC on save picker returns to class select, not quit.
             out->action = STARTUP_BACK;
             advance_input_frame();
             return true;
         }
-        if (harness_key_pressed(KEY_UP) || harness_key_pressed(KEY_KP_8)) {
+        if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_KP_8)) {
             cursor = (cursor - 1 + row_count) % row_count;
         }
-        if (harness_key_pressed(KEY_DOWN) || harness_key_pressed(KEY_KP_2)) {
+        if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_KP_2)) {
             cursor = (cursor + 1) % row_count;
         }
-        if (harness_key_pressed(KEY_ENTER) || harness_key_pressed(KEY_KP_ENTER) ||
-            harness_key_pressed(KEY_SPACE)) {
+        if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER) ||
+            IsKeyPressed(KEY_SPACE)) {
             if (cursor == new_row) {
                 // Find first empty slot for the new game; player can
                 // overwrite an occupied slot by selecting it directly
@@ -346,13 +342,12 @@ static bool run_class_select(const Resources *res,
     int py = (CL_SCREEN_H - ph) / 2;
 
     while (!WindowShouldClose()) {
-        harness_tick();
-        if (harness_key_pressed(KEY_ESCAPE)) {
+        if (IsKeyPressed(KEY_ESCAPE)) {
             out->action = STARTUP_QUIT;
             return false;
         }
         // L for Load 
-        if (harness_key_pressed(KEY_L)) {
+        if (IsKeyPressed(KEY_L)) {
             out->action = STARTUP_LOAD;
             drain_char_queue();   // don't leak the 'L' into name entry
             return true;
@@ -360,7 +355,7 @@ static bool run_class_select(const Resources *res,
         // A/B/C/D pick directly .
         static const int keys[4] = { KEY_A, KEY_B, KEY_C, KEY_D };
         for (int k = 0; k < n; k++) {
-            if (harness_key_pressed(keys[k])) {
+            if (IsKeyPressed(keys[k])) {
                 const ClassDef *c = class_by_index(k);
                 safe_copy(out->class_id, sizeof(out->class_id),
                           c ? c->id : "knight");
@@ -449,8 +444,7 @@ static bool run_create_game(const Resources *res,
     const int n = 4;
 
     while (!WindowShouldClose()) {
-        harness_tick();
-        if (harness_key_pressed(KEY_ESCAPE)) {
+        if (IsKeyPressed(KEY_ESCAPE)) {
             // ESC on new-game screen returns to class select, not quit.
             out->action = STARTUP_BACK;
             advance_input_frame();
@@ -460,7 +454,7 @@ static bool run_create_game(const Resources *res,
         if (!has_name) {
             // Name entry phase. Enter confirms; BACKSPACE deletes; alpha/
             // digit/space appends.
-            if (harness_key_pressed(KEY_ENTER) || harness_key_pressed(KEY_KP_ENTER)) {
+            if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER)) {
                 if (name_len == 0) {
                     // We default to world.default_name on empty name
                     // (from game.json) so the flow always completes.
@@ -474,10 +468,10 @@ static bool run_create_game(const Resources *res,
                     name_buf[0] = (char)(name_buf[0] - 'a' + 'A');
                 }
                 has_name = true;
-            } else if (harness_key_pressed(KEY_BACKSPACE) && name_len > 0) {
+            } else if (IsKeyPressed(KEY_BACKSPACE) && name_len > 0) {
                 name_buf[--name_len] = '\0';
             } else {
-                int ch = harness_get_char_pressed();
+                int ch = GetCharPressed();
                 while (ch > 0 && name_len < 10) {
                     bool allowed = (ch >= 'A' && ch <= 'Z') ||
                                    (ch >= 'a' && ch <= 'z') ||
@@ -487,20 +481,20 @@ static bool run_create_game(const Resources *res,
                         name_buf[name_len++] = (char)ch;
                         name_buf[name_len] = '\0';
                     }
-                    ch = harness_get_char_pressed();
+                    ch = GetCharPressed();
                 }
             }
         } else {
             // Difficulty selection phase. Arrows clamp :
             //   sel--; if (sel < 0) sel = 0;
             //   sel++; if (sel > 3) sel = 3;
-            if (harness_key_pressed(KEY_UP) || harness_key_pressed(KEY_KP_8)) {
+            if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_KP_8)) {
                 if (sel > 0) sel--;
             }
-            if (harness_key_pressed(KEY_DOWN) || harness_key_pressed(KEY_KP_2)) {
+            if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_KP_2)) {
                 if (sel < n - 1) sel++;
             }
-            if (harness_key_pressed(KEY_ENTER) || harness_key_pressed(KEY_KP_ENTER)) {
+            if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER)) {
                 out->difficulty = rows[sel].diff;
                 safe_copy(out->name, sizeof(out->name), name_buf);
                 out->action = STARTUP_NEW;
@@ -657,7 +651,6 @@ static bool run_new_game_intro(RenderTexture2D *rt,
     double start = GetTime();
     double timeout = 4.0;
     while (!WindowShouldClose()) {
-        harness_tick();
         if (any_key_pressed() || (GetTime() - start) >= timeout) return true;
 
         frame_begin(rt);
@@ -772,7 +765,6 @@ static bool run_credits(RenderTexture2D *rt, const Resources *res,
     double start = GetTime();
     double timeout = 2.5;
     while (!WindowShouldClose()) {
-        harness_tick();
         if (any_key_pressed() || (GetTime() - start) >= timeout) return true;
 
         frame_begin(rt);

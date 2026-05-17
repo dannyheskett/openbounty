@@ -6,7 +6,6 @@
 #include "encode_dialog.h"
 #include "encode_mp4.h"
 #include "bfont.h"
-#include "harness_input.h"
 #include "palette.h"
 #include "layout.h"
 #include "raylib.h"
@@ -187,7 +186,7 @@ bool encode_dialog_session(RenderTexture2D *rt, const char *record_dir) {
         // any frame is detected on the next iteration.
         bool got_key = false;
         int k;
-        while ((k = harness_get_key_pressed()) != 0) {
+        while ((k = GetKeyPressed()) != 0) {
             // Ignore pure-modifier keys so accidental shift/ctrl don't
             // dismiss the dialog before the user reads it.
             if (k != KEY_LEFT_SHIFT && k != KEY_RIGHT_SHIFT &&

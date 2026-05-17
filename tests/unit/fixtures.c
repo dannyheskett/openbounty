@@ -18,11 +18,17 @@ static void close_test_pack(void) {
 }
 
 static bool ensure_test_pack(void) {
-    if (s_test_pack) return true;
-    s_test_pack = pack_open(FIXTURE_PACK_DIR);
-    if (!s_test_pack) return false;
-    pack_stack_push(s_test_pack);
-    atexit(close_test_pack);
+    // Re-push if pack_suite (or another test) cleared the stack between
+    // suites. s_test_pack stays open across the process; only the stack
+    // membership changes.
+    if (!pack_stack_top()) {
+        if (!s_test_pack) {
+            s_test_pack = pack_open(FIXTURE_PACK_DIR);
+            if (!s_test_pack) return false;
+            atexit(close_test_pack);
+        }
+        pack_stack_push(s_test_pack);
+    }
     return true;
 }
 

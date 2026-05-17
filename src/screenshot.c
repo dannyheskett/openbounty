@@ -1,6 +1,5 @@
 #include "screenshot.h"
 #include "raylib.h"
-#include "harness_input.h"
 #include <stdio.h>
 
 void screenshot_save(RenderTexture2D rt, const char *prefix) {
@@ -21,6 +20,6 @@ void screenshot_save(RenderTexture2D rt, const char *prefix) {
 }
 
 void screenshot_tick(RenderTexture2D rt, const char *prefix) {
-    if (!harness_key_pressed(KEY_GRAVE)) return;
+    if (!IsKeyPressed(KEY_GRAVE)) return;
     screenshot_save(rt, prefix ? prefix : "shot");
 }

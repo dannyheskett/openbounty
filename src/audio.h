@@ -4,17 +4,11 @@
 #include <stdbool.h>
 
 #include "resources.h"
+#include "ui_host.h"   // AudioTuneId + audio_play_tune (engine-shared)
 
-// Logical tune ids consumed by audio_play_tune(). Names mirror the four
-// sound effects used in the engine: walk step, bump-into-wall,
-// chest-open, hero-defeated.
-typedef enum {
-    AUDIO_TUNE_WALK   = 0,
-    AUDIO_TUNE_BUMP,
-    AUDIO_TUNE_CHEST,
-    AUDIO_TUNE_DEFEAT,
-    AUDIO_TUNE_COUNT
-} AudioTuneId;
+// Shell-side audio API. The engine-facing parts (AudioTuneId enum +
+// audio_play_tune) live in engine/include/ui_host.h. This header adds
+// the shell-only lifecycle and settings calls used by main.c.
 
 typedef enum {
     AUDIO_TRACK_NONE,
@@ -47,10 +41,6 @@ void audio_set_music_enabled(bool on);
 // Master volume slider, 0..9 (UI scale matching the controls panel).
 // 0 = mute, 9 = full. Applied multiplicatively to both music and SFX.
 void audio_set_master_volume(int v);
-
-// Trigger one of the 4 PC-speaker tunes (walk/bump/chest/defeat).
-// Voice-stealing: a new tune interrupts whatever was playing.
-void audio_play_tune(AudioTuneId t);
 
 // Switch the background music track. Hard cut. Pass AUDIO_TRACK_NONE
 // to silence music without disabling the toggle.

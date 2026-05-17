@@ -1,6 +1,5 @@
 #include "input.h"
 #include "raylib.h"
-#include "harness_input.h"
 
 #define GAMEPAD_ID 0
 #define GAMEPAD_AXIS_DEADZONE 0.5f
@@ -11,16 +10,16 @@ static void poll_direction(InputState *in) {
     in->dx = 0; in->dy = 0;
 
     // Cardinal
-    if      (harness_key_pressed(KEY_UP)    || harness_key_pressed(KEY_KP_8)) in->dy = -1;
-    else if (harness_key_pressed(KEY_DOWN)  || harness_key_pressed(KEY_KP_2)) in->dy =  1;
-    if      (harness_key_pressed(KEY_LEFT)  || harness_key_pressed(KEY_KP_4)) in->dx = -1;
-    else if (harness_key_pressed(KEY_RIGHT) || harness_key_pressed(KEY_KP_6)) in->dx =  1;
+    if      (IsKeyPressed(KEY_UP)    || IsKeyPressed(KEY_KP_8)) in->dy = -1;
+    else if (IsKeyPressed(KEY_DOWN)  || IsKeyPressed(KEY_KP_2)) in->dy =  1;
+    if      (IsKeyPressed(KEY_LEFT)  || IsKeyPressed(KEY_KP_4)) in->dx = -1;
+    else if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_KP_6)) in->dx =  1;
 
     // Diagonals via numpad or Home/End/PgUp/PgDn.
-    if      (harness_key_pressed(KEY_KP_7) || harness_key_pressed(KEY_HOME))      { in->dx = -1; in->dy = -1; }
-    else if (harness_key_pressed(KEY_KP_9) || harness_key_pressed(KEY_PAGE_UP))   { in->dx =  1; in->dy = -1; }
-    else if (harness_key_pressed(KEY_KP_1) || harness_key_pressed(KEY_END))       { in->dx = -1; in->dy =  1; }
-    else if (harness_key_pressed(KEY_KP_3) || harness_key_pressed(KEY_PAGE_DOWN)) { in->dx =  1; in->dy =  1; }
+    if      (IsKeyPressed(KEY_KP_7) || IsKeyPressed(KEY_HOME))      { in->dx = -1; in->dy = -1; }
+    else if (IsKeyPressed(KEY_KP_9) || IsKeyPressed(KEY_PAGE_UP))   { in->dx =  1; in->dy = -1; }
+    else if (IsKeyPressed(KEY_KP_1) || IsKeyPressed(KEY_END))       { in->dx = -1; in->dy =  1; }
+    else if (IsKeyPressed(KEY_KP_3) || IsKeyPressed(KEY_PAGE_DOWN)) { in->dx =  1; in->dy =  1; }
 }
 
 // Adventure-mode gamepad polling. D-pad / left stick → 8-direction
@@ -33,7 +32,7 @@ static void poll_direction(InputState *in) {
 // keys. If the pad isn't connected, IsGamepadAvailable returns false
 // and every check no-ops.
 static void poll_gamepad(InputState *in) {
-    if (harness_active() || !IsGamepadAvailable(GAMEPAD_ID)) return;
+    if (!IsGamepadAvailable(GAMEPAD_ID)) return;
 
     // Movement: d-pad first, fall back to left stick.
     int dx = 0, dy = 0;
@@ -77,7 +76,7 @@ static void poll_gamepad(InputState *in) {
 }
 
 bool gamepad_pressed_cancel(void) {
-    if (harness_active() || !IsGamepadAvailable(GAMEPAD_ID)) return false;
+    if (!IsGamepadAvailable(GAMEPAD_ID)) return false;
     return IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_RIGHT_FACE_RIGHT);
 }
 
@@ -87,25 +86,25 @@ InputState input_poll(void) {
     poll_direction(&in);
 
     // Letter keys — adventure-mode action bindings.
-    bool ctrl = harness_key_down(KEY_LEFT_CONTROL) || harness_key_down(KEY_RIGHT_CONTROL);
+    bool ctrl = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL);
 
-    if      (harness_key_pressed(KEY_A))                 in.action = INPUT_ACTION_VIEW_ARMY;
-    else if (harness_key_pressed(KEY_C))                 in.action = INPUT_ACTION_VIEW_CONTROLS;
-    else if (harness_key_pressed(KEY_F))                 in.action = INPUT_ACTION_FLY;
-    else if (harness_key_pressed(KEY_L))                 in.action = INPUT_ACTION_LAND;
-    else if (harness_key_pressed(KEY_I))                 in.action = INPUT_ACTION_VIEW_CONTRACT;
-    else if (harness_key_pressed(KEY_M))                 in.action = INPUT_ACTION_VIEW_MAP;
-    else if (harness_key_pressed(KEY_P))                 in.action = INPUT_ACTION_VIEW_PUZZLE;
-    else if (harness_key_pressed(KEY_S))                 in.action = INPUT_ACTION_SEARCH;
-    else if (harness_key_pressed(KEY_U))                 in.action = INPUT_ACTION_CAST_SPELL;
-    else if (harness_key_pressed(KEY_V))                 in.action = INPUT_ACTION_VIEW_CHARACTER;
-    else if (harness_key_pressed(KEY_W))                 in.action = INPUT_ACTION_END_WEEK;
-    else if (harness_key_pressed(KEY_D))                 in.action = INPUT_ACTION_DISMISS_ARMY;
-    else if (harness_key_pressed(KEY_O))                 in.action = INPUT_ACTION_OPTIONS_MENU;
-    else if (harness_key_pressed(KEY_N))                 in.action = INPUT_ACTION_NEW_CONTINENT;
-    else if (harness_key_pressed(KEY_KP_5))              in.action = INPUT_ACTION_REST;
-    else if (ctrl && harness_key_pressed(KEY_Q))         in.action = INPUT_ACTION_FAST_QUIT;
-    else if (harness_key_pressed(KEY_Q))                 in.action = INPUT_ACTION_SAVE_QUIT;
+    if      (IsKeyPressed(KEY_A))                 in.action = INPUT_ACTION_VIEW_ARMY;
+    else if (IsKeyPressed(KEY_C))                 in.action = INPUT_ACTION_VIEW_CONTROLS;
+    else if (IsKeyPressed(KEY_F))                 in.action = INPUT_ACTION_FLY;
+    else if (IsKeyPressed(KEY_L))                 in.action = INPUT_ACTION_LAND;
+    else if (IsKeyPressed(KEY_I))                 in.action = INPUT_ACTION_VIEW_CONTRACT;
+    else if (IsKeyPressed(KEY_M))                 in.action = INPUT_ACTION_VIEW_MAP;
+    else if (IsKeyPressed(KEY_P))                 in.action = INPUT_ACTION_VIEW_PUZZLE;
+    else if (IsKeyPressed(KEY_S))                 in.action = INPUT_ACTION_SEARCH;
+    else if (IsKeyPressed(KEY_U))                 in.action = INPUT_ACTION_CAST_SPELL;
+    else if (IsKeyPressed(KEY_V))                 in.action = INPUT_ACTION_VIEW_CHARACTER;
+    else if (IsKeyPressed(KEY_W))                 in.action = INPUT_ACTION_END_WEEK;
+    else if (IsKeyPressed(KEY_D))                 in.action = INPUT_ACTION_DISMISS_ARMY;
+    else if (IsKeyPressed(KEY_O))                 in.action = INPUT_ACTION_OPTIONS_MENU;
+    else if (IsKeyPressed(KEY_N))                 in.action = INPUT_ACTION_NEW_CONTINENT;
+    else if (IsKeyPressed(KEY_KP_5))              in.action = INPUT_ACTION_REST;
+    else if (ctrl && IsKeyPressed(KEY_Q))         in.action = INPUT_ACTION_FAST_QUIT;
+    else if (IsKeyPressed(KEY_Q))                 in.action = INPUT_ACTION_SAVE_QUIT;
 
     poll_gamepad(&in);
 

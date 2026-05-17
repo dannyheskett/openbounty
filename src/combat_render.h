@@ -12,15 +12,9 @@
 void combat_render_frame(const Combat *c, const Game *g,
                          const Sprites *sprites);
 
-// Push one log line. Format-string flavor for engine-side messages.
-void combat_log(Combat *c, const char *fmt, ...);
-
-// Push one log line by expanding a %TOKEN%-style template
-// (typically a field of `Resources.combat_log`). Vars and nvars are
-// the same shape resources_format_template accepts. NULL or empty
-// template is a no-op.
-void combat_log_template(Combat *c, const char *template_str,
-                         const ResTemplateVar *vars, int nvars);
+// combat_log / combat_log_template now live in engine/include/combat.h
+// (engine/combat_log.c implements them; they're pure data + string
+// substitution, no rendering).
 
 // Build the title-bar string.
 // Pre-first-kill: "Options / <Actor> M<n>"

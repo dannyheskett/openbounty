@@ -3,8 +3,6 @@
 
 #include "pack_select.h"
 #include "raylib.h"
-#include "harness_input.h"
-#include "harness.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -24,21 +22,20 @@ bool pack_select_flow(const PackEntry *list, int n, int *chosen) {
     bool quit   = false;
 
     while (!done && !WindowShouldClose()) {
-        harness_tick();
 
-        if (harness_key_pressed(KEY_ESCAPE)) { quit = true; done = true; }
-        if (harness_key_pressed(KEY_UP) || harness_key_pressed(KEY_KP_8)) {
+        if (IsKeyPressed(KEY_ESCAPE)) { quit = true; done = true; }
+        if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_KP_8)) {
             cursor = (cursor - 1 + n) % n;
         }
-        if (harness_key_pressed(KEY_DOWN) || harness_key_pressed(KEY_KP_2)) {
+        if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_KP_2)) {
             cursor = (cursor + 1) % n;
         }
         for (int i = 0; i < n && i < 9; i++) {
-            if (harness_key_pressed(KEY_ONE + i)) cursor = i;
+            if (IsKeyPressed(KEY_ONE + i)) cursor = i;
         }
-        if (harness_key_pressed(KEY_ENTER) ||
-            harness_key_pressed(KEY_KP_ENTER) ||
-            harness_key_pressed(KEY_SPACE)) {
+        if (IsKeyPressed(KEY_ENTER) ||
+            IsKeyPressed(KEY_KP_ENTER) ||
+            IsKeyPressed(KEY_SPACE)) {
             done = true;
         }
 
