@@ -306,8 +306,9 @@ static int combat_player_cast(Combat *c, const Game *g,
             unsigned char uid = c->umap[ty][tx];
             int t_side = (uid - 1) / COMBAT_SLOTS;
             int t_slot = (uid - 1) % COMBAT_SLOTS;
-            spell_freeze(c, t_side, t_slot);
-            casted = 1;
+            // spell_freeze returns -1 on IMMUNE (no-op); only consume
+            // the spell when it actually took effect.
+            if (spell_freeze(c, t_side, t_slot) == 1) casted = 1;
             break;
         }
         case COMBAT_SPELL_RESURRECT: {
@@ -319,8 +320,9 @@ static int combat_player_cast(Combat *c, const Game *g,
             unsigned char uid = c->umap[ty][tx];
             int t_side = (uid - 1) / COMBAT_SLOTS;
             int t_slot = (uid - 1) % COMBAT_SLOTS;
-            spell_resurrect(c, t_side, t_slot, sp);
-            casted = 1;
+            // spell_resurrect returns 0 if the stack is full or dead;
+            // only consume the spell when troops were actually revived.
+            if (spell_resurrect(c, t_side, t_slot, sp) == 1) casted = 1;
             break;
         }
         case COMBAT_SPELL_TURN_UNDEAD: {

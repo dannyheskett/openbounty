@@ -870,15 +870,15 @@ int combat_fly_unit(Combat *c, int side, int id, int nx, int ny) {
     return 1;
 }
 
-/* exposed for tests */ void spell_resurrect(Combat *c, int t_side, int t_slot, int sp) {
+/* exposed for tests */ int spell_resurrect(Combat *c, int t_side, int t_slot, int sp) {
     CombatUnit *u = &c->units[t_side][t_slot];
-    if (u->count == 0) return;
+    if (u->count == 0) return 0;
     int revived = sp;
     if (revived <= 0) revived = 1;
     if (u->count + revived > u->max_count) {
         revived = u->max_count - u->count;
     }
-    if (revived <= 0) return;
+    if (revived <= 0) return 0;
     u->count += revived;
     u->injury = 0;
     const TroopDef *t = troop_by_index(u->troop_idx);
@@ -891,6 +891,7 @@ int combat_fly_unit(Combat *c, int side, int id, int nx, int ny) {
     const ResCombatLog *cl = combat_log_strings(c);
     combat_log_template(c, cl ? cl->resurrected : "%COUNT% %TROOP% resurrected",
                         vars, 2);
+    return 1;
 }
 
 /* exposed for tests */ int spell_damage_value(int base, int sp) {

@@ -228,6 +228,9 @@ int  spell_damage(Combat *c, int t_side, int t_slot, int dmg);
 void spell_clone(Combat *c, int t_side, int t_slot, int sp);
 void spell_teleport(Combat *c, int from_side, int from_slot, int to_x, int to_y);
 int  spell_freeze(Combat *c, int t_side, int t_slot);
-void spell_resurrect(Combat *c, int t_side, int t_slot, int sp);
+// Returns 1 if any troops were revived, 0 if no-op (stack full or
+// already dead). Callers use the return value to decide whether to
+// consume the spell charge.
+int  spell_resurrect(Combat *c, int t_side, int t_slot, int sp);
 
 #endif
