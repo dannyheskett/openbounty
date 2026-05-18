@@ -62,6 +62,7 @@
 #include "shell_ctx.h"
 #include "shell_promptdispatch.h"
 #include "shell_actions.h"
+#include "shell_earlyexit.h"
 
 // Adventure spell casting (cast_*, dispatch_adventure_spell, bridge/gate
 // continuation state) lives in spells_adventure.{c,h}.
@@ -142,76 +143,11 @@ int main(int argc, char **argv) {
         }
     }
 
-    // --pack-dir <src> <dst>: zip a pre-extracted asset tree into a
-    // .openbounty archive. Used by the Makefile to build the shipped
-    // pack from assets/<name>/. No window.
-    if (pack_dir_src) {
-        if (!pack_zip_dir(pack_dir_src, pack_dir_dst)) {
-            fprintf(stderr, "pack-dir: failed to write %s\n", pack_dir_dst);
-            return 1;
-        }
-        return 0;
-    }
-
-    // --extract: produce a .openbounty pack (or, with --out-dir, a
-    // loose tree) from the user's KB.EXE distribution. Inputs come from
-    // cwd's legacy/bin/ subdir to match the standalone tool's contract;
-    // if that's missing, the engine looks in cwd directly. Output is
-    // <user-data>/openbounty/<pack_id>.openbounty, unless --out-dir is
-    // given.
-    if (extract_mode) {
-        const char *in_dir = "legacy/bin";
-        struct stat sst;
-        if (stat(in_dir, &sst) != 0) {
-            // Fall back to cwd if KB.EXE sits there directly.
-            if (stat("KB.EXE", &sst) == 0) in_dir = ".";
-            else {
-                fprintf(stderr,
-                        "extract: KB.EXE not found. Place your game files "
-                        "in legacy/bin/ or in the current directory.\n");
-                return 2;
-            }
-        }
-        if (extract_out_dir) {
-            int rc = extract_run(in_dir, extract_out_dir);
-            return rc == 0 ? 0 : 1;
-        }
-        char user_dir[PACK_ENTRY_PATH_MAX];
-        if (!SavePathGetDir(user_dir, sizeof user_dir)) {
-            fprintf(stderr, "extract: cannot resolve user data dir\n");
-            return 1;
-        }
-        char tmp_dir[PACK_ENTRY_PATH_MAX + 32];
-        snprintf(tmp_dir, sizeof tmp_dir, "%s/.tmp-extract", user_dir);
-        pack_rmtree(tmp_dir);
-        int rc = extract_run(in_dir, tmp_dir);
-        if (rc != 0) {
-            pack_rmtree(tmp_dir);
-            return 1;
-        }
-        // Read pack_id from the just-emitted game.json so the output
-        // filename matches what discovery will surface.
-        char pid[64] = "kings-bounty";
-        {
-            Pack *p = pack_open(tmp_dir);
-            if (p) {
-                const char *id = pack_id(p);
-                if (id && id[0]) snprintf(pid, sizeof pid, "%s", id);
-                pack_close(p);
-            }
-        }
-        char out_zip[PACK_ENTRY_PATH_MAX + 96];
-        snprintf(out_zip, sizeof out_zip, "%s/%s.openbounty",
-                 user_dir, pid);
-        if (!pack_zip_dir(tmp_dir, out_zip)) {
-            fprintf(stderr, "extract: failed to write %s\n", out_zip);
-            pack_rmtree(tmp_dir);
-            return 1;
-        }
-        pack_rmtree(tmp_dir);
-        fprintf(stderr, "extract: wrote %s\n", out_zip);
-        return 0;
-    }
+    // Early-exit CLI modes (--pack-dir and --extract). Both run to
+    // completion and return; no window opens. Implementations live in
+    // shell_earlyexit.{c,h}.
+    if (pack_dir_src) return shell_run_pack_dir_mode(pack_dir_src, pack_dir_dst);
+    if (extract_mode) return shell_run_extract_mode(extract_out_dir);
 
     // Resolve --pack <name|path>, or auto-discover. Discovery walks (in
     // order): cwd zips, <user-data>/openbounty zips, <exe>/assets zips,
