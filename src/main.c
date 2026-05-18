@@ -53,15 +53,9 @@
 #include "step.h"
 #include "flows.h"
 
-// Fast-quit (Ctrl+Q) status-bar prompt.
-// The "Quit without saving (y/n)" string is rendered into the top status
-// bar, NOT a bottom dialog. While active, chrome substitutes the prompt
-// for the usual "Days Left:N" status. Y -> quit. N or any other key ->
-// clear.
-static bool         fast_quit_active = false;
-
-// Public getter for chrome.c — keeps the flag a static here.
-bool main_fast_quit_active(void) { return fast_quit_active; }
+// Fast-quit (Ctrl+Q) status-bar prompt lives in shell_fastquit.{c,h}.
+// main_fast_quit_active() is provided there for chrome.c to query.
+#include "shell_fastquit.h"
 
 // F10 debug cheat menu lives in shell_cheats.{c,h}.
 #include "shell_cheats.h"
@@ -598,18 +592,9 @@ int main(int argc, char **argv) {
 
         // ==== Input ====
 
-        // Fast-quit (Ctrl+Q) status-bar prompt. Modal y/n read directly
-        // off the keyboard while the status bar shows "Quit without
-        // saving (y/n)". No bottom dialog. Y -> quit; N or any other
-        // key -> clear flag.
-        if (fast_quit_active) {
-            if (IsKeyPressed(KEY_Y)) {
-                quit_requested = true;
-                fast_quit_active = false;
-            } else if (IsKeyPressed(KEY_N) || IsKeyPressed(KEY_ESCAPE)
-                       || gamepad_pressed_cancel()) {
-                fast_quit_active = false;
-            }
+        // Fast-quit (Ctrl+Q) status-bar prompt.
+        if (fast_quit_is_active()) {
+            if (fast_quit_tick()) quit_requested = true;
             goto end_input;   // swallow any other input this frame
         }
 
@@ -1412,12 +1397,10 @@ int main(int argc, char **argv) {
                     break;
                 }
                 case INPUT_ACTION_FAST_QUIT:
-                    //  / :
-                    // status-bar prompt, NOT a bottom dialog. Set the
-                    // flag; chrome.c renders the prompt string in the
-                    // top bar; the input handler below reads y/n while
-                    // the flag is active.
-                    fast_quit_active = true;
+                    // Status-bar prompt, NOT a bottom dialog. chrome.c
+                    // queries fast_quit_is_active() to substitute the
+                    // prompt string for the "Days Left:N" status.
+                    fast_quit_open();
                     break;
 
                 case INPUT_ACTION_END_WEEK: {
