@@ -408,6 +408,36 @@ static int combat_player_action_full(Combat *c, const Game *g,
         }
         return 0;
     }
+    if (IsKeyPressed(KEY_F)) {
+        // Fly: relocate the active unit to an empty, unobstructed cell
+        // anywhere on the field. Only legal for TROOP_ABIL_FLY units
+        // with flights > 0. Picker uses PICK_FILTER_EMPTY (no unit,
+        // no obstacle). Spec lines 5588–5593.
+        if (c->unit_id < 0) return 0;
+        CombatUnit *u = &c->units[c->side][c->unit_id];
+        const TroopDef *t = troop_by_index(u->troop_idx);
+        const ResCombatLog *cl_fl = combat_log_strings(c);
+        if (!t || !(t->abilities & TROOP_ABIL_FLY) || u->flights <= 0) {
+            combat_log_template(c,
+                cl_fl ? cl_fl->cant_fly : "Can't Fly", NULL, 0);
+            return 0;
+        }
+        c->cursor_x = u->x;
+        c->cursor_y = u->y;
+        int tx = 0, ty = 0;
+        if (combat_pick_target(c, g, sprites, target,
+                                c->side, PICK_FILTER_EMPTY, &tx, &ty)) {
+            if (combat_fly_unit(c, c->side, c->unit_id, tx, ty)) {
+                // Mirror the AI's per-flight log line so the player
+                // sees the same "<TROOP> fly" feedback.
+                ResTemplateVar vars[] = { { "TROOP", t->name } };
+                combat_log_template(c,
+                    cl_fl ? cl_fl->fly : "%TROOP% fly", vars, 1);
+                return 1;
+            }
+        }
+        return 0;
+    }
     if (IsKeyPressed(KEY_U)) {
         return combat_player_cast(c, g, sprites, target);
     }
