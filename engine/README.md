@@ -40,11 +40,26 @@ engine/
 │   ├── raylib_stub.h     # type/function no-ops matching real raylib
 │   └── input_keys.h      # OB_KEY_* constants (raylib-compatible ints)
 │
-├── *.c                   # Engine implementation (game.c, map.c,
-│                         # combat.c, etc.)
-└── host_noop.c           # Default no-op implementations of
-                          # ui_host.h callbacks. Optional — link this
-                          # if you don't need real UI behavior.
+├── game.c                # Game state, init, mechanics, salting
+├── map.c                 # Tile grid + .dat parsing
+├── fog.c                 # Fog of war
+├── adventure.c           # Walkability + interact dispatch
+├── step.c                # `step_try` — one-tile movement
+├── combat.c              # Combat state, AI, headless turn loop, damage
+├── combat_log.c          # Combat log line append (pure data)
+├── flows.c               # Encounter / week-end / endgame
+├── savegame.c            # JSON save read/write
+├── savepath.c            # User save dir
+├── state_serialize.c     # JSON snapshot builder
+├── tables.c              # Catalog lookups
+├── resources.c           # game.json parser
+├── tile.c                # Tile semantics
+├── pending.c             # Continuation state
+├── spells_adventure.c    # Adventure-mode spells
+├── assets_bytes.c        # LoadAssetBytes
+├── fatal.c               # Fatal-error helper
+└── host_noop.c           # Default no-op host callbacks (link if
+                          # your consumer doesn't need real UI).
 ```
 
 ## Building the library
@@ -87,8 +102,13 @@ Note the link line includes **only `-lm -lpthread`** — no raylib, no
 X11, no audio device. If your consumer accidentally pulls those, the
 link will fail.
 
-For a working example, see `tests/library/consumer.c`. Build and run
-with `make test-library`.
+For a working example, see `tests/library/consumer.c`. `make all`
+builds the same consumer + host_noop + libobengine.a as a link-time
+boundary check; the resulting binary is discarded and a stamp file
+(`build/libtest-pass.stamp`) records success. A build that produces
+the stamp proves the library is consumable in isolation. If the
+engine ever depends on shell headers or shell symbols, that link
+fails and `make all` fails.
 
 ## Required host callbacks
 

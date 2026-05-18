@@ -53,69 +53,129 @@ maintainer's release procedure.
 
 ## 1. Repository layout
 
+The codebase splits into **engine** (game logic, raylib-free, builds
+as `libobengine.a`) and **shell** (renderer, audio, input, screens —
+links the engine library). The two binaries (`openbounty` for play
+and `openbounty-test` for tests) both link the same engine archive.
+
 ```
 .
 ├── Makefile                  # Linux + Windows + macOS cross-compile targets
 ├── run.sh                    # `make && ./build/openbounty`
-├── src/                      # All C source (single flat tree, no subdirs
-│                             #   except src/screens/)
-│   ├── main.c                # Bootstrap, main game loop, --extract path
-│   ├── game.{c,h}            # Game state, init, salting, mechanics
-│   ├── map.{c,h}             # Tile grid, .dat parsing, placement stamping
-│   ├── fog.{c,h}             # Per-tile visibility (per continent)
-│   ├── adventure.{c,h}       # Walkability + tile-step interact dispatch
-│   ├── step.{c,h}            # `step_try` -- one-tile movement + bookkeeping
-│   ├── flows.{c,h}           # Encounter / week-end / endgame entry points
-│   ├── savegame.{c,h}        # JSON save (read/write)
-│   ├── savepath.{c,h}        # OS-aware save dir resolution
-│   ├── state_serialize.{c,h} # Full-state JSON snapshot (recorder + tests)
-│   ├── tables.{c,h}          # Lookup helpers (troops/spells/artifacts/etc.)
-│   ├── resources.{c,h}       # game.json parser + ResZone/ResTown/etc.
-│   ├── tile.{c,h}            # Terrain + interactive enums
-│   ├── tile_cache.{c,h}      # Texture cache for map tiles
-│   ├── sprites.{c,h}         # Sprite sheet loading
-│   ├── views.{c,h}           # Town / overlay view-stack manager
+│
+├── engine/                   # ENGINE: pure game logic, builds to libobengine.a
+│   ├── README.md             # Architecture + linking instructions
+│   ├── include/              # Public API (consumers add -Iengine/include)
+│   │   ├── game.h            #   Game state, GameInit, mechanics
+│   │   ├── map.h             #   Map struct, MapLoadZoneWithPlacements
+│   │   ├── fog.h             #   Fog of war
+│   │   ├── adventure.h       #   Walkability + tile-step interact dispatch
+│   │   ├── step.h            #   `step_try` — one-tile movement + bookkeeping
+│   │   ├── combat.h          #   Combat state + engine combat API
+│   │   ├── flows.h           #   Encounter / week-end / endgame entry points
+│   │   ├── savegame.h        #   JSON save read/write
+│   │   ├── savepath.h        #   OS-aware save dir resolution
+│   │   ├── state_serialize.h #   Full-state JSON snapshot
+│   │   ├── tables.h          #   Troop/spell/artifact catalog lookups
+│   │   ├── resources.h       #   game.json schema + ResZone/ResTown/...
+│   │   ├── tile.h            #   Terrain + interactive enums
+│   │   ├── pending.h         #   Deferred-action / continuation scratch
+│   │   ├── spells_adventure.h#   Adventure spells (bridge/gate/find-villain…)
+│   │   ├── assets_bytes.h    #   LoadAssetBytes (engine-side asset reads)
+│   │   ├── end_screen.h      #   screen_end_game_open contract
+│   │   ├── ui_host.h         #   Callbacks the SHELL must provide
+│   │   ├── view_kind.h       #   ViewKind enum (engine/shell shared)
+│   │   ├── dwelling_kind.h   #   DwellingKind enum (engine/shell shared)
+│   │   └── fatal.h
+│   ├── headless/             # raylib stub headers for headless consumers
+│   │   ├── raylib.h          #   bridge: includes raylib_stub.h
+│   │   ├── raylib_stub.h     #   no-op types/functions matching real raylib
+│   │   └── input_keys.h      #   OB_KEY_* constants (raylib-compatible ints)
+│   ├── game.c                # Game state, init, salting, mechanics
+│   ├── map.c                 # Tile grid, .dat parsing, placement stamping
+│   ├── fog.c                 # Per-tile visibility
+│   ├── adventure.c           # Walkability + tile-step interact dispatch
+│   ├── step.c                # `step_try` — one-tile movement
+│   ├── combat.c              # Combat state, AI, headless turn loop, damage
+│   ├── combat_log.c          # Combat log line append (pure data)
+│   ├── flows.c               # Encounter / week-end / endgame flows
+│   ├── savegame.c            # JSON save read/write
+│   ├── savepath.c            # OS-aware save dir resolution
+│   ├── state_serialize.c     # JSON snapshot builder
+│   ├── tables.c              # Catalog lookups
+│   ├── resources.c           # game.json parser
+│   ├── tile.c                # Tile semantics
+│   ├── pending.c             # Continuation state
+│   ├── spells_adventure.c    # Adventure spell effects
+│   ├── assets_bytes.c        # LoadAssetBytes / UnloadAssetBytes
+│   ├── fatal.c               # Fatal-error helper
+│   └── host_noop.c           # Default no-op host callbacks (for headless
+│                             #   consumers that don't need real UI)
+│
+├── src/                      # SHELL: renderer + audio + input + screens
+│   ├── main.c                # CLI parsing, init sequence, main loop skeleton
+│   ├── shell_menu.{c,h}      # Game-menu Save/Load/New/Quit callbacks
+│   ├── shell_tempdeath.{c,h} # Defeat / dismiss-last-army handler
+│   ├── shell_weekend.{c,h}   # Astrology + budget end-of-week dialogs
+│   ├── shell_audience.{c,h}  # King Maximus audience flow
+│   ├── shell_cheats.{c,h}    # F10 debug cheat menu
+│   ├── shell_fastquit.{c,h}  # Ctrl+Q status-bar prompt
+│   ├── shell_frame.{c,h}     # Per-frame draw dispatcher
+│   ├── shell_promptdispatch.{c,h} # Bottom-frame prompt-result router
+│   ├── shell_actions.{c,h}   # Adventure-mode InputState.action dispatcher
+│   ├── shell_earlyexit.{c,h} # --extract / --pack-dir CLI modes
+│   ├── shell_ctx.h           # ShellCtx struct (pointer bundle for the above)
+│   ├── combat_loop.{c,h}     # Rendered combat: RunCombat + modal input
+│   ├── combat_render.{c,h}   # Combat field renderer
+│   ├── views.{c,h}           # View-stack manager
 │   ├── views_render.{c,h}    # Per-view rendering
 │   ├── overlay.{c,h}         # Options / controls / character overlays
-│   ├── hud.{c,h}             # Sidebar HUD (gold, contract, magic icons)
+│   ├── hud.{c,h}             # Sidebar HUD
 │   ├── chrome.{c,h}          # Outerworld frame + status bar
-│   ├── map_render.{c,h}      # 5x5 tile viewport with hero centered
+│   ├── map_render.{c,h}      # Map viewport
 │   ├── layout.h              # Pixel constants (320x200 design space)
 │   ├── palette.{c,h}         # 256-color VGA palette
 │   ├── bfont.{c,h}           # 8x8 bitmap font
 │   ├── ui.{c,h}              # Bottom-frame dialog primitives
-│   ├── prompt.{c,h}          # Bottom-frame yes-no / numeric / text input
+│   ├── prompt.{c,h}          # Yes-no / numeric / text-input prompts
 │   ├── input.{c,h}           # Overworld keybindings + gamepad mapping
-│   ├── startup.{c,h}         # Splash -> title -> credits -> class -> name
+│   ├── startup.{c,h}         # Splash → title → credits → class → name
 │   ├── end_cartoon.{c,h}     # Victory cartoon
-│   ├── pending.{c,h}         # Queued banner / one-shot dialog state
-│   ├── spells_adventure.{c,h}# Out-of-combat spell effects
-│   ├── combat.{c,h}          # Combat module (turn loop, AI, spells, RNG)
-│   ├── combat_render.{c,h}   # Combat field renderer
-│   ├── pack.{c,h}            # Asset-pack open / read (zip + loose tree)
 │   ├── pack_select.{c,h}     # Pack picker UI
-│   ├── assets.{c,h}          # File-or-embedded asset loader
+│   ├── assets.{c,h}          # Shell-side texture loader (LoadAssetTexture)
 │   ├── audio.{c,h}           # Music + sfx mixer
 │   ├── screenshot.{c,h}      # Backtick screenshot helper
-│   ├── recorder.{c,h}        # --movie capture (state + framebuffer PNG per tick)
-│   ├── harness.{c,h}         # Headless test harness (Unix socket protocol)
-│   ├── harness_input.{c,h}   # Input shim that swaps raylib for harness
-│   ├── encode_dialog.{c,h}   # MP4 record dialog
+│   ├── sprites.{c,h}         # Sprite sheet loading
+│   ├── tile_cache.{c,h}      # Texture cache for map tiles
+│   ├── recorder.{c,h}        # --movie capture (state + framebuffer PNG/tick)
+│   ├── encode_dialog.{c,h}   # MP4 progress dialog
 │   ├── encode_mp4*.c         # H.264 encoder + MP4 muxer
-│   ├── fatal.{c,h}           # User-friendly fatal-error dialog
-│   └── screens/              # Screen-flow modules (one per location/dialog)
+│   └── screens/              # Screen-flow modules (location/dialog)
 │       ├── home_castle.{c,h}
 │       ├── own_castle.{c,h}
 │       ├── recruit_soldiers.{c,h}
 │       ├── dwelling.{c,h}
 │       ├── alcove.{c,h}
 │       └── end_game.{c,h}
+│
 ├── assets/kings-bounty/
 │   ├── game.json             # All gameplay data (see §3)
 │   ├── data/palette.bin      # 768-byte VGA palette
 │   ├── audio/                # OGG music + WAV sfx
 │   ├── art/                  # Sprites, tiles, fonts, UI chrome
 │   └── maps/*.dat            # ASCII tile-code map files
+│
+├── tests/                    # All tests + the library boundary check
+│   ├── main.c                # Test runner entry (greatest)
+│   ├── fixtures.{c,h}        # Shared init helpers
+│   ├── stubs.c               # main.c stand-in symbols for the test binary
+│   ├── combat_internal.h     # Legacy alias header (re-includes combat.h)
+│   ├── unit/                 # 17 suites, 103 tests — single-function checks
+│   ├── regression/           # 2 suites, 26 tests — combat-digest goldens
+│   ├── e2e/                  # 8 suites, 42 tests — multi-step flows
+│   ├── fixtures/save_v1.dat  # Golden save fixture
+│   └── library/consumer.c    # Boundary-check minimal consumer (build-time)
+│
 ├── third_party/
 │   ├── cjson/                # cJSON library (vendored)
 │   ├── miniz/                # ZIP read/write (for .openbounty packs)
@@ -123,10 +183,9 @@ maintainer's release procedure.
 │   ├── minih264 / minimp4/   # MP4 record encoder
 │   ├── raylib/               # raylib source (for reference)
 │   └── raylib-install*/      # Prebuilt raylib for linux + win64 + win32 + mac
-├── tools/                    # C-only asset extraction + test tooling
-│   ├── extract*.c            # Pack extractor (KB.EXE -> .openbounty)
-│   ├── playtest.c            # Scenario runner against the harness
-│   └── scenarios/*.json      # Scripted test scenarios
+│
+├── tools/                    # C-only asset extraction
+│   └── extract*.c            # Pack extractor (KB.EXE → .openbounty)
 ├── tests/unit/               # Unit tests (greatest framework)
 ├── scripts/                  # raylib build scripts + combat regression runner
 ├── dist/                     # Release-staging templates
@@ -531,7 +590,7 @@ Powers are applied on pickup in `GameClaimArtifact`. Querying with
 - **Garrison castle** (own non-home castle): swap troops between army
   and garrison.
 - **Siege castle** (enemy): "Lay siege (y/n)?" -> dispatches to the
-  combat module (`src/combat.c`).
+  combat module (`engine/combat.c` + `src/combat_loop.c`).
 - **Visit town**: A) New contract / B) Rent boat (500 / 1 week) /
   C) Gather information / D) Buy spell / E) Buy siege weapons (3000).
 - **Visit dwelling**: numeric prompt for troop count, capped by
@@ -547,9 +606,23 @@ Powers are applied on pickup in `GameClaimArtifact`. Querying with
 
 ## 7. Combat
 
-Turn-based tactical combat on a 6×5 grid. Implemented in `src/combat.c`
-and `src/combat_render.c`. Includes troop morale, melee and ranged
-attacks, in-combat spells, AI movement and targeting, and pathfinding.
+Turn-based tactical combat on a 6×5 grid. Split:
+
+- **Engine half** (`engine/combat.c`): state, AI, headless turn loop,
+  damage formula, combat spells. No raylib. Exposes `Combat` struct,
+  `combat_init`, `combat_ai_action`, `combat_run_headless`,
+  `combat_test_digest`, the `spell_*` helpers.
+- **Shell half** (`src/combat_loop.c`): `RunCombat` + modal player
+  input + target picker + per-frame present. Uses raylib.
+- **Renderer** (`src/combat_render.c`): draws the battlefield, log
+  panel, banners.
+
+Player input includes movement, wait/skip (Space/W), shoot (S),
+**fly (F — only when active unit has TROOP_ABIL_FLY)**, use magic (U),
+give up (G), open controls/options/army/character views.
+
+The combat-formula digests (25 golden cases) live in
+`tests/regression/test_combat_digests.c` and run via `make test`.
 
 ---
 
@@ -686,39 +759,48 @@ zone's JSON arrays + the salt-time placements at zone load.
 
 ## 12. Tools (`tools/`)
 
-C-only utilities. Build with `make tools` (or implicitly via `make
-extract`).
+C-only asset extraction. The extractor source compiles into the main
+`openbounty` binary; `./build/openbounty --extract` is the invocation.
 
-| Binary           | Purpose |
-|---|---|
-| `extract`        | Reads a KB.EXE distribution and writes a complete `.openbounty` pack (palette, font, sprites, tiles, chrome, audio metadata, game.json). Invoked from the engine via `--extract`. |
-| `playtest`       | Drives the engine through the harness socket using JSON scenarios under `tools/scenarios/`. |
+The extractor reads a KB.EXE distribution and writes a complete
+`.openbounty` pack (palette, font, sprites, tiles, chrome, audio
+metadata, game.json). It is broken into one translation unit per
+pipeline stage: `extract_unpack.c`, `extract_lzw.c`, `extract_vga.c`,
+`extract_png.c`, `extract_chrome.c`, `extract_gamejson.c`, plus the
+dispatcher `extract.c`.
 
-Packing a loose asset tree into a `.openbounty` zip is done by the engine itself: `./build/openbounty --pack-dir <src> <out_zip>`.
+Packing a loose asset tree into a `.openbounty` zip is done by the
+engine binary itself: `./build/openbounty --pack-dir <src> <out_zip>`.
 
-The extractor is broken into one TU per pipeline stage
-(`extract_unpack.c`, `extract_lzw.c`, `extract_vga.c`, `extract_png.c`,
-`extract_chrome.c`, `extract_gamejson.c`) plus the dispatcher
-(`extract.c`).
-
-There is no Python in this project; the legacy Python scripts have all
-been ported to C and folded into `extract`.
+There is no Python in this project.
 
 ---
 
 ## 13. Where to look first
 
-- **Adding a feature**: start in `src/game.c` for state changes,
-  `src/main.c` for input/flow, `src/views.c` and `src/screens/` for
-  screens.
-- **Fixing a dialog text bug**: find the literal in `src/main.c` or
-  `src/views.c`, or in `assets/kings-bounty/game.json` (`strings`
-  section). User-facing text is loaded through `src/resources.c`, so
-  most strings are pack-overridable.
-- **Debugging movement**: `src/step.c step_try` is the entry point;
-  `src/adventure.c adventure_walkable_*` controls what's passable.
-- **Debugging an interact**: `src/adventure.c adventure_handle_interact`
-  classifies the tile; `src/main.c` reads the result and dispatches.
-- **Save format change**: `src/savegame.c` and bump `SAVE_VERSION`
-  in `src/savegame.h`.
-- **Adding a CLI flag**: `src/main.c main()` (currently takes none).
+- **Adding a game-state feature**: `engine/game.c` (mechanics + RNG
+  salting), `engine/include/game.h` (struct fields), and possibly the
+  relevant flow handler in `src/shell_*.c`. State changes belong in
+  the engine; UI flow belongs in the shell.
+- **Fixing a dialog text bug**: most strings live in
+  `assets/kings-bounty/game.json` (`strings` section). They're loaded
+  via `engine/resources.c` and pack-overridable. Hard-coded literals
+  may also exist in `src/shell_*.c` flow handlers.
+- **Debugging movement**: `engine/step.c step_try` is the entry point;
+  `engine/adventure.c adventure_walkable_*` controls what's passable.
+- **Debugging an interact**: `engine/adventure.c adventure_handle_interact`
+  classifies the tile; `engine/step.c` reads the result and dispatches
+  to flows / screen openers (`engine/flows.c`, the host callbacks in
+  `engine/include/ui_host.h`).
+- **Save format change**: `engine/savegame.c` and bump `SAVE_VERSION`
+  in `engine/include/savegame.h`. Update or replace the golden
+  `tests/fixtures/save_v1.dat`.
+- **Adding a CLI flag**: `src/main.c main()` parses argv; for an
+  early-exit mode use `src/shell_earlyexit.c`. The current set is
+  documented in §3.
+- **Adding a combat ability/spell**: math in `engine/combat.c`,
+  player input wiring in `src/combat_loop.c`. Add a golden digest in
+  `tests/regression/test_combat_digests.c` if it changes the formula.
+- **Adding an adventure spell**: implementation in
+  `engine/spells_adventure.c`, dispatch in `dispatch_adventure_spell`.
+  Modal continuations route through `engine/pending.h`.
