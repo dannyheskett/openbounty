@@ -63,9 +63,8 @@ static bool         fast_quit_active = false;
 // Public getter for chrome.c — keeps the flag a static here.
 bool main_fast_quit_active(void) { return fast_quit_active; }
 
-// F10 cheat menu state. When active the next pressed letter dispatches
-// a debug action .
-static bool         cheat_menu_active = false;
+// F10 debug cheat menu lives in shell_cheats.{c,h}.
+#include "shell_cheats.h"
 
 // Adventure spell casting (cast_*, dispatch_adventure_spell, bridge/gate
 // continuation state) lives in spells_adventure.{c,h}.
@@ -577,112 +576,11 @@ int main(int argc, char **argv) {
             ToggleFullscreen();
         }
 
-        // F10 → debug cheat menu .
-        // The menu lists every command and stays modal until F10/ESC closes
-        // it or a valid letter dispatches.
-        static const char *const cheat_menu_body =
-            "G  Gold        N  Zone\n"
-            "V  Leadership  O  Fog\n"
-            "M  Magic       W  Win\n"
-            "U  Spells      L  Lose\n"
-            "S  Siege\n"
-            "F  Flight\n"
-            "F10/ESC  close";
-        if (IsKeyPressed(KEY_F10) && !cheat_menu_active) {
-            cheat_menu_active = true;
-            open_dialog("Debug menu", cheat_menu_body);
-            // Drain the keypress queue so the same-frame F10 doesn't
-            // immediately close the menu we just opened.
-            while (GetKeyPressed() != 0) { }
-        } else if (cheat_menu_active) {
-            int ck = GetKeyPressed();
-            if (ck == KEY_ESCAPE || ck == KEY_F10) {
-                cheat_menu_active = false;
-                dialog_dismiss();
-            } else if (ck >= KEY_A && ck <= KEY_Z) {
-                char letter = (char)('A' + (ck - KEY_A));
-                char body[160];
-                body[0] = '\0';
-                switch (letter) {
-                case 'G':
-                    game.stats.gold += 50000;
-                    snprintf(body, sizeof body, "Gold +50000");
-                    break;
-                case 'V':
-                    game.stats.leadership_current += 100;
-                    game.stats.leadership_base += 100;
-                    snprintf(body, sizeof body, "Leadership +100");
-                    break;
-                case 'M':
-                    game.stats.spell_power += 1;
-                    game.stats.max_spells += 1;
-                    snprintf(body, sizeof body, "Magic boosted");
-                    break;
-                case 'U': {
-                    int n = spells_count();
-                    for (int si = 0; si < n && si < 14; si++) {
-                        game.spells.counts[si] += 1;
-                    }
-                    snprintf(body, sizeof body, "+1 of every spell");
-                    break;
-                }
-                case 'S':
-                    game.stats.siege_weapons = 1;
-                    snprintf(body, sizeof body, "Siege weapons granted");
-                    break;
-                case 'F':
-                    game.character.mount = MOUNT_FLY;
-                    snprintf(body, sizeof body, "Flight granted");
-                    break;
-                case 'N': {
-                    int found = -1;
-                    for (int zi = 0; zi < res.zone_count; zi++) {
-                        if (!game.world.zones_discovered[zi]) {
-                            game.world.zones_discovered[zi] = true;
-                            found = zi;
-                            break;
-                        }
-                    }
-                    if (found >= 0)
-                        snprintf(body, sizeof body, "Revealed: %s",
-                                 res.zones[found].id);
-                    else
-                        snprintf(body, sizeof body, "All zones already known");
-                    break;
-                }
-                case 'O': {
-                    int revealed = 0;
-                    for (int y = 0; y < map.height; y++) {
-                        for (int x = 0; x < map.width; x++) {
-                            if (!fog.seen[y][x]) {
-                                fog.seen[y][x] = true;
-                                revealed++;
-                            }
-                        }
-                    }
-                    snprintf(body, sizeof body, "Map fog cleared (%d tiles)",
-                             revealed);
-                    break;
-                }
-                case 'W':
-                    cheat_menu_active = false;
-                    dialog_dismiss();
-                    run_end_cartoon(&render_target, &res, &sprites);
-                    show_win_game(&game, &res);
-                    continue;
-                case 'L':
-                    cheat_menu_active = false;
-                    dialog_dismiss();
-                    show_lose_game(&game, &res);
-                    continue;
-                default:
-                    snprintf(body, sizeof body, "Unknown cheat: %c", letter);
-                    break;
-                }
-                cheat_menu_active = false;
-                dialog_dismiss();
-                if (body[0]) open_dialog("Debug", body);
-            }
+        // F10 → debug cheat menu (implementation in shell_cheats.{c,h}).
+        // W/L cheats short-circuit normal per-frame logic.
+        if (cheat_menu_tick(&game, &map, &fog, &res, &sprites,
+                            &render_target) == CHEAT_DISPATCHED_TERMINAL) {
+            continue;
         }
 
         bool overlay = (views_active() != VIEW_NONE) || dialog_is_active() ||
