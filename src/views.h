@@ -6,6 +6,9 @@
 #include "fog.h"
 #include "sprites.h"
 #include "view_kind.h"  // engine-shared ViewKind enum
+#include "ui_host.h"    // prototype for views_active() (declared with the
+                        // engine→host callback contract; shell code that
+                        // queries view state needs this prototype too).
 
 #define VIEWS_STACK_MAX 4
 
