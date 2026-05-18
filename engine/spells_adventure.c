@@ -41,7 +41,13 @@ static void cast_find_villain(Game *g) {
     for (int i = 0; i < GAME_CASTLES; i++) {
         if (g->castles[i].known &&
             strcmp(g->castles[i].villain_id, villain_id) == 0) {
-            ResTemplateVar vars[] = { { "CASTLE", g->castles[i].id } };
+            // Look up the castle's display name; fall back to id if
+            // missing from the resource catalog.
+            const ResCastle *rc =
+                resources_castle_by_id(g->res, g->castles[i].id);
+            const char *castle_label =
+                (rc && rc->name[0]) ? rc->name : g->castles[i].id;
+            ResTemplateVar vars[] = { { "CASTLE", castle_label } };
             resources_format_template(msg, sizeof msg,
                                       bn->spell_find_villain_success, vars, 1);
             open_dialog(spell_header("find_villain", "Find Villain"), msg);
