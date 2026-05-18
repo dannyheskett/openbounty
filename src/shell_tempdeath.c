@@ -22,6 +22,16 @@ void perform_temp_death(Game *g, Map *map, Fog *fog, const Resources *res) {
         g->army[0].count = 20;
     }
 
+    // Forfeit the boat rental on defeat. Without this, GameSwitchZone
+    // below would move the boat to the home spawn, magically materializing
+    // it on land at the King's castle. Boat is rental property; losing
+    // it matches the rest of temp_death's "forfeit everything" semantics
+    // (army wiped, siege weapons revoked).
+    g->boat.has_boat = false;
+    g->boat.x = -1;
+    g->boat.y = -1;
+    g->boat.zone[0] = '\0';
+
     for (int zi = 0; zi < res->zone_count; zi++) {
         if (!res->zones[zi].is_home) continue;
         GameSwitchZone(g, map, fog, res->zones[zi].id);
