@@ -1124,16 +1124,21 @@ int GameBoatCost(const Game *g) {
 
 TownRecord *GameTouchTown(Game *g, const char *town_id) {
     if (!town_id || !town_id[0]) return NULL;
-    // Existing slot?
+    // Existing slot? Touching a known town marks it visited (the Town
+    // Gate spell filters on this flag); first-visit also gets it set
+    // below via the fresh-slot path.
     for (int i = 0; i < GAME_TOWNS; i++) {
-        if (strcmp(g->towns[i].id, town_id) == 0) return &g->towns[i];
+        if (strcmp(g->towns[i].id, town_id) == 0) {
+            g->towns[i].visited = true;
+            return &g->towns[i];
+        }
     }
     // Allocate a fresh slot.
     for (int i = 0; i < GAME_TOWNS; i++) {
         if (g->towns[i].id[0]) continue;
         TownRecord *t = &g->towns[i];
         copy_id(t->id, sizeof(t->id), town_id);
-        t->visited = false;
+        t->visited = true;
         // Deterministic spell: seed xor town slot index, modulo spells_count().
         // We don't
         // carry that hardcoded pairing; any spell is fair game.

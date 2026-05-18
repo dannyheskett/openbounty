@@ -128,6 +128,12 @@ bool step_try(Game *game, Map *map, Fog *fog,
             }
         }
         if (ir.opened_castle) {
+            // Mark visited on any castle entry — audience, own, or
+            // hostile — so the Castle Gate spell can list it. Per
+            // OpenKB spec §15: castle_visited[i] is set on first
+            // visit regardless of outcome.
+            CastleRecord *cr_mut = GameFindCastle(game, ir.castle_id);
+            if (cr_mut) cr_mut->visited = true;
             const CastleRecord *cr = GameFindCastleConst(game, ir.castle_id);
             const ResCastle *rc = resources_castle_by_id(res, ir.castle_id);
             char header[64];
