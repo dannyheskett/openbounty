@@ -536,7 +536,6 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
     combat_init(&c, g, mode, target);
     // Expose the live combat to the harness so `state` can serialize it.
     // Detached on every return path below.
-    recorder_attach_combat(&c);
     combat_seed_rng(&c, g, mode, target);
     combat_prepare_player(&c, g);
     if (mode == COMBAT_MODE_CASTLE) combat_prepare_castle(&c, target);
@@ -557,7 +556,6 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
     c.unit_id = -1;
     int nxt = combat_next_unit(&c);
     if (nxt < 0) {
-        recorder_attach_combat(NULL);
         recorder_capture("combat:end:loss");
         audio_play_tune(AUDIO_TUNE_DEFEAT);
         audio_set_track(AUDIO_TRACK_OPENWORLD);
@@ -722,7 +720,6 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
             }
         }
         GameCompactArmy(g);
-        recorder_attach_combat(NULL);
         recorder_capture("combat:end:win");
         audio_set_track(AUDIO_TRACK_OPENWORLD);
         return COMBAT_RESULT_WIN;
@@ -734,7 +731,6 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         // home castle, drawn over the overworld in the bottom box
         // ( which calls draw_map/draw_sidebar
         // first). No battlefield-side dialog here.
-        recorder_attach_combat(NULL);
         recorder_capture("combat:end:loss");
         audio_play_tune(AUDIO_TUNE_DEFEAT);
         audio_set_track(AUDIO_TRACK_OPENWORLD);
@@ -742,7 +738,6 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
     }
     // Unreachable in normal play: the loop only exits via WIN or LOSS.
     // Kept as a defensive return so the function is total.
-    recorder_attach_combat(NULL);
     recorder_capture("combat:end:loss");
     audio_set_track(AUDIO_TRACK_OPENWORLD);
     return COMBAT_RESULT_LOSS;

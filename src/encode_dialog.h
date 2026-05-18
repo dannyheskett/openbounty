@@ -8,6 +8,6 @@
 // success. After completion, holds a "Done" panel for ~1.5s (or until
 // any key) before returning. `rt` is the same 320x200 RenderTexture2D
 // used by the rest of the game.
-bool encode_dialog_session(RenderTexture2D *rt, const char *record_dir);
+bool encode_dialog_session(RenderTexture2D *rt, const char *src_dir, const char *out_path);
 
 #endif

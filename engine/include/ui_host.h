@@ -164,8 +164,5 @@ void audio_play_tune(AudioTuneId t);
 
 void recorder_capture(const char *trigger);
 
-// recorder_pending_snap is shell-only (called by harness.c); declared
-// in src/recorder.h. recorder_attach_combat is also shell-side; the
-// callers that have a Combat* also have combat.h available.
 
 #endif

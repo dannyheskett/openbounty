@@ -1,4 +1,4 @@
-// Progress dialog for the --encode-movie path. Drives mp4_encode_dir
+// Progress dialog for the --movie shutdown path. Drives mp4_encode_dir
 // synchronously, rendering an "Encoding video..." panel each time the
 // encoder calls back. Renders OVER the existing framebuffer (no clear)
 // so the last in-game frame stays visible behind the panel.
@@ -156,8 +156,9 @@ static void on_progress(const EncodeProgress *p, void *user) {
     frame_end(cx->rt);
 }
 
-bool encode_dialog_session(RenderTexture2D *rt, const char *record_dir) {
-    if (!rt || !record_dir) return false;
+bool encode_dialog_session(RenderTexture2D *rt, const char *src_dir,
+                           const char *out_path) {
+    if (!rt || !src_dir || !out_path) return false;
 
     // Initial frame: dialog appears immediately, before the encoder
     // spends time scanning the manifest.
@@ -166,7 +167,8 @@ bool encode_dialog_session(RenderTexture2D *rt, const char *record_dir) {
     on_progress(&init, &cx);
 
     char err[256] = { 0 };
-    bool ok = mp4_encode_dir(record_dir, on_progress, &cx, err, sizeof err);
+    bool ok = mp4_encode_dir(src_dir, out_path, on_progress, &cx,
+                             err, sizeof err);
 
     // Final panel: shows the real frame count + elapsed time captured
     // during encode. Held until the user presses any key.

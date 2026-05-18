@@ -97,7 +97,7 @@ maintainer's release procedure.
 │   ├── assets.{c,h}          # File-or-embedded asset loader
 │   ├── audio.{c,h}           # Music + sfx mixer
 │   ├── screenshot.{c,h}      # Backtick screenshot helper
-│   ├── recorder.{c,h}        # State+frame ring for tests / replay
+│   ├── recorder.{c,h}        # --movie capture (state + framebuffer PNG per tick)
 │   ├── harness.{c,h}         # Headless test harness (Unix socket protocol)
 │   ├── harness_input.{c,h}   # Input shim that swaps raylib for harness
 │   ├── encode_dialog.{c,h}   # MP4 record dialog
@@ -201,9 +201,7 @@ modes (extractor, pack builder, headless combat digest).
 | `--pack` | `<name\|path>` | Select a pack: bare name resolves via pack discovery, path opens a `.openbounty` zip or directory containing `game.json`. |
 | `--save-dir` | `<dir>` | Override the user save directory (where saves and discovered packs live). |
 | `--seed` | `N` | Force a deterministic per-game RNG seed. Default derives from time + name + class. Useful for reproducible runs. |
-| `--record` | `<dir>` | Recorder dumps captures (state JSON + framebuffer PNG) to `<dir>`. Without this flag captures stay in memory only. |
-| `--record-cap` | `N` | Override the recorder's in-memory ring-buffer size. |
-| `--encode-movie` | — | After the session ends, mux captured frames into an MP4 (uses `<record-dir>`). |
+| `--movie` | `[<path>]` | Record gameplay to an MP4. With no argument, writes to `<user-data>/openbounty/movie-<timestamp>.mp4`. With a path, writes there. At shutdown an "Encoding…" dialog runs the muxer; intermediate per-tick frames live in a hidden temp dir, deleted afterward. |
 | `--extract` | — | Build an asset pack from a user's DOS distribution and exit. Input: `legacy/bin/KB.EXE` if present, else `./KB.EXE`. Output: `<user-data>/openbounty/<pack_id>.openbounty`. |
 | `--out-dir` | `<dir>` | Modifier for `--extract`: emit a loose asset tree to `<dir>` instead of a zip. |
 | `--pack-dir` | `<src> <dst>` | Zip a pre-extracted asset tree into a `.openbounty` archive. Used by the Makefile to build the shipped pack. |

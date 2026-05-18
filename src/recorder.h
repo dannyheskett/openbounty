@@ -2,74 +2,55 @@
 #define OB_RECORDER_H
 
 #include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
 
 #include "game.h"
 #include "map.h"
 #include "fog.h"
-#include "combat.h"
 
-// In-memory ring of (state JSON + framebuffer PNG) pairs, captured at
-// canonical mutation sites (one capture per "tick" — the game is
-// turn-based so emits fire on user-driven state changes, not per
-// render frame).
+// Gameplay-movie recorder. When enabled via recorder_init(), each
+// recorder_capture() call writes one state-JSON + framebuffer-PNG pair
+// into a hidden temp directory; on shutdown, the encoder muxes those
+// PNGs into the configured output .mp4.
 //
-// Default mode is memory-only with a bounded ring (entries + bytes).
-// Disk dump is enabled by recorder_set_record_dir() — typically wired
-// to a --record CLI flag; without it, captures stay in memory and the
-// oldest is evicted on overflow.
+// When NOT initialized, every recorder_capture() call is a free no-op
+// (one branch). The 45 call sites scattered through engine + shell
+// stay always-on; the recorder decides whether to do work.
 
-typedef struct {
-    uint64_t       seq;            // monotonic, starts at 1
-    uint64_t       ms;             // wall-clock ms since recorder_init
-    char          *trigger;        // owned, e.g. "step:right"
-    char          *snap_path;      // owned, "" if no snap was associated
-    char          *state_json;     // owned, full snapshot JSON
-    unsigned char *frame_png;      // owned, NULL if RT not attached
-    int            frame_png_len;
-} TickRecord;
+// Initialize the recorder. `out_mp4_path` is where the final .mp4 lands
+// at shutdown. The recorder picks its own temp directory for the
+// intermediate per-tick files (deleted after the encode). Idempotent:
+// a second call is a no-op.
+void recorder_init(const char *out_mp4_path);
 
-// Lifecycle. cap_entries <= 0 → default 16. cap_bytes 0 → default 8 MB.
-// Idempotent.
-void recorder_init(int cap_entries, size_t cap_bytes);
-void recorder_shutdown(void);
+// Stop recording, encode the intermediate frames into the configured
+// .mp4, delete the temp directory. Safe to call when never initialized.
+// Returns true on a successful encode, false otherwise (no frames, no
+// init, encode failure). The render-side caller is responsible for
+// running the user-facing "Encoding..." dialog around this; see
+// recorder_temp_dir() + the encode dialog wiring in main.c.
+bool recorder_shutdown(void);
+
+// True iff recorder_init() has been called and shutdown hasn't.
 bool recorder_active(void);
 
-// Wire dependencies (all may be NULL to detach).
+// Attach live state pointers used by recorder_capture() to serialize
+// state JSON. Pass NULL to detach. Captures before attach are no-ops.
 void recorder_attach_state(Game *g, const Map *map, const Fog *fog);
-void recorder_attach_combat(const Combat *c);
 void recorder_attach_render_target(void *rt);   // RenderTexture2D *
 
-// Disk dump configuration. When non-NULL, every capture also writes
-// tick_NNNNNN.json + tick_NNNNNN.png and appends a manifest line. NULL
-// disables disk writes (default).
-void recorder_set_record_dir(const char *dir);
-
-// Capture using attached pointers. No-op if Game has not been attached
-// (pre-game startup). Builds a state JSON snapshot and (if a render
-// target is attached) a framebuffer PNG, pushes to ring, evicts
-// oldest entries while either cap is exceeded.
+// Capture: serializes Game/Map/Fog to JSON, reads back framebuffer to
+// PNG, writes both to the temp dir under tick_NNNNNN.{json,png}, and
+// appends a manifest line. No-op when recorder isn't active or state
+// isn't attached. `trigger` is a short tag like "step:right" for the
+// manifest.
 void recorder_capture(const char *trigger);
 
-// Most recent entry, or NULL. Read-only.
-const TickRecord *recorder_last(void);
+// Path of the active temp directory (NULL when not recording). The
+// encoder reads this to find the intermediate frames; the shutdown
+// step deletes it.
+const char *recorder_temp_dir(void);
 
-// Number of entries currently held / total ever captured.
-int recorder_count(void);
-uint64_t recorder_total(void);
-
-// Tag a path to associate with the next capture (mirrors the harness
-// `snap:` flow). One pending path at a time.
-void recorder_pending_snap(const char *path);
-
-// On-demand dump of the current ring to <dir>/manifest.ndjson +
-// per-tick files. Returns number of entries written, or -1 on error.
-int recorder_dump_ring(const char *dir);
-
-// Suggested default dump dir under screenshots/. Caller-provided
-// buffer; returns the buffer or NULL on truncation. Does not create
-// directories.
-char *recorder_default_dump_dir(char *buf, size_t cap);
+// Path of the final .mp4 output (NULL when not recording).
+const char *recorder_output_path(void);
 
 #endif

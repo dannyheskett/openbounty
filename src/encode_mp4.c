@@ -1,5 +1,5 @@
 // H.264 (baseline) + MP4 encoder for openbounty recordings.
-// Reads <dir>/manifest.ndjson + tick_*.png, emits <dir>/movie.mp4.
+// Reads <src_dir>/manifest.ndjson + tick_*.png, emits <out_path>.
 //
 // minih264 requires width and height to be multiples of 16. Our
 // framebuffer is 320x200, so we encode at 320x208 with the bottom 8
@@ -166,7 +166,7 @@ static int mp4_write_cb(int64_t off, const void *buf, size_t sz, void *tok) {
 
 // ---------- main entry ------------------------------------------------------
 
-bool mp4_encode_dir(const char *dir,
+bool mp4_encode_dir(const char *src_dir, const char *out_path,
                     encode_progress_fn cb, void *user,
                     char *err_buf, size_t err_cap) {
     if (!err_buf || err_cap == 0) {
@@ -174,6 +174,7 @@ bool mp4_encode_dir(const char *dir,
     }
     err_buf[0] = '\0';
 
+    const char *dir = src_dir;
     if (!dir || !dir[0]) {
         snprintf(err_buf, err_cap, "no record dir");
         return false;
@@ -226,11 +227,16 @@ bool mp4_encode_dir(const char *dir,
     yuv.stride[2] = VID_W / 2;
 
     // ---- minimp4 init ----
-    char mp4_path[512];
-    snprintf(mp4_path, sizeof mp4_path, "%s/movie.mp4", dir);
-    FILE *fout = fopen(mp4_path, "wb");
+    // Output path comes from the caller (recorder_output_path()).
+    if (!out_path || !out_path[0]) {
+        snprintf(err_buf, err_cap, "no output path");
+        free(enc); free(scr); free(yuv_buf);
+        manifest_free(&mf);
+        return false;
+    }
+    FILE *fout = fopen(out_path, "wb");
     if (!fout) {
-        snprintf(err_buf, err_cap, "cannot create %s", mp4_path);
+        snprintf(err_buf, err_cap, "cannot create %s", out_path);
         free(enc); free(scr); free(yuv_buf);
         manifest_free(&mf);
         return false;

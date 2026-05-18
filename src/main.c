@@ -1,3 +1,6 @@
+// localtime_r needs POSIX 199506+; 200809L covers everything we use.
+#define _POSIX_C_SOURCE 200809L
+
 #include "raylib.h"
 #include "recorder.h"
 #include "audio.h"
@@ -101,9 +104,10 @@ int main(int argc, char **argv) {
     const char *extract_out_dir = NULL; // --out-dir <dir>: extract to loose tree
     const char *pack_dir_src = NULL;  // --pack-dir <src> <dst>: zip a loose asset tree
     const char *pack_dir_dst = NULL;
-    int record_cap = 0;          // 0 → recorder_init uses default
-    const char *record_dir = NULL;
-    bool encode_movie = false;
+    // --movie [path]: record gameplay to an MP4. With no arg, defaults
+    // to <user-data>/openbounty/movie-<timestamp>.mp4.
+    bool        movie_requested = false;
+    const char *movie_path_arg  = NULL;
     // 0 means "derive from time + name + class" (default). Non-zero
     // forces a deterministic per-game seed for reproducible runs.
     uint64_t forced_seed = 0;
@@ -114,10 +118,12 @@ int main(int argc, char **argv) {
             return 0;
         } else if (strcmp(a, "--help") == 0 || strcmp(a, "-h") == 0) {
             printf("openbounty build %s\n"
-                   "Usage: %s [--fullscreen] [--pack <name|path>] [--save-dir <dir>] [--extract [--out-dir <dir>]]\n"
-                   "       %*s [--record <dir>] [--record-cap N] [--encode-movie] [--seed N] [--version]\n"
+                   "Usage: %s [--fullscreen] [--pack <name|path>] [--save-dir <dir>]\n"
+                   "       %*s [--movie [<path>]] [--seed N] [--version]\n"
+                   "       %s --extract [--out-dir <dir>]\n"
                    "       %s --pack-dir <src_dir> <out_zip>\n",
-                   OPENBOUNTY_VERSION, argv[0], (int)strlen(argv[0]), "", argv[0]);
+                   OPENBOUNTY_VERSION, argv[0], (int)strlen(argv[0]), "",
+                   argv[0], argv[0]);
             return 0;
         } else if (strcmp(a, "--fullscreen") == 0) {
             want_fullscreen = true;
@@ -127,12 +133,14 @@ int main(int argc, char **argv) {
             extract_mode = true;
         } else if (strcmp(a, "--out-dir") == 0 && i + 1 < argc) {
             extract_out_dir = argv[++i];
-        } else if (strcmp(a, "--record") == 0 && i + 1 < argc) {
-            record_dir = argv[++i];
-        } else if (strcmp(a, "--record-cap") == 0 && i + 1 < argc) {
-            record_cap = atoi(argv[++i]);
-        } else if (strcmp(a, "--encode-movie") == 0) {
-            encode_movie = true;
+        } else if (strcmp(a, "--movie") == 0) {
+            movie_requested = true;
+            // Optional next-arg path: only consumed if it doesn't look
+            // like another flag (no leading "-"). Without an arg, the
+            // recorder picks an auto-named timestamp file.
+            if (i + 1 < argc && argv[i + 1][0] != '-') {
+                movie_path_arg = argv[++i];
+            }
         } else if (strcmp(a, "--seed") == 0 && i + 1 < argc) {
             forced_seed = strtoull(argv[++i], NULL, 0);
         } else if (strcmp(a, "--save-dir") == 0 && i + 1 < argc) {
@@ -458,15 +466,38 @@ int main(int argc, char **argv) {
     // so the pre-game flow can draw into it; reuse here.
     RenderTexture2D render_target = render_target_startup;
 
-    // Recorder: in-memory ring of (state JSON + framebuffer PNG)
-    // snapshots, captured on logical-tick mutations (steps, combat
-    // actions, dialogs, view changes). Disk dump is opt-in via
-    // --record <dir>.
-    recorder_init(record_cap, 0);
-    recorder_attach_state(&game, &map, &fog);
-    recorder_attach_render_target(&render_target);
-    if (record_dir) recorder_set_record_dir(record_dir);
-    recorder_capture("init");
+    // Recorder: when --movie was passed, capture state + framebuffer
+    // PNGs on logical-tick mutations into a hidden temp dir, then mux
+    // to one .mp4 at shutdown. Off when --movie wasn't passed, in
+    // which case every recorder_capture() call is a free no-op.
+    if (movie_requested) {
+        char movie_path[1024];
+        if (movie_path_arg) {
+            snprintf(movie_path, sizeof movie_path, "%s", movie_path_arg);
+        } else {
+            // Auto-name: <user-data>/openbounty/movie-YYYYMMDD-HHMMSS.mp4
+            char user_dir[PACK_ENTRY_PATH_MAX];
+            if (!SavePathGetDir(user_dir, sizeof user_dir)) {
+                fprintf(stderr, "--movie: cannot resolve user data dir\n");
+                movie_requested = false;
+            } else {
+                time_t t = time(NULL);
+                struct tm tmv;
+                localtime_r(&t, &tmv);
+                snprintf(movie_path, sizeof movie_path,
+                         "%s/movie-%04d%02d%02d-%02d%02d%02d.mp4",
+                         user_dir,
+                         tmv.tm_year + 1900, tmv.tm_mon + 1, tmv.tm_mday,
+                         tmv.tm_hour, tmv.tm_min, tmv.tm_sec);
+            }
+        }
+        if (movie_requested) {
+            recorder_init(movie_path);
+            recorder_attach_state(&game, &map, &fog);
+            recorder_attach_render_target(&render_target);
+            fprintf(stderr, "--movie: recording to %s\n", movie_path);
+        }
+    }
 
     // Audio: open device, load music streams, start the openworld
     // track. Honors the user's saved Sounds + Music toggles.
@@ -912,17 +943,13 @@ int main(int argc, char **argv) {
 
     }
 
-    // Encode session to movie.webm if --encode-movie was given. Runs
-    // AFTER the main loop exits, BEFORE recorder_shutdown so the disk
-    // record dir is still untouched. The dialog drives its own draw
-    // loop on render_target.
-    if (encode_movie) {
-        if (record_dir) {
-            encode_dialog_session(&render_target, record_dir);
-        } else {
-            fprintf(stderr,
-                    "[encode-movie] requires --record <dir>; skipping\n");
-        }
+    // Encode --movie session to its MP4. Runs AFTER the main loop exits,
+    // BEFORE recorder_shutdown so the temp dir is still on disk. The
+    // dialog drives its own draw loop on render_target.
+    if (recorder_active() && recorder_temp_dir() && recorder_output_path()) {
+        encode_dialog_session(&render_target,
+                              recorder_temp_dir(),
+                              recorder_output_path());
     }
 
     audio_shutdown();
