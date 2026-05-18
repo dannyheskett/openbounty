@@ -82,18 +82,8 @@
 // src/shell_audience.{c,h}.
 #include "shell_audience.h"
 
-// ===========================================================================
-// Render path. Draws into the 320x200 target at 1x.
-// ===========================================================================
-
-static void draw_frame(const Game *game, const Map *map, const Fog *fog,
-                               const Sprites *sprites) {
-    ClearBackground(BLACK);
-    chrome_draw(game, sprites);
-    map_render_draw(game, map, fog, sprites);
-    hud_draw(game, sprites);
-    overlay_draw(game, map, fog, sprites);
-}
+// Per-frame draw_frame() dispatcher moved to src/shell_frame.{c,h}.
+#include "shell_frame.h"
 
 // ===========================================================================
 // main
