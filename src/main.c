@@ -769,10 +769,17 @@ int main(int argc, char **argv) {
                     if (gate_mode == 0) {
                         // Castle gate: find visited castle whose name
                         // (or id, falling back) starts with `letter`.
+                        // Skip the home castle (King Maximus's) — per
+                        // spec, the spell can't teleport there; it
+                        // would also collide on 'O' with "Ophiraund"
+                        // since the home castle's display name is
+                        // "of King Maximus".
                         for (int ci = 0; ci < GAME_CASTLES; ci++) {
                             if (!game.castles[ci].visited) continue;
                             if (ci >= game.res->castle_count) continue;
                             const ResCastle *rc = &game.res->castles[ci];
+                            if (strcmp(rc->special.flow, "audience") == 0)
+                                continue;
                             char first = (char)tolower((unsigned char)
                                 (rc->name[0] ? rc->name[0] : rc->id[0]));
                             if (first != letter) continue;
