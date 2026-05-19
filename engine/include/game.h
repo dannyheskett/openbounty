@@ -200,11 +200,14 @@ typedef struct {
 typedef struct {
     bool             zones_discovered[GAME_CONTINENTS];
     bool             orbs_found[GAME_CONTINENTS];
-    // Puzzle: which cells have been revealed (17 villains + 8 artifacts = 25).
-    bool             puzzle_revealed[25];
     // Per-continent fog snapshots. Active continent's fog lives in main.c's
     // standalone Fog. On zone switch the outgoing fog is copied into this
     // array and the incoming continent's snapshot is loaded back.
+    //
+    // The puzzle has no separate "revealed" state: the puzzle view in
+    // src/views_render.c reads g->contract.villains_caught[] and
+    // g->artifacts.found[] directly, so those flag arrays ARE the
+    // puzzle reveal state. No bookkeeping needed.
     Fog              continent_fog[GAME_CONTINENTS];
 } WorldProgress;
 

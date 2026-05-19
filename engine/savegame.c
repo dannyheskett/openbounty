@@ -350,17 +350,10 @@ SaveResult SaveGameRead(const char *path,
                 }
             }
         }
-        cJSON *jpuz = cJSON_GetObjectItem(jw, "puzzle_revealed");
-        if (cJSON_IsArray(jpuz)) {
-            cJSON *it;
-            cJSON_ArrayForEach(it, jpuz) {
-                if (!cJSON_IsString(it)) continue;
-                const VillainDef *v = villain_by_id(it->valuestring);
-                if (v) { g->world.puzzle_revealed[v->index] = true; continue; }
-                const ArtifactDef *a = artifact_by_id(it->valuestring);
-                if (a) g->world.puzzle_revealed[17 + a->index] = true;
-            }
-        }
+        // puzzle_revealed was a dead field (never written by gameplay,
+        // never read by the renderer). Older saves may still carry it;
+        // ignore it on load. Puzzle reveal state is derived from
+        // contract.villains_caught[] and artifacts.found[].
     }
 
     // Boat.

@@ -393,20 +393,10 @@ cJSON *state_build_snapshot(const Game *g,
         }
         cJSON_AddItemToObject(w, "zones_discovered", disc);
         cJSON_AddItemToObject(w, "orbs_found", orbs);
-        cJSON *puz = cJSON_CreateArray();
-        for (int i = 0; i < 25; i++) {
-            if (!g->world.puzzle_revealed[i]) continue;
-            const char *label = NULL;
-            if (i < 17) {
-                const VillainDef *v = villain_by_index(i);
-                if (v) label = v->id;
-            } else {
-                const ArtifactDef *a = artifact_by_index(i - 17);
-                if (a) label = a->id;
-            }
-            if (label) cJSON_AddItemToArray(puz, cJSON_CreateString(label));
-        }
-        cJSON_AddItemToObject(w, "puzzle_revealed", puz);
+        // Puzzle reveal state is derived from g->contract.villains_caught[]
+        // and g->artifacts.found[], not stored separately. Older save
+        // files carried a "puzzle_revealed" array here; we drop it on
+        // write and ignore it on read.
         cJSON_AddItemToObject(root, "world", w);
     }
 
