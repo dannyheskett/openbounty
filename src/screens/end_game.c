@@ -31,40 +31,50 @@ void screen_end_game_open(bool won, const char *body) {
 void screen_end_game_draw(const Game *g, const Sprites *s) {
     (void)g;
 
-    // Fullscreen layout:  — left half is the
-    // CS_ENDING background color (DBLUE), right half is the ending
-    // image. Together they cover the map area + sidebar; chrome
-    // (status bar + outer frame) still renders on top.
+    // Fullscreen layout: left side gets the rendered text, right side
+    // gets a half-scale ending image. The text area is intentionally
+    // wider than 50% (216px vs 72px for the image): the win/lose body
+    // strings in game.json average ~25 chars per line, which doesn't
+    // fit cleanly in a 144px half. Shrinking the image to half-scale
+    // (72x85, centered vertically in the right column) buys the text
+    // enough horizontal room to render without aggressive wrapping
+    // and truncation off the bottom.
     int total_left  = CL_MAP_X;             // chrome's left frame stays
     int total_top   = CL_MAP_Y;             // status bar + bar strip stay
     int total_w     = CL_SCREEN_W - CL_MAP_X - CL_FRAME_RIGHT_W;
     int total_h     = CL_SCREEN_H - CL_MAP_Y - CL_FRAME_BOTTOM_H;
-    int half_w      = total_w / 2;
 
     // Paint full area DBLUE first (CS_ENDING background).
     DrawRectangle(total_left, total_top, total_w, total_h, PAL_CLR(DBLUE));
 
-    // Right half: the ending image. Stretch to fit.
+    // Right column: the ending image at half-scale (72x85), centered
+    // vertically in an 80-px-wide reservation. The original asset is
+    // 144x170 — half-scale preserves aspect ratio.
+    int img_col_w   = 80;
+    int img_col_x   = total_left + total_w - img_col_w;
     Texture2D img = s_won ? s->ending_win : s->ending_lose;
     if (img.id && img.width > 0) {
+        int dst_w = img.width  / 2;
+        int dst_h = img.height / 2;
+        int dst_x = img_col_x + (img_col_w - dst_w) / 2;
+        int dst_y = total_top + (total_h - dst_h) / 2;
         Rectangle src = { 0, 0, (float)img.width, (float)img.height };
-        Rectangle dst = { (float)(total_left + half_w),
-                          (float)total_top,
-                          (float)half_w,
-                          (float)total_h };
+        Rectangle dst = { (float)dst_x, (float)dst_y,
+                          (float)dst_w, (float)dst_h };
         DrawTexturePro(img, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
     }
 
-    // Left half: rendered text. 8-pixel font, ~half_w / 8 chars per
-    // line. Body is pre-formatted by the caller (multi-line, already
-    // word-wrapped if needed).
+    // Text column: the remaining width on the left. 27 chars/line at
+    // 8px font with 4px padding is enough to render the standard win
+    // body without truncating the closing lines.
+    int text_col_w = total_w - img_col_w;
     int pad     = 4;
     int line_h  = BFONT_GLYPH_H + 1;
     int tx      = total_left + pad;
     int ty      = total_top + pad;
     int floor_y = total_top + total_h - pad;
 
-    int max_chars = (half_w - 2 * pad) / BFONT_GLYPH_W;
+    int max_chars = (text_col_w - 2 * pad) / BFONT_GLYPH_W;
     if (max_chars < 1) max_chars = 1;
 
     const char *p = s_body;

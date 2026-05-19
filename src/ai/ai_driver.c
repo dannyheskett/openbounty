@@ -384,12 +384,16 @@ static bool tactical_board_boat(AiDriver *d, Game *g, Map *m, Fog *fog,
                             bx, by, true);
     if (!s.ok || (s.dx == 0 && s.dy == 0)) {
         // BFS rejected the goal (water tile) — walk toward the
-        // nearest land tile adjacent to the boat.
+        // nearest non-interactive land tile adjacent to the boat.
+        // Skipping interactives matters because docks sit next to
+        // their town's gate: if we route through the town the AI
+        // bounces back from the town view forever instead of moving
+        // adjacent to the water.
         for (int oy = -1; oy <= 1; oy++) {
             for (int ox = -1; ox <= 1; ox++) {
                 if (!ox && !oy) continue;
                 int ax = bx + ox, ay = by + oy;
-                if (!ai_walkable(m, ax, ay, AI_MOVE_FOOT, false)) continue;
+                if (!ai_walkable(m, ax, ay, AI_MOVE_FOOT, true)) continue;
                 AiStep s2 = ai_path_step(m, AI_MOVE_FOOT,
                                          g->position.x, g->position.y,
                                          ax, ay, true);
@@ -462,6 +466,28 @@ bool ai_tick(AiDriver *d, Game *game, Map *map, Fog *fog,
     // left intact for the town handler below (the mission may want
     // to invoke a row before dismissing).
     if (ai_clear_ui(d)) return true;
+
+    // Endgame: standing on the scepter tile is an instant win. Honest
+    // gate matches the strategy: only consider this if we've caught
+    // every villain and found every artifact. Otherwise stepping onto
+    // the scepter tile by accident (en route to some other goal in
+    // the same zone) would still trigger the win — which is exactly
+    // the cheat we just disabled. The 10-day search wasted on a
+    // non-scepter tile is a minor cost; firing it on the scepter
+    // without the prerequisites is the actual cheat.
+    if (GameVillainsCaught(game) >= 17 &&
+        GameArtifactsFound(game) >= 8 &&
+        game->scepter.zone[0] &&
+        strcmp(game->scepter.zone, game->position.zone) == 0 &&
+        game->scepter.x == game->position.x &&
+        game->scepter.y == game->position.y) {
+        InputState in = {0};
+        in.action = INPUT_ACTION_SEARCH;
+        shell_dispatch_action(sctx, &in);
+        ai_log(d, "scepter", "SEARCH on (%d,%d) zone=%s",
+               game->position.x, game->position.y, game->position.zone);
+        return true;
+    }
 
     // Town handler: if we're standing inside a town view, the
     // mission decides what to do. RENT_BOAT invokes the BOAT row
