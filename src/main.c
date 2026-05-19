@@ -66,6 +66,7 @@
 #include "shell_promptdispatch.h"
 #include "shell_actions.h"
 #include "shell_earlyexit.h"
+#include "ai/ai_driver.h"
 
 // Adventure spell casting (cast_*, dispatch_adventure_spell, bridge/gate
 // continuation state) lives in spells_adventure.{c,h}.
@@ -111,6 +112,13 @@ int main(int argc, char **argv) {
     // 0 means "derive from time + name + class" (default). Non-zero
     // forces a deterministic per-game seed for reproducible runs.
     uint64_t forced_seed = 0;
+    // --ai flag: drive the game with the in-process AI instead of the
+    // keyboard. --ai-trace writes a JSONL decision log. --ai-max-ticks
+    // bounds the run so a stuck AI doesn't loop forever.
+    bool        ai_mode = false;
+    const char *ai_trace_path = NULL;
+    int         ai_max_ticks = 0;
+    bool        ai_verbose = false;
     for (int i = 1; i < argc; i++) {
         const char *a = argv[i];
         if (strcmp(a, "--version") == 0 || strcmp(a, "-v") == 0) {
@@ -148,6 +156,14 @@ int main(int argc, char **argv) {
         } else if (strcmp(a, "--pack-dir") == 0 && i + 2 < argc) {
             pack_dir_src = argv[++i];
             pack_dir_dst = argv[++i];
+        } else if (strcmp(a, "--ai") == 0) {
+            ai_mode = true;
+        } else if (strcmp(a, "--ai-trace") == 0 && i + 1 < argc) {
+            ai_trace_path = argv[++i];
+        } else if (strcmp(a, "--ai-max-ticks") == 0 && i + 1 < argc) {
+            ai_max_ticks = atoi(argv[++i]);
+        } else if (strcmp(a, "--ai-verbose") == 0) {
+            ai_verbose = true;
         }
     }
 
@@ -519,6 +535,26 @@ int main(int argc, char **argv) {
     double last_step_time = 0.0;   // classic: only animate shortly after a step
     bool prev_overlay = false;
 
+    // --ai driver. Lives for the duration of the frame loop; nothing
+    // if --ai wasn't passed.
+    AiDriver *ai = NULL;
+    if (ai_mode) {
+        AiConfig cfg = {
+            .trace_path = ai_trace_path,
+            .seed       = forced_seed,
+            .max_ticks  = ai_max_ticks,
+            .verbose    = ai_verbose,
+        };
+        ai = ai_create(&cfg);
+        if (!ai) {
+            fprintf(stderr, "ai: failed to create driver\n");
+            return 1;
+        }
+        fprintf(stderr, "ai: driver active%s%s\n",
+                ai_trace_path ? ", trace=" : "",
+                ai_trace_path ? ai_trace_path : "");
+    }
+
     while (!WindowShouldClose() && !quit_requested) {
         // Audio: drive music streaming + react to live toggle changes.
         audio_set_sounds_enabled(game.stats.options[1] != 0);
@@ -566,6 +602,18 @@ int main(int argc, char **argv) {
             .sprites = &sprites, .render_target = &render_target,
             .quit_requested = &quit_requested,
         };
+
+        // --ai driver: drives the game in place of keyboard input. Runs
+        // BEFORE prompt_dispatch_tick so any forced prompt resolution
+        // staged this frame gets consumed by prompt_update() below.
+        if (ai && !GameIsOver(&game)) {
+            ai_tick(ai, &game, &map, &fog, &res, &sctx);
+            if (ai_finished(ai)) {
+                quit_requested = true;
+                // Let the frame finish drawing the final state.
+            }
+        }
+
         if (prompt_dispatch_tick(&sctx)) {
             // prompt is up (or just resolved); skip the rest of input
         } else if (views_active() == VIEW_MENU) {
@@ -961,6 +1009,7 @@ int main(int argc, char **argv) {
 
     audio_shutdown();
     recorder_shutdown();
+    if (ai) ai_destroy(ai);
     UnloadRenderTexture(render_target);
     bfont_shutdown();
     sprites_unload(&sprites);

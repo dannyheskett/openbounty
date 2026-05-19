@@ -26,6 +26,13 @@ static int  g_text_max_value  = 9999;
 static char g_text_buf[8];
 static int  g_text_len = 0;
 
+// One-shot synthetic result. When non-NONE, the next prompt_update()
+// returns this value (and dismisses the prompt) without consulting
+// raylib input. Used by the AI driver to resolve prompts without
+// faking keystrokes; cleared on consumption.
+static PromptResult g_forced = PROMPT_RESULT_NONE;
+static int          g_forced_text_value = 0;
+
 static void copy_to(char *dst, int dst_sz, const char *src) {
     int n = 0;
     if (src) while (n + 1 < dst_sz && src[n]) { dst[n] = src[n]; n++; }
@@ -83,6 +90,15 @@ int prompt_text_input_value(void) {
     return atoi(g_text_buf);
 }
 
+void prompt_force_resolve(PromptResult r) {
+    g_forced = r;
+}
+
+void prompt_force_resolve_text(int value) {
+    g_forced_text_value = value;
+    g_forced = PROMPT_RESULT_YES;
+}
+
 bool prompt_is_active(void) { return g_kind != PK_NONE; }
 
 const char *prompt_kind_str(void) {
@@ -109,6 +125,26 @@ void prompt_dismiss(void) {
 
 PromptResult prompt_update(void) {
     if (g_kind == PK_NONE) return PROMPT_RESULT_NONE;
+
+    // Synthetic resolution (AI driver). Consumes the forced result
+    // and dismisses the prompt; for text-input prompts the caller
+    // staged the value via prompt_force_resolve_text first.
+    if (g_forced != PROMPT_RESULT_NONE) {
+        PromptResult r = g_forced;
+        g_forced = PROMPT_RESULT_NONE;
+        if (g_kind == PK_TEXT_INPUT && r == PROMPT_RESULT_YES) {
+            // Stage the typed value so prompt_text_input_value() returns it.
+            snprintf(g_text_buf, sizeof g_text_buf, "%d", g_forced_text_value);
+            g_text_len = (int)strlen(g_text_buf);
+            // Mirror the keyboard path: dispatcher reads value, then
+            // dismiss clears state.
+            recorder_capture("prompt:close:forced");
+            g_kind = PK_NONE;
+            return PROMPT_RESULT_YES;
+        }
+        prompt_dismiss();
+        return r;
+    }
 
     if (IsKeyPressed(KEY_ESCAPE)) {
         prompt_dismiss();

@@ -65,6 +65,17 @@ const char *prompt_body_text(void);
 // value means the prompt dispatched and state was cleared.
 PromptResult prompt_update(void);
 
+// AI hook: stage a synthetic result so the next prompt_update() returns
+// it without consulting the keyboard. One-shot — cleared on consumption.
+// Calling on a closed prompt is a no-op (the result is dropped when no
+// prompt is active to dispatch through).
+void prompt_force_resolve(PromptResult r);
+
+// AI hook for text-input prompts: stage a numeric value AND force the
+// prompt to resolve as YES on the next prompt_update(). The dispatcher
+// then reads the value with prompt_text_input_value() as usual.
+void prompt_force_resolve_text(int value);
+
 // Render the prompt (if active) in the bottom frame. Called from the
 // overlay after dialogs.
 void prompt_draw(void);
