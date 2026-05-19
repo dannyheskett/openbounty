@@ -135,14 +135,11 @@ static int combat_player_cast(Combat *c, const Game *g,
     }
     Game *gw = c->heroes[c->side];
     if (!gw) return 0;
-    // Pre-check: hero rank must know magic. Use the resolved class
-    // table -- class_by_id + rank.knows_magic.
-    const ClassDef *cls = class_by_id(gw->character.cls.id);
-    if (!cls || cls->rank_count == 0) return 0;
-    int rank = gw->character.cls.rank_index;
-    if (rank < 0) rank = 0;
-    if (rank >= cls->rank_count) rank = cls->rank_count - 1;
-    if (!cls->ranks[rank].knows_magic) {
+    // Pre-check: hero must know magic. `g->stats.knows_magic` is the
+    // live flag — initialised from the rank-0 class default, then set
+    // true by the Archmage's alcove (REQ-123). Any class that bought
+    // magic at the alcove can cast in combat.
+    if (!gw->stats.knows_magic) {
         combat_log_template(c,
             cl_pre ? cl_pre->cannot_cast : "You cannot cast magic",
             NULL, 0);
