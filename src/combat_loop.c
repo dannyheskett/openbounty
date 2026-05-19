@@ -558,6 +558,17 @@ static bool s_auto_player = false;
 void combat_set_auto_player(bool on) { s_auto_player = on; }
 bool combat_auto_player(void)        { return s_auto_player; }
 
+// Optional player-side AI. NULL means "fall back to combat_ai_action"
+// (the existing harness behavior when auto-combat is on). Set by the
+// --ai driver to plug in player-specific policy.
+static CombatPlayerAi s_player_ai      = NULL;
+static void          *s_player_ai_user = NULL;
+
+void combat_set_player_ai(CombatPlayerAi fn, void *user) {
+    s_player_ai      = fn;
+    s_player_ai_user = user;
+}
+
 CombatResult RunCombat(Game *g, const Sprites *sprites,
                        void *render_target,
                        CombatMode mode, const CombatTarget *target) {
@@ -681,10 +692,18 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
                             !c.units[c.side][c.unit_id].out_of_control);
         if (player_turn && !s_auto_player) {
             acted = combat_player_action_full(&c, g, sprites, rt);
+        } else if (player_turn && s_player_ai) {
+            // Auto-combat with a registered player-side AI: that hook
+            // gets first crack at the decision. Fires every frame (no
+            // frame_rollover gate) — the hook itself decides pacing,
+            // typically returning 1 on a frame where it commits to an
+            // action and 0 otherwise.
+            acted = s_player_ai(&c, s_player_ai_user);
         } else if (frame_rollover) {
             // AI drives this turn — either a real AI unit, an
             // out-of-control player unit, or any player unit while
-            // auto_combat is on (harness-driven runs).
+            // auto_combat is on without a player-side AI registered
+            // (harness-driven runs use this path).
             acted = combat_ai_action(&c);
         }
 

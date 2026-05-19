@@ -27,4 +27,20 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
 void combat_set_auto_player(bool on);
 bool combat_auto_player(void);
 
+// Player-side AI hook. When set AND auto-combat is on, RunCombat
+// consults this function on the player's turns instead of routing
+// through combat_ai_action. The hook returns the same int that
+// combat_ai_action returns: non-zero = an action was taken this
+// frame, 0 = no-op / try again next frame. `user` is the opaque
+// pointer registered alongside the function.
+//
+// Default is NULL — auto-combat falls back to combat_ai_action,
+// preserving the harness behavior. Cleared by passing NULL.
+//
+// Intended caller: the upcoming --ai driver, which plays the
+// player side with policy distinct from the enemy AI (favour
+// ranged, target highest-DPS first, cast spells at thresholds).
+typedef int (*CombatPlayerAi)(Combat *c, void *user);
+void combat_set_player_ai(CombatPlayerAi fn, void *user);
+
 #endif
