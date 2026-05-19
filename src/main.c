@@ -360,9 +360,20 @@ int main(int argc, char **argv) {
         LoadRenderTexture(CL_SCREEN_W, CL_SCREEN_H);
     SetTextureFilter(render_target_startup.texture, TEXTURE_FILTER_POINT);
 
-    // Pre-game flow: pick slot + new-game wizard.
+    // Pre-game flow: pick slot + new-game wizard. When --ai is set, we
+    // skip the wizard entirely and synthesize a fresh-game choice:
+    // knight, normal difficulty, slot 0, name "AI". The AI driver only
+    // runs in this mode for now; loading a save under --ai would also
+    // work, but that's a CLI-shape decision to defer.
     StartupChoice choice = { 0 };
-    if (!startup_flow(&res, &sprites,
+    if (ai_mode) {
+        choice.action = STARTUP_NEW;
+        choice.slot = 0;
+        snprintf(choice.class_id, sizeof choice.class_id, "knight");
+        snprintf(choice.name,     sizeof choice.name,     "AI");
+        choice.difficulty = DIFFICULTY_NORMAL;
+        choice.seed = forced_seed ? forced_seed : 1;
+    } else if (!startup_flow(&res, &sprites,
                               &render_target_startup, &choice)) {
         // User quit before choosing.
         UnloadRenderTexture(render_target_startup);

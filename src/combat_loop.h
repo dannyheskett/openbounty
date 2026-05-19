@@ -43,4 +43,13 @@ bool combat_auto_player(void);
 typedef int (*CombatPlayerAi)(Combat *c, void *user);
 void combat_set_player_ai(CombatPlayerAi fn, void *user);
 
+// Fast-combat: when on, RunCombat skips the per-frame animation
+// rollover gate, letting AI dispatch one action per frame instead of
+// waiting out the walk-animation tick. Used by the --ai driver so a
+// battle finishes in a few frames rather than seconds of cinematic.
+// Rendering still runs each frame; only the action-dispatch cadence
+// changes. No effect when a human is driving the player side.
+void combat_set_fast_combat(bool on);
+bool combat_fast_combat(void);
+
 #endif
