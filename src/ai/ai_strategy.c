@@ -109,6 +109,12 @@ static bool find_nearest_interact_bfs(const Game *g, const Map *m,
             if (tile_skip_owned_castle(g, t))         continue;
             if (tile_skip_audience_castle(g, t))      continue;
             if (tile_skip_drained_dwelling(g, t, x, y)) continue;
+            // Alcove: skip if we already know magic, otherwise visiting
+            // just bounces off the "already learned" dialog every time
+            // (the tile isn't consumed).
+            if (t->interactive == INTERACT_ALCOVE && g->stats.knows_magic) {
+                continue;
+            }
             AiStep s = ai_path_step(m, mode,
                                     g->position.x, g->position.y,
                                     x, y, true);
@@ -149,8 +155,11 @@ static bool find_nearest_fog_frontier(const Game *g, const Map *m,
             }
             if (!has_unseen) continue;
             if (!ai_walkable(m, x, y, mode, false)) continue;
+            // avoid_interact=true matches the driver's step planning,
+            // so a frontier we say is reachable is actually reachable
+            // by the same path the driver will take.
             AiStep s = ai_path_step(m, mode, g->position.x, g->position.y,
-                                    x, y, false);
+                                    x, y, true);
             if (!s.ok) continue;
             if (best < 0 || s.dist < best) {
                 best = s.dist;
@@ -211,12 +220,15 @@ AiGoal ai_strategy_pick(const Game *g, const Map *m, const Fog *fog) {
         }
     }
 
-    // (4) Nearest artifact, then chest, then dwelling.
+    // (4) Nearest artifact, then chest, then dwelling. Telecaves
+    // are excluded — they're persistent teleporters, and routing to
+    // one just bounces us across the map without consuming the tile,
+    // producing a perpetual loop.
     static const Interact pickup_kinds[] = {
         INTERACT_ARTIFACT, INTERACT_TREASURE_CHEST,
         INTERACT_DWELLING_PLAINS, INTERACT_DWELLING_FOREST,
         INTERACT_DWELLING_HILLS,  INTERACT_DWELLING_DUNGEON,
-        INTERACT_ORB, INTERACT_NAVMAP, INTERACT_TELECAVE,
+        INTERACT_ORB, INTERACT_NAVMAP, INTERACT_ALCOVE,
     };
     for (size_t i = 0; i < sizeof pickup_kinds / sizeof pickup_kinds[0]; i++) {
         int gx, gy, d;
@@ -239,24 +251,19 @@ AiGoal ai_strategy_pick(const Game *g, const Map *m, const Fog *fog) {
         }
     }
 
-    // (6) Last resort: pick the farthest reachable corner so we at
-    // least move. If even that fails, the strategy returns no goal
-    // and the driver falls back to first-walkable.
-    static const int corners[4][2] = {
-        {  1,  1 },
-        {  60,  1 },
-        {  1, 60 },
-        {  60, 60 },
-    };
-    for (int i = 0; i < 4; i++) {
-        AiStep s = ai_path_step(m, mode, g->position.x, g->position.y,
-                                corners[i][0], corners[i][1], false);
-        if (s.ok) {
-            out.gx = corners[i][0]; out.gy = corners[i][1]; out.ok = true;
-            set_label(&out, "corner@%d,%d", out.gx, out.gy);
-            return out;
-        }
-    }
-
+    // No tactical goal in this zone — the mission layer will read
+    // ok=false and may transition us to GO_TO_DOCK / BOARD_BOAT to
+    // leave the continent. Don't fabricate a "corner" wander goal:
+    // that produces purposeless movement that wedges the AI for many
+    // ticks before stuck detection fires.
     return out;
+}
+
+bool ai_zone_exhausted(const Game *g, const Map *m, const Fog *fog) {
+    // Bedrock predicate: PLAY_ZONE stays active as long as anything
+    // in the strategy's tactical priorities is reachable. Implemented
+    // by asking the strategy once and checking ok. Cheap to do —
+    // a few BFS over a 64x64 grid.
+    AiGoal goal = ai_strategy_pick(g, m, fog);
+    return !goal.ok;
 }

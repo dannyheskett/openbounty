@@ -28,7 +28,23 @@ typedef struct {
     bool ok;                 // false if no goal could be picked
 } AiGoal;
 
-// Choose a goal in the current zone. Reads g, m, and fog; never mutates.
+// Choose a tactical goal for the current zone, given that the mission
+// layer has decided we should be playing inside the zone (PLAY_ZONE).
+// Reads g, m, and fog; never mutates. Returns ok=false when nothing
+// productive is reachable on foot — that's the cue for the mission
+// layer to transition.
 AiGoal ai_strategy_pick(const Game *g, const Map *m, const Fog *fog);
+
+// "Is the current zone fully exhausted on foot?" — the predicate the
+// mission layer uses to leave PLAY_ZONE. True when there are no
+// unvisited towns, no enemy castles, no live pickups (artifacts,
+// chests, navmaps, orbs, telecaves, alcoves, fundable dwellings), and
+// no fog-frontier tiles reachable on foot from the hero's current
+// position. Pure water frontiers are excluded — sailing to nowhere
+// doesn't count as progress in the current zone.
+//
+// Pre-computed once per tick by the driver and cached on the
+// AiMissionCtx so we don't run the same BFS family twice in a frame.
+bool ai_zone_exhausted(const Game *g, const Map *m, const Fog *fog);
 
 #endif

@@ -693,6 +693,13 @@ static void town_do_row(Game *g, TownRow r) {
     }
 }
 
+void views_town_invoke_row(Game *g, int row) {
+    if (view_stack_top() != VIEW_TOWN) return;
+    if (row < 0 || row >= TOWN_ROW_COUNT) return;
+    town.cursor = row;
+    town_do_row(g, (TownRow)row);
+}
+
 bool views_town_update(Game *g) {
     if (view_stack_top() != VIEW_TOWN) return false;
 

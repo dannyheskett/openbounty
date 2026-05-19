@@ -1,13 +1,23 @@
 // src/ai/ai_driver.c
 //
-// MVP scaffolding: observes Game/Map/Fog, dismisses blocking UI so
-// the AI never sits stuck on a dialog, takes one step per frame in a
-// dumb direction. Strategy modules slot in later — this file owns
-// the frame-by-frame state machine and the trace log.
+// In-process AI driver. Each frame the driver:
+//   1. Dismisses any blocking UI modal (dialog / view / prompt).
+//   2. Asks the mission state machine for the current high-level
+//      objective (PLAY_ZONE / GO_TO_DOCK / BOARD_BOAT / SAIL_NEXT /
+//      ...).
+//   3. Dispatches to a per-mission handler that produces either a
+//      tile to step toward or a shell action to fire.
+//
+// The strategy module (ai_strategy.c) only handles PLAY_ZONE — the
+// "what's the best thing to do on foot in this zone" question. The
+// multi-step plans (rent a boat, sail to another continent) live in
+// the mission layer (ai_mission.c) so we don't have stateless goal
+// pickers fighting each other across travel modes.
 
 #include "ai_driver.h"
 #include "ai_nav.h"
 #include "ai_strategy.h"
+#include "ai_mission.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -28,8 +38,20 @@
 #include "prompt.h"
 #include "ui.h"
 #include "ui_host.h"          // views_active()
-#include "views.h"            // views_dismiss()
+#include "views.h"            // views_dismiss(), views_town_invoke_row()
 #include "combat_loop.h"      // combat_set_auto_player
+
+#define AI_TOWN_ROW_BOAT      1   // mirrors TownRow enum in views.c
+#define AI_TOWN_ROW_CONTRACT  0
+#define AI_TOWN_ROW_SPELL     3
+
+// Bridge between the SAIL_NEXT mission (dispatches NEW_CONTINENT,
+// which opens a numeric prompt to pick a neighbor zone) and the
+// prompt-dismissal code in ai_clear_ui (which resolves the numeric
+// prompt). The mission sets pending=true with the desired pick; the
+// prompt handler reads + clears.
+static bool s_sail_prompt_pending = false;
+static int  s_sail_prompt_pick    = 0;
 
 struct AiDriver {
     AiConfig cfg;
@@ -39,9 +61,21 @@ struct AiDriver {
     char     last_goal[64];
     char     last_action[96];
 
-    // Anti-stuck: remember the last few tiles we stepped onto. If we
-    // revisit the same tile too many times in a short window we abandon
-    // the current goal and try the next-best one.
+    AiMission mission;
+    int       ticks_in_mission;     // resets on each mission transition
+    int       ticks_since_sail;     // for SAIL_NEXT cooldown watchdog
+    char      last_zone[24];        // tracks zone changes between ticks
+    bool      sail_dispatched;      // SAIL_NEXT one-shot: only one NEW_CONTINENT
+                                    // per mission entry. Cleared on transition out
+                                    // of SAIL_NEXT or on a zone change.
+    int       sail_pick_cycle;      // rotates over neighbors so successive sails
+                                    // pick different destinations (avoids two-zone
+                                    // ping-pong when neighbor[0] is always the
+                                    // last visited zone)
+
+    // Anti-stuck: remember the last few tiles we stepped onto. Revisits
+    // count as "stuck"; enough strikes triggers a clean exit (we'd
+    // rather end than wedge the user's terminal forever).
     int      recent_x[8];
     int      recent_y[8];
     int      recent_n;
@@ -62,6 +96,7 @@ AiDriver *ai_create(const AiConfig *cfg_in) {
     }
     snprintf(d->last_goal,   sizeof d->last_goal,   "init");
     snprintf(d->last_action, sizeof d->last_action, "(none)");
+    d->mission = AI_MISSION_PLAY_ZONE;
 
     // Auto-combat: when the AI driver enters a fight, RunCombat must
     // not block on keyboard input. Enabling auto_player makes RunCombat
@@ -115,7 +150,7 @@ static void ai_log(AiDriver *d, const char *goal, const char *fmt, ...) {
     }
 }
 
-// ---- per-frame tick --------------------------------------------------------
+// ---- UI dismissal ----------------------------------------------------------
 
 // Dismiss the topmost blocking UI element. Returns true if something
 // was dismissed (caller treats the frame as consumed).
@@ -123,13 +158,8 @@ static bool ai_clear_ui(AiDriver *d) {
     if (prompt_is_active()) {
         // Default heuristics: yes to most yes/no (attack, recruit,
         // siege — combat AI handles the fight), 1 to numeric, A to ab.
-        // The macro strategy will refine this later (e.g. retreat on a
-        // mismatched army).
         const char *kind = prompt_kind_str();
         if (strcmp(kind, "yes_no") == 0) {
-            // Look for words that suggest the prompt is asking
-            // permission to do something destructive to the player
-            // (quit, dismiss army, etc.). For those we answer NO.
             const char *body = prompt_body_text();
             bool destructive = false;
             if (body) {
@@ -149,19 +179,32 @@ static bool ai_clear_ui(AiDriver *d) {
                 ai_log(d, "ui", "prompt(yes_no)=YES");
             }
         } else if (strcmp(kind, "numeric") == 0) {
-            prompt_force_resolve(PROMPT_RESULT_1);
-            ai_log(d, "ui", "prompt(numeric)=1");
+            // The post-NEW_CONTINENT navigate prompt should rotate
+            // through neighbors so we don't always pick the same
+            // zone. The flag is one-shot — set when sail dispatches,
+            // cleared here. Other numeric prompts (dismiss-army
+            // slot picker etc.) get the default RESULT_1.
+            PromptResult r = PROMPT_RESULT_1;
+            if (s_sail_prompt_pending) {
+                int pick = s_sail_prompt_pick;
+                if (pick < 1) pick = 1;
+                if (pick > 5) pick = 5;
+                r = (PromptResult)(PROMPT_RESULT_1 + (pick - 1));
+                s_sail_prompt_pending = false;
+            }
+            prompt_force_resolve(r);
+            ai_log(d, "ui", "prompt(numeric)=%d", (int)(r - PROMPT_RESULT_1 + 1));
         } else if (strcmp(kind, "ab") == 0) {
             prompt_force_resolve(PROMPT_RESULT_1);
             ai_log(d, "ui", "prompt(ab)=A");
         } else if (strcmp(kind, "text") == 0) {
-            // Text prompts are usually recruit counts ("how many to
-            // recruit?"). Accept the minimum non-zero so the dwelling
-            // gets touched-and-consumed and the strategy stops
-            // re-targeting it. Future revision: ask the strategy how
-            // much to spend.
-            prompt_force_resolve_text(1);
-            ai_log(d, "ui", "prompt(text)=1");
+            // FLOW_RECRUIT clamps n to GameMaxRecruitable AND to
+            // dwelling.count, so passing 9999 buys the maximum
+            // possible. Drains the dwelling in one visit so the
+            // strategy's "skip drained dwelling" filter kicks in
+            // and we stop re-targeting it.
+            prompt_force_resolve_text(9999);
+            ai_log(d, "ui", "prompt(text)=9999");
         } else {
             prompt_force_resolve(PROMPT_RESULT_CANCEL);
             ai_log(d, "ui", "prompt(?)=CANCEL");
@@ -174,12 +217,26 @@ static bool ai_clear_ui(AiDriver *d) {
         return true;
     }
     if (views_active() != VIEW_NONE) {
+        // VIEW_TOWN: let the mission layer drive the menu rows before
+        // we dismiss. RENT_BOAT mission invokes the BOAT row from
+        // here; future missions may take contracts or buy spells. The
+        // PLAY_ZONE default falls through to the dismiss below — we
+        // don't want to take a fresh contract every time the AI
+        // walks into a town and breaks pathing.
+        if (views_active() == VIEW_TOWN) {
+            // Suppressed: handled by tactical_in_town() below, called
+            // from the main tick BEFORE the dismiss step runs again.
+            // Return false so the dispatcher's town handler can run.
+            return false;
+        }
         views_dismiss();
         ai_log(d, "ui", "dismiss view=%d", (int)views_active());
         return true;
     }
     return false;
 }
+
+// ---- anti-stuck bookkeeping -----------------------------------------------
 
 static int ai_revisit_count(const AiDriver *d, int x, int y) {
     int n = 0;
@@ -196,7 +253,6 @@ static void ai_remember_pos(AiDriver *d, int x, int y) {
         d->recent_y[d->recent_n] = y;
         d->recent_n++;
     } else {
-        // Shift left.
         for (int i = 1; i < cap; i++) {
             d->recent_x[i - 1] = d->recent_x[i];
             d->recent_y[i - 1] = d->recent_y[i];
@@ -206,50 +262,188 @@ static void ai_remember_pos(AiDriver *d, int x, int y) {
     }
 }
 
-// Pick a one-tile move toward the strategy's current goal. Falls back to
-// random-walkable if no path exists or the strategy returned no goal.
-static bool ai_pick_move(AiDriver *d, Game *g, Map *m, Fog *fog,
-                         int *out_dx, int *out_dy) {
-    AiGoal goal = ai_strategy_pick(g, m, fog);
+// ---- step helpers ----------------------------------------------------------
+
+// Try to step toward (gx, gy). Returns true if a step was issued
+// (success of the underlying step_try is best-effort — adventure
+// engine handles blockers). The path-step uses boat-aware walkability:
+// when on foot it treats the player's parked boat tile as walkable
+// (boarding) so missions that need to board can path onto water.
+static bool ai_step_toward(AiDriver *d, Game *g, Map *m, Fog *fog,
+                           const Resources *res,
+                           int gx, int gy, const char *label) {
     AiMoveMode mode = ai_move_mode_for(g);
+    bool avoid_interact = true;
+    AiStep step = ai_path_step(m, mode, g->position.x, g->position.y,
+                               gx, gy, avoid_interact);
+    if (!step.ok || (step.dx == 0 && step.dy == 0)) return false;
+    ai_log(d, label, "step %+d%+d -> (%d,%d) dist=%d goal=(%d,%d)",
+           step.dx, step.dy,
+           g->position.x + step.dx, g->position.y + step.dy,
+           step.dist, gx, gy);
+    step_try(g, m, fog, res, step.dx, step.dy);
+    return true;
+}
 
-    if (goal.ok) {
-        AiStep step = ai_path_step(m, mode,
-                                   g->position.x, g->position.y,
-                                   goal.gx, goal.gy, true);
-        if (step.ok && (step.dx != 0 || step.dy != 0)) {
-            *out_dx = step.dx;
-            *out_dy = step.dy;
-            ai_log(d, goal.label,
-                   "step %+d%+d -> (%d,%d) dist=%d goal=(%d,%d)",
-                   step.dx, step.dy,
-                   g->position.x + step.dx, g->position.y + step.dy,
-                   step.dist, goal.gx, goal.gy);
-            return true;
-        }
-    }
-
-    // Fallback: first-walkable scan so we don't freeze. The strategy
-    // module rebids next frame.
+// Fallback: take any walkable neighbor that isn't interactive. Used
+// when the mission's goal is unreachable but we still want to wiggle
+// (so stuck detection eventually trips a clean exit).
+static bool ai_step_wander(AiDriver *d, Game *g, Map *m, Fog *fog,
+                           const Resources *res) {
+    AiMoveMode mode = ai_move_mode_for(g);
     static const int dx[] = {  1, 0, -1,  0, 1, 1, -1, -1 };
     static const int dy[] = {  0, 1,  0, -1, 1,-1,  1, -1 };
+    // Pass 1: prefer non-interactive neighbors so we don't loop in
+    // and out of a town we just visited.
+    for (int i = 0; i < 8; i++) {
+        int nx = g->position.x + dx[i];
+        int ny = g->position.y + dy[i];
+        if (!ai_walkable(m, nx, ny, mode, true)) continue;
+        ai_log(d, "wander", "step %+d%+d -> (%d,%d) (non-interact)",
+               dx[i], dy[i], nx, ny);
+        step_try(g, m, fog, res, dx[i], dy[i]);
+        return true;
+    }
+    // Pass 2: any walkable.
     for (int i = 0; i < 8; i++) {
         int nx = g->position.x + dx[i];
         int ny = g->position.y + dy[i];
         if (!ai_walkable(m, nx, ny, mode, false)) continue;
-        *out_dx = dx[i];
-        *out_dy = dy[i];
-        ai_log(d, "wander", "fallback step %+d%+d -> (%d,%d)",
+        ai_log(d, "wander", "step %+d%+d -> (%d,%d) (any)",
                dx[i], dy[i], nx, ny);
+        step_try(g, m, fog, res, dx[i], dy[i]);
         return true;
     }
     return false;
 }
 
+// ---- per-mission tactical handlers -----------------------------------------
+
+// Walk toward whatever ai_strategy_pick returned. The strategy returns
+// no goal when the zone is exhausted — at that point the mission
+// layer should have already transitioned us away from PLAY_ZONE.
+static bool tactical_play_zone(AiDriver *d, Game *g, Map *m, Fog *fog,
+                               const Resources *res) {
+    AiGoal goal = ai_strategy_pick(g, m, fog);
+    if (!goal.ok) return false;
+    return ai_step_toward(d, g, m, fog, res, goal.gx, goal.gy, goal.label);
+}
+
+// Walk to the nearest coastal town tile (ignoring `visited` because
+// we may need to re-rent at a previously visited town after losing
+// the boat to weekly upkeep).
+static bool tactical_go_to_dock(AiDriver *d, Game *g, Map *m, Fog *fog,
+                                const Resources *res) {
+    int best = -1, bx = -1, by = -1;
+    for (int y = 0; y < m->height; y++) {
+        for (int x = 0; x < m->width; x++) {
+            const Tile *t = MapGetTile(m, x, y);
+            if (!t || t->interactive != INTERACT_TOWN) continue;
+            if (!t->id[0]) continue;
+            const ResTown *rt = resources_town_by_id(g->res, t->id);
+            if (!rt) continue;
+            if (rt->boat_x < 0 || rt->boat_y < 0) continue;
+            AiStep s = ai_path_step(m, AI_MOVE_FOOT,
+                                    g->position.x, g->position.y,
+                                    x, y, true);
+            if (!s.ok) continue;
+            if (best < 0 || s.dist < best) {
+                best = s.dist; bx = x; by = y;
+            }
+        }
+    }
+    if (best < 0) return false;
+    char lbl[40];
+    snprintf(lbl, sizeof lbl, "dock@%d,%d", bx, by);
+    return ai_step_toward(d, g, m, fog, res, bx, by, lbl);
+}
+
+// Walk onto the parked boat tile.
+static bool tactical_board_boat(AiDriver *d, Game *g, Map *m, Fog *fog,
+                                const Resources *res) {
+    if (!g->boat.has_boat ||
+        strcmp(g->boat.zone, g->position.zone) != 0) return false;
+    // We need the path-step to treat the boat tile as walkable on
+    // foot. ai_walkable refuses water on foot, but stepping onto
+    // boat.x/y is exactly how step.c boards. Compute the direction
+    // manually if we're adjacent.
+    int bx = g->boat.x, by = g->boat.y;
+    int dx = bx - g->position.x;
+    int dy = by - g->position.y;
+    if (dx >= -1 && dx <= 1 && dy >= -1 && dy <= 1 && (dx || dy)) {
+        // Direct adjacency: step onto the boat tile.
+        ai_log(d, "board_boat", "step %+d%+d -> (%d,%d) (board)",
+               dx, dy, bx, by);
+        step_try(g, m, fog, res, dx, dy);
+        return true;
+    }
+    // Not adjacent — route toward the boat. Block interactive tiles
+    // so we don't keep bumping into the town tile we just left.
+    AiStep s = ai_path_step(m, AI_MOVE_FOOT,
+                            g->position.x, g->position.y,
+                            bx, by, true);
+    if (!s.ok || (s.dx == 0 && s.dy == 0)) {
+        // BFS rejected the goal (water tile) — walk toward the
+        // nearest land tile adjacent to the boat.
+        for (int oy = -1; oy <= 1; oy++) {
+            for (int ox = -1; ox <= 1; ox++) {
+                if (!ox && !oy) continue;
+                int ax = bx + ox, ay = by + oy;
+                if (!ai_walkable(m, ax, ay, AI_MOVE_FOOT, false)) continue;
+                AiStep s2 = ai_path_step(m, AI_MOVE_FOOT,
+                                         g->position.x, g->position.y,
+                                         ax, ay, true);
+                if (s2.ok && (s2.dx || s2.dy)) {
+                    char lbl[40];
+                    snprintf(lbl, sizeof lbl, "board_boat@%d,%d", bx, by);
+                    return ai_step_toward(d, g, m, fog, res, ax, ay, lbl);
+                }
+            }
+        }
+        return false;
+    }
+    char lbl[40];
+    snprintf(lbl, sizeof lbl, "board_boat@%d,%d", bx, by);
+    return ai_step_toward(d, g, m, fog, res, bx, by, lbl);
+}
+
+// Fire INPUT_ACTION_NEW_CONTINENT exactly once per entry into the
+// SAIL_NEXT mission. After firing we wait for the zone to change
+// (mission transitions to PLAY_ZONE) or for the watchdog to bail.
+// Without this gate the AI would re-dispatch every tick — and if
+// the arrival zone's spawn is on water, that produces zone-to-zone
+// ping-pong without ever disembarking.
+static bool tactical_sail_next(AiDriver *d, Game *g, ShellCtx *sctx,
+                               bool *sail_dispatched) {
+    (void)g;
+    if (*sail_dispatched) {
+        // Already requested; sit tight until the zone changes.
+        return false;
+    }
+    InputState in = {0};
+    in.action = INPUT_ACTION_NEW_CONTINENT;
+    shell_dispatch_action(sctx, &in);
+    *sail_dispatched = true;
+
+    // Arm the navigate-prompt picker. Rotate through 3 entries (the
+    // 3 neighbors a zone typically has) so we don't always sail back
+    // to the same neighbor each cycle.
+    s_sail_prompt_pending = true;
+    s_sail_prompt_pick    = (d->sail_pick_cycle % 3) + 1;
+    d->sail_pick_cycle++;
+
+    ai_log(d, "sail_next", "dispatched NEW_CONTINENT from zone=%s pick=%d",
+           g->position.zone, s_sail_prompt_pick);
+    return true;
+}
+
+// (sail prompt bridge declared at file scope above)
+
+// ---- per-tick orchestration -----------------------------------------------
+
 bool ai_tick(AiDriver *d, Game *game, Map *map, Fog *fog,
              const Resources *res, ShellCtx *sctx) {
     if (!d || !game || !map) return false;
-    (void)sctx;
     d->ticks++;
 
     if (d->cfg.max_ticks > 0 && d->ticks >= d->cfg.max_ticks) {
@@ -264,44 +458,145 @@ bool ai_tick(AiDriver *d, Game *game, Map *map, Fog *fog,
         return true;
     }
 
-    // Pre-step: clear any blocking modal so we can act.
+    // Pre-step: clear any blocking modal so we can act. VIEW_TOWN is
+    // left intact for the town handler below (the mission may want
+    // to invoke a row before dismissing).
     if (ai_clear_ui(d)) return true;
 
-    // Decide.
-    int dx = 0, dy = 0;
-    if (ai_pick_move(d, game, map, fog, &dx, &dy)) {
-        int prev_x = game->position.x;
-        int prev_y = game->position.y;
-        step_try(game, map, fog, res, dx, dy);
-        // Record post-step position. If we revisit the same tile too
-        // many times within the recent window, we're stuck. We keep
-        // the history alive across strikes — only the strike counter
-        // resets when we make genuine progress (moved to a new tile we
-        // haven't seen often).
-        ai_remember_pos(d, game->position.x, game->position.y);
-        int revisits = ai_revisit_count(d, game->position.x, game->position.y);
-        bool moved = (prev_x != game->position.x || prev_y != game->position.y);
-        if (revisits >= 4) {
-            d->stuck_strikes++;
-            ai_log(d, "stuck",
-                   "tile (%d,%d) revisited %dx; strikes=%d",
-                   game->position.x, game->position.y, revisits,
-                   d->stuck_strikes);
-        } else if (moved && revisits <= 1) {
-            // Real progress — reset strikes.
-            d->stuck_strikes = 0;
+    // Town handler: if we're standing inside a town view, the
+    // mission decides what to do. RENT_BOAT invokes the BOAT row
+    // (rents a boat for cost gold); other missions just dismiss
+    // without taking actions — we don't want walking past a town to
+    // accidentally consume gold or change contracts.
+    if (views_active() == VIEW_TOWN) {
+        if (d->mission == AI_MISSION_GO_TO_DOCK ||
+            d->mission == AI_MISSION_RENT_BOAT) {
+            int cost = GameBoatCost(game);
+            if (!game->boat.has_boat && game->stats.gold > cost) {
+                views_town_invoke_row(game, AI_TOWN_ROW_BOAT);
+                ai_log(d, "town", "BOAT row invoked (cost=%d gold=%d)",
+                       cost, game->stats.gold);
+            } else {
+                ai_log(d, "town", "BOAT skipped (has=%d gold=%d cost=%d)",
+                       (int)game->boat.has_boat, game->stats.gold, cost);
+            }
         }
-        if (d->stuck_strikes >= 6) {
-            d->finished = true;
-            ai_log(d, "exit", "stuck for too long, giving up");
+        views_dismiss();
+        ai_log(d, "ui", "dismiss town view");
+        return true;
+    }
+
+    // Detect zone changes (sailing across continents) so the mission
+    // layer can read a stable "we're somewhere new" signal.
+    bool zone_changed = (d->last_zone[0] != '\0' &&
+                         strcmp(d->last_zone, game->position.zone) != 0);
+    snprintf(d->last_zone, sizeof d->last_zone, "%s", game->position.zone);
+    if (zone_changed) {
+        // Reset stuck history on zone change — we're starting fresh.
+        d->recent_n = 0;
+        d->stuck_strikes = 0;
+        d->ticks_since_sail = 0;
+        d->sail_dispatched = false;
+    }
+    if (d->mission == AI_MISSION_SAIL_NEXT) d->ticks_since_sail++;
+    else                                    d->ticks_since_sail = 0;
+
+    // Mission update. ai_zone_exhausted is the bedrock predicate —
+    // if anything's reachable in this zone on foot, we stay in
+    // PLAY_ZONE and the strategy keeps cycling local goals.
+    AiMissionCtx ctx = {
+        .g                  = game,
+        .m                  = map,
+        .fog                = fog,
+        .zone_exhausted     = ai_zone_exhausted(game, map, fog),
+        .boat_lost_recently = false,   // unused for now
+        .ticks_since_sail   = d->ticks_since_sail,
+        .zone_changed       = zone_changed,
+    };
+    AiMission next = ai_mission_update(d->mission, &ctx);
+    if (next != d->mission) {
+        ai_log(d, "mission", "%s -> %s (zone=%s exhausted=%d)",
+               ai_mission_name(d->mission), ai_mission_name(next),
+               game->position.zone, ctx.zone_exhausted);
+        // Clearing the sail one-shot on any transition INTO SAIL_NEXT
+        // means each entry fires exactly one NEW_CONTINENT; transitions
+        // OUT also clear it for symmetry.
+        if (d->mission == AI_MISSION_SAIL_NEXT ||
+            next == AI_MISSION_SAIL_NEXT) {
+            d->sail_dispatched = false;
         }
+        d->mission = next;
+        d->ticks_in_mission = 0;
     } else {
-        ai_log(d, "stuck", "no walkable neighbor");
-        d->stuck_strikes++;
-        if (d->stuck_strikes >= 8) {
-            d->finished = true;
-            ai_log(d, "exit", "no moves available, giving up");
+        d->ticks_in_mission++;
+    }
+
+    if (d->mission == AI_MISSION_DONE) {
+        d->finished = true;
+        ai_log(d, "exit", "mission DONE (zone=%s exhausted=%d)",
+               game->position.zone, ctx.zone_exhausted);
+        return true;
+    }
+
+    // Dispatch.
+    int prev_x = game->position.x;
+    int prev_y = game->position.y;
+    bool acted = false;
+    switch (d->mission) {
+        case AI_MISSION_PLAY_ZONE:
+            acted = tactical_play_zone(d, game, map, fog, res);
+            break;
+        case AI_MISSION_GO_TO_DOCK:
+            acted = tactical_go_to_dock(d, game, map, fog, res);
+            break;
+        case AI_MISSION_RENT_BOAT:
+            // The town handler above did the work. If we're still
+            // in this mission this tick the view was already closed
+            // OR we never entered it (bounced off the town tile);
+            // either way, step toward the town to retry.
+            acted = tactical_go_to_dock(d, game, map, fog, res);
+            break;
+        case AI_MISSION_BOARD_BOAT:
+            acted = tactical_board_boat(d, game, map, fog, res);
+            break;
+        case AI_MISSION_SAIL_NEXT:
+            acted = tactical_sail_next(d, game, sctx, &d->sail_dispatched);
+            break;
+        case AI_MISSION_FIND_SCEPTER:
+        case AI_MISSION_SEARCH_SCEPTER:
+        case AI_MISSION_DONE:
+            // Unreachable: scepter missions aren't wired yet, DONE
+            // exits above.
+            break;
+    }
+
+    if (!acted) {
+        // The mission's tactical layer had nothing to do this frame —
+        // fall back to a wander step so stuck detection can fire.
+        if (!ai_step_wander(d, game, map, fog, res)) {
+            ai_log(d, "stuck", "no walkable neighbor");
+            d->stuck_strikes++;
         }
     }
+
+    // Stuck accounting.
+    ai_remember_pos(d, game->position.x, game->position.y);
+    int revisits = ai_revisit_count(d, game->position.x, game->position.y);
+    bool moved = (prev_x != game->position.x || prev_y != game->position.y);
+    if (revisits >= 4) {
+        d->stuck_strikes++;
+        ai_log(d, "stuck",
+               "tile (%d,%d) revisited %dx; strikes=%d mission=%s",
+               game->position.x, game->position.y, revisits,
+               d->stuck_strikes, ai_mission_name(d->mission));
+    } else if (moved && revisits <= 1) {
+        d->stuck_strikes = 0;
+    }
+    if (d->stuck_strikes >= 8) {
+        d->finished = true;
+        ai_log(d, "exit", "stuck for too long, giving up (mission=%s)",
+               ai_mission_name(d->mission));
+    }
+
     return true;
 }

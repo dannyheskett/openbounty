@@ -96,6 +96,12 @@ const char *views_town_info_text(void);
 // Town action row the cursor is on (0..4).
 int  views_town_cursor(void);
 
+// Invoke a town action row directly (AI driver). `row` is a TownRow
+// value: 0=contract, 1=boat, 2=info, 3=spell, 4=siege. No-op if not
+// currently in VIEW_TOWN or row is out of range. Equivalent to the
+// player pressing the A..E hotkey for that row.
+void views_town_invoke_row(struct Game *g, int row);
+
 // ---- Controls settings panel (VIEW_CONTROLS) -------------------------------
 // Row cursor for navigation (0..res->controls.count-1).
 int  views_controls_cursor(void);
