@@ -1895,9 +1895,17 @@ const CastleRecord *GameFindCastleConst(const Game *g, const char *castle_id) {
 
 FoeState *GameFindFoe(Game *g, const char *placement_id) {
     if (!g || !placement_id || !placement_id[0]) return NULL;
+    // Placement IDs (wandering_army_NNN) are NOT unique across zones —
+    // the same numbering restarts in every zone's `wandering_armies[]`.
+    // Scope the match to the hero's current zone so defeating a foe on
+    // one continent doesn't silently mark a same-named foe on another
+    // continent as dead, leaving the one you actually fought alive and
+    // pursuing forever.
+    const char *zone = g->position.zone;
     for (int i = 0; i < g->foe_count; i++) {
-        if (strcmp(g->foes[i].placement_id, placement_id) == 0)
-            return &g->foes[i];
+        if (strcmp(g->foes[i].placement_id, placement_id) != 0) continue;
+        if (zone[0] && strcmp(g->foes[i].zone, zone) != 0) continue;
+        return &g->foes[i];
     }
     return NULL;
 }
