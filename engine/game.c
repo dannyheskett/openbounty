@@ -922,20 +922,15 @@ static void end_day(Game *g, bool *week_ended, int *commission_paid) {
         // ghosts → peasants when creature == peasants.
         GameApplyAstrology(g, astrology);
 
-        // : auto-repopulate any
-        // player-owned castles whose garrisons have been emptied.
-        for (int i = 0; i < GAME_CASTLES; i++) {
-            if (!g->castles[i].id[0]) continue;
-            if (g->castles[i].owner_kind != CASTLE_OWNER_PLAYER) continue;
-            bool empty = true;
-            for (int s = 0; s < GAME_ARMY_SLOTS; s++) {
-                if (g->castles[i].garrison[s].id[0] &&
-                    g->castles[i].garrison[s].count > 0) {
-                    empty = false; break;
-                }
-            }
-            if (empty) repopulate_castle(g, i);
-        }
+        // Player castles do NOT auto-repopulate. The hero garrisons
+        // them by transferring troops in via the own_castle screen;
+        // empty player castles stay empty until the player visits and
+        // deposits a stack. The astrology growth block below correctly
+        // skips player- and special-owned castles for the same reason.
+        //
+        // (Earlier this loop called repopulate_castle() — the monster
+        // spawner — on empty player castles, which silently stuffed
+        // captured castles with random monster garrisons every week.)
 
         // : weekly astrology growth.
         // For every non-player-owned castle, stacks whose troop matches

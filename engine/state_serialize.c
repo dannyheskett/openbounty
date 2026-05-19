@@ -39,6 +39,7 @@ static const char *castle_owner_id(CastleOwnerKind k) {
     switch (k) {
         case CASTLE_OWNER_MONSTERS: return "monsters";
         case CASTLE_OWNER_VILLAIN:  return "villain";
+        case CASTLE_OWNER_SPECIAL:  return "special";
         case CASTLE_OWNER_PLAYER: default: return "player";
     }
 }

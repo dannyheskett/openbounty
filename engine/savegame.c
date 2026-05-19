@@ -48,6 +48,7 @@ static CastleOwnerKind castle_owner_from_id(const char *s) {
     if (!s) return CASTLE_OWNER_PLAYER;
     if (strcmp(s, "monsters") == 0) return CASTLE_OWNER_MONSTERS;
     if (strcmp(s, "villain")  == 0) return CASTLE_OWNER_VILLAIN;
+    if (strcmp(s, "special")  == 0) return CASTLE_OWNER_SPECIAL;
     return CASTLE_OWNER_PLAYER;
 }
 
