@@ -31,40 +31,47 @@ void screen_end_game_open(bool won, const char *body) {
 void screen_end_game_draw(const Game *g, const Sprites *s) {
     (void)g;
 
-    // Fullscreen layout:  — left half is the
-    // CS_ENDING background color (DBLUE), right half is the ending
-    // image. Together they cover the map area + sidebar; chrome
-    // (status bar + outer frame) still renders on top.
-    int total_left  = CL_MAP_X;             // chrome's left frame stays
-    int total_top   = CL_MAP_Y;             // status bar + bar strip stay
+    // Layout matches openkb's win_game / lose_game (src/game.c:4431):
+    //   full = the map+sidebar area minus right chrome
+    //        = { CL_MAP_X, CL_MAP_Y, 288, 170 }  in our units
+    //   right-align the ending image inside `full` at its NATIVE size
+    //        = 144x170 PNG, no scaling
+    //   text rectangle = `full` with image width subtracted on the right
+    //        = { CL_MAP_X, CL_MAP_Y, 144, 170 }
+    //   text rendered character-cell at (text.x, text.y), 18 cols x
+    //   21 rows of 8x8 glyphs, NO padding, NO inter-line gap. The
+    //   body strings in game.json are authored pre-wrapped to 18
+    //   chars per line, matching the original DOS layout (see
+    //   openkb/data/free/endwin.txt for the canonical formatting).
+    int total_left  = CL_MAP_X;
+    int total_top   = CL_MAP_Y;
     int total_w     = CL_SCREEN_W - CL_MAP_X - CL_FRAME_RIGHT_W;
     int total_h     = CL_SCREEN_H - CL_MAP_Y - CL_FRAME_BOTTOM_H;
-    int half_w      = total_w / 2;
 
     // Paint full area DBLUE first (CS_ENDING background).
     DrawRectangle(total_left, total_top, total_w, total_h, PAL_CLR(DBLUE));
 
-    // Right half: the ending image. Stretch to fit.
+    // Right side: the ending image at native size, right-aligned.
     Texture2D img = s_won ? s->ending_win : s->ending_lose;
-    if (img.id && img.width > 0) {
-        Rectangle src = { 0, 0, (float)img.width, (float)img.height };
-        Rectangle dst = { (float)(total_left + half_w),
+    int img_w = (img.id && img.width  > 0) ? img.width  : 0;
+    int img_h = (img.id && img.height > 0) ? img.height : 0;
+    if (img_w > 0 && img_h > 0) {
+        Rectangle src = { 0, 0, (float)img_w, (float)img_h };
+        Rectangle dst = { (float)(total_left + total_w - img_w),
                           (float)total_top,
-                          (float)half_w,
-                          (float)total_h };
+                          (float)img_w,
+                          (float)img_h };
         DrawTexturePro(img, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
     }
 
-    // Left half: rendered text. 8-pixel font, ~half_w / 8 chars per
-    // line. Body is pre-formatted by the caller (multi-line, already
-    // word-wrapped if needed).
-    int pad     = 4;
-    int line_h  = BFONT_GLYPH_H + 1;
-    int tx      = total_left + pad;
-    int ty      = total_top + pad;
-    int floor_y = total_top + total_h - pad;
+    // Text rectangle = `full` minus the image's width.
+    int text_w  = total_w - img_w;
+    int line_h  = BFONT_GLYPH_H;   // openkb-parity: no inter-line gap
+    int tx      = total_left;
+    int ty      = total_top;
+    int floor_y = total_top + total_h;
 
-    int max_chars = (half_w - 2 * pad) / BFONT_GLYPH_W;
+    int max_chars = text_w / BFONT_GLYPH_W;
     if (max_chars < 1) max_chars = 1;
 
     const char *p = s_body;
@@ -78,8 +85,11 @@ void screen_end_game_draw(const Game *g, const Sprites *s) {
         line[n] = '\0';
         if (*p == '\n') p++;
 
-        // Word-wrap if longer than max_chars. Break at the last space
-        // that still fits; if no space, hard-break.
+        // Defensive word-wrap: the JSON body should already be authored
+        // to fit max_chars, but if a translated/edited string sneaks in
+        // longer we'd rather wrap than draw past the rect into the
+        // image. Break at the last space that still fits; if no space,
+        // hard-break.
         char *cursor = line;
         while ((int)strlen(cursor) > max_chars && ty + line_h <= floor_y) {
             int cut = max_chars;
@@ -93,7 +103,9 @@ void screen_end_game_draw(const Game *g, const Sprites *s) {
             cursor += cut;
             while (*cursor == ' ') cursor++;
         }
-        if (*cursor && ty + line_h <= floor_y) {
+        if (ty + line_h <= floor_y) {
+            // Render even empty lines so author-controlled paragraph
+            // breaks (blank lines in the JSON body) come through.
             bfont_draw(cursor, tx, ty, PAL_CLR(WHITE));
             ty += line_h;
         }

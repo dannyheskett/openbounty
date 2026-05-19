@@ -178,6 +178,28 @@ AiGoal ai_strategy_pick(const Game *g, const Map *m, const Fog *fog) {
     if (!g || !m) return out;
     AiMoveMode mode = ai_move_mode_for(g);
 
+    // (0) Scepter target — the win condition. Honest progression
+    // gate: a human player only learns the scepter's coordinates by
+    // assembling the puzzle map, which requires capturing every
+    // villain AND collecting every artifact. The AI mirrors that
+    // gate here — even though it reads g->scepter directly, it only
+    // ACTS on that knowledge after the same prerequisites are met.
+    // Without this gate the AI cheats to the win on tick ~500 with
+    // an empty army; with it, every win is one the human game would
+    // also have allowed at the same state.
+    if (GameVillainsCaught(g) >= 17 && GameArtifactsFound(g) >= 8 &&
+        g->scepter.zone[0] &&
+        strcmp(g->scepter.zone, g->position.zone) == 0 &&
+        g->scepter.x >= 0 && g->scepter.y >= 0) {
+        AiStep s = ai_path_step(m, mode, g->position.x, g->position.y,
+                                g->scepter.x, g->scepter.y, true);
+        if (s.ok) {
+            out.gx = g->scepter.x; out.gy = g->scepter.y; out.ok = true;
+            set_label(&out, "scepter@%d,%d", out.gx, out.gy);
+            return out;
+        }
+    }
+
     // (1) Contract villain whose castle is known and lives in this zone.
     if (g->contract.active_id[0]) {
         for (int i = 0; i < GAME_CASTLES; i++) {

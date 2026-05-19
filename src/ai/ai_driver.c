@@ -463,6 +463,26 @@ bool ai_tick(AiDriver *d, Game *game, Map *map, Fog *fog,
     // to invoke a row before dismissing).
     if (ai_clear_ui(d)) return true;
 
+    // Endgame: standing on the scepter tile is an instant win. Honest
+    // gate matches the strategy: only consider this if we've caught
+    // every villain and found every artifact — the same prerequisites
+    // a human player needs to assemble the puzzle map and locate the
+    // scepter. The engine's FLOW_SEARCH itself only checks position
+    // == scepter and not villain count, so the gate lives in the AI.
+    if (GameVillainsCaught(game) >= 17 &&
+        GameArtifactsFound(game) >= 8 &&
+        game->scepter.zone[0] &&
+        strcmp(game->scepter.zone, game->position.zone) == 0 &&
+        game->scepter.x == game->position.x &&
+        game->scepter.y == game->position.y) {
+        InputState in = {0};
+        in.action = INPUT_ACTION_SEARCH;
+        shell_dispatch_action(sctx, &in);
+        ai_log(d, "scepter", "SEARCH on (%d,%d) zone=%s",
+               game->position.x, game->position.y, game->position.zone);
+        return true;
+    }
+
     // Town handler: if we're standing inside a town view, the
     // mission decides what to do. RENT_BOAT invokes the BOAT row
     // (rents a boat for cost gold); other missions just dismiss

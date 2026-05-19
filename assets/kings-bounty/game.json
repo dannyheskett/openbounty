@@ -4601,14 +4601,14 @@
 	},
 	"strings":	{
 		"lose":	{
-			"header":	"Sorry, %NAME% the %RANK%",
-			"body":	"you have failed to\nrecover the Sceptre of Order\nin time to save the land!\n\nBeloved King Maximus has died\nand the Demon King Urthrax\nKillspite rules in his place.\n\nThe Four Continents lay in ruin\nabout you, its people doomed\nto a life of misery and\noppression because you could\nnot find the Sceptre.",
-			"footer":	"Final Score: %SCORE%"
+			"header":	"",
+			"body":	"%NAME% they\ncall the %RANK%,\nyou have doomed us\nall.\nThe land is in\ndisarray without\nit's king. All\nhope is lost.\nThe villains are\nunpunished and the\nbeast roams free.\nThe peasants are\nterrified and your\narmy has abandoned\nyour cause.\nAll because you\nwasted your time\nso carelessly.\nFinal Score:\n%SCORE%",
+			"footer":	""
 		},
 		"win":	{
-			"header":	"Congratulations, %NAME%",
-			"body":	"You have recovered the\nSceptre of Order from\nthe clutches of the evil\nMaster Villains.\n\nAs a reward for saving himself\nand the four continents from\nruin, King Maximus and his\nsubjects reward you with a\nlarge parcel of land, a rank\nof nobility, and a medal\nannouncing your victory.",
-			"footer":	"Final Score: %SCORE%"
+			"header":	"",
+			"body":	"Good job, soldier!\nYou have tamed the\nbeast and captured\nthe villains. The\norder is restored\naccross the land.\n\nHistory will reme-\nmber the name of\n%NAME%, the\n%RANK%-who-\nsaved us all.\n\nYou keep all the\ncastles and your\ncommission is\ntrippled.\n\n\nFinal Score:\n%SCORE%",
+			"footer":	""
 		},
 		"banners":	{
 			"chest_gold":	"After scouring the area,\nyou fall upon a hidden\ntreasure cache. You may:\nA) Take the %GOLD% gold.\nB) Distribute the gold to\nthe peasants, increasing\nyour leadership by %LEADERSHIP%.",
