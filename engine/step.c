@@ -523,7 +523,7 @@ bool step_try(Game *game, Map *map, Fog *fog,
     if (!bounced) {
         bool day_end = false, week_end = false;
         int  paid = 0;
-        GameOnStep(game, nt->terrain == TERRAIN_DESERT,
+        GameOnStep(game, !flying && nt->terrain == TERRAIN_DESERT,
                    &day_end, &week_end, &paid);
         (void)day_end;
         int collided_idx = GameFoesFollow(game, map);
