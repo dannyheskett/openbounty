@@ -58,6 +58,13 @@ int ai_troop_quality(const char *troop_id);
 // expect to win.
 bool ai_can_beat_castle(const Game *g, const char *castle_id);
 
+// True iff a headless simulation of a foe combat against this foe's
+// garrison resolves as a WIN. Used to gate the "attack foe?" yes/no
+// prompt — the AI should decline fights it would lose, because a
+// loss triggers temp_death which wipes the army and forces a
+// peasants × 20 restart from the home castle.
+bool ai_can_beat_foe(const Game *g, const char *foe_id);
+
 // True iff the dwelling at (x, y) in the current zone is currently
 // useless to the AI: drained for the week, unaffordable, or our
 // leadership is already at cap for that troop. Exposed so the

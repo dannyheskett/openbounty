@@ -51,6 +51,20 @@ bool ai_can_beat_castle(const Game *g, const char *castle_id) {
     return r == COMBAT_RESULT_WIN;
 }
 
+bool ai_can_beat_foe(const Game *g, const char *foe_id) {
+    if (!g || !foe_id || !foe_id[0]) return false;
+    const FoeState *foe = GameFindFoeConst(g, foe_id);
+    if (!foe) return false;
+    Game sim = *g;
+    CombatTarget tgt = {
+        .name           = "foe",
+        .garrison       = foe->garrison,
+        .garrison_slots = GAME_ARMY_SLOTS,
+    };
+    CombatResult r = combat_run_headless(&sim, COMBAT_MODE_FOE, &tgt, 64);
+    return r == COMBAT_RESULT_WIN;
+}
+
 // Lookup helpers for "is this tile already used up".
 static bool tile_skip_visited_town(const Game *g, const Tile *t) {
     if (!t || t->interactive != INTERACT_TOWN) return false;
@@ -172,9 +186,18 @@ static bool tile_skip_drained_dwelling(const Game *g, const Tile *t,
         if (!td) return true;
         if (g->stats.gold < td->recruit_cost) return true;
         if (GameMaxRecruitable(g, td->id) < 1) return true;
-        int quality   = ai_troop_quality(troop_id);
+        int quality = ai_troop_quality(troop_id);
+        // Hard floor: never recruit junk troops (peasants q=1,
+        // sprites q=2) when we're trying to build an army for
+        // Murray. They take a slot we'd rather keep open for
+        // skeletons / wolves / orcs / gnomes. The wander pass
+        // would otherwise step onto a peasants dwelling, the
+        // engine prompt fires, AI auto-types 9999, and a slot
+        // gets filled with junk we can't easily get rid of.
+        if (quality < 3) return true;
         int worst_now = ai_army_weakest_quality(g);
-        // worst_now == 0 means an empty slot exists; accept anything.
+        // worst_now == 0 means an empty slot exists; accept anything
+        // above the junk floor.
         if (worst_now > 0 && quality <= worst_now) return true;
     }
     return false;

@@ -42,6 +42,7 @@
 #include "combat_loop.h"      // combat_set_auto_player
 #include "spells_adventure.h" // dispatch_adventure_spell
 #include "tables.h"           // spell_index_by_id
+#include "pending.h"          // pending_flow, pending_dwelling_troop
 
 #define AI_TOWN_ROW_BOAT      1   // mirrors TownRow enum in views.c
 #define AI_TOWN_ROW_CONTRACT  0
@@ -172,7 +173,10 @@ static void ai_log(AiDriver *d, const char *goal, const char *fmt, ...) {
 
 // Dismiss the topmost blocking UI element. Returns true if something
 // was dismissed (caller treats the frame as consumed).
-static bool ai_clear_ui(AiDriver *d) {
+static void ai_blacklist_add(AiDriver *d, const char *zone, int x, int y,
+                             int hold_ticks);  // defined below
+
+static bool ai_clear_ui(AiDriver *d, const Game *game) {
     if (prompt_is_active()) {
         // Default heuristics: yes to most yes/no (attack, recruit,
         // siege — combat AI handles the fight), 1 to numeric, A to ab.
@@ -189,9 +193,90 @@ static bool ai_clear_ui(AiDriver *d) {
                     if (strstr(body, no_words[i])) { destructive = true; break; }
                 }
             }
+            // Friendly-foe filter: when the engine asks "X troops
+            // wish to join you, accept?" the AI used to blindly
+            // answer YES, which polluted the army with peasants /
+            // sprites / other junk. Refuse offers whose troop
+            // quality is below the same junk floor the dwelling
+            // strategy uses (skeletons/wolves/orcs/gnomes only).
+            // Detect the flow via the engine's pending_flow global —
+            // FLOW_ACCEPT_FRIENDLY carries pending_dwelling_troop
+            // (the offered troop id).
+            bool junk_offer = false;
+            if (!destructive && pending_flow == FLOW_ACCEPT_FRIENDLY &&
+                pending_dwelling_troop[0]) {
+                if (ai_troop_quality(pending_dwelling_troop) < 3) {
+                    junk_offer = true;
+                }
+            }
+            // Attack-foe filter: when the engine asks "Attack the
+            // band of <troops>? (y/n)" we simulate the fight first.
+            // Declining (NO) bounces us back; combat doesn't happen.
+            // Winning the simulation is the bar — losing the actual
+            // fight triggers temp_death (army wiped, peasants × 20
+            // forced, boat lost, teleported to home castle), which
+            // erases a lot of progress.
+            bool unwinnable_foe = false;
+            if (!destructive && pending_flow == FLOW_ATTACK_FOE &&
+                pending_foe_id[0]) {
+                if (!ai_can_beat_foe(game, pending_foe_id)) {
+                    unwinnable_foe = true;
+                }
+            }
+            // Siege-castle filter: same logic. The castle pre-check
+            // already gates the STRATEGY GOAL, but the prompt fires
+            // whenever the AI steps onto a castle gate (e.g. via
+            // wander). Gate it here too as a defense-in-depth.
+            bool unwinnable_castle = false;
+            if (!destructive &&
+                (pending_flow == FLOW_SIEGE_MONSTER ||
+                 pending_flow == FLOW_SIEGE_VILLAIN) &&
+                pending_castle_id[0]) {
+                if (!ai_can_beat_castle(game, pending_castle_id)) {
+                    unwinnable_castle = true;
+                }
+            }
             if (destructive) {
                 prompt_force_resolve(PROMPT_RESULT_NO);
                 ai_log(d, "ui", "prompt(yes_no)=NO (destructive)");
+            } else if (junk_offer) {
+                prompt_force_resolve(PROMPT_RESULT_NO);
+                ai_log(d, "ui", "prompt(yes_no)=NO (junk %s)",
+                       pending_dwelling_troop);
+                // Blacklist the friendly-foe tile so wander doesn't
+                // keep stepping onto it. The foe doesn't go away
+                // when declined — it sits there waiting to re-offer.
+                if (pending_dwelling_x >= 0 && pending_dwelling_y >= 0) {
+                    ai_blacklist_add(d, game->position.zone,
+                                     pending_dwelling_x,
+                                     pending_dwelling_y, 600);
+                }
+            } else if (unwinnable_foe) {
+                prompt_force_resolve(PROMPT_RESULT_NO);
+                ai_log(d, "ui", "prompt(yes_no)=NO (foe %s unwinnable)",
+                       pending_foe_id);
+                // Blacklist the foe tile for a long window so the AI
+                // doesn't oscillate stepping onto it. The foe is on
+                // an interactive tile already; wander skips
+                // blacklisted tiles unless they're the only option.
+                if (pending_foe_x >= 0 && pending_foe_y >= 0) {
+                    ai_blacklist_add(d, game->position.zone,
+                                     pending_foe_x, pending_foe_y, 600);
+                }
+            } else if (unwinnable_castle) {
+                prompt_force_resolve(PROMPT_RESULT_NO);
+                ai_log(d, "ui", "prompt(yes_no)=NO (castle %s unwinnable)",
+                       pending_castle_id);
+                // Same idea for castles we can't beat.
+                const CastleRecord *cr =
+                    GameFindCastleConst(game, pending_castle_id);
+                const ResCastle *rc =
+                    resources_castle_by_id(game->res, pending_castle_id);
+                if (cr && rc) {
+                    int cx = rc->gate_x >= 0 ? rc->gate_x : rc->x;
+                    int cy = rc->gate_y >= 0 ? rc->gate_y : rc->y + 1;
+                    ai_blacklist_add(d, game->position.zone, cx, cy, 600);
+                }
             } else {
                 prompt_force_resolve(PROMPT_RESULT_YES);
                 ai_log(d, "ui", "prompt(yes_no)=YES");
@@ -399,16 +484,35 @@ static bool ai_step_wander(AiDriver *d, Game *g, Map *m, Fog *fog,
         return true;
     }
     // Pass 3: last-resort, accept blacklisted but still NOT unusable
-    // dwellings. If our only walkable neighbor is a dwelling we
-    // can't use, we'd rather trip stuck-strikes than burn ticks
-    // bouncing off it.
+    // dwellings, and NOT a blacklisted hostile foe (engaging it
+    // re-triggers the unwinnable-prompt loop). If our only walkable
+    // neighbor is a foe we'd lose to, we'd rather trip stuck-strikes
+    // than feed temp_death.
     for (int i = 0; i < 8; i++) {
         int nx = g->position.x + dx[i];
         int ny = g->position.y + dy[i];
         if (!ai_walkable(m, nx, ny, mode, false)) continue;
         const Tile *t = MapGetTile(m, nx, ny);
         if (t && ai_dwelling_unusable(g, t, nx, ny)) continue;
+        if (t && t->interactive == INTERACT_FOE &&
+            ai_is_blacklisted(d, g->position.zone, nx, ny)) continue;
         ai_log(d, "wander", "step %+d%+d -> (%d,%d) (blacklisted-ok)",
+               dx[i], dy[i], nx, ny);
+        step_try(g, m, fog, res, dx[i], dy[i]);
+        return true;
+    }
+    // Pass 4: absolutely cornered — accept ANY walkable, including a
+    // blacklisted foe. Stepping onto the foe re-opens the attack
+    // prompt; the AI declines (because the pre-check still says
+    // unwinnable) and bounces back. Stuck-strikes will eventually
+    // eject the run, but at least we don't infinite-loop.
+    for (int i = 0; i < 8; i++) {
+        int nx = g->position.x + dx[i];
+        int ny = g->position.y + dy[i];
+        if (!ai_walkable(m, nx, ny, mode, false)) continue;
+        const Tile *t = MapGetTile(m, nx, ny);
+        if (t && ai_dwelling_unusable(g, t, nx, ny)) continue;
+        ai_log(d, "wander", "step %+d%+d -> (%d,%d) (truly-cornered)",
                dx[i], dy[i], nx, ny);
         step_try(g, m, fog, res, dx[i], dy[i]);
         return true;
@@ -617,7 +721,7 @@ bool ai_tick(AiDriver *d, Game *game, Map *map, Fog *fog,
     // Pre-step: clear any blocking modal so we can act. VIEW_TOWN is
     // left intact for the town handler below (the mission may want
     // to invoke a row before dismissing).
-    if (ai_clear_ui(d)) return true;
+    if (ai_clear_ui(d, game)) return true;
 
     // Endgame: standing on the scepter tile is an instant win. Honest
     // gate matches the strategy: only consider this if we've caught
