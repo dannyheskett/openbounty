@@ -77,6 +77,13 @@ typedef struct {
     // arriving on water in the new zone doesn't trigger another
     // immediate NEW_CONTINENT.
     bool zone_changed;
+
+    // Ticks the AI has been in the current mission. The mission
+    // layer uses this as a watchdog for missions that have a clear
+    // bounded duration (board the boat, go to dock) — if we've spent
+    // too long without progress, force a transition rather than let
+    // the driver-level stuck-strike eject us from the run entirely.
+    int  ticks_in_mission;
 } AiMissionCtx;
 
 // Run the mission state machine once per tick. Returns the mission

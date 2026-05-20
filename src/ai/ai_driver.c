@@ -67,6 +67,9 @@ struct AiDriver {
     AiMission mission;
     int       ticks_in_mission;     // resets on each mission transition
     int       ticks_since_sail;     // for SAIL_NEXT cooldown watchdog
+    int       last_recover_tick;    // throttles end_week recoveries so
+                                    // we don't burn days_left in a
+                                    // recovery loop
     char      last_zone[24];        // tracks zone changes between ticks
     bool      sail_dispatched;      // SAIL_NEXT one-shot: only one NEW_CONTINENT
                                     // per mission entry. Cleared on transition out
@@ -715,6 +718,7 @@ bool ai_tick(AiDriver *d, Game *game, Map *map, Fog *fog,
         .boat_lost_recently = false,   // unused for now
         .ticks_since_sail   = d->ticks_since_sail,
         .zone_changed       = zone_changed,
+        .ticks_in_mission   = d->ticks_in_mission,
     };
     AiMission next = ai_mission_update(d->mission, &ctx);
     if (next != d->mission) {
@@ -801,7 +805,13 @@ bool ai_tick(AiDriver *d, Game *game, Map *map, Fog *fog,
     // commission income (which may unstick gold-gated decisions), and
     // forces some game state to roll. Resets the strike counter on
     // success so the AI gets another window before bailing out.
-    if (d->stuck_strikes == 4 && game->stats.days_left > 7) {
+    //
+    // Throttled by `last_recover_tick`: only fire once per ~50 ticks
+    // so we don't burn the entire days_left budget on a recovery
+    // loop that the mission-level watchdog should be solving
+    // instead.
+    if (d->stuck_strikes == 4 && game->stats.days_left > 7 &&
+        d->ticks - d->last_recover_tick > 50) {
         InputState in = {0};
         in.action = INPUT_ACTION_END_WEEK;
         shell_dispatch_action(sctx, &in);
@@ -811,6 +821,7 @@ bool ai_tick(AiDriver *d, Game *game, Map *map, Fog *fog,
         // Clear position history so the freshly-changed map doesn't
         // immediately re-trip revisit detection.
         d->recent_n = 0;
+        d->last_recover_tick = d->ticks;
     }
 
     if (d->stuck_strikes >= 12) {

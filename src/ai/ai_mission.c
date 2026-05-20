@@ -115,6 +115,10 @@ AiMission ai_mission_update(AiMission current, const AiMissionCtx *ctx) {
 
         // No dock-capable town in this zone at all → bail.
         if (!zone_has_dock_town(g)) return AI_MISSION_PLAY_ZONE;
+        // Watchdog: if we've been walking toward a dock for a long
+        // time and never arrived, the dock route is blocked. Back
+        // off to PLAY_ZONE; strategy may re-pursue later.
+        if (ctx->ticks_in_mission > 300) return AI_MISSION_PLAY_ZONE;
         return AI_MISSION_GO_TO_DOCK;
     }
 
@@ -144,6 +148,13 @@ AiMission ai_mission_update(AiMission current, const AiMissionCtx *ctx) {
         // Boat exists but parked in a different zone (only possible
         // if some prior shell action moved it) → re-evaluate.
         if (!boat_parked_here(g)) return AI_MISSION_PLAY_ZONE;
+        // Watchdog: if we've been trying to board for many ticks
+        // without succeeding, the boat is probably parked behind an
+        // interactive tile we can't path through (e.g. its own
+        // town's gate). Fall back to PLAY_ZONE — the strategy may
+        // pick something else productive, and the next zone
+        // exhaustion will re-enter BOARD_BOAT.
+        if (ctx->ticks_in_mission > 200) return AI_MISSION_PLAY_ZONE;
         return AI_MISSION_BOARD_BOAT;
     }
 
