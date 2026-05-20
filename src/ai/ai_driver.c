@@ -83,6 +83,18 @@ struct AiDriver {
     int      recent_y[8];
     int      recent_n;
     int      stuck_strikes;
+
+    // Wander blacklist: tiles wander stepped onto recently and bounced
+    // back from (interactive tiles like dwellings the AI can't drain,
+    // towns with nothing to buy, etc.). Wander skips these so a
+    // cornered AI doesn't oscillate on the same dead-end neighbor
+    // forever. Entries expire after a fixed tick window.
+    struct {
+        int x, y;
+        int expires_tick;
+        char zone[24];
+    } blacklist[8];
+    int  blacklist_n;
 };
 
 static void ai_log(AiDriver *d, const char *goal, const char *fmt, ...);
@@ -265,6 +277,48 @@ static void ai_remember_pos(AiDriver *d, int x, int y) {
     }
 }
 
+// True iff (zone,x,y) is currently on the wander blacklist (and the
+// entry hasn't expired yet). Drops expired entries lazily as a side
+// effect.
+static bool ai_is_blacklisted(AiDriver *d, const char *zone, int x, int y) {
+    int w = 0;
+    for (int i = 0; i < d->blacklist_n; i++) {
+        if (d->blacklist[i].expires_tick <= d->ticks) continue;
+        if (w != i) d->blacklist[w] = d->blacklist[i];
+        w++;
+    }
+    d->blacklist_n = w;
+    for (int i = 0; i < d->blacklist_n; i++) {
+        if (d->blacklist[i].x == x && d->blacklist[i].y == y &&
+            strcmp(d->blacklist[i].zone, zone) == 0) return true;
+    }
+    return false;
+}
+
+// Add (zone,x,y) to the wander blacklist with a tick-count expiry.
+// Capacity is fixed; oldest entries are evicted.
+static void ai_blacklist_add(AiDriver *d, const char *zone, int x, int y,
+                             int hold_ticks) {
+    int cap = (int)(sizeof d->blacklist / sizeof d->blacklist[0]);
+    for (int i = 0; i < d->blacklist_n; i++) {
+        if (d->blacklist[i].x == x && d->blacklist[i].y == y &&
+            strcmp(d->blacklist[i].zone, zone) == 0) {
+            d->blacklist[i].expires_tick = d->ticks + hold_ticks;
+            return;
+        }
+    }
+    if (d->blacklist_n >= cap) {
+        for (int i = 1; i < cap; i++) d->blacklist[i - 1] = d->blacklist[i];
+        d->blacklist_n = cap - 1;
+    }
+    d->blacklist[d->blacklist_n].x = x;
+    d->blacklist[d->blacklist_n].y = y;
+    d->blacklist[d->blacklist_n].expires_tick = d->ticks + hold_ticks;
+    snprintf(d->blacklist[d->blacklist_n].zone,
+             sizeof d->blacklist[d->blacklist_n].zone, "%s", zone);
+    d->blacklist_n++;
+}
+
 // ---- step helpers ----------------------------------------------------------
 
 // Try to step toward (gx, gy). Returns true if a step was issued
@@ -291,28 +345,56 @@ static bool ai_step_toward(AiDriver *d, Game *g, Map *m, Fog *fog,
 // Fallback: take any walkable neighbor that isn't interactive. Used
 // when the mission's goal is unreachable but we still want to wiggle
 // (so stuck detection eventually trips a clean exit).
+//
+// Blacklist: when we have to fall through to pass 2 (the only walkable
+// neighbor is an interactive tile), record the tile so we don't keep
+// stepping onto the same dead-end dwelling / town / etc. that
+// triggers a bounce-back. Pass 1 is preferred; if blacklist exhausts
+// pass 2 we still try non-blacklisted interactives before giving up,
+// then accept any walkable as last-resort.
 static bool ai_step_wander(AiDriver *d, Game *g, Map *m, Fog *fog,
                            const Resources *res) {
     AiMoveMode mode = ai_move_mode_for(g);
     static const int dx[] = {  1, 0, -1,  0, 1, 1, -1, -1 };
     static const int dy[] = {  0, 1,  0, -1, 1,-1,  1, -1 };
-    // Pass 1: prefer non-interactive neighbors so we don't loop in
-    // and out of a town we just visited.
+
+    // Pass 1: prefer non-interactive, non-blacklisted neighbors.
     for (int i = 0; i < 8; i++) {
         int nx = g->position.x + dx[i];
         int ny = g->position.y + dy[i];
         if (!ai_walkable(m, nx, ny, mode, true)) continue;
+        if (ai_is_blacklisted(d, g->position.zone, nx, ny)) continue;
         ai_log(d, "wander", "step %+d%+d -> (%d,%d) (non-interact)",
                dx[i], dy[i], nx, ny);
         step_try(g, m, fog, res, dx[i], dy[i]);
         return true;
     }
-    // Pass 2: any walkable.
+    // Pass 2: any walkable, non-blacklisted. Record an interactive
+    // tile we step onto so the next stuck iteration won't pick it
+    // again. Hold for 80 ticks — long enough to break the loop, short
+    // enough that the AI revisits if state genuinely changed (e.g.
+    // a dwelling repopulated at week-end).
     for (int i = 0; i < 8; i++) {
         int nx = g->position.x + dx[i];
         int ny = g->position.y + dy[i];
         if (!ai_walkable(m, nx, ny, mode, false)) continue;
+        if (ai_is_blacklisted(d, g->position.zone, nx, ny)) continue;
+        const Tile *t = MapGetTile(m, nx, ny);
+        if (t && t->interactive != INTERACT_NONE) {
+            ai_blacklist_add(d, g->position.zone, nx, ny, 80);
+        }
         ai_log(d, "wander", "step %+d%+d -> (%d,%d) (any)",
+               dx[i], dy[i], nx, ny);
+        step_try(g, m, fog, res, dx[i], dy[i]);
+        return true;
+    }
+    // Pass 3: last-resort, accept blacklisted. We're truly boxed in
+    // and would rather trip stuck-strikes than freeze.
+    for (int i = 0; i < 8; i++) {
+        int nx = g->position.x + dx[i];
+        int ny = g->position.y + dy[i];
+        if (!ai_walkable(m, nx, ny, mode, false)) continue;
+        ai_log(d, "wander", "step %+d%+d -> (%d,%d) (blacklisted-ok)",
                dx[i], dy[i], nx, ny);
         step_try(g, m, fog, res, dx[i], dy[i]);
         return true;
