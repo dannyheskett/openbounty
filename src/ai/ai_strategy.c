@@ -209,10 +209,15 @@ AiGoal ai_strategy_pick(const Game *g, const Map *m, const Fog *fog) {
     // ~80% of the cost (so the strategy doesn't oscillate while
     // commission ticks up the difference).
     //
-    // The alcove sometimes sits behind interactive tiles (the king's
-    // castle, etc.) that avoid_interact=true blocks. We retry with
-    // avoid_interact=false on failure — the worst case is we bounce
-    // off a sign or dwelling along the way, which is recoverable.
+    // The reachability check uses avoid_interact=true so it MATCHES
+    // ai_step_toward's path planning. If we returned an alcove goal
+    // that the path planner couldn't actually step toward (e.g.
+    // because avoid_interact=false found a route through a town the
+    // step planner refuses), the AI would fall through to the
+    // wander fallback and stuck-strike out without ever reaching the
+    // contract / town / castle priorities below. Worst case here:
+    // the alcove is unreachable along non-interactive tiles, the AI
+    // skips it, and gameplay continues without magic.
     if (!g->stats.knows_magic && g->res &&
         g->stats.gold >= (g->res->economy.alcove_cost * 4) / 5) {
         int best = -1, bx = -1, by = -1;
@@ -222,10 +227,6 @@ AiGoal ai_strategy_pick(const Game *g, const Map *m, const Fog *fog) {
                 if (!t || t->interactive != INTERACT_ALCOVE) continue;
                 AiStep s = ai_path_step(m, mode, g->position.x,
                                         g->position.y, x, y, true);
-                if (!s.ok) {
-                    s = ai_path_step(m, mode, g->position.x,
-                                     g->position.y, x, y, false);
-                }
                 if (!s.ok) continue;
                 if (best < 0 || s.dist < best) {
                     best = s.dist; bx = x; by = y;

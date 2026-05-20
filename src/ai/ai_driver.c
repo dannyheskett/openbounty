@@ -46,6 +46,7 @@
 #define AI_TOWN_ROW_BOAT      1   // mirrors TownRow enum in views.c
 #define AI_TOWN_ROW_CONTRACT  0
 #define AI_TOWN_ROW_SPELL     3
+#define AI_TOWN_ROW_SIEGE     4
 
 // Bridge between the SAIL_NEXT mission (dispatches NEW_CONTINENT,
 // which opens a numeric prompt to pick a neighbor zone) and the
@@ -566,6 +567,19 @@ bool ai_tick(AiDriver *d, Game *game, Map *map, Fog *fog,
             if (!game->contract.active_id[0]) {
                 views_town_invoke_row(game, AI_TOWN_ROW_CONTRACT);
                 ai_log(d, "town", "CONTRACT row invoked");
+            }
+            // Buy siege weapons if we don't have them and can afford
+            // it. Siege weapons double damage during castle assaults,
+            // which is the bulk of villain capture; the one-time
+            // cost is worth it well before we've done much castle
+            // work. game.json default siege_cost is 3000.
+            int siege_cost = game->res->economy.siege_cost;
+            if (!game->stats.siege_weapons &&
+                game->stats.gold > siege_cost + 500) {
+                views_town_invoke_row(game, AI_TOWN_ROW_SIEGE);
+                ai_log(d, "town",
+                       "SIEGE row invoked (cost=%d gold=%d)",
+                       siege_cost, game->stats.gold);
             }
             // Buy the offered spell when we have a healthy gold
             // reserve and we're below the max-spells cap. The town
