@@ -9,6 +9,7 @@
 
 #include "resources.h"
 #include "tile.h"
+#include "tables.h"
 
 static void set_label(AiGoal *out, const char *fmt, ...) {
     va_list ap;
@@ -328,4 +329,18 @@ bool ai_zone_exhausted(const Game *g, const Map *m, const Fog *fog) {
     // a few BFS over a 64x64 grid.
     AiGoal goal = ai_strategy_pick(g, m, fog);
     return !goal.ok;
+}
+
+int ai_zone_uncaught_villains(const Game *g, const char *zone_id) {
+    if (!g || !zone_id || !zone_id[0]) return 0;
+    int remaining = 0;
+    int n = villains_count();
+    for (int i = 0; i < n && i < 17; i++) {
+        const VillainDef *v = villain_by_index(i);
+        if (!v || !v->zone[0]) continue;
+        if (strcmp(v->zone, zone_id) != 0) continue;
+        if (g->contract.villains_caught[i]) continue;
+        remaining++;
+    }
+    return remaining;
 }

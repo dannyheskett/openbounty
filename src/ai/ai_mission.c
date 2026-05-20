@@ -1,6 +1,7 @@
 // src/ai/ai_mission.c
 
 #include "ai_mission.h"
+#include "ai_strategy.h"   // ai_zone_uncaught_villains
 
 #include <stdio.h>
 #include <string.h>
@@ -80,7 +81,22 @@ AiMission ai_mission_update(AiMission current, const AiMissionCtx *ctx) {
         // exhausted AND we have somewhere else to go.
         if (!ctx->zone_exhausted) return AI_MISSION_PLAY_ZONE;
 
-        // Zone is exhausted. Pick the next mission:
+        // Zone-progression gate: the villain catalog groups villains
+        // by zone in ascending difficulty order — continentia first
+        // (rewards 5k-10k), then forestria (12k-18k), archipelia
+        // (20k-35k), saharia (40k-50k). A villain in zone B is
+        // almost certainly stronger than one in zone A. Don't leave
+        // the current zone while uncaught villains remain there;
+        // sailing onward to face a higher-tier villain with the
+        // current army usually just kills the run. Stay in PLAY_ZONE
+        // so the strategy keeps cycling contracts, Find Villain
+        // casts, and grinding troops at local dwellings.
+        if (ai_zone_uncaught_villains(g, g->position.zone) > 0) {
+            return AI_MISSION_PLAY_ZONE;
+        }
+
+        // Zone is exhausted and all villains here are caught. Pick
+        // the next mission:
         //   - have boat parked here → BOARD_BOAT (cheapest exit)
         //   - have coastal town we can reach → GO_TO_DOCK
         //   - neither → DONE (stuck on this continent forever)

@@ -47,4 +47,13 @@ AiGoal ai_strategy_pick(const Game *g, const Map *m, const Fog *fog);
 // AiMissionCtx so we don't run the same BFS family twice in a frame.
 bool ai_zone_exhausted(const Game *g, const Map *m, const Fog *fog);
 
+// Count of villains whose home zone == `zone_id` and who have not yet
+// been caught (per g->contract.villains_caught[]). The villain
+// catalog groups villains by zone in ascending difficulty order — all
+// of continentia first (easy), then forestria, archipelia, saharia.
+// The mission layer uses this to keep the AI in a zone until all
+// villains there are caught, rather than sailing onward to face
+// villains tiers above the current army strength.
+int ai_zone_uncaught_villains(const Game *g, const char *zone_id);
+
 #endif
