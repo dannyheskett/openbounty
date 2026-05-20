@@ -527,11 +527,6 @@ static void combat_tick_anim(Combat *c, double *next_tick, bool *rolled_over) {
     }
 }
 
-// Forward-declared so combat_wait_for_dialog_ack can short-circuit
-// when fast-combat is on (setter / getter defined further down with
-// the rest of the auto-combat plumbing).
-static bool s_fast_combat = false;
-
 // Block until the player acknowledges the open end-of-combat dialog,
 // keeping the battlefield rendered behind it. Without this, RunCombat
 // would return the moment c.result is set, callers would mutate world
@@ -541,16 +536,6 @@ static bool s_fast_combat = false;
 static void combat_wait_for_dialog_ack(const Combat *c, const Game *g,
                                        const Sprites *sprites,
                                        RenderTexture2D *target) {
-    // Fast-combat: the AI driver doesn't press keys. Auto-dismiss the
-    // end-of-combat dialog after one render so the AI returns to the
-    // overworld immediately.
-    if (s_fast_combat) {
-        combat_present(c, g, sprites, target);
-        while (dialog_is_active()) {
-            if (!dialog_advance()) dialog_dismiss();
-        }
-        return;
-    }
     while (dialog_is_active() && !WindowShouldClose()) {
         combat_present(c, g, sprites, target);
         // Allow screenshots while paused on the end-of-combat dialog
@@ -560,36 +545,6 @@ static void combat_wait_for_dialog_ack(const Combat *c, const Game *g,
             if (!dialog_advance()) dialog_dismiss();
         }
     }
-}
-
-// Auto-combat: when set, RunCombat routes the player's turn through
-// combat_ai_action just like the AI side. Used by the harness so a
-// driver can step the bot through a full game without authoring the
-// combat-modal input sequence per fight. Set via combat_set_auto_player
-// (e.g. from harness command "auto_combat:on"). Persists across fights
-// until cleared.
-static bool s_auto_player = false;
-
-void combat_set_auto_player(bool on) { s_auto_player = on; }
-bool combat_auto_player(void)        { return s_auto_player; }
-
-// Fast-combat: when set, RunCombat does not wait for the per-frame
-// animation rollover before ticking AI actions. Used by the --ai driver
-// so a battle finishes in a handful of frames instead of seconds of
-// per-unit walk animation. Rendering still happens (so the player can
-// watch if they want), but action dispatch fires every frame.
-void combat_set_fast_combat(bool on) { s_fast_combat = on; }
-bool combat_fast_combat(void)        { return s_fast_combat; }
-
-// Optional player-side AI. NULL means "fall back to combat_ai_action"
-// (the existing harness behavior when auto-combat is on). Set by the
-// --ai driver to plug in player-specific policy.
-static CombatPlayerAi s_player_ai      = NULL;
-static void          *s_player_ai_user = NULL;
-
-void combat_set_player_ai(CombatPlayerAi fn, void *user) {
-    s_player_ai      = fn;
-    s_player_ai_user = user;
 }
 
 CombatResult RunCombat(Game *g, const Sprites *sprites,
@@ -713,22 +668,11 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         bool player_turn = (c.side == COMBAT_SIDE_PLAYER &&
                             c.unit_id >= 0 &&
                             !c.units[c.side][c.unit_id].out_of_control);
-        if (player_turn && !s_auto_player) {
+        if (player_turn) {
             acted = combat_player_action_full(&c, g, sprites, rt);
-        } else if (player_turn && s_player_ai) {
-            // Auto-combat with a registered player-side AI: that hook
-            // gets first crack at the decision. Fires every frame (no
-            // frame_rollover gate) — the hook itself decides pacing,
-            // typically returning 1 on a frame where it commits to an
-            // action and 0 otherwise.
-            acted = s_player_ai(&c, s_player_ai_user);
-        } else if (frame_rollover || s_fast_combat) {
-            // AI drives this turn — either a real AI unit, an
-            // out-of-control player unit, or any player unit while
-            // auto_combat is on without a player-side AI registered
-            // (harness-driven runs use this path). In fast-combat the
-            // rollover gate is bypassed so the fight finishes as fast
-            // as the frame loop can dispatch actions.
+        } else if (frame_rollover) {
+            // AI drives this turn — either a real AI unit or an
+            // out-of-control player unit.
             acted = combat_ai_action(&c);
         }
 

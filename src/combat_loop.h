@@ -1,8 +1,8 @@
 // src/combat_loop.h
 //
-// Shell-side combat: the rendered combat loop and the auto-player
-// toggle. Uses raylib types (via void * for render_target). Engine
-// code uses combat.h (headless combat + Combat struct) instead.
+// Shell-side combat: the rendered combat loop. Uses raylib types
+// (via void * for render_target). Engine code uses combat.h
+// (headless combat + Combat struct) instead.
 
 #ifndef OB_COMBAT_LOOP_H
 #define OB_COMBAT_LOOP_H
@@ -17,39 +17,5 @@
 CombatResult RunCombat(Game *g, const Sprites *sprites,
                        void *render_target,
                        CombatMode mode, const CombatTarget *target);
-
-// Auto-combat toggle. When on, RunCombat drives the player's turns
-// through combat_ai_action (skipping the modal player-input flow).
-// Persists across fights until cleared. Used by the harness so a
-// scripted driver can run a full playthrough without authoring per-
-// fight key sequences. No effect on combat_run_headless (already AI
-// vs AI by definition).
-void combat_set_auto_player(bool on);
-bool combat_auto_player(void);
-
-// Player-side AI hook. When set AND auto-combat is on, RunCombat
-// consults this function on the player's turns instead of routing
-// through combat_ai_action. The hook returns the same int that
-// combat_ai_action returns: non-zero = an action was taken this
-// frame, 0 = no-op / try again next frame. `user` is the opaque
-// pointer registered alongside the function.
-//
-// Default is NULL — auto-combat falls back to combat_ai_action,
-// preserving the harness behavior. Cleared by passing NULL.
-//
-// Intended caller: the upcoming --ai driver, which plays the
-// player side with policy distinct from the enemy AI (favour
-// ranged, target highest-DPS first, cast spells at thresholds).
-typedef int (*CombatPlayerAi)(Combat *c, void *user);
-void combat_set_player_ai(CombatPlayerAi fn, void *user);
-
-// Fast-combat: when on, RunCombat skips the per-frame animation
-// rollover gate, letting AI dispatch one action per frame instead of
-// waiting out the walk-animation tick. Used by the --ai driver so a
-// battle finishes in a few frames rather than seconds of cinematic.
-// Rendering still runs each frame; only the action-dispatch cadence
-// changes. No effect when a human is driving the player side.
-void combat_set_fast_combat(bool on);
-bool combat_fast_combat(void);
 
 #endif
