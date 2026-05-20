@@ -128,9 +128,24 @@ int main(int argc, char **argv) {
             printf("openbounty build %s\n"
                    "Usage: %s [--fullscreen] [--pack <name|path>] [--save-dir <dir>]\n"
                    "       %*s [--movie [<path>]] [--seed N] [--version]\n"
+                   "       %*s [--ai [--ai-trace <path>] [--ai-max-ticks N] [--ai-verbose]]\n"
                    "       %s --extract [--out-dir <dir>]\n"
-                   "       %s --pack-dir <src_dir> <out_zip>\n",
-                   OPENBOUNTY_VERSION, argv[0], (int)strlen(argv[0]), "",
+                   "       %s --pack-dir <src_dir> <out_zip>\n"
+                   "\n"
+                   "Self-playing AI (--ai):\n"
+                   "  --ai                Drive the game with the in-process AI instead\n"
+                   "                      of the keyboard. Synthesizes a fresh knight,\n"
+                   "                      normal difficulty, slot 0. Runs until the\n"
+                   "                      mission state machine reaches DONE, --ai-max-ticks\n"
+                   "                      hits, or it wins / loses the game.\n"
+                   "  --ai-trace <path>   Write a JSONL decision log to <path>. One line\n"
+                   "                      per AI tick: { t, goal, action }.\n"
+                   "  --ai-max-ticks N    Cap the AI run at N ticks. 0 (default) = no cap.\n"
+                   "                      Useful for smoke tests.\n"
+                   "  --ai-verbose        Mirror every decision to stderr.\n",
+                   OPENBOUNTY_VERSION, argv[0],
+                   (int)strlen(argv[0]), "",
+                   (int)strlen(argv[0]), "",
                    argv[0], argv[0]);
             return 0;
         } else if (strcmp(a, "--fullscreen") == 0) {

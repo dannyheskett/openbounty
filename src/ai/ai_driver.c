@@ -713,7 +713,25 @@ bool ai_tick(AiDriver *d, Game *game, Map *map, Fog *fog,
     } else if (moved && revisits <= 1) {
         d->stuck_strikes = 0;
     }
-    if (d->stuck_strikes >= 8) {
+
+    // Mid-strike recovery: at strike 4, try advancing a week. Weekly
+    // upkeep triggers astrology (which can repopulate a dwelling),
+    // commission income (which may unstick gold-gated decisions), and
+    // forces some game state to roll. Resets the strike counter on
+    // success so the AI gets another window before bailing out.
+    if (d->stuck_strikes == 4 && game->stats.days_left > 7) {
+        InputState in = {0};
+        in.action = INPUT_ACTION_END_WEEK;
+        shell_dispatch_action(sctx, &in);
+        ai_log(d, "recover", "end_week (days_left=%d gold=%d)",
+               game->stats.days_left, game->stats.gold);
+        d->stuck_strikes = 0;
+        // Clear position history so the freshly-changed map doesn't
+        // immediately re-trip revisit detection.
+        d->recent_n = 0;
+    }
+
+    if (d->stuck_strikes >= 12) {
         d->finished = true;
         ai_log(d, "exit", "stuck for too long, giving up (mission=%s)",
                ai_mission_name(d->mission));
