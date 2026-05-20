@@ -10,6 +10,7 @@
 #include "resources.h"
 #include "tile.h"
 #include "tables.h"
+#include "combat.h"
 
 static void set_label(AiGoal *out, const char *fmt, ...) {
     va_list ap;
@@ -29,6 +30,25 @@ static bool castle_in_zone(const Game *g, const char *castle_id,
     *out_x = gx;
     *out_y = gy;
     return true;
+}
+
+bool ai_can_beat_castle(const Game *g, const char *castle_id) {
+    if (!g || !castle_id || !castle_id[0]) return false;
+    const CastleRecord *cr = GameFindCastleConst(g, castle_id);
+    if (!cr) return false;
+    // Clone the game so combat_run_headless's mutations (army losses,
+    // spoils gold, RNG advance) don't touch the real state. Game is
+    // a few KB — stack-allocating is fine.
+    Game sim = *g;
+    CombatTarget tgt = {
+        .name           = "sim",
+        .garrison       = cr->garrison,
+        .garrison_slots = GAME_ARMY_SLOTS,
+    };
+    // cap_rounds=64: KB castle fights usually resolve in <20; 64 is
+    // generous and bails on stalemates.
+    CombatResult r = combat_run_headless(&sim, COMBAT_MODE_CASTLE, &tgt, 64);
+    return r == COMBAT_RESULT_WIN;
 }
 
 // Lookup helpers for "is this tile already used up".
@@ -74,25 +94,128 @@ static bool is_dwelling(Interact i) {
         || i == INTERACT_DWELLING_HILLS   || i == INTERACT_DWELLING_DUNGEON;
 }
 
+// Combat-value score for a troop, used by the AI to compare what's on
+// offer at a dwelling against what's currently in the army. Hit
+// points dominate (survival is the binding constraint at low
+// leadership cap), but ranged DPS and melee damage both matter.
+//
+// We hand-tuned the weights against continentia's troop pool:
+//   peasants  (1 hp, 1 melee, 0 ranged) → 1
+//   sprites   (1 hp, 2 melee, 0 ranged, FLY) → 2
+//   skeletons (3 hp, 2 melee, 0 ranged, UNDEAD) → 6
+//   wolves    (3 hp, 3 melee, 0 ranged) → 9
+//   gnomes    (5 hp, 3 melee, 0 ranged) → 15
+//   orcs      (5 hp, 3 melee, 2x10 ranged) → 35
+// Orcs come out far ahead because of their ranged attack at range 10
+// — exactly the kit needed against melee-heavy garrisons like
+// Murray's.
+int ai_troop_quality(const char *troop_id) {
+    if (!troop_id || !troop_id[0]) return 0;
+    const TroopDef *t = troop_by_id(troop_id);
+    if (!t) return 0;
+    int melee   = t->melee_max;
+    int ranged  = t->ranged_max * t->ranged_ammo;
+    return t->hit_points * melee + ranged;
+}
+
+// Score of the AI's weakest currently-held army stack. 0 if the army
+// has any empty slot (meaning ANY dwelling is an upgrade — fills the
+// slot rather than displacing anything). Used by dwelling targeting
+// to skip pulling Peasants into a slot a better troop could occupy
+// later.
+static int ai_army_weakest_quality(const Game *g) {
+    int worst = -1;
+    for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+        if (!g->army[i].id[0] || g->army[i].count <= 0) return 0;
+        int q = ai_troop_quality(g->army[i].id);
+        if (worst < 0 || q < worst) worst = q;
+    }
+    return worst < 0 ? 0 : worst;
+}
+
 // Skip dwellings whose state row exists and has count == 0 — they're
 // drained for this week. Also skip dwellings we can't afford a single
-// troop at (gold < recruit_cost or leadership cap = 0).
+// troop at (gold < recruit_cost or leadership cap = 0). And skip
+// dwellings whose troop is lower-quality than what's already in our
+// army when we have no empty slot to fill — recruiting peasants into
+// a slot we could later use for orcs is a strict downgrade.
 static bool tile_skip_drained_dwelling(const Game *g, const Tile *t,
                                        int x, int y) {
     if (!t || !is_dwelling(t->interactive)) return false;
+    // Find the dwelling's troop. Prefer the persistent state row if
+    // it exists (initialized on first visit); otherwise consult the
+    // SaltedPlacement table that GameInit populated.
+    const char *troop_id = NULL;
+    int  d_count_known   = -1;
     for (int i = 0; i < g->dwelling_count; i++) {
         const DwellingState *d = &g->dwellings[i];
         if (d->x != x || d->y != y) continue;
         if (strcmp(d->zone, g->position.zone) != 0) continue;
-        if (d->count <= 0) return true;
-        // Can we afford and accommodate at least one?
-        const TroopDef *td = troop_by_id(d->troop_id);
+        troop_id = d->troop_id;
+        d_count_known = d->count;
+        break;
+    }
+    if (d_count_known == 0) return true;   // drained
+    // Quality gate: only meaningful when we know which troop the
+    // dwelling sells (state row exists). On first encounter the
+    // strategy may target a low-tier dwelling — that's acceptable
+    // because we'll learn the troop id on visit; the persistent skip
+    // kicks in from the second pass.
+    if (troop_id && troop_id[0]) {
+        const TroopDef *td = troop_by_id(troop_id);
         if (!td) return true;
         if (g->stats.gold < td->recruit_cost) return true;
         if (GameMaxRecruitable(g, td->id) < 1) return true;
-        return false;
+        int quality   = ai_troop_quality(troop_id);
+        int worst_now = ai_army_weakest_quality(g);
+        // worst_now == 0 means an empty slot exists; accept anything.
+        if (worst_now > 0 && quality <= worst_now) return true;
     }
     return false;
+}
+
+// Find the nearest dwelling whose troop has hit_points >= min_hp AND
+// passes the standard skip filters (drained, unaffordable, would
+// downgrade the army). Used to give the army-building strategy a
+// chance to grab a high-quality dwelling (orcs, gnomes) before the
+// generic dwelling pursuit picks a peasant dwelling that happens to
+// be one tile closer.
+static bool find_nearest_quality_dwelling(const Game *g, const Map *m,
+                                          AiMoveMode mode, int min_hp,
+                                          int *out_x, int *out_y) {
+    int best = -1, bx = -1, by = -1;
+    for (int y = 0; y < m->height; y++) {
+        for (int x = 0; x < m->width; x++) {
+            const Tile *t = MapGetTile(m, x, y);
+            if (!t || !is_dwelling(t->interactive)) continue;
+            if (tile_skip_drained_dwelling(g, t, x, y)) continue;
+            // Determine the troop id. Only known via DwellingState
+            // after first visit. For unseen dwellings we can't
+            // assess quality, so skip them in this quality-only
+            // pass; the generic pickup pass will reach them later.
+            const char *troop_id = NULL;
+            for (int i = 0; i < g->dwelling_count; i++) {
+                const DwellingState *d = &g->dwellings[i];
+                if (d->x == x && d->y == y &&
+                    strcmp(d->zone, g->position.zone) == 0) {
+                    troop_id = d->troop_id;
+                    break;
+                }
+            }
+            if (!troop_id || !troop_id[0]) continue;
+            const TroopDef *td = troop_by_id(troop_id);
+            if (!td || td->hit_points < min_hp) continue;
+            AiStep s = ai_path_step(m, mode, g->position.x,
+                                    g->position.y, x, y, true);
+            if (!s.ok) continue;
+            if (best < 0 || s.dist < best) {
+                best = s.dist; bx = x; by = y;
+            }
+        }
+    }
+    if (best < 0) return false;
+    *out_x = bx; *out_y = by;
+    return true;
 }
 
 // Walk the map for a tile matching a given Interact kind. Picks the
@@ -241,7 +364,12 @@ AiGoal ai_strategy_pick(const Game *g, const Map *m, const Fog *fog) {
         }
     }
 
-    // (1) Contract villain whose castle is known and lives in this zone.
+    // (1) Contract villain whose castle is known and lives in this
+    // zone — and whose garrison we can actually beat. The pre-check
+    // simulates the fight via combat_run_headless; only WIN
+    // outcomes pass. If the prediction loses, the goal doesn't fire
+    // and the strategy falls through to recruiting / dwellings /
+    // fog exploration to gather more troops before trying again.
     if (g->contract.active_id[0]) {
         for (int i = 0; i < GAME_CASTLES; i++) {
             const CastleRecord *cr = &g->castles[i];
@@ -249,6 +377,7 @@ AiGoal ai_strategy_pick(const Game *g, const Map *m, const Fog *fog) {
             if (cr->owner_kind != CASTLE_OWNER_VILLAIN) continue;
             if (strcmp(cr->villain_id, g->contract.active_id) != 0) continue;
             if (!cr->known) continue;
+            if (!ai_can_beat_castle(g, cr->id)) continue;
             int gx, gy;
             if (castle_in_zone(g, cr->id, &gx, &gy)) {
                 AiStep s = ai_path_step(m, mode, g->position.x, g->position.y,
@@ -272,13 +401,49 @@ AiGoal ai_strategy_pick(const Game *g, const Map *m, const Fog *fog) {
         }
     }
 
-    // (3) Nearest castle gate that isn't home / current player castle.
+    // (3) Nearest castle gate we can WIN at, that isn't home /
+    // already-owned / audience-only. Pre-check via
+    // ai_can_beat_castle keeps the AI from walking into a fight it
+    // can't win. Castles for which the prediction loses get skipped;
+    // the AI keeps grinding dwellings until the simulator says yes.
     {
-        int gx, gy, d;
-        if (find_nearest_interact_bfs(g, m, INTERACT_CASTLE_GATE, mode,
-                                      &gx, &gy, &d)) {
+        int best = -1, bx = -1, by = -1;
+        for (int y = 0; y < m->height; y++) {
+            for (int x = 0; x < m->width; x++) {
+                const Tile *t = MapGetTile(m, x, y);
+                if (!t || t->interactive != INTERACT_CASTLE_GATE) continue;
+                if (tile_skip_owned_castle(g, t))    continue;
+                if (tile_skip_audience_castle(g, t)) continue;
+                if (!t->id[0]) continue;
+                if (!ai_can_beat_castle(g, t->id)) continue;
+                AiStep s = ai_path_step(m, mode, g->position.x,
+                                        g->position.y, x, y, true);
+                if (!s.ok) continue;
+                if (best < 0 || s.dist < best) {
+                    best = s.dist; bx = x; by = y;
+                }
+            }
+        }
+        if (best >= 0) {
+            out.gx = bx; out.gy = by; out.ok = true;
+            set_label(&out, "castle@%d,%d", bx, by);
+            return out;
+        }
+    }
+
+    // (3b) High-quality dwelling — orcs / gnomes / wolves / etc.
+    // Ranked above the generic pickup loop so the army-building
+    // path doesn't waste slots on Peasants just because a peasant
+    // dwelling is one tile closer. We require hit_points >= 3 to
+    // exclude Peasants (1 hp) and Sprites (1 hp) from continentia.
+    // A dwelling whose troop_id we haven't learned yet (no
+    // DwellingState row) doesn't qualify; the generic pass below
+    // will still target it on first encounter.
+    {
+        int gx, gy;
+        if (find_nearest_quality_dwelling(g, m, mode, 3, &gx, &gy)) {
             out.gx = gx; out.gy = gy; out.ok = true;
-            set_label(&out, "castle@%d,%d", gx, gy);
+            set_label(&out, "good-dwell@%d,%d", gx, gy);
             return out;
         }
     }

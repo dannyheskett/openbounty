@@ -648,36 +648,43 @@ bool ai_tick(AiDriver *d, Game *game, Map *map, Fog *fog,
         }
         if (d->mission == AI_MISSION_PLAY_ZONE) {
             // Take a fresh contract if we don't have one — the
-            // strategy's villain goal can't fire without it.
+            // strategy's villain goal can't fire without it. Free,
+            // always do.
             if (!game->contract.active_id[0]) {
                 views_town_invoke_row(game, AI_TOWN_ROW_CONTRACT);
                 ai_log(d, "town", "CONTRACT row invoked");
             }
-            // Buy siege weapons if we don't have them and can afford
-            // it. Siege weapons double damage during castle assaults,
-            // which is the bulk of villain capture; the one-time
-            // cost is worth it well before we've done much castle
-            // work. game.json default siege_cost is 3000.
-            int siege_cost = game->res->economy.siege_cost;
-            if (!game->stats.siege_weapons &&
-                game->stats.gold > siege_cost + 500) {
-                views_town_invoke_row(game, AI_TOWN_ROW_SIEGE);
+            // Gold-budget ordering: until we know magic, every spare
+            // gold piece is earmarked for the alcove (5000g) and
+            // troops. Siege weapons (3000g) and town spells (~500g
+            // each) only get bought AFTER we have magic — by which
+            // time commission income has padded the budget. Without
+            // this gate the AI burned its 7500g starting purse on
+            // siege + spells, dropped below the alcove threshold,
+            // never learned magic, never cast Find Villain, and so
+            // never located any villain. The honest fix is to defer
+            // discretionary spending.
+            if (game->stats.knows_magic) {
+                int siege_cost = game->res->economy.siege_cost;
+                if (!game->stats.siege_weapons &&
+                    game->stats.gold > siege_cost + 500) {
+                    views_town_invoke_row(game, AI_TOWN_ROW_SIEGE);
+                    ai_log(d, "town",
+                           "SIEGE row invoked (cost=%d gold=%d)",
+                           siege_cost, game->stats.gold);
+                }
+                int known = GameKnownSpells(game);
+                if (known < game->stats.max_spells &&
+                    game->stats.gold > 1000) {
+                    views_town_invoke_row(game, AI_TOWN_ROW_SPELL);
+                    ai_log(d, "town",
+                           "SPELL row invoked (known=%d cap=%d gold=%d)",
+                           known, game->stats.max_spells, game->stats.gold);
+                }
+            } else {
                 ai_log(d, "town",
-                       "SIEGE row invoked (cost=%d gold=%d)",
-                       siege_cost, game->stats.gold);
-            }
-            // Buy the offered spell when we have a healthy gold
-            // reserve and we're below the max-spells cap. The town
-            // handler suppresses the "at cap" popup by gating on
-            // GameKnownSpells (the engine still pops it if we beat
-            // the gate by a race; harmless either way).
-            int known = GameKnownSpells(game);
-            if (known < game->stats.max_spells &&
-                game->stats.gold > 1000) {
-                views_town_invoke_row(game, AI_TOWN_ROW_SPELL);
-                ai_log(d, "town",
-                       "SPELL row invoked (known=%d cap=%d gold=%d)",
-                       known, game->stats.max_spells, game->stats.gold);
+                       "siege/spell deferred until alcove (gold=%d)",
+                       game->stats.gold);
             }
         }
         views_dismiss();

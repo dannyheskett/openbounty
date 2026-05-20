@@ -47,6 +47,17 @@ AiGoal ai_strategy_pick(const Game *g, const Map *m, const Fog *fog);
 // AiMissionCtx so we don't run the same BFS family twice in a frame.
 bool ai_zone_exhausted(const Game *g, const Map *m, const Fog *fog);
 
+// Combat-value score for a troop id, used by the AI to compare what's
+// on offer at a dwelling against what's currently in the army. See
+// the implementation in ai_strategy.c for the weighting rationale.
+int ai_troop_quality(const char *troop_id);
+
+// True iff a headless simulation of a castle siege against this
+// castle's garrison resolves as a WIN. Used to gate "walk into the
+// villain's castle" decisions so the AI only engages fights it can
+// expect to win.
+bool ai_can_beat_castle(const Game *g, const char *castle_id);
+
 // Count of villains whose home zone == `zone_id` and who have not yet
 // been caught (per g->contract.villains_caught[]). The villain
 // catalog groups villains by zone in ascending difficulty order — all
