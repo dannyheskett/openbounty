@@ -365,6 +365,15 @@ int main(int argc, char **argv) {
     // knight, normal difficulty, slot 0, name "AI". The AI driver only
     // runs in this mode for now; loading a save under --ai would also
     // work, but that's a CLI-shape decision to defer.
+    //
+    // The non-AI path runs many BeginDrawing/EndDrawing cycles inside
+    // startup_flow (splashes, credits, class picker) before the main
+    // loop begins. raylib relies on at least one such cycle to publish
+    // the window's first frame before any subsequent BeginTextureMode
+    // → blit sequence renders visibly. Skipping startup_flow in --ai
+    // mode left the window blank for the entire run (AI logic still
+    // executed against the off-screen target). Pump one frame here so
+    // both paths reach the main loop with the same window state.
     StartupChoice choice = { 0 };
     if (ai_mode) {
         choice.action = STARTUP_NEW;
@@ -373,6 +382,9 @@ int main(int argc, char **argv) {
         snprintf(choice.name,     sizeof choice.name,     "AI");
         choice.difficulty = DIFFICULTY_NORMAL;
         choice.seed = forced_seed ? forced_seed : 1;
+        BeginDrawing();
+        ClearBackground(BLACK);
+        EndDrawing();
     } else if (!startup_flow(&res, &sprites,
                               &render_target_startup, &choice)) {
         // User quit before choosing.
