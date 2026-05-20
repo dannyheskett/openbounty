@@ -58,6 +58,14 @@ int ai_troop_quality(const char *troop_id);
 // expect to win.
 bool ai_can_beat_castle(const Game *g, const char *castle_id);
 
+// True iff the dwelling at (x, y) in the current zone is currently
+// useless to the AI: drained for the week, unaffordable, or our
+// leadership is already at cap for that troop. Exposed so the
+// driver's wander fallback can treat such tiles as hard-blocked —
+// otherwise the AI corners itself stepping into a dwelling it
+// can't recruit from.
+bool ai_dwelling_unusable(const Game *g, const Tile *t, int x, int y);
+
 // Count of villains whose home zone == `zone_id` and who have not yet
 // been caught (per g->contract.villains_caught[]). The villain
 // catalog groups villains by zone in ascending difficulty order — all

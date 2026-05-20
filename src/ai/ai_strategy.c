@@ -133,6 +133,12 @@ static int ai_army_weakest_quality(const Game *g) {
     return worst < 0 ? 0 : worst;
 }
 
+static bool tile_skip_drained_dwelling(const Game *g, const Tile *t,
+                                       int x, int y);
+bool ai_dwelling_unusable(const Game *g, const Tile *t, int x, int y) {
+    return tile_skip_drained_dwelling(g, t, x, y);
+}
+
 // Skip dwellings whose state row exists and has count == 0 — they're
 // drained for this week. Also skip dwellings we can't afford a single
 // troop at (gold < recruit_cost or leadership cap = 0). And skip
@@ -189,10 +195,10 @@ static bool find_nearest_quality_dwelling(const Game *g, const Map *m,
             const Tile *t = MapGetTile(m, x, y);
             if (!t || !is_dwelling(t->interactive)) continue;
             if (tile_skip_drained_dwelling(g, t, x, y)) continue;
-            // Determine the troop id. Only known via DwellingState
-            // after first visit. For unseen dwellings we can't
-            // assess quality, so skip them in this quality-only
-            // pass; the generic pickup pass will reach them later.
+            // Determine the troop id. Pre-populated by GameInit's
+            // enforce_dwelling sweep (every dwelling in every zone
+            // gets a DwellingState row at game start), so this
+            // lookup succeeds on the first call.
             const char *troop_id = NULL;
             for (int i = 0; i < g->dwelling_count; i++) {
                 const DwellingState *d = &g->dwellings[i];

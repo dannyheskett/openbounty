@@ -362,27 +362,34 @@ static bool ai_step_wander(AiDriver *d, Game *g, Map *m, Fog *fog,
     static const int dy[] = {  0, 1,  0, -1, 1,-1,  1, -1 };
 
     // Pass 1: prefer non-interactive, non-blacklisted neighbors.
+    // Also block dwellings the strategy considers unusable (drained
+    // / unaffordable / leadership-capped) — stepping onto them just
+    // bounces the hero back without progress and corners us.
     for (int i = 0; i < 8; i++) {
         int nx = g->position.x + dx[i];
         int ny = g->position.y + dy[i];
         if (!ai_walkable(m, nx, ny, mode, true)) continue;
         if (ai_is_blacklisted(d, g->position.zone, nx, ny)) continue;
+        const Tile *t = MapGetTile(m, nx, ny);
+        if (t && ai_dwelling_unusable(g, t, nx, ny)) continue;
         ai_log(d, "wander", "step %+d%+d -> (%d,%d) (non-interact)",
                dx[i], dy[i], nx, ny);
         step_try(g, m, fog, res, dx[i], dy[i]);
         return true;
     }
-    // Pass 2: any walkable, non-blacklisted. Record an interactive
-    // tile we step onto so the next stuck iteration won't pick it
-    // again. Hold for 80 ticks — long enough to break the loop, short
-    // enough that the AI revisits if state genuinely changed (e.g.
-    // a dwelling repopulated at week-end).
+    // Pass 2: any walkable, non-blacklisted (still excluding unusable
+    // dwellings). Record an interactive tile we step onto so the
+    // next stuck iteration won't pick it again. Hold for 80 ticks —
+    // long enough to break the loop, short enough that the AI
+    // revisits if state genuinely changed (e.g. a dwelling
+    // repopulated at week-end).
     for (int i = 0; i < 8; i++) {
         int nx = g->position.x + dx[i];
         int ny = g->position.y + dy[i];
         if (!ai_walkable(m, nx, ny, mode, false)) continue;
         if (ai_is_blacklisted(d, g->position.zone, nx, ny)) continue;
         const Tile *t = MapGetTile(m, nx, ny);
+        if (t && ai_dwelling_unusable(g, t, nx, ny)) continue;
         if (t && t->interactive != INTERACT_NONE) {
             ai_blacklist_add(d, g->position.zone, nx, ny, 80);
         }
@@ -391,12 +398,16 @@ static bool ai_step_wander(AiDriver *d, Game *g, Map *m, Fog *fog,
         step_try(g, m, fog, res, dx[i], dy[i]);
         return true;
     }
-    // Pass 3: last-resort, accept blacklisted. We're truly boxed in
-    // and would rather trip stuck-strikes than freeze.
+    // Pass 3: last-resort, accept blacklisted but still NOT unusable
+    // dwellings. If our only walkable neighbor is a dwelling we
+    // can't use, we'd rather trip stuck-strikes than burn ticks
+    // bouncing off it.
     for (int i = 0; i < 8; i++) {
         int nx = g->position.x + dx[i];
         int ny = g->position.y + dy[i];
         if (!ai_walkable(m, nx, ny, mode, false)) continue;
+        const Tile *t = MapGetTile(m, nx, ny);
+        if (t && ai_dwelling_unusable(g, t, nx, ny)) continue;
         ai_log(d, "wander", "step %+d%+d -> (%d,%d) (blacklisted-ok)",
                dx[i], dy[i], nx, ny);
         step_try(g, m, fog, res, dx[i], dy[i]);
