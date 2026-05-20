@@ -40,6 +40,8 @@
 #include "ui_host.h"          // views_active()
 #include "views.h"            // views_dismiss(), views_town_invoke_row()
 #include "combat_loop.h"      // combat_set_auto_player
+#include "spells_adventure.h" // dispatch_adventure_spell
+#include "tables.h"           // spell_index_by_id
 
 #define AI_TOWN_ROW_BOAT      1   // mirrors TownRow enum in views.c
 #define AI_TOWN_ROW_CONTRACT  0
@@ -319,6 +321,63 @@ static bool ai_step_wander(AiDriver *d, Game *g, Map *m, Fog *fog,
 
 // ---- per-mission tactical handlers -----------------------------------------
 
+// True iff the active contract's villain has been "found" (their
+// castle is g->castles[i].known). Precondition for skipping the Find
+// Villain cast.
+static bool contract_villain_known(const Game *g) {
+    if (!g || !g->contract.active_id[0]) return false;
+    for (int i = 0; i < GAME_CASTLES; i++) {
+        const CastleRecord *cr = &g->castles[i];
+        if (!cr->id[0]) continue;
+        if (cr->owner_kind != CASTLE_OWNER_VILLAIN) continue;
+        if (strcmp(cr->villain_id, g->contract.active_id) != 0) continue;
+        return cr->known;
+    }
+    return false;
+}
+
+// Opportunistic adventure-spell casts. Called once per tick BEFORE
+// mission dispatch. Each cast opens a dialog the next ai_clear_ui
+// dismisses. Returns true if a spell was cast (the tile-step is
+// skipped that tick so the dialog has a frame to render).
+//
+// Find Villain — when we have a contract whose villain isn't yet
+//   located, casting reveals that villain's castle. The strategy's
+//   contract-villain goal (priority 1) can then route us there.
+//
+// Time Stop — when days_left < 10 and no existing time-stop bonus
+//   is running. Buys us steps without burning days.
+//
+// Castle Gate — not wired here; the shell-side letter-picker flow
+//   is too entangled with main.c's input loop to invoke directly.
+//
+// dispatch_adventure_spell rejects casts when counts[spell] == 0 so
+// we don't need to pre-check; the engine-level GameCastFindVillain /
+// GameCastTimeStop decrement the charge.
+static bool tactical_cast_spells(AiDriver *d, Game *g) {
+    if (!g || !g->stats.knows_magic) return false;
+
+    int fv = spell_index_by_id("find_villain");
+    if (fv >= 0 && g->spells.counts[fv] > 0 &&
+        g->contract.active_id[0] && !contract_villain_known(g)) {
+        ai_log(d, "cast", "find_villain (charges=%d, contract=%s)",
+               g->spells.counts[fv], g->contract.active_id);
+        dispatch_adventure_spell(g, fv);
+        return true;
+    }
+
+    int ts = spell_index_by_id("time_stop");
+    if (ts >= 0 && g->spells.counts[ts] > 0 &&
+        g->stats.time_stop == 0 && g->stats.days_left < 10) {
+        ai_log(d, "cast", "time_stop (days_left=%d charges=%d)",
+               g->stats.days_left, g->spells.counts[ts]);
+        dispatch_adventure_spell(g, ts);
+        return true;
+    }
+
+    return false;
+}
+
 // Walk toward whatever ai_strategy_pick returned. The strategy returns
 // no goal when the zone is exhausted — at that point the mission
 // layer should have already transitioned us away from PLAY_ZONE.
@@ -485,9 +544,9 @@ bool ai_tick(AiDriver *d, Game *game, Map *map, Fog *fog,
 
     // Town handler: if we're standing inside a town view, the
     // mission decides what to do. RENT_BOAT invokes the BOAT row
-    // (rents a boat for cost gold); other missions just dismiss
-    // without taking actions — we don't want walking past a town to
-    // accidentally consume gold or change contracts.
+    // (rents a boat for cost gold). PLAY_ZONE pulls a fresh contract
+    // and buys the for-sale spell when affordable. Other missions
+    // just dismiss without taking actions.
     if (views_active() == VIEW_TOWN) {
         if (d->mission == AI_MISSION_GO_TO_DOCK ||
             d->mission == AI_MISSION_RENT_BOAT) {
@@ -501,10 +560,38 @@ bool ai_tick(AiDriver *d, Game *game, Map *map, Fog *fog,
                        (int)game->boat.has_boat, game->stats.gold, cost);
             }
         }
+        if (d->mission == AI_MISSION_PLAY_ZONE) {
+            // Take a fresh contract if we don't have one — the
+            // strategy's villain goal can't fire without it.
+            if (!game->contract.active_id[0]) {
+                views_town_invoke_row(game, AI_TOWN_ROW_CONTRACT);
+                ai_log(d, "town", "CONTRACT row invoked");
+            }
+            // Buy the offered spell when we have a healthy gold
+            // reserve and we're below the max-spells cap. The town
+            // handler suppresses the "at cap" popup by gating on
+            // GameKnownSpells (the engine still pops it if we beat
+            // the gate by a race; harmless either way).
+            int known = GameKnownSpells(game);
+            if (known < game->stats.max_spells &&
+                game->stats.gold > 1000) {
+                views_town_invoke_row(game, AI_TOWN_ROW_SPELL);
+                ai_log(d, "town",
+                       "SPELL row invoked (known=%d cap=%d gold=%d)",
+                       known, game->stats.max_spells, game->stats.gold);
+            }
+        }
         views_dismiss();
         ai_log(d, "ui", "dismiss town view");
         return true;
     }
+
+    // Adventure spell casts (Find Villain, Time Stop). Runs BEFORE
+    // mission dispatch so the spell's dialog is up by the time the
+    // next tick's ai_clear_ui runs. The cast may have changed game
+    // state the mission layer reads (e.g. find_villain reveals a
+    // castle so the strategy's contract goal can fire).
+    if (tactical_cast_spells(d, game)) return true;
 
     // Detect zone changes (sailing across continents) so the mission
     // layer can read a stable "we're somewhere new" signal.

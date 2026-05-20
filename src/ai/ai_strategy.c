@@ -200,6 +200,45 @@ AiGoal ai_strategy_pick(const Game *g, const Map *m, const Fog *fog) {
         }
     }
 
+    // (0a) Alcove — Archmage Aurange teaches knows_magic for
+    // economy.alcove_cost gold, unlocking every adventure spell
+    // (Find Villain, Castle Gate, Time Stop, etc.). Until we have
+    // magic, casting from tactical_cast_spells is a no-op, so
+    // visiting the alcove is ranked just below the scepter goal.
+    // Only fires when we don't already know magic AND we can afford
+    // ~80% of the cost (so the strategy doesn't oscillate while
+    // commission ticks up the difference).
+    //
+    // The alcove sometimes sits behind interactive tiles (the king's
+    // castle, etc.) that avoid_interact=true blocks. We retry with
+    // avoid_interact=false on failure — the worst case is we bounce
+    // off a sign or dwelling along the way, which is recoverable.
+    if (!g->stats.knows_magic && g->res &&
+        g->stats.gold >= (g->res->economy.alcove_cost * 4) / 5) {
+        int best = -1, bx = -1, by = -1;
+        for (int y = 0; y < m->height; y++) {
+            for (int x = 0; x < m->width; x++) {
+                const Tile *t = MapGetTile(m, x, y);
+                if (!t || t->interactive != INTERACT_ALCOVE) continue;
+                AiStep s = ai_path_step(m, mode, g->position.x,
+                                        g->position.y, x, y, true);
+                if (!s.ok) {
+                    s = ai_path_step(m, mode, g->position.x,
+                                     g->position.y, x, y, false);
+                }
+                if (!s.ok) continue;
+                if (best < 0 || s.dist < best) {
+                    best = s.dist; bx = x; by = y;
+                }
+            }
+        }
+        if (best >= 0) {
+            out.gx = bx; out.gy = by; out.ok = true;
+            set_label(&out, "alcove@%d,%d", bx, by);
+            return out;
+        }
+    }
+
     // (1) Contract villain whose castle is known and lives in this zone.
     if (g->contract.active_id[0]) {
         for (int i = 0; i < GAME_CASTLES; i++) {
