@@ -15,10 +15,10 @@
 // EXIT_PASS / EXIT_FAIL = stop the loop and report the verdict to the
 // caller via shell_run_game's return value (0 on PASS, 1 on FAIL).
 typedef enum {
-    GP_VERDICT_CONTINUE  = 0,
-    GP_VERDICT_EXIT_PASS = 1,
-    GP_VERDICT_EXIT_FAIL = 2,
-} GpVerdict;
+    SHELL_RUN_CONTINUE  = 0,
+    SHELL_RUN_EXIT_PASS = 1,
+    SHELL_RUN_EXIT_FAIL = 2,
+} ShellRunVerdict;
 
 typedef struct ShellRunHooks ShellRunHooks;
 struct ShellRunHooks {
@@ -38,7 +38,7 @@ struct ShellRunHooks {
     // frame_host_tick. Return CONTINUE to keep the loop running, or
     // EXIT_PASS/EXIT_FAIL to terminate with that verdict. Optional —
     // NULL means "always continue".
-    GpVerdict (*per_frame)(ShellRunHooks *self,
+    ShellRunVerdict (*per_frame)(ShellRunHooks *self,
                            Game *g, Map *m, Fog *f, Resources *res,
                            int frame_no);
 

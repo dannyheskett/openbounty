@@ -5,7 +5,7 @@
 
 // Input host shim. Drop-in replacements for the raylib input calls
 // used by game logic. In normal play these forward straight to raylib.
-// In gameplay-test mode they pop events from a scripted queue, which
+// In autoplay mode they pop events from a scripted queue, which
 // lets a test scenario drive the real game through deterministic
 // input without a human at the keyboard.
 //
@@ -28,7 +28,7 @@ int  input_get_char_pressed(void);   // GetCharPressed (drains queue)
 void input_host_use_raylib(void);
 
 // Test mode. The shim consumes from an internal queue fed by the
-// gameplay-test runner. Any key that isn't in the queue reports
+// autoplay runner. Any key that isn't in the queue reports
 // "not pressed" — the test must script everything it expects.
 void input_host_use_queue(void);
 
@@ -58,7 +58,7 @@ void input_host_tick(void);
 
 // Slow the queue's key-promotion to one key per N ticks. Default 1
 // (one queued key per frame). Use higher values when paired with
-// frame_host_set_test_fps() to slow scripted scenarios down to a
+// frame_host_set_test_fps() to slow autoplay down to a
 // human-watchable pace. The shim still TICKS every frame (so the
 // "active key" stays current); only the *promotion of the next
 // queued event* is rate-limited.

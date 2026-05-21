@@ -3,7 +3,7 @@
 
 #include "frame_host.h"
 #include "input_host.h"
-#include "gameplay_test.h"
+#include "autoplay.h"
 #include "shell_run.h"
 #include "raylib.h"
 #include "recorder.h"
@@ -119,12 +119,11 @@ int shell_run_game(int argc, char **argv, ShellRunHooks *hooks) {
     // 0 means "derive from time + name + class" (default). Non-zero
     // forces a deterministic per-game seed for reproducible runs.
     uint64_t forced_seed = 0;
-    // --gameplay-test <name> [--list]: drive the game through a scripted
-    // input sequence (via input_host/frame_host shims) and assert on
-    // Game state. Exits with the scenario's return code. See
-    // src/gameplay_test.h.
-    const char *gameplay_test_name = NULL;
-    bool        gameplay_test_list = false;
+    // --autoplay: drive the game through a scripted input sequence
+    // (via input_host/frame_host shims) and assert on the end-state.
+    // Exits with the autoplay routine's return code. See
+    // src/autoplay.h.
+    bool autoplay_mode = false;
     for (int i = 1; i < argc; i++) {
         const char *a = argv[i];
         if (strcmp(a, "--version") == 0 || strcmp(a, "-v") == 0) {
@@ -136,7 +135,7 @@ int shell_run_game(int argc, char **argv, ShellRunHooks *hooks) {
                    "       %*s [--movie [<path>]] [--seed N] [--version]\n"
                    "       %s --extract [--out-dir <dir>]\n"
                    "       %s --pack-dir <src_dir> <out_zip>\n"
-                   "       %s --gameplay-test <name> | --gameplay-test-list\n",
+                   "       %s --autoplay [--visible]\n",
                    OPENBOUNTY_VERSION, argv[0],
                    (int)strlen(argv[0]), "",
                    argv[0], argv[0], argv[0]);
@@ -164,10 +163,8 @@ int shell_run_game(int argc, char **argv, ShellRunHooks *hooks) {
         } else if (strcmp(a, "--pack-dir") == 0 && i + 2 < argc) {
             pack_dir_src = argv[++i];
             pack_dir_dst = argv[++i];
-        } else if (strcmp(a, "--gameplay-test") == 0 && i + 1 < argc) {
-            gameplay_test_name = argv[++i];
-        } else if (strcmp(a, "--gameplay-test-list") == 0) {
-            gameplay_test_list = true;
+        } else if (strcmp(a, "--autoplay") == 0) {
+            autoplay_mode = true;
         }
     }
 
@@ -177,26 +174,12 @@ int shell_run_game(int argc, char **argv, ShellRunHooks *hooks) {
     if (pack_dir_src) return shell_run_pack_dir_mode(pack_dir_src, pack_dir_dst);
     if (extract_mode) return shell_run_extract_mode(extract_out_dir);
 
-    // gameplay-test CLI dispatch happens only when called from
-    // entry-point main() (hooks==NULL). Scenarios call this same
-    // function with hooks set; recursing into the dispatch would loop
-    // forever.
-    if (!hooks && gameplay_test_list) {
-        printf("Available gameplay-test scenarios:\n");
-        gp_scenario_list();
-        return 0;
-    }
-    if (!hooks && gameplay_test_name) {
-        const GpScenario *sc = gp_scenario_find(gameplay_test_name);
-        if (!sc) {
-            fprintf(stderr, "gameplay-test: unknown scenario '%s'\n",
-                    gameplay_test_name);
-            fprintf(stderr, "Available scenarios:\n");
-            gp_scenario_list();
-            return 2;
-        }
-        gp_runner_init();
-        return sc->fn(argc, argv);
+    // --autoplay dispatch happens only when called from entry-point
+    // main() (hooks==NULL). The autoplay routine itself calls
+    // shell_run_game with hooks set; recursing into the dispatch
+    // would loop forever.
+    if (!hooks && autoplay_mode) {
+        return autoplay_run(argc, argv);
     }
 
     // Resolve --pack <name|path>, or auto-discover. Discovery walks (in
@@ -365,36 +348,36 @@ int shell_run_game(int argc, char **argv, ShellRunHooks *hooks) {
     int base_h = CL_WINDOW_H;    // 400
 
     unsigned int window_flags = FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT;
-    bool scenario_visible = false;
+    bool autoplay_visible = false;
     if (hooks) {
-        // In scenario mode the window stays hidden by default — tests
-        // running in CI shouldn't pop a window, and we don't need
-        // vsync-paced frames. --visible opens the window AND throttles
-        // the simulation to wall-clock 60fps so a human can follow it.
+        // In autoplay mode the window stays hidden by default — CI
+        // shouldn't pop a window and we don't need vsync-paced
+        // frames. --visible opens the window AND throttles the
+        // simulation to wall-clock 60fps so a human can follow it.
         for (int i = 1; i < argc; i++) {
             if (strcmp(argv[i], "--visible") == 0) {
-                scenario_visible = true;
+                autoplay_visible = true;
                 break;
             }
         }
-        if (!scenario_visible) window_flags |= FLAG_WINDOW_HIDDEN;
+        if (!autoplay_visible) window_flags |= FLAG_WINDOW_HIDDEN;
     }
     SetConfigFlags(window_flags);
     InitWindow(base_w, base_h, res.title[0] ? res.title : "OpenBounty");
     SetWindowMinSize(320, 200);
     if (want_fullscreen) ToggleFullscreen();
-    // In scenario mode we don't want SetTargetFPS's vsync — the test
+    // In autoplay mode we don't want SetTargetFPS's vsync — the test
     // clock advances per loop iteration. Without --visible, leaving
-    // FPS uncapped lets the scenario run as fast as possible.
-    // With --visible, throttle the test clock so the simulation tracks
+    // FPS uncapped lets autoplay run as fast as possible. With
+    // --visible, throttle the test clock so the simulation tracks
     // wall time and is actually watchable.
     if (!hooks) SetTargetFPS(60);
-    if (hooks && scenario_visible) {
+    if (hooks && autoplay_visible) {
         frame_host_set_test_fps(60);
         // One queued input event every 6 wall-clock frames at 60fps
         // = ~10 actions/sec, close to a human player's pace. Without
-        // this, the scripted scenario blasts through one step per
-        // frame and the overworld is unwatchable.
+        // this, autoplay blasts through one step per frame and the
+        // overworld is unwatchable.
         input_host_set_promotion_period(6);
     }
     SetExitKey(KEY_NULL);
@@ -601,9 +584,9 @@ int shell_run_game(int argc, char **argv, ShellRunHooks *hooks) {
     int gp_exit_code = 0;
     while (!frame_host_should_close() && !quit_requested) {
         if (hooks && hooks->per_frame) {
-            GpVerdict v = hooks->per_frame(hooks, &game, &map, &fog, &res, gp_frame_no);
-            if (v == GP_VERDICT_EXIT_PASS) { gp_exit_code = 0; break; }
-            if (v == GP_VERDICT_EXIT_FAIL) { gp_exit_code = 1; break; }
+            ShellRunVerdict v = hooks->per_frame(hooks, &game, &map, &fog, &res, gp_frame_no);
+            if (v == SHELL_RUN_EXIT_PASS) { gp_exit_code = 0; break; }
+            if (v == SHELL_RUN_EXIT_FAIL) { gp_exit_code = 1; break; }
         }
         gp_frame_no++;
         // Audio: drive music streaming + react to live toggle changes.

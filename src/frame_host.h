@@ -22,8 +22,8 @@ void frame_host_use_test(void);
 // In test mode, sleep at the start of each frame so the simulation
 // runs at roughly the given frames-per-second instead of as fast as
 // the CPU allows. `fps` <= 0 disables the throttle (default).
-// Used by --gameplay-test --visible so a human can actually follow
-// the run on screen; CI / headless runs leave it off.
+// Used by --autoplay --visible so a human can actually follow the
+// run on screen; CI / headless runs leave it off.
 void frame_host_set_test_fps(int fps);
 
 // Advance the test clock by one logical frame (default dt = 1/60s).

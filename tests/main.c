@@ -46,7 +46,7 @@ SUITE_EXTERN(e2e_score_suite);
 SUITE_EXTERN(e2e_combat_input_suite);
 SUITE_EXTERN(e2e_save_suite);
 SUITE_EXTERN(e2e_save_more_suite);
-SUITE_EXTERN(e2e_capture_murray_suite);
+SUITE_EXTERN(e2e_autoplay_suite);
 
 int main(int argc, char **argv) {
     GREATEST_MAIN_BEGIN();
@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
     RUN_SUITE(e2e_combat_input_suite);
     RUN_SUITE(e2e_save_suite);
     RUN_SUITE(e2e_save_more_suite);
-    RUN_SUITE(e2e_capture_murray_suite);
+    RUN_SUITE(e2e_autoplay_suite);
 
     GREATEST_MAIN_END();
 }

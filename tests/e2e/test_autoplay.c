@@ -1,9 +1,10 @@
-// Long-test: capture Murray the Miser from a freshly-spawned game on a
-// fixed seed. Exercises the full early-game capture path end-to-end
-// using engine APIs only (no UI). On seed=1 the contract cycle starts
-// with Murray, his castle ("azram") sits at gate (30,37) in continentia,
-// and his garrison totals 215 HP. The knight's 60 HP starting army is
-// not enough; the test recruits at the home castle's roster
+// Headless autoplay counterpart: walks the engine through the same
+// capture flow the rendered autoplay routine (src/autoplay.c) drives,
+// but using engine APIs directly instead of scripted UI input. On the
+// fixed seed used here, the contract cycle starts with Murray, his
+// castle ("azram") sits at gate (30,37) in continentia, and his
+// garrison totals 215 HP. The knight's 60 HP starting army is not
+// enough; the test recruits at the home castle's roster
 // (king_maximus) to bring army HP to ~300 before sieging.
 //
 // The siege itself runs through combat_run_headless, which drives both
@@ -56,7 +57,7 @@ static CastleRecord *find_murray_castle(Game *g) {
     return NULL;
 }
 
-TEST capture_murray_seed1_full_flow(void) {
+TEST autoplay_seed1_full_flow(void) {
     Resources *res; Game *g; Map *m; Fog *f;
     ASSERT(fx_init_game_full(&res, &g, &m, &f, "continentia", 1));
 
@@ -156,6 +157,6 @@ TEST capture_murray_seed1_full_flow(void) {
     PASS();
 }
 
-SUITE(e2e_capture_murray_suite) {
-    RUN_TEST(capture_murray_seed1_full_flow);
+SUITE(e2e_autoplay_suite) {
+    RUN_TEST(autoplay_seed1_full_flow);
 }
