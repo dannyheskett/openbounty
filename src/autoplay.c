@@ -22,6 +22,8 @@
 #include "ui.h"
 #include "views.h"
 #include "prompt.h"
+#include "savegame.h"
+#include "savepath.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -70,6 +72,37 @@ static int army_total_hp(const Game *g) {
         if (t) hp += t->hit_points * g->army[i].count;
     }
     return hp;
+}
+
+// Write a save into the last user-visible slot, fake-overwriting
+// whatever was there. Reserves slots 0..SAVE_SLOT_COUNT-2 for the
+// human player and uses the highest-numbered slot as a dedicated
+// rolling autoplay checkpoint. Logs success to stderr and surfaces
+// a toast for --visible runs. Returns true on a clean write.
+static bool autoplay_save_checkpoint(const Game *g, const Map *m,
+                                     const Fog *f) {
+    const char *pack_id = (g->res && g->res->pack_id[0])
+        ? g->res->pack_id : NULL;
+    int slot = SAVE_SLOT_COUNT - 1;
+    char path[512];
+    if (!SavePathGetSlot(pack_id, slot, path, sizeof path)) {
+        AP_LOG("checkpoint: SavePathGetSlot failed");
+        return false;
+    }
+    SaveResult r = SaveGameWrite(path, g, m, f);
+    if (r != SAVE_OK) {
+        AP_LOG("checkpoint: SaveGameWrite failed (%s)",
+               SaveResultText(r));
+        return false;
+    }
+    // Slots are 0-indexed on disk but presented to the user as 1..N
+    // in the save-picker UI; show the user-facing number.
+    AP_LOG("checkpoint: saved to slot %d (%s)", slot + 1, path);
+    char msg[64];
+    snprintf(msg, sizeof msg, "AutoPlay checkpoint saved (slot %d)",
+             slot + 1);
+    toast_show(msg);
+    return true;
 }
 
 // =========================================================================
@@ -1112,6 +1145,13 @@ static ShellRunVerdict autoplay_per_frame(ShellRunHooks *self,
         }
         if (!g->contract.villains_caught[vm->index]) {
             AP_LOG("villains_caught[murray] is false; capture failed");
+            return SHELL_RUN_EXIT_FAIL;
+        }
+        // Drop a rolling checkpoint at the last save slot so a human
+        // can load the same world state and pick up where autoplay
+        // left off. A failed write is treated as a run failure — the
+        // checkpoint IS part of the autoplay contract.
+        if (!autoplay_save_checkpoint(g, m, f)) {
             return SHELL_RUN_EXIT_FAIL;
         }
         printf("autoplay: PASS — villains_caught[murray]=true, "
