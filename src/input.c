@@ -1,3 +1,4 @@
+#include "input_host.h"
 #include "input.h"
 #include "raylib.h"
 
@@ -10,16 +11,16 @@ static void poll_direction(InputState *in) {
     in->dx = 0; in->dy = 0;
 
     // Cardinal
-    if      (IsKeyPressed(KEY_UP)    || IsKeyPressed(KEY_KP_8)) in->dy = -1;
-    else if (IsKeyPressed(KEY_DOWN)  || IsKeyPressed(KEY_KP_2)) in->dy =  1;
-    if      (IsKeyPressed(KEY_LEFT)  || IsKeyPressed(KEY_KP_4)) in->dx = -1;
-    else if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_KP_6)) in->dx =  1;
+    if      (input_key_pressed(KEY_UP)    || input_key_pressed(KEY_KP_8)) in->dy = -1;
+    else if (input_key_pressed(KEY_DOWN)  || input_key_pressed(KEY_KP_2)) in->dy =  1;
+    if      (input_key_pressed(KEY_LEFT)  || input_key_pressed(KEY_KP_4)) in->dx = -1;
+    else if (input_key_pressed(KEY_RIGHT) || input_key_pressed(KEY_KP_6)) in->dx =  1;
 
     // Diagonals via numpad or Home/End/PgUp/PgDn.
-    if      (IsKeyPressed(KEY_KP_7) || IsKeyPressed(KEY_HOME))      { in->dx = -1; in->dy = -1; }
-    else if (IsKeyPressed(KEY_KP_9) || IsKeyPressed(KEY_PAGE_UP))   { in->dx =  1; in->dy = -1; }
-    else if (IsKeyPressed(KEY_KP_1) || IsKeyPressed(KEY_END))       { in->dx = -1; in->dy =  1; }
-    else if (IsKeyPressed(KEY_KP_3) || IsKeyPressed(KEY_PAGE_DOWN)) { in->dx =  1; in->dy =  1; }
+    if      (input_key_pressed(KEY_KP_7) || input_key_pressed(KEY_HOME))      { in->dx = -1; in->dy = -1; }
+    else if (input_key_pressed(KEY_KP_9) || input_key_pressed(KEY_PAGE_UP))   { in->dx =  1; in->dy = -1; }
+    else if (input_key_pressed(KEY_KP_1) || input_key_pressed(KEY_END))       { in->dx = -1; in->dy =  1; }
+    else if (input_key_pressed(KEY_KP_3) || input_key_pressed(KEY_PAGE_DOWN)) { in->dx =  1; in->dy =  1; }
 }
 
 // Adventure-mode gamepad polling. D-pad / left stick → 8-direction
@@ -86,25 +87,25 @@ InputState input_poll(void) {
     poll_direction(&in);
 
     // Letter keys — adventure-mode action bindings.
-    bool ctrl = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL);
+    bool ctrl = input_key_down(KEY_LEFT_CONTROL) || input_key_down(KEY_RIGHT_CONTROL);
 
-    if      (IsKeyPressed(KEY_A))                 in.action = INPUT_ACTION_VIEW_ARMY;
-    else if (IsKeyPressed(KEY_C))                 in.action = INPUT_ACTION_VIEW_CONTROLS;
-    else if (IsKeyPressed(KEY_F))                 in.action = INPUT_ACTION_FLY;
-    else if (IsKeyPressed(KEY_L))                 in.action = INPUT_ACTION_LAND;
-    else if (IsKeyPressed(KEY_I))                 in.action = INPUT_ACTION_VIEW_CONTRACT;
-    else if (IsKeyPressed(KEY_M))                 in.action = INPUT_ACTION_VIEW_MAP;
-    else if (IsKeyPressed(KEY_P))                 in.action = INPUT_ACTION_VIEW_PUZZLE;
-    else if (IsKeyPressed(KEY_S))                 in.action = INPUT_ACTION_SEARCH;
-    else if (IsKeyPressed(KEY_U))                 in.action = INPUT_ACTION_CAST_SPELL;
-    else if (IsKeyPressed(KEY_V))                 in.action = INPUT_ACTION_VIEW_CHARACTER;
-    else if (IsKeyPressed(KEY_W))                 in.action = INPUT_ACTION_END_WEEK;
-    else if (IsKeyPressed(KEY_D))                 in.action = INPUT_ACTION_DISMISS_ARMY;
-    else if (IsKeyPressed(KEY_O))                 in.action = INPUT_ACTION_OPTIONS_MENU;
-    else if (IsKeyPressed(KEY_N))                 in.action = INPUT_ACTION_NEW_CONTINENT;
-    else if (IsKeyPressed(KEY_KP_5))              in.action = INPUT_ACTION_REST;
-    else if (ctrl && IsKeyPressed(KEY_Q))         in.action = INPUT_ACTION_FAST_QUIT;
-    else if (IsKeyPressed(KEY_Q))                 in.action = INPUT_ACTION_SAVE_QUIT;
+    if      (input_key_pressed(KEY_A))                 in.action = INPUT_ACTION_VIEW_ARMY;
+    else if (input_key_pressed(KEY_C))                 in.action = INPUT_ACTION_VIEW_CONTROLS;
+    else if (input_key_pressed(KEY_F))                 in.action = INPUT_ACTION_FLY;
+    else if (input_key_pressed(KEY_L))                 in.action = INPUT_ACTION_LAND;
+    else if (input_key_pressed(KEY_I))                 in.action = INPUT_ACTION_VIEW_CONTRACT;
+    else if (input_key_pressed(KEY_M))                 in.action = INPUT_ACTION_VIEW_MAP;
+    else if (input_key_pressed(KEY_P))                 in.action = INPUT_ACTION_VIEW_PUZZLE;
+    else if (input_key_pressed(KEY_S))                 in.action = INPUT_ACTION_SEARCH;
+    else if (input_key_pressed(KEY_U))                 in.action = INPUT_ACTION_CAST_SPELL;
+    else if (input_key_pressed(KEY_V))                 in.action = INPUT_ACTION_VIEW_CHARACTER;
+    else if (input_key_pressed(KEY_W))                 in.action = INPUT_ACTION_END_WEEK;
+    else if (input_key_pressed(KEY_D))                 in.action = INPUT_ACTION_DISMISS_ARMY;
+    else if (input_key_pressed(KEY_O))                 in.action = INPUT_ACTION_OPTIONS_MENU;
+    else if (input_key_pressed(KEY_N))                 in.action = INPUT_ACTION_NEW_CONTINENT;
+    else if (input_key_pressed(KEY_KP_5))              in.action = INPUT_ACTION_REST;
+    else if (ctrl && input_key_pressed(KEY_Q))         in.action = INPUT_ACTION_FAST_QUIT;
+    else if (input_key_pressed(KEY_Q))                 in.action = INPUT_ACTION_SAVE_QUIT;
 
     poll_gamepad(&in);
 

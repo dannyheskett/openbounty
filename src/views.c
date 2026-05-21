@@ -1,3 +1,4 @@
+#include "input_host.h"
 #include "views.h"
 #include "raylib.h"
 #include "audio.h"
@@ -39,15 +40,15 @@ int views_spells_chosen(void) {
 
 bool views_spells_update(void) {
     if (!spell_state.active) return false;
-    if (IsKeyPressed(KEY_LEFT))  spell_state.column = 0;
-    if (IsKeyPressed(KEY_RIGHT)) spell_state.column = 1;
-    if (IsKeyPressed(KEY_ESCAPE)) {
+    if (input_key_pressed(KEY_LEFT))  spell_state.column = 0;
+    if (input_key_pressed(KEY_RIGHT)) spell_state.column = 1;
+    if (input_key_pressed(KEY_ESCAPE)) {
         spell_state.active = false;
         views_dismiss();
         return false;
     }
     for (int i = 0; i < 7; i++) {
-        if (IsKeyPressed(KEY_A + i)) {
+        if (input_key_pressed(KEY_A + i)) {
             spell_state.chosen = spell_state.column * 7 + i;
             views_dismiss();
             return true;
@@ -286,16 +287,16 @@ bool views_menu_update(const MenuCallbacks *cbs, void *userdata) {
     MenuFrame *f = &menu_stack[menu_depth - 1];
     int n = f->page->count;
 
-    if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W) || IsKeyPressed(KEY_KP_8)) {
+    if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_W) || input_key_pressed(KEY_KP_8)) {
         f->cursor = (f->cursor - 1 + n) % n;
         return true;
     }
-    if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S) || IsKeyPressed(KEY_KP_2)) {
+    if (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_S) || input_key_pressed(KEY_KP_2)) {
         f->cursor = (f->cursor + 1) % n;
         return true;
     }
-    if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER) ||
-        IsKeyPressed(KEY_SPACE)) {
+    if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
+        input_key_pressed(KEY_SPACE)) {
         const MenuEntry *e = &f->page->entries[f->cursor];
         switch (e->kind) {
             case MENU_KIND_SUBMENU:
@@ -315,7 +316,7 @@ bool views_menu_update(const MenuCallbacks *cbs, void *userdata) {
         }
         return true;
     }
-    if (IsKeyPressed(KEY_ESCAPE)) {
+    if (input_key_pressed(KEY_ESCAPE)) {
         menu_pop_or_close();
         return true;
     }
@@ -705,40 +706,40 @@ bool views_town_update(Game *g) {
 
     if (town.info_active) {
         // Any key dismisses the info panel and returns to the menu.
-        if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_ENTER) ||
-            IsKeyPressed(KEY_KP_ENTER) || IsKeyPressed(KEY_SPACE)) {
+        if (input_key_pressed(KEY_ESCAPE) || input_key_pressed(KEY_ENTER) ||
+            input_key_pressed(KEY_KP_ENTER) || input_key_pressed(KEY_SPACE)) {
             town.info_active = false;
             return true;
         }
         // Letters A-E also dismiss so the player can chain actions.
         for (int k = KEY_A; k <= KEY_E; k++) {
-            if (IsKeyPressed(k)) { town.info_active = false; return true; }
+            if (input_key_pressed(k)) { town.info_active = false; return true; }
         }
         return true;
     }
 
-    if (IsKeyPressed(KEY_ESCAPE)) {
+    if (input_key_pressed(KEY_ESCAPE)) {
         views_dismiss();
         return true;
     }
-    if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W) || IsKeyPressed(KEY_KP_8)) {
+    if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_W) || input_key_pressed(KEY_KP_8)) {
         town.cursor = (town.cursor - 1 + TOWN_ROW_COUNT) % TOWN_ROW_COUNT;
         return true;
     }
-    if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S) || IsKeyPressed(KEY_KP_2)) {
+    if (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_S) || input_key_pressed(KEY_KP_2)) {
         town.cursor = (town.cursor + 1) % TOWN_ROW_COUNT;
         return true;
     }
-    if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER) ||
-        IsKeyPressed(KEY_SPACE)) {
+    if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
+        input_key_pressed(KEY_SPACE)) {
         town_do_row(g, (TownRow)town.cursor);
         return true;
     }
-    if (IsKeyPressed(KEY_A)) { town.cursor = TOWN_ROW_CONTRACT; town_do_row(g, TOWN_ROW_CONTRACT); return true; }
-    if (IsKeyPressed(KEY_B)) { town.cursor = TOWN_ROW_BOAT;     town_do_row(g, TOWN_ROW_BOAT);     return true; }
-    if (IsKeyPressed(KEY_C)) { town.cursor = TOWN_ROW_INFO;     town_do_row(g, TOWN_ROW_INFO);     return true; }
-    if (IsKeyPressed(KEY_D)) { town.cursor = TOWN_ROW_SPELL;    town_do_row(g, TOWN_ROW_SPELL);    return true; }
-    if (IsKeyPressed(KEY_E)) { town.cursor = TOWN_ROW_SIEGE;    town_do_row(g, TOWN_ROW_SIEGE);    return true; }
+    if (input_key_pressed(KEY_A)) { town.cursor = TOWN_ROW_CONTRACT; town_do_row(g, TOWN_ROW_CONTRACT); return true; }
+    if (input_key_pressed(KEY_B)) { town.cursor = TOWN_ROW_BOAT;     town_do_row(g, TOWN_ROW_BOAT);     return true; }
+    if (input_key_pressed(KEY_C)) { town.cursor = TOWN_ROW_INFO;     town_do_row(g, TOWN_ROW_INFO);     return true; }
+    if (input_key_pressed(KEY_D)) { town.cursor = TOWN_ROW_SPELL;    town_do_row(g, TOWN_ROW_SPELL);    return true; }
+    if (input_key_pressed(KEY_E)) { town.cursor = TOWN_ROW_SIEGE;    town_do_row(g, TOWN_ROW_SIEGE);    return true; }
     return false;
 }
 

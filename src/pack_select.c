@@ -1,6 +1,8 @@
 // Pre-game pack selector. Runs before any pack is loaded, so it
 // deliberately uses only raylib built-ins (default font, plain colors).
 
+#include "frame_host.h"
+#include "input_host.h"
 #include "pack_select.h"
 #include "raylib.h"
 
@@ -21,21 +23,21 @@ bool pack_select_flow(const PackEntry *list, int n, int *chosen) {
     bool done   = false;
     bool quit   = false;
 
-    while (!done && !WindowShouldClose()) {
+    while (!done && !frame_host_should_close()) {
 
-        if (IsKeyPressed(KEY_ESCAPE)) { quit = true; done = true; }
-        if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_KP_8)) {
+        if (input_key_pressed(KEY_ESCAPE)) { quit = true; done = true; }
+        if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_KP_8)) {
             cursor = (cursor - 1 + n) % n;
         }
-        if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_KP_2)) {
+        if (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2)) {
             cursor = (cursor + 1) % n;
         }
         for (int i = 0; i < n && i < 9; i++) {
-            if (IsKeyPressed(KEY_ONE + i)) cursor = i;
+            if (input_key_pressed(KEY_ONE + i)) cursor = i;
         }
-        if (IsKeyPressed(KEY_ENTER) ||
-            IsKeyPressed(KEY_KP_ENTER) ||
-            IsKeyPressed(KEY_SPACE)) {
+        if (input_key_pressed(KEY_ENTER) ||
+            input_key_pressed(KEY_KP_ENTER) ||
+            input_key_pressed(KEY_SPACE)) {
             done = true;
         }
 

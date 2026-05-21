@@ -1,3 +1,5 @@
+#include "frame_host.h"
+#include "input_host.h"
 #include "ui.h"
 #include "raylib.h"
 #include "recorder.h"
@@ -6,7 +8,7 @@
 
 // ---- any-key helper --------------------------------------------------------
 bool ui_any_key_pressed(void) {
-    int k = GetKeyPressed();
+    int k = input_get_key_pressed();
     while (k != 0) {
         if (k != KEY_LEFT_SHIFT && k != KEY_RIGHT_SHIFT &&
             k != KEY_LEFT_CONTROL && k != KEY_RIGHT_CONTROL &&
@@ -15,7 +17,7 @@ bool ui_any_key_pressed(void) {
             k != KEY_CAPS_LOCK && k != KEY_NUM_LOCK && k != KEY_SCROLL_LOCK) {
             return true;
         }
-        k = GetKeyPressed();
+        k = input_get_key_pressed();
     }
     return false;
 }
@@ -109,11 +111,11 @@ static double toast_until;
 
 void toast_show(const char *msg) {
     copy_to(toast_text, sizeof(toast_text), msg);
-    toast_until = GetTime() + 2.0;
+    toast_until = frame_host_time() + 2.0;
 }
 
 const char *toast_text_current(void) {
-    if (!toast_text[0] || GetTime() >= toast_until) return NULL;
+    if (!toast_text[0] || frame_host_time() >= toast_until) return NULL;
     return toast_text;
 }
 

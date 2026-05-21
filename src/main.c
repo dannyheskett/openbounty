@@ -1,6 +1,10 @@
 // localtime_r needs POSIX 199506+; 200809L covers everything we use.
 #define _POSIX_C_SOURCE 200809L
 
+#include "frame_host.h"
+#include "input_host.h"
+#include "gameplay_test.h"
+#include "shell_run.h"
 #include "raylib.h"
 #include "recorder.h"
 #include "audio.h"
@@ -97,6 +101,10 @@
 // ===========================================================================
 
 int main(int argc, char **argv) {
+    return shell_run_game(argc, argv, NULL);
+}
+
+int shell_run_game(int argc, char **argv, ShellRunHooks *hooks) {
     // Minimal CLI parsing ( /  read_cmd_config equivalent).
     bool want_fullscreen = false;
     const char *pack_arg = NULL;     // --pack <name|path>
@@ -111,6 +119,12 @@ int main(int argc, char **argv) {
     // 0 means "derive from time + name + class" (default). Non-zero
     // forces a deterministic per-game seed for reproducible runs.
     uint64_t forced_seed = 0;
+    // --gameplay-test <name> [--list]: drive the game through a scripted
+    // input sequence (via input_host/frame_host shims) and assert on
+    // Game state. Exits with the scenario's return code. See
+    // src/gameplay_test.h.
+    const char *gameplay_test_name = NULL;
+    bool        gameplay_test_list = false;
     for (int i = 1; i < argc; i++) {
         const char *a = argv[i];
         if (strcmp(a, "--version") == 0 || strcmp(a, "-v") == 0) {
@@ -121,10 +135,11 @@ int main(int argc, char **argv) {
                    "Usage: %s [--fullscreen] [--pack <name|path>] [--save-dir <dir>]\n"
                    "       %*s [--movie [<path>]] [--seed N] [--version]\n"
                    "       %s --extract [--out-dir <dir>]\n"
-                   "       %s --pack-dir <src_dir> <out_zip>\n",
+                   "       %s --pack-dir <src_dir> <out_zip>\n"
+                   "       %s --gameplay-test <name> | --gameplay-test-list\n",
                    OPENBOUNTY_VERSION, argv[0],
                    (int)strlen(argv[0]), "",
-                   argv[0], argv[0]);
+                   argv[0], argv[0], argv[0]);
             return 0;
         } else if (strcmp(a, "--fullscreen") == 0) {
             want_fullscreen = true;
@@ -149,6 +164,10 @@ int main(int argc, char **argv) {
         } else if (strcmp(a, "--pack-dir") == 0 && i + 2 < argc) {
             pack_dir_src = argv[++i];
             pack_dir_dst = argv[++i];
+        } else if (strcmp(a, "--gameplay-test") == 0 && i + 1 < argc) {
+            gameplay_test_name = argv[++i];
+        } else if (strcmp(a, "--gameplay-test-list") == 0) {
+            gameplay_test_list = true;
         }
     }
 
@@ -157,6 +176,28 @@ int main(int argc, char **argv) {
     // shell_earlyexit.{c,h}.
     if (pack_dir_src) return shell_run_pack_dir_mode(pack_dir_src, pack_dir_dst);
     if (extract_mode) return shell_run_extract_mode(extract_out_dir);
+
+    // gameplay-test CLI dispatch happens only when called from
+    // entry-point main() (hooks==NULL). Scenarios call this same
+    // function with hooks set; recursing into the dispatch would loop
+    // forever.
+    if (!hooks && gameplay_test_list) {
+        printf("Available gameplay-test scenarios:\n");
+        gp_scenario_list();
+        return 0;
+    }
+    if (!hooks && gameplay_test_name) {
+        const GpScenario *sc = gp_scenario_find(gameplay_test_name);
+        if (!sc) {
+            fprintf(stderr, "gameplay-test: unknown scenario '%s'\n",
+                    gameplay_test_name);
+            fprintf(stderr, "Available scenarios:\n");
+            gp_scenario_list();
+            return 2;
+        }
+        gp_runner_init();
+        return sc->fn(argc, argv);
+    }
 
     // Resolve --pack <name|path>, or auto-discover. Discovery walks (in
     // order): cwd zips, <user-data>/openbounty zips, <exe>/assets zips,
@@ -323,11 +364,39 @@ int main(int argc, char **argv) {
     int base_w = CL_WINDOW_W;    // 640
     int base_h = CL_WINDOW_H;    // 400
 
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
+    unsigned int window_flags = FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT;
+    bool scenario_visible = false;
+    if (hooks) {
+        // In scenario mode the window stays hidden by default — tests
+        // running in CI shouldn't pop a window, and we don't need
+        // vsync-paced frames. --visible opens the window AND throttles
+        // the simulation to wall-clock 60fps so a human can follow it.
+        for (int i = 1; i < argc; i++) {
+            if (strcmp(argv[i], "--visible") == 0) {
+                scenario_visible = true;
+                break;
+            }
+        }
+        if (!scenario_visible) window_flags |= FLAG_WINDOW_HIDDEN;
+    }
+    SetConfigFlags(window_flags);
     InitWindow(base_w, base_h, res.title[0] ? res.title : "OpenBounty");
     SetWindowMinSize(320, 200);
     if (want_fullscreen) ToggleFullscreen();
-    SetTargetFPS(60);
+    // In scenario mode we don't want SetTargetFPS's vsync — the test
+    // clock advances per loop iteration. Without --visible, leaving
+    // FPS uncapped lets the scenario run as fast as possible.
+    // With --visible, throttle the test clock so the simulation tracks
+    // wall time and is actually watchable.
+    if (!hooks) SetTargetFPS(60);
+    if (hooks && scenario_visible) {
+        frame_host_set_test_fps(60);
+        // One queued input event every 6 wall-clock frames at 60fps
+        // = ~10 actions/sec, close to a human player's pace. Without
+        // this, the scripted scenario blasts through one step per
+        // frame and the overworld is unwatchable.
+        input_host_set_promotion_period(6);
+    }
     SetExitKey(KEY_NULL);
 
     // Bitmap font + 256-color palette have fixed pack-relative paths
@@ -346,6 +415,7 @@ int main(int argc, char **argv) {
     SetTextureFilter(render_target_startup.texture, TEXTURE_FILTER_POINT);
 
     // Pre-game flow: pick slot + new-game wizard.
+    if (hooks && hooks->before_startup) hooks->before_startup(hooks);
     StartupChoice choice = { 0 };
     if (!startup_flow(&res, &sprites,
                       &render_target_startup, &choice)) {
@@ -520,14 +590,29 @@ int main(int argc, char **argv) {
     double last_step_time = 0.0;   // classic: only animate shortly after a step
     bool prev_overlay = false;
 
-    while (!WindowShouldClose() && !quit_requested) {
+    if (hooks && hooks->after_init) hooks->after_init(hooks, &game, &map, &fog, &res);
+
+    // frame_host_should_close itself advances the input/frame test
+    // clock (one tick per check) so we don't need explicit tick
+    // calls here. The per-frame hook is called right after the
+    // tick fires for this iteration so the hook sees the freshly
+    // promoted active key and can queue follow-up input.
+    int gp_frame_no = 0;
+    int gp_exit_code = 0;
+    while (!frame_host_should_close() && !quit_requested) {
+        if (hooks && hooks->per_frame) {
+            GpVerdict v = hooks->per_frame(hooks, &game, &map, &fog, &res, gp_frame_no);
+            if (v == GP_VERDICT_EXIT_PASS) { gp_exit_code = 0; break; }
+            if (v == GP_VERDICT_EXIT_FAIL) { gp_exit_code = 1; break; }
+        }
+        gp_frame_no++;
         // Audio: drive music streaming + react to live toggle changes.
         audio_set_sounds_enabled(game.stats.options[1] != 0);
         audio_set_music_enabled (game.stats.options[6] != 0);
         audio_set_master_volume (game.stats.options[7]);
         audio_tick();
-        if ((IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) &&
-            IsKeyPressed(KEY_ENTER)) {
+        if ((input_key_down(KEY_LEFT_ALT) || input_key_down(KEY_RIGHT_ALT)) &&
+            input_key_pressed(KEY_ENTER)) {
             ToggleFullscreen();
         }
 
@@ -589,25 +674,25 @@ int main(int argc, char **argv) {
             }
             int cur = views_controls_cursor();
             if (count > 0) {
-                if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_KP_8)) {
+                if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_KP_8)) {
                     cur = (cur - 1 + count) % count;
                     views_controls_set_cursor(cur);
-                } else if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_KP_2)) {
+                } else if (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2)) {
                     cur = (cur + 1) % count;
                     views_controls_set_cursor(cur);
-                } else if (IsKeyPressed(KEY_ENTER) ||
-                           IsKeyPressed(KEY_KP_ENTER) ||
-                           IsKeyPressed(KEY_SPACE)) {
+                } else if (input_key_pressed(KEY_ENTER) ||
+                           input_key_pressed(KEY_KP_ENTER) ||
+                           input_key_pressed(KEY_SPACE)) {
                     // Advance the value of the selected setting.
                     views_controls_advance(&game, vis_map[cur]);
-                } else if (IsKeyPressed(KEY_ESCAPE) ||
-                           IsKeyPressed(KEY_C) ||
+                } else if (input_key_pressed(KEY_ESCAPE) ||
+                           input_key_pressed(KEY_C) ||
                            gamepad_pressed_cancel()) {
                     views_dismiss();
                 } else {
                     // Digit 1..count selects and advances that row.
                     for (int k = 0; k < count && k < 9; k++) {
-                        if (IsKeyPressed(KEY_ONE + k)) {
+                        if (input_key_pressed(KEY_ONE + k)) {
                             views_controls_set_cursor(k);
                             views_controls_advance(&game, vis_map[k]);
                             break;
@@ -636,14 +721,14 @@ int main(int argc, char **argv) {
             // (run_audience_dialog → open_dialog) is handled by the
             // downstream dialog branch instead — dialog has its own
             // SPACE-to-advance flow over the persistent backdrop.
-            if (IsKeyPressed(KEY_ESCAPE) || gamepad_pressed_cancel()) {
+            if (input_key_pressed(KEY_ESCAPE) || gamepad_pressed_cancel()) {
                 views_dismiss();
                 pending_castle_id[0] = '\0';
-            } else if (IsKeyPressed(KEY_A)) {
+            } else if (input_key_pressed(KEY_A)) {
                 // A) Recruit Soldiers — push the dedicated recruit
                 // sub-screen (5 troops + gold + key hint).
                 screen_recruit_soldiers_open(&game);
-            } else if (IsKeyPressed(KEY_B)) {
+            } else if (input_key_pressed(KEY_B)) {
                 // B) Audience with the King — modal popup over the
                 // castle backdrop. Run after panel render so it overlays.
                 const ResCastle *rc2 =
@@ -663,14 +748,14 @@ int main(int argc, char **argv) {
             // SPACE toggles GARRISON/REMOVE; A..E moves the chosen
             // slot via GameGarrisonTroop / GameUngarrisonTroop. ESC
             // returns to the overworld. Errors per .
-            if (IsKeyPressed(KEY_ESCAPE) || gamepad_pressed_cancel()) {
+            if (input_key_pressed(KEY_ESCAPE) || gamepad_pressed_cancel()) {
                 views_dismiss();
                 pending_castle_id[0] = '\0';
-            } else if (IsKeyPressed(KEY_SPACE)) {
+            } else if (input_key_pressed(KEY_SPACE)) {
                 screen_own_castle_toggle_mode();
             } else {
                 for (int k = 0; k < 5; k++) {
-                    if (!IsKeyPressed(KEY_A + k)) continue;
+                    if (!input_key_pressed(KEY_A + k)) continue;
                     const char *cid = screen_own_castle_castle_id();
                     int rc;
                     if (screen_own_castle_is_garrison_mode()) {
@@ -702,7 +787,7 @@ int main(int argc, char **argv) {
             // a persistent view (e.g. audience-with-king over
             // VIEW_HOME_CASTLE) doesn't have its dismiss key also tear
             // down the underlying view.
-            if (views_active() == VIEW_WORLDMAP && IsKeyPressed(KEY_SPACE)) {
+            if (views_active() == VIEW_WORLDMAP && input_key_pressed(KEY_SPACE)) {
                 int zi = -1;
                 for (int i = 0; i < res.zone_count; i++) {
                     if (strcmp(res.zones[i].id, game.position.zone) == 0) {
@@ -746,7 +831,7 @@ int main(int argc, char **argv) {
                         dialog_dismiss();
                         open_dialog(spell_header("bridge", "Bridge"), msg);
                     }
-                } else if (IsKeyPressed(KEY_ESCAPE) || gamepad_pressed_cancel()) {
+                } else if (input_key_pressed(KEY_ESCAPE) || gamepad_pressed_cancel()) {
                     bridge_state = BRIDGE_STATE_NONE;
                     dialog_dismiss();
                 }
@@ -754,7 +839,7 @@ int main(int argc, char **argv) {
                 // Handle gate destination selection (A-Z or ESC).
                 // matches the typed letter to the destination's first
                 // letter (not its catalog index).
-                int key = GetKeyPressed();
+                int key = input_get_key_pressed();
                 if (key == 0) {
                     // No key pressed
                 } else if (key == KEY_ESCAPE) {
@@ -846,8 +931,8 @@ int main(int argc, char **argv) {
                 // ask_quit dialog handling: Ctrl-Q exits, any other key
                 // advances page or dismisses. Since Ctrl-Q is the only post-dialog action, we
                 // check it here for all dialogs (harmless elsewhere).
-                bool ctrl = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL);
-                if (ctrl && IsKeyPressed(KEY_Q)) {
+                bool ctrl = input_key_down(KEY_LEFT_CONTROL) || input_key_down(KEY_RIGHT_CONTROL);
+                if (ctrl && input_key_pressed(KEY_Q)) {
                     dialog_dismiss();
                     quit_requested = true;
                 } else if (ui_any_key_pressed()) {
@@ -882,7 +967,7 @@ int main(int argc, char **argv) {
             shell_dispatch_action(&sctx, &in);
             if (in.action == INPUT_ACTION_NONE && (in.dx || in.dy)) {
                 if (step_try(&game, &map, &fog, &res, in.dx, in.dy)) {
-                    last_step_time = GetTime();
+                    last_step_time = frame_host_time();
                 }
             }
         }
@@ -891,9 +976,9 @@ int main(int argc, char **argv) {
         // or just after a step. options[3] = 1 means Animation On
         // ( "Animation = On" with value 1; classic
         // controls_menu displays "On" when val==1).
-        if (GetTime() >= hero_anim_next) {
+        if (frame_host_time() >= hero_anim_next) {
             bool anim_enabled = (game.stats.options[3] != 0);
-            bool animating = anim_enabled && (GetTime() - last_step_time < 0.4);
+            bool animating = anim_enabled && (frame_host_time() - last_step_time < 0.4);
             if (animating) {
                 game.anim_frame = (game.anim_frame + 1) % 4;
             } else {
@@ -901,7 +986,7 @@ int main(int argc, char **argv) {
             }
             // Delay option: 0.05 + options[0] * 0.05 (range 0-5 = 0.05-0.30)
             double interval = 0.05 + game.stats.options[0] * 0.05;
-            hero_anim_next = GetTime() + interval;
+            hero_anim_next = frame_host_time() + interval;
         }
 
         end_input:;
@@ -969,5 +1054,5 @@ int main(int argc, char **argv) {
     CloseWindow();
     resources_free(&res);
     pack_stack_clear();
-    return 0;
+    return hooks ? gp_exit_code : 0;
 }

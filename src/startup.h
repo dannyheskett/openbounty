@@ -41,4 +41,10 @@ bool startup_flow(const Resources *res,
                           void            *chrome_target,   // RenderTexture2D *
                           StartupChoice   *out);
 
+// When true, splash screens, the credits screen, and the post-init
+// "new game is being created" intro auto-skip immediately instead of
+// running their timeout-or-keypress loops. Set by the gameplay-test
+// runner so scenarios don't have to script through them.
+extern bool startup_skip_intros;
+
 #endif

@@ -14,6 +14,7 @@
 // screen_recruit_soldiers_update() each frame and the screen returns
 // SCREEN_RESULT_DISMISS when ESC is pressed at idle.
 
+#include "input_host.h"
 #include "recruit_soldiers.h"
 #include "layout.h"
 #include "palette.h"
@@ -148,9 +149,9 @@ static int recompute_max(const Game *g, int slot) {
 //   -1   ESC
 //   0    nothing
 static int poll_idle_input(void) {
-    if (IsKeyPressed(KEY_ESCAPE)) return -1;
+    if (input_key_pressed(KEY_ESCAPE)) return -1;
     for (int i = 0; i < 5; i++) {
-        if (IsKeyPressed(KEY_A + i)) return i + 1;
+        if (input_key_pressed(KEY_A + i)) return i + 1;
     }
     // SYN tick at 90ms cadence drives the twirl animation.
     double now = GetTime();
@@ -168,14 +169,14 @@ static int poll_idle_input(void) {
 //   2  ESC pressed: cancel (whom -> 0)
 //   0  still entering / nothing this frame
 static int poll_count_input(void) {
-    if (IsKeyPressed(KEY_ESCAPE)) return 2;
-    if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER)) return 1;
-    if (IsKeyPressed(KEY_BACKSPACE) && s_input_len > 0) {
+    if (input_key_pressed(KEY_ESCAPE)) return 2;
+    if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER)) return 1;
+    if (input_key_pressed(KEY_BACKSPACE) && s_input_len > 0) {
         s_input_len--;
         s_input_buf[s_input_len] = '\0';
     }
     for (int d = 0; d < 10; d++) {
-        if ((IsKeyPressed(KEY_ZERO + d) || IsKeyPressed(KEY_KP_0 + d))
+        if ((input_key_pressed(KEY_ZERO + d) || input_key_pressed(KEY_KP_0 + d))
             && s_input_len < INPUT_MAX_LEN) {
             s_input_buf[s_input_len++] = (char)('0' + d);
             s_input_buf[s_input_len] = '\0';
@@ -210,7 +211,7 @@ bool screen_recruit_soldiers_update(Game *g) {
     if (s_error_msg[0]) {
         if (s_error_just_set) {
             s_error_just_set = false;
-        } else if (GetKeyPressed() != 0) {
+        } else if (input_get_key_pressed() != 0) {
             s_error_msg[0] = '\0';
         }
         return false;   // don't dismiss the screen, just wait

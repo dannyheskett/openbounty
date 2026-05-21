@@ -5,6 +5,8 @@
 // helpers. Engine-side combat state, AI, and damage formula live in
 // engine/combat.c.
 
+#include "frame_host.h"
+#include "input_host.h"
 #include "combat.h"
 #include "combat_loop.h"
 #include "combat_render.h"
@@ -44,12 +46,12 @@ static bool combat_pick_target(Combat *c, const Game *g,
     // on every return path so the next render is back to normal play.
     c->picker_active = true;
     bool result = false;
-    double cursor_tick = GetTime();
-    while (!WindowShouldClose()) {
+    double cursor_tick = frame_host_time();
+    while (!frame_host_should_close()) {
         audio_tick();
         // Animate cursor ring at ~150ms per frame, matching the SYN
         // tick. Without this the cursor would stay on a single frame.
-        double now = GetTime();
+        double now = frame_host_time();
         if (now >= cursor_tick) {
             cursor_tick = now + 0.15;
             c->cursor_frame = (c->cursor_frame + 1) & 3;
@@ -74,23 +76,23 @@ static bool combat_pick_target(Combat *c, const Game *g,
         EndDrawing();
 
         int dx = 0, dy = 0;
-        if      (IsKeyPressed(KEY_UP)    || IsKeyPressed(KEY_KP_8)) dy = -1;
-        else if (IsKeyPressed(KEY_DOWN)  || IsKeyPressed(KEY_KP_2)) dy =  1;
-        if      (IsKeyPressed(KEY_LEFT)  || IsKeyPressed(KEY_KP_4)) dx = -1;
-        else if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_KP_6)) dx =  1;
-        if      (IsKeyPressed(KEY_KP_7) || IsKeyPressed(KEY_HOME))      { dx = -1; dy = -1; }
-        else if (IsKeyPressed(KEY_KP_9) || IsKeyPressed(KEY_PAGE_UP))   { dx =  1; dy = -1; }
-        else if (IsKeyPressed(KEY_KP_1) || IsKeyPressed(KEY_END))       { dx = -1; dy =  1; }
-        else if (IsKeyPressed(KEY_KP_3) || IsKeyPressed(KEY_PAGE_DOWN)) { dx =  1; dy =  1; }
+        if      (input_key_pressed(KEY_UP)    || input_key_pressed(KEY_KP_8)) dy = -1;
+        else if (input_key_pressed(KEY_DOWN)  || input_key_pressed(KEY_KP_2)) dy =  1;
+        if      (input_key_pressed(KEY_LEFT)  || input_key_pressed(KEY_KP_4)) dx = -1;
+        else if (input_key_pressed(KEY_RIGHT) || input_key_pressed(KEY_KP_6)) dx =  1;
+        if      (input_key_pressed(KEY_KP_7) || input_key_pressed(KEY_HOME))      { dx = -1; dy = -1; }
+        else if (input_key_pressed(KEY_KP_9) || input_key_pressed(KEY_PAGE_UP))   { dx =  1; dy = -1; }
+        else if (input_key_pressed(KEY_KP_1) || input_key_pressed(KEY_END))       { dx = -1; dy =  1; }
+        else if (input_key_pressed(KEY_KP_3) || input_key_pressed(KEY_PAGE_DOWN)) { dx =  1; dy =  1; }
         if (dx || dy) {
             int nx = c->cursor_x + dx, ny = c->cursor_y + dy;
             if (combat_in_bounds(nx, ny)) {
                 c->cursor_x = nx; c->cursor_y = ny;
             }
         }
-        if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER) ||
-            IsKeyPressed(KEY_SPACE) ||
-            IsKeyPressed(KEY_A)     || IsKeyPressed(KEY_C)) {
+        if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
+            input_key_pressed(KEY_SPACE) ||
+            input_key_pressed(KEY_A)     || input_key_pressed(KEY_C)) {
             if (combat_cell_passes_filter(c, c->cursor_x, c->cursor_y,
                                            caster_side, filter)) {
                 if (out_x) *out_x = c->cursor_x;
@@ -100,7 +102,7 @@ static bool combat_pick_target(Combat *c, const Game *g,
             }
             // Filter rejected -- leave cursor and re-loop.
         }
-        if (IsKeyPressed(KEY_ESCAPE)) goto done;
+        if (input_key_pressed(KEY_ESCAPE)) goto done;
     }
 done:
     c->picker_active = false;
@@ -111,15 +113,15 @@ done:
 
 static bool combat_read_dir(int *dx, int *dy) {
     *dx = 0; *dy = 0;
-    if (IsKeyPressed(KEY_KP_5)) return false;
-    if (IsKeyPressed(KEY_UP)        || IsKeyPressed(KEY_KP_8)) { *dy = -1; return true; }
-    if (IsKeyPressed(KEY_DOWN)      || IsKeyPressed(KEY_KP_2)) { *dy =  1; return true; }
-    if (IsKeyPressed(KEY_LEFT)      || IsKeyPressed(KEY_KP_4)) { *dx = -1; return true; }
-    if (IsKeyPressed(KEY_RIGHT)     || IsKeyPressed(KEY_KP_6)) { *dx =  1; return true; }
-    if (IsKeyPressed(KEY_HOME)      || IsKeyPressed(KEY_KP_7)) { *dx = -1; *dy = -1; return true; }
-    if (IsKeyPressed(KEY_PAGE_UP)   || IsKeyPressed(KEY_KP_9)) { *dx =  1; *dy = -1; return true; }
-    if (IsKeyPressed(KEY_END)       || IsKeyPressed(KEY_KP_1)) { *dx = -1; *dy =  1; return true; }
-    if (IsKeyPressed(KEY_PAGE_DOWN) || IsKeyPressed(KEY_KP_3)) { *dx =  1; *dy =  1; return true; }
+    if (input_key_pressed(KEY_KP_5)) return false;
+    if (input_key_pressed(KEY_UP)        || input_key_pressed(KEY_KP_8)) { *dy = -1; return true; }
+    if (input_key_pressed(KEY_DOWN)      || input_key_pressed(KEY_KP_2)) { *dy =  1; return true; }
+    if (input_key_pressed(KEY_LEFT)      || input_key_pressed(KEY_KP_4)) { *dx = -1; return true; }
+    if (input_key_pressed(KEY_RIGHT)     || input_key_pressed(KEY_KP_6)) { *dx =  1; return true; }
+    if (input_key_pressed(KEY_HOME)      || input_key_pressed(KEY_KP_7)) { *dx = -1; *dy = -1; return true; }
+    if (input_key_pressed(KEY_PAGE_UP)   || input_key_pressed(KEY_KP_9)) { *dx =  1; *dy = -1; return true; }
+    if (input_key_pressed(KEY_END)       || input_key_pressed(KEY_KP_1)) { *dx = -1; *dy =  1; return true; }
+    if (input_key_pressed(KEY_PAGE_DOWN) || input_key_pressed(KEY_KP_3)) { *dx =  1; *dy =  1; return true; }
     return false;
 }
 
@@ -149,7 +151,7 @@ static int combat_player_cast(Combat *c, const Game *g,
     // Modal: wait for A-G or Esc. The caller ran a render frame just
     // before this; we render-and-poll until a key resolves.
     int picked = -1;
-    while (!WindowShouldClose() && picked < 0) {
+    while (!frame_host_should_close() && picked < 0) {
         BeginTextureMode(*target);
         combat_render_frame(c, g, sprites);
         // Inline overlay: spells menu, abbreviated single-column layout.
@@ -186,9 +188,9 @@ static int combat_player_cast(Combat *c, const Game *g,
                        (Vector2){ 0, 0 }, 0.0f, WHITE);
         EndDrawing();
 
-        if (IsKeyPressed(KEY_ESCAPE)) return 0;
+        if (input_key_pressed(KEY_ESCAPE)) return 0;
         for (int i = 0; i < 7; i++) {
-            if (IsKeyPressed(KEY_A + i)) { picked = i; break; }
+            if (input_key_pressed(KEY_A + i)) { picked = i; break; }
         }
     }
     if (picked < 0) return 0;
@@ -365,11 +367,11 @@ static int combat_player_action_full(Combat *c, const Game *g,
         if (c->unit_id < 0) return 0;
         return combat_move_unit(c, c->side, c->unit_id, dx, dy);
     }
-    if (IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_W)) {
+    if (input_key_pressed(KEY_SPACE) || input_key_pressed(KEY_W)) {
         if (c->unit_id >= 0) c->units[c->side][c->unit_id].acted = true;
         return 1;
     }
-    if (IsKeyPressed(KEY_G)) {
+    if (input_key_pressed(KEY_G)) {
         // Open a y/n give-up confirm; the outer combat loop polls
         // prompt_update() and writes c->result to 2 on YES.
         if (g && g->res) {
@@ -378,7 +380,7 @@ static int combat_player_action_full(Combat *c, const Game *g,
         }
         return 0;
     }
-    if (IsKeyPressed(KEY_S)) {
+    if (input_key_pressed(KEY_S)) {
         // Shoot. Pick enemy, ranged damage.
         if (c->unit_id < 0) return 0;
         CombatUnit *u = &c->units[c->side][c->unit_id];
@@ -407,7 +409,7 @@ static int combat_player_action_full(Combat *c, const Game *g,
         }
         return 0;
     }
-    if (IsKeyPressed(KEY_F)) {
+    if (input_key_pressed(KEY_F)) {
         // Fly: relocate the active unit to an empty, unobstructed cell
         // anywhere on the field. Only legal for TROOP_ABIL_FLY units
         // with flights > 0. Picker uses PICK_FILTER_EMPTY (no unit,
@@ -437,10 +439,10 @@ static int combat_player_action_full(Combat *c, const Game *g,
         }
         return 0;
     }
-    if (IsKeyPressed(KEY_U)) {
+    if (input_key_pressed(KEY_U)) {
         return combat_player_cast(c, g, sprites, target);
     }
-    if (IsKeyPressed(KEY_C)) {
+    if (input_key_pressed(KEY_C)) {
         // Opening a view pauses combat in the outer loop; the view
         // handles its own input and dismissal. The C↔O swap is
         // implemented there too.
@@ -499,7 +501,7 @@ static void combat_present(const Combat *c, const Game *g,
 // soon as keys are pressed.
 static void combat_tick_anim(Combat *c, double *next_tick, bool *rolled_over) {
     *rolled_over = false;
-    double now = GetTime();
+    double now = frame_host_time();
     if (now < *next_tick) return;
     *next_tick = now + 0.15;
     // Decay damage-burst on every stack (including dead ones, so the
@@ -536,7 +538,7 @@ static void combat_tick_anim(Combat *c, double *next_tick, bool *rolled_over) {
 static void combat_wait_for_dialog_ack(const Combat *c, const Game *g,
                                        const Sprites *sprites,
                                        RenderTexture2D *target) {
-    while (dialog_is_active() && !WindowShouldClose()) {
+    while (dialog_is_active() && !frame_host_should_close()) {
         combat_present(c, g, sprites, target);
         // Allow screenshots while paused on the end-of-combat dialog
         // (main loop is suspended during RunCombat).
@@ -547,11 +549,14 @@ static void combat_wait_for_dialog_ack(const Combat *c, const Game *g,
     }
 }
 
+Combat *combat_current_rendered = NULL;
+
 CombatResult RunCombat(Game *g, const Sprites *sprites,
                        void *render_target,
                        CombatMode mode, const CombatTarget *target) {
     Combat c;
     combat_init(&c, g, mode, target);
+    combat_current_rendered = &c;
     // Expose the live combat to the harness so `state` can serialize it.
     // Detached on every return path below.
     combat_seed_rng(&c, g, mode, target);
@@ -577,14 +582,15 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         recorder_capture("combat:end:loss");
         audio_play_tune(AUDIO_TUNE_DEFEAT);
         audio_set_track(AUDIO_TRACK_OPENWORLD);
+        combat_current_rendered = NULL;
         return COMBAT_RESULT_LOSS;
     }
     c.unit_id = nxt;
 
     RenderTexture2D *rt = (RenderTexture2D *)render_target;
-    double next_tick = GetTime() + 0.15;
+    double next_tick = frame_host_time() + 0.15;
 
-    while (c.result == 0 && !WindowShouldClose()) {
+    while (c.result == 0 && !frame_host_should_close()) {
         // Pump the harness every frame so external commands keep
         // working through combat. Without this the game appears
         // deadlocked from the harness POV the moment battle starts.
@@ -608,7 +614,7 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         // it; ESC with no menu open is a no-op. Take this *before*
         // views eat their own input so dismissing always works from the
         // outer loop.
-        if (IsKeyPressed(KEY_ESCAPE)) {
+        if (input_key_pressed(KEY_ESCAPE)) {
             if (views_active() != VIEW_NONE) {
                 views_dismiss();
             }
@@ -620,15 +626,15 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         // own input (and number-key cycling for Controls — see below).
         if (views_active() != VIEW_NONE) {
             // Swap between Options and Controls without leaving the menu.
-            if (views_active() == VIEW_OPTIONS && IsKeyPressed(KEY_C)) {
+            if (views_active() == VIEW_OPTIONS && input_key_pressed(KEY_C)) {
                 views_set(VIEW_CONTROLS);
             } else if (views_active() == VIEW_CONTROLS &&
-                       IsKeyPressed(KEY_O)) {
+                       input_key_pressed(KEY_O)) {
                 views_set(VIEW_OPTIONS);
             } else if (views_active() == VIEW_CONTROLS) {
                 // Number keys 1..N cycle the corresponding control row.
                 for (int i = 0; i < 9; i++) {
-                    if (IsKeyPressed(KEY_ONE + i)) {
+                    if (input_key_pressed(KEY_ONE + i)) {
                         views_controls_advance(g, i);
                         break;
                     }
@@ -651,15 +657,15 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         // Top-level view openers. Player can open these even on AI's
         // turn: input is discarded for moves during AI turn, but menu
         // keys still resolve.
-        if (IsKeyPressed(KEY_O)) {
+        if (input_key_pressed(KEY_O)) {
             views_set(VIEW_OPTIONS);
             continue;
         }
-        if (IsKeyPressed(KEY_A)) {
+        if (input_key_pressed(KEY_A)) {
             views_set(VIEW_ARMY);
             continue;
         }
-        if (IsKeyPressed(KEY_V)) {
+        if (input_key_pressed(KEY_V)) {
             views_set(VIEW_CHARACTER);
             continue;
         }
@@ -739,6 +745,7 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         GameCompactArmy(g);
         recorder_capture("combat:end:win");
         audio_set_track(AUDIO_TRACK_OPENWORLD);
+        combat_current_rendered = NULL;
         return COMBAT_RESULT_WIN;
     }
     if (c.result == 2) {
@@ -751,11 +758,13 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         recorder_capture("combat:end:loss");
         audio_play_tune(AUDIO_TUNE_DEFEAT);
         audio_set_track(AUDIO_TRACK_OPENWORLD);
+        combat_current_rendered = NULL;
         return COMBAT_RESULT_LOSS;
     }
     // Unreachable in normal play: the loop only exits via WIN or LOSS.
     // Kept as a defensive return so the function is total.
     recorder_capture("combat:end:loss");
     audio_set_track(AUDIO_TRACK_OPENWORLD);
+    combat_current_rendered = NULL;
     return COMBAT_RESULT_LOSS;
 }

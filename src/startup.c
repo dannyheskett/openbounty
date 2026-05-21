@@ -1,3 +1,5 @@
+#include "frame_host.h"
+#include "input_host.h"
 #include "startup.h"
 #include "layout.h"
 #include "palette.h"
@@ -95,10 +97,10 @@ static void panel(int x, int y, int w, int h) {
 // save-picker shortcuts) so the next screen's name/text input doesn't
 // receive the committing keystroke.
 static void drain_char_queue(void) {
-    while (GetCharPressed() != 0) { /* discard */ }
+    while (input_get_char_pressed() != 0) { /* discard */ }
 }
 
-// Cycle raylib's key-edge state to the next frame. IsKeyPressed() compares
+// Cycle raylib's key-edge state to the next frame. input_key_pressed() compares
 // currentKeyState against previousKeyState; both are refreshed on
 // PollInputEvents(). Without this call, a key handled in one while-loop
 // would still register as "pressed" in the next screen's first iteration
@@ -111,7 +113,7 @@ static void advance_input_frame(void) {
 // Helper: true if any key was pressed this frame (other than pure
 // modifier keys).  behavior.
 static bool any_key_pressed(void) {
-    int k = GetKeyPressed();
+    int k = input_get_key_pressed();
     while (k != 0) {
         if (k != KEY_LEFT_SHIFT && k != KEY_RIGHT_SHIFT &&
             k != KEY_LEFT_CONTROL && k != KEY_RIGHT_CONTROL &&
@@ -120,22 +122,25 @@ static bool any_key_pressed(void) {
             k != KEY_CAPS_LOCK && k != KEY_NUM_LOCK && k != KEY_SCROLL_LOCK) {
             return true;
         }
-        k = GetKeyPressed();
+        k = input_get_key_pressed();
     }
     return false;
 }
 
 // Show a full-screen splash (texture centered on `bg_color`) for 2 seconds,
 // or until the player presses any key. Returns false if the window is closed.
+bool startup_skip_intros = false;
+
 static bool run_splash(RenderTexture2D *rt,
                        Texture2D tex,
                        Color bg_color) {
     if (!tex.id) return true;   // Missing asset: skip silently.
-    double start_time = GetTime();
+    if (startup_skip_intros) return true;
+    double start_time = frame_host_time();
     double timeout = 2.5;
-    while (!WindowShouldClose()) {
+    while (!frame_host_should_close()) {
         // Auto-advance after 2 seconds or on any key press
-        if (GetTime() - start_time >= timeout || any_key_pressed()) return true;
+        if (frame_host_time() - start_time >= timeout || any_key_pressed()) return true;
 
         BeginTextureMode(*rt);
         ClearBackground(bg_color);
@@ -216,22 +221,22 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
         if (slots.hdrs[i].exists) { cursor = i; break; }
     }
 
-    while (!WindowShouldClose()) {
+    while (!frame_host_should_close()) {
         // ---- Input ---------------------------------------------------
-        if (IsKeyPressed(KEY_ESCAPE)) {
+        if (input_key_pressed(KEY_ESCAPE)) {
             // ESC on save picker returns to class select, not quit.
             out->action = STARTUP_BACK;
             advance_input_frame();
             return true;
         }
-        if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_KP_8)) {
+        if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_KP_8)) {
             cursor = (cursor - 1 + row_count) % row_count;
         }
-        if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_KP_2)) {
+        if (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2)) {
             cursor = (cursor + 1) % row_count;
         }
-        if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER) ||
-            IsKeyPressed(KEY_SPACE)) {
+        if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
+            input_key_pressed(KEY_SPACE)) {
             if (cursor == new_row) {
                 // Find first empty slot for the new game; player can
                 // overwrite an occupied slot by selecting it directly
@@ -341,13 +346,13 @@ static bool run_class_select(const Resources *res,
     int px = (CL_SCREEN_W - pw) / 2;
     int py = (CL_SCREEN_H - ph) / 2;
 
-    while (!WindowShouldClose()) {
-        if (IsKeyPressed(KEY_ESCAPE)) {
+    while (!frame_host_should_close()) {
+        if (input_key_pressed(KEY_ESCAPE)) {
             out->action = STARTUP_QUIT;
             return false;
         }
         // L for Load 
-        if (IsKeyPressed(KEY_L)) {
+        if (input_key_pressed(KEY_L)) {
             out->action = STARTUP_LOAD;
             drain_char_queue();   // don't leak the 'L' into name entry
             return true;
@@ -355,7 +360,7 @@ static bool run_class_select(const Resources *res,
         // A/B/C/D pick directly .
         static const int keys[4] = { KEY_A, KEY_B, KEY_C, KEY_D };
         for (int k = 0; k < n; k++) {
-            if (IsKeyPressed(keys[k])) {
+            if (input_key_pressed(keys[k])) {
                 const ClassDef *c = class_by_index(k);
                 safe_copy(out->class_id, sizeof(out->class_id),
                           c ? c->id : "knight");
@@ -443,8 +448,8 @@ static bool run_create_game(const Resources *res,
     }
     const int n = 4;
 
-    while (!WindowShouldClose()) {
-        if (IsKeyPressed(KEY_ESCAPE)) {
+    while (!frame_host_should_close()) {
+        if (input_key_pressed(KEY_ESCAPE)) {
             // ESC on new-game screen returns to class select, not quit.
             out->action = STARTUP_BACK;
             advance_input_frame();
@@ -454,7 +459,7 @@ static bool run_create_game(const Resources *res,
         if (!has_name) {
             // Name entry phase. Enter confirms; BACKSPACE deletes; alpha/
             // digit/space appends.
-            if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER)) {
+            if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER)) {
                 if (name_len == 0) {
                     // We default to world.default_name on empty name
                     // (from game.json) so the flow always completes.
@@ -468,10 +473,10 @@ static bool run_create_game(const Resources *res,
                     name_buf[0] = (char)(name_buf[0] - 'a' + 'A');
                 }
                 has_name = true;
-            } else if (IsKeyPressed(KEY_BACKSPACE) && name_len > 0) {
+            } else if (input_key_pressed(KEY_BACKSPACE) && name_len > 0) {
                 name_buf[--name_len] = '\0';
             } else {
-                int ch = GetCharPressed();
+                int ch = input_get_char_pressed();
                 while (ch > 0 && name_len < 10) {
                     bool allowed = (ch >= 'A' && ch <= 'Z') ||
                                    (ch >= 'a' && ch <= 'z') ||
@@ -481,20 +486,20 @@ static bool run_create_game(const Resources *res,
                         name_buf[name_len++] = (char)ch;
                         name_buf[name_len] = '\0';
                     }
-                    ch = GetCharPressed();
+                    ch = input_get_char_pressed();
                 }
             }
         } else {
             // Difficulty selection phase. Arrows clamp :
             //   sel--; if (sel < 0) sel = 0;
             //   sel++; if (sel > 3) sel = 3;
-            if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_KP_8)) {
+            if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_KP_8)) {
                 if (sel > 0) sel--;
             }
-            if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_KP_2)) {
+            if (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2)) {
                 if (sel < n - 1) sel++;
             }
-            if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER)) {
+            if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER)) {
                 out->difficulty = rows[sel].diff;
                 safe_copy(out->name, sizeof(out->name), name_buf);
                 out->action = STARTUP_NEW;
@@ -613,6 +618,7 @@ static bool run_new_game_intro(RenderTexture2D *rt,
                                const StartupChoice *out,
                                const char *name) {
     if (!res || !res->banners.new_game_intro[0]) return true;
+    if (startup_skip_intros) return true;
 
     const ClassDef *cls = class_by_id(out->class_id);
     const char *class_title = cls ? cls->name : "Hero";
@@ -648,10 +654,10 @@ static bool run_new_game_intro(RenderTexture2D *rt,
     int px = (CL_SCREEN_W - panel_w) / 2;
     int py = (CL_SCREEN_H - panel_h) / 2;
 
-    double start = GetTime();
+    double start = frame_host_time();
     double timeout = 4.0;
-    while (!WindowShouldClose()) {
-        if (any_key_pressed() || (GetTime() - start) >= timeout) return true;
+    while (!frame_host_should_close()) {
+        if (any_key_pressed() || (frame_host_time() - start) >= timeout) return true;
 
         frame_begin(rt);
 
@@ -701,6 +707,7 @@ static bool run_new_game_intro(RenderTexture2D *rt,
 static bool run_credits(RenderTexture2D *rt, const Resources *res,
                         const Sprites *sprites) {
     if (!res) return true;
+    if (startup_skip_intros) return true;
     int gn = res->credits.group_count;
     int cn = res->credits.copyright_count;
     if (gn == 0 && cn == 0) return true;
@@ -762,10 +769,10 @@ static bool run_credits(RenderTexture2D *rt, const Resources *res,
     int px = (CL_SCREEN_W - panel_w) / 2;
     int py = (CL_SCREEN_H - panel_h) / 2;
 
-    double start = GetTime();
+    double start = frame_host_time();
     double timeout = 2.5;
-    while (!WindowShouldClose()) {
-        if (any_key_pressed() || (GetTime() - start) >= timeout) return true;
+    while (!frame_host_should_close()) {
+        if (any_key_pressed() || (frame_host_time() - start) >= timeout) return true;
 
         frame_begin(rt);
 

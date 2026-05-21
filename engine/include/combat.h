@@ -143,6 +143,12 @@ CombatResult combat_run_headless(Game *g, CombatMode mode,
                                  const CombatTarget *target,
                                  int cap_rounds);
 
+// While RunCombat is active, points at its local Combat struct so
+// gameplay-test scenarios (and only them) can introspect combat state
+// from the frame_host before_frame callback to script player input.
+// NULL outside of an active combat. Set/cleared by RunCombat itself.
+extern Combat *combat_current_rendered;
+
 // ----- Engine helpers used by both engine/combat.c and src/combat_loop.c.
 // These were file-static when both halves lived in src/combat.c; the
 // split required them to cross translation units. Engine-only callers
