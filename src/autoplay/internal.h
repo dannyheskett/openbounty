@@ -57,17 +57,24 @@ typedef enum {
     AP_HACK_TAKE_CONTRACT,
     AP_HACK_CLOSE_TOWN_INFO_AFTER_CONTRACT,
     AP_HACK_EXIT_TOWN_AFTER_CONTRACT,
-    // Re-stock phases — currently unused on seed=1 (the contract town
-    // is on a different landmass than king_maximus). Kept for future
-    // villains where the path is reachable.
+    AP_HACK_LOCATE_CASTLE,
+    // Re-stock loop: sail back to Maximus's landmass, walk to the king,
+    // recruit a fresh army, then walk to a coastal town there to rent
+    // a fresh boat to Hack's gate.
+    AP_HACK_WALK_TO_TOWN_FOR_HOMETRIP,
+    AP_HACK_RENT_BOAT_FOR_HOMETRIP,
+    AP_HACK_EXIT_TOWN_AFTER_HOMEBOAT,
+    AP_HACK_BOARD_BOAT_FOR_HOMETRIP,
+    AP_HACK_SAIL_HOME_TO_MAINLAND,
+    AP_HACK_DISEMBARK_NEAR_MAXIMUS,
     AP_HACK_WALK_TO_KING,
     AP_HACK_OPEN_RECRUIT,
     AP_HACK_DO_RECRUITS,
     AP_HACK_LEAVE_RECRUIT,
     AP_HACK_LEAVE_KING,
-    AP_HACK_LOCATE_CASTLE,
-    // Boat trip from contract town to a land tile near Hack's castle.
-    // Same shape as the Murray sail: rent → board → sail BFS → disembark.
+    // Boat trip from coastal Continentia town to a land tile near
+    // Hack's castle. Same shape as the Murray sail: rent → board → sail
+    // BFS → disembark.
     AP_HACK_WALK_TO_TOWN_FOR_BOAT,
     AP_HACK_RENT_BOAT,
     AP_HACK_EXIT_TOWN_AFTER_BOAT,
@@ -121,7 +128,7 @@ typedef struct AutoplayState {
     // module entry; -1 = "not yet set". When you need more state
     // than two ints, extend this array — the cost is one int per
     // villain module that uses it, which is fine.
-    int           module_scratch[8];
+    int           module_scratch[16];
 } AutoplayState;
 
 // =========================================================================

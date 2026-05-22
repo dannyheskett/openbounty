@@ -23,11 +23,16 @@
 //      to AP_ALL_DONE.
 //
 // State slot layout (module_scratch[]):
-//   [0],[1] = contract town gate (x,y)
-//   [2],[3] = boat-rental town (same coords today, separate slots so
-//             a future villain can split the two)
-//   [4],[5] = Hack's castle gate (x,y), set by AP_HACK_LOCATE_CASTLE
+//   [0],[1] = contract town (xoctan on seed=1)
+//   [2],[3] = current boat-rental town — changes between the home-trip
+//             (Azram-side town) and the to-Hack trip (Continentia-side
+//             town)
+//   [4],[5] = current sail target gate — changes between Maximus
+//             (during home trip restock) and Hack's gate (after restock)
 //   [6],[7] = chosen sail-target land tile (x,y), set by sail planner
+//   [8],[9] = Hack's castle gate (x,y), fixed once LOCATE_CASTLE runs
+//  [10],[11] = chosen Maximus-side disembark land tile (set by home sail
+//             planner)
 
 #include "autoplay/internal.h"
 
@@ -171,14 +176,10 @@ ShellRunVerdict ap_hack_per_frame(Game *g, Map *m, Fog *f,
 
     case AP_HACK_EXIT_TOWN_AFTER_CONTRACT:
         if (views_active() == VIEW_NONE) {
-            // Skip the home-castle re-stock on seed=1: the contract
-            // town is on a different landmass than king_maximus, no
-            // overland path back. The post-Murray army handles Hack.
             st->phase = AP_HACK_LOCATE_CASTLE;
             st->phase_started_at = frame_no;
             st->path_len = 0;
-            AP_LOG("[hack] exited town, locating Hack's castle "
-                   "(skipping re-stock; cross-landmass)");
+            AP_LOG("[hack] exited town, locating Hack's castle");
             return SHELL_RUN_CONTINUE;
         }
         if (views_active() == VIEW_TOWN) {
@@ -189,16 +190,6 @@ ShellRunVerdict ap_hack_per_frame(Game *g, Map *m, Fog *f,
         AP_TIMEOUT_FAIL(st->phase_started_at, 240,
                         "[hack] couldn't transition after town contract");
         return SHELL_RUN_CONTINUE;
-
-    // ---- Re-stock phases (unused on seed=1) ---------------------------
-    case AP_HACK_WALK_TO_KING:
-    case AP_HACK_OPEN_RECRUIT:
-    case AP_HACK_DO_RECRUITS:
-    case AP_HACK_LEAVE_RECRUIT:
-    case AP_HACK_LEAVE_KING:
-        AP_LOG("[hack] re-stock phases not exercised on seed=1; phase=%d",
-               (int)st->phase);
-        return SHELL_RUN_EXIT_FAIL;
 
     case AP_HACK_LOCATE_CASTLE: {
         int gate_x = -1, gate_y = -1;
@@ -214,26 +205,459 @@ ShellRunVerdict ap_hack_per_frame(Game *g, Map *m, Fog *f,
                    zone ? zone : "(null)", g->position.zone);
             return SHELL_RUN_EXIT_FAIL;
         }
+        // Stash Hack's gate permanently. scratch[4..5] is the *current*
+        // sail target — overwritten by the home trip planner to point
+        // at Maximus, then restored from [8..9] when we head back out.
+        st->module_scratch[8] = gate_x;
+        st->module_scratch[9] = gate_y;
         st->module_scratch[4] = gate_x;
         st->module_scratch[5] = gate_y;
         st->path_len = 0;
         AP_LOG("[hack] castle located at (%d,%d) in zone %s",
                gate_x, gate_y, zone);
-        // Decide: walk overland if possible, otherwise sail.
-        ApPoint diag[AP_PATH_MAX];
-        int n_walk = ap_bfs(m, g->position.x, g->position.y,
-                            gate_x, gate_y, AP_TRAVEL_WALK,
-                            diag, AP_PATH_MAX);
-        if (n_walk > 0) {
-            st->phase = AP_HACK_WALK_TO_GATE;
-            AP_LOG("[hack] overland route exists (%d steps)", n_walk);
-        } else {
-            st->phase = AP_HACK_WALK_TO_TOWN_FOR_BOAT;
-            AP_LOG("[hack] no overland route — going back to town for a boat");
+
+        // Always restock before sieging Hack. Post-Murray army is ~230 HP,
+        // which loses to Hack's tier-0 garrison. The restock detour
+        // sails back to the nearest coastal town on Maximus's landmass,
+        // recruits a fresh army at king_maximus, then heads to Hack.
+        //
+        // On seed=1 the contract town (xoctan) is on a different
+        // landmass from king_maximus so we go through the boat trip.
+        // Aim sail target at king_maximus = (11, 57). Pick the nearest
+        // town in the *current* zone as the rental — that's the boat
+        // we use to get home. (find_nearest_town is overland-BFS-bounded
+        // to the current landmass.)
+        int rent_x = -1, rent_y = -1;
+        int n = find_nearest_town(g, m, g->position.x, g->position.y,
+                                  &rent_x, &rent_y);
+        if (n < 0) {
+            AP_LOG("[hack] no overland-reachable town for home trip "
+                   "from (%d,%d)", g->position.x, g->position.y);
+            return SHELL_RUN_EXIT_FAIL;
         }
+        st->module_scratch[2] = rent_x;
+        st->module_scratch[3] = rent_y;
+        st->module_scratch[4] = 11;  // king_maximus gate x
+        st->module_scratch[5] = 57;  // king_maximus gate y
+        st->phase = AP_HACK_WALK_TO_TOWN_FOR_HOMETRIP;
         st->phase_started_at = frame_no;
+        AP_LOG("[hack] heading home for restock via town (%d,%d) → "
+               "Maximus (11,57)", rent_x, rent_y);
         return SHELL_RUN_CONTINUE;
     }
+
+    // ---- Restock loop ---------------------------------------------------
+    // Sail home. Same shape as the to-Hack boat trip below, just targeting
+    // Maximus instead of Hack's gate, with VIEW_HOME_CASTLE as the terminal
+    // instead of a siege prompt.
+
+    case AP_HACK_WALK_TO_TOWN_FOR_HOMETRIP:
+        if (views_active() == VIEW_TOWN) {
+            st->phase = AP_HACK_RENT_BOAT_FOR_HOMETRIP;
+            st->phase_started_at = frame_no;
+            st->phase_action_queued = false;
+            st->module_scratch[12] = 0;  // no B press in flight
+            AP_LOG("[hack] entered town for home-trip boat");
+            return SHELL_RUN_CONTINUE;
+        }
+        if (views_active() != VIEW_NONE) {
+            input_host_queue_key(KEY_ESCAPE);
+            return SHELL_RUN_CONTINUE;
+        }
+        if (!ap_ensure_path(st, m, g->position.x, g->position.y,
+                            st->module_scratch[2], st->module_scratch[3],
+                            AP_TRAVEL_WALK)) {
+            AP_LOG("[hack] BFS failed walking to home-trip town (%d,%d)",
+                   st->module_scratch[2], st->module_scratch[3]);
+            return SHELL_RUN_EXIT_FAIL;
+        }
+        if (!ap_step_along_path(st, g->position.x, g->position.y)) {
+            return SHELL_RUN_EXIT_FAIL;
+        }
+        AP_TIMEOUT_FAIL(st->phase_started_at, 3600,
+                        "[hack] stuck walking to home-trip town");
+        return SHELL_RUN_CONTINUE;
+
+    case AP_HACK_RENT_BOAT_FOR_HOMETRIP: {
+        // Goal: a boat near THIS town. Three possible states each frame:
+        //   (a) has_boat && boat_is_local — done.
+        //   (b) has_boat && !boat_is_local — stale boat from a prior
+        //       voyage. Press B once to cancel (town_do_boat sets
+        //       has_boat=false). Next pass falls into (c).
+        //   (c) !has_boat — press B once to rent fresh. Next pass falls
+        //       into (a) once the new boat is created at this town's
+        //       boat_spawn.
+        //
+        // After each B press, wait for the engine to consume the input
+        // and the boat state to flip before re-pressing.
+        int town_x = st->module_scratch[2];
+        int town_y = st->module_scratch[3];
+        bool boat_is_local = false;
+        if (g->boat.has_boat) {
+            int dx = g->boat.x - town_x; if (dx < 0) dx = -dx;
+            int dy = g->boat.y - town_y; if (dy < 0) dy = -dy;
+            boat_is_local = (dx <= 5 && dy <= 5);
+        }
+        if (g->boat.has_boat && boat_is_local) {
+            // Done.
+            input_host_queue_key(KEY_ESCAPE);
+            st->phase = AP_HACK_EXIT_TOWN_AFTER_HOMEBOAT;
+            st->phase_started_at = frame_no;
+            st->phase_action_queued = false;
+            AP_LOG("[hack] home-trip boat ready at (%d,%d), gold=%d",
+                   g->boat.x, g->boat.y, g->stats.gold);
+            return SHELL_RUN_CONTINUE;
+        }
+        // Need to press B (cancel or rent). One press per "cycle" —
+        // a cycle ends when the boat state has flipped from what it
+        // was at press time. We track the press's pre-state in
+        // module_scratch[12]: 0 = no press in flight, 1 = pressed
+        // while has_boat=true (expect cancel), 2 = pressed while
+        // has_boat=false (expect rent).
+        int *expect = &st->module_scratch[12];
+        if (*expect == 1 && !g->boat.has_boat) *expect = 0;  // cancel done
+        if (*expect == 2 &&  g->boat.has_boat) *expect = 0;  // rent done
+        if (*expect == 0 && input_host_queue_depth() == 0) {
+            input_host_queue_key(KEY_B);
+            *expect = g->boat.has_boat ? 1 : 2;
+        }
+        AP_TIMEOUT_FAIL(st->phase_started_at, 600,
+                        "[hack] couldn't get a local boat for home trip");
+        return SHELL_RUN_CONTINUE;
+    }
+
+    case AP_HACK_EXIT_TOWN_AFTER_HOMEBOAT:
+        if (views_active() == VIEW_NONE) {
+            st->phase = AP_HACK_BOARD_BOAT_FOR_HOMETRIP;
+            st->phase_started_at = frame_no;
+            st->path_len = 0;
+            AP_LOG("[hack] exited home-trip town, walking to boat at "
+                   "(%d,%d)", g->boat.x, g->boat.y);
+            return SHELL_RUN_CONTINUE;
+        }
+        if (views_active() == VIEW_TOWN) {
+            input_host_queue_key(KEY_ESCAPE);
+            return SHELL_RUN_CONTINUE;
+        }
+        input_host_queue_key(KEY_ESCAPE);
+        AP_TIMEOUT_FAIL(st->phase_started_at, 240,
+                        "[hack] couldn't exit home-trip town after rental");
+        return SHELL_RUN_CONTINUE;
+
+    case AP_HACK_BOARD_BOAT_FOR_HOMETRIP: {
+        int bx = g->boat.x, by = g->boat.y;
+        if (g->travel_mode == TRAVEL_BOAT) {
+            st->phase = AP_HACK_SAIL_HOME_TO_MAINLAND;
+            st->phase_started_at = frame_no;
+            st->path_len = 0;
+            st->module_scratch[6] = -1;
+            st->module_scratch[7] = -1;
+            AP_LOG("[hack] boarded home-trip boat at (%d,%d)", bx, by);
+            return SHELL_RUN_CONTINUE;
+        }
+        int dx = 0, dy = 0;
+        if (bx > g->position.x) dx = 1; else if (bx < g->position.x) dx = -1;
+        if (by > g->position.y) dy = 1; else if (by < g->position.y) dy = -1;
+        int k = ap_dir_key(g->position.x, g->position.y,
+                           g->position.x + dx, g->position.y + dy);
+        if (k == 0) {
+            AP_LOG("[hack] already adjacent to home-trip boat? "
+                   "pos=(%d,%d) boat=(%d,%d)",
+                   g->position.x, g->position.y, bx, by);
+            return SHELL_RUN_EXIT_FAIL;
+        }
+        if (input_host_queue_depth() == 0) input_host_queue_key(k);
+        AP_TIMEOUT_FAIL(st->phase_started_at, 240,
+                        "[hack] couldn't board home-trip boat");
+        return SHELL_RUN_CONTINUE;
+    }
+
+    case AP_HACK_SAIL_HOME_TO_MAINLAND: {
+        // Same planner as SAIL_TO_GATE_COAST, just aimed at king_maximus.
+        // scratch[4..5] is currently Maximus's gate (set by LOCATE_CASTLE).
+        int gx = st->module_scratch[4];
+        int gy = st->module_scratch[5];
+
+        if (views_active() != VIEW_NONE) {
+            if (input_host_queue_depth() == 0) {
+                input_host_queue_key(KEY_ESCAPE);
+            }
+            st->path_len = 0;
+            AP_TIMEOUT_FAIL(st->phase_started_at, 14400,
+                            "[hack] stuck in unexpected view during home sail");
+            return SHELL_RUN_CONTINUE;
+        }
+
+        if (g->travel_mode == TRAVEL_WALK) {
+            // Disembarked. Is Maximus walkable from here?
+            int adx = g->position.x - gx; if (adx < 0) adx = -adx;
+            int ady = g->position.y - gy; if (ady < 0) ady = -ady;
+            ApPoint walk_diag[AP_PATH_MAX];
+            int n_walk_to_king = (adx + ady <= 25)
+                ? ap_bfs(m, g->position.x, g->position.y, gx, gy,
+                         AP_TRAVEL_WALK, walk_diag, AP_PATH_MAX)
+                : 0;
+            if (n_walk_to_king > 0) {
+                st->phase = AP_HACK_WALK_TO_KING;
+                st->phase_started_at = frame_no;
+                st->path_len = 0;
+                AP_LOG("[hack] disembarked home at (%d,%d), Maximus "
+                       "reachable on foot (%d steps)",
+                       g->position.x, g->position.y, n_walk_to_king);
+                return SHELL_RUN_CONTINUE;
+            }
+            if (g->boat.has_boat && g->boat.x >= 0) {
+                int dx = 0, dy = 0;
+                if (g->boat.x > g->position.x) dx = 1;
+                else if (g->boat.x < g->position.x) dx = -1;
+                if (g->boat.y > g->position.y) dy = 1;
+                else if (g->boat.y < g->position.y) dy = -1;
+                int k = ap_dir_key(g->position.x, g->position.y,
+                                   g->position.x + dx,
+                                   g->position.y + dy);
+                if (k != 0 && input_host_queue_depth() == 0) {
+                    input_host_queue_key(k);
+                }
+                AP_TIMEOUT_FAIL(st->phase_started_at, 14400,
+                                "[hack] stuck reboarding boat (home)");
+                return SHELL_RUN_CONTINUE;
+            }
+            // No boat — try walking anyway.
+            st->phase = AP_HACK_WALK_TO_KING;
+            st->phase_started_at = frame_no;
+            st->path_len = 0;
+            AP_LOG("[hack] disembarked home at (%d,%d) and no boat — "
+                   "falling through to walk", g->position.x, g->position.y);
+            return SHELL_RUN_CONTINUE;
+        }
+
+        // Plan once: nearest land tile near Maximus that's sailable from
+        // here and walkable to the gate.
+        if (st->path_len == 0) {
+            int best_total = 1 << 30;
+            int best_x = -1, best_y = -1;
+            ApPoint sail_path[AP_PATH_MAX];
+            ApPoint walk_path[AP_PATH_MAX];
+            for (int dy = -12; dy <= 12; dy++) {
+                for (int dx = -12; dx <= 12; dx++) {
+                    int tx = gx + dx;
+                    int ty = gy + dy;
+                    if (!MapInBounds(m, tx, ty)) continue;
+                    const Tile *t = MapGetTile(m, tx, ty);
+                    if (!t) continue;
+                    if (!TerrainWalkable(t->terrain) || t->blocks_foot) continue;
+                    if (t->interactive != INTERACT_NONE) continue;
+                    int n_walk = ap_bfs(m, tx, ty, gx, gy,
+                                        AP_TRAVEL_WALK,
+                                        walk_path, AP_PATH_MAX);
+                    if (n_walk <= 0) continue;
+                    int n_sail = ap_bfs(m, g->position.x, g->position.y,
+                                        tx, ty, AP_TRAVEL_BOAT,
+                                        sail_path, AP_PATH_MAX);
+                    if (n_sail <= 0) continue;
+                    int total = n_sail + n_walk;
+                    if (total < best_total) {
+                        best_total = total;
+                        best_x = tx;
+                        best_y = ty;
+                        memcpy(st->path, sail_path,
+                               sizeof(ApPoint) * (size_t)n_sail);
+                        st->path_len = n_sail;
+                        st->path_idx = 0;
+                        st->path_target_x = tx;
+                        st->path_target_y = ty;
+                    }
+                }
+            }
+            if (best_x < 0) {
+                AP_LOG("[hack] no sailable home approach to Maximus "
+                       "from (%d,%d)", g->position.x, g->position.y);
+                return SHELL_RUN_EXIT_FAIL;
+            }
+            st->module_scratch[10] = best_x;
+            st->module_scratch[11] = best_y;
+            AP_LOG("[hack] sailing home to land (%d,%d) "
+                   "(sail+walk=%d steps)", best_x, best_y, best_total);
+        }
+        if (g->position.x == st->path_target_x &&
+            g->position.y == st->path_target_y) {
+            st->phase = AP_HACK_DISEMBARK_NEAR_MAXIMUS;
+            st->phase_started_at = frame_no;
+            st->path_len = 0;
+            return SHELL_RUN_CONTINUE;
+        }
+        if (!ap_ensure_path(st, m, g->position.x, g->position.y,
+                            st->path_target_x, st->path_target_y,
+                            AP_TRAVEL_BOAT)) {
+            AP_LOG("[hack] home sail: BFS recompute failed from (%d,%d)",
+                   g->position.x, g->position.y);
+            return SHELL_RUN_EXIT_FAIL;
+        }
+        if (!ap_step_along_path(st, g->position.x, g->position.y)) {
+            AP_LOG("[hack] home sailing step failed at (%d,%d)",
+                   g->position.x, g->position.y);
+            return SHELL_RUN_EXIT_FAIL;
+        }
+        AP_TIMEOUT_FAIL(st->phase_started_at, 72000,
+                        "[hack] stuck sailing home to Maximus coast");
+        return SHELL_RUN_CONTINUE;
+    }
+
+    case AP_HACK_DISEMBARK_NEAR_MAXIMUS: {
+        if (g->travel_mode != TRAVEL_BOAT) {
+            st->phase = AP_HACK_WALK_TO_KING;
+            st->phase_started_at = frame_no;
+            st->path_len = 0;
+            AP_LOG("[hack] disembarked home at (%d,%d)",
+                   g->position.x, g->position.y);
+            return SHELL_RUN_CONTINUE;
+        }
+        // Step onto any adjacent land tile.
+        static const int dxs[8] = { 0, 0, -1, 1, -1, 1, -1, 1 };
+        static const int dys[8] = { -1, 1, 0, 0, -1, -1, 1, 1 };
+        int chosen_k = 0;
+        for (int i = 0; i < 8; i++) {
+            int nx = g->position.x + dxs[i];
+            int ny = g->position.y + dys[i];
+            if (!MapInBounds(m, nx, ny)) continue;
+            const Tile *t = MapGetTile(m, nx, ny);
+            if (!t || !TerrainWalkable(t->terrain) || t->blocks_foot) continue;
+            if (t->interactive != INTERACT_NONE) continue;
+            chosen_k = ap_dir_key(g->position.x, g->position.y, nx, ny);
+            if (chosen_k != 0) break;
+        }
+        if (chosen_k == 0) {
+            AP_LOG("[hack] no adjacent land to disembark home "
+                   "from (%d,%d)", g->position.x, g->position.y);
+            return SHELL_RUN_EXIT_FAIL;
+        }
+        if (input_host_queue_depth() == 0) input_host_queue_key(chosen_k);
+        AP_TIMEOUT_FAIL(st->phase_started_at, 240,
+                        "[hack] couldn't disembark home");
+        return SHELL_RUN_CONTINUE;
+    }
+
+    case AP_HACK_WALK_TO_KING:
+        if (views_active() == VIEW_HOME_CASTLE) {
+            st->phase = AP_HACK_OPEN_RECRUIT;
+            st->phase_started_at = frame_no;
+            st->path_len = 0;
+            AP_LOG("[hack] entered king_maximus for restock");
+            return SHELL_RUN_CONTINUE;
+        }
+        if (views_active() != VIEW_NONE) {
+            input_host_queue_key(KEY_ESCAPE);
+            return SHELL_RUN_CONTINUE;
+        }
+        // Maximus gate sits at (11,57); the tile *just south* (11,58) is
+        // the hero spawn and a clean adjacent walk tile. Aim for (11,58)
+        // and step N once to trigger the gate, same shape Murray uses.
+        if (!ap_ensure_path(st, m, g->position.x, g->position.y,
+                            11, 56, AP_TRAVEL_WALK)) {
+            AP_LOG("[hack] BFS failed walking to Maximus from (%d,%d)",
+                   g->position.x, g->position.y);
+            return SHELL_RUN_EXIT_FAIL;
+        }
+        if (!ap_step_along_path(st, g->position.x, g->position.y)) {
+            return SHELL_RUN_EXIT_FAIL;
+        }
+        AP_TIMEOUT_FAIL(st->phase_started_at, 7200,
+                        "[hack] stuck walking to Maximus");
+        return SHELL_RUN_CONTINUE;
+
+    case AP_HACK_OPEN_RECRUIT:
+        input_host_queue_key(KEY_A);
+        st->phase = AP_HACK_DO_RECRUITS;
+        st->phase_started_at = frame_no;
+        return SHELL_RUN_CONTINUE;
+
+    case AP_HACK_DO_RECRUITS:
+        if (views_active() == VIEW_RECRUIT_SOLDIERS) {
+            AP_LOG("[hack] recruit screen open, HP=%d gold=%d "
+                   "leadership=%d", ap_army_total_hp(g), g->stats.gold,
+                   g->stats.leadership_current);
+            // Same shape as Murray's recruit (C/A/B + counts).
+            // Pool order is militia/archers/pikemen by recruit_cost.
+            // Knight leadership=100 caps per-troop, so request more than
+            // we'd ever get — buy_troop silently clamps.
+            input_host_queue_key(KEY_C);   // pikemen
+            ap_queue_recruit_count(99);
+            input_host_queue_key(KEY_A);   // militia
+            ap_queue_recruit_count(99);
+            input_host_queue_key(KEY_B);   // archers
+            ap_queue_recruit_count(99);
+            st->phase = AP_HACK_LEAVE_RECRUIT;
+            st->phase_started_at = frame_no;
+            return SHELL_RUN_CONTINUE;
+        }
+        AP_TIMEOUT_FAIL(st->phase_started_at, 300,
+                        "[hack] VIEW_RECRUIT_SOLDIERS never opened");
+        return SHELL_RUN_CONTINUE;
+
+    case AP_HACK_LEAVE_RECRUIT: {
+        // The recruit queue from DO_RECRUITS is processed asynchronously
+        // by the recruit screen. Knight leadership=100 means we can't
+        // hit a fixed HP target — total HP across troop types can exceed
+        // 100 since each troop type is capped independently, but how
+        // much we get depends on what's already in the army. Wait until
+        // the recruit queue has been fully drained AND a few frames
+        // have passed without gold/HP changing, then ESC out.
+        int hp_now = ap_army_total_hp(g);
+        int gold_now = g->stats.gold;
+        // scratch[13] = last_hp, scratch[14] = last_gold,
+        // scratch[15] = stable-frame-count
+        if (st->module_scratch[13] != hp_now ||
+            st->module_scratch[14] != gold_now) {
+            st->module_scratch[13] = hp_now;
+            st->module_scratch[14] = gold_now;
+            st->module_scratch[15] = frame_no;
+        }
+        if (input_host_queue_depth() == 0 &&
+            frame_no - st->module_scratch[15] >= 30) {
+            input_host_queue_key(KEY_ESCAPE);
+            st->phase = AP_HACK_LEAVE_KING;
+            st->phase_started_at = frame_no;
+            AP_LOG("[hack] restock done, army HP=%d gold=%d",
+                   hp_now, gold_now);
+            return SHELL_RUN_CONTINUE;
+        }
+        AP_TIMEOUT_FAIL(st->phase_started_at, 1200,
+                        "[hack] recruit queue never settled");
+        return SHELL_RUN_CONTINUE;
+    }
+
+    case AP_HACK_LEAVE_KING:
+        if (views_active() == VIEW_NONE) {
+            // Done restocking. Now head out to Hack: pick the nearest
+            // coastal town on *this* (Maximus) landmass and switch the
+            // sail target back to Hack's gate.
+            int rent_x = -1, rent_y = -1;
+            int n = find_nearest_town(g, m, g->position.x, g->position.y,
+                                      &rent_x, &rent_y);
+            if (n < 0) {
+                AP_LOG("[hack] no town reachable from Maximus (%d,%d)",
+                       g->position.x, g->position.y);
+                return SHELL_RUN_EXIT_FAIL;
+            }
+            st->module_scratch[2] = rent_x;
+            st->module_scratch[3] = rent_y;
+            st->module_scratch[4] = st->module_scratch[8];  // hack gate x
+            st->module_scratch[5] = st->module_scratch[9];  // hack gate y
+            st->phase = AP_HACK_WALK_TO_TOWN_FOR_BOAT;
+            st->phase_started_at = frame_no;
+            st->path_len = 0;
+            AP_LOG("[hack] exited king_maximus, walking to (%d,%d) for "
+                   "boat to Hack at (%d,%d)",
+                   rent_x, rent_y,
+                   st->module_scratch[4], st->module_scratch[5]);
+            return SHELL_RUN_CONTINUE;
+        }
+        if (views_active() == VIEW_HOME_CASTLE) {
+            input_host_queue_key(KEY_ESCAPE);
+        }
+        AP_TIMEOUT_FAIL(st->phase_started_at, 240,
+                        "[hack] couldn't exit king_maximus after restock");
+        return SHELL_RUN_CONTINUE;
 
     case AP_HACK_WALK_TO_TOWN_FOR_BOAT:
         if (views_active() == VIEW_TOWN) {
