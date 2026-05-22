@@ -175,10 +175,65 @@ ShellRunVerdict ap_grind_p1_per_frame(Game *g, Map *m, Fog *f,
         if (!grind_p1_find_nearest_pickup(m, st,
                                           g->position.x, g->position.y,
                                           &tx, &ty)) {
-            AP_LOG("[grind-p1] no reachable pickups remain");
-            st->phase = AP_GRIND_P1_VERIFY;
-            st->phase_started_at = frame_no;
-            return SHELL_RUN_CONTINUE;
+            // Normal scan finds nothing. Try retry mode: iterate
+            // blacklist entries that are still pickup tiles on the map.
+            // scratch[24] = retry mode flag, scratch[31] = retry index.
+            if (st->module_scratch[24] != 1) {
+                st->module_scratch[24] = 1;
+                st->module_scratch[31] = 0;
+                AP_LOG("[grind-p1] main scan empty, entering retry mode "
+                       "(%d blacklisted)", st->grind_blacklist_count);
+            }
+            // Iterate every remaining pickup tile on the map, in
+            // map-scan order. scratch[31] = encoded (y * 4096 + x)
+            // checkpoint of where we left off, so each retry advances.
+            int last = st->module_scratch[31];
+            if (last < 0) last = 0;
+            int found = 0;
+            for (int y = 0; y < m->height && !found; y++) {
+                for (int x = 0; x < m->width; x++) {
+                    int key = y * 4096 + x;
+                    if (key < last) continue;
+                    const Tile *t2 = MapGetTile(m, x, y);
+                    if (!t2) continue;
+                    if (t2->interactive != INTERACT_TREASURE_CHEST &&
+                        t2->interactive != INTERACT_ARTIFACT) continue;
+                    tx = x; ty = y;
+                    st->module_scratch[31] = key + 1;
+                    found = 1;
+                    break;
+                }
+            }
+            if (!found) {
+                AP_LOG("[grind-p1] retry mode exhausted — stopping sweep");
+                st->phase = AP_GRIND_P1_VERIFY;
+                st->phase_started_at = frame_no;
+                return SHELL_RUN_CONTINUE;
+            }
+            AP_LOG("[grind-p1] RETRY target at (%d,%d) (from blacklist)",
+                   tx, ty);
+            // Save target for after the home detour, then route through
+            // RETRY_GO_HOME first if we're not already near Maximus.
+            // Heuristic "near": within 4 tiles of (11,57).
+            int dx_home = g->position.x - 11;
+            int dy_home = g->position.y - 57;
+            if (dx_home < 0) dx_home = -dx_home;
+            if (dy_home < 0) dy_home = -dy_home;
+            int near_home = (dx_home <= 4 && dy_home <= 4);
+            if (!near_home) {
+                st->module_scratch[0] = tx;
+                st->module_scratch[1] = ty;
+                st->module_scratch[5] = 0;
+                st->module_scratch[25] = frame_no;
+                st->module_scratch[26] = g->position.x;
+                st->module_scratch[27] = g->position.y;
+                st->ferry_state = FERRY_IDLE;
+                st->phase = AP_GRIND_P1_RETRY_GO_HOME;
+                st->phase_started_at = frame_no;
+                st->path_len = 0;
+                return SHELL_RUN_CONTINUE;
+            }
+            // Already near home: just attempt the target directly.
         }
         const Tile *tt = MapGetTile(m, tx, ty);
         const char *kind = (tt && tt->interactive == INTERACT_ARTIFACT)
@@ -195,6 +250,55 @@ ShellRunVerdict ap_grind_p1_per_frame(Game *g, Map *m, Fog *f,
         st->phase = AP_GRIND_P1_WALK_TO_TARGET;
         st->phase_started_at = frame_no;
         st->path_len = 0;
+        return SHELL_RUN_CONTINUE;
+    }
+
+    case AP_GRIND_P1_RETRY_GO_HOME: {
+        // Ferry to (11,57) — adjacent to Maximus's gate. We don't enter
+        // the castle; we just want the hero on continentia near the home
+        // spawn so the next ferry-to-blacklist-chest BFS-walk has a
+        // chance of finding a path that the post-sweep position couldn't.
+        if (g->position.x == 11 && g->position.y == 57) {
+            // At the gate. Don't step onto it (would enter HOME_CASTLE);
+            // just transition to the actual chest target.
+            st->ferry_state = FERRY_IDLE;
+            st->phase = AP_GRIND_P1_WALK_TO_TARGET;
+            st->phase_started_at = frame_no;
+            st->module_scratch[25] = frame_no;
+            st->module_scratch[26] = g->position.x;
+            st->module_scratch[27] = g->position.y;
+            st->path_len = 0;
+            AP_LOG("[grind-p1] retry: arrived near home, attempting target");
+            return SHELL_RUN_CONTINUE;
+        }
+        FerryState fs = ap_ferry_tick(st, g, m, frame_no, 11, 57);
+        if (fs == FERRY_FAILED) {
+            // Can't even reach home — blacklist target and continue.
+            AP_LOG("[grind-p1] retry: ferry to home failed, "
+                   "blacklisting (%d,%d) and continuing",
+                   st->module_scratch[0], st->module_scratch[1]);
+            grind_p1_remember_failed(st, st->module_scratch[0],
+                                     st->module_scratch[1]);
+            st->phase = AP_GRIND_P1_PICK_TARGET;
+            st->phase_started_at = frame_no;
+            st->ferry_state = FERRY_IDLE;
+            st->path_len = 0;
+            return SHELL_RUN_CONTINUE;
+        }
+        if (fs == FERRY_DONE) {
+            // Adjacent to gate. Don't step onto the gate; stop here.
+            st->ferry_state = FERRY_IDLE;
+            st->phase = AP_GRIND_P1_WALK_TO_TARGET;
+            st->phase_started_at = frame_no;
+            st->module_scratch[25] = frame_no;
+            st->module_scratch[26] = g->position.x;
+            st->module_scratch[27] = g->position.y;
+            st->path_len = 0;
+            AP_LOG("[grind-p1] retry: adjacent to home, attempting target");
+            return SHELL_RUN_CONTINUE;
+        }
+        AP_TIMEOUT_FAIL(st->phase_started_at, 14400,
+                        "[grind-p1] stuck heading home for retry");
         return SHELL_RUN_CONTINUE;
     }
 
@@ -402,12 +506,32 @@ ShellRunVerdict ap_grind_p1_per_frame(Game *g, Map *m, Fog *f,
 
     case AP_GRIND_P1_VERIFY: {
         int delta = g->stats.gold - st->module_scratch[4];
+        // Count chests + artifacts still on the map (uncollected).
+        int chests_left = 0, artifacts_left = 0;
+        for (int y = 0; y < m->height; y++) {
+            for (int x = 0; x < m->width; x++) {
+                const Tile *t = MapGetTile(m, x, y);
+                if (!t) continue;
+                if (t->interactive == INTERACT_TREASURE_CHEST) {
+                    chests_left++;
+                    fprintf(stderr, "[autoplay] UNCOLLECTED chest: (%d,%d)\n",
+                            x, y);
+                } else if (t->interactive == INTERACT_ARTIFACT) {
+                    artifacts_left++;
+                    fprintf(stderr,
+                            "[autoplay] UNCOLLECTED artifact: (%d,%d)\n",
+                            x, y);
+                }
+            }
+        }
         printf("autoplay: grind P1 swept %d pickups — "
-               "gold %d → %d (Δ%+d), army_hp=%d, pos=(%d,%d)\n",
+               "gold %d → %d (Δ%+d), army_hp=%d, pos=(%d,%d), "
+               "uncollected chests=%d artifacts=%d\n",
                st->module_scratch[2],
                st->module_scratch[4], g->stats.gold, delta,
                ap_army_total_hp(g),
-               g->position.x, g->position.y);
+               g->position.x, g->position.y,
+               chests_left, artifacts_left);
         if (!ap_save_checkpoint(g, m, f, AP_SLOT_GRIND_P1)) {
             return SHELL_RUN_EXIT_FAIL;
         }

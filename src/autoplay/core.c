@@ -567,6 +567,11 @@ static void autoplay_before_frame(void *user) {
 //   FERRY_DONE          → hero at target tile; module resumes
 //   FERRY_FAILED        → unrecoverable (no town to ferry from, BFS fails)
 
+// Forward decl — defined below.
+static int ferry_plan_sail(const Map *m, int cx, int cy, int tx, int ty,
+                           ApPoint *out_sail_path, int sail_cap,
+                           int *out_landing_x, int *out_landing_y);
+
 int ap_find_nearest_town(const Game *g, const Map *m,
                          int cx, int cy, int *out_x, int *out_y) {
     int best_dist = 1 << 30;
@@ -589,6 +594,40 @@ int ap_find_nearest_town(const Game *g, const Map *m,
     return best_dist;
 }
 
+// Like ap_find_nearest_town, but only returns towns whose boat spawn
+// can sail to a walkable landing near (tx,ty). Used by the ferry when
+// the nearest town's water body isn't connected to the target.
+// Returns walk distance to chosen town, -1 if none qualifies.
+int ap_find_useful_town(const Game *g, const Map *m,
+                        int cx, int cy, int tx, int ty,
+                        int *out_x, int *out_y) {
+    int best_dist = 1 << 30;
+    int best_x = -1, best_y = -1;
+    ApPoint tmp[AP_PATH_MAX];
+    ApPoint sail_path[AP_PATH_MAX];
+    int dummy_lx, dummy_ly;
+    for (int i = 0; i < g->res->town_count; i++) {
+        const ResTown *t = &g->res->towns[i];
+        if (strcmp(t->zone, g->position.zone) != 0) continue;
+        if (t->boat_x < 0 || t->boat_y < 0) continue;
+        int n = ap_bfs(m, cx, cy, t->x, t->y, AP_TRAVEL_WALK,
+                       tmp, AP_PATH_MAX);
+        if (n <= 0 || n >= best_dist) continue;
+        // Probe: can this town's boat reach a landing near the target?
+        int n_sail = ferry_plan_sail(m, t->boat_x, t->boat_y, tx, ty,
+                                     sail_path, AP_PATH_MAX,
+                                     &dummy_lx, &dummy_ly);
+        if (n_sail <= 0) continue;
+        best_dist = n;
+        best_x = t->x;
+        best_y = t->y;
+    }
+    if (best_x < 0) return -1;
+    if (out_x) *out_x = best_x;
+    if (out_y) *out_y = best_y;
+    return best_dist;
+}
+
 // Plan the cheapest sail+walk approach: nearest non-interactive land
 // tile near (tx,ty) that's sailable from (cx,cy) and walkable to (tx,ty).
 // Returns sail_path_len (and fills the path) on success, 0 if none.
@@ -600,8 +639,8 @@ static int ferry_plan_sail(const Map *m, int cx, int cy, int tx, int ty,
     int best_sail_len = 0;
     ApPoint sail_path[AP_PATH_MAX];
     ApPoint walk_path[AP_PATH_MAX];
-    for (int oy = -12; oy <= 12; oy++) {
-        for (int ox = -12; ox <= 12; ox++) {
+    for (int oy = -30; oy <= 30; oy++) {
+        for (int ox = -30; ox <= 30; ox++) {
             int lx = tx + ox;
             int ly = ty + oy;
             if (!MapInBounds(m, lx, ly)) continue;
@@ -657,11 +696,28 @@ FerryState ap_ferry_tick(AutoplayState *st, Game *g, Map *m,
             AP_LOG("ferry → walk direct to (%d,%d) (%d steps)",
                    target_x, target_y, n_walk);
         } else {
-            // Need a boat. Find nearest town to rent from.
+            // Need a boat. Prefer a town whose boat can actually sail
+            // to a landing near the target — falls back to nearest-town
+            // if no such town is found (so old behavior is preserved
+            // when the per-target probe is moot).
             int rent_x = -1, rent_y = -1;
-            int rn = ap_find_nearest_town(g, m,
+            int rn = ap_find_useful_town(g, m,
+                                         g->position.x, g->position.y,
+                                         target_x, target_y,
+                                         &rent_x, &rent_y);
+            if (rn >= 0) {
+                AP_LOG("ferry → useful town (%d,%d) for boat to (%d,%d)",
+                       rent_x, rent_y, target_x, target_y);
+            } else {
+                rn = ap_find_nearest_town(g, m,
                                           g->position.x, g->position.y,
                                           &rent_x, &rent_y);
+                if (rn >= 0) {
+                    AP_LOG("ferry → nearest town (%d,%d) fallback "
+                           "(useful-town probe found none for target)",
+                           rent_x, rent_y);
+                }
+            }
             if (rn < 0) {
                 // No town overland — but if we already have a boat,
                 // skip the town and go straight to the sail planner.

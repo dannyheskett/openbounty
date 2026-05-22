@@ -99,6 +99,10 @@ typedef enum {
     AP_GRIND_P1_FIRST,
     AP_GRIND_P1_PICK_TARGET = AP_GRIND_P1_FIRST,
     AP_GRIND_P1_WALK_TO_TARGET,
+    // Retry-mode precursor: ferry hero to the home spawn before each
+    // retry attempt, so blacklisted chests that need a specific walk
+    // approach (no sail landing within 12 tiles) get a chance.
+    AP_GRIND_P1_RETRY_GO_HOME,
     // Post-defeat recovery: walk to Maximus (or wait if already there),
     // open the recruit screen, max-recruit, exit. Then pick next target.
     AP_GRIND_P1_RESTOCK_WALK,
@@ -237,6 +241,13 @@ bool ap_handle_common_prompts(const AutoplayState *st);
 // overland-reachable.
 int ap_find_nearest_town(const Game *g, const Map *m,
                          int cx, int cy, int *out_x, int *out_y);
+
+// Like ap_find_nearest_town, but only returns towns whose boat spawn
+// can actually sail to a landing near (tx,ty). Used when the closest
+// town's water body isn't connected to the destination.
+int ap_find_useful_town(const Game *g, const Map *m,
+                        int cx, int cy, int tx, int ty,
+                        int *out_x, int *out_y);
 
 // Ferry sub-state-machine. Call from a module phase to move the hero
 // from anywhere to (target_x, target_y). Returns:
