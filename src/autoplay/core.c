@@ -525,6 +525,449 @@ static void autoplay_before_frame(void *user) {
 }
 
 // =========================================================================
+// Town finder + ferry sub-state-machine
+// =========================================================================
+//
+// ap_ferry_tick drives the hero from anywhere to (target_x, target_y),
+// renting a boat and sailing if no overland route exists. Modules
+// invoke it from a single phase and react to the return value.
+//
+// The substate machine tracks:
+//   FERRY_IDLE          → first tick: decide walk-direct or boat-trip
+//   FERRY_WALK_DIRECT   → overland path; ap_ensure_path + step until at target
+//   FERRY_WALK_TO_TOWN  → walking to the chosen rental town
+//   FERRY_RENT_BOAT     → press B to cancel-and-rent until local boat
+//   FERRY_EXIT_TOWN     → ESC out of town view
+//   FERRY_BOARD_BOAT    → walk-BFS to boat-adjacent land tile, step onto boat
+//   FERRY_SAIL          → boat-mode BFS to a non-interactive land tile
+//                         near target, then step until at the landing
+//   FERRY_DISEMBARK     → step from water onto adjacent land
+//   FERRY_WALK_TO_TARGET → final walk on the target's landmass
+//   FERRY_DONE          → hero at target tile; module resumes
+//   FERRY_FAILED        → unrecoverable (no town to ferry from, BFS fails)
+
+int ap_find_nearest_town(const Game *g, const Map *m,
+                         int cx, int cy, int *out_x, int *out_y) {
+    int best_dist = 1 << 30;
+    int best_x = -1, best_y = -1;
+    ApPoint tmp[AP_PATH_MAX];
+    for (int i = 0; i < g->res->town_count; i++) {
+        const ResTown *t = &g->res->towns[i];
+        if (strcmp(t->zone, g->position.zone) != 0) continue;
+        int n = ap_bfs(m, cx, cy, t->x, t->y, AP_TRAVEL_WALK,
+                       tmp, AP_PATH_MAX);
+        if (n > 0 && n < best_dist) {
+            best_dist = n;
+            best_x = t->x;
+            best_y = t->y;
+        }
+    }
+    if (best_x < 0) return -1;
+    if (out_x) *out_x = best_x;
+    if (out_y) *out_y = best_y;
+    return best_dist;
+}
+
+// Plan the cheapest sail+walk approach: nearest non-interactive land
+// tile near (tx,ty) that's sailable from (cx,cy) and walkable to (tx,ty).
+// Returns sail_path_len (and fills the path) on success, 0 if none.
+static int ferry_plan_sail(const Map *m, int cx, int cy, int tx, int ty,
+                           ApPoint *out_sail_path, int sail_cap,
+                           int *out_landing_x, int *out_landing_y) {
+    int best_total = 1 << 30;
+    int best_x = -1, best_y = -1;
+    int best_sail_len = 0;
+    ApPoint sail_path[AP_PATH_MAX];
+    ApPoint walk_path[AP_PATH_MAX];
+    for (int oy = -12; oy <= 12; oy++) {
+        for (int ox = -12; ox <= 12; ox++) {
+            int lx = tx + ox;
+            int ly = ty + oy;
+            if (!MapInBounds(m, lx, ly)) continue;
+            const Tile *t = MapGetTile(m, lx, ly);
+            if (!t) continue;
+            if (!TerrainWalkable(t->terrain) || t->blocks_foot) continue;
+            if (t->interactive != INTERACT_NONE) continue;
+            int n_walk = ap_bfs(m, lx, ly, tx, ty, AP_TRAVEL_WALK,
+                                walk_path, AP_PATH_MAX);
+            if (n_walk <= 0) continue;
+            int n_sail = ap_bfs(m, cx, cy, lx, ly, AP_TRAVEL_BOAT,
+                                sail_path, AP_PATH_MAX);
+            if (n_sail <= 0) continue;
+            int total = n_sail + n_walk;
+            if (total < best_total) {
+                best_total = total;
+                best_x = lx;
+                best_y = ly;
+                best_sail_len = n_sail;
+                memcpy(out_sail_path, sail_path,
+                       sizeof(ApPoint) * (size_t)((n_sail < sail_cap)
+                                                  ? n_sail : sail_cap));
+                if (n_sail > sail_cap) best_sail_len = sail_cap;
+            }
+        }
+    }
+    if (best_x < 0) return 0;
+    if (out_landing_x) *out_landing_x = best_x;
+    if (out_landing_y) *out_landing_y = best_y;
+    return best_sail_len;
+}
+
+FerryState ap_ferry_tick(AutoplayState *st, Game *g, Map *m,
+                         int frame_no, int target_x, int target_y) {
+    // First tick of a new ferry: pick walk-direct vs boat-trip.
+    if (st->ferry_state == FERRY_IDLE) {
+        st->ferry_target_x = target_x;
+        st->ferry_target_y = target_y;
+        st->ferry_started_at = frame_no;
+        st->path_len = 0;
+        // Already at the target? Trivial done.
+        if (g->position.x == target_x && g->position.y == target_y) {
+            st->ferry_state = FERRY_DONE;
+            return FERRY_DONE;
+        }
+        // Walk-direct if BFS succeeds.
+        ApPoint tmp[AP_PATH_MAX];
+        int n_walk = ap_bfs(m, g->position.x, g->position.y,
+                            target_x, target_y, AP_TRAVEL_WALK,
+                            tmp, AP_PATH_MAX);
+        if (n_walk > 0) {
+            st->ferry_state = FERRY_WALK_DIRECT;
+            AP_LOG("ferry → walk direct to (%d,%d) (%d steps)",
+                   target_x, target_y, n_walk);
+        } else {
+            // Need a boat. Find nearest town to rent from.
+            int rent_x = -1, rent_y = -1;
+            int rn = ap_find_nearest_town(g, m,
+                                          g->position.x, g->position.y,
+                                          &rent_x, &rent_y);
+            if (rn < 0) {
+                // No town overland — but if we already have a boat,
+                // skip the town and go straight to the sail planner.
+                if (g->boat.has_boat && g->boat.x >= 0) {
+                    st->ferry_state = FERRY_BOARD_BOAT;
+                    st->ferry_town_x = -1;
+                    st->ferry_town_y = -1;
+                    AP_LOG("ferry → no town, using current boat at (%d,%d)",
+                           g->boat.x, g->boat.y);
+                } else {
+                    AP_LOG("ferry → no town and no boat from (%d,%d) "
+                           "to (%d,%d) — FAILED",
+                           g->position.x, g->position.y, target_x, target_y);
+                    st->ferry_state = FERRY_FAILED;
+                    return FERRY_FAILED;
+                }
+            } else {
+                st->ferry_town_x = rent_x;
+                st->ferry_town_y = rent_y;
+                st->ferry_state = FERRY_WALK_TO_TOWN;
+                AP_LOG("ferry → town (%d,%d) for boat to (%d,%d)",
+                       rent_x, rent_y, target_x, target_y);
+            }
+        }
+        st->ferry_press_expect = 0;
+        st->ferry_landing_x = -1;
+        st->ferry_landing_y = -1;
+    }
+
+    switch (st->ferry_state) {
+
+    case FERRY_WALK_DIRECT: {
+        if (g->position.x == target_x && g->position.y == target_y) {
+            st->ferry_state = FERRY_DONE;
+            return FERRY_DONE;
+        }
+        if (views_active() != VIEW_NONE) {
+            input_host_queue_key(KEY_ESCAPE);
+            return st->ferry_state;
+        }
+        if (!ap_ensure_path(st, m, g->position.x, g->position.y,
+                            target_x, target_y, AP_TRAVEL_WALK)) {
+            AP_LOG("ferry walk: BFS lost path from (%d,%d) to (%d,%d)",
+                   g->position.x, g->position.y, target_x, target_y);
+            st->ferry_state = FERRY_FAILED;
+            return FERRY_FAILED;
+        }
+        if (!ap_step_along_path(st, g->position.x, g->position.y)) {
+            st->ferry_state = FERRY_FAILED;
+            return FERRY_FAILED;
+        }
+        return st->ferry_state;
+    }
+
+    case FERRY_WALK_TO_TOWN: {
+        if (views_active() == VIEW_TOWN) {
+            st->ferry_state = FERRY_RENT_BOAT;
+            st->ferry_press_expect = 0;
+            return st->ferry_state;
+        }
+        if (views_active() != VIEW_NONE) {
+            input_host_queue_key(KEY_ESCAPE);
+            return st->ferry_state;
+        }
+        if (!ap_ensure_path(st, m, g->position.x, g->position.y,
+                            st->ferry_town_x, st->ferry_town_y,
+                            AP_TRAVEL_WALK)) {
+            AP_LOG("ferry: BFS lost walk to town (%d,%d)",
+                   st->ferry_town_x, st->ferry_town_y);
+            st->ferry_state = FERRY_FAILED;
+            return FERRY_FAILED;
+        }
+        if (!ap_step_along_path(st, g->position.x, g->position.y)) {
+            st->ferry_state = FERRY_FAILED;
+            return FERRY_FAILED;
+        }
+        return st->ferry_state;
+    }
+
+    case FERRY_RENT_BOAT: {
+        int tx = st->ferry_town_x, ty = st->ferry_town_y;
+        bool local = false;
+        if (g->boat.has_boat) {
+            int dx = g->boat.x - tx; if (dx < 0) dx = -dx;
+            int dy = g->boat.y - ty; if (dy < 0) dy = -dy;
+            local = (dx <= 5 && dy <= 5);
+        }
+        if (g->boat.has_boat && local) {
+            input_host_queue_key(KEY_ESCAPE);
+            st->ferry_state = FERRY_EXIT_TOWN;
+            st->ferry_press_expect = 0;
+            AP_LOG("ferry: boat ready at (%d,%d), gold=%d",
+                   g->boat.x, g->boat.y, g->stats.gold);
+            return st->ferry_state;
+        }
+        int *expect = &st->ferry_press_expect;
+        if (*expect == 1 && !g->boat.has_boat) *expect = 0;
+        if (*expect == 2 &&  g->boat.has_boat) *expect = 0;
+        if (*expect == 0 && input_host_queue_depth() == 0) {
+            input_host_queue_key(KEY_B);
+            *expect = g->boat.has_boat ? 1 : 2;
+        }
+        return st->ferry_state;
+    }
+
+    case FERRY_EXIT_TOWN: {
+        if (views_active() == VIEW_NONE) {
+            st->ferry_state = FERRY_BOARD_BOAT;
+            st->path_len = 0;
+            return st->ferry_state;
+        }
+        if (views_active() == VIEW_TOWN) {
+            input_host_queue_key(KEY_ESCAPE);
+            return st->ferry_state;
+        }
+        input_host_queue_key(KEY_ESCAPE);
+        return st->ferry_state;
+    }
+
+    case FERRY_BOARD_BOAT: {
+        int bx = g->boat.x, by = g->boat.y;
+        if (g->travel_mode == TRAVEL_BOAT) {
+            st->ferry_state = FERRY_SAIL;
+            st->path_len = 0;
+            st->ferry_landing_x = -1;
+            st->ferry_landing_y = -1;
+            AP_LOG("ferry: boarded boat at (%d,%d), sailing to (%d,%d)",
+                   bx, by, target_x, target_y);
+            return st->ferry_state;
+        }
+        int adx = bx - g->position.x; if (adx < 0) adx = -adx;
+        int ady = by - g->position.y; if (ady < 0) ady = -ady;
+        if (adx <= 1 && ady <= 1) {
+            int k = ap_dir_key(g->position.x, g->position.y, bx, by);
+            if (k == 0) {
+                AP_LOG("ferry: already on boat tile? pos=(%d,%d) boat=(%d,%d)",
+                       g->position.x, g->position.y, bx, by);
+                st->ferry_state = FERRY_FAILED;
+                return FERRY_FAILED;
+            }
+            if (input_host_queue_depth() == 0) input_host_queue_key(k);
+            return st->ferry_state;
+        }
+        // Not adjacent: BFS-walk to a land tile next to the boat.
+        static const int dxs[8] = { 0, 0, -1, 1, -1, 1, -1, 1 };
+        static const int dys[8] = { -1, 1, 0, 0, -1, -1, 1, 1 };
+        int approach_x = -1, approach_y = -1;
+        for (int i = 0; i < 8; i++) {
+            int nx = bx + dxs[i];
+            int ny = by + dys[i];
+            if (!MapInBounds(m, nx, ny)) continue;
+            const Tile *t = MapGetTile(m, nx, ny);
+            if (!t) continue;
+            if (!TerrainWalkable(t->terrain) || t->blocks_foot) continue;
+            if (t->interactive != INTERACT_NONE) continue;
+            ApPoint tmp[AP_PATH_MAX];
+            int n = ap_bfs(m, g->position.x, g->position.y, nx, ny,
+                           AP_TRAVEL_WALK, tmp, AP_PATH_MAX);
+            if (n > 0) { approach_x = nx; approach_y = ny; break; }
+        }
+        if (approach_x < 0) {
+            AP_LOG("ferry: no walk approach to boat at (%d,%d)", bx, by);
+            st->ferry_state = FERRY_FAILED;
+            return FERRY_FAILED;
+        }
+        if (!ap_ensure_path(st, m, g->position.x, g->position.y,
+                            approach_x, approach_y, AP_TRAVEL_WALK)) {
+            st->ferry_state = FERRY_FAILED;
+            return FERRY_FAILED;
+        }
+        if (!ap_step_along_path(st, g->position.x, g->position.y)) {
+            st->ferry_state = FERRY_FAILED;
+            return FERRY_FAILED;
+        }
+        return st->ferry_state;
+    }
+
+    case FERRY_SAIL: {
+        if (views_active() != VIEW_NONE) {
+            if (input_host_queue_depth() == 0) {
+                input_host_queue_key(KEY_ESCAPE);
+            }
+            st->path_len = 0;
+            return st->ferry_state;
+        }
+        // Disembarked mid-sail? Check if we can walk to target now,
+        // otherwise re-board.
+        if (g->travel_mode == TRAVEL_WALK) {
+            ApPoint tmp[AP_PATH_MAX];
+            int n_walk = ap_bfs(m, g->position.x, g->position.y,
+                                target_x, target_y, AP_TRAVEL_WALK,
+                                tmp, AP_PATH_MAX);
+            if (n_walk > 0) {
+                st->ferry_state = FERRY_WALK_TO_TARGET;
+                st->path_len = 0;
+                AP_LOG("ferry: disembarked at (%d,%d), target reachable "
+                       "on foot (%d steps)",
+                       g->position.x, g->position.y, n_walk);
+                return st->ferry_state;
+            }
+            // Try reboarding if we still have a boat.
+            if (g->boat.has_boat && g->boat.x >= 0) {
+                st->ferry_state = FERRY_BOARD_BOAT;
+                st->path_len = 0;
+                return st->ferry_state;
+            }
+            AP_LOG("ferry: stranded at (%d,%d), no boat — FAILED",
+                   g->position.x, g->position.y);
+            st->ferry_state = FERRY_FAILED;
+            return FERRY_FAILED;
+        }
+        // Plan landing on first frame here.
+        if (st->path_len == 0) {
+            int lx = -1, ly = -1;
+            ApPoint sail_path[AP_PATH_MAX];
+            int n_sail = ferry_plan_sail(m,
+                                         g->position.x, g->position.y,
+                                         target_x, target_y,
+                                         sail_path, AP_PATH_MAX,
+                                         &lx, &ly);
+            if (n_sail <= 0) {
+                AP_LOG("ferry: no sail approach to (%d,%d) — FAILED",
+                       target_x, target_y);
+                st->ferry_state = FERRY_FAILED;
+                return FERRY_FAILED;
+            }
+            memcpy(st->path, sail_path, sizeof(ApPoint) * (size_t)n_sail);
+            st->path_len = n_sail;
+            st->path_idx = 0;
+            st->path_target_x = lx;
+            st->path_target_y = ly;
+            st->ferry_landing_x = lx;
+            st->ferry_landing_y = ly;
+            AP_LOG("ferry: sailing to landing (%d,%d) (%d sail steps)",
+                   lx, ly, n_sail);
+        }
+        if (g->position.x == st->path_target_x &&
+            g->position.y == st->path_target_y) {
+            st->ferry_state = FERRY_DISEMBARK;
+            st->path_len = 0;
+            return st->ferry_state;
+        }
+        if (!ap_ensure_path(st, m, g->position.x, g->position.y,
+                            st->path_target_x, st->path_target_y,
+                            AP_TRAVEL_BOAT)) {
+            st->ferry_state = FERRY_FAILED;
+            return FERRY_FAILED;
+        }
+        if (!ap_step_along_path(st, g->position.x, g->position.y)) {
+            st->ferry_state = FERRY_FAILED;
+            return FERRY_FAILED;
+        }
+        return st->ferry_state;
+    }
+
+    case FERRY_DISEMBARK: {
+        if (g->travel_mode != TRAVEL_BOAT) {
+            st->ferry_state = FERRY_WALK_TO_TARGET;
+            st->path_len = 0;
+            AP_LOG("ferry: disembarked at (%d,%d)",
+                   g->position.x, g->position.y);
+            return st->ferry_state;
+        }
+        static const int dxs[8] = { 0, 0, -1, 1, -1, 1, -1, 1 };
+        static const int dys[8] = { -1, 1, 0, 0, -1, -1, 1, 1 };
+        int chosen_k = 0;
+        for (int i = 0; i < 8; i++) {
+            int nx = g->position.x + dxs[i];
+            int ny = g->position.y + dys[i];
+            if (!MapInBounds(m, nx, ny)) continue;
+            const Tile *t = MapGetTile(m, nx, ny);
+            if (!t || !TerrainWalkable(t->terrain) || t->blocks_foot) continue;
+            if (t->interactive != INTERACT_NONE) continue;
+            chosen_k = ap_dir_key(g->position.x, g->position.y, nx, ny);
+            if (chosen_k != 0) break;
+        }
+        if (chosen_k == 0) {
+            AP_LOG("ferry: no land adjacent to disembark");
+            st->ferry_state = FERRY_FAILED;
+            return FERRY_FAILED;
+        }
+        if (input_host_queue_depth() == 0) input_host_queue_key(chosen_k);
+        return st->ferry_state;
+    }
+
+    case FERRY_WALK_TO_TARGET: {
+        if (g->position.x == target_x && g->position.y == target_y) {
+            st->ferry_state = FERRY_DONE;
+            return FERRY_DONE;
+        }
+        // If something opened a view/dialog (e.g. dwelling prompt at
+        // target), let the caller handle it — the caller's expects-prompt
+        // settings keep common_prompts from auto-ESC'ing. The hero is
+        // effectively at the target; return DONE.
+        if (prompt_is_active() || dialog_is_active()) {
+            st->ferry_state = FERRY_DONE;
+            return FERRY_DONE;
+        }
+        if (views_active() != VIEW_NONE) {
+            // VIEW_TOWN or VIEW_HOME_CASTLE on the path — ESC out and
+            // resume walking.
+            input_host_queue_key(KEY_ESCAPE);
+            return st->ferry_state;
+        }
+        if (!ap_ensure_path(st, m, g->position.x, g->position.y,
+                            target_x, target_y, AP_TRAVEL_WALK)) {
+            AP_LOG("ferry: BFS lost path to target (%d,%d) from (%d,%d)",
+                   target_x, target_y, g->position.x, g->position.y);
+            st->ferry_state = FERRY_FAILED;
+            return FERRY_FAILED;
+        }
+        if (!ap_step_along_path(st, g->position.x, g->position.y)) {
+            st->ferry_state = FERRY_FAILED;
+            return FERRY_FAILED;
+        }
+        return st->ferry_state;
+    }
+
+    case FERRY_DONE:
+    case FERRY_FAILED:
+    case FERRY_IDLE:
+        break;
+    }
+    return st->ferry_state;
+}
+
+// =========================================================================
 // Top-level dispatcher
 // =========================================================================
 //

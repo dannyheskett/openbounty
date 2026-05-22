@@ -129,6 +129,24 @@ typedef enum {
     AP_TRAVEL_BOAT,
 } ApTravel;
 
+// Substate enum for ap_ferry_tick. The ferry helper drives a hero
+// from wherever they are to (target_x, target_y), renting a boat and
+// sailing if no overland route exists. Modules call ap_ferry_tick in
+// a loop from one of their own phases and react to the return value.
+typedef enum {
+    FERRY_IDLE = 0,
+    FERRY_WALK_DIRECT,      // overland path exists; just walking
+    FERRY_WALK_TO_TOWN,
+    FERRY_RENT_BOAT,
+    FERRY_EXIT_TOWN,
+    FERRY_BOARD_BOAT,
+    FERRY_SAIL,
+    FERRY_DISEMBARK,
+    FERRY_WALK_TO_TARGET,
+    FERRY_DONE,             // hero is at target
+    FERRY_FAILED,           // unrecoverable (no town, no path)
+} FerryState;
+
 typedef struct AutoplayState {
     AutoplayPhase phase;
     int           phase_started_at;
@@ -142,6 +160,15 @@ typedef struct AutoplayState {
     // Combat scripting state.
     int           combat_unit_id_last_acted;
     int           combat_frame_last_action;
+    // Ferry sub-state-machine. Driven by ap_ferry_tick; the calling
+    // module's switch case stays in one phase across the whole ferry
+    // and reacts to the FerryState return value.
+    FerryState    ferry_state;
+    int           ferry_target_x, ferry_target_y;  // final destination
+    int           ferry_town_x, ferry_town_y;      // chosen rental town
+    int           ferry_landing_x, ferry_landing_y; // chosen disembark tile
+    int           ferry_press_expect;              // RENT_BOAT B-press state
+    int           ferry_started_at;                // for timeouts
     // Module-specific scratch. Modules write/read these freely
     // between their own phases. By convention they're reset to -1 at
     // module entry; -1 = "not yet set". When you need more state
@@ -197,6 +224,26 @@ int  ap_queue_picker(int cx, int cy, int tx, int ty);
 // or otherwise wants the per_frame to bail (return CONTINUE).
 // Modules call this near the top of their per_frame.
 bool ap_handle_common_prompts(const AutoplayState *st);
+
+// Walk g->res->towns[] for towns in the current zone, BFS-distance
+// each from (cx,cy) on foot, return the closest. -1 if no town is
+// overland-reachable.
+int ap_find_nearest_town(const Game *g, const Map *m,
+                         int cx, int cy, int *out_x, int *out_y);
+
+// Ferry sub-state-machine. Call from a module phase to move the hero
+// from anywhere to (target_x, target_y). Returns:
+//   FERRY_DONE   — hero is at the target tile; resume your own flow.
+//   FERRY_FAILED — couldn't get there (no town for ferry, no path).
+//                  Module should give up on this target.
+//   anything else — still in progress; return SHELL_RUN_CONTINUE and
+//                  re-tick next frame.
+//
+// To start a new ferry, set st->ferry_state = FERRY_IDLE before the
+// first call. Subsequent calls drive the substate forward.
+FerryState ap_ferry_tick(AutoplayState *st, Game *g, Map *m,
+                         int frame_no,
+                         int target_x, int target_y);
 
 // Per-module checkpoint slot assignments. Each module saves at the
 // end of its capture flow so the run is resumable from any completed
