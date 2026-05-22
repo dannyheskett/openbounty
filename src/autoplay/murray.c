@@ -114,10 +114,21 @@ ShellRunVerdict ap_murray_per_frame(Game *g, Map *m, Fog *f,
 
     case AP_MURRAY_LEAVE_KING:
         if (views_active() == VIEW_NONE) {
-            st->phase = AP_MURRAY_WALK_TO_TOWN_FOR_CONTRACT;
+            // Detour into grind_p0 first — recruited army is at HP=300,
+            // chests are walking distance from Maximus, so the sweep
+            // boosts leadership before Murray's contract pickup. grind_p0
+            // returns to AP_MURRAY_WALK_TO_TOWN_FOR_CONTRACT when done.
+            st->phase = AP_GRIND_P0_FIRST;
             st->phase_started_at = frame_no;
+            st->phase_action_queued = false;
+            st->ferry_state = FERRY_IDLE;
             st->path_len = 0;
-            AP_LOG("exited king_maximus, walking to a town for contract");
+            for (size_t i = 0;
+                 i < sizeof(st->module_scratch)/sizeof(st->module_scratch[0]);
+                 i++) {
+                st->module_scratch[i] = -1;
+            }
+            AP_LOG("exited king_maximus, detour to chest sweep");
             return SHELL_RUN_CONTINUE;
         }
         if (views_active() == VIEW_HOME_CASTLE) {
@@ -570,14 +581,13 @@ ShellRunVerdict ap_murray_per_frame(Game *g, Map *m, Fog *f,
             }
         }
         AP_LOG("=== scan done ===");
-        // Chain into the next module: Hack.
+        // Chain into the Hack module — grind_p0 already ran before
+        // Murray (intro → grind_p0 → Murray → Hack).
         st->phase = AP_HACK_FIRST;
         st->phase_started_at = frame_no;
         st->phase_action_queued = false;
+        st->ferry_state = FERRY_IDLE;
         st->path_len = 0;
-        // Reset module scratch — Hack uses these slots for its own
-        // ad-hoc state. -1 is the "not set yet" sentinel; valid map
-        // coords are always >= 0.
         for (size_t i = 0;
              i < sizeof(st->module_scratch) / sizeof(st->module_scratch[0]);
              i++) {

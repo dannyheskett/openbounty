@@ -122,7 +122,12 @@ int ap_bfs(const Map *m, int sx, int sy, int gx, int gy,
                 ok = TerrainWalkable(t->terrain) && !t->blocks_foot;
                 if (ok && t->interactive != INTERACT_NONE &&
                     t->interactive != INTERACT_TREASURE_CHEST &&
-                    t->interactive != INTERACT_ARTIFACT) {
+                    t->interactive != INTERACT_ARTIFACT &&
+                    // Foes block movement but we can fight through
+                    // them: stepping triggers an attack prompt, the
+                    // common-prompts handler answers Y, combat runs,
+                    // hero ends up on (or past) the foe's tile.
+                    t->interactive != INTERACT_FOE) {
                     ok = false;
                 }
             } else {
@@ -332,15 +337,24 @@ static bool ap_phase_expects_dialog(AutoplayPhase p) {
 }
 
 static bool ap_phase_expects_prompt(AutoplayPhase p) {
-    return p == AP_MURRAY_SIEGE_PROMPT ||
-           p == AP_MURRAY_COMBAT ||
-           p == AP_HACK_SIEGE_PROMPT ||
-           p == AP_HACK_COMBAT ||
-           // Dwelling phases expect a text-input "how many to recruit?"
-           // prompt — common-prompts handler would ESC it before we
-           // could enter the count.
-           p == AP_HACK_WALK_TO_DWELLING ||
-           p == AP_HACK_RECRUIT_AT_DWELLING;
+    if (p == AP_MURRAY_SIEGE_PROMPT ||
+        p == AP_MURRAY_COMBAT ||
+        p == AP_HACK_SIEGE_PROMPT ||
+        p == AP_HACK_COMBAT) {
+        return true;
+    }
+    // Dwelling phases expect a text-input "how many to recruit?"
+    // prompt — common-prompts would dismiss it before we could enter
+    // the count. But other prompts (Foes! when stepping on a foe tile
+    // mid-walk) MUST still flow through common_prompts or the autoplay
+    // wedges. So defer only when the current prompt is actually the
+    // text-input kind.
+    if (p == AP_HACK_WALK_TO_DWELLING ||
+        p == AP_HACK_RECRUIT_AT_DWELLING) {
+        const char *kind = prompt_kind_str();
+        return kind && strcmp(kind, "text") == 0;
+    }
+    return false;
 }
 
 bool ap_handle_common_prompts(const AutoplayState *st) {
@@ -371,7 +385,15 @@ bool ap_handle_common_prompts(const AutoplayState *st) {
                                strstr(hdr, "Castle"))) {
                 key = KEY_Y; what = "ATTACK";
             } else if (kind && strcmp(kind, "ab") == 0) {
-                key = KEY_A; what = "A (gold)";
+                // GRIND_P0 wants leadership (B); other phases take
+                // the gold (A). The chest gold-or-leadership prompt is
+                // the only A/B picker the autoplay encounters.
+                if (st->phase >= AP_GRIND_P0_FIRST &&
+                    st->phase <= AP_GRIND_P0_LAST) {
+                    key = KEY_B; what = "B (leadership)";
+                } else {
+                    key = KEY_A; what = "A (gold)";
+                }
             }
             AP_LOG("prompt kind=%s header='%s' → %s",
                    kind, hdr, what);
@@ -819,7 +841,8 @@ FerryState ap_ferry_tick(AutoplayState *st, Game *g, Map *m,
             if (n > 0) { approach_x = nx; approach_y = ny; break; }
         }
         if (approach_x < 0) {
-            AP_LOG("ferry: no walk approach to boat at (%d,%d)", bx, by);
+            AP_LOG("ferry: no walk approach to boat at (%d,%d) from (%d,%d)",
+                   bx, by, g->position.x, g->position.y);
             st->ferry_state = FERRY_FAILED;
             return FERRY_FAILED;
         }
@@ -1079,6 +1102,9 @@ static ShellRunVerdict autoplay_per_frame(ShellRunHooks *self,
     // plug in by adding their (FIRST..LAST) range here.
     if (st->phase >= AP_MURRAY_FIRST && st->phase <= AP_MURRAY_LAST) {
         return ap_murray_per_frame(g, m, f, res, frame_no, st);
+    }
+    if (st->phase >= AP_GRIND_P0_FIRST && st->phase <= AP_GRIND_P0_LAST) {
+        return ap_grind_p0_per_frame(g, m, f, res, frame_no, st);
     }
     if (st->phase >= AP_HACK_FIRST && st->phase <= AP_HACK_LAST) {
         return ap_hack_per_frame(g, m, f, res, frame_no, st);

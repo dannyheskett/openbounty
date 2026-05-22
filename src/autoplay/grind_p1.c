@@ -26,6 +26,9 @@
 //               ferry returned FAILED. Future scans skip tiles equal
 //               to any entry, so we don't keep retargeting the same
 //               unreachable chest.
+//   [25]      = frame_no of last position change (defeat/wedge watchdog)
+//   [26],[27] = last known position
+//   [28..31]  = reserved
 //
 // Per-pickup expected loop: PICK_TARGET → WALK_TO_TARGET → (pickup
 // handled by common_prompts) → PICK_TARGET … → VERIFY when scan empty
@@ -44,30 +47,38 @@
 #include <stdio.h>
 #include <string.h>
 
-#define AP_GRIND_P1_FAIL_CAP    16   // consecutive failures before giving up
-#define GRIND_FAIL_LIST_MAX     8    // (x,y) pairs in [8..23]
+#define AP_GRIND_P1_FAIL_CAP    32   // consecutive failures before giving up
+#define GRIND_BLACKLIST_CAP     64
 
 static bool grind_p1_is_failed(const AutoplayState *st, int x, int y) {
-    int n = st->module_scratch[7];
+    int n = st->grind_blacklist_count;
     if (n < 0) n = 0;
-    if (n > GRIND_FAIL_LIST_MAX) n = GRIND_FAIL_LIST_MAX;
+    if (n > GRIND_BLACKLIST_CAP) n = GRIND_BLACKLIST_CAP;
     for (int i = 0; i < n; i++) {
-        int fx = st->module_scratch[8 + 2 * i];
-        int fy = st->module_scratch[8 + 2 * i + 1];
-        if (fx == x && fy == y) return true;
+        if (st->grind_blacklist_x[i] == x &&
+            st->grind_blacklist_y[i] == y) return true;
     }
     return false;
 }
 
 static void grind_p1_remember_failed(AutoplayState *st, int x, int y) {
-    int w = st->module_scratch[6];
-    if (w < 0) w = 0;
-    w %= GRIND_FAIL_LIST_MAX;
-    st->module_scratch[8 + 2 * w] = x;
-    st->module_scratch[8 + 2 * w + 1] = y;
-    st->module_scratch[6] = (w + 1) % GRIND_FAIL_LIST_MAX;
-    int n = st->module_scratch[7];
-    if (n < GRIND_FAIL_LIST_MAX) st->module_scratch[7] = n + 1;
+    // Already in the list? No-op.
+    if (grind_p1_is_failed(st, x, y)) return;
+    int n = st->grind_blacklist_count;
+    if (n < 0) n = 0;
+    if (n >= GRIND_BLACKLIST_CAP) {
+        // Full — overwrite oldest (slot 0); shift down.
+        for (int i = 1; i < GRIND_BLACKLIST_CAP; i++) {
+            st->grind_blacklist_x[i - 1] = st->grind_blacklist_x[i];
+            st->grind_blacklist_y[i - 1] = st->grind_blacklist_y[i];
+        }
+        st->grind_blacklist_x[GRIND_BLACKLIST_CAP - 1] = x;
+        st->grind_blacklist_y[GRIND_BLACKLIST_CAP - 1] = y;
+        return;
+    }
+    st->grind_blacklist_x[n] = x;
+    st->grind_blacklist_y[n] = y;
+    st->grind_blacklist_count = n + 1;
 }
 
 // Scan the current zone's map for the nearest unclaimed pickup tile
@@ -142,6 +153,12 @@ ShellRunVerdict ap_grind_p1_per_frame(Game *g, Map *m, Fog *f,
             st->module_scratch[2] = 0;       // pickups completed
             st->module_scratch[3] = 0;       // consecutive fails
             st->module_scratch[4] = g->stats.gold;
+            // Reset blacklist for this sweep.
+            st->grind_blacklist_count = 0;
+            for (int i = 0; i < GRIND_BLACKLIST_CAP; i++) {
+                st->grind_blacklist_x[i] = -1;
+                st->grind_blacklist_y[i] = -1;
+            }
             st->module_scratch[6] = 0;       // failed-coord write idx
             st->module_scratch[7] = 0;       // failed-coord count
             AP_LOG("[grind-p1] sweep starting from (%d,%d), gold=%d",
@@ -171,6 +188,9 @@ ShellRunVerdict ap_grind_p1_per_frame(Game *g, Map *m, Fog *f,
         st->module_scratch[0] = tx;
         st->module_scratch[1] = ty;
         st->module_scratch[5] = 0;
+        st->module_scratch[25] = frame_no;
+        st->module_scratch[26] = g->position.x;
+        st->module_scratch[27] = g->position.y;
         st->ferry_state = FERRY_IDLE;
         st->phase = AP_GRIND_P1_WALK_TO_TARGET;
         st->phase_started_at = frame_no;
@@ -195,6 +215,66 @@ ShellRunVerdict ap_grind_p1_per_frame(Game *g, Map *m, Fog *f,
                    st->module_scratch[2], tx, ty, g->stats.gold);
             st->phase = AP_GRIND_P1_PICK_TARGET;
             st->phase_started_at = frame_no;
+            st->ferry_state = FERRY_IDLE;
+            st->path_len = 0;
+            return SHELL_RUN_CONTINUE;
+        }
+        // Position-change watchdog: if the hero hasn't moved for a
+        // while, the current target is wedged (foe loop, combat-loss
+        // teleport, etc). Blacklist it and pick a new target.
+        // scratch[26],[27] = last known position;
+        // scratch[25]       = frame_no of last position change.
+        if (st->module_scratch[26] != g->position.x ||
+            st->module_scratch[27] != g->position.y) {
+            // Defeat teleport detection: if the hero "moved" but ended
+            // up at the home spawn (11,58 on continentia) far from the
+            // target, that's a temp_death — blacklist the target and
+            // restart with a different one. Also check for the
+            // 20-peasants-only army signature.
+            int dx = g->position.x - st->module_scratch[26];
+            int dy = g->position.y - st->module_scratch[27];
+            if (dx < 0) dx = -dx;
+            if (dy < 0) dy = -dy;
+            bool big_jump = (dx > 2 || dy > 2);
+            bool at_home  = (g->position.x == 11 && g->position.y == 58);
+            int peasants = 0, other = 0;
+            for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+                if (!g->army[i].id[0] || g->army[i].count <= 0) continue;
+                if (strcmp(g->army[i].id, "peasants") == 0) {
+                    peasants = g->army[i].count;
+                } else {
+                    other += g->army[i].count;
+                }
+            }
+            bool peasants_only = (other == 0 && peasants > 0);
+            if (big_jump && at_home && peasants_only) {
+                AP_LOG("[grind-p1] DEFEAT detected (teleport to home, "
+                       "20 peasants only) — blacklisting (%d,%d)",
+                       tx, ty);
+                grind_p1_remember_failed(st, tx, ty);
+                st->module_scratch[3] += 1;
+                st->phase = AP_GRIND_P1_PICK_TARGET;
+                st->phase_started_at = frame_no;
+                st->module_scratch[25] = frame_no;
+                st->module_scratch[26] = g->position.x;
+                st->module_scratch[27] = g->position.y;
+                st->ferry_state = FERRY_IDLE;
+                st->path_len = 0;
+                return SHELL_RUN_CONTINUE;
+            }
+            st->module_scratch[26] = g->position.x;
+            st->module_scratch[27] = g->position.y;
+            st->module_scratch[25] = frame_no;
+        }
+        if (frame_no - st->module_scratch[25] > 1800) {
+            AP_LOG("[grind-p1] target (%d,%d) wedged at (%d,%d) — "
+                   "blacklisting and skipping",
+                   tx, ty, g->position.x, g->position.y);
+            grind_p1_remember_failed(st, tx, ty);
+            st->module_scratch[3] += 1;
+            st->phase = AP_GRIND_P1_PICK_TARGET;
+            st->phase_started_at = frame_no;
+            st->module_scratch[25] = frame_no;
             st->ferry_state = FERRY_IDLE;
             st->path_len = 0;
             return SHELL_RUN_CONTINUE;
@@ -230,7 +310,7 @@ ShellRunVerdict ap_grind_p1_per_frame(Game *g, Map *m, Fog *f,
                 }
             }
         }
-        AP_TIMEOUT_FAIL(st->phase_started_at, 86400,
+        AP_TIMEOUT_FAIL(st->phase_started_at, 7200,
                         "[grind-p1] stuck heading to pickup");
         return SHELL_RUN_CONTINUE;
     }

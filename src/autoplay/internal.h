@@ -51,6 +51,17 @@ typedef enum {
     AP_MURRAY_VERIFY,
     AP_MURRAY_LAST = AP_MURRAY_VERIFY,
 
+    // ---- Grind phase 0 (pre-Hack chest sweep) ---------------------------
+    // After Murray VERIFY, before Hack contract pickup, sweep the
+    // continentia south band for gold chests and choose the leadership
+    // (B) option at each. The +leadership raises our recruit cap so the
+    // post-restock army can carry enough HP to win the Hack siege.
+    AP_GRIND_P0_FIRST,
+    AP_GRIND_P0_PICK_TARGET = AP_GRIND_P0_FIRST,
+    AP_GRIND_P0_WALK_TO_TARGET,
+    AP_GRIND_P0_VERIFY,
+    AP_GRIND_P0_LAST = AP_GRIND_P0_VERIFY,
+
     // ---- Hack -----------------------------------------------------------
     AP_HACK_FIRST,
     AP_HACK_WALK_TO_TOWN_FOR_CONTRACT = AP_HACK_FIRST,
@@ -158,7 +169,13 @@ typedef struct AutoplayState {
     // module entry; -1 = "not yet set". When you need more state
     // than two ints, extend this array — the cost is one int per
     // villain module that uses it, which is fine.
-    int           module_scratch[24];
+    int           module_scratch[32];
+    // Grind-phase blacklist of unreachable/dangerous pickup tiles.
+    // Owned by grind_p0 / grind_p1. Each entry is an (x,y) pair; a
+    // negative x means "empty slot".
+    int           grind_blacklist_x[64];
+    int           grind_blacklist_y[64];
+    int           grind_blacklist_count;
 } AutoplayState;
 
 // =========================================================================
@@ -239,6 +256,7 @@ FerryState ap_ferry_tick(AutoplayState *st, Game *g, Map *m,
 // Add new modules here, decrementing from the existing minimum.
 #define AP_SLOT_MURRAY    8
 #define AP_SLOT_HACK      9
+#define AP_SLOT_GRIND_P0  6
 #define AP_SLOT_GRIND_P1  7
 
 // Write an autoplay checkpoint to the given save slot (0-indexed).
@@ -257,6 +275,10 @@ ShellRunVerdict ap_murray_per_frame(Game *g, Map *m, Fog *f,
 ShellRunVerdict ap_hack_per_frame(Game *g, Map *m, Fog *f,
                                   Resources *res, int frame_no,
                                   AutoplayState *st);
+
+ShellRunVerdict ap_grind_p0_per_frame(Game *g, Map *m, Fog *f,
+                                      Resources *res, int frame_no,
+                                      AutoplayState *st);
 
 ShellRunVerdict ap_grind_p1_per_frame(Game *g, Map *m, Fog *f,
                                       Resources *res, int frame_no,
