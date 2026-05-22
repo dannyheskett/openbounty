@@ -99,6 +99,12 @@ typedef enum {
     AP_GRIND_P1_FIRST,
     AP_GRIND_P1_PICK_TARGET = AP_GRIND_P1_FIRST,
     AP_GRIND_P1_WALK_TO_TARGET,
+    // Post-defeat recovery: walk to Maximus (or wait if already there),
+    // open the recruit screen, max-recruit, exit. Then pick next target.
+    AP_GRIND_P1_RESTOCK_WALK,
+    AP_GRIND_P1_RESTOCK_OPEN,
+    AP_GRIND_P1_RESTOCK_DO,
+    AP_GRIND_P1_RESTOCK_LEAVE,
     AP_GRIND_P1_VERIFY,
     AP_GRIND_P1_LAST = AP_GRIND_P1_VERIFY,
 

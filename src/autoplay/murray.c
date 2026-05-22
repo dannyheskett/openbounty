@@ -580,6 +580,18 @@ ShellRunVerdict ap_murray_per_frame(Game *g, Map *m, Fog *f,
                 }
             }
         }
+        AP_LOG("=== continentia artifact scan ===");
+        for (int y = 0; y < m->height; y++) {
+            for (int x = 0; x < m->width; x++) {
+                const Tile *t = MapGetTile(m, x, y);
+                if (!t) continue;
+                if (t->interactive == INTERACT_ARTIFACT) {
+                    fprintf(stderr,
+                            "[autoplay] artifact: (%d,%d) id='%s'\n",
+                            x, y, t->id);
+                }
+            }
+        }
         AP_LOG("=== scan done ===");
         // Chain into the Hack module — grind_p0 already ran before
         // Murray (intro → grind_p0 → Murray → Hack).

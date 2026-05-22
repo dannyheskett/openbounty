@@ -249,11 +249,12 @@ ShellRunVerdict ap_grind_p1_per_frame(Game *g, Map *m, Fog *f,
             bool peasants_only = (other == 0 && peasants > 0);
             if (big_jump && at_home && peasants_only) {
                 AP_LOG("[grind-p1] DEFEAT detected (teleport to home, "
-                       "20 peasants only) — blacklisting (%d,%d)",
+                       "20 peasants only) — blacklisting (%d,%d), "
+                       "restocking at Maximus",
                        tx, ty);
                 grind_p1_remember_failed(st, tx, ty);
                 st->module_scratch[3] += 1;
-                st->phase = AP_GRIND_P1_PICK_TARGET;
+                st->phase = AP_GRIND_P1_RESTOCK_WALK;
                 st->phase_started_at = frame_no;
                 st->module_scratch[25] = frame_no;
                 st->module_scratch[26] = g->position.x;
@@ -312,6 +313,90 @@ ShellRunVerdict ap_grind_p1_per_frame(Game *g, Map *m, Fog *f,
         }
         AP_TIMEOUT_FAIL(st->phase_started_at, 7200,
                         "[grind-p1] stuck heading to pickup");
+        return SHELL_RUN_CONTINUE;
+    }
+
+    case AP_GRIND_P1_RESTOCK_WALK: {
+        // After defeat we're at the home spawn (11,58). Walk one tile
+        // north to the Maximus gate (11,56-ish) to enter the home castle.
+        if (views_active() == VIEW_HOME_CASTLE) {
+            st->phase = AP_GRIND_P1_RESTOCK_OPEN;
+            st->phase_started_at = frame_no;
+            st->path_len = 0;
+            AP_LOG("[grind-p1] entered Maximus for post-defeat restock");
+            return SHELL_RUN_CONTINUE;
+        }
+        FerryState fs = ap_ferry_tick(st, g, m, frame_no, 11, 56);
+        if (fs == FERRY_FAILED) {
+            AP_LOG("[grind-p1] ferry to Maximus failed — bailing sweep");
+            st->phase = AP_GRIND_P1_VERIFY;
+            st->phase_started_at = frame_no;
+            return SHELL_RUN_CONTINUE;
+        }
+        if (fs == FERRY_DONE) {
+            if (input_host_queue_depth() == 0) {
+                int k = ap_dir_key(g->position.x, g->position.y, 11, 56);
+                if (k != 0) input_host_queue_key(k);
+            }
+        }
+        AP_TIMEOUT_FAIL(st->phase_started_at, 7200,
+                        "[grind-p1] stuck heading to Maximus for restock");
+        return SHELL_RUN_CONTINUE;
+    }
+
+    case AP_GRIND_P1_RESTOCK_OPEN:
+        input_host_queue_key(KEY_A);
+        st->phase = AP_GRIND_P1_RESTOCK_DO;
+        st->phase_started_at = frame_no;
+        return SHELL_RUN_CONTINUE;
+
+    case AP_GRIND_P1_RESTOCK_DO:
+        if (views_active() == VIEW_RECRUIT_SOLDIERS) {
+            AP_LOG("[grind-p1] recruit screen open, HP=%d gold=%d "
+                   "leadership=%d", ap_army_total_hp(g), g->stats.gold,
+                   g->stats.leadership_current);
+            // Same C/A/B/99 pattern as Hack's restock.
+            input_host_queue_key(KEY_C);   // pikemen
+            ap_queue_recruit_count(99);
+            input_host_queue_key(KEY_A);   // militia
+            ap_queue_recruit_count(99);
+            input_host_queue_key(KEY_B);   // archers
+            ap_queue_recruit_count(99);
+            st->module_scratch[28] = ap_army_total_hp(g);
+            st->module_scratch[29] = g->stats.gold;
+            st->module_scratch[30] = frame_no;
+            st->phase = AP_GRIND_P1_RESTOCK_LEAVE;
+            st->phase_started_at = frame_no;
+            return SHELL_RUN_CONTINUE;
+        }
+        AP_TIMEOUT_FAIL(st->phase_started_at, 300,
+                        "[grind-p1] VIEW_RECRUIT_SOLDIERS never opened");
+        return SHELL_RUN_CONTINUE;
+
+    case AP_GRIND_P1_RESTOCK_LEAVE: {
+        int hp_now = ap_army_total_hp(g);
+        int gold_now = g->stats.gold;
+        if (st->module_scratch[28] != hp_now ||
+            st->module_scratch[29] != gold_now) {
+            st->module_scratch[28] = hp_now;
+            st->module_scratch[29] = gold_now;
+            st->module_scratch[30] = frame_no;
+        }
+        if (input_host_queue_depth() == 0 &&
+            frame_no - st->module_scratch[30] >= 30) {
+            input_host_queue_key(KEY_ESCAPE);
+            if (views_active() == VIEW_NONE) {
+                AP_LOG("[grind-p1] restock done, HP=%d gold=%d",
+                       hp_now, gold_now);
+                st->phase = AP_GRIND_P1_PICK_TARGET;
+                st->phase_started_at = frame_no;
+                st->ferry_state = FERRY_IDLE;
+                st->path_len = 0;
+                return SHELL_RUN_CONTINUE;
+            }
+        }
+        AP_TIMEOUT_FAIL(st->phase_started_at, 1200,
+                        "[grind-p1] recruit screen never closed");
         return SHELL_RUN_CONTINUE;
     }
 
