@@ -332,6 +332,53 @@ bool ap_handle_common_prompts(const AutoplayState *st) {
             }
             AP_LOG("prompt kind=%s header='%s' → %s",
                    kind, hdr, what);
+            // Castle siege diagnostic: dump army vs garrison.
+            if (hdr && strstr(hdr, "Castle") && key == KEY_Y) {
+                extern Game *g_active_game_for_diag;
+                Game *gd = g_active_game_for_diag;
+                if (gd) {
+                    AP_LOG("siege MATCHUP — our army HP=%d gold=%d "
+                           "leadership=%d:",
+                           ap_army_total_hp(gd), gd->stats.gold,
+                           gd->stats.leadership_current);
+                    for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+                        const ArmyStack *u = &gd->army[i];
+                        if (!u->id[0] || u->count <= 0) continue;
+                        const TroopDef *td = troop_by_id(u->id);
+                        fprintf(stderr, "[autoplay]   ours[%d]: %d × %s "
+                                "(%d HP each)\n", i, u->count,
+                                td ? td->name : u->id,
+                                td ? td->hit_points : 0);
+                    }
+                    for (int ci = 0; ci < GAME_CASTLES; ci++) {
+                        const CastleRecord *cr = &gd->castles[ci];
+                        if (!cr->id[0]) continue;
+                        if (cr->owner_kind != CASTLE_OWNER_VILLAIN &&
+                            cr->owner_kind != CASTLE_OWNER_MONSTERS) continue;
+                        // Pick whichever castle the hero is adjacent to.
+                        const ResCastle *rc = resources_castle_by_id(
+                            gd->res, cr->id);
+                        if (!rc) continue;
+                        int dx = rc->x - gd->position.x;
+                        int dy = rc->y - gd->position.y;
+                        if (dx < 0) dx = -dx;
+                        if (dy < 0) dy = -dy;
+                        if (dx > 1 || dy > 1) continue;
+                        AP_LOG("siege MATCHUP — garrison at %s (villain=%s):",
+                               cr->id, cr->villain_id);
+                        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+                            const Unit *u = &cr->garrison[i];
+                            if (!u->id[0] || u->count <= 0) continue;
+                            const TroopDef *td = troop_by_id(u->id);
+                            fprintf(stderr, "[autoplay]   their[%d]: %d × %s "
+                                    "(%d HP each)\n", i, u->count,
+                                    td ? td->name : u->id,
+                                    td ? td->hit_points : 0);
+                        }
+                        break;
+                    }
+                }
+            }
             input_host_queue_key(key);
         }
         return true;
@@ -437,10 +484,13 @@ static void autoplay_before_startup(ShellRunHooks *self) {
     ap_queue_standard_startup();
 }
 
+Game *g_active_game_for_diag = NULL;
+
 static ShellRunVerdict autoplay_per_frame(ShellRunHooks *self,
                                           Game *g, Map *m, Fog *f,
                                           Resources *res, int frame_no) {
     AutoplayState *st = (AutoplayState *)self->user;
+    g_active_game_for_diag = g;
 
     // Shared input handling: dismiss strays, auto-attack stray foes,
     // drive combat. If this fires, the module's switch is skipped.
