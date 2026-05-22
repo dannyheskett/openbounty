@@ -61,10 +61,15 @@ int ap_army_total_hp(const Game *g) {
     return hp;
 }
 
-bool ap_save_checkpoint(const Game *g, const Map *m, const Fog *f) {
+bool ap_save_checkpoint(const Game *g, const Map *m, const Fog *f,
+                        int slot) {
+    if (slot < 0 || slot >= SAVE_SLOT_COUNT) {
+        AP_LOG("checkpoint: slot %d out of range [0,%d)",
+               slot, SAVE_SLOT_COUNT);
+        return false;
+    }
     const char *pack_id = (g->res && g->res->pack_id[0])
         ? g->res->pack_id : NULL;
-    int slot = SAVE_SLOT_COUNT - 1;
     char path[512];
     if (!SavePathGetSlot(pack_id, slot, path, sizeof path)) {
         AP_LOG("checkpoint: SavePathGetSlot failed");
@@ -77,10 +82,6 @@ bool ap_save_checkpoint(const Game *g, const Map *m, const Fog *f) {
         return false;
     }
     AP_LOG("checkpoint: saved to slot %d (%s)", slot + 1, path);
-    char msg[64];
-    snprintf(msg, sizeof msg, "AutoPlay checkpoint saved (slot %d)",
-             slot + 1);
-    toast_show(msg);
     return true;
 }
 

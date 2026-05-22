@@ -198,9 +198,21 @@ int  ap_queue_picker(int cx, int cy, int tx, int ty);
 // Modules call this near the top of their per_frame.
 bool ap_handle_common_prompts(const AutoplayState *st);
 
-// Write the rolling autoplay checkpoint into the last save slot.
-// Logs success/failure and toasts on success.
-bool ap_save_checkpoint(const Game *g, const Map *m, const Fog *f);
+// Per-module checkpoint slot assignments. Each module saves at the
+// end of its capture flow so the run is resumable from any completed
+// villain. Slots are reserved from the top down so player save slots
+// 1..N stay free for human use.
+//   slot 9 (10) = Hack
+//   slot 8 (9)  = Murray
+//   slot 7 (8)  = (reserved for next villain)
+// Add new villains here, decrementing from the existing minimum.
+#define AP_SLOT_MURRAY  8
+#define AP_SLOT_HACK    9
+
+// Write an autoplay checkpoint to the given save slot (0-indexed).
+// Logs success or failure to stderr; otherwise silent.
+bool ap_save_checkpoint(const Game *g, const Map *m, const Fog *f,
+                        int slot);
 
 // =========================================================================
 // Module entry points (defined in their respective .c files)

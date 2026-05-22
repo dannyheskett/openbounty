@@ -1628,7 +1628,7 @@ ShellRunVerdict ap_hack_per_frame(Game *g, Map *m, Fog *f,
             AP_LOG("[hack] villains_caught[hack] is false; capture failed");
             return SHELL_RUN_EXIT_FAIL;
         }
-        if (!ap_save_checkpoint(g, m, f)) {
+        if (!ap_save_checkpoint(g, m, f, AP_SLOT_HACK)) {
             return SHELL_RUN_EXIT_FAIL;
         }
         printf("autoplay: captured Hack — gold=%d, "

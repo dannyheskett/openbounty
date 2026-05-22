@@ -530,7 +530,7 @@ ShellRunVerdict ap_murray_per_frame(Game *g, Map *m, Fog *f,
             AP_LOG("villains_caught[murray] is false; capture failed");
             return SHELL_RUN_EXIT_FAIL;
         }
-        if (!ap_save_checkpoint(g, m, f)) {
+        if (!ap_save_checkpoint(g, m, f, AP_SLOT_MURRAY)) {
             return SHELL_RUN_EXIT_FAIL;
         }
         printf("autoplay: captured Murray — gold=%d, "
