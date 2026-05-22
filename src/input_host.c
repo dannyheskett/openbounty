@@ -87,7 +87,15 @@ void input_host_queue_key_down(int key, int frames) {
 }
 
 int input_host_queue_depth(void) {
-    return s_press_count;
+    // Count the currently-active key too: even if the queue is empty,
+    // an active key is about to be consumed by input_poll this iteration,
+    // and the scripted side shouldn't queue a follow-up before observing
+    // its effect. Otherwise the just-promoted key gets re-promoted on
+    // the next tick and fires again in a wrong context (e.g. a WALK
+    // direction key drives a boat-step on the iter after the boarding,
+    // causing an unwanted auto-disembark).
+    int active = (s_active_key >= 0 && !s_active_drained) ? 1 : 0;
+    return s_press_count + active;
 }
 
 void input_host_queue_char(int codepoint) {

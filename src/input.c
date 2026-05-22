@@ -33,6 +33,10 @@ static void poll_direction(InputState *in) {
 // keys. If the pad isn't connected, IsGamepadAvailable returns false
 // and every check no-ops.
 static void poll_gamepad(InputState *in) {
+    // Autoplay/test mode: gamepads aren't scriptable, and on headless
+    // boxes raylib's gamepad layer can produce phantom button/axis
+    // readings that override the scripted keyboard input. Skip.
+    if (input_host_is_scripted()) return;
     if (!IsGamepadAvailable(GAMEPAD_ID)) return;
 
     // Movement: d-pad first, fall back to left stick.
@@ -77,6 +81,7 @@ static void poll_gamepad(InputState *in) {
 }
 
 bool gamepad_pressed_cancel(void) {
+    if (input_host_is_scripted()) return false;
     if (!IsGamepadAvailable(GAMEPAD_ID)) return false;
     return IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_RIGHT_FACE_RIGHT);
 }

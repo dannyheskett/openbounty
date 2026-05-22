@@ -3,7 +3,7 @@
 
 #include "frame_host.h"
 #include "input_host.h"
-#include "autoplay.h"
+#include "autoplay/core.h"
 #include "shell_run.h"
 #include "raylib.h"
 #include "recorder.h"
@@ -555,7 +555,13 @@ int shell_run_game(int argc, char **argv, ShellRunHooks *hooks) {
 
     // Audio: open device, load music streams, start the openworld
     // track. Honors the user's saved Sounds + Music toggles.
-    audio_init(&res);
+    // Autoplay headless (no --visible) skips audio entirely — opening
+    // the device on a headless box is noisy and the test doesn't
+    // listen anyway.
+    bool autoplay_headless = (hooks && !autoplay_visible);
+    if (!autoplay_headless) {
+        audio_init(&res);
+    }
     if (!audio_is_available()) {
         // No playback device: pin Sounds/Music/Volume to 0 so the
         // controls panel and the live audio push agree. The rows are
