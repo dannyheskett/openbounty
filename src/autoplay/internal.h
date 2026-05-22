@@ -79,6 +79,18 @@ typedef enum {
     AP_HACK_WALK_TO_DWELLING,
     AP_HACK_RECRUIT_AT_DWELLING,
     AP_HACK_EXIT_DWELLING,
+    // Dwelling boat-ferry: when a dwelling waypoint is on a different
+    // landmass, ferry across. Mirrors the to-Hack sail flow but the
+    // terminal is a dwelling recruit prompt instead of a siege.
+    // Sub-target for these phases lives in scratch[20..21] (ferry
+    // destination land tile chosen by the planner).
+    AP_HACK_WALK_TO_TOWN_FOR_DWELLING_BOAT,
+    AP_HACK_RENT_DWELLING_BOAT,
+    AP_HACK_EXIT_TOWN_AFTER_DWELLING_BOAT,
+    AP_HACK_BOARD_DWELLING_BOAT,
+    AP_HACK_SAIL_TO_DWELLING_COAST,
+    AP_HACK_DISEMBARK_NEAR_FAR_DWELLING,
+    AP_HACK_WALK_FROM_LAND_TO_DWELLING,
     // Boat trip from coastal Continentia town to a land tile near
     // Hack's castle. Same shape as the Murray sail: rent → board → sail
     // BFS → disembark.

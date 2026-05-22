@@ -42,6 +42,9 @@
 //      [16] = dwelling-tour index (0,1,... over the visit list)
 //  [17],[18] = current dwelling target (x,y)
 //      [19] = RECRUIT_AT_DWELLING: count-entry queued flag
+//  [20],[21] = dwelling-ferry chosen disembark land tile (x,y)
+//      [22] = dwelling-ferry rent-boat press-in-flight expectation
+//             (0/1/2, see RENT_BOAT_FOR_HOMETRIP for semantics)
 
 #include "autoplay/internal.h"
 
@@ -678,25 +681,40 @@ ShellRunVerdict ap_hack_per_frame(Game *g, Map *m, Fog *f,
         const int tour_n = (int)(sizeof(tour) / sizeof(tour[0]));
         int idx = st->module_scratch[16];
         if (idx >= tour_n) {
-            // Tour complete — head out to Hack.
+            // Tour complete — head out to Hack. Aim sail target at
+            // Hack's gate (cached in [8],[9]) and use whichever boat
+            // we already have rented (the dwelling-ferry boat). If we
+            // can find a town overland, route through it (lets us
+            // re-rent for fresh boat-cost upkeep); otherwise sail
+            // straight from our current position.
+            st->module_scratch[4] = st->module_scratch[8];
+            st->module_scratch[5] = st->module_scratch[9];
             int rent_x = -1, rent_y = -1;
             int n = find_nearest_town(g, m, g->position.x, g->position.y,
                                       &rent_x, &rent_y);
-            if (n < 0) {
-                AP_LOG("[hack] no town reachable from (%d,%d) after tour",
+            if (n >= 0) {
+                st->module_scratch[2] = rent_x;
+                st->module_scratch[3] = rent_y;
+                st->phase = AP_HACK_WALK_TO_TOWN_FOR_BOAT;
+                AP_LOG("[hack] dwelling tour complete, army HP=%d gold=%d "
+                       "→ boat at (%d,%d) for Hack",
+                       ap_army_total_hp(g), g->stats.gold, rent_x, rent_y);
+            } else if (g->boat.has_boat) {
+                // No town reachable, but we have a boat. Walk to it and
+                // sail straight to Hack from here.
+                st->phase = AP_HACK_BOARD_BOAT;
+                AP_LOG("[hack] dwelling tour complete (no town, using "
+                       "current boat at (%d,%d)), army HP=%d gold=%d → "
+                       "sail to Hack",
+                       g->boat.x, g->boat.y,
+                       ap_army_total_hp(g), g->stats.gold);
+            } else {
+                AP_LOG("[hack] no town and no boat from (%d,%d) after tour",
                        g->position.x, g->position.y);
                 return SHELL_RUN_EXIT_FAIL;
             }
-            st->module_scratch[2] = rent_x;
-            st->module_scratch[3] = rent_y;
-            st->module_scratch[4] = st->module_scratch[8];
-            st->module_scratch[5] = st->module_scratch[9];
-            st->phase = AP_HACK_WALK_TO_TOWN_FOR_BOAT;
             st->phase_started_at = frame_no;
             st->path_len = 0;
-            AP_LOG("[hack] dwelling tour complete, army HP=%d gold=%d → "
-                   "boat at (%d,%d) for Hack",
-                   ap_army_total_hp(g), g->stats.gold, rent_x, rent_y);
             return SHELL_RUN_CONTINUE;
         }
         int tx = tour[idx].x, ty = tour[idx].y;
@@ -738,12 +756,32 @@ ShellRunVerdict ap_hack_per_frame(Game *g, Map *m, Fog *f,
         }
         if (!ap_ensure_path(st, m, g->position.x, g->position.y,
                             tx, ty, AP_TRAVEL_WALK)) {
-            AP_LOG("[hack] BFS failed walking to dwelling %s (%d,%d) "
-                   "from (%d,%d) — skipping",
-                   tour[idx].name, tx, ty,
-                   g->position.x, g->position.y);
-            st->module_scratch[16] = idx + 1;
+            // No overland route — dwelling is on a different landmass.
+            // Ferry over. Reuse the same boat-rent/sail/disembark
+            // helpers via the *_DWELLING_BOAT phases below.
+            int rent_x = -1, rent_y = -1;
+            int n = find_nearest_town(g, m,
+                                      g->position.x, g->position.y,
+                                      &rent_x, &rent_y);
+            if (n < 0) {
+                AP_LOG("[hack] dwelling %s (%d,%d) unreachable AND no "
+                       "town to ferry from — skipping",
+                       tour[idx].name, tx, ty);
+                st->module_scratch[16] = idx + 1;
+                st->path_len = 0;
+                return SHELL_RUN_CONTINUE;
+            }
+            st->module_scratch[2] = rent_x;
+            st->module_scratch[3] = rent_y;
+            // scratch[17],[18] already hold the dwelling target.
+            st->module_scratch[22] = 0;
+            st->phase = AP_HACK_WALK_TO_TOWN_FOR_DWELLING_BOAT;
+            st->phase_started_at = frame_no;
             st->path_len = 0;
+            AP_LOG("[hack] dwelling %s (%d,%d) needs ferry — town "
+                   "(%d,%d), gold=%d",
+                   tour[idx].name, tx, ty, rent_x, rent_y,
+                   g->stats.gold);
             return SHELL_RUN_CONTINUE;
         }
         if (!ap_step_along_path(st, g->position.x, g->position.y)) {
@@ -791,6 +829,367 @@ ShellRunVerdict ap_hack_per_frame(Game *g, Map *m, Fog *f,
         AP_TIMEOUT_FAIL(st->phase_started_at, 600,
                         "[hack] couldn't exit dwelling view");
         return SHELL_RUN_CONTINUE;
+
+    // ---- Dwelling-ferry sub-flow ----------------------------------------
+    // Same shape as the to-Hack boat trip, but the terminal is a
+    // dwelling recruit prompt instead of a siege. After recruiting,
+    // we don't sail back — we just continue from the dwelling's
+    // landmass into WALK_TO_DWELLING for the next waypoint (which may
+    // skip if not reachable). Net result on seed=1: gnomes are reached
+    // via ferry; ghosts then likely fail BFS again and skip.
+
+    case AP_HACK_WALK_TO_TOWN_FOR_DWELLING_BOAT:
+        if (views_active() == VIEW_TOWN) {
+            st->phase = AP_HACK_RENT_DWELLING_BOAT;
+            st->phase_started_at = frame_no;
+            st->module_scratch[22] = 0;
+            AP_LOG("[hack] entered town for dwelling-ferry boat");
+            return SHELL_RUN_CONTINUE;
+        }
+        if (views_active() != VIEW_NONE) {
+            input_host_queue_key(KEY_ESCAPE);
+            return SHELL_RUN_CONTINUE;
+        }
+        if (!ap_ensure_path(st, m, g->position.x, g->position.y,
+                            st->module_scratch[2], st->module_scratch[3],
+                            AP_TRAVEL_WALK)) {
+            AP_LOG("[hack] BFS failed walking to dwelling-ferry town "
+                   "(%d,%d) — skipping dwelling",
+                   st->module_scratch[2], st->module_scratch[3]);
+            st->module_scratch[16] += 1;
+            st->path_len = 0;
+            st->phase = AP_HACK_WALK_TO_DWELLING;
+            st->phase_started_at = frame_no;
+            return SHELL_RUN_CONTINUE;
+        }
+        if (!ap_step_along_path(st, g->position.x, g->position.y)) {
+            return SHELL_RUN_EXIT_FAIL;
+        }
+        AP_TIMEOUT_FAIL(st->phase_started_at, 7200,
+                        "[hack] stuck walking to dwelling-ferry town");
+        return SHELL_RUN_CONTINUE;
+
+    case AP_HACK_RENT_DWELLING_BOAT: {
+        // Identical state machine to RENT_BOAT_FOR_HOMETRIP, just using
+        // scratch[22] for press-in-flight state.
+        int town_x = st->module_scratch[2];
+        int town_y = st->module_scratch[3];
+        bool boat_is_local = false;
+        if (g->boat.has_boat) {
+            int dx = g->boat.x - town_x; if (dx < 0) dx = -dx;
+            int dy = g->boat.y - town_y; if (dy < 0) dy = -dy;
+            boat_is_local = (dx <= 5 && dy <= 5);
+        }
+        if (g->boat.has_boat && boat_is_local) {
+            input_host_queue_key(KEY_ESCAPE);
+            st->phase = AP_HACK_EXIT_TOWN_AFTER_DWELLING_BOAT;
+            st->phase_started_at = frame_no;
+            st->module_scratch[22] = 0;
+            AP_LOG("[hack] dwelling-ferry boat ready at (%d,%d), "
+                   "gold=%d", g->boat.x, g->boat.y, g->stats.gold);
+            return SHELL_RUN_CONTINUE;
+        }
+        int *expect = &st->module_scratch[22];
+        if (*expect == 1 && !g->boat.has_boat) *expect = 0;
+        if (*expect == 2 &&  g->boat.has_boat) *expect = 0;
+        if (*expect == 0 && input_host_queue_depth() == 0) {
+            input_host_queue_key(KEY_B);
+            *expect = g->boat.has_boat ? 1 : 2;
+        }
+        AP_TIMEOUT_FAIL(st->phase_started_at, 600,
+                        "[hack] couldn't get a local dwelling-ferry boat");
+        return SHELL_RUN_CONTINUE;
+    }
+
+    case AP_HACK_EXIT_TOWN_AFTER_DWELLING_BOAT:
+        if (views_active() == VIEW_NONE) {
+            st->phase = AP_HACK_BOARD_DWELLING_BOAT;
+            st->phase_started_at = frame_no;
+            st->path_len = 0;
+            AP_LOG("[hack] exited dwelling-ferry town, walking to boat "
+                   "at (%d,%d)", g->boat.x, g->boat.y);
+            return SHELL_RUN_CONTINUE;
+        }
+        if (views_active() == VIEW_TOWN) {
+            input_host_queue_key(KEY_ESCAPE);
+            return SHELL_RUN_CONTINUE;
+        }
+        input_host_queue_key(KEY_ESCAPE);
+        AP_TIMEOUT_FAIL(st->phase_started_at, 240,
+                        "[hack] couldn't exit dwelling-ferry town");
+        return SHELL_RUN_CONTINUE;
+
+    case AP_HACK_BOARD_DWELLING_BOAT: {
+        int bx = g->boat.x, by = g->boat.y;
+        if (g->travel_mode == TRAVEL_BOAT) {
+            st->phase = AP_HACK_SAIL_TO_DWELLING_COAST;
+            st->phase_started_at = frame_no;
+            st->path_len = 0;
+            st->module_scratch[20] = -1;
+            st->module_scratch[21] = -1;
+            AP_LOG("[hack] boarded dwelling-ferry boat at (%d,%d)", bx, by);
+            return SHELL_RUN_CONTINUE;
+        }
+        int adx = bx - g->position.x; if (adx < 0) adx = -adx;
+        int ady = by - g->position.y; if (ady < 0) ady = -ady;
+        if (adx <= 1 && ady <= 1) {
+            int k = ap_dir_key(g->position.x, g->position.y, bx, by);
+            if (k == 0) {
+                AP_LOG("[hack] already on dwelling-ferry boat tile? "
+                       "pos=(%d,%d) boat=(%d,%d)",
+                       g->position.x, g->position.y, bx, by);
+                return SHELL_RUN_EXIT_FAIL;
+            }
+            if (input_host_queue_depth() == 0) input_host_queue_key(k);
+            AP_TIMEOUT_FAIL(st->phase_started_at, 240,
+                            "[hack] couldn't board dwelling-ferry boat");
+            return SHELL_RUN_CONTINUE;
+        }
+        static const int dxs[8] = { 0, 0, -1, 1, -1, 1, -1, 1 };
+        static const int dys[8] = { -1, 1, 0, 0, -1, -1, 1, 1 };
+        int approach_x = -1, approach_y = -1;
+        for (int i = 0; i < 8; i++) {
+            int nx = bx + dxs[i];
+            int ny = by + dys[i];
+            if (!MapInBounds(m, nx, ny)) continue;
+            const Tile *t = MapGetTile(m, nx, ny);
+            if (!t) continue;
+            if (!TerrainWalkable(t->terrain) || t->blocks_foot) continue;
+            if (t->interactive != INTERACT_NONE) continue;
+            ApPoint tmp[AP_PATH_MAX];
+            int n = ap_bfs(m, g->position.x, g->position.y, nx, ny,
+                           AP_TRAVEL_WALK, tmp, AP_PATH_MAX);
+            if (n > 0) { approach_x = nx; approach_y = ny; break; }
+        }
+        if (approach_x < 0) {
+            AP_LOG("[hack] no walk approach to dwelling-ferry boat at "
+                   "(%d,%d) from (%d,%d)",
+                   bx, by, g->position.x, g->position.y);
+            return SHELL_RUN_EXIT_FAIL;
+        }
+        if (!ap_ensure_path(st, m, g->position.x, g->position.y,
+                            approach_x, approach_y, AP_TRAVEL_WALK)) {
+            return SHELL_RUN_EXIT_FAIL;
+        }
+        if (!ap_step_along_path(st, g->position.x, g->position.y)) {
+            return SHELL_RUN_EXIT_FAIL;
+        }
+        AP_TIMEOUT_FAIL(st->phase_started_at, 1200,
+                        "[hack] stuck walking to dwelling-ferry boat");
+        return SHELL_RUN_CONTINUE;
+    }
+
+    case AP_HACK_SAIL_TO_DWELLING_COAST: {
+        // Sail toward a land tile near the dwelling, then disembark.
+        // Sub-target = scratch[17],[18] (dwelling x,y).
+        int dx = st->module_scratch[17];
+        int dy = st->module_scratch[18];
+
+        if (views_active() != VIEW_NONE) {
+            if (input_host_queue_depth() == 0) {
+                input_host_queue_key(KEY_ESCAPE);
+            }
+            st->path_len = 0;
+            AP_TIMEOUT_FAIL(st->phase_started_at, 14400,
+                            "[hack] stuck in view during dwelling sail");
+            return SHELL_RUN_CONTINUE;
+        }
+
+        if (g->travel_mode == TRAVEL_WALK) {
+            // Disembarked. Is the dwelling reachable on foot from here?
+            int adx = g->position.x - dx; if (adx < 0) adx = -adx;
+            int ady = g->position.y - dy; if (ady < 0) ady = -ady;
+            ApPoint walk_diag[AP_PATH_MAX];
+            int n_walk = (adx + ady <= 30)
+                ? ap_bfs(m, g->position.x, g->position.y, dx, dy,
+                         AP_TRAVEL_WALK, walk_diag, AP_PATH_MAX)
+                : 0;
+            if (n_walk > 0) {
+                st->phase = AP_HACK_WALK_FROM_LAND_TO_DWELLING;
+                st->phase_started_at = frame_no;
+                st->path_len = 0;
+                AP_LOG("[hack] disembarked at (%d,%d), dwelling "
+                       "reachable on foot (%d steps)",
+                       g->position.x, g->position.y, n_walk);
+                return SHELL_RUN_CONTINUE;
+            }
+            if (g->boat.has_boat && g->boat.x >= 0) {
+                int bdx = 0, bdy = 0;
+                if (g->boat.x > g->position.x) bdx = 1;
+                else if (g->boat.x < g->position.x) bdx = -1;
+                if (g->boat.y > g->position.y) bdy = 1;
+                else if (g->boat.y < g->position.y) bdy = -1;
+                int k = ap_dir_key(g->position.x, g->position.y,
+                                   g->position.x + bdx,
+                                   g->position.y + bdy);
+                if (k != 0 && input_host_queue_depth() == 0) {
+                    input_host_queue_key(k);
+                }
+                AP_TIMEOUT_FAIL(st->phase_started_at, 14400,
+                                "[hack] stuck reboarding dwelling-ferry");
+                return SHELL_RUN_CONTINUE;
+            }
+            // Fall through: skip this dwelling.
+            AP_LOG("[hack] dwelling unreachable post-disembark — skipping");
+            st->module_scratch[16] += 1;
+            st->phase = AP_HACK_WALK_TO_DWELLING;
+            st->phase_started_at = frame_no;
+            st->path_len = 0;
+            return SHELL_RUN_CONTINUE;
+        }
+
+        // Plan: nearest land tile near (dx,dy) that's sailable from
+        // here and walkable to the dwelling.
+        if (st->path_len == 0) {
+            int best_total = 1 << 30;
+            int best_x = -1, best_y = -1;
+            ApPoint sail_path[AP_PATH_MAX];
+            ApPoint walk_path[AP_PATH_MAX];
+            for (int oy = -12; oy <= 12; oy++) {
+                for (int ox = -12; ox <= 12; ox++) {
+                    int tx = dx + ox;
+                    int ty = dy + oy;
+                    if (!MapInBounds(m, tx, ty)) continue;
+                    const Tile *t = MapGetTile(m, tx, ty);
+                    if (!t) continue;
+                    if (!TerrainWalkable(t->terrain) || t->blocks_foot) continue;
+                    if (t->interactive != INTERACT_NONE) continue;
+                    int n_walk = ap_bfs(m, tx, ty, dx, dy,
+                                        AP_TRAVEL_WALK,
+                                        walk_path, AP_PATH_MAX);
+                    if (n_walk <= 0) continue;
+                    int n_sail = ap_bfs(m, g->position.x, g->position.y,
+                                        tx, ty, AP_TRAVEL_BOAT,
+                                        sail_path, AP_PATH_MAX);
+                    if (n_sail <= 0) continue;
+                    int total = n_sail + n_walk;
+                    if (total < best_total) {
+                        best_total = total;
+                        best_x = tx;
+                        best_y = ty;
+                        memcpy(st->path, sail_path,
+                               sizeof(ApPoint) * (size_t)n_sail);
+                        st->path_len = n_sail;
+                        st->path_idx = 0;
+                        st->path_target_x = tx;
+                        st->path_target_y = ty;
+                    }
+                }
+            }
+            if (best_x < 0) {
+                AP_LOG("[hack] no sail approach to dwelling at (%d,%d) — "
+                       "skipping", dx, dy);
+                st->module_scratch[16] += 1;
+                st->phase = AP_HACK_WALK_TO_DWELLING;
+                st->phase_started_at = frame_no;
+                st->path_len = 0;
+                return SHELL_RUN_CONTINUE;
+            }
+            st->module_scratch[20] = best_x;
+            st->module_scratch[21] = best_y;
+            AP_LOG("[hack] sailing to dwelling-coast (%d,%d) "
+                   "(sail+walk=%d)", best_x, best_y, best_total);
+        }
+        if (g->position.x == st->path_target_x &&
+            g->position.y == st->path_target_y) {
+            st->phase = AP_HACK_DISEMBARK_NEAR_FAR_DWELLING;
+            st->phase_started_at = frame_no;
+            st->path_len = 0;
+            return SHELL_RUN_CONTINUE;
+        }
+        if (!ap_ensure_path(st, m, g->position.x, g->position.y,
+                            st->path_target_x, st->path_target_y,
+                            AP_TRAVEL_BOAT)) {
+            AP_LOG("[hack] dwelling sail: BFS recompute failed");
+            return SHELL_RUN_EXIT_FAIL;
+        }
+        if (!ap_step_along_path(st, g->position.x, g->position.y)) {
+            return SHELL_RUN_EXIT_FAIL;
+        }
+        AP_TIMEOUT_FAIL(st->phase_started_at, 72000,
+                        "[hack] stuck sailing to dwelling coast");
+        return SHELL_RUN_CONTINUE;
+    }
+
+    case AP_HACK_DISEMBARK_NEAR_FAR_DWELLING: {
+        if (g->travel_mode != TRAVEL_BOAT) {
+            st->phase = AP_HACK_WALK_FROM_LAND_TO_DWELLING;
+            st->phase_started_at = frame_no;
+            st->path_len = 0;
+            AP_LOG("[hack] disembarked at dwelling-coast (%d,%d)",
+                   g->position.x, g->position.y);
+            return SHELL_RUN_CONTINUE;
+        }
+        static const int dxs[8] = { 0, 0, -1, 1, -1, 1, -1, 1 };
+        static const int dys[8] = { -1, 1, 0, 0, -1, -1, 1, 1 };
+        int chosen_k = 0;
+        for (int i = 0; i < 8; i++) {
+            int nx = g->position.x + dxs[i];
+            int ny = g->position.y + dys[i];
+            if (!MapInBounds(m, nx, ny)) continue;
+            const Tile *t = MapGetTile(m, nx, ny);
+            if (!t || !TerrainWalkable(t->terrain) || t->blocks_foot) continue;
+            if (t->interactive != INTERACT_NONE) continue;
+            chosen_k = ap_dir_key(g->position.x, g->position.y, nx, ny);
+            if (chosen_k != 0) break;
+        }
+        if (chosen_k == 0) {
+            AP_LOG("[hack] no land adjacent to disembark dwelling-ferry");
+            return SHELL_RUN_EXIT_FAIL;
+        }
+        if (input_host_queue_depth() == 0) input_host_queue_key(chosen_k);
+        AP_TIMEOUT_FAIL(st->phase_started_at, 240,
+                        "[hack] couldn't disembark dwelling-ferry");
+        return SHELL_RUN_CONTINUE;
+    }
+
+    case AP_HACK_WALK_FROM_LAND_TO_DWELLING: {
+        // Walk from the post-disembark land tile to the dwelling.
+        // When the dwelling prompt fires, hand back to RECRUIT_AT_DWELLING.
+        int dx = st->module_scratch[17];
+        int dy = st->module_scratch[18];
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "text") == 0) {
+                st->phase = AP_HACK_RECRUIT_AT_DWELLING;
+                st->phase_started_at = frame_no;
+                st->module_scratch[19] = 0;
+                AP_LOG("[hack] reached ferried dwelling at (%d,%d) — "
+                       "recruit prompt up", dx, dy);
+                return SHELL_RUN_CONTINUE;
+            }
+            return SHELL_RUN_CONTINUE;
+        }
+        if (views_active() != VIEW_NONE) {
+            input_host_queue_key(KEY_ESCAPE);
+            return SHELL_RUN_CONTINUE;
+        }
+        if (g->position.x == dx && g->position.y == dy) {
+            AP_LOG("[hack] at ferried dwelling (%d,%d) but no prompt — "
+                   "skipping", dx, dy);
+            st->module_scratch[16] += 1;
+            st->phase = AP_HACK_WALK_TO_DWELLING;
+            st->phase_started_at = frame_no;
+            st->path_len = 0;
+            return SHELL_RUN_CONTINUE;
+        }
+        if (!ap_ensure_path(st, m, g->position.x, g->position.y,
+                            dx, dy, AP_TRAVEL_WALK)) {
+            AP_LOG("[hack] BFS failed walking from land to dwelling "
+                   "(%d,%d) — skipping", dx, dy);
+            st->module_scratch[16] += 1;
+            st->phase = AP_HACK_WALK_TO_DWELLING;
+            st->phase_started_at = frame_no;
+            st->path_len = 0;
+            return SHELL_RUN_CONTINUE;
+        }
+        if (!ap_step_along_path(st, g->position.x, g->position.y)) {
+            return SHELL_RUN_EXIT_FAIL;
+        }
+        AP_TIMEOUT_FAIL(st->phase_started_at, 7200,
+                        "[hack] stuck walking from land to dwelling");
+        return SHELL_RUN_CONTINUE;
+    }
 
     case AP_HACK_WALK_TO_TOWN_FOR_BOAT:
         if (views_active() == VIEW_TOWN) {

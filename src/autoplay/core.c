@@ -339,7 +339,8 @@ static bool ap_phase_expects_prompt(AutoplayPhase p) {
            // prompt — common-prompts handler would ESC it before we
            // could enter the count.
            p == AP_HACK_WALK_TO_DWELLING ||
-           p == AP_HACK_RECRUIT_AT_DWELLING;
+           p == AP_HACK_RECRUIT_AT_DWELLING ||
+           p == AP_HACK_WALK_FROM_LAND_TO_DWELLING;
 }
 
 bool ap_handle_common_prompts(const AutoplayState *st) {
