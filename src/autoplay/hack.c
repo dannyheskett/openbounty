@@ -33,6 +33,15 @@
 //   [8],[9] = Hack's castle gate (x,y), fixed once LOCATE_CASTLE runs
 //  [10],[11] = chosen Maximus-side disembark land tile (set by home sail
 //             planner)
+//      [12] = boat-rental "press in flight" expectation
+//             (0 = idle, 1 = pressed-while-has-boat (await cancel),
+//              2 = pressed-while-no-boat (await rent))
+//      [13] = LEAVE_RECRUIT: last seen army HP (for settle detection)
+//      [14] = LEAVE_RECRUIT: last seen gold
+//      [15] = LEAVE_RECRUIT: frame_no of last change
+//      [16] = dwelling-tour index (0,1,... over the visit list)
+//  [17],[18] = current dwelling target (x,y)
+//      [19] = RECRUIT_AT_DWELLING: count-entry queued flag
 
 #include "autoplay/internal.h"
 
@@ -628,28 +637,17 @@ ShellRunVerdict ap_hack_per_frame(Game *g, Map *m, Fog *f,
 
     case AP_HACK_LEAVE_KING:
         if (views_active() == VIEW_NONE) {
-            // Done restocking. Now head out to Hack: pick the nearest
-            // coastal town on *this* (Maximus) landmass and switch the
-            // sail target back to Hack's gate.
-            int rent_x = -1, rent_y = -1;
-            int n = find_nearest_town(g, m, g->position.x, g->position.y,
-                                      &rent_x, &rent_y);
-            if (n < 0) {
-                AP_LOG("[hack] no town reachable from Maximus (%d,%d)",
-                       g->position.x, g->position.y);
-                return SHELL_RUN_EXIT_FAIL;
-            }
-            st->module_scratch[2] = rent_x;
-            st->module_scratch[3] = rent_y;
-            st->module_scratch[4] = st->module_scratch[8];  // hack gate x
-            st->module_scratch[5] = st->module_scratch[9];  // hack gate y
-            st->phase = AP_HACK_WALK_TO_TOWN_FOR_BOAT;
+            // Restock at Maximus done; now tour dwellings north of the
+            // castle to pick up elite troops (gnomes, ghosts) before
+            // heading out to Hack. Kick off the tour at index 0.
+            st->module_scratch[16] = 0;
+            st->module_scratch[17] = -1;
+            st->module_scratch[18] = -1;
+            st->module_scratch[19] = 0;
+            st->phase = AP_HACK_WALK_TO_DWELLING;
             st->phase_started_at = frame_no;
             st->path_len = 0;
-            AP_LOG("[hack] exited king_maximus, walking to (%d,%d) for "
-                   "boat to Hack at (%d,%d)",
-                   rent_x, rent_y,
-                   st->module_scratch[4], st->module_scratch[5]);
+            AP_LOG("[hack] exited king_maximus, starting dwelling tour");
             return SHELL_RUN_CONTINUE;
         }
         if (views_active() == VIEW_HOME_CASTLE) {
@@ -657,6 +655,141 @@ ShellRunVerdict ap_hack_per_frame(Game *g, Map *m, Fog *f,
         }
         AP_TIMEOUT_FAIL(st->phase_started_at, 240,
                         "[hack] couldn't exit king_maximus after restock");
+        return SHELL_RUN_CONTINUE;
+
+    // ---- Dwelling tour ---------------------------------------------------
+    // Walk to each waypoint in turn, recruit max-affordable at the
+    // dwelling's tile, then advance to the next. When done, fall through
+    // to the boat-to-Hack phases. The waypoint list is seed=1-specific
+    // and hand-picked for high-HP-per-leadership troops.
+
+    case AP_HACK_WALK_TO_DWELLING: {
+        // Hard-coded waypoint list (x,y) tuned for seed=1 dwellings on
+        // continentia, north of king_maximus, ordered by walk distance:
+        //   index 0 → gnomes  (21,37)   5 HP, 60g
+        //   index 1 → skeletons (15,44) 4 HP — undead, immune to morale
+        //   index 2 → ghosts  (5,29)    10 HP, skill 4, 400g (best!)
+        // Stops when index runs off the end, then routes to the boat.
+        static const struct { int x, y; const char *name; } tour[] = {
+            { 21, 37, "gnomes" },
+            { 15, 44, "skeletons" },
+            { 5,  29, "ghosts" },
+        };
+        const int tour_n = (int)(sizeof(tour) / sizeof(tour[0]));
+        int idx = st->module_scratch[16];
+        if (idx >= tour_n) {
+            // Tour complete — head out to Hack.
+            int rent_x = -1, rent_y = -1;
+            int n = find_nearest_town(g, m, g->position.x, g->position.y,
+                                      &rent_x, &rent_y);
+            if (n < 0) {
+                AP_LOG("[hack] no town reachable from (%d,%d) after tour",
+                       g->position.x, g->position.y);
+                return SHELL_RUN_EXIT_FAIL;
+            }
+            st->module_scratch[2] = rent_x;
+            st->module_scratch[3] = rent_y;
+            st->module_scratch[4] = st->module_scratch[8];
+            st->module_scratch[5] = st->module_scratch[9];
+            st->phase = AP_HACK_WALK_TO_TOWN_FOR_BOAT;
+            st->phase_started_at = frame_no;
+            st->path_len = 0;
+            AP_LOG("[hack] dwelling tour complete, army HP=%d gold=%d → "
+                   "boat at (%d,%d) for Hack",
+                   ap_army_total_hp(g), g->stats.gold, rent_x, rent_y);
+            return SHELL_RUN_CONTINUE;
+        }
+        int tx = tour[idx].x, ty = tour[idx].y;
+        st->module_scratch[17] = tx;
+        st->module_scratch[18] = ty;
+
+        // Once a prompt opens (we stepped onto the dwelling tile) hand
+        // off to the recruit phase. Common-prompts will normally ESC
+        // out of unknown text prompts, but WALK_TO_DWELLING is in the
+        // expects-prompt list below so it gets first crack.
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "text") == 0) {
+                st->phase = AP_HACK_RECRUIT_AT_DWELLING;
+                st->phase_started_at = frame_no;
+                st->module_scratch[19] = 0;
+                AP_LOG("[hack] reached dwelling '%s' at (%d,%d) — "
+                       "recruit prompt up",
+                       tour[idx].name, tx, ty);
+                return SHELL_RUN_CONTINUE;
+            }
+            // Some other prompt (foe?). Let common_prompts handle on
+            // next dispatch by leaving phase unchanged but logging.
+            AP_LOG("[hack] unexpected prompt during walk to %s: kind=%s",
+                   tour[idx].name, kind);
+            return SHELL_RUN_CONTINUE;
+        }
+        if (views_active() != VIEW_NONE) {
+            input_host_queue_key(KEY_ESCAPE);
+            return SHELL_RUN_CONTINUE;
+        }
+        // Already at the dwelling tile but no prompt? Skip to next.
+        if (g->position.x == tx && g->position.y == ty) {
+            AP_LOG("[hack] at dwelling %s (%d,%d) but no prompt — "
+                   "skipping", tour[idx].name, tx, ty);
+            st->module_scratch[16] = idx + 1;
+            st->path_len = 0;
+            return SHELL_RUN_CONTINUE;
+        }
+        if (!ap_ensure_path(st, m, g->position.x, g->position.y,
+                            tx, ty, AP_TRAVEL_WALK)) {
+            AP_LOG("[hack] BFS failed walking to dwelling %s (%d,%d) "
+                   "from (%d,%d) — skipping",
+                   tour[idx].name, tx, ty,
+                   g->position.x, g->position.y);
+            st->module_scratch[16] = idx + 1;
+            st->path_len = 0;
+            return SHELL_RUN_CONTINUE;
+        }
+        if (!ap_step_along_path(st, g->position.x, g->position.y)) {
+            return SHELL_RUN_EXIT_FAIL;
+        }
+        AP_TIMEOUT_FAIL(st->phase_started_at, 14400,
+                        "[hack] stuck walking to dwelling");
+        return SHELL_RUN_CONTINUE;
+    }
+
+    case AP_HACK_RECRUIT_AT_DWELLING: {
+        // Type "99" + ENTER to recruit as many as we can afford / fit.
+        // The dwelling screen clamps silently if 99 > cap. If gold or
+        // leadership is too low we may get 0; that's fine — we proceed.
+        if (!st->module_scratch[19]) {
+            ap_queue_recruit_count(99);
+            st->module_scratch[19] = 1;
+            return SHELL_RUN_CONTINUE;
+        }
+        // Wait for the prompt to close, then advance.
+        if (!prompt_is_active() && input_host_queue_depth() == 0) {
+            AP_LOG("[hack] dwelling recruit settled, army HP=%d gold=%d",
+                   ap_army_total_hp(g), g->stats.gold);
+            st->phase = AP_HACK_EXIT_DWELLING;
+            st->phase_started_at = frame_no;
+            return SHELL_RUN_CONTINUE;
+        }
+        AP_TIMEOUT_FAIL(st->phase_started_at, 600,
+                        "[hack] dwelling recruit didn't settle");
+        return SHELL_RUN_CONTINUE;
+    }
+
+    case AP_HACK_EXIT_DWELLING:
+        // After recruit settles a dialog ("you bought N") may pop up.
+        // ap_handle_common_prompts will SPACE it. Wait for VIEW_NONE.
+        if (views_active() == VIEW_NONE && !prompt_is_active() &&
+            !dialog_is_active()) {
+            // Step off the dwelling tile and on to the next waypoint.
+            st->module_scratch[16] += 1;
+            st->path_len = 0;
+            st->phase = AP_HACK_WALK_TO_DWELLING;
+            st->phase_started_at = frame_no;
+            return SHELL_RUN_CONTINUE;
+        }
+        AP_TIMEOUT_FAIL(st->phase_started_at, 600,
+                        "[hack] couldn't exit dwelling view");
         return SHELL_RUN_CONTINUE;
 
     case AP_HACK_WALK_TO_TOWN_FOR_BOAT:
@@ -761,19 +894,56 @@ ShellRunVerdict ap_hack_per_frame(Game *g, Map *m, Fog *f,
             AP_LOG("[hack] boarded boat at (%d,%d), now sailing", bx, by);
             return SHELL_RUN_CONTINUE;
         }
-        int dx = 0, dy = 0;
-        if (bx > g->position.x) dx = 1; else if (bx < g->position.x) dx = -1;
-        if (by > g->position.y) dy = 1; else if (by < g->position.y) dy = -1;
-        int k = ap_dir_key(g->position.x, g->position.y,
-                           g->position.x + dx, g->position.y + dy);
-        if (k == 0) {
-            AP_LOG("[hack] already adjacent to boat? pos=(%d,%d) boat=(%d,%d)",
-                   g->position.x, g->position.y, bx, by);
+        // If hero is already adjacent to the boat (8-neighborhood),
+        // step directly onto it — the engine treats walking onto the
+        // boat tile as boarding.
+        int adx = bx - g->position.x; if (adx < 0) adx = -adx;
+        int ady = by - g->position.y; if (ady < 0) ady = -ady;
+        if (adx <= 1 && ady <= 1) {
+            int k = ap_dir_key(g->position.x, g->position.y, bx, by);
+            if (k == 0) {
+                AP_LOG("[hack] already on boat tile? pos=(%d,%d) boat=(%d,%d)",
+                       g->position.x, g->position.y, bx, by);
+                return SHELL_RUN_EXIT_FAIL;
+            }
+            if (input_host_queue_depth() == 0) input_host_queue_key(k);
+            AP_TIMEOUT_FAIL(st->phase_started_at, 240,
+                            "[hack] couldn't board boat (adjacent)");
+            return SHELL_RUN_CONTINUE;
+        }
+        // Not adjacent: BFS a walk path to a land tile next to the boat,
+        // then board on next entry to this case. Try each of the boat's
+        // 8 neighbors; pick the first walk-reachable one.
+        static const int dxs[8] = { 0, 0, -1, 1, -1, 1, -1, 1 };
+        static const int dys[8] = { -1, 1, 0, 0, -1, -1, 1, 1 };
+        int approach_x = -1, approach_y = -1;
+        for (int i = 0; i < 8; i++) {
+            int nx = bx + dxs[i];
+            int ny = by + dys[i];
+            if (!MapInBounds(m, nx, ny)) continue;
+            const Tile *t = MapGetTile(m, nx, ny);
+            if (!t) continue;
+            if (!TerrainWalkable(t->terrain) || t->blocks_foot) continue;
+            if (t->interactive != INTERACT_NONE) continue;
+            ApPoint tmp[AP_PATH_MAX];
+            int n = ap_bfs(m, g->position.x, g->position.y, nx, ny,
+                           AP_TRAVEL_WALK, tmp, AP_PATH_MAX);
+            if (n > 0) { approach_x = nx; approach_y = ny; break; }
+        }
+        if (approach_x < 0) {
+            AP_LOG("[hack] no walk approach to boat at (%d,%d) from (%d,%d)",
+                   bx, by, g->position.x, g->position.y);
             return SHELL_RUN_EXIT_FAIL;
         }
-        input_host_queue_key(k);
-        AP_TIMEOUT_FAIL(st->phase_started_at, 120,
-                        "[hack] couldn't board boat");
+        if (!ap_ensure_path(st, m, g->position.x, g->position.y,
+                            approach_x, approach_y, AP_TRAVEL_WALK)) {
+            return SHELL_RUN_EXIT_FAIL;
+        }
+        if (!ap_step_along_path(st, g->position.x, g->position.y)) {
+            return SHELL_RUN_EXIT_FAIL;
+        }
+        AP_TIMEOUT_FAIL(st->phase_started_at, 1200,
+                        "[hack] stuck walking to boat approach");
         return SHELL_RUN_CONTINUE;
     }
 

@@ -537,6 +537,39 @@ ShellRunVerdict ap_murray_per_frame(Game *g, Map *m, Fog *f,
                "army_hp=%d, pos=(%d,%d)\n",
                g->stats.gold, ap_army_total_hp(g),
                g->position.x, g->position.y);
+        // One-shot diagnostic: scan continentia for dwellings + chests
+        // so we can pick prep waypoints. Logs once at Murray verify.
+        AP_LOG("=== continentia dwelling scan ===");
+        for (int y = 0; y < m->height; y++) {
+            for (int x = 0; x < m->width; x++) {
+                const Tile *t = MapGetTile(m, x, y);
+                if (!t) continue;
+                const char *kind = NULL;
+                switch (t->interactive) {
+                    case INTERACT_DWELLING_PLAINS:  kind = "plains";  break;
+                    case INTERACT_DWELLING_FOREST:  kind = "forest";  break;
+                    case INTERACT_DWELLING_HILLS:   kind = "hills";   break;
+                    case INTERACT_DWELLING_DUNGEON: kind = "dungeon"; break;
+                    default: continue;
+                }
+                fprintf(stderr,
+                        "[autoplay] dwelling: (%d,%d) kind=%s art='%s' id='%s'\n",
+                        x, y, kind, t->art, t->id);
+            }
+        }
+        AP_LOG("=== continentia chest scan ===");
+        for (int y = 0; y < m->height; y++) {
+            for (int x = 0; x < m->width; x++) {
+                const Tile *t = MapGetTile(m, x, y);
+                if (!t) continue;
+                if (t->interactive == INTERACT_TREASURE_CHEST) {
+                    fprintf(stderr,
+                            "[autoplay] chest: (%d,%d) id='%s'\n",
+                            x, y, t->id);
+                }
+            }
+        }
+        AP_LOG("=== scan done ===");
         // Chain into the next module: Hack.
         st->phase = AP_HACK_FIRST;
         st->phase_started_at = frame_no;

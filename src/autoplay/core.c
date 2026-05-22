@@ -303,7 +303,12 @@ static bool ap_phase_expects_prompt(AutoplayPhase p) {
     return p == AP_MURRAY_SIEGE_PROMPT ||
            p == AP_MURRAY_COMBAT ||
            p == AP_HACK_SIEGE_PROMPT ||
-           p == AP_HACK_COMBAT;
+           p == AP_HACK_COMBAT ||
+           // Dwelling phases expect a text-input "how many to recruit?"
+           // prompt — common-prompts handler would ESC it before we
+           // could enter the count.
+           p == AP_HACK_WALK_TO_DWELLING ||
+           p == AP_HACK_RECRUIT_AT_DWELLING;
 }
 
 bool ap_handle_common_prompts(const AutoplayState *st) {
@@ -324,8 +329,14 @@ bool ap_handle_common_prompts(const AutoplayState *st) {
             const char *kind = prompt_kind_str();
             int key = KEY_N;
             const char *what = "decline";
-            if (hdr && (strstr(hdr, "Foe") || strstr(hdr, "Siege") ||
-                        strstr(hdr, "Castle"))) {
+            // Text-input prompts (dwelling recruit, hero-name) need
+            // ESC to dismiss — N is ignored and the prompt spins forever.
+            // Numeric prompts (dismiss-army slot picker) also take ESC.
+            if (kind && (strcmp(kind, "text") == 0 ||
+                         strcmp(kind, "numeric") == 0)) {
+                key = KEY_ESCAPE; what = "ESC (dismiss text/numeric)";
+            } else if (hdr && (strstr(hdr, "Foe") || strstr(hdr, "Siege") ||
+                               strstr(hdr, "Castle"))) {
                 key = KEY_Y; what = "ATTACK";
             } else if (kind && strcmp(kind, "ab") == 0) {
                 key = KEY_A; what = "A (gold)";

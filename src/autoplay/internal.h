@@ -72,6 +72,13 @@ typedef enum {
     AP_HACK_DO_RECRUITS,
     AP_HACK_LEAVE_RECRUIT,
     AP_HACK_LEAVE_KING,
+    // Dwelling tour: walk N from Maximus to recruit elite troops
+    // (gnomes, ghosts) that out-leverage castle militia per leadership
+    // point. On any seed this is best-effort; we skip dwellings we
+    // can't afford or that aren't reachable overland.
+    AP_HACK_WALK_TO_DWELLING,
+    AP_HACK_RECRUIT_AT_DWELLING,
+    AP_HACK_EXIT_DWELLING,
     // Boat trip from coastal Continentia town to a land tile near
     // Hack's castle. Same shape as the Murray sail: rent → board → sail
     // BFS → disembark.
@@ -128,7 +135,7 @@ typedef struct AutoplayState {
     // module entry; -1 = "not yet set". When you need more state
     // than two ints, extend this array — the cost is one int per
     // villain module that uses it, which is fine.
-    int           module_scratch[16];
+    int           module_scratch[24];
 } AutoplayState;
 
 // =========================================================================
