@@ -58,48 +58,21 @@ typedef enum {
     AP_HACK_CLOSE_TOWN_INFO_AFTER_CONTRACT,
     AP_HACK_EXIT_TOWN_AFTER_CONTRACT,
     AP_HACK_LOCATE_CASTLE,
-    // Re-stock loop: sail back to Maximus's landmass, walk to the king,
-    // recruit a fresh army, then walk to a coastal town there to rent
-    // a fresh boat to Hack's gate.
-    AP_HACK_WALK_TO_TOWN_FOR_HOMETRIP,
-    AP_HACK_RENT_BOAT_FOR_HOMETRIP,
-    AP_HACK_EXIT_TOWN_AFTER_HOMEBOAT,
-    AP_HACK_BOARD_BOAT_FOR_HOMETRIP,
-    AP_HACK_SAIL_HOME_TO_MAINLAND,
-    AP_HACK_DISEMBARK_NEAR_MAXIMUS,
+    // Restock at Maximus: ferry home, recruit a fresh army, then tour
+    // dwellings before sieging Hack. The ferry phases that used to
+    // live here are gone — ap_ferry_tick (core.c) drives the boat
+    // trips from inside WALK_TO_KING / WALK_TO_DWELLING / WALK_TO_GATE.
     AP_HACK_WALK_TO_KING,
     AP_HACK_OPEN_RECRUIT,
     AP_HACK_DO_RECRUITS,
     AP_HACK_LEAVE_RECRUIT,
     AP_HACK_LEAVE_KING,
-    // Dwelling tour: walk N from Maximus to recruit elite troops
-    // (gnomes, ghosts) that out-leverage castle militia per leadership
-    // point. On any seed this is best-effort; we skip dwellings we
-    // can't afford or that aren't reachable overland.
+    // Dwelling tour: walk/ferry to each waypoint to recruit elite
+    // troops. Best-effort; skips unreachable dwellings.
     AP_HACK_WALK_TO_DWELLING,
     AP_HACK_RECRUIT_AT_DWELLING,
     AP_HACK_EXIT_DWELLING,
-    // Dwelling boat-ferry: when a dwelling waypoint is on a different
-    // landmass, ferry across. Mirrors the to-Hack sail flow but the
-    // terminal is a dwelling recruit prompt instead of a siege.
-    // Sub-target for these phases lives in scratch[20..21] (ferry
-    // destination land tile chosen by the planner).
-    AP_HACK_WALK_TO_TOWN_FOR_DWELLING_BOAT,
-    AP_HACK_RENT_DWELLING_BOAT,
-    AP_HACK_EXIT_TOWN_AFTER_DWELLING_BOAT,
-    AP_HACK_BOARD_DWELLING_BOAT,
-    AP_HACK_SAIL_TO_DWELLING_COAST,
-    AP_HACK_DISEMBARK_NEAR_FAR_DWELLING,
-    AP_HACK_WALK_FROM_LAND_TO_DWELLING,
-    // Boat trip from coastal Continentia town to a land tile near
-    // Hack's castle. Same shape as the Murray sail: rent → board → sail
-    // BFS → disembark.
-    AP_HACK_WALK_TO_TOWN_FOR_BOAT,
-    AP_HACK_RENT_BOAT,
-    AP_HACK_EXIT_TOWN_AFTER_BOAT,
-    AP_HACK_BOARD_BOAT,
-    AP_HACK_SAIL_TO_GATE_COAST,
-    AP_HACK_DISEMBARK_NEAR_GATE,
+    // Siege: walk/ferry to Hack's gate, accept siege, fight, verify.
     AP_HACK_WALK_TO_GATE,
     AP_HACK_SIEGE_PROMPT,
     AP_HACK_COMBAT,

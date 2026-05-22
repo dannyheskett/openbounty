@@ -340,8 +340,7 @@ static bool ap_phase_expects_prompt(AutoplayPhase p) {
            // prompt — common-prompts handler would ESC it before we
            // could enter the count.
            p == AP_HACK_WALK_TO_DWELLING ||
-           p == AP_HACK_RECRUIT_AT_DWELLING ||
-           p == AP_HACK_WALK_FROM_LAND_TO_DWELLING;
+           p == AP_HACK_RECRUIT_AT_DWELLING;
 }
 
 bool ap_handle_common_prompts(const AutoplayState *st) {
@@ -673,7 +672,25 @@ FerryState ap_ferry_tick(AutoplayState *st, Game *g, Map *m,
     switch (st->ferry_state) {
 
     case FERRY_WALK_DIRECT: {
+        // Stop adjacent to interactive targets — see FERRY_WALK_TO_TARGET.
+        const Tile *target_tile = MapGetTile(m, target_x, target_y);
+        bool target_is_interactive = target_tile &&
+            target_tile->interactive != INTERACT_NONE;
+        if (target_is_interactive) {
+            int adx = g->position.x - target_x; if (adx < 0) adx = -adx;
+            int ady = g->position.y - target_y; if (ady < 0) ady = -ady;
+            if (adx <= 1 && ady <= 1 &&
+                !(g->position.x == target_x &&
+                  g->position.y == target_y)) {
+                st->ferry_state = FERRY_DONE;
+                return FERRY_DONE;
+            }
+        }
         if (g->position.x == target_x && g->position.y == target_y) {
+            st->ferry_state = FERRY_DONE;
+            return FERRY_DONE;
+        }
+        if (prompt_is_active() || dialog_is_active()) {
             st->ferry_state = FERRY_DONE;
             return FERRY_DONE;
         }
@@ -927,24 +944,46 @@ FerryState ap_ferry_tick(AutoplayState *st, Game *g, Map *m,
     }
 
     case FERRY_WALK_TO_TARGET: {
+        // If the target tile is interactive (castle gate, town,
+        // dwelling, chest, artifact) and we step onto it the engine
+        // will open a view/dialog/prompt — at which point the caller
+        // owns the interaction. Treat "adjacent to target" as DONE for
+        // those targets so the caller can take the final step itself.
+        const Tile *target_tile = MapGetTile(m, target_x, target_y);
+        bool target_is_interactive = target_tile &&
+            target_tile->interactive != INTERACT_NONE;
+        if (target_is_interactive) {
+            int adx = g->position.x - target_x; if (adx < 0) adx = -adx;
+            int ady = g->position.y - target_y; if (ady < 0) ady = -ady;
+            if (adx <= 1 && ady <= 1 &&
+                !(g->position.x == target_x &&
+                  g->position.y == target_y)) {
+                st->ferry_state = FERRY_DONE;
+                return FERRY_DONE;
+            }
+        }
         if (g->position.x == target_x && g->position.y == target_y) {
             st->ferry_state = FERRY_DONE;
             return FERRY_DONE;
         }
-        // If something opened a view/dialog (e.g. dwelling prompt at
-        // target), let the caller handle it — the caller's expects-prompt
-        // settings keep common_prompts from auto-ESC'ing. The hero is
-        // effectively at the target; return DONE.
+        // If something opened a view/dialog already (we walked through
+        // a foe or town en route), let the caller handle it — return
+        // DONE-ish so the caller's expects-prompt logic takes over.
         if (prompt_is_active() || dialog_is_active()) {
             st->ferry_state = FERRY_DONE;
             return FERRY_DONE;
         }
         if (views_active() != VIEW_NONE) {
-            // VIEW_TOWN or VIEW_HOME_CASTLE on the path — ESC out and
-            // resume walking.
+            // Town/castle view opened on the path (e.g. we walked onto
+            // a town tile en route). Bounce-back happens automatically;
+            // ESC dismisses the view and we resume walking.
             input_host_queue_key(KEY_ESCAPE);
             return st->ferry_state;
         }
+        // BFS to target. If target is interactive, BFS will treat it
+        // as walkable (the goal-override in ap_bfs) but intermediate
+        // tiles won't pick up other interactives. We don't need to do
+        // anything special — we'll just exit early above when adjacent.
         if (!ap_ensure_path(st, m, g->position.x, g->position.y,
                             target_x, target_y, AP_TRAVEL_WALK)) {
             AP_LOG("ferry: BFS lost path to target (%d,%d) from (%d,%d)",
