@@ -80,6 +80,17 @@ typedef enum {
     AP_HACK_VERIFY,
     AP_HACK_LAST = AP_HACK_VERIFY,
 
+    // ---- Grind phase 1 ---------------------------------------------------
+    // After Hack capture, sweep continentia for treasure chests and
+    // artifacts: pickups give gold (chest), leadership (some chests +
+    // chest A/B choice), spells, troops, or in the artifact case
+    // permanent stat bumps. Saves to AP_SLOT_GRIND_P1 on completion.
+    AP_GRIND_P1_FIRST,
+    AP_GRIND_P1_PICK_TARGET = AP_GRIND_P1_FIRST,
+    AP_GRIND_P1_WALK_TO_TARGET,
+    AP_GRIND_P1_VERIFY,
+    AP_GRIND_P1_LAST = AP_GRIND_P1_VERIFY,
+
     // ---- Terminal -------------------------------------------------------
     AP_ALL_DONE,
 } AutoplayPhase;
@@ -220,14 +231,15 @@ FerryState ap_ferry_tick(AutoplayState *st, Game *g, Map *m,
 
 // Per-module checkpoint slot assignments. Each module saves at the
 // end of its capture flow so the run is resumable from any completed
-// villain. Slots are reserved from the top down so player save slots
+// module. Slots are reserved from the top down so player save slots
 // 1..N stay free for human use.
 //   slot 9 (10) = Hack
 //   slot 8 (9)  = Murray
-//   slot 7 (8)  = (reserved for next villain)
-// Add new villains here, decrementing from the existing minimum.
-#define AP_SLOT_MURRAY  8
-#define AP_SLOT_HACK    9
+//   slot 7 (8)  = Grind P1 (chest/artifact sweep)
+// Add new modules here, decrementing from the existing minimum.
+#define AP_SLOT_MURRAY    8
+#define AP_SLOT_HACK      9
+#define AP_SLOT_GRIND_P1  7
 
 // Write an autoplay checkpoint to the given save slot (0-indexed).
 // Logs success or failure to stderr; otherwise silent.
@@ -245,5 +257,9 @@ ShellRunVerdict ap_murray_per_frame(Game *g, Map *m, Fog *f,
 ShellRunVerdict ap_hack_per_frame(Game *g, Map *m, Fog *f,
                                   Resources *res, int frame_no,
                                   AutoplayState *st);
+
+ShellRunVerdict ap_grind_p1_per_frame(Game *g, Map *m, Fog *f,
+                                      Resources *res, int frame_no,
+                                      AutoplayState *st);
 
 #endif

@@ -543,8 +543,17 @@ ShellRunVerdict ap_hack_per_frame(Game *g, Map *m, Fog *f,
                "army_hp=%d, pos=(%d,%d)\n",
                g->stats.gold, ap_army_total_hp(g),
                g->position.x, g->position.y);
-        st->phase = AP_ALL_DONE;
+        // Chain into the grind sweep before the next villain.
+        st->phase = AP_GRIND_P1_FIRST;
         st->phase_started_at = frame_no;
+        st->phase_action_queued = false;
+        st->ferry_state = FERRY_IDLE;
+        st->path_len = 0;
+        for (size_t i = 0;
+             i < sizeof(st->module_scratch) / sizeof(st->module_scratch[0]);
+             i++) {
+            st->module_scratch[i] = -1;
+        }
         return SHELL_RUN_CONTINUE;
     }
 

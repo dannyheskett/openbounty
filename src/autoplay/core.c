@@ -1083,6 +1083,9 @@ static ShellRunVerdict autoplay_per_frame(ShellRunHooks *self,
     if (st->phase >= AP_HACK_FIRST && st->phase <= AP_HACK_LAST) {
         return ap_hack_per_frame(g, m, f, res, frame_no, st);
     }
+    if (st->phase >= AP_GRIND_P1_FIRST && st->phase <= AP_GRIND_P1_LAST) {
+        return ap_grind_p1_per_frame(g, m, f, res, frame_no, st);
+    }
     if (st->phase == AP_ALL_DONE) {
         printf("autoplay: all wired-up villains captured\n");
         return SHELL_RUN_EXIT_PASS;
