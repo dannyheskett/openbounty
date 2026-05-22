@@ -174,6 +174,11 @@ bool ap_step_along_path(AutoplayState *st, int cx, int cy);
 struct Combat;
 int  ap_closest_enemy(const struct Combat *c, int ux, int uy,
                       int *out_dist);
+// Pick the enemy stack with highest total HP (count * hit_points),
+// tiebroken by proximity. Used for ranged target selection so shooters
+// focus-fire big threats instead of plinking the nearest weakling.
+int  ap_highest_threat_enemy(const struct Combat *c, int ux, int uy,
+                             int *out_dist);
 int  ap_queue_picker(int cx, int cy, int tx, int ty);
 
 // Common prompt/dialog handler. Returns true if it queued an input

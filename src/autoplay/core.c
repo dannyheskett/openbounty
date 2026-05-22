@@ -259,6 +259,37 @@ int ap_closest_enemy(const Combat *c, int ux, int uy, int *out_dist) {
     return best;
 }
 
+// Highest-total-HP enemy stack (count * hit_points), tiebroken by
+// proximity. Used for ranged target selection so shooters focus-fire
+// the biggest threat (e.g. Nomads at 150 HP) instead of pinging the
+// nearest peasant stack. Returns -1 if no enemies remain.
+int ap_highest_threat_enemy(const Combat *c, int ux, int uy,
+                            int *out_dist) {
+    int best = -1, best_hp = -1, best_d = 1 << 30;
+    for (int i = 0; i < COMBAT_SLOTS; i++) {
+        const CombatUnit *e = &c->units[COMBAT_SIDE_AI][i];
+        if (e->troop_idx < 0 || e->count <= 0) continue;
+        const TroopDef *td = troop_by_index(e->troop_idx);
+        int hp_each = td ? td->hit_points : 1;
+        int total_hp = e->count * hp_each;
+        int adx = e->x - ux; if (adx < 0) adx = -adx;
+        int ady = e->y - uy; if (ady < 0) ady = -ady;
+        int d = (adx > ady) ? adx : ady;
+        // Strict total-HP comparison; tiebreak on proximity so equal
+        // threats prefer the closer one (less likely to take retal
+        // damage moving to engage).
+        bool better = (total_hp > best_hp) ||
+                      (total_hp == best_hp && d < best_d);
+        if (better) {
+            best_hp = total_hp;
+            best_d = d;
+            best = i;
+        }
+    }
+    if (out_dist) *out_dist = best_d;
+    return best;
+}
+
 int ap_queue_picker(int cx, int cy, int tx, int ty) {
     int queued = 0;
     while (cx != tx || cy != ty) {
@@ -439,6 +470,10 @@ static void autoplay_before_frame(void *user) {
         frame_no < st->combat_frame_last_action + 6) {
         return;
     }
+    // Two enemy choices: closest (for melee approach) and highest-
+    // threat (for ranged target). Ranged shots ignore the "must be
+    // closer than 1 tile" check against the target — we just need ANY
+    // enemy more than 1 tile away to be allowed to shoot.
     int enemy_d = 0;
     int enemy_slot = ap_closest_enemy(c, u->x, u->y, &enemy_d);
     if (enemy_slot < 0) return;
@@ -446,8 +481,12 @@ static void autoplay_before_frame(void *user) {
     bool can_shoot = (u->shots > 0 && enemy_d > 1 &&
                       !combat_unit_surrounded(c, c->side, c->unit_id));
     if (can_shoot) {
+        int tgt_d = 0;
+        int tgt_slot = ap_highest_threat_enemy(c, u->x, u->y, &tgt_d);
+        if (tgt_slot < 0) tgt_slot = enemy_slot;
+        const CombatUnit *target = &c->units[COMBAT_SIDE_AI][tgt_slot];
         input_host_queue_key(KEY_S);
-        ap_queue_picker(u->x, u->y, enemy->x, enemy->y);
+        ap_queue_picker(u->x, u->y, target->x, target->y);
     } else {
         static const int dxs[8] = { -1, 0, 1, -1, 1, -1, 0, 1 };
         static const int dys[8] = { -1, -1, -1, 0, 0, 1, 1, 1 };
