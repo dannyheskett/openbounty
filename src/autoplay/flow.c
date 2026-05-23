@@ -447,16 +447,25 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
     }
 
     case AP_FLOW_REBUY_PIKEMEN: {
-        // C (pick pikemen) → 3 → Enter. Buys 3 pikemen (300g/ea =
-        // 900g). The recruit screen silently caps at gold available;
-        // we pick a small count that fits even at the early recruit.
+        // C (pick pikemen) → 9 9 9 9 → Enter. The recruit screen
+        // silently clamps to s_max (line 268 of recruit_soldiers.c),
+        // so typing 9999 buys the max affordable count.
         int sub = (st->module_scratch[4] < 0) ? 0 : st->module_scratch[4];
         switch (sub) {
         case 0: st->module_scratch[4] = 1;
             return (ApCmd){ "REBUY_PIKEMEN:c", KEY_C,
                             assert_view_recruit_soldiers };
         case 1: st->module_scratch[4] = 2;
-            return (ApCmd){ "REBUY_PIKEMEN:3", KEY_THREE,
+            return (ApCmd){ "REBUY_PIKEMEN:9a", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[4] = 3;
+            return (ApCmd){ "REBUY_PIKEMEN:9b", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[4] = 4;
+            return (ApCmd){ "REBUY_PIKEMEN:9c", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 4: st->module_scratch[4] = 5;
+            return (ApCmd){ "REBUY_PIKEMEN:9d", KEY_NINE,
                             assert_view_recruit_soldiers };
         default: st->module_scratch[4] = -1;
             *out_phase_done = true;
@@ -467,21 +476,55 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
     }
 
     case AP_FLOW_REBUY_ARCHERS: {
-        // B (pick archers) → 2 → Enter. Buys 2 archers (250g/ea =
-        // 500g). Combined with the 900g pikemen, total recruit
-        // spend per visit is 1400g.
+        // B (pick archers) → 9 9 9 9 → Enter. Clamped to max.
         int sub = (st->module_scratch[4] < 0) ? 0 : st->module_scratch[4];
         switch (sub) {
         case 0: st->module_scratch[4] = 1;
             return (ApCmd){ "REBUY_ARCHERS:b", KEY_B,
                             assert_view_recruit_soldiers };
         case 1: st->module_scratch[4] = 2;
-            return (ApCmd){ "REBUY_ARCHERS:2", KEY_TWO,
+            return (ApCmd){ "REBUY_ARCHERS:9a", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[4] = 3;
+            return (ApCmd){ "REBUY_ARCHERS:9b", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[4] = 4;
+            return (ApCmd){ "REBUY_ARCHERS:9c", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 4: st->module_scratch[4] = 5;
+            return (ApCmd){ "REBUY_ARCHERS:9d", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[4] = -1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_REBUY_MILITIA;
+            return (ApCmd){ "REBUY_ARCHERS:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_REBUY_MILITIA: {
+        // A (pick militia) → 9 9 9 9 → Enter. Clamped to max.
+        int sub = (st->module_scratch[4] < 0) ? 0 : st->module_scratch[4];
+        switch (sub) {
+        case 0: st->module_scratch[4] = 1;
+            return (ApCmd){ "REBUY_MILITIA:a", KEY_A,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[4] = 2;
+            return (ApCmd){ "REBUY_MILITIA:9a", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[4] = 3;
+            return (ApCmd){ "REBUY_MILITIA:9b", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[4] = 4;
+            return (ApCmd){ "REBUY_MILITIA:9c", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 4: st->module_scratch[4] = 5;
+            return (ApCmd){ "REBUY_MILITIA:9d", KEY_NINE,
                             assert_view_recruit_soldiers };
         default: st->module_scratch[4] = -1;
             *out_phase_done = true;
             *out_next_phase = AP_FLOW_REEXIT_RECRUIT;
-            return (ApCmd){ "REBUY_ARCHERS:enter", KEY_ENTER,
+            return (ApCmd){ "REBUY_MILITIA:enter", KEY_ENTER,
                             assert_always_true };
         }
     }
