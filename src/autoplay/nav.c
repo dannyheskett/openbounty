@@ -131,6 +131,10 @@ static bool walk_foot(const Map *m, int x, int y, bool is_goal, void *vctx) {
     // town tile if it's the explicit goal (e.g., routing-to-town to
     // rent a boat). The caller-provided `is_goal` flag indicates this.
     if (t->interactive == INTERACT_TOWN && !is_goal) return false;
+    if ((t->interactive == INTERACT_DWELLING_PLAINS ||
+         t->interactive == INTERACT_DWELLING_FOREST ||
+         t->interactive == INTERACT_DWELLING_HILLS  ||
+         t->interactive == INTERACT_DWELLING_DUNGEON) && !is_goal) return false;
     // Step onto the parked boat = board (engine handles this in step.c).
     if (ctx->g->boat.has_boat &&
         x == ctx->g->boat.x && y == ctx->g->boat.y) return true;
@@ -147,6 +151,10 @@ static bool walk_boat(const Map *m, int x, int y, bool is_goal, void *vctx) {
     // town tile if it's the explicit goal (e.g., routing-to-town to
     // rent a boat). The caller-provided `is_goal` flag indicates this.
     if (t->interactive == INTERACT_TOWN && !is_goal) return false;
+    if ((t->interactive == INTERACT_DWELLING_PLAINS ||
+         t->interactive == INTERACT_DWELLING_FOREST ||
+         t->interactive == INTERACT_DWELLING_HILLS  ||
+         t->interactive == INTERACT_DWELLING_DUNGEON) && !is_goal) return false;
     if (adventure_walkable_in_boat(t)) {
         // Disallow disembarking onto land unless it's the goal — sailing
         // semantics: only stop at the destination.
@@ -170,6 +178,10 @@ static bool walk_foot_to_any_town(const Map *m, int x, int y, bool is_goal,
     // town tile if it's the explicit goal (e.g., routing-to-town to
     // rent a boat). The caller-provided `is_goal` flag indicates this.
     if (t->interactive == INTERACT_TOWN && !is_goal) return false;
+    if ((t->interactive == INTERACT_DWELLING_PLAINS ||
+         t->interactive == INTERACT_DWELLING_FOREST ||
+         t->interactive == INTERACT_DWELLING_HILLS  ||
+         t->interactive == INTERACT_DWELLING_DUNGEON) && !is_goal) return false;
     if (ctx->g->boat.has_boat &&
         x == ctx->g->boat.x && y == ctx->g->boat.y) return true;
     return adventure_walkable_on_foot(t);
@@ -269,6 +281,16 @@ static int bfs_multimode(const Map *m, const Game *g,
             if (t->interactive == INTERACT_CASTLE_GATE) continue;
             bool is_goal = (ny == gy && nx == gx);
             if (t->interactive == INTERACT_TOWN && !is_goal) continue;
+            // Dwellings (plains/forest/hills/dungeon) all trigger a
+            // recruit prompt on step-on. Skip unless explicit goal.
+            if ((t->interactive == INTERACT_DWELLING_PLAINS ||
+                 t->interactive == INTERACT_DWELLING_FOREST ||
+                 t->interactive == INTERACT_DWELLING_HILLS  ||
+                 t->interactive == INTERACT_DWELLING_DUNGEON) && !is_goal) continue;
+            // Wandering armies are unpredictable (friendly = text
+            // prompt, hostile = combat) and can follow into the hero's
+            // path. Always route around them, unless it's the goal.
+            if (t->interactive == INTERACT_FOE && !is_goal) continue;
 
             int next_mode = mode;
             bool ok = false;

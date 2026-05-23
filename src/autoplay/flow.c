@@ -191,12 +191,22 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
         // blocked move.
         if (prompt_is_active()) {
             st->module_scratch[5] = 0;
-            const char *hdr = prompt_header_text();
-            if (hdr && strstr(hdr, "Foe")) {
+            const char *kind = prompt_kind_str();
+            // Yes/no = foe attack confirmation. Press Y to engage.
+            if (kind && strcmp(kind, "yes_no") == 0) {
                 *out_phase_done = true;
                 *out_next_phase = AP_FLOW_COMBAT;
                 return (ApCmd){ "GRIND:y_foe", KEY_Y, assert_combat_resolved };
             }
+            // Text input = friendly-army or dwelling recruitment count.
+            // Press Enter to commit 0 (no recruit); the engine then
+            // consumes the foe / dwelling so the prompt won't re-fire.
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "GRIND:enter_recruit_0", KEY_ENTER,
+                                assert_prompt_gone };
+            }
+            // A/B chest choice: press A to take the gold path.
+            // Plain yes/no (search, etc.): A is also accepted.
             return (ApCmd){ "GRIND:a_chest", KEY_A, assert_prompt_gone };
         }
         if (dialog_is_active()) {
@@ -219,14 +229,71 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
         // When ap_nav_step returns 0 the hero is on the goal tile —
         // advance to the next leg.
         {
+            // The 54 actual chest tiles in continentia at seed=1
+            // (extracted from a tick-1 AP_DUMP_MAP=1 run that prints
+            // only INTERACT_TREASURE_CHEST tiles). Ordered nearest-
+            // neighbor from the GRIND start at (11, 57). The other 21
+            // slots that game.json names treasure_chest_NNN are
+            // re-tagged at salt time as artifacts / navmaps / orbs /
+            // telecaves / dwellings / friendly foes and aren't chests.
             static const struct {
                 int x, y;
                 const char *name;
             } legs[] = {
-                { 36, 3,  "chest_073" },
-                { 59, 3,  "chest_074" },
-                { 45, 4,  "chest_072" },
-                { 15, 5,  "chest_071" },
+                { 10, 54, "chest_01" },
+                { 10, 53, "chest_02" },
+                {  8, 60, "chest_03" },
+                {  3, 59, "chest_04" },
+                {  3, 48, "chest_05" },
+                {  6, 46, "chest_06" },
+                {  8, 42, "chest_07" },
+                { 11, 41, "chest_08" },
+                {  9, 32, "chest_09" },
+                {  8, 24, "chest_10" },
+                {  7, 24, "chest_11" },
+                {  6, 24, "chest_12" },
+                { 13, 20, "chest_13" },
+                { 17, 22, "chest_14" },
+                { 17, 29, "chest_15" },
+                { 23, 28, "chest_16" },
+                { 33, 22, "chest_17" },
+                { 36, 24, "chest_18" },
+                { 44, 22, "chest_19" },
+                { 46, 19, "chest_20" },
+                { 47, 16, "chest_21" },
+                { 42, 18, "chest_22" },
+                { 45,  4, "chest_23" },
+                { 36,  3, "chest_24" },
+                { 27,  8, "chest_25" },
+                { 24,  6, "chest_26" },
+                { 23,  6, "chest_27" },
+                { 15,  5, "chest_28" },
+                {  5,  7, "chest_29" },
+                { 10, 13, "chest_30" },
+                { 20, 14, "chest_31" },
+                { 25, 42, "chest_32" },
+                { 29, 44, "chest_33" },
+                { 23, 46, "chest_34" },
+                { 21, 50, "chest_35" },
+                { 25, 57, "chest_36" },
+                { 29, 56, "chest_37" },
+                { 37, 56, "chest_38" },
+                { 33, 60, "chest_39" },
+                { 22, 60, "chest_40" },
+                { 50, 59, "chest_41" },
+                { 52, 46, "chest_42" },
+                { 41, 45, "chest_43" },
+                { 40, 48, "chest_44" },
+                { 43, 50, "chest_45" },
+                { 41, 39, "chest_46" },
+                { 39, 34, "chest_47" },
+                { 31, 37, "chest_48" },
+                { 49, 28, "chest_49" },
+                { 54, 23, "chest_50" },
+                { 60, 27, "chest_51" },
+                { 59, 30, "chest_52" },
+                { 56, 14, "chest_53" },
+                { 59,  3, "chest_54" },
             };
             const int n_legs = (int)(sizeof(legs) / sizeof(legs[0]));
             int leg = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
