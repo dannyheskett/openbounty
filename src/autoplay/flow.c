@@ -88,8 +88,43 @@ static bool assert_combat_resolved(const Game *g) {
 // =========================================================================
 
 // treasure_chest_073 @ (36, 3)
+//
+// Hero starts this leg at (11, 57) — the tile they're on when GRIND
+// first runs (post-EXIT_CASTLE from the home castle gate at (11, 56)).
+// chest_073 is on the northern landmass, unreachable on foot, so the
+// leg walks south to Hunterville town at (12, 60), the town-modal
+// auto-rents a boat (boat spawns at (11, 60)), then the hero boards
+// and sails the long way around — south through row 61, west along
+// the south coast, up the west edge to row 0, then east across the
+// top to (36, 2), and finally one step south onto the chest at
+// (36, 3). The chest prompt + flavor dialog are handled by GRIND's
+// modal interceptors (KEY_A + KEY_SPACE), so this list contains only
+// the movement keys.
 static int leg_chest_073_step(int step_idx) {
-    (void)step_idx; return 0;
+    // BFS-derived path from start (11, 57) to chest at (36, 3):
+    //   walk D D R D    — into Hunterville at (12, 60); town flow auto-rents boat
+    //   board L D       — back to (11, 59) then south onto boat tile (11, 60)
+    //   sail 103 steps  — strict water-only BFS from (11, 60) to (36, 2)
+    //   step D          — disembark south onto chest tile (36, 3)
+    static const int keys[] = {
+        KEY_DOWN, KEY_DOWN, KEY_RIGHT, KEY_DOWN, KEY_LEFT, KEY_DOWN, KEY_DOWN, KEY_LEFT,
+        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_UP, KEY_LEFT, KEY_LEFT, KEY_UP, KEY_UP,
+        KEY_LEFT, KEY_UP, KEY_LEFT, KEY_UP, KEY_UP, KEY_LEFT, KEY_UP, KEY_UP,
+        KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP,
+        KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP,
+        KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP,
+        KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP,
+        KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP,
+        KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP,
+        KEY_UP, KEY_UP, KEY_UP, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT,
+        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT,
+        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT,
+        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT,
+        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_DOWN,
+    };
+    const int n = (int)(sizeof(keys) / sizeof(keys[0]));
+    if (step_idx < 0 || step_idx >= n) return 0;
+    return keys[step_idx];
 }
 
 // treasure_chest_074 @ (59, 3)
@@ -479,17 +514,30 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
         if (dialog_is_active()) {
             return (ApCmd){ "GRIND:space_dialog", KEY_SPACE, assert_dialog_closed };
         }
-        // Town view: divert into BUY_SIEGE → RENT_BOAT → EXIT_TOWN,
-        // which returns to GRIND after exiting.
+        // Town view: divert into RENT_BOAT → EXIT_TOWN. (BUY_SIEGE is
+        // skipped here because the chest_073 leg lands in Hunterville
+        // with only 1000g and siege costs 3000g; the chest_073 path
+        // doesn't need siege weapons anyway.)
         if (views_active() == VIEW_TOWN) {
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_BUY_SIEGE;
+            *out_next_phase = AP_FLOW_RENT_BOAT;
             return (ApCmd){ "GRIND:in_town", 0, assert_always_true };
         }
-        // STUB: no leg list yet — declare done.
-        *out_phase_done = true;
-        *out_next_phase = AP_FLOW_DONE;
-        return (ApCmd){ "GRIND:stub_done", 0, assert_always_true };
+        // Single-leg drive: chest_073. module_scratch[1] = step_idx.
+        {
+            int step_idx = (st->module_scratch[1] < 0)
+                           ? 0 : st->module_scratch[1];
+            int key = leg_chest_073_step(step_idx);
+            if (key == 0) {
+                AP_LOG("[flow] leg_073 done: pos=(%d,%d) gold=%d",
+                       g->position.x, g->position.y, g->stats.gold);
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_DONE;
+                return (ApCmd){ "GRIND:leg_073_done", 0, assert_always_true };
+            }
+            st->module_scratch[1] = step_idx + 1;
+            return (ApCmd){ "GRIND:leg_073_step", key, assert_always_true };
+        }
     }
 
     case AP_FLOW_COMBAT: {
