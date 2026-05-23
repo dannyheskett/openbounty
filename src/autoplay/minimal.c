@@ -228,6 +228,16 @@ ApCmd ap_minimal_phase(const Game *g, const Map *m,
             return (ApCmd){ "FLOW:space_dialog", KEY_SPACE, assert_dialog_closed };
         }
 
+        // Town view auto-opens when we step onto a town tile.
+        // Transition to BUY_SIEGE.
+        if (views_active() == VIEW_TOWN) {
+            AP_LOG("[min] entered town — transitioning to BUY_SIEGE");
+            st->module_scratch[1] = 0;
+            *out_phase_done = true;
+            *out_next_phase = AP_MIN_BUY_SIEGE;
+            return (ApCmd){ "FLOW:in_town", 0, assert_always_true };
+        }
+
         if (ti >= N_TARGETS) {
             *out_phase_done = true;
             *out_next_phase = AP_MIN_DONE;
@@ -281,8 +291,6 @@ ApCmd ap_minimal_phase(const Game *g, const Map *m,
             return (ApCmd){ "FLOW:skip_unreachable", 0, assert_always_true };
         }
 
-        // Soft assertion — mobile foes may block; next tick's
-        // pos-didn't-change check handles it.
         return (ApCmd){ "FLOW:step", key, assert_always_true };
     }
 
@@ -320,6 +328,44 @@ ApCmd ap_minimal_phase(const Game *g, const Map *m,
             return (ApCmd){ "POST_COMBAT:space", KEY_SPACE, assert_dialog_closed };
         }
         return (ApCmd){ "POST_COMBAT:wait", 0, assert_always_true };
+    }
+
+    // -- Buy siege weapons at town. ---------------------------------
+    // module_scratch[4] = sub-step:
+    //   0 = press E (open siege row)
+    //   1 = press SPACE (dismiss the "purchased" info panel)
+    //   2 = done — assert siege_weapons == 1, transition to EXIT_TOWN
+    case AP_MIN_BUY_SIEGE: {
+        int sub = (st->module_scratch[4] < 0) ? 0 : st->module_scratch[4];
+        switch (sub) {
+        case 0:
+            st->module_scratch[4] = 1;
+            return (ApCmd){ "BUY_SIEGE:e", KEY_E, assert_always_true };
+        case 1:
+            st->module_scratch[4] = 2;
+            return (ApCmd){ "BUY_SIEGE:space_info", KEY_SPACE, assert_always_true };
+        default:
+            // Verify the purchase actually took effect.
+            if (!g->stats.siege_weapons) {
+                AP_LOG("[min] BUY_SIEGE: siege_weapons still 0 after purchase!");
+                ap_dump_state("siege purchase failed", g, st);
+                return (ApCmd){ "BUY_SIEGE:fail", 0, assert_dialog_open };
+            }
+            AP_LOG("[min] siege_weapons=1, gold=%d", g->stats.gold);
+            st->module_scratch[4] = -1;
+            *out_phase_done = true;
+            *out_next_phase = AP_MIN_EXIT_TOWN;
+            return (ApCmd){ "BUY_SIEGE:done", 0, assert_always_true };
+        }
+    }
+
+    case AP_MIN_EXIT_TOWN: {
+        if (views_active() == VIEW_NONE) {
+            *out_phase_done = true;
+            *out_next_phase = AP_MIN_DONE;
+            return (ApCmd){ "EXIT_TOWN:done", 0, assert_always_true };
+        }
+        return (ApCmd){ "EXIT_TOWN:esc", KEY_ESCAPE, assert_always_true };
     }
 
     case AP_MIN_DONE: {

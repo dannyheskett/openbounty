@@ -365,7 +365,8 @@ static void dump_zone_interactives(const Map *m, const Game *g) {
                 bool walkable = !t->blocks_foot && TerrainWalkable(t->terrain);
                 bool terminal = t->interactive == INTERACT_TREASURE_CHEST ||
                                 t->interactive == INTERACT_FOE ||
-                                t->interactive == INTERACT_ARTIFACT;
+                                t->interactive == INTERACT_ARTIFACT ||
+                                t->interactive == INTERACT_TOWN;
                 if (!walkable && !terminal) continue;
                 if (t->interactive != INTERACT_NONE && !terminal) continue;
                 land[ny][nx] = true;
@@ -374,10 +375,11 @@ static void dump_zone_interactives(const Map *m, const Game *g) {
         }
     }
 
-    // 2. Collect reachable chests and foes.
+    // 2. Collect reachable chests, foes, and towns.
     typedef struct { int x, y; const char *id; } Target;
     Target chests[32]; int n_chests = 0;
     Target foes[32];   int n_foes = 0;
+    Target towns[8];   int n_towns = 0;
     for (int y = 0; y < m->height; y++) {
         for (int x = 0; x < m->width; x++) {
             if (!land[y][x]) continue;
@@ -386,6 +388,8 @@ static void dump_zone_interactives(const Map *m, const Game *g) {
                 chests[n_chests++] = (Target){x, y, t->id};
             } else if (t->interactive == INTERACT_FOE && n_foes < 32) {
                 foes[n_foes++] = (Target){x, y, t->id};
+            } else if (t->interactive == INTERACT_TOWN && n_towns < 8) {
+                towns[n_towns++] = (Target){x, y, t->id};
             }
         }
     }
@@ -410,6 +414,20 @@ static void dump_zone_interactives(const Map *m, const Game *g) {
         fprintf(stderr, "//   foe       = (%d,%d) %s\n",
                 foes[foe_idx].x, foes[foe_idx].y, foes[foe_idx].id);
     }
+    int town_idx = -1;
+    if (n_towns > 0) {
+        // Pick the nearest town to start (siege-weapon purchase point).
+        int best = 0, best_d = 1 << 30;
+        for (int j = 0; j < n_towns; j++) {
+            int adx = towns[j].x - g->position.x; if (adx<0) adx=-adx;
+            int ady = towns[j].y - g->position.y; if (ady<0) ady=-ady;
+            int d = (adx > ady) ? adx : ady;
+            if (d < best_d) { best_d = d; best = j; }
+        }
+        town_idx = best;
+        fprintf(stderr, "//   town      = (%d,%d) %s\n",
+                towns[town_idx].x, towns[town_idx].y, towns[town_idx].id);
+    }
 
     // 3. For each target (chest, then foe), emit a flow-field:
     //    flow[y][x] = direction key from (x,y) toward target, or 0.
@@ -421,28 +439,36 @@ static void dump_zone_interactives(const Map *m, const Game *g) {
     static const int dxs[8] = { 0, 0, -1, 1, -1, 1, -1, 1 };
     static const int dys[8] = { -1, 1, 0, 0, -1, -1, 1, 1 };
 
-    int n_total_targets = n_chests + (n_foes > 0 ? 1 : 0);
+    int n_total_targets = n_chests + (n_foes > 0 ? 1 : 0) + (n_towns > 0 ? 1 : 0);
     fprintf(stderr,
         "// === BEGIN FLOW-FIELD TABLE (target idx, then 64x64 keys) ===\n");
     fprintf(stderr, "static const int N_TARGETS = %d;\n", n_total_targets);
     fprintf(stderr, "static const int TARGET_X[%d] = {", n_total_targets);
     for (int i = 0; i < n_chests; i++) fprintf(stderr, "%d,", chests[i].x);
-    if (foe_idx >= 0) fprintf(stderr, "%d,", foes[foe_idx].x);
+    if (foe_idx >= 0)  fprintf(stderr, "%d,", foes[foe_idx].x);
+    if (town_idx >= 0) fprintf(stderr, "%d,", towns[town_idx].x);
     fprintf(stderr, "};\n");
     fprintf(stderr, "static const int TARGET_Y[%d] = {", n_total_targets);
     for (int i = 0; i < n_chests; i++) fprintf(stderr, "%d,", chests[i].y);
-    if (foe_idx >= 0) fprintf(stderr, "%d,", foes[foe_idx].y);
+    if (foe_idx >= 0)  fprintf(stderr, "%d,", foes[foe_idx].y);
+    if (town_idx >= 0) fprintf(stderr, "%d,", towns[town_idx].y);
     fprintf(stderr, "};\n");
     fprintf(stderr, "static const char TARGET_KIND[%d] = {", n_total_targets);
     for (int i = 0; i < n_chests; i++) fprintf(stderr, "'C',");
-    if (foe_idx >= 0) fprintf(stderr, "'F',");
+    if (foe_idx >= 0)  fprintf(stderr, "'F',");
+    if (town_idx >= 0) fprintf(stderr, "'T',");
     fprintf(stderr, "};\n");
 
     fprintf(stderr, "static const int FLOW[%d][64][64] = {\n", n_total_targets);
     for (int ti = 0; ti < n_total_targets; ti++) {
-        bool is_foe = (ti == n_chests);
-        int tx = is_foe ? foes[foe_idx].x : chests[ti].x;
-        int ty = is_foe ? foes[foe_idx].y : chests[ti].y;
+        int tx, ty;
+        if (ti < n_chests) {
+            tx = chests[ti].x; ty = chests[ti].y;
+        } else if (ti == n_chests && foe_idx >= 0) {
+            tx = foes[foe_idx].x; ty = foes[foe_idx].y;
+        } else {
+            tx = towns[town_idx].x; ty = towns[town_idx].y;
+        }
         // Reverse-BFS from (tx,ty). Record parent direction (the
         // direction you'd press FROM (x,y) to step toward the target).
         short par[64][64];
@@ -460,13 +486,16 @@ static void dump_zone_interactives(const Map *m, const Game *g) {
                 if (par[ny][nx] != 0) continue;
                 if (!land[ny][nx]) continue;
                 const Tile *t = &m->tiles[ny][nx];
-                // Intermediate (non-target) tiles: walkable AND not
-                // a foe (foes block the path — chests are OK to step
-                // through since by the time we reach this leg they
-                // will have been claimed and cleared).
+                // Intermediate (non-target) tiles: walkable AND
+                // not a town/castle/dwelling (those bounce-back and
+                // open a view we don't want to enter unintentionally).
+                // Chests and foes are OK as intermediates — chests
+                // give a one-tick A press to claim, foes give one
+                // combat to clear, and then the tile is passable.
                 bool is_target_tile = (nx == tx && ny == ty);
                 if (!is_target_tile) {
-                    if (t->interactive == INTERACT_FOE) continue;
+                    if (t->interactive == INTERACT_TOWN) continue;
+                    if (t->interactive == INTERACT_CASTLE_GATE) continue;
                     if (t->blocks_foot) continue;
                     if (!TerrainWalkable(t->terrain)) continue;
                 }

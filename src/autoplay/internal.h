@@ -45,6 +45,8 @@ typedef enum {
     AP_MIN_ATTACK_FOE,
     AP_MIN_COMBAT,
     AP_MIN_POST_COMBAT,
+    AP_MIN_BUY_SIEGE,
+    AP_MIN_EXIT_TOWN,
     AP_MIN_DONE,
     AP_MIN_LAST = AP_MIN_DONE,
 
