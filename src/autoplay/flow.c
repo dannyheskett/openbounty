@@ -312,12 +312,11 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 return (ApCmd){ "GRIND:all_done", 0, assert_always_true };
             }
             int gx = legs[leg].x, gy = legs[leg].y;
-            // Periodic re-recruit: every 5 legs route to the home
-            // castle gate at (11, 56) first. module_scratch[8] holds
-            // the next leg index at which to recruit; once done at
-            // that threshold it's bumped by 5.
+            // Re-recruit after every chest: route to the home castle
+            // gate at (11, 56). module_scratch[8] holds the next leg
+            // index at which to recruit; once done it's bumped by 1.
             int recruit_at = st->module_scratch[8];
-            if (recruit_at <= 0) recruit_at = 5;
+            if (recruit_at <= 0) recruit_at = 1;
             if (leg >= recruit_at) {
                 gx = 11; gy = 56;
             }
@@ -495,11 +494,11 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
     }
 
     case AP_FLOW_REEXIT_CASTLE: {
-        // Bump the next-recruit threshold by 5 so we don't re-loop
+        // Bump the next-recruit threshold by 1 so we don't re-loop
         // back into the castle next tick.
         int recruit_at = st->module_scratch[8];
-        if (recruit_at <= 0) recruit_at = 5;
-        st->module_scratch[8] = recruit_at + 5;
+        if (recruit_at <= 0) recruit_at = 1;
+        st->module_scratch[8] = recruit_at + 1;
         AP_LOG("[flow] re-recruit done; next recruit at leg %d",
                st->module_scratch[8]);
         *out_phase_done = true;
