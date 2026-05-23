@@ -55,6 +55,28 @@ typedef enum {
     AP_FLOW_REBUY_MILITIA,
     AP_FLOW_REEXIT_RECRUIT,
     AP_FLOW_REEXIT_CASTLE,
+    // Post-grind villain hunt loop. module_scratch[9] = index into
+    // continentia_villains[] (0..5, by reward ascending). For each:
+    //   HUNT_PRE_RECRUIT  → divert to the existing re-recruit sub-
+    //                        flow at the home castle.
+    //   HUNT_TO_TOWN      → nav to the nearest town's gate.
+    //   HUNT_CONTRACT     → loop: A (contract) + Space until
+    //                        g->contract.active_id matches target.
+    //   HUNT_SIEGE        → E (siege) + Space.
+    //   HUNT_EXIT_TOWN    → Esc out.
+    //   HUNT_TO_CASTLE    → nav to target villain's castle gate.
+    //                        engine fires yes_no prompt; GRIND modal
+    //                        handler dispatches into COMBAT.
+    //   POST_COMBAT       → returns to HUNT_NEXT.
+    //   HUNT_NEXT         → bump module_scratch[9] and re-enter
+    //                        HUNT_PRE_RECRUIT, or finish if done.
+    AP_FLOW_HUNT_PRE_RECRUIT,
+    AP_FLOW_HUNT_TO_TOWN,
+    AP_FLOW_HUNT_CONTRACT,
+    AP_FLOW_HUNT_SIEGE,
+    AP_FLOW_HUNT_EXIT_TOWN,
+    AP_FLOW_HUNT_TO_CASTLE,
+    AP_FLOW_HUNT_NEXT,
     AP_FLOW_DONE,
     AP_FLOW_LAST = AP_FLOW_DONE,
 
