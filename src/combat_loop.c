@@ -46,16 +46,11 @@ static bool combat_pick_target(Combat *c, const Game *g,
     // on every return path so the next render is back to normal play.
     c->picker_active = true;
     bool result = false;
-    double cursor_tick = frame_host_time();
     while (!frame_host_should_close()) {
         audio_tick();
-        // Animate cursor ring at ~150ms per frame, matching the SYN
-        // tick. Without this the cursor would stay on a single frame.
-        double now = frame_host_time();
-        if (now >= cursor_tick) {
-            cursor_tick = now + 0.15;
-            c->cursor_frame = (c->cursor_frame + 1) & 3;
-        }
+        // Cycle the cursor-ring animation one frame per tick (same
+        // cadence as everything else in combat now).
+        c->cursor_frame = (c->cursor_frame + 1) & 3;
         BeginTextureMode(*target);
         combat_render_frame(c, g, sprites);
         EndTextureMode();
@@ -496,14 +491,19 @@ static void combat_present(const Combat *c, const Game *g,
     EndDrawing();
 }
 
-// 150ms SYN tick (manual line 351 / ). AI acts on
-// frame rollover so units feel paced; player input dispatches as
-// soon as keys are pressed.
-static void combat_tick_anim(Combat *c, double *next_tick, bool *rolled_over) {
+// One tick = one logical step. No wall-clock gating; the engine
+// advances animation frame, decays damage burst, and signals AI to
+// act every call. Pacing for human watchability comes from the outer
+// loop's frame-rate cap (frame_host_set_test_fps), not from a
+// secondary timer inside combat. This matches open-world: one tick,
+// one decision, one observable state change.
+//
+// Note: the original DOS KB had a 150ms SYN tick gating AI/animation
+// here. We dropped it so combat runs at the same pace as open-world
+// walking. The unit animation still cycles 0→1→2→3→0 visibly, just
+// frame-per-frame instead of every 9 frames.
+static void combat_tick_anim(Combat *c, bool *rolled_over) {
     *rolled_over = false;
-    double now = frame_host_time();
-    if (now < *next_tick) return;
-    *next_tick = now + 0.15;
     // Decay damage-burst on every stack (including dead ones, so the
     // splat plays out over a now-empty cell).
     for (int s = 0; s < COMBAT_SIDES; s++) {
@@ -513,10 +513,8 @@ static void combat_tick_anim(Combat *c, double *next_tick, bool *rolled_over) {
             if (u->hit_flash > 0) u->hit_flash--;
         }
     }
-    // Advance only the active unit's animation frame. game.c
-    // line 6119 ticks `units[side][unit_id].frame` exclusively — the
-    // animation is the visual cue for whose turn it is. All other
-    // stacks stay on frame 0.
+    // Advance only the active unit's animation frame (visual cue for
+    // whose turn it is). All other stacks stay on frame 0.
     if (c->unit_id >= 0) {
         CombatUnit *act = &c->units[c->side][c->unit_id];
         if (act->troop_idx >= 0 && act->count > 0) {
@@ -588,7 +586,6 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
     c.unit_id = nxt;
 
     RenderTexture2D *rt = (RenderTexture2D *)render_target;
-    double next_tick = frame_host_time() + 0.15;
 
     while (c.result == 0 && !frame_host_should_close()) {
         // Pump the harness every frame so external commands keep
@@ -644,7 +641,7 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         }
 
         bool frame_rollover;
-        combat_tick_anim(&c, &next_tick, &frame_rollover);
+        combat_tick_anim(&c, &frame_rollover);
 
         if (c.unit_id >= 0) {
             const CombatUnit *act = &c.units[c.side][c.unit_id];
@@ -676,9 +673,11 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
                             !c.units[c.side][c.unit_id].out_of_control);
         if (player_turn) {
             acted = combat_player_action_full(&c, g, sprites, rt);
-        } else if (frame_rollover) {
+        } else {
             // AI drives this turn — either a real AI unit or an
-            // out-of-control player unit.
+            // out-of-control player unit. One decision per tick, same
+            // pacing as the open-world step loop.
+            (void)frame_rollover;
             acted = combat_ai_action(&c);
         }
 

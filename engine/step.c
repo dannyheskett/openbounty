@@ -153,6 +153,16 @@ bool step_try(Game *game, Map *map, Fog *fog,
                 screen_own_castle_open(game, ir.castle_id);
                 header[0] = '\0';
                 body[0]   = '\0';
+            } else if (cr && cr->owner_kind == CASTLE_OWNER_MONSTERS &&
+                       !game->stats.siege_weapons) {
+                // Original DOS KB: stepping onto a hostile castle gate
+                // without siege weapons silently bounces the hero back.
+                // The bounce_back flag is already set by adventure.c.
+                // openkb left this unenforced (spec §34.14); we restore
+                // the original behavior so castles actually gate the
+                // purchase.
+                header[0] = '\0';
+                body[0]   = '\0';
             } else if (cr && cr->owner_kind == CASTLE_OWNER_MONSTERS) {
                 size_t k = 0;
                 while (k + 1 < sizeof(pending_castle_id) && ir.castle_id[k]) {
@@ -195,6 +205,12 @@ bool step_try(Game *game, Map *map, Fog *fog,
                          rc && rc->name[0] ? rc->name : ir.castle_id);
                 pending_flow = FLOW_SIEGE_MONSTER;
                 prompt_yes_no_open(prompt_header, prompt_body);
+                header[0] = '\0';
+                body[0]   = '\0';
+            } else if (cr && cr->owner_kind == CASTLE_OWNER_VILLAIN &&
+                       !game->stats.siege_weapons) {
+                // See CASTLE_OWNER_MONSTERS branch above — silent
+                // bounce-back without siege weapons (DOS KB faithful).
                 header[0] = '\0';
                 body[0]   = '\0';
             } else if (cr && cr->owner_kind == CASTLE_OWNER_VILLAIN) {

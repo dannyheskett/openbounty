@@ -349,15 +349,21 @@ int shell_run_game(int argc, char **argv, ShellRunHooks *hooks) {
 
     unsigned int window_flags = FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT;
     bool autoplay_visible = false;
+    bool autoplay_handoff = false;
     if (hooks) {
         // In autoplay mode the window stays hidden by default — CI
         // shouldn't pop a window and we don't need vsync-paced
         // frames. --visible opens the window AND throttles the
         // simulation to wall-clock 60fps so a human can follow it.
+        // --handoff (implied by --visible) hands control to the
+        // keyboard when the autoplay flow finishes successfully,
+        // instead of exiting the process.
         for (int i = 1; i < argc; i++) {
             if (strcmp(argv[i], "--visible") == 0) {
                 autoplay_visible = true;
-                break;
+                autoplay_handoff = true;
+            } else if (strcmp(argv[i], "--handoff") == 0) {
+                autoplay_handoff = true;
             }
         }
         if (!autoplay_visible) window_flags |= FLAG_WINDOW_HIDDEN;
@@ -373,12 +379,11 @@ int shell_run_game(int argc, char **argv, ShellRunHooks *hooks) {
     // wall time and is actually watchable.
     if (!hooks) SetTargetFPS(60);
     if (hooks && autoplay_visible) {
-        frame_host_set_test_fps(60);
-        // One queued input event every 6 wall-clock frames at 60fps
-        // = ~10 actions/sec, close to a human player's pace. Without
-        // this, autoplay blasts through one step per frame and the
-        // overworld is unwatchable.
-        input_host_set_promotion_period(6);
+        // Wall-clock pace = 30 fps in visible autoplay — half the
+        // native 60fps. Slow enough to follow each tick's logical
+        // action (one walk step or one combat decision) without
+        // feeling sluggish.
+        frame_host_set_test_fps(30);
     }
     SetExitKey(KEY_NULL);
 
@@ -558,8 +563,11 @@ int shell_run_game(int argc, char **argv, ShellRunHooks *hooks) {
     // Autoplay headless (no --visible) skips audio entirely — opening
     // the device on a headless box is noisy and the test doesn't
     // listen anyway.
-    bool autoplay_headless = (hooks && !autoplay_visible);
-    if (!autoplay_headless) {
+    // Autoplay (headless OR visible) skips audio entirely: opening the
+    // device can hang for several seconds on systems without working
+    // audio (headless boxes, WSL2 without pulse, CI runners), and the
+    // autoplay isn't going to listen anyway.
+    if (!hooks) {
         audio_init(&res);
     }
     if (!audio_is_available()) {
@@ -591,7 +599,27 @@ int shell_run_game(int argc, char **argv, ShellRunHooks *hooks) {
     while (!frame_host_should_close() && !quit_requested) {
         if (hooks && hooks->per_frame) {
             ShellRunVerdict v = hooks->per_frame(hooks, &game, &map, &fog, &res, gp_frame_no);
-            if (v == SHELL_RUN_EXIT_PASS) { gp_exit_code = 0; break; }
+            if (v == SHELL_RUN_EXIT_PASS) {
+                if (autoplay_handoff) {
+                    // Hand over to the human: unhook autoplay, switch
+                    // input shim back to raylib, switch frame host to
+                    // raylib (60fps vsync), open audio if it wasn't
+                    // already, and continue the loop without per_frame.
+                    hooks->per_frame = NULL;
+                    input_host_use_raylib();
+                    frame_host_use_raylib();
+                    SetTargetFPS(60);
+                    audio_init(&res);
+                    audio_set_sounds_enabled(game.stats.options[1] != 0);
+                    audio_set_music_enabled (game.stats.options[6] != 0);
+                    audio_set_master_volume (game.stats.options[7]);
+                    audio_set_track(AUDIO_TRACK_OPENWORLD);
+                    fprintf(stderr, "[main] autoplay complete — handing off to keyboard\n");
+                    continue;
+                }
+                gp_exit_code = 0;
+                break;
+            }
             if (v == SHELL_RUN_EXIT_FAIL) { gp_exit_code = 1; break; }
         }
         gp_frame_no++;

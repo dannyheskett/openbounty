@@ -5,68 +5,49 @@
 
 // Input host shim. Drop-in replacements for the raylib input calls
 // used by game logic. In normal play these forward straight to raylib.
-// In autoplay mode they pop events from a scripted queue, which
-// lets a test scenario drive the real game through deterministic
-// input without a human at the keyboard.
-//
-// One shim covers every game-logic input site in src/ (input.c,
-// main.c, combat_loop.c, startup.c, views.c, prompt.c, pack_select.c,
-// screens/*, ui.c). Cheat/debug screens (shell_cheats.c) and the
-// encoder dialog stay raylib-native — they're not in the test path.
-//
-// The engine itself never sees these calls; engine code compiles
-// against engine/headless/raylib.h and has no raylib dependency.
+// In autoplay (scripted) mode, a single "live key" register drives
+// what the engine sees this tick.
 
 bool input_key_pressed(int key);     // IsKeyPressed
 bool input_key_down(int key);        // IsKeyDown
-int  input_get_key_pressed(void);    // GetKeyPressed (drains queue)
+int  input_get_key_pressed(void);    // GetKeyPressed (drains live key)
 int  input_get_char_pressed(void);   // GetCharPressed (drains queue)
 
 // ----- Mode control -------------------------------------------------------
-// Default (set implicitly by the first call). Forwards everything to
-// raylib.
 void input_host_use_raylib(void);
-
-// Test mode. The shim consumes from an internal queue fed by the
-// autoplay runner. Any key that isn't in the queue reports
-// "not pressed" — the test must script everything it expects.
 void input_host_use_queue(void);
 
-// Queue a key for IsKeyPressed / GetKeyPressed. Press events stay in
-// the queue until consumed (each match consumes one event). This
-// mirrors real raylib edge-triggered input — one press fires exactly
-// one IsKeyPressed match. Queue order is preserved for
-// GetKeyPressed.
+// ----- Autoplay live-key API (per-tick set/clear) -------------------------
+// The autoplay dispatcher calls ap_set_key(K) each tick to set the
+// engine-visible key for THIS tick. input_key_pressed(K) returns true
+// iff K matches the live key. ap_clear_key sets the live key to "none."
+//
+// The live key is NOT auto-cleared by input_host_tick. Autoplay must
+// set or clear on each per_tick invocation.
+void ap_set_key(int key);
+void ap_clear_key(void);
+
+// ----- Tiny FIFO ----------------------------------------------------------
+// Used ONLY for sequences that can't be driven one-per-tick by the
+// dispatcher:
+//   (a) startup wizard: pre-queued before the main loop starts.
+//   (b) combat picker: a few direction keys + KEY_A confirm.
+// input_host_tick pops one queued key into the live key. When the
+// queue is empty, input_host_tick leaves the live key alone (so the
+// dispatcher's per-tick ap_set_key keeps working).
 void input_host_queue_key(int key);
-
-// Queue a held key — IsKeyDown returns true for `frames` consecutive
-// frames after this is called. Use frames=1 for a one-frame tap.
-void input_host_queue_key_down(int key, int frames);
-
-// Queue a unicode codepoint for GetCharPressed (prompt_text_input).
-void input_host_queue_char(int codepoint);
-
-// Current depth of the press-event queue (not counting the active
-// key). Scenarios use this to avoid over-queuing the same key every
-// frame when the engine hasn't drained yet.
 int  input_host_queue_depth(void);
 
-// Advance the frame counter — call once per logical frame in test
-// mode. Decays held-down keys; drops the press-edge queue's "fresh
-// this frame" flag.
+// Held-key support (KEY_DOWN-style for adventure-mode movement).
+void input_host_queue_key_down(int key, int frames);
+
+// Char queue for text-input prompts.
+void input_host_queue_char(int codepoint);
+
+// Per-tick advance. Pops one queued key into the live key if any;
+// otherwise no-op on the live key. Always decays held-key counters.
 void input_host_tick(void);
 
-// Slow the queue's key-promotion to one key per N ticks. Default 1
-// (one queued key per frame). Use higher values when paired with
-// frame_host_set_test_fps() to slow autoplay down to a
-// human-watchable pace. The shim still TICKS every frame (so the
-// "active key" stays current); only the *promotion of the next
-// queued event* is rate-limited.
-void input_host_set_promotion_period(int ticks_per_promotion);
-
-// True iff the queue mode is active. Used by views/screens that need
-// to know whether to skip raylib gamepad polling (gamepads aren't
-// scriptable yet).
 bool input_host_is_scripted(void);
 
 #endif

@@ -80,8 +80,12 @@ bool frame_host_should_close(void) {
     // without invasive per-loop changes.
     if (s_test) {
         throttle_to_fps(s_test_fps);
-        if (s_before_fn) s_before_fn(s_before_user);
+        // Order matters: tick FIRST (clears stale live key, pops one
+        // from FIFO if any), THEN before_fn (combat driver may set
+        // the live key for THIS tick). Engine input_poll runs after
+        // both and sees the latest live key.
         input_host_tick();
+        if (s_before_fn) s_before_fn(s_before_user);
         s_clock += FH_DT;
     }
     return s_test ? s_close : WindowShouldClose();
