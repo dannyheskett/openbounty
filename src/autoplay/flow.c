@@ -97,7 +97,7 @@ static bool assert_combat_open_or_won(const Game *g) {
 // Phase dispatch
 // =========================================================================
 
-ApCmd ap_minimal_phase(const Game *g, const Map *m,
+ApCmd ap_flow_phase(const Game *g, const Map *m,
                        AutoplayState *st,
                        bool *out_phase_done,
                        AutoplayPhase *out_next_phase) {
@@ -107,7 +107,7 @@ ApCmd ap_minimal_phase(const Game *g, const Map *m,
 
     switch (st->phase) {
 
-    case AP_MIN_DISMISS_INTRO: {
+    case AP_FLOW_DISMISS_INTRO: {
         int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
         if (sub == 0) {
             st->module_scratch[0] = 1;
@@ -115,35 +115,35 @@ ApCmd ap_minimal_phase(const Game *g, const Map *m,
         }
         st->module_scratch[0] = -1;
         *out_phase_done = true;
-        *out_next_phase = AP_MIN_WALK_TO_GATE;
+        *out_next_phase = AP_FLOW_WALK_TO_GATE;
         return (ApCmd){ "DISMISS_INTRO:space", KEY_SPACE, assert_dialog_closed };
     }
 
-    case AP_MIN_WALK_TO_GATE: {
+    case AP_FLOW_WALK_TO_GATE: {
         int n = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
         if (n >= 1) {
             st->module_scratch[0] = -1;
             *out_phase_done = true;
-            *out_next_phase = AP_MIN_STEP_ONTO_GATE;
+            *out_next_phase = AP_FLOW_STEP_ONTO_GATE;
             return (ApCmd){ "WALK_TO_GATE:done", 0, assert_always_true };
         }
         st->module_scratch[0] = n + 1;
         return (ApCmd){ "WALK_TO_GATE:up", KEY_UP, assert_moved_up };
     }
 
-    case AP_MIN_STEP_ONTO_GATE: {
+    case AP_FLOW_STEP_ONTO_GATE: {
         *out_phase_done = true;
-        *out_next_phase = AP_MIN_OPEN_RECRUIT;
+        *out_next_phase = AP_FLOW_OPEN_RECRUIT;
         return (ApCmd){ "STEP_ONTO_GATE:up", KEY_UP, assert_view_home_castle };
     }
 
-    case AP_MIN_OPEN_RECRUIT: {
+    case AP_FLOW_OPEN_RECRUIT: {
         *out_phase_done = true;
-        *out_next_phase = AP_MIN_RECRUIT_PIKEMEN;
+        *out_next_phase = AP_FLOW_RECRUIT_PIKEMEN;
         return (ApCmd){ "OPEN_RECRUIT:a", KEY_A, assert_view_recruit_soldiers };
     }
 
-    case AP_MIN_RECRUIT_PIKEMEN: {
+    case AP_FLOW_RECRUIT_PIKEMEN: {
         int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
         switch (sub) {
         case 0: st->module_scratch[0]=1;
@@ -153,12 +153,12 @@ ApCmd ap_minimal_phase(const Game *g, const Map *m,
         case 2: st->module_scratch[0]=3;
             return (ApCmd){ "RECRUIT_PIKEMEN:0", KEY_ZERO, assert_view_recruit_soldiers };
         default: st->module_scratch[0]=-1;
-            *out_phase_done = true; *out_next_phase = AP_MIN_RECRUIT_MILITIA;
+            *out_phase_done = true; *out_next_phase = AP_FLOW_RECRUIT_MILITIA;
             return (ApCmd){ "RECRUIT_PIKEMEN:enter", KEY_ENTER, assert_army_hp_plus_100 };
         }
     }
 
-    case AP_MIN_RECRUIT_MILITIA: {
+    case AP_FLOW_RECRUIT_MILITIA: {
         int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
         switch (sub) {
         case 0: st->module_scratch[0]=1;
@@ -168,12 +168,12 @@ ApCmd ap_minimal_phase(const Game *g, const Map *m,
         case 2: st->module_scratch[0]=3;
             return (ApCmd){ "RECRUIT_MILITIA:0", KEY_ZERO, assert_view_recruit_soldiers };
         default: st->module_scratch[0]=-1;
-            *out_phase_done = true; *out_next_phase = AP_MIN_RECRUIT_ARCHERS;
+            *out_phase_done = true; *out_next_phase = AP_FLOW_RECRUIT_ARCHERS;
             return (ApCmd){ "RECRUIT_MILITIA:enter", KEY_ENTER, assert_army_hp_plus_60 };
         }
     }
 
-    case AP_MIN_RECRUIT_ARCHERS: {
+    case AP_FLOW_RECRUIT_ARCHERS: {
         int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
         switch (sub) {
         case 0: st->module_scratch[0]=1;
@@ -181,24 +181,24 @@ ApCmd ap_minimal_phase(const Game *g, const Map *m,
         case 1: st->module_scratch[0]=2;
             return (ApCmd){ "RECRUIT_ARCHERS:8", KEY_EIGHT, assert_view_recruit_soldiers };
         default: st->module_scratch[0]=-1;
-            *out_phase_done = true; *out_next_phase = AP_MIN_EXIT_RECRUIT;
+            *out_phase_done = true; *out_next_phase = AP_FLOW_EXIT_RECRUIT;
             return (ApCmd){ "RECRUIT_ARCHERS:enter", KEY_ENTER, assert_army_hp_plus_80 };
         }
     }
 
-    case AP_MIN_EXIT_RECRUIT: {
+    case AP_FLOW_EXIT_RECRUIT: {
         *out_phase_done = true;
-        *out_next_phase = AP_MIN_EXIT_CASTLE;
+        *out_next_phase = AP_FLOW_EXIT_CASTLE;
         return (ApCmd){ "EXIT_RECRUIT:esc", KEY_ESCAPE, assert_view_home_castle };
     }
 
-    case AP_MIN_EXIT_CASTLE: {
+    case AP_FLOW_EXIT_CASTLE: {
         st->module_scratch[0] = 0;   // initial target idx
         st->module_scratch[1] = 0;   // consecutive fails
         st->module_scratch[2] = -1;  // last_x (sentinel = "uninitialized")
         st->module_scratch[3] = -1;  // last_y
         *out_phase_done = true;
-        *out_next_phase = AP_MIN_WALK_TO_FOE;
+        *out_next_phase = AP_FLOW_WALK_TO_FOE;
         return (ApCmd){ "EXIT_CASTLE:esc", KEY_ESCAPE, assert_view_none };
     }
 
@@ -207,7 +207,7 @@ ApCmd ap_minimal_phase(const Game *g, const Map *m,
     // module_scratch[1] = consecutive failed-step count (vs scratch[2,3])
     // module_scratch[2] = last observed position x
     // module_scratch[3] = last observed position y
-    case AP_MIN_WALK_TO_FOE: {
+    case AP_FLOW_WALK_TO_FOE: {
         int ti = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
 
         // Handle any prompt / dialog FIRST.
@@ -217,7 +217,7 @@ ApCmd ap_minimal_phase(const Game *g, const Map *m,
                 AP_LOG("[min] foe prompt — Y");
                 st->module_scratch[1] = 0;
                 *out_phase_done = true;
-                *out_next_phase = AP_MIN_COMBAT;
+                *out_next_phase = AP_FLOW_COMBAT;
                 return (ApCmd){ "FLOW:y_foe", KEY_Y, assert_combat_open_or_won };
             }
             st->module_scratch[1] = 0;
@@ -234,13 +234,13 @@ ApCmd ap_minimal_phase(const Game *g, const Map *m,
             AP_LOG("[min] entered town — transitioning to BUY_SIEGE");
             st->module_scratch[1] = 0;
             *out_phase_done = true;
-            *out_next_phase = AP_MIN_BUY_SIEGE;
+            *out_next_phase = AP_FLOW_BUY_SIEGE;
             return (ApCmd){ "FLOW:in_town", 0, assert_always_true };
         }
 
         if (ti >= N_TARGETS) {
             *out_phase_done = true;
-            *out_next_phase = AP_MIN_DONE;
+            *out_next_phase = AP_FLOW_DONE;
             return (ApCmd){ "FLOW:all_done", 0, assert_always_true };
         }
 
@@ -294,23 +294,23 @@ ApCmd ap_minimal_phase(const Game *g, const Map *m,
         return (ApCmd){ "FLOW:step", key, assert_always_true };
     }
 
-    case AP_MIN_ATTACK_FOE: {
+    case AP_FLOW_ATTACK_FOE: {
         // Not reached — flow phase emits Y directly when the foe prompt fires.
         *out_phase_done = true;
-        *out_next_phase = AP_MIN_COMBAT;
+        *out_next_phase = AP_FLOW_COMBAT;
         return (ApCmd){ "ATTACK_FOE:noop", 0, assert_always_true };
     }
 
-    case AP_MIN_COMBAT: {
+    case AP_FLOW_COMBAT: {
         if (combat_current_rendered == NULL) {
             *out_phase_done = true;
-            *out_next_phase = AP_MIN_POST_COMBAT;
+            *out_next_phase = AP_FLOW_POST_COMBAT;
             return (ApCmd){ "COMBAT:ended", 0, assert_always_true };
         }
         return (ApCmd){ "COMBAT:wait", 0, assert_always_true };
     }
 
-    case AP_MIN_POST_COMBAT: {
+    case AP_FLOW_POST_COMBAT: {
         if (!dialog_is_active() && !prompt_is_active() &&
             views_active() == VIEW_NONE) {
             // Resume the flow walk. If the current target is the
@@ -321,7 +321,7 @@ ApCmd ap_minimal_phase(const Game *g, const Map *m,
                 st->module_scratch[0] = ti + 1;
             }
             *out_phase_done = true;
-            *out_next_phase = AP_MIN_WALK_TO_FOE;  // resume flow
+            *out_next_phase = AP_FLOW_WALK_TO_FOE;  // resume flow
             return (ApCmd){ "POST_COMBAT:noop", 0, assert_always_true };
         }
         if (dialog_is_active()) {
@@ -335,7 +335,7 @@ ApCmd ap_minimal_phase(const Game *g, const Map *m,
     //   0 = press E (open siege row)
     //   1 = press SPACE (dismiss the "purchased" info panel)
     //   2 = done — assert siege_weapons == 1, transition to EXIT_TOWN
-    case AP_MIN_BUY_SIEGE: {
+    case AP_FLOW_BUY_SIEGE: {
         int sub = (st->module_scratch[4] < 0) ? 0 : st->module_scratch[4];
         switch (sub) {
         case 0:
@@ -354,21 +354,21 @@ ApCmd ap_minimal_phase(const Game *g, const Map *m,
             AP_LOG("[min] siege_weapons=1, gold=%d", g->stats.gold);
             st->module_scratch[4] = -1;
             *out_phase_done = true;
-            *out_next_phase = AP_MIN_EXIT_TOWN;
+            *out_next_phase = AP_FLOW_EXIT_TOWN;
             return (ApCmd){ "BUY_SIEGE:done", 0, assert_always_true };
         }
     }
 
-    case AP_MIN_EXIT_TOWN: {
+    case AP_FLOW_EXIT_TOWN: {
         if (views_active() == VIEW_NONE) {
             *out_phase_done = true;
-            *out_next_phase = AP_MIN_DONE;
+            *out_next_phase = AP_FLOW_DONE;
             return (ApCmd){ "EXIT_TOWN:done", 0, assert_always_true };
         }
         return (ApCmd){ "EXIT_TOWN:esc", KEY_ESCAPE, assert_always_true };
     }
 
-    case AP_MIN_DONE: {
+    case AP_FLOW_DONE: {
         *out_phase_done = true;
         *out_next_phase = AP_ALL_DONE;
         return (ApCmd){ "DONE", 0, assert_always_true };

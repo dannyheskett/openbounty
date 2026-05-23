@@ -31,24 +31,24 @@
 // =========================================================================
 
 typedef enum {
-    AP_MIN_FIRST = 0,
-    AP_MIN_DISMISS_INTRO = AP_MIN_FIRST,
-    AP_MIN_WALK_TO_GATE,
-    AP_MIN_STEP_ONTO_GATE,
-    AP_MIN_OPEN_RECRUIT,
-    AP_MIN_RECRUIT_PIKEMEN,
-    AP_MIN_RECRUIT_MILITIA,
-    AP_MIN_RECRUIT_ARCHERS,
-    AP_MIN_EXIT_RECRUIT,
-    AP_MIN_EXIT_CASTLE,
-    AP_MIN_WALK_TO_FOE,
-    AP_MIN_ATTACK_FOE,
-    AP_MIN_COMBAT,
-    AP_MIN_POST_COMBAT,
-    AP_MIN_BUY_SIEGE,
-    AP_MIN_EXIT_TOWN,
-    AP_MIN_DONE,
-    AP_MIN_LAST = AP_MIN_DONE,
+    AP_FLOW_FIRST = 0,
+    AP_FLOW_DISMISS_INTRO = AP_FLOW_FIRST,
+    AP_FLOW_WALK_TO_GATE,
+    AP_FLOW_STEP_ONTO_GATE,
+    AP_FLOW_OPEN_RECRUIT,
+    AP_FLOW_RECRUIT_PIKEMEN,
+    AP_FLOW_RECRUIT_MILITIA,
+    AP_FLOW_RECRUIT_ARCHERS,
+    AP_FLOW_EXIT_RECRUIT,
+    AP_FLOW_EXIT_CASTLE,
+    AP_FLOW_WALK_TO_FOE,
+    AP_FLOW_ATTACK_FOE,
+    AP_FLOW_COMBAT,
+    AP_FLOW_POST_COMBAT,
+    AP_FLOW_BUY_SIEGE,
+    AP_FLOW_EXIT_TOWN,
+    AP_FLOW_DONE,
+    AP_FLOW_LAST = AP_FLOW_DONE,
 
     AP_ALL_DONE,
 } AutoplayPhase;
@@ -118,7 +118,7 @@ int  ap_army_total_hp(const Game *g);
 
 // Combat decision helpers (used by autoplay_before_frame inside
 // RunCombat's loop). Forward-decl Combat to avoid pulling combat.h
-// into every minimal.c predicate.
+// into every flow.c predicate.
 struct Combat;
 int  ap_closest_enemy(const struct Combat *c, int ux, int uy,
                       int *out_dist);
@@ -132,7 +132,7 @@ void ap_dump_state(const char *why, const Game *g, const AutoplayState *st);
 // Module entry: the minimal flow's phase dispatch.
 // =========================================================================
 
-ApCmd ap_minimal_phase(const Game *g, const Map *m,
+ApCmd ap_flow_phase(const Game *g, const Map *m,
                        AutoplayState *st,
                        bool *out_phase_done,
                        AutoplayPhase *out_next_phase);

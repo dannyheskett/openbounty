@@ -1,5 +1,5 @@
 // Autoplay core: dispatcher, shared helpers, and the combat input
-// driver. Per-phase logic lives in src/autoplay/minimal.c.
+// driver. Per-phase logic lives in src/autoplay/flow.c.
 
 #include "autoplay/core.h"
 #include "autoplay/internal.h"
@@ -334,7 +334,7 @@ static int bfs_keys(const Map *m, int sx, int sy, int gx, int gy,
 // and emit a flow-field of next-step direction keys: for every
 // landmass tile, which direction should the hero step toward to
 // reach this target by shortest path? Output is a giant C array
-// pasted into minimal.c. Runtime: hero at (x,y) targeting chest T
+// pasted into flow.c. Runtime: hero at (x,y) targeting chest T
 // → press flow_keys[T][y][x]. No runtime BFS.
 //
 // Foes are treated as BLOCKERS in the flow field (so paths route
@@ -577,7 +577,7 @@ static ShellRunVerdict autoplay_per_tick(ShellRunHooks *self,
     // 4. Ask the active phase for the next command.
     bool phase_done = false;
     AutoplayPhase next_phase = st->phase;
-    ApCmd cmd = ap_minimal_phase(g, m, st, &phase_done, &next_phase);
+    ApCmd cmd = ap_flow_phase(g, m, st, &phase_done, &next_phase);
 
     // 5. Set the live key for this tick (or clear).
     if (cmd.key) ap_set_key(cmd.key);
@@ -607,7 +607,7 @@ int autoplay_run(int argc, char **argv) {
     startup_skip_intros = true;
 
     AutoplayState state = { 0 };
-    state.phase = AP_MIN_FIRST;
+    state.phase = AP_FLOW_FIRST;
     for (size_t i = 0; i < sizeof(state.module_scratch)/sizeof(state.module_scratch[0]); i++) {
         state.module_scratch[i] = -1;
     }
