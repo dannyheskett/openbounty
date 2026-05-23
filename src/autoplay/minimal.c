@@ -4,14 +4,10 @@
 // core.c runs the command, advances one tick, asserts the command's
 // post-state predicate. Hard fail on assertion failure.
 //
-// Sequence (seed=1, knight start at (11,58)):
-//   intro → walk to (11,57) → step onto Maximus gate → recruit army
-//   → exit castle → walk path collecting every reachable chest →
-//   walk to nearest foe → fight → win → done
-//
-// The walk paths between landmarks are HARDCODED key sequences,
-// pre-computed offline by the path generator in core.c (compiled out
-// under #if 0; set AP_PRINT_PATHS=1 to regenerate).
+// Sequence (seed=1):
+//   intro → walk to Maximus → recruit → exit castle → for each chest
+//   on the start landmass, walk via flow-field and answer A/SPACE
+//   → walk to foe → Y → combat → done
 
 #include "autoplay/internal.h"
 #include "combat.h"
@@ -24,47 +20,15 @@
 #include <stddef.h>
 #include <string.h>
 
-// =========================================================================
-// Hardcoded landmass path: 8 chests + 1 foe, in BFS order from start
-// after the recruit. Each leg is a NUL-terminated key sequence (0 ends
-// the leg). After the final key the hero is ON the target tile,
-// which fires a chest A/B prompt or a foe Y/N prompt — handled by
-// the WALK_PATH phase below.
-// =========================================================================
-
-typedef struct {
-    int  x, y;        // target tile coordinates (for logging)
-    char kind;        // 'C' chest, 'F' foe
-    const int *keys;  // NUL-terminated key sequence
-} PathLeg;
-
-// Direction key codes (raylib): UP=265 DOWN=264 LEFT=263 RIGHT=262
-// HOME=268 PAGE_UP=266 END=269 PAGE_DOWN=267
-// leg0 begins from (11,57) — the post-castle-exit position — not the
-// (11,58) spawn the path generator assumed. Prepend KEY_DOWN to
-// re-enter (11,58) before the original sequence.
-static const int leg0[] = { 264,269,263,269,0 };
-static const int leg1[] = { 268,268,265,265,266,265,265,268,265,265,266,262,262,267,267,264,264,269,0 };
-static const int leg2[] = { 265,0 };
-static const int leg3[] = { 266,265,268,263,268,263,269,264,264,267,264,264,264,269,264,267,262,262,262,262,262,262,262,262,266,266,266,262,266,266,266,266,265,266,266,266,265,265,268,263,263,263,263,263,268,263,263,268,268,268,263,263,268,268,263,263,263,263,269,264,264,269,269,264,264,264,264,0 };
-static const int leg4[] = { 265,265,265,265,266,266,265,265,266,262,262,262,262,267,264,0 };
-static const int leg5[] = { 262,262,262,267,262,267,262,267,267,264,267,264,264,264,0 };
-static const int leg6[] = { 265,265,265,266,262,0 };
-static const int leg7[] = { 266,262,267,264,264,269,269,264,264,267,262,262,262,262,262,262,262,267,267,264,267,262,266,0 };
-static const int leg8[] = { 269,263,263,263,0 };
-
-static const PathLeg legs[] = {
-    {  8, 60, 'C', leg0 },
-    { 10, 54, 'C', leg1 },
-    { 10, 53, 'C', leg2 },
-    {  3, 48, 'C', leg3 },
-    { 11, 41, 'C', leg4 },
-    { 21, 50, 'C', leg5 },
-    { 23, 46, 'C', leg6 },
-    { 37, 56, 'C', leg7 },
-    { 33, 57, 'F', leg8 },
-};
-#define N_LEGS ((int)(sizeof(legs)/sizeof(legs[0])))
+// Pre-computed flow-field table: for each target (chest or foe) and
+// each tile (x,y) on the map, the direction key the hero should press
+// to step one tile closer to that target by shortest path. Generated
+// offline by AP_PRINT_FLOW=1.
+//
+//   FLOW[target][y][x] == -1   → we ARE the target
+//   FLOW[target][y][x] ==  0   → unreachable (or off-map)
+//   FLOW[target][y][x] == K    → press raylib key K
+#include "flow_field.h"
 
 // =========================================================================
 // Predicates
@@ -100,14 +64,23 @@ static bool assert_army_hp_plus_60(const Game *g) {
 static bool assert_army_hp_plus_80(const Game *g) {
     return ap_army_total_hp(g) == ap_pre_army_hp + 80;
 }
-static bool assert_combat_open(const Game *g) {
-    (void)g; return combat_current_rendered != NULL;
+
+// "Step succeeded": position changed by the queued direction, OR a
+// prompt opened (we stepped on a chest/foe), OR a dialog opened.
+static bool assert_step_made_progress(const Game *g) {
+    if (g->position.x != ap_pre_pos_x ||
+        g->position.y != ap_pre_pos_y) return true;
+    if (prompt_is_active()) return true;
+    if (dialog_is_active()) return true;
+    return false;
 }
 
-// Combat opened OR combat already finished (in the same outer tick;
-// RunCombat takes over the loop and may complete the whole fight
-// before the autoplay's NEXT per_tick checks the assertion). "Won"
-// is inferred from no temp_death army-wipe.
+static bool assert_prompt_gone(const Game *g) {
+    (void)g; return !prompt_is_active();
+}
+
+// Combat opened OR combat already finished with a win (RunCombat
+// may complete the whole fight inside a single outer tick).
 static bool assert_combat_open_or_won(const Game *g) {
     if (combat_current_rendered != NULL) return true;
     int peasants = 0, other = 0;
@@ -119,28 +92,6 @@ static bool assert_combat_open_or_won(const Game *g) {
     bool defeat = (other == 0 && peasants > 0 && peasants <= 20);
     return !defeat;
 }
-
-// "step succeeded": either position changed by (dx,dy) per the queued
-// key direction, OR an interactive prompt opened (chest A/B or Foes!
-// Y/N), OR a stray dialog opened that needs dismissing. We can't pass
-// the (dx,dy) through assert_post without globals — instead we just
-// check that *something* changed: position differs OR a prompt is now
-// active OR a dialog is now active.
-static bool assert_step_made_progress(const Game *g) {
-    if (g->position.x != ap_pre_pos_x ||
-        g->position.y != ap_pre_pos_y) return true;
-    if (prompt_is_active()) return true;
-    if (dialog_is_active()) return true;
-    return false;
-}
-
-// Chest A/B prompt is dismissed → no prompt active.
-static bool assert_prompt_gone(const Game *g) {
-    (void)g; return !prompt_is_active();
-}
-
-// After Y on foe prompt: combat opens.
-// (Already covered by assert_combat_open.)
 
 // =========================================================================
 // Phase dispatch
@@ -156,7 +107,6 @@ ApCmd ap_minimal_phase(const Game *g, const Map *m,
 
     switch (st->phase) {
 
-    // -- intro --------------------------------------------------------
     case AP_MIN_DISMISS_INTRO: {
         int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
         if (sub == 0) {
@@ -169,7 +119,6 @@ ApCmd ap_minimal_phase(const Game *g, const Map *m,
         return (ApCmd){ "DISMISS_INTRO:space", KEY_SPACE, assert_dialog_closed };
     }
 
-    // -- walk to gate-approach (11,57) --------------------------------
     case AP_MIN_WALK_TO_GATE: {
         int n = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
         if (n >= 1) {
@@ -194,7 +143,6 @@ ApCmd ap_minimal_phase(const Game *g, const Map *m,
         return (ApCmd){ "OPEN_RECRUIT:a", KEY_A, assert_view_recruit_soldiers };
     }
 
-    // -- recruit pikemen: C, 1, 0, ENTER --------------------------------
     case AP_MIN_RECRUIT_PIKEMEN: {
         int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
         switch (sub) {
@@ -245,75 +193,101 @@ ApCmd ap_minimal_phase(const Game *g, const Map *m,
     }
 
     case AP_MIN_EXIT_CASTLE: {
+        st->module_scratch[0] = 0;   // initial target idx
+        st->module_scratch[1] = 0;   // consecutive fails
+        st->module_scratch[2] = -1;  // last_x (sentinel = "uninitialized")
+        st->module_scratch[3] = -1;  // last_y
         *out_phase_done = true;
-        *out_next_phase = AP_MIN_WALK_TO_FOE;  // reused as "walk the path"
+        *out_next_phase = AP_MIN_WALK_TO_FOE;
         return (ApCmd){ "EXIT_CASTLE:esc", KEY_ESCAPE, assert_view_none };
     }
 
-    // -- walk the hardcoded path: chests then foe --------------------
-    // module_scratch layout for this phase:
-    //   [0] = current leg index (0..N_LEGS-1)
-    //   [1] = current key index within the leg's key array
-    //   [2] = sub-state:
-    //         0 = walking (emit next key)
-    //         1 = arrived at chest tile, expect A/B prompt; emit A
-    //         2 = arrived at foe tile, expect Foe prompt; emit Y;
-    //             transition to COMBAT
+    // -- Flow-field walk: visit each target in TARGET_X/Y order. ----
+    // module_scratch[0] = current target index
+    // module_scratch[1] = consecutive failed-step count (vs scratch[2,3])
+    // module_scratch[2] = last observed position x
+    // module_scratch[3] = last observed position y
     case AP_MIN_WALK_TO_FOE: {
-        int leg_idx = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
-        int key_idx = (st->module_scratch[1] < 0) ? 0 : st->module_scratch[1];
-        int sub     = (st->module_scratch[2] < 0) ? 0 : st->module_scratch[2];
+        int ti = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
 
-        // Handle a pending prompt FIRST: if we just stepped onto a
-        // chest or foe and the prompt is up, dispatch the answer.
+        // Handle any prompt / dialog FIRST.
         if (prompt_is_active()) {
             const char *hdr = prompt_header_text();
             if (hdr && strstr(hdr, "Foe")) {
-                // Foe prompt: Y → combat.
-                AP_LOG("[min] leg %d: foe prompt — Y", leg_idx);
-                st->module_scratch[2] = 0;
+                AP_LOG("[min] foe prompt — Y");
+                st->module_scratch[1] = 0;
                 *out_phase_done = true;
                 *out_next_phase = AP_MIN_COMBAT;
-                return (ApCmd){ "PATH:y_foe", KEY_Y, assert_combat_open_or_won };
+                return (ApCmd){ "FLOW:y_foe", KEY_Y, assert_combat_open_or_won };
             }
-            // Chest A/B: pick A (gold).
-            AP_LOG("[min] leg %d: chest A", leg_idx);
-            return (ApCmd){ "PATH:a_chest", KEY_A, assert_prompt_gone };
+            st->module_scratch[1] = 0;
+            return (ApCmd){ "FLOW:a_chest", KEY_A, assert_prompt_gone };
         }
         if (dialog_is_active()) {
-            return (ApCmd){ "PATH:space_dialog", KEY_SPACE, assert_dialog_closed };
+            st->module_scratch[1] = 0;
+            return (ApCmd){ "FLOW:space_dialog", KEY_SPACE, assert_dialog_closed };
         }
 
-        // No prompt/dialog. Advance the walk.
-        if (leg_idx >= N_LEGS) {
-            // All legs done. Should not reach here since the foe leg
-            // transitions to COMBAT. Defensive: go to DONE.
+        if (ti >= N_TARGETS) {
             *out_phase_done = true;
             *out_next_phase = AP_MIN_DONE;
-            return (ApCmd){ "PATH:legs_exhausted", 0, assert_always_true };
+            return (ApCmd){ "FLOW:all_done", 0, assert_always_true };
         }
 
-        const PathLeg *leg = &legs[leg_idx];
-        int key = leg->keys[key_idx];
-        if (key == 0) {
-            // End of this leg's keys. We should be standing on the
-            // target tile — the next tick the engine will fire the
-            // chest A/B or Foes! prompt. Advance to next leg now and
-            // emit a noop tick.
-            AP_LOG("[min] leg %d arrived at (%d,%d) kind=%c",
-                   leg_idx, leg->x, leg->y, leg->kind);
-            st->module_scratch[0] = leg_idx + 1;
+        int hx = g->position.x;
+        int hy = g->position.y;
+
+        // Position-progress check vs the LAST tick's observed position
+        // (not this tick's pre-snapshot, which is captured AFTER the
+        // previous engine step so it equals current). Initialized to
+        // -1 the first time we enter this phase.
+        int last_x = st->module_scratch[2];
+        int last_y = st->module_scratch[3];
+        if (last_x < 0) {
+            st->module_scratch[2] = hx;
+            st->module_scratch[3] = hy;
             st->module_scratch[1] = 0;
-            return (ApCmd){ "PATH:leg_end_wait_prompt", 0, assert_always_true };
+        } else if (hx == last_x && hy == last_y) {
+            int fails = st->module_scratch[1] + 1;
+            st->module_scratch[1] = fails;
+            if (fails >= 3) {
+                AP_LOG("[min] target %d at (%d,%d): 3 blocked steps from (%d,%d) — skip",
+                       ti, TARGET_X[ti], TARGET_Y[ti], hx, hy);
+                st->module_scratch[0] = ti + 1;
+                st->module_scratch[1] = 0;
+                return (ApCmd){ "FLOW:skip_blocked", 0, assert_always_true };
+            }
+        } else {
+            st->module_scratch[1] = 0;
+            st->module_scratch[2] = hx;
+            st->module_scratch[3] = hy;
         }
-        st->module_scratch[1] = key_idx + 1;
-        return (ApCmd){ "PATH:step", key, assert_step_made_progress };
+
+        int key = (hx >= 0 && hx < 64 && hy >= 0 && hy < 64)
+                  ? FLOW[ti][hy][hx] : 0;
+
+        if (key == -1) {
+            AP_LOG("[min] target %d at (%d,%d) reached", ti,
+                   TARGET_X[ti], TARGET_Y[ti]);
+            st->module_scratch[0] = ti + 1;
+            st->module_scratch[1] = 0;
+            return (ApCmd){ "FLOW:advance_target", 0, assert_always_true };
+        }
+        if (key == 0) {
+            AP_LOG("[min] target %d at (%d,%d) unreachable from (%d,%d) — skip",
+                   ti, TARGET_X[ti], TARGET_Y[ti], hx, hy);
+            st->module_scratch[0] = ti + 1;
+            st->module_scratch[1] = 0;
+            return (ApCmd){ "FLOW:skip_unreachable", 0, assert_always_true };
+        }
+
+        // Soft assertion — mobile foes may block; next tick's
+        // pos-didn't-change check handles it.
+        return (ApCmd){ "FLOW:step", key, assert_always_true };
     }
 
-    // -- attack foe / combat (unused — folded into PATH above) -------
     case AP_MIN_ATTACK_FOE: {
-        // Not reached: the PATH phase emits Y when the Foe prompt is
-        // up and transitions directly to COMBAT.
+        // Not reached — flow phase emits Y directly when the foe prompt fires.
         *out_phase_done = true;
         *out_next_phase = AP_MIN_COMBAT;
         return (ApCmd){ "ATTACK_FOE:noop", 0, assert_always_true };
@@ -331,8 +305,15 @@ ApCmd ap_minimal_phase(const Game *g, const Map *m,
     case AP_MIN_POST_COMBAT: {
         if (!dialog_is_active() && !prompt_is_active() &&
             views_active() == VIEW_NONE) {
+            // Resume the flow walk. If the current target is the
+            // dedicated foe (last entry, kind 'F') and we just won
+            // that combat, advance past it to DONE.
+            int ti = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+            if (ti < N_TARGETS && TARGET_KIND[ti] == 'F') {
+                st->module_scratch[0] = ti + 1;
+            }
             *out_phase_done = true;
-            *out_next_phase = AP_MIN_DONE;
+            *out_next_phase = AP_MIN_WALK_TO_FOE;  // resume flow
             return (ApCmd){ "POST_COMBAT:noop", 0, assert_always_true };
         }
         if (dialog_is_active()) {

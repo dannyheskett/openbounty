@@ -251,7 +251,7 @@ static void autoplay_before_startup(ShellRunHooks *self) {
     ap_queue_standard_startup();
 }
 
-#if 0  // === offline path generator — kept commented for re-runs ===
+#if 0  // === offline flow-field generator — set AP_PRINT_FLOW=1 to run ===
 
 #include <stdlib.h>
 
@@ -330,25 +330,29 @@ static int bfs_keys(const Map *m, int sx, int sy, int gx, int gy,
     return n;
 }
 
+// For each target (chest or foe), do reverse-BFS from the target
+// and emit a flow-field of next-step direction keys: for every
+// landmass tile, which direction should the hero step toward to
+// reach this target by shortest path? Output is a giant C array
+// pasted into minimal.c. Runtime: hero at (x,y) targeting chest T
+// → press flow_keys[T][y][x]. No runtime BFS.
+//
+// Foes are treated as BLOCKERS in the flow field (so paths route
+// around them — we never step into a foe by accident en route to a
+// chest). The final foe leg uses a separate flow field that ALLOWS
+// the foe tile as the goal.
 static void dump_zone_interactives(const Map *m, const Game *g) {
-    if (!getenv("AP_PRINT_PATHS")) return;
+    if (!getenv("AP_PRINT_FLOW")) return;
 
-    AP_LOG("=== AP_PRINT_PATHS: generating hardcoded paths ===");
+    AP_LOG("=== AP_PRINT_FLOW: generating flow-field table ===");
     AP_LOG("hero start: (%d,%d)", g->position.x, g->position.y);
 
-    // Chest visit order: greedy nearest-by-Chebyshev from current pos,
-    // BFS-reachable on foot, all interactives in-between forbidden.
-    // After all chests, visit one foe.
-    typedef struct { int x, y; const char *kind; } Target;
-    Target targets[32];
-    int n_targets = 0;
-
-    // Flood-fill to find reachable interactives.
-    bool reachable[64][64] = { { false } };
+    // 1. Flood-fill to identify the start landmass.
+    bool land[64][64] = { { false } };
     {
         int qx[64*64], qy[64*64], qh=0, qt=0;
         qx[qt]=g->position.x; qy[qt]=g->position.y; qt++;
-        reachable[g->position.y][g->position.x] = true;
+        land[g->position.y][g->position.x] = true;
         static const int dxs[8] = { -1, 0, 1, -1, 1, -1, 0, 1 };
         static const int dys[8] = { -1, -1, -1, 0, 0, 1, 1, 1 };
         while (qh < qt) {
@@ -356,95 +360,150 @@ static void dump_zone_interactives(const Map *m, const Game *g) {
             for (int k=0; k<8; k++) {
                 int nx=cx+dxs[k], ny=cy+dys[k];
                 if (nx<0||ny<0||nx>=m->width||ny>=m->height) continue;
-                if (reachable[ny][nx]) continue;
+                if (land[ny][nx]) continue;
                 const Tile *t = &m->tiles[ny][nx];
                 bool walkable = !t->blocks_foot && TerrainWalkable(t->terrain);
-                bool terminal =
-                    t->interactive == INTERACT_TREASURE_CHEST ||
-                    t->interactive == INTERACT_FOE ||
-                    t->interactive == INTERACT_ARTIFACT;
+                bool terminal = t->interactive == INTERACT_TREASURE_CHEST ||
+                                t->interactive == INTERACT_FOE ||
+                                t->interactive == INTERACT_ARTIFACT;
                 if (!walkable && !terminal) continue;
                 if (t->interactive != INTERACT_NONE && !terminal) continue;
-                reachable[ny][nx] = true;
+                land[ny][nx] = true;
                 if (!terminal) { qx[qt]=nx; qy[qt]=ny; qt++; }
             }
         }
     }
 
-    // Collect reachable chests.
+    // 2. Collect reachable chests and foes.
+    typedef struct { int x, y; const char *id; } Target;
     Target chests[32]; int n_chests = 0;
     Target foes[32];   int n_foes = 0;
     for (int y = 0; y < m->height; y++) {
         for (int x = 0; x < m->width; x++) {
-            if (!reachable[y][x]) continue;
+            if (!land[y][x]) continue;
             const Tile *t = &m->tiles[y][x];
             if (t->interactive == INTERACT_TREASURE_CHEST && n_chests < 32) {
-                chests[n_chests++] = (Target){x, y, "chest"};
+                chests[n_chests++] = (Target){x, y, t->id};
             } else if (t->interactive == INTERACT_FOE && n_foes < 32) {
-                foes[n_foes++] = (Target){x, y, "foe"};
+                foes[n_foes++] = (Target){x, y, t->id};
             }
         }
     }
 
-    // Greedy nearest-Chebyshev order through chests, ending with one
-    // foe (the one closest to last chest).
-    int cur_x = g->position.x, cur_y = g->position.y;
-    bool visited[32] = { false };
+    AP_LOG("// landmass chests: %d  foes: %d", n_chests, n_foes);
+    fprintf(stderr, "// Targets in declaration order:\n");
     for (int i = 0; i < n_chests; i++) {
-        int best = -1, best_d = 1 << 30;
-        for (int j = 0; j < n_chests; j++) {
-            if (visited[j]) continue;
-            int adx = chests[j].x - cur_x; if (adx<0) adx=-adx;
-            int ady = chests[j].y - cur_y; if (ady<0) ady=-ady;
-            int d = (adx > ady) ? adx : ady;
-            if (d < best_d) { best_d = d; best = j; }
-        }
-        if (best < 0) break;
-        visited[best] = true;
-        targets[n_targets++] = chests[best];
-        cur_x = chests[best].x; cur_y = chests[best].y;
+        fprintf(stderr, "//   chest[%d] = (%d,%d) %s\n",
+                i, chests[i].x, chests[i].y, chests[i].id);
     }
-    // Pick nearest foe to current end position.
+    int foe_idx = -1;
     if (n_foes > 0) {
+        // Pick the nearest foe to start.
         int best = 0, best_d = 1 << 30;
         for (int j = 0; j < n_foes; j++) {
-            int adx = foes[j].x - cur_x; if (adx<0) adx=-adx;
-            int ady = foes[j].y - cur_y; if (ady<0) ady=-ady;
+            int adx = foes[j].x - g->position.x; if (adx<0) adx=-adx;
+            int ady = foes[j].y - g->position.y; if (ady<0) ady=-ady;
             int d = (adx > ady) ? adx : ady;
             if (d < best_d) { best_d = d; best = j; }
         }
-        targets[n_targets++] = foes[best];
+        foe_idx = best;
+        fprintf(stderr, "//   foe       = (%d,%d) %s\n",
+                foes[foe_idx].x, foes[foe_idx].y, foes[foe_idx].id);
     }
 
-    // Emit path keys for each leg.
-    cur_x = g->position.x; cur_y = g->position.y;
-    AP_LOG("// === BEGIN HARDCODED PATHS ===");
-    for (int i = 0; i < n_targets; i++) {
-        int keys[1024];
-        int n = bfs_keys(m, cur_x, cur_y, targets[i].x, targets[i].y, keys, 1024);
-        AP_LOG("// leg %d: %s at (%d,%d), %d steps from (%d,%d)",
-               i, targets[i].kind, targets[i].x, targets[i].y, n, cur_x, cur_y);
-        if (n == 0) {
-            AP_LOG("//   (no path found)");
-            continue;
+    // 3. For each target (chest, then foe), emit a flow-field:
+    //    flow[y][x] = direction key from (x,y) toward target, or 0.
+    //
+    // Build by reverse-BFS from the target tile. Allowed intermediate
+    // tiles: walkable, no interactive (foes are blockers!), in the
+    // start landmass. The target tile itself is allowed as goal.
+    typedef struct { int x, y; } P;
+    static const int dxs[8] = { 0, 0, -1, 1, -1, 1, -1, 1 };
+    static const int dys[8] = { -1, 1, 0, 0, -1, -1, 1, 1 };
+
+    int n_total_targets = n_chests + (n_foes > 0 ? 1 : 0);
+    fprintf(stderr,
+        "// === BEGIN FLOW-FIELD TABLE (target idx, then 64x64 keys) ===\n");
+    fprintf(stderr, "static const int N_TARGETS = %d;\n", n_total_targets);
+    fprintf(stderr, "static const int TARGET_X[%d] = {", n_total_targets);
+    for (int i = 0; i < n_chests; i++) fprintf(stderr, "%d,", chests[i].x);
+    if (foe_idx >= 0) fprintf(stderr, "%d,", foes[foe_idx].x);
+    fprintf(stderr, "};\n");
+    fprintf(stderr, "static const int TARGET_Y[%d] = {", n_total_targets);
+    for (int i = 0; i < n_chests; i++) fprintf(stderr, "%d,", chests[i].y);
+    if (foe_idx >= 0) fprintf(stderr, "%d,", foes[foe_idx].y);
+    fprintf(stderr, "};\n");
+    fprintf(stderr, "static const char TARGET_KIND[%d] = {", n_total_targets);
+    for (int i = 0; i < n_chests; i++) fprintf(stderr, "'C',");
+    if (foe_idx >= 0) fprintf(stderr, "'F',");
+    fprintf(stderr, "};\n");
+
+    fprintf(stderr, "static const int FLOW[%d][64][64] = {\n", n_total_targets);
+    for (int ti = 0; ti < n_total_targets; ti++) {
+        bool is_foe = (ti == n_chests);
+        int tx = is_foe ? foes[foe_idx].x : chests[ti].x;
+        int ty = is_foe ? foes[foe_idx].y : chests[ti].y;
+        // Reverse-BFS from (tx,ty). Record parent direction (the
+        // direction you'd press FROM (x,y) to step toward the target).
+        short par[64][64];
+        for (int y = 0; y < 64; y++)
+            for (int x = 0; x < 64; x++) par[y][x] = 0;
+        // Mark goal with sentinel.
+        par[ty][tx] = -1;
+        P queue[64*64]; int qh=0, qt=0;
+        queue[qt++] = (P){tx, ty};
+        while (qh < qt) {
+            P p = queue[qh++];
+            for (int k = 0; k < 8; k++) {
+                int nx = p.x + dxs[k], ny = p.y + dys[k];
+                if (nx<0||ny<0||nx>=m->width||ny>=m->height) continue;
+                if (par[ny][nx] != 0) continue;
+                if (!land[ny][nx]) continue;
+                const Tile *t = &m->tiles[ny][nx];
+                // Intermediate (non-target) tiles: walkable AND not
+                // a foe (foes block the path — chests are OK to step
+                // through since by the time we reach this leg they
+                // will have been claimed and cleared).
+                bool is_target_tile = (nx == tx && ny == ty);
+                if (!is_target_tile) {
+                    if (t->interactive == INTERACT_FOE) continue;
+                    if (t->blocks_foot) continue;
+                    if (!TerrainWalkable(t->terrain)) continue;
+                }
+                // Encode: the direction the hero at (nx,ny) should
+                // press to step toward (px,py) = (nx - dx, ny - dy)
+                // — which is the REVERSE of how we got here.
+                int hero_dx = -dxs[k];
+                int hero_dy = -dys[k];
+                int key = dir_to_key(hero_dx, hero_dy);
+                par[ny][nx] = (short)key;
+                queue[qt++] = (P){nx, ny};
+            }
         }
-        fprintf(stderr, "    /* leg %d -> %s (%d,%d) */ ", i,
-                targets[i].kind, targets[i].x, targets[i].y);
-        for (int k = 0; k < n; k++) {
-            fprintf(stderr, "%d,", keys[k]);
+        // Emit the 64x64 grid.
+        fprintf(stderr, "    /* target %d (%d,%d) */ {\n", ti, tx, ty);
+        for (int y = 0; y < 64; y++) {
+            fprintf(stderr, "        {");
+            for (int x = 0; x < 64; x++) {
+                int v = par[y][x];
+                if (v < 0) v = -1;  // goal sentinel — runtime uses this
+                                     // to detect "we are AT target."
+                fprintf(stderr, "%d,", v);
+            }
+            fprintf(stderr, "},\n");
         }
-        fprintf(stderr, "0,\n");
-        cur_x = targets[i].x; cur_y = targets[i].y;
+        fprintf(stderr, "    },\n");
     }
-    AP_LOG("// === END HARDCODED PATHS ===");
+    fprintf(stderr, "};\n");
+    fprintf(stderr,
+        "// === END FLOW-FIELD TABLE ===\n");
 }
 
-#endif // offline path generator
-
-// Stub — no-op now that the paths are baked into minimal.c.
+#else
 static void dump_zone_interactives(const Map *m, const Game *g) {
     (void)m; (void)g;
 }
+#endif // offline flow-field generator
 
 static ShellRunVerdict autoplay_per_tick(ShellRunHooks *self,
                                          Game *g, Map *m, Fog *f,
