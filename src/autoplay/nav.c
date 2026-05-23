@@ -287,10 +287,6 @@ static int bfs_multimode(const Map *m, const Game *g,
                  t->interactive == INTERACT_DWELLING_FOREST ||
                  t->interactive == INTERACT_DWELLING_HILLS  ||
                  t->interactive == INTERACT_DWELLING_DUNGEON) && !is_goal) continue;
-            // Wandering armies are unpredictable (friendly = text
-            // prompt, hostile = combat) and can follow into the hero's
-            // path. Always route around them, unless it's the goal.
-            if (t->interactive == INTERACT_FOE && !is_goal) continue;
 
             int next_mode = mode;
             bool ok = false;
