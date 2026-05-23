@@ -251,10 +251,45 @@ static void autoplay_before_startup(ShellRunHooks *self) {
     ap_queue_standard_startup();
 }
 
-// Map-scan dump (offline pathfinding generator deleted). Kept as a
-// no-op so autoplay_per_tick still compiles.
+// Map-scan dump. With env var AP_DUMP_MAP=1, prints the whole zone
+// as ASCII (water=~, blocked=#, walkable=., chest=C, foe=F, town=T,
+// castle=K, hero=@). Used once by hand to author the step lists for
+// each chest leg. Otherwise no-op.
+#include "tile.h"
+#include <stdlib.h>
 static void dump_zone_interactives(const Map *m, const Game *g) {
-    (void)m; (void)g;
+    if (!getenv("AP_DUMP_MAP")) return;
+    AP_LOG("=== zone map (zone=%s, %dx%d) ===",
+           g->position.zone, m->width, m->height);
+    AP_LOG("  hero at (%d,%d)", g->position.x, g->position.y);
+    for (int y = 0; y < m->height; y++) {
+        char row[160];
+        int n = 0;
+        n += snprintf(row + n, sizeof row - n, "  %2d: ", y);
+        for (int x = 0; x < m->width; x++) {
+            const Tile *t = &m->tiles[y][x];
+            char c = '?';
+            if (x == g->position.x && y == g->position.y) c = '@';
+            else if (t->interactive == INTERACT_TREASURE_CHEST) c = 'C';
+            else if (t->interactive == INTERACT_FOE) c = 'F';
+            else if (t->interactive == INTERACT_TOWN) c = 'T';
+            else if (t->interactive == INTERACT_CASTLE_GATE) c = 'K';
+            else if (t->interactive == INTERACT_ARTIFACT) c = 'A';
+            else if (t->interactive == INTERACT_DWELLING_PLAINS ||
+                     t->interactive == INTERACT_DWELLING_FOREST ||
+                     t->interactive == INTERACT_DWELLING_HILLS ||
+                     t->interactive == INTERACT_DWELLING_DUNGEON) c = 'D';
+            else if (t->interactive != INTERACT_NONE) c = '*';
+            else if (t->terrain == TERRAIN_WATER) c = '~';
+            else if (t->blocks_foot) c = '#';
+            else if (TerrainWalkable(t->terrain)) c = '.';
+            else c = '?';
+            row[n++] = c;
+        }
+        row[n] = '\0';
+        AP_LOG("%s", row);
+    }
+    AP_LOG("=== scan done ===");
 }
 
 
