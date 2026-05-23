@@ -556,8 +556,11 @@ int shell_run_game(int argc, char **argv, ShellRunHooks *hooks) {
     // Autoplay headless (no --visible) skips audio entirely — opening
     // the device on a headless box is noisy and the test doesn't
     // listen anyway.
-    bool autoplay_headless = (hooks && !autoplay_visible);
-    if (!autoplay_headless) {
+    // Autoplay (headless OR visible) skips audio entirely: opening the
+    // device can hang for several seconds on systems without working
+    // audio (headless boxes, WSL2 without pulse, CI runners), and the
+    // autoplay isn't going to listen anyway.
+    if (!hooks) {
         audio_init(&res);
     }
     if (!audio_is_available()) {

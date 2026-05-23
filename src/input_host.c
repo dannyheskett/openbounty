@@ -1,6 +1,7 @@
 #include "input_host.h"
 #include "raylib.h"
 
+#include <stdio.h>
 #include <string.h>
 
 // Tiny FIFO. Only used for: (a) the 3 startup-wizard keys queued
@@ -94,9 +95,6 @@ void input_host_queue_char(int codepoint) {
 
 void input_host_tick(void) {
     if (!s_scripted) return;
-    // If the FIFO has anything, pop one into the live key. Otherwise
-    // leave the live key alone (the per-tick autoplay dispatcher is
-    // responsible for setting/clearing on each call).
     if (s_press_count > 0) {
         s_live_key = s_press[0];
         for (int i = 1; i < s_press_count; i++) s_press[i - 1] = s_press[i];
