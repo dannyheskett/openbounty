@@ -128,8 +128,26 @@ static int leg_chest_073_step(int step_idx) {
 }
 
 // treasure_chest_074 @ (59, 3)
+//
+// Hero starts at (36, 3) — on the chest_073 tile, on foot, boat parked
+// just north at (36, 2). chest_074 is on a separate island further
+// east, also unreachable by foot. Re-board, sail east along row 2,
+// disembark south onto the chest at (59, 3).
 static int leg_chest_074_step(int step_idx) {
-    (void)step_idx; return 0;
+    // BFS-derived path from (36, 3) to chest at (59, 3):
+    //   board U     — step north onto boat at (36, 2); travel_mode=BOAT
+    //   sail R x23  — east along row 2 (all water) to (59, 2)
+    //   step D      — disembark south onto chest tile (59, 3)
+    static const int keys[] = {
+        KEY_UP,
+        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT,
+        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT,
+        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT,
+        KEY_DOWN,
+    };
+    const int n = (int)(sizeof(keys) / sizeof(keys[0]));
+    if (step_idx < 0 || step_idx >= n) return 0;
+    return keys[step_idx];
 }
 
 // treasure_chest_072 @ (45, 4)
@@ -523,20 +541,43 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
             *out_next_phase = AP_FLOW_RENT_BOAT;
             return (ApCmd){ "GRIND:in_town", 0, assert_always_true };
         }
-        // Single-leg drive: chest_073. module_scratch[1] = step_idx.
+        // Multi-leg drive. module_scratch[0] = leg index, [1] = step
+        // index within the current leg. Reset on EXIT_CASTLE (above).
         {
+            int leg = (st->module_scratch[0] < 0)
+                      ? 0 : st->module_scratch[0];
             int step_idx = (st->module_scratch[1] < 0)
                            ? 0 : st->module_scratch[1];
-            int key = leg_chest_073_step(step_idx);
-            if (key == 0) {
-                AP_LOG("[flow] leg_073 done: pos=(%d,%d) gold=%d",
+            int key = 0;
+            const char *name = "GRIND:leg_step";
+            const char *done_name = "GRIND:leg_done";
+            switch (leg) {
+            case 0:
+                key = leg_chest_073_step(step_idx);
+                name = "GRIND:leg_073_step";
+                done_name = "GRIND:leg_073_done";
+                break;
+            case 1:
+                key = leg_chest_074_step(step_idx);
+                name = "GRIND:leg_074_step";
+                done_name = "GRIND:leg_074_done";
+                break;
+            default:
+                AP_LOG("[flow] all legs done: pos=(%d,%d) gold=%d",
                        g->position.x, g->position.y, g->stats.gold);
                 *out_phase_done = true;
                 *out_next_phase = AP_FLOW_DONE;
-                return (ApCmd){ "GRIND:leg_073_done", 0, assert_always_true };
+                return (ApCmd){ "GRIND:all_done", 0, assert_always_true };
+            }
+            if (key == 0) {
+                AP_LOG("[flow] leg %d done: pos=(%d,%d) gold=%d",
+                       leg, g->position.x, g->position.y, g->stats.gold);
+                st->module_scratch[0] = leg + 1;
+                st->module_scratch[1] = 0;
+                return (ApCmd){ done_name, 0, assert_always_true };
             }
             st->module_scratch[1] = step_idx + 1;
-            return (ApCmd){ "GRIND:leg_073_step", key, assert_always_true };
+            return (ApCmd){ name, key, assert_always_true };
         }
     }
 
