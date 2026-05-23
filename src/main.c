@@ -379,10 +379,11 @@ int shell_run_game(int argc, char **argv, ShellRunHooks *hooks) {
     // wall time and is actually watchable.
     if (!hooks) SetTargetFPS(60);
     if (hooks && autoplay_visible) {
-        // Wall-clock pace = 60 fps, watchable. Per-tick inputs from
-        // the autoplay dispatcher fire at the same rate, so the human
-        // sees one logical action per ~1/60s.
-        frame_host_set_test_fps(60);
+        // Wall-clock pace = 30 fps in visible autoplay — half the
+        // native 60fps. Slow enough to follow each tick's logical
+        // action (one walk step or one combat decision) without
+        // feeling sluggish.
+        frame_host_set_test_fps(30);
     }
     SetExitKey(KEY_NULL);
 
