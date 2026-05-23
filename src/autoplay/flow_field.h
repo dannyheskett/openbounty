@@ -664,7 +664,6 @@ static const int FLOW[10][64][64] = {
         {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,},
     },
 };
-[autoplay] // off-landmass chests: 46
 //   boat_chest[0] = (36,3) treasure_chest_073
 //   boat_chest[1] = (59,3) treasure_chest_074
 //   boat_chest[2] = (45,4) treasure_chest_072

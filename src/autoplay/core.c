@@ -670,7 +670,9 @@ static ShellRunVerdict autoplay_per_tick(ShellRunHooks *self,
     // 4. Ask the active phase for the next command.
     bool phase_done = false;
     AutoplayPhase next_phase = st->phase;
+    AutoplayPhase phase_in = st->phase;
     ApCmd cmd = ap_flow_phase(g, m, st, &phase_done, &next_phase);
+    (void)phase_in;
 
     // 5. Set the live key for this tick (or clear).
     if (cmd.key) ap_set_key(cmd.key);
@@ -683,9 +685,9 @@ static ShellRunVerdict autoplay_per_tick(ShellRunHooks *self,
     // 7. Transition if signaled.
     if (phase_done) st->phase = next_phase;
 
-    AP_LOG("tick=%d phase=%d cmd='%s' key=%d",
-           st->tick, (int)st->phase,
-           cmd.name ? cmd.name : "(unnamed)", cmd.key);
+    AP_LOG("tick=%d phase_in=%d phase_out=%d cmd='%s' key=%d done=%d",
+           st->tick, (int)phase_in, (int)st->phase,
+           cmd.name ? cmd.name : "(unnamed)", cmd.key, (int)phase_done);
 
     return SHELL_RUN_CONTINUE;
 }

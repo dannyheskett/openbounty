@@ -313,15 +313,24 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
     case AP_FLOW_POST_COMBAT: {
         if (!dialog_is_active() && !prompt_is_active() &&
             views_active() == VIEW_NONE) {
-            // Resume the flow walk. If the current target is the
-            // dedicated foe (last entry, kind 'F') and we just won
-            // that combat, advance past it to DONE.
-            int ti = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
-            if (ti < N_TARGETS && TARGET_KIND[ti] == 'F') {
-                st->module_scratch[0] = ti + 1;
-            }
+            // Resume the active grind. Boat mode after a sea combat:
+            // back to BOAT_GRIND. Otherwise: back to land WALK_TO_FOE.
+            // If the active land target is the dedicated foe ('F') and
+            // we just won, advance past it.
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_WALK_TO_FOE;  // resume flow
+            if (g->boat.has_boat && g->travel_mode == TRAVEL_BOAT) {
+                *out_next_phase = AP_FLOW_BOAT_GRIND;
+            } else if (g->boat.has_boat) {
+                // We had a boat but combat dropped us back on land
+                // (loss → temp_death, or disembark mid-fight). Re-board.
+                *out_next_phase = AP_FLOW_WALK_TO_BOAT;
+            } else {
+                int ti = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+                if (ti < N_TARGETS && TARGET_KIND[ti] == 'F') {
+                    st->module_scratch[0] = ti + 1;
+                }
+                *out_next_phase = AP_FLOW_WALK_TO_FOE;
+            }
             return (ApCmd){ "POST_COMBAT:noop", 0, assert_always_true };
         }
         if (dialog_is_active()) {
@@ -388,11 +397,159 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
 
     case AP_FLOW_EXIT_TOWN: {
         if (views_active() == VIEW_NONE) {
+            // Reset boat-grind state and head to boat tile.
+            st->module_scratch[0] = 0;   // boat target idx
+            st->module_scratch[1] = 0;   // fail counter
+            st->module_scratch[2] = -1;  // last_x
+            st->module_scratch[3] = -1;  // last_y
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_DONE;
+            *out_next_phase = AP_FLOW_WALK_TO_BOAT;
             return (ApCmd){ "EXIT_TOWN:done", 0, assert_always_true };
         }
         return (ApCmd){ "EXIT_TOWN:esc", KEY_ESCAPE, assert_always_true };
+    }
+
+    // -- Walk to boat tile (one cardinal step per tick). ------------
+    // After exiting hunterville the hero is at (12,60)? — let me check
+    // — the bounce-back from town leaves the hero at the tile they
+    // stepped from, which is wherever the flow approached the town
+    // from. Either way, the boat is at g->boat.x/y (hunterville's
+    // boat spawn = (11,60)). Step toward it using the simple direct
+    // direction; on collision the position-progress watchdog bails.
+    case AP_FLOW_WALK_TO_BOAT: {
+        // Already in boat (stepped on it)? Transition.
+        if (g->travel_mode == TRAVEL_BOAT) {
+            AP_LOG("[flow] boarded boat at (%d,%d)",
+                   g->position.x, g->position.y);
+            st->module_scratch[1] = 0;
+            st->module_scratch[2] = -1;
+            st->module_scratch[3] = -1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_BOAT_GRIND;
+            return (ApCmd){ "WALK_TO_BOAT:boarded", 0, assert_always_true };
+        }
+        if (!g->boat.has_boat) {
+            AP_LOG("[flow] WALK_TO_BOAT: lost the boat!");
+            ap_dump_state("no boat", g, st);
+            return (ApCmd){ "WALK_TO_BOAT:no_boat", 0, assert_dialog_open };
+        }
+        int hx = g->position.x, hy = g->position.y;
+        int bx = g->boat.x,    by = g->boat.y;
+        int dx = (bx > hx) ? 1 : (bx < hx) ? -1 : 0;
+        int dy = (by > hy) ? 1 : (by < hy) ? -1 : 0;
+        // pos-progress fail counter (scratch[1]) — same shape as
+        // BOAT_GRIND below.
+        int last_x = st->module_scratch[2];
+        int last_y = st->module_scratch[3];
+        if (last_x < 0) {
+            st->module_scratch[2] = hx;
+            st->module_scratch[3] = hy;
+            st->module_scratch[1] = 0;
+        } else if (hx == last_x && hy == last_y) {
+            int fails = st->module_scratch[1] + 1;
+            st->module_scratch[1] = fails;
+            if (fails >= 5) {
+                AP_LOG("[flow] WALK_TO_BOAT: blocked at (%d,%d) en route to (%d,%d)",
+                       hx, hy, bx, by);
+                ap_dump_state("walk-to-boat blocked", g, st);
+                return (ApCmd){ "WALK_TO_BOAT:fail", 0, assert_dialog_open };
+            }
+        } else {
+            st->module_scratch[1] = 0;
+            st->module_scratch[2] = hx;
+            st->module_scratch[3] = hy;
+        }
+        int key = 0;
+        if      (dx == 0  && dy == -1) key = KEY_UP;
+        else if (dx == 0  && dy ==  1) key = KEY_DOWN;
+        else if (dx == -1 && dy ==  0) key = KEY_LEFT;
+        else if (dx == 1  && dy ==  0) key = KEY_RIGHT;
+        else if (dx == -1 && dy == -1) key = KEY_HOME;
+        else if (dx == 1  && dy == -1) key = KEY_PAGE_UP;
+        else if (dx == -1 && dy ==  1) key = KEY_END;
+        else if (dx == 1  && dy ==  1) key = KEY_PAGE_DOWN;
+        if (key == 0) {
+            AP_LOG("[flow] WALK_TO_BOAT: already at boat tile?");
+            return (ApCmd){ "WALK_TO_BOAT:wait", 0, assert_always_true };
+        }
+        return (ApCmd){ "WALK_TO_BOAT:step", key, assert_always_true };
+    }
+
+    // -- Boat grind: follow BOAT_FLOW for each off-landmass chest. --
+    // module_scratch[0] = current boat target idx
+    // module_scratch[1] = consecutive fail count
+    // module_scratch[2] = last_x
+    // module_scratch[3] = last_y
+    case AP_FLOW_BOAT_GRIND: {
+        int ti = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+
+        // Handle any prompt / dialog first.
+        if (prompt_is_active()) {
+            const char *hdr = prompt_header_text();
+            if (hdr && strstr(hdr, "Foe")) {
+                AP_LOG("[flow] BOAT: foe prompt — Y");
+                st->module_scratch[1] = 0;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                return (ApCmd){ "BOAT:y_foe", KEY_Y, assert_combat_open_or_won };
+            }
+            st->module_scratch[1] = 0;
+            return (ApCmd){ "BOAT:a_chest", KEY_A, assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            st->module_scratch[1] = 0;
+            return (ApCmd){ "BOAT:space_dialog", KEY_SPACE, assert_dialog_closed };
+        }
+
+        if (ti >= N_BOAT_TARGETS) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "BOAT:all_done", 0, assert_always_true };
+        }
+
+        int hx = g->position.x;
+        int hy = g->position.y;
+
+        int last_x = st->module_scratch[2];
+        int last_y = st->module_scratch[3];
+        if (last_x < 0) {
+            st->module_scratch[2] = hx;
+            st->module_scratch[3] = hy;
+            st->module_scratch[1] = 0;
+        } else if (hx == last_x && hy == last_y) {
+            int fails = st->module_scratch[1] + 1;
+            st->module_scratch[1] = fails;
+            if (fails >= 5) {
+                AP_LOG("[flow] BOAT target %d (%d,%d): blocked at (%d,%d) — skip",
+                       ti, BOAT_TARGET_X[ti], BOAT_TARGET_Y[ti], hx, hy);
+                st->module_scratch[0] = ti + 1;
+                st->module_scratch[1] = 0;
+                return (ApCmd){ "BOAT:skip_blocked", 0, assert_always_true };
+            }
+        } else {
+            st->module_scratch[1] = 0;
+            st->module_scratch[2] = hx;
+            st->module_scratch[3] = hy;
+        }
+
+        int key = (hx >= 0 && hx < 64 && hy >= 0 && hy < 64)
+                  ? BOAT_FLOW[ti][hy][hx] : 0;
+
+        if (key == -1) {
+            AP_LOG("[flow] BOAT target %d at (%d,%d) reached",
+                   ti, BOAT_TARGET_X[ti], BOAT_TARGET_Y[ti]);
+            st->module_scratch[0] = ti + 1;
+            st->module_scratch[1] = 0;
+            return (ApCmd){ "BOAT:advance_target", 0, assert_always_true };
+        }
+        if (key == 0) {
+            AP_LOG("[flow] BOAT target %d (%d,%d) unreachable from (%d,%d) — skip",
+                   ti, BOAT_TARGET_X[ti], BOAT_TARGET_Y[ti], hx, hy);
+            st->module_scratch[0] = ti + 1;
+            st->module_scratch[1] = 0;
+            return (ApCmd){ "BOAT:skip_unreachable", 0, assert_always_true };
+        }
+        return (ApCmd){ "BOAT:step", key, assert_always_true };
     }
 
     case AP_FLOW_DONE: {
