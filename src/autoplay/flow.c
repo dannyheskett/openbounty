@@ -151,8 +151,26 @@ static int leg_chest_074_step(int step_idx) {
 }
 
 // treasure_chest_072 @ (45, 4)
+//
+// Hero starts at (59, 3) on foot (just disembarked onto chest_074).
+// chest_072 is on the same northern island, reachable on foot via
+// row 3 west then down through the open land at col 48.
 static int leg_chest_072_step(int step_idx) {
-    (void)step_idx; return 0;
+    // BFS-derived foot path from (59, 3) to chest at (45, 4):
+    //   L x11  — west along row 3 from (59,3) to (48,3)
+    //   D x2   — south through (48,4) to (48,5)
+    //   L x3   — west to (45,5)
+    //   U      — north onto chest tile (45,4)
+    static const int keys[] = {
+        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
+        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
+        KEY_DOWN, KEY_DOWN,
+        KEY_LEFT, KEY_LEFT, KEY_LEFT,
+        KEY_UP,
+    };
+    const int n = (int)(sizeof(keys) / sizeof(keys[0]));
+    if (step_idx < 0 || step_idx >= n) return 0;
+    return keys[step_idx];
 }
 
 // treasure_chest_071 @ (15, 5)
@@ -561,6 +579,11 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 key = leg_chest_074_step(step_idx);
                 name = "GRIND:leg_074_step";
                 done_name = "GRIND:leg_074_done";
+                break;
+            case 2:
+                key = leg_chest_072_step(step_idx);
+                name = "GRIND:leg_072_step";
+                done_name = "GRIND:leg_072_done";
                 break;
             default:
                 AP_LOG("[flow] all legs done: pos=(%d,%d) gold=%d",
