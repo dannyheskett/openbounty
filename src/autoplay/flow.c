@@ -174,8 +174,58 @@ static int leg_chest_072_step(int step_idx) {
 }
 
 // treasure_chest_071 @ (15, 5)
+//
+// Hero starts at (45, 4) on foot. chest_071 is on another island and
+// the only foot-reachable disembark to it is at (20, 9), 9 tiles SE
+// of the chest. Walk back to the boat parked at (59, 2), sail the
+// 201-step counterclockwise loop around the continent to (20, 10),
+// disembark north onto (20, 9), then walk UP×4 LEFT×5 to (15, 5).
+// (16, 5) is a foe; GRIND's "Foe" prompt handler runs combat inline.
 static int leg_chest_071_step(int step_idx) {
-    (void)step_idx; return 0;
+    static const int keys[] = {
+        KEY_DOWN, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_UP, KEY_UP,
+        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT,
+        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_UP,
+        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
+        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
+        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
+        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
+        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
+        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
+        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
+        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
+        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
+        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_DOWN, KEY_DOWN, KEY_DOWN,
+        KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN,
+        KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN,
+        KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN,
+        KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN,
+        KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN,
+        KEY_DOWN, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT,
+        KEY_DOWN, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT,
+        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_UP, KEY_UP, KEY_UP,
+        KEY_UP, KEY_UP, KEY_UP, KEY_RIGHT, KEY_UP, KEY_RIGHT,
+        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_UP, KEY_RIGHT, KEY_RIGHT,
+        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_UP, KEY_RIGHT,
+        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT,
+        KEY_UP, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT,
+        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_UP,
+        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_UP, KEY_RIGHT, KEY_RIGHT,
+        KEY_RIGHT, KEY_UP, KEY_UP, KEY_RIGHT, KEY_UP, KEY_UP,
+        KEY_RIGHT, KEY_RIGHT, KEY_UP, KEY_UP, KEY_UP, KEY_UP,
+        KEY_LEFT, KEY_UP, KEY_LEFT, KEY_UP, KEY_LEFT, KEY_UP,
+        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_UP, KEY_LEFT,
+        KEY_LEFT, KEY_LEFT, KEY_UP, KEY_LEFT, KEY_LEFT, KEY_UP,
+        KEY_LEFT, KEY_UP, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
+        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
+        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
+        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_UP, KEY_UP, KEY_UP,
+        KEY_UP, KEY_UP, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
+        KEY_LEFT,
+    };
+    const int n = (int)(sizeof(keys) / sizeof(keys[0]));
+    if (step_idx < 0 || step_idx >= n) return 0;
+    return keys[step_idx];
 }
 
 // treasure_chest_066 @ (23, 6)
@@ -527,6 +577,9 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
         // Reset GRIND scratch on entry.
         st->module_scratch[0] = 0;  // leg index
         st->module_scratch[1] = 0;  // step index within leg
+        st->module_scratch[5] = 0;  // replay: last key (0 = none)
+        st->module_scratch[6] = 0;  // replay: last pre-x
+        st->module_scratch[7] = 0;  // replay: last pre-y
         *out_phase_done = true;
         *out_next_phase = AP_FLOW_GRIND;
         return (ApCmd){ "EXIT_CASTLE:esc", KEY_ESCAPE, assert_view_none };
@@ -537,8 +590,12 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
     // and step-consumption logic are wired up in a follow-up commit.
     case AP_FLOW_GRIND: {
         // Handle modal prompts first so an unexpected popup doesn't
-        // wedge the run before we have steps to play.
+        // wedge the run before we have steps to play. When any modal
+        // diverts the leg, clear the replay-tracking state so the next
+        // leg-step tick doesn't mistake "position unchanged" for a
+        // blocked move.
         if (prompt_is_active()) {
+            st->module_scratch[5] = 0;
             const char *hdr = prompt_header_text();
             if (hdr && strstr(hdr, "Foe")) {
                 *out_phase_done = true;
@@ -548,6 +605,7 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
             return (ApCmd){ "GRIND:a_chest", KEY_A, assert_prompt_gone };
         }
         if (dialog_is_active()) {
+            st->module_scratch[5] = 0;
             return (ApCmd){ "GRIND:space_dialog", KEY_SPACE, assert_dialog_closed };
         }
         // Town view: divert into RENT_BOAT → EXIT_TOWN. (BUY_SIEGE is
@@ -555,6 +613,7 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
         // with only 1000g and siege costs 3000g; the chest_073 path
         // doesn't need siege weapons anyway.)
         if (views_active() == VIEW_TOWN) {
+            st->module_scratch[5] = 0;
             *out_phase_done = true;
             *out_next_phase = AP_FLOW_RENT_BOAT;
             return (ApCmd){ "GRIND:in_town", 0, assert_always_true };
@@ -585,6 +644,11 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 name = "GRIND:leg_072_step";
                 done_name = "GRIND:leg_072_done";
                 break;
+            case 3:
+                key = leg_chest_071_step(step_idx);
+                name = "GRIND:leg_071_step";
+                done_name = "GRIND:leg_071_done";
+                break;
             default:
                 AP_LOG("[flow] all legs done: pos=(%d,%d) gold=%d",
                        g->position.x, g->position.y, g->stats.gold);
@@ -599,7 +663,36 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 st->module_scratch[1] = 0;
                 return (ApCmd){ done_name, 0, assert_always_true };
             }
+            // If last leg step issued a move key but position didn't
+            // change (e.g., a week-end dialog absorbed the keypress),
+            // replay the same step_idx without advancing.
+            // Scratch[5,6,7] = last_key, last_pre_x, last_pre_y.
+            int last_key   = st->module_scratch[5];
+            int last_pre_x = st->module_scratch[6];
+            int last_pre_y = st->module_scratch[7];
+            bool last_was_move = (last_key == KEY_LEFT || last_key == KEY_RIGHT ||
+                                  last_key == KEY_UP   || last_key == KEY_DOWN);
+            bool position_unchanged = (last_was_move &&
+                                       g->position.x == last_pre_x &&
+                                       g->position.y == last_pre_y);
+            if (position_unchanged) {
+                int retry_step = step_idx - 1;
+                int retry_key = 0;
+                switch (leg) {
+                case 0: retry_key = leg_chest_073_step(retry_step); break;
+                case 1: retry_key = leg_chest_074_step(retry_step); break;
+                case 2: retry_key = leg_chest_072_step(retry_step); break;
+                case 3: retry_key = leg_chest_071_step(retry_step); break;
+                }
+                st->module_scratch[5] = retry_key;
+                st->module_scratch[6] = g->position.x;
+                st->module_scratch[7] = g->position.y;
+                return (ApCmd){ name, retry_key, assert_always_true };
+            }
             st->module_scratch[1] = step_idx + 1;
+            st->module_scratch[5] = key;
+            st->module_scratch[6] = g->position.x;
+            st->module_scratch[7] = g->position.y;
             return (ApCmd){ name, key, assert_always_true };
         }
     }
