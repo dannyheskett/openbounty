@@ -14,6 +14,7 @@
 // control to GRIND when they finish.
 
 #include "autoplay/internal.h"
+#include "autoplay/nav.h"
 #include "combat.h"
 
 #include "raylib.h"
@@ -73,416 +74,10 @@ static bool assert_combat_resolved(const Game *g) {
 // Phase dispatch
 // =========================================================================
 
-// =========================================================================
-// Per-chest leg stubs (seed=1 continentia, 54 chests).
-//
-// Each function returns the next direction key to press to walk the
-// hero one tile toward the named chest, given the current step index
-// inside this leg. Step index 0 = the first step of this leg (i.e.,
-// the hero is at wherever the previous chest's leg ended). When the
-// list is exhausted the function returns 0 (sentinel).
-//
-// All step lists are EMPTY for now (stub). Author each list inline
-// by hand-tracing the seed=1 map. Returning 0 from step 0 means
-// "leg has no steps" — GRIND treats that as "leg done, advance".
-// =========================================================================
-
-// treasure_chest_073 @ (36, 3)
-//
-// Hero starts this leg at (11, 57) — the tile they're on when GRIND
-// first runs (post-EXIT_CASTLE from the home castle gate at (11, 56)).
-// chest_073 is on the northern landmass, unreachable on foot, so the
-// leg walks south to Hunterville town at (12, 60), the town-modal
-// auto-rents a boat (boat spawns at (11, 60)), then the hero boards
-// and sails the long way around — south through row 61, west along
-// the south coast, up the west edge to row 0, then east across the
-// top to (36, 2), and finally one step south onto the chest at
-// (36, 3). The chest prompt + flavor dialog are handled by GRIND's
-// modal interceptors (KEY_A + KEY_SPACE), so this list contains only
-// the movement keys.
-static int leg_chest_073_step(int step_idx) {
-    // BFS-derived path from start (11, 57) to chest at (36, 3):
-    //   walk D D R D    — into Hunterville at (12, 60); town flow auto-rents boat
-    //   board L D       — back to (11, 59) then south onto boat tile (11, 60)
-    //   sail 103 steps  — strict water-only BFS from (11, 60) to (36, 2)
-    //   step D          — disembark south onto chest tile (36, 3)
-    static const int keys[] = {
-        KEY_DOWN, KEY_DOWN, KEY_RIGHT, KEY_DOWN, KEY_LEFT, KEY_DOWN, KEY_DOWN, KEY_LEFT,
-        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_UP, KEY_LEFT, KEY_LEFT, KEY_UP, KEY_UP,
-        KEY_LEFT, KEY_UP, KEY_LEFT, KEY_UP, KEY_UP, KEY_LEFT, KEY_UP, KEY_UP,
-        KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP,
-        KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP,
-        KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP,
-        KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP,
-        KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP,
-        KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP, KEY_UP,
-        KEY_UP, KEY_UP, KEY_UP, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT,
-        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT,
-        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT,
-        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT,
-        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_DOWN,
-    };
-    const int n = (int)(sizeof(keys) / sizeof(keys[0]));
-    if (step_idx < 0 || step_idx >= n) return 0;
-    return keys[step_idx];
-}
-
-// treasure_chest_074 @ (59, 3)
-//
-// Hero starts at (36, 3) — on the chest_073 tile, on foot, boat parked
-// just north at (36, 2). chest_074 is on a separate island further
-// east, also unreachable by foot. Re-board, sail east along row 2,
-// disembark south onto the chest at (59, 3).
-static int leg_chest_074_step(int step_idx) {
-    // BFS-derived path from (36, 3) to chest at (59, 3):
-    //   board U     — step north onto boat at (36, 2); travel_mode=BOAT
-    //   sail R x23  — east along row 2 (all water) to (59, 2)
-    //   step D      — disembark south onto chest tile (59, 3)
-    static const int keys[] = {
-        KEY_UP,
-        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT,
-        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT,
-        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT,
-        KEY_DOWN,
-    };
-    const int n = (int)(sizeof(keys) / sizeof(keys[0]));
-    if (step_idx < 0 || step_idx >= n) return 0;
-    return keys[step_idx];
-}
-
-// treasure_chest_072 @ (45, 4)
-//
-// Hero starts at (59, 3) on foot (just disembarked onto chest_074).
-// chest_072 is on the same northern island, reachable on foot via
-// row 3 west then down through the open land at col 48.
-static int leg_chest_072_step(int step_idx) {
-    // BFS-derived foot path from (59, 3) to chest at (45, 4):
-    //   L x11  — west along row 3 from (59,3) to (48,3)
-    //   D x2   — south through (48,4) to (48,5)
-    //   L x3   — west to (45,5)
-    //   U      — north onto chest tile (45,4)
-    static const int keys[] = {
-        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
-        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
-        KEY_DOWN, KEY_DOWN,
-        KEY_LEFT, KEY_LEFT, KEY_LEFT,
-        KEY_UP,
-    };
-    const int n = (int)(sizeof(keys) / sizeof(keys[0]));
-    if (step_idx < 0 || step_idx >= n) return 0;
-    return keys[step_idx];
-}
-
-// treasure_chest_071 @ (15, 5)
-//
-// Hero starts at (45, 4) on foot. chest_071 is on another island and
-// the only foot-reachable disembark to it is at (20, 9), 9 tiles SE
-// of the chest. Walk back to the boat parked at (59, 2), sail the
-// 201-step counterclockwise loop around the continent to (20, 10),
-// disembark north onto (20, 9), then walk UP×4 LEFT×5 to (15, 5).
-// (16, 5) is a foe; GRIND's "Foe" prompt handler runs combat inline.
-static int leg_chest_071_step(int step_idx) {
-    static const int keys[] = {
-        KEY_DOWN, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_UP, KEY_UP,
-        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT,
-        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_UP,
-        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
-        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
-        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
-        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
-        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
-        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
-        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
-        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
-        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
-        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_DOWN, KEY_DOWN, KEY_DOWN,
-        KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN,
-        KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN,
-        KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN,
-        KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN,
-        KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_DOWN,
-        KEY_DOWN, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT,
-        KEY_DOWN, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT,
-        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_UP, KEY_UP, KEY_UP,
-        KEY_UP, KEY_UP, KEY_UP, KEY_RIGHT, KEY_UP, KEY_RIGHT,
-        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_UP, KEY_RIGHT, KEY_RIGHT,
-        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_UP, KEY_RIGHT,
-        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT,
-        KEY_UP, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT,
-        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_UP,
-        KEY_RIGHT, KEY_RIGHT, KEY_RIGHT, KEY_UP, KEY_RIGHT, KEY_RIGHT,
-        KEY_RIGHT, KEY_UP, KEY_UP, KEY_RIGHT, KEY_UP, KEY_UP,
-        KEY_RIGHT, KEY_RIGHT, KEY_UP, KEY_UP, KEY_UP, KEY_UP,
-        KEY_LEFT, KEY_UP, KEY_LEFT, KEY_UP, KEY_LEFT, KEY_UP,
-        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_UP, KEY_LEFT,
-        KEY_LEFT, KEY_LEFT, KEY_UP, KEY_LEFT, KEY_LEFT, KEY_UP,
-        KEY_LEFT, KEY_UP, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
-        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
-        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
-        KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_UP, KEY_UP, KEY_UP,
-        KEY_UP, KEY_UP, KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_LEFT,
-        KEY_LEFT,
-    };
-    const int n = (int)(sizeof(keys) / sizeof(keys[0]));
-    if (step_idx < 0 || step_idx >= n) return 0;
-    return keys[step_idx];
-}
-
-// treasure_chest_066 @ (23, 6)
-static int leg_chest_066_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_067 @ (24, 6)
-static int leg_chest_067_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_065 @ (5, 7)
-static int leg_chest_065_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_064 @ (27, 8)
-static int leg_chest_064_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_063 @ (10, 13)
-static int leg_chest_063_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_060 @ (20, 14)
-static int leg_chest_060_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_062 @ (56, 14)
-static int leg_chest_062_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_059 @ (47, 16)
-static int leg_chest_059_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_057 @ (42, 18)
-static int leg_chest_057_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_056 @ (46, 19)
-static int leg_chest_056_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_055 @ (13, 20)
-static int leg_chest_055_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_052 @ (17, 22)
-static int leg_chest_052_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_053 @ (33, 22)
-static int leg_chest_053_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_054 @ (44, 22)
-static int leg_chest_054_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_050 @ (54, 23)
-static int leg_chest_050_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_046 @ (6, 24)
-static int leg_chest_046_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_047 @ (7, 24)
-static int leg_chest_047_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_048 @ (8, 24)
-static int leg_chest_048_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_049 @ (36, 24)
-static int leg_chest_049_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_045 @ (60, 27)
-static int leg_chest_045_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_042 @ (23, 28)
-static int leg_chest_042_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_043 @ (49, 28)
-static int leg_chest_043_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_041 @ (17, 29)
-static int leg_chest_041_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_039 @ (59, 30)
-static int leg_chest_039_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_036 @ (9, 32)
-static int leg_chest_036_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_034 @ (39, 34)
-static int leg_chest_034_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_033 @ (31, 37)
-static int leg_chest_033_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_031 @ (41, 39)
-static int leg_chest_031_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_029 @ (11, 41)
-static int leg_chest_029_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_027 @ (8, 42)
-static int leg_chest_027_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_028 @ (25, 42)
-static int leg_chest_028_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_025 @ (29, 44)
-static int leg_chest_025_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_023 @ (41, 45)
-static int leg_chest_023_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_019 @ (6, 46)
-static int leg_chest_019_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_020 @ (23, 46)
-static int leg_chest_020_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_021 @ (52, 46)
-static int leg_chest_021_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_017 @ (3, 48)
-static int leg_chest_017_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_018 @ (40, 48)
-static int leg_chest_018_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_014 @ (21, 50)
-static int leg_chest_014_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_015 @ (43, 50)
-static int leg_chest_015_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_012 @ (10, 53)
-static int leg_chest_012_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_011 @ (10, 54)
-static int leg_chest_011_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_007 @ (29, 56)
-static int leg_chest_007_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_008 @ (37, 56)
-static int leg_chest_008_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_006 @ (25, 57)
-static int leg_chest_006_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_003 @ (3, 59)
-static int leg_chest_003_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_005 @ (50, 59)
-static int leg_chest_005_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_000 @ (8, 60)
-static int leg_chest_000_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_001 @ (22, 60)
-static int leg_chest_001_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
-// treasure_chest_002 @ (33, 60)
-static int leg_chest_002_step(int step_idx) {
-    (void)step_idx; return 0;
-}
-
 ApCmd ap_flow_phase(const Game *g, const Map *m,
                        AutoplayState *st,
                        bool *out_phase_done,
                        AutoplayPhase *out_next_phase) {
-    (void)m;
     *out_phase_done = false;
     *out_next_phase = st->phase;
 
@@ -618,82 +213,50 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
             *out_next_phase = AP_FLOW_RENT_BOAT;
             return (ApCmd){ "GRIND:in_town", 0, assert_always_true };
         }
-        // Multi-leg drive. module_scratch[0] = leg index, [1] = step
-        // index within the current leg. Reset on EXIT_CASTLE (above).
+        // Multi-leg drive via the generic navigator. The legs[] table
+        // holds the chest coords; ap_nav_step plans a path each tick
+        // (handles foot/boat, town-rents-boat) and emits the next key.
+        // When ap_nav_step returns 0 the hero is on the goal tile —
+        // advance to the next leg.
         {
-            int leg = (st->module_scratch[0] < 0)
-                      ? 0 : st->module_scratch[0];
-            int step_idx = (st->module_scratch[1] < 0)
-                           ? 0 : st->module_scratch[1];
-            int key = 0;
-            const char *name = "GRIND:leg_step";
-            const char *done_name = "GRIND:leg_done";
-            switch (leg) {
-            case 0:
-                key = leg_chest_073_step(step_idx);
-                name = "GRIND:leg_073_step";
-                done_name = "GRIND:leg_073_done";
-                break;
-            case 1:
-                key = leg_chest_074_step(step_idx);
-                name = "GRIND:leg_074_step";
-                done_name = "GRIND:leg_074_done";
-                break;
-            case 2:
-                key = leg_chest_072_step(step_idx);
-                name = "GRIND:leg_072_step";
-                done_name = "GRIND:leg_072_done";
-                break;
-            case 3:
-                key = leg_chest_071_step(step_idx);
-                name = "GRIND:leg_071_step";
-                done_name = "GRIND:leg_071_done";
-                break;
-            default:
+            static const struct {
+                int x, y;
+                const char *name;
+            } legs[] = {
+                { 36, 3,  "chest_073" },
+                { 59, 3,  "chest_074" },
+                { 45, 4,  "chest_072" },
+                { 15, 5,  "chest_071" },
+            };
+            const int n_legs = (int)(sizeof(legs) / sizeof(legs[0]));
+            int leg = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+            if (leg >= n_legs) {
                 AP_LOG("[flow] all legs done: pos=(%d,%d) gold=%d",
                        g->position.x, g->position.y, g->stats.gold);
                 *out_phase_done = true;
                 *out_next_phase = AP_FLOW_DONE;
                 return (ApCmd){ "GRIND:all_done", 0, assert_always_true };
             }
-            if (key == 0) {
-                AP_LOG("[flow] leg %d done: pos=(%d,%d) gold=%d",
-                       leg, g->position.x, g->position.y, g->stats.gold);
+            int gx = legs[leg].x, gy = legs[leg].y;
+            // Goal reached? Advance to the next leg.
+            if (g->position.x == gx && g->position.y == gy) {
+                AP_LOG("[flow] leg %d (%s) done: pos=(%d,%d) gold=%d",
+                       leg, legs[leg].name, g->position.x, g->position.y,
+                       g->stats.gold);
                 st->module_scratch[0] = leg + 1;
-                st->module_scratch[1] = 0;
-                return (ApCmd){ done_name, 0, assert_always_true };
+                return (ApCmd){ "GRIND:leg_done", 0, assert_always_true };
             }
-            // If last leg step issued a move key but position didn't
-            // change (e.g., a week-end dialog absorbed the keypress),
-            // replay the same step_idx without advancing.
-            // Scratch[5,6,7] = last_key, last_pre_x, last_pre_y.
-            int last_key   = st->module_scratch[5];
-            int last_pre_x = st->module_scratch[6];
-            int last_pre_y = st->module_scratch[7];
-            bool last_was_move = (last_key == KEY_LEFT || last_key == KEY_RIGHT ||
-                                  last_key == KEY_UP   || last_key == KEY_DOWN);
-            bool position_unchanged = (last_was_move &&
-                                       g->position.x == last_pre_x &&
-                                       g->position.y == last_pre_y);
-            if (position_unchanged) {
-                int retry_step = step_idx - 1;
-                int retry_key = 0;
-                switch (leg) {
-                case 0: retry_key = leg_chest_073_step(retry_step); break;
-                case 1: retry_key = leg_chest_074_step(retry_step); break;
-                case 2: retry_key = leg_chest_072_step(retry_step); break;
-                case 3: retry_key = leg_chest_071_step(retry_step); break;
-                }
-                st->module_scratch[5] = retry_key;
-                st->module_scratch[6] = g->position.x;
-                st->module_scratch[7] = g->position.y;
-                return (ApCmd){ name, retry_key, assert_always_true };
+            int key = ap_nav_step(g, m, gx, gy);
+            if (key == 0) {
+                // No path found — log and abort the leg by advancing
+                // anyway so the run terminates rather than spins.
+                AP_LOG("[flow] leg %d (%s) no path from (%d,%d) to (%d,%d)",
+                       leg, legs[leg].name,
+                       g->position.x, g->position.y, gx, gy);
+                st->module_scratch[0] = leg + 1;
+                return (ApCmd){ "GRIND:no_path", 0, assert_always_true };
             }
-            st->module_scratch[1] = step_idx + 1;
-            st->module_scratch[5] = key;
-            st->module_scratch[6] = g->position.x;
-            st->module_scratch[7] = g->position.y;
-            return (ApCmd){ name, key, assert_always_true };
+            return (ApCmd){ "GRIND:nav", key, assert_always_true };
         }
     }
 
