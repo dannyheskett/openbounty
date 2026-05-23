@@ -373,12 +373,10 @@ int shell_run_game(int argc, char **argv, ShellRunHooks *hooks) {
     // wall time and is actually watchable.
     if (!hooks) SetTargetFPS(60);
     if (hooks && autoplay_visible) {
+        // Wall-clock pace = 60 fps, watchable. Per-tick inputs from
+        // the autoplay dispatcher fire at the same rate, so the human
+        // sees one logical action per ~1/60s.
         frame_host_set_test_fps(60);
-        // One queued input event every 6 wall-clock frames at 60fps
-        // = ~10 actions/sec, close to a human player's pace. Without
-        // this, autoplay blasts through one step per frame and the
-        // overworld is unwatchable.
-        input_host_set_promotion_period(6);
     }
     SetExitKey(KEY_NULL);
 
