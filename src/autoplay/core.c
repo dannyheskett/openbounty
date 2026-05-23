@@ -524,6 +524,99 @@ static void dump_zone_interactives(const Map *m, const Game *g) {
         fprintf(stderr, "    },\n");
     }
     fprintf(stderr, "};\n");
+
+    // 4. Boat-mode flow fields. Collect all chests on the WHOLE map
+    //    that AREN'T on the start landmass. For each, reverse-BFS
+    //    using mixed water/land passability: water tiles are
+    //    boat-traversable; land tiles are foot-traversable; engine
+    //    auto-switches travel mode on water↔land transitions.
+    //    The hero starts the boat phase in TRAVEL_BOAT on a water
+    //    tile; the flow steers boat across water until it lands on
+    //    coast, then walks to the chest. Same flow handles both.
+    Target boat_chests[64]; int n_boat_chests = 0;
+    for (int y = 0; y < m->height && n_boat_chests < 64; y++) {
+        for (int x = 0; x < m->width && n_boat_chests < 64; x++) {
+            const Tile *t = &m->tiles[y][x];
+            if (t->interactive != INTERACT_TREASURE_CHEST) continue;
+            if (land[y][x]) continue;  // skip landmass chests (already in LAND flow)
+            boat_chests[n_boat_chests++] = (Target){x, y, t->id};
+        }
+    }
+    AP_LOG("// off-landmass chests: %d", n_boat_chests);
+    for (int i = 0; i < n_boat_chests; i++) {
+        fprintf(stderr, "//   boat_chest[%d] = (%d,%d) %s\n",
+                i, boat_chests[i].x, boat_chests[i].y, boat_chests[i].id);
+    }
+
+    fprintf(stderr, "static const int N_BOAT_TARGETS = %d;\n", n_boat_chests);
+    fprintf(stderr, "static const int BOAT_TARGET_X[%d] = {",
+            n_boat_chests > 0 ? n_boat_chests : 1);
+    for (int i = 0; i < n_boat_chests; i++)
+        fprintf(stderr, "%d,", boat_chests[i].x);
+    if (n_boat_chests == 0) fprintf(stderr, "0");
+    fprintf(stderr, "};\n");
+    fprintf(stderr, "static const int BOAT_TARGET_Y[%d] = {",
+            n_boat_chests > 0 ? n_boat_chests : 1);
+    for (int i = 0; i < n_boat_chests; i++)
+        fprintf(stderr, "%d,", boat_chests[i].y);
+    if (n_boat_chests == 0) fprintf(stderr, "0");
+    fprintf(stderr, "};\n");
+
+    fprintf(stderr, "static const int BOAT_FLOW[%d][64][64] = {\n",
+            n_boat_chests > 0 ? n_boat_chests : 1);
+    if (n_boat_chests == 0) {
+        // Stub so the array isn't zero-sized.
+        fprintf(stderr, "    /* (no boat targets) */ {{0}}\n");
+    }
+    for (int ti = 0; ti < n_boat_chests; ti++) {
+        int tx = boat_chests[ti].x, ty = boat_chests[ti].y;
+        short par[64][64];
+        for (int y = 0; y < 64; y++)
+            for (int x = 0; x < 64; x++) par[y][x] = 0;
+        par[ty][tx] = -1;
+        P queue[64*64]; int qh=0, qt=0;
+        queue[qt++] = (P){tx, ty};
+        while (qh < qt) {
+            P p = queue[qh++];
+            for (int k = 0; k < 8; k++) {
+                int nx = p.x + dxs[k], ny = p.y + dys[k];
+                if (nx<0||ny<0||nx>=m->width||ny>=m->height) continue;
+                if (par[ny][nx] != 0) continue;
+                const Tile *t = &m->tiles[ny][nx];
+                bool is_target_tile = (nx == tx && ny == ty);
+                if (!is_target_tile) {
+                    // Skip view-opening interactives (town, castle,
+                    // dwelling). Chests and foes are OK as
+                    // intermediates same as the land flow.
+                    if (t->interactive == INTERACT_TOWN) continue;
+                    if (t->interactive == INTERACT_CASTLE_GATE) continue;
+                    // Allow: water (boat) OR walkable land (foot).
+                    bool water = (t->terrain == TERRAIN_WATER) || t->is_bridge;
+                    bool walkable = !t->blocks_foot &&
+                                    TerrainWalkable(t->terrain);
+                    if (!water && !walkable) continue;
+                }
+                int hero_dx = -dxs[k];
+                int hero_dy = -dys[k];
+                int key = dir_to_key(hero_dx, hero_dy);
+                par[ny][nx] = (short)key;
+                queue[qt++] = (P){nx, ny};
+            }
+        }
+        fprintf(stderr, "    /* boat target %d (%d,%d) */ {\n", ti, tx, ty);
+        for (int y = 0; y < 64; y++) {
+            fprintf(stderr, "        {");
+            for (int x = 0; x < 64; x++) {
+                int v = par[y][x];
+                if (v < 0) v = -1;
+                fprintf(stderr, "%d,", v);
+            }
+            fprintf(stderr, "},\n");
+        }
+        fprintf(stderr, "    },\n");
+    }
+    fprintf(stderr, "};\n");
+
     fprintf(stderr,
         "// === END FLOW-FIELD TABLE ===\n");
 }
