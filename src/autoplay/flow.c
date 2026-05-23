@@ -73,6 +73,290 @@ static bool assert_combat_resolved(const Game *g) {
 // Phase dispatch
 // =========================================================================
 
+// =========================================================================
+// Per-chest leg stubs (seed=1 continentia, 54 chests).
+//
+// Each function returns the next direction key to press to walk the
+// hero one tile toward the named chest, given the current step index
+// inside this leg. Step index 0 = the first step of this leg (i.e.,
+// the hero is at wherever the previous chest's leg ended). When the
+// list is exhausted the function returns 0 (sentinel).
+//
+// All step lists are EMPTY for now (stub). Author each list inline
+// by hand-tracing the seed=1 map. Returning 0 from step 0 means
+// "leg has no steps" — GRIND treats that as "leg done, advance".
+// =========================================================================
+
+// treasure_chest_073 @ (36, 3)
+static int leg_chest_073_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_074 @ (59, 3)
+static int leg_chest_074_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_072 @ (45, 4)
+static int leg_chest_072_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_071 @ (15, 5)
+static int leg_chest_071_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_066 @ (23, 6)
+static int leg_chest_066_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_067 @ (24, 6)
+static int leg_chest_067_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_065 @ (5, 7)
+static int leg_chest_065_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_064 @ (27, 8)
+static int leg_chest_064_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_063 @ (10, 13)
+static int leg_chest_063_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_060 @ (20, 14)
+static int leg_chest_060_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_062 @ (56, 14)
+static int leg_chest_062_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_059 @ (47, 16)
+static int leg_chest_059_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_057 @ (42, 18)
+static int leg_chest_057_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_056 @ (46, 19)
+static int leg_chest_056_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_055 @ (13, 20)
+static int leg_chest_055_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_052 @ (17, 22)
+static int leg_chest_052_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_053 @ (33, 22)
+static int leg_chest_053_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_054 @ (44, 22)
+static int leg_chest_054_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_050 @ (54, 23)
+static int leg_chest_050_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_046 @ (6, 24)
+static int leg_chest_046_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_047 @ (7, 24)
+static int leg_chest_047_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_048 @ (8, 24)
+static int leg_chest_048_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_049 @ (36, 24)
+static int leg_chest_049_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_045 @ (60, 27)
+static int leg_chest_045_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_042 @ (23, 28)
+static int leg_chest_042_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_043 @ (49, 28)
+static int leg_chest_043_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_041 @ (17, 29)
+static int leg_chest_041_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_039 @ (59, 30)
+static int leg_chest_039_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_036 @ (9, 32)
+static int leg_chest_036_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_034 @ (39, 34)
+static int leg_chest_034_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_033 @ (31, 37)
+static int leg_chest_033_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_031 @ (41, 39)
+static int leg_chest_031_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_029 @ (11, 41)
+static int leg_chest_029_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_027 @ (8, 42)
+static int leg_chest_027_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_028 @ (25, 42)
+static int leg_chest_028_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_025 @ (29, 44)
+static int leg_chest_025_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_023 @ (41, 45)
+static int leg_chest_023_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_019 @ (6, 46)
+static int leg_chest_019_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_020 @ (23, 46)
+static int leg_chest_020_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_021 @ (52, 46)
+static int leg_chest_021_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_017 @ (3, 48)
+static int leg_chest_017_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_018 @ (40, 48)
+static int leg_chest_018_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_014 @ (21, 50)
+static int leg_chest_014_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_015 @ (43, 50)
+static int leg_chest_015_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_012 @ (10, 53)
+static int leg_chest_012_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_011 @ (10, 54)
+static int leg_chest_011_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_007 @ (29, 56)
+static int leg_chest_007_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_008 @ (37, 56)
+static int leg_chest_008_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_006 @ (25, 57)
+static int leg_chest_006_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_003 @ (3, 59)
+static int leg_chest_003_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_005 @ (50, 59)
+static int leg_chest_005_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_000 @ (8, 60)
+static int leg_chest_000_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_001 @ (22, 60)
+static int leg_chest_001_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
+// treasure_chest_002 @ (33, 60)
+static int leg_chest_002_step(int step_idx) {
+    (void)step_idx; return 0;
+}
+
 ApCmd ap_flow_phase(const Game *g, const Map *m,
                        AutoplayState *st,
                        bool *out_phase_done,
