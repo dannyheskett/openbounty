@@ -9,6 +9,7 @@
 #include "shell_run.h"
 #include "startup.h"
 #include "tables.h"
+#include "tile.h"
 #include "combat.h"
 #include "raylib.h"
 #include "ui.h"
@@ -162,7 +163,12 @@ static void autoplay_before_frame(void *user) {
     if (!st) return;
     Combat *c = combat_current_rendered;
     if (!c) return;
-    if (c->result != 0) return;
+    if (c->result != 0) {
+        // Combat ended (1=win, 2=loss). RunCombat shows a victory or
+        // defeat dialog before returning. SPACE dismisses it.
+        if (dialog_is_active()) ap_set_key(KEY_SPACE);
+        return;
+    }
     if (c->picker_active) return;
     if (c->side != COMBAT_SIDE_PLAYER) return;
     if (c->unit_id < 0) return;
@@ -174,12 +180,10 @@ static void autoplay_before_frame(void *user) {
 
     CombatUnit *u = &c->units[c->side][c->unit_id];
     if (u->acted || u->troop_idx < 0 || u->count <= 0) return;
-    // Rate-limit: don't re-decide for the same unit before the engine
-    // has animated the previous move.
-    if (c->unit_id == combat_unit_id_last_acted &&
-        st->tick < combat_tick_last_action + 6) {
-        return;
-    }
+    // The engine's u->acted flag already guarantees one decision per
+    // unit per turn — we don't need an additional rate-limit here.
+    (void)combat_unit_id_last_acted;
+    (void)combat_tick_last_action;
 
     int enemy_d = 0;
     int enemy_slot = ap_closest_enemy(c, u->x, u->y, &enemy_d);
@@ -247,12 +251,210 @@ static void autoplay_before_startup(ShellRunHooks *self) {
     ap_queue_standard_startup();
 }
 
+#if 0  // === offline path generator — kept commented for re-runs ===
+
+#include <stdlib.h>
+
+static int dir_to_key(int dx, int dy) {
+    if (dx == 0  && dy == -1) return 265; // UP
+    if (dx == 0  && dy ==  1) return 264; // DOWN
+    if (dx == -1 && dy ==  0) return 263; // LEFT
+    if (dx == 1  && dy ==  0) return 262; // RIGHT
+    if (dx == -1 && dy == -1) return 268; // HOME
+    if (dx == 1  && dy == -1) return 266; // PAGE_UP
+    if (dx == -1 && dy ==  1) return 269; // END
+    if (dx == 1  && dy ==  1) return 267; // PAGE_DOWN
+    return 0;
+}
+
+// BFS shortest path from (sx,sy) to (gx,gy) over foot-walkable tiles.
+// Goal can be an interactive tile; intermediate tiles must NOT be
+// (we don't want to walk through dwellings or onto chests we haven't
+// claimed yet — except possibly already-stepped-on ones, but for path
+// gen we forbid all interactives in between).
+static int bfs_keys(const Map *m, int sx, int sy, int gx, int gy,
+                    int *out_keys, int cap) {
+    if (sx == gx && sy == gy) return 0;
+    int W = m->width, H = m->height;
+    short *par = (short *)calloc((size_t)W * H, sizeof(short));
+    if (!par) return 0;
+    int *qx = (int *)malloc(sizeof(int) * (size_t)W * H);
+    int *qy = (int *)malloc(sizeof(int) * (size_t)W * H);
+    if (!qx || !qy) { free(par); free(qx); free(qy); return 0; }
+    int qh = 0, qt = 0;
+    qx[qt] = sx; qy[qt] = sy; qt++;
+    par[sy * W + sx] = 1;
+    static const int dxs[8] = { 0, 0, -1, 1, -1, 1, -1, 1 };
+    static const int dys[8] = { -1, 1, 0, 0, -1, -1, 1, 1 };
+    bool found = false;
+    while (!found && qh < qt) {
+        int cx = qx[qh], cy = qy[qh]; qh++;
+        for (int k = 0; k < 8; k++) {
+            int nx = cx + dxs[k], ny = cy + dys[k];
+            if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+            if (par[ny * W + nx]) continue;
+            const Tile *t = &m->tiles[ny][nx];
+            bool is_goal = (nx == gx && ny == gy);
+            bool walkable = !t->blocks_foot && TerrainWalkable(t->terrain);
+            if (!is_goal) {
+                if (!walkable) continue;
+                if (t->interactive != INTERACT_NONE) continue;
+            }
+            par[ny * W + nx] = (short)((dys[k] + 1) * 3 + (dxs[k] + 1) + 1);
+            qx[qt] = nx; qy[qt] = ny; qt++;
+            if (is_goal) { found = true; break; }
+        }
+    }
+    int n = 0;
+    if (found) {
+        // Walk back recording dx,dy.
+        int cx = gx, cy = gy;
+        int tmp_dx[1024], tmp_dy[1024], cnt = 0;
+        while (!(cx == sx && cy == sy) && cnt < 1024) {
+            short enc = par[cy * W + cx];
+            int dir = (int)enc - 1;
+            int dy = dir / 3 - 1;
+            int dx = dir % 3 - 1;
+            tmp_dx[cnt] = dx;
+            tmp_dy[cnt] = dy;
+            cx -= dx; cy -= dy;
+            cnt++;
+        }
+        // Reverse and convert to keys.
+        for (int i = cnt - 1; i >= 0 && n < cap; i--) {
+            int key = dir_to_key(tmp_dx[i], tmp_dy[i]);
+            if (key) out_keys[n++] = key;
+        }
+    }
+    free(par); free(qx); free(qy);
+    return n;
+}
+
+static void dump_zone_interactives(const Map *m, const Game *g) {
+    if (!getenv("AP_PRINT_PATHS")) return;
+
+    AP_LOG("=== AP_PRINT_PATHS: generating hardcoded paths ===");
+    AP_LOG("hero start: (%d,%d)", g->position.x, g->position.y);
+
+    // Chest visit order: greedy nearest-by-Chebyshev from current pos,
+    // BFS-reachable on foot, all interactives in-between forbidden.
+    // After all chests, visit one foe.
+    typedef struct { int x, y; const char *kind; } Target;
+    Target targets[32];
+    int n_targets = 0;
+
+    // Flood-fill to find reachable interactives.
+    bool reachable[64][64] = { { false } };
+    {
+        int qx[64*64], qy[64*64], qh=0, qt=0;
+        qx[qt]=g->position.x; qy[qt]=g->position.y; qt++;
+        reachable[g->position.y][g->position.x] = true;
+        static const int dxs[8] = { -1, 0, 1, -1, 1, -1, 0, 1 };
+        static const int dys[8] = { -1, -1, -1, 0, 0, 1, 1, 1 };
+        while (qh < qt) {
+            int cx=qx[qh], cy=qy[qh]; qh++;
+            for (int k=0; k<8; k++) {
+                int nx=cx+dxs[k], ny=cy+dys[k];
+                if (nx<0||ny<0||nx>=m->width||ny>=m->height) continue;
+                if (reachable[ny][nx]) continue;
+                const Tile *t = &m->tiles[ny][nx];
+                bool walkable = !t->blocks_foot && TerrainWalkable(t->terrain);
+                bool terminal =
+                    t->interactive == INTERACT_TREASURE_CHEST ||
+                    t->interactive == INTERACT_FOE ||
+                    t->interactive == INTERACT_ARTIFACT;
+                if (!walkable && !terminal) continue;
+                if (t->interactive != INTERACT_NONE && !terminal) continue;
+                reachable[ny][nx] = true;
+                if (!terminal) { qx[qt]=nx; qy[qt]=ny; qt++; }
+            }
+        }
+    }
+
+    // Collect reachable chests.
+    Target chests[32]; int n_chests = 0;
+    Target foes[32];   int n_foes = 0;
+    for (int y = 0; y < m->height; y++) {
+        for (int x = 0; x < m->width; x++) {
+            if (!reachable[y][x]) continue;
+            const Tile *t = &m->tiles[y][x];
+            if (t->interactive == INTERACT_TREASURE_CHEST && n_chests < 32) {
+                chests[n_chests++] = (Target){x, y, "chest"};
+            } else if (t->interactive == INTERACT_FOE && n_foes < 32) {
+                foes[n_foes++] = (Target){x, y, "foe"};
+            }
+        }
+    }
+
+    // Greedy nearest-Chebyshev order through chests, ending with one
+    // foe (the one closest to last chest).
+    int cur_x = g->position.x, cur_y = g->position.y;
+    bool visited[32] = { false };
+    for (int i = 0; i < n_chests; i++) {
+        int best = -1, best_d = 1 << 30;
+        for (int j = 0; j < n_chests; j++) {
+            if (visited[j]) continue;
+            int adx = chests[j].x - cur_x; if (adx<0) adx=-adx;
+            int ady = chests[j].y - cur_y; if (ady<0) ady=-ady;
+            int d = (adx > ady) ? adx : ady;
+            if (d < best_d) { best_d = d; best = j; }
+        }
+        if (best < 0) break;
+        visited[best] = true;
+        targets[n_targets++] = chests[best];
+        cur_x = chests[best].x; cur_y = chests[best].y;
+    }
+    // Pick nearest foe to current end position.
+    if (n_foes > 0) {
+        int best = 0, best_d = 1 << 30;
+        for (int j = 0; j < n_foes; j++) {
+            int adx = foes[j].x - cur_x; if (adx<0) adx=-adx;
+            int ady = foes[j].y - cur_y; if (ady<0) ady=-ady;
+            int d = (adx > ady) ? adx : ady;
+            if (d < best_d) { best_d = d; best = j; }
+        }
+        targets[n_targets++] = foes[best];
+    }
+
+    // Emit path keys for each leg.
+    cur_x = g->position.x; cur_y = g->position.y;
+    AP_LOG("// === BEGIN HARDCODED PATHS ===");
+    for (int i = 0; i < n_targets; i++) {
+        int keys[1024];
+        int n = bfs_keys(m, cur_x, cur_y, targets[i].x, targets[i].y, keys, 1024);
+        AP_LOG("// leg %d: %s at (%d,%d), %d steps from (%d,%d)",
+               i, targets[i].kind, targets[i].x, targets[i].y, n, cur_x, cur_y);
+        if (n == 0) {
+            AP_LOG("//   (no path found)");
+            continue;
+        }
+        fprintf(stderr, "    /* leg %d -> %s (%d,%d) */ ", i,
+                targets[i].kind, targets[i].x, targets[i].y);
+        for (int k = 0; k < n; k++) {
+            fprintf(stderr, "%d,", keys[k]);
+        }
+        fprintf(stderr, "0,\n");
+        cur_x = targets[i].x; cur_y = targets[i].y;
+    }
+    AP_LOG("// === END HARDCODED PATHS ===");
+}
+
+#endif // offline path generator
+
+// Stub — no-op now that the paths are baked into minimal.c.
+static void dump_zone_interactives(const Map *m, const Game *g) {
+    (void)m; (void)g;
+}
+
 static ShellRunVerdict autoplay_per_tick(ShellRunHooks *self,
                                          Game *g, Map *m, Fog *f,
                                          Resources *res, int frame_no) {
     (void)f; (void)res; (void)frame_no;
     AutoplayState *st = (AutoplayState *)self->user;
     st->tick++;
+
+    // One-shot map dump on first tick.
+    if (st->tick == 1) dump_zone_interactives(m, g);
 
     // 1. Assert the previous command's post-state expectation.
     if (st->pending_active) {

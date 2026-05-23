@@ -95,6 +95,11 @@ void input_host_queue_char(int codepoint) {
 
 void input_host_tick(void) {
     if (!s_scripted) return;
+    // Each tick starts fresh: clear the live key. If the FIFO has
+    // anything, pop one into the live key. Otherwise leave live key
+    // cleared — autoplay's per-tick handler (or combat driver) will
+    // set it via ap_set_key for THIS tick.
+    s_live_key = -1;
     if (s_press_count > 0) {
         s_live_key = s_press[0];
         for (int i = 1; i < s_press_count; i++) s_press[i - 1] = s_press[i];
