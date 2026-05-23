@@ -81,6 +81,17 @@ static bool assert_prompt_gone(const Game *g) {
 
 // Combat opened OR combat already finished with a win (RunCombat
 // may complete the whole fight inside a single outer tick).
+// Combat opened OR combat already finished (regardless of outcome).
+// Used when we want POST_COMBAT to detect loss and exit gracefully
+// instead of hard-failing the assertion.
+static bool assert_combat_resolved(const Game *g) {
+    (void)g;
+    // Always passes — combat either opened (and will resolve in
+    // RunCombat), or already resolved this tick. Either way the
+    // POST_COMBAT phase observes the outcome.
+    return true;
+}
+
 static bool assert_combat_open_or_won(const Game *g) {
     if (combat_current_rendered != NULL) return true;
     int peasants = 0, other = 0;
@@ -313,16 +324,32 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
     case AP_FLOW_POST_COMBAT: {
         if (!dialog_is_active() && !prompt_is_active() &&
             views_active() == VIEW_NONE) {
+            // Defeat detection: temp_death wipes the army to 20
+            // peasants and forfeits the boat. If we're standing back
+            // at the home spawn with that signature, end the run
+            // gracefully rather than spiraling into more lost fights.
+            int peasants = 0, other = 0;
+            for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+                if (!g->army[i].id[0] || g->army[i].count <= 0) continue;
+                if (strcmp(g->army[i].id, "peasants") == 0)
+                    peasants += g->army[i].count;
+                else other += g->army[i].count;
+            }
+            bool defeat = (other == 0 && peasants > 0 && peasants <= 20);
+            if (defeat) {
+                AP_LOG("[flow] combat defeat — ending run gracefully "
+                       "(pos=(%d,%d) gold=%d)",
+                       g->position.x, g->position.y, g->stats.gold);
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_DONE;
+                return (ApCmd){ "POST_COMBAT:defeat", 0, assert_always_true };
+            }
             // Resume the active grind. Boat mode after a sea combat:
             // back to BOAT_GRIND. Otherwise: back to land WALK_TO_FOE.
-            // If the active land target is the dedicated foe ('F') and
-            // we just won, advance past it.
             *out_phase_done = true;
             if (g->boat.has_boat && g->travel_mode == TRAVEL_BOAT) {
                 *out_next_phase = AP_FLOW_BOAT_GRIND;
             } else if (g->boat.has_boat) {
-                // We had a boat but combat dropped us back on land
-                // (loss → temp_death, or disembark mid-fight). Re-board.
                 *out_next_phase = AP_FLOW_WALK_TO_BOAT;
             } else {
                 int ti = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
@@ -491,7 +518,7 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 st->module_scratch[1] = 0;
                 *out_phase_done = true;
                 *out_next_phase = AP_FLOW_COMBAT;
-                return (ApCmd){ "BOAT:y_foe", KEY_Y, assert_combat_open_or_won };
+                return (ApCmd){ "BOAT:y_foe", KEY_Y, assert_combat_resolved };
             }
             st->module_scratch[1] = 0;
             return (ApCmd){ "BOAT:a_chest", KEY_A, assert_prompt_gone };

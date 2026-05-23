@@ -542,7 +542,27 @@ static void dump_zone_interactives(const Map *m, const Game *g) {
             boat_chests[n_boat_chests++] = (Target){x, y, t->id};
         }
     }
-    AP_LOG("// off-landmass chests: %d", n_boat_chests);
+    // Order boat chests by Chebyshev distance from hunterville's boat
+    // spawn (11,60) — nearest first. Insertion sort, n is small.
+    for (int i = 1; i < n_boat_chests; i++) {
+        Target a = boat_chests[i];
+        int da = (a.x > 11 ? a.x - 11 : 11 - a.x);
+        int dya = (a.y > 60 ? a.y - 60 : 60 - a.y);
+        if (dya > da) da = dya;
+        int j = i - 1;
+        while (j >= 0) {
+            Target b = boat_chests[j];
+            int db = (b.x > 11 ? b.x - 11 : 11 - b.x);
+            int dyb = (b.y > 60 ? b.y - 60 : 60 - b.y);
+            if (dyb > db) db = dyb;
+            if (db <= da) break;
+            boat_chests[j+1] = b;
+            j--;
+        }
+        boat_chests[j+1] = a;
+    }
+    AP_LOG("// off-landmass chests: %d (sorted by Chebyshev dist from (11,60))",
+           n_boat_chests);
     for (int i = 0; i < n_boat_chests; i++) {
         fprintf(stderr, "//   boat_chest[%d] = (%d,%d) %s\n",
                 i, boat_chests[i].x, boat_chests[i].y, boat_chests[i].id);
