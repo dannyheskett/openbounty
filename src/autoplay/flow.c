@@ -351,11 +351,38 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 ap_dump_state("siege purchase failed", g, st);
                 return (ApCmd){ "BUY_SIEGE:fail", 0, assert_dialog_open };
             }
-            AP_LOG("[min] siege_weapons=1, gold=%d", g->stats.gold);
+            AP_LOG("[flow] siege_weapons=1, gold=%d", g->stats.gold);
+            st->module_scratch[4] = -1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_RENT_BOAT;
+            return (ApCmd){ "BUY_SIEGE:done", 0, assert_always_true };
+        }
+    }
+
+    // -- Rent a boat (same town, row B). ----------------------------
+    // Pressing B in the town view runs town_do_boat which deducts the
+    // cost and sets boat.has_boat=true atomically. No info panel pops
+    // up on success, so we MUST NOT press a follow-up SPACE — that
+    // would re-trigger BOAT row and CANCEL the rental.
+    // module_scratch[4] = sub-step: 0=KEY_B, 1=verify+done
+    case AP_FLOW_RENT_BOAT: {
+        int sub = (st->module_scratch[4] < 0) ? 0 : st->module_scratch[4];
+        switch (sub) {
+        case 0:
+            st->module_scratch[4] = 1;
+            return (ApCmd){ "RENT_BOAT:b", KEY_B, assert_always_true };
+        default:
+            if (!g->boat.has_boat) {
+                AP_LOG("[flow] RENT_BOAT: has_boat still false after purchase");
+                ap_dump_state("boat purchase failed", g, st);
+                return (ApCmd){ "RENT_BOAT:fail", 0, assert_dialog_open };
+            }
+            AP_LOG("[flow] boat rented at (%d,%d), gold=%d",
+                   g->boat.x, g->boat.y, g->stats.gold);
             st->module_scratch[4] = -1;
             *out_phase_done = true;
             *out_next_phase = AP_FLOW_EXIT_TOWN;
-            return (ApCmd){ "BUY_SIEGE:done", 0, assert_always_true };
+            return (ApCmd){ "RENT_BOAT:done", 0, assert_always_true };
         }
     }
 
