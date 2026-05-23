@@ -213,15 +213,20 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
             st->module_scratch[5] = 0;
             return (ApCmd){ "GRIND:space_dialog", KEY_SPACE, assert_dialog_closed };
         }
-        // Town view: divert into RENT_BOAT → EXIT_TOWN. (BUY_SIEGE is
-        // skipped here because the chest_073 leg lands in Hunterville
-        // with only 1000g and siege costs 3000g; the chest_073 path
-        // doesn't need siege weapons anyway.)
+        // Town view: divert into RENT_BOAT → EXIT_TOWN.
         if (views_active() == VIEW_TOWN) {
             st->module_scratch[5] = 0;
             *out_phase_done = true;
             *out_next_phase = AP_FLOW_RENT_BOAT;
             return (ApCmd){ "GRIND:in_town", 0, assert_always_true };
+        }
+        // Castle view: we routed onto the home gate for a re-recruit.
+        // Divert into the REOPEN_RECRUIT sub-flow.
+        if (views_active() == VIEW_HOME_CASTLE) {
+            st->module_scratch[5] = 0;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_REOPEN_RECRUIT;
+            return (ApCmd){ "GRIND:in_castle", 0, assert_always_true };
         }
         // Multi-leg drive via the generic navigator. The legs[] table
         // holds the chest coords; ap_nav_step plans a path each tick
@@ -249,9 +254,6 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 {  8, 42, "chest_07" },
                 { 11, 41, "chest_08" },
                 {  9, 32, "chest_09" },
-                {  8, 24, "chest_10" },
-                {  7, 24, "chest_11" },
-                {  6, 24, "chest_12" },
                 { 13, 20, "chest_13" },
                 { 17, 22, "chest_14" },
                 { 17, 29, "chest_15" },
@@ -294,6 +296,11 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 { 59, 30, "chest_52" },
                 { 56, 14, "chest_53" },
                 { 59,  3, "chest_54" },
+                // Moved to end: foe-dense cluster that defeats us
+                // before we can collect them in the natural order.
+                {  8, 24, "chest_10" },
+                {  7, 24, "chest_11" },
+                {  6, 24, "chest_12" },
             };
             const int n_legs = (int)(sizeof(legs) / sizeof(legs[0]));
             int leg = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
@@ -305,6 +312,15 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 return (ApCmd){ "GRIND:all_done", 0, assert_always_true };
             }
             int gx = legs[leg].x, gy = legs[leg].y;
+            // Periodic re-recruit: every 5 legs route to the home
+            // castle gate at (11, 56) first. module_scratch[8] holds
+            // the next leg index at which to recruit; once done at
+            // that threshold it's bumped by 5.
+            int recruit_at = st->module_scratch[8];
+            if (recruit_at <= 0) recruit_at = 5;
+            if (leg >= recruit_at) {
+                gx = 11; gy = 56;
+            }
             // Goal reached? Advance to the next leg.
             if (g->position.x == gx && g->position.y == gy) {
                 AP_LOG("[flow] leg %d (%s) done: pos=(%d,%d) gold=%d",
@@ -420,6 +436,76 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
             return (ApCmd){ "EXIT_TOWN:done", 0, assert_always_true };
         }
         return (ApCmd){ "EXIT_TOWN:esc", KEY_ESCAPE, assert_always_true };
+    }
+
+    // -- Mid-grind re-recruit at the home castle. ---------------------
+    case AP_FLOW_REOPEN_RECRUIT: {
+        st->module_scratch[4] = 0;   // pikemen sub-step counter
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_REBUY_PIKEMEN;
+        return (ApCmd){ "REOPEN_RECRUIT:a", KEY_A,
+                        assert_view_recruit_soldiers };
+    }
+
+    case AP_FLOW_REBUY_PIKEMEN: {
+        // C (pick pikemen) → 3 → Enter. Buys 3 pikemen (300g/ea =
+        // 900g). The recruit screen silently caps at gold available;
+        // we pick a small count that fits even at the early recruit.
+        int sub = (st->module_scratch[4] < 0) ? 0 : st->module_scratch[4];
+        switch (sub) {
+        case 0: st->module_scratch[4] = 1;
+            return (ApCmd){ "REBUY_PIKEMEN:c", KEY_C,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[4] = 2;
+            return (ApCmd){ "REBUY_PIKEMEN:3", KEY_THREE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[4] = -1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_REBUY_ARCHERS;
+            return (ApCmd){ "REBUY_PIKEMEN:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_REBUY_ARCHERS: {
+        // B (pick archers) → 2 → Enter. Buys 2 archers (250g/ea =
+        // 500g). Combined with the 900g pikemen, total recruit
+        // spend per visit is 1400g.
+        int sub = (st->module_scratch[4] < 0) ? 0 : st->module_scratch[4];
+        switch (sub) {
+        case 0: st->module_scratch[4] = 1;
+            return (ApCmd){ "REBUY_ARCHERS:b", KEY_B,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[4] = 2;
+            return (ApCmd){ "REBUY_ARCHERS:2", KEY_TWO,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[4] = -1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_REEXIT_RECRUIT;
+            return (ApCmd){ "REBUY_ARCHERS:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_REEXIT_RECRUIT: {
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_REEXIT_CASTLE;
+        return (ApCmd){ "REEXIT_RECRUIT:esc", KEY_ESCAPE,
+                        assert_view_home_castle };
+    }
+
+    case AP_FLOW_REEXIT_CASTLE: {
+        // Bump the next-recruit threshold by 5 so we don't re-loop
+        // back into the castle next tick.
+        int recruit_at = st->module_scratch[8];
+        if (recruit_at <= 0) recruit_at = 5;
+        st->module_scratch[8] = recruit_at + 5;
+        AP_LOG("[flow] re-recruit done; next recruit at leg %d",
+               st->module_scratch[8]);
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_GRIND;
+        return (ApCmd){ "REEXIT_CASTLE:esc", KEY_ESCAPE,
+                        assert_view_none };
     }
 
     case AP_FLOW_DONE: {

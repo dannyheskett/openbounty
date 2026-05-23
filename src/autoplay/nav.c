@@ -126,7 +126,7 @@ static bool walk_foot(const Map *m, int x, int y, bool is_goal, void *vctx) {
     NavCtx *ctx = (NavCtx *)vctx;
     const Tile *t = MapGetTile(m, x, y);
     if (!t) return false;
-    if (t->interactive == INTERACT_CASTLE_GATE) return false;
+    if (t->interactive == INTERACT_CASTLE_GATE && !is_goal) return false;
     // Towns trigger a modal on step-on; only allow stepping onto a
     // town tile if it's the explicit goal (e.g., routing-to-town to
     // rent a boat). The caller-provided `is_goal` flag indicates this.
@@ -146,7 +146,7 @@ static bool walk_boat(const Map *m, int x, int y, bool is_goal, void *vctx) {
     (void)vctx;
     const Tile *t = MapGetTile(m, x, y);
     if (!t) return false;
-    if (t->interactive == INTERACT_CASTLE_GATE) return false;
+    if (t->interactive == INTERACT_CASTLE_GATE && !is_goal) return false;
     // Towns trigger a modal on step-on; only allow stepping onto a
     // town tile if it's the explicit goal (e.g., routing-to-town to
     // rent a boat). The caller-provided `is_goal` flag indicates this.
@@ -173,7 +173,7 @@ static bool walk_foot_to_any_town(const Map *m, int x, int y, bool is_goal,
     NavCtx *ctx = (NavCtx *)vctx;
     const Tile *t = MapGetTile(m, x, y);
     if (!t) return false;
-    if (t->interactive == INTERACT_CASTLE_GATE) return false;
+    if (t->interactive == INTERACT_CASTLE_GATE && !is_goal) return false;
     // Towns trigger a modal on step-on; only allow stepping onto a
     // town tile if it's the explicit goal (e.g., routing-to-town to
     // rent a boat). The caller-provided `is_goal` flag indicates this.
@@ -278,8 +278,8 @@ static int bfs_multimode(const Map *m, const Game *g,
             if (ny < 0 || nx < 0 || ny >= H || nx >= W) continue;
             const Tile *t = MapGetTile(m, nx, ny);
             if (!t) continue;
-            if (t->interactive == INTERACT_CASTLE_GATE) continue;
             bool is_goal = (ny == gy && nx == gx);
+            if (t->interactive == INTERACT_CASTLE_GATE && !is_goal) continue;
             if (t->interactive == INTERACT_TOWN && !is_goal) continue;
             // Dwellings (plains/forest/hills/dungeon) all trigger a
             // recruit prompt on step-on. Skip unless explicit goal.

@@ -47,6 +47,13 @@ typedef enum {
     AP_FLOW_BUY_SIEGE,
     AP_FLOW_RENT_BOAT,
     AP_FLOW_EXIT_TOWN,
+    // Re-recruit at the home castle between chest legs. Reached when
+    // GRIND detects VIEW_HOME_CASTLE (the nav routed onto the gate).
+    AP_FLOW_REOPEN_RECRUIT,
+    AP_FLOW_REBUY_PIKEMEN,
+    AP_FLOW_REBUY_ARCHERS,
+    AP_FLOW_REEXIT_RECRUIT,
+    AP_FLOW_REEXIT_CASTLE,
     AP_FLOW_DONE,
     AP_FLOW_LAST = AP_FLOW_DONE,
 
