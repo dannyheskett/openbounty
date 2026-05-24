@@ -357,7 +357,8 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
             if (resume != AP_FLOW_PHASE1 &&
                 resume != AP_FLOW_PHASE2_NAV_CASTLE &&
                 resume != AP_FLOW_PHASE3_NAV_HOME &&
-                resume != AP_FLOW_PHASE3_HUNT) {
+                resume != AP_FLOW_PHASE3_HUNT &&
+                resume != AP_FLOW_PHASE3_NAV_HOME_2) {
                 resume = AP_FLOW_PHASE1;
             }
             *out_phase_done = true;
@@ -713,11 +714,12 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
             const int n_legs = (int)(sizeof(legs) / sizeof(legs[0]));
             int leg = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
             if (leg >= n_legs) {
-                AP_LOG("[phase3] complete: pos=(%d,%d) gold=%d hp=%d",
+                AP_LOG("[phase3] hunt complete: pos=(%d,%d) gold=%d hp=%d",
                        g->position.x, g->position.y, g->stats.gold,
                        ap_army_total_hp(g));
+                st->module_scratch[0] = 0;
                 *out_phase_done = true;
-                *out_next_phase = AP_FLOW_DONE;
+                *out_next_phase = AP_FLOW_PHASE3_NAV_HOME_2;
                 return (ApCmd){ "PHASE3_HUNT:done", 0,
                                 assert_always_true };
             }
@@ -744,6 +746,213 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
             return (ApCmd){ "PHASE3_HUNT:nav", key,
                             assert_always_true };
         }
+    }
+
+    // -- PHASE 3 extension: nav back to king_maximus, re-recruit
+    //    again, then walk to Hunterville and take the next
+    //    contract (Hack — the second villain in the cycle).
+    case AP_FLOW_PHASE3_NAV_HOME_2: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE3_NAV_HOME_2;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE3_NAV_HOME_2:y_foe");
+                return (ApCmd){ "PHASE3_NAV_HOME_2:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE3_NAV_HOME_2:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE3_NAV_HOME_2:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE3_NAV_HOME_2:space_dialog", KEY_SPACE,
+                            assert_dialog_closed };
+        }
+        if (g->position.x == 11 && g->position.y == 57) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE3_OPEN_RECRUIT_2;
+            return (ApCmd){ "PHASE3_NAV_HOME_2:arrived", 0,
+                            assert_always_true };
+        }
+        int key = ap_nav_step(g, m, 11, 57);
+        if (key == 0) {
+            AP_LOG("[phase3] NAV_HOME_2 no path from (%d,%d)",
+                   g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE3_NAV_HOME_2:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE3_NAV_HOME_2:nav", key,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE3_OPEN_RECRUIT_2: {
+        if (views_active() == VIEW_RECRUIT_SOLDIERS) {
+            st->module_scratch[0] = 0;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE3_RECRUIT_ARCHERS_2;
+            return (ApCmd){ "PHASE3_OPEN_RECRUIT_2:entered", 0,
+                            assert_always_true };
+        }
+        if (views_active() == VIEW_HOME_CASTLE) {
+            return (ApCmd){ "PHASE3_OPEN_RECRUIT_2:a", KEY_A,
+                            assert_always_true };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE3_OPEN_RECRUIT_2:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        return (ApCmd){ "PHASE3_OPEN_RECRUIT_2:up", KEY_UP,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE3_RECRUIT_ARCHERS_2: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE3_RECRUIT_ARCHERS_2:b", KEY_B,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE3_RECRUIT_ARCHERS_2:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE3_RECRUIT_ARCHERS_2:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE3_RECRUIT_ARCHERS_2:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE3_RECRUIT_PIKEMEN_2;
+            return (ApCmd){ "PHASE3_RECRUIT_ARCHERS_2:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE3_RECRUIT_PIKEMEN_2: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE3_RECRUIT_PIKEMEN_2:c", KEY_C,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE3_RECRUIT_PIKEMEN_2:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE3_RECRUIT_PIKEMEN_2:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE3_RECRUIT_PIKEMEN_2:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE3_RECRUIT_MILITIA_2;
+            return (ApCmd){ "PHASE3_RECRUIT_PIKEMEN_2:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE3_RECRUIT_MILITIA_2: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE3_RECRUIT_MILITIA_2:a", KEY_A,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE3_RECRUIT_MILITIA_2:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE3_RECRUIT_MILITIA_2:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE3_RECRUIT_MILITIA_2:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE3_EXIT_RECRUIT_2;
+            return (ApCmd){ "PHASE3_RECRUIT_MILITIA_2:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE3_EXIT_RECRUIT_2: {
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_PHASE3_EXIT_CASTLE_2;
+        return (ApCmd){ "PHASE3_EXIT_RECRUIT_2:esc", KEY_ESCAPE,
+                        assert_view_home_castle };
+    }
+
+    case AP_FLOW_PHASE3_EXIT_CASTLE_2: {
+        if (views_active() == VIEW_NONE) {
+            AP_LOG("[phase3] re-recruit done: gold=%d hp=%d",
+                   g->stats.gold, ap_army_total_hp(g));
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE3_NAV_TOWN;
+            return (ApCmd){ "PHASE3_EXIT_CASTLE_2:done", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE3_EXIT_CASTLE_2:esc", KEY_ESCAPE,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE3_NAV_TOWN: {
+        if (views_active() == VIEW_TOWN) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE3_TOWN_ACTIONS;
+            return (ApCmd){ "PHASE3_NAV_TOWN:entered", 0,
+                            assert_always_true };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE3_NAV_TOWN:space_dialog", KEY_SPACE,
+                            assert_dialog_closed };
+        }
+        int key = ap_nav_step(g, m, 12, 60);
+        if (key == 0) {
+            AP_LOG("[phase3] NAV_TOWN no path from (%d,%d)",
+                   g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE3_NAV_TOWN:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE3_NAV_TOWN:nav", key,
+                        assert_always_true };
+    }
+
+    // Take the next contract (Hack) — Murray is captured so the
+    // cycle advances past him on the next A-press. Dismiss the
+    // info panel, then exit.
+    case AP_FLOW_PHASE3_TOWN_ACTIONS: {
+        if (views_town_info_text() != NULL) {
+            return (ApCmd){ "PHASE3_TOWN:space_info", KEY_SPACE,
+                            assert_always_true };
+        }
+        if (!g->contract.active_id[0]) {
+            return (ApCmd){ "PHASE3_TOWN:a_contract", KEY_A,
+                            assert_always_true };
+        }
+        AP_LOG("[phase3] Hack contract taken: active=%s gold=%d",
+               g->contract.active_id, g->stats.gold);
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_PHASE3_EXIT_TOWN;
+        return (ApCmd){ "PHASE3_TOWN:done", 0, assert_always_true };
+    }
+
+    case AP_FLOW_PHASE3_EXIT_TOWN: {
+        if (views_active() == VIEW_NONE) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE3_EXIT_TOWN:done", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE3_EXIT_TOWN:esc", KEY_ESCAPE,
+                        assert_always_true };
     }
 
     // BUY_SIEGE / EXIT_TOWN retained as legacy stubs (unreached
