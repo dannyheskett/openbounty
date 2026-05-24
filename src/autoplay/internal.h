@@ -167,6 +167,14 @@ typedef enum {
     AP_FLOW_PHASE8_NAV_CASTLE,
     AP_FLOW_PHASE8_GARRISON,
     AP_FLOW_PHASE8_NAV_HOME,
+    // Phase 9: take a contract on caneghor (the 6th villain in
+    // the cycle, refilled into slot 0 after murray was captured),
+    // sail to rythacon (54,57), siege, return home.
+    AP_FLOW_PHASE9_NAV_TOWN,
+    AP_FLOW_PHASE9_TOWN_ACTIONS,
+    AP_FLOW_PHASE9_EXIT_TOWN,
+    AP_FLOW_PHASE9_NAV_CASTLE,
+    AP_FLOW_PHASE9_NAV_HOME,
     AP_FLOW_BUY_SIEGE,
     AP_FLOW_EXIT_TOWN,
     AP_FLOW_DONE,
