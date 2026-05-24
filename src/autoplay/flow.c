@@ -359,9 +359,9 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 resume != AP_FLOW_PHASE3_NAV_HOME &&
                 resume != AP_FLOW_PHASE3_HUNT &&
                 resume != AP_FLOW_PHASE3_NAV_HOME_2 &&
-                resume != AP_FLOW_PHASE3_5_TOUR &&
-                resume != AP_FLOW_PHASE4_NAV_CASTLE &&
-                resume != AP_FLOW_PHASE4_NAV_HOME) {
+                resume != AP_FLOW_PHASE4_TOUR &&
+                resume != AP_FLOW_PHASE5_NAV_CASTLE &&
+                resume != AP_FLOW_PHASE5_NAV_HOME) {
                 resume = AP_FLOW_PHASE1;
             }
             *out_phase_done = true;
@@ -953,9 +953,9 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
 
     case AP_FLOW_PHASE3_EXIT_TOWN: {
         if (views_active() == VIEW_NONE) {
-            st->module_scratch[0] = 0;  // reset PHASE3_5 leg index
+            st->module_scratch[0] = 0;  // reset PHASE4 leg index
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_PHASE3_5_TOUR;
+            *out_next_phase = AP_FLOW_PHASE4_TOUR;
             return (ApCmd){ "PHASE3_EXIT_TOWN:done", 0,
                             assert_always_true };
         }
@@ -963,26 +963,26 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                         assert_always_true };
     }
 
-    // -- PHASE 3.5: chest tour over all uncollected Continentia
+    // -- PHASE 4: chest tour over all uncollected Continentia
     //    chests reachable from gate via boat+foot without entering
     //    any alive wandering-army's chebyshev-2 pursuit envelope.
     //    Always pick KEY_B (leadership) so the run accumulates
-    //    leadership_base for the Hack fight in Phase 4.
+    //    leadership_base for the Hack fight in Phase 5.
     //    Leg order from a nearest-neighbor TSP over the 28 nodes.
-    case AP_FLOW_PHASE3_5_TOUR: {
+    case AP_FLOW_PHASE4_TOUR: {
         if (prompt_is_active()) {
             const char *kind = prompt_kind_str();
             if (kind && strcmp(kind, "yes_no") == 0) {
                 // A foe wandered into us — fight defensively.
-                st->module_scratch[3] = AP_FLOW_PHASE3_5_TOUR;
+                st->module_scratch[3] = AP_FLOW_PHASE4_TOUR;
                 *out_phase_done = true;
                 *out_next_phase = AP_FLOW_COMBAT;
-                dump_combat_start(g, "PHASE3_5_TOUR:y_foe");
-                return (ApCmd){ "PHASE3_5_TOUR:y_foe", KEY_Y,
+                dump_combat_start(g, "PHASE4_TOUR:y_foe");
+                return (ApCmd){ "PHASE4_TOUR:y_foe", KEY_Y,
                                 assert_combat_resolved };
             }
             if (kind && strcmp(kind, "text") == 0) {
-                return (ApCmd){ "PHASE3_5_TOUR:enter_dismiss", KEY_ENTER,
+                return (ApCmd){ "PHASE4_TOUR:enter_dismiss", KEY_ENTER,
                                 assert_prompt_gone };
             }
             // A/B chest prompt — leadership until we have enough
@@ -992,14 +992,14 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
             // 13 + 9 pikemen, and frees the rest of the tour to pile
             // up gold for the post-tour recruit.
             if (g->stats.leadership_base < 160) {
-                return (ApCmd){ "PHASE3_5_TOUR:b_chest", KEY_B,
+                return (ApCmd){ "PHASE4_TOUR:b_chest", KEY_B,
                                 assert_prompt_gone };
             }
-            return (ApCmd){ "PHASE3_5_TOUR:a_chest", KEY_A,
+            return (ApCmd){ "PHASE4_TOUR:a_chest", KEY_A,
                             assert_prompt_gone };
         }
         if (dialog_is_active()) {
-            return (ApCmd){ "PHASE3_5_TOUR:space_dialog", KEY_SPACE,
+            return (ApCmd){ "PHASE4_TOUR:space_dialog", KEY_SPACE,
                             assert_dialog_closed };
         }
         {
@@ -1039,255 +1039,255 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
             const int n_legs = (int)(sizeof(legs) / sizeof(legs[0]));
             int leg = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
             if (leg >= n_legs) {
-                AP_LOG("[phase3.5] tour complete: pos=(%d,%d) gold=%d "
+                AP_LOG("[phase4] tour complete: pos=(%d,%d) gold=%d "
                        "hp=%d lead_base=%d",
                        g->position.x, g->position.y, g->stats.gold,
                        ap_army_total_hp(g), g->stats.leadership_base);
                 *out_phase_done = true;
-                *out_next_phase = AP_FLOW_PHASE3_5_OPEN_RECRUIT;
-                return (ApCmd){ "PHASE3_5_TOUR:done", 0,
+                *out_next_phase = AP_FLOW_PHASE4_OPEN_RECRUIT;
+                return (ApCmd){ "PHASE4_TOUR:done", 0,
                                 assert_always_true };
             }
             int gx = legs[leg].x, gy = legs[leg].y;
             if (g->position.x == gx && g->position.y == gy) {
-                AP_LOG("[phase3.5] leg %d (%s) done: pos=(%d,%d) gold=%d "
+                AP_LOG("[phase4] leg %d (%s) done: pos=(%d,%d) gold=%d "
                        "lead_base=%d",
                        leg, legs[leg].name, g->position.x, g->position.y,
                        g->stats.gold, g->stats.leadership_base);
                 st->module_scratch[0] = leg + 1;
-                return (ApCmd){ "PHASE3_5_TOUR:leg_done", 0,
+                return (ApCmd){ "PHASE4_TOUR:leg_done", 0,
                                 assert_always_true };
             }
             int key = ap_nav_step_avoiding_foes(g, m, gx, gy);
             if (key == 0) {
-                AP_LOG("[phase3.5] leg %d (%s) no foe-free path from "
+                AP_LOG("[phase4] leg %d (%s) no foe-free path from "
                        "(%d,%d), skipping",
                        leg, legs[leg].name, g->position.x, g->position.y);
                 st->module_scratch[0] = leg + 1;
-                return (ApCmd){ "PHASE3_5_TOUR:no_path", 0,
+                return (ApCmd){ "PHASE4_TOUR:no_path", 0,
                                 assert_always_true };
             }
-            return (ApCmd){ "PHASE3_5_TOUR:nav", key,
+            return (ApCmd){ "PHASE4_TOUR:nav", key,
                             assert_always_true };
         }
     }
 
-    // -- Post-Phase-3.5 re-recruit: walk into king_maximus and
+    // -- Post-Phase-4 re-recruit: walk into king_maximus and
     //    max-buy archers + pikemen + militia again so the army
     //    grows to fill the new leadership cap.
-    case AP_FLOW_PHASE3_5_OPEN_RECRUIT: {
+    case AP_FLOW_PHASE4_OPEN_RECRUIT: {
         if (views_active() == VIEW_RECRUIT_SOLDIERS) {
             st->module_scratch[0] = 0;
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_PHASE3_5_RECRUIT_ARCHERS;
-            return (ApCmd){ "PHASE3_5_OPEN_RECRUIT:entered", 0,
+            *out_next_phase = AP_FLOW_PHASE4_RECRUIT_ARCHERS;
+            return (ApCmd){ "PHASE4_OPEN_RECRUIT:entered", 0,
                             assert_always_true };
         }
         if (views_active() == VIEW_HOME_CASTLE) {
-            return (ApCmd){ "PHASE3_5_OPEN_RECRUIT:a", KEY_A,
+            return (ApCmd){ "PHASE4_OPEN_RECRUIT:a", KEY_A,
                             assert_always_true };
         }
         if (dialog_is_active()) {
-            return (ApCmd){ "PHASE3_5_OPEN_RECRUIT:space_dialog",
+            return (ApCmd){ "PHASE4_OPEN_RECRUIT:space_dialog",
                             KEY_SPACE, assert_dialog_closed };
         }
-        return (ApCmd){ "PHASE3_5_OPEN_RECRUIT:up", KEY_UP,
+        return (ApCmd){ "PHASE4_OPEN_RECRUIT:up", KEY_UP,
                         assert_always_true };
     }
 
-    case AP_FLOW_PHASE3_5_RECRUIT_ARCHERS: {
+    case AP_FLOW_PHASE4_RECRUIT_ARCHERS: {
         int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
         switch (sub) {
         case 0: st->module_scratch[0]=1;
-            return (ApCmd){ "PHASE3_5_RECRUIT_ARCHERS:b", KEY_B,
+            return (ApCmd){ "PHASE4_RECRUIT_ARCHERS:b", KEY_B,
                             assert_view_recruit_soldiers };
         case 1: st->module_scratch[0]=2;
-            return (ApCmd){ "PHASE3_5_RECRUIT_ARCHERS:9", KEY_NINE,
+            return (ApCmd){ "PHASE4_RECRUIT_ARCHERS:9", KEY_NINE,
                             assert_view_recruit_soldiers };
         case 2: st->module_scratch[0]=3;
-            return (ApCmd){ "PHASE3_5_RECRUIT_ARCHERS:9", KEY_NINE,
+            return (ApCmd){ "PHASE4_RECRUIT_ARCHERS:9", KEY_NINE,
                             assert_view_recruit_soldiers };
         case 3: st->module_scratch[0]=4;
-            return (ApCmd){ "PHASE3_5_RECRUIT_ARCHERS:9", KEY_NINE,
+            return (ApCmd){ "PHASE4_RECRUIT_ARCHERS:9", KEY_NINE,
                             assert_view_recruit_soldiers };
         default: st->module_scratch[0]=-1;
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_PHASE3_5_RECRUIT_PIKEMEN;
-            return (ApCmd){ "PHASE3_5_RECRUIT_ARCHERS:enter", KEY_ENTER,
+            *out_next_phase = AP_FLOW_PHASE4_RECRUIT_PIKEMEN;
+            return (ApCmd){ "PHASE4_RECRUIT_ARCHERS:enter", KEY_ENTER,
                             assert_always_true };
         }
     }
 
-    case AP_FLOW_PHASE3_5_RECRUIT_PIKEMEN: {
+    case AP_FLOW_PHASE4_RECRUIT_PIKEMEN: {
         int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
         switch (sub) {
         case 0: st->module_scratch[0]=1;
-            return (ApCmd){ "PHASE3_5_RECRUIT_PIKEMEN:c", KEY_C,
+            return (ApCmd){ "PHASE4_RECRUIT_PIKEMEN:c", KEY_C,
                             assert_view_recruit_soldiers };
         case 1: st->module_scratch[0]=2;
-            return (ApCmd){ "PHASE3_5_RECRUIT_PIKEMEN:9", KEY_NINE,
+            return (ApCmd){ "PHASE4_RECRUIT_PIKEMEN:9", KEY_NINE,
                             assert_view_recruit_soldiers };
         case 2: st->module_scratch[0]=3;
-            return (ApCmd){ "PHASE3_5_RECRUIT_PIKEMEN:9", KEY_NINE,
+            return (ApCmd){ "PHASE4_RECRUIT_PIKEMEN:9", KEY_NINE,
                             assert_view_recruit_soldiers };
         case 3: st->module_scratch[0]=4;
-            return (ApCmd){ "PHASE3_5_RECRUIT_PIKEMEN:9", KEY_NINE,
+            return (ApCmd){ "PHASE4_RECRUIT_PIKEMEN:9", KEY_NINE,
                             assert_view_recruit_soldiers };
         default: st->module_scratch[0]=-1;
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_PHASE3_5_RECRUIT_MILITIA;
-            return (ApCmd){ "PHASE3_5_RECRUIT_PIKEMEN:enter", KEY_ENTER,
+            *out_next_phase = AP_FLOW_PHASE4_RECRUIT_MILITIA;
+            return (ApCmd){ "PHASE4_RECRUIT_PIKEMEN:enter", KEY_ENTER,
                             assert_always_true };
         }
     }
 
-    case AP_FLOW_PHASE3_5_RECRUIT_MILITIA: {
+    case AP_FLOW_PHASE4_RECRUIT_MILITIA: {
         int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
         switch (sub) {
         case 0: st->module_scratch[0]=1;
-            return (ApCmd){ "PHASE3_5_RECRUIT_MILITIA:a", KEY_A,
+            return (ApCmd){ "PHASE4_RECRUIT_MILITIA:a", KEY_A,
                             assert_view_recruit_soldiers };
         case 1: st->module_scratch[0]=2;
-            return (ApCmd){ "PHASE3_5_RECRUIT_MILITIA:9", KEY_NINE,
+            return (ApCmd){ "PHASE4_RECRUIT_MILITIA:9", KEY_NINE,
                             assert_view_recruit_soldiers };
         case 2: st->module_scratch[0]=3;
-            return (ApCmd){ "PHASE3_5_RECRUIT_MILITIA:9", KEY_NINE,
+            return (ApCmd){ "PHASE4_RECRUIT_MILITIA:9", KEY_NINE,
                             assert_view_recruit_soldiers };
         case 3: st->module_scratch[0]=4;
-            return (ApCmd){ "PHASE3_5_RECRUIT_MILITIA:9", KEY_NINE,
+            return (ApCmd){ "PHASE4_RECRUIT_MILITIA:9", KEY_NINE,
                             assert_view_recruit_soldiers };
         default: st->module_scratch[0]=-1;
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_PHASE3_5_EXIT_RECRUIT;
-            return (ApCmd){ "PHASE3_5_RECRUIT_MILITIA:enter", KEY_ENTER,
+            *out_next_phase = AP_FLOW_PHASE4_EXIT_RECRUIT;
+            return (ApCmd){ "PHASE4_RECRUIT_MILITIA:enter", KEY_ENTER,
                             assert_always_true };
         }
     }
 
-    case AP_FLOW_PHASE3_5_EXIT_RECRUIT: {
+    case AP_FLOW_PHASE4_EXIT_RECRUIT: {
         *out_phase_done = true;
-        *out_next_phase = AP_FLOW_PHASE3_5_EXIT_CASTLE;
-        return (ApCmd){ "PHASE3_5_EXIT_RECRUIT:esc", KEY_ESCAPE,
+        *out_next_phase = AP_FLOW_PHASE4_EXIT_CASTLE;
+        return (ApCmd){ "PHASE4_EXIT_RECRUIT:esc", KEY_ESCAPE,
                         assert_view_home_castle };
     }
 
-    case AP_FLOW_PHASE3_5_EXIT_CASTLE: {
+    case AP_FLOW_PHASE4_EXIT_CASTLE: {
         if (views_active() == VIEW_NONE) {
-            AP_LOG("[phase3.5] post-tour re-recruit done: gold=%d "
+            AP_LOG("[phase4] post-tour re-recruit done: gold=%d "
                    "hp=%d lead_base=%d",
                    g->stats.gold, ap_army_total_hp(g),
                    g->stats.leadership_base);
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_PHASE4_NAV_CASTLE;
-            return (ApCmd){ "PHASE3_5_EXIT_CASTLE:done", 0,
+            *out_next_phase = AP_FLOW_PHASE5_NAV_CASTLE;
+            return (ApCmd){ "PHASE4_EXIT_CASTLE:done", 0,
                             assert_always_true };
         }
-        return (ApCmd){ "PHASE3_5_EXIT_CASTLE:esc", KEY_ESCAPE,
+        return (ApCmd){ "PHASE4_EXIT_CASTLE:esc", KEY_ESCAPE,
                         assert_always_true };
     }
 
-    // -- PHASE 4 step 1: sail/walk to Hack's castle gate at
+    // -- PHASE 5 step 1: sail/walk to Hack's castle gate at
     //    faxis (22,14). Multi-mode BFS handles boat boarding,
     //    sailing, and disembarking.
-    case AP_FLOW_PHASE4_NAV_CASTLE: {
+    case AP_FLOW_PHASE5_NAV_CASTLE: {
         // Contract cleared = Hack captured. Sail home.
         if (!g->contract.active_id[0]) {
-            AP_LOG("[phase4] Hack captured — contract fulfilled. "
+            AP_LOG("[phase5] Hack captured — contract fulfilled. "
                    "pos=(%d,%d) gold=%d hp=%d",
                    g->position.x, g->position.y, g->stats.gold,
                    ap_army_total_hp(g));
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_PHASE4_NAV_HOME;
-            return (ApCmd){ "PHASE4_NAV_CASTLE:captured", 0,
+            *out_next_phase = AP_FLOW_PHASE5_NAV_HOME;
+            return (ApCmd){ "PHASE5_NAV_CASTLE:captured", 0,
                             assert_always_true };
         }
         if (prompt_is_active()) {
             const char *kind = prompt_kind_str();
             if (kind && strcmp(kind, "yes_no") == 0) {
-                st->module_scratch[3] = AP_FLOW_PHASE4_NAV_CASTLE;
+                st->module_scratch[3] = AP_FLOW_PHASE5_NAV_CASTLE;
                 *out_phase_done = true;
                 *out_next_phase = AP_FLOW_COMBAT;
-                dump_combat_start(g, "PHASE4_NAV_CASTLE:y_castle");
-                return (ApCmd){ "PHASE4_NAV_CASTLE:y_castle", KEY_Y,
+                dump_combat_start(g, "PHASE5_NAV_CASTLE:y_castle");
+                return (ApCmd){ "PHASE5_NAV_CASTLE:y_castle", KEY_Y,
                                 assert_combat_resolved };
             }
             if (kind && strcmp(kind, "text") == 0) {
-                return (ApCmd){ "PHASE4_NAV_CASTLE:enter_dismiss",
+                return (ApCmd){ "PHASE5_NAV_CASTLE:enter_dismiss",
                                 KEY_ENTER, assert_prompt_gone };
             }
-            return (ApCmd){ "PHASE4_NAV_CASTLE:b_chest", KEY_B,
+            return (ApCmd){ "PHASE5_NAV_CASTLE:b_chest", KEY_B,
                             assert_prompt_gone };
         }
         if (dialog_is_active()) {
-            return (ApCmd){ "PHASE4_NAV_CASTLE:space_dialog", KEY_SPACE,
+            return (ApCmd){ "PHASE5_NAV_CASTLE:space_dialog", KEY_SPACE,
                             assert_dialog_closed };
         }
         if (g->position.x == 22 && g->position.y == 14) {
-            AP_LOG("[phase4] reached faxis gate (no fight triggered) "
+            AP_LOG("[phase5] reached faxis gate (no fight triggered) "
                    "gold=%d hp=%d siege=%d",
                    g->stats.gold, ap_army_total_hp(g),
                    g->stats.siege_weapons);
             *out_phase_done = true;
             *out_next_phase = AP_FLOW_DONE;
-            return (ApCmd){ "PHASE4_NAV_CASTLE:arrived", 0,
+            return (ApCmd){ "PHASE5_NAV_CASTLE:arrived", 0,
                             assert_always_true };
         }
         int key = ap_nav_step(g, m, 22, 14);
         if (key == 0) {
-            AP_LOG("[phase4] no path to faxis from (%d,%d)",
+            AP_LOG("[phase5] no path to faxis from (%d,%d)",
                    g->position.x, g->position.y);
             *out_phase_done = true;
             *out_next_phase = AP_FLOW_DONE;
-            return (ApCmd){ "PHASE4_NAV_CASTLE:no_path", 0,
+            return (ApCmd){ "PHASE5_NAV_CASTLE:no_path", 0,
                             assert_always_true };
         }
-        return (ApCmd){ "PHASE4_NAV_CASTLE:nav", key,
+        return (ApCmd){ "PHASE5_NAV_CASTLE:nav", key,
                         assert_always_true };
     }
 
-    // -- PHASE 4 step 2: sail/walk back to king_maximus gate.
-    case AP_FLOW_PHASE4_NAV_HOME: {
+    // -- PHASE 5 step 2: sail/walk back to king_maximus gate.
+    case AP_FLOW_PHASE5_NAV_HOME: {
         if (prompt_is_active()) {
             const char *kind = prompt_kind_str();
             if (kind && strcmp(kind, "yes_no") == 0) {
-                st->module_scratch[3] = AP_FLOW_PHASE4_NAV_HOME;
+                st->module_scratch[3] = AP_FLOW_PHASE5_NAV_HOME;
                 *out_phase_done = true;
                 *out_next_phase = AP_FLOW_COMBAT;
-                dump_combat_start(g, "PHASE4_NAV_HOME:y_foe");
-                return (ApCmd){ "PHASE4_NAV_HOME:y_foe", KEY_Y,
+                dump_combat_start(g, "PHASE5_NAV_HOME:y_foe");
+                return (ApCmd){ "PHASE5_NAV_HOME:y_foe", KEY_Y,
                                 assert_combat_resolved };
             }
             if (kind && strcmp(kind, "text") == 0) {
-                return (ApCmd){ "PHASE4_NAV_HOME:enter_dismiss",
+                return (ApCmd){ "PHASE5_NAV_HOME:enter_dismiss",
                                 KEY_ENTER, assert_prompt_gone };
             }
-            return (ApCmd){ "PHASE4_NAV_HOME:b_chest", KEY_B,
+            return (ApCmd){ "PHASE5_NAV_HOME:b_chest", KEY_B,
                             assert_prompt_gone };
         }
         if (dialog_is_active()) {
-            return (ApCmd){ "PHASE4_NAV_HOME:space_dialog", KEY_SPACE,
+            return (ApCmd){ "PHASE5_NAV_HOME:space_dialog", KEY_SPACE,
                             assert_dialog_closed };
         }
         if (g->position.x == 11 && g->position.y == 57) {
-            AP_LOG("[phase4] reached king_maximus gate. pos=(%d,%d) "
+            AP_LOG("[phase5] reached king_maximus gate. pos=(%d,%d) "
                    "gold=%d hp=%d",
                    g->position.x, g->position.y, g->stats.gold,
                    ap_army_total_hp(g));
             *out_phase_done = true;
             *out_next_phase = AP_FLOW_DONE;
-            return (ApCmd){ "PHASE4_NAV_HOME:arrived", 0,
+            return (ApCmd){ "PHASE5_NAV_HOME:arrived", 0,
                             assert_always_true };
         }
         int key = ap_nav_step(g, m, 11, 57);
         if (key == 0) {
-            AP_LOG("[phase4] NAV_HOME no path from (%d,%d)",
+            AP_LOG("[phase5] NAV_HOME no path from (%d,%d)",
                    g->position.x, g->position.y);
             *out_phase_done = true;
             *out_next_phase = AP_FLOW_DONE;
-            return (ApCmd){ "PHASE4_NAV_HOME:no_path", 0,
+            return (ApCmd){ "PHASE5_NAV_HOME:no_path", 0,
                             assert_always_true };
         }
-        return (ApCmd){ "PHASE4_NAV_HOME:nav", key,
+        return (ApCmd){ "PHASE5_NAV_HOME:nav", key,
                         assert_always_true };
     }
 

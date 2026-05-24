@@ -76,24 +76,24 @@ typedef enum {
     AP_FLOW_PHASE3_NAV_TOWN,
     AP_FLOW_PHASE3_TOWN_ACTIONS,
     AP_FLOW_PHASE3_EXIT_TOWN,
-    // Phase 3.5: boat tour through all remaining Continentia chests
+    // Phase 4: boat tour through all remaining Continentia chests
     // that are reachable without entering any alive foe's chebyshev-2
     // pursuit envelope. KEY_B (leadership) on every gold chest until
     // we have enough leadership to take Hack; then switch to KEY_A.
-    AP_FLOW_PHASE3_5_TOUR,
-    // After Phase 3.5 returns to gate, re-recruit one more time so
+    AP_FLOW_PHASE4_TOUR,
+    // After Phase 4 returns to gate, re-recruit one more time so
     // the army cap actually reflects the leadership we just bought
     // from chests. Mirrors the v1 recruit chain.
-    AP_FLOW_PHASE3_5_OPEN_RECRUIT,
-    AP_FLOW_PHASE3_5_RECRUIT_ARCHERS,
-    AP_FLOW_PHASE3_5_RECRUIT_PIKEMEN,
-    AP_FLOW_PHASE3_5_RECRUIT_MILITIA,
-    AP_FLOW_PHASE3_5_EXIT_RECRUIT,
-    AP_FLOW_PHASE3_5_EXIT_CASTLE,
-    // Phase 4: sail to faxis castle and capture Hack, then sail
+    AP_FLOW_PHASE4_OPEN_RECRUIT,
+    AP_FLOW_PHASE4_RECRUIT_ARCHERS,
+    AP_FLOW_PHASE4_RECRUIT_PIKEMEN,
+    AP_FLOW_PHASE4_RECRUIT_MILITIA,
+    AP_FLOW_PHASE4_EXIT_RECRUIT,
+    AP_FLOW_PHASE4_EXIT_CASTLE,
+    // Phase 5: sail to faxis castle and capture Hack, then sail
     // back to king_maximus.
-    AP_FLOW_PHASE4_NAV_CASTLE,
-    AP_FLOW_PHASE4_NAV_HOME,
+    AP_FLOW_PHASE5_NAV_CASTLE,
+    AP_FLOW_PHASE5_NAV_HOME,
     AP_FLOW_BUY_SIEGE,
     AP_FLOW_EXIT_TOWN,
     AP_FLOW_DONE,
