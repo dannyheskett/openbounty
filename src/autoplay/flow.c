@@ -359,6 +359,7 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 resume != AP_FLOW_PHASE3_NAV_HOME &&
                 resume != AP_FLOW_PHASE3_HUNT &&
                 resume != AP_FLOW_PHASE3_NAV_HOME_2 &&
+                resume != AP_FLOW_PHASE3_5_TOUR &&
                 resume != AP_FLOW_PHASE4_NAV_CASTLE &&
                 resume != AP_FLOW_PHASE4_NAV_HOME) {
                 resume = AP_FLOW_PHASE1;
@@ -368,7 +369,11 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
             return (ApCmd){ "POST_COMBAT:noop", 0, assert_always_true };
         }
         if (dialog_is_active()) {
-            return (ApCmd){ "POST_COMBAT:space", KEY_SPACE, assert_dialog_closed };
+            // Don't assert dialog closes — multi-page victory dialogs
+            // (villain capture especially) take several SPACE presses
+            // to clear.
+            return (ApCmd){ "POST_COMBAT:space", KEY_SPACE,
+                            assert_always_true };
         }
         return (ApCmd){ "POST_COMBAT:wait", 0, assert_always_true };
     }
@@ -948,12 +953,236 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
 
     case AP_FLOW_PHASE3_EXIT_TOWN: {
         if (views_active() == VIEW_NONE) {
+            st->module_scratch[0] = 0;  // reset PHASE3_5 leg index
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_PHASE4_NAV_CASTLE;
+            *out_next_phase = AP_FLOW_PHASE3_5_TOUR;
             return (ApCmd){ "PHASE3_EXIT_TOWN:done", 0,
                             assert_always_true };
         }
         return (ApCmd){ "PHASE3_EXIT_TOWN:esc", KEY_ESCAPE,
+                        assert_always_true };
+    }
+
+    // -- PHASE 3.5: chest tour over all uncollected Continentia
+    //    chests reachable from gate via boat+foot without entering
+    //    any alive wandering-army's chebyshev-2 pursuit envelope.
+    //    Always pick KEY_B (leadership) so the run accumulates
+    //    leadership_base for the Hack fight in Phase 4.
+    //    Leg order from a nearest-neighbor TSP over the 28 nodes.
+    case AP_FLOW_PHASE3_5_TOUR: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                // A foe wandered into us — fight defensively.
+                st->module_scratch[3] = AP_FLOW_PHASE3_5_TOUR;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE3_5_TOUR:y_foe");
+                return (ApCmd){ "PHASE3_5_TOUR:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE3_5_TOUR:enter_dismiss", KEY_ENTER,
+                                assert_prompt_gone };
+            }
+            // A/B chest prompt — leadership until we have enough
+            // headroom to recruit a Hack-beating army, then gold so we
+            // can actually afford the recruit. Threshold of 200
+            // leadership_base = ~7 more archers above the carried
+            // 13 + 9 pikemen, and frees the rest of the tour to pile
+            // up gold for the post-tour recruit.
+            if (g->stats.leadership_base < 160) {
+                return (ApCmd){ "PHASE3_5_TOUR:b_chest", KEY_B,
+                                assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE3_5_TOUR:a_chest", KEY_A,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE3_5_TOUR:space_dialog", KEY_SPACE,
+                            assert_dialog_closed };
+        }
+        {
+            // 28-leg NN tour computed offline. Tour cost ~662 steps
+            // round-trip from gate. Final leg returns to gate.
+            static const struct { int x, y; const char *name; } legs[] = {
+                {  3, 59, "chest_slot_3" },
+                { 22, 60, "chest_slot_1" },
+                { 33, 60, "chest_slot_2" },
+                { 50, 59, "chest_slot_5" },
+                { 52, 46, "chest_slot_21" },
+                { 41, 45, "chest_slot_23" },
+                { 41, 39, "chest_slot_31" },
+                { 39, 34, "chest_slot_34" },
+                { 31, 37, "chest_slot_33" },
+                { 17, 29, "chest_slot_41" },
+                { 23, 28, "chest_slot_42" },
+                { 25, 42, "chest_slot_28" },
+                { 29, 44, "chest_slot_25" },
+                { 49, 28, "chest_slot_43" },
+                { 54, 23, "chest_slot_50" },
+                { 44, 22, "chest_slot_54" },
+                { 47, 16, "chest_slot_59" },
+                { 46, 19, "chest_slot_56" },
+                { 45,  4, "chest_slot_72" },
+                { 59,  3, "chest_slot_74" },
+                { 56, 14, "chest_slot_62" },
+                { 60, 27, "chest_slot_45" },
+                { 59, 30, "chest_slot_39" },
+                { 27,  8, "chest_slot_64" },
+                { 20, 14, "chest_slot_60" },
+                { 17, 22, "chest_slot_52" },
+                { 13, 20, "chest_slot_55" },
+                {  5,  7, "chest_slot_65" },
+                { 11, 57, "return_gate" },
+            };
+            const int n_legs = (int)(sizeof(legs) / sizeof(legs[0]));
+            int leg = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+            if (leg >= n_legs) {
+                AP_LOG("[phase3.5] tour complete: pos=(%d,%d) gold=%d "
+                       "hp=%d lead_base=%d",
+                       g->position.x, g->position.y, g->stats.gold,
+                       ap_army_total_hp(g), g->stats.leadership_base);
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_PHASE3_5_OPEN_RECRUIT;
+                return (ApCmd){ "PHASE3_5_TOUR:done", 0,
+                                assert_always_true };
+            }
+            int gx = legs[leg].x, gy = legs[leg].y;
+            if (g->position.x == gx && g->position.y == gy) {
+                AP_LOG("[phase3.5] leg %d (%s) done: pos=(%d,%d) gold=%d "
+                       "lead_base=%d",
+                       leg, legs[leg].name, g->position.x, g->position.y,
+                       g->stats.gold, g->stats.leadership_base);
+                st->module_scratch[0] = leg + 1;
+                return (ApCmd){ "PHASE3_5_TOUR:leg_done", 0,
+                                assert_always_true };
+            }
+            int key = ap_nav_step_avoiding_foes(g, m, gx, gy);
+            if (key == 0) {
+                AP_LOG("[phase3.5] leg %d (%s) no foe-free path from "
+                       "(%d,%d), skipping",
+                       leg, legs[leg].name, g->position.x, g->position.y);
+                st->module_scratch[0] = leg + 1;
+                return (ApCmd){ "PHASE3_5_TOUR:no_path", 0,
+                                assert_always_true };
+            }
+            return (ApCmd){ "PHASE3_5_TOUR:nav", key,
+                            assert_always_true };
+        }
+    }
+
+    // -- Post-Phase-3.5 re-recruit: walk into king_maximus and
+    //    max-buy archers + pikemen + militia again so the army
+    //    grows to fill the new leadership cap.
+    case AP_FLOW_PHASE3_5_OPEN_RECRUIT: {
+        if (views_active() == VIEW_RECRUIT_SOLDIERS) {
+            st->module_scratch[0] = 0;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE3_5_RECRUIT_ARCHERS;
+            return (ApCmd){ "PHASE3_5_OPEN_RECRUIT:entered", 0,
+                            assert_always_true };
+        }
+        if (views_active() == VIEW_HOME_CASTLE) {
+            return (ApCmd){ "PHASE3_5_OPEN_RECRUIT:a", KEY_A,
+                            assert_always_true };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE3_5_OPEN_RECRUIT:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        return (ApCmd){ "PHASE3_5_OPEN_RECRUIT:up", KEY_UP,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE3_5_RECRUIT_ARCHERS: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE3_5_RECRUIT_ARCHERS:b", KEY_B,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE3_5_RECRUIT_ARCHERS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE3_5_RECRUIT_ARCHERS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE3_5_RECRUIT_ARCHERS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE3_5_RECRUIT_PIKEMEN;
+            return (ApCmd){ "PHASE3_5_RECRUIT_ARCHERS:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE3_5_RECRUIT_PIKEMEN: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE3_5_RECRUIT_PIKEMEN:c", KEY_C,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE3_5_RECRUIT_PIKEMEN:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE3_5_RECRUIT_PIKEMEN:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE3_5_RECRUIT_PIKEMEN:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE3_5_RECRUIT_MILITIA;
+            return (ApCmd){ "PHASE3_5_RECRUIT_PIKEMEN:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE3_5_RECRUIT_MILITIA: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE3_5_RECRUIT_MILITIA:a", KEY_A,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE3_5_RECRUIT_MILITIA:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE3_5_RECRUIT_MILITIA:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE3_5_RECRUIT_MILITIA:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE3_5_EXIT_RECRUIT;
+            return (ApCmd){ "PHASE3_5_RECRUIT_MILITIA:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE3_5_EXIT_RECRUIT: {
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_PHASE3_5_EXIT_CASTLE;
+        return (ApCmd){ "PHASE3_5_EXIT_RECRUIT:esc", KEY_ESCAPE,
+                        assert_view_home_castle };
+    }
+
+    case AP_FLOW_PHASE3_5_EXIT_CASTLE: {
+        if (views_active() == VIEW_NONE) {
+            AP_LOG("[phase3.5] post-tour re-recruit done: gold=%d "
+                   "hp=%d lead_base=%d",
+                   g->stats.gold, ap_army_total_hp(g),
+                   g->stats.leadership_base);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE4_NAV_CASTLE;
+            return (ApCmd){ "PHASE3_5_EXIT_CASTLE:done", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE3_5_EXIT_CASTLE:esc", KEY_ESCAPE,
                         assert_always_true };
     }
 

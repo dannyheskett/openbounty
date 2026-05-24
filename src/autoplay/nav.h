@@ -35,4 +35,11 @@
 
 int ap_nav_step(const Game *g, const Map *m, int goal_x, int goal_y);
 
+// Same as ap_nav_step, but routes around every alive hostile foe's
+// chebyshev-<=2 pursuit envelope (the foe-follow trigger range, see
+// engine/game.c:GameFoesFollow). The goal tile itself is exempt from
+// the exclusion (allows stepping onto a chest adjacent to a foe).
+int ap_nav_step_avoiding_foes(const Game *g, const Map *m,
+                              int goal_x, int goal_y);
+
 #endif

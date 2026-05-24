@@ -2,6 +2,7 @@
 #include "autoplay/internal.h"
 #include "adventure.h"
 #include "tile.h"
+#include <string.h>
 
 #include "raylib.h"
 
@@ -235,9 +236,28 @@ static bool find_nearest_town(const Game *g, const Map *m,
 //     tile (disembark)
 // Returns the first key to press from (sx,sy) in start_mode toward
 // (gx,gy). Mode of goal not constrained.
+// When `avoid_foes` is true, refuse to traverse any tile within chebyshev
+// <= 2 of an alive hostile foe (the foe-follow trigger range — see
+// engine/game.c:GameFoesFollow). The goal tile is exempt so we can still
+// pick up a chest immediately adjacent to a foe. Friendly foes are
+// ignored (they're recruit prompts, not combat triggers).
+static bool tile_in_foe_envelope(const Game *g, int x, int y) {
+    if (!g) return false;
+    for (int i = 0; i < g->foe_count; i++) {
+        const FoeState *f = &g->foes[i];
+        if (!f->alive || f->friendly) continue;
+        if (strcmp(f->zone, g->position.zone) != 0) continue;
+        int dx = x - f->x; if (dx < 0) dx = -dx;
+        int dy = y - f->y; if (dy < 0) dy = -dy;
+        int ch = (dx > dy) ? dx : dy;
+        if (ch <= 2) return true;
+    }
+    return false;
+}
+
 static int bfs_multimode(const Map *m, const Game *g,
                          int sx, int sy, int start_mode,
-                         int gx, int gy) {
+                         int gx, int gy, bool avoid_foes) {
     int W = m->width;
     int H = m->height;
     if (W <= 0 || H <= 0 || W > NAV_MAX_W || H > NAV_MAX_H) return 0;
@@ -287,6 +307,11 @@ static int bfs_multimode(const Map *m, const Game *g,
                  t->interactive == INTERACT_DWELLING_FOREST ||
                  t->interactive == INTERACT_DWELLING_HILLS  ||
                  t->interactive == INTERACT_DWELLING_DUNGEON) && !is_goal) continue;
+            // Foe-avoidance: skip tiles within chebyshev 2 of any alive
+            // hostile foe in the current zone. Goal is exempt so the
+            // caller can route onto a chest adjacent to a foe.
+            if (avoid_foes && !is_goal &&
+                tile_in_foe_envelope(g, nx, ny)) continue;
 
             int next_mode = mode;
             bool ok = false;
@@ -340,7 +365,7 @@ int ap_nav_step(const Game *g, const Map *m, int goal_x, int goal_y) {
     // Try a direct multi-mode plan first. This handles foot, boat, and
     // any combination of board/disembark transitions in one BFS.
     int key = bfs_multimode(m, g, g->position.x, g->position.y, mode,
-                            goal_x, goal_y);
+                            goal_x, goal_y, /*avoid_foes=*/false);
     if (key) return key;
 
     // No path — likely we need a boat but don't have one. Route to the
@@ -358,4 +383,16 @@ int ap_nav_step(const Game *g, const Map *m, int goal_x, int goal_y) {
         }
     }
     return 0;
+}
+
+// Public entry point — like ap_nav_step, but the multi-mode BFS
+// refuses to traverse any tile within chebyshev <= 2 of an alive
+// hostile foe (so we never trigger pursuit). Goal tile is exempt.
+int ap_nav_step_avoiding_foes(const Game *g, const Map *m,
+                              int goal_x, int goal_y) {
+    if (!g || !m) return 0;
+    if (g->position.x == goal_x && g->position.y == goal_y) return 0;
+    int mode = (g->travel_mode == TRAVEL_BOAT) ? 1 : 0;
+    return bfs_multimode(m, g, g->position.x, g->position.y, mode,
+                         goal_x, goal_y, /*avoid_foes=*/true);
 }
