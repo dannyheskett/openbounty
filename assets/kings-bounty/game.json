@@ -83,8 +83,8 @@
 			"height":	64,
 			"neighbors":	["forestria", "archipelia", "saharia"],
 			"hero_spawn":	{
-				"x":	11,
-				"y":	58
+				"x":	12,
+				"y":	62
 			},
 			"is_home":	true,
 			"home_spawn":	{

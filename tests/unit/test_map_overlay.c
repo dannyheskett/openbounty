@@ -90,9 +90,12 @@ TEST clear_interactive_out_of_bounds_no_op(void) {
 TEST hero_spawn_coords_present(void) {
     Resources *res; Game *g; Map *m; Fog *f;
     ASSERT(fx_init_game_full(&res, &g, &m, &f, "continentia", FIXTURE_SEED));
-    // Continentia hero_spawn = (11, 58).
-    ASSERT_EQ(11, m->hero_spawn_x);
-    ASSERT_EQ(58, m->hero_spawn_y);
+    // Continentia hero_spawn = (12, 62) — water tile just off the
+    // home castle coast. Cross-zone arrivals (engine/game.c:1594)
+    // need a water spawn so the boat parks correctly; the new-game
+    // start uses home_spawn (11, 58) instead.
+    ASSERT_EQ(12, m->hero_spawn_x);
+    ASSERT_EQ(62, m->hero_spawn_y);
     fx_free_game_full(res, g, m, f);
     PASS();
 }

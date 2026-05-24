@@ -135,7 +135,7 @@ int shell_run_game(int argc, char **argv, ShellRunHooks *hooks) {
                    "       %*s [--movie [<path>]] [--seed N] [--version]\n"
                    "       %s --extract [--out-dir <dir>]\n"
                    "       %s --pack-dir <src_dir> <out_zip>\n"
-                   "       %s --autoplay [--visible]\n",
+                   "       %s --autoplay [--visible] [--uncapped]\n",
                    OPENBOUNTY_VERSION, argv[0],
                    (int)strlen(argv[0]), "",
                    argv[0], argv[0], argv[0]);
@@ -348,22 +348,28 @@ int shell_run_game(int argc, char **argv, ShellRunHooks *hooks) {
     int base_h = CL_WINDOW_H;    // 400
 
     unsigned int window_flags = FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT;
-    bool autoplay_visible = false;
-    bool autoplay_handoff = false;
+    bool autoplay_visible  = false;
+    bool autoplay_handoff  = false;
+    bool autoplay_uncapped = false;
     if (hooks) {
         // In autoplay mode the window stays hidden by default — CI
         // shouldn't pop a window and we don't need vsync-paced
         // frames. --visible opens the window AND throttles the
-        // simulation to wall-clock 60fps so a human can follow it.
+        // simulation to wall-clock 30fps so a human can follow it.
         // --handoff (implied by --visible) hands control to the
         // keyboard when the autoplay flow finishes successfully,
-        // instead of exiting the process.
+        // instead of exiting the process. --uncapped removes the
+        // 30fps wall-clock throttle (and skips raylib's SetTargetFPS
+        // post-handoff) so visible autoplay runs as fast as the
+        // host can render.
         for (int i = 1; i < argc; i++) {
             if (strcmp(argv[i], "--visible") == 0) {
                 autoplay_visible = true;
                 autoplay_handoff = true;
             } else if (strcmp(argv[i], "--handoff") == 0) {
                 autoplay_handoff = true;
+            } else if (strcmp(argv[i], "--uncapped") == 0) {
+                autoplay_uncapped = true;
             }
         }
         if (!autoplay_visible) window_flags |= FLAG_WINDOW_HIDDEN;
@@ -375,10 +381,10 @@ int shell_run_game(int argc, char **argv, ShellRunHooks *hooks) {
     // In autoplay mode we don't want SetTargetFPS's vsync — the test
     // clock advances per loop iteration. Without --visible, leaving
     // FPS uncapped lets autoplay run as fast as possible. With
-    // --visible, throttle the test clock so the simulation tracks
-    // wall time and is actually watchable.
+    // --visible (and no --uncapped), throttle the test clock to 30fps
+    // so the simulation tracks wall time and is actually watchable.
     if (!hooks) SetTargetFPS(60);
-    if (hooks && autoplay_visible) {
+    if (hooks && autoplay_visible && !autoplay_uncapped) {
         // Wall-clock pace = 30 fps in visible autoplay — half the
         // native 60fps. Slow enough to follow each tick's logical
         // action (one walk step or one combat decision) without
@@ -603,12 +609,13 @@ int shell_run_game(int argc, char **argv, ShellRunHooks *hooks) {
                 if (autoplay_handoff) {
                     // Hand over to the human: unhook autoplay, switch
                     // input shim back to raylib, switch frame host to
-                    // raylib (60fps vsync), open audio if it wasn't
-                    // already, and continue the loop without per_frame.
+                    // raylib (60fps vsync — or uncapped if --uncapped
+                    // was passed), open audio if it wasn't already,
+                    // and continue the loop without per_frame.
                     hooks->per_frame = NULL;
                     input_host_use_raylib();
                     frame_host_use_raylib();
-                    SetTargetFPS(60);
+                    if (!autoplay_uncapped) SetTargetFPS(60);
                     audio_init(&res);
                     audio_set_sounds_enabled(game.stats.options[1] != 0);
                     audio_set_music_enabled (game.stats.options[6] != 0);
