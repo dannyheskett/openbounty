@@ -32,6 +32,7 @@
 
 typedef enum {
     AP_FLOW_FIRST = 0,
+    // Startup: intro → enter home castle → buy starting army → exit.
     AP_FLOW_DISMISS_INTRO = AP_FLOW_FIRST,
     AP_FLOW_WALK_TO_GATE,
     AP_FLOW_STEP_ONTO_GATE,
@@ -41,45 +42,14 @@ typedef enum {
     AP_FLOW_RECRUIT_ARCHERS,
     AP_FLOW_EXIT_RECRUIT,
     AP_FLOW_EXIT_CASTLE,
-    AP_FLOW_GRIND,
+    // Phase 1: collect every chest on the home landmass, fighting
+    // any foe encountered en route, then enter Hunterville and buy
+    // siege weapons.
+    AP_FLOW_PHASE1,
     AP_FLOW_COMBAT,
     AP_FLOW_POST_COMBAT,
     AP_FLOW_BUY_SIEGE,
-    AP_FLOW_RENT_BOAT,
     AP_FLOW_EXIT_TOWN,
-    // Re-recruit at the home castle between chest legs. Reached when
-    // GRIND detects VIEW_HOME_CASTLE (the nav routed onto the gate).
-    AP_FLOW_REOPEN_RECRUIT,
-    AP_FLOW_REBUY_KNIGHTS,
-    AP_FLOW_REBUY_CAVALRY,
-    AP_FLOW_REBUY_PIKEMEN,
-    AP_FLOW_REBUY_ARCHERS,
-    AP_FLOW_REBUY_MILITIA,
-    AP_FLOW_REEXIT_RECRUIT,
-    AP_FLOW_REEXIT_CASTLE,
-    // Post-grind villain hunt loop. module_scratch[9] = index into
-    // continentia_villains[] (0..5, by reward ascending). For each:
-    //   HUNT_PRE_RECRUIT  → divert to the existing re-recruit sub-
-    //                        flow at the home castle.
-    //   HUNT_TO_TOWN      → nav to the nearest town's gate.
-    //   HUNT_CONTRACT     → loop: A (contract) + Space until
-    //                        g->contract.active_id matches target.
-    //   HUNT_SIEGE        → E (siege) + Space.
-    //   HUNT_EXIT_TOWN    → Esc out.
-    //   HUNT_TO_CASTLE    → nav to target villain's castle gate.
-    //                        engine fires yes_no prompt; GRIND modal
-    //                        handler dispatches into COMBAT.
-    //   POST_COMBAT       → returns to HUNT_NEXT.
-    //   HUNT_NEXT         → bump module_scratch[9] and re-enter
-    //                        HUNT_PRE_RECRUIT, or finish if done.
-    AP_FLOW_HUNT_PRE_RECRUIT,
-    AP_FLOW_HUNT_TO_TOWN,
-    AP_FLOW_HUNT_CONTRACT,
-    AP_FLOW_HUNT_SIEGE,
-    AP_FLOW_HUNT_EXIT_TOWN,
-    AP_FLOW_HUNT_RECRUIT_AGAIN,
-    AP_FLOW_HUNT_TO_CASTLE,
-    AP_FLOW_HUNT_NEXT,
     AP_FLOW_DONE,
     AP_FLOW_LAST = AP_FLOW_DONE,
 

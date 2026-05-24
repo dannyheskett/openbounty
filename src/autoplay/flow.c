@@ -221,200 +221,108 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
     }
 
     case AP_FLOW_EXIT_CASTLE: {
-        // Reset GRIND scratch on entry.
+        // Reset PHASE1 scratch on entry.
         st->module_scratch[0] = 0;  // leg index
-        st->module_scratch[1] = 0;  // step index within leg
-        st->module_scratch[5] = 0;  // replay: last key (0 = none)
-        st->module_scratch[6] = 0;  // replay: last pre-x
-        st->module_scratch[7] = 0;  // replay: last pre-y
         *out_phase_done = true;
-        *out_next_phase = AP_FLOW_GRIND;
+        *out_next_phase = AP_FLOW_PHASE1;
         return (ApCmd){ "EXIT_CASTLE:esc", KEY_ESCAPE, assert_view_none };
     }
 
-    // -- GRIND: consume LEGS[ti].steps[step_idx] one per tick. --------
-    // Stub for now: just transition to DONE. The actual LEGS[] table
-    // and step-consumption logic are wired up in a follow-up commit.
-    case AP_FLOW_GRIND: {
-        // Handle modal prompts first so an unexpected popup doesn't
-        // wedge the run before we have steps to play. When any modal
-        // diverts the leg, clear the replay-tracking state so the next
-        // leg-step tick doesn't mistake "position unchanged" for a
-        // blocked move.
+    // -- PHASE 1: walk the 12 home-landmass chests in nearest-neighbor
+    //    order, fighting any foe en route (always take gold on
+    //    chests). Final leg is Hunterville — entering its tile diverts
+    //    to BUY_SIEGE, then EXIT_TOWN, then DONE.
+    case AP_FLOW_PHASE1: {
         if (prompt_is_active()) {
-            st->module_scratch[5] = 0;
             const char *kind = prompt_kind_str();
-            // Yes/no = foe attack confirmation. Press Y to engage.
             if (kind && strcmp(kind, "yes_no") == 0) {
                 *out_phase_done = true;
                 *out_next_phase = AP_FLOW_COMBAT;
-                dump_combat_start(g, "GRIND:y_foe");
-                return (ApCmd){ "GRIND:y_foe", KEY_Y, assert_combat_resolved };
+                dump_combat_start(g, "PHASE1:y_foe");
+                return (ApCmd){ "PHASE1:y_foe", KEY_Y,
+                                assert_combat_resolved };
             }
-            // Text input = friendly-army or dwelling recruitment count.
-            // Press Enter to commit 0 (no recruit); the engine then
-            // consumes the foe / dwelling so the prompt won't re-fire.
             if (kind && strcmp(kind, "text") == 0) {
-                return (ApCmd){ "GRIND:enter_recruit_0", KEY_ENTER,
+                return (ApCmd){ "PHASE1:enter_dismiss", KEY_ENTER,
                                 assert_prompt_gone };
             }
-            // A/B chest choice: alternate between A (gold) and B
-            // (distribute → leadership). module_scratch[13] is the
-            // toggle: even = A, odd = B.
-            int n = st->module_scratch[13];
-            st->module_scratch[13] = n + 1;
-            if (n % 2 == 0) {
-                return (ApCmd){ "GRIND:a_chest", KEY_A,
-                                assert_prompt_gone };
-            }
-            return (ApCmd){ "GRIND:b_chest", KEY_B, assert_prompt_gone };
+            // A/B chest prompt — always take gold.
+            return (ApCmd){ "PHASE1:a_chest", KEY_A,
+                            assert_prompt_gone };
         }
         if (dialog_is_active()) {
-            st->module_scratch[5] = 0;
-            return (ApCmd){ "GRIND:space_dialog", KEY_SPACE, assert_dialog_closed };
+            return (ApCmd){ "PHASE1:space_dialog", KEY_SPACE,
+                            assert_dialog_closed };
         }
-        // Town view: divert into RENT_BOAT → EXIT_TOWN.
+        // Town view (Hunterville reached): divert into BUY_SIEGE,
+        // which transitions through EXIT_TOWN to DONE.
         if (views_active() == VIEW_TOWN) {
-            st->module_scratch[5] = 0;
+            st->module_scratch[4] = 0;
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_RENT_BOAT;
-            return (ApCmd){ "GRIND:in_town", 0, assert_always_true };
+            *out_next_phase = AP_FLOW_BUY_SIEGE;
+            return (ApCmd){ "PHASE1:in_town", 0, assert_always_true };
         }
-        // Castle view: we routed onto the home gate for a re-recruit.
-        // Divert into the REOPEN_RECRUIT sub-flow.
-        if (views_active() == VIEW_HOME_CASTLE) {
-            st->module_scratch[5] = 0;
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_REOPEN_RECRUIT;
-            return (ApCmd){ "GRIND:in_castle", 0, assert_always_true };
-        }
-        // Multi-leg drive via the generic navigator. The legs[] table
-        // holds the chest coords; ap_nav_step plans a path each tick
-        // (handles foot/boat, town-rents-boat) and emits the next key.
-        // When ap_nav_step returns 0 the hero is on the goal tile —
-        // advance to the next leg.
         {
-            // The 54 actual chest tiles in continentia at seed=1
-            // (extracted from a tick-1 AP_DUMP_MAP=1 run that prints
-            // only INTERACT_TREASURE_CHEST tiles). Ordered nearest-
-            // neighbor from the GRIND start at (11, 57). The other 21
-            // slots that game.json names treasure_chest_NNN are
-            // re-tagged at salt time as artifacts / navmaps / orbs /
-            // telecaves / dwellings / friendly foes and aren't chests.
-            // Generated by /tmp/optimize.awk from the AP_DUMP_MAP=1
-            // dump. Greedy nearest-neighbor over continentia chests
-            // (foot BFS for home landmass; Manhattan for off-island)
-            // with a home-castle re-recruit detour every 5 chests,
-            // plus a Hunterville boat-rent stop between phase 1 and
-            // phase 2.
-            //
-            // recruit field: 0=chest goal, 1=home castle (recruit),
-            // 2=town (rent boat).
-            static const struct {
-                int x, y;
-                const char *name;
-                int recruit;
-            } legs[] = {
-                {  8, 60, "chest_01", 0 },
-                {  6, 46, "chest_02", 0 },
-                {  8, 42, "chest_03", 0 },
-                { 10, 53, "chest_04", 0 },
-                { 10, 54, "chest_05", 0 },
-                { 23, 46, "chest_06", 0 },
-                { 21, 50, "chest_07", 0 },
-                { 11, 41, "chest_08", 0 },
-                {  3, 48, "chest_09", 0 },
-                { 37, 56, "chest_10", 0 },
-                { 11, 56, "home_castle", 1 },
-                { 29, 56, "chest_11", 0 },
-                { 25, 57, "chest_12", 0 },
-                { 12, 60, "hunterville", 2 },
-                {  3, 59, "chest_13", 0 },
-                { 22, 60, "chest_14", 0 },
-                { 33, 60, "chest_15", 0 },
-                { 50, 59, "chest_16", 0 },
-                { 52, 46, "chest_17", 0 },
-                { 41, 45, "chest_18", 0 },
-                { 40, 48, "chest_19", 0 },
-                { 43, 50, "chest_20", 0 },
-                { 11, 56, "home_castle", 1 },
-                {  9, 32, "chest_21", 0 },
-                {  8, 24, "chest_22", 0 },
-                {  7, 24, "chest_23", 0 },
-                {  6, 24, "chest_24", 0 },
-                { 13, 20, "chest_25", 0 },
-                { 17, 22, "chest_26", 0 },
-                { 17, 29, "chest_27", 0 },
-                { 23, 28, "chest_28", 0 },
-                { 33, 22, "chest_29", 0 },
-                { 36, 24, "chest_30", 0 },
-                { 11, 56, "home_castle", 1 },
-                { 25, 42, "chest_31", 0 },
-                { 29, 44, "chest_32", 0 },
-                { 31, 37, "chest_33", 0 },
-                { 39, 34, "chest_34", 0 },
-                { 41, 39, "chest_35", 0 },
-                { 49, 28, "chest_36", 0 },
-                { 54, 23, "chest_37", 0 },
-                { 60, 27, "chest_38", 0 },
-                { 59, 30, "chest_39", 0 },
-                { 56, 14, "chest_40", 0 },
-                { 11, 56, "home_castle", 1 },
-                { 10, 13, "chest_41", 0 },
-                {  5,  7, "chest_42", 0 },
-                { 15,  5, "chest_43", 0 },
-                { 23,  6, "chest_44", 0 },
-                { 24,  6, "chest_45", 0 },
-                { 27,  8, "chest_46", 0 },
-                { 20, 14, "chest_47", 0 },
-                { 42, 18, "chest_48", 0 },
-                { 46, 19, "chest_49", 0 },
-                { 47, 16, "chest_50", 0 },
-                { 11, 56, "home_castle", 1 },
-                { 44, 22, "chest_51", 0 },
-                { 45,  4, "chest_52", 0 },
-                { 36,  3, "chest_53", 0 },
-                { 59,  3, "chest_54", 0 },
+            // Home-landmass chests, ordered so the path crosses the
+            // hardest foe tiles while the army is at full HP. Last
+            // run's fight log identified two heavy hitters: the foe
+            // near (27, 57) (cost ~80 HP, last fight wiped us) and
+            // the foe near (8, 47) (cost ~128 HP). chest_12 (25, 57)
+            // forces the (27, 57) fight first; chest_02 (6, 46)
+            // routes past (8, 47); remaining chests follow in
+            // nearest-neighbor order from the new starting point.
+            // The two heaviest fights on the home landmass are at
+            // (27, 57) and (8, 47). Last run shows both are
+            // *survivable at full HP* but lethal once the army has
+            // taken any damage. Hit both with 300 HP by doing the
+            // chest legs whose nav-paths cross those tiles first.
+            static const struct { int x, y; const char *name; } legs[] = {
+                { 25, 57, "chest_12" },  // path crosses (27,57)
+                {  6, 46, "chest_02" },  // path crosses (8,47)
+                {  8, 60, "chest_01" },
+                {  8, 42, "chest_03" },
+                { 10, 53, "chest_04" },
+                { 10, 54, "chest_05" },
+                { 23, 46, "chest_06" },
+                { 21, 50, "chest_07" },
+                { 11, 41, "chest_08" },
+                {  3, 48, "chest_09" },
+                { 37, 56, "chest_10" },
+                { 29, 56, "chest_11" },
+                { 12, 60, "hunterville" },
             };
             const int n_legs = (int)(sizeof(legs) / sizeof(legs[0]));
             int leg = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
             if (leg >= n_legs) {
-                AP_LOG("[flow] all chests done: pos=(%d,%d) gold=%d "
-                       "— starting villain hunt",
+                AP_LOG("[phase1] all legs done unexpectedly: "
+                       "pos=(%d,%d) gold=%d",
                        g->position.x, g->position.y, g->stats.gold);
-                st->module_scratch[9]  = 0;  // first villain index
-                st->module_scratch[11] = 1;  // hunt active
                 *out_phase_done = true;
-                *out_next_phase = AP_FLOW_HUNT_PRE_RECRUIT;
-                return (ApCmd){ "GRIND:all_chests_done", 0,
+                *out_next_phase = AP_FLOW_DONE;
+                return (ApCmd){ "PHASE1:fallthrough", 0,
                                 assert_always_true };
             }
             int gx = legs[leg].x, gy = legs[leg].y;
-            int leg_kind = legs[leg].recruit;
-            // Goal reached? Advance to the next leg. For recruit/town
-            // legs, hero never actually steps onto (11,56) or (12,60)
-            // (engine bounces them back), so we never see pos==goal;
-            // those legs advance via the VIEW_HOME_CASTLE / VIEW_TOWN
-            // modal handlers above setting *out_next_phase elsewhere.
+            // Goal reached? Advance. (Hunterville is bounce-back — the
+            // view-town divert above handles its advance.)
             if (g->position.x == gx && g->position.y == gy) {
-                AP_LOG("[flow] leg %d (%s) done: pos=(%d,%d) gold=%d",
-                       leg, legs[leg].name, g->position.x, g->position.y,
-                       g->stats.gold);
+                AP_LOG("[phase1] leg %d (%s) done: pos=(%d,%d) gold=%d",
+                       leg, legs[leg].name,
+                       g->position.x, g->position.y, g->stats.gold);
                 st->module_scratch[0] = leg + 1;
-                return (ApCmd){ "GRIND:leg_done", 0, assert_always_true };
+                return (ApCmd){ "PHASE1:leg_done", 0,
+                                assert_always_true };
             }
-            (void)leg_kind;
             int key = ap_nav_step(g, m, gx, gy);
             if (key == 0) {
-                // No path found — log and abort the leg by advancing
-                // anyway so the run terminates rather than spins.
-                AP_LOG("[flow] leg %d (%s) no path from (%d,%d) to (%d,%d)",
-                       leg, legs[leg].name,
+                AP_LOG("[phase1] leg %d (%s) no path from (%d,%d) "
+                       "to (%d,%d)", leg, legs[leg].name,
                        g->position.x, g->position.y, gx, gy);
                 st->module_scratch[0] = leg + 1;
-                return (ApCmd){ "GRIND:no_path", 0, assert_always_true };
+                return (ApCmd){ "PHASE1:no_path", 0,
+                                assert_always_true };
             }
-            return (ApCmd){ "GRIND:nav", key, assert_always_true };
+            return (ApCmd){ "PHASE1:nav", key, assert_always_true };
         }
     }
 
@@ -455,20 +363,9 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 *out_next_phase = AP_FLOW_DONE;
                 return (ApCmd){ "POST_COMBAT:defeat", 0, assert_always_true };
             }
-            // Resume GRIND, or the hunt sub-loop if it's active.
+            // Resume PHASE1 — the only navigating phase.
             *out_phase_done = true;
-            if (st->module_scratch[11] == 1) {
-                // In hunt mode. The resume target was stashed in
-                // module_scratch[10] before COMBAT was entered.
-                int t = st->module_scratch[10];
-                if      (t == 1) *out_next_phase = AP_FLOW_HUNT_PRE_RECRUIT;
-                else if (t == 2) *out_next_phase = AP_FLOW_HUNT_TO_TOWN;
-                else if (t == 3) *out_next_phase = AP_FLOW_HUNT_NEXT;
-                else if (t == 5) *out_next_phase = AP_FLOW_HUNT_RECRUIT_AGAIN;
-                else             *out_next_phase = AP_FLOW_HUNT_TO_CASTLE;
-            } else {
-                *out_next_phase = AP_FLOW_GRIND;
-            }
+            *out_next_phase = AP_FLOW_PHASE1;
             return (ApCmd){ "POST_COMBAT:noop", 0, assert_always_true };
         }
         if (dialog_is_active()) {
@@ -485,549 +382,37 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
             return (ApCmd){ "BUY_SIEGE:e", KEY_E, assert_always_true };
         case 1:
             st->module_scratch[4] = 2;
-            return (ApCmd){ "BUY_SIEGE:space_info", KEY_SPACE, assert_always_true };
+            return (ApCmd){ "BUY_SIEGE:space_info", KEY_SPACE,
+                            assert_always_true };
         default:
             if (!g->stats.siege_weapons) {
-                AP_LOG("[flow] BUY_SIEGE: siege_weapons still 0 after purchase!");
-                ap_dump_state("siege purchase failed", g, st);
-                return (ApCmd){ "BUY_SIEGE:fail", 0, assert_dialog_open };
-            }
-            AP_LOG("[flow] siege_weapons=1, gold=%d", g->stats.gold);
-            st->module_scratch[4] = -1;
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_RENT_BOAT;
-            return (ApCmd){ "BUY_SIEGE:done", 0, assert_always_true };
-        }
-    }
-
-    case AP_FLOW_RENT_BOAT: {
-        int sub = (st->module_scratch[4] < 0) ? 0 : st->module_scratch[4];
-        switch (sub) {
-        case 0:
-            st->module_scratch[4] = 1;
-            return (ApCmd){ "RENT_BOAT:b", KEY_B, assert_always_true };
-        default:
-            if (!g->boat.has_boat) {
-                // Not enough gold to rent. Skip the boat and exit
-                // the town; nav re-plans on the next tick.
-                AP_LOG("[flow] RENT_BOAT: insufficient gold "
-                       "(gold=%d), continuing without boat",
+                AP_LOG("[flow] BUY_SIEGE: siege_weapons still 0 "
+                       "after purchase (gold=%d)", g->stats.gold);
+            } else {
+                AP_LOG("[flow] siege_weapons=1, gold=%d",
                        g->stats.gold);
-                st->module_scratch[4] = -1;
-                *out_phase_done = true;
-                *out_next_phase = AP_FLOW_EXIT_TOWN;
-                return (ApCmd){ "RENT_BOAT:skip", KEY_SPACE,
-                                assert_always_true };
             }
-            AP_LOG("[flow] boat rented at (%d,%d), gold=%d",
-                   g->boat.x, g->boat.y, g->stats.gold);
             st->module_scratch[4] = -1;
             *out_phase_done = true;
             *out_next_phase = AP_FLOW_EXIT_TOWN;
-            return (ApCmd){ "RENT_BOAT:done", 0, assert_always_true };
+            return (ApCmd){ "BUY_SIEGE:done", 0, assert_always_true };
         }
     }
 
     case AP_FLOW_EXIT_TOWN: {
         if (views_active() == VIEW_NONE) {
-            // If we entered town for a leg-table "town" entry (rent
-            // boat), advance the leg index so we don't re-route.
-            // Leg-table town entries are recruit==2.
-            AP_LOG("[flow] town exited at leg %d",
-                   st->module_scratch[0]);
-            st->module_scratch[0] = st->module_scratch[0] + 1;
+            AP_LOG("[phase1] complete: pos=(%d,%d) gold=%d hp=%d "
+                   "siege=%d",
+                   g->position.x, g->position.y, g->stats.gold,
+                   ap_army_total_hp(g), g->stats.siege_weapons);
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_GRIND;
+            *out_next_phase = AP_FLOW_DONE;
             return (ApCmd){ "EXIT_TOWN:done", 0, assert_always_true };
         }
-        return (ApCmd){ "EXIT_TOWN:esc", KEY_ESCAPE, assert_always_true };
-    }
-
-    // -- Mid-grind re-recruit at the home castle. ---------------------
-    case AP_FLOW_REOPEN_RECRUIT: {
-        st->module_scratch[4] = 0;
-        *out_phase_done = true;
-        *out_next_phase = AP_FLOW_REBUY_PIKEMEN;
-        return (ApCmd){ "REOPEN_RECRUIT:a", KEY_A,
-                        assert_view_recruit_soldiers };
-    }
-
-    case AP_FLOW_REBUY_KNIGHTS: {
-        // E (pick knights) → 9 9 9 9 → Enter. Clamped to s_max
-        // (leadership + gold). Highest priority — buy first.
-        int sub = (st->module_scratch[4] < 0) ? 0 : st->module_scratch[4];
-        switch (sub) {
-        case 0: st->module_scratch[4] = 1;
-            return (ApCmd){ "REBUY_KNIGHTS:e", KEY_E,
-                            assert_view_recruit_soldiers };
-        case 1: st->module_scratch[4] = 2;
-            return (ApCmd){ "REBUY_KNIGHTS:9a", KEY_NINE,
-                            assert_view_recruit_soldiers };
-        case 2: st->module_scratch[4] = 3;
-            return (ApCmd){ "REBUY_KNIGHTS:9b", KEY_NINE,
-                            assert_view_recruit_soldiers };
-        case 3: st->module_scratch[4] = 4;
-            return (ApCmd){ "REBUY_KNIGHTS:9c", KEY_NINE,
-                            assert_view_recruit_soldiers };
-        case 4: st->module_scratch[4] = 5;
-            return (ApCmd){ "REBUY_KNIGHTS:9d", KEY_NINE,
-                            assert_view_recruit_soldiers };
-        default: st->module_scratch[4] = -1;
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_REBUY_CAVALRY;
-            return (ApCmd){ "REBUY_KNIGHTS:enter", KEY_ENTER,
-                            assert_always_true };
-        }
-    }
-
-    case AP_FLOW_REBUY_CAVALRY: {
-        // D (pick cavalry) → 9 9 9 9 → Enter. Clamped to max.
-        int sub = (st->module_scratch[4] < 0) ? 0 : st->module_scratch[4];
-        switch (sub) {
-        case 0: st->module_scratch[4] = 1;
-            return (ApCmd){ "REBUY_CAVALRY:d", KEY_D,
-                            assert_view_recruit_soldiers };
-        case 1: st->module_scratch[4] = 2;
-            return (ApCmd){ "REBUY_CAVALRY:9a", KEY_NINE,
-                            assert_view_recruit_soldiers };
-        case 2: st->module_scratch[4] = 3;
-            return (ApCmd){ "REBUY_CAVALRY:9b", KEY_NINE,
-                            assert_view_recruit_soldiers };
-        case 3: st->module_scratch[4] = 4;
-            return (ApCmd){ "REBUY_CAVALRY:9c", KEY_NINE,
-                            assert_view_recruit_soldiers };
-        case 4: st->module_scratch[4] = 5;
-            return (ApCmd){ "REBUY_CAVALRY:9d", KEY_NINE,
-                            assert_view_recruit_soldiers };
-        default: st->module_scratch[4] = -1;
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_REBUY_PIKEMEN;
-            return (ApCmd){ "REBUY_CAVALRY:enter", KEY_ENTER,
-                            assert_always_true };
-        }
-    }
-
-    case AP_FLOW_REBUY_PIKEMEN: {
-        // C (pick pikemen) → 9 9 9 9 → Enter. The recruit screen
-        // silently clamps to s_max (line 268 of recruit_soldiers.c),
-        // so typing 9999 buys the max affordable count.
-        int sub = (st->module_scratch[4] < 0) ? 0 : st->module_scratch[4];
-        switch (sub) {
-        case 0: st->module_scratch[4] = 1;
-            return (ApCmd){ "REBUY_PIKEMEN:c", KEY_C,
-                            assert_view_recruit_soldiers };
-        case 1: st->module_scratch[4] = 2;
-            return (ApCmd){ "REBUY_PIKEMEN:9a", KEY_NINE,
-                            assert_view_recruit_soldiers };
-        case 2: st->module_scratch[4] = 3;
-            return (ApCmd){ "REBUY_PIKEMEN:9b", KEY_NINE,
-                            assert_view_recruit_soldiers };
-        case 3: st->module_scratch[4] = 4;
-            return (ApCmd){ "REBUY_PIKEMEN:9c", KEY_NINE,
-                            assert_view_recruit_soldiers };
-        case 4: st->module_scratch[4] = 5;
-            return (ApCmd){ "REBUY_PIKEMEN:9d", KEY_NINE,
-                            assert_view_recruit_soldiers };
-        default: st->module_scratch[4] = -1;
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_REBUY_ARCHERS;
-            return (ApCmd){ "REBUY_PIKEMEN:enter", KEY_ENTER,
-                            assert_always_true };
-        }
-    }
-
-    case AP_FLOW_REBUY_ARCHERS: {
-        // B (pick archers) → 9 9 9 9 → Enter. Clamped to max.
-        int sub = (st->module_scratch[4] < 0) ? 0 : st->module_scratch[4];
-        switch (sub) {
-        case 0: st->module_scratch[4] = 1;
-            return (ApCmd){ "REBUY_ARCHERS:b", KEY_B,
-                            assert_view_recruit_soldiers };
-        case 1: st->module_scratch[4] = 2;
-            return (ApCmd){ "REBUY_ARCHERS:9a", KEY_NINE,
-                            assert_view_recruit_soldiers };
-        case 2: st->module_scratch[4] = 3;
-            return (ApCmd){ "REBUY_ARCHERS:9b", KEY_NINE,
-                            assert_view_recruit_soldiers };
-        case 3: st->module_scratch[4] = 4;
-            return (ApCmd){ "REBUY_ARCHERS:9c", KEY_NINE,
-                            assert_view_recruit_soldiers };
-        case 4: st->module_scratch[4] = 5;
-            return (ApCmd){ "REBUY_ARCHERS:9d", KEY_NINE,
-                            assert_view_recruit_soldiers };
-        default: st->module_scratch[4] = -1;
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_REBUY_MILITIA;
-            return (ApCmd){ "REBUY_ARCHERS:enter", KEY_ENTER,
-                            assert_always_true };
-        }
-    }
-
-    case AP_FLOW_REBUY_MILITIA: {
-        // A (pick militia) → 9 9 9 9 → Enter. Clamped to max.
-        int sub = (st->module_scratch[4] < 0) ? 0 : st->module_scratch[4];
-        switch (sub) {
-        case 0: st->module_scratch[4] = 1;
-            return (ApCmd){ "REBUY_MILITIA:a", KEY_A,
-                            assert_view_recruit_soldiers };
-        case 1: st->module_scratch[4] = 2;
-            return (ApCmd){ "REBUY_MILITIA:9a", KEY_NINE,
-                            assert_view_recruit_soldiers };
-        case 2: st->module_scratch[4] = 3;
-            return (ApCmd){ "REBUY_MILITIA:9b", KEY_NINE,
-                            assert_view_recruit_soldiers };
-        case 3: st->module_scratch[4] = 4;
-            return (ApCmd){ "REBUY_MILITIA:9c", KEY_NINE,
-                            assert_view_recruit_soldiers };
-        case 4: st->module_scratch[4] = 5;
-            return (ApCmd){ "REBUY_MILITIA:9d", KEY_NINE,
-                            assert_view_recruit_soldiers };
-        default: st->module_scratch[4] = -1;
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_REEXIT_RECRUIT;
-            return (ApCmd){ "REBUY_MILITIA:enter", KEY_ENTER,
-                            assert_always_true };
-        }
-    }
-
-    case AP_FLOW_REEXIT_RECRUIT: {
-        AP_LOG("[recruit] done; army composition after recruit:");
-        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
-            if (!g->army[i].id[0] || g->army[i].count == 0) continue;
-            const TroopDef *t = troop_by_id(g->army[i].id);
-            int hp = t ? t->hit_points * g->army[i].count : 0;
-            AP_LOG("[recruit]   [%d]: %d x %s (hp=%d)",
-                   i, g->army[i].count, g->army[i].id, hp);
-        }
-        AP_LOG("[recruit]   gold=%d leadership=%d",
-               g->stats.gold, g->stats.leadership_current);
-        *out_phase_done = true;
-        *out_next_phase = AP_FLOW_REEXIT_CASTLE;
-        return (ApCmd){ "REEXIT_RECRUIT:esc", KEY_ESCAPE,
-                        assert_view_home_castle };
-    }
-
-    case AP_FLOW_REEXIT_CASTLE: {
-        // If we're in the hunt sub-loop (scratch[11] = 1), continue
-        // into the next hunt phase. scratch[12] = post-recruit target:
-        //   1 = HUNT_TO_TOWN  (pre-hunt recruit)
-        //   2 = HUNT_TO_CASTLE (post-siege top-up before attack)
-        if (st->module_scratch[11] == 1) {
-            *out_phase_done = true;
-            int t = st->module_scratch[12];
-            *out_next_phase = (t == 2) ? AP_FLOW_HUNT_TO_CASTLE
-                                       : AP_FLOW_HUNT_TO_TOWN;
-            return (ApCmd){ "REEXIT_CASTLE:to_hunt", KEY_ESCAPE,
-                            assert_view_none };
-        }
-        // Otherwise we were diverted from GRIND for a leg-table
-        // recruit entry. Advance the leg index so we don't re-route
-        // back to the castle on the next tick.
-        AP_LOG("[flow] re-recruit done at leg %d",
-               st->module_scratch[0]);
-        st->module_scratch[0] = st->module_scratch[0] + 1;
-        *out_phase_done = true;
-        *out_next_phase = AP_FLOW_GRIND;
-        return (ApCmd){ "REEXIT_CASTLE:esc", KEY_ESCAPE,
-                        assert_view_none };
-    }
-
-    // -- Post-grind villain hunt loop. ----------------------------------
-    // Continentia villains, ordered by reward ascending (proxy for combat
-    // strength). For each we re-recruit, take a contract, buy siege,
-    // then attack the castle they were assigned to at salt time.
-    // module_scratch[9] = index into the villains list (0..5).
-    case AP_FLOW_HUNT_PRE_RECRUIT: {
-        // Pre-hunt: top up army at home castle, then go to town.
-        st->module_scratch[12] = 1;  // post-recruit → HUNT_TO_TOWN
-        if (views_active() == VIEW_HOME_CASTLE) {
-            st->module_scratch[4] = 0;
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_REOPEN_RECRUIT;
-            return (ApCmd){ "HUNT_PRE_RECRUIT:in_castle", 0,
-                            assert_always_true };
-        }
-        // We stumbled into a town en route — Esc out, nav will pick
-        // a path that avoids town tiles next tick.
-        if (views_active() == VIEW_TOWN) {
-            return (ApCmd){ "HUNT_PRE_RECRUIT:town_esc", KEY_ESCAPE,
-                            assert_always_true };
-        }
-        int key = ap_nav_step(g, m, 11, 56);
-        if (key == 0) {
-            // Already at castle? Or no path. Skip ahead.
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_HUNT_TO_TOWN;
-            return (ApCmd){ "HUNT_PRE_RECRUIT:skip", 0,
-                            assert_always_true };
-        }
-        // Handle modal interruptions en route.
-        if (prompt_is_active()) {
-            const char *kind = prompt_kind_str();
-            if (kind && strcmp(kind, "yes_no") == 0) {
-                *out_phase_done = true;
-                *out_next_phase = AP_FLOW_COMBAT;
-                st->module_scratch[10] = 1;  // resume target: HUNT
-                dump_combat_start(g, "HUNT:y_foe");
-                return (ApCmd){ "HUNT:y_foe", KEY_Y,
-                                assert_combat_resolved };
-            }
-            if (kind && strcmp(kind, "text") == 0) {
-                return (ApCmd){ "HUNT:enter_recruit_0", KEY_ENTER,
-                                assert_prompt_gone };
-            }
-            { int n = st->module_scratch[13]; st->module_scratch[13] = n + 1;
-                  if (n % 2 == 0)
-                      return (ApCmd){ "HUNT:a_chest", KEY_A, assert_prompt_gone };
-                  return (ApCmd){ "HUNT:b_chest", KEY_B, assert_prompt_gone };
-                }
-        }
-        if (dialog_is_active()) {
-            return (ApCmd){ "HUNT:space_dialog", KEY_SPACE,
-                            assert_dialog_closed };
-        }
-        return (ApCmd){ "HUNT_PRE_RECRUIT:nav", key, assert_always_true };
-    }
-
-    case AP_FLOW_HUNT_TO_TOWN: {
-        // Find any town with a defined contract row. Simplest: route
-        // to Hunterville (12, 60). The nav already handles the foot
-        // path back; on step-on VIEW_TOWN opens and we divert.
-        if (views_active() == VIEW_TOWN) {
-            st->module_scratch[4] = 0;
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_HUNT_CONTRACT;
-            return (ApCmd){ "HUNT_TO_TOWN:in_town", 0,
-                            assert_always_true };
-        }
-        int key = ap_nav_step(g, m, 12, 60);
-        if (key == 0) {
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_HUNT_TO_CASTLE;
-            return (ApCmd){ "HUNT_TO_TOWN:skip", 0,
-                            assert_always_true };
-        }
-        if (prompt_is_active()) {
-            const char *kind = prompt_kind_str();
-            if (kind && strcmp(kind, "yes_no") == 0) {
-                *out_phase_done = true;
-                *out_next_phase = AP_FLOW_COMBAT;
-                st->module_scratch[10] = 2;
-                dump_combat_start(g, "HUNT:y_foe");
-                return (ApCmd){ "HUNT:y_foe", KEY_Y,
-                                assert_combat_resolved };
-            }
-            if (kind && strcmp(kind, "text") == 0) {
-                return (ApCmd){ "HUNT:enter_recruit_0", KEY_ENTER,
-                                assert_prompt_gone };
-            }
-            { int n = st->module_scratch[13]; st->module_scratch[13] = n + 1;
-                  if (n % 2 == 0)
-                      return (ApCmd){ "HUNT:a_chest", KEY_A, assert_prompt_gone };
-                  return (ApCmd){ "HUNT:b_chest", KEY_B, assert_prompt_gone };
-                }
-        }
-        if (dialog_is_active()) {
-            return (ApCmd){ "HUNT:space_dialog", KEY_SPACE,
-                            assert_dialog_closed };
-        }
-        return (ApCmd){ "HUNT_TO_TOWN:nav", key, assert_always_true };
-    }
-
-    case AP_FLOW_HUNT_CONTRACT: {
-        // Continentia villains by hardness ascending.
-        static const char *const villains[] = {
-            "murray", "hack", "aimola",
-            "baron_makahl", "dread_rob", "caneghor"
-        };
-        int vi = st->module_scratch[9];
-        if (vi < 0 || vi >= (int)(sizeof(villains)/sizeof(villains[0]))) {
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_HUNT_EXIT_TOWN;
-            return (ApCmd){ "HUNT_CONTRACT:done", 0, assert_always_true };
-        }
-        // Press A to get next contract; the engine rotates through
-        // villains. Each A opens an info panel; any key dismisses it.
-        // Loop A/A/A/... until g->contract.active_id matches target.
-        if (strcmp(g->contract.active_id, villains[vi]) == 0) {
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_HUNT_SIEGE;
-            return (ApCmd){ "HUNT_CONTRACT:match", 0, assert_always_true };
-        }
-        return (ApCmd){ "HUNT_CONTRACT:a", KEY_A, assert_always_true };
-    }
-
-    case AP_FLOW_HUNT_SIEGE: {
-        // Press E to buy siege weapons. Engine opens info panel after.
-        if (g->stats.siege_weapons) {
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_HUNT_EXIT_TOWN;
-            return (ApCmd){ "HUNT_SIEGE:owned", 0, assert_always_true };
-        }
-        // Already pressed E once and siege didn't get owned — likely
-        // gold < siege_cost. Skip to exit; the castle attack will
-        // bounce-back without siege but we can try anyway.
-        if (st->module_scratch[4] >= 1) {
-            AP_LOG("[flow] HUNT_SIEGE: can't afford siege (gold=%d), "
-                   "continuing without", g->stats.gold);
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_HUNT_EXIT_TOWN;
-            return (ApCmd){ "HUNT_SIEGE:skip", KEY_SPACE,
-                            assert_always_true };
-        }
-        st->module_scratch[4] = 1;
-        return (ApCmd){ "HUNT_SIEGE:e", KEY_E, assert_always_true };
-    }
-
-    case AP_FLOW_HUNT_EXIT_TOWN: {
-        if (views_active() == VIEW_NONE) {
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_HUNT_RECRUIT_AGAIN;
-            return (ApCmd){ "HUNT_EXIT_TOWN:done", 0, assert_always_true };
-        }
-        return (ApCmd){ "HUNT_EXIT_TOWN:esc", KEY_ESCAPE,
+        return (ApCmd){ "EXIT_TOWN:esc", KEY_ESCAPE,
                         assert_always_true };
     }
 
-    case AP_FLOW_HUNT_RECRUIT_AGAIN: {
-        // After siege purchase, top up army again before attacking.
-        st->module_scratch[12] = 2;  // post-recruit → HUNT_TO_CASTLE
-        if (views_active() == VIEW_HOME_CASTLE) {
-            st->module_scratch[4] = 0;
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_REOPEN_RECRUIT;
-            return (ApCmd){ "HUNT_RECRUIT_AGAIN:in_castle", 0,
-                            assert_always_true };
-        }
-        int key = ap_nav_step(g, m, 11, 56);
-        if (key == 0) {
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_HUNT_TO_CASTLE;
-            return (ApCmd){ "HUNT_RECRUIT_AGAIN:skip", 0,
-                            assert_always_true };
-        }
-        if (prompt_is_active()) {
-            const char *kind = prompt_kind_str();
-            if (kind && strcmp(kind, "yes_no") == 0) {
-                *out_phase_done = true;
-                *out_next_phase = AP_FLOW_COMBAT;
-                st->module_scratch[10] = 5;  // resume into RECRUIT_AGAIN
-                dump_combat_start(g, "HUNT:y_foe");
-                return (ApCmd){ "HUNT:y_foe", KEY_Y,
-                                assert_combat_resolved };
-            }
-            if (kind && strcmp(kind, "text") == 0) {
-                return (ApCmd){ "HUNT:enter_recruit_0", KEY_ENTER,
-                                assert_prompt_gone };
-            }
-            { int n = st->module_scratch[13]; st->module_scratch[13] = n + 1;
-                  if (n % 2 == 0)
-                      return (ApCmd){ "HUNT:a_chest", KEY_A, assert_prompt_gone };
-                  return (ApCmd){ "HUNT:b_chest", KEY_B, assert_prompt_gone };
-                }
-        }
-        if (dialog_is_active()) {
-            return (ApCmd){ "HUNT:space_dialog", KEY_SPACE,
-                            assert_dialog_closed };
-        }
-        return (ApCmd){ "HUNT_RECRUIT_AGAIN:nav", key, assert_always_true };
-    }
-
-    case AP_FLOW_HUNT_TO_CASTLE: {
-        // Look up the active villain's castle in g->castles[] and nav
-        // to its gate. Engine fires the attack-castle yes_no prompt on
-        // step-on (siege weapons required, which we have).
-        static const char *const villains[] = {
-            "murray", "hack", "aimola",
-            "baron_makahl", "dread_rob", "caneghor"
-        };
-        int vi = st->module_scratch[9];
-        const char *vid = (vi >= 0 && vi < 6) ? villains[vi] : NULL;
-        // Find which castle this villain owns.
-        int castle_x = -1, castle_y = -1;
-        if (vid) {
-            for (int ci = 0; ci < GAME_CASTLES; ci++) {
-                const CastleRecord *cr = &g->castles[ci];
-                if (cr->owner_kind != CASTLE_OWNER_VILLAIN) continue;
-                if (strcmp(cr->villain_id, vid) != 0) continue;
-                const ResCastle *rc = resources_castle_by_id(g->res, cr->id);
-                if (rc) { castle_x = rc->x; castle_y = rc->y; }
-                break;
-            }
-        }
-        if (castle_x < 0) {
-            // Villain already captured (no matching castle). Skip.
-            AP_LOG("[flow] hunt: villain '%s' not on map (already caught?)",
-                   vid ? vid : "(null)");
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_HUNT_NEXT;
-            return (ApCmd){ "HUNT_TO_CASTLE:skip", 0, assert_always_true };
-        }
-        // No siege weapons → castle gate silently bounces hero back.
-        // Skip this villain rather than loop on the gate.
-        if (!g->stats.siege_weapons) {
-            AP_LOG("[flow] hunt: no siege, skipping villain '%s'",
-                   vid ? vid : "(null)");
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_HUNT_NEXT;
-            return (ApCmd){ "HUNT_TO_CASTLE:no_siege", 0,
-                            assert_always_true };
-        }
-        // Modal handling.
-        if (prompt_is_active()) {
-            const char *kind = prompt_kind_str();
-            if (kind && strcmp(kind, "yes_no") == 0) {
-                *out_phase_done = true;
-                *out_next_phase = AP_FLOW_COMBAT;
-                st->module_scratch[10] = 3;  // resume into HUNT_NEXT
-                dump_combat_start(g, "HUNT:y_foe");
-                return (ApCmd){ "HUNT:y_foe", KEY_Y,
-                                assert_combat_resolved };
-            }
-            if (kind && strcmp(kind, "text") == 0) {
-                return (ApCmd){ "HUNT:enter_recruit_0", KEY_ENTER,
-                                assert_prompt_gone };
-            }
-            { int n = st->module_scratch[13]; st->module_scratch[13] = n + 1;
-                  if (n % 2 == 0)
-                      return (ApCmd){ "HUNT:a_chest", KEY_A, assert_prompt_gone };
-                  return (ApCmd){ "HUNT:b_chest", KEY_B, assert_prompt_gone };
-                }
-        }
-        if (dialog_is_active()) {
-            return (ApCmd){ "HUNT:space_dialog", KEY_SPACE,
-                            assert_dialog_closed };
-        }
-        int key = ap_nav_step(g, m, castle_x, castle_y);
-        if (key == 0) {
-            AP_LOG("[flow] hunt: no path to villain '%s' castle at (%d,%d)",
-                   vid ? vid : "(null)", castle_x, castle_y);
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_HUNT_NEXT;
-            return (ApCmd){ "HUNT_TO_CASTLE:no_path", 0,
-                            assert_always_true };
-        }
-        return (ApCmd){ "HUNT_TO_CASTLE:nav", key, assert_always_true };
-    }
-
-    case AP_FLOW_HUNT_NEXT: {
-        int vi = st->module_scratch[9] + 1;
-        st->module_scratch[9] = vi;
-        if (vi >= 6) {
-            AP_LOG("[flow] all continentia villains hunted; pos=(%d,%d) "
-                   "gold=%d", g->position.x, g->position.y, g->stats.gold);
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_DONE;
-            return (ApCmd){ "HUNT_NEXT:all_done", 0, assert_always_true };
-        }
-        AP_LOG("[flow] hunt: advancing to villain %d", vi);
-        // Reset siege flag — engine clears it on capture? Check; for now
-        // assume we need to re-buy each round. (g->stats.siege_weapons
-        // stays set until... let's see.)
-        *out_phase_done = true;
-        *out_next_phase = AP_FLOW_HUNT_PRE_RECRUIT;
-        return (ApCmd){ "HUNT_NEXT:advance", 0, assert_always_true };
-    }
 
     case AP_FLOW_DONE: {
         *out_phase_done = true;

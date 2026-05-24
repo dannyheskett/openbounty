@@ -157,6 +157,53 @@ static void queue_picker_path(int cx, int cy, int tx, int ty) {
 static int combat_unit_id_last_acted = -1;
 static int combat_tick_last_action   = 0;
 
+// Per-turn snapshot — called once per acting player unit before we
+// pick a move. Dumps the live grid (units + obstacles) and both
+// sides' rosters so we can see what the picker is reacting to.
+static void log_combat_turn(const Combat *c) {
+    AP_LOG("[fight] turn=%d acting=player slot=%d at (%d,%d) "
+           "troop=%d count=%d shots=%d moves=%d",
+           c->turn, c->unit_id,
+           c->units[c->side][c->unit_id].x,
+           c->units[c->side][c->unit_id].y,
+           c->units[c->side][c->unit_id].troop_idx,
+           c->units[c->side][c->unit_id].count,
+           c->units[c->side][c->unit_id].shots,
+           c->units[c->side][c->unit_id].moves);
+    // Roster (both sides).
+    for (int s = 0; s < COMBAT_SIDES; s++) {
+        for (int i = 0; i < COMBAT_SLOTS; i++) {
+            const CombatUnit *u = &c->units[s][i];
+            if (u->troop_idx < 0 || u->count <= 0) continue;
+            const TroopDef *t = troop_by_index(u->troop_idx);
+            AP_LOG("[fight]   %s[%d]: %d x %s at (%d,%d) hp_each=%d",
+                   s == COMBAT_SIDE_PLAYER ? "ply" : "ai ",
+                   i, u->count, t ? t->id : "?",
+                   u->x, u->y, t ? t->hit_points : -1);
+        }
+    }
+    // Grid: each cell is one of U=player unit, A=ai unit, #=obstacle,
+    // .=open. Y is row 0..H-1 top to bottom.
+    for (int y = 0; y < COMBAT_H; y++) {
+        char row[64];
+        int n = 0;
+        n += snprintf(row + n, sizeof row - n, "  y%d: ", y);
+        for (int x = 0; x < COMBAT_W; x++) {
+            char ch = '.';
+            if (c->omap[y][x]) ch = '#';
+            unsigned char u = c->umap[y][x];
+            if (u) {
+                int side = (u - 1) / COMBAT_SLOTS;
+                ch = (side == COMBAT_SIDE_PLAYER) ? 'U' : 'A';
+            }
+            row[n++] = ch;
+            row[n++] = ' ';
+        }
+        row[n] = '\0';
+        AP_LOG("[fight]%s", row);
+    }
+}
+
 static void autoplay_before_frame(void *user) {
     (void)user;
     AutoplayState *st = g_active_state;
@@ -185,6 +232,20 @@ static void autoplay_before_frame(void *user) {
     (void)combat_unit_id_last_acted;
     (void)combat_tick_last_action;
 
+    // One log line per acting player unit so we can see what the
+    // picker is reacting to. Only emit when this is a different
+    // (unit_id, turn) tuple than the last we logged, to avoid
+    // spamming repeated frames.
+    {
+        static int last_logged_turn = -1;
+        static int last_logged_slot = -1;
+        if (c->turn != last_logged_turn || c->unit_id != last_logged_slot) {
+            log_combat_turn(c);
+            last_logged_turn = c->turn;
+            last_logged_slot = c->unit_id;
+        }
+    }
+
     int enemy_d = 0;
     int enemy_slot = ap_closest_enemy(c, u->x, u->y, &enemy_d);
     if (enemy_slot < 0) return;
@@ -194,47 +255,164 @@ static void autoplay_before_frame(void *user) {
         int tgt_slot = ap_highest_threat_enemy(c, u->x, u->y, NULL);
         if (tgt_slot < 0) tgt_slot = enemy_slot;
         const CombatUnit *target = &c->units[COMBAT_SIDE_AI][tgt_slot];
+        AP_LOG("[fight]   action: SHOOT at slot %d (%d,%d)",
+               tgt_slot, target->x, target->y);
         input_host_queue_key(KEY_S);
         queue_picker_path(u->x, u->y, target->x, target->y);
     } else {
-        // Melee: pick the 8-direction step that closes Chebyshev
-        // distance to the closest enemy the most.
-        static const int dxs[8] = { -1, 0, 1, -1, 1, -1, 0, 1 };
-        static const int dys[8] = { -1, -1, -1, 0, 0, 1, 1, 1 };
-        const CombatUnit *enemy = &c->units[COMBAT_SIDE_AI][enemy_slot];
-        int best_k = 0;
-        int best_d = enemy_d;
-        for (int i = 0; i < 8; i++) {
-            int nx = u->x + dxs[i];
-            int ny = u->y + dys[i];
-            if (!combat_in_bounds(nx, ny)) continue;
-            if (c->omap[ny][nx]) continue;
-            unsigned char other = c->umap[ny][nx];
-            if (other) {
-                int o_side = (other - 1) / COMBAT_SLOTS;
-                int o_slot = (other - 1) % COMBAT_SLOTS;
-                if (units_are_friendly(c, c->side, c->unit_id,
-                                       o_side, o_slot)) continue;
-            }
-            int adx = enemy->x - nx; if (adx < 0) adx = -adx;
-            int ady = enemy->y - ny; if (ady < 0) ady = -ady;
-            int nd = (adx > ady) ? adx : ady;
-            if (nd < best_d) {
-                best_d = nd;
-                int k = 0;
-                if (dxs[i] == 0  && dys[i] == -1) k = KEY_UP;
-                else if (dxs[i] == 0  && dys[i] ==  1) k = KEY_DOWN;
-                else if (dxs[i] == -1 && dys[i] ==  0) k = KEY_LEFT;
-                else if (dxs[i] == 1  && dys[i] ==  0) k = KEY_RIGHT;
-                else if (dxs[i] == -1 && dys[i] == -1) k = KEY_HOME;
-                else if (dxs[i] == 1  && dys[i] == -1) k = KEY_PAGE_UP;
-                else if (dxs[i] == -1 && dys[i] ==  1) k = KEY_END;
-                else if (dxs[i] == 1  && dys[i] ==  1) k = KEY_PAGE_DOWN;
-                best_k = k;
+        // Don't suicide-rush heavy enemies. If the closest enemy has
+        // high per-unit HP (heavy hitter), melee units stay back and
+        // let archers do the work. Threshold = 25 HP/unit (covers
+        // trolls=50, giants=60, ogres, etc; excludes peasants=1,
+        // militia=2, sprites=1, zombies=5, archers=10, pikemen=10).
+        {
+            const CombatUnit *e = &c->units[COMBAT_SIDE_AI][enemy_slot];
+            const TroopDef *t = troop_by_index(e->troop_idx);
+            int e_hp_each = t ? t->hit_points : 0;
+            const TroopDef *mt = troop_by_index(u->troop_idx);
+            int my_hp_each = mt ? mt->hit_points : 0;
+            // Heavy = enemy hp/unit at least 3x my hp/unit, AND
+            // enemy ≥ 25 hp/unit. That keeps pikemen (10) from
+            // suiciding into trolls (50), but doesn't make pikemen
+            // afraid of zombies (5).
+            bool heavy = (e_hp_each >= 25) &&
+                         (my_hp_each > 0 && e_hp_each >= my_hp_each * 3);
+            if (heavy) {
+                AP_LOG("[fight]   action: HOLD (heavy enemy slot %d "
+                       "hp_each=%d > my hp_each=%d)",
+                       enemy_slot, e_hp_each, my_hp_each);
+                ap_set_key(KEY_SPACE);
+                combat_unit_id_last_acted = c->unit_id;
+                combat_tick_last_action = st->tick;
+                return;
             }
         }
-        if (best_k != 0) ap_set_key(best_k);
-        else             ap_set_key(KEY_SPACE);  // wait
+        // Melee: If we're already adjacent to an enemy, attack (step
+        // INTO that tile — engine treats it as melee). Otherwise BFS
+        // over the combat grid to find the shortest 8-direction path
+        // that ends on a tile adjacent (Chebyshev=1) to ANY enemy.
+        // Then take the first step on that path. The BFS handles
+        // rocks/obstacles that block the direct line-of-sight.
+        static const int dxs[8] = { -1, 0, 1, -1, 1, -1, 0, 1 };
+        static const int dys[8] = { -1, -1, -1, 0, 0, 1, 1, 1 };
+        static const int keys[8] = {
+            KEY_HOME,   KEY_UP,   KEY_PAGE_UP,
+            KEY_LEFT,             KEY_RIGHT,
+            KEY_END,    KEY_DOWN, KEY_PAGE_DOWN
+        };
+        // First: if adjacent to an enemy, pick the direction toward
+        // the highest-threat adjacent enemy and attack.
+        {
+            int best_e = -1;
+            int best_e_hp = -1;
+            for (int i = 0; i < COMBAT_SLOTS; i++) {
+                const CombatUnit *e = &c->units[COMBAT_SIDE_AI][i];
+                if (e->troop_idx < 0 || e->count <= 0) continue;
+                int adx = e->x - u->x; if (adx < 0) adx = -adx;
+                int ady = e->y - u->y; if (ady < 0) ady = -ady;
+                if (adx <= 1 && ady <= 1 && (adx + ady) > 0) {
+                    const TroopDef *t = troop_by_index(e->troop_idx);
+                    int hp = t ? e->count * t->hit_points : 0;
+                    if (hp > best_e_hp) {
+                        best_e_hp = hp;
+                        best_e = i;
+                    }
+                }
+            }
+            if (best_e >= 0) {
+                const CombatUnit *e = &c->units[COMBAT_SIDE_AI][best_e];
+                int dx = e->x - u->x;
+                int dy = e->y - u->y;
+                // Map (dx,dy) to one of the 8 keys.
+                int k = 0;
+                if (dx == 0  && dy == -1) k = KEY_UP;
+                else if (dx == 0  && dy ==  1) k = KEY_DOWN;
+                else if (dx == -1 && dy ==  0) k = KEY_LEFT;
+                else if (dx == 1  && dy ==  0) k = KEY_RIGHT;
+                else if (dx == -1 && dy == -1) k = KEY_HOME;
+                else if (dx == 1  && dy == -1) k = KEY_PAGE_UP;
+                else if (dx == -1 && dy ==  1) k = KEY_END;
+                else if (dx == 1  && dy ==  1) k = KEY_PAGE_DOWN;
+                if (k) {
+                    AP_LOG("[fight]   action: ATTACK adjacent slot %d "
+                           "(%d,%d) dx=%d dy=%d",
+                           best_e, e->x, e->y, dx, dy);
+                    ap_set_key(k);
+                    combat_unit_id_last_acted = c->unit_id;
+                    combat_tick_last_action = st->tick;
+                    return;
+                }
+            }
+        }
+        int W = COMBAT_W, H = COMBAT_H;
+        // visited[y*W + x] = step-count from u, or -1 if unvisited.
+        // first_dir[y*W + x] = the 0..7 dxs/dys index of the first
+        // move on the shortest path to (x,y) from the unit's tile.
+        int dist[6 * 5];
+        int first_dir[6 * 5];
+        for (int i = 0; i < W * H; i++) { dist[i] = -1; first_dir[i] = -1; }
+        int q[6 * 5];
+        int qh = 0, qt = 0;
+        int s_idx = u->y * W + u->x;
+        dist[s_idx] = 0;
+        q[qt++] = s_idx;
+        int best_path_dir = -1;
+        int best_path_len = 1 << 30;
+        while (qh < qt) {
+            int cur = q[qh++];
+            int cy = cur / W;
+            int cx = cur % W;
+            int d_here = dist[cur];
+            if (d_here >= best_path_len) continue;
+            // Goal test: this tile is adjacent to an enemy.
+            for (int i = 0; i < COMBAT_SLOTS; i++) {
+                const CombatUnit *e = &c->units[COMBAT_SIDE_AI][i];
+                if (e->troop_idx < 0 || e->count <= 0) continue;
+                int adx = e->x - cx; if (adx < 0) adx = -adx;
+                int ady = e->y - cy; if (ady < 0) ady = -ady;
+                int che = (adx > ady) ? adx : ady;
+                if (che <= 1 && d_here > 0) {
+                    if (d_here < best_path_len) {
+                        best_path_len = d_here;
+                        best_path_dir = first_dir[cur];
+                    }
+                    break;
+                }
+            }
+            // Expand 8 neighbors.
+            for (int i = 0; i < 8; i++) {
+                int nx = cx + dxs[i];
+                int ny = cy + dys[i];
+                if (!combat_in_bounds(nx, ny)) continue;
+                if (c->omap[ny][nx]) continue;
+                unsigned char other = c->umap[ny][nx];
+                if (other) {
+                    int o_side = (other - 1) / COMBAT_SLOTS;
+                    int o_slot = (other - 1) % COMBAT_SLOTS;
+                    // Friendly units block; enemy units block walking
+                    // through but a tile adjacent to them is the goal.
+                    if (units_are_friendly(c, c->side, c->unit_id,
+                                           o_side, o_slot)) continue;
+                    if (o_side == COMBAT_SIDE_AI) continue;  // can't stand on enemy
+                }
+                int n_idx = ny * W + nx;
+                if (dist[n_idx] >= 0) continue;
+                dist[n_idx] = d_here + 1;
+                // first_dir on a node = either the dir from the source
+                // (if cur is the source) or inherited from cur.
+                if (cur == s_idx) first_dir[n_idx] = i;
+                else              first_dir[n_idx] = first_dir[cur];
+                q[qt++] = n_idx;
+            }
+        }
+        if (best_path_dir >= 0) {
+            AP_LOG("[fight]   action: MELEE step dir=%d len=%d",
+                   best_path_dir, best_path_len);
+            ap_set_key(keys[best_path_dir]);
+        } else {
+            AP_LOG("[fight]   action: WAIT (no path)");
+            ap_set_key(KEY_SPACE);  // truly nowhere to go
+        }
     }
     combat_unit_id_last_acted = c->unit_id;
     combat_tick_last_action = st->tick;
