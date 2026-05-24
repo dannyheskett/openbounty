@@ -675,13 +675,14 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                         assert_always_true };
     }
 
-    // -- PHASE 3 step 6: collect the one foot-reachable chest
-    //    that's outside the trolls'/giants' pursuit envelope.
-    //    Verified: path gate -> (8,42) stays chebyshev 8 from
-    //    giants (7,46) and never enters troll range at (26,57).
-    //    Trolls (50 HP) and giants (60 HP) are not winnable at
-    //    Knight-rank leadership (cap ~13 archers), so we skip
-    //    those two chests this phase.
+    // -- PHASE 3 step 6: chest cleanup on the home landmass.
+    //    The path from gate -> (8,42) enters the giants'
+    //    chebyshev-2 envelope at (8,48); we fight (and win,
+    //    verified seed-1) wandering_army_009 there. With the
+    //    giants now dead, chest (6,46) becomes a free 6-step
+    //    pickup. Trolls (26,57) remain alive — at Knight rank
+    //    we can't reliably win that fight, so chest (25,57) is
+    //    deferred to a future ranked-up phase.
     case AP_FLOW_PHASE3_HUNT: {
         if (prompt_is_active()) {
             const char *kind = prompt_kind_str();
@@ -707,6 +708,7 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
         {
             static const struct { int x, y; const char *name; } legs[] = {
                 {  8, 42, "chest_slot_27" },
+                {  6, 46, "chest_slot_19" },
             };
             const int n_legs = (int)(sizeof(legs) / sizeof(legs[0]));
             int leg = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
