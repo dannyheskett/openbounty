@@ -76,6 +76,10 @@ typedef enum {
     AP_FLOW_PHASE3_NAV_TOWN,
     AP_FLOW_PHASE3_TOWN_ACTIONS,
     AP_FLOW_PHASE3_EXIT_TOWN,
+    // Phase 4: sail to faxis castle and capture Hack, then sail
+    // back to king_maximus.
+    AP_FLOW_PHASE4_NAV_CASTLE,
+    AP_FLOW_PHASE4_NAV_HOME,
     AP_FLOW_BUY_SIEGE,
     AP_FLOW_EXIT_TOWN,
     AP_FLOW_DONE,

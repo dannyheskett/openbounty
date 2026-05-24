@@ -358,7 +358,9 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 resume != AP_FLOW_PHASE2_NAV_CASTLE &&
                 resume != AP_FLOW_PHASE3_NAV_HOME &&
                 resume != AP_FLOW_PHASE3_HUNT &&
-                resume != AP_FLOW_PHASE3_NAV_HOME_2) {
+                resume != AP_FLOW_PHASE3_NAV_HOME_2 &&
+                resume != AP_FLOW_PHASE4_NAV_CASTLE &&
+                resume != AP_FLOW_PHASE4_NAV_HOME) {
                 resume = AP_FLOW_PHASE1;
             }
             *out_phase_done = true;
@@ -947,11 +949,116 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
     case AP_FLOW_PHASE3_EXIT_TOWN: {
         if (views_active() == VIEW_NONE) {
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_DONE;
+            *out_next_phase = AP_FLOW_PHASE4_NAV_CASTLE;
             return (ApCmd){ "PHASE3_EXIT_TOWN:done", 0,
                             assert_always_true };
         }
         return (ApCmd){ "PHASE3_EXIT_TOWN:esc", KEY_ESCAPE,
+                        assert_always_true };
+    }
+
+    // -- PHASE 4 step 1: sail/walk to Hack's castle gate at
+    //    faxis (22,14). Multi-mode BFS handles boat boarding,
+    //    sailing, and disembarking.
+    case AP_FLOW_PHASE4_NAV_CASTLE: {
+        // Contract cleared = Hack captured. Sail home.
+        if (!g->contract.active_id[0]) {
+            AP_LOG("[phase4] Hack captured — contract fulfilled. "
+                   "pos=(%d,%d) gold=%d hp=%d",
+                   g->position.x, g->position.y, g->stats.gold,
+                   ap_army_total_hp(g));
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE4_NAV_HOME;
+            return (ApCmd){ "PHASE4_NAV_CASTLE:captured", 0,
+                            assert_always_true };
+        }
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE4_NAV_CASTLE;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE4_NAV_CASTLE:y_castle");
+                return (ApCmd){ "PHASE4_NAV_CASTLE:y_castle", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE4_NAV_CASTLE:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE4_NAV_CASTLE:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE4_NAV_CASTLE:space_dialog", KEY_SPACE,
+                            assert_dialog_closed };
+        }
+        if (g->position.x == 22 && g->position.y == 14) {
+            AP_LOG("[phase4] reached faxis gate (no fight triggered) "
+                   "gold=%d hp=%d siege=%d",
+                   g->stats.gold, ap_army_total_hp(g),
+                   g->stats.siege_weapons);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE4_NAV_CASTLE:arrived", 0,
+                            assert_always_true };
+        }
+        int key = ap_nav_step(g, m, 22, 14);
+        if (key == 0) {
+            AP_LOG("[phase4] no path to faxis from (%d,%d)",
+                   g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE4_NAV_CASTLE:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE4_NAV_CASTLE:nav", key,
+                        assert_always_true };
+    }
+
+    // -- PHASE 4 step 2: sail/walk back to king_maximus gate.
+    case AP_FLOW_PHASE4_NAV_HOME: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE4_NAV_HOME;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE4_NAV_HOME:y_foe");
+                return (ApCmd){ "PHASE4_NAV_HOME:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE4_NAV_HOME:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE4_NAV_HOME:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE4_NAV_HOME:space_dialog", KEY_SPACE,
+                            assert_dialog_closed };
+        }
+        if (g->position.x == 11 && g->position.y == 57) {
+            AP_LOG("[phase4] reached king_maximus gate. pos=(%d,%d) "
+                   "gold=%d hp=%d",
+                   g->position.x, g->position.y, g->stats.gold,
+                   ap_army_total_hp(g));
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE4_NAV_HOME:arrived", 0,
+                            assert_always_true };
+        }
+        int key = ap_nav_step(g, m, 11, 57);
+        if (key == 0) {
+            AP_LOG("[phase4] NAV_HOME no path from (%d,%d)",
+                   g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE4_NAV_HOME:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE4_NAV_HOME:nav", key,
                         assert_always_true };
     }
 
