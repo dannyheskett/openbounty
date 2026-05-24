@@ -373,6 +373,7 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 resume != AP_FLOW_PHASE8_NAV_HOME &&
                 resume != AP_FLOW_PHASE9_NAV_TROLLS &&
                 resume != AP_FLOW_PHASE9_NAV_CHEST &&
+                resume != AP_FLOW_PHASE9_NAV_PATHS_END &&
                 resume != AP_FLOW_PHASE9_NAV_HOME &&
                 resume != AP_FLOW_PHASE10_NAV_TOWN &&
                 resume != AP_FLOW_PHASE10_NAV_CASTLE &&
@@ -2745,7 +2746,17 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
         }
         if (g->position.x == 11 && g->position.y == 57) {
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_PHASE8_OPEN_RECRUIT;
+            // After the last castle's garrison, skip the home
+            // recruit pass — its ~4k g would be more useful as
+            // fireball spell budget in Phase 9. Hand off straight
+            // to Phase 9.
+            if (st->module_scratch[1] >= 5) {
+                AP_LOG("[phase8] skipping post-grind recruit, "
+                       "handing off to phase 9");
+                *out_next_phase = AP_FLOW_PHASE9_NAV_TROLLS;
+            } else {
+                *out_next_phase = AP_FLOW_PHASE8_OPEN_RECRUIT;
+            }
             return (ApCmd){ "PHASE8_NAV_HOME:arrived", 0,
                             assert_always_true };
         }
@@ -2845,18 +2856,101 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                    g->position.x, g->position.y, g->stats.gold,
                    ap_army_total_hp(g));
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_PHASE9_NAV_HOME;
+            *out_next_phase = AP_FLOW_PHASE9_NAV_PATHS_END;
             return (ApCmd){ "PHASE9_NAV_CHEST:done", 0,
                             assert_always_true };
         }
         int key = ap_nav_step(g, m, 25, 57);
         if (key == 0) {
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_PHASE9_NAV_HOME;
+            *out_next_phase = AP_FLOW_PHASE9_NAV_PATHS_END;
             return (ApCmd){ "PHASE9_NAV_CHEST:no_path", 0,
                             assert_always_true };
         }
         return (ApCmd){ "PHASE9_NAV_CHEST:nav", key,
+                        assert_always_true };
+    }
+
+    // Sail to paths_end (38,13) — the Continentia town that sells
+    // fireball on seed 1. Buy up to 3 fireballs (max_spells cap)
+    // for the caneghor fight in Phase 10.
+    case AP_FLOW_PHASE9_NAV_PATHS_END: {
+        if (views_active() == VIEW_TOWN) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE9_BUY_SPELLS;
+            return (ApCmd){ "PHASE9_NAV_PATHS_END:entered", 0,
+                            assert_always_true };
+        }
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE9_NAV_PATHS_END;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE9_NAV_PATHS_END:y_foe");
+                return (ApCmd){ "PHASE9_NAV_PATHS_END:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE9_NAV_PATHS_END:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE9_NAV_PATHS_END:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE9_NAV_PATHS_END:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        int key = ap_nav_step_avoiding_foes(g, m, 38, 13);
+        if (key == 0) key = ap_nav_step(g, m, 38, 13);
+        if (key == 0) {
+            AP_LOG("[phase9] no path to paths_end from (%d,%d), "
+                   "skipping spell buy",
+                   g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE9_NAV_HOME;
+            return (ApCmd){ "PHASE9_NAV_PATHS_END:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE9_NAV_PATHS_END:nav", key,
+                        assert_always_true };
+    }
+
+    // Buy fireballs until we hit max_spells or run out of gold.
+    // Town spell purchase = press D, dismiss info panel, repeat.
+    case AP_FLOW_PHASE9_BUY_SPELLS: {
+        if (views_town_info_text() != NULL) {
+            return (ApCmd){ "PHASE9_BUY_SPELLS:space_info", KEY_SPACE,
+                            assert_always_true };
+        }
+        int known = 0;
+        for (int i = 0; i < 14; i++) known += g->spells.counts[i];
+        // Stop if at cap, or if next buy would dip below the
+        // 500g reserve we need for the home castle re-recruit.
+        int spell_cost = 1500;  // fireball cost
+        if (known >= g->stats.max_spells || g->stats.gold < spell_cost + 500) {
+            AP_LOG("[phase9] spell buy done: known=%d/%d fireballs=%d "
+                   "gold=%d",
+                   known, g->stats.max_spells, g->spells.counts[2],
+                   g->stats.gold);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE9_EXIT_PATHS_END;
+            return (ApCmd){ "PHASE9_BUY_SPELLS:done", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE9_BUY_SPELLS:d", KEY_D,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE9_EXIT_PATHS_END: {
+        if (views_active() == VIEW_NONE) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE9_NAV_HOME;
+            return (ApCmd){ "PHASE9_EXIT_PATHS_END:done", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE9_EXIT_PATHS_END:esc", KEY_ESCAPE,
                         assert_always_true };
     }
 

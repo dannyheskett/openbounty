@@ -18,4 +18,22 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
                        void *render_target,
                        CombatMode mode, const CombatTarget *target);
 
+// One-frame target-picker step. Reads at most one input. Returns
+// true and writes (*out_x, *out_y) once the player confirms a valid
+// cell; sets *out_cancelled true on ESC; returns false otherwise.
+// Caller sets c->picker_active, c->pick_reason, c->pick_filter, and
+// c->cursor_x/y before the first call and clears picker_active when
+// the pick resolves.
+// render_target is RenderTexture2D *; void * keeps raylib out.
+bool combat_pick_step(Combat *c, const Game *g, const Sprites *sprites,
+                      void *render_target,
+                      int *out_x, int *out_y, bool *out_cancelled);
+
+// One-frame cast workflow step. Dispatches on c->cast_phase.
+// Returns 1 if the casting unit's turn is consumed this frame
+// (effect applied), 0 if still mid-cast or cancelled. Resets
+// c->cast_phase to NONE on APPLY and on cancel.
+int combat_cast_step(Combat *c, Game *g, const Sprites *sprites,
+                     void *render_target);
+
 #endif

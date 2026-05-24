@@ -39,6 +39,30 @@ typedef struct {
 #define COMBAT_SIDE_PLAYER  0
 #define COMBAT_SIDE_AI      1
 
+// Cast workflow phase, lives on Combat. The outer RunCombat loop
+// advances the phase one step per frame; observers (autoplay,
+// renderer, save/restore) read this field instead of guessing at
+// modal stack frames.
+typedef enum {
+    COMBAT_CAST_NONE = 0,
+    COMBAT_CAST_PICK_SPELL,    // spell-menu overlay drawn; wait A..G or ESC
+    COMBAT_CAST_PICK_TARGET,   // target picker active; wait cursor + confirm
+    COMBAT_CAST_APPLY,         // target captured; effect applied this frame
+} CombatCastPhase;
+
+// What the target picker is being used for. Drives the post-pick
+// dispatch (shoot resolves to combat_hit_unit, fly to
+// combat_fly_unit, spell targets to the cast pipeline). Also lets
+// the autoplay hook tell shoot picks (single-target) from spell
+// picks (cursor needs to walk to a different cell first).
+typedef enum {
+    COMBAT_PICK_REASON_NONE = 0,
+    COMBAT_PICK_REASON_SHOOT,
+    COMBAT_PICK_REASON_FLY,
+    COMBAT_PICK_REASON_SPELL_TARGET,   // first/only target for fireball/etc.
+    COMBAT_PICK_REASON_TELEPORT_DEST,  // teleport second pick (destination)
+} CombatPickReason;
+
 // Per-side artifact power bits used during combat. Translated from
 // the player's found-artifact set at prepare time. Bit values are
 // internal -- never serialized.
@@ -111,6 +135,21 @@ typedef struct Combat {
     // tileset when picker_active is true. Advanced by combat_tick_anim
     // alongside the unit-frame animation.
     int           cursor_frame;
+    // Pick + cast state machine. Lives on Combat so the outer
+    // RunCombat loop, the renderer, and autoplay all see the same
+    // source of truth. Replaces the function-local modals that used
+    // to live in src/combat_loop.c.
+    CombatCastPhase  cast_phase;
+    int              cast_spell_idx;     // 0..6, set during PICK_SPELL
+    CombatPickReason pick_reason;        // why the picker is active
+    int              pick_filter;        // PICK_FILTER_* for the current pick
+    // First target captured by the picker. For most spells this is
+    // the spell's target. For teleport, this is the unit being
+    // teleported; the destination cell is the second pick and lands
+    // in cast_dest_x/y.
+    int              pick_t1_x, pick_t1_y;
+    int              pick_t1_side, pick_t1_slot;
+    int              cast_dest_x, cast_dest_y;
     // Outcome scratch.
     int           result;                               // 0 = running, 1 = player win, 2 = AI win
     char          villain_id[24];                       // for victory dialog substitution; empty = none

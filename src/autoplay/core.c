@@ -216,7 +216,15 @@ static void autoplay_before_frame(void *user) {
         if (dialog_is_active()) ap_set_key(KEY_SPACE);
         return;
     }
-    if (c->picker_active) return;
+    // Picker early-exit. The spell-target picker is the only one
+    // we drive from this hook; the shoot/fly pickers are resolved
+    // by keys already queued via queue_picker_path from the SHOOT
+    // / MELEE branches below, so we must NOT re-evaluate combat
+    // strategy while one of those is mid-resolution.
+    if (c->picker_active &&
+        c->pick_reason != COMBAT_PICK_REASON_SPELL_TARGET) {
+        return;
+    }
     if (c->side != COMBAT_SIDE_PLAYER) return;
     if (c->unit_id < 0) return;
     if (dialog_is_active()) {
@@ -249,6 +257,68 @@ static void autoplay_before_frame(void *user) {
     int enemy_d = 0;
     int enemy_slot = ap_closest_enemy(c, u->x, u->y, &enemy_d);
     if (enemy_slot < 0) return;
+
+    // Cast fireball through the engine state machine. While the
+    // cast is in flight we drive one transition per tick by reading
+    // c->cast_phase + c->picker_active — no key queue, no race.
+    //
+    //   Idle  : if we own a fireball and the heaviest enemy stack
+    //           is hp_each >= 25, press U to enter PICK_SPELL.
+    //   PICK_SPELL : press C (Fireball is catalog letter C).
+    //   PICK_TARGET (reason=SPELL_TARGET) : walk the cursor one
+    //           step toward the cached target, or press A to
+    //           confirm when on it.
+    //   APPLY  : engine resolves this frame; nothing for us to do.
+    //
+    // module_scratch[6] stores the target cell as (y<<8)|x while a
+    // cast is in flight; cleared once spells_this_round flips.
+    Game *gw = c->heroes[c->side];
+    if (c->cast_phase == COMBAT_CAST_PICK_SPELL) {
+        ap_set_key(KEY_C);
+        return;
+    }
+    if (c->picker_active &&
+        c->pick_reason == COMBAT_PICK_REASON_SPELL_TARGET) {
+        int tx = st->module_scratch[6] & 0xff;
+        int ty = (st->module_scratch[6] >> 8) & 0xff;
+        if (c->cursor_x == tx && c->cursor_y == ty) {
+            ap_set_key(KEY_A);
+        } else {
+            int dx = (tx > c->cursor_x) ? 1 : (tx < c->cursor_x ? -1 : 0);
+            int dy = (ty > c->cursor_y) ? 1 : (ty < c->cursor_y ? -1 : 0);
+            int k = 0;
+            if      (dx ==  0 && dy == -1) k = KEY_UP;
+            else if (dx ==  0 && dy ==  1) k = KEY_DOWN;
+            else if (dx == -1 && dy ==  0) k = KEY_LEFT;
+            else if (dx ==  1 && dy ==  0) k = KEY_RIGHT;
+            else if (dx == -1 && dy == -1) k = KEY_HOME;
+            else if (dx ==  1 && dy == -1) k = KEY_PAGE_UP;
+            else if (dx == -1 && dy ==  1) k = KEY_END;
+            else if (dx ==  1 && dy ==  1) k = KEY_PAGE_DOWN;
+            if (k) ap_set_key(k);
+        }
+        return;
+    }
+    if (c->cast_phase == COMBAT_CAST_NONE && !c->picker_active &&
+        gw && gw->stats.knows_magic && gw->spells.counts[2] > 0 &&
+        c->spells_this_round == 0) {
+        int tgt_slot = ap_highest_threat_enemy(c, u->x, u->y, NULL);
+        if (tgt_slot >= 0) {
+            const CombatUnit *target = &c->units[COMBAT_SIDE_AI][tgt_slot];
+            const TroopDef *tt = troop_by_index(target->troop_idx);
+            int e_hp_each = tt ? tt->hit_points : 0;
+            if (e_hp_each >= 25) {
+                AP_LOG("[fight]   action: CAST FIREBALL at slot %d "
+                       "(%d,%d) e_hp_each=%d",
+                       tgt_slot, target->x, target->y, e_hp_each);
+                st->module_scratch[6] =
+                    ((target->y & 0xff) << 8) | (target->x & 0xff);
+                ap_set_key(KEY_U);
+                return;
+            }
+        }
+    }
+
     bool can_shoot = (u->shots > 0 && enemy_d > 1 &&
                       !combat_unit_surrounded(c, c->side, c->unit_id));
     if (can_shoot) {

@@ -37,81 +37,57 @@
 #define COMBAT_SPELL_RESURRECT    5
 #define COMBAT_SPELL_TURN_UNDEAD  6
 
-static bool combat_pick_target(Combat *c, const Game *g,
-                               const Sprites *sprites,
-                               RenderTexture2D *target,
-                               int caster_side, int filter,
-                               int *out_x, int *out_y) {
-    // Enable cursor ring for the duration of the modal pick. Cleared
-    // on every return path so the next render is back to normal play.
-    c->picker_active = true;
-    bool result = false;
-    double cursor_tick = frame_host_time();
-    while (!frame_host_should_close()) {
-        audio_tick();
-        // Cursor-ring animation cadence: human mode = 150ms per frame
-        // (watchable); autoplay = every tick (matches combat-tick
-        // pace). Same shape as combat_tick_anim's mode-switch.
-        if (input_host_is_scripted()) {
-            c->cursor_frame = (c->cursor_frame + 1) & 3;
-        } else {
-            double now = frame_host_time();
-            if (now >= cursor_tick) {
-                cursor_tick = now + 0.15;
-                c->cursor_frame = (c->cursor_frame + 1) & 3;
-            }
-        }
-        BeginTextureMode(*target);
-        combat_render_frame(c, g, sprites);
-        EndTextureMode();
+// Single-frame target-picker step. The outer combat loop calls this
+// once per frame while c->picker_active is set. Reads at most one
+// arrow (cursor move) or one confirm/cancel input. The render +
+// audio + input-poll for THIS frame are handled by the outer loop;
+// this function only consumes input that's already been polled.
+bool combat_pick_step(Combat *c, const Game *g, const Sprites *sprites,
+                      void *render_target,
+                      int *out_x, int *out_y, bool *out_cancelled) {
+    (void)g; (void)sprites; (void)render_target;
+    if (out_cancelled) *out_cancelled = false;
 
-        BeginDrawing();
-        ClearBackground(BLACK);
-        int win_w = GetScreenWidth(), win_h = GetScreenHeight();
-        int sx = win_w / CL_SCREEN_W, sy = win_h / CL_SCREEN_H;
-        int scale = (sx < sy) ? sx : sy; if (scale < 2) scale = 2;
-        int dst_w = CL_SCREEN_W * scale, dst_h = CL_SCREEN_H * scale;
-        int dst_x = (win_w - dst_w) / 2, dst_y = (win_h - dst_h) / 2;
-        Rectangle src = { 0, 0, (float)target->texture.width,
-                          -(float)target->texture.height };
-        Rectangle dst = { (float)dst_x, (float)dst_y,
-                          (float)dst_w, (float)dst_h };
-        DrawTexturePro(target->texture, src, dst,
-                       (Vector2){ 0, 0 }, 0.0f, WHITE);
-        EndDrawing();
-
-        int dx = 0, dy = 0;
-        if      (input_key_pressed(KEY_UP)    || input_key_pressed(KEY_KP_8)) dy = -1;
-        else if (input_key_pressed(KEY_DOWN)  || input_key_pressed(KEY_KP_2)) dy =  1;
-        if      (input_key_pressed(KEY_LEFT)  || input_key_pressed(KEY_KP_4)) dx = -1;
-        else if (input_key_pressed(KEY_RIGHT) || input_key_pressed(KEY_KP_6)) dx =  1;
-        if      (input_key_pressed(KEY_KP_7) || input_key_pressed(KEY_HOME))      { dx = -1; dy = -1; }
-        else if (input_key_pressed(KEY_KP_9) || input_key_pressed(KEY_PAGE_UP))   { dx =  1; dy = -1; }
-        else if (input_key_pressed(KEY_KP_1) || input_key_pressed(KEY_END))       { dx = -1; dy =  1; }
-        else if (input_key_pressed(KEY_KP_3) || input_key_pressed(KEY_PAGE_DOWN)) { dx =  1; dy =  1; }
-        if (dx || dy) {
-            int nx = c->cursor_x + dx, ny = c->cursor_y + dy;
-            if (combat_in_bounds(nx, ny)) {
-                c->cursor_x = nx; c->cursor_y = ny;
-            }
-        }
-        if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
-            input_key_pressed(KEY_SPACE) ||
-            input_key_pressed(KEY_A)     || input_key_pressed(KEY_C)) {
-            if (combat_cell_passes_filter(c, c->cursor_x, c->cursor_y,
-                                           caster_side, filter)) {
-                if (out_x) *out_x = c->cursor_x;
-                if (out_y) *out_y = c->cursor_y;
-                result = true;
-                goto done;
-            }
-            // Filter rejected -- leave cursor and re-loop.
-        }
-        if (input_key_pressed(KEY_ESCAPE)) goto done;
+    // Cursor-ring animation: in autoplay, advance every tick; in
+    // human mode, the outer loop's combat_tick_anim handles cadence,
+    // but the picker also wants it visible-fast, so nudge it here.
+    if (input_host_is_scripted()) {
+        c->cursor_frame = (c->cursor_frame + 1) & 3;
     }
-done:
-    c->picker_active = false;
-    return result;
+
+    int dx = 0, dy = 0;
+    if      (input_key_pressed(KEY_UP)    || input_key_pressed(KEY_KP_8)) dy = -1;
+    else if (input_key_pressed(KEY_DOWN)  || input_key_pressed(KEY_KP_2)) dy =  1;
+    if      (input_key_pressed(KEY_LEFT)  || input_key_pressed(KEY_KP_4)) dx = -1;
+    else if (input_key_pressed(KEY_RIGHT) || input_key_pressed(KEY_KP_6)) dx =  1;
+    if      (input_key_pressed(KEY_KP_7) || input_key_pressed(KEY_HOME))      { dx = -1; dy = -1; }
+    else if (input_key_pressed(KEY_KP_9) || input_key_pressed(KEY_PAGE_UP))   { dx =  1; dy = -1; }
+    else if (input_key_pressed(KEY_KP_1) || input_key_pressed(KEY_END))       { dx = -1; dy =  1; }
+    else if (input_key_pressed(KEY_KP_3) || input_key_pressed(KEY_PAGE_DOWN)) { dx =  1; dy =  1; }
+    if (dx || dy) {
+        int nx = c->cursor_x + dx, ny = c->cursor_y + dy;
+        if (combat_in_bounds(nx, ny)) {
+            c->cursor_x = nx;
+            c->cursor_y = ny;
+        }
+        return false;
+    }
+
+    if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
+        input_key_pressed(KEY_SPACE) ||
+        input_key_pressed(KEY_A)     || input_key_pressed(KEY_C)) {
+        if (combat_cell_passes_filter(c, c->cursor_x, c->cursor_y,
+                                       c->side, c->pick_filter)) {
+            if (out_x) *out_x = c->cursor_x;
+            if (out_y) *out_y = c->cursor_y;
+            return true;
+        }
+        // Filter rejected -- leave cursor for another step.
+    }
+    if (input_key_pressed(KEY_ESCAPE)) {
+        if (out_cancelled) *out_cancelled = true;
+    }
+    return false;
 }
 
 // ----- Input + action dispatch -----------------------------------------------
@@ -130,236 +106,202 @@ static bool combat_read_dir(int *dx, int *dy) {
     return false;
 }
 
-static int combat_player_cast(Combat *c, const Game *g,
-                              const Sprites *sprites,
-                              RenderTexture2D *target) {
+// One-frame cast workflow step. Dispatches on c->cast_phase:
+//   PICK_SPELL  : draw the spell menu and read one A..G letter.
+//                 Validates it's an owned, in-bounds spell; sets up
+//                 the picker for the spell's target filter.
+//   PICK_TARGET : feed one input into combat_pick_step. On confirm,
+//                 capture the target into c->pick_t1_*. Spells that
+//                 take two targets (teleport) advance the
+//                 pick_reason and stay in PICK_TARGET.
+//   APPLY       : invoke the spell-effect function with the captured
+//                 target. Decrement spells.counts[idx], increment
+//                 spells_this_round, log the spell name.
+// Returns 1 when the casting unit's turn is consumed (effect applied
+// successfully). 0 when still mid-cast or cancelled/no-effect.
+// Resets c->cast_phase = NONE on success, cancel, and no-effect.
+int combat_cast_step(Combat *c, Game *g, const Sprites *sprites,
+                     void *render_target) {
+    (void)sprites; (void)render_target;
     const ResCombatLog *cl_pre = combat_log_strings(c);
-    if (c->spells_this_round >= 1) {
-        combat_log_template(c,
-            cl_pre ? cl_pre->only_one_spell : "Only 1 spell per round!",
-            NULL, 0);
-        return 0;
-    }
     Game *gw = c->heroes[c->side];
-    if (!gw) return 0;
-    // Pre-check: hero must know magic. `g->stats.knows_magic` is the
-    // live flag — initialised from the rank-0 class default, then set
-    // true by the Archmage's alcove (REQ-123). Any class that bought
-    // magic at the alcove can cast in combat.
-    if (!gw->stats.knows_magic) {
-        combat_log_template(c,
-            cl_pre ? cl_pre->cannot_cast : "You cannot cast magic",
-            NULL, 0);
+    if (!gw) {
+        c->cast_phase = COMBAT_CAST_NONE;
+        c->picker_active = false;
         return 0;
     }
-
-    // Modal: wait for A-G or Esc. The caller ran a render frame just
-    // before this; we render-and-poll until a key resolves.
-    int picked = -1;
-    while (!frame_host_should_close() && picked < 0) {
-        BeginTextureMode(*target);
-        combat_render_frame(c, g, sprites);
-        // Inline overlay: spells menu, abbreviated single-column layout.
-        DrawRectangle(40, 30, 240, 130, PAL_CLR(DBLUE));
-        DrawRectangleLines(40, 30, 240, 130, PAL_CLR(YELLOW));
-        const ResUI *ui = (gw && gw->res) ? &gw->res->ui : NULL;
-        bfont_draw(ui ? ui->combat_spells_title      : "Spells", 140, 36, PAL_CLR(YELLOW));
-        bfont_draw(ui ? ui->combat_spells_col_combat : "Combat", 60, 50, PAL_CLR(YELLOW));
-        char line[40];
-        const char *names[] = {
-            "Clone", "Teleport", "Fireball", "Lightning",
-            "Freeze", "Resurrect", "Turn Undead",
-        };
-        for (int i = 0; i < 7; i++) {
-            snprintf(line, sizeof line, "%d %-12s %c",
-                     gw->spells.counts[i], names[i], 'A' + i);
-            bfont_draw(line, 56, 64 + i * 10, PAL_CLR(WHITE));
+    if (c->cast_phase == COMBAT_CAST_PICK_SPELL) {
+        if (input_key_pressed(KEY_ESCAPE)) {
+            c->cast_phase = COMBAT_CAST_NONE;
+            return 0;
         }
-        bfont_draw(ui ? ui->combat_spells_prompt : "Cast which (A-G)?", 70, 144, PAL_CLR(WHITE));
-        EndTextureMode();
-
-        BeginDrawing();
-        ClearBackground(BLACK);
-        int win_w = GetScreenWidth(), win_h = GetScreenHeight();
-        int sx = win_w / CL_SCREEN_W, sy = win_h / CL_SCREEN_H;
-        int sc = (sx < sy) ? sx : sy; if (sc < 2) sc = 2;
-        int dst_w = CL_SCREEN_W * sc, dst_h = CL_SCREEN_H * sc;
-        int dst_x = (win_w - dst_w) / 2, dst_y = (win_h - dst_h) / 2;
-        Rectangle src = { 0, 0, (float)target->texture.width,
-                          -(float)target->texture.height };
-        Rectangle dst = { (float)dst_x, (float)dst_y,
-                          (float)dst_w, (float)dst_h };
-        DrawTexturePro(target->texture, src, dst,
-                       (Vector2){ 0, 0 }, 0.0f, WHITE);
-        EndDrawing();
-
-        if (input_key_pressed(KEY_ESCAPE)) return 0;
+        int picked = -1;
         for (int i = 0; i < 7; i++) {
             if (input_key_pressed(KEY_A + i)) { picked = i; break; }
         }
-    }
-    if (picked < 0) return 0;
-    if (gw->spells.counts[picked] <= 0) {
-        combat_log_template(c,
-            cl_pre ? cl_pre->no_spell_type : "No spells of that type",
-            NULL, 0);
+        if (picked < 0) return 0;
+        if (gw->spells.counts[picked] <= 0) {
+            combat_log_template(c,
+                cl_pre ? cl_pre->no_spell_type : "No spells of that type",
+                NULL, 0);
+            c->cast_phase = COMBAT_CAST_NONE;
+            return 0;
+        }
+        c->cast_spell_idx = picked;
+        // Set up the picker for this spell's target filter.
+        int filter = PICK_FILTER_ENEMY;
+        CombatPickReason reason = COMBAT_PICK_REASON_SPELL_TARGET;
+        switch (picked) {
+            case COMBAT_SPELL_CLONE:       filter = PICK_FILTER_FRIENDLY; break;
+            case COMBAT_SPELL_TELEPORT:    filter = PICK_FILTER_ANY_UNIT; break;
+            case COMBAT_SPELL_FIREBALL:    filter = PICK_FILTER_ENEMY;    break;
+            case COMBAT_SPELL_LIGHTNING:   filter = PICK_FILTER_ENEMY;    break;
+            case COMBAT_SPELL_FREEZE:      filter = PICK_FILTER_ENEMY;    break;
+            case COMBAT_SPELL_RESURRECT:   filter = PICK_FILTER_FRIENDLY; break;
+            case COMBAT_SPELL_TURN_UNDEAD: filter = PICK_FILTER_UNDEAD;   break;
+        }
+        c->pick_filter   = filter;
+        c->pick_reason   = reason;
+        c->picker_active = true;
+        if (c->unit_id >= 0) {
+            c->cursor_x = c->units[c->side][c->unit_id].x;
+            c->cursor_y = c->units[c->side][c->unit_id].y;
+        }
+        c->cast_phase = COMBAT_CAST_PICK_TARGET;
         return 0;
     }
-
-    int caster_side = c->side;
-    int sp = gw->stats.spell_power;
-    if (sp < 1) sp = 1;
-    if (gw->artifacts.found[0]) {
-        // Amulet of Augmentation = DOUBLE_SPELL_POWER.
-        // Index 0 is the Amulet's slot in game.json.
+    if (c->cast_phase == COMBAT_CAST_PICK_TARGET) {
+        int tx = 0, ty = 0;
+        bool cancelled = false;
+        if (!combat_pick_step(c, g, sprites, render_target,
+                               &tx, &ty, &cancelled)) {
+            if (cancelled) {
+                c->cast_phase   = COMBAT_CAST_NONE;
+                c->pick_reason  = COMBAT_PICK_REASON_NONE;
+                c->picker_active = false;
+                return 0;
+            }
+            return 0;
+        }
+        // Picker resolved a valid cell. Decide whether this was the
+        // first target or (for teleport) the destination pick.
+        if (c->cast_spell_idx == COMBAT_SPELL_TELEPORT &&
+            c->pick_reason == COMBAT_PICK_REASON_SPELL_TARGET) {
+            // First pick: remember the unit; second pick is the
+            // destination cell.
+            unsigned char uid = c->umap[ty][tx];
+            c->pick_t1_x    = tx;
+            c->pick_t1_y    = ty;
+            c->pick_t1_side = (uid - 1) / COMBAT_SLOTS;
+            c->pick_t1_slot = (uid - 1) % COMBAT_SLOTS;
+            c->pick_filter  = PICK_FILTER_EMPTY;
+            c->pick_reason  = COMBAT_PICK_REASON_TELEPORT_DEST;
+            // Reset cursor to caster for the destination pick.
+            if (c->unit_id >= 0) {
+                c->cursor_x = c->units[c->side][c->unit_id].x;
+                c->cursor_y = c->units[c->side][c->unit_id].y;
+            }
+            return 0;
+        }
+        // Single-target spell, or teleport's destination: capture
+        // and advance to APPLY.
+        if (c->pick_reason == COMBAT_PICK_REASON_TELEPORT_DEST) {
+            c->cast_dest_x = tx;
+            c->cast_dest_y = ty;
+        } else {
+            unsigned char uid = c->umap[ty][tx];
+            c->pick_t1_x    = tx;
+            c->pick_t1_y    = ty;
+            c->pick_t1_side = (uid - 1) / COMBAT_SLOTS;
+            c->pick_t1_slot = (uid - 1) % COMBAT_SLOTS;
+        }
+        c->picker_active = false;
+        c->pick_reason   = COMBAT_PICK_REASON_NONE;
+        c->cast_phase    = COMBAT_CAST_APPLY;
+        // Fall through to APPLY this same frame.
     }
-    int tx = 0, ty = 0;
-
-    int consumed = 1;     // most spells consume the turn
-    int casted   = 0;
-    switch (picked) {
-        case COMBAT_SPELL_CLONE:
-            c->cursor_x = c->units[caster_side][c->unit_id].x;
-            c->cursor_y = c->units[caster_side][c->unit_id].y;
-            if (combat_pick_target(c, g, sprites, target,
-                                    caster_side, PICK_FILTER_FRIENDLY,
-                                    &tx, &ty)) {
-                unsigned char uid = c->umap[ty][tx];
-                int t_side = (uid - 1) / COMBAT_SLOTS;
-                int t_slot = (uid - 1) % COMBAT_SLOTS;
-                spell_clone(c, t_side, t_slot, sp);
+    if (c->cast_phase == COMBAT_CAST_APPLY) {
+        int sp = gw->stats.spell_power;
+        if (sp < 1) sp = 1;
+        int casted = 0;
+        switch (c->cast_spell_idx) {
+            case COMBAT_SPELL_CLONE:
+                spell_clone(c, c->pick_t1_side, c->pick_t1_slot, sp);
                 casted = 1;
-            }
-            break;
-        case COMBAT_SPELL_TELEPORT: {
-            int sx_p = 0, sy_p = 0;
-            c->cursor_x = c->units[caster_side][c->unit_id].x;
-            c->cursor_y = c->units[caster_side][c->unit_id].y;
-            if (!combat_pick_target(c, g, sprites, target,
-                                     caster_side, PICK_FILTER_ANY_UNIT,
-                                     &sx_p, &sy_p)) break;
-            unsigned char uid = c->umap[sy_p][sx_p];
-            int t_side = (uid - 1) / COMBAT_SLOTS;
-            int t_slot = (uid - 1) % COMBAT_SLOTS;
-            if (combat_pick_target(c, g, sprites, target,
-                                    caster_side, PICK_FILTER_EMPTY,
-                                    &tx, &ty)) {
-                spell_teleport(c, t_side, t_slot, tx, ty);
+                break;
+            case COMBAT_SPELL_TELEPORT:
+                spell_teleport(c, c->pick_t1_side, c->pick_t1_slot,
+                               c->cast_dest_x, c->cast_dest_y);
                 casted = 1;
-            }
-            break;
-        }
-        case COMBAT_SPELL_FIREBALL: {
-            c->cursor_x = c->units[caster_side][c->unit_id].x;
-            c->cursor_y = c->units[caster_side][c->unit_id].y;
-            if (!combat_pick_target(c, g, sprites, target,
-                                     caster_side, PICK_FILTER_ENEMY,
-                                     &tx, &ty)) break;
-            unsigned char uid = c->umap[ty][tx];
-            int t_side = (uid - 1) / COMBAT_SLOTS;
-            int t_slot = (uid - 1) % COMBAT_SLOTS;
-            //  cancels on IMMUNE.
-            // freeze_army pattern (game.c:3919): the caller treats a
-            // failed cast as "spell not used", so casted stays 0 and
-            // the spell count is preserved.
-            const TroopDef *tt =
-                troop_by_index(c->units[t_side][t_slot].troop_idx);
-            if (tt && (tt->abilities & TROOP_ABIL_IMMUNE)) {
+                break;
+            case COMBAT_SPELL_FIREBALL: {
+                const TroopDef *tt = troop_by_index(
+                    c->units[c->pick_t1_side][c->pick_t1_slot].troop_idx);
+                if (tt && (tt->abilities & TROOP_ABIL_IMMUNE)) {
+                    combat_log_template(c,
+                        cl_pre ? cl_pre->no_effect_msg
+                               : "The spell seems to have no effect!",
+                        NULL, 0);
+                    break;
+                }
+                spell_damage(c, c->pick_t1_side, c->pick_t1_slot,
+                             spell_damage_value(25, sp));
                 combat_log_template(c,
-                    cl_pre ? cl_pre->no_effect_msg
-                           : "The spell seems to have no effect!",
-                    NULL, 0);
+                    cl_pre ? cl_pre->cast_fireball : "Fireball!", NULL, 0);
+                casted = 1;
                 break;
             }
-            spell_damage(c, t_side, t_slot, spell_damage_value(25, sp));
-            combat_log_template(c,
-                cl_pre ? cl_pre->cast_fireball : "Fireball!", NULL, 0);
-            casted = 1;
-            break;
-        }
-        case COMBAT_SPELL_LIGHTNING: {
-            c->cursor_x = c->units[caster_side][c->unit_id].x;
-            c->cursor_y = c->units[caster_side][c->unit_id].y;
-            if (!combat_pick_target(c, g, sprites, target,
-                                     caster_side, PICK_FILTER_ENEMY,
-                                     &tx, &ty)) break;
-            unsigned char uid = c->umap[ty][tx];
-            int t_side = (uid - 1) / COMBAT_SLOTS;
-            int t_slot = (uid - 1) % COMBAT_SLOTS;
-            const TroopDef *tt =
-                troop_by_index(c->units[t_side][t_slot].troop_idx);
-            if (tt && (tt->abilities & TROOP_ABIL_IMMUNE)) {
+            case COMBAT_SPELL_LIGHTNING: {
+                const TroopDef *tt = troop_by_index(
+                    c->units[c->pick_t1_side][c->pick_t1_slot].troop_idx);
+                if (tt && (tt->abilities & TROOP_ABIL_IMMUNE)) {
+                    combat_log_template(c,
+                        cl_pre ? cl_pre->no_effect_msg
+                               : "The spell seems to have no effect!",
+                        NULL, 0);
+                    break;
+                }
+                spell_damage(c, c->pick_t1_side, c->pick_t1_slot,
+                             spell_damage_value(10, sp));
                 combat_log_template(c,
-                    cl_pre ? cl_pre->no_effect_msg
-                           : "The spell seems to have no effect!",
-                    NULL, 0);
+                    cl_pre ? cl_pre->cast_lightning : "Lightning!", NULL, 0);
+                casted = 1;
                 break;
             }
-            spell_damage(c, t_side, t_slot, spell_damage_value(10, sp));
-            combat_log_template(c,
-                cl_pre ? cl_pre->cast_lightning : "Lightning!", NULL, 0);
-            casted = 1;
-            break;
-        }
-        case COMBAT_SPELL_FREEZE: {
-            c->cursor_x = c->units[caster_side][c->unit_id].x;
-            c->cursor_y = c->units[caster_side][c->unit_id].y;
-            if (!combat_pick_target(c, g, sprites, target,
-                                     caster_side, PICK_FILTER_ENEMY,
-                                     &tx, &ty)) break;
-            unsigned char uid = c->umap[ty][tx];
-            int t_side = (uid - 1) / COMBAT_SLOTS;
-            int t_slot = (uid - 1) % COMBAT_SLOTS;
-            // spell_freeze returns -1 on IMMUNE (no-op); only consume
-            // the spell when it actually took effect.
-            if (spell_freeze(c, t_side, t_slot) == 1) casted = 1;
-            break;
-        }
-        case COMBAT_SPELL_RESURRECT: {
-            c->cursor_x = c->units[caster_side][c->unit_id].x;
-            c->cursor_y = c->units[caster_side][c->unit_id].y;
-            if (!combat_pick_target(c, g, sprites, target,
-                                     caster_side, PICK_FILTER_FRIENDLY,
-                                     &tx, &ty)) break;
-            unsigned char uid = c->umap[ty][tx];
-            int t_side = (uid - 1) / COMBAT_SLOTS;
-            int t_slot = (uid - 1) % COMBAT_SLOTS;
-            // spell_resurrect returns 0 if the stack is full or dead;
-            // only consume the spell when troops were actually revived.
-            if (spell_resurrect(c, t_side, t_slot, sp) == 1) casted = 1;
-            break;
-        }
-        case COMBAT_SPELL_TURN_UNDEAD: {
-            c->cursor_x = c->units[caster_side][c->unit_id].x;
-            c->cursor_y = c->units[caster_side][c->unit_id].y;
-            if (!combat_pick_target(c, g, sprites, target,
-                                     caster_side, PICK_FILTER_UNDEAD,
-                                     &tx, &ty)) break;
-            unsigned char uid = c->umap[ty][tx];
-            int t_side = (uid - 1) / COMBAT_SLOTS;
-            int t_slot = (uid - 1) % COMBAT_SLOTS;
-            const TroopDef *tt =
-                troop_by_index(c->units[t_side][t_slot].troop_idx);
-            if (tt && (tt->abilities & TROOP_ABIL_IMMUNE)) {
+            case COMBAT_SPELL_FREEZE:
+                if (spell_freeze(c, c->pick_t1_side, c->pick_t1_slot) == 1)
+                    casted = 1;
+                break;
+            case COMBAT_SPELL_RESURRECT:
+                if (spell_resurrect(c, c->pick_t1_side, c->pick_t1_slot, sp) == 1)
+                    casted = 1;
+                break;
+            case COMBAT_SPELL_TURN_UNDEAD: {
+                const TroopDef *tt = troop_by_index(
+                    c->units[c->pick_t1_side][c->pick_t1_slot].troop_idx);
+                if (tt && (tt->abilities & TROOP_ABIL_IMMUNE)) {
+                    combat_log_template(c,
+                        cl_pre ? cl_pre->no_effect_msg
+                               : "The spell seems to have no effect!",
+                        NULL, 0);
+                    break;
+                }
+                spell_damage(c, c->pick_t1_side, c->pick_t1_slot,
+                             spell_damage_value(50, sp));
                 combat_log_template(c,
-                    cl_pre ? cl_pre->no_effect_msg
-                           : "The spell seems to have no effect!",
+                    cl_pre ? cl_pre->cast_turn_undead : "Turn Undead!",
                     NULL, 0);
+                casted = 1;
                 break;
             }
-            spell_damage(c, t_side, t_slot, spell_damage_value(50, sp));
-            combat_log_template(c,
-                cl_pre ? cl_pre->cast_turn_undead : "Turn Undead!",
-                NULL, 0);
-            casted = 1;
-            break;
         }
-    }
-
-    if (casted) {
-        gw->spells.counts[picked]--;
-        c->spells_this_round++;
-        return consumed;  // most spells advance the turn
+        c->cast_phase = COMBAT_CAST_NONE;
+        if (casted) {
+            gw->spells.counts[c->cast_spell_idx]--;
+            c->spells_this_round++;
+            return 1;
+        }
+        return 0;
     }
     return 0;
 }
@@ -386,7 +328,8 @@ static int combat_player_action_full(Combat *c, const Game *g,
         return 0;
     }
     if (input_key_pressed(KEY_S)) {
-        // Shoot. Pick enemy, ranged damage.
+        // Shoot: arm the picker; the outer loop drives combat_pick_step
+        // and dispatches combat_hit_unit when the pick resolves.
         if (c->unit_id < 0) return 0;
         CombatUnit *u = &c->units[c->side][c->unit_id];
         const ResCombatLog *cl_sh = combat_log_strings(c);
@@ -402,23 +345,14 @@ static int combat_player_action_full(Combat *c, const Game *g,
         }
         c->cursor_x = u->x;
         c->cursor_y = u->y;
-        int tx = 0, ty = 0;
-        if (combat_pick_target(c, g, sprites, target,
-                                c->side, PICK_FILTER_ENEMY, &tx, &ty)) {
-            unsigned char uid = c->umap[ty][tx];
-            int t_side = (uid - 1) / COMBAT_SLOTS;
-            int t_slot = (uid - 1) % COMBAT_SLOTS;
-            combat_hit_unit(c, c->side, c->unit_id, t_side, t_slot, true);
-            u->acted = true;
-            return 1;
-        }
+        c->pick_filter   = PICK_FILTER_ENEMY;
+        c->pick_reason   = COMBAT_PICK_REASON_SHOOT;
+        c->picker_active = true;
         return 0;
     }
     if (input_key_pressed(KEY_F)) {
-        // Fly: relocate the active unit to an empty, unobstructed cell
-        // anywhere on the field. Only legal for TROOP_ABIL_FLY units
-        // with flights > 0. Picker uses PICK_FILTER_EMPTY (no unit,
-        // no obstacle). Spec lines 5588–5593.
+        // Fly: arm the picker for an empty cell anywhere; the outer
+        // loop dispatches combat_fly_unit when the pick resolves.
         if (c->unit_id < 0) return 0;
         CombatUnit *u = &c->units[c->side][c->unit_id];
         const TroopDef *t = troop_by_index(u->troop_idx);
@@ -430,22 +364,32 @@ static int combat_player_action_full(Combat *c, const Game *g,
         }
         c->cursor_x = u->x;
         c->cursor_y = u->y;
-        int tx = 0, ty = 0;
-        if (combat_pick_target(c, g, sprites, target,
-                                c->side, PICK_FILTER_EMPTY, &tx, &ty)) {
-            if (combat_fly_unit(c, c->side, c->unit_id, tx, ty)) {
-                // Mirror the AI's per-flight log line so the player
-                // sees the same "<TROOP> fly" feedback.
-                ResTemplateVar vars[] = { { "TROOP", t->name } };
-                combat_log_template(c,
-                    cl_fl ? cl_fl->fly : "%TROOP% fly", vars, 1);
-                return 1;
-            }
-        }
+        c->pick_filter   = PICK_FILTER_EMPTY;
+        c->pick_reason   = COMBAT_PICK_REASON_FLY;
+        c->picker_active = true;
         return 0;
     }
     if (input_key_pressed(KEY_U)) {
-        return combat_player_cast(c, g, sprites, target);
+        // Start the cast workflow. The outer loop drives
+        // combat_cast_step on subsequent frames; this just transitions
+        // into PICK_SPELL so the menu overlay draws next frame.
+        const ResCombatLog *cl_pre = combat_log_strings(c);
+        Game *gw = c->heroes[c->side];
+        if (!gw) return 0;
+        if (c->spells_this_round >= 1) {
+            combat_log_template(c,
+                cl_pre ? cl_pre->only_one_spell
+                       : "Only 1 spell per round!", NULL, 0);
+            return 0;
+        }
+        if (!gw->stats.knows_magic) {
+            combat_log_template(c,
+                cl_pre ? cl_pre->cannot_cast : "You cannot cast magic",
+                NULL, 0);
+            return 0;
+        }
+        c->cast_phase = COMBAT_CAST_PICK_SPELL;
+        return 0;
     }
     if (input_key_pressed(KEY_C)) {
         // Opening a view pauses combat in the outer loop; the view
@@ -468,6 +412,29 @@ static void combat_present(const Combat *c, const Game *g,
     // reachable from combat).
     if (views_active() != VIEW_NONE) {
         overlay_draw(g, NULL, NULL, sprites);
+    }
+    // Spell-pick menu overlay. Drawn while the cast state machine is
+    // in PICK_SPELL phase; the outer loop drives combat_cast_step one
+    // input per frame.
+    if (c->cast_phase == COMBAT_CAST_PICK_SPELL) {
+        DrawRectangle(40, 30, 240, 130, PAL_CLR(DBLUE));
+        DrawRectangleLines(40, 30, 240, 130, PAL_CLR(YELLOW));
+        const Game *gw = c->heroes[c->side];
+        const ResUI *ui = (gw && gw->res) ? &gw->res->ui : NULL;
+        bfont_draw(ui ? ui->combat_spells_title      : "Spells", 140, 36, PAL_CLR(YELLOW));
+        bfont_draw(ui ? ui->combat_spells_col_combat : "Combat", 60, 50, PAL_CLR(YELLOW));
+        char line[40];
+        const char *names[] = {
+            "Clone", "Teleport", "Fireball", "Lightning",
+            "Freeze", "Resurrect", "Turn Undead",
+        };
+        for (int i = 0; i < 7; i++) {
+            int count = (gw ? gw->spells.counts[i] : 0);
+            snprintf(line, sizeof line, "%d %-12s %c", count, names[i], 'A' + i);
+            bfont_draw(line, 56, 64 + i * 10, PAL_CLR(WHITE));
+        }
+        bfont_draw(ui ? ui->combat_spells_prompt : "Cast which (A-G)?",
+                   70, 144, PAL_CLR(WHITE));
     }
     // Victory dialog : centered modal
     // floating over the still-rendered battlefield. Defeat does not
@@ -661,7 +628,12 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         bool frame_rollover;
         combat_tick_anim(&c, &next_tick, &frame_rollover);
 
-        if (c.unit_id >= 0) {
+        if (c.unit_id >= 0 && !c.picker_active &&
+            c.cast_phase == COMBAT_CAST_NONE) {
+            // Keep the cursor parked on the acting unit between
+            // turns -- but NEVER clobber it while a picker is open,
+            // or the player's cursor moves get reset every frame
+            // and the pick can never resolve.
             const CombatUnit *act = &c.units[c.side][c.unit_id];
             if (act->troop_idx >= 0 && act->count > 0) {
                 c.cursor_x = act->x;
@@ -669,27 +641,82 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
             }
         }
 
-        // Top-level view openers. Player can open these even on AI's
-        // turn: input is discarded for moves during AI turn, but menu
-        // keys still resolve.
-        if (input_key_pressed(KEY_O)) {
-            views_set(VIEW_OPTIONS);
-            continue;
-        }
-        if (input_key_pressed(KEY_A)) {
-            views_set(VIEW_ARMY);
-            continue;
-        }
-        if (input_key_pressed(KEY_V)) {
-            views_set(VIEW_CHARACTER);
-            continue;
-        }
-
         int acted = 0;
         bool player_turn = (c.side == COMBAT_SIDE_PLAYER &&
                             c.unit_id >= 0 &&
                             !c.units[c.side][c.unit_id].out_of_control);
-        if (player_turn) {
+
+        // Top-level view openers. Player can open these even on AI's
+        // turn: input is discarded for moves during AI turn, but menu
+        // keys still resolve.
+        //
+        // Gate KEY_A on no-active-picker: A is also "confirm" for the
+        // picker, and we don't want a picker confirm to accidentally
+        // open the Army view.
+        if (c.cast_phase == COMBAT_CAST_NONE && !c.picker_active) {
+            if (input_key_pressed(KEY_O)) {
+                views_set(VIEW_OPTIONS);
+                continue;
+            }
+            if (input_key_pressed(KEY_A)) {
+                views_set(VIEW_ARMY);
+                continue;
+            }
+            if (input_key_pressed(KEY_V)) {
+                views_set(VIEW_CHARACTER);
+                continue;
+            }
+        }
+
+        // Cast workflow takes precedence over the normal player-input
+        // dispatch: while c.cast_phase != NONE the spell menu /
+        // target picker is on screen and we step that state machine
+        // one phase per frame.
+        if (c.cast_phase != COMBAT_CAST_NONE) {
+            acted = combat_cast_step(&c, g, sprites, rt);
+            // No fall-through: even if not yet acted, we don't want
+            // KEY_S / KEY_F / KEY_U etc. to re-fire on the same input
+            // tick. Resume the next-unit pick if acted; otherwise
+            // continue the frame loop.
+            if (!acted) continue;
+        } else if (c.picker_active &&
+                   (c.pick_reason == COMBAT_PICK_REASON_SHOOT ||
+                    c.pick_reason == COMBAT_PICK_REASON_FLY)) {
+            // Shoot/Fly picker: one combat_pick_step per frame.
+            int tx = 0, ty = 0;
+            bool cancelled = false;
+            bool resolved = combat_pick_step(&c, g, sprites, rt,
+                                             &tx, &ty, &cancelled);
+            if (cancelled) {
+                c.picker_active = false;
+                c.pick_reason   = COMBAT_PICK_REASON_NONE;
+                continue;
+            }
+            if (!resolved) continue;
+            CombatUnit *u = &c.units[c.side][c.unit_id];
+            if (c.pick_reason == COMBAT_PICK_REASON_SHOOT) {
+                unsigned char uid = c.umap[ty][tx];
+                int t_side = (uid - 1) / COMBAT_SLOTS;
+                int t_slot = (uid - 1) % COMBAT_SLOTS;
+                combat_hit_unit(&c, c.side, c.unit_id,
+                                t_side, t_slot, true);
+                u->acted = true;
+                acted = 1;
+            } else { // FLY
+                const TroopDef *t = troop_by_index(u->troop_idx);
+                const ResCombatLog *cl_fl = combat_log_strings(&c);
+                if (combat_fly_unit(&c, c.side, c.unit_id, tx, ty)) {
+                    if (t) {
+                        ResTemplateVar vars[] = { { "TROOP", t->name } };
+                        combat_log_template(&c,
+                            cl_fl ? cl_fl->fly : "%TROOP% fly", vars, 1);
+                    }
+                    acted = 1;
+                }
+            }
+            c.picker_active = false;
+            c.pick_reason   = COMBAT_PICK_REASON_NONE;
+        } else if (player_turn) {
             acted = combat_player_action_full(&c, g, sprites, rt);
         } else if (frame_rollover || input_host_is_scripted()) {
             // AI drives this turn. In human (raylib) mode, pace AI
