@@ -1551,8 +1551,24 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                             assert_dialog_closed };
         }
         {
-            // 29-leg NN tour (27 chests + 2 artifacts).
+            // 29-leg NN tour (27 chests + 2 artifacts) plus a
+            // "fight_032" leg up-front that targets wandering_army_032
+            // at (24,5). Foe_032 blocks chest_slot_66 (23,6) and
+            // chest_slot_67 (24,6) — both their entire chebyshev-2
+            // neighborhoods sit in 032's envelope, so foe-aware nav
+            // can't reach them without first killing the foe. Doing
+            // the fight first (at the post-recruit hp peak of ~390)
+            // unlocks those two chests; doing it last (after the
+            // tour has bled hp down to ~140) loses.
+            //
+            // The first leg target is (24,5), the foe's own tile —
+            // stepping onto it triggers combat. The foe-aware nav
+            // refuses to route there (it's in the envelope), so we
+            // fall back to regular nav and accept the fight.
             static const struct { int x, y; const char *name; } legs[] = {
+                { 24,  5, "fight_032" },
+                { 23,  6, "chest_slot_66" },
+                { 24,  6, "chest_slot_67" },
                 { 43, 50, "chest_slot_15" },
                 { 47, 41, "artifact_1" },
                 { 59, 49, "artifact_0" },
@@ -1573,8 +1589,6 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 {  7, 24, "chest_slot_47" },
                 {  6, 24, "chest_slot_46" },
                 {  5,  7, "chest_slot_65" },
-                { 23,  6, "chest_slot_66" },
-                { 24,  6, "chest_slot_67" },
                 { 15,  5, "chest_slot_71" },
                 {  9, 32, "chest_slot_36" },
                 { 17, 29, "chest_slot_41" },
