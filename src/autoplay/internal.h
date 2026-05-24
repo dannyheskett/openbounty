@@ -150,6 +150,23 @@ typedef enum {
     AP_FLOW_PHASE7_RECRUIT_MILITIA,
     AP_FLOW_PHASE7_EXIT_RECRUIT,
     AP_FLOW_PHASE7_EXIT_CASTLE,
+    // Phase 8: grind 5 monster-owned Continentia castles for
+    // gold + score + rank-up. Per iteration: max-buy knights
+    // (then cavalry/archers/pikemen/militia) → walk to next
+    // monster castle → siege → step back onto the now-owned
+    // gate → toggle to garrison mode → drop militia into the
+    // castle → ESC → return home → loop.
+    AP_FLOW_PHASE8_OPEN_RECRUIT,
+    AP_FLOW_PHASE8_RECRUIT_KNIGHTS,
+    AP_FLOW_PHASE8_RECRUIT_CAVALRY,
+    AP_FLOW_PHASE8_RECRUIT_ARCHERS,
+    AP_FLOW_PHASE8_RECRUIT_PIKEMEN,
+    AP_FLOW_PHASE8_RECRUIT_MILITIA,
+    AP_FLOW_PHASE8_EXIT_RECRUIT,
+    AP_FLOW_PHASE8_EXIT_CASTLE,
+    AP_FLOW_PHASE8_NAV_CASTLE,
+    AP_FLOW_PHASE8_GARRISON,
+    AP_FLOW_PHASE8_NAV_HOME,
     AP_FLOW_BUY_SIEGE,
     AP_FLOW_EXIT_TOWN,
     AP_FLOW_DONE,

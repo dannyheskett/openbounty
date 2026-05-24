@@ -368,7 +368,9 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 resume != AP_FLOW_PHASE6_MID_NAV_HOME &&
                 resume != AP_FLOW_PHASE7_NAV_TOWN &&
                 resume != AP_FLOW_PHASE7_NAV_CASTLE &&
-                resume != AP_FLOW_PHASE7_NAV_HOME) {
+                resume != AP_FLOW_PHASE7_NAV_HOME &&
+                resume != AP_FLOW_PHASE8_NAV_CASTLE &&
+                resume != AP_FLOW_PHASE8_NAV_HOME) {
                 resume = AP_FLOW_PHASE1;
             }
             *out_phase_done = true;
@@ -2353,7 +2355,11 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 AP_LOG("[phase7] 3 villains captured "
                        "(aimola+baron_makahl+dread_rob); "
                        "caneghor deferred to later phase");
-                *out_next_phase = AP_FLOW_DONE;
+                // Reset Phase 8 castle index (module_scratch[1])
+                // and recruit sub-state (module_scratch[0]).
+                st->module_scratch[1] = 0;
+                st->module_scratch[0] = 0;
+                *out_next_phase = AP_FLOW_PHASE8_OPEN_RECRUIT;
             } else {
                 *out_next_phase = AP_FLOW_PHASE7_NAV_TOWN;
             }
@@ -2361,6 +2367,391 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                             assert_always_true };
         }
         return (ApCmd){ "PHASE7_EXIT_CASTLE:esc", KEY_ESCAPE,
+                        assert_always_true };
+    }
+
+    // -- PHASE 8: monster-castle grind loop.
+    //    Iterate 5 Continentia castles (irok, nilslag, vutar,
+    //    cancomar, kookamunga) in proximity order from home.
+    //    module_scratch[1] = castle iteration index (0..4).
+    //    Each iteration: recruit (knights → cavalry → archers →
+    //    pikemen → militia) → walk → siege → garrison militia →
+    //    walk home → loop.
+    case AP_FLOW_PHASE8_OPEN_RECRUIT: {
+        if (views_active() == VIEW_RECRUIT_SOLDIERS) {
+            st->module_scratch[0] = 0;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE8_RECRUIT_KNIGHTS;
+            return (ApCmd){ "PHASE8_OPEN_RECRUIT:entered", 0,
+                            assert_always_true };
+        }
+        if (views_active() == VIEW_HOME_CASTLE) {
+            return (ApCmd){ "PHASE8_OPEN_RECRUIT:a", KEY_A,
+                            assert_always_true };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE8_OPEN_RECRUIT:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        return (ApCmd){ "PHASE8_OPEN_RECRUIT:up", KEY_UP,
+                        assert_always_true };
+    }
+
+    // Knights are E in the home-castle recruit menu (5th letter,
+    // pool sorted by cost: militia A, archers B, pikemen C,
+    // cavalry D, knights E).
+    case AP_FLOW_PHASE8_RECRUIT_KNIGHTS: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE8_RECRUIT_KNIGHTS:e", KEY_E,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE8_RECRUIT_KNIGHTS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE8_RECRUIT_KNIGHTS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE8_RECRUIT_KNIGHTS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE8_RECRUIT_CAVALRY;
+            return (ApCmd){ "PHASE8_RECRUIT_KNIGHTS:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE8_RECRUIT_CAVALRY: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE8_RECRUIT_CAVALRY:d", KEY_D,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE8_RECRUIT_CAVALRY:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE8_RECRUIT_CAVALRY:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE8_RECRUIT_CAVALRY:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE8_RECRUIT_ARCHERS;
+            return (ApCmd){ "PHASE8_RECRUIT_CAVALRY:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE8_RECRUIT_ARCHERS: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE8_RECRUIT_ARCHERS:b", KEY_B,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE8_RECRUIT_ARCHERS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE8_RECRUIT_ARCHERS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE8_RECRUIT_ARCHERS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE8_RECRUIT_PIKEMEN;
+            return (ApCmd){ "PHASE8_RECRUIT_ARCHERS:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE8_RECRUIT_PIKEMEN: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE8_RECRUIT_PIKEMEN:c", KEY_C,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE8_RECRUIT_PIKEMEN:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE8_RECRUIT_PIKEMEN:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE8_RECRUIT_PIKEMEN:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE8_RECRUIT_MILITIA;
+            return (ApCmd){ "PHASE8_RECRUIT_PIKEMEN:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE8_RECRUIT_MILITIA: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE8_RECRUIT_MILITIA:a", KEY_A,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE8_RECRUIT_MILITIA:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE8_RECRUIT_MILITIA:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE8_RECRUIT_MILITIA:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE8_EXIT_RECRUIT;
+            return (ApCmd){ "PHASE8_RECRUIT_MILITIA:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE8_EXIT_RECRUIT: {
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_PHASE8_EXIT_CASTLE;
+        return (ApCmd){ "PHASE8_EXIT_RECRUIT:esc", KEY_ESCAPE,
+                        assert_view_home_castle };
+    }
+
+    case AP_FLOW_PHASE8_EXIT_CASTLE: {
+        if (views_active() == VIEW_NONE) {
+            AP_LOG("[phase8] recruit done for iteration %d: gold=%d "
+                   "hp=%d lead_base=%d",
+                   st->module_scratch[1], g->stats.gold,
+                   ap_army_total_hp(g), g->stats.leadership_base);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE8_NAV_CASTLE;
+            return (ApCmd){ "PHASE8_EXIT_CASTLE:done", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE8_EXIT_CASTLE:esc", KEY_ESCAPE,
+                        assert_always_true };
+    }
+
+    // Walk/sail to the iteration-index monster castle. Five
+    // hardcoded targets sorted by manhattan distance from home
+    // gate (closest first). Skips already-owned castles (the
+    // grind may capture them out of strict order if some are
+    // unreachable).
+    case AP_FLOW_PHASE8_NAV_CASTLE: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE8_NAV_CASTLE;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE8_NAV_CASTLE:y_castle");
+                return (ApCmd){ "PHASE8_NAV_CASTLE:y_castle", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE8_NAV_CASTLE:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE8_NAV_CASTLE:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE8_NAV_CASTLE:space_dialog", KEY_SPACE,
+                            assert_dialog_closed };
+        }
+        {
+            static const struct { int x, y; const char *id; } castles[] = {
+                { 11, 33, "irok" },
+                { 22, 39, "nilslag" },
+                { 40, 58, "vutar" },
+                { 36, 14, "cancomar" },
+                { 57,  5, "kookamunga" },
+            };
+            const int n = (int)(sizeof(castles)/sizeof(castles[0]));
+            int idx = st->module_scratch[1];
+            if (idx >= n) {
+                AP_LOG("[phase8] all 5 monster castles captured. "
+                       "gold=%d hp=%d", g->stats.gold,
+                       ap_army_total_hp(g));
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_DONE;
+                return (ApCmd){ "PHASE8_NAV_CASTLE:all_done", 0,
+                                assert_always_true };
+            }
+            int gx = castles[idx].x, gy = castles[idx].y;
+            // Detect capture: castle is now player-owned. Hand off
+            // to GARRISON which steps onto the gate to open
+            // VIEW_OWN_CASTLE.
+            const CastleRecord *cr = GameFindCastleConst(g,
+                castles[idx].id);
+            if (cr && cr->owner_kind == CASTLE_OWNER_PLAYER) {
+                st->module_scratch[2] = 0;  // reset garrison sub
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_PHASE8_GARRISON;
+                return (ApCmd){ "PHASE8_NAV_CASTLE:captured", 0,
+                                assert_always_true };
+            }
+            int key = ap_nav_step(g, m, gx, gy);
+            if (key == 0) {
+                AP_LOG("[phase8] no path to %s castle at (%d,%d) "
+                       "from (%d,%d), skipping",
+                       castles[idx].id, gx, gy,
+                       g->position.x, g->position.y);
+                st->module_scratch[1] = idx + 1;
+                return (ApCmd){ "PHASE8_NAV_CASTLE:no_path", 0,
+                                assert_always_true };
+            }
+            return (ApCmd){ "PHASE8_NAV_CASTLE:nav", key,
+                            assert_always_true };
+        }
+    }
+
+    // Garrison the militia stack into the just-captured castle.
+    // Post-combat the hero stands on the gate with no view open.
+    // We need to step OFF and back ON so the engine fires
+    // opened_castle and pushes VIEW_OWN_CASTLE. Then SPACE toggles
+    // GARRISON mode (screen starts in REMOVE), then the slot
+    // letter (A..E) for the militia stack, then ESC.
+    //
+    // module_scratch[2]: 0 = stepping off, 1 = stepping back on,
+    // 2 = pre-toggle, 3 = post-toggle (find militia slot + send
+    // key), 4 = post-garrison (ESC).
+    case AP_FLOW_PHASE8_GARRISON: {
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE8_GARRISON:space_dialog", KEY_SPACE,
+                            assert_dialog_closed };
+        }
+        int sub = (st->module_scratch[2] < 0) ? 0 : st->module_scratch[2];
+        // Look up our castle.
+        static const struct { int x, y; const char *id; } castles[] = {
+            { 11, 33, "irok" },
+            { 22, 39, "nilslag" },
+            { 40, 58, "vutar" },
+            { 36, 14, "cancomar" },
+            { 57,  5, "kookamunga" },
+        };
+        int idx = st->module_scratch[1];
+        if (idx < 0 || idx >= (int)(sizeof(castles)/sizeof(castles[0]))) {
+            // Out of range — bail.
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE8_NAV_HOME;
+            return (ApCmd){ "PHASE8_GARRISON:bad_idx", 0,
+                            assert_always_true };
+        }
+        int gx = castles[idx].x, gy = castles[idx].y;
+        // Post-combat the hero sits one tile south of the gate
+        // (engine bounces back from the gate step). Walk UP onto
+        // the gate to trigger VIEW_OWN_CASTLE. Loop until the
+        // view is open (more than one UP may be needed if hero
+        // is further away from a no-path skip).
+        if (sub == 0) {
+            if (views_active() == VIEW_OWN_CASTLE) {
+                st->module_scratch[2] = 1;
+                return (ApCmd){ "PHASE8_GARRISON:view_open", 0,
+                                assert_always_true };
+            }
+            int key = ap_nav_step(g, m, gx, gy);
+            if (key == 0) {
+                AP_LOG("[phase8] garrison: cant nav to gate (%d,%d) "
+                       "from (%d,%d), giving up",
+                       gx, gy, g->position.x, g->position.y);
+                st->module_scratch[2] = 4;
+                return (ApCmd){ "PHASE8_GARRISON:no_nav", 0,
+                                assert_always_true };
+            }
+            return (ApCmd){ "PHASE8_GARRISON:nav_to_gate", key,
+                            assert_always_true };
+        }
+        if (sub == 1) {
+            st->module_scratch[2] = 2;
+            return (ApCmd){ "PHASE8_GARRISON:space_toggle", KEY_SPACE,
+                            assert_always_true };
+        }
+        if (sub == 2) {
+            // Find militia slot in player's army.
+            int militia_slot = -1;
+            for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+                if (strcmp(g->army[i].id, "militia") == 0 &&
+                    g->army[i].count > 0) {
+                    militia_slot = i;
+                    break;
+                }
+            }
+            if (militia_slot < 0) {
+                AP_LOG("[phase8] no militia in army, skipping garrison");
+                st->module_scratch[2] = 4;
+                return (ApCmd){ "PHASE8_GARRISON:no_militia", KEY_ESCAPE,
+                                assert_always_true };
+            }
+            st->module_scratch[2] = 4;
+            int key_letter = KEY_A + militia_slot;
+            const char *name = militia_slot == 0 ? "PHASE8_GARRISON:a" :
+                               militia_slot == 1 ? "PHASE8_GARRISON:b" :
+                               militia_slot == 2 ? "PHASE8_GARRISON:c" :
+                               militia_slot == 3 ? "PHASE8_GARRISON:d" :
+                                                   "PHASE8_GARRISON:e";
+            AP_LOG("[phase8] garrisoning militia from slot %d at %s",
+                   militia_slot, castles[idx].id);
+            return (ApCmd){ name, key_letter, assert_always_true };
+        }
+        // sub >= 4: ESC out, then advance.
+        if (views_active() == VIEW_NONE) {
+            AP_LOG("[phase8] garrison done for %s iter=%d gold=%d "
+                   "hp=%d",
+                   castles[idx].id, idx, g->stats.gold,
+                   ap_army_total_hp(g));
+            st->module_scratch[1] = idx + 1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE8_NAV_HOME;
+            return (ApCmd){ "PHASE8_GARRISON:done", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE8_GARRISON:esc", KEY_ESCAPE,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE8_NAV_HOME: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE8_NAV_HOME;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE8_NAV_HOME:y_foe");
+                return (ApCmd){ "PHASE8_NAV_HOME:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE8_NAV_HOME:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE8_NAV_HOME:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE8_NAV_HOME:space_dialog", KEY_SPACE,
+                            assert_dialog_closed };
+        }
+        if (g->position.x == 11 && g->position.y == 57) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE8_OPEN_RECRUIT;
+            return (ApCmd){ "PHASE8_NAV_HOME:arrived", 0,
+                            assert_always_true };
+        }
+        int key = ap_nav_step_avoiding_foes(g, m, 11, 57);
+        if (key == 0) key = ap_nav_step(g, m, 11, 57);
+        if (key == 0) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE8_NAV_HOME:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE8_NAV_HOME:nav", key,
                         assert_always_true };
     }
 
