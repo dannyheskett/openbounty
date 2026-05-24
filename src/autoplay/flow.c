@@ -371,9 +371,12 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 resume != AP_FLOW_PHASE7_NAV_HOME &&
                 resume != AP_FLOW_PHASE8_NAV_CASTLE &&
                 resume != AP_FLOW_PHASE8_NAV_HOME &&
-                resume != AP_FLOW_PHASE9_NAV_TOWN &&
-                resume != AP_FLOW_PHASE9_NAV_CASTLE &&
-                resume != AP_FLOW_PHASE9_NAV_HOME) {
+                resume != AP_FLOW_PHASE9_NAV_TROLLS &&
+                resume != AP_FLOW_PHASE9_NAV_CHEST &&
+                resume != AP_FLOW_PHASE9_NAV_HOME &&
+                resume != AP_FLOW_PHASE10_NAV_TOWN &&
+                resume != AP_FLOW_PHASE10_NAV_CASTLE &&
+                resume != AP_FLOW_PHASE10_NAV_HOME) {
                 resume = AP_FLOW_PHASE1;
             }
             *out_phase_done = true;
@@ -2582,7 +2585,7 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                        "gold=%d hp=%d", g->stats.gold,
                        ap_army_total_hp(g));
                 *out_phase_done = true;
-                *out_next_phase = AP_FLOW_PHASE9_NAV_TOWN;
+                *out_next_phase = AP_FLOW_PHASE9_NAV_TROLLS;
                 return (ApCmd){ "PHASE8_NAV_CASTLE:all_done", 0,
                                 assert_always_true };
             }
@@ -2758,152 +2761,102 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                         assert_always_true };
     }
 
-    // -- PHASE 9: capture caneghor at rythacon (54,57). One-shot
-    //    contract+sail+siege loop, no per-villain iteration since
-    //    he's the only remaining Continentia villain.
-    case AP_FLOW_PHASE9_NAV_TOWN: {
-        if (views_active() == VIEW_TOWN) {
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_PHASE9_TOWN_ACTIONS;
-            return (ApCmd){ "PHASE9_NAV_TOWN:entered", 0,
-                            assert_always_true };
-        }
+    // -- PHASE 9: troll-killer detour. After Phase 8's monster
+    //    castle grind, the army has 8 knights — enough to clear
+    //    wandering_army_000 (2 trolls + sprites + zombies) at
+    //    (26,57). Step onto the foe tile to engage, then walk to
+    //    chest_slot_6 at (25,57), then home to re-recruit before
+    //    Phase 10 takes on caneghor.
+    case AP_FLOW_PHASE9_NAV_TROLLS: {
         if (prompt_is_active()) {
             const char *kind = prompt_kind_str();
             if (kind && strcmp(kind, "yes_no") == 0) {
-                st->module_scratch[3] = AP_FLOW_PHASE9_NAV_TOWN;
+                st->module_scratch[3] = AP_FLOW_PHASE9_NAV_TROLLS;
                 *out_phase_done = true;
                 *out_next_phase = AP_FLOW_COMBAT;
-                dump_combat_start(g, "PHASE9_NAV_TOWN:y_foe");
-                return (ApCmd){ "PHASE9_NAV_TOWN:y_foe", KEY_Y,
+                dump_combat_start(g, "PHASE9_NAV_TROLLS:y_foe");
+                return (ApCmd){ "PHASE9_NAV_TROLLS:y_foe", KEY_Y,
                                 assert_combat_resolved };
             }
             if (kind && strcmp(kind, "text") == 0) {
-                return (ApCmd){ "PHASE9_NAV_TOWN:enter_dismiss",
+                return (ApCmd){ "PHASE9_NAV_TROLLS:enter_dismiss",
                                 KEY_ENTER, assert_prompt_gone };
             }
-            return (ApCmd){ "PHASE9_NAV_TOWN:b_chest", KEY_B,
+            return (ApCmd){ "PHASE9_NAV_TROLLS:b_chest", KEY_B,
                             assert_prompt_gone };
         }
         if (dialog_is_active()) {
-            return (ApCmd){ "PHASE9_NAV_TOWN:space_dialog", KEY_SPACE,
+            return (ApCmd){ "PHASE9_NAV_TROLLS:space_dialog", KEY_SPACE,
                             assert_dialog_closed };
         }
-        int key = ap_nav_step_avoiding_foes(g, m, 12, 60);
-        if (key == 0) key = ap_nav_step(g, m, 12, 60);
+        // Look up trolls foe. If dead, advance to chest pickup.
+        const FoeState *trolls = GameFindFoeConst(g,
+            "wandering_army_000");
+        if (!trolls || !trolls->alive) {
+            AP_LOG("[phase9] trolls dead. pos=(%d,%d) gold=%d hp=%d",
+                   g->position.x, g->position.y, g->stats.gold,
+                   ap_army_total_hp(g));
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE9_NAV_CHEST;
+            return (ApCmd){ "PHASE9_NAV_TROLLS:dead", 0,
+                            assert_always_true };
+        }
+        // Goal: step onto the trolls' current tile (26,57 init,
+        // may have drifted). Stepping onto a foe tile triggers
+        // combat.
+        int key = ap_nav_step(g, m, trolls->x, trolls->y);
         if (key == 0) {
+            AP_LOG("[phase9] no path to trolls at (%d,%d) from (%d,%d)",
+                   trolls->x, trolls->y, g->position.x, g->position.y);
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_DONE;
-            return (ApCmd){ "PHASE9_NAV_TOWN:no_path", 0,
+            *out_next_phase = AP_FLOW_PHASE9_NAV_HOME;
+            return (ApCmd){ "PHASE9_NAV_TROLLS:no_path", 0,
                             assert_always_true };
         }
-        return (ApCmd){ "PHASE9_NAV_TOWN:nav", key,
+        return (ApCmd){ "PHASE9_NAV_TROLLS:nav", key,
                         assert_always_true };
     }
 
-    // Press A to take a contract. The cycle has been refilled
-    // multiple times by now; press A repeatedly until we get a
-    // continentia villain (specifically caneghor — the only
-    // remaining one). Forestria villains get rerolled by pressing
-    // A again (engine drops active_id on retake).
-    case AP_FLOW_PHASE9_TOWN_ACTIONS: {
-        if (views_town_info_text() != NULL) {
-            return (ApCmd){ "PHASE9_TOWN:space_info", KEY_SPACE,
-                            assert_always_true };
-        }
-        if (g->contract.active_id[0]) {
-            const VillainDef *v = villain_by_id(g->contract.active_id);
-            if (v && strcmp(v->zone, "continentia") == 0) {
-                AP_LOG("[phase9] contract taken: villain=%s zone=%s",
-                       g->contract.active_id, v->zone);
+    case AP_FLOW_PHASE9_NAV_CHEST: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE9_NAV_CHEST;
                 *out_phase_done = true;
-                *out_next_phase = AP_FLOW_PHASE9_EXIT_TOWN;
-                return (ApCmd){ "PHASE9_TOWN:done", 0,
-                                assert_always_true };
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE9_NAV_CHEST:y_foe");
+                return (ApCmd){ "PHASE9_NAV_CHEST:y_foe", KEY_Y,
+                                assert_combat_resolved };
             }
-            AP_LOG("[phase9] contract %s is zone=%s (not continentia), "
-                   "rerolling", g->contract.active_id,
-                   v ? v->zone : "(unknown)");
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE9_NAV_CHEST:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE9_NAV_CHEST:b_chest", KEY_B,
+                            assert_prompt_gone };
         }
-        return (ApCmd){ "PHASE9_TOWN:a_contract", KEY_A,
-                        assert_always_true };
-    }
-
-    case AP_FLOW_PHASE9_EXIT_TOWN: {
-        if (views_active() == VIEW_NONE) {
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_PHASE9_NAV_CASTLE;
-            return (ApCmd){ "PHASE9_EXIT_TOWN:done", 0,
-                            assert_always_true };
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE9_NAV_CHEST:space_dialog", KEY_SPACE,
+                            assert_dialog_closed };
         }
-        return (ApCmd){ "PHASE9_EXIT_TOWN:esc", KEY_ESCAPE,
-                        assert_always_true };
-    }
-
-    case AP_FLOW_PHASE9_NAV_CASTLE: {
-        if (!g->contract.active_id[0]) {
-            AP_LOG("[phase9] caneghor captured. pos=(%d,%d) gold=%d "
-                   "hp=%d",
+        if (g->position.x == 25 && g->position.y == 57) {
+            AP_LOG("[phase9] chest_slot_6 grabbed. pos=(%d,%d) "
+                   "gold=%d hp=%d",
                    g->position.x, g->position.y, g->stats.gold,
                    ap_army_total_hp(g));
             *out_phase_done = true;
             *out_next_phase = AP_FLOW_PHASE9_NAV_HOME;
-            return (ApCmd){ "PHASE9_NAV_CASTLE:captured", 0,
+            return (ApCmd){ "PHASE9_NAV_CHEST:done", 0,
                             assert_always_true };
         }
-        if (prompt_is_active()) {
-            const char *kind = prompt_kind_str();
-            if (kind && strcmp(kind, "yes_no") == 0) {
-                st->module_scratch[3] = AP_FLOW_PHASE9_NAV_CASTLE;
-                *out_phase_done = true;
-                *out_next_phase = AP_FLOW_COMBAT;
-                dump_combat_start(g, "PHASE9_NAV_CASTLE:y_castle");
-                return (ApCmd){ "PHASE9_NAV_CASTLE:y_castle", KEY_Y,
-                                assert_combat_resolved };
-            }
-            if (kind && strcmp(kind, "text") == 0) {
-                return (ApCmd){ "PHASE9_NAV_CASTLE:enter_dismiss",
-                                KEY_ENTER, assert_prompt_gone };
-            }
-            return (ApCmd){ "PHASE9_NAV_CASTLE:b_chest", KEY_B,
-                            assert_prompt_gone };
-        }
-        if (dialog_is_active()) {
-            return (ApCmd){ "PHASE9_NAV_CASTLE:space_dialog", KEY_SPACE,
-                            assert_dialog_closed };
-        }
-        // Find caneghor's castle (we know it's rythacon at (54,57)
-        // from the villain salt, but read live to be robust).
-        int target_x = -1, target_y = -1;
-        for (int i = 0; i < GAME_CASTLES; i++) {
-            if (g->castles[i].owner_kind != CASTLE_OWNER_VILLAIN) continue;
-            if (strcmp(g->castles[i].villain_id,
-                       g->contract.active_id) != 0) continue;
-            const ResCastle *rc = resources_castle_by_id(
-                g->res, g->castles[i].id);
-            if (rc) { target_x = rc->x; target_y = rc->y; }
-            break;
-        }
-        if (target_x < 0) {
-            AP_LOG("[phase9] castle for villain %s not found",
-                   g->contract.active_id);
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_DONE;
-            return (ApCmd){ "PHASE9_NAV_CASTLE:no_castle", 0,
-                            assert_always_true };
-        }
-        int key = ap_nav_step(g, m, target_x, target_y);
+        int key = ap_nav_step(g, m, 25, 57);
         if (key == 0) {
-            AP_LOG("[phase9] no path to castle (%d,%d) for %s "
-                   "from (%d,%d)",
-                   target_x, target_y, g->contract.active_id,
-                   g->position.x, g->position.y);
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_DONE;
-            return (ApCmd){ "PHASE9_NAV_CASTLE:no_path", 0,
+            *out_next_phase = AP_FLOW_PHASE9_NAV_HOME;
+            return (ApCmd){ "PHASE9_NAV_CHEST:no_path", 0,
                             assert_always_true };
         }
-        return (ApCmd){ "PHASE9_NAV_CASTLE:nav", key,
+        return (ApCmd){ "PHASE9_NAV_CHEST:nav", key,
                         assert_always_true };
     }
 
@@ -2929,19 +2882,14 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
             return (ApCmd){ "PHASE9_NAV_HOME:space_dialog", KEY_SPACE,
                             assert_dialog_closed };
         }
-        if (g->position.x == 11 && g->position.y == 58) {
-            AP_LOG("[phase9] complete: pos=(%d,%d) gold=%d hp=%d "
-                   "lead_base=%d villains_caught=%d",
-                   g->position.x, g->position.y, g->stats.gold,
-                   ap_army_total_hp(g), g->stats.leadership_base,
-                   GameVillainsCaught(g));
+        if (g->position.x == 11 && g->position.y == 57) {
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_DONE;
+            *out_next_phase = AP_FLOW_PHASE9_OPEN_RECRUIT;
             return (ApCmd){ "PHASE9_NAV_HOME:arrived", 0,
                             assert_always_true };
         }
-        int key = ap_nav_step_avoiding_foes(g, m, 11, 58);
-        if (key == 0) key = ap_nav_step(g, m, 11, 58);
+        int key = ap_nav_step_avoiding_foes(g, m, 11, 57);
+        if (key == 0) key = ap_nav_step(g, m, 11, 57);
         if (key == 0) {
             *out_phase_done = true;
             *out_next_phase = AP_FLOW_DONE;
@@ -2949,6 +2897,357 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                             assert_always_true };
         }
         return (ApCmd){ "PHASE9_NAV_HOME:nav", key,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE9_OPEN_RECRUIT: {
+        if (views_active() == VIEW_RECRUIT_SOLDIERS) {
+            st->module_scratch[0] = 0;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE9_RECRUIT_KNIGHTS;
+            return (ApCmd){ "PHASE9_OPEN_RECRUIT:entered", 0,
+                            assert_always_true };
+        }
+        if (views_active() == VIEW_HOME_CASTLE) {
+            return (ApCmd){ "PHASE9_OPEN_RECRUIT:a", KEY_A,
+                            assert_always_true };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE9_OPEN_RECRUIT:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        return (ApCmd){ "PHASE9_OPEN_RECRUIT:up", KEY_UP,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE9_RECRUIT_KNIGHTS: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE9_RECRUIT_KNIGHTS:e", KEY_E,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE9_RECRUIT_KNIGHTS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE9_RECRUIT_KNIGHTS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE9_RECRUIT_KNIGHTS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE9_RECRUIT_CAVALRY;
+            return (ApCmd){ "PHASE9_RECRUIT_KNIGHTS:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE9_RECRUIT_CAVALRY: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE9_RECRUIT_CAVALRY:d", KEY_D,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE9_RECRUIT_CAVALRY:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE9_RECRUIT_CAVALRY:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE9_RECRUIT_CAVALRY:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE9_RECRUIT_ARCHERS;
+            return (ApCmd){ "PHASE9_RECRUIT_CAVALRY:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE9_RECRUIT_ARCHERS: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE9_RECRUIT_ARCHERS:b", KEY_B,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE9_RECRUIT_ARCHERS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE9_RECRUIT_ARCHERS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE9_RECRUIT_ARCHERS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE9_RECRUIT_PIKEMEN;
+            return (ApCmd){ "PHASE9_RECRUIT_ARCHERS:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE9_RECRUIT_PIKEMEN: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE9_RECRUIT_PIKEMEN:c", KEY_C,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE9_RECRUIT_PIKEMEN:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE9_RECRUIT_PIKEMEN:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE9_RECRUIT_PIKEMEN:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE9_RECRUIT_MILITIA;
+            return (ApCmd){ "PHASE9_RECRUIT_PIKEMEN:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE9_RECRUIT_MILITIA: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE9_RECRUIT_MILITIA:a", KEY_A,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE9_RECRUIT_MILITIA:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE9_RECRUIT_MILITIA:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE9_RECRUIT_MILITIA:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE9_EXIT_RECRUIT;
+            return (ApCmd){ "PHASE9_RECRUIT_MILITIA:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE9_EXIT_RECRUIT: {
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_PHASE9_EXIT_CASTLE;
+        return (ApCmd){ "PHASE9_EXIT_RECRUIT:esc", KEY_ESCAPE,
+                        assert_view_home_castle };
+    }
+
+    case AP_FLOW_PHASE9_EXIT_CASTLE: {
+        if (views_active() == VIEW_NONE) {
+            AP_LOG("[phase9] complete: pos=(%d,%d) gold=%d hp=%d "
+                   "lead_base=%d",
+                   g->position.x, g->position.y, g->stats.gold,
+                   ap_army_total_hp(g), g->stats.leadership_base);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE10_NAV_TOWN;
+            return (ApCmd){ "PHASE9_EXIT_CASTLE:done", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE9_EXIT_CASTLE:esc", KEY_ESCAPE,
+                        assert_always_true };
+    }
+
+    // -- PHASE 10: capture caneghor at rythacon (54,57). One-shot
+    //    contract+sail+siege loop, no per-villain iteration since
+    //    he's the only remaining Continentia villain.
+    case AP_FLOW_PHASE10_NAV_TOWN: {
+        if (views_active() == VIEW_TOWN) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE10_TOWN_ACTIONS;
+            return (ApCmd){ "PHASE10_NAV_TOWN:entered", 0,
+                            assert_always_true };
+        }
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE10_NAV_TOWN;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE10_NAV_TOWN:y_foe");
+                return (ApCmd){ "PHASE10_NAV_TOWN:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE10_NAV_TOWN:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE10_NAV_TOWN:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE10_NAV_TOWN:space_dialog", KEY_SPACE,
+                            assert_dialog_closed };
+        }
+        int key = ap_nav_step_avoiding_foes(g, m, 12, 60);
+        if (key == 0) key = ap_nav_step(g, m, 12, 60);
+        if (key == 0) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE10_NAV_TOWN:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE10_NAV_TOWN:nav", key,
+                        assert_always_true };
+    }
+
+    // Press A to take a contract. The cycle has been refilled
+    // multiple times by now; press A repeatedly until we get a
+    // continentia villain (specifically caneghor — the only
+    // remaining one). Forestria villains get rerolled by pressing
+    // A again (engine drops active_id on retake).
+    case AP_FLOW_PHASE10_TOWN_ACTIONS: {
+        if (views_town_info_text() != NULL) {
+            return (ApCmd){ "PHASE10_TOWN:space_info", KEY_SPACE,
+                            assert_always_true };
+        }
+        if (g->contract.active_id[0]) {
+            const VillainDef *v = villain_by_id(g->contract.active_id);
+            if (v && strcmp(v->zone, "continentia") == 0) {
+                AP_LOG("[phase10] contract taken: villain=%s zone=%s",
+                       g->contract.active_id, v->zone);
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_PHASE10_EXIT_TOWN;
+                return (ApCmd){ "PHASE10_TOWN:done", 0,
+                                assert_always_true };
+            }
+            AP_LOG("[phase10] contract %s is zone=%s (not continentia), "
+                   "rerolling", g->contract.active_id,
+                   v ? v->zone : "(unknown)");
+        }
+        return (ApCmd){ "PHASE10_TOWN:a_contract", KEY_A,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE10_EXIT_TOWN: {
+        if (views_active() == VIEW_NONE) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE10_NAV_CASTLE;
+            return (ApCmd){ "PHASE10_EXIT_TOWN:done", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE10_EXIT_TOWN:esc", KEY_ESCAPE,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE10_NAV_CASTLE: {
+        if (!g->contract.active_id[0]) {
+            AP_LOG("[phase10] caneghor captured. pos=(%d,%d) gold=%d "
+                   "hp=%d",
+                   g->position.x, g->position.y, g->stats.gold,
+                   ap_army_total_hp(g));
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE10_NAV_HOME;
+            return (ApCmd){ "PHASE10_NAV_CASTLE:captured", 0,
+                            assert_always_true };
+        }
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE10_NAV_CASTLE;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE10_NAV_CASTLE:y_castle");
+                return (ApCmd){ "PHASE10_NAV_CASTLE:y_castle", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE10_NAV_CASTLE:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE10_NAV_CASTLE:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE10_NAV_CASTLE:space_dialog", KEY_SPACE,
+                            assert_dialog_closed };
+        }
+        // Find caneghor's castle (we know it's rythacon at (54,57)
+        // from the villain salt, but read live to be robust).
+        int target_x = -1, target_y = -1;
+        for (int i = 0; i < GAME_CASTLES; i++) {
+            if (g->castles[i].owner_kind != CASTLE_OWNER_VILLAIN) continue;
+            if (strcmp(g->castles[i].villain_id,
+                       g->contract.active_id) != 0) continue;
+            const ResCastle *rc = resources_castle_by_id(
+                g->res, g->castles[i].id);
+            if (rc) { target_x = rc->x; target_y = rc->y; }
+            break;
+        }
+        if (target_x < 0) {
+            AP_LOG("[phase10] castle for villain %s not found",
+                   g->contract.active_id);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE10_NAV_CASTLE:no_castle", 0,
+                            assert_always_true };
+        }
+        int key = ap_nav_step(g, m, target_x, target_y);
+        if (key == 0) {
+            AP_LOG("[phase10] no path to castle (%d,%d) for %s "
+                   "from (%d,%d)",
+                   target_x, target_y, g->contract.active_id,
+                   g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE10_NAV_CASTLE:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE10_NAV_CASTLE:nav", key,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE10_NAV_HOME: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE10_NAV_HOME;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE10_NAV_HOME:y_foe");
+                return (ApCmd){ "PHASE10_NAV_HOME:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE10_NAV_HOME:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE10_NAV_HOME:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE10_NAV_HOME:space_dialog", KEY_SPACE,
+                            assert_dialog_closed };
+        }
+        if (g->position.x == 11 && g->position.y == 58) {
+            AP_LOG("[phase10] complete: pos=(%d,%d) gold=%d hp=%d "
+                   "lead_base=%d villains_caught=%d",
+                   g->position.x, g->position.y, g->stats.gold,
+                   ap_army_total_hp(g), g->stats.leadership_base,
+                   GameVillainsCaught(g));
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE10_NAV_HOME:arrived", 0,
+                            assert_always_true };
+        }
+        int key = ap_nav_step_avoiding_foes(g, m, 11, 58);
+        if (key == 0) key = ap_nav_step(g, m, 11, 58);
+        if (key == 0) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE10_NAV_HOME:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE10_NAV_HOME:nav", key,
                         assert_always_true };
     }
 

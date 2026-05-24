@@ -167,14 +167,30 @@ typedef enum {
     AP_FLOW_PHASE8_NAV_CASTLE,
     AP_FLOW_PHASE8_GARRISON,
     AP_FLOW_PHASE8_NAV_HOME,
-    // Phase 9: take a contract on caneghor (the 6th villain in
+    // Phase 9: kill the trolls at (26,57) and grab chest_slot_6
+    // at (25,57). Step onto the foe tile to trigger combat; the
+    // post-Phase-8 army has 8 knights, which beats the HOLD-vs-
+    // heavy gate (50 < 3×35) and damages trolls fast enough to
+    // overcome their REGEN.
+    AP_FLOW_PHASE9_NAV_TROLLS,
+    AP_FLOW_PHASE9_NAV_CHEST,
+    AP_FLOW_PHASE9_NAV_HOME,
+    AP_FLOW_PHASE9_OPEN_RECRUIT,
+    AP_FLOW_PHASE9_RECRUIT_KNIGHTS,
+    AP_FLOW_PHASE9_RECRUIT_CAVALRY,
+    AP_FLOW_PHASE9_RECRUIT_ARCHERS,
+    AP_FLOW_PHASE9_RECRUIT_PIKEMEN,
+    AP_FLOW_PHASE9_RECRUIT_MILITIA,
+    AP_FLOW_PHASE9_EXIT_RECRUIT,
+    AP_FLOW_PHASE9_EXIT_CASTLE,
+    // Phase 10: take a contract on caneghor (the 6th villain in
     // the cycle, refilled into slot 0 after murray was captured),
     // sail to rythacon (54,57), siege, return home.
-    AP_FLOW_PHASE9_NAV_TOWN,
-    AP_FLOW_PHASE9_TOWN_ACTIONS,
-    AP_FLOW_PHASE9_EXIT_TOWN,
-    AP_FLOW_PHASE9_NAV_CASTLE,
-    AP_FLOW_PHASE9_NAV_HOME,
+    AP_FLOW_PHASE10_NAV_TOWN,
+    AP_FLOW_PHASE10_TOWN_ACTIONS,
+    AP_FLOW_PHASE10_EXIT_TOWN,
+    AP_FLOW_PHASE10_NAV_CASTLE,
+    AP_FLOW_PHASE10_NAV_HOME,
     AP_FLOW_BUY_SIEGE,
     AP_FLOW_EXIT_TOWN,
     AP_FLOW_DONE,
