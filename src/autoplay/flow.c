@@ -374,9 +374,12 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 resume != AP_FLOW_PHASE9_NAV_TROLLS &&
                 resume != AP_FLOW_PHASE9_NAV_CHEST &&
                 resume != AP_FLOW_PHASE9_NAV_PATHS_END &&
+                resume != AP_FLOW_PHASE9_NAV_GHOSTS &&
                 resume != AP_FLOW_PHASE9_NAV_HOME &&
                 resume != AP_FLOW_PHASE10_NAV_TOWN &&
                 resume != AP_FLOW_PHASE10_NAV_CASTLE &&
+                resume != AP_FLOW_PHASE10_NAV_HOME_RECRUIT &&
+                resume != AP_FLOW_PHASE10_NAV_RYTHACON &&
                 resume != AP_FLOW_PHASE10_NAV_HOME) {
                 resume = AP_FLOW_PHASE1;
             }
@@ -2946,11 +2949,131 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
     case AP_FLOW_PHASE9_EXIT_PATHS_END: {
         if (views_active() == VIEW_NONE) {
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_PHASE9_NAV_HOME;
+            *out_next_phase = AP_FLOW_PHASE9_NAV_GHOSTS;
             return (ApCmd){ "PHASE9_EXIT_PATHS_END:done", 0,
                             assert_always_true };
         }
         return (ApCmd){ "PHASE9_EXIT_PATHS_END:esc", KEY_ESCAPE,
+                        assert_always_true };
+    }
+
+    // -- Phase 9 detour: sail/walk to the ghosts dwelling at (5,29).
+    //    Stepping onto a dwelling tile opens a text-input prompt
+    //    ("How many Ghosts...") and bounces the hero back to the
+    //    previous tile. We handle the prompt in RECRUIT_GHOSTS; here
+    //    we just nav toward (5,29) until the prompt fires.
+    case AP_FLOW_PHASE9_NAV_GHOSTS: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "text") == 0) {
+                // Dwelling prompt opened — hand off to recruit state.
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_PHASE9_RECRUIT_GHOSTS;
+                st->module_scratch[0] = 0;
+                return (ApCmd){ "PHASE9_NAV_GHOSTS:dwelling_open", 0,
+                                assert_always_true };
+            }
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE9_NAV_GHOSTS;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE9_NAV_GHOSTS:y_foe");
+                return (ApCmd){ "PHASE9_NAV_GHOSTS:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            return (ApCmd){ "PHASE9_NAV_GHOSTS:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE9_NAV_GHOSTS:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        // If we already have ghosts in the army (recruited this run),
+        // skip the detour.
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+            if (g->army[i].id[0] &&
+                strcmp(g->army[i].id, "ghosts") == 0 &&
+                g->army[i].count > 0) {
+                AP_LOG("[phase9] ghosts already in army (slot %d, "
+                       "count=%d), skipping dwelling", i,
+                       g->army[i].count);
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_PHASE9_NAV_HOME;
+                return (ApCmd){ "PHASE9_NAV_GHOSTS:already", 0,
+                                assert_always_true };
+            }
+        }
+        int key = ap_nav_step_avoiding_foes(g, m, 5, 29);
+        if (key == 0) key = ap_nav_step(g, m, 5, 29);
+        if (key == 0) {
+            AP_LOG("[phase9] no path to ghost dwelling at (5,29) "
+                   "from (%d,%d), skipping",
+                   g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE9_NAV_HOME;
+            return (ApCmd){ "PHASE9_NAV_GHOSTS:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE9_NAV_GHOSTS:nav", key,
+                        assert_always_true };
+    }
+
+    // -- Dwelling recruit text-input: type 9999 then ENTER to buy
+    //    the cap. The engine clamps the typed value to whatever
+    //    leadership/gold actually permits. Confirm closes the
+    //    prompt; the dwelling screen then gets dismissed and the
+    //    hero is back at the pre-step tile.
+    case AP_FLOW_PHASE9_RECRUIT_GHOSTS: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "text") == 0) {
+                int sub = (st->module_scratch[0] < 0)
+                              ? 0 : st->module_scratch[0];
+                switch (sub) {
+                case 0: st->module_scratch[0] = 1;
+                    return (ApCmd){ "PHASE9_RECRUIT_GHOSTS:9", KEY_NINE,
+                                    assert_always_true };
+                case 1: st->module_scratch[0] = 2;
+                    return (ApCmd){ "PHASE9_RECRUIT_GHOSTS:9", KEY_NINE,
+                                    assert_always_true };
+                case 2: st->module_scratch[0] = 3;
+                    return (ApCmd){ "PHASE9_RECRUIT_GHOSTS:9", KEY_NINE,
+                                    assert_always_true };
+                case 3: st->module_scratch[0] = 4;
+                    return (ApCmd){ "PHASE9_RECRUIT_GHOSTS:9", KEY_NINE,
+                                    assert_always_true };
+                default:
+                    return (ApCmd){ "PHASE9_RECRUIT_GHOSTS:enter",
+                                    KEY_ENTER, assert_prompt_gone };
+                }
+            }
+            return (ApCmd){ "PHASE9_RECRUIT_GHOSTS:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE9_RECRUIT_GHOSTS:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        // Dwelling screen may still be open (VIEW_DWELLING) — dismiss
+        // it. After dismissal the hero is back at the prior tile and
+        // we proceed to home castle.
+        if (views_active() != VIEW_NONE) {
+            return (ApCmd){ "PHASE9_RECRUIT_GHOSTS:esc", KEY_ESCAPE,
+                            assert_always_true };
+        }
+        // Log result and advance.
+        int n = 0;
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+            if (g->army[i].id[0] &&
+                strcmp(g->army[i].id, "ghosts") == 0)
+                n = g->army[i].count;
+        }
+        AP_LOG("[phase9] ghosts recruited: count=%d gold=%d "
+               "lead_base=%d", n, g->stats.gold,
+               g->stats.leadership_base);
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_PHASE9_NAV_HOME;
+        return (ApCmd){ "PHASE9_RECRUIT_GHOSTS:done", 0,
                         assert_always_true };
     }
 
@@ -3100,31 +3223,8 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                             assert_view_recruit_soldiers };
         default: st->module_scratch[0]=-1;
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_PHASE9_RECRUIT_MILITIA;
-            return (ApCmd){ "PHASE9_RECRUIT_PIKEMEN:enter", KEY_ENTER,
-                            assert_always_true };
-        }
-    }
-
-    case AP_FLOW_PHASE9_RECRUIT_MILITIA: {
-        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
-        switch (sub) {
-        case 0: st->module_scratch[0]=1;
-            return (ApCmd){ "PHASE9_RECRUIT_MILITIA:a", KEY_A,
-                            assert_view_recruit_soldiers };
-        case 1: st->module_scratch[0]=2;
-            return (ApCmd){ "PHASE9_RECRUIT_MILITIA:9", KEY_NINE,
-                            assert_view_recruit_soldiers };
-        case 2: st->module_scratch[0]=3;
-            return (ApCmd){ "PHASE9_RECRUIT_MILITIA:9", KEY_NINE,
-                            assert_view_recruit_soldiers };
-        case 3: st->module_scratch[0]=4;
-            return (ApCmd){ "PHASE9_RECRUIT_MILITIA:9", KEY_NINE,
-                            assert_view_recruit_soldiers };
-        default: st->module_scratch[0]=-1;
-            *out_phase_done = true;
             *out_next_phase = AP_FLOW_PHASE9_EXIT_RECRUIT;
-            return (ApCmd){ "PHASE9_RECRUIT_MILITIA:enter", KEY_ENTER,
+            return (ApCmd){ "PHASE9_RECRUIT_PIKEMEN:enter", KEY_ENTER,
                             assert_always_true };
         }
     }
@@ -3240,7 +3340,7 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                    g->position.x, g->position.y, g->stats.gold,
                    ap_army_total_hp(g));
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_PHASE10_NAV_HOME;
+            *out_next_phase = AP_FLOW_PHASE10_NAV_HOME_RECRUIT;
             return (ApCmd){ "PHASE10_NAV_CASTLE:captured", 0,
                             assert_always_true };
         }
@@ -3297,6 +3397,237 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                             assert_always_true };
         }
         return (ApCmd){ "PHASE10_NAV_CASTLE:nav", key,
+                        assert_always_true };
+    }
+
+    // After caneghor only ghosts survive; we can't garrison them
+    // alone (GameGarrisonTroop refuses to empty the army). So
+    // first head home and recruit a small militia stack so the
+    // hero retains a second slot, then walk back to rythacon and
+    // drop the ghosts into the garrison.
+    case AP_FLOW_PHASE10_NAV_HOME_RECRUIT: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE10_NAV_HOME_RECRUIT;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE10_NAV_HOME_RECRUIT:y_foe");
+                return (ApCmd){ "PHASE10_NAV_HOME_RECRUIT:y_foe",
+                                KEY_Y, assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE10_NAV_HOME_RECRUIT:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE10_NAV_HOME_RECRUIT:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE10_NAV_HOME_RECRUIT:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        if (g->position.x == 11 && g->position.y == 57) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE10_OPEN_RECRUIT;
+            return (ApCmd){ "PHASE10_NAV_HOME_RECRUIT:arrived", 0,
+                            assert_always_true };
+        }
+        int key = ap_nav_step_avoiding_foes(g, m, 11, 57);
+        if (key == 0) key = ap_nav_step(g, m, 11, 57);
+        if (key == 0) {
+            AP_LOG("[phase10] no path home for recruit from (%d,%d)",
+                   g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE10_NAV_HOME;
+            return (ApCmd){ "PHASE10_NAV_HOME_RECRUIT:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE10_NAV_HOME_RECRUIT:nav", key,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE10_OPEN_RECRUIT: {
+        if (views_active() == VIEW_RECRUIT_SOLDIERS) {
+            st->module_scratch[0] = 0;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE10_RECRUIT_MILITIA;
+            return (ApCmd){ "PHASE10_OPEN_RECRUIT:entered", 0,
+                            assert_always_true };
+        }
+        if (views_active() == VIEW_HOME_CASTLE) {
+            return (ApCmd){ "PHASE10_OPEN_RECRUIT:a", KEY_A,
+                            assert_always_true };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE10_OPEN_RECRUIT:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        return (ApCmd){ "PHASE10_OPEN_RECRUIT:up", KEY_UP,
+                        assert_always_true };
+    }
+
+    // Recruit exactly 20 militia: press A (militia row), then "20",
+    // then ENTER. 20 × 50g = 1000g, well within budget.
+    case AP_FLOW_PHASE10_RECRUIT_MILITIA: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE10_RECRUIT_MILITIA:a", KEY_A,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE10_RECRUIT_MILITIA:2", KEY_TWO,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE10_RECRUIT_MILITIA:0", KEY_ZERO,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE10_EXIT_RECRUIT;
+            return (ApCmd){ "PHASE10_RECRUIT_MILITIA:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE10_EXIT_RECRUIT: {
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_PHASE10_EXIT_CASTLE;
+        return (ApCmd){ "PHASE10_EXIT_RECRUIT:esc", KEY_ESCAPE,
+                        assert_view_home_castle };
+    }
+
+    case AP_FLOW_PHASE10_EXIT_CASTLE: {
+        if (views_active() == VIEW_NONE) {
+            AP_LOG("[phase10] militia recruited for garrison: "
+                   "gold=%d hp=%d", g->stats.gold, ap_army_total_hp(g));
+            st->module_scratch[2] = 0;  // reset garrison sub-state
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE10_NAV_RYTHACON;
+            return (ApCmd){ "PHASE10_EXIT_CASTLE:done", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE10_EXIT_CASTLE:esc", KEY_ESCAPE,
+                        assert_always_true };
+    }
+
+    // Walk back to rythacon (54,57) for the garrison handoff.
+    case AP_FLOW_PHASE10_NAV_RYTHACON: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE10_NAV_RYTHACON;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE10_NAV_RYTHACON:y_foe");
+                return (ApCmd){ "PHASE10_NAV_RYTHACON:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE10_NAV_RYTHACON:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE10_NAV_RYTHACON:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE10_NAV_RYTHACON:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        // Arrival: one tile south of rythacon's gate, the bounce-
+        // back tile after stepping onto (54,57).
+        if (g->position.x == 54 && g->position.y == 58) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE10_GARRISON;
+            return (ApCmd){ "PHASE10_NAV_RYTHACON:arrived", 0,
+                            assert_always_true };
+        }
+        int key = ap_nav_step_avoiding_foes(g, m, 54, 58);
+        if (key == 0) key = ap_nav_step(g, m, 54, 58);
+        if (key == 0) {
+            AP_LOG("[phase10] no path back to rythacon from (%d,%d)",
+                   g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE10_NAV_HOME;
+            return (ApCmd){ "PHASE10_NAV_RYTHACON:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE10_NAV_RYTHACON:nav", key,
+                        assert_always_true };
+    }
+
+    // Drop the militia stack into rythacon's garrison. Pattern
+    // mirrors PHASE8_GARRISON: walk onto the gate (54,57) →
+    // VIEW_OWN_CASTLE opens → SPACE toggles GARRISON mode →
+    // press the letter for the militia slot → ESC out.
+    // module_scratch[2] tracks sub-state: 0 nav-to-gate,
+    // 1 view-open, 2 toggled-now-pick-slot, 4 ESC.
+    case AP_FLOW_PHASE10_GARRISON: {
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE10_GARRISON:space_dialog", KEY_SPACE,
+                            assert_dialog_closed };
+        }
+        int sub = (st->module_scratch[2] < 0) ? 0 : st->module_scratch[2];
+        const int gx = 54, gy = 57;  // rythacon gate
+        if (sub == 0) {
+            if (views_active() == VIEW_OWN_CASTLE) {
+                st->module_scratch[2] = 1;
+                return (ApCmd){ "PHASE10_GARRISON:view_open", 0,
+                                assert_always_true };
+            }
+            int key = ap_nav_step(g, m, gx, gy);
+            if (key == 0) {
+                AP_LOG("[phase10] garrison: cant nav to gate (%d,%d) "
+                       "from (%d,%d), giving up",
+                       gx, gy, g->position.x, g->position.y);
+                st->module_scratch[2] = 4;
+                return (ApCmd){ "PHASE10_GARRISON:no_nav", 0,
+                                assert_always_true };
+            }
+            return (ApCmd){ "PHASE10_GARRISON:nav_to_gate", key,
+                            assert_always_true };
+        }
+        if (sub == 1) {
+            st->module_scratch[2] = 2;
+            return (ApCmd){ "PHASE10_GARRISON:space_toggle", KEY_SPACE,
+                            assert_always_true };
+        }
+        if (sub == 2) {
+            // Find militia slot in player's army.
+            int militia_slot = -1;
+            for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+                if (strcmp(g->army[i].id, "militia") == 0 &&
+                    g->army[i].count > 0) {
+                    militia_slot = i;
+                    break;
+                }
+            }
+            if (militia_slot < 0) {
+                AP_LOG("[phase10] no militia in army, skipping garrison");
+                st->module_scratch[2] = 4;
+                return (ApCmd){ "PHASE10_GARRISON:no_militia",
+                                KEY_ESCAPE, assert_always_true };
+            }
+            st->module_scratch[2] = 4;
+            int key_letter = KEY_A + militia_slot;
+            const char *name = militia_slot == 0 ? "PHASE10_GARRISON:a" :
+                               militia_slot == 1 ? "PHASE10_GARRISON:b" :
+                               militia_slot == 2 ? "PHASE10_GARRISON:c" :
+                               militia_slot == 3 ? "PHASE10_GARRISON:d" :
+                                                   "PHASE10_GARRISON:e";
+            AP_LOG("[phase10] garrisoning militia from slot %d at "
+                   "rythacon", militia_slot);
+            return (ApCmd){ name, key_letter, assert_always_true };
+        }
+        // sub >= 4: ESC out, then advance.
+        if (views_active() == VIEW_NONE) {
+            AP_LOG("[phase10] garrison done at rythacon gold=%d hp=%d",
+                   g->stats.gold, ap_army_total_hp(g));
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE10_NAV_HOME;
+            return (ApCmd){ "PHASE10_GARRISON:done", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE10_GARRISON:esc", KEY_ESCAPE,
                         assert_always_true };
     }
 

@@ -177,13 +177,18 @@ typedef enum {
     AP_FLOW_PHASE9_NAV_PATHS_END,
     AP_FLOW_PHASE9_BUY_SPELLS,
     AP_FLOW_PHASE9_EXIT_PATHS_END,
+    // Detour to the ghosts dwelling at (5,29) to buy ghosts before
+    // returning to home castle. Ghosts (10 hp, 3-4 melee, ABSORB,
+    // UNDEAD) are key vs caneghor's archmages. They replace militia
+    // in the army roster for Phase 10.
+    AP_FLOW_PHASE9_NAV_GHOSTS,
+    AP_FLOW_PHASE9_RECRUIT_GHOSTS,
     AP_FLOW_PHASE9_NAV_HOME,
     AP_FLOW_PHASE9_OPEN_RECRUIT,
     AP_FLOW_PHASE9_RECRUIT_KNIGHTS,
     AP_FLOW_PHASE9_RECRUIT_CAVALRY,
     AP_FLOW_PHASE9_RECRUIT_ARCHERS,
     AP_FLOW_PHASE9_RECRUIT_PIKEMEN,
-    AP_FLOW_PHASE9_RECRUIT_MILITIA,
     AP_FLOW_PHASE9_EXIT_RECRUIT,
     AP_FLOW_PHASE9_EXIT_CASTLE,
     // Phase 10: take a contract on caneghor (the 6th villain in
@@ -193,6 +198,18 @@ typedef enum {
     AP_FLOW_PHASE10_TOWN_ACTIONS,
     AP_FLOW_PHASE10_EXIT_TOWN,
     AP_FLOW_PHASE10_NAV_CASTLE,
+    // After caneghor capture, only ghosts survive (ABSORB pulled
+    // every kill back into the stack). GameGarrisonTroop refuses
+    // to move a stack if it would leave the hero with zero troops,
+    // so we detour: navigate home → recruit 20 militia → walk
+    // back to rythacon → garrison ghosts → return home.
+    AP_FLOW_PHASE10_NAV_HOME_RECRUIT,
+    AP_FLOW_PHASE10_OPEN_RECRUIT,
+    AP_FLOW_PHASE10_RECRUIT_MILITIA,
+    AP_FLOW_PHASE10_EXIT_RECRUIT,
+    AP_FLOW_PHASE10_EXIT_CASTLE,
+    AP_FLOW_PHASE10_NAV_RYTHACON,
+    AP_FLOW_PHASE10_GARRISON,
     AP_FLOW_PHASE10_NAV_HOME,
     AP_FLOW_BUY_SIEGE,
     AP_FLOW_EXIT_TOWN,
