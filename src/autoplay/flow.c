@@ -496,9 +496,18 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
             return (ApCmd){ "RENT_BOAT:b", KEY_B, assert_always_true };
         default:
             if (!g->boat.has_boat) {
-                AP_LOG("[flow] RENT_BOAT: has_boat still false after purchase");
-                ap_dump_state("boat purchase failed", g, st);
-                return (ApCmd){ "RENT_BOAT:fail", 0, assert_dialog_open };
+                // Not enough gold to rent (engine opens a "no gold"
+                // dialog which any-key dismisses). Skip the boat and
+                // continue — caller's nav will work it out or no_path
+                // its way to the next leg.
+                AP_LOG("[flow] RENT_BOAT: insufficient gold "
+                       "(gold=%d), continuing without boat",
+                       g->stats.gold);
+                st->module_scratch[4] = -1;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_EXIT_TOWN;
+                return (ApCmd){ "RENT_BOAT:skip", KEY_SPACE,
+                                assert_always_true };
             }
             AP_LOG("[flow] boat rented at (%d,%d), gold=%d",
                    g->boat.x, g->boat.y, g->stats.gold);

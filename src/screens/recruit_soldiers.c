@@ -132,12 +132,15 @@ void screen_recruit_soldiers_open(Game *g) {
     views_push(VIEW_RECRUIT_SOLDIERS);
 }
 
-// max = min(leadership_cap, gold / recruit_cost). The leadership
-// cap (GameMaxRecruitable) governs how many your army can hold;
-// the gold cap governs what you can afford. The commit path's
-// silent-clamp uses this s_max, so by bounding here we prevent
-// the "no gold" error that fires when entering a leadership-
-// allowed count that exceeds the wallet.
+// max = min(leadership_cap, (gold - reserve) / recruit_cost). The
+// leadership cap (GameMaxRecruitable) governs how many your army
+// can hold; the gold cap governs what you can afford. We reserve a
+// small buffer (100g, enough for the cheapest boat rental) so the
+// player isn't left totally cashless after a max-out recruit.
+// The commit path's silent-clamp uses this s_max, so by bounding
+// here we prevent the "no gold" error that fires when entering a
+// leadership-allowed count that exceeds the wallet.
+#define RECRUIT_GOLD_RESERVE 100
 static int recompute_max(const Game *g, int slot) {
     if (slot < 0 || slot >= s_pool_count) return 0;
     const TroopDef *t = troop_by_index(s_pool[slot]);
@@ -145,7 +148,9 @@ static int recompute_max(const Game *g, int slot) {
     int m = GameMaxRecruitable(g, t->id);
     if (m < 0) m = 0;
     if (t->recruit_cost > 0) {
-        int affordable = g->stats.gold / t->recruit_cost;
+        int budget = g->stats.gold - RECRUIT_GOLD_RESERVE;
+        if (budget < 0) budget = 0;
+        int affordable = budget / t->recruit_cost;
         if (affordable < m) m = affordable;
     }
     return m;
