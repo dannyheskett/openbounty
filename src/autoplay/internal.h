@@ -282,6 +282,16 @@ typedef enum {
     AP_FLOW_PHASE13_OPEN_NAV_PROMPT_BACK,
     AP_FLOW_PHASE13_PICK_CONTINENTIA,
     AP_FLOW_PHASE13_NAV_HOME,
+    // Phase 14: still on Forestria after Phase 13's refill. Walk to
+    // woods_end town (3,55), buy fireballs to max_spells (the Ring
+    // of Heroism doubled the cap back in Phase 11), take Moradon's
+    // contract (easiest Forestria villain at 1425 HP, no archmages),
+    // sail/walk to his castle, siege, capture. Then hand back to
+    // Phase 13's RETURN_TO_SPAWN to head home.
+    AP_FLOW_PHASE14_NAV_TO_WOODS_END,
+    AP_FLOW_PHASE14_TOWN_ACTIONS,
+    AP_FLOW_PHASE14_EXIT_WOODS_END,
+    AP_FLOW_PHASE14_NAV_CASTLE,
     AP_FLOW_DONE,
 
     AP_ALL_DONE,

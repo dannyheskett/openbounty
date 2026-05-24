@@ -414,7 +414,9 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 resume != AP_FLOW_PHASE13_REFILL_OGRES_NAV &&
                 resume != AP_FLOW_PHASE13_REFILL_ELVES_NAV &&
                 resume != AP_FLOW_PHASE13_RETURN_TO_SPAWN &&
-                resume != AP_FLOW_PHASE13_NAV_HOME) {
+                resume != AP_FLOW_PHASE13_NAV_HOME &&
+                resume != AP_FLOW_PHASE14_NAV_TO_WOODS_END &&
+                resume != AP_FLOW_PHASE14_NAV_CASTLE) {
                 resume = AP_FLOW_PHASE1;
             }
             *out_phase_done = true;
@@ -5232,7 +5234,7 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
         AP_LOG("[phase13] elves refilled: count=%d gold=%d",
                n, g->stats.gold);
         *out_phase_done = true;
-        *out_next_phase = AP_FLOW_PHASE13_RETURN_TO_SPAWN;
+        *out_next_phase = AP_FLOW_PHASE14_NAV_TO_WOODS_END;
         return (ApCmd){ "PHASE13_REFILL_ELVES:done", 0,
                         assert_always_true };
     }
@@ -5352,6 +5354,176 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                             assert_always_true };
         }
         return (ApCmd){ "PHASE13_NAV_HOME:nav", key,
+                        assert_always_true };
+    }
+
+    // ===== PHASE 14 ===================================================
+    // Buy fireballs at woods_end (Forestria's fireball town), take
+    // Moradon's contract there, sail to Moradon's castle, siege +
+    // capture, then hand off to Phase 13's RETURN_TO_SPAWN to head
+    // back to Continentia origin.
+
+    case AP_FLOW_PHASE14_NAV_TO_WOODS_END: {
+        if (views_active() == VIEW_TOWN) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE14_TOWN_ACTIONS;
+            return (ApCmd){ "PHASE14_NAV_TO_WOODS_END:entered", 0,
+                            assert_always_true };
+        }
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE14_NAV_TO_WOODS_END;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE14_NAV_TO_WOODS_END:y_foe");
+                return (ApCmd){ "PHASE14_NAV_TO_WOODS_END:y_foe",
+                                KEY_Y, assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE14_NAV_TO_WOODS_END:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE14_NAV_TO_WOODS_END:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE14_NAV_TO_WOODS_END:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        int key = ap_nav_step_avoiding_desert(g, m, 3, 55);
+        if (key == 0) key = ap_nav_step(g, m, 3, 55);
+        if (key == 0) {
+            AP_LOG("[phase14] no path to woods_end from (%d,%d), "
+                   "skipping", g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_RETURN_TO_SPAWN;
+            return (ApCmd){ "PHASE14_NAV_TO_WOODS_END:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE14_NAV_TO_WOODS_END:nav", key,
+                        assert_always_true };
+    }
+
+    // -- Town menu loop: buy fireballs to max_spells (D), take
+    //    Moradon's contract (A — cycle until active=moradon), then
+    //    exit. Town info panels are dismissed with SPACE; D may
+    //    bounce back if we already hit max_spells, which is the
+    //    cue to stop buying spells and shift to contract.
+    case AP_FLOW_PHASE14_TOWN_ACTIONS: {
+        if (views_town_info_text() != NULL) {
+            return (ApCmd){ "PHASE14_TOWN:space_info", KEY_SPACE,
+                            assert_always_true };
+        }
+        // Did we land Moradon's contract? Match by id.
+        if (g->contract.active_id[0] &&
+            strcmp(g->contract.active_id, "moradon") == 0) {
+            AP_LOG("[phase14] contract: moradon. gold=%d hp=%d",
+                   g->stats.gold, ap_army_total_hp(g));
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE14_EXIT_WOODS_END;
+            return (ApCmd){ "PHASE14_TOWN:contract_taken", 0,
+                            assert_always_true };
+        }
+        // Spell buy phase: keep pressing D until fireballs hit cap.
+        int known = 0;
+        for (int i = 0; i < 14; i++) known += g->spells.counts[i];
+        // Stop spell buying if at cap or low on gold.
+        const int spell_cost = 1500;
+        bool can_buy_spell =
+            (known < g->stats.max_spells) &&
+            (g->stats.gold >= spell_cost + 2000 /* reserve for fight */);
+        if (can_buy_spell) {
+            return (ApCmd){ "PHASE14_TOWN:d_spell", KEY_D,
+                            assert_always_true };
+        }
+        if (!g->contract.active_id[0]) {
+            AP_LOG("[phase14] spells done (known=%d cap=%d), "
+                   "taking contract", known, g->stats.max_spells);
+            return (ApCmd){ "PHASE14_TOWN:a_contract", KEY_A,
+                            assert_always_true };
+        }
+        // Have a non-moradon contract → cycle.
+        AP_LOG("[phase14] active contract is %s (not moradon), "
+               "rerolling", g->contract.active_id);
+        return (ApCmd){ "PHASE14_TOWN:a_recontract", KEY_A,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE14_EXIT_WOODS_END: {
+        if (views_active() == VIEW_NONE) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE14_NAV_CASTLE;
+            return (ApCmd){ "PHASE14_EXIT_WOODS_END:done", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE14_EXIT_WOODS_END:esc", KEY_ESCAPE,
+                        assert_always_true };
+    }
+
+    // -- Sail/walk to Moradon's castle. Castle id is read live from
+    //    castles[] where villain_id == "moradon" (salt-time assignment
+    //    isn't stable across seeds).
+    case AP_FLOW_PHASE14_NAV_CASTLE: {
+        if (!g->contract.active_id[0]) {
+            AP_LOG("[phase14] moradon captured: pos=(%d,%d) gold=%d "
+                   "hp=%d", g->position.x, g->position.y,
+                   g->stats.gold, ap_army_total_hp(g));
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_RETURN_TO_SPAWN;
+            return (ApCmd){ "PHASE14_NAV_CASTLE:captured", 0,
+                            assert_always_true };
+        }
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE14_NAV_CASTLE;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE14_NAV_CASTLE:y_castle");
+                return (ApCmd){ "PHASE14_NAV_CASTLE:y_castle", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE14_NAV_CASTLE:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE14_NAV_CASTLE:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE14_NAV_CASTLE:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        // Look up Moradon's castle dynamically.
+        int target_x = -1, target_y = -1;
+        for (int i = 0; i < GAME_CASTLES; i++) {
+            if (g->castles[i].owner_kind != CASTLE_OWNER_VILLAIN) continue;
+            if (strcmp(g->castles[i].villain_id, "moradon") != 0) continue;
+            const ResCastle *rc =
+                resources_castle_by_id(g->res, g->castles[i].id);
+            if (rc) { target_x = rc->x; target_y = rc->y; }
+            break;
+        }
+        if (target_x < 0) {
+            AP_LOG("[phase14] moradon castle not found, skipping");
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_RETURN_TO_SPAWN;
+            return (ApCmd){ "PHASE14_NAV_CASTLE:no_castle", 0,
+                            assert_always_true };
+        }
+        int key = ap_nav_step_avoiding_desert(g, m, target_x, target_y);
+        if (key == 0) key = ap_nav_step(g, m, target_x, target_y);
+        if (key == 0) {
+            AP_LOG("[phase14] no path to moradon castle (%d,%d) "
+                   "from (%d,%d), skipping", target_x, target_y,
+                   g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_RETURN_TO_SPAWN;
+            return (ApCmd){ "PHASE14_NAV_CASTLE:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE14_NAV_CASTLE:nav", key,
                         assert_always_true };
     }
 
