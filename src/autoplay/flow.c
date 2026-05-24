@@ -402,7 +402,19 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 resume != AP_FLOW_PHASE12_NAV_TO_SEA &&
                 resume != AP_FLOW_PHASE12_TOUR &&
                 resume != AP_FLOW_PHASE12_RETURN_TO_SPAWN &&
-                resume != AP_FLOW_PHASE12_NAV_HOME) {
+                resume != AP_FLOW_PHASE12_NAV_HOME &&
+                resume != AP_FLOW_PHASE13_NAV_TO_SEA &&
+                resume != AP_FLOW_PHASE13_NAV_TO_DWARVES &&
+                resume != AP_FLOW_PHASE13_NAV_TO_ZOMBIES &&
+                resume != AP_FLOW_PHASE13_NAV_TO_OGRES &&
+                resume != AP_FLOW_PHASE13_NAV_TO_ELVES &&
+                resume != AP_FLOW_PHASE13_NAV_TO_ANCHOR &&
+                resume != AP_FLOW_PHASE13_NAV_TO_SHIELD &&
+                resume != AP_FLOW_PHASE13_CASTLE_NAV &&
+                resume != AP_FLOW_PHASE13_REFILL_OGRES_NAV &&
+                resume != AP_FLOW_PHASE13_REFILL_ELVES_NAV &&
+                resume != AP_FLOW_PHASE13_RETURN_TO_SPAWN &&
+                resume != AP_FLOW_PHASE13_NAV_HOME) {
                 resume = AP_FLOW_PHASE1;
             }
             *out_phase_done = true;
@@ -4228,8 +4240,15 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
             AP_LOG("[phase12] complete: pos=(%d,%d) gold=%d hp=%d",
                    g->position.x, g->position.y, g->stats.gold,
                    ap_army_total_hp(g));
+            st->module_scratch[0] = 0;  // reset for Phase 13 subs
+            // Skip the Continentia pre-recruit — every week ashore
+            // costs ~3-6k in upkeep, and the only way to GET to
+            // Forestria is a week of sea travel. Carry our existing
+            // (~175hp) army and rebuild from Forestria dwellings
+            // instead, which is what the Phase 12 gold haul (~59k)
+            // was meant for.
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_DONE;
+            *out_next_phase = AP_FLOW_PHASE13_NAV_TO_SEA;
             return (ApCmd){ "PHASE12_NAV_HOME:arrived", 0,
                             assert_always_true };
         }
@@ -4242,6 +4261,1097 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                             assert_always_true };
         }
         return (ApCmd){ "PHASE12_NAV_HOME:nav", key,
+                        assert_always_true };
+    }
+
+    // ===== PHASE 13 ===================================================
+    // Sail straight from the Continentia origin to Forestria (no
+    // pre-recruit — every week ashore costs ~3-6k upkeep and the
+    // sea trip itself is one full week). Top up at the zombie
+    // dwelling for garrison fodder, grab the shield + anchor
+    // artifacts, then iterate Forestria's monster-owned castles
+    // dropping zombies into each garrison. Return to (11,58) origin.
+
+    case AP_FLOW_PHASE13_NAV_TO_SEA: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE13_NAV_TO_SEA;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE13_NAV_TO_SEA:y_foe");
+                return (ApCmd){ "PHASE13_NAV_TO_SEA:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE13_NAV_TO_SEA:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE13_NAV_TO_SEA:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE13_NAV_TO_SEA:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        const int sea_x = 12, sea_y = 62;
+        if (g->travel_mode == TRAVEL_BOAT &&
+            g->position.x == sea_x && g->position.y == sea_y) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_OPEN_NAV_PROMPT;
+            return (ApCmd){ "PHASE13_NAV_TO_SEA:arrived", 0,
+                            assert_always_true };
+        }
+        int key = ap_nav_step_avoiding_foes(g, m, sea_x, sea_y);
+        if (key == 0) key = ap_nav_step(g, m, sea_x, sea_y);
+        if (key == 0) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE13_NAV_TO_SEA:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE13_NAV_TO_SEA:nav", key,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE13_OPEN_NAV_PROMPT: {
+        if (prompt_is_active() && prompt_kind_str() &&
+            strcmp(prompt_kind_str(), "numeric") == 0) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_PICK_FORESTRIA;
+            return (ApCmd){ "PHASE13_OPEN_NAV_PROMPT:opened", 0,
+                            assert_always_true };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE13_OPEN_NAV_PROMPT:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        return (ApCmd){ "PHASE13_OPEN_NAV_PROMPT:n", KEY_N,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE13_PICK_FORESTRIA: {
+        if (strcmp(g->position.zone, "forestria") == 0) {
+            AP_LOG("[phase13] arrived on forestria: pos=(%d,%d)",
+                   g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_NAV_TO_DWARVES;
+            return (ApCmd){ "PHASE13_PICK_FORESTRIA:switched", 0,
+                            assert_always_true };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE13_PICK_FORESTRIA:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        return (ApCmd){ "PHASE13_PICK_FORESTRIA:1", KEY_ONE,
+                        assert_always_true };
+    }
+
+    // -- Stop at dwarves dwelling (8,50) for a beefy fight stack.
+    //    Dwarves: 20 HP each, 2-4 melee, 350g, very high HP per
+    //    leadership. Used to absorb hits in Forestria castle sieges
+    //    so the zombie stack survives for garrison-time.
+    case AP_FLOW_PHASE13_NAV_TO_DWARVES: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "text") == 0) {
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_PHASE13_RECRUIT_DWARVES;
+                st->module_scratch[0] = 0;
+                return (ApCmd){ "PHASE13_NAV_TO_DWARVES:dwelling_open",
+                                0, assert_always_true };
+            }
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE13_NAV_TO_DWARVES;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE13_NAV_TO_DWARVES:y_foe");
+                return (ApCmd){ "PHASE13_NAV_TO_DWARVES:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            return (ApCmd){ "PHASE13_NAV_TO_DWARVES:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE13_NAV_TO_DWARVES:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        // Skip if dwarves already in army.
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+            if (g->army[i].id[0] &&
+                strcmp(g->army[i].id, "dwarves") == 0 &&
+                g->army[i].count > 0) {
+                AP_LOG("[phase13] dwarves already in army (slot %d, "
+                       "count=%d), skipping", i, g->army[i].count);
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_PHASE13_NAV_TO_ZOMBIES;
+                return (ApCmd){ "PHASE13_NAV_TO_DWARVES:already", 0,
+                                assert_always_true };
+            }
+        }
+        int key = ap_nav_step_avoiding_desert(g, m, 8, 50);
+        if (key == 0) key = ap_nav_step(g, m, 8, 50);
+        if (key == 0) {
+            AP_LOG("[phase13] no path to dwarves (8,50) from "
+                   "(%d,%d), skipping", g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_NAV_TO_ZOMBIES;
+            return (ApCmd){ "PHASE13_NAV_TO_DWARVES:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE13_NAV_TO_DWARVES:nav", key,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE13_RECRUIT_DWARVES: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "text") == 0) {
+                int sub = (st->module_scratch[0] < 0)
+                              ? 0 : st->module_scratch[0];
+                switch (sub) {
+                case 0: st->module_scratch[0] = 1;
+                    return (ApCmd){ "PHASE13_RECRUIT_DWARVES:9",
+                                    KEY_NINE, assert_always_true };
+                case 1: st->module_scratch[0] = 2;
+                    return (ApCmd){ "PHASE13_RECRUIT_DWARVES:9",
+                                    KEY_NINE, assert_always_true };
+                case 2: st->module_scratch[0] = 3;
+                    return (ApCmd){ "PHASE13_RECRUIT_DWARVES:9",
+                                    KEY_NINE, assert_always_true };
+                case 3: st->module_scratch[0] = 4;
+                    return (ApCmd){ "PHASE13_RECRUIT_DWARVES:9",
+                                    KEY_NINE, assert_always_true };
+                default:
+                    return (ApCmd){ "PHASE13_RECRUIT_DWARVES:enter",
+                                    KEY_ENTER, assert_prompt_gone };
+                }
+            }
+            return (ApCmd){ "PHASE13_RECRUIT_DWARVES:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE13_RECRUIT_DWARVES:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        if (views_active() != VIEW_NONE) {
+            return (ApCmd){ "PHASE13_RECRUIT_DWARVES:esc", KEY_ESCAPE,
+                            assert_always_true };
+        }
+        int n = 0;
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+            if (g->army[i].id[0] &&
+                strcmp(g->army[i].id, "dwarves") == 0)
+                n = g->army[i].count;
+        }
+        AP_LOG("[phase13] dwarves recruited: count=%d gold=%d",
+               n, g->stats.gold);
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_PHASE13_NAV_TO_ZOMBIES;
+        return (ApCmd){ "PHASE13_RECRUIT_DWARVES:done", 0,
+                        assert_always_true };
+    }
+
+    // -- Stop at zombie dwelling (16,50) for garrison fodder.
+    //    Stepping onto a dwelling tile opens the text-input recruit
+    //    prompt; we type 9999 to buy the cap.
+    case AP_FLOW_PHASE13_NAV_TO_ZOMBIES: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "text") == 0) {
+                // Dwelling prompt opened — hand off to recruit state.
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_PHASE13_RECRUIT_ZOMBIES;
+                st->module_scratch[0] = 0;
+                return (ApCmd){ "PHASE13_NAV_TO_ZOMBIES:dwelling_open",
+                                0, assert_always_true };
+            }
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE13_NAV_TO_ZOMBIES;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE13_NAV_TO_ZOMBIES:y_foe");
+                return (ApCmd){ "PHASE13_NAV_TO_ZOMBIES:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            return (ApCmd){ "PHASE13_NAV_TO_ZOMBIES:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE13_NAV_TO_ZOMBIES:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        // Skip if zombies already in army (revisit case).
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+            if (g->army[i].id[0] &&
+                strcmp(g->army[i].id, "zombies") == 0 &&
+                g->army[i].count > 0) {
+                AP_LOG("[phase13] zombies already in army (slot %d, "
+                       "count=%d), skipping", i, g->army[i].count);
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_PHASE13_NAV_TO_ANCHOR;
+                return (ApCmd){ "PHASE13_NAV_TO_ZOMBIES:already", 0,
+                                assert_always_true };
+            }
+        }
+        int key = ap_nav_step_avoiding_desert(g, m, 16, 50);
+        if (key == 0) key = ap_nav_step(g, m, 16, 50);
+        if (key == 0) {
+            AP_LOG("[phase13] no path to zombies (16,50) from "
+                   "(%d,%d), skipping", g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_NAV_TO_ANCHOR;
+            return (ApCmd){ "PHASE13_NAV_TO_ZOMBIES:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE13_NAV_TO_ZOMBIES:nav", key,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE13_RECRUIT_ZOMBIES: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "text") == 0) {
+                int sub = (st->module_scratch[0] < 0)
+                              ? 0 : st->module_scratch[0];
+                switch (sub) {
+                case 0: st->module_scratch[0] = 1;
+                    return (ApCmd){ "PHASE13_RECRUIT_ZOMBIES:9",
+                                    KEY_NINE, assert_always_true };
+                case 1: st->module_scratch[0] = 2;
+                    return (ApCmd){ "PHASE13_RECRUIT_ZOMBIES:9",
+                                    KEY_NINE, assert_always_true };
+                case 2: st->module_scratch[0] = 3;
+                    return (ApCmd){ "PHASE13_RECRUIT_ZOMBIES:9",
+                                    KEY_NINE, assert_always_true };
+                case 3: st->module_scratch[0] = 4;
+                    return (ApCmd){ "PHASE13_RECRUIT_ZOMBIES:9",
+                                    KEY_NINE, assert_always_true };
+                default:
+                    return (ApCmd){ "PHASE13_RECRUIT_ZOMBIES:enter",
+                                    KEY_ENTER, assert_prompt_gone };
+                }
+            }
+            return (ApCmd){ "PHASE13_RECRUIT_ZOMBIES:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE13_RECRUIT_ZOMBIES:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        if (views_active() != VIEW_NONE) {
+            return (ApCmd){ "PHASE13_RECRUIT_ZOMBIES:esc", KEY_ESCAPE,
+                            assert_always_true };
+        }
+        int n = 0;
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+            if (g->army[i].id[0] &&
+                strcmp(g->army[i].id, "zombies") == 0)
+                n = g->army[i].count;
+        }
+        AP_LOG("[phase13] zombies recruited: count=%d gold=%d",
+               n, g->stats.gold);
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_PHASE13_NAV_TO_OGRES;
+        return (ApCmd){ "PHASE13_RECRUIT_ZOMBIES:done", 0,
+                        assert_always_true };
+    }
+
+    // -- Ogres dwelling (19,42) — 40 HP each, 750g, big melee
+    //    tank. Sit between yeneverre castle (19,45) and the rest of
+    //    Forestria, so the detour is essentially free.
+    case AP_FLOW_PHASE13_NAV_TO_OGRES: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "text") == 0) {
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_PHASE13_RECRUIT_OGRES;
+                st->module_scratch[0] = 0;
+                return (ApCmd){ "PHASE13_NAV_TO_OGRES:dwelling_open",
+                                0, assert_always_true };
+            }
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE13_NAV_TO_OGRES;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE13_NAV_TO_OGRES:y_foe");
+                return (ApCmd){ "PHASE13_NAV_TO_OGRES:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            return (ApCmd){ "PHASE13_NAV_TO_OGRES:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE13_NAV_TO_OGRES:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+            if (g->army[i].id[0] &&
+                strcmp(g->army[i].id, "ogres") == 0 &&
+                g->army[i].count > 0) {
+                AP_LOG("[phase13] ogres already in army (slot %d, "
+                       "count=%d), skipping", i, g->army[i].count);
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_PHASE13_NAV_TO_ELVES;
+                return (ApCmd){ "PHASE13_NAV_TO_OGRES:already", 0,
+                                assert_always_true };
+            }
+        }
+        int key = ap_nav_step_avoiding_desert(g, m, 19, 42);
+        if (key == 0) key = ap_nav_step(g, m, 19, 42);
+        if (key == 0) {
+            AP_LOG("[phase13] no path to ogres (19,42) from (%d,%d), "
+                   "skipping", g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_NAV_TO_ELVES;
+            return (ApCmd){ "PHASE13_NAV_TO_OGRES:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE13_NAV_TO_OGRES:nav", key,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE13_RECRUIT_OGRES: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "text") == 0) {
+                int sub = (st->module_scratch[0] < 0)
+                              ? 0 : st->module_scratch[0];
+                switch (sub) {
+                case 0: st->module_scratch[0] = 1;
+                    return (ApCmd){ "PHASE13_RECRUIT_OGRES:9",
+                                    KEY_NINE, assert_always_true };
+                case 1: st->module_scratch[0] = 2;
+                    return (ApCmd){ "PHASE13_RECRUIT_OGRES:9",
+                                    KEY_NINE, assert_always_true };
+                case 2: st->module_scratch[0] = 3;
+                    return (ApCmd){ "PHASE13_RECRUIT_OGRES:9",
+                                    KEY_NINE, assert_always_true };
+                case 3: st->module_scratch[0] = 4;
+                    return (ApCmd){ "PHASE13_RECRUIT_OGRES:9",
+                                    KEY_NINE, assert_always_true };
+                default:
+                    return (ApCmd){ "PHASE13_RECRUIT_OGRES:enter",
+                                    KEY_ENTER, assert_prompt_gone };
+                }
+            }
+            return (ApCmd){ "PHASE13_RECRUIT_OGRES:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE13_RECRUIT_OGRES:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        if (views_active() != VIEW_NONE) {
+            return (ApCmd){ "PHASE13_RECRUIT_OGRES:esc", KEY_ESCAPE,
+                            assert_always_true };
+        }
+        int n = 0;
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+            if (g->army[i].id[0] &&
+                strcmp(g->army[i].id, "ogres") == 0)
+                n = g->army[i].count;
+        }
+        AP_LOG("[phase13] ogres recruited: count=%d gold=%d",
+               n, g->stats.gold);
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_PHASE13_NAV_TO_ELVES;
+        return (ApCmd){ "PHASE13_RECRUIT_OGRES:done", 0,
+                        assert_always_true };
+    }
+
+    // -- Elves dwelling (42,43) — 10 HP, 200g, ranged 2-4 shot 24.
+    //    Best ranged available on Forestria. East of yeneverre/ogres,
+    //    en route to the anchor pickup at (43,18).
+    case AP_FLOW_PHASE13_NAV_TO_ELVES: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "text") == 0) {
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_PHASE13_RECRUIT_ELVES;
+                st->module_scratch[0] = 0;
+                return (ApCmd){ "PHASE13_NAV_TO_ELVES:dwelling_open",
+                                0, assert_always_true };
+            }
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE13_NAV_TO_ELVES;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE13_NAV_TO_ELVES:y_foe");
+                return (ApCmd){ "PHASE13_NAV_TO_ELVES:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            return (ApCmd){ "PHASE13_NAV_TO_ELVES:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE13_NAV_TO_ELVES:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+            if (g->army[i].id[0] &&
+                strcmp(g->army[i].id, "elves") == 0 &&
+                g->army[i].count > 0) {
+                AP_LOG("[phase13] elves already in army (slot %d, "
+                       "count=%d), skipping", i, g->army[i].count);
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_PHASE13_NAV_TO_ANCHOR;
+                return (ApCmd){ "PHASE13_NAV_TO_ELVES:already", 0,
+                                assert_always_true };
+            }
+        }
+        int key = ap_nav_step_avoiding_desert(g, m, 42, 43);
+        if (key == 0) key = ap_nav_step(g, m, 42, 43);
+        if (key == 0) {
+            AP_LOG("[phase13] no path to elves (42,43) from (%d,%d), "
+                   "skipping", g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_NAV_TO_ANCHOR;
+            return (ApCmd){ "PHASE13_NAV_TO_ELVES:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE13_NAV_TO_ELVES:nav", key,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE13_RECRUIT_ELVES: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "text") == 0) {
+                int sub = (st->module_scratch[0] < 0)
+                              ? 0 : st->module_scratch[0];
+                switch (sub) {
+                case 0: st->module_scratch[0] = 1;
+                    return (ApCmd){ "PHASE13_RECRUIT_ELVES:9",
+                                    KEY_NINE, assert_always_true };
+                case 1: st->module_scratch[0] = 2;
+                    return (ApCmd){ "PHASE13_RECRUIT_ELVES:9",
+                                    KEY_NINE, assert_always_true };
+                case 2: st->module_scratch[0] = 3;
+                    return (ApCmd){ "PHASE13_RECRUIT_ELVES:9",
+                                    KEY_NINE, assert_always_true };
+                case 3: st->module_scratch[0] = 4;
+                    return (ApCmd){ "PHASE13_RECRUIT_ELVES:9",
+                                    KEY_NINE, assert_always_true };
+                default:
+                    return (ApCmd){ "PHASE13_RECRUIT_ELVES:enter",
+                                    KEY_ENTER, assert_prompt_gone };
+                }
+            }
+            return (ApCmd){ "PHASE13_RECRUIT_ELVES:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE13_RECRUIT_ELVES:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        if (views_active() != VIEW_NONE) {
+            return (ApCmd){ "PHASE13_RECRUIT_ELVES:esc", KEY_ESCAPE,
+                            assert_always_true };
+        }
+        int n = 0;
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+            if (g->army[i].id[0] &&
+                strcmp(g->army[i].id, "elves") == 0)
+                n = g->army[i].count;
+        }
+        AP_LOG("[phase13] elves recruited: count=%d gold=%d",
+               n, g->stats.gold);
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_PHASE13_NAV_TO_ANCHOR;
+        return (ApCmd){ "PHASE13_RECRUIT_ELVES:done", 0,
+                        assert_always_true };
+    }
+
+    // -- Pick up anchor artifact at (43,18). Automatic on step.
+    case AP_FLOW_PHASE13_NAV_TO_ANCHOR: {
+        if (g->artifacts.found[7] /* anchor */) {
+            AP_LOG("[phase13] anchor acquired: pos=(%d,%d)",
+                   g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_NAV_TO_SHIELD;
+            return (ApCmd){ "PHASE13_NAV_TO_ANCHOR:found", 0,
+                            assert_always_true };
+        }
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE13_NAV_TO_ANCHOR;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE13_NAV_TO_ANCHOR:y_foe");
+                return (ApCmd){ "PHASE13_NAV_TO_ANCHOR:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE13_NAV_TO_ANCHOR:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE13_NAV_TO_ANCHOR:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE13_NAV_TO_ANCHOR:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        int key = ap_nav_step_avoiding_desert(g, m, 43, 18);
+        if (key == 0) key = ap_nav_step(g, m, 43, 18);
+        if (key == 0) {
+            AP_LOG("[phase13] no path to anchor (43,18) from (%d,%d), "
+                   "skipping", g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_NAV_TO_SHIELD;
+            return (ApCmd){ "PHASE13_NAV_TO_ANCHOR:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE13_NAV_TO_ANCHOR:nav", key,
+                        assert_always_true };
+    }
+
+    // -- Pick up shield artifact at (51,28).
+    case AP_FLOW_PHASE13_NAV_TO_SHIELD: {
+        if (g->artifacts.found[1] /* shield */) {
+            AP_LOG("[phase13] shield acquired: pos=(%d,%d)",
+                   g->position.x, g->position.y);
+            st->module_scratch[1] = 0;  // castle iteration index
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_CASTLE_LOOP;
+            return (ApCmd){ "PHASE13_NAV_TO_SHIELD:found", 0,
+                            assert_always_true };
+        }
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE13_NAV_TO_SHIELD;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE13_NAV_TO_SHIELD:y_foe");
+                return (ApCmd){ "PHASE13_NAV_TO_SHIELD:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE13_NAV_TO_SHIELD:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE13_NAV_TO_SHIELD:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE13_NAV_TO_SHIELD:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        int key = ap_nav_step_avoiding_desert(g, m, 51, 28);
+        if (key == 0) key = ap_nav_step(g, m, 51, 28);
+        if (key == 0) {
+            AP_LOG("[phase13] no path to shield (51,28) from (%d,%d), "
+                   "skipping", g->position.x, g->position.y);
+            st->module_scratch[1] = 0;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_CASTLE_LOOP;
+            return (ApCmd){ "PHASE13_NAV_TO_SHIELD:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE13_NAV_TO_SHIELD:nav", key,
+                        assert_always_true };
+    }
+
+    // -- Iterate Forestria's 6 castles. Skip villain-owned, special,
+    //    and player-owned. Target monster-owned ones for sieges.
+    //    module_scratch[1] = castle iteration index (0..5).
+    //    module_scratch[2] = current GARRISON sub-state.
+    case AP_FLOW_PHASE13_CASTLE_LOOP: {
+        static const struct { int x, y; const char *id; } castles[] = {
+            { 19, 44, "yeneverre" },
+            { 30, 45, "duvock" },
+            { 41, 29, "jhan" },
+            { 25, 24, "mooseweigh" },
+            { 47, 57, "basefit" },
+            { 42,  7, "quinderwitch" },
+        };
+        const int n_castles = (int)(sizeof(castles)/sizeof(castles[0]));
+        int idx = (st->module_scratch[1] < 0) ? 0 : st->module_scratch[1];
+        // Skip past any villain/special/player-owned castles.
+        while (idx < n_castles) {
+            const CastleRecord *cr = GameFindCastleConst(g, castles[idx].id);
+            if (!cr) { idx++; continue; }
+            if (cr->owner_kind == CASTLE_OWNER_MONSTERS) break;
+            AP_LOG("[phase13] skipping castle %s (owner=%d)",
+                   castles[idx].id, (int)cr->owner_kind);
+            idx++;
+        }
+        st->module_scratch[1] = idx;
+        if (idx >= n_castles) {
+            AP_LOG("[phase13] castle loop complete: pos=(%d,%d) "
+                   "gold=%d hp=%d", g->position.x, g->position.y,
+                   g->stats.gold, ap_army_total_hp(g));
+            st->module_scratch[0] = 0;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_REFILL_OGRES_NAV;
+            return (ApCmd){ "PHASE13_CASTLE_LOOP:done", 0,
+                            assert_always_true };
+        }
+        st->module_scratch[2] = 0;
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_PHASE13_CASTLE_NAV;
+        return (ApCmd){ "PHASE13_CASTLE_LOOP:advance", 0,
+                        assert_always_true };
+    }
+
+    // -- Sail/walk to the current castle's gate, fight when prompted.
+    case AP_FLOW_PHASE13_CASTLE_NAV: {
+        static const struct { int x, y; const char *id; } castles[] = {
+            { 19, 44, "yeneverre" },
+            { 30, 45, "duvock" },
+            { 41, 29, "jhan" },
+            { 25, 24, "mooseweigh" },
+            { 47, 57, "basefit" },
+            { 42,  7, "quinderwitch" },
+        };
+        int idx = st->module_scratch[1];
+        if (idx < 0 || idx >= (int)(sizeof(castles)/sizeof(castles[0]))) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_RETURN_TO_SPAWN;
+            return (ApCmd){ "PHASE13_CASTLE_NAV:bad_idx", 0,
+                            assert_always_true };
+        }
+        const CastleRecord *cr =
+            GameFindCastleConst(g, castles[idx].id);
+        // Already captured? Advance to garrison.
+        if (cr && cr->owner_kind == CASTLE_OWNER_PLAYER) {
+            AP_LOG("[phase13] castle %s captured: pos=(%d,%d) hp=%d",
+                   castles[idx].id, g->position.x, g->position.y,
+                   ap_army_total_hp(g));
+            st->module_scratch[2] = 0;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_CASTLE_GARRISON;
+            return (ApCmd){ "PHASE13_CASTLE_NAV:captured", 0,
+                            assert_always_true };
+        }
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE13_CASTLE_NAV;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE13_CASTLE_NAV:y_castle");
+                return (ApCmd){ "PHASE13_CASTLE_NAV:y_castle", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE13_CASTLE_NAV:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE13_CASTLE_NAV:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE13_CASTLE_NAV:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        int key = ap_nav_step_avoiding_desert(g, m,
+                                              castles[idx].x,
+                                              castles[idx].y);
+        if (key == 0) key = ap_nav_step(g, m,
+                                        castles[idx].x,
+                                        castles[idx].y);
+        if (key == 0) {
+            AP_LOG("[phase13] castle %s no path from (%d,%d), "
+                   "skipping", castles[idx].id, g->position.x,
+                   g->position.y);
+            st->module_scratch[1] = idx + 1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_CASTLE_LOOP;
+            return (ApCmd){ "PHASE13_CASTLE_NAV:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE13_CASTLE_NAV:nav", key,
+                        assert_always_true };
+    }
+
+    // -- Drop a zombie stack into the freshly captured castle.
+    //    Pattern mirrors PHASE8/PHASE10 garrison flow.
+    case AP_FLOW_PHASE13_CASTLE_GARRISON: {
+        static const struct { int x, y; const char *id; } castles[] = {
+            { 19, 44, "yeneverre" },
+            { 30, 45, "duvock" },
+            { 41, 29, "jhan" },
+            { 25, 24, "mooseweigh" },
+            { 47, 57, "basefit" },
+            { 42,  7, "quinderwitch" },
+        };
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE13_CASTLE_GARRISON:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        int idx = st->module_scratch[1];
+        if (idx < 0 || idx >= (int)(sizeof(castles)/sizeof(castles[0]))) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_RETURN_TO_SPAWN;
+            return (ApCmd){ "PHASE13_CASTLE_GARRISON:bad_idx", 0,
+                            assert_always_true };
+        }
+        int sub = (st->module_scratch[2] < 0) ? 0 : st->module_scratch[2];
+        int gx = castles[idx].x, gy = castles[idx].y;
+        if (sub == 0) {
+            if (views_active() == VIEW_OWN_CASTLE) {
+                st->module_scratch[2] = 1;
+                return (ApCmd){ "PHASE13_CASTLE_GARRISON:view_open", 0,
+                                assert_always_true };
+            }
+            int key = ap_nav_step(g, m, gx, gy);
+            if (key == 0) {
+                AP_LOG("[phase13] castle %s: cant nav to gate, "
+                       "giving up", castles[idx].id);
+                st->module_scratch[2] = 4;
+                return (ApCmd){ "PHASE13_CASTLE_GARRISON:no_nav", 0,
+                                assert_always_true };
+            }
+            return (ApCmd){ "PHASE13_CASTLE_GARRISON:nav_to_gate",
+                            key, assert_always_true };
+        }
+        if (sub == 1) {
+            st->module_scratch[2] = 2;
+            return (ApCmd){ "PHASE13_CASTLE_GARRISON:space_toggle",
+                            KEY_SPACE, assert_always_true };
+        }
+        if (sub == 2) {
+            int zombie_slot = -1;
+            for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+                if (strcmp(g->army[i].id, "zombies") == 0 &&
+                    g->army[i].count > 0) {
+                    zombie_slot = i;
+                    break;
+                }
+            }
+            if (zombie_slot < 0) {
+                AP_LOG("[phase13] castle %s: no zombies in army, "
+                       "skipping garrison", castles[idx].id);
+                st->module_scratch[2] = 4;
+                return (ApCmd){ "PHASE13_CASTLE_GARRISON:no_zombies",
+                                KEY_ESCAPE, assert_always_true };
+            }
+            st->module_scratch[2] = 4;
+            int key_letter = KEY_A + zombie_slot;
+            const char *name =
+                zombie_slot == 0 ? "PHASE13_CASTLE_GARRISON:a" :
+                zombie_slot == 1 ? "PHASE13_CASTLE_GARRISON:b" :
+                zombie_slot == 2 ? "PHASE13_CASTLE_GARRISON:c" :
+                zombie_slot == 3 ? "PHASE13_CASTLE_GARRISON:d" :
+                                   "PHASE13_CASTLE_GARRISON:e";
+            AP_LOG("[phase13] castle %s: garrisoning zombies slot %d",
+                   castles[idx].id, zombie_slot);
+            return (ApCmd){ name, key_letter, assert_always_true };
+        }
+        if (views_active() == VIEW_NONE) {
+            AP_LOG("[phase13] castle %s garrison done gold=%d hp=%d",
+                   castles[idx].id, g->stats.gold,
+                   ap_army_total_hp(g));
+            st->module_scratch[1] = idx + 1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_CASTLE_LOOP;
+            return (ApCmd){ "PHASE13_CASTLE_GARRISON:done", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE13_CASTLE_GARRISON:esc", KEY_ESCAPE,
+                        assert_always_true };
+    }
+
+    // -- Post-loop refill: revisit ogres dwelling (19,42) and elves
+    //    (42,43) to top up before heading home. Population regrows
+    //    weekly; after several castle fights and the zombie garrison
+    //    drop, we usually have leadership headroom to take a fresh
+    //    stack of each.
+    case AP_FLOW_PHASE13_REFILL_OGRES_NAV: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "text") == 0) {
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_PHASE13_REFILL_OGRES;
+                st->module_scratch[0] = 0;
+                return (ApCmd){ "PHASE13_REFILL_OGRES_NAV:dwelling_open",
+                                0, assert_always_true };
+            }
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE13_REFILL_OGRES_NAV;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE13_REFILL_OGRES_NAV:y_foe");
+                return (ApCmd){ "PHASE13_REFILL_OGRES_NAV:y_foe",
+                                KEY_Y, assert_combat_resolved };
+            }
+            return (ApCmd){ "PHASE13_REFILL_OGRES_NAV:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE13_REFILL_OGRES_NAV:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        int key = ap_nav_step_avoiding_desert(g, m, 19, 42);
+        if (key == 0) key = ap_nav_step(g, m, 19, 42);
+        if (key == 0) {
+            AP_LOG("[phase13] refill ogres: no path from (%d,%d), "
+                   "skipping", g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_REFILL_ELVES_NAV;
+            return (ApCmd){ "PHASE13_REFILL_OGRES_NAV:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE13_REFILL_OGRES_NAV:nav", key,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE13_REFILL_OGRES: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "text") == 0) {
+                int sub = (st->module_scratch[0] < 0)
+                              ? 0 : st->module_scratch[0];
+                switch (sub) {
+                case 0: st->module_scratch[0] = 1;
+                    return (ApCmd){ "PHASE13_REFILL_OGRES:9",
+                                    KEY_NINE, assert_always_true };
+                case 1: st->module_scratch[0] = 2;
+                    return (ApCmd){ "PHASE13_REFILL_OGRES:9",
+                                    KEY_NINE, assert_always_true };
+                case 2: st->module_scratch[0] = 3;
+                    return (ApCmd){ "PHASE13_REFILL_OGRES:9",
+                                    KEY_NINE, assert_always_true };
+                case 3: st->module_scratch[0] = 4;
+                    return (ApCmd){ "PHASE13_REFILL_OGRES:9",
+                                    KEY_NINE, assert_always_true };
+                default:
+                    return (ApCmd){ "PHASE13_REFILL_OGRES:enter",
+                                    KEY_ENTER, assert_prompt_gone };
+                }
+            }
+            return (ApCmd){ "PHASE13_REFILL_OGRES:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE13_REFILL_OGRES:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        if (views_active() != VIEW_NONE) {
+            return (ApCmd){ "PHASE13_REFILL_OGRES:esc", KEY_ESCAPE,
+                            assert_always_true };
+        }
+        int n = 0;
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+            if (g->army[i].id[0] &&
+                strcmp(g->army[i].id, "ogres") == 0)
+                n = g->army[i].count;
+        }
+        AP_LOG("[phase13] ogres refilled: count=%d gold=%d",
+               n, g->stats.gold);
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_PHASE13_REFILL_ELVES_NAV;
+        return (ApCmd){ "PHASE13_REFILL_OGRES:done", 0,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE13_REFILL_ELVES_NAV: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "text") == 0) {
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_PHASE13_REFILL_ELVES;
+                st->module_scratch[0] = 0;
+                return (ApCmd){ "PHASE13_REFILL_ELVES_NAV:dwelling_open",
+                                0, assert_always_true };
+            }
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE13_REFILL_ELVES_NAV;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE13_REFILL_ELVES_NAV:y_foe");
+                return (ApCmd){ "PHASE13_REFILL_ELVES_NAV:y_foe",
+                                KEY_Y, assert_combat_resolved };
+            }
+            return (ApCmd){ "PHASE13_REFILL_ELVES_NAV:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE13_REFILL_ELVES_NAV:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        int key = ap_nav_step_avoiding_desert(g, m, 42, 43);
+        if (key == 0) key = ap_nav_step(g, m, 42, 43);
+        if (key == 0) {
+            AP_LOG("[phase13] refill elves: no path from (%d,%d), "
+                   "skipping", g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_RETURN_TO_SPAWN;
+            return (ApCmd){ "PHASE13_REFILL_ELVES_NAV:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE13_REFILL_ELVES_NAV:nav", key,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE13_REFILL_ELVES: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "text") == 0) {
+                int sub = (st->module_scratch[0] < 0)
+                              ? 0 : st->module_scratch[0];
+                switch (sub) {
+                case 0: st->module_scratch[0] = 1;
+                    return (ApCmd){ "PHASE13_REFILL_ELVES:9",
+                                    KEY_NINE, assert_always_true };
+                case 1: st->module_scratch[0] = 2;
+                    return (ApCmd){ "PHASE13_REFILL_ELVES:9",
+                                    KEY_NINE, assert_always_true };
+                case 2: st->module_scratch[0] = 3;
+                    return (ApCmd){ "PHASE13_REFILL_ELVES:9",
+                                    KEY_NINE, assert_always_true };
+                case 3: st->module_scratch[0] = 4;
+                    return (ApCmd){ "PHASE13_REFILL_ELVES:9",
+                                    KEY_NINE, assert_always_true };
+                default:
+                    return (ApCmd){ "PHASE13_REFILL_ELVES:enter",
+                                    KEY_ENTER, assert_prompt_gone };
+                }
+            }
+            return (ApCmd){ "PHASE13_REFILL_ELVES:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE13_REFILL_ELVES:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        if (views_active() != VIEW_NONE) {
+            return (ApCmd){ "PHASE13_REFILL_ELVES:esc", KEY_ESCAPE,
+                            assert_always_true };
+        }
+        int n = 0;
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+            if (g->army[i].id[0] &&
+                strcmp(g->army[i].id, "elves") == 0)
+                n = g->army[i].count;
+        }
+        AP_LOG("[phase13] elves refilled: count=%d gold=%d",
+               n, g->stats.gold);
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_PHASE13_RETURN_TO_SPAWN;
+        return (ApCmd){ "PHASE13_REFILL_ELVES:done", 0,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE13_RETURN_TO_SPAWN: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE13_RETURN_TO_SPAWN;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE13_RETURN_TO_SPAWN:y_foe");
+                return (ApCmd){ "PHASE13_RETURN_TO_SPAWN:y_foe",
+                                KEY_Y, assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE13_RETURN_TO_SPAWN:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE13_RETURN_TO_SPAWN:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE13_RETURN_TO_SPAWN:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        const int back_x = 0, back_y = 27;
+        if (g->travel_mode == TRAVEL_BOAT &&
+            g->position.x == back_x && g->position.y == back_y) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_OPEN_NAV_PROMPT_BACK;
+            return (ApCmd){ "PHASE13_RETURN_TO_SPAWN:arrived", 0,
+                            assert_always_true };
+        }
+        int key = ap_nav_step_avoiding_desert(g, m, back_x, back_y);
+        if (key == 0) key = ap_nav_step(g, m, back_x, back_y);
+        if (key == 0) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE13_RETURN_TO_SPAWN:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE13_RETURN_TO_SPAWN:nav", key,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE13_OPEN_NAV_PROMPT_BACK: {
+        if (prompt_is_active() && prompt_kind_str() &&
+            strcmp(prompt_kind_str(), "numeric") == 0) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_PICK_CONTINENTIA;
+            return (ApCmd){ "PHASE13_OPEN_NAV_PROMPT_BACK:opened", 0,
+                            assert_always_true };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE13_OPEN_NAV_PROMPT_BACK:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        return (ApCmd){ "PHASE13_OPEN_NAV_PROMPT_BACK:n", KEY_N,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE13_PICK_CONTINENTIA: {
+        if (strcmp(g->position.zone, "continentia") == 0) {
+            AP_LOG("[phase13] back on continentia: pos=(%d,%d)",
+                   g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE13_NAV_HOME;
+            return (ApCmd){ "PHASE13_PICK_CONTINENTIA:switched", 0,
+                            assert_always_true };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE13_PICK_CONTINENTIA:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        return (ApCmd){ "PHASE13_PICK_CONTINENTIA:1", KEY_ONE,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE13_NAV_HOME: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE13_NAV_HOME;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE13_NAV_HOME:y_foe");
+                return (ApCmd){ "PHASE13_NAV_HOME:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE13_NAV_HOME:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE13_NAV_HOME:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE13_NAV_HOME:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        if (g->position.x == 11 && g->position.y == 58) {
+            AP_LOG("[phase13] complete: pos=(%d,%d) gold=%d hp=%d",
+                   g->position.x, g->position.y, g->stats.gold,
+                   ap_army_total_hp(g));
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE13_NAV_HOME:arrived", 0,
+                            assert_always_true };
+        }
+        int key = ap_nav_step_avoiding_foes(g, m, 11, 58);
+        if (key == 0) key = ap_nav_step(g, m, 11, 58);
+        if (key == 0) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE13_NAV_HOME:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE13_NAV_HOME:nav", key,
                         assert_always_true };
     }
 

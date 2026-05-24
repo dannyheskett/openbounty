@@ -247,6 +247,41 @@ typedef enum {
     AP_FLOW_PHASE12_OPEN_NAV_PROMPT_BACK,
     AP_FLOW_PHASE12_PICK_CONTINENTIA,
     AP_FLOW_PHASE12_NAV_HOME,
+    // Phase 13: second Forestria visit. Sail straight from origin
+    // (no pre-recruit), top up at the zombie dwelling for garrison
+    // fodder, pick up the shield + anchor artifacts, then iterate
+    // Forestria's monster-owned castles, capturing each and dropping
+    // a zombie stack into the garrison. Return to (11,58) origin on
+    // Continentia.
+    AP_FLOW_PHASE13_NAV_TO_SEA,
+    AP_FLOW_PHASE13_OPEN_NAV_PROMPT,
+    AP_FLOW_PHASE13_PICK_FORESTRIA,
+    AP_FLOW_PHASE13_NAV_TO_DWARVES,
+    AP_FLOW_PHASE13_RECRUIT_DWARVES,
+    AP_FLOW_PHASE13_NAV_TO_ZOMBIES,
+    AP_FLOW_PHASE13_RECRUIT_ZOMBIES,
+    AP_FLOW_PHASE13_NAV_TO_OGRES,
+    AP_FLOW_PHASE13_RECRUIT_OGRES,
+    AP_FLOW_PHASE13_NAV_TO_ELVES,
+    AP_FLOW_PHASE13_RECRUIT_ELVES,
+    AP_FLOW_PHASE13_NAV_TO_ANCHOR,
+    AP_FLOW_PHASE13_NAV_TO_SHIELD,
+    AP_FLOW_PHASE13_CASTLE_LOOP,
+    AP_FLOW_PHASE13_CASTLE_NAV,
+    AP_FLOW_PHASE13_CASTLE_GARRISON,
+    // Post-castle-loop refill: top up ogres + elves at the same
+    // dwellings we visited on the way in. Population regrows each
+    // week, and after losing zombies into garrisons + fight attrition
+    // we usually have leadership headroom. These run unconditionally
+    // (no "already in army" skip — refilling is the whole point).
+    AP_FLOW_PHASE13_REFILL_OGRES_NAV,
+    AP_FLOW_PHASE13_REFILL_OGRES,
+    AP_FLOW_PHASE13_REFILL_ELVES_NAV,
+    AP_FLOW_PHASE13_REFILL_ELVES,
+    AP_FLOW_PHASE13_RETURN_TO_SPAWN,
+    AP_FLOW_PHASE13_OPEN_NAV_PROMPT_BACK,
+    AP_FLOW_PHASE13_PICK_CONTINENTIA,
+    AP_FLOW_PHASE13_NAV_HOME,
     AP_FLOW_DONE,
 
     AP_ALL_DONE,
