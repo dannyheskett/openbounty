@@ -53,6 +53,17 @@ typedef enum {
     AP_FLOW_PHASE2_TOWN_ACTIONS,
     AP_FLOW_PHASE2_EXIT_TOWN,
     AP_FLOW_PHASE2_NAV_CASTLE,
+    // Phase 3: return to king_maximus → re-recruit to full → fight
+    // trolls (26,57) → grab chest_slot_6 (25,57) → fight giants
+    // (7,46) → grab chest_slot_19 (6,46) and chest_slot_27 (8,42).
+    AP_FLOW_PHASE3_NAV_HOME,
+    AP_FLOW_PHASE3_OPEN_RECRUIT,
+    AP_FLOW_PHASE3_RECRUIT_PIKEMEN,
+    AP_FLOW_PHASE3_RECRUIT_MILITIA,
+    AP_FLOW_PHASE3_RECRUIT_ARCHERS,
+    AP_FLOW_PHASE3_EXIT_RECRUIT,
+    AP_FLOW_PHASE3_EXIT_CASTLE,
+    AP_FLOW_PHASE3_HUNT,
     AP_FLOW_BUY_SIEGE,
     AP_FLOW_EXIT_TOWN,
     AP_FLOW_DONE,
