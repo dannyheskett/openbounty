@@ -50,6 +50,8 @@ typedef enum {
     // Re-recruit at the home castle between chest legs. Reached when
     // GRIND detects VIEW_HOME_CASTLE (the nav routed onto the gate).
     AP_FLOW_REOPEN_RECRUIT,
+    AP_FLOW_REBUY_KNIGHTS,
+    AP_FLOW_REBUY_CAVALRY,
     AP_FLOW_REBUY_PIKEMEN,
     AP_FLOW_REBUY_ARCHERS,
     AP_FLOW_REBUY_MILITIA,
@@ -75,6 +77,7 @@ typedef enum {
     AP_FLOW_HUNT_CONTRACT,
     AP_FLOW_HUNT_SIEGE,
     AP_FLOW_HUNT_EXIT_TOWN,
+    AP_FLOW_HUNT_RECRUIT_AGAIN,
     AP_FLOW_HUNT_TO_CASTLE,
     AP_FLOW_HUNT_NEXT,
     AP_FLOW_DONE,
