@@ -2342,8 +2342,17 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                    v_idx, g->stats.gold, ap_army_total_hp(g),
                    g->stats.leadership_base);
             *out_phase_done = true;
-            if (v_idx >= 4) {
-                AP_LOG("[phase7] all 4 villains captured");
+            // Stop after dread_rob (iteration 3). Caneghor's
+            // garrison (250 sprites + 10 ghosts + 16 knights +
+            // 12 archmages, ~1210 hp + magic) is above our
+            // post-recruit peak — defer his capture to a later
+            // phase that grinds monster-held castles to push the
+            // hero to Marshal rank (leadership 400 instead of
+            // the General-rank 200 we're stuck at).
+            if (v_idx >= 3) {
+                AP_LOG("[phase7] 3 villains captured "
+                       "(aimola+baron_makahl+dread_rob); "
+                       "caneghor deferred to later phase");
                 *out_next_phase = AP_FLOW_DONE;
             } else {
                 *out_next_phase = AP_FLOW_PHASE7_NAV_TOWN;
