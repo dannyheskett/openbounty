@@ -94,6 +94,21 @@ typedef enum {
     // back to king_maximus.
     AP_FLOW_PHASE5_NAV_CASTLE,
     AP_FLOW_PHASE5_NAV_HOME,
+    // Phase 6: nav to the magic alcove at (11,44), accept the
+    // offer (5000g for knows_magic), return home, max-recruit
+    // again, then sweep every remaining chest + 2 artifacts on
+    // Continentia. Foe-aware nav with fallback to regular nav
+    // when no foe-free path exists.
+    AP_FLOW_PHASE6_NAV_ALCOVE,
+    AP_FLOW_PHASE6_ALCOVE_ACCEPT,
+    AP_FLOW_PHASE6_NAV_HOME,
+    AP_FLOW_PHASE6_OPEN_RECRUIT,
+    AP_FLOW_PHASE6_RECRUIT_ARCHERS,
+    AP_FLOW_PHASE6_RECRUIT_MILITIA,
+    AP_FLOW_PHASE6_RECRUIT_PIKEMEN,
+    AP_FLOW_PHASE6_EXIT_RECRUIT,
+    AP_FLOW_PHASE6_EXIT_CASTLE,
+    AP_FLOW_PHASE6_TOUR,
     AP_FLOW_BUY_SIEGE,
     AP_FLOW_EXIT_TOWN,
     AP_FLOW_DONE,
