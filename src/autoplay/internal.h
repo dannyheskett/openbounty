@@ -132,6 +132,24 @@ typedef enum {
     AP_FLOW_PHASE6_FINAL_EXIT_RECRUIT,
     AP_FLOW_PHASE6_FINAL_EXIT_CASTLE,
     AP_FLOW_PHASE6_FINAL_RETURN_SPAWN,
+    // Phase 7: iterate the 4 remaining Continentia villains
+    // (aimola → baron_makahl → dread_rob → caneghor) — for
+    // each, walk to Hunterville, take the next contract, sail
+    // to the villain's castle, siege/fight, return home, max-
+    // buy a fresh army (cavalry first), loop. module_scratch[1]
+    // holds the per-villain iteration index (0..3).
+    AP_FLOW_PHASE7_NAV_TOWN,
+    AP_FLOW_PHASE7_TOWN_ACTIONS,
+    AP_FLOW_PHASE7_EXIT_TOWN,
+    AP_FLOW_PHASE7_NAV_CASTLE,
+    AP_FLOW_PHASE7_NAV_HOME,
+    AP_FLOW_PHASE7_OPEN_RECRUIT,
+    AP_FLOW_PHASE7_RECRUIT_CAVALRY,
+    AP_FLOW_PHASE7_RECRUIT_ARCHERS,
+    AP_FLOW_PHASE7_RECRUIT_PIKEMEN,
+    AP_FLOW_PHASE7_RECRUIT_MILITIA,
+    AP_FLOW_PHASE7_EXIT_RECRUIT,
+    AP_FLOW_PHASE7_EXIT_CASTLE,
     AP_FLOW_BUY_SIEGE,
     AP_FLOW_EXIT_TOWN,
     AP_FLOW_DONE,

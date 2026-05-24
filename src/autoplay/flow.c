@@ -365,7 +365,10 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 resume != AP_FLOW_PHASE6_NAV_ALCOVE &&
                 resume != AP_FLOW_PHASE6_NAV_HOME &&
                 resume != AP_FLOW_PHASE6_TOUR &&
-                resume != AP_FLOW_PHASE6_MID_NAV_HOME) {
+                resume != AP_FLOW_PHASE6_MID_NAV_HOME &&
+                resume != AP_FLOW_PHASE7_NAV_TOWN &&
+                resume != AP_FLOW_PHASE7_NAV_CASTLE &&
+                resume != AP_FLOW_PHASE7_NAV_HOME) {
                 resume = AP_FLOW_PHASE1;
             }
             *out_phase_done = true;
@@ -1989,12 +1992,366 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                    "lead_base=%d",
                    g->position.x, g->position.y, g->stats.gold,
                    ap_army_total_hp(g), g->stats.leadership_base);
+            // Reset Phase 7 villain index to 0.
+            st->module_scratch[1] = 0;
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_DONE;
+            *out_next_phase = AP_FLOW_PHASE7_NAV_TOWN;
             return (ApCmd){ "PHASE6_FINAL_RETURN_SPAWN:arrived", 0,
                             assert_always_true };
         }
         return (ApCmd){ "PHASE6_FINAL_RETURN_SPAWN:down", KEY_DOWN,
+                        assert_always_true };
+    }
+
+    // -- PHASE 7: iterate 4 remaining Continentia villains.
+    //    module_scratch[1] = villain index (0..3). Per iter:
+    //    NAV_TOWN → TOWN_ACTIONS (take contract) → EXIT_TOWN →
+    //    NAV_CASTLE (sail, siege, fight) → NAV_HOME → recruit →
+    //    increment villain index, loop or DONE.
+    case AP_FLOW_PHASE7_NAV_TOWN: {
+        if (views_active() == VIEW_TOWN) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE7_TOWN_ACTIONS;
+            return (ApCmd){ "PHASE7_NAV_TOWN:entered", 0,
+                            assert_always_true };
+        }
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE7_NAV_TOWN;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE7_NAV_TOWN:y_foe");
+                return (ApCmd){ "PHASE7_NAV_TOWN:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE7_NAV_TOWN:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE7_NAV_TOWN:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE7_NAV_TOWN:space_dialog", KEY_SPACE,
+                            assert_dialog_closed };
+        }
+        int key = ap_nav_step_avoiding_foes(g, m, 12, 60);
+        if (key == 0) key = ap_nav_step(g, m, 12, 60);
+        if (key == 0) {
+            AP_LOG("[phase7] no path to Hunterville from (%d,%d)",
+                   g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE7_NAV_TOWN:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE7_NAV_TOWN:nav", key,
+                        assert_always_true };
+    }
+
+    // Take the next contract. Press A; if it doesn't match the
+    // expected villain (e.g. cycle handed us a Forestria villain
+    // we can't reach), press A again until we get a continentia
+    // villain. After the dialog dismisses (panel_active false &&
+    // active_id set), exit.
+    case AP_FLOW_PHASE7_TOWN_ACTIONS: {
+        if (views_town_info_text() != NULL) {
+            return (ApCmd){ "PHASE7_TOWN:space_info", KEY_SPACE,
+                            assert_always_true };
+        }
+        // If we have an active contract, check it's continentia.
+        if (g->contract.active_id[0]) {
+            const VillainDef *v = villain_by_id(g->contract.active_id);
+            if (v && strcmp(v->zone, "continentia") == 0) {
+                AP_LOG("[phase7] contract taken: villain=%s zone=%s",
+                       g->contract.active_id, v->zone);
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_PHASE7_EXIT_TOWN;
+                return (ApCmd){ "PHASE7_TOWN:done", 0,
+                                assert_always_true };
+            }
+            // Wrong zone — log and take another contract (the
+            // engine drops the active_id when we press A again).
+            AP_LOG("[phase7] contract %s is zone=%s (not continentia), "
+                   "rerolling", g->contract.active_id,
+                   v ? v->zone : "(unknown)");
+        }
+        return (ApCmd){ "PHASE7_TOWN:a_contract", KEY_A,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE7_EXIT_TOWN: {
+        if (views_active() == VIEW_NONE) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE7_NAV_CASTLE;
+            return (ApCmd){ "PHASE7_EXIT_TOWN:done", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE7_EXIT_TOWN:esc", KEY_ESCAPE,
+                        assert_always_true };
+    }
+
+    // Sail/walk to the active contract's castle. Castle position
+    // is looked up live via GameFindCastle on the villain's id —
+    // salt_villains assigns each villain to a random castle in
+    // its zone at game init, so we read the assignment at runtime.
+    case AP_FLOW_PHASE7_NAV_CASTLE: {
+        // Contract cleared = villain captured. Advance.
+        if (!g->contract.active_id[0]) {
+            int v_idx = st->module_scratch[1];
+            AP_LOG("[phase7] villain %d captured. pos=(%d,%d) gold=%d "
+                   "hp=%d",
+                   v_idx, g->position.x, g->position.y,
+                   g->stats.gold, ap_army_total_hp(g));
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE7_NAV_HOME;
+            return (ApCmd){ "PHASE7_NAV_CASTLE:captured", 0,
+                            assert_always_true };
+        }
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE7_NAV_CASTLE;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE7_NAV_CASTLE:y_castle");
+                return (ApCmd){ "PHASE7_NAV_CASTLE:y_castle", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE7_NAV_CASTLE:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE7_NAV_CASTLE:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE7_NAV_CASTLE:space_dialog", KEY_SPACE,
+                            assert_dialog_closed };
+        }
+        // Look up the castle for this villain.
+        int target_x = -1, target_y = -1;
+        for (int i = 0; i < GAME_CASTLES; i++) {
+            if (g->castles[i].owner_kind != CASTLE_OWNER_VILLAIN) continue;
+            if (strcmp(g->castles[i].villain_id,
+                       g->contract.active_id) != 0) continue;
+            const ResCastle *rc = resources_castle_by_id(
+                g->res, g->castles[i].id);
+            if (rc) { target_x = rc->x; target_y = rc->y; }
+            break;
+        }
+        if (target_x < 0) {
+            AP_LOG("[phase7] castle for villain %s not found",
+                   g->contract.active_id);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE7_NAV_CASTLE:no_castle", 0,
+                            assert_always_true };
+        }
+        if (g->position.x == target_x && g->position.y == target_y) {
+            AP_LOG("[phase7] reached castle without fight: villain=%s "
+                   "pos=(%d,%d)",
+                   g->contract.active_id, target_x, target_y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE7_NAV_CASTLE:arrived", 0,
+                            assert_always_true };
+        }
+        int key = ap_nav_step(g, m, target_x, target_y);
+        if (key == 0) {
+            AP_LOG("[phase7] no path to castle (%d,%d) for villain %s "
+                   "from (%d,%d)",
+                   target_x, target_y, g->contract.active_id,
+                   g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE7_NAV_CASTLE:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE7_NAV_CASTLE:nav", key,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE7_NAV_HOME: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE7_NAV_HOME;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE7_NAV_HOME:y_foe");
+                return (ApCmd){ "PHASE7_NAV_HOME:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE7_NAV_HOME:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE7_NAV_HOME:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE7_NAV_HOME:space_dialog", KEY_SPACE,
+                            assert_dialog_closed };
+        }
+        if (g->position.x == 11 && g->position.y == 57) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE7_OPEN_RECRUIT;
+            return (ApCmd){ "PHASE7_NAV_HOME:arrived", 0,
+                            assert_always_true };
+        }
+        int key = ap_nav_step_avoiding_foes(g, m, 11, 57);
+        if (key == 0) key = ap_nav_step(g, m, 11, 57);
+        if (key == 0) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE7_NAV_HOME:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE7_NAV_HOME:nav", key,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE7_OPEN_RECRUIT: {
+        if (views_active() == VIEW_RECRUIT_SOLDIERS) {
+            st->module_scratch[0] = 0;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE7_RECRUIT_CAVALRY;
+            return (ApCmd){ "PHASE7_OPEN_RECRUIT:entered", 0,
+                            assert_always_true };
+        }
+        if (views_active() == VIEW_HOME_CASTLE) {
+            return (ApCmd){ "PHASE7_OPEN_RECRUIT:a", KEY_A,
+                            assert_always_true };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE7_OPEN_RECRUIT:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        return (ApCmd){ "PHASE7_OPEN_RECRUIT:up", KEY_UP,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE7_RECRUIT_CAVALRY: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE7_RECRUIT_CAVALRY:d", KEY_D,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE7_RECRUIT_CAVALRY:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE7_RECRUIT_CAVALRY:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE7_RECRUIT_CAVALRY:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE7_RECRUIT_ARCHERS;
+            return (ApCmd){ "PHASE7_RECRUIT_CAVALRY:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE7_RECRUIT_ARCHERS: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE7_RECRUIT_ARCHERS:b", KEY_B,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE7_RECRUIT_ARCHERS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE7_RECRUIT_ARCHERS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE7_RECRUIT_ARCHERS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE7_RECRUIT_PIKEMEN;
+            return (ApCmd){ "PHASE7_RECRUIT_ARCHERS:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE7_RECRUIT_PIKEMEN: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE7_RECRUIT_PIKEMEN:c", KEY_C,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE7_RECRUIT_PIKEMEN:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE7_RECRUIT_PIKEMEN:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE7_RECRUIT_PIKEMEN:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE7_RECRUIT_MILITIA;
+            return (ApCmd){ "PHASE7_RECRUIT_PIKEMEN:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE7_RECRUIT_MILITIA: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE7_RECRUIT_MILITIA:a", KEY_A,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE7_RECRUIT_MILITIA:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE7_RECRUIT_MILITIA:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE7_RECRUIT_MILITIA:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE7_EXIT_RECRUIT;
+            return (ApCmd){ "PHASE7_RECRUIT_MILITIA:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE7_EXIT_RECRUIT: {
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_PHASE7_EXIT_CASTLE;
+        return (ApCmd){ "PHASE7_EXIT_RECRUIT:esc", KEY_ESCAPE,
+                        assert_view_home_castle };
+    }
+
+    case AP_FLOW_PHASE7_EXIT_CASTLE: {
+        if (views_active() == VIEW_NONE) {
+            int v_idx = st->module_scratch[1];
+            v_idx++;
+            st->module_scratch[1] = v_idx;
+            AP_LOG("[phase7] iteration %d done: gold=%d hp=%d "
+                   "lead_base=%d",
+                   v_idx, g->stats.gold, ap_army_total_hp(g),
+                   g->stats.leadership_base);
+            *out_phase_done = true;
+            if (v_idx >= 4) {
+                AP_LOG("[phase7] all 4 villains captured");
+                *out_next_phase = AP_FLOW_DONE;
+            } else {
+                *out_next_phase = AP_FLOW_PHASE7_NAV_TOWN;
+            }
+            return (ApCmd){ "PHASE7_EXIT_CASTLE:done", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE7_EXIT_CASTLE:esc", KEY_ESCAPE,
                         assert_always_true };
     }
 
