@@ -380,7 +380,9 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 resume != AP_FLOW_PHASE10_NAV_CASTLE &&
                 resume != AP_FLOW_PHASE10_NAV_HOME_RECRUIT &&
                 resume != AP_FLOW_PHASE10_NAV_RYTHACON &&
-                resume != AP_FLOW_PHASE10_NAV_HOME) {
+                resume != AP_FLOW_PHASE10_NAV_HOME &&
+                resume != AP_FLOW_PHASE11_NAV_NAVMAP &&
+                resume != AP_FLOW_PHASE11_NAV_HOME) {
                 resume = AP_FLOW_PHASE1;
             }
             *out_phase_done = true;
@@ -3660,7 +3662,7 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                    ap_army_total_hp(g), g->stats.leadership_base,
                    GameVillainsCaught(g));
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_DONE;
+            *out_next_phase = AP_FLOW_PHASE11_NAV_NAVMAP;
             return (ApCmd){ "PHASE10_NAV_HOME:arrived", 0,
                             assert_always_true };
         }
@@ -3668,11 +3670,110 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
         if (key == 0) key = ap_nav_step(g, m, 11, 58);
         if (key == 0) {
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_DONE;
+            *out_next_phase = AP_FLOW_PHASE11_NAV_NAVMAP;
             return (ApCmd){ "PHASE10_NAV_HOME:no_path", 0,
                             assert_always_true };
         }
         return (ApCmd){ "PHASE10_NAV_HOME:nav", key,
+                        assert_always_true };
+    }
+
+    // ----- PHASE 11 -----------------------------------------------------
+    // Fetch the Continentia navmap so future navigation can offer
+    // Forestria. The navmap on seed 1 is salt-placed at (57,55) — a
+    // tile no earlier phase visits. Stepping onto INTERACT_NAVMAP
+    // triggers engine/step.c:454, which flips
+    // game->world.zones_discovered[<new zone>] and opens the
+    // "You found the map to <ZONE>" dialog.
+    case AP_FLOW_PHASE11_NAV_NAVMAP: {
+        if (g->world.zones_discovered[1] /* forestria */ ||
+            g->world.zones_discovered[2] /* archipelia */ ||
+            g->world.zones_discovered[3] /* saharia */) {
+            AP_LOG("[phase11] navmap collected: discovered=[%d,%d,%d,%d]",
+                   (int)g->world.zones_discovered[0],
+                   (int)g->world.zones_discovered[1],
+                   (int)g->world.zones_discovered[2],
+                   (int)g->world.zones_discovered[3]);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE11_NAV_HOME;
+            return (ApCmd){ "PHASE11_NAV_NAVMAP:found", 0,
+                            assert_always_true };
+        }
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE11_NAV_NAVMAP;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE11_NAV_NAVMAP:y_foe");
+                return (ApCmd){ "PHASE11_NAV_NAVMAP:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE11_NAV_NAVMAP:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE11_NAV_NAVMAP:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE11_NAV_NAVMAP:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        int key = ap_nav_step_avoiding_foes(g, m, 57, 55);
+        if (key == 0) key = ap_nav_step(g, m, 57, 55);
+        if (key == 0) {
+            AP_LOG("[phase11] no path to navmap (57,55) from (%d,%d)",
+                   g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE11_NAV_NAVMAP:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE11_NAV_NAVMAP:nav", key,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE11_NAV_HOME: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE11_NAV_HOME;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE11_NAV_HOME:y_foe");
+                return (ApCmd){ "PHASE11_NAV_HOME:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE11_NAV_HOME:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE11_NAV_HOME:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE11_NAV_HOME:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        if (g->position.x == 11 && g->position.y == 58) {
+            AP_LOG("[phase11] complete: pos=(%d,%d) gold=%d hp=%d",
+                   g->position.x, g->position.y, g->stats.gold,
+                   ap_army_total_hp(g));
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE11_NAV_HOME:arrived", 0,
+                            assert_always_true };
+        }
+        int key = ap_nav_step_avoiding_foes(g, m, 11, 58);
+        if (key == 0) key = ap_nav_step(g, m, 11, 58);
+        if (key == 0) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE11_NAV_HOME:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE11_NAV_HOME:nav", key,
                         assert_always_true };
     }
 

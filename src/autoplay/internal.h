@@ -211,6 +211,13 @@ typedef enum {
     AP_FLOW_PHASE10_NAV_RYTHACON,
     AP_FLOW_PHASE10_GARRISON,
     AP_FLOW_PHASE10_NAV_HOME,
+    // Phase 11: fetch the Continentia navmap so the new-continent
+    // prompt unlocks Forestria (the salt-time navmap on seed 1 sits
+    // at (57,55), un-visited by phases 1–10). Sail there, step on
+    // the tile to trigger INTERACT_NAVMAP, dismiss the discovery
+    // dialog, sail back to home_castle gate to finish the run.
+    AP_FLOW_PHASE11_NAV_NAVMAP,
+    AP_FLOW_PHASE11_NAV_HOME,
     AP_FLOW_BUY_SIEGE,
     AP_FLOW_EXIT_TOWN,
     AP_FLOW_DONE,

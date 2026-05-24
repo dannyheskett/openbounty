@@ -157,6 +157,12 @@ void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
             open_dialog(NULL, bn->body_no_continents);
             break;
         }
+        // Only offer neighbors whose navmap has been picked up.
+        // game.c:167 auto-discovers the home zone; every other zone
+        // requires the player to step onto an INTERACT_NAVMAP tile
+        // (engine/step.c:454, which flips world.zones_discovered[i]).
+        // Without this gate, the new-continent prompt would let the
+        // hero sail anywhere on day one.
         pending_nav_count = 0;
         char body[256];
         int bo = 0;
@@ -164,6 +170,9 @@ void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
                          pending_nav_count < 5; ni++) {
             const ResZone *nz = resources_zone_by_id(r_, cur->neighbors[ni]);
             if (!nz) continue;
+            int nz_idx = (int)(nz - r_->zones);
+            if (nz_idx < 0 || nz_idx >= GAME_CONTINENTS ||
+                !g->world.zones_discovered[nz_idx]) continue;
             size_t k = 0;
             while (k + 1 < sizeof(pending_nav_zones[0]) && nz->id[k]) {
                 pending_nav_zones[pending_nav_count][k] = nz->id[k];
