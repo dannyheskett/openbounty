@@ -228,14 +228,16 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
         return (ApCmd){ "EXIT_CASTLE:esc", KEY_ESCAPE, assert_view_none };
     }
 
-    // -- PHASE 1: walk the 12 home-landmass chests in nearest-neighbor
-    //    order, fighting any foe en route (always take gold on
-    //    chests). Final leg is Hunterville — entering its tile diverts
-    //    to BUY_SIEGE, then EXIT_TOWN, then DONE.
+    // -- PHASE 1: walk the 11 home-landmass chests reachable on foot
+    //    from spawn while strictly avoiding the two lethal foes:
+    //    trolls at (26,57) and giants at (7,46). Always take
+    //    leadership (B) on gold chests. Run ends after the final leg
+    //    returns to the home castle gate.
     case AP_FLOW_PHASE1: {
         if (prompt_is_active()) {
             const char *kind = prompt_kind_str();
             if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE1;
                 *out_phase_done = true;
                 *out_next_phase = AP_FLOW_COMBAT;
                 dump_combat_start(g, "PHASE1:y_foe");
@@ -246,65 +248,50 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 return (ApCmd){ "PHASE1:enter_dismiss", KEY_ENTER,
                                 assert_prompt_gone };
             }
-            // A/B chest prompt — always take gold.
-            return (ApCmd){ "PHASE1:a_chest", KEY_A,
+            // A/B chest prompt — take leadership.
+            return (ApCmd){ "PHASE1:b_chest", KEY_B,
                             assert_prompt_gone };
         }
         if (dialog_is_active()) {
             return (ApCmd){ "PHASE1:space_dialog", KEY_SPACE,
                             assert_dialog_closed };
         }
-        // Town view (Hunterville reached): divert into BUY_SIEGE,
-        // which transitions through EXIT_TOWN to DONE.
-        if (views_active() == VIEW_TOWN) {
-            st->module_scratch[4] = 0;
-            *out_phase_done = true;
-            *out_next_phase = AP_FLOW_BUY_SIEGE;
-            return (ApCmd){ "PHASE1:in_town", 0, assert_always_true };
-        }
         {
-            // Home-landmass chests, ordered so the path crosses the
-            // hardest foe tiles while the army is at full HP. Last
-            // run's fight log identified two heavy hitters: the foe
-            // near (27, 57) (cost ~80 HP, last fight wiped us) and
-            // the foe near (8, 47) (cost ~128 HP). chest_12 (25, 57)
-            // forces the (27, 57) fight first; chest_02 (6, 46)
-            // routes past (8, 47); remaining chests follow in
-            // nearest-neighbor order from the new starting point.
-            // The two heaviest fights on the home landmass are at
-            // (27, 57) and (8, 47). Last run shows both are
-            // *survivable at full HP* but lethal once the army has
-            // taken any damage. Hit both with 300 HP by doing the
-            // chest legs whose nav-paths cross those tiles first.
+            // Held-Karp TSP tour over the 9 chests reachable on foot
+            // from spawn with chebyshev-2 exclusion around trolls
+            // (26,57) and giants (7,46). Positions are runtime-true
+            // chests only — the JSON's 75 treasure_chest_NNN slots
+            // get re-salted at game-init into a mix of chests,
+            // dwellings, telecaves, artifacts, navmaps, orbs, and
+            // friendly foes; only slots that remain SALT_NONE
+            // (chests) are walk-on-and-collect. Tour cost 206 steps
+            // round-trip from gate. Final leg returns to the gate so
+            // the run terminates cleanly at home.
             static const struct { int x, y; const char *name; } legs[] = {
-                { 25, 57, "chest_12" },  // path crosses (27,57)
-                {  6, 46, "chest_02" },  // path crosses (8,47)
-                {  8, 60, "chest_01" },
-                {  8, 42, "chest_03" },
-                { 10, 53, "chest_04" },
-                { 10, 54, "chest_05" },
-                { 23, 46, "chest_06" },
-                { 21, 50, "chest_07" },
-                { 11, 41, "chest_08" },
-                {  3, 48, "chest_09" },
-                { 37, 56, "chest_10" },
-                { 29, 56, "chest_11" },
-                { 12, 60, "hunterville" },
+                {  8, 60, "chest_slot_0" },
+                { 10, 53, "chest_slot_12" },
+                { 10, 54, "chest_slot_11" },
+                { 37, 56, "chest_slot_8" },
+                { 29, 56, "chest_slot_7" },
+                {  3, 48, "chest_slot_17" },
+                { 11, 41, "chest_slot_29" },
+                { 21, 50, "chest_slot_14" },
+                { 23, 46, "chest_slot_20" },
+                { 11, 57, "return_gate" },
             };
             const int n_legs = (int)(sizeof(legs) / sizeof(legs[0]));
             int leg = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
             if (leg >= n_legs) {
-                AP_LOG("[phase1] all legs done unexpectedly: "
-                       "pos=(%d,%d) gold=%d",
-                       g->position.x, g->position.y, g->stats.gold);
+                AP_LOG("[phase1] complete: pos=(%d,%d) gold=%d hp=%d",
+                       g->position.x, g->position.y, g->stats.gold,
+                       ap_army_total_hp(g));
+                st->module_scratch[0] = 0;  // reset for PHASE2 nav
                 *out_phase_done = true;
-                *out_next_phase = AP_FLOW_DONE;
-                return (ApCmd){ "PHASE1:fallthrough", 0,
-                                assert_always_true };
+                *out_next_phase = AP_FLOW_PHASE2_NAV_TOWN;
+                return (ApCmd){ "PHASE1:done", 0, assert_always_true };
             }
             int gx = legs[leg].x, gy = legs[leg].y;
-            // Goal reached? Advance. (Hunterville is bounce-back — the
-            // view-town divert above handles its advance.)
+            // Goal reached? Advance.
             if (g->position.x == gx && g->position.y == gy) {
                 AP_LOG("[phase1] leg %d (%s) done: pos=(%d,%d) gold=%d",
                        leg, legs[leg].name,
@@ -363,9 +350,16 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 *out_next_phase = AP_FLOW_DONE;
                 return (ApCmd){ "POST_COMBAT:defeat", 0, assert_always_true };
             }
-            // Resume PHASE1 — the only navigating phase.
+            // Resume whichever navigating phase started this combat.
+            // module_scratch[3] holds the resume target; defaults to
+            // PHASE1 if never set.
+            AutoplayPhase resume = (AutoplayPhase)st->module_scratch[3];
+            if (resume != AP_FLOW_PHASE1 &&
+                resume != AP_FLOW_PHASE2_NAV_CASTLE) {
+                resume = AP_FLOW_PHASE1;
+            }
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_PHASE1;
+            *out_next_phase = resume;
             return (ApCmd){ "POST_COMBAT:noop", 0, assert_always_true };
         }
         if (dialog_is_active()) {
@@ -374,44 +368,148 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
         return (ApCmd){ "POST_COMBAT:wait", 0, assert_always_true };
     }
 
-    case AP_FLOW_BUY_SIEGE: {
-        int sub = (st->module_scratch[4] < 0) ? 0 : st->module_scratch[4];
-        switch (sub) {
-        case 0:
-            st->module_scratch[4] = 1;
-            return (ApCmd){ "BUY_SIEGE:e", KEY_E, assert_always_true };
-        case 1:
-            st->module_scratch[4] = 2;
-            return (ApCmd){ "BUY_SIEGE:space_info", KEY_SPACE,
-                            assert_always_true };
-        default:
-            if (!g->stats.siege_weapons) {
-                AP_LOG("[flow] BUY_SIEGE: siege_weapons still 0 "
-                       "after purchase (gold=%d)", g->stats.gold);
-            } else {
-                AP_LOG("[flow] siege_weapons=1, gold=%d",
-                       g->stats.gold);
-            }
-            st->module_scratch[4] = -1;
+    // -- PHASE 2 step 1: walk from gate (11,57) to Hunterville (12,60).
+    case AP_FLOW_PHASE2_NAV_TOWN: {
+        if (views_active() == VIEW_TOWN) {
+            // Town view opened — step inside and start the menu loop.
+            st->module_scratch[4] = 0;  // reset town action sub-index
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_EXIT_TOWN;
-            return (ApCmd){ "BUY_SIEGE:done", 0, assert_always_true };
+            *out_next_phase = AP_FLOW_PHASE2_TOWN_ACTIONS;
+            return (ApCmd){ "PHASE2_NAV_TOWN:entered", 0,
+                            assert_always_true };
         }
-    }
-
-    case AP_FLOW_EXIT_TOWN: {
-        if (views_active() == VIEW_NONE) {
-            AP_LOG("[phase1] complete: pos=(%d,%d) gold=%d hp=%d "
-                   "siege=%d",
-                   g->position.x, g->position.y, g->stats.gold,
-                   ap_army_total_hp(g), g->stats.siege_weapons);
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE2_NAV_TOWN:space_dialog", KEY_SPACE,
+                            assert_dialog_closed };
+        }
+        int key = ap_nav_step(g, m, 12, 60);
+        if (key == 0) {
+            AP_LOG("[phase2] no path to Hunterville from (%d,%d)",
+                   g->position.x, g->position.y);
             *out_phase_done = true;
             *out_next_phase = AP_FLOW_DONE;
-            return (ApCmd){ "EXIT_TOWN:done", 0, assert_always_true };
+            return (ApCmd){ "PHASE2_NAV_TOWN:no_path", 0,
+                            assert_always_true };
         }
-        return (ApCmd){ "EXIT_TOWN:esc", KEY_ESCAPE,
+        return (ApCmd){ "PHASE2_NAV_TOWN:nav", key, assert_always_true };
+    }
+
+    // -- PHASE 2 step 2: town menu — buy siege (E), rent boat (B),
+    //    take contract (A → Murray, the cycle's first villain).
+    //    Siege and contract open a town info panel that we dismiss
+    //    with SPACE; boat rental on success opens no panel. State
+    //    machine: clear any panel first; otherwise press the next
+    //    action key based on observable game state.
+    case AP_FLOW_PHASE2_TOWN_ACTIONS: {
+        if (views_town_info_text() != NULL) {
+            return (ApCmd){ "PHASE2_TOWN:space_info", KEY_SPACE,
+                            assert_always_true };
+        }
+        if (!g->stats.siege_weapons) {
+            return (ApCmd){ "PHASE2_TOWN:e_siege", KEY_E,
+                            assert_always_true };
+        }
+        if (!g->boat.has_boat) {
+            return (ApCmd){ "PHASE2_TOWN:b_boat", KEY_B,
+                            assert_always_true };
+        }
+        if (!g->contract.active_id[0]) {
+            return (ApCmd){ "PHASE2_TOWN:a_contract", KEY_A,
+                            assert_always_true };
+        }
+        AP_LOG("[phase2] town actions done: siege=%d boat=%d "
+               "contract=%s gold=%d",
+               g->stats.siege_weapons,
+               g->boat.has_boat ? 1 : 0,
+               g->contract.active_id,
+               g->stats.gold);
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_PHASE2_EXIT_TOWN;
+        return (ApCmd){ "PHASE2_TOWN:done", 0, assert_always_true };
+    }
+
+    // -- PHASE 2 step 3: ESC out of the town view.
+    case AP_FLOW_PHASE2_EXIT_TOWN: {
+        if (views_active() == VIEW_NONE) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE2_NAV_CASTLE;
+            return (ApCmd){ "PHASE2_EXIT_TOWN:done", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE2_EXIT_TOWN:esc", KEY_ESCAPE,
                         assert_always_true };
     }
+
+    // -- PHASE 2 step 4: sail/walk to Murray's castle gate at
+    //    azram (30,36). The engine's multi-mode BFS handles boat
+    //    boarding, sailing, and disembarking automatically.
+    case AP_FLOW_PHASE2_NAV_CASTLE: {
+        // Contract cleared = Murray captured. Mission accomplished.
+        if (!g->contract.active_id[0]) {
+            AP_LOG("[phase2] Murray captured — contract fulfilled. "
+                   "pos=(%d,%d) gold=%d hp=%d",
+                   g->position.x, g->position.y, g->stats.gold,
+                   ap_army_total_hp(g));
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE2_NAV_CASTLE:captured", 0,
+                            assert_always_true };
+        }
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                // Castle attack prompt — fight Murray.
+                st->module_scratch[3] = AP_FLOW_PHASE2_NAV_CASTLE;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE2_NAV_CASTLE:y_castle");
+                return (ApCmd){ "PHASE2_NAV_CASTLE:y_castle", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE2_NAV_CASTLE:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            // A/B prompt en route — take leadership.
+            return (ApCmd){ "PHASE2_NAV_CASTLE:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE2_NAV_CASTLE:space_dialog", KEY_SPACE,
+                            assert_dialog_closed };
+        }
+        // Goal: stand on azram's gate tile.
+        if (g->position.x == 30 && g->position.y == 36) {
+            AP_LOG("[phase2] reached azram gate (no fight triggered) "
+                   "gold=%d hp=%d siege=%d",
+                   g->stats.gold, ap_army_total_hp(g),
+                   g->stats.siege_weapons);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE2_NAV_CASTLE:arrived", 0,
+                            assert_always_true };
+        }
+        int key = ap_nav_step(g, m, 30, 36);
+        if (key == 0) {
+            AP_LOG("[phase2] no path to azram from (%d,%d)",
+                   g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE2_NAV_CASTLE:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE2_NAV_CASTLE:nav", key,
+                        assert_always_true };
+    }
+
+    // BUY_SIEGE / EXIT_TOWN retained as legacy stubs (unreached
+    // by the current flow) so the AutoplayPhase enum's enumerators
+    // all have switch cases and the build stays clean.
+    case AP_FLOW_BUY_SIEGE:
+    case AP_FLOW_EXIT_TOWN:
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_DONE;
+        return (ApCmd){ "LEGACY:skip", 0, assert_always_true };
 
 
     case AP_FLOW_DONE: {

@@ -42,12 +42,17 @@ typedef enum {
     AP_FLOW_RECRUIT_ARCHERS,
     AP_FLOW_EXIT_RECRUIT,
     AP_FLOW_EXIT_CASTLE,
-    // Phase 1: collect every chest on the home landmass, fighting
-    // any foe encountered en route, then enter Hunterville and buy
-    // siege weapons.
+    // Phase 1: collect every reachable chest on the home landmass
+    // while avoiding lethal foes, then return to home castle gate.
     AP_FLOW_PHASE1,
     AP_FLOW_COMBAT,
     AP_FLOW_POST_COMBAT,
+    // Phase 2: nav to Hunterville → buy siege + boat + Murray
+    // contract → sail to azram castle → fight Murray.
+    AP_FLOW_PHASE2_NAV_TOWN,
+    AP_FLOW_PHASE2_TOWN_ACTIONS,
+    AP_FLOW_PHASE2_EXIT_TOWN,
+    AP_FLOW_PHASE2_NAV_CASTLE,
     AP_FLOW_BUY_SIEGE,
     AP_FLOW_EXIT_TOWN,
     AP_FLOW_DONE,
