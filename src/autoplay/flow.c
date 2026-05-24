@@ -398,7 +398,11 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 resume != AP_FLOW_PHASE10_NAV_RYTHACON &&
                 resume != AP_FLOW_PHASE10_NAV_HOME &&
                 resume != AP_FLOW_PHASE11_NAV_NAVMAP &&
-                resume != AP_FLOW_PHASE11_NAV_HOME) {
+                resume != AP_FLOW_PHASE11_NAV_HOME &&
+                resume != AP_FLOW_PHASE12_NAV_TO_SEA &&
+                resume != AP_FLOW_PHASE12_TOUR &&
+                resume != AP_FLOW_PHASE12_RETURN_TO_SPAWN &&
+                resume != AP_FLOW_PHASE12_NAV_HOME) {
                 resume = AP_FLOW_PHASE1;
             }
             *out_phase_done = true;
@@ -3765,8 +3769,9 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
             AP_LOG("[phase11] complete: pos=(%d,%d) gold=%d hp=%d",
                    g->position.x, g->position.y, g->stats.gold,
                    ap_army_total_hp(g));
+            st->module_scratch[0] = 0;  // reset Phase 12 leg index
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_DONE;
+            *out_next_phase = AP_FLOW_PHASE12_NAV_TO_SEA;
             return (ApCmd){ "PHASE11_NAV_HOME:arrived", 0,
                             assert_always_true };
         }
@@ -3779,6 +3784,328 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                             assert_always_true };
         }
         return (ApCmd){ "PHASE11_NAV_HOME:nav", key,
+                        assert_always_true };
+    }
+
+    // ===== PHASE 12 ===================================================
+    // Sail from Continentia to Forestria, sweep every chest reachable
+    // without crossing a hostile foe's chebyshev-2 envelope or stepping
+    // on desert, return to (11,58) origin on Continentia.
+
+    // -- 12a: get the hero into a boat on Continentia and into a tile
+    //    near open water so KEY_N triggers the new-continent prompt.
+    //    The boat was rented in Phase 2 and is parked at g->boat.x/y;
+    //    we just need to walk to it and board. Once in boat, set a
+    //    sail-target tile at the south edge — far enough from land
+    //    that pressing N yields the discovered-neighbors menu.
+    case AP_FLOW_PHASE12_NAV_TO_SEA: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE12_NAV_TO_SEA;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE12_NAV_TO_SEA:y_foe");
+                return (ApCmd){ "PHASE12_NAV_TO_SEA:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE12_NAV_TO_SEA:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE12_NAV_TO_SEA:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE12_NAV_TO_SEA:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        // Target an open-sea tile south of home castle. (12,62) is in
+        // the bay; if it's blocked we fall back to the boat's last
+        // parked location and try from there.
+        const int sea_x = 12, sea_y = 62;
+        if (g->travel_mode == TRAVEL_BOAT &&
+            g->position.x == sea_x && g->position.y == sea_y) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_OPEN_NAV_PROMPT;
+            return (ApCmd){ "PHASE12_NAV_TO_SEA:arrived", 0,
+                            assert_always_true };
+        }
+        int key = ap_nav_step_avoiding_foes(g, m, sea_x, sea_y);
+        if (key == 0) key = ap_nav_step(g, m, sea_x, sea_y);
+        if (key == 0) {
+            AP_LOG("[phase12] no path to sea (%d,%d) from (%d,%d)",
+                   sea_x, sea_y, g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE12_NAV_TO_SEA:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE12_NAV_TO_SEA:nav", key,
+                        assert_always_true };
+    }
+
+    // -- 12b: press N to open the "Go to which continent?" prompt.
+    case AP_FLOW_PHASE12_OPEN_NAV_PROMPT: {
+        if (prompt_is_active() && prompt_kind_str() &&
+            strcmp(prompt_kind_str(), "numeric") == 0) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_PICK_FORESTRIA;
+            return (ApCmd){ "PHASE12_OPEN_NAV_PROMPT:opened", 0,
+                            assert_always_true };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE12_OPEN_NAV_PROMPT:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        return (ApCmd){ "PHASE12_OPEN_NAV_PROMPT:n", KEY_N,
+                        assert_always_true };
+    }
+
+    // -- 12c: After Phase 11 only Forestria is discovered among
+    //    Continentia's neighbors, so the prompt shows "1) Forestria".
+    //    Press 1; engine calls GameSwitchZone and the hero spawns at
+    //    Forestria's hero_spawn (1,26).
+    case AP_FLOW_PHASE12_PICK_FORESTRIA: {
+        if (strcmp(g->position.zone, "forestria") == 0) {
+            AP_LOG("[phase12] arrived on forestria: pos=(%d,%d) "
+                   "travel_mode=%d", g->position.x, g->position.y,
+                   (int)g->travel_mode);
+            st->module_scratch[0] = 0;  // leg index for TOUR
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_TOUR;
+            return (ApCmd){ "PHASE12_PICK_FORESTRIA:switched", 0,
+                            assert_always_true };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE12_PICK_FORESTRIA:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        return (ApCmd){ "PHASE12_PICK_FORESTRIA:1", KEY_ONE,
+                        assert_always_true };
+    }
+
+    // -- 12d: chest tour on Forestria. The 50 chests below are the
+    //    66 JSON treasure_chest_NNN positions minus the 16 that got
+    //    consumed by salt (telecaves / dwellings / artifacts / navmap
+    //    / orb) on seed 1. Foe-and-desert-aware nav skips any chest
+    //    we can't safely reach; the final leg ((1,26)) returns to
+    //    spawn so the cross-back to Continentia uses the same tile
+    //    the zone-switch will spawn us on next time.
+    case AP_FLOW_PHASE12_TOUR: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE12_TOUR;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE12_TOUR:y_foe");
+                return (ApCmd){ "PHASE12_TOUR:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE12_TOUR:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE12_TOUR:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE12_TOUR:space_dialog", KEY_SPACE,
+                            assert_dialog_closed };
+        }
+        // 50 non-salt chests sorted roughly by y-descending then
+        // x-ascending. ap_nav_step_avoiding_foes_and_desert returns 0
+        // when no safe path exists; we skip that leg and move on.
+        static const struct { int x, y; const char *name; } legs[] = {
+            {  3, 60, "chest_000" }, {  8, 60, "chest_001" },
+            { 50, 60, "chest_003" }, { 31, 59, "chest_004" },
+            { 41, 59, "chest_005" }, { 53, 57, "chest_006" },
+            { 45, 56, "chest_007" }, { 59, 56, "chest_008" },
+            { 56, 54, "chest_009" }, { 11, 52, "chest_011" },
+            { 12, 52, "chest_012" }, { 43, 51, "chest_013" },
+            { 35, 50, "chest_016" }, { 39, 50, "chest_017" },
+            { 44, 48, "chest_018" }, { 24, 45, "chest_019" },
+            { 11, 44, "chest_021" }, { 54, 44, "chest_023" },
+            { 46, 40, "chest_026" }, { 38, 38, "chest_027" },
+            { 15, 37, "chest_028" }, { 43, 37, "chest_029" },
+            { 12, 36, "chest_030" }, { 60, 36, "chest_031" },
+            { 60, 34, "chest_033" }, { 35, 33, "chest_034" },
+            { 21, 32, "chest_035" }, { 27, 32, "chest_036" },
+            { 47, 32, "chest_037" }, { 11, 26, "chest_039" },
+            { 37, 25, "chest_040" }, { 16, 23, "chest_041" },
+            { 23, 23, "chest_042" }, { 14, 17, "chest_044" },
+            { 15, 17, "chest_045" }, { 27, 17, "chest_047" },
+            { 40, 17, "chest_048" }, { 43, 17, "chest_049" },
+            {  8, 16, "chest_050" }, { 38, 16, "chest_051" },
+            { 43, 16, "chest_052" }, { 51, 14, "chest_054" },
+            { 11, 12, "chest_055" }, { 50, 11, "chest_056" },
+            { 57,  9, "chest_059" }, { 32,  8, "chest_060" },
+            { 19,  7, "chest_062" }, { 29,  7, "chest_063" },
+            { 54,  7, "chest_064" }, { 46,  5, "chest_065" },
+        };
+        const int n_legs = (int)(sizeof(legs) / sizeof(legs[0]));
+        int leg = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        if (leg >= n_legs) {
+            AP_LOG("[phase12] tour complete: pos=(%d,%d) gold=%d "
+                   "hp=%d", g->position.x, g->position.y,
+                   g->stats.gold, ap_army_total_hp(g));
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_RETURN_TO_SPAWN;
+            return (ApCmd){ "PHASE12_TOUR:done", 0,
+                            assert_always_true };
+        }
+        int gx = legs[leg].x, gy = legs[leg].y;
+        if (g->position.x == gx && g->position.y == gy) {
+            AP_LOG("[phase12] leg %d (%s) done: pos=(%d,%d) gold=%d "
+                   "hp=%d", leg, legs[leg].name, g->position.x,
+                   g->position.y, g->stats.gold, ap_army_total_hp(g));
+            st->module_scratch[0] = leg + 1;
+            return (ApCmd){ "PHASE12_TOUR:leg_done", 0,
+                            assert_always_true };
+        }
+        int key = ap_nav_step_avoiding_foes_and_desert(g, m, gx, gy);
+        if (key == 0) {
+            AP_LOG("[phase12] leg %d (%s) no safe path from (%d,%d), "
+                   "skipping", leg, legs[leg].name, g->position.x,
+                   g->position.y);
+            st->module_scratch[0] = leg + 1;
+            return (ApCmd){ "PHASE12_TOUR:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE12_TOUR:nav", key,
+                        assert_always_true };
+    }
+
+    // -- 12e: walk/sail back to Forestria's spawn tile (1,26) so we
+    //    leave at the canonical entry point.
+    case AP_FLOW_PHASE12_RETURN_TO_SPAWN: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE12_RETURN_TO_SPAWN;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE12_RETURN_TO_SPAWN:y_foe");
+                return (ApCmd){ "PHASE12_RETURN_TO_SPAWN:y_foe",
+                                KEY_Y, assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE12_RETURN_TO_SPAWN:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE12_RETURN_TO_SPAWN:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE12_RETURN_TO_SPAWN:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        // Spawn is (1,26). Go to a water tile next to it so KEY_N
+        // works. (1,26) itself might be land — board the boat first.
+        const int back_x = 0, back_y = 27;
+        if (g->travel_mode == TRAVEL_BOAT &&
+            g->position.x == back_x && g->position.y == back_y) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_OPEN_NAV_PROMPT_BACK;
+            return (ApCmd){ "PHASE12_RETURN_TO_SPAWN:arrived", 0,
+                            assert_always_true };
+        }
+        int key = ap_nav_step_avoiding_foes_and_desert(g, m,
+                                                       back_x, back_y);
+        if (key == 0) key = ap_nav_step(g, m, back_x, back_y);
+        if (key == 0) {
+            AP_LOG("[phase12] no path back to spawn-water (%d,%d) "
+                   "from (%d,%d)", back_x, back_y,
+                   g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE12_RETURN_TO_SPAWN:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE12_RETURN_TO_SPAWN:nav", key,
+                        assert_always_true };
+    }
+
+    // -- 12f: press N to open the new-continent prompt while at sea
+    //    off Forestria. Continentia is now the only discovered
+    //    neighbor we care to revisit (Archipelia + Saharia stay
+    //    locked until their navmaps are found in later phases).
+    case AP_FLOW_PHASE12_OPEN_NAV_PROMPT_BACK: {
+        if (prompt_is_active() && prompt_kind_str() &&
+            strcmp(prompt_kind_str(), "numeric") == 0) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_PICK_CONTINENTIA;
+            return (ApCmd){ "PHASE12_OPEN_NAV_PROMPT_BACK:opened", 0,
+                            assert_always_true };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE12_OPEN_NAV_PROMPT_BACK:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        return (ApCmd){ "PHASE12_OPEN_NAV_PROMPT_BACK:n", KEY_N,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE12_PICK_CONTINENTIA: {
+        if (strcmp(g->position.zone, "continentia") == 0) {
+            AP_LOG("[phase12] back on continentia: pos=(%d,%d)",
+                   g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_NAV_HOME;
+            return (ApCmd){ "PHASE12_PICK_CONTINENTIA:switched", 0,
+                            assert_always_true };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE12_PICK_CONTINENTIA:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        // From Forestria, Continentia is in neighbors[0]; the prompt
+        // shows it as "1) Continentia".
+        return (ApCmd){ "PHASE12_PICK_CONTINENTIA:1", KEY_ONE,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE12_NAV_HOME: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE12_NAV_HOME;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE12_NAV_HOME:y_foe");
+                return (ApCmd){ "PHASE12_NAV_HOME:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE12_NAV_HOME:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE12_NAV_HOME:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE12_NAV_HOME:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        if (g->position.x == 11 && g->position.y == 58) {
+            AP_LOG("[phase12] complete: pos=(%d,%d) gold=%d hp=%d",
+                   g->position.x, g->position.y, g->stats.gold,
+                   ap_army_total_hp(g));
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE12_NAV_HOME:arrived", 0,
+                            assert_always_true };
+        }
+        int key = ap_nav_step_avoiding_foes(g, m, 11, 58);
+        if (key == 0) key = ap_nav_step(g, m, 11, 58);
+        if (key == 0) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE12_NAV_HOME:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE12_NAV_HOME:nav", key,
                         assert_always_true };
     }
 

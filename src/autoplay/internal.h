@@ -220,6 +220,22 @@ typedef enum {
     // dialog, sail back to home_castle gate to finish the run.
     AP_FLOW_PHASE11_NAV_NAVMAP,
     AP_FLOW_PHASE11_NAV_HOME,
+    // Phase 12: first Forestria visit. Board the boat parked near
+    // home castle, sail to deep water, press N to open the
+    // new-continent prompt, pick the Forestria digit. Engine's
+    // GameSwitchZone teleports the hero to Forestria's hero_spawn
+    // at (1,26). Tour every chest reachable on foot/boat without
+    // crossing a hostile foe's chebyshev-2 envelope or stepping on
+    // desert (per-step day penalty). Return to (1,26), re-cross to
+    // Continentia, walk back to (11,58) origin.
+    AP_FLOW_PHASE12_NAV_TO_SEA,
+    AP_FLOW_PHASE12_OPEN_NAV_PROMPT,
+    AP_FLOW_PHASE12_PICK_FORESTRIA,
+    AP_FLOW_PHASE12_TOUR,
+    AP_FLOW_PHASE12_RETURN_TO_SPAWN,
+    AP_FLOW_PHASE12_OPEN_NAV_PROMPT_BACK,
+    AP_FLOW_PHASE12_PICK_CONTINENTIA,
+    AP_FLOW_PHASE12_NAV_HOME,
     AP_FLOW_DONE,
 
     AP_ALL_DONE,

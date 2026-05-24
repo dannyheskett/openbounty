@@ -255,9 +255,13 @@ static bool tile_in_foe_envelope(const Game *g, int x, int y) {
     return false;
 }
 
+// Flags for bfs_multimode.
+#define NAV_AVOID_FOES   (1u << 0)
+#define NAV_AVOID_DESERT (1u << 1)
+
 static int bfs_multimode(const Map *m, const Game *g,
                          int sx, int sy, int start_mode,
-                         int gx, int gy, bool avoid_foes) {
+                         int gx, int gy, unsigned int flags) {
     int W = m->width;
     int H = m->height;
     if (W <= 0 || H <= 0 || W > NAV_MAX_W || H > NAV_MAX_H) return 0;
@@ -310,8 +314,14 @@ static int bfs_multimode(const Map *m, const Game *g,
             // Foe-avoidance: skip tiles within chebyshev 2 of any alive
             // hostile foe in the current zone. Goal is exempt so the
             // caller can route onto a chest adjacent to a foe.
-            if (avoid_foes && !is_goal &&
+            if ((flags & NAV_AVOID_FOES) && !is_goal &&
                 tile_in_foe_envelope(g, nx, ny)) continue;
+            // Desert-avoidance: each desert step zeros the day's step
+            // budget (engine/tile.c:TerrainMoveCost), so even one
+            // wastes a full day. Skip unless this is the goal tile
+            // (allows picking up a chest that happens to sit in sand).
+            if ((flags & NAV_AVOID_DESERT) && !is_goal &&
+                t->terrain == TERRAIN_DESERT) continue;
 
             int next_mode = mode;
             bool ok = false;
@@ -365,7 +375,7 @@ int ap_nav_step(const Game *g, const Map *m, int goal_x, int goal_y) {
     // Try a direct multi-mode plan first. This handles foot, boat, and
     // any combination of board/disembark transitions in one BFS.
     int key = bfs_multimode(m, g, g->position.x, g->position.y, mode,
-                            goal_x, goal_y, /*avoid_foes=*/false);
+                            goal_x, goal_y, /*flags=*/0u);
     if (key) return key;
 
     // No path — likely we need a boat but don't have one. Route to the
@@ -394,5 +404,19 @@ int ap_nav_step_avoiding_foes(const Game *g, const Map *m,
     if (g->position.x == goal_x && g->position.y == goal_y) return 0;
     int mode = (g->travel_mode == TRAVEL_BOAT) ? 1 : 0;
     return bfs_multimode(m, g, g->position.x, g->position.y, mode,
-                         goal_x, goal_y, /*avoid_foes=*/true);
+                         goal_x, goal_y, NAV_AVOID_FOES);
+}
+
+// Public entry point — like ap_nav_step_avoiding_foes, but also
+// refuses to step onto desert. Use when traversing or sailing past
+// a continent (Saharia / Forestria) where desert peninsulas would
+// otherwise cost a full day per step.
+int ap_nav_step_avoiding_foes_and_desert(const Game *g, const Map *m,
+                                         int goal_x, int goal_y) {
+    if (!g || !m) return 0;
+    if (g->position.x == goal_x && g->position.y == goal_y) return 0;
+    int mode = (g->travel_mode == TRAVEL_BOAT) ? 1 : 0;
+    return bfs_multimode(m, g, g->position.x, g->position.y, mode,
+                         goal_x, goal_y,
+                         NAV_AVOID_FOES | NAV_AVOID_DESERT);
 }

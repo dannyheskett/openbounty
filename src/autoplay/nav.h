@@ -42,4 +42,13 @@ int ap_nav_step(const Game *g, const Map *m, int goal_x, int goal_y);
 int ap_nav_step_avoiding_foes(const Game *g, const Map *m,
                               int goal_x, int goal_y);
 
+// Same as ap_nav_step_avoiding_foes, but also refuses to step onto
+// any TERRAIN_DESERT tile (each desert step zeros the day's step
+// budget — see engine/tile.c:TerrainMoveCost and engine/step.c:542
+// GameOnStep — so even a single one consumes a full day). Useful
+// for boat tours where the destination is grass-adjacent and we'd
+// otherwise plow through a desert peninsula to save a few tiles.
+int ap_nav_step_avoiding_foes_and_desert(const Game *g, const Map *m,
+                                         int goal_x, int goal_y);
+
 #endif
