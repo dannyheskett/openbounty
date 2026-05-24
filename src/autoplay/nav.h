@@ -51,4 +51,10 @@ int ap_nav_step_avoiding_foes(const Game *g, const Map *m,
 int ap_nav_step_avoiding_foes_and_desert(const Game *g, const Map *m,
                                          int goal_x, int goal_y);
 
+// Same as ap_nav_step but also refuses to step onto desert. Use
+// when the caller WANTS to fight wandering armies (foes are not
+// avoided) but still wants to dodge the desert-day-penalty trap.
+int ap_nav_step_avoiding_desert(const Game *g, const Map *m,
+                                int goal_x, int goal_y);
+
 #endif

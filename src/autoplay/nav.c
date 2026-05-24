@@ -420,3 +420,16 @@ int ap_nav_step_avoiding_foes_and_desert(const Game *g, const Map *m,
                          goal_x, goal_y,
                          NAV_AVOID_FOES | NAV_AVOID_DESERT);
 }
+
+// Public entry point — like ap_nav_step but also refuses to step
+// onto desert. Use when the caller wants to fight wandering armies
+// (foes allowed) but still wants to dodge the desert-day-penalty
+// trap.
+int ap_nav_step_avoiding_desert(const Game *g, const Map *m,
+                                int goal_x, int goal_y) {
+    if (!g || !m) return 0;
+    if (g->position.x == goal_x && g->position.y == goal_y) return 0;
+    int mode = (g->travel_mode == TRAVEL_BOAT) ? 1 : 0;
+    return bfs_multimode(m, g, g->position.x, g->position.y, mode,
+                         goal_x, goal_y, NAV_AVOID_DESERT);
+}

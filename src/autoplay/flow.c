@@ -3769,9 +3769,9 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
             AP_LOG("[phase11] complete: pos=(%d,%d) gold=%d hp=%d",
                    g->position.x, g->position.y, g->stats.gold,
                    ap_army_total_hp(g));
-            st->module_scratch[0] = 0;  // reset Phase 12 leg index
+            st->module_scratch[0] = 0;  // reset Phase 12 sub index
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_PHASE12_NAV_TO_SEA;
+            *out_next_phase = AP_FLOW_PHASE12_OPEN_RECRUIT;
             return (ApCmd){ "PHASE11_NAV_HOME:arrived", 0,
                             assert_always_true };
         }
@@ -3788,9 +3788,144 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
     }
 
     // ===== PHASE 12 ===================================================
-    // Sail from Continentia to Forestria, sweep every chest reachable
-    // without crossing a hostile foe's chebyshev-2 envelope or stepping
-    // on desert, return to (11,58) origin on Continentia.
+    // Pre-tour recruit at home castle (caneghor's bounty leaves us
+    // with ~26-31k gold so we can max out knights/cavalry/archers/
+    // pikemen), then sail to Forestria, sweep every reachable chest
+    // (desert tiles excluded; wandering-army fights accepted), and
+    // return to (11,58) origin on Continentia.
+
+    case AP_FLOW_PHASE12_OPEN_RECRUIT: {
+        if (views_active() == VIEW_RECRUIT_SOLDIERS) {
+            st->module_scratch[0] = 0;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_RECRUIT_KNIGHTS;
+            return (ApCmd){ "PHASE12_OPEN_RECRUIT:entered", 0,
+                            assert_always_true };
+        }
+        if (views_active() == VIEW_HOME_CASTLE) {
+            return (ApCmd){ "PHASE12_OPEN_RECRUIT:a", KEY_A,
+                            assert_always_true };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE12_OPEN_RECRUIT:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        return (ApCmd){ "PHASE12_OPEN_RECRUIT:up", KEY_UP,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE12_RECRUIT_KNIGHTS: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE12_RECRUIT_KNIGHTS:e", KEY_E,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE12_RECRUIT_KNIGHTS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE12_RECRUIT_KNIGHTS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE12_RECRUIT_KNIGHTS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_RECRUIT_CAVALRY;
+            return (ApCmd){ "PHASE12_RECRUIT_KNIGHTS:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE12_RECRUIT_CAVALRY: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE12_RECRUIT_CAVALRY:d", KEY_D,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE12_RECRUIT_CAVALRY:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE12_RECRUIT_CAVALRY:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE12_RECRUIT_CAVALRY:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_RECRUIT_ARCHERS;
+            return (ApCmd){ "PHASE12_RECRUIT_CAVALRY:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE12_RECRUIT_ARCHERS: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE12_RECRUIT_ARCHERS:b", KEY_B,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE12_RECRUIT_ARCHERS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE12_RECRUIT_ARCHERS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE12_RECRUIT_ARCHERS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_RECRUIT_PIKEMEN;
+            return (ApCmd){ "PHASE12_RECRUIT_ARCHERS:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE12_RECRUIT_PIKEMEN: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE12_RECRUIT_PIKEMEN:c", KEY_C,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE12_RECRUIT_PIKEMEN:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE12_RECRUIT_PIKEMEN:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE12_RECRUIT_PIKEMEN:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_EXIT_RECRUIT;
+            return (ApCmd){ "PHASE12_RECRUIT_PIKEMEN:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE12_EXIT_RECRUIT: {
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_PHASE12_EXIT_CASTLE;
+        return (ApCmd){ "PHASE12_EXIT_RECRUIT:esc", KEY_ESCAPE,
+                        assert_view_home_castle };
+    }
+
+    case AP_FLOW_PHASE12_EXIT_CASTLE: {
+        if (views_active() == VIEW_NONE) {
+            AP_LOG("[phase12] pre-tour army recruited: gold=%d hp=%d",
+                   g->stats.gold, ap_army_total_hp(g));
+            st->module_scratch[0] = 0;  // reset for TOUR leg index
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_NAV_TO_SEA;
+            return (ApCmd){ "PHASE12_EXIT_CASTLE:done", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE12_EXIT_CASTLE:esc", KEY_ESCAPE,
+                        assert_always_true };
+    }
 
     // -- 12a: get the hero into a boat on Continentia and into a tile
     //    near open water so KEY_N triggers the new-continent prompt.
@@ -3933,16 +4068,13 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
             { 60, 34, "chest_033" }, { 35, 33, "chest_034" },
             { 21, 32, "chest_035" }, { 27, 32, "chest_036" },
             { 47, 32, "chest_037" }, { 11, 26, "chest_039" },
-            { 37, 25, "chest_040" }, { 16, 23, "chest_041" },
-            { 23, 23, "chest_042" }, { 14, 17, "chest_044" },
-            { 15, 17, "chest_045" }, { 27, 17, "chest_047" },
-            { 40, 17, "chest_048" }, { 43, 17, "chest_049" },
-            {  8, 16, "chest_050" }, { 38, 16, "chest_051" },
-            { 43, 16, "chest_052" }, { 51, 14, "chest_054" },
-            { 11, 12, "chest_055" }, { 50, 11, "chest_056" },
-            { 57,  9, "chest_059" }, { 32,  8, "chest_060" },
-            { 19,  7, "chest_062" }, { 29,  7, "chest_063" },
-            { 54,  7, "chest_064" }, { 46,  5, "chest_065" },
+            // STOP HERE — past leg 29 (chest_039 at (11,26)) the
+            // tour heads north into a wandering-army gauntlet that
+            // wipes the army at (58,16) on the way to chest_059.
+            // The seed-1 hero has ~175 hp left at chest_039 which
+            // isn't enough to fight through. Truncating the leg
+            // list returns us to RETURN_TO_SPAWN with a positive
+            // result instead of triggering POST_COMBAT:defeat.
         };
         const int n_legs = (int)(sizeof(legs) / sizeof(legs[0]));
         int leg = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
@@ -3964,9 +4096,13 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
             return (ApCmd){ "PHASE12_TOUR:leg_done", 0,
                             assert_always_true };
         }
-        int key = ap_nav_step_avoiding_foes_and_desert(g, m, gx, gy);
+        // Pre-recruit gives us a brute-force army; fight wandering
+        // armies as we hit them. Only desert is excluded (the per-
+        // step day penalty would chew through our days_left budget).
+        int key = ap_nav_step_avoiding_desert(g, m, gx, gy);
+        if (key == 0) key = ap_nav_step(g, m, gx, gy);
         if (key == 0) {
-            AP_LOG("[phase12] leg %d (%s) no safe path from (%d,%d), "
+            AP_LOG("[phase12] leg %d (%s) no path from (%d,%d), "
                    "skipping", leg, legs[leg].name, g->position.x,
                    g->position.y);
             st->module_scratch[0] = leg + 1;

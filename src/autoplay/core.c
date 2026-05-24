@@ -601,6 +601,12 @@ static ShellRunVerdict autoplay_per_tick(ShellRunHooks *self,
 // =========================================================================
 
 int autoplay_run(int argc, char **argv) {
+    // Line-buffer stdout/stderr so the log stays in sync with the run
+    // and we don't lose the last few hundred entries to fflush-on-exit
+    // ordering when the harness exits via SHELL_RUN_EXIT_PASS.
+    setvbuf(stdout, NULL, _IOLBF, 0);
+    setvbuf(stderr, NULL, _IOLBF, 0);
+
     input_host_use_queue();
     frame_host_use_test();
     startup_skip_intros = true;

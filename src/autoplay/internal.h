@@ -228,6 +228,17 @@ typedef enum {
     // crossing a hostile foe's chebyshev-2 envelope or stepping on
     // desert (per-step day penalty). Return to (1,26), re-cross to
     // Continentia, walk back to (11,58) origin.
+    // Pre-tour recruit at king_maximus so the Forestria visit goes in
+    // with a brute-force army instead of relying on foe-avoidance.
+    // After caneghor's bounty we usually carry ~26-31k gold, which is
+    // enough to top up knights/cavalry/archers/pikemen to leadership.
+    AP_FLOW_PHASE12_OPEN_RECRUIT,
+    AP_FLOW_PHASE12_RECRUIT_KNIGHTS,
+    AP_FLOW_PHASE12_RECRUIT_CAVALRY,
+    AP_FLOW_PHASE12_RECRUIT_ARCHERS,
+    AP_FLOW_PHASE12_RECRUIT_PIKEMEN,
+    AP_FLOW_PHASE12_EXIT_RECRUIT,
+    AP_FLOW_PHASE12_EXIT_CASTLE,
     AP_FLOW_PHASE12_NAV_TO_SEA,
     AP_FLOW_PHASE12_OPEN_NAV_PROMPT,
     AP_FLOW_PHASE12_PICK_FORESTRIA,
