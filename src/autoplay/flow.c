@@ -258,8 +258,15 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 return (ApCmd){ "GRIND:enter_recruit_0", KEY_ENTER,
                                 assert_prompt_gone };
             }
-            // A/B chest choice: press A to take the gold path.
-            // Plain yes/no (search, etc.): A is also accepted.
+            // A/B chest choice: alternate between A (gold) and B
+            // (distribute → leadership). module_scratch[13] is the
+            // toggle: even = A, odd = B.
+            int n = st->module_scratch[13];
+            st->module_scratch[13] = n + 1;
+            if (n % 2 == 0) {
+                return (ApCmd){ "GRIND:a_chest", KEY_A,
+                                assert_prompt_gone };
+            }
             return (ApCmd){ "GRIND:b_chest", KEY_B, assert_prompt_gone };
         }
         if (dialog_is_active()) {
@@ -739,7 +746,11 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 return (ApCmd){ "HUNT:enter_recruit_0", KEY_ENTER,
                                 assert_prompt_gone };
             }
-            return (ApCmd){ "HUNT:b_chest", KEY_B, assert_prompt_gone };
+            { int n = st->module_scratch[13]; st->module_scratch[13] = n + 1;
+                  if (n % 2 == 0)
+                      return (ApCmd){ "HUNT:a_chest", KEY_A, assert_prompt_gone };
+                  return (ApCmd){ "HUNT:b_chest", KEY_B, assert_prompt_gone };
+                }
         }
         if (dialog_is_active()) {
             return (ApCmd){ "HUNT:space_dialog", KEY_SPACE,
@@ -780,7 +791,11 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 return (ApCmd){ "HUNT:enter_recruit_0", KEY_ENTER,
                                 assert_prompt_gone };
             }
-            return (ApCmd){ "HUNT:b_chest", KEY_B, assert_prompt_gone };
+            { int n = st->module_scratch[13]; st->module_scratch[13] = n + 1;
+                  if (n % 2 == 0)
+                      return (ApCmd){ "HUNT:a_chest", KEY_A, assert_prompt_gone };
+                  return (ApCmd){ "HUNT:b_chest", KEY_B, assert_prompt_gone };
+                }
         }
         if (dialog_is_active()) {
             return (ApCmd){ "HUNT:space_dialog", KEY_SPACE,
@@ -863,7 +878,11 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 return (ApCmd){ "HUNT:enter_recruit_0", KEY_ENTER,
                                 assert_prompt_gone };
             }
-            return (ApCmd){ "HUNT:b_chest", KEY_B, assert_prompt_gone };
+            { int n = st->module_scratch[13]; st->module_scratch[13] = n + 1;
+                  if (n % 2 == 0)
+                      return (ApCmd){ "HUNT:a_chest", KEY_A, assert_prompt_gone };
+                  return (ApCmd){ "HUNT:b_chest", KEY_B, assert_prompt_gone };
+                }
         }
         if (dialog_is_active()) {
             return (ApCmd){ "HUNT:space_dialog", KEY_SPACE,
@@ -917,7 +936,11 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 return (ApCmd){ "HUNT:enter_recruit_0", KEY_ENTER,
                                 assert_prompt_gone };
             }
-            return (ApCmd){ "HUNT:b_chest", KEY_B, assert_prompt_gone };
+            { int n = st->module_scratch[13]; st->module_scratch[13] = n + 1;
+                  if (n % 2 == 0)
+                      return (ApCmd){ "HUNT:a_chest", KEY_A, assert_prompt_gone };
+                  return (ApCmd){ "HUNT:b_chest", KEY_B, assert_prompt_gone };
+                }
         }
         if (dialog_is_active()) {
             return (ApCmd){ "HUNT:space_dialog", KEY_SPACE,
