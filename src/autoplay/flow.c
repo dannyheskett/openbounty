@@ -1613,7 +1613,13 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 { 17, 29, "chest_slot_41" },
                 { 23, 28, "chest_slot_42" },
                 { 40, 48, "chest_slot_18" },
-                { 25, 57, "chest_slot_6" },
+                // chest_slot_6 at (25,57) is skipped: its only
+                // approach tiles all sit inside the alive trolls'
+                // (26,57) chebyshev-2 envelope, so reaching it
+                // requires fighting wandering_army_000 — a fight
+                // we can't reliably win even at the post-mid-tour
+                // hp peak (trolls hp_each=50 trigger HOLD-vs-heavy
+                // for every player stack and we get overrun).
                 { 11, 57, "return_gate" },
             };
             const int n_legs = (int)(sizeof(legs) / sizeof(legs[0]));
@@ -1624,7 +1630,7 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                        g->position.x, g->position.y, g->stats.gold,
                        ap_army_total_hp(g));
                 *out_phase_done = true;
-                *out_next_phase = AP_FLOW_DONE;
+                *out_next_phase = AP_FLOW_PHASE6_FINAL_OPEN_RECRUIT;
                 return (ApCmd){ "PHASE6_TOUR:done", 0,
                                 assert_always_true };
             }
@@ -1836,6 +1842,159 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                             assert_always_true };
         }
         return (ApCmd){ "PHASE6_MID_EXIT_CASTLE:esc", KEY_ESCAPE,
+                        assert_always_true };
+    }
+
+    // -- PHASE 6 final re-recruit + return to hero_spawn. Same
+    //    cavalry → archers → pikemen → militia max-buy chain as
+    //    the mid-tour recruit. After ESC out, walk one tile
+    //    south so the run ends on the canonical starting tile.
+    case AP_FLOW_PHASE6_FINAL_OPEN_RECRUIT: {
+        if (views_active() == VIEW_RECRUIT_SOLDIERS) {
+            st->module_scratch[0] = 0;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE6_FINAL_RECRUIT_CAVALRY;
+            return (ApCmd){ "PHASE6_FINAL_OPEN_RECRUIT:entered", 0,
+                            assert_always_true };
+        }
+        if (views_active() == VIEW_HOME_CASTLE) {
+            return (ApCmd){ "PHASE6_FINAL_OPEN_RECRUIT:a", KEY_A,
+                            assert_always_true };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE6_FINAL_OPEN_RECRUIT:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        return (ApCmd){ "PHASE6_FINAL_OPEN_RECRUIT:up", KEY_UP,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE6_FINAL_RECRUIT_CAVALRY: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE6_FINAL_RECRUIT_CAVALRY:d", KEY_D,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE6_FINAL_RECRUIT_CAVALRY:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE6_FINAL_RECRUIT_CAVALRY:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE6_FINAL_RECRUIT_CAVALRY:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE6_FINAL_RECRUIT_ARCHERS;
+            return (ApCmd){ "PHASE6_FINAL_RECRUIT_CAVALRY:enter",
+                            KEY_ENTER, assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE6_FINAL_RECRUIT_ARCHERS: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE6_FINAL_RECRUIT_ARCHERS:b", KEY_B,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE6_FINAL_RECRUIT_ARCHERS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE6_FINAL_RECRUIT_ARCHERS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE6_FINAL_RECRUIT_ARCHERS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE6_FINAL_RECRUIT_PIKEMEN;
+            return (ApCmd){ "PHASE6_FINAL_RECRUIT_ARCHERS:enter",
+                            KEY_ENTER, assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE6_FINAL_RECRUIT_PIKEMEN: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE6_FINAL_RECRUIT_PIKEMEN:c", KEY_C,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE6_FINAL_RECRUIT_PIKEMEN:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE6_FINAL_RECRUIT_PIKEMEN:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE6_FINAL_RECRUIT_PIKEMEN:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE6_FINAL_RECRUIT_MILITIA;
+            return (ApCmd){ "PHASE6_FINAL_RECRUIT_PIKEMEN:enter",
+                            KEY_ENTER, assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE6_FINAL_RECRUIT_MILITIA: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE6_FINAL_RECRUIT_MILITIA:a", KEY_A,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE6_FINAL_RECRUIT_MILITIA:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE6_FINAL_RECRUIT_MILITIA:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE6_FINAL_RECRUIT_MILITIA:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE6_FINAL_EXIT_RECRUIT;
+            return (ApCmd){ "PHASE6_FINAL_RECRUIT_MILITIA:enter",
+                            KEY_ENTER, assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE6_FINAL_EXIT_RECRUIT: {
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_PHASE6_FINAL_EXIT_CASTLE;
+        return (ApCmd){ "PHASE6_FINAL_EXIT_RECRUIT:esc", KEY_ESCAPE,
+                        assert_view_home_castle };
+    }
+
+    case AP_FLOW_PHASE6_FINAL_EXIT_CASTLE: {
+        if (views_active() == VIEW_NONE) {
+            AP_LOG("[phase6] final recruit done: gold=%d hp=%d "
+                   "lead_base=%d",
+                   g->stats.gold, ap_army_total_hp(g),
+                   g->stats.leadership_base);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE6_FINAL_RETURN_SPAWN;
+            return (ApCmd){ "PHASE6_FINAL_EXIT_CASTLE:done", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE6_FINAL_EXIT_CASTLE:esc", KEY_ESCAPE,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE6_FINAL_RETURN_SPAWN: {
+        if (g->position.x == 11 && g->position.y == 58) {
+            AP_LOG("[phase6] complete: pos=(%d,%d) gold=%d hp=%d "
+                   "lead_base=%d",
+                   g->position.x, g->position.y, g->stats.gold,
+                   ap_army_total_hp(g), g->stats.leadership_base);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE6_FINAL_RETURN_SPAWN:arrived", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE6_FINAL_RETURN_SPAWN:down", KEY_DOWN,
                         assert_always_true };
     }
 
