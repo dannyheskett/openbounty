@@ -27,7 +27,10 @@
 #include "shell_run.h"
 
 // =========================================================================
-// Phase enum (frozen — the minimal smoke flow)
+// Phase enum. Phases 1–11 drive the seed=1 Continentia run from intro
+// through the final caneghor capture and Forestria navmap pickup.
+// Append new phases before AP_FLOW_DONE; do not reorder existing
+// entries (POST_COMBAT's resume whitelist uses the enum values).
 // =========================================================================
 
 typedef enum {
@@ -100,7 +103,6 @@ typedef enum {
     // Continentia. Foe-aware nav with fallback to regular nav
     // when no foe-free path exists.
     AP_FLOW_PHASE6_NAV_ALCOVE,
-    AP_FLOW_PHASE6_ALCOVE_ACCEPT,
     AP_FLOW_PHASE6_NAV_HOME,
     AP_FLOW_PHASE6_OPEN_RECRUIT,
     AP_FLOW_PHASE6_RECRUIT_ARCHERS,
@@ -218,10 +220,7 @@ typedef enum {
     // dialog, sail back to home_castle gate to finish the run.
     AP_FLOW_PHASE11_NAV_NAVMAP,
     AP_FLOW_PHASE11_NAV_HOME,
-    AP_FLOW_BUY_SIEGE,
-    AP_FLOW_EXIT_TOWN,
     AP_FLOW_DONE,
-    AP_FLOW_LAST = AP_FLOW_DONE,
 
     AP_ALL_DONE,
 } AutoplayPhase;

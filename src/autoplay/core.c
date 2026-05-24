@@ -154,9 +154,6 @@ static void queue_picker_path(int cx, int cy, int tx, int ty) {
     input_host_queue_key(KEY_A);  // confirm
 }
 
-static int combat_unit_id_last_acted = -1;
-static int combat_tick_last_action   = 0;
-
 // Per-turn snapshot — called once per acting player unit before we
 // pick a move. Dumps the live grid (units + obstacles) and both
 // sides' rosters so we can see what the picker is reacting to.
@@ -237,8 +234,6 @@ static void autoplay_before_frame(void *user) {
     if (u->acted || u->troop_idx < 0 || u->count <= 0) return;
     // The engine's u->acted flag already guarantees one decision per
     // unit per turn — we don't need an additional rate-limit here.
-    (void)combat_unit_id_last_acted;
-    (void)combat_tick_last_action;
 
     // One log line per acting player unit so we can see what the
     // picker is reacting to. Only emit when this is a different
@@ -352,8 +347,6 @@ static void autoplay_before_frame(void *user) {
                        "hp_each=%d > my hp_each=%d)",
                        enemy_slot, e_hp_each, my_hp_each);
                 ap_set_key(KEY_SPACE);
-                combat_unit_id_last_acted = c->unit_id;
-                combat_tick_last_action = st->tick;
                 return;
             }
         }
@@ -408,8 +401,6 @@ static void autoplay_before_frame(void *user) {
                            "(%d,%d) dx=%d dy=%d",
                            best_e, e->x, e->y, dx, dy);
                     ap_set_key(k);
-                    combat_unit_id_last_acted = c->unit_id;
-                    combat_tick_last_action = st->tick;
                     return;
                 }
             }
@@ -484,8 +475,6 @@ static void autoplay_before_frame(void *user) {
             ap_set_key(KEY_SPACE);  // truly nowhere to go
         }
     }
-    combat_unit_id_last_acted = c->unit_id;
-    combat_tick_last_action = st->tick;
 }
 
 // =========================================================================
@@ -503,8 +492,6 @@ static void autoplay_before_startup(ShellRunHooks *self) {
 // as ASCII (water=~, blocked=#, walkable=., chest=C, foe=F, town=T,
 // castle=K, hero=@). Used once by hand to author the step lists for
 // each chest leg. Otherwise no-op.
-#include "tile.h"
-#include <stdlib.h>
 static void dump_zone_interactives(const Map *m, const Game *g) {
     if (!getenv("AP_DUMP_MAP")) return;
     AP_LOG("=== zone map (zone=%s, %dx%d) ===",
@@ -624,8 +611,6 @@ int autoplay_run(int argc, char **argv) {
         state.module_scratch[i] = -1;
     }
     g_active_state = &state;
-    combat_unit_id_last_acted = -1;
-    combat_tick_last_action   = 0;
     frame_host_set_before_frame(autoplay_before_frame, NULL);
 
     ShellRunHooks hooks = {

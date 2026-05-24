@@ -4,14 +4,30 @@
 // core.c runs the command, advances one tick, asserts the command's
 // post-state predicate. Hard fail on assertion failure.
 //
-// Sequence (seed=1):
-//   intro → walk to Maximus → recruit → exit castle → GRIND (consumes
-//   hand-authored step lists, one per leg) → done.
+// Sequence (seed=1, 11 phases):
+//   intro → home castle starter recruit (pikemen/militia/archers)
+//   → Phase 1 home-landmass chest tour (avoids trolls + giants)
+//   → Phase 2 Hunterville (siege + boat + Murray contract) → azram
+//     capture
+//   → Phase 3 re-recruit → kill trolls/giants → grab south chests
+//     → second re-recruit → take Hack contract
+//   → Phase 4 Continentia north boat tour (foe-aware) → re-recruit
+//   → Phase 5 faxis capture (Hack)
+//   → Phase 6 magic alcove + chest/artifact sweep with mid-tour
+//     re-recruit
+//   → Phase 7 iterate 3 Continentia villains (aimola, baron_makahl,
+//     dread_rob)
+//   → Phase 8 grind 5 monster castles (knights up-front, militia in
+//     garrison)
+//   → Phase 9 kill trolls @ (26,57) → grab chest_slot_6 → paths_end
+//     fireball restock → ghost dwelling detour → home re-recruit
+//   → Phase 10 caneghor capture at rythacon → post-fight home recruit
+//     of 20 militia → return to rythacon → drop militia in garrison
+//   → Phase 11 sail to (57,55) for Forestria navmap → return home
 //
-// The town visit (buy siege weapons + rent boat) is handled inline by
-// the GRIND phase when it detects VIEW_TOWN opening as a side effect
-// of a step. Modal phases (BUY_SIEGE/RENT_BOAT/EXIT_TOWN) return
-// control to GRIND when they finish.
+// Phases end at the (11,58) home_castle gate in open-world before
+// transitioning to the next. POST_COMBAT resumes the originating
+// nav phase via module_scratch[3] (see the whitelist).
 
 #include "autoplay/internal.h"
 #include "autoplay/nav.h"
@@ -402,8 +418,6 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
     // -- PHASE 2 step 1: walk from gate (11,57) to Hunterville (12,60).
     case AP_FLOW_PHASE2_NAV_TOWN: {
         if (views_active() == VIEW_TOWN) {
-            // Town view opened — step inside and start the menu loop.
-            st->module_scratch[4] = 0;  // reset town action sub-index
             *out_phase_done = true;
             *out_next_phase = AP_FLOW_PHASE2_TOWN_ACTIONS;
             return (ApCmd){ "PHASE2_NAV_TOWN:entered", 0,
@@ -1377,16 +1391,7 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                         assert_always_true };
     }
 
-    // -- PHASE 6 step 2: deprecated — alcove acceptance now happens
-    //    inline in PHASE6_NAV_ALCOVE. Pass-through if ever reached.
-    case AP_FLOW_PHASE6_ALCOVE_ACCEPT: {
-        *out_phase_done = true;
-        *out_next_phase = AP_FLOW_PHASE6_NAV_HOME;
-        return (ApCmd){ "PHASE6_ALCOVE_ACCEPT:passthrough", 0,
-                        assert_always_true };
-    }
-
-    // -- PHASE 6 step 3: walk back to king_maximus gate (11,57).
+    // -- PHASE 6 step 2: walk back to king_maximus gate (11,57).
     case AP_FLOW_PHASE6_NAV_HOME: {
         if (prompt_is_active()) {
             const char *kind = prompt_kind_str();
@@ -3776,16 +3781,6 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
         return (ApCmd){ "PHASE11_NAV_HOME:nav", key,
                         assert_always_true };
     }
-
-    // BUY_SIEGE / EXIT_TOWN retained as legacy stubs (unreached
-    // by the current flow) so the AutoplayPhase enum's enumerators
-    // all have switch cases and the build stays clean.
-    case AP_FLOW_BUY_SIEGE:
-    case AP_FLOW_EXIT_TOWN:
-        *out_phase_done = true;
-        *out_next_phase = AP_FLOW_DONE;
-        return (ApCmd){ "LEGACY:skip", 0, assert_always_true };
-
 
     case AP_FLOW_DONE: {
         *out_phase_done = true;
