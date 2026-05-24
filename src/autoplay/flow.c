@@ -364,7 +364,8 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 resume != AP_FLOW_PHASE5_NAV_HOME &&
                 resume != AP_FLOW_PHASE6_NAV_ALCOVE &&
                 resume != AP_FLOW_PHASE6_NAV_HOME &&
-                resume != AP_FLOW_PHASE6_TOUR) {
+                resume != AP_FLOW_PHASE6_TOUR &&
+                resume != AP_FLOW_PHASE6_MID_NAV_HOME) {
                 resume = AP_FLOW_PHASE1;
             }
             *out_phase_done = true;
@@ -1550,6 +1551,24 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
             return (ApCmd){ "PHASE6_TOUR:space_dialog", KEY_SPACE,
                             assert_dialog_closed };
         }
+        // Mid-tour re-recruit divert: after leg 8 (chest_slot_54,
+        // (44,22)) — the last chest before the army has bled below
+        // the safe threshold in the previous run — go back to
+        // king_maximus, max-buy a fresh army including cavalry,
+        // then resume the tour at leg 9. module_scratch[5] tracks
+        // whether we've already done the mid-recruit so it fires
+        // exactly once.
+        if (st->module_scratch[0] == 9 && st->module_scratch[5] < 1) {
+            AP_LOG("[phase6] mid-tour divert at leg 9: pos=(%d,%d) "
+                   "gold=%d hp=%d",
+                   g->position.x, g->position.y, g->stats.gold,
+                   ap_army_total_hp(g));
+            st->module_scratch[5] = 1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE6_MID_NAV_HOME;
+            return (ApCmd){ "PHASE6_TOUR:divert_recruit", 0,
+                            assert_always_true };
+        }
         {
             // 29-leg NN tour (27 chests + 2 artifacts) plus a
             // "fight_032" leg up-front that targets wandering_army_032
@@ -1632,6 +1651,192 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
             return (ApCmd){ "PHASE6_TOUR:nav", key,
                             assert_always_true };
         }
+    }
+
+    // -- PHASE 6 mid-tour re-recruit chain. Navigate back to the
+    //    gate, max-buy cavalry/archers/pikemen/militia, then
+    //    resume PHASE6_TOUR. Cavalry (35 hp, 800 g) goes first
+    //    so the limited leadership headroom fills with the most
+    //    hp-per-leadership unit.
+    case AP_FLOW_PHASE6_MID_NAV_HOME: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE6_MID_NAV_HOME;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE6_MID_NAV_HOME:y_foe");
+                return (ApCmd){ "PHASE6_MID_NAV_HOME:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE6_MID_NAV_HOME:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE6_MID_NAV_HOME:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE6_MID_NAV_HOME:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        if (g->position.x == 11 && g->position.y == 57) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE6_MID_OPEN_RECRUIT;
+            return (ApCmd){ "PHASE6_MID_NAV_HOME:arrived", 0,
+                            assert_always_true };
+        }
+        int key = ap_nav_step_avoiding_foes(g, m, 11, 57);
+        if (key == 0) key = ap_nav_step(g, m, 11, 57);
+        if (key == 0) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE6_MID_NAV_HOME:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE6_MID_NAV_HOME:nav", key,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE6_MID_OPEN_RECRUIT: {
+        if (views_active() == VIEW_RECRUIT_SOLDIERS) {
+            st->module_scratch[0] = 0;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE6_MID_RECRUIT_CAVALRY;
+            return (ApCmd){ "PHASE6_MID_OPEN_RECRUIT:entered", 0,
+                            assert_always_true };
+        }
+        if (views_active() == VIEW_HOME_CASTLE) {
+            return (ApCmd){ "PHASE6_MID_OPEN_RECRUIT:a", KEY_A,
+                            assert_always_true };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE6_MID_OPEN_RECRUIT:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        return (ApCmd){ "PHASE6_MID_OPEN_RECRUIT:up", KEY_UP,
+                        assert_always_true };
+    }
+
+    // Cavalry = D in the home-castle recruit menu (4th letter,
+    // pool sorted by cost: militia A, archers B, pikemen C,
+    // cavalry D, knights E).
+    case AP_FLOW_PHASE6_MID_RECRUIT_CAVALRY: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE6_MID_RECRUIT_CAVALRY:d", KEY_D,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE6_MID_RECRUIT_CAVALRY:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE6_MID_RECRUIT_CAVALRY:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE6_MID_RECRUIT_CAVALRY:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE6_MID_RECRUIT_ARCHERS;
+            return (ApCmd){ "PHASE6_MID_RECRUIT_CAVALRY:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE6_MID_RECRUIT_ARCHERS: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE6_MID_RECRUIT_ARCHERS:b", KEY_B,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE6_MID_RECRUIT_ARCHERS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE6_MID_RECRUIT_ARCHERS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE6_MID_RECRUIT_ARCHERS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE6_MID_RECRUIT_PIKEMEN;
+            return (ApCmd){ "PHASE6_MID_RECRUIT_ARCHERS:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE6_MID_RECRUIT_PIKEMEN: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE6_MID_RECRUIT_PIKEMEN:c", KEY_C,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE6_MID_RECRUIT_PIKEMEN:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE6_MID_RECRUIT_PIKEMEN:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE6_MID_RECRUIT_PIKEMEN:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE6_MID_RECRUIT_MILITIA;
+            return (ApCmd){ "PHASE6_MID_RECRUIT_PIKEMEN:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE6_MID_RECRUIT_MILITIA: {
+        int sub = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
+        switch (sub) {
+        case 0: st->module_scratch[0]=1;
+            return (ApCmd){ "PHASE6_MID_RECRUIT_MILITIA:a", KEY_A,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[0]=2;
+            return (ApCmd){ "PHASE6_MID_RECRUIT_MILITIA:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[0]=3;
+            return (ApCmd){ "PHASE6_MID_RECRUIT_MILITIA:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[0]=4;
+            return (ApCmd){ "PHASE6_MID_RECRUIT_MILITIA:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[0]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE6_MID_EXIT_RECRUIT;
+            return (ApCmd){ "PHASE6_MID_RECRUIT_MILITIA:enter", KEY_ENTER,
+                            assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE6_MID_EXIT_RECRUIT: {
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_PHASE6_MID_EXIT_CASTLE;
+        return (ApCmd){ "PHASE6_MID_EXIT_RECRUIT:esc", KEY_ESCAPE,
+                        assert_view_home_castle };
+    }
+
+    case AP_FLOW_PHASE6_MID_EXIT_CASTLE: {
+        if (views_active() == VIEW_NONE) {
+            AP_LOG("[phase6] mid-recruit done: gold=%d hp=%d "
+                   "lead_base=%d, resuming tour at leg %d",
+                   g->stats.gold, ap_army_total_hp(g),
+                   g->stats.leadership_base, 9);
+            // Restore the tour leg index to 9 (we diverted before
+            // handling leg 9). module_scratch[0] was clobbered by
+            // the recruit sub-state machine, so set it explicitly.
+            st->module_scratch[0] = 9;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE6_TOUR;
+            return (ApCmd){ "PHASE6_MID_EXIT_CASTLE:done", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE6_MID_EXIT_CASTLE:esc", KEY_ESCAPE,
+                        assert_always_true };
     }
 
     // BUY_SIEGE / EXIT_TOWN retained as legacy stubs (unreached

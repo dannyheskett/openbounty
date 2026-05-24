@@ -109,6 +109,18 @@ typedef enum {
     AP_FLOW_PHASE6_EXIT_RECRUIT,
     AP_FLOW_PHASE6_EXIT_CASTLE,
     AP_FLOW_PHASE6_TOUR,
+    // Mid-tour re-recruit: when hp drops below the safety
+    // threshold, divert from PHASE6_TOUR back to the castle,
+    // max-buy a new army (cavalry too, now that we have more
+    // gold), then resume the tour.
+    AP_FLOW_PHASE6_MID_NAV_HOME,
+    AP_FLOW_PHASE6_MID_OPEN_RECRUIT,
+    AP_FLOW_PHASE6_MID_RECRUIT_CAVALRY,
+    AP_FLOW_PHASE6_MID_RECRUIT_ARCHERS,
+    AP_FLOW_PHASE6_MID_RECRUIT_PIKEMEN,
+    AP_FLOW_PHASE6_MID_RECRUIT_MILITIA,
+    AP_FLOW_PHASE6_MID_EXIT_RECRUIT,
+    AP_FLOW_PHASE6_MID_EXIT_CASTLE,
     AP_FLOW_BUY_SIEGE,
     AP_FLOW_EXIT_TOWN,
     AP_FLOW_DONE,
