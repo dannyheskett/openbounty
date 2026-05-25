@@ -230,9 +230,13 @@ int ap_leadership_until_next_rank(const Game *g) {
     if (!g) return 0;
     const ClassDef *cls = class_by_id(g->character.cls.id);
     if (!cls || cls->rank_count == 0) return 0;
-    // Target the MAX leadership across all ranks (e.g. King at 500
-    // for Knight class). Take leadership chests until base reaches
-    // that ceiling, then always take gold.
+    // Target the max-rank ceiling. Yes, rank-ups wipe
+    // accumulated chest leadership (engine/game.c:1232) — but the
+    // pre-rank-up benefit (larger army HP cap during the chest /
+    // monster grind that happens BEFORE the next villain capture)
+    // is the whole point. Going under-leadership leaves us
+    // permanently capped at the base rank's army size, which is
+    // worse than rebuilding after a rank-up wipe.
     int target = 0;
     for (int i = 0; i < cls->rank_count; i++) {
         if (cls->ranks[i].leadership > target)
