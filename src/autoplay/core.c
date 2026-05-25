@@ -555,6 +555,7 @@ static ShellRunVerdict autoplay_per_tick(ShellRunHooks *self,
     // 2. Terminal phase: report and exit PASS.
     if (st->phase == AP_ALL_DONE) {
         printf("autoplay: complete (tick=%d)\n", st->tick);
+        fflush(stdout);
         return SHELL_RUN_EXIT_PASS;
     }
 

@@ -5816,10 +5816,16 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
     }
 
     case AP_FLOW_PHASE14_EXIT_RECRUIT: {
+        // If militia (last recruit row) couldn't buy (leadership at
+        // cap, gold short, or dwelling empty), the ENTER from the
+        // RECRUIT_MILITIA chain may have stayed inside the recruit
+        // view instead of bouncing back to VIEW_HOME_CASTLE. Use
+        // assert_always_true so the EXIT_CASTLE state handles the
+        // ESC dance via its own views_active check.
         *out_phase_done = true;
         *out_next_phase = AP_FLOW_PHASE14_EXIT_CASTLE;
         return (ApCmd){ "PHASE14_EXIT_RECRUIT:esc", KEY_ESCAPE,
-                        assert_view_home_castle };
+                        assert_always_true };
     }
 
     case AP_FLOW_PHASE14_EXIT_CASTLE: {

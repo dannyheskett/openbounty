@@ -379,7 +379,10 @@ extern int ap_pre_pos_y;
 // Logging
 // =========================================================================
 
-#define AP_LOG(fmt, ...) fprintf(stderr, "[autoplay] " fmt "\n", ##__VA_ARGS__)
+#define AP_LOG(fmt, ...) do {                                          \
+    fprintf(stderr, "[autoplay] " fmt "\n", ##__VA_ARGS__);             \
+    fflush(stderr);                                                     \
+} while (0)
 
 // =========================================================================
 // Shared helpers (defined in core.c)
