@@ -31,6 +31,7 @@
 
 #include "autoplay/internal.h"
 #include "autoplay/macros.h"
+#include "autoplay/missions.h"
 #include "autoplay/nav.h"
 #include "combat.h"
 #include "tables.h"
@@ -98,21 +99,21 @@ static void dump_combat_start(const Game *g, const char *who) {
 // Predicates
 // =========================================================================
 
-static bool assert_always_true(const Game *g) { (void)g; return true; }
+bool assert_always_true(const Game *g) { (void)g; return true; }
 
-static bool assert_dialog_open(const Game *g) {
+bool assert_dialog_open(const Game *g) {
     (void)g; return dialog_is_active();
 }
-static bool assert_dialog_closed(const Game *g) {
+bool assert_dialog_closed(const Game *g) {
     (void)g; return !dialog_is_active();
 }
-static bool assert_view_home_castle(const Game *g) {
+bool assert_view_home_castle(const Game *g) {
     (void)g; return views_active() == VIEW_HOME_CASTLE;
 }
-static bool assert_view_recruit_soldiers(const Game *g) {
+bool assert_view_recruit_soldiers(const Game *g) {
     (void)g; return views_active() == VIEW_RECRUIT_SOLDIERS;
 }
-static bool assert_view_none(const Game *g) {
+bool assert_view_none(const Game *g) {
     (void)g; return views_active() == VIEW_NONE && !dialog_is_active();
 }
 static bool assert_moved_up(const Game *g) {
@@ -129,13 +130,13 @@ static bool assert_army_hp_plus_80(const Game *g) {
     return ap_army_total_hp(g) == ap_pre_army_hp + 80;
 }
 
-static bool assert_prompt_gone(const Game *g) {
+bool assert_prompt_gone(const Game *g) {
     (void)g; return !prompt_is_active();
 }
 
 // Combat opened OR combat already finished (regardless of outcome).
 // POST_COMBAT detects loss and exits gracefully.
-static bool assert_combat_resolved(const Game *g) {
+bool assert_combat_resolved(const Game *g) {
     (void)g; return true;
 }
 
@@ -149,6 +150,15 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                        AutoplayPhase *out_next_phase) {
     *out_phase_done = false;
     *out_next_phase = st->phase;
+
+    // Mission-based dispatch (new generic solver). COMBAT and
+    // POST_COMBAT remain phase-driven; everything else flows through
+    // the mission solver.
+    if (st->phase != AP_FLOW_COMBAT &&
+        st->phase != AP_FLOW_POST_COMBAT &&
+        st->phase != AP_FLOW_DONE) {
+        return ap_mission_tick(g, m, st, out_phase_done, out_next_phase);
+    }
 
     switch (st->phase) {
 
@@ -367,68 +377,10 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 *out_next_phase = AP_FLOW_DONE;
                 return (ApCmd){ "POST_COMBAT:defeat", 0, assert_always_true };
             }
-            // Resume whichever navigating phase started this combat.
-            // module_scratch[3] holds the resume target; defaults to
-            // PHASE1 if never set.
-            AutoplayPhase resume = (AutoplayPhase)st->module_scratch[3];
-            if (resume != AP_FLOW_PHASE1 &&
-                resume != AP_FLOW_PHASE2_NAV_CASTLE &&
-                resume != AP_FLOW_PHASE3_NAV_HOME &&
-                resume != AP_FLOW_PHASE3_HUNT &&
-                resume != AP_FLOW_PHASE3_NAV_HOME_2 &&
-                resume != AP_FLOW_PHASE4_TOUR &&
-                resume != AP_FLOW_PHASE5_NAV_CASTLE &&
-                resume != AP_FLOW_PHASE5_NAV_HOME &&
-                resume != AP_FLOW_PHASE6_NAV_ALCOVE &&
-                resume != AP_FLOW_PHASE6_NAV_HOME &&
-                resume != AP_FLOW_PHASE6_TOUR &&
-                resume != AP_FLOW_PHASE6_MID_NAV_HOME &&
-                resume != AP_FLOW_PHASE7_NAV_TOWN &&
-                resume != AP_FLOW_PHASE7_NAV_CASTLE &&
-                resume != AP_FLOW_PHASE7_NAV_HOME &&
-                resume != AP_FLOW_PHASE8_NAV_CASTLE &&
-                resume != AP_FLOW_PHASE8_NAV_HOME &&
-                resume != AP_FLOW_PHASE9_NAV_TROLLS &&
-                resume != AP_FLOW_PHASE9_NAV_CHEST &&
-                resume != AP_FLOW_PHASE9_NAV_PATHS_END &&
-                resume != AP_FLOW_PHASE9_NAV_GHOSTS &&
-                resume != AP_FLOW_PHASE9_NAV_HOME &&
-                resume != AP_FLOW_PHASE10_NAV_TOWN &&
-                resume != AP_FLOW_PHASE10_NAV_CASTLE &&
-                resume != AP_FLOW_PHASE10_NAV_HOME_RECRUIT &&
-                resume != AP_FLOW_PHASE10_NAV_RYTHACON &&
-                resume != AP_FLOW_PHASE10_NAV_HOME &&
-                resume != AP_FLOW_PHASE11_NAV_NAVMAP &&
-                resume != AP_FLOW_PHASE11_NAV_HOME &&
-                resume != AP_FLOW_PHASE12_NAV_TO_SEA &&
-                resume != AP_FLOW_PHASE12_TOUR &&
-                resume != AP_FLOW_PHASE12_MID_RETURN_SPAWN &&
-                resume != AP_FLOW_PHASE12_MID_NAV_HOME &&
-                resume != AP_FLOW_PHASE12_MID_NAV_SEA &&
-                resume != AP_FLOW_PHASE12_RETURN_TO_SPAWN &&
-                resume != AP_FLOW_PHASE12_NAV_HOME &&
-                resume != AP_FLOW_PHASE13_NAV_TO_SEA &&
-                resume != AP_FLOW_PHASE13_NAV_TO_DWARVES &&
-                resume != AP_FLOW_PHASE13_NAV_TO_ZOMBIES &&
-                resume != AP_FLOW_PHASE13_NAV_TO_OGRES &&
-                resume != AP_FLOW_PHASE13_NAV_TO_ELVES &&
-                resume != AP_FLOW_PHASE13_NAV_TO_ANCHOR &&
-                resume != AP_FLOW_PHASE13_NAV_TO_SHIELD &&
-                resume != AP_FLOW_PHASE13_CASTLE_NAV &&
-                resume != AP_FLOW_PHASE13_REFILL_OGRES_NAV &&
-                resume != AP_FLOW_PHASE13_REFILL_ELVES_NAV &&
-                resume != AP_FLOW_PHASE13_RETURN_TO_SPAWN &&
-                resume != AP_FLOW_PHASE13_NAV_HOME &&
-                resume != AP_FLOW_PHASE14_NAV_TO_WOODS_END &&
-                resume != AP_FLOW_PHASE14_CHEST_TOUR &&
-                resume != AP_FLOW_PHASE14_NAV_TO_SPAWN &&
-                resume != AP_FLOW_PHASE14_NAV_HOME_RECRUIT &&
-                resume != AP_FLOW_PHASE14_NAV_HOME_SEA &&
-                resume != AP_FLOW_PHASE14_NAV_CASTLE) {
-                resume = AP_FLOW_PHASE1;
-            }
+            // Resume mission dispatcher (mission_kind/substep
+            // already preserved across combat).
             *out_phase_done = true;
-            *out_next_phase = resume;
+            *out_next_phase = AP_FLOW_FIRST;
             return (ApCmd){ "POST_COMBAT:noop", 0, assert_always_true };
         }
         if (dialog_is_active()) {

@@ -3,6 +3,7 @@
 
 #include "autoplay/core.h"
 #include "autoplay/internal.h"
+#include "autoplay/missions.h"
 
 #include "input_host.h"
 #include "frame_host.h"
@@ -617,6 +618,7 @@ int autoplay_run(int argc, char **argv) {
     for (size_t i = 0; i < sizeof(state.module_scratch)/sizeof(state.module_scratch[0]); i++) {
         state.module_scratch[i] = -1;
     }
+    ap_mission_reset(&state);
     g_active_state = &state;
     frame_host_set_before_frame(autoplay_before_frame, NULL);
 

@@ -379,6 +379,12 @@ struct AutoplayState {
     // phases like RECRUIT_PIKEMEN; foe coord cache; etc.).
     int  module_scratch[16];
 
+    // Mission-solver state (new generic per-zone solver).
+    int  mission_kind;             // MissionKind (cast)
+    int  mission_substep;          // per-mission internal step
+    char mission_zone[24];         // zone the current mission targets
+    bool zone_solved[4];           // VILLAIN_GRIND done flag per zone
+
     // Pre-tick snapshot — captured by the dispatcher BEFORE setting
     // the live key. Predicates read these via ap_pre_* globals to
     // assert deltas (e.g. army_hp == pre_army_hp + 100).
@@ -387,6 +393,17 @@ struct AutoplayState {
     int  pre_pos_x;
     int  pre_pos_y;
 };
+
+// Shared assertion predicates (defined in flow.c).
+struct Game;
+bool assert_always_true(const struct Game *g);
+bool assert_dialog_open(const struct Game *g);
+bool assert_dialog_closed(const struct Game *g);
+bool assert_view_home_castle(const struct Game *g);
+bool assert_view_recruit_soldiers(const struct Game *g);
+bool assert_view_none(const struct Game *g);
+bool assert_prompt_gone(const struct Game *g);
+bool assert_combat_resolved(const struct Game *g);
 
 // Dispatcher publishes the pre-snapshot so that predicate functions
 // (which only get a `const Game *`) can compare post-tick against
