@@ -243,7 +243,9 @@ int ap_leadership_until_next_rank(const Game *g) {
 
 const char *ap_mission_name(int k) {
     switch (k) {
-    case MISSION_STARTUP:           return "STARTUP";
+    case MISSION_INTRO:             return "INTRO";
+    case MISSION_VISIT_TOWN:        return "VISIT_TOWN";
+    case MISSION_STARTUP_RECRUIT:   return "STARTUP_RECRUIT";
     case MISSION_ALCOVE:            return "ALCOVE";
     case MISSION_PATHS_END_SPELLS:  return "PATHS_END_SPELLS";
     case MISSION_GHOST_DWELLING:    return "GHOST_DWELLING";
@@ -277,11 +279,11 @@ static void advance_to(AutoplayState *st, int mission, const char *zone) {
 }
 
 void ap_mission_reset(AutoplayState *st) {
-    st->mission_kind = MISSION_STARTUP;
+    st->mission_kind = MISSION_INTRO;
     st->mission_substep = 0;
     st->mission_zone[0] = '\0';
     for (int i = 0; i < MAX_ZONES; i++) st->zone_solved[i] = false;
-    AP_LOG("[mission] reset -> STARTUP");
+    AP_LOG("[mission] reset -> INTRO");
 }
 
 // -------------------------------------------------------------------------
@@ -289,87 +291,155 @@ void ap_mission_reset(AutoplayState *st) {
 // They drive sub-state via st->module_scratch[].
 // -------------------------------------------------------------------------
 
-// MISSION_STARTUP: intro + initial recruit. Hand off after starter
-// army recruited.
-static ApCmd handle_startup(const Game *g, const Map *m,
-                            AutoplayState *st,
-                            bool *out_phase_done,
-                            AutoplayPhase *out_next_phase) {
-    (void)out_next_phase;
+// MISSION_INTRO: dismiss the intro dialog, advance.
+static ApCmd handle_intro(const Game *g, const Map *m,
+                          AutoplayState *st,
+                          bool *out_phase_done,
+                          AutoplayPhase *out_next_phase) {
+    (void)m; (void)out_phase_done; (void)out_next_phase;
+    if (dialog_is_active()) {
+        return (ApCmd){ "INTRO:space", KEY_SPACE,
+                        assert_dialog_closed };
+    }
+    advance_to(st, MISSION_VISIT_TOWN, g->position.zone);
+    return (ApCmd){ "INTRO:done", 0, assert_always_true };
+}
+
+// MISSION_VISIT_TOWN: walk to nearest town, buy siege + boat with
+// the starter gold, then exit. Done when both owned OR can't afford
+// what's missing.
+static ApCmd handle_visit_town(const Game *g, const Map *m,
+                               AutoplayState *st,
+                               bool *out_phase_done,
+                               AutoplayPhase *out_next_phase) {
+    const int siege_cost = g->res ? g->res->economy.siege_cost : 3000;
+    const int boat_cost  = g->res ? g->res->economy.boat_cost_normal : 500;
+    bool need_boat  = !g->boat.has_boat && g->stats.gold > boat_cost;
+    bool need_siege = !g->stats.siege_weapons &&
+                      g->stats.gold > siege_cost;
+    if (!need_boat && !need_siege) {
+        if (views_active() == VIEW_TOWN) {
+            return (ApCmd){ "VISIT:esc_town", KEY_ESCAPE,
+                            assert_always_true };
+        }
+        if (views_active() != VIEW_NONE) {
+            return (ApCmd){ "VISIT:esc_other", KEY_ESCAPE,
+                            assert_always_true };
+        }
+        AP_LOG("[mission] VISIT_TOWN done: siege=%d boat=%d gold=%d",
+               (int)g->stats.siege_weapons,
+               (int)g->boat.has_boat, g->stats.gold);
+        advance_to(st, MISSION_STARTUP_RECRUIT, g->position.zone);
+        return (ApCmd){ "VISIT:done", 0, assert_always_true };
+    }
+    if (views_town_info_text() != NULL) {
+        return (ApCmd){ "VISIT:space_info", KEY_SPACE,
+                        assert_always_true };
+    }
+    if (dialog_is_active()) {
+        return (ApCmd){ "VISIT:space", KEY_SPACE,
+                        assert_dialog_closed };
+    }
+    if (views_active() == VIEW_TOWN) {
+        if (need_siege) {
+            return (ApCmd){ "VISIT:e_siege", KEY_E,
+                            assert_always_true };
+        }
+        return (ApCmd){ "VISIT:b_boat", KEY_B,
+                        assert_always_true };
+    }
+    // Not in town yet — nav to nearest.
+    char tid[24];
+    if (!pick_nearest_town(g, m, tid, sizeof tid)) {
+        AP_LOG("[mission] VISIT_TOWN: no town in zone — HALT");
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_DONE;
+        return (ApCmd){ "VISIT:no_town", 0, assert_always_true };
+    }
+    return ap_nav_to_town(g, m, st, tid,
+                          (AutoplayPhase)0, (AutoplayPhase)0,
+                          out_phase_done, out_next_phase);
+}
+
+// MISSION_STARTUP_RECRUIT: walk to maximus castle, row-buy A..E with
+// 9999 each, exit.
+static ApCmd handle_startup_recruit(const Game *g, const Map *m,
+                                    AutoplayState *st,
+                                    bool *out_phase_done,
+                                    AutoplayPhase *out_next_phase) {
+    (void)m; (void)out_phase_done; (void)out_next_phase;
     int sub = st->mission_substep;
 
-    // Sub 0: wait for and dismiss intro dialog.
+    // sub 0: walk to gate (UP from spawn).
     if (sub == 0) {
-        if (dialog_is_active()) {
-            st->mission_substep = 1;
-            return (ApCmd){ "STARTUP:space", KEY_SPACE,
-                            assert_dialog_closed };
-        }
-        st->mission_substep = 1;
-        return (ApCmd){ "STARTUP:wait", 0, assert_always_true };
-    }
-    // Sub 1: walk up to the gate (2 ups from spawn = on gate).
-    if (sub == 1) {
         if (views_active() == VIEW_HOME_CASTLE) {
-            st->mission_substep = 2;
-            return (ApCmd){ "STARTUP:in_castle", 0,
+            st->mission_substep = 1;
+            return (ApCmd){ "STARTUP_RECRUIT:in_castle", 0,
                             assert_always_true };
         }
         if (dialog_is_active()) {
-            return (ApCmd){ "STARTUP:dlg", KEY_SPACE,
+            return (ApCmd){ "STARTUP_RECRUIT:dlg", KEY_SPACE,
                             assert_dialog_closed };
         }
-        return (ApCmd){ "STARTUP:up", KEY_UP, assert_always_true };
-    }
-    // Sub 2-3: open recruit, buy small starter army (pikemen+militia+
-    // archers — counts hand-tuned), exit.
-    if (sub == 2) {
-        if (views_active() == VIEW_RECRUIT_SOLDIERS) {
-            st->mission_substep = 3;
-            st->module_scratch[0] = 0;
-            return (ApCmd){ "STARTUP:in_recruit", 0,
+        // Heading to (11,57). Use ap_nav_step if not at gate-south.
+        if (g->position.x != 11 || g->position.y != 57) {
+            int key = ap_nav_step(g, m, 11, 57);
+            if (key == 0) {
+                return (ApCmd){ "STARTUP_RECRUIT:up", KEY_UP,
+                                assert_always_true };
+            }
+            return (ApCmd){ "STARTUP_RECRUIT:nav", key,
                             assert_always_true };
         }
-        return (ApCmd){ "STARTUP:a", KEY_A, assert_always_true };
+        return (ApCmd){ "STARTUP_RECRUIT:up", KEY_UP,
+                        assert_always_true };
     }
-    if (sub == 3) {
-        // Row-buy A..E with "9999" each. module_scratch[11] is
-        // encoded row*8 + ks; ks 0=letter, 1-3=9, 4=ENTER.
+    // sub 1: press A to open recruit.
+    if (sub == 1) {
+        if (views_active() == VIEW_RECRUIT_SOLDIERS) {
+            st->mission_substep = 2;
+            st->module_scratch[11] = 0;
+            return (ApCmd){ "STARTUP_RECRUIT:in_recruit", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "STARTUP_RECRUIT:a", KEY_A,
+                        assert_always_true };
+    }
+    // sub 2: row-buy loop.
+    if (sub == 2) {
         int s = st->module_scratch[11];
         if (s < 0) s = 0;
         int row = s >> 3;
         int ks  = s & 7;
         if (row >= 5) {
-            // All rows done — ESC out of recruit.
-            st->mission_substep = 4;
-            return (ApCmd){ "STARTUP:esc_recruit", KEY_ESCAPE,
-                            assert_always_true };
+            st->mission_substep = 3;
+            return (ApCmd){ "STARTUP_RECRUIT:esc_recruit",
+                            KEY_ESCAPE, assert_always_true };
         }
         switch (ks) {
         case 0: st->module_scratch[11] = (row << 3) | 1;
-            return (ApCmd){ "STARTUP:letter", KEY_A + row,
+            return (ApCmd){ "STARTUP_RECRUIT:letter", KEY_A + row,
                             assert_always_true };
         case 1: case 2: case 3:
             st->module_scratch[11] = (row << 3) | (ks + 1);
-            return (ApCmd){ "STARTUP:9", KEY_NINE,
+            return (ApCmd){ "STARTUP_RECRUIT:9", KEY_NINE,
                             assert_always_true };
         default:
             st->module_scratch[11] = ((row + 1) << 3) | 0;
-            return (ApCmd){ "STARTUP:enter", KEY_ENTER,
+            return (ApCmd){ "STARTUP_RECRUIT:enter", KEY_ENTER,
                             assert_always_true };
         }
     }
-    if (sub == 4) {
-        // ESC out of castle view.
-        if (views_active() == VIEW_NONE) {
-            advance_to(st, MISSION_SAFE_ACQUIRE, g->position.zone);
-            return (ApCmd){ "STARTUP:done", 0, assert_always_true };
-        }
-        return (ApCmd){ "STARTUP:esc_castle", KEY_ESCAPE,
+    // sub 3: ESC out of castle.
+    if (views_active() == VIEW_NONE) {
+        AP_LOG("[mission] STARTUP_RECRUIT done: gold=%d hp=%d",
+               g->stats.gold, ap_army_total_hp(g));
+        advance_to(st, MISSION_SAFE_ACQUIRE, g->position.zone);
+        return (ApCmd){ "STARTUP_RECRUIT:done", 0,
                         assert_always_true };
     }
-    advance_to(st, MISSION_SAFE_ACQUIRE, g->position.zone);
-    return (ApCmd){ "STARTUP:done", 0, assert_always_true };
+    return (ApCmd){ "STARTUP_RECRUIT:esc_castle", KEY_ESCAPE,
+                    assert_always_true };
 }
 
 // MISSION_SAFE_ACQUIRE: pick nearest acquisition tile not in foe
@@ -582,6 +652,16 @@ static ApCmd handle_monster_grind(const Game *g, const Map *m,
         advance_to(st, MISSION_VILLAIN_GRIND, zone);
         return (ApCmd){ "MONSTER:done", 0, assert_always_true };
     }
+    // Monster castles silently bounce the hero if siege_weapons==0.
+    // Divert to a town to buy siege (and a boat if missing).
+    if (!g->stats.siege_weapons && g->stats.gold > 3000) {
+        AP_LOG("[mission] MONSTER_GRIND: no siege weapons — "
+               "diverting to RENT_BOAT/SIEGE");
+        st->mission_resume_kind = MISSION_MONSTER_GRIND;
+        advance_to(st, MISSION_RENT_BOAT, zone);
+        return (ApCmd){ "MONSTER:divert_siege", 0,
+                        assert_always_true };
+    }
     // Use the existing nav-to-castle helper. After capture the engine
     // opens VIEW_OWN_CASTLE; the helper transitions out, we then
     // re-enter this mission and pick the next castle.
@@ -657,21 +737,26 @@ static ApCmd handle_villain_grind(const Game *g, const Map *m,
                             out_phase_done, out_next_phase);
 }
 
-// MISSION_RENT_BOAT: nav to nearest town, enter VIEW_TOWN, press B,
-// ESC out, then resume the original mission (mission_resume_kind).
+// MISSION_RENT_BOAT: nav to nearest town, enter VIEW_TOWN, buy
+// missing siege weapons + boat, ESC out, then resume the original
+// mission (mission_resume_kind).
 static ApCmd handle_rent_boat(const Game *g, const Map *m,
                               AutoplayState *st,
                               bool *out_phase_done,
                               AutoplayPhase *out_next_phase) {
     static char cmd[64];
-    // Already got a boat? Resume.
-    if (g->boat.has_boat) {
-        AP_LOG("[mission] RENT_BOAT done — boat=(%d,%d), "
+    const int siege_cost = g->res ? g->res->economy.siege_cost : 3000;
+    const int boat_cost  = g->res ? g->res->economy.boat_cost_normal : 500;
+    bool need_boat  = !g->boat.has_boat && g->stats.gold > boat_cost;
+    bool need_siege = !g->stats.siege_weapons &&
+                      g->stats.gold > siege_cost;
+    // All done (have what we wanted OR can't afford)? Resume.
+    if (!need_boat && !need_siege) {
+        AP_LOG("[mission] RENT_BOAT done — boat=(%d,%d) siege=1, "
                "resume=%d=%s",
                g->boat.x, g->boat.y,
                st->mission_resume_kind,
                ap_mission_name(st->mission_resume_kind));
-        // If we're still in VIEW_TOWN, ESC out first.
         if (views_active() == VIEW_TOWN) {
             return (ApCmd){ "RENT:esc_town", KEY_ESCAPE,
                             assert_always_true };
@@ -683,12 +768,20 @@ static ApCmd handle_rent_boat(const Game *g, const Map *m,
         advance_to(st, st->mission_resume_kind, st->mission_zone);
         return (ApCmd){ "RENT:done", 0, assert_always_true };
     }
+    if (views_town_info_text() != NULL) {
+        return (ApCmd){ "RENT:space_info", KEY_SPACE,
+                        assert_always_true };
+    }
     if (dialog_is_active()) {
         return (ApCmd){ "RENT:space", KEY_SPACE,
                         assert_dialog_closed };
     }
     if (views_active() == VIEW_TOWN) {
-        // In town — press B to rent.
+        // In town — buy siege first (E), then boat (B).
+        if (need_siege) {
+            return (ApCmd){ "RENT:e_siege", KEY_E,
+                            assert_always_true };
+        }
         return (ApCmd){ "RENT:b", KEY_B, assert_always_true };
     }
     // Find nearest town in current zone.
@@ -819,8 +912,14 @@ ApCmd ap_mission_tick(const Game *g, const Map *m,
                       bool *out_phase_done,
                       AutoplayPhase *out_next_phase) {
     switch (st->mission_kind) {
-    case MISSION_STARTUP:
-        return handle_startup(g, m, st, out_phase_done, out_next_phase);
+    case MISSION_INTRO:
+        return handle_intro(g, m, st, out_phase_done, out_next_phase);
+    case MISSION_VISIT_TOWN:
+        return handle_visit_town(g, m, st, out_phase_done,
+                                 out_next_phase);
+    case MISSION_STARTUP_RECRUIT:
+        return handle_startup_recruit(g, m, st, out_phase_done,
+                                      out_next_phase);
     case MISSION_ALCOVE:
         return handle_alcove(g, m, st, out_phase_done, out_next_phase);
     case MISSION_PATHS_END_SPELLS:

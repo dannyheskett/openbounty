@@ -29,7 +29,10 @@
 #include "autoplay/internal.h"
 
 typedef enum {
-    MISSION_STARTUP = 0,
+    MISSION_INTRO = 0,         // dismiss intro dialog
+    MISSION_VISIT_TOWN,        // BEFORE first recruit: nav to nearest town,
+                               // buy siege + boat with starter gold
+    MISSION_STARTUP_RECRUIT,   // first castle recruit (uses leftover gold)
     MISSION_ALCOVE,
     MISSION_PATHS_END_SPELLS,
     MISSION_GHOST_DWELLING,
@@ -39,8 +42,11 @@ typedef enum {
     MISSION_MONSTER_GRIND,
     MISSION_VILLAIN_GRIND,
     MISSION_SAIL_TO_NEXT,
-    MISSION_RENT_BOAT,   // detour: nav to nearest town, press B, resume
+    MISSION_RENT_BOAT,         // mid-run detour: town + buy missing
+                               //   siege/boat, then resume previous mission
     MISSION_DONE,
+    // Backward-compat alias — STARTUP used to be a combined intro+recruit.
+    MISSION_STARTUP = MISSION_INTRO,
 } MissionKind;
 
 // Dispatch one tick of the current mission. Reads st->mission_kind +
