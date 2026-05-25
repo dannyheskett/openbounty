@@ -779,7 +779,39 @@ static ApCmd handle_villain_grind(const Game *g, const Map *m,
                               (AutoplayPhase)0, (AutoplayPhase)0,
                               out_phase_done, out_next_phase);
     }
-    // Have correct contract — nav to villain's castle.
+    // Have correct contract. Refill army before engaging — even on
+    // the FIRST villain. The previous MONSTER_GRIND probably left
+    // the army depleted. Mirrors the MONSTER_GRIND refill check.
+    if (views_active() == VIEW_NONE && !dialog_is_active() &&
+        !prompt_is_active()) {
+        int castle_hp = 0;
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+            if (!cr->garrison[i].id[0] ||
+                cr->garrison[i].count == 0) continue;
+            const TroopDef *t = troop_by_id(cr->garrison[i].id);
+            if (t) castle_hp += t->hit_points * cr->garrison[i].count;
+        }
+        int my_hp = ap_army_total_hp(g);
+        int last_divert_gold = st->module_scratch[13];
+        bool needs_refill = (castle_hp > 0 &&
+                             my_hp * 2 < castle_hp * 3);
+        bool refill_was_noop = (last_divert_gold == g->stats.gold);
+        AP_LOG("[mission] VILLAIN_GRIND check: my_hp=%d castle=%d "
+               "(%s) needs=%d last_gold=%d gold=%d",
+               my_hp, castle_hp, cr->id,
+               (int)needs_refill, last_divert_gold, g->stats.gold);
+        if (needs_refill && !refill_was_noop) {
+            AP_LOG("[mission] VILLAIN_GRIND: divert to REHOME_RECRUIT");
+            st->module_scratch[13] = g->stats.gold;
+            st->mission_resume_kind = MISSION_VILLAIN_GRIND;
+            advance_to(st, MISSION_REHOME_RECRUIT, zone);
+            return (ApCmd){ "VILLAIN:divert_refill", 0,
+                            assert_always_true };
+        }
+        if (needs_refill) {
+            AP_LOG("[mission] VILLAIN_GRIND: refill exhausted, attack");
+        }
+    }
     return ap_nav_to_castle(g, m, st, cr->id,
                             (AutoplayPhase)0, (AutoplayPhase)0,
                             out_phase_done, out_next_phase);
