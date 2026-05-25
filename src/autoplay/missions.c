@@ -229,10 +229,15 @@ static bool pick_nearest_town(const Game *g, const Map *m,
 int ap_leadership_until_next_rank(const Game *g) {
     if (!g) return 0;
     const ClassDef *cls = class_by_id(g->character.cls.id);
-    if (!cls) return 0;
-    int r = g->character.cls.rank_index;
-    if (r + 1 >= cls->rank_count) return 0;
-    int target = cls->ranks[r + 1].leadership;
+    if (!cls || cls->rank_count == 0) return 0;
+    // Target the MAX leadership across all ranks (e.g. King at 500
+    // for Knight class). Take leadership chests until base reaches
+    // that ceiling, then always take gold.
+    int target = 0;
+    for (int i = 0; i < cls->rank_count; i++) {
+        if (cls->ranks[i].leadership > target)
+            target = cls->ranks[i].leadership;
+    }
     int have = g->stats.leadership_base;
     return (target > have) ? target - have : 0;
 }
