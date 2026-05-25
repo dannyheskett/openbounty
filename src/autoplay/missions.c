@@ -742,8 +742,8 @@ static ApCmd handle_villain_grind(const Game *g, const Map *m,
         return (ApCmd){ "VILLAIN:wrong_zone", 0,
                         assert_always_true };
     }
-    const CastleRecord *cr = ap_pick_next_villain(g, zone);
-    if (!cr) {
+    // Check if there are ANY uncaught villains left in this zone.
+    if (!ap_pick_next_villain(g, zone)) {
         AP_LOG("[mission] VILLAIN_GRIND done in %s", zone);
         for (int i = 0; i < g->res->zone_count && i < MAX_ZONES; i++) {
             if (strcmp(g->res->zones[i].id, zone) == 0) {
@@ -753,10 +753,30 @@ static ApCmd handle_villain_grind(const Game *g, const Map *m,
         advance_to(st, MISSION_SAIL_TO_NEXT, "");
         return (ApCmd){ "VILLAIN:done", 0, assert_always_true };
     }
-    // Have contract for this villain? Otherwise go take one.
-    if (!g->contract.active_id[0] ||
-        strcmp(g->contract.active_id, cr->villain_id) != 0) {
-        // Take a contract at any town in zone.
+    // Don't pre-pick a specific villain — the contract cycle decides
+    // who we get. Accept any contract whose villain lives in this
+    // zone, then attack THAT villain's castle.
+    const CastleRecord *cr = NULL;
+    if (g->contract.active_id[0]) {
+        const VillainDef *v = villain_by_id(g->contract.active_id);
+        if (v && strcmp(v->zone, zone) == 0) {
+            // Find the castle for this contracted villain.
+            for (int i = 0; i < GAME_CASTLES; i++) {
+                if (g->castles[i].owner_kind != CASTLE_OWNER_VILLAIN)
+                    continue;
+                if (strcmp(g->castles[i].villain_id,
+                           g->contract.active_id) == 0) {
+                    cr = &g->castles[i];
+                    break;
+                }
+            }
+        }
+    }
+    if (!cr) {
+        // No usable contract — go to a town and take one.
+        AP_LOG("[mission] VILLAIN: contract=%s — need zone-%s contract",
+               g->contract.active_id[0] ? g->contract.active_id : "(none)",
+               zone);
         int tx, ty;
         char tid[24];
         if (!ap_pick_any_town(m, &tx, &ty, tid, sizeof tid)) {
@@ -770,7 +790,6 @@ static ApCmd handle_villain_grind(const Game *g, const Map *m,
             return (ApCmd){ "VILLAIN:no_town", 0,
                             assert_always_true };
         }
-        // In town view: take contract for zone.
         if (views_active() == VIEW_TOWN) {
             char action[48];
             snprintf(action, sizeof action, "contract_zone:%s", zone);
@@ -778,7 +797,6 @@ static ApCmd handle_villain_grind(const Game *g, const Map *m,
                                   (AutoplayPhase)0, (AutoplayPhase)0,
                                   out_phase_done, out_next_phase);
         }
-        // Not in town — nav there.
         return ap_nav_to_town(g, m, st, tid,
                               (AutoplayPhase)0, (AutoplayPhase)0,
                               out_phase_done, out_next_phase);
