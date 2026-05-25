@@ -831,14 +831,17 @@ ApCmd ap_town_action(const Game *g, const Map *m,
                         ap_macro_assert_dialog_closed };
     }
 
-    if (views_active() == VIEW_NONE) {
-        // We've exited the town view — advance.
+    // "exit" handles VIEW_NONE itself. For all other actions, if the
+    // town view is gone we can't drive a row, so we just advance.
+    if (views_active() == VIEW_NONE &&
+        strcmp(action_kind, "exit") != 0) {
         *out_phase_done = true;
         *out_next_phase = next_phase;
-        snprintf(cmd_buf, sizeof cmd_buf, "%s:done", label_buf);
+        snprintf(cmd_buf, sizeof cmd_buf, "%s:no_view", label_buf);
         return (ApCmd){ cmd_buf, 0, ap_macro_assert_always };
     }
-    if (views_active() != VIEW_TOWN) {
+    if (views_active() != VIEW_TOWN &&
+        views_active() != VIEW_NONE) {
         // Some other view (recruit, castle, dwelling, etc.) — ESC.
         snprintf(cmd_buf, sizeof cmd_buf, "%s:esc_other", label_buf);
         return (ApCmd){ cmd_buf, KEY_ESCAPE,
@@ -847,31 +850,34 @@ ApCmd ap_town_action(const Game *g, const Map *m,
 
     if (strcmp(action_kind, "siege") == 0) {
         if (g->stats.siege_weapons) {
-            // Done — exit town.
-            snprintf(cmd_buf, sizeof cmd_buf, "%s:esc_done",
+            // Already done — advance.
+            *out_phase_done = true;
+            *out_next_phase = next_phase;
+            snprintf(cmd_buf, sizeof cmd_buf, "%s:already",
                      label_buf);
-            return (ApCmd){ cmd_buf, KEY_ESCAPE,
-                            ap_macro_assert_always };
+            return (ApCmd){ cmd_buf, 0, ap_macro_assert_always };
         }
         snprintf(cmd_buf, sizeof cmd_buf, "%s:e", label_buf);
         return (ApCmd){ cmd_buf, KEY_E, ap_macro_assert_always };
     }
     if (strcmp(action_kind, "boat") == 0) {
         if (g->boat.has_boat) {
-            snprintf(cmd_buf, sizeof cmd_buf, "%s:esc_done",
+            *out_phase_done = true;
+            *out_next_phase = next_phase;
+            snprintf(cmd_buf, sizeof cmd_buf, "%s:already",
                      label_buf);
-            return (ApCmd){ cmd_buf, KEY_ESCAPE,
-                            ap_macro_assert_always };
+            return (ApCmd){ cmd_buf, 0, ap_macro_assert_always };
         }
         snprintf(cmd_buf, sizeof cmd_buf, "%s:b", label_buf);
         return (ApCmd){ cmd_buf, KEY_B, ap_macro_assert_always };
     }
     if (strcmp(action_kind, "contract") == 0) {
         if (g->contract.active_id[0]) {
-            snprintf(cmd_buf, sizeof cmd_buf, "%s:esc_done",
+            *out_phase_done = true;
+            *out_next_phase = next_phase;
+            snprintf(cmd_buf, sizeof cmd_buf, "%s:already",
                      label_buf);
-            return (ApCmd){ cmd_buf, KEY_ESCAPE,
-                            ap_macro_assert_always };
+            return (ApCmd){ cmd_buf, 0, ap_macro_assert_always };
         }
         snprintf(cmd_buf, sizeof cmd_buf, "%s:a", label_buf);
         return (ApCmd){ cmd_buf, KEY_A, ap_macro_assert_always };
@@ -882,15 +888,30 @@ ApCmd ap_town_action(const Game *g, const Map *m,
             const VillainDef *v =
                 villain_by_id(g->contract.active_id);
             if (v && strcmp(v->zone, want_zone) == 0) {
-                snprintf(cmd_buf, sizeof cmd_buf, "%s:esc_done",
+                *out_phase_done = true;
+                *out_next_phase = next_phase;
+                snprintf(cmd_buf, sizeof cmd_buf, "%s:got",
                          label_buf);
-                return (ApCmd){ cmd_buf, KEY_ESCAPE,
+                return (ApCmd){ cmd_buf, 0,
                                 ap_macro_assert_always };
             }
             // Wrong zone — press A again to reroll.
         }
         snprintf(cmd_buf, sizeof cmd_buf, "%s:a", label_buf);
         return (ApCmd){ cmd_buf, KEY_A, ap_macro_assert_always };
+    }
+    if (strcmp(action_kind, "exit") == 0) {
+        // Just ESC out (helper for chaining at the end).
+        if (views_active() == VIEW_NONE) {
+            *out_phase_done = true;
+            *out_next_phase = next_phase;
+            snprintf(cmd_buf, sizeof cmd_buf, "%s:exited",
+                     label_buf);
+            return (ApCmd){ cmd_buf, 0, ap_macro_assert_always };
+        }
+        snprintf(cmd_buf, sizeof cmd_buf, "%s:esc", label_buf);
+        return (ApCmd){ cmd_buf, KEY_ESCAPE,
+                        ap_macro_assert_always };
     }
 
     // Unknown action — just exit.
@@ -1135,7 +1156,11 @@ ApCmd ap_recruit_at_dwelling(const Game *g, const Map *m,
                         ap_macro_assert_dialog_closed };
     }
 
-    // Find the dwelling tile by id.
+    // Find the dwelling tile. dwelling_id can be either the exact
+    // salted id ("sd_dwarves_3") or just the troop name ("dwarves") —
+    // we accept either by prefix match against "sd_<troop>_".
+    char prefix[32];
+    snprintf(prefix, sizeof prefix, "sd_%s_", troop_id);
     int dx = -1, dy = -1;
     for (int y = 0; y < m->height && dx < 0; y++) {
         for (int x = 0; x < m->width; x++) {
@@ -1144,15 +1169,19 @@ ApCmd ap_recruit_at_dwelling(const Game *g, const Map *m,
                 t->interactive == INTERACT_DWELLING_FOREST ||
                 t->interactive == INTERACT_DWELLING_HILLS ||
                 t->interactive == INTERACT_DWELLING_DUNGEON) {
-                if (strcmp(t->id, dwelling_id) == 0) {
+                if (dwelling_id && dwelling_id[0] &&
+                    strcmp(t->id, dwelling_id) == 0) {
+                    dx = x; dy = y; break;
+                }
+                if (strncmp(t->id, prefix, strlen(prefix)) == 0) {
                     dx = x; dy = y; break;
                 }
             }
         }
     }
     if (dx < 0) {
-        AP_LOG("[%s] dwelling '%s' not found — advancing",
-               label_buf, dwelling_id);
+        AP_LOG("[%s] no dwelling for '%s' — advancing",
+               label_buf, troop_id);
         *out_phase_done = true;
         *out_next_phase = next_phase;
         snprintf(cmd_buf, sizeof cmd_buf, "%s:no_dwell", label_buf);

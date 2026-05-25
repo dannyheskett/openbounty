@@ -35,7 +35,8 @@
 
 typedef enum {
     AP_FLOW_FIRST = 0,
-    // Startup: intro → enter home castle → buy starting army → exit.
+
+    // ---- PHASE 1: game start (intro + first recruit) ------------
     AP_FLOW_DISMISS_INTRO = AP_FLOW_FIRST,
     AP_FLOW_WALK_TO_GATE,
     AP_FLOW_STEP_ONTO_GATE,
