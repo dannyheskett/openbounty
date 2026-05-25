@@ -547,10 +547,9 @@ static ApCmd handle_rehome_recruit(const Game *g, const Map *m,
                                    AutoplayState *st,
                                    bool *out_phase_done,
                                    AutoplayPhase *out_next_phase) {
-    // Reserve 1000g so recruitment leaves headroom for the weekly
-    // boat-upkeep floor (500g) plus a few weeks of travel between
-    // bounties.
-    ApCmd r = ap_rehome_and_recruit(g, m, st, /*reserve=*/1000,
+    // Reserve handled by the recruit screen's RECRUIT_GOLD_RESERVE
+    // constant (1000g); no need to gate at row-start.
+    ApCmd r = ap_rehome_and_recruit(g, m, st, /*reserve=*/0,
         (AutoplayPhase)0, (AutoplayPhase)0,
         out_phase_done, out_next_phase);
     if (*out_phase_done) {

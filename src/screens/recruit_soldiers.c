@@ -140,9 +140,11 @@ void screen_recruit_soldiers_open(Game *g) {
 // The commit path's silent-clamp uses this s_max, so by bounding
 // here we prevent the "no gold" error that fires when entering a
 // leadership-allowed count that exceeds the wallet.
-// Small buffer so a max-out recruit doesn't immediately trigger a
-// no-gold boat repossession on the next week boundary.
-#define RECRUIT_GOLD_RESERVE 500
+// Buffer left after a max-out recruit. Must cover several weeks of
+// boat upkeep (500/week) plus the recruit's own week-end deduction,
+// so the engine doesn't silently repossess the boat on the next
+// week boundary.
+#define RECRUIT_GOLD_RESERVE 1000
 static int recompute_max(const Game *g, int slot) {
     if (slot < 0 || slot >= s_pool_count) return 0;
     const TroopDef *t = troop_by_index(s_pool[slot]);
