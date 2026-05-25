@@ -194,18 +194,19 @@ int ap_nav_step(const Game *g, const Map *m, int goal_x, int goal_y) {
                             goal_x, goal_y, /*flags=*/0u);
     if (key) return key;
 
-    // No path. If the hero is on foot without a boat, the OLD
-    // behavior was to route to the nearest town to auto-rent. That
-    // produces an infinite KEY_LEFT/KEY_DOWN loop because:
-    //   1. The hero bounces off the town tile (engine pushes
-    //      VIEW_TOWN + bounce_back).
-    //   2. The caller doesn't handle VIEW_TOWN (or just ESCs out
-    //      without renting).
-    //   3. Next tick BFS still has no boat → fallback returns the
-    //      same town-direction key → repeat.
-    //
-    // User directive: never loop on this. Return 0 (no path); the
-    // dispatcher's assertion failure will terminate the autoplay.
+    // No path. Log enough context to diagnose: where we are, where
+    // we tried to go, mode, boat ownership, and the destination tile
+    // properties. User directive: never loop on this — caller treats
+    // 0 as "stuck" and halts.
+    const Tile *gt = MapGetTile(m, goal_x, goal_y);
+    AP_LOG("[nav] no path from (%d,%d) to (%d,%d) mode=%d boat=%d "
+           "boat_at=(%d,%d) goal_terrain=%d goal_interact=%d "
+           "goal_id='%s'",
+           g->position.x, g->position.y, goal_x, goal_y, mode,
+           (int)g->boat.has_boat, g->boat.x, g->boat.y,
+           gt ? (int)gt->terrain : -1,
+           gt ? (int)gt->interactive : -1,
+           gt ? gt->id : "?");
     return 0;
 }
 
@@ -217,8 +218,14 @@ int ap_nav_step_avoiding_foes(const Game *g, const Map *m,
     if (!g || !m) return 0;
     if (g->position.x == goal_x && g->position.y == goal_y) return 0;
     int mode = (g->travel_mode == TRAVEL_BOAT) ? 1 : 0;
-    return bfs_multimode(m, g, g->position.x, g->position.y, mode,
-                         goal_x, goal_y, NAV_AVOID_FOES);
+    int key = bfs_multimode(m, g, g->position.x, g->position.y, mode,
+                            goal_x, goal_y, NAV_AVOID_FOES);
+    if (!key) {
+        AP_LOG("[nav] no foe-safe path from (%d,%d) to (%d,%d) "
+               "mode=%d", g->position.x, g->position.y,
+               goal_x, goal_y, mode);
+    }
+    return key;
 }
 
 // Public entry point — like ap_nav_step_avoiding_foes, but also

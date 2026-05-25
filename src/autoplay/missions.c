@@ -405,6 +405,13 @@ static ApCmd handle_safe_acquire(const Game *g, const Map *m,
         }
         st->module_scratch[14] = tx;
         st->module_scratch[15] = ty;
+        const Tile *gt = MapGetTile(m, tx, ty);
+        AP_LOG("[mission] SAFE_ACQUIRE new target (%d,%d) "
+               "interact=%d id='%s' from pos=(%d,%d)",
+               tx, ty,
+               gt ? (int)gt->interactive : -1,
+               gt ? gt->id : "?",
+               g->position.x, g->position.y);
     }
     int key = ap_nav_step_avoiding_foes(g, m, tx, ty);
     if (key == 0) {
@@ -485,6 +492,13 @@ static ApCmd handle_chest_grind(const Game *g, const Map *m,
         }
         st->module_scratch[14] = tx;
         st->module_scratch[15] = ty;
+        const Tile *gt = MapGetTile(m, tx, ty);
+        AP_LOG("[mission] CHEST_GRIND new target (%d,%d) "
+               "interact=%d id='%s' from pos=(%d,%d)",
+               tx, ty,
+               gt ? (int)gt->interactive : -1,
+               gt ? gt->id : "?",
+               g->position.x, g->position.y);
     }
     int key = ap_nav_step(g, m, tx, ty);
     if (key == 0) {
@@ -492,6 +506,23 @@ static ApCmd handle_chest_grind(const Game *g, const Map *m,
                "boat=%d — HALT",
                tx, ty, g->position.x, g->position.y,
                (int)g->boat.has_boat);
+        // Dump the 4 cardinal neighbors of the hero so we can see
+        // why no step is walkable.
+        for (int i = 0; i < 4; i++) {
+            static const int ddx[4] = {0, 0, -1, 1};
+            static const int ddy[4] = {-1, 1, 0, 0};
+            int nx = g->position.x + ddx[i];
+            int ny = g->position.y + ddy[i];
+            const Tile *nt = MapGetTile(m, nx, ny);
+            if (!nt) {
+                AP_LOG("[mission]   neighbor (%d,%d): off-map", nx, ny);
+                continue;
+            }
+            AP_LOG("[mission]   neighbor (%d,%d): terrain=%d "
+                   "interact=%d id='%s'",
+                   nx, ny, (int)nt->terrain, (int)nt->interactive,
+                   nt->id);
+        }
         *out_phase_done = true;
         *out_next_phase = AP_FLOW_DONE;
         return (ApCmd){ "GRIND:no_path_halt", 0,
