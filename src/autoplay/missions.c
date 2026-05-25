@@ -487,11 +487,14 @@ static ApCmd handle_chest_grind(const Game *g, const Map *m,
     }
     int key = ap_nav_step(g, m, tx, ty);
     if (key == 0) {
-        AP_LOG("[mission] GRIND: no path to (%d,%d) — skip", tx, ty);
-        st->module_scratch[14] = -1;
-        st->module_scratch[15] = -1;
-        advance_to(st, MISSION_MONSTER_GRIND, zone);
-        return (ApCmd){ "GRIND:no_path", 0, assert_always_true };
+        AP_LOG("[mission] GRIND: no path to (%d,%d) from (%d,%d) "
+               "boat=%d — HALT",
+               tx, ty, g->position.x, g->position.y,
+               (int)g->boat.has_boat);
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_DONE;
+        return (ApCmd){ "GRIND:no_path_halt", 0,
+                        assert_always_true };
     }
     snprintf(cmd, sizeof cmd, "GRIND:nav(%d,%d)", tx, ty);
     return (ApCmd){ cmd, key, assert_always_true };
