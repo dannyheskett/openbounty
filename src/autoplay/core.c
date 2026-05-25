@@ -589,12 +589,12 @@ static ShellRunVerdict autoplay_per_tick(ShellRunHooks *self,
     if (phase_done) st->phase = next_phase;
 
     AP_LOG("tick=%d mission=%s zone=%s cmd='%s' key=%d done=%d "
-           "pos=(%d,%d) gold=%d hp=%d",
+           "pos=(%d,%d) gold=%d hp=%d lead=%d",
            st->tick, ap_mission_name(st->mission_kind),
            st->mission_zone[0] ? st->mission_zone : "-",
            cmd.name ? cmd.name : "(unnamed)", cmd.key, (int)phase_done,
            g->position.x, g->position.y, g->stats.gold,
-           ap_army_total_hp(g));
+           ap_army_total_hp(g), g->stats.leadership_base);
     (void)phase_in;
 
     return SHELL_RUN_CONTINUE;
