@@ -547,7 +547,10 @@ static ApCmd handle_rehome_recruit(const Game *g, const Map *m,
                                    AutoplayState *st,
                                    bool *out_phase_done,
                                    AutoplayPhase *out_next_phase) {
-    ApCmd r = ap_rehome_and_recruit(g, m, st, /*reserve=*/0,
+    // Keep at least 2000g in reserve. Boat upkeep is 500/week and
+    // travel between REHOMEs can span several weeks; the reserve
+    // must cover all weekly deductions until the next bounty.
+    ApCmd r = ap_rehome_and_recruit(g, m, st, /*reserve=*/2000,
         (AutoplayPhase)0, (AutoplayPhase)0,
         out_phase_done, out_next_phase);
     if (*out_phase_done) {
@@ -695,15 +698,17 @@ static ApCmd handle_monster_grind(const Game *g, const Map *m,
         // for this castle and attack.
         bool needs_refill = (castle_hp > 0 &&
                              my_hp * 2 < castle_hp * 3);
-        int last_divert_gold = st->module_scratch[13];
-        bool refill_was_noop = (last_divert_gold == g->stats.gold);
+        int last_divert_hp = st->module_scratch[13];
+        // If we already diverted at this exact HP, recruit was a
+        // no-op (cap reached) — skip further diverts and attack.
+        bool refill_was_noop = (last_divert_hp == my_hp);
         AP_LOG("[mission] MONSTER_GRIND check: my_hp=%d castle=%d "
-               "(%s) needs=%d last_gold=%d gold=%d",
+               "(%s) needs=%d last_hp=%d",
                my_hp, castle_hp, cr->id,
-               (int)needs_refill, last_divert_gold, g->stats.gold);
+               (int)needs_refill, last_divert_hp);
         if (needs_refill && !refill_was_noop) {
             AP_LOG("[mission] MONSTER_GRIND: divert to REHOME_RECRUIT");
-            st->module_scratch[13] = g->stats.gold;
+            st->module_scratch[13] = my_hp;
             st->mission_resume_kind = MISSION_MONSTER_GRIND;
             advance_to(st, MISSION_REHOME_RECRUIT, zone);
             return (ApCmd){ "MONSTER:divert_refill", 0,
@@ -792,17 +797,19 @@ static ApCmd handle_villain_grind(const Game *g, const Map *m,
             if (t) castle_hp += t->hit_points * cr->garrison[i].count;
         }
         int my_hp = ap_army_total_hp(g);
-        int last_divert_gold = st->module_scratch[13];
+        int last_divert_hp = st->module_scratch[13];
         bool needs_refill = (castle_hp > 0 &&
                              my_hp * 2 < castle_hp * 3);
-        bool refill_was_noop = (last_divert_gold == g->stats.gold);
+        // If we already diverted at this same HP, the recruit was a
+        // no-op (army at leadership cap) — don't divert again.
+        bool refill_was_noop = (last_divert_hp == my_hp);
         AP_LOG("[mission] VILLAIN_GRIND check: my_hp=%d castle=%d "
-               "(%s) needs=%d last_gold=%d gold=%d",
+               "(%s) needs=%d last_hp=%d",
                my_hp, castle_hp, cr->id,
-               (int)needs_refill, last_divert_gold, g->stats.gold);
+               (int)needs_refill, last_divert_hp);
         if (needs_refill && !refill_was_noop) {
             AP_LOG("[mission] VILLAIN_GRIND: divert to REHOME_RECRUIT");
-            st->module_scratch[13] = g->stats.gold;
+            st->module_scratch[13] = my_hp;
             st->mission_resume_kind = MISSION_VILLAIN_GRIND;
             advance_to(st, MISSION_REHOME_RECRUIT, zone);
             return (ApCmd){ "VILLAIN:divert_refill", 0,
