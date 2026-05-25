@@ -215,7 +215,7 @@ int ap_leadership_until_next_rank(const Game *g) {
 // Mission dispatcher
 // -------------------------------------------------------------------------
 
-static const char *mission_name(int k) {
+const char *ap_mission_name(int k) {
     switch (k) {
     case MISSION_STARTUP:           return "STARTUP";
     case MISSION_ALCOVE:            return "ALCOVE";
@@ -231,6 +231,7 @@ static const char *mission_name(int k) {
     }
     return "?";
 }
+#define mission_name(k) ap_mission_name(k)
 
 static void advance_to(AutoplayState *st, int mission, const char *zone) {
     st->mission_kind = mission;

@@ -53,6 +53,9 @@ ApCmd ap_mission_tick(const Game *g, const Map *m,
 // Initialize the solver state to start of mission queue.
 void ap_mission_reset(AutoplayState *st);
 
+// Symbolic name of a MissionKind value (for logging).
+const char *ap_mission_name(int kind);
+
 // =========================================================================
 // Runtime queries — used by missions to decide what to do.
 // =========================================================================
