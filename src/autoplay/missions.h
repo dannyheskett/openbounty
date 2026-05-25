@@ -39,6 +39,7 @@ typedef enum {
     MISSION_MONSTER_GRIND,
     MISSION_VILLAIN_GRIND,
     MISSION_SAIL_TO_NEXT,
+    MISSION_RENT_BOAT,   // detour: nav to nearest town, press B, resume
     MISSION_DONE,
 } MissionKind;
 

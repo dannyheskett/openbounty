@@ -384,6 +384,8 @@ struct AutoplayState {
     int  mission_substep;          // per-mission internal step
     char mission_zone[24];         // zone the current mission targets
     bool zone_solved[4];           // VILLAIN_GRIND done flag per zone
+    int  mission_resume_kind;      // mission to resume after a detour
+                                   // (e.g. RENT_BOAT returns control)
 
     // Pre-tick snapshot — captured by the dispatcher BEFORE setting
     // the live key. Predicates read these via ap_pre_* globals to

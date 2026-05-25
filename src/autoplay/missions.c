@@ -200,6 +200,32 @@ bool ap_pick_any_town(const Map *m, int *out_x, int *out_y,
     return false;
 }
 
+// Pick the town nearest the hero in the current zone.
+static bool pick_nearest_town(const Game *g, const Map *m,
+                              char *out_id, int id_cap) {
+    if (!g || !m) return false;
+    int best_d = -1;
+    int best_x = -1, best_y = -1;
+    const char *best_id = NULL;
+    for (int y = 0; y < m->height; y++) {
+        for (int x = 0; x < m->width; x++) {
+            const Tile *t = &m->tiles[y][x];
+            if (t->interactive != INTERACT_TOWN) continue;
+            int d = manhattan(g->position.x, g->position.y, x, y);
+            if (best_d < 0 || d < best_d) {
+                best_d = d; best_x = x; best_y = y;
+                best_id = t->id;
+            }
+        }
+    }
+    if (best_d < 0) return false;
+    (void)best_x; (void)best_y;
+    int k = 0;
+    while (k + 1 < id_cap && best_id[k]) { out_id[k] = best_id[k]; k++; }
+    out_id[k] = '\0';
+    return true;
+}
+
 int ap_leadership_until_next_rank(const Game *g) {
     if (!g) return 0;
     const ClassDef *cls = class_by_id(g->character.cls.id);
@@ -227,6 +253,7 @@ const char *ap_mission_name(int k) {
     case MISSION_MONSTER_GRIND:     return "MONSTER_GRIND";
     case MISSION_VILLAIN_GRIND:     return "VILLAIN_GRIND";
     case MISSION_SAIL_TO_NEXT:      return "SAIL_TO_NEXT";
+    case MISSION_RENT_BOAT:         return "RENT_BOAT";
     case MISSION_DONE:              return "DONE";
     }
     return "?";
@@ -415,6 +442,17 @@ static ApCmd handle_safe_acquire(const Game *g, const Map *m,
     }
     int key = ap_nav_step_avoiding_foes(g, m, tx, ty);
     if (key == 0) {
+        if (!g->boat.has_boat && g->stats.gold > 500) {
+            st->mission_resume_kind = MISSION_SAFE_ACQUIRE;
+            AP_LOG("[mission] SAFE: no foe-safe path to (%d,%d) "
+                   "boat=0 — diverting to RENT_BOAT "
+                   "(resume=%d=%s)", tx, ty,
+                   st->mission_resume_kind,
+                   ap_mission_name(st->mission_resume_kind));
+            advance_to(st, MISSION_RENT_BOAT, zone);
+            return (ApCmd){ "SAFE:divert_rent", 0,
+                            assert_always_true };
+        }
         AP_LOG("[mission] SAFE: no safe path to (%d,%d) — advancing",
                tx, ty);
         st->module_scratch[14] = -1;
@@ -502,27 +540,21 @@ static ApCmd handle_chest_grind(const Game *g, const Map *m,
     }
     int key = ap_nav_step(g, m, tx, ty);
     if (key == 0) {
-        AP_LOG("[mission] GRIND: no path to (%d,%d) from (%d,%d) "
-               "boat=%d — HALT",
-               tx, ty, g->position.x, g->position.y,
-               (int)g->boat.has_boat);
-        // Dump the 4 cardinal neighbors of the hero so we can see
-        // why no step is walkable.
-        for (int i = 0; i < 4; i++) {
-            static const int ddx[4] = {0, 0, -1, 1};
-            static const int ddy[4] = {-1, 1, 0, 0};
-            int nx = g->position.x + ddx[i];
-            int ny = g->position.y + ddy[i];
-            const Tile *nt = MapGetTile(m, nx, ny);
-            if (!nt) {
-                AP_LOG("[mission]   neighbor (%d,%d): off-map", nx, ny);
-                continue;
-            }
-            AP_LOG("[mission]   neighbor (%d,%d): terrain=%d "
-                   "interact=%d id='%s'",
-                   nx, ny, (int)nt->terrain, (int)nt->interactive,
-                   nt->id);
+        // No path. If hero has no boat, try renting one — the goal
+        // might be reachable via water. Otherwise halt.
+        if (!g->boat.has_boat && g->stats.gold > 500) {
+            AP_LOG("[mission] GRIND: no path to (%d,%d) from (%d,%d) "
+                   "boat=0 — diverting to RENT_BOAT",
+                   tx, ty, g->position.x, g->position.y);
+            st->mission_resume_kind = MISSION_CHEST_GRIND;
+            advance_to(st, MISSION_RENT_BOAT, zone);
+            return (ApCmd){ "GRIND:divert_rent", 0,
+                            assert_always_true };
         }
+        AP_LOG("[mission] GRIND: no path to (%d,%d) from (%d,%d) "
+               "boat=%d gold=%d — HALT",
+               tx, ty, g->position.x, g->position.y,
+               (int)g->boat.has_boat, g->stats.gold);
         *out_phase_done = true;
         *out_next_phase = AP_FLOW_DONE;
         return (ApCmd){ "GRIND:no_path_halt", 0,
@@ -623,6 +655,63 @@ static ApCmd handle_villain_grind(const Game *g, const Map *m,
     return ap_nav_to_castle(g, m, st, cr->id,
                             (AutoplayPhase)0, (AutoplayPhase)0,
                             out_phase_done, out_next_phase);
+}
+
+// MISSION_RENT_BOAT: nav to nearest town, enter VIEW_TOWN, press B,
+// ESC out, then resume the original mission (mission_resume_kind).
+static ApCmd handle_rent_boat(const Game *g, const Map *m,
+                              AutoplayState *st,
+                              bool *out_phase_done,
+                              AutoplayPhase *out_next_phase) {
+    static char cmd[64];
+    // Already got a boat? Resume.
+    if (g->boat.has_boat) {
+        AP_LOG("[mission] RENT_BOAT done — boat=(%d,%d), "
+               "resume=%d=%s",
+               g->boat.x, g->boat.y,
+               st->mission_resume_kind,
+               ap_mission_name(st->mission_resume_kind));
+        // If we're still in VIEW_TOWN, ESC out first.
+        if (views_active() == VIEW_TOWN) {
+            return (ApCmd){ "RENT:esc_town", KEY_ESCAPE,
+                            assert_always_true };
+        }
+        if (views_active() != VIEW_NONE) {
+            return (ApCmd){ "RENT:esc_other", KEY_ESCAPE,
+                            assert_always_true };
+        }
+        advance_to(st, st->mission_resume_kind, st->mission_zone);
+        return (ApCmd){ "RENT:done", 0, assert_always_true };
+    }
+    if (dialog_is_active()) {
+        return (ApCmd){ "RENT:space", KEY_SPACE,
+                        assert_dialog_closed };
+    }
+    if (views_active() == VIEW_TOWN) {
+        // In town — press B to rent.
+        return (ApCmd){ "RENT:b", KEY_B, assert_always_true };
+    }
+    // Find nearest town in current zone.
+    char tid[24];
+    if (!pick_nearest_town(g, m, tid, sizeof tid)) {
+        AP_LOG("[mission] RENT_BOAT: no town in zone — HALT");
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_DONE;
+        return (ApCmd){ "RENT:no_town", 0, assert_always_true };
+    }
+    ApCmd r = ap_nav_to_town(g, m, st, tid,
+                             (AutoplayPhase)0, (AutoplayPhase)0,
+                             out_phase_done, out_next_phase);
+    // ap_nav_to_town sets out_phase_done when VIEW_TOWN opens; we
+    // suppress the transition so the next tick re-enters
+    // handle_rent_boat with VIEW_TOWN active.
+    if (*out_phase_done) {
+        *out_phase_done = false;
+        *out_next_phase = st->phase;
+    }
+    snprintf(cmd, sizeof cmd, "RENT:nav[%s]", tid);
+    (void)cmd;
+    return r;
 }
 
 // MISSION_SAIL_TO_NEXT: pick next discovered unsolved zone, sail.
@@ -758,6 +847,9 @@ ApCmd ap_mission_tick(const Game *g, const Map *m,
     case MISSION_SAIL_TO_NEXT:
         return handle_sail_to_next(g, m, st, out_phase_done,
                                    out_next_phase);
+    case MISSION_RENT_BOAT:
+        return handle_rent_boat(g, m, st, out_phase_done,
+                                out_next_phase);
     case MISSION_DONE: default:
         *out_phase_done = true;
         *out_next_phase = AP_FLOW_DONE;
