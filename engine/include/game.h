@@ -21,7 +21,12 @@
 #define GAME_CONTINENTS       4
 #define GAME_TOWNS           26
 #define GAME_CASTLES         26
-#define GAME_MAX_MUTATIONS   64    // claimed artifacts, opened chests, etc.
+#define GAME_MAX_MUTATIONS 1024    // claimed artifacts, opened chests, etc.
+                                   // Was 64, but a 4-continent playthrough
+                                   // collects 50+ chests per continent;
+                                   // hitting the cap silently drops new
+                                   // consumed entries and chests respawn
+                                   // on zone re-entry.
 #define GAME_MAX_DWELLINGS   64    // per-zone dwelling state rows
 #define GAME_MAX_PLACEMENTS 128    // randomized objects stamped per-zone at init
 #define GAME_MAX_FOES        64    // per-zone hostile foe state rows

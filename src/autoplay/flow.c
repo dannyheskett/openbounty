@@ -401,6 +401,9 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 resume != AP_FLOW_PHASE11_NAV_HOME &&
                 resume != AP_FLOW_PHASE12_NAV_TO_SEA &&
                 resume != AP_FLOW_PHASE12_TOUR &&
+                resume != AP_FLOW_PHASE12_MID_RETURN_SPAWN &&
+                resume != AP_FLOW_PHASE12_MID_NAV_HOME &&
+                resume != AP_FLOW_PHASE12_MID_NAV_SEA &&
                 resume != AP_FLOW_PHASE12_RETURN_TO_SPAWN &&
                 resume != AP_FLOW_PHASE12_NAV_HOME &&
                 resume != AP_FLOW_PHASE13_NAV_TO_SEA &&
@@ -3973,6 +3976,10 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
             return (ApCmd){ "PHASE12_NAV_TO_SEA:space_dialog",
                             KEY_SPACE, assert_dialog_closed };
         }
+        if (views_active() == VIEW_TOWN) {
+            return (ApCmd){ "PHASE12_NAV_TO_SEA:esc_town", KEY_ESCAPE,
+                            assert_always_true };
+        }
         // Target an open-sea tile south of home castle. (12,62) is in
         // the bay; if it's blocked we fall back to the boat's last
         // parked location and try from there.
@@ -4060,16 +4067,52 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                 return (ApCmd){ "PHASE12_TOUR:enter_dismiss",
                                 KEY_ENTER, assert_prompt_gone };
             }
-            return (ApCmd){ "PHASE12_TOUR:b_chest", KEY_B,
+            // ab prompt (chest gold-or-leadership): always take A
+            // (gold). Phase 12 funds the Continentia mid-tour
+            // re-recruit + weekly boat upkeep across the long
+            // chest tour — running out of gold leaves the boat
+            // repossessed (engine/game.c:914) and ap_nav_step's
+            // town-rental fallback (autoplay/nav.c:381) traps the
+            // hero in an infinite town-bounce loop.
+            return (ApCmd){ "PHASE12_TOUR:a_chest", KEY_A,
                             assert_prompt_gone };
         }
         if (dialog_is_active()) {
             return (ApCmd){ "PHASE12_TOUR:space_dialog", KEY_SPACE,
                             assert_dialog_closed };
         }
-        // 50 non-salt chests sorted roughly by y-descending then
-        // x-ascending. ap_nav_step_avoiding_foes_and_desert returns 0
-        // when no safe path exists; we skip that leg and move on.
+        if (views_active() == VIEW_TOWN) {
+            // ap_nav_step's auto-rent fallback (autoplay/nav.c:381)
+            // routes us into a town when the boat was repossessed
+            // mid-tour. Town visit auto-rents a boat if we have the
+            // gold (the engine handles it inside the town flow); ESC
+            // to exit, then the next tick replans with a boat again.
+            return (ApCmd){ "PHASE12_TOUR:esc_town", KEY_ESCAPE,
+                            assert_always_true };
+        }
+        // Mid-tour divert: after the south block (leg 29 = chest_037
+        // at (47,32)) the hero's HP is too thin to fight through the
+        // wandering-army gauntlet guarding the north chests +
+        // artifacts. Sail home, max-buy a fresh army, sail back,
+        // resume at leg 30. module_scratch[7] gates the divert to
+        // fire exactly once per Phase 12 run (Phase 6 already owns
+        // scratch[5] for its own mid-tour divert).
+        if (st->module_scratch[0] == 30 && st->module_scratch[7] < 1) {
+            AP_LOG("[phase12] mid-tour divert at leg 30: pos=(%d,%d) "
+                   "gold=%d hp=%d", g->position.x, g->position.y,
+                   g->stats.gold, ap_army_total_hp(g));
+            st->module_scratch[7] = 1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_MID_RETURN_SPAWN;
+            return (ApCmd){ "PHASE12_TOUR:divert_recruit", 0,
+                            assert_always_true };
+        }
+        // 50 non-salt chests + Forestria navmap (12,44) + both
+        // artifacts (shield 51,28; anchor 43,18). Sorted roughly
+        // y-descending then x-ascending. The pre-Phase-12 recruit
+        // gives us a brute-force army; fight every wandering army
+        // we hit. Desert tiles are excluded for the day penalty;
+        // unreachable legs are skipped via no_path.
         static const struct { int x, y; const char *name; } legs[] = {
             {  3, 60, "chest_000" }, {  8, 60, "chest_001" },
             { 50, 60, "chest_003" }, { 31, 59, "chest_004" },
@@ -4079,20 +4122,25 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
             { 12, 52, "chest_012" }, { 43, 51, "chest_013" },
             { 35, 50, "chest_016" }, { 39, 50, "chest_017" },
             { 44, 48, "chest_018" }, { 24, 45, "chest_019" },
-            { 11, 44, "chest_021" }, { 54, 44, "chest_023" },
-            { 46, 40, "chest_026" }, { 38, 38, "chest_027" },
-            { 15, 37, "chest_028" }, { 43, 37, "chest_029" },
-            { 12, 36, "chest_030" }, { 60, 36, "chest_031" },
-            { 60, 34, "chest_033" }, { 35, 33, "chest_034" },
-            { 21, 32, "chest_035" }, { 27, 32, "chest_036" },
-            { 47, 32, "chest_037" }, { 11, 26, "chest_039" },
-            // STOP HERE — past leg 29 (chest_039 at (11,26)) the
-            // tour heads north into a wandering-army gauntlet that
-            // wipes the army at (58,16) on the way to chest_059.
-            // The seed-1 hero has ~175 hp left at chest_039 which
-            // isn't enough to fight through. Truncating the leg
-            // list returns us to RETURN_TO_SPAWN with a positive
-            // result instead of triggering POST_COMBAT:defeat.
+            { 12, 44, "navmap"    }, { 11, 44, "chest_021" },
+            { 54, 44, "chest_023" }, { 46, 40, "chest_026" },
+            { 38, 38, "chest_027" }, { 15, 37, "chest_028" },
+            { 43, 37, "chest_029" }, { 12, 36, "chest_030" },
+            { 60, 36, "chest_031" }, { 60, 34, "chest_033" },
+            { 35, 33, "chest_034" }, { 21, 32, "chest_035" },
+            { 27, 32, "chest_036" }, { 47, 32, "chest_037" },
+            { 51, 28, "shield"    }, { 11, 26, "chest_039" },
+            { 37, 25, "chest_040" }, { 16, 23, "chest_041" },
+            { 23, 23, "chest_042" }, { 43, 18, "anchor"    },
+            { 14, 17, "chest_044" }, { 15, 17, "chest_045" },
+            { 27, 17, "chest_047" }, { 40, 17, "chest_048" },
+            { 43, 17, "chest_049" }, {  8, 16, "chest_050" },
+            { 38, 16, "chest_051" }, { 43, 16, "chest_052" },
+            { 51, 14, "chest_054" }, { 11, 12, "chest_055" },
+            { 50, 11, "chest_056" }, { 57,  9, "chest_059" },
+            { 32,  8, "chest_060" }, { 19,  7, "chest_062" },
+            { 29,  7, "chest_063" }, { 54,  7, "chest_064" },
+            { 46,  5, "chest_065" },
         };
         const int n_legs = (int)(sizeof(legs) / sizeof(legs[0]));
         int leg = (st->module_scratch[0] < 0) ? 0 : st->module_scratch[0];
@@ -4131,6 +4179,358 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                         assert_always_true };
     }
 
+    // ----- Phase 12 mid-tour Continentia re-recruit -----------------
+
+    case AP_FLOW_PHASE12_MID_RETURN_SPAWN: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE12_MID_RETURN_SPAWN;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE12_MID_RETURN_SPAWN:y_foe");
+                return (ApCmd){ "PHASE12_MID_RETURN_SPAWN:y_foe",
+                                KEY_Y, assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){
+                    "PHASE12_MID_RETURN_SPAWN:enter_dismiss",
+                    KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE12_MID_RETURN_SPAWN:b_chest",
+                            KEY_B, assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE12_MID_RETURN_SPAWN:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        const int back_x = 0, back_y = 27;
+        if (g->travel_mode == TRAVEL_BOAT &&
+            g->position.x == back_x && g->position.y == back_y) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_MID_OPEN_NAV_HOME;
+            return (ApCmd){ "PHASE12_MID_RETURN_SPAWN:arrived", 0,
+                            assert_always_true };
+        }
+        int key = ap_nav_step_avoiding_desert(g, m, back_x, back_y);
+        if (key == 0) key = ap_nav_step(g, m, back_x, back_y);
+        if (key == 0) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE12_MID_RETURN_SPAWN:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE12_MID_RETURN_SPAWN:nav", key,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE12_MID_OPEN_NAV_HOME: {
+        if (prompt_is_active() && prompt_kind_str() &&
+            strcmp(prompt_kind_str(), "numeric") == 0) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_MID_PICK_CONTINENTIA;
+            return (ApCmd){ "PHASE12_MID_OPEN_NAV_HOME:opened", 0,
+                            assert_always_true };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE12_MID_OPEN_NAV_HOME:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        return (ApCmd){ "PHASE12_MID_OPEN_NAV_HOME:n", KEY_N,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE12_MID_PICK_CONTINENTIA: {
+        if (strcmp(g->position.zone, "continentia") == 0) {
+            AP_LOG("[phase12-mid] back on continentia: pos=(%d,%d)",
+                   g->position.x, g->position.y);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_MID_NAV_HOME;
+            return (ApCmd){ "PHASE12_MID_PICK_CONTINENTIA:switched",
+                            0, assert_always_true };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){
+                "PHASE12_MID_PICK_CONTINENTIA:space_dialog",
+                KEY_SPACE, assert_dialog_closed };
+        }
+        return (ApCmd){ "PHASE12_MID_PICK_CONTINENTIA:1", KEY_ONE,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE12_MID_NAV_HOME: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE12_MID_NAV_HOME;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE12_MID_NAV_HOME:y_foe");
+                return (ApCmd){ "PHASE12_MID_NAV_HOME:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE12_MID_NAV_HOME:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE12_MID_NAV_HOME:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE12_MID_NAV_HOME:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        if (g->position.x == 11 && g->position.y == 57) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_MID_OPEN_RECRUIT;
+            return (ApCmd){ "PHASE12_MID_NAV_HOME:arrived", 0,
+                            assert_always_true };
+        }
+        int key = ap_nav_step_avoiding_foes(g, m, 11, 57);
+        if (key == 0) key = ap_nav_step(g, m, 11, 57);
+        if (key == 0) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE12_MID_NAV_HOME:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE12_MID_NAV_HOME:nav", key,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE12_MID_OPEN_RECRUIT: {
+        if (views_active() == VIEW_RECRUIT_SOLDIERS) {
+            st->module_scratch[6] = 0;  // sub-state for recruit chain
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_MID_RECRUIT_KNIGHTS;
+            return (ApCmd){ "PHASE12_MID_OPEN_RECRUIT:entered", 0,
+                            assert_always_true };
+        }
+        if (views_active() == VIEW_HOME_CASTLE) {
+            return (ApCmd){ "PHASE12_MID_OPEN_RECRUIT:a", KEY_A,
+                            assert_always_true };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE12_MID_OPEN_RECRUIT:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        return (ApCmd){ "PHASE12_MID_OPEN_RECRUIT:up", KEY_UP,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE12_MID_RECRUIT_KNIGHTS: {
+        int sub = (st->module_scratch[6] < 0) ? 0 : st->module_scratch[6];
+        switch (sub) {
+        case 0: st->module_scratch[6]=1;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_KNIGHTS:e", KEY_E,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[6]=2;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_KNIGHTS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[6]=3;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_KNIGHTS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[6]=4;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_KNIGHTS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[6]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_MID_RECRUIT_CAVALRY;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_KNIGHTS:enter",
+                            KEY_ENTER, assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE12_MID_RECRUIT_CAVALRY: {
+        int sub = (st->module_scratch[6] < 0) ? 0 : st->module_scratch[6];
+        switch (sub) {
+        case 0: st->module_scratch[6]=1;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_CAVALRY:d", KEY_D,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[6]=2;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_CAVALRY:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[6]=3;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_CAVALRY:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[6]=4;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_CAVALRY:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[6]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_MID_RECRUIT_ARCHERS;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_CAVALRY:enter",
+                            KEY_ENTER, assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE12_MID_RECRUIT_ARCHERS: {
+        int sub = (st->module_scratch[6] < 0) ? 0 : st->module_scratch[6];
+        switch (sub) {
+        case 0: st->module_scratch[6]=1;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_ARCHERS:b", KEY_B,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[6]=2;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_ARCHERS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[6]=3;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_ARCHERS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[6]=4;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_ARCHERS:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[6]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_MID_RECRUIT_PIKEMEN;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_ARCHERS:enter",
+                            KEY_ENTER, assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE12_MID_RECRUIT_PIKEMEN: {
+        int sub = (st->module_scratch[6] < 0) ? 0 : st->module_scratch[6];
+        switch (sub) {
+        case 0: st->module_scratch[6]=1;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_PIKEMEN:c", KEY_C,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[6]=2;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_PIKEMEN:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[6]=3;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_PIKEMEN:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[6]=4;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_PIKEMEN:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[6]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_MID_RECRUIT_MILITIA;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_PIKEMEN:enter",
+                            KEY_ENTER, assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE12_MID_RECRUIT_MILITIA: {
+        int sub = (st->module_scratch[6] < 0) ? 0 : st->module_scratch[6];
+        switch (sub) {
+        case 0: st->module_scratch[6]=1;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_MILITIA:a", KEY_A,
+                            assert_view_recruit_soldiers };
+        case 1: st->module_scratch[6]=2;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_MILITIA:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 2: st->module_scratch[6]=3;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_MILITIA:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        case 3: st->module_scratch[6]=4;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_MILITIA:9", KEY_NINE,
+                            assert_view_recruit_soldiers };
+        default: st->module_scratch[6]=-1;
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_MID_EXIT_RECRUIT;
+            return (ApCmd){ "PHASE12_MID_RECRUIT_MILITIA:enter",
+                            KEY_ENTER, assert_always_true };
+        }
+    }
+
+    case AP_FLOW_PHASE12_MID_EXIT_RECRUIT: {
+        *out_phase_done = true;
+        *out_next_phase = AP_FLOW_PHASE12_MID_EXIT_CASTLE;
+        return (ApCmd){ "PHASE12_MID_EXIT_RECRUIT:esc", KEY_ESCAPE,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE12_MID_EXIT_CASTLE: {
+        if (views_active() == VIEW_NONE) {
+            AP_LOG("[phase12-mid] re-recruit done: gold=%d hp=%d",
+                   g->stats.gold, ap_army_total_hp(g));
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_MID_NAV_SEA;
+            return (ApCmd){ "PHASE12_MID_EXIT_CASTLE:done", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE12_MID_EXIT_CASTLE:esc", KEY_ESCAPE,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE12_MID_NAV_SEA: {
+        if (prompt_is_active()) {
+            const char *kind = prompt_kind_str();
+            if (kind && strcmp(kind, "yes_no") == 0) {
+                st->module_scratch[3] = AP_FLOW_PHASE12_MID_NAV_SEA;
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_COMBAT;
+                dump_combat_start(g, "PHASE12_MID_NAV_SEA:y_foe");
+                return (ApCmd){ "PHASE12_MID_NAV_SEA:y_foe", KEY_Y,
+                                assert_combat_resolved };
+            }
+            if (kind && strcmp(kind, "text") == 0) {
+                return (ApCmd){ "PHASE12_MID_NAV_SEA:enter_dismiss",
+                                KEY_ENTER, assert_prompt_gone };
+            }
+            return (ApCmd){ "PHASE12_MID_NAV_SEA:b_chest", KEY_B,
+                            assert_prompt_gone };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE12_MID_NAV_SEA:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        const int sea_x = 12, sea_y = 62;
+        if (g->travel_mode == TRAVEL_BOAT &&
+            g->position.x == sea_x && g->position.y == sea_y) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_MID_OPEN_NAV_FOREST;
+            return (ApCmd){ "PHASE12_MID_NAV_SEA:arrived", 0,
+                            assert_always_true };
+        }
+        int key = ap_nav_step_avoiding_foes(g, m, sea_x, sea_y);
+        if (key == 0) key = ap_nav_step(g, m, sea_x, sea_y);
+        if (key == 0) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_DONE;
+            return (ApCmd){ "PHASE12_MID_NAV_SEA:no_path", 0,
+                            assert_always_true };
+        }
+        return (ApCmd){ "PHASE12_MID_NAV_SEA:nav", key,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE12_MID_OPEN_NAV_FOREST: {
+        if (prompt_is_active() && prompt_kind_str() &&
+            strcmp(prompt_kind_str(), "numeric") == 0) {
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_MID_PICK_FORESTRIA;
+            return (ApCmd){ "PHASE12_MID_OPEN_NAV_FOREST:opened", 0,
+                            assert_always_true };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){
+                "PHASE12_MID_OPEN_NAV_FOREST:space_dialog",
+                KEY_SPACE, assert_dialog_closed };
+        }
+        return (ApCmd){ "PHASE12_MID_OPEN_NAV_FOREST:n", KEY_N,
+                        assert_always_true };
+    }
+
+    case AP_FLOW_PHASE12_MID_PICK_FORESTRIA: {
+        if (strcmp(g->position.zone, "forestria") == 0) {
+            AP_LOG("[phase12-mid] back on forestria: pos=(%d,%d) "
+                   "resuming TOUR at leg %d",
+                   g->position.x, g->position.y,
+                   st->module_scratch[0]);
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE12_TOUR;
+            return (ApCmd){ "PHASE12_MID_PICK_FORESTRIA:switched", 0,
+                            assert_always_true };
+        }
+        if (dialog_is_active()) {
+            return (ApCmd){ "PHASE12_MID_PICK_FORESTRIA:space_dialog",
+                            KEY_SPACE, assert_dialog_closed };
+        }
+        return (ApCmd){ "PHASE12_MID_PICK_FORESTRIA:1", KEY_ONE,
+                        assert_always_true };
+    }
+
     // -- 12e: walk/sail back to Forestria's spawn tile (1,26) so we
     //    leave at the canonical entry point.
     case AP_FLOW_PHASE12_RETURN_TO_SPAWN: {
@@ -4154,6 +4554,10 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
         if (dialog_is_active()) {
             return (ApCmd){ "PHASE12_RETURN_TO_SPAWN:space_dialog",
                             KEY_SPACE, assert_dialog_closed };
+        }
+        if (views_active() == VIEW_TOWN) {
+            return (ApCmd){ "PHASE12_RETURN_TO_SPAWN:esc_town",
+                            KEY_ESCAPE, assert_always_true };
         }
         // Spawn is (1,26). Go to a water tile next to it so KEY_N
         // works. (1,26) itself might be land — board the boat first.
@@ -5237,6 +5641,7 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
         }
         AP_LOG("[phase13] elves refilled: count=%d gold=%d",
                n, g->stats.gold);
+        st->module_scratch[1] = 0;  // Phase 14 villain iteration idx
         *out_phase_done = true;
         *out_next_phase = AP_FLOW_PHASE14_NAV_TO_WOODS_END;
         return (ApCmd){ "PHASE13_REFILL_ELVES:done", 0,
@@ -5415,15 +5820,32 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
     //    bounce back if we already hit max_spells, which is the
     //    cue to stop buying spells and shift to contract.
     case AP_FLOW_PHASE14_TOWN_ACTIONS: {
+        // Forestria villain iteration. module_scratch[1] = current
+        // index into this table; bumped after each NAV_CASTLE
+        // captures the matching villain.
+        static const char *villains[] = {
+            "moradon", "barrowpine", "bargash", "rinaldus",
+        };
+        const int n_villains = (int)(sizeof(villains)/sizeof(villains[0]));
+        int v_idx = (st->module_scratch[1] < 0)
+                        ? 0 : st->module_scratch[1];
+        if (v_idx >= n_villains) {
+            AP_LOG("[phase14] all Forestria villains captured");
+            *out_phase_done = true;
+            *out_next_phase = AP_FLOW_PHASE14_EXIT_WOODS_END;
+            return (ApCmd){ "PHASE14_TOWN:all_done", 0,
+                            assert_always_true };
+        }
+        const char *want = villains[v_idx];
         if (views_town_info_text() != NULL) {
             return (ApCmd){ "PHASE14_TOWN:space_info", KEY_SPACE,
                             assert_always_true };
         }
-        // Did we land Moradon's contract? Match by id.
+        // Have target villain's contract? Done with town.
         if (g->contract.active_id[0] &&
-            strcmp(g->contract.active_id, "moradon") == 0) {
-            AP_LOG("[phase14] contract: moradon. gold=%d hp=%d",
-                   g->stats.gold, ap_army_total_hp(g));
+            strcmp(g->contract.active_id, want) == 0) {
+            AP_LOG("[phase14] contract: %s. gold=%d hp=%d",
+                   want, g->stats.gold, ap_army_total_hp(g));
             *out_phase_done = true;
             *out_next_phase = AP_FLOW_PHASE14_EXIT_WOODS_END;
             return (ApCmd){ "PHASE14_TOWN:contract_taken", 0,
@@ -5432,7 +5854,6 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
         // Spell buy phase: keep pressing D until fireballs hit cap.
         int known = 0;
         for (int i = 0; i < 14; i++) known += g->spells.counts[i];
-        // Stop spell buying if at cap or low on gold.
         const int spell_cost = 1500;
         bool can_buy_spell =
             (known < g->stats.max_spells) &&
@@ -5443,22 +5864,27 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
         }
         if (!g->contract.active_id[0]) {
             AP_LOG("[phase14] spells done (known=%d cap=%d), "
-                   "taking contract", known, g->stats.max_spells);
+                   "taking contract for %s",
+                   known, g->stats.max_spells, want);
             return (ApCmd){ "PHASE14_TOWN:a_contract", KEY_A,
                             assert_always_true };
         }
-        // Have a non-moradon contract → cycle.
-        AP_LOG("[phase14] active contract is %s (not moradon), "
-               "rerolling", g->contract.active_id);
+        // Have a non-target contract → cycle.
+        AP_LOG("[phase14] active contract is %s (want %s), rerolling",
+               g->contract.active_id, want);
         return (ApCmd){ "PHASE14_TOWN:a_recontract", KEY_A,
                         assert_always_true };
     }
 
     case AP_FLOW_PHASE14_EXIT_WOODS_END: {
         if (views_active() == VIEW_NONE) {
-            st->module_scratch[0] = 0;  // chest tour leg index
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_PHASE14_CHEST_TOUR;
+            // Chest tour now lives in Phase 12 — all 50 chests +
+            // navmap + 2 artifacts are collected during the south-
+            // to-north Forestria sweep before Phase 13. Skip the
+            // (now redundant) chest_tour state and sail straight
+            // home for the Continentia recruit before Moradon.
+            *out_next_phase = AP_FLOW_PHASE14_NAV_TO_SPAWN;
             return (ApCmd){ "PHASE14_EXIT_WOODS_END:done", 0,
                             assert_always_true };
         }
@@ -5921,12 +6347,30 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
     //    castles[] where villain_id == "moradon" (salt-time assignment
     //    isn't stable across seeds).
     case AP_FLOW_PHASE14_NAV_CASTLE: {
+        static const char *villains[] = {
+            "moradon", "barrowpine", "bargash", "rinaldus",
+        };
+        const int n_villains = (int)(sizeof(villains)/sizeof(villains[0]));
+        int v_idx = (st->module_scratch[1] < 0)
+                        ? 0 : st->module_scratch[1];
         if (!g->contract.active_id[0]) {
-            AP_LOG("[phase14] moradon captured: pos=(%d,%d) gold=%d "
-                   "hp=%d", g->position.x, g->position.y,
+            const char *just_caught = (v_idx < n_villains)
+                                        ? villains[v_idx] : "?";
+            v_idx++;
+            st->module_scratch[1] = v_idx;
+            AP_LOG("[phase14] villain %d (%s) captured: pos=(%d,%d) "
+                   "gold=%d hp=%d", v_idx - 1, just_caught,
+                   g->position.x, g->position.y,
                    g->stats.gold, ap_army_total_hp(g));
             *out_phase_done = true;
-            *out_next_phase = AP_FLOW_PHASE13_RETURN_TO_SPAWN;
+            if (v_idx >= n_villains) {
+                // All Forestria villains down. Return to origin.
+                *out_next_phase = AP_FLOW_PHASE13_RETURN_TO_SPAWN;
+                return (ApCmd){ "PHASE14_NAV_CASTLE:all_done", 0,
+                                assert_always_true };
+            }
+            // Loop back to recruit + take next contract.
+            *out_next_phase = AP_FLOW_PHASE14_NAV_TO_SPAWN;
             return (ApCmd){ "PHASE14_NAV_CASTLE:captured", 0,
                             assert_always_true };
         }
@@ -5953,16 +6397,17 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
         }
         // Look up Moradon's castle dynamically.
         int target_x = -1, target_y = -1;
+        const char *want = (v_idx < n_villains) ? villains[v_idx] : "";
         for (int i = 0; i < GAME_CASTLES; i++) {
             if (g->castles[i].owner_kind != CASTLE_OWNER_VILLAIN) continue;
-            if (strcmp(g->castles[i].villain_id, "moradon") != 0) continue;
+            if (strcmp(g->castles[i].villain_id, want) != 0) continue;
             const ResCastle *rc =
                 resources_castle_by_id(g->res, g->castles[i].id);
             if (rc) { target_x = rc->x; target_y = rc->y; }
             break;
         }
         if (target_x < 0) {
-            AP_LOG("[phase14] moradon castle not found, skipping");
+            AP_LOG("[phase14] %s castle not found, skipping", want);
             *out_phase_done = true;
             *out_next_phase = AP_FLOW_PHASE13_RETURN_TO_SPAWN;
             return (ApCmd){ "PHASE14_NAV_CASTLE:no_castle", 0,
@@ -5971,8 +6416,8 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
         int key = ap_nav_step_avoiding_desert(g, m, target_x, target_y);
         if (key == 0) key = ap_nav_step(g, m, target_x, target_y);
         if (key == 0) {
-            AP_LOG("[phase14] no path to moradon castle (%d,%d) "
-                   "from (%d,%d), skipping", target_x, target_y,
+            AP_LOG("[phase14] no path to %s castle (%d,%d) from "
+                   "(%d,%d), skipping", want, target_x, target_y,
                    g->position.x, g->position.y);
             *out_phase_done = true;
             *out_next_phase = AP_FLOW_PHASE13_RETURN_TO_SPAWN;
