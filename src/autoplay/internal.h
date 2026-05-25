@@ -291,6 +291,34 @@ typedef enum {
     AP_FLOW_PHASE14_NAV_TO_WOODS_END,
     AP_FLOW_PHASE14_TOWN_ACTIONS,
     AP_FLOW_PHASE14_EXIT_WOODS_END,
+    // After buying spells / taking contract: grind the remaining
+    // north Forestria chests (chests 040-065 minus salt overlaps).
+    // Take B on every gold chest while leadership_base < 500, then
+    // A (gold) once at/above the Marshal-rank cap (since rank-up at
+    // villain #8 hard-assigns leadership_base = 500 in
+    // engine/game.c:1232). Fight every foe.
+    AP_FLOW_PHASE14_CHEST_TOUR,
+    // Sail back to Continentia and recruit a 5-stack Continentia
+    // army (knights/cavalry/archers/pikemen/militia) at king_maximus
+    // before crossing back to Forestria for the Moradon siege. This
+    // replaces the Forestria dwelling stops — knights at hp_each=35
+    // outclass everything we can recruit on Forestria, and 5 slots
+    // are all we get.
+    AP_FLOW_PHASE14_NAV_TO_SPAWN,
+    AP_FLOW_PHASE14_OPEN_NAV_HOME,
+    AP_FLOW_PHASE14_PICK_CONTINENTIA,
+    AP_FLOW_PHASE14_NAV_HOME_RECRUIT,
+    AP_FLOW_PHASE14_OPEN_RECRUIT,
+    AP_FLOW_PHASE14_RECRUIT_KNIGHTS,
+    AP_FLOW_PHASE14_RECRUIT_CAVALRY,
+    AP_FLOW_PHASE14_RECRUIT_ARCHERS,
+    AP_FLOW_PHASE14_RECRUIT_PIKEMEN,
+    AP_FLOW_PHASE14_RECRUIT_MILITIA,
+    AP_FLOW_PHASE14_EXIT_RECRUIT,
+    AP_FLOW_PHASE14_EXIT_CASTLE,
+    AP_FLOW_PHASE14_NAV_HOME_SEA,
+    AP_FLOW_PHASE14_OPEN_NAV_BACK,
+    AP_FLOW_PHASE14_PICK_FORESTRIA_BACK,
     AP_FLOW_PHASE14_NAV_CASTLE,
     AP_FLOW_DONE,
 
