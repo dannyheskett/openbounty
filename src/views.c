@@ -786,6 +786,11 @@ const char *views_town_display_name(void) {
     return town.display_name[0] ? town.display_name : NULL;
 }
 
+const char *views_town_record_key(void) {
+    if (view_stack_top() != VIEW_TOWN) return NULL;
+    return town.record_key[0] ? town.record_key : NULL;
+}
+
 bool views_town_row_text(const Game *g, int row, char *out, int out_sz) {
     if (view_stack_top() != VIEW_TOWN) return false;
     if (row < 0 || row >= TOWN_ROW_COUNT) return false;

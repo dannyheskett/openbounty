@@ -6,18 +6,20 @@
 // the appropriate mission handler each tick.
 //
 // Mission queue (executed in order):
-//   1. STARTUP        — intro + initial starter recruit (zone 1 only)
-//   2. ALCOVE         — visit the magic alcove if not yet claimed
-//   3. PATHS_END_SPELLS — buy fireballs at the paths_end town
-//   4. GHOST_DWELLING — recruit ghosts (caneghor counter)
-//   5. (per zone, in discovery order)
+//   1. Home-zone init (continentia only):
+//      - INTRO, VISIT_TOWN, STARTUP_RECRUIT, ALCOVE, MAGIC_GRIND,
+//        PATHS_END_SPELLS
+//   2. Per zone, in discovery order:
 //      a. SAFE_ACQUIRE     — chests/artifacts/navmaps with no foe in
 //                            pursuit range
 //      b. REHOME_RECRUIT   — sail back to king_maximus, max-buy army
 //      c. CHEST_GRIND      — remaining chests, foes accepted
-//      d. MONSTER_GRIND    — capture all monster-owned castles
-//      e. VILLAIN_GRIND    — take contract + capture each villain
-//      f. SAIL_TO_NEXT     — sail to next discovered zone if any
+//      d. CASTLE_GRIND     — attack all monster + villain castles in
+//                            ascending garrison-HP order, with
+//                            REHOME between each. Villain targets
+//                            walk to nearest town and cycle the
+//                            contract until the right one comes up.
+//      e. SAIL_TO_NEXT     — sail to next discovered zone if any
 //
 // Each mission is idempotent — re-entering it checks world state and
 // re-decides what to do. Missions advance when their work is fully
@@ -34,13 +36,21 @@ typedef enum {
                                // buy siege + boat with starter gold
     MISSION_STARTUP_RECRUIT,   // first castle recruit (uses leftover gold)
     MISSION_ALCOVE,
+    MISSION_MAGIC_GRIND,       // visit towns to stockpile combat spells
+                               // (only useful if knows_magic; idempotent
+                               // re-entry tops up spells after combats)
     MISSION_PATHS_END_SPELLS,
-    MISSION_GHOST_DWELLING,
     MISSION_SAFE_ACQUIRE,
     MISSION_REHOME_RECRUIT,
     MISSION_CHEST_GRIND,
-    MISSION_MONSTER_GRIND,
-    MISSION_VILLAIN_GRIND,
+    MISSION_CASTLE_GRIND,      // unified monster + villain castle queue,
+                               // attacks weakest first regardless of
+                               // owner; cycles town contracts when the
+                               // target is a villain
+    MISSION_DWELLING_GNOMES,   // nav to nearest forest dwelling, recruit
+                               // gnomes max. Replaces militia as cheap
+                               // soak (12 g/hp vs militia's 25 g/hp).
+                               // Fires after each castle clear.
     MISSION_SAIL_TO_NEXT,
     MISSION_RENT_BOAT,         // mid-run detour: town + buy missing
                                //   siege/boat, then resume previous mission
@@ -75,14 +85,26 @@ bool ap_find_interact(const Map *m, int want_interact,
 
 // Returns true if any tile (chest/artifact/navmap/orb) is "safe" —
 // reachable without entering any alive hostile foe's chebyshev-2
-// envelope. Writes the nearest such tile to (out_x, out_y).
+// envelope. Writes the nearest such tile to (out_x, out_y). If
+// `st` is non-NULL, tiles on st->chest_skip[] are excluded
+// (previously found unreachable).
 bool ap_pick_safe_acquisition(const Game *g, const Map *m,
+                              const AutoplayState *st,
                               int *out_x, int *out_y);
 
 // Same but ignores foe envelope. Returns nearest remaining
 // chest/artifact/navmap/orb tile.
 bool ap_pick_any_acquisition(const Game *g, const Map *m,
+                             const AutoplayState *st,
                              int *out_x, int *out_y);
+
+// Like ap_pick_any_acquisition but skips any tile whose pursuit-
+// range foe set includes an unwinnable foe (REGEN-weighted HP
+// ratio). Returns false if every remaining acquisition is guarded
+// by an unwinnable foe.
+bool ap_pick_winnable_acquisition(const Game *g, const Map *m,
+                                  const AutoplayState *st,
+                                  int *out_x, int *out_y);
 
 // Returns true if any alive hostile foe in the current zone sits
 // within chebyshev-2 of (x,y). Used to decide chest "safety".
@@ -92,10 +114,28 @@ bool ap_foe_in_pursuit_range(const Game *g, int x, int y);
 const CastleRecord *ap_pick_weakest_monster_castle(
     const Game *g, const char *zone_id);
 
+// Like ap_pick_weakest_monster_castle but only considers castles with
+// garrison HP at or below hp_cap. Used to defer too-strong castles
+// until the army can win them.
+const CastleRecord *ap_pick_winnable_monster_castle(
+    const Game *g, const char *zone_id, int hp_cap);
+
 // Pick the next uncaptured villain in zone_id (a castle with owner=
 // VILLAIN, villain_id not in villains_caught). Returns castle pointer
 // or NULL.
 const CastleRecord *ap_pick_next_villain(
+    const Game *g, const char *zone_id);
+
+// Pick the weakest enemy castle (monster OR uncaught-villain) in
+// zone_id with garrison HP at or below hp_cap. Returns NULL when
+// none qualify. Used by CASTLE_GRIND to attack the unified queue in
+// ascending HP order.
+const CastleRecord *ap_pick_winnable_castle(
+    const Game *g, const char *zone_id, int hp_cap);
+
+// Like ap_pick_winnable_castle with hp_cap=INT_MAX — used when
+// reporting which castle blocks further progress.
+const CastleRecord *ap_pick_weakest_enemy_castle(
     const Game *g, const char *zone_id);
 
 // Pick the next unsolved discovered zone (in discovery order, skipping
@@ -115,6 +155,10 @@ int ap_leadership_until_next_rank(const Game *g);
 
 // Estimate the total HP of a foe's garrison (alive hostiles only).
 int ap_estimate_foe_hp(const FoeState *foe);
+
+// REGEN-weighted variant: regen stacks are doubled because partial
+// damage resets each round. Use this for fight/decline decisions.
+int ap_effective_foe_hp(const FoeState *foe);
 
 // Total army HP for the player.
 // (Already declared in internal.h as ap_army_total_hp; reused.)

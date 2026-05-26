@@ -68,22 +68,49 @@ int ap_closest_enemy(const Combat *c, int ux, int uy, int *out_dist) {
     return best;
 }
 
+// Priority score for picking which enemy stack to attack first.
+// Higher score = more urgent. Composition:
+//   REGEN units              : +10000 (must concentrate or partial
+//                                       damage heals each round)
+//   per-unit hp >= 25 heavy  : +5000  (high hp_each means partial
+//                                       attacks against the stack
+//                                       waste damage; we need
+//                                       concentrated fire to land
+//                                       full kills)
+//   stack_hp                 : tiebreaker (1 point per stack hp)
+//
+// REGEN is intentionally NOT prioritized: regen units (trolls) heal
+// partial damage between rounds, and our typical army can't burst
+// past their hp_each (50) in one round. Attacking them wastes attacks.
+// Kill the other stacks first; trolls die last by attrition.
+static int enemy_priority_score(const CombatUnit *e) {
+    const TroopDef *t = troop_by_index(e->troop_idx);
+    if (!t) return -1;
+    int stack_hp = e->count * t->hit_points;
+    int score = stack_hp;
+    // Deprioritize REGEN units — partial damage resets each round,
+    // so attacks against them rarely convert to kills.
+    if (t->abilities & TROOP_ABIL_REGEN) score -= 5000;
+    if (t->hit_points >= 25)             score += 1000;
+    return score;
+}
+
 int ap_highest_threat_enemy(const Combat *c, int ux, int uy,
                             int *out_dist) {
-    int best = -1, best_hp = -1, best_d = 1 << 30;
+    int best = -1, best_score = -1, best_d = 1 << 30;
     for (int i = 0; i < COMBAT_SLOTS; i++) {
         const CombatUnit *e = &c->units[COMBAT_SIDE_AI][i];
         if (e->troop_idx < 0 || e->count <= 0) continue;
-        const TroopDef *t = troop_by_index(e->troop_idx);
-        if (!t) continue;
-        int stack_hp = e->count * t->hit_points;
+        int score = enemy_priority_score(e);
+        if (score < 0) continue;
         int adx = e->x - ux; if (adx < 0) adx = -adx;
         int ady = e->y - uy; if (ady < 0) ady = -ady;
         int d = (adx > ady) ? adx : ady;
-        if (stack_hp > best_hp || (stack_hp == best_hp && d < best_d)) {
-            best_hp = stack_hp;
-            best_d  = d;
-            best    = i;
+        if (score > best_score ||
+            (score == best_score && d < best_d)) {
+            best_score = score;
+            best_d     = d;
+            best       = i;
         }
     }
     if (out_dist) *out_dist = best_d;
@@ -202,6 +229,18 @@ static void log_combat_turn(const Combat *c) {
     }
 }
 
+// Mirror of engine/combat.c spell catalog indices. Kept private to this
+// file; the public combat.h doesn't export them but the mapping is
+// stable (engine code uses these same constants). Used by the spell
+// picker to choose which letter (A..G) to press in the cast menu.
+#define COMBAT_SPELL_CLONE        0
+#define COMBAT_SPELL_TELEPORT     1
+#define COMBAT_SPELL_FIREBALL     2
+#define COMBAT_SPELL_LIGHTNING    3
+#define COMBAT_SPELL_FREEZE       4
+#define COMBAT_SPELL_RESURRECT    5
+#define COMBAT_SPELL_TURN_UNDEAD  6
+
 static void autoplay_before_frame(void *user) {
     (void)user;
     AutoplayState *st = g_active_state;
@@ -254,23 +293,30 @@ static void autoplay_before_frame(void *user) {
     int enemy_slot = ap_closest_enemy(c, u->x, u->y, &enemy_d);
     if (enemy_slot < 0) return;
 
-    // Cast fireball through the engine state machine. While the
-    // cast is in flight we drive one transition per tick by reading
-    // c->cast_phase + c->picker_active — no key queue, no race.
+    // Cast a combat spell through the engine state machine. We drive
+    // one transition per tick by reading c->cast_phase + c->picker_active.
     //
-    //   Idle  : if we own a fireball and the heaviest enemy stack
-    //           is hp_each >= 25, press U to enter PICK_SPELL.
-    //   PICK_SPELL : press C (Fireball is catalog letter C).
-    //   PICK_TARGET (reason=SPELL_TARGET) : walk the cursor one
-    //           step toward the cached target, or press A to
-    //           confirm when on it.
+    //   Idle  : pick the best (spell, target) pair we own; if any,
+    //           press U to enter PICK_SPELL. Cache the chosen spell
+    //           index in module_scratch[7] and target in [6].
+    //   PICK_SPELL : press KEY_A + chosen_spell_idx.
+    //   PICK_TARGET (reason=SPELL_TARGET) : walk the cursor toward
+    //           the cached target, press A to confirm.
     //   APPLY  : engine resolves this frame; nothing for us to do.
     //
-    // module_scratch[6] stores the target cell as (y<<8)|x while a
-    // cast is in flight; cleared once spells_this_round flips.
+    // Spell priorities (when we own >0 charges and meet preconditions):
+    //   turn_undead  : enemy is UNDEAD (50 dmg, undead-only)
+    //   fireball     : enemy hp_each >= 25 and NOT IMMUNE     (25 dmg)
+    //   lightning    : any non-IMMUNE enemy with stack hp >= 30 (10 dmg)
+    //   freeze       : heavy enemy (hp_each >= 25) we can't kill quickly
+    //
+    // Adventure spells (clone/teleport/resurrect) are skipped here —
+    // they need more situational handling.
     Game *gw = c->heroes[c->side];
     if (c->cast_phase == COMBAT_CAST_PICK_SPELL) {
-        ap_set_key(KEY_C);
+        int idx = st->module_scratch[7];
+        if (idx < 0 || idx > 6) idx = COMBAT_SPELL_FIREBALL;
+        ap_set_key(KEY_A + idx);
         return;
     }
     if (c->picker_active &&
@@ -296,22 +342,77 @@ static void autoplay_before_frame(void *user) {
         return;
     }
     if (c->cast_phase == COMBAT_CAST_NONE && !c->picker_active &&
-        gw && gw->stats.knows_magic && gw->spells.counts[2] > 0 &&
+        gw && gw->stats.knows_magic &&
         c->spells_this_round == 0) {
-        int tgt_slot = ap_highest_threat_enemy(c, u->x, u->y, NULL);
-        if (tgt_slot >= 0) {
-            const CombatUnit *target = &c->units[COMBAT_SIDE_AI][tgt_slot];
-            const TroopDef *tt = troop_by_index(target->troop_idx);
-            int e_hp_each = tt ? tt->hit_points : 0;
-            if (e_hp_each >= 25) {
-                AP_LOG("[fight]   action: CAST FIREBALL at slot %d "
-                       "(%d,%d) e_hp_each=%d",
-                       tgt_slot, target->x, target->y, e_hp_each);
-                st->module_scratch[6] =
-                    ((target->y & 0xff) << 8) | (target->x & 0xff);
-                ap_set_key(KEY_U);
-                return;
+        // Walk all enemies; for each, evaluate which spell is best to
+        // cast on them. Pick the (spell, target) pair with highest
+        // priority score.
+        int best_pri  = 0;
+        int best_idx  = -1;
+        int best_tx   = 0;
+        int best_ty   = 0;
+        const char *best_name = "";
+        for (int s = 0; s < COMBAT_SLOTS; s++) {
+            const CombatUnit *e = &c->units[COMBAT_SIDE_AI][s];
+            if (e->troop_idx < 0 || e->count <= 0) continue;
+            const TroopDef *tt = troop_by_index(e->troop_idx);
+            if (!tt) continue;
+            int e_hp_each = tt->hit_points;
+            int e_stack   = tt->hit_points * e->count;
+            bool immune   = (tt->abilities & TROOP_ABIL_IMMUNE) != 0;
+            bool undead   = (tt->abilities & TROOP_ABIL_UNDEAD) != 0;
+            bool regen    = (tt->abilities & TROOP_ABIL_REGEN)  != 0;
+            // REGEN targets get a massive bonus — partial damage
+            // heals each round, so spells are the *only* way to
+            // make damage stick against them with a small army.
+            int regen_bonus = regen ? 1000 : 0;
+            // turn_undead — only on undead, big damage (50)
+            if (undead && gw->spells.counts[COMBAT_SPELL_TURN_UNDEAD] > 0) {
+                int pri = 200 + e_stack + regen_bonus;
+                if (pri > best_pri) {
+                    best_pri = pri; best_idx = COMBAT_SPELL_TURN_UNDEAD;
+                    best_tx = e->x; best_ty = e->y;
+                    best_name = "TURN_UNDEAD";
+                }
             }
+            // fireball — heavy non-immune (25 dmg)
+            if (!immune && e_hp_each >= 25 &&
+                gw->spells.counts[COMBAT_SPELL_FIREBALL] > 0) {
+                int pri = 150 + e_stack + regen_bonus;
+                if (pri > best_pri) {
+                    best_pri = pri; best_idx = COMBAT_SPELL_FIREBALL;
+                    best_tx = e->x; best_ty = e->y;
+                    best_name = "FIREBALL";
+                }
+            }
+            // freeze — disable big heavy that we'd otherwise HOLD against
+            if (!immune && e_hp_each >= 25 &&
+                gw->spells.counts[COMBAT_SPELL_FREEZE] > 0) {
+                int pri = 130 + e_stack + regen_bonus;
+                if (pri > best_pri) {
+                    best_pri = pri; best_idx = COMBAT_SPELL_FREEZE;
+                    best_tx = e->x; best_ty = e->y;
+                    best_name = "FREEZE";
+                }
+            }
+            // lightning — fall-back chip damage on anything chunky (10 dmg)
+            if (!immune && e_stack >= 30 &&
+                gw->spells.counts[COMBAT_SPELL_LIGHTNING] > 0) {
+                int pri = 80 + (e_stack / 4) + regen_bonus;
+                if (pri > best_pri) {
+                    best_pri = pri; best_idx = COMBAT_SPELL_LIGHTNING;
+                    best_tx = e->x; best_ty = e->y;
+                    best_name = "LIGHTNING";
+                }
+            }
+        }
+        if (best_idx >= 0) {
+            AP_LOG("[fight]   action: CAST %s at (%d,%d) pri=%d",
+                   best_name, best_tx, best_ty, best_pri);
+            st->module_scratch[6] = ((best_ty & 0xff) << 8) | (best_tx & 0xff);
+            st->module_scratch[7] = best_idx;
+            ap_set_key(KEY_U);
+            return;
         }
     }
 
@@ -326,29 +427,59 @@ static void autoplay_before_frame(void *user) {
         input_host_queue_key(KEY_S);
         queue_picker_path(u->x, u->y, target->x, target->y);
     } else {
-        // Don't suicide-rush heavy enemies. If the closest enemy has
-        // high per-unit HP (heavy hitter), melee units stay back and
-        // let archers do the work. Threshold = 25 HP/unit (covers
-        // trolls=50, giants=60, ogres, etc; excludes peasants=1,
-        // militia=2, sprites=1, zombies=5, archers=10, pikemen=10).
+        // Don't suicide-rush heavy enemies *if* we have a way to whittle
+        // them down: either a friendly stack still has shots, or we own
+        // a damaging combat spell. Otherwise HOLD = death by slow shred
+        // and we should charge instead — landing damage at least kills
+        // some heavies and shortens the bleed.
         {
             const CombatUnit *e = &c->units[COMBAT_SIDE_AI][enemy_slot];
             const TroopDef *t = troop_by_index(e->troop_idx);
             int e_hp_each = t ? t->hit_points : 0;
             const TroopDef *mt = troop_by_index(u->troop_idx);
             int my_hp_each = mt ? mt->hit_points : 0;
-            // Heavy = enemy hp/unit at least 3x my hp/unit, AND
-            // enemy ≥ 25 hp/unit. That keeps pikemen (10) from
-            // suiciding into trolls (50), but doesn't make pikemen
-            // afraid of zombies (5).
             bool heavy = (e_hp_each >= 25) &&
                          (my_hp_each > 0 && e_hp_each >= my_hp_each * 3);
             if (heavy) {
-                AP_LOG("[fight]   action: HOLD (heavy enemy slot %d "
-                       "hp_each=%d > my hp_each=%d)",
-                       enemy_slot, e_hp_each, my_hp_each);
-                ap_set_key(KEY_SPACE);
-                return;
+                // Look for any teammate that can still contribute ranged
+                // damage this round.
+                bool team_has_shots = false;
+                for (int s = 0; s < COMBAT_SLOTS; s++) {
+                    if (s == c->unit_id) continue;
+                    const CombatUnit *f =
+                        &c->units[COMBAT_SIDE_PLAYER][s];
+                    if (f->troop_idx < 0 || f->count <= 0) continue;
+                    if (f->shots > 0) { team_has_shots = true; break; }
+                }
+                // Spells: any damaging combat charge counts (fireball,
+                // lightning, turn_undead) plus freeze as disable.
+                bool spells_available = false;
+                if (gw && gw->stats.knows_magic) {
+                    if (gw->spells.counts[COMBAT_SPELL_FIREBALL]    > 0 ||
+                        gw->spells.counts[COMBAT_SPELL_LIGHTNING]   > 0 ||
+                        gw->spells.counts[COMBAT_SPELL_TURN_UNDEAD] > 0 ||
+                        gw->spells.counts[COMBAT_SPELL_FREEZE]      > 0)
+                        spells_available = true;
+                }
+                // REGEN units (trolls) get a HOLD-bypass: ranged
+                // damage rarely converts to kills because partial
+                // damage resets each round. Charging at least keeps
+                // pressure on, and we lose less to standing still
+                // while trolls march in and gut us.
+                bool regen = t && (t->abilities & TROOP_ABIL_REGEN);
+                if ((team_has_shots || spells_available) && !regen) {
+                    AP_LOG("[fight]   action: HOLD (heavy enemy slot %d "
+                           "hp_each=%d > my hp_each=%d; ranged/spell "
+                           "available)",
+                           enemy_slot, e_hp_each, my_hp_each);
+                    ap_set_key(KEY_SPACE);
+                    return;
+                }
+                AP_LOG("[fight]   action: CHARGE (heavy enemy slot %d "
+                       "hp_each=%d %s)",
+                       enemy_slot, e_hp_each,
+                       regen ? "REGEN — HOLD wastes shots"
+                             : "no ranged/spell — HOLD would starve");
             }
         }
         // Melee: If we're already adjacent to an enemy, attack (step
@@ -365,20 +496,20 @@ static void autoplay_before_frame(void *user) {
             KEY_END,    KEY_DOWN, KEY_PAGE_DOWN
         };
         // First: if adjacent to an enemy, pick the direction toward
-        // the highest-threat adjacent enemy and attack.
+        // the highest-PRIORITY adjacent enemy (REGEN/heavy first)
+        // and attack.
         {
             int best_e = -1;
-            int best_e_hp = -1;
+            int best_score = -1;
             for (int i = 0; i < COMBAT_SLOTS; i++) {
                 const CombatUnit *e = &c->units[COMBAT_SIDE_AI][i];
                 if (e->troop_idx < 0 || e->count <= 0) continue;
                 int adx = e->x - u->x; if (adx < 0) adx = -adx;
                 int ady = e->y - u->y; if (ady < 0) ady = -ady;
                 if (adx <= 1 && ady <= 1 && (adx + ady) > 0) {
-                    const TroopDef *t = troop_by_index(e->troop_idx);
-                    int hp = t ? e->count * t->hit_points : 0;
-                    if (hp > best_e_hp) {
-                        best_e_hp = hp;
+                    int score = enemy_priority_score(e);
+                    if (score > best_score) {
+                        best_score = score;
                         best_e = i;
                     }
                 }
@@ -418,15 +549,21 @@ static void autoplay_before_frame(void *user) {
         int s_idx = u->y * W + u->x;
         dist[s_idx] = 0;
         q[qt++] = s_idx;
+        // Pick the path whose adjacent enemy has the highest
+        // priority (REGEN > heavy > stack_hp), breaking ties by
+        // shortest path. This makes melee units route around weaker
+        // adjacent enemies to reach the REGEN/heavy stack that
+        // actually matters (e.g. trolls behind a dwarf screen).
         int best_path_dir = -1;
         int best_path_len = 1 << 30;
+        int best_path_score = -1;
         while (qh < qt) {
             int cur = q[qh++];
             int cy = cur / W;
             int cx = cur % W;
             int d_here = dist[cur];
-            if (d_here >= best_path_len) continue;
-            // Goal test: this tile is adjacent to an enemy.
+            // Goal test: this tile is adjacent to an enemy. Score
+            // each adjacency by enemy priority; keep the highest.
             for (int i = 0; i < COMBAT_SLOTS; i++) {
                 const CombatUnit *e = &c->units[COMBAT_SIDE_AI][i];
                 if (e->troop_idx < 0 || e->count <= 0) continue;
@@ -434,11 +571,16 @@ static void autoplay_before_frame(void *user) {
                 int ady = e->y - cy; if (ady < 0) ady = -ady;
                 int che = (adx > ady) ? adx : ady;
                 if (che <= 1 && d_here > 0) {
-                    if (d_here < best_path_len) {
-                        best_path_len = d_here;
-                        best_path_dir = first_dir[cur];
+                    int sc = enemy_priority_score(e);
+                    bool take = false;
+                    if (sc > best_path_score) take = true;
+                    else if (sc == best_path_score &&
+                             d_here < best_path_len) take = true;
+                    if (take) {
+                        best_path_score = sc;
+                        best_path_len   = d_here;
+                        best_path_dir   = first_dir[cur];
                     }
-                    break;
                 }
             }
             // Expand 8 neighbors.

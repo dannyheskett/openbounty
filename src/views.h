@@ -81,6 +81,10 @@ int  views_menu_cursor(void);
 // Town display name (from views_open_town), or NULL if not in VIEW_TOWN.
 const char *views_town_display_name(void);
 
+// Town record id (canonical id for g->towns[] lookup), or NULL if not
+// in VIEW_TOWN.
+const char *views_town_record_key(void);
+
 // Town menu row text, formatted per the current game state. Returns false
 // if `row` is out of range. `out` is written up to `out_sz`.
 bool views_town_row_text(const struct Game *g, int row,

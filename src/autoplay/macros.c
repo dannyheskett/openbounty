@@ -2,6 +2,7 @@
 
 #include "autoplay/macros.h"
 #include "autoplay/nav.h"
+#include "autoplay/missions.h"
 
 #include "raylib.h"
 #include "ui.h"
@@ -548,15 +549,24 @@ ApCmd ap_rehome_and_recruit(const Game *g, const Map *m,
         return (ApCmd){ cmd_buf, KEY_A, ap_macro_assert_always };
     }
 
-    // Step 4: row loop. Encode sub = row*8 + ks (ks=0..4 per row).
+    // Step 4: row loop. Encode sub = iter*8 + ks (iter=0..NROWS-1).
+    // We iterate rows from MOST EXPENSIVE down to CHEAPEST so the
+    // premium troops (high hit_points) eat gold + leadership before
+    // peasants flood every available slot. The recruit screen sorts
+    // s_pool by recruit_cost ascending, so the bottom row (E) is the
+    // priciest; iter=0 → row=NROWS-1, iter=1 → row=NROWS-2, ...
+    //
+    // Skip row 0 (militia for Knight class): militia have
+    // recruit_cost/hp = 25, vs gnomes at 12 from a forest dwelling.
+    // The autoplay visits a dwelling after each castle to recruit
+    // gnomes in militia's place — see CASTLE_GRIND post-fight flow.
     if (step == 4) {
         int sub = st->module_scratch[11];
-        int row = sub >> 3;
-        int ks  = sub & 7;
+        int iter = sub >> 3;
+        int ks   = sub & 7;
         const int NROWS = 5;
-        // Gold-reserve check: if the caller asked to leave gold on
-        // the table, stop row recruitment before the next row when
-        // the current gold is already at/below the reserve floor.
+        const int NROWS_TO_BUY = NROWS - 1;  // skip cheapest (militia)
+        int row = NROWS - 1 - iter;
         if (ks == 0 && min_gold_reserve > 0 &&
             g->stats.gold <= min_gold_reserve) {
             st->module_scratch[10] = 5;
@@ -567,8 +577,7 @@ ApCmd ap_rehome_and_recruit(const Game *g, const Map *m,
                      label);
             return (ApCmd){ cmd_buf, 0, ap_macro_assert_always };
         }
-        if (row >= NROWS) {
-            // All rows done — exit recruit.
+        if (iter >= NROWS_TO_BUY) {
             st->module_scratch[10] = 5;
             st->module_scratch[11] = 0;
             snprintf(cmd_buf, sizeof cmd_buf, "%s:rows_done", label);
@@ -576,23 +585,21 @@ ApCmd ap_rehome_and_recruit(const Game *g, const Map *m,
         }
         switch (ks) {
         case 0: {
-            // Press letter A+row to pick this row.
-            st->module_scratch[11] = (row << 3) | 1;
+            st->module_scratch[11] = (iter << 3) | 1;
             int key = KEY_A + row;
             snprintf(cmd_buf, sizeof cmd_buf, "%s:row%d_letter",
                      label, row);
             return (ApCmd){ cmd_buf, key, ap_macro_assert_always };
         }
         case 1: case 2: case 3: {
-            st->module_scratch[11] = (row << 3) | (ks + 1);
+            st->module_scratch[11] = (iter << 3) | (ks + 1);
             snprintf(cmd_buf, sizeof cmd_buf, "%s:row%d_9_%d",
                      label, row, ks);
             return (ApCmd){ cmd_buf, KEY_NINE,
                             ap_macro_assert_always };
         }
         default: {
-            // ENTER — commit; advance to next row.
-            st->module_scratch[11] = ((row + 1) << 3) | 0;
+            st->module_scratch[11] = ((iter + 1) << 3) | 0;
             snprintf(cmd_buf, sizeof cmd_buf, "%s:row%d_enter",
                      label, row);
             return (ApCmd){ cmd_buf, KEY_ENTER,
@@ -900,6 +907,24 @@ ApCmd ap_town_action(const Game *g, const Map *m,
         snprintf(cmd_buf, sizeof cmd_buf, "%s:a", label_buf);
         return (ApCmd){ cmd_buf, KEY_A, ap_macro_assert_always };
     }
+    if (strncmp(action_kind, "contract_villain:", 17) == 0) {
+        const char *want_id = action_kind + 17;
+        if (g->contract.active_id[0] &&
+            strcmp(g->contract.active_id, want_id) == 0) {
+            *out_phase_done = true;
+            *out_next_phase = next_phase;
+            snprintf(cmd_buf, sizeof cmd_buf, "%s:got_%s",
+                     label_buf, want_id);
+            return (ApCmd){ cmd_buf, 0,
+                            ap_macro_assert_always };
+        }
+        // Press A to advance the contract cycle. The cycle is
+        // free (no gold) and finite (cycle_length slots), so
+        // repeated presses will eventually surface any uncaught
+        // villain.
+        snprintf(cmd_buf, sizeof cmd_buf, "%s:a", label_buf);
+        return (ApCmd){ cmd_buf, KEY_A, ap_macro_assert_always };
+    }
     if (strcmp(action_kind, "exit") == 0) {
         // Just ESC out (helper for chaining at the end).
         if (views_active() == VIEW_NONE) {
@@ -1100,6 +1125,34 @@ ApCmd ap_recruit_at_dwelling(const Game *g, const Map *m,
             return (ApCmd){ cmd_buf, 0, ap_macro_assert_always };
         }
     }
+    // Gold floor: if we can't afford even one more, exit.
+    {
+        const TroopDef *td = troop_by_id(troop_id);
+        int unit_cost = td ? td->recruit_cost : 0;
+        int lead_max  = GameMaxRecruitable(g, troop_id);
+        int afford    = (unit_cost > 0) ? (g->stats.gold / unit_cost)
+                                        : 0;
+        int can_buy   = (afford < lead_max) ? afford : lead_max;
+        // If we can't buy even one more (either leadership or gold
+        // exhausted) we're done. ESC the prompt if it's still open
+        // from a previous buy attempt; otherwise advance.
+        if (can_buy <= 0) {
+            if (prompt_is_active() || dialog_is_active()) {
+                AP_LOG("[%s] can_buy=0 (gold=%d cost=%d lead_max=%d) "
+                       "— ESC to close prompt",
+                       label_buf, g->stats.gold, unit_cost, lead_max);
+                snprintf(cmd_buf, sizeof cmd_buf, "%s:esc_full",
+                         label_buf);
+                return (ApCmd){ cmd_buf, KEY_ESCAPE,
+                                ap_macro_assert_always };
+            }
+            AP_LOG("[%s] can_buy=0 — advancing", label_buf);
+            *out_phase_done = true;
+            *out_next_phase = next_phase;
+            snprintf(cmd_buf, sizeof cmd_buf, "%s:done", label_buf);
+            return (ApCmd){ cmd_buf, 0, ap_macro_assert_always };
+        }
+    }
 
     if (prompt_is_active()) {
         const char *kind = prompt_kind_str();
@@ -1113,39 +1166,36 @@ ApCmd ap_recruit_at_dwelling(const Game *g, const Map *m,
                             ap_macro_assert_always };
         }
         if (kind && strcmp(kind, "text") == 0) {
-            // Dwelling-open prompt — start typing count.
+            // Dwelling-open prompt — type the EXACT count we can
+            // afford (gold-and-leadership clamped). Typing 9999 and
+            // letting the engine clamp fails when gold-affordable is
+            // less than leadership-cap: the engine's clamp only
+            // considers leadership, then GameBuyTroop returns
+            // rc=1 (no gold) when the leadership-cap value exceeds
+            // what gold can pay for.
+            const TroopDef *td2 = troop_by_id(troop_id);
+            int unit_cost = td2 ? td2->recruit_cost : 0;
+            int lead_max  = GameMaxRecruitable(g, troop_id);
+            int afford    = (unit_cost > 0)
+                                ? (g->stats.gold / unit_cost) : 0;
+            int can_buy   = (afford < lead_max) ? afford : lead_max;
+            if (can_buy > 9999) can_buy = 9999;
+            if (can_buy < 1) can_buy = 1;
+            char digits[8];
+            int dn = snprintf(digits, sizeof digits, "%d", can_buy);
             int sub = st->module_scratch[6];
-            if (sub == 0) {
-                st->module_scratch[6] = 1;
-                snprintf(cmd_buf, sizeof cmd_buf, "%s:9_1",
-                         label_buf);
-                return (ApCmd){ cmd_buf, KEY_NINE,
-                                ap_macro_assert_always };
-            }
-            if (sub == 1) {
-                st->module_scratch[6] = 2;
-                snprintf(cmd_buf, sizeof cmd_buf, "%s:9_2",
-                         label_buf);
-                return (ApCmd){ cmd_buf, KEY_NINE,
-                                ap_macro_assert_always };
-            }
-            if (sub == 2) {
-                st->module_scratch[6] = 3;
-                snprintf(cmd_buf, sizeof cmd_buf, "%s:9_3",
-                         label_buf);
-                return (ApCmd){ cmd_buf, KEY_NINE,
-                                ap_macro_assert_always };
-            }
-            if (sub == 3) {
-                st->module_scratch[6] = 4;
-                snprintf(cmd_buf, sizeof cmd_buf, "%s:9_4",
-                         label_buf);
-                return (ApCmd){ cmd_buf, KEY_NINE,
+            if (sub < 0) sub = 0;
+            if (sub < dn) {
+                st->module_scratch[6] = sub + 1;
+                int k = KEY_ZERO + (digits[sub] - '0');
+                snprintf(cmd_buf, sizeof cmd_buf, "%s:d%d=%c",
+                         label_buf, sub, digits[sub]);
+                return (ApCmd){ cmd_buf, k,
                                 ap_macro_assert_always };
             }
             st->module_scratch[6] = 0;
-            snprintf(cmd_buf, sizeof cmd_buf, "%s:enter",
-                     label_buf);
+            snprintf(cmd_buf, sizeof cmd_buf, "%s:enter[%d]",
+                     label_buf, can_buy);
             return (ApCmd){ cmd_buf, KEY_ENTER,
                             ap_macro_assert_prompt_gone };
         }

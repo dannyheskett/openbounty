@@ -358,6 +358,16 @@ ChestOutcome GameRollChest(Game *g, int zone_index, int x, int y,
                            char *out_body, int out_sz,
                            ChestPending *out_pending);
 
+// Read-only equivalent of GameRollChest: returns what *would* happen
+// if a chest at (x, y) in zone_index were opened, without mutating
+// any game state. Used by autoplay to pre-plan chest pick choices.
+// For CHEST_OUTCOME_GOLD, out_pending->pending_gold and
+// pending_leadership are populated (same values the prompt would
+// offer). For other outcomes, out_pending fields are 0 and the
+// effect value can be inferred from the outcome kind + zone tier.
+ChestOutcome GamePeekChest(const Game *g, int zone_index, int x, int y,
+                           ChestPending *out_pending);
+
 void GameAcceptChestGold(Game *g, int gold);
 void GameAcceptChestLeadership(Game *g, int leadership);
 

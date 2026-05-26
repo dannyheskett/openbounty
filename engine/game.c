@@ -1316,6 +1316,38 @@ static unsigned chest_rand(const Game *g, int x, int y, unsigned salt) {
     return h;
 }
 
+ChestOutcome GamePeekChest(const Game *g, int zone_index, int x, int y,
+                           ChestPending *out_pending) {
+    if (out_pending) {
+        out_pending->pending_gold = 0;
+        out_pending->pending_leadership = 0;
+    }
+    int zi = (zone_index >= 0 && zone_index < 4) ? zone_index : 0;
+    const ResChest *ch = &g->res->economy.chest;
+    int chance = (int)(chest_rand(g, x, y, 1) % 100u) + 1;
+    if (chance < ch->chance_gold[zi]) {
+        int points = (int)(chest_rand(g, x, y, 2) %
+                           (unsigned)(ch->gold_max[zi] > 0 ? ch->gold_max[zi] : 1)) + 1;
+        points += ch->gold_min[zi];
+        int gold = points * 100;
+        int leadership = gold / 50;
+        if (GameHasPower(g, ARTIFACT_POWER_DOUBLE_LEADERSHIP)) leadership *= 2;
+        if (out_pending) {
+            out_pending->pending_gold = gold;
+            out_pending->pending_leadership = leadership;
+        }
+        return CHEST_OUTCOME_GOLD;
+    }
+    if (chance < ch->chance_commission[zi]) return CHEST_OUTCOME_COMMISSION;
+    if (chance < ch->chance_spell_power[zi]) return CHEST_OUTCOME_SPELL_POWER;
+    if (chance < ch->chance_max_spells[zi]) return CHEST_OUTCOME_MAX_SPELLS;
+    if (chance < ch->chance_new_spell[zi]) {
+        if (spells_count() <= 0) return CHEST_OUTCOME_EMPTY;
+        return CHEST_OUTCOME_NEW_SPELL;
+    }
+    return CHEST_OUTCOME_EMPTY;
+}
+
 ChestOutcome GameRollChest(Game *g, int zone_index, int x, int y,
                            char *out_body, int out_sz,
                            ChestPending *out_pending) {

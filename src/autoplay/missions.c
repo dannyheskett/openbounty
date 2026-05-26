@@ -64,7 +64,19 @@ static int manhattan(int ax, int ay, int bx, int by) {
     return dx + dy;
 }
 
+// Per-zone unreachable-chest skiplist check. Populated when nav
+// returns no-path; subsequent picks ignore that tile.
+static bool chest_skip_contains(const AutoplayState *st, int x, int y) {
+    if (!st) return false;
+    int packed = (y << 8) | (x & 0xff);
+    for (int i = 0; i < st->chest_skip_count; i++) {
+        if (st->chest_skip[i] == packed) return true;
+    }
+    return false;
+}
+
 bool ap_pick_safe_acquisition(const Game *g, const Map *m,
+                              const AutoplayState *st,
                               int *out_x, int *out_y) {
     if (!g || !m) return false;
     int best_x = -1, best_y = -1, best_d = -1;
@@ -72,6 +84,7 @@ bool ap_pick_safe_acquisition(const Game *g, const Map *m,
         for (int x = 0; x < m->width; x++) {
             const Tile *t = &m->tiles[y][x];
             if (!is_acquisition(t->interactive)) continue;
+            if (chest_skip_contains(st, x, y)) continue;
             if (ap_foe_in_pursuit_range(g, x, y)) continue;
             int d = manhattan(g->position.x, g->position.y, x, y);
             if (best_d < 0 || d < best_d) {
@@ -85,6 +98,7 @@ bool ap_pick_safe_acquisition(const Game *g, const Map *m,
 }
 
 bool ap_pick_any_acquisition(const Game *g, const Map *m,
+                             const AutoplayState *st,
                              int *out_x, int *out_y) {
     if (!g || !m) return false;
     int best_x = -1, best_y = -1, best_d = -1;
@@ -92,6 +106,46 @@ bool ap_pick_any_acquisition(const Game *g, const Map *m,
         for (int x = 0; x < m->width; x++) {
             const Tile *t = &m->tiles[y][x];
             if (!is_acquisition(t->interactive)) continue;
+            if (chest_skip_contains(st, x, y)) continue;
+            int d = manhattan(g->position.x, g->position.y, x, y);
+            if (best_d < 0 || d < best_d) {
+                best_d = d; best_x = x; best_y = y;
+            }
+        }
+    }
+    if (best_d < 0) return false;
+    *out_x = best_x; *out_y = best_y;
+    return true;
+}
+
+// Pick the nearest acquisition tile guarded ONLY by foes we can
+// beat, AND not on the skiplist (unreachable from prior attempts).
+// Returns false when no winnable+reachable chest remains.
+bool ap_pick_winnable_acquisition(const Game *g, const Map *m,
+                                  const AutoplayState *st,
+                                  int *out_x, int *out_y) {
+    if (!g || !m) return false;
+    int my_hp = ap_army_total_hp(g);
+    int best_x = -1, best_y = -1, best_d = -1;
+    for (int y = 0; y < m->height; y++) {
+        for (int x = 0; x < m->width; x++) {
+            const Tile *t = &m->tiles[y][x];
+            if (!is_acquisition(t->interactive)) continue;
+            if (chest_skip_contains(st, x, y)) continue;
+            bool unwinnable = false;
+            for (int i = 0; i < g->foe_count; i++) {
+                const FoeState *f = &g->foes[i];
+                if (!f->alive || f->friendly) continue;
+                if (strcmp(f->zone, g->position.zone) != 0) continue;
+                int dx = (f->x > x) ? f->x - x : x - f->x;
+                int dy = (f->y > y) ? f->y - y : y - f->y;
+                if (dx > 2 || dy > 2) continue;
+                int foe_hp = ap_effective_foe_hp(f);
+                bool winnable =
+                    (foe_hp == 0) || (my_hp * 2 >= foe_hp * 3);
+                if (!winnable) { unwinnable = true; break; }
+            }
+            if (unwinnable) continue;
             int d = manhattan(g->position.x, g->position.y, x, y);
             if (best_d < 0 || d < best_d) {
                 best_d = d; best_x = x; best_y = y;
@@ -114,6 +168,29 @@ int ap_estimate_foe_hp(const FoeState *foe) {
     return hp;
 }
 
+// Effective foe HP, weighted for hard-to-kill abilities. REGEN
+// stacks heal partial damage each round, so for a normal army that
+// can't burst past hp_each, a regen unit costs roughly 2× its raw
+// HP in attrition. Returns hp value padded by the regen surcharge.
+int ap_effective_foe_hp(const FoeState *foe) {
+    if (!foe) return 0;
+    int hp = 0;
+    for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+        if (!foe->garrison[i].id[0] || foe->garrison[i].count == 0) continue;
+        const TroopDef *t = troop_by_id(foe->garrison[i].id);
+        if (!t) continue;
+        int stack_hp = t->hit_points * foe->garrison[i].count;
+        if (t->abilities & TROOP_ABIL_REGEN) {
+            // Double-count regen stacks — partial damage resets,
+            // so to a non-spell army each regen unit absorbs about
+            // 2× its raw HP before dying.
+            stack_hp *= 2;
+        }
+        hp += stack_hp;
+    }
+    return hp;
+}
+
 static int castle_garrison_hp(const CastleRecord *cr) {
     if (!cr) return 0;
     int hp = 0;
@@ -123,6 +200,161 @@ static int castle_garrison_hp(const CastleRecord *cr) {
         if (t) hp += t->hit_points * cr->garrison[i].count;
     }
     return hp;
+}
+
+static bool villain_caught(const Game *g, const char *villain_id);
+
+// Leadership-target slot in AutoplayState.module_scratch.
+//   [9] = leadership headroom needed to beat the hardest enemy castle
+//         in the current mission_zone. Computed lazily by
+//         leadership_target_for_zone(); reset to 0 when the zone
+//         changes or all castles are cleared.
+#define MS_LEAD_TARGET 9
+
+// Scan every monster + uncaught-villain castle in zone_id and return
+// the largest garrison HP. Used by CHEST_GRIND to size a leadership
+// target: enough troop-hp to soak the toughest castle we'll face.
+// Returns 0 if no enemy castles remain.
+static int max_enemy_castle_hp_in_zone(const Game *g,
+                                       const char *zone_id) {
+    int best = 0;
+    for (int i = 0; i < GAME_CASTLES; i++) {
+        const CastleRecord *cr = &g->castles[i];
+        if (!cr->id[0]) continue;
+        if (cr->owner_kind == CASTLE_OWNER_PLAYER) continue;
+        if (cr->owner_kind == CASTLE_OWNER_VILLAIN &&
+            villain_caught(g, cr->villain_id)) continue;
+        const ResCastle *rc = g->res
+            ? resources_castle_by_id(g->res, cr->id) : NULL;
+        if (!rc || strcmp(rc->zone, zone_id) != 0) continue;
+        int hp = castle_garrison_hp(cr);
+        if (hp > best) best = hp;
+    }
+    return best;
+}
+
+// Average gold cost per 1 hp of army. Knights: 1000g / 35hp ≈ 28.6.
+// Archers: 250g / 10hp = 25. Mixed buy across the recruit pool
+// averages ~30. Used to convert the projected gold pool into the
+// army-hp we can afford, which is the leadership ceiling worth
+// banking.
+#define AP_GOLD_PER_HP 30
+
+// Compute (and cache in MS_LEAD_TARGET) the gold-balanced leadership
+// target for the current zone. The formula:
+//
+//   projected_gold = current_gold
+//                  + Σ chest_gold_offering    (peek every unopened GOLD chest)
+//                  + Σ castle_garrison_spoils (5 × spoils_factor × count per stack)
+//                  + Σ villain_contract_rewards (uncaught villains in zone)
+//
+//   lead_target    = projected_gold / 30
+//
+// Per chest GOLD/LEADERSHIP prompt: take leadership while
+// leadership_base < lead_target, gold otherwise. This pairs each
+// leadership point with ~30g of gold we'll actually have to spend
+// recruiting up to it.
+static int leadership_target_for_zone(const Game *g,
+                                      const Map *m,
+                                      AutoplayState *st,
+                                      const char *zone_id) {
+    int cached = st->module_scratch[MS_LEAD_TARGET];
+    if (cached > 0) return cached;
+
+    // 1. Current gold.
+    int projected_gold = g->stats.gold;
+
+    // 2. Sum offered gold across every unopened GOLD chest in zone.
+    int zone_index = 0;
+    if (g->res) {
+        for (int i = 0; i < g->res->zone_count; i++) {
+            if (strcmp(g->res->zones[i].id, zone_id) == 0) {
+                zone_index = i; break;
+            }
+        }
+    }
+    int chest_gold_sum = 0;
+    int chest_lead_sum = 0;
+    int chest_count = 0;
+    int chest_gold_count = 0;
+    if (m) {
+        for (int y = 0; y < m->height; y++) {
+            for (int x = 0; x < m->width; x++) {
+                const Tile *t = MapGetTile(m, x, y);
+                if (!t) continue;
+                if (t->interactive != INTERACT_TREASURE_CHEST) continue;
+                ChestPending cp = { 0, 0 };
+                ChestOutcome co =
+                    GamePeekChest(g, zone_index, x, y, &cp);
+                chest_count++;
+                if (co == CHEST_OUTCOME_GOLD) {
+                    chest_gold_count++;
+                    chest_gold_sum += cp.pending_gold;
+                    chest_lead_sum += cp.pending_leadership;
+                }
+            }
+        }
+    }
+    projected_gold += chest_gold_sum;
+
+    // 3. Sum garrison spoils for every uncaptured enemy castle in zone.
+    //    Combat formula (engine/combat.c:262): spoils += spoils_factor × 5 × count
+    int spoils_sum = 0;
+    int castle_count = 0;
+    for (int i = 0; i < GAME_CASTLES; i++) {
+        const CastleRecord *cr = &g->castles[i];
+        if (!cr->id[0]) continue;
+        if (cr->owner_kind == CASTLE_OWNER_PLAYER) continue;
+        if (cr->owner_kind == CASTLE_OWNER_VILLAIN &&
+            villain_caught(g, cr->villain_id)) continue;
+        const ResCastle *rc = g->res
+            ? resources_castle_by_id(g->res, cr->id) : NULL;
+        if (!rc || strcmp(rc->zone, zone_id) != 0) continue;
+        castle_count++;
+        for (int s = 0; s < GAME_ARMY_SLOTS; s++) {
+            if (!cr->garrison[s].id[0] ||
+                cr->garrison[s].count <= 0) continue;
+            const TroopDef *td = troop_by_id(cr->garrison[s].id);
+            if (!td) continue;
+            spoils_sum += td->spoils_factor * 5 * cr->garrison[s].count;
+        }
+    }
+    projected_gold += spoils_sum;
+
+    // 4. Sum uncaught villain contract rewards for villains in zone.
+    int villain_reward_sum = 0;
+    int villain_count = 0;
+    if (g->res) {
+        int n = villains_count();
+        for (int i = 0; i < n; i++) {
+            const VillainDef *v = villain_by_index(i);
+            if (!v) continue;
+            if (strcmp(v->zone, zone_id) != 0) continue;
+            if (v->index >= 0 && v->index < 17 &&
+                g->contract.villains_caught[v->index]) continue;
+            villain_reward_sum += v->reward;
+            villain_count++;
+        }
+    }
+    projected_gold += villain_reward_sum;
+
+    int target = projected_gold / AP_GOLD_PER_HP;
+    if (target < 1) target = 1;
+    st->module_scratch[MS_LEAD_TARGET] = target;
+
+    AP_LOG("[mission] lead_target computed for zone=%s: "
+           "current_gold=%d chests_total=%d gold_chests=%d "
+           "chest_gold_offered=%d chest_lead_offered=%d "
+           "castles=%d spoils=%d villains=%d rewards=%d "
+           "→ projected_gold=%d → lead_target=%d (gold/hp=%d)",
+           zone_id, g->stats.gold,
+           chest_count, chest_gold_count,
+           chest_gold_sum, chest_lead_sum,
+           castle_count, spoils_sum,
+           villain_count, villain_reward_sum,
+           projected_gold, target, AP_GOLD_PER_HP);
+
+    return target;
 }
 
 const CastleRecord *ap_pick_weakest_monster_castle(
@@ -137,6 +369,29 @@ const CastleRecord *ap_pick_weakest_monster_castle(
             ? resources_castle_by_id(g->res, cr->id) : NULL;
         if (!rc || strcmp(rc->zone, zone_id) != 0) continue;
         int hp = castle_garrison_hp(cr);
+        if (!best || hp < best_hp) {
+            best = cr; best_hp = hp;
+        }
+    }
+    return best;
+}
+
+// Pick the weakest monster castle in zone whose HP is at or below
+// `hp_cap`. Returns NULL when none qualify — caller can treat that as
+// "no winnable target right now, advance to villains".
+const CastleRecord *ap_pick_winnable_monster_castle(
+    const Game *g, const char *zone_id, int hp_cap) {
+    const CastleRecord *best = NULL;
+    int best_hp = 0;
+    for (int i = 0; i < GAME_CASTLES; i++) {
+        const CastleRecord *cr = &g->castles[i];
+        if (!cr->id[0]) continue;
+        if (cr->owner_kind != CASTLE_OWNER_MONSTERS) continue;
+        const ResCastle *rc = g->res
+            ? resources_castle_by_id(g->res, cr->id) : NULL;
+        if (!rc || strcmp(rc->zone, zone_id) != 0) continue;
+        int hp = castle_garrison_hp(cr);
+        if (hp > hp_cap) continue;
         if (!best || hp < best_hp) {
             best = cr; best_hp = hp;
         }
@@ -166,6 +421,55 @@ const CastleRecord *ap_pick_next_villain(
         return cr;
     }
     return NULL;
+}
+
+// Internal: is this castle a valid CASTLE_GRIND target?
+// Monsters always qualify. Villain castles qualify when the villain
+// is not yet caught. Player castles never qualify.
+static bool castle_is_enemy(const Game *g, const CastleRecord *cr) {
+    if (!cr || !cr->id[0]) return false;
+    if (cr->owner_kind == CASTLE_OWNER_MONSTERS) return true;
+    if (cr->owner_kind == CASTLE_OWNER_VILLAIN) {
+        return !villain_caught(g, cr->villain_id);
+    }
+    return false;
+}
+
+const CastleRecord *ap_pick_winnable_castle(
+    const Game *g, const char *zone_id, int hp_cap) {
+    const CastleRecord *best = NULL;
+    int best_hp = 0;
+    for (int i = 0; i < GAME_CASTLES; i++) {
+        const CastleRecord *cr = &g->castles[i];
+        if (!castle_is_enemy(g, cr)) continue;
+        const ResCastle *rc = g->res
+            ? resources_castle_by_id(g->res, cr->id) : NULL;
+        if (!rc || strcmp(rc->zone, zone_id) != 0) continue;
+        int hp = castle_garrison_hp(cr);
+        if (hp > hp_cap) continue;
+        if (!best || hp < best_hp) {
+            best = cr; best_hp = hp;
+        }
+    }
+    return best;
+}
+
+const CastleRecord *ap_pick_weakest_enemy_castle(
+    const Game *g, const char *zone_id) {
+    const CastleRecord *best = NULL;
+    int best_hp = 0;
+    for (int i = 0; i < GAME_CASTLES; i++) {
+        const CastleRecord *cr = &g->castles[i];
+        if (!castle_is_enemy(g, cr)) continue;
+        const ResCastle *rc = g->res
+            ? resources_castle_by_id(g->res, cr->id) : NULL;
+        if (!rc || strcmp(rc->zone, zone_id) != 0) continue;
+        int hp = castle_garrison_hp(cr);
+        if (!best || hp < best_hp) {
+            best = cr; best_hp = hp;
+        }
+    }
+    return best;
 }
 
 bool ap_pick_next_unsolved_zone(const Game *g, const AutoplayState *st,
@@ -256,13 +560,13 @@ const char *ap_mission_name(int k) {
     case MISSION_VISIT_TOWN:        return "VISIT_TOWN";
     case MISSION_STARTUP_RECRUIT:   return "STARTUP_RECRUIT";
     case MISSION_ALCOVE:            return "ALCOVE";
+    case MISSION_MAGIC_GRIND:       return "MAGIC_GRIND";
     case MISSION_PATHS_END_SPELLS:  return "PATHS_END_SPELLS";
-    case MISSION_GHOST_DWELLING:    return "GHOST_DWELLING";
     case MISSION_SAFE_ACQUIRE:      return "SAFE_ACQUIRE";
     case MISSION_REHOME_RECRUIT:    return "REHOME_RECRUIT";
     case MISSION_CHEST_GRIND:       return "CHEST_GRIND";
-    case MISSION_MONSTER_GRIND:     return "MONSTER_GRIND";
-    case MISSION_VILLAIN_GRIND:     return "VILLAIN_GRIND";
+    case MISSION_CASTLE_GRIND:      return "CASTLE_GRIND";
+    case MISSION_DWELLING_GNOMES:   return "DWELLING_GNOMES";
     case MISSION_SAIL_TO_NEXT:      return "SAIL_TO_NEXT";
     case MISSION_RENT_BOAT:         return "RENT_BOAT";
     case MISSION_DONE:              return "DONE";
@@ -277,6 +581,19 @@ static void advance_to(AutoplayState *st, int mission, const char *zone) {
     st->module_scratch[14] = -1;
     st->module_scratch[15] = -1;
     if (zone) {
+        // Drop the leadership target cache when we cross into a new
+        // zone — the next CHEST_GRIND will recompute it from that
+        // zone's own castle HPs. Same goes for the chest skiplist:
+        // unreachable chests are per-zone (different boat state /
+        // map blockers per zone).
+        if (strcmp(st->mission_zone, zone) != 0) {
+            st->module_scratch[MS_LEAD_TARGET] = 0;
+            for (int i = 0; i < (int)(sizeof(st->chest_skip) /
+                                       sizeof(st->chest_skip[0])); i++) {
+                st->chest_skip[i] = -1;
+            }
+            st->chest_skip_count = 0;
+        }
         size_t k = 0;
         while (k + 1 < sizeof(st->mission_zone) && zone[k]) {
             st->mission_zone[k] = zone[k]; k++;
@@ -291,7 +608,13 @@ void ap_mission_reset(AutoplayState *st) {
     st->mission_kind = MISSION_INTRO;
     st->mission_substep = 0;
     st->mission_zone[0] = '\0';
+    st->module_scratch[MS_LEAD_TARGET] = 0;
     for (int i = 0; i < MAX_ZONES; i++) st->zone_solved[i] = false;
+    for (int i = 0; i < (int)(sizeof(st->chest_skip) /
+                               sizeof(st->chest_skip[0])); i++) {
+        st->chest_skip[i] = -1;
+    }
+    st->chest_skip_count = 0;
     AP_LOG("[mission] reset -> INTRO");
 }
 
@@ -414,12 +737,17 @@ static ApCmd handle_startup_recruit(const Game *g, const Map *m,
         return (ApCmd){ "STARTUP_RECRUIT:a", KEY_A,
                         assert_always_true };
     }
-    // sub 2: row-buy loop.
+    // sub 2: row-buy loop. Skip row 0 (militia for Knight class) —
+    // we recruit gnomes from a forest dwelling immediately after.
     if (sub == 2) {
         int s = st->module_scratch[11];
         if (s < 0) s = 0;
         int row = s >> 3;
         int ks  = s & 7;
+        if (row == 0) {  // skip militia row
+            st->module_scratch[11] = (1 << 3) | 0;
+            row = 1;
+        }
         if (row >= 5) {
             st->mission_substep = 3;
             return (ApCmd){ "STARTUP_RECRUIT:esc_recruit",
@@ -443,7 +771,8 @@ static ApCmd handle_startup_recruit(const Game *g, const Map *m,
     if (views_active() == VIEW_NONE) {
         AP_LOG("[mission] STARTUP_RECRUIT done: gold=%d hp=%d",
                g->stats.gold, ap_army_total_hp(g));
-        advance_to(st, MISSION_SAFE_ACQUIRE, g->position.zone);
+        // Visit forest dwelling to recruit gnomes (replaces militia).
+        advance_to(st, MISSION_DWELLING_GNOMES, g->position.zone);
         return (ApCmd){ "STARTUP_RECRUIT:done", 0,
                         assert_always_true };
     }
@@ -479,8 +808,12 @@ static ApCmd handle_safe_acquire(const Game *g, const Map *m,
             return (ApCmd){ "SAFE:enter", KEY_ENTER,
                             assert_prompt_gone };
         }
-        // Chest A/B prompt — leadership while below next rank, else gold.
-        int letter = (ap_leadership_until_next_rank(g) > 0)
+        // Chest A/B prompt. Take leadership (B) while EITHER:
+        // Take leadership (B) while leadership_base < lead_target,
+        // gold (A) afterwards. Target = projected_gold / 30
+        // (gold-balanced; see leadership_target_for_zone).
+        int lead_target = leadership_target_for_zone(g, m, st, zone);
+        int letter = (g->stats.leadership_base < lead_target)
                          ? KEY_B : KEY_A;
         return (ApCmd){ "SAFE:chest", letter, assert_prompt_gone };
     }
@@ -502,7 +835,7 @@ static ApCmd handle_safe_acquire(const Game *g, const Map *m,
         }
     }
     if (need_pick) {
-        if (!ap_pick_safe_acquisition(g, m, &tx, &ty)) {
+        if (!ap_pick_safe_acquisition(g, m, st, &tx, &ty)) {
             AP_LOG("[mission] SAFE_ACQUIRE done in %s — advancing", zone);
             st->module_scratch[14] = -1;
             st->module_scratch[15] = -1;
@@ -532,8 +865,24 @@ static ApCmd handle_safe_acquire(const Game *g, const Map *m,
             return (ApCmd){ "SAFE:divert_rent", 0,
                             assert_always_true };
         }
-        AP_LOG("[mission] SAFE: no safe path to (%d,%d) — advancing",
-               tx, ty);
+        // No foe-safe path. Skip this chest and re-pick on the
+        // next tick. Only advance to REHOME_RECRUIT once we've
+        // exhausted the safe-pickable chests.
+        int cap = (int)(sizeof(st->chest_skip) /
+                        sizeof(st->chest_skip[0]));
+        if (st->chest_skip_count < cap) {
+            st->chest_skip[st->chest_skip_count++] =
+                (ty << 8) | (tx & 0xff);
+            AP_LOG("[mission] SAFE: no path to (%d,%d) — skip "
+                   "(skip_count=%d) and re-pick",
+                   tx, ty, st->chest_skip_count);
+            st->module_scratch[14] = -1;
+            st->module_scratch[15] = -1;
+            return (ApCmd){ "SAFE:skip_unreachable", 0,
+                            assert_always_true };
+        }
+        AP_LOG("[mission] SAFE: no safe path to (%d,%d) and "
+               "skiplist full — advancing", tx, ty);
         st->module_scratch[14] = -1;
         st->module_scratch[15] = -1;
         advance_to(st, MISSION_REHOME_RECRUIT, zone);
@@ -551,6 +900,21 @@ static ApCmd handle_rehome_recruit(const Game *g, const Map *m,
                                    AutoplayState *st,
                                    bool *out_phase_done,
                                    AutoplayPhase *out_next_phase) {
+    // Before recruiting (which drains gold), detour to ALCOVE if
+    // we can afford it and don't yet know magic. Home-zone only —
+    // the alcove sits in continentia and we'd otherwise sail away
+    // from a foreign zone just to visit it.
+    int alcove_cost = g->res ? g->res->economy.alcove_cost : 5000;
+    if (strcmp(g->position.zone, "continentia") == 0 &&
+        !g->stats.knows_magic && g->stats.gold > alcove_cost &&
+        st->mission_resume_kind == 0) {
+        AP_LOG("[mission] REHOME: pre-recruit gold=%d > alcove=%d "
+               "— detour to ALCOVE first",
+               g->stats.gold, alcove_cost);
+        advance_to(st, MISSION_ALCOVE, st->mission_zone);
+        return (ApCmd){ "REHOME:divert_alcove", 0,
+                        assert_always_true };
+    }
     // Reserve handled by the recruit screen's RECRUIT_GOLD_RESERVE
     // constant (1000g); no need to gate at row-start.
     ApCmd r = ap_rehome_and_recruit(g, m, st, /*reserve=*/0,
@@ -564,6 +928,19 @@ static ApCmd handle_rehome_recruit(const Game *g, const Map *m,
         st->mission_resume_kind = 0;
         if (next == 0 || next == MISSION_REHOME_RECRUIT) {
             next = MISSION_CHEST_GRIND;
+        }
+        // Opportunistic detour: if we just finished REHOME at
+        // continentia, don't yet know magic, and have enough gold
+        // for the alcove, head there before going back out. Skip
+        // for non-home zones — the alcove only lives at home.
+        int alcove_cost = g->res ? g->res->economy.alcove_cost : 5000;
+        if (strcmp(g->position.zone, "continentia") == 0 &&
+            !g->stats.knows_magic &&
+            g->stats.gold > alcove_cost &&
+            next != MISSION_ALCOVE) {
+            AP_LOG("[mission] REHOME: gold=%d > alcove=%d — detour "
+                   "to ALCOVE", g->stats.gold, alcove_cost);
+            next = MISSION_ALCOVE;
         }
         advance_to(st, next, st->mission_zone);
     }
@@ -579,12 +956,97 @@ static ApCmd handle_chest_grind(const Game *g, const Map *m,
     static char cmd[64];
     const char *zone = st->mission_zone;
     if (strcmp(g->position.zone, zone) != 0) {
-        advance_to(st, MISSION_MONSTER_GRIND, zone);
+        advance_to(st, MISSION_CASTLE_GRIND, zone);
         return (ApCmd){ "GRIND:wrong_zone", 0, assert_always_true };
+    }
+    // Refill-before-critical: if the army has bled below 50% of
+    // leadership capacity, divert to REHOME_RECRUIT *now* —
+    // before the next foe fight (where we'd be weak enough to
+    // get trapped). module_scratch[10] caches the last hp value
+    // we used as the refill check so we don't keep diverting
+    // when REHOME can't actually buy more (gold-limited).
+    if (!prompt_is_active() && !dialog_is_active()) {
+        int my_hp   = ap_army_total_hp(g);
+        int my_lead = g->stats.leadership_current;
+        // Refill threshold: hp < 50% of leadership capacity.
+        // Leadership_current scales with rank + chest bonuses;
+        // 50% of that is the natural "I'm getting weak" marker.
+        int threshold = my_lead / 2;
+        int last_refill_hp = st->module_scratch[10];
+        if (my_hp < threshold && my_hp != last_refill_hp) {
+            AP_LOG("[mission] CHEST_GRIND: army hp=%d < 50%% of "
+                   "lead=%d (threshold=%d) — divert to REHOME",
+                   my_hp, my_lead, threshold);
+            st->module_scratch[10] = my_hp;
+            st->module_scratch[14] = -1;
+            st->module_scratch[15] = -1;
+            st->mission_resume_kind = MISSION_CHEST_GRIND;
+            advance_to(st, MISSION_REHOME_RECRUIT, zone);
+            return (ApCmd){ "GRIND:divert_refill", 0,
+                            assert_always_true };
+        }
     }
     if (prompt_is_active()) {
         const char *kind = prompt_kind_str();
         if (kind && strcmp(kind, "yes_no") == 0) {
+            // yes_no covers hostile foe encounters, friendly
+            // recruits, and castle attacks. Only hostile foes
+            // get the over-match check — friendlies and other
+            // yes_no prompts default to Y. Hostile foe is
+            // identified by pending_foe_id mapping to a FoeState
+            // whose friendly==false.
+            const char *fid = pending_foe_id;
+            const FoeState *fs = (fid && fid[0])
+                                     ? GameFindFoeConst(g, fid)
+                                     : NULL;
+            bool hostile = fs && !fs->friendly;
+            if (hostile) {
+                int my_hp  = ap_army_total_hp(g);
+                int foe_hp = ap_effective_foe_hp(fs);
+                // Fight when my_hp × 2 >= foe_hp × 3 (army ≥
+                // 1.5× effective foe). foe_hp doubles REGEN
+                // stacks so trolls cost us 2× their raw HP. If
+                // outmatched, drop the chest target and decline
+                // — re-pick a different chest next tick.
+                bool worth_fighting =
+                    (foe_hp == 0) || (my_hp * 2 >= foe_hp * 3);
+                if (!worth_fighting) {
+                    // Track decline count in module_scratch[8].
+                    // After 3 declines, give up on CHEST_GRIND —
+                    // the unkillable foe is blocking too many
+                    // chests; better to move on to CASTLE_GRIND.
+                    int declines = st->module_scratch[8];
+                    if (declines < 0) declines = 0;
+                    declines++;
+                    st->module_scratch[8] = declines;
+                    AP_LOG("[mission] GRIND: DECLINE #%d foe='%s' "
+                           "my_hp=%d effective_foe_hp=%d (ratio %.2f)",
+                           declines, fid, my_hp, foe_hp,
+                           (float)my_hp / (float)foe_hp);
+                    if (declines >= 3) {
+                        AP_LOG("[mission] GRIND: %d declines — "
+                               "advance to CASTLE_GRIND",
+                               declines);
+                        st->module_scratch[8]  = 0;
+                        st->module_scratch[14] = -1;
+                        st->module_scratch[15] = -1;
+                        advance_to(st, MISSION_CASTLE_GRIND, zone);
+                        return (ApCmd){ "GRIND:n_foe_giveup",
+                                        KEY_N,
+                                        assert_always_true };
+                    }
+                    st->module_scratch[14] = -1;
+                    st->module_scratch[15] = -1;
+                    return (ApCmd){ "GRIND:n_foe", KEY_N,
+                                    assert_always_true };
+                }
+                // Successful fight — reset decline counter.
+                st->module_scratch[8] = 0;
+                AP_LOG("[mission] GRIND: fight foe='%s' "
+                       "my_hp=%d effective_foe_hp=%d (ratio %.2f)",
+                       fid, my_hp, foe_hp,
+                       (float)my_hp / (float)foe_hp);
+            }
             *out_phase_done = true;
             *out_next_phase = AP_FLOW_COMBAT;
             return (ApCmd){ "GRIND:y_foe", KEY_Y,
@@ -594,7 +1056,11 @@ static ApCmd handle_chest_grind(const Game *g, const Map *m,
             return (ApCmd){ "GRIND:enter", KEY_ENTER,
                             assert_prompt_gone };
         }
-        int letter = (ap_leadership_until_next_rank(g) > 0)
+        // Chest A/B prompt — same rule as SAFE_ACQUIRE: B
+        // (leadership) while below gold-balanced lead_target,
+        // A (gold) afterwards.
+        int lead_target = leadership_target_for_zone(g, m, st, zone);
+        int letter = (g->stats.leadership_base < lead_target)
                          ? KEY_B : KEY_A;
         return (ApCmd){ "GRIND:chest", letter,
                         assert_prompt_gone };
@@ -611,11 +1077,25 @@ static ApCmd handle_chest_grind(const Game *g, const Map *m,
         if (!t || !is_acquisition(t->interactive)) need_pick = true;
     }
     if (need_pick) {
-        if (!ap_pick_any_acquisition(g, m, &tx, &ty)) {
-            AP_LOG("[mission] CHEST_GRIND done in %s", zone);
+        // Two-pass: prefer foe-free chests, then chests guarded only
+        // by winnable foes. Unwinnable chests are skipped entirely.
+        bool picked = ap_pick_safe_acquisition(g, m, st, &tx, &ty);
+        if (!picked) {
+            picked = ap_pick_winnable_acquisition(g, m, st, &tx, &ty);
+            if (picked) {
+                AP_LOG("[mission] CHEST_GRIND pass2 (winnable-foe) "
+                       "target=(%d,%d)", tx, ty);
+            }
+        } else {
+            AP_LOG("[mission] CHEST_GRIND pass1 (foe-free) "
+                   "target=(%d,%d)", tx, ty);
+        }
+        if (!picked) {
+            AP_LOG("[mission] CHEST_GRIND done in %s "
+                   "(remaining chests all unwinnable)", zone);
             st->module_scratch[14] = -1;
             st->module_scratch[15] = -1;
-            advance_to(st, MISSION_MONSTER_GRIND, zone);
+            advance_to(st, MISSION_CASTLE_GRIND, zone);
             return (ApCmd){ "GRIND:done", 0, assert_always_true };
         }
         st->module_scratch[14] = tx;
@@ -631,7 +1111,7 @@ static ApCmd handle_chest_grind(const Game *g, const Map *m,
     int key = ap_nav_step(g, m, tx, ty);
     if (key == 0) {
         // No path. If hero has no boat, try renting one — the goal
-        // might be reachable via water. Otherwise halt.
+        // might be reachable via water.
         if (!g->boat.has_boat && g->stats.gold > 500) {
             AP_LOG("[mission] GRIND: no path to (%d,%d) from (%d,%d) "
                    "boat=0 — diverting to RENT_BOAT",
@@ -641,51 +1121,134 @@ static ApCmd handle_chest_grind(const Game *g, const Map *m,
             return (ApCmd){ "GRIND:divert_rent", 0,
                             assert_always_true };
         }
-        AP_LOG("[mission] GRIND: no path to (%d,%d) from (%d,%d) "
-               "boat=%d gold=%d — HALT",
-               tx, ty, g->position.x, g->position.y,
-               (int)g->boat.has_boat, g->stats.gold);
-        *out_phase_done = true;
-        *out_next_phase = AP_FLOW_DONE;
-        return (ApCmd){ "GRIND:no_path_halt", 0,
+        // Unreachable chest. Add to skiplist and drop sticky target
+        // so the next tick re-picks a different chest. If the skip
+        // list is full, halt (extremely rare).
+        int cap = (int)(sizeof(st->chest_skip) /
+                        sizeof(st->chest_skip[0]));
+        if (st->chest_skip_count < cap) {
+            st->chest_skip[st->chest_skip_count++] =
+                (ty << 8) | (tx & 0xff);
+            AP_LOG("[mission] GRIND: no path to (%d,%d) — skip "
+                   "(skip_count=%d) and re-pick",
+                   tx, ty, st->chest_skip_count);
+            st->module_scratch[14] = -1;
+            st->module_scratch[15] = -1;
+            return (ApCmd){ "GRIND:skip_unreachable", 0,
+                            assert_always_true };
+        }
+        AP_LOG("[mission] GRIND: no path to (%d,%d) and skiplist "
+               "full (%d) — advance to CASTLE_GRIND",
+               tx, ty, st->chest_skip_count);
+        st->module_scratch[14] = -1;
+        st->module_scratch[15] = -1;
+        advance_to(st, MISSION_CASTLE_GRIND, zone);
+        return (ApCmd){ "GRIND:skip_full", 0,
                         assert_always_true };
     }
     snprintf(cmd, sizeof cmd, "GRIND:nav(%d,%d)", tx, ty);
     return (ApCmd){ cmd, key, assert_always_true };
 }
 
-// MISSION_MONSTER_GRIND: iterate monster castles in zone. Before
-// attacking each one, ensure our army HP exceeds 2x the garrison's
-// HP — if not, divert to REHOME_RECRUIT, then back here.
-static ApCmd handle_monster_grind(const Game *g, const Map *m,
-                                  AutoplayState *st,
-                                  bool *out_phase_done,
-                                  AutoplayPhase *out_next_phase) {
+// MISSION_CASTLE_GRIND: unified enemy-castle queue.
+//
+//   1. Pick weakest enemy castle (monster or uncaught-villain) in
+//      zone with garrison HP ≤ army × 1.5. That's the target.
+//   2. If target is a villain and active_id doesn't match: BFS to
+//      nearest town, cycle contracts until match (free, no gold).
+//   3. Refill army before engaging; if refill is a no-op AND army
+//      ≥ castle hp, attack with what we have; otherwise end run
+//      (rank ceiling can't grow without other-zone villains).
+//   4. After attacking, REHOME-recruit between castles to refill.
+//   5. When no winnable castle remains in zone, mark zone solved
+//      and SAIL_TO_NEXT. If no other zones, MISSION_DONE.
+static ApCmd handle_castle_grind(const Game *g, const Map *m,
+                                 AutoplayState *st,
+                                 bool *out_phase_done,
+                                 AutoplayPhase *out_next_phase) {
     const char *zone = st->mission_zone;
     if (strcmp(g->position.zone, zone) != 0) {
-        advance_to(st, MISSION_VILLAIN_GRIND, zone);
-        return (ApCmd){ "MONSTER:wrong_zone", 0,
+        for (int i = 0; i < g->res->zone_count && i < MAX_ZONES; i++) {
+            if (strcmp(g->res->zones[i].id, zone) == 0) {
+                st->zone_solved[i] = true;
+            }
+        }
+        advance_to(st, MISSION_SAIL_TO_NEXT, "");
+        return (ApCmd){ "CASTLE:wrong_zone", 0,
                         assert_always_true };
     }
-    const CastleRecord *cr = ap_pick_weakest_monster_castle(g, zone);
+    // Always pick the weakest enemy castle in this zone. No
+    // threshold — we fight in absolute HP order. Refill happens
+    // between every castle (below).
+    const CastleRecord *cr = ap_pick_weakest_enemy_castle(g, zone);
     if (!cr) {
-        AP_LOG("[mission] MONSTER_GRIND done in %s", zone);
-        advance_to(st, MISSION_VILLAIN_GRIND, zone);
-        return (ApCmd){ "MONSTER:done", 0, assert_always_true };
+        AP_LOG("[mission] CASTLE_GRIND done in %s — all enemy "
+               "castles cleared", zone);
+        for (int i = 0; i < g->res->zone_count && i < MAX_ZONES; i++) {
+            if (strcmp(g->res->zones[i].id, zone) == 0) {
+                st->zone_solved[i] = true;
+            }
+        }
+        advance_to(st, MISSION_SAIL_TO_NEXT, "");
+        return (ApCmd){ "CASTLE:zone_clear", 0,
+                        assert_always_true };
     }
+    bool is_villain = (cr->owner_kind == CASTLE_OWNER_VILLAIN);
     // Need siege weapons to enter — divert if missing.
     if (!g->stats.siege_weapons && g->stats.gold > 3000) {
-        AP_LOG("[mission] MONSTER_GRIND: no siege — divert to RENT/SIEGE");
-        st->mission_resume_kind = MISSION_MONSTER_GRIND;
+        AP_LOG("[mission] CASTLE_GRIND: no siege — divert to RENT");
+        st->mission_resume_kind = MISSION_CASTLE_GRIND;
         advance_to(st, MISSION_RENT_BOAT, zone);
-        return (ApCmd){ "MONSTER:divert_siege", 0,
+        return (ApCmd){ "CASTLE:divert_siege", 0,
                         assert_always_true };
     }
-    // Refill army if HP is low vs the target castle's garrison.
-    // Only check at the start (no castle view active) — once we're
-    // mid-fight we let the engine resolve.
+    // Villain prerequisite: matching contract. Cycle (free) at any
+    // town until the active contract names our target villain.
+    if (is_villain) {
+        bool contract_matches =
+            (g->contract.active_id[0] &&
+             strcmp(g->contract.active_id, cr->villain_id) == 0);
+        if (!contract_matches) {
+            AP_LOG("[mission] CASTLE_GRIND: villain target=%s "
+                   "contract=%s — cycle for match",
+                   cr->villain_id,
+                   g->contract.active_id[0]
+                       ? g->contract.active_id : "(none)");
+            char tid[24];
+            if (!pick_nearest_town(g, m, tid, sizeof tid)) {
+                AP_LOG("[mission] CASTLE_GRIND: no town in zone — "
+                       "END RUN (can't cycle contract)");
+                advance_to(st, MISSION_DONE, "");
+                *out_phase_done = true;
+                *out_next_phase = AP_FLOW_DONE;
+                return (ApCmd){ "CASTLE:no_town", 0,
+                                assert_always_true };
+            }
+            if (views_active() == VIEW_TOWN) {
+                // Cycle: press A repeatedly until the active
+                // contract matches our target villain. ap_town_action
+                // handles the prompt accept/decline.
+                char action[64];
+                snprintf(action, sizeof action,
+                         "contract_villain:%s", cr->villain_id);
+                return ap_town_action(g, m, st, action,
+                                      (AutoplayPhase)0,
+                                      (AutoplayPhase)0,
+                                      out_phase_done,
+                                      out_next_phase);
+            }
+            return ap_nav_to_town(g, m, st, tid,
+                                  (AutoplayPhase)0, (AutoplayPhase)0,
+                                  out_phase_done, out_next_phase);
+        }
+    }
+    // Refill before EVERY castle, exactly once per castle. Track
+    // which castle we last refilled for in module_scratch[13] (as a
+    // hash of the castle id). When we change target (castle id
+    // changes), force a fresh refill.
     if (views_active() == VIEW_NONE && !dialog_is_active() &&
         !prompt_is_active()) {
+        int my_hp = ap_army_total_hp(g);
         int castle_hp = 0;
         for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
             if (!cr->garrison[i].id[0] ||
@@ -693,32 +1256,40 @@ static ApCmd handle_monster_grind(const Game *g, const Map *m,
             const TroopDef *t = troop_by_id(cr->garrison[i].id);
             if (t) castle_hp += t->hit_points * cr->garrison[i].count;
         }
-        int my_hp = ap_army_total_hp(g);
-        // Refill if HP is well below 1.5x castle. Use gold as
-        // the "did REHOME help" tripwire: if the last divert left
-        // gold unchanged (we were at the leadership cap and
-        // couldn't actually buy anything), skip further diverts
-        // for this castle and attack.
-        bool needs_refill = (castle_hp > 0 &&
-                             my_hp * 2 < castle_hp * 3);
-        int last_divert_hp = st->module_scratch[13];
-        // If we already diverted at this exact HP, recruit was a
-        // no-op (cap reached) — skip further diverts and attack.
-        bool refill_was_noop = (last_divert_hp == my_hp);
-        AP_LOG("[mission] MONSTER_GRIND check: my_hp=%d castle=%d "
-               "(%s) needs=%d last_hp=%d",
-               my_hp, castle_hp, cr->id,
-               (int)needs_refill, last_divert_hp);
-        if (needs_refill && !refill_was_noop) {
-            AP_LOG("[mission] MONSTER_GRIND: divert to REHOME_RECRUIT");
-            st->module_scratch[13] = my_hp;
-            st->mission_resume_kind = MISSION_MONSTER_GRIND;
+        // FNV-1a hash of cr->id to fit in module_scratch[13].
+        unsigned target_tag = 2166136261u;
+        for (const char *p = cr->id; *p; p++) {
+            target_tag ^= (unsigned char)*p;
+            target_tag *= 16777619u;
+        }
+        int target_tag_i = (int)(target_tag & 0x7FFFFFFF);
+        int last_refilled_tag = st->module_scratch[13];
+        AP_LOG("[mission] CASTLE_GRIND check: target=%s owner=%s "
+               "my_hp=%d castle=%d refilled_for=%d cur_tag=%d",
+               cr->id, is_villain ? "VILLAIN" : "MONSTER",
+               my_hp, castle_hp, last_refilled_tag, target_tag_i);
+        if (last_refilled_tag != target_tag_i) {
+            AP_LOG("[mission] CASTLE_GRIND: refill before %s",
+                   cr->id);
+            st->module_scratch[13] = target_tag_i;
+            st->mission_resume_kind = MISSION_CASTLE_GRIND;
             advance_to(st, MISSION_REHOME_RECRUIT, zone);
-            return (ApCmd){ "MONSTER:divert_refill", 0,
+            return (ApCmd){ "CASTLE:refill", 0,
                             assert_always_true };
         }
-        if (needs_refill) {
-            AP_LOG("[mission] MONSTER_GRIND: refill exhausted, attack");
+        // After REHOME completes, visit a forest dwelling to fill
+        // remaining leadership with gnomes (12 g/hp vs militia at
+        // 25 g/hp). Module slot [12] mirrors [13] for this step:
+        // tagged with the same target so we do it exactly once per
+        // castle.
+        int last_gnomes_tag = st->module_scratch[12];
+        if (last_gnomes_tag != target_tag_i) {
+            AP_LOG("[mission] CASTLE_GRIND: gnomes top-up before %s",
+                   cr->id);
+            st->module_scratch[12] = target_tag_i;
+            advance_to(st, MISSION_DWELLING_GNOMES, zone);
+            return (ApCmd){ "CASTLE:gnomes", 0,
+                            assert_always_true };
         }
     }
     return ap_nav_to_castle(g, m, st, cr->id,
@@ -726,123 +1297,35 @@ static ApCmd handle_monster_grind(const Game *g, const Map *m,
                             out_phase_done, out_next_phase);
 }
 
-// MISSION_VILLAIN_GRIND: per villain in zone:
-//   - if no contract: walk to any town in zone, take contract for this zone
-//   - then nav to villain castle, fight
-//   - on capture, divert to REHOME_RECRUIT, then back here
-static ApCmd handle_villain_grind(const Game *g, const Map *m,
-                                  AutoplayState *st,
-                                  bool *out_phase_done,
-                                  AutoplayPhase *out_next_phase) {
+// MISSION_DWELLING_GNOMES: nav to nearest forest dwelling in zone
+// (any one — gnomes is the only forest troop we want), recruit max
+// gnomes. Idempotent: skips if no forest dwelling exists in zone.
+// Falls through to CASTLE_GRIND when done.
+static ApCmd handle_dwelling_gnomes(const Game *g, const Map *m,
+                                    AutoplayState *st,
+                                    bool *out_phase_done,
+                                    AutoplayPhase *out_next_phase) {
     const char *zone = st->mission_zone;
+    // Pick the next mission to advance to when done. When the
+    // pre-castle tag (module_scratch[12]) is a positive castle-id
+    // hash, we got here from CASTLE_GRIND and should return there.
+    // Otherwise (default -1 from init, or post-STARTUP_RECRUIT)
+    // continue the standard chain: ALCOVE.
+    int next_mission = (st->module_scratch[12] > 0)
+                           ? MISSION_CASTLE_GRIND
+                           : MISSION_ALCOVE;
     if (strcmp(g->position.zone, zone) != 0) {
-        // Mark zone solved (we may need to revisit) and advance.
-        for (int i = 0; i < g->res->zone_count && i < MAX_ZONES; i++) {
-            if (strcmp(g->res->zones[i].id, zone) == 0) {
-                st->zone_solved[i] = true;
-            }
-        }
-        advance_to(st, MISSION_SAIL_TO_NEXT, "");
-        return (ApCmd){ "VILLAIN:wrong_zone", 0,
-                        assert_always_true };
+        advance_to(st, next_mission, zone);
+        return (ApCmd){ "DWELL:wrong_zone", 0, assert_always_true };
     }
-    // Check if there are ANY uncaught villains left in this zone.
-    if (!ap_pick_next_villain(g, zone)) {
-        AP_LOG("[mission] VILLAIN_GRIND done in %s", zone);
-        for (int i = 0; i < g->res->zone_count && i < MAX_ZONES; i++) {
-            if (strcmp(g->res->zones[i].id, zone) == 0) {
-                st->zone_solved[i] = true;
-            }
-        }
-        advance_to(st, MISSION_SAIL_TO_NEXT, "");
-        return (ApCmd){ "VILLAIN:done", 0, assert_always_true };
+    ApCmd r = ap_recruit_at_dwelling(g, m, st, NULL, "gnomes", 9999,
+        (AutoplayPhase)0, (AutoplayPhase)0,
+        out_phase_done, out_next_phase);
+    if (*out_phase_done) {
+        *out_phase_done = false;
+        advance_to(st, next_mission, zone);
     }
-    // Don't pre-pick a specific villain — the contract cycle decides
-    // who we get. Accept any contract whose villain lives in this
-    // zone, then attack THAT villain's castle.
-    const CastleRecord *cr = NULL;
-    if (g->contract.active_id[0]) {
-        const VillainDef *v = villain_by_id(g->contract.active_id);
-        if (v && strcmp(v->zone, zone) == 0) {
-            // Find the castle for this contracted villain.
-            for (int i = 0; i < GAME_CASTLES; i++) {
-                if (g->castles[i].owner_kind != CASTLE_OWNER_VILLAIN)
-                    continue;
-                if (strcmp(g->castles[i].villain_id,
-                           g->contract.active_id) == 0) {
-                    cr = &g->castles[i];
-                    break;
-                }
-            }
-        }
-    }
-    if (!cr) {
-        // No usable contract — go to a town and take one.
-        AP_LOG("[mission] VILLAIN: contract=%s — need zone-%s contract",
-               g->contract.active_id[0] ? g->contract.active_id : "(none)",
-               zone);
-        int tx, ty;
-        char tid[24];
-        if (!ap_pick_any_town(m, &tx, &ty, tid, sizeof tid)) {
-            AP_LOG("[mission] VILLAIN: no town in zone — skip");
-            for (int i = 0; i < g->res->zone_count && i < MAX_ZONES; i++) {
-                if (strcmp(g->res->zones[i].id, zone) == 0) {
-                    st->zone_solved[i] = true;
-                }
-            }
-            advance_to(st, MISSION_SAIL_TO_NEXT, "");
-            return (ApCmd){ "VILLAIN:no_town", 0,
-                            assert_always_true };
-        }
-        if (views_active() == VIEW_TOWN) {
-            char action[48];
-            snprintf(action, sizeof action, "contract_zone:%s", zone);
-            return ap_town_action(g, m, st, action,
-                                  (AutoplayPhase)0, (AutoplayPhase)0,
-                                  out_phase_done, out_next_phase);
-        }
-        return ap_nav_to_town(g, m, st, tid,
-                              (AutoplayPhase)0, (AutoplayPhase)0,
-                              out_phase_done, out_next_phase);
-    }
-    // Have correct contract. Refill army before engaging — even on
-    // the FIRST villain. The previous MONSTER_GRIND probably left
-    // the army depleted. Mirrors the MONSTER_GRIND refill check.
-    if (views_active() == VIEW_NONE && !dialog_is_active() &&
-        !prompt_is_active()) {
-        int castle_hp = 0;
-        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
-            if (!cr->garrison[i].id[0] ||
-                cr->garrison[i].count == 0) continue;
-            const TroopDef *t = troop_by_id(cr->garrison[i].id);
-            if (t) castle_hp += t->hit_points * cr->garrison[i].count;
-        }
-        int my_hp = ap_army_total_hp(g);
-        int last_divert_hp = st->module_scratch[13];
-        bool needs_refill = (castle_hp > 0 &&
-                             my_hp * 2 < castle_hp * 3);
-        // If we already diverted at this same HP, the recruit was a
-        // no-op (army at leadership cap) — don't divert again.
-        bool refill_was_noop = (last_divert_hp == my_hp);
-        AP_LOG("[mission] VILLAIN_GRIND check: my_hp=%d castle=%d "
-               "(%s) needs=%d last_hp=%d",
-               my_hp, castle_hp, cr->id,
-               (int)needs_refill, last_divert_hp);
-        if (needs_refill && !refill_was_noop) {
-            AP_LOG("[mission] VILLAIN_GRIND: divert to REHOME_RECRUIT");
-            st->module_scratch[13] = my_hp;
-            st->mission_resume_kind = MISSION_VILLAIN_GRIND;
-            advance_to(st, MISSION_REHOME_RECRUIT, zone);
-            return (ApCmd){ "VILLAIN:divert_refill", 0,
-                            assert_always_true };
-        }
-        if (needs_refill) {
-            AP_LOG("[mission] VILLAIN_GRIND: refill exhausted, attack");
-        }
-    }
-    return ap_nav_to_castle(g, m, st, cr->id,
-                            (AutoplayPhase)0, (AutoplayPhase)0,
-                            out_phase_done, out_next_phase);
+    return r;
 }
 
 // MISSION_RENT_BOAT: nav to nearest town, enter VIEW_TOWN, buy
@@ -938,25 +1421,177 @@ static ApCmd handle_sail_to_next(const Game *g, const Map *m,
                            out_phase_done, out_next_phase);
 }
 
-// MISSION_ALCOVE: visit the magic alcove if any tile of that
-// interactive exists in this zone and knows_magic is false.
+// MISSION_ALCOVE: home-zone-only. Visit the magic alcove in
+// continentia if knows_magic is false. Any non-home zone short-
+// circuits to SAFE_ACQUIRE — the only alcove lives at home, and
+// we don't sail back there mid-zone just for it.
 static ApCmd handle_alcove(const Game *g, const Map *m,
                            AutoplayState *st,
                            bool *out_phase_done,
                            AutoplayPhase *out_next_phase) {
+    if (strcmp(g->position.zone, "continentia") != 0) {
+        advance_to(st, MISSION_SAFE_ACQUIRE, g->position.zone);
+        return (ApCmd){ "ALCOVE:not_home", 0, assert_always_true };
+    }
     if (g->stats.knows_magic) {
-        advance_to(st, MISSION_PATHS_END_SPELLS, g->position.zone);
+        advance_to(st, MISSION_MAGIC_GRIND, g->position.zone);
         return (ApCmd){ "ALCOVE:already", 0, assert_always_true };
+    }
+    // Alcove costs alcove_cost gold (5000g on stock). Defer if we
+    // can't afford — the chest/monster grind will come back here
+    // later once we've accumulated enough.
+    int alcove_cost = g->res ? g->res->economy.alcove_cost : 5000;
+    if (g->stats.gold <= alcove_cost) {
+        AP_LOG("[mission] ALCOVE: gold=%d < cost=%d — defer past "
+               "grind", g->stats.gold, alcove_cost);
+        advance_to(st, MISSION_SAFE_ACQUIRE, g->position.zone);
+        return (ApCmd){ "ALCOVE:defer_funds", 0, assert_always_true };
     }
     int ax, ay;
     if (!ap_find_interact(m, (int)INTERACT_ALCOVE, NULL, &ax, &ay)) {
-        // No alcove in this zone — skip.
-        advance_to(st, MISSION_PATHS_END_SPELLS, g->position.zone);
+        advance_to(st, MISSION_SAFE_ACQUIRE, g->position.zone);
         return (ApCmd){ "ALCOVE:none", 0, assert_always_true };
     }
     return ap_visit_alcove(g, m, st, ax, ay,
                            (AutoplayPhase)0, (AutoplayPhase)0,
                            out_phase_done, out_next_phase);
+}
+
+// Combat spell priority (higher = buy first). Adventure spells
+// excluded — we don't use them in fights.
+static int spell_combat_priority(const char *id) {
+    if (!id) return 0;
+    if (strcmp(id, "fireball")    == 0) return 100;
+    if (strcmp(id, "lightning")   == 0) return 80;
+    if (strcmp(id, "turn_undead") == 0) return 70;
+    if (strcmp(id, "freeze")      == 0) return 50;
+    if (strcmp(id, "clone")       == 0) return 30;
+    if (strcmp(id, "teleport")    == 0) return 20;
+    if (strcmp(id, "resurrect")   == 0) return 10;
+    return 0; // adventure spells
+}
+
+// Pick the next town to visit. Walks g->towns[] looking for the
+// best-priority combat spell we haven't yet topped up on. Returns
+// the town's id and the spell id it sells. Returns false if no
+// useful town remains (either all spells stocked or cap reached).
+static bool magic_pick_next_town(const Game *g,
+                                 const char *zone,
+                                 char *out_town, int town_cap,
+                                 const char **out_spell) {
+    if (!g) return false;
+    int known = GameKnownSpells(g);
+    if (known >= g->stats.max_spells) return false;
+    int best_pri = 0;
+    const TownRecord *best = NULL;
+    const char *best_spell = NULL;
+    for (int i = 0; i < GAME_TOWNS; i++) {
+        const TownRecord *t = &g->towns[i];
+        if (!t->id[0]) continue;
+        if (!t->spell_for_sale[0]) continue;
+        // Must be in current zone (look up via resources).
+        const ResTown *rt = resources_town_by_id(g->res, t->id);
+        if (!rt) continue;
+        // Find which zone this town belongs to.
+        bool in_zone = false;
+        for (int zi = 0; zi < g->res->zone_count; zi++) {
+            const ResZone *z = &g->res->zones[zi];
+            if (strcmp(z->id, zone) != 0) continue;
+            for (int ti = 0; ti < z->town_count; ti++) {
+                if (strcmp(z->towns[ti].id, t->id) == 0) {
+                    in_zone = true; break;
+                }
+            }
+            break;
+        }
+        if (!in_zone) continue;
+        int pri = spell_combat_priority(t->spell_for_sale);
+        if (pri == 0) continue; // adventure spell — skip
+        if (pri > best_pri) {
+            best_pri = pri;
+            best = t;
+            best_spell = t->spell_for_sale;
+        }
+    }
+    if (!best) return false;
+    int k = 0;
+    while (k + 1 < town_cap && best->id[k]) {
+        out_town[k] = best->id[k]; k++;
+    }
+    out_town[k] = '\0';
+    if (out_spell) *out_spell = best_spell;
+    return true;
+}
+
+// MISSION_MAGIC_GRIND: visit zone towns, buy combat spells until
+// max_spells cap reached or no useful town remains. Idempotent:
+// re-entry tops up after combats deplete the stockpile.
+static ApCmd handle_magic_grind(const Game *g, const Map *m,
+                                AutoplayState *st,
+                                bool *out_phase_done,
+                                AutoplayPhase *out_next_phase) {
+    static char cmd[64];
+    const char *zone = st->mission_zone;
+    if (!g->stats.knows_magic) {
+        AP_LOG("[mission] MAGIC_GRIND: knows_magic=0 — skip");
+        advance_to(st, MISSION_PATHS_END_SPELLS, zone);
+        return (ApCmd){ "MAGIC:no_magic", 0, assert_always_true };
+    }
+    int known = GameKnownSpells(g);
+    if (known >= g->stats.max_spells) {
+        AP_LOG("[mission] MAGIC_GRIND: at cap (%d/%d) — advance",
+               known, g->stats.max_spells);
+        // ESC out of any town view first.
+        if (views_active() == VIEW_TOWN) {
+            return (ApCmd){ "MAGIC:esc_town", KEY_ESCAPE,
+                            assert_always_true };
+        }
+        advance_to(st, MISSION_PATHS_END_SPELLS, zone);
+        return (ApCmd){ "MAGIC:cap_reached", 0,
+                        assert_always_true };
+    }
+    // Handle dialogs / info panels.
+    if (views_town_info_text() != NULL) {
+        return (ApCmd){ "MAGIC:space_info", KEY_SPACE,
+                        assert_always_true };
+    }
+    if (dialog_is_active()) {
+        return (ApCmd){ "MAGIC:space", KEY_SPACE,
+                        assert_dialog_closed };
+    }
+    // Find next town with a useful spell we don't have at cap.
+    char tid[24];
+    const char *want_spell = NULL;
+    if (!magic_pick_next_town(g, zone, tid, sizeof tid, &want_spell)) {
+        AP_LOG("[mission] MAGIC_GRIND: no useful town in %s — advance",
+               zone);
+        if (views_active() == VIEW_TOWN) {
+            return (ApCmd){ "MAGIC:esc_done", KEY_ESCAPE,
+                            assert_always_true };
+        }
+        advance_to(st, MISSION_PATHS_END_SPELLS, zone);
+        return (ApCmd){ "MAGIC:done", 0, assert_always_true };
+    }
+    // If we're already in a town, check if it's the target. If so,
+    // press D to buy. Otherwise ESC out to nav elsewhere.
+    if (views_active() == VIEW_TOWN) {
+        const char *cur = views_town_record_key();
+        if (cur && strcmp(cur, tid) == 0) {
+            snprintf(cmd, sizeof cmd, "MAGIC:d[%s]",
+                     want_spell ? want_spell : "?");
+            return (ApCmd){ cmd, KEY_D, assert_always_true };
+        }
+        // Wrong town — exit and nav to the right one.
+        return (ApCmd){ "MAGIC:esc_wrong_town", KEY_ESCAPE,
+                        assert_always_true };
+    }
+    // Not in a town — nav to the target.
+    snprintf(cmd, sizeof cmd, "MAGIC:nav[%s/%s]", tid,
+             want_spell ? want_spell : "?");
+    (void)cmd;
+    return ap_nav_to_town(g, m, st, tid,
+                          (AutoplayPhase)0, (AutoplayPhase)0,
+                          out_phase_done, out_next_phase);
 }
 
 // MISSION_PATHS_END_SPELLS: nav to paths_end town, buy fireballs.
@@ -989,26 +1624,10 @@ static ApCmd handle_paths_end_spells(const Game *g, const Map *m,
     }
     // Exit town.
     if (views_active() == VIEW_NONE) {
-        advance_to(st, MISSION_GHOST_DWELLING, g->position.zone);
+        advance_to(st, MISSION_SAFE_ACQUIRE, g->position.zone);
         return (ApCmd){ "SPELLS:done", 0, assert_always_true };
     }
     return (ApCmd){ "SPELLS:esc", KEY_ESCAPE, assert_always_true };
-}
-
-// MISSION_GHOST_DWELLING: recruit ghosts to add a strong stack vs
-// undead/magic foes. ap_recruit_at_dwelling skips if already in army.
-static ApCmd handle_ghost_dwelling(const Game *g, const Map *m,
-                                   AutoplayState *st,
-                                   bool *out_phase_done,
-                                   AutoplayPhase *out_next_phase) {
-    ApCmd r = ap_recruit_at_dwelling(g, m, st, NULL, "ghosts", 9999,
-        (AutoplayPhase)0, (AutoplayPhase)0,
-        out_phase_done, out_next_phase);
-    if (*out_phase_done) {
-        *out_phase_done = false;
-        advance_to(st, MISSION_SAFE_ACQUIRE, g->position.zone);
-    }
-    return r;
 }
 
 // -------------------------------------------------------------------------
@@ -1030,12 +1649,12 @@ ApCmd ap_mission_tick(const Game *g, const Map *m,
                                       out_next_phase);
     case MISSION_ALCOVE:
         return handle_alcove(g, m, st, out_phase_done, out_next_phase);
+    case MISSION_MAGIC_GRIND:
+        return handle_magic_grind(g, m, st, out_phase_done,
+                                  out_next_phase);
     case MISSION_PATHS_END_SPELLS:
         return handle_paths_end_spells(g, m, st, out_phase_done,
                                        out_next_phase);
-    case MISSION_GHOST_DWELLING:
-        return handle_ghost_dwelling(g, m, st, out_phase_done,
-                                     out_next_phase);
     case MISSION_SAFE_ACQUIRE:
         return handle_safe_acquire(g, m, st, out_phase_done,
                                    out_next_phase);
@@ -1045,12 +1664,12 @@ ApCmd ap_mission_tick(const Game *g, const Map *m,
     case MISSION_CHEST_GRIND:
         return handle_chest_grind(g, m, st, out_phase_done,
                                   out_next_phase);
-    case MISSION_MONSTER_GRIND:
-        return handle_monster_grind(g, m, st, out_phase_done,
-                                    out_next_phase);
-    case MISSION_VILLAIN_GRIND:
-        return handle_villain_grind(g, m, st, out_phase_done,
-                                    out_next_phase);
+    case MISSION_CASTLE_GRIND:
+        return handle_castle_grind(g, m, st, out_phase_done,
+                                   out_next_phase);
+    case MISSION_DWELLING_GNOMES:
+        return handle_dwelling_gnomes(g, m, st, out_phase_done,
+                                      out_next_phase);
     case MISSION_SAIL_TO_NEXT:
         return handle_sail_to_next(g, m, st, out_phase_done,
                                    out_next_phase);
