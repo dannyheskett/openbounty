@@ -387,13 +387,6 @@ struct AutoplayState {
     int  mission_resume_kind;      // mission to resume after a detour
                                    // (e.g. RENT_BOAT returns control)
 
-    // Per-zone unreachable-chest skiplist. Populated by CHEST_GRIND
-    // when ap_nav_step returns 0 (no path). Subsequent picker calls
-    // ignore tiles on this list. Cleared on zone change. Coords are
-    // packed as (y * 256 + x), -1 = empty slot.
-    int  chest_skip[16];
-    int  chest_skip_count;
-
     // Pre-tick snapshot — captured by the dispatcher BEFORE setting
     // the live key. Predicates read these via ap_pre_* globals to
     // assert deltas (e.g. army_hp == pre_army_hp + 100).

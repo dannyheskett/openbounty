@@ -1125,13 +1125,18 @@ ApCmd ap_recruit_at_dwelling(const Game *g, const Map *m,
             return (ApCmd){ cmd_buf, 0, ap_macro_assert_always };
         }
     }
-    // Gold floor: if we can't afford even one more, exit.
+    // Gold floor: if we can't afford even one more (above the
+    // boat-cost reserve), exit. The reserve must match the buy
+    // step's reserve so we don't pretend we have budget and then
+    // type 0.
     {
         const TroopDef *td = troop_by_id(troop_id);
         int unit_cost = td ? td->recruit_cost : 0;
         int lead_max  = GameMaxRecruitable(g, troop_id);
-        int afford    = (unit_cost > 0) ? (g->stats.gold / unit_cost)
-                                        : 0;
+        int reserve   = 1000;
+        int spendable = g->stats.gold - reserve;
+        if (spendable < 0) spendable = 0;
+        int afford    = (unit_cost > 0) ? (spendable / unit_cost) : 0;
         int can_buy   = (afford < lead_max) ? afford : lead_max;
         // If we can't buy even one more (either leadership or gold
         // exhausted) we're done. ESC the prompt if it's still open
@@ -1176,8 +1181,15 @@ ApCmd ap_recruit_at_dwelling(const Game *g, const Map *m,
             const TroopDef *td2 = troop_by_id(troop_id);
             int unit_cost = td2 ? td2->recruit_cost : 0;
             int lead_max  = GameMaxRecruitable(g, troop_id);
+            // Reserve enough gold for a boat rental + a one-week
+            // upkeep cushion. Without this, dwelling recruits drain
+            // gold to zero and subsequent SAFE/CHEST grinds can't
+            // afford to cross water, halting the run early.
+            int reserve   = 1000;
+            int spendable = g->stats.gold - reserve;
+            if (spendable < 0) spendable = 0;
             int afford    = (unit_cost > 0)
-                                ? (g->stats.gold / unit_cost) : 0;
+                                ? (spendable / unit_cost) : 0;
             int can_buy   = (afford < lead_max) ? afford : lead_max;
             if (can_buy > 9999) can_buy = 9999;
             if (can_buy < 1) can_buy = 1;

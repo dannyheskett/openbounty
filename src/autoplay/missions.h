@@ -85,17 +85,13 @@ bool ap_find_interact(const Map *m, int want_interact,
 
 // Returns true if any tile (chest/artifact/navmap/orb) is "safe" —
 // reachable without entering any alive hostile foe's chebyshev-2
-// envelope. Writes the nearest such tile to (out_x, out_y). If
-// `st` is non-NULL, tiles on st->chest_skip[] are excluded
-// (previously found unreachable).
+// envelope. Writes the nearest such tile to (out_x, out_y).
 bool ap_pick_safe_acquisition(const Game *g, const Map *m,
-                              const AutoplayState *st,
                               int *out_x, int *out_y);
 
 // Same but ignores foe envelope. Returns nearest remaining
 // chest/artifact/navmap/orb tile.
 bool ap_pick_any_acquisition(const Game *g, const Map *m,
-                             const AutoplayState *st,
                              int *out_x, int *out_y);
 
 // Like ap_pick_any_acquisition but skips any tile whose pursuit-
@@ -103,7 +99,6 @@ bool ap_pick_any_acquisition(const Game *g, const Map *m,
 // ratio). Returns false if every remaining acquisition is guarded
 // by an unwinnable foe.
 bool ap_pick_winnable_acquisition(const Game *g, const Map *m,
-                                  const AutoplayState *st,
                                   int *out_x, int *out_y);
 
 // Returns true if any alive hostile foe in the current zone sits

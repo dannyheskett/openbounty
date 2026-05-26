@@ -64,19 +64,7 @@ static int manhattan(int ax, int ay, int bx, int by) {
     return dx + dy;
 }
 
-// Per-zone unreachable-chest skiplist check. Populated when nav
-// returns no-path; subsequent picks ignore that tile.
-static bool chest_skip_contains(const AutoplayState *st, int x, int y) {
-    if (!st) return false;
-    int packed = (y << 8) | (x & 0xff);
-    for (int i = 0; i < st->chest_skip_count; i++) {
-        if (st->chest_skip[i] == packed) return true;
-    }
-    return false;
-}
-
 bool ap_pick_safe_acquisition(const Game *g, const Map *m,
-                              const AutoplayState *st,
                               int *out_x, int *out_y) {
     if (!g || !m) return false;
     int best_x = -1, best_y = -1, best_d = -1;
@@ -84,7 +72,6 @@ bool ap_pick_safe_acquisition(const Game *g, const Map *m,
         for (int x = 0; x < m->width; x++) {
             const Tile *t = &m->tiles[y][x];
             if (!is_acquisition(t->interactive)) continue;
-            if (chest_skip_contains(st, x, y)) continue;
             if (ap_foe_in_pursuit_range(g, x, y)) continue;
             int d = manhattan(g->position.x, g->position.y, x, y);
             if (best_d < 0 || d < best_d) {
@@ -98,7 +85,6 @@ bool ap_pick_safe_acquisition(const Game *g, const Map *m,
 }
 
 bool ap_pick_any_acquisition(const Game *g, const Map *m,
-                             const AutoplayState *st,
                              int *out_x, int *out_y) {
     if (!g || !m) return false;
     int best_x = -1, best_y = -1, best_d = -1;
@@ -106,7 +92,6 @@ bool ap_pick_any_acquisition(const Game *g, const Map *m,
         for (int x = 0; x < m->width; x++) {
             const Tile *t = &m->tiles[y][x];
             if (!is_acquisition(t->interactive)) continue;
-            if (chest_skip_contains(st, x, y)) continue;
             int d = manhattan(g->position.x, g->position.y, x, y);
             if (best_d < 0 || d < best_d) {
                 best_d = d; best_x = x; best_y = y;
@@ -119,10 +104,9 @@ bool ap_pick_any_acquisition(const Game *g, const Map *m,
 }
 
 // Pick the nearest acquisition tile guarded ONLY by foes we can
-// beat, AND not on the skiplist (unreachable from prior attempts).
-// Returns false when no winnable+reachable chest remains.
+// beat (REGEN-weighted, army × 2 ≥ effective foe × 3). Returns
+// false when no winnable chest remains.
 bool ap_pick_winnable_acquisition(const Game *g, const Map *m,
-                                  const AutoplayState *st,
                                   int *out_x, int *out_y) {
     if (!g || !m) return false;
     int my_hp = ap_army_total_hp(g);
@@ -131,7 +115,6 @@ bool ap_pick_winnable_acquisition(const Game *g, const Map *m,
         for (int x = 0; x < m->width; x++) {
             const Tile *t = &m->tiles[y][x];
             if (!is_acquisition(t->interactive)) continue;
-            if (chest_skip_contains(st, x, y)) continue;
             bool unwinnable = false;
             for (int i = 0; i < g->foe_count; i++) {
                 const FoeState *f = &g->foes[i];
@@ -583,16 +566,9 @@ static void advance_to(AutoplayState *st, int mission, const char *zone) {
     if (zone) {
         // Drop the leadership target cache when we cross into a new
         // zone — the next CHEST_GRIND will recompute it from that
-        // zone's own castle HPs. Same goes for the chest skiplist:
-        // unreachable chests are per-zone (different boat state /
-        // map blockers per zone).
+        // zone's own castle HPs.
         if (strcmp(st->mission_zone, zone) != 0) {
             st->module_scratch[MS_LEAD_TARGET] = 0;
-            for (int i = 0; i < (int)(sizeof(st->chest_skip) /
-                                       sizeof(st->chest_skip[0])); i++) {
-                st->chest_skip[i] = -1;
-            }
-            st->chest_skip_count = 0;
         }
         size_t k = 0;
         while (k + 1 < sizeof(st->mission_zone) && zone[k]) {
@@ -610,11 +586,6 @@ void ap_mission_reset(AutoplayState *st) {
     st->mission_zone[0] = '\0';
     st->module_scratch[MS_LEAD_TARGET] = 0;
     for (int i = 0; i < MAX_ZONES; i++) st->zone_solved[i] = false;
-    for (int i = 0; i < (int)(sizeof(st->chest_skip) /
-                               sizeof(st->chest_skip[0])); i++) {
-        st->chest_skip[i] = -1;
-    }
-    st->chest_skip_count = 0;
     AP_LOG("[mission] reset -> INTRO");
 }
 
@@ -835,7 +806,7 @@ static ApCmd handle_safe_acquire(const Game *g, const Map *m,
         }
     }
     if (need_pick) {
-        if (!ap_pick_safe_acquisition(g, m, st, &tx, &ty)) {
+        if (!ap_pick_safe_acquisition(g, m, &tx, &ty)) {
             AP_LOG("[mission] SAFE_ACQUIRE done in %s — advancing", zone);
             st->module_scratch[14] = -1;
             st->module_scratch[15] = -1;
@@ -865,24 +836,13 @@ static ApCmd handle_safe_acquire(const Game *g, const Map *m,
             return (ApCmd){ "SAFE:divert_rent", 0,
                             assert_always_true };
         }
-        // No foe-safe path. Skip this chest and re-pick on the
-        // next tick. Only advance to REHOME_RECRUIT once we've
-        // exhausted the safe-pickable chests.
-        int cap = (int)(sizeof(st->chest_skip) /
-                        sizeof(st->chest_skip[0]));
-        if (st->chest_skip_count < cap) {
-            st->chest_skip[st->chest_skip_count++] =
-                (ty << 8) | (tx & 0xff);
-            AP_LOG("[mission] SAFE: no path to (%d,%d) — skip "
-                   "(skip_count=%d) and re-pick",
-                   tx, ty, st->chest_skip_count);
-            st->module_scratch[14] = -1;
-            st->module_scratch[15] = -1;
-            return (ApCmd){ "SAFE:skip_unreachable", 0,
-                            assert_always_true };
-        }
-        AP_LOG("[mission] SAFE: no safe path to (%d,%d) and "
-               "skiplist full — advancing", tx, ty);
+        // No foe-safe path to the nearest safe chest. SAFE_ACQUIRE
+        // only takes "no foe in pursuit range" chests; if even the
+        // nearest one can't be reached without entering a foe
+        // envelope, advance to REHOME_RECRUIT and let CHEST_GRIND
+        // (which accepts combat) pick the rest up.
+        AP_LOG("[mission] SAFE: no foe-safe path to (%d,%d) — "
+               "advancing", tx, ty);
         st->module_scratch[14] = -1;
         st->module_scratch[15] = -1;
         advance_to(st, MISSION_REHOME_RECRUIT, zone);
@@ -1079,9 +1039,9 @@ static ApCmd handle_chest_grind(const Game *g, const Map *m,
     if (need_pick) {
         // Two-pass: prefer foe-free chests, then chests guarded only
         // by winnable foes. Unwinnable chests are skipped entirely.
-        bool picked = ap_pick_safe_acquisition(g, m, st, &tx, &ty);
+        bool picked = ap_pick_safe_acquisition(g, m, &tx, &ty);
         if (!picked) {
-            picked = ap_pick_winnable_acquisition(g, m, st, &tx, &ty);
+            picked = ap_pick_winnable_acquisition(g, m, &tx, &ty);
             if (picked) {
                 AP_LOG("[mission] CHEST_GRIND pass2 (winnable-foe) "
                        "target=(%d,%d)", tx, ty);
@@ -1121,30 +1081,18 @@ static ApCmd handle_chest_grind(const Game *g, const Map *m,
             return (ApCmd){ "GRIND:divert_rent", 0,
                             assert_always_true };
         }
-        // Unreachable chest. Add to skiplist and drop sticky target
-        // so the next tick re-picks a different chest. If the skip
-        // list is full, halt (extremely rare).
-        int cap = (int)(sizeof(st->chest_skip) /
-                        sizeof(st->chest_skip[0]));
-        if (st->chest_skip_count < cap) {
-            st->chest_skip[st->chest_skip_count++] =
-                (ty << 8) | (tx & 0xff);
-            AP_LOG("[mission] GRIND: no path to (%d,%d) — skip "
-                   "(skip_count=%d) and re-pick",
-                   tx, ty, st->chest_skip_count);
-            st->module_scratch[14] = -1;
-            st->module_scratch[15] = -1;
-            return (ApCmd){ "GRIND:skip_unreachable", 0,
-                            assert_always_true };
-        }
-        AP_LOG("[mission] GRIND: no path to (%d,%d) and skiplist "
-               "full (%d) — advance to CASTLE_GRIND",
-               tx, ty, st->chest_skip_count);
+        // No path. Continentia has no actually-inaccessible chests
+        // for a hero with a boat, so this means a transient nav
+        // issue. Advance to CASTLE_GRIND and let the mission cycle
+        // pick chest grinding back up later if needed.
+        AP_LOG("[mission] GRIND: no path to (%d,%d) from (%d,%d) "
+               "boat=%d gold=%d — advance to CASTLE_GRIND",
+               tx, ty, g->position.x, g->position.y,
+               (int)g->boat.has_boat, g->stats.gold);
         st->module_scratch[14] = -1;
         st->module_scratch[15] = -1;
         advance_to(st, MISSION_CASTLE_GRIND, zone);
-        return (ApCmd){ "GRIND:skip_full", 0,
-                        assert_always_true };
+        return (ApCmd){ "GRIND:no_path", 0, assert_always_true };
     }
     snprintf(cmd, sizeof cmd, "GRIND:nav(%d,%d)", tx, ty);
     return (ApCmd){ cmd, key, assert_always_true };
