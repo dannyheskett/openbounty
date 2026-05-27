@@ -156,7 +156,8 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
     // the mission solver.
     if (st->phase != AP_FLOW_COMBAT &&
         st->phase != AP_FLOW_POST_COMBAT &&
-        st->phase != AP_FLOW_DONE) {
+        st->phase != AP_FLOW_DONE &&
+        st->phase != AP_FLOW_FAIL) {
         return ap_mission_tick(g, m, st, out_phase_done, out_next_phase);
     }
 
@@ -372,9 +373,10 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
                        i, g->army[i].count, g->army[i].id);
             }
             if (defeat) {
-                AP_LOG("[flow] combat defeat — ending run gracefully");
+                AP_LOG("[flow] combat defeat — army wiped to %d peasants; "
+                       "FAILING run", peasants);
                 *out_phase_done = true;
-                *out_next_phase = AP_FLOW_DONE;
+                *out_next_phase = AP_FLOW_FAIL;
                 return (ApCmd){ "POST_COMBAT:defeat", 0, assert_always_true };
             }
             // Resume mission dispatcher (mission_kind/substep
@@ -2571,6 +2573,12 @@ ApCmd ap_flow_phase(const Game *g, const Map *m,
         *out_phase_done = true;
         *out_next_phase = AP_ALL_DONE;
         return (ApCmd){ "DONE", 0, assert_always_true };
+    }
+
+    case AP_FLOW_FAIL: {
+        *out_phase_done = true;
+        *out_next_phase = AP_ALL_FAILED;
+        return (ApCmd){ "FAILED", 0, assert_always_true };
     }
 
     default:

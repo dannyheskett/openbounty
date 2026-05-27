@@ -453,6 +453,47 @@ ApCmd ap_collect_artifacts_in_zone(const Game *g, const Map *m,
 //   high nibble: which row (0..4 for A..E)
 //   low nibble: which keystroke within the row (0=letter, 1..3=9, 4=ENTER)
 
+// Resolve a castle-recruit row index (0=A..4=E) to its troop. The
+// engine builds the recruit pool from dwelling=="castle" troops and
+// sorts it by recruit_cost ascending (see recruit_soldiers.c), so we
+// mirror that ordering here. Returns the TroopDef, or NULL if the row
+// is out of range. *out_reachable reflects the engine's *6
+// selectability gate: a row is selectable only when
+// leadership_current >= hit_points*6. Rows that fail it are swallowed
+// by the engine — pressing the letter does nothing, so a buy aimed at
+// such a row no-ops (wastes keystrokes, buys zero).
+static const TroopDef *ap_castle_row_troop(const Game *g, int row,
+                                           bool *out_reachable) {
+    int pool[8];
+    int npool = 0;
+    int total = troops_count();
+    for (int i = 0; i < total && npool < 8; i++) {
+        const TroopDef *t = troop_by_index(i);
+        if (t && strcmp(t->dwelling, "castle") == 0) pool[npool++] = i;
+    }
+    for (int i = 1; i < npool; i++) {
+        int kk = pool[i];
+        const TroopDef *kt = troop_by_index(kk);
+        int kcost = kt ? kt->recruit_cost : 0;
+        int j = i - 1;
+        while (j >= 0) {
+            const TroopDef *jt = troop_by_index(pool[j]);
+            int jcost = jt ? jt->recruit_cost : 0;
+            if (jcost <= kcost) break;
+            pool[j + 1] = pool[j];
+            j--;
+        }
+        pool[j + 1] = kk;
+    }
+    const TroopDef *rt = (row >= 0 && row < npool)
+        ? troop_by_index(pool[row]) : NULL;
+    if (out_reachable) {
+        *out_reachable = rt && rt->hit_points > 0 &&
+            g->stats.leadership_current >= rt->hit_points * 6;
+    }
+    return rt;
+}
+
 ApCmd ap_rehome_and_recruit(const Game *g, const Map *m,
                             AutoplayState *st,
                             int min_gold_reserve,
@@ -585,6 +626,32 @@ ApCmd ap_rehome_and_recruit(const Game *g, const Map *m,
         }
         switch (ks) {
         case 0: {
+            // Resolve which troop this row letter selects in the engine
+            // and whether the engine's *6 selectability gate will accept
+            // it (leadership_current >= hp*6). Rows that fail the gate
+            // are swallowed: pressing the letter does nothing, so the
+            // following "999"+ENTER would buy zero. Skip them — advance
+            // to the next (cheaper) row instead of wasting keystrokes.
+            bool reachable = false;
+            const TroopDef *rt = ap_castle_row_troop(g, row, &reachable);
+            int hp       = rt ? rt->hit_points : 0;
+            int lead_max = rt ? GameMaxRecruitable(g, rt->id) : 0;
+            AP_LOG("[%s] row%d -> %s hp=%d cost=%d lead_cur=%d "
+                   "need_lead(hp*6)=%d reachable=%d max_buy=%d%s",
+                   label, row, rt ? rt->id : "(none)", hp,
+                   rt ? rt->recruit_cost : 0,
+                   g->stats.leadership_current, hp * 6,
+                   reachable ? 1 : 0, lead_max,
+                   reachable ? "" : "  <<< UNSELECTABLE: skipping row");
+            if (!reachable) {
+                // Advance iter to the next row; stay at ks=0 so we
+                // re-evaluate. The iter>=NROWS_TO_BUY guard above ends
+                // the loop once we run off the bottom.
+                st->module_scratch[11] = ((iter + 1) << 3) | 0;
+                snprintf(cmd_buf, sizeof cmd_buf, "%s:row%d_skip",
+                         label, row);
+                return (ApCmd){ cmd_buf, 0, ap_macro_assert_always };
+            }
             st->module_scratch[11] = (iter << 3) | 1;
             int key = KEY_A + row;
             snprintf(cmd_buf, sizeof cmd_buf, "%s:row%d_letter",

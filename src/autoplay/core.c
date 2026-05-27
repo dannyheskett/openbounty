@@ -702,6 +702,15 @@ static ShellRunVerdict autoplay_per_tick(ShellRunHooks *self,
         return SHELL_RUN_EXIT_PASS;
     }
 
+    // 2b. Failure terminal: report and exit FAIL loudly.
+    if (st->phase == AP_ALL_FAILED) {
+        AP_LOG("autoplay: FAILED (tick=%d) — see preceding log for cause",
+               st->tick);
+        fprintf(stderr, "autoplay: FAILED (tick=%d)\n", st->tick);
+        fflush(stderr);
+        return SHELL_RUN_EXIT_FAIL;
+    }
+
     // 3. Snapshot pre-tick state for delta-based assertions.
     st->pre_gold    = g->stats.gold;
     st->pre_army_hp = ap_army_total_hp(g);

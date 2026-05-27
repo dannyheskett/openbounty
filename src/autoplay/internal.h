@@ -342,8 +342,14 @@ typedef enum {
     AP_FLOW_PHASE14_PICK_FORESTRIA_BACK,
     AP_FLOW_PHASE14_NAV_CASTLE,
     AP_FLOW_DONE,
+    // Failure terminal: routes to AP_ALL_FAILED, which makes the
+    // per-tick dispatcher return EXIT_FAIL. Used when the run hits an
+    // unrecoverable state (e.g. combat defeat) so the harness reports
+    // FAIL loudly rather than a misleading PASS.
+    AP_FLOW_FAIL,
 
     AP_ALL_DONE,
+    AP_ALL_FAILED,
 } AutoplayPhase;
 
 // =========================================================================
