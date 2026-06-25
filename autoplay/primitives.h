@@ -18,39 +18,24 @@
 
 #include <stdbool.h>
 #include "goals.h"       // PlanStep (the objective the planner hands to execute)
-#include "recruit.h"     // ArmyTarget (the committed composition for PRIM_ARMY)
 #include "recording.h"   // RecSink (where execute appends the replayable prims)
 
 typedef enum {
     // ---- TARGET primitives: reach the object (nav incl. sail + path-clear), interact
     PRIM_FETCH = 0, // pick up a consumable at (x,y): chest / artifact / navmap / orb
     PRIM_TOWN,      // visit a town and perform `service`
-    PRIM_DWELL,     // recruit `count` of troop `id` at its dwelling (x,y)
-    PRIM_HOME,      // the home (audience) castle: recruit the pool, or garrison
     PRIM_SIEGE,     // assault a monster-castle / villain castle (id); garrison on win
     PRIM_SLAY,      // engage a hostile wandering foe / path-blocker (id at x,y)
     PRIM_DIG,       // the buried-scepter finale (the WIN) at (x,y)
     PRIM_LEARN,     // an alcove: pay gold, learn magic, at (x,y)
-    // ---- STATE primitives: no map target
-    PRIM_ARMY,      // make the held army == `army` (the recompose contract)
-    PRIM_CAST,      // apply an adventure spell `id` (time-stop, leadership boost, ...)
-    PRIM_WAIT,      // bank `count` weeks of commission / let dwellings restock
     PRIM_KIND_COUNT
 } PrimKind;
 
 // What a TOWN visit transacts (entering a town is identical; only this differs).
 typedef enum {
     TOWN_CONTRACT = 0,  // GameTakeNextContract, cycling to villain `id`
-    TOWN_SPELL,         // buy the combat spell on sale
-    TOWN_BOAT,          // rent a boat toward `id` (destination zone)
     TOWN_SIEGE,         // buy siege weapons
 } TownService;
-
-// What a HOME visit does.
-typedef enum {
-    HOME_RECRUIT = 0,   // GameBuyTroop over the whole home pool
-    HOME_GARRISON,      // garrison the weakest surviving stack
-} HomeService;
 
 // One planned primitive. Only the fields relevant to `kind` are meaningful.
 typedef struct {
@@ -59,10 +44,8 @@ typedef struct {
                             // empty => current zone / not zone-bound (state prims).
     int         x, y;       // the object's tile (target primitives); -1 if N/A.
     char        id[32];     // object / troop / villain / spell id (kind-dependent).
-    int         count;      // PRIM_DWELL troop count; PRIM_WAIT weeks; PRIM_CAST index.
+    int         count;      // kind-dependent scalar.
     TownService town;       // PRIM_TOWN service.
-    HomeService home;       // PRIM_HOME service.
-    ArmyTarget  army;       // PRIM_ARMY target composition (the contract).
 } Primitive;
 
 // ---------------------------------------------------------------------------------
@@ -103,8 +86,5 @@ typedef struct {
 // alternative). MUTATES g / map / fog on success.
 bool execute(const PlanStep *s, const Resources *res, Game *g, Map *map,
              Fog *fog, RecSink *rec);
-
-// Human-readable name for a kind (diagnostics).
-const char *prim_kind_name(PrimKind k);
 
 #endif

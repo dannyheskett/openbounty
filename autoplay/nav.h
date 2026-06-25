@@ -94,21 +94,6 @@ typedef struct {
 // Fill the default options (foot, block bouncers, diagonals on).
 void nav_default_options(NavOptions *opts);
 
-// Compute the next single step from `from` toward `to` over `map`. Returns
-// NAV_OK with (*out_dx,*out_dy) in {-1,0,1} (not both zero), or one of the
-// other statuses. Pure: no Map/Game mutation. Deterministic: equal-cost ties
-// resolve by a fixed rule (lower f, then lower g, then lower flattened cell
-// index), never by iteration-order accident.
-NavStatus nav_next_step(const Map *map, NavPoint from, NavPoint to,
-                        const NavOptions *opts, int *out_dx, int *out_dy);
-
-// Whether a full path exists from `from` to `to` under `opts` (a convenience
-// wrapper over the same search; used by the planner's reachability checks and
-// blocked-goal detection). Optionally returns the total path length in
-// steps via *out_steps (the number of moves, 0 if already arrived).
-bool nav_reachable(const Map *map, NavPoint from, NavPoint to,
-                   const NavOptions *opts, int *out_steps);
-
 // ---------------------------------------------------------------------------
 // Boat-aware (multi-mode) navigation (Phase 3b).
 //
@@ -134,20 +119,9 @@ NavStatus nav_next_step_travel(const Map *map, NavPoint from,
                                const NavOptions *opts,
                                int *out_dx, int *out_dy);
 
-// Boat-aware reachability + path length, mirroring nav_reachable.
+// Boat-aware reachability + path length.
 bool nav_reachable_travel(const Map *map, NavPoint from,
                           const NavTravel *travel, NavPoint to,
                           const NavOptions *opts, int *out_steps);
-
-// Boat-aware distance FIELD: one flood from `from` (in the given travel state)
-// that fills out_dist[y*MAP_MAX_W + x] with the minimum path cost to each cell
-// reachable in EITHER travel mode, or -1 if unreachable. out_dist must hold at
-// least MAP_MAX_W*MAP_MAX_H ints. This computes all-cell reachability in a
-// single search, so a caller ranking many targets pays ONE flood instead of
-// one search per target. Same transitions/costs/determinism as
-// nav_reachable_travel.
-void nav_distance_field_travel(const Map *map, NavPoint from,
-                               const NavTravel *travel, const NavOptions *opts,
-                               int *out_dist);
 
 #endif

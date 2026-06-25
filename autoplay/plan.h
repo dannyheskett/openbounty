@@ -32,7 +32,6 @@
 #include "goals.h"      // PlanStepSet / STEP_MAX
 #include "worldsnap.h"  // WorldSnapshot (per-objective checkpoints)
 #include "recording.h"  // RecBuf / CombatRecList / RecSink (WS-4)
-#include "diag.h"       // DiagSink — structured decision trace (NULL = off)
 #include "view_kind.h"  // ViewKind (visible-mode view presenter hook)
 
 // The committed plan IS the ordered sequence of admitted goal indices. The
@@ -43,63 +42,17 @@
 // snapshots, regenerates them by replaying the committed sequence rather than
 // storing them all.
 //
-// A recorded span for one admitted step: [rec_begin, rec_end) into Plan.rec,
-// plus a checkpoint fingerprint of the world at the step boundary (WS-4).
-typedef struct {
-    int      rec_begin, rec_end;   // primitive range in Plan.rec for this step
-    uint64_t boundary_fp;          // FNV of (Game+Map) at the start of this step
-} PlanStepSpan;
-
-// Why an in-scope objective could not be admitted (cited honest PARTIAL).
-typedef enum {
-    UNADM_NONE = 0,        // (admitted / done — not unadmitted)
-    UNADM_NO_DOCK,         // tile-bound but no reachable dock reaches it (multi-trip boat)
-    UNADM_NAV,             // not reachable on foot/one-boat and not dock-reachable
-    UNADM_PREREQ,          // a hard prereq (e.g. contract) could not be chained
-    UNADM_OTHER,           // unclassified
-    UNADM_COMBAT,          // reached, but the fight is a predicted LOSS (army too weak)
-    UNADM_NO_GOLD,         // a reaching dock exists but the boat fee is unaffordable
-    UNADM_NO_GARRISON,     // siege WON but a single-stack army cannot garrison
-    UNADM_MOBILITY,        // reached and completed, but the hero can't route home
-    UNADM_OTHER_ZONE,      // lives in another zone; no committed travel reached it
-    UNADM_TIME,            // not achievable within the remaining calendar days
-    UNADM_FLY,             // sealed off from every surface route; flight (an
-                           // all-flying army) is the only way in
-    UNADM_SCEPTER_DEFER,   // the scepter finale, deliberately deferred until every
-                           // other objective resolves (AP-066) — never a nav default
-} UnadmReason;
-
-
 // The committed plan and the run verdict.
 typedef struct {
-    PlanStepSet       set;                       // the enumerated objective universe
-    int           admitted[STEP_MAX];        // ordered admitted goal indices
-    int           admitted_count;
-    int           unadmitted[STEP_MAX];      // goal indices left out (-> PARTIAL)
-    UnadmReason   unadmitted_reason[STEP_MAX];// why each unadmitted[] is stranded
-    int           unadmitted_count;
     AutoplayVerdict verdict;                 // CLEARED / PARTIAL / FAILED
-    int           failed_goal_index;         // committed-but-unwinnable goal, or -1
-    // Terminal world after simulating the full committed plan (the last
-    // admitted objective's checkpoint, or the boot world if nothing admitted).
-    // One snapshot, not one-per-objective — the proof that every admitted
-    // objective is done lives here, and the executor reproduces this terminal
-    // state.
-    WorldSnapshot terminal;
 
-    // RECORDED PRIMITIVE SEQUENCE (WS-4). Captured during plan_build's
-    // single proving simulation: the exact moves / answers / direct actions that
-    // completed each admitted step, plus the per-fight CombatTurnRecords. The
-    // executor APPLIES this with no planner / nav / prediction / combat at execute
-    // time, so headless and visible reproduce the identical resolution. Heap-owned
-    // — freed by plan_free. step_span[k] is the range for admitted[k].
+    // RECORDED PRIMITIVE SEQUENCE (WS-4). Captured during the planner's single
+    // proving simulation: the exact moves / answers / direct actions that completed
+    // each admitted step, plus the per-fight CombatTurnRecords. The executor APPLIES
+    // this with no planner / nav / prediction / combat at execute time, so headless
+    // and visible reproduce the identical resolution. Heap-owned — freed by plan_free.
     RecBuf        rec;
     CombatRecList combat;
-    PlanStepSpan  step_span[STEP_MAX];
-
-    // Planning-cost meter: total simulated turns plan_build spent proving this
-    // plan (every candidate + intervention probe). Observability only.
-    long          sim_turns;
 } Plan;
 
 // Release the heap the Plan owns (rec, combat records). Safe with NULL / a
@@ -123,13 +76,6 @@ void autoplay_apply_recorded_combat(Game *g, CombatTurnRecord *out_rec);
 // per-zone fog); every other action ignores them. Implemented in autoplay.c.
 void autoplay_apply_rec_action(Game *g, Map *map, Fog *fog, RecActionKind kind,
                                const char *id, int x, int y);
-
-// Apply an RA_SET_ARMY recruit-optimizer re-composition (WS/RO): atomically
-// replace the army with `army[0..n)` — dismiss every current stack, then
-// GameBuyTroop each target stack at its exact count. Deterministic (pure engine
-// calls on a byte-identical world), so executor + visible reproduce it. In autoplay.c.
-void autoplay_apply_set_army(Game *g, const RecArmyStack *army, int n);
-
 
 // ---- Execute phase (§5.3) -------------------------------------------------
 // Replay the committed plan on the LIVE world as a DUMB APPLIER (WS-4). The plan
@@ -170,11 +116,8 @@ typedef void (*PlanViewPresenter)(void *ctx, ViewKind view, int chosen_row);
 // recorded primitive sequence. Caller allocates one (stack or heap). No planner.
 typedef struct {
     const Plan *plan;            // committed plan being replayed (borrowed)
-    int   step;                  // current admitted-step index (for boundary_fp)
     int   rec_cursor;            // index into plan->rec.items[]
-    int   turns;                 // adventure steps issued so far
     bool  done;
-    bool  boundary_checked;      // has the current step's boundary_fp been asserted?
     // Visible-mode animator (WS-7); NULL in headless.
     PlanCombatAnimator animate;
     void              *animate_ctx;

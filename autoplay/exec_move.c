@@ -1,6 +1,6 @@
 // autoplay/exec_move.c
 //
-// Executor MOVEMENT helpers (see exec.h / docs/EXECUTOR-REFACTOR.md):
+// Executor MOVEMENT helpers (see exec.h):
 //   exec_step    — one recorded engine move                    (HELPER #3)  [here]
 //   exec_path    — next A* step (folds nav.c's kernel)          (HELPER #4)  [P1]
 //   exec_travel  — hero A->B by any means, fight-through        (HELPER #1)  [P1]
@@ -661,20 +661,6 @@ static bool nav_check(const Map *map, NavPoint from, NavPoint to,
     return true;
 }
 
-// Foot-only entries: thin wrappers over the boat-aware search
-// with no boat (has_boat = false), so there's a single search implementation.
-NavStatus nav_next_step(const Map *map, NavPoint from, NavPoint to,
-                        const NavOptions *opts, int *out_dx, int *out_dy) {
-    NavTravel foot = { NAV_MODE_FOOT, false, -1, -1 };
-    return nav_next_step_travel(map, from, &foot, to, opts, out_dx, out_dy);
-}
-
-bool nav_reachable(const Map *map, NavPoint from, NavPoint to,
-                   const NavOptions *opts, int *out_steps) {
-    NavTravel foot = { NAV_MODE_FOOT, false, -1, -1 };
-    return nav_reachable_travel(map, from, &foot, to, opts, out_steps);
-}
-
 NavStatus nav_next_step_travel(const Map *map, NavPoint from,
                                const NavTravel *travel, NavPoint to,
                                const NavOptions *opts,
@@ -720,20 +706,6 @@ bool nav_reachable_travel(const Map *map, NavPoint from,
         *out_steps = steps;
     }
     return true;
-}
-
-void nav_distance_field_travel(const Map *map, NavPoint from,
-                               const NavTravel *travel, const NavOptions *opts,
-                               int *out_dist) {
-    NavOptions lo; NavTravel lt;
-    if (!opts)   { nav_default_options(&lo); opts = &lo; }
-    if (!travel) { lt.mode = NAV_MODE_FOOT; lt.has_boat = false;
-                   lt.boat_x = lt.boat_y = -1; travel = &lt; }
-    if (!out_dist) return;
-    for (int i = 0; i < NAV_CELLS; i++) out_dist[i] = -1;
-    if (!map || from.x < 0 || from.x >= map->width ||
-        from.y < 0 || from.y >= map->height) return;
-    nav5_run(map, from, travel, -1, opts, out_dist);
 }
 
 // ===================== folded from navigator.c (P6: collapse sub-solver into the executor) =====================

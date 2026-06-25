@@ -56,8 +56,4 @@ void worldsnap_restore(const WorldSnapshot *snap, Game *g, Map *m, Fog *fog);
 // determinism regression. Reads only.
 uint64_t worldsnap_fingerprint(const Game *g, const Map *m);
 
-// Same fingerprint computed from a captured snapshot (using the snapshot's own
-// RNG). Used by plan_build to record a step's boundary_fp from the proven prefix.
-uint64_t worldsnap_fingerprint_snap(const WorldSnapshot *snap);
-
 #endif // AUTOPLAY_WORLDSNAP_H

@@ -1,4 +1,4 @@
-// Uniform player-IO request queue mechanics (docs/UNIFORM-IO-DESIGN.md, M1).
+// Uniform player-IO request queue mechanics (engine/include/player_io.h, milestone M1).
 // Exercises the engine-owned FIFO embedded in Game: enqueue (decision/message/
 // view), front/idle peeking, ack popping, answer popping, FIFO ordering,
 // capacity bound, and reset. M1 is queue mechanics only; flow routing in

@@ -8,7 +8,7 @@
 #include "fog.h"
 #include "resources.h"
 #include "player_io.h"   // PlayerIoQueue — the uniform player-IO request queue
-                         // embedded in Game (docs/UNIFORM-IO-DESIGN.md)
+                         // embedded in Game (see engine/include/player_io.h)
 
 // Full adventure-screen game state. Fields mirror the JSON save schema so
 // serialization is 1:1. All enumerations are keyed by string IDs from
@@ -302,7 +302,7 @@ typedef struct Game {
     FoeState         foes[GAME_MAX_FOES];
     int              foe_count;
 
-    // Uniform player-IO request queue (docs/UNIFORM-IO-DESIGN.md). Holds the
+    // Uniform player-IO request queue (see engine/include/player_io.h). Holds the
     // outstanding player-facing requests (decisions / messages / views). Flat
     // and value-copyable, so Game stays a sound deep copy via `Game tmp = *g;`
     // (autoplay combat prediction + worldsnap rely on this). Reset by GameInit.

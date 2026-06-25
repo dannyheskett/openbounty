@@ -1,6 +1,6 @@
 // autoplay/exec_fight.c
 //
-// Executor COMBAT helpers (see exec.h / docs/EXECUTOR-REFACTOR.md):
+// Executor COMBAT helpers (see exec.h):
 //   exec_fight    — predict -> run headless -> answer (folds combat_policy.c)  [P1]
 //   exec_garrison — garrison the weakest stack into a won castle  (HELPER #6)  [here]
 //
@@ -17,7 +17,7 @@
 #include "game.h"          // GameFindFoe / GameFindCastleConst / FoeState / CastleRecord
 #include "combat.h"        // combat_run_headless_* / CombatTarget / CombatMode / CombatResult
 #include "combat_policy.h" // autoplay_combat_policy (the player-side policy callback)
-#include "recruit.h"       // predict_combat_survivors (prediction; folds into fight_predict at P6)
+#include "recruit.h"       // predict_combat_eval (prediction; folds into fight_predict at P6)
 #include "player_io.h"     // player_io_answer / PlayerIoPresentation / PLAYER_IO_COMBAT_*
 #include "pending.h"       // pending_flow / pending_foe_id / pending_castle_id / FLOW_*
 
@@ -27,8 +27,8 @@
 // and exec_travel's blocker-clear — just step on and call this; no target-building
 // is duplicated at the call sites).
 //
-// FOLD NOTE: drives combat_policy.c (autoplay_combat_policy) and the survivor
-// prediction (predict_combat_survivors) for now; at P6 those become this helper's
+// FOLD NOTE: drives combat_policy.c (autoplay_combat_policy) and the combat
+// prediction (predict_combat_eval) for now; at P6 those become this helper's
 // private internals — fight_policy (the callback by pointer), fight_predict, and the
 // probe_* kit — with no change to this signature.
 bool exec_fight(Game *g, Map *map, RecSink *rec) {
@@ -102,7 +102,6 @@ bool exec_fight(Game *g, Map *map, RecSink *rec) {
             rp.kind = REC_ANSWER;
             rp.ans = no;
             rp.outcome = PLAYER_IO_COMBAT_NOT_RUN;
-            rp.flow = flow;
             rp.rec_combat_index = -1;
             recbuf_push(rec->prims, rp);
         }
@@ -129,7 +128,6 @@ bool exec_fight(Game *g, Map *map, RecSink *rec) {
                 rp.kind = REC_ANSWER;
                 rp.ans = no;
                 rp.outcome = PLAYER_IO_COMBAT_NOT_RUN;
-                rp.flow = flow;
                 rp.rec_combat_index = -1;
                 recbuf_push(rec->prims, rp);
             }
@@ -158,7 +156,6 @@ bool exec_fight(Game *g, Map *map, RecSink *rec) {
         rp.kind = REC_ANSWER;
         rp.ans = yes;
         rp.outcome = PLAYER_IO_COMBAT_WON;
-        rp.flow = flow;
         rp.combat_mode = mode;
         rp.rec_combat_index = rec_combat_index;
         recbuf_push(rec->prims, rp);
@@ -563,47 +560,3 @@ int autoplay_combat_policy(Combat *c, void *ctx) {
     return 1;
 }
 
-// ---- Pre-fight prediction ---------------------------------------------------
-
-CombatResult autoplay_predict_combat_ex(const Game *g, CombatMode mode,
-                                        const CombatTarget *target,
-                                        int cap_rounds, bool *out_capped) {
-    if (out_capped) *out_capped = false;
-    if (!g) return COMBAT_RESULT_LOSS;
-    // Snapshot the global world RNG so the prediction leaves it untouched
-    // (combat itself seeds from Combat.rng_state, but be strict anyway).
-    uint64_t rng = GameRngSnapshot();
-    // Run the fight on a discarded COPY of the game: a winning fight mutates
-    // gold/army, which must not touch the live state. Game is tens of KB —
-    // far too large for the stack here: this is a LEAF of the deepest planner
-    // recursion (plan_build -> ... -> autoplay_step -> predict), and a frame
-    // that size at that depth overflowed the stack in visible mode.
-    // Heap-allocate it.
-    Game *tmp = malloc(sizeof *tmp);
-    if (!tmp) { GameRngRestore(rng); return COMBAT_RESULT_LOSS; }
-    *tmp = *g;                     // value copy; only pointer is res (read-only)
-    // Use the recording variant only to read the terminal CombatTurnRecord.result
-    // (1 win / 2 loss / 0 cap-out): a fight that exhausts max_actions returns LOSS
-    // like a real wipe but is NOT a clean win — surface that (WS-10) so a capped
-    // fight is never silently treated as winnable. A throwaway record buffer
-    // suffices; we read only .result, then discard. (The record is observation-
-    // only, so this is byte-identical to the NULL-record path — the pinned
-    // combat digests are unaffected.)
-    CombatTurnRecord rec = { 0 };
-    rec.cap = cap_rounds > 0 ? cap_rounds * 64 : 4096;
-    rec.entries = malloc((size_t)rec.cap * sizeof *rec.entries);
-    if (!rec.entries) rec.cap = 0;
-    CombatResult r = combat_run_headless_rec(tmp, mode, target, cap_rounds,
-                                             autoplay_combat_policy, NULL, &rec);
-    if (out_capped) *out_capped = (rec.result == 0);   // neither win nor loss
-    free(rec.entries);
-    free(tmp);
-    GameRngRestore(rng);
-    return r;
-}
-
-CombatResult autoplay_predict_combat(const Game *g, CombatMode mode,
-                                     const CombatTarget *target,
-                                     int cap_rounds) {
-    return autoplay_predict_combat_ex(g, mode, target, cap_rounds, NULL);
-}

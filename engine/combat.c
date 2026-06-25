@@ -6,13 +6,13 @@
 #include <string.h>
 
 // Combat engine: state, AI, headless turn loop, damage formula.
-// See docs/COMBAT-PLAN.md for design notes. The rendered combat
+// See docs/OPENBOUNTY-SPEC.md §25 (Combat) for design notes. The rendered combat
 // loop (RunCombat, target picker, modal player input) lives in
 // src/combat_loop.c on the shell side.
 
 // Combat module. Builds the Combat data structure, runs the turn loop
 // (input, AI, spells, retaliation, end-of-combat), and renders into the
-// shared offscreen target. See docs/COMBAT-PLAN.md for the design notes.
+// shared offscreen target. See docs/OPENBOUNTY-SPEC.md §25 (Combat) for the design notes.
 
 // Resolve the Resources pointer for combat-log template lookups.
 // Player side carries the live Game*; AI-only paths fall back to NULL,

@@ -74,7 +74,7 @@ void GameInit(Game *g, const char *name, int pclass, int difficulty, const unsig
     g->res = res_saved;
     player_io_reset(g);   // empty the uniform player-IO request queue (the
                           // memset already zeroed it; this centralizes the
-                          // invariant — docs/UNIFORM-IO-DESIGN.md)
+                          // invariant — see engine/include/player_io.h)
     pending_reset();      // clear the pending-flow GLOBALS too: they leak across
                           // in-process games (a stale pending_flow would make the
                           // new game's first tick answer a phantom prompt).

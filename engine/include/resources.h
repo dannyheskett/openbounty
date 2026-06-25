@@ -423,8 +423,8 @@ typedef struct {
 // distinct line emitted by the combat engine. Templates use the same
 // %TOKEN% substitution as banners; tokens listed inline below.
 //
-// Field set + names follow COMBAT-PLAN.md  verbatim where the plan
-// specifies them; additional names cover lines the plan didn't enumerate.
+// Field set + names follow docs/OPENBOUNTY-SPEC.md §25 verbatim where the spec
+// specifies them; additional names cover lines the spec didn't enumerate.
 typedef struct {
     char melee_hit[RES_BANNER_LEN];          // %ATK% %TGT% %COUNT%
     char retaliate[RES_BANNER_LEN];          // %TGT% %COUNT%
@@ -809,7 +809,7 @@ typedef struct {
     ResBanners banners;
 
     // In-combat log strings (strings.combat_log in game.json). See
-    // COMBAT-PLAN.md  for the canonical key set and provenance.
+    // docs/OPENBOUNTY-SPEC.md §25.11 for the canonical key set and provenance.
     ResCombatLog combat_log;
 
     // Credits screen. Shown once between the title splash and the class

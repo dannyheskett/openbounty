@@ -19,23 +19,4 @@
 // combat_run_headless_ex.
 int autoplay_combat_policy(Combat *c, void *ctx);
 
-// Pre-fight prediction: predict the outcome of fighting
-// `target` in `mode` WITHOUT perturbing the live game `g`. Runs the fight on a
-// discarded copy of *g with the player policy, snapshotting/restoring the
-// world RNG so `g` and the global RNG are untouched. Returns the predicted
-// CombatResult (WIN means the live fight, run from the same state, will also
-// win — the combat RNG is a pure function of seed+identity+mode).
-CombatResult autoplay_predict_combat(const Game *g, CombatMode mode,
-                                     const CombatTarget *target,
-                                     int cap_rounds);
-
-// As above, plus: *out_capped (optional) is set true when the fight terminated by
-// EXHAUSTING max_actions (cap-out) rather than a clean win/loss (WS-10). A
-// cap-out returns LOSS — so the planner already declines it — but it is NOT a
-// clean result; callers log it distinctly so a capped fight is never mistaken for
-// winnable. autoplay_predict_combat is the out_capped=NULL wrapper.
-CombatResult autoplay_predict_combat_ex(const Game *g, CombatMode mode,
-                                        const CombatTarget *target,
-                                        int cap_rounds, bool *out_capped);
-
 #endif

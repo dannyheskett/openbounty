@@ -94,8 +94,8 @@ fail:
 }
 
 bool planner(Game *g, Map *map, Fog *fog, const Resources *res,
-             DiagSink *diag, int zone_scope, PrimRun *out) {
-    (void)diag; (void)zone_scope;
+             int zone_scope, PrimRun *out) {
+    (void)zone_scope;
     if (!g || !map || !fog || !res || !out) return false;
     memset(out, 0, sizeof *out);
     out->verdict = AUTOPLAY_VERDICT_PARTIAL;

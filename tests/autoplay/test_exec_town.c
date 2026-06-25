@@ -1,11 +1,10 @@
 // tests/autoplay/test_exec_town.c
 //
 // Isolation unit tests for the executor TOWN transaction helpers (exec_town.c):
-// exec_buy_siege (#12), exec_take_contract (#13), exec_buy_spell (#14),
-// exec_rent_boat (#15). Each assumes the hero is already gated into a town, so we
-// set position.in_town (the engine's own town-gate marker) and ample gold directly
-// — a cheap, reliable precondition, not an end-to-end town walk. exec_enter_town
-// (the fight-through router) is tested separately once it folds in.
+// exec_buy_siege (#12), exec_take_contract (#13). Each assumes the hero is already
+// gated into a town, so we set position.in_town (the engine's own town-gate marker)
+// and ample gold directly — a cheap, reliable precondition, not an end-to-end town
+// walk. exec_enter_town (the fight-through router) is tested separately.
 
 #include "greatest.h"
 
@@ -26,12 +25,6 @@ static const char *any_town_id(const Game *g) {
         if (g->towns[i].id[0]) return g->towns[i].id;
     return "town";   // the gated helpers only check in_town[0]; any non-empty works
 }
-static const char *town_selling_spell(const Game *g) {
-    for (int i = 0; i < GAME_TOWNS; i++)
-        if (g->towns[i].id[0] && g->towns[i].spell_for_sale[0]) return g->towns[i].id;
-    return NULL;
-}
-
 TEST exec_buy_siege_buys_then_no_rebuy(void) {
     Resources *res = NULL; Game *g = NULL; Map *map = NULL; Fog *fog = NULL;
     ASSERT(fx_init_game_full(&res, &g, &map, &fog, "continentia", EXEC_SEED));
@@ -72,60 +65,6 @@ TEST exec_take_contract_takes_any(void) {
     ASSERT_EQ_FMT(1, prims.count, "%d");
     ASSERT_EQ_FMT((int)RA_TAKE_CONTRACT, (int)prims.items[0].action, "%d");
 
-    recbuf_free(&prims); combatreclist_free(&combats);
-    fx_free_game_full(res, g, map, fog);
-    PASS();
-}
-
-TEST exec_buy_spell_buys_when_offered(void) {
-    Resources *res = NULL; Game *g = NULL; Map *map = NULL; Fog *fog = NULL;
-    ASSERT(fx_init_game_full(&res, &g, &map, &fog, "continentia", EXEC_SEED));
-
-    const char *tid = town_selling_spell(g);
-    if (!tid) {
-        fx_free_game_full(res, g, map, fog);
-        SKIPm("no town sells a spell on this seed");
-    }
-    set_in_town(g, tid);
-    g->stats.gold = 10000000;
-
-    RecBuf prims = {0}; CombatRecList combats = {0};
-    RecSink rec = { &prims, &combats };
-    ASSERT(exec_buy_spell(g, &rec));
-    ASSERT_EQ_FMT(1, prims.count, "%d");
-    ASSERT_EQ_FMT((int)RA_BUY_SPELLS, (int)prims.items[0].action, "%d");
-    ASSERT_STR_EQ(tid, prims.items[0].act_id);
-
-    recbuf_free(&prims); combatreclist_free(&combats);
-    fx_free_game_full(res, g, map, fog);
-    PASS();
-}
-
-TEST exec_rent_boat_rents_at_dock(void) {
-    Resources *res = NULL; Game *g = NULL; Map *map = NULL; Fog *fog = NULL;
-    ASSERT(fx_init_game_full(&res, &g, &map, &fog, "continentia", EXEC_SEED));
-
-    set_in_town(g, any_town_id(g));
-    g->stats.gold = 10000000;
-    ASSERT_FALSE(g->boat.has_boat);
-
-    // Bad dock (no boat held yet): rejected with no record.
-    RecBuf bad = {0}; CombatRecList badc = {0};
-    RecSink rec_bad = { &bad, &badc };
-    ASSERT_FALSE(exec_rent_boat(g, -1, -1, &rec_bad));
-    ASSERT_EQ_FMT(0, bad.count, "%d");
-
-    // Valid dock: rents and records the dock coords.
-    RecBuf prims = {0}; CombatRecList combats = {0};
-    RecSink rec = { &prims, &combats };
-    ASSERT(exec_rent_boat(g, 5, 7, &rec));
-    ASSERT(g->boat.has_boat);
-    ASSERT_EQ_FMT(1, prims.count, "%d");
-    ASSERT_EQ_FMT((int)RA_RENT_BOAT, (int)prims.items[0].action, "%d");
-    ASSERT_EQ_FMT(5, prims.items[0].act_x, "%d");
-    ASSERT_EQ_FMT(7, prims.items[0].act_y, "%d");
-
-    recbuf_free(&bad); combatreclist_free(&badc);
     recbuf_free(&prims); combatreclist_free(&combats);
     fx_free_game_full(res, g, map, fog);
     PASS();
@@ -201,6 +140,4 @@ SUITE(exec_town_suite) {
     RUN_TEST(exec_enter_town_castle_haven);
     RUN_TEST(exec_buy_siege_buys_then_no_rebuy);
     RUN_TEST(exec_take_contract_takes_any);
-    RUN_TEST(exec_buy_spell_buys_when_offered);
-    RUN_TEST(exec_rent_boat_rents_at_dock);
 }

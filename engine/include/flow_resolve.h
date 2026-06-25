@@ -1,7 +1,7 @@
 // engine/include/flow_resolve.h
 //
 // Prompt-flow APPLY-CORES: the engine-side state-mutation half of each
-// pending-flow resolution (see docs/AUTOPLAY-SPEC.md). Phase 0.5 splits
+// pending-flow resolution (see docs/OPENBOUNTY-SPEC.md §36). Phase 0.5 splits
 // the shell's prompt resolver (src/shell_promptdispatch.c) into three layers:
 //
 //   (a) state mutation      → here, in the engine (callable by shell + autoplay)

@@ -1,7 +1,7 @@
 // autoplay/autoplay.h
 //
 // Public API for autoplay mode — the pack-winnability oracle described in
-// docs/AUTOPLAY-SPEC.md. Autoplay is a development / QA tool: it drives a
+// docs/OPENBOUNTY-SPEC.md §36. Autoplay is a development / QA tool: it drives a
 // competent automated player to demonstrate that a gamepack is winnable from
 // a given seed.
 //
@@ -50,14 +50,6 @@ typedef struct {
                          // time(NULL). seed == 0 is rejected.
     const char *pack_dir;// pack to load (e.g. "assets/kings-bounty"). When
                          // NULL the runner uses its built-in default.
-    bool trace;          // emit the structured decision trace to STDOUT (diag.h).
-                         // The headless runner sets this true (always-on in
-                         // headless); visible mode never sets it, so the trace
-                         // stays silent there. Observation-only — never affects
-                         // the run's behavior or its stdout.
-    int  trace_level;    // 1 = STEP/PREDICT/CAND/INTERV/RUNCAP; >=2 adds
-                         // NAV/RECRUIT detail. 0 is treated as 1.
-    bool trace_json;     // emit JSONL instead of greppable key=val text.
     int  zone_scope;     // objective-universe scope: 0..3 = enumerate only that
                          // zone (0 = the starting zone, the permanent regression
                          // baseline and the current default); -1 = enumerate all

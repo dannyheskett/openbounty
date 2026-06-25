@@ -3,7 +3,7 @@
 
 // autoplay/exec.h
 //
-// THE EXECUTOR'S FLAT HELPER SET (see docs/EXECUTOR-REFACTOR.md).
+// THE EXECUTOR'S FLAT HELPER SET (this header is the canonical reference).
 //
 // The architecture is exactly four levels, each calling only downward:
 //
@@ -132,14 +132,16 @@ bool exec_garrison(Game *g, const char *castle_id, RecSink *rec);
 
 // --- Recruit ---
 
-// HELPER #7 — exec_recruit(target): assemble the held army to the composition
-// `target` (the recruiting contract). Dismiss held stacks whose type the target
-// dropped, then buy each target stack's shortfall at its source (exec_recruit_one).
-// Do-or-fail: returns false if any source can't be reached/bought. (The planner
-// supplies the composition `target`; the old simulation optimizer that used to
-// decide it was deleted with the AutoplayPlanner at P6.)
+// HELPER #7 — exec_recruit(req): THE SINGLE RECRUITMENT SEAM, polymorphic over
+// RecruitMode. RECRUIT_APPLY_TARGET commits a precomputed ArmyTarget (the planner's
+// recruiting contract). RECRUIT_ADD_FOR_WIN / RECRUIT_RECOMPOSE_FOR_WIN /
+// RECRUIT_BUILD_FOR_WIN run the pre-fight army SEARCHES — decide a composition by
+// combat prediction on a discarded copy, then commit it. ALL substantive recruitment,
+// real and trial, flows through here; the three searches + the apply core are PRIVATE
+// to exec_recruit.c and reached only via this seam. Returns true iff the request met
+// its goal (army assembled, or a winning recruit committed). docs/RECRUIT-CONSOLIDATION.md.
 bool exec_recruit(Game *g, Map *map, Fog *fog, const Resources *res,
-                  const ArmyTarget *target, RecSink *rec);
+                  const RecruitRequest *req, RecSink *rec);
 
 // HELPER #8 — exec_recruit_one(source, n): buy up to n of source->troop_id at one
 // source — an in/off-zone dwelling (reach it, answer its recruit flow) or the home
@@ -186,14 +188,6 @@ bool exec_buy_siege(Game *g, RecSink *rec);
 bool exec_take_contract(Game *g, const Resources *res, const char *villain_id,
                         RecSink *rec);
 
-// HELPER #14 — exec_buy_spell(): buy the combat spell the current town offers
-// (RA_BUY_SPELLS). False if no spell for sale / at cap / no gold.
-bool exec_buy_spell(Game *g, RecSink *rec);
-
-// HELPER #15 — exec_rent_boat(dock): rent a boat at the town's dock coords
-// (RA_RENT_BOAT). True if a boat is held after. False on no gold / bad dock.
-bool exec_rent_boat(Game *g, int dock_x, int dock_y, RecSink *rec);
-
 // --- Interaction / time / spell (defined in primitives.c alongside the
 //     primitives they cut across). ---
 
@@ -202,11 +196,6 @@ bool exec_rent_boat(Game *g, int dock_x, int dock_y, RecSink *rec);
 // player_io router and record a REC_ANSWER. Returns false if no flow is pending.
 // (Combat answers are emitted inside exec_fight, which runs the fight first.)
 bool exec_answer(Game *g, Map *map, FlowAnswer ans, RecSink *rec);
-
-// HELPER #17 — exec_cast(spell_index): apply an adventure spell (RA_CAST_ADV_SPELL).
-// Returns the engine's result (false on a bad index / no charge). Records the cast
-// before applying so replay reproduces it.
-bool exec_cast(Game *g, int spell_index, RecSink *rec);
 
 // HELPER #18 — exec_spend_week(): pass one week, banking commission (RA_WAIT_WEEK).
 // Returns true if the game is still live afterward.

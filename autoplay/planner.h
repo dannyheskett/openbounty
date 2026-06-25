@@ -35,7 +35,6 @@
 #include "goals.h"        // GoalLog / PlanStep
 #include "recording.h"    // RecBuf / CombatRecList
 #include "autoplay.h"     // AutoplayVerdict
-#include "diag.h"         // DiagSink
 
 // The outcome of a planner() run: the ordered admitted objectives, the recording
 // they emit (replayable on a fresh boot), and the verdict + objective tally.
@@ -54,7 +53,7 @@ typedef struct {
 // them at the terminal state of the last admitted primitive). Fills `out`.
 // Returns false only on a setup failure (null args / enumeration error).
 bool planner(Game *g, Map *map, Fog *fog, const Resources *res,
-             DiagSink *diag, int zone_scope, PrimRun *out);
+             int zone_scope, PrimRun *out);
 
 // Release the heap owned by a PrimRun (plan items, recording, combat records).
 void primrun_free(PrimRun *r);

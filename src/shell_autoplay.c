@@ -51,7 +51,7 @@ static int    s_obj_total = 0;
 // capture and showcases the core game loop:
 //   * a couple of chests (treasure) + one misc pickup (navmap/orb/artifact);
 //   * the hero grows its army by the rules — the planner recruits at the home
-//     castle (STEP_RECRUIT_HOME) as needed, no cheat army;
+//     castle as needed, no cheat army;
 //   * the villain prereq chain — buy siege weapons (a town visit) and take the
 //     matching contract — then LAY SIEGE to the villain's castle and capture;
 //   * one wandering-army (foe) battle.
@@ -170,7 +170,7 @@ bool shell_autoplay_begin_ex(ShellCtx *ctx, bool demo) {
     worldsnap_capture(&boot, ctx->game, ctx->map, ctx->fog);
     PrimRun run; memset(&run, 0, sizeof run);
     bool ok = planner(ctx->game, ctx->map, ctx->fog, (Resources *)ctx->res,
-                      /*diag=*/NULL, /*zone_scope=*/demo ? 0 : -1, &run);
+                      /*zone_scope=*/demo ? 0 : -1, &run);
     worldsnap_restore(&boot, ctx->game, ctx->map, ctx->fog);
     pending_reset();                       // the planner answered its flows; clear scratch
     if (!ok) {
@@ -180,15 +180,13 @@ bool shell_autoplay_begin_ex(ShellCtx *ctx, bool demo) {
     }
 
     // Adapt the planner's recording into the dumb replayer's Plan view. ONLY the
-    // recording is replayed; admitted_count=0 disables the per-step boundary_fp
-    // checkpoint (planner() emits no per-step fingerprints — the recording replays
-    // deterministically by construction). Move ownership of the heap (rec/combats)
-    // into s_plan; shell_autoplay_end's plan_free releases it.
+    // recording is replayed (the recording replays deterministically by
+    // construction). Move ownership of the heap (rec/combats) into s_plan;
+    // shell_autoplay_end's plan_free releases it.
     memset(&s_plan, 0, sizeof s_plan);
     s_plan.rec     = run.rec;
     s_plan.combat  = run.combats;
     s_plan.verdict = run.verdict;
-    s_plan.admitted_count = 0;
     run.rec = (RecBuf){0};                 // ownership moved out; primrun_free won't double-free
     run.combats = (CombatRecList){0};
     s_obj_done  = run.obj_done;

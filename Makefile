@@ -44,12 +44,12 @@ LDFLAGS_release := -L$(RAYLIB)/lib -lraylib -lm -lpthread -ldl -lrt \
 LDFLAGS := $(LDFLAGS_$(BUILD))
 
 ENGINE_SRC := engine/game.c engine/map.c engine/fog.c engine/pack.c engine/tile.c engine/savegame.c engine/state_serialize.c engine/savepath.c engine/tables.c engine/adventure.c engine/resources.c engine/pending.c engine/player_io.c engine/flows.c engine/flow_resolve.c engine/step.c engine/spells_adventure.c engine/fatal.c engine/assets_bytes.c engine/combat.c engine/combat_log.c
-# Autoplay module (docs/AUTOPLAY-SPEC.md). Engine-only (no raylib, no src/):
+# Autoplay module (docs/OPENBOUNTY-SPEC.md §36). Engine-only (no raylib, no src/):
 # the objects link into the game/release binaries (so --autoplay [--headless]
 # works on the single main binary, AP-084) and into the test binary, and are
 # linked engine-pure by the library boundary check (AP-041/AP-120). No separate
 # autoplay binary exists. Defined here so the binary rules below can reference it.
-AUTOPLAY_SRC := autoplay/autoplay.c autoplay/goals.c autoplay/report.c autoplay/worldsnap.c autoplay/plan.c autoplay/prereq.c autoplay/recording.c autoplay/diag.c autoplay/primitives.c autoplay/planner.c autoplay/exec_move.c autoplay/exec_fight.c autoplay/exec_recruit.c autoplay/exec_town.c
+AUTOPLAY_SRC := autoplay/autoplay.c autoplay/goals.c autoplay/worldsnap.c autoplay/plan.c autoplay/prereq.c autoplay/recording.c autoplay/primitives.c autoplay/planner.c autoplay/exec_move.c autoplay/exec_fight.c autoplay/exec_recruit.c autoplay/exec_town.c
 AUTOPLAY_OBJ_DIR := build/$(BUILD)/objs/autoplay
 AUTOPLAY_OBJ     := $(patsubst %.c,$(AUTOPLAY_OBJ_DIR)/%.o,$(AUTOPLAY_SRC))
 SHELL_SRC  := src/main.c src/shell_menu.c src/shell_tempdeath.c src/shell_weekend.c src/shell_audience.c src/shell_cheats.c src/shell_gate.c src/shell_fastquit.c src/shell_frame.c src/shell_promptdispatch.c src/shell_actions.c src/shell_autoplay.c src/shell_earlyexit.c src/assets.c src/pack_select.c src/recorder.c src/audio.c src/encode_mp4.c src/encode_mp4_h264.c src/encode_mp4_mux.c src/encode_dialog.c src/bfont.c src/tile_cache.c src/sprites.c src/views.c src/ui.c src/screenshot.c src/combat_loop.c src/combat_render.c src/combat_replay.c src/palette.c src/chrome.c src/hud.c src/map_render.c src/overlay.c src/views_render.c src/input.c src/input_host.c src/frame_host.c src/prompt.c src/startup.c src/end_cartoon.c src/screens/home_castle.c src/screens/recruit_soldiers.c src/screens/own_castle.c src/screens/dwelling.c src/screens/alcove.c src/screens/end_game.c
@@ -363,7 +363,7 @@ LIBTEST_LDFLAGS := -lm -lpthread
 # provides the entry point, and the link uses only -lm -lpthread (no raylib,
 # no -Isrc). If any autoplay (or engine) object reaches a shell symbol, this
 # fails and `make all` fails. No binary is emitted — the link is discarded.
-# Uniform player-IO emit guard (docs/UNIFORM-IO-DESIGN.md, M6). The engine must
+# Uniform player-IO emit guard (engine/include/player_io.h, M6). The engine must
 # raise informational messages ONLY through the player-IO queue
 # (player_io_message), never the open_dialog host callback directly — that was the
 # pre-refactor "out-of-band" path that let the shell and autoplay diverge. Engine
@@ -386,7 +386,7 @@ $(LIBTEST_STAMP): tests/library/consumer.c engine/host_noop.c $(AUTOPLAY_OBJ) $(
 	@touch $@
 
 # ---------------------------------------------------------------------------
-# autoplay objects (docs/AUTOPLAY-SPEC.md). Compiled ENGINE-ONLY — only engine
+# autoplay objects (docs/OPENBOUNTY-SPEC.md §36). Compiled ENGINE-ONLY — only engine
 # include paths, NO -Isrc and NO raylib include dir — so the module stays
 # engine-pure. The objects link into the game/release/test binaries; there is
 # NO separate autoplay binary (autoplay is the --autoplay [--headless] flag on

@@ -18,6 +18,25 @@
 typedef struct { char id[24]; int count; } TargetStack;
 typedef struct { TargetStack slot[GAME_ARMY_SLOTS]; int n; bool wins; } ArmyTarget;
 
+// Recruitment MODE — the polymorphic axis of the single exec_recruit() seam.
+typedef enum {
+    RECRUIT_APPLY_TARGET = 0,   // commit a precomputed ArmyTarget (the planner's contract)
+    RECRUIT_ADD_FOR_WIN,        // pre-fight search: ADD to a slot           (try_recruit_for_win)
+    RECRUIT_RECOMPOSE_FOR_WIN,  // pre-fight search: SWAP the weakest stack   (try_recompose_for_win)
+    RECRUIT_BUILD_FOR_WIN,      // pre-fight search: full greedy REBUILD      (exec_build_for)
+} RecruitMode;
+
+// One recruitment request. Only the fields relevant to `mode` are read:
+//  - APPLY_TARGET: `target` (required).
+//  - *_FOR_WIN   : `combat_mode` / `tgt` / `min_survivors` (the fight to win).
+typedef struct {
+    RecruitMode         mode;
+    const ArmyTarget   *target;        // APPLY_TARGET
+    CombatMode          combat_mode;   // *_FOR_WIN
+    const CombatTarget *tgt;           // *_FOR_WIN
+    int                 min_survivors; // *_FOR_WIN (1 foe / 2 monster castle)
+} RecruitRequest;
+
 // A single recruit SOURCE — "what can be recruited and where", enumerated by
 // recruit_sources_enumerate in strict preference order: the current zone's
 // dwellings, then the always-available home pool, then other zones' dwellings.
@@ -40,9 +59,6 @@ typedef struct {
 // function of g — no planner state, no nav. Returns the number written (<= cap).
 int recruit_sources_enumerate(const Game *g, RecruitSource *out, int cap);
 
-// Total weekly upkeep of the current army (the week-end summary reads this).
-int army_upkeep(const Game *g);
-
 // Count of non-empty army stacks (the "survivors" metric for a copy after a fight).
 int army_stack_count(const Game *g);
 
@@ -55,16 +71,6 @@ long army_hp_worth(const ArmyStack *army);
 // GameBuyTroop is all-or-nothing on gold, so the army-build pipeline must cap recruit
 // counts by this, not just by the leadership cap.
 int recruit_affordable_count(const Game *g, const char *troop_id);
-
-// Run (mode,tgt) to completion on a discarded copy of g and report the result.
-// army_override: if non-NULL, replaces the hero army in the simulation copy (so the
-// caller can test a hypothetical army without mutating g). NULL uses g->army as-is.
-// *out_survivors (if non-NULL) gets the HERO army's surviving stack count
-// (meaningful on a WIN). RNG snapshot/restored. Thin wrapper over predict_combat_eval.
-CombatResult predict_combat_survivors(const Game *g, CombatMode mode,
-                                      const CombatTarget *tgt,
-                                      const ArmyStack *army_override,
-                                      int *out_survivors);
 
 // Richer variant: also reports the DEFENDER's surviving stacks / total HP via any
 // non-NULL out-param (0 on a player WIN). RNG snapshot/restored.

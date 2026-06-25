@@ -87,7 +87,8 @@ TEST exec_recruit_empty_target_is_trivial(void) {
     RecBuf prims = {0}; CombatRecList combats = {0};
     RecSink rec = { &prims, &combats };
 
-    ASSERT(exec_recruit(g, map, fog, res, &target, &rec));
+    RecruitRequest req = { .mode = RECRUIT_APPLY_TARGET, .target = &target };
+    ASSERT(exec_recruit(g, map, fog, res, &req, &rec));
     ASSERT_EQ_FMT(0, prims.count, "%d");                     // nothing to do
 
     recbuf_free(&prims); combatreclist_free(&combats);
@@ -115,7 +116,8 @@ TEST exec_recruit_already_satisfied(void) {
 
     RecBuf prims = {0}; CombatRecList combats = {0};
     RecSink rec = { &prims, &combats };
-    ASSERT(exec_recruit(g, map, fog, res, &target, &rec));
+    RecruitRequest req = { .mode = RECRUIT_APPLY_TARGET, .target = &target };
+    ASSERT(exec_recruit(g, map, fog, res, &req, &rec));
     ASSERT_EQ_FMT(0, prims.count, "%d");                     // already held: no dismiss/buy
 
     recbuf_free(&prims); combatreclist_free(&combats);

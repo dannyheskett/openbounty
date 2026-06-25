@@ -19,17 +19,7 @@ const char *planstep_kind_str(PlanKind k) {
     case STEP_VILLAIN:         return "villain";
     case STEP_SCEPTER:         return "scepter";
     case STEP_FOE:             return "foe";
-    case STEP_RECRUIT_HOME:    return "recruit-home";
-    case STEP_RECRUIT_DWELLING:return "recruit-dwelling";
-    case STEP_RENT_BOAT:       return "rent-boat";
     case STEP_TAKE_CONTRACT:   return "take-contract";
-    case STEP_CLEAR_FOE:       return "clear-foe";
-    case STEP_BUY_SPELLS:      return "buy-spells";
-    case STEP_TRAVEL_ZONE:     return "travel-zone";
-    case STEP_RECOMPOSE_ARMY:  return "recompose-army";
-    case STEP_WAIT_WEEKS:      return "wait-weeks";
-    case STEP_RECOMPOSE_FLY:   return "recompose-fly";
-    case STEP_CAST_SPELL:      return "cast-spell";
     default:                   return "?";
     }
 }
@@ -81,7 +71,6 @@ int plansteps_enumerate_chests(PlanStepSet *set, const Game *g, const Map *map,
         if (!gl) break;
         gl->kind = STEP_CHEST;
         gl->tile_bound = true;
-        gl->arrival = ARRIVE_CONSUME;
         gl->target.x = c->x;
         gl->target.y = c->y;
         gl->zone_index = zone_index;
@@ -120,7 +109,6 @@ int plansteps_enumerate_noncombat(PlanStepSet *set, const Game *g, const Map *ma
         if (!gl) break;
         gl->kind = k;
         gl->tile_bound = true;
-        gl->arrival = ARRIVE_CONSUME;
         gl->target.x = pl->x;
         gl->target.y = pl->y;
         gl->zone_index = zone_index;
@@ -137,7 +125,6 @@ int plansteps_enumerate_noncombat(PlanStepSet *set, const Game *g, const Map *ma
         if (gl) {
             gl->kind = STEP_ALCOVE;
             gl->tile_bound = true;
-            gl->arrival = ARRIVE_ALCOVE;
             gl->target.x = z->magic_alcove_x;
             gl->target.y = z->magic_alcove_y;
             gl->zone_index = zone_index;
@@ -154,7 +141,6 @@ int plansteps_enumerate_noncombat(PlanStepSet *set, const Game *g, const Map *ma
         if (gl) {
             gl->kind = STEP_SIEGE_WEAPONS;
             gl->tile_bound = false;
-            gl->arrival = ARRIVE_BUY_SIEGE;
             gl->zone_index = zone_index;
             snprintf(gl->label, sizeof gl->label, "buy siege weapons (at a town)");
             added++;
@@ -183,7 +169,6 @@ int plansteps_enumerate_combat(PlanStepSet *set, const Game *g, int zone_index) 
             if (!gl) break;
             gl->kind = STEP_MONSTER_CASTLE;
             gl->tile_bound = true;
-            gl->arrival = ARRIVE_SIEGE;
             gl->target.x = rc->x; gl->target.y = rc->y;   // the gate tile
             gl->zone_index = zone_index;
             snprintf(gl->handle, sizeof gl->handle, "%s", cr->id);
@@ -195,7 +180,6 @@ int plansteps_enumerate_combat(PlanStepSet *set, const Game *g, int zone_index) 
             if (!gl) break;
             gl->kind = STEP_VILLAIN;
             gl->tile_bound = true;
-            gl->arrival = ARRIVE_SIEGE;
             gl->target.x = rc->x; gl->target.y = rc->y;
             gl->zone_index = zone_index;
             // id is the VILLAIN id (for done-detection via villains_caught),
@@ -234,9 +218,7 @@ int plansteps_enumerate_foes(PlanStepSet *set, const Game *g, int zone_index) {
         gl->tile_bound = true;
         // The foe tile IS the target, reached by a walk-ONTO step: the generic
         // tile-bound path (steps 4-8) routes to it and step 6b fights it the
-        // instant the next step lands on the foe. ARRIVE_CONSUME keeps it out of
-        // the STEP_CLEAR_FOE / ARRIVE_SIEGE branches and the bouncer set.
-        gl->arrival = ARRIVE_CONSUME;
+        // instant the next step lands on the foe.
         gl->target.x = fs->x;
         gl->target.y = fs->y;
         gl->zone_index = zone_index;
@@ -248,29 +230,6 @@ int plansteps_enumerate_foes(PlanStepSet *set, const Game *g, int zone_index) {
         added++;
     }
     return added;
-}
-
-int plansteps_enumerate_scepter(PlanStepSet *set, const Game *g) {
-    if (!set || !g || !g->res) return 0;
-    if (!g->scepter.zone[0]) return 0;
-    int zi = -1;
-    for (int i = 0; i < g->res->zone_count; i++)
-        if (strcmp(g->res->zones[i].id, g->scepter.zone) == 0) { zi = i; break; }
-    if (zi < 0) return 0;
-    PlanStep *gl = step_push(set);
-    if (!gl) return 0;
-    gl->kind = STEP_SCEPTER;
-    gl->tile_bound = true;
-    gl->arrival = ARRIVE_SCEPTER;
-    gl->target.x = g->scepter.x;
-    gl->target.y = g->scepter.y;
-    gl->zone_index = zi;
-    // Zone-qualify the label like every other multi-zone objective ("[zone] …")
-    // so the checklist/decision log read uniformly and the all-zone universe
-    // invariant (every label bracketed) holds.
-    snprintf(gl->label, sizeof gl->label, "[%s] scepter (%d,%d)",
-             g->scepter.zone, g->scepter.x, g->scepter.y);
-    return 1;
 }
 
 bool planstep_is_done(const PlanStep *gl, const Game *g) {
@@ -331,45 +290,8 @@ bool planstep_is_done(const PlanStep *gl, const Game *g) {
         // no specific villain was named).
         return gl->handle[0] ? (strcmp(g->contract.active_id, gl->handle) == 0)
                              : (g->contract.active_id[0] != '\0');
-    case STEP_RENT_BOAT:
-        return g->boat.has_boat;
-    case STEP_TRAVEL_ZONE:
-        // Done = the hero stands in the destination zone (handle = zone id).
-        return gl->handle[0] && strcmp(g->position.zone, gl->handle) == 0;
-    case STEP_RECRUIT_HOME:
-    case STEP_RECRUIT_DWELLING:
-        // A recruit step is a one-shot action with no persistent "done" flag of
-        // its own; the executor marks it complete by releasing p->cur after
-        // buying. For the planstep_is_done predicate (used to skip already-met
-        // steps) treat it as not-pre-satisfiable: it must be performed.
-        return false;
     default:
         return false;
     }
 }
 
-void planstepset_progress(const PlanStepSet *set, const Game *g,
-                      int *out_done, int *out_total) {
-    // Only OBJECTIVE primitives count toward the milestone checklist; enabling
-    // primitives (recruit/boat/contract) are means, not milestones.
-    int done = 0, total = 0;
-    if (set) {
-        for (int i = 0; i < set->count; i++) {
-            if (!planstep_is_objective(set->steps[i].kind)) continue;
-            total++;
-            if (planstep_is_done(&set->steps[i], g)) done++;
-        }
-    }
-    if (out_done)  *out_done  = done;
-    if (out_total) *out_total = total;
-}
-
-int planstepset_next(const PlanStepSet *set, const Game *g) {
-    if (!set) return -1;
-    // Phase 2: enumeration order (chests only). The safe->power->combat tiers
-    // slot in here as more kinds arrive.
-    for (int i = 0; i < set->count; i++) {
-        if (!planstep_is_done(&set->steps[i], g)) return i;
-    }
-    return -1;
-}

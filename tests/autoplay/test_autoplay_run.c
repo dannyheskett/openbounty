@@ -26,15 +26,14 @@
 #define RUN_SEED 1UL
 
 // Run the planner with its always-on stdout decision trace muted, so the test
-// output stays clean. (planner() prints "planner:"/exec DECLINE lines via printf;
-// the DiagSink arg only gates the separate structured trace, not these.)
+// output stays clean. (planner() prints "planner:"/exec DECLINE lines via printf.)
 static bool planner_quiet(Game *g, Map *map, Fog *fog, const Resources *res,
                           PrimRun *run) {
     fflush(stdout);
     int saved = dup(STDOUT_FILENO);
     int dn = open("/dev/null", O_WRONLY);
     if (dn >= 0) dup2(dn, STDOUT_FILENO);
-    bool ok = planner(g, map, fog, res, /*diag=*/NULL, /*zone_scope=*/-1, run);
+    bool ok = planner(g, map, fog, res, /*zone_scope=*/-1, run);
     fflush(stdout);
     if (saved >= 0) { dup2(saved, STDOUT_FILENO); close(saved); }
     if (dn >= 0) close(dn);
@@ -86,11 +85,11 @@ TEST replay_reproduces_planner_terminal(void) {
     ASSERT(planner_quiet(g, map, fog, res, &run));
     uint64_t planner_fp = worldsnap_fingerprint(g, map);
 
-    // Back to boot, then DUMB-replay the recording (admitted_count=0 => no per-step
-    // boundary check; we assert the end state instead). The replay touches no planner.
+    // Back to boot, then DUMB-replay the recording (we assert the end state
+    // instead). The replay touches no planner.
     worldsnap_restore(&boot, g, map, fog);
     Plan p; memset(&p, 0, sizeof p);
-    p.rec = run.rec; p.combat = run.combats; p.admitted_count = 0;
+    p.rec = run.rec; p.combat = run.combats;
     PlanExecutor ex; plan_exec_begin(&ex, &p, /*animate=*/NULL, /*present=*/NULL, NULL);
     int guard = 0;
     while (plan_exec_step(&ex, g, map, fog, res) == PLAN_EXEC_RUNNING) {
@@ -117,7 +116,7 @@ static bool seed_replays_deterministically(unsigned long seed) {
     worldsnap_restore(&boot, g, map, fog);
     if (ok) {
         Plan p; memset(&p, 0, sizeof p);
-        p.rec = run.rec; p.combat = run.combats; p.admitted_count = 0;
+        p.rec = run.rec; p.combat = run.combats;
         PlanExecutor ex; plan_exec_begin(&ex, &p, NULL, NULL, NULL);
         int guard = 0;
         while (plan_exec_step(&ex, g, map, fog, res) == PLAN_EXEC_RUNNING &&

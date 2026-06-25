@@ -1,13 +1,11 @@
 // autoplay/exec_town.c
 //
-// Executor TOWN-service helpers (see exec.h / docs/EXECUTOR-REFACTOR.md):
+// Executor TOWN-service helpers (see exec.h):
 //   exec_enter_town   — reach the nearest town and gate in        (HELPER #11) [P1]
 //   exec_buy_siege    — buy siege weapons                         (HELPER #12) [here]
 //   exec_take_contract— take a villain's contract                 (HELPER #13) [here]
-//   exec_buy_spell    — buy the town's combat spell               (HELPER #14) [here]
-//   exec_rent_boat    — rent a boat at the town dock              (HELPER #15) [here]
 //
-// The four transaction helpers below assume the hero is already gated into a town
+// The transaction helpers below assume the hero is already gated into a town
 // (exec_enter_town, built later, does the fight-through routing). Each issues one
 // engine town-core call and records its replayable RA_* on success.
 
@@ -172,21 +170,3 @@ bool exec_take_contract(Game *g, const Resources *res, const char *villain_id,
     return false;   // wanted villain not in the cycle yet (capture an earlier one)
 }
 
-// HELPER #14 — exec_buy_spell. Buy the combat spell the current town offers. Records
-// RA_BUY_SPELLS keyed by the town id. False if no spell for sale / at cap / no gold.
-bool exec_buy_spell(Game *g, RecSink *rec) {
-    SpellBuyResult r = GameBuySpell(g, g->position.in_town);
-    if (r != SPELL_BUY_OK) return false;
-    rec_push_action(rec, RA_BUY_SPELLS, g->position.in_town, 0, 0);
-    return true;
-}
-
-// HELPER #15 — exec_rent_boat. Rent a boat at the town's dock coords (dock_x,dock_y).
-// Records RA_RENT_BOAT BEFORE applying (replay re-rents at the same dock). No-op
-// success if a boat is already held. False on a bad dock or insufficient gold.
-bool exec_rent_boat(Game *g, int dock_x, int dock_y, RecSink *rec) {
-    if (g->boat.has_boat) return true;                  // already holds a boat
-    if (dock_x < 0 || dock_y < 0) return false;         // town has no dock
-    rec_push_action(rec, RA_RENT_BOAT, NULL, dock_x, dock_y);   // act_x/y = dock
-    return GameRentBoat(g, dock_x, dock_y, g->position.zone) == BOAT_RENT_OK;
-}

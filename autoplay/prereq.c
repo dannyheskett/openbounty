@@ -15,7 +15,6 @@ PlanStep prereq_make_buy_siege(int zone_index) {
     memset(&s, 0, sizeof s);
     s.kind = STEP_SIEGE_WEAPONS;       // an objective AND a hard prereq
     s.tile_bound = false;              // resolved to the nearest town at exec
-    s.arrival = ARRIVE_BUY_SIEGE;
     s.zone_index = zone_index;
     snprintf(s.label, sizeof s.label, "buy siege weapons (at a town)");
     return s;
@@ -27,7 +26,6 @@ PlanStep prereq_make_take_contract(const char *villain_id, int zone_index) {
     s.kind = STEP_TAKE_CONTRACT;
     s.tile_bound = false;              // taken at a town in normal play; the
                                        // engine cycle needs no tile for the oracle
-    s.arrival = ARRIVE_TAKE_CONTRACT;
     s.zone_index = zone_index;
     if (villain_id) snprintf(s.handle, sizeof s.handle, "%s", villain_id);
     snprintf(s.label, sizeof s.label, "take contract for %s",

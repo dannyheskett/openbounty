@@ -1,6 +1,6 @@
 // engine/include/player_io.h
 //
-// Uniform player-IO request queue (docs/UNIFORM-IO-DESIGN.md, Option 1). One
+// Uniform player-IO request queue (this header is the canonical reference). One
 // engine-owned FIFO carries EVERY player-facing moment the engine raises —
 // decisions, informational messages, and full-screen view-opens — as ordered
 // PlayerRequest entries. Both consumers drain the SAME queue: the human shell UI

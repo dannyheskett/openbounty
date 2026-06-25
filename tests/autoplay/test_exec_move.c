@@ -139,6 +139,7 @@ TEST exec_step_null_sink_is_safe(void) {
 static bool foot_reachable_target(const Map *map, NavPoint from, int min_steps,
                                   NavPoint *out) {
     NavOptions opts; nav_default_options(&opts);
+    NavTravel foot = { NAV_MODE_FOOT, false, -1, -1 };
     int maxr = map->width > map->height ? map->width : map->height;
     for (int r = min_steps; r <= maxr; r++)
         for (int y = from.y - r; y <= from.y + r; y++)
@@ -149,7 +150,7 @@ static bool foot_reachable_target(const Map *map, NavPoint from, int min_steps,
                 if (x < 0 || x >= map->width || y < 0 || y >= map->height) continue;
                 NavPoint cand = { x, y };
                 int steps = 0;
-                if (nav_reachable(map, from, cand, &opts, &steps) && steps >= min_steps) {
+                if (nav_reachable_travel(map, from, &foot, cand, &opts, &steps) && steps >= min_steps) {
                     *out = cand; return true;
                 }
             }
@@ -245,6 +246,7 @@ TEST exec_reach_defers_undiscovered_zone(void) {
 // A foot-reachable hostile foe in the hero's zone, if any (else returns false).
 static bool find_reachable_foe(Game *g, const Map *map, int *fx, int *fy) {
     NavOptions opts; nav_default_options(&opts);
+    NavTravel foot = { NAV_MODE_FOOT, false, -1, -1 };
     NavPoint from = { g->position.x, g->position.y };
     int best = -1;
     for (int i = 0; i < g->foe_count; i++) {
@@ -254,7 +256,7 @@ static bool find_reachable_foe(Game *g, const Map *map, int *fx, int *fy) {
         for (int k = 0; k < 8; k++) {
             NavPoint nb = { f->x + NDX[k], f->y + NDY[k] };
             int steps = 0;
-            if (nav_reachable(map, from, nb, &opts, &steps)) {
+            if (nav_reachable_travel(map, from, &foot, nb, &opts, &steps)) {
                 if (best < 0 || steps < best) { best = steps; *fx = f->x; *fy = f->y; }
                 break;
             }

@@ -1403,7 +1403,7 @@ static void parse_banners(ResBanners *b, cJSON *obj) {
 }
 
 // ---- Combat log strings (game.json strings.combat_log) ------------
-// Defaults follow COMBAT-PLAN.md  verbatim; see also .
+// Defaults follow docs/OPENBOUNTY-SPEC.md §25.11 verbatim.
 static void load_combat_log_defaults(ResCombatLog *cl) {
     memset(cl, 0, sizeof(*cl));
     copy_str(cl->melee_hit,        sizeof(cl->melee_hit),

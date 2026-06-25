@@ -76,10 +76,3 @@ uint64_t worldsnap_fingerprint(const Game *g, const Map *m) {
     // spuriously. Used as the executor's step-boundary checkpoint (WS-4).
     return fnv_world(g, m, GameRngSnapshot());
 }
-
-uint64_t worldsnap_fingerprint_snap(const WorldSnapshot *snap) {
-    // Same fingerprint computed from a captured snapshot (its own RNG, not the
-    // live one) — so a recorded step's boundary_fp matches what the executor
-    // recomputes live when it reaches that prefix.
-    return fnv_world(&snap->game, &snap->map, snap->rng);
-}

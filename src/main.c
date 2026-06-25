@@ -239,19 +239,9 @@ int shell_run_game(int argc, char **argv) {
     // later in the main loop. autoplay() boots its own engine + pack (the
     // engine-only consumer pattern), so no shell/window state is needed.
     if (autoplay_mode && headless_mode) {
-        // The structured decision trace (diag.h) is ALWAYS ON at FULL verbosity
-        // in headless: it goes to stdout alongside the verdict line (the "aptrace"
-        // prefix keeps it filterable) and is observation-only, so it never changes
-        // the run. No env knobs
-        // or flags — headless always emits the complete trace (level 2: STEP/
-        // PREDICT/CAND/INTERV/RUNCAP plus NAV/RECRUIT detail), in greppable
-        // key=val text.
         AutoplayConfig cfg = {
             .seed = forced_seed ? forced_seed : 1,
             .pack_dir = NULL,           // default pack (assets/kings-bounty)
-            .trace = true,              // structured trace to stdout (always-on)
-            .trace_level = 2,           // full detail (includes NAV/RECRUIT)
-            .trace_json = false,        // greppable key=val text
             .zone_scope = -1,           // all zones — the binary's one behavior
                                         // (the zone-0 regression baseline lives
                                         // in the test suite, not the CLI)

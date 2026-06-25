@@ -21,15 +21,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "goals.h"
-#include "report.h"
-#include "prereq.h"
 #include "step.h"        // GameStep (execute phase issues live moves)
 #include "player_io.h"   // player_io_answer (apply recorded answers)
-#include "pending.h"     // pending_reset (clear stale planning-sim pending flow)
-#include "spells_adventure.h" // spells_adventure_reset_ui (scrub gate/bridge UI globals)
-#include "tables.h"      // troop_by_id (army-power measure, criterion b2)
-#include "ob_trace.h"    // TEMP OB_TRACE_PRES observational trace (AP-046)
 
 // Outcome of simulating one candidate onto the proven prefix.
 typedef enum {
@@ -67,10 +60,7 @@ void plan_exec_begin(PlanExecutor *ex, const Plan *plan,
                      void *animate_ctx) {
     if (!ex) return;
     ex->plan = plan;
-    ex->step = 0;
     ex->rec_cursor = 0;
-    ex->turns = 0;
-    ex->boundary_checked = false;
     ex->animate = animate;
     ex->present_view = present_view;
     ex->animate_ctx = animate_ctx;
@@ -98,7 +88,6 @@ static int town_demo_row_for_next_action(const Plan *plan, int cursor) {
         case RA_BUY_SIEGE:     return TOWN_DEMO_ROW_SIEGE;
         case RA_TAKE_CONTRACT: return TOWN_DEMO_ROW_CONTRACT;
         case RA_RENT_BOAT:     return TOWN_DEMO_ROW_BOAT;
-        case RA_BUY_SPELLS:    return TOWN_DEMO_ROW_SPELL;
         default:               return -1;
     }
 }
@@ -117,33 +106,10 @@ PlanExecStatus plan_exec_step(PlanExecutor *ex, Game *g, Map *map,
 
     if (ex->rec_cursor >= plan->rec.count) { ex->done = true; return PLAN_EXEC_DONE; }
 
-    // Step-boundary checkpoint: when the cursor reaches a step's
-    // rec_begin, assert the live world matches the recorded boundary_fp. A
-    // mismatch is a determinism regression — stop rather than apply a primitive
-    // to the wrong world. Advance ex->step to the span containing the cursor.
-    while (ex->step < plan->admitted_count &&
-           ex->rec_cursor >= plan->step_span[ex->step].rec_end) {
-        ex->step++;
-        ex->boundary_checked = false;
-    }
-    if (ex->step < plan->admitted_count && !ex->boundary_checked &&
-        ex->rec_cursor == plan->step_span[ex->step].rec_begin) {
-        uint64_t live = worldsnap_fingerprint(g, map);
-        if (live != plan->step_span[ex->step].boundary_fp) {
-            // Determinism regression: the live prefix diverged from the proven
-            // one. Stop (the verdict already reflects the plan; we never apply a
-            // primitive against the wrong world).
-            ex->done = true;
-            return PLAN_EXEC_DONE;
-        }
-        ex->boundary_checked = true;
-    }
-
     const RecPrim *p = &plan->rec.items[ex->rec_cursor];
     switch (p->kind) {
     case REC_MOVE:
         GameStep(g, map, fog, res, p->dx, p->dy);
-        ex->turns++;
         // VISIBLE: a move that stepped onto a town gate just opened the town view
         // (engine entered_town path) and set position.in_town. Present it the way a
         // player sees it — render the town screen + walk the menu to the action's
@@ -184,11 +150,8 @@ PlanExecStatus plan_exec_step(PlanExecutor *ex, Game *g, Map *map,
         break;
     }
     case REC_ACTION:
-        if (p->action == RA_SET_ARMY)
-            autoplay_apply_set_army(g, p->set_army, p->set_army_n);
-        else
-            autoplay_apply_rec_action(g, map, fog, p->action,
-                                      p->act_id, p->act_x, p->act_y);
+        autoplay_apply_rec_action(g, map, fog, p->action,
+                                  p->act_id, p->act_x, p->act_y);
         // (Town views are presented on the town-ENTERING REC_MOVE, not here — the
         // town action core just mutates state with in_town already set.)
         player_io_drain_messages(g);

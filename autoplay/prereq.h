@@ -34,7 +34,7 @@
 
 // A set of enabling-primitive candidates to satisfy an objective's UNMET hard
 // prerequisites. Each entry is a fully-formed PlanStep of an enabling kind
-// (STEP_RENT_BOAT / STEP_TAKE_CONTRACT / STEP_SIEGE_WEAPONS / ...), ready for the
+// (STEP_TAKE_CONTRACT / STEP_SIEGE_WEAPONS), ready for the
 // intervention search to simulate. Order is the documented try-order.
 typedef struct {
     PlanStep step[PREREQ_MAX];
