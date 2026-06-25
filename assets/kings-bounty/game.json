@@ -1,0 +1,5083 @@
+{
+	"title":	"King's Bounty",
+	"version":	1,
+	"pack_id":	"kings-bounty",
+	"pack_name":	"King's Bounty",
+	"pack_kind":	"base",
+	"world":	{
+		"max_army_slots":	5,
+		"fog_sight":	3,
+		"starting_zone":	"continentia",
+		"zone_noun":	"continent",
+		"zone_noun_plural":	"continents",
+		"default_name":	"Hero",
+		"default_options":	[4, 1, 1, 1, 1, 1]
+	},
+	"time":	{
+		"day_steps":	40,
+		"week_days":	5,
+		"days_per_difficulty":	{
+			"easy":	900,
+			"normal":	600,
+			"hard":	400,
+			"impossible":	200
+		}
+	},
+	"economy":	{
+		"alcove_cost":	5000,
+		"boat_cost_cheap":	100,
+		"boat_cost_normal":	500,
+		"siege_cost":	3000,
+		"chest":	{
+			"chance_gold":	[61, 66, 76, 71],
+			"chance_commission":	[81, 86, 86, 81],
+			"chance_spell_power":	[86, 92, 93, 91],
+			"chance_max_spells":	[86, 92, 93, 91],
+			"chance_new_spell":	[101, 101, 101, 101],
+			"gold_min":	[0, 4, 9, 19],
+			"gold_max":	[5, 16, 21, 31],
+			"commission_min":	[9, 49, 99, 199],
+			"commission_max":	[41, 51, 101, 301],
+			"max_spells_base":	[1, 1, 2, 2]
+		},
+		"scoring":	{
+			"per_villain":	500,
+			"per_artifact":	250,
+			"per_castle":	100,
+			"kill_penalty":	1,
+			"difficulty_multiplier":	[0, 1, 2, 4, 8],
+			"easy_halves":	true
+		}
+	},
+	"tuning":	{
+		"instant_army_multiplier":	[3, 2, 1, 1],
+		"search_cost_days":	10
+	},
+	"combat":	{
+		"morale_chart":	[["N", "N", "N", "N", "N"], ["N", "N", "N", "N", "N"], ["N", "N", "H", "N", "N"], ["L", "N", "L", "H", "N"], ["L", "L", "L", "N", "N"]],
+		"number_names":	[{
+				"min":	500,
+				"label":	"A multitude of"
+			}, {
+				"min":	100,
+				"label":	"A horde of"
+			}, {
+				"min":	50,
+				"label":	"A lot of"
+			}, {
+				"min":	20,
+				"label":	"Many"
+			}, {
+				"min":	10,
+				"label":	"Some"
+			}, {
+				"min":	1,
+				"label":	"A few"
+			}]
+	},
+	"zones":	[{
+			"id":	"continentia",
+			"name":	"Continentia",
+			"map":	"maps/continentia.dat",
+			"width":	64,
+			"height":	64,
+			"neighbors":	["forestria", "archipelia", "saharia"],
+			"hero_spawn":	{
+				"x":	12,
+				"y":	62
+			},
+			"is_home":	true,
+			"home_spawn":	{
+				"x":	11,
+				"y":	58
+			},
+			"magic_alcove":	{
+				"x":	11,
+				"y":	44
+			},
+			"salt":	{
+				"artifacts":	2,
+				"navmaps":	1,
+				"orbs":	1,
+				"telecaves":	2,
+				"dwellings":	10,
+				"friendly_foes":	5,
+				"preferred_troops":	["peasants", "sprites", "orcs", "skeletons", "wolves", "gnomes"],
+				"dwelling_range":	[0, 14]
+			},
+			"signs":	[{
+					"x":	3,
+					"y":	60,
+					"id":	"sign_000",
+					"title":	"Treasure Island",
+					"body":	""
+				}, {
+					"x":	14,
+					"y":	60,
+					"id":	"sign_001",
+					"title":	"Rent a boat and sail the",
+					"body":	"seas. Explore the easy way!"
+				}, {
+					"x":	38,
+					"y":	60,
+					"id":	"sign_002",
+					"title":	"Six villains rule",
+					"body":	"Continentia."
+				}, {
+					"x":	5,
+					"y":	57,
+					"id":	"sign_003",
+					"title":	"Aurange is north",
+					"body":	""
+				}, {
+					"x":	3,
+					"y":	54,
+					"id":	"sign_004",
+					"title":	"The Sceptre will never be",
+					"body":	"found!"
+				}, {
+					"x":	12,
+					"y":	53,
+					"id":	"sign_005",
+					"title":	"King's Treasure Garden",
+					"body":	""
+				}, {
+					"x":	15,
+					"y":	53,
+					"id":	"sign_006",
+					"title":	"There are two artifacts per",
+					"body":	"continent."
+				}, {
+					"x":	25,
+					"y":	52,
+					"id":	"sign_007",
+					"title":	"Peasant Way",
+					"body":	""
+				}, {
+					"x":	40,
+					"y":	51,
+					"id":	"sign_008",
+					"title":	"Wonder Woods",
+					"body":	""
+				}, {
+					"x":	20,
+					"y":	47,
+					"id":	"sign_009",
+					"title":	"Pond of Peril",
+					"body":	""
+				}, {
+					"x":	45,
+					"y":	47,
+					"id":	"sign_010",
+					"title":	"It takes time to cross the",
+					"body":	"desert."
+				}, {
+					"x":	32,
+					"y":	45,
+					"id":	"sign_011",
+					"title":	"Dead End",
+					"body":	""
+				}, {
+					"x":	10,
+					"y":	35,
+					"id":	"sign_012",
+					"title":	"Irok guards the north.",
+					"body":	""
+				}, {
+					"x":	15,
+					"y":	30,
+					"id":	"sign_013",
+					"title":	"A-maze-ing Forest",
+					"body":	""
+				}, {
+					"x":	58,
+					"y":	30,
+					"id":	"sign_014",
+					"title":	"All maps are found in chests",
+					"body":	""
+				}, {
+					"x":	51,
+					"y":	25,
+					"id":	"sign_015",
+					"title":	"Bridge Port",
+					"body":	""
+				}, {
+					"x":	34,
+					"y":	24,
+					"id":	"sign_016",
+					"title":	"Hidden Grove",
+					"body":	""
+				}, {
+					"x":	9,
+					"y":	22,
+					"id":	"sign_017",
+					"title":	"Secret Pass",
+					"body":	""
+				}, {
+					"x":	24,
+					"y":	14,
+					"id":	"sign_018",
+					"title":	"Isle of Death",
+					"body":	""
+				}, {
+					"x":	7,
+					"y":	8,
+					"id":	"sign_019",
+					"title":	"Pirate's Cove",
+					"body":	""
+				}, {
+					"x":	43,
+					"y":	4,
+					"id":	"sign_020",
+					"title":	"Boon Docks",
+					"body":	""
+				}, {
+					"x":	55,
+					"y":	4,
+					"id":	"sign_021",
+					"title":	"Welcome to Kookamunga!",
+					"body":	""
+				}],
+			"towns":	[{
+					"x":	29,
+					"y":	51,
+					"id":	"riverton",
+					"boat_x":	30,
+					"boat_y":	52
+				}, {
+					"x":	38,
+					"y":	13,
+					"id":	"paths_end",
+					"boat_x":	39,
+					"boat_y":	13
+				}, {
+					"x":	17,
+					"y":	19,
+					"id":	"lakeview",
+					"boat_x":	18,
+					"boat_y":	19
+				}, {
+					"x":	14,
+					"y":	36,
+					"id":	"quiln_point",
+					"boat_x":	14,
+					"boat_y":	37
+				}, {
+					"x":	51,
+					"y":	35,
+					"id":	"xoctan",
+					"boat_x":	51,
+					"boat_y":	36
+				}, {
+					"x":	17,
+					"y":	42,
+					"id":	"kings_haven",
+					"boat_x":	18,
+					"boat_y":	42
+				}, {
+					"x":	41,
+					"y":	5,
+					"id":	"bayside",
+					"boat_x":	41,
+					"boat_y":	6
+				}, {
+					"x":	50,
+					"y":	50,
+					"id":	"nyre",
+					"boat_x":	49,
+					"boat_y":	51
+				}, {
+					"x":	57,
+					"y":	58,
+					"id":	"isla_vista",
+					"boat_x":	56,
+					"boat_y":	59
+				}, {
+					"x":	12,
+					"y":	60,
+					"id":	"hunterville",
+					"boat_x":	11,
+					"boat_y":	60
+				}, {
+					"x":	46,
+					"y":	28,
+					"id":	"fjord",
+					"boat_x":	47,
+					"boat_y":	27
+				}],
+			"castles":	[{
+					"x":	30,
+					"y":	36,
+					"id":	"azram"
+				}, {
+					"x":	36,
+					"y":	14,
+					"id":	"cancomar"
+				}, {
+					"x":	22,
+					"y":	14,
+					"id":	"faxis"
+				}, {
+					"x":	11,
+					"y":	33,
+					"id":	"irok"
+				}, {
+					"x":	57,
+					"y":	5,
+					"id":	"kookamunga"
+				}, {
+					"x":	22,
+					"y":	39,
+					"id":	"nilslag"
+				}, {
+					"x":	6,
+					"y":	6,
+					"id":	"ophiraund"
+				}, {
+					"x":	58,
+					"y":	40,
+					"id":	"portalis"
+				}, {
+					"x":	54,
+					"y":	57,
+					"id":	"rythacon"
+				}, {
+					"x":	40,
+					"y":	58,
+					"id":	"vutar"
+				}, {
+					"x":	40,
+					"y":	22,
+					"id":	"wankelforte"
+				}, {
+					"x":	11,
+					"y":	56,
+					"id":	"king_maximus",
+					"decorations":	[{
+							"dx":	-3,
+							"dy":	-3,
+							"art":	"castle_tl"
+						}, {
+							"dx":	-2,
+							"dy":	-3,
+							"art":	"castle_tr"
+						}, {
+							"dx":	2,
+							"dy":	-3,
+							"art":	"castle_tl"
+						}, {
+							"dx":	3,
+							"dy":	-3,
+							"art":	"castle_tr"
+						}, {
+							"dx":	-3,
+							"dy":	-2,
+							"art":	"castle_ml"
+						}, {
+							"dx":	-2,
+							"dy":	-2,
+							"art":	"castle_mr"
+						}, {
+							"dx":	2,
+							"dy":	-2,
+							"art":	"castle_ml"
+						}, {
+							"dx":	3,
+							"dy":	-2,
+							"art":	"castle_mr"
+						}, {
+							"dx":	-3,
+							"dy":	-1,
+							"art":	"castle_tl"
+						}, {
+							"dx":	-2,
+							"dy":	-1,
+							"art":	"castle_tr"
+						}, {
+							"dx":	2,
+							"dy":	-1,
+							"art":	"castle_tl"
+						}, {
+							"dx":	3,
+							"dy":	-1,
+							"art":	"castle_tr"
+						}, {
+							"dx":	-3,
+							"dy":	0,
+							"art":	"castle_ml"
+						}, {
+							"dx":	-2,
+							"dy":	0,
+							"art":	"castle_mr"
+						}, {
+							"dx":	2,
+							"dy":	0,
+							"art":	"castle_ml"
+						}, {
+							"dx":	3,
+							"dy":	0,
+							"art":	"castle_mr"
+						}, {
+							"dx":	-2,
+							"dy":	1,
+							"art":	"castle_tl"
+						}, {
+							"dx":	-1,
+							"dy":	1,
+							"art":	"castle_tr"
+						}, {
+							"dx":	1,
+							"dy":	1,
+							"art":	"castle_tl"
+						}, {
+							"dx":	2,
+							"dy":	1,
+							"art":	"castle_tr"
+						}, {
+							"dx":	-2,
+							"dy":	2,
+							"art":	"castle_ml"
+						}, {
+							"dx":	-1,
+							"dy":	2,
+							"art":	"castle_mr"
+						}, {
+							"dx":	1,
+							"dy":	2,
+							"art":	"castle_ml"
+						}, {
+							"dx":	2,
+							"dy":	2,
+							"art":	"castle_mr"
+						}]
+				}],
+			"chests":	[{
+					"x":	8,
+					"y":	60,
+					"id":	"treasure_chest_000"
+				}, {
+					"x":	22,
+					"y":	60,
+					"id":	"treasure_chest_001"
+				}, {
+					"x":	33,
+					"y":	60,
+					"id":	"treasure_chest_002"
+				}, {
+					"x":	3,
+					"y":	59,
+					"id":	"treasure_chest_003"
+				}, {
+					"x":	20,
+					"y":	59,
+					"id":	"treasure_chest_004"
+				}, {
+					"x":	50,
+					"y":	59,
+					"id":	"treasure_chest_005"
+				}, {
+					"x":	25,
+					"y":	57,
+					"id":	"treasure_chest_006"
+				}, {
+					"x":	29,
+					"y":	56,
+					"id":	"treasure_chest_007"
+				}, {
+					"x":	37,
+					"y":	56,
+					"id":	"treasure_chest_008"
+				}, {
+					"x":	49,
+					"y":	56,
+					"id":	"treasure_chest_009"
+				}, {
+					"x":	57,
+					"y":	55,
+					"id":	"treasure_chest_010"
+				}, {
+					"x":	10,
+					"y":	54,
+					"id":	"treasure_chest_011"
+				}, {
+					"x":	10,
+					"y":	53,
+					"id":	"treasure_chest_012"
+				}, {
+					"x":	18,
+					"y":	52,
+					"id":	"treasure_chest_013"
+				}, {
+					"x":	21,
+					"y":	50,
+					"id":	"treasure_chest_014"
+				}, {
+					"x":	43,
+					"y":	50,
+					"id":	"treasure_chest_015"
+				}, {
+					"x":	59,
+					"y":	49,
+					"id":	"treasure_chest_016"
+				}, {
+					"x":	3,
+					"y":	48,
+					"id":	"treasure_chest_017"
+				}, {
+					"x":	40,
+					"y":	48,
+					"id":	"treasure_chest_018"
+				}, {
+					"x":	6,
+					"y":	46,
+					"id":	"treasure_chest_019"
+				}, {
+					"x":	23,
+					"y":	46,
+					"id":	"treasure_chest_020"
+				}, {
+					"x":	52,
+					"y":	46,
+					"id":	"treasure_chest_021"
+				}, {
+					"x":	55,
+					"y":	46,
+					"id":	"treasure_chest_022"
+				}, {
+					"x":	41,
+					"y":	45,
+					"id":	"treasure_chest_023"
+				}, {
+					"x":	15,
+					"y":	44,
+					"id":	"treasure_chest_024"
+				}, {
+					"x":	29,
+					"y":	44,
+					"id":	"treasure_chest_025"
+				}, {
+					"x":	35,
+					"y":	43,
+					"id":	"treasure_chest_026"
+				}, {
+					"x":	8,
+					"y":	42,
+					"id":	"treasure_chest_027"
+				}, {
+					"x":	25,
+					"y":	42,
+					"id":	"treasure_chest_028"
+				}, {
+					"x":	11,
+					"y":	41,
+					"id":	"treasure_chest_029"
+				}, {
+					"x":	47,
+					"y":	41,
+					"id":	"treasure_chest_030"
+				}, {
+					"x":	41,
+					"y":	39,
+					"id":	"treasure_chest_031"
+				}, {
+					"x":	21,
+					"y":	37,
+					"id":	"treasure_chest_032"
+				}, {
+					"x":	31,
+					"y":	37,
+					"id":	"treasure_chest_033"
+				}, {
+					"x":	39,
+					"y":	34,
+					"id":	"treasure_chest_034"
+				}, {
+					"x":	48,
+					"y":	33,
+					"id":	"treasure_chest_035"
+				}, {
+					"x":	9,
+					"y":	32,
+					"id":	"treasure_chest_036"
+				}, {
+					"x":	30,
+					"y":	32,
+					"id":	"treasure_chest_037"
+				}, {
+					"x":	46,
+					"y":	31,
+					"id":	"treasure_chest_038"
+				}, {
+					"x":	59,
+					"y":	30,
+					"id":	"treasure_chest_039"
+				}, {
+					"x":	5,
+					"y":	29,
+					"id":	"treasure_chest_040"
+				}, {
+					"x":	17,
+					"y":	29,
+					"id":	"treasure_chest_041"
+				}, {
+					"x":	23,
+					"y":	28,
+					"id":	"treasure_chest_042"
+				}, {
+					"x":	49,
+					"y":	28,
+					"id":	"treasure_chest_043"
+				}, {
+					"x":	31,
+					"y":	27,
+					"id":	"treasure_chest_044"
+				}, {
+					"x":	60,
+					"y":	27,
+					"id":	"treasure_chest_045"
+				}, {
+					"x":	6,
+					"y":	24,
+					"id":	"treasure_chest_046"
+				}, {
+					"x":	7,
+					"y":	24,
+					"id":	"treasure_chest_047"
+				}, {
+					"x":	8,
+					"y":	24,
+					"id":	"treasure_chest_048"
+				}, {
+					"x":	36,
+					"y":	24,
+					"id":	"treasure_chest_049"
+				}, {
+					"x":	54,
+					"y":	23,
+					"id":	"treasure_chest_050"
+				}, {
+					"x":	57,
+					"y":	23,
+					"id":	"treasure_chest_051"
+				}, {
+					"x":	17,
+					"y":	22,
+					"id":	"treasure_chest_052"
+				}, {
+					"x":	33,
+					"y":	22,
+					"id":	"treasure_chest_053"
+				}, {
+					"x":	44,
+					"y":	22,
+					"id":	"treasure_chest_054"
+				}, {
+					"x":	13,
+					"y":	20,
+					"id":	"treasure_chest_055"
+				}, {
+					"x":	46,
+					"y":	19,
+					"id":	"treasure_chest_056"
+				}, {
+					"x":	42,
+					"y":	18,
+					"id":	"treasure_chest_057"
+				}, {
+					"x":	49,
+					"y":	18,
+					"id":	"treasure_chest_058"
+				}, {
+					"x":	47,
+					"y":	16,
+					"id":	"treasure_chest_059"
+				}, {
+					"x":	20,
+					"y":	14,
+					"id":	"treasure_chest_060"
+				}, {
+					"x":	40,
+					"y":	14,
+					"id":	"treasure_chest_061"
+				}, {
+					"x":	56,
+					"y":	14,
+					"id":	"treasure_chest_062"
+				}, {
+					"x":	10,
+					"y":	13,
+					"id":	"treasure_chest_063"
+				}, {
+					"x":	27,
+					"y":	8,
+					"id":	"treasure_chest_064"
+				}, {
+					"x":	5,
+					"y":	7,
+					"id":	"treasure_chest_065"
+				}, {
+					"x":	23,
+					"y":	6,
+					"id":	"treasure_chest_066"
+				}, {
+					"x":	24,
+					"y":	6,
+					"id":	"treasure_chest_067"
+				}, {
+					"x":	30,
+					"y":	6,
+					"id":	"treasure_chest_068"
+				}, {
+					"x":	59,
+					"y":	6,
+					"id":	"treasure_chest_069"
+				}, {
+					"x":	8,
+					"y":	5,
+					"id":	"treasure_chest_070"
+				}, {
+					"x":	15,
+					"y":	5,
+					"id":	"treasure_chest_071"
+				}, {
+					"x":	45,
+					"y":	4,
+					"id":	"treasure_chest_072"
+				}, {
+					"x":	36,
+					"y":	3,
+					"id":	"treasure_chest_073"
+				}, {
+					"x":	59,
+					"y":	3,
+					"id":	"treasure_chest_074"
+				}],
+			"artifacts":	[],
+			"dwellings":	[],
+			"wandering_armies":	[{
+					"x":	26,
+					"y":	57,
+					"id":	"wandering_army_000"
+				}, {
+					"x":	33,
+					"y":	57,
+					"id":	"wandering_army_001"
+				}, {
+					"x":	54,
+					"y":	55,
+					"id":	"wandering_army_002"
+				}, {
+					"x":	6,
+					"y":	53,
+					"id":	"wandering_army_003"
+				}, {
+					"x":	23,
+					"y":	53,
+					"id":	"wandering_army_004"
+				}, {
+					"x":	18,
+					"y":	51,
+					"id":	"wandering_army_005"
+				}, {
+					"x":	43,
+					"y":	51,
+					"id":	"wandering_army_006"
+				}, {
+					"x":	48,
+					"y":	51,
+					"id":	"wandering_army_007"
+				}, {
+					"x":	12,
+					"y":	47,
+					"id":	"wandering_army_008"
+				}, {
+					"x":	7,
+					"y":	46,
+					"id":	"wandering_army_009"
+				}, {
+					"x":	32,
+					"y":	46,
+					"id":	"wandering_army_010"
+				}, {
+					"x":	49,
+					"y":	46,
+					"id":	"wandering_army_011"
+				}, {
+					"x":	3,
+					"y":	43,
+					"id":	"wandering_army_012"
+				}, {
+					"x":	8,
+					"y":	43,
+					"id":	"wandering_army_013"
+				}, {
+					"x":	15,
+					"y":	41,
+					"id":	"wandering_army_014"
+				}, {
+					"x":	11,
+					"y":	39,
+					"id":	"wandering_army_015"
+				}, {
+					"x":	20,
+					"y":	39,
+					"id":	"wandering_army_016"
+				}, {
+					"x":	9,
+					"y":	34,
+					"id":	"wandering_army_017"
+				}, {
+					"x":	54,
+					"y":	31,
+					"id":	"wandering_army_018"
+				}, {
+					"x":	6,
+					"y":	29,
+					"id":	"wandering_army_019"
+				}, {
+					"x":	54,
+					"y":	26,
+					"id":	"wandering_army_020"
+				}, {
+					"x":	31,
+					"y":	24,
+					"id":	"wandering_army_021"
+				}, {
+					"x":	10,
+					"y":	23,
+					"id":	"wandering_army_022"
+				}, {
+					"x":	21,
+					"y":	21,
+					"id":	"wandering_army_023"
+				}, {
+					"x":	57,
+					"y":	19,
+					"id":	"wandering_army_024"
+				}, {
+					"x":	7,
+					"y":	18,
+					"id":	"wandering_army_025"
+				}, {
+					"x":	41,
+					"y":	18,
+					"id":	"wandering_army_026"
+				}, {
+					"x":	23,
+					"y":	15,
+					"id":	"wandering_army_027"
+				}, {
+					"x":	33,
+					"y":	15,
+					"id":	"wandering_army_028"
+				}, {
+					"x":	5,
+					"y":	10,
+					"id":	"wandering_army_029"
+				}, {
+					"x":	42,
+					"y":	10,
+					"id":	"wandering_army_030"
+				}, {
+					"x":	16,
+					"y":	5,
+					"id":	"wandering_army_031"
+				}, {
+					"x":	24,
+					"y":	5,
+					"id":	"wandering_army_032"
+				}, {
+					"x":	53,
+					"y":	4,
+					"id":	"wandering_army_033"
+				}, {
+					"x":	37,
+					"y":	3,
+					"id":	"wandering_army_034"
+				}]
+		}, {
+			"id":	"forestria",
+			"name":	"Forestria",
+			"map":	"maps/forestria.dat",
+			"width":	64,
+			"height":	64,
+			"neighbors":	["continentia", "archipelia", "saharia"],
+			"hero_spawn":	{
+				"x":	1,
+				"y":	26
+			},
+			"salt":	{
+				"artifacts":	2,
+				"navmaps":	1,
+				"orbs":	1,
+				"telecaves":	2,
+				"dwellings":	10,
+				"friendly_foes":	5,
+				"preferred_troops":	["dwarves", "zombies", "nomads", "elves", "ogres", "elves"],
+				"dwelling_range":	[1, 14]
+			},
+			"signs":	[{
+					"x":	42,
+					"y":	60,
+					"id":	"sign_000",
+					"title":	"Time is on our side.",
+					"body":	""
+				}, {
+					"x":	52,
+					"y":	60,
+					"id":	"sign_001",
+					"title":	"Passage to Basefit.",
+					"body":	""
+				}, {
+					"x":	57,
+					"y":	52,
+					"id":	"sign_002",
+					"title":	"The end is near.",
+					"body":	""
+				}, {
+					"x":	22,
+					"y":	49,
+					"id":	"sign_003",
+					"title":	"Treasure at the river's end.",
+					"body":	""
+				}, {
+					"x":	27,
+					"y":	49,
+					"id":	"sign_004",
+					"title":	"The ogres are back... and",
+					"body":	"they're hungry!"
+				}, {
+					"x":	3,
+					"y":	48,
+					"id":	"sign_005",
+					"title":	"Wood's End is south.",
+					"body":	""
+				}, {
+					"x":	41,
+					"y":	48,
+					"id":	"sign_006",
+					"title":	"Undead are everywhere!",
+					"body":	""
+				}, {
+					"x":	59,
+					"y":	41,
+					"id":	"sign_007",
+					"title":	"Peasants are fodder!",
+					"body":	""
+				}, {
+					"x":	18,
+					"y":	37,
+					"id":	"sign_008",
+					"title":	"Monster Way",
+					"body":	""
+				}, {
+					"x":	42,
+					"y":	36,
+					"id":	"sign_009",
+					"title":	"There is one town for each",
+					"body":	"castle."
+				}, {
+					"x":	60,
+					"y":	35,
+					"id":	"sign_010",
+					"title":	"Remember, wherever you go",
+					"body":	"there you are."
+				}, {
+					"x":	7,
+					"y":	31,
+					"id":	"sign_011",
+					"title":	"Forestria maze entrance!",
+					"body":	""
+				}, {
+					"x":	22,
+					"y":	29,
+					"id":	"sign_012",
+					"title":	"Crossroads",
+					"body":	""
+				}, {
+					"x":	37,
+					"y":	28,
+					"id":	"sign_013",
+					"title":	"No Trespassing!",
+					"body":	""
+				}, {
+					"x":	6,
+					"y":	26,
+					"id":	"sign_014",
+					"title":	"Beware the moors!",
+					"body":	""
+				}, {
+					"x":	39,
+					"y":	24,
+					"id":	"sign_015",
+					"title":	"You'll never find the",
+					"body":	"Sceptre here!"
+				}, {
+					"x":	56,
+					"y":	24,
+					"id":	"sign_016",
+					"title":	"Your quest is doomed!",
+					"body":	""
+				}, {
+					"x":	60,
+					"y":	15,
+					"id":	"sign_017",
+					"title":	"Stay on the road!",
+					"body":	""
+				}, {
+					"x":	22,
+					"y":	14,
+					"id":	"sign_018",
+					"title":	"Don't go any farther!",
+					"body":	""
+				}, {
+					"x":	16,
+					"y":	5,
+					"id":	"sign_019",
+					"title":	"Wrong Way!",
+					"body":	""
+				}, {
+					"x":	55,
+					"y":	3,
+					"id":	"sign_020",
+					"title":	"Four villains rule Forestria",
+					"body":	""
+				}],
+			"towns":	[{
+					"x":	58,
+					"y":	59,
+					"id":	"underfoot",
+					"boat_x":	59,
+					"boat_y":	58
+				}, {
+					"x":	34,
+					"y":	40,
+					"id":	"anomaly",
+					"boat_x":	34,
+					"boat_y":	41
+				}, {
+					"x":	58,
+					"y":	30,
+					"id":	"midland",
+					"boat_x":	58,
+					"boat_y":	31
+				}, {
+					"x":	3,
+					"y":	26,
+					"id":	"elans_landing",
+					"boat_x":	2,
+					"boat_y":	27
+				}, {
+					"x":	58,
+					"y":	3,
+					"id":	"dark_corner",
+					"boat_x":	59,
+					"boat_y":	3
+				}, {
+					"x":	3,
+					"y":	55,
+					"id":	"woods_end",
+					"boat_x":	2,
+					"boat_y":	54
+				}],
+			"castles":	[{
+					"x":	47,
+					"y":	57,
+					"id":	"basefit"
+				}, {
+					"x":	30,
+					"y":	45,
+					"id":	"duvock"
+				}, {
+					"x":	41,
+					"y":	29,
+					"id":	"jhan"
+				}, {
+					"x":	25,
+					"y":	24,
+					"id":	"mooseweigh"
+				}, {
+					"x":	42,
+					"y":	7,
+					"id":	"quinderwitch"
+				}, {
+					"x":	19,
+					"y":	44,
+					"id":	"yeneverre"
+				}],
+			"chests":	[{
+					"x":	3,
+					"y":	60,
+					"id":	"treasure_chest_000"
+				}, {
+					"x":	8,
+					"y":	60,
+					"id":	"treasure_chest_001"
+				}, {
+					"x":	20,
+					"y":	60,
+					"id":	"treasure_chest_002"
+				}, {
+					"x":	50,
+					"y":	60,
+					"id":	"treasure_chest_003"
+				}, {
+					"x":	31,
+					"y":	59,
+					"id":	"treasure_chest_004"
+				}, {
+					"x":	41,
+					"y":	59,
+					"id":	"treasure_chest_005"
+				}, {
+					"x":	53,
+					"y":	57,
+					"id":	"treasure_chest_006"
+				}, {
+					"x":	45,
+					"y":	56,
+					"id":	"treasure_chest_007"
+				}, {
+					"x":	59,
+					"y":	56,
+					"id":	"treasure_chest_008"
+				}, {
+					"x":	56,
+					"y":	54,
+					"id":	"treasure_chest_009"
+				}, {
+					"x":	8,
+					"y":	53,
+					"id":	"treasure_chest_010"
+				}, {
+					"x":	11,
+					"y":	52,
+					"id":	"treasure_chest_011"
+				}, {
+					"x":	12,
+					"y":	52,
+					"id":	"treasure_chest_012"
+				}, {
+					"x":	43,
+					"y":	51,
+					"id":	"treasure_chest_013"
+				}, {
+					"x":	8,
+					"y":	50,
+					"id":	"treasure_chest_014"
+				}, {
+					"x":	16,
+					"y":	50,
+					"id":	"treasure_chest_015"
+				}, {
+					"x":	35,
+					"y":	50,
+					"id":	"treasure_chest_016"
+				}, {
+					"x":	39,
+					"y":	50,
+					"id":	"treasure_chest_017"
+				}, {
+					"x":	44,
+					"y":	48,
+					"id":	"treasure_chest_018"
+				}, {
+					"x":	24,
+					"y":	45,
+					"id":	"treasure_chest_019"
+				}, {
+					"x":	59,
+					"y":	45,
+					"id":	"treasure_chest_020"
+				}, {
+					"x":	11,
+					"y":	44,
+					"id":	"treasure_chest_021"
+				}, {
+					"x":	12,
+					"y":	44,
+					"id":	"treasure_chest_022"
+				}, {
+					"x":	54,
+					"y":	44,
+					"id":	"treasure_chest_023"
+				}, {
+					"x":	42,
+					"y":	43,
+					"id":	"treasure_chest_024"
+				}, {
+					"x":	19,
+					"y":	42,
+					"id":	"treasure_chest_025"
+				}, {
+					"x":	46,
+					"y":	40,
+					"id":	"treasure_chest_026"
+				}, {
+					"x":	38,
+					"y":	38,
+					"id":	"treasure_chest_027"
+				}, {
+					"x":	15,
+					"y":	37,
+					"id":	"treasure_chest_028"
+				}, {
+					"x":	43,
+					"y":	37,
+					"id":	"treasure_chest_029"
+				}, {
+					"x":	12,
+					"y":	36,
+					"id":	"treasure_chest_030"
+				}, {
+					"x":	60,
+					"y":	36,
+					"id":	"treasure_chest_031"
+				}, {
+					"x":	53,
+					"y":	34,
+					"id":	"treasure_chest_032"
+				}, {
+					"x":	60,
+					"y":	34,
+					"id":	"treasure_chest_033"
+				}, {
+					"x":	35,
+					"y":	33,
+					"id":	"treasure_chest_034"
+				}, {
+					"x":	21,
+					"y":	32,
+					"id":	"treasure_chest_035"
+				}, {
+					"x":	27,
+					"y":	32,
+					"id":	"treasure_chest_036"
+				}, {
+					"x":	47,
+					"y":	32,
+					"id":	"treasure_chest_037"
+				}, {
+					"x":	51,
+					"y":	28,
+					"id":	"treasure_chest_038"
+				}, {
+					"x":	11,
+					"y":	26,
+					"id":	"treasure_chest_039"
+				}, {
+					"x":	37,
+					"y":	25,
+					"id":	"treasure_chest_040"
+				}, {
+					"x":	16,
+					"y":	23,
+					"id":	"treasure_chest_041"
+				}, {
+					"x":	23,
+					"y":	23,
+					"id":	"treasure_chest_042"
+				}, {
+					"x":	43,
+					"y":	18,
+					"id":	"treasure_chest_043"
+				}, {
+					"x":	14,
+					"y":	17,
+					"id":	"treasure_chest_044"
+				}, {
+					"x":	15,
+					"y":	17,
+					"id":	"treasure_chest_045"
+				}, {
+					"x":	16,
+					"y":	17,
+					"id":	"treasure_chest_046"
+				}, {
+					"x":	27,
+					"y":	17,
+					"id":	"treasure_chest_047"
+				}, {
+					"x":	40,
+					"y":	17,
+					"id":	"treasure_chest_048"
+				}, {
+					"x":	43,
+					"y":	17,
+					"id":	"treasure_chest_049"
+				}, {
+					"x":	8,
+					"y":	16,
+					"id":	"treasure_chest_050"
+				}, {
+					"x":	38,
+					"y":	16,
+					"id":	"treasure_chest_051"
+				}, {
+					"x":	43,
+					"y":	16,
+					"id":	"treasure_chest_052"
+				}, {
+					"x":	51,
+					"y":	15,
+					"id":	"treasure_chest_053"
+				}, {
+					"x":	51,
+					"y":	14,
+					"id":	"treasure_chest_054"
+				}, {
+					"x":	11,
+					"y":	12,
+					"id":	"treasure_chest_055"
+				}, {
+					"x":	50,
+					"y":	11,
+					"id":	"treasure_chest_056"
+				}, {
+					"x":	14,
+					"y":	10,
+					"id":	"treasure_chest_057"
+				}, {
+					"x":	32,
+					"y":	9,
+					"id":	"treasure_chest_058"
+				}, {
+					"x":	57,
+					"y":	9,
+					"id":	"treasure_chest_059"
+				}, {
+					"x":	32,
+					"y":	8,
+					"id":	"treasure_chest_060"
+				}, {
+					"x":	36,
+					"y":	8,
+					"id":	"treasure_chest_061"
+				}, {
+					"x":	19,
+					"y":	7,
+					"id":	"treasure_chest_062"
+				}, {
+					"x":	29,
+					"y":	7,
+					"id":	"treasure_chest_063"
+				}, {
+					"x":	54,
+					"y":	7,
+					"id":	"treasure_chest_064"
+				}, {
+					"x":	46,
+					"y":	5,
+					"id":	"treasure_chest_065"
+				}],
+			"artifacts":	[],
+			"dwellings":	[],
+			"wandering_armies":	[{
+					"x":	55,
+					"y":	59,
+					"id":	"wandering_army_000"
+				}, {
+					"x":	22,
+					"y":	57,
+					"id":	"wandering_army_001"
+				}, {
+					"x":	42,
+					"y":	53,
+					"id":	"wandering_army_002"
+				}, {
+					"x":	52,
+					"y":	53,
+					"id":	"wandering_army_003"
+				}, {
+					"x":	8,
+					"y":	48,
+					"id":	"wandering_army_004"
+				}, {
+					"x":	13,
+					"y":	48,
+					"id":	"wandering_army_005"
+				}, {
+					"x":	53,
+					"y":	48,
+					"id":	"wandering_army_006"
+				}, {
+					"x":	38,
+					"y":	43,
+					"id":	"wandering_army_007"
+				}, {
+					"x":	49,
+					"y":	41,
+					"id":	"wandering_army_008"
+				}, {
+					"x":	19,
+					"y":	38,
+					"id":	"wandering_army_009"
+				}, {
+					"x":	9,
+					"y":	37,
+					"id":	"wandering_army_010"
+				}, {
+					"x":	47,
+					"y":	35,
+					"id":	"wandering_army_011"
+				}, {
+					"x":	29,
+					"y":	34,
+					"id":	"wandering_army_012"
+				}, {
+					"x":	41,
+					"y":	31,
+					"id":	"wandering_army_013"
+				}, {
+					"x":	56,
+					"y":	30,
+					"id":	"wandering_army_014"
+				}, {
+					"x":	10,
+					"y":	29,
+					"id":	"wandering_army_015"
+				}, {
+					"x":	25,
+					"y":	29,
+					"id":	"wandering_army_016"
+				}, {
+					"x":	10,
+					"y":	23,
+					"id":	"wandering_army_017"
+				}, {
+					"x":	52,
+					"y":	23,
+					"id":	"wandering_army_018"
+				}, {
+					"x":	21,
+					"y":	18,
+					"id":	"wandering_army_019"
+				}, {
+					"x":	4,
+					"y":	17,
+					"id":	"wandering_army_020"
+				}, {
+					"x":	58,
+					"y":	17,
+					"id":	"wandering_army_021"
+				}, {
+					"x":	33,
+					"y":	8,
+					"id":	"wandering_army_022"
+				}, {
+					"x":	8,
+					"y":	6,
+					"id":	"wandering_army_023"
+				}, {
+					"x":	55,
+					"y":	5,
+					"id":	"wandering_army_024"
+				}, {
+					"x":	15,
+					"y":	4,
+					"id":	"wandering_army_025"
+				}, {
+					"x":	24,
+					"y":	4,
+					"id":	"wandering_army_026"
+				}]
+		}, {
+			"id":	"archipelia",
+			"name":	"Archipelia",
+			"map":	"maps/archipelia.dat",
+			"width":	64,
+			"height":	64,
+			"neighbors":	["continentia", "forestria", "saharia"],
+			"hero_spawn":	{
+				"x":	14,
+				"y":	1
+			},
+			"salt":	{
+				"artifacts":	2,
+				"navmaps":	1,
+				"orbs":	1,
+				"telecaves":	2,
+				"dwellings":	10,
+				"friendly_foes":	5,
+				"preferred_troops":	["ghosts", "barbarians", "trolls", "druids"],
+				"dwelling_range":	[2, 14]
+			},
+			"signs":	[{
+					"x":	28,
+					"y":	57,
+					"id":	"sign_000",
+					"title":	"There's no turning back!",
+					"body":	""
+				}, {
+					"x":	6,
+					"y":	47,
+					"id":	"sign_001",
+					"title":	"Swamplands",
+					"body":	""
+				}, {
+					"x":	25,
+					"y":	41,
+					"id":	"sign_002",
+					"title":	"Pirate's Treasure Trove",
+					"body":	""
+				}, {
+					"x":	37,
+					"y":	41,
+					"id":	"sign_003",
+					"title":	"Corak was here!",
+					"body":	""
+				}, {
+					"x":	53,
+					"y":	39,
+					"id":	"sign_004",
+					"title":	"Thieves will be eaten!",
+					"body":	""
+				}, {
+					"x":	29,
+					"y":	35,
+					"id":	"sign_005",
+					"title":	"Pirates have no mercy!",
+					"body":	""
+				}, {
+					"x":	40,
+					"y":	35,
+					"id":	"sign_006",
+					"title":	"The dead live!",
+					"body":	""
+				}, {
+					"x":	9,
+					"y":	30,
+					"id":	"sign_007",
+					"title":	"There are five islands here.",
+					"body":	""
+				}, {
+					"x":	34,
+					"y":	24,
+					"id":	"sign_008",
+					"title":	"Maximus will DIE!",
+					"body":	""
+				}, {
+					"x":	41,
+					"y":	20,
+					"id":	"sign_009",
+					"title":	"Pool of Prosperity",
+					"body":	""
+				}, {
+					"x":	11,
+					"y":	13,
+					"id":	"sign_010",
+					"title":	"Four villains rule here.",
+					"body":	""
+				}, {
+					"x":	51,
+					"y":	10,
+					"id":	"sign_011",
+					"title":	"Down with the King!",
+					"body":	""
+				}, {
+					"x":	3,
+					"y":	7,
+					"id":	"sign_012",
+					"title":	"The islands hide treasures.",
+					"body":	""
+				}, {
+					"x":	31,
+					"y":	7,
+					"id":	"sign_013",
+					"title":	"Time, is on our side!",
+					"body":	""
+				}, {
+					"x":	10,
+					"y":	3,
+					"id":	"sign_014",
+					"title":	"Welcome to Archipelia!",
+					"body":	""
+				}],
+			"towns":	[{
+					"x":	5,
+					"y":	13,
+					"id":	"topshore",
+					"boat_x":	4,
+					"boat_y":	14
+				}, {
+					"x":	13,
+					"y":	3,
+					"id":	"simpleton",
+					"boat_x":	14,
+					"boat_y":	3
+				}, {
+					"x":	9,
+					"y":	24,
+					"id":	"centrapf",
+					"boat_x":	10,
+					"boat_y":	25
+				}, {
+					"x":	57,
+					"y":	6,
+					"id":	"overthere",
+					"boat_x":	58,
+					"boat_y":	7
+				}, {
+					"x":	13,
+					"y":	56,
+					"id":	"japper",
+					"boat_x":	12,
+					"boat_y":	56
+				}, {
+					"x":	49,
+					"y":	55,
+					"id":	"yakonia",
+					"boat_x":	50,
+					"boat_y":	54
+				}],
+			"castles":	[{
+					"x":	11,
+					"y":	17,
+					"id":	"endryx"
+				}, {
+					"x":	41,
+					"y":	27,
+					"id":	"goobare"
+				}, {
+					"x":	43,
+					"y":	36,
+					"id":	"hyppus"
+				}, {
+					"x":	52,
+					"y":	6,
+					"id":	"lorsche"
+				}, {
+					"x":	9,
+					"y":	45,
+					"id":	"tylitch"
+				}, {
+					"x":	45,
+					"y":	57,
+					"id":	"xelox"
+				}],
+			"chests":	[{
+					"x":	34,
+					"y":	60,
+					"id":	"treasure_chest_000"
+				}, {
+					"x":	31,
+					"y":	59,
+					"id":	"treasure_chest_001"
+				}, {
+					"x":	20,
+					"y":	57,
+					"id":	"treasure_chest_002"
+				}, {
+					"x":	10,
+					"y":	54,
+					"id":	"treasure_chest_003"
+				}, {
+					"x":	40,
+					"y":	53,
+					"id":	"treasure_chest_004"
+				}, {
+					"x":	44,
+					"y":	53,
+					"id":	"treasure_chest_005"
+				}, {
+					"x":	13,
+					"y":	52,
+					"id":	"treasure_chest_006"
+				}, {
+					"x":	5,
+					"y":	49,
+					"id":	"treasure_chest_007"
+				}, {
+					"x":	5,
+					"y":	46,
+					"id":	"treasure_chest_008"
+				}, {
+					"x":	30,
+					"y":	43,
+					"id":	"treasure_chest_009"
+				}, {
+					"x":	25,
+					"y":	42,
+					"id":	"treasure_chest_010"
+				}, {
+					"x":	38,
+					"y":	42,
+					"id":	"treasure_chest_011"
+				}, {
+					"x":	30,
+					"y":	41,
+					"id":	"treasure_chest_012"
+				}, {
+					"x":	25,
+					"y":	40,
+					"id":	"treasure_chest_013"
+				}, {
+					"x":	53,
+					"y":	40,
+					"id":	"treasure_chest_014"
+				}, {
+					"x":	37,
+					"y":	39,
+					"id":	"treasure_chest_015"
+				}, {
+					"x":	53,
+					"y":	38,
+					"id":	"treasure_chest_016"
+				}, {
+					"x":	29,
+					"y":	36,
+					"id":	"treasure_chest_017"
+				}, {
+					"x":	47,
+					"y":	36,
+					"id":	"treasure_chest_018"
+				}, {
+					"x":	45,
+					"y":	35,
+					"id":	"treasure_chest_019"
+				}, {
+					"x":	8,
+					"y":	33,
+					"id":	"treasure_chest_020"
+				}, {
+					"x":	34,
+					"y":	33,
+					"id":	"treasure_chest_021"
+				}, {
+					"x":	3,
+					"y":	32,
+					"id":	"treasure_chest_022"
+				}, {
+					"x":	34,
+					"y":	31,
+					"id":	"treasure_chest_023"
+				}, {
+					"x":	15,
+					"y":	30,
+					"id":	"treasure_chest_024"
+				}, {
+					"x":	13,
+					"y":	28,
+					"id":	"treasure_chest_025"
+				}, {
+					"x":	8,
+					"y":	24,
+					"id":	"treasure_chest_026"
+				}, {
+					"x":	33,
+					"y":	24,
+					"id":	"treasure_chest_027"
+				}, {
+					"x":	51,
+					"y":	23,
+					"id":	"treasure_chest_028"
+				}, {
+					"x":	8,
+					"y":	21,
+					"id":	"treasure_chest_029"
+				}, {
+					"x":	51,
+					"y":	21,
+					"id":	"treasure_chest_030"
+				}, {
+					"x":	37,
+					"y":	20,
+					"id":	"treasure_chest_031"
+				}, {
+					"x":	30,
+					"y":	19,
+					"id":	"treasure_chest_032"
+				}, {
+					"x":	32,
+					"y":	19,
+					"id":	"treasure_chest_033"
+				}, {
+					"x":	37,
+					"y":	19,
+					"id":	"treasure_chest_034"
+				}, {
+					"x":	46,
+					"y":	19,
+					"id":	"treasure_chest_035"
+				}, {
+					"x":	37,
+					"y":	18,
+					"id":	"treasure_chest_036"
+				}, {
+					"x":	45,
+					"y":	18,
+					"id":	"treasure_chest_037"
+				}, {
+					"x":	6,
+					"y":	15,
+					"id":	"treasure_chest_038"
+				}, {
+					"x":	46,
+					"y":	8,
+					"id":	"treasure_chest_039"
+				}, {
+					"x":	32,
+					"y":	7,
+					"id":	"treasure_chest_040"
+				}, {
+					"x":	7,
+					"y":	6,
+					"id":	"treasure_chest_041"
+				}, {
+					"x":	8,
+					"y":	6,
+					"id":	"treasure_chest_042"
+				}, {
+					"x":	38,
+					"y":	6,
+					"id":	"treasure_chest_043"
+				}, {
+					"x":	11,
+					"y":	4,
+					"id":	"treasure_chest_044"
+				}],
+			"artifacts":	[],
+			"dwellings":	[],
+			"wandering_armies":	[{
+					"x":	43,
+					"y":	58,
+					"id":	"wandering_army_000"
+				}, {
+					"x":	17,
+					"y":	53,
+					"id":	"wandering_army_001"
+				}, {
+					"x":	11,
+					"y":	48,
+					"id":	"wandering_army_002"
+				}, {
+					"x":	42,
+					"y":	37,
+					"id":	"wandering_army_003"
+				}, {
+					"x":	41,
+					"y":	29,
+					"id":	"wandering_army_004"
+				}, {
+					"x":	9,
+					"y":	26,
+					"id":	"wandering_army_005"
+				}, {
+					"x":	45,
+					"y":	21,
+					"id":	"wandering_army_006"
+				}, {
+					"x":	11,
+					"y":	19,
+					"id":	"wandering_army_007"
+				}, {
+					"x":	7,
+					"y":	14,
+					"id":	"wandering_army_008"
+				}, {
+					"x":	52,
+					"y":	8,
+					"id":	"wandering_army_009"
+				}]
+		}, {
+			"id":	"saharia",
+			"name":	"Saharia",
+			"map":	"maps/saharia.dat",
+			"width":	64,
+			"height":	64,
+			"neighbors":	["continentia", "forestria", "archipelia"],
+			"hero_spawn":	{
+				"x":	9,
+				"y":	62
+			},
+			"salt":	{
+				"artifacts":	2,
+				"navmaps":	1,
+				"orbs":	1,
+				"telecaves":	2,
+				"dwellings":	10,
+				"friendly_foes":	5,
+				"preferred_troops":	["giants", "vampires", "archmages", "dragons", "demons"],
+				"dwelling_range":	[20, 24]
+			},
+			"signs":	[{
+					"x":	6,
+					"y":	58,
+					"id":	"sign_000",
+					"title":	"Saharia is a volcano",
+					"body":	"surrounded by a desert."
+				}, {
+					"x":	52,
+					"y":	54,
+					"id":	"sign_001",
+					"title":	"Three villains rule Saharia.",
+					"body":	""
+				}, {
+					"x":	40,
+					"y":	52,
+					"id":	"sign_002",
+					"title":	"Your army will perish here!",
+					"body":	""
+				}, {
+					"x":	39,
+					"y":	45,
+					"id":	"sign_003",
+					"title":	"Oasis",
+					"body":	""
+				}, {
+					"x":	14,
+					"y":	33,
+					"id":	"sign_004",
+					"title":	"Wading Pool",
+					"body":	""
+				}, {
+					"x":	46,
+					"y":	30,
+					"id":	"sign_005",
+					"title":	"Oasis of Plenty",
+					"body":	""
+				}, {
+					"x":	18,
+					"y":	25,
+					"id":	"sign_006",
+					"title":	"There is no escaping the",
+					"body":	"prophecy!"
+				}, {
+					"x":	47,
+					"y":	21,
+					"id":	"sign_007",
+					"title":	"Volcano Guardian",
+					"body":	""
+				}, {
+					"x":	17,
+					"y":	17,
+					"id":	"sign_008",
+					"title":	"Time is running out!",
+					"body":	""
+				}, {
+					"x":	25,
+					"y":	16,
+					"id":	"sign_009",
+					"title":	"Treasure Trough",
+					"body":	""
+				}, {
+					"x":	43,
+					"y":	14,
+					"id":	"sign_010",
+					"title":	"Rest Stop",
+					"body":	""
+				}, {
+					"x":	35,
+					"y":	13,
+					"id":	"sign_011",
+					"title":	"Treasure Zone",
+					"body":	""
+				}, {
+					"x":	11,
+					"y":	4,
+					"id":	"sign_012",
+					"title":	"This place is a nightmare!",
+					"body":	""
+				}],
+			"towns":	[{
+					"x":	9,
+					"y":	3,
+					"id":	"grimwold",
+					"boat_x":	10,
+					"boat_y":	3
+				}, {
+					"x":	7,
+					"y":	60,
+					"id":	"vengeance",
+					"boat_x":	8,
+					"boat_y":	60
+				}, {
+					"x":	58,
+					"y":	15,
+					"id":	"zaezoizu",
+					"boat_x":	59,
+					"boat_y":	15
+				}],
+			"castles":	[{
+					"x":	17,
+					"y":	24,
+					"id":	"spockana"
+				}, {
+					"x":	41,
+					"y":	51,
+					"id":	"uzare"
+				}, {
+					"x":	46,
+					"y":	20,
+					"id":	"zyzzarzaz"
+				}],
+			"chests":	[{
+					"x":	51,
+					"y":	54,
+					"id":	"treasure_chest_000"
+				}, {
+					"x":	42,
+					"y":	52,
+					"id":	"treasure_chest_001"
+				}, {
+					"x":	13,
+					"y":	51,
+					"id":	"treasure_chest_002"
+				}, {
+					"x":	20,
+					"y":	44,
+					"id":	"treasure_chest_003"
+				}, {
+					"x":	23,
+					"y":	44,
+					"id":	"treasure_chest_004"
+				}, {
+					"x":	27,
+					"y":	43,
+					"id":	"treasure_chest_005"
+				}, {
+					"x":	32,
+					"y":	43,
+					"id":	"treasure_chest_006"
+				}, {
+					"x":	36,
+					"y":	43,
+					"id":	"treasure_chest_007"
+				}, {
+					"x":	18,
+					"y":	40,
+					"id":	"treasure_chest_008"
+				}, {
+					"x":	27,
+					"y":	40,
+					"id":	"treasure_chest_009"
+				}, {
+					"x":	30,
+					"y":	40,
+					"id":	"treasure_chest_010"
+				}, {
+					"x":	33,
+					"y":	40,
+					"id":	"treasure_chest_011"
+				}, {
+					"x":	42,
+					"y":	39,
+					"id":	"treasure_chest_012"
+				}, {
+					"x":	27,
+					"y":	37,
+					"id":	"treasure_chest_013"
+				}, {
+					"x":	30,
+					"y":	37,
+					"id":	"treasure_chest_014"
+				}, {
+					"x":	36,
+					"y":	37,
+					"id":	"treasure_chest_015"
+				}, {
+					"x":	45,
+					"y":	37,
+					"id":	"treasure_chest_016"
+				}, {
+					"x":	18,
+					"y":	36,
+					"id":	"treasure_chest_017"
+				}, {
+					"x":	10,
+					"y":	35,
+					"id":	"treasure_chest_018"
+				}, {
+					"x":	42,
+					"y":	35,
+					"id":	"treasure_chest_019"
+				}, {
+					"x":	36,
+					"y":	34,
+					"id":	"treasure_chest_020"
+				}, {
+					"x":	13,
+					"y":	33,
+					"id":	"treasure_chest_021"
+				}, {
+					"x":	27,
+					"y":	33,
+					"id":	"treasure_chest_022"
+				}, {
+					"x":	30,
+					"y":	31,
+					"id":	"treasure_chest_023"
+				}, {
+					"x":	39,
+					"y":	31,
+					"id":	"treasure_chest_024"
+				}, {
+					"x":	43,
+					"y":	31,
+					"id":	"treasure_chest_025"
+				}, {
+					"x":	27,
+					"y":	30,
+					"id":	"treasure_chest_026"
+				}, {
+					"x":	31,
+					"y":	30,
+					"id":	"treasure_chest_027"
+				}, {
+					"x":	33,
+					"y":	30,
+					"id":	"treasure_chest_028"
+				}, {
+					"x":	18,
+					"y":	29,
+					"id":	"treasure_chest_029"
+				}, {
+					"x":	44,
+					"y":	29,
+					"id":	"treasure_chest_030"
+				}, {
+					"x":	39,
+					"y":	28,
+					"id":	"treasure_chest_031"
+				}, {
+					"x":	27,
+					"y":	27,
+					"id":	"treasure_chest_032"
+				}, {
+					"x":	42,
+					"y":	26,
+					"id":	"treasure_chest_033"
+				}, {
+					"x":	29,
+					"y":	24,
+					"id":	"treasure_chest_034"
+				}, {
+					"x":	32,
+					"y":	24,
+					"id":	"treasure_chest_035"
+				}, {
+					"x":	15,
+					"y":	23,
+					"id":	"treasure_chest_036"
+				}, {
+					"x":	49,
+					"y":	22,
+					"id":	"treasure_chest_037"
+				}, {
+					"x":	18,
+					"y":	20,
+					"id":	"treasure_chest_038"
+				}, {
+					"x":	18,
+					"y":	19,
+					"id":	"treasure_chest_039"
+				}, {
+					"x":	22,
+					"y":	18,
+					"id":	"treasure_chest_040"
+				}, {
+					"x":	23,
+					"y":	18,
+					"id":	"treasure_chest_041"
+				}, {
+					"x":	28,
+					"y":	18,
+					"id":	"treasure_chest_042"
+				}, {
+					"x":	29,
+					"y":	18,
+					"id":	"treasure_chest_043"
+				}, {
+					"x":	30,
+					"y":	18,
+					"id":	"treasure_chest_044"
+				}, {
+					"x":	33,
+					"y":	18,
+					"id":	"treasure_chest_045"
+				}, {
+					"x":	34,
+					"y":	18,
+					"id":	"treasure_chest_046"
+				}, {
+					"x":	35,
+					"y":	18,
+					"id":	"treasure_chest_047"
+				}, {
+					"x":	42,
+					"y":	18,
+					"id":	"treasure_chest_048"
+				}, {
+					"x":	50,
+					"y":	17,
+					"id":	"treasure_chest_049"
+				}, {
+					"x":	43,
+					"y":	15,
+					"id":	"treasure_chest_050"
+				}, {
+					"x":	46,
+					"y":	15,
+					"id":	"treasure_chest_051"
+				}, {
+					"x":	27,
+					"y":	13,
+					"id":	"treasure_chest_052"
+				}, {
+					"x":	29,
+					"y":	13,
+					"id":	"treasure_chest_053"
+				}, {
+					"x":	11,
+					"y":	11,
+					"id":	"treasure_chest_054"
+				}],
+			"artifacts":	[],
+			"dwellings":	[],
+			"wandering_armies":	[{
+					"x":	6,
+					"y":	59,
+					"id":	"wandering_army_000"
+				}, {
+					"x":	59,
+					"y":	59,
+					"id":	"wandering_army_001"
+				}, {
+					"x":	5,
+					"y":	44,
+					"id":	"wandering_army_002"
+				}, {
+					"x":	25,
+					"y":	39,
+					"id":	"wandering_army_003"
+				}, {
+					"x":	35,
+					"y":	39,
+					"id":	"wandering_army_004"
+				}, {
+					"x":	31,
+					"y":	36,
+					"id":	"wandering_army_005"
+				}, {
+					"x":	38,
+					"y":	33,
+					"id":	"wandering_army_006"
+				}, {
+					"x":	60,
+					"y":	31,
+					"id":	"wandering_army_007"
+				}, {
+					"x":	3,
+					"y":	28,
+					"id":	"wandering_army_008"
+				}, {
+					"x":	28,
+					"y":	25,
+					"id":	"wandering_army_009"
+				}, {
+					"x":	34,
+					"y":	23,
+					"id":	"wandering_army_010"
+				}, {
+					"x":	59,
+					"y":	16,
+					"id":	"wandering_army_011"
+				}, {
+					"x":	33,
+					"y":	14,
+					"id":	"wandering_army_012"
+				}, {
+					"x":	8,
+					"y":	4,
+					"id":	"wandering_army_013"
+				}, {
+					"x":	59,
+					"y":	4,
+					"id":	"wandering_army_014"
+				}]
+		}],
+	"towns":	[{
+			"index":	0,
+			"id":	"riverton",
+			"name":	"Riverton",
+			"x":	29,
+			"y":	51,
+			"boat":	{
+				"x":	30,
+				"y":	52
+			},
+			"gate":	{
+				"x":	29,
+				"y":	52
+			},
+			"zone":	"continentia",
+			"intel_castle":	"azram"
+		}, {
+			"index":	1,
+			"id":	"underfoot",
+			"name":	"Underfoot",
+			"x":	58,
+			"y":	59,
+			"boat":	{
+				"x":	59,
+				"y":	58
+			},
+			"gate":	{
+				"x":	57,
+				"y":	59
+			},
+			"zone":	"forestria",
+			"intel_castle":	"basefit"
+		}, {
+			"index":	2,
+			"id":	"paths_end",
+			"name":	"Path's End",
+			"x":	38,
+			"y":	13,
+			"boat":	{
+				"x":	39,
+				"y":	13
+			},
+			"gate":	{
+				"x":	38,
+				"y":	14
+			},
+			"zone":	"continentia",
+			"intel_castle":	"cancomar"
+		}, {
+			"index":	3,
+			"id":	"anomaly",
+			"name":	"Anomaly",
+			"x":	34,
+			"y":	40,
+			"boat":	{
+				"x":	34,
+				"y":	41
+			},
+			"gate":	{
+				"x":	35,
+				"y":	40
+			},
+			"zone":	"forestria",
+			"intel_castle":	"duvock"
+		}, {
+			"index":	4,
+			"id":	"topshore",
+			"name":	"Topshore",
+			"x":	5,
+			"y":	13,
+			"boat":	{
+				"x":	4,
+				"y":	14
+			},
+			"gate":	{
+				"x":	5,
+				"y":	14
+			},
+			"zone":	"archipelia",
+			"intel_castle":	"endryx"
+		}, {
+			"index":	5,
+			"id":	"lakeview",
+			"name":	"Lakeview",
+			"x":	17,
+			"y":	19,
+			"boat":	{
+				"x":	18,
+				"y":	19
+			},
+			"gate":	{
+				"x":	16,
+				"y":	19
+			},
+			"zone":	"continentia",
+			"intel_castle":	"faxis"
+		}, {
+			"index":	6,
+			"id":	"simpleton",
+			"name":	"Simpleton",
+			"x":	13,
+			"y":	3,
+			"boat":	{
+				"x":	14,
+				"y":	3
+			},
+			"gate":	{
+				"x":	12,
+				"y":	3
+			},
+			"zone":	"archipelia",
+			"intel_castle":	"goobare"
+		}, {
+			"index":	7,
+			"id":	"centrapf",
+			"name":	"Centrapf",
+			"x":	9,
+			"y":	24,
+			"boat":	{
+				"x":	10,
+				"y":	25
+			},
+			"gate":	{
+				"x":	9,
+				"y":	25
+			},
+			"zone":	"archipelia",
+			"intel_castle":	"hyppus"
+		}, {
+			"index":	8,
+			"id":	"quiln_point",
+			"name":	"Quiln Point",
+			"x":	14,
+			"y":	36,
+			"boat":	{
+				"x":	14,
+				"y":	37
+			},
+			"gate":	{
+				"x":	13,
+				"y":	36
+			},
+			"zone":	"continentia",
+			"intel_castle":	"irok"
+		}, {
+			"index":	9,
+			"id":	"midland",
+			"name":	"Midland",
+			"x":	58,
+			"y":	30,
+			"boat":	{
+				"x":	58,
+				"y":	31
+			},
+			"gate":	{
+				"x":	57,
+				"y":	30
+			},
+			"zone":	"forestria",
+			"intel_castle":	"jhan"
+		}, {
+			"index":	10,
+			"id":	"xoctan",
+			"name":	"Xoctan",
+			"x":	51,
+			"y":	35,
+			"boat":	{
+				"x":	51,
+				"y":	36
+			},
+			"gate":	{
+				"x":	51,
+				"y":	34
+			},
+			"zone":	"continentia",
+			"intel_castle":	"kookamunga"
+		}, {
+			"index":	11,
+			"id":	"overthere",
+			"name":	"Overthere",
+			"x":	57,
+			"y":	6,
+			"boat":	{
+				"x":	58,
+				"y":	7
+			},
+			"gate":	{
+				"x":	57,
+				"y":	7
+			},
+			"zone":	"archipelia",
+			"intel_castle":	"lorsche"
+		}, {
+			"index":	12,
+			"id":	"elans_landing",
+			"name":	"Elan's Landing",
+			"x":	3,
+			"y":	26,
+			"boat":	{
+				"x":	2,
+				"y":	27
+			},
+			"gate":	{
+				"x":	3,
+				"y":	27
+			},
+			"zone":	"forestria",
+			"intel_castle":	"mooseweigh"
+		}, {
+			"index":	13,
+			"id":	"kings_haven",
+			"name":	"King's Haven",
+			"x":	17,
+			"y":	42,
+			"boat":	{
+				"x":	18,
+				"y":	42
+			},
+			"gate":	{
+				"x":	16,
+				"y":	42
+			},
+			"zone":	"continentia",
+			"intel_castle":	"nilslag"
+		}, {
+			"index":	14,
+			"id":	"bayside",
+			"name":	"Bayside",
+			"x":	41,
+			"y":	5,
+			"boat":	{
+				"x":	41,
+				"y":	6
+			},
+			"gate":	{
+				"x":	40,
+				"y":	5
+			},
+			"zone":	"continentia",
+			"intel_castle":	"ophiraund"
+		}, {
+			"index":	15,
+			"id":	"nyre",
+			"name":	"Nyre",
+			"x":	50,
+			"y":	50,
+			"boat":	{
+				"x":	49,
+				"y":	51
+			},
+			"gate":	{
+				"x":	50,
+				"y":	49
+			},
+			"zone":	"continentia",
+			"intel_castle":	"portalis"
+		}, {
+			"index":	16,
+			"id":	"dark_corner",
+			"name":	"Dark Corner",
+			"x":	58,
+			"y":	3,
+			"boat":	{
+				"x":	59,
+				"y":	3
+			},
+			"gate":	{
+				"x":	58,
+				"y":	4
+			},
+			"zone":	"forestria",
+			"intel_castle":	"quinderwitch"
+		}, {
+			"index":	17,
+			"id":	"isla_vista",
+			"name":	"Isla Vista",
+			"x":	57,
+			"y":	58,
+			"boat":	{
+				"x":	56,
+				"y":	59
+			},
+			"gate":	{
+				"x":	56,
+				"y":	58
+			},
+			"zone":	"continentia",
+			"intel_castle":	"rythacon"
+		}, {
+			"index":	18,
+			"id":	"grimwold",
+			"name":	"Grimwold",
+			"x":	9,
+			"y":	3,
+			"boat":	{
+				"x":	10,
+				"y":	3
+			},
+			"gate":	{
+				"x":	9,
+				"y":	4
+			},
+			"zone":	"saharia",
+			"intel_castle":	"spockana"
+		}, {
+			"index":	19,
+			"id":	"japper",
+			"name":	"Japper",
+			"x":	13,
+			"y":	56,
+			"boat":	{
+				"x":	12,
+				"y":	56
+			},
+			"gate":	{
+				"x":	13,
+				"y":	55
+			},
+			"zone":	"archipelia",
+			"intel_castle":	"tylitch"
+		}, {
+			"index":	20,
+			"id":	"vengeance",
+			"name":	"Vengeance",
+			"x":	7,
+			"y":	60,
+			"boat":	{
+				"x":	8,
+				"y":	60
+			},
+			"gate":	{
+				"x":	6,
+				"y":	60
+			},
+			"zone":	"saharia",
+			"intel_castle":	"uzare"
+		}, {
+			"index":	21,
+			"id":	"hunterville",
+			"name":	"Hunterville",
+			"x":	12,
+			"y":	60,
+			"boat":	{
+				"x":	11,
+				"y":	60
+			},
+			"gate":	{
+				"x":	12,
+				"y":	59
+			},
+			"zone":	"continentia",
+			"intel_castle":	"vutar",
+			"pinned_spell":	"bridge"
+		}, {
+			"index":	22,
+			"id":	"fjord",
+			"name":	"Fjord",
+			"x":	46,
+			"y":	28,
+			"boat":	{
+				"x":	47,
+				"y":	27
+			},
+			"gate":	{
+				"x":	47,
+				"y":	28
+			},
+			"zone":	"continentia",
+			"intel_castle":	"wankelforte"
+		}, {
+			"index":	23,
+			"id":	"yakonia",
+			"name":	"Yakonia",
+			"x":	49,
+			"y":	55,
+			"boat":	{
+				"x":	50,
+				"y":	54
+			},
+			"gate":	{
+				"x":	50,
+				"y":	55
+			},
+			"zone":	"archipelia",
+			"intel_castle":	"xelox"
+		}, {
+			"index":	24,
+			"id":	"woods_end",
+			"name":	"Woods End",
+			"x":	3,
+			"y":	55,
+			"boat":	{
+				"x":	2,
+				"y":	54
+			},
+			"gate":	{
+				"x":	3,
+				"y":	54
+			},
+			"zone":	"forestria",
+			"intel_castle":	"yeneverre"
+		}, {
+			"index":	25,
+			"id":	"zaezoizu",
+			"name":	"Zaezoizu",
+			"x":	58,
+			"y":	15,
+			"boat":	{
+				"x":	59,
+				"y":	15
+			},
+			"gate":	{
+				"x":	58,
+				"y":	16
+			},
+			"zone":	"saharia",
+			"intel_castle":	"zyzzarzaz"
+		}],
+	"castles":	[{
+			"index":	0,
+			"id":	"azram",
+			"name":	"Azram",
+			"x":	30,
+			"y":	36,
+			"zone":	"continentia",
+			"difficulty_tier":	0
+		}, {
+			"index":	1,
+			"id":	"basefit",
+			"name":	"Basefit",
+			"x":	47,
+			"y":	57,
+			"zone":	"forestria",
+			"difficulty_tier":	1
+		}, {
+			"index":	2,
+			"id":	"cancomar",
+			"name":	"Cancomar",
+			"x":	36,
+			"y":	14,
+			"zone":	"continentia",
+			"difficulty_tier":	0
+		}, {
+			"index":	3,
+			"id":	"duvock",
+			"name":	"Duvock",
+			"x":	30,
+			"y":	45,
+			"zone":	"forestria",
+			"difficulty_tier":	1
+		}, {
+			"index":	4,
+			"id":	"endryx",
+			"name":	"Endryx",
+			"x":	11,
+			"y":	17,
+			"zone":	"archipelia",
+			"difficulty_tier":	2
+		}, {
+			"index":	5,
+			"id":	"faxis",
+			"name":	"Faxis",
+			"x":	22,
+			"y":	14,
+			"zone":	"continentia",
+			"difficulty_tier":	0
+		}, {
+			"index":	6,
+			"id":	"goobare",
+			"name":	"Goobare",
+			"x":	41,
+			"y":	27,
+			"zone":	"archipelia",
+			"difficulty_tier":	2
+		}, {
+			"index":	7,
+			"id":	"hyppus",
+			"name":	"Hyppus",
+			"x":	43,
+			"y":	36,
+			"zone":	"archipelia",
+			"difficulty_tier":	2
+		}, {
+			"index":	8,
+			"id":	"irok",
+			"name":	"Irok",
+			"x":	11,
+			"y":	33,
+			"zone":	"continentia",
+			"difficulty_tier":	0
+		}, {
+			"index":	9,
+			"id":	"jhan",
+			"name":	"Jhan",
+			"x":	41,
+			"y":	29,
+			"zone":	"forestria",
+			"difficulty_tier":	1
+		}, {
+			"index":	10,
+			"id":	"kookamunga",
+			"name":	"Kookamunga",
+			"x":	57,
+			"y":	5,
+			"zone":	"continentia",
+			"difficulty_tier":	0
+		}, {
+			"index":	11,
+			"id":	"lorsche",
+			"name":	"Lorsche",
+			"x":	52,
+			"y":	6,
+			"zone":	"archipelia",
+			"difficulty_tier":	2
+		}, {
+			"index":	12,
+			"id":	"mooseweigh",
+			"name":	"Mooseweigh",
+			"x":	25,
+			"y":	24,
+			"zone":	"forestria",
+			"difficulty_tier":	1
+		}, {
+			"index":	13,
+			"id":	"nilslag",
+			"name":	"Nilslag",
+			"x":	22,
+			"y":	39,
+			"zone":	"continentia",
+			"difficulty_tier":	0
+		}, {
+			"index":	14,
+			"id":	"ophiraund",
+			"name":	"Ophiraund",
+			"x":	6,
+			"y":	6,
+			"zone":	"continentia",
+			"difficulty_tier":	0
+		}, {
+			"index":	15,
+			"id":	"portalis",
+			"name":	"Portalis",
+			"x":	58,
+			"y":	40,
+			"zone":	"continentia",
+			"difficulty_tier":	0
+		}, {
+			"index":	16,
+			"id":	"quinderwitch",
+			"name":	"Quinderwitch",
+			"x":	42,
+			"y":	7,
+			"zone":	"forestria",
+			"difficulty_tier":	1
+		}, {
+			"index":	17,
+			"id":	"rythacon",
+			"name":	"Rythacon",
+			"x":	54,
+			"y":	57,
+			"zone":	"continentia",
+			"difficulty_tier":	0
+		}, {
+			"index":	18,
+			"id":	"spockana",
+			"name":	"Spockana",
+			"x":	17,
+			"y":	24,
+			"zone":	"saharia",
+			"difficulty_tier":	3
+		}, {
+			"index":	19,
+			"id":	"tylitch",
+			"name":	"Tylitch",
+			"x":	9,
+			"y":	45,
+			"zone":	"archipelia",
+			"difficulty_tier":	2
+		}, {
+			"index":	20,
+			"id":	"uzare",
+			"name":	"Uzare",
+			"x":	41,
+			"y":	51,
+			"zone":	"saharia",
+			"difficulty_tier":	3
+		}, {
+			"index":	21,
+			"id":	"vutar",
+			"name":	"Vutar",
+			"x":	40,
+			"y":	58,
+			"zone":	"continentia",
+			"difficulty_tier":	0
+		}, {
+			"index":	22,
+			"id":	"wankelforte",
+			"name":	"Wankelforte",
+			"x":	40,
+			"y":	22,
+			"zone":	"continentia",
+			"difficulty_tier":	0
+		}, {
+			"index":	23,
+			"id":	"xelox",
+			"name":	"Xelox",
+			"x":	45,
+			"y":	57,
+			"zone":	"archipelia",
+			"difficulty_tier":	2
+		}, {
+			"index":	24,
+			"id":	"yeneverre",
+			"name":	"Yeneverre",
+			"x":	19,
+			"y":	44,
+			"zone":	"forestria",
+			"difficulty_tier":	1
+		}, {
+			"index":	25,
+			"id":	"zyzzarzaz",
+			"name":	"Zyzzarzaz",
+			"x":	46,
+			"y":	20,
+			"zone":	"saharia",
+			"difficulty_tier":	3
+		}, {
+			"index":	26,
+			"id":	"king_maximus",
+			"name":	"of King Maximus",
+			"x":	11,
+			"y":	56,
+			"zone":	"continentia",
+			"special":	{
+				"flow":	"audience",
+				"excluded_from_siege":	true,
+				"excluded_from_intel":	true,
+				"excluded_from_contract":	true,
+				"win_condition":	"scepter",
+				"dialog":	{
+					"header":	"Castle of King Maximus",
+					"body":	"King Maximus bids you welcome,\nHero.\n\nReturn with the stolen Scepter\nof Order and the Four Continents\nshall be yours."
+				},
+				"audience":	{
+					"intro":	"Trumpets announce your\narrival with regal fanfare.\n\nKing Maximus rises from his\nthrone to greet you and\nproclaims:           (space)",
+					"rank_up":	"\n\nCongratulations %NAME%,\n\nI now promote you to\n%RANK%.\n",
+					"more_needed":	"\n\nMy dear %NAME%,\n\nI can aid you better after\nyou've captured %NEEDED% more\nvillains.",
+					"final_rank":	"\n\n%NAME% the %RANK%,\n\nHurry and recover my Scepter\nof Order or all will be\nlost!"
+				}
+			}
+		}],
+	"troops":	[{
+			"index":	0,
+			"id":	"peasants",
+			"name":	"Peasants",
+			"sprite":	"art/troops/peasants_00.png",
+			"skill_level":	1,
+			"hit_points":	1,
+			"move_rate":	1,
+			"melee":	[1, 1],
+			"ranged":	[0, 0, 0],
+			"recruit_cost":	10,
+			"spoils_factor":	1,
+			"abilities":	"",
+			"dwelling":	"plains",
+			"max_population":	250,
+			"growth_per_week":	6,
+			"morale_group":	"A",
+			"anim":	["art/troops/peasants_00.png", "art/troops/peasants_01.png", "art/troops/peasants_02.png", "art/troops/peasants_03.png"],
+			"tier_counts":	[10, 20, 50, 100]
+		}, {
+			"index":	1,
+			"id":	"sprites",
+			"name":	"Sprites",
+			"sprite":	"art/troops/sprites_00.png",
+			"skill_level":	1,
+			"hit_points":	1,
+			"move_rate":	1,
+			"melee":	[1, 2],
+			"ranged":	[0, 0, 0],
+			"recruit_cost":	15,
+			"spoils_factor":	1,
+			"abilities":	"FLY",
+			"dwelling":	"forest",
+			"max_population":	200,
+			"growth_per_week":	6,
+			"morale_group":	"C",
+			"anim":	["art/troops/sprites_00.png", "art/troops/sprites_01.png", "art/troops/sprites_02.png", "art/troops/sprites_03.png"],
+			"tier_counts":	[10, 15, 30, 50]
+		}, {
+			"index":	2,
+			"id":	"militia",
+			"name":	"Militia",
+			"sprite":	"art/troops/militia_00.png",
+			"skill_level":	2,
+			"hit_points":	2,
+			"move_rate":	2,
+			"melee":	[1, 2],
+			"ranged":	[0, 0, 0],
+			"recruit_cost":	50,
+			"spoils_factor":	5,
+			"abilities":	"",
+			"dwelling":	"castle",
+			"max_population":	0,
+			"growth_per_week":	5,
+			"morale_group":	"A",
+			"anim":	["art/troops/militia_00.png", "art/troops/militia_01.png", "art/troops/militia_02.png", "art/troops/militia_03.png"],
+			"tier_counts":	[0, 5, 15, 30]
+		}, {
+			"index":	3,
+			"id":	"wolves",
+			"name":	"Wolves",
+			"sprite":	"art/troops/wolves_00.png",
+			"skill_level":	2,
+			"hit_points":	3,
+			"move_rate":	3,
+			"melee":	[1, 3],
+			"ranged":	[0, 0, 0],
+			"recruit_cost":	40,
+			"spoils_factor":	4,
+			"abilities":	"",
+			"dwelling":	"plains",
+			"max_population":	150,
+			"growth_per_week":	5,
+			"morale_group":	"D",
+			"anim":	["art/troops/wolves_00.png", "art/troops/wolves_01.png", "art/troops/wolves_02.png", "art/troops/wolves_03.png"],
+			"tier_counts":	[5, 10, 20, 40]
+		}, {
+			"index":	4,
+			"id":	"skeletons",
+			"name":	"Skeletons",
+			"sprite":	"art/troops/skeletons_00.png",
+			"skill_level":	2,
+			"hit_points":	3,
+			"move_rate":	2,
+			"melee":	[1, 2],
+			"ranged":	[0, 0, 0],
+			"recruit_cost":	40,
+			"spoils_factor":	4,
+			"abilities":	"UNDEAD",
+			"dwelling":	"dungeon",
+			"max_population":	150,
+			"growth_per_week":	5,
+			"morale_group":	"E",
+			"anim":	["art/troops/skeletons_00.png", "art/troops/skeletons_01.png", "art/troops/skeletons_02.png", "art/troops/skeletons_03.png"],
+			"tier_counts":	[5, 10, 15, 25]
+		}, {
+			"index":	5,
+			"id":	"zombies",
+			"name":	"Zombies",
+			"sprite":	"art/troops/zombies_00.png",
+			"skill_level":	2,
+			"hit_points":	5,
+			"move_rate":	1,
+			"melee":	[2, 2],
+			"ranged":	[0, 0, 0],
+			"recruit_cost":	50,
+			"spoils_factor":	5,
+			"abilities":	"UNDEAD",
+			"dwelling":	"dungeon",
+			"max_population":	100,
+			"growth_per_week":	5,
+			"morale_group":	"E",
+			"anim":	["art/troops/zombies_00.png", "art/troops/zombies_01.png", "art/troops/zombies_02.png", "art/troops/zombies_03.png"],
+			"tier_counts":	[5, 10, 15, 20]
+		}, {
+			"index":	6,
+			"id":	"gnomes",
+			"name":	"Gnomes",
+			"sprite":	"art/troops/gnomes_00.png",
+			"skill_level":	2,
+			"hit_points":	5,
+			"move_rate":	1,
+			"melee":	[1, 3],
+			"ranged":	[0, 0, 0],
+			"recruit_cost":	60,
+			"spoils_factor":	6,
+			"abilities":	"",
+			"dwelling":	"forest",
+			"max_population":	250,
+			"growth_per_week":	5,
+			"morale_group":	"C",
+			"anim":	["art/troops/gnomes_00.png", "art/troops/gnomes_01.png", "art/troops/gnomes_02.png", "art/troops/gnomes_03.png"],
+			"tier_counts":	[5, 10, 15, 20]
+		}, {
+			"index":	7,
+			"id":	"orcs",
+			"name":	"Orcs",
+			"sprite":	"art/troops/orcs_00.png",
+			"skill_level":	2,
+			"hit_points":	5,
+			"move_rate":	2,
+			"melee":	[2, 3],
+			"ranged":	[1, 2, 10],
+			"recruit_cost":	75,
+			"spoils_factor":	7,
+			"abilities":	"",
+			"dwelling":	"hill",
+			"max_population":	200,
+			"growth_per_week":	5,
+			"morale_group":	"D",
+			"anim":	["art/troops/orcs_00.png", "art/troops/orcs_01.png", "art/troops/orcs_02.png", "art/troops/orcs_03.png"],
+			"tier_counts":	[5, 10, 12, 20]
+		}, {
+			"index":	8,
+			"id":	"archers",
+			"name":	"Archers",
+			"sprite":	"art/troops/archers_00.png",
+			"skill_level":	2,
+			"hit_points":	10,
+			"move_rate":	2,
+			"melee":	[1, 2],
+			"ranged":	[1, 3, 12],
+			"recruit_cost":	250,
+			"spoils_factor":	25,
+			"abilities":	"",
+			"dwelling":	"castle",
+			"max_population":	0,
+			"growth_per_week":	5,
+			"morale_group":	"B",
+			"anim":	["art/troops/archers_00.png", "art/troops/archers_01.png", "art/troops/archers_02.png", "art/troops/archers_03.png"],
+			"tier_counts":	[0, 5, 10, 15]
+		}, {
+			"index":	9,
+			"id":	"elves",
+			"name":	"Elves",
+			"sprite":	"art/troops/elves_00.png",
+			"skill_level":	3,
+			"hit_points":	10,
+			"move_rate":	3,
+			"melee":	[1, 2],
+			"ranged":	[2, 4, 24],
+			"recruit_cost":	200,
+			"spoils_factor":	20,
+			"abilities":	"",
+			"dwelling":	"forest",
+			"max_population":	100,
+			"growth_per_week":	4,
+			"morale_group":	"C",
+			"anim":	["art/troops/elves_00.png", "art/troops/elves_01.png", "art/troops/elves_02.png", "art/troops/elves_03.png"],
+			"tier_counts":	[5, 8, 10, 15]
+		}, {
+			"index":	10,
+			"id":	"pikemen",
+			"name":	"Pikemen",
+			"sprite":	"art/troops/pikemen_00.png",
+			"skill_level":	3,
+			"hit_points":	10,
+			"move_rate":	2,
+			"melee":	[2, 4],
+			"ranged":	[0, 0, 0],
+			"recruit_cost":	300,
+			"spoils_factor":	30,
+			"abilities":	"",
+			"dwelling":	"castle",
+			"max_population":	0,
+			"growth_per_week":	4,
+			"morale_group":	"B",
+			"anim":	["art/troops/pikemen_00.png", "art/troops/pikemen_01.png", "art/troops/pikemen_02.png", "art/troops/pikemen_03.png"],
+			"tier_counts":	[0, 5, 8, 15]
+		}, {
+			"index":	11,
+			"id":	"nomads",
+			"name":	"Nomads",
+			"sprite":	"art/troops/nomads_00.png",
+			"skill_level":	3,
+			"hit_points":	15,
+			"move_rate":	2,
+			"melee":	[2, 4],
+			"ranged":	[0, 0, 0],
+			"recruit_cost":	300,
+			"spoils_factor":	30,
+			"abilities":	"",
+			"dwelling":	"plains",
+			"max_population":	150,
+			"growth_per_week":	4,
+			"morale_group":	"C",
+			"anim":	["art/troops/nomads_00.png", "art/troops/nomads_01.png", "art/troops/nomads_02.png", "art/troops/nomads_03.png"],
+			"tier_counts":	[5, 8, 12, 18]
+		}, {
+			"index":	12,
+			"id":	"dwarves",
+			"name":	"Dwarves",
+			"sprite":	"art/troops/dwarves_00.png",
+			"skill_level":	3,
+			"hit_points":	20,
+			"move_rate":	1,
+			"melee":	[2, 4],
+			"ranged":	[0, 0, 0],
+			"recruit_cost":	350,
+			"spoils_factor":	30,
+			"abilities":	"",
+			"dwelling":	"hill",
+			"max_population":	100,
+			"growth_per_week":	4,
+			"morale_group":	"C",
+			"anim":	["art/troops/dwarves_00.png", "art/troops/dwarves_01.png", "art/troops/dwarves_02.png", "art/troops/dwarves_03.png"],
+			"tier_counts":	[5, 6, 8, 12]
+		}, {
+			"index":	13,
+			"id":	"ghosts",
+			"name":	"Ghosts",
+			"sprite":	"art/troops/ghosts_00.png",
+			"skill_level":	4,
+			"hit_points":	10,
+			"move_rate":	3,
+			"melee":	[3, 4],
+			"ranged":	[0, 0, 0],
+			"recruit_cost":	400,
+			"spoils_factor":	40,
+			"abilities":	"ABSORB|UNDEAD",
+			"dwelling":	"dungeon",
+			"max_population":	25,
+			"growth_per_week":	3,
+			"morale_group":	"E",
+			"anim":	["art/troops/ghosts_00.png", "art/troops/ghosts_01.png", "art/troops/ghosts_02.png", "art/troops/ghosts_03.png"],
+			"tier_counts":	[2, 4, 6, 8]
+		}, {
+			"index":	14,
+			"id":	"knights",
+			"name":	"Knights",
+			"sprite":	"art/troops/knights_00.png",
+			"skill_level":	5,
+			"hit_points":	35,
+			"move_rate":	1,
+			"melee":	[6, 10],
+			"ranged":	[0, 0, 0],
+			"recruit_cost":	1000,
+			"spoils_factor":	100,
+			"abilities":	"",
+			"dwelling":	"castle",
+			"max_population":	250,
+			"growth_per_week":	3,
+			"morale_group":	"B",
+			"anim":	["art/troops/knights_00.png", "art/troops/knights_01.png", "art/troops/knights_02.png", "art/troops/knights_03.png"],
+			"tier_counts":	[0, 2, 5, 8]
+		}, {
+			"index":	15,
+			"id":	"ogres",
+			"name":	"Ogres",
+			"sprite":	"art/troops/ogres_00.png",
+			"skill_level":	4,
+			"hit_points":	40,
+			"move_rate":	1,
+			"melee":	[3, 5],
+			"ranged":	[0, 0, 0],
+			"recruit_cost":	750,
+			"spoils_factor":	75,
+			"abilities":	"",
+			"dwelling":	"hill",
+			"max_population":	200,
+			"growth_per_week":	3,
+			"morale_group":	"D",
+			"anim":	["art/troops/ogres_00.png", "art/troops/ogres_01.png", "art/troops/ogres_02.png", "art/troops/ogres_03.png"],
+			"tier_counts":	[2, 3, 5, 8]
+		}, {
+			"index":	16,
+			"id":	"barbarians",
+			"name":	"Barbarians",
+			"sprite":	"art/troops/barbarians_00.png",
+			"skill_level":	4,
+			"hit_points":	40,
+			"move_rate":	3,
+			"melee":	[1, 6],
+			"ranged":	[0, 0, 0],
+			"recruit_cost":	750,
+			"spoils_factor":	75,
+			"abilities":	"",
+			"dwelling":	"plains",
+			"max_population":	100,
+			"growth_per_week":	3,
+			"morale_group":	"C",
+			"anim":	["art/troops/barbarians_00.png", "art/troops/barbarians_01.png", "art/troops/barbarians_02.png", "art/troops/barbarians_03.png"],
+			"tier_counts":	[2, 3, 5, 8]
+		}, {
+			"index":	17,
+			"id":	"trolls",
+			"name":	"Trolls",
+			"sprite":	"art/troops/trolls_00.png",
+			"skill_level":	4,
+			"hit_points":	50,
+			"move_rate":	1,
+			"melee":	[2, 5],
+			"ranged":	[0, 0, 0],
+			"recruit_cost":	1000,
+			"spoils_factor":	100,
+			"abilities":	"REGEN",
+			"dwelling":	"forest",
+			"max_population":	25,
+			"growth_per_week":	3,
+			"morale_group":	"D",
+			"anim":	["art/troops/trolls_00.png", "art/troops/trolls_01.png", "art/troops/trolls_02.png", "art/troops/trolls_03.png"],
+			"tier_counts":	[2, 3, 4, 6]
+		}, {
+			"index":	18,
+			"id":	"cavalry",
+			"name":	"Cavalry",
+			"sprite":	"art/troops/cavalry_00.png",
+			"skill_level":	4,
+			"hit_points":	20,
+			"move_rate":	4,
+			"melee":	[3, 5],
+			"ranged":	[0, 0, 0],
+			"recruit_cost":	800,
+			"spoils_factor":	80,
+			"abilities":	"",
+			"dwelling":	"castle",
+			"max_population":	0,
+			"growth_per_week":	2,
+			"morale_group":	"B",
+			"anim":	["art/troops/cavalry_00.png", "art/troops/cavalry_01.png", "art/troops/cavalry_02.png", "art/troops/cavalry_03.png"],
+			"tier_counts":	[0, 2, 4, 6]
+		}, {
+			"index":	19,
+			"id":	"druids",
+			"name":	"Druids",
+			"sprite":	"art/troops/druids_00.png",
+			"skill_level":	5,
+			"hit_points":	25,
+			"move_rate":	2,
+			"melee":	[2, 3],
+			"ranged":	[10, 0, 3],
+			"recruit_cost":	700,
+			"spoils_factor":	70,
+			"abilities":	"MAGIC",
+			"dwelling":	"forest",
+			"max_population":	25,
+			"growth_per_week":	2,
+			"morale_group":	"C",
+			"anim":	["art/troops/druids_00.png", "art/troops/druids_01.png", "art/troops/druids_02.png", "art/troops/druids_03.png"],
+			"tier_counts":	[2, 3, 4, 6]
+		}, {
+			"index":	20,
+			"id":	"archmages",
+			"name":	"Archmages",
+			"sprite":	"art/troops/archmages_00.png",
+			"skill_level":	5,
+			"hit_points":	25,
+			"move_rate":	1,
+			"melee":	[2, 3],
+			"ranged":	[25, 0, 2],
+			"recruit_cost":	1200,
+			"spoils_factor":	120,
+			"abilities":	"FLY|MAGIC",
+			"dwelling":	"plains",
+			"max_population":	25,
+			"growth_per_week":	2,
+			"morale_group":	"C",
+			"anim":	["art/troops/archmages_00.png", "art/troops/archmages_01.png", "art/troops/archmages_02.png", "art/troops/archmages_03.png"],
+			"tier_counts":	[2, 3, 4, 5]
+		}, {
+			"index":	21,
+			"id":	"vampires",
+			"name":	"Vampires",
+			"sprite":	"art/troops/vampires_00.png",
+			"skill_level":	5,
+			"hit_points":	30,
+			"move_rate":	1,
+			"melee":	[3, 6],
+			"ranged":	[0, 0, 0],
+			"recruit_cost":	1500,
+			"spoils_factor":	150,
+			"abilities":	"FLY|LEECH|UNDEAD",
+			"dwelling":	"dungeon",
+			"max_population":	50,
+			"growth_per_week":	2,
+			"morale_group":	"E",
+			"anim":	["art/troops/vampires_00.png", "art/troops/vampires_01.png", "art/troops/vampires_02.png", "art/troops/vampires_03.png"],
+			"tier_counts":	[1, 2, 3, 5]
+		}, {
+			"index":	22,
+			"id":	"giants",
+			"name":	"Giants",
+			"sprite":	"art/troops/giants_00.png",
+			"skill_level":	5,
+			"hit_points":	60,
+			"move_rate":	3,
+			"melee":	[10, 20],
+			"ranged":	[5, 10, 6],
+			"recruit_cost":	2000,
+			"spoils_factor":	200,
+			"abilities":	"",
+			"dwelling":	"hill",
+			"max_population":	50,
+			"growth_per_week":	2,
+			"morale_group":	"C",
+			"anim":	["art/troops/giants_00.png", "art/troops/giants_01.png", "art/troops/giants_02.png", "art/troops/giants_03.png"],
+			"tier_counts":	[1, 2, 3, 5]
+		}, {
+			"index":	23,
+			"id":	"demons",
+			"name":	"Demons",
+			"sprite":	"art/troops/demons_00.png",
+			"skill_level":	6,
+			"hit_points":	50,
+			"move_rate":	1,
+			"melee":	[5, 7],
+			"ranged":	[0, 0, 0],
+			"recruit_cost":	3000,
+			"spoils_factor":	300,
+			"abilities":	"FLY|SCYTHE",
+			"dwelling":	"dungeon",
+			"max_population":	25,
+			"growth_per_week":	1,
+			"morale_group":	"E",
+			"anim":	["art/troops/demons_00.png", "art/troops/demons_01.png", "art/troops/demons_02.png", "art/troops/demons_03.png"],
+			"tier_counts":	[1, 2, 3, 4]
+		}, {
+			"index":	24,
+			"id":	"dragons",
+			"name":	"Dragons",
+			"sprite":	"art/troops/dragons_00.png",
+			"skill_level":	6,
+			"hit_points":	200,
+			"move_rate":	1,
+			"melee":	[25, 50],
+			"ranged":	[0, 0, 0],
+			"recruit_cost":	5000,
+			"spoils_factor":	500,
+			"abilities":	"FLY|IMMUNE",
+			"dwelling":	"hill",
+			"max_population":	25,
+			"growth_per_week":	1,
+			"morale_group":	"D",
+			"anim":	["art/troops/dragons_00.png", "art/troops/dragons_01.png", "art/troops/dragons_02.png", "art/troops/dragons_03.png"],
+			"tier_counts":	[1, 1, 1, 2]
+		}],
+	"spells":	[{
+			"index":	0,
+			"id":	"clone",
+			"name":	"Clone",
+			"kind":	"combat",
+			"cost":	2000
+		}, {
+			"index":	1,
+			"id":	"teleport",
+			"name":	"Teleport",
+			"kind":	"combat",
+			"cost":	500
+		}, {
+			"index":	2,
+			"id":	"fireball",
+			"name":	"Fireball",
+			"kind":	"combat",
+			"cost":	1500
+		}, {
+			"index":	3,
+			"id":	"lightning",
+			"name":	"Lightning",
+			"kind":	"combat",
+			"cost":	500
+		}, {
+			"index":	4,
+			"id":	"freeze",
+			"name":	"Freeze",
+			"kind":	"combat",
+			"cost":	300
+		}, {
+			"index":	5,
+			"id":	"resurrect",
+			"name":	"Resurrect",
+			"kind":	"combat",
+			"cost":	5000
+		}, {
+			"index":	6,
+			"id":	"turn_undead",
+			"name":	"Turn Undead",
+			"kind":	"combat",
+			"cost":	2000
+		}, {
+			"index":	7,
+			"id":	"bridge",
+			"name":	"Bridge",
+			"kind":	"adventure",
+			"cost":	100
+		}, {
+			"index":	8,
+			"id":	"time_stop",
+			"name":	"Time Stop",
+			"kind":	"adventure",
+			"cost":	200
+		}, {
+			"index":	9,
+			"id":	"find_villain",
+			"name":	"Find Villain",
+			"kind":	"adventure",
+			"cost":	1000
+		}, {
+			"index":	10,
+			"id":	"castle_gate",
+			"name":	"Castle Gate",
+			"kind":	"adventure",
+			"cost":	1000
+		}, {
+			"index":	11,
+			"id":	"town_gate",
+			"name":	"Town Gate",
+			"kind":	"adventure",
+			"cost":	500
+		}, {
+			"index":	12,
+			"id":	"instant_army",
+			"name":	"Instant Army",
+			"kind":	"adventure",
+			"cost":	1000
+		}, {
+			"index":	13,
+			"id":	"raise_control",
+			"name":	"Raise Control",
+			"kind":	"adventure",
+			"cost":	500
+		}],
+	"classes":	[{
+			"index":	0,
+			"id":	"knight",
+			"name":	"Knight",
+			"portrait":	"art/classes/knight.png",
+			"starting_gold":	7500,
+			"starting_troops":	[{
+					"id":	"militia",
+					"count":	20
+				}, {
+					"id":	"archers",
+					"count":	2
+				}],
+			"ranks":	[{
+					"id":	"knight",
+					"name":	"Knight",
+					"villains_needed":	0,
+					"leadership":	100,
+					"max_spells":	2,
+					"spell_power":	1,
+					"commission":	1000,
+					"knows_magic":	false,
+					"instant_army":	0
+				}, {
+					"id":	"general",
+					"name":	"General",
+					"villains_needed":	2,
+					"leadership":	100,
+					"max_spells":	3,
+					"spell_power":	1,
+					"commission":	1000,
+					"knows_magic":	false,
+					"instant_army":	2
+				}, {
+					"id":	"marshal",
+					"name":	"Marshal",
+					"villains_needed":	8,
+					"leadership":	300,
+					"max_spells":	4,
+					"spell_power":	1,
+					"commission":	2000,
+					"knows_magic":	false,
+					"instant_army":	8
+				}, {
+					"id":	"lord",
+					"name":	"Lord",
+					"villains_needed":	14,
+					"leadership":	500,
+					"max_spells":	5,
+					"spell_power":	2,
+					"commission":	4000,
+					"knows_magic":	false,
+					"instant_army":	14
+				}]
+		}, {
+			"index":	1,
+			"id":	"paladin",
+			"name":	"Paladin",
+			"portrait":	"art/classes/paladin.png",
+			"starting_gold":	10000,
+			"starting_troops":	[{
+					"id":	"peasants",
+					"count":	20
+				}, {
+					"id":	"militia",
+					"count":	20
+				}],
+			"ranks":	[{
+					"id":	"paladin",
+					"name":	"Paladin",
+					"villains_needed":	0,
+					"leadership":	80,
+					"max_spells":	3,
+					"spell_power":	1,
+					"commission":	1000,
+					"knows_magic":	false,
+					"instant_army":	0
+				}, {
+					"id":	"crusader",
+					"name":	"Crusader",
+					"villains_needed":	2,
+					"leadership":	80,
+					"max_spells":	3,
+					"spell_power":	1,
+					"commission":	1000,
+					"knows_magic":	false,
+					"instant_army":	2
+				}, {
+					"id":	"avenger",
+					"name":	"Avenger",
+					"villains_needed":	7,
+					"leadership":	240,
+					"max_spells":	6,
+					"spell_power":	2,
+					"commission":	2000,
+					"knows_magic":	false,
+					"instant_army":	8
+				}, {
+					"id":	"champion",
+					"name":	"Champion",
+					"villains_needed":	13,
+					"leadership":	400,
+					"max_spells":	5,
+					"spell_power":	2,
+					"commission":	4000,
+					"knows_magic":	false,
+					"instant_army":	18
+				}]
+		}, {
+			"index":	2,
+			"id":	"sorceress",
+			"name":	"Sorceress",
+			"portrait":	"art/classes/sorceress.png",
+			"starting_gold":	10000,
+			"starting_troops":	[{
+					"id":	"peasants",
+					"count":	30
+				}, {
+					"id":	"sprites",
+					"count":	10
+				}],
+			"ranks":	[{
+					"id":	"sorceress",
+					"name":	"Sorceress",
+					"villains_needed":	0,
+					"leadership":	60,
+					"max_spells":	5,
+					"spell_power":	2,
+					"commission":	3000,
+					"knows_magic":	true,
+					"instant_army":	1
+				}, {
+					"id":	"magician",
+					"name":	"Magician",
+					"villains_needed":	3,
+					"leadership":	60,
+					"max_spells":	8,
+					"spell_power":	3,
+					"commission":	1000,
+					"knows_magic":	false,
+					"instant_army":	6
+				}, {
+					"id":	"mage",
+					"name":	"Mage",
+					"villains_needed":	6,
+					"leadership":	180,
+					"max_spells":	10,
+					"spell_power":	5,
+					"commission":	1000,
+					"knows_magic":	false,
+					"instant_army":	9
+				}, {
+					"id":	"archmage",
+					"name":	"Archmage",
+					"villains_needed":	12,
+					"leadership":	300,
+					"max_spells":	12,
+					"spell_power":	5,
+					"commission":	1000,
+					"knows_magic":	false,
+					"instant_army":	19
+				}]
+		}, {
+			"index":	3,
+			"id":	"barbarian",
+			"name":	"Barbarian",
+			"portrait":	"art/classes/barbarian.png",
+			"starting_gold":	7500,
+			"starting_troops":	[{
+					"id":	"wolves",
+					"count":	20
+				}],
+			"ranks":	[{
+					"id":	"barbarian",
+					"name":	"Barbarian",
+					"villains_needed":	0,
+					"leadership":	100,
+					"max_spells":	2,
+					"spell_power":	0,
+					"commission":	2000,
+					"knows_magic":	false,
+					"instant_army":	0
+				}, {
+					"id":	"chieftain",
+					"name":	"Chieftain",
+					"villains_needed":	1,
+					"leadership":	100,
+					"max_spells":	2,
+					"spell_power":	1,
+					"commission":	2000,
+					"knows_magic":	false,
+					"instant_army":	3
+				}, {
+					"id":	"warlord",
+					"name":	"Warlord",
+					"villains_needed":	5,
+					"leadership":	300,
+					"max_spells":	3,
+					"spell_power":	1,
+					"commission":	2000,
+					"knows_magic":	false,
+					"instant_army":	7
+				}, {
+					"id":	"overlord",
+					"name":	"Overlord",
+					"villains_needed":	10,
+					"leadership":	500,
+					"max_spells":	3,
+					"spell_power":	1,
+					"commission":	2000,
+					"knows_magic":	false,
+					"instant_army":	15
+				}]
+		}],
+	"villains":	[{
+			"index":	0,
+			"id":	"murray",
+			"name":	"Murray the Miser",
+			"zone":	"continentia",
+			"reward":	5000,
+			"puzzle_cell":	0,
+			"portrait":	"art/villains/murray_00.png",
+			"army":	[{
+					"troop":	"peasants",
+					"count":	50
+				}, {
+					"troop":	"wolves",
+					"count":	20
+				}, {
+					"troop":	"militia",
+					"count":	25
+				}, {
+					"troop":	"peasants",
+					"count":	30
+				}, {
+					"troop":	"peasants",
+					"count":	25
+				}]
+		}, {
+			"index":	1,
+			"id":	"hack",
+			"name":	"Hack the Rogue",
+			"zone":	"continentia",
+			"reward":	6000,
+			"puzzle_cell":	1,
+			"portrait":	"art/villains/hack_00.png",
+			"army":	[{
+					"troop":	"nomads",
+					"count":	10
+				}, {
+					"troop":	"militia",
+					"count":	30
+				}, {
+					"troop":	"militia",
+					"count":	20
+				}, {
+					"troop":	"peasants",
+					"count":	60
+				}, {
+					"troop":	"peasants",
+					"count":	40
+				}]
+		}, {
+			"index":	2,
+			"id":	"aimola",
+			"name":	"Princess Aimola",
+			"zone":	"continentia",
+			"reward":	7000,
+			"puzzle_cell":	2,
+			"portrait":	"art/villains/aimola_00.png",
+			"army":	[{
+					"troop":	"sprites",
+					"count":	70
+				}, {
+					"troop":	"sprites",
+					"count":	50
+				}, {
+					"troop":	"skeletons",
+					"count":	20
+				}, {
+					"troop":	"zombies",
+					"count":	20
+				}, {
+					"troop":	"ogres",
+					"count":	4
+				}]
+		}, {
+			"index":	3,
+			"id":	"baron_makahl",
+			"name":	"Baron Johnno Makahl",
+			"zone":	"continentia",
+			"reward":	8000,
+			"puzzle_cell":	3,
+			"portrait":	"art/villains/baron_makahl_00.png",
+			"army":	[{
+					"troop":	"wolves",
+					"count":	30
+				}, {
+					"troop":	"orcs",
+					"count":	20
+				}, {
+					"troop":	"archers",
+					"count":	10
+				}, {
+					"troop":	"trolls",
+					"count":	2
+				}, {
+					"troop":	"dwarves",
+					"count":	6
+				}]
+		}, {
+			"index":	4,
+			"id":	"dread_rob",
+			"name":	"Dread Pirate Rob",
+			"zone":	"continentia",
+			"reward":	9000,
+			"puzzle_cell":	4,
+			"portrait":	"art/villains/dread_rob_00.png",
+			"army":	[{
+					"troop":	"militia",
+					"count":	50
+				}, {
+					"troop":	"militia",
+					"count":	50
+				}, {
+					"troop":	"archers",
+					"count":	10
+				}, {
+					"troop":	"elves",
+					"count":	10
+				}, {
+					"troop":	"barbarians",
+					"count":	5
+				}]
+		}, {
+			"index":	5,
+			"id":	"caneghor",
+			"name":	"Canegor the Mystic",
+			"zone":	"continentia",
+			"reward":	10000,
+			"puzzle_cell":	5,
+			"portrait":	"art/villains/caneghor_00.png",
+			"army":	[{
+					"troop":	"sprites",
+					"count":	250
+				}, {
+					"troop":	"ghosts",
+					"count":	10
+				}, {
+					"troop":	"knights",
+					"count":	10
+				}, {
+					"troop":	"archmages",
+					"count":	4
+				}, {
+					"troop":	"archmages",
+					"count":	4
+				}]
+		}, {
+			"index":	6,
+			"id":	"moradon",
+			"name":	"Sir Moradon the Cruel",
+			"zone":	"forestria",
+			"reward":	12000,
+			"puzzle_cell":	6,
+			"portrait":	"art/villains/moradon_00.png",
+			"army":	[{
+					"troop":	"militia",
+					"count":	100
+				}, {
+					"troop":	"archers",
+					"count":	20
+				}, {
+					"troop":	"pikemen",
+					"count":	20
+				}, {
+					"troop":	"cavalry",
+					"count":	15
+				}, {
+					"troop":	"knights",
+					"count":	15
+				}]
+		}, {
+			"index":	7,
+			"id":	"barrowpine",
+			"name":	"Prince Barrowpine",
+			"zone":	"forestria",
+			"reward":	14000,
+			"puzzle_cell":	7,
+			"portrait":	"art/villains/barrowpine_00.png",
+			"army":	[{
+					"troop":	"elves",
+					"count":	30
+				}, {
+					"troop":	"archmages",
+					"count":	30
+				}, {
+					"troop":	"druids",
+					"count":	10
+				}, {
+					"troop":	"pikemen",
+					"count":	30
+				}, {
+					"troop":	"sprites",
+					"count":	300
+				}]
+		}, {
+			"index":	8,
+			"id":	"bargash",
+			"name":	"Bargash Eyesore",
+			"zone":	"forestria",
+			"reward":	16000,
+			"puzzle_cell":	8,
+			"portrait":	"art/villains/bargash_00.png",
+			"army":	[{
+					"troop":	"orcs",
+					"count":	150
+				}, {
+					"troop":	"ogres",
+					"count":	20
+				}, {
+					"troop":	"trolls",
+					"count":	10
+				}, {
+					"troop":	"giants",
+					"count":	5
+				}, {
+					"troop":	"wolves",
+					"count":	80
+				}]
+		}, {
+			"index":	9,
+			"id":	"rinaldus",
+			"name":	"Rinaldus Drybone",
+			"zone":	"forestria",
+			"reward":	18000,
+			"puzzle_cell":	9,
+			"portrait":	"art/villains/rinaldus_00.png",
+			"army":	[{
+					"troop":	"skeletons",
+					"count":	500
+				}, {
+					"troop":	"zombies",
+					"count":	100
+				}, {
+					"troop":	"ghosts",
+					"count":	30
+				}, {
+					"troop":	"vampires",
+					"count":	10
+				}, {
+					"troop":	"demons",
+					"count":	6
+				}]
+		}, {
+			"index":	10,
+			"id":	"ragface",
+			"name":	"Ragface",
+			"zone":	"archipelia",
+			"reward":	20000,
+			"puzzle_cell":	10,
+			"portrait":	"art/villains/ragface_00.png",
+			"army":	[{
+					"troop":	"skeletons",
+					"count":	600
+				}, {
+					"troop":	"zombies",
+					"count":	200
+				}, {
+					"troop":	"ghosts",
+					"count":	50
+				}, {
+					"troop":	"vampires",
+					"count":	25
+				}, {
+					"troop":	"demons",
+					"count":	10
+				}]
+		}, {
+			"index":	11,
+			"id":	"mahk",
+			"name":	"Mahk Bellowspeak",
+			"zone":	"archipelia",
+			"reward":	25000,
+			"puzzle_cell":	11,
+			"portrait":	"art/villains/mahk_00.png",
+			"army":	[{
+					"troop":	"giants",
+					"count":	30
+				}, {
+					"troop":	"dragons",
+					"count":	5
+				}, {
+					"troop":	"ogres",
+					"count":	30
+				}, {
+					"troop":	"orcs",
+					"count":	200
+				}, {
+					"troop":	"gnomes",
+					"count":	200
+				}]
+		}, {
+			"index":	12,
+			"id":	"auric",
+			"name":	"Auric Whiteskin",
+			"zone":	"archipelia",
+			"reward":	30000,
+			"puzzle_cell":	12,
+			"portrait":	"art/villains/auric_00.png",
+			"army":	[{
+					"troop":	"gnomes",
+					"count":	300
+				}, {
+					"troop":	"barbarians",
+					"count":	40
+				}, {
+					"troop":	"giants",
+					"count":	20
+				}, {
+					"troop":	"nomads",
+					"count":	100
+				}, {
+					"troop":	"peasants",
+					"count":	700
+				}]
+		}, {
+			"index":	13,
+			"id":	"czar_nickolai",
+			"name":	"Czar Nickolai the Mad",
+			"zone":	"archipelia",
+			"reward":	35000,
+			"puzzle_cell":	13,
+			"portrait":	"art/villains/czar_nickolai_00.png",
+			"army":	[{
+					"troop":	"archers",
+					"count":	35
+				}, {
+					"troop":	"pikemen",
+					"count":	100
+				}, {
+					"troop":	"cavalry",
+					"count":	80
+				}, {
+					"troop":	"knights",
+					"count":	60
+				}, {
+					"troop":	"dragons",
+					"count":	5
+				}]
+		}, {
+			"index":	14,
+			"id":	"magus",
+			"name":	"Magus Deathspell",
+			"zone":	"saharia",
+			"reward":	40000,
+			"puzzle_cell":	14,
+			"portrait":	"art/villains/magus_00.png",
+			"army":	[{
+					"troop":	"demons",
+					"count":	30
+				}, {
+					"troop":	"vampires",
+					"count":	50
+				}, {
+					"troop":	"archmages",
+					"count":	100
+				}, {
+					"troop":	"gnomes",
+					"count":	500
+				}, {
+					"troop":	"peasants",
+					"count":	5000
+				}]
+		}, {
+			"index":	15,
+			"id":	"urthrax",
+			"name":	"Urthrax Killspite",
+			"zone":	"saharia",
+			"reward":	45000,
+			"puzzle_cell":	15,
+			"portrait":	"art/villains/urthrax_00.png",
+			"army":	[{
+					"troop":	"demons",
+					"count":	50
+				}, {
+					"troop":	"dragons",
+					"count":	10
+				}, {
+					"troop":	"cavalry",
+					"count":	200
+				}, {
+					"troop":	"knights",
+					"count":	250
+				}, {
+					"troop":	"archmages",
+					"count":	60
+				}]
+		}, {
+			"index":	16,
+			"id":	"arech",
+			"name":	"Arech Dragonbreath",
+			"zone":	"saharia",
+			"reward":	50000,
+			"puzzle_cell":	16,
+			"portrait":	"art/villains/arech_00.png",
+			"army":	[{
+					"troop":	"dragons",
+					"count":	100
+				}, {
+					"troop":	"dragons",
+					"count":	25
+				}, {
+					"troop":	"dragons",
+					"count":	25
+				}, {
+					"troop":	"demons",
+					"count":	100
+				}, {
+					"troop":	"vampires",
+					"count":	100
+				}]
+		}],
+	"artifacts":	[{
+			"index":	0,
+			"id":	"sword",
+			"name":	"The Sword of Prowess",
+			"zone":	"saharia",
+			"effect":	"Your army deals +50% damage.",
+			"power":	"increased_damage",
+			"icon":	"art/ui/inventory_artifact_sword.png",
+			"puzzle_cell":	17,
+			"local_idx":	1
+		}, {
+			"index":	1,
+			"id":	"shield",
+			"name":	"The Shield of Protection",
+			"zone":	"forestria",
+			"effect":	"Your army takes 25% less damage.",
+			"power":	"quarter_protection",
+			"icon":	"art/ui/inventory_artifact_shield.png",
+			"puzzle_cell":	18,
+			"local_idx":	0
+		}, {
+			"index":	2,
+			"id":	"crown",
+			"name":	"The Crown of Command",
+			"zone":	"archipelia",
+			"effect":	"Doubles your leadership.",
+			"power":	"double_leadership",
+			"icon":	"art/ui/inventory_artifact_crown.png",
+			"puzzle_cell":	19,
+			"local_idx":	0
+		}, {
+			"index":	3,
+			"id":	"articles",
+			"name":	"The Articles of Nobility",
+			"zone":	"continentia",
+			"effect":	"Increases your weekly commission.",
+			"power":	"increase_commission",
+			"icon":	"art/ui/inventory_artifact_articles.png",
+			"puzzle_cell":	20,
+			"local_idx":	1
+		}, {
+			"index":	4,
+			"id":	"amulet",
+			"name":	"The Amulet of Augmentation",
+			"zone":	"saharia",
+			"effect":	"Doubles your spell power.",
+			"power":	"double_spell_power",
+			"icon":	"art/ui/inventory_artifact_amulet.png",
+			"puzzle_cell":	21,
+			"local_idx":	0
+		}, {
+			"index":	5,
+			"id":	"ring",
+			"name":	"The Ring of Heroism",
+			"zone":	"continentia",
+			"effect":	"Doubles your maximum spells.",
+			"power":	"double_max_spells",
+			"icon":	"art/ui/inventory_artifact_ring.png",
+			"puzzle_cell":	22,
+			"local_idx":	0
+		}, {
+			"index":	6,
+			"id":	"book",
+			"name":	"The Book of Necros",
+			"zone":	"archipelia",
+			"effect":	"Unknown power.",
+			"power":	"unknown_xxx1",
+			"icon":	"art/ui/inventory_artifact_book.png",
+			"puzzle_cell":	23,
+			"local_idx":	1
+		}, {
+			"index":	7,
+			"id":	"anchor",
+			"name":	"The Anchor of Admirability",
+			"zone":	"forestria",
+			"effect":	"Boat rental is cheaper.",
+			"power":	"cheaper_boat_rental",
+			"icon":	"art/ui/inventory_artifact_anchor.png",
+			"puzzle_cell":	24,
+			"local_idx":	1
+		}],
+	"tile_codes":	{
+		"*":	{
+			"art":	"desert_edge_01",
+			"terrain":	"desert"
+		},
+		"+":	{
+			"art":	"desert_edge_02",
+			"terrain":	"desert"
+		},
+		",":	{
+			"art":	"grass_variant",
+			"terrain":	"grass"
+		},
+		"-":	{
+			"art":	"desert_edge_03",
+			"terrain":	"desert"
+		},
+		".":	{
+			"art":	"grass",
+			"terrain":	"grass"
+		},
+		"/":	{
+			"art":	"desert_edge_04",
+			"terrain":	"desert"
+		},
+		"0":	{
+			"art":	"desert_edge_05",
+			"terrain":	"desert"
+		},
+		"1":	{
+			"art":	"desert_edge_06",
+			"terrain":	"desert"
+		},
+		"2":	{
+			"art":	"desert_edge_07",
+			"terrain":	"desert"
+		},
+		"3":	{
+			"art":	"desert_edge_08",
+			"terrain":	"desert"
+		},
+		"4":	{
+			"art":	"desert_edge_09",
+			"terrain":	"desert"
+		},
+		"5":	{
+			"art":	"desert_edge_10",
+			"terrain":	"desert"
+		},
+		"6":	{
+			"art":	"desert_edge_11",
+			"terrain":	"desert"
+		},
+		"7":	{
+			"art":	"desert_edge_12",
+			"terrain":	"desert"
+		},
+		"<":	{
+			"art":	"forest_edge_01",
+			"terrain":	"forest",
+			"blocks_foot":	true
+		},
+		"=":	{
+			"art":	"forest_edge_02",
+			"terrain":	"forest",
+			"blocks_foot":	true
+		},
+		">":	{
+			"art":	"forest_edge_03",
+			"terrain":	"forest",
+			"blocks_foot":	true
+		},
+		"?":	{
+			"art":	"forest_edge_04",
+			"terrain":	"forest",
+			"blocks_foot":	true
+		},
+		"@":	{
+			"art":	"forest_edge_05",
+			"terrain":	"forest",
+			"blocks_foot":	true
+		},
+		"A":	{
+			"art":	"forest_edge_06",
+			"terrain":	"forest",
+			"blocks_foot":	true
+		},
+		"B":	{
+			"art":	"forest_edge_07",
+			"terrain":	"forest",
+			"blocks_foot":	true
+		},
+		"C":	{
+			"art":	"forest_edge_08",
+			"terrain":	"forest",
+			"blocks_foot":	true
+		},
+		"D":	{
+			"art":	"desert",
+			"terrain":	"desert"
+		},
+		"E":	{
+			"art":	"forest_edge_09",
+			"terrain":	"forest",
+			"blocks_foot":	true
+		},
+		"F":	{
+			"art":	"forest",
+			"terrain":	"forest",
+			"blocks_foot":	true
+		},
+		"G":	{
+			"art":	"forest_edge_10",
+			"terrain":	"forest",
+			"blocks_foot":	true
+		},
+		"H":	{
+			"art":	"forest_edge_11",
+			"terrain":	"forest",
+			"blocks_foot":	true
+		},
+		"I":	{
+			"art":	"forest_edge_12",
+			"terrain":	"forest",
+			"blocks_foot":	true
+		},
+		"J":	{
+			"art":	"mountain_edge_01",
+			"terrain":	"mountain",
+			"blocks_foot":	true
+		},
+		"K":	{
+			"art":	"mountain_edge_02",
+			"terrain":	"mountain",
+			"blocks_foot":	true
+		},
+		"L":	{
+			"art":	"mountain_edge_03",
+			"terrain":	"mountain",
+			"blocks_foot":	true
+		},
+		"M":	{
+			"art":	"mountain_edge_04",
+			"terrain":	"mountain",
+			"blocks_foot":	true
+		},
+		"N":	{
+			"art":	"mountain_edge_05",
+			"terrain":	"mountain",
+			"blocks_foot":	true
+		},
+		"O":	{
+			"art":	"mountain_edge_06",
+			"terrain":	"mountain",
+			"blocks_foot":	true
+		},
+		"P":	{
+			"art":	"mountain_edge_07",
+			"terrain":	"mountain",
+			"blocks_foot":	true
+		},
+		"Q":	{
+			"art":	"mountain_edge_08",
+			"terrain":	"mountain",
+			"blocks_foot":	true
+		},
+		"R":	{
+			"art":	"mountain_edge_09",
+			"terrain":	"mountain",
+			"blocks_foot":	true
+		},
+		"S":	{
+			"art":	"mountain_edge_10",
+			"terrain":	"mountain",
+			"blocks_foot":	true
+		},
+		"T":	{
+			"art":	"mountain_edge_11",
+			"terrain":	"mountain",
+			"blocks_foot":	true
+		},
+		"U":	{
+			"art":	"mountain_edge_12",
+			"terrain":	"mountain",
+			"blocks_foot":	true
+		},
+		"Y":	{
+			"art":	"water_edge_00",
+			"terrain":	"water"
+		},
+		"Z":	{
+			"art":	"water_edge_01",
+			"terrain":	"water"
+		},
+		"[":	{
+			"art":	"water_edge_02",
+			"terrain":	"water"
+		},
+		"\\":	{
+			"art":	"water_edge_03",
+			"terrain":	"water"
+		},
+		"]":	{
+			"art":	"water_edge_04",
+			"terrain":	"water"
+		},
+		"^":	{
+			"art":	"mountain",
+			"terrain":	"mountain",
+			"blocks_foot":	true
+		},
+		"_":	{
+			"art":	"water_edge_05",
+			"terrain":	"water"
+		},
+		"`":	{
+			"art":	"water_edge_06",
+			"terrain":	"water"
+		},
+		"a":	{
+			"art":	"water_edge_07",
+			"terrain":	"water"
+		},
+		"b":	{
+			"art":	"water_edge_08",
+			"terrain":	"water"
+		},
+		"c":	{
+			"art":	"water_edge_09",
+			"terrain":	"water"
+		},
+		"d":	{
+			"art":	"water_edge_10",
+			"terrain":	"water"
+		},
+		"e":	{
+			"art":	"water_edge_11",
+			"terrain":	"water"
+		},
+		"~":	{
+			"art":	"water",
+			"terrain":	"water"
+		}
+	},
+	"spawn":	{
+		"tier_chance_curve":	[[60, 90, 98, 101], [20, 70, 95, 99], [10, 20, 50, 90], [3, 6, 10, 40]],
+		"tier_troop_pool":	[["peasants", "wolves", "nomads", "barbarians", "archmages"], ["sprites", "gnomes", "elves", "trolls", "druids"], ["orcs", "dwarves", "ogres", "giants", "dragons"], ["skeletons", "zombies", "ghosts", "vampires", "demons"]]
+	},
+	"contract":	{
+		"cycle_length":	5,
+		"initial_last_contract":	4
+	},
+	"controls":	{
+		"settings":	[{
+				"id":	"delay",
+				"label":	"Delay",
+				"type":	"numeric",
+				"range":	10,
+				"default":	5
+			}, {
+				"id":	"sounds",
+				"label":	"Sounds",
+				"type":	"bool",
+				"default":	1
+			}, {
+				"id":	"walk_beep",
+				"label":	"Walk Beep",
+				"type":	"bool",
+				"default":	1
+			}, {
+				"id":	"animation",
+				"label":	"Animation",
+				"type":	"bool",
+				"default":	1
+			}, {
+				"id":	"army_size",
+				"label":	"Army Size",
+				"type":	"bool",
+				"default":	1
+			}, {
+				"id":	"cga",
+				"label":	"CGA",
+				"type":	"numeric",
+				"range":	8,
+				"default":	0,
+				"hidden":	true
+			}, {
+				"id":	"music",
+				"label":	"Music",
+				"type":	"bool",
+				"default":	0
+			}, {
+				"id":	"volume",
+				"label":	"Volume",
+				"type":	"numeric",
+				"range":	10,
+				"default":	5
+			}]
+	},
+	"sprites":	{
+		"hero":	{
+			"walk":	["art/sprites/hero_walk_00.png", "art/sprites/hero_walk_01.png", "art/sprites/hero_walk_02.png", "art/sprites/hero_walk_03.png"],
+			"boat":	["art/sprites/boat_00.png", "art/sprites/boat_01.png", "art/sprites/boat_02.png", "art/sprites/boat_03.png"]
+		},
+		"ui":	{
+			"puzzle_cover":	"art/ui/puzzle_cover.png",
+			"town_backdrop":	"art/ui/backdrop_town.png",
+			"castle_backdrop":	"art/ui/backdrop_castle.png",
+			"plains_backdrop":	"art/ui/backdrop_plains.png",
+			"forest_backdrop":	"art/ui/backdrop_forest.png",
+			"hillcave_backdrop":	"art/ui/backdrop_hillcave.png",
+			"dungeon_backdrop":	"art/ui/backdrop_dungeon.png",
+			"ending_win":	"art/ui/end_win_screen.png",
+			"ending_lose":	"art/ui/end_lose_screen.png",
+			"view_icons_extra":	["art/ui/inventory_zone_continentia.png", "art/ui/inventory_zone_forestria.png", "art/ui/inventory_zone_archipelia.png", "art/ui/inventory_zone_saharia.png"],
+			"chrome_overworld":	"art/ui/chrome_overworld.png",
+			"splash_logo":	"art/ui/splash_logo.png",
+			"splash_title":	"art/ui/splash_title.png",
+			"class_picker":	"art/ui/class_select_picker.png",
+			"class_highlight":	"art/ui/class_select_highlight.png"
+		},
+		"hud":	{
+			"contract_silhouette":	"art/ui/hud_contract_silhouette.png",
+			"siege_silhouette":	"art/ui/hud_siege_silhouette.png",
+			"siege_animation":	["art/ui/hud_siege_00.png", "art/ui/hud_siege_01.png", "art/ui/hud_siege_02.png", "art/ui/hud_siege_03.png"],
+			"magic_silhouette":	"art/ui/hud_magic_silhouette.png",
+			"magic_animation":	["art/ui/hud_magic_00.png", "art/ui/hud_magic_01.png", "art/ui/hud_magic_02.png", "art/ui/hud_magic_03.png"],
+			"puzzle_grid":	"art/ui/hud_puzzle_grid.png",
+			"gold_purse":	"art/ui/hud_gold_purse.png",
+			"bar_strip":	"art/ui/hud_bar_strip.png"
+		}
+	},
+	"ending":	{
+		"grass_tile":	"art/ui/end_grass.png",
+		"carpet_tile":	"art/ui/end_carpet.png",
+		"hero_tile":	"art/ui/end_hero.png",
+		"throne_backdrop":	"art/ui/end_lose_screen.png",
+		"grid_width":	6,
+		"grid_height":	5,
+		"carpet_column":	4,
+		"carpet_length":	5,
+		"frame_count":	10,
+		"ticks_per_step":	2,
+		"troop_border":	true
+	},
+	"colors":	{
+		"minimap_terrain":	{
+			"grass":	"#55FF55",
+			"forest":	"#00AA00",
+			"mountain":	"#AA5500",
+			"water":	"#5555FF",
+			"desert":	"#FFFF55",
+			"fog":	"#000000"
+		},
+		"difficulty_bar":	{
+			"easy":	"#00AAAA",
+			"normal":	"#AA0000",
+			"hard":	"#5555FF",
+			"impossible":	"#AA00AA"
+		}
+	},
+	"credits":	{
+		"image":	"art/ui/class_select_highlight.png",
+		"groups":	[{
+				"label":	"King's Bounty Designed By:",
+				"names":	["Jon Van Caneghem"]
+			}, {
+				"label":	"Programmed By:",
+				"names":	["Mark Caldwell", "Andy Caldwell"]
+			}, {
+				"label":	"Graphics By:",
+				"names":	["Kenneth L. Mayfield", "Vincent DeQuattro, Jr."]
+			}],
+		"copyright":	["Copyright 1990", "New World Computing, Inc", "All Rights Reserved"]
+	},
+	"audio":	{
+		"tracks":	{
+			"openworld":	"audio/openworld.ogg",
+			"combat":	"audio/combat.ogg"
+		},
+		"tunes":	{
+			"walk":	"audio/tune_walk.wav",
+			"bump":	"audio/tune_bump.wav",
+			"chest":	"audio/tune_chest.wav",
+			"defeat":	"audio/tune_defeat.wav"
+		}
+	},
+	"strings":	{
+		"lose":	{
+			"header":	"",
+			"body":	"%NAME% they\ncall the %RANK%,\nyou have doomed us\nall.\nThe land is in\ndisarray without\nits king. All\nhope is lost.\nThe villains are\nunpunished and the\nbeast roams free.\nThe peasants are\nterrified and your\narmy has abandoned\nyour cause.\nAll because you\nwasted your time\nso carelessly.\nFinal Score:\n%SCORE%",
+			"footer":	""
+		},
+		"win":	{
+			"header":	"",
+			"body":	"Good job, soldier!\nYou have tamed the\nbeast and captured\nthe villains. The\norder is restored\nacross the land.\n\nHistory will reme-\nmber the name of\n%NAME%, the\n%RANK%-who-\nsaved us all.\n\nYou keep all the\ncastles and your\ncommission is\ntripled.\n\n\nFinal Score:\n%SCORE%",
+			"footer":	""
+		},
+		"banners":	{
+			"chest_gold":	"After scouring the area,\nyou fall upon a hidden\ntreasure cache. You may:\nA) Take the %GOLD% gold.\nB) Distribute the gold to\nthe peasants, increasing\nyour leadership by %LEADERSHIP%.",
+			"chest_commission":	"After surveying the area,\nyou discover that it is\nrich in mineral deposits.\n\nThe King rewards you for\nyour find by increasing\nyour weekly income by %POINTS%",
+			"chest_spell_power":	"Traversing the area, you\nstumble upon a time worn\ncannister. Curious, you un-\nstop the bottle, releasing\na powerful genie who raises\nyour Spell Power by %POINTS% and\nvanishes.",
+			"chest_max_spells":	"A tribe of nomads greet you\nand your army warmly. Their\nshaman, in awe of your\nprowess, teaches you the\nsecret of his tribe's magic.\nYour maximum spell capacity\nis increased by %POINTS%",
+			"chest_new_spell":	"You have captured a\nmischevious imp which has\nbeen terrorizing the\nregion. In exchange for\nits release, you receive:\n\n   %COUNT% %SPELL% spell.",
+			"chest_empty":	"The chest was empty!",
+			"town_header":	"Town of %NAME%",
+			"town_gold_label":	"GP=%GOLD%K",
+			"town_row_contract":	"A) Get New Contract",
+			"town_row_boat_rent":	"B) Rent boat (%COST% week)",
+			"town_row_boat_cancel":	"B) Cancel boat rental",
+			"town_row_info":	"C) Gather information",
+			"town_row_spell":	"D) %SPELL% spell (%SPELL_COST%)",
+			"town_row_spell_none":	"D) (no spell available)",
+			"town_row_siege_buy":	"E) Buy seige weapons (%SIEGE_COST%)",
+			"town_row_siege_owned":	"E) Siege weapons (owned)",
+			"town_contract_new":	"New contract: %VILLAIN%.\nReward: %REWARD% gold.\nLast seen on %ZONE%.",
+			"town_contract_none":	"No contracts are available right now.",
+			"town_boat_vacate_first":	"\n\nPlease vacate the boat first",
+			"town_no_gold":	"\n\n\nYou don't have enough gold!",
+			"town_intel_unavailable":	"No intelligence is available here.",
+			"town_intel_castle_under":	"Castle %NAME% is under\n",
+			"town_intel_owner_rule":	"%OWNER%'s rule.\n\n",
+			"town_intel_owner_none":	"no one",
+			"town_intel_owner_player":	"your",
+			"town_intel_owner_king":	"the King",
+			"town_intel_count_named":	"  %LABEL% %TROOP%\n",
+			"town_intel_count_numeric":	"  %COUNT% %TROOP%\n",
+			"town_intel_monsters_generic":	"  Various groups of monsters\n  occupy the castle.",
+			"town_intel_no_garrison":	"  (no garrison)",
+			"town_spell_unavailable":	"No spell is available here.",
+			"town_spell_at_cap":	"You have learned your maximum number of spells.",
+			"town_spell_can_learn":	"You can learn %LEFT% more spell%S%.",
+			"town_siege_already":	"You have siege weapons!",
+			"town_siege_purchased":	"Siege weapons purchased.",
+			"spell_time_stop":	"Time has stopped for %STEPS% steps.",
+			"spell_find_villain_no_contract":	"You have no contract.",
+			"spell_find_villain_success":	"You have found %CASTLE%!",
+			"spell_find_villain_none":	"Your search reveals nothing.",
+			"spell_bridge_prompt":	"Build bridge in which\ndirection? Use arrows.",
+			"spell_bridge_built":	"Bridge constructed with\n%COUNT% tiles.",
+			"spell_bridge_invalid":	"Not a suitable location\nfor a bridge.",
+			"spell_castle_gate_none":	"You have not visited\nany castles yet.",
+			"spell_castle_gate_choose":	"Which castle? Press A-Z.",
+			"spell_town_gate_none":	"You have not visited\nany towns yet.",
+			"spell_town_gate_choose":	"Which town? Press A-Z.",
+			"spell_instant_army_fizzle":	"Spell fizzles.",
+			"spell_instant_army_no_room":	"Your army has no room!",
+			"spell_instant_army_success":	"%QTY% %TROOP%\nhave joined your army.",
+			"spell_raise_control_success":	"Your leadership has\nincreased by %AMOUNT%.",
+			"spell_gate_teleported":	"Teleported!",
+			"spell_gate_invalid":	"Invalid selection.",
+			"encounter_join_named":	"%LABEL% %TROOP%,\nwith desires of greater\nglory, wish to join you.",
+			"encounter_join_numeric":	"%COUNT% %TROOP%,\nwith desires of greater\nglory, wish to join you.",
+			"encounter_wanderers":	"They flee in terror at the\nsight of your vast army.",
+			"encounter_hostile_header":	"You encounter:\n",
+			"encounter_hostile_unknown":	"  a hostile band\n",
+			"encounter_hostile_count_named":	"  %LABEL% %TROOP%\n",
+			"encounter_hostile_count_numeric":	"  %COUNT% %TROOP%\n",
+			"alcove_offer":	"The venerable Archmage,\nAurange, will teach you the\nsecrets of spell casting for\n%COST% gold.\n\nAccept?",
+			"alcove_already":	"The archmage nods.\nYou already know magic.",
+			"alcove_taught":	"Aurange teaches you the\narcane arts. You now know\nthe ways of magic.",
+			"alcove_no_gold":	"You have not enough gold!\n%COST% is required.\nBegone until you do!",
+			"no_spell_banner":	"You have not been trained in\nthe art of spellcasting yet.\nVisit the Archmage Aurange\nin %ZONE% at %X%,%Y% for\nthis ability.",
+			"new_game_intro":	"%NAME% the %CLASS%,\nA new game is being created.\nPlease wait while I perform\ngodlike actions to make this\ngame playable.",
+			"dwelling_recruit_prompt":	"%COUNT% %TROOP% are available\nCost=%COST% each.  GP=%GOLD%\nYou may recruit up to %CAP%.",
+			"dwelling_none_this_week":	"No troops are available here\nthis week.",
+			"dwelling_empty":	"This dwelling is empty.",
+			"telecave_teleport":	"You step into the cave and\nemerge elsewhere on this\ncontinent.",
+			"telecave_inert":	"This cave hums with magic,\nbut nothing happens.",
+			"navmap_pickup":	"A navigation map of %ZONE%!",
+			"crystal_ball_pickup":	"You gaze into a crystal ball\nand see all of %ZONE%!",
+			"astrology_header":	"Week #%WEEK%",
+			"astrology_body":	"Astrologers proclaim:\nWeek of the %TROOP%\n\nAll %TROOP% dwellings are\nrepopulated.         (space)",
+			"temp_death":	"After being disgraced on the\nfield of battle, King\nMaximus summons you to his\ncastle. After a lesson in\ntactics, he reluctantly re-\nissues your commission and\nsends you on your way.",
+			"combat_give_up_header":	"Press ESC to exit",
+			"combat_give_up_body":	"Giving up will forfeit your\narmies and send you back to\nthe King. Give up",
+			"combat_scouts_header":	"Your scouts have sighted:\n",
+			"combat_scouts_count":	"  %COUNT% %TROOP%\n",
+			"combat_scouts_small_band":	"  (a small band)\n",
+			"combat_header_siege":	"Siege",
+			"combat_header_default":	"Combat",
+			"signpost_with_body":	"A sign reads:\n\n\"%TITLE%\n%BODY%\"",
+			"signpost_title_only":	"A sign reads:\n\n\"%TITLE%\"",
+			"budget_header":	"Week #%WEEK%             Budget",
+			"budget_on_hand":	"On Hand",
+			"budget_payment":	"Payment",
+			"budget_boat":	"Boat   ",
+			"budget_army":	"Army   ",
+			"budget_balance":	"Balance",
+			"status_days_left":	" Options / Controls / Days Left:%DAYS% ",
+			"status_time_stop":	" Options / Controls / Time Stop:%STEPS% ",
+			"body_save_confirm":	"Your game has been saved.\nPress Control-Q to Quit or\nany other key to continue.",
+			"body_search":	"It will take %DAYS% days to\nsearch this area.\nSearch?",
+			"body_dismiss_pick":	"Dismiss which troop?",
+			"body_dismiss_last":	"If you dismiss your last\narmy, you will be sent back\nto the King in disgrace.\nDismiss last army?",
+			"body_home_castle":	"Castle of King Maximus\n\nA) Recruit Soldiers\nB) Audience with the King",
+			"body_own_castle":	"Castle %NAME%:\n1. Garrison troops\n2. Remove troops",
+			"body_garrison_row_named":	"%INDEX%. %TROOP% (%COUNT%)\n",
+			"body_garrison_row_empty":	"%INDEX%. Empty\n",
+			"body_navigate_row":	"%INDEX%. %ZONE%\n",
+			"body_no_continents":	"No known continents from\nthis zone.",
+			"body_must_be_sailing":	"You must be sailing to\nnavigate to another\ncontinent.",
+			"cannot_garrison_last":	"You cannot garrison your\n        last army!",
+			"no_troop_slots":	"No troop slots left!",
+			"army_cannot_handle":	"Your army cannot handle\nthat many troops.",
+			"no_troops_to_garrison":	"No troops to garrison.",
+			"castle_garrison_empty":	"Castle garrison is empty.",
+			"spell_unavailable":	"That spell is not available.",
+			"spell_not_known":	"You don't have that spell.",
+			"spell_unknown":	"Unknown spell."
+		},
+		"combat_log":	{
+			"melee_hit":	"%ATK% vs %TGT%, %COUNT% die",
+			"retaliate":	"%TGT% retaliate, killing %COUNT%",
+			"ranged_hit":	"%ATK% shoot %TGT% killing %COUNT%",
+			"ranged_no_effect":	"%ATK% shoot %TGT%",
+			"no_effect_msg":	"The spell seems to have no effect!",
+			"fly":	"%TROOP% fly",
+			"move":	"%TROOP% move",
+			"wait":	"%TROOP% wait",
+			"pass":	"%TROOP% pass",
+			"frozen":	"%TROOP% are frozen",
+			"ooc":	"%TROOP% are out of control!",
+			"immune":	"%TROOP% are immune",
+			"cloned":	"%COUNT% %TROOP% cloned",
+			"resurrected":	"%COUNT% %TROOP% resurrected",
+			"teleported":	"Teleported",
+			"only_one_spell":	"Only 1 spell per round!",
+			"no_spell_type":	"No spells of that type",
+			"cannot_cast":	"You cannot cast magic",
+			"cast_fireball":	"Fireball!",
+			"cast_lightning":	"Lightning!",
+			"cast_turn_undead":	"Turn Undead!",
+			"select_clone":	"Select your army to Clone",
+			"select_freeze":	"Select enemy army to Freeze",
+			"select_resurrect":	"Select army to Resurrect",
+			"select_damage":	"Select enemy army to %SPELL%",
+			"select_teleport":	"Select army to Teleport",
+			"select_dest":	"Select new location",
+			"cant_shoot":	"Can't Shoot",
+			"no_ammo":	"No ammo",
+			"cant_fly":	"Can't Fly",
+			"give_up_prompt":	"Giving up will forfeit your\narmies and send you back to\nthe King. Give up (y/n)?",
+			"exit_hint":	"Press 'ESC' to exit"
+		},
+		"ui":	{
+			"press_esc_to_exit":	"Press 'ESC' to exit",
+			"quit_to_dos_prompt":	" Quit without saving (y/n) ",
+			"out_of_control":	"OUT OF CONTROL",
+			"worldmap_hint_your_map":	"'ESC' to exit / 'SPC' your map",
+			"worldmap_hint_whole_map":	"'ESC' to exit / 'SPC' whole map",
+			"empty_slot":	"Empty",
+			"combat_spells_title":	"Spells",
+			"combat_spells_col_combat":	"Combat",
+			"combat_spells_prompt":	"Cast which (A-G)?",
+			"dwelling_kind_plains":	"Plains",
+			"dwelling_kind_forest":	"Forest",
+			"dwelling_kind_hill":	"Hill",
+			"dwelling_kind_dungeon":	"Dungeon",
+			"dwelling_recruit_how_many":	"Recruit how many",
+			"recruit_soldiers_title":	"Recruit Soldiers",
+			"recruit_soldiers_how_many":	"How Many",
+			"own_castle_mode_garrison":	"Garrison troops (Space=Remove)",
+			"own_castle_mode_remove":	"Remove troops (Space=Garrison)"
+		},
+		"toasts":	{
+			"save_cancelled":	"Save cancelled.",
+			"save_ok":	"Saved.",
+			"save_failed":	"Save failed: %REASON%",
+			"load_cancelled":	"Load cancelled.",
+			"load_ok":	"Loaded.",
+			"load_failed":	"Load failed: %REASON%",
+			"new_game":	"New game started."
+		},
+		"contract_view":	{
+			"title_no_contract":	"You have no Contract!",
+			"label_name":	"Name: %VALUE%",
+			"label_alias":	"Alias: %VALUE%",
+			"label_reward":	"Reward: %VALUE% gold",
+			"label_last_seen":	"Last Seen: %VALUE%",
+			"label_castle":	"Castle: %VALUE%",
+			"alias_none":	"None",
+			"castle_unknown":	"Unknown",
+			"features_header":	"Distinguishing Features:",
+			"crimes_header":	"Crimes:"
+		},
+		"spells_view":	{
+			"title":	"Spells",
+			"combat_col":	"Combat",
+			"adventure_col":	"Adventuring"
+		},
+		"menu":	{
+			"root_title":	"Game Menu",
+			"views_title":	"Views",
+			"options_title":	"Options",
+			"items":	{
+				"back":	"Back",
+				"exit":	"Exit",
+				"save":	"Save",
+				"load":	"Load",
+				"new_game":	"New Game",
+				"views":	"Views",
+				"options":	"Options",
+				"army":	"Army",
+				"spells":	"Spells",
+				"character":	"Character",
+				"contract":	"Contract",
+				"puzzle":	"Puzzle",
+				"view_map":	"View Map"
+			}
+		},
+		"stats":	{
+			"leadership":	"Leadership",
+			"commission":	"Commission/Week",
+			"gold":	"Gold",
+			"spell_power":	"Spell power",
+			"max_spells":	"Max # of spells",
+			"villains_caught":	"Villains caught",
+			"artifacts_found":	"Artifacts found",
+			"castles_garrisoned":	"Castles garrisoned",
+			"followers_killed":	"Followers killed",
+			"current_score":	"Current score"
+		},
+		"army_view":	{
+			"skill":	"SL:",
+			"move":	"MV:",
+			"morale":	"Morale:",
+			"hit_points":	"HitPts:",
+			"damage":	"Damage:",
+			"g_cost":	"G-Cost:"
+		},
+		"morale":	{
+			"normal":	"Normal",
+			"low":	"Low",
+			"high":	"High"
+		},
+		"count_buckets":	{
+			"army_view":	[{
+					"max":	5,
+					"label":	"Few"
+				}, {
+					"max":	20,
+					"label":	"Some"
+				}, {
+					"max":	2147483647,
+					"label":	"Lots"
+				}],
+			"instant_army":	[{
+					"max":	1,
+					"label":	"One"
+				}, {
+					"max":	2,
+					"label":	"A few"
+				}, {
+					"max":	9,
+					"label":	"Several"
+				}, {
+					"max":	2147483647,
+					"label":	"Many"
+				}]
+		},
+		"difficulty":	{
+			"easy":	{
+				"label":	"Easy",
+				"score_mult":	"x.5"
+			},
+			"normal":	{
+				"label":	"Normal",
+				"score_mult":	" x1"
+			},
+			"hard":	{
+				"label":	"Hard",
+				"score_mult":	" x2"
+			},
+			"impossible":	{
+				"label":	"Impossible?",
+				"score_mult":	" x4"
+			}
+		},
+		"keybinds":	[{
+				"key":	"Dn",
+				"label":	"Move Down"
+			}, {
+				"key":	"Lf",
+				"label":	"Move Left"
+			}, {
+				"key":	"Rt",
+				"label":	"Move Right"
+			}, {
+				"key":	"Up",
+				"label":	"Move Up"
+			}, {
+				"key":	"End",
+				"label":	"Down Left"
+			}, {
+				"key":	"PgDn",
+				"label":	"Down Right"
+			}, {
+				"key":	"Hm",
+				"label":	"Up Left"
+			}, {
+				"key":	"PgUp",
+				"label":	"Up Right"
+			}, {
+				"key":	"A",
+				"label":	"View Army"
+			}, {
+				"key":	"C",
+				"label":	"Controls"
+			}, {
+				"key":	"F",
+				"label":	"Fly"
+			}, {
+				"key":	"L",
+				"label":	"Land"
+			}, {
+				"key":	"I",
+				"label":	"Contract Info"
+			}, {
+				"key":	"M",
+				"label":	"Auto-mapping"
+			}, {
+				"key":	"P",
+				"label":	"Puzzle Solve"
+			}, {
+				"key":	"S",
+				"label":	"Search Area"
+			}, {
+				"key":	"U",
+				"label":	"Use Magic"
+			}, {
+				"key":	"V",
+				"label":	"View Character"
+			}, {
+				"key":	"W",
+				"label":	"Wait End Week"
+			}, {
+				"key":	"Q",
+				"label":	"Quit and Save"
+			}],
+		"startup":	{
+			"controls_hint":	"UP/DN move  ENTER pick  ESC quit",
+			"class_select_hint":	"Select Char A-D or L-Load saved game",
+			"class_picker_missing":	"class picker asset missing",
+			"save_picker_title":	" Select game:",
+			"save_picker_empty":	"(empty)",
+			"save_picker_new_game":	"New game",
+			"new_game_table_header":	"   Difficulty   Days  Score",
+			"new_game_select_hint":	"^v to select   Ent to Accept"
+		},
+		"controls":	{
+			"title":	" Controls ",
+			"on":	"On",
+			"off":	"Off"
+		},
+		"prompts":	{
+			"text_hint":	"(Enter to confirm / ESC cancel)",
+			"numeric_range_hint":	"(1-%COUNT% or ESC)",
+			"yes_no_hint":	"(y/n)?",
+			"numeric_5_hint":	"(1-5 or ESC)"
+		},
+		"dialog_titles":	{
+			"treasure":	"Treasure",
+			"teleport_cave":	"Teleport Cave",
+			"crystal_ball":	"Crystal Ball",
+			"foes":	"Foes!",
+			"alcove_offer":	"Archmage Aurange",
+			"alcove_result":	"Aurange",
+			"castle_default":	"Castle",
+			"own_castle":	"Your castle",
+			"search":	"Search...",
+			"dismiss_army":	"Dismiss Army",
+			"dismiss_last":	"Dismiss last army",
+			"navigate":	"Go to which continent?",
+			"garrison_pick":	"Garrison which troop?",
+			"remove_pick":	"Remove which troop?",
+			"save_confirm":	"Your game has been saved.",
+			"lose_fallback":	"Sorry.",
+			"win_fallback":	"Congratulations!"
+		},
+		"villain_descriptions":	{
+			"murray":	{
+				"alias":	"None",
+				"features":	"Threadbare clothes, bald\npatch with hair combed to\ncover it, incessant cough.",
+				"crimes":	"Murray is wanted for\nvarious petty crimes as well\nas for treason. He allowed a\ngroup of pirates to enter the\ncastle and free criminals."
+			},
+			"hack":	{
+				"alias":	"The Spitter",
+				"features":	"Bushy ebon beard stained\nwith tobacco juice, numerous\nbattle scars, brash, arrogant\nbehavior.",
+				"crimes":	"Along with many minor\ninfractions, Hack is wanted\nfor conspiracy against the\nCrown and grave-robbing."
+			},
+			"aimola":	{
+				"alias":	"Lady Deceit",
+				"features":	"Excessive use of make-up\nto hide aging features, ever-\npresent lace handkerchief.",
+				"crimes":	"The Princess violated\nher status as a visiting\ndignitary by encouraging a\nmurder and joining the\nconspiracy against the Crown."
+			},
+			"baron_makahl":	{
+				"alias":	"Johnno",
+				"features":	"Expensive and gaudy\nclothes, overweight, and\na scruffy beard.",
+				"crimes":	"Johnno is wanted for\nvarious crimes against the\nKingdom, including leading a\ndirect assault against the\nCrown and conspiracy."
+			},
+			"dread_rob":	{
+				"alias":	"Terror of the Sea",
+				"features":	"Pencil thin moustache\nand elegantly trimmed beard,\nnever without a rapier.",
+				"crimes":	"Rob is wanted for piracy\nas well a conspiracy and for\nbreaking out five traitors\nsentenced to death in the\nRoyal Dungeons."
+			},
+			"caneghor":	{
+				"alias":	"The Majestic Sage",
+				"features":	"Voluminous robes, bald\nhead, magic symbols engraved\non body, levitating ability.",
+				"crimes":	"Canegor is wanted for\ngrave robbing, conspiracy\nagainst the Crown, and\nplundering the Royal Library."
+			},
+			"moradon":	{
+				"alias":	"None",
+				"features":	"Always wearing armor and\nconcealed weapons, has two\nprominent front teeth and an\nunkept beard.",
+				"crimes":	"Sir Moradon, an emissary\nfrom another land, is wanted\nfor joining a conspiracy to\ntopple the kingdom."
+			},
+			"barrowpine":	{
+				"alias":	"The Elf Lord",
+				"features":	"Pointed ears, sharp\nelfin features, pale blue eyes\nwith no whites, glimmering\nenchanted coin.",
+				"crimes":	"The prince is one of the\nleaders of the conspiracy\nagainst the Crown, he also\ntraffics stolen artifacts."
+			},
+			"bargash":	{
+				"alias":	"Old One Eye",
+				"features":	"Single eye centered in\nmiddle of forehead, over ten\nfeet tall, only hair on body\nis in beard.",
+				"crimes":	"Bargash is wanted for\nconspiracy against the Crown\nand for leading an outright\nattack against the King."
+			},
+			"rinaldus":	{
+				"alias":	"The Death Lord",
+				"features":	"Rinaldus is a magically\nanimated skeleton, an undead,\nhe is easily identifiable by\nthe ancient crown he wears.",
+				"crimes":	"Rinaldus is wanted for\nconspiracy against the Crown\nand leading a rebellion on the\ncontinent of Saharia."
+			},
+			"ragface":	{
+				"alias":	"None",
+				"features":	"Ragface is an undead, he\nis covered from head to foot\nin moldering green strips of\ncloth. A rotting smell follows\nhim.",
+				"crimes":	"Conspiracy against the\nCrown and leading an\ninsurrection in Saharia."
+			},
+			"mahk":	{
+				"alias":	"Bruiser",
+				"features":	"Bright orange body hair\non a fluorescent green body, a\ntendency to shout for no\napparent reason.",
+				"crimes":	"Mahk is wanted for the\nconspiracy against the Crown,\nleading a jail break, and for\npiracy on the open seas."
+			},
+			"auric":	{
+				"alias":	"The Barbarian",
+				"features":	"Auric is heavily muscled\nand wears a protective skin\nmade from the hides of baby\nlambs.",
+				"crimes":	"Auric is wanted for\nconspiracy and for leading the\nrebellion of the continent\nSaharia."
+			},
+			"czar_nickolai":	{
+				"alias":	"The Mad Czar",
+				"features":	"The Czar has eyes which\nchange color constantly, also\na sulphuric smell emanates\nfrom his body.",
+				"crimes":	"The Czar is wanted for\nconspiracy against the Crown,\nviolating diplomatic status,\nand murder."
+			},
+			"magus":	{
+				"alias":	"None",
+				"features":	"Pupil-less eyes, flowing\nwhite beard, always wears\ncrimson robes and a matching\nskull cap.",
+				"crimes":	"Magus is wanted for\nconspiracy against the Crown\nand for practicing forbidden\nmagics."
+			},
+			"urthrax":	{
+				"alias":	"The Demon King",
+				"features":	"Green, scaly skin,\nglowing red eyes, horns\nprotruding from sides of head,\nover 7 feet tall.",
+				"crimes":	"Urthrax is wanted for\nconspiracy against the Crown."
+			},
+			"arech":	{
+				"alias":	"Mastermind",
+				"features":	"Arech is an immense\ndragon with a green body and\nblue wings, he breathes fire.",
+				"crimes":	"Arech is wanted for\nleading the conspiracy against\nthe Crown, arranging jail-\nbreaks, fomenting rebellion,\nstealing the Sceptre of Order."
+			}
+		}
+	}
+}

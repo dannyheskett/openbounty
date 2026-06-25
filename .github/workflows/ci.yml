@@ -1,0 +1,68 @@
+name: ci
+
+# Runs on every PR. Linux job builds the dev binary and runs the full
+# test suite (`make test` — unit, e2e, autoplay, and the regression
+# combat-formula digests + save fixtures). Windows + macOS jobs run as
+# cheap insurance that the cross-compile / mac build still works before a
+# release is cut. Doc-only changes skip CI. Pushes to main do nothing —
+# releases are triggered manually via the release workflow.
+
+on:
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: linux (build + tests)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install raylib build + runtime deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
+            libxcursor-dev libxi-dev libasound2-dev
+      - name: Rebuild raylib against runner glibc
+        # The bundled .a was built on glibc 2.38+; relinking on 22.04
+        # (glibc 2.35) fails on __isoc23_* symbols. Always rebuild.
+        run: ./scripts/build_raylib_linux.sh
+      - name: Build dev binary
+        # `make` only compiles + links the game (no test run) since the build
+        # was split debug/release.
+        run: make
+      - name: Run the full test suite
+        # `make test` builds and runs the entire greatest suite: unit, e2e,
+        # autoplay, plus the regression combat-formula digests + save fixtures.
+        run: make test
+
+  smoke-windows:
+    name: windows cross-compile smoke
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install mingw + raylib build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            mingw-w64 mingw-w64-tools binutils-mingw-w64
+      - name: Rebuild raylib for mingw (win64 + win32)
+        run: ./scripts/build_raylib_windows.sh
+      - name: Cross-compile Win64 + Win32
+        run: make windows OPENBOUNTY_VERSION=ci-smoke
+
+  smoke-mac:
+    name: macOS universal smoke
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rebuild raylib universal (arm64 + x86_64)
+        run: ./scripts/build_raylib_mac.sh
+      - name: Build universal binary
+        run: make mac OPENBOUNTY_VERSION=ci-smoke

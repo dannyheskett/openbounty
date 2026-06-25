@@ -1,0 +1,179 @@
+name: release
+
+# Manually triggered from the Actions tab ("Run workflow"). Auto-picks
+# the next sequential release-N tag, builds Linux x86_64, Windows
+# x64+x86, and macOS universal binaries, packages each into the
+# user-facing archive (binary + README + LICENSE + NOTICES, NO
+# .openbounty pack), and creates a GitHub Release with the archives
+# attached and auto-generated notes.
+#
+# Tag is created in the publish job AFTER all builds succeed, so a
+# failed build leaves N unused and the next dispatch reuses it.
+# The dispatched commit SHA is captured up front and used everywhere,
+# so a mid-build push to main does not affect what gets tagged.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write   # create tag + publish release
+
+concurrency:
+  # Never cancel a release mid-build: artifacts won't have a tag and
+  # the next run will reuse N anyway, so cancelling just wastes time.
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: compute next release number
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.next.outputs.version }}
+      sha: ${{ steps.next.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: next
+        name: Compute next release number
+        run: |
+          # Find max N across existing release-N tags; default to 0.
+          last=$(git tag --list 'release-*' \
+                   | sed -n 's/^release-\([1-9][0-9]*\)$/\1/p' \
+                   | sort -n | tail -1)
+          next=$(( ${last:-0} + 1 ))
+          echo "version=$next" >> "$GITHUB_OUTPUT"
+          echo "sha=$GITHUB_SHA"  >> "$GITHUB_OUTPUT"
+          echo "Next release: release-$next at $GITHUB_SHA"
+
+  build-linux-windows:
+    name: linux + windows builds
+    needs: prepare
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux + mingw deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
+            libxcursor-dev libxi-dev libasound2-dev \
+            mingw-w64 mingw-w64-tools binutils-mingw-w64 \
+            zip
+
+      - name: Rebuild raylib against runner glibc (Linux)
+        run: ./scripts/build_raylib_linux.sh
+
+      - name: Run tests
+        # `make test` runs the FULL greatest suite: unit, e2e, autoplay, and
+        # the regression combat-formula digests + save fixtures.
+        run: make test OPENBOUNTY_VERSION=${{ needs.prepare.outputs.version }}
+
+      - name: Rebuild raylib for mingw (win64 + win32)
+        run: ./scripts/build_raylib_windows.sh
+
+      - name: Build release binaries (Linux + Windows)
+        run: make release windows OPENBOUNTY_VERSION=${{ needs.prepare.outputs.version }}
+
+      - name: Package archives
+        run: make dist-linux dist-windows OPENBOUNTY_VERSION=${{ needs.prepare.outputs.version }}
+
+      - name: Verify no .openbounty pack in release archives
+        run: |
+          set -e
+          fail=0
+          for f in dist/*.tar.gz; do
+            if tar -tzf "$f" | grep -q '\.openbounty$'; then
+              echo "FAIL: $f contains a .openbounty pack file"
+              fail=1
+            fi
+          done
+          for f in dist/*.zip; do
+            if unzip -l "$f" | grep -q '\.openbounty$'; then
+              echo "FAIL: $f contains a .openbounty pack file"
+              fail=1
+            fi
+          done
+          [ "$fail" -eq 0 ]
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-windows
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+
+  build-mac:
+    name: macOS universal build
+    needs: prepare
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rebuild raylib universal (arm64 + x86_64)
+        run: ./scripts/build_raylib_mac.sh
+
+      - name: Build universal binary
+        run: make mac OPENBOUNTY_VERSION=${{ needs.prepare.outputs.version }}
+
+      - name: Package archive
+        run: make dist-mac OPENBOUNTY_VERSION=${{ needs.prepare.outputs.version }}
+
+      - name: Verify no .openbounty pack in release archive
+        run: |
+          set -e
+          fail=0
+          for f in dist/*.zip; do
+            if unzip -l "$f" | grep -q '\.openbounty$'; then
+              echo "FAIL: $f contains a .openbounty pack file"
+              fail=1
+            fi
+          done
+          [ "$fail" -eq 0 ]
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac
+          path: dist/*.zip
+
+  publish:
+    name: tag + publish GitHub Release
+    needs: [prepare, build-linux-windows, build-mac]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist-merged
+          merge-multiple: true
+
+      - name: List artifacts
+        run: ls -la dist-merged/
+
+      - name: Create release-N tag at the dispatched commit
+        env:
+          V: ${{ needs.prepare.outputs.version }}
+          SHA: ${{ needs.prepare.outputs.sha }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "release-$V" "$SHA"
+          git push origin "release-$V"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: release-${{ needs.prepare.outputs.version }}
+          name: release-${{ needs.prepare.outputs.version }}
+          target_commitish: ${{ needs.prepare.outputs.sha }}
+          files: dist-merged/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          draft: false

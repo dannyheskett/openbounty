@@ -1,0 +1,47 @@
+# Build output
+build/
+*.o
+*.a
+*.obj
+*.exe
+
+# Release archives (produced by `make dist-*`); the dist/ directory is
+# committed only for its source template (dist/README.txt.in).
+dist/*.tar.gz
+dist/*.zip
+
+# Exemption: the prebuilt raylib static archives ARE committed so a
+# fresh clone is buildable without a separate raylib download step.
+!third_party/raylib-install/lib/libraylib.a
+!third_party/raylib-install-mac/lib/libraylib.a
+!third_party/raylib-install-win64/lib/libraylib.a
+!third_party/raylib-install-win32/lib/libraylib.a
+
+# Raylib source checkout (build artifact; the install dirs above carry
+# the only thing the build actually needs).
+third_party/raylib/
+
+# Scratch dir.
+tmp/
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+*:Zone.Identifier
+
+# Save data (if ever accidentally created in-tree)
+save.dat
+*.sav
+
+# Dev screenshot captures (V-view auto-save + backtick-key shots)
+screenshots/
+
+# Splicer backup (created by tools/splice_overlays.c).
+*.json.bak
+
+# Local Claude Code harness state (session locks, scheduled tasks).
+.claude/
