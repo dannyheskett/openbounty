@@ -159,28 +159,6 @@ int exec_recruit_sources(const Game *g, RecruitSource *out, int cap);
 // refused (e.g. it would empty the army).
 bool exec_dismiss(Game *g, int slot, RecSink *rec);
 
-// try_recruit_for_win / try_recompose_for_win — pre-fight army upgrade helpers.
-// Try each available recruit source to find one whose purchase flips the combat
-// prediction from LOSS to WIN against `tgt`. try_recruit adds a troop to an
-// existing slot; try_recompose swaps the weakest held stack for a stronger type.
-// Both trial on a discarded copy (g unchanged until a winning source is found),
-// then buy for real. Return true if a recruit/recompose was performed. Used by
-// exec_slay (SLAY objectives) and exec_travel (fight-through blocking foes).
-bool try_recruit_for_win(Game *g, Map *map, Fog *fog, const Resources *res,
-                         CombatMode mode, const CombatTarget *tgt,
-                         RecSink *rec, int min_survivors);
-bool try_recompose_for_win(Game *g, Map *map, Fog *fog, const Resources *res,
-                           CombatMode mode, const CombatTarget *tgt,
-                           RecSink *rec, int min_survivors);
-// Full-army rebuild: when the single-slot heuristics above cannot flip a LOSS to a WIN,
-// greedily fills all GAME_ARMY_SLOTS from scratch (simulation-guided, shared gold budget).
-// Validates via predict_combat_eval; realizes via exec_recruit_one per slot.
-// Sources: in-zone dwellings with a confirmed foot-only path; home castle pool (works when
-// already gated in). Off-zone dwellings are excluded — they require sailing to zones that
-// may be undiscovered and consistently fail exec_recruit_one.
-bool try_build_winning_army(Game *g, Map *map, Fog *fog, const Resources *res,
-                            CombatMode mode, const CombatTarget *tgt,
-                            RecSink *rec, int min_survivors);
 
 // --- Town ---
 

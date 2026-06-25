@@ -10,6 +10,7 @@
 
 #include <stddef.h>   // size_t
 #include "player_io.h"   // player_io_reset (normalize the transient I/O queue)
+#include "pending.h"     // pending_reset (clear stale flow state on restore)
 
 void worldsnap_capture(WorldSnapshot *out, const Game *g, const Map *m,
                        const Fog *fog) {
@@ -24,6 +25,14 @@ void worldsnap_restore(const WorldSnapshot *snap, Game *g, Map *m, Fog *fog) {
     *m = snap->map;
     *fog = snap->fog;
     GameRngRestore(snap->rng);
+    // The pending_* globals are process globals not stored in Game/Map/Fog.
+    // Any navigation that consumed a chest mid-route (or stepped onto any
+    // interactive tile) and then failed before answering the flow leaves
+    // pending_flow dirty. Since every worldsnap_capture is taken when
+    // pending_flow == FLOW_NONE (at the start of a planning attempt, after
+    // all previous flows were resolved), restoring always means returning to
+    // that clean state.
+    pending_reset();
 }
 
 static uint64_t fnv_bytes(uint64_t h, const void *buf, size_t n) {

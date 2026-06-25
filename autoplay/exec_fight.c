@@ -97,6 +97,15 @@ bool exec_fight(Game *g, Map *map, RecSink *rec) {
         FlowAnswer no = { FLOW_ANS_NO, 0 };
         player_io_answer(g, map, /*fog=*/NULL, g->res, no,
                          PLAYER_IO_COMBAT_NOT_RUN, &pres);
+        if (rec && rec->prims) {
+            RecPrim rp; memset(&rp, 0, sizeof rp);
+            rp.kind = REC_ANSWER;
+            rp.ans = no;
+            rp.outcome = PLAYER_IO_COMBAT_NOT_RUN;
+            rp.flow = flow;
+            rp.rec_combat_index = -1;
+            recbuf_push(rec->prims, rp);
+        }
         return false;
     }
 
@@ -115,6 +124,15 @@ bool exec_fight(Game *g, Map *map, RecSink *rec) {
             FlowAnswer no = { FLOW_ANS_NO, 0 };
             player_io_answer(g, map, /*fog=*/NULL, g->res, no,
                              PLAYER_IO_COMBAT_NOT_RUN, &pres);
+            if (rec && rec->prims) {
+                RecPrim rp; memset(&rp, 0, sizeof rp);
+                rp.kind = REC_ANSWER;
+                rp.ans = no;
+                rp.outcome = PLAYER_IO_COMBAT_NOT_RUN;
+                rp.flow = flow;
+                rp.rec_combat_index = -1;
+                recbuf_push(rec->prims, rp);
+            }
             return false;
         }
     }
