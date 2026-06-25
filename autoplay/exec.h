@@ -172,6 +172,15 @@ bool try_recruit_for_win(Game *g, Map *map, Fog *fog, const Resources *res,
 bool try_recompose_for_win(Game *g, Map *map, Fog *fog, const Resources *res,
                            CombatMode mode, const CombatTarget *tgt,
                            RecSink *rec, int min_survivors);
+// Full-army rebuild: when the single-slot heuristics above cannot flip a LOSS to a WIN,
+// greedily fills all GAME_ARMY_SLOTS from scratch (simulation-guided, shared gold budget).
+// Validates via predict_combat_eval; realizes via exec_recruit_one per slot.
+// Sources: in-zone dwellings with a confirmed foot-only path; home castle pool (works when
+// already gated in). Off-zone dwellings are excluded — they require sailing to zones that
+// may be undiscovered and consistently fail exec_recruit_one.
+bool try_build_winning_army(Game *g, Map *map, Fog *fog, const Resources *res,
+                            CombatMode mode, const CombatTarget *tgt,
+                            RecSink *rec, int min_survivors);
 
 // --- Town ---
 

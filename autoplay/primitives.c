@@ -439,6 +439,185 @@ bool try_recompose_for_win(Game *g, Map *map, Fog *fog, const Resources *res,
     return false;
 }
 
+// Full-army rebuild: when the single-slot heuristics (try_recruit_for_win /
+// try_recompose_for_win) cannot flip a LOSS to a WIN, build a fresh ArmyTarget across
+// all GAME_ARMY_SLOTS using a simulation-guided greedy. At each slot step every
+// remaining reachable source is trialled via predict_combat_eval; the one whose
+// addition produces the best combat outcome (any WIN beats any LOSS; among equal
+// results, higher surviving hero hp-worth wins) is committed. Stops as soon as the
+// partial trial already wins with >= min_survivors — no need to fill more slots.
+// Sources: in-zone dwellings with a confirmed foot-only path (recruit_source_foot_ok),
+// home castle pool (allowed when hero is already gated in — pre-flight check guards).
+// Off-zone dwellings excluded: require sailing to zones that may be undiscovered.
+// A final predict_combat_eval guards before realizing via exec_recruit_one.
+bool try_build_winning_army(Game *g, Map *map, Fog *fog, const Resources *res,
+                            CombatMode mode, const CombatTarget *tgt,
+                            RecSink *rec, int min_survivors) {
+    static const int SDX[8] = { -1, 0, 1, -1, 1, -1, 0, 1 };
+    static const int SDY[8] = { -1,-1,-1,  0, 0,  1, 1, 1 };
+
+    RecruitSource srcs[64];
+    int ns = exec_recruit_sources(g, srcs, 64);
+    if (ns == 0) return false;
+
+    int  src_maxn[64], src_cost[64];
+    bool src_ok[64];
+
+    for (int i = 0; i < ns; i++) {
+        src_ok[i] = false;
+        // In-zone dwellings: require a confirmed foot-only path (exec_recruit_one forces
+        // foot-only nav via a temporary boat-hide, so the filter and the navigator agree).
+        // Home castle (tier=1): allowed — works whenever the hero is already gated in.
+        // Off-zone dwellings (tier=2): excluded — they require sailing to an undiscovered
+        // zone and consistently fail exec_recruit_one; letting the greedy pick them masks
+        // reachable in-zone sources and causes try_build to return false spuriously.
+        if (srcs[i].tier == RSRC_INZONE_DWELLING)
+            src_ok[i] = recruit_source_foot_ok(g, map, &srcs[i], SDX, SDY);
+        else if (srcs[i].tier == RSRC_HOME_CASTLE)
+            src_ok[i] = true;
+        else
+            src_ok[i] = false;  // RSRC_OFFZONE_DWELLING
+
+        int mn = GameMaxRecruitable(g, srcs[i].troop_id);
+        if (mn <= 0) { src_ok[i] = false; continue; }
+        src_maxn[i] = (srcs[i].avail > 0 && srcs[i].avail < mn) ? srcs[i].avail : mn;
+        const TroopDef *td = troop_by_id(srcs[i].troop_id);
+        src_cost[i] = td ? td->recruit_cost : 0;
+    }
+
+    // Simulation-guided greedy: at each slot, try every remaining reachable source
+    // and commit the one that produces the best predicted fight outcome. Raw HP-yield
+    // ordering is wrong here — high-count weak troops (militia) have more total HP
+    // than low-count strong troops (dragons) yet lose the fight; the simulation
+    // captures the actual damage/armor interaction that the HP proxy misses.
+    ArmyStack trial[GAME_ARMY_SLOTS];
+    memset(trial, 0, sizeof trial);
+    int slot_src[GAME_ARMY_SLOTS];   // source index the greedy picked for each slot
+    memset(slot_src, -1, sizeof slot_src);
+    int n_slots = 0;
+    long remaining = g->stats.gold;
+    bool used[64]; memset(used, 0, sizeof used);
+
+    while (n_slots < GAME_ARMY_SLOTS) {
+        int  best_src = -1, best_try_n = 0, best_surv = 0;
+        long best_post = -1;
+        CombatResult best_r = COMBAT_RESULT_LOSS;
+
+        for (int i = 0; i < ns; i++) {
+            if (!src_ok[i] || used[i]) continue;
+            int aff = src_cost[i] > 0 ? (int)(remaining / src_cost[i]) : src_maxn[i];
+            int try_n = (src_maxn[i] < aff) ? src_maxn[i] : aff;
+            if (try_n <= 0) continue;
+
+            ArmyStack cand[GAME_ARMY_SLOTS];
+            memcpy(cand, trial, sizeof cand);
+            snprintf(cand[n_slots].id, sizeof cand[n_slots].id, "%.23s", srcs[i].troop_id);
+            cand[n_slots].count = try_n;
+
+            int surv = 0; long post_hp = 0;
+            CombatResult r = predict_combat_eval(g, mode, tgt, cand,
+                                                 &surv, NULL, NULL, &post_hp);
+
+            // Rank: any WIN beats any LOSS; among equal results, highest post_hp wins.
+            bool better = (best_src < 0) ||
+                          (r == COMBAT_RESULT_WIN && best_r != COMBAT_RESULT_WIN) ||
+                          (r == best_r && post_hp > best_post);
+            if (better) {
+                best_src = i; best_try_n = try_n;
+                best_r = r; best_post = post_hp; best_surv = surv;
+            }
+        }
+
+        if (best_src < 0) break;
+
+        snprintf(trial[n_slots].id, sizeof trial[n_slots].id,
+                 "%.23s", srcs[best_src].troop_id);
+        trial[n_slots].count = best_try_n;
+        slot_src[n_slots] = best_src;
+        n_slots++;
+        remaining -= (long)best_try_n * src_cost[best_src];
+        used[best_src] = true;
+
+        // Early exit: partial trial already wins — don't spend more slots/gold.
+        if (best_r == COMBAT_RESULT_WIN && best_surv >= min_survivors) break;
+    }
+
+    if (n_slots == 0) return false;
+
+    // Final guard: the sim-greedy may still lose if no reachable combination wins.
+    int surv = 0; long post_hp = 0;
+    if (predict_combat_eval(g, mode, tgt, trial, &surv, NULL, NULL, &post_hp)
+            != COMBAT_RESULT_WIN || surv < min_survivors) {
+        printf("try_build_winning_army: FAIL vs '%s' — %d-slot sim-greedy trial LOSES"
+               " (surv=%d min=%d)\n",
+               tgt->seed_key ? tgt->seed_key : "?", n_slots, surv, min_survivors);
+        return false;
+    }
+
+    // Pre-flight: for home-castle slots the hero must already be gated in — the gate
+    // navigation (exec_reach to INTERACT_CASTLE_GATE) is unreliable from a distance, and
+    // dismiss would have already run before the buy fails. Bail before any side effect.
+    for (int s = 0; s < n_slots; s++) {
+        if (slot_src[s] < 0 || !trial[s].id[0]) continue;
+        if (srcs[slot_src[s]].tier == RSRC_HOME_CASTLE && !g->position.home_castle[0]) {
+            printf("try_build_winning_army: ABORT vs '%s' — slot %d %s needs home castle"
+                   " but hero not gated in\n",
+                   tgt->seed_key ? tgt->seed_key : "?", s, trial[s].id);
+            return false;
+        }
+    }
+
+    // Realize: dismiss troops not in the trial, then buy each trial slot from the
+    // exact source the greedy validated. Using slot_src[] avoids re-enumeration
+    // picking a different source than the one the greedy validated.
+    for (int s = 0; s < GAME_ARMY_SLOTS; s++) {
+        if (!g->army[s].id[0] || g->army[s].count <= 0) continue;
+        bool in_trial = false;
+        for (int t = 0; t < n_slots; t++)
+            if (trial[t].id[0] && strcmp(trial[t].id, g->army[s].id) == 0)
+                { in_trial = true; break; }
+        if (in_trial) continue;
+        if (exec_dismiss(g, s, rec)) s = -1;   // slots compact after dismiss; rescan
+    }
+
+    for (int s = 0; s < n_slots; s++) {
+        if (!trial[s].id[0] || trial[s].count <= 0) continue;
+        int held = 0;
+        for (int st = 0; st < GAME_ARMY_SLOTS; st++)
+            if (g->army[st].id[0] && strcmp(g->army[st].id, trial[s].id) == 0)
+                { held = g->army[st].count; break; }
+        int need = trial[s].count - held;
+        if (need <= 0) continue;
+        if (!exec_recruit_one(g, map, fog, res, &srcs[slot_src[s]], need, rec)) {
+            printf("try_build_winning_army: FAIL vs '%s' — slot %d %s tier=%d gold=%d\n",
+                   tgt->seed_key ? tgt->seed_key : "?", s,
+                   trial[s].id, srcs[slot_src[s]].tier, g->stats.gold);
+            return false;
+        }
+    }
+
+    long committed = army_hp_worth(g->army);
+    printf("try_build_winning_army: OK vs '%s' — %d slots (survival ratio %ld%%)\n",
+           tgt->seed_key ? tgt->seed_key : "?", n_slots,
+           committed > 0 ? post_hp * 100 / committed : 0);
+
+    // Step off the dwelling tile so nav starts from a plain-walkable position on
+    // the subsequent exec_reach for the fight.
+    const Tile *here = MapGetTile(map, g->position.x, g->position.y);
+    if (here && here->interactive != INTERACT_NONE) {
+        for (int k = 0; k < 8; k++) {
+            int nx = g->position.x + SDX[k], ny = g->position.y + SDY[k];
+            const Tile *nt = MapGetTile(map, nx, ny);
+            if (nt && nt->interactive == INTERACT_NONE &&
+                adventure_walkable_on_foot(nt)) {
+                exec_step(g, map, fog, res, SDX[k], SDY[k], rec);
+                break;
+            }
+        }
+    }
+    return true;
+}
+
 // SLAY: a hostile wandering foe at p->id. The foe BOUNCES, so reach it (step ONTO it,
 // raising FLOW_ATTACK_FOE) then resolve the fight (predict-gated in exec_fight).
 static bool exec_slay(const Primitive *p, Game *g, Map *map, Fog *fog,
@@ -466,7 +645,9 @@ static bool exec_slay(const Primitive *p, Game *g, Map *map, Fog *fog,
             bool recruited = try_recruit_for_win(g, map, fog, res, COMBAT_MODE_FOE, &tgt, rec, 1);
             bool recomposed = !recruited &&
                               try_recompose_for_win(g, map, fog, res, COMBAT_MODE_FOE, &tgt, rec, 1);
-            if (recruited || recomposed) {
+            bool rebuilt = !recruited && !recomposed &&
+                           try_build_winning_army(g, map, fog, res, COMBAT_MODE_FOE, &tgt, rec, 1);
+            if (recruited || recomposed || rebuilt) {
                 // Recruitment navigated away; re-approach the foe to re-raise FLOW_ATTACK_FOE.
                 if (!exec_reach(g, map, fog, res, PRIM_DZ(p, g), foe->x, foe->y,
                                 /*fight_through=*/true, rec))
@@ -607,6 +788,9 @@ static bool exec_siege(const Primitive *p, Game *g, Map *map, Fog *fog,
                 if (!recruited)
                     recruited = try_recompose_for_win(g, map, fog, res, COMBAT_MODE_CASTLE,
                                                       &tgt, rec, min_survivors);
+                if (!recruited)
+                    recruited = try_build_winning_army(g, map, fog, res, COMBAT_MODE_CASTLE,
+                                                       &tgt, rec, min_survivors);
                 if (recruited) {
                     // Re-approach the gate to re-raise the siege flow at the new rng_state.
                     if (!exec_reach(g, map, fog, res, PRIM_DZ(p, g), p->x, p->y,

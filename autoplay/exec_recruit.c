@@ -12,6 +12,7 @@
 
 #include "exec.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #include "game.h"           // GameMaxRecruitable / GameBuyTroop / army / position / world
@@ -44,7 +45,7 @@ bool exec_recruit_one(Game *g, Map *map, Fog *fog, const Resources *res,
             if (strcmp(res->castles[i].special.flow, "audience") == 0) {
                 home = &res->castles[i]; break;
             }
-        if (!home) return false;
+        if (!home) { printf("exec_recruit_one: home castle not found\n"); return false; }
 
         // Sail to the home zone first (so the gate scan reads its map); defer if the
         // home zone is undiscovered or the crossing did not land.
@@ -54,14 +55,21 @@ bool exec_recruit_one(Game *g, Map *map, Fog *fog, const Resources *res,
             int zi = -1;
             for (int i = 0; i < res->zone_count; i++)
                 if (strcmp(res->zones[i].id, home->zone) == 0) { zi = i; break; }
-            if (zi < 0 || zi >= GAME_CONTINENTS || !g->world.zones_discovered[zi])
+            if (zi < 0 || zi >= GAME_CONTINENTS || !g->world.zones_discovered[zi]) {
+                printf("exec_recruit_one: home zone '%s' undiscovered (zi=%d)\n", home->zone, zi);
                 return false;
+            }
             exec_travel(g, map, fog, res, home->zone, ctx, cty, /*fight_through=*/false, rec);
-            if (strcmp(home->zone, g->position.zone) != 0) return false;
+            if (strcmp(home->zone, g->position.zone) != 0) {
+                printf("exec_recruit_one: zone crossing to '%s' failed\n", home->zone);
+                return false;
+            }
         }
 
         if (!g->position.home_castle[0]) {
-            // The REAL gate is the INTERACT_CASTLE_GATE tile near the castle body.
+            // Find the INTERACT_CASTLE_GATE tile (the bouncer the hero must step onto).
+            // gate_x/gate_y from the resource is the landing/approach tile — not the gate
+            // itself — so we scan near the castle body tile for the actual gate tile.
             int gx = -1, gy = -1;
             for (int dy = -2; dy <= 2 && gy < 0; dy++)
                 for (int dx = -2; dx <= 2; dx++) {
@@ -70,25 +78,53 @@ bool exec_recruit_one(Game *g, Map *map, Fog *fog, const Resources *res,
                         gx = home->x + dx; gy = home->y + dy; break;
                     }
                 }
-            if (gx < 0) return false;
-            if (!exec_reach(g, map, fog, res, home->zone, gx, gy, /*fight_through=*/true, rec))
+            if (gx < 0) {
+                printf("exec_recruit_one: home gate not found (body=%d,%d)\n",
+                       home->x, home->y);
                 return false;
+            }
+            if (!exec_reach(g, map, fog, res, home->zone, gx, gy, /*fight_through=*/true, rec)) {
+                printf("exec_recruit_one: reach to home gate (%d,%d) FAIL\n", gx, gy);
+                return false;
+            }
         }
-        if (!g->position.home_castle[0]) return false;
+        if (!g->position.home_castle[0]) {
+            printf("exec_recruit_one: at gate but home_castle unset\n");
+            return false;
+        }
 
         int maxn = GameMaxRecruitable(g, src->troop_id);
         int buy = (n < maxn) ? n : maxn;
-        if (buy <= 0) return false;
-        if (GameBuyTroop(g, src->troop_id, buy) != 0) return false;
+        if (buy <= 0) {
+            printf("exec_recruit_one: home castle buy=0 for '%s' (maxn=%d n=%d)\n",
+                   src->troop_id, maxn, n);
+            return false;
+        }
+        if (GameBuyTroop(g, src->troop_id, buy) != 0) {
+            printf("exec_recruit_one: GameBuyTroop FAIL '%s' buy=%d\n", src->troop_id, buy);
+            return false;
+        }
         rec_push_action(rec, RA_RECRUIT_TYPE_N, src->troop_id, buy, 0);
         return true;
     }
 
     // A dwelling, in the current zone or another: reach it (sailing first when
     // off-zone — exec_reach handles the crossing) and answer its recruit flow.
-    if (!exec_reach(g, map, fog, res, src->zone, src->x, src->y, /*fight_through=*/true, rec))
+    // For in-zone dwellings the foot-stranding filter (recruit_source_foot_ok)
+    // already confirmed a foot-only path exists; exec_reach uses the full
+    // boat-aware A* regardless (hero always has a return path if they board).
+    bool reached = exec_reach(g, map, fog, res, src->zone, src->x, src->y, /*fight_through=*/true, rec);
+    if (!reached) {
+        printf("exec_recruit_one: reach FAIL '%s' tier=%d at (%d,%d) zone=%s hero=(%d,%d,%s)\n",
+               src->troop_id, src->tier, src->x, src->y, src->zone,
+               g->position.x, g->position.y, g->position.zone);
         return false;
-    if (pending_flow != FLOW_RECRUIT) return false;
+    }
+    if (pending_flow != FLOW_RECRUIT) {
+        printf("exec_recruit_one: flow FAIL '%s' tier=%d pending=%d (want FLOW_RECRUIT)\n",
+               src->troop_id, src->tier, (int)pending_flow);
+        return false;
+    }
     int maxn = GameMaxRecruitable(g, src->troop_id);
     int buy = (n < maxn) ? n : maxn;
     int aff = recruit_affordable_count(g, src->troop_id);
