@@ -1,0 +1,54 @@
+# Build output
+build/
+*.o
+*.a
+*.obj
+*.exe
+
+# Release archives (produced by `make dist-*`); the dist/ directory is
+# committed only for its source template (dist/README.txt.in).
+dist/*.tar.gz
+dist/*.zip
+
+# Raylib is never committed -- it is built from source into a per-platform
+# install dir by scripts/build_raylib_<platform>.sh, which CI runs before
+# each build and a fresh clone runs once. See README section 2.
+third_party/raylib-install*/
+third_party/raylib/
+
+# Emscripten SDK checkout (~1.6 GB of toolchain). Needed only to build
+# the `web` target; install with:
+#   git clone https://github.com/emscripten-core/emsdk third_party/emsdk
+#   third_party/emsdk/emsdk install latest && third_party/emsdk/emsdk activate latest
+third_party/emsdk/
+
+# Playwright MCP scratch (browser screenshots / console logs).
+.playwright-mcp/
+
+# Scratch dir.
+tmp/
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+# Python bytecode (the project is C-only; never commit interpreter caches)
+__pycache__/
+*.pyc
+*~
+.DS_Store
+Thumbs.db
+*:Zone.Identifier
+
+# Save data (if ever accidentally created in-tree)
+save.dat
+*.sav
+
+# Dev screenshot captures (V-view auto-save + backtick-key shots)
+screenshots/
+
+# Splicer backup (created by tools/splice_overlays.c).
+*.json.bak
+
+# Local Claude Code harness state (session locks, scheduled tasks).
+.claude/

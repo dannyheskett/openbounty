@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<!--
+  Emscripten shell for the `web` target (see the Makefile's web: rule).
+
+  Three jobs beyond hosting the canvas:
+    1. Mount IDBFS at /saves and pull existing saves in BEFORE main() runs,
+       so the save-slot picker sees them. engine/savepath.c's __EMSCRIPTEN__
+       branch resolves the save root to exactly this path.
+    2. Point the game at the preloaded pack via argv. This reuses main.c's
+       existing --pack short-circuit, so engine/pack.c's directory-scanning
+       discovery (meaningless in a virtual filesystem) is never entered.
+    3. Record the first user gesture. Browsers mute any AudioContext created
+       before one, so src/audio.c defers InitAudioDevice until this flips.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenBounty</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      color: #c0c0c0;
+      font-family: monospace;
+      overflow: hidden;
+    }
+    #wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      flex-direction: column;
+    }
+    /* The game renders to a 320x200 offscreen target and blits it with an
+       integer scale (src/shell_frame.c). Keeping the canvas an exact
+       multiple of that and disabling smoothing preserves hard pixel edges. */
+    canvas#canvas {
+      display: block;
+      background: #000;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      outline: none;
+    }
+    #status {
+      padding: 1em;
+      font-size: 14px;
+      text-align: center;
+    }
+    #status.hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <div id="status">Loading OpenBounty&hellip;</div>
+    <canvas id="canvas" tabindex="-1" oncontextmenu="event.preventDefault()"></canvas>
+  </div>
+
+  <script type="text/javascript">
+    var statusEl = document.getElementById('status');
+    var canvasEl = document.getElementById('canvas');
+
+    // First-gesture latch, polled from C by src/audio.c. Browsers refuse to
+    // start an AudioContext until the user has interacted with the page.
+    window.__ob_gesture = 0;
+    ['mousedown', 'keydown', 'touchstart'].forEach(function (ev) {
+      window.addEventListener(ev, function () { window.__ob_gesture = 1; },
+                              { once: true });
+    });
+
+    // Keyboard input has to reach the canvas, not the document body.
+    canvasEl.addEventListener('click', function () { canvasEl.focus(); });
+
+    var Module = {
+      // Reuses main.c's existing --pack short-circuit; the path matches the
+      // --preload-file mapping in the Makefile's web: rule.
+      arguments: ['--pack', '/assets/kings-bounty.openbounty'],
+      canvas: canvasEl,
+      print: function (text) { console.log(text); },
+      printErr: function (text) { console.error(text); },
+
+      preRun: [function () {
+        // Persist saves across reloads. syncfs is async, so hold the runtime
+        // back with a run dependency until the initial load completes --
+        // otherwise main() could reach the save-slot picker before the
+        // slots are readable.
+        Module.FS.mkdir('/saves');
+        Module.FS.mount(Module.IDBFS, {}, '/saves');
+        Module.addRunDependency('ob-idbfs-load');
+        Module.FS.syncfs(true, function (err) {
+          if (err) console.warn('OpenBounty: could not load saves:', err);
+          Module.removeRunDependency('ob-idbfs-load');
+        });
+      }],
+
+      setStatus: function (text) {
+        if (text) {
+          statusEl.textContent = text;
+          statusEl.classList.remove('hidden');
+        } else {
+          statusEl.classList.add('hidden');
+        }
+      },
+
+      onRuntimeInitialized: function () {
+        statusEl.classList.add('hidden');
+        canvasEl.focus();
+      }
+    };
+
+    Module.setStatus('Downloading game data…');
+    window.onerror = function (msg) {
+      Module.setStatus('Error: ' + msg);
+    };
+  </script>
+  {{{ SCRIPT }}}
+</body>
+</html>

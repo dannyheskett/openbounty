@@ -1,0 +1,123 @@
+# Rejects any push that introduces a commit referencing the banned pattern in
+# its message or author/committer lines. GitHub cannot refuse a push before it
+# lands on non-Enterprise plans, so this is detect-and-remediate: a violating
+# push to a branch is force-reset (default branch) or deleted (other branches
+# and tags) within seconds, and the run fails red. Only NEW commits are
+# scanned (range-limited), so pre-existing history does not trip the guard.
+name: attribution-guard
+
+on:
+  push:
+  pull_request:
+  # Lets release/deploy workflows gate on the guard via `uses:`.
+  workflow_call:
+
+permissions:
+  contents: write
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Scan new commits
+        id: scan
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.event.after }}
+          REF: ${{ github.ref }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -u
+          PATTERN='claude|anthropic'
+          ZERO=0000000000000000000000000000000000000000
+
+          # Only push/pull_request events carry new commits to judge. When the
+          # guard is invoked via workflow_call from a dispatch/schedule run,
+          # there is no pushed range (and no before/after SHAs), pass.
+          if [ "$EVENT" != "push" ] && [ "$EVENT" != "pull_request" ]; then
+            echo "violation=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # Ref deletion: nothing to scan.
+          if [ "$EVENT" = "push" ] && { [ "$AFTER" = "$ZERO" ] || [ -z "$AFTER" ]; }; then
+            echo "violation=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+
+          if [ "$EVENT" = "pull_request" ]; then
+            commits=$(git rev-list "origin/$BASE_REF..HEAD")
+          elif [ "$BEFORE" != "$ZERO" ] && git cat-file -e "$BEFORE" 2>/dev/null; then
+            commits=$(git rev-list "$BEFORE..$AFTER")
+          else
+            # New ref (or force push whose old tip is gone): scan commits not
+            # reachable from any other ref.
+            others=$(git for-each-ref --format='%(refname) %(objectname)' refs/remotes/origin refs/tags \
+                     | awk -v ref="${REF#refs/heads/}" '$1 != "refs/remotes/origin/"ref {print $2}')
+            commits=$(git rev-list "$AFTER" --not $others --)
+          fi
+
+          : > /tmp/violations
+          for c in $commits; do
+            if git log -1 --format='%an%n%ae%n%cn%n%ce%n%B' "$c" | grep -qiE "$PATTERN"; then
+              {
+                echo "commit $c"
+                git log -1 --format='%an <%ae> / %cn <%ce>%n%B' "$c" | grep -iE "$PATTERN" | sed 's/^/  /'
+              } >> /tmp/violations
+            fi
+          done
+
+          # Annotated tag messages count too.
+          case "$REF" in refs/tags/*)
+            if git tag -l --format='%(contents)' "${REF#refs/tags/}" | grep -qiE "$PATTERN"; then
+              echo "tag ${REF#refs/tags/} annotation" >> /tmp/violations
+            fi
+          esac
+
+          if [ -s /tmp/violations ]; then
+            echo "violation=true" >> "$GITHUB_OUTPUT"
+            { echo '## Attribution guard: banned reference found'
+              echo '```'
+              cat /tmp/violations
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            cat /tmp/violations
+          else
+            echo "violation=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Remediate violating push
+        if: steps.scan.outputs.violation == 'true' && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BEFORE: ${{ github.event.before }}
+          REF: ${{ github.ref }}
+          DEFAULT: ${{ github.event.repository.default_branch }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -u
+          ZERO=0000000000000000000000000000000000000000
+          case "$REF" in
+            refs/heads/*)
+              branch="${REF#refs/heads/}"
+              if [ "$branch" = "$DEFAULT" ] && [ "$BEFORE" != "$ZERO" ]; then
+                echo "Force-resetting $branch to pre-push state $BEFORE"
+                gh api -X PATCH "repos/$REPO/git/refs/heads/$branch" -f sha="$BEFORE" -F force=true
+              else
+                echo "Deleting branch $branch"
+                gh api -X DELETE "repos/$REPO/git/refs/heads/$branch"
+              fi
+              ;;
+            refs/tags/*)
+              echo "Deleting tag ${REF#refs/tags/}"
+              gh api -X DELETE "repos/$REPO/git/refs/tags/${REF#refs/tags/}"
+              ;;
+          esac
+
+      - name: Fail on violation
+        if: steps.scan.outputs.violation == 'true'
+        run: |
+          echo "Push rejected: commit metadata references the banned pattern."
+          exit 1

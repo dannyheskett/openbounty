@@ -1,0 +1,101 @@
+name: ci
+
+# Runs on every PR targeting main. Each job rebuilds raylib 6.0 from source
+# for its platform (the install dirs are gitignored), then builds openbounty:
+#   - linux:   native gcc, dev binary + the full test suite
+#   - windows: mingw-w64 cross-compile, x64 + x86
+#   - mac:     clang universal binary, arm64 + x86_64
+#   - web:     Emscripten WASM build, uploaded as an artifact
+# Doc-only changes skip CI. Pushes to main do not run this, they go straight
+# to the release workflow, which runs the same tests before publishing.
+
+on:
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: linux (build + tests)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install raylib build + runtime deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
+            libxcursor-dev libxi-dev libasound2-dev
+      - name: Rebuild raylib against runner glibc
+        # The bundled .a was built on glibc 2.38+; relinking on 22.04
+        # (glibc 2.35) fails on __isoc23_* symbols. Always rebuild.
+        run: ./scripts/build_raylib_linux.sh
+      - name: Build dev binary
+        # `make` only compiles + links the game (no test run) since the build
+        # was split debug/release.
+        run: make
+      - name: Run the full test suite
+        # `make test` builds and runs the entire greatest suite: unit, e2e,
+        # autoplay, plus the regression combat-formula digests + save fixtures.
+        run: make test
+
+  smoke-windows:
+    name: windows cross-compile smoke
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install mingw + raylib build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            mingw-w64 mingw-w64-tools binutils-mingw-w64
+      - name: Rebuild raylib for mingw (win64 + win32)
+        run: ./scripts/build_raylib_windows.sh
+      - name: Cross-compile Win64 + Win32
+        run: make windows OPENBOUNTY_VERSION=ci-smoke
+
+  smoke-mac:
+    name: macOS universal smoke
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v7
+      - name: Rebuild raylib universal (arm64 + x86_64)
+        run: ./scripts/build_raylib_mac.sh
+      - name: Build universal binary
+        run: make mac OPENBOUNTY_VERSION=ci-smoke
+
+  web:
+    name: web (WASM via Emscripten)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Emscripten
+        uses: mymindstorm/setup-emsdk@v16
+      # The web target transitively builds the NATIVE binary first: the pack
+      # embedded in openbounty.data is zipped by `./build/debug/openbounty
+      # --pack-dir`, so the Linux toolchain and a Linux raylib are required
+      # even though nothing native ships from this job.
+      - name: Install Linux build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
+            libxcursor-dev libxi-dev libasound2-dev
+      - name: Rebuild raylib against runner glibc
+        run: ./scripts/build_raylib_linux.sh
+      - name: Build raylib (web)
+        run: ./scripts/build_raylib_web.sh
+      - name: Build WASM
+        run: make web OPENBOUNTY_VERSION=ci-smoke
+      - name: Upload web build
+        uses: actions/upload-artifact@v7
+        with:
+          name: openbounty-web
+          path: build/web
