@@ -21,4 +21,8 @@ void overlay_draw(const Game *g, const Map *m, const Fog *f,
 void overlay_draw_dialog(void);
 void overlay_draw_dialog_centered(void);
 
+// Number of pages the current dialog body wraps to in the bottom panel.
+// The pager uses this so its page count matches what the renderer displays.
+int overlay_dialog_page_count(void);
+
 #endif

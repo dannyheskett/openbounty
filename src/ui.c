@@ -2,7 +2,8 @@
 #include "input_host.h"
 #include "ui_host.h"
 #include "ui.h"
-#include "player_io.h"   // engine player-IO message queue 
+#include "overlay.h"     // overlay_dialog_page_count (renderer owns the wrap)
+#include "player_io.h"   // engine player-IO message queue
 #include "raylib.h"
 #include "recorder.h"
 #include <string.h>
@@ -106,15 +107,11 @@ bool dialog_advance(void) {
     const char *body = dialog_body;
     if (!body || !body[0]) return false;
 
-    // Count newlines to estimate pages (7 lines per page).
-    // This is a simple heuristic; overlay.c does proper line-wrapping.
-    int newline_count = 0;
-    for (const char *p = body; *p; p++) {
-        if (*p == '\n') newline_count++;
-    }
-    int estimated_pages = (newline_count / 7) + 1;
-
-    if (dialog_page + 1 < estimated_pages) {
+    // Page count comes from the renderer, which word-wraps to the panel
+    // width. Counting raw newlines here (the old approach) under-counted a
+    // wrapped paragraph and left its overflow unreachable.
+    int pages = overlay_dialog_page_count();
+    if (dialog_page + 1 < pages) {
         dialog_page++;
         return true;
     }

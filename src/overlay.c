@@ -21,6 +21,12 @@
 #define GW  BFONT_GLYPH_W
 #define GH  BFONT_GLYPH_H
 
+// Body rows per page in the bottom message panel. Single-sourced: both the
+// renderer (draw_dialog_ex) and the page-count the pager reads
+// (overlay_dialog_page_count) must use the same value, or dialog_advance and
+// the display disagree about how many pages a message has.
+#define DLG_BOTTOM_BODY_LINES 7
+
 // ---------------------------------------------------------------------------
 // Bottom message frame: a solid black strip covering the map viewport from
 // the status bar downward, plus a 1px yellow frame. This rendering reserves the
@@ -63,6 +69,26 @@ static int consume_line(const char **p, int max_chars,
     out[n] = '\0';
     if (**p == '\n') (*p)++;
     return n + 1;  // consumed at least newline or text
+}
+
+// Pages the current dialog body wraps to in the bottom panel. Counts WRAPPED
+// lines the same way draw_dialog_ex renders them -- same consume_line, same
+// CL_PANEL_COLS width, same rows-per-page -- so the pager (dialog_advance)
+// and the display never disagree. The old pager counted raw newlines, so a
+// long word-wrapped paragraph with few newlines was scored as one page and
+// its overflow was unreachable.
+int overlay_dialog_page_count(void) {
+    const char *body = dialog_body_text();
+    if (!body || !body[0]) return 1;
+    int lines = 0;
+    const char *p = body;
+    char line[128];
+    while (*p) {
+        if (consume_line(&p, CL_PANEL_COLS, line, (int)sizeof line) <= 0) break;
+        lines++;
+    }
+    int pages = (lines + DLG_BOTTOM_BODY_LINES - 1) / DLG_BOTTOM_BODY_LINES;
+    return pages < 1 ? 1 : pages;
 }
 
 // ---------------------------------------------------------------------------
@@ -122,7 +148,7 @@ static void draw_dialog_ex(DialogMode mode) {
         y = CL_PANEL_Y;
         w = CL_PANEL_W;
         h = CL_PANEL_H;                 // 68px, rows 0..67 (border on 67)
-        body_lines = 7;
+        body_lines = DLG_BOTTOM_BODY_LINES;
         // Glyphs are GH=8 tall and stack with no leading, so 7 body rows
         // plus a 1-row header cost a fixed 64px. That leaves 4px for
         // pad_y + gap, and the last glyph row must stop short of the
