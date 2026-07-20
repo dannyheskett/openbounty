@@ -536,9 +536,19 @@ static const char *salt_pick_dwelling_troop(const Game *g, int continent,
     int total = troops_count();
     if (lo >= total) return NULL;
     if (hi >= total) hi = total - 1;
-    int idx = game_rng_next(lo, hi);
-    const TroopDef *t = troop_by_index(idx);
-    return (t && t->id[0]) ? t->id : NULL;
+    // Castle-kind troops (militia, archers, pikemen, knights, cavalry) are
+    // recruited only at the home castle (REQ-310); they must never host a
+    // dwelling. The numeric range straddles their catalog indices, so re-roll
+    // whenever one comes up. Bounded guard avoids a spin if the range holds
+    // nothing else; returning NULL then leaves the slot unplaced.
+    for (int guard = 0; guard <= (hi - lo) * 20 + 20; guard++) {
+        int idx = game_rng_next(lo, hi);
+        const TroopDef *t = troop_by_index(idx);
+        if (!t || !t->id[0]) continue;
+        if (strcmp(t->dwelling, "castle") == 0) continue;
+        return t->id;
+    }
+    return NULL;
 }
 
 // Converts a subset of the zone's saltable slots (JSON-declared
@@ -614,7 +624,12 @@ void salt_continent(Game *g, int continent, int min_artifacts, int min_navmaps,
     // friendly
     // foes appear after them in g->foes[] -- but classification is by
     // the per-foe `friendly` flag, not by index ordering.
-    for (int i = 0; i < z->army_count; i++) {
+    // Cap hostiles at the per-continent budget (OpenKB's 35 = MAX_FOES 40 less
+    // the 5 friendly slots). With GAME_MAX_FOES sized for 4 * 40, this keeps
+    // each continent inside its own allocation so no zone starves another.
+    int army_cap = z->army_count < GAME_MAX_HOSTILE_PER_ZONE
+                       ? z->army_count : GAME_MAX_HOSTILE_PER_ZONE;
+    for (int i = 0; i < army_cap; i++) {
         const ResZoneArmy *a = &z->armies[i];
         const char *aid = (a->id[0]) ? a->id : NULL;
         char fallback[32];

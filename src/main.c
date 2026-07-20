@@ -1052,11 +1052,16 @@ int shell_run_game(int argc, char **argv) {
         }
 
         // Town/Castle Gate destination picker (shell_gate.{c,h}): when a gate
-        // spell armed gate_state, show the visited-destination list in the
-        // message box and teleport on a letter press. Same shape as the F10
-        // debug menu (player_io_message + GetKeyPressed letter dispatch). When
-        // the picker is up it consumes input, so skip the rest of the frame.
-        if (gate_menu_tick(&game, &map, &fog) == GATE_MENU_ACTIVE) {
+        // spell armed gate_state, gate_menu_tick opens VIEW_GATE. Selection/ESC
+        // input then lives in the VIEW_GATE branch of the if/else chain below,
+        // NOT in gate_menu_tick. So only short-circuit the frame on which the
+        // picker is freshly opened; while it is already showing, fall through
+        // so its VIEW_GATE branch actually receives keys. (Blanket-skipping
+        // every frame the picker is up starved that branch -> a dead,
+        // unresponsive picker that could only be escaped by rebooting.)
+        bool gate_already_open = (views_active() == VIEW_GATE);
+        if (gate_menu_tick(&game, &map, &fog) == GATE_MENU_ACTIVE &&
+            !gate_already_open) {
             goto end_input;
         }
 
