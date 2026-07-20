@@ -8,7 +8,7 @@
 
 // Keep this in sync with game.h / savegame.c. Bump when the schema changes
 // in a way that can't be read by an older loader.
-#define SAVE_VERSION 8u
+#define SAVE_VERSION 9u
 
 typedef enum {
     SAVE_OK = 0,

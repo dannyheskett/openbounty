@@ -551,6 +551,27 @@ cJSON *state_build_snapshot(const Game *g,
         cJSON_AddItemToObject(root, "foes", arr);
     }
 
+    // ---- dwellings ----
+    // Persist the salt-pinned troop and current count per dwelling. Without
+    // this, a reload wipes dwelling_count to 0 and the visit path re-derives
+    // the troop tier-blind via GameDwellingTroopAt, corrupting which creature
+    // a dwelling offers (and refilling any depleted count).
+    {
+        cJSON *arr = cJSON_CreateArray();
+        for (int i = 0; i < g->dwelling_count; i++) {
+            const DwellingState *d = &g->dwellings[i];
+            cJSON *m = cJSON_CreateObject();
+            cJSON_AddStringToObject(m, "zone", d->zone);
+            cJSON_AddNumberToObject(m, "x", d->x);
+            cJSON_AddNumberToObject(m, "y", d->y);
+            cJSON_AddStringToObject(m, "troop", d->troop_id);
+            cJSON_AddNumberToObject(m, "count", d->count);
+            cJSON_AddNumberToObject(m, "max_population", d->max_population);
+            cJSON_AddItemToArray(arr, m);
+        }
+        cJSON_AddItemToObject(root, "dwellings", arr);
+    }
+
     // ---- map_state (fog per continent, hex-per-row) ----
     // keeps fog per continent. We snapshot every discovered zone
     // into world.continent_fog[]; the *active* zone's live fog wins over

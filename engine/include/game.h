@@ -32,7 +32,15 @@
                                    // on zone re-entry.
 #define GAME_MAX_DWELLINGS   64    // per-zone dwelling state rows
 #define GAME_MAX_PLACEMENTS 128    // randomized objects stamped per-zone at init
-#define GAME_MAX_FOES        64    // per-zone hostile foe state rows
+// OpenKB stored foes as foe_coords[MAX_CONTINENTS][MAX_FOES] = [4][40]: every
+// continent gets its own 40 slots (5 friendly + 35 hostile). OpenBounty keeps a
+// single FLAT foes[] shared across all zones, so the cap must cover all four
+// continents' allocations at once (4 * 40 = 160). A smaller shared cap let the
+// early zones (salted first) exhaust the table and starved the later ones of any
+// foes at all. salt_continent bounds each continent to GAME_MAX_HOSTILE_PER_ZONE
+// hostiles + friendly_foes friendlies so the per-continent 35/5 split holds.
+#define GAME_MAX_HOSTILE_PER_ZONE 35   // hostile wandering armies per continent
+#define GAME_MAX_FOES           160    // flat foe table (4 continents * 40 each)
 
 // Storage caps are compile-time (bound by struct sizes). Tunable constants
 // that define gameplay (day/week, costs, contract cycle length, difficulty

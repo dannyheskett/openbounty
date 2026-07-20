@@ -552,6 +552,35 @@ SaveResult SaveGameRead(const char *path,
         }
     }
 
+    // Dwelling state (v9+). Restores the salt-pinned troop and current count
+    // so a reload does not re-derive the troop tier-blind (GameDwellingTroopAt)
+    // or refill a depleted dwelling. The IsArray guard is defensive: the
+    // version check above already rejects saves without this field, but an
+    // empty array simply leaves dwelling_count at 0 (lazy re-materialization).
+    g->dwelling_count = 0;
+    cJSON *jdwell = cJSON_GetObjectItem(root, "dwellings");
+    if (cJSON_IsArray(jdwell)) {
+        cJSON *m;
+        cJSON_ArrayForEach(m, jdwell) {
+            if (g->dwelling_count >= GAME_MAX_DWELLINGS) break;
+            cJSON *jz = cJSON_GetObjectItem(m, "zone");
+            cJSON *jx = cJSON_GetObjectItem(m, "x");
+            cJSON *jy = cJSON_GetObjectItem(m, "y");
+            cJSON *jt = cJSON_GetObjectItem(m, "troop");
+            cJSON *jc = cJSON_GetObjectItem(m, "count");
+            cJSON *jmp = cJSON_GetObjectItem(m, "max_population");
+            if (!cJSON_IsString(jz) || !cJSON_IsNumber(jx) ||
+                !cJSON_IsNumber(jy)) continue;
+            DwellingState *d = &g->dwellings[g->dwelling_count++];
+            copy_json_string(d->zone, sizeof(d->zone), jz);
+            d->x = jx->valueint;
+            d->y = jy->valueint;
+            copy_json_string(d->troop_id, sizeof(d->troop_id), jt);
+            d->count = cJSON_IsNumber(jc) ? jc->valueint : 0;
+            d->max_population = cJSON_IsNumber(jmp) ? jmp->valueint : d->count;
+        }
+    }
+
     // Fog. The save format stores one entry per discovered continent
     // under map_state[zone_id], each with a "fog" hex-per-row array.
     // We populate world.continent_fog[] for every zone present, then

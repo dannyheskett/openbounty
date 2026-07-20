@@ -340,7 +340,7 @@ except where a deviation is explicitly flagged (§34).
   | `GAME_MAX_MUTATIONS` | 1024 | Consumed-tile records (artifact pickups, opened chests). Raised from 64, a four-continent playthrough collects 50+ chests per continent; overflow silently dropped consumed entries and chests respawned on re-entry. |
   | `GAME_MAX_DWELLINGS` | 64 | Per-game dwelling state rows |
   | `GAME_MAX_PLACEMENTS` | 128 | Salt-time randomized placements |
-  | `GAME_MAX_FOES` | 64 | Foe state rows (hostile + friendly share the table) |
+  | `GAME_MAX_FOES` | 160 | Foe state rows (hostile + friendly share the flat table). Sized for all four continents at once: OpenKB's `foe_coords[4][40]` gave each continent its own 40 slots (35 hostile + 5 friendly); the flat shared table must therefore hold 4 × 40 = 160, or the first-salted continents exhaust it and later ones (Archipelia, Saharia) get no foes. `salt_continent` caps each continent to `GAME_MAX_HOSTILE_PER_ZONE` (35) hostiles + 5 friendlies. |
   | `CONTRACT_CYCLE_MAX` | 8 | Contract cycle buffer (real length from `res->contract.cycle_length`) |
 
 - **REQ-111.** Tunable constants that *define gameplay* (day/week lengths,
@@ -460,7 +460,7 @@ except where a deviation is explicitly flagged (§34).
   | `consumed[1024]` + `consumed_count` | `TileMutation` | Permanently consumed tiles |
   | `dwellings[64]` + `dwelling_count` | `DwellingState` | Per-dwelling recruit pools |
   | `placements[128]` + `placement_count` | `SaltedPlacement` | Salt-time placements |
-  | `foes[64]` + `foe_count` | `FoeState` | Hostile + friendly foe rows |
+  | `foes[160]` + `foe_count` | `FoeState` | Hostile + friendly foe rows (all four continents share the flat table) |
 
 ### 4.3 Sub-struct field semantics
 
@@ -1061,9 +1061,15 @@ except where a deviation is explicitly flagged (§34).
 ### 15.1 Foe state and sources
 
 - **REQ-280.** A `FoeState` (§4.3) holds zone, `(x,y)`, `placement_id`,
-  `alive`, `friendly`, and a 5-stack garrison. Up to 64 foes are tracked
-  (`GAME_MAX_FOES`); static zone armies and salt-placed friendly foes share the
-  array. Static hostile foes come from `zones[].armies[]` with garrisons
+  `alive`, `friendly`, and a 5-stack garrison. Up to 160 foes are tracked
+  (`GAME_MAX_FOES` = 4 continents × 40), and static zone armies and salt-placed
+  friendly foes share the one flat array. Because the array is shared and salted
+  in zone order, the cap must cover every continent's allocation at once — a
+  smaller cap let the early continents exhaust the table and left later ones
+  (Archipelia, Saharia) with no foes. To keep OpenKB's per-continent 40-slot
+  split (`foe_coords[4][40]`), `salt_continent` bounds each continent to
+  `GAME_MAX_HOSTILE_PER_ZONE` (35) hostiles plus its `friendly_foes` (5)
+  friendlies. Static hostile foes come from `zones[].armies[]` with garrisons
   pre-rolled at salt time (`roll_hostile_garrison`); friendly foes are
   salt-placed with placeholder garrisons re-rolled on join (§15.5).
 
