@@ -535,6 +535,8 @@ cJSON *state_build_snapshot(const Game *g,
             cJSON_AddStringToObject(m, "zone", f->zone);
             cJSON_AddNumberToObject(m, "x", f->x);
             cJSON_AddNumberToObject(m, "y", f->y);
+            cJSON_AddNumberToObject(m, "origin_x", f->origin_x);
+            cJSON_AddNumberToObject(m, "origin_y", f->origin_y);
             cJSON_AddStringToObject(m, "id", f->placement_id);
             cJSON_AddBoolToObject  (m, "alive", f->alive);
             cJSON_AddBoolToObject  (m, "friendly", f->friendly);

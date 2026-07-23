@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Save format v10 (SAVE_VERSION, savegame.h) -- JSON, mirrors the Game struct
+// Save format v11 (SAVE_VERSION, savegame.h) -- JSON, mirrors the Game struct
 // in game.h for human
 // readability. IDs are strings (e.g. "knight", "peasants", "murray").
 // Fog is stored per-continent, one hex string per row (each hex nibble
@@ -517,10 +517,16 @@ SaveResult SaveGameRead(const char *path,
             cJSON *jg  = cJSON_GetObjectItem(m, "garrison");
             if (!cJSON_IsString(jz) || !cJSON_IsNumber(jx) ||
                 !cJSON_IsNumber(jy) || !cJSON_IsString(jid)) continue;
+            cJSON *jox = cJSON_GetObjectItem(m, "origin_x");
+            cJSON *joy = cJSON_GetObjectItem(m, "origin_y");
             FoeState *f = &g->foes[g->foe_count++];
             copy_json_string(f->zone, sizeof(f->zone), jz);
             f->x = jx->valueint;
             f->y = jy->valueint;
+            // origin defaults to the current tile if absent (a foe that has
+            // not wandered is at its origin), keeping older-shaped rows sane.
+            f->origin_x = cJSON_IsNumber(jox) ? jox->valueint : f->x;
+            f->origin_y = cJSON_IsNumber(joy) ? joy->valueint : f->y;
             copy_json_string(f->placement_id, sizeof(f->placement_id), jid);
             f->alive = cJSON_IsBool(ja) ? cJSON_IsTrue(ja) : true;
             // Legacy saves predate the `friendly` flag -- fall back to

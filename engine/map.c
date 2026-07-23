@@ -126,7 +126,8 @@ static Tile *tile_at(Map *map, int x, int y) {
 // `t->interactive` (gameplay) and `t->art` (rendering); the renderer in
 // map_render.c looks up `t->art` to pick the sprite, so every
 // branch must set it or the object renders as the underlying terrain.
-static void stamp_objects(Map *map, const Resources *res, const ResZone *z) {
+static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
+                          const Game *game) {
     for (int i = 0; i < z->sign_count; i++) {
         Tile *t = tile_at(map, z->signs[i].x, z->signs[i].y);
         if (!t) continue;
@@ -195,6 +196,12 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z) {
         }
     }
     for (int i = 0; i < z->chest_count; i++) {
+        // A chest slot salted into a friendly foe is no longer a chest -- the
+        // foe was placed here (or wandered off, or was recruited). Suppress the
+        // chest so the foe isn't shadowed at spawn and no phantom chest is left
+        // behind afterwards. stamp_placements then stamps the live foe here.
+        if (GameFriendlyFoeOriginAt(game, z->id, z->chests[i].x, z->chests[i].y))
+            continue;
         Tile *t = tile_at(map, z->chests[i].x, z->chests[i].y);
         if (!t) continue;
         t->interactive = INTERACT_TREASURE_CHEST;
@@ -308,9 +315,17 @@ static void stamp_placements(Map *map, const Game *game, const char *zone_id) {
 void MapStampFoe(Map *map, int x, int y, const char *placement_id) {
     Tile *t = tile_at(map, x, y);
     if (!t) return;
-    // Never clobber a non-foe overlay (chest / gate / dwelling); a foe should
-    // never share a tile with one, but be defensive.
-    if (t->interactive != INTERACT_NONE && t->interactive != INTERACT_FOE) return;
+    // Never clobber a non-foe overlay (gate / dwelling / town / artifact); a
+    // foe should never share a tile with one. The ONE exception is a treasure
+    // chest: a chest coinciding with a live foe is always the foe's own origin
+    // slot (a chest slot salted into a friendly foe), because foe_can_stand
+    // forbids a foe from ever standing on a real chest. stamp_objects normally
+    // suppresses that origin chest; this override is the belt-and-suspenders
+    // guard for any path that stamped one anyway.
+    bool spurious_chest = (t->interactive == INTERACT_TREASURE_CHEST);
+    if (t->interactive != INTERACT_NONE && t->interactive != INTERACT_FOE &&
+        !spurious_chest)
+        return;
     t->interactive = INTERACT_FOE;
     copy_string(t->id, sizeof(t->id), placement_id);
     copy_string(t->art, sizeof(t->art), "wandering_army");
@@ -344,7 +359,7 @@ bool MapLoadZoneWithPlacements(Map *map, const Resources *res,
     }
     memset(map, 0, sizeof(*map));
     if (!load_dat(map, res, zone)) return false;
-    stamp_objects(map, res, zone);
+    stamp_objects(map, res, zone, game);
     stamp_placements(map, game, zone_id);
     return true;
 }

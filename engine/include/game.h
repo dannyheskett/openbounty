@@ -148,6 +148,13 @@ typedef struct {
 typedef struct {
     char zone[24];
     int  x, y;
+    int  origin_x, origin_y; // spawn tile; never changes as the foe wanders.
+                             // A friendly foe is salted onto a chest slot, so
+                             // its origin is a chest slot the world must NOT
+                             // render/behave as a treasure chest -- neither
+                             // while the foe is alive (it IS the foe) nor after
+                             // it is recruited (the slot is spent). stamp_objects
+                             // suppresses the chest at every friendly origin.
     char placement_id[32];
     Unit garrison[GAME_ARMY_SLOTS];
     bool alive;
@@ -740,6 +747,12 @@ int  GameComputeScore(const Game *g);
 // until GameInit resets state.
 FoeState *GameFindFoe(Game *g, const char *placement_id);
 const FoeState *GameFindFoeConst(const Game *g, const char *placement_id);
+
+// True if a FRIENDLY foe was salted onto the chest slot at (zone,x,y). Such a
+// slot must never be stamped as a treasure chest -- while the foe lives it IS
+// the foe, and once recruited/killed the slot is spent. Matches alive and dead
+// foes alike. Used by the map loader to suppress the phantom-chest overlay.
+bool GameFriendlyFoeOriginAt(const Game *g, const char *zone, int x, int y);
 
 // The foe pursuit gate (play.c:823-829 provenance): a foe follows only when
 // within this many tiles on EACH axis of the hero's previous position.

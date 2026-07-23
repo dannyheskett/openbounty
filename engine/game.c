@@ -602,6 +602,8 @@ static void add_foe(Game *g, int continent, const char *zone, int x, int y,
     copy_id(f->zone, sizeof(f->zone), zone);
     f->x = x;
     f->y = y;
+    f->origin_x = x;   // pinned to the spawn tile; wander updates x/y, not this
+    f->origin_y = y;
     copy_id(f->placement_id, sizeof(f->placement_id), placement_id);
     f->alive = true;
     f->friendly = friendly;
@@ -2434,6 +2436,21 @@ FoeState *GameFindFoe(Game *g, const char *placement_id) {
 
 const FoeState *GameFindFoeConst(const Game *g, const char *placement_id) {
     return GameFindFoe((Game *)g, placement_id);
+}
+
+bool GameFriendlyFoeOriginAt(const Game *g, const char *zone, int x, int y) {
+    if (!g || !zone) return false;
+    // Match regardless of `alive`: a friendly foe's origin chest slot is spent
+    // the moment the game is salted -- it stays suppressed after the foe is
+    // recruited or killed so the slot never reverts to an openable chest.
+    for (int i = 0; i < g->foe_count; i++) {
+        const FoeState *f = &g->foes[i];
+        if (!f->friendly) continue;
+        if (f->origin_x != x || f->origin_y != y) continue;
+        if (strcmp(f->zone, zone) != 0) continue;
+        return true;
+    }
+    return false;
 }
 
 // Port of foe_closest_offset (OpenKB's play.c:1738).
