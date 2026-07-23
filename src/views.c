@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <ctype.h>
 
 // ---- Active view stack ----------------------------------------------------
 // Views are stacked so sub-screens (e.g. VIEW_RECRUIT_SOLDIERS over
@@ -107,9 +108,14 @@ bool views_gate_update(void) {
         views_dismiss();
         return false;
     }
-    // Letter shortcut: jump straight to that row and confirm.
-    for (int i = 0; i < n && i < 26; i++) {
-        if (input_key_pressed(KEY_A + i)) {
+    // Letter shortcut: each town/castle is keyed by the FIRST LETTER of its
+    // name (Elan's Landing -> 'E'), not its row position -- the original A-Z
+    // gate grid, where the 26 destinations each own a distinct letter
+    // (OPENKB-SPEC 11.5). Press that letter to jump straight to it and confirm.
+    for (int i = 0; i < n; i++) {
+        int letter = toupper((unsigned char)gate_view.list[i].name[0]) - 'A';
+        if (letter < 0 || letter > 25) continue;
+        if (input_key_pressed(KEY_A + letter)) {
             gate_view.chosen = i;
             views_dismiss();
             return true;
