@@ -31,7 +31,7 @@
 		"chest":	{
 			"chance_gold":	[61, 66, 76, 71],
 			"chance_commission":	[81, 86, 86, 81],
-			"chance_spell_power":	[86, 92, 93, 91],
+			"chance_spell_power":	[83, 89, 89, 86],
 			"chance_max_spells":	[86, 92, 93, 91],
 			"chance_new_spell":	[101, 101, 101, 101],
 			"gold_min":	[0, 4, 9, 19],

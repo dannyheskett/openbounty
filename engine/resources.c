@@ -2191,7 +2191,12 @@ bool resources_load(Resources *res, const char *manifest_path) {
         ResChest *ch = &res->economy.chest;
         static const int def_chance_gold[4]       = { 0x3d, 0x42, 0x4c, 0x47 };
         static const int def_chance_commission[4] = { 0x51, 0x56, 0x56, 0x51 };
-        static const int def_chance_spell_power[4]= { 0x56, 0x5c, 0x5d, 0x5b };
+        // OpenBounty divergence: the original tables set spell_power and
+        // max_spells to identical thresholds, so the spells-known chest reward
+        // was unreachable (see OPENKB-SPEC 13.3). We lower chance_spell_power so
+        // the [chance_spell_power, chance_max_spells) window opens and the
+        // reward can roll. Every other reward's window is byte-identical.
+        static const int def_chance_spell_power[4]= { 0x53, 0x59, 0x59, 0x56 };
         static const int def_chance_max_spells[4] = { 0x56, 0x5c, 0x5d, 0x5b };
         static const int def_chance_new_spell[4]  = { 0x65, 0x65, 0x65, 0x65 };
         static const int def_gold_min[4]          = { 0x00, 0x04, 0x09, 0x13 };

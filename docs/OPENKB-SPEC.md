@@ -4052,6 +4052,18 @@ simplification or a bug; openkb adds a warning "Chance tables for
 treasure are impossible!" to KB_errlog when the empty branch is
 hit.
 
+**OpenBounty divergence (not faithful to the original).** OpenBounty
+treats the empty max_spell branch as a data-entry bug and fixes it by
+lowering `chance_for_spellpower` so a non-empty
+`[spellpower, maxspell)` window opens, splitting the original
+spell_power band roughly in half between the spell-power and
+spells-known rewards. All other reward windows (gold, commission,
+new_spell, empty) are byte-identical to the original. Concretely
+`chance_spell_power` becomes `{83, 89, 89, 86}` while `chance_max_spells`
+keeps the original `{86, 92, 93, 91}`, giving spell-power/spells-known
+windows of {2,3,3,5}/{3,3,4,5} across the four continents. This is the
+one deliberate departure from the original chest tables.
+
 ### 13.4 Gold / commission / max_spell amounts
 
 ```
