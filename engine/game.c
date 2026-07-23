@@ -1490,6 +1490,20 @@ bool GameMaybeRankUp(Game *g) {
     return true;
 }
 
+GameAudienceOutcome GameAudienceWithKing(Game *g, int *out_needed) {
+    if (out_needed) *out_needed = 0;
+    const ClassDef *cls = class_by_id(g->character.cls.id);
+    int rank = g->character.cls.rank_index;
+    if (!cls || rank + 1 >= cls->rank_count) return GAME_AUDIENCE_FINAL_RANK;
+    int needed = cls->ranks[rank + 1].villains_needed - GameVillainsCaught(g);
+    if (needed > 0) {
+        if (out_needed) *out_needed = needed;
+        return GAME_AUDIENCE_MORE_NEEDED;
+    }
+    GameMaybeRankUp(g);
+    return GAME_AUDIENCE_PROMOTED;
+}
+
 int GameArmyTotalLeadership(const Game *g) {
     int total = 0;
     for (int i = 0; i < GAME_ARMY_SLOTS; i++) {

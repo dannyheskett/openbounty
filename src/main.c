@@ -907,6 +907,10 @@ int shell_run_game(int argc, char **argv) {
     if (autoplay_mode) {
         // Visible autoplay (AP-024): resolve headlessly on the oracle's own
         // world, then replay the recording on this identical live world.
+        // Mark the live game as an oracle session so the replay's on-capture
+        // rank promotions match the headless resolve (issue #13 gates that
+        // promotion to real, non-oracle play only).
+        game.oracle_mode = true;
         ShellCtx actx = {
             .game = &game, .map = &map, .fog = &fog, .res = &res,
             .sprites = &sprites, .render_target = &render_target,

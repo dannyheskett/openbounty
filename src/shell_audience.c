@@ -54,25 +54,22 @@ static void audience_substitute(const Game *game, int needed,
 // into a second open_dialog.
 void run_audience_dialog(Game *game, const ResCastle *rc) {
     if (!rc) return;
-    const ClassDef *cls = class_by_id(game->character.cls.id);
-    int caught = GameVillainsCaught(game);
-    int rank   = game->character.cls.rank_index;
+    // The engine owns the promotion (shared with autoplay); the shell only
+    // renders the King's words for whatever outcome it reports.
     int needed = 0;
-    if (cls && rank + 1 < cls->rank_count) {
-        needed = cls->ranks[rank + 1].villains_needed - caught;
-    }
-    bool at_final_rank = !cls || rank + 1 >= cls->rank_count;
-
     const char *branch;
-    if (needed > 0) {
-        branch = rc->special.audience_more_needed;
-    } else if (!at_final_rank) {
-        GameMaybeRankUp(game);
-        // After rank-up, character.cls.rank_title now reflects the new
-        // rank -- substitution below picks that up.
-        branch = rc->special.audience_rank_up;
-    } else {
-        branch = rc->special.audience_final_rank;
+    switch (GameAudienceWithKing(game, &needed)) {
+        case GAME_AUDIENCE_MORE_NEEDED:
+            branch = rc->special.audience_more_needed;
+            break;
+        case GAME_AUDIENCE_PROMOTED:
+            // rank_title now reflects the new rank -- substitution picks it up.
+            branch = rc->special.audience_rank_up;
+            break;
+        case GAME_AUDIENCE_FINAL_RANK:
+        default:
+            branch = rc->special.audience_final_rank;
+            break;
     }
 
     // Build the king's message (page 2) with substitutions applied.

@@ -188,8 +188,15 @@ bool flow_apply_siege_villain(Game *g, const Resources *res,
     if (contract_match) {
         if (captured) reward_gold = captured->reward;
         GameFulfillContract(g, caught_vid);
-        GameMaybeRankUp(g);
-        ranked_up = (g->character.cls.rank_index != prev_rank);
+        // Real play (issue #13): the hero advances in rank ONLY via an audience
+        // with King Maximus (shell_audience.c / OPENKB-SPEC 22), never on
+        // capture. The autoplay oracle (g->oracle_mode) keeps the legacy
+        // on-capture promotion so its search stays efficient and byte-identical
+        // to the baseline -- a real player never sets oracle_mode.
+        if (g->oracle_mode) {
+            GameMaybeRankUp(g);
+            ranked_up = (g->character.cls.rank_index != prev_rank);
+        }
     }
 
     if (caught_vid[0]) {
