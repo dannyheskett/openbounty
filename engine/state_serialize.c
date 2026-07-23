@@ -307,7 +307,7 @@ cJSON *state_build_snapshot(const Game *g,
         cJSON_AddBoolToObject  (s, "won", g->stats.won);
         cJSON_AddNumberToObject(s, "last_commission", g->stats.last_commission);
         cJSON *opts = cJSON_CreateArray();
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 7; i++) {
             cJSON_AddItemToArray(opts, cJSON_CreateNumber(g->stats.options[i]));
         }
         cJSON_AddItemToObject(s, "options", opts);

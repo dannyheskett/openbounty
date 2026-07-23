@@ -128,7 +128,7 @@ typedef struct {
     int  fog_sight;
     // Initial player state defaults, used by GameInit when no override exists.
     char default_name[RES_NAME_LEN];   // fallback when player enters no name
-    int  default_options[8];           // delay, sounds, walk_beep, anim, army_size, cga, music, (reserved)
+    int  default_options[7];           // delay, sounds, walk_beep, anim, cga, music, volume
 } ResWorld;
 
 typedef struct {

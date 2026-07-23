@@ -267,7 +267,7 @@ void GameInitSeeded(Game *g, const char *name, int pclass, int difficulty,
     }
 
     // Step 9 (play.c:435-441): Default player options.
-    for (int oi = 0; oi < 8; oi++) {
+    for (int oi = 0; oi < 7; oi++) {
         g->stats.options[oi] = g->res ? g->res->world.default_options[oi] : 1;
     }
 

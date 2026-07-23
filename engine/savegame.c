@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Save format v8 (SAVE_VERSION, savegame.h) -- JSON, mirrors the Game struct
+// Save format v10 (SAVE_VERSION, savegame.h) -- JSON, mirrors the Game struct
 // in game.h for human
 // readability. IDs are strings (e.g. "knight", "peasants", "murray").
 // Fog is stored per-continent, one hex string per row (each hex nibble
@@ -232,7 +232,7 @@ SaveResult SaveGameRead(const char *path,
             int i = 0;
             cJSON *it;
             cJSON_ArrayForEach(it, jopts) {
-                if (i >= 8) break;
+                if (i >= 7) break;
                 if (cJSON_IsNumber(it))
                     g->stats.options[i] = it->valueint;
                 i++;

@@ -11,7 +11,7 @@
 		"zone_noun":	"continent",
 		"zone_noun_plural":	"continents",
 		"default_name":	"Hero",
-		"default_options":	[4, 1, 1, 1, 1, 1]
+		"default_options":	[4, 1, 1, 1, 1]
 	},
 	"time":	{
 		"day_steps":	40,
@@ -4484,11 +4484,6 @@
 			}, {
 				"id":	"animation",
 				"label":	"Animation",
-				"type":	"bool",
-				"default":	1
-			}, {
-				"id":	"army_size",
-				"label":	"Army Size",
 				"type":	"bool",
 				"default":	1
 			}, {

@@ -878,12 +878,12 @@ int shell_run_game(int argc, char **argv) {
         // controls panel and the live audio push agree. The rows are
         // also rendered grayed-out and ignore input.
         game.stats.options[1] = 0;  // Sounds
-        game.stats.options[6] = 0;  // Music
-        game.stats.options[7] = 0;  // Volume
+        game.stats.options[5] = 0;  // Music
+        game.stats.options[6] = 0;  // Volume
     }
     audio_set_sounds_enabled(game.stats.options[1] != 0);
-    audio_set_music_enabled (game.stats.options[6] != 0);
-    audio_set_master_volume (game.stats.options[7]);       // Volume 0..9
+    audio_set_music_enabled (game.stats.options[5] != 0);
+    audio_set_master_volume (game.stats.options[6]);       // Volume 0..9
     audio_set_track(AUDIO_TRACK_OPENWORLD);
 
     double hero_anim_next = 0.0;
@@ -929,8 +929,8 @@ int shell_run_game(int argc, char **argv) {
     while (!frame_host_should_close() && !quit_requested) {
         // Audio: drive music streaming + react to live toggle changes.
         audio_set_sounds_enabled(game.stats.options[1] != 0);
-        audio_set_music_enabled (game.stats.options[6] != 0);
-        audio_set_master_volume (game.stats.options[7]);
+        audio_set_music_enabled (game.stats.options[5] != 0);
+        audio_set_master_volume (game.stats.options[6]);
         audio_tick();
         if ((input_key_down(KEY_LEFT_ALT) || input_key_down(KEY_RIGHT_ALT)) &&
             input_key_pressed(KEY_ENTER)) {

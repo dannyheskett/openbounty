@@ -470,7 +470,7 @@ except where a deviation is explicitly flagged (§34).
   `time_stop` (overworld steps where the day does not advance),
   `steps_left_today`, `days_left`, `game_over` (set when `days_left` hits 0),
   `last_commission` and `last_astrology_troop` (UI carry from the most recent
-  week-end), and `options[8]` (the controls-menu settings, persisted per game,
+  week-end), and `options[7]` (the controls-menu settings, persisted per game,
   parallel to `res->controls.items[]`).
 - **REQ-144.** `Character` has held: `name[16]`, `cls` (a `ClassState`:
   class id, `rank_index` 0..3, denormalized `rank_id` + `rank_title`),
@@ -1762,8 +1762,8 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   `src/input.c`, which also maps the gamepad. The render exit key is disabled
   so `Escape` dismisses overlays rather than closing the window.
 - **REQ-441.** The Controls menu (`VIEW_CONTROLS`) exposes per-game settings
-  persisted in `Game.stats.options[8]` (parallel to `res->controls.items[]`):
-  animation delay, sounds, walk-beep, animation toggle, army-size display, etc.
+  persisted in `Game.stats.options[7]` (parallel to `res->controls.items[]`):
+  animation delay, sounds, walk-beep, animation toggle, CGA, music, volume.
   Meta keys: Alt+Enter fullscreen, backtick screenshot
   (`screenshots/shot_NNNN.png`, `src/screenshot.c`), `Q` save-and-quit,
   `Ctrl+Q` fast quit (`src/shell_fastquit.c`).

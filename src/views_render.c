@@ -238,16 +238,9 @@ static void draw_army(const Game *g, const Sprites *s) {
         char buf[96];
 
         const ResUI *ui = &g->res->ui;
-        // Army Size option (4): 0 = exact count, 1 = fuzzy display
-        if (g->stats.options[4] == 0) {
-            snprintf(buf, sizeof(buf), "%3d %s", g->army[i].count, t->name);
-        } else {
-            const char *count_str = resources_count_bucket_label(
-                ui->count_buckets_army_view,
-                ui->count_buckets_army_view_n,
-                g->army[i].count, "");
-            snprintf(buf, sizeof(buf), "%s %s", count_str, t->name);
-        }
+        // The original army roster always shows exact troop counts. (The
+        // "Army Size" fuzzy-display toggle was never in the original game.)
+        snprintf(buf, sizeof(buf), "%3d %s", g->army[i].count, t->name);
         bfont_draw(buf, tx, ty, PAL_CLR(WHITE));
         snprintf(buf, sizeof(buf), "%s%2d %s%2d",
                  ui->army_skill, t->skill_level,

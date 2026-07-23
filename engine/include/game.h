@@ -221,7 +221,7 @@ typedef struct {
     // Controls-menu settings . Parallel to
     // res->controls.items[]. Stored per-game so preferences persist in
     // the save file.
-    int              options[8];
+    int              options[7];
 } Stats;
 
 typedef struct {

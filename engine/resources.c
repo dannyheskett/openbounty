@@ -2388,14 +2388,14 @@ bool resources_load(Resources *res, const char *manifest_path) {
     copy_str(res->world.default_name, sizeof(res->world.default_name),
              json_str(jw, "default_name", "Hero"));
     cJSON *jdo = cJSON_GetObjectItem(jw, "default_options");
-    // Fallback defaults: delay, sounds, walk_beep, anim, army_size, cga, music, volume.
-    static const int default_options_fallback[8] = { 4, 1, 1, 1, 1, 1, 0, 5 };
-    for (int i = 0; i < 8; i++) res->world.default_options[i] = default_options_fallback[i];
+    // Fallback defaults: delay, sounds, walk_beep, anim, cga, music, volume.
+    static const int default_options_fallback[7] = { 4, 1, 1, 1, 1, 0, 5 };
+    for (int i = 0; i < 7; i++) res->world.default_options[i] = default_options_fallback[i];
     if (cJSON_IsArray(jdo)) {
         int i = 0;
         cJSON *v;
         cJSON_ArrayForEach(v, jdo) {
-            if (i >= 8) break;
+            if (i >= 7) break;
             if (cJSON_IsNumber(v)) res->world.default_options[i] = v->valueint;
             i++;
         }
