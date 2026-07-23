@@ -479,15 +479,21 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
             continue;
         }
 
-        // ESC is cancel-only in combat: ESC inside a menu just closes
-        // it; ESC with no menu open is a no-op. Take this *before*
-        // views eat their own input so dismissing always works from the
-        // outer loop.
+        // ESC is cancel-only in combat: ESC inside a menu just closes it.
+        // Take this *before* views eat their own input so dismissing always
+        // works from the outer loop. BUT when a shoot/fly/cast picker is armed,
+        // ESC is that picker's cancel key -- fall through so its branch below
+        // backs the action out (no turn spent). Without this, ESC was swallowed
+        // here and a no-target spell (e.g. Turn Undead with no undead on the
+        // field) trapped the turn with no way out.
         if (input_key_pressed(KEY_ESCAPE)) {
             if (views_active() != VIEW_NONE) {
                 views_dismiss();
+                continue;
             }
-            continue;
+            if (!c.picker_active && c.cast_phase == COMBAT_CAST_NONE)
+                continue;   // nothing armed: ESC is a no-op
+            // else: let the cast / shoot-fly picker branch handle the cancel.
         }
 
         // While a view is open, combat is paused: no AI advancement,
