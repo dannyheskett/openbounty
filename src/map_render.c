@@ -11,6 +11,27 @@
 // on each side of the hero are visible, plus the hero tile.
 #define RADIUS  (CL_MAP_TILES_W / 2)   // 2
 
+// The world-map sprite for a wandering foe: its lead troop (first non-empty
+// garrison stack), animated, so a stack of ogres/skeletons/archers shows that
+// creature instead of a single generic footman (issue #9). Returns {0} when
+// the foe or its troop can't be resolved, so the caller falls back to the
+// generic wandering-army art.
+static Texture2D foe_map_sprite(const Game *g, const Sprites *s,
+                                const char *foe_id, int frame) {
+    if (!g || !foe_id || !foe_id[0]) return (Texture2D){ 0 };
+    const FoeState *f = GameFindFoeConst(g, foe_id);
+    if (!f) return (Texture2D){ 0 };
+    for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+        if (!f->garrison[i].id[0] || f->garrison[i].count <= 0) continue;
+        const TroopDef *t = troop_by_id(f->garrison[i].id);
+        if (!t || t->index < 0 || t->index >= 25) return (Texture2D){ 0 };
+        Texture2D a = s->troop_anim[t->index][frame & 3];
+        if (!a.id) a = s->troop_sprite[t->index];
+        return a;
+    }
+    return (Texture2D){ 0 };
+}
+
 void map_render_draw(const Game *g, const Map *m, const Fog *f,
                       const Sprites *s) {
     if (!g || !m) return;
@@ -37,7 +58,10 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
             if (!FogSeen(f, mx, my)) continue;
             const Tile *t = MapGetTile(m, mx, my);
             if (!t) continue;
-            Texture2D tex = tile_cache_get(t->art);
+            Texture2D tex = (Texture2D){ 0 };
+            if (t->interactive == INTERACT_FOE)
+                tex = foe_map_sprite(g, s, t->id, g->anim_frame);
+            if (tex.id == 0) tex = tile_cache_get(t->art);
             if (tex.id == 0) continue;
             Rectangle src = { 0, 0, (float)tex.width, (float)tex.height };
             int px = CL_MAP_X + tx * CL_TILE_W;

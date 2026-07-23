@@ -8,6 +8,7 @@
 #include "resources.h"
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #define GW  BFONT_GLYPH_W
 #define GH  BFONT_GLYPH_H
@@ -847,8 +848,11 @@ static void draw_gate(void) {
             bool sel = (idx == cursor);
             Color fg = sel ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
             char buf[80];
+            // Key each row by the first letter of its name (OPENKB-SPEC 11.5),
+            // matching the letter the picker actually accepts, not the row idx.
+            char key = (char)toupper((unsigned char)d->name[0]);
             snprintf(buf, sizeof buf, "%s%c) %.*s",
-                     sel ? ">" : " ", (char)('A' + idx),
+                     sel ? ">" : " ", key,
                      GATE_NAME_COL, d->name);
             bfont_draw(buf, x, y, fg);
         }

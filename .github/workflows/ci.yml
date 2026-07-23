@@ -52,10 +52,16 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Install mingw + raylib build deps
+        env:
+          DEBIAN_FRONTEND: noninteractive
         run: |
           sudo apt-get update
+          # C99 cross-compile only: install the two mingw C compilers + binutils
+          # directly. The `mingw-w64` metapackage pulls the whole g++ toolchain
+          # (both arches x posix/win32) + perl -- 39 pkgs / 241 MB, none of the
+          # C++ used here -- whose configure step could also stall the runner.
           sudo apt-get install -y --no-install-recommends \
-            mingw-w64 mingw-w64-tools binutils-mingw-w64
+            gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 binutils-mingw-w64
       - name: Rebuild raylib for mingw (win64 + win32)
         run: ./scripts/build_raylib_windows.sh
       - name: Cross-compile Win64 + Win32

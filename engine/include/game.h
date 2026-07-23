@@ -298,6 +298,12 @@ typedef struct Game {
     // pinned g->seed directly and the game sits outside the catalog.
     bool             seed_from_catalog;
     int              seed_index;      // 0..255 when seed_from_catalog
+    // Oracle/demo session flag (transient; NOT serialized -- a loaded save or a
+    // fresh manual game is always false). When set, rank promotion still fires
+    // automatically on capturing a villain (the legacy behavior the autoplay
+    // search depends on). In real play it is false, so the hero is promoted
+    // ONLY via an audience with King Maximus (OPENKB-SPEC 22, issue #13).
+    bool             oracle_mode;
     Character        character;
     Stats            stats;
     Position         position;
@@ -725,6 +731,20 @@ bool GameVillainContractObtainable(const Game *g, const char *villain_id);
 // Apply rank-up if villains_caught count meets the next rank's threshold.
 // Returns true if rank changed.
 bool GameMaybeRankUp(Game *g);
+
+// Outcome of an audience with King Maximus.
+typedef enum {
+    GAME_AUDIENCE_MORE_NEEDED = 0, // not enough villains caught for the next rank
+    GAME_AUDIENCE_PROMOTED,        // promoted to the next rank this audience
+    GAME_AUDIENCE_FINAL_RANK,      // already at the highest rank
+} GameAudienceOutcome;
+
+// Hold an audience with the King: the ONLY path to a rank promotion (the hero
+// is never promoted automatically on capturing a villain -- OPENKB-SPEC 22).
+// Promotes when the villains-caught count meets the next rank's threshold and
+// reports the outcome; *out_needed (may be NULL) receives how many MORE villains
+// are still needed, meaningful only for GAME_AUDIENCE_MORE_NEEDED.
+GameAudienceOutcome GameAudienceWithKing(Game *g, int *out_needed);
 
 // Army helpers.
 int  GameArmyTotalLeadership(const Game *g);     // sum of troop->hp * count for all stacks

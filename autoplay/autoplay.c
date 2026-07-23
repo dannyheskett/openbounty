@@ -98,6 +98,9 @@ bool autoplay_run(const AutoplayConfig *cfg, AutoplayResult *out) {
     game->res = res;
     GameInitSeeded(game, AUTOPLAY_HERO_NAME, pclass, difficulty, NULL,
                    cfg->seed_index);
+    // Oracle session: keep the legacy on-capture rank promotion (issue #13's
+    // King-audience gating applies only to real play). The search relies on it.
+    game->oracle_mode = true;
     FogInit(fog);
     bool ok = MapLoadZoneWithPlacements(map, res, res->world.starting_zone,
                                         game);
