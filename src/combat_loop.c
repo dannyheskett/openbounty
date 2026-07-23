@@ -618,19 +618,32 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         }
 
         if (acted) {
-            // Park the now-inactive unit on its idle frame so it stops
-            // animating (). The next unit picked
-            // below will start cycling from frame 0 in combat_tick_anim.
-            if (c.unit_id >= 0) {
-                CombatUnit *prev = &c.units[c.side][c.unit_id];
-                if (prev->troop_idx >= 0) prev->frame = 0;
-            }
             combat_compact(&c);
             if (combat_test_dead(&c, COMBAT_SIDE_AI))     { c.result = 1; break; }
             if (combat_test_dead(&c, COMBAT_SIDE_PLAYER)) { c.result = 2; break; }
-            int n = combat_next_unit(&c);
-            if (n < 0) combat_next_turn(&c);
-            else        c.unit_id = n;
+            // Advance to the next unit ONLY when the acting unit's turn is
+            // truly over (u->acted), not after every single action (issue #8).
+            // combat_move_unit / combat_fly_unit set acted only once the unit's
+            // moves/flights are spent (or it attacked); a hero spell never sets
+            // it. So one action no longer ends the turn: a unit walks its full
+            // move_rate, a flyer can attack the same turn it flies, and casting
+            // a spell doesn't skip the current creature. The AI path is
+            // unaffected -- combat_ai_action marks its unit acted each call.
+            const CombatUnit *cur =
+                (c.unit_id >= 0) ? &c.units[c.side][c.unit_id] : NULL;
+            bool unit_done = (!cur) || cur->troop_idx < 0 ||
+                             cur->count == 0 || cur->acted;
+            if (unit_done) {
+                // Park the now-inactive unit on its idle frame so it stops
+                // animating. The next unit picked starts cycling from frame 0.
+                if (c.unit_id >= 0) {
+                    CombatUnit *prev = &c.units[c.side][c.unit_id];
+                    if (prev->troop_idx >= 0) prev->frame = 0;
+                }
+                int n = combat_next_unit(&c);
+                if (n < 0) combat_next_turn(&c);
+                else        c.unit_id = n;
+            }
         }
     }
 
