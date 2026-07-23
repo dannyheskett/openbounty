@@ -58,16 +58,30 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
             if (!FogSeen(f, mx, my)) continue;
             const Tile *t = MapGetTile(m, mx, my);
             if (!t) continue;
-            Texture2D tex = (Texture2D){ 0 };
-            if (t->interactive == INTERACT_FOE)
-                tex = foe_map_sprite(g, s, t->id, g->anim_frame);
-            if (tex.id == 0) tex = tile_cache_get(t->art);
-            if (tex.id == 0) continue;
-            Rectangle src = { 0, 0, (float)tex.width, (float)tex.height };
             int px = CL_MAP_X + tx * CL_TILE_W;
             int py = CL_MAP_Y + ty * CL_TILE_H;
             Rectangle dst = { (float)px, (float)py,
                               (float)CL_TILE_W, (float)CL_TILE_H };
+            Texture2D tex = (Texture2D){ 0 };
+            if (t->interactive == INTERACT_FOE) {
+                tex = foe_map_sprite(g, s, t->id, g->anim_frame);
+                // A troop-override sprite (issue #9) is transparent, unlike the
+                // opaque generic wandering_army tile. Draw the preserved base
+                // terrain under it first, or its background is the black map
+                // fill instead of the ground the foe stands on.
+                if (tex.id) {
+                    Texture2D ground = tile_cache_get(TerrainName(t->terrain));
+                    if (ground.id) {
+                        Rectangle gsrc = { 0, 0, (float)ground.width,
+                                           (float)ground.height };
+                        DrawTexturePro(ground, gsrc, dst, (Vector2){ 0, 0 },
+                                       0.0f, WHITE);
+                    }
+                }
+            }
+            if (tex.id == 0) tex = tile_cache_get(t->art);
+            if (tex.id == 0) continue;
+            Rectangle src = { 0, 0, (float)tex.width, (float)tex.height };
             DrawTexturePro(tex, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
         }
     }
