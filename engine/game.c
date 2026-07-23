@@ -2573,13 +2573,26 @@ int GameFoesFollow(Game *g, Map *map) {
                 int ny = f->y + dy;
                 if (!MapInBounds(map, nx, ny)) continue;
                 bool is_center = (dx == 0 && dy == 0);
+                bool is_hero_tile = (nx == g->position.x &&
+                                     ny == g->position.y);
+                // A flying hero is untouchable (issue #12): the foe must not
+                // step onto the hero's tile (no combat), nor chase the hero
+                // across the water / trees / castle no-go tiles it is flying
+                // over. Skip that tile entirely so only real, foe-standable
+                // ground is ever considered. Gated to real play: the autoplay
+                // oracle (oracle_mode) keeps the legacy behavior its search is
+                // tuned against -- wandering-foe contact gates no objective, so
+                // the winnability verdict is unchanged. The visible replay runs
+                // with oracle_mode set, so it stays consistent with the resolve.
+                if (is_hero_tile && g->character.mount == MOUNT_FLY &&
+                    !g->oracle_mode)
+                    continue;
                 // The hero's tile is normally treated as walkable for the
                 // foe (combat trigger when stepped on). But if the hero is
                 // in the boat, the hero's tile is a water tile that a land
                 // foe could never reach -- so the exception drops away and
                 // foe_can_stand's water check applies.
-                bool hero_reachable = (nx == g->position.x &&
-                                       ny == g->position.y &&
+                bool hero_reachable = (is_hero_tile &&
                                        g->travel_mode != TRAVEL_BOAT);
                 // `if (i || j)` gate: only non-center cells get
                 // the obstacle penalty. The hero's tile is treated as
