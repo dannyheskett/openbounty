@@ -336,7 +336,7 @@ except where a deviation is explicitly flagged (§34).
   | `GAME_ARMY_SLOTS` | 5 | Player army stack slots |
   | `GAME_CONTINENTS` | 4 | Zones in the base pack |
   | `GAME_TOWNS` | 26 | Town record rows |
-  | `GAME_CASTLES` | 26 | Castle record rows (player-trackable castles A..Z; the King's castle is the special 27th catalog entry, §17.1) |
+  | `GAME_CASTLES` | 26 | Castle record rows (player-trackable castles; the King's castle is the special 27th catalog entry, §17.1). A ceiling, not a required count: every consumer loops to `min(res->castle_count, GAME_CASTLES)`, so a pack may declare fewer. |
   | `GAME_MAX_MUTATIONS` | 1024 | Consumed-tile records (artifact pickups, opened chests). Raised from 64, a four-continent playthrough collects 50+ chests per continent; overflow silently dropped consumed entries and chests respawned on re-entry. |
   | `GAME_MAX_DWELLINGS` | 64 | Per-game dwelling state rows |
   | `GAME_MAX_PLACEMENTS` | 128 | Salt-time randomized placements |
@@ -383,8 +383,9 @@ except where a deviation is explicitly flagged (§34).
 - **REQ-125.** `DwellingKind` (`engine/include/dwelling_kind.h`):
   `DWELLING_KIND_PLAINS=0`, `_FOREST`, `_HILL`, `_DUNGEON`.
 - **REQ-126.** `ViewKind` (`engine/include/view_kind.h`): `VIEW_NONE=0`,
-  `VIEW_MENU`, `_CHARACTER`, `_ARMY`, `_SPELLS`, `_CONTRACT`, `_PUZZLE`,
-  `_WORLDMAP`, `_OPTIONS`, `_CONTROLS`, `_TOWN`, `_HOME_CASTLE`, `_OWN_CASTLE`,
+  `VIEW_MENU`, `_CHARACTER`, `_ARMY`, `_SPELLS`, `_GATE` (the Town/Castle Gate
+  destination picker, REQ-322), `_CONTRACT`, `_PUZZLE`, `_WORLDMAP`,
+  `_OPTIONS`, `_CONTROLS`, `_TOWN`, `_HOME_CASTLE`, `_OWN_CASTLE`,
   `_DWELLING`, `_ALCOVE`, `_RECRUIT_SOLDIERS`, `_WIN`, `_LOSE`.
 
 ### 3.5 Troop ability flags (`engine/include/tables.h`)
@@ -1127,8 +1128,12 @@ except where a deviation is explicitly flagged (§34).
 
 ## 16. Towns
 
-- **REQ-290.** The town catalog has held 26 towns (`game.json:towns[]`), one
-  per letter A..Z. Each town carries id, name, zone, `(x,y)`, gate coords, boat
+- **REQ-290.** The town catalog has held 26 towns (`game.json:towns[]`) in the
+  shipped pack, which names one per letter A..Z. That naming is a convention of
+  that pack, not an engine requirement: `GAME_TOWNS` (26) is a storage ceiling
+  and consumers loop to `min(res->town_count, GAME_TOWNS)`, so a pack may
+  declare fewer and may name them freely (REQ-322 selects gate destinations
+  from a list, not by first letter). Each town carries id, name, zone, `(x,y)`, gate coords, boat
   coords, an intel castle, and an optional pinned spell (full table in
   §Appendix A). Each `TownRecord` tracks `visited` and `spell_for_sale`.
 - **REQ-291.** The town view (`src/screens/` / `src/views_render.c`) has shown
@@ -1153,10 +1158,15 @@ except where a deviation is explicitly flagged (§34).
 
 ### 17.1 Catalog
 
-- **REQ-300.** The castle catalog has held **27** castles: 26 villain/monster
-  castles (A..Z) plus King Maximus's castle (full table + difficulty tiers in
-  §Appendix A). Each `CastleRecord` tracks `visited`, `known`, `owner_kind`,
-  `villain_id` (when applicable), and a 5-stack garrison.
+- **REQ-300.** The castle catalog has held **27** castles in the shipped pack:
+  26 villain/monster castles (named A..Z by that pack's convention) plus King
+  Maximus's castle (full table + difficulty tiers in §Appendix A). The 26 is a
+  storage ceiling (`GAME_CASTLES`, §3.1), not a required count. A pack must
+  still declare, per zone, more contract-eligible castles than that zone's
+  villain count, or `salt_villains`' retry loop (REQ-233) exhausts its guard
+  and villains silently fail to place. Each `CastleRecord` tracks `visited`,
+  `known`, `owner_kind`, `villain_id` (when applicable), and a 5-stack
+  garrison.
 
 ### 17.2 Owner kinds
 
@@ -1262,10 +1272,26 @@ except where a deviation is explicitly flagged (§34).
   - **Find Villain** (1000): scans castles for the active contract's villain
     and sets that castle `known = true`. With no active contract, no effect and
     no decrement.
-  - **Castle Gate** (1000) / **Town Gate** (500): await a letter A..Z, match on
-    the destination's first letter; a visited castle/town teleports the hero
-    (via `GameSwitchZone` + setting position). Town Gate's default landing is
-    `(town.boat_x, boat_y)` when no gate is declared.
+  - **Castle Gate** (1000) / **Town Gate** (500): open a cursored destination
+    picker over the visited, gate-eligible castles / towns. The cast function
+    (`cast_castle_gate` / `cast_town_gate`) counts eligible destinations,
+    shows the "none" banner and stops when there are none, and otherwise arms
+    `gate_state = GATE_STATE_SELECT` plus `gate_mode` (0 castle / 1 town). The
+    shell pump (`src/shell_gate.c gate_menu_tick`) then asks the engine for the
+    list through `GameGateDestinations` and opens `VIEW_GATE`
+    (`views_gate_open`); the view's input branch calls `GameGateTeleport`
+    (boat-aware) on selection. The charge is consumed only on a committed
+    teleport, never on cast or cancel. Castle Gate excludes the home/audience
+    castle. Cross-zone destinations are allowed. Town Gate's default landing is
+    `(town.boat_x, boat_y)` when no gate is declared. Destinations are chosen
+    from a list, **not** addressed by first letter: the engine builds
+    `GateDestination` rows (`engine/include/game.h`: display `name`,
+    destination `zone`, landing `x`/`y`) so neither the shell nor autoplay
+    reaches into `g->towns` / `g->castles` directly. The legacy A–Z
+    first-letter addressing this spell once used is gone; nothing requires
+    castle or town names to begin with distinct letters, and the `GATE_MAX 26`
+    buffer bound in `src/shell_gate.c` is the storage cap (§3.1), not a
+    letter-space.
   - **Instant Army** (1000): resolves the troop via
     `class.ranks[rank].instant_army` and count `(spell_power + 1) *
     [3,2,1,1][rank]` (§8.5), added via `GameAddTroop` (free). No empty slot →
@@ -1743,7 +1769,9 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   `src/screens/`. Toggle views: Army (`A`), Character (`V`), Contract (`I`),
   Puzzle (`P`, 5×5 grid derived from villains_caught + artifacts_found),
   Worldmap (`M`), Controls (`C`), Options (`O`). Location views: Town, Home
-  Castle, Own Castle, Dwelling, Alcove, Recruit Soldiers. End views: Win, Lose.
+  Castle, Own Castle, Dwelling, Alcove, Recruit Soldiers. Spell-driven view:
+  Gate, the Town/Castle Gate destination picker opened by a cast rather than
+  by a key (REQ-322). End views: Win, Lose.
 
 ### 29.3 Dialogs and prompts
 
