@@ -211,6 +211,48 @@ mysterious. Expect to iterate. Everything *else* stays frozen (troop stats,
 tier curves, chest tables, economy), so the oracle's report isolates the
 villain blocks and the maps as the only things that can be wrong.
 
+### 3.3 The roster
+
+**DRAFTED — needs review.** Catalog order is the difficulty ramp, so the table
+below *is* the catalog: index 0 is the Emperor's first commission, index 16
+the last. Zone is independent of it, which is why Italia appears at both ends.
+
+Armies are composed from the §7 roster. The reward ladder is the reference
+pack's, unchanged: 5,000 rising to 50,000.
+
+| # | Villain | Zone | Reward | Army (5 stacks) | The idea |
+|---|---|---|---|---|---|
+| 0 | **Catiline** | Italia | 5,000 | 60 Coloni, 40 Coloni, 30 Tirones, 20 Tirones, 15 Lupi | A conspiracy, not an army: debtors and disaffected veterans |
+| 1 | **Spartacus** | Italia | 6,000 | 80 Coloni, 50 Coloni, 40 Tirones, 25 Hastati, 20 Lupi | Slaves, with a hard core of trained gladiators |
+| 2 | **Tacfarinas** | Africa | 7,000 | 60 Coloni, 40 Numidae, 30 Baleares, 30 Lupi, 20 Numidae | A Roman deserter turned desert raider; all skirmish, no line |
+| 3 | **Jugurtha** | Africa | 8,000 | 50 Numidae, 40 Numidae, 40 Baleares, 30 Velites, 25 Lupi | A king with real cavalry and Roman-trained troops he bought |
+| 4 | **Boudica** | Galliae | 9,000 | 100 Coloni, 60 Silvani, 40 Sarmatae, 30 Fauni, 20 Druidae | A mass rising: enormous numbers, poor equipment, druids behind it |
+| 5 | **Civilis** | Galliae | 10,000 | 60 Hastati, 50 Velites, 50 Silvani, 40 Sarmatae, 25 Equites | Batavian auxiliaries who mutinied — he fights Rome *with Rome's own drill* |
+| 6 | **Brennus** | Italia | 12,000 | 70 Sarmatae, 60 Silvani, 50 Fauni, 40 Ligures, 20 Antaei | The Gallic host that sacked Rome in 390 BC |
+| 7 | **Vercingetorix** | Galliae | 14,000 | 80 Sarmatae, 60 Silvani, 50 Ligures, 30 Druidae, 25 Antaei | All Gaul united for the first time |
+| 8 | **Arminius** | Galliae | 16,000 | 90 Sarmatae, 70 Silvani, 50 Antaei, 40 Druidae, 30 Fauni | Teutoburg — forest-heavy, because the forest was the weapon |
+| 9 | **Gildo** | Africa | 18,000 | 140 Numidae, 80 Baleares, 70 Sarmatae, 60 Cyclopes, 40 Furiae | The revolt that cut Rome's grain supply |
+| 10 | **Pyrrhus** | Italia | 20,000 | 120 Hastati, 80 Equites, 70 Gigantes, 60 Velites, 40 Cyclopes | A Hellenistic professional army, elephants at its centre |
+| 11 | **Mithridates** | Oriens | 25,000 | 150 Numidae, 100 Silvani, 80 Furiae, 70 Gigantes, 50 Druidae | Decades of war and the levies of half of Anatolia |
+| 12 | **Hannibal** | Africa | 30,000 | 100 Numidae, 80 Gigantes, 70 Sarmatae, 50 Cyclopes, 40 Equites | Elephants and Numidian horse — the army Rome never solved |
+| 13 | **Zenobia** | Oriens | 35,000 | 150 Sarmatae, 90 Furiae, 70 Equites, 60 Gigantes, 40 Striges | Palmyra's cataphracts, and something worse out of the desert |
+| 14 | **Shapur** | Oriens | 40,000 | 200 Sarmatae, 100 Gigantes, 80 Equites, 60 Furiae, 30 Dracones | The Sassanid who took an emperor alive |
+| 15 | **Alaric** | Italia | 45,000 | 200 Sarmatae, 120 Antaei, 100 Empusae, 80 Striges, 40 Dracones | The sack of Rome, and the dead the sack left behind |
+| 16 | **Attila** | Italia | 50,000 | 150 Dracones, 120 Empusae, 100 Striges, 100 Sarmatae, 80 Furiae | The Scourge of God |
+
+**The ramp.** Summed hit-point worth rises monotonically across the seventeen,
+from about 245 at Catiline to about 45,000 at Attila — the same shape as the
+reference pack, whose final villain fields 150 dragons. Hit-point worth is a
+rough proxy and not the same as difficulty (abilities, morale and ranged
+attacks all move the real answer), which is exactly why the oracle sweep
+decides and this table only proposes.
+
+**Two deliberate shapes.** Civilis fields Roman troops because the Batavian
+revolt was mutinying auxiliaries — the player meets his own army's drill from
+the wrong side, once, early. And Alaric and Attila stand at the top of the
+ladder while sitting in the tier-0 home province, so the player walks past
+them from the opening hour.
+
 ---
 
 ## 4. Artifacts
@@ -437,9 +479,8 @@ The six decisions previously open here are now settled and folded into the
 sections above. What remains is work, not choices:
 
 1. ~~The 25-troop name table~~ — **drafted** (§7), awaiting review.
-2. **The villain armies and rewards** (§3.2), which also fixes catalog order.
-   Now unblocked: composing Boudica's Celts or Shapur's cataphracts needs the
-   troop roster to exist first.
+2. ~~The villain armies and rewards~~ — **drafted** (§3.3), which also fixes
+   catalog order. Awaiting review.
 3. **The four maps** and their settlement placements (§2.3), the largest job.
 4. **Validation** — `--validate-pack 0 255`, then iterate on whatever the
    oracle reports (§3.2).
