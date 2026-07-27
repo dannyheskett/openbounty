@@ -396,7 +396,7 @@ TEST_SRC := $(filter-out src/main.c,$(SHELL_SRC)) $(TOOL_SRC) \
             tools/gamebuilder/gb_workspace.c \
             tools/gamebuilder/gb_undo.c tools/gamebuilder/gb_objects.c \
             tools/gamebuilder/gb_validate.c tools/gamebuilder/gb_package.c \
-            tools/gamebuilder/gb_archive.c \
+            tools/gamebuilder/gb_archive.c tools/gamebuilder/gb_checklist.c \
             tools/mapedit_io.c tools/mapedit_furnish.c \
             $(DEMO_SRC) $(AUTOPLAY_SRC) \
             $(TEST_ONLY_SRC)
@@ -436,6 +436,31 @@ gamebuilder: $(OUT_GB)
 
 $(OUT_GB): $(GB_SRC) $(OUT_ENGLIB) build/version.h Makefile | build
 	gcc $(GB_CFLAGS) $(GB_SRC) $(OUT_ENGLIB) -o $(OUT_GB) $(LDFLAGS)
+
+# GameBuilder ships to end users (GB-010/GB-011), so it cross-compiles for the
+# same desktop targets the game does. The engine archive is rebuilt per target
+# because it is compiled into each binary, not linked from a shared lib.
+OUT_GB_WIN64 := build/openbounty-gamebuilder-x64.exe
+OUT_GB_WIN32 := build/openbounty-gamebuilder-x86.exe
+OUT_GB_MAC   := build/openbounty-gamebuilder-mac
+GB_ENGINE_SRC := $(ENGINE_SRC) $(VENDOR_SRC) engine/host_noop.c
+
+.PHONY: gamebuilder-windows gamebuilder-mac
+gamebuilder-windows: $(OUT_GB_WIN64) $(OUT_GB_WIN32)
+
+$(OUT_GB_WIN64): $(GB_SRC) $(GB_ENGINE_SRC) build/version.h Makefile | build
+	$(WIN64_CC) $(WIN64_CFLAGS) -Ithird_party/raygui -Itools/gamebuilder \
+	    $(GB_SRC) $(GB_ENGINE_SRC) -o $(OUT_GB_WIN64) $(WIN64_LDFLAGS)
+
+$(OUT_GB_WIN32): $(GB_SRC) $(GB_ENGINE_SRC) build/version.h Makefile | build
+	$(WIN32_CC) $(WIN32_CFLAGS) -Ithird_party/raygui -Itools/gamebuilder \
+	    $(GB_SRC) $(GB_ENGINE_SRC) -o $(OUT_GB_WIN32) $(WIN32_LDFLAGS)
+
+gamebuilder-mac: $(OUT_GB_MAC)
+
+$(OUT_GB_MAC): $(GB_SRC) $(GB_ENGINE_SRC) build/version.h Makefile | build
+	$(MAC_CC) $(MAC_CFLAGS) -Ithird_party/raygui -Itools/gamebuilder \
+	    $(GB_SRC) $(GB_ENGINE_SRC) -o $(OUT_GB_MAC) $(MAC_LDFLAGS)
 
 # ---------------------------------------------------------------------------
 # libobengine.a, engine compiled as a static archive. Consumers link

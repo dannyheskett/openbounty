@@ -19,11 +19,13 @@
 #include <string.h>
 #include <sys/stat.h>
 
+// dirent, not windows.h, even on Windows: mingw ships dirent.h, and pulling in
+// windows.h here collides head-on with raylib -- both define Rectangle,
+// CloseWindow and ShowCursor. One directory walk is not worth that fight.
+#include <dirent.h>
 #ifdef _WIN32
-#  include <windows.h>
 #  define GB_SEP '\\'
 #else
-#  include <dirent.h>
 #  include <unistd.h>
 #  define GB_SEP '/'
 #endif
@@ -80,25 +82,6 @@ static void rescan(GbBrowser *b) {
     b->selected = -1;
     b->scroll = (Vector2){ 0, 0 };
 
-#ifdef _WIN32
-    char pat[GB_PATH_MAX];
-    snprintf(pat, sizeof pat, "%s\\*", b->cwd);
-    WIN32_FIND_DATAA fd;
-    HANDLE h = FindFirstFileA(pat, &fd);
-    if (h == INVALID_HANDLE_VALUE) return;
-    do {
-        if (!strcmp(fd.cFileName, ".")) continue;
-        if (b->count >= GB_MAX_ENTRIES) break;
-        GbEntry *e = &b->entry[b->count];
-        snprintf(e->name, sizeof e->name, "%s", fd.cFileName);
-        e->is_dir = (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
-        e->is_pack = has_suffix(e->name, ".openbounty");
-        e->has_manifest = e->is_dir && strcmp(e->name, "..") &&
-                          dir_has_manifest(b->cwd, e->name);
-        if (e->is_dir || e->is_pack) b->count++;
-    } while (FindNextFileA(h, &fd));
-    FindClose(h);
-#else
     DIR *d = opendir(b->cwd);
     if (!d) return;
     struct dirent *de;
@@ -116,7 +99,6 @@ static void rescan(GbBrowser *b) {
         if (e->is_dir || e->is_pack) b->count++;
     }
     closedir(d);
-#endif
     qsort(b->entry, (size_t)b->count, sizeof *b->entry, cmp_entry);
     b->needs_rescan = false;
 }
