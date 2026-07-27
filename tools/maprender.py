@@ -107,10 +107,14 @@ def render_tiles(rows, w, h, codes, pack_dir):
             if not art:
                 continue
             if art not in cache:
-                p = os.path.join(pack_dir, "art", art)
-                if not os.path.exists(p):
-                    p = os.path.join(pack_dir, art)
-                cache[art] = Image.open(p).convert("RGBA") if os.path.exists(p) else None
+                # Same fixed layout the engine uses: src/tile_cache.c resolves
+                # a tile_codes `art` stem as art/tiles/<stem>.png.
+                p = os.path.join(pack_dir, "art", "tiles", art + ".png")
+                cache[art] = (Image.open(p).convert("RGBA")
+                              if os.path.exists(p) else None)
+                if cache[art] is None:
+                    print(f"  warn: no art for tile '{art}' "
+                          f"(looked for {p})")
             t = cache[art]
             if t is not None:
                 img.paste(t, (x * TW, y * TH), t)
