@@ -46,10 +46,18 @@ What he *is*, and what the dialogue should build on:
 
 ### 1.2 The Emperor
 
-**DECIDED.** The home castle's occupant is **Imperator Maximus** — which is
-both a real imperial name (Magnus Maximus, 383–388) and a near-zero change
-from the base pack's King Maximus. He is the source of contracts, the place
-rank is conferred, and the only castle that can never be besieged.
+**DECIDED.** The home castle's occupant is **Imperator Traianus** — Trajan.
+He is the source of contracts, the place rank is conferred, and the only
+castle that can never be besieged.
+
+Trajan is the right man for a game called Glory of Rome: his reign was the
+empire's greatest territorial extent, he took Dacia and campaigned in the
+East, and the Senate awarded him *optimus princeps*, the best of emperors. He
+reads as an authority worth serving rather than a tyrant to be endured.
+
+**Names to avoid.** Maximus, Commodus and Marcus Aurelius all appear in
+*Gladiator* (2000) and will pull the whole pack into that film's orbit. The
+Antonine end of the emperor list is best left alone for the same reason.
 
 ---
 
@@ -106,7 +114,23 @@ country of wooded corridors and **Oriens** a plateau of passes.
 Each zone is its own 64×64 map, not a slice of one world map, so "geographic
 accuracy" means each map resembles its region's coastline at its own scale.
 
-### 2.3 The alcoves
+### 2.3 Castles and towns
+
+**DECIDED.** Named for **real Roman cities**, with the count per zone set by
+what each map's geography actually supports rather than by a target number.
+The engine caps both at 26 but requires neither (§8), so there is no filler
+obligation.
+
+Working sources: Roma, Ostia, Neapolis, Ravenna and Mediolanum in Italia;
+Massilia, Lugdunum, Londinium, Corduba and Colonia Agrippina in Galliae;
+Carthago, Leptis Magna, Cyrene, Alexandria and Lambaesis in Africa;
+Antiochia, Ephesus, Palmyra, Byzantium and Caesarea in Oriens.
+
+**Hard constraint:** Italia hosts six villains, so it needs comfortably more
+than six contract-eligible castles or `salt_villains` starves (§8). That sets
+the floor for the home map's density before any aesthetic consideration.
+
+### 2.4 The alcoves
 
 **DECIDED.** One per zone — where a non-priest class buys the knowledge of
 magic. Mythic Rome supplies real oracles:
@@ -166,7 +190,26 @@ at index 0 and the opening commission is a fight that cannot be won for two
 hundred days.
 
 **Rule: catalog order tracks the intended difficulty ramp, decoupled entirely
-from geography.** Brennus and Spartacus early; Alaric and Attila last.
+from geography.** Brennus and Spartacus early; Alaric and Attila last. The
+concrete ordering falls out of the authored armies (§3.2) rather than being
+chosen separately.
+
+### 3.2 Armies and rewards
+
+**DECIDED: both are re-authored, not inherited.** Each villain's five stacks
+are composed from thematically right troops — Boudica fields Celts, Shapur
+fields cataphracts, Hannibal fields elephants — and the reward ladder is set
+to match. This is the one place the design deliberately gives up the
+frozen-numbers safety net, because a villain fielding the wrong troops is the
+most visible possible failure of a re-theme.
+
+**How winnability is kept, given that:** author for flavour first, then run
+`--validate-pack 0 255` and fix what the oracle reports. A failing seed names
+the first objective it could not clear and the binding cause — gold, stock,
+leadership or reach — so a too-hard villain is diagnosable rather than
+mysterious. Expect to iterate. Everything *else* stays frozen (troop stats,
+tier curves, chest tables, economy), so the oracle's report isolates the
+villain blocks and the maps as the only things that can be wrong.
 
 ---
 
@@ -186,8 +229,22 @@ Several are authentic Roman objects rather than invented ones.
 | *(none — no effect)* | **The Sibylline Fragment** | The Sibylline Books were consulted in crisis and mostly burned. A surviving scrap nobody can read is a better joke than the Book of Necros ever was. |
 | `cheaper_boat_rental` | **The Anchor of Neptune** | |
 
-Zone assignment (two each, `local_idx` 0 and 1) is still open and should
-follow the maps.
+**DECIDED: the Sibylline Fragment stays inert.** No power, faithful to the
+Book of Necros's unimplemented slot (REQ-333), and a better gag than the
+original. Giving it a real effect would mean a ninth entry in the
+`ArtifactPower` enum, which is compiled rather than pack data — that would
+turn a data-only pack into an engine change.
+
+### 4.1 Zone placement
+
+**DECIDED.** Two per zone, sited by theme (`local_idx` 0 and 1).
+
+| Zone | Artifacts | Why there |
+|---|---|---|
+| **Italia** | Senatus Consultum, Sibylline Fragment | The Senate sits in Rome, and the Sibylline Books were kept in Rome with the Sibyl herself at Cumae |
+| **Galliae** | Gladius of Mars, Anchor of Neptune | The Rhine frontier is Rome's endless war; the zone is also the sea-heaviest, holding the Atlantic, the Channel and Gibraltar |
+| **Africa** | Bulla of Jupiter, Anulus Aureus | Jupiter Ammon's oracle is at Siwa; the equestrian order's gold ring belongs with the grain wealth of the African provinces |
+| **Oriens** | Corona Triumphalis, Scutum of Aeneas | Eastern conquest is what Roman triumphs were awarded for, and Aeneas carried his shield out of burning Troy, which stands in Anatolia |
 
 ---
 
@@ -257,8 +314,13 @@ five dwelling families of five, stats unchanged from the reference pack.
 | **Hill** | Mountain tribes, war elephants, and the giants of myth — cyclopes and gigantes at the top. |
 | **Dungeon** | The chthonic tier, and Rome supplies it natively: *lemures* and *larvae* (malevolent dead), *manes* (ancestral shades), *striges* — screech-owl blood-drinkers, a genuine Roman vampire tradition rather than a borrowed one — *empusae*, and a hellhound at the apex. |
 
-The five stat lines per family are fixed; only the names and art change. The
-mapping of name to stat line is the open work.
+The five stat lines per family are fixed; only the names and art change.
+
+**DECIDED: the full 25-name mapping is drafted in one pass and reviewed as a
+table.** Each name has to fit its stat line's mechanics, not just its family —
+a flier must be a thing that flies, a ranged line must be a thing that shoots,
+and the dungeon family must read as undead for Turn Undead and morale group E
+to make sense. That draft is the next deliverable on this document.
 
 ---
 
@@ -287,10 +349,12 @@ mapping of name to stat line is the open work.
 
 **PROPOSED.**
 
-1. **Freeze the numbers.** Copy the reference pack's `game.json` wholesale and
-   change only ids, display names, art paths, zone names, and the villain
-   roster. Every stat line, tier curve, chest table and economy value stays
-   numerically identical.
+1. **Freeze everything except the villain blocks.** Copy the reference pack's
+   `game.json` wholesale and change ids, display names, art paths, zone names,
+   and the villain roster. Troop stat lines, tier curves, chest tables and
+   economy values stay numerically identical. Villain armies and rewards are
+   authored fresh (§3.2) — deliberately the one exception, and therefore the
+   one thing a validation failure can be attributed to alongside the maps.
 2. **Author the four maps.** Four hand-drawn 64×64 ASCII `.dat` files, plus
    the zone object lists (towns, castles, signs, chests, dwellings, armies).
    This is the real design work.
@@ -308,11 +372,15 @@ check in the release workflow, deliberately rather than accidentally.
 
 ---
 
-## 10. Open decisions
+## 10. Next deliverables
 
-- Castle and town counts per zone, and their names.
-- Which two artifacts fall in which zone.
-- Troop names mapped to the twenty-five fixed stat lines.
-- Villain armies and rewards — the two hand-authored dials.
-- Catalog order, which is the difficulty ramp.
-- Whether the Sibylline Fragment stays a joke or gets a real power.
+The six decisions previously open here are now settled and folded into the
+sections above. What remains is work, not choices:
+
+1. **The 25-troop name table** (§7) — the immediate next piece.
+2. **The villain armies and rewards** (§3.2), which also fixes catalog order.
+3. **The four maps** and their settlement placements (§2.3), the largest job.
+4. **Validation** — `--validate-pack 0 255`, then iterate on whatever the
+   oracle reports (§3.2).
+5. **Art commission** against `ART-SPEC.md`, once the troop and villain
+   rosters are final and the file list is therefore known.
