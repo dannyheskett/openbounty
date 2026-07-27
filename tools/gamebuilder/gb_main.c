@@ -16,7 +16,7 @@
 #include <string.h>
 
 #define BAR_H  34
-#define SIDE_W 210
+#define SIDE_W 268
 
 typedef enum {
     MODE_MAPS = 0, MODE_OBJECTS, MODE_CATALOG, MODE_STRINGS,
@@ -195,6 +195,20 @@ static void selftest_tick(bool *quit) {
                 load_zone(0);
             }
         }
+        // Inspect a tile that actually holds an object, so the captured
+        // panel shows real content instead of the empty prompt.
+        if (G.objs.count > 0) {
+            for (int i = 0; i < G.objs.count; i++)
+                if (G.objs.item[i].kind == GB_OBJ_CASTLE ||
+                    G.objs.item[i].kind == GB_OBJ_TOWN) {
+                    G.view.inspect_x = G.objs.item[i].x;
+                    G.view.inspect_y = G.objs.item[i].y;
+                    G.view.selected = i;
+                    G.view.pan.x = -(G.view.inspect_x * 48 * G.view.zoom) + 400;
+                    G.view.pan.y = -(G.view.inspect_y * 34 * G.view.zoom) + 300;
+                    break;
+                }
+        }
         st_step = -1;
     }
     if (st_step == -3) return;
@@ -320,6 +334,111 @@ static void draw_map_side(bool objects_mode) {
     }
     y += 10;
 
+    // --- the inspector (View tool) --------------------------------------
+    // Shown before the paint controls, because View is the default and what
+    // the author is doing most of the time is looking, not editing.
+    if (!objects_mode && G.view.tool == GB_TOOL_VIEW) {
+        DrawText("TILE", x + 10, y, 12, LIGHTGRAY); y += 18;
+        if (G.view.inspect_x < 0) {
+            DrawText("Click a tile to inspect it.", x + 10, y, 11, GRAY);
+            y += 16;
+            DrawText("Nothing is changed in this", x + 10, y, 11, DARKGRAY);
+            y += 13;
+            DrawText("mode.", x + 10, y, 11, DARKGRAY);
+            y += 24;
+        } else {
+            GbTileInfo ti;
+            gb_inspect_tile(&ti, &G.grid[G.view.zone], &G.objs, &G.ws.res,
+                            cur_zone_id(), G.view.inspect_x, G.view.inspect_y);
+            if (ti.valid) {
+                DrawText(TextFormat("%s  (%d, %d)", ti.zone, ti.x, ti.y),
+                         x + 10, y, 12, (Color){ 120, 200, 255, 255 });
+                y += 20;
+
+                DrawText("Terrain", x + 10, y, 11, GRAY);
+                DrawText(gb_terrain_name(ti.terrain), x + 96, y, 11, RAYWHITE);
+                y += 15;
+
+                // The sub-terrain: which of the twelve edge variants this
+                // tile resolved to, and the byte it writes into the .dat.
+                DrawText("Variant", x + 10, y, 11, GRAY);
+                DrawText(ti.variant < 0 ? "plain"
+                                        : TextFormat("edge %02d", ti.variant),
+                         x + 96, y, 11, RAYWHITE);
+                y += 15;
+                DrawText("Art", x + 10, y, 11, GRAY);
+                DrawText(ti.art, x + 96, y, 11, RAYWHITE);
+                y += 15;
+                DrawText("Tile code", x + 10, y, 11, GRAY);
+                DrawText(ti.code ? TextFormat("'%c'  0x%02X", ti.code,
+                                              (unsigned char)ti.code)
+                                 : "(none)", x + 96, y, 11, RAYWHITE);
+                y += 15;
+                DrawText("Walkable", x + 10, y, 11, GRAY);
+                DrawText(ti.blocks_foot && !ti.is_bridge ? "no" : "yes",
+                         x + 96, y, 11,
+                         ti.blocks_foot && !ti.is_bridge
+                             ? (Color){ 255, 150, 120, 255 }
+                             : (Color){ 150, 220, 150, 255 });
+                y += 15;
+                if (ti.is_bridge) {
+                    DrawText("bridge -- walkable and sailable", x + 10, y, 10,
+                             (Color){ 200, 190, 120, 255 });
+                    y += 14;
+                }
+                if (ti.decorative) {
+                    DrawText("decorative alternate tile", x + 10, y, 10,
+                             (Color){ 200, 190, 120, 255 });
+                    y += 14;
+                }
+                y += 8;
+
+                DrawText(TextFormat("ON THIS TILE  (%d)", ti.objects),
+                         x + 10, y, 12, LIGHTGRAY);
+                y += 18;
+                if (ti.objects == 0) {
+                    DrawText("nothing", x + 10, y, 11, DARKGRAY);
+                    y += 16;
+                }
+                for (int i = 0; i < ti.objects; i++) {
+                    const GbObject *o = ti.obj[i];
+                    DrawRectangle(x + 10, y + 2, 8, 8, gb_object_color(o->kind));
+                    bool here = (o->x == ti.x && o->y == ti.y);
+                    DrawText(TextFormat("%s%s", GB_OBJ_NAME[o->kind],
+                                        here ? "" : " (footprint)"),
+                             x + 24, y, 11, RAYWHITE);
+                    y += 14;
+                    DrawText(o->label, x + 24, y, 10,
+                             (Color){ 190, 190, 200, 255 });
+                    y += 16;
+
+                    // The fields that decide how the object behaves, rather
+                    // than making the author open the Catalog to find them.
+                    if (o->node) {
+                        const char *keys[] = { "id", "troop", "title",
+                                               "difficulty_tier", "villain",
+                                               "intel_castle", "spell" };
+                        for (unsigned k = 0; k < sizeof keys / sizeof *keys; k++) {
+                            cJSON *f = cJSON_GetObjectItem(o->node, keys[k]);
+                            if (!f) continue;
+                            const char *val = cJSON_IsString(f) ? f->valuestring
+                                            : cJSON_IsNumber(f)
+                                              ? TextFormat("%g", f->valuedouble)
+                                              : NULL;
+                            if (!val || !*val) continue;
+                            DrawText(TextFormat("%s: %s", keys[k], val),
+                                     x + 24, y, 10, (Color){ 150, 165, 180, 255 });
+                            y += 12;
+                        }
+                    }
+                    y += 4;
+                    if (y > GetScreenHeight() - 140) break;
+                }
+                y += 8;
+            }
+        }
+    }
+
     if (!objects_mode) {
         DrawText("TERRAIN  (1-5)", x + 10, y, 12, LIGHTGRAY); y += 18;
         for (int i = 0; i < TERRAIN_COUNT; i++) {
@@ -337,15 +456,16 @@ static void draw_map_side(bool objects_mode) {
             y += 20;
         }
         y += 8;
-        static const char *TOOL[GB_TOOL_COUNT] = { "Paint", "Fill", "Rect", "Pick" };
-        DrawText("TOOL", x + 10, y, 12, LIGHTGRAY); y += 18;
+        static const char *TOOL[GB_TOOL_COUNT] = { "View", "Paint", "Fill",
+                                                   "Rect", "Pick" };
+        DrawText("TOOL   (V to view)", x + 10, y, 12, LIGHTGRAY); y += 18;
         for (int i = 0; i < GB_TOOL_COUNT; i++) {
-            Rectangle r = { (float)(x + 10 + (i % 2) * 92), (float)(y + (i / 2) * 26),
-                            88, 22 };
+            Rectangle r = { (float)(x + 10 + (i % 2) * 120),
+                            (float)(y + (i / 2) * 26), 116, 22 };
             if (GuiButton(r, TOOL[i])) G.view.tool = (GbTool)i;
             if ((int)G.view.tool == i) DrawRectangleLinesEx(r, 2, YELLOW);
         }
-        y += 60;
+        y += 86;
         DrawText(TextFormat("Brush  %d   [ ]", G.view.brush), x + 10, y, 12,
                  RAYWHITE);
         y += 24;
@@ -400,7 +520,7 @@ static void draw_map_side(bool objects_mode) {
     y += 20;
     DrawText("Ctrl+Z / Ctrl+Y / Ctrl+S", x + 10, y, 10, DARKGRAY);
     y += 14;
-    DrawText("G grid   T flat   O objects", x + 10, y, 10, DARKGRAY);
+    DrawText("V view  G grid  T flat  O objects", x + 10, y, 10, DARKGRAY);
 }
 
 // --- main ---------------------------------------------------------------------
@@ -484,6 +604,11 @@ int main(int argc, char **argv) {
                 } else say("Nothing to redo");
             }
             if (ctrl && IsKeyPressed(KEY_S)) do_save();
+            if (IsKeyPressed(KEY_V)) G.view.tool = GB_TOOL_VIEW;
+            if (IsKeyPressed(KEY_ESCAPE)) {
+                G.view.inspect_x = G.view.inspect_y = -1;
+                G.view.selected = -1;
+            }
             if (IsKeyPressed(KEY_G)) G.view.show_grid = !G.view.show_grid;
             if (IsKeyPressed(KEY_T)) G.view.flat_view = !G.view.flat_view;
             if (IsKeyPressed(KEY_O)) G.view.show_objects = !G.view.show_objects;
