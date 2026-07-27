@@ -375,19 +375,42 @@ static void draw_palette(GbWorkspace *ws, int top) {
     DrawText("Pack palette -- 256 colours, 768 bytes", 12, top + 8, 13, LIGHTGRAY);
     DrawText("The first 16 are the reserved named indices.", 12, top + 26, 11,
              GRAY);
-    (void)ws;
-    // The palette is loaded by the shell's palette.c into PAL[]; drawing it
-    // from there keeps this view honest about what the game will use.
+    // The palette is loaded by the shell's palette.c into PAL[]; editing it
+    // there means this view and the game agree by construction.
     extern Color PAL[];
+    static int sel = 16;
     for (int i = 0; i < 256; i++) {
         int col = i % 16, row = i / 16;
         Rectangle r = { 12.0f + col * 34, (float)top + 50 + row * 26, 32, 24 };
         DrawRectangleRec(r, PAL[i]);
         if (i < 16) DrawRectangleLinesEx(r, 1, (Color){ 255, 255, 255, 120 });
-        if (CheckCollisionPointRec(GetMousePosition(), r))
+        if (i == sel) DrawRectangleLinesEx(r, 2, YELLOW);
+        if (CheckCollisionPointRec(GetMousePosition(), r)) {
             DrawText(TextFormat("#%d  %d,%d,%d", i, PAL[i].r, PAL[i].g, PAL[i].b),
                      12, h - 22, 12, RAYWHITE);
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) sel = i;
+        }
     }
+    int py = top + 50 + 16 * 26 + 16;
+    DrawText(TextFormat("Editing entry #%d", sel), 12, py, 13, RAYWHITE);
+    if (sel < 16)
+        DrawText("This is a reserved named index -- changing it repaints the "
+                 "UI chrome too.", 160, py, 11, (Color){ 220, 190, 120, 255 });
+    py += 22;
+    Color c = PAL[sel];
+    Color picked = c;
+    GuiColorPicker((Rectangle){ 12, (float)py, 200, 160 }, NULL, &picked);
+    if (picked.r != c.r || picked.g != c.g || picked.b != c.b) {
+        gb_palette_set(sel, picked);
+        ws->dirty = true;
+    }
+    if (GuiButton((Rectangle){ 230, (float)py, 170, 26 },
+                  "Save palettes/palette.bin")) {
+        if (gb_palette_save(ws->root, "palettes/palette.bin"))
+            DrawText("saved", 410, py + 6, 12, GREEN);
+    }
+    DrawText("A palette edit repaints every sprite in the pack at once.",
+             230, py + 34, 11, GRAY);
 }
 
 // --- Validate -----------------------------------------------------------------

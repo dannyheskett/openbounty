@@ -25,9 +25,14 @@ coordinates and now sit on land, the zone has no chest placeholders against a
 salt budget of 21, and villains + artifacts total 14 rather than the 25 the
 puzzle grid needs.
 
-**Not yet built:** art import with per-file validation (GB-241/242), palette
-editing as opposed to viewing (GB-260/262), pack content versioning
-(GB-330..332), and release packaging (GB-506).
+**Not yet built:** pack content versioning (GB-330..332), multi-pack
+workspaces (GB-522), and audio import (GB-521). Everything else in this
+document exists.
+
+**Shipping.** GameBuilder is packaged into the Linux and Windows release
+archives alongside the game (`make dist-linux`, `make dist-windows`). The
+pack-leak assertion is unaffected: the editor ships without a pack, and the
+archive still contains zero `.openbounty` files.
 
 **Conventions.** Each requirement carries a stable identifier `GB-NNN`. This
 document owns the `GB-` namespace; `OPENBOUNTY-SPEC.md` owns `REQ-`,

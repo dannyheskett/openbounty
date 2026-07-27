@@ -54,6 +54,29 @@ bool gb_pixel_dirty(void);
 void gb_pixel_frame(int top, const char *pack_root, char *status,
                     size_t status_sz);
 
+// --- art import and palette (GB-241/242, GB-260/262) -------------------------
+//
+// Import never silently alters the source. Problems are named; fix-up is a
+// separate, explicit act on the copy written into the pack.
+
+#define GB_ART_MSG 160
+#define GB_ART_MAX_PROBLEMS 4
+
+typedef struct {
+    int  w, h;
+    int  soft_alpha;      // pixels with partial transparency
+    int  off_palette;     // pixels outside the pack palette
+    char problem[GB_ART_MAX_PROBLEMS][GB_ART_MSG];
+    int  problems;
+} GbArtReport;
+
+int  gb_art_check(const char *src_file, const char *pack_rel, GbArtReport *out);
+bool gb_art_import(const char *src_file, const char *pack_root,
+                   const char *pack_rel, bool fixup, char *err, size_t errsz);
+
+bool gb_palette_save(const char *pack_root, const char *rel);
+void gb_palette_set(int index, Color c);
+
 const char *gb_terrain_name(int t);
 Color       gb_terrain_color(int t);
 Color       gb_object_color(int k);

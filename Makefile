@@ -330,9 +330,10 @@ STAGING := build/staging
 # The release workflow invokes it from its own job.
 dist: dist-linux dist-windows dist-mac
 
-dist-linux: release
+dist-linux: release gamebuilder
 	@rm -rf $(STAGING)/linux && mkdir -p $(STAGING)/linux/openbounty-$(OPENBOUNTY_VERSION_SLUG)
 	cp build/release/openbounty $(STAGING)/linux/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty
+	cp $(OUT_GB) $(STAGING)/linux/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty-gamebuilder
 	sed "s/<version>/$(OPENBOUNTY_VERSION_DISPLAY)/g" $(DIST)/README.txt.in > $(STAGING)/linux/openbounty-$(OPENBOUNTY_VERSION_SLUG)/README.txt
 	cp LICENSE NOTICES.md $(STAGING)/linux/openbounty-$(OPENBOUNTY_VERSION_SLUG)/
 	@mkdir -p $(DIST)
@@ -344,14 +345,16 @@ dist-linux: release
 # saw the exit status of its last one -- the zip. A failing `cp LICENSE
 # NOTICES.md` left make reporting success and shipped archives with no licence
 # text. The other five games are written this way; this one was the exception.
-dist-windows: $(OUT_WIN64) $(OUT_WIN32)
+dist-windows: $(OUT_WIN64) $(OUT_WIN32) $(OUT_GB_WIN64) $(OUT_GB_WIN32)
 	@rm -rf $(STAGING)/win-x86_64 $(STAGING)/win-i686 && mkdir -p $(DIST) \
 	    $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG) \
 	    $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)
 	cp $(OUT_WIN64) $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty.exe
+	cp $(OUT_GB_WIN64) $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty-gamebuilder.exe
 	sed "s/<version>/$(OPENBOUNTY_VERSION_DISPLAY)/g" $(DIST)/README.txt.in > $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG)/README.txt
 	cp LICENSE NOTICES.md $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG)/
 	cp $(OUT_WIN32) $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty.exe
+	cp $(OUT_GB_WIN32) $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty-gamebuilder.exe
 	sed "s/<version>/$(OPENBOUNTY_VERSION_DISPLAY)/g" $(DIST)/README.txt.in > $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)/README.txt
 	cp LICENSE NOTICES.md $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)/
 	(cd $(STAGING)/win-x86_64 && zip -qr ../../../$(DIST)/openbounty-$(OPENBOUNTY_VERSION_SLUG)-windows-x86_64.zip openbounty-$(OPENBOUNTY_VERSION_SLUG))
