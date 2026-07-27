@@ -14,10 +14,38 @@ import os
 
 # The design tables below were drawn against a 40-wide grid. SCALE stretches
 # them to the real width; the shape is unchanged, the landmass is fatter.
-DESIGN_W = 40
-W, H = 64, 64
+DESIGN_W, DESIGN_H = 40, 64
+W, H = 64, 128        # H needs MAP_MAX_H >= 128 (engine/include/map.h)
 SCALE = W / DESIGN_W
+SCALE_Y = H / DESIGN_H
 FATTEN = 2            # extra tiles on each side of every land span
+
+
+def expand(table):
+    """Design rows -> real rows, interpolating spans between them.
+
+    The tables are drawn at DESIGN_H; stretching vertically by repeating rows
+    would give a coastline of 2-tall steps. Interpolating the span endpoints
+    instead keeps the outline smooth at any height.
+    """
+    if not table:
+        return {}
+    lo, hi = min(table), max(table)
+    out = {}
+    for ry in range(int(round(lo * SCALE_Y)), int(round(hi * SCALE_Y)) + 1):
+        dy = ry / SCALE_Y
+        a, b = int(dy), min(int(dy) + 1, hi)
+        while a > lo and a not in table:
+            a -= 1
+        while b < hi and b not in table:
+            b += 1
+        if a not in table or b not in table:
+            continue
+        f = 0.0 if a == b else (dy - a) / (b - a)
+        x0 = table[a][0] + (table[b][0] - table[a][0]) * f
+        x1 = table[a][1] + (table[b][1] - table[a][1]) * f
+        out[ry] = (x0, x1)
+    return out
 SEA, GRASS, VAR, FOREST, MTN = '~', '.', ',', 'F', '^'
 
 # --- mainland: row -> (x0, x1) inclusive -------------------------------------
@@ -25,6 +53,7 @@ SEA, GRASS, VAR, FOREST, MTN = '~', '.', ',', 'F', '^'
 # northern boundary, not an island's coastline. Italia is closed off to the
 # north by mountain rather than by sea, so the zone reads as part of a
 # continent whose interior lies beyond the edge.
+MAINLAND_R = {}
 MAINLAND = {
     0:  (0, W - 1), 1: (0, W - 1), 2: (0, W - 1),     # Alpine wall, edge to edge
     3:  (0, W - 1), 4: (0, W - 1),
@@ -94,12 +123,14 @@ def build():
         for x in range(a, b + 1):
             g[y][x] = ch
 
+    global MAINLAND_R
+    MAINLAND_R = expand(MAINLAND)
     for table in (MAINLAND, TOE, HEEL, SICILIA, CORSICA, SARDINIA):
-        for y, (x0, x1) in table.items():
+        for y, (x0, x1) in expand(table).items():
             span(y, x0, x1, fat=FATTEN)
 
-    for y in ALPS_ROWS:                       # Alps: the full width, exactly
-        for x in range(W):
+    for y in range(int(round(max(ALPS_ROWS) * SCALE_Y)) + 1):
+        for x in range(W):                    # Alps: the full width, exactly
             g[y][x] = MTN
     for y, x in ALPINE_PASSES:
         g[y][x] = GRASS
@@ -107,18 +138,22 @@ def build():
     # The spine holds one column pair for a run of rows, then steps east.
     # Stepping every row would leave a 1-tile nub at each step, and a 1-tile
     # feature has no edge variant (REQ-229a) -- it renders as a hard block.
+    spine_rows = [int(round(y * SCALE_Y)) + k
+                  for y in SPINE_ROWS for k in range(int(SCALE_Y))]
+    spine_gaps = {int(round(y * SCALE_Y)) + k
+                  for y in SPINE_GAPS for k in range(int(SCALE_Y))}
     seg = []
-    for y in list(SPINE_ROWS) + [None]:
-        if y is not None and y not in SPINE_GAPS and y in MAINLAND:
+    for y in spine_rows + [None]:
+        if y is not None and y not in spine_gaps and y in MAINLAND_R:
             seg.append(y)
             continue
         if seg:                                # close the segment
             my = seg[len(seg) // 2]
-            x0m, x1m = MAINLAND[my]
-            sx = sx_((x0m + x1m) // 2 - SPINE_OFFSET)
+            x0m, x1m = MAINLAND_R[my]
+            sx = sx_((x0m + x1m) / 2 - SPINE_OFFSET)
             for yy in seg:
-                x0 = sx_(MAINLAND[yy][0]) - FATTEN
-                x1 = sx_(MAINLAND[yy][1]) + FATTEN
+                x0 = sx_(MAINLAND_R[yy][0]) - FATTEN
+                x1 = sx_(MAINLAND_R[yy][1]) + FATTEN
                 if x1 - x0 < 6:
                     continue
                 sxx = min(max(sx, x0 + 2), x1 - 4)
@@ -127,14 +162,17 @@ def build():
             seg = []
 
     for y, x0, x1 in PO_FOREST + ETRURIA_FOREST:
-        for x in range(sx_(x0), sx_(x1) + 1):
-            if 0 <= x < W and g[y][x] == GRASS:
-                g[y][x] = FOREST
+        for dy in range(int(SCALE_Y)):
+            ry = int(round(y * SCALE_Y)) + dy
+            for x in range(sx_(x0), sx_(x1) + 1):
+                if 0 <= x < W and 0 <= ry < H and g[ry][x] == GRASS:
+                    g[ry][x] = FOREST
     for y, x in ISLAND_PEAKS:
-        for dy in (0, 1):
+        for dy in range(int(SCALE_Y) + 1):
             for dx in range(3):
-                if 0 <= sx_(x) + dx < W:
-                    g[y + dy][sx_(x) + dx] = MTN
+                ry, rx = int(round(y * SCALE_Y)) + dy, sx_(x) + dx
+                if 0 <= rx < W and 0 <= ry < H:
+                    g[ry][rx] = MTN
 
     for y in range(H):                        # texture speckle
         for x in range(W):
@@ -157,6 +195,7 @@ def despeckle(g, codes):
     """
     terr = {k: v.get('terrain') for k, v in codes.items()}
     CARD = {'N': (0, -1), 'S': (0, 1), 'E': (1, 0), 'W': (-1, 0)}
+    DIAG = {'NE': (1, -1), 'SE': (1, 1), 'SW': (-1, 1), 'NW': (-1, -1)}
     OPP = ({'N', 'S'}, {'E', 'W'})
     plain = {'grass': GRASS, 'water': SEA, 'forest': FOREST,
              'mountain': MTN, 'desert': 'D'}
@@ -171,7 +210,17 @@ def despeckle(g, codes):
                     if 0 <= x + dx < W and 0 <= y + dy < H:
                         nb[d] = terr[g[y + dy][x + dx]]
                 diff = {d for d, nt in nb.items() if nt != t}
-                if len(diff) < 2 or (len(diff) == 2 and diff not in OPP):
+                if not diff:
+                    dg = {}
+                    for d, (dx, dy) in DIAG.items():
+                        if 0 <= x + dx < W and 0 <= y + dy < H:
+                            nt = terr[g[y + dy][x + dx]]
+                            if nt != t:
+                                dg[d] = nt
+                    if len(dg) < 2:
+                        continue
+                    nb, diff = dg, set(dg)
+                elif len(diff) < 2 or (len(diff) == 2 and diff not in OPP):
                     continue
                 counts = {}
                 for d in diff:

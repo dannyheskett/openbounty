@@ -416,7 +416,17 @@ except where a deviation is explicitly flagged (§34).
   the shipped pack: `economy.boat_cost_normal=500`, `boat_cost_cheap=100`,
   `siege_cost=3000`, `alcove_cost=5000` (§23, §Appendix A). Time:
   `time.day_steps=40`, `week_days=5`, `days_per_difficulty=[900,600,400,200]`.
-  Map dimensions: `MAP_MAX_W=64`, `MAP_MAX_H=64` (`engine/include/map.h`).
+  Map dimensions: `MAP_MAX_W=64`, `MAP_MAX_H=128` (`engine/include/map.h`).
+  These are the compile-time bounds of the `Map.tiles` array and are enforced
+  at load: `MapLoadZone` prints `too large` and fails a zone declaring more.
+  A zone may declare any smaller `width`/`height`. Raising them is a
+  behaviour-neutral recompile, not a format change: the save encodes fog from
+  each zone's own `width`/`height` (REQ-413), not from these bounds, and the
+  height was raised from 64 to 128 with the full suite and the reference
+  pack's validation sweep byte-identical either way. The cost is memory:
+  `sizeof(Map)` is 212 bytes per tile, so 64x64 is 848 KB and 64x128 is
+  1,696 KB, and every autoplay search node snapshots a whole `Map` (AP-204),
+  so the frontier beam pays proportionally.
 
 ---
 

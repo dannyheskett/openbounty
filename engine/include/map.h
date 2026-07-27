@@ -5,7 +5,7 @@
 #include "tile.h"
 
 #define MAP_MAX_W 64
-#define MAP_MAX_H 64
+#define MAP_MAX_H 128
 #define TILE_ART_NAME_LEN  24
 #define TILE_ID_LEN        24
 
