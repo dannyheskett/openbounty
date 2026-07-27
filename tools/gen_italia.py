@@ -12,7 +12,12 @@ and Sardinia stand offshore west with clear water on every side.
 import json
 import os
 
-W, H = 40, 64
+# The design tables below were drawn against a 40-wide grid. SCALE stretches
+# them to the real width; the shape is unchanged, the landmass is fatter.
+DESIGN_W = 40
+W, H = 64, 64
+SCALE = W / DESIGN_W
+FATTEN = 2            # extra tiles on each side of every land span
 SEA, GRASS, VAR, FOREST, MTN = '~', '.', ',', 'F', '^'
 
 # --- mainland: row -> (x0, x1) inclusive -------------------------------------
@@ -49,7 +54,7 @@ HEEL = {47: (29, 35), 48: (30, 36), 49: (31, 37),
 
 # --- islands: each with clear water on every side ----------------------------
 SICILIA = {55: (13, 21), 56: (12, 22), 57: (12, 22), 58: (13, 21), 59: (15, 19)}
-CORSICA = {19: (3, 7), 20: (3, 7), 21: (3, 7), 22: (3, 7), 23: (4, 7), 24: (4, 6)}
+CORSICA = {19: (2, 6), 20: (2, 6), 21: (2, 6), 22: (2, 6), 23: (3, 6), 24: (3, 5)}
 SARDINIA = {27: (3, 7), 28: (2, 7), 29: (2, 7), 30: (2, 7), 31: (2, 7),
             32: (2, 7), 33: (3, 7), 34: (3, 6), 35: (4, 6)}
 
@@ -76,20 +81,26 @@ ETRURIA_FOREST = [(21, 20, 22), (22, 20, 22), (26, 22, 24), (27, 22, 24),
 ISLAND_PEAKS = [(21, 4), (30, 3), (56, 17)]   # Corsica, Sardinia, Etna
 
 
+def sx_(x):
+    return int(round(x * SCALE))
+
+
 def build():
     g = [[SEA] * W for _ in range(H)]
 
-    def span(y, x0, x1, ch=GRASS):
-        for x in range(max(0, x0), min(W, x1 + 1)):
+    def span(y, x0, x1, ch=GRASS, fat=0):
+        a = max(0, sx_(x0) - fat)
+        b = min(W - 1, sx_(x1) + fat)
+        for x in range(a, b + 1):
             g[y][x] = ch
 
     for table in (MAINLAND, TOE, HEEL, SICILIA, CORSICA, SARDINIA):
         for y, (x0, x1) in table.items():
-            span(y, x0, x1)
+            span(y, x0, x1, fat=FATTEN)
 
-    for y in ALPS_ROWS:                       # Alps overwrite their own rows
-        x0, x1 = MAINLAND[y]
-        span(y, x0, x1, MTN)
+    for y in ALPS_ROWS:                       # Alps: the full width, exactly
+        for x in range(W):
+            g[y][x] = MTN
     for y, x in ALPINE_PASSES:
         g[y][x] = GRASS
 
@@ -104,30 +115,74 @@ def build():
         if seg:                                # close the segment
             my = seg[len(seg) // 2]
             x0m, x1m = MAINLAND[my]
-            sx = (x0m + x1m) // 2 - SPINE_OFFSET
+            sx = sx_((x0m + x1m) // 2 - SPINE_OFFSET)
             for yy in seg:
-                x0, x1 = MAINLAND[yy]
-                if x1 - x0 < 4:               # too narrow to hold a 2-wide range
+                x0 = sx_(MAINLAND[yy][0]) - FATTEN
+                x1 = sx_(MAINLAND[yy][1]) + FATTEN
+                if x1 - x0 < 6:
                     continue
-                sxx = min(max(sx, x0 + 1), x1 - 2)
-                g[yy][sxx] = MTN
-                g[yy][sxx + 1] = MTN
+                sxx = min(max(sx, x0 + 2), x1 - 4)
+                for dx in range(3):            # the range widens with the map
+                    g[yy][sxx + dx] = MTN
             seg = []
 
     for y, x0, x1 in PO_FOREST + ETRURIA_FOREST:
-        for x in range(x0, x1 + 1):
-            if g[y][x] == GRASS:
+        for x in range(sx_(x0), sx_(x1) + 1):
+            if 0 <= x < W and g[y][x] == GRASS:
                 g[y][x] = FOREST
     for y, x in ISLAND_PEAKS:
         for dy in (0, 1):
-            for dx in (0, 1):
-                g[y + dy][x + dx] = MTN
+            for dx in range(3):
+                if 0 <= sx_(x) + dx < W:
+                    g[y + dy][sx_(x) + dx] = MTN
 
     for y in range(H):                        # texture speckle
         for x in range(W):
             if g[y][x] == GRASS and (x * 7 + y * 13) % 19 == 0:
                 g[y][x] = VAR
     return g
+
+
+def despeckle(g, codes):
+    """Remove terrain shapes REQ-229a defines no edge variant for.
+
+    Two patterns have no variant and therefore render as a hard step:
+      * three or more differing cardinal neighbours (a 1-tile-wide feature)
+      * exactly two differing cardinals that are OPPOSITE (a 1-tile-wide
+        channel or isthmus: N and S, or E and W)
+
+    Rather than chase these by hand in the span tables, absorb each offending
+    tile into whichever neighbouring terrain surrounds it most. Iterates to a
+    fixed point, since absorbing one tile can expose another.
+    """
+    terr = {k: v.get('terrain') for k, v in codes.items()}
+    CARD = {'N': (0, -1), 'S': (0, 1), 'E': (1, 0), 'W': (-1, 0)}
+    OPP = ({'N', 'S'}, {'E', 'W'})
+    plain = {'grass': GRASS, 'water': SEA, 'forest': FOREST,
+             'mountain': MTN, 'desert': 'D'}
+    total = 0
+    for _ in range(24):
+        fixed = 0
+        for y in range(H):
+            for x in range(W):
+                t = terr[g[y][x]]
+                nb = {}
+                for d, (dx, dy) in CARD.items():
+                    if 0 <= x + dx < W and 0 <= y + dy < H:
+                        nb[d] = terr[g[y + dy][x + dx]]
+                diff = {d for d, nt in nb.items() if nt != t}
+                if len(diff) < 2 or (len(diff) == 2 and diff not in OPP):
+                    continue
+                counts = {}
+                for d in diff:
+                    counts[nb[d]] = counts.get(nb[d], 0) + 1
+                win = max(counts, key=lambda k: (counts[k], k == 'water'))
+                g[y][x] = plain[win]
+                fixed += 1
+        total += fixed
+        if not fixed:
+            break
+    return total
 
 
 # --- the furnish pass (OPENBOUNTY-SPEC REQ-229a) ------------------------------
@@ -218,6 +273,7 @@ def main():
         codes = json.load(f)["tile_codes"]
 
     g = build()
+    smoothed = despeckle(g, codes)
     g, changed, unresolved = furnish(g, codes)
 
     out = os.path.join(root, "assets", "glory-of-rome", "maps", "italia.dat")
@@ -226,6 +282,7 @@ def main():
         f.write(HEADER + "\n".join("".join(r) for r in g) + "\n")
     distinct = len({c for r in g for c in r})
     print(f"wrote {out} ({W}x{H})")
+    print(f"  despeckled {smoothed} tile(s) with no legal edge variant")
     print(f"  furnished {changed} tiles into edge variants; "
           f"{distinct} distinct tile codes in use")
     if unresolved:
