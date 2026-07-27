@@ -89,6 +89,7 @@ PACKS := $(addprefix $(PACK_DIR)/,$(addsuffix .openbounty,$(PACK_NAMES)))
 
 OUT_TEST      := build/openbounty-test
 OUT_MAPEDIT   := build/openbounty-mapedit
+OUT_GB        := build/openbounty-gamebuilder
 OUT_ENGLIB    := build/libobengine.a
 LIBTEST_STAMP := build/libtest-pass.stamp
 
@@ -392,11 +393,12 @@ TEST_ONLY_SRC := $(TEST_SHARED) $(TEST_UNIT) $(TEST_REGR) $(TEST_E2E) $(TEST_AUT
 # Unit-test binary: shell sources (minus main.c, which defines main())
 # + test sources + libobengine.a.
 TEST_SRC := $(filter-out src/main.c,$(SHELL_SRC)) $(TOOL_SRC) \
+            tools/gamebuilder/gb_workspace.c \
             $(DEMO_SRC) $(AUTOPLAY_SRC) \
             $(TEST_ONLY_SRC)
 
 $(OUT_TEST): $(TEST_SRC) $(OUT_ENGLIB) build/version.h Makefile | build
-	gcc $(CFLAGS) -Ithird_party/greatest -Itests $(TEST_SRC) $(OUT_ENGLIB) -o $(OUT_TEST) $(LDFLAGS)
+	gcc $(CFLAGS) -Ithird_party/greatest -Itests -Itools/gamebuilder $(TEST_SRC) $(OUT_ENGLIB) -o $(OUT_TEST) $(LDFLAGS)
 
 # ---------------------------------------------------------------------------
 # openbounty-mapedit: GUI zone map editor. Author-time only -- never built by
@@ -411,6 +413,20 @@ mapedit: $(OUT_MAPEDIT)
 
 $(OUT_MAPEDIT): $(MAPEDIT_SRC) $(OUT_ENGLIB) build/version.h Makefile | build
 	gcc $(CFLAGS) $(MAPEDIT_SRC) $(OUT_ENGLIB) -o $(OUT_MAPEDIT) $(LDFLAGS)
+
+# ---------------------------------------------------------------------------
+# openbounty-gamebuilder: the game-pack editor (docs/GAMEBUILDER-SPEC.md).
+# Takes no arguments -- everything is point-and-click (GB-015). Built with
+# `make gamebuilder`; it will be packaged into the release archives once it
+# is worth shipping (GB-010).
+GB_SRC := $(wildcard tools/gamebuilder/*.c)
+GB_CFLAGS := $(CFLAGS) -Ithird_party/raygui -Itools/gamebuilder
+
+.PHONY: gamebuilder
+gamebuilder: $(OUT_GB)
+
+$(OUT_GB): $(GB_SRC) $(OUT_ENGLIB) build/version.h Makefile | build
+	gcc $(GB_CFLAGS) $(GB_SRC) $(OUT_ENGLIB) -o $(OUT_GB) $(LDFLAGS)
 
 # ---------------------------------------------------------------------------
 # libobengine.a, engine compiled as a static archive. Consumers link
