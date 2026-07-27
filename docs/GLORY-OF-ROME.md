@@ -466,10 +466,22 @@ UI those two will look odd.
    the troop and villain lists determine the file list.
 5. **Re-tune afterward, one axis at a time**, re-validating each time.
 
-An all-original pack is also the first one that could legally **ship inside
-the release archives** — the current packs are excluded because the
-DOS-extracted assets are copyright-restricted. That changes the pack-leak
-check in the release workflow, deliberately rather than accidentally.
+**DECIDED: Glory of Rome ships with the editor**, in the release archives, as
+the playable pack. It is the first pack that legally can — it is entirely
+original, where `kings-bounty` is DOS-extracted and copyright-restricted.
+
+Three consequences follow, recorded in `PACK-EDITOR-SPEC.md` PE-014:
+
+- The release workflow's pack-leak assertion becomes an **allowlist by pack
+  id** rather than a blanket deny, in four places, so `glory-of-rome` ships and
+  nothing derived from the DOS assets ever does.
+- The **art commission is on the critical path** to shipping, not just to
+  looking finished. Rome borrows `kings-bounty` art through a base pack for
+  development and none of it may survive into the released artifact.
+- Rome is **built in the editor**, and doing so is the editor's acceptance
+  test. That settles the sequencing: the editor's first phases come before the
+  remaining three zones, because hand-placing objects is precisely the work the
+  editor exists to delete.
 
 ---
 
