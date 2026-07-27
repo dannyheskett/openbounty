@@ -39,6 +39,23 @@ this describes work not yet done.
   serious class of defect.
 - **PE-013.** The editor is a separate binary (`openbounty-packedit`). It shall
   not be linked into the game, and the game shall not depend on it.
+- **PE-015.** **It is a GUI application, not a command-line tool.** The binary
+  shall take **no arguments**. Everything — which pack to open, where to save,
+  which base pack to layer, which zone to edit — is chosen by pointing and
+  clicking inside the application. There shall be no flag that is the only way
+  to reach a feature, and no workflow that requires a terminal.
+  (The current `openbounty-mapedit`, which takes `--pack` / `--zone` /
+  `--base`, is a development stepping stone and is superseded by this.)
+- **PE-016.** The editor shall open on a **start screen**: New Pack, Open Pack,
+  and a list of recently opened packs. It shall never open into an empty or
+  undefined state.
+- **PE-017.** The recent-packs list shall persist across sessions in the user
+  data directory (`REQ-412`), never inside a pack.
+- **PE-018.** The editor shall provide its **own in-application file browser**
+  for choosing directories and `.openbounty` files. It shall not depend on a
+  native file dialog: raylib provides none, and the usual Linux answer
+  (shelling out to `zenity` or `kdialog`) adds a runtime dependency that fails
+  on a bare system. An in-app browser also looks the same on all four targets.
 - **PE-014.** Shipping the editor changes the release workflow's pack-leak
   assertion, which currently fails any archive containing a `.openbounty` file
   (`RELEASE-PROCESS.md` §2). The editor ships **without** any pack; the
@@ -85,10 +102,14 @@ this describes work not yet done.
 - **PE-111.** Opening an archive shall extract to a working directory; the
   archive itself is never edited in place.
 - **PE-112.** The editor shall support a **base pack** layered underneath the
-  workspace (already implemented as `--base`), so a pack under construction
-  inherits art it does not carry yet. Inherited assets shall be visibly marked
-  as inherited, and packaging shall either materialise them into the output or
-  report them as missing (author's choice, PE-520).
+  workspace, so a pack under construction can borrow art it does not carry yet.
+  This is **never automatic**. The author explicitly chooses a base pack, in
+  the UI, and can change or remove it at any time; nothing is inherited by
+  default and no pack is layered without being picked. The alternative to
+  layering is equally explicit: copy the assets into the workspace.
+- **PE-112a.** Inherited assets shall be **visibly marked as inherited**
+  everywhere they appear, so the author always knows which parts of the pack
+  are theirs. Packaging shall not silently materialise them (PE-520).
 - **PE-113.** Saving shall write **only files that changed**, preserving byte
   content of untouched files, so a pack under version control produces minimal
   diffs.
@@ -331,10 +352,12 @@ Ordered so that **editing an existing pack (PE-002) works before building one
 from scratch (PE-001)**, because the former is testable against the reference
 pack at every step.
 
-- **PE-500. Phase 0 — Foundations.** raygui vendored; mode bar; workspace open
-  or save for loose and archive packs; stable JSON writer; undo/redo; autosave;
-  raw-JSON view. *Exit:* open the reference pack, change one field in raw JSON,
-  save, and the game still loads it; an unchanged round-trip is byte-identical.
+- **PE-500. Phase 0 — Foundations.** raygui vendored; start screen and
+  in-app file browser (PE-016, PE-018); mode bar; workspace open and save for
+  loose and archive packs; stable JSON writer; undo/redo; autosave; raw-JSON
+  view. *Exit:* launch the binary with no arguments, open the reference pack by
+  clicking, change one field in raw JSON, save, and the game still loads it; an
+  unchanged round-trip is byte-identical.
 - **PE-501. Phase 1 — Maps and objects.** Extends the existing terrain editor
   (§7 already partly built) with multi-zone, selection tools, minimap, then all
   of §8. *Exit:* place every object type on a new Glory of Rome zone and play
@@ -356,21 +379,24 @@ pack at every step.
 
 ## 19. Sizing, honestly
 
-- **PE-510.** This is an application, not a tool. A realistic estimate is
+- **PE-510.** This is an application. A realistic estimate is
   **12,000–16,000 lines of C** on top of the current ~600, with the pixel
   editor and the catalog forms the two largest pieces. raygui removes perhaps a
-  third of that; without it the estimate roughly doubles.
+  third of that; without it the estimate roughly doubles. The number is here to
+  size the phases, not to argue against the scope.
 - **PE-511.** The riskiest requirement is **PE-012** (never lose work). It is
   cheap to state and expensive to honour, and it is the difference between a
   tool people use and one they abandon.
 
 ## 20. Open questions
 
-- **PE-520.** When a workspace inherits assets from a base pack, does packaging
-  materialise them into the output or leave them missing? Materialising is
-  friendlier; leaving them out is what keeps a derived pack from silently
-  redistributing the base pack's copyright-restricted art. Leaning toward:
-  refuse to materialise, warn loudly, and let the author supply their own.
+- **PE-520.** **Resolved.** Base packs are chosen explicitly (PE-112), never
+  inherited automatically, so the author always knows they are borrowing.
+  Packaging shall still **not** silently fold borrowed assets into the output:
+  it shall list exactly what is inherited and require an explicit choice per
+  package — copy them in, or ship without them. That keeps a derived pack from
+  quietly redistributing the reference pack's copyright-restricted DOS art
+  while a deliberate author can still do it with their own material.
 - **PE-521.** Does the editor need audio import and preview, or is audio
   hand-placed? Six files in the reference pack, so low cost either way.
 - **PE-522.** Should the map editor support more than one pack open at once,
