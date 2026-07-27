@@ -270,7 +270,49 @@ void gb_mapview_init(GbMapView *v) {
     v->show_grid = true;
     v->show_objects = true;
     v->selected = -1;
-    v->tool = GB_TOOL_PAINT;
+    v->tool = GB_TOOL_VIEW;      // open in a mode that cannot change anything
+    v->inspect_x = v->inspect_y = -1;
+}
+
+// Gather everything about one tile. Reads the grid and the object list rather
+// than keeping its own copy, so the inspector cannot disagree with the map.
+void gb_inspect_tile(GbTileInfo *out, const MapGrid *g, const GbObjectList *L,
+                     const Resources *res, const char *zone, int x, int y) {
+    memset(out, 0, sizeof *out);
+    if (!g || x < 0 || y < 0 || x >= g->w || y >= g->h) return;
+    const MapCell *c = &g->cell[y][x];
+    out->valid   = true;
+    out->x = x; out->y = y;
+    out->zone    = zone;
+    out->terrain = c->terrain;
+    out->variant = c->variant;
+    out->decorative = (c->decor != 0);
+    out->art     = mapedit_art_for(c->terrain, c->variant);
+    out->code    = c->decor ? c->decor : mapedit_code_for(res, c->terrain,
+                                                          c->variant);
+    // Walkability comes from the pack's own tile_codes entry, not from a
+    // guess about the terrain -- a bridge is grass that water rules ignore.
+    unsigned char b = (unsigned char)out->code;
+    if (b < RES_TILE_CODE_COUNT && res->tile_codes[b].present) {
+        out->blocks_foot = res->tile_codes[b].blocks_foot;
+        out->is_bridge   = res->tile_codes[b].is_bridge;
+    }
+    if (L) {
+        for (int i = 0; i < L->count && out->objects < GB_INSPECT_MAX_OBJ; i++) {
+            if (L->item[i].x != x || L->item[i].y != y) continue;
+            out->obj[out->objects++] = &L->item[i];
+        }
+        // A castle occupies 3x2, so a tile can be inside one without being its
+        // gate. Report that too, or the author wonders why the tile is blocked.
+        for (int i = 0; i < L->count && out->objects < GB_INSPECT_MAX_OBJ; i++) {
+            if (L->item[i].kind != GB_OBJ_CASTLE) continue;
+            if (L->item[i].x == x && L->item[i].y == y) continue;
+            int fx, fy, fw, fh;
+            gb_castle_footprint(L->item[i].x, L->item[i].y, &fx, &fy, &fw, &fh);
+            if (x >= fx && x < fx + fw && y >= fy && y < fy + fh)
+                out->obj[out->objects++] = &L->item[i];
+        }
+    }
 }
 
 void gb_mapview_frame(GbMapView *v, MapGrid *g, GbObjectList *objs,
@@ -305,7 +347,17 @@ void gb_mapview_frame(GbMapView *v, MapGrid *g, GbObjectList *objs,
     if (!objects_mode) {
         // --- terrain editing ---
         if (over && in_grid(g, cx, cy)) {
-            if (v->tool == GB_TOOL_PAINT && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+            if (v->tool == GB_TOOL_VIEW && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                v->inspect_x = cx;
+                v->inspect_y = cy;
+                // Select any object here too, so the two panels agree.
+                v->selected = -1;
+                for (int i = objs->count - 1; i >= 0; i--)
+                    if (objs->item[i].x == cx && objs->item[i].y == cy) {
+                        v->selected = i;
+                        break;
+                    }
+            } else if (v->tool == GB_TOOL_PAINT && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
                 paint_at(v, g, undo, cx, cy);
                 mapedit_despeckle(g);
                 mapedit_furnish(g, NULL);
@@ -388,10 +440,19 @@ void gb_mapview_frame(GbMapView *v, MapGrid *g, GbObjectList *objs,
         }
     }
 
+    // The inspected tile keeps a marker after the mouse moves on.
+    if (v->inspect_x >= 0 && in_grid(g, v->inspect_x, v->inspect_y)) {
+        float tw = TW * v->zoom, th = TH * v->zoom;
+        Rectangle r = { v->origin.x + v->pan.x + v->inspect_x * tw,
+                        v->origin.y + v->pan.y + v->inspect_y * th, tw, th };
+        DrawRectangleRec(r, (Color){ 120, 200, 255, 50 });
+        DrawRectangleLinesEx(r, 2, (Color){ 120, 200, 255, 255 });
+    }
+
     // brush / hover cursor
     if (over && in_grid(g, cx, cy)) {
         float tw = TW * v->zoom, th = TH * v->zoom;
-        int r = objects_mode ? 0 : v->brush / 2;
+        int r = (objects_mode || v->tool == GB_TOOL_VIEW) ? 0 : v->brush / 2;
         DrawRectangleLinesEx((Rectangle){ v->origin.x + v->pan.x + (cx - r) * tw,
                                           v->origin.y + v->pan.y + (cy - r) * th,
                                           tw * (r * 2 + 1), th * (r * 2 + 1) },

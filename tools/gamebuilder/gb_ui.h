@@ -10,8 +10,12 @@
 
 #include "raylib.h"
 
+// View is FIRST and is the default: the editor opens in a mode that cannot
+// change anything, so a stray click inspects rather than paints. Every other
+// tool is destructive and has to be chosen deliberately.
 typedef enum {
-    GB_TOOL_PAINT = 0, GB_TOOL_FILL, GB_TOOL_RECT, GB_TOOL_PICK, GB_TOOL_COUNT
+    GB_TOOL_VIEW = 0, GB_TOOL_PAINT, GB_TOOL_FILL, GB_TOOL_RECT, GB_TOOL_PICK,
+    GB_TOOL_COUNT
 } GbTool;
 
 // The shared map canvas. Maps and Objects modes both drive this: terrain
@@ -31,7 +35,34 @@ typedef struct {
     int      selected;          // object index, -1 for none
     bool     dragging;
     Vector2  drag_from;
+
+    // The inspected tile (View tool). -1 when nothing is selected.
+    int      inspect_x, inspect_y;
 } GbMapView;
+
+// Everything known about one tile, for the inspector. Gathered in one place
+// so the panel cannot drift from what the map and manifest actually say.
+#define GB_INSPECT_MAX_OBJ 16
+
+typedef struct {
+    bool        valid;
+    int         x, y;
+    const char *zone;
+
+    Terrain     terrain;        // what the author painted
+    int         variant;        // edge variant index, -1 for the plain tile
+    const char *art;            // resolved art stem, e.g. "water_edge_10"
+    char        code;           // the byte this tile writes into the .dat
+    bool        blocks_foot;
+    bool        is_bridge;
+    bool        decorative;     // a pack alternate such as grass_variant
+
+    const GbObject *obj[GB_INSPECT_MAX_OBJ];
+    int         objects;
+} GbTileInfo;
+
+void gb_inspect_tile(GbTileInfo *out, const MapGrid *g, const GbObjectList *L,
+                     const Resources *res, const char *zone, int x, int y);
 
 void gb_mapview_init(GbMapView *v);
 
