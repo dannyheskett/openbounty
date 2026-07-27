@@ -10,6 +10,25 @@ and is not linked into the shipped game; it is listed for completeness.
 
 ---
 
+## raygui
+
+Simple and easy-to-use immediate-mode GUI library, used by GameBuilder
+(the pack editor) for its widgets.
+
+- License: zlib/libpng
+- Project: https://github.com/raysan5/raygui
+- Vendored at: `third_party/raygui/raygui.h`
+
+```
+Copyright (c) 2014-2026 Ramon Santamaria (@raysan5)
+
+This software is provided "as-is", without any express or implied warranty.
+In no event will the authors be held liable for any damages arising from
+the use of this software.
+```
+
+---
+
 ## raylib
 
 A simple and easy-to-use library to enjoy videogames programming.
