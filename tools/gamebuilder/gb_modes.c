@@ -406,6 +406,45 @@ static void draw_validate(GbWorkspace *ws, int top,
     DrawText("Findings are advisory. Nothing here blocks packaging.",
              140, top + 12, 12, GRAY);
 
+    // Winnability: the oracle, out of process (GB-311).
+    static int lo = 0, hi = 4;
+    GuiLabel((Rectangle){ (float)(GetScreenWidth() - 430), (float)top + 6, 60, 24 },
+             "Seeds");
+    char lob[8], hib[8];
+    snprintf(lob, sizeof lob, "%d", lo);
+    snprintf(hib, sizeof hib, "%d", hi);
+    GuiTextBox((Rectangle){ (float)(GetScreenWidth() - 380), (float)top + 6, 44, 24 },
+               lob, sizeof lob, false);
+    GuiTextBox((Rectangle){ (float)(GetScreenWidth() - 330), (float)top + 6, 44, 24 },
+               hib, sizeof hib, false);
+    lo = atoi(lob); hi = atoi(hib);
+    if (gb_oracle_running()) {
+        gb_oracle_poll();
+        const GbOracleResult *r = gb_oracle_result();
+        if (GuiButton((Rectangle){ (float)(GetScreenWidth() - 276), (float)top + 6,
+                                   120, 24 }, "Stop check"))
+            gb_oracle_stop();
+        DrawText(TextFormat("checking... %d/%d seeds done",
+                            r->rows, r->hi - r->lo + 1),
+                 GetScreenWidth() - 150, top + 12, 11,
+                 (Color){ 220, 200, 120, 255 });
+    } else {
+        if (GuiButton((Rectangle){ (float)(GetScreenWidth() - 276), (float)top + 6,
+                                   120, 24 }, "Check winnable")) {
+            char oerr[512];
+            if (!gb_oracle_start(ws->root, lo, hi, oerr, sizeof oerr))
+                snprintf(status, status_sz, "%s", oerr);
+        }
+        const GbOracleResult *r = gb_oracle_result();
+        if (r->finished)
+            DrawText(TextFormat("%s  %d solved, %d not",
+                                r->verdict == 1 ? "PASS" : "FAIL",
+                                r->solved, r->failed),
+                     GetScreenWidth() - 150, top + 12, 11,
+                     r->verdict == 1 ? (Color){ 140, 200, 140, 255 }
+                                     : (Color){ 255, 150, 120, 255 });
+    }
+
     int y0 = top + 40;
     if (!M.findings_fresh) {
         DrawText("Press Run checks.", 16, y0 + 10, 13, GRAY);
