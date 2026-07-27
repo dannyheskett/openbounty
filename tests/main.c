@@ -54,6 +54,7 @@ SUITE_EXTERN(e2e_score_suite);
 SUITE_EXTERN(e2e_combat_input_suite);
 SUITE_EXTERN(e2e_save_suite);
 SUITE_EXTERN(e2e_save_more_suite);
+SUITE_EXTERN(e2e_gamebuilder_suite);
 
 // ---- autoplay ----------------------------------------------------------------
 SUITE_EXTERN(autoplay_worldsnap_suite);
@@ -101,6 +102,7 @@ int main(int argc, char **argv) {
     RUN_SUITE(e2e_combat_input_suite);
     RUN_SUITE(e2e_save_suite);
     RUN_SUITE(e2e_save_more_suite);
+    RUN_SUITE(e2e_gamebuilder_suite);
 
     // autoplay
     RUN_SUITE(autoplay_worldsnap_suite);

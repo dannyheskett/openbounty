@@ -307,7 +307,7 @@ static const char *ART_DIRS[] = { "tiles", "troops", "villains", "sprites",
 #define NART ((int)(sizeof ART_DIRS / sizeof *ART_DIRS))
 
 static void draw_art(GbWorkspace *ws, int top) {
-    int w = GetScreenWidth(), h = GetScreenHeight();
+    int h = GetScreenHeight();
     for (int i = 0; i < NART; i++) {
         Rectangle r = { 8.0f + i * 86, (float)top + 6, 82, 22 };
         if (GuiButton(r, ART_DIRS[i])) { M.art_category = i; M.art_index = 0; }
@@ -343,15 +343,26 @@ static void draw_art(GbWorkspace *ws, int top) {
                 missing++;
             }
             DrawText(art, px, py + 68, 9, GRAY);
+            Rectangle hit = { (float)px, (float)py, 96, 68 };
+            if (CheckCollisionPointRec(GetMousePosition(), hit)) {
+                DrawRectangleLinesEx(hit, 2, YELLOW);
+                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                    char rel[GB_PATH_MAX];
+                    snprintf(rel, sizeof rel, "art/tiles/%s.png", art);
+                    if (!gb_pixel_open(rel))
+                        DrawText("could not open", px, py + 30, 10, RED);
+                }
+            }
             shown++;
         }
     } else {
         DrawText("Art in this category is referenced from the catalogs.",
                  16, y, 12, GRAY);
-        DrawText("Import and per-file validation land with the pixel editor; "
-                 "the Catalog tab already previews each entry's sprite.",
+        DrawText("Click a tile in the tiles category to edit it pixel by pixel.",
                  16, y + 18, 12, DARKGRAY);
     }
+    DrawText("Click any tile to open it in the pixel editor.", 12, h - 40,
+             11, (Color){ 150, 170, 200, 255 });
     DrawText(TextFormat("%d referenced, %d missing", shown, missing),
              12, h - 22, 12, missing ? (Color){ 255, 140, 120, 255 }
                                      : (Color){ 140, 200, 140, 255 });
@@ -465,6 +476,27 @@ static void draw_package(GbWorkspace *ws, int top,
                  GRAY);
     }
     y += 30;
+
+    // What is still missing, next to the button that ships it.
+    extern void gb_collect_grids(MapGrid ***g, bool **loaded, int *n);
+    MapGrid **grids; bool *loaded; int ng;
+    gb_collect_grids(&grids, &loaded, &ng);
+    GbChecklist C;
+    gb_checklist_build(&C, ws, grids, loaded, ng);
+    int cy = top + 96, cx = 380;
+    DrawText(TextFormat("COMPLETENESS  %d/%d", C.done_count, C.count),
+             cx, cy, 12, LIGHTGRAY);
+    cy += 20;
+    for (int i = 0; i < C.count && cy < h - 40; i++) {
+        DrawText(C.item[i].done ? "[x]" : "[ ]", cx, cy, 12,
+                 C.item[i].done ? (Color){ 140, 200, 140, 255 }
+                                : (Color){ 200, 160, 100, 255 });
+        DrawText(C.item[i].what, cx + 28, cy, 12,
+                 C.item[i].done ? GRAY : RAYWHITE);
+        if (!C.item[i].done && C.item[i].hint[0])
+            DrawText(C.item[i].hint, cx + 300, cy, 11, DARKGRAY);
+        cy += 17;
+    }
 
     if (GuiButton((Rectangle){ 12, (float)y, 160, 28 }, "Build .openbounty")) {
         char out[GB_PATH_MAX * 2], err[512];

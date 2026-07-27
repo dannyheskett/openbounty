@@ -421,8 +421,18 @@ int main(int argc, char **argv) {
                 break;
             }
             default:
-                gb_mode_draw(G.mode, &G.ws, G.undo, BAR_H, G.status,
-                             sizeof G.status);
+                if (gb_pixel_is_open()) {
+                    gb_pixel_frame(BAR_H, G.ws.root, G.status, sizeof G.status);
+                    if (GuiButton((Rectangle){ (float)(GetScreenWidth() - 96),
+                                               (float)BAR_H + 4, 84, 22 },
+                                  "Close")) {
+                        if (gb_pixel_dirty()) gb_pixel_save(G.ws.root);
+                        gb_pixel_close();
+                    }
+                } else {
+                    gb_mode_draw(G.mode, &G.ws, G.undo, BAR_H, G.status,
+                                 sizeof G.status);
+                }
                 break;
             }
         }

@@ -41,6 +41,19 @@ void gb_mapview_frame(GbMapView *v, MapGrid *g, GbObjectList *objs,
                       GbUndo *undo, bool objects_mode, cJSON *doc,
                       const char *zone_id, char *status, size_t status_sz);
 
+// --- pixel editor (GB-250..255) ----------------------------------------------
+//
+// Opened from the Art tab on any image. Scoped to the pack: the image's own
+// dimensions, the pack palette as the only selectable colours, binary alpha.
+
+bool gb_pixel_open(const char *pack_rel_path);
+bool gb_pixel_save(const char *pack_root);
+void gb_pixel_close(void);
+bool gb_pixel_is_open(void);
+bool gb_pixel_dirty(void);
+void gb_pixel_frame(int top, const char *pack_root, char *status,
+                    size_t status_sz);
+
 const char *gb_terrain_name(int t);
 Color       gb_terrain_color(int t);
 Color       gb_object_color(int k);

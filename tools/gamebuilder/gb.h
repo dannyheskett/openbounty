@@ -167,6 +167,28 @@ const char *gb_tier_name(GbTier t);
 // validation findings.
 bool gb_package(GbWorkspace *ws, const char *out_zip, char *err, size_t errsz);
 
+// --- completeness checklist (GB-403) -----------------------------------------
+//
+// Validation says what is WRONG. This says what is MISSING -- a pack with no
+// villains is incomplete, not broken, and the two lists should not be confused.
+
+#define GB_MAX_CHECKS 32
+
+typedef struct {
+    char what[80];
+    char hint[96];
+    bool done;
+} GbCheckItem;
+
+typedef struct {
+    GbCheckItem item[GB_MAX_CHECKS];
+    int         count;
+    int         done_count;
+} GbChecklist;
+
+void gb_checklist_build(GbChecklist *C, GbWorkspace *ws,
+                        MapGrid *const *grids, const bool *loaded, int nzones);
+
 // --- new pack (GB-400) -------------------------------------------------------
 
 // Write a minimal pack that loads and runs into an empty directory. Generated,
