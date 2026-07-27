@@ -208,6 +208,11 @@ static void draw_objects(GbMapView *v, const GbObjectList *L, int selected) {
         Rectangle dot = { px + tw * 0.25f, py + th * 0.25f, tw * 0.5f, th * 0.5f };
         DrawRectangleRec(dot, OBJ_COL[o->kind]);
         DrawRectangleLinesEx(dot, 1, BLACK);
+        // A field of unlabelled dots tells the author nothing about which is
+        // which, so name them once there is room to read it.
+        if (v->zoom > 0.6f && o->kind <= GB_OBJ_CASTLE)
+            DrawText(o->label, (int)px, (int)(py + th * 0.8f), 9,
+                     (Color){ 230, 230, 240, 220 });
         if (i == selected) {
             DrawRectangleLinesEx((Rectangle){ px, py, tw, th }, 2, YELLOW);
             if (v->zoom > 0.4f)
@@ -217,21 +222,34 @@ static void draw_objects(GbMapView *v, const GbObjectList *L, int selected) {
 }
 
 static void draw_minimap(GbMapView *v, const MapGrid *g, Rectangle box) {
-    DrawRectangleRec(box, (Color){ 10, 10, 14, 255 });
-    float sx = box.width / g->w, sy = box.height / g->h;
-    float s = sx < sy ? sx : sy;
+    // A tall zone (64x128) is half as wide as the box, so centre the drawn
+    // area inside it rather than leaving a black slab beside the map.
+    float s = box.width / g->w;
+    float sy = box.height / g->h;
+    if (sy < s) s = sy;
+    float dw = g->w * s, dh = g->h * s;
+    Rectangle inner = { box.x + (box.width - dw) / 2,
+                        box.y + (box.height - dh) / 2, dw, dh };
+    DrawRectangleRec(inner, (Color){ 10, 10, 14, 255 });
     for (int y = 0; y < g->h; y++)
         for (int x = 0; x < g->w; x++)
-            DrawRectangle((int)(box.x + x * s), (int)(box.y + y * s),
+            DrawRectangle((int)(inner.x + x * s), (int)(inner.y + y * s),
                           (int)(s + 1), (int)(s + 1),
                           TERRAIN_COL[g->cell[y][x].terrain]);
-    // viewport rectangle
+
+    // Viewport rectangle, clamped to the map so it cannot spill outside.
     float tw = TW * v->zoom, th = TH * v->zoom;
-    Rectangle vp = { box.x + (-v->pan.x / tw) * s,
-                     box.y + (-v->pan.y / th) * s,
-                     (v->size.x / tw) * s, (v->size.y / th) * s };
-    DrawRectangleLinesEx(vp, 1, YELLOW);
-    DrawRectangleLinesEx(box, 1, (Color){ 70, 70, 80, 255 });
+    float vx = (-v->pan.x / tw) * s, vy = (-v->pan.y / th) * s;
+    float vw = (v->size.x / tw) * s, vh = (v->size.y / th) * s;
+    if (vx < 0) { vw += vx; vx = 0; }
+    if (vy < 0) { vh += vy; vy = 0; }
+    if (vx + vw > dw) vw = dw - vx;
+    if (vy + vh > dh) vh = dh - vy;
+    if (vw > 0 && vh > 0)
+        DrawRectangleLinesEx((Rectangle){ inner.x + vx, inner.y + vy, vw, vh },
+                             1, YELLOW);
+    DrawRectangleLinesEx(inner, 1, (Color){ 70, 70, 80, 255 });
+    box = inner;
 
     if (CheckCollisionPointRec(GetMousePosition(), box) &&
         IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
@@ -387,9 +405,10 @@ void gb_mapview_frame(GbMapView *v, MapGrid *g, GbObjectList *objs,
     draw_minimap(v, g, mm);
 
     if (over && in_grid(g, cx, cy)) {
+        // Sits above the app's status line, which owns the bottom edge.
         DrawText(TextFormat("%d, %d  %s", cx, cy,
                             TERRAIN_NAME[g->cell[cy][cx].terrain]),
-                 (int)v->origin.x + 8, (int)(v->origin.y + v->size.y - 18), 12,
+                 (int)v->origin.x + 8, (int)(v->origin.y + v->size.y - 38), 12,
                  (Color){ 200, 200, 210, 255 });
     }
 }

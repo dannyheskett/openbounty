@@ -28,7 +28,10 @@ static const char *MODE_NAME[MODE_COUNT] = {
     "Art", "Palette", "Validate", "Package"
 };
 
+typedef enum { PICK_PACK = 0, PICK_NEW, PICK_BASE } GbPickWhat;
+
 typedef struct {
+    GbPickWhat   picking;
     GbWorkspace  ws;
     GbRecent     recent;
     GbBrowser   *browser;
@@ -122,12 +125,81 @@ static void open_path(const char *path) {
     G.start_screen = false;
     say("Opened %s", G.ws.root);
 
+    // A pack with no art of its own renders as flat colour, which looks
+    // broken rather than empty. Say so, and offer the fix, rather than
+    // letting the author wonder why the map is blocks.
+    if (!tile_cache_get("grass").id) {
+        snprintf(G.message, sizeof G.message,
+                 "This pack has no tile art of its own, so the map will draw "
+                 "as flat colour.\n\nPress B to choose a base pack to borrow "
+                 "art from, or Esc to carry on without it.");
+        return;
+    }
+
     if (gb_autosave_exists(G.ws.root)) {
         snprintf(G.message, sizeof G.message,
                  "Unsaved work from a previous session was found for this "
                  "pack.\n\nPress R to recover it, or Esc to discard it and "
                  "keep the version on disk.");
     }
+}
+
+// --- self-test ----------------------------------------------------------------
+//
+// With build/gb-selftest present (holding a pack path), open that pack, visit
+// every mode, screenshot each, and exit. The GUI is otherwise the one part of
+// this program nothing can check; a compile is not evidence that a panel draws.
+// Triggered by a FILE, not a flag, so the no-arguments rule (GB-015) stands and
+// shipped behaviour is byte-identical.
+static int  st_step = -2, st_frame;
+
+static void selftest_tick(bool *quit) {
+    static const char *SHOT[MODE_COUNT] = {
+        "maps", "objects", "catalog", "strings",
+        "art", "palette", "validate", "package"
+    };
+    if (st_step == -2) {
+        FILE *f = fopen("build/gb-selftest", "r");
+        if (!f) { st_step = -3; return; }
+        char path[GB_PATH_MAX] = {0};
+        if (fgets(path, sizeof path, f)) {
+            size_t n = strlen(path);
+            while (n && (path[n-1] == '\n' || path[n-1] == '\r')) path[--n] = 0;
+        }
+        fclose(f);
+        open_path(path);
+        G.message[0] = 0;                 // a modal would cover every shot
+        // Borrow art the same way the UI does, so the captured maps show real
+        // tiles rather than the flat-colour fallback.
+        {
+            char root[GB_PATH_MAX];
+            snprintf(root, sizeof root, "%s", G.ws.root);
+            Pack *base = pack_open("assets/kings-bounty");
+            if (base) {
+                pack_stack_clear();
+                pack_stack_push(base);
+                Pack *own = pack_open(root);
+                if (own) pack_stack_push(own);
+                gb_workspace_reproject(&G.ws);
+                tile_cache_shutdown();
+                tile_cache_attach(&G.ws.res);
+                palette_init("palettes/palette.bin");
+                memset(G.grid_loaded, 0, sizeof G.grid_loaded);
+                load_zone(0);
+            }
+        }
+        st_step = -1;
+    }
+    if (st_step == -3) return;
+    if (++st_frame < 20) return;          // raygui needs frames to settle
+    st_frame = 0;
+    if (st_step >= 0 && st_step < MODE_COUNT)
+        TakeScreenshot(TextFormat("screenshots/gb_%d_%s.png", st_step,
+                                  SHOT[st_step]));
+    st_step++;
+    if (st_step >= MODE_COUNT) { *quit = true; return; }
+    G.mode = (GbMode)st_step;
+    G.message[0] = 0;
 }
 
 static void do_save(void) {
@@ -165,6 +237,7 @@ static void draw_start(void) {
     int by = 200;
     if (GuiButton((Rectangle){ (float)(cx - 150), (float)by, 300, 40 },
                   "Open Pack...")) {
+        G.picking = PICK_PACK;
         gb_browser_open(G.browser, GB_PICK_PACK,
                         G.recent.count ? G.recent.path[0] : NULL,
                         "Open a pack folder or .openbounty");
@@ -172,9 +245,9 @@ static void draw_start(void) {
     by += 48;
     if (GuiButton((Rectangle){ (float)(cx - 150), (float)by, 300, 40 },
                   "New Pack...")) {
+        G.picking = PICK_NEW;
         gb_browser_open(G.browser, GB_PICK_DIR, NULL,
                         "Choose an empty folder for the new pack");
-        G.view.selected = -2;          // marks the browser result as "new"
     }
 
     by += 70;
@@ -344,6 +417,22 @@ int main(int argc, char **argv) {
     SetTargetFPS(60);
     SetExitKey(KEY_NULL);
     GuiSetStyle(DEFAULT, TEXT_SIZE, 13);
+    // raygui ships a LIGHT theme. The app chrome is dark, so without this
+    // every list and panel raygui draws is white -- and our light text on it
+    // is invisible. This was the single worst defect in the first build.
+    GuiSetStyle(DEFAULT, BACKGROUND_COLOR,     0x1a1a20ff);
+    GuiSetStyle(DEFAULT, BASE_COLOR_NORMAL,    0x24242cff);
+    GuiSetStyle(DEFAULT, BASE_COLOR_FOCUSED,   0x30303aff);
+    GuiSetStyle(DEFAULT, BASE_COLOR_PRESSED,   0x3c5a8cff);
+    GuiSetStyle(DEFAULT, BASE_COLOR_DISABLED,  0x1e1e24ff);
+    GuiSetStyle(DEFAULT, TEXT_COLOR_NORMAL,    0xc8c8d0ff);
+    GuiSetStyle(DEFAULT, TEXT_COLOR_FOCUSED,   0xffffffff);
+    GuiSetStyle(DEFAULT, TEXT_COLOR_PRESSED,   0xffffffff);
+    GuiSetStyle(DEFAULT, TEXT_COLOR_DISABLED,  0x6a6a72ff);
+    GuiSetStyle(DEFAULT, BORDER_COLOR_NORMAL,  0x4a4a56ff);
+    GuiSetStyle(DEFAULT, BORDER_COLOR_FOCUSED, 0x6e8ec0ff);
+    GuiSetStyle(DEFAULT, BORDER_COLOR_PRESSED, 0x8ab4ffff);
+    GuiSetStyle(DEFAULT, LINE_COLOR,           0x3a3a44ff);
     G.browser = gb_browser_create();
     G.undo = gb_undo_create();
     gb_mapview_init(&G.view);
@@ -442,14 +531,36 @@ int main(int argc, char **argv) {
             if (gb_browser_draw(G.browser, GetScreenWidth() / 2 - 320,
                                 GetScreenHeight() / 2 - 250, 640, 500,
                                 picked, sizeof picked)) {
-                if (G.view.selected == -2) {          // New Pack flow
-                    G.view.selected = -1;
+                if (G.picking == PICK_NEW) {
                     char err[512];
                     if (gb_newpack_create(picked, err, sizeof err)) open_path(picked);
                     else snprintf(G.message, sizeof G.message, "%s", err);
+                } else if (G.picking == PICK_BASE) {
+                    // Layered UNDERNEATH: the engine's pack stack reads
+                    // top-down with fall-through, so the edited pack still
+                    // wins wherever it has its own file (GB-112).
+                    Pack *base = pack_open(picked);
+                    if (base) {
+                        char root[GB_PATH_MAX];
+                        snprintf(root, sizeof root, "%s", G.ws.root);
+                        snprintf(G.ws.base_pack, sizeof G.ws.base_pack, "%s",
+                                 picked);
+                        pack_stack_clear();
+                        pack_stack_push(base);
+                        Pack *own = pack_open(root);
+                        if (own) pack_stack_push(own);
+                        gb_workspace_reproject(&G.ws);
+                        tile_cache_shutdown();
+                        tile_cache_attach(&G.ws.res);
+                        palette_init("palettes/palette.bin");
+                        memset(G.grid_loaded, 0, sizeof G.grid_loaded);
+                        load_zone(G.view.zone);
+                        say("Borrowing art from %s", picked);
+                    }
                 } else {
                     open_path(picked);
                 }
+                G.picking = PICK_PACK;
             }
         }
 
@@ -487,7 +598,12 @@ int main(int argc, char **argv) {
                 }
             } else {
                 // Recovery offer uses the same modal.
-                if (IsKeyPressed(KEY_R) && gb_autosave_exists(G.ws.root)) {
+                if (IsKeyPressed(KEY_B)) {
+                    G.picking = PICK_BASE;
+                    gb_browser_open(G.browser, GB_PICK_PACK, "assets",
+                                    "Choose a pack to borrow art from");
+                    G.message[0] = 0;
+                } else if (IsKeyPressed(KEY_R) && gb_autosave_exists(G.ws.root)) {
                     char err[512];
                     if (gb_autosave_recover(&G.ws, err, sizeof err)) {
                         memset(G.grid_loaded, 0, sizeof G.grid_loaded);
@@ -508,6 +624,12 @@ int main(int argc, char **argv) {
             DrawText(G.status, 12, GetScreenHeight() - 18, 12,
                      (Color){ 130, 190, 130, 255 });
         EndDrawing();
+
+        // Self-test hook: with a script present, drive the app and capture
+        // each mode. Lets the GUI be inspected without a human at the
+        // keyboard, which is otherwise the one part of this program nothing
+        // can check. Absent the file, nothing here runs.
+        selftest_tick(&quit);
     }
 
     gb_browser_destroy(G.browser);
