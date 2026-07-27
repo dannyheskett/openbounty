@@ -9,6 +9,25 @@
 #include <stdio.h>
 #include <string.h>
 
+void pack_select_step(PackSelectState *st, const PackSelectInput *in, int n) {
+    if (!st || !in || n <= 0) return;
+
+    // A dismissed window is a cancel, not a selection. Without this the loop
+    // fell out with quit unset and the caller booted whatever row the cursor
+    // happened to rest on.
+    if (in->close || in->cancel) {
+        st->quit = true;
+        st->done = true;
+        return;
+    }
+
+    if (in->up)   st->cursor = (st->cursor - 1 + n) % n;
+    if (in->down) st->cursor = (st->cursor + 1) % n;
+    if (in->digit >= 0 && in->digit < n) st->cursor = in->digit;
+
+    if (in->confirm) st->done = true;
+}
+
 bool pack_select_flow(const PackEntry *list, int n, int *chosen) {
     if (!list || n <= 0 || !chosen) return false;
 
@@ -19,27 +38,26 @@ bool pack_select_flow(const PackEntry *list, int n, int *chosen) {
     SetTargetFPS(60);
     SetExitKey(KEY_NULL);
 
-    int cursor = 0;
-    bool done   = false;
-    bool quit   = false;
+    PackSelectState st = { 0, false, false };
 
-    while (!done && !frame_host_should_close()) {
+    while (!st.done) {
 
-        if (input_key_pressed(KEY_ESCAPE)) { quit = true; done = true; }
-        if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_KP_8)) {
-            cursor = (cursor - 1 + n) % n;
-        }
-        if (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2)) {
-            cursor = (cursor + 1) % n;
-        }
+        PackSelectInput in;
+        in.close   = frame_host_should_close();
+        in.cancel  = input_key_pressed(KEY_ESCAPE);
+        in.up      = input_key_pressed(KEY_UP)   || input_key_pressed(KEY_KP_8);
+        in.down    = input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2);
+        in.confirm = input_key_pressed(KEY_ENTER) ||
+                     input_key_pressed(KEY_KP_ENTER) ||
+                     input_key_pressed(KEY_SPACE);
+        in.digit   = -1;
         for (int i = 0; i < n && i < 9; i++) {
-            if (input_key_pressed(KEY_ONE + i)) cursor = i;
+            if (input_key_pressed(KEY_ONE + i)) in.digit = i;
         }
-        if (input_key_pressed(KEY_ENTER) ||
-            input_key_pressed(KEY_KP_ENTER) ||
-            input_key_pressed(KEY_SPACE)) {
-            done = true;
-        }
+
+        pack_select_step(&st, &in, n);
+
+        int cursor = st.cursor;
 
         BeginDrawing();
         ClearBackground((Color){ 16, 16, 32, 255 });
@@ -76,7 +94,7 @@ bool pack_select_flow(const PackEntry *list, int n, int *chosen) {
     }
 
     CloseWindow();
-    if (quit) return false;
-    *chosen = cursor;
+    if (st.quit) return false;
+    *chosen = st.cursor;
     return true;
 }
