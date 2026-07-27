@@ -303,24 +303,83 @@ is exactly the Barbarian class's position.
 
 ## 7. Troops
 
-**PROPOSED — structure decided, names need a pass.** Twenty-five troops in
-five dwelling families of five, stats unchanged from the reference pack.
+**DRAFTED — needs review.** Twenty-five troops in five dwelling families of
+five. Every stat line is unchanged from the reference pack; only the name and
+the art move. Names were chosen against the *mechanics*, not just the family:
+a line with `FLY` is a thing that flies, a line with a ranged attack is a
+thing that shoots, and `MAGIC`, `REGEN`, `ABSORB`, `LEECH`, `SCYTHE` and
+`IMMUNE` each name something the myth actually does.
 
-| Family | Concept |
-|---|---|
-| **Castle** | Rome's own, recruited only at the Emperor's seat. The manipular legion was already five graded lines by age and experience, so this is a one-to-one correspondence: skirmisher, spearman, veteran, cavalry, guard. Velites, Hastati, Principes, Triarii, Equites and Praetoriani are all available; pick five to fit the five stat lines. |
-| **Plains** | Auxiliary and allied horse — Numidian light cavalry, Sarmatian and Parthian cataphracts — topped by something winged and magical. |
-| **Forest** | Celtic and Germanic warriors, plus the woodland powers: fauns, dryads, the followers of Silvanus. |
-| **Hill** | Mountain tribes, war elephants, and the giants of myth — cyclopes and gigantes at the top. |
-| **Dungeon** | The chthonic tier, and Rome supplies it natively: *lemures* and *larvae* (malevolent dead), *manes* (ancestral shades), *striges* — screech-owl blood-drinkers, a genuine Roman vampire tradition rather than a borrowed one — *empusae*, and a hellhound at the apex. |
+### 7.1 Castra — the legion (castle family)
 
-The five stat lines per family are fixed; only the names and art change.
+Recruited only at the Emperor's seat. The manipular legion was already five
+graded lines, so this is a direct correspondence.
 
-**DECIDED: the full 25-name mapping is drafted in one pass and reviewed as a
-table.** Each name has to fit its stat line's mechanics, not just its family —
-a flier must be a thing that flies, a ranged line must be a thing that shoots,
-and the dungeon family must read as undead for Turn Undead and morale group E
-to make sense. That draft is the next deliverable on this document.
+| # | Base | Roman | SL/HP/MV | Why |
+|---|---|---|---|---|
+| 2 | militia | **Tirones** | 2/2/2 | The literal Latin for raw recruits |
+| 8 | archers | **Velites** | 2/10/2, ranged 1–3 | The legion's own javelin skirmishers — Rome's ranged line, not an auxiliary import |
+| 10 | pikemen | **Hastati** | 3/10/2 | *Hasta*, the spear. The first heavy line |
+| 18 | cavalry | **Equites** | 4/20/**4** | Roman cavalry, and the fastest thing in the game |
+| 14 | knights | **Praetoriani** | 5/35/1 | The Emperor's own guard, bought at the Emperor's own castle |
+
+### 7.2 Vicus — the provinces (plains family)
+
+| # | Base | Roman | SL/HP/MV | Why |
+|---|---|---|---|---|
+| 0 | peasants | **Coloni** | 1/1/1 | Tenant farmers; the trash tier and the fallback troop |
+| 3 | wolves | **Lupi** | 2/3/3 | Kept as wolves — Rome's own founding animal |
+| 11 | nomads | **Numidae** | 3/15/2 | Numidian light horse, the most famous irregular cavalry of the ancient world |
+| 16 | barbarians | **Sarmatae** | 4/40/3 | Steppe warriors; fast, heavy, and genuinely of the plains |
+| 20 | archmages | **Furiae** | 5/25/1, `FLY\|MAGIC` | The Furies are winged avenging spirits who strike at range — the flight and the magic are both the myth |
+
+### 7.3 Lucus — the sacred wood (forest family)
+
+| # | Base | Roman | SL/HP/MV | Why |
+|---|---|---|---|---|
+| 1 | sprites | **Lares** | 1/1/1, `FLY` | Household and place-spirits: tiny, numerous, incorporeal |
+| 6 | gnomes | **Fauni** | 2/5/1 | Woodland half-goats, small and rustic |
+| 9 | elves | **Silvani** | 3/10/3, ranged 2–4, 24 shots | Wood-dwellers of Silvanus; the deepest ammunition in the game suits forest ambushers |
+| 17 | trolls | **Antaei** | 4/50/1, `REGEN` | Antaeus regained his strength whenever he touched the earth. Regeneration *is* his myth |
+| 19 | druids | **Druidae** | 5/25/2, `MAGIC` | Kept — Celtic forest priests, and Rome really did fight them at Anglesey |
+
+### 7.4 Specus — the caves (hill family)
+
+| # | Base | Roman | SL/HP/MV | Why |
+|---|---|---|---|---|
+| 7 | orcs | **Baleares** | 2/5/2, ranged 1–2 | Balearic slingers, antiquity's most feared missile troops, out of the island hills |
+| 12 | dwarves | **Ligures** | 3/20/1 | Ligurian mountain tribes; Rome fought them for a century |
+| 15 | ogres | **Cyclopes** | 4/40/1 | Cave-dwelling one-eyed giants who forge under Etna |
+| 22 | giants | **Gigantes** | 5/60/3, ranged 5–10 | The Gigantomachy's giants fought by hurling boulders — the ranged attack is literal |
+| 24 | dragons | **Dracones** | 6/200/1, `FLY\|IMMUNE` | Also the name of the Roman cavalry windsock standard |
+
+### 7.5 Hypogeum — the dead below (dungeon family)
+
+Rome supplies this tier natively; none of it is borrowed fantasy.
+
+| # | Base | Roman | SL/HP/MV | Why |
+|---|---|---|---|---|
+| 4 | skeletons | **Larvae** | 2/3/2, `UNDEAD` | The Latin word meant precisely a skeletal ghost |
+| 5 | zombies | **Lemures** | 2/5/1, `UNDEAD` | The restless dead of the Lemuria — the same rite the Turn Undead spell is named for |
+| 13 | ghosts | **Manes** | 4/10/3, `ABSORB\|UNDEAD` | Ancestral shades. A host of the dead that swells as it kills is exactly what `ABSORB` does |
+| 21 | vampires | **Striges** | 5/30/1, `FLY\|LEECH\|UNDEAD` | Screech-owl blood-drinkers — a genuine Roman vampire, and `FLY\|LEECH` is the myth verbatim |
+| 23 | demons | **Empusae** | 6/50/1, `FLY\|SCYTHE` | Shape-shifting devourers in Hecate's service |
+
+### 7.6 Two consequences worth noting
+
+**Dwelling names.** The engine's `dwelling` field must stay
+`plains` / `forest` / `hill` / `dungeon` / `castle` — those are matched in
+code. Only the *display* names change, and the section headings above are the
+proposal: **Vicus** (village), **Lucus** (sacred grove), **Specus** (cave),
+**Hypogeum** (underground chamber), **Castra** (the legionary camp).
+
+**Morale groups.** The five groups are frozen along with everything else, but
+their flavour labels can be re-themed: **Plebs** (A), **Legio** (B), **Socii**
+(C), **Ferae** (D), **Inferi** (E). One rough edge — Baleares are human
+slingers sitting in group D with wolves and dragons, and Gigantes sit in
+group C with allied peoples. The letters are what the morale chart reads, so
+this costs nothing mechanically, but if the labels are ever surfaced in the
+UI those two will look odd.
 
 ---
 
@@ -377,8 +436,10 @@ check in the release workflow, deliberately rather than accidentally.
 The six decisions previously open here are now settled and folded into the
 sections above. What remains is work, not choices:
 
-1. **The 25-troop name table** (§7) — the immediate next piece.
+1. ~~The 25-troop name table~~ — **drafted** (§7), awaiting review.
 2. **The villain armies and rewards** (§3.2), which also fixes catalog order.
+   Now unblocked: composing Boudica's Celts or Shapur's cataphracts needs the
+   troop roster to exist first.
 3. **The four maps** and their settlement placements (§2.3), the largest job.
 4. **Validation** — `--validate-pack 0 255`, then iterate on whatever the
    oracle reports (§3.2).
