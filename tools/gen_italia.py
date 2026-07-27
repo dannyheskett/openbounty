@@ -15,8 +15,13 @@ W, H = 40, 64
 SEA, GRASS, VAR, FOREST, MTN = '~', '.', ',', 'F', '^'
 
 # --- mainland: row -> (x0, x1) inclusive -------------------------------------
+# Rows 0-4 are the Alps and span the FULL WIDTH: the range is the map's
+# northern boundary, not an island's coastline. Italia is closed off to the
+# north by mountain rather than by sea, so the zone reads as part of a
+# continent whose interior lies beyond the edge.
 MAINLAND = {
-    2:  (8, 31),  3:  (6, 33),  4:  (5, 34),          # Alpine arc
+    0:  (0, W - 1), 1: (0, W - 1), 2: (0, W - 1),     # Alpine wall, edge to edge
+    3:  (0, W - 1), 4: (0, W - 1),
     5:  (5, 35),  6:  (4, 35),  7:  (4, 34),          # Po valley, widest
     8:  (5, 33),  9:  (6, 32), 10:  (7, 30),
     11: (8, 28), 12: (8, 27), 13: (9, 27),            # Liguria / Etruria neck
@@ -47,9 +52,12 @@ CORSICA = {19: (3, 7), 20: (3, 7), 21: (3, 7), 22: (3, 7), 23: (4, 7), 24: (4, 6
 SARDINIA = {27: (3, 7), 28: (2, 7), 29: (2, 7), 30: (2, 7), 31: (2, 7),
             32: (2, 7), 33: (3, 7), 34: (3, 6), 35: (4, 6)}
 
-# --- the Alps: mountain fill, with three passes cut through -------------------
-ALPS_ROWS = (2, 3, 4)
-ALPINE_PASSES = ((4, 12), (4, 22), (4, 29))   # (row, x) -- the ways south
+# --- the Alps ----------------------------------------------------------------
+# A solid wall across the top of the map. No passes are cut: with the map edge
+# immediately north there is nothing on the far side to reach, so a pass would
+# be a dead-end valley rather than a route.
+ALPS_ROWS = (0, 1, 2, 3, 4)
+ALPINE_PASSES = ()
 
 # --- the Apennine spine ------------------------------------------------------
 # Two tiles wide, offset west of centre, broken every few rows so the coast
