@@ -88,6 +88,7 @@ PACK_DIR   := build/$(BUILD)/assets
 PACKS := $(addprefix $(PACK_DIR)/,$(addsuffix .openbounty,$(PACK_NAMES)))
 
 OUT_TEST      := build/openbounty-test
+OUT_MAPEDIT   := build/openbounty-mapedit
 OUT_ENGLIB    := build/libobengine.a
 LIBTEST_STAMP := build/libtest-pass.stamp
 
@@ -396,6 +397,20 @@ TEST_SRC := $(filter-out src/main.c,$(SHELL_SRC)) $(TOOL_SRC) \
 
 $(OUT_TEST): $(TEST_SRC) $(OUT_ENGLIB) build/version.h Makefile | build
 	gcc $(CFLAGS) -Ithird_party/greatest -Itests $(TEST_SRC) $(OUT_ENGLIB) -o $(OUT_TEST) $(LDFLAGS)
+
+# ---------------------------------------------------------------------------
+# openbounty-mapedit: GUI zone map editor. Author-time only -- never built by
+# `make all` and never packaged into a release archive. Links the engine
+# archive plus the shell's tile_cache/assets so the canvas is drawn by exactly
+# the code that draws the game.
+MAPEDIT_SRC := tools/mapedit_main.c tools/mapedit_io.c tools/mapedit_furnish.c \
+               src/tile_cache.c src/assets.c
+
+.PHONY: mapedit
+mapedit: $(OUT_MAPEDIT)
+
+$(OUT_MAPEDIT): $(MAPEDIT_SRC) $(OUT_ENGLIB) build/version.h Makefile | build
+	gcc $(CFLAGS) $(MAPEDIT_SRC) $(OUT_ENGLIB) -o $(OUT_MAPEDIT) $(LDFLAGS)
 
 # ---------------------------------------------------------------------------
 # libobengine.a, engine compiled as a static archive. Consumers link

@@ -851,11 +851,16 @@ except where a deviation is explicitly flagged (§34).
   `mountain_edge_01..12`, `desert_edge_01..12`; 48 of the pack's 54 tile
   codes). They are the transition pieces that blend a terrain into its
   neighbour, and they are **baked into the `.dat` files by the map author**,
-  not generated at runtime. `furnish_map` (`engine/game.c`) is retained as a
-  **no-op** purely to mirror OpenKB's `spawn_game` call sequence; OpenKB ran a
-  real furnishing pass there (`rogue.c`, `OPENKB-SPEC.md` §12.5) that rewrote
-  base terrain bytes into edge bytes at load, and OpenBounty deliberately does
-  not. A `.dat` written with only the plain terrain codes therefore renders
+  not generated at runtime. **A `.dat` holds the fully rendered map; nothing
+  about its appearance is computed at game time.** This is a ratified
+  decision, not an accident of implementation: `furnish_map` (`engine/game.c`)
+  is retained as a permanent **no-op** mirroring OpenKB's `spawn_game` call
+  sequence, where a real furnishing pass (`rogue.c`, `OPENKB-SPEC.md` §12.5)
+  rewrote base terrain bytes into edge bytes at load. OpenBounty will not do
+  that. The consequences are intended: a `.dat` is self-contained and renders
+  identically in the game, in an editor, and in any third-party tool, with no
+  shared algorithm to keep in agreement; load does no per-tile work; and a
+  pack author's saved file is exactly what a player sees. A `.dat` written with only the plain terrain codes therefore renders
   with hard stair-stepped coastlines; the shipped `continentia` uses all 54
   codes, and its edge tiles outnumber its plain ones.
 

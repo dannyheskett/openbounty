@@ -569,7 +569,14 @@ only by flight or a gate. It is not fatal, because the autoplay fetch has a
 flight fallback (AP-188) and the shipped `saharia` contains exactly one such
 chest, but it should be deliberate rather than accidental.
 
-### 10.6.1 The checker
+### 10.6.1 Furnishing is author-time, permanently
+
+**DECIDED.** The `.dat` file contains the **fully rendered map**, edge variants
+and all (REQ-229). Nothing about a map's appearance is computed at game time,
+and `furnish_map` in the engine stays a no-op forever. The editor bakes the
+variants when it saves.
+
+### 10.6.2 The checker
 
 `tools/mapcheck.py` enforces all of the above:
 
