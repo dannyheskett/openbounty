@@ -478,18 +478,28 @@ check in the release workflow, deliberately rather than accidentally.
 **DECIDED.** Four hand-authored zone maps, each an ASCII `.dat` under
 `maps/`, one byte per tile, resolved through `tile_codes` in `game.json`.
 
-### 10.1 Dimensions are per-zone, and shrink-only
+### 10.1 Dimensions are per-zone, and bounded by a raisable constant
 
-`MAP_MAX_W` and `MAP_MAX_H` are **64**, and `MapLoadZone` *rejects* a zone
-declaring more — it is a hard ceiling, not a default. Zone `width` and
-`height` are parsed per-zone and default to 64, so every zone may have its own
-shape, and short rows pad with grass.
+Zone `width`/`height` are parsed per-zone and default to 64; short rows pad
+with grass. The ceiling is `MAP_MAX_W` / `MAP_MAX_H` in
+`engine/include/map.h`, enforced at load — `MapLoadZone` prints `too large`
+and fails the zone. That was verified empirically: a 96×96 zone is rejected
+and aborts the run.
 
-**Growing past 64 would cost the oracle, not just memory.** `sizeof(Map)` is
-848 KB. Every autoplay search node snapshots Game + Map + Fog and the frontier
-beam is sized against that (AP-204), so doubling the edge quadruples the tile
-array to ~3.4 MB per node and forces a roughly 4× smaller beam. The engine
-would get worse at proving the pack winnable. **64 is treated as fixed.**
+The ceiling is a **constant, not a structural limit**, and this pack raises
+`MAP_MAX_H` from 64 to **128** so Italia can be a proper boot. Measured
+consequences of that change:
+
+- **Behaviour-neutral.** 211/211 tests pass and the reference pack's
+  validation sweep is identical either way (seeds 0–2: PASS 3/3, 299 days,
+  6072 score at both settings).
+- **Not a save-format change.** Fog is encoded from each zone's own
+  `width`/`height`, never from these bounds.
+- **The cost is memory.** `sizeof(Map)` is 212 bytes per tile: 848 KB at
+  64×64, 1,696 KB at 64×128. Every autoplay search node snapshots a whole
+  `Map` (AP-204), so the frontier beam pays proportionally. Raising the
+  *width* too would have cost 4× rather than 2×, which is why only the height
+  moved.
 
 ### 10.2 Scale, in play terms
 
@@ -506,7 +516,7 @@ costs geography, so zones shrink only where the real region is genuinely thin.
 
 | Zone | Size | Shape |
 |---|---|---|
-| **Italia** | 40 × 64 | Tall and narrow: Po valley at the top, the peninsula running NW→SE, Sicilia / Sardinia / Corsica as islands |
+| **Italia** | 64 × 128 | Tall and narrow: Po valley at the top, the peninsula running NW→SE, Sicilia / Sardinia / Corsica as islands |
 | **Galliae** | 64 × 64 | The one genuinely blocky zone: Gaul centre, Hispania southwest, Britannia across water northwest, the Rhine on the east edge |
 | **Africa** | 64 × 28 | A long coastal strip, which is the honest shape of the Roman Maghreb |
 | **Oriens** | 64 × 44 | Wide: Anatolia west and centre, the Levant running south |
