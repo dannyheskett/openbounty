@@ -167,6 +167,13 @@ static void selftest_tick(bool *quit) {
             while (n && (path[n-1] == '\n' || path[n-1] == '\r')) path[--n] = 0;
         }
         fclose(f);
+        // Consume the trigger. A leftover file otherwise hijacks every later
+        // run -- the app drives itself through the modes and exits, which
+        // looks like a serious malfunction and is impossible to guess at.
+        remove("build/gb-selftest");
+        TraceLog(LOG_WARNING,
+                 "gamebuilder: build/gb-selftest found -- running the mode "
+                 "capture once, then exiting. The file has been consumed.");
         open_path(path);
         G.message[0] = 0;                 // a modal would cover every shot
         // Borrow art the same way the UI does, so the captured maps show real
