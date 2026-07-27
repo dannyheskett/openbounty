@@ -394,6 +394,10 @@ TEST_ONLY_SRC := $(TEST_SHARED) $(TEST_UNIT) $(TEST_REGR) $(TEST_E2E) $(TEST_AUT
 # + test sources + libobengine.a.
 TEST_SRC := $(filter-out src/main.c,$(SHELL_SRC)) $(TOOL_SRC) \
             tools/gamebuilder/gb_workspace.c \
+            tools/gamebuilder/gb_undo.c tools/gamebuilder/gb_objects.c \
+            tools/gamebuilder/gb_validate.c tools/gamebuilder/gb_package.c \
+            tools/gamebuilder/gb_archive.c \
+            tools/mapedit_io.c tools/mapedit_furnish.c \
             $(DEMO_SRC) $(AUTOPLAY_SRC) \
             $(TEST_ONLY_SRC)
 
@@ -419,7 +423,12 @@ $(OUT_MAPEDIT): $(MAPEDIT_SRC) $(OUT_ENGLIB) build/version.h Makefile | build
 # Takes no arguments -- everything is point-and-click (GB-015). Built with
 # `make gamebuilder`; it will be packaged into the release archives once it
 # is worth shipping (GB-010).
-GB_SRC := $(wildcard tools/gamebuilder/*.c)
+# The map layer (furnish/despeckle/IO) and the shell's tile cache, assets and
+# palette are shared with the game, not reimplemented, so the editor's canvas
+# cannot drift from what the game draws.
+GB_SRC := $(wildcard tools/gamebuilder/*.c) \
+          tools/mapedit_io.c tools/mapedit_furnish.c \
+          src/tile_cache.c src/assets.c src/palette.c
 GB_CFLAGS := $(CFLAGS) -Ithird_party/raygui -Itools/gamebuilder
 
 .PHONY: gamebuilder

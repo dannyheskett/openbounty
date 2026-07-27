@@ -53,15 +53,15 @@ bool gb_workspace_open(GbWorkspace *ws, const char *path,
         snprintf(err, errsz, "No path given.");
         return false;
     }
+    // GB-111: an archive is extracted to a working directory and that
+    // directory becomes the workspace; the archive itself is never edited in
+    // place, so a failed edit cannot destroy the user's only copy.
+    char work[GB_PATH_MAX];
+    char archive_src[GB_PATH_MAX] = {0};
     if (!is_dir(path)) {
-        // GB-111: an archive is extracted to a working directory; the archive
-        // itself is never edited in place. Not yet implemented -- the message
-        // has to tell the user what to do instead, not just refuse.
-        snprintf(err, errsz,
-                 "'%s' is not a directory.\n\n"
-                 "Opening a .openbounty archive is not supported yet. "
-                 "Extract it first, then open the folder.", path);
-        return false;
+        if (!gb_archive_extract(path, work, sizeof work, err, errsz)) return false;
+        snprintf(archive_src, sizeof archive_src, "%s", path);
+        path = work;
     }
 
     char manifest[GB_PATH_MAX + 16];
@@ -101,6 +101,7 @@ bool gb_workspace_open(GbWorkspace *ws, const char *path,
     memset(ws, 0, sizeof *ws);
     ws->doc = doc;
     snprintf(ws->root, sizeof ws->root, "%s", path);
+    snprintf(ws->from_archive, sizeof ws->from_archive, "%s", archive_src);
     ws->open = true;
     ws->dirty = false;
     gb_workspace_reproject(ws);

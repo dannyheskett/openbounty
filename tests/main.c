@@ -34,6 +34,7 @@ SUITE_EXTERN(unit_art_manifest_suite);
 SUITE_EXTERN(unit_pack_suite);
 SUITE_EXTERN(unit_pack_select_suite);
 SUITE_EXTERN(unit_gamebuilder_suite);
+SUITE_EXTERN(unit_gamebuilder_ops_suite);
 SUITE_EXTERN(unit_combat_rng_suite);
 SUITE_EXTERN(unit_combat_unit_suite);
 SUITE_EXTERN(unit_combat_geom_suite);
@@ -82,6 +83,7 @@ int main(int argc, char **argv) {
     RUN_SUITE(unit_pack_suite);
     RUN_SUITE(unit_pack_select_suite);
     RUN_SUITE(unit_gamebuilder_suite);
+    RUN_SUITE(unit_gamebuilder_ops_suite);
     RUN_SUITE(unit_combat_rng_suite);
     RUN_SUITE(unit_combat_unit_suite);
     RUN_SUITE(unit_combat_geom_suite);
