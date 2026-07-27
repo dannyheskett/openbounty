@@ -834,6 +834,57 @@ except where a deviation is explicitly flagged (§34).
   `boat_spawn_x/y` used when a boat is rented. When a castle's `gate` object is
   absent, the gate landing tile is computed as `(x, y+1)`.
 
+### 9.8 Terrain edge variants (baked, not generated)
+
+- **REQ-229.** Every terrain except grass has shipped **twelve edge variants**
+  alongside its plain tile (`water_edge_00..11`, `forest_edge_01..12`,
+  `mountain_edge_01..12`, `desert_edge_01..12`; 48 of the pack's 54 tile
+  codes). They are the transition pieces that blend a terrain into its
+  neighbour, and they are **baked into the `.dat` files by the map author**,
+  not generated at runtime. `furnish_map` (`engine/game.c`) is retained as a
+  **no-op** purely to mirror OpenKB's `spawn_game` call sequence; OpenKB ran a
+  real furnishing pass there (`rogue.c`, `OPENKB-SPEC.md` §12.5) that rewrote
+  base terrain bytes into edge bytes at load, and OpenBounty deliberately does
+  not. A `.dat` written with only the plain terrain codes therefore renders
+  with hard stair-stepped coastlines; the shipped `continentia` uses all 54
+  codes, and its edge tiles outnumber its plain ones.
+
+- **REQ-229a.** The variant is selected by which of the tile's eight
+  neighbours carry a **different terrain**, cardinals taking precedence over
+  diagonals. Two families exist, differing in both base and permutation
+  (matching OpenKB's `tile_offset` table, which gives water its own row):
+
+  | Differing neighbours | water | forest / mountain / desert |
+  |---|---|---|
+  | N | `10` | `11` |
+  | S | `11` | `12` |
+  | E | `08` | `09` |
+  | W | `09` | `10` |
+  | N and E | `00` | `03` |
+  | N and W | `01` | `01` |
+  | S and W | `02` | `02` |
+  | S and E | `03` | `04` |
+  | NE only (no cardinal) | `05` | `06` |
+  | SE only | `04` | `05` |
+  | SW only | `06` | `07` |
+  | NW only | `07` | `08` |
+
+  Water is 0-based (`00`–`11`); the other three are 1-based (`01`–`12`) and
+  have no `00`. A tile with no differing neighbour uses the plain terrain
+  code. Three or more differing cardinals (a one-tile spit) has no dedicated
+  variant and is the author's choice; the shipped maps avoid the shape.
+
+- **REQ-229b.** This table was **derived from the shipped maps**, by
+  classifying every edge tile in all four zones by its neighbour pattern, then
+  re-applied as a rule and measured against what the authors actually placed.
+  Of the **7,870** edge tiles in the four shipped zones it reproduces **7,590
+  (96.4%)** exactly; **169 (2.1%)** sit on patterns the table leaves undefined
+  (three or more differing cardinals, or more than one differing diagonal with
+  no cardinal), and **111 (1.4%)** disagree, which is the expected residue of
+  a hand-drawn map. The convention is therefore exact enough to author
+  against, and a generator applying it will produce coastlines
+  indistinguishable from the shipped ones.
+
 ---
 
 ## 10. Salt: per-zone object placement
