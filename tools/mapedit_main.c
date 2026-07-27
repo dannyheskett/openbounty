@@ -235,7 +235,10 @@ static void DrawTextBoxed(const char *s, int x, int y) {
 
 static void usage(void) {
     fprintf(stderr,
-        "usage: openbounty-mapedit --pack <dir> --zone <id>\n"
+        "usage: openbounty-mapedit --pack <dir> --zone <id> [--base <dir>]\n"
+        "\n"
+        "  --base <dir>  a pack to fall back to for art the edited pack does\n"
+        "                not carry yet (e.g. --base assets/kings-bounty)\n"
         "\n"
         "Paints base terrain for a pack zone. Edge variants are derived by the\n"
         "furnish pass and baked into the .dat on save; they are never painted\n"
@@ -243,13 +246,26 @@ static void usage(void) {
 }
 
 int main(int argc, char **argv) {
-    const char *pack_arg = NULL, *zone_arg = NULL;
+    const char *pack_arg = NULL, *zone_arg = NULL, *base_arg = NULL;
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--pack") && i + 1 < argc) pack_arg = argv[++i];
         else if (!strcmp(argv[i], "--zone") && i + 1 < argc) zone_arg = argv[++i];
+        else if (!strcmp(argv[i], "--base") && i + 1 < argc) base_arg = argv[++i];
         else { usage(); return 2; }
     }
     if (!pack_arg || !zone_arg) { usage(); return 2; }
+
+    // A pack under construction may have maps and a manifest but no art yet.
+    // The engine's pack stack reads top-down with fall-through, so pushing a
+    // base pack underneath supplies whatever the edited pack is missing.
+    if (base_arg) {
+        Pack *base = pack_open(base_arg);
+        if (!base) {
+            fprintf(stderr, "mapedit: cannot open base pack '%s'\n", base_arg);
+            return 1;
+        }
+        pack_stack_push(base);
+    }
 
     Pack *pack = pack_open(pack_arg);
     if (!pack) {
