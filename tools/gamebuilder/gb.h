@@ -161,6 +161,36 @@ void        gb_validate(GbFindings *F, GbWorkspace *ws,
                         MapGrid *const *grids, const bool *loaded, int nzones);
 const char *gb_tier_name(GbTier t);
 
+// --- winnability (GB-310..313) -----------------------------------------------
+//
+// Runs OUT OF PROCESS against the game binary. A sweep can take hours and the
+// oracle is doing a deep search; a hang there must not take unsaved work with
+// it, which is why this is a pipe and not a linked call.
+
+#define GB_ORACLE_MAX_ROWS 256
+
+typedef struct {
+    bool solved;
+    char text[160];
+} GbOracleRow;
+
+typedef struct {
+    int         lo, hi;
+    GbOracleRow row[GB_ORACLE_MAX_ROWS];
+    int         rows, solved, failed;
+    int         verdict;      // 0 running, 1 PASS, 2 FAIL
+    bool        finished;
+} GbOracleResult;
+
+typedef struct GbOracle GbOracle;
+
+bool                  gb_oracle_start(const char *pack_root, int lo, int hi,
+                                      char *err, size_t errsz);
+bool                  gb_oracle_poll(void);     // call each frame; true = running
+void                  gb_oracle_stop(void);
+bool                  gb_oracle_running(void);
+const GbOracleResult *gb_oracle_result(void);
+
 // --- packaging (GB-320..324) -------------------------------------------------
 
 // Zip the workspace into `out_zip`. Reports what it wrote; never refuses on

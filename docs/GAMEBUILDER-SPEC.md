@@ -1,9 +1,33 @@
 # OpenBounty GameBuilder, Requirements
 
-**Status:** planning. The requirement set for **GameBuilder**, OpenBounty's
-game-pack editor, which expands the current `openbounty-mapedit` into a full
-application. Written to be phased later; nothing here is built yet except the
-terrain pass noted in §12.
+**Status:** built, first pass. The requirement set for **GameBuilder**,
+OpenBounty's game-pack editor. Phases 0-6 are implemented
+(`tools/gamebuilder/`, `make gamebuilder`); this document is now both the
+requirement set and the record of what exists.
+
+**As built.** Start screen with recent packs; in-app file browser; eight
+modes (Maps, Objects, Catalog, Strings, Art, Palette, Validate, Package);
+undo/redo across all of them; autosave with crash recovery; `.openbounty`
+archives opened by extraction; a cJSON-DOM workspace that preserves unknown
+keys and saves byte-identically when unchanged; multi-zone terrain painting
+with live furnishing; object placement with castle footprints; catalog forms
+with typed commit and raw-JSON escape hatch; string editing with token
+highlighting; a palette-constrained pixel editor with onion-skin, playback and
+in-context tiling preview; three-tier validation; out-of-process winnability
+checking; packaging to `.openbounty`; a generated new-pack skeleton; and a
+completeness checklist. Cross-compiles for Windows.
+
+**Measured against real packs.** Running every operation headlessly over the
+reference pack reports one finding (Saharia has 3 villains and 3 castles, which
+REQ-300 says is too tight) and 15/16 checklist items complete. Over Glory of
+Rome it reports 8 findings, all true: six town docks carry the reference pack's
+coordinates and now sit on land, the zone has no chest placeholders against a
+salt budget of 21, and villains + artifacts total 14 rather than the 25 the
+puzzle grid needs.
+
+**Not yet built:** art import with per-file validation (GB-241/242), palette
+editing as opposed to viewing (GB-260/262), pack content versioning
+(GB-330..332), and release packaging (GB-506).
 
 **Conventions.** Each requirement carries a stable identifier `GB-NNN`. This
 document owns the `GB-` namespace; `OPENBOUNTY-SPEC.md` owns `REQ-`,
