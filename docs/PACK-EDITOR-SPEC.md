@@ -56,10 +56,27 @@ this describes work not yet done.
   native file dialog: raylib provides none, and the usual Linux answer
   (shelling out to `zenity` or `kdialog`) adds a runtime dependency that fails
   on a bare system. An in-app browser also looks the same on all four targets.
-- **PE-014.** Shipping the editor changes the release workflow's pack-leak
-  assertion, which currently fails any archive containing a `.openbounty` file
-  (`RELEASE-PROCESS.md` §2). The editor ships **without** any pack; the
-  assertion stands unchanged.
+- **PE-014.** **Glory of Rome ships with the editor**, as the release's
+  playable pack. It is the first pack that legally can ship: it is entirely
+  original content, where the `kings-bounty` pack is DOS-extracted and
+  copyright-restricted.
+- **PE-014a.** That changes the release workflow's pack-leak assertion, which
+  today fails **any** archive containing a `.openbounty` file, in four places
+  (`.github/workflows/release.yml`). It shall become an **allowlist by pack
+  id**: `glory-of-rome` may ship; anything derived from the DOS assets never
+  may. The rule being enforced is "no extracted content in a release", and the
+  assertion shall say so, because a blanket deny that someone later widens by
+  hand is how extracted art escapes.
+- **PE-014b.** Shipping Rome puts the **art commission on the critical path**.
+  Rome currently borrows `kings-bounty` art through a base pack for
+  development; none of that may survive into the shipped artifact (PE-520). The
+  release is gated on original art existing for every category in
+  `ART-SPEC.md`.
+- **PE-014c.** Building Glory of Rome **in the editor** is the editor's
+  acceptance test. A phase is not done because its requirements are ticked off;
+  it is done when the corresponding part of Rome was built with it. This is the
+  cheapest available guard against building an editor that is pleasant to
+  specify and unusable in practice.
 
 ## 3. Non-goals
 
