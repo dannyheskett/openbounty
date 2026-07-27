@@ -470,7 +470,7 @@ UI those two will look odd.
 the playable pack. It is the first pack that legally can — it is entirely
 original, where `kings-bounty` is DOS-extracted and copyright-restricted.
 
-Three consequences follow, recorded in `PACK-EDITOR-SPEC.md` PE-014:
+Three consequences follow, recorded in `GAMEBUILDER-SPEC.md` GB-014:
 
 - The release workflow's pack-leak assertion becomes an **allowlist by pack
   id** rather than a blanket deny, in four places, so `glory-of-rome` ships and
