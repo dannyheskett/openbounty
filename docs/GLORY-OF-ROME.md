@@ -473,7 +473,132 @@ check in the release workflow, deliberately rather than accidentally.
 
 ---
 
-## 10. Next deliverables
+## 10. Maps
+
+**DECIDED.** Four hand-authored zone maps, each an ASCII `.dat` under
+`maps/`, one byte per tile, resolved through `tile_codes` in `game.json`.
+
+### 10.1 Dimensions are per-zone, and shrink-only
+
+`MAP_MAX_W` and `MAP_MAX_H` are **64**, and `MapLoadZone` *rejects* a zone
+declaring more — it is a hard ceiling, not a default. Zone `width` and
+`height` are parsed per-zone and default to 64, so every zone may have its own
+shape, and short rows pad with grass.
+
+**Growing past 64 would cost the oracle, not just memory.** `sizeof(Map)` is
+848 KB. Every autoplay search node snapshots Game + Map + Fog and the frontier
+beam is sized against that (AP-204), so doubling the edge quadruples the tile
+array to ~3.4 MB per node and forces a roughly 4× smaller beam. The engine
+would get worse at proving the pack winnable. **64 is treated as fixed.**
+
+### 10.2 Scale, in play terms
+
+The player sees a **5 × 5 tile viewport** with fog radius 3, so a 64×64 zone
+is about 164 screens of area. At 40 steps per day a corner-to-corner diagonal
+is ~64 steps, under two days; a round trip across a zone is about three days
+against a 600-day normal budget.
+
+The maps are not the scarce resource — the calendar is spent fighting and
+shopping, not walking. Shrinking therefore buys less than it appears to and
+costs geography, so zones shrink only where the real region is genuinely thin.
+
+### 10.3 Per-zone dimensions
+
+| Zone | Size | Shape |
+|---|---|---|
+| **Italia** | 40 × 64 | Tall and narrow: Po valley at the top, the peninsula running NW→SE, Sicilia / Sardinia / Corsica as islands |
+| **Galliae** | 64 × 64 | The one genuinely blocky zone: Gaul centre, Hispania southwest, Britannia across water northwest, the Rhine on the east edge |
+| **Africa** | 64 × 28 | A long coastal strip, which is the honest shape of the Roman Maghreb |
+| **Oriens** | 64 × 44 | Wide: Anatolia west and centre, the Levant running south |
+
+### 10.4 Scoping tools, in order of preference
+
+1. **Shrink the declaration.** No wasted tiles, and the worldmap view shows a
+   correctly shaped region rather than a blob in the corner of a square.
+2. **Sea as the hard edge.** Water on the outer rows is free and natural.
+3. **Desert as a soft edge.** The best of the three. Desert zeroes the day's
+   remaining steps on entry, so the Sahara is *passable but ruinous* — one
+   tile per day. The player gets a boundary they can see, understand, and
+   cross in desperation, with no wall. Mountains do the same job for the
+   Parthian frontier in Oriens and the Rhine in Galliae.
+
+### 10.5 The boat-trap rule
+
+**No town's `boat_x`/`boat_y` may sit on a water body that is not connected to
+the open sea.**
+
+The rule is about *docks*, not about enclosed water as such. An earlier
+draft of this section demanded one water body per zone; **that was wrong, and
+the shipped pack disproves it** — all four `kings-bounty` maps carry 8–32
+enclosed water tiles apiece and the pack still clears 15/15. The reason is
+that **boats only ever spawn at a town's dock**, so a pond nothing can launch
+into is decorative and completely harmless.
+
+What *is* lethal is a dock on such a pond, because a boat launched into an
+enclosed body is unrecoverable: rental is charged weekly and forever, and
+cancellation is refused mid-sail. The oracle would suffer for it too — the
+mover prices every rentable town dock as a boarding edge (AP-093), so a
+landlocked dock is a boarding that leads nowhere.
+
+**Rivers are fine either way**, and a river reaching the sea is both realistic
+and sailable.
+
+### 10.6 Islands need a coastline, not a dock
+
+Britannia across water inside Galliae needs **a coastline and one dock town
+somewhere on the same sea** — that is all.
+
+A second earlier claim, that an island needs its own dock, was also wrong.
+Disembarking parks the boat on whatever coastal land tile the hero steps onto
+(REQ-243), so any shore is a landing. The shipped `continentia` reaches a
+249-tile region and a 195-tile region exactly this way.
+
+The real hazard is narrower: **an objective inside a walled inland pocket** —
+land enclosed by forest or mountain with no coast at all. That is reachable
+only by flight or a gate. It is not fatal, because the autoplay fetch has a
+flight fallback (AP-188) and the shipped `saharia` contains exactly one such
+chest, but it should be deliberate rather than accidental.
+
+### 10.6.1 The checker
+
+`tools/mapcheck.py` enforces all of the above:
+
+```sh
+tools/mapcheck.py <pack-dir> <map.dat> [WxH] [zone-id]
+```
+
+It verifies dimensions and tile codes, flags a dock on landlocked water,
+reports objectives stranded in inland pockets, and prints the terrain
+breakdown. It is **calibrated against the shipped pack** — three of the four
+`kings-bounty` maps pass clean, and the fourth reports only that one real
+`saharia` chest. A checker that failed known-good maps would be worthless,
+which is how the two wrong rules above were caught.
+
+### 10.7 Per-zone budget
+
+Real requirements, not guidelines:
+
+- **≥ 21 chest placeholder tiles per zone.** The salt barrel draws from them
+  (REQ-231): 2 artifacts + 1 navmap + 1 orb + 2 telecaves + 10 dwellings + 5
+  friendly foes. Anything above 21 remains a real chest. Reference zones carry
+  45–75.
+- **More contract-eligible castles than villains, with margin.** Italia hosts
+  six, so it wants 10–12.
+- **Castles are 3 × 2 footprints** — one walkable gate plus five blocking wall
+  tiles. They need flat room.
+- Exactly one `is_home` zone (Italia); one `magic_alcove` and one
+  `hero_spawn` per zone.
+
+### 10.8 One consequence to watch
+
+Smaller maps mean less travel, so **the pack gets easier** while
+`days_per_difficulty` stays at 900/600/400/200. This is measurable rather than
+guesswork — the oracle reports days-to-clear per seed — so the day budget is
+left alone until validation says otherwise.
+
+---
+
+## 11. Next deliverables
 
 The six decisions previously open here are now settled and folded into the
 sections above. What remains is work, not choices:
