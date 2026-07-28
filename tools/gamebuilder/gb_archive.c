@@ -122,18 +122,40 @@ bool gb_archive_extract(const char *archive, char *out_dir, size_t out_sz,
 
 // --- autosave (GB-103) --------------------------------------------------------
 //
-// Autosave never writes to the pack. It writes the manifest to a sibling file
-// so a crash loses at most one interval of work, and recovery is an explicit
-// choice rather than something that happens behind the user's back.
+// Autosave NEVER writes to the pack. The first cut put the file inside the
+// pack directory, which drops an untracked file into whatever the author has
+// under version control -- and for the reference pack, into the repository.
+// It lives in the user data directory instead, named after a hash of the
+// pack's path so two packs cannot collide.
+
+static void autosave_path_for(const char *root, char *out, size_t n) {
+    char dir[GB_PATH_MAX];
+    if (!SavePathGetDir(dir, sizeof dir)) { out[0] = '\0'; return; }
+    // FNV-1a over the path: short, stable, and no characters that need
+    // escaping in a filename.
+    unsigned long long h = 1469598103934665603ULL;
+    for (const char *p = root; *p; p++) {
+        h ^= (unsigned char)*p;
+        h *= 1099511628211ULL;
+    }
+    snprintf(out, n, "%s%cgamebuilder%cautosave-%016llx.json", dir, GB_SEP,
+             GB_SEP, h);
+}
 
 static void autosave_path(const GbWorkspace *ws, char *out, size_t n) {
-    snprintf(out, n, "%s%c.gamebuilder-autosave.json", ws->root, GB_SEP);
+    autosave_path_for(ws->root, out, n);
 }
 
 bool gb_autosave_write(const GbWorkspace *ws) {
     if (!ws || !ws->open || !ws->doc || !ws->dirty) return false;
     char path[GB_PATH_MAX * 2];
     autosave_path(ws, path, sizeof path);
+    if (!path[0]) return false;
+    // The per-user directory may not exist on a first run.
+    char dir[GB_PATH_MAX * 2];
+    snprintf(dir, sizeof dir, "%s", path);
+    char *slash = strrchr(dir, GB_SEP);
+    if (slash) { *slash = 0; mkdirs(dir); }
     char *text = cJSON_Print(ws->doc);
     if (!text) return false;
     FILE *f = fopen(path, "wb");
@@ -146,7 +168,8 @@ bool gb_autosave_write(const GbWorkspace *ws) {
 
 bool gb_autosave_exists(const char *root) {
     char path[GB_PATH_MAX * 2];
-    snprintf(path, sizeof path, "%s%c.gamebuilder-autosave.json", root, GB_SEP);
+    autosave_path_for(root, path, sizeof path);
+    if (!path[0]) return false;
     struct stat st;
     return stat(path, &st) == 0;
 }
