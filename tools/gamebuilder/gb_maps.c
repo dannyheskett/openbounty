@@ -64,38 +64,50 @@ static void snap_rect(const MapGrid *g, int x, int y, int w, int h,
 
 // --- terrain tools ------------------------------------------------------------
 
-static void paint_at(GbMapView *v, MapGrid *g, GbUndo *undo, int cx, int cy) {
-    int r = v->brush / 2;
-    int x0 = cx - r, y0 = cy - r, w = v->brush, h = v->brush;
-    static MapCell before[15 * 15], after[15 * 15];
-    if (w * h > 15 * 15) return;
+// A whole stroke is ONE undo step. Pushing per frame meant Ctrl+Z rubbed out
+// a few tiles of a drag rather than the drag, which is not what anyone means
+// by undo. The grid is captured when the button goes down and the single
+// entry is committed when it comes up.
+static MapCell stroke_before[MAPEDIT_MAX_W * MAPEDIT_MAX_H];
+static bool    stroke_open;
 
-    snap_rect(g, x0, y0, w, h, before);
-    bool changed = false;
-    for (int j = 0; j < h; j++)
-        for (int i = 0; i < w; i++) {
-            int gx = x0 + i, gy = y0 + j;
+static void stroke_begin(GbMapView *v, const MapGrid *g) {
+    (void)v;
+    snap_rect(g, 0, 0, g->w, g->h, stroke_before);
+    stroke_open = true;
+}
+
+static void stroke_commit(GbMapView *v, const MapGrid *g, GbUndo *undo,
+                          const char *label) {
+    if (!stroke_open) return;
+    stroke_open = false;
+    static MapCell after[MAPEDIT_MAX_W * MAPEDIT_MAX_H];
+    snap_rect(g, 0, 0, g->w, g->h, after);
+    // Nothing actually changed: do not leave an empty step in the history.
+    if (memcmp(stroke_before, after,
+               (size_t)g->w * g->h * sizeof(MapCell)) == 0) return;
+    gb_undo_push_tiles(undo, label, v->zone, 0, 0, g->w, g->h,
+                       stroke_before, after);
+}
+
+static void paint_at(GbMapView *v, MapGrid *g, int cx, int cy) {
+    int r = v->brush / 2;
+    for (int j = -r; j <= r; j++)
+        for (int i = -r; i <= r; i++) {
+            int gx = cx + i, gy = cy + j;
             if (!in_grid(g, gx, gy)) continue;
             if (g->cell[gy][gx].terrain == v->brush_terrain &&
                 !g->cell[gy][gx].decor) continue;
             g->cell[gy][gx].terrain = v->brush_terrain;
             g->cell[gy][gx].decor = 0;      // painting clears a decorative tile
-            changed = true;
+            g->dirty = true;
         }
-    if (!changed) return;
-    snap_rect(g, x0, y0, w, h, after);
-    gb_undo_push_tiles(undo, "paint", v->zone, x0, y0, w, h, before, after);
-    g->dirty = true;
 }
 
-static void flood_at(GbMapView *v, MapGrid *g, GbUndo *undo, int sx, int sy) {
+static void flood_at(GbMapView *v, MapGrid *g, int sx, int sy) {
     if (!in_grid(g, sx, sy)) return;
     Terrain from = g->cell[sy][sx].terrain;
     if (from == v->brush_terrain) return;
-
-    static MapCell before[MAPEDIT_MAX_W * MAPEDIT_MAX_H];
-    static MapCell after[MAPEDIT_MAX_W * MAPEDIT_MAX_H];
-    snap_rect(g, 0, 0, g->w, g->h, before);
 
     static int stack[MAPEDIT_MAX_W * MAPEDIT_MAX_H][2];
     int top = 0;
@@ -111,30 +123,20 @@ static void flood_at(GbMapView *v, MapGrid *g, GbUndo *undo, int sx, int sy) {
             stack[top][0] = x + dx[i]; stack[top][1] = y + dy[i]; top++;
         }
     }
-    snap_rect(g, 0, 0, g->w, g->h, after);
-    gb_undo_push_tiles(undo, "flood fill", v->zone, 0, 0, g->w, g->h,
-                       before, after);
     g->dirty = true;
 }
 
-static void rect_fill(GbMapView *v, MapGrid *g, GbUndo *undo,
-                      int ax, int ay, int bx, int by) {
+static void rect_fill(GbMapView *v, MapGrid *g, int ax, int ay, int bx, int by) {
     int x0 = ax < bx ? ax : bx, x1 = ax < bx ? bx : ax;
     int y0 = ay < by ? ay : by, y1 = ay < by ? by : ay;
     int w = x1 - x0 + 1, h = y1 - y0 + 1;
-    if (w <= 0 || h <= 0 || (long)w * h > MAPEDIT_MAX_W * MAPEDIT_MAX_H) return;
-
-    static MapCell before[MAPEDIT_MAX_W * MAPEDIT_MAX_H];
-    static MapCell after[MAPEDIT_MAX_W * MAPEDIT_MAX_H];
-    snap_rect(g, x0, y0, w, h, before);
+    if (w <= 0 || h <= 0) return;
     for (int y = y0; y <= y1; y++)
         for (int x = x0; x <= x1; x++)
             if (in_grid(g, x, y)) {
                 g->cell[y][x].terrain = v->brush_terrain;
                 g->cell[y][x].decor = 0;
             }
-    snap_rect(g, x0, y0, w, h, after);
-    gb_undo_push_tiles(undo, "rectangle", v->zone, x0, y0, w, h, before, after);
     g->dirty = true;
 }
 
@@ -358,23 +360,28 @@ void gb_mapview_frame(GbMapView *v, MapGrid *g, GbObjectList *objs,
                         break;
                     }
             } else if (v->tool == GB_TOOL_PAINT && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-                paint_at(v, g, undo, cx, cy);
+                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) stroke_begin(v, g);
+                paint_at(v, g, cx, cy);
                 mapedit_despeckle(g);
                 mapedit_furnish(g, NULL);
             } else if (v->tool == GB_TOOL_FILL &&
                        IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                flood_at(v, g, undo, cx, cy);
+                stroke_begin(v, g);
+                flood_at(v, g, cx, cy);
                 mapedit_despeckle(g);
                 mapedit_furnish(g, NULL);
+                stroke_commit(v, g, undo, "flood fill");
             } else if (v->tool == GB_TOOL_RECT) {
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                     v->drag_from = (Vector2){ (float)cx, (float)cy };
                     v->dragging = true;
+                    stroke_begin(v, g);
                 } else if (v->dragging && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-                    rect_fill(v, g, undo, (int)v->drag_from.x, (int)v->drag_from.y,
+                    rect_fill(v, g, (int)v->drag_from.x, (int)v->drag_from.y,
                               cx, cy);
                     mapedit_despeckle(g);
                     mapedit_furnish(g, NULL);
+                    stroke_commit(v, g, undo, "rectangle");
                     v->dragging = false;
                 }
             } else if (v->tool == GB_TOOL_PICK &&
@@ -384,6 +391,9 @@ void gb_mapview_frame(GbMapView *v, MapGrid *g, GbObjectList *objs,
                          TERRAIN_NAME[v->brush_terrain]);
             }
         }
+        if (v->tool == GB_TOOL_PAINT && IsMouseButtonReleased(MOUSE_LEFT_BUTTON))
+            stroke_commit(v, g, undo, "paint");
+
         if (v->dragging && v->tool == GB_TOOL_RECT) {
             float tw = TW * v->zoom, th = TH * v->zoom;
             int x0 = (int)fminf(v->drag_from.x, (float)cx);

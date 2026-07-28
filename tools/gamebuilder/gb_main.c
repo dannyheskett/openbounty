@@ -124,6 +124,7 @@ static void open_path(const char *path) {
     load_zone(0);
     G.start_screen = false;
     say("Opened %s", G.ws.root);
+    TraceLog(LOG_WARNING, "gamebuilder: opened %s", G.ws.root);
 
     // A pack with no art of its own renders as flat colour, which looks
     // broken rather than empty. Say so, and offer the fix, rather than
@@ -237,6 +238,7 @@ static void do_save(void) {
     }
     gb_autosave_discard(&G.ws);
     say("Saved game.json%s", written ? TextFormat(" and %d map(s)", written) : "");
+    TraceLog(LOG_WARNING, "gamebuilder: saved game.json and %d map(s)", written);
 }
 
 static bool anything_dirty(void) {

@@ -44,6 +44,8 @@ typedef struct {
 
 struct GbBrowser {
     bool       active;
+    char       typed[GB_PATH_MAX];   // a path the user can type or paste
+    bool       typing;
     GbPickMode mode;
     char       cwd[GB_PATH_MAX];
     char       title[128];
@@ -156,15 +158,26 @@ bool gb_browser_draw(GbBrowser *b, int x, int y, int w, int h,
     GuiPanel((Rectangle){ (float)x, (float)y, (float)w, (float)h }, b->title);
 
     const int pad = 10, row_h = 22, top = y + 30;
-    int list_h = h - 30 - 84;
+    int list_h = h - 30 - 88;
 
-    // Current location, elided from the left so the tail stays readable.
-    const char *shown = b->cwd;
-    if (strlen(shown) > 62) shown = shown + strlen(shown) - 62;
-    GuiLabel((Rectangle){ (float)(x + pad), (float)(top), (float)(w - 2 * pad), 18 },
-             TextFormat("%s%s", shown == b->cwd ? "" : "...", shown));
+    // An editable path field. Browsing is fine for exploring, but anyone who
+    // already knows where the pack is should be able to type or paste it --
+    // and without this there is no way to reach a location at all except by
+    // clicking down to it one folder at a time.
+    if (!b->typing) snprintf(b->typed, sizeof b->typed, "%s", b->cwd);
+    Rectangle pathbox = { (float)(x + pad), (float)top,
+                          (float)(w - 2 * pad - 70), 20 };
+    if (GuiTextBox(pathbox, b->typed, sizeof b->typed, b->typing))
+        b->typing = !b->typing;
+    if (GuiButton((Rectangle){ pathbox.x + pathbox.width + 4, pathbox.y, 62, 20 },
+                  "Go") || (b->typing && IsKeyPressed(KEY_ENTER))) {
+        if (is_dir(b->typed)) {
+            go_to(b, b->typed);
+            b->typing = false;
+        }
+    }
 
-    Rectangle list = { (float)(x + pad), (float)(top + 22),
+    Rectangle list = { (float)(x + pad), (float)(top + 26),
                        (float)(w - 2 * pad), (float)list_h };
     Rectangle view;
     GuiScrollPanel(list, NULL,
