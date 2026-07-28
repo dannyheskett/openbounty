@@ -1,13 +1,6 @@
-# Italia -- 40x64. Home zone of the Glory of Rome pack.
-#
-# Alpine arc across the north with three passes; the Po valley beneath it; the
-# peninsula running SE with the Apennine spine down its western side, broken
-# for the coast roads; the Calabrian toe and Apulian heel at the south.
-# Sicilia off the toe. Corsica and Sardinia offshore west, clear water around.
-#
-# Authored by tools/gen_italia.py -- edit the span tables there, not this file.
-# Verify: tools/mapcheck.py assets/kings-bounty <this file> 40x64
-# Render: tools/maprender.py assets/kings-bounty <this file> out.png
+# italia -- 64x128. Written by openbounty-mapedit.
+# Fully rendered: edge variants are baked in (REQ-229). The
+# engine computes nothing about appearance at load.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

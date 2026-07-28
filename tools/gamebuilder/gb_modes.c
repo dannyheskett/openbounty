@@ -458,6 +458,8 @@ static void draw_validate(GbWorkspace *ws, int top,
         gb_collect_grids(&grids, &loaded, &n);
         gb_validate(&M.findings, ws, grids, loaded, n);
         M.findings_fresh = true;
+        TraceLog(LOG_WARNING, "gamebuilder: validated -- %d finding(s)",
+                 M.findings.count);
         snprintf(status, status_sz, "%d finding(s)", M.findings.count);
     }
     DrawText("Findings are advisory. Nothing here blocks packaging.",
@@ -596,8 +598,10 @@ static void draw_package(GbWorkspace *ws, int top,
     if (GuiButton((Rectangle){ 12, (float)y, 160, 28 }, "Build .openbounty")) {
         char out[GB_PATH_MAX * 2], err[512];
         snprintf(out, sizeof out, "%s/%s", ws->root, M.pkg_out);
-        if (gb_package(ws, out, err, sizeof err))
+        if (gb_package(ws, out, err, sizeof err)) {
             snprintf(status, status_sz, "Wrote %s", out);
+            TraceLog(LOG_WARNING, "gamebuilder: packaged %s", out);
+        }
         else
             snprintf(status, status_sz, "%s", err);
     }
