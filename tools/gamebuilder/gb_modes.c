@@ -17,6 +17,11 @@
 
 #define ROW_H 22
 
+// The app owns the bottom strip for its status line. Modes draw their own
+// footer above it, or the two overlap and neither is readable.
+#define FOOTER_Y   (GetScreenHeight() - 44)
+#define CONTENT_H  (GetScreenHeight() - 56)
+
 // Which catalogs the Catalog mode lists, in the order an author works through
 // them. Zones are edited on the map, so they are not here.
 static const char *CATALOGS[] = {
@@ -60,13 +65,34 @@ static const char *str_of(cJSON *o, const char *k, const char *fb) {
 // every catalog form honest about types -- a number that becomes a string is
 // the kind of edit that loads fine and breaks at runtime.
 
-static bool field_row(cJSON *parent, cJSON *item, const char *key,
-                      Rectangle r, GbUndo *undo, bool *dirty) {
-    GuiLabel((Rectangle){ r.x, r.y, 150, r.height }, key);
-    Rectangle box = { r.x + 155, r.y, r.width - 165, r.height };
+// `label` false when the caller has already drawn the key -- Strings shows the
+// key in its own column and a second copy inside the row is just noise.
+static bool field_edit(cJSON *parent, cJSON *item, const char *key,
+                       Rectangle r, GbUndo *undo, bool *dirty, bool label) {
+    Rectangle box = r;
+    if (label) {
+        GuiLabel((Rectangle){ r.x, r.y, 150, r.height }, key);
+        box = (Rectangle){ r.x + 155, r.y, r.width - 165, r.height };
+    }
 
     char buf[256];
-    if (cJSON_IsString(item)) snprintf(buf, sizeof buf, "%s", item->valuestring);
+    if (cJSON_IsString(item)) {
+        // Many pack strings carry embedded newlines and form-feeds (the
+        // engine's page break). A single-line box renders them literally and
+        // the text spills over the rows above and below, which is what made
+        // the Strings tab unreadable. Show them as markers instead; the value
+        // itself is untouched.
+        const char *src = item->valuestring;
+        size_t o = 0;
+        for (size_t i = 0; src[i] && o < sizeof buf - 4; i++) {
+            if (src[i] == '\n')      { buf[o++] = ' '; buf[o++] = 0xC2;
+                                        buf[o++] = 0xB6; buf[o++] = ' '; }
+            else if (src[i] == '\f')  { buf[o++] = ' '; buf[o++] = '>';
+                                        buf[o++] = '>'; buf[o++] = ' '; }
+            else buf[o++] = src[i];
+        }
+        buf[o] = 0;
+    }
     else if (cJSON_IsNumber(item)) snprintf(buf, sizeof buf, "%g", item->valuedouble);
     else if (cJSON_IsBool(item)) snprintf(buf, sizeof buf, "%s",
                                           cJSON_IsTrue(item) ? "true" : "false");
@@ -100,10 +126,20 @@ static bool field_row(cJSON *parent, cJSON *item, const char *key,
     return false;
 }
 
+static bool field_row(cJSON *parent, cJSON *item, const char *key,
+                      Rectangle r, GbUndo *undo, bool *dirty) {
+    return field_edit(parent, item, key, r, undo, dirty, true);
+}
+
+static bool field_row_novalue(cJSON *parent, cJSON *item, const char *key,
+                              Rectangle r, GbUndo *undo, bool *dirty) {
+    return field_edit(parent, item, key, r, undo, dirty, false);
+}
+
 // --- Catalog ------------------------------------------------------------------
 
 static void draw_catalog(GbWorkspace *ws, GbUndo *undo, int top) {
-    int w = GetScreenWidth(), h = GetScreenHeight();
+    int w = GetScreenWidth();
     int listw = 260;
 
     // catalog picker
@@ -123,7 +159,7 @@ static void draw_catalog(GbWorkspace *ws, GbUndo *undo, int top) {
     int n = cJSON_GetArraySize(arr);
 
     // entry list
-    Rectangle list = { 8, (float)y0, (float)listw, (float)(h - y0 - 40) };
+    Rectangle list = { 8, (float)y0, (float)listw, (float)(FOOTER_Y - y0) };
     Rectangle view;
     GuiScrollPanel(list, NULL, (Rectangle){ 0, 0, list.width - 16,
                                             (float)(n * ROW_H + 4) },
@@ -169,7 +205,7 @@ static void draw_catalog(GbWorkspace *ws, GbUndo *undo, int top) {
     }
 
     Rectangle form = { (float)fx, (float)(y0 + 28), (float)(w - fx - 16),
-                       (float)(h - y0 - 70) };
+                       (float)(FOOTER_Y - y0 - 30) };
     if (M.raw) {
         char *txt = cJSON_Print(e);
         if (txt) {
@@ -231,7 +267,7 @@ static void draw_catalog(GbWorkspace *ws, GbUndo *undo, int top) {
 // --- Strings ------------------------------------------------------------------
 
 static void draw_strings(GbWorkspace *ws, GbUndo *undo, int top) {
-    int w = GetScreenWidth(), h = GetScreenHeight();
+    int w = GetScreenWidth();
     cJSON *strings = cJSON_GetObjectItem(ws->doc, "strings");
     if (!cJSON_IsObject(strings)) {
         DrawText("This pack declares no strings block. The engine will use its "
@@ -266,10 +302,10 @@ static void draw_strings(GbWorkspace *ws, GbUndo *undo, int top) {
     int y0 = top + 58;
     int n = 0;
     for (cJSON *s = group->child; s; s = s->next) n++;
-    Rectangle box = { 8, (float)y0, (float)(w - 16), (float)(h - y0 - 30) };
+    Rectangle box = { 8, (float)y0, (float)(w - 16), (float)(FOOTER_Y - y0 - 6) };
     Rectangle view;
-    GuiScrollPanel(box, NULL, (Rectangle){ 0, 0, box.width - 16,
-                                           (float)(n * (ROW_H + 2) + 8) },
+    GuiScrollPanel(box, NULL, (Rectangle){ 0, 0, box.width - 20,
+                                           (float)(n * (ROW_H + 6) + 8) },
                    &M.list_scroll, &view);
     BeginScissorMode((int)view.x, (int)view.y, (int)view.width, (int)view.height);
     int row = 0;
@@ -278,26 +314,27 @@ static void draw_strings(GbWorkspace *ws, GbUndo *undo, int top) {
         if (!s->string || !cJSON_IsString(s)) continue;
         if (M.filter[0] && !strstr(s->string, M.filter) &&
             !strstr(s->valuestring, M.filter)) continue;
-        Rectangle r = { box.x + 6, box.y + M.list_scroll.y + 6 + row * (ROW_H + 2),
-                        box.width - 26, ROW_H };
+        Rectangle r = { box.x + 6, box.y + M.list_scroll.y + 6 + row * (ROW_H + 6),
+                        box.width - 30, ROW_H };
         row++;
-        if (r.y + r.height < view.y || r.y > view.y + view.height) continue;
+        if (r.y + r.height < view.y - ROW_H || r.y > view.y + view.height) continue;
 
         // Substitution tokens are load-bearing: a string that loses %NAME%
         // renders wrong in game and nothing catches it later (GB-231).
         bool has_token = strchr(s->valuestring, '%') != NULL;
         DrawText(s->string, (int)r.x, (int)r.y + 5, 11,
                  has_token ? (Color){ 220, 200, 120, 255 } : GRAY);
-        Rectangle tb = { r.x + 230, r.y, r.width - 230, r.height };
-        field_row(group, s, s->string, (Rectangle){ r.x + 75, r.y,
-                                                    r.width - 75, r.height },
-                  undo, &dirty);
-        (void)tb;
+
+        // The key is drawn above; field_row must not draw it again, and the
+        // box has to start clear of it or the two overlap.
+        field_row_novalue(group, s, s->string,
+                          (Rectangle){ r.x + 240, r.y, r.width - 246, r.height },
+                          undo, &dirty);
     }
     EndScissorMode();
     if (dirty) { ws->dirty = true; gb_workspace_reproject(ws); }
     DrawText("Yellow keys contain %TOKENS% -- keep them, or the line renders "
-             "wrong in game.", 12, h - 22, 11, (Color){ 200, 180, 110, 255 });
+             "wrong in game.", 12, FOOTER_Y, 11, (Color){ 200, 180, 110, 255 });
 }
 
 // --- Art ----------------------------------------------------------------------
@@ -307,7 +344,6 @@ static const char *ART_DIRS[] = { "tiles", "troops", "villains", "sprites",
 #define NART ((int)(sizeof ART_DIRS / sizeof *ART_DIRS))
 
 static void draw_art(GbWorkspace *ws, int top) {
-    int h = GetScreenHeight();
     for (int i = 0; i < NART; i++) {
         Rectangle r = { 8.0f + i * 86, (float)top + 6, 82, 22 };
         if (GuiButton(r, ART_DIRS[i])) { M.art_category = i; M.art_index = 0; }
@@ -330,8 +366,8 @@ static void draw_art(GbWorkspace *ws, int top) {
             if (!art) continue;
             Texture2D t = tile_cache_get(art);
             int col = shown % 10, rw = shown / 10;
-            int px = 16 + col * 108, py = y + rw * 74;
-            if (py > h - 80) break;
+            int px = 16 + col * 108, py = y + rw * 84;
+            if (py > FOOTER_Y - 84) break;
             if (t.id) {
                 DrawTexturePro(t, (Rectangle){ 0, 0, (float)t.width,
                                                (float)t.height },
@@ -361,17 +397,15 @@ static void draw_art(GbWorkspace *ws, int top) {
         DrawText("Click a tile in the tiles category to edit it pixel by pixel.",
                  16, y + 18, 12, DARKGRAY);
     }
-    DrawText("Click any tile to open it in the pixel editor.", 12, h - 40,
-             11, (Color){ 150, 170, 200, 255 });
-    DrawText(TextFormat("%d referenced, %d missing", shown, missing),
-             12, h - 22, 12, missing ? (Color){ 255, 140, 120, 255 }
-                                     : (Color){ 140, 200, 140, 255 });
+    DrawText(TextFormat("%d referenced, %d missing  --  click any tile to edit "
+                        "it pixel by pixel", shown, missing),
+             12, FOOTER_Y, 11, missing ? (Color){ 255, 140, 120, 255 }
+                                       : (Color){ 140, 200, 140, 255 });
 }
 
 // --- Palette ------------------------------------------------------------------
 
 static void draw_palette(GbWorkspace *ws, int top) {
-    int h = GetScreenHeight();
     DrawText("Pack palette -- 256 colours, 768 bytes", 12, top + 8, 13, LIGHTGRAY);
     DrawText("The first 16 are the reserved named indices.", 12, top + 26, 11,
              GRAY);
@@ -387,7 +421,7 @@ static void draw_palette(GbWorkspace *ws, int top) {
         if (i == sel) DrawRectangleLinesEx(r, 2, YELLOW);
         if (CheckCollisionPointRec(GetMousePosition(), r)) {
             DrawText(TextFormat("#%d  %d,%d,%d", i, PAL[i].r, PAL[i].g, PAL[i].b),
-                     12, h - 22, 12, RAYWHITE);
+                     12, FOOTER_Y, 12, RAYWHITE);
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) sel = i;
         }
     }
@@ -417,7 +451,7 @@ static void draw_palette(GbWorkspace *ws, int top) {
 
 static void draw_validate(GbWorkspace *ws, int top,
                           char *status, size_t status_sz) {
-    int w = GetScreenWidth(), h = GetScreenHeight();
+    int w = GetScreenWidth();
     if (GuiButton((Rectangle){ 8, (float)top + 6, 120, 24 }, "Run checks")) {
         extern void gb_collect_grids(MapGrid ***g, bool **loaded, int *n);
         MapGrid **grids; bool *loaded; int n;
@@ -480,7 +514,7 @@ static void draw_validate(GbWorkspace *ws, int top,
                                        : (Color){ 140, 200, 140, 255 });
     y0 += 24;
 
-    Rectangle box = { 8, (float)y0, (float)(w - 16), (float)(h - y0 - 24) };
+    Rectangle box = { 8, (float)y0, (float)(w - 16), (float)(FOOTER_Y - y0) };
     Rectangle view;
     GuiScrollPanel(box, NULL, (Rectangle){ 0, 0, box.width - 16,
                                            (float)(M.findings.count * 34 + 8) },
@@ -504,7 +538,6 @@ static void draw_validate(GbWorkspace *ws, int top,
 
 static void draw_package(GbWorkspace *ws, int top,
                          char *status, size_t status_sz) {
-    int h = GetScreenHeight();
     DrawText("Package this pack into a .openbounty archive", 12, top + 10, 14,
              RAYWHITE);
 
@@ -549,7 +582,7 @@ static void draw_package(GbWorkspace *ws, int top,
     DrawText(TextFormat("COMPLETENESS  %d/%d", C.done_count, C.count),
              cx, cy, 12, LIGHTGRAY);
     cy += 20;
-    for (int i = 0; i < C.count && cy < h - 40; i++) {
+    for (int i = 0; i < C.count && cy < FOOTER_Y - 16; i++) {
         DrawText(C.item[i].done ? "[x]" : "[ ]", cx, cy, 12,
                  C.item[i].done ? (Color){ 140, 200, 140, 255 }
                                 : (Color){ 200, 160, 100, 255 });
@@ -569,7 +602,7 @@ static void draw_package(GbWorkspace *ws, int top,
             snprintf(status, status_sz, "%s", err);
     }
     DrawText("Nothing blocks this build. Outstanding findings are yours to "
-             "judge.", 12, h - 22, 11, GRAY);
+             "judge.", 12, FOOTER_Y, 11, GRAY);
 }
 
 // --- dispatch -----------------------------------------------------------------
