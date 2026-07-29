@@ -1069,6 +1069,9 @@ int shell_run_game(int argc, char **argv) {
             goto end_input;
         }
 
+        // prompt_dispatch_tick returns false while a message dialog is up, so
+        // the chain falls through to the dialog branch below and the message is
+        // dismissed before the prompt is answered (issue #19).
         if (prompt_dispatch_tick(&sctx)) {
             // prompt is up (or just resolved); skip the rest of input
         } else if (views_active() == VIEW_MENU) {

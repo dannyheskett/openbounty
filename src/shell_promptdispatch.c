@@ -72,6 +72,19 @@ static CombatResult run_castle_combat(ShellCtx *ctx, const char *castle_id) {
 bool prompt_dispatch_tick(ShellCtx *ctx) {
     if (!prompt_is_active()) return false;
 
+    // A live message dialog OWNS input, so defer the whole dispatch while one
+    // is up (issue #19). A single engine step can raise both: a chest result
+    // message AND, from the foe that walked onto the hero in that same step,
+    // the attack yes/no -- prompt_yes_no_open fires at the emit site while the
+    // message is still queued behind it. Answering the prompt first started
+    // RunCombat with the dialog still open, and combat draws an open dialog as
+    // a centered modal over the battlefield while the main loop -- which owns
+    // dialog input -- is suspended: an undismissable message covering the
+    // fight. Returning false (rather than swallowing the frame) lets main.c's
+    // if/else chain reach its dialog branch, so the player presses a key to
+    // clear the message and the prompt underneath answers on the next frame.
+    if (dialog_is_active()) return false;
+
     Game            *g  = ctx->game;
     Map             *m  = ctx->map;
     Fog             *f  = ctx->fog;

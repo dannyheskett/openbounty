@@ -695,14 +695,18 @@ void overlay_draw(const Game *g, const Map *m, const Fog *f,
         views_render_draw(g, m, f, s);
     }
 
-    if (dialog_is_active()) {
-        draw_dialog();
-    }
-
-    // Modal prompt (yes/no, numeric picker) renders over dialogs since it
-    // replaces the bottom frame entirely.
+    // Modal prompt (yes/no, numeric picker): replaces the bottom frame.
     if (prompt_is_active()) {
         prompt_draw();
+    }
+
+    // Dialog LAST, so it covers a prompt that is up at the same time. Both are
+    // opaque bottom-frame panels, and the dialog is the one holding input while
+    // it is open (see the prompt_dispatch_tick gate in main.c, issue #19) -- the
+    // visible modal has to be the one the next key talks to. Once the dialog is
+    // dismissed the prompt underneath is revealed and answers as usual.
+    if (dialog_is_active()) {
+        draw_dialog();
     }
 
     // Toast always last so it floats above other layers.
