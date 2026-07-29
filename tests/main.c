@@ -40,6 +40,7 @@ SUITE_EXTERN(unit_combat_ai_suite);
 // ---- regression ------------------------------------------------------------
 SUITE_EXTERN(regression_combat_digests_suite);
 SUITE_EXTERN(regression_save_fixture_suite);
+SUITE_EXTERN(regression_message_over_prompt_suite);
 
 // ---- e2e -------------------------------------------------------------------
 SUITE_EXTERN(e2e_game_flow_suite);
@@ -83,6 +84,7 @@ int main(int argc, char **argv) {
     // regression
     RUN_SUITE(regression_combat_digests_suite);
     RUN_SUITE(regression_save_fixture_suite);
+    RUN_SUITE(regression_message_over_prompt_suite);
 
     // e2e
     RUN_SUITE(e2e_game_flow_suite);
