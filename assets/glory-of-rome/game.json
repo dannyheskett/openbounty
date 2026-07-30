@@ -7,9 +7,9 @@
 	"world":	{
 		"max_army_slots":	5,
 		"fog_sight":	3,
-		"starting_zone":	"continentia",
-		"zone_noun":	"continent",
-		"zone_noun_plural":	"continents",
+		"starting_zone":	"italia",
+		"zone_noun":	"province",
+		"zone_noun_plural":	"provinces",
 		"default_name":	"Hero",
 		"default_options":	[4, 1, 1, 1, 1]
 	},
@@ -83,13 +83,13 @@
 			"height":	128,
 			"neighbors":	["galliae", "africa", "oriens"],
 			"hero_spawn":	{
-				"x":	5,
-				"y":	10
+				"x":	38,
+				"y":	46
 			},
 			"is_home":	true,
 			"home_spawn":	{
-				"x":	5,
-				"y":	12
+				"x":	38,
+				"y":	45
 			},
 			"magic_alcove":	{
 				"x":	8,
@@ -105,219 +105,90 @@
 				"preferred_troops":	["peasants", "sprites", "orcs", "skeletons", "wolves", "gnomes"],
 				"dwelling_range":	[0, 14]
 			},
-			"signs":	[],
-			"towns":	[{
-					"x":	29,
-					"y":	51,
-					"id":	"riverton",
-					"boat_x":	30,
-					"boat_y":	52
+			"signs":	[{
+					"x":	25,
+					"y":	18,
+					"id":	"sign_italia_1",
+					"title":	"The Rubicon",
+					"body":	"Beyond this stream\nlies Italia herself.\nCross under arms and\nthere is no return."
 				}, {
-					"x":	38,
-					"y":	13,
-					"id":	"paths_end",
-					"boat_x":	39,
-					"boat_y":	13
-				}, {
-					"x":	17,
-					"y":	19,
-					"id":	"lakeview",
-					"boat_x":	18,
-					"boat_y":	19
-				}, {
-					"x":	14,
-					"y":	36,
-					"id":	"quiln_point",
-					"boat_x":	14,
-					"boat_y":	37
-				}, {
-					"x":	51,
-					"y":	35,
-					"id":	"xoctan",
-					"boat_x":	51,
-					"boat_y":	36
-				}, {
-					"x":	17,
-					"y":	42,
-					"id":	"kings_haven",
-					"boat_x":	18,
-					"boat_y":	42
-				}, {
-					"x":	41,
-					"y":	5,
-					"id":	"bayside",
-					"boat_x":	41,
-					"boat_y":	6
-				}, {
-					"x":	50,
-					"y":	50,
-					"id":	"nyre",
-					"boat_x":	49,
-					"boat_y":	51
-				}, {
-					"x":	57,
-					"y":	58,
-					"id":	"isla_vista",
-					"boat_x":	56,
-					"boat_y":	59
-				}, {
-					"x":	12,
-					"y":	60,
-					"id":	"hunterville",
-					"boat_x":	11,
-					"boat_y":	60
-				}, {
-					"x":	46,
-					"y":	28,
-					"id":	"fjord",
-					"boat_x":	47,
-					"boat_y":	27
-				}],
-			"castles":	[{
-					"x":	30,
-					"y":	36,
-					"id":	"azram"
+					"x":	42,
+					"y":	56,
+					"id":	"sign_italia_2",
+					"title":	"The Via Appia",
+					"body":	"The Appian Way runs\nsouth to Brundisium\nand the sea."
 				}, {
 					"x":	36,
-					"y":	14,
-					"id":	"cancomar"
+					"y":	46,
+					"id":	"sign_italia_3",
+					"title":	"Roma",
+					"body":	"All roads lead here.\nEmperor Traianus holds\ncourt within."
 				}, {
-					"x":	22,
-					"y":	14,
-					"id":	"faxis"
+					"x":	29,
+					"y":	50,
+					"id":	"sign_italia_4",
+					"title":	"The Apennines",
+					"body":	"This stony spine\ndivides the peninsula,\ncoast from coast."
 				}, {
-					"x":	11,
-					"y":	33,
-					"id":	"irok"
+					"x":	36,
+					"y":	98,
+					"id":	"sign_italia_5",
+					"title":	"The Strait",
+					"body":	"Across the water lies\nSicilia, granary of\nthe Republic."
+				}],
+			"towns":	[{
+					"x":	30,
+					"y":	11,
+					"id":	"riverton"
 				}, {
-					"x":	57,
-					"y":	5,
-					"id":	"kookamunga"
+					"x":	52,
+					"y":	15,
+					"id":	"xoctan"
 				}, {
-					"x":	22,
-					"y":	39,
-					"id":	"nilslag"
-				}, {
-					"x":	6,
-					"y":	6,
-					"id":	"ophiraund"
-				}, {
-					"x":	58,
-					"y":	40,
-					"id":	"portalis"
-				}, {
-					"x":	54,
-					"y":	57,
-					"id":	"rythacon"
+					"x":	23,
+					"y":	46,
+					"id":	"isla_vista"
+				}],
+			"castles":	[{
+					"x":	38,
+					"y":	44,
+					"id":	"castle_italia_1"
 				}, {
 					"x":	40,
-					"y":	58,
-					"id":	"vutar"
+					"y":	54,
+					"id":	"castle_italia_2"
 				}, {
 					"x":	40,
-					"y":	22,
-					"id":	"wankelforte"
+					"y":	62,
+					"id":	"castle_italia_3"
 				}, {
-					"x":	11,
-					"y":	56,
-					"id":	"king_maximus",
-					"decorations":	[{
-							"dx":	-3,
-							"dy":	-3,
-							"art":	"castle_tl"
-						}, {
-							"dx":	-2,
-							"dy":	-3,
-							"art":	"castle_tr"
-						}, {
-							"dx":	2,
-							"dy":	-3,
-							"art":	"castle_tl"
-						}, {
-							"dx":	3,
-							"dy":	-3,
-							"art":	"castle_tr"
-						}, {
-							"dx":	-3,
-							"dy":	-2,
-							"art":	"castle_ml"
-						}, {
-							"dx":	-2,
-							"dy":	-2,
-							"art":	"castle_mr"
-						}, {
-							"dx":	2,
-							"dy":	-2,
-							"art":	"castle_ml"
-						}, {
-							"dx":	3,
-							"dy":	-2,
-							"art":	"castle_mr"
-						}, {
-							"dx":	-3,
-							"dy":	-1,
-							"art":	"castle_tl"
-						}, {
-							"dx":	-2,
-							"dy":	-1,
-							"art":	"castle_tr"
-						}, {
-							"dx":	2,
-							"dy":	-1,
-							"art":	"castle_tl"
-						}, {
-							"dx":	3,
-							"dy":	-1,
-							"art":	"castle_tr"
-						}, {
-							"dx":	-3,
-							"dy":	0,
-							"art":	"castle_ml"
-						}, {
-							"dx":	-2,
-							"dy":	0,
-							"art":	"castle_mr"
-						}, {
-							"dx":	2,
-							"dy":	0,
-							"art":	"castle_ml"
-						}, {
-							"dx":	3,
-							"dy":	0,
-							"art":	"castle_mr"
-						}, {
-							"dx":	-2,
-							"dy":	1,
-							"art":	"castle_tl"
-						}, {
-							"dx":	-1,
-							"dy":	1,
-							"art":	"castle_tr"
-						}, {
-							"dx":	1,
-							"dy":	1,
-							"art":	"castle_tl"
-						}, {
-							"dx":	2,
-							"dy":	1,
-							"art":	"castle_tr"
-						}, {
-							"dx":	-2,
-							"dy":	2,
-							"art":	"castle_ml"
-						}, {
-							"dx":	-1,
-							"dy":	2,
-							"art":	"castle_mr"
-						}, {
-							"dx":	1,
-							"dy":	2,
-							"art":	"castle_ml"
-						}, {
-							"dx":	2,
-							"dy":	2,
-							"art":	"castle_mr"
-						}]
+					"x":	44,
+					"y":	74,
+					"id":	"castle_italia_4"
+				}, {
+					"x":	45,
+					"y":	88,
+					"id":	"castle_italia_5"
+				}, {
+					"x":	38,
+					"y":	100,
+					"id":	"castle_italia_6"
+				}, {
+					"x":	44,
+					"y":	20,
+					"id":	"castle_italia_7"
+				}, {
+					"x":	20,
+					"y":	10,
+					"id":	"castle_italia_8"
+				}, {
+					"x":	10,
+					"y":	14,
+					"id":	"castle_italia_9"
+				}, {
+					"x":	48,
+					"y":	80,
+					"id":	"castle_italia_10"
 				}],
 			"chests":	[{
 					"id":	"chest_1",
@@ -341,7 +212,7 @@
 					"y":	9
 				}, {
 					"id":	"chest_6",
-					"x":	21,
+					"x":	22,
 					"y":	9
 				}, {
 					"id":	"chest_7",
@@ -643,108 +514,108 @@
 			},
 			"chests":	[{
 					"id":	"chest_1",
-					"x":	6,
-					"y":	3
+					"x":	46,
+					"y":	20
 				}, {
 					"id":	"chest_2",
 					"x":	9,
-					"y":	3
+					"y":	25
 				}, {
 					"id":	"chest_3",
-					"x":	12,
-					"y":	3
+					"x":	33,
+					"y":	27
 				}, {
 					"id":	"chest_4",
-					"x":	15,
-					"y":	3
+					"x":	45,
+					"y":	28
 				}, {
 					"id":	"chest_5",
-					"x":	18,
-					"y":	3
+					"x":	20,
+					"y":	34
 				}, {
 					"id":	"chest_6",
-					"x":	21,
-					"y":	3
+					"x":	32,
+					"y":	35
 				}, {
 					"id":	"chest_7",
-					"x":	6,
-					"y":	6
+					"x":	43,
+					"y":	44
 				}, {
 					"id":	"chest_8",
-					"x":	15,
-					"y":	6
+					"x":	18,
+					"y":	50
 				}, {
 					"id":	"chest_9",
-					"x":	18,
-					"y":	6
+					"x":	42,
+					"y":	52
 				}, {
 					"id":	"chest_10",
-					"x":	21,
-					"y":	6
+					"x":	17,
+					"y":	58
 				}, {
 					"id":	"chest_11",
-					"x":	6,
-					"y":	9
+					"x":	29,
+					"y":	59
 				}, {
 					"id":	"chest_12",
-					"x":	15,
-					"y":	9
+					"x":	11,
+					"y":	24
 				}, {
 					"id":	"chest_13",
-					"x":	18,
-					"y":	9
+					"x":	23,
+					"y":	25
 				}, {
 					"id":	"chest_14",
-					"x":	21,
-					"y":	9
+					"x":	35,
+					"y":	26
 				}, {
 					"id":	"chest_15",
-					"x":	6,
-					"y":	12
+					"x":	47,
+					"y":	27
 				}, {
 					"id":	"chest_16",
-					"x":	9,
-					"y":	12
+					"x":	10,
+					"y":	32
 				}, {
 					"id":	"chest_17",
-					"x":	12,
-					"y":	12
+					"x":	20,
+					"y":	20
 				}, {
 					"id":	"chest_18",
-					"x":	15,
-					"y":	12
+					"x":	22,
+					"y":	20
 				}, {
 					"id":	"chest_19",
-					"x":	18,
-					"y":	12
+					"x":	24,
+					"y":	20
 				}, {
 					"id":	"chest_20",
-					"x":	21,
-					"y":	12
+					"x":	26,
+					"y":	20
 				}, {
 					"id":	"chest_21",
-					"x":	6,
-					"y":	15
+					"x":	8,
+					"y":	23
 				}, {
 					"id":	"chest_22",
-					"x":	9,
-					"y":	15
+					"x":	13,
+					"y":	23
 				}, {
 					"id":	"chest_23",
-					"x":	12,
-					"y":	15
+					"x":	15,
+					"y":	23
 				}, {
 					"id":	"chest_24",
-					"x":	15,
-					"y":	15
+					"x":	20,
+					"y":	22
 				}, {
 					"id":	"chest_25",
-					"x":	18,
-					"y":	15
+					"x":	22,
+					"y":	22
 				}, {
 					"id":	"chest_26",
-					"x":	21,
-					"y":	15
+					"x":	24,
+					"y":	22
 				}, {
 					"id":	"chest_27",
 					"x":	9,
@@ -762,17 +633,73 @@
 					"x":	18,
 					"y":	21
 				}],
-			"signs":	[],
+			"signs":	[{
+					"x":	38,
+					"y":	29,
+					"id":	"sign_galliae_1",
+					"title":	"Alesia",
+					"body":	"Here Vercingetorix\nlaid down his arms\nbefore Caesar."
+				}, {
+					"x":	46,
+					"y":	30,
+					"id":	"sign_galliae_2",
+					"title":	"The Rhine",
+					"body":	"This river marks the\nedge of the world.\nBeyond it, Germania."
+				}, {
+					"x":	22,
+					"y":	21,
+					"id":	"sign_galliae_3",
+					"title":	"Britannia",
+					"body":	"Across the northern\nsea lies Britannia,\nand Londinium upon it."
+				}],
 			"dwellings":	[],
 			"armies":	[],
 			"hero_spawn":	{
-				"x":	7,
-				"y":	4
+				"x":	9,
+				"y":	20
 			},
 			"magic_alcove":	{
-				"x":	18,
-				"y":	11
-			}
+				"x":	24,
+				"y":	24
+			},
+			"towns":	[{
+					"x":	44,
+					"y":	55,
+					"id":	"paths_end"
+				}, {
+					"x":	12,
+					"y":	52,
+					"id":	"kings_haven"
+				}, {
+					"x":	18,
+					"y":	4,
+					"id":	"hunterville"
+				}],
+			"castles":	[{
+					"x":	30,
+					"y":	23,
+					"id":	"castle_galliae_1"
+				}, {
+					"x":	40,
+					"y":	28,
+					"id":	"castle_galliae_2"
+				}, {
+					"x":	30,
+					"y":	44,
+					"id":	"castle_galliae_3"
+				}, {
+					"x":	47,
+					"y":	22,
+					"id":	"castle_galliae_4"
+				}, {
+					"x":	30,
+					"y":	52,
+					"id":	"castle_galliae_5"
+				}, {
+					"x":	22,
+					"y":	35,
+					"id":	"castle_galliae_6"
+				}]
 		}, {
 			"id":	"africa",
 			"name":	"Africa",
@@ -812,7 +739,7 @@
 					"y":	6
 				}, {
 					"id":	"chest_6",
-					"x":	21,
+					"x":	22,
 					"y":	6
 				}, {
 					"id":	"chest_7",
@@ -836,7 +763,7 @@
 					"y":	6
 				}, {
 					"id":	"chest_12",
-					"x":	39,
+					"x":	38,
 					"y":	6
 				}, {
 					"id":	"chest_13",
@@ -848,7 +775,7 @@
 					"y":	6
 				}, {
 					"id":	"chest_15",
-					"x":	48,
+					"x":	47,
 					"y":	6
 				}, {
 					"id":	"chest_16",
@@ -911,7 +838,25 @@
 					"x":	33,
 					"y":	9
 				}],
-			"signs":	[],
+			"signs":	[{
+					"x":	18,
+					"y":	8,
+					"id":	"sign_africa_1",
+					"title":	"Carthago",
+					"body":	"Thrice Rome fought\nher; thrice she fell.\nCarthago delenda est."
+				}, {
+					"x":	25,
+					"y":	16,
+					"id":	"sign_africa_2",
+					"title":	"The Sahara",
+					"body":	"South lies the sand.\nA day of marching\nbuys a single tile."
+				}, {
+					"x":	36,
+					"y":	8,
+					"id":	"sign_africa_3",
+					"title":	"The Grain Fleet",
+					"body":	"From these ports the\ncorn ships sail to\nfeed a million in Roma."
+				}],
 			"dwellings":	[],
 			"armies":	[],
 			"hero_spawn":	{
@@ -921,7 +866,45 @@
 			"magic_alcove":	{
 				"x":	24,
 				"y":	8
-			}
+			},
+			"towns":	[{
+					"x":	14,
+					"y":	7,
+					"id":	"lakeview"
+				}, {
+					"x":	33,
+					"y":	7,
+					"id":	"bayside"
+				}, {
+					"x":	46,
+					"y":	8,
+					"id":	"fjord"
+				}],
+			"castles":	[{
+					"x":	20,
+					"y":	7,
+					"id":	"castle_africa_1"
+				}, {
+					"x":	10,
+					"y":	15,
+					"id":	"castle_africa_2"
+				}, {
+					"x":	28,
+					"y":	15,
+					"id":	"castle_africa_3"
+				}, {
+					"x":	40,
+					"y":	7,
+					"id":	"castle_africa_4"
+				}, {
+					"x":	44,
+					"y":	15,
+					"id":	"castle_africa_5"
+				}, {
+					"x":	49,
+					"y":	7,
+					"id":	"castle_africa_6"
+				}]
 		}, {
 			"id":	"oriens",
 			"name":	"Oriens",
@@ -945,7 +928,7 @@
 					"y":	6
 				}, {
 					"id":	"chest_2",
-					"x":	12,
+					"x":	11,
 					"y":	6
 				}, {
 					"id":	"chest_3",
@@ -977,7 +960,7 @@
 					"y":	6
 				}, {
 					"id":	"chest_10",
-					"x":	39,
+					"x":	38,
 					"y":	6
 				}, {
 					"id":	"chest_11",
@@ -1060,7 +1043,25 @@
 					"x":	45,
 					"y":	12
 				}],
-			"signs":	[],
+			"signs":	[{
+					"x":	46,
+					"y":	37,
+					"id":	"sign_oriens_1",
+					"title":	"Palmyra",
+					"body":	"Oasis of the caravans,\nwhere Zenobia named\nherself Augusta."
+				}, {
+					"x":	44,
+					"y":	20,
+					"id":	"sign_oriens_2",
+					"title":	"The Frontier",
+					"body":	"East lies Parthia,\nthe border Rome\nnever truly held."
+				}, {
+					"x":	38,
+					"y":	8,
+					"id":	"sign_oriens_3",
+					"title":	"The Silk Road",
+					"body":	"The road from the East\nends here. Its wealth\npasses through Antiochia."
+				}],
 			"dwellings":	[],
 			"armies":	[],
 			"hero_spawn":	{
@@ -1070,173 +1071,134 @@
 			"magic_alcove":	{
 				"x":	41,
 				"y":	7
-			}
+			},
+			"towns":	[{
+					"x":	12,
+					"y":	6,
+					"id":	"quiln_point"
+				}, {
+					"x":	28,
+					"y":	17,
+					"id":	"nyre"
+				}],
+			"castles":	[{
+					"x":	40,
+					"y":	7,
+					"id":	"castle_oriens_1"
+				}, {
+					"x":	10,
+					"y":	17,
+					"id":	"castle_oriens_2"
+				}, {
+					"x":	48,
+					"y":	23,
+					"id":	"castle_oriens_3"
+				}, {
+					"x":	48,
+					"y":	38,
+					"id":	"castle_oriens_4"
+				}]
 		}],
 	"towns":	[{
 			"index":	0,
 			"id":	"riverton",
-			"name":	"Riverton",
-			"x":	9,
-			"y":	10,
+			"name":	"Mediolanum",
+			"x":	30,
+			"y":	11,
 			"boat":	{
-				"x":	3,
-				"y":	10
+				"x":	-1,
+				"y":	-1
 			},
 			"gate":	{
-				"x":	9,
-				"y":	11
+				"x":	30,
+				"y":	12
 			},
 			"zone":	"italia",
-			"intel_castle":	"azram"
+			"intel_castle":	"castle_italia_2"
 		}, {
 			"index":	2,
 			"id":	"paths_end",
-			"name":	"Path's End",
-			"x":	19,
-			"y":	4,
+			"name":	"Massilia",
+			"x":	44,
+			"y":	55,
 			"boat":	{
-				"x":	19,
-				"y":	2
+				"x":	43,
+				"y":	56
 			},
 			"gate":	{
-				"x":	19,
-				"y":	5
+				"x":	44,
+				"y":	54
 			},
 			"zone":	"galliae",
-			"intel_castle":	"cancomar"
+			"intel_castle":	"castle_galliae_1"
 		}, {
 			"index":	5,
 			"id":	"lakeview",
-			"name":	"Lakeview",
-			"x":	11,
+			"name":	"Utica",
+			"x":	14,
 			"y":	7,
 			"boat":	{
-				"x":	11,
+				"x":	14,
 				"y":	5
 			},
 			"gate":	{
-				"x":	11,
+				"x":	14,
 				"y":	8
 			},
 			"zone":	"africa",
-			"intel_castle":	"faxis"
+			"intel_castle":	"castle_africa_1"
 		}, {
 			"index":	8,
 			"id":	"quiln_point",
-			"name":	"Quiln Point",
-			"x":	13,
+			"name":	"Byzantium",
+			"x":	12,
 			"y":	6,
 			"boat":	{
-				"x":	13,
+				"x":	11,
 				"y":	4
 			},
 			"gate":	{
-				"x":	13,
+				"x":	12,
 				"y":	7
 			},
 			"zone":	"oriens",
-			"intel_castle":	"irok"
+			"intel_castle":	"castle_oriens_1"
 		}, {
 			"index":	10,
 			"id":	"xoctan",
-			"name":	"Xoctan",
-			"x":	20,
-			"y":	10,
+			"name":	"Ravenna",
+			"x":	52,
+			"y":	15,
 			"boat":	{
-				"x":	7,
+				"x":	55,
 				"y":	18
 			},
 			"gate":	{
-				"x":	20,
-				"y":	11
+				"x":	52,
+				"y":	16
 			},
 			"zone":	"italia",
-			"intel_castle":	"kookamunga"
+			"intel_castle":	"castle_italia_3"
 		}, {
 			"index":	13,
 			"id":	"kings_haven",
-			"name":	"King's Haven",
-			"x":	16,
-			"y":	6,
+			"name":	"Burdigala",
+			"x":	12,
+			"y":	52,
 			"boat":	{
-				"x":	16,
-				"y":	2
+				"x":	9,
+				"y":	49
 			},
 			"gate":	{
-				"x":	16,
-				"y":	7
+				"x":	12,
+				"y":	51
 			},
 			"zone":	"galliae",
-			"intel_castle":	"nilslag"
+			"intel_castle":	"castle_galliae_2"
 		}, {
 			"index":	14,
 			"id":	"bayside",
-			"name":	"Bayside",
-			"x":	22,
-			"y":	7,
-			"boat":	{
-				"x":	22,
-				"y":	5
-			},
-			"gate":	{
-				"x":	22,
-				"y":	8
-			},
-			"zone":	"africa",
-			"intel_castle":	"ophiraund"
-		}, {
-			"index":	15,
-			"id":	"nyre",
-			"name":	"Nyre",
-			"x":	24,
-			"y":	6,
-			"boat":	{
-				"x":	24,
-				"y":	4
-			},
-			"gate":	{
-				"x":	24,
-				"y":	7
-			},
-			"zone":	"oriens",
-			"intel_castle":	"portalis"
-		}, {
-			"index":	17,
-			"id":	"isla_vista",
-			"name":	"Isla Vista",
-			"x":	31,
-			"y":	10,
-			"boat":	{
-				"x":	46,
-				"y":	24
-			},
-			"gate":	{
-				"x":	31,
-				"y":	11
-			},
-			"zone":	"italia",
-			"intel_castle":	"rythacon"
-		}, {
-			"index":	21,
-			"id":	"hunterville",
-			"name":	"Hunterville",
-			"x":	20,
-			"y":	7,
-			"boat":	{
-				"x":	23,
-				"y":	7
-			},
-			"gate":	{
-				"x":	20,
-				"y":	8
-			},
-			"zone":	"galliae",
-			"intel_castle":	"vutar",
-			"pinned_spell":	"bridge"
-		}, {
-			"index":	22,
-			"id":	"fjord",
-			"name":	"Fjord",
+			"name":	"Thapsus",
 			"x":	33,
 			"y":	7,
 			"boat":	{
@@ -1248,221 +1210,303 @@
 				"y":	8
 			},
 			"zone":	"africa",
-			"intel_castle":	"wankelforte"
+			"intel_castle":	"castle_africa_2"
+		}, {
+			"index":	15,
+			"id":	"nyre",
+			"name":	"Ancyra",
+			"x":	28,
+			"y":	17,
+			"boat":	{
+				"x":	-1,
+				"y":	-1
+			},
+			"gate":	{
+				"x":	28,
+				"y":	18
+			},
+			"zone":	"oriens",
+			"intel_castle":	"castle_oriens_2"
+		}, {
+			"index":	17,
+			"id":	"isla_vista",
+			"name":	"Ostia",
+			"x":	23,
+			"y":	46,
+			"boat":	{
+				"x":	20,
+				"y":	49
+			},
+			"gate":	{
+				"x":	23,
+				"y":	47
+			},
+			"zone":	"italia",
+			"intel_castle":	"castle_italia_4"
+		}, {
+			"index":	21,
+			"id":	"hunterville",
+			"name":	"Londinium",
+			"x":	18,
+			"y":	4,
+			"boat":	{
+				"x":	18,
+				"y":	2
+			},
+			"gate":	{
+				"x":	18,
+				"y":	4
+			},
+			"zone":	"galliae",
+			"intel_castle":	"castle_galliae_3",
+			"pinned_spell":	"bridge"
+		}, {
+			"index":	22,
+			"id":	"fjord",
+			"name":	"Sabratha",
+			"x":	46,
+			"y":	8,
+			"boat":	{
+				"x":	44,
+				"y":	5
+			},
+			"gate":	{
+				"x":	46,
+				"y":	9
+			},
+			"zone":	"africa",
+			"intel_castle":	"castle_africa_3"
 		}],
 	"castles":	[{
 			"index":	0,
 			"id":	"castle_italia_1",
-			"name":	"Castra italia 1",
-			"x":	35,
-			"y":	10,
+			"name":	"Roma",
+			"x":	38,
+			"y":	44,
 			"zone":	"italia",
-			"difficulty_tier":	0
+			"difficulty_tier":	0,
+			"special":	{
+				"flow":	"audience",
+				"excluded_from_siege":	true,
+				"excluded_from_intel":	true,
+				"excluded_from_contract":	true,
+				"win_condition":	"scepter",
+				"dialog":	{
+					"header":	"Roma, Seat of Traianus",
+					"body":	"Emperor Traianus bids you\nwelcome, Hero.\n\nReturn with the stolen Aquila\nof the Legions and all the\nprovinces of Rome are yours."
+				},
+				"audience":	{
+					"intro":	"Trumpets announce your\narrival with imperial fanfare.\n\nEmperor Traianus rises from his\nthrone to greet you and\nproclaims:           (space)",
+					"rank_up":	"\n\nCongratulations %NAME%,\n\nI now raise you to the rank of\n%RANK%.\n",
+					"more_needed":	"\n\nMy dear %NAME%,\n\nI can aid you better after\nyou've captured %NEEDED% more\nvillains.",
+					"final_rank":	"\n\n%NAME% the %RANK%,\n\nHurry and recover the Aquila\nof the Legions, or all Rome\nwill be lost!"
+				}
+			}
 		}, {
 			"index":	0,
 			"id":	"castle_italia_2",
-			"name":	"Castra italia 2",
-			"x":	52,
-			"y":	10,
+			"name":	"Capua",
+			"x":	40,
+			"y":	54,
 			"zone":	"italia",
 			"difficulty_tier":	0
 		}, {
 			"index":	0,
 			"id":	"castle_italia_3",
-			"name":	"Castra italia 3",
-			"x":	26,
-			"y":	11,
+			"name":	"Neapolis",
+			"x":	40,
+			"y":	62,
 			"zone":	"italia",
 			"difficulty_tier":	0
 		}, {
 			"index":	0,
 			"id":	"castle_italia_4",
-			"name":	"Castra italia 4",
-			"x":	52,
-			"y":	11,
+			"name":	"Beneventum",
+			"x":	44,
+			"y":	74,
 			"zone":	"italia",
 			"difficulty_tier":	0
 		}, {
 			"index":	0,
 			"id":	"castle_italia_5",
-			"name":	"Castra italia 5",
-			"x":	26,
-			"y":	12,
+			"name":	"Tarentum",
+			"x":	45,
+			"y":	88,
 			"zone":	"italia",
 			"difficulty_tier":	0
 		}, {
 			"index":	0,
 			"id":	"castle_italia_6",
-			"name":	"Castra italia 6",
-			"x":	52,
-			"y":	12,
+			"name":	"Rhegium",
+			"x":	38,
+			"y":	100,
 			"zone":	"italia",
 			"difficulty_tier":	0
 		}, {
 			"index":	0,
 			"id":	"castle_italia_7",
-			"name":	"Castra italia 7",
-			"x":	27,
-			"y":	13,
+			"name":	"Ariminum",
+			"x":	44,
+			"y":	20,
 			"zone":	"italia",
 			"difficulty_tier":	0
 		}, {
 			"index":	0,
 			"id":	"castle_italia_8",
-			"name":	"Castra italia 8",
-			"x":	53,
-			"y":	13,
+			"name":	"Verona",
+			"x":	20,
+			"y":	10,
 			"zone":	"italia",
 			"difficulty_tier":	0
 		}, {
 			"index":	0,
 			"id":	"castle_italia_9",
-			"name":	"Castra italia 9",
-			"x":	30,
+			"name":	"Genua",
+			"x":	10,
 			"y":	14,
 			"zone":	"italia",
 			"difficulty_tier":	0
 		}, {
 			"index":	0,
 			"id":	"castle_italia_10",
-			"name":	"Castra italia 10",
-			"x":	7,
-			"y":	15,
+			"name":	"Brundisium",
+			"x":	48,
+			"y":	80,
 			"zone":	"italia",
 			"difficulty_tier":	0
 		}, {
 			"index":	0,
 			"id":	"castle_galliae_1",
-			"name":	"Castra galliae 1",
-			"x":	17,
-			"y":	8,
+			"name":	"Lugdunum",
+			"x":	30,
+			"y":	23,
 			"zone":	"galliae",
 			"difficulty_tier":	0
 		}, {
 			"index":	0,
 			"id":	"castle_galliae_2",
-			"name":	"Castra galliae 2",
-			"x":	20,
-			"y":	10,
+			"name":	"Alesia",
+			"x":	40,
+			"y":	28,
 			"zone":	"galliae",
 			"difficulty_tier":	0
 		}, {
 			"index":	0,
 			"id":	"castle_galliae_3",
-			"name":	"Castra galliae 3",
-			"x":	7,
-			"y":	12,
+			"name":	"Gergovia",
+			"x":	30,
+			"y":	44,
 			"zone":	"galliae",
 			"difficulty_tier":	0
 		}, {
 			"index":	0,
 			"id":	"castle_galliae_4",
-			"name":	"Castra galliae 4",
-			"x":	9,
-			"y":	13,
+			"name":	"Colonia Agrippina",
+			"x":	47,
+			"y":	22,
 			"zone":	"galliae",
 			"difficulty_tier":	0
 		}, {
 			"index":	0,
 			"id":	"castle_galliae_5",
-			"name":	"Castra galliae 5",
-			"x":	11,
-			"y":	14,
+			"name":	"Corduba",
+			"x":	30,
+			"y":	52,
 			"zone":	"galliae",
 			"difficulty_tier":	0
 		}, {
 			"index":	0,
 			"id":	"castle_galliae_6",
-			"name":	"Castra galliae 6",
-			"x":	15,
-			"y":	21,
+			"name":	"Bibracte",
+			"x":	22,
+			"y":	35,
 			"zone":	"galliae",
 			"difficulty_tier":	0
 		}, {
 			"index":	0,
 			"id":	"castle_africa_1",
-			"name":	"Castra africa 1",
-			"x":	37,
+			"name":	"Carthago",
+			"x":	20,
 			"y":	7,
 			"zone":	"africa",
 			"difficulty_tier":	0
 		}, {
 			"index":	0,
 			"id":	"castle_africa_2",
-			"name":	"Castra africa 2",
-			"x":	11,
-			"y":	8,
+			"name":	"Hippo Regius",
+			"x":	10,
+			"y":	15,
 			"zone":	"africa",
 			"difficulty_tier":	0
 		}, {
 			"index":	0,
 			"id":	"castle_africa_3",
-			"name":	"Castra africa 3",
+			"name":	"Lambaesis",
 			"x":	28,
-			"y":	8,
+			"y":	15,
 			"zone":	"africa",
 			"difficulty_tier":	0
 		}, {
 			"index":	0,
 			"id":	"castle_africa_4",
-			"name":	"Castra africa 4",
-			"x":	45,
-			"y":	8,
+			"name":	"Leptis Magna",
+			"x":	40,
+			"y":	7,
 			"zone":	"africa",
 			"difficulty_tier":	0
 		}, {
 			"index":	0,
 			"id":	"castle_africa_5",
-			"name":	"Castra africa 5",
-			"x":	18,
-			"y":	9,
+			"name":	"Cyrene",
+			"x":	44,
+			"y":	15,
 			"zone":	"africa",
 			"difficulty_tier":	0
 		}, {
 			"index":	0,
 			"id":	"castle_africa_6",
-			"name":	"Castra africa 6",
-			"x":	35,
-			"y":	9,
+			"name":	"Alexandria",
+			"x":	49,
+			"y":	7,
 			"zone":	"africa",
 			"difficulty_tier":	0
 		}, {
 			"index":	0,
 			"id":	"castle_oriens_1",
-			"name":	"Castra oriens 1",
-			"x":	39,
-			"y":	6,
+			"name":	"Antiochia",
+			"x":	40,
+			"y":	7,
 			"zone":	"oriens",
 			"difficulty_tier":	0
 		}, {
 			"index":	0,
 			"id":	"castle_oriens_2",
-			"name":	"Castra oriens 2",
-			"x":	28,
-			"y":	7,
+			"name":	"Ephesus",
+			"x":	10,
+			"y":	17,
 			"zone":	"oriens",
 			"difficulty_tier":	0
 		}, {
 			"index":	0,
 			"id":	"castle_oriens_3",
-			"name":	"Castra oriens 3",
-			"x":	45,
-			"y":	7,
+			"name":	"Caesarea",
+			"x":	48,
+			"y":	23,
 			"zone":	"oriens",
 			"difficulty_tier":	0
 		}, {
 			"index":	0,
 			"id":	"castle_oriens_4",
-			"name":	"Castra oriens 4",
-			"x":	30,
-			"y":	8,
+			"name":	"Palmyra",
+			"x":	48,
+			"y":	38,
 			"zone":	"oriens",
 			"difficulty_tier":	0
 		}],
 	"troops":	[{
 			"index":	0,
 			"id":	"peasants",
-			"name":	"Peasants",
+			"name":	"Coloni",
 			"sprite":	"art/troops/peasants_00.png",
 			"skill_level":	1,
 			"hit_points":	1,
@@ -1481,7 +1525,7 @@
 		}, {
 			"index":	1,
 			"id":	"sprites",
-			"name":	"Sprites",
+			"name":	"Lares",
 			"sprite":	"art/troops/sprites_00.png",
 			"skill_level":	1,
 			"hit_points":	1,
@@ -1500,7 +1544,7 @@
 		}, {
 			"index":	2,
 			"id":	"militia",
-			"name":	"Militia",
+			"name":	"Tirones",
 			"sprite":	"art/troops/militia_00.png",
 			"skill_level":	2,
 			"hit_points":	2,
@@ -1519,7 +1563,7 @@
 		}, {
 			"index":	3,
 			"id":	"wolves",
-			"name":	"Wolves",
+			"name":	"Lupi",
 			"sprite":	"art/troops/wolves_00.png",
 			"skill_level":	2,
 			"hit_points":	3,
@@ -1538,7 +1582,7 @@
 		}, {
 			"index":	4,
 			"id":	"skeletons",
-			"name":	"Skeletons",
+			"name":	"Larvae",
 			"sprite":	"art/troops/skeletons_00.png",
 			"skill_level":	2,
 			"hit_points":	3,
@@ -1557,7 +1601,7 @@
 		}, {
 			"index":	5,
 			"id":	"zombies",
-			"name":	"Zombies",
+			"name":	"Lemures",
 			"sprite":	"art/troops/zombies_00.png",
 			"skill_level":	2,
 			"hit_points":	5,
@@ -1576,7 +1620,7 @@
 		}, {
 			"index":	6,
 			"id":	"gnomes",
-			"name":	"Gnomes",
+			"name":	"Fauni",
 			"sprite":	"art/troops/gnomes_00.png",
 			"skill_level":	2,
 			"hit_points":	5,
@@ -1595,7 +1639,7 @@
 		}, {
 			"index":	7,
 			"id":	"orcs",
-			"name":	"Orcs",
+			"name":	"Baleares",
 			"sprite":	"art/troops/orcs_00.png",
 			"skill_level":	2,
 			"hit_points":	5,
@@ -1614,7 +1658,7 @@
 		}, {
 			"index":	8,
 			"id":	"archers",
-			"name":	"Archers",
+			"name":	"Velites",
 			"sprite":	"art/troops/archers_00.png",
 			"skill_level":	2,
 			"hit_points":	10,
@@ -1633,7 +1677,7 @@
 		}, {
 			"index":	9,
 			"id":	"elves",
-			"name":	"Elves",
+			"name":	"Silvani",
 			"sprite":	"art/troops/elves_00.png",
 			"skill_level":	3,
 			"hit_points":	10,
@@ -1652,7 +1696,7 @@
 		}, {
 			"index":	10,
 			"id":	"pikemen",
-			"name":	"Pikemen",
+			"name":	"Hastati",
 			"sprite":	"art/troops/pikemen_00.png",
 			"skill_level":	3,
 			"hit_points":	10,
@@ -1671,7 +1715,7 @@
 		}, {
 			"index":	11,
 			"id":	"nomads",
-			"name":	"Nomads",
+			"name":	"Numidae",
 			"sprite":	"art/troops/nomads_00.png",
 			"skill_level":	3,
 			"hit_points":	15,
@@ -1690,7 +1734,7 @@
 		}, {
 			"index":	12,
 			"id":	"dwarves",
-			"name":	"Dwarves",
+			"name":	"Ligures",
 			"sprite":	"art/troops/dwarves_00.png",
 			"skill_level":	3,
 			"hit_points":	20,
@@ -1709,7 +1753,7 @@
 		}, {
 			"index":	13,
 			"id":	"ghosts",
-			"name":	"Ghosts",
+			"name":	"Manes",
 			"sprite":	"art/troops/ghosts_00.png",
 			"skill_level":	4,
 			"hit_points":	10,
@@ -1728,7 +1772,7 @@
 		}, {
 			"index":	14,
 			"id":	"knights",
-			"name":	"Knights",
+			"name":	"Praetoriani",
 			"sprite":	"art/troops/knights_00.png",
 			"skill_level":	5,
 			"hit_points":	35,
@@ -1747,7 +1791,7 @@
 		}, {
 			"index":	15,
 			"id":	"ogres",
-			"name":	"Ogres",
+			"name":	"Cyclopes",
 			"sprite":	"art/troops/ogres_00.png",
 			"skill_level":	4,
 			"hit_points":	40,
@@ -1766,7 +1810,7 @@
 		}, {
 			"index":	16,
 			"id":	"barbarians",
-			"name":	"Barbarians",
+			"name":	"Sarmatae",
 			"sprite":	"art/troops/barbarians_00.png",
 			"skill_level":	4,
 			"hit_points":	40,
@@ -1785,7 +1829,7 @@
 		}, {
 			"index":	17,
 			"id":	"trolls",
-			"name":	"Trolls",
+			"name":	"Antaei",
 			"sprite":	"art/troops/trolls_00.png",
 			"skill_level":	4,
 			"hit_points":	50,
@@ -1804,7 +1848,7 @@
 		}, {
 			"index":	18,
 			"id":	"cavalry",
-			"name":	"Cavalry",
+			"name":	"Equites",
 			"sprite":	"art/troops/cavalry_00.png",
 			"skill_level":	4,
 			"hit_points":	20,
@@ -1823,7 +1867,7 @@
 		}, {
 			"index":	19,
 			"id":	"druids",
-			"name":	"Druids",
+			"name":	"Druidae",
 			"sprite":	"art/troops/druids_00.png",
 			"skill_level":	5,
 			"hit_points":	25,
@@ -1842,7 +1886,7 @@
 		}, {
 			"index":	20,
 			"id":	"archmages",
-			"name":	"Archmages",
+			"name":	"Furiae",
 			"sprite":	"art/troops/archmages_00.png",
 			"skill_level":	5,
 			"hit_points":	25,
@@ -1861,7 +1905,7 @@
 		}, {
 			"index":	21,
 			"id":	"vampires",
-			"name":	"Vampires",
+			"name":	"Striges",
 			"sprite":	"art/troops/vampires_00.png",
 			"skill_level":	5,
 			"hit_points":	30,
@@ -1880,7 +1924,7 @@
 		}, {
 			"index":	22,
 			"id":	"giants",
-			"name":	"Giants",
+			"name":	"Gigantes",
 			"sprite":	"art/troops/giants_00.png",
 			"skill_level":	5,
 			"hit_points":	60,
@@ -1899,7 +1943,7 @@
 		}, {
 			"index":	23,
 			"id":	"demons",
-			"name":	"Demons",
+			"name":	"Empusae",
 			"sprite":	"art/troops/demons_00.png",
 			"skill_level":	6,
 			"hit_points":	50,
@@ -1918,7 +1962,7 @@
 		}, {
 			"index":	24,
 			"id":	"dragons",
-			"name":	"Dragons",
+			"name":	"Dracones",
 			"sprite":	"art/troops/dragons_00.png",
 			"skill_level":	6,
 			"hit_points":	200,
@@ -1938,92 +1982,92 @@
 	"spells":	[{
 			"index":	0,
 			"id":	"clone",
-			"name":	"Clone",
+			"name":	"Simulacrum",
 			"kind":	"combat",
 			"cost":	2000
 		}, {
 			"index":	1,
 			"id":	"teleport",
-			"name":	"Teleport",
+			"name":	"Mercury's Passage",
 			"kind":	"combat",
 			"cost":	500
 		}, {
 			"index":	2,
 			"id":	"fireball",
-			"name":	"Fireball",
+			"name":	"Vulcan's Fire",
 			"kind":	"combat",
 			"cost":	1500
 		}, {
 			"index":	3,
 			"id":	"lightning",
-			"name":	"Lightning",
+			"name":	"Fulmen",
 			"kind":	"combat",
 			"cost":	500
 		}, {
 			"index":	4,
 			"id":	"freeze",
-			"name":	"Freeze",
+			"name":	"Medusa's Gaze",
 			"kind":	"combat",
 			"cost":	300
 		}, {
 			"index":	5,
 			"id":	"resurrect",
-			"name":	"Resurrect",
+			"name":	"Rite of Aesculapius",
 			"kind":	"combat",
 			"cost":	5000
 		}, {
 			"index":	6,
 			"id":	"turn_undead",
-			"name":	"Turn Undead",
+			"name":	"Rite of the Lemuria",
 			"kind":	"combat",
 			"cost":	2000
 		}, {
 			"index":	7,
 			"id":	"bridge",
-			"name":	"Bridge",
+			"name":	"Pontifex",
 			"kind":	"adventure",
 			"cost":	100
 		}, {
 			"index":	8,
 			"id":	"time_stop",
-			"name":	"Time Stop",
+			"name":	"Iter Magnum",
 			"kind":	"adventure",
 			"cost":	200
 		}, {
 			"index":	9,
 			"id":	"find_villain",
-			"name":	"Find Villain",
+			"name":	"Augury",
 			"kind":	"adventure",
 			"cost":	1000
 		}, {
 			"index":	10,
 			"id":	"castle_gate",
-			"name":	"Castle Gate",
+			"name":	"Cursus Publicus",
 			"kind":	"adventure",
 			"cost":	1000
 		}, {
 			"index":	11,
 			"id":	"town_gate",
-			"name":	"Town Gate",
+			"name":	"Via",
 			"kind":	"adventure",
 			"cost":	500
 		}, {
 			"index":	12,
 			"id":	"instant_army",
-			"name":	"Instant Army",
+			"name":	"Dilectus",
 			"kind":	"adventure",
 			"cost":	1000
 		}, {
 			"index":	13,
 			"id":	"raise_control",
-			"name":	"Raise Control",
+			"name":	"Imperium",
 			"kind":	"adventure",
 			"cost":	500
 		}],
 	"classes":	[{
 			"index":	0,
 			"id":	"knight",
-			"name":	"Knight",
+			"name":	"Legatus",
 			"portrait":	"art/classes/knight.png",
 			"starting_gold":	7500,
 			"starting_troops":	[{
@@ -2035,7 +2079,7 @@
 				}],
 			"ranks":	[{
 					"id":	"knight",
-					"name":	"Knight",
+					"name":	"Tribunus",
 					"villains_needed":	0,
 					"leadership":	100,
 					"max_spells":	2,
@@ -2045,7 +2089,7 @@
 					"instant_army":	0
 				}, {
 					"id":	"general",
-					"name":	"General",
+					"name":	"Praefectus",
 					"villains_needed":	2,
 					"leadership":	100,
 					"max_spells":	3,
@@ -2055,7 +2099,7 @@
 					"instant_army":	2
 				}, {
 					"id":	"marshal",
-					"name":	"Marshal",
+					"name":	"Legatus",
 					"villains_needed":	8,
 					"leadership":	300,
 					"max_spells":	4,
@@ -2065,7 +2109,7 @@
 					"instant_army":	8
 				}, {
 					"id":	"lord",
-					"name":	"Lord",
+					"name":	"Consul",
 					"villains_needed":	14,
 					"leadership":	500,
 					"max_spells":	5,
@@ -2077,7 +2121,7 @@
 		}, {
 			"index":	1,
 			"id":	"paladin",
-			"name":	"Paladin",
+			"name":	"Praetorianus",
 			"portrait":	"art/classes/paladin.png",
 			"starting_gold":	10000,
 			"starting_troops":	[{
@@ -2089,7 +2133,7 @@
 				}],
 			"ranks":	[{
 					"id":	"paladin",
-					"name":	"Paladin",
+					"name":	"Miles",
 					"villains_needed":	0,
 					"leadership":	80,
 					"max_spells":	3,
@@ -2099,7 +2143,7 @@
 					"instant_army":	0
 				}, {
 					"id":	"crusader",
-					"name":	"Crusader",
+					"name":	"Centurio",
 					"villains_needed":	2,
 					"leadership":	80,
 					"max_spells":	3,
@@ -2109,7 +2153,7 @@
 					"instant_army":	2
 				}, {
 					"id":	"avenger",
-					"name":	"Avenger",
+					"name":	"Tribunus",
 					"villains_needed":	7,
 					"leadership":	240,
 					"max_spells":	6,
@@ -2119,7 +2163,7 @@
 					"instant_army":	8
 				}, {
 					"id":	"champion",
-					"name":	"Champion",
+					"name":	"Praefectus Praetorio",
 					"villains_needed":	13,
 					"leadership":	400,
 					"max_spells":	5,
@@ -2131,7 +2175,7 @@
 		}, {
 			"index":	2,
 			"id":	"sorceress",
-			"name":	"Sorceress",
+			"name":	"Sibylla",
 			"portrait":	"art/classes/sorceress.png",
 			"starting_gold":	10000,
 			"starting_troops":	[{
@@ -2143,7 +2187,7 @@
 				}],
 			"ranks":	[{
 					"id":	"sorceress",
-					"name":	"Sorceress",
+					"name":	"Virgo Vestalis",
 					"villains_needed":	0,
 					"leadership":	60,
 					"max_spells":	5,
@@ -2153,7 +2197,7 @@
 					"instant_army":	1
 				}, {
 					"id":	"magician",
-					"name":	"Magician",
+					"name":	"Sacerdos",
 					"villains_needed":	3,
 					"leadership":	60,
 					"max_spells":	8,
@@ -2163,7 +2207,7 @@
 					"instant_army":	6
 				}, {
 					"id":	"mage",
-					"name":	"Mage",
+					"name":	"Augur",
 					"villains_needed":	6,
 					"leadership":	180,
 					"max_spells":	10,
@@ -2173,7 +2217,7 @@
 					"instant_army":	9
 				}, {
 					"id":	"archmage",
-					"name":	"Archmage",
+					"name":	"Sibylla",
 					"villains_needed":	12,
 					"leadership":	300,
 					"max_spells":	12,
@@ -2185,7 +2229,7 @@
 		}, {
 			"index":	3,
 			"id":	"barbarian",
-			"name":	"Barbarian",
+			"name":	"Dux",
 			"portrait":	"art/classes/barbarian.png",
 			"starting_gold":	7500,
 			"starting_troops":	[{
@@ -2194,7 +2238,7 @@
 				}],
 			"ranks":	[{
 					"id":	"barbarian",
-					"name":	"Barbarian",
+					"name":	"Auxiliarius",
 					"villains_needed":	0,
 					"leadership":	100,
 					"max_spells":	2,
@@ -2204,7 +2248,7 @@
 					"instant_army":	0
 				}, {
 					"id":	"chieftain",
-					"name":	"Chieftain",
+					"name":	"Decurio",
 					"villains_needed":	1,
 					"leadership":	100,
 					"max_spells":	2,
@@ -2214,7 +2258,7 @@
 					"instant_army":	3
 				}, {
 					"id":	"warlord",
-					"name":	"Warlord",
+					"name":	"Praefectus Alae",
 					"villains_needed":	5,
 					"leadership":	300,
 					"max_spells":	3,
@@ -2224,7 +2268,7 @@
 					"instant_army":	7
 				}, {
 					"id":	"overlord",
-					"name":	"Overlord",
+					"name":	"Dux",
 					"villains_needed":	10,
 					"leadership":	500,
 					"max_spells":	3,
@@ -2646,28 +2690,28 @@
 	"artifacts":	[{
 			"index":	0,
 			"id":	"sword",
-			"name":	"The Sword of Prowess",
-			"zone":	"saharia",
+			"name":	"The Gladius of Mars",
+			"zone":	"galliae",
 			"effect":	"Your army deals +50% damage.",
 			"power":	"increased_damage",
 			"icon":	"art/ui/inventory_artifact_sword.png",
 			"puzzle_cell":	17,
-			"local_idx":	1
+			"local_idx":	0
 		}, {
 			"index":	1,
 			"id":	"shield",
-			"name":	"The Shield of Protection",
-			"zone":	"forestria",
+			"name":	"The Scutum of Aeneas",
+			"zone":	"oriens",
 			"effect":	"Your army takes 25% less damage.",
 			"power":	"quarter_protection",
 			"icon":	"art/ui/inventory_artifact_shield.png",
 			"puzzle_cell":	18,
-			"local_idx":	0
+			"local_idx":	1
 		}, {
 			"index":	2,
 			"id":	"crown",
-			"name":	"The Crown of Command",
-			"zone":	"archipelia",
+			"name":	"The Corona Triumphalis",
+			"zone":	"oriens",
 			"effect":	"Doubles your leadership.",
 			"power":	"double_leadership",
 			"icon":	"art/ui/inventory_artifact_crown.png",
@@ -2676,18 +2720,18 @@
 		}, {
 			"index":	3,
 			"id":	"articles",
-			"name":	"The Articles of Nobility",
-			"zone":	"continentia",
+			"name":	"The Senatus Consultum",
+			"zone":	"italia",
 			"effect":	"Increases your weekly commission.",
 			"power":	"increase_commission",
 			"icon":	"art/ui/inventory_artifact_articles.png",
 			"puzzle_cell":	20,
-			"local_idx":	1
+			"local_idx":	0
 		}, {
 			"index":	4,
 			"id":	"amulet",
-			"name":	"The Amulet of Augmentation",
-			"zone":	"saharia",
+			"name":	"The Bulla of Jupiter",
+			"zone":	"africa",
 			"effect":	"Doubles your spell power.",
 			"power":	"double_spell_power",
 			"icon":	"art/ui/inventory_artifact_amulet.png",
@@ -2696,18 +2740,18 @@
 		}, {
 			"index":	5,
 			"id":	"ring",
-			"name":	"The Ring of Heroism",
-			"zone":	"continentia",
+			"name":	"The Anulus Aureus",
+			"zone":	"africa",
 			"effect":	"Doubles your maximum spells.",
 			"power":	"double_max_spells",
 			"icon":	"art/ui/inventory_artifact_ring.png",
 			"puzzle_cell":	22,
-			"local_idx":	0
+			"local_idx":	1
 		}, {
 			"index":	6,
 			"id":	"book",
-			"name":	"The Book of Necros",
-			"zone":	"archipelia",
+			"name":	"The Sibylline Fragment",
+			"zone":	"italia",
 			"effect":	"Unknown power.",
 			"power":	"unknown_xxx1",
 			"icon":	"art/ui/inventory_artifact_book.png",
@@ -2716,8 +2760,8 @@
 		}, {
 			"index":	7,
 			"id":	"anchor",
-			"name":	"The Anchor of Admirability",
-			"zone":	"forestria",
+			"name":	"The Anchor of Neptune",
+			"zone":	"galliae",
 			"effect":	"Boat rental is cheaper.",
 			"power":	"cheaper_boat_rental",
 			"icon":	"art/ui/inventory_artifact_anchor.png",
@@ -3109,12 +3153,12 @@
 	"strings":	{
 		"lose":	{
 			"header":	"",
-			"body":	"%NAME% they\ncall the %RANK%,\nyou have doomed us\nall.\nThe land is in\ndisarray without\nits king. All\nhope is lost.\nThe villains are\nunpunished and the\nbeast roams free.\nThe peasants are\nterrified and your\narmy has abandoned\nyour cause.\nAll because you\nwasted your time\nso carelessly.\nFinal Score:\n%SCORE%",
+			"body":	"%NAME% they\ncall the %RANK%,\nyou have doomed us\nall.\nRome is leaderless\nwithout the Aquila.\nAll hope is lost.\nThe rebels go\nunpunished and the\nlegions scatter.\nThe people are\nterrified and your\narmy has abandoned\nyour cause.\nAll because you\nwasted your time\nso carelessly.\nFinal Score:\n%SCORE%",
 			"footer":	""
 		},
 		"win":	{
 			"header":	"",
-			"body":	"Good job, soldier!\nYou have tamed the\nbeast and captured\nthe villains. The\norder is restored\nacross the land.\n\nHistory will reme-\nmber the name of\n%NAME%, the\n%RANK%-who-\nsaved us all.\n\nYou keep all the\ncastles and your\ncommission is\ntripled.\n\n\nFinal Score:\n%SCORE%",
+			"body":	"Rome is saved, %NAME%!\nYou have crushed the\nrebels and recovered\nthe Aquila of the\nLegions. Order is\nrestored across the\nprovinces.\n\nHistory will reme-\nmber the name of\n%NAME%, the\n%RANK%-who-\nsaved us all.\n\nYou keep all the\ncastles and your\ncommission is\ntripled.\n\n\nFinal Score:\n%SCORE%",
 			"footer":	""
 		},
 		"banners":	{
@@ -3274,10 +3318,10 @@
 			"combat_spells_title":	"Spells",
 			"combat_spells_col_combat":	"Combat",
 			"combat_spells_prompt":	"Cast which (A-G)?",
-			"dwelling_kind_plains":	"Plains",
-			"dwelling_kind_forest":	"Forest",
-			"dwelling_kind_hill":	"Hill",
-			"dwelling_kind_dungeon":	"Dungeon",
+			"dwelling_kind_plains":	"Vicus",
+			"dwelling_kind_forest":	"Lucus",
+			"dwelling_kind_hill":	"Specus",
+			"dwelling_kind_dungeon":	"Hypogeum",
 			"dwelling_recruit_how_many":	"Recruit how many",
 			"recruit_soldiers_title":	"Recruit Soldiers",
 			"recruit_soldiers_how_many":	"How Many",
@@ -3485,7 +3529,7 @@
 			"teleport_cave":	"Teleport Cave",
 			"crystal_ball":	"Crystal Ball",
 			"foes":	"Foes!",
-			"alcove_offer":	"Archmage Aurange",
+			"alcove_offer":	"The Oracle",
 			"alcove_result":	"Aurange",
 			"castle_default":	"Castle",
 			"own_castle":	"Your castle",

@@ -54,3 +54,10 @@ save.dat
 __pycache__/
 *.pyc
 *:Zone.Identifier
+
+# Local Claude Code harness state (session locks, scheduled tasks).
+.claude/
+
+# Dev-only borrowed art/audio for glory-of-rome (DOS-derived, never ship)
+assets/glory-of-rome/art/
+assets/glory-of-rome/audio/

@@ -484,7 +484,15 @@ void salt_spells(Game *g) {
 
     // Step 2: for every not-yet-claimed spell, place it at a random
     // currently-empty town.  loop.
-    for (int s = 0; s < nspells; ) {
+    // A pack may declare more spells than towns (e.g. 14 spells, 11 towns).
+    // Once no empty town remains the surplus spells simply go unsold --
+    // without this bound the random-empty-town search spins forever. Packs
+    // with towns >= spells never hit empty_towns == 0 before s == nspells,
+    // so their draw sequence (and every derived digest) is unchanged.
+    int empty_towns = 0;
+    for (int i = 0; i < ntowns; i++)
+        if (g->towns[i].spell_for_sale[0] == '\0') empty_towns++;
+    for (int s = 0; s < nspells && empty_towns > 0; ) {
         if (s < CAT_SPELLS_MAX && spell_claimed[s]) { s++; continue; }
         int t = game_rng_next(0, ntowns - 1);
         if (g->towns[t].spell_for_sale[0] == '\0') {
@@ -492,6 +500,7 @@ void salt_spells(Game *g) {
             if (sp) copy_id(g->towns[t].spell_for_sale,
                             sizeof(g->towns[t].spell_for_sale), sp->id);
             s++;
+            empty_towns--;
         }
     }
 
