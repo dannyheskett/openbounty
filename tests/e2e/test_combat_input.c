@@ -22,22 +22,16 @@
 // text (so future game.json edits don't silently break the give-up flow)
 // and the prompt API contract the loop depends on.
 
-TEST give_up_banner_strings_match_expected(void) {
+TEST give_up_banner_strings_present(void) {
     Resources *res = fx_load_resources();
     ASSERT(res);
 
-    // Header is the "Press 'ESC' to exit" hint.
-    ASSERT_STR_EQ("Press ESC to exit",
-                  res->banners.combat_give_up_header);
-
-    // Body must contain the expected phrasing. We don't pin exact
-    // whitespace because the prompt renderer adds "(y/n)?" itself.
-    ASSERT(strstr(res->banners.combat_give_up_body,
-                  "Giving up will forfeit your") != NULL);
-    ASSERT(strstr(res->banners.combat_give_up_body,
-                  "armies and send you back") != NULL);
-    ASSERT(strstr(res->banners.combat_give_up_body,
-                  "the King") != NULL);
+    // The give-up flow draws its header and body from the pack. The engine
+    // is string-agnostic, so we assert the fields are populated -- not their
+    // wording (pinning KB phrasing here would be wrong, and a Roman pack
+    // must pass the same test).
+    ASSERT(res->banners.combat_give_up_header[0] != '\0');
+    ASSERT(res->banners.combat_give_up_body[0]   != '\0');
 
     resources_free(res);
     free(res);
@@ -164,7 +158,7 @@ TEST controls_advance_rejects_out_of_range_row(void) {
 }
 
 SUITE(e2e_combat_input_suite) {
-    RUN_TEST(give_up_banner_strings_match_expected);
+    RUN_TEST(give_up_banner_strings_present);
     RUN_TEST(give_up_prompt_opens_and_dismisses);
     RUN_TEST(view_swap_replaces_top);
     RUN_TEST(controls_advance_cycles_within_range);
