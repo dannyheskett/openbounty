@@ -1,0 +1,492 @@
+{
+	"lose":	{
+		"header":	"",
+		"body":	"%NAME% they\ncall the %RANK%,\nyou have doomed us\nall.\nRome is leaderless\nwithout the Aquila.\nAll hope is lost.\nThe rebels go\nunpunished and the\nlegions scatter.\nThe people are\nterrified and your\narmy has abandoned\nyour cause.\nAll because you\nwasted your time\nso carelessly.\nFinal Score:\n%SCORE%",
+		"footer":	""
+	},
+	"win":	{
+		"header":	"",
+		"body":	"Rome is saved, %NAME%!\nYou have crushed the\nrebels and recovered\nthe Aquila of the\nLegions. Order is\nrestored across the\nprovinces.\n\nHistory will reme-\nmber the name of\n%NAME%, the\n%RANK%-who-\nsaved us all.\n\nYou keep all the\ncastles and your\ncommission is\ntripled.\n\n\nFinal Score:\n%SCORE%",
+		"footer":	""
+	},
+	"banners":	{
+		"chest_gold":	"After scouring the area,\nyou fall upon a hidden\ntreasure cache. You may:\nA) Take the %GOLD% gold.\nB) Distribute the gold to\nthe peasants, increasing\nyour leadership by %LEADERSHIP%.",
+		"chest_commission":	"After surveying the area,\nyou discover that it is\nrich in mineral deposits.\n\nThe King rewards you for\nyour find by increasing\nyour weekly income by %POINTS%",
+		"chest_spell_power":	"Traversing the area, you\nstumble upon a time worn\ncannister. Curious, you un-\nstop the bottle, releasing\na powerful genie who raises\nyour Spell Power by %POINTS% and\nvanishes.",
+		"chest_max_spells":	"A tribe of nomads greet you\nand your army warmly. Their\nshaman, in awe of your\nprowess, teaches you the\nsecret of his tribe's magic.\nYour maximum spell capacity\nis increased by %POINTS%",
+		"chest_new_spell":	"You have captured a\nmischevious imp which has\nbeen terrorizing the\nregion. In exchange for\nits release, you receive:\n\n   %COUNT% %SPELL% spell.",
+		"chest_empty":	"The chest was empty!",
+		"town_header":	"Town of %NAME%",
+		"town_gold_label":	"GP=%GOLD%K",
+		"town_row_contract":	"A) Get New Contract",
+		"town_row_boat_rent":	"B) Rent boat (%COST% week)",
+		"town_row_boat_cancel":	"B) Cancel boat rental",
+		"town_row_info":	"C) Gather information",
+		"town_row_spell":	"D) %SPELL% spell (%SPELL_COST%)",
+		"town_row_spell_none":	"D) (no spell available)",
+		"town_row_siege_buy":	"E) Buy seige weapons (%SIEGE_COST%)",
+		"town_row_siege_owned":	"E) Siege weapons (owned)",
+		"town_contract_new":	"New contract: %VILLAIN%.\nReward: %REWARD% gold.\nLast seen on %ZONE%.",
+		"town_contract_none":	"No contracts are available right now.",
+		"town_boat_vacate_first":	"\n\nPlease vacate the boat first",
+		"town_no_gold":	"\n\n\nYou don't have enough gold!",
+		"town_intel_unavailable":	"No intelligence is available here.",
+		"town_intel_castle_under":	"Castle %NAME% is under\n",
+		"town_intel_owner_rule":	"%OWNER%'s rule.\n\n",
+		"town_intel_owner_none":	"no one",
+		"town_intel_owner_player":	"your",
+		"town_intel_owner_king":	"the King",
+		"town_intel_count_named":	"  %LABEL% %TROOP%\n",
+		"town_intel_count_numeric":	"  %COUNT% %TROOP%\n",
+		"town_intel_monsters_generic":	"  Various groups of monsters\n  occupy the castle.",
+		"town_intel_no_garrison":	"  (no garrison)",
+		"town_spell_unavailable":	"No spell is available here.",
+		"town_spell_at_cap":	"You have learned your maximum number of spells.",
+		"town_spell_can_learn":	"You can learn %LEFT% more spell%S%.",
+		"town_siege_already":	"You have siege weapons!",
+		"town_siege_purchased":	"Siege weapons purchased.",
+		"spell_time_stop":	"Time has stopped for %STEPS% steps.",
+		"spell_find_villain_no_contract":	"You have no contract.",
+		"spell_find_villain_success":	"You have found %CASTLE%!",
+		"spell_find_villain_none":	"Your search reveals nothing.",
+		"spell_bridge_prompt":	"Build bridge in which\ndirection? Use arrows.",
+		"spell_bridge_built":	"Bridge constructed with\n%COUNT% tiles.",
+		"spell_bridge_invalid":	"Not a suitable location\nfor a bridge.",
+		"spell_castle_gate_none":	"You have not visited\nany castles yet.",
+		"spell_castle_gate_choose":	"Which castle? Press A-Z.",
+		"spell_town_gate_none":	"You have not visited\nany towns yet.",
+		"spell_town_gate_choose":	"Which town? Press A-Z.",
+		"spell_instant_army_fizzle":	"Spell fizzles.",
+		"spell_instant_army_no_room":	"Your army has no room!",
+		"spell_instant_army_success":	"%QTY% %TROOP%\nhave joined your army.",
+		"spell_raise_control_success":	"Your leadership has\nincreased by %AMOUNT%.",
+		"spell_gate_teleported":	"Teleported!",
+		"spell_gate_invalid":	"Invalid selection.",
+		"encounter_join_named":	"%LABEL% %TROOP%,\nwith desires of greater\nglory, wish to join you.",
+		"encounter_join_numeric":	"%COUNT% %TROOP%,\nwith desires of greater\nglory, wish to join you.",
+		"encounter_wanderers":	"They flee in terror at the\nsight of your vast army.",
+		"encounter_hostile_header":	"You encounter:\n",
+		"encounter_hostile_unknown":	"  a hostile band\n",
+		"encounter_hostile_count_named":	"  %LABEL% %TROOP%\n",
+		"encounter_hostile_count_numeric":	"  %COUNT% %TROOP%\n",
+		"alcove_offer":	"The venerable Archmage,\nAurange, will teach you the\nsecrets of spell casting for\n%COST% gold.\n\nAccept?",
+		"alcove_already":	"The archmage nods.\nYou already know magic.",
+		"alcove_taught":	"Aurange teaches you the\narcane arts. You now know\nthe ways of magic.",
+		"alcove_no_gold":	"You have not enough gold!\n%COST% is required.\nBegone until you do!",
+		"no_spell_banner":	"You have not been trained in\nthe art of spellcasting yet.\nVisit the Archmage Aurange\nin %ZONE% at %X%,%Y% for\nthis ability.",
+		"new_game_intro":	"%NAME% the %CLASS%,\nA new game is being created.\nPlease wait while I perform\ngodlike actions to make this\ngame playable.",
+		"combat_victory_named":	"Well done %NAME%, you have\nsuccessfully vanquished\n%TARGET%.\n\nSpoils of War: %GOLD% gold",
+		"combat_victory_unnamed":	"Well done %NAME%, you have\nsuccessfully vanquished\nyet another foe.\n\nSpoils of War: %GOLD% gold",
+		"dwelling_recruit_prompt":	"%COUNT% %TROOP% are available\nCost=%COST% each.  GP=%GOLD%\nYou may recruit up to %CAP%.",
+		"dwelling_none_this_week":	"No troops are available here\nthis week.",
+		"dwelling_empty":	"This dwelling is empty.",
+		"telecave_teleport":	"You step into the cave and\nemerge elsewhere on this\ncontinent.",
+		"telecave_inert":	"This cave hums with magic,\nbut nothing happens.",
+		"navmap_pickup":	"A navigation map of %ZONE%!",
+		"crystal_ball_pickup":	"You gaze into a crystal ball\nand see all of %ZONE%!",
+		"astrology_header":	"Week #%WEEK%",
+		"astrology_body":	"Astrologers proclaim:\nWeek of the %TROOP%\n\nAll %TROOP% dwellings are\nrepopulated.         (space)",
+		"temp_death":	"After being disgraced on the\nfield of battle, King\nMaximus summons you to his\ncastle. After a lesson in\ntactics, he reluctantly re-\nissues your commission and\nsends you on your way.",
+		"combat_give_up_header":	"Press ESC to exit",
+		"combat_give_up_body":	"Giving up will forfeit your\narmies and send you back to\nthe King. Give up",
+		"combat_scouts_header":	"Your scouts have sighted:\n",
+		"combat_scouts_count":	"  %COUNT% %TROOP%\n",
+		"combat_scouts_small_band":	"  (a small band)\n",
+		"combat_header_siege":	"Siege",
+		"combat_header_default":	"Combat",
+		"signpost_with_body":	"A sign reads:\n\n\"%TITLE%\n%BODY%\"",
+		"signpost_title_only":	"A sign reads:\n\n\"%TITLE%\"",
+		"budget_header":	"Week #%WEEK%             Budget",
+		"budget_on_hand":	"On Hand",
+		"budget_payment":	"Payment",
+		"budget_boat":	"Boat   ",
+		"budget_army":	"Army   ",
+		"budget_balance":	"Balance",
+		"status_days_left":	" Options / Controls / Days Left:%DAYS% ",
+		"status_time_stop":	" Options / Controls / Time Stop:%STEPS% ",
+		"body_save_confirm":	"Your game has been saved.\nPress Control-Q to Quit or\nany other key to continue.",
+		"body_search":	"It will take %DAYS% days to\nsearch this area.\nSearch?",
+		"body_dismiss_pick":	"Dismiss which troop?",
+		"body_dismiss_last":	"If you dismiss your last\narmy, you will be sent back\nto the King in disgrace.\nDismiss last army?",
+		"body_home_castle":	"Castle of King Maximus\n\nA) Recruit Soldiers\nB) Audience with the King",
+		"body_own_castle":	"Castle %NAME%:\n1. Garrison troops\n2. Remove troops",
+		"body_garrison_row_named":	"%INDEX%. %TROOP% (%COUNT%)\n",
+		"body_garrison_row_empty":	"%INDEX%. Empty\n",
+		"body_navigate_row":	"%INDEX%. %ZONE%\n",
+		"body_no_continents":	"No known continents from\nthis zone.",
+		"body_must_be_sailing":	"You must be sailing to\nnavigate to another\ncontinent.",
+		"cannot_garrison_last":	"You cannot garrison your\n        last army!",
+		"no_troop_slots":	"No troop slots left!",
+		"army_cannot_handle":	"Your army cannot handle\nthat many troops.",
+		"no_troops_to_garrison":	"No troops to garrison.",
+		"castle_garrison_empty":	"Castle garrison is empty.",
+		"spell_unavailable":	"That spell is not available.",
+		"spell_not_known":	"You don't have that spell.",
+		"spell_unknown":	"Unknown spell."
+	},
+	"combat_log":	{
+		"melee_hit":	"%ATK% vs %TGT%, %COUNT% die",
+		"retaliate":	"%TGT% retaliate, killing %COUNT%",
+		"ranged_hit":	"%ATK% shoot %TGT% killing %COUNT%",
+		"ranged_no_effect":	"%ATK% shoot %TGT%",
+		"no_effect_msg":	"The spell seems to have no effect!",
+		"fly":	"%TROOP% fly",
+		"move":	"%TROOP% move",
+		"wait":	"%TROOP% wait",
+		"pass":	"%TROOP% pass",
+		"frozen":	"%TROOP% are frozen",
+		"ooc":	"%TROOP% are out of control!",
+		"immune":	"%TROOP% are immune",
+		"cloned":	"%COUNT% %TROOP% cloned",
+		"resurrected":	"%COUNT% %TROOP% resurrected",
+		"teleported":	"Teleported",
+		"only_one_spell":	"Only 1 spell per round!",
+		"no_spell_type":	"No spells of that type",
+		"cannot_cast":	"You cannot cast magic",
+		"cast_fireball":	"Fireball!",
+		"cast_lightning":	"Lightning!",
+		"cast_turn_undead":	"Turn Undead!",
+		"select_clone":	"Select your army to Clone",
+		"select_freeze":	"Select enemy army to Freeze",
+		"select_resurrect":	"Select army to Resurrect",
+		"select_damage":	"Select enemy army to %SPELL%",
+		"select_teleport":	"Select army to Teleport",
+		"select_dest":	"Select new location",
+		"cant_shoot":	"Can't Shoot",
+		"no_ammo":	"No ammo",
+		"cant_fly":	"Can't Fly",
+		"give_up_prompt":	"Giving up will forfeit your\narmies and send you back to\nthe King. Give up (y/n)?",
+		"exit_hint":	"Press 'ESC' to exit"
+	},
+	"ui":	{
+		"press_esc_to_exit":	"Press 'ESC' to exit",
+		"quit_to_dos_prompt":	" Quit without saving (y/n) ",
+		"out_of_control":	"OUT OF CONTROL",
+		"worldmap_hint_your_map":	"'ESC' to exit / 'SPC' your map",
+		"worldmap_hint_whole_map":	"'ESC' to exit / 'SPC' whole map",
+		"empty_slot":	"Empty",
+		"combat_spells_title":	"Spells",
+		"combat_spells_col_combat":	"Combat",
+		"combat_spells_prompt":	"Cast which (A-G)?",
+		"dwelling_kind_plains":	"Vicus",
+		"dwelling_kind_forest":	"Lucus",
+		"dwelling_kind_hill":	"Specus",
+		"dwelling_kind_dungeon":	"Hypogeum",
+		"dwelling_recruit_how_many":	"Recruit how many",
+		"recruit_soldiers_title":	"Recruit Soldiers",
+		"recruit_soldiers_how_many":	"How Many",
+		"own_castle_mode_garrison":	"Garrison troops (Space=Remove)",
+		"own_castle_mode_remove":	"Remove troops (Space=Garrison)",
+		"gate_title_town":	"Town Gate",
+		"gate_title_castle":	"Castle Gate",
+		"gate_footer_hint":	"Arrows/letter select  Enter go  ESC cancel",
+		"recruit_col_hint":	"(A-C) ",
+		"dwelling_info_available":	"%COUNT% %TROOP% are available",
+		"dwelling_info_cost":	"Cost=%COST% each.",
+		"dwelling_info_gold":	"GP=%GOLD%K",
+		"dwelling_info_recruit_cap":	"You may recruit up to %CAP%"
+	},
+	"toasts":	{
+		"save_cancelled":	"Save cancelled.",
+		"save_ok":	"Saved.",
+		"save_failed":	"Save failed: %REASON%",
+		"load_cancelled":	"Load cancelled.",
+		"load_ok":	"Loaded.",
+		"load_failed":	"Load failed: %REASON%",
+		"new_game":	"New game started."
+	},
+	"contract_view":	{
+		"title_no_contract":	"You have no Contract!",
+		"label_name":	"Name: %VALUE%",
+		"label_alias":	"Alias: %VALUE%",
+		"label_reward":	"Reward: %VALUE% gold",
+		"label_last_seen":	"Last Seen: %VALUE%",
+		"label_castle":	"Castle: %VALUE%",
+		"alias_none":	"None",
+		"castle_unknown":	"Unknown",
+		"features_header":	"Distinguishing Features:",
+		"crimes_header":	"Crimes:"
+	},
+	"spells_view":	{
+		"title":	"Spells",
+		"combat_col":	"Combat",
+		"adventure_col":	"Adventuring"
+	},
+	"menu":	{
+		"root_title":	"Game Menu",
+		"views_title":	"Views",
+		"options_title":	"Options",
+		"items":	{
+			"back":	"Back",
+			"exit":	"Exit",
+			"save":	"Save",
+			"load":	"Load",
+			"new_game":	"New Game",
+			"views":	"Views",
+			"options":	"Options",
+			"army":	"Army",
+			"spells":	"Spells",
+			"character":	"Character",
+			"contract":	"Contract",
+			"puzzle":	"Puzzle",
+			"view_map":	"View Map"
+		}
+	},
+	"stats":	{
+		"leadership":	"Leadership",
+		"commission":	"Commission/Week",
+		"gold":	"Gold",
+		"spell_power":	"Spell power",
+		"max_spells":	"Max # of spells",
+		"villains_caught":	"Villains caught",
+		"artifacts_found":	"Artifacts found",
+		"castles_garrisoned":	"Castles garrisoned",
+		"followers_killed":	"Followers killed",
+		"current_score":	"Current score"
+	},
+	"army_view":	{
+		"skill":	"SL:",
+		"move":	"MV:",
+		"morale":	"Morale:",
+		"hit_points":	"HitPts:",
+		"damage":	"Damage:",
+		"g_cost":	"G-Cost:"
+	},
+	"morale":	{
+		"normal":	"Normal",
+		"low":	"Low",
+		"high":	"High"
+	},
+	"count_buckets":	{
+		"army_view":	[{
+				"max":	5,
+				"label":	"Few"
+			}, {
+				"max":	20,
+				"label":	"Some"
+			}, {
+				"max":	2147483647,
+				"label":	"Lots"
+			}],
+		"instant_army":	[{
+				"max":	1,
+				"label":	"One"
+			}, {
+				"max":	2,
+				"label":	"A few"
+			}, {
+				"max":	9,
+				"label":	"Several"
+			}, {
+				"max":	2147483647,
+				"label":	"Many"
+			}]
+	},
+	"difficulty":	{
+		"easy":	{
+			"label":	"Easy",
+			"score_mult":	"x.5"
+		},
+		"normal":	{
+			"label":	"Normal",
+			"score_mult":	" x1"
+		},
+		"hard":	{
+			"label":	"Hard",
+			"score_mult":	" x2"
+		},
+		"impossible":	{
+			"label":	"Impossible?",
+			"score_mult":	" x4"
+		}
+	},
+	"keybinds":	[{
+			"key":	"Dn",
+			"label":	"Move Down"
+		}, {
+			"key":	"Lf",
+			"label":	"Move Left"
+		}, {
+			"key":	"Rt",
+			"label":	"Move Right"
+		}, {
+			"key":	"Up",
+			"label":	"Move Up"
+		}, {
+			"key":	"End",
+			"label":	"Down Left"
+		}, {
+			"key":	"PgDn",
+			"label":	"Down Right"
+		}, {
+			"key":	"Hm",
+			"label":	"Up Left"
+		}, {
+			"key":	"PgUp",
+			"label":	"Up Right"
+		}, {
+			"key":	"A",
+			"label":	"View Army"
+		}, {
+			"key":	"C",
+			"label":	"Controls"
+		}, {
+			"key":	"F",
+			"label":	"Fly"
+		}, {
+			"key":	"L",
+			"label":	"Land"
+		}, {
+			"key":	"I",
+			"label":	"Contract Info"
+		}, {
+			"key":	"M",
+			"label":	"Auto-mapping"
+		}, {
+			"key":	"P",
+			"label":	"Puzzle Solve"
+		}, {
+			"key":	"S",
+			"label":	"Search Area"
+		}, {
+			"key":	"U",
+			"label":	"Use Magic"
+		}, {
+			"key":	"V",
+			"label":	"View Character"
+		}, {
+			"key":	"W",
+			"label":	"Wait End Week"
+		}, {
+			"key":	"Q",
+			"label":	"Quit and Save"
+		}],
+	"startup":	{
+		"controls_hint":	"UP/DN move  ENTER pick  ESC quit",
+		"class_select_hint":	"Select Char A-D or L-Load saved game",
+		"class_picker_missing":	"class picker asset missing",
+		"save_picker_title":	" Select game:",
+		"save_picker_empty":	"(empty)",
+		"save_picker_new_game":	"New game",
+		"new_game_table_header":	"   Difficulty   Days  Score",
+		"new_game_select_hint":	"^v to select   Ent to Accept"
+	},
+	"controls":	{
+		"title":	" Controls ",
+		"on":	"On",
+		"off":	"Off"
+	},
+	"prompts":	{
+		"text_hint":	"(Enter to confirm / ESC cancel)",
+		"numeric_range_hint":	"(1-%COUNT% or ESC)",
+		"yes_no_hint":	"(y/n)?",
+		"numeric_5_hint":	"(1-5 or ESC)"
+	},
+	"dialog_titles":	{
+		"treasure":	"Treasure",
+		"teleport_cave":	"Teleport Cave",
+		"crystal_ball":	"Crystal Ball",
+		"foes":	"Foes!",
+		"alcove_offer":	"The Oracle",
+		"alcove_result":	"Aurange",
+		"castle_default":	"Castle",
+		"own_castle":	"Your castle",
+		"search":	"Search...",
+		"dismiss_army":	"Dismiss Army",
+		"dismiss_last":	"Dismiss last army",
+		"navigate":	"Go to which continent?",
+		"garrison_pick":	"Garrison which troop?",
+		"remove_pick":	"Remove which troop?",
+		"save_confirm":	"Your game has been saved.",
+		"lose_fallback":	"Sorry.",
+		"win_fallback":	"Congratulations!",
+		"combat_victory":	"Victory!"
+	},
+	"villain_descriptions":	{
+		"murray":	{
+			"alias":	"None",
+			"features":	"Threadbare clothes, bald\npatch with hair combed to\ncover it, incessant cough.",
+			"crimes":	"Murray is wanted for\nvarious petty crimes as well\nas for treason. He allowed a\ngroup of pirates to enter the\ncastle and free criminals."
+		},
+		"hack":	{
+			"alias":	"The Spitter",
+			"features":	"Bushy ebon beard stained\nwith tobacco juice, numerous\nbattle scars, brash, arrogant\nbehavior.",
+			"crimes":	"Along with many minor\ninfractions, Hack is wanted\nfor conspiracy against the\nCrown and grave-robbing."
+		},
+		"aimola":	{
+			"alias":	"Lady Deceit",
+			"features":	"Excessive use of make-up\nto hide aging features, ever-\npresent lace handkerchief.",
+			"crimes":	"The Princess violated\nher status as a visiting\ndignitary by encouraging a\nmurder and joining the\nconspiracy against the Crown."
+		},
+		"baron_makahl":	{
+			"alias":	"Johnno",
+			"features":	"Expensive and gaudy\nclothes, overweight, and\na scruffy beard.",
+			"crimes":	"Johnno is wanted for\nvarious crimes against the\nKingdom, including leading a\ndirect assault against the\nCrown and conspiracy."
+		},
+		"dread_rob":	{
+			"alias":	"Terror of the Sea",
+			"features":	"Pencil thin moustache\nand elegantly trimmed beard,\nnever without a rapier.",
+			"crimes":	"Rob is wanted for piracy\nas well a conspiracy and for\nbreaking out five traitors\nsentenced to death in the\nRoyal Dungeons."
+		},
+		"caneghor":	{
+			"alias":	"The Majestic Sage",
+			"features":	"Voluminous robes, bald\nhead, magic symbols engraved\non body, levitating ability.",
+			"crimes":	"Canegor is wanted for\ngrave robbing, conspiracy\nagainst the Crown, and\nplundering the Royal Library."
+		},
+		"moradon":	{
+			"alias":	"None",
+			"features":	"Always wearing armor and\nconcealed weapons, has two\nprominent front teeth and an\nunkept beard.",
+			"crimes":	"Sir Moradon, an emissary\nfrom another land, is wanted\nfor joining a conspiracy to\ntopple the kingdom."
+		},
+		"barrowpine":	{
+			"alias":	"The Elf Lord",
+			"features":	"Pointed ears, sharp\nelfin features, pale blue eyes\nwith no whites, glimmering\nenchanted coin.",
+			"crimes":	"The prince is one of the\nleaders of the conspiracy\nagainst the Crown, he also\ntraffics stolen artifacts."
+		},
+		"bargash":	{
+			"alias":	"Old One Eye",
+			"features":	"Single eye centered in\nmiddle of forehead, over ten\nfeet tall, only hair on body\nis in beard.",
+			"crimes":	"Bargash is wanted for\nconspiracy against the Crown\nand for leading an outright\nattack against the King."
+		},
+		"rinaldus":	{
+			"alias":	"The Death Lord",
+			"features":	"Rinaldus is a magically\nanimated skeleton, an undead,\nhe is easily identifiable by\nthe ancient crown he wears.",
+			"crimes":	"Rinaldus is wanted for\nconspiracy against the Crown\nand leading a rebellion on the\ncontinent of Saharia."
+		},
+		"ragface":	{
+			"alias":	"None",
+			"features":	"Ragface is an undead, he\nis covered from head to foot\nin moldering green strips of\ncloth. A rotting smell follows\nhim.",
+			"crimes":	"Conspiracy against the\nCrown and leading an\ninsurrection in Saharia."
+		},
+		"mahk":	{
+			"alias":	"Bruiser",
+			"features":	"Bright orange body hair\non a fluorescent green body, a\ntendency to shout for no\napparent reason.",
+			"crimes":	"Mahk is wanted for the\nconspiracy against the Crown,\nleading a jail break, and for\npiracy on the open seas."
+		},
+		"auric":	{
+			"alias":	"The Barbarian",
+			"features":	"Auric is heavily muscled\nand wears a protective skin\nmade from the hides of baby\nlambs.",
+			"crimes":	"Auric is wanted for\nconspiracy and for leading the\nrebellion of the continent\nSaharia."
+		},
+		"czar_nickolai":	{
+			"alias":	"The Mad Czar",
+			"features":	"The Czar has eyes which\nchange color constantly, also\na sulphuric smell emanates\nfrom his body.",
+			"crimes":	"The Czar is wanted for\nconspiracy against the Crown,\nviolating diplomatic status,\nand murder."
+		},
+		"magus":	{
+			"alias":	"None",
+			"features":	"Pupil-less eyes, flowing\nwhite beard, always wears\ncrimson robes and a matching\nskull cap.",
+			"crimes":	"Magus is wanted for\nconspiracy against the Crown\nand for practicing forbidden\nmagics."
+		},
+		"urthrax":	{
+			"alias":	"The Demon King",
+			"features":	"Green, scaly skin,\nglowing red eyes, horns\nprotruding from sides of head,\nover 7 feet tall.",
+			"crimes":	"Urthrax is wanted for\nconspiracy against the Crown."
+		},
+		"arech":	{
+			"alias":	"Mastermind",
+			"features":	"Arech is an immense\ndragon with a green body and\nblue wings, he breathes fire.",
+			"crimes":	"Arech is wanted for\nleading the conspiracy against\nthe Crown, arranging jail-\nbreaks, fomenting rebellion,\nstealing the Sceptre of Order."
+		}
+	}
+}

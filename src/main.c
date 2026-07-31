@@ -246,6 +246,7 @@ int shell_run_game(int argc, char **argv) {
     // Minimal CLI parsing.
     bool want_fullscreen = false;
     const char *pack_arg = NULL;     // --pack <name|path>
+    const char *lang_arg = NULL;     // --lang <code>: locale (strings/<code>.json)
     bool extract_mode = false;        // --extract: build pack from KB.EXE then exit
     const char *extract_out_dir = NULL; // --out-dir <dir>: extract to loose tree
     const char *pack_dir_src = NULL;  // --pack-dir <src> <dst>: zip a loose asset tree
@@ -323,6 +324,9 @@ int shell_run_game(int argc, char **argv) {
         } else if (strcmp(a, "--pack") == 0) {
             if (i + 1 >= argc) { fprintf(stderr, "openbounty: --pack requires <name|path>\n"); return 2; }
             pack_arg = argv[++i];
+        } else if (strcmp(a, "--lang") == 0) {
+            if (i + 1 >= argc) { fprintf(stderr, "openbounty: --lang requires <code>\n"); return 2; }
+            lang_arg = argv[++i];
         } else if (strcmp(a, "--extract") == 0) {
             extract_mode = true;
         } else if (strcmp(a, "--out-dir") == 0) {
@@ -405,6 +409,10 @@ int shell_run_game(int argc, char **argv) {
     // agent path runs. Other modes never touch a gated hook, so this is inert.
     demo_set_verbose(verbose_mode);
     ob_diag_set_verbose(verbose_mode);
+
+    // Apply the --lang locale override once, before any mode loads resources
+    // (validate-pack, autoplay, demo, and the normal game all share it).
+    resources_set_locale(lang_arg);
 
     // Early-exit CLI modes (--pack-dir and --extract). Both run to
     // completion and return; no window opens. Implementations live in

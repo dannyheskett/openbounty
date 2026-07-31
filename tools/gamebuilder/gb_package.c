@@ -78,7 +78,7 @@ bool gb_newpack_create(const char *dir, char *err, size_t errsz) {
     char sub[GB_PATH_MAX * 2];
     const char *dirs[] = { "art", "art/tiles", "art/troops", "art/villains",
                            "art/sprites", "art/ui", "art/combat", "art/classes",
-                           "art/font", "audio", "maps", "palettes" };
+                           "art/font", "audio", "maps", "palettes", "strings" };
     for (unsigned i = 0; i < sizeof dirs / sizeof *dirs; i++) {
         snprintf(sub, sizeof sub, "%s%c%s", dir, GB_SEP, dirs[i]);
         for (char *p = sub; *p; p++) if (*p == '/') *p = GB_SEP;
@@ -111,6 +111,7 @@ bool gb_newpack_create(const char *dir, char *err, size_t errsz) {
 
     cJSON *world = cJSON_AddObjectToObject(doc, "world");
     cJSON_AddNumberToObject(world, "fog_sight", 3);
+    cJSON_AddStringToObject(world, "language", "en");
     cJSON_AddStringToObject(world, "starting_zone", "starter");
     cJSON_AddStringToObject(world, "zone_noun", "zone_noun");
     cJSON_AddStringToObject(world, "zone_noun_plural", "zone_noun_plural");
@@ -218,12 +219,22 @@ bool gb_newpack_create(const char *dir, char *err, size_t errsz) {
     cJSON_AddArrayToObject(z, "neighbors");
     cJSON_AddItemToArray(zones, z);
 
-    cJSON_AddItemToObject(doc, "strings", gb_placeholder_strings());
-
     char *text = cJSON_Print(doc);
     cJSON_Delete(doc);
     bool ok = write_text(manifest, text, err, errsz);
     cJSON_free(text);
+    if (!ok) return false;
+
+    // Strings live in their own per-locale file, not in game.json, so the
+    // pack can grow more languages later. The base locale (en) ships with a
+    // literal placeholder for every required key.
+    cJSON *strings = gb_placeholder_strings();
+    char *stext = cJSON_Print(strings);
+    cJSON_Delete(strings);
+    char en_path[GB_PATH_MAX * 2];
+    snprintf(en_path, sizeof en_path, "%s%cstrings%cen.json", dir, GB_SEP, GB_SEP);
+    ok = write_text(en_path, stext, err, errsz);
+    cJSON_free(stext);
     if (!ok) return false;
 
     // A README, because a folder of empty art directories tells the author
