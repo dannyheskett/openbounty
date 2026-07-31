@@ -642,9 +642,8 @@ static void draw_controls(const Game *g) {
         int val = g->stats.options[i];
         const char *type = g->res->controls.items[i].type;
         if (strcmp(type, "bool") == 0) {
-            const char *text = (val == 1)
-                ? (ui_ctl ? ui_ctl->controls_on  : "On")
-                : (ui_ctl ? ui_ctl->controls_off : "Off");
+            const char *text = (val == 1) ? ui_ctl->controls_on
+                                          : ui_ctl->controls_off;
             int tw = (int)bfont_measure(text).x;
             bfont_draw(text, x + w - pad - tw, ty, fg);
         } else {

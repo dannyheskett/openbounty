@@ -45,9 +45,10 @@ bool gb_package(GbWorkspace *ws, const char *out_zip, char *err, size_t errsz) {
 // --- new pack ------------------------------------------------------------------
 //
 // The skeleton is GENERATED, not copied from kings-bounty, because that pack is
-// DOS-extracted and copyright-restricted (GB-401). It leans on the engine's
-// documented defaults: anything omitted falls back, so a minimal manifest is a
-// playable one.
+// DOS-extracted and copyright-restricted (GB-401). The engine ships NO string
+// fallbacks -- every user-facing key must be present or the pack hard-fails at
+// load -- so the skeleton carries the full strings manifest with literal
+// placeholder values (the key name), which the author then replaces.
 
 static bool write_text(const char *path, const char *text, char *err,
                        size_t errsz) {
@@ -60,6 +61,8 @@ static bool write_text(const char *path, const char *text, char *err,
     fclose(f);
     return true;
 }
+
+#include "starter_strings.inc"
 
 bool gb_newpack_create(const char *dir, char *err, size_t errsz) {
     struct stat st;
@@ -108,6 +111,10 @@ bool gb_newpack_create(const char *dir, char *err, size_t errsz) {
 
     cJSON *world = cJSON_AddObjectToObject(doc, "world");
     cJSON_AddNumberToObject(world, "fog_sight", 3);
+    cJSON_AddStringToObject(world, "starting_zone", "starter");
+    cJSON_AddStringToObject(world, "zone_noun", "zone_noun");
+    cJSON_AddStringToObject(world, "zone_noun_plural", "zone_noun_plural");
+    cJSON_AddStringToObject(world, "default_name", "default_name");
     cJSON *time_ = cJSON_AddObjectToObject(doc, "time");
     cJSON_AddNumberToObject(time_, "day_steps", 40);
     cJSON_AddNumberToObject(time_, "week_days", 5);
@@ -210,6 +217,8 @@ bool gb_newpack_create(const char *dir, char *err, size_t errsz) {
     cJSON_AddArrayToObject(z, "armies");
     cJSON_AddArrayToObject(z, "neighbors");
     cJSON_AddItemToArray(zones, z);
+
+    cJSON_AddItemToObject(doc, "strings", gb_placeholder_strings());
 
     char *text = cJSON_Print(doc);
     cJSON_Delete(doc);

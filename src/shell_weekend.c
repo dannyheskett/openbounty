@@ -32,7 +32,7 @@ bool pump_week_end_dialog(const Game *g) {
 
     if (pending_week_phase == WK_PHASE_ASTROLOGY) {
         const TroopDef *t = troop_by_index(pending_astrology_troop_idx);
-        const char *creature = (t && t->name[0]) ? t->name : "Peasants";
+        const char *creature = t->name;
         const ResBanners *bn = &g->res->banners;
         char header[64], body[320], wbuf[16];
         snprintf(wbuf, sizeof wbuf, "%d", pending_week_id);

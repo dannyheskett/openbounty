@@ -248,8 +248,8 @@ void dispatch_adventure_spell(Game *g, int spell_idx) {
         snprintf(body, sizeof body,
                  "%s cannot be cast in the field.\n\n"
                  "Discard it to free a spell slot?",
-                 sp->name[0] ? sp->name : "This spell");
-        const char *header = sp->name[0] ? sp->name : "Spell";
+                 sp->name);
+        const char *header = sp->name;
         pending_discard_spell_idx = spell_idx;
         pending_flow = FLOW_DISCARD_SPELL;
         prompt_yes_no_open(header, body);

@@ -3516,6 +3516,8 @@
 			"alcove_no_gold":	"You have not enough gold!\n%COST% is required.\nBegone until you do!",
 			"no_spell_banner":	"You have not been trained in\nthe art of spellcasting yet.\nVisit the Archmage Aurange\nin %ZONE% at %X%,%Y% for\nthis ability.",
 			"new_game_intro":	"%NAME% the %CLASS%,\nA new game is being created.\nPlease wait while I perform\ngodlike actions to make this\ngame playable.",
+			"combat_victory_named":	"Well done %NAME%, you have\nsuccessfully vanquished\n%TARGET%.\n\nSpoils of War: %GOLD% gold",
+			"combat_victory_unnamed":	"Well done %NAME%, you have\nsuccessfully vanquished\nyet another foe.\n\nSpoils of War: %GOLD% gold",
 			"dwelling_recruit_prompt":	"%COUNT% %TROOP% are available\nCost=%COST% each.  GP=%GOLD%\nYou may recruit up to %CAP%.",
 			"dwelling_none_this_week":	"No troops are available here\nthis week.",
 			"dwelling_empty":	"This dwelling is empty.",
@@ -3615,7 +3617,15 @@
 			"recruit_soldiers_title":	"Recruit Soldiers",
 			"recruit_soldiers_how_many":	"How Many",
 			"own_castle_mode_garrison":	"Garrison troops (Space=Remove)",
-			"own_castle_mode_remove":	"Remove troops (Space=Garrison)"
+			"own_castle_mode_remove":	"Remove troops (Space=Garrison)",
+			"gate_title_town":	"Town Gate",
+			"gate_title_castle":	"Castle Gate",
+			"gate_footer_hint":	"Arrows/letter select  Enter go  ESC cancel",
+			"recruit_col_hint":	"(A-C) ",
+			"dwelling_info_available":	"%COUNT% %TROOP% are available",
+			"dwelling_info_cost":	"Cost=%COST% each.",
+			"dwelling_info_gold":	"GP=%GOLD%K",
+			"dwelling_info_recruit_cap":	"You may recruit up to %CAP%"
 		},
 		"toasts":	{
 			"save_cancelled":	"Save cancelled.",
@@ -3830,7 +3840,8 @@
 			"remove_pick":	"Remove which troop?",
 			"save_confirm":	"Your game has been saved.",
 			"lose_fallback":	"Sorry.",
-			"win_fallback":	"Congratulations!"
+			"win_fallback":	"Congratulations!",
+			"combat_victory":	"Victory!"
 		},
 		"villain_descriptions":	{
 			"murray":	{

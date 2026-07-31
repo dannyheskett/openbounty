@@ -992,333 +992,17 @@ static void parse_ending(Resources *res, cJSON *obj) {
 // Banner defaults preserve  text, so a
 // game.json missing strings.banners still produces parity-correct prompts.
 // %TOKEN% placeholders are resolved at render time by resources_format_template.
-static void load_banner_defaults(ResBanners *b) {
-    copy_str(b->chest_gold, sizeof(b->chest_gold),
-        "After scouring the area,\n"
-        "you fall upon a hidden\n"
-        "treasure cache. You may:\n\n"
-        "A) Take the %GOLD% gold.\n"
-        "B) Distribute the gold to\n"
-        "   the peasants, increasing\n"
-        "   your leadership by %LEADERSHIP%.");
-    copy_str(b->chest_commission, sizeof(b->chest_commission),
-        "After surveying the area,\n"
-        "you discover that it is\n"
-        "rich in mineral deposits.\n\n"
-        "The King rewards you for\n"
-        "your find by increasing\n"
-        "your weekly income by %POINTS%");
-    copy_str(b->chest_spell_power, sizeof(b->chest_spell_power),
-        "Traversing the area, you\n"
-        "stumble upon a time worn\n"
-        "cannister. Curious, you un-\n"
-        "stop the bottle, releasing\n"
-        "a powerful genie who raises\n"
-        "your Spell Power by %POINTS% and\n"
-        "vanishes.");
-    copy_str(b->chest_max_spells, sizeof(b->chest_max_spells),
-        "A tribe of nomads greet you\n"
-        "and your army warmly. Their\n"
-        "shaman, in awe of your\n"
-        "prowess, teaches you the\n"
-        "secret of his tribe's magic.\n"
-        "Your maximum spell capacity\n"
-        "is increased by %POINTS%");
-    copy_str(b->chest_new_spell, sizeof(b->chest_new_spell),
-        "You have captured a\n"
-        "mischevious imp which has\n"
-        "been terrorizing the\n"
-        "region. In exchange for\n"
-        "its release, you receive:\n\n"
-        "   %COUNT% %SPELL% spell.");
-    copy_str(b->chest_empty, sizeof(b->chest_empty),
-        "The chest was empty!");
 
-    // Town overlay .
-    copy_str(b->town_header,        sizeof(b->town_header),        "Town of %NAME%");
-    copy_str(b->town_gold_label,    sizeof(b->town_gold_label),    "GP=%GOLD%K");
-    copy_str(b->town_row_contract,  sizeof(b->town_row_contract),  "A) Get New Contract");
-    copy_str(b->town_row_boat_rent, sizeof(b->town_row_boat_rent), "B) Rent boat (%COST% week)");
-    copy_str(b->town_row_boat_cancel, sizeof(b->town_row_boat_cancel),
-                                                                  "B) Cancel boat rental");
-    copy_str(b->town_row_info,      sizeof(b->town_row_info),      "C) Gather information");
-    copy_str(b->town_row_spell,     sizeof(b->town_row_spell),     "D) %SPELL% spell (%SPELL_COST%)");
-    copy_str(b->town_row_spell_none, sizeof(b->town_row_spell_none), "D) (no spell available)");
-    copy_str(b->town_row_siege_buy,  sizeof(b->town_row_siege_buy), "E) Buy seige weapons (%SIEGE_COST%)");
-    copy_str(b->town_row_siege_owned, sizeof(b->town_row_siege_owned), "E) Siege weapons (owned)");
 
-    // Town action toasts.
-    copy_str(b->town_contract_new,  sizeof(b->town_contract_new),
-        "New contract: %VILLAIN%.\nReward: %REWARD% gold.\nLast seen on %ZONE%.");
-    copy_str(b->town_contract_none, sizeof(b->town_contract_none),
-        "No contracts are available right now.");
-    copy_str(b->town_boat_vacate_first, sizeof(b->town_boat_vacate_first),
-        "\n\nPlease vacate the boat first");
-    copy_str(b->town_no_gold, sizeof(b->town_no_gold),
-        "\n\n\nYou don't have enough gold!");
-    copy_str(b->town_intel_unavailable, sizeof(b->town_intel_unavailable),
-        "No intelligence is available here.");
-    copy_str(b->town_intel_castle_under, sizeof(b->town_intel_castle_under),
-        "Castle %NAME% is under\n");
-    copy_str(b->town_intel_owner_rule, sizeof(b->town_intel_owner_rule),
-        "%OWNER%'s rule.\n\n");
-    copy_str(b->town_intel_owner_none, sizeof(b->town_intel_owner_none),
-        "no one");
-    copy_str(b->town_intel_owner_player, sizeof(b->town_intel_owner_player),
-        "your");
-    copy_str(b->town_intel_owner_king, sizeof(b->town_intel_owner_king),
-        "the King");
-    copy_str(b->town_intel_count_named, sizeof(b->town_intel_count_named),
-        "  %LABEL% %TROOP%\n");
-    copy_str(b->town_intel_count_numeric, sizeof(b->town_intel_count_numeric),
-        "  %COUNT% %TROOP%\n");
-    copy_str(b->town_intel_monsters_generic, sizeof(b->town_intel_monsters_generic),
-        "  Various groups of monsters\n  occupy the castle.");
-    copy_str(b->town_intel_no_garrison, sizeof(b->town_intel_no_garrison),
-        "  (no garrison)");
-    copy_str(b->town_spell_unavailable, sizeof(b->town_spell_unavailable),
-        "No spell is available here.");
-    copy_str(b->town_spell_at_cap, sizeof(b->town_spell_at_cap),
-        "You have learned your maximum number of spells.");
-    copy_str(b->town_spell_can_learn, sizeof(b->town_spell_can_learn),
-        "You can learn %LEFT% more spell%S%.");
-    copy_str(b->town_siege_already, sizeof(b->town_siege_already),
-        "You have siege weapons!");
-    copy_str(b->town_siege_purchased, sizeof(b->town_siege_purchased),
-        "Siege weapons purchased.");
-
-    // Spell effects .
-    copy_str(b->spell_time_stop, sizeof(b->spell_time_stop),
-        "Time has stopped for %STEPS% steps.");
-    copy_str(b->spell_find_villain_no_contract,
-             sizeof(b->spell_find_villain_no_contract),
-        "You have no contract.");
-    copy_str(b->spell_find_villain_success,
-             sizeof(b->spell_find_villain_success),
-        "You have found %CASTLE%!");
-    copy_str(b->spell_find_villain_none,
-             sizeof(b->spell_find_villain_none),
-        "Your search reveals nothing.");
-    copy_str(b->spell_bridge_prompt, sizeof(b->spell_bridge_prompt),
-        "Build bridge in which\ndirection? Use arrows.");
-    copy_str(b->spell_bridge_built, sizeof(b->spell_bridge_built),
-        "Bridge constructed with\n%COUNT% tiles.");
-    copy_str(b->spell_bridge_invalid, sizeof(b->spell_bridge_invalid),
-        "Not a suitable location\nfor a bridge.");
-    copy_str(b->spell_castle_gate_none, sizeof(b->spell_castle_gate_none),
-        "You have not visited\nany castles yet.");
-    copy_str(b->spell_castle_gate_choose, sizeof(b->spell_castle_gate_choose),
-        "Which castle? Press A-K.");
-    copy_str(b->spell_town_gate_none, sizeof(b->spell_town_gate_none),
-        "You have not visited\nany towns yet.");
-    copy_str(b->spell_town_gate_choose, sizeof(b->spell_town_gate_choose),
-        "Which town? Press A-K.");
-    copy_str(b->spell_instant_army_fizzle,
-             sizeof(b->spell_instant_army_fizzle),
-        "Spell fizzles.");
-    copy_str(b->spell_instant_army_no_room,
-             sizeof(b->spell_instant_army_no_room),
-        "Your army has no room!");
-    copy_str(b->spell_instant_army_success,
-             sizeof(b->spell_instant_army_success),
-        "%QTY% %TROOP%\nhave joined your army.");
-    copy_str(b->spell_raise_control_success,
-             sizeof(b->spell_raise_control_success),
-        "Your leadership has\nincreased by %AMOUNT%.");
-    copy_str(b->spell_gate_teleported, sizeof(b->spell_gate_teleported),
-        "Teleported!");
-    copy_str(b->spell_gate_invalid, sizeof(b->spell_gate_invalid),
-        "Invalid selection.");
-
-    // Foe encounters.
-    copy_str(b->encounter_join_named, sizeof(b->encounter_join_named),
-        "You encounter:\n  %LABEL% %TROOP%\n\n"
-        "They offer to join your\narmy for %COST% gold.\n\n"
-        "Press Enter to accept, Esc\nto refuse.");
-    copy_str(b->encounter_join_numeric, sizeof(b->encounter_join_numeric),
-        "You encounter:\n  %COUNT% %TROOP%\n\n"
-        "They offer to join your\narmy for %COST% gold.\n\n"
-        "Press Enter to accept, Esc\nto refuse.");
-    copy_str(b->encounter_wanderers, sizeof(b->encounter_wanderers),
-        "A band of wanderers passes\nby, looking grim.");
-    copy_str(b->encounter_hostile_header,
-             sizeof(b->encounter_hostile_header),
-        "You encounter:\n");
-    copy_str(b->encounter_hostile_unknown,
-             sizeof(b->encounter_hostile_unknown),
-        "  a hostile band\n");
-    copy_str(b->encounter_hostile_count_named,
-             sizeof(b->encounter_hostile_count_named),
-        "  %LABEL% %TROOP%\n");
-    copy_str(b->encounter_hostile_count_numeric,
-             sizeof(b->encounter_hostile_count_numeric),
-        "  %COUNT% %TROOP%\n");
-
-    // Archmage Aurange alcove.
-    copy_str(b->alcove_offer, sizeof(b->alcove_offer),
-        "The venerable Archmage,\n"
-        "Aurange, will teach you the\n"
-        "secrets of spell casting for\n"
-        "%COST% gold.\n\nAccept?");
-    copy_str(b->alcove_already, sizeof(b->alcove_already),
-        "The archmage nods.\nYou already know magic.");
-    copy_str(b->alcove_taught, sizeof(b->alcove_taught),
-        "Aurange teaches you the\n"
-        "arcane arts. You now know\n"
-        "the ways of magic.");
-    copy_str(b->alcove_no_gold, sizeof(b->alcove_no_gold),
-        "You have not enough gold!\n%COST% is required.\nBegone until you do!");
-    copy_str(b->no_spell_banner, sizeof(b->no_spell_banner),
-        "You have not been trained in\n"
-        "the art of spellcasting yet.\n"
-        "Visit the Archmage Aurange\n"
-        "in Continentia at 11,19 for\n"
-        "this ability.");
-    copy_str(b->new_game_intro, sizeof(b->new_game_intro),
-        "%NAME% the %CLASS%,\n"
-        "A new game is being created.\n"
-        "Please wait while I perform\n"
-        "godlike actions to make this\n"
-        "game playable.");
-
-    // Dwelling recruitment.
-    copy_str(b->dwelling_recruit_prompt,
-             sizeof(b->dwelling_recruit_prompt),
-        "%COUNT% %TROOP% are available\n"
-        "Cost=%COST% each.  GP=%GOLD%\n"
-        "You may recruit up to %CAP%.");
-    copy_str(b->dwelling_none_this_week,
-             sizeof(b->dwelling_none_this_week),
-        "No troops are available here\nthis week.");
-    copy_str(b->dwelling_empty, sizeof(b->dwelling_empty),
-        "This dwelling is empty.");
-
-    // Adventure-tile pickups.
-    copy_str(b->telecave_teleport, sizeof(b->telecave_teleport),
-        "You step into the cave and\n"
-        "emerge elsewhere on this\ncontinent.");
-    copy_str(b->telecave_inert, sizeof(b->telecave_inert),
-        "This cave hums with magic,\nbut nothing happens.");
-    copy_str(b->navmap_pickup, sizeof(b->navmap_pickup),
-        "A navigation map of %ZONE%!");
-    copy_str(b->crystal_ball_pickup, sizeof(b->crystal_ball_pickup),
-        "You gaze into a crystal ball\nand see all of %ZONE%!");
-
-    // End-of-week / defeat fallback.
-    copy_str(b->astrology_header, sizeof(b->astrology_header),
-        "Week #%WEEK%");
-    copy_str(b->astrology_body, sizeof(b->astrology_body),
-        "Astrologers proclaim:\n"
-        "Week of the %TROOP%\n\n"
-        "All %TROOP% dwellings are\n"
-        "repopulated.         (space)");
-    copy_str(b->temp_death, sizeof(b->temp_death),
-        "After being disgraced on the\n"
-        "field of battle, King\n"
-        "Maximus summons you to his\n"
-        "castle. After a lesson in\n"
-        "tactics, he reluctantly re-\n"
-        "issues your commission and\n"
-        "sends you on your way.");
-
-    // Mid-combat give-up confirm. Body text is verbatim from the DOS
-    // game; the header doubles as the "Press ESC to exit" hint shown
-    // at the top of the prompt frame.
-    copy_str(b->combat_give_up_header, sizeof(b->combat_give_up_header),
-        "Press ESC to exit");
-    copy_str(b->combat_give_up_body, sizeof(b->combat_give_up_body),
-        "Giving up will forfeit your\n"
-        "armies and send you back to\n"
-        "the King. Give up");
-
-    // Pre-combat scout report.
-    copy_str(b->combat_scouts_header, sizeof(b->combat_scouts_header),
-        "Your scouts have sighted:\n");
-    copy_str(b->combat_scouts_count, sizeof(b->combat_scouts_count),
-        "  %COUNT% %TROOP%\n");
-    copy_str(b->combat_scouts_small_band, sizeof(b->combat_scouts_small_band),
-        "  (a small band)\n");
-    copy_str(b->combat_header_siege, sizeof(b->combat_header_siege),
-        "Siege");
-    copy_str(b->combat_header_default, sizeof(b->combat_header_default),
-        "Combat");
-
-    // Signposts.
-    copy_str(b->signpost_with_body, sizeof(b->signpost_with_body),
-        "A sign reads:\n\n\"%TITLE%\n%BODY%\"");
-    copy_str(b->signpost_title_only, sizeof(b->signpost_title_only),
-        "A sign reads:\n\n\"%TITLE%\"");
-
-    // End-of-week budget panel.
-    copy_str(b->budget_header, sizeof(b->budget_header),
-        "Week #%WEEK%             Budget");
-    copy_str(b->budget_on_hand, sizeof(b->budget_on_hand), "On Hand");
-    copy_str(b->budget_payment, sizeof(b->budget_payment), "Payment");
-    copy_str(b->budget_boat,    sizeof(b->budget_boat),    "Boat   ");
-    copy_str(b->budget_army,    sizeof(b->budget_army),    "Army   ");
-    copy_str(b->budget_balance, sizeof(b->budget_balance), "Balance");
-
-    // Status bar.
-    copy_str(b->status_days_left, sizeof(b->status_days_left),
-        " Options / Controls / Days Left:%DAYS% ");
-    copy_str(b->status_time_stop, sizeof(b->status_time_stop),
-        " Options / Controls / Time Stop:%STEPS% ");
-
-    // Composite prompt bodies.
-    copy_str(b->body_save_confirm, sizeof(b->body_save_confirm),
-        "Press Control-Q to Quit or\nany other key to continue.");
-    copy_str(b->body_search, sizeof(b->body_search),
-        "It will take %DAYS% days to\nsearch this area.\nSearch?");
-    copy_str(b->body_dismiss_pick, sizeof(b->body_dismiss_pick),
-        "Dismiss which troop?");
-    copy_str(b->body_dismiss_last, sizeof(b->body_dismiss_last),
-        "If you dismiss your last\n"
-        "army, you will be sent back\n"
-        "to the King in disgrace.\n"
-        "Dismiss last army?");
-    copy_str(b->body_home_castle, sizeof(b->body_home_castle),
-        "1. Recruit Soldiers\n2. Audience with the King");
-    copy_str(b->body_own_castle, sizeof(b->body_own_castle),
-        "Castle %NAME%:\n1. Garrison troops\n2. Remove troops");
-    copy_str(b->body_garrison_row_named,
-             sizeof(b->body_garrison_row_named),
-        "%INDEX%. %TROOP% (%COUNT%)\n");
-    copy_str(b->body_garrison_row_empty,
-             sizeof(b->body_garrison_row_empty),
-        "%INDEX%. Empty\n");
-    copy_str(b->body_navigate_row, sizeof(b->body_navigate_row),
-        "%INDEX%. %ZONE%\n");
-    copy_str(b->body_no_continents, sizeof(b->body_no_continents),
-        "No known continents from\nthis zone.");
-    copy_str(b->body_must_be_sailing, sizeof(b->body_must_be_sailing),
-        "You must be sailing to\nnavigate to another\ncontinent.");
-
-    // Short banners reused by multiple flows.
-    copy_str(b->cannot_garrison_last, sizeof(b->cannot_garrison_last),
-        "You cannot garrison your\nlast army!");
-    copy_str(b->no_troop_slots, sizeof(b->no_troop_slots),
-        "No troop slots left!");
-    copy_str(b->army_cannot_handle, sizeof(b->army_cannot_handle),
-        "Your army cannot handle\nthat many troops.");
-    copy_str(b->no_troops_to_garrison, sizeof(b->no_troops_to_garrison),
-        "No troops to garrison.");
-    copy_str(b->castle_garrison_empty, sizeof(b->castle_garrison_empty),
-        "Castle garrison is empty.");
-    copy_str(b->spell_unavailable, sizeof(b->spell_unavailable),
-        "That spell is not available.");
-    copy_str(b->spell_not_known, sizeof(b->spell_not_known),
-        "You don't have that spell.");
-    copy_str(b->spell_unknown, sizeof(b->spell_unknown),
-        "Unknown spell.");
-}
-
-static void parse_banners(ResBanners *b, cJSON *obj) {
-    load_banner_defaults(b);
-    if (!cJSON_IsObject(obj)) return;
-    // Each key overrides the matching default if present.
+static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
+    // No defaults: every key MUST come from the pack. A missing key is
+    // recorded (and printed) and hard-fails the load -- never a silent English
+    // fallback. (obj may be NULL if the pack omits the whole section.)
     #define SET_BANNER(field, key) do { \
-        const char *s = json_str(obj, key, NULL); \
+        const char *s = cJSON_IsObject(obj) ? json_str(obj, key, NULL) : NULL; \
         if (s) copy_str(b->field, sizeof(b->field), s); \
+        else { fprintf(stdout, "resources: pack missing string key '%s'\n", key); \
+               res->strings_missing++; } \
     } while (0)
     SET_BANNER(chest_gold,        "chest_gold");
     SET_BANNER(chest_commission,  "chest_commission");
@@ -1385,6 +1069,8 @@ static void parse_banners(ResBanners *b, cJSON *obj) {
     SET_BANNER(alcove_no_gold,                 "alcove_no_gold");
     SET_BANNER(no_spell_banner,                "no_spell_banner");
     SET_BANNER(new_game_intro,                 "new_game_intro");
+    SET_BANNER(combat_victory_named,           "combat_victory_named");
+    SET_BANNER(combat_victory_unnamed,         "combat_victory_unnamed");
     SET_BANNER(dwelling_recruit_prompt,        "dwelling_recruit_prompt");
     SET_BANNER(dwelling_none_this_week,        "dwelling_none_this_week");
     SET_BANNER(dwelling_empty,                 "dwelling_empty");
@@ -1436,69 +1122,14 @@ static void parse_banners(ResBanners *b, cJSON *obj) {
 
 // ---- Combat log strings (game.json strings.combat_log) ------------
 // Defaults follow docs/OPENBOUNTY-SPEC.md section 25.11 verbatim.
-static void load_combat_log_defaults(ResCombatLog *cl) {
-    memset(cl, 0, sizeof(*cl));
-    copy_str(cl->melee_hit,        sizeof(cl->melee_hit),
-             "%ATK% vs %TGT%, %COUNT% die");
-    copy_str(cl->retaliate,        sizeof(cl->retaliate),
-             "%TGT% retaliate, killing %COUNT%");
-    copy_str(cl->ranged_hit,       sizeof(cl->ranged_hit),
-             "%ATK% shoot %TGT% killing %COUNT%");
-    copy_str(cl->ranged_no_effect, sizeof(cl->ranged_no_effect),
-             "%ATK% shoot %TGT%");
-    copy_str(cl->no_effect_msg,    sizeof(cl->no_effect_msg),
-             "The spell seems to have no effect!");
-    copy_str(cl->fly,              sizeof(cl->fly),    "%TROOP% fly");
-    copy_str(cl->move,             sizeof(cl->move),   "%TROOP% move");
-    copy_str(cl->wait,             sizeof(cl->wait),   "%TROOP% wait");
-    copy_str(cl->pass,             sizeof(cl->pass),   "%TROOP% pass");
-    copy_str(cl->frozen,           sizeof(cl->frozen), "%TROOP% are frozen");
-    copy_str(cl->ooc,              sizeof(cl->ooc),
-             "%TROOP% are out of control!");
-    copy_str(cl->immune,           sizeof(cl->immune), "%TROOP% are immune");
-    copy_str(cl->cloned,           sizeof(cl->cloned),
-             "%COUNT% %TROOP% cloned");
-    copy_str(cl->resurrected,      sizeof(cl->resurrected),
-             "%COUNT% %TROOP% resurrected");
-    copy_str(cl->teleported,       sizeof(cl->teleported), "Teleported");
-    copy_str(cl->only_one_spell,   sizeof(cl->only_one_spell),
-             "Only 1 spell per round!");
-    copy_str(cl->no_spell_type,    sizeof(cl->no_spell_type),
-             "No spells of that type");
-    copy_str(cl->cannot_cast,      sizeof(cl->cannot_cast),
-             "You cannot cast magic");
-    copy_str(cl->cast_fireball,    sizeof(cl->cast_fireball), "Fireball!");
-    copy_str(cl->cast_lightning,   sizeof(cl->cast_lightning), "Lightning!");
-    copy_str(cl->cast_turn_undead, sizeof(cl->cast_turn_undead),
-             "Turn Undead!");
-    copy_str(cl->select_clone,     sizeof(cl->select_clone),
-             "Select your army to Clone");
-    copy_str(cl->select_freeze,    sizeof(cl->select_freeze),
-             "Select enemy army to Freeze");
-    copy_str(cl->select_resurrect, sizeof(cl->select_resurrect),
-             "Select army to Resurrect");
-    copy_str(cl->select_damage,    sizeof(cl->select_damage),
-             "Select enemy army to %SPELL%");
-    copy_str(cl->select_teleport,  sizeof(cl->select_teleport),
-             "Select army to Teleport");
-    copy_str(cl->select_dest,      sizeof(cl->select_dest),
-             "Select new location");
-    copy_str(cl->cant_shoot,       sizeof(cl->cant_shoot), "Can't Shoot");
-    copy_str(cl->no_ammo,          sizeof(cl->no_ammo),    "No ammo");
-    copy_str(cl->cant_fly,         sizeof(cl->cant_fly),   "Can't Fly");
-    copy_str(cl->give_up_prompt,   sizeof(cl->give_up_prompt),
-             "Giving up will forfeit your\n"
-             "armies and send you back to\n"
-             "the King. Give up (y/n)?");
-    copy_str(cl->exit_hint,        sizeof(cl->exit_hint), "Press 'ESC' to exit");
-}
 
-static void parse_combat_log(ResCombatLog *cl, cJSON *obj) {
-    load_combat_log_defaults(cl);
-    if (!cJSON_IsObject(obj)) return;
+
+static void parse_combat_log(ResCombatLog *cl, cJSON *obj, Resources *res) {
     #define SET_CL(field, key) do { \
-        const char *s = json_str(obj, key, NULL); \
+        const char *s = cJSON_IsObject(obj) ? json_str(obj, key, NULL) : NULL; \
         if (s) copy_str(cl->field, sizeof(cl->field), s); \
+        else { fprintf(stdout, "resources: pack missing string key '%s'\n", key); \
+               res->strings_missing++; } \
     } while (0)
     SET_CL(melee_hit,        "melee_hit");
     SET_CL(retaliate,        "retaliate");
@@ -1539,235 +1170,14 @@ static void parse_combat_log(ResCombatLog *cl, cJSON *obj) {
 //                 .morale / .count_buckets / .difficulty / .keybinds /
 //                 .startup) ----------------------------------------------
 
-static void load_ui_defaults(ResUI *ui) {
-    memset(ui, 0, sizeof(*ui));
-    copy_str(ui->press_esc_to_exit, sizeof(ui->press_esc_to_exit),
-             "Press 'ESC' to exit");
-    copy_str(ui->quit_to_dos_prompt, sizeof(ui->quit_to_dos_prompt),
-             " Quit without saving (y/n) ");
-    copy_str(ui->out_of_control, sizeof(ui->out_of_control),
-             "OUT OF CONTROL");
-    copy_str(ui->worldmap_hint_your_map, sizeof(ui->worldmap_hint_your_map),
-             "'ESC' to exit / 'SPC' your map");
-    copy_str(ui->worldmap_hint_whole_map, sizeof(ui->worldmap_hint_whole_map),
-             "'ESC' to exit / 'SPC' whole map");
 
-    copy_str(ui->menu_root_title,    sizeof(ui->menu_root_title),    "Game Menu");
-    copy_str(ui->menu_views_title,   sizeof(ui->menu_views_title),   "Views");
-    copy_str(ui->menu_options_title, sizeof(ui->menu_options_title), "Options");
-    copy_str(ui->menu_back,      sizeof(ui->menu_back),      "Back");
-    copy_str(ui->menu_exit,      sizeof(ui->menu_exit),      "Exit");
-    copy_str(ui->menu_save,      sizeof(ui->menu_save),      "Save");
-    copy_str(ui->menu_load,      sizeof(ui->menu_load),      "Load");
-    copy_str(ui->menu_new_game,  sizeof(ui->menu_new_game),  "New Game");
-    copy_str(ui->menu_views,     sizeof(ui->menu_views),     "Views");
-    copy_str(ui->menu_options,   sizeof(ui->menu_options),   "Options");
-    copy_str(ui->menu_army,      sizeof(ui->menu_army),      "Army");
-    copy_str(ui->menu_spells,    sizeof(ui->menu_spells),    "Spells");
-    copy_str(ui->menu_character, sizeof(ui->menu_character), "Character");
-    copy_str(ui->menu_contract,  sizeof(ui->menu_contract),  "Contract");
-    copy_str(ui->menu_puzzle,    sizeof(ui->menu_puzzle),    "Puzzle");
-    copy_str(ui->menu_view_map,  sizeof(ui->menu_view_map),  "View Map");
-
-    copy_str(ui->stat_leadership,         sizeof(ui->stat_leadership),         "Leadership");
-    copy_str(ui->stat_commission,         sizeof(ui->stat_commission),         "Commission/Week");
-    copy_str(ui->stat_gold,               sizeof(ui->stat_gold),               "Gold");
-    copy_str(ui->stat_spell_power,        sizeof(ui->stat_spell_power),        "Spell power");
-    copy_str(ui->stat_max_spells,         sizeof(ui->stat_max_spells),         "Max # of spells");
-    copy_str(ui->stat_villains_caught,    sizeof(ui->stat_villains_caught),    "Villains caught");
-    copy_str(ui->stat_artifacts_found,    sizeof(ui->stat_artifacts_found),    "Artifacts found");
-    copy_str(ui->stat_castles_garrisoned, sizeof(ui->stat_castles_garrisoned), "Castles garrisoned");
-    copy_str(ui->stat_followers_killed,   sizeof(ui->stat_followers_killed),   "Followers killed");
-    copy_str(ui->stat_current_score,      sizeof(ui->stat_current_score),      "Current score");
-
-    copy_str(ui->army_skill,      sizeof(ui->army_skill),      "SL:");
-    copy_str(ui->army_move,       sizeof(ui->army_move),       "MV:");
-    copy_str(ui->army_morale,     sizeof(ui->army_morale),     "Morale:");
-    copy_str(ui->army_hit_points, sizeof(ui->army_hit_points), "HitPts:");
-    copy_str(ui->army_damage,     sizeof(ui->army_damage),     "Damage:");
-    copy_str(ui->army_g_cost,     sizeof(ui->army_g_cost),     "G-Cost:");
-
-    copy_str(ui->morale_normal, sizeof(ui->morale_normal), "Normal");
-    copy_str(ui->morale_low,    sizeof(ui->morale_low),    "Low");
-    copy_str(ui->morale_high,   sizeof(ui->morale_high),   "High");
-
-    // Count buckets -- defaults match the historical openbounty inline ladders.
-    ui->count_buckets_army_view_n = 3;
-    ui->count_buckets_army_view[0].threshold = 5;
-    copy_str(ui->count_buckets_army_view[0].label,
-             sizeof(ui->count_buckets_army_view[0].label), "Few");
-    ui->count_buckets_army_view[1].threshold = 20;
-    copy_str(ui->count_buckets_army_view[1].label,
-             sizeof(ui->count_buckets_army_view[1].label), "Some");
-    ui->count_buckets_army_view[2].threshold = 0x7FFFFFFF;
-    copy_str(ui->count_buckets_army_view[2].label,
-             sizeof(ui->count_buckets_army_view[2].label), "Lots");
-
-    ui->count_buckets_instant_army_n = 4;
-    ui->count_buckets_instant_army[0].threshold = 1;
-    copy_str(ui->count_buckets_instant_army[0].label,
-             sizeof(ui->count_buckets_instant_army[0].label), "One");
-    ui->count_buckets_instant_army[1].threshold = 2;
-    copy_str(ui->count_buckets_instant_army[1].label,
-             sizeof(ui->count_buckets_instant_army[1].label), "A few");
-    ui->count_buckets_instant_army[2].threshold = 9;
-    copy_str(ui->count_buckets_instant_army[2].label,
-             sizeof(ui->count_buckets_instant_army[2].label), "Several");
-    ui->count_buckets_instant_army[3].threshold = 0x7FFFFFFF;
-    copy_str(ui->count_buckets_instant_army[3].label,
-             sizeof(ui->count_buckets_instant_army[3].label), "Many");
-
-    // Difficulty labels (indexed by Difficulty 0..3).
-    static const struct { const char *l; const char *m; } diff_def[4] = {
-        { "Easy",        "x.5" },
-        { "Normal",      " x1" },
-        { "Hard",        " x2" },
-        { "Impossible?", " x4" },
-    };
-    for (int i = 0; i < 4; i++) {
-        copy_str(ui->difficulty[i].label, sizeof(ui->difficulty[i].label),
-                 diff_def[i].l);
-        copy_str(ui->difficulty[i].score_mult,
-                 sizeof(ui->difficulty[i].score_mult), diff_def[i].m);
-    }
-
-    // Default keybinds -- overlay.c options panel order.
-    static const struct { const char *k; const char *l; } keybind_defaults[] = {
-        { "Dn",   "Move Down"      }, { "Lf",   "Move Left"      },
-        { "Rt",   "Move Right"     }, { "Up",   "Move Up"        },
-        { "End",  "Down Left"      }, { "PgDn", "Down Right"     },
-        { "Hm",   "Up Left"        }, { "PgUp", "Up Right"       },
-        { "A",    "View Army"      }, { "C",    "Controls"       },
-        { "F",    "Fly"            }, { "L",    "Land"           },
-        { "I",    "Contract Info"  }, { "M",    "Auto-mapping"   },
-        { "P",    "Puzzle Solve"   }, { "S",    "Search Area"    },
-        { "U",    "Use Magic"      }, { "V",    "View Character" },
-        { "W",    "Wait End Week"  }, { "Q",    "Quit and Save"  },
-    };
-    int n = (int)(sizeof(keybind_defaults) / sizeof(keybind_defaults[0]));
-    if (n > RES_MAX_KEYBINDS) n = RES_MAX_KEYBINDS;
-    ui->keybind_count = n;
-    for (int i = 0; i < n; i++) {
-        copy_str(ui->keybinds[i].key,   sizeof(ui->keybinds[i].key),   keybind_defaults[i].k);
-        copy_str(ui->keybinds[i].label, sizeof(ui->keybinds[i].label), keybind_defaults[i].l);
-    }
-
-    copy_str(ui->startup_controls_hint, sizeof(ui->startup_controls_hint),
-             "UP/DN move  ENTER pick  ESC quit");
-    copy_str(ui->startup_class_select_hint,
-             sizeof(ui->startup_class_select_hint),
-             "Select Char A-D or L-Load saved game");
-    copy_str(ui->startup_class_picker_missing,
-             sizeof(ui->startup_class_picker_missing),
-             "class picker asset missing");
-    copy_str(ui->startup_save_picker_title,
-             sizeof(ui->startup_save_picker_title),
-             " Select game:");
-    copy_str(ui->startup_save_picker_empty,
-             sizeof(ui->startup_save_picker_empty),
-             "(empty)");
-    copy_str(ui->startup_save_picker_new_game,
-             sizeof(ui->startup_save_picker_new_game),
-             "New game");
-    copy_str(ui->startup_new_game_table_header,
-             sizeof(ui->startup_new_game_table_header),
-             "   Difficulty   Days  Score");
-    copy_str(ui->startup_new_game_select_hint,
-             sizeof(ui->startup_new_game_select_hint),
-             "^v to select   Ent to Accept");
-
-    copy_str(ui->controls_title, sizeof(ui->controls_title), " Controls ");
-    copy_str(ui->controls_on,    sizeof(ui->controls_on),    "On");
-    copy_str(ui->controls_off,   sizeof(ui->controls_off),   "Off");
-
-    copy_str(ui->prompt_text_hint, sizeof(ui->prompt_text_hint),
-             "(Enter to confirm / ESC cancel)");
-    copy_str(ui->prompt_numeric_range_hint,
-             sizeof(ui->prompt_numeric_range_hint),
-             "(1-%COUNT% or ESC)");
-    copy_str(ui->prompt_yes_no_hint,    sizeof(ui->prompt_yes_no_hint),    "(y/n)?");
-    copy_str(ui->prompt_numeric_5_hint, sizeof(ui->prompt_numeric_5_hint), "(1-5 or ESC)");
-
-    // Dialog / prompt titles.
-    copy_str(ui->dt_treasure,        sizeof(ui->dt_treasure),        "Treasure");
-    copy_str(ui->dt_teleport_cave,   sizeof(ui->dt_teleport_cave),   "Teleport Cave");
-    copy_str(ui->dt_crystal_ball,    sizeof(ui->dt_crystal_ball),    "Crystal Ball");
-    copy_str(ui->dt_foes,            sizeof(ui->dt_foes),            "Foes!");
-    copy_str(ui->dt_alcove_offer,    sizeof(ui->dt_alcove_offer),    "Archmage Aurange");
-    copy_str(ui->dt_alcove_result,   sizeof(ui->dt_alcove_result),   "Aurange");
-    copy_str(ui->dt_castle_default,  sizeof(ui->dt_castle_default),  "Castle");
-    copy_str(ui->dt_own_castle,      sizeof(ui->dt_own_castle),      "Your castle");
-    copy_str(ui->dt_search,          sizeof(ui->dt_search),          "Search...");
-    copy_str(ui->dt_dismiss_army,    sizeof(ui->dt_dismiss_army),    "Dismiss Army");
-    copy_str(ui->dt_dismiss_last,    sizeof(ui->dt_dismiss_last),    "Dismiss last army");
-    copy_str(ui->dt_navigate,        sizeof(ui->dt_navigate),        "Go to which continent?");
-    copy_str(ui->dt_garrison_pick,   sizeof(ui->dt_garrison_pick),   "Garrison which troop?");
-    copy_str(ui->dt_remove_pick,     sizeof(ui->dt_remove_pick),     "Remove which troop?");
-    copy_str(ui->dt_save_confirm,    sizeof(ui->dt_save_confirm),    "Your game has been saved.");
-    copy_str(ui->dt_lose_fallback,   sizeof(ui->dt_lose_fallback),   "Sorry.");
-    copy_str(ui->dt_win_fallback,    sizeof(ui->dt_win_fallback),    "Congratulations!");
-
-    copy_str(ui->empty_slot, sizeof(ui->empty_slot), "Empty");
-
-    copy_str(ui->combat_spells_title,      sizeof(ui->combat_spells_title),      "Spells");
-    copy_str(ui->combat_spells_col_combat, sizeof(ui->combat_spells_col_combat), "Combat");
-    copy_str(ui->combat_spells_prompt,     sizeof(ui->combat_spells_prompt),     "Cast which (A-G)?");
-
-    copy_str(ui->dwelling_kind_plains,       sizeof(ui->dwelling_kind_plains),       "Plains");
-    copy_str(ui->dwelling_kind_forest,       sizeof(ui->dwelling_kind_forest),       "Forest");
-    copy_str(ui->dwelling_kind_hill,         sizeof(ui->dwelling_kind_hill),         "Hill");
-    copy_str(ui->dwelling_kind_dungeon,      sizeof(ui->dwelling_kind_dungeon),      "Dungeon");
-    copy_str(ui->dwelling_recruit_how_many,  sizeof(ui->dwelling_recruit_how_many),  "Recruit how many");
-
-    copy_str(ui->recruit_soldiers_title,    sizeof(ui->recruit_soldiers_title),    "Recruit Soldiers");
-    copy_str(ui->recruit_soldiers_how_many, sizeof(ui->recruit_soldiers_how_many), "How Many");
-
-    copy_str(ui->own_castle_mode_garrison, sizeof(ui->own_castle_mode_garrison), "Garrison troops (Space=Remove)");
-    copy_str(ui->own_castle_mode_remove,   sizeof(ui->own_castle_mode_remove),   "Remove troops (Space=Garrison)");
-
-    // Save/load + game-state toasts.
-    copy_str(ui->toast_save_cancelled, sizeof(ui->toast_save_cancelled),
-             "Save cancelled.");
-    copy_str(ui->toast_save_ok,        sizeof(ui->toast_save_ok),        "Saved.");
-    copy_str(ui->toast_save_failed,    sizeof(ui->toast_save_failed),
-             "Save failed: %REASON%");
-    copy_str(ui->toast_load_cancelled, sizeof(ui->toast_load_cancelled),
-             "Load cancelled.");
-    copy_str(ui->toast_load_ok,        sizeof(ui->toast_load_ok),        "Loaded.");
-    copy_str(ui->toast_load_failed,    sizeof(ui->toast_load_failed),
-             "Load failed: %REASON%");
-    copy_str(ui->toast_new_game,       sizeof(ui->toast_new_game),
-             "New game started.");
-
-    // Contract view labels.
-    copy_str(ui->cv_title_no_contract, sizeof(ui->cv_title_no_contract),
-             "You have no Contract!");
-    copy_str(ui->cv_label_name,        sizeof(ui->cv_label_name),
-             "Name: %VALUE%");
-    copy_str(ui->cv_label_alias,       sizeof(ui->cv_label_alias),
-             "Alias: %VALUE%");
-    copy_str(ui->cv_label_reward,      sizeof(ui->cv_label_reward),
-             "Reward: %VALUE% gold");
-    copy_str(ui->cv_label_last_seen,   sizeof(ui->cv_label_last_seen),
-             "Last Seen: %VALUE%");
-    copy_str(ui->cv_label_castle,      sizeof(ui->cv_label_castle),
-             "Castle: %VALUE%");
-    copy_str(ui->cv_alias_none,        sizeof(ui->cv_alias_none),     "None");
-    copy_str(ui->cv_castle_unknown,    sizeof(ui->cv_castle_unknown), "Unknown");
-    copy_str(ui->cv_features_header,   sizeof(ui->cv_features_header),
-             "Distinguishing Features:");
-    copy_str(ui->cv_crimes_header,     sizeof(ui->cv_crimes_header),  "Crimes:");
-
-    // Spells view labels.
-    copy_str(ui->sv_title,         sizeof(ui->sv_title),         "Spells");
-    copy_str(ui->sv_combat_col,    sizeof(ui->sv_combat_col),    "Combat");
-    copy_str(ui->sv_adventure_col, sizeof(ui->sv_adventure_col), "Adventuring");
-}
 
 // Override one buffer field if the JSON object has a string at `key`.
 #define UI_SET(field, key) do { \
-    const char *s = json_str(obj, key, NULL); \
+    const char *s = cJSON_IsObject(obj) ? json_str(obj, key, NULL) : NULL; \
     if (s) copy_str(ui->field, sizeof(ui->field), s); \
+    else { fprintf(stdout, "resources: pack missing string key '%s'\n", key); \
+           res->strings_missing++; } \
 } while (0)
 
 static void parse_count_buckets(ResCountBucket *out, int *out_n, int max,
@@ -1788,8 +1198,7 @@ static void parse_count_buckets(ResCountBucket *out, int *out_n, int max,
 
 static void parse_ui(Resources *res, cJSON *root_strings) {
     ResUI *ui = &res->ui;
-    load_ui_defaults(ui);
-    if (!cJSON_IsObject(root_strings)) return;
+    // No defaults: keys come only from the pack (missing -> recorded, hard-fail).
 
     cJSON *jui = cJSON_GetObjectItem(root_strings, "ui");
     if (cJSON_IsObject(jui)) {
@@ -1945,10 +1354,18 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(dwelling_kind_hill,         "dwelling_kind_hill");
         UI_SET(dwelling_kind_dungeon,      "dwelling_kind_dungeon");
         UI_SET(dwelling_recruit_how_many,  "dwelling_recruit_how_many");
+        UI_SET(dwelling_info_available,    "dwelling_info_available");
+        UI_SET(dwelling_info_cost,         "dwelling_info_cost");
+        UI_SET(dwelling_info_gold,         "dwelling_info_gold");
+        UI_SET(dwelling_info_recruit_cap,  "dwelling_info_recruit_cap");
         UI_SET(recruit_soldiers_title,    "recruit_soldiers_title");
         UI_SET(recruit_soldiers_how_many, "recruit_soldiers_how_many");
         UI_SET(own_castle_mode_garrison, "own_castle_mode_garrison");
         UI_SET(own_castle_mode_remove,   "own_castle_mode_remove");
+        UI_SET(gate_title_town,          "gate_title_town");
+        UI_SET(gate_title_castle,        "gate_title_castle");
+        UI_SET(gate_footer_hint,         "gate_footer_hint");
+        UI_SET(recruit_col_hint,         "recruit_col_hint");
     }
 
     cJSON *jtoasts = cJSON_GetObjectItem(root_strings, "toasts");
@@ -2006,6 +1423,7 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(dt_save_confirm,   "save_confirm");
         UI_SET(dt_lose_fallback,  "lose_fallback");
         UI_SET(dt_win_fallback,   "win_fallback");
+        UI_SET(dt_combat_victory, "combat_victory");
     }
 }
 
@@ -2015,9 +1433,9 @@ static void parse_strings(Resources *res, cJSON *obj) {
     // Banners + UI labels load defaults even when strings/* is missing, so
     // every dialog and HUD draw call has a body to render.
     parse_banners(&res->banners,
-                  cJSON_IsObject(obj) ? cJSON_GetObjectItem(obj, "banners") : NULL);
+                  cJSON_IsObject(obj) ? cJSON_GetObjectItem(obj, "banners") : NULL, res);
     parse_combat_log(&res->combat_log,
-                     cJSON_IsObject(obj) ? cJSON_GetObjectItem(obj, "combat_log") : NULL);
+                     cJSON_IsObject(obj) ? cJSON_GetObjectItem(obj, "combat_log") : NULL, res);
     parse_ui(res, obj);
     if (!cJSON_IsObject(obj)) return;
     parse_end_text(&res->win_text,  cJSON_GetObjectItem(obj, "win"));
@@ -2413,16 +1831,20 @@ bool resources_load(Resources *res, const char *manifest_path) {
     }
 
     cJSON *jw = cJSON_GetObjectItem(root, "world");
-    copy_str(res->world.starting_zone, sizeof(res->world.starting_zone),
-             json_str(jw, "starting_zone", "continentia"));
-    copy_str(res->world.zone_noun, sizeof(res->world.zone_noun),
-             json_str(jw, "zone_noun", "zone"));
-    copy_str(res->world.zone_noun_plural, sizeof(res->world.zone_noun_plural),
-             json_str(jw, "zone_noun_plural", "zones"));
+    // world.* user-facing strings are required from the pack too (no defaults).
+    #define REQ_WORLD(field, key) do { \
+        const char *s = json_str(jw, key, NULL); \
+        if (s) copy_str(res->world.field, sizeof(res->world.field), s); \
+        else { fprintf(stdout, "resources: pack missing string key 'world.%s'\n", key); \
+               res->strings_missing++; } \
+    } while (0)
+    REQ_WORLD(starting_zone,    "starting_zone");
+    REQ_WORLD(zone_noun,        "zone_noun");
+    REQ_WORLD(zone_noun_plural, "zone_noun_plural");
+    REQ_WORLD(default_name,     "default_name");
+    #undef REQ_WORLD
     res->world.max_army_slots = json_int(jw, "max_army_slots", 5);
     res->world.fog_sight      = json_int(jw, "fog_sight",      3);
-    copy_str(res->world.default_name, sizeof(res->world.default_name),
-             json_str(jw, "default_name", "Hero"));
     cJSON *jdo = cJSON_GetObjectItem(jw, "default_options");
     // Fallback defaults: delay, sounds, walk_beep, anim, cga, music, volume.
     static const int default_options_fallback[7] = { 4, 1, 1, 1, 1, 0, 5 };
@@ -2518,6 +1940,17 @@ bool resources_load(Resources *res, const char *manifest_path) {
     parse_credits(res,     cJSON_GetObjectItem(root, "credits"));
 
     cJSON_Delete(root);
+
+    // Strict strings: the engine carries no fallback text. If the pack omitted
+    // any required string key, refuse to load -- the missing keys were printed
+    // above -- rather than render blank/garbage.
+    if (res->strings_missing > 0) {
+        fprintf(stdout,
+                "resources: pack is missing %d required string key(s); "
+                "refusing to load. Every UI/message string must be supplied by "
+                "the pack.\n", res->strings_missing);
+        return false;
+    }
 
     g_resources = res;    // publish to table lookups
     return true;

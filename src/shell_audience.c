@@ -73,20 +73,13 @@ void run_audience_dialog(Game *game, const ResCastle *rc) {
     }
 
     // Build the king's message (page 2) with substitutions applied.
-    audience_substitute(game, needed, branch ? branch : "",
+    audience_substitute(game, needed, branch,
                         pending_audience_message,
                         sizeof(pending_audience_message));
 
     // Open the fanfare dialog first (page 1).
     char fanfare[400];
-    audience_substitute(game, needed,
-                        rc->special.audience_intro[0]
-                            ? rc->special.audience_intro
-                            : "Trumpets announce your\n"
-                              "arrival with regal fanfare.\n\n"
-                              "King Maximus rises from his\n"
-                              "throne to greet you and\n"
-                              "proclaims:           (space)",
+    audience_substitute(game, needed, rc->special.audience_intro,
                         fanfare, sizeof(fanfare));
     player_io_message(game, NULL, fanfare);
 }

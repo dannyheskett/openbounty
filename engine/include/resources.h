@@ -429,6 +429,8 @@ typedef struct {
     char spell_unavailable[RES_BANNER_LEN];
     char spell_not_known[RES_BANNER_LEN];
     char spell_unknown[RES_BANNER_LEN];
+    char combat_victory_named[RES_BANNER_LEN];   // %NAME% %TARGET% %GOLD%
+    char combat_victory_unnamed[RES_BANNER_LEN]; // %NAME% %GOLD%
 } ResBanners;
 
 // In-combat log strings (game.json strings.combat_log). One entry per
@@ -605,6 +607,7 @@ typedef struct {
     char dt_save_confirm[RES_UI_LABEL_LEN];
     char dt_lose_fallback[RES_UI_LABEL_LEN];   // header when win_text.header empty
     char dt_win_fallback[RES_UI_LABEL_LEN];
+    char dt_combat_victory[RES_UI_LABEL_LEN];  // title of the post-battle spoils dialog
 
     // Misc fallbacks.
     char empty_slot[RES_UI_LABEL_LEN];   // garrison-row "Empty" placeholder
@@ -620,6 +623,10 @@ typedef struct {
     char dwelling_kind_hill[RES_UI_LABEL_LEN];
     char dwelling_kind_dungeon[RES_UI_LABEL_LEN];
     char dwelling_recruit_how_many[RES_UI_LABEL_LEN];
+    char dwelling_info_available[RES_UI_LABEL_LEN];    // %COUNT% %TROOP%
+    char dwelling_info_cost[RES_UI_LABEL_LEN];         // %COST%
+    char dwelling_info_gold[RES_UI_LABEL_LEN];         // %GOLD% (thousands)
+    char dwelling_info_recruit_cap[RES_UI_LABEL_LEN];  // %CAP%
 
     // Home-castle recruit screen.
     char recruit_soldiers_title[RES_UI_LABEL_LEN];
@@ -628,6 +635,12 @@ typedef struct {
     // Own-castle garrison/remove mode labels.
     char own_castle_mode_garrison[RES_UI_LABEL_LEN];
     char own_castle_mode_remove[RES_UI_LABEL_LEN];
+
+    // Gate-landing view titles (town vs. castle gate).
+    char gate_title_town[RES_UI_LABEL_LEN];
+    char gate_title_castle[RES_UI_LABEL_LEN];
+    char gate_footer_hint[RES_BANNER_LEN];     // gate chooser footer controls
+    char recruit_col_hint[RES_UI_LABEL_LEN];   // "(A-C) " recruit column hint
 
     // Save/load + game-state toasts (game.json strings.toasts).
     // Substitutions: %REASON%.
@@ -914,6 +927,12 @@ typedef struct {
         char tune_chest[RES_PATH_LEN];
         char tune_defeat[RES_PATH_LEN];
     } audio;
+
+    // Strict-strings bookkeeping: the engine ships NO hardcoded user-facing
+    // text. Every string comes from the pack; a key the pack omits is counted
+    // here (and printed) and makes resources_load() hard-fail. Never a silent
+    // fallback.
+    int  strings_missing;
 
 } Resources;
 

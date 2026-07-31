@@ -80,14 +80,14 @@ static int loc_kind_for(DwellingKind k) {
 }
 
 static const char *dwelling_kind_name(const Game *g, DwellingKind k) {
-    const ResUI *ui = (g && g->res) ? &g->res->ui : NULL;
+    const ResUI *ui = &g->res->ui;
     switch (k) {
-        case DWELLING_KIND_PLAINS:  return ui ? ui->dwelling_kind_plains  : "Plains";
-        case DWELLING_KIND_FOREST:  return ui ? ui->dwelling_kind_forest  : "Forest";
-        case DWELLING_KIND_HILL:    return ui ? ui->dwelling_kind_hill    : "Hill";
-        case DWELLING_KIND_DUNGEON: return ui ? ui->dwelling_kind_dungeon : "Dungeon";
+        case DWELLING_KIND_FOREST:  return ui->dwelling_kind_forest;
+        case DWELLING_KIND_HILL:    return ui->dwelling_kind_hill;
+        case DWELLING_KIND_DUNGEON: return ui->dwelling_kind_dungeon;
+        case DWELLING_KIND_PLAINS:
+        default:                    return ui->dwelling_kind_plains;
     }
-    return "Dwelling";
 }
 
 void screen_dwelling_draw(const Game *g, const Sprites *s) {
@@ -125,18 +125,34 @@ void screen_dwelling_draw(const Game *g, const Sprites *s) {
     }
     ty += row_h;
 
+    const ResUI *ui = &g->res->ui;
+
     // "<pop> <Troops> are available"
-    char line[96];
-    snprintf(line, sizeof(line), "%d %s are available",
-             s_pop, s_troop_name[0] ? s_troop_name : "Troops");
+    char line[96], numbuf[16];
+    snprintf(numbuf, sizeof numbuf, "%d", s_pop);
+    ResTemplateVar avail_vars[] = {
+        { "COUNT", numbuf },
+        { "TROOP", s_troop_name },
+    };
+    resources_format_template(line, sizeof(line),
+                              ui->dwelling_info_available, avail_vars, 2);
     bfont_draw(line, tx, ty, PAL_CLR(WHITE));
     ty += row_h;
 
     // "Cost=<N> each.      GP=<gold>K"
     char cost_part[32];
     char gold_part[24];
-    snprintf(cost_part, sizeof(cost_part), "Cost=%d each.", s_cost);
-    snprintf(gold_part, sizeof(gold_part), "GP=%dK", s_gold / 1000);
+    snprintf(numbuf, sizeof numbuf, "%d", s_cost);
+    ResTemplateVar cost_vars[] = { { "COST", numbuf } };
+    resources_format_template(cost_part, sizeof(cost_part),
+                              ui->dwelling_info_cost, cost_vars, 1);
+    {
+        char kbuf[16];
+        snprintf(kbuf, sizeof kbuf, "%d", s_gold / 1000);
+        ResTemplateVar gold_vars[] = { { "GOLD", kbuf } };
+        resources_format_template(gold_part, sizeof(gold_part),
+                                  ui->dwelling_info_gold, gold_vars, 1);
+    }
     bfont_draw(cost_part, tx, ty, PAL_CLR(WHITE));
     {
         // Right-align the gold part to column 20 (spec aligns the GP=
@@ -147,16 +163,15 @@ void screen_dwelling_draw(const Game *g, const Sprites *s) {
     ty += row_h;
 
     // "You may recruit up to <max>"
-    snprintf(line, sizeof(line), "You may recruit up to %d", s_cap);
+    snprintf(numbuf, sizeof numbuf, "%d", s_cap);
+    ResTemplateVar cap_vars[] = { { "CAP", numbuf } };
+    resources_format_template(line, sizeof(line),
+                              ui->dwelling_info_recruit_cap, cap_vars, 1);
     bfont_draw(line, tx, ty, PAL_CLR(WHITE));
     ty += row_h;
 
     // The "Recruit how many" prompt and numeric input are owned by
     // engine/step.c (prompt_text_input_open over this panel). The cursor /
     // typed digits render via prompt_draw on top of this rect.
-    {
-        const ResUI *ui = (g && g->res) ? &g->res->ui : NULL;
-        bfont_draw(ui ? ui->dwelling_recruit_how_many : "Recruit how many",
-                   tx, ty, PAL_CLR(WHITE));
-    }
+    bfont_draw(ui->dwelling_recruit_how_many, tx, ty, PAL_CLR(WHITE));
 }

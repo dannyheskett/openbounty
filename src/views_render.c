@@ -684,14 +684,14 @@ static void draw_worldmap_exit_hint(const Game *g) {
     // KB_TopBox strings.
     DrawRectangle(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H,
                   PAL_CLR(DRED));
-    const ResUI *ui = (g && g->res) ? &g->res->ui : NULL;
+    const ResUI *ui = &g->res->ui;
     const char *txt;
     if (!worldmap_has_orb(g)) {
-        txt = ui ? ui->press_esc_to_exit : "Press 'ESC' to exit";
+        txt = ui->press_esc_to_exit;
     } else if (s_worldmap_whole_map) {
-        txt = ui ? ui->worldmap_hint_your_map : "'ESC' to exit / 'SPC' your map";
+        txt = ui->worldmap_hint_your_map;
     } else {
-        txt = ui ? ui->worldmap_hint_whole_map : "'ESC' to exit / 'SPC' whole map";
+        txt = ui->worldmap_hint_whole_map;
     }
     bfont_draw_centered(txt,
                         CL_STATUS_X + CL_STATUS_W / 2,
@@ -828,7 +828,9 @@ static void draw_gate(void) {
     DrawRectangle(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DGREY));
     DrawRectangleLines(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DRED));
 
-    const char *title = views_gate_is_town() ? "Town Gate" : "Castle Gate";
+    const ResUI *ui = &resources_current()->ui;
+    const char *title = views_gate_is_town() ? ui->gate_title_town
+                                             : ui->gate_title_castle;
     bfont_draw_centered(title, vx + vw / 2, VIEW_Y + VIEW_PAD, PAL_CLR(YELLOW));
 
     int n = views_gate_count();
@@ -863,7 +865,7 @@ static void draw_gate(void) {
     }
 
     // Footer hint.
-    bfont_draw("Arrows/letter select  Enter go  ESC cancel",
+    bfont_draw(ui->gate_footer_hint,
                vx + VIEW_PAD + 2, VIEW_Y + VIEW_H - GH - 3, PAL_CLR(GREY));
 }
 
