@@ -61,3 +61,4 @@ __pycache__/
 # Dev-only borrowed art/audio for glory-of-rome (DOS-derived, never ship)
 assets/glory-of-rome/art/
 assets/glory-of-rome/audio/
+assets/glory-of-rome/palettes/
