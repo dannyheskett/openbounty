@@ -103,6 +103,14 @@ static const Resources *g_resources = NULL;
 
 const Resources *resources_current(void) { return g_resources; }
 
+// Locale override for the next load (set from the --lang CLI flag). Empty
+// means "use the pack's base locale (world.language)".
+static char g_locale_override[RES_ID_LEN];
+void resources_set_locale(const char *lang) {
+    if (lang && lang[0]) snprintf(g_locale_override, sizeof g_locale_override, "%s", lang);
+    else g_locale_override[0] = '\0';
+}
+
 // Read a whole file from `path` (via assets.c so packaged builds work too).
 // Returns a heap-owned NUL-terminated buffer; caller frees.
 static char *slurp(const char *path) {
@@ -1640,6 +1648,30 @@ int artifact_index_for_tile(const char *zone, int local_idx) {
 
 // ---- Top-level -------------------------------------------------------------
 
+// Load the pack's string catalog for `lang` from strings/<lang>.json, falling
+// back to the base locale <base> when the requested locale file is absent. The
+// engine carries no text of its own, so a missing/unparseable base locale is a
+// hard load failure. Returns a cJSON the caller must cJSON_Delete, or NULL.
+static cJSON *load_locale_strings(const char *lang, const char *base) {
+    char path[128];
+    snprintf(path, sizeof path, "strings/%s.json", lang);
+    char *txt = slurp(path);
+    if (!txt && base && base[0] && strcmp(lang, base) != 0) {
+        fprintf(stdout, "resources: locale '%s' not found, using base locale '%s'\n",
+                lang, base);
+        snprintf(path, sizeof path, "strings/%s.json", base);
+        txt = slurp(path);
+    }
+    if (!txt) {
+        fprintf(stdout, "resources: could not read strings locale file '%s'\n", path);
+        return NULL;
+    }
+    cJSON *j = cJSON_Parse(txt);
+    free(txt);
+    if (!j) fprintf(stdout, "resources: could not parse %s\n", path);
+    return j;
+}
+
 bool resources_load(Resources *res, const char *manifest_path) {
     memset(res, 0, sizeof(*res));
 
@@ -1951,6 +1983,10 @@ bool resources_load(Resources *res, const char *manifest_path) {
     REQ_WORLD(zone_noun_plural, "zone_noun_plural");
     REQ_WORLD(default_name,     "default_name");
     #undef REQ_WORLD
+    // Base locale code (names the strings/<language>.json file). Optional;
+    // defaults to English so a pack that omits it still resolves a locale.
+    copy_str(res->world.language, sizeof res->world.language,
+             json_str(jw, "language", "en"));
     res->world.max_army_slots = json_int(jw, "max_army_slots", 5);
     res->world.fog_sight      = json_int(jw, "fog_sight",      3);
     cJSON *jdo = cJSON_GetObjectItem(jw, "default_options");
@@ -2043,7 +2079,17 @@ bool resources_load(Resources *res, const char *manifest_path) {
     parse_audio(res,       cJSON_GetObjectItem(root, "audio"));
     parse_combat(res,      cJSON_GetObjectItem(root, "combat"));
     parse_controls(res,    cJSON_GetObjectItem(root, "controls"));
-    parse_strings(res,     cJSON_GetObjectItem(root, "strings"));
+    // Strings live in their own per-locale file (strings/<lang>.json), not in
+    // game.json -- so a pack can ship multiple languages and the engine stays
+    // string-free. Pick the requested locale (CLI --lang) or the pack's base.
+    {
+        const char *base = res->world.language[0] ? res->world.language : "en";
+        const char *lang = g_locale_override[0] ? g_locale_override : base;
+        cJSON *strings_root = load_locale_strings(lang, base);
+        if (!strings_root) res->strings_missing++;   // forces the hard-fail below
+        parse_strings(res, strings_root);            // NULL-safe: records misses
+        cJSON_Delete(strings_root);
+    }
     parse_ending(res,      cJSON_GetObjectItem(root, "ending"));
     parse_credits(res,     cJSON_GetObjectItem(root, "credits"));
 

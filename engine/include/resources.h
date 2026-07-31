@@ -157,6 +157,7 @@ typedef struct {
     char starting_zone[RES_ID_LEN];
     char zone_noun[RES_ID_LEN];
     char zone_noun_plural[RES_ID_LEN];
+    char language[RES_ID_LEN];    // base locale code; strings load from strings/<language>.json
     int  max_army_slots;
     int  fog_sight;
     // Initial player state defaults, used by GameInit when no override exists.
@@ -1006,6 +1007,12 @@ bool resources_load(Resources *res, const char *manifest_path);
 #define RES_ART_MANIFEST_MAX 512
 int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
                            int cap);
+// Override the locale used for the next resources_load. Strings load from
+// strings/<lang>.json in the pack; a locale file that is absent falls back to
+// the pack's base locale (world.language). Pass NULL or "" to clear the
+// override and use the pack's base locale. Wired to the --lang CLI flag.
+void resources_set_locale(const char *lang);
+
 // Currently a no-op (all storage is inline). Kept as the proper teardown
 // hook in case any catalog-table allocation grows beyond inline storage.
 void resources_free(Resources *res);
