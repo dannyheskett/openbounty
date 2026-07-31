@@ -159,6 +159,8 @@ typedef struct {
     Unit garrison[GAME_ARMY_SLOTS];
     bool alive;
     bool friendly;          // true -> recruit dialog; false -> attack prompt
+    bool is_static;         // never moves (skipped by foes_follow); the fight
+                            // is forced on contact -- no decline (REQ-gate).
 } FoeState;
 
 // Randomized object placements produced by salt_continent / salt_spells /

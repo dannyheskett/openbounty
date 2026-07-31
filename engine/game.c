@@ -610,7 +610,8 @@ static void roll_hostile_garrison(const Game *g, int continent, Unit *out) {
 }
 
 static void add_foe(Game *g, int continent, const char *zone, int x, int y,
-                    const char *placement_id, bool friendly) {
+                    const char *placement_id, bool friendly,
+                    bool is_static, const ResZoneArmy *explicit_army) {
     if (!g || g->foe_count >= GAME_MAX_FOES) return;
     FoeState *f = &g->foes[g->foe_count++];
     copy_id(f->zone, sizeof(f->zone), zone);
@@ -621,10 +622,23 @@ static void add_foe(Game *g, int continent, const char *zone, int x, int y,
     copy_id(f->placement_id, sizeof(f->placement_id), placement_id);
     f->alive = true;
     f->friendly = friendly;
-    // Garrison is rolled regardless. For friendlies it's unused (recruit
-    // dialog rolls a fresh creature  accept_foe), but having it
-    // populated keeps save/load and tests uniform.
-    roll_hostile_garrison(g, continent, f->garrison);
+    f->is_static = is_static;
+    // Explicit garrison (a hand-tuned guardian) if one was declared; otherwise
+    // roll by zone tier. For friendlies the garrison is unused (recruit dialog
+    // rolls a fresh creature), but populating it keeps save/load + tests uniform.
+    if (explicit_army && explicit_army->army_stacks > 0) {
+        for (int s = 0; s < GAME_ARMY_SLOTS; s++) {
+            f->garrison[s].id[0] = '\0';
+            f->garrison[s].count = 0;
+        }
+        for (int s = 0; s < explicit_army->army_stacks && s < GAME_ARMY_SLOTS; s++) {
+            copy_id(f->garrison[s].id, sizeof(f->garrison[s].id),
+                    explicit_army->army_id[s]);
+            f->garrison[s].count = explicit_army->army_count[s];
+        }
+    } else {
+        roll_hostile_garrison(g, continent, f->garrison);
+    }
 }
 
 void salt_continent(Game *g, int continent, int min_artifacts, int min_navmaps,
@@ -653,7 +667,8 @@ void salt_continent(Game *g, int continent, int min_artifacts, int min_navmaps,
             snprintf(fallback, sizeof(fallback), "static_foe_%d", i);
             aid = fallback;
         }
-        add_foe(g, continent, z->id, a->x, a->y, aid, /*friendly=*/false);
+        add_foe(g, continent, z->id, a->x, a->y, aid, /*friendly=*/false,
+                a->is_static, a);
     }
 
     int barrel_len = z->chest_count;
@@ -778,7 +793,8 @@ void salt_continent(Game *g, int continent, int min_artifacts, int min_navmaps,
                 // salt_continent -- friendlies are
                 // registered in foe_coords[], not via static map data.
                 snprintf(id, sizeof(id), "salt_foe_friendly_%d", foe_counter);
-                add_foe(g, continent, z->id, slot->x, slot->y, id, /*friendly=*/true);
+                add_foe(g, continent, z->id, slot->x, slot->y, id, /*friendly=*/true,
+                        /*is_static=*/false, /*explicit_army=*/NULL);
                 foe_counter++;
                 break;
             }
@@ -2590,6 +2606,7 @@ int GameFoesFollow(Game *g, Map *map) {
         FoeState *f = &g->foes[i];
         if (!f->alive) continue;
         if (strcmp(f->zone, g->position.zone) != 0) continue;
+        if (f->is_static) continue;   // fixed guardian: never moves
         // Range gate (OpenKB's play.c:823-829): foe must be within
         // GAME_FOE_FOLLOW_RANGE tiles on each axis of the hero's previous
         // position.

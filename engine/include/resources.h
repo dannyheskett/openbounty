@@ -271,6 +271,13 @@ typedef struct {
 typedef struct {
     int  x, y;
     char id[RES_ID_LEN];
+    bool is_static;                    // never moves; forced fight on contact
+    // Optional explicit garrison. If army_stacks == 0 the foe's garrison is
+    // rolled by zone tier (default); otherwise these stacks are used verbatim
+    // (a hand-tuned guardian).
+    char army_id[5][RES_ID_LEN];       // 5 == GAME_ARMY_SLOTS
+    int  army_count[5];
+    int  army_stacks;
 } ResZoneArmy;
 
 // ---- Strings  -----
