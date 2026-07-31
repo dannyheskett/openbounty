@@ -159,8 +159,7 @@ void GameInitSeeded(Game *g, const char *name, int pclass, int difficulty,
             g->character.name[0] = (char)(g->character.name[0] - 'a' + 'A');
         }
     } else {
-        const char *dn = (g->res && g->res->world.default_name[0])
-            ? g->res->world.default_name : "Hero";
+        const char *dn = g->res->world.default_name;
         strncpy(g->character.name, dn, sizeof(g->character.name) - 1);
         g->character.name[sizeof(g->character.name) - 1] = '\0';
     }

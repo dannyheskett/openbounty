@@ -101,10 +101,7 @@ void screen_home_castle_draw(const Game *g, const Sprites *s) {
     int pad = CL_PANEL_PAD_X;   // 1px: the panel holds exactly CL_PANEL_COLS glyphs
     int row_h = BFONT_GLYPH_H + 1;
 
-    const char *body =
-        (g && g->res && g->res->banners.body_home_castle[0])
-            ? g->res->banners.body_home_castle
-            : "Castle of King Maximus\n\nA) Recruit Soldiers\nB) Audience with the King";
+    const char *body = g->res->banners.body_home_castle;
 
     int tx = x + pad;
     int ty = y + pad;

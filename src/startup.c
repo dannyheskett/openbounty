@@ -55,10 +55,8 @@ static void draw_class_picker_backdrop(const Sprites *sprites) {
 
 static void draw_class_picker_status_hint(const Resources *res) {
     DrawRectangle(0, 0, CL_SCREEN_W, GH + 2, PAL_CLR(DRED));
-    const char *hint = (res && res->ui.startup_class_select_hint[0])
-        ? res->ui.startup_class_select_hint
-        : "Select Char A-D or L-Load saved game";
-    bfont_draw_centered(hint, CL_SCREEN_W / 2, 1, PAL_CLR(WHITE));
+    bfont_draw_centered(res->ui.startup_class_select_hint,
+                        CL_SCREEN_W / 2, 1, PAL_CLR(WHITE));
 }
 
 static void frame_end(RenderTexture2D *rt) {
@@ -273,13 +271,12 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
         Color nfg = (cursor == new_row) ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
         char ng_line[64];
         snprintf(ng_line, sizeof ng_line, "    %s",
-                 ui ? ui->startup_save_picker_new_game : "New game");
+                 ui->startup_save_picker_new_game);
         bfont_draw(ng_line, x + pad, ty, nfg);
 
         // Hint fits in the 33-char content width (280 - 2*pad).
         // Source: res.ui.startup_controls_hint (game.json strings.startup).
-        const char *hint = ui ? ui->startup_controls_hint
-                              : "UP/DN move  ENTER pick  ESC quit";
+        const char *hint = ui->startup_controls_hint;
         bfont_draw(hint, x + pad, y + h - pad - instr_h, PAL_CLR(GREY));
 
         frame_end(rt);
@@ -345,15 +342,13 @@ static bool run_class_select(const Resources *res,
             DrawTexturePro(t, src, dst, (Vector2){0,0}, 0.0f, WHITE);
         } else {
             // Fallback: text list if asset missing.
-            const char *miss = res ? res->ui.startup_class_picker_missing
-                                   : "class picker asset missing";
-            bfont_draw(miss, 40, 90, PAL_CLR(YELLOW));
+            bfont_draw(res->ui.startup_class_picker_missing,
+                       40, 90, PAL_CLR(YELLOW));
         }
 
         // Status-bar hint at top ().
         DrawRectangle(0, 0, CL_SCREEN_W, GH + 2, PAL_CLR(DRED));
-        const char *hint = res ? res->ui.startup_class_select_hint
-                               : "Select Char A-D or L-Load saved game";
+        const char *hint = res->ui.startup_class_select_hint;
         bfont_draw_centered(hint, CL_SCREEN_W / 2, 1, PAL_CLR(WHITE));
 
         frame_end(rt);
@@ -390,7 +385,7 @@ static bool run_create_game(const Resources *res,
 
     // Look up class title via out->class_id (set by run_class_select).
     const ClassDef *cls = class_by_id(out->class_id);
-    const char *class_title = cls ? cls->name : "Hero";
+    const char *class_title = cls->name;
 
     // Labels + score-multiplier text from res.ui.difficulty (game.json
     // strings.difficulty); enum order matches the JSON key order.
@@ -425,8 +420,7 @@ static bool run_create_game(const Resources *res,
                 if (name_len == 0) {
                     // We default to world.default_name on empty name
                     // (from game.json) so the flow always completes.
-                    const char *dn = (res && res->world.default_name[0])
-                        ? res->world.default_name : "Hero";
+                    const char *dn = res->world.default_name;
                     safe_copy(name_buf, sizeof(name_buf), dn);
                     name_len = (int)strlen(name_buf);
                 }
@@ -532,8 +526,7 @@ static bool run_create_game(const Resources *res,
             // Hint on row 10: "\x18\x19 to select   Ent to Accept"
             // -- 0x18 and 0x19 are CP437 up/down arrows. Our bfont is ASCII-
             // only, so substitute "^v".
-            bfont_draw(res ? res->ui.startup_new_game_select_hint
-                           : "^v to select   Ent to Accept",
+            bfont_draw(res->ui.startup_new_game_select_hint,
                        x + GW, ROW_Y(10), PAL_CLR(WHITE));
         }
 
@@ -582,11 +575,11 @@ static bool run_new_game_intro(RenderTexture2D *rt,
     if (!res || !res->banners.new_game_intro[0]) return true;
 
     const ClassDef *cls = class_by_id(out->class_id);
-    const char *class_title = cls ? cls->name : "Hero";
+    const char *class_title = cls->name;
 
     char body[RES_BANNER_LEN];
     ResTemplateVar vars[2] = {
-        { "NAME",  name && name[0] ? name : "Hero" },
+        { "NAME",  name && name[0] ? name : res->world.default_name },
         { "CLASS", class_title },
     };
     resources_format_template(body, sizeof(body),
@@ -636,10 +629,8 @@ static bool run_new_game_intro(RenderTexture2D *rt,
 
         // Status hint at top.
         DrawRectangle(0, 0, CL_SCREEN_W, GH + 2, PAL_CLR(DRED));
-        const char *hint = res->ui.startup_class_select_hint[0]
-            ? res->ui.startup_class_select_hint
-            : "Select Char A-D or L-Load saved game";
-        bfont_draw_centered(hint, CL_SCREEN_W / 2, 1, PAL_CLR(WHITE));
+        bfont_draw_centered(res->ui.startup_class_select_hint,
+                            CL_SCREEN_W / 2, 1, PAL_CLR(WHITE));
 
         // Panel.
         panel(px, py, panel_w, panel_h);

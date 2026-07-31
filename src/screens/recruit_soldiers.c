@@ -334,9 +334,8 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
     }
 
     // ---- LEFT SIDE ----------------------------------------------------
-    const ResUI *ui = (g && g->res) ? &g->res->ui : NULL;
-    bfont_draw(ui ? ui->recruit_soldiers_title : "Recruit Soldiers",
-               tx, ty, PAL_CLR(WHITE));
+    const ResUI *ui = &g->res->ui;
+    bfont_draw(ui->recruit_soldiers_title, tx, ty, PAL_CLR(WHITE));
 
     // 5 troop rows starting at text->y + fs->h/4
     // (one row gap after the title), formatted "%c) %-11s%d".
@@ -381,8 +380,9 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
     // "\n\n" -> the (A-C) row is 2 rows below the GP=NK header.
     int rby = ty + row_h + 1 + row_h;   // GP row + 1 gap + 1 blank line
 
-    // Literal "(A-C) " hint string, rendered verbatim.
-    bfont_draw("(A-C) ", rx, rby, PAL_CLR(WHITE));
+    // "(A-C) " column hint from the pack (kept 6 glyphs so the column math
+    // below lines up).
+    bfont_draw(ui->recruit_col_hint, rx, rby, PAL_CLR(WHITE));
     int after_hint_x = rx + 6 * BFONT_GLYPH_W;   // after "(A-C) "
 
     if (s_whom == 0) {
@@ -402,7 +402,7 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
         snprintf(maxbuf, sizeof(maxbuf), "Max=%d", s_max);
         bfont_draw(maxbuf, rx, rby + row_h, PAL_CLR(WHITE));
 
-        bfont_draw(ui ? ui->recruit_soldiers_how_many : "How Many",
+        bfont_draw(ui->recruit_soldiers_how_many,
                    rx, rby + 2 * row_h, PAL_CLR(WHITE));
 
         // text_input cursor inline at right column,
@@ -425,13 +425,9 @@ static int recruit_commit(Game *g, int pool_slot, int count, bool set_err) {
     int rc = GameBuyTroop(g, t->id, count);  // the REAL transaction
     if (set_err) {
         if (rc == 1) {
-            const char *m = (g->res && g->res->banners.town_no_gold[0])
-                ? g->res->banners.town_no_gold : "You don't have enough gold!";
-            set_error(m);
+            set_error(g->res->banners.town_no_gold);
         } else if (rc == 2) {
-            const char *m = (g->res && g->res->banners.no_troop_slots[0])
-                ? g->res->banners.no_troop_slots : "No troop slots left!";
-            set_error(m);
+            set_error(g->res->banners.no_troop_slots);
         }
     }
     return rc;

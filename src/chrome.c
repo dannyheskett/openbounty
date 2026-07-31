@@ -144,10 +144,7 @@ void chrome_draw(const Game *g, const Sprites *s) {
                                 CL_STATUS_Y + 1,
                                 PAL_CLR(WHITE));
         } else if (views_wants_exit_hint() || dialog_is_active()) {
-            const char *txt = (ui && ui->press_esc_to_exit[0])
-                              ? ui->press_esc_to_exit
-                              : "Press 'ESC' to exit";
-            bfont_draw_centered(txt,
+            bfont_draw_centered(ui->press_esc_to_exit,
                                 CL_STATUS_X + CL_STATUS_W / 2,
                                 CL_STATUS_Y + 1,
                                 PAL_CLR(WHITE));

@@ -119,10 +119,10 @@ void screen_own_castle_draw(const Game *g, const Sprites *s) {
     // castle) and REMOVE (castle -> player). We surface the active
     // mode as a one-line subtitle so the player knows which list the
     // 5 rows below represent.
-    const ResUI *ui = (g && g->res) ? &g->res->ui : NULL;
+    const ResUI *ui = &g->res->ui;
     const char *mode_label = s_garrison_mode
-        ? (ui ? ui->own_castle_mode_garrison : "Garrison troops (Space=Remove)")
-        : (ui ? ui->own_castle_mode_remove   : "Remove troops (Space=Garrison)");
+        ? ui->own_castle_mode_garrison
+        : ui->own_castle_mode_remove;
     bfont_draw(mode_label, tx, ty, PAL_CLR(WHITE));
     ty += row_h + 1;   // small gap
 

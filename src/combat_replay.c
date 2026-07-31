@@ -177,24 +177,26 @@ CombatReplayStatus RenderCombatRecord(void *shell_ctx, CombatMode mode,
     // zero dwell, so this is a no-op there. Loss draws nothing (RunCombat is
     // silent on defeat too -- the disgrace flow is the caller's).
     if (rv == COMBAT_REPLAY_OK && rec->result == 1) {
-        char body[400];
-        const char *who = (g->character.name[0]) ? g->character.name : "warrior";
+        char body[400], gbuf[16];
+        snprintf(gbuf, sizeof gbuf, "%d", c.spoils[COMBAT_SIDE_AI]);
+        const ResBanners *bn = &g->res->banners;
         if (c.target_name[0]) {
-            snprintf(body, sizeof body,
-                     "Well done %s, you have\n"
-                     "successfully vanquished\n"
-                     "%s.\n\n"
-                     "Spoils of War: %d gold",
-                     who, c.target_name, c.spoils[COMBAT_SIDE_AI]);
+            ResTemplateVar vars[] = {
+                { "NAME",   g->character.name },
+                { "TARGET", c.target_name },
+                { "GOLD",   gbuf },
+            };
+            resources_format_template(body, sizeof body,
+                                      bn->combat_victory_named, vars, 3);
         } else {
-            snprintf(body, sizeof body,
-                     "Well done %s, you have\n"
-                     "successfully vanquished\n"
-                     "yet another foe.\n\n"
-                     "Spoils of War: %d gold",
-                     who, c.spoils[COMBAT_SIDE_AI]);
+            ResTemplateVar vars[] = {
+                { "NAME", g->character.name },
+                { "GOLD", gbuf },
+            };
+            resources_format_template(body, sizeof body,
+                                      bn->combat_victory_unnamed, vars, 2);
         }
-        open_dialog("Victory!", body);
+        open_dialog(g->res->ui.dt_combat_victory, body);
         double dwell = shell_demo_active() ? shell_demo_read_dwell()
                                            : shell_autoplay_read_dwell();
         if (dwell > 0.0) {

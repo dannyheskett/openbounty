@@ -128,9 +128,7 @@ int combat_cast_step(Combat *c, Game *g, const Sprites *sprites,
         }
         if (picked < 0) return 0;
         if (gw->spells.counts[picked] <= 0) {
-            combat_log_template(c,
-                cl_pre ? cl_pre->no_spell_type : "No spells of that type",
-                NULL, 0);
+            combat_log_template(c, cl_pre->no_spell_type, NULL, 0);
             c->cast_phase = COMBAT_CAST_NONE;
             return 0;
         }
@@ -246,13 +244,11 @@ static int combat_player_action_full(Combat *c, const Game *g,
         CombatUnit *u = &c->units[c->side][c->unit_id];
         const ResCombatLog *cl_sh = combat_log_strings(c);
         if (u->shots <= 0) {
-            combat_log_template(c,
-                cl_sh ? cl_sh->no_ammo : "No ammo", NULL, 0);
+            combat_log_template(c, cl_sh->no_ammo, NULL, 0);
             return 0;
         }
         if (combat_unit_surrounded(c, c->side, c->unit_id)) {
-            combat_log_template(c,
-                cl_sh ? cl_sh->cant_shoot : "Can't Shoot", NULL, 0);
+            combat_log_template(c, cl_sh->cant_shoot, NULL, 0);
             return 0;
         }
         c->cursor_x = u->x;
@@ -270,8 +266,7 @@ static int combat_player_action_full(Combat *c, const Game *g,
         const TroopDef *t = troop_by_index(u->troop_idx);
         const ResCombatLog *cl_fl = combat_log_strings(c);
         if (!t || !(t->abilities & TROOP_ABIL_FLY) || u->flights <= 0) {
-            combat_log_template(c,
-                cl_fl ? cl_fl->cant_fly : "Can't Fly", NULL, 0);
+            combat_log_template(c, cl_fl->cant_fly, NULL, 0);
             return 0;
         }
         c->cursor_x = u->x;
@@ -289,15 +284,11 @@ static int combat_player_action_full(Combat *c, const Game *g,
         Game *gw = c->heroes[c->side];
         if (!gw) return 0;
         if (c->spells_this_round >= 1) {
-            combat_log_template(c,
-                cl_pre ? cl_pre->only_one_spell
-                       : "Only 1 spell per round!", NULL, 0);
+            combat_log_template(c, cl_pre->only_one_spell, NULL, 0);
             return 0;
         }
         if (!gw->stats.knows_magic) {
-            combat_log_template(c,
-                cl_pre ? cl_pre->cannot_cast : "You cannot cast magic",
-                NULL, 0);
+            combat_log_template(c, cl_pre->cannot_cast, NULL, 0);
             return 0;
         }
         c->cast_phase = COMBAT_CAST_PICK_SPELL;
@@ -332,21 +323,21 @@ static void combat_present(const Combat *c, const Game *g,
         DrawRectangle(40, 30, 240, 130, PAL_CLR(DBLUE));
         DrawRectangleLines(40, 30, 240, 130, PAL_CLR(YELLOW));
         const Game *gw = c->heroes[c->side];
-        const ResUI *ui = (gw && gw->res) ? &gw->res->ui : NULL;
-        bfont_draw(ui ? ui->combat_spells_title      : "Spells", 140, 36, PAL_CLR(YELLOW));
-        bfont_draw(ui ? ui->combat_spells_col_combat : "Combat", 60, 50, PAL_CLR(YELLOW));
-        char line[40];
-        const char *names[] = {
-            "Clone", "Teleport", "Fireball", "Lightning",
-            "Freeze", "Resurrect", "Turn Undead",
-        };
+        const ResUI *ui = &gw->res->ui;
+        bfont_draw(ui->combat_spells_title,      140, 36, PAL_CLR(YELLOW));
+        bfont_draw(ui->combat_spells_col_combat, 60, 50, PAL_CLR(YELLOW));
+        char line[64];   // room for long pack spell names (e.g. Rome's Latin)
+        // The seven combat spells are catalog indices 0..6 (COMBAT_SPELL_*),
+        // so their display names come straight from the pack -- no hardcoded
+        // list, and Rome shows its Latin names.
         for (int i = 0; i < 7; i++) {
-            int count = (gw ? gw->spells.counts[i] : 0);
-            snprintf(line, sizeof line, "%d %-12s %c", count, names[i], 'A' + i);
+            int count = gw->spells.counts[i];
+            const SpellDef *sd = spell_by_index(i);
+            snprintf(line, sizeof line, "%d %-12s %c",
+                     count, sd->name, 'A' + i);
             bfont_draw(line, 56, 64 + i * 10, PAL_CLR(WHITE));
         }
-        bfont_draw(ui ? ui->combat_spells_prompt : "Cast which (A-G)?",
-                   70, 144, PAL_CLR(WHITE));
+        bfont_draw(ui->combat_spells_prompt, 70, 144, PAL_CLR(WHITE));
     }
     // Victory dialog : centered modal
     // floating over the still-rendered battlefield. Defeat does not
@@ -654,26 +645,26 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
     // flow lives in main.c's caller and stays there).
     if (c.result == 1) {
         g->stats.gold += c.spoils[COMBAT_SIDE_AI];
-        char body[400];
+        char body[400], gbuf[16];
+        snprintf(gbuf, sizeof gbuf, "%d", c.spoils[COMBAT_SIDE_AI]);
+        const ResBanners *bn = &g->res->banners;
         if (c.target_name[0]) {
-            snprintf(body, sizeof body,
-                     "Well done %s, you have\n"
-                     "successfully vanquished\n"
-                     "%s.\n\n"
-                     "Spoils of War: %d gold",
-                     g->character.name[0] ? g->character.name : "warrior",
-                     c.target_name,
-                     c.spoils[COMBAT_SIDE_AI]);
+            ResTemplateVar vars[] = {
+                { "NAME",   g->character.name },
+                { "TARGET", c.target_name },
+                { "GOLD",   gbuf },
+            };
+            resources_format_template(body, sizeof body,
+                                      bn->combat_victory_named, vars, 3);
         } else {
-            snprintf(body, sizeof body,
-                     "Well done %s, you have\n"
-                     "successfully vanquished\n"
-                     "yet another foe.\n\n"
-                     "Spoils of War: %d gold",
-                     g->character.name[0] ? g->character.name : "warrior",
-                     c.spoils[COMBAT_SIDE_AI]);
+            ResTemplateVar vars[] = {
+                { "NAME", g->character.name },
+                { "GOLD", gbuf },
+            };
+            resources_format_template(body, sizeof body,
+                                      bn->combat_victory_unnamed, vars, 2);
         }
-        open_dialog("Victory!", body);
+        open_dialog(g->res->ui.dt_combat_victory, body);
         combat_wait_for_dialog_ack(&c, g, sprites, rt);
         // Write surviving troops back to g->army so the player keeps
         // their losses. Vacated slots get compacted afterwards so the
