@@ -1,6 +1,8 @@
 #ifndef OB_PENDING_H
 #define OB_PENDING_H
 
+#include <stdbool.h>
+
 // Prompt-flow scratch state shared across modules: the same fields are
 // written by the step module and read by the prompt resolver, so they live
 // in one shared translation unit rather than in either caller.
@@ -57,6 +59,7 @@ extern char pending_castle_id[24];
 
 // Hostile-foe attack prompt state.
 extern char pending_foe_id[24];
+extern bool pending_foe_forced;   // static-foe fight: no decline, auto-confirm
 extern int  pending_foe_x, pending_foe_y;
 
 // Gold-chest choice prompt state .

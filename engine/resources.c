@@ -305,6 +305,21 @@ static void fill_zone_army(cJSON *j, void *dst) {
     ResZoneArmy *a = (ResZoneArmy *)dst;
     a->x = json_int(j, "x", 0); a->y = json_int(j, "y", 0);
     copy_str(a->id, sizeof(a->id), json_str(j, "id", ""));
+    cJSON *st = cJSON_GetObjectItem(j, "static");
+    a->is_static = cJSON_IsBool(st) && cJSON_IsTrue(st);
+    // Optional explicit garrison: "army":[{"troop":id,"count":n}, ...].
+    a->army_stacks = 0;
+    cJSON *army = cJSON_GetObjectItem(j, "army");
+    if (cJSON_IsArray(army)) {
+        cJSON *it;
+        cJSON_ArrayForEach(it, army) {
+            if (a->army_stacks >= 5) break;
+            copy_str(a->army_id[a->army_stacks], sizeof(a->army_id[0]),
+                     json_str(it, "troop", ""));
+            a->army_count[a->army_stacks] = json_int(it, "count", 0);
+            a->army_stacks++;
+        }
+    }
 }
 
 static void parse_zones(Resources *res, cJSON *arr) {

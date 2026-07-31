@@ -98,16 +98,51 @@ ALPINE_PASSES = ()
 # Two tiles wide, offset west of centre, broken every few rows so the coast
 # roads connect east to west. SPINE_GAPS lists the rows left open.
 SPINE_ROWS = range(14, 45)
-SPINE_GAPS = {18, 24, 29, 35, 41, 45}
+SPINE_GAPS = {24, 35, 45}   # fewer passes -> the spine gates N-S travel
 SPINE_OFFSET = 3          # tiles west of the row's centre
 
+# --- gating belts: forest/mountain walls across the whole peninsula, each with
+# a single narrow pass, so Italia reads as chained sections rather than one open
+# field. (design_row, terrain, pass_fraction along the land span).
+CROSS_BELTS = [(16, FOREST, 0.30),   # Po valley -> the neck
+               (30, MTN,    0.62),   # central Italy -> the south
+               (44, FOREST, 0.35)]   # the south -> toe & heel
+
 # --- woodland: (row, x0, x1) -------------------------------------------------
-PO_FOREST = [(6, 9, 13), (7, 9, 13), (6, 20, 24), (7, 20, 24)]
+PO_FOREST = [(6, 9, 13), (7, 9, 13), (6, 20, 24), (7, 20, 24),
+             (8, 14, 19), (9, 26, 31), (10, 12, 16)]
 ETRURIA_FOREST = [(21, 20, 22), (22, 20, 22), (26, 22, 24), (27, 22, 24),
                   (32, 24, 26), (33, 24, 26), (38, 27, 29), (39, 27, 29)]
+# more woodland down the peninsula so grass is broken up, not one field.
+PENINSULA_FOREST = [(19, 12, 15), (20, 12, 14), (24, 15, 17), (25, 15, 18),
+                    (28, 19, 21), (29, 19, 22), (36, 22, 25), (37, 23, 25),
+                    (40, 26, 29), (41, 27, 30), (43, 25, 28),
+                    (48, 21, 23), (49, 21, 24), (50, 32, 35), (51, 33, 36)]
 # 2x2 blocks, not single tiles: a lone peak is a 1-tile feature with no edge
 # variant. (row, x0) -- covers rows row..row+1 and columns x0..x0+1.
 ISLAND_PEAKS = [(21, 4), (30, 3), (56, 17)]   # Corsica, Sardinia, Etna
+
+# --- south gate: wall the Calabrian neck (real rows/cols) so the toe -- the
+# southernmost castle -- is reachable only through ONE passage, where a static
+# guardian stands. Real coordinates (the toe geometry is easier to read there).
+SOUTH_GATE_ROWS = (94, 95)
+SOUTH_GATE_X0, SOUTH_GATE_X1 = 26, 41
+SOUTH_GATE_PASS = 32          # the one open column (guardian's tile)
+SOUTH_GATE_CARVE = range(93, 101)   # force this column to grass top-to-toe
+
+
+def assert_south_gate(g):
+    """Wall the Calabrian neck to a single passage. Applied LAST (after despeckle
+    and connect_mainland) so nothing re-closes it: mountain across the two neck
+    rows except the PASS column, and a grass corridor punched down the PASS
+    column from the band into the toe so the passage actually connects both."""
+    for ry in SOUTH_GATE_ROWS:
+        for x in range(SOUTH_GATE_X0, SOUTH_GATE_X1 + 1):
+            if x != SOUTH_GATE_PASS and g[ry][x] != SEA:
+                g[ry][x] = MTN
+    for ry in SOUTH_GATE_CARVE:
+        if g[ry][SOUTH_GATE_PASS] != SEA:
+            g[ry][SOUTH_GATE_PASS] = GRASS
 
 
 def sx_(x):
@@ -157,16 +192,34 @@ def build():
                 if x1 - x0 < 6:
                     continue
                 sxx = min(max(sx, x0 + 2), x1 - 4)
-                for dx in range(3):            # the range widens with the map
+                for dx in range(4):            # the range widens with the map
                     g[yy][sxx + dx] = MTN
             seg = []
 
-    for y, x0, x1 in PO_FOREST + ETRURIA_FOREST:
+    for y, x0, x1 in PO_FOREST + ETRURIA_FOREST + PENINSULA_FOREST:
         for dy in range(int(SCALE_Y)):
             ry = int(round(y * SCALE_Y)) + dy
             for x in range(sx_(x0), sx_(x1) + 1):
                 if 0 <= x < W and 0 <= ry < H and g[ry][x] == GRASS:
                     g[ry][x] = FOREST
+
+    # Gating belts: fill each belt row's land span with its terrain, leaving a
+    # single ~3-wide pass. MAINLAND_R gives the land span per real row.
+    for drow, terr_ch, passfrac in CROSS_BELTS:
+        for dy in range(int(SCALE_Y)):
+            ry = int(round(drow * SCALE_Y)) + dy
+            if ry not in MAINLAND_R:
+                continue
+            x0 = sx_(MAINLAND_R[ry][0]) - FATTEN
+            x1 = sx_(MAINLAND_R[ry][1]) + FATTEN
+            if x1 - x0 < 6:
+                continue
+            passx = int(x0 + (x1 - x0) * passfrac)
+            for x in range(max(0, x0), min(W, x1 + 1)):
+                if abs(x - passx) <= 1:      # keep a 3-wide pass open
+                    continue
+                if g[ry][x] == GRASS:
+                    g[ry][x] = terr_ch
     for y, x in ISLAND_PEAKS:
         for dy in range(int(SCALE_Y) + 1):
             for dx in range(3):
@@ -174,11 +227,114 @@ def build():
                 if 0 <= rx < W and 0 <= ry < H:
                     g[ry][rx] = MTN
 
-    for y in range(H):                        # texture speckle
-        for x in range(W):
-            if g[y][x] == GRASS and (x * 7 + y * 13) % 19 == 0:
-                g[y][x] = VAR
+    # Cluster fill: scatter woodland/hill blocks through the open land so every
+    # section has cover instead of one bare field. Blocks are >=2 tiles wide
+    # (a 1-tile feature has no edge variant), placed only on all-grass footprints
+    # so coasts and existing features are untouched. The coarse grid leaves grass
+    # lanes between clusters, and the belt passes are never on this grid, so
+    # connectivity survives. Deterministic (hash of the tile), no RNG.
+    for cy in range(10, H - 6, 4):
+        for cx in range(4, W - 5, 5):
+            h = (cx * 131 + cy * 197) % 100
+            if h >= 55:                      # ~55% of cells get a cluster
+                continue
+            ch = MTN if h % 5 == 0 else FOREST
+            bw, bh = (3, 2) if ch == MTN else (2, 2)
+            ox = (cx * 29 + cy * 7) % 3      # jitter so rows don't line up
+            if all(0 <= cx + ox + dx < W and 0 <= cy + dy < H and
+                   g[cy + dy][cx + ox + dx] == GRASS
+                   for dx in range(bw) for dy in range(bh)):
+                for dx in range(bw):
+                    for dy in range(bh):
+                        g[cy + dy][cx + ox + dx] = ch
+
+    # No grass_variant tiles: the variant art is a shadow blob, unwanted on the
+    # map. Grass stays plain grass everywhere.
     return g
+
+
+def connect_mainland(g):
+    """Guarantee the mainland is one walkable component. Gating belts and
+    cluster fill can wall a land pocket off entirely; here we carve the minimum
+    forest/mountain back to grass to reconnect it. Water is never carved, so the
+    offshore islands (Corsica/Sardinia/Sicilia) stay islands."""
+    from collections import deque
+    WALK = (GRASS, VAR)
+    def walk(ch): return ch in WALK
+    def water(ch): return ch == SEA
+    def comps():
+        seen = [[False] * W for _ in range(H)]
+        out = []
+        for y in range(H):
+            for x in range(W):
+                if seen[y][x] or not walk(g[y][x]):
+                    continue
+                q = deque([(x, y)]); cell = []
+                seen[y][x] = True
+                while q:
+                    cx, cy = q.popleft(); cell.append((cx, cy))
+                    for dx, dy in ((1,0),(-1,0),(0,1),(0,-1)):
+                        nx, ny = cx+dx, cy+dy
+                        if 0<=nx<W and 0<=ny<H and not seen[ny][nx] and walk(g[ny][nx]):
+                            seen[ny][nx] = True; q.append((nx, ny))
+                out.append(cell)
+        return out
+    carved = 0
+    for _ in range(40):
+        cs = comps()
+        if len(cs) <= 1:
+            break
+        cs.sort(key=len, reverse=True)
+        main = set(cs[0])
+        # non-water landmass reachable from main (same continent test)
+        land_seen = set()
+        q = deque(main)
+        for p in main: land_seen.add(p)
+        while q:
+            cx, cy = q.popleft()
+            for dx, dy in ((1,0),(-1,0),(0,1),(0,-1)):
+                nx, ny = cx+dx, cy+dy
+                if 0<=nx<W and 0<=ny<H and (nx,ny) not in land_seen and not water(g[ny][nx]):
+                    land_seen.add((nx,ny)); q.append((nx,ny))
+        # reconnect the largest off-main pocket that is on the same landmass
+        target = None
+        for c in cs[1:]:
+            if any(p in land_seen for p in c):
+                target = c; break
+        if target is None:
+            break   # remaining pockets are islands across water -- leave them
+        # BFS from main over non-water, cost 0 through walkable, 1 through block,
+        # to the nearest target tile; carve the blocking tiles on that path.
+        tgt = set(target)
+        dist = {}; prev = {}
+        pq = deque()
+        for p in main:
+            dist[p] = 0; pq.append(p)
+        # 0-1 BFS
+        found = None
+        while pq:
+            cur = pq.popleft()
+            if cur in tgt:
+                found = cur; break
+            cx, cy = cur
+            for dx, dy in ((1,0),(-1,0),(0,1),(0,-1)):
+                nx, ny = cx+dx, cy+dy
+                if not (0<=nx<W and 0<=ny<H) or water(g[ny][nx]):
+                    continue
+                w = 0 if walk(g[ny][nx]) else 1
+                nd = dist[cur] + w
+                if (nx,ny) not in dist or nd < dist[(nx,ny)]:
+                    dist[(nx,ny)] = nd; prev[(nx,ny)] = cur
+                    (pq.appendleft if w == 0 else pq.append)((nx,ny))
+        if found is None:
+            break
+        node = found
+        while node in prev:
+            x, y = node
+            if not walk(g[y][x]):
+                g[y][x] = GRASS; carved += 1
+            node = prev[node]
+    return carved
 
 
 def despeckle(g, codes):
@@ -322,7 +478,12 @@ def main():
         codes = json.load(f)["tile_codes"]
 
     g = build()
+    carved = connect_mainland(g)
     smoothed = despeckle(g, codes)
+    connect_mainland(g)                  # reconnect anything despeckle re-isolated
+    assert_south_gate(g)                 # LAST: cut the neck to one passage. The
+                                         # toe was connected before this; now its
+                                         # only link is the carved PASS column.
     g, changed, unresolved = furnish(g, codes)
 
     out = os.path.join(root, "assets", "glory-of-rome", "maps", "italia.dat")
@@ -331,6 +492,7 @@ def main():
         f.write(HEADER + "\n".join("".join(r) for r in g) + "\n")
     distinct = len({c for r in g for c in r})
     print(f"wrote {out} ({W}x{H})")
+    print(f"  carved {carved} tile(s) to keep the mainland connected")
     print(f"  despeckled {smoothed} tile(s) with no legal edge variant")
     print(f"  furnished {changed} tiles into edge variants; "
           f"{distinct} distinct tile codes in use")

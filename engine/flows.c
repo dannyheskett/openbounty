@@ -228,6 +228,9 @@ void start_foe_friendly_flow(Game *game, Map *map, const Resources *res,
 void start_foe_hostile_flow(Game *game, const char *foe_id,
                             int nx, int ny) {
     const FoeState *f = GameFindFoeConst(game, foe_id);
+    // A static guardian's fight cannot be declined: mark it so the host
+    // auto-confirms the prompt (no y/n) and goes straight to combat.
+    pending_foe_forced = (f && f->is_static);
     const ResBanners *bn = &game->res->banners;
     char prompt_body[320], frag[128];
     size_t off = 0;
