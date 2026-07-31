@@ -11,7 +11,7 @@
 	},
 	"banners":	{
 		"chest_gold":	"After scouring the area,\nyou fall upon a hidden\ntreasure cache. You may:\nA) Take the %GOLD% gold.\nB) Distribute the gold to\nthe peasants, increasing\nyour leadership by %LEADERSHIP%.",
-		"chest_commission":	"After surveying the area,\nyou discover that it is\nrich in mineral deposits.\n\nThe King rewards you for\nyour find by increasing\nyour weekly income by %POINTS%",
+		"chest_commission":	"After surveying the area,\nyou discover that it is\nrich in mineral deposits.\n\nThe Emperor rewards you for\nyour find by increasing\nyour weekly income by %POINTS%",
 		"chest_spell_power":	"Traversing the area, you\nstumble upon a time worn\ncannister. Curious, you un-\nstop the bottle, releasing\na powerful genie who raises\nyour Spell Power by %POINTS% and\nvanishes.",
 		"chest_max_spells":	"A tribe of nomads greet you\nand your army warmly. Their\nshaman, in awe of your\nprowess, teaches you the\nsecret of his tribe's magic.\nYour maximum spell capacity\nis increased by %POINTS%",
 		"chest_new_spell":	"You have captured a\nmischevious imp which has\nbeen terrorizing the\nregion. In exchange for\nits release, you receive:\n\n   %COUNT% %SPELL% spell.",
@@ -35,7 +35,7 @@
 		"town_intel_owner_rule":	"%OWNER%'s rule.\n\n",
 		"town_intel_owner_none":	"no one",
 		"town_intel_owner_player":	"your",
-		"town_intel_owner_king":	"the King",
+		"town_intel_owner_king":	"the Emperor",
 		"town_intel_count_named":	"  %LABEL% %TROOP%\n",
 		"town_intel_count_numeric":	"  %COUNT% %TROOP%\n",
 		"town_intel_monsters_generic":	"  Various groups of monsters\n  occupy the castle.",
@@ -69,11 +69,11 @@
 		"encounter_hostile_unknown":	"  a hostile band\n",
 		"encounter_hostile_count_named":	"  %LABEL% %TROOP%\n",
 		"encounter_hostile_count_numeric":	"  %COUNT% %TROOP%\n",
-		"alcove_offer":	"The venerable Archmage,\nAurange, will teach you the\nsecrets of spell casting for\n%COST% gold.\n\nAccept?",
-		"alcove_already":	"The archmage nods.\nYou already know magic.",
-		"alcove_taught":	"Aurange teaches you the\narcane arts. You now know\nthe ways of magic.",
+		"alcove_offer":	"The venerable Augur will teach\nyou the secrets of spell\ncasting for %COST% gold.\n\nAccept?",
+		"alcove_already":	"The Augur nods.\nYou already know magic.",
+		"alcove_taught":	"The Augur teaches you the\narcane arts. You now know\nthe ways of magic.",
 		"alcove_no_gold":	"You have not enough gold!\n%COST% is required.\nBegone until you do!",
-		"no_spell_banner":	"You have not been trained in\nthe art of spellcasting yet.\nVisit the Archmage Aurange\nin %ZONE% at %X%,%Y% for\nthis ability.",
+		"no_spell_banner":	"You have not been trained in\nthe art of spellcasting yet.\nVisit the Augur\nin %ZONE% at %X%,%Y% for\nthis ability.",
 		"new_game_intro":	"%NAME% the %CLASS%,\nA new game is being created.\nPlease wait while I perform\ngodlike actions to make this\ngame playable.",
 		"combat_victory_named":	"Well done %NAME%, you have\nsuccessfully vanquished\n%TARGET%.\n\nSpoils of War: %GOLD% gold",
 		"combat_victory_unnamed":	"Well done %NAME%, you have\nsuccessfully vanquished\nyet another foe.\n\nSpoils of War: %GOLD% gold",
@@ -86,9 +86,9 @@
 		"crystal_ball_pickup":	"You gaze into a crystal ball\nand see all of %ZONE%!",
 		"astrology_header":	"Week #%WEEK%",
 		"astrology_body":	"Astrologers proclaim:\nWeek of the %TROOP%\n\nAll %TROOP% dwellings are\nrepopulated.         (space)",
-		"temp_death":	"After being disgraced on the\nfield of battle, King\nMaximus summons you to his\ncastle. After a lesson in\ntactics, he reluctantly re-\nissues your commission and\nsends you on your way.",
+		"temp_death":	"After being disgraced on the\nfield of battle, Emperor\nTraianus summons you to his\ncastle. After a lesson in\ntactics, he reluctantly re-\nissues your commission and\nsends you on your way.",
 		"combat_give_up_header":	"Press ESC to exit",
-		"combat_give_up_body":	"Giving up will forfeit your\narmies and send you back to\nthe King. Give up",
+		"combat_give_up_body":	"Giving up will forfeit your\narmies and send you back to\nthe Emperor. Give up",
 		"combat_scouts_header":	"Your scouts have sighted:\n",
 		"combat_scouts_count":	"  %COUNT% %TROOP%\n",
 		"combat_scouts_small_band":	"  (a small band)\n",
@@ -107,8 +107,8 @@
 		"body_save_confirm":	"Your game has been saved.\nPress Control-Q to Quit or\nany other key to continue.",
 		"body_search":	"It will take %DAYS% days to\nsearch this area.\nSearch?",
 		"body_dismiss_pick":	"Dismiss which troop?",
-		"body_dismiss_last":	"If you dismiss your last\narmy, you will be sent back\nto the King in disgrace.\nDismiss last army?",
-		"body_home_castle":	"Castle of King Maximus\n\nA) Recruit Soldiers\nB) Audience with the King",
+		"body_dismiss_last":	"If you dismiss your last\narmy, you will be sent back\nto the Emperor in disgrace.\nDismiss last army?",
+		"body_home_castle":	"Castle of Emperor Traianus\n\nA) Recruit Soldiers\nB) Audience with the Emperor",
 		"body_own_castle":	"Castle %NAME%:\n1. Garrison troops\n2. Remove troops",
 		"body_garrison_row_named":	"%INDEX%. %TROOP% (%COUNT%)\n",
 		"body_garrison_row_empty":	"%INDEX%. Empty\n",
@@ -155,7 +155,7 @@
 		"cant_shoot":	"Can't Shoot",
 		"no_ammo":	"No ammo",
 		"cant_fly":	"Can't Fly",
-		"give_up_prompt":	"Giving up will forfeit your\narmies and send you back to\nthe King. Give up (y/n)?",
+		"give_up_prompt":	"Giving up will forfeit your\narmies and send you back to\nthe Emperor. Give up (y/n)?",
 		"exit_hint":	"Press 'ESC' to exit"
 	},
 	"ui":	{
@@ -387,8 +387,8 @@
 		"teleport_cave":	"Teleport Cave",
 		"crystal_ball":	"Crystal Ball",
 		"foes":	"Foes!",
-		"alcove_offer":	"The Oracle",
-		"alcove_result":	"Aurange",
+		"alcove_offer":	"The Augur",
+		"alcove_result":	"The Augur",
 		"castle_default":	"Castle",
 		"own_castle":	"Your castle",
 		"search":	"Search...",
@@ -401,92 +401,5 @@
 		"lose_fallback":	"Sorry.",
 		"win_fallback":	"Congratulations!",
 		"combat_victory":	"Victory!"
-	},
-	"villain_descriptions":	{
-		"murray":	{
-			"alias":	"None",
-			"features":	"Threadbare clothes, bald\npatch with hair combed to\ncover it, incessant cough.",
-			"crimes":	"Murray is wanted for\nvarious petty crimes as well\nas for treason. He allowed a\ngroup of pirates to enter the\ncastle and free criminals."
-		},
-		"hack":	{
-			"alias":	"The Spitter",
-			"features":	"Bushy ebon beard stained\nwith tobacco juice, numerous\nbattle scars, brash, arrogant\nbehavior.",
-			"crimes":	"Along with many minor\ninfractions, Hack is wanted\nfor conspiracy against the\nCrown and grave-robbing."
-		},
-		"aimola":	{
-			"alias":	"Lady Deceit",
-			"features":	"Excessive use of make-up\nto hide aging features, ever-\npresent lace handkerchief.",
-			"crimes":	"The Princess violated\nher status as a visiting\ndignitary by encouraging a\nmurder and joining the\nconspiracy against the Crown."
-		},
-		"baron_makahl":	{
-			"alias":	"Johnno",
-			"features":	"Expensive and gaudy\nclothes, overweight, and\na scruffy beard.",
-			"crimes":	"Johnno is wanted for\nvarious crimes against the\nKingdom, including leading a\ndirect assault against the\nCrown and conspiracy."
-		},
-		"dread_rob":	{
-			"alias":	"Terror of the Sea",
-			"features":	"Pencil thin moustache\nand elegantly trimmed beard,\nnever without a rapier.",
-			"crimes":	"Rob is wanted for piracy\nas well a conspiracy and for\nbreaking out five traitors\nsentenced to death in the\nRoyal Dungeons."
-		},
-		"caneghor":	{
-			"alias":	"The Majestic Sage",
-			"features":	"Voluminous robes, bald\nhead, magic symbols engraved\non body, levitating ability.",
-			"crimes":	"Canegor is wanted for\ngrave robbing, conspiracy\nagainst the Crown, and\nplundering the Royal Library."
-		},
-		"moradon":	{
-			"alias":	"None",
-			"features":	"Always wearing armor and\nconcealed weapons, has two\nprominent front teeth and an\nunkept beard.",
-			"crimes":	"Sir Moradon, an emissary\nfrom another land, is wanted\nfor joining a conspiracy to\ntopple the kingdom."
-		},
-		"barrowpine":	{
-			"alias":	"The Elf Lord",
-			"features":	"Pointed ears, sharp\nelfin features, pale blue eyes\nwith no whites, glimmering\nenchanted coin.",
-			"crimes":	"The prince is one of the\nleaders of the conspiracy\nagainst the Crown, he also\ntraffics stolen artifacts."
-		},
-		"bargash":	{
-			"alias":	"Old One Eye",
-			"features":	"Single eye centered in\nmiddle of forehead, over ten\nfeet tall, only hair on body\nis in beard.",
-			"crimes":	"Bargash is wanted for\nconspiracy against the Crown\nand for leading an outright\nattack against the King."
-		},
-		"rinaldus":	{
-			"alias":	"The Death Lord",
-			"features":	"Rinaldus is a magically\nanimated skeleton, an undead,\nhe is easily identifiable by\nthe ancient crown he wears.",
-			"crimes":	"Rinaldus is wanted for\nconspiracy against the Crown\nand leading a rebellion on the\ncontinent of Saharia."
-		},
-		"ragface":	{
-			"alias":	"None",
-			"features":	"Ragface is an undead, he\nis covered from head to foot\nin moldering green strips of\ncloth. A rotting smell follows\nhim.",
-			"crimes":	"Conspiracy against the\nCrown and leading an\ninsurrection in Saharia."
-		},
-		"mahk":	{
-			"alias":	"Bruiser",
-			"features":	"Bright orange body hair\non a fluorescent green body, a\ntendency to shout for no\napparent reason.",
-			"crimes":	"Mahk is wanted for the\nconspiracy against the Crown,\nleading a jail break, and for\npiracy on the open seas."
-		},
-		"auric":	{
-			"alias":	"The Barbarian",
-			"features":	"Auric is heavily muscled\nand wears a protective skin\nmade from the hides of baby\nlambs.",
-			"crimes":	"Auric is wanted for\nconspiracy and for leading the\nrebellion of the continent\nSaharia."
-		},
-		"czar_nickolai":	{
-			"alias":	"The Mad Czar",
-			"features":	"The Czar has eyes which\nchange color constantly, also\na sulphuric smell emanates\nfrom his body.",
-			"crimes":	"The Czar is wanted for\nconspiracy against the Crown,\nviolating diplomatic status,\nand murder."
-		},
-		"magus":	{
-			"alias":	"None",
-			"features":	"Pupil-less eyes, flowing\nwhite beard, always wears\ncrimson robes and a matching\nskull cap.",
-			"crimes":	"Magus is wanted for\nconspiracy against the Crown\nand for practicing forbidden\nmagics."
-		},
-		"urthrax":	{
-			"alias":	"The Demon King",
-			"features":	"Green, scaly skin,\nglowing red eyes, horns\nprotruding from sides of head,\nover 7 feet tall.",
-			"crimes":	"Urthrax is wanted for\nconspiracy against the Crown."
-		},
-		"arech":	{
-			"alias":	"Mastermind",
-			"features":	"Arech is an immense\ndragon with a green body and\nblue wings, he breathes fire.",
-			"crimes":	"Arech is wanted for\nleading the conspiracy against\nthe Crown, arranging jail-\nbreaks, fomenting rebellion,\nstealing the Sceptre of Order."
-		}
 	}
 }
