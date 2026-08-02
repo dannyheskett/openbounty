@@ -219,8 +219,9 @@ static void cast_raise_control(Game *g) {
     int idx = spell_index_by_adventure_effect(ADV_EFFECT_RAISE_CONTROL);
     if (idx < 0 || g->spells.counts[idx] <= 0) return;
     // ONE formula: GameCastRaiseControl (engine/game.c) consumes the charge and
-    // applies GameRaiseControlAmount, including its min-100 clamp. This wrapper
-    // only adds the banner -- it never recomputes the amount.
+    // applies GameRaiseControlAmount, including its GAME_LEADERSHIP_MAX cap. This
+    // wrapper only adds the banner -- it never recomputes the amount. The banner
+    // reports the uncapped amount; at spell_power 0 that is a truthful "0".
     int amount = GameRaiseControlAmount(g);
     GameCastRaiseControl(g);
     char msg[RES_BANNER_LEN], abuf[16];

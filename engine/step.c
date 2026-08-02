@@ -584,10 +584,16 @@ bool GameStep(Game *game, Map *map, Fog *fog,
     if (!bounced) {
         bool day_end = false, week_end = false;
         int  paid = 0;
+        // Timestop freezes the world: GameOnStep returns early (absorbing the
+        // step without advancing the day) whenever time_stop is banked, so the
+        // foe-follow pass must be skipped too. Sample the flag BEFORE the call
+        // -- GameOnStep decrements it, so reading it after cannot distinguish
+        // "last frozen step" from "not frozen".
+        bool frozen = (game->stats.time_stop > 0);
         GameOnStep(game, !flying && GameTerrainCostsFullDay(nt->terrain),
                    &day_end, &week_end, &paid);
         (void)day_end;
-        int collided_idx = GameFoesFollow(game, map);
+        int collided_idx = frozen ? -1 : GameFoesFollow(game, map);
         if (collided_idx >= 0) {
             const FoeState *cf = &game->foes[collided_idx];
             char fid[32];

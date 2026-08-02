@@ -257,7 +257,9 @@ bool exec_raise_for_fight(ExecCtx *ctx, const RecruitRequest *req, int k);
 bool exec_rearm_raise_for(ExecCtx *ctx, int k, int reserve_gold);
 
 // Raise-cast ceiling (AP-102, runaway watchdog -- sized beyond any reachable
-// lift; RAISE_K_MAX raise casts at floor 100 per cast is +6400 leadership).
+// lift; RAISE_K_MAX casts at 100 leadership per cast is +6400). The per-cast
+// amount is now spell_power*100 with no floor, so a spell_power-0 hero lifts
+// nothing however many casts it plans -- see GameRaiseControlAmount.
 #define RAISE_K_MAX 64
 
 // ---- shared small helpers (autoplay/exec_loc.c) ------------------------------

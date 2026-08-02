@@ -374,16 +374,23 @@ void player_accept_rank(Game *g);
 void GameCastTimeStop(Game *g);
 void GameCastFindVillain(Game *g);
 
-// Cast raise_control (adventure spell): leadership_current += spell_power*100.
-// Consumes one charge. The boost is TEMPORARY -- leadership_current resets to
-// leadership_base at the next week boundary (GameOnStep). Shared engine entry so
-// autoplay can apply it headlessly (same effect as the shell's spell dispatch).
-// No-op (no charge spent) if the hero owns no raise_control charge.
+// Hard ceiling on leadership_current, applied by GameCastRaiseControl.
+#define GAME_LEADERSHIP_MAX 65000
+
+// Cast raise_control (adventure spell): leadership_current += spell_power*100,
+// capped at GAME_LEADERSHIP_MAX. Consumes one charge. The boost is TEMPORARY --
+// leadership_current resets to leadership_base at the next week boundary
+// (GameOnStep). Shared engine entry so autoplay can apply it headlessly (same
+// effect as the shell's spell dispatch). No-op (no charge spent) if the hero
+// owns no raise_control charge. At spell_power 0 the charge is still spent and
+// the amount is 0 -- see GameRaiseControlAmount.
 void GameCastRaiseControl(Game *g);
 
 // Effect-size prediction queries -- the SAME formulas the casts above apply,
 // exposed so planning layers can size acquisitions without duplicating engine
 // math. Read-only; nothing is consumed.
+// Both are the bare original formulas with NO minimum: a rank with spell_power 0
+// (Barbarian, first rank) gets 0 from either spell.
 int GameTimeStopStepsPerCast(const Game *g);   // free steps one time_stop cast banks
 int GameRaiseControlAmount(const Game *g);     // leadership one raise_control cast adds
 

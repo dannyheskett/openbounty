@@ -381,14 +381,15 @@ void GameInitSeeded(Game *g, const char *name, int pclass, int difficulty,
 
 // The cast formulas, exposed as read-only queries so planning layers never
 // duplicate them (game.h). The casts below apply exactly these values.
+// Both are the bare original formulas: NO minimum. A class whose current rank
+// has spell_power 0 (Barbarian, first rank) gets nothing from either spell --
+// that is the intended original behavior, not a degenerate case to clamp away.
 int GameTimeStopStepsPerCast(const Game *g) {
-    int bonus = (g ? g->stats.spell_power : 0) * 10;
-    return bonus < 10 ? 10 : bonus;
+    return (g ? g->stats.spell_power : 0) * 10;
 }
 
 int GameRaiseControlAmount(const Game *g) {
-    int amount = (g ? g->stats.spell_power : 0) * 100;
-    return amount < 100 ? 100 : amount;
+    return (g ? g->stats.spell_power : 0) * 100;
 }
 
 bool GameTerrainCostsFullDay(int terrain) {
@@ -405,15 +406,19 @@ void GameCastTimeStop(Game *g) {
 }
 
 // raise_control: leadership_current += spell_power*100 (the field's only lever
-// besides rank-ups). TEMPORARY: leadership_current resets to leadership_base at the next week
-// boundary (GameOnStep), so callers that need the boost for a fight must use it
-// the same tick. Consumes one charge; no-op (nothing spent) if none owned.
+// besides rank-ups), capped at GAME_LEADERSHIP_MAX. TEMPORARY: leadership_current
+// resets to leadership_base at the next week boundary (GameOnStep), so callers
+// that need the boost for a fight must use it the same tick. Consumes one
+// charge; no-op (nothing spent) if none owned. Note the charge IS spent even at
+// spell_power 0, where the amount is 0 -- the cast happens, it just does nothing.
 void GameCastRaiseControl(Game *g) {
     if (!g) return;
     int idx = spell_index_by_adventure_effect(ADV_EFFECT_RAISE_CONTROL);
     if (idx < 0 || g->spells.counts[idx] <= 0) return;
     g->spells.counts[idx]--;
     g->stats.leadership_current += GameRaiseControlAmount(g);
+    if (g->stats.leadership_current > GAME_LEADERSHIP_MAX)
+        g->stats.leadership_current = GAME_LEADERSHIP_MAX;
 }
 
 // find_villain: scan castles for the one held by the active contract's
