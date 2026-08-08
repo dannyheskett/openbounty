@@ -1,24 +1,7 @@
 name: ci
 
-# Runs on every pull request targeting main. Each job rebuilds raylib from source for its
-# platform (the install dirs are gitignored), then builds openbounty:
-#   - linux:   native gcc, dev binary + the full test suite
-#   - windows: mingw-w64 cross-compile, x64 + x86
-#   - mac:     clang universal binary, arm64 + x86_64
-#   - web:     Emscripten WASM build, uploaded as an artifact
-#
-# Branch protection requires every job here to pass before a PR can merge, and every merge
-# to main cuts a release, so this is the gate that keeps main releasable.
-#
-# There is deliberately NO paths-ignore. A workflow that never triggers never reports a
-# status, and a required check that never reports blocks the PR forever -- a docs-only PR
-# would hang instead of merging. Running the full matrix on a README change wastes a few
-# runner minutes; the deadlock wastes an afternoon. release.yml still skips docs-only
-# pushes, so they cut no release.
-#
-# For the same reason, do NOT put [skip ci] in a commit destined for a PR: GitHub skips the
-# whole run, the required checks never report, and the PR cannot be merged.
-
+# Thin caller. All logic lives in dannyheskett/.github, shared by every game repo.
+# Check names in this repo are "ci / <platform>".
 on:
   pull_request:
     branches: [main]
@@ -27,85 +10,8 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Job ids are the branch-protection check names -- these jobs carry no `name:` precisely so
-# the check name stays short and stable. Renaming a job silently breaks protection, because
-# a required check that no longer reports blocks every PR.
 jobs:
-  linux:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v7
-      - name: Install raylib build + runtime deps
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
-            libxcursor-dev libxi-dev libasound2-dev
-      - name: Rebuild raylib against runner glibc
-        # The bundled .a was built on glibc 2.38+; relinking on 22.04 (glibc 2.35) fails on
-        # __isoc23_* symbols. Always rebuild.
-        run: ./scripts/build_raylib_linux.sh
-      - name: Build dev binary
-        # `make` only compiles + links the game (no test run) since the build was split
-        # debug/release.
-        run: make
-      - name: Run the full test suite
-        # `make test` builds and runs the entire greatest suite: unit, e2e, autoplay, plus
-        # the regression combat-formula digests + save fixtures.
-        run: make test
-
-  windows:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v7
-      - name: Install mingw cross-toolchain
-        env:
-          DEBIAN_FRONTEND: noninteractive
-        run: |
-          sudo apt-get update
-          # C99 cross-compile only: the two mingw C compilers + binutils directly. The
-          # `mingw-w64` metapackage pulls the whole g++ toolchain (both arches x
-          # posix/win32) + perl -- 39 packages / 241 MB, none of which this build uses.
-          # binutils-mingw-w64 supplies the *-ar that build_raylib_windows.sh invokes.
-          sudo apt-get install -y --no-install-recommends \
-            gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 binutils-mingw-w64
-      - name: Build raylib (mingw win64 + win32)
-        run: ./scripts/build_raylib_windows.sh
-      - name: Cross-compile Win64 + Win32
-        run: make windows RELEASE_VERSION=ci-smoke
-
-  mac:
-    runs-on: macos-14
-    steps:
-      - uses: actions/checkout@v7
-      - name: Build raylib (universal arm64 + x86_64)
-        run: ./scripts/build_raylib_mac.sh
-      - name: Build universal binary
-        run: make mac RELEASE_VERSION=ci-smoke
-
-  web:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v7
-      - name: Set up Emscripten
-        uses: emscripten-core/setup-emsdk@v16
-      # The web target transitively builds the NATIVE binary first: the pack embedded in
-      # openbounty.data is zipped by `./build/debug/openbounty --pack-dir`, so the Linux
-      # toolchain and a Linux raylib are required even though nothing native ships here.
-      - name: Install Linux build deps
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
-            libxcursor-dev libxi-dev libasound2-dev
-      - name: Rebuild raylib against runner glibc
-        run: ./scripts/build_raylib_linux.sh
-      - name: Build raylib (web)
-        run: ./scripts/build_raylib_web.sh
-      - name: Build WASM
-        run: make web RELEASE_VERSION=ci-smoke
-      - name: Upload web build
-        uses: actions/upload-artifact@v7
-        with:
-          name: openbounty-web
-          path: build/web
+  ci:
+    uses: dannyheskett/.github/.github/workflows/game-ci.yml@v1
+    with:
+      platforms: '["linux","windows","mac","web"]'
