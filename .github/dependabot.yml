@@ -1,0 +1,14 @@
+version: 2
+updates:
+  # Keep the GitHub Actions used by CI (actions/checkout, etc.) up to date.
+  # All action bumps are batched into a single weekly PR, which then runs
+  # through the cross-platform CI before it can merge.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "ci"
+    groups:
+      github-actions:
+        patterns: ["*"]
