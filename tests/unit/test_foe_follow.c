@@ -79,7 +79,102 @@ TEST live_foe_stays_stamped(void) {
     PASS();
 }
 
+// ---------------------------------------------------------------------------
+// Terrain gating (issue #22). The original accepts a candidate tile only when
+// its map byte is 0x00 grass (OPENKB-SPEC.md:6234). Each test below sets up one
+// foe at (9,44) homing toward (8,44) and makes every neighbour of the foe
+// unstandable, so the only legal outcome is staying put -- the centre cell is
+// exempt from the obstacle test in both the original and GameFoesFollow.
+//
+// homing_control() is the load-bearing counterpart: it proves the same fixture
+// DOES move the foe over plain grass, so a "did not move" assertion below can
+// never pass vacuously.
+
+// Build the shared fixture: 64x64 all-grass map, hero clear of the foe, one live
+// foe at (9,44) whose homing target is (8,44).
+static void homing_fixture(Game **pg, Map **pm) {
+    Game *g = calloc(1, sizeof *g);
+    Map  *m = calloc(1, sizeof *m);
+    m->width = 64; m->height = 64;
+    strcpy(g->position.zone, "z");
+    g->position.x = 8;  g->position.y = 40;
+    g->position.last_x = 8; g->position.last_y = 44;
+    put_foe(g, 0, "foe0", 9, 44);
+    g->foe_count = 1;
+    *pg = g; *pm = m;
+}
+
+// Control: plain grass, so the foe must reach its target tile. If this ever
+// fails, every "stays put" assertion in this section is meaningless.
+TEST homing_control(void) {
+    Game *g; Map *m; homing_fixture(&g, &m);
+    GameFoesFollow(g, m);
+    ASSERT_EQ(8, g->foes[0].x);
+    ASSERT_EQ(44, g->foes[0].y);
+    free(g); free(m);
+    PASS();
+}
+
+// Desert is a non-zero byte. Foes must not enter it, which is what makes desert
+// a refuge for the hero.
+TEST foe_refuses_desert(void) {
+    Game *g; Map *m; homing_fixture(&g, &m);
+    for (int dy = -1; dy <= 1; dy++)
+        for (int dx = -1; dx <= 1; dx++)
+            if (dx || dy) m->tiles[44 + dy][9 + dx].terrain = TERRAIN_DESERT;
+    GameFoesFollow(g, m);
+    ASSERT_EQ(9, g->foes[0].x);
+    ASSERT_EQ(44, g->foes[0].y);
+    free(g); free(m);
+    PASS();
+}
+
+// A bridge keeps TERRAIN_GRASS (TerrainFromArt falls through for unrecognised
+// art), so only the is_bridge flag distinguishes it. Without that check a foe
+// crosses water and follows the hero over a barrier.
+TEST foe_refuses_bridge(void) {
+    Game *g; Map *m; homing_fixture(&g, &m);
+    for (int dy = -1; dy <= 1; dy++)
+        for (int dx = -1; dx <= 1; dx++)
+            if (dx || dy) m->tiles[44 + dy][9 + dx].is_bridge = true;
+    GameFoesFollow(g, m);
+    ASSERT_EQ(9, g->foes[0].x);
+    ASSERT_EQ(44, g->foes[0].y);
+    free(g); free(m);
+    PASS();
+}
+
+// House rule, not a restoration: the gate approach is grass in the original too.
+// A gate at (7,44) makes (8,43), (8,44) and (8,45) all gate-adjacent, so no
+// step toward the target is legal.
+TEST foe_refuses_castle_gate_approach(void) {
+    Game *g; Map *m; homing_fixture(&g, &m);
+    m->tiles[44][7].interactive = INTERACT_CASTLE_GATE;
+    GameFoesFollow(g, m);
+    ASSERT_FALSE(g->foes[0].x == 8 && g->foes[0].y == 44);
+    ASSERT_EQ(9, g->foes[0].x);
+    ASSERT_EQ(44, g->foes[0].y);
+    free(g); free(m);
+    PASS();
+}
+
+// The gate tile itself was already rejected by the INTERACT_NONE test; keep that
+// nailed down so the new adjacency rule can't be mistaken for the only guard.
+TEST foe_refuses_castle_gate_tile(void) {
+    Game *g; Map *m; homing_fixture(&g, &m);
+    m->tiles[44][8].interactive = INTERACT_CASTLE_GATE;
+    GameFoesFollow(g, m);
+    ASSERT_FALSE(g->foes[0].x == 8 && g->foes[0].y == 44);
+    free(g); free(m);
+    PASS();
+}
+
 SUITE(unit_foe_follow_suite) {
     RUN_TEST(foes_never_stack);
     RUN_TEST(live_foe_stays_stamped);
+    RUN_TEST(homing_control);
+    RUN_TEST(foe_refuses_desert);
+    RUN_TEST(foe_refuses_bridge);
+    RUN_TEST(foe_refuses_castle_gate_approach);
+    RUN_TEST(foe_refuses_castle_gate_tile);
 }

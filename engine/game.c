@@ -2497,16 +2497,43 @@ static unsigned foe_dist_sq(int x1, int y1, int x2, int y2) {
     return (unsigned)(dx * dx + dy * dy);
 }
 
+// Keep foes off the eight tiles surrounding a castle gate. This is a house
+// rule, NOT a restoration: the original's 0x00 test does not prevent it,
+// because the approach tile below a gate is grass in both. Without it a foe
+// parks on the doorstep of the hero's own castle. See issue #22.
+static bool adjacent_to_castle_gate(const Map *map, int x, int y) {
+    for (int dy = -1; dy <= 1; dy++) {
+        for (int dx = -1; dx <= 1; dx++) {
+            if (dx == 0 && dy == 0) continue;
+            const Tile *n = MapGetTile(map, x + dx, y + dy);
+            if (n && n->interactive == INTERACT_CASTLE_GATE) return true;
+        }
+    }
+    return false;
+}
+
 static bool foe_can_stand(const Map *map, int x, int y) {
     if (!MapInBounds(map, x, y)) return false;
     const Tile *t = MapGetTile(map, x, y);
     if (!t) return false;
     if (t->blocks_foot) return false;
-    if (!TerrainWalkable(t->terrain)) return false;
+    // The original accepts a candidate tile only when its map byte is 0x00,
+    // i.e. grass (OPENKB-SPEC.md:6234, foe_closest_offset at play.c:1738).
+    // Deliberately NOT TerrainWalkable(), which also admits desert: desert is
+    // a non-zero byte and impassable to foes, which is what makes it a refuge
+    // for the hero. Hero movement is unaffected; adventure_walkable_on_foot
+    // still crosses desert at 40 movement points per tile.
+    if (t->terrain != TERRAIN_GRASS) return false;
+    // Bridges have no terrain of their own: TerrainFromArt falls through to
+    // GRASS for art it does not recognise, so the test above lets them past.
+    // A bridge is a non-zero byte, so the original rejects it; without this a
+    // foe walks over water and follows the hero across a barrier.
+    if (t->is_bridge) return false;
     // Treat any stamped tile byte as an obstacle -- the foe can't
     // sit on a chest, castle gate, another foe, etc. Our INTERACT_NONE
     // check captures the same rule.
     if (t->interactive != INTERACT_NONE) return false;
+    if (adjacent_to_castle_gate(map, x, y)) return false;
     return true;
 }
 
