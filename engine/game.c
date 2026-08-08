@@ -2619,20 +2619,29 @@ int GameFoesFollow(Game *g, Map *map) {
                 if (is_hero_tile && g->character.mount == MOUNT_FLY &&
                     !g->oracle_mode)
                     continue;
-                // The hero's tile is normally treated as walkable for the
-                // foe (combat trigger when stepped on). But if the hero is
-                // in the boat, the hero's tile is a water tile that a land
-                // foe could never reach -- so the exception drops away and
-                // foe_can_stand's water check applies.
+                // Used ONLY for the anti-stacking exemption below, not for
+                // walkability: a foe standing on the hero (the collision that
+                // triggers combat) is not a stack, so a second foe is still
+                // allowed to target that tile. Drops away in the boat, where
+                // the hero sits on water no land foe can occupy anyway.
                 bool hero_reachable = (is_hero_tile &&
                                        g->travel_mode != TRAVEL_BOAT);
-                // `if (i || j)` gate: only non-center cells get
-                // the obstacle penalty. The hero's tile is treated as
-                // walkable for the purpose of the foe stepping onto it
-                // (combat trigger), even though foe_can_stand would reject
-                // it because the hero "occupies" no interactive tile.
-                if (!is_center && !hero_reachable &&
-                    !foe_can_stand(map, nx, ny))
+                // `if (i || j)` gate: only non-center cells get the obstacle
+                // penalty, matching the original's `if (i != 0 or j != 0)`.
+                //
+                // The hero's tile gets NO exemption here. foe_closest_offset
+                // (OPENKB-SPEC.md:6234) tests the map byte of all eight
+                // non-center cells without caring where the player is, so a
+                // hero standing on any non-zero tile simply cannot be reached.
+                // That is what makes desert a refuge rather than merely
+                // impassable: foes neither cross it nor attack into it. The
+                // same now holds for bridges, towns and the other interactive
+                // tiles, and for the castle-gate approach.
+                //
+                // This previously exempted the hero's tile so the foe could
+                // step on and trigger combat, which let a foe on adjacent
+                // grass reach a hero standing anywhere at all.
+                if (!is_center && !foe_can_stand(map, nx, ny))
                     continue;
                 // Anti-stacking, stamp-independent: never target a tile another
                 // live foe already holds (two foes may never share a spot). The

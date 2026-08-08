@@ -169,6 +169,96 @@ TEST foe_refuses_castle_gate_tile(void) {
     PASS();
 }
 
+// Terrain the previous rule already rejected via TerrainWalkable(). No behavior
+// change, pinned so a future edit to foe_can_stand cannot quietly readmit them.
+static void assert_terrain_blocks(Terrain terr, int *ox, int *oy) {
+    Game *g; Map *m; homing_fixture(&g, &m);
+    for (int dy = -1; dy <= 1; dy++)
+        for (int dx = -1; dx <= 1; dx++)
+            if (dx || dy) m->tiles[44 + dy][9 + dx].terrain = terr;
+    GameFoesFollow(g, m);
+    *ox = g->foes[0].x; *oy = g->foes[0].y;
+    free(g); free(m);
+}
+
+TEST foe_refuses_water_forest_mountain(void) {
+    int x, y;
+    assert_terrain_blocks(TERRAIN_WATER, &x, &y);
+    ASSERT_EQ(9, x); ASSERT_EQ(44, y);
+    assert_terrain_blocks(TERRAIN_FOREST, &x, &y);
+    ASSERT_EQ(9, x); ASSERT_EQ(44, y);
+    assert_terrain_blocks(TERRAIN_MOUNTAIN, &x, &y);
+    ASSERT_EQ(9, x); ASSERT_EQ(44, y);
+    PASS();
+}
+
+// Pack data may seat a foe on desert or a bridge; the grass-only rule must not
+// strand it. The center cell is exempt from the obstacle test in both the
+// original and GameFoesFollow, so the foe can always step back onto grass.
+TEST foe_on_desert_can_leave(void) {
+    Game *g; Map *m; homing_fixture(&g, &m);
+    m->tiles[44][9].terrain = TERRAIN_DESERT;   // the foe's OWN tile
+    GameFoesFollow(g, m);
+    ASSERT_EQ(8, g->foes[0].x);
+    ASSERT_EQ(44, g->foes[0].y);
+    free(g); free(m);
+    PASS();
+}
+
+// ---------------------------------------------------------------------------
+// Reaching the hero. foe_closest_offset tests the map byte of all eight
+// non-center cells without regard to where the player stands, so a hero on any
+// non-zero tile cannot be reached. GameFoesFollow returns the foe index when a
+// foe lands on the hero (the combat trigger) and -1 otherwise.
+
+// Place the hero on the foe's target tile with the given terrain, and report
+// whether the foe reached them.
+static int hero_contact(Terrain terr, bool bridge, bool boat) {
+    Game *g; Map *m; homing_fixture(&g, &m);
+    g->position.x = 8; g->position.y = 44;
+    g->position.last_x = 8; g->position.last_y = 44;
+    m->tiles[44][8].terrain = terr;
+    m->tiles[44][8].is_bridge = bridge;
+    if (boat) g->travel_mode = TRAVEL_BOAT;
+    int r = GameFoesFollow(g, m);
+    free(g); free(m);
+    return r;
+}
+
+// Control. Without this, every "unreachable" assertion below could pass simply
+// because contact is broken everywhere, which would silently disable combat.
+TEST hero_on_grass_is_reachable(void) {
+    ASSERT_EQ(0, hero_contact(TERRAIN_GRASS, false, false));
+    PASS();
+}
+
+TEST hero_on_desert_is_unreachable(void) {
+    ASSERT_EQ(-1, hero_contact(TERRAIN_DESERT, false, false));
+    PASS();
+}
+
+TEST hero_on_bridge_is_unreachable(void) {
+    ASSERT_EQ(-1, hero_contact(TERRAIN_GRASS, true, false));
+    PASS();
+}
+
+TEST hero_in_boat_is_unreachable(void) {
+    ASSERT_EQ(-1, hero_contact(TERRAIN_WATER, false, true));
+    PASS();
+}
+
+// The castle-gate house rule covers the hero too: standing on the approach is
+// as safe as any other tile a foe may not enter.
+TEST hero_on_gate_approach_is_unreachable(void) {
+    Game *g; Map *m; homing_fixture(&g, &m);
+    g->position.x = 8; g->position.y = 44;
+    g->position.last_x = 8; g->position.last_y = 44;
+    m->tiles[44][7].interactive = INTERACT_CASTLE_GATE;
+    ASSERT_EQ(-1, GameFoesFollow(g, m));
+    free(g); free(m);
+    PASS();
+}
+
 SUITE(unit_foe_follow_suite) {
     RUN_TEST(foes_never_stack);
     RUN_TEST(live_foe_stays_stamped);
@@ -177,4 +267,11 @@ SUITE(unit_foe_follow_suite) {
     RUN_TEST(foe_refuses_bridge);
     RUN_TEST(foe_refuses_castle_gate_approach);
     RUN_TEST(foe_refuses_castle_gate_tile);
+    RUN_TEST(foe_refuses_water_forest_mountain);
+    RUN_TEST(foe_on_desert_can_leave);
+    RUN_TEST(hero_on_grass_is_reachable);
+    RUN_TEST(hero_on_desert_is_unreachable);
+    RUN_TEST(hero_on_bridge_is_unreachable);
+    RUN_TEST(hero_in_boat_is_unreachable);
+    RUN_TEST(hero_on_gate_approach_is_unreachable);
 }
