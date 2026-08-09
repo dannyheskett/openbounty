@@ -47,6 +47,9 @@ save.dat
 # Dev screenshot captures (V-view auto-save + backtick-key shots)
 screenshots/
 
+# Gameplay recordings written by src/recorder.c into the repo root.
+*.mp4
+
 # Splicer backup (created by tools/splice_overlays.c).
 *.json.bak
 
