@@ -1,57 +1,56 @@
 # Build output
 build/
-*.o
-*.a
-*.obj
-*.exe
-
-# Release archives (produced by `make dist-*`); the dist/ directory is
-# committed only for its source template (dist/README.txt.in).
 dist/*.tar.gz
 dist/*.zip
+*.o
+*.a
+*.so
+*.exe
+*.obj
 
-# Raylib is never committed -- it is built from source into a per-platform
-# install dir by scripts/build_raylib_<platform>.sh, which CI runs before
-# each build and a fresh clone runs once. See README section 2.
-third_party/raylib-install*/
+# Vendored raylib, built from source by scripts/build_raylib_<platform>.sh
 third_party/raylib/
+third_party/raylib-install*/
 
-# Emscripten SDK checkout (~1.6 GB of toolchain). Needed only to build
-# the `web` target; install with:
-#   git clone https://github.com/emscripten-core/emsdk third_party/emsdk
-#   third_party/emsdk/emsdk install latest && third_party/emsdk/emsdk activate latest
-third_party/emsdk/
+# Gameplay recordings written by src/recorder.c into the repo root
+*.mp4
 
-# Playwright MCP scratch (browser screenshots / console logs).
-.playwright-mcp/
-
-# Scratch dir.
-tmp/
+# Local agent state. `.claude/*` rather than `.claude/` because git cannot
+# re-include a path whose parent directory is excluded, and committed skills
+# must stay tracked.
+.claude/*
+!.claude/skills/
 
 # Editor / OS
 .vscode/
 .idea/
 *.swp
-# Python bytecode (the project is C-only; never commit interpreter caches)
-__pycache__/
-*.pyc
+*.swo
 *~
 .DS_Store
 Thumbs.db
-*:Zone.Identifier
 
-# Save data (if ever accidentally created in-tree)
-save.dat
-*.sav
+# --- openbounty only ---
+# dist/ is not ignored wholesale: dist/README.txt.in is a tracked source template.
+
+# Emscripten SDK checkout (~1.6 GB). Needed only for the `web` target:
+#   git clone https://github.com/emscripten-core/emsdk third_party/emsdk
+#   third_party/emsdk/emsdk install latest && third_party/emsdk/emsdk activate latest
+third_party/emsdk/
 
 # Dev screenshot captures (V-view auto-save + backtick-key shots)
 screenshots/
+tmp/
 
-# Gameplay recordings written by src/recorder.c into the repo root.
-*.mp4
+# Save data, if ever created in-tree
+save.dat
+*.sav
 
-# Splicer backup (created by tools/splice_overlays.c).
+# Splicer backup (created by tools/splice_overlays.c)
 *.json.bak
 
-# Local Claude Code harness state (session locks, scheduled tasks).
-.claude/
+# Tooling scratch
+.playwright-mcp/
+__pycache__/
+*.pyc
+*:Zone.Identifier
