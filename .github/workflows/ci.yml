@@ -1,7 +1,12 @@
 name: ci
 
-# Thin caller. All logic lives in dannyheskett/.github, shared by every game repo.
-# Check names in this repo are "ci / <platform>".
+# Inlined, not called. The shared copy in dannyheskett/.github is being retired, so this
+# repository carries its own. The body below is that workflow verbatim, with two edits:
+# the workflow_call trigger becomes this repo's real pull_request trigger, and the
+# `platforms` input and its per-job gates are gone -- a platform this repo does not build
+# is simply not a job here, rather than a job that reports skipped.
+#
+# Check names are therefore the bare job ids ("linux"), not "ci / linux".
 on:
   pull_request:
     branches: [main]
@@ -11,7 +16,81 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ci:
-    uses: dannyheskett/.github/.github/workflows/game-ci.yml@v2
-    with:
-      platforms: '["linux","windows","mac","web"]'
+  linux:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install raylib build + runtime deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
+            libxcursor-dev libxi-dev libasound2-dev
+      - name: Build raylib (Linux, static)
+        run: ./scripts/build_raylib_linux.sh
+      - name: Run tests
+        run: make test
+      - name: Build dev + release
+        run: make all release
+
+  windows:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install mingw cross-toolchain
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          sudo apt-get update
+          # C99 cross-compile only: the two mingw C compilers + binutils directly. The
+          # `mingw-w64` metapackage pulls the whole g++ toolchain (both arches x
+          # posix/win32) + perl -- 39 packages / 241 MB, none of which this build uses.
+          # binutils-mingw-w64 supplies the *-ar that build_raylib_windows.sh invokes.
+          sudo apt-get install -y --no-install-recommends \
+            gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 binutils-mingw-w64
+      - name: Build raylib (mingw win64 + win32)
+        run: ./scripts/build_raylib_windows.sh
+      - name: Cross-compile Win64 + Win32
+        run: make windows
+
+  mac:
+    runs-on: macos-14
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build raylib (universal arm64 + x86_64)
+        run: ./scripts/build_raylib_mac.sh
+      - name: Build universal binary
+        run: make mac
+
+  web:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Emscripten
+        uses: emscripten-core/setup-emsdk@v16
+      # The Linux toolchain is required even though nothing native ships from this job.
+      # In openbounty the web target transitively builds the NATIVE binary first: the pack
+      # embedded in openbounty.data is zipped by ./build/debug/openbounty --pack-dir. The
+      # other web repos do not need it; installing it unconditionally costs a little time
+      # and keeps one job body for all of them.
+      - name: Install Linux build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
+            libxcursor-dev libxi-dev libasound2-dev
+      - name: Build raylib (Linux)
+        run: ./scripts/build_raylib_linux.sh
+      - name: Build raylib (web)
+        run: ./scripts/build_raylib_web.sh
+      - name: Build WASM
+        run: make web
+      - name: Upload web build
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-build
+          path: build/web
