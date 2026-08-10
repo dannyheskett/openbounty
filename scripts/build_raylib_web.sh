@@ -34,6 +34,23 @@ if [ ! -d "$RAYLIB_SRC_DIR" ]; then
         https://github.com/raysan5/raylib "$RAYLIB_SRC_DIR"
 fi
 
+# Fix raylib's web touchend handling: upstream removes only ONE lifted touch
+# per touchend event, but lifting several fingers at once (a two-finger tap)
+# arrives as a single event with multiple changed touches, leaving the touch
+# count stuck above zero with no further events coming. opensweeper and
+# openblocks have carried this patch since their web builds landed; openbounty
+# ships a web build too and did not, so the same raylib produced different
+# behaviour here. Idempotent: skipped when already applied, which matters
+# because third_party/raylib is shared with the desktop scripts and survives
+# between runs.
+PATCH="$(cd "$(dirname "$0")" && pwd)/raylib-web-touchend.patch"
+if git -C "$RAYLIB_SRC_DIR" apply --reverse --check "$PATCH" 2>/dev/null; then
+    echo "[build_raylib_web] touchend patch already applied"
+else
+    git -C "$RAYLIB_SRC_DIR" apply "$PATCH"
+    echo "[build_raylib_web] applied touchend patch"
+fi
+
 # PLATFORM_WEB selects raylib's Emscripten backend; GRAPHICS_API_OPENGL_ES2
 # is the WebGL-compatible renderer. emmake puts emcc in front of the compiler
 # so every object lands as wasm32. The clean is mandatory: the raylib source
