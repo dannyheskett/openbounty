@@ -1,7 +1,15 @@
 name: release
 
-# Thin caller. All logic lives in dannyheskett/.github, shared by every game repo.
-# Every merge to main cuts the next release-N.
+# Inlined, not called. The shared copy in dannyheskett/.github is being retired, so this
+# repository carries its own. The body below is that workflow verbatim, with the edits the
+# shared form existed to avoid needing:
+#   - workflow_call becomes this repo's real push + workflow_dispatch triggers
+#   - the `platforms` input and its per-job gates are gone; a platform this repo does not
+#     build is simply not a job
+#   - `play_publish` and the publish-play job are gone; this repo ships no Android bundle
+#   - the pack guard steps are unconditional, the `verify_no_pack` input having no other
+#     caller to be false for
+#
 on:
   push:
     branches: [main]
@@ -26,10 +34,226 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
-    uses: dannyheskett/.github/.github/workflows/game-release.yml@v2
-    with:
-      platforms: '["linux","windows","mac","web"]'
-      verify_no_pack: true
-      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
-    secrets: inherit
+  guard:
+    uses: ./.github/workflows/attribution-guard.yml
+    permissions:
+      contents: write
+
+  prepare:
+    needs: guard
+    name: compute next release number
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.next.outputs.version }}
+      sha: ${{ steps.next.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: next
+        run: |
+          # Find max N across existing release-N tags; default to 0.
+          last=$(git tag --list 'release-*' \
+                   | sed -n 's/^release-\([1-9][0-9]*\)$/\1/p' \
+                   | sort -n | tail -1)
+          next=$(( ${last:-0} + 1 ))
+          echo "version=$next" >> "$GITHUB_OUTPUT"
+          echo "sha=$GITHUB_SHA"  >> "$GITHUB_OUTPUT"
+          echo "Next release: release-$next at $GITHUB_SHA"
+
+  build-linux-windows:
+    name: linux + windows builds
+    needs: prepare
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Linux + mingw deps
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
+            libxcursor-dev libxi-dev libasound2-dev \
+            gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 binutils-mingw-w64 \
+            zip
+      - name: Build raylib (Linux)
+        run: ./scripts/build_raylib_linux.sh
+      - name: Run tests
+        run: make test RELEASE_VERSION=${{ needs.prepare.outputs.version }}
+      - name: Build raylib (mingw win64 + win32)
+        run: ./scripts/build_raylib_windows.sh
+      - name: Package Linux + Windows archives
+        run: make dist-linux dist-windows RELEASE_VERSION=${{ needs.prepare.outputs.version }}
+      - name: Verify no loose pack file in the archives
+        run: |
+          set -e
+          # Escaped dot: an unescaped "." matches any character, so ".openbounty$"
+          # also matched "openbounty-build-13/openbounty" -- the binary itself.
+          pat="\\.${{ github.event.repository.name }}$"
+          fail=0
+          # tar/unzip's status must be tested on its own. Inside an `if` condition the
+          # pipeline's status is consumed as the condition's truth value, so a corrupt or
+          # truncated archive made the lister fail, grep report "no match", and the guard
+          # pass clean. `set -o pipefail` does not help here for the same reason.
+          for f in dist/*.tar.gz; do
+            [ -e "$f" ] || continue
+            if ! listing=$(tar -tzf "$f" 2>/dev/null); then
+              echo "FAIL: cannot read $f"; fail=1; continue
+            fi
+            if printf '%s\n' "$listing" | grep -qE "$pat"; then
+              echo "FAIL: $f contains a pack file matching $pat"; fail=1
+            fi
+          done
+          for f in dist/*.zip; do
+            [ -e "$f" ] || continue
+            if ! listing=$(unzip -l "$f" 2>/dev/null); then
+              echo "FAIL: cannot read $f"; fail=1; continue
+            fi
+            if printf '%s\n' "$listing" | grep -qE "$pat"; then
+              echo "FAIL: $f contains a pack file matching $pat"; fail=1
+            fi
+          done
+          [ "$fail" -eq 0 ]
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux-windows
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+
+  build-mac:
+    name: macOS universal build
+    needs: prepare
+    runs-on: macos-14
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build raylib (universal arm64 + x86_64)
+        run: ./scripts/build_raylib_mac.sh
+      - name: Package macOS archive
+        run: make dist-mac RELEASE_VERSION=${{ needs.prepare.outputs.version }}
+      - name: Verify no loose pack file in the archive
+        run: |
+          set -e
+          # Escaped dot: an unescaped "." matches any character, so ".openbounty$"
+          # also matched "openbounty-build-13/openbounty" -- the binary itself.
+          pat="\\.${{ github.event.repository.name }}$"
+          fail=0
+          # tar/unzip's status must be tested on its own. Inside an `if` condition the
+          # pipeline's status is consumed as the condition's truth value, so a corrupt or
+          # truncated archive made the lister fail, grep report "no match", and the guard
+          # pass clean. `set -o pipefail` does not help here for the same reason.
+          for f in dist/*.zip; do
+            [ -e "$f" ] || continue
+            if ! listing=$(unzip -l "$f" 2>/dev/null); then
+              echo "FAIL: cannot read $f"; fail=1; continue
+            fi
+            if printf '%s\n' "$listing" | grep -qE "$pat"; then
+              echo "FAIL: $f contains a pack file matching $pat"; fail=1
+            fi
+          done
+          [ "$fail" -eq 0 ]
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mac
+          path: dist/*.zip
+
+  build-web:
+    name: web (WASM) build
+    needs: prepare
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Emscripten
+        uses: emscripten-core/setup-emsdk@v16
+      # See game-ci.yml: the web target can transitively need the native Linux build.
+      - name: Install Linux build deps + zip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
+            libxcursor-dev libxi-dev libasound2-dev \
+            zip
+      - name: Build raylib (Linux)
+        run: ./scripts/build_raylib_linux.sh
+      - name: Build raylib (web)
+        run: ./scripts/build_raylib_web.sh
+      # RELEASE_VERSION must be passed HERE, not only to dist-web: it can bake a version
+      # header into the wasm. Packaging later with a different value would rezip a binary
+      # carrying the wrong version.
+      - name: Build WASM
+        run: make web RELEASE_VERSION=${{ needs.prepare.outputs.version }}
+      - name: Package WASM bundle
+        run: make dist-web RELEASE_VERSION=${{ needs.prepare.outputs.version }}
+      - name: Verify no loose pack file in the archive
+        run: |
+          set -e
+          # Escaped dot: an unescaped "." matches any character, so ".openbounty$"
+          # also matched "openbounty-build-13/openbounty" -- the binary itself.
+          pat="\\.${{ github.event.repository.name }}$"
+          fail=0
+          # tar/unzip's status must be tested on its own. Inside an `if` condition the
+          # pipeline's status is consumed as the condition's truth value, so a corrupt or
+          # truncated archive made the lister fail, grep report "no match", and the guard
+          # pass clean. `set -o pipefail` does not help here for the same reason.
+          for f in dist/*.zip; do
+            [ -e "$f" ] || continue
+            if ! listing=$(unzip -l "$f" 2>/dev/null); then
+              echo "FAIL: cannot read $f"; fail=1; continue
+            fi
+            if printf '%s\n' "$listing" | grep -qE "$pat"; then
+              echo "FAIL: $f contains a pack file matching $pat"; fail=1
+            fi
+          done
+          [ "$fail" -eq 0 ]
+      - uses: actions/upload-artifact@v7
+        with:
+          name: web
+          path: dist/*.zip
+
+  publish:
+    name: tag + publish GitHub Release
+    needs: [prepare, build-linux-windows, build-mac, build-web]
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && needs.prepare.result == 'success' }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: dist-merged
+          merge-multiple: true
+      - run: ls -la dist-merged/
+      # The two publishing steps, and only these, are what `dry_run` withholds. Everything
+      # before them still runs, so a dry run proves the build and the packaging without
+      # consuming a release number or putting anything in front of a user.
+      - name: Create release-N tag at the captured commit
+        if: ${{ !inputs.dry_run }}
+        env:
+          V: ${{ needs.prepare.outputs.version }}
+          SHA: ${{ needs.prepare.outputs.sha }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "release-$V" "$SHA"
+          git push origin "release-$V"
+      - name: Create GitHub Release
+        if: ${{ !inputs.dry_run }}
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: release-${{ needs.prepare.outputs.version }}
+          name: release-${{ needs.prepare.outputs.version }}
+          target_commitish: ${{ needs.prepare.outputs.sha }}
+          files: dist-merged/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          draft: false

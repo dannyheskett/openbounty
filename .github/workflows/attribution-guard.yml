@@ -1,16 +1,158 @@
+# Rejects any push that introduces a commit referencing the banned pattern in its message or
+# author/committer lines. GitHub cannot refuse a push before it lands on non-Enterprise
+# plans, so this is detect-and-remediate: a violating push to a NON-default branch or tag is
+# deleted within seconds and the run fails red. The default branch cannot be auto-remediated
+# (see the note on that step) and must be corrected by hand. Only NEW commits are scanned
+# (range-limited), so pre-existing history does not trip the guard.
 name: attribution-guard
 
-# Thin caller. All logic lives in dannyheskett/.github, shared by every repo.
-# Check name in this repo is "guard / guard".
+# Inlined, not called. The shared copy in dannyheskett/.github is being retired, so this
+# repository carries its own. The body below is that workflow verbatim; only the triggers
+# differ, which is all the thin caller ever supplied.
+#
+# There is no shared copy left to be the source of truth, so a fix made here must be made
+# in every other copy: the other five game repos, openchime, the control plane, the site
+# and bronzeventure.
 on:
   push:
   pull_request:
+  # Kept so this repo's own release.yml can gate on it via `uses:`.
+  workflow_call:
 
 permissions:
   contents: write
 
 jobs:
   guard:
-    uses: dannyheskett/.github/.github/workflows/attribution-guard.yml@v2
-    permissions:
-      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Scan new commits
+        id: scan
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.event.after }}
+          REF: ${{ github.ref }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -u
+          PATTERN='claude|anthropic'
+          ZERO=0000000000000000000000000000000000000000
+
+          # Only push/pull_request events carry new commits to judge. When the guard is
+          # invoked via workflow_call from a dispatch/schedule run, there is no pushed range
+          # (and no before/after SHAs), pass.
+          if [ "$EVENT" != "push" ] && [ "$EVENT" != "pull_request" ]; then
+            echo "violation=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # Ref deletion: nothing to scan.
+          if [ "$EVENT" = "push" ] && { [ "$AFTER" = "$ZERO" ] || [ -z "$AFTER" ]; }; then
+            echo "violation=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+
+          if [ "$EVENT" = "pull_request" ]; then
+            commits=$(git rev-list "origin/$BASE_REF..HEAD")
+          elif [ "$BEFORE" != "$ZERO" ] && git cat-file -e "$BEFORE" 2>/dev/null; then
+            commits=$(git rev-list "$BEFORE..$AFTER")
+          else
+            # New ref (or force push whose old tip is gone): scan commits not reachable from
+            # any other ref.
+            #
+            # Both the pushed branch AND the pushed tag have to be excluded from the "other
+            # refs" set. Excluding only the branch meant that on a TAG push the tag itself
+            # stayed in the set, so `--not <the tag>` cancelled out `$AFTER` and rev-list
+            # returned nothing -- a tag pushed at a commit reachable from no other ref was
+            # never scanned. (When the tag points at a commit already on a branch, both
+            # variants correctly scan nothing: no commit is new.)
+            self_branch="refs/remotes/origin/${REF#refs/heads/}"
+            self_tag="${REF}"
+            others=$(git for-each-ref --format='%(refname) %(objectname)' refs/remotes/origin refs/tags \
+                     | awk -v b="$self_branch" -v t="$self_tag" '$1 != b && $1 != t {print $2}')
+            # $others is a whitespace-separated list of SHAs and MUST word-split into
+            # separate rev-list arguments; quoting it would pass one bogus multi-line ref.
+            # shellcheck disable=SC2086
+            commits=$(git rev-list "$AFTER" --not $others --)
+          fi
+
+          : > /tmp/violations
+          for c in $commits; do
+            if git log -1 --format='%an%n%ae%n%cn%n%ce%n%B' "$c" | grep -qiE "$PATTERN"; then
+              {
+                echo "commit $c"
+                git log -1 --format='%an <%ae> / %cn <%ce>%n%B' "$c" | grep -iE "$PATTERN" | sed 's/^/  /'
+              } >> /tmp/violations
+            fi
+          done
+
+          # Annotated tag messages count too. This check is independent of the commit scan
+          # above and applies to every tag push.
+          case "$REF" in refs/tags/*)
+            if git tag -l --format='%(contents)' "${REF#refs/tags/}" | grep -qiE "$PATTERN"; then
+              echo "tag ${REF#refs/tags/} annotation" >> /tmp/violations
+            fi
+          esac
+
+          if [ -s /tmp/violations ]; then
+            echo "violation=true" >> "$GITHUB_OUTPUT"
+            { echo '## Attribution guard: banned reference found'
+              echo '```'
+              cat /tmp/violations
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            cat /tmp/violations
+          else
+            echo "violation=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # The default branch is remediated by a HUMAN, not by this step.
+      #
+      # main is protected with allow_force_pushes disabled, and the Actions bot holds write
+      # (not admin) permission, so the force-reset this step used to attempt
+      # (PATCH .../git/refs/heads/main with force=true) is refused. It never worked, while
+      # the header comment promised the branch was reset "within seconds".
+      #
+      # What actually protects main now is that this job is a REQUIRED status check: a red
+      # guard blocks the pull request, so a violating commit cannot merge in the first place.
+      # If one reaches main anyway (direct push before protection, or an admin override) it
+      # STAYS there until removed by hand -- that is the real behaviour, and it is now the
+      # documented one.
+      #
+      # Non-default branches and tags are a different matter: nothing protects those, so
+      # deleting them still works and is still done here.
+      - name: Remediate violating push (non-default refs only)
+        if: steps.scan.outputs.violation == 'true' && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF: ${{ github.ref }}
+          DEFAULT: ${{ github.event.repository.default_branch }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -u
+          case "$REF" in
+            refs/heads/*)
+              branch="${REF#refs/heads/}"
+              if [ "$branch" = "$DEFAULT" ]; then
+                echo "::warning::$branch is protected and cannot be reset automatically. \
+          The offending commit is still on $branch and must be removed by hand \
+          (git rebase -i / git reset, then a force push by an admin with protection \
+          temporarily relaxed)."
+              else
+                echo "Deleting branch $branch"
+                gh api -X DELETE "repos/$REPO/git/refs/heads/$branch"
+              fi
+              ;;
+            refs/tags/*)
+              echo "Deleting tag ${REF#refs/tags/}"
+              gh api -X DELETE "repos/$REPO/git/refs/tags/${REF#refs/tags/}"
+              ;;
+          esac
+
+      - name: Fail on violation
+        if: steps.scan.outputs.violation == 'true'
+        run: |
+          echo "Push rejected: commit metadata references the banned pattern."
+          exit 1
