@@ -1,0 +1,41 @@
+diff --git a/src/platforms/rcore_web.c b/src/platforms/rcore_web.c
+index e7e1741..470908e 100644
+--- a/src/platforms/rcore_web.c
++++ b/src/platforms/rcore_web.c
+@@ -1845,24 +1845,22 @@ static EM_BOOL EmscriptenTouchCallback(int eventType, const EmscriptenTouchEvent
+ 
+     if (eventType == EMSCRIPTEN_EVENT_TOUCHEND)
+     {
+-        // Identify the EMSCRIPTEN_EVENT_TOUCHEND and remove it from the list
+-        for (int i = 0; i < CORE.Input.Touch.pointCount; i++)
++        // Keep only the touch points still on the surface (isChanged marks the
++        // lifted ones). Removing a single changed touch per event is not enough:
++        // lifting several fingers at once (e.g. a two-finger tap) delivers ONE
++        // touchend event with multiple changed touches, which left pointCount
++        // stuck above zero with no further events coming.
++        int stillDown = 0;
++        for (int i = 0; (i < touchEvent->numTouches) && (i < MAX_TOUCH_POINTS); i++)
+         {
+-            if (touchEvent->touches[i].isChanged)
++            if (!touchEvent->touches[i].isChanged)
+             {
+-                // Move all touch points one position up
+-                for (int j = i; j < CORE.Input.Touch.pointCount - 1; j++)
+-                {
+-                    CORE.Input.Touch.pointId[j] = CORE.Input.Touch.pointId[j + 1];
+-                    CORE.Input.Touch.position[j] = CORE.Input.Touch.position[j + 1];
+-                }
+-                // Decrease touch points count to remove the last one
+-                CORE.Input.Touch.pointCount--;
+-                break;
++                CORE.Input.Touch.pointId[stillDown] = CORE.Input.Touch.pointId[i];
++                CORE.Input.Touch.position[stillDown] = CORE.Input.Touch.position[i];
++                stillDown++;
+             }
+         }
+-        // Clamp pointCount to avoid negative values
+-        if (CORE.Input.Touch.pointCount < 0) CORE.Input.Touch.pointCount = 0;
++        CORE.Input.Touch.pointCount = stillDown;
+     }
+ 
+     return 1; // The event was consumed by the callback handler
