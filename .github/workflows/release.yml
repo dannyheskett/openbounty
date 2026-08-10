@@ -11,7 +11,12 @@ on:
       - '.editorconfig'
       - 'LICENSE'
       - 'NOTICE'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Build and verify everything; tag nothing, publish nothing'
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -22,8 +27,9 @@ concurrency:
 
 jobs:
   release:
-    uses: dannyheskett/.github/.github/workflows/game-release.yml@v1
+    uses: dannyheskett/.github/.github/workflows/game-release.yml@v2
     with:
       platforms: '["linux","windows","mac","web"]'
       verify_no_pack: true
+      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
     secrets: inherit
