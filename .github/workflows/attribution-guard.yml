@@ -11,6 +11,6 @@ permissions:
 
 jobs:
   guard:
-    uses: dannyheskett/.github/.github/workflows/attribution-guard.yml@v1
+    uses: dannyheskett/.github/.github/workflows/attribution-guard.yml@v2
     permissions:
       contents: write
