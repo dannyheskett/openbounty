@@ -337,16 +337,23 @@ dist-linux: release
 	tar -czf $(DIST)/openbounty-$(OPENBOUNTY_VERSION_SLUG)-linux-x86_64.tar.gz \
 	    -C $(STAGING)/linux openbounty-$(OPENBOUNTY_VERSION_SLUG)
 
+# One recipe line per command, not a `for` loop. The loop's backslash
+# continuations made the whole body a single shell command, so make only ever
+# saw the exit status of its last one -- the zip. A failing `cp LICENSE
+# NOTICES.md` left make reporting success and shipped archives with no licence
+# text. The other five games are written this way; this one was the exception.
 dist-windows: $(OUT_WIN64) $(OUT_WIN32)
-	@for arch in x86_64 i686; do \
-	  case $$arch in x86_64) src=$(OUT_WIN64);; i686) src=$(OUT_WIN32);; esac; \
-	  rm -rf $(STAGING)/win-$$arch && mkdir -p $(STAGING)/win-$$arch/openbounty-$(OPENBOUNTY_VERSION_SLUG); \
-	  cp $$src $(STAGING)/win-$$arch/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty.exe; \
-	  sed "s/<version>/$(OPENBOUNTY_VERSION_DISPLAY)/g" $(DIST)/README.txt.in > $(STAGING)/win-$$arch/openbounty-$(OPENBOUNTY_VERSION_SLUG)/README.txt; \
-	  cp LICENSE NOTICES.md $(STAGING)/win-$$arch/openbounty-$(OPENBOUNTY_VERSION_SLUG)/; \
-	  mkdir -p $(DIST); \
-	  (cd $(STAGING)/win-$$arch && zip -qr ../../../$(DIST)/openbounty-$(OPENBOUNTY_VERSION_SLUG)-windows-$$arch.zip openbounty-$(OPENBOUNTY_VERSION_SLUG)); \
-	done
+	@rm -rf $(STAGING)/win-x86_64 $(STAGING)/win-i686 && mkdir -p $(DIST) \
+	    $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG) \
+	    $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)
+	cp $(OUT_WIN64) $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty.exe
+	sed "s/<version>/$(OPENBOUNTY_VERSION_DISPLAY)/g" $(DIST)/README.txt.in > $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG)/README.txt
+	cp LICENSE NOTICES.md $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG)/
+	cp $(OUT_WIN32) $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty.exe
+	sed "s/<version>/$(OPENBOUNTY_VERSION_DISPLAY)/g" $(DIST)/README.txt.in > $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)/README.txt
+	cp LICENSE NOTICES.md $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)/
+	(cd $(STAGING)/win-x86_64 && zip -qr ../../../$(DIST)/openbounty-$(OPENBOUNTY_VERSION_SLUG)-windows-x86_64.zip openbounty-$(OPENBOUNTY_VERSION_SLUG))
+	(cd $(STAGING)/win-i686 && zip -qr ../../../$(DIST)/openbounty-$(OPENBOUNTY_VERSION_SLUG)-windows-i686.zip openbounty-$(OPENBOUNTY_VERSION_SLUG))
 
 dist-mac: $(OUT_MAC)
 	@rm -rf $(STAGING)/mac && mkdir -p $(STAGING)/mac/openbounty-$(OPENBOUNTY_VERSION_SLUG)
