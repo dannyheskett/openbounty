@@ -14,11 +14,18 @@
 // Every *_frames field is the animation's cycle length as the pack declared
 // it. Index an animation with sprites_frame(counter, count) rather than a
 // hardcoded mask -- the cycle is pack data now, not a fixed four.
+// One loaded animation: either a single strip the renderer mirrors, or four
+// authored facings it selects between. Mirrors ResAnimSet in the manifest.
 typedef struct {
-    int       hero_walk_frames;
-    Texture2D hero_walk[OB_ANIM_FRAMES_MAX];
-    int       hero_boat_frames;
-    Texture2D hero_boat[OB_ANIM_FRAMES_MAX];
+    bool      directional;
+    int       frames[OB_FACE_COUNT];
+    Texture2D tex[OB_FACE_COUNT][OB_ANIM_FRAMES_MAX];
+} SpriteAnim;
+
+typedef struct {
+    SpriteAnim hero_walk;
+    SpriteAnim hero_idle;
+    SpriteAnim hero_boat;
 
     Texture2D class_portrait[4];
     // villain_portrait[i] = frame 0 (still image, kept for compatibility).
@@ -85,6 +92,37 @@ static inline int sprites_frame(int counter, int count) {
     if (count <= 0) return 0;
     if (counter < 0) counter = -counter;
     return counter % count;
+}
+
+// Pick the texture for `facing` at animation tick `counter`, and report
+// through *out_mirror whether the caller must flip it horizontally.
+//
+// A single-strip animation always returns its one strip and asks to be
+// mirrored when facing west, which is exactly what the game did before
+// facings existed. A directional animation returns the authored facing and
+// never asks for a mirror; if that facing was left undeclared it falls back
+// to south rather than drawing nothing.
+static inline Texture2D sprites_anim_tex(const SpriteAnim *a, int facing,
+                                         int counter, bool *out_mirror) {
+    Texture2D none = (Texture2D){ 0 };
+    if (out_mirror) *out_mirror = false;
+    if (!a) return none;
+    if (facing < 0 || facing >= OB_FACE_COUNT) facing = OB_FACE_SOUTH;
+    if (!a->directional) {
+        if (out_mirror) *out_mirror = (facing == OB_FACE_WEST);
+        return a->tex[OB_FACE_SOUTH][sprites_frame(counter,
+                                                   a->frames[OB_FACE_SOUTH])];
+    }
+    if (a->frames[facing] <= 0) facing = OB_FACE_SOUTH;
+    return a->tex[facing][sprites_frame(counter, a->frames[facing])];
+}
+
+// True when the pack declared any frames for this animation at all.
+static inline bool sprites_anim_present(const SpriteAnim *a) {
+    if (!a) return false;
+    for (int f = 0; f < OB_FACE_COUNT; f++)
+        if (a->frames[f] > 0) return true;
+    return false;
 }
 
 void sprites_load(Sprites *s, const Resources *res);

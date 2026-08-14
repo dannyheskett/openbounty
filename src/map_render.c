@@ -102,7 +102,9 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
         int bvy = g->boat.y - cam_y;
         if (bvx >= 0 && bvy >= 0 &&
             bvx < CL_MAP_TILES_W && bvy < CL_MAP_TILES_H) {
-            Texture2D bt = s->hero_boat[0];
+            // A boat the hero left behind sits still: frame 0, no facing.
+            Texture2D bt = sprites_anim_tex(&s->hero_boat, OB_FACE_SOUTH,
+                                            0, NULL);
             if (bt.id) {
                 Rectangle bsrc = { 0, 0, (float)bt.width, (float)bt.height };
                 Rectangle bdst = {
@@ -120,12 +122,22 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
     // the walking hero when the army is empty or the lead troop has no sprite.
     // anim_frame is a free-running tick; each strip folds it onto its own
     // declared cycle, so a six-frame walk and a four-frame boat coexist.
-    int fr = sprites_frame(g->anim_frame, s->hero_walk_frames);
-    Texture2D hsprite = s->hero_walk[fr];
-    if (g->travel_mode == TRAVEL_BOAT) {
-        fr = sprites_frame(g->anim_frame, s->hero_boat_frames);
-        hsprite = s->hero_boat[fr];
-    } else if (g->character.mount == MOUNT_FLY) {
+    //
+    // Whether the sprite gets mirrored is the animation's business, not the
+    // hero's: a pack that authored four facings is drawn unflipped, while a
+    // single-strip pack still mirrors when facing west exactly as before.
+    // The hero holds still between steps, so pick the idle set when the pack
+    // shipped one and the walk cycle isn't running.
+    bool mirror = false;
+    const SpriteAnim *set = &s->hero_walk;
+    if (g->travel_mode != TRAVEL_BOAT && !g->anim_moving &&
+        sprites_anim_present(&s->hero_idle)) {
+        set = &s->hero_idle;
+    }
+    if (g->travel_mode == TRAVEL_BOAT) set = &s->hero_boat;
+    Texture2D hsprite = sprites_anim_tex(set, g->position.facing,
+                                         g->anim_frame, &mirror);
+    if (g->travel_mode != TRAVEL_BOAT && g->character.mount == MOUNT_FLY) {
         for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
             if (!g->army[i].id[0] || g->army[i].count <= 0) continue;
             const TroopDef *t = troop_by_id(g->army[i].id);
@@ -135,7 +147,9 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
                                  [sprites_frame(g->anim_frame,
                                                 s->troop_anim_frames[t->index])];
                 if (!a.id) a = s->troop_sprite[t->index];
-                if (a.id) hsprite = a;
+                // Troop sprites are single-strip, so flight goes back to the
+                // mirror regardless of what the hero's own art declares.
+                if (a.id) { hsprite = a; mirror = (g->position.facing == OB_FACE_WEST); }
             }
             break;   // first non-empty slot only
         }
@@ -143,7 +157,7 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
     if (hsprite.id) {
         Rectangle hsrc = {
             0, 0,
-            (float)(g->position.facing_left ? -hsprite.width : hsprite.width),
+            (float)(mirror ? -hsprite.width : hsprite.width),
             (float)hsprite.height
         };
         Rectangle hdst = {

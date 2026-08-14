@@ -15,10 +15,42 @@
     "h_04.png",
     "h_05.png"
    ],
-   "boat": [
-    "b_00.png",
-    "b_01.png"
-   ]
+   "boat": {
+    "south": [
+     "b_00.png",
+     "b_01.png"
+    ],
+    "east": [
+     "b_e0.png",
+     "b_e1.png"
+    ],
+    "west": [
+     "b_w0.png",
+     "b_w1.png"
+    ]
+   },
+   "idle": {
+    "south": [
+     "i_s0.png",
+     "i_s1.png",
+     "i_s2.png"
+    ],
+    "east": [
+     "i_e0.png",
+     "i_e1.png",
+     "i_e2.png"
+    ],
+    "west": [
+     "i_w0.png",
+     "i_w1.png",
+     "i_w2.png"
+    ],
+    "north": [
+     "i_n0.png",
+     "i_n1.png",
+     "i_n2.png"
+    ]
+   }
   },
   "hud": {
    "siege_animation": [

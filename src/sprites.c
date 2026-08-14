@@ -25,6 +25,18 @@ static Texture2D load_rel(const char *rel) {
     return load_filtered(p);
 }
 
+// Load every declared frame of an animation set, preserving which facings the
+// pack actually authored so the renderer knows whether to mirror.
+static void load_anim_set(SpriteAnim *dst, const ResAnimSet *src) {
+    if (!dst || !src) return;
+    dst->directional = src->directional;
+    for (int f = 0; f < OB_FACE_COUNT; f++) {
+        dst->frames[f] = src->count[f];
+        for (int i = 0; i < src->count[f]; i++)
+            dst->tex[f][i] = load_rel(src->frames[f][i]);
+    }
+}
+
 void sprites_load(Sprites *s, const Resources *res) {
     if (!s || !res) return;
     // Animation arrays are now filled only up to their declared count, so the
@@ -33,14 +45,11 @@ void sprites_load(Sprites *s, const Resources *res) {
     memset(s, 0, sizeof *s);
     s_res = res;
 
-    // Hero walk + boat frames from the sprite manifest. The declared array
+    // Hero walk / idle / boat from the sprite manifest. The declared array
     // length is the cycle; a pack shipping six walk frames animates over six.
-    s->hero_walk_frames = res->sprites.hero_walk_count;
-    s->hero_boat_frames = res->sprites.hero_boat_count;
-    for (int i = 0; i < s->hero_walk_frames; i++)
-        s->hero_walk[i] = load_rel(res->sprites.hero_walk[i]);
-    for (int i = 0; i < s->hero_boat_frames; i++)
-        s->hero_boat[i] = load_rel(res->sprites.hero_boat[i]);
+    load_anim_set(&s->hero_walk, &res->sprites.hero_walk);
+    load_anim_set(&s->hero_idle, &res->sprites.hero_idle);
+    load_anim_set(&s->hero_boat, &res->sprites.hero_boat);
 
     // Class portraits from the class catalog.
     int nc = classes_count();
@@ -179,8 +188,11 @@ void sprites_load(Sprites *s, const Resources *res) {
 }
 
 void sprites_unload(Sprites *s) {
-    for (int i = 0; i < OB_ANIM_FRAMES_MAX; i++) UnloadTexture(s->hero_walk[i]);
-    for (int i = 0; i < OB_ANIM_FRAMES_MAX; i++) UnloadTexture(s->hero_boat[i]);
+    SpriteAnim *hero_anims[3] = { &s->hero_walk, &s->hero_idle, &s->hero_boat };
+    for (int a = 0; a < 3; a++)
+        for (int f = 0; f < OB_FACE_COUNT; f++)
+            for (int i = 0; i < OB_ANIM_FRAMES_MAX; i++)
+                UnloadTexture(hero_anims[a]->tex[f][i]);
     for (int i = 0; i < 4;  i++) UnloadTexture(s->class_portrait[i]);
     for (int i = 0; i < 17; i++) {
         UnloadTexture(s->villain_portrait[i]);

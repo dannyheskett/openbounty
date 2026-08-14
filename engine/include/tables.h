@@ -21,6 +21,17 @@
 // both the catalogs and the sprite manifest in resources.h share one value.
 #define OB_ANIM_FRAMES_MAX          16
 #define OB_ANIM_FRAMES_DEFAULT       4
+// The four facings an animation may be authored for. The order is the row
+// order of a four-direction sprite sheet, and it is the order the manifest
+// keys are read in, so a pack's rows map to these indices unchanged.
+typedef enum {
+    OB_FACE_SOUTH = 0,
+    OB_FACE_EAST  = 1,
+    OB_FACE_WEST  = 2,
+    OB_FACE_NORTH = 3,
+    OB_FACE_COUNT = 4,
+} OBFacing;
+
 // Wrap point for the free-running counters that drive animation. Every cycle
 // length from 1 to OB_ANIM_FRAMES_MAX divides it exactly (it is their LCM),
 // so a counter rolling over never short-changes a frame mid-cycle.

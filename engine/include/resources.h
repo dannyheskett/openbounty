@@ -32,6 +32,22 @@
 
 // ---- Sub-structures --------------------------------------------------------
 
+// One animation, authored either as a single strip or as four facings.
+//
+// `directional` false means the pack declared a flat array: the frames live in
+// slot OB_FACE_SOUTH and the renderer mirrors them east/west, exactly as every
+// pack worked before facings existed. True means the pack declared all four,
+// and the renderer selects a facing and never mirrors -- so an asymmetric
+// figure keeps its shield on the correct arm walking west.
+//
+// count[] is per facing because nothing requires the four to be the same
+// length; a pack may ship a six-frame walk east and a four-frame walk north.
+typedef struct {
+    bool directional;
+    int  count[OB_FACE_COUNT];
+    char frames[OB_FACE_COUNT][OB_ANIM_FRAMES_MAX][RES_PATH_LEN];
+} ResAnimSet;
+
 typedef struct {
     int day_steps;
     int week_days;
@@ -876,12 +892,13 @@ typedef struct {
 
     // Role-fixed sprite manifest (assets that aren't per-catalog-entry).
     struct {
-        // Hero. *_count is the declared cycle length, 0 when the pack ships
-        // no frames at all.
-        int  hero_walk_count;
-        char hero_walk[OB_ANIM_FRAMES_MAX][RES_PATH_LEN];
-        int  hero_boat_count;
-        char hero_boat[OB_ANIM_FRAMES_MAX][RES_PATH_LEN];
+        // Hero. Each set is either a single strip (mirrored east/west by the
+        // renderer, which is how kings-bounty is authored) or four authored
+        // facings. `idle` is optional; without it the hero holds frame 0 while
+        // standing still, which is the behaviour packs had before it existed.
+        ResAnimSet hero_walk;
+        ResAnimSet hero_idle;
+        ResAnimSet hero_boat;
         // UI.
         char puzzle_cover[RES_PATH_LEN];
         // Location backdrops .

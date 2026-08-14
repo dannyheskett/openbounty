@@ -256,6 +256,14 @@ SaveResult SaveGameRead(const char *path,
         g->position.last_x = cJSON_IsNumber(jlx) ? jlx->valueint : g->position.x;
         g->position.last_y = cJSON_IsNumber(jly) ? jly->valueint : g->position.y;
         g->position.facing_left = cJSON_IsBool(jf) ? cJSON_IsTrue(jf) : false;
+        // Absent in saves written before facings existed, so derive it from
+        // facing_left rather than bumping SAVE_VERSION and orphaning them.
+        cJSON *jfd = cJSON_GetObjectItem(jp, "facing");
+        g->position.facing = cJSON_IsNumber(jfd)
+            ? jfd->valueint
+            : (g->position.facing_left ? OB_FACE_WEST : OB_FACE_EAST);
+        if (g->position.facing < 0 || g->position.facing >= OB_FACE_COUNT)
+            g->position.facing = OB_FACE_SOUTH;
         cJSON *jtm = cJSON_GetObjectItem(jp, "travel_mode");
         g->travel_mode = (cJSON_IsString(jtm) && strcmp(jtm->valuestring, "boat") == 0)
             ? TRAVEL_BOAT : TRAVEL_WALK;
