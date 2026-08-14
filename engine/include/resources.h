@@ -25,7 +25,7 @@
 #define RES_PATH_LEN         128
 #define RES_TILE_CODE_COUNT  128     // indexed by raw byte
 #define RES_TILE_ART_LEN      24
-#define RES_ANIM_FRAMES        4     // hero walk / boat / HUD animations
+// Animation cycle lengths: OB_ANIM_FRAMES_MAX / _DEFAULT, in tables.h.
 #define RES_EXTRA_ICONS        8     // view_icons_extra cap 
 #define RES_END_BODY_LEN     512     // win/lose body text
 #define RES_VDESC_TEXT_LEN   320     // per-villain features / crimes block
@@ -855,9 +855,12 @@ typedef struct {
 
     // Role-fixed sprite manifest (assets that aren't per-catalog-entry).
     struct {
-        // Hero.
-        char hero_walk[RES_ANIM_FRAMES][RES_PATH_LEN];
-        char hero_boat[RES_ANIM_FRAMES][RES_PATH_LEN];
+        // Hero. *_count is the declared cycle length, 0 when the pack ships
+        // no frames at all.
+        int  hero_walk_count;
+        char hero_walk[OB_ANIM_FRAMES_MAX][RES_PATH_LEN];
+        int  hero_boat_count;
+        char hero_boat[OB_ANIM_FRAMES_MAX][RES_PATH_LEN];
         // UI.
         char puzzle_cover[RES_PATH_LEN];
         // Location backdrops .
@@ -875,9 +878,11 @@ typedef struct {
         // HUD panels.
         char hud_contract_silhouette[RES_PATH_LEN];
         char hud_siege_silhouette[RES_PATH_LEN];
-        char hud_siege_animation[RES_ANIM_FRAMES][RES_PATH_LEN];
+        int  hud_siege_animation_count;
+        char hud_siege_animation[OB_ANIM_FRAMES_MAX][RES_PATH_LEN];
         char hud_magic_silhouette[RES_PATH_LEN];
-        char hud_magic_animation[RES_ANIM_FRAMES][RES_PATH_LEN];
+        int  hud_magic_animation_count;
+        char hud_magic_animation[OB_ANIM_FRAMES_MAX][RES_PATH_LEN];
         char hud_puzzle_grid[RES_PATH_LEN];
         char hud_gold_purse[RES_PATH_LEN];
         char hud_bar_strip[RES_PATH_LEN];   // 320x5 middle bar (GR_SELECT, 1)

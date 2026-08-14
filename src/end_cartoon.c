@@ -87,14 +87,14 @@ static void draw_cartoon_frame(const Resources *res, const Sprites *sprites,
     // Troop border. layout: iterate troops, fill x=0..3 then x=5,
     // row by row. Troops in column 5 get their sprites horizontally
     // flipped . Troop frame index
-    // is just `tick` -- a 0..3 cycle.
+    // is `tick` folded onto whatever cycle length the troop declares.
     if (res->ending.troop_border) {
         int nt = troops_count();
         if (nt > 25) nt = 25;
         int x = 0, y = 0;
         for (int i = 0; i < nt && y < gh; i++) {
             bool flip = (x == gw - 1);
-            int frame_idx = tick % 4;
+            int frame_idx = sprites_frame(tick, sprites->troop_anim_frames[i]);
             Texture2D tex = sprites->troop_anim[i][frame_idx];
             if (!tex.id) tex = sprites->troop_sprite[i];
             draw_tile(tex, x, y, origin_x, origin_y, flip);

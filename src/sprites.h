@@ -2,6 +2,7 @@
 #define OB_SPRITES_H
 
 #include "raylib.h"
+#include "resources.h"   // OB_ANIM_FRAMES_MAX (via tables.h)
 
 // Bundle of all non-tile textures used across the game. One instance is
 // loaded at startup and passed (const) to drawing modules. Arrays are
@@ -10,18 +11,25 @@
 //   - villain_portrait[17]     matches VILLAINS[]
 //   - troop_sprite[25]         matches TROOPS[]
 //   - view_icon[14]            0-7 artifacts, 8-11 maps, 12 empty, 13 empty-map
+// Every *_frames field is the animation's cycle length as the pack declared
+// it. Index an animation with sprites_frame(counter, count) rather than a
+// hardcoded mask -- the cycle is pack data now, not a fixed four.
 typedef struct {
-    Texture2D hero_walk[4];
-    Texture2D hero_boat[4];
+    int       hero_walk_frames;
+    Texture2D hero_walk[OB_ANIM_FRAMES_MAX];
+    int       hero_boat_frames;
+    Texture2D hero_boat[OB_ANIM_FRAMES_MAX];
 
     Texture2D class_portrait[4];
     // villain_portrait[i] = frame 0 (still image, kept for compatibility).
-    // villain_anim[i][0..3] = 4-frame animation strip .
+    // villain_anim[i][0..villain_anim_frames[i]-1] = the animation strip.
     Texture2D villain_portrait[17];
-    Texture2D villain_anim[17][4];
+    int       villain_anim_frames[17];
+    Texture2D villain_anim[17][OB_ANIM_FRAMES_MAX];
     Texture2D view_icon[14];
     Texture2D troop_sprite[25];
-    Texture2D troop_anim[25][4];        // 4-frame idle animation (troop.anim[])
+    int       troop_anim_frames[25];    // 0 = no animation, use troop_sprite
+    Texture2D troop_anim[25][OB_ANIM_FRAMES_MAX];   // idle animation (troop.anim[])
     Texture2D puzzle_cover;
     // Location backdrops (240x102), used by location-screen views
     // (VIEW_TOWN, VIEW_HOME_CASTLE, VIEW_DWELLING, VIEW_ALCOVE, ...).
@@ -41,8 +49,10 @@ typedef struct {
     Texture2D hud_magic_silhouette;
     Texture2D hud_puzzle_grid;
     Texture2D hud_gold_purse;
-    Texture2D hud_siege_anim[4];
-    Texture2D hud_magic_anim[4];
+    int       hud_siege_anim_frames;
+    Texture2D hud_siege_anim[OB_ANIM_FRAMES_MAX];
+    int       hud_magic_anim_frames;
+    Texture2D hud_magic_anim[OB_ANIM_FRAMES_MAX];
     Texture2D hud_bar_strip;             // 320x5 horizontal middle bar
     Texture2D chrome_overworld;          // 320x200 chrome frame (transparent interior)
     Texture2D splash_logo;                // 320x84 publisher logo
@@ -67,7 +77,16 @@ typedef struct {
     Texture2D combat_tile[15];
 } Sprites;
 
-#include "resources.h"
+// Map a free-running animation counter onto a cycle of `count` frames.
+// `count` <= 0 means the pack declared no frames, so this yields 0 and the
+// caller draws whatever still image it has. Every animated draw site goes
+// through this instead of masking the counter against a fixed frame count.
+static inline int sprites_frame(int counter, int count) {
+    if (count <= 0) return 0;
+    if (counter < 0) counter = -counter;
+    return counter % count;
+}
+
 void sprites_load(Sprites *s, const Resources *res);
 void sprites_unload(Sprites *s);
 

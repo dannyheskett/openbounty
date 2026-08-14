@@ -39,7 +39,7 @@ void screen_alcove_draw(const Game *g, const Sprites *s) {
     double now = GetTime();
     if (now - s_last_tick >= ALCOVE_TICK) {
         s_last_tick = now;
-        s_frame = (s_frame + 1) & 3;
+        s_frame = (s_frame + 1) % OB_ANIM_TICK_WRAP;
     }
     screens_draw_location_backdrop(g, s, SCREEN_LOC_HILLCAVE,
                                    s_gnomes_idx, s_frame);

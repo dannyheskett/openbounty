@@ -109,7 +109,10 @@ static void draw_unit(const CombatUnit *u, int side,
     if (u->troop_idx < 0 || u->count == 0) return;
     int px, py;
     cell_origin(u->x, u->y, &px, &py);
-    Texture2D tex = sprites->troop_anim[u->troop_idx][u->frame & 3];
+    Texture2D tex =
+        sprites->troop_anim[u->troop_idx]
+                           [sprites_frame(u->frame,
+                                          sprites->troop_anim_frames[u->troop_idx])];
     if (tex.id == 0) tex = sprites->troop_sprite[u->troop_idx];
     if (tex.id != 0) {
         // Sprites face right by default. AI side faces left -- mirror via

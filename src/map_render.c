@@ -25,7 +25,9 @@ static Texture2D foe_map_sprite(const Game *g, const Sprites *s,
         if (!f->garrison[i].id[0] || f->garrison[i].count <= 0) continue;
         const TroopDef *t = troop_by_id(f->garrison[i].id);
         if (!t || t->index < 0 || t->index >= 25) return (Texture2D){ 0 };
-        Texture2D a = s->troop_anim[t->index][frame & 3];
+        Texture2D a =
+            s->troop_anim[t->index][sprites_frame(frame,
+                                                 s->troop_anim_frames[t->index])];
         if (!a.id) a = s->troop_sprite[t->index];
         return a;
     }
@@ -116,16 +118,22 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
     // knight-on-horse gliding over mountains looked wrong -- flight shows what
     // the hero is riding); the walking hero otherwise. Flight falls back to
     // the walking hero when the army is empty or the lead troop has no sprite.
-    int fr = g->anim_frame & 3;
+    // anim_frame is a free-running tick; each strip folds it onto its own
+    // declared cycle, so a six-frame walk and a four-frame boat coexist.
+    int fr = sprites_frame(g->anim_frame, s->hero_walk_frames);
     Texture2D hsprite = s->hero_walk[fr];
     if (g->travel_mode == TRAVEL_BOAT) {
+        fr = sprites_frame(g->anim_frame, s->hero_boat_frames);
         hsprite = s->hero_boat[fr];
     } else if (g->character.mount == MOUNT_FLY) {
         for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
             if (!g->army[i].id[0] || g->army[i].count <= 0) continue;
             const TroopDef *t = troop_by_id(g->army[i].id);
             if (t && t->index >= 0 && t->index < 25) {
-                Texture2D a = s->troop_anim[t->index][fr];
+                Texture2D a =
+                    s->troop_anim[t->index]
+                                 [sprites_frame(g->anim_frame,
+                                                s->troop_anim_frames[t->index])];
                 if (!a.id) a = s->troop_sprite[t->index];
                 if (a.id) hsprite = a;
             }
