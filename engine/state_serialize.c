@@ -323,6 +323,7 @@ cJSON *state_build_snapshot(const Game *g,
         cJSON_AddNumberToObject(p, "last_x", g->position.last_x);
         cJSON_AddNumberToObject(p, "last_y", g->position.last_y);
         cJSON_AddBoolToObject  (p, "facing_left", g->position.facing_left);
+        cJSON_AddNumberToObject(p, "facing",      g->position.facing);
         cJSON_AddStringToObject(p, "travel_mode",
             g->travel_mode == TRAVEL_BOAT ? "boat" : "walk");
         cJSON_AddBoolToObject  (p, "hud_visible", g->hud_visible);

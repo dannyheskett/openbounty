@@ -1337,7 +1337,11 @@ int shell_run_game(int argc, char **argv) {
         if (frame_host_time() >= hero_anim_next) {
             bool anim_enabled = (game.stats.options[3] != 0);
             bool animating = anim_enabled && (frame_host_time() - last_step_time < 0.4);
-            if (animating) {
+            game.anim_moving = animating;
+            // A pack that ships an idle animation keeps ticking while the hero
+            // stands still, so he breathes instead of freezing. Without one,
+            // standing still snaps back to frame 0 as it always has.
+            if (animating || sprites_anim_present(&sprites.hero_idle)) {
                 // Free-running tick: each sprite strip folds this onto its
                 // own declared cycle length at draw time, so the counter
                 // must not assume any particular frame count here.

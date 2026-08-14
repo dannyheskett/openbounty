@@ -708,19 +708,43 @@ static void parse_string_array(cJSON *arr, char dst[][RES_PATH_LEN],
     parse_path_array(arr, dst ? dst[0] : NULL, RES_PATH_LEN, cap, out_count);
 }
 
+// An animation is authored one of two ways, and both are accepted:
+//
+//   "walk": ["a.png", "b.png"]                        <- one strip, mirrored
+//   "walk": {"south": [...], "east": [...], ... }     <- four authored facings
+//
+// The flat form lands in OB_FACE_SOUTH with directional=false, so packs
+// written before facings existed parse exactly as they always did. In the
+// object form a facing may be omitted; it simply keeps count 0 and the
+// renderer falls back for it.
+static void parse_anim_set(cJSON *obj, ResAnimSet *out) {
+    static const char *KEYS[OB_FACE_COUNT] = { "south", "east", "west", "north" };
+    if (!out) return;
+    memset(out, 0, sizeof *out);
+    if (!obj) return;
+
+    if (cJSON_IsArray(obj)) {
+        parse_path_array(obj, out->frames[OB_FACE_SOUTH][0], RES_PATH_LEN,
+                         OB_ANIM_FRAMES_MAX, &out->count[OB_FACE_SOUTH]);
+        return;
+    }
+    if (!cJSON_IsObject(obj)) return;
+    out->directional = true;
+    for (int f = 0; f < OB_FACE_COUNT; f++) {
+        parse_path_array(cJSON_GetObjectItem(obj, KEYS[f]),
+                         out->frames[f][0], RES_PATH_LEN,
+                         OB_ANIM_FRAMES_MAX, &out->count[f]);
+    }
+}
+
 static void parse_sprites(Resources *res, cJSON *obj) {
     if (!cJSON_IsObject(obj)) return;
 
     cJSON *hero = cJSON_GetObjectItem(obj, "hero");
     if (cJSON_IsObject(hero)) {
-        // Each array keeps its OWN count. They shared one `n` before, so the
-        // walk count was overwritten by the boat count and both were dropped.
-        parse_string_array(cJSON_GetObjectItem(hero, "walk"),
-                           res->sprites.hero_walk, OB_ANIM_FRAMES_MAX,
-                           &res->sprites.hero_walk_count);
-        parse_string_array(cJSON_GetObjectItem(hero, "boat"),
-                           res->sprites.hero_boat, OB_ANIM_FRAMES_MAX,
-                           &res->sprites.hero_boat_count);
+        parse_anim_set(cJSON_GetObjectItem(hero, "walk"), &res->sprites.hero_walk);
+        parse_anim_set(cJSON_GetObjectItem(hero, "idle"), &res->sprites.hero_idle);
+        parse_anim_set(cJSON_GetObjectItem(hero, "boat"), &res->sprites.hero_boat);
     }
 
     cJSON *ui = cJSON_GetObjectItem(obj, "ui");

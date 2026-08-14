@@ -93,6 +93,13 @@ bool GameStep(Game *game, Map *map, Fog *fog,
     game->position.last_y = prev_y;
     if (dx < 0) game->position.facing_left = true;
     else if (dx > 0) game->position.facing_left = false;
+    // Movement is 8-way, so a diagonal has to resolve to one of four facings.
+    // Horizontal wins, which keeps the facing consistent with facing_left
+    // above and matches how the game has always read a diagonal step.
+    if (dx > 0)      game->position.facing = OB_FACE_EAST;
+    else if (dx < 0) game->position.facing = OB_FACE_WEST;
+    else if (dy > 0) game->position.facing = OB_FACE_SOUTH;
+    else if (dy < 0) game->position.facing = OB_FACE_NORTH;
     game->position.x = nx;
     game->position.y = ny;
 

@@ -96,6 +96,40 @@ The `sprites` block points at PNG files. Each entry is either:
 - A single path (`"path": "art/foo.png"`).
 - A path + frame count for animated sprites (`{"path": "...", "frames": 4}`).
 
+### 4.1 Animations
+
+An animation is a JSON array of frame paths, and **the length of that array is
+the cycle**. A pack ships as many frames as it has, up to 16; nothing is fixed
+at four. This applies to `sprites.hero.*`, `sprites.hud.*_animation`,
+`troops[].anim` and `villains[].anim`.
+
+The hero's `walk`, `idle` and `boat` may instead be authored per facing:
+
+```json
+"hero": {
+  "walk": { "south": ["..."], "east": ["..."], "west": ["..."], "north": ["..."] },
+  "idle": ["art/sprites/hero_idle_00.png", "art/sprites/hero_idle_01.png"],
+  "boat": ["art/sprites/boat_00.png", "art/sprites/boat_01.png"]
+}
+```
+
+The two forms mean different things to the renderer:
+
+- **Flat array** — one strip, mirrored horizontally when the hero faces west.
+  Walking north or south shows the side-on view. This is how `kings-bounty` is
+  authored.
+- **Per-facing object** — the authored facing is drawn and the sprite is
+  **never mirrored**, so an asymmetric figure keeps its shield on the correct
+  arm walking west. Facings may be omitted individually; a missing one falls
+  back to `south`.
+
+Each facing carries its own frame count, so a six-frame walk east alongside a
+four-frame walk north is legal.
+
+`idle` is optional. With it, the hero animates while standing still. Without
+it, he holds frame 0 between steps, which is what every pack did before `idle`
+existed.
+
 Tile images live under `art/tiles/` by convention. Each `tile_codes`
 entry maps an ASCII character (used in `.dat` map files) to a tile
 record:
