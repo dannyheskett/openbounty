@@ -209,9 +209,9 @@ static void draw_army(const Game *g, const Sprites *s) {
     int row_h = 34;
     int pad = 2;
 
-    // view_army tick-animates each troop's 4-frame idle strip.
-    // ~8 Hz matches the HUD villain anim cadence.
-    int anim_frame = ((int)(GetTime() * 8.0)) & 3;
+    // view_army tick-animates each troop's idle strip over however many
+    // frames the troop declares. ~8 Hz matches the HUD villain anim cadence.
+    int anim_tick = (int)(GetTime() * 8.0);
 
     for (int i = 0; i < 5; i++) {
         int ry = VIEW_Y + pad + i * row_h;
@@ -224,7 +224,9 @@ static void draw_army(const Game *g, const Sprites *s) {
         const TroopDef *t = troop_by_id(g->army[i].id);
         if (!t) continue;
 
-        Texture2D tex = s->troop_anim[t->index][anim_frame];
+        Texture2D tex =
+            s->troop_anim[t->index][sprites_frame(anim_tick,
+                                                 s->troop_anim_frames[t->index])];
         if (!tex.id) tex = s->troop_sprite[t->index];
         if (tex.id) {
             Rectangle src = { 0, 0, (float)tex.width, (float)tex.height };
@@ -375,7 +377,8 @@ static void draw_contract(const Game *g, const Sprites *s) {
     if (!v) return;
 
     // Villain portrait on left (animated when strip is available).
-    int frame = ((int)(GetTime() * 2.0)) & 3;
+    int frame = sprites_frame((int)(GetTime() * 2.0),
+                              s->villain_anim_frames[v->index]);
     Texture2D face = s->villain_anim[v->index][frame];
     if (!face.id) face = s->villain_portrait[v->index];
     int face_w = 48;
@@ -536,7 +539,7 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
 
     // Tick villain faces at ~2 Hz on the puzzle page, same as
     // the HUD contract panel (hud.c:51).
-    int anim_frame = ((int)(GetTime() * 2.0)) & 3;
+    int anim_tick = (int)(GetTime() * 2.0);
 
     // Two-pass cell ordering: pass 0 = artifacts (id<0), pass 1 = villains.
     // Within each pass, row-major (j, then i). cell_seq counts only
@@ -570,7 +573,8 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
                 face = s->view_icon[artifact_id];
             } else {
                 caught = g->contract.villains_caught[id];
-                face = s->villain_anim[id][anim_frame];
+                face = s->villain_anim[id]
+                        [sprites_frame(anim_tick, s->villain_anim_frames[id])];
                 if (!face.id) face = s->villain_portrait[id];
             }
             // Animation gate.

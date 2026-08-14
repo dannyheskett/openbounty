@@ -327,7 +327,9 @@ static void draw_location_backdrop(const Game *g, const Sprites *s,
     // sprite's feet overlap the panel's top border).
     enum { TROOP_BOTTOM_LIFT = 4 };
     if (s && troop_idx >= 0 && troop_idx < 25) {
-        int frame = troop_frame & 3;
+        // troop_frame arrives as a free-running tick; the troop's own
+        // declared cycle length decides where in the strip that lands.
+        int frame = sprites_frame(troop_frame, s->troop_anim_frames[troop_idx]);
         Texture2D ts = s->troop_anim[troop_idx][frame];
         if (!ts.id) ts = s->troop_sprite[troop_idx];
         if (ts.id && ts.width > 0) {
@@ -411,10 +413,10 @@ static void draw_town(const Game *g, const Sprites *s) {
     // visit_town draws the town backdrop at (16, 22) and
     // animates a random castle-class troop on top. Delegated to the
     // generic location-backdrop helper. Town view doesn't own a SYN-tick
-    // frame counter yet; derive a 4-frame index from real time at the
+    // frame counter yet; derive a free-running tick from real time at the
     // SYN cadence (~150ms per frame -> 6.7fps).
     int troop_idx = town_backdrop_troop(g, name);
-    int town_frame = ((int)(GetTime() * 6.66)) & 3;
+    int town_frame = (int)(GetTime() * 6.66);
     draw_location_backdrop(g, s, LOC_TOWN, troop_idx, town_frame);
 
     // Menu panel: placed below the backdrop in the bottom-frame area.

@@ -13,6 +13,19 @@
 #define CAT_TEXT_LEN 160
 #define CAT_PATH_LEN 128
 
+// Animation cycle length. A pack declares however many frames it ships and
+// the parsed array length IS the cycle -- OB_ANIM_FRAMES_MAX is only the
+// storage ceiling. OB_ANIM_FRAMES_DEFAULT is what a consumer assumes when
+// nothing is declared, and matches the four-frame cycle every animation was
+// fixed at before counts were tracked. Defined here, the lower header, so
+// both the catalogs and the sprite manifest in resources.h share one value.
+#define OB_ANIM_FRAMES_MAX          16
+#define OB_ANIM_FRAMES_DEFAULT       4
+// Wrap point for the free-running counters that drive animation. Every cycle
+// length from 1 to OB_ANIM_FRAMES_MAX divides it exactly (it is their LCM),
+// so a counter rolling over never short-changes a frame mid-cycle.
+#define OB_ANIM_TICK_WRAP       720720
+
 // Caps enforce fixed-size storage so the catalogs stay POD.
 #define CAT_TROOPS_MAX              32
 #define CAT_SPELLS_MAX              32
@@ -40,7 +53,11 @@ typedef struct {
     char id[CAT_ID_LEN];
     char name[CAT_NAME_LEN];
     char sprite[CAT_PATH_LEN];
-    char anim[4][CAT_PATH_LEN];     // 4-frame idle animation (used by army view + combat)
+    // Idle animation (army view + combat + map foes). anim_count is the
+    // declared cycle length; 0 means the troop ships no animation and
+    // consumers fall back to the still `sprite`.
+    int  anim_count;
+    char anim[OB_ANIM_FRAMES_MAX][CAT_PATH_LEN];
     int  skill_level;
     int  hit_points;
     int  move_rate;
@@ -157,6 +174,12 @@ typedef struct {
     char id[CAT_ID_LEN];
     char name[CAT_NAME_LEN];
     char portrait[CAT_PATH_LEN];
+    // Wanted-poster animation, declared exactly like a troop's. When
+    // anim_count is 0 the shell falls back to deriving `<portrait-stem>_NN`
+    // siblings, which is how packs addressed these frames before the array
+    // existed -- kings-bounty still relies on that path.
+    int  anim_count;
+    char anim[OB_ANIM_FRAMES_MAX][CAT_PATH_LEN];
     char zone[CAT_ID_LEN];          // home zone id
     int  reward;
     int  puzzle_cell;

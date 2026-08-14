@@ -47,8 +47,9 @@ void hud_draw(const Game *g, const Sprites *s) {
         const VillainDef *v = villain_by_id(g->contract.active_id);
         if (v && v->index >= 0 && v->index < 17) {
             // ticks the sidebar at frame speed (~2/sec). Use the
-            // 4-frame strip if loaded; fall back to the static portrait.
-            int frame = ((int)(GetTime() * 2.0)) & 3;
+            // animation strip if loaded; fall back to the static portrait.
+            int frame = sprites_frame((int)(GetTime() * 2.0),
+                                      s->villain_anim_frames[v->index]);
             Texture2D face = s->villain_anim[v->index][frame];
             if (!face.id) face = s->villain_portrait[v->index];
             blit_panel(face, x, y);
@@ -58,7 +59,8 @@ void hud_draw(const Game *g, const Sprites *s) {
 
     // 2. Siege weapons: silhouette when not owned, animated cart when owned.
     if (g && g->stats.siege_weapons) {
-        int frame = ((int)(GetTime() * 2.0)) & 3;
+        int frame = sprites_frame((int)(GetTime() * 2.0),
+                                  s->hud_siege_anim_frames);
         blit_panel(s->hud_siege_anim[frame], x, y);
     } else {
         blit_panel(s->hud_siege_silhouette, x, y);
@@ -67,7 +69,8 @@ void hud_draw(const Game *g, const Sprites *s) {
 
     // 3. Magic star: silhouette until knows_magic, then animated star.
     if (g && g->stats.knows_magic) {
-        int frame = ((int)(GetTime() * 2.0)) & 3;
+        int frame = sprites_frame((int)(GetTime() * 2.0),
+                                  s->hud_magic_anim_frames);
         blit_panel(s->hud_magic_anim[frame], x, y);
     } else {
         blit_panel(s->hud_magic_silhouette, x, y);

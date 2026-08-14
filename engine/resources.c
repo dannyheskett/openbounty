@@ -44,6 +44,11 @@ static const char *json_str(const cJSON *obj, const char *key,
     return fallback;
 }
 
+// Defined further down alongside the sprite-manifest parsers; declared here
+// because the catalog parsers (troops, villains) reach it first.
+static void parse_path_array(cJSON *arr, char *dst, size_t stride,
+                             int cap, int *out_count);
+
 // Read a fixed-length int array under `key`. Missing keys / wrong types leave
 // `out[]` untouched, so callers prime it with defaults before calling.
 static void json_int_array(const cJSON *obj, const char *key,
@@ -465,17 +470,11 @@ static void parse_troops(Resources *res, cJSON *arr) {
         copy_str(t->id,       sizeof(t->id),       json_str(it, "id", ""));
         copy_str(t->name,     sizeof(t->name),     json_str(it, "name", ""));
         copy_str(t->sprite,   sizeof(t->sprite),   json_str(it, "sprite", ""));
-        cJSON *anim = cJSON_GetObjectItem(it, "anim");
-        if (cJSON_IsArray(anim)) {
-            int n = 0;
-            cJSON *fr;
-            cJSON_ArrayForEach(fr, anim) {
-                if (n >= 4) break;
-                if (cJSON_IsString(fr))
-                    copy_str(t->anim[n], sizeof(t->anim[n]), fr->valuestring);
-                n++;
-            }
-        }
+        // Via parse_string_array so a non-string entry is skipped rather than
+        // burning a slot: the hand-rolled loop this replaces advanced its
+        // index outside the type check, leaving an empty frame mid-cycle.
+        parse_path_array(cJSON_GetObjectItem(it, "anim"), t->anim[0],
+                         CAT_PATH_LEN, OB_ANIM_FRAMES_MAX, &t->anim_count);
         copy_str(t->dwelling, sizeof(t->dwelling), json_str(it, "dwelling", ""));
         t->skill_level     = json_int(it, "skill_level", 0);
         t->hit_points      = json_int(it, "hit_points", 0);
@@ -601,6 +600,10 @@ static void parse_villains(Resources *res, cJSON *arr) {
         copy_str(v->id,       sizeof(v->id),       json_str(it, "id", ""));
         copy_str(v->name,     sizeof(v->name),     json_str(it, "name", ""));
         copy_str(v->portrait, sizeof(v->portrait), json_str(it, "portrait", ""));
+        // Optional, and declared exactly like a troop's. Absent (count 0)
+        // means the shell derives `<portrait-stem>_NN` siblings instead.
+        parse_path_array(cJSON_GetObjectItem(it, "anim"), v->anim[0],
+                         CAT_PATH_LEN, OB_ANIM_FRAMES_MAX, &v->anim_count);
         copy_str(v->zone,     sizeof(v->zone),     json_str(it, "zone", ""));
         v->reward      = json_int(it, "reward", 0);
         v->puzzle_cell = json_int(it, "puzzle_cell", -1);
@@ -657,20 +660,29 @@ static void parse_artifacts(Resources *res, cJSON *arr) {
 
 // ---- Sprite manifest -----------------------------------------------------
 
-static void parse_string_array(cJSON *arr, char dst[][RES_PATH_LEN],
-                               int cap, int *out_count) {
+// Fill a fixed-size array of path buffers from a JSON array of strings,
+// skipping any non-string entry. `stride` is the per-slot buffer size, which
+// is what lets this serve both the RES_PATH_LEN sprite manifest arrays and
+// the CAT_PATH_LEN catalog ones. *out_count receives the number of strings
+// actually stored -- for an animation that count IS the cycle length.
+static void parse_path_array(cJSON *arr, char *dst, size_t stride,
+                             int cap, int *out_count) {
     if (out_count) *out_count = 0;
-    if (!cJSON_IsArray(arr)) return;
+    if (!cJSON_IsArray(arr) || !dst) return;
     int n = 0;
     cJSON *it;
     cJSON_ArrayForEach(it, arr) {
         if (n >= cap) break;
-        if (cJSON_IsString(it)) {
-            copy_str(dst[n], RES_PATH_LEN, it->valuestring);
-            n++;
-        }
+        if (!cJSON_IsString(it)) continue;
+        copy_str(dst + (size_t)n * stride, stride, it->valuestring);
+        n++;
     }
     if (out_count) *out_count = n;
+}
+
+static void parse_string_array(cJSON *arr, char dst[][RES_PATH_LEN],
+                               int cap, int *out_count) {
+    parse_path_array(arr, dst ? dst[0] : NULL, RES_PATH_LEN, cap, out_count);
 }
 
 static void parse_sprites(Resources *res, cJSON *obj) {
@@ -678,11 +690,14 @@ static void parse_sprites(Resources *res, cJSON *obj) {
 
     cJSON *hero = cJSON_GetObjectItem(obj, "hero");
     if (cJSON_IsObject(hero)) {
-        int n = 0;
+        // Each array keeps its OWN count. They shared one `n` before, so the
+        // walk count was overwritten by the boat count and both were dropped.
         parse_string_array(cJSON_GetObjectItem(hero, "walk"),
-                           res->sprites.hero_walk, RES_ANIM_FRAMES, &n);
+                           res->sprites.hero_walk, OB_ANIM_FRAMES_MAX,
+                           &res->sprites.hero_walk_count);
         parse_string_array(cJSON_GetObjectItem(hero, "boat"),
-                           res->sprites.hero_boat, RES_ANIM_FRAMES, &n);
+                           res->sprites.hero_boat, OB_ANIM_FRAMES_MAX,
+                           &res->sprites.hero_boat_count);
     }
 
     cJSON *ui = cJSON_GetObjectItem(obj, "ui");
@@ -737,16 +752,17 @@ static void parse_sprites(Resources *res, cJSON *obj) {
         copy_str(res->sprites.hud_siege_silhouette,
                  sizeof(res->sprites.hud_siege_silhouette),
                  json_str(hud, "siege_silhouette", ""));
-        int n = 0;
         parse_string_array(cJSON_GetObjectItem(hud, "siege_animation"),
                            res->sprites.hud_siege_animation,
-                           RES_ANIM_FRAMES, &n);
+                           OB_ANIM_FRAMES_MAX,
+                           &res->sprites.hud_siege_animation_count);
         copy_str(res->sprites.hud_magic_silhouette,
                  sizeof(res->sprites.hud_magic_silhouette),
                  json_str(hud, "magic_silhouette", ""));
         parse_string_array(cJSON_GetObjectItem(hud, "magic_animation"),
                            res->sprites.hud_magic_animation,
-                           RES_ANIM_FRAMES, &n);
+                           OB_ANIM_FRAMES_MAX,
+                           &res->sprites.hud_magic_animation_count);
         copy_str(res->sprites.hud_puzzle_grid,
                  sizeof(res->sprites.hud_puzzle_grid),
                  json_str(hud, "puzzle_grid", ""));

@@ -1330,7 +1330,10 @@ int shell_run_game(int argc, char **argv) {
             bool anim_enabled = (game.stats.options[3] != 0);
             bool animating = anim_enabled && (frame_host_time() - last_step_time < 0.4);
             if (animating) {
-                game.anim_frame = (game.anim_frame + 1) % 4;
+                // Free-running tick: each sprite strip folds this onto its
+                // own declared cycle length at draw time, so the counter
+                // must not assume any particular frame count here.
+                game.anim_frame = (game.anim_frame + 1) % OB_ANIM_TICK_WRAP;
             } else {
                 game.anim_frame = 0;   // idle pose
             }

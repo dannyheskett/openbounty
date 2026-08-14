@@ -1,0 +1,32 @@
+{
+	"title":	"Anim Frames Fixture",
+	"version":	1,
+	"pack_id":	"anim-frames-fixture",
+	"pack_name":	"Anim Frames Fixture",
+	"pack_kind":	"base",
+	"_note":	"Exercises pack-declared animation cycle lengths. Art paths are deliberately fake -- the engine only parses the manifest; textures are the shell's job.",
+	"sprites":	{
+		"hero":	{
+			"walk":	["h_00.png", "h_01.png", "h_02.png", "h_03.png", "h_04.png", "h_05.png"],
+			"boat":	["b_00.png", "b_01.png"]
+		},
+		"hud":	{
+			"siege_animation":	["s_00.png", "s_01.png", "s_02.png", "s_03.png", "s_04.png", "s_05.png", "s_06.png", "s_07.png"]
+		}
+	},
+	"troops":	[{
+			"index":	0,
+			"id":	"grunt",
+			"name":	"Grunt",
+			"sprite":	"g.png",
+			"_note":	"The 7 embedded in this array is not a string. It must be SKIPPED, not consume a slot and leave a hole.",
+			"anim":	["g_00.png", 7, "g_01.png", "g_02.png", "g_03.png", "g_04.png", "g_05.png", "g_06.png"]
+		}],
+	"villains":	[{
+			"index":	0,
+			"id":	"boss",
+			"name":	"Boss",
+			"portrait":	"p_00.png",
+			"anim":	["p_00.png", "p_01.png", "p_02.png", "p_03.png", "p_04.png"]
+		}]
+}

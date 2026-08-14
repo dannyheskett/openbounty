@@ -88,7 +88,7 @@ void screen_own_castle_draw(const Game *g, const Sprites *s) {
     double now = GetTime();
     if (now - s_last_tick >= OWN_CASTLE_TICK) {
         s_last_tick = now;
-        s_frame = (s_frame + 1) & 3;
+        s_frame = (s_frame + 1) % OB_ANIM_TICK_WRAP;
     }
     screens_draw_location_backdrop(g, s, SCREEN_LOC_CASTLE,
                                    s_anim_troop_idx, s_frame);
