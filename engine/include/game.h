@@ -177,7 +177,12 @@ typedef struct {
     char             zone[24];        // current zone id
     int              x, y;            // current tile coords (display-space)
     int              last_x, last_y;  // previous tile (for bump-back)
-    bool             facing_left;     // hero sprite mirror
+    bool             facing_left;     // hero sprite mirror (non-directional art)
+    // Which way the hero last moved, as an OBFacing. Only meaningful to packs
+    // that author four facings; facing_left still drives the mirror for packs
+    // that ship a single strip, and the two are kept consistent so a save
+    // written by either build reads correctly in the other.
+    int              facing;
     // Town the hero is CURRENTLY transacting with (id), or "" when not in a
     // town. Set the instant the hero steps onto a town gate (step.c, the
     // entered_town path) and cleared on the next real move away. This is the
@@ -308,7 +313,11 @@ typedef struct Game {
     Stats            stats;
     Position         position;
     TravelMode       travel_mode;     // walking vs in boat
-    int              anim_frame;      // 0..3, shared by hero and boat sprites
+    int              anim_frame;      // free-running tick, shared by hero/boat/foes
+    // True while the walk cycle is running (during and just after a step).
+    // Selects walk vs idle art. Presentation state like anim_frame: the shell
+    // owns it, and it is never serialized.
+    bool             anim_moving;
     bool             hud_visible;     // floating HUD bar toggle (persisted)
     ArmyStack        army[GAME_ARMY_SLOTS];
     Spellbook        spells;
