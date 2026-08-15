@@ -19,6 +19,11 @@
 // own.
 int present_scale(int win_w, int win_h);
 
+// Runtime display scale. 0 restores auto-fit. Not persisted anywhere: it is a
+// per-machine viewing preference, not pack data and not game state.
+void present_set_scale(int scale);
+int  present_get_scale_override(void);
+
 // Begin the frame and blit `rt` to the window, integer-scaled and centred,
 // with black letterbox around it. Takes the render texture BY VALUE; most
 // callers hold a RenderTexture2D* and pass *ptr.

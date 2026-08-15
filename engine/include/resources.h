@@ -137,6 +137,22 @@ typedef struct {
     char troop_pool  [RES_SPAWN_TIERS][RES_SPAWN_POOL_N][RES_ID_LEN];
 } ResSpawn;
 
+// Render geometry, declared by the pack. There is no default: a pack must say
+// which mode it is authored for, because the two are not interchangeable --
+// legacy art is drawn for a 48x34 tile and modern art for a square one. A pack
+// that declares neither is rejected at load rather than guessed at.
+typedef enum {
+    RENDER_MODE_NONE = 0,     // nothing declared -> fatal
+    RENDER_MODE_LEGACY,       // 320x200, 48x34 tiles, 5x5 viewport
+    RENDER_MODE_MODERN,       // pack-declared tile size and viewport
+} RenderMode;
+
+typedef struct {
+    RenderMode mode;
+    int tile_w, tile_h;       // modern only; legacy forces 48x34
+    int tiles_w, tiles_h;     // viewport in tiles; must be odd
+} ResRender;
+
 typedef struct {
     char starting_zone[RES_ID_LEN];
     char zone_noun[RES_ID_LEN];
@@ -764,6 +780,7 @@ typedef struct {
     ResContract contract;
     ResSpawn    spawn;
     ResWorld    world;
+    ResRender   render;
     ResTuning   tuning;
     ResColors   colors;
     ResUI       ui;

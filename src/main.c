@@ -658,8 +658,13 @@ int shell_run_game(int argc, char **argv) {
         return 2;
     }
 
-    int base_w = CL_WINDOW_W;    // 640
-    int base_h = CL_WINDOW_H;    // 400
+    // Geometry comes from the pack, so it must be resolved before the window
+    // and the render target are sized. resources_load already rejected a pack
+    // that declared no render.mode.
+    layout_init(&res);
+
+    int base_w = CL_WINDOW_W;
+    int base_h = CL_WINDOW_H;
 
     unsigned int window_flags = FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT;
     SetConfigFlags(window_flags);

@@ -3,13 +3,38 @@
 
 #include "raylib.h"
 
-// Design-space coordinates for the 320x200 internal render target.
-// All values in internal pixels; the renderer scales 2x to the window.
+// Design-space coordinates for the internal render target. All values are in
+// internal pixels; present.c blits that target to the window at an integer
+// scale.
+//
+// The geometry is no longer fixed. A pack declares render.mode: "legacy" keeps
+// the 320x200 / 48x34 / 5x5 layout the DOS original used, and "modern" allows
+// square tiles and a larger viewport. layout_init() fills g_layout from the
+// pack before the render target or window exist; every CL_ macro below reads
+// from it, so the ~340 call sites across the shell are unchanged.
+//
+// The chrome bands (frame, status, bar) stay literal: they are text and border
+// furniture measured in pixels, not in tiles, and do not scale with tile size.
 
-// Internal design resolution.
-#define CL_SCREEN_W   320
-#define CL_SCREEN_H   200
-#define CL_SCALE        2
+typedef struct {
+    int tile_w, tile_h;        // one map tile
+    int tiles_w, tiles_h;      // viewport size, in tiles (odd, so the hero centres)
+    int map_w, map_h;          // tile_* * tiles_*
+    int sidebar_w;             // one tile wide, as in the original
+    int screen_w, screen_h;    // derived from the map plus the chrome bands
+    int default_scale;         // window scale at startup; modern is already large
+} ClLayout;
+
+extern ClLayout g_layout;
+
+// Fill g_layout from the pack's render block. Must be called after
+// resources_load and before the render target and window are created.
+struct Resources;
+void layout_init(const struct Resources *res);
+
+#define CL_SCREEN_W  (g_layout.screen_w)
+#define CL_SCREEN_H  (g_layout.screen_h)
+#define CL_SCALE     (g_layout.default_scale)
 #define CL_WINDOW_W  (CL_SCREEN_W * CL_SCALE)
 #define CL_WINDOW_H  (CL_SCREEN_H * CL_SCALE)
 
@@ -28,9 +53,9 @@
 #define CL_SCALE_MAX      5   // desktop -> 1600x1000
 #define CL_SCALE_MAX_WEB  3   // browser -> 960x600
 
-// Tile dimensions.
-#define CL_TILE_W 48
-#define CL_TILE_H 34
+// Tile dimensions. Pack-declared; 48x34 in legacy mode.
+#define CL_TILE_W (g_layout.tile_w)
+#define CL_TILE_H (g_layout.tile_h)
 
 // Chrome strips from DOS_frame_ui[]:
 //   [0] Top    { 0, 0, 320,   8 }
@@ -65,15 +90,15 @@
 //   map.h = screen->h - top - bar - status - bot; (= 200 - 8 - 5 - 9 - 8 = 170)
 #define CL_MAP_X          CL_FRAME_LEFT_W
 #define CL_MAP_Y          (CL_FRAME_TOP_H + CL_STATUS_H + CL_BAR_H)  // 22
-#define CL_MAP_W          (CL_TILE_W * 5)                            // 240
-#define CL_MAP_H          (CL_TILE_H * 5)                            // 170
-#define CL_MAP_TILES_W    5
-#define CL_MAP_TILES_H    5
+#define CL_MAP_W          (g_layout.map_w)     // tile_w * tiles_w
+#define CL_MAP_H          (g_layout.map_h)     // tile_h * tiles_h
+#define CL_MAP_TILES_W    (g_layout.tiles_w)
+#define CL_MAP_TILES_H    (g_layout.tiles_h)
 
 // Sidebar column (between map.w end and right frame start).
 #define CL_SIDEBAR_X      (CL_MAP_X + CL_MAP_W)                       // 256
 #define CL_SIDEBAR_Y      CL_MAP_Y
-#define CL_SIDEBAR_W      (CL_SCREEN_W - CL_SIDEBAR_X - CL_FRAME_RIGHT_W)  // 48
+#define CL_SIDEBAR_W      (g_layout.sidebar_w)                        // one tile
 #define CL_SIDEBAR_H      CL_MAP_H
 
 // Bottom chrome strip (the 8px decorative frame at the very bottom of the
