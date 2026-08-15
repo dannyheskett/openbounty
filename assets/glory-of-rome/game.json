@@ -1,3443 +1,4650 @@
 {
-	"title":	"Glory of Rome",
-	"version":	1,
-	"pack_id":	"glory-of-rome",
-	"pack_name":	"Glory of Rome",
-	"pack_kind":	"base",
-	"world":	{
-		"language":	"en",
-		"max_army_slots":	5,
-		"fog_sight":	3,
-		"starting_zone":	"italia",
-		"zone_noun":	"province",
-		"zone_noun_plural":	"provinces",
-		"default_name":	"Hero",
-		"default_options":	[4, 1, 1, 1, 1]
+	"title": "Glory of Rome",
+	"version": 1,
+	"pack_id": "glory-of-rome",
+	"pack_name": "Glory of Rome",
+	"pack_kind": "base",
+	"world": {
+		"language": "en",
+		"max_army_slots": 5,
+		"fog_sight": 3,
+		"starting_zone": "italia",
+		"zone_noun": "province",
+		"zone_noun_plural": "provinces",
+		"default_name": "Hero",
+		"default_options": [
+			4,
+			1,
+			1,
+			1,
+			1
+		]
 	},
-	"time":	{
-		"day_steps":	40,
-		"week_days":	5,
-		"days_per_difficulty":	{
-			"easy":	900,
-			"normal":	600,
-			"hard":	400,
-			"impossible":	200
+	"time": {
+		"day_steps": 40,
+		"week_days": 5,
+		"days_per_difficulty": {
+			"easy": 900,
+			"normal": 600,
+			"hard": 400,
+			"impossible": 200
 		}
 	},
-	"economy":	{
-		"alcove_cost":	5000,
-		"boat_cost_cheap":	100,
-		"boat_cost_normal":	500,
-		"siege_cost":	3000,
-		"chest":	{
-			"chance_gold":	[61, 66, 76, 71],
-			"chance_commission":	[81, 86, 86, 81],
-			"chance_spell_power":	[83, 89, 89, 86],
-			"chance_max_spells":	[86, 92, 93, 91],
-			"chance_new_spell":	[101, 101, 101, 101],
-			"gold_min":	[0, 4, 9, 19],
-			"gold_max":	[5, 16, 21, 31],
-			"commission_min":	[9, 49, 99, 199],
-			"commission_max":	[41, 51, 101, 301],
-			"max_spells_base":	[1, 1, 2, 2]
+	"economy": {
+		"alcove_cost": 5000,
+		"boat_cost_cheap": 100,
+		"boat_cost_normal": 500,
+		"siege_cost": 3000,
+		"chest": {
+			"chance_gold": [
+				61,
+				66,
+				76,
+				71
+			],
+			"chance_commission": [
+				81,
+				86,
+				86,
+				81
+			],
+			"chance_spell_power": [
+				83,
+				89,
+				89,
+				86
+			],
+			"chance_max_spells": [
+				86,
+				92,
+				93,
+				91
+			],
+			"chance_new_spell": [
+				101,
+				101,
+				101,
+				101
+			],
+			"gold_min": [
+				0,
+				4,
+				9,
+				19
+			],
+			"gold_max": [
+				5,
+				16,
+				21,
+				31
+			],
+			"commission_min": [
+				9,
+				49,
+				99,
+				199
+			],
+			"commission_max": [
+				41,
+				51,
+				101,
+				301
+			],
+			"max_spells_base": [
+				1,
+				1,
+				2,
+				2
+			]
 		},
-		"scoring":	{
-			"per_villain":	500,
-			"per_artifact":	250,
-			"per_castle":	100,
-			"kill_penalty":	1,
-			"difficulty_multiplier":	[0, 1, 2, 4, 8],
-			"easy_halves":	true
+		"scoring": {
+			"per_villain": 500,
+			"per_artifact": 250,
+			"per_castle": 100,
+			"kill_penalty": 1,
+			"difficulty_multiplier": [
+				0,
+				1,
+				2,
+				4,
+				8
+			],
+			"easy_halves": true
 		}
 	},
-	"tuning":	{
-		"instant_army_multiplier":	[3, 2, 1, 1],
-		"search_cost_days":	10
+	"tuning": {
+		"instant_army_multiplier": [
+			3,
+			2,
+			1,
+			1
+		],
+		"search_cost_days": 10
 	},
-	"combat":	{
-		"morale_chart":	[["N", "N", "N", "N", "N"], ["N", "N", "N", "N", "N"], ["N", "N", "H", "N", "N"], ["L", "N", "L", "H", "N"], ["L", "L", "L", "N", "N"]],
-		"number_names":	[{
-				"min":	500,
-				"label":	"A multitude of"
-			}, {
-				"min":	100,
-				"label":	"A horde of"
-			}, {
-				"min":	50,
-				"label":	"A lot of"
-			}, {
-				"min":	20,
-				"label":	"Many"
-			}, {
-				"min":	10,
-				"label":	"Some"
-			}, {
-				"min":	1,
-				"label":	"A few"
-			}]
+	"combat": {
+		"morale_chart": [
+			[
+				"N",
+				"N",
+				"N",
+				"N",
+				"N"
+			],
+			[
+				"N",
+				"N",
+				"N",
+				"N",
+				"N"
+			],
+			[
+				"N",
+				"N",
+				"H",
+				"N",
+				"N"
+			],
+			[
+				"L",
+				"N",
+				"L",
+				"H",
+				"N"
+			],
+			[
+				"L",
+				"L",
+				"L",
+				"N",
+				"N"
+			]
+		],
+		"number_names": [
+			{
+				"min": 500,
+				"label": "A multitude of"
+			},
+			{
+				"min": 100,
+				"label": "A horde of"
+			},
+			{
+				"min": 50,
+				"label": "A lot of"
+			},
+			{
+				"min": 20,
+				"label": "Many"
+			},
+			{
+				"min": 10,
+				"label": "Some"
+			},
+			{
+				"min": 1,
+				"label": "A few"
+			}
+		]
 	},
-	"zones":	[{
-			"id":	"italia",
-			"name":	"Italia",
-			"map":	"maps/italia.dat",
-			"width":	64,
-			"height":	128,
-			"neighbors":	["galliae", "africa", "oriens"],
-			"hero_spawn":	{
-				"x":	37,
-				"y":	46
+	"zones": [
+		{
+			"id": "italia",
+			"name": "Italia",
+			"map": "maps/italia.dat",
+			"width": 64,
+			"height": 128,
+			"neighbors": [
+				"galliae",
+				"africa",
+				"oriens"
+			],
+			"hero_spawn": {
+				"x": 37,
+				"y": 46
 			},
-			"is_home":	true,
-			"home_spawn":	{
-				"x":	37,
-				"y":	46
+			"is_home": true,
+			"home_spawn": {
+				"x": 37,
+				"y": 46
 			},
-			"magic_alcove":	{
-				"x":	8,
-				"y":	16
+			"magic_alcove": {
+				"x": 8,
+				"y": 16
 			},
-			"salt":	{
-				"artifacts":	2,
-				"navmaps":	1,
-				"orbs":	1,
-				"telecaves":	2,
-				"dwellings":	10,
-				"friendly_foes":	5,
-				"preferred_troops":	["peasants", "sprites", "orcs", "skeletons", "wolves", "gnomes"],
-				"dwelling_range":	[0, 14]
+			"salt": {
+				"artifacts": 2,
+				"navmaps": 1,
+				"orbs": 1,
+				"telecaves": 2,
+				"dwellings": 10,
+				"friendly_foes": 5,
+				"preferred_troops": [
+					"peasants",
+					"sprites",
+					"orcs",
+					"skeletons",
+					"wolves",
+					"gnomes"
+				],
+				"dwelling_range": [
+					0,
+					14
+				]
 			},
-			"signs":	[{
-					"x":	25,
-					"y":	18,
-					"id":	"sign_italia_1",
-					"title":	"The Rubicon",
-					"body":	"Beyond this stream\nlies Italia herself.\nCross under arms and\nthere is no return."
-				}, {
-					"x":	42,
-					"y":	56,
-					"id":	"sign_italia_2",
-					"title":	"The Via Appia",
-					"body":	"The Appian Way runs\nsouth to Brundisium\nand the sea."
-				}, {
-					"x":	36,
-					"y":	46,
-					"id":	"sign_italia_3",
-					"title":	"Roma",
-					"body":	"All roads lead here.\nEmperor Traianus holds\ncourt within."
-				}, {
-					"x":	30,
-					"y":	50,
-					"id":	"sign_italia_4",
-					"title":	"The Apennines",
-					"body":	"This stony spine\ndivides the peninsula,\ncoast from coast."
-				}, {
-					"x":	37,
-					"y":	100,
-					"id":	"sign_italia_5",
-					"title":	"The Strait",
-					"body":	"Across the water lies\nSicilia, granary of\nthe Republic."
-				}],
-			"towns":	[{
-					"x":	39,
-					"y":	51,
-					"id":	"ostia"
-				}, {
-					"x":	37,
-					"y":	62,
-					"id":	"puteoli"
-				}, {
-					"x":	45,
-					"y":	72,
-					"id":	"cumae"
-				}, {
-					"x":	45,
-					"y":	84,
-					"id":	"tarracina"
-				}, {
-					"x":	33,
-					"y":	99,
-					"id":	"pisae"
-				}, {
-					"x":	42,
-					"y":	20,
-					"id":	"ancona"
-				}, {
-					"x":	18,
-					"y":	10,
-					"id":	"ravenna"
-				}, {
-					"x":	7,
-					"y":	12,
-					"id":	"mediolanum"
-				}, {
-					"x":	47,
-					"y":	78,
-					"id":	"croton"
-				}],
-			"castles":	[{
-					"x":	38,
-					"y":	45,
-					"id":	"castle_italia_1"
-				}, {
-					"x":	41,
-					"y":	53,
-					"id":	"castle_italia_2"
-				}, {
-					"x":	39,
-					"y":	62,
-					"id":	"castle_italia_3"
-				}, {
-					"x":	46,
-					"y":	74,
-					"id":	"castle_italia_4"
-				}, {
-					"x":	46,
-					"y":	86,
-					"id":	"castle_italia_5"
-				}, {
-					"x":	35,
-					"y":	101,
-					"id":	"castle_italia_6"
-				}, {
-					"x":	44,
-					"y":	21,
-					"id":	"castle_italia_7"
-				}, {
-					"x":	20,
-					"y":	10,
-					"id":	"castle_italia_8"
-				}, {
-					"x":	9,
-					"y":	14,
-					"id":	"castle_italia_9"
-				}, {
-					"x":	48,
-					"y":	80,
-					"id":	"castle_italia_10"
-				}],
-			"chests":	[{
-					"id":	"chest_1",
-					"x":	6,
-					"y":	9
-				}, {
-					"id":	"chest_2",
-					"x":	9,
-					"y":	9
-				}, {
-					"id":	"chest_3",
-					"x":	12,
-					"y":	9
-				}, {
-					"id":	"chest_4",
-					"x":	15,
-					"y":	9
-				}, {
-					"id":	"chest_5",
-					"x":	18,
-					"y":	9
-				}, {
-					"id":	"chest_6",
-					"x":	22,
-					"y":	9
-				}, {
-					"id":	"chest_7",
-					"x":	24,
-					"y":	9
-				}, {
-					"id":	"chest_8",
-					"x":	27,
-					"y":	9
-				}, {
-					"id":	"chest_9",
-					"x":	30,
-					"y":	9
-				}, {
-					"id":	"chest_10",
-					"x":	33,
-					"y":	9
-				}, {
-					"id":	"chest_11",
-					"x":	36,
-					"y":	9
-				}, {
-					"id":	"chest_12",
-					"x":	39,
-					"y":	9
-				}, {
-					"id":	"chest_13",
-					"x":	42,
-					"y":	9
-				}, {
-					"id":	"chest_14",
-					"x":	45,
-					"y":	9
-				}, {
-					"id":	"chest_15",
-					"x":	48,
-					"y":	9
-				}, {
-					"id":	"chest_16",
-					"x":	51,
-					"y":	9
-				}, {
-					"id":	"chest_17",
-					"x":	54,
-					"y":	9
-				}, {
-					"id":	"chest_18",
-					"x":	57,
-					"y":	9
-				}, {
-					"id":	"chest_19",
-					"x":	6,
-					"y":	12
-				}, {
-					"id":	"chest_20",
-					"x":	9,
-					"y":	12
-				}, {
-					"id":	"chest_21",
-					"x":	12,
-					"y":	12
-				}, {
-					"id":	"chest_22",
-					"x":	24,
-					"y":	12
-				}, {
-					"id":	"chest_23",
-					"x":	27,
-					"y":	12
-				}, {
-					"id":	"chest_24",
-					"x":	30,
-					"y":	12
-				}, {
-					"id":	"chest_25",
-					"x":	42,
-					"y":	12
-				}, {
-					"id":	"chest_26",
-					"x":	45,
-					"y":	12
-				}, {
-					"id":	"chest_27",
-					"x":	48,
-					"y":	12
-				}, {
-					"id":	"chest_28",
-					"x":	51,
-					"y":	12
-				}, {
-					"id":	"chest_29",
-					"x":	54,
-					"y":	12
-				}, {
-					"id":	"chest_30",
-					"x":	57,
-					"y":	11
-				}, {
-					"id":	"chest_31",
-					"x":	6,
-					"y":	14
-				}, {
-					"id":	"chest_32",
-					"x":	9,
-					"y":	15
-				}, {
-					"id":	"chest_33",
-					"x":	12,
-					"y":	16
-				}, {
-					"id":	"chest_34",
-					"x":	24,
-					"y":	15
-				}, {
-					"id":	"chest_35",
-					"x":	28,
-					"y":	15
-				}, {
-					"id":	"chest_36",
-					"x":	30,
-					"y":	15
-				}, {
-					"id":	"chest_37",
-					"x":	39,
-					"y":	15
-				}, {
-					"id":	"chest_38",
-					"x":	42,
-					"y":	15
-				}, {
-					"id":	"chest_39",
-					"x":	45,
-					"y":	16
-				}, {
-					"id":	"chest_40",
-					"x":	48,
-					"y":	15
-				}],
-			"artifacts":	[],
-			"dwellings":	[],
-			"wandering_armies":	[{
-					"x":	26,
-					"y":	57,
-					"id":	"wandering_army_000"
-				}, {
-					"x":	36,
-					"y":	56,
-					"id":	"wandering_army_001"
-				}, {
-					"x":	47,
-					"y":	58,
-					"id":	"wandering_army_002"
-				}, {
-					"x":	23,
-					"y":	10,
-					"id":	"wandering_army_003"
-				}, {
-					"x":	24,
-					"y":	52,
-					"id":	"wandering_army_004"
-				}, {
-					"x":	20,
-					"y":	48,
-					"id":	"wandering_army_005"
-				}, {
-					"x":	43,
-					"y":	51,
-					"id":	"wandering_army_006"
-				}, {
-					"x":	45,
-					"y":	52,
-					"id":	"wandering_army_007"
-				}, {
-					"x":	18,
-					"y":	41,
-					"id":	"wandering_army_008"
-				}, {
-					"x":	16,
-					"y":	37,
-					"id":	"wandering_army_009"
-				}, {
-					"x":	32,
-					"y":	46,
-					"id":	"wandering_army_010"
-				}, {
-					"x":	44,
-					"y":	46,
-					"id":	"wandering_army_011"
-				}, {
-					"x":	47,
-					"y":	12,
-					"id":	"wandering_army_012"
-				}, {
-					"x":	14,
-					"y":	35,
-					"id":	"wandering_army_013"
-				}, {
-					"x":	16,
-					"y":	39,
-					"id":	"wandering_army_014"
-				}, {
-					"x":	15,
-					"y":	35,
-					"id":	"wandering_army_015"
-				}, {
-					"x":	18,
-					"y":	37,
-					"id":	"wandering_army_016"
-				}, {
-					"x":	14,
-					"y":	34,
-					"id":	"wandering_army_017"
-				}, {
-					"x":	46,
-					"y":	23,
-					"id":	"wandering_army_018"
-				}, {
-					"x":	11,
-					"y":	24,
-					"id":	"wandering_army_019"
-				}, {
-					"x":	48,
-					"y":	20,
-					"id":	"wandering_army_020"
-				}, {
-					"x":	31,
-					"y":	24,
-					"id":	"wandering_army_021"
-				}, {
-					"x":	11,
-					"y":	22,
-					"id":	"wandering_army_022"
-				}, {
-					"x":	21,
-					"y":	22,
-					"id":	"wandering_army_023"
-				}, {
-					"x":	54,
-					"y":	16,
-					"id":	"wandering_army_024"
-				}, {
-					"x":	9,
-					"y":	16,
-					"id":	"wandering_army_025"
-				}, {
-					"x":	41,
-					"y":	18,
-					"id":	"wandering_army_026"
-				}, {
-					"x":	23,
-					"y":	15,
-					"id":	"wandering_army_027"
-				}, {
-					"x":	32,
-					"y":	16,
-					"id":	"wandering_army_028"
-				}, {
-					"x":	5,
-					"y":	10,
-					"id":	"wandering_army_029"
-				}, {
-					"x":	42,
-					"y":	10,
-					"id":	"wandering_army_030"
-				}, {
-					"x":	13,
-					"y":	9,
-					"id":	"wandering_army_031"
-				}, {
-					"x":	23,
-					"y":	9,
-					"id":	"wandering_army_032"
-				}, {
-					"x":	49,
-					"y":	9,
-					"id":	"wandering_army_033"
-				}, {
-					"x":	31,
-					"y":	9,
-					"id":	"wandering_army_034"
-				}, {
-					"x":	32,
-					"y":	95,
-					"id":	"guardian_calabria",
-					"static":	true,
-					"army":	[{
-							"troop":	"barbarians",
-							"count":	30
-						}, {
-							"troop":	"trolls",
-							"count":	20
-						}, {
-							"troop":	"ogres",
-							"count":	12
-						}, {
-							"troop":	"knights",
-							"count":	8
-						}, {
-							"troop":	"dragons",
-							"count":	2
-						}]
-				}],
-			"armies":	[]
-		}, {
-			"id":	"galliae",
-			"name":	"Galliae",
-			"map":	"maps/galliae.dat",
-			"width":	64,
-			"height":	64,
-			"neighbors":	["italia", "africa"],
-			"salt":	{
-				"artifacts":	2,
-				"navmaps":	1,
-				"orbs":	1,
-				"telecaves":	2,
-				"dwellings":	10,
-				"friendly_foes":	5,
-				"preferred_troops":	["peasants", "sprites", "orcs", "skeletons", "wolves", "gnomes"],
-				"dwelling_range":	[0, 14]
-			},
-			"chests":	[{
-					"id":	"chest_1",
-					"x":	46,
-					"y":	20
-				}, {
-					"id":	"chest_2",
-					"x":	9,
-					"y":	25
-				}, {
-					"id":	"chest_3",
-					"x":	33,
-					"y":	27
-				}, {
-					"id":	"chest_4",
-					"x":	45,
-					"y":	28
-				}, {
-					"id":	"chest_5",
-					"x":	20,
-					"y":	34
-				}, {
-					"id":	"chest_6",
-					"x":	32,
-					"y":	35
-				}, {
-					"id":	"chest_7",
-					"x":	43,
-					"y":	44
-				}, {
-					"id":	"chest_8",
-					"x":	18,
-					"y":	50
-				}, {
-					"id":	"chest_9",
-					"x":	42,
-					"y":	52
-				}, {
-					"id":	"chest_10",
-					"x":	17,
-					"y":	58
-				}, {
-					"id":	"chest_11",
-					"x":	29,
-					"y":	59
-				}, {
-					"id":	"chest_12",
-					"x":	11,
-					"y":	24
-				}, {
-					"id":	"chest_13",
-					"x":	23,
-					"y":	25
-				}, {
-					"id":	"chest_14",
-					"x":	35,
-					"y":	26
-				}, {
-					"id":	"chest_15",
-					"x":	47,
-					"y":	27
-				}, {
-					"id":	"chest_16",
-					"x":	10,
-					"y":	32
-				}, {
-					"id":	"chest_17",
-					"x":	20,
-					"y":	20
-				}, {
-					"id":	"chest_18",
-					"x":	22,
-					"y":	20
-				}, {
-					"id":	"chest_19",
-					"x":	24,
-					"y":	20
-				}, {
-					"id":	"chest_20",
-					"x":	26,
-					"y":	20
-				}, {
-					"id":	"chest_21",
-					"x":	8,
-					"y":	23
-				}, {
-					"id":	"chest_22",
-					"x":	13,
-					"y":	23
-				}, {
-					"id":	"chest_23",
-					"x":	15,
-					"y":	23
-				}, {
-					"id":	"chest_24",
-					"x":	20,
-					"y":	22
-				}, {
-					"id":	"chest_25",
-					"x":	22,
-					"y":	22
-				}, {
-					"id":	"chest_26",
-					"x":	24,
-					"y":	22
-				}, {
-					"id":	"chest_27",
-					"x":	9,
-					"y":	21
-				}, {
-					"id":	"chest_28",
-					"x":	12,
-					"y":	21
-				}, {
-					"id":	"chest_29",
-					"x":	15,
-					"y":	21
-				}, {
-					"id":	"chest_30",
-					"x":	18,
-					"y":	21
-				}],
-			"signs":	[{
-					"x":	38,
-					"y":	29,
-					"id":	"sign_galliae_1",
-					"title":	"Alesia",
-					"body":	"Here Vercingetorix\nlaid down his arms\nbefore Caesar."
-				}, {
-					"x":	46,
-					"y":	30,
-					"id":	"sign_galliae_2",
-					"title":	"The Rhine",
-					"body":	"This river marks the\nedge of the world.\nBeyond it, Germania."
-				}, {
-					"x":	22,
-					"y":	21,
-					"id":	"sign_galliae_3",
-					"title":	"Britannia",
-					"body":	"Across the northern\nsea lies Britannia,\nand Londinium upon it."
-				}],
-			"dwellings":	[],
-			"armies":	[],
-			"hero_spawn":	{
-				"x":	9,
-				"y":	20
-			},
-			"magic_alcove":	{
-				"x":	24,
-				"y":	24
-			},
-			"towns":	[{
-					"x":	28,
-					"y":	21,
-					"id":	"massilia"
-				}, {
-					"x":	38,
-					"y":	26,
-					"id":	"narbo"
-				}, {
-					"x":	28,
-					"y":	42,
-					"id":	"tolosa"
-				}, {
-					"x":	45,
-					"y":	20,
-					"id":	"burdigala"
-				}, {
-					"x":	28,
-					"y":	50,
-					"id":	"vienna"
-				}, {
-					"x":	20,
-					"y":	35,
-					"id":	"aquae_sextiae"
-				}],
-			"castles":	[{
-					"x":	30,
-					"y":	23,
-					"id":	"castle_galliae_1"
-				}, {
-					"x":	40,
-					"y":	28,
-					"id":	"castle_galliae_2"
-				}, {
-					"x":	30,
-					"y":	44,
-					"id":	"castle_galliae_3"
-				}, {
-					"x":	47,
-					"y":	22,
-					"id":	"castle_galliae_4"
-				}, {
-					"x":	30,
-					"y":	52,
-					"id":	"castle_galliae_5"
-				}, {
-					"x":	22,
-					"y":	35,
-					"id":	"castle_galliae_6"
-				}]
-		}, {
-			"id":	"africa",
-			"name":	"Africa",
-			"map":	"maps/africa.dat",
-			"width":	64,
-			"height":	28,
-			"neighbors":	["italia", "galliae", "oriens"],
-			"salt":	{
-				"artifacts":	2,
-				"navmaps":	1,
-				"orbs":	1,
-				"telecaves":	2,
-				"dwellings":	10,
-				"friendly_foes":	5,
-				"preferred_troops":	["peasants", "sprites", "orcs", "skeletons", "wolves", "gnomes"],
-				"dwelling_range":	[0, 14]
-			},
-			"chests":	[{
-					"id":	"chest_1",
-					"x":	6,
-					"y":	6
-				}, {
-					"id":	"chest_2",
-					"x":	9,
-					"y":	6
-				}, {
-					"id":	"chest_3",
-					"x":	12,
-					"y":	6
-				}, {
-					"id":	"chest_4",
-					"x":	15,
-					"y":	6
-				}, {
-					"id":	"chest_5",
-					"x":	18,
-					"y":	6
-				}, {
-					"id":	"chest_6",
-					"x":	22,
-					"y":	6
-				}, {
-					"id":	"chest_7",
-					"x":	24,
-					"y":	6
-				}, {
-					"id":	"chest_8",
-					"x":	27,
-					"y":	6
-				}, {
-					"id":	"chest_9",
-					"x":	30,
-					"y":	6
-				}, {
-					"id":	"chest_10",
-					"x":	33,
-					"y":	6
-				}, {
-					"id":	"chest_11",
-					"x":	36,
-					"y":	6
-				}, {
-					"id":	"chest_12",
-					"x":	38,
-					"y":	6
-				}, {
-					"id":	"chest_13",
-					"x":	42,
-					"y":	6
-				}, {
-					"id":	"chest_14",
-					"x":	45,
-					"y":	6
-				}, {
-					"id":	"chest_15",
-					"x":	47,
-					"y":	6
-				}, {
-					"id":	"chest_16",
-					"x":	51,
-					"y":	6
-				}, {
-					"id":	"chest_17",
-					"x":	54,
-					"y":	6
-				}, {
-					"id":	"chest_18",
-					"x":	57,
-					"y":	6
-				}, {
-					"id":	"chest_19",
-					"x":	60,
-					"y":	6
-				}, {
-					"id":	"chest_20",
-					"x":	3,
-					"y":	9
-				}, {
-					"id":	"chest_21",
-					"x":	6,
-					"y":	9
-				}, {
-					"id":	"chest_22",
-					"x":	9,
-					"y":	9
-				}, {
-					"id":	"chest_23",
-					"x":	12,
-					"y":	9
-				}, {
-					"id":	"chest_24",
-					"x":	15,
-					"y":	9
-				}, {
-					"id":	"chest_25",
-					"x":	18,
-					"y":	9
-				}, {
-					"id":	"chest_26",
-					"x":	21,
-					"y":	9
-				}, {
-					"id":	"chest_27",
-					"x":	24,
-					"y":	9
-				}, {
-					"id":	"chest_28",
-					"x":	27,
-					"y":	9
-				}, {
-					"id":	"chest_29",
-					"x":	30,
-					"y":	9
-				}, {
-					"id":	"chest_30",
-					"x":	33,
-					"y":	9
-				}],
-			"signs":	[{
-					"x":	18,
-					"y":	8,
-					"id":	"sign_africa_1",
-					"title":	"Carthago",
-					"body":	"Thrice Rome fought\nher; thrice she fell.\nCarthago delenda est."
-				}, {
-					"x":	25,
-					"y":	16,
-					"id":	"sign_africa_2",
-					"title":	"The Sahara",
-					"body":	"South lies the sand.\nA day of marching\nbuys a single tile."
-				}, {
-					"x":	36,
-					"y":	8,
-					"id":	"sign_africa_3",
-					"title":	"The Grain Fleet",
-					"body":	"From these ports the\ncorn ships sail to\nfeed a million in Roma."
-				}],
-			"dwellings":	[],
-			"armies":	[],
-			"hero_spawn":	{
-				"x":	7,
-				"y":	7
-			},
-			"magic_alcove":	{
-				"x":	24,
-				"y":	8
-			},
-			"towns":	[{
-					"x":	18,
-					"y":	7,
-					"id":	"utica"
-				}, {
-					"x":	8,
-					"y":	14,
-					"id":	"thapsus"
-				}, {
-					"x":	26,
-					"y":	14,
-					"id":	"sabratha"
-				}, {
-					"x":	38,
-					"y":	7,
-					"id":	"hadrumetum"
-				}, {
-					"x":	42,
-					"y":	13,
-					"id":	"oea"
-				}, {
-					"x":	47,
-					"y":	7,
-					"id":	"ptolemais"
-				}],
-			"castles":	[{
-					"x":	20,
-					"y":	7,
-					"id":	"castle_africa_1"
-				}, {
-					"x":	10,
-					"y":	15,
-					"id":	"castle_africa_2"
-				}, {
-					"x":	28,
-					"y":	15,
-					"id":	"castle_africa_3"
-				}, {
-					"x":	40,
-					"y":	7,
-					"id":	"castle_africa_4"
-				}, {
-					"x":	44,
-					"y":	15,
-					"id":	"castle_africa_5"
-				}, {
-					"x":	49,
-					"y":	7,
-					"id":	"castle_africa_6"
-				}]
-		}, {
-			"id":	"oriens",
-			"name":	"Oriens",
-			"map":	"maps/oriens.dat",
-			"width":	64,
-			"height":	44,
-			"neighbors":	["italia", "africa"],
-			"salt":	{
-				"artifacts":	2,
-				"navmaps":	1,
-				"orbs":	1,
-				"telecaves":	2,
-				"dwellings":	10,
-				"friendly_foes":	5,
-				"preferred_troops":	["peasants", "sprites", "orcs", "skeletons", "wolves", "gnomes"],
-				"dwelling_range":	[0, 14]
-			},
-			"chests":	[{
-					"id":	"chest_1",
-					"x":	6,
-					"y":	6
-				}, {
-					"id":	"chest_2",
-					"x":	11,
-					"y":	6
-				}, {
-					"id":	"chest_3",
-					"x":	15,
-					"y":	6
-				}, {
-					"id":	"chest_4",
-					"x":	18,
-					"y":	6
-				}, {
-					"id":	"chest_5",
-					"x":	21,
-					"y":	6
-				}, {
-					"id":	"chest_6",
-					"x":	27,
-					"y":	6
-				}, {
-					"id":	"chest_7",
-					"x":	30,
-					"y":	6
-				}, {
-					"id":	"chest_8",
-					"x":	33,
-					"y":	6
-				}, {
-					"id":	"chest_9",
-					"x":	36,
-					"y":	6
-				}, {
-					"id":	"chest_10",
-					"x":	38,
-					"y":	6
-				}, {
-					"id":	"chest_11",
-					"x":	42,
-					"y":	6
-				}, {
-					"id":	"chest_12",
-					"x":	45,
-					"y":	6
-				}, {
-					"id":	"chest_13",
-					"x":	6,
-					"y":	9
-				}, {
-					"id":	"chest_14",
-					"x":	15,
-					"y":	9
-				}, {
-					"id":	"chest_15",
-					"x":	18,
-					"y":	9
-				}, {
-					"id":	"chest_16",
-					"x":	21,
-					"y":	9
-				}, {
-					"id":	"chest_17",
-					"x":	24,
-					"y":	9
-				}, {
-					"id":	"chest_18",
-					"x":	27,
-					"y":	9
-				}, {
-					"id":	"chest_19",
-					"x":	30,
-					"y":	9
-				}, {
-					"id":	"chest_20",
-					"x":	33,
-					"y":	9
-				}, {
-					"id":	"chest_21",
-					"x":	36,
-					"y":	9
-				}, {
-					"id":	"chest_22",
-					"x":	39,
-					"y":	9
-				}, {
-					"id":	"chest_23",
-					"x":	42,
-					"y":	9
-				}, {
-					"id":	"chest_24",
-					"x":	45,
-					"y":	9
-				}, {
-					"id":	"chest_25",
-					"x":	6,
-					"y":	12
-				}, {
-					"id":	"chest_26",
-					"x":	9,
-					"y":	12
-				}, {
-					"id":	"chest_27",
-					"x":	36,
-					"y":	12
-				}, {
-					"id":	"chest_28",
-					"x":	39,
-					"y":	12
-				}, {
-					"id":	"chest_29",
-					"x":	42,
-					"y":	12
-				}, {
-					"id":	"chest_30",
-					"x":	45,
-					"y":	12
-				}],
-			"signs":	[{
-					"x":	46,
-					"y":	37,
-					"id":	"sign_oriens_1",
-					"title":	"Palmyra",
-					"body":	"Oasis of the caravans,\nwhere Zenobia named\nherself Augusta."
-				}, {
-					"x":	44,
-					"y":	20,
-					"id":	"sign_oriens_2",
-					"title":	"The Frontier",
-					"body":	"East lies Parthia,\nthe border Rome\nnever truly held."
-				}, {
-					"x":	38,
-					"y":	8,
-					"id":	"sign_oriens_3",
-					"title":	"The Silk Road",
-					"body":	"The road from the East\nends here. Its wealth\npasses through Antiochia."
-				}],
-			"dwellings":	[],
-			"armies":	[],
-			"hero_spawn":	{
-				"x":	9,
-				"y":	6
-			},
-			"magic_alcove":	{
-				"x":	41,
-				"y":	7
-			},
-			"towns":	[{
-					"x":	38,
-					"y":	5,
-					"id":	"tarsus"
-				}, {
-					"x":	8,
-					"y":	15,
-					"id":	"smyrna"
-				}, {
-					"x":	46,
-					"y":	21,
-					"id":	"nicomedia"
-				}, {
-					"x":	46,
-					"y":	36,
-					"id":	"damascus"
-				}],
-			"castles":	[{
-					"x":	40,
-					"y":	7,
-					"id":	"castle_oriens_1"
-				}, {
-					"x":	10,
-					"y":	17,
-					"id":	"castle_oriens_2"
-				}, {
-					"x":	48,
-					"y":	23,
-					"id":	"castle_oriens_3"
-				}, {
-					"x":	48,
-					"y":	38,
-					"id":	"castle_oriens_4"
-				}]
-		}],
-	"towns":	[{
-			"index":	0,
-			"id":	"ostia",
-			"name":	"Ostia",
-			"x":	39,
-			"y":	51,
-			"boat":	{
-				"x":	-1,
-				"y":	-1
-			},
-			"gate":	{
-				"x":	39,
-				"y":	52
-			},
-			"zone":	"italia",
-			"intel_castle":	"castle_italia_2",
-			"pinned_spell":	"bridge"
-		}, {
-			"index":	1,
-			"id":	"puteoli",
-			"name":	"Puteoli",
-			"x":	37,
-			"y":	62,
-			"boat":	{
-				"x":	-1,
-				"y":	-1
-			},
-			"gate":	{
-				"x":	37,
-				"y":	63
-			},
-			"zone":	"italia",
-			"intel_castle":	"castle_italia_3"
-		}, {
-			"index":	2,
-			"id":	"cumae",
-			"name":	"Cumae",
-			"x":	45,
-			"y":	72,
-			"boat":	{
-				"x":	-1,
-				"y":	-1
-			},
-			"gate":	{
-				"x":	45,
-				"y":	73
-			},
-			"zone":	"italia",
-			"intel_castle":	"castle_italia_4"
-		}, {
-			"index":	3,
-			"id":	"tarracina",
-			"name":	"Tarracina",
-			"x":	45,
-			"y":	84,
-			"boat":	{
-				"x":	-1,
-				"y":	-1
-			},
-			"gate":	{
-				"x":	45,
-				"y":	85
-			},
-			"zone":	"italia",
-			"intel_castle":	"castle_italia_5"
-		}, {
-			"index":	4,
-			"id":	"pisae",
-			"name":	"Pisae",
-			"x":	33,
-			"y":	99,
-			"boat":	{
-				"x":	-1,
-				"y":	-1
-			},
-			"gate":	{
-				"x":	33,
-				"y":	100
-			},
-			"zone":	"italia",
-			"intel_castle":	"castle_italia_6"
-		}, {
-			"index":	5,
-			"id":	"ancona",
-			"name":	"Ancona",
-			"x":	42,
-			"y":	20,
-			"boat":	{
-				"x":	-1,
-				"y":	-1
-			},
-			"gate":	{
-				"x":	42,
-				"y":	21
-			},
-			"zone":	"italia",
-			"intel_castle":	"castle_italia_7"
-		}, {
-			"index":	6,
-			"id":	"ravenna",
-			"name":	"Ravenna",
-			"x":	18,
-			"y":	10,
-			"boat":	{
-				"x":	-1,
-				"y":	-1
-			},
-			"gate":	{
-				"x":	18,
-				"y":	11
-			},
-			"zone":	"italia",
-			"intel_castle":	"castle_italia_8"
-		}, {
-			"index":	7,
-			"id":	"mediolanum",
-			"name":	"Mediolanum",
-			"x":	7,
-			"y":	12,
-			"boat":	{
-				"x":	5,
-				"y":	14
-			},
-			"gate":	{
-				"x":	7,
-				"y":	13
-			},
-			"zone":	"italia",
-			"intel_castle":	"castle_italia_9"
-		}, {
-			"index":	8,
-			"id":	"croton",
-			"name":	"Croton",
-			"x":	47,
-			"y":	78,
-			"boat":	{
-				"x":	-1,
-				"y":	-1
-			},
-			"gate":	{
-				"x":	47,
-				"y":	79
-			},
-			"zone":	"italia",
-			"intel_castle":	"castle_italia_10"
-		}, {
-			"index":	9,
-			"id":	"massilia",
-			"name":	"Massilia",
-			"x":	28,
-			"y":	21,
-			"boat":	{
-				"x":	30,
-				"y":	19
-			},
-			"gate":	{
-				"x":	28,
-				"y":	22
-			},
-			"zone":	"galliae",
-			"intel_castle":	"castle_galliae_1"
-		}, {
-			"index":	10,
-			"id":	"narbo",
-			"name":	"Narbo",
-			"x":	38,
-			"y":	26,
-			"boat":	{
-				"x":	-1,
-				"y":	-1
-			},
-			"gate":	{
-				"x":	38,
-				"y":	27
-			},
-			"zone":	"galliae",
-			"intel_castle":	"castle_galliae_2"
-		}, {
-			"index":	11,
-			"id":	"tolosa",
-			"name":	"Tolosa",
-			"x":	28,
-			"y":	42,
-			"boat":	{
-				"x":	-1,
-				"y":	-1
-			},
-			"gate":	{
-				"x":	28,
-				"y":	43
-			},
-			"zone":	"galliae",
-			"intel_castle":	"castle_galliae_3"
-		}, {
-			"index":	12,
-			"id":	"burdigala",
-			"name":	"Burdigala",
-			"x":	45,
-			"y":	20,
-			"boat":	{
-				"x":	44,
-				"y":	19
-			},
-			"gate":	{
-				"x":	45,
-				"y":	21
-			},
-			"zone":	"galliae",
-			"intel_castle":	"castle_galliae_4"
-		}, {
-			"index":	13,
-			"id":	"vienna",
-			"name":	"Vienna",
-			"x":	28,
-			"y":	50,
-			"boat":	{
-				"x":	-1,
-				"y":	-1
-			},
-			"gate":	{
-				"x":	28,
-				"y":	51
-			},
-			"zone":	"galliae",
-			"intel_castle":	"castle_galliae_5"
-		}, {
-			"index":	14,
-			"id":	"aquae_sextiae",
-			"name":	"Aquae Sextiae",
-			"x":	20,
-			"y":	35,
-			"boat":	{
-				"x":	-1,
-				"y":	-1
-			},
-			"gate":	{
-				"x":	20,
-				"y":	36
-			},
-			"zone":	"galliae",
-			"intel_castle":	"castle_galliae_6"
-		}, {
-			"index":	15,
-			"id":	"utica",
-			"name":	"Utica",
-			"x":	18,
-			"y":	7,
-			"boat":	{
-				"x":	17,
-				"y":	5
-			},
-			"gate":	{
-				"x":	18,
-				"y":	8
-			},
-			"zone":	"africa",
-			"intel_castle":	"castle_africa_1"
-		}, {
-			"index":	16,
-			"id":	"thapsus",
-			"name":	"Thapsus",
-			"x":	8,
-			"y":	14,
-			"boat":	{
-				"x":	-1,
-				"y":	-1
-			},
-			"gate":	{
-				"x":	8,
-				"y":	15
-			},
-			"zone":	"africa",
-			"intel_castle":	"castle_africa_2"
-		}, {
-			"index":	17,
-			"id":	"sabratha",
-			"name":	"Sabratha",
-			"x":	26,
-			"y":	14,
-			"boat":	{
-				"x":	-1,
-				"y":	-1
-			},
-			"gate":	{
-				"x":	26,
-				"y":	15
-			},
-			"zone":	"africa",
-			"intel_castle":	"castle_africa_3"
-		}, {
-			"index":	18,
-			"id":	"hadrumetum",
-			"name":	"Hadrumetum",
-			"x":	38,
-			"y":	7,
-			"boat":	{
-				"x":	36,
-				"y":	5
-			},
-			"gate":	{
-				"x":	38,
-				"y":	8
-			},
-			"zone":	"africa",
-			"intel_castle":	"castle_africa_4"
-		}, {
-			"index":	19,
-			"id":	"oea",
-			"name":	"Oea",
-			"x":	42,
-			"y":	13,
-			"boat":	{
-				"x":	-1,
-				"y":	-1
-			},
-			"gate":	{
-				"x":	42,
-				"y":	14
-			},
-			"zone":	"africa",
-			"intel_castle":	"castle_africa_5"
-		}, {
-			"index":	20,
-			"id":	"ptolemais",
-			"name":	"Ptolemais",
-			"x":	47,
-			"y":	7,
-			"boat":	{
-				"x":	47,
-				"y":	5
-			},
-			"gate":	{
-				"x":	47,
-				"y":	8
-			},
-			"zone":	"africa",
-			"intel_castle":	"castle_africa_6"
-		}, {
-			"index":	21,
-			"id":	"tarsus",
-			"name":	"Tarsus",
-			"x":	38,
-			"y":	5,
-			"boat":	{
-				"x":	37,
-				"y":	4
-			},
-			"gate":	{
-				"x":	38,
-				"y":	6
-			},
-			"zone":	"oriens",
-			"intel_castle":	"castle_oriens_1"
-		}, {
-			"index":	22,
-			"id":	"smyrna",
-			"name":	"Smyrna",
-			"x":	8,
-			"y":	15,
-			"boat":	{
-				"x":	-1,
-				"y":	-1
-			},
-			"gate":	{
-				"x":	8,
-				"y":	16
-			},
-			"zone":	"oriens",
-			"intel_castle":	"castle_oriens_2"
-		}, {
-			"index":	23,
-			"id":	"nicomedia",
-			"name":	"Nicomedia",
-			"x":	46,
-			"y":	21,
-			"boat":	{
-				"x":	47,
-				"y":	20
-			},
-			"gate":	{
-				"x":	46,
-				"y":	22
-			},
-			"zone":	"oriens",
-			"intel_castle":	"castle_oriens_3"
-		}, {
-			"index":	24,
-			"id":	"damascus",
-			"name":	"Damascus",
-			"x":	46,
-			"y":	36,
-			"boat":	{
-				"x":	-1,
-				"y":	-1
-			},
-			"gate":	{
-				"x":	46,
-				"y":	37
-			},
-			"zone":	"oriens",
-			"intel_castle":	"castle_oriens_4"
-		}],
-	"castles":	[{
-			"index":	0,
-			"id":	"castle_italia_1",
-			"name":	"Roma",
-			"x":	38,
-			"y":	45,
-			"zone":	"italia",
-			"difficulty_tier":	0,
-			"special":	{
-				"flow":	"audience",
-				"excluded_from_siege":	true,
-				"excluded_from_intel":	true,
-				"excluded_from_contract":	true,
-				"win_condition":	"scepter",
-				"dialog":	{
-					"header":	"Roma, Seat of Traianus",
-					"body":	"Emperor Traianus bids you\nwelcome, Hero.\n\nReturn with the stolen Aquila\nof the Legions and all the\nprovinces of Rome are yours."
+			"signs": [
+				{
+					"x": 25,
+					"y": 18,
+					"id": "sign_italia_1",
+					"title": "The Rubicon",
+					"body": "Beyond this stream\nlies Italia herself.\nCross under arms and\nthere is no return."
 				},
-				"audience":	{
-					"intro":	"Trumpets announce your\narrival with imperial fanfare.\n\nEmperor Traianus rises from his\nthrone to greet you and\nproclaims:           (space)",
-					"rank_up":	"\n\nCongratulations %NAME%,\n\nI now raise you to the rank of\n%RANK%.\n",
-					"more_needed":	"\n\nMy dear %NAME%,\n\nI can aid you better after\nyou've captured %NEEDED% more\nvillains.",
-					"final_rank":	"\n\n%NAME% the %RANK%,\n\nHurry and recover the Aquila\nof the Legions, or all Rome\nwill be lost!"
+				{
+					"x": 42,
+					"y": 56,
+					"id": "sign_italia_2",
+					"title": "The Via Appia",
+					"body": "The Appian Way runs\nsouth to Brundisium\nand the sea."
+				},
+				{
+					"x": 36,
+					"y": 46,
+					"id": "sign_italia_3",
+					"title": "Roma",
+					"body": "All roads lead here.\nEmperor Traianus holds\ncourt within."
+				},
+				{
+					"x": 30,
+					"y": 50,
+					"id": "sign_italia_4",
+					"title": "The Apennines",
+					"body": "This stony spine\ndivides the peninsula,\ncoast from coast."
+				},
+				{
+					"x": 37,
+					"y": 100,
+					"id": "sign_italia_5",
+					"title": "The Strait",
+					"body": "Across the water lies\nSicilia, granary of\nthe Republic."
+				}
+			],
+			"towns": [
+				{
+					"x": 39,
+					"y": 51,
+					"id": "ostia"
+				},
+				{
+					"x": 37,
+					"y": 62,
+					"id": "puteoli"
+				},
+				{
+					"x": 45,
+					"y": 72,
+					"id": "cumae"
+				},
+				{
+					"x": 45,
+					"y": 84,
+					"id": "tarracina"
+				},
+				{
+					"x": 33,
+					"y": 99,
+					"id": "pisae"
+				},
+				{
+					"x": 42,
+					"y": 20,
+					"id": "ancona"
+				},
+				{
+					"x": 18,
+					"y": 10,
+					"id": "ravenna"
+				},
+				{
+					"x": 7,
+					"y": 12,
+					"id": "mediolanum"
+				},
+				{
+					"x": 47,
+					"y": 78,
+					"id": "croton"
+				}
+			],
+			"castles": [
+				{
+					"x": 38,
+					"y": 45,
+					"id": "castle_italia_1"
+				},
+				{
+					"x": 41,
+					"y": 53,
+					"id": "castle_italia_2"
+				},
+				{
+					"x": 39,
+					"y": 62,
+					"id": "castle_italia_3"
+				},
+				{
+					"x": 46,
+					"y": 74,
+					"id": "castle_italia_4"
+				},
+				{
+					"x": 46,
+					"y": 86,
+					"id": "castle_italia_5"
+				},
+				{
+					"x": 35,
+					"y": 101,
+					"id": "castle_italia_6"
+				},
+				{
+					"x": 44,
+					"y": 21,
+					"id": "castle_italia_7"
+				},
+				{
+					"x": 20,
+					"y": 10,
+					"id": "castle_italia_8"
+				},
+				{
+					"x": 9,
+					"y": 14,
+					"id": "castle_italia_9"
+				},
+				{
+					"x": 48,
+					"y": 80,
+					"id": "castle_italia_10"
+				}
+			],
+			"chests": [
+				{
+					"id": "chest_1",
+					"x": 6,
+					"y": 9
+				},
+				{
+					"id": "chest_2",
+					"x": 9,
+					"y": 9
+				},
+				{
+					"id": "chest_3",
+					"x": 12,
+					"y": 9
+				},
+				{
+					"id": "chest_4",
+					"x": 15,
+					"y": 9
+				},
+				{
+					"id": "chest_5",
+					"x": 18,
+					"y": 9
+				},
+				{
+					"id": "chest_6",
+					"x": 22,
+					"y": 9
+				},
+				{
+					"id": "chest_7",
+					"x": 24,
+					"y": 9
+				},
+				{
+					"id": "chest_8",
+					"x": 27,
+					"y": 9
+				},
+				{
+					"id": "chest_9",
+					"x": 30,
+					"y": 9
+				},
+				{
+					"id": "chest_10",
+					"x": 33,
+					"y": 9
+				},
+				{
+					"id": "chest_11",
+					"x": 36,
+					"y": 9
+				},
+				{
+					"id": "chest_12",
+					"x": 39,
+					"y": 9
+				},
+				{
+					"id": "chest_13",
+					"x": 42,
+					"y": 9
+				},
+				{
+					"id": "chest_14",
+					"x": 45,
+					"y": 9
+				},
+				{
+					"id": "chest_15",
+					"x": 48,
+					"y": 9
+				},
+				{
+					"id": "chest_16",
+					"x": 51,
+					"y": 9
+				},
+				{
+					"id": "chest_17",
+					"x": 54,
+					"y": 9
+				},
+				{
+					"id": "chest_18",
+					"x": 57,
+					"y": 9
+				},
+				{
+					"id": "chest_19",
+					"x": 6,
+					"y": 12
+				},
+				{
+					"id": "chest_20",
+					"x": 9,
+					"y": 12
+				},
+				{
+					"id": "chest_21",
+					"x": 12,
+					"y": 12
+				},
+				{
+					"id": "chest_22",
+					"x": 24,
+					"y": 12
+				},
+				{
+					"id": "chest_23",
+					"x": 27,
+					"y": 12
+				},
+				{
+					"id": "chest_24",
+					"x": 30,
+					"y": 12
+				},
+				{
+					"id": "chest_25",
+					"x": 42,
+					"y": 12
+				},
+				{
+					"id": "chest_26",
+					"x": 45,
+					"y": 12
+				},
+				{
+					"id": "chest_27",
+					"x": 48,
+					"y": 12
+				},
+				{
+					"id": "chest_28",
+					"x": 51,
+					"y": 12
+				},
+				{
+					"id": "chest_29",
+					"x": 54,
+					"y": 12
+				},
+				{
+					"id": "chest_30",
+					"x": 57,
+					"y": 11
+				},
+				{
+					"id": "chest_31",
+					"x": 6,
+					"y": 14
+				},
+				{
+					"id": "chest_32",
+					"x": 9,
+					"y": 15
+				},
+				{
+					"id": "chest_33",
+					"x": 12,
+					"y": 16
+				},
+				{
+					"id": "chest_34",
+					"x": 24,
+					"y": 15
+				},
+				{
+					"id": "chest_35",
+					"x": 28,
+					"y": 15
+				},
+				{
+					"id": "chest_36",
+					"x": 30,
+					"y": 15
+				},
+				{
+					"id": "chest_37",
+					"x": 39,
+					"y": 15
+				},
+				{
+					"id": "chest_38",
+					"x": 42,
+					"y": 15
+				},
+				{
+					"id": "chest_39",
+					"x": 45,
+					"y": 16
+				},
+				{
+					"id": "chest_40",
+					"x": 48,
+					"y": 15
+				}
+			],
+			"artifacts": [],
+			"dwellings": [],
+			"wandering_armies": [
+				{
+					"x": 26,
+					"y": 57,
+					"id": "wandering_army_000"
+				},
+				{
+					"x": 36,
+					"y": 56,
+					"id": "wandering_army_001"
+				},
+				{
+					"x": 47,
+					"y": 58,
+					"id": "wandering_army_002"
+				},
+				{
+					"x": 23,
+					"y": 10,
+					"id": "wandering_army_003"
+				},
+				{
+					"x": 24,
+					"y": 52,
+					"id": "wandering_army_004"
+				},
+				{
+					"x": 20,
+					"y": 48,
+					"id": "wandering_army_005"
+				},
+				{
+					"x": 43,
+					"y": 51,
+					"id": "wandering_army_006"
+				},
+				{
+					"x": 45,
+					"y": 52,
+					"id": "wandering_army_007"
+				},
+				{
+					"x": 18,
+					"y": 41,
+					"id": "wandering_army_008"
+				},
+				{
+					"x": 16,
+					"y": 37,
+					"id": "wandering_army_009"
+				},
+				{
+					"x": 32,
+					"y": 46,
+					"id": "wandering_army_010"
+				},
+				{
+					"x": 44,
+					"y": 46,
+					"id": "wandering_army_011"
+				},
+				{
+					"x": 47,
+					"y": 12,
+					"id": "wandering_army_012"
+				},
+				{
+					"x": 14,
+					"y": 35,
+					"id": "wandering_army_013"
+				},
+				{
+					"x": 16,
+					"y": 39,
+					"id": "wandering_army_014"
+				},
+				{
+					"x": 15,
+					"y": 35,
+					"id": "wandering_army_015"
+				},
+				{
+					"x": 18,
+					"y": 37,
+					"id": "wandering_army_016"
+				},
+				{
+					"x": 14,
+					"y": 34,
+					"id": "wandering_army_017"
+				},
+				{
+					"x": 46,
+					"y": 23,
+					"id": "wandering_army_018"
+				},
+				{
+					"x": 11,
+					"y": 24,
+					"id": "wandering_army_019"
+				},
+				{
+					"x": 48,
+					"y": 20,
+					"id": "wandering_army_020"
+				},
+				{
+					"x": 31,
+					"y": 24,
+					"id": "wandering_army_021"
+				},
+				{
+					"x": 11,
+					"y": 22,
+					"id": "wandering_army_022"
+				},
+				{
+					"x": 21,
+					"y": 22,
+					"id": "wandering_army_023"
+				},
+				{
+					"x": 54,
+					"y": 16,
+					"id": "wandering_army_024"
+				},
+				{
+					"x": 9,
+					"y": 16,
+					"id": "wandering_army_025"
+				},
+				{
+					"x": 41,
+					"y": 18,
+					"id": "wandering_army_026"
+				},
+				{
+					"x": 23,
+					"y": 15,
+					"id": "wandering_army_027"
+				},
+				{
+					"x": 32,
+					"y": 16,
+					"id": "wandering_army_028"
+				},
+				{
+					"x": 5,
+					"y": 10,
+					"id": "wandering_army_029"
+				},
+				{
+					"x": 42,
+					"y": 10,
+					"id": "wandering_army_030"
+				},
+				{
+					"x": 13,
+					"y": 9,
+					"id": "wandering_army_031"
+				},
+				{
+					"x": 23,
+					"y": 9,
+					"id": "wandering_army_032"
+				},
+				{
+					"x": 49,
+					"y": 9,
+					"id": "wandering_army_033"
+				},
+				{
+					"x": 31,
+					"y": 9,
+					"id": "wandering_army_034"
+				},
+				{
+					"x": 32,
+					"y": 95,
+					"id": "guardian_calabria",
+					"static": true,
+					"army": [
+						{
+							"troop": "barbarians",
+							"count": 30
+						},
+						{
+							"troop": "trolls",
+							"count": 20
+						},
+						{
+							"troop": "ogres",
+							"count": 12
+						},
+						{
+							"troop": "knights",
+							"count": 8
+						},
+						{
+							"troop": "dragons",
+							"count": 2
+						}
+					]
+				}
+			],
+			"armies": []
+		},
+		{
+			"id": "galliae",
+			"name": "Galliae",
+			"map": "maps/galliae.dat",
+			"width": 64,
+			"height": 64,
+			"neighbors": [
+				"italia",
+				"africa"
+			],
+			"salt": {
+				"artifacts": 2,
+				"navmaps": 1,
+				"orbs": 1,
+				"telecaves": 2,
+				"dwellings": 10,
+				"friendly_foes": 5,
+				"preferred_troops": [
+					"peasants",
+					"sprites",
+					"orcs",
+					"skeletons",
+					"wolves",
+					"gnomes"
+				],
+				"dwelling_range": [
+					0,
+					14
+				]
+			},
+			"chests": [
+				{
+					"id": "chest_1",
+					"x": 46,
+					"y": 20
+				},
+				{
+					"id": "chest_2",
+					"x": 9,
+					"y": 25
+				},
+				{
+					"id": "chest_3",
+					"x": 33,
+					"y": 27
+				},
+				{
+					"id": "chest_4",
+					"x": 45,
+					"y": 28
+				},
+				{
+					"id": "chest_5",
+					"x": 20,
+					"y": 34
+				},
+				{
+					"id": "chest_6",
+					"x": 32,
+					"y": 35
+				},
+				{
+					"id": "chest_7",
+					"x": 43,
+					"y": 44
+				},
+				{
+					"id": "chest_8",
+					"x": 18,
+					"y": 50
+				},
+				{
+					"id": "chest_9",
+					"x": 42,
+					"y": 52
+				},
+				{
+					"id": "chest_10",
+					"x": 17,
+					"y": 58
+				},
+				{
+					"id": "chest_11",
+					"x": 29,
+					"y": 59
+				},
+				{
+					"id": "chest_12",
+					"x": 11,
+					"y": 24
+				},
+				{
+					"id": "chest_13",
+					"x": 23,
+					"y": 25
+				},
+				{
+					"id": "chest_14",
+					"x": 35,
+					"y": 26
+				},
+				{
+					"id": "chest_15",
+					"x": 47,
+					"y": 27
+				},
+				{
+					"id": "chest_16",
+					"x": 10,
+					"y": 32
+				},
+				{
+					"id": "chest_17",
+					"x": 20,
+					"y": 20
+				},
+				{
+					"id": "chest_18",
+					"x": 22,
+					"y": 20
+				},
+				{
+					"id": "chest_19",
+					"x": 24,
+					"y": 20
+				},
+				{
+					"id": "chest_20",
+					"x": 26,
+					"y": 20
+				},
+				{
+					"id": "chest_21",
+					"x": 8,
+					"y": 23
+				},
+				{
+					"id": "chest_22",
+					"x": 13,
+					"y": 23
+				},
+				{
+					"id": "chest_23",
+					"x": 15,
+					"y": 23
+				},
+				{
+					"id": "chest_24",
+					"x": 20,
+					"y": 22
+				},
+				{
+					"id": "chest_25",
+					"x": 22,
+					"y": 22
+				},
+				{
+					"id": "chest_26",
+					"x": 24,
+					"y": 22
+				},
+				{
+					"id": "chest_27",
+					"x": 9,
+					"y": 21
+				},
+				{
+					"id": "chest_28",
+					"x": 12,
+					"y": 21
+				},
+				{
+					"id": "chest_29",
+					"x": 15,
+					"y": 21
+				},
+				{
+					"id": "chest_30",
+					"x": 18,
+					"y": 21
+				}
+			],
+			"signs": [
+				{
+					"x": 38,
+					"y": 29,
+					"id": "sign_galliae_1",
+					"title": "Alesia",
+					"body": "Here Vercingetorix\nlaid down his arms\nbefore Caesar."
+				},
+				{
+					"x": 46,
+					"y": 30,
+					"id": "sign_galliae_2",
+					"title": "The Rhine",
+					"body": "This river marks the\nedge of the world.\nBeyond it, Germania."
+				},
+				{
+					"x": 22,
+					"y": 21,
+					"id": "sign_galliae_3",
+					"title": "Britannia",
+					"body": "Across the northern\nsea lies Britannia,\nand Londinium upon it."
+				}
+			],
+			"dwellings": [],
+			"armies": [],
+			"hero_spawn": {
+				"x": 9,
+				"y": 20
+			},
+			"magic_alcove": {
+				"x": 24,
+				"y": 24
+			},
+			"towns": [
+				{
+					"x": 28,
+					"y": 21,
+					"id": "massilia"
+				},
+				{
+					"x": 38,
+					"y": 26,
+					"id": "narbo"
+				},
+				{
+					"x": 28,
+					"y": 42,
+					"id": "tolosa"
+				},
+				{
+					"x": 45,
+					"y": 20,
+					"id": "burdigala"
+				},
+				{
+					"x": 28,
+					"y": 50,
+					"id": "vienna"
+				},
+				{
+					"x": 20,
+					"y": 35,
+					"id": "aquae_sextiae"
+				}
+			],
+			"castles": [
+				{
+					"x": 30,
+					"y": 23,
+					"id": "castle_galliae_1"
+				},
+				{
+					"x": 40,
+					"y": 28,
+					"id": "castle_galliae_2"
+				},
+				{
+					"x": 30,
+					"y": 44,
+					"id": "castle_galliae_3"
+				},
+				{
+					"x": 47,
+					"y": 22,
+					"id": "castle_galliae_4"
+				},
+				{
+					"x": 30,
+					"y": 52,
+					"id": "castle_galliae_5"
+				},
+				{
+					"x": 22,
+					"y": 35,
+					"id": "castle_galliae_6"
+				}
+			]
+		},
+		{
+			"id": "africa",
+			"name": "Africa",
+			"map": "maps/africa.dat",
+			"width": 64,
+			"height": 28,
+			"neighbors": [
+				"italia",
+				"galliae",
+				"oriens"
+			],
+			"salt": {
+				"artifacts": 2,
+				"navmaps": 1,
+				"orbs": 1,
+				"telecaves": 2,
+				"dwellings": 10,
+				"friendly_foes": 5,
+				"preferred_troops": [
+					"peasants",
+					"sprites",
+					"orcs",
+					"skeletons",
+					"wolves",
+					"gnomes"
+				],
+				"dwelling_range": [
+					0,
+					14
+				]
+			},
+			"chests": [
+				{
+					"id": "chest_1",
+					"x": 6,
+					"y": 6
+				},
+				{
+					"id": "chest_2",
+					"x": 9,
+					"y": 6
+				},
+				{
+					"id": "chest_3",
+					"x": 12,
+					"y": 6
+				},
+				{
+					"id": "chest_4",
+					"x": 15,
+					"y": 6
+				},
+				{
+					"id": "chest_5",
+					"x": 18,
+					"y": 6
+				},
+				{
+					"id": "chest_6",
+					"x": 22,
+					"y": 6
+				},
+				{
+					"id": "chest_7",
+					"x": 24,
+					"y": 6
+				},
+				{
+					"id": "chest_8",
+					"x": 27,
+					"y": 6
+				},
+				{
+					"id": "chest_9",
+					"x": 30,
+					"y": 6
+				},
+				{
+					"id": "chest_10",
+					"x": 33,
+					"y": 6
+				},
+				{
+					"id": "chest_11",
+					"x": 36,
+					"y": 6
+				},
+				{
+					"id": "chest_12",
+					"x": 38,
+					"y": 6
+				},
+				{
+					"id": "chest_13",
+					"x": 42,
+					"y": 6
+				},
+				{
+					"id": "chest_14",
+					"x": 45,
+					"y": 6
+				},
+				{
+					"id": "chest_15",
+					"x": 47,
+					"y": 6
+				},
+				{
+					"id": "chest_16",
+					"x": 51,
+					"y": 6
+				},
+				{
+					"id": "chest_17",
+					"x": 54,
+					"y": 6
+				},
+				{
+					"id": "chest_18",
+					"x": 57,
+					"y": 6
+				},
+				{
+					"id": "chest_19",
+					"x": 60,
+					"y": 6
+				},
+				{
+					"id": "chest_20",
+					"x": 3,
+					"y": 9
+				},
+				{
+					"id": "chest_21",
+					"x": 6,
+					"y": 9
+				},
+				{
+					"id": "chest_22",
+					"x": 9,
+					"y": 9
+				},
+				{
+					"id": "chest_23",
+					"x": 12,
+					"y": 9
+				},
+				{
+					"id": "chest_24",
+					"x": 15,
+					"y": 9
+				},
+				{
+					"id": "chest_25",
+					"x": 18,
+					"y": 9
+				},
+				{
+					"id": "chest_26",
+					"x": 21,
+					"y": 9
+				},
+				{
+					"id": "chest_27",
+					"x": 24,
+					"y": 9
+				},
+				{
+					"id": "chest_28",
+					"x": 27,
+					"y": 9
+				},
+				{
+					"id": "chest_29",
+					"x": 30,
+					"y": 9
+				},
+				{
+					"id": "chest_30",
+					"x": 33,
+					"y": 9
+				}
+			],
+			"signs": [
+				{
+					"x": 18,
+					"y": 8,
+					"id": "sign_africa_1",
+					"title": "Carthago",
+					"body": "Thrice Rome fought\nher; thrice she fell.\nCarthago delenda est."
+				},
+				{
+					"x": 25,
+					"y": 16,
+					"id": "sign_africa_2",
+					"title": "The Sahara",
+					"body": "South lies the sand.\nA day of marching\nbuys a single tile."
+				},
+				{
+					"x": 36,
+					"y": 8,
+					"id": "sign_africa_3",
+					"title": "The Grain Fleet",
+					"body": "From these ports the\ncorn ships sail to\nfeed a million in Roma."
+				}
+			],
+			"dwellings": [],
+			"armies": [],
+			"hero_spawn": {
+				"x": 7,
+				"y": 7
+			},
+			"magic_alcove": {
+				"x": 24,
+				"y": 8
+			},
+			"towns": [
+				{
+					"x": 18,
+					"y": 7,
+					"id": "utica"
+				},
+				{
+					"x": 8,
+					"y": 14,
+					"id": "thapsus"
+				},
+				{
+					"x": 26,
+					"y": 14,
+					"id": "sabratha"
+				},
+				{
+					"x": 38,
+					"y": 7,
+					"id": "hadrumetum"
+				},
+				{
+					"x": 42,
+					"y": 13,
+					"id": "oea"
+				},
+				{
+					"x": 47,
+					"y": 7,
+					"id": "ptolemais"
+				}
+			],
+			"castles": [
+				{
+					"x": 20,
+					"y": 7,
+					"id": "castle_africa_1"
+				},
+				{
+					"x": 10,
+					"y": 15,
+					"id": "castle_africa_2"
+				},
+				{
+					"x": 28,
+					"y": 15,
+					"id": "castle_africa_3"
+				},
+				{
+					"x": 40,
+					"y": 7,
+					"id": "castle_africa_4"
+				},
+				{
+					"x": 44,
+					"y": 15,
+					"id": "castle_africa_5"
+				},
+				{
+					"x": 49,
+					"y": 7,
+					"id": "castle_africa_6"
+				}
+			]
+		},
+		{
+			"id": "oriens",
+			"name": "Oriens",
+			"map": "maps/oriens.dat",
+			"width": 64,
+			"height": 44,
+			"neighbors": [
+				"italia",
+				"africa"
+			],
+			"salt": {
+				"artifacts": 2,
+				"navmaps": 1,
+				"orbs": 1,
+				"telecaves": 2,
+				"dwellings": 10,
+				"friendly_foes": 5,
+				"preferred_troops": [
+					"peasants",
+					"sprites",
+					"orcs",
+					"skeletons",
+					"wolves",
+					"gnomes"
+				],
+				"dwelling_range": [
+					0,
+					14
+				]
+			},
+			"chests": [
+				{
+					"id": "chest_1",
+					"x": 6,
+					"y": 6
+				},
+				{
+					"id": "chest_2",
+					"x": 11,
+					"y": 6
+				},
+				{
+					"id": "chest_3",
+					"x": 15,
+					"y": 6
+				},
+				{
+					"id": "chest_4",
+					"x": 18,
+					"y": 6
+				},
+				{
+					"id": "chest_5",
+					"x": 21,
+					"y": 6
+				},
+				{
+					"id": "chest_6",
+					"x": 27,
+					"y": 6
+				},
+				{
+					"id": "chest_7",
+					"x": 30,
+					"y": 6
+				},
+				{
+					"id": "chest_8",
+					"x": 33,
+					"y": 6
+				},
+				{
+					"id": "chest_9",
+					"x": 36,
+					"y": 6
+				},
+				{
+					"id": "chest_10",
+					"x": 38,
+					"y": 6
+				},
+				{
+					"id": "chest_11",
+					"x": 42,
+					"y": 6
+				},
+				{
+					"id": "chest_12",
+					"x": 45,
+					"y": 6
+				},
+				{
+					"id": "chest_13",
+					"x": 6,
+					"y": 9
+				},
+				{
+					"id": "chest_14",
+					"x": 15,
+					"y": 9
+				},
+				{
+					"id": "chest_15",
+					"x": 18,
+					"y": 9
+				},
+				{
+					"id": "chest_16",
+					"x": 21,
+					"y": 9
+				},
+				{
+					"id": "chest_17",
+					"x": 24,
+					"y": 9
+				},
+				{
+					"id": "chest_18",
+					"x": 27,
+					"y": 9
+				},
+				{
+					"id": "chest_19",
+					"x": 30,
+					"y": 9
+				},
+				{
+					"id": "chest_20",
+					"x": 33,
+					"y": 9
+				},
+				{
+					"id": "chest_21",
+					"x": 36,
+					"y": 9
+				},
+				{
+					"id": "chest_22",
+					"x": 39,
+					"y": 9
+				},
+				{
+					"id": "chest_23",
+					"x": 42,
+					"y": 9
+				},
+				{
+					"id": "chest_24",
+					"x": 45,
+					"y": 9
+				},
+				{
+					"id": "chest_25",
+					"x": 6,
+					"y": 12
+				},
+				{
+					"id": "chest_26",
+					"x": 9,
+					"y": 12
+				},
+				{
+					"id": "chest_27",
+					"x": 36,
+					"y": 12
+				},
+				{
+					"id": "chest_28",
+					"x": 39,
+					"y": 12
+				},
+				{
+					"id": "chest_29",
+					"x": 42,
+					"y": 12
+				},
+				{
+					"id": "chest_30",
+					"x": 45,
+					"y": 12
+				}
+			],
+			"signs": [
+				{
+					"x": 46,
+					"y": 37,
+					"id": "sign_oriens_1",
+					"title": "Palmyra",
+					"body": "Oasis of the caravans,\nwhere Zenobia named\nherself Augusta."
+				},
+				{
+					"x": 44,
+					"y": 20,
+					"id": "sign_oriens_2",
+					"title": "The Frontier",
+					"body": "East lies Parthia,\nthe border Rome\nnever truly held."
+				},
+				{
+					"x": 38,
+					"y": 8,
+					"id": "sign_oriens_3",
+					"title": "The Silk Road",
+					"body": "The road from the East\nends here. Its wealth\npasses through Antiochia."
+				}
+			],
+			"dwellings": [],
+			"armies": [],
+			"hero_spawn": {
+				"x": 9,
+				"y": 6
+			},
+			"magic_alcove": {
+				"x": 41,
+				"y": 7
+			},
+			"towns": [
+				{
+					"x": 38,
+					"y": 5,
+					"id": "tarsus"
+				},
+				{
+					"x": 8,
+					"y": 15,
+					"id": "smyrna"
+				},
+				{
+					"x": 46,
+					"y": 21,
+					"id": "nicomedia"
+				},
+				{
+					"x": 46,
+					"y": 36,
+					"id": "damascus"
+				}
+			],
+			"castles": [
+				{
+					"x": 40,
+					"y": 7,
+					"id": "castle_oriens_1"
+				},
+				{
+					"x": 10,
+					"y": 17,
+					"id": "castle_oriens_2"
+				},
+				{
+					"x": 48,
+					"y": 23,
+					"id": "castle_oriens_3"
+				},
+				{
+					"x": 48,
+					"y": 38,
+					"id": "castle_oriens_4"
+				}
+			]
+		}
+	],
+	"towns": [
+		{
+			"index": 0,
+			"id": "ostia",
+			"name": "Ostia",
+			"x": 39,
+			"y": 51,
+			"boat": {
+				"x": -1,
+				"y": -1
+			},
+			"gate": {
+				"x": 39,
+				"y": 52
+			},
+			"zone": "italia",
+			"intel_castle": "castle_italia_2",
+			"pinned_spell": "bridge"
+		},
+		{
+			"index": 1,
+			"id": "puteoli",
+			"name": "Puteoli",
+			"x": 37,
+			"y": 62,
+			"boat": {
+				"x": -1,
+				"y": -1
+			},
+			"gate": {
+				"x": 37,
+				"y": 63
+			},
+			"zone": "italia",
+			"intel_castle": "castle_italia_3"
+		},
+		{
+			"index": 2,
+			"id": "cumae",
+			"name": "Cumae",
+			"x": 45,
+			"y": 72,
+			"boat": {
+				"x": -1,
+				"y": -1
+			},
+			"gate": {
+				"x": 45,
+				"y": 73
+			},
+			"zone": "italia",
+			"intel_castle": "castle_italia_4"
+		},
+		{
+			"index": 3,
+			"id": "tarracina",
+			"name": "Tarracina",
+			"x": 45,
+			"y": 84,
+			"boat": {
+				"x": -1,
+				"y": -1
+			},
+			"gate": {
+				"x": 45,
+				"y": 85
+			},
+			"zone": "italia",
+			"intel_castle": "castle_italia_5"
+		},
+		{
+			"index": 4,
+			"id": "pisae",
+			"name": "Pisae",
+			"x": 33,
+			"y": 99,
+			"boat": {
+				"x": -1,
+				"y": -1
+			},
+			"gate": {
+				"x": 33,
+				"y": 100
+			},
+			"zone": "italia",
+			"intel_castle": "castle_italia_6"
+		},
+		{
+			"index": 5,
+			"id": "ancona",
+			"name": "Ancona",
+			"x": 42,
+			"y": 20,
+			"boat": {
+				"x": -1,
+				"y": -1
+			},
+			"gate": {
+				"x": 42,
+				"y": 21
+			},
+			"zone": "italia",
+			"intel_castle": "castle_italia_7"
+		},
+		{
+			"index": 6,
+			"id": "ravenna",
+			"name": "Ravenna",
+			"x": 18,
+			"y": 10,
+			"boat": {
+				"x": -1,
+				"y": -1
+			},
+			"gate": {
+				"x": 18,
+				"y": 11
+			},
+			"zone": "italia",
+			"intel_castle": "castle_italia_8"
+		},
+		{
+			"index": 7,
+			"id": "mediolanum",
+			"name": "Mediolanum",
+			"x": 7,
+			"y": 12,
+			"boat": {
+				"x": 5,
+				"y": 14
+			},
+			"gate": {
+				"x": 7,
+				"y": 13
+			},
+			"zone": "italia",
+			"intel_castle": "castle_italia_9"
+		},
+		{
+			"index": 8,
+			"id": "croton",
+			"name": "Croton",
+			"x": 47,
+			"y": 78,
+			"boat": {
+				"x": -1,
+				"y": -1
+			},
+			"gate": {
+				"x": 47,
+				"y": 79
+			},
+			"zone": "italia",
+			"intel_castle": "castle_italia_10"
+		},
+		{
+			"index": 9,
+			"id": "massilia",
+			"name": "Massilia",
+			"x": 28,
+			"y": 21,
+			"boat": {
+				"x": 30,
+				"y": 19
+			},
+			"gate": {
+				"x": 28,
+				"y": 22
+			},
+			"zone": "galliae",
+			"intel_castle": "castle_galliae_1"
+		},
+		{
+			"index": 10,
+			"id": "narbo",
+			"name": "Narbo",
+			"x": 38,
+			"y": 26,
+			"boat": {
+				"x": -1,
+				"y": -1
+			},
+			"gate": {
+				"x": 38,
+				"y": 27
+			},
+			"zone": "galliae",
+			"intel_castle": "castle_galliae_2"
+		},
+		{
+			"index": 11,
+			"id": "tolosa",
+			"name": "Tolosa",
+			"x": 28,
+			"y": 42,
+			"boat": {
+				"x": -1,
+				"y": -1
+			},
+			"gate": {
+				"x": 28,
+				"y": 43
+			},
+			"zone": "galliae",
+			"intel_castle": "castle_galliae_3"
+		},
+		{
+			"index": 12,
+			"id": "burdigala",
+			"name": "Burdigala",
+			"x": 45,
+			"y": 20,
+			"boat": {
+				"x": 44,
+				"y": 19
+			},
+			"gate": {
+				"x": 45,
+				"y": 21
+			},
+			"zone": "galliae",
+			"intel_castle": "castle_galliae_4"
+		},
+		{
+			"index": 13,
+			"id": "vienna",
+			"name": "Vienna",
+			"x": 28,
+			"y": 50,
+			"boat": {
+				"x": -1,
+				"y": -1
+			},
+			"gate": {
+				"x": 28,
+				"y": 51
+			},
+			"zone": "galliae",
+			"intel_castle": "castle_galliae_5"
+		},
+		{
+			"index": 14,
+			"id": "aquae_sextiae",
+			"name": "Aquae Sextiae",
+			"x": 20,
+			"y": 35,
+			"boat": {
+				"x": -1,
+				"y": -1
+			},
+			"gate": {
+				"x": 20,
+				"y": 36
+			},
+			"zone": "galliae",
+			"intel_castle": "castle_galliae_6"
+		},
+		{
+			"index": 15,
+			"id": "utica",
+			"name": "Utica",
+			"x": 18,
+			"y": 7,
+			"boat": {
+				"x": 17,
+				"y": 5
+			},
+			"gate": {
+				"x": 18,
+				"y": 8
+			},
+			"zone": "africa",
+			"intel_castle": "castle_africa_1"
+		},
+		{
+			"index": 16,
+			"id": "thapsus",
+			"name": "Thapsus",
+			"x": 8,
+			"y": 14,
+			"boat": {
+				"x": -1,
+				"y": -1
+			},
+			"gate": {
+				"x": 8,
+				"y": 15
+			},
+			"zone": "africa",
+			"intel_castle": "castle_africa_2"
+		},
+		{
+			"index": 17,
+			"id": "sabratha",
+			"name": "Sabratha",
+			"x": 26,
+			"y": 14,
+			"boat": {
+				"x": -1,
+				"y": -1
+			},
+			"gate": {
+				"x": 26,
+				"y": 15
+			},
+			"zone": "africa",
+			"intel_castle": "castle_africa_3"
+		},
+		{
+			"index": 18,
+			"id": "hadrumetum",
+			"name": "Hadrumetum",
+			"x": 38,
+			"y": 7,
+			"boat": {
+				"x": 36,
+				"y": 5
+			},
+			"gate": {
+				"x": 38,
+				"y": 8
+			},
+			"zone": "africa",
+			"intel_castle": "castle_africa_4"
+		},
+		{
+			"index": 19,
+			"id": "oea",
+			"name": "Oea",
+			"x": 42,
+			"y": 13,
+			"boat": {
+				"x": -1,
+				"y": -1
+			},
+			"gate": {
+				"x": 42,
+				"y": 14
+			},
+			"zone": "africa",
+			"intel_castle": "castle_africa_5"
+		},
+		{
+			"index": 20,
+			"id": "ptolemais",
+			"name": "Ptolemais",
+			"x": 47,
+			"y": 7,
+			"boat": {
+				"x": 47,
+				"y": 5
+			},
+			"gate": {
+				"x": 47,
+				"y": 8
+			},
+			"zone": "africa",
+			"intel_castle": "castle_africa_6"
+		},
+		{
+			"index": 21,
+			"id": "tarsus",
+			"name": "Tarsus",
+			"x": 38,
+			"y": 5,
+			"boat": {
+				"x": 37,
+				"y": 4
+			},
+			"gate": {
+				"x": 38,
+				"y": 6
+			},
+			"zone": "oriens",
+			"intel_castle": "castle_oriens_1"
+		},
+		{
+			"index": 22,
+			"id": "smyrna",
+			"name": "Smyrna",
+			"x": 8,
+			"y": 15,
+			"boat": {
+				"x": -1,
+				"y": -1
+			},
+			"gate": {
+				"x": 8,
+				"y": 16
+			},
+			"zone": "oriens",
+			"intel_castle": "castle_oriens_2"
+		},
+		{
+			"index": 23,
+			"id": "nicomedia",
+			"name": "Nicomedia",
+			"x": 46,
+			"y": 21,
+			"boat": {
+				"x": 47,
+				"y": 20
+			},
+			"gate": {
+				"x": 46,
+				"y": 22
+			},
+			"zone": "oriens",
+			"intel_castle": "castle_oriens_3"
+		},
+		{
+			"index": 24,
+			"id": "damascus",
+			"name": "Damascus",
+			"x": 46,
+			"y": 36,
+			"boat": {
+				"x": -1,
+				"y": -1
+			},
+			"gate": {
+				"x": 46,
+				"y": 37
+			},
+			"zone": "oriens",
+			"intel_castle": "castle_oriens_4"
+		}
+	],
+	"castles": [
+		{
+			"index": 0,
+			"id": "castle_italia_1",
+			"name": "Roma",
+			"x": 38,
+			"y": 45,
+			"zone": "italia",
+			"difficulty_tier": 0,
+			"special": {
+				"flow": "audience",
+				"excluded_from_siege": true,
+				"excluded_from_intel": true,
+				"excluded_from_contract": true,
+				"win_condition": "scepter",
+				"dialog": {
+					"header": "Roma, Seat of Traianus",
+					"body": "Emperor Traianus bids you\nwelcome, Hero.\n\nReturn with the stolen Aquila\nof the Legions and all the\nprovinces of Rome are yours."
+				},
+				"audience": {
+					"intro": "Trumpets announce your\narrival with imperial fanfare.\n\nEmperor Traianus rises from his\nthrone to greet you and\nproclaims:           (space)",
+					"rank_up": "\n\nCongratulations %NAME%,\n\nI now raise you to the rank of\n%RANK%.\n",
+					"more_needed": "\n\nMy dear %NAME%,\n\nI can aid you better after\nyou've captured %NEEDED% more\nvillains.",
+					"final_rank": "\n\n%NAME% the %RANK%,\n\nHurry and recover the Aquila\nof the Legions, or all Rome\nwill be lost!"
 				}
 			}
-		}, {
-			"index":	0,
-			"id":	"castle_italia_2",
-			"name":	"Capua",
-			"x":	41,
-			"y":	53,
-			"zone":	"italia",
-			"difficulty_tier":	0
-		}, {
-			"index":	0,
-			"id":	"castle_italia_3",
-			"name":	"Neapolis",
-			"x":	39,
-			"y":	62,
-			"zone":	"italia",
-			"difficulty_tier":	0
-		}, {
-			"index":	0,
-			"id":	"castle_italia_4",
-			"name":	"Beneventum",
-			"x":	46,
-			"y":	74,
-			"zone":	"italia",
-			"difficulty_tier":	1
-		}, {
-			"index":	0,
-			"id":	"castle_italia_5",
-			"name":	"Tarentum",
-			"x":	46,
-			"y":	86,
-			"zone":	"italia",
-			"difficulty_tier":	1
-		}, {
-			"index":	0,
-			"id":	"castle_italia_6",
-			"name":	"Rhegium",
-			"x":	35,
-			"y":	101,
-			"zone":	"italia",
-			"difficulty_tier":	1
-		}, {
-			"index":	0,
-			"id":	"castle_italia_7",
-			"name":	"Ariminum",
-			"x":	44,
-			"y":	21,
-			"zone":	"italia",
-			"difficulty_tier":	0
-		}, {
-			"index":	0,
-			"id":	"castle_italia_8",
-			"name":	"Verona",
-			"x":	20,
-			"y":	10,
-			"zone":	"italia",
-			"difficulty_tier":	0
-		}, {
-			"index":	0,
-			"id":	"castle_italia_9",
-			"name":	"Genua",
-			"x":	9,
-			"y":	14,
-			"zone":	"italia",
-			"difficulty_tier":	0
-		}, {
-			"index":	0,
-			"id":	"castle_italia_10",
-			"name":	"Brundisium",
-			"x":	48,
-			"y":	80,
-			"zone":	"italia",
-			"difficulty_tier":	1
-		}, {
-			"index":	0,
-			"id":	"castle_galliae_1",
-			"name":	"Lugdunum",
-			"x":	30,
-			"y":	23,
-			"zone":	"galliae",
-			"difficulty_tier":	1
-		}, {
-			"index":	0,
-			"id":	"castle_galliae_2",
-			"name":	"Alesia",
-			"x":	40,
-			"y":	28,
-			"zone":	"galliae",
-			"difficulty_tier":	1
-		}, {
-			"index":	0,
-			"id":	"castle_galliae_3",
-			"name":	"Gergovia",
-			"x":	30,
-			"y":	44,
-			"zone":	"galliae",
-			"difficulty_tier":	1
-		}, {
-			"index":	0,
-			"id":	"castle_galliae_4",
-			"name":	"Colonia Agrippina",
-			"x":	47,
-			"y":	22,
-			"zone":	"galliae",
-			"difficulty_tier":	1
-		}, {
-			"index":	0,
-			"id":	"castle_galliae_5",
-			"name":	"Corduba",
-			"x":	30,
-			"y":	52,
-			"zone":	"galliae",
-			"difficulty_tier":	1
-		}, {
-			"index":	0,
-			"id":	"castle_galliae_6",
-			"name":	"Bibracte",
-			"x":	22,
-			"y":	35,
-			"zone":	"galliae",
-			"difficulty_tier":	1
-		}, {
-			"index":	0,
-			"id":	"castle_africa_1",
-			"name":	"Carthago",
-			"x":	20,
-			"y":	7,
-			"zone":	"africa",
-			"difficulty_tier":	1
-		}, {
-			"index":	0,
-			"id":	"castle_africa_2",
-			"name":	"Hippo Regius",
-			"x":	10,
-			"y":	15,
-			"zone":	"africa",
-			"difficulty_tier":	1
-		}, {
-			"index":	0,
-			"id":	"castle_africa_3",
-			"name":	"Lambaesis",
-			"x":	28,
-			"y":	15,
-			"zone":	"africa",
-			"difficulty_tier":	1
-		}, {
-			"index":	0,
-			"id":	"castle_africa_4",
-			"name":	"Leptis Magna",
-			"x":	40,
-			"y":	7,
-			"zone":	"africa",
-			"difficulty_tier":	1
-		}, {
-			"index":	0,
-			"id":	"castle_africa_5",
-			"name":	"Cyrene",
-			"x":	44,
-			"y":	15,
-			"zone":	"africa",
-			"difficulty_tier":	1
-		}, {
-			"index":	0,
-			"id":	"castle_africa_6",
-			"name":	"Alexandria",
-			"x":	49,
-			"y":	7,
-			"zone":	"africa",
-			"difficulty_tier":	1
-		}, {
-			"index":	0,
-			"id":	"castle_oriens_1",
-			"name":	"Antiochia",
-			"x":	40,
-			"y":	7,
-			"zone":	"oriens",
-			"difficulty_tier":	2
-		}, {
-			"index":	0,
-			"id":	"castle_oriens_2",
-			"name":	"Ephesus",
-			"x":	10,
-			"y":	17,
-			"zone":	"oriens",
-			"difficulty_tier":	2
-		}, {
-			"index":	0,
-			"id":	"castle_oriens_3",
-			"name":	"Caesarea",
-			"x":	48,
-			"y":	23,
-			"zone":	"oriens",
-			"difficulty_tier":	2
-		}, {
-			"index":	0,
-			"id":	"castle_oriens_4",
-			"name":	"Palmyra",
-			"x":	48,
-			"y":	38,
-			"zone":	"oriens",
-			"difficulty_tier":	2
-		}],
-	"troops":	[{
-			"index":	0,
-			"id":	"peasants",
-			"name":	"Coloni",
-			"sprite":	"art/troops/peasants_00.png",
-			"skill_level":	1,
-			"hit_points":	1,
-			"move_rate":	1,
-			"melee":	[1, 1],
-			"ranged":	[0, 0, 0],
-			"recruit_cost":	10,
-			"spoils_factor":	1,
-			"abilities":	"",
-			"dwelling":	"plains",
-			"max_population":	250,
-			"growth_per_week":	6,
-			"morale_group":	"A",
-			"anim":	["art/troops/peasants_00.png", "art/troops/peasants_01.png", "art/troops/peasants_02.png", "art/troops/peasants_03.png"],
-			"tier_counts":	[10, 20, 50, 100]
-		}, {
-			"index":	1,
-			"id":	"sprites",
-			"name":	"Lares",
-			"sprite":	"art/troops/sprites_00.png",
-			"skill_level":	1,
-			"hit_points":	1,
-			"move_rate":	1,
-			"melee":	[1, 2],
-			"ranged":	[0, 0, 0],
-			"recruit_cost":	15,
-			"spoils_factor":	1,
-			"abilities":	"FLY",
-			"dwelling":	"forest",
-			"max_population":	200,
-			"growth_per_week":	6,
-			"morale_group":	"C",
-			"anim":	["art/troops/sprites_00.png", "art/troops/sprites_01.png", "art/troops/sprites_02.png", "art/troops/sprites_03.png"],
-			"tier_counts":	[10, 15, 30, 50]
-		}, {
-			"index":	2,
-			"id":	"militia",
-			"name":	"Tirones",
-			"sprite":	"art/troops/militia_00.png",
-			"skill_level":	2,
-			"hit_points":	2,
-			"move_rate":	2,
-			"melee":	[1, 2],
-			"ranged":	[0, 0, 0],
-			"recruit_cost":	50,
-			"spoils_factor":	5,
-			"abilities":	"",
-			"dwelling":	"castle",
-			"max_population":	0,
-			"growth_per_week":	5,
-			"morale_group":	"A",
-			"anim":	["art/troops/militia_00.png", "art/troops/militia_01.png", "art/troops/militia_02.png", "art/troops/militia_03.png"],
-			"tier_counts":	[0, 5, 15, 30]
-		}, {
-			"index":	3,
-			"id":	"wolves",
-			"name":	"Lupi",
-			"sprite":	"art/troops/wolves_00.png",
-			"skill_level":	2,
-			"hit_points":	3,
-			"move_rate":	3,
-			"melee":	[1, 3],
-			"ranged":	[0, 0, 0],
-			"recruit_cost":	40,
-			"spoils_factor":	4,
-			"abilities":	"",
-			"dwelling":	"plains",
-			"max_population":	150,
-			"growth_per_week":	5,
-			"morale_group":	"D",
-			"anim":	["art/troops/wolves_00.png", "art/troops/wolves_01.png", "art/troops/wolves_02.png", "art/troops/wolves_03.png"],
-			"tier_counts":	[5, 10, 20, 40]
-		}, {
-			"index":	4,
-			"id":	"skeletons",
-			"name":	"Larvae",
-			"sprite":	"art/troops/skeletons_00.png",
-			"skill_level":	2,
-			"hit_points":	3,
-			"move_rate":	2,
-			"melee":	[1, 2],
-			"ranged":	[0, 0, 0],
-			"recruit_cost":	40,
-			"spoils_factor":	4,
-			"abilities":	"UNDEAD",
-			"dwelling":	"dungeon",
-			"max_population":	150,
-			"growth_per_week":	5,
-			"morale_group":	"E",
-			"anim":	["art/troops/skeletons_00.png", "art/troops/skeletons_01.png", "art/troops/skeletons_02.png", "art/troops/skeletons_03.png"],
-			"tier_counts":	[5, 10, 15, 25]
-		}, {
-			"index":	5,
-			"id":	"zombies",
-			"name":	"Lemures",
-			"sprite":	"art/troops/zombies_00.png",
-			"skill_level":	2,
-			"hit_points":	5,
-			"move_rate":	1,
-			"melee":	[2, 2],
-			"ranged":	[0, 0, 0],
-			"recruit_cost":	50,
-			"spoils_factor":	5,
-			"abilities":	"UNDEAD",
-			"dwelling":	"dungeon",
-			"max_population":	100,
-			"growth_per_week":	5,
-			"morale_group":	"E",
-			"anim":	["art/troops/zombies_00.png", "art/troops/zombies_01.png", "art/troops/zombies_02.png", "art/troops/zombies_03.png"],
-			"tier_counts":	[5, 10, 15, 20]
-		}, {
-			"index":	6,
-			"id":	"gnomes",
-			"name":	"Fauni",
-			"sprite":	"art/troops/gnomes_00.png",
-			"skill_level":	2,
-			"hit_points":	5,
-			"move_rate":	1,
-			"melee":	[1, 3],
-			"ranged":	[0, 0, 0],
-			"recruit_cost":	60,
-			"spoils_factor":	6,
-			"abilities":	"",
-			"dwelling":	"forest",
-			"max_population":	250,
-			"growth_per_week":	5,
-			"morale_group":	"C",
-			"anim":	["art/troops/gnomes_00.png", "art/troops/gnomes_01.png", "art/troops/gnomes_02.png", "art/troops/gnomes_03.png"],
-			"tier_counts":	[5, 10, 15, 20]
-		}, {
-			"index":	7,
-			"id":	"orcs",
-			"name":	"Baleares",
-			"sprite":	"art/troops/orcs_00.png",
-			"skill_level":	2,
-			"hit_points":	5,
-			"move_rate":	2,
-			"melee":	[2, 3],
-			"ranged":	[1, 2, 10],
-			"recruit_cost":	75,
-			"spoils_factor":	7,
-			"abilities":	"",
-			"dwelling":	"hill",
-			"max_population":	200,
-			"growth_per_week":	5,
-			"morale_group":	"D",
-			"anim":	["art/troops/orcs_00.png", "art/troops/orcs_01.png", "art/troops/orcs_02.png", "art/troops/orcs_03.png"],
-			"tier_counts":	[5, 10, 12, 20]
-		}, {
-			"index":	8,
-			"id":	"archers",
-			"name":	"Velites",
-			"sprite":	"art/troops/archers_00.png",
-			"skill_level":	2,
-			"hit_points":	10,
-			"move_rate":	2,
-			"melee":	[1, 2],
-			"ranged":	[1, 3, 12],
-			"recruit_cost":	250,
-			"spoils_factor":	25,
-			"abilities":	"",
-			"dwelling":	"castle",
-			"max_population":	0,
-			"growth_per_week":	5,
-			"morale_group":	"B",
-			"anim":	["art/troops/archers_00.png", "art/troops/archers_01.png", "art/troops/archers_02.png", "art/troops/archers_03.png"],
-			"tier_counts":	[0, 5, 10, 15]
-		}, {
-			"index":	9,
-			"id":	"elves",
-			"name":	"Silvani",
-			"sprite":	"art/troops/elves_00.png",
-			"skill_level":	3,
-			"hit_points":	10,
-			"move_rate":	3,
-			"melee":	[1, 2],
-			"ranged":	[2, 4, 24],
-			"recruit_cost":	200,
-			"spoils_factor":	20,
-			"abilities":	"",
-			"dwelling":	"forest",
-			"max_population":	100,
-			"growth_per_week":	4,
-			"morale_group":	"C",
-			"anim":	["art/troops/elves_00.png", "art/troops/elves_01.png", "art/troops/elves_02.png", "art/troops/elves_03.png"],
-			"tier_counts":	[5, 8, 10, 15]
-		}, {
-			"index":	10,
-			"id":	"pikemen",
-			"name":	"Hastati",
-			"sprite":	"art/troops/pikemen_00.png",
-			"skill_level":	3,
-			"hit_points":	10,
-			"move_rate":	2,
-			"melee":	[2, 4],
-			"ranged":	[0, 0, 0],
-			"recruit_cost":	300,
-			"spoils_factor":	30,
-			"abilities":	"",
-			"dwelling":	"castle",
-			"max_population":	0,
-			"growth_per_week":	4,
-			"morale_group":	"B",
-			"anim":	["art/troops/pikemen_00.png", "art/troops/pikemen_01.png", "art/troops/pikemen_02.png", "art/troops/pikemen_03.png"],
-			"tier_counts":	[0, 5, 8, 15]
-		}, {
-			"index":	11,
-			"id":	"nomads",
-			"name":	"Numidae",
-			"sprite":	"art/troops/nomads_00.png",
-			"skill_level":	3,
-			"hit_points":	15,
-			"move_rate":	2,
-			"melee":	[2, 4],
-			"ranged":	[0, 0, 0],
-			"recruit_cost":	300,
-			"spoils_factor":	30,
-			"abilities":	"",
-			"dwelling":	"plains",
-			"max_population":	150,
-			"growth_per_week":	4,
-			"morale_group":	"C",
-			"anim":	["art/troops/nomads_00.png", "art/troops/nomads_01.png", "art/troops/nomads_02.png", "art/troops/nomads_03.png"],
-			"tier_counts":	[5, 8, 12, 18]
-		}, {
-			"index":	12,
-			"id":	"dwarves",
-			"name":	"Ligures",
-			"sprite":	"art/troops/dwarves_00.png",
-			"skill_level":	3,
-			"hit_points":	20,
-			"move_rate":	1,
-			"melee":	[2, 4],
-			"ranged":	[0, 0, 0],
-			"recruit_cost":	350,
-			"spoils_factor":	30,
-			"abilities":	"",
-			"dwelling":	"hill",
-			"max_population":	100,
-			"growth_per_week":	4,
-			"morale_group":	"C",
-			"anim":	["art/troops/dwarves_00.png", "art/troops/dwarves_01.png", "art/troops/dwarves_02.png", "art/troops/dwarves_03.png"],
-			"tier_counts":	[5, 6, 8, 12]
-		}, {
-			"index":	13,
-			"id":	"ghosts",
-			"name":	"Manes",
-			"sprite":	"art/troops/ghosts_00.png",
-			"skill_level":	4,
-			"hit_points":	10,
-			"move_rate":	3,
-			"melee":	[3, 4],
-			"ranged":	[0, 0, 0],
-			"recruit_cost":	400,
-			"spoils_factor":	40,
-			"abilities":	"ABSORB|UNDEAD",
-			"dwelling":	"dungeon",
-			"max_population":	25,
-			"growth_per_week":	3,
-			"morale_group":	"E",
-			"anim":	["art/troops/ghosts_00.png", "art/troops/ghosts_01.png", "art/troops/ghosts_02.png", "art/troops/ghosts_03.png"],
-			"tier_counts":	[2, 4, 6, 8]
-		}, {
-			"index":	14,
-			"id":	"knights",
-			"name":	"Praetoriani",
-			"sprite":	"art/troops/knights_00.png",
-			"skill_level":	5,
-			"hit_points":	35,
-			"move_rate":	1,
-			"melee":	[6, 10],
-			"ranged":	[0, 0, 0],
-			"recruit_cost":	1000,
-			"spoils_factor":	100,
-			"abilities":	"",
-			"dwelling":	"castle",
-			"max_population":	250,
-			"growth_per_week":	3,
-			"morale_group":	"B",
-			"anim":	["art/troops/knights_00.png", "art/troops/knights_01.png", "art/troops/knights_02.png", "art/troops/knights_03.png"],
-			"tier_counts":	[0, 2, 5, 8]
-		}, {
-			"index":	15,
-			"id":	"ogres",
-			"name":	"Cyclopes",
-			"sprite":	"art/troops/ogres_00.png",
-			"skill_level":	4,
-			"hit_points":	40,
-			"move_rate":	1,
-			"melee":	[3, 5],
-			"ranged":	[0, 0, 0],
-			"recruit_cost":	750,
-			"spoils_factor":	75,
-			"abilities":	"",
-			"dwelling":	"hill",
-			"max_population":	200,
-			"growth_per_week":	3,
-			"morale_group":	"D",
-			"anim":	["art/troops/ogres_00.png", "art/troops/ogres_01.png", "art/troops/ogres_02.png", "art/troops/ogres_03.png"],
-			"tier_counts":	[2, 3, 5, 8]
-		}, {
-			"index":	16,
-			"id":	"barbarians",
-			"name":	"Sarmatae",
-			"sprite":	"art/troops/barbarians_00.png",
-			"skill_level":	4,
-			"hit_points":	40,
-			"move_rate":	3,
-			"melee":	[1, 6],
-			"ranged":	[0, 0, 0],
-			"recruit_cost":	750,
-			"spoils_factor":	75,
-			"abilities":	"",
-			"dwelling":	"plains",
-			"max_population":	100,
-			"growth_per_week":	3,
-			"morale_group":	"C",
-			"anim":	["art/troops/barbarians_00.png", "art/troops/barbarians_01.png", "art/troops/barbarians_02.png", "art/troops/barbarians_03.png"],
-			"tier_counts":	[2, 3, 5, 8]
-		}, {
-			"index":	17,
-			"id":	"trolls",
-			"name":	"Antaei",
-			"sprite":	"art/troops/trolls_00.png",
-			"skill_level":	4,
-			"hit_points":	50,
-			"move_rate":	1,
-			"melee":	[2, 5],
-			"ranged":	[0, 0, 0],
-			"recruit_cost":	1000,
-			"spoils_factor":	100,
-			"abilities":	"REGEN",
-			"dwelling":	"forest",
-			"max_population":	25,
-			"growth_per_week":	3,
-			"morale_group":	"D",
-			"anim":	["art/troops/trolls_00.png", "art/troops/trolls_01.png", "art/troops/trolls_02.png", "art/troops/trolls_03.png"],
-			"tier_counts":	[2, 3, 4, 6]
-		}, {
-			"index":	18,
-			"id":	"cavalry",
-			"name":	"Equites",
-			"sprite":	"art/troops/cavalry_00.png",
-			"skill_level":	4,
-			"hit_points":	20,
-			"move_rate":	4,
-			"melee":	[3, 5],
-			"ranged":	[0, 0, 0],
-			"recruit_cost":	800,
-			"spoils_factor":	80,
-			"abilities":	"",
-			"dwelling":	"castle",
-			"max_population":	0,
-			"growth_per_week":	2,
-			"morale_group":	"B",
-			"anim":	["art/troops/cavalry_00.png", "art/troops/cavalry_01.png", "art/troops/cavalry_02.png", "art/troops/cavalry_03.png"],
-			"tier_counts":	[0, 2, 4, 6]
-		}, {
-			"index":	19,
-			"id":	"druids",
-			"name":	"Druidae",
-			"sprite":	"art/troops/druids_00.png",
-			"skill_level":	5,
-			"hit_points":	25,
-			"move_rate":	2,
-			"melee":	[2, 3],
-			"ranged":	[10, 0, 3],
-			"recruit_cost":	700,
-			"spoils_factor":	70,
-			"abilities":	"MAGIC",
-			"dwelling":	"forest",
-			"max_population":	25,
-			"growth_per_week":	2,
-			"morale_group":	"C",
-			"anim":	["art/troops/druids_00.png", "art/troops/druids_01.png", "art/troops/druids_02.png", "art/troops/druids_03.png"],
-			"tier_counts":	[2, 3, 4, 6]
-		}, {
-			"index":	20,
-			"id":	"archmages",
-			"name":	"Furiae",
-			"sprite":	"art/troops/archmages_00.png",
-			"skill_level":	5,
-			"hit_points":	25,
-			"move_rate":	1,
-			"melee":	[2, 3],
-			"ranged":	[25, 0, 2],
-			"recruit_cost":	1200,
-			"spoils_factor":	120,
-			"abilities":	"FLY|MAGIC",
-			"dwelling":	"plains",
-			"max_population":	25,
-			"growth_per_week":	2,
-			"morale_group":	"C",
-			"anim":	["art/troops/archmages_00.png", "art/troops/archmages_01.png", "art/troops/archmages_02.png", "art/troops/archmages_03.png"],
-			"tier_counts":	[2, 3, 4, 5]
-		}, {
-			"index":	21,
-			"id":	"vampires",
-			"name":	"Striges",
-			"sprite":	"art/troops/vampires_00.png",
-			"skill_level":	5,
-			"hit_points":	30,
-			"move_rate":	1,
-			"melee":	[3, 6],
-			"ranged":	[0, 0, 0],
-			"recruit_cost":	1500,
-			"spoils_factor":	150,
-			"abilities":	"FLY|LEECH|UNDEAD",
-			"dwelling":	"dungeon",
-			"max_population":	50,
-			"growth_per_week":	2,
-			"morale_group":	"E",
-			"anim":	["art/troops/vampires_00.png", "art/troops/vampires_01.png", "art/troops/vampires_02.png", "art/troops/vampires_03.png"],
-			"tier_counts":	[1, 2, 3, 5]
-		}, {
-			"index":	22,
-			"id":	"giants",
-			"name":	"Gigantes",
-			"sprite":	"art/troops/giants_00.png",
-			"skill_level":	5,
-			"hit_points":	60,
-			"move_rate":	3,
-			"melee":	[10, 20],
-			"ranged":	[5, 10, 6],
-			"recruit_cost":	2000,
-			"spoils_factor":	200,
-			"abilities":	"",
-			"dwelling":	"hill",
-			"max_population":	50,
-			"growth_per_week":	2,
-			"morale_group":	"C",
-			"anim":	["art/troops/giants_00.png", "art/troops/giants_01.png", "art/troops/giants_02.png", "art/troops/giants_03.png"],
-			"tier_counts":	[1, 2, 3, 5]
-		}, {
-			"index":	23,
-			"id":	"demons",
-			"name":	"Empusae",
-			"sprite":	"art/troops/demons_00.png",
-			"skill_level":	6,
-			"hit_points":	50,
-			"move_rate":	1,
-			"melee":	[5, 7],
-			"ranged":	[0, 0, 0],
-			"recruit_cost":	3000,
-			"spoils_factor":	300,
-			"abilities":	"FLY|SCYTHE",
-			"dwelling":	"dungeon",
-			"max_population":	25,
-			"growth_per_week":	1,
-			"morale_group":	"E",
-			"anim":	["art/troops/demons_00.png", "art/troops/demons_01.png", "art/troops/demons_02.png", "art/troops/demons_03.png"],
-			"tier_counts":	[1, 2, 3, 4]
-		}, {
-			"index":	24,
-			"id":	"dragons",
-			"name":	"Dracones",
-			"sprite":	"art/troops/dragons_00.png",
-			"skill_level":	6,
-			"hit_points":	200,
-			"move_rate":	1,
-			"melee":	[25, 50],
-			"ranged":	[0, 0, 0],
-			"recruit_cost":	5000,
-			"spoils_factor":	500,
-			"abilities":	"FLY|IMMUNE",
-			"dwelling":	"hill",
-			"max_population":	25,
-			"growth_per_week":	1,
-			"morale_group":	"D",
-			"anim":	["art/troops/dragons_00.png", "art/troops/dragons_01.png", "art/troops/dragons_02.png", "art/troops/dragons_03.png"],
-			"tier_counts":	[1, 1, 1, 2]
-		}],
-	"spells":	[{
-			"index":	0,
-			"id":	"clone",
-			"name":	"Simulacrum",
-			"kind":	"combat",
-			"cost":	2000
-		}, {
-			"index":	1,
-			"id":	"teleport",
-			"name":	"Mercury's Passage",
-			"kind":	"combat",
-			"cost":	500
-		}, {
-			"index":	2,
-			"id":	"fireball",
-			"name":	"Vulcan's Fire",
-			"kind":	"combat",
-			"cost":	1500
-		}, {
-			"index":	3,
-			"id":	"lightning",
-			"name":	"Fulmen",
-			"kind":	"combat",
-			"cost":	500
-		}, {
-			"index":	4,
-			"id":	"freeze",
-			"name":	"Medusa's Gaze",
-			"kind":	"combat",
-			"cost":	300
-		}, {
-			"index":	5,
-			"id":	"resurrect",
-			"name":	"Rite of Aesculapius",
-			"kind":	"combat",
-			"cost":	5000
-		}, {
-			"index":	6,
-			"id":	"turn_undead",
-			"name":	"Rite of the Lemuria",
-			"kind":	"combat",
-			"cost":	2000
-		}, {
-			"index":	7,
-			"id":	"bridge",
-			"name":	"Pontifex",
-			"kind":	"adventure",
-			"cost":	100
-		}, {
-			"index":	8,
-			"id":	"time_stop",
-			"name":	"Iter Magnum",
-			"kind":	"adventure",
-			"cost":	200
-		}, {
-			"index":	9,
-			"id":	"find_villain",
-			"name":	"Augury",
-			"kind":	"adventure",
-			"cost":	1000
-		}, {
-			"index":	10,
-			"id":	"castle_gate",
-			"name":	"Cursus Publicus",
-			"kind":	"adventure",
-			"cost":	1000
-		}, {
-			"index":	11,
-			"id":	"town_gate",
-			"name":	"Via",
-			"kind":	"adventure",
-			"cost":	500
-		}, {
-			"index":	12,
-			"id":	"instant_army",
-			"name":	"Dilectus",
-			"kind":	"adventure",
-			"cost":	1000
-		}, {
-			"index":	13,
-			"id":	"raise_control",
-			"name":	"Imperium",
-			"kind":	"adventure",
-			"cost":	500
-		}],
-	"classes":	[{
-			"index":	0,
-			"id":	"knight",
-			"name":	"Legatus",
-			"portrait":	"art/classes/knight.png",
-			"starting_gold":	7500,
-			"starting_troops":	[{
-					"id":	"militia",
-					"count":	20
-				}, {
-					"id":	"archers",
-					"count":	2
-				}],
-			"ranks":	[{
-					"id":	"knight",
-					"name":	"Tribunus",
-					"villains_needed":	0,
-					"leadership":	100,
-					"max_spells":	2,
-					"spell_power":	1,
-					"commission":	1000,
-					"knows_magic":	false,
-					"instant_army":	0
-				}, {
-					"id":	"general",
-					"name":	"Praefectus",
-					"villains_needed":	2,
-					"leadership":	100,
-					"max_spells":	3,
-					"spell_power":	1,
-					"commission":	1000,
-					"knows_magic":	false,
-					"instant_army":	2
-				}, {
-					"id":	"marshal",
-					"name":	"Legatus",
-					"villains_needed":	8,
-					"leadership":	300,
-					"max_spells":	4,
-					"spell_power":	1,
-					"commission":	2000,
-					"knows_magic":	false,
-					"instant_army":	8
-				}, {
-					"id":	"lord",
-					"name":	"Consul",
-					"villains_needed":	14,
-					"leadership":	500,
-					"max_spells":	5,
-					"spell_power":	2,
-					"commission":	4000,
-					"knows_magic":	false,
-					"instant_army":	14
-				}]
-		}, {
-			"index":	1,
-			"id":	"paladin",
-			"name":	"Praetorianus",
-			"portrait":	"art/classes/paladin.png",
-			"starting_gold":	10000,
-			"starting_troops":	[{
-					"id":	"peasants",
-					"count":	20
-				}, {
-					"id":	"militia",
-					"count":	20
-				}],
-			"ranks":	[{
-					"id":	"paladin",
-					"name":	"Miles",
-					"villains_needed":	0,
-					"leadership":	80,
-					"max_spells":	3,
-					"spell_power":	1,
-					"commission":	1000,
-					"knows_magic":	false,
-					"instant_army":	0
-				}, {
-					"id":	"crusader",
-					"name":	"Centurio",
-					"villains_needed":	2,
-					"leadership":	80,
-					"max_spells":	3,
-					"spell_power":	1,
-					"commission":	1000,
-					"knows_magic":	false,
-					"instant_army":	2
-				}, {
-					"id":	"avenger",
-					"name":	"Tribunus",
-					"villains_needed":	7,
-					"leadership":	240,
-					"max_spells":	6,
-					"spell_power":	2,
-					"commission":	2000,
-					"knows_magic":	false,
-					"instant_army":	8
-				}, {
-					"id":	"champion",
-					"name":	"Praefectus Praetorio",
-					"villains_needed":	13,
-					"leadership":	400,
-					"max_spells":	5,
-					"spell_power":	2,
-					"commission":	4000,
-					"knows_magic":	false,
-					"instant_army":	18
-				}]
-		}, {
-			"index":	2,
-			"id":	"sorceress",
-			"name":	"Sibylla",
-			"portrait":	"art/classes/sorceress.png",
-			"starting_gold":	10000,
-			"starting_troops":	[{
-					"id":	"peasants",
-					"count":	30
-				}, {
-					"id":	"sprites",
-					"count":	10
-				}],
-			"ranks":	[{
-					"id":	"sorceress",
-					"name":	"Virgo Vestalis",
-					"villains_needed":	0,
-					"leadership":	60,
-					"max_spells":	5,
-					"spell_power":	2,
-					"commission":	3000,
-					"knows_magic":	true,
-					"instant_army":	1
-				}, {
-					"id":	"magician",
-					"name":	"Sacerdos",
-					"villains_needed":	3,
-					"leadership":	60,
-					"max_spells":	8,
-					"spell_power":	3,
-					"commission":	1000,
-					"knows_magic":	false,
-					"instant_army":	6
-				}, {
-					"id":	"mage",
-					"name":	"Augur",
-					"villains_needed":	6,
-					"leadership":	180,
-					"max_spells":	10,
-					"spell_power":	5,
-					"commission":	1000,
-					"knows_magic":	false,
-					"instant_army":	9
-				}, {
-					"id":	"archmage",
-					"name":	"Sibylla",
-					"villains_needed":	12,
-					"leadership":	300,
-					"max_spells":	12,
-					"spell_power":	5,
-					"commission":	1000,
-					"knows_magic":	false,
-					"instant_army":	19
-				}]
-		}, {
-			"index":	3,
-			"id":	"barbarian",
-			"name":	"Dux",
-			"portrait":	"art/classes/barbarian.png",
-			"starting_gold":	7500,
-			"starting_troops":	[{
-					"id":	"wolves",
-					"count":	20
-				}],
-			"ranks":	[{
-					"id":	"barbarian",
-					"name":	"Auxiliarius",
-					"villains_needed":	0,
-					"leadership":	100,
-					"max_spells":	2,
-					"spell_power":	0,
-					"commission":	2000,
-					"knows_magic":	false,
-					"instant_army":	0
-				}, {
-					"id":	"chieftain",
-					"name":	"Decurio",
-					"villains_needed":	1,
-					"leadership":	100,
-					"max_spells":	2,
-					"spell_power":	1,
-					"commission":	2000,
-					"knows_magic":	false,
-					"instant_army":	3
-				}, {
-					"id":	"warlord",
-					"name":	"Praefectus Alae",
-					"villains_needed":	5,
-					"leadership":	300,
-					"max_spells":	3,
-					"spell_power":	1,
-					"commission":	2000,
-					"knows_magic":	false,
-					"instant_army":	7
-				}, {
-					"id":	"overlord",
-					"name":	"Dux",
-					"villains_needed":	10,
-					"leadership":	500,
-					"max_spells":	3,
-					"spell_power":	1,
-					"commission":	2000,
-					"knows_magic":	false,
-					"instant_army":	15
-				}]
-		}],
-	"villains":	[{
-			"index":	0,
-			"id":	"catiline",
-			"name":	"Catiline",
-			"zone":	"italia",
-			"reward":	5000,
-			"puzzle_cell":	0,
-			"portrait":	"art/villains/murray_00.png",
-			"army":	[{
-					"troop":	"peasants",
-					"count":	6
-				}, {
-					"troop":	"peasants",
-					"count":	6
-				}, {
-					"troop":	"militia",
-					"count":	6
-				}, {
-					"troop":	"militia",
-					"count":	6
-				}, {
-					"troop":	"wolves",
-					"count":	6
-				}]
-		}, {
-			"index":	1,
-			"id":	"spartacus",
-			"name":	"Spartacus",
-			"zone":	"italia",
-			"reward":	6000,
-			"puzzle_cell":	1,
-			"portrait":	"art/villains/murray_00.png",
-			"army":	[{
-					"troop":	"peasants",
-					"count":	7
-				}, {
-					"troop":	"peasants",
-					"count":	7
-				}, {
-					"troop":	"militia",
-					"count":	7
-				}, {
-					"troop":	"pikemen",
-					"count":	4
-				}, {
-					"troop":	"wolves",
-					"count":	7
-				}]
-		}, {
-			"index":	2,
-			"id":	"tacfarinas",
-			"name":	"Tacfarinas",
-			"zone":	"africa",
-			"reward":	7000,
-			"puzzle_cell":	2,
-			"portrait":	"art/villains/murray_00.png",
-			"army":	[{
-					"troop":	"peasants",
-					"count":	8
-				}, {
-					"troop":	"nomads",
-					"count":	5
-				}, {
-					"troop":	"orcs",
-					"count":	8
-				}, {
-					"troop":	"wolves",
-					"count":	8
-				}, {
-					"troop":	"nomads",
-					"count":	5
-				}]
-		}, {
-			"index":	3,
-			"id":	"jugurtha",
-			"name":	"Jugurtha",
-			"zone":	"africa",
-			"reward":	8000,
-			"puzzle_cell":	3,
-			"portrait":	"art/villains/murray_00.png",
-			"army":	[{
-					"troop":	"nomads",
-					"count":	5
-				}, {
-					"troop":	"nomads",
-					"count":	5
-				}, {
-					"troop":	"orcs",
-					"count":	9
-				}, {
-					"troop":	"archers",
-					"count":	5
-				}, {
-					"troop":	"wolves",
-					"count":	9
-				}]
-		}, {
-			"index":	4,
-			"id":	"boudica",
-			"name":	"Boudica",
-			"zone":	"galliae",
-			"reward":	9000,
-			"puzzle_cell":	4,
-			"portrait":	"art/villains/murray_00.png",
-			"army":	[{
-					"troop":	"peasants",
-					"count":	10
-				}, {
-					"troop":	"elves",
-					"count":	6
-				}, {
-					"troop":	"barbarians",
-					"count":	3
-				}, {
-					"troop":	"gnomes",
-					"count":	10
-				}, {
-					"troop":	"druids",
-					"count":	3
-				}]
-		}, {
-			"index":	5,
-			"id":	"civilis",
-			"name":	"Civilis",
-			"zone":	"galliae",
-			"reward":	10000,
-			"puzzle_cell":	5,
-			"portrait":	"art/villains/murray_00.png",
-			"army":	[{
-					"troop":	"pikemen",
-					"count":	6
-				}, {
-					"troop":	"archers",
-					"count":	6
-				}, {
-					"troop":	"elves",
-					"count":	6
-				}, {
-					"troop":	"barbarians",
-					"count":	3
-				}, {
-					"troop":	"cavalry",
-					"count":	3
-				}]
-		}, {
-			"index":	6,
-			"id":	"brennus",
-			"name":	"Brennus",
-			"zone":	"italia",
-			"reward":	12000,
-			"puzzle_cell":	6,
-			"portrait":	"art/villains/murray_00.png",
-			"army":	[{
-					"troop":	"barbarians",
-					"count":	4
-				}, {
-					"troop":	"elves",
-					"count":	7
-				}, {
-					"troop":	"gnomes",
-					"count":	12
-				}, {
-					"troop":	"dwarves",
-					"count":	7
-				}, {
-					"troop":	"trolls",
-					"count":	4
-				}]
-		}, {
-			"index":	7,
-			"id":	"vercingetorix",
-			"name":	"Vercingetorix",
-			"zone":	"galliae",
-			"reward":	14000,
-			"puzzle_cell":	7,
-			"portrait":	"art/villains/murray_00.png",
-			"army":	[{
-					"troop":	"barbarians",
-					"count":	4
-				}, {
-					"troop":	"elves",
-					"count":	7
-				}, {
-					"troop":	"dwarves",
-					"count":	7
-				}, {
-					"troop":	"druids",
-					"count":	4
-				}, {
-					"troop":	"trolls",
-					"count":	4
-				}]
-		}, {
-			"index":	8,
-			"id":	"arminius",
-			"name":	"Arminius",
-			"zone":	"galliae",
-			"reward":	16000,
-			"puzzle_cell":	8,
-			"portrait":	"art/villains/murray_00.png",
-			"army":	[{
-					"troop":	"barbarians",
-					"count":	4
-				}, {
-					"troop":	"elves",
-					"count":	8
-				}, {
-					"troop":	"trolls",
-					"count":	4
-				}, {
-					"troop":	"druids",
-					"count":	4
-				}, {
-					"troop":	"gnomes",
-					"count":	14
-				}]
-		}, {
-			"index":	9,
-			"id":	"gildo",
-			"name":	"Gildo",
-			"zone":	"africa",
-			"reward":	18000,
-			"puzzle_cell":	9,
-			"portrait":	"art/villains/murray_00.png",
-			"army":	[{
-					"troop":	"nomads",
-					"count":	8
-				}, {
-					"troop":	"orcs",
-					"count":	15
-				}, {
-					"troop":	"barbarians",
-					"count":	5
-				}, {
-					"troop":	"ogres",
-					"count":	5
-				}]
-		}, {
-			"index":	10,
-			"id":	"pyrrhus",
-			"name":	"Pyrrhus",
-			"zone":	"italia",
-			"reward":	20000,
-			"puzzle_cell":	10,
-			"portrait":	"art/villains/murray_00.png",
-			"army":	[{
-					"troop":	"pikemen",
-					"count":	9
-				}, {
-					"troop":	"cavalry",
-					"count":	5
-				}, {
-					"troop":	"archers",
-					"count":	9
-				}, {
-					"troop":	"ogres",
-					"count":	5
-				}]
-		}, {
-			"index":	11,
-			"id":	"mithridates",
-			"name":	"Mithridates",
-			"zone":	"oriens",
-			"reward":	25000,
-			"puzzle_cell":	11,
-			"portrait":	"art/villains/murray_00.png",
-			"army":	[{
-					"troop":	"nomads",
-					"count":	9
-				}, {
-					"troop":	"elves",
-					"count":	9
-				}, {
-					"troop":	"druids",
-					"count":	5
-				}]
-		}, {
-			"index":	12,
-			"id":	"hannibal",
-			"name":	"Hannibal",
-			"zone":	"africa",
-			"reward":	30000,
-			"puzzle_cell":	12,
-			"portrait":	"art/villains/murray_00.png",
-			"army":	[{
-					"troop":	"nomads",
-					"count":	10
-				}, {
-					"troop":	"giants",
-					"count":	1
-				}, {
-					"troop":	"barbarians",
-					"count":	6
-				}, {
-					"troop":	"ogres",
-					"count":	6
-				}, {
-					"troop":	"cavalry",
-					"count":	6
-				}]
-		}, {
-			"index":	13,
-			"id":	"zenobia",
-			"name":	"Zenobia",
-			"zone":	"oriens",
-			"reward":	35000,
-			"puzzle_cell":	13,
-			"portrait":	"art/villains/murray_00.png",
-			"army":	[{
-					"troop":	"barbarians",
-					"count":	6
-				}, {
-					"troop":	"archmages",
-					"count":	1
-				}, {
-					"troop":	"cavalry",
-					"count":	6
-				}, {
-					"troop":	"giants",
-					"count":	1
-				}, {
-					"troop":	"vampires",
-					"count":	1
-				}]
-		}, {
-			"index":	14,
-			"id":	"shapur",
-			"name":	"Shapur",
-			"zone":	"oriens",
-			"reward":	40000,
-			"puzzle_cell":	14,
-			"portrait":	"art/villains/murray_00.png",
-			"army":	[{
-					"troop":	"barbarians",
-					"count":	6
-				}, {
-					"troop":	"giants",
-					"count":	1
-				}, {
-					"troop":	"cavalry",
-					"count":	6
-				}, {
-					"troop":	"archmages",
-					"count":	1
-				}, {
-					"troop":	"dragons",
-					"count":	1
-				}]
-		}, {
-			"index":	15,
-			"id":	"alaric",
-			"name":	"Alaric",
-			"zone":	"italia",
-			"reward":	45000,
-			"puzzle_cell":	15,
-			"portrait":	"art/villains/murray_00.png",
-			"army":	[{
-					"troop":	"barbarians",
-					"count":	7
-				}, {
-					"troop":	"trolls",
-					"count":	7
-				}, {
-					"troop":	"demons",
-					"count":	1
-				}, {
-					"troop":	"vampires",
-					"count":	1
-				}, {
-					"troop":	"dragons",
-					"count":	1
-				}]
-		}, {
-			"index":	16,
-			"id":	"attila",
-			"name":	"Attila",
-			"zone":	"italia",
-			"reward":	50000,
-			"puzzle_cell":	16,
-			"portrait":	"art/villains/murray_00.png",
-			"army":	[{
-					"troop":	"dragons",
-					"count":	1
-				}, {
-					"troop":	"demons",
-					"count":	1
-				}, {
-					"troop":	"vampires",
-					"count":	1
-				}, {
-					"troop":	"barbarians",
-					"count":	7
-				}, {
-					"troop":	"archmages",
-					"count":	1
-				}]
-		}],
-	"artifacts":	[{
-			"index":	0,
-			"id":	"sword",
-			"name":	"The Gladius of Mars",
-			"zone":	"galliae",
-			"effect":	"Your army deals +50% damage.",
-			"power":	"increased_damage",
-			"icon":	"art/ui/inventory_artifact_sword.png",
-			"puzzle_cell":	17,
-			"local_idx":	0
-		}, {
-			"index":	1,
-			"id":	"shield",
-			"name":	"The Scutum of Aeneas",
-			"zone":	"oriens",
-			"effect":	"Your army takes 25% less damage.",
-			"power":	"quarter_protection",
-			"icon":	"art/ui/inventory_artifact_shield.png",
-			"puzzle_cell":	18,
-			"local_idx":	1
-		}, {
-			"index":	2,
-			"id":	"crown",
-			"name":	"The Corona Triumphalis",
-			"zone":	"oriens",
-			"effect":	"Doubles your leadership.",
-			"power":	"double_leadership",
-			"icon":	"art/ui/inventory_artifact_crown.png",
-			"puzzle_cell":	19,
-			"local_idx":	0
-		}, {
-			"index":	3,
-			"id":	"articles",
-			"name":	"The Senatus Consultum",
-			"zone":	"italia",
-			"effect":	"Increases your weekly commission.",
-			"power":	"increase_commission",
-			"icon":	"art/ui/inventory_artifact_articles.png",
-			"puzzle_cell":	20,
-			"local_idx":	0
-		}, {
-			"index":	4,
-			"id":	"amulet",
-			"name":	"The Bulla of Jupiter",
-			"zone":	"africa",
-			"effect":	"Doubles your spell power.",
-			"power":	"double_spell_power",
-			"icon":	"art/ui/inventory_artifact_amulet.png",
-			"puzzle_cell":	21,
-			"local_idx":	0
-		}, {
-			"index":	5,
-			"id":	"ring",
-			"name":	"The Anulus Aureus",
-			"zone":	"africa",
-			"effect":	"Doubles your maximum spells.",
-			"power":	"double_max_spells",
-			"icon":	"art/ui/inventory_artifact_ring.png",
-			"puzzle_cell":	22,
-			"local_idx":	1
-		}, {
-			"index":	6,
-			"id":	"book",
-			"name":	"The Sibylline Fragment",
-			"zone":	"italia",
-			"effect":	"Unknown power.",
-			"power":	"unknown_xxx1",
-			"icon":	"art/ui/inventory_artifact_book.png",
-			"puzzle_cell":	23,
-			"local_idx":	1
-		}, {
-			"index":	7,
-			"id":	"anchor",
-			"name":	"The Anchor of Neptune",
-			"zone":	"galliae",
-			"effect":	"Boat rental is cheaper.",
-			"power":	"cheaper_boat_rental",
-			"icon":	"art/ui/inventory_artifact_anchor.png",
-			"puzzle_cell":	24,
-			"local_idx":	1
-		}],
-	"tile_codes":	{
-		"*":	{
-			"art":	"desert_edge_01",
-			"terrain":	"desert"
 		},
-		"+":	{
-			"art":	"desert_edge_02",
-			"terrain":	"desert"
+		{
+			"index": 0,
+			"id": "castle_italia_2",
+			"name": "Capua",
+			"x": 41,
+			"y": 53,
+			"zone": "italia",
+			"difficulty_tier": 0
 		},
-		",":	{
-			"art":	"grass_variant",
-			"terrain":	"grass"
+		{
+			"index": 0,
+			"id": "castle_italia_3",
+			"name": "Neapolis",
+			"x": 39,
+			"y": 62,
+			"zone": "italia",
+			"difficulty_tier": 0
 		},
-		"-":	{
-			"art":	"desert_edge_03",
-			"terrain":	"desert"
+		{
+			"index": 0,
+			"id": "castle_italia_4",
+			"name": "Beneventum",
+			"x": 46,
+			"y": 74,
+			"zone": "italia",
+			"difficulty_tier": 1
 		},
-		".":	{
-			"art":	"grass",
-			"terrain":	"grass"
+		{
+			"index": 0,
+			"id": "castle_italia_5",
+			"name": "Tarentum",
+			"x": 46,
+			"y": 86,
+			"zone": "italia",
+			"difficulty_tier": 1
 		},
-		"/":	{
-			"art":	"desert_edge_04",
-			"terrain":	"desert"
+		{
+			"index": 0,
+			"id": "castle_italia_6",
+			"name": "Rhegium",
+			"x": 35,
+			"y": 101,
+			"zone": "italia",
+			"difficulty_tier": 1
 		},
-		"0":	{
-			"art":	"desert_edge_05",
-			"terrain":	"desert"
+		{
+			"index": 0,
+			"id": "castle_italia_7",
+			"name": "Ariminum",
+			"x": 44,
+			"y": 21,
+			"zone": "italia",
+			"difficulty_tier": 0
 		},
-		"1":	{
-			"art":	"desert_edge_06",
-			"terrain":	"desert"
+		{
+			"index": 0,
+			"id": "castle_italia_8",
+			"name": "Verona",
+			"x": 20,
+			"y": 10,
+			"zone": "italia",
+			"difficulty_tier": 0
 		},
-		"2":	{
-			"art":	"desert_edge_07",
-			"terrain":	"desert"
+		{
+			"index": 0,
+			"id": "castle_italia_9",
+			"name": "Genua",
+			"x": 9,
+			"y": 14,
+			"zone": "italia",
+			"difficulty_tier": 0
 		},
-		"3":	{
-			"art":	"desert_edge_08",
-			"terrain":	"desert"
+		{
+			"index": 0,
+			"id": "castle_italia_10",
+			"name": "Brundisium",
+			"x": 48,
+			"y": 80,
+			"zone": "italia",
+			"difficulty_tier": 1
 		},
-		"4":	{
-			"art":	"desert_edge_09",
-			"terrain":	"desert"
+		{
+			"index": 0,
+			"id": "castle_galliae_1",
+			"name": "Lugdunum",
+			"x": 30,
+			"y": 23,
+			"zone": "galliae",
+			"difficulty_tier": 1
 		},
-		"5":	{
-			"art":	"desert_edge_10",
-			"terrain":	"desert"
+		{
+			"index": 0,
+			"id": "castle_galliae_2",
+			"name": "Alesia",
+			"x": 40,
+			"y": 28,
+			"zone": "galliae",
+			"difficulty_tier": 1
 		},
-		"6":	{
-			"art":	"desert_edge_11",
-			"terrain":	"desert"
+		{
+			"index": 0,
+			"id": "castle_galliae_3",
+			"name": "Gergovia",
+			"x": 30,
+			"y": 44,
+			"zone": "galliae",
+			"difficulty_tier": 1
 		},
-		"7":	{
-			"art":	"desert_edge_12",
-			"terrain":	"desert"
+		{
+			"index": 0,
+			"id": "castle_galliae_4",
+			"name": "Colonia Agrippina",
+			"x": 47,
+			"y": 22,
+			"zone": "galliae",
+			"difficulty_tier": 1
 		},
-		"<":	{
-			"art":	"forest_edge_01",
-			"terrain":	"forest",
-			"blocks_foot":	true
+		{
+			"index": 0,
+			"id": "castle_galliae_5",
+			"name": "Corduba",
+			"x": 30,
+			"y": 52,
+			"zone": "galliae",
+			"difficulty_tier": 1
 		},
-		"=":	{
-			"art":	"forest_edge_02",
-			"terrain":	"forest",
-			"blocks_foot":	true
+		{
+			"index": 0,
+			"id": "castle_galliae_6",
+			"name": "Bibracte",
+			"x": 22,
+			"y": 35,
+			"zone": "galliae",
+			"difficulty_tier": 1
 		},
-		">":	{
-			"art":	"forest_edge_03",
-			"terrain":	"forest",
-			"blocks_foot":	true
+		{
+			"index": 0,
+			"id": "castle_africa_1",
+			"name": "Carthago",
+			"x": 20,
+			"y": 7,
+			"zone": "africa",
+			"difficulty_tier": 1
 		},
-		"?":	{
-			"art":	"forest_edge_04",
-			"terrain":	"forest",
-			"blocks_foot":	true
+		{
+			"index": 0,
+			"id": "castle_africa_2",
+			"name": "Hippo Regius",
+			"x": 10,
+			"y": 15,
+			"zone": "africa",
+			"difficulty_tier": 1
 		},
-		"@":	{
-			"art":	"forest_edge_05",
-			"terrain":	"forest",
-			"blocks_foot":	true
+		{
+			"index": 0,
+			"id": "castle_africa_3",
+			"name": "Lambaesis",
+			"x": 28,
+			"y": 15,
+			"zone": "africa",
+			"difficulty_tier": 1
 		},
-		"A":	{
-			"art":	"forest_edge_06",
-			"terrain":	"forest",
-			"blocks_foot":	true
+		{
+			"index": 0,
+			"id": "castle_africa_4",
+			"name": "Leptis Magna",
+			"x": 40,
+			"y": 7,
+			"zone": "africa",
+			"difficulty_tier": 1
 		},
-		"B":	{
-			"art":	"forest_edge_07",
-			"terrain":	"forest",
-			"blocks_foot":	true
+		{
+			"index": 0,
+			"id": "castle_africa_5",
+			"name": "Cyrene",
+			"x": 44,
+			"y": 15,
+			"zone": "africa",
+			"difficulty_tier": 1
 		},
-		"C":	{
-			"art":	"forest_edge_08",
-			"terrain":	"forest",
-			"blocks_foot":	true
+		{
+			"index": 0,
+			"id": "castle_africa_6",
+			"name": "Alexandria",
+			"x": 49,
+			"y": 7,
+			"zone": "africa",
+			"difficulty_tier": 1
 		},
-		"D":	{
-			"art":	"desert",
-			"terrain":	"desert"
+		{
+			"index": 0,
+			"id": "castle_oriens_1",
+			"name": "Antiochia",
+			"x": 40,
+			"y": 7,
+			"zone": "oriens",
+			"difficulty_tier": 2
 		},
-		"E":	{
-			"art":	"forest_edge_09",
-			"terrain":	"forest",
-			"blocks_foot":	true
+		{
+			"index": 0,
+			"id": "castle_oriens_2",
+			"name": "Ephesus",
+			"x": 10,
+			"y": 17,
+			"zone": "oriens",
+			"difficulty_tier": 2
 		},
-		"F":	{
-			"art":	"forest",
-			"terrain":	"forest",
-			"blocks_foot":	true
+		{
+			"index": 0,
+			"id": "castle_oriens_3",
+			"name": "Caesarea",
+			"x": 48,
+			"y": 23,
+			"zone": "oriens",
+			"difficulty_tier": 2
 		},
-		"G":	{
-			"art":	"forest_edge_10",
-			"terrain":	"forest",
-			"blocks_foot":	true
+		{
+			"index": 0,
+			"id": "castle_oriens_4",
+			"name": "Palmyra",
+			"x": 48,
+			"y": 38,
+			"zone": "oriens",
+			"difficulty_tier": 2
+		}
+	],
+	"troops": [
+		{
+			"index": 0,
+			"id": "peasants",
+			"name": "Coloni",
+			"sprite": "art/troops/peasants_00.png",
+			"skill_level": 1,
+			"hit_points": 1,
+			"move_rate": 1,
+			"melee": [
+				1,
+				1
+			],
+			"ranged": [
+				0,
+				0,
+				0
+			],
+			"recruit_cost": 10,
+			"spoils_factor": 1,
+			"abilities": "",
+			"dwelling": "plains",
+			"max_population": 250,
+			"growth_per_week": 6,
+			"morale_group": "A",
+			"anim": [
+				"art/troops/peasants_00.png",
+				"art/troops/peasants_01.png",
+				"art/troops/peasants_02.png",
+				"art/troops/peasants_03.png"
+			],
+			"tier_counts": [
+				10,
+				20,
+				50,
+				100
+			]
 		},
-		"H":	{
-			"art":	"forest_edge_11",
-			"terrain":	"forest",
-			"blocks_foot":	true
+		{
+			"index": 1,
+			"id": "sprites",
+			"name": "Lares",
+			"sprite": "art/troops/sprites_00.png",
+			"skill_level": 1,
+			"hit_points": 1,
+			"move_rate": 1,
+			"melee": [
+				1,
+				2
+			],
+			"ranged": [
+				0,
+				0,
+				0
+			],
+			"recruit_cost": 15,
+			"spoils_factor": 1,
+			"abilities": "FLY",
+			"dwelling": "forest",
+			"max_population": 200,
+			"growth_per_week": 6,
+			"morale_group": "C",
+			"anim": [
+				"art/troops/sprites_00.png",
+				"art/troops/sprites_01.png",
+				"art/troops/sprites_02.png",
+				"art/troops/sprites_03.png"
+			],
+			"tier_counts": [
+				10,
+				15,
+				30,
+				50
+			]
 		},
-		"I":	{
-			"art":	"forest_edge_12",
-			"terrain":	"forest",
-			"blocks_foot":	true
+		{
+			"index": 2,
+			"id": "militia",
+			"name": "Tirones",
+			"sprite": "art/troops/militia_00.png",
+			"skill_level": 2,
+			"hit_points": 2,
+			"move_rate": 2,
+			"melee": [
+				1,
+				2
+			],
+			"ranged": [
+				0,
+				0,
+				0
+			],
+			"recruit_cost": 50,
+			"spoils_factor": 5,
+			"abilities": "",
+			"dwelling": "castle",
+			"max_population": 0,
+			"growth_per_week": 5,
+			"morale_group": "A",
+			"anim": [
+				"art/troops/militia_00.png",
+				"art/troops/militia_01.png",
+				"art/troops/militia_02.png",
+				"art/troops/militia_03.png"
+			],
+			"tier_counts": [
+				0,
+				5,
+				15,
+				30
+			]
 		},
-		"J":	{
-			"art":	"mountain_edge_01",
-			"terrain":	"mountain",
-			"blocks_foot":	true
+		{
+			"index": 3,
+			"id": "wolves",
+			"name": "Lupi",
+			"sprite": "art/troops/wolves_00.png",
+			"skill_level": 2,
+			"hit_points": 3,
+			"move_rate": 3,
+			"melee": [
+				1,
+				3
+			],
+			"ranged": [
+				0,
+				0,
+				0
+			],
+			"recruit_cost": 40,
+			"spoils_factor": 4,
+			"abilities": "",
+			"dwelling": "plains",
+			"max_population": 150,
+			"growth_per_week": 5,
+			"morale_group": "D",
+			"anim": [
+				"art/troops/wolves_00.png",
+				"art/troops/wolves_01.png",
+				"art/troops/wolves_02.png",
+				"art/troops/wolves_03.png"
+			],
+			"tier_counts": [
+				5,
+				10,
+				20,
+				40
+			]
 		},
-		"K":	{
-			"art":	"mountain_edge_02",
-			"terrain":	"mountain",
-			"blocks_foot":	true
+		{
+			"index": 4,
+			"id": "skeletons",
+			"name": "Larvae",
+			"sprite": "art/troops/skeletons_00.png",
+			"skill_level": 2,
+			"hit_points": 3,
+			"move_rate": 2,
+			"melee": [
+				1,
+				2
+			],
+			"ranged": [
+				0,
+				0,
+				0
+			],
+			"recruit_cost": 40,
+			"spoils_factor": 4,
+			"abilities": "UNDEAD",
+			"dwelling": "dungeon",
+			"max_population": 150,
+			"growth_per_week": 5,
+			"morale_group": "E",
+			"anim": [
+				"art/troops/skeletons_00.png",
+				"art/troops/skeletons_01.png",
+				"art/troops/skeletons_02.png",
+				"art/troops/skeletons_03.png"
+			],
+			"tier_counts": [
+				5,
+				10,
+				15,
+				25
+			]
 		},
-		"L":	{
-			"art":	"mountain_edge_03",
-			"terrain":	"mountain",
-			"blocks_foot":	true
+		{
+			"index": 5,
+			"id": "zombies",
+			"name": "Lemures",
+			"sprite": "art/troops/zombies_00.png",
+			"skill_level": 2,
+			"hit_points": 5,
+			"move_rate": 1,
+			"melee": [
+				2,
+				2
+			],
+			"ranged": [
+				0,
+				0,
+				0
+			],
+			"recruit_cost": 50,
+			"spoils_factor": 5,
+			"abilities": "UNDEAD",
+			"dwelling": "dungeon",
+			"max_population": 100,
+			"growth_per_week": 5,
+			"morale_group": "E",
+			"anim": [
+				"art/troops/zombies_00.png",
+				"art/troops/zombies_01.png",
+				"art/troops/zombies_02.png",
+				"art/troops/zombies_03.png"
+			],
+			"tier_counts": [
+				5,
+				10,
+				15,
+				20
+			]
 		},
-		"M":	{
-			"art":	"mountain_edge_04",
-			"terrain":	"mountain",
-			"blocks_foot":	true
+		{
+			"index": 6,
+			"id": "gnomes",
+			"name": "Fauni",
+			"sprite": "art/troops/gnomes_00.png",
+			"skill_level": 2,
+			"hit_points": 5,
+			"move_rate": 1,
+			"melee": [
+				1,
+				3
+			],
+			"ranged": [
+				0,
+				0,
+				0
+			],
+			"recruit_cost": 60,
+			"spoils_factor": 6,
+			"abilities": "",
+			"dwelling": "forest",
+			"max_population": 250,
+			"growth_per_week": 5,
+			"morale_group": "C",
+			"anim": [
+				"art/troops/gnomes_00.png",
+				"art/troops/gnomes_01.png",
+				"art/troops/gnomes_02.png",
+				"art/troops/gnomes_03.png"
+			],
+			"tier_counts": [
+				5,
+				10,
+				15,
+				20
+			]
 		},
-		"N":	{
-			"art":	"mountain_edge_05",
-			"terrain":	"mountain",
-			"blocks_foot":	true
+		{
+			"index": 7,
+			"id": "orcs",
+			"name": "Baleares",
+			"sprite": "art/troops/orcs_00.png",
+			"skill_level": 2,
+			"hit_points": 5,
+			"move_rate": 2,
+			"melee": [
+				2,
+				3
+			],
+			"ranged": [
+				1,
+				2,
+				10
+			],
+			"recruit_cost": 75,
+			"spoils_factor": 7,
+			"abilities": "",
+			"dwelling": "hill",
+			"max_population": 200,
+			"growth_per_week": 5,
+			"morale_group": "D",
+			"anim": [
+				"art/troops/orcs_00.png",
+				"art/troops/orcs_01.png",
+				"art/troops/orcs_02.png",
+				"art/troops/orcs_03.png"
+			],
+			"tier_counts": [
+				5,
+				10,
+				12,
+				20
+			]
 		},
-		"O":	{
-			"art":	"mountain_edge_06",
-			"terrain":	"mountain",
-			"blocks_foot":	true
+		{
+			"index": 8,
+			"id": "archers",
+			"name": "Velites",
+			"sprite": "art/troops/archers_00.png",
+			"skill_level": 2,
+			"hit_points": 10,
+			"move_rate": 2,
+			"melee": [
+				1,
+				2
+			],
+			"ranged": [
+				1,
+				3,
+				12
+			],
+			"recruit_cost": 250,
+			"spoils_factor": 25,
+			"abilities": "",
+			"dwelling": "castle",
+			"max_population": 0,
+			"growth_per_week": 5,
+			"morale_group": "B",
+			"anim": [
+				"art/troops/archers_00.png",
+				"art/troops/archers_01.png",
+				"art/troops/archers_02.png",
+				"art/troops/archers_03.png"
+			],
+			"tier_counts": [
+				0,
+				5,
+				10,
+				15
+			]
 		},
-		"P":	{
-			"art":	"mountain_edge_07",
-			"terrain":	"mountain",
-			"blocks_foot":	true
+		{
+			"index": 9,
+			"id": "elves",
+			"name": "Silvani",
+			"sprite": "art/troops/elves_00.png",
+			"skill_level": 3,
+			"hit_points": 10,
+			"move_rate": 3,
+			"melee": [
+				1,
+				2
+			],
+			"ranged": [
+				2,
+				4,
+				24
+			],
+			"recruit_cost": 200,
+			"spoils_factor": 20,
+			"abilities": "",
+			"dwelling": "forest",
+			"max_population": 100,
+			"growth_per_week": 4,
+			"morale_group": "C",
+			"anim": [
+				"art/troops/elves_00.png",
+				"art/troops/elves_01.png",
+				"art/troops/elves_02.png",
+				"art/troops/elves_03.png"
+			],
+			"tier_counts": [
+				5,
+				8,
+				10,
+				15
+			]
 		},
-		"Q":	{
-			"art":	"mountain_edge_08",
-			"terrain":	"mountain",
-			"blocks_foot":	true
+		{
+			"index": 10,
+			"id": "pikemen",
+			"name": "Hastati",
+			"sprite": "art/troops/pikemen_00.png",
+			"skill_level": 3,
+			"hit_points": 10,
+			"move_rate": 2,
+			"melee": [
+				2,
+				4
+			],
+			"ranged": [
+				0,
+				0,
+				0
+			],
+			"recruit_cost": 300,
+			"spoils_factor": 30,
+			"abilities": "",
+			"dwelling": "castle",
+			"max_population": 0,
+			"growth_per_week": 4,
+			"morale_group": "B",
+			"anim": [
+				"art/troops/pikemen_00.png",
+				"art/troops/pikemen_01.png",
+				"art/troops/pikemen_02.png",
+				"art/troops/pikemen_03.png"
+			],
+			"tier_counts": [
+				0,
+				5,
+				8,
+				15
+			]
 		},
-		"R":	{
-			"art":	"mountain_edge_09",
-			"terrain":	"mountain",
-			"blocks_foot":	true
+		{
+			"index": 11,
+			"id": "nomads",
+			"name": "Numidae",
+			"sprite": "art/troops/nomads_00.png",
+			"skill_level": 3,
+			"hit_points": 15,
+			"move_rate": 2,
+			"melee": [
+				2,
+				4
+			],
+			"ranged": [
+				0,
+				0,
+				0
+			],
+			"recruit_cost": 300,
+			"spoils_factor": 30,
+			"abilities": "",
+			"dwelling": "plains",
+			"max_population": 150,
+			"growth_per_week": 4,
+			"morale_group": "C",
+			"anim": [
+				"art/troops/nomads_00.png",
+				"art/troops/nomads_01.png",
+				"art/troops/nomads_02.png",
+				"art/troops/nomads_03.png"
+			],
+			"tier_counts": [
+				5,
+				8,
+				12,
+				18
+			]
 		},
-		"S":	{
-			"art":	"mountain_edge_10",
-			"terrain":	"mountain",
-			"blocks_foot":	true
+		{
+			"index": 12,
+			"id": "dwarves",
+			"name": "Ligures",
+			"sprite": "art/troops/dwarves_00.png",
+			"skill_level": 3,
+			"hit_points": 20,
+			"move_rate": 1,
+			"melee": [
+				2,
+				4
+			],
+			"ranged": [
+				0,
+				0,
+				0
+			],
+			"recruit_cost": 350,
+			"spoils_factor": 30,
+			"abilities": "",
+			"dwelling": "hill",
+			"max_population": 100,
+			"growth_per_week": 4,
+			"morale_group": "C",
+			"anim": [
+				"art/troops/dwarves_00.png",
+				"art/troops/dwarves_01.png",
+				"art/troops/dwarves_02.png",
+				"art/troops/dwarves_03.png"
+			],
+			"tier_counts": [
+				5,
+				6,
+				8,
+				12
+			]
 		},
-		"T":	{
-			"art":	"mountain_edge_11",
-			"terrain":	"mountain",
-			"blocks_foot":	true
+		{
+			"index": 13,
+			"id": "ghosts",
+			"name": "Manes",
+			"sprite": "art/troops/ghosts_00.png",
+			"skill_level": 4,
+			"hit_points": 10,
+			"move_rate": 3,
+			"melee": [
+				3,
+				4
+			],
+			"ranged": [
+				0,
+				0,
+				0
+			],
+			"recruit_cost": 400,
+			"spoils_factor": 40,
+			"abilities": "ABSORB|UNDEAD",
+			"dwelling": "dungeon",
+			"max_population": 25,
+			"growth_per_week": 3,
+			"morale_group": "E",
+			"anim": [
+				"art/troops/ghosts_00.png",
+				"art/troops/ghosts_01.png",
+				"art/troops/ghosts_02.png",
+				"art/troops/ghosts_03.png"
+			],
+			"tier_counts": [
+				2,
+				4,
+				6,
+				8
+			]
 		},
-		"U":	{
-			"art":	"mountain_edge_12",
-			"terrain":	"mountain",
-			"blocks_foot":	true
+		{
+			"index": 14,
+			"id": "knights",
+			"name": "Praetoriani",
+			"sprite": "art/troops/knights_00.png",
+			"skill_level": 5,
+			"hit_points": 35,
+			"move_rate": 1,
+			"melee": [
+				6,
+				10
+			],
+			"ranged": [
+				0,
+				0,
+				0
+			],
+			"recruit_cost": 1000,
+			"spoils_factor": 100,
+			"abilities": "",
+			"dwelling": "castle",
+			"max_population": 250,
+			"growth_per_week": 3,
+			"morale_group": "B",
+			"anim": [
+				"art/troops/knights_00.png",
+				"art/troops/knights_01.png",
+				"art/troops/knights_02.png",
+				"art/troops/knights_03.png"
+			],
+			"tier_counts": [
+				0,
+				2,
+				5,
+				8
+			]
 		},
-		"Y":	{
-			"art":	"water_edge_00",
-			"terrain":	"water"
+		{
+			"index": 15,
+			"id": "ogres",
+			"name": "Cyclopes",
+			"sprite": "art/troops/ogres_00.png",
+			"skill_level": 4,
+			"hit_points": 40,
+			"move_rate": 1,
+			"melee": [
+				3,
+				5
+			],
+			"ranged": [
+				0,
+				0,
+				0
+			],
+			"recruit_cost": 750,
+			"spoils_factor": 75,
+			"abilities": "",
+			"dwelling": "hill",
+			"max_population": 200,
+			"growth_per_week": 3,
+			"morale_group": "D",
+			"anim": [
+				"art/troops/ogres_00.png",
+				"art/troops/ogres_01.png",
+				"art/troops/ogres_02.png",
+				"art/troops/ogres_03.png"
+			],
+			"tier_counts": [
+				2,
+				3,
+				5,
+				8
+			]
 		},
-		"Z":	{
-			"art":	"water_edge_01",
-			"terrain":	"water"
+		{
+			"index": 16,
+			"id": "barbarians",
+			"name": "Sarmatae",
+			"sprite": "art/troops/barbarians_00.png",
+			"skill_level": 4,
+			"hit_points": 40,
+			"move_rate": 3,
+			"melee": [
+				1,
+				6
+			],
+			"ranged": [
+				0,
+				0,
+				0
+			],
+			"recruit_cost": 750,
+			"spoils_factor": 75,
+			"abilities": "",
+			"dwelling": "plains",
+			"max_population": 100,
+			"growth_per_week": 3,
+			"morale_group": "C",
+			"anim": [
+				"art/troops/barbarians_00.png",
+				"art/troops/barbarians_01.png",
+				"art/troops/barbarians_02.png",
+				"art/troops/barbarians_03.png"
+			],
+			"tier_counts": [
+				2,
+				3,
+				5,
+				8
+			]
 		},
-		"[":	{
-			"art":	"water_edge_02",
-			"terrain":	"water"
+		{
+			"index": 17,
+			"id": "trolls",
+			"name": "Antaei",
+			"sprite": "art/troops/trolls_00.png",
+			"skill_level": 4,
+			"hit_points": 50,
+			"move_rate": 1,
+			"melee": [
+				2,
+				5
+			],
+			"ranged": [
+				0,
+				0,
+				0
+			],
+			"recruit_cost": 1000,
+			"spoils_factor": 100,
+			"abilities": "REGEN",
+			"dwelling": "forest",
+			"max_population": 25,
+			"growth_per_week": 3,
+			"morale_group": "D",
+			"anim": [
+				"art/troops/trolls_00.png",
+				"art/troops/trolls_01.png",
+				"art/troops/trolls_02.png",
+				"art/troops/trolls_03.png"
+			],
+			"tier_counts": [
+				2,
+				3,
+				4,
+				6
+			]
 		},
-		"\\":	{
-			"art":	"water_edge_03",
-			"terrain":	"water"
+		{
+			"index": 18,
+			"id": "cavalry",
+			"name": "Equites",
+			"sprite": "art/troops/cavalry_00.png",
+			"skill_level": 4,
+			"hit_points": 20,
+			"move_rate": 4,
+			"melee": [
+				3,
+				5
+			],
+			"ranged": [
+				0,
+				0,
+				0
+			],
+			"recruit_cost": 800,
+			"spoils_factor": 80,
+			"abilities": "",
+			"dwelling": "castle",
+			"max_population": 0,
+			"growth_per_week": 2,
+			"morale_group": "B",
+			"anim": [
+				"art/troops/cavalry_00.png",
+				"art/troops/cavalry_01.png",
+				"art/troops/cavalry_02.png",
+				"art/troops/cavalry_03.png"
+			],
+			"tier_counts": [
+				0,
+				2,
+				4,
+				6
+			]
 		},
-		"]":	{
-			"art":	"water_edge_04",
-			"terrain":	"water"
+		{
+			"index": 19,
+			"id": "druids",
+			"name": "Druidae",
+			"sprite": "art/troops/druids_00.png",
+			"skill_level": 5,
+			"hit_points": 25,
+			"move_rate": 2,
+			"melee": [
+				2,
+				3
+			],
+			"ranged": [
+				10,
+				0,
+				3
+			],
+			"recruit_cost": 700,
+			"spoils_factor": 70,
+			"abilities": "MAGIC",
+			"dwelling": "forest",
+			"max_population": 25,
+			"growth_per_week": 2,
+			"morale_group": "C",
+			"anim": [
+				"art/troops/druids_00.png",
+				"art/troops/druids_01.png",
+				"art/troops/druids_02.png",
+				"art/troops/druids_03.png"
+			],
+			"tier_counts": [
+				2,
+				3,
+				4,
+				6
+			]
 		},
-		"^":	{
-			"art":	"mountain",
-			"terrain":	"mountain",
-			"blocks_foot":	true
+		{
+			"index": 20,
+			"id": "archmages",
+			"name": "Furiae",
+			"sprite": "art/troops/archmages_00.png",
+			"skill_level": 5,
+			"hit_points": 25,
+			"move_rate": 1,
+			"melee": [
+				2,
+				3
+			],
+			"ranged": [
+				25,
+				0,
+				2
+			],
+			"recruit_cost": 1200,
+			"spoils_factor": 120,
+			"abilities": "FLY|MAGIC",
+			"dwelling": "plains",
+			"max_population": 25,
+			"growth_per_week": 2,
+			"morale_group": "C",
+			"anim": [
+				"art/troops/archmages_00.png",
+				"art/troops/archmages_01.png",
+				"art/troops/archmages_02.png",
+				"art/troops/archmages_03.png"
+			],
+			"tier_counts": [
+				2,
+				3,
+				4,
+				5
+			]
 		},
-		"_":	{
-			"art":	"water_edge_05",
-			"terrain":	"water"
+		{
+			"index": 21,
+			"id": "vampires",
+			"name": "Striges",
+			"sprite": "art/troops/vampires_00.png",
+			"skill_level": 5,
+			"hit_points": 30,
+			"move_rate": 1,
+			"melee": [
+				3,
+				6
+			],
+			"ranged": [
+				0,
+				0,
+				0
+			],
+			"recruit_cost": 1500,
+			"spoils_factor": 150,
+			"abilities": "FLY|LEECH|UNDEAD",
+			"dwelling": "dungeon",
+			"max_population": 50,
+			"growth_per_week": 2,
+			"morale_group": "E",
+			"anim": [
+				"art/troops/vampires_00.png",
+				"art/troops/vampires_01.png",
+				"art/troops/vampires_02.png",
+				"art/troops/vampires_03.png"
+			],
+			"tier_counts": [
+				1,
+				2,
+				3,
+				5
+			]
 		},
-		"`":	{
-			"art":	"water_edge_06",
-			"terrain":	"water"
+		{
+			"index": 22,
+			"id": "giants",
+			"name": "Gigantes",
+			"sprite": "art/troops/giants_00.png",
+			"skill_level": 5,
+			"hit_points": 60,
+			"move_rate": 3,
+			"melee": [
+				10,
+				20
+			],
+			"ranged": [
+				5,
+				10,
+				6
+			],
+			"recruit_cost": 2000,
+			"spoils_factor": 200,
+			"abilities": "",
+			"dwelling": "hill",
+			"max_population": 50,
+			"growth_per_week": 2,
+			"morale_group": "C",
+			"anim": [
+				"art/troops/giants_00.png",
+				"art/troops/giants_01.png",
+				"art/troops/giants_02.png",
+				"art/troops/giants_03.png"
+			],
+			"tier_counts": [
+				1,
+				2,
+				3,
+				5
+			]
 		},
-		"a":	{
-			"art":	"water_edge_07",
-			"terrain":	"water"
+		{
+			"index": 23,
+			"id": "demons",
+			"name": "Empusae",
+			"sprite": "art/troops/demons_00.png",
+			"skill_level": 6,
+			"hit_points": 50,
+			"move_rate": 1,
+			"melee": [
+				5,
+				7
+			],
+			"ranged": [
+				0,
+				0,
+				0
+			],
+			"recruit_cost": 3000,
+			"spoils_factor": 300,
+			"abilities": "FLY|SCYTHE",
+			"dwelling": "dungeon",
+			"max_population": 25,
+			"growth_per_week": 1,
+			"morale_group": "E",
+			"anim": [
+				"art/troops/demons_00.png",
+				"art/troops/demons_01.png",
+				"art/troops/demons_02.png",
+				"art/troops/demons_03.png"
+			],
+			"tier_counts": [
+				1,
+				2,
+				3,
+				4
+			]
 		},
-		"b":	{
-			"art":	"water_edge_08",
-			"terrain":	"water"
+		{
+			"index": 24,
+			"id": "dragons",
+			"name": "Dracones",
+			"sprite": "art/troops/dragons_00.png",
+			"skill_level": 6,
+			"hit_points": 200,
+			"move_rate": 1,
+			"melee": [
+				25,
+				50
+			],
+			"ranged": [
+				0,
+				0,
+				0
+			],
+			"recruit_cost": 5000,
+			"spoils_factor": 500,
+			"abilities": "FLY|IMMUNE",
+			"dwelling": "hill",
+			"max_population": 25,
+			"growth_per_week": 1,
+			"morale_group": "D",
+			"anim": [
+				"art/troops/dragons_00.png",
+				"art/troops/dragons_01.png",
+				"art/troops/dragons_02.png",
+				"art/troops/dragons_03.png"
+			],
+			"tier_counts": [
+				1,
+				1,
+				1,
+				2
+			]
+		}
+	],
+	"spells": [
+		{
+			"index": 0,
+			"id": "clone",
+			"name": "Simulacrum",
+			"kind": "combat",
+			"cost": 2000
 		},
-		"c":	{
-			"art":	"water_edge_09",
-			"terrain":	"water"
+		{
+			"index": 1,
+			"id": "teleport",
+			"name": "Mercury's Passage",
+			"kind": "combat",
+			"cost": 500
 		},
-		"d":	{
-			"art":	"water_edge_10",
-			"terrain":	"water"
+		{
+			"index": 2,
+			"id": "fireball",
+			"name": "Vulcan's Fire",
+			"kind": "combat",
+			"cost": 1500
 		},
-		"e":	{
-			"art":	"water_edge_11",
-			"terrain":	"water"
+		{
+			"index": 3,
+			"id": "lightning",
+			"name": "Fulmen",
+			"kind": "combat",
+			"cost": 500
 		},
-		"~":	{
-			"art":	"water",
-			"terrain":	"water"
+		{
+			"index": 4,
+			"id": "freeze",
+			"name": "Medusa's Gaze",
+			"kind": "combat",
+			"cost": 300
+		},
+		{
+			"index": 5,
+			"id": "resurrect",
+			"name": "Rite of Aesculapius",
+			"kind": "combat",
+			"cost": 5000
+		},
+		{
+			"index": 6,
+			"id": "turn_undead",
+			"name": "Rite of the Lemuria",
+			"kind": "combat",
+			"cost": 2000
+		},
+		{
+			"index": 7,
+			"id": "bridge",
+			"name": "Pontifex",
+			"kind": "adventure",
+			"cost": 100
+		},
+		{
+			"index": 8,
+			"id": "time_stop",
+			"name": "Iter Magnum",
+			"kind": "adventure",
+			"cost": 200
+		},
+		{
+			"index": 9,
+			"id": "find_villain",
+			"name": "Augury",
+			"kind": "adventure",
+			"cost": 1000
+		},
+		{
+			"index": 10,
+			"id": "castle_gate",
+			"name": "Cursus Publicus",
+			"kind": "adventure",
+			"cost": 1000
+		},
+		{
+			"index": 11,
+			"id": "town_gate",
+			"name": "Via",
+			"kind": "adventure",
+			"cost": 500
+		},
+		{
+			"index": 12,
+			"id": "instant_army",
+			"name": "Dilectus",
+			"kind": "adventure",
+			"cost": 1000
+		},
+		{
+			"index": 13,
+			"id": "raise_control",
+			"name": "Imperium",
+			"kind": "adventure",
+			"cost": 500
+		}
+	],
+	"classes": [
+		{
+			"index": 0,
+			"id": "knight",
+			"name": "Legatus",
+			"portrait": "art/classes/knight.png",
+			"starting_gold": 7500,
+			"starting_troops": [
+				{
+					"id": "militia",
+					"count": 20
+				},
+				{
+					"id": "archers",
+					"count": 2
+				}
+			],
+			"ranks": [
+				{
+					"id": "knight",
+					"name": "Tribunus",
+					"villains_needed": 0,
+					"leadership": 100,
+					"max_spells": 2,
+					"spell_power": 1,
+					"commission": 1000,
+					"knows_magic": false,
+					"instant_army": 0
+				},
+				{
+					"id": "general",
+					"name": "Praefectus",
+					"villains_needed": 2,
+					"leadership": 100,
+					"max_spells": 3,
+					"spell_power": 1,
+					"commission": 1000,
+					"knows_magic": false,
+					"instant_army": 2
+				},
+				{
+					"id": "marshal",
+					"name": "Legatus",
+					"villains_needed": 8,
+					"leadership": 300,
+					"max_spells": 4,
+					"spell_power": 1,
+					"commission": 2000,
+					"knows_magic": false,
+					"instant_army": 8
+				},
+				{
+					"id": "lord",
+					"name": "Consul",
+					"villains_needed": 14,
+					"leadership": 500,
+					"max_spells": 5,
+					"spell_power": 2,
+					"commission": 4000,
+					"knows_magic": false,
+					"instant_army": 14
+				}
+			]
+		},
+		{
+			"index": 1,
+			"id": "paladin",
+			"name": "Praetorianus",
+			"portrait": "art/classes/paladin.png",
+			"starting_gold": 10000,
+			"starting_troops": [
+				{
+					"id": "peasants",
+					"count": 20
+				},
+				{
+					"id": "militia",
+					"count": 20
+				}
+			],
+			"ranks": [
+				{
+					"id": "paladin",
+					"name": "Miles",
+					"villains_needed": 0,
+					"leadership": 80,
+					"max_spells": 3,
+					"spell_power": 1,
+					"commission": 1000,
+					"knows_magic": false,
+					"instant_army": 0
+				},
+				{
+					"id": "crusader",
+					"name": "Centurio",
+					"villains_needed": 2,
+					"leadership": 80,
+					"max_spells": 3,
+					"spell_power": 1,
+					"commission": 1000,
+					"knows_magic": false,
+					"instant_army": 2
+				},
+				{
+					"id": "avenger",
+					"name": "Tribunus",
+					"villains_needed": 7,
+					"leadership": 240,
+					"max_spells": 6,
+					"spell_power": 2,
+					"commission": 2000,
+					"knows_magic": false,
+					"instant_army": 8
+				},
+				{
+					"id": "champion",
+					"name": "Praefectus Praetorio",
+					"villains_needed": 13,
+					"leadership": 400,
+					"max_spells": 5,
+					"spell_power": 2,
+					"commission": 4000,
+					"knows_magic": false,
+					"instant_army": 18
+				}
+			]
+		},
+		{
+			"index": 2,
+			"id": "sorceress",
+			"name": "Sibylla",
+			"portrait": "art/classes/sorceress.png",
+			"starting_gold": 10000,
+			"starting_troops": [
+				{
+					"id": "peasants",
+					"count": 30
+				},
+				{
+					"id": "sprites",
+					"count": 10
+				}
+			],
+			"ranks": [
+				{
+					"id": "sorceress",
+					"name": "Virgo Vestalis",
+					"villains_needed": 0,
+					"leadership": 60,
+					"max_spells": 5,
+					"spell_power": 2,
+					"commission": 3000,
+					"knows_magic": true,
+					"instant_army": 1
+				},
+				{
+					"id": "magician",
+					"name": "Sacerdos",
+					"villains_needed": 3,
+					"leadership": 60,
+					"max_spells": 8,
+					"spell_power": 3,
+					"commission": 1000,
+					"knows_magic": false,
+					"instant_army": 6
+				},
+				{
+					"id": "mage",
+					"name": "Augur",
+					"villains_needed": 6,
+					"leadership": 180,
+					"max_spells": 10,
+					"spell_power": 5,
+					"commission": 1000,
+					"knows_magic": false,
+					"instant_army": 9
+				},
+				{
+					"id": "archmage",
+					"name": "Sibylla",
+					"villains_needed": 12,
+					"leadership": 300,
+					"max_spells": 12,
+					"spell_power": 5,
+					"commission": 1000,
+					"knows_magic": false,
+					"instant_army": 19
+				}
+			]
+		},
+		{
+			"index": 3,
+			"id": "barbarian",
+			"name": "Dux",
+			"portrait": "art/classes/barbarian.png",
+			"starting_gold": 7500,
+			"starting_troops": [
+				{
+					"id": "wolves",
+					"count": 20
+				}
+			],
+			"ranks": [
+				{
+					"id": "barbarian",
+					"name": "Auxiliarius",
+					"villains_needed": 0,
+					"leadership": 100,
+					"max_spells": 2,
+					"spell_power": 0,
+					"commission": 2000,
+					"knows_magic": false,
+					"instant_army": 0
+				},
+				{
+					"id": "chieftain",
+					"name": "Decurio",
+					"villains_needed": 1,
+					"leadership": 100,
+					"max_spells": 2,
+					"spell_power": 1,
+					"commission": 2000,
+					"knows_magic": false,
+					"instant_army": 3
+				},
+				{
+					"id": "warlord",
+					"name": "Praefectus Alae",
+					"villains_needed": 5,
+					"leadership": 300,
+					"max_spells": 3,
+					"spell_power": 1,
+					"commission": 2000,
+					"knows_magic": false,
+					"instant_army": 7
+				},
+				{
+					"id": "overlord",
+					"name": "Dux",
+					"villains_needed": 10,
+					"leadership": 500,
+					"max_spells": 3,
+					"spell_power": 1,
+					"commission": 2000,
+					"knows_magic": false,
+					"instant_army": 15
+				}
+			]
+		}
+	],
+	"villains": [
+		{
+			"index": 0,
+			"id": "catiline",
+			"name": "Catiline",
+			"zone": "italia",
+			"reward": 5000,
+			"puzzle_cell": 0,
+			"portrait": "art/villains/murray_00.png",
+			"army": [
+				{
+					"troop": "peasants",
+					"count": 6
+				},
+				{
+					"troop": "peasants",
+					"count": 6
+				},
+				{
+					"troop": "militia",
+					"count": 6
+				},
+				{
+					"troop": "militia",
+					"count": 6
+				},
+				{
+					"troop": "wolves",
+					"count": 6
+				}
+			]
+		},
+		{
+			"index": 1,
+			"id": "spartacus",
+			"name": "Spartacus",
+			"zone": "italia",
+			"reward": 6000,
+			"puzzle_cell": 1,
+			"portrait": "art/villains/murray_00.png",
+			"army": [
+				{
+					"troop": "peasants",
+					"count": 7
+				},
+				{
+					"troop": "peasants",
+					"count": 7
+				},
+				{
+					"troop": "militia",
+					"count": 7
+				},
+				{
+					"troop": "pikemen",
+					"count": 4
+				},
+				{
+					"troop": "wolves",
+					"count": 7
+				}
+			]
+		},
+		{
+			"index": 2,
+			"id": "tacfarinas",
+			"name": "Tacfarinas",
+			"zone": "africa",
+			"reward": 7000,
+			"puzzle_cell": 2,
+			"portrait": "art/villains/murray_00.png",
+			"army": [
+				{
+					"troop": "peasants",
+					"count": 8
+				},
+				{
+					"troop": "nomads",
+					"count": 5
+				},
+				{
+					"troop": "orcs",
+					"count": 8
+				},
+				{
+					"troop": "wolves",
+					"count": 8
+				},
+				{
+					"troop": "nomads",
+					"count": 5
+				}
+			]
+		},
+		{
+			"index": 3,
+			"id": "jugurtha",
+			"name": "Jugurtha",
+			"zone": "africa",
+			"reward": 8000,
+			"puzzle_cell": 3,
+			"portrait": "art/villains/murray_00.png",
+			"army": [
+				{
+					"troop": "nomads",
+					"count": 5
+				},
+				{
+					"troop": "nomads",
+					"count": 5
+				},
+				{
+					"troop": "orcs",
+					"count": 9
+				},
+				{
+					"troop": "archers",
+					"count": 5
+				},
+				{
+					"troop": "wolves",
+					"count": 9
+				}
+			]
+		},
+		{
+			"index": 4,
+			"id": "boudica",
+			"name": "Boudica",
+			"zone": "galliae",
+			"reward": 9000,
+			"puzzle_cell": 4,
+			"portrait": "art/villains/murray_00.png",
+			"army": [
+				{
+					"troop": "peasants",
+					"count": 10
+				},
+				{
+					"troop": "elves",
+					"count": 6
+				},
+				{
+					"troop": "barbarians",
+					"count": 3
+				},
+				{
+					"troop": "gnomes",
+					"count": 10
+				},
+				{
+					"troop": "druids",
+					"count": 3
+				}
+			]
+		},
+		{
+			"index": 5,
+			"id": "civilis",
+			"name": "Civilis",
+			"zone": "galliae",
+			"reward": 10000,
+			"puzzle_cell": 5,
+			"portrait": "art/villains/murray_00.png",
+			"army": [
+				{
+					"troop": "pikemen",
+					"count": 6
+				},
+				{
+					"troop": "archers",
+					"count": 6
+				},
+				{
+					"troop": "elves",
+					"count": 6
+				},
+				{
+					"troop": "barbarians",
+					"count": 3
+				},
+				{
+					"troop": "cavalry",
+					"count": 3
+				}
+			]
+		},
+		{
+			"index": 6,
+			"id": "brennus",
+			"name": "Brennus",
+			"zone": "italia",
+			"reward": 12000,
+			"puzzle_cell": 6,
+			"portrait": "art/villains/murray_00.png",
+			"army": [
+				{
+					"troop": "barbarians",
+					"count": 4
+				},
+				{
+					"troop": "elves",
+					"count": 7
+				},
+				{
+					"troop": "gnomes",
+					"count": 12
+				},
+				{
+					"troop": "dwarves",
+					"count": 7
+				},
+				{
+					"troop": "trolls",
+					"count": 4
+				}
+			]
+		},
+		{
+			"index": 7,
+			"id": "vercingetorix",
+			"name": "Vercingetorix",
+			"zone": "galliae",
+			"reward": 14000,
+			"puzzle_cell": 7,
+			"portrait": "art/villains/murray_00.png",
+			"army": [
+				{
+					"troop": "barbarians",
+					"count": 4
+				},
+				{
+					"troop": "elves",
+					"count": 7
+				},
+				{
+					"troop": "dwarves",
+					"count": 7
+				},
+				{
+					"troop": "druids",
+					"count": 4
+				},
+				{
+					"troop": "trolls",
+					"count": 4
+				}
+			]
+		},
+		{
+			"index": 8,
+			"id": "arminius",
+			"name": "Arminius",
+			"zone": "galliae",
+			"reward": 16000,
+			"puzzle_cell": 8,
+			"portrait": "art/villains/murray_00.png",
+			"army": [
+				{
+					"troop": "barbarians",
+					"count": 4
+				},
+				{
+					"troop": "elves",
+					"count": 8
+				},
+				{
+					"troop": "trolls",
+					"count": 4
+				},
+				{
+					"troop": "druids",
+					"count": 4
+				},
+				{
+					"troop": "gnomes",
+					"count": 14
+				}
+			]
+		},
+		{
+			"index": 9,
+			"id": "gildo",
+			"name": "Gildo",
+			"zone": "africa",
+			"reward": 18000,
+			"puzzle_cell": 9,
+			"portrait": "art/villains/murray_00.png",
+			"army": [
+				{
+					"troop": "nomads",
+					"count": 8
+				},
+				{
+					"troop": "orcs",
+					"count": 15
+				},
+				{
+					"troop": "barbarians",
+					"count": 5
+				},
+				{
+					"troop": "ogres",
+					"count": 5
+				}
+			]
+		},
+		{
+			"index": 10,
+			"id": "pyrrhus",
+			"name": "Pyrrhus",
+			"zone": "italia",
+			"reward": 20000,
+			"puzzle_cell": 10,
+			"portrait": "art/villains/murray_00.png",
+			"army": [
+				{
+					"troop": "pikemen",
+					"count": 9
+				},
+				{
+					"troop": "cavalry",
+					"count": 5
+				},
+				{
+					"troop": "archers",
+					"count": 9
+				},
+				{
+					"troop": "ogres",
+					"count": 5
+				}
+			]
+		},
+		{
+			"index": 11,
+			"id": "mithridates",
+			"name": "Mithridates",
+			"zone": "oriens",
+			"reward": 25000,
+			"puzzle_cell": 11,
+			"portrait": "art/villains/murray_00.png",
+			"army": [
+				{
+					"troop": "nomads",
+					"count": 9
+				},
+				{
+					"troop": "elves",
+					"count": 9
+				},
+				{
+					"troop": "druids",
+					"count": 5
+				}
+			]
+		},
+		{
+			"index": 12,
+			"id": "hannibal",
+			"name": "Hannibal",
+			"zone": "africa",
+			"reward": 30000,
+			"puzzle_cell": 12,
+			"portrait": "art/villains/murray_00.png",
+			"army": [
+				{
+					"troop": "nomads",
+					"count": 10
+				},
+				{
+					"troop": "giants",
+					"count": 1
+				},
+				{
+					"troop": "barbarians",
+					"count": 6
+				},
+				{
+					"troop": "ogres",
+					"count": 6
+				},
+				{
+					"troop": "cavalry",
+					"count": 6
+				}
+			]
+		},
+		{
+			"index": 13,
+			"id": "zenobia",
+			"name": "Zenobia",
+			"zone": "oriens",
+			"reward": 35000,
+			"puzzle_cell": 13,
+			"portrait": "art/villains/murray_00.png",
+			"army": [
+				{
+					"troop": "barbarians",
+					"count": 6
+				},
+				{
+					"troop": "archmages",
+					"count": 1
+				},
+				{
+					"troop": "cavalry",
+					"count": 6
+				},
+				{
+					"troop": "giants",
+					"count": 1
+				},
+				{
+					"troop": "vampires",
+					"count": 1
+				}
+			]
+		},
+		{
+			"index": 14,
+			"id": "shapur",
+			"name": "Shapur",
+			"zone": "oriens",
+			"reward": 40000,
+			"puzzle_cell": 14,
+			"portrait": "art/villains/murray_00.png",
+			"army": [
+				{
+					"troop": "barbarians",
+					"count": 6
+				},
+				{
+					"troop": "giants",
+					"count": 1
+				},
+				{
+					"troop": "cavalry",
+					"count": 6
+				},
+				{
+					"troop": "archmages",
+					"count": 1
+				},
+				{
+					"troop": "dragons",
+					"count": 1
+				}
+			]
+		},
+		{
+			"index": 15,
+			"id": "alaric",
+			"name": "Alaric",
+			"zone": "italia",
+			"reward": 45000,
+			"puzzle_cell": 15,
+			"portrait": "art/villains/murray_00.png",
+			"army": [
+				{
+					"troop": "barbarians",
+					"count": 7
+				},
+				{
+					"troop": "trolls",
+					"count": 7
+				},
+				{
+					"troop": "demons",
+					"count": 1
+				},
+				{
+					"troop": "vampires",
+					"count": 1
+				},
+				{
+					"troop": "dragons",
+					"count": 1
+				}
+			]
+		},
+		{
+			"index": 16,
+			"id": "attila",
+			"name": "Attila",
+			"zone": "italia",
+			"reward": 50000,
+			"puzzle_cell": 16,
+			"portrait": "art/villains/murray_00.png",
+			"army": [
+				{
+					"troop": "dragons",
+					"count": 1
+				},
+				{
+					"troop": "demons",
+					"count": 1
+				},
+				{
+					"troop": "vampires",
+					"count": 1
+				},
+				{
+					"troop": "barbarians",
+					"count": 7
+				},
+				{
+					"troop": "archmages",
+					"count": 1
+				}
+			]
+		}
+	],
+	"artifacts": [
+		{
+			"index": 0,
+			"id": "sword",
+			"name": "The Gladius of Mars",
+			"zone": "galliae",
+			"effect": "Your army deals +50% damage.",
+			"power": "increased_damage",
+			"icon": "art/ui/inventory_artifact_sword.png",
+			"puzzle_cell": 17,
+			"local_idx": 0
+		},
+		{
+			"index": 1,
+			"id": "shield",
+			"name": "The Scutum of Aeneas",
+			"zone": "oriens",
+			"effect": "Your army takes 25% less damage.",
+			"power": "quarter_protection",
+			"icon": "art/ui/inventory_artifact_shield.png",
+			"puzzle_cell": 18,
+			"local_idx": 1
+		},
+		{
+			"index": 2,
+			"id": "crown",
+			"name": "The Corona Triumphalis",
+			"zone": "oriens",
+			"effect": "Doubles your leadership.",
+			"power": "double_leadership",
+			"icon": "art/ui/inventory_artifact_crown.png",
+			"puzzle_cell": 19,
+			"local_idx": 0
+		},
+		{
+			"index": 3,
+			"id": "articles",
+			"name": "The Senatus Consultum",
+			"zone": "italia",
+			"effect": "Increases your weekly commission.",
+			"power": "increase_commission",
+			"icon": "art/ui/inventory_artifact_articles.png",
+			"puzzle_cell": 20,
+			"local_idx": 0
+		},
+		{
+			"index": 4,
+			"id": "amulet",
+			"name": "The Bulla of Jupiter",
+			"zone": "africa",
+			"effect": "Doubles your spell power.",
+			"power": "double_spell_power",
+			"icon": "art/ui/inventory_artifact_amulet.png",
+			"puzzle_cell": 21,
+			"local_idx": 0
+		},
+		{
+			"index": 5,
+			"id": "ring",
+			"name": "The Anulus Aureus",
+			"zone": "africa",
+			"effect": "Doubles your maximum spells.",
+			"power": "double_max_spells",
+			"icon": "art/ui/inventory_artifact_ring.png",
+			"puzzle_cell": 22,
+			"local_idx": 1
+		},
+		{
+			"index": 6,
+			"id": "book",
+			"name": "The Sibylline Fragment",
+			"zone": "italia",
+			"effect": "Unknown power.",
+			"power": "unknown_xxx1",
+			"icon": "art/ui/inventory_artifact_book.png",
+			"puzzle_cell": 23,
+			"local_idx": 1
+		},
+		{
+			"index": 7,
+			"id": "anchor",
+			"name": "The Anchor of Neptune",
+			"zone": "galliae",
+			"effect": "Boat rental is cheaper.",
+			"power": "cheaper_boat_rental",
+			"icon": "art/ui/inventory_artifact_anchor.png",
+			"puzzle_cell": 24,
+			"local_idx": 1
+		}
+	],
+	"tile_codes": {
+		"*": {
+			"art": "desert_edge_01",
+			"terrain": "desert"
+		},
+		"+": {
+			"art": "desert_edge_02",
+			"terrain": "desert"
+		},
+		",": {
+			"art": "grass_variant",
+			"terrain": "grass"
+		},
+		"-": {
+			"art": "desert_edge_03",
+			"terrain": "desert"
+		},
+		".": {
+			"art": "grass",
+			"terrain": "grass"
+		},
+		"/": {
+			"art": "desert_edge_04",
+			"terrain": "desert"
+		},
+		"0": {
+			"art": "desert_edge_05",
+			"terrain": "desert"
+		},
+		"1": {
+			"art": "desert_edge_06",
+			"terrain": "desert"
+		},
+		"2": {
+			"art": "desert_edge_07",
+			"terrain": "desert"
+		},
+		"3": {
+			"art": "desert_edge_08",
+			"terrain": "desert"
+		},
+		"4": {
+			"art": "desert_edge_09",
+			"terrain": "desert"
+		},
+		"5": {
+			"art": "desert_edge_10",
+			"terrain": "desert"
+		},
+		"6": {
+			"art": "desert_edge_11",
+			"terrain": "desert"
+		},
+		"7": {
+			"art": "desert_edge_12",
+			"terrain": "desert"
+		},
+		"<": {
+			"art": "forest_edge_01",
+			"terrain": "forest",
+			"blocks_foot": true
+		},
+		"=": {
+			"art": "forest_edge_02",
+			"terrain": "forest",
+			"blocks_foot": true
+		},
+		">": {
+			"art": "forest_edge_03",
+			"terrain": "forest",
+			"blocks_foot": true
+		},
+		"?": {
+			"art": "forest_edge_04",
+			"terrain": "forest",
+			"blocks_foot": true
+		},
+		"@": {
+			"art": "forest_edge_05",
+			"terrain": "forest",
+			"blocks_foot": true
+		},
+		"A": {
+			"art": "forest_edge_06",
+			"terrain": "forest",
+			"blocks_foot": true
+		},
+		"B": {
+			"art": "forest_edge_07",
+			"terrain": "forest",
+			"blocks_foot": true
+		},
+		"C": {
+			"art": "forest_edge_08",
+			"terrain": "forest",
+			"blocks_foot": true
+		},
+		"D": {
+			"art": "desert",
+			"terrain": "desert"
+		},
+		"E": {
+			"art": "forest_edge_09",
+			"terrain": "forest",
+			"blocks_foot": true
+		},
+		"F": {
+			"art": "forest",
+			"terrain": "forest",
+			"blocks_foot": true
+		},
+		"G": {
+			"art": "forest_edge_10",
+			"terrain": "forest",
+			"blocks_foot": true
+		},
+		"H": {
+			"art": "forest_edge_11",
+			"terrain": "forest",
+			"blocks_foot": true
+		},
+		"I": {
+			"art": "forest_edge_12",
+			"terrain": "forest",
+			"blocks_foot": true
+		},
+		"J": {
+			"art": "mountain_edge_01",
+			"terrain": "mountain",
+			"blocks_foot": true
+		},
+		"K": {
+			"art": "mountain_edge_02",
+			"terrain": "mountain",
+			"blocks_foot": true
+		},
+		"L": {
+			"art": "mountain_edge_03",
+			"terrain": "mountain",
+			"blocks_foot": true
+		},
+		"M": {
+			"art": "mountain_edge_04",
+			"terrain": "mountain",
+			"blocks_foot": true
+		},
+		"N": {
+			"art": "mountain_edge_05",
+			"terrain": "mountain",
+			"blocks_foot": true
+		},
+		"O": {
+			"art": "mountain_edge_06",
+			"terrain": "mountain",
+			"blocks_foot": true
+		},
+		"P": {
+			"art": "mountain_edge_07",
+			"terrain": "mountain",
+			"blocks_foot": true
+		},
+		"Q": {
+			"art": "mountain_edge_08",
+			"terrain": "mountain",
+			"blocks_foot": true
+		},
+		"R": {
+			"art": "mountain_edge_09",
+			"terrain": "mountain",
+			"blocks_foot": true
+		},
+		"S": {
+			"art": "mountain_edge_10",
+			"terrain": "mountain",
+			"blocks_foot": true
+		},
+		"T": {
+			"art": "mountain_edge_11",
+			"terrain": "mountain",
+			"blocks_foot": true
+		},
+		"U": {
+			"art": "mountain_edge_12",
+			"terrain": "mountain",
+			"blocks_foot": true
+		},
+		"Y": {
+			"art": "water_edge_00",
+			"terrain": "water"
+		},
+		"Z": {
+			"art": "water_edge_01",
+			"terrain": "water"
+		},
+		"[": {
+			"art": "water_edge_02",
+			"terrain": "water"
+		},
+		"\\": {
+			"art": "water_edge_03",
+			"terrain": "water"
+		},
+		"]": {
+			"art": "water_edge_04",
+			"terrain": "water"
+		},
+		"^": {
+			"art": "mountain",
+			"terrain": "mountain",
+			"blocks_foot": true
+		},
+		"_": {
+			"art": "water_edge_05",
+			"terrain": "water"
+		},
+		"`": {
+			"art": "water_edge_06",
+			"terrain": "water"
+		},
+		"a": {
+			"art": "water_edge_07",
+			"terrain": "water"
+		},
+		"b": {
+			"art": "water_edge_08",
+			"terrain": "water"
+		},
+		"c": {
+			"art": "water_edge_09",
+			"terrain": "water"
+		},
+		"d": {
+			"art": "water_edge_10",
+			"terrain": "water"
+		},
+		"e": {
+			"art": "water_edge_11",
+			"terrain": "water"
+		},
+		"~": {
+			"art": "water",
+			"terrain": "water"
 		}
 	},
-	"spawn":	{
-		"tier_chance_curve":	[[60, 90, 98, 101], [20, 70, 95, 99], [10, 20, 50, 90], [3, 6, 10, 40]],
-		"tier_troop_pool":	[["peasants", "wolves", "nomads", "barbarians", "archmages"], ["sprites", "gnomes", "elves", "trolls", "druids"], ["orcs", "dwarves", "ogres", "giants", "dragons"], ["skeletons", "zombies", "ghosts", "vampires", "demons"]]
+	"spawn": {
+		"tier_chance_curve": [
+			[
+				60,
+				90,
+				98,
+				101
+			],
+			[
+				20,
+				70,
+				95,
+				99
+			],
+			[
+				10,
+				20,
+				50,
+				90
+			],
+			[
+				3,
+				6,
+				10,
+				40
+			]
+		],
+		"tier_troop_pool": [
+			[
+				"peasants",
+				"wolves",
+				"nomads",
+				"barbarians",
+				"archmages"
+			],
+			[
+				"sprites",
+				"gnomes",
+				"elves",
+				"trolls",
+				"druids"
+			],
+			[
+				"orcs",
+				"dwarves",
+				"ogres",
+				"giants",
+				"dragons"
+			],
+			[
+				"skeletons",
+				"zombies",
+				"ghosts",
+				"vampires",
+				"demons"
+			]
+		]
 	},
-	"contract":	{
-		"cycle_length":	5,
-		"initial_last_contract":	4
+	"contract": {
+		"cycle_length": 5,
+		"initial_last_contract": 4
 	},
-	"controls":	{
-		"settings":	[{
-				"id":	"delay",
-				"label":	"Delay",
-				"type":	"numeric",
-				"range":	10,
-				"default":	5
-			}, {
-				"id":	"sounds",
-				"label":	"Sounds",
-				"type":	"bool",
-				"default":	1
-			}, {
-				"id":	"walk_beep",
-				"label":	"Walk Beep",
-				"type":	"bool",
-				"default":	1
-			}, {
-				"id":	"animation",
-				"label":	"Animation",
-				"type":	"bool",
-				"default":	1
-			}, {
-				"id":	"cga",
-				"label":	"CGA",
-				"type":	"numeric",
-				"range":	8,
-				"default":	0,
-				"hidden":	true
-			}, {
-				"id":	"music",
-				"label":	"Music",
-				"type":	"bool",
-				"default":	0
-			}, {
-				"id":	"volume",
-				"label":	"Volume",
-				"type":	"numeric",
-				"range":	10,
-				"default":	5
-			}]
+	"controls": {
+		"settings": [
+			{
+				"id": "delay",
+				"label": "Delay",
+				"type": "numeric",
+				"range": 10,
+				"default": 5
+			},
+			{
+				"id": "sounds",
+				"label": "Sounds",
+				"type": "bool",
+				"default": 1
+			},
+			{
+				"id": "walk_beep",
+				"label": "Walk Beep",
+				"type": "bool",
+				"default": 1
+			},
+			{
+				"id": "animation",
+				"label": "Animation",
+				"type": "bool",
+				"default": 1
+			},
+			{
+				"id": "cga",
+				"label": "CGA",
+				"type": "numeric",
+				"range": 8,
+				"default": 0,
+				"hidden": true
+			},
+			{
+				"id": "music",
+				"label": "Music",
+				"type": "bool",
+				"default": 0
+			},
+			{
+				"id": "volume",
+				"label": "Volume",
+				"type": "numeric",
+				"range": 10,
+				"default": 5
+			}
+		]
 	},
-	"sprites":	{
-		"hero":	{
-			"walk":	["art/sprites/hero_walk_00.png", "art/sprites/hero_walk_01.png", "art/sprites/hero_walk_02.png", "art/sprites/hero_walk_03.png"],
-			"boat":	["art/sprites/boat_00.png", "art/sprites/boat_01.png", "art/sprites/boat_02.png", "art/sprites/boat_03.png"]
+	"sprites": {
+		"hero": {
+			"walk": [
+				"art/sprites/hero_walk_00.png",
+				"art/sprites/hero_walk_01.png",
+				"art/sprites/hero_walk_02.png",
+				"art/sprites/hero_walk_03.png"
+			],
+			"boat": [
+				"art/sprites/boat_00.png",
+				"art/sprites/boat_01.png",
+				"art/sprites/boat_02.png",
+				"art/sprites/boat_03.png"
+			]
 		},
-		"ui":	{
-			"puzzle_cover":	"art/ui/puzzle_cover.png",
-			"town_backdrop":	"art/ui/backdrop_town.png",
-			"castle_backdrop":	"art/ui/backdrop_castle.png",
-			"plains_backdrop":	"art/ui/backdrop_plains.png",
-			"forest_backdrop":	"art/ui/backdrop_forest.png",
-			"hillcave_backdrop":	"art/ui/backdrop_hillcave.png",
-			"dungeon_backdrop":	"art/ui/backdrop_dungeon.png",
-			"ending_win":	"art/ui/end_win_screen.png",
-			"ending_lose":	"art/ui/end_lose_screen.png",
-			"view_icons_extra":	["art/ui/inventory_zone_continentia.png", "art/ui/inventory_zone_forestria.png", "art/ui/inventory_zone_archipelia.png", "art/ui/inventory_zone_saharia.png"],
-			"chrome_overworld":	"art/ui/chrome_overworld.png",
-			"splash_logo":	"art/ui/splash_logo.png",
-			"splash_title":	"art/ui/splash_title.png",
-			"class_picker":	"art/ui/class_select_picker.png",
-			"class_highlight":	"art/ui/class_select_highlight.png"
+		"ui": {
+			"puzzle_cover": "art/ui/puzzle_cover.png",
+			"town_backdrop": "art/ui/backdrop_town.png",
+			"castle_backdrop": "art/ui/backdrop_castle.png",
+			"plains_backdrop": "art/ui/backdrop_plains.png",
+			"forest_backdrop": "art/ui/backdrop_forest.png",
+			"hillcave_backdrop": "art/ui/backdrop_hillcave.png",
+			"dungeon_backdrop": "art/ui/backdrop_dungeon.png",
+			"ending_win": "art/ui/end_win_screen.png",
+			"ending_lose": "art/ui/end_lose_screen.png",
+			"view_icons_extra": [
+				"art/ui/inventory_zone_continentia.png",
+				"art/ui/inventory_zone_forestria.png",
+				"art/ui/inventory_zone_archipelia.png",
+				"art/ui/inventory_zone_saharia.png"
+			],
+			"chrome_overworld": "art/ui/chrome_overworld.png",
+			"splash_logo": "art/ui/splash_logo.png",
+			"splash_title": "art/ui/splash_title.png",
+			"class_picker": "art/ui/class_select_picker.png",
+			"class_highlight": "art/ui/class_select_highlight.png"
 		},
-		"hud":	{
-			"contract_silhouette":	"art/ui/hud_contract_silhouette.png",
-			"siege_silhouette":	"art/ui/hud_siege_silhouette.png",
-			"siege_animation":	["art/ui/hud_siege_00.png", "art/ui/hud_siege_01.png", "art/ui/hud_siege_02.png", "art/ui/hud_siege_03.png"],
-			"magic_silhouette":	"art/ui/hud_magic_silhouette.png",
-			"magic_animation":	["art/ui/hud_magic_00.png", "art/ui/hud_magic_01.png", "art/ui/hud_magic_02.png", "art/ui/hud_magic_03.png"],
-			"puzzle_grid":	"art/ui/hud_puzzle_grid.png",
-			"gold_purse":	"art/ui/hud_gold_purse.png",
-			"bar_strip":	"art/ui/hud_bar_strip.png"
+		"hud": {
+			"contract_silhouette": "art/ui/hud_contract_silhouette.png",
+			"siege_silhouette": "art/ui/hud_siege_silhouette.png",
+			"siege_animation": [
+				"art/ui/hud_siege_00.png",
+				"art/ui/hud_siege_01.png",
+				"art/ui/hud_siege_02.png",
+				"art/ui/hud_siege_03.png"
+			],
+			"magic_silhouette": "art/ui/hud_magic_silhouette.png",
+			"magic_animation": [
+				"art/ui/hud_magic_00.png",
+				"art/ui/hud_magic_01.png",
+				"art/ui/hud_magic_02.png",
+				"art/ui/hud_magic_03.png"
+			],
+			"puzzle_grid": "art/ui/hud_puzzle_grid.png",
+			"gold_purse": "art/ui/hud_gold_purse.png",
+			"bar_strip": "art/ui/hud_bar_strip.png"
+		},
+		"font": "art/font/rome-font.png"
+	},
+	"ending": {
+		"grass_tile": "art/ui/end_grass.png",
+		"carpet_tile": "art/ui/end_carpet.png",
+		"hero_tile": "art/ui/end_hero.png",
+		"throne_backdrop": "art/ui/end_lose_screen.png",
+		"grid_width": 6,
+		"grid_height": 5,
+		"carpet_column": 4,
+		"carpet_length": 5,
+		"frame_count": 10,
+		"ticks_per_step": 2,
+		"troop_border": true
+	},
+	"colors": {
+		"minimap_terrain": {
+			"grass": "#55FF55",
+			"forest": "#00AA00",
+			"mountain": "#AA5500",
+			"water": "#5555FF",
+			"desert": "#FFFF55",
+			"fog": "#000000"
+		},
+		"difficulty_bar": {
+			"easy": "#00AAAA",
+			"normal": "#AA0000",
+			"hard": "#5555FF",
+			"impossible": "#AA00AA"
 		}
 	},
-	"ending":	{
-		"grass_tile":	"art/ui/end_grass.png",
-		"carpet_tile":	"art/ui/end_carpet.png",
-		"hero_tile":	"art/ui/end_hero.png",
-		"throne_backdrop":	"art/ui/end_lose_screen.png",
-		"grid_width":	6,
-		"grid_height":	5,
-		"carpet_column":	4,
-		"carpet_length":	5,
-		"frame_count":	10,
-		"ticks_per_step":	2,
-		"troop_border":	true
+	"credits": {
+		"image": "art/ui/class_select_highlight.png",
+		"groups": [
+			{
+				"label": "King's Bounty Designed By:",
+				"names": [
+					"Jon Van Caneghem"
+				]
+			},
+			{
+				"label": "Programmed By:",
+				"names": [
+					"Mark Caldwell",
+					"Andy Caldwell"
+				]
+			},
+			{
+				"label": "Graphics By:",
+				"names": [
+					"Kenneth L. Mayfield",
+					"Vincent DeQuattro, Jr."
+				]
+			}
+		],
+		"copyright": [
+			"Copyright 1990",
+			"New World Computing, Inc",
+			"All Rights Reserved"
+		]
 	},
-	"colors":	{
-		"minimap_terrain":	{
-			"grass":	"#55FF55",
-			"forest":	"#00AA00",
-			"mountain":	"#AA5500",
-			"water":	"#5555FF",
-			"desert":	"#FFFF55",
-			"fog":	"#000000"
+	"audio": {
+		"tracks": {
+			"openworld": "audio/openworld.ogg",
+			"combat": "audio/combat.ogg"
 		},
-		"difficulty_bar":	{
-			"easy":	"#00AAAA",
-			"normal":	"#AA0000",
-			"hard":	"#5555FF",
-			"impossible":	"#AA00AA"
-		}
-	},
-	"credits":	{
-		"image":	"art/ui/class_select_highlight.png",
-		"groups":	[{
-				"label":	"King's Bounty Designed By:",
-				"names":	["Jon Van Caneghem"]
-			}, {
-				"label":	"Programmed By:",
-				"names":	["Mark Caldwell", "Andy Caldwell"]
-			}, {
-				"label":	"Graphics By:",
-				"names":	["Kenneth L. Mayfield", "Vincent DeQuattro, Jr."]
-			}],
-		"copyright":	["Copyright 1990", "New World Computing, Inc", "All Rights Reserved"]
-	},
-	"audio":	{
-		"tracks":	{
-			"openworld":	"audio/openworld.ogg",
-			"combat":	"audio/combat.ogg"
-		},
-		"tunes":	{
-			"walk":	"audio/tune_walk.wav",
-			"bump":	"audio/tune_bump.wav",
-			"chest":	"audio/tune_chest.wav",
-			"defeat":	"audio/tune_defeat.wav"
+		"tunes": {
+			"walk": "audio/tune_walk.wav",
+			"bump": "audio/tune_bump.wav",
+			"chest": "audio/tune_chest.wav",
+			"defeat": "audio/tune_defeat.wav"
 		}
 	}
 }
