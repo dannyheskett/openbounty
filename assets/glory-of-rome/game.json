@@ -2587,7 +2587,7 @@
 			"zone":	"italia",
 			"reward":	5000,
 			"puzzle_cell":	0,
-			"portrait":	"art/villains/murray_00.png",
+			"portrait":	"art/villains/catiline_00.png",
 			"army":	[{
 					"troop":	"peasants",
 					"count":	6
@@ -2611,7 +2611,7 @@
 			"zone":	"italia",
 			"reward":	6000,
 			"puzzle_cell":	1,
-			"portrait":	"art/villains/murray_00.png",
+			"portrait":	"art/villains/spartacus_00.png",
 			"army":	[{
 					"troop":	"peasants",
 					"count":	7
@@ -2635,7 +2635,7 @@
 			"zone":	"africa",
 			"reward":	7000,
 			"puzzle_cell":	2,
-			"portrait":	"art/villains/murray_00.png",
+			"portrait":	"art/villains/tacfarinas_00.png",
 			"army":	[{
 					"troop":	"peasants",
 					"count":	8
@@ -2659,7 +2659,7 @@
 			"zone":	"africa",
 			"reward":	8000,
 			"puzzle_cell":	3,
-			"portrait":	"art/villains/murray_00.png",
+			"portrait":	"art/villains/jugurtha_00.png",
 			"army":	[{
 					"troop":	"nomads",
 					"count":	5
@@ -2683,7 +2683,7 @@
 			"zone":	"galliae",
 			"reward":	9000,
 			"puzzle_cell":	4,
-			"portrait":	"art/villains/murray_00.png",
+			"portrait":	"art/villains/boudica_00.png",
 			"army":	[{
 					"troop":	"peasants",
 					"count":	10
@@ -2707,7 +2707,7 @@
 			"zone":	"galliae",
 			"reward":	10000,
 			"puzzle_cell":	5,
-			"portrait":	"art/villains/murray_00.png",
+			"portrait":	"art/villains/civilis_00.png",
 			"army":	[{
 					"troop":	"pikemen",
 					"count":	6
@@ -2731,7 +2731,7 @@
 			"zone":	"italia",
 			"reward":	12000,
 			"puzzle_cell":	6,
-			"portrait":	"art/villains/murray_00.png",
+			"portrait":	"art/villains/brennus_00.png",
 			"army":	[{
 					"troop":	"barbarians",
 					"count":	4
@@ -2755,7 +2755,7 @@
 			"zone":	"galliae",
 			"reward":	14000,
 			"puzzle_cell":	7,
-			"portrait":	"art/villains/murray_00.png",
+			"portrait":	"art/villains/vercingetorix_00.png",
 			"army":	[{
 					"troop":	"barbarians",
 					"count":	4
@@ -2779,7 +2779,7 @@
 			"zone":	"galliae",
 			"reward":	16000,
 			"puzzle_cell":	8,
-			"portrait":	"art/villains/murray_00.png",
+			"portrait":	"art/villains/arminius_00.png",
 			"army":	[{
 					"troop":	"barbarians",
 					"count":	4
@@ -2803,7 +2803,7 @@
 			"zone":	"africa",
 			"reward":	18000,
 			"puzzle_cell":	9,
-			"portrait":	"art/villains/murray_00.png",
+			"portrait":	"art/villains/gildo_00.png",
 			"army":	[{
 					"troop":	"nomads",
 					"count":	8
@@ -2824,7 +2824,7 @@
 			"zone":	"italia",
 			"reward":	20000,
 			"puzzle_cell":	10,
-			"portrait":	"art/villains/murray_00.png",
+			"portrait":	"art/villains/pyrrhus_00.png",
 			"army":	[{
 					"troop":	"pikemen",
 					"count":	9
@@ -2845,7 +2845,7 @@
 			"zone":	"oriens",
 			"reward":	25000,
 			"puzzle_cell":	11,
-			"portrait":	"art/villains/murray_00.png",
+			"portrait":	"art/villains/mithridates_00.png",
 			"army":	[{
 					"troop":	"nomads",
 					"count":	9
@@ -2863,7 +2863,7 @@
 			"zone":	"africa",
 			"reward":	30000,
 			"puzzle_cell":	12,
-			"portrait":	"art/villains/murray_00.png",
+			"portrait":	"art/villains/hannibal_00.png",
 			"army":	[{
 					"troop":	"nomads",
 					"count":	10
@@ -2887,7 +2887,7 @@
 			"zone":	"oriens",
 			"reward":	35000,
 			"puzzle_cell":	13,
-			"portrait":	"art/villains/murray_00.png",
+			"portrait":	"art/villains/zenobia_00.png",
 			"army":	[{
 					"troop":	"barbarians",
 					"count":	6
@@ -2911,7 +2911,7 @@
 			"zone":	"oriens",
 			"reward":	40000,
 			"puzzle_cell":	14,
-			"portrait":	"art/villains/murray_00.png",
+			"portrait":	"art/villains/shapur_00.png",
 			"army":	[{
 					"troop":	"barbarians",
 					"count":	6
@@ -2935,7 +2935,7 @@
 			"zone":	"italia",
 			"reward":	45000,
 			"puzzle_cell":	15,
-			"portrait":	"art/villains/murray_00.png",
+			"portrait":	"art/villains/alaric_00.png",
 			"army":	[{
 					"troop":	"barbarians",
 					"count":	7
@@ -2959,7 +2959,7 @@
 			"zone":	"italia",
 			"reward":	50000,
 			"puzzle_cell":	16,
-			"portrait":	"art/villains/murray_00.png",
+			"portrait":	"art/villains/attila_00.png",
 			"army":	[{
 					"troop":	"dragons",
 					"count":	1
