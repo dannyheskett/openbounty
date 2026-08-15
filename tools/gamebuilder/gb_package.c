@@ -109,6 +109,12 @@ bool gb_newpack_create(const char *dir, char *err, size_t errsz) {
     cJSON_AddStringToObject(doc, "title", "New Pack");
     cJSON_AddNumberToObject(doc, "version", 1);
 
+    // Every pack must declare a render mode -- resources_load rejects one that
+    // does not -- so a pack this tool creates has to be valid out of the box.
+    // A new pack starts legacy: it inherits the reference pack's 48x34 art.
+    cJSON *render = cJSON_AddObjectToObject(doc, "render");
+    cJSON_AddStringToObject(render, "mode", "legacy");
+
     cJSON *world = cJSON_AddObjectToObject(doc, "world");
     cJSON_AddNumberToObject(world, "fog_sight", 3);
     cJSON_AddStringToObject(world, "language", "en");

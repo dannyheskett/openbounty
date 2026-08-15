@@ -4,6 +4,13 @@
 	"pack_id":	"glory-of-rome",
 	"pack_name":	"Glory of Rome",
 	"pack_kind":	"base",
+	"render":	{
+		"mode":	"modern",
+		"tile_w":	96,
+		"tile_h":	96,
+		"tiles_w":	7,
+		"tiles_h":	7
+	},
 	"world":	{
 		"language":	"en",
 		"max_army_slots":	5,

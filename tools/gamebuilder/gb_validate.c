@@ -49,7 +49,7 @@ static int sub_int(cJSON *o, const char *sub, const char *k, int fb) {
 
 static void check_structural(GbFindings *F, GbWorkspace *ws) {
     cJSON *doc = ws->doc;
-    const char *required[] = { "pack_id", "pack_name", "world", "time",
+    const char *required[] = { "pack_id", "pack_name", "render", "world", "time",
                                "economy", "combat", "sprites", "tile_codes",
                                "troops", "spells", "artifacts", "villains",
                                "classes", "castles", "towns", "zones" };
