@@ -30,6 +30,71 @@ static Color color_from_packed(unsigned int v) {
     };
 }
 
+
+// The chrome bitmap is a picture frame: four edge bands of fixed thickness
+// (top/bottom CL_FRAME_TOP_H, left/right CL_FRAME_LEFT_W) around a transparent
+// interior. Stretching it to a larger screen smears those bands -- a 320x200
+// frame drawn across 800x506 gives a 20px top band and a misplaced border.
+//
+// So draw it as a nine-slice instead: corners at native size, edges repeated
+// along their length. Band thickness is preserved and the decorative pattern
+// keeps its pitch. A pack whose chrome already matches the screen (every legacy
+// pack) takes the 1:1 path and is untouched.
+static void draw_chrome_frame(Texture2D tex) {
+    const int W = CL_SCREEN_W, H = CL_SCREEN_H;
+    const int tw = tex.width, th = tex.height;
+
+    if (tw == W && th == H) {
+        Rectangle src = { 0, 0, (float)tw, (float)th };
+        Rectangle dst = { 0, 0, (float)W, (float)H };
+        DrawTexturePro(tex, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+        return;
+    }
+
+    const int cw = CL_FRAME_LEFT_W;   // corner / side-band width
+    const int ch = CL_FRAME_TOP_H;    // corner / top-band height
+    if (tw <= 2 * cw || th <= 2 * ch) return;
+
+    // Corners, 1:1.
+    struct { int sx, sy, dx, dy; } corner[4] = {
+        { 0,          0,          0,      0      },
+        { tw - cw,    0,          W - cw, 0      },
+        { 0,          th - ch,    0,      H - ch },
+        { tw - cw,    th - ch,    W - cw, H - ch },
+    };
+    for (int i = 0; i < 4; i++) {
+        Rectangle src = { (float)corner[i].sx, (float)corner[i].sy,
+                          (float)cw, (float)ch };
+        Rectangle dst = { (float)corner[i].dx, (float)corner[i].dy,
+                          (float)cw, (float)ch };
+        DrawTexturePro(tex, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+    }
+
+    // Top and bottom bands: repeat the source's middle span horizontally.
+    int span_w = tw - 2 * cw;
+    for (int x = cw; x < W - cw; x += span_w) {
+        int run = (x + span_w > W - cw) ? (W - cw - x) : span_w;
+        Rectangle stop = { (float)cw, 0.0f, (float)run, (float)ch };
+        Rectangle dtop = { (float)x,  0.0f, (float)run, (float)ch };
+        DrawTexturePro(tex, stop, dtop, (Vector2){ 0, 0 }, 0.0f, WHITE);
+        Rectangle sbot = { (float)cw, (float)(th - ch), (float)run, (float)ch };
+        Rectangle dbot = { (float)x,  (float)(H  - ch), (float)run, (float)ch };
+        DrawTexturePro(tex, sbot, dbot, (Vector2){ 0, 0 }, 0.0f, WHITE);
+    }
+
+    // Left and right bands: repeat the source's middle span vertically.
+    int span_h = th - 2 * ch;
+    for (int y = ch; y < H - ch; y += span_h) {
+        int run = (y + span_h > H - ch) ? (H - ch - y) : span_h;
+        Rectangle sl = { 0.0f,             (float)ch, (float)cw, (float)run };
+        Rectangle dl = { 0.0f,             (float)y,  (float)cw, (float)run };
+        DrawTexturePro(tex, sl, dl, (Vector2){ 0, 0 }, 0.0f, WHITE);
+        Rectangle sr = { (float)(tw - cw), (float)ch, (float)cw, (float)run };
+        Rectangle dr = { (float)(W  - cw), (float)y,  (float)cw, (float)run };
+        DrawTexturePro(tex, sr, dr, (Vector2){ 0, 0 }, 0.0f, WHITE);
+    }
+}
+
 static Color status_bg_for_difficulty(Difficulty d) {
     const Resources *res = resources_current();
     if (res) {
@@ -76,13 +141,7 @@ void chrome_draw_with_status(const Game *g, const Sprites *s,
                        (Vector2){ 0, 0 }, 0.0f, WHITE);
     }
     if (s && s->chrome_overworld.id) {
-        Rectangle src = { 0, 0,
-                          (float)s->chrome_overworld.width,
-                          (float)s->chrome_overworld.height };
-        Rectangle dst = { 0, 0,
-                          (float)CL_SCREEN_W, (float)CL_SCREEN_H };
-        DrawTexturePro(s->chrome_overworld, src, dst,
-                       (Vector2){ 0, 0 }, 0.0f, WHITE);
+        draw_chrome_frame(s->chrome_overworld);
     }
     if (status_text && status_text[0]) {
         bfont_draw(status_text, CL_STATUS_X + 1, CL_STATUS_Y + 1,
@@ -117,13 +176,7 @@ void chrome_draw(const Game *g, const Sprites *s) {
     // Blit the chrome bitmap over everything. Its interior is transparent
     // so the status bar + bar strip drawn above remain visible.
     if (s && s->chrome_overworld.id) {
-        Rectangle src = { 0, 0,
-                          (float)s->chrome_overworld.width,
-                          (float)s->chrome_overworld.height };
-        Rectangle dst = { 0, 0,
-                          (float)CL_SCREEN_W, (float)CL_SCREEN_H };
-        DrawTexturePro(s->chrome_overworld, src, dst,
-                       (Vector2){ 0, 0 }, 0.0f, WHITE);
+        draw_chrome_frame(s->chrome_overworld);
     }
 
     // Status text (white, on top of the fill). Three modes:
