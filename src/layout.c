@@ -23,6 +23,7 @@ ClLayout g_layout = {
     .sidebar_w = 48,
     .screen_w = 320, .screen_h = 200,
     .default_scale = 2,
+    .is_modern = 0,
 };
 
 void layout_init(const struct Resources *res) {
@@ -47,4 +48,5 @@ void layout_init(const struct Resources *res) {
     // pack is already large -- 800x702 at 2x would be 1600x1404 and taller than
     // a 1080p screen -- so it opens 1:1 and the user scales up if they want to.
     g_layout.default_scale = (r->mode == RENDER_MODE_MODERN) ? 1 : 2;
+    g_layout.is_modern     = (r->mode == RENDER_MODE_MODERN);
 }

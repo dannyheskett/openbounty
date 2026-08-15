@@ -128,6 +128,11 @@ void views_controls_advance(struct Game *g, int row);
 // only the audio rows when no playback device is available.
 bool views_controls_row_disabled(const struct Game *g, int row);
 
+// The shell-appended Scale row. Not pack data and not game state: it is a
+// runtime display preference held in present.c.
+void views_controls_advance_scale(void);
+int  views_controls_scale_value(void);   // 0 = Auto
+
 // ---- Spell casting (VIEW_SPELLS) -------------------------------------------
 // Enter interactive cast mode for the spell view.
 void views_spells_set_mode(bool cast_mode);

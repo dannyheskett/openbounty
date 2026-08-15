@@ -23,9 +23,15 @@ typedef struct {
     int sidebar_w;             // one tile wide, as in the original
     int screen_w, screen_h;    // derived from the map plus the chrome bands
     int default_scale;         // window scale at startup; modern is already large
+    int is_modern;             // 1 in modern mode; legacy must behave as it always did
 } ClLayout;
 
 extern ClLayout g_layout;
+
+// True only for a pack that declared render.mode "modern". Legacy packs must be
+// indistinguishable from the build before render modes existed, so anything new
+// -- the scale control included -- is gated on this.
+#define CL_IS_MODERN (g_layout.is_modern)
 
 // Fill g_layout from the pack's render block. Must be called after
 // resources_load and before the render target and window are created.
