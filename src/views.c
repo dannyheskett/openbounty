@@ -1,5 +1,7 @@
 #include "input_host.h"
 #include "views.h"
+#include "present.h"
+#include "layout.h"
 #include "player_io.h"   // engine views arrive via the player-IO queue
 #include "raylib.h"
 #include "audio.h"
@@ -924,6 +926,19 @@ static bool controls_row_is_audio(const struct Game *g, int row) {
 bool views_controls_row_disabled(const struct Game *g, int row) {
     return controls_row_is_audio(g, row) && !audio_is_available();
 }
+
+// The Scale row is not one of the pack's controls: it is appended by the shell
+// and backed by present.c, not by stats.options[]. Display scale belongs to the
+// machine looking at the game, and stats.options[] is serialized into saves.
+// Cycles Auto -> 1x -> 2x -> 3x -> 4x -> 5x -> Auto; present_scale() clamps the
+// choice to what the window can actually show.
+void views_controls_advance_scale(void) {
+    int s = present_get_scale_override();
+    s = (s + 1) % (CL_SCALE_MAX + 1);
+    present_set_scale(s);
+}
+
+int views_controls_scale_value(void) { return present_get_scale_override(); }
 
 void views_controls_advance(struct Game *g, int row) {
     if (!g || !g->res) return;

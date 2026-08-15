@@ -2466,6 +2466,45 @@ bool resources_load(Resources *res, const char *manifest_path) {
         }
     }
 
+    // Render geometry. Required: a pack is authored for one mode or the other
+    // and guessing would silently mis-size every tile. resources_load returns
+    // false when it is missing, and the caller reports it fatally.
+    {
+        cJSON *jr = cJSON_GetObjectItem(root, "render");
+        const char *mode = json_str(jr, "mode", "");
+        if (strcmp(mode, "legacy") == 0) {
+            res->render.mode    = RENDER_MODE_LEGACY;
+            res->render.tile_w  = 48;
+            res->render.tile_h  = 34;
+            res->render.tiles_w = 5;
+            res->render.tiles_h = 5;
+        } else if (strcmp(mode, "modern") == 0) {
+            res->render.mode    = RENDER_MODE_MODERN;
+            res->render.tile_w  = json_int(jr, "tile_w",  96);
+            res->render.tile_h  = json_int(jr, "tile_h",  96);
+            res->render.tiles_w = json_int(jr, "tiles_w",  7);
+            res->render.tiles_h = json_int(jr, "tiles_h",  7);
+        } else {
+            res->render.mode = RENDER_MODE_NONE;
+            fprintf(stdout,
+                    "resources: pack declares no render.mode "
+                    "(expected \"legacy\" or \"modern\")\n");
+            return false;
+        }
+        // The viewport must be odd on both axes: map_render centres the hero
+        // with RADIUS = tiles/2, and an even count leaves him half a tile off.
+        if ((res->render.tiles_w % 2) == 0 || (res->render.tiles_h % 2) == 0 ||
+            res->render.tiles_w < 3 || res->render.tiles_h < 3 ||
+            res->render.tile_w  < 8 || res->render.tile_h  < 8) {
+            fprintf(stdout,
+                    "resources: render viewport must be odd and at least 3x3 "
+                    "with tiles at least 8px (got %dx%d tiles of %dx%d)\n",
+                    res->render.tiles_w, res->render.tiles_h,
+                    res->render.tile_w, res->render.tile_h);
+            return false;
+        }
+    }
+
     cJSON *jw = cJSON_GetObjectItem(root, "world");
     copy_str(res->world.starting_zone, sizeof(res->world.starting_zone),
              json_str(jw, "starting_zone", "continentia"));

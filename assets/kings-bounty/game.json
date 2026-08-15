@@ -4,6 +4,9 @@
 	"pack_id":	"kings-bounty",
 	"pack_name":	"King's Bounty",
 	"pack_kind":	"base",
+	"render":	{
+		"mode":	"legacy"
+	},
 	"world":	{
 		"max_army_slots":	5,
 		"fog_sight":	3,

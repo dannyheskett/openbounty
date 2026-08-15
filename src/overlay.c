@@ -606,7 +606,7 @@ static void draw_controls(const Game *g) {
     // area so the live game stays visible to the right (page 5 of refs).
     int pad = 3;
     int cols = 18;
-    int rows = vis + 1;  // +1 for the "Controls" title row
+    int rows = vis + 1 + (CL_IS_MODERN ? 1 : 0);  // title, and Scale in modern
     int w = cols * GW + 2 * pad;
     int h = rows * (GH + 2) + 2 * pad;
     int x = CL_MAP_X;
@@ -660,6 +660,25 @@ static void draw_controls(const Game *g) {
             }
         }
         ty += GH + 2;
+    }
+
+    // Scale: appended by the shell, not part of the pack's controls. Backed by
+    // present.c rather than stats.options[], because a display preference must
+    // not travel inside a save file. Modern only -- a legacy pack must look
+    // exactly as it did before render modes existed.
+    if (CL_IS_MODERN) {
+        bool is_selected = (cursor == vis);
+        Color fg = is_selected ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
+        char label[48];
+        snprintf(label, sizeof(label), "%c Scale", '1' + vis);
+        bfont_draw(label, tx, ty, fg);
+
+        int sc = views_controls_scale_value();
+        char val[16];
+        if (sc <= 0) snprintf(val, sizeof(val), "Auto");
+        else         snprintf(val, sizeof(val), "%dx", sc);
+        int vw = (int)bfont_measure(val).x;
+        bfont_draw(val, x + w - pad - vw, ty, fg);
     }
 }
 

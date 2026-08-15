@@ -643,7 +643,17 @@ int shell_run_game(int argc, char **argv) {
 
     Resources res;
     if (!resources_load(&res, "game.json")) {
-        fprintf(stdout, "Failed to load game resources from %s.\n", pack_path);
+        // Reported through fatal_user_error, not a bare printf: on Windows the
+        // console may not be visible, and a pack rejected for declaring no
+        // render.mode would otherwise look like the game vanishing silently.
+        char body[1024];
+        snprintf(body, sizeof body,
+                 "Failed to load game resources from:\n  %s\n\n"
+                 "A pack must declare a render mode, for example:\n"
+                 "  \"render\": { \"mode\": \"legacy\" }\n\n"
+                 "See the console output for the specific reason.",
+                 pack_path);
+        fatal_user_error("OpenBounty: cannot load game pack", body);
         pack_stack_clear();
         return 1;
     }
@@ -658,14 +668,23 @@ int shell_run_game(int argc, char **argv) {
         return 2;
     }
 
-    int base_w = CL_WINDOW_W;    // 640
-    int base_h = CL_WINDOW_H;    // 400
+    // Geometry comes from the pack, so it must be resolved before the window
+    // and the render target are sized. resources_load already rejected a pack
+    // that declared no render.mode.
+    layout_init((const struct Resources *)&res);
+
+    int base_w = CL_WINDOW_W;
+    int base_h = CL_WINDOW_H;
 
     unsigned int window_flags = FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT;
     SetConfigFlags(window_flags);
     InitWindow(base_w, base_h, res.title[0] ? res.title : "OpenBounty");
     SetWindowMinSize(320, 200);
     if (want_fullscreen) ToggleFullscreen();
+    // Modern packs start at 1:1 rather than Auto, so the Scale row reads "1x"
+    // and the player is scaling up from the pack's native size. Legacy never
+    // touches the override at all.
+    if (CL_IS_MODERN) present_set_scale(1);
     // Demo mode paces itself via per-beat holds in shell_demo.c; the frame rate
     // stays at the human 60fps cap. Human play is 60fps too.
     SetTargetFPS(60);
@@ -1092,6 +1111,10 @@ int shell_run_game(int argc, char **argv) {
                 }
                 count = vis;
             }
+            // The shell appends one row after the pack's: Scale. Modern only,
+            // so a legacy pack's panel is unchanged.
+            int scale_row = CL_IS_MODERN ? count : -1;
+            if (CL_IS_MODERN) count += 1;
             int cur = views_controls_cursor();
             if (count > 0) {
                 if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_KP_8)) {
@@ -1104,7 +1127,8 @@ int shell_run_game(int argc, char **argv) {
                            input_key_pressed(KEY_KP_ENTER) ||
                            input_key_pressed(KEY_SPACE)) {
                     // Advance the value of the selected setting.
-                    views_controls_advance(&game, vis_map[cur]);
+                    if (cur == scale_row) views_controls_advance_scale();
+                    else                  views_controls_advance(&game, vis_map[cur]);
                 } else if (input_key_pressed(KEY_ESCAPE) ||
                            input_key_pressed(KEY_C) ||
                            gamepad_pressed_cancel()) {
@@ -1114,7 +1138,8 @@ int shell_run_game(int argc, char **argv) {
                     for (int k = 0; k < count && k < 9; k++) {
                         if (input_key_pressed(KEY_ONE + k)) {
                             views_controls_set_cursor(k);
-                            views_controls_advance(&game, vis_map[k]);
+                            if (k == scale_row) views_controls_advance_scale();
+                            else                views_controls_advance(&game, vis_map[k]);
                             break;
                         }
                     }
