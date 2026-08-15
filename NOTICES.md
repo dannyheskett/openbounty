@@ -185,3 +185,14 @@ OpenBounty ships none of the original game's binaries, art, or audio.
 Original assets must be supplied by the player from a legally-owned
 copy of the DOS distribution; the `--extract` mode produces a runnable
 asset pack from such a distribution.
+
+## Glory of Rome bitmap font
+
+`assets/glory-of-rome/art/font/rome-font.png` is derived from **Px437
+EagleSpCGA Alt3**, from the Ultimate Oldschool PC Font Pack by **VileR**
+(<https://int10h.org/oldschool-pc-fonts/>), which is licensed
+**CC BY-SA 4.0** (<https://creativecommons.org/licenses/by-sa/4.0/>).
+
+The PNG is an adaptation of that font -- the glyphs rendered to a 1024x8
+strip -- and is therefore itself covered by CC BY-SA 4.0. This applies to
+that file only, not to the rest of the pack.

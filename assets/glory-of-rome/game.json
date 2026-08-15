@@ -3353,6 +3353,7 @@
 			}]
 	},
 	"sprites":	{
+		"font":	"art/font/rome-font.png",
 		"hero":	{
 			"walk":	["art/sprites/hero_walk_00.png", "art/sprites/hero_walk_01.png", "art/sprites/hero_walk_02.png", "art/sprites/hero_walk_03.png"],
 			"boat":	["art/sprites/boat_00.png", "art/sprites/boat_01.png", "art/sprites/boat_02.png", "art/sprites/boat_03.png"]
