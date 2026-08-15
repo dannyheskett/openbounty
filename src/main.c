@@ -671,10 +671,11 @@ int shell_run_game(int argc, char **argv) {
     SetTargetFPS(60);
     SetExitKey(KEY_NULL);
 
-    // Bitmap font + 256-color palette have fixed pack-relative paths
-    // that the extractor produces. No engine-side configuration knob.
-    bfont_init("art/font/kb-font.png");
-    palette_init("palettes/palette.bin");
+    // Font strip and palette come from the manifest. They were compiled in
+    // here, which meant every pack had to ship a file named for the game the
+    // extractor was written against.
+    bfont_init(res.sprites.font);
+    palette_init(res.sprites.palette);
 
     Sprites sprites;
     sprites_load(&sprites, &res);

@@ -30,6 +30,7 @@ SUITE_EXTERN(unit_player_io_suite);
 SUITE_EXTERN(unit_resources_suite);
 SUITE_EXTERN(unit_anim_frames_suite);
 SUITE_EXTERN(unit_facing_suite);
+SUITE_EXTERN(unit_art_manifest_suite);
 SUITE_EXTERN(unit_pack_suite);
 SUITE_EXTERN(unit_pack_select_suite);
 SUITE_EXTERN(unit_combat_rng_suite);
@@ -76,6 +77,7 @@ int main(int argc, char **argv) {
     RUN_SUITE(unit_resources_suite);
     RUN_SUITE(unit_anim_frames_suite);
     RUN_SUITE(unit_facing_suite);
+    RUN_SUITE(unit_art_manifest_suite);
     RUN_SUITE(unit_pack_suite);
     RUN_SUITE(unit_pack_select_suite);
     RUN_SUITE(unit_combat_rng_suite);

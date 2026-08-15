@@ -26,6 +26,7 @@
 #define RES_TILE_CODE_COUNT  128     // indexed by raw byte
 #define RES_TILE_ART_LEN      24
 // Animation cycle lengths: OB_ANIM_FRAMES_MAX / _DEFAULT, in tables.h.
+#define RES_COMBAT_TILES      15     // combat tileset, fixed role order
 #define RES_EXTRA_ICONS        8     // view_icons_extra cap 
 #define RES_END_BODY_LEN     512     // win/lose body text
 #define RES_VDESC_TEXT_LEN   320     // per-villain features / crimes block
@@ -878,6 +879,15 @@ typedef struct {
         ResAnimSet hero_walk;
         ResAnimSet hero_idle;
         ResAnimSet hero_boat;
+        // Combat tileset, in the fixed role order the renderer indexes by:
+        // 0 field, 1-3 obstacles, 4 castle item, 5-10 walls, 11-14 cursor.
+        // Declared by the pack; the shell carried this list hardcoded before.
+        int  combat_count;
+        char combat[RES_COMBAT_TILES][RES_PATH_LEN];
+        // Bitmap font strip and the VGA palette binary. Both had their paths
+        // compiled into the shell, which meant a pack could not name its own.
+        char font[RES_PATH_LEN];
+        char palette[RES_PATH_LEN];
         // UI.
         char puzzle_cover[RES_PATH_LEN];
         // Location backdrops .
@@ -940,6 +950,19 @@ void resources_resolve_path(const Resources *res, const char *rel,
 // failure and leaves `*res` in an indeterminate state.
 bool resources_load(Resources *res, const char *manifest_path);
 
+// Every pack-relative art path this manifest resolves to, de-duplicated.
+// Returns the count written to `out` (capped at `cap`).
+//
+// This is the single source of truth for "what art does this pack use". Art
+// used to be reachable five different ways -- explicit paths here, bare
+// tile_codes names expanded under art/tiles/, a list hardcoded in the shell,
+// villain frames derived from a portrait filename, and the placed-object
+// names map.c stamps by interact kind -- so no caller could answer that
+// question without replicating all five. Tile names, the villain stem
+// fallback and the object names are expanded here so callers see real paths.
+#define RES_ART_MANIFEST_MAX 512
+int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
+                           int cap);
 // Currently a no-op (all storage is inline). Kept as the proper teardown
 // hook in case any catalog-table allocation grows beyond inline storage.
 void resources_free(Resources *res);

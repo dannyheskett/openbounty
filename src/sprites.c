@@ -163,28 +163,11 @@ void sprites_load(Sprites *s, const Resources *res) {
     s->end_hero   = load_rel(res->ending.hero_tile);
     s->end_throne = load_rel(res->ending.throne_backdrop);
 
-    // Combat tileset . Names
-    // match the role each frame plays in combat scene composition.
-    static const char *combat_names[15] = {
-        "art/combat/field_grass.png",
-        "art/combat/obstacle_01.png",
-        "art/combat/obstacle_02.png",
-        "art/combat/obstacle_03.png",
-        "art/combat/castle_spike.png",
-        "art/combat/castle_wall_01.png",
-        "art/combat/castle_wall_02.png",
-        "art/combat/castle_wall_03.png",
-        "art/combat/castle_wall_04.png",
-        "art/combat/castle_wall_05.png",
-        "art/combat/castle_wall_06.png",
-        "art/combat/cursor_01.png",
-        "art/combat/cursor_02.png",
-        "art/combat/cursor_03.png",
-        "art/combat/cursor_04.png",
-    };
-    for (int i = 0; i < 15; i++) {
-        s->combat_tile[i] = load_rel(combat_names[i]);
-    }
+    // Combat tileset, in the role order the renderer indexes by. The list
+    // lives in the manifest now (res->sprites.combat) rather than here, so a
+    // pack can name its own battle art.
+    for (int i = 0; i < res->sprites.combat_count && i < 15; i++)
+        s->combat_tile[i] = load_rel(res->sprites.combat[i]);
 }
 
 void sprites_unload(Sprites *s) {

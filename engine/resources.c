@@ -1,4 +1,5 @@
 #include "resources.h"
+#include "map.h"
 #include "cJSON.h"
 #include "assets_bytes.h"   // LoadAssetBytes / UnloadAssetBytes
 #include "pack.h"
@@ -715,6 +716,34 @@ static void parse_anim_set(cJSON *obj, ResAnimSet *out) {
 }
 
 static void parse_sprites(Resources *res, cJSON *obj) {
+    // Art paths that used to be compiled into the shell. A pack may override
+    // any of them in the sprites block; these keep packs that don't unchanged.
+    {
+        static const char *COMBAT_DEFAULT[RES_COMBAT_TILES] = {
+            "art/combat/field_grass.png",
+            "art/combat/obstacle_01.png",
+            "art/combat/obstacle_02.png",
+            "art/combat/obstacle_03.png",
+            "art/combat/castle_spike.png",
+            "art/combat/castle_wall_01.png",
+            "art/combat/castle_wall_02.png",
+            "art/combat/castle_wall_03.png",
+            "art/combat/castle_wall_04.png",
+            "art/combat/castle_wall_05.png",
+            "art/combat/castle_wall_06.png",
+            "art/combat/cursor_01.png",
+            "art/combat/cursor_02.png",
+            "art/combat/cursor_03.png",
+            "art/combat/cursor_04.png",
+        };
+        for (int i = 0; i < RES_COMBAT_TILES; i++)
+            copy_str(res->sprites.combat[i], RES_PATH_LEN, COMBAT_DEFAULT[i]);
+        res->sprites.combat_count = RES_COMBAT_TILES;
+    }
+    copy_str(res->sprites.font, sizeof res->sprites.font,
+             "art/font/kb-font.png");
+    copy_str(res->sprites.palette, sizeof res->sprites.palette,
+             "palettes/palette.bin");
     if (!cJSON_IsObject(obj)) return;
 
     cJSON *hero = cJSON_GetObjectItem(obj, "hero");
@@ -723,6 +752,22 @@ static void parse_sprites(Resources *res, cJSON *obj) {
         parse_anim_set(cJSON_GetObjectItem(hero, "idle"), &res->sprites.hero_idle);
         parse_anim_set(cJSON_GetObjectItem(hero, "boat"), &res->sprites.hero_boat);
     }
+
+    // Combat tileset. The shell used to carry this list as a static array,
+    // which meant the pack could not name its own battle art. Declared here
+    // now; the defaults installed before parsing keep older packs working.
+    // Guarded: parse_path_array zeroes the out-count for a missing key, which
+    // would wipe the defaults installed above rather than leave them alone.
+    cJSON *jcombat = cJSON_GetObjectItem(obj, "combat");
+    if (cJSON_IsArray(jcombat))
+        parse_string_array(jcombat, res->sprites.combat, RES_COMBAT_TILES,
+                           &res->sprites.combat_count);
+
+    // Font strip and palette binary, likewise compiled into the shell before.
+    copy_str(res->sprites.font, sizeof res->sprites.font,
+             json_str(obj, "font", res->sprites.font));
+    copy_str(res->sprites.palette, sizeof res->sprites.palette,
+             json_str(obj, "palette", res->sprites.palette));
 
     cJSON *ui = cJSON_GetObjectItem(obj, "ui");
     if (cJSON_IsObject(ui)) {
@@ -2681,4 +2726,126 @@ void resources_format_template(char *out, int out_sz, const char *src,
         out[o++] = *src++;
     }
     out[o] = '\0';
+}
+
+// ---- Art manifest ----------------------------------------------------------
+
+static void art_add(char out[][RES_PATH_LEN], int cap, int *n, const char *p) {
+    if (!p || !p[0] || !out || *n >= cap) return;
+    for (int i = 0; i < *n; i++)
+        if (strcmp(out[i], p) == 0) return;    // already listed
+    copy_str(out[*n], RES_PATH_LEN, p);
+    (*n)++;
+}
+
+static void art_add_anim(char out[][RES_PATH_LEN], int cap, int *n,
+                         const ResAnimSet *a) {
+    if (!a) return;
+    for (int f = 0; f < OB_FACE_COUNT; f++)
+        for (int i = 0; i < a->count[f]; i++)
+            art_add(out, cap, n, a->frames[f][i]);
+}
+
+int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
+                           int cap) {
+    int n = 0;
+    if (!res) return 0;
+
+    art_add_anim(out, cap, &n, &res->sprites.hero_walk);
+    art_add_anim(out, cap, &n, &res->sprites.hero_idle);
+    art_add_anim(out, cap, &n, &res->sprites.hero_boat);
+
+    for (int i = 0; i < res->sprites.combat_count; i++)
+        art_add(out, cap, &n, res->sprites.combat[i]);
+
+    art_add(out, cap, &n, res->sprites.font);
+    art_add(out, cap, &n, res->sprites.puzzle_cover);
+    art_add(out, cap, &n, res->sprites.town_backdrop);
+    art_add(out, cap, &n, res->sprites.castle_backdrop);
+    art_add(out, cap, &n, res->sprites.plains_backdrop);
+    art_add(out, cap, &n, res->sprites.forest_backdrop);
+    art_add(out, cap, &n, res->sprites.hillcave_backdrop);
+    art_add(out, cap, &n, res->sprites.dungeon_backdrop);
+    art_add(out, cap, &n, res->sprites.ending_win);
+    art_add(out, cap, &n, res->sprites.ending_lose);
+    for (int i = 0; i < res->sprites.view_icons_extra_count; i++)
+        art_add(out, cap, &n, res->sprites.view_icons_extra[i]);
+    art_add(out, cap, &n, res->sprites.hud_contract_silhouette);
+    art_add(out, cap, &n, res->sprites.hud_siege_silhouette);
+    for (int i = 0; i < res->sprites.hud_siege_animation_count; i++)
+        art_add(out, cap, &n, res->sprites.hud_siege_animation[i]);
+    art_add(out, cap, &n, res->sprites.hud_magic_silhouette);
+    for (int i = 0; i < res->sprites.hud_magic_animation_count; i++)
+        art_add(out, cap, &n, res->sprites.hud_magic_animation[i]);
+    art_add(out, cap, &n, res->sprites.hud_puzzle_grid);
+    art_add(out, cap, &n, res->sprites.hud_gold_purse);
+    art_add(out, cap, &n, res->sprites.hud_bar_strip);
+    art_add(out, cap, &n, res->sprites.chrome_overworld);
+    art_add(out, cap, &n, res->sprites.splash_logo);
+    art_add(out, cap, &n, res->sprites.splash_title);
+    art_add(out, cap, &n, res->sprites.class_picker);
+    art_add(out, cap, &n, res->sprites.class_highlight);
+    art_add(out, cap, &n, res->sprites.orb);
+
+    art_add(out, cap, &n, res->ending.grass_tile);
+    art_add(out, cap, &n, res->ending.carpet_tile);
+    art_add(out, cap, &n, res->ending.hero_tile);
+    art_add(out, cap, &n, res->ending.throne_backdrop);
+
+    for (int i = 0; i < res->classes_count; i++)
+        art_add(out, cap, &n, res->classes[i].portrait);
+
+    for (int i = 0; i < res->troops_count; i++) {
+        art_add(out, cap, &n, res->troops[i].sprite);
+        for (int f = 0; f < res->troops[i].anim_count; f++)
+            art_add(out, cap, &n, res->troops[i].anim[f]);
+    }
+
+    for (int i = 0; i < res->villains_count; i++) {
+        const VillainDef *v = &res->villains[i];
+        art_add(out, cap, &n, v->portrait);
+        if (v->anim_count > 0) {
+            for (int f = 0; f < v->anim_count; f++)
+                art_add(out, cap, &n, v->anim[f]);
+            continue;
+        }
+        // No declared array: the shell derives <portrait-stem>_NN.png
+        // siblings. Mirror that here so the manifest is complete either way.
+        char stem[RES_PATH_LEN];
+        copy_str(stem, sizeof stem, v->portrait);
+        size_t sl = strlen(stem);
+        if (sl >= 7 && stem[sl - 7] == '_' && stem[sl - 4] == '.') stem[sl - 7] = '\0';
+        else if (sl >= 4 && stem[sl - 4] == '.') stem[sl - 4] = '\0';
+        for (int f = 0; f < OB_ANIM_FRAMES_DEFAULT; f++) {
+            char p[RES_PATH_LEN];
+            snprintf(p, sizeof p, "%s_%02d.png", stem, f);
+            art_add(out, cap, &n, p);
+        }
+    }
+
+    for (int i = 0; i < res->artifacts_count; i++)
+        art_add(out, cap, &n, res->artifacts[i].icon);
+
+    // Placed-object art: chosen by the engine's interact kind in map.c, not
+    // declared in game.json at all. Asked for rather than duplicated.
+    {
+        int nobj = 0;
+        const char *const *obj = map_object_art_names(&nobj);
+        for (int i = 0; i < nobj; i++) {
+            char p[RES_PATH_LEN];
+            snprintf(p, sizeof p, "art/tiles/%s.png", obj[i]);
+            art_add(out, cap, &n, p);
+        }
+    }
+
+    // Tile art: tile_codes carry a bare name that tile_cache resolves under
+    // art/tiles/. Expand it here so callers see real paths.
+    for (int i = 0; i < RES_TILE_CODE_COUNT; i++) {
+        if (!res->tile_codes[i].present || !res->tile_codes[i].art[0]) continue;
+        char p[RES_PATH_LEN];
+        snprintf(p, sizeof p, "art/tiles/%s.png", res->tile_codes[i].art);
+        art_add(out, cap, &n, p);
+    }
+
+    return n;
 }
