@@ -82,4 +82,10 @@ void MapStampFoe(Map *map, int x, int y, const char *placement_id);
 // over the hero's tile can never destroy an unconsumed pickup beneath.
 bool MapClearFoeStamp(Map *map, int x, int y);
 
+
+// The tile art names this module stamps for placed objects. These come from
+// the engine's interact-kind mapping rather than from game.json, so callers
+// enumerating a pack's art must include them. Returns a static array.
+const char *const *map_object_art_names(int *out_count);
+
 #endif

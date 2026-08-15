@@ -398,3 +398,19 @@ void MapClearInteractive(Map *map, int x, int y) {
         t->is_bridge   = false;
     }
 }
+
+// Art names this module stamps onto tiles for placed objects (castles, towns,
+// dwellings, chests, signs, bridges, foes). They are NOT in game.json -- the
+// engine chooses them by interact kind -- so resources_art_manifest() has to
+// ask for them rather than duplicate the list and drift from it.
+const char *const *map_object_art_names(int *out_count) {
+    static const char *const NAMES[] = {
+        "castle_tl", "castle_tr", "castle_br", "castle_ml", "castle_mr",
+        "castle_gate", "town", "chest", "artifact_chest", "artifact_ring",
+        "sign", "bridge_h", "bridge_v", "wandering_army",
+        "dwelling_plains", "dwelling_forest", "dwelling_hills",
+        "dwelling_dungeon",
+    };
+    if (out_count) *out_count = (int)(sizeof NAMES / sizeof NAMES[0]);
+    return NAMES;
+}
