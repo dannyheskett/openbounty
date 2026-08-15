@@ -671,10 +671,11 @@ int shell_run_game(int argc, char **argv) {
     SetTargetFPS(60);
     SetExitKey(KEY_NULL);
 
-    // Bitmap font + 256-color palette have fixed pack-relative paths
-    // that the extractor produces. No engine-side configuration knob.
-    bfont_init("art/font/kb-font.png");
-    palette_init("palettes/palette.bin");
+    // Font strip and palette come from the manifest. They were compiled in
+    // here, which meant every pack had to ship a file named for the game the
+    // extractor was written against.
+    bfont_init(res.sprites.font);
+    palette_init(res.sprites.palette);
 
     Sprites sprites;
     sprites_load(&sprites, &res);
@@ -1329,7 +1330,11 @@ int shell_run_game(int argc, char **argv) {
         if (frame_host_time() >= hero_anim_next) {
             bool anim_enabled = (game.stats.options[3] != 0);
             bool animating = anim_enabled && (frame_host_time() - last_step_time < 0.4);
-            if (animating) {
+            game.anim_moving = animating;
+            // A pack that ships an idle animation keeps ticking while the hero
+            // stands still, so he breathes instead of freezing. Without one,
+            // standing still snaps back to frame 0 as it always has.
+            if (animating || sprites_anim_present(&sprites.hero_idle)) {
                 // Free-running tick: each sprite strip folds this onto its
                 // own declared cycle length at draw time, so the counter
                 // must not assume any particular frame count here.

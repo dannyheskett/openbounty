@@ -50,10 +50,11 @@ TEST hero_cycles_come_from_the_pack(void) {
     // Six walk frames and two boat frames, from one manifest. These used to
     // share a single out-count, so the walk value was overwritten by the boat
     // value and both were discarded.
-    ASSERT_EQ(6, r->sprites.hero_walk_count);
-    ASSERT_EQ(2, r->sprites.hero_boat_count);
-    ASSERT_STR_EQ("h_05.png", r->sprites.hero_walk[5]);
-    ASSERT_STR_EQ("b_01.png", r->sprites.hero_boat[1]);
+    ASSERT(!r->sprites.hero_walk.directional);
+    ASSERT_EQ(6, r->sprites.hero_walk.count[OB_FACE_SOUTH]);
+    ASSERT_EQ(2, r->sprites.hero_boat.count[OB_FACE_SOUTH]);
+    ASSERT_STR_EQ("h_05.png", r->sprites.hero_walk.frames[OB_FACE_SOUTH][5]);
+    ASSERT_STR_EQ("b_01.png", r->sprites.hero_boat.frames[OB_FACE_SOUTH][1]);
     free_anim_fixture(r);
     PASS();
 }
@@ -104,8 +105,10 @@ TEST villain_anim_is_declarable_like_a_troop(void) {
 TEST kings_bounty_keeps_four_frame_cycles(void) {
     Resources *r = fx_load_resources();
     ASSERT(r);
-    ASSERT_EQ(OB_ANIM_FRAMES_DEFAULT, r->sprites.hero_walk_count);
-    ASSERT_EQ(OB_ANIM_FRAMES_DEFAULT, r->sprites.hero_boat_count);
+    ASSERT(!r->sprites.hero_walk.directional);
+    ASSERT(!r->sprites.hero_boat.directional);
+    ASSERT_EQ(OB_ANIM_FRAMES_DEFAULT, r->sprites.hero_walk.count[OB_FACE_SOUTH]);
+    ASSERT_EQ(OB_ANIM_FRAMES_DEFAULT, r->sprites.hero_boat.count[OB_FACE_SOUTH]);
     ASSERT_EQ(OB_ANIM_FRAMES_DEFAULT, r->sprites.hud_siege_animation_count);
     ASSERT_EQ(OB_ANIM_FRAMES_DEFAULT, r->sprites.hud_magic_animation_count);
     resources_free(r); free(r);
@@ -143,6 +146,64 @@ TEST kings_bounty_villains_use_the_stem_fallback(void) {
     PASS();
 }
 
+// ---- Four authored facings -------------------------------------------------
+
+TEST directional_set_parses_all_four_facings(void) {
+    Resources *r = load_anim_fixture();
+    ASSERT(r);
+    const ResAnimSet *idle = &r->sprites.hero_idle;
+    ASSERT(idle->directional);
+    for (int f = 0; f < OB_FACE_COUNT; f++)
+        ASSERT_EQ(3, idle->count[f]);
+    ASSERT_STR_EQ("i_s0.png", idle->frames[OB_FACE_SOUTH][0]);
+    ASSERT_STR_EQ("i_e0.png", idle->frames[OB_FACE_EAST][0]);
+    ASSERT_STR_EQ("i_w0.png", idle->frames[OB_FACE_WEST][0]);
+    ASSERT_STR_EQ("i_n0.png", idle->frames[OB_FACE_NORTH][0]);
+    free_anim_fixture(r);
+    PASS();
+}
+
+TEST directional_set_tolerates_an_omitted_facing(void) {
+    Resources *r = load_anim_fixture();
+    ASSERT(r);
+    // The fixture's boat declares south/east/west but no north. A pack is
+    // allowed to be incomplete; the renderer falls back to south for the
+    // missing facing rather than drawing nothing.
+    const ResAnimSet *boat = &r->sprites.hero_boat;
+    ASSERT(boat->directional);
+    ASSERT_EQ(2, boat->count[OB_FACE_SOUTH]);
+    ASSERT_EQ(2, boat->count[OB_FACE_EAST]);
+    ASSERT_EQ(2, boat->count[OB_FACE_WEST]);
+    ASSERT_EQ(0, boat->count[OB_FACE_NORTH]);
+    free_anim_fixture(r);
+    PASS();
+}
+
+TEST flat_and_directional_forms_coexist(void) {
+    Resources *r = load_anim_fixture();
+    ASSERT(r);
+    // Same manifest: walk is a flat array, idle and boat are objects. The
+    // flat one must stay non-directional so it keeps being mirrored.
+    ASSERT(!r->sprites.hero_walk.directional);
+    ASSERT(r->sprites.hero_idle.directional);
+    ASSERT(r->sprites.hero_boat.directional);
+    free_anim_fixture(r);
+    PASS();
+}
+
+TEST kings_bounty_declares_no_idle_and_no_facings(void) {
+    Resources *r = fx_load_resources();
+    ASSERT(r);
+    // No idle set means the hero still snaps to frame 0 when standing still,
+    // and a flat walk array means he is still mirrored rather than turned.
+    ASSERT(!r->sprites.hero_walk.directional);
+    ASSERT(!r->sprites.hero_boat.directional);
+    for (int f = 0; f < OB_FACE_COUNT; f++)
+        ASSERT_EQ(0, r->sprites.hero_idle.count[f]);
+    resources_free(r); free(r);
+    PASS();
+}
+
 // ---- The storage ceiling holds ---------------------------------------------
 
 TEST tick_wrap_divides_every_supported_cycle(void) {
@@ -162,5 +223,9 @@ SUITE(unit_anim_frames_suite) {
     RUN_TEST(kings_bounty_keeps_four_frame_cycles);
     RUN_TEST(kings_bounty_troops_all_declare_four_frames);
     RUN_TEST(kings_bounty_villains_use_the_stem_fallback);
+    RUN_TEST(directional_set_parses_all_four_facings);
+    RUN_TEST(directional_set_tolerates_an_omitted_facing);
+    RUN_TEST(flat_and_directional_forms_coexist);
+    RUN_TEST(kings_bounty_declares_no_idle_and_no_facings);
     RUN_TEST(tick_wrap_divides_every_supported_cycle);
 }

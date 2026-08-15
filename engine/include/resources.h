@@ -26,11 +26,28 @@
 #define RES_TILE_CODE_COUNT  128     // indexed by raw byte
 #define RES_TILE_ART_LEN      24
 // Animation cycle lengths: OB_ANIM_FRAMES_MAX / _DEFAULT, in tables.h.
+#define RES_COMBAT_TILES      15     // combat tileset, fixed role order
 #define RES_EXTRA_ICONS        8     // view_icons_extra cap 
 #define RES_END_BODY_LEN     512     // win/lose body text
 #define RES_VDESC_TEXT_LEN   320     // per-villain features / crimes block
 
 // ---- Sub-structures --------------------------------------------------------
+
+// One animation, authored either as a single strip or as four facings.
+//
+// `directional` false means the pack declared a flat array: the frames live in
+// slot OB_FACE_SOUTH and the renderer mirrors them east/west, exactly as every
+// pack worked before facings existed. True means the pack declared all four,
+// and the renderer selects a facing and never mirrors -- so an asymmetric
+// figure keeps its shield on the correct arm walking west.
+//
+// count[] is per facing because nothing requires the four to be the same
+// length; a pack may ship a six-frame walk east and a four-frame walk north.
+typedef struct {
+    bool directional;
+    int  count[OB_FACE_COUNT];
+    char frames[OB_FACE_COUNT][OB_ANIM_FRAMES_MAX][RES_PATH_LEN];
+} ResAnimSet;
 
 typedef struct {
     int day_steps;
@@ -855,12 +872,22 @@ typedef struct {
 
     // Role-fixed sprite manifest (assets that aren't per-catalog-entry).
     struct {
-        // Hero. *_count is the declared cycle length, 0 when the pack ships
-        // no frames at all.
-        int  hero_walk_count;
-        char hero_walk[OB_ANIM_FRAMES_MAX][RES_PATH_LEN];
-        int  hero_boat_count;
-        char hero_boat[OB_ANIM_FRAMES_MAX][RES_PATH_LEN];
+        // Hero. Each set is either a single strip (mirrored east/west by the
+        // renderer, which is how kings-bounty is authored) or four authored
+        // facings. `idle` is optional; without it the hero holds frame 0 while
+        // standing still, which is the behaviour packs had before it existed.
+        ResAnimSet hero_walk;
+        ResAnimSet hero_idle;
+        ResAnimSet hero_boat;
+        // Combat tileset, in the fixed role order the renderer indexes by:
+        // 0 field, 1-3 obstacles, 4 castle item, 5-10 walls, 11-14 cursor.
+        // Declared by the pack; the shell carried this list hardcoded before.
+        int  combat_count;
+        char combat[RES_COMBAT_TILES][RES_PATH_LEN];
+        // Bitmap font strip and the VGA palette binary. Both had their paths
+        // compiled into the shell, which meant a pack could not name its own.
+        char font[RES_PATH_LEN];
+        char palette[RES_PATH_LEN];
         // UI.
         char puzzle_cover[RES_PATH_LEN];
         // Location backdrops .
@@ -923,6 +950,19 @@ void resources_resolve_path(const Resources *res, const char *rel,
 // failure and leaves `*res` in an indeterminate state.
 bool resources_load(Resources *res, const char *manifest_path);
 
+// Every pack-relative art path this manifest resolves to, de-duplicated.
+// Returns the count written to `out` (capped at `cap`).
+//
+// This is the single source of truth for "what art does this pack use". Art
+// used to be reachable five different ways -- explicit paths here, bare
+// tile_codes names expanded under art/tiles/, a list hardcoded in the shell,
+// villain frames derived from a portrait filename, and the placed-object
+// names map.c stamps by interact kind -- so no caller could answer that
+// question without replicating all five. Tile names, the villain stem
+// fallback and the object names are expanded here so callers see real paths.
+#define RES_ART_MANIFEST_MAX 512
+int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
+                           int cap);
 // Currently a no-op (all storage is inline). Kept as the proper teardown
 // hook in case any catalog-table allocation grows beyond inline storage.
 void resources_free(Resources *res);
