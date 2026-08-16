@@ -2,6 +2,7 @@
 #include "layout.h"
 #include "palette.h"
 #include "bfont.h"
+#include "ui.h"
 #include "raylib.h"
 #include <stdio.h>
 
@@ -87,9 +88,14 @@ void hud_draw(const Game *g, const Sprites *s) {
         // uncaught/unfound cell with a 2px inset within the panel,
         // leaving the underlying map-fragment art visible only on
         // caught/found cells.
-        int cw = s->puzzle_cover.width;   // 9
-        int ch = s->puzzle_cover.height;  // 6
-        int inset = 2;
+        // The cover art is authored against the legacy 48x34 panel, so it
+        // scales by however much bigger this pack's panel is. Legacy divides
+        // out to 1 and the numbers are the originals exactly.
+        int hs = CL_SIDEBAR_W / 48;
+        if (hs < 1) hs = 1;
+        int cw = s->puzzle_cover.width  * hs;   // 9
+        int ch = s->puzzle_cover.height * hs;   // 6
+        int inset = 2 * hs;
         for (int j = 0; j < 5; j++) {
             for (int i = 0; i < 5; i++) {
                 signed char id = PUZZLE_MAP[j][i];
@@ -99,11 +105,7 @@ void hud_draw(const Game *g, const Sprites *s) {
                 if (caught) continue;
                 int cx = x + inset + i * cw;
                 int cy = y + inset + j * ch;
-                Rectangle src = { 0, 0, (float)cw, (float)ch };
-                Rectangle dst = { (float)cx, (float)cy,
-                                  (float)cw, (float)ch };
-                DrawTexturePro(s->puzzle_cover, src, dst,
-                               (Vector2){ 0, 0 }, 0.0f, WHITE);
+                ui_blit(s->puzzle_cover, cx, cy, cw, ch);
             }
         }
     }
@@ -115,8 +117,8 @@ void hud_draw(const Game *g, const Sprites *s) {
         char gold_str[12];
         snprintf(gold_str, sizeof(gold_str), "%d", g->stats.gold);
         Vector2 gsz = bfont_measure(gold_str);
-        int gx = x + CL_SIDEBAR_W - (int)gsz.x - 2;
-        int gy = y + CL_TILE_H - BFONT_GLYPH_H - 2;
+        int gx = x + CL_SIDEBAR_W - (int)gsz.x - 2 * CL_UI;
+        int gy = y + CL_TILE_H - BFONT_GLYPH_H - 2 * CL_UI;
         bfont_draw(gold_str, gx, gy, PAL_CLR(YELLOW));
     }
 }

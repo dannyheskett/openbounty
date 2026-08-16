@@ -118,16 +118,6 @@ void run_end_cartoon(RenderTexture2D *rt,
     int tps = res->ending.ticks_per_step > 0 ? res->ending.ticks_per_step : 2;
     int max_frames = res->ending.frame_count > 0 ? res->ending.frame_count : 10;
 
-    // Center the grid horizontally; anchor at the map viewport's Y.
-    int total_w = gw * CL_TILE_W;
-    int origin_x = (CL_SCREEN_W - total_w) / 2;
-    if (origin_x < 0) origin_x = 0;
-    int origin_y = CL_MAP_Y;
-    // If the grid overflows the map viewport vertically, still anchor at
-    // the top -- renders within the map area but openbounty' map is
-    // 170 tall vs a native 5x34 = 170 grid that fits exactly at default.
-    (void)gh;
-
     int tick = 0;
     int frame = 0;
     bool done = false;
@@ -150,6 +140,15 @@ void run_end_cartoon(RenderTexture2D *rt,
             }
             if (tick > 3) tick = 0;
         }
+
+        // Derived per frame, not once: present_refit can resize the screen
+        // under us when the window changes, which would leave the origin
+        // pointing at the old geometry.
+        present_refit(rt);
+        int origin_x = CL_MAP_X + (CL_MAP_W - gw * CL_TILE_W) / 2;
+        int origin_y = CL_MAP_Y + (CL_MAP_H - gh * CL_TILE_H) / 2;
+        if (origin_x < CL_MAP_X) origin_x = CL_MAP_X;
+        if (origin_y < CL_MAP_Y) origin_y = CL_MAP_Y;
 
         BeginTextureMode(*rt);
         ClearBackground(BLACK);

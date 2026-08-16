@@ -2,6 +2,7 @@
 #include "layout.h"
 #include "palette.h"
 #include "bfont.h"
+#include "ui.h"
 #include "views.h"
 #include "tile_cache.h"
 #include "tables.h"
@@ -22,9 +23,18 @@
 #define VIEW_H       CL_CONTENT_H
 #define VIEW_PAD     (4 * CL_UI)
 
-// Full-content-width views (Character) cover map + sidebar.
-#define FULL_VIEW_X  CL_MAP_X
-#define FULL_VIEW_W  (CL_MAP_W + CL_SIDEBAR_W)
+// Wide views (Character, Army, Gate) get the content rect plus a sidebar's
+// worth of extra width -- their right-hand stat column needs it. This is a
+// WIDER FIXED SIZE, not the pane: sizing it from the pane stretched a 30-column
+// layout across the whole window, putting labels at one edge and values at the
+// other. In legacy it is 288 wide at x=16, exactly as before.
+// Centred in the chrome interior, the same construction CL_COMBAT_X uses --
+// NOT in the map pane, which would put legacy at x=-8 because the view is
+// wider than the pane by exactly the sidebar.
+#define FULL_VIEW_W  (CL_CONTENT_W + CL_SIDEBAR_W)
+#define FULL_VIEW_X  (CL_FRAME_LEFT_W + \
+                      ((CL_SCREEN_W - CL_FRAME_LEFT_W - CL_FRAME_RIGHT_W) \
+                       - FULL_VIEW_W) / 2)
 
 // Solid-fill background + 1px yellow border for a view panel.
 static void draw_view_panel(void) {
@@ -34,7 +44,7 @@ static void draw_view_panel(void) {
 
 // Thin horizontal rule between rows.
 static void draw_rule(int x, int y, int w) {
-    DrawRectangle(x, y, w, 1, PAL_CLR(DRED));
+    DrawRectangle(x, y, w, CL_UI, PAL_CLR(DRED));
 }
 
 // ---------------------------------------------------------------------------
@@ -53,33 +63,28 @@ static void draw_character(const Game *g, const Sprites *s) {
     DrawRectangle(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DGREY));
 
     const ClassDef *cls = class_by_id(g->character.cls.id);
-    int portrait_w = 96;
-    int portrait_h = 102;
+    // Authored 96x102 in the 320x200 design space; the slot scales with the
+    // rest of the furniture rather than staying at the texture's own size.
+    int portrait_w = 96 * CL_UI;
+    int portrait_h = 102 * CL_UI;
     if (cls) {
-        Texture2D portrait = s->class_portrait[cls->index];
-        if (portrait.id) {
-            portrait_w = portrait.width;
-            portrait_h = portrait.height;
-            Rectangle src = { 0, 0, (float)portrait_w, (float)portrait_h };
-            Rectangle dst = { (float)vx, (float)VIEW_Y,
-                              (float)portrait_w, (float)portrait_h };
-            DrawTexturePro(portrait, src, dst, (Vector2){0,0}, 0.0f, WHITE);
-        }
+        ui_blit(s->class_portrait[cls->index], vx, VIEW_Y,
+                portrait_w, portrait_h);
     }
 
     int sx = vx + portrait_w;
-    int lh = 8;       // row height = font glyph height; no overlap
-    int bh = 4;       // blank-row gap
+    int lh = GH;          // row height = font glyph height; no overlap
+    int bh = GH / 2;      // blank-row gap
     char buf[64];
     const ResUI *ui = &g->res->ui;
 
     // Render label + value rows. Value column right-aligned within the
     // stats area; blank string when value == 0 (per page 1 reference).
-    int label_pad = 1;
+    int label_pad = CL_UI;
     int label_x = sx + label_pad;
-    int val_right = vx + vw - 2;     // right edge of stats area, 2px inset
+    int val_right = vx + vw - 2 * CL_UI;   // right edge, 2px inset
 
-    int y = VIEW_Y + 1;
+    int y = VIEW_Y + CL_UI;
 
     // Row helper: draw label left-aligned and value right-aligned. value
     // string is empty when count is 0.
@@ -124,7 +129,10 @@ static void draw_character(const Game *g, const Sprites *s) {
     int inv_x = vx;
     int inv_y = VIEW_Y + portrait_h;
     int item_w = vw / 6;             // 288/6 = 48
-    int item_h = CL_TILE_H;          // 34
+    // A belt slot is 34 design units tall, not one map tile. Those coincide in
+    // legacy, and happen to coincide for Rome too, but only because its tile is
+    // exactly twice the legacy one -- CL_UI is what this actually depends on.
+    int item_h = 34 * CL_UI;
     int belt_h = item_h * 2;
 
     // Inner fill: dark red (empty-slot color).
@@ -132,9 +140,9 @@ static void draw_character(const Game *g, const Sprites *s) {
     // Light-grey outline + grid lines.
     DrawRectangleLines(inv_x, inv_y, vw, belt_h, PAL_CLR(GREY));
     for (int c = 1; c < 6; c++) {
-        DrawRectangle(inv_x + c * item_w, inv_y, 1, belt_h, PAL_CLR(GREY));
+        DrawRectangle(inv_x + c * item_w, inv_y, CL_UI, belt_h, PAL_CLR(GREY));
     }
-    DrawRectangle(inv_x, inv_y + item_h, vw, 1, PAL_CLR(GREY));
+    DrawRectangle(inv_x, inv_y + item_h, vw, CL_UI, PAL_CLR(GREY));
 
     // Artifact grid: 4 cols x 2 rows. Only stamp icon when found.
     for (int i = 0; i < 8; i++) {
@@ -143,12 +151,8 @@ static void draw_character(const Game *g, const Sprites *s) {
         if (!tex.id) continue;
         int col = i % 4;
         int row = i / 4;
-        int ix = inv_x + col * item_w;
-        int iy = inv_y + row * item_h;
-        Rectangle src = { 0, 0, (float)tex.width, (float)tex.height };
-        Rectangle dst = { (float)ix, (float)iy,
-                          (float)item_w, (float)item_h };
-        DrawTexturePro(tex, src, dst, (Vector2){0,0}, 0.0f, WHITE);
+        ui_blit(tex, inv_x + col * item_w, inv_y + row * item_h,
+                item_w, item_h);
     }
 
     // Map grid: 2 cols x 2 rows starting at col 4. Only stamp tile when
@@ -160,12 +164,8 @@ static void draw_character(const Game *g, const Sprites *s) {
         if (!tex.id) continue;
         int col = i % 2;
         int row = i / 2;
-        int ix = map_x + col * item_w;
-        int iy = inv_y + row * item_h;
-        Rectangle src = { 0, 0, (float)tex.width, (float)tex.height };
-        Rectangle dst = { (float)ix, (float)iy,
-                          (float)item_w, (float)item_h };
-        DrawTexturePro(tex, src, dst, (Vector2){0,0}, 0.0f, WHITE);
+        ui_blit(tex, map_x + col * item_w, inv_y + row * item_h,
+                item_w, item_h);
     }
 }
 
@@ -207,8 +207,13 @@ static void draw_army(const Game *g, const Sprites *s) {
     DrawRectangle(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DGREY));
     DrawRectangleLines(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DRED));
 
-    int row_h = 34;
-    int pad = 2;
+    // Each row carries three lines of text beside its sprite, so the row has
+    // to clear 3 glyphs however the pack scales. 34 design units does that at
+    // any ui_scale (3 * 8 = 24 <= 34); the floor is belt-and-braces for a pack
+    // that ever ships a taller font.
+    int pad = 2 * CL_UI;
+    int row_h = 34 * CL_UI;
+    if (row_h < 3 * GH + pad) row_h = 3 * GH + pad;
 
     // view_army tick-animates each troop's idle strip over however many
     // frames the troop declares. ~8 Hz matches the HUD villain anim cadence.
@@ -216,8 +221,8 @@ static void draw_army(const Game *g, const Sprites *s) {
 
     for (int i = 0; i < 5; i++) {
         int ry = VIEW_Y + pad + i * row_h;
-        int sprite_w = 48;
-        int sprite_h = 34;
+        int sprite_w = 48 * CL_UI;
+        int sprite_h = 34 * CL_UI;
 
         DrawRectangle(vx + pad, ry, sprite_w, sprite_h, PAL_CLR(DGREEN));
 
@@ -229,16 +234,11 @@ static void draw_army(const Game *g, const Sprites *s) {
             s->troop_anim[t->index][sprites_frame(anim_tick,
                                                  s->troop_anim_frames[t->index])];
         if (!tex.id) tex = s->troop_sprite[t->index];
-        if (tex.id) {
-            Rectangle src = { 0, 0, (float)tex.width, (float)tex.height };
-            Rectangle dst = { (float)(vx + pad), (float)ry,
-                              (float)sprite_w, (float)sprite_h };
-            DrawTexturePro(tex, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
-        }
+        ui_blit(tex, vx + pad, ry, sprite_w, sprite_h);
 
         // Two columns of stats to the right.
-        int tx = vx + pad + sprite_w + 4;
-        int ty = ry + 2;
+        int tx = vx + pad + sprite_w + 4 * CL_UI;
+        int ty = ry + 2 * CL_UI;
         char buf[96];
 
         const ResUI *ui = &g->res->ui;
@@ -280,7 +280,7 @@ static void draw_army(const Game *g, const Sprites *s) {
                  (t->recruit_cost / 10) * g->army[i].count);
         bfont_draw(buf, rx, ty + GH * 2, PAL_CLR(WHITE));
 
-        if (i < 4) draw_rule(vx + pad, ry + row_h - 1,
+        if (i < 4) draw_rule(vx + pad, ry + row_h - CL_UI,
                              vw - 2 * pad);
     }
 }
@@ -316,9 +316,12 @@ static void draw_contract(const Game *g, const Sprites *s) {
     // (3 tiles tall = 102px). Top map row + bottom map row remain visible;
     // HUD sidebar untouched. Don't override the status bar -- it stays
     // normal ("Options / Controls / Days Left:NNN").
-    int panel_x = VIEW_X + 2;
+    // x and w must come from the SAME rect. They used to be the content rect
+    // and the pane respectively, which put the left edge at the centred panel
+    // and the right edge a pane-width further on -- off the screen entirely.
+    int panel_x = FULL_VIEW_X + 2 * CL_UI;
     int panel_y = VIEW_Y + CL_TILE_H;        // 1 tile down
-    int panel_w = FULL_VIEW_W - 4;           // 2px inset on each side
+    int panel_w = FULL_VIEW_W - 4 * CL_UI;   // 2px inset on each side
     int panel_h = CL_TILE_H * 3;             // 3 tiles tall
 
     // Rounded-corner blue panel with yellow border .
@@ -339,19 +342,13 @@ static void draw_contract(const Game *g, const Sprites *s) {
     if (!g->contract.active_id[0]) {
         // No contract: silhouette box top-left, "You have no Contract!"
         // centered in the remaining space.
-        int box_w = 48;
-        int box_h = 34;
-        DrawRectangleLines(tx - 1, ty - 1, box_w + 2, box_h + 2,
+        int box_w = 48 * CL_UI;
+        int box_h = 34 * CL_UI;
+        DrawRectangleLines(tx - CL_UI, ty - CL_UI,
+                           box_w + 2 * CL_UI, box_h + 2 * CL_UI,
                            PAL_CLR(YELLOW));
-        if (s && s->hud_contract_silhouette.id) {
-            Rectangle src = { 0, 0,
-                              (float)s->hud_contract_silhouette.width,
-                              (float)s->hud_contract_silhouette.height };
-            Rectangle dst = { (float)tx, (float)ty,
-                              (float)box_w, (float)box_h };
-            DrawTexturePro(s->hud_contract_silhouette, src, dst,
-                           (Vector2){ 0, 0 }, 0.0f, WHITE);
-        }
+        ui_blit(s ? s->hud_contract_silhouette : (Texture2D){ 0 },
+                tx, ty, box_w, box_h);
         bfont_draw_centered(ui->cv_title_no_contract,
                             panel_x + panel_w / 2,
                             panel_y + panel_h / 2 - GH / 2,
@@ -382,16 +379,11 @@ static void draw_contract(const Game *g, const Sprites *s) {
                               s->villain_anim_frames[v->index]);
     Texture2D face = s->villain_anim[v->index][frame];
     if (!face.id) face = s->villain_portrait[v->index];
-    int face_w = 48;
-    int face_h = 34;
-    if (face.id) {
-        face_w = face.width;
-        face_h = face.height;
-        Rectangle src = { 0, 0, (float)face_w, (float)face_h };
-        Rectangle dst = { (float)tx, (float)ty, (float)face_w, (float)face_h };
-        DrawTexturePro(face, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
-    }
-    DrawRectangleLines(tx - 1, ty - 1, face_w + 2, face_h + 2,
+    int face_w = 48 * CL_UI;
+    int face_h = 34 * CL_UI;
+    ui_blit(face, tx, ty, face_w, face_h);
+    DrawRectangleLines(tx - CL_UI, ty - CL_UI,
+                       face_w + 2 * CL_UI, face_h + 2 * CL_UI,
                        PAL_CLR(YELLOW));
 
     // Pull the description from game.json resources.
@@ -508,10 +500,14 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
     // Cells span ONLY the map area (240x170), NOT the sidebar -- matches
     // . Each cell is 48x34, same as a map tile, so
     // the scepter terrain we draw underneath aligns to the tile grid.
-    int cell_w = CL_MAP_W / 5;   // 48
-    int cell_h = CL_MAP_H / 5;   // 34
-    int grid_x = CL_MAP_X;
-    int grid_y = CL_MAP_Y;
+    // The grid belongs to the panel draw_view_panel just drew, so it comes
+    // from the content rect. Taking it from the map pane made the 5x5 grow
+    // with the window while its own panel did not, so it spilled over the
+    // panel border and across the sidebar.
+    int cell_w = VIEW_W / 5;     // 48
+    int cell_h = VIEW_H / 5;     // 34
+    int grid_x = VIEW_X;
+    int grid_y = VIEW_Y;
 
     puzzle_load_scepter_map(g);
 

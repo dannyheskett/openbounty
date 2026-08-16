@@ -227,19 +227,19 @@ static void draw_menu(void) {
     int cursor = views_menu_cursor();
 
     // Size the panel to the menu content.
-    int row_h = GH + 2;
-    int w = 160;
-    int h = (count + 2) * row_h + 8;   // title + entries + hint
+    int row_h = GH + 2 * CL_UI;
+    int w = 160 * CL_UI;
+    int h = (count + 2) * row_h + 8 * CL_UI;   // title + entries + hint
     int x = CL_MAP_X + (CL_MAP_W - w) / 2;
     int y = CL_MAP_Y + (CL_MAP_H - h) / 2;
 
     draw_panel(x, y, w, h, PAL_CLR(DBLUE));
 
-    int tx = x + 6;
-    int ty = y + 4;
+    int tx = x + 6 * CL_UI;
+    int ty = y + 4 * CL_UI;
     if (title) {
         bfont_draw_centered(title, x + w / 2, ty, PAL_CLR(YELLOW));
-        ty += row_h + 2;
+        ty += row_h + 2 * CL_UI;
     }
 
     for (int i = 0; i < count; i++) {
@@ -254,7 +254,7 @@ static void draw_menu(void) {
         else        snprintf(buf, sizeof(buf), "%s", label);
 
         if (sel) bfont_draw(">", tx, ty, PAL_CLR(YELLOW));
-        bfont_draw(buf, tx + GW + 4, ty, fg);
+        bfont_draw(buf, tx + GW + 4 * CL_UI, ty, fg);
         ty += row_h;
     }
 }
@@ -307,16 +307,17 @@ static void draw_location_backdrop(const Game *g, const Sprites *s,
                                    LocKind kind, int troop_idx,
                                    int troop_frame) {
     (void)g;
-    int bd_x = CL_MAP_X;
-    int bd_y = CL_MAP_Y;
-    int bd_w = 240;
-    int bd_h = 102;
+    // The backdrop is fixed-size content, so it belongs in the content rect
+    // like the view panels do -- anchoring it to the map pane pinned it to the
+    // top-left corner of a pane many times its size. 240x102 is its authored
+    // size in the 320x200 design space.
+    int bd_x = CL_CONTENT_X;
+    int bd_y = CL_CONTENT_Y;
+    int bd_w = 240 * CL_UI;
+    int bd_h = 102 * CL_UI;
     Texture2D bd = loc_texture(s, kind);
     if (bd.id && bd.width > 0) {
-        Rectangle src = { 0, 0, (float)bd.width, (float)bd.height };
-        Rectangle dst = { (float)bd_x, (float)bd_y,
-                          (float)bd_w, (float)bd_h };
-        DrawTexturePro(bd, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+        ui_blit(bd, bd_x, bd_y, bd_w, bd_h);
     } else {
         DrawRectangle(bd_x, bd_y, bd_w, bd_h, PAL_CLR(BLACK));
     }
@@ -325,7 +326,7 @@ static void draw_location_backdrop(const Game *g, const Sprites *s,
     // one sprite-width (x = troop_w * 1). Lifted a few pixels off the backdrop
     // bottom so it clears the menu/dialog panel drawn just below (otherwise the
     // sprite's feet overlap the panel's top border).
-    enum { TROOP_BOTTOM_LIFT = 4 };
+    const int troop_lift = 4 * CL_UI;
     if (s && troop_idx >= 0 && troop_idx < 25) {
         // troop_frame arrives as a free-running tick; the troop's own
         // declared cycle length decides where in the strip that lands.
@@ -333,24 +334,28 @@ static void draw_location_backdrop(const Game *g, const Sprites *s,
         Texture2D ts = s->troop_anim[troop_idx][frame];
         if (!ts.id) ts = s->troop_sprite[troop_idx];
         if (ts.id && ts.width > 0) {
-            int tw = ts.width;
-            int th = ts.height;
-            Rectangle tsrc = { 0, 0, (float)tw, (float)th };
-            Rectangle tdst = { (float)(bd_x + tw),
-                               (float)(bd_y + bd_h - th - TROOP_BOTTOM_LIFT),
-                               (float)tw, (float)th };
-            DrawTexturePro(ts, tsrc, tdst,
-                           (Vector2){ 0, 0 }, 0.0f, WHITE);
+            int tw = ts.width  * CL_UI;
+            int th = ts.height * CL_UI;
+            ui_blit(ts, bd_x + tw, bd_y + bd_h - th - troop_lift, tw, th);
         }
     }
 
-    // Black fill below the backdrop to clear any residual map-area pixels
-    // before the bottom panel is drawn over them.
-    if (bd_y + bd_h < CL_MAP_Y + CL_MAP_H) {
-        DrawRectangle(bd_x, bd_y + bd_h,
-                      bd_w, CL_MAP_Y + CL_MAP_H - (bd_y + bd_h),
+    // Black fill around the backdrop to clear any residual map-area pixels
+    // before the bottom panel is drawn over them. The backdrop no longer
+    // starts at the pane's corner, so this has to cover the whole pane rather
+    // than just the strip underneath it.
+    if (bd_y > CL_MAP_Y)
+        DrawRectangle(CL_MAP_X, CL_MAP_Y, CL_MAP_W, bd_y - CL_MAP_Y,
                       PAL_CLR(BLACK));
-    }
+    if (bd_x > CL_MAP_X)
+        DrawRectangle(CL_MAP_X, bd_y, bd_x - CL_MAP_X, bd_h, PAL_CLR(BLACK));
+    if (bd_x + bd_w < CL_MAP_X + CL_MAP_W)
+        DrawRectangle(bd_x + bd_w, bd_y,
+                      CL_MAP_X + CL_MAP_W - (bd_x + bd_w), bd_h,
+                      PAL_CLR(BLACK));
+    if (bd_y + bd_h < CL_MAP_Y + CL_MAP_H)
+        DrawRectangle(CL_MAP_X, bd_y + bd_h, CL_MAP_W,
+                      CL_MAP_Y + CL_MAP_H - (bd_y + bd_h), PAL_CLR(BLACK));
 }
 
 // Public bridge for screen modules in src/screens/. Takes an int
@@ -516,12 +521,15 @@ static void draw_options(const Game *g) {
     // : movement-reference rows on top
     // (8 direction keys + numpad equivalents), then the lettered command
     // list below. One unified blue panel below the status bar.
-    int pad = 3;
+    int pad = 3 * CL_UI;
     int cols = 28;
     int rows = 19;
     int w = cols * GW + 2 * pad;
     int h = rows * GH + 2 * pad;
-    int x = CL_MAP_X;
+    // Anchored to the content rect, not the pane. The panel is a fixed 28
+    // columns, so on a wide pane the pane's left edge strands it in the
+    // corner. The content rect IS the pane in legacy, so this stays at 16.
+    int x = CL_CONTENT_X;
     int y = CL_STATUS_Y + CL_STATUS_H + CL_BAR_H;
 
     draw_panel(x, y, w, h, PAL_CLR(DBLUE));

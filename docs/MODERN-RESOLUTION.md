@@ -43,6 +43,33 @@ combat field -- do not use the pane. They use the **content rect**: 240x170
 design units times `ui_scale`, centred in the pane. Combat likewise uses a
 6x5 grid of one-tile cells, centred.
 
+Wide screens (character, army, gate, end game) use the content rect plus a
+sidebar's width, centred in the chrome interior -- the same construction
+`CL_COMBAT_X` uses. Centring those in the *pane* would put legacy at x=-8,
+because the view is wider than the pane by exactly the sidebar.
+
+### Art scales to its slot, never to itself
+
+Both packs author every asset in the legacy 320x200 design space: 48x34 tiles
+and troops, 240x102 location backdrops, 96x102 class portraits, a 288x184 class
+picker. Drawing at `tex.width`/`tex.height` therefore means drawing at 1x inside
+a buffer that has been scaled up -- which is what left combat as small sprites in
+a field of black gutters and the location backdrop as a postage stamp in the
+corner of the pane.
+
+The rule is that art fills the slot that holds it: `CL_TILE_W/H` for anything in
+a map or combat cell, its design size times `CL_UI` for everything else. Use
+`ui_blit` (`src/ui.h`) rather than hand-rolling the `DrawTexturePro` call.
+
+### Every render-target loop must re-fit
+
+The buffer is derived from the window, so it is stale the moment the window is
+resized. `present_refit` (`src/present.h`) re-fits and reallocates; all seven
+loops that own a target call it at the top of their frame. The startup loop not
+calling it is why a resized window used to clip the class-select screen top and
+bottom: `main.c` fits once at launch, and nothing refit again until the main loop
+took over.
+
 The pack's `tiles_w`/`tiles_h` are the viewport it opens with and a floor for the
 Auto scale to respect, not a fixed size.
 
@@ -87,6 +114,8 @@ on screen                tiles 192x136, font 32px, frame 64px
   and validated with the rest of the render block
 - `src/layout.h` -- bands as multiples of `CL_UI`; `CL_CONTENT_*`; `CL_PANEL_*`
 - `src/layout.c` -- `layout_fit_window`, `layout_auto_scale`
+- `src/ui.h`, `src/ui.c` -- `ui_blit`, `ui_blit_mirrored`
+- `src/present.h`, `src/present.c` -- `present_refit`
 - `src/bfont.h`, `src/bfont.c` -- `BFONT_SRC_GLYPH_*` is the 8x8 strip;
   `BFONT_GLYPH_*` is the on-screen size
 - `src/present.c` -- Auto and the 2x/3x override
@@ -100,24 +129,40 @@ on screen                tiles 192x136, font 32px, frame 64px
 `tools/walkthrough.sh` plays a fresh game from character select to the overworld
 and captures every view a key can reach.
 
-Two things must be right or captures lie: the window has to be moved to the
-origin, or `import` silently returns a clipped image; and `xdotool key` needs
-`--delay 200`, or the press and release land inside one 60fps frame and
-`IsKeyPressed` never fires. The first key after launch is swallowed while the
-window settles.
+Three things must be right or captures lie:
+
+- Keys must be sent with `xdotool key --window <wid>`, not to the focused
+  window. This X server has no window manager, so `windowactivate` fails and
+  every key is dropped in silence -- the capture then returns the same frame
+  repeatedly and the screens read as verified when nothing was.
+- `--delay 200`, or the press and release land inside one 60fps frame and
+  `IsKeyPressed` never fires.
+- The window must sit at the origin, or `import` silently returns a clipped
+  image when part of it hangs off the display.
+
+Byte-comparing captures is NOT a valid regression gate: the army roster, puzzle,
+world map, spells and controls screens all animate, so two runs of the *same*
+build differ on five screens. Compare layout by eye.
 
 Legacy gate: `make test` (281 tests) and
 `./build/debug/openbounty --validate-pack 0 4` on kings-bounty, which must stay
 PASS 5/5, 368 days, 8853.
 
+## Not defects
+
+- **The world map's tall narrow rectangle.** It is drawing the map it was given.
+  Every King's Bounty zone is 64x64, so its minimap is square; Rome's `italia` is
+  genuinely 64x128, so a square-pixel minimap is correctly twice as tall as it is
+  wide. (The `# Italia -- 40x64` header comment in `italia.dat` is stale and is
+  what originally made this look like a bug.)
+- **`src/pack_select.c`.** Its own 640x400 `DrawText` screen, drawn before a pack
+  is chosen and therefore before any layout exists. Outside this system.
+- **The black column under the sidebar.** Five stacked panels do not fill a tall
+  pane. Accepted.
+
 ## Outstanding
 
-- Screens not yet re-captured after the `ui_scale` and content-rect changes:
-  town, home castle, own castle, dwelling, alcove, recruit soldiers, end game
-  win/lose, end cartoon. They are behind a location and need play to reach.
-- The world map view draws the 64x64 map at a visibly wrong aspect -- a tall
-  narrow rectangle. Its cell sizing has not been looked at.
-- The startup screens are laid out for 320x200 and are small in a large window.
-  They fit and are legible, but nothing is centred to the content rect.
-- The sidebar is five stacked panels and leaves a black column beneath them on a
-  tall pane. Accepted as-is.
+- Screens still not captured because autoplay does not reliably reach them:
+  town, home castle, own castle, alcove, end game win/lose, end cartoon. Their
+  code went through the same conversion as the dwelling screen, which is
+  verified, but they have not been seen.

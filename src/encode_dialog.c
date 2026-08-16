@@ -20,6 +20,7 @@
 // We do NOT clear the render target. Whatever the previous frame left
 // is the backdrop the modal panel sits on top of.
 static void frame_begin(RenderTexture2D *rt) {
+    present_refit(rt);
     BeginTextureMode(*rt);
 }
 
@@ -49,7 +50,7 @@ static void draw_panel(const EncodeProgress *p, const char *footer) {
     // 36-char inner width, 8-px padding all round. The 320x200 screen
     // can fit 36 cols comfortably (288 px + 16 px padding = 304 px).
     int cols = 36, rows = 11;
-    int pad  = 8;
+    int pad  = 8 * CL_UI;
     int w = cols * GW + pad * 2;
     int h = rows * GH + pad * 2;
     int x = (CL_SCREEN_W - w) / 2;

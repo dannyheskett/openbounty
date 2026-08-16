@@ -1,7 +1,24 @@
 #ifndef OB_UI_H
 #define OB_UI_H
 
+#include "raylib.h"
 #include <stdbool.h>
+
+// ---- Texture blit --------------------------------------------------------
+// Draw `t` stretched to exactly (x, y, w, h). No-op when the texture is
+// missing (id 0), so callers don't each need a guard.
+//
+// Use this for every piece of art instead of blitting at tex.width/tex.height.
+// Both packs author their art in the legacy 320x200 design space -- 48x34
+// tiles and troops, 240x102 backdrops, 96x102 portraits -- so drawing at the
+// native size means drawing at 1x inside a buffer that is scaled up. The size
+// that is correct is always the slot the art goes in: a map or combat cell is
+// CL_TILE_W/H, anything else is its design size times CL_UI.
+void ui_blit(Texture2D t, int x, int y, int w, int h);
+
+// As ui_blit, but flipped horizontally. Sprites are authored facing right;
+// combat mirrors the AI side rather than shipping a second strip.
+void ui_blit_mirrored(Texture2D t, int x, int y, int w, int h);
 
 // Forward decl: the engine Game (carries the player-IO request queue).
 typedef struct Game Game;

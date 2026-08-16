@@ -48,25 +48,30 @@ bool shell_autoplay_cancelled(void) { return s_cancelled; }
 // objectives -- the same count the search reports.
 static void draw_processing(ShellCtx *ctx, int done, int total) {
     RenderTexture2D *target = (RenderTexture2D *)ctx->render_target;
+    present_refit(target);
     const int W = CL_SCREEN_W, H = CL_SCREEN_H;
     BeginTextureMode(*target);
     ClearBackground(BLACK);
     // A centered KB-style panel: blue field, yellow border.
-    int pw = 240, ph = 90, px = (W - pw) / 2, py = (H - ph) / 2;
-    DrawRectangle(px - 2, py - 2, pw + 4, ph + 4, PAL[14]);   // yellow border
+    int pw = 240 * CL_UI, ph = 90 * CL_UI;
+    int px = (W - pw) / 2, py = (H - ph) / 2;
+    DrawRectangle(px - 2 * CL_UI, py - 2 * CL_UI,
+                  pw + 4 * CL_UI, ph + 4 * CL_UI, PAL[14]);   // yellow border
     DrawRectangle(px, py, pw, ph, PAL[1]);                    // blue field
-    bfont_draw_centered("AUTOPLAY PROCESSING", W / 2, py + 12, PAL[15]);
+    bfont_draw_centered("AUTOPLAY PROCESSING", W / 2, py + 12 * CL_UI, PAL[15]);
     // Progress bar.
-    int bw = pw - 40, bh = 12, bx = (W - bw) / 2, by = py + 40;
+    int bw = pw - 40 * CL_UI, bh = 12 * CL_UI;
+    int bx = (W - bw) / 2, by = py + 40 * CL_UI;
     int fw = (total > 0) ? (bw * done) / total : 0;
     if (fw < 0) fw = 0;
     if (fw > bw) fw = bw;
-    DrawRectangle(bx - 1, by - 1, bw + 2, bh + 2, PAL[15]);   // white frame
+    DrawRectangle(bx - CL_UI, by - CL_UI,
+                  bw + 2 * CL_UI, bh + 2 * CL_UI, PAL[15]);   // white frame
     DrawRectangle(bx, by, bw, bh, PAL[8]);                    // dark track
     DrawRectangle(bx, by, fw, bh, PAL[10]);                   // green fill
     char buf[64];
     snprintf(buf, sizeof buf, "%d / %d objectives", done, total);
-    bfont_draw_centered(buf, W / 2, by + bh + 8, PAL[15]);
+    bfont_draw_centered(buf, W / 2, by + bh + 8 * CL_UI, PAL[15]);
     EndTextureMode();
 
     // Scale + letterbox blit (same pattern as shell_present_frame).

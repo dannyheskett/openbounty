@@ -307,6 +307,7 @@ static int combat_player_action_full(Combat *c, const Game *g,
 static void combat_present(const Combat *c, const Game *g,
                            const Sprites *sprites,
                            RenderTexture2D *target) {
+    present_refit(target);
     BeginTextureMode(*target);
     combat_render_frame(c, g, sprites);
     // Open view (Options / Controls / Army / Character) draws over the

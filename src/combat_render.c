@@ -3,6 +3,7 @@
 #include "bfont.h"
 #include "palette.h"
 #include "layout.h"
+#include "ui.h"
 #include "chrome.h"
 #include "raylib.h"
 #include <stdio.h>
@@ -95,11 +96,11 @@ static void cell_origin(int gx, int gy, int *px, int *py) {
 
 static void draw_tile(const Sprites *s, int idx, int px, int py) {
     if (idx < 0 || idx >= 15) return;
-    Texture2D t = s->combat_tile[idx];
-    if (t.id == 0) return;
-    Rectangle src = { 0, 0, (float)t.width, (float)t.height };
-    Rectangle dst = { (float)px, (float)py, (float)t.width, (float)t.height };
-    DrawTexturePro(t, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+    // Fill the cell. The art is authored at the legacy 48x34 tile, so blitting
+    // at its native size leaves black gutters between cells on any pack whose
+    // tile is bigger.
+    ui_blit(s->combat_tile[idx], px, py,
+            CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
 }
 
 // ----- Unit + count badge ----------------------------------------------------
@@ -114,24 +115,22 @@ static void draw_unit(const CombatUnit *u, int side,
                            [sprites_frame(u->frame,
                                           sprites->troop_anim_frames[u->troop_idx])];
     if (tex.id == 0) tex = sprites->troop_sprite[u->troop_idx];
-    if (tex.id != 0) {
-        // Sprites face right by default. AI side faces left -- mirror via
-        // negative source width. Sprite cell pitch is 48x34, matching
-        // unit-sprite native size, so they fill the cell exactly.
-        Rectangle src = { 0, 0, (float)tex.width, (float)tex.height };
-        if (side == COMBAT_SIDE_AI) src.width = -src.width;
-        Rectangle dst = { (float)px, (float)py,
-                          (float)tex.width, (float)tex.height };
-        DrawTexturePro(tex, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
-    }
+    // Sprites face right by default; the AI side is mirrored rather than
+    // shipping a second strip. The slot is the cell, not the sprite's own
+    // size -- they coincide only in legacy, where the cell is 48x34.
+    if (side == COMBAT_SIDE_AI)
+        ui_blit_mirrored(tex, px, py, CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
+    else
+        ui_blit(tex, px, py, CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
     // Count badge: white digits on black band, centered horizontally,
     // anchored at the bottom of the cell.
     char buf[16];
     snprintf(buf, sizeof buf, "%d", u->count);
     Vector2 m = bfont_measure(buf);
     int bx = px + (CL_COMBAT_CELL_W - (int)m.x) / 2;
-    int by = py + CL_COMBAT_CELL_H - BFONT_GLYPH_H - 1;
-    DrawRectangle(bx - 1, by - 1, (int)m.x + 2, BFONT_GLYPH_H + 2,
+    int by = py + CL_COMBAT_CELL_H - BFONT_GLYPH_H - CL_UI;
+    DrawRectangle(bx - CL_UI, by - CL_UI,
+                  (int)m.x + 2 * CL_UI, BFONT_GLYPH_H + 2 * CL_UI,
                   PAL_CLR(BLACK));
     bfont_draw(buf, bx, by, PAL_CLR(WHITE));
 }

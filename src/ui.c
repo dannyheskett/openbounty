@@ -9,6 +9,24 @@
 #include <string.h>
 #include <stdio.h>
 
+// ---- texture blit ----------------------------------------------------------
+static void blit(Texture2D t, int x, int y, int w, int h, bool mirror) {
+    if (t.id == 0 || w <= 0 || h <= 0) return;
+    Rectangle src = { 0, 0,
+                      mirror ? -(float)t.width : (float)t.width,
+                      (float)t.height };
+    Rectangle dst = { (float)x, (float)y, (float)w, (float)h };
+    DrawTexturePro(t, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+}
+
+void ui_blit(Texture2D t, int x, int y, int w, int h) {
+    blit(t, x, y, w, h, false);
+}
+
+void ui_blit_mirrored(Texture2D t, int x, int y, int w, int h) {
+    blit(t, x, y, w, h, true);
+}
+
 // ---- any-key helper --------------------------------------------------------
 bool ui_any_key_pressed(void) {
     int k = input_get_key_pressed();

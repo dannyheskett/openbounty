@@ -11,6 +11,21 @@
 #define OB_PRESENT_H
 
 #include "raylib.h"
+#include <stdbool.h>
+
+// Re-fit the layout to the window and, if the design-space screen size changed,
+// reallocate `*rt` to match. Returns true when the target was replaced.
+//
+// Modern mode derives the buffer FROM the window, so the buffer is stale the
+// moment the window is resized: the frame is then drawn at the old size and
+// present_scaled either crops it or leaves a border. Every loop that owns a
+// render target has to call this at the top of its frame -- not just the main
+// one. The startup loop not calling it is why a resized window clipped the
+// class-select screen top and bottom.
+//
+// Legacy geometry is fixed, so layout_fit_window is a no-op and this always
+// returns false.
+bool present_refit(RenderTexture2D *rt);
 
 // The integer scale used for a window of this size: the largest whole
 // multiple of 320x200 that fits, clamped to [CL_SCALE_MIN, ceiling], where

@@ -1391,14 +1391,8 @@ int shell_run_game(int argc, char **argv) {
         // ==== Draw ====
         // Modern grows the viewport to whatever whole tiles the window can
         // show, so the render target changes size when the window or the scale
-        // does. Legacy is fixed and layout_fit_window is a no-op for it.
-        if (layout_fit_window(GetScreenWidth(), GetScreenHeight(),
-                              present_scale(GetScreenWidth(),
-                                            GetScreenHeight()))) {
-            UnloadRenderTexture(render_target);
-            render_target = LoadRenderTexture(CL_SCREEN_W, CL_SCREEN_H);
-            SetTextureFilter(render_target.texture, TEXTURE_FILTER_POINT);
-        }
+        // does. Legacy is fixed and this is a no-op for it.
+        present_refit(&render_target);
 
         // Render into the offscreen target.
         BeginTextureMode(render_target);

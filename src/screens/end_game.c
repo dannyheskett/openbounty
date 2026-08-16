@@ -42,12 +42,22 @@ void screen_end_game_draw(const Game *g, const Sprites *s) {
     //   body strings in game.json are authored pre-wrapped to 18
     //   chars per line, matching the original DOS layout (see
     //   OpenKB's data/free/endwin.txt for the canonical formatting).
-    int total_left  = CL_MAP_X;
+    // Fixed-size content: 18 columns of pre-wrapped text beside a fixed
+    // portrait. Sized from the content rect plus a sidebar, centred in the
+    // chrome interior -- the same rect the wide views use. Taking it from the
+    // pane would push the text to one edge and the portrait to the other with
+    // a field of blue between them. In legacy this is 288 wide at x=16, which
+    // is what it has always been.
+    int total_w     = CL_CONTENT_W + CL_SIDEBAR_W;
+    int total_left  = CL_FRAME_LEFT_W
+                    + ((CL_SCREEN_W - CL_FRAME_LEFT_W - CL_FRAME_RIGHT_W)
+                       - total_w) / 2;
     int total_top   = CL_MAP_Y;
-    int total_w     = CL_SCREEN_W - CL_MAP_X - CL_FRAME_RIGHT_W;
     int total_h     = CL_SCREEN_H - CL_MAP_Y - CL_FRAME_BOTTOM_H;
 
-    // Paint full area DBLUE first (CS_ENDING background).
+    // Black around it, then the panel itself (CS_ENDING background).
+    DrawRectangle(CL_MAP_X, CL_MAP_Y, CL_MAP_W + CL_SIDEBAR_W, CL_MAP_H,
+                  PAL_CLR(BLACK));
     DrawRectangle(total_left, total_top, total_w, total_h, PAL_CLR(DBLUE));
 
     // Text gets a small inset from the frame's top-left so the copy isn't
@@ -56,19 +66,22 @@ void screen_end_game_draw(const Game *g, const Sprites *s) {
     // the TEXT rectangle (it would wrap/clip). Instead we take it out of the
     // ending image: shrink the image by the margin so the text keeps its
     // full 18-col width AND the right edge stops short of the portrait.
-    const int MARGIN_L = 6;   // left inset (and image shrink)
-    const int MARGIN_T = 2;   // top inset (fits: 21 rows x 8 = 168 <= 170 - 2)
+    const int MARGIN_L = 6 * CL_UI;   // left inset (and image shrink)
+    const int MARGIN_T = 2 * CL_UI;   // top inset (21 rows of glyphs still fit)
 
-    // Right side: the ending image at native size, right-aligned, but pulled
-    // MARGIN_L to the right and narrowed by MARGIN_L so it clears the text.
+    // Right side: the ending image, right-aligned, but pulled MARGIN_L to the
+    // right and narrowed by MARGIN_L so it clears the text. Authored in the
+    // 320x200 design space, so its slot is its own size times CL_UI.
     Texture2D img = s_won ? s->ending_win : s->ending_lose;
-    int img_w = (img.id && img.width  > 0) ? img.width  : 0;
-    int img_h = (img.id && img.height > 0) ? img.height : 0;
+    int img_w = (img.id && img.width  > 0) ? img.width  * CL_UI : 0;
+    int img_h = (img.id && img.height > 0) ? img.height * CL_UI : 0;
     if (img_w > 0 && img_h > 0) {
         int draw_w = img_w - MARGIN_L;
         if (draw_w < 1) draw_w = img_w;
-        Rectangle src = { (float)(img_w - draw_w), 0,
-                          (float)draw_w, (float)img_h };
+        // Source is in texture space; the crop is the same fraction of it.
+        float src_x = (float)(img.width) * (float)(img_w - draw_w) / img_w;
+        Rectangle src = { src_x, 0,
+                          (float)img.width - src_x, (float)img.height };
         Rectangle dst = { (float)(total_left + total_w - draw_w),
                           (float)total_top,
                           (float)draw_w,

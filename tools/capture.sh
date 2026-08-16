@@ -1,56 +1,67 @@
 #!/usr/bin/env bash
-# Phase 0 capture harness. Drives a running OpenBounty window with xdotool and
-# pulls frames out through the built-in backtick screenshot key, which exports
-# the render target (the design-space buffer) rather than the scaled window.
+# Capture harness. Drives a running OpenBounty window with xdotool and grabs
+# frames with `import`.
 #
-#   tools/capture.sh start <pack> [w] [h]   launch and size the window
-#   tools/capture.sh shot  <label>          capture, rename to <label>.png
-#   tools/capture.sh key   <keys...>        send keys, one xdotool key per arg
+#   tools/capture.sh start <pack> [w] [h] [out]  launch and size the window
+#   tools/capture.sh shot  <label>               capture to <out>/<label>.png
+#   tools/capture.sh type  <text>                type a string
+#   tools/capture.sh key   <keys...>             send keys, one xdotool key per arg
 #   tools/capture.sh stop
+#
+# Three things must be right or the captures lie:
+#
+#   1. Keys go to the window with `key --window`, NOT to the focused window.
+#      This X server has no window manager, so `windowactivate` fails and every
+#      key is dropped silently -- the capture then returns the same frame over
+#      and over and the screens look verified when nothing was.
+#   2. --delay 200 holds the key down across at least one 60fps poll. At the
+#      xdotool default the press and release land in the same frame and
+#      IsKeyPressed never fires.
+#   3. The window must sit at the origin, or `import` silently returns a
+#      clipped image when part of it hangs off the display.
 set -u
 DIR="$(cd "$(dirname "$0")/.." && pwd)"
-OUT="$DIR/screenshots"
-WIN() { xdotool search --name "$(cat "$OUT/.title" 2>/dev/null || echo Bounty)" | tail -1; }
+STATE="${TMPDIR:-/tmp}/openbounty-capture"
+OUT() { cat "$STATE/out" 2>/dev/null || echo "$DIR/screenshots"; }
+WIN() { cat "$STATE/wid" 2>/dev/null; }
 
 case "${1:-}" in
 start)
   pack="${2:-glory-of-rome}"; w="${3:-1920}"; h="${4:-1040}"
+  out="${5:-$DIR/screenshots}"
   pkill -x openbounty; sleep 1
-  mkdir -p "$OUT"; rm -f "$OUT"/*.png
-  case "$pack" in glory-of-rome) echo "Glory of Rome" > "$OUT/.title";;
-                  *)             echo "King's Bounty" > "$OUT/.title";; esac
+  mkdir -p "$STATE" "$out"; echo "$out" > "$STATE/out"
+  case "$pack" in glory-of-rome) title="Glory of Rome";;
+                  *)             title="King's Bounty";; esac
   cd "$DIR" || exit 1
   setsid nohup ./build/debug/openbounty --pack "$pack" \
-      > "$OUT/.log" 2>&1 < /dev/null &
-  sleep 5
-  wid=$(WIN); [ -z "$wid" ] && { echo "no window"; exit 1; }
-  # Pin to the origin first: a window hanging off the display gets
-  # clipped by import and the capture silently comes back short.
+      > "$STATE/log" 2>&1 < /dev/null &
+  sleep 6
+  wid=$(xdotool search --name "$title" | tail -1)
+  [ -z "$wid" ] && { echo "no window"; cat "$STATE/log"; exit 1; }
+  echo "$wid" > "$STATE/wid"
   xdotool windowmove "$wid" 0 0; sleep 1
   xdotool windowsize "$wid" "$w" "$h"; sleep 2
-  xdotool windowactivate --sync "$wid"; sleep 1
   echo "$wid"
   ;;
 key)
   shift
-  wid=$(WIN); xdotool windowactivate --sync "$wid" 2>/dev/null
-  # --delay holds the key down across at least one 60fps poll; at the
-  # xdotool default the press and release land in the same frame and
-  # IsKeyPressed never fires.
-  for k in "$@"; do xdotool key --clearmodifiers --delay 200 "$k"; sleep 0.8; done
-  sleep 1
+  wid=$(WIN)
+  for k in "$@"; do
+    xdotool key --window "$wid" --clearmodifiers --delay 200 "$k"; sleep 0.8
+  done
+  ;;
+type)
+  wid=$(WIN)
+  xdotool type --window "$wid" --delay 150 "${2:-}"; sleep 1
   ;;
 shot)
-  # Grab the window itself rather than the render target: the startup screens
-  # run their own loop and never reach the backtick handler, and the window is
-  # what the player actually sees, scaling included.
-  label="${2:-shot}"
-  wid=$(WIN); xdotool windowactivate --sync "$wid" 2>/dev/null; sleep 0.5
-  import -window "$wid" "$OUT/$label.png" 2>/dev/null \
-    && echo "$OUT/$label.png" || { echo "MISS $label"; exit 1; }
+  label="${2:-shot}"; out=$(OUT); sleep 0.5
+  import -window "$(WIN)" "$out/$label.png" 2>/dev/null \
+    && echo "$out/$label.png" || { echo "MISS $label"; exit 1; }
   ;;
 stop)
-  pkill -x openbounty
+  pkill -x openbounty; rm -rf "$STATE"
   ;;
-*) echo "usage: capture.sh start|key|shot|stop"; exit 1;;
+*) echo "usage: capture.sh start|key|type|shot|stop"; exit 1;;
 esac

@@ -67,6 +67,18 @@ int present_scale(int win_w, int win_h) {
     return scale;
 }
 
+bool present_refit(RenderTexture2D *rt) {
+    if (!rt) return false;
+    int win_w = GetScreenWidth();
+    int win_h = GetScreenHeight();
+    if (!layout_fit_window(win_w, win_h, present_scale(win_w, win_h)))
+        return false;
+    UnloadRenderTexture(*rt);
+    *rt = LoadRenderTexture(CL_SCREEN_W, CL_SCREEN_H);
+    SetTextureFilter(rt->texture, TEXTURE_FILTER_POINT);
+    return true;
+}
+
 void present_scaled(RenderTexture2D rt) {
     BeginDrawing();
     ClearBackground(BLACK);

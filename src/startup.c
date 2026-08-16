@@ -8,6 +8,7 @@
 #include "bfont.h"
 #include "savegame.h"
 #include "screenshot.h"
+#include "ui.h"
 #include "tables.h"
 #include "resources.h"
 #include "raylib.h"
@@ -34,6 +35,10 @@ static void safe_copy(char *dst, size_t dst_sz, const char *src) {
 }
 
 static void frame_begin(RenderTexture2D *rt) {
+    // The startup loop runs before the main loop and owns the same target, so
+    // it has to re-fit too. Without this, resizing the window during character
+    // select leaves the buffer at its launch size and present_scaled crops it.
+    present_refit(rt);
     BeginTextureMode(*rt);
     ClearBackground(PAL_CLR(BLACK));
 }
@@ -44,13 +49,9 @@ static void frame_begin(RenderTexture2D *rt) {
 static void draw_class_picker_backdrop(const Sprites *sprites) {
     if (!sprites || !sprites->class_picker.id) return;
     Texture2D t = sprites->class_picker;
-    int pw = t.width;
-    int ph = t.height;
-    int bx = (CL_SCREEN_W - pw) / 2;
-    int by = (CL_SCREEN_H - ph) / 2;
-    Rectangle src = { 0, 0, (float)pw, (float)ph };
-    Rectangle dst = { (float)bx, (float)by, (float)pw, (float)ph };
-    DrawTexturePro(t, src, dst, (Vector2){0,0}, 0.0f, WHITE);
+    int pw = t.width  * CL_UI;
+    int ph = t.height * CL_UI;
+    ui_blit(t, (CL_SCREEN_W - pw) / 2, (CL_SCREEN_H - ph) / 2, pw, ph);
 }
 
 static void draw_class_picker_status_hint(const Resources *res) {
@@ -121,14 +122,13 @@ static bool run_splash(RenderTexture2D *rt,
         // Auto-advance after 2 seconds or on any key press
         if (frame_host_time() - start_time >= timeout || any_key_pressed()) return true;
 
-        BeginTextureMode(*rt);
+        frame_begin(rt);
         ClearBackground(bg_color);
-        int ix = (CL_SCREEN_W - tex.width)  / 2;
-        int iy = (CL_SCREEN_H - tex.height) / 2;
-        Rectangle src = { 0, 0, (float)tex.width, (float)tex.height };
-        Rectangle dst = { (float)ix, (float)iy,
-                          (float)tex.width, (float)tex.height };
-        DrawTexturePro(tex, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+        // Splash art is authored in the 320x200 design space like everything
+        // else, so it scales with the rest of the furniture.
+        int iw = tex.width  * CL_UI;
+        int ih = tex.height * CL_UI;
+        ui_blit(tex, (CL_SCREEN_W - iw) / 2, (CL_SCREEN_H - ih) / 2, iw, ih);
         EndTextureMode();
 
         present_scaled(*rt);
@@ -229,13 +229,13 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
         draw_class_picker_status_hint(resources_current());
 
         // Layout: pad / header row / body rows / gap / instruction row / pad.
-        int pad      = 6;
-        int row_h    = GH + 2;
-        int header_h = GH + 4;       // "Select game:" plus a little breathing room
-        int gap_h    = 4;            // space between last body row and instructions
-        int instr_h  = GH;           // "UP/DN select ..." line
+        int pad      = 6 * CL_UI;
+        int row_h    = GH + 2 * CL_UI;
+        int header_h = GH + 4 * CL_UI;  // title plus a little breathing room
+        int gap_h    = 4 * CL_UI;       // last body row to instructions
+        int instr_h  = GH;              // "UP/DN select ..." line
         int body_h   = row_count * row_h;
-        int w = 280;
+        int w = 280 * CL_UI;
         int h = pad + header_h + body_h + gap_h + instr_h + pad;
         int x = (CL_SCREEN_W - w) / 2;
         int y = (CL_SCREEN_H - h) / 2;
@@ -297,14 +297,6 @@ static bool run_class_select(const Resources *res,
     if (n < 1) n = 1;
     if (n > 4) n = 4;
 
-    // Center the picker image on the screen.
-    int pw = sprites && sprites->class_picker.id
-             ? sprites->class_picker.width : 288;
-    int ph = sprites && sprites->class_picker.id
-             ? sprites->class_picker.height : 184;
-    int px = (CL_SCREEN_W - pw) / 2;
-    int py = (CL_SCREEN_H - ph) / 2;
-
     while (!frame_host_should_close()) {
         if (input_key_pressed(KEY_ESCAPE)) {
             out->action = STARTUP_QUIT;
@@ -333,17 +325,18 @@ static bool run_class_select(const Resources *res,
         // Background: solid black.
         DrawRectangle(0, 0, CL_SCREEN_W, CL_SCREEN_H, PAL_CLR(BLACK));
 
-        // Picker bitmap, centered.
+        // Picker bitmap, centered. Sized per frame: present_refit can change
+        // the screen out from under us when the window is resized.
+        int pw = 288 * CL_UI, ph = 184 * CL_UI;
         if (sprites && sprites->class_picker.id) {
-            Texture2D t = sprites->class_picker;
-            Rectangle src = { 0, 0, (float)t.width, (float)t.height };
-            Rectangle dst = { (float)px, (float)py,
-                              (float)pw, (float)ph };
-            DrawTexturePro(t, src, dst, (Vector2){0,0}, 0.0f, WHITE);
+            pw = sprites->class_picker.width  * CL_UI;
+            ph = sprites->class_picker.height * CL_UI;
+            ui_blit(sprites->class_picker,
+                    (CL_SCREEN_W - pw) / 2, (CL_SCREEN_H - ph) / 2, pw, ph);
         } else {
             // Fallback: text list if asset missing.
             bfont_draw(res->ui.startup_class_picker_missing,
-                       40, 90, PAL_CLR(YELLOW));
+                       40 * CL_UI, 90 * CL_UI, PAL_CLR(YELLOW));
         }
 
         // Status-bar hint at top ().
@@ -616,16 +609,7 @@ static bool run_new_game_intro(RenderTexture2D *rt,
         frame_begin(rt);
 
         // Background: same class-select cartoon (sprites->class_picker).
-        if (sprites && sprites->class_picker.id) {
-            Texture2D t = sprites->class_picker;
-            int pw = t.width;
-            int ph = t.height;
-            int bx = (CL_SCREEN_W - pw) / 2;
-            int by = (CL_SCREEN_H - ph) / 2;
-            Rectangle src = { 0, 0, (float)pw, (float)ph };
-            Rectangle dst = { (float)bx, (float)by, (float)pw, (float)ph };
-            DrawTexturePro(t, src, dst, (Vector2){0,0}, 0.0f, WHITE);
-        }
+        draw_class_picker_backdrop(sprites);
 
         // Status hint at top.
         DrawRectangle(0, 0, CL_SCREEN_W, GH + 2, PAL_CLR(DRED));
@@ -694,15 +678,15 @@ static bool run_credits(RenderTexture2D *rt, const Resources *res,
         // The credit inset re-uses the class-select highlight sprite.
         if (sprites->class_highlight.id) {
             inset = sprites->class_highlight;
-            image_w = inset.width;
-            image_h = inset.height;
+            image_w = inset.width  * CL_UI;
+            image_h = inset.height * CL_UI;
         }
     }
 
     int text_w  = max_text_chars * GW;
-    int gap     = image_w ? 8 : 0;
+    int gap     = image_w ? 8 * CL_UI : 0;
     int panel_w = pad + text_w + gap + image_w + pad;
-    if (panel_w > CL_SCREEN_W - 8) panel_w = CL_SCREEN_W - 8;
+    if (panel_w > CL_SCREEN_W - 8 * CL_UI) panel_w = CL_SCREEN_W - 8 * CL_UI;
 
     // Compute height: groups (label + names) + spacer + copyright.
     int rows = 0;
@@ -766,12 +750,9 @@ static bool run_credits(RenderTexture2D *rt, const Resources *res,
             if (iy + image_h > py + panel_h - pad) {
                 iy = py + panel_h - pad - image_h;
             }
-            Rectangle src = { 0, 0, (float)image_w, (float)image_h };
-            Rectangle dst = { (float)ix, (float)iy,
-                              (float)image_w, (float)image_h };
-            DrawTexturePro(inset, src, dst, (Vector2){0,0}, 0.0f, WHITE);
-            DrawRectangleLines(ix - 1, iy - 1,
-                               image_w + 2, image_h + 2,
+            ui_blit(inset, ix, iy, image_w, image_h);
+            DrawRectangleLines(ix - CL_UI, iy - CL_UI,
+                               image_w + 2 * CL_UI, image_h + 2 * CL_UI,
                                PAL_CLR(DGREEN));
         }
 
