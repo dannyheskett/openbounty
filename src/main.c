@@ -689,10 +689,9 @@ int shell_run_game(int argc, char **argv) {
     InitWindow(base_w, base_h, res.title[0] ? res.title : "OpenBounty");
     SetWindowMinSize(320, 200);
     if (want_fullscreen) ToggleFullscreen();
-    // Modern packs start at 1:1 rather than Auto, so the Scale row reads "1x"
-    // and the player is scaling up from the pack's native size. Legacy never
-    // touches the override at all.
-    if (CL_IS_MODERN) present_set_scale(1);
+    // Modern starts on Auto, which fits the window: maximising on a large
+    // display should use it. 2x/3x are explicit overrides for a 4K panel where
+    // even a fitted image leaves the tiles small.
     // Demo mode paces itself via per-beat holds in shell_demo.c; the frame rate
     // stays at the human 60fps cap. Human play is 60fps too.
     SetTargetFPS(60);
@@ -707,6 +706,13 @@ int shell_run_game(int argc, char **argv) {
     Sprites sprites;
     sprites_load(&sprites, &res);
     tile_cache_attach(&res);
+
+    // Fit the layout to the window before anything allocates a target. In
+    // modern the buffer is the window divided by the scale; without this the
+    // startup screens get a target sized from the pack's declared viewport,
+    // which at the auto scale is taller than the window and clips.
+    layout_fit_window(GetScreenWidth(), GetScreenHeight(),
+                      present_scale(GetScreenWidth(), GetScreenHeight()));
 
     // Allocate the render target early so startup screens can
     // draw into it.
@@ -1383,7 +1389,18 @@ int shell_run_game(int argc, char **argv) {
         end_input:;
 
         // ==== Draw ====
-        // Render into the 320x200 offscreen target.
+        // Modern grows the viewport to whatever whole tiles the window can
+        // show, so the render target changes size when the window or the scale
+        // does. Legacy is fixed and layout_fit_window is a no-op for it.
+        if (layout_fit_window(GetScreenWidth(), GetScreenHeight(),
+                              present_scale(GetScreenWidth(),
+                                            GetScreenHeight()))) {
+            UnloadRenderTexture(render_target);
+            render_target = LoadRenderTexture(CL_SCREEN_W, CL_SCREEN_H);
+            SetTextureFilter(render_target.texture, TEXTURE_FILTER_POINT);
+        }
+
+        // Render into the offscreen target.
         BeginTextureMode(render_target);
         draw_frame(&game, &map, &fog, &sprites);
         EndTextureMode();

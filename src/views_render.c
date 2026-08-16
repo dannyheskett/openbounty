@@ -13,13 +13,14 @@
 #define GW  BFONT_GLYPH_W
 #define GH  BFONT_GLYPH_H
 
-// View panels render into the region below the status bar, spanning
-// the map area + sidebar (not the frames). Width = CL_MAP_W + CL_SIDEBAR_W.
-#define VIEW_X       CL_MAP_X
-#define VIEW_Y       CL_MAP_Y
-#define VIEW_W       CL_MAP_W
-#define VIEW_H       CL_MAP_H
-#define VIEW_PAD     4
+// View panels are fixed-size content: 30 columns of text and a hand-placed
+// portrait and grid. They draw into the shared content rect, which is centred in
+// the map pane rather than filling it -- see CL_CONTENT_* in layout.h.
+#define VIEW_X       CL_CONTENT_X
+#define VIEW_Y       CL_CONTENT_Y
+#define VIEW_W       CL_CONTENT_W
+#define VIEW_H       CL_CONTENT_H
+#define VIEW_PAD     (4 * CL_UI)
 
 // Full-content-width views (Character) cover map + sidebar.
 #define FULL_VIEW_X  CL_MAP_X

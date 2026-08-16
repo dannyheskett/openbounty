@@ -7,8 +7,16 @@
 // The strip PNG is white glyphs on transparent; draw tints the glyphs
 // with the given color.
 
-#define BFONT_GLYPH_W  8
-#define BFONT_GLYPH_H  8
+// The strip is 8x8 on disk. What these report is the glyph's size ON SCREEN,
+// which the pack scales with render.ui_scale -- an 8px glyph in a buffer three
+// times the size of the original design space is unreadable. Every caller
+// measures text with these, so scaling here scales all text layout with it.
+#define BFONT_SRC_GLYPH_W  8
+#define BFONT_SRC_GLYPH_H  8
+int bfont_glyph_w(void);
+int bfont_glyph_h(void);
+#define BFONT_GLYPH_W  (bfont_glyph_w())
+#define BFONT_GLYPH_H  (bfont_glyph_h())
 
 bool    bfont_init(const char *png_path);
 void    bfont_shutdown(void);

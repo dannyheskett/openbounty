@@ -933,8 +933,14 @@ bool views_controls_row_disabled(const struct Game *g, int row) {
 // Cycles Auto -> 1x -> 2x -> 3x -> 4x -> 5x -> Auto; present_scale() clamps the
 // choice to what the window can actually show.
 void views_controls_advance_scale(void) {
+    // Auto (= 1x, the pack's native size) -> 2x -> 3x -> Auto. Nothing beyond
+    // 3x: a 96px tile at 4x is 384 screen pixels, which no display makes
+    // useful, and the earlier six-entry cycle had four entries that did
+    // nothing because the window could not show them.
     int s = present_get_scale_override();
-    s = (s + 1) % (CL_SCALE_MAX + 1);
+    if      (s == 0) s = 2;
+    else if (s == 2) s = 3;
+    else             s = 0;
     present_set_scale(s);
 }
 

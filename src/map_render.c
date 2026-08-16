@@ -45,12 +45,24 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
     if (cam_y < 0) cam_y = 0;
     if (cam_x > m->width  - CL_MAP_TILES_W) cam_x = m->width  - CL_MAP_TILES_W;
     if (cam_y > m->height - CL_MAP_TILES_H) cam_y = m->height - CL_MAP_TILES_H;
+    // A modern viewport grows with the window and can end up wider than the
+    // map itself, which makes the clamp above negative. Pin it back to the
+    // origin: the surplus tiles fall outside the map and are simply not drawn.
+    if (cam_x < 0) cam_x = 0;
+    if (cam_y < 0) cam_y = 0;
 
     // Scissor so partial tiles at the map boundary don't spill.
     BeginScissorMode(CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H);
 
-    // Fill unseen tiles as black.
+    // Fill unseen tiles as black. This also blacks out the sub-tile slack: in
+    // modern mode the pane is the whole interior of the frame, which is rarely
+    // an exact multiple of the tile, and a partial tile is never drawn.
     DrawRectangle(CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H, PAL_CLR(BLACK));
+
+    // Centre the whole-tile grid in the pane, so the leftover splits evenly
+    // either side and the hero still sits at the middle of the window.
+    const int ox = CL_MAP_X + (CL_MAP_W - CL_MAP_TILES_W * CL_TILE_W) / 2;
+    const int oy = CL_MAP_Y + (CL_MAP_H - CL_MAP_TILES_H * CL_TILE_H) / 2;
 
     for (int ty = 0; ty < CL_MAP_TILES_H; ty++) {
         for (int tx = 0; tx < CL_MAP_TILES_W; tx++) {
@@ -60,8 +72,8 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
             if (!FogSeen(f, mx, my)) continue;
             const Tile *t = MapGetTile(m, mx, my);
             if (!t) continue;
-            int px = CL_MAP_X + tx * CL_TILE_W;
-            int py = CL_MAP_Y + ty * CL_TILE_H;
+            int px = ox + tx * CL_TILE_W;
+            int py = oy + ty * CL_TILE_H;
             Rectangle dst = { (float)px, (float)py,
                               (float)CL_TILE_W, (float)CL_TILE_H };
             Texture2D tex = (Texture2D){ 0 };
@@ -108,8 +120,8 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
             if (bt.id) {
                 Rectangle bsrc = { 0, 0, (float)bt.width, (float)bt.height };
                 Rectangle bdst = {
-                    (float)(CL_MAP_X + bvx * CL_TILE_W),
-                    (float)(CL_MAP_Y + bvy * CL_TILE_H),
+                    (float)(ox + bvx * CL_TILE_W),
+                    (float)(oy + bvy * CL_TILE_H),
                     (float)CL_TILE_W, (float)CL_TILE_H };
                 DrawTexturePro(bt, bsrc, bdst, (Vector2){ 0, 0 }, 0.0f, WHITE);
             }
@@ -161,8 +173,8 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
             (float)hsprite.height
         };
         Rectangle hdst = {
-            (float)(CL_MAP_X + hero_vx * CL_TILE_W),
-            (float)(CL_MAP_Y + hero_vy * CL_TILE_H),
+            (float)(ox + hero_vx * CL_TILE_W),
+            (float)(oy + hero_vy * CL_TILE_H),
             (float)CL_TILE_W, (float)CL_TILE_H };
         DrawTexturePro(hsprite, hsrc, hdst, (Vector2){ 0, 0 }, 0.0f, WHITE);
     }
@@ -175,8 +187,8 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
             int my = cam_y + ty;
             if (mx < 0 || my < 0 || mx >= m->width || my >= m->height) continue;
             if (!FogSeen(f, mx, my)) continue;
-            int px = CL_MAP_X + tx * CL_TILE_W;
-            int py = CL_MAP_Y + ty * CL_TILE_H;
+            int px = ox + tx * CL_TILE_W;
+            int py = oy + ty * CL_TILE_H;
             static const int NDX[4] = { 0, 0,-1, 1 };
             static const int NDY[4] = {-1, 1, 0, 0 };
             for (int d = 0; d < 4; d++) {

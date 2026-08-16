@@ -2,6 +2,7 @@
 #define OB_COMBAT_RENDER_H
 
 #include "combat.h"
+#include "layout.h"
 #include "sprites.h"
 #include "resources.h"
 
@@ -32,11 +33,19 @@ void combat_format_title(const Combat *c, const Game *g, char *buf, int cap);
 //
 // 22 = CL_FRAME_TOP_H (8) + CL_STATUS_H (9) + CL_BAR_H (5)
 // 192 = CL_BOTTOM_Y; bottom 8 is the chrome strip.
-#define CL_COMBAT_X       16
-#define CL_COMBAT_Y       22
-#define CL_COMBAT_W       288
-#define CL_COMBAT_H       170
-#define CL_COMBAT_CELL_W  48    // 288 / COMBAT_W (=6)
-#define CL_COMBAT_CELL_H  34    // 170 / COMBAT_H (=5)
+// The 6x5 grid is a rule of the game and never changes. What changes is the
+// cell, which is one map tile, so combat sprites are the size the pack authored
+// them at. The field is centred in the chrome interior. In legacy that
+// arithmetic lands on exactly the historic numbers -- the grid is 288x170,
+// the interior is 288 wide and the map band 170 tall, so both offsets are
+// zero and the field sits at 16,22 as it always has.
+#define CL_COMBAT_CELL_W  CL_TILE_W
+#define CL_COMBAT_CELL_H  CL_TILE_H
+#define CL_COMBAT_W       (CL_COMBAT_CELL_W * COMBAT_W)
+#define CL_COMBAT_H       (CL_COMBAT_CELL_H * COMBAT_H)
+#define CL_COMBAT_X       (CL_FRAME_LEFT_W + \
+                           ((CL_SCREEN_W - CL_FRAME_LEFT_W - CL_FRAME_RIGHT_W) \
+                            - CL_COMBAT_W) / 2)
+#define CL_COMBAT_Y       (CL_MAP_Y + (CL_MAP_H - CL_COMBAT_H) / 2)
 
 #endif

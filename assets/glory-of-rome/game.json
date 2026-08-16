@@ -9,8 +9,7 @@
 		"tile_w":	96,
 		"tile_h":	68,
 		"tiles_w":	7,
-		"tiles_h":	7
-	},
+		"tiles_h":	7, "ui_scale": 2 },
 	"world":	{
 		"language":	"en",
 		"max_army_slots":	5,

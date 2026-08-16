@@ -151,6 +151,10 @@ typedef struct {
     RenderMode mode;
     int tile_w, tile_h;       // modern only; legacy forces 48x34
     int tiles_w, tiles_h;     // viewport in tiles; must be odd
+    int ui_scale;             // multiplies the font and the chrome bands. A pack
+                              // that doubles its tile must say so, or its
+                              // furniture stays at 320x200 size around giant
+                              // tiles. Legacy is 1.
 } ResRender;
 
 typedef struct {

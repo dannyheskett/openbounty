@@ -1,5 +1,6 @@
 #include "bfont.h"
 #include "assets.h"
+#include "layout.h"
 #include <stdio.h>
 
 static Texture2D g_font_tex;
@@ -24,10 +25,10 @@ static void bfont_patch_twirl_glyphs(Image *img) {
         { 0x1C, '\\' },  // backslash
     };
     for (size_t i = 0; i < sizeof(pairs) / sizeof(pairs[0]); i++) {
-        Rectangle src = { (float)(pairs[i].src_code * BFONT_GLYPH_W), 0.0f,
-                          (float)BFONT_GLYPH_W, (float)BFONT_GLYPH_H };
-        Rectangle dst = { (float)(pairs[i].dst_code * BFONT_GLYPH_W), 0.0f,
-                          (float)BFONT_GLYPH_W, (float)BFONT_GLYPH_H };
+        Rectangle src = { (float)(pairs[i].src_code * BFONT_SRC_GLYPH_W), 0.0f,
+                          (float)BFONT_SRC_GLYPH_W, (float)BFONT_SRC_GLYPH_H };
+        Rectangle dst = { (float)(pairs[i].dst_code * BFONT_SRC_GLYPH_W), 0.0f,
+                          (float)BFONT_SRC_GLYPH_W, (float)BFONT_SRC_GLYPH_H };
         ImageDraw(img, *img, src, dst, WHITE);
     }
 }
@@ -68,6 +69,10 @@ void bfont_shutdown(void) {
 
 bool bfont_ready(void) { return g_ready; }
 
+// The glyph is 8x8 in the strip and ui_scale times that on screen.
+int bfont_glyph_w(void) { return BFONT_SRC_GLYPH_W * g_layout.ui_scale; }
+int bfont_glyph_h(void) { return BFONT_SRC_GLYPH_H * g_layout.ui_scale; }
+
 int bfont_line_height(void) { return BFONT_GLYPH_H; }
 
 void bfont_draw(const char *text, int x, int y, Color c) {
@@ -82,8 +87,8 @@ void bfont_draw(const char *text, int x, int y, Color c) {
         }
         unsigned char ch = (unsigned char)*p;
         if (ch >= 128) ch = ' ';
-        Rectangle src = { (float)(ch * BFONT_GLYPH_W), 0.0f,
-                          (float)BFONT_GLYPH_W, (float)BFONT_GLYPH_H };
+        Rectangle src = { (float)(ch * BFONT_SRC_GLYPH_W), 0.0f,
+                          (float)BFONT_SRC_GLYPH_W, (float)BFONT_SRC_GLYPH_H };
         Rectangle dst = { (float)cx, (float)cy,
                           (float)BFONT_GLYPH_W, (float)BFONT_GLYPH_H };
         DrawTexturePro(g_font_tex, src, dst, (Vector2){ 0, 0 }, 0.0f, c);

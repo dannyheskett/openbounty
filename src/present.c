@@ -8,14 +8,12 @@
 static int s_scale_override = 0;
 
 void present_set_scale(int scale) {
+    // Never touches the window. Scale is pixel size, not window size: the
+    // buffer is drawn larger and present_scaled centres and letterboxes it.
+    // A 4K or 8K display is the case this exists for -- at 1x a 96px tile is
+    // tiny on such a panel, and 2x/3x make it comfortable without changing
+    // how much map is visible.
     s_scale_override = (scale > 0) ? scale : 0;
-    // Resizing is the point of the control. Clamping the choice to whatever the
-    // window already fits made every option collapse to the current scale, so
-    // the setting appeared to do nothing. Grow the window to match instead.
-    if (s_scale_override > 0 && IsWindowReady() && !IsWindowFullscreen()) {
-        SetWindowSize(CL_SCREEN_W * s_scale_override,
-                      CL_SCREEN_H * s_scale_override);
-    }
 }
 
 int present_get_scale_override(void) {
@@ -40,20 +38,26 @@ int present_scale(int win_w, int win_h) {
         return scale;
     }
 
-    // An explicit choice is honoured as given. The floor below is a default-
-    // sizing rule, not a veto on what the player asked for, and set_scale has
-    // already grown the window to match so the fit clamp normally agrees.
+    // Modern: Auto is the largest scale that still shows the pack's declared
+    // viewport. Staying at 1x would leave the chrome, the status font and the
+    // sidebar at 320x200 proportions on a 1920x1200 buffer -- a hairline frame
+    // and an 8px font around giant tiles. The viewport then grows into whatever
+    // the scale leaves over.
+    scale = layout_auto_scale(win_w, win_h);
     if (s_scale_override > 0) {
-        int fit = (sx < sy) ? sx : sy;
+        // Clamp against the SMALLEST viewport the layout will shrink to, not
+        // against the current screen size. The current size is derived from the
+        // scale, so measuring against it would feed back on itself: a larger
+        // scale shrinks the viewport, which shrinks the screen, which permits a
+        // larger scale. The minimum is fixed, so this terminates.
+        int min_w = CL_FRAME_LEFT_W + CL_TILE_W * CL_TILES_MIN
+                  + CL_SIDEBAR_W + CL_FRAME_RIGHT_W;
+        int min_h = CL_FRAME_TOP_H + CL_STATUS_H + CL_BAR_H
+                  + CL_TILE_H * CL_TILES_MIN + CL_FRAME_BOTTOM_H;
+        int fx = win_w / min_w, fy = win_h / min_h;
+        int fit = (fx < fy) ? fx : fy;
         if (fit < 1) fit = 1;
         scale = (s_scale_override < fit) ? s_scale_override : fit;
-    } else {
-        // Auto-fit. Floor first, then ceiling. The floor keeps a small screen
-        // legible and belongs to the geometry: 320x200 needs 2x to be usable,
-        // whereas a modern pack is already large and sits at 1:1. CL_SCALE is
-        // the pack's own starting scale.
-        int floor_scale = CL_SCALE;
-        if (scale < floor_scale) scale = floor_scale;
     }
 #if defined(__EMSCRIPTEN__)
     if (scale > CL_SCALE_MAX_WEB) scale = CL_SCALE_MAX_WEB;

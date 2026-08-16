@@ -1943,14 +1943,17 @@ bool resources_load(Resources *res, const char *manifest_path) {
             res->render.tile_h  = 34;
             res->render.tiles_w = 5;
             res->render.tiles_h = 5;
+            res->render.ui_scale = 1;
         } else if (strcmp(mode, "modern") == 0) {
             res->render.mode    = RENDER_MODE_MODERN;
             res->render.tile_w  = json_int(jr, "tile_w",  96);
             res->render.tile_h  = json_int(jr, "tile_h",  96);
             res->render.tiles_w = json_int(jr, "tiles_w",  7);
             res->render.tiles_h = json_int(jr, "tiles_h",  7);
+            res->render.ui_scale = json_int(jr, "ui_scale", 1);
         } else {
             res->render.mode = RENDER_MODE_NONE;
+            res->render.ui_scale = 1;
             fprintf(stdout,
                     "resources: pack declares no render.mode "
                     "(expected \"legacy\" or \"modern\")\n");
@@ -1960,12 +1963,15 @@ bool resources_load(Resources *res, const char *manifest_path) {
         // with RADIUS = tiles/2, and an even count leaves him half a tile off.
         if ((res->render.tiles_w % 2) == 0 || (res->render.tiles_h % 2) == 0 ||
             res->render.tiles_w < 3 || res->render.tiles_h < 3 ||
-            res->render.tile_w  < 8 || res->render.tile_h  < 8) {
+            res->render.tile_w  < 8 || res->render.tile_h  < 8 ||
+            res->render.ui_scale < 1 || res->render.ui_scale > 8) {
             fprintf(stdout,
                     "resources: render viewport must be odd and at least 3x3 "
-                    "with tiles at least 8px (got %dx%d tiles of %dx%d)\n",
+                    "with tiles at least 8px and ui_scale 1..8 "
+                    "(got %dx%d tiles of %dx%d, ui_scale %d)\n",
                     res->render.tiles_w, res->render.tiles_h,
-                    res->render.tile_w, res->render.tile_h);
+                    res->render.tile_w, res->render.tile_h,
+                    res->render.ui_scale);
             return false;
         }
     }
