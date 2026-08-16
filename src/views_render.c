@@ -128,21 +128,24 @@ static void draw_character(const Game *g, const Sprites *s) {
     // slots inside; artifact icons / zone tiles overlay when found.
     int inv_x = vx;
     int inv_y = VIEW_Y + portrait_h;
-    int item_w = vw / 6;             // 288/6 = 48
-    // A belt slot is 34 design units tall, not one map tile. Those coincide in
-    // legacy, and happen to coincide for Rome too, but only because its tile is
-    // exactly twice the legacy one -- CL_UI is what this actually depends on.
-    int item_h = 34 * CL_UI;
+    // A belt slot holds tile-shaped art -- artifact icons and zone map tiles --
+    // so it IS a tile. Centred, because 6 tiles is narrower than the panel once
+    // the tile stops being exactly a sixth of it. In legacy 6*48 == 288 == vw,
+    // so the offset is zero and this lands where it always did.
+    int item_w = CL_TILE_W;
+    int item_h = CL_TILE_H;
+    int belt_w = item_w * 6;
     int belt_h = item_h * 2;
+    inv_x += (vw - belt_w) / 2;
 
     // Inner fill: dark red (empty-slot color).
-    DrawRectangle(inv_x, inv_y, vw, belt_h, PAL_CLR(DRED));
+    DrawRectangle(inv_x, inv_y, belt_w, belt_h, PAL_CLR(DRED));
     // Light-grey outline + grid lines.
-    DrawRectangleLines(inv_x, inv_y, vw, belt_h, PAL_CLR(GREY));
+    DrawRectangleLines(inv_x, inv_y, belt_w, belt_h, PAL_CLR(GREY));
     for (int c = 1; c < 6; c++) {
         DrawRectangle(inv_x + c * item_w, inv_y, CL_UI, belt_h, PAL_CLR(GREY));
     }
-    DrawRectangle(inv_x, inv_y + item_h, vw, CL_UI, PAL_CLR(GREY));
+    DrawRectangle(inv_x, inv_y + item_h, belt_w, CL_UI, PAL_CLR(GREY));
 
     // Artifact grid: 4 cols x 2 rows. Only stamp icon when found.
     for (int i = 0; i < 8; i++) {
@@ -207,12 +210,13 @@ static void draw_army(const Game *g, const Sprites *s) {
     DrawRectangle(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DGREY));
     DrawRectangleLines(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DRED));
 
-    // Each row carries three lines of text beside its sprite, so the row has
-    // to clear 3 glyphs however the pack scales. 34 design units does that at
-    // any ui_scale (3 * 8 = 24 <= 34); the floor is belt-and-braces for a pack
-    // that ever ships a taller font.
+    // The row holds a troop sprite, so its height is a tile. It also carries
+    // three lines of text beside that sprite, so it must clear 3 glyphs however
+    // the pack scales -- hence the floor, which a short tile would otherwise
+    // violate. In legacy the tile is 34 and 3 glyphs are 24, so the floor never
+    // binds and the row is 34 as it always was.
     int pad = 2 * CL_UI;
-    int row_h = 34 * CL_UI;
+    int row_h = CL_TILE_H;
     if (row_h < 3 * GH + pad) row_h = 3 * GH + pad;
 
     // view_army tick-animates each troop's idle strip over however many
@@ -221,8 +225,8 @@ static void draw_army(const Game *g, const Sprites *s) {
 
     for (int i = 0; i < 5; i++) {
         int ry = VIEW_Y + pad + i * row_h;
-        int sprite_w = 48 * CL_UI;
-        int sprite_h = 34 * CL_UI;
+        int sprite_w = CL_TILE_W;
+        int sprite_h = CL_TILE_H;
 
         DrawRectangle(vx + pad, ry, sprite_w, sprite_h, PAL_CLR(DGREEN));
 
@@ -342,8 +346,9 @@ static void draw_contract(const Game *g, const Sprites *s) {
     if (!g->contract.active_id[0]) {
         // No contract: silhouette box top-left, "You have no Contract!"
         // centered in the remaining space.
-        int box_w = 48 * CL_UI;
-        int box_h = 34 * CL_UI;
+        // Tile-shaped: the silhouette is the same art the HUD panel shows.
+        int box_w = CL_TILE_W;
+        int box_h = CL_TILE_H;
         DrawRectangleLines(tx - CL_UI, ty - CL_UI,
                            box_w + 2 * CL_UI, box_h + 2 * CL_UI,
                            PAL_CLR(YELLOW));
@@ -379,8 +384,8 @@ static void draw_contract(const Game *g, const Sprites *s) {
                               s->villain_anim_frames[v->index]);
     Texture2D face = s->villain_anim[v->index][frame];
     if (!face.id) face = s->villain_portrait[v->index];
-    int face_w = 48 * CL_UI;
-    int face_h = 34 * CL_UI;
+    int face_w = CL_TILE_W;
+    int face_h = CL_TILE_H;
     ui_blit(face, tx, ty, face_w, face_h);
     DrawRectangleLines(tx - CL_UI, ty - CL_UI,
                        face_w + 2 * CL_UI, face_h + 2 * CL_UI,
@@ -500,14 +505,16 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
     // Cells span ONLY the map area (240x170), NOT the sidebar -- matches
     // . Each cell is 48x34, same as a map tile, so
     // the scepter terrain we draw underneath aligns to the tile grid.
-    // The grid belongs to the panel draw_view_panel just drew, so it comes
-    // from the content rect. Taking it from the map pane made the 5x5 grow
-    // with the window while its own panel did not, so it spilled over the
-    // panel border and across the sidebar.
-    int cell_w = VIEW_W / 5;     // 48
-    int cell_h = VIEW_H / 5;     // 34
-    int grid_x = VIEW_X;
-    int grid_y = VIEW_Y;
+    // Each cell holds tile-shaped art -- a villain portrait, an artifact icon,
+    // or a literal map tile from the scepter's zone -- so the cell is a tile,
+    // and the 5x5 is centred in the panel. Dividing the panel by 5 instead only
+    // agreed with the tile while the tile was exactly a fifth of it. In legacy
+    // 5*48 == 240 == VIEW_W and 5*34 == 170 == VIEW_H, so both offsets are zero
+    // and this lands on the historic grid.
+    int cell_w = CL_TILE_W;
+    int cell_h = CL_TILE_H;
+    int grid_x = VIEW_X + (VIEW_W - cell_w * 5) / 2;
+    int grid_y = VIEW_Y + (VIEW_H - cell_h * 5) / 2;
 
     puzzle_load_scepter_map(g);
 

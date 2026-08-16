@@ -88,14 +88,14 @@ void hud_draw(const Game *g, const Sprites *s) {
         // uncaught/unfound cell with a 2px inset within the panel,
         // leaving the underlying map-fragment art visible only on
         // caught/found cells.
-        // The cover art is authored against the legacy 48x34 panel, so it
-        // scales by however much bigger this pack's panel is. Legacy divides
-        // out to 1 and the numbers are the originals exactly.
-        int hs = CL_SIDEBAR_W / 48;
-        if (hs < 1) hs = 1;
-        int cw = s->puzzle_cover.width  * hs;   // 9
-        int ch = s->puzzle_cover.height * hs;   // 6
-        int inset = 2 * hs;
+        // The chip and its inset are authored against the legacy 48x34 panel,
+        // so they scale by this pack's panel over that one -- per axis, since a
+        // square tile stretches the panel differently in x and y. Legacy is
+        // 48/48 and 34/34, so the numbers come out as the originals exactly.
+        int cw    = 9 * CL_SIDEBAR_W / 48;
+        int ch    = 6 * CL_TILE_H    / 34;
+        int ins_x = 2 * CL_SIDEBAR_W / 48;
+        int ins_y = 2 * CL_TILE_H    / 34;
         for (int j = 0; j < 5; j++) {
             for (int i = 0; i < 5; i++) {
                 signed char id = PUZZLE_MAP[j][i];
@@ -103,8 +103,8 @@ void hud_draw(const Game *g, const Sprites *s) {
                 if (id < 0) caught = g->artifacts.found[-id - 1];
                 else        caught = g->contract.villains_caught[id];
                 if (caught) continue;
-                int cx = x + inset + i * cw;
-                int cy = y + inset + j * ch;
+                int cx = x + ins_x + i * cw;
+                int cy = y + ins_y + j * ch;
                 ui_blit(s->puzzle_cover, cx, cy, cw, ch);
             }
         }

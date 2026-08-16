@@ -3,18 +3,28 @@
 
 #include "raylib.h"
 
-// bitmap font. 8x8 glyphs in a 128-glyph strip, ASCII 0..127.
-// The strip PNG is white glyphs on transparent; draw tints the glyphs
-// with the given color.
-
-// The strip is 8x8 on disk. What these report is the glyph's size ON SCREEN,
-// which the pack scales with render.ui_scale -- an 8px glyph in a buffer three
-// times the size of the original design space is unreadable. Every caller
-// measures text with these, so scaling here scales all text layout with it.
-#define BFONT_SRC_GLYPH_W  8
-#define BFONT_SRC_GLYPH_H  8
+// bitmap font. A horizontal strip of BFONT_GLYPHS glyphs, ASCII 0..127,
+// white on transparent; draw tints them with the given colour.
+//
+// Two sizes, and they are not the same thing:
+//
+//   SOURCE size -- what the pack authored, measured off the strip itself
+//   (width / BFONT_GLYPHS). A pack may ship 8x8 as the original did, or a
+//   higher-resolution strip. Nothing but the source rectangle uses this.
+//
+//   ON-SCREEN size -- always 8 * render.ui_scale, and deliberately NOT tied to
+//   the source. The whole layout is measured in 8px design units (CL_STATUS_H,
+//   the panel column budgets, every row height), so this is a contract: change
+//   it and the layout moves. A pack that ships a source glyph equal to the
+//   on-screen size gets a crisp 1:1 blit; a smaller source is upscaled, which
+//   is what an 8x8 strip does at ui_scale > 1.
+#define BFONT_GLYPHS 128
+int bfont_src_glyph_w(void);
+int bfont_src_glyph_h(void);
 int bfont_glyph_w(void);
 int bfont_glyph_h(void);
+#define BFONT_SRC_GLYPH_W  (bfont_src_glyph_w())
+#define BFONT_SRC_GLYPH_H  (bfont_src_glyph_h())
 #define BFONT_GLYPH_W  (bfont_glyph_w())
 #define BFONT_GLYPH_H  (bfont_glyph_h())
 

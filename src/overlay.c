@@ -334,8 +334,10 @@ static void draw_location_backdrop(const Game *g, const Sprites *s,
         Texture2D ts = s->troop_anim[troop_idx][frame];
         if (!ts.id) ts = s->troop_sprite[troop_idx];
         if (ts.id && ts.width > 0) {
-            int tw = ts.width  * CL_UI;
-            int th = ts.height * CL_UI;
+            // Tile-shaped: this is the same troop sprite the combat field and
+            // the army roster draw, so it gets the same slot.
+            int tw = CL_TILE_W;
+            int th = CL_TILE_H;
             ui_blit(ts, bd_x + tw, bd_y + bd_h - th - troop_lift, tw, th);
         }
     }

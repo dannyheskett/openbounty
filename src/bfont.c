@@ -6,6 +6,15 @@
 static Texture2D g_font_tex;
 static bool      g_ready = false;
 
+// Measured off the strip at load: width / BFONT_GLYPHS. 8 for the original
+// 1024x8 font, 32 for a strip authored at ui_scale 4. Zero until bfont_init
+// runs, so the accessors fall back to 8 rather than divide by nothing.
+static int g_src_w = 0;
+static int g_src_h = 0;
+
+int bfont_src_glyph_w(void) { return g_src_w > 0 ? g_src_w : 8; }
+int bfont_src_glyph_h(void) { return g_src_h > 0 ? g_src_h : 8; }
+
 // places special glyph codepoints in the control-char range
 // ():
 //   \x1D pipe (twirl |)
@@ -49,6 +58,10 @@ bool bfont_init(const char *png_path) {
         g_ready = false;
         return false;
     }
+    // Measure the glyph before patching -- the patch copies glyph-sized
+    // rectangles around inside the strip and needs the size to do it.
+    g_src_w = (img.width > 0) ? img.width / BFONT_GLYPHS : 0;
+    g_src_h = img.height;
     bfont_patch_twirl_glyphs(&img);
     g_font_tex = LoadTextureFromImage(img);
     UnloadImage(img);
@@ -69,9 +82,12 @@ void bfont_shutdown(void) {
 
 bool bfont_ready(void) { return g_ready; }
 
-// The glyph is 8x8 in the strip and ui_scale times that on screen.
-int bfont_glyph_w(void) { return BFONT_SRC_GLYPH_W * g_layout.ui_scale; }
-int bfont_glyph_h(void) { return BFONT_SRC_GLYPH_H * g_layout.ui_scale; }
+// The on-screen glyph is 8 DESIGN UNITS times ui_scale -- deliberately not the
+// source size. The layout is measured in 8px units throughout, so this has to
+// stay put however the pack authors its strip; a higher-resolution source buys
+// sharpness, not bigger text.
+int bfont_glyph_w(void) { return 8 * g_layout.ui_scale; }
+int bfont_glyph_h(void) { return 8 * g_layout.ui_scale; }
 
 int bfont_line_height(void) { return BFONT_GLYPH_H; }
 
@@ -86,7 +102,7 @@ void bfont_draw(const char *text, int x, int y, Color c) {
             continue;
         }
         unsigned char ch = (unsigned char)*p;
-        if (ch >= 128) ch = ' ';
+        if (ch >= BFONT_GLYPHS) ch = ' ';
         Rectangle src = { (float)(ch * BFONT_SRC_GLYPH_W), 0.0f,
                           (float)BFONT_SRC_GLYPH_W, (float)BFONT_SRC_GLYPH_H };
         Rectangle dst = { (float)cx, (float)cy,
