@@ -215,7 +215,7 @@ static int take_line(const char **p, int max_chars,
 void prompt_draw(void) {
     if (g_kind == PK_NONE) return;
 
-    int row_h = BFONT_GLYPH_H + 1;
+    int row_h = BFONT_GLYPH_H + CL_UI;
     int pad = CL_PANEL_PAD_X;   // 1px: the panel holds exactly CL_PANEL_COLS glyphs
     //  draws KB_BottomFrame at a FIXED size: 30 chars
     // wide x 8 chars tall + a few extra pixels. Width matches the map

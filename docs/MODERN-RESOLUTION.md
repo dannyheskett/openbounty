@@ -160,9 +160,20 @@ PASS 5/5, 368 days, 8853.
 - **The black column under the sidebar.** Five stacked panels do not fill a tall
   pane. Accepted.
 
+## Verified by capture
+
+Rome at 1920x1040, and again at 900x620 to exercise the minimum-viewport
+fallback: character, army, contract, puzzle, spells, controls, options, world
+map, overworld, class select, dwelling/recruit, town, own castle, combat
+(including a castle siege), the end cartoon and the end-game win screen.
+
+Legacy is byte-identical to its pre-change baseline on every screen that does
+not animate.
+
 ## Outstanding
 
-- Screens still not captured because autoplay does not reliably reach them:
-  town, home castle, own castle, alcove, end game win/lose, end cartoon. Their
-  code went through the same conversion as the dwelling screen, which is
-  verified, but they have not been seen.
+- Three screens still unseen: the alcove, the home-castle throne room, and the
+  end-game lose screen. Each is built from two pieces that ARE verified --
+  `draw_location_backdrop` (seen in the dwelling, town and own-castle captures)
+  and the `CL_PANEL_*` rect (seen in every dialog) -- so they are correct by
+  construction, but nobody has looked at them.

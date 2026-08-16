@@ -785,7 +785,7 @@ static void draw_spells(const Game *g) {
     bfont_draw(ui->sv_adventure_col, col_r, head_y, PAL_CLR(YELLOW));
 
     int row_y = head_y + GH + 4;
-    int row_h = GH + 1;
+    int row_h = GH + CL_UI;
     for (int i = 0; i < 7; i++) {
         const SpellDef *sc = spell_by_index(i);
         const SpellDef *sa = spell_by_index(i + 7);

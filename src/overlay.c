@@ -426,12 +426,16 @@ static void draw_town(const Game *g, const Sprites *s) {
 
     // Menu panel: placed below the backdrop in the bottom-frame area.
     // Header is 2 rows (Town of NAME + GP=NK) 
-    int row_h = GH + 1;
-    int pad = 4;
+    int row_h = GH + CL_UI;
+    int pad = 4 * CL_UI;
     int lines = 2 /* header rows */ + rows;
-    int h = lines * row_h + 2 * pad + 4;
-    int w = CL_MAP_W + CL_SIDEBAR_W;
-    int x = CL_MAP_X;
+    int h = lines * row_h + 2 * pad + 4 * CL_UI;
+    // Sized from the content rect plus a sidebar, like every other location
+    // panel, so it lines up under the backdrop instead of spanning the whole
+    // pane. In legacy this is 288 wide at x=16 -- what it has always been.
+    int w = CL_CONTENT_W + CL_SIDEBAR_W;
+    int x = CL_FRAME_LEFT_W
+          + ((CL_SCREEN_W - CL_FRAME_LEFT_W - CL_FRAME_RIGHT_W) - w) / 2;
     int y = CL_MAP_Y + CL_MAP_H - h;
 
     draw_panel(x, y, w, h, PAL_CLR(DBLUE));
@@ -440,7 +444,7 @@ static void draw_town(const Game *g, const Sprites *s) {
     // : header rendered at `text->y - fs->h/4 - fs->h/8`,
     // a few pixels above the inner-text top.
     int ty = y + pad - row_h / 4 - row_h / 8;
-    if (ty < y + 1) ty = y + 1;
+    if (ty < y + CL_UI) ty = y + CL_UI;
 
     // Header row 1: "Town of <name>" (templates from strings.banners).
     const ResBanners *bn = (g && g->res) ? &g->res->banners : NULL;

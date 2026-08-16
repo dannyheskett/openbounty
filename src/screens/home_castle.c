@@ -99,7 +99,7 @@ void screen_home_castle_draw(const Game *g, const Sprites *s) {
     DrawRectangleLines(x, y, w, h, PAL_CLR(YELLOW));
 
     int pad = CL_PANEL_PAD_X;   // 1px: the panel holds exactly CL_PANEL_COLS glyphs
-    int row_h = BFONT_GLYPH_H + 1;
+    int row_h = BFONT_GLYPH_H + CL_UI;
 
     const char *body = g->res->banners.body_home_castle;
 
