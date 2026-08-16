@@ -27,17 +27,29 @@
 // returns false.
 bool present_refit(RenderTexture2D *rt);
 
-// The integer scale used for a window of this size: the largest whole
-// multiple of 320x200 that fits, clamped to [CL_SCALE_MIN, ceiling], where
-// the ceiling is CL_SCALE_MAX_WEB on web and CL_SCALE_MAX elsewhere
-// (layout.h). Pure arithmetic -- no GL, no window -- so it is testable on its
-// own.
+// The integer scale to blit at, for a window of this size. Pure arithmetic --
+// no GL, no window -- so it is testable on its own.
+//
+// LEGACY auto-fits, exactly as it did before render modes existed: the largest
+// whole multiple of 320x200 that fits, floored at CL_SCALE_MIN and capped at
+// CL_SCALE_MAX (CL_SCALE_MAX_WEB on web).
+//
+// MODERN does not auto-fit. The window decides how much you SEE -- resize it
+// and the viewport gains or loses whole tiles -- while the scale decides how
+// big a PIXEL is. At 1x, the default, one buffer pixel is one screen pixel and
+// the pack renders at the resolution it was authored for. Higher scales exist
+// for a 4K or 8K panel where 1:1 is too small; they never resize the window.
 int present_scale(int win_w, int win_h);
 
-// Runtime display scale. 0 restores auto-fit. Not persisted anywhere: it is a
+// The player's chosen scale, in whole pixels, floored at 1. Not persisted: a
 // per-machine viewing preference, not pack data and not game state.
 void present_set_scale(int scale);
-int  present_get_scale_override(void);
+int  present_get_scale(void);
+
+// Largest scale this window can show without dropping below the minimum
+// viewport. The Scale menu wraps here, so the label always matches what is
+// actually rendered.
+int  present_max_scale(int win_w, int win_h);
 
 // Begin the frame and blit `rt` to the window, integer-scaled and centred,
 // with black letterbox around it. Takes the render texture BY VALUE; most

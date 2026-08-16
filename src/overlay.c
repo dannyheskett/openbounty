@@ -688,8 +688,7 @@ static void draw_controls(const Game *g) {
 
         int sc = views_controls_scale_value();
         char val[16];
-        if (sc <= 0) snprintf(val, sizeof(val), "Auto");
-        else         snprintf(val, sizeof(val), "%dx", sc);
+        snprintf(val, sizeof(val), "%dx", sc);
         int vw = (int)bfont_measure(val).x;
         bfont_draw(val, x + w - pad - vw, ty, fg);
     }

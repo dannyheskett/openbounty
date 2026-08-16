@@ -930,21 +930,19 @@ bool views_controls_row_disabled(const struct Game *g, int row) {
 // The Scale row is not one of the pack's controls: it is appended by the shell
 // and backed by present.c, not by stats.options[]. Display scale belongs to the
 // machine looking at the game, and stats.options[] is serialized into saves.
-// Cycles Auto -> 1x -> 2x -> 3x -> 4x -> 5x -> Auto; present_scale() clamps the
-// choice to what the window can actually show.
+// Cycles 1x -> 2x -> ... -> the largest scale this window can show -> 1x.
+// There is no Auto: 1x is one buffer pixel to one screen pixel, which is what a
+// modern pack is authored for, and a bigger window shows more tiles rather than
+// bigger ones. Wrapping at the measured maximum rather than a constant is what
+// keeps the label honest -- an entry that the window cannot show would render
+// clamped and say something else.
 void views_controls_advance_scale(void) {
-    // Auto (= 1x, the pack's native size) -> 2x -> 3x -> Auto. Nothing beyond
-    // 3x: a 96px tile at 4x is 384 screen pixels, which no display makes
-    // useful, and the earlier six-entry cycle had four entries that did
-    // nothing because the window could not show them.
-    int s = present_get_scale_override();
-    if      (s == 0) s = 2;
-    else if (s == 2) s = 3;
-    else             s = 0;
+    int s = present_get_scale() + 1;
+    if (s > present_max_scale(GetScreenWidth(), GetScreenHeight())) s = 1;
     present_set_scale(s);
 }
 
-int views_controls_scale_value(void) { return present_get_scale_override(); }
+int views_controls_scale_value(void) { return present_get_scale(); }
 
 void views_controls_advance(struct Game *g, int row) {
     if (!g || !g->res) return;

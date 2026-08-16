@@ -689,9 +689,9 @@ int shell_run_game(int argc, char **argv) {
     InitWindow(base_w, base_h, res.title[0] ? res.title : "OpenBounty");
     SetWindowMinSize(320, 200);
     if (want_fullscreen) ToggleFullscreen();
-    // Modern starts on Auto, which fits the window: maximising on a large
-    // display should use it. 2x/3x are explicit overrides for a 4K panel where
-    // even a fitted image leaves the tiles small.
+    // Modern starts at 1x -- one buffer pixel to one screen pixel, the
+    // resolution the pack was authored for. Maximising shows more tiles rather
+    // than bigger ones; higher scales are an explicit choice for a 4K panel.
     // Demo mode paces itself via per-beat holds in shell_demo.c; the frame rate
     // stays at the human 60fps cap. Human play is 60fps too.
     SetTargetFPS(60);
@@ -709,8 +709,8 @@ int shell_run_game(int argc, char **argv) {
 
     // Fit the layout to the window before anything allocates a target. In
     // modern the buffer is the window divided by the scale; without this the
-    // startup screens get a target sized from the pack's declared viewport,
-    // which at the auto scale is taller than the window and clips.
+    // startup screens get a target sized from the pack's declared viewport
+    // rather than the actual window, and clip.
     layout_fit_window(GetScreenWidth(), GetScreenHeight(),
                       present_scale(GetScreenWidth(), GetScreenHeight()));
 

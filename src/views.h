@@ -131,7 +131,7 @@ bool views_controls_row_disabled(const struct Game *g, int row);
 // The shell-appended Scale row. Not pack data and not game state: it is a
 // runtime display preference held in present.c.
 void views_controls_advance_scale(void);
-int  views_controls_scale_value(void);   // 0 = Auto
+int  views_controls_scale_value(void);   // whole pixels; 1 = 1:1
 
 // ---- Spell casting (VIEW_SPELLS) -------------------------------------------
 // Enter interactive cast mode for the spell view.

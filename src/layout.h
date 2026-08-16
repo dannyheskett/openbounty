@@ -48,11 +48,6 @@ void layout_init(const struct Resources *res);
 // recreate the render target. The remainder is letterboxed by present_scaled.
 bool layout_fit_window(int win_w, int win_h, int scale);
 
-// Modern only: the largest integer scale at which the pack's declared viewport
-// still fits the window. This is what Auto uses. Scaling up rather than staying
-// at 1x is what keeps the chrome, the font and the sidebar in proportion with
-// the map -- they are fixed pixel furniture and do not grow with the tile.
-int layout_auto_scale(int win_w, int win_h);
 
 // Viewport bounds. The floor matches what fog reveals (a 5x5 square, see
 // FogReveal): a wider viewport would show tiles the game never uncovers from

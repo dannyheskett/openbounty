@@ -1,23 +1,46 @@
 #include "present.h"
 #include "layout.h"
 
-// Runtime display scale. 0 = auto-fit the window, which is the startup state.
-// Deliberately not persisted: it is a property of the machine looking at the
-// game, not of the pack and not of the save. The project writes no config file
-// and stats.options[] is serialized into saves, so neither is a home for it.
-static int s_scale_override = 0;
+// Runtime display scale, in whole pixels. 1 means one buffer pixel is one
+// screen pixel, which is the startup state and what a modern pack is authored
+// for. Deliberately not persisted: it is a property of the machine looking at
+// the game, not of the pack and not of the save. The project writes no config
+// file and stats.options[] is serialized into saves, so neither is a home.
+static int s_scale = 1;
 
 void present_set_scale(int scale) {
-    // Never touches the window. Scale is pixel size, not window size: the
-    // buffer is drawn larger and present_scaled centres and letterboxes it.
-    // A 4K or 8K display is the case this exists for -- at 1x a 96px tile is
-    // tiny on such a panel, and 2x/3x make it comfortable without changing
-    // how much map is visible.
-    s_scale_override = (scale > 0) ? scale : 0;
+    // Never touches the window. Scale is pixel size, not window size: a higher
+    // scale makes each pixel bigger and the viewport correspondingly smaller.
+    // A 4K or 8K display is the case this exists for -- at 1:1 a 96px tile is
+    // small on such a panel.
+    s_scale = (scale > 0) ? scale : 1;
 }
 
-int present_get_scale_override(void) {
-    return s_scale_override;
+int present_get_scale(void) {
+    return s_scale;
+}
+
+int present_max_scale(int win_w, int win_h) {
+    if (!CL_IS_MODERN) return CL_SCALE_MAX;
+    // Measured against the SMALLEST viewport the layout will shrink to, never
+    // against the current screen size. That size is itself derived from the
+    // scale, so measuring against it feeds back on itself: a larger scale
+    // shrinks the viewport, which shrinks the screen, which permits a larger
+    // scale. The minimum is fixed, so this terminates.
+    int min_w = CL_FRAME_LEFT_W + CL_TILE_W * CL_TILES_MIN
+              + CL_SIDEBAR_W + CL_FRAME_RIGHT_W;
+    int min_h = CL_FRAME_TOP_H + CL_STATUS_H + CL_BAR_H
+              + CL_TILE_H * CL_TILES_MIN + CL_FRAME_BOTTOM_H;
+    int fx = (min_w > 0) ? win_w / min_w : 1;
+    int fy = (min_h > 0) ? win_h / min_h : 1;
+    int fit = (fx < fy) ? fx : fy;
+    if (fit < 1) fit = 1;
+#if defined(__EMSCRIPTEN__)
+    if (fit > CL_SCALE_MAX_WEB) fit = CL_SCALE_MAX_WEB;
+#else
+    if (fit > CL_SCALE_MAX) fit = CL_SCALE_MAX;
+#endif
+    return fit;
 }
 
 int present_scale(int win_w, int win_h) {
@@ -38,33 +61,16 @@ int present_scale(int win_w, int win_h) {
         return scale;
     }
 
-    // Modern: Auto is the largest scale that still shows the pack's declared
-    // viewport. Staying at 1x would leave the chrome, the status font and the
-    // sidebar at 320x200 proportions on a 1920x1200 buffer -- a hairline frame
-    // and an 8px font around giant tiles. The viewport then grows into whatever
-    // the scale leaves over.
-    scale = layout_auto_scale(win_w, win_h);
-    if (s_scale_override > 0) {
-        // Clamp against the SMALLEST viewport the layout will shrink to, not
-        // against the current screen size. The current size is derived from the
-        // scale, so measuring against it would feed back on itself: a larger
-        // scale shrinks the viewport, which shrinks the screen, which permits a
-        // larger scale. The minimum is fixed, so this terminates.
-        int min_w = CL_FRAME_LEFT_W + CL_TILE_W * CL_TILES_MIN
-                  + CL_SIDEBAR_W + CL_FRAME_RIGHT_W;
-        int min_h = CL_FRAME_TOP_H + CL_STATUS_H + CL_BAR_H
-                  + CL_TILE_H * CL_TILES_MIN + CL_FRAME_BOTTOM_H;
-        int fx = win_w / min_w, fy = win_h / min_h;
-        int fit = (fx < fy) ? fx : fy;
-        if (fit < 1) fit = 1;
-        scale = (s_scale_override < fit) ? s_scale_override : fit;
-    }
-#if defined(__EMSCRIPTEN__)
-    if (scale > CL_SCALE_MAX_WEB) scale = CL_SCALE_MAX_WEB;
-#else
-    if (scale > CL_SCALE_MAX) scale = CL_SCALE_MAX;
-#endif
-    return scale;
+    // Modern renders pixel for pixel: at 1x one buffer pixel is one screen
+    // pixel, and it is the VIEWPORT that grows to fill a bigger window, not the
+    // pixels. There is no auto-fit -- a pack already sizes its own art and
+    // furniture through tile_w/tile_h and ui_scale, so scaling the buffer on
+    // top of that would enlarge everything twice.
+    //
+    // The setting is whatever the player chose, clamped to what the window can
+    // actually show so the menu's label never disagrees with the picture.
+    int fit = present_max_scale(win_w, win_h);
+    return (s_scale < fit) ? s_scale : fit;
 }
 
 bool present_refit(RenderTexture2D *rt) {

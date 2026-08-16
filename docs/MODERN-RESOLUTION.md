@@ -29,7 +29,7 @@ Three quantities, each with one job.
 |---|---|---|
 | `tile_w` / `tile_h` | the size of one map tile in buffer pixels | the pack |
 | `ui_scale` | multiplies the font and the chrome bands | the pack |
-| present scale | multiplies the whole buffer onto the window | Auto, or the player |
+| present scale | how many screen pixels one buffer pixel becomes | the player |
 
 The buffer is the window divided by the present scale. The chrome frame therefore
 reaches the window edge instead of a small image being centred in black.
@@ -70,19 +70,30 @@ calling it is why a resized window used to clip the class-select screen top and
 bottom: `main.c` fits once at launch, and nothing refit again until the main loop
 took over.
 
-The pack's `tiles_w`/`tiles_h` are the viewport it opens with and a floor for the
-Auto scale to respect, not a fixed size.
+The pack's `tiles_w`/`tiles_h` are the viewport it opens with, not a fixed size.
 
-### Auto
+### The scale is always a number, and 1x is 1:1
 
-Auto is the largest integer scale at which the *minimum* viewport (`CL_TILES_MIN`,
-5x5, matching what `FogReveal` uncovers) still fits the window. It measures
-against the minimum rather than the pack's declared viewport on purpose: measuring
-against the declared one makes `ui_scale` self-cancelling, because doubling the
-chrome grows the space the declared viewport needs, which drops the scale back to
-1 and leaves the tiles exactly as small as they started.
+There is no Auto. The two jobs are split cleanly:
 
-2x and 3x are manual overrides for a 4K or 8K panel. They never resize the window.
+**The window decides how much you see.** Resize it and the viewport gains or
+loses whole tiles. Nothing about the image gets bigger.
+
+**The scale decides how big a pixel is.** At 1x -- the default -- one buffer
+pixel is one screen pixel and the pack renders at the resolution it was authored
+for. 2x, 3x and up are for a 4K or 8K panel where 1:1 is too small; they never
+resize the window, so a higher scale means bigger pixels and fewer tiles.
+
+Auto used to pick the scale by measuring what fit. It existed because `ui_scale`
+did not: when the chrome could not grow, blowing up the whole buffer was the only
+way to make anything bigger. Now that a pack sizes its own furniture, an
+auto-scale on top of that enlarged everything twice -- Rome rendered a 96px tile
+at 192px on screen, from a 48x34 source.
+
+The menu cycles 1x up to `present_max_scale()`, the largest scale at which the
+window still holds the minimum viewport (`CL_TILES_MIN`, 5x5, matching what
+`FogReveal` uncovers), then wraps. Wrapping at the measured maximum rather than a
+constant is what stops the label reading `4x` while the renderer clamps to `2x`.
 
 ### Legacy is unchanged by construction
 
@@ -96,29 +107,31 @@ immediately for legacy.
 ## Worked example
 
 Rome on a 1920x1080 panel, maximised to a 1920x1040 client area.
-Tile 96x68, `ui_scale` 2.
+Tile 96x68, `ui_scale` 4, scale 1x.
 
 ```
-minimum viewport needs   32 + 96*5 + 96 + 32   =  640 wide
-                         60 + 68*5             =  400 tall
-auto scale               min(1920/640, 1040/400) = 2
-buffer                   960 x 520
-pane                     960 - 64 - 96 = 800    520 - 60 = 460
-viewport                 800/96 = 8 -> 7 odd    460/68 = 6 -> 5 odd
-on screen                tiles 192x136, font 32px, frame 64px
+buffer                   1920 x 1040            (the window itself)
+chrome                   frame 64, status 36, bar 20
+pane                     1920 - 64 - 96 - 64 = 1696
+                         1040 - 32 - 36 - 20 - 32 = 920
+viewport                 1696/96 = 17 odd       920/68 = 13 odd
+on screen                tiles 96x68, font 32px, frame 64px
 ```
+
+At 2x the same window gives a 960x520 buffer and a 7x5 viewport: the same
+picture, twice the size, less of the map.
 
 ## Files
 
 - `engine/include/resources.h`, `engine/resources.c` -- `render.ui_scale`, parsed
   and validated with the rest of the render block
 - `src/layout.h` -- bands as multiples of `CL_UI`; `CL_CONTENT_*`; `CL_PANEL_*`
-- `src/layout.c` -- `layout_fit_window`, `layout_auto_scale`
+- `src/layout.c` -- `layout_fit_window`
 - `src/ui.h`, `src/ui.c` -- `ui_blit`, `ui_blit_mirrored`
 - `src/present.h`, `src/present.c` -- `present_refit`
-- `src/bfont.h`, `src/bfont.c` -- `BFONT_SRC_GLYPH_*` is the 8x8 strip;
+- `src/bfont.h`, `src/bfont.c` -- `BFONT_SRC_GLYPH_*` is measured off the strip;
   `BFONT_GLYPH_*` is the on-screen size
-- `src/present.c` -- Auto and the 2x/3x override
+- `src/present.c` -- `present_scale`, `present_max_scale`
 - `src/map_render.c` -- centred tile grid, black remainder
 - `src/combat_render.h` -- cell is one tile, field centred
 - `src/views_render.c` -- views draw into the content rect

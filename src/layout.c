@@ -68,24 +68,6 @@ static int odd_clamp(int n) {
     return n;
 }
 
-int layout_auto_scale(int win_w, int win_h) {
-    if (!g_layout.is_modern) return 0;
-    // Measure against the SMALLEST viewport, not the pack's declared one. The
-    // declared viewport is a preference; the minimum is the guarantee. Using
-    // the declared one made ui_scale self-cancelling: doubling the chrome grew
-    // the space the declared viewport needed, which dropped the scale back to
-    // 1, which left the tiles exactly as small as before.
-    int need_w = CL_FRAME_LEFT_W + g_layout.tile_w * CL_TILES_MIN
-               + g_layout.sidebar_w + CL_FRAME_RIGHT_W;
-    int need_h = CL_FRAME_TOP_H + CL_STATUS_H + CL_BAR_H
-               + g_layout.tile_h * CL_TILES_MIN + CL_FRAME_BOTTOM_H;
-    int sx = win_w / need_w, sy = win_h / need_h;
-    int s = (sx < sy) ? sx : sy;
-    if (s < 1) s = 1;
-    if (s > CL_SCALE_MAX) s = CL_SCALE_MAX;
-    return s;
-}
-
 bool layout_fit_window(int win_w, int win_h, int scale) {
     if (!g_layout.is_modern) return false;   // legacy geometry is fixed
     if (scale < 1) scale = 1;
