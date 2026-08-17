@@ -687,7 +687,9 @@ int shell_run_game(int argc, char **argv) {
     unsigned int window_flags = FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT;
     SetConfigFlags(window_flags);
     InitWindow(base_w, base_h, res.title[0] ? res.title : "OpenBounty");
-    SetWindowMinSize(320, 200);
+    int min_w, min_h;
+    layout_min_window(&min_w, &min_h);
+    SetWindowMinSize(min_w, min_h);
     if (want_fullscreen) ToggleFullscreen();
     // Modern starts at 1x -- one buffer pixel to one screen pixel, the
     // resolution the pack was authored for. Maximising shows more tiles rather

@@ -1,5 +1,6 @@
 #include "layout.h"
 #include "resources.h"
+#include "combat.h"   // COMBAT_W / COMBAT_H -- the battlefield does not resize
 
 // Screen geometry is derived from the tile size, not declared alongside it.
 // The original 320x200 is exactly what this arithmetic produces for a 48x34
@@ -66,6 +67,35 @@ static int odd_clamp(int n) {
     if (n < CL_TILES_MIN) n = CL_TILES_MIN;
     if (n > CL_TILES_MAX) n = CL_TILES_MAX;
     return n;
+}
+
+void layout_min_window(int *out_w, int *out_h) {
+    // Two things set the floor, and the pack's tile size moves both, so this
+    // cannot be a constant:
+    //
+    //   The battlefield is a fixed COMBAT_W x COMBAT_H grid of one-tile cells.
+    //   Unlike the map viewport it cannot shed cells to fit a smaller window --
+    //   making it fit would mean scaling the combat screen separately, which is
+    //   a whole rendering path that does not exist.
+    //
+    //   The map viewport will not shrink below CL_TILES_MIN tiles plus the
+    //   one-tile sidebar.
+    //
+    // For the 48x34 pack these come out equal and give exactly 320x200 -- the
+    // value that used to be hardcoded -- because the sidebar is one tile wide,
+    // so CL_TILES_MIN + 1 == COMBAT_W. A pack that changes either number gets a
+    // floor that still holds.
+    int need_w = COMBAT_W * g_layout.tile_w;
+    int alt_w  = CL_TILES_MIN * g_layout.tile_w + g_layout.sidebar_w;
+    if (alt_w > need_w) need_w = alt_w;
+
+    int need_h = COMBAT_H * g_layout.tile_h;
+    int alt_h  = CL_TILES_MIN * g_layout.tile_h;
+    if (alt_h > need_h) need_h = alt_h;
+
+    if (out_w) *out_w = need_w + CL_FRAME_LEFT_W + CL_FRAME_RIGHT_W;
+    if (out_h) *out_h = need_h + CL_FRAME_TOP_H + CL_STATUS_H
+                      + CL_BAR_H + CL_FRAME_BOTTOM_H;
 }
 
 bool layout_fit_window(int win_w, int win_h, int scale) {

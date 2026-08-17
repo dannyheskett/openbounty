@@ -48,6 +48,12 @@ void layout_init(const struct Resources *res);
 // recreate the render target. The remainder is letterboxed by present_scaled.
 bool layout_fit_window(int win_w, int win_h, int scale);
 
+// The smallest window this pack can be played in, derived from its tile size.
+// Set as the window's minimum so the player cannot drag below it. The binding
+// constraint is the battlefield: it is a fixed grid of one-tile cells and has
+// no path that scales it, so the window must be able to hold it.
+void layout_min_window(int *out_w, int *out_h);
+
 
 // Viewport bounds. The floor matches what fog reveals (a 5x5 square, see
 // FogReveal): a wider viewport would show tiles the game never uncovers from

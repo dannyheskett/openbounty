@@ -31,15 +31,23 @@ static Color color_from_packed(unsigned int v) {
 }
 
 
-// The chrome bitmap is a picture frame: four edge bands of fixed thickness
-// (top/bottom CL_FRAME_TOP_H, left/right CL_FRAME_LEFT_W) around a transparent
-// interior. Stretching it to a larger screen smears those bands -- a 320x200
-// frame drawn across 800x506 gives a 20px top band and a misplaced border.
-//
-// So draw it as a nine-slice instead: corners at native size, edges repeated
-// along their length. Band thickness is preserved and the decorative pattern
-// keeps its pitch. A pack whose chrome already matches the screen (every legacy
-// pack) takes the 1:1 path and is untouched.
+// The bar strip under the status line. Repeated along its length rather than
+// stretched, for the same reason the frame's edge bands are: it is a pattern
+// with a pitch, and a screen-wide stretch smears it by however much wider the
+// window is than the source. Its height is the band's, CL_BAR_H, not the
+// texture's -- drawing at the texture height left a 5px strip in a 10px band
+// at ui_scale 2.
+static void draw_bar_strip(Texture2D tex) {
+    if (tex.id == 0 || tex.width <= 0) return;
+    const int h = CL_BAR_H;
+    for (int x = 0; x < CL_SCREEN_W; x += tex.width) {
+        int run = (x + tex.width > CL_SCREEN_W) ? (CL_SCREEN_W - x) : tex.width;
+        Rectangle src = { 0, 0, (float)run, (float)tex.height };
+        Rectangle dst = { (float)x, (float)CL_BAR_Y, (float)run, (float)h };
+        DrawTexturePro(tex, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+    }
+}
+
 static void draw_chrome_frame(Texture2D tex) {
     const int W = CL_SCREEN_W, H = CL_SCREEN_H;
     const int tw = tex.width, th = tex.height;
@@ -130,16 +138,7 @@ void chrome_draw_with_status(const Game *g, const Sprites *s,
         g ? g->character.difficulty : DIFFICULTY_NORMAL);
     DrawRectangle(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H,
                   status_bg);
-    if (s && s->hud_bar_strip.id) {
-        Rectangle src = { 0, 0,
-                          (float)s->hud_bar_strip.width,
-                          (float)s->hud_bar_strip.height };
-        Rectangle dst = { 0, (float)CL_BAR_Y,
-                          (float)CL_SCREEN_W,
-                          (float)s->hud_bar_strip.height };
-        DrawTexturePro(s->hud_bar_strip, src, dst,
-                       (Vector2){ 0, 0 }, 0.0f, WHITE);
-    }
+    if (s) draw_bar_strip(s->hud_bar_strip);
     if (s && s->chrome_overworld.id) {
         draw_chrome_frame(s->chrome_overworld);
     }
@@ -162,16 +161,7 @@ void chrome_draw(const Game *g, const Sprites *s) {
 
     // Middle bar (bar_strip.png) at y=17, 5px tall. 320 wide; the chrome
     // bitmap's side columns will paint over the outer 16px after this.
-    if (s && s->hud_bar_strip.id) {
-        Rectangle src = { 0, 0,
-                          (float)s->hud_bar_strip.width,
-                          (float)s->hud_bar_strip.height };
-        Rectangle dst = { 0, (float)CL_BAR_Y,
-                          (float)CL_SCREEN_W,
-                          (float)s->hud_bar_strip.height };
-        DrawTexturePro(s->hud_bar_strip, src, dst,
-                       (Vector2){ 0, 0 }, 0.0f, WHITE);
-    }
+    if (s) draw_bar_strip(s->hud_bar_strip);
 
     // Blit the chrome bitmap over everything. Its interior is transparent
     // so the status bar + bar strip drawn above remain visible.
