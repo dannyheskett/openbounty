@@ -121,17 +121,19 @@ convert build/art/troops_archers_00_03/02_sheet.png -crop 96x96 +repage build/ar
 ```
 
 ## troops_archmages_00_03
+
 **Replaces:** `troops/archmages_00.png`, `troops/archmages_01.png`, `troops/archmages_02.png`, `troops/archmages_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**Currently:** still generated 2026-09-03, accepted, at
+`build/art/troops_archmages_00_03/01_still.png` — 96x96, 37 colours, figure on
+rows 7-88, cols 11-75. The four pack files are still King's Bounty placeholder.
+Animation not yet run.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a winged Fury, a gaunt female spirit with dark feathered wings, snakes in her hair, clutching a burning torch, hovering
 
-*Original brief wording: a winged Fury, a gaunt female spirit with dark feathered wings, snakes in her hair, clutching a burning torch, hovering*
-
-
-**Step 1 — the still.** $0.18.
+**Step 1 — the still.** $0.18. Already run at seed 1020; this regenerates it.
 
 ```sh
 mkdir -p build/art/troops_archmages_00_03
@@ -150,17 +152,21 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_arch
 file build/art/troops_archmages_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — look at it.** At 1:1 and at 8x. For this subject, accept when:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- both wings are complete and inside the frame, not clipped by an edge
+- the snakes read as snakes in the hair at 1:1, not as a blur
+- the torch has a visible flame
+- both legs and feet are drawn
+- she hovers clear of the bottom row rather than standing on it
+- no armour and no shield: this troop has neither
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched,
+alpha intact; that is what makes the returned frames transparent.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_archmages_00_03/01_still.png)" \
-  '{prompt: "surging forward to strike, then drifting back",
+  '{prompt: "surging forward to strike with the burning torch, wings beating, then drifting back",
     prompt_style: "rd_advanced_animation__attack",
     width: 96, height: 96, num_images: 1,
     frames_duration: 4, return_spritesheet: true,
@@ -180,11 +186,20 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_arch
 file build/art/troops_archmages_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells,
+read left to right, top to bottom.
 
 ```sh
 convert build/art/troops_archmages_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_archmages_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_archmages_00_03/frame_0*.png   # four files, each 96x96
+```
+
+**Then copy into the pack:**
+
+```sh
+for i in 0 1 2 3; do
+  cp build/art/troops_archmages_00_03/frame_0$i.png assets/glory-of-rome/art/troops/archmages_0$i.png
+done
 ```
 
 ## troops_barbarians_00_03
