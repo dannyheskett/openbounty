@@ -41,6 +41,7 @@
 #include "map_render.h"
 #include "overlay.h"
 #include "input.h"
+#include "touch.h"
 #include "prompt.h"
 #include "startup.h"
 #include "end_cartoon.h"
@@ -1117,6 +1118,7 @@ int shell_run_game(int argc, char **argv) {
         } else if (views_active() == VIEW_CONTROLS) {
             // Navigate rows with Up/Down; digit keys 1..N jump to and
             // advance the matching row; ESC / any unhandled key closes.
+            touch_request(TOUCH_CHROME_BACK);
             int count = 0;
             int vis_map[8] = { 0 };
             int vis = 0;
@@ -1291,6 +1293,11 @@ int shell_run_game(int argc, char **argv) {
         } else if (dialog_is_active()) {
             // Handle bridge direction input if waiting for it
             if (bridge_state == BRIDGE_STATE_DIRECTION) {
+                // Touch: tap the target tile; ESC chrome cancels.
+                touch_region_map(CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H,
+                                 CL_TILE_W, CL_TILE_H,
+                                 CL_MAP_TILES_W / 2, CL_MAP_TILES_H / 2, 0);
+                touch_request(TOUCH_CHROME_BACK);
                 InputState in = input_poll();
                 if (in.dx != 0 || in.dy != 0) {
                     int built = try_build_bridge(&game, &map, in.dx, in.dy);
@@ -1355,6 +1362,15 @@ int shell_run_game(int argc, char **argv) {
         } else {
             // Standard adventure-mode bindings. No ESC->menu,
             // no TAB, no Space->HUD.
+            //
+            // Touch: the hero is always the centre tile of the viewport, so
+            // a tap picks its direction relative to centre -- one tap, one
+            // injected direction key, one step. The action bar carries the
+            // letter-key verbs.
+            touch_region_map(CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H,
+                             CL_TILE_W, CL_TILE_H,
+                             CL_MAP_TILES_W / 2, CL_MAP_TILES_H / 2, 0);
+            touch_request(TOUCH_CHROME_ADVENTURE);
             InputState in = input_poll();
             shell_dispatch_action(&sctx, &in);
             if (in.action == INPUT_ACTION_NONE && (in.dx || in.dy)) {

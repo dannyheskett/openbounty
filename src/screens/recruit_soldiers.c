@@ -16,6 +16,7 @@
 
 #include "input_host.h"
 #include "recruit_soldiers.h"
+#include "touch.h"
 #include "layout.h"
 #include "palette.h"
 #include "bfont.h"
@@ -166,6 +167,7 @@ static int recompute_max(const Game *g, int slot) {
 //   -1   ESC
 //   0    nothing
 static int poll_idle_input(void) {
+    touch_request(TOUCH_CHROME_BACK);
     if (input_key_pressed(KEY_ESCAPE)) return -1;
     for (int i = 0; i < 5; i++) {
         if (input_key_pressed(KEY_A + i)) return i + 1;
@@ -186,6 +188,8 @@ static int poll_idle_input(void) {
 //   2  ESC pressed: cancel (whom -> 0)
 //   0  still entering / nothing this frame
 static int poll_count_input(void) {
+    touch_request(TOUCH_CHROME_BACK);
+    touch_request(TOUCH_CHROME_DIGITS);
     if (input_key_pressed(KEY_ESCAPE)) return 2;
     if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER)) return 1;
     if (input_key_pressed(KEY_BACKSPACE) && s_input_len > 0) {
@@ -230,6 +234,7 @@ bool screen_recruit_soldiers_update(Game *g) {
     // the player presses any key. Don't consume the key on the same
     // frame the popup opened.
     if (s_error_msg[0]) {
+        touch_region_any(KEY_ENTER);   // tap dismisses the error popup
         if (s_error_just_set) {
             s_error_just_set = false;
         } else if (input_get_key_pressed() != 0) {
@@ -365,6 +370,11 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
                      'A' + i, t->name, t->recruit_cost);
         }
         bfont_draw(line, tx, troop_ty + i * row_h, PAL_CLR(WHITE));
+        // Touch: rows answer to their letters (only while idle -- during
+        // count entry the digit pad owns input).
+        if (s_whom == 0 && !unreachable)
+            touch_region(tx, troop_ty + i * row_h,
+                         20 * BFONT_GLYPH_W, row_h, KEY_A + i);
     }
 
     // ---- RIGHT SIDE ---------------------------------------------------

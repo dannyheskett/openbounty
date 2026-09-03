@@ -1,6 +1,7 @@
 #include "frame_host.h"
 #include "input_host.h"
 #include "startup.h"
+#include "touch.h"
 #include "layout.h"
 #include "present.h"
 #include "palette.h"
@@ -91,11 +92,15 @@ static void drain_char_queue(void) {
 // select screen and exit the program.
 static void advance_input_frame(void) {
     PollInputEvents();
+    // Injected (touch) keys have the same one-frame-edge hazard: an ESC
+    // injected for this screen must not re-fire in the next screen's loop.
+    input_host_clear_injected();
 }
 
 // Helper: true if any key was pressed this frame (other than pure
 // modifier keys).  behavior.
 static bool any_key_pressed(void) {
+    touch_region_any(KEY_ENTER);   // a tap counts as any key
     int k = input_get_key_pressed();
     while (k != 0) {
         if (k != KEY_LEFT_SHIFT && k != KEY_RIGHT_SHIFT &&
@@ -184,6 +189,10 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
 
     while (!frame_host_should_close()) {
         // ---- Input ---------------------------------------------------
+        touch_request(TOUCH_CHROME_BACK);
+        // Touch: tapping a row selects and confirms it in one go.
+        int tapped = touch_tapped_row(TOUCH_LIST_STARTUP);
+        if (tapped >= 0 && tapped < row_count) cursor = tapped;
         if (input_key_pressed(KEY_ESCAPE)) {
             // ESC on save picker returns to class select, not quit.
             out->action = STARTUP_BACK;
@@ -196,7 +205,8 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
         if (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2)) {
             cursor = (cursor + 1) % row_count;
         }
-        if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
+        if (tapped >= 0 ||
+            input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
             input_key_pressed(KEY_SPACE)) {
             if (cursor == new_row) {
                 // Find first empty slot for the new game; player can
@@ -262,6 +272,7 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
                 snprintf(line, sizeof(line), "%2d. %s", i + 1, empty_lbl);
             }
             bfont_draw(line, x + pad, ty, fg);
+            touch_region_row(x, ty, w, row_h, TOUCH_LIST_STARTUP, i);
             ty += row_h;
         }
         // "New game" row -- slot index `new_row == SAVE_SLOT_COUNT`, one row
@@ -273,6 +284,7 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
         snprintf(ng_line, sizeof ng_line, "    %s",
                  ui->startup_save_picker_new_game);
         bfont_draw(ng_line, x + pad, ty, nfg);
+        touch_region_row(x, ty, w, row_h, TOUCH_LIST_STARTUP, new_row);
 
         // Hint fits in the 33-char content width (280 - 2*pad).
         // Source: res.ui.startup_controls_hint (game.json strings.startup).
@@ -298,11 +310,12 @@ static bool run_class_select(const Resources *res,
     if (n > 4) n = 4;
 
     while (!frame_host_should_close()) {
+        touch_request(TOUCH_CHROME_BACK);
         if (input_key_pressed(KEY_ESCAPE)) {
             out->action = STARTUP_QUIT;
             return false;
         }
-        // L for Load 
+        // L for Load
         if (input_key_pressed(KEY_L)) {
             out->action = STARTUP_LOAD;
             drain_char_queue();   // don't leak the 'L' into name entry
@@ -331,8 +344,13 @@ static bool run_class_select(const Resources *res,
         if (sprites && sprites->class_picker.id) {
             pw = sprites->class_picker.width  * CL_UI;
             ph = sprites->class_picker.height * CL_UI;
-            ui_blit(sprites->class_picker,
-                    (CL_SCREEN_W - pw) / 2, (CL_SCREEN_H - ph) / 2, pw, ph);
+            int px = (CL_SCREEN_W - pw) / 2;
+            int py = (CL_SCREEN_H - ph) / 2;
+            ui_blit(sprites->class_picker, px, py, pw, ph);
+            // Touch: the picker art shows the classes side by side, one
+            // column each; tapping a column picks that class (A-D).
+            for (int k = 0; k < n; k++)
+                touch_region(px + k * (pw / n), py, pw / n, ph, KEY_A + k);
         } else {
             // Fallback: text list if asset missing.
             bfont_draw(res->ui.startup_class_picker_missing,
@@ -399,6 +417,7 @@ static bool run_create_game(const Resources *res,
     const int n = 4;
 
     while (!frame_host_should_close()) {
+        touch_request(TOUCH_CHROME_BACK);
         if (input_key_pressed(KEY_ESCAPE)) {
             // ESC on new-game screen returns to class select, not quit.
             out->action = STARTUP_BACK;
@@ -406,7 +425,10 @@ static bool run_create_game(const Resources *res,
             return true;
         }
 
+        int tapped = touch_tapped_row(TOUCH_LIST_STARTUP);
         if (!has_name) {
+            // Touch: on-screen keyboard feeds the same char queue.
+            touch_request(TOUCH_CHROME_KEYBOARD);
             // Name entry phase. Enter confirms; BACKSPACE deletes; alpha/
             // digit/space appends.
             if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER)) {
@@ -442,13 +464,16 @@ static bool run_create_game(const Resources *res,
             // Difficulty selection phase. Arrows clamp :
             //   sel--; if (sel < 0) sel = 0;
             //   sel++; if (sel > 3) sel = 3;
+            // Touch: tapping a difficulty row selects and accepts it.
+            if (tapped >= 0 && tapped < n) sel = tapped;
             if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_KP_8)) {
                 if (sel > 0) sel--;
             }
             if (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2)) {
                 if (sel < n - 1) sel++;
             }
-            if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER)) {
+            if (tapped >= 0 ||
+                input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER)) {
                 out->difficulty = rows[sel].diff;
                 safe_copy(out->name, sizeof(out->name), name_buf);
                 out->action = STARTUP_NEW;
@@ -505,6 +530,9 @@ static bool run_create_game(const Resources *res,
             snprintf(line, sizeof(line), "   %-11s %3d    %s",
                      rows[i].label, days, rows[i].score);
             bfont_draw(line, x + GW, ROW_Y(5 + i), PAL_CLR(WHITE));
+            if (has_name)
+                touch_region_row(x, ROW_Y(5 + i), w, GH,
+                                 TOUCH_LIST_STARTUP, i);
         }
 
         // After has_name: draw the ">" cursor at col 0 of the selected row,

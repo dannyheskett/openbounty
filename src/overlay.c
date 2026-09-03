@@ -1,4 +1,5 @@
 #include "overlay.h"
+#include "touch.h"
 #include "layout.h"
 #include "palette.h"
 #include "views.h"
@@ -255,6 +256,7 @@ static void draw_menu(void) {
 
         if (sel) bfont_draw(">", tx, ty, PAL_CLR(YELLOW));
         bfont_draw(buf, tx + GW + 4 * CL_UI, ty, fg);
+        touch_region_row(x, ty, w, row_h, TOUCH_LIST_MENU, i);
         ty += row_h;
     }
 }
@@ -488,6 +490,11 @@ static void draw_town(const Game *g, const Sprites *s) {
         bool sel = (r == cursor);
         Color fg = sel ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
         bfont_draw(row, tx, ty, fg);
+        // Touch: rows answer to their letters directly. Only while the
+        // menu is showing -- with the info popup up, any tap dismisses it
+        // (the update fn's any-key path), so no row regions then.
+        if (!info || !info[0])
+            touch_region(x, ty, w, row_h, KEY_A + r);
         ty += row_h;
     }
 
@@ -652,6 +659,8 @@ static void draw_controls(const Game *g) {
         snprintf(label, sizeof(label), "%c %s",
                  '1' + k, g->res->controls.items[i].label);
         bfont_draw(label, tx, ty, fg);
+        // Touch: rows answer to their digit (select + advance in one).
+        touch_region(x, ty, w, GH + 2, KEY_ONE + k);
 
         int val = g->stats.options[i];
         const char *type = g->res->controls.items[i].type;
@@ -685,6 +694,7 @@ static void draw_controls(const Game *g) {
         char label[48];
         snprintf(label, sizeof(label), "%c Scale", '1' + vis);
         bfont_draw(label, tx, ty, fg);
+        touch_region(x, ty, w, GH + 2, KEY_ONE + vis);
 
         int sc = views_controls_scale_value();
         char val[16];

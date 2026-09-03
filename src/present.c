@@ -1,5 +1,11 @@
 #include "present.h"
 #include "layout.h"
+#include "touch.h"
+
+// The blit rect of the last present_scaled, in window pixels, and the scale
+// it used. This is what turns a tap's window position back into design-space
+// pixels, and what the touch chrome lays itself out around.
+static int s_dst_x, s_dst_y, s_dst_w, s_dst_h, s_dst_scale = 1;
 
 // Runtime display scale, in whole pixels. 1 means one buffer pixel is one
 // screen pixel, which is the startup state and what a modern pack is authored
@@ -104,4 +110,35 @@ void present_scaled(RenderTexture2D rt) {
                       (float)((win_h - dst_h) / 2),
                       (float)dst_w, (float)dst_h };
     DrawTexturePro(rt.texture, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+
+    present_store_dst((int)dst.x, (int)dst.y, dst_w, dst_h, scale);
+
+    // Touch chrome draws over the letterbox, in window pixels, after the
+    // game's frame. It renders nothing unless a screen requested chrome
+    // this frame AND a touch has been seen, so every present_scaled caller
+    // (main loop, startup, combat, cartoon, autoplay, encode) gets it
+    // without change and desktop output is untouched.
+    touch_draw_chrome();
+}
+
+void present_store_dst(int x, int y, int w, int h, int scale) {
+    s_dst_x = x; s_dst_y = y;
+    s_dst_w = w; s_dst_h = h;
+    s_dst_scale = scale;
+}
+
+bool present_window_to_screen(int wx, int wy, int *sx, int *sy) {
+    if (s_dst_w <= 0 || s_dst_h <= 0 || s_dst_scale <= 0) return false;
+    if (wx < s_dst_x || wy < s_dst_y ||
+        wx >= s_dst_x + s_dst_w || wy >= s_dst_y + s_dst_h) return false;
+    if (sx) *sx = (wx - s_dst_x) / s_dst_scale;
+    if (sy) *sy = (wy - s_dst_y) / s_dst_scale;
+    return true;
+}
+
+void present_last_dst(int *x, int *y, int *w, int *h) {
+    if (x) *x = s_dst_x;
+    if (y) *y = s_dst_y;
+    if (w) *w = s_dst_w;
+    if (h) *h = s_dst_h;
 }

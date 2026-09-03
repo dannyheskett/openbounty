@@ -61,4 +61,19 @@ int  present_max_scale(int win_w, int win_h);
 // on differ between them.
 void present_scaled(RenderTexture2D rt);
 
+// Map a window-pixel position to design-space pixels, using the dst rect the
+// last present_scaled call actually blitted to. Returns false outside the
+// game area (in the letterbox). Pure arithmetic over stored values, so the
+// mapping is testable without a window.
+bool present_window_to_screen(int wx, int wy, int *sx, int *sy);
+
+// The letterboxed blit rect from the last present_scaled call, in window
+// pixels. The touch layer lays its chrome out around this.
+void present_last_dst(int *x, int *y, int *w, int *h);
+
+// Record the blit rect + scale the mapping above reads. Called by
+// present_scaled with what it actually drew; public so tests can exercise
+// present_window_to_screen without a window.
+void present_store_dst(int x, int y, int w, int h, int scale);
+
 #endif

@@ -1,5 +1,6 @@
 #include "input_host.h"
 #include "views.h"
+#include "touch.h"
 #include "present.h"
 #include "layout.h"
 #include "player_io.h"   // engine views arrive via the player-IO queue
@@ -44,6 +45,15 @@ int views_spells_chosen(void) {
 
 bool views_spells_update(void) {
     if (!spell_state.active) return false;
+    touch_request(TOUCH_CHROME_BACK);
+    // Touch: a tapped cell carries its column, so one tap casts.
+    int tapped = touch_tapped_row(TOUCH_LIST_SPELLS);
+    if (tapped >= 0) {
+        spell_state.column = tapped / 7;
+        spell_state.chosen = tapped;
+        views_dismiss();
+        return true;
+    }
     if (input_key_pressed(KEY_LEFT))  spell_state.column = 0;
     if (input_key_pressed(KEY_RIGHT)) spell_state.column = 1;
     if (input_key_pressed(KEY_ESCAPE)) {
@@ -106,6 +116,13 @@ bool views_gate_update(void) {
     if (n <= 0) return false;
     int left = (n + 1) / 2;   // rows in the left column (matches the renderer)
 
+    touch_request(TOUCH_CHROME_BACK);
+    int tapped = touch_tapped_row(TOUCH_LIST_GATE);
+    if (tapped >= 0 && tapped < n) {
+        gate_view.chosen = tapped;
+        views_dismiss();
+        return true;
+    }
     if (input_key_pressed(KEY_ESCAPE)) {
         views_dismiss();
         return false;
@@ -396,6 +413,11 @@ bool views_menu_update(const MenuCallbacks *cbs, void *userdata) {
     MenuFrame *f = &menu_stack[menu_depth - 1];
     int n = f->page->count;
 
+    touch_request(TOUCH_CHROME_BACK);
+    // Touch: a tapped row selects and confirms in one go.
+    int tapped = touch_tapped_row(TOUCH_LIST_MENU);
+    if (tapped >= 0 && tapped < n) f->cursor = tapped;
+
     if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_W) || input_key_pressed(KEY_KP_8)) {
         f->cursor = (f->cursor - 1 + n) % n;
         return true;
@@ -404,7 +426,8 @@ bool views_menu_update(const MenuCallbacks *cbs, void *userdata) {
         f->cursor = (f->cursor + 1) % n;
         return true;
     }
-    if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
+    if (tapped >= 0 ||
+        input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
         input_key_pressed(KEY_SPACE)) {
         const MenuEntry *e = &f->page->entries[f->cursor];
         switch (e->kind) {
@@ -775,8 +798,11 @@ static void town_do_row(Game *g, TownRow r) {
 bool views_town_update(Game *g) {
     if (view_stack_top() != VIEW_TOWN) return false;
 
+    touch_request(TOUCH_CHROME_BACK);
+
     if (town.info_active) {
         // Any key dismisses the info panel and returns to the menu.
+        touch_region_any(KEY_ENTER);
         if (input_key_pressed(KEY_ESCAPE) || input_key_pressed(KEY_ENTER) ||
             input_key_pressed(KEY_KP_ENTER) || input_key_pressed(KEY_SPACE)) {
             town.info_active = false;

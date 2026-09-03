@@ -1,4 +1,5 @@
 #include "views.h"
+#include "touch.h"
 #include "layout.h"
 #include "palette.h"
 #include "bfont.h"
@@ -806,11 +807,17 @@ static void draw_spells(const Game *g) {
             snprintf(buf, sizeof(buf), "%2d %c %s",
                      cc, (char)('A' + i), sc->name);
             bfont_draw(buf, col_l, row_y + i * row_h, lc);
+            touch_region_row(VIEW_X + VIEW_PAD, row_y + i * row_h,
+                             VIEW_W / 2 - VIEW_PAD, row_h,
+                             TOUCH_LIST_SPELLS, i);
         }
         if (sa) {
             snprintf(buf, sizeof(buf), "%c %-12s %2d",
                      (char)('A' + i), sa->name, ca);
             bfont_draw(buf, col_r, row_y + i * row_h, rc);
+            touch_region_row(VIEW_X + VIEW_W / 2, row_y + i * row_h,
+                             VIEW_W / 2 - VIEW_PAD, row_h,
+                             TOUCH_LIST_SPELLS, 7 + i);
         }
     }
 }
@@ -865,6 +872,8 @@ static void draw_gate(void) {
                      sel ? ">" : " ", key,
                      GATE_NAME_COL, d->name);
             bfont_draw(buf, x, y, fg);
+            touch_region_row(x, y, vw / 2 - VIEW_PAD, row_h,
+                             TOUCH_LIST_GATE, idx);
         }
     }
 

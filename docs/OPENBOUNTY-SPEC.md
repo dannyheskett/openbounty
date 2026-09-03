@@ -1861,6 +1861,25 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   Meta keys: Alt+Enter fullscreen, backtick screenshot
   (`screenshots/shot_NNNN.png`, `src/screenshot.c`), `Q` save-and-quit,
   `Ctrl+Q` fast quit (`src/shell_fastquit.c`).
+- **REQ-442.** **Touch/pointer input** (`src/touch.c`) translates taps into
+  synthetic key events injected at the `input_host` shim
+  (`input_host_inject_key/_char`), so every screen keeps its keyboard
+  handling and the recorder/replay see a keyboard-shaped input stream.
+  Screens register per-frame tap regions while they run: plain rects mapped
+  to a key, cursor-list rows (`touch_region_row`/`touch_tapped_row`), the
+  adventure/combat tile viewport (tap → direction key relative to the centre
+  tile / active unit; hold repeats one discrete keypress per beat), and the
+  combat picker grid (tap → cursor jump + confirm). Injected keys are
+  one-frame edges cleared by `touch_frame()`, which runs from
+  `frame_host_end_frame()` after the poll/yield.
+- **REQ-443.** **Touch chrome**: on-screen buttons (adventure/combat action
+  bars, ESC, Yes/No / 1-N / A-B prompt bars, digit pad, A-Z keyboard for
+  name entry) are drawn by `touch_draw_chrome()` from `present_scaled`, in
+  window pixels over the letterbox margins, outside the design-space render
+  target. Chrome renders only after a real touch contact has been seen
+  (`input_touch_active`); keyboard/mouse desktop sessions are pixel-identical
+  to the pre-touch build. Tap positions map back to design space via
+  `present_window_to_screen` (inverse of the letterboxed integer-scale blit).
 
 ---
 

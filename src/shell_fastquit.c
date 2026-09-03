@@ -2,6 +2,7 @@
 
 #include "input_host.h"
 #include "shell_fastquit.h"
+#include "touch.h"
 
 #include "raylib.h"
 #include "input.h"
@@ -17,6 +18,7 @@ bool main_fast_quit_active(void)  { return s_active; }
 
 bool fast_quit_tick(void) {
     if (!s_active) return false;
+    touch_request_prompt_yesno();
     if (input_key_pressed(KEY_Y)) {
         s_active = false;
         return true;

@@ -2,6 +2,7 @@
 #include "input_host.h"
 #include "ui_host.h"
 #include "ui.h"
+#include "touch.h"
 #include "overlay.h"     // overlay_dialog_page_count (renderer owns the wrap)
 #include "player_io.h"   // engine player-IO message queue
 #include "raylib.h"
@@ -29,6 +30,9 @@ void ui_blit_mirrored(Texture2D t, int x, int y, int w, int h) {
 
 // ---- any-key helper --------------------------------------------------------
 bool ui_any_key_pressed(void) {
+    // Every caller means "any key advances/dismisses", so a tap anywhere
+    // counts as one. Explicit touch regions still win over this.
+    touch_region_any(KEY_ENTER);
     int k = input_get_key_pressed();
     while (k != 0) {
         if (k != KEY_LEFT_SHIFT && k != KEY_RIGHT_SHIFT &&

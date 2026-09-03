@@ -1,4 +1,5 @@
 #include "frame_host.h"
+#include "touch.h"
 #include "raylib.h"
 
 #if defined(__EMSCRIPTEN__)
@@ -41,4 +42,9 @@ void frame_host_yield(void) {
 void frame_host_end_frame(void) {
     EndDrawing();
     frame_host_yield();
+    // Touch runs here so it exists in every loop that reads input: the
+    // pointer state is fresh (post-poll, post-yield), the frame just drawn
+    // has registered its regions, and any key injected now is a clean edge
+    // for the read at the top of the next loop iteration.
+    touch_frame();
 }

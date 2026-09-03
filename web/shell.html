@@ -15,7 +15,9 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- user-scalable=no: pinch/double-tap zoom would fight the game's own
+       taps; the canvas is the whole page, so browser zoom has no use here. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>OpenBounty</title>
   <style>
     html, body {
@@ -27,6 +29,8 @@
       color: #c0c0c0;
       font-family: monospace;
       overflow: hidden;
+      /* No pull-to-refresh / overscroll bounce eating a drag on the map. */
+      overscroll-behavior: none;
     }
     #wrap {
       display: flex;
@@ -45,6 +49,11 @@
       image-rendering: pixelated;
       image-rendering: crisp-edges;
       outline: none;
+      /* Every touch belongs to the game: no browser panning/zooming from
+         gestures that start on the canvas, no long-press callout. */
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
     }
     #status {
       padding: 1em;

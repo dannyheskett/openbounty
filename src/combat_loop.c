@@ -7,6 +7,7 @@
 
 #include "frame_host.h"
 #include "input_host.h"
+#include "touch.h"
 #include "combat.h"
 #include "combat_loop.h"
 #include "combat_render.h"
@@ -41,6 +42,25 @@ bool combat_pick_step(Combat *c, const Game *g, const Sprites *sprites,
                       int *out_x, int *out_y, bool *out_cancelled) {
     (void)g; (void)sprites; (void)render_target;
     if (out_cancelled) *out_cancelled = false;
+
+    // Touch: tap a cell to jump the cursor there; if the cell passes the
+    // pick filter it confirms in the same tap. ESC chrome cancels.
+    touch_request(TOUCH_CHROME_BACK);
+    touch_region_grid(CL_COMBAT_X, CL_COMBAT_Y,
+                      COMBAT_W * CL_COMBAT_CELL_W, COMBAT_H * CL_COMBAT_CELL_H,
+                      CL_COMBAT_CELL_W, CL_COMBAT_CELL_H, TOUCH_GRID_COMBAT);
+    int tcx, tcy;
+    if (touch_tapped_cell(TOUCH_GRID_COMBAT, &tcx, &tcy) &&
+        combat_in_bounds(tcx, tcy)) {
+        c->cursor_x = tcx;
+        c->cursor_y = tcy;
+        if (combat_cell_passes_filter(c, tcx, tcy, c->side, c->pick_filter)) {
+            if (out_x) *out_x = tcx;
+            if (out_y) *out_y = tcy;
+            return true;
+        }
+        return false;
+    }
 
     int dx = 0, dy = 0;
     if      (input_key_pressed(KEY_UP)    || input_key_pressed(KEY_KP_8)) dy = -1;
@@ -118,6 +138,7 @@ int combat_cast_step(Combat *c, Game *g, const Sprites *sprites,
         return 0;
     }
     if (c->cast_phase == COMBAT_CAST_PICK_SPELL) {
+        touch_request(TOUCH_CHROME_BACK);
         if (input_key_pressed(KEY_ESCAPE)) {
             c->cast_phase = COMBAT_CAST_NONE;
             return 0;
@@ -219,6 +240,17 @@ static int combat_player_action_full(Combat *c, const Game *g,
                                      const Sprites *sprites,
                                      RenderTexture2D *target) {
     (void)sprites; (void)target;
+    // Touch: tap a battlefield cell to step the active unit toward it (one
+    // tap, one step, like the adventure map); the bar carries the verbs.
+    touch_request(TOUCH_CHROME_COMBAT);
+    if (c->unit_id >= 0) {
+        const CombatUnit *au = &c->units[c->side][c->unit_id];
+        touch_region_map(CL_COMBAT_X, CL_COMBAT_Y,
+                         COMBAT_W * CL_COMBAT_CELL_W,
+                         COMBAT_H * CL_COMBAT_CELL_H,
+                         CL_COMBAT_CELL_W, CL_COMBAT_CELL_H,
+                         au->x, au->y, 0);
+    }
     int dx, dy;
     if (combat_read_dir(&dx, &dy)) {
         if (c->unit_id < 0) return 0;
@@ -337,6 +369,7 @@ static void combat_present(const Combat *c, const Game *g,
             snprintf(line, sizeof line, "%d %-12s %c",
                      count, sd->name, 'A' + i);
             bfont_draw(line, 56, 64 + i * 10, PAL_CLR(WHITE));
+            touch_region(56, 64 + i * 10, 224, 10, KEY_A + i);
         }
         bfont_draw(ui->combat_spells_prompt, 70, 144, PAL_CLR(WHITE));
     }
@@ -492,6 +525,7 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         // no animation frame ticks driving acts. The view handles its
         // own input (and number-key cycling for Controls -- see below).
         if (views_active() != VIEW_NONE) {
+            touch_request(TOUCH_CHROME_BACK);   // ESC dismisses the view
             // Swap between Options and Controls without leaving the menu.
             if (views_active() == VIEW_OPTIONS && input_key_pressed(KEY_C)) {
                 views_set(VIEW_CONTROLS);

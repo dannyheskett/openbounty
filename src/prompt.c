@@ -1,6 +1,7 @@
 #include "input_host.h"
 #include "ui_host.h"
 #include "prompt.h"
+#include "touch.h"
 #include "layout.h"
 #include "palette.h"
 #include "bfont.h"
@@ -111,6 +112,13 @@ void prompt_dismiss(void) {
 
 PromptResult prompt_update(void) {
     if (g_kind == PK_NONE) return PROMPT_RESULT_NONE;
+
+    // Touch: on-screen answer buttons for the keys read below, plus ESC.
+    touch_request(TOUCH_CHROME_BACK);
+    if      (g_kind == PK_YES_NO)     touch_request_prompt_yesno();
+    else if (g_kind == PK_NUMERIC)    touch_request_prompt_numeric(g_max_choice);
+    else if (g_kind == PK_AB_CHOICE)  touch_request_prompt_ab();
+    else if (g_kind == PK_TEXT_INPUT) touch_request(TOUCH_CHROME_DIGITS);
 
     if (input_key_pressed(KEY_ESCAPE)) {
         prompt_dismiss();
