@@ -1,0 +1,18 @@
+{
+ "id": "hastati_attack6",
+ "_note": "Attack on build/art/hastati_minimal/run02. frames_duration 6 per the vendor guidance that 6 suits a snappy single action; 4 is the minimum and every previous attempt used it. The motion line names geometry rather than an action: upright to horizontal, past the shield, feet planted, shield still. Previous attempts said 'levelling', and level reads as plumb.",
+ "prompt": "the spear swings down from upright to horizontal and drives forward past the shield, both feet stay planted, the shield stays still",
+ "style": "rd_advanced_animation__attack",
+ "width": 96,
+ "height": 96,
+ "frames_duration": 6,
+ "return_spritesheet": true,
+ "input_image_path": "build/art/hastati_minimal/run02/01_raw.png",
+ "input_image_keep_alpha": true,
+ "raw_only": true,
+ "target": [
+  96,
+  96
+ ],
+ "figure": false
+}

@@ -3900,11 +3900,14 @@ cp build/art/troops_peasants_00_03/frame_03.png assets/glory-of-rome/art/troops/
 
 **Replaces:** `troops/pikemen_00.png`, `troops/pikemen_01.png`, `troops/pikemen_02.png`, `troops/pikemen_03.png`
 
-**State:** still generated 2026-09-03 and accepted; a four-frame attack sheet exists at build/art/hastati_attack/run01/; the four pack files are still placeholder. Design size 48x34 → generate at 96x96.
+**State:** done, pending your approval. Still at
+`build/art/hastati_minimal/run02/01_raw.png`; four attack frames at
+`build/art/hastati_custom4/run01/frame_00..03.png`. The four pack files are
+still placeholder.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
-> a Roman hastatus legionary in banded lorica segmentata, crested galea helmet, tall rectangular red and gold scutum, thrusting a spear forward
+> A Roman legionary with a red crested helmet and a tall rectangular red and gold shield, holding a spear, stocky and broad shouldered
 
 **Step 1 — the still.** $0.18.
 
@@ -3912,7 +3915,7 @@ cp build/art/troops_peasants_00_03/frame_03.png assets/glory-of-rome/art/troops/
 mkdir -p build/art/troops_pikemen_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman hastatus legionary in banded lorica segmentata, crested galea helmet, tall rectangular red and gold scutum, thrusting a spear forward", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1010, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "A Roman legionary with a red crested helmet and a tall rectangular red and gold shield, holding a spear, stocky and broad shouldered", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1101, "remove_bg": true, "return_non_bg_removed": true, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3927,18 +3930,22 @@ file build/art/troops_pikemen_00_03/01_still.png   # must say: PNG image data
 
 **Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-- the crested galea helmet is present and readable at 1:1
-- the tall rectangular red and gold scutum is present and readable at 1:1
-- the whole figure is inside the frame, with clear rows above the head
-- both feet are drawn and the figure stands on them
+- the banded lorica segmentata reads as bands at 1:1
+- the crested galea is present, crest clear of the top row
+- the tall rectangular scutum is on his left arm, the spear in his right hand
+- both feet are drawn and he stands on them
 - it reads at 1:1 over grass, forest and desert, not only enlarged
 
-**Step 3 — animate the approved still.** $0.14.
+**Step 3 — animate the approved still.** $0.25, `rd_advanced_animation__custom_action`
+at **`frames_duration: 4`**. `__attack` was tried four times on this subject and
+chose to raise the shield every time; `custom_action` takes the motion as
+described. Four frames, not six: six loses the spear entirely in the middle of
+the swing.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_pikemen_00_03/01_still.png)" \
-  '{prompt: "levelling the spear and thrusting it forward, feet planted",
-    prompt_style: "rd_advanced_animation__attack",
+  '{prompt: "the spear swings down from upright to horizontal and drives forward past the shield, both feet stay planted, the shield stays still",
+    prompt_style: "rd_advanced_animation__custom_action",
     width: 96, height: 96, num_images: 1,
     frames_duration: 4, return_spritesheet: true,
     input_image: $img, async: true}' > build/art/troops_pikemen_00_03/anim_request.json
@@ -3957,14 +3964,19 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_pike
 file build/art/troops_pikemen_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
+**Step 4 — accept the animation by eye.** The silhouette must widen frame to
+frame as the spear comes down and extends. The accepted run measured 47, 60, 62
+and 81 pixels wide; the reference pikeman's thrust is 80. The spear must be
+present in every frame and both feet planted throughout.
+
+**Step 5 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_pikemen_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_pikemen_00_03/frame_%02d.png
 identify -format "%f %wx%h\n" build/art/troops_pikemen_00_03/frame_0*.png   # four files, each 96x96
 ```
 
-**Step 5 — copy into the pack.**
+**Step 6 — copy into the pack.**
 
 ```sh
 cp build/art/troops_pikemen_00_03/frame_00.png assets/glory-of-rome/art/troops/pikemen_00.png
@@ -3972,7 +3984,6 @@ cp build/art/troops_pikemen_00_03/frame_01.png assets/glory-of-rome/art/troops/p
 cp build/art/troops_pikemen_00_03/frame_02.png assets/glory-of-rome/art/troops/pikemen_02.png
 cp build/art/troops_pikemen_00_03/frame_03.png assets/glory-of-rome/art/troops/pikemen_03.png
 ```
-
 
 ## troops_skeletons_00_03
 
