@@ -1,8 +1,7 @@
 # Glory of Rome — art inventory and commands
 
 113 items, 271 files. Each entry gives the files it produces, its state on disk,
-the prompt, and the commands to run. Method and the evidence behind it are in
-`ART-PIPELINE.md`.
+the prompt, and the commands to run. The process itself is in `ART-PIPELINE.md`.
 
 ```sh
 TOKEN=$(cat ~/.config/retrodiffusion/token)
@@ -11,54 +10,42 @@ TOKEN=$(cat ~/.config/retrodiffusion/token)
 Everything lands under `build/art/<id>/`. Nothing here writes into `assets/` —
 approved finals are copied across by hand.
 
-## Four routes, and how much each is actually proven
+## Four routes
 
-**1. Troops and villains — 42 items. Proven end to end on 2026-09-03.**
-Four steps per item, and step 2 is a stop:
+**1. Troops and villains — 42 items, $0.32 each.** Four steps, and step 2 is a
+stop:
 
-1. **The still**, $0.18, through the custom style
-   `user__glory_of_rome_troops_bac676cd`. The prompt is **subject only** — the
-   style appends *"full length, standing in profile facing right, game sprite,
-   solid neutral grey background"* and forbids scenery.
-2. **Look at it.** At 1:1 and 8x against the reference. Nothing proceeds on a
-   metric; the QA script's thresholds were written for a 48-wide tile and its
-   width, colour and feet checks are meaningless at 96.
+1. **The still**, $0.18, through `user__glory_of_rome_troops_bac676cd`. The
+   prompt is subject only; the style supplies framing, pose and background.
+2. **Look at it** at 1:1 and 8x against the reference, and accept it by eye.
 3. **Animate the approved still**, $0.14, `rd_advanced_animation__attack`,
-   `frames_duration: 4`, `return_spritesheet: true`. The still is uploaded
-   untouched with its alpha intact — that is what makes the frames transparent.
-4. **Cut the sheet**: it returns 192x192, a 2x2 grid of 96x96 cells.
+   `frames_duration: 4`, `return_spritesheet: true`. The still uploads untouched
+   with its alpha intact, which is what makes the frames transparent.
+4. **Cut the sheet**: 192x192, a 2x2 grid of 96x96 cells.
 
-$0.32 an item, ≈$13.50 for all 42.
+**2. Cell and screen art — 56 items, $0.038 each.** `rd_plus__classic` up to
+192px, `rd_plus__default` above it. These have not been run yet, and they use a
+different style from the troops, so settle Phase B in `ART-PIPELINE.md` before
+spending on them.
 
-**2. Cell and screen art — 56 items. Provisional. Never generated.**
-`rd_plus__classic` up to 192px and `rd_plus__default` above it, chosen off the
-published size ranges rather than from any result. $0.038 each. Two things to
-settle before spending on them: nothing has tested these prompts, and a
-different style means these assets will **not** match the troops — which is the
-exact coherence problem the custom style was built to solve. Expect to need a
-second custom style for objects, and possibly a third for screens.
+**3. Base terrain — 6 items, $0.038 each.** `rd_plus__low_res` with
+`tile_x`/`tile_y`, and prompts that describe a pattern rather than a subject.
+Keep the wording exactly as it is.
 
-**3. Base terrain — 6 items. Proven in August, do not touch the wording.**
-`rd_plus__low_res` with `tile_x`/`tile_y`, and prompts that describe a *pattern*
-rather than a subject. Naming "sea" or "grass" makes the model light a scene and
-bake in a gradient or an edge vignette that reads as a lattice once tiled. That
-wording cost 13 generations to find.
+**4. Nine screen assets exceed the 384px ceiling** and carry a note in place of
+a command.
 
-**4. Nine screen assets cannot be generated at their stated size.**
-480x204 up to 640x400, against a 384px ceiling on every public style. Each says
-so in place, with the options.
-
-## Standing rules
+## Rules
 
 - **96x96** for anything in a map or combat cell; screen art at design size x2.
-- **Subject only in the prompt.** Never rendering words — the style carries the
-  look, and every prompt that argued with it produced a worse figure.
-- **No `input_palette`.** It hard-constrains the image to the supplied palette
-  and collapses structure; it returned 3-colour all-green artifact tiles.
-- **`async: true`**, so the task id exists before any charge can be lost.
-- **One call per item.** If a subject comes back wrong, record why and move on.
-- Terrain edges (48 files) are **not** generated — composite them from the new
-  base and grass tiles using the reference edge's alpha mask.
+- **Subject only in the prompt.** The style carries the look.
+- **No `input_palette`.**
+- **`async: true`**, so the task id exists before the charge.
+- Decode from `.result.base64_images[0]`, then `file` the output: it must say
+  PNG image data.
+- **One call per item.**
+- Terrain edges (48 files) are composited from the new base and grass tiles
+  using the reference edge's alpha mask.
 
 ---
 
