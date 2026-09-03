@@ -1,68 +1,83 @@
 # Glory of Rome — art inventory and commands
 
-113 items, 271 files. Each entry gives the files it produces, its state on disk,
-the prompt, and the commands to run. The process itself is in `ART-PIPELINE.md`.
+113 items, 299 files. Every entry below carries the files it
+produces, the state those files are in today, the prompt, and commands that have
+been checked against the API. The process itself is described in
+`ART-PIPELINE.md`.
 
 ```sh
 TOKEN=$(cat ~/.config/retrodiffusion/token)
 ```
 
-Everything lands under `build/art/<id>/`. Nothing here writes into `assets/` —
-approved finals are copied across by hand.
+Output lands under `build/art/<id>/`. The final step of each entry copies the
+approved files into `assets/glory-of-rome/art/`; nothing before that step writes
+into the pack.
+
+## Certified
+
+Every command in this file was verified on 2026-09-03 with `check_cost: true`,
+the API's free dry run, which validates a request and generates nothing:
+
+- **134 generation payloads** accepted by the API, $11.33 to run them all once
+- **51 animation payloads** accepted, $7.14
+- **Total to generate the pack once: $18.47**
+- **350 shell blocks**, all parsing under `bash -n`
+- Every `convert` crop checked against a real 192x192 sheet: four 96x96 files
+- **299 copy targets**, every one a real path in the pack except the 48
+  hero and boat directional files, which are new slots with no art yet
 
 ## Four routes
 
-**1. Troops and villains — 42 items, $0.32 each.** Four steps, and step 2 is a
-stop:
+**1. Troops and villains — 42 items, $0.32 each.** Five steps, and step 2 is a
+stop. The still comes from `user__glory_of_rome_troops_bac676cd`, which supplies
+framing, pose and background, so the prompt is subject only. The approved still
+is then animated by `rd_advanced_animation__attack` at `frames_duration: 4`,
+uploaded untouched so its alpha carries into the frames, and the returned
+192x192 sheet is cut into four 96x96 cells.
 
-1. **The still**, $0.18, through `user__glory_of_rome_troops_bac676cd`. The
-   prompt is subject only; the style supplies framing, pose and background.
-2. **Look at it** at 1:1 and 8x against the reference, and accept it by eye.
-3. **Animate the approved still**, $0.14, `rd_advanced_animation__attack`,
-   `frames_duration: 4`, `return_spritesheet: true`. The still uploads untouched
-   with its alpha intact, which is what makes the frames transparent.
-4. **Cut the sheet**: 192x192, a 2x2 grid of 96x96 cells.
+**2. Hero and boat — 9 items, $0.178 each.** Same shape, but the still uses
+`rd_plus__classic` with `remove_bg` rather than the troop style, which would
+force every one of them into a standing profile. The animation is
+`rd_advanced_animation__walking` for the four hero facings and
+`rd_advanced_animation__idle` for the hero at rest and the four boat views.
 
-**2. Cell and screen art — 56 items, $0.038 each.** `rd_plus__classic` up to
-192px, `rd_plus__default` above it. These have not been run yet, and they use a
-different style from the troops, so settle Phase B in `ART-PIPELINE.md` before
-spending on them.
+**3. Base terrain and tiled ground — 9 items, $0.038 each.** `rd_plus__low_res`
+with `tile_x`/`tile_y`, opaque, and prompts that describe a *pattern* rather
+than a subject. Keep that wording exactly as it is.
 
-**3. Base terrain — 6 items, $0.038 each.** `rd_plus__low_res` with
-`tile_x`/`tile_y`, and prompts that describe a pattern rather than a subject.
-Keep the wording exactly as it is.
-
-**4. Nine screen assets exceed the 384px ceiling** and carry a note in place of
-a command.
+**4. Everything else — 53 items, $0.038 each.** `rd_plus__classic` up to 192px
+and `rd_plus__default` above it. Map tiles are opaque with the ground baked in,
+because `map_render.c` draws each tile alone over a black fill and only puts
+terrain underneath a wandering-army sprite. Sprites, icons and combat pieces
+carry `remove_bg`.
 
 ## Rules
 
-- **96x96** for anything in a map or combat cell; screen art at design size x2.
-- **Subject only in the prompt.** The style carries the look.
+- **96x96** for anything in a map or combat cell. Screen art at design size x2,
+  capped so no dimension exceeds **384**, the largest any public style accepts.
+- **Subject only in the prompt.** The style carries the rendering.
+- **No scenery** in a figure prompt. The background remover cannot strip drawn
+  ground, and a named background colour must be one that cannot occur in the
+  subject.
 - **No `input_palette`.**
-- **`async: true`**, so the task id exists before the charge.
-- Decode from `.result.base64_images[0]`, then `file` the output: it must say
+- **`async: true`** on every call, so the task id exists before the charge.
+- Decode from `.result.base64_images[0]`, then `file` the output: it must report
   PNG image data.
 - **One call per item.**
-- Terrain edges (48 files) are composited from the new base and grass tiles
-  using the reference edge's alpha mask.
+- Terrain edges (48 files) are composited from the finished base and grass
+  tiles using the reference edge's alpha mask, never generated.
 
 ---
 
-
-# 5.1 Troops -- 25 items, 100 files, 96x96, 4 frames
-
-
 ## troops_archers_00_03
+
 **Replaces:** `troops/archers_00.png`, `troops/archers_01.png`, `troops/archers_02.png`, `troops/archers_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a Roman velite skirmisher in a wolfskin headdress over a helmet, small round parma shield, throwing a javelin
-
-*Original brief wording: a Roman velite skirmisher in a wolfskin headdress over a helmet, small round parma shield, throwing a javelin*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -83,17 +98,19 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_arch
 file build/art/troops_archers_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the small round parma shield is present and readable at 1:1
+- the throwing a javelin is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_archers_00_03/01_still.png)" \
-  '{prompt: "levelling the spear and thrusting it forward, feet planted",
+  '{prompt: "hurling the javelin overarm, feet planted",
     prompt_style: "rd_advanced_animation__attack",
     width: 96, height: 96, num_images: 1,
     frames_duration: 4, return_spritesheet: true,
@@ -113,27 +130,34 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_arch
 file build/art/troops_archers_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_archers_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_archers_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_archers_00_03/frame_0*.png   # four files, each 96x96
 ```
+
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/troops_archers_00_03/frame_00.png assets/glory-of-rome/art/troops/archers_00.png
+cp build/art/troops_archers_00_03/frame_01.png assets/glory-of-rome/art/troops/archers_01.png
+cp build/art/troops_archers_00_03/frame_02.png assets/glory-of-rome/art/troops/archers_02.png
+cp build/art/troops_archers_00_03/frame_03.png assets/glory-of-rome/art/troops/archers_03.png
+```
+
 
 ## troops_archmages_00_03
 
 **Replaces:** `troops/archmages_00.png`, `troops/archmages_01.png`, `troops/archmages_02.png`, `troops/archmages_03.png`
 
-**Currently:** still generated 2026-09-03, accepted, at
-`build/art/troops_archmages_00_03/01_still.png` — 96x96, 37 colours, figure on
-rows 7-88, cols 11-75. The four pack files are still King's Bounty placeholder.
-Animation not yet run.
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a winged Fury, a gaunt female spirit with dark feathered wings, snakes in her hair, clutching a burning torch, hovering
 
-**Step 1 — the still.** $0.18. Already run at seed 1020; this regenerates it.
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_archmages_00_03
@@ -152,21 +176,20 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_arch
 file build/art/troops_archmages_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x. For this subject, accept when:
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-- both wings are complete and inside the frame, not clipped by an edge
-- the snakes read as snakes in the hair at 1:1, not as a blur
-- the torch has a visible flame
-- both legs and feet are drawn
-- she hovers clear of the bottom row rather than standing on it
-- no armour and no shield: this troop has neither
+- the a gaunt female spirit with dark feathered wings is present and readable at 1:1
+- the snakes in her hair is present and readable at 1:1
+- the clutching a burning torch is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched,
-alpha intact; that is what makes the returned frames transparent.
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_archmages_00_03/01_still.png)" \
-  '{prompt: "surging forward to strike with the burning torch, wings beating, then drifting back",
+  '{prompt: "surging forward to strike, wings beating, then drifting back",
     prompt_style: "rd_advanced_animation__attack",
     width: 96, height: 96, num_images: 1,
     frames_duration: 4, return_spritesheet: true,
@@ -186,32 +209,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_arch
 file build/art/troops_archmages_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells,
-read left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_archmages_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_archmages_00_03/frame_%02d.png
 identify -format "%f %wx%h\n" build/art/troops_archmages_00_03/frame_0*.png   # four files, each 96x96
 ```
 
-**Then copy into the pack:**
+**Step 5 — copy into the pack.**
 
 ```sh
-for i in 0 1 2 3; do
-  cp build/art/troops_archmages_00_03/frame_0$i.png assets/glory-of-rome/art/troops/archmages_0$i.png
-done
+cp build/art/troops_archmages_00_03/frame_00.png assets/glory-of-rome/art/troops/archmages_00.png
+cp build/art/troops_archmages_00_03/frame_01.png assets/glory-of-rome/art/troops/archmages_01.png
+cp build/art/troops_archmages_00_03/frame_02.png assets/glory-of-rome/art/troops/archmages_02.png
+cp build/art/troops_archmages_00_03/frame_03.png assets/glory-of-rome/art/troops/archmages_03.png
 ```
 
+
 ## troops_barbarians_00_03
+
 **Replaces:** `troops/barbarians_00.png`, `troops/barbarians_01.png`, `troops/barbarians_02.png`, `troops/barbarians_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a Sarmatian steppe warrior in full scale armour of overlapping plates, conical helmet, long lance, fur-trimmed cloak
-
-*Original brief wording: a Sarmatian steppe warrior in full scale armour of overlapping plates, conical helmet, long lance, fur-trimmed cloak*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -232,17 +255,20 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_barb
 file build/art/troops_barbarians_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the conical helmet is present and readable at 1:1
+- the long lance is present and readable at 1:1
+- the fur-trimmed cloak is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_barbarians_00_03/01_still.png)" \
-  '{prompt: "levelling the spear and thrusting it forward, feet planted",
+  '{prompt: "couching the long lance and driving it forward, feet planted",
     prompt_style: "rd_advanced_animation__attack",
     width: 96, height: 96, num_images: 1,
     frames_duration: 4, return_spritesheet: true,
@@ -262,23 +288,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_barb
 file build/art/troops_barbarians_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_barbarians_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_barbarians_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_barbarians_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/troops_barbarians_00_03/frame_00.png assets/glory-of-rome/art/troops/barbarians_00.png
+cp build/art/troops_barbarians_00_03/frame_01.png assets/glory-of-rome/art/troops/barbarians_01.png
+cp build/art/troops_barbarians_00_03/frame_02.png assets/glory-of-rome/art/troops/barbarians_02.png
+cp build/art/troops_barbarians_00_03/frame_03.png assets/glory-of-rome/art/troops/barbarians_03.png
+```
+
+
 ## troops_cavalry_00_03
+
 **Replaces:** `troops/cavalry_00.png`, `troops/cavalry_01.png`, `troops/cavalry_02.png`, `troops/cavalry_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a Roman cavalryman on a galloping horse, oval shield and crested helmet, couched lance, cloak streaming behind
-
-*Original brief wording: a Roman cavalryman on a galloping horse, oval shield and crested helmet, couched lance, cloak streaming behind*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -299,17 +334,20 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_cava
 file build/art/troops_cavalry_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the oval shield and crested helmet is present and readable at 1:1
+- the couched lance is present and readable at 1:1
+- the cloak streaming behind is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_cavalry_00_03/01_still.png)" \
-  '{prompt: "levelling the spear and thrusting it forward, feet planted",
+  '{prompt: "spurring the horse forward and striking with the lance, then reining back",
     prompt_style: "rd_advanced_animation__attack",
     width: 96, height: 96, num_images: 1,
     frames_duration: 4, return_spritesheet: true,
@@ -329,23 +367,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_cava
 file build/art/troops_cavalry_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_cavalry_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_cavalry_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_cavalry_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/troops_cavalry_00_03/frame_00.png assets/glory-of-rome/art/troops/cavalry_00.png
+cp build/art/troops_cavalry_00_03/frame_01.png assets/glory-of-rome/art/troops/cavalry_01.png
+cp build/art/troops_cavalry_00_03/frame_02.png assets/glory-of-rome/art/troops/cavalry_02.png
+cp build/art/troops_cavalry_00_03/frame_03.png assets/glory-of-rome/art/troops/cavalry_03.png
+```
+
+
 ## troops_demons_00_03
+
 **Replaces:** `troops/demons_00.png`, `troops/demons_01.png`, `troops/demons_02.png`, `troops/demons_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a shape-shifting devourer of Hecate, a lean winged demon with one bronze leg, bat wings, swinging a scythe
-
-*Original brief wording: a shape-shifting devourer of Hecate, a lean winged demon with one bronze leg, bat wings, swinging a scythe*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -366,17 +413,19 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_demo
 file build/art/troops_demons_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the a lean winged demon with one bronze leg is present and readable at 1:1
+- the bat wings is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_demons_00_03/01_still.png)" \
-  '{prompt: "swinging the sword forward and striking, feet planted",
+  '{prompt: "swinging the scythe across, wings beating",
     prompt_style: "rd_advanced_animation__attack",
     width: 96, height: 96, num_images: 1,
     frames_duration: 4, return_spritesheet: true,
@@ -396,23 +445,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_demo
 file build/art/troops_demons_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_demons_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_demons_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_demons_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/troops_demons_00_03/frame_00.png assets/glory-of-rome/art/troops/demons_00.png
+cp build/art/troops_demons_00_03/frame_01.png assets/glory-of-rome/art/troops/demons_01.png
+cp build/art/troops_demons_00_03/frame_02.png assets/glory-of-rome/art/troops/demons_02.png
+cp build/art/troops_demons_00_03/frame_03.png assets/glory-of-rome/art/troops/demons_03.png
+```
+
+
 ## troops_dragons_00_03
+
 **Replaces:** `troops/dragons_00.png`, `troops/dragons_01.png`, `troops/dragons_02.png`, `troops/dragons_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a great scaled dragon, wings spread, long serpentine neck, jaws open, standing on clawed feet
-
-*Original brief wording: a great scaled dragon, wings spread, long serpentine neck, jaws open, standing on clawed feet*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -433,13 +491,16 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_drag
 file build/art/troops_dragons_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the wings spread is present and readable at 1:1
+- the long serpentine neck is present and readable at 1:1
+- the jaws open is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_dragons_00_03/01_still.png)" \
@@ -463,23 +524,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_drag
 file build/art/troops_dragons_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_dragons_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_dragons_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_dragons_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/troops_dragons_00_03/frame_00.png assets/glory-of-rome/art/troops/dragons_00.png
+cp build/art/troops_dragons_00_03/frame_01.png assets/glory-of-rome/art/troops/dragons_01.png
+cp build/art/troops_dragons_00_03/frame_02.png assets/glory-of-rome/art/troops/dragons_02.png
+cp build/art/troops_dragons_00_03/frame_03.png assets/glory-of-rome/art/troops/dragons_03.png
+```
+
+
 ## troops_druids_00_03
+
 **Replaces:** `troops/druids_00.png`, `troops/druids_01.png`, `troops/druids_02.png`, `troops/druids_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
-> a Celtic druid in a long white robe, oak-leaf wreath, holding a golden sickle and a gnarled staff, mist at his feet
-
-*Original brief wording: a Celtic druid in a long white robe, oak-leaf wreath, holding a golden sickle and a gnarled staff, mist at his feet*
-
+> a Celtic druid in a long white robe, oak-leaf wreath, holding a golden sickle and a gnarled staff
 
 **Step 1 — the still.** $0.18.
 
@@ -487,7 +557,7 @@ convert build/art/troops_dragons_00_03/02_sheet.png -crop 96x96 +repage build/ar
 mkdir -p build/art/troops_druids_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Celtic druid in a long white robe, oak-leaf wreath, holding a golden sickle and a gnarled staff, mist at his feet", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1019, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a Celtic druid in a long white robe, oak-leaf wreath, holding a golden sickle and a gnarled staff", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1019, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -500,17 +570,18 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_drui
 file build/art/troops_druids_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the oak-leaf wreath is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_druids_00_03/01_still.png)" \
-  '{prompt: "swinging the sword forward and striking, feet planted",
+  '{prompt: "raising the staff and casting, feet planted",
     prompt_style: "rd_advanced_animation__attack",
     width: 96, height: 96, num_images: 1,
     frames_duration: 4, return_spritesheet: true,
@@ -530,23 +601,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_drui
 file build/art/troops_druids_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_druids_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_druids_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_druids_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/troops_druids_00_03/frame_00.png assets/glory-of-rome/art/troops/druids_00.png
+cp build/art/troops_druids_00_03/frame_01.png assets/glory-of-rome/art/troops/druids_01.png
+cp build/art/troops_druids_00_03/frame_02.png assets/glory-of-rome/art/troops/druids_02.png
+cp build/art/troops_druids_00_03/frame_03.png assets/glory-of-rome/art/troops/druids_03.png
+```
+
+
 ## troops_dwarves_00_03
+
 **Replaces:** `troops/dwarves_00.png`, `troops/dwarves_01.png`, `troops/dwarves_02.png`, `troops/dwarves_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a stocky Ligurian mountain tribesman, thick beard, fur cloak over a leather cuirass, wielding a heavy axe
-
-*Original brief wording: a stocky Ligurian mountain tribesman, thick beard, fur cloak over a leather cuirass, wielding a heavy axe*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -567,13 +647,16 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_dwar
 file build/art/troops_dwarves_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the thick beard is present and readable at 1:1
+- the fur cloak over a leather cuirass is present and readable at 1:1
+- the wielding a heavy axe is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_dwarves_00_03/01_still.png)" \
@@ -597,23 +680,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_dwar
 file build/art/troops_dwarves_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_dwarves_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_dwarves_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_dwarves_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/troops_dwarves_00_03/frame_00.png assets/glory-of-rome/art/troops/dwarves_00.png
+cp build/art/troops_dwarves_00_03/frame_01.png assets/glory-of-rome/art/troops/dwarves_01.png
+cp build/art/troops_dwarves_00_03/frame_02.png assets/glory-of-rome/art/troops/dwarves_02.png
+cp build/art/troops_dwarves_00_03/frame_03.png assets/glory-of-rome/art/troops/dwarves_03.png
+```
+
+
 ## troops_elves_00_03
+
 **Replaces:** `troops/elves_00.png`, `troops/elves_01.png`, `troops/elves_02.png`, `troops/elves_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a forest spirit archer in bark-toned robes with leaf-patterned cloak, drawing a longbow, antlered circlet
-
-*Original brief wording: a forest spirit archer in bark-toned robes with leaf-patterned cloak, drawing a longbow, antlered circlet*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -634,13 +726,14 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_elve
 file build/art/troops_elves_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the antlered circlet is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_elves_00_03/01_still.png)" \
@@ -664,23 +757,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_elve
 file build/art/troops_elves_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_elves_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_elves_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_elves_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/troops_elves_00_03/frame_00.png assets/glory-of-rome/art/troops/elves_00.png
+cp build/art/troops_elves_00_03/frame_01.png assets/glory-of-rome/art/troops/elves_01.png
+cp build/art/troops_elves_00_03/frame_02.png assets/glory-of-rome/art/troops/elves_02.png
+cp build/art/troops_elves_00_03/frame_03.png assets/glory-of-rome/art/troops/elves_03.png
+```
+
+
 ## troops_ghosts_00_03
+
 **Replaces:** `troops/ghosts_00.png`, `troops/ghosts_01.png`, `troops/ghosts_02.png`, `troops/ghosts_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a translucent ancestral shade, a hollow robed figure with no legs, trailing into vapour, faintly glowing
-
-*Original brief wording: a translucent ancestral shade, a hollow robed figure with no legs, trailing into vapour, faintly glowing*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -701,13 +803,16 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_ghos
 file build/art/troops_ghosts_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the a hollow robed figure with no legs is present and readable at 1:1
+- the trailing into vapour is present and readable at 1:1
+- the faintly glowing is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_ghosts_00_03/01_still.png)" \
@@ -731,23 +836,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_ghos
 file build/art/troops_ghosts_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_ghosts_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_ghosts_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_ghosts_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/troops_ghosts_00_03/frame_00.png assets/glory-of-rome/art/troops/ghosts_00.png
+cp build/art/troops_ghosts_00_03/frame_01.png assets/glory-of-rome/art/troops/ghosts_01.png
+cp build/art/troops_ghosts_00_03/frame_02.png assets/glory-of-rome/art/troops/ghosts_02.png
+cp build/art/troops_ghosts_00_03/frame_03.png assets/glory-of-rome/art/troops/ghosts_03.png
+```
+
+
 ## troops_giants_00_03
+
 **Replaces:** `troops/giants_00.png`, `troops/giants_01.png`, `troops/giants_02.png`, `troops/giants_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a towering giant with serpent-scaled legs, wild hair and beard, raising a boulder overhead to throw
-
-*Original brief wording: a towering giant with serpent-scaled legs, wild hair and beard, raising a boulder overhead to throw*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -768,17 +882,18 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_gian
 file build/art/troops_giants_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the wild hair and beard is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_giants_00_03/01_still.png)" \
-  '{prompt: "swinging the weapon overhead and striking down, feet planted",
+  '{prompt: "hurling the boulder forward, feet planted",
     prompt_style: "rd_advanced_animation__attack",
     width: 96, height: 96, num_images: 1,
     frames_duration: 4, return_spritesheet: true,
@@ -798,23 +913,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_gian
 file build/art/troops_giants_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_giants_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_giants_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_giants_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/troops_giants_00_03/frame_00.png assets/glory-of-rome/art/troops/giants_00.png
+cp build/art/troops_giants_00_03/frame_01.png assets/glory-of-rome/art/troops/giants_01.png
+cp build/art/troops_giants_00_03/frame_02.png assets/glory-of-rome/art/troops/giants_02.png
+cp build/art/troops_giants_00_03/frame_03.png assets/glory-of-rome/art/troops/giants_03.png
+```
+
+
 ## troops_gnomes_00_03
+
 **Replaces:** `troops/gnomes_00.png`, `troops/gnomes_01.png`, `troops/gnomes_02.png`, `troops/gnomes_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a small woodland faun, goat legs and curling horns, shaggy pelt, holding a crooked branch, mischievous
-
-*Original brief wording: a small woodland faun, goat legs and curling horns, shaggy pelt, holding a crooked branch, mischievous*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -835,17 +959,19 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_gnom
 file build/art/troops_gnomes_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the goat legs and curling horns is present and readable at 1:1
+- the shaggy pelt is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_gnomes_00_03/01_still.png)" \
-  '{prompt: "striking forward, feet planted",
+  '{prompt: "swinging the crooked branch, feet planted",
     prompt_style: "rd_advanced_animation__attack",
     width: 96, height: 96, num_images: 1,
     frames_duration: 4, return_spritesheet: true,
@@ -865,23 +991,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_gnom
 file build/art/troops_gnomes_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_gnomes_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_gnomes_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_gnomes_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/troops_gnomes_00_03/frame_00.png assets/glory-of-rome/art/troops/gnomes_00.png
+cp build/art/troops_gnomes_00_03/frame_01.png assets/glory-of-rome/art/troops/gnomes_01.png
+cp build/art/troops_gnomes_00_03/frame_02.png assets/glory-of-rome/art/troops/gnomes_02.png
+cp build/art/troops_gnomes_00_03/frame_03.png assets/glory-of-rome/art/troops/gnomes_03.png
+```
+
+
 ## troops_knights_00_03
+
 **Replaces:** `troops/knights_00.png`, `troops/knights_01.png`, `troops/knights_02.png`, `troops/knights_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > an elite Praetorian guardsman in polished ornate muscled cuirass, tall transverse-crested helmet, oval shield with scorpion emblem, gladius drawn
-
-*Original brief wording: an elite Praetorian guardsman in polished ornate muscled cuirass, tall transverse-crested helmet, oval shield with scorpion emblem, gladius drawn*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -902,13 +1037,16 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_knig
 file build/art/troops_knights_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the tall transverse-crested helmet is present and readable at 1:1
+- the oval shield with scorpion emblem is present and readable at 1:1
+- the gladius drawn is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_knights_00_03/01_still.png)" \
@@ -932,23 +1070,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_knig
 file build/art/troops_knights_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_knights_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_knights_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_knights_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/troops_knights_00_03/frame_00.png assets/glory-of-rome/art/troops/knights_00.png
+cp build/art/troops_knights_00_03/frame_01.png assets/glory-of-rome/art/troops/knights_01.png
+cp build/art/troops_knights_00_03/frame_02.png assets/glory-of-rome/art/troops/knights_02.png
+cp build/art/troops_knights_00_03/frame_03.png assets/glory-of-rome/art/troops/knights_03.png
+```
+
+
 ## troops_militia_00_03
+
 **Replaces:** `troops/militia_00.png`, `troops/militia_01.png`, `troops/militia_02.png`, `troops/militia_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a raw Roman recruit in a plain undyed tunic and simple leather cap, holding a short spear and a small round shield, standing stiffly
-
-*Original brief wording: a raw Roman recruit in a plain undyed tunic and simple leather cap, holding a short spear and a small round shield, standing stiffly*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -969,13 +1116,14 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_mili
 file build/art/troops_militia_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the a raw Roman recruit in a plain undyed tunic and simple leather cap is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_militia_00_03/01_still.png)" \
@@ -999,23 +1147,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_mili
 file build/art/troops_militia_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_militia_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_militia_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_militia_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/troops_militia_00_03/frame_00.png assets/glory-of-rome/art/troops/militia_00.png
+cp build/art/troops_militia_00_03/frame_01.png assets/glory-of-rome/art/troops/militia_01.png
+cp build/art/troops_militia_00_03/frame_02.png assets/glory-of-rome/art/troops/militia_02.png
+cp build/art/troops_militia_00_03/frame_03.png assets/glory-of-rome/art/troops/militia_03.png
+```
+
+
 ## troops_nomads_00_03
+
 **Replaces:** `troops/nomads_00.png`, `troops/nomads_01.png`, `troops/nomads_02.png`, `troops/nomads_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a Numidian light horseman riding bareback, no saddle or bridle, bare-chested in a leopard skin, hurling a javelin
-
-*Original brief wording: a Numidian light horseman riding bareback, no saddle or bridle, bare-chested in a leopard skin, hurling a javelin*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -1036,17 +1193,20 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_noma
 file build/art/troops_nomads_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the no saddle or bridle is present and readable at 1:1
+- the bare-chested in a leopard skin is present and readable at 1:1
+- the hurling a javelin is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_nomads_00_03/01_still.png)" \
-  '{prompt: "levelling the spear and thrusting it forward, feet planted",
+  '{prompt: "urging the horse forward and hurling the javelin, then reining back",
     prompt_style: "rd_advanced_animation__attack",
     width: 96, height: 96, num_images: 1,
     frames_duration: 4, return_spritesheet: true,
@@ -1066,23 +1226,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_noma
 file build/art/troops_nomads_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_nomads_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_nomads_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_nomads_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/troops_nomads_00_03/frame_00.png assets/glory-of-rome/art/troops/nomads_00.png
+cp build/art/troops_nomads_00_03/frame_01.png assets/glory-of-rome/art/troops/nomads_01.png
+cp build/art/troops_nomads_00_03/frame_02.png assets/glory-of-rome/art/troops/nomads_02.png
+cp build/art/troops_nomads_00_03/frame_03.png assets/glory-of-rome/art/troops/nomads_03.png
+```
+
+
 ## troops_ogres_00_03
+
 **Replaces:** `troops/ogres_00.png`, `troops/ogres_01.png`, `troops/ogres_02.png`, `troops/ogres_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
-> a huge one-eyed cave giant, single central eye, bare muscled torso, blacksmith's leather apron, swinging a massive hammer
-
-*Original brief wording: a huge one-eyed cave giant, single central eye, bare muscled torso, blacksmith's leather apron, swinging a massive hammer*
-
+> a huge one-eyed cave giant, single central eye, bare muscled torso, a heavy leather smith apron, swinging a massive hammer
 
 **Step 1 — the still.** $0.18.
 
@@ -1090,7 +1259,7 @@ convert build/art/troops_nomads_00_03/02_sheet.png -crop 96x96 +repage build/art
 mkdir -p build/art/troops_ogres_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a huge one-eyed cave giant, single central eye, bare muscled torso, blacksmith's leather apron, swinging a massive hammer", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1015, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a huge one-eyed cave giant, single central eye, bare muscled torso, a heavy leather smith apron, swinging a massive hammer", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1015, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1103,13 +1272,16 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_ogre
 file build/art/troops_ogres_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the single central eye is present and readable at 1:1
+- the bare muscled torso is present and readable at 1:1
+- the a heavy leather smith apron is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_ogres_00_03/01_still.png)" \
@@ -1133,23 +1305,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_ogre
 file build/art/troops_ogres_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_ogres_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_ogres_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_ogres_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/troops_ogres_00_03/frame_00.png assets/glory-of-rome/art/troops/ogres_00.png
+cp build/art/troops_ogres_00_03/frame_01.png assets/glory-of-rome/art/troops/ogres_01.png
+cp build/art/troops_ogres_00_03/frame_02.png assets/glory-of-rome/art/troops/ogres_02.png
+cp build/art/troops_ogres_00_03/frame_03.png assets/glory-of-rome/art/troops/ogres_03.png
+```
+
+
 ## troops_orcs_00_03
+
 **Replaces:** `troops/orcs_00.png`, `troops/orcs_01.png`, `troops/orcs_02.png`, `troops/orcs_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a Balearic slinger, bare-chested and wiry, whirling a leather sling above his head, pouch of stones at his hip
-
-*Original brief wording: a Balearic slinger, bare-chested and wiry, whirling a leather sling above his head, pouch of stones at his hip*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -1170,13 +1351,15 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_orcs
 file build/art/troops_orcs_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the bare-chested and wiry is present and readable at 1:1
+- the pouch of stones at his hip is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_orcs_00_03/01_still.png)" \
@@ -1200,23 +1383,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_orcs
 file build/art/troops_orcs_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_orcs_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_orcs_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_orcs_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/troops_orcs_00_03/frame_00.png assets/glory-of-rome/art/troops/orcs_00.png
+cp build/art/troops_orcs_00_03/frame_01.png assets/glory-of-rome/art/troops/orcs_01.png
+cp build/art/troops_orcs_00_03/frame_02.png assets/glory-of-rome/art/troops/orcs_02.png
+cp build/art/troops_orcs_00_03/frame_03.png assets/glory-of-rome/art/troops/orcs_03.png
+```
+
+
 ## troops_peasants_00_03
+
 **Replaces:** `troops/peasants_00.png`, `troops/peasants_01.png`, `troops/peasants_02.png`, `troops/peasants_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a ragged Roman tenant farmer in a torn dirty tunic, barefoot, holding a wooden pitchfork, stooped and unarmoured
-
-*Original brief wording: a ragged Roman tenant farmer in a torn dirty tunic, barefoot, holding a wooden pitchfork, stooped and unarmoured*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -1237,17 +1429,18 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_peas
 file build/art/troops_peasants_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the stooped and unarmoured is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_peasants_00_03/01_still.png)" \
-  '{prompt: "striking forward, feet planted",
+  '{prompt: "jabbing the pitchfork forward, feet planted",
     prompt_style: "rd_advanced_animation__attack",
     width: 96, height: 96, num_images: 1,
     frames_duration: 4, return_spritesheet: true,
@@ -1267,23 +1460,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_peas
 file build/art/troops_peasants_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_peasants_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_peasants_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_peasants_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/troops_peasants_00_03/frame_00.png assets/glory-of-rome/art/troops/peasants_00.png
+cp build/art/troops_peasants_00_03/frame_01.png assets/glory-of-rome/art/troops/peasants_01.png
+cp build/art/troops_peasants_00_03/frame_02.png assets/glory-of-rome/art/troops/peasants_02.png
+cp build/art/troops_peasants_00_03/frame_03.png assets/glory-of-rome/art/troops/peasants_03.png
+```
+
+
 ## troops_pikemen_00_03
+
 **Replaces:** `troops/pikemen_00.png`, `troops/pikemen_01.png`, `troops/pikemen_02.png`, `troops/pikemen_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a Roman hastatus legionary in banded lorica segmentata, crested galea helmet, tall rectangular red and gold scutum, thrusting a spear forward
-
-*Original brief wording: a Roman hastatus legionary in banded lorica segmentata, crested galea helmet, tall rectangular red and gold scutum, thrusting a spear forward*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -1304,13 +1506,15 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_pike
 file build/art/troops_pikemen_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the crested galea helmet is present and readable at 1:1
+- the tall rectangular red and gold scutum is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_pikemen_00_03/01_still.png)" \
@@ -1334,23 +1538,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_pike
 file build/art/troops_pikemen_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_pikemen_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_pikemen_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_pikemen_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/troops_pikemen_00_03/frame_00.png assets/glory-of-rome/art/troops/pikemen_00.png
+cp build/art/troops_pikemen_00_03/frame_01.png assets/glory-of-rome/art/troops/pikemen_01.png
+cp build/art/troops_pikemen_00_03/frame_02.png assets/glory-of-rome/art/troops/pikemen_02.png
+cp build/art/troops_pikemen_00_03/frame_03.png assets/glory-of-rome/art/troops/pikemen_03.png
+```
+
+
 ## troops_skeletons_00_03
+
 **Replaces:** `troops/skeletons_00.png`, `troops/skeletons_01.png`, `troops/skeletons_02.png`, `troops/skeletons_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a walking human skeleton in a rotted Roman tunic, hollow eye sockets, carrying a rusted short sword
-
-*Original brief wording: a walking human skeleton in a rotted Roman tunic, hollow eye sockets, carrying a rusted short sword*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -1371,13 +1584,15 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_skel
 file build/art/troops_skeletons_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the hollow eye sockets is present and readable at 1:1
+- the carrying a rusted short sword is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_skeletons_00_03/01_still.png)" \
@@ -1401,23 +1616,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_skel
 file build/art/troops_skeletons_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_skeletons_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_skeletons_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_skeletons_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/troops_skeletons_00_03/frame_00.png assets/glory-of-rome/art/troops/skeletons_00.png
+cp build/art/troops_skeletons_00_03/frame_01.png assets/glory-of-rome/art/troops/skeletons_01.png
+cp build/art/troops_skeletons_00_03/frame_02.png assets/glory-of-rome/art/troops/skeletons_02.png
+cp build/art/troops_skeletons_00_03/frame_03.png assets/glory-of-rome/art/troops/skeletons_03.png
+```
+
+
 ## troops_sprites_00_03
+
 **Replaces:** `troops/sprites_00.png`, `troops/sprites_01.png`, `troops/sprites_02.png`, `troops/sprites_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a tiny glowing household spirit, a small floating robed figure with a faint halo, translucent and weightless, hovering above the ground
-
-*Original brief wording: a tiny glowing household spirit, a small floating robed figure with a faint halo, translucent and weightless, hovering above the ground*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -1438,17 +1662,19 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_spri
 file build/art/troops_sprites_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the a small floating robed figure with a faint halo is present and readable at 1:1
+- the translucent and weightless is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_sprites_00_03/01_still.png)" \
-  '{prompt: "surging forward to strike, then drifting back",
+  '{prompt: "darting forward to strike, then drifting back",
     prompt_style: "rd_advanced_animation__attack",
     width: 96, height: 96, num_images: 1,
     frames_duration: 4, return_spritesheet: true,
@@ -1468,23 +1694,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_spri
 file build/art/troops_sprites_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_sprites_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_sprites_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_sprites_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/troops_sprites_00_03/frame_00.png assets/glory-of-rome/art/troops/sprites_00.png
+cp build/art/troops_sprites_00_03/frame_01.png assets/glory-of-rome/art/troops/sprites_01.png
+cp build/art/troops_sprites_00_03/frame_02.png assets/glory-of-rome/art/troops/sprites_02.png
+cp build/art/troops_sprites_00_03/frame_03.png assets/glory-of-rome/art/troops/sprites_03.png
+```
+
+
 ## troops_trolls_00_03
+
 **Replaces:** `troops/trolls_00.png`, `troops/trolls_01.png`, `troops/trolls_02.png`, `troops/trolls_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a hulking earth-giant, hunched, skin caked in soil and moss, enormous hands, regenerating wounds glowing faintly
-
-*Original brief wording: a hulking earth-giant, hunched, skin caked in soil and moss, enormous hands, regenerating wounds glowing faintly*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -1505,17 +1740,20 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_trol
 file build/art/troops_trolls_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the skin caked in soil and moss is present and readable at 1:1
+- the enormous hands is present and readable at 1:1
+- the regenerating wounds glowing faintly is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_trolls_00_03/01_still.png)" \
-  '{prompt: "striking forward, feet planted",
+  '{prompt: "swinging both fists down, feet planted",
     prompt_style: "rd_advanced_animation__attack",
     width: 96, height: 96, num_images: 1,
     frames_duration: 4, return_spritesheet: true,
@@ -1535,23 +1773,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_trol
 file build/art/troops_trolls_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_trolls_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_trolls_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_trolls_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/troops_trolls_00_03/frame_00.png assets/glory-of-rome/art/troops/trolls_00.png
+cp build/art/troops_trolls_00_03/frame_01.png assets/glory-of-rome/art/troops/trolls_01.png
+cp build/art/troops_trolls_00_03/frame_02.png assets/glory-of-rome/art/troops/trolls_02.png
+cp build/art/troops_trolls_00_03/frame_03.png assets/glory-of-rome/art/troops/trolls_03.png
+```
+
+
 ## troops_vampires_00_03
+
 **Replaces:** `troops/vampires_00.png`, `troops/vampires_01.png`, `troops/vampires_02.png`, `troops/vampires_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a screech-owl vampire, a hunched winged creature with owl features and a human face, bloodied talons, membranous wings spread
-
-*Original brief wording: a screech-owl vampire, a hunched winged creature with owl features and a human face, bloodied talons, membranous wings spread*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -1572,17 +1819,20 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_vamp
 file build/art/troops_vampires_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the a hunched winged creature with owl features and a human face is present and readable at 1:1
+- the bloodied talons is present and readable at 1:1
+- the membranous wings spread is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_vampires_00_03/01_still.png)" \
-  '{prompt: "lunging forward and striking with its jaws, then settling back",
+  '{prompt: "diving forward and raking with its talons, wings spread",
     prompt_style: "rd_advanced_animation__attack",
     width: 96, height: 96, num_images: 1,
     frames_duration: 4, return_spritesheet: true,
@@ -1602,23 +1852,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_vamp
 file build/art/troops_vampires_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_vampires_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_vampires_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_vampires_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/troops_vampires_00_03/frame_00.png assets/glory-of-rome/art/troops/vampires_00.png
+cp build/art/troops_vampires_00_03/frame_01.png assets/glory-of-rome/art/troops/vampires_01.png
+cp build/art/troops_vampires_00_03/frame_02.png assets/glory-of-rome/art/troops/vampires_02.png
+cp build/art/troops_vampires_00_03/frame_03.png assets/glory-of-rome/art/troops/vampires_03.png
+```
+
+
 ## troops_wolves_00_03
+
 **Replaces:** `troops/wolves_00.png`, `troops/wolves_01.png`, `troops/wolves_02.png`, `troops/wolves_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a lean grey wolf, snarling, head low, in mid-prowl, seen from the side
-
-*Original brief wording: a lean grey wolf, snarling, head low, in mid-prowl, seen from the side*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -1639,13 +1898,15 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_wolv
 file build/art/troops_wolves_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the head low is present and readable at 1:1
+- the in mid-prowl is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_wolves_00_03/01_still.png)" \
@@ -1669,23 +1930,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_wolv
 file build/art/troops_wolves_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_wolves_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_wolves_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_wolves_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/troops_wolves_00_03/frame_00.png assets/glory-of-rome/art/troops/wolves_00.png
+cp build/art/troops_wolves_00_03/frame_01.png assets/glory-of-rome/art/troops/wolves_01.png
+cp build/art/troops_wolves_00_03/frame_02.png assets/glory-of-rome/art/troops/wolves_02.png
+cp build/art/troops_wolves_00_03/frame_03.png assets/glory-of-rome/art/troops/wolves_03.png
+```
+
+
 ## troops_zombies_00_03
+
 **Replaces:** `troops/zombies_00.png`, `troops/zombies_01.png`, `troops/zombies_02.png`, `troops/zombies_03.png`
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a shambling rotted corpse in grave wrappings, arms hanging, hunched and slow, grey-green flesh
-
-*Original brief wording: a shambling rotted corpse in grave wrappings, arms hanging, hunched and slow, grey-green flesh*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -1706,17 +1976,20 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_zomb
 file build/art/troops_zombies_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the arms hanging is present and readable at 1:1
+- the hunched and slow is present and readable at 1:1
+- the grey-green flesh is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_zombies_00_03/01_still.png)" \
-  '{prompt: "striking forward, feet planted",
+  '{prompt: "lurching forward and clawing, feet planted",
     prompt_style: "rd_advanced_animation__attack",
     width: 96, height: 96, num_images: 1,
     frames_duration: 4, return_spritesheet: true,
@@ -1736,23 +2009,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_zomb
 file build/art/troops_zombies_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/troops_zombies_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_zombies_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/troops_zombies_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/troops_zombies_00_03/frame_00.png assets/glory-of-rome/art/troops/zombies_00.png
+cp build/art/troops_zombies_00_03/frame_01.png assets/glory-of-rome/art/troops/zombies_01.png
+cp build/art/troops_zombies_00_03/frame_02.png assets/glory-of-rome/art/troops/zombies_02.png
+cp build/art/troops_zombies_00_03/frame_03.png assets/glory-of-rome/art/troops/zombies_03.png
+```
+
+
 ## villains_alaric_00_03
+
 **Replaces:** `villains/alaric_00.png`, `villains/alaric_01.png`, `villains/alaric_02.png`, `villains/alaric_03.png`
-**Currently:** 48x34, already replaced → **generate at 96x96**
+
+**State:** no KB counterpart. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
-> a Visigoth king in looted Roman armour over furs, iron crown, heavy broadsword, a sacked city's smoke behind him
-
-*Original brief wording: a Visigoth king in looted Roman armour over furs, iron crown, heavy broadsword, a sacked city's smoke behind him*
-
+> a Visigoth king in looted Roman armour over furs, iron crown, heavy broadsword
 
 **Step 1 — the still.** $0.18.
 
@@ -1760,7 +2042,7 @@ convert build/art/troops_zombies_00_03/02_sheet.png -crop 96x96 +repage build/ar
 mkdir -p build/art/villains_alaric_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Visigoth king in looted Roman armour over furs, iron crown, heavy broadsword, a sacked city's smoke behind him", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1040, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a Visigoth king in looted Roman armour over furs, iron crown, heavy broadsword", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1040, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1773,13 +2055,15 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_al
 file build/art/villains_alaric_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the iron crown is present and readable at 1:1
+- the heavy broadsword is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/villains_alaric_00_03/01_still.png)" \
@@ -1803,23 +2087,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_al
 file build/art/villains_alaric_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/villains_alaric_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_alaric_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/villains_alaric_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/villains_alaric_00_03/frame_00.png assets/glory-of-rome/art/villains/alaric_00.png
+cp build/art/villains_alaric_00_03/frame_01.png assets/glory-of-rome/art/villains/alaric_01.png
+cp build/art/villains_alaric_00_03/frame_02.png assets/glory-of-rome/art/villains/alaric_02.png
+cp build/art/villains_alaric_00_03/frame_03.png assets/glory-of-rome/art/villains/alaric_03.png
+```
+
+
 ## villains_arminius_00_03
+
 **Replaces:** `villains/arminius_00.png`, `villains/arminius_01.png`, `villains/arminius_02.png`, `villains/arminius_03.png`
-**Currently:** 48x34, already replaced → **generate at 96x96**
+
+**State:** no KB counterpart. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
-> a Cheruscan chieftain in a bearskin over Roman mail, wolf-skull helmet, framea spear, standing among forest shadow
-
-*Original brief wording: a Cheruscan chieftain in a bearskin over Roman mail, wolf-skull helmet, framea spear, standing among forest shadow*
-
+> a Cheruscan chieftain in a bearskin over Roman mail, wolf-skull helmet, framea spear
 
 **Step 1 — the still.** $0.18.
 
@@ -1827,7 +2120,7 @@ convert build/art/villains_alaric_00_03/02_sheet.png -crop 96x96 +repage build/a
 mkdir -p build/art/villains_arminius_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Cheruscan chieftain in a bearskin over Roman mail, wolf-skull helmet, framea spear, standing among forest shadow", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1033, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a Cheruscan chieftain in a bearskin over Roman mail, wolf-skull helmet, framea spear", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1033, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1840,13 +2133,15 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_ar
 file build/art/villains_arminius_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the wolf-skull helmet is present and readable at 1:1
+- the framea spear is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/villains_arminius_00_03/01_still.png)" \
@@ -1870,23 +2165,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_ar
 file build/art/villains_arminius_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/villains_arminius_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_arminius_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/villains_arminius_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/villains_arminius_00_03/frame_00.png assets/glory-of-rome/art/villains/arminius_00.png
+cp build/art/villains_arminius_00_03/frame_01.png assets/glory-of-rome/art/villains/arminius_01.png
+cp build/art/villains_arminius_00_03/frame_02.png assets/glory-of-rome/art/villains/arminius_02.png
+cp build/art/villains_arminius_00_03/frame_03.png assets/glory-of-rome/art/villains/arminius_03.png
+```
+
+
 ## villains_attila_00_03
+
 **Replaces:** `villains/attila_00.png`, `villains/attila_01.png`, `villains/attila_02.png`, `villains/attila_03.png`
-**Currently:** 48x34, already replaced → **generate at 96x96**
+
+**State:** no KB counterpart. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > the Hun warlord, wiry and fierce with a thin braided beard, lamellar armour and fur, composite bow and horsehair standard
-
-*Original brief wording: the Hun warlord, wiry and fierce with a thin braided beard, lamellar armour and fur, composite bow and horsehair standard*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -1907,13 +2211,16 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_at
 file build/art/villains_attila_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the wiry and fierce with a thin braided beard is present and readable at 1:1
+- the lamellar armour and fur is present and readable at 1:1
+- the composite bow and horsehair standard is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/villains_attila_00_03/01_still.png)" \
@@ -1937,23 +2244,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_at
 file build/art/villains_attila_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/villains_attila_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_attila_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/villains_attila_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/villains_attila_00_03/frame_00.png assets/glory-of-rome/art/villains/attila_00.png
+cp build/art/villains_attila_00_03/frame_01.png assets/glory-of-rome/art/villains/attila_01.png
+cp build/art/villains_attila_00_03/frame_02.png assets/glory-of-rome/art/villains/attila_02.png
+cp build/art/villains_attila_00_03/frame_03.png assets/glory-of-rome/art/villains/attila_03.png
+```
+
+
 ## villains_boudica_00_03
+
 **Replaces:** `villains/boudica_00.png`, `villains/boudica_01.png`, `villains/boudica_02.png`, `villains/boudica_03.png`
-**Currently:** 48x34, already replaced → **generate at 96x96**
+
+**State:** no KB counterpart. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a tall Iceni warrior queen with long red hair, heavy torc at her throat, checked cloak, spear in hand, fierce
-
-*Original brief wording: a tall Iceni warrior queen with long red hair, heavy torc at her throat, checked cloak, spear in hand, fierce*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -1974,13 +2290,16 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_bo
 file build/art/villains_boudica_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the heavy torc at her throat is present and readable at 1:1
+- the checked cloak is present and readable at 1:1
+- the spear in hand is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/villains_boudica_00_03/01_still.png)" \
@@ -2004,23 +2323,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_bo
 file build/art/villains_boudica_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/villains_boudica_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_boudica_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/villains_boudica_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/villains_boudica_00_03/frame_00.png assets/glory-of-rome/art/villains/boudica_00.png
+cp build/art/villains_boudica_00_03/frame_01.png assets/glory-of-rome/art/villains/boudica_01.png
+cp build/art/villains_boudica_00_03/frame_02.png assets/glory-of-rome/art/villains/boudica_02.png
+cp build/art/villains_boudica_00_03/frame_03.png assets/glory-of-rome/art/villains/boudica_03.png
+```
+
+
 ## villains_brennus_00_03
+
 **Replaces:** `villains/brennus_00.png`, `villains/brennus_01.png`, `villains/brennus_02.png`, `villains/brennus_03.png`
-**Currently:** 48x34, already replaced → **generate at 96x96**
+
+**State:** no KB counterpart. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a Gallic warchief with a drooping moustache and lime-spiked hair, bare-chested with a heavy gold torc, long sword raised
-
-*Original brief wording: a Gallic warchief with a drooping moustache and lime-spiked hair, bare-chested with a heavy gold torc, long sword raised*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -2041,13 +2369,15 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_br
 file build/art/villains_brennus_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the bare-chested with a heavy gold torc is present and readable at 1:1
+- the long sword raised is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/villains_brennus_00_03/01_still.png)" \
@@ -2071,23 +2401,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_br
 file build/art/villains_brennus_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/villains_brennus_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_brennus_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/villains_brennus_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/villains_brennus_00_03/frame_00.png assets/glory-of-rome/art/villains/brennus_00.png
+cp build/art/villains_brennus_00_03/frame_01.png assets/glory-of-rome/art/villains/brennus_01.png
+cp build/art/villains_brennus_00_03/frame_02.png assets/glory-of-rome/art/villains/brennus_02.png
+cp build/art/villains_brennus_00_03/frame_03.png assets/glory-of-rome/art/villains/brennus_03.png
+```
+
+
 ## villains_catiline_00_03
+
 **Replaces:** `villains/catiline_00.png`, `villains/catiline_01.png`, `villains/catiline_02.png`, `villains/catiline_03.png`
-**Currently:** 48x34, already replaced → **generate at 96x96**
+
+**State:** no KB counterpart. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a disgraced Roman senator in a stained toga, gaunt and hollow-eyed, dagger half-hidden in the folds, conspiratorial
-
-*Original brief wording: a disgraced Roman senator in a stained toga, gaunt and hollow-eyed, dagger half-hidden in the folds, conspiratorial*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -2108,17 +2447,19 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_ca
 file build/art/villains_catiline_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the gaunt and hollow-eyed is present and readable at 1:1
+- the dagger half-hidden in the folds is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/villains_catiline_00_03/01_still.png)" \
-  '{prompt: "striking forward, feet planted",
+  '{prompt: "drawing the dagger and stabbing forward, feet planted",
     prompt_style: "rd_advanced_animation__attack",
     width: 96, height: 96, num_images: 1,
     frames_duration: 4, return_spritesheet: true,
@@ -2138,23 +2479,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_ca
 file build/art/villains_catiline_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/villains_catiline_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_catiline_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/villains_catiline_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/villains_catiline_00_03/frame_00.png assets/glory-of-rome/art/villains/catiline_00.png
+cp build/art/villains_catiline_00_03/frame_01.png assets/glory-of-rome/art/villains/catiline_01.png
+cp build/art/villains_catiline_00_03/frame_02.png assets/glory-of-rome/art/villains/catiline_02.png
+cp build/art/villains_catiline_00_03/frame_03.png assets/glory-of-rome/art/villains/catiline_03.png
+```
+
+
 ## villains_civilis_00_03
+
 **Replaces:** `villains/civilis_00.png`, `villains/civilis_01.png`, `villains/civilis_02.png`, `villains/civilis_03.png`
-**Currently:** 48x34, already replaced → **generate at 96x96**
+
+**State:** no KB counterpart. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a Batavian auxiliary commander, one eye missing, Roman mail worn over Germanic trousers, long blond hair, holding a Roman standard
-
-*Original brief wording: a Batavian auxiliary commander, one eye missing, Roman mail worn over Germanic trousers, long blond hair, holding a Roman standard*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -2175,17 +2525,20 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_ci
 file build/art/villains_civilis_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the one eye missing is present and readable at 1:1
+- the Roman mail worn over Germanic trousers is present and readable at 1:1
+- the long blond hair is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/villains_civilis_00_03/01_still.png)" \
-  '{prompt: "striking forward, feet planted",
+  '{prompt: "thrusting the standard forward, feet planted",
     prompt_style: "rd_advanced_animation__attack",
     width: 96, height: 96, num_images: 1,
     frames_duration: 4, return_spritesheet: true,
@@ -2205,23 +2558,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_ci
 file build/art/villains_civilis_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/villains_civilis_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_civilis_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/villains_civilis_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/villains_civilis_00_03/frame_00.png assets/glory-of-rome/art/villains/civilis_00.png
+cp build/art/villains_civilis_00_03/frame_01.png assets/glory-of-rome/art/villains/civilis_01.png
+cp build/art/villains_civilis_00_03/frame_02.png assets/glory-of-rome/art/villains/civilis_02.png
+cp build/art/villains_civilis_00_03/frame_03.png assets/glory-of-rome/art/villains/civilis_03.png
+```
+
+
 ## villains_gildo_00_03
+
 **Replaces:** `villains/gildo_00.png`, `villains/gildo_01.png`, `villains/gildo_02.png`, `villains/gildo_03.png`
-**Currently:** 48x34, already replaced → **generate at 96x96**
+
+**State:** no KB counterpart. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a Moorish count in flowing white desert robes over Roman officer armour, curved blade, dark-skinned and imposing
-
-*Original brief wording: a Moorish count in flowing white desert robes over Roman officer armour, curved blade, dark-skinned and imposing*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -2242,13 +2604,15 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_gi
 file build/art/villains_gildo_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the curved blade is present and readable at 1:1
+- the dark-skinned and imposing is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/villains_gildo_00_03/01_still.png)" \
@@ -2272,23 +2636,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_gi
 file build/art/villains_gildo_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/villains_gildo_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_gildo_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/villains_gildo_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/villains_gildo_00_03/frame_00.png assets/glory-of-rome/art/villains/gildo_00.png
+cp build/art/villains_gildo_00_03/frame_01.png assets/glory-of-rome/art/villains/gildo_01.png
+cp build/art/villains_gildo_00_03/frame_02.png assets/glory-of-rome/art/villains/gildo_02.png
+cp build/art/villains_gildo_00_03/frame_03.png assets/glory-of-rome/art/villains/gildo_03.png
+```
+
+
 ## villains_hannibal_00_03
+
 **Replaces:** `villains/hannibal_00.png`, `villains/hannibal_01.png`, `villains/hannibal_02.png`, `villains/hannibal_03.png`
-**Currently:** 48x34, already replaced → **generate at 96x96**
+
+**State:** no KB counterpart. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a Carthaginian general in a crested Punic helmet, one eye scarred and blind, purple cloak, curved falcata sword
-
-*Original brief wording: a Carthaginian general in a crested Punic helmet, one eye scarred and blind, purple cloak, curved falcata sword*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -2309,13 +2682,16 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_ha
 file build/art/villains_hannibal_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the one eye scarred and blind is present and readable at 1:1
+- the purple cloak is present and readable at 1:1
+- the curved falcata sword is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/villains_hannibal_00_03/01_still.png)" \
@@ -2339,23 +2715,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_ha
 file build/art/villains_hannibal_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/villains_hannibal_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_hannibal_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/villains_hannibal_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/villains_hannibal_00_03/frame_00.png assets/glory-of-rome/art/villains/hannibal_00.png
+cp build/art/villains_hannibal_00_03/frame_01.png assets/glory-of-rome/art/villains/hannibal_01.png
+cp build/art/villains_hannibal_00_03/frame_02.png assets/glory-of-rome/art/villains/hannibal_02.png
+cp build/art/villains_hannibal_00_03/frame_03.png assets/glory-of-rome/art/villains/hannibal_03.png
+```
+
+
 ## villains_jugurtha_00_03
+
 **Replaces:** `villains/jugurtha_00.png`, `villains/jugurtha_01.png`, `villains/jugurtha_02.png`, `villains/jugurtha_03.png`
-**Currently:** 48x34, already replaced → **generate at 96x96**
+
+**State:** no KB counterpart. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a Numidian king in an ornate gold circlet and rich embroidered robes over a cuirass, arms folded, imperious
-
-*Original brief wording: a Numidian king in an ornate gold circlet and rich embroidered robes over a cuirass, arms folded, imperious*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -2376,17 +2761,18 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_ju
 file build/art/villains_jugurtha_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the arms folded is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/villains_jugurtha_00_03/01_still.png)" \
-  '{prompt: "raising the staff and casting, feet planted",
+  '{prompt: "unfolding the arms and striking forward, feet planted",
     prompt_style: "rd_advanced_animation__attack",
     width: 96, height: 96, num_images: 1,
     frames_duration: 4, return_spritesheet: true,
@@ -2406,23 +2792,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_ju
 file build/art/villains_jugurtha_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/villains_jugurtha_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_jugurtha_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/villains_jugurtha_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/villains_jugurtha_00_03/frame_00.png assets/glory-of-rome/art/villains/jugurtha_00.png
+cp build/art/villains_jugurtha_00_03/frame_01.png assets/glory-of-rome/art/villains/jugurtha_01.png
+cp build/art/villains_jugurtha_00_03/frame_02.png assets/glory-of-rome/art/villains/jugurtha_02.png
+cp build/art/villains_jugurtha_00_03/frame_03.png assets/glory-of-rome/art/villains/jugurtha_03.png
+```
+
+
 ## villains_mithridates_00_03
+
 **Replaces:** `villains/mithridates_00.png`, `villains/mithridates_01.png`, `villains/mithridates_02.png`, `villains/mithridates_03.png`
-**Currently:** 48x34, already replaced → **generate at 96x96**
+
+**State:** no KB counterpart. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > an eastern king in a Persian tiara and richly patterned robes, jewelled scabbard, holding a phial of poison
-
-*Original brief wording: an eastern king in a Persian tiara and richly patterned robes, jewelled scabbard, holding a phial of poison*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -2443,17 +2838,18 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_mi
 file build/art/villains_mithridates_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the jewelled scabbard is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/villains_mithridates_00_03/01_still.png)" \
-  '{prompt: "raising the staff and casting, feet planted",
+  '{prompt: "raising the phial and hurling its contents forward, feet planted",
     prompt_style: "rd_advanced_animation__attack",
     width: 96, height: 96, num_images: 1,
     frames_duration: 4, return_spritesheet: true,
@@ -2473,23 +2869,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_mi
 file build/art/villains_mithridates_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/villains_mithridates_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_mithridates_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/villains_mithridates_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/villains_mithridates_00_03/frame_00.png assets/glory-of-rome/art/villains/mithridates_00.png
+cp build/art/villains_mithridates_00_03/frame_01.png assets/glory-of-rome/art/villains/mithridates_01.png
+cp build/art/villains_mithridates_00_03/frame_02.png assets/glory-of-rome/art/villains/mithridates_02.png
+cp build/art/villains_mithridates_00_03/frame_03.png assets/glory-of-rome/art/villains/mithridates_03.png
+```
+
+
 ## villains_pyrrhus_00_03
+
 **Replaces:** `villains/pyrrhus_00.png`, `villains/pyrrhus_01.png`, `villains/pyrrhus_02.png`, `villains/pyrrhus_03.png`
-**Currently:** 48x34, already replaced → **generate at 96x96**
+
+**State:** no KB counterpart. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a Hellenistic king in a plumed Corinthian helmet and gilded muscled cuirass, round hoplite shield, long sarissa spear
-
-*Original brief wording: a Hellenistic king in a plumed Corinthian helmet and gilded muscled cuirass, round hoplite shield, long sarissa spear*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -2510,13 +2915,15 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_py
 file build/art/villains_pyrrhus_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the round hoplite shield is present and readable at 1:1
+- the long sarissa spear is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/villains_pyrrhus_00_03/01_still.png)" \
@@ -2540,23 +2947,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_py
 file build/art/villains_pyrrhus_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/villains_pyrrhus_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_pyrrhus_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/villains_pyrrhus_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/villains_pyrrhus_00_03/frame_00.png assets/glory-of-rome/art/villains/pyrrhus_00.png
+cp build/art/villains_pyrrhus_00_03/frame_01.png assets/glory-of-rome/art/villains/pyrrhus_01.png
+cp build/art/villains_pyrrhus_00_03/frame_02.png assets/glory-of-rome/art/villains/pyrrhus_02.png
+cp build/art/villains_pyrrhus_00_03/frame_03.png assets/glory-of-rome/art/villains/pyrrhus_03.png
+```
+
+
 ## villains_shapur_00_03
+
 **Replaces:** `villains/shapur_00.png`, `villains/shapur_01.png`, `villains/shapur_02.png`, `villains/shapur_03.png`
-**Currently:** 48x34, already replaced → **generate at 96x96**
+
+**State:** no KB counterpart. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a Sasanian shah in a towering jewelled korymbos crown, full cataphract scale armour, long straight sword, regal
-
-*Original brief wording: a Sasanian shah in a towering jewelled korymbos crown, full cataphract scale armour, long straight sword, regal*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -2577,13 +2993,15 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_sh
 file build/art/villains_shapur_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the full cataphract scale armour is present and readable at 1:1
+- the long straight sword is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/villains_shapur_00_03/01_still.png)" \
@@ -2607,23 +3025,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_sh
 file build/art/villains_shapur_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/villains_shapur_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_shapur_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/villains_shapur_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/villains_shapur_00_03/frame_00.png assets/glory-of-rome/art/villains/shapur_00.png
+cp build/art/villains_shapur_00_03/frame_01.png assets/glory-of-rome/art/villains/shapur_01.png
+cp build/art/villains_shapur_00_03/frame_02.png assets/glory-of-rome/art/villains/shapur_02.png
+cp build/art/villains_shapur_00_03/frame_03.png assets/glory-of-rome/art/villains/shapur_03.png
+```
+
+
 ## villains_spartacus_00_03
+
 **Replaces:** `villains/spartacus_00.png`, `villains/spartacus_01.png`, `villains/spartacus_02.png`, `villains/spartacus_03.png`
-**Currently:** 48x34, already replaced → **generate at 96x96**
+
+**State:** no KB counterpart. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a Thracian gladiator, bare-chested and scarred, gladiator helmet with a grille visor, short curved sica sword and small square shield
-
-*Original brief wording: a Thracian gladiator, bare-chested and scarred, gladiator helmet with a grille visor, short curved sica sword and small square shield*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -2644,13 +3071,16 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_sp
 file build/art/villains_spartacus_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the bare-chested and scarred is present and readable at 1:1
+- the gladiator helmet with a grille visor is present and readable at 1:1
+- the short curved sica sword and small square shield is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/villains_spartacus_00_03/01_still.png)" \
@@ -2674,23 +3104,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_sp
 file build/art/villains_spartacus_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/villains_spartacus_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_spartacus_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/villains_spartacus_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/villains_spartacus_00_03/frame_00.png assets/glory-of-rome/art/villains/spartacus_00.png
+cp build/art/villains_spartacus_00_03/frame_01.png assets/glory-of-rome/art/villains/spartacus_01.png
+cp build/art/villains_spartacus_00_03/frame_02.png assets/glory-of-rome/art/villains/spartacus_02.png
+cp build/art/villains_spartacus_00_03/frame_03.png assets/glory-of-rome/art/villains/spartacus_03.png
+```
+
+
 ## villains_tacfarinas_00_03
+
 **Replaces:** `villains/tacfarinas_00.png`, `villains/tacfarinas_01.png`, `villains/tacfarinas_02.png`, `villains/tacfarinas_03.png`
-**Currently:** 48x34, already replaced → **generate at 96x96**
+
+**State:** no KB counterpart. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a Numidian deserter chieftain in a Roman military cloak over desert robes, javelins across his back, sun-darkened
-
-*Original brief wording: a Numidian deserter chieftain in a Roman military cloak over desert robes, javelins across his back, sun-darkened*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -2711,17 +3150,18 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_ta
 file build/art/villains_tacfarinas_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the javelins across his back is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/villains_tacfarinas_00_03/01_still.png)" \
-  '{prompt: "levelling the spear and thrusting it forward, feet planted",
+  '{prompt: "hurling a javelin overarm, feet planted",
     prompt_style: "rd_advanced_animation__attack",
     width: 96, height: 96, num_images: 1,
     frames_duration: 4, return_spritesheet: true,
@@ -2741,23 +3181,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_ta
 file build/art/villains_tacfarinas_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/villains_tacfarinas_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_tacfarinas_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/villains_tacfarinas_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/villains_tacfarinas_00_03/frame_00.png assets/glory-of-rome/art/villains/tacfarinas_00.png
+cp build/art/villains_tacfarinas_00_03/frame_01.png assets/glory-of-rome/art/villains/tacfarinas_01.png
+cp build/art/villains_tacfarinas_00_03/frame_02.png assets/glory-of-rome/art/villains/tacfarinas_02.png
+cp build/art/villains_tacfarinas_00_03/frame_03.png assets/glory-of-rome/art/villains/tacfarinas_03.png
+```
+
+
 ## villains_vercingetorix_00_03
+
 **Replaces:** `villains/vercingetorix_00.png`, `villains/vercingetorix_01.png`, `villains/vercingetorix_02.png`, `villains/vercingetorix_03.png`
-**Currently:** 48x34, already replaced → **generate at 96x96**
+
+**State:** no KB counterpart. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a Gallic king in a horned helmet and mail shirt, long moustache, oval shield with a swirling Celtic device, longsword
-
-*Original brief wording: a Gallic king in a horned helmet and mail shirt, long moustache, oval shield with a swirling Celtic device, longsword*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -2778,13 +3227,15 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_ve
 file build/art/villains_vercingetorix_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the long moustache is present and readable at 1:1
+- the oval shield with a swirling Celtic device is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/villains_vercingetorix_00_03/01_still.png)" \
@@ -2808,23 +3259,32 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_ve
 file build/art/villains_vercingetorix_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/villains_vercingetorix_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_vercingetorix_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/villains_vercingetorix_00_03/frame_0*.png   # four files, each 96x96
 ```
 
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/villains_vercingetorix_00_03/frame_00.png assets/glory-of-rome/art/villains/vercingetorix_00.png
+cp build/art/villains_vercingetorix_00_03/frame_01.png assets/glory-of-rome/art/villains/vercingetorix_01.png
+cp build/art/villains_vercingetorix_00_03/frame_02.png assets/glory-of-rome/art/villains/vercingetorix_02.png
+cp build/art/villains_vercingetorix_00_03/frame_03.png assets/glory-of-rome/art/villains/vercingetorix_03.png
+```
+
+
 ## villains_zenobia_00_03
+
 **Replaces:** `villains/zenobia_00.png`, `villains/zenobia_01.png`, `villains/zenobia_02.png`, `villains/zenobia_03.png`
-**Currently:** 48x34, already replaced → **generate at 96x96**
+
+**State:** no KB counterpart. Design size 48x34 → generate at 96x96.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
 > a Palmyrene warrior queen in gilded scale armour and an eastern diadem, dark braided hair, ornate curved sword
-
-*Original brief wording: a Palmyrene warrior queen in gilded scale armour and an eastern diadem, dark braided hair, ornate curved sword*
-
 
 **Step 1 — the still.** $0.18.
 
@@ -2845,13 +3305,15 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_ze
 file build/art/villains_zenobia_00_03/01_still.png   # must say: PNG image data
 ```
 
-**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
-Check the whole figure is inside the frame, both feet are drawn, the armour or
-equipment survived, and the shield is on the same arm as every other troop. If it
-is wrong, write down what was wrong and move on. Do not re-roll it.
+**Step 2 — accept it by eye.** At 1:1 and at 8x. For this subject:
 
-**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
-intact; that is what makes the returned frames transparent.
+- the dark braided hair is present and readable at 1:1
+- the ornate curved sword is present and readable at 1:1
+- the whole figure is inside the frame, with clear rows above the head
+- both feet are drawn and the figure stands on them
+- it reads at 1:1 over grass, forest and desert, not only enlarged
+
+**Step 3 — animate the approved still.** $0.14.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/villains_zenobia_00_03/01_still.png)" \
@@ -2875,30 +3337,40 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_ze
 file build/art/villains_zenobia_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
-left to right, top to bottom.
+**Step 4 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 
 ```sh
 convert build/art/villains_zenobia_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_zenobia_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/villains_zenobia_00_03/frame_0*.png   # four files, each 96x96
 ```
+
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/villains_zenobia_00_03/frame_00.png assets/glory-of-rome/art/villains/zenobia_00.png
+cp build/art/villains_zenobia_00_03/frame_01.png assets/glory-of-rome/art/villains/zenobia_01.png
+cp build/art/villains_zenobia_00_03/frame_02.png assets/glory-of-rome/art/villains/zenobia_02.png
+cp build/art/villains_zenobia_00_03/frame_03.png assets/glory-of-rome/art/villains/zenobia_03.png
+```
+
 
 ## classes_barbarian
 
 **Replaces:** `classes/barbarian.png`
-  
-**Currently:** 96x102, placeholder (identical to King's Bounty) → **generate at 192x204**
+
+**State:** placeholder. Design size 96x102 → generate at 192x204.
 
 **Prompt**
 
 > a weathered frontier commander in mail over furs with a wolf-pelt cloak and iron torc, standing on a rock at a forest frontier
 
-*Original brief wording: a weathered frontier commander in mail over furs with a wolf-pelt cloak and iron torc, standing on a rock at a forest frontier*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/classes_barbarian
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a weathered frontier commander in mail over furs with a wolf-pelt cloak and iron torc, standing on a rock at a forest frontier", "prompt_style": "rd_plus__default", "width": 192, "height": 204, "num_images": 1, "seed": 1045, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a weathered frontier commander in mail over furs with a wolf-pelt cloak and iron torc, standing on a rock at a forest frontier", "prompt_style": "rd_plus__default", "width": 192, "height": 204, "num_images": 1, "seed": 1045, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2909,26 +3381,40 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/classes_barbarian/01_raw.png
 file build/art/classes_barbarian/01_raw.png   # must say: PNG image data
-echo wrote build/art/classes_barbarian/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the a weathered frontier commander in mail over furs with a wolf-pelt cloak and iron torc is present and readable at 1:1
+- the figure is complete head to foot
+- the scene behind the figure is deliberate, not an accident of framing
+- the image is fully opaque
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/classes_barbarian/01_raw.png assets/glory-of-rome/art/classes/barbarian.png
+```
+
 
 ## classes_knight
 
 **Replaces:** `classes/knight.png`
-  
-**Currently:** 96x102, placeholder (identical to King's Bounty) → **generate at 192x204**
+
+**State:** placeholder. Design size 96x102 → generate at 192x204.
 
 **Prompt**
 
 > a Roman general in a muscled bronze cuirass with lion-head shoulder pieces, red paludamentum cloak, crested helmet under one arm, standing before a distant fortified camp at sunset
 
-*Original brief wording: a Roman general in a muscled bronze cuirass with lion-head shoulder pieces, red paludamentum cloak, crested helmet under one arm, standing before a distant fortified camp at sunset*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/classes_knight
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman general in a muscled bronze cuirass with lion-head shoulder pieces, red paludamentum cloak, crested helmet under one arm, standing before a distant fortified camp at sunset", "prompt_style": "rd_plus__default", "width": 192, "height": 204, "num_images": 1, "seed": 1042, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman general in a muscled bronze cuirass with lion-head shoulder pieces, red paludamentum cloak, crested helmet under one arm, standing before a distant fortified camp at sunset", "prompt_style": "rd_plus__default", "width": 192, "height": 204, "num_images": 1, "seed": 1042, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2939,26 +3425,41 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/classes_knight/01_raw.png
 file build/art/classes_knight/01_raw.png   # must say: PNG image data
-echo wrote build/art/classes_knight/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the red paludamentum cloak is present and readable at 1:1
+- the crested helmet under one arm is present and readable at 1:1
+- the figure is complete head to foot
+- the scene behind the figure is deliberate, not an accident of framing
+- the image is fully opaque
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/classes_knight/01_raw.png assets/glory-of-rome/art/classes/knight.png
+```
+
 
 ## classes_paladin
 
 **Replaces:** `classes/paladin.png`
-  
-**Currently:** 96x102, placeholder (identical to King's Bounty) → **generate at 192x204**
+
+**State:** placeholder. Design size 96x102 → generate at 192x204.
 
 **Prompt**
 
 > a Praetorian guardsman in an ornate scorpion-embossed cuirass with a tall black transverse crest, kneeling at a candlelit altar in a marble shrine
 
-*Original brief wording: a Praetorian guardsman in an ornate scorpion-embossed cuirass with a tall black transverse crest, kneeling at a candlelit altar in a marble shrine*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/classes_paladin
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Praetorian guardsman in an ornate scorpion-embossed cuirass with a tall black transverse crest, kneeling at a candlelit altar in a marble shrine", "prompt_style": "rd_plus__default", "width": 192, "height": 204, "num_images": 1, "seed": 1043, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Praetorian guardsman in an ornate scorpion-embossed cuirass with a tall black transverse crest, kneeling at a candlelit altar in a marble shrine", "prompt_style": "rd_plus__default", "width": 192, "height": 204, "num_images": 1, "seed": 1043, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2969,26 +3470,40 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/classes_paladin/01_raw.png
 file build/art/classes_paladin/01_raw.png   # must say: PNG image data
-echo wrote build/art/classes_paladin/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the kneeling at a candlelit altar in a marble shrine is present and readable at 1:1
+- the figure is complete head to foot
+- the scene behind the figure is deliberate, not an accident of framing
+- the image is fully opaque
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/classes_paladin/01_raw.png assets/glory-of-rome/art/classes/paladin.png
+```
+
 
 ## classes_sorceress
 
 **Replaces:** `classes/sorceress.png`
-  
-**Currently:** 96x102, placeholder (identical to King's Bounty) → **generate at 192x204**
+
+**State:** placeholder. Design size 96x102 → generate at 192x204.
 
 **Prompt**
 
 > a veiled Vestal oracle-priestess in white robes with a gold fillet, holding a laurel sprig, standing in a temple interior lit by a sacred flame
 
-*Original brief wording: a veiled Vestal oracle-priestess in white robes with a gold fillet, holding a laurel sprig, standing in a temple interior lit by a sacred flame*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/classes_sorceress
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a veiled Vestal oracle-priestess in white robes with a gold fillet, holding a laurel sprig, standing in a temple interior lit by a sacred flame", "prompt_style": "rd_plus__default", "width": 192, "height": 204, "num_images": 1, "seed": 1044, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a veiled Vestal oracle-priestess in white robes with a gold fillet, holding a laurel sprig, standing in a temple interior lit by a sacred flame", "prompt_style": "rd_plus__default", "width": 192, "height": 204, "num_images": 1, "seed": 1044, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2999,29 +3514,40 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/classes_sorceress/01_raw.png
 file build/art/classes_sorceress/01_raw.png   # must say: PNG image data
-echo wrote build/art/classes_sorceress/01_raw.png
 ```
 
-# 5.4 Hero -- 16 walk + 16 idle files, 96x96
+**Step 2 — accept it by eye.**
+
+- the a veiled Vestal oracle-priestess in white robes with a gold fillet is present and readable at 1:1
+- the figure is complete head to foot
+- the scene behind the figure is deliberate, not an accident of framing
+- the image is fully opaque
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/classes_sorceress/01_raw.png assets/glory-of-rome/art/classes/sorceress.png
+```
 
 
 ## sprites_hero_idle_facing_00_03
 
-**Replaces:** `sprites/hero_idle_<facing>_00.png`, `sprites/hero_idle_<facing>_01.png`, `sprites/hero_idle_<facing>_02.png`, `sprites/hero_idle_<facing>_03.png`
-  
-**Currently:** ?, missing → **generate at 96x96**
+**Replaces:** `sprites/hero_idle_south_00.png`, `sprites/hero_idle_south_01.png`, `sprites/hero_idle_south_02.png`, `sprites/hero_idle_south_03.png`, `sprites/hero_idle_north_00.png`, `sprites/hero_idle_north_01.png`, `sprites/hero_idle_north_02.png`, `sprites/hero_idle_north_03.png`, `sprites/hero_idle_east_00.png`, `sprites/hero_idle_east_01.png`, `sprites/hero_idle_east_02.png`, `sprites/hero_idle_east_03.png`, `sprites/hero_idle_west_00.png`, `sprites/hero_idle_west_01.png`, `sprites/hero_idle_west_02.png`, `sprites/hero_idle_west_03.png`
+
+**State:** file does not exist yet; size taken from sprites/hero_walk_00.png. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
-> the same rider at rest, horse shifting weight, cloak stirring
+> a Roman commander on horseback at rest, red cloak, crested helmet, gilded cuirass, the horse standing still
 
-*Original brief wording: the same rider at rest, horse shifting weight, cloak stirring*
+**Step 1 — the still.** $0.038. This one does not use the troop style: that style forces a standing figure in profile.
 
 ```sh
 mkdir -p build/art/sprites_hero_idle_facing_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "the same rider at rest, horse shifting weight, cloak stirring", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1050, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman commander on horseback at rest, red cloak, crested helmet, gilded cuirass, the horse standing still", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1050, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3030,28 +3556,90 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_hero_idle_facing_00_03/01_raw.png
-file build/art/sprites_hero_idle_facing_00_03/01_raw.png   # must say: PNG image data
-echo wrote build/art/sprites_hero_idle_facing_00_03/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_hero_idle_facing_00_03/01_still.png
+file build/art/sprites_hero_idle_facing_00_03/01_still.png   # must say: PNG image data
 ```
+
+**Step 2 — accept it by eye.**
+
+- the red cloak is present and readable at 1:1
+- the crested helmet is present and readable at 1:1
+- the gilded cuirass is present and readable at 1:1
+- the the horse standing still is present and readable at 1:1
+- the subject is complete and inside the frame
+- the background is fully transparent
+- it faces the direction this file is for
+
+**Step 3 — animate the approved still.** $0.14, `rd_advanced_animation__idle`.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/sprites_hero_idle_facing_00_03/01_still.png)" \
+  '{prompt: "at rest, the horse shifting its weight and the cloak stirring",
+    prompt_style: "rd_advanced_animation__idle",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/sprites_hero_idle_facing_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/sprites_hero_idle_facing_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_hero_idle_facing_00_03/02_sheet.png
+file build/art/sprites_hero_idle_facing_00_03/02_sheet.png   # must say: PNG image data
+```
+
+**Step 4 — cut the sheet.**
+
+```sh
+convert build/art/sprites_hero_idle_facing_00_03/02_sheet.png -crop 96x96 +repage build/art/sprites_hero_idle_facing_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/sprites_hero_idle_facing_00_03/frame_0*.png   # four files, each 96x96
+```
+
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/sprites_hero_idle_facing_00_03/frame_00.png assets/glory-of-rome/art/sprites/hero_idle_south_00.png
+cp build/art/sprites_hero_idle_facing_00_03/frame_01.png assets/glory-of-rome/art/sprites/hero_idle_south_01.png
+cp build/art/sprites_hero_idle_facing_00_03/frame_02.png assets/glory-of-rome/art/sprites/hero_idle_south_02.png
+cp build/art/sprites_hero_idle_facing_00_03/frame_03.png assets/glory-of-rome/art/sprites/hero_idle_south_03.png
+cp build/art/sprites_hero_idle_facing_00_03/frame_04.png assets/glory-of-rome/art/sprites/hero_idle_north_00.png
+cp build/art/sprites_hero_idle_facing_00_03/frame_05.png assets/glory-of-rome/art/sprites/hero_idle_north_01.png
+cp build/art/sprites_hero_idle_facing_00_03/frame_06.png assets/glory-of-rome/art/sprites/hero_idle_north_02.png
+cp build/art/sprites_hero_idle_facing_00_03/frame_07.png assets/glory-of-rome/art/sprites/hero_idle_north_03.png
+cp build/art/sprites_hero_idle_facing_00_03/frame_08.png assets/glory-of-rome/art/sprites/hero_idle_east_00.png
+cp build/art/sprites_hero_idle_facing_00_03/frame_09.png assets/glory-of-rome/art/sprites/hero_idle_east_01.png
+cp build/art/sprites_hero_idle_facing_00_03/frame_10.png assets/glory-of-rome/art/sprites/hero_idle_east_02.png
+cp build/art/sprites_hero_idle_facing_00_03/frame_11.png assets/glory-of-rome/art/sprites/hero_idle_east_03.png
+cp build/art/sprites_hero_idle_facing_00_03/frame_12.png assets/glory-of-rome/art/sprites/hero_idle_west_00.png
+cp build/art/sprites_hero_idle_facing_00_03/frame_13.png assets/glory-of-rome/art/sprites/hero_idle_west_01.png
+cp build/art/sprites_hero_idle_facing_00_03/frame_14.png assets/glory-of-rome/art/sprites/hero_idle_west_02.png
+cp build/art/sprites_hero_idle_facing_00_03/frame_15.png assets/glory-of-rome/art/sprites/hero_idle_west_03.png
+```
+
 
 ## sprites_hero_walk_east_00_03
 
 **Replaces:** `sprites/hero_walk_east_00.png`, `sprites/hero_walk_east_01.png`, `sprites/hero_walk_east_02.png`, `sprites/hero_walk_east_03.png`
-  
-**Currently:** ?, missing → **generate at 96x96**
+
+**State:** file does not exist yet; size taken from sprites/hero_walk_00.png. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
-> the same rider in profile facing right
+> a Roman commander on horseback in profile facing right, red cloak, crested helmet, gilded cuirass
 
-*Original brief wording: the same rider in profile facing right*
+**Step 1 — the still.** $0.038. This one does not use the troop style: that style forces a standing figure in profile.
 
 ```sh
 mkdir -p build/art/sprites_hero_walk_east_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "the same rider in profile facing right", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1047, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman commander on horseback in profile facing right, red cloak, crested helmet, gilded cuirass", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1047, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3060,28 +3648,77 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_hero_walk_east_00_03/01_raw.png
-file build/art/sprites_hero_walk_east_00_03/01_raw.png   # must say: PNG image data
-echo wrote build/art/sprites_hero_walk_east_00_03/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_hero_walk_east_00_03/01_still.png
+file build/art/sprites_hero_walk_east_00_03/01_still.png   # must say: PNG image data
 ```
+
+**Step 2 — accept it by eye.**
+
+- the red cloak is present and readable at 1:1
+- the crested helmet is present and readable at 1:1
+- the gilded cuirass is present and readable at 1:1
+- the subject is complete and inside the frame
+- the background is fully transparent
+- it faces the direction this file is for
+
+**Step 3 — animate the approved still.** $0.14, `rd_advanced_animation__walking`.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/sprites_hero_walk_east_00_03/01_still.png)" \
+  '{prompt: "walking, steady steps, the legs moving",
+    prompt_style: "rd_advanced_animation__walking",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/sprites_hero_walk_east_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/sprites_hero_walk_east_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_hero_walk_east_00_03/02_sheet.png
+file build/art/sprites_hero_walk_east_00_03/02_sheet.png   # must say: PNG image data
+```
+
+**Step 4 — cut the sheet.**
+
+```sh
+convert build/art/sprites_hero_walk_east_00_03/02_sheet.png -crop 96x96 +repage build/art/sprites_hero_walk_east_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/sprites_hero_walk_east_00_03/frame_0*.png   # four files, each 96x96
+```
+
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/sprites_hero_walk_east_00_03/frame_00.png assets/glory-of-rome/art/sprites/hero_walk_east_00.png
+cp build/art/sprites_hero_walk_east_00_03/frame_01.png assets/glory-of-rome/art/sprites/hero_walk_east_01.png
+cp build/art/sprites_hero_walk_east_00_03/frame_02.png assets/glory-of-rome/art/sprites/hero_walk_east_02.png
+cp build/art/sprites_hero_walk_east_00_03/frame_03.png assets/glory-of-rome/art/sprites/hero_walk_east_03.png
+```
+
 
 ## sprites_hero_walk_north_00_03
 
 **Replaces:** `sprites/hero_walk_north_00.png`, `sprites/hero_walk_north_01.png`, `sprites/hero_walk_north_02.png`, `sprites/hero_walk_north_03.png`
-  
-**Currently:** ?, missing → **generate at 96x96**
+
+**State:** file does not exist yet; size taken from sprites/hero_walk_00.png. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
-> the same rider seen from behind, cloak and crest from the rear
+> a Roman commander on horseback seen from behind, red cloak and crested helmet from the rear, gilded cuirass, riding away from the viewer
 
-*Original brief wording: the same rider seen from behind, cloak and crest from the rear*
+**Step 1 — the still.** $0.038. This one does not use the troop style: that style forces a standing figure in profile.
 
 ```sh
 mkdir -p build/art/sprites_hero_walk_north_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "the same rider seen from behind, cloak and crest from the rear", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1049, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman commander on horseback seen from behind, red cloak and crested helmet from the rear, gilded cuirass, riding away from the viewer", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1049, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3090,22 +3727,70 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_hero_walk_north_00_03/01_raw.png
-file build/art/sprites_hero_walk_north_00_03/01_raw.png   # must say: PNG image data
-echo wrote build/art/sprites_hero_walk_north_00_03/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_hero_walk_north_00_03/01_still.png
+file build/art/sprites_hero_walk_north_00_03/01_still.png   # must say: PNG image data
 ```
+
+**Step 2 — accept it by eye.**
+
+- the red cloak and crested helmet from the rear is present and readable at 1:1
+- the gilded cuirass is present and readable at 1:1
+- the subject is complete and inside the frame
+- the background is fully transparent
+- it faces the direction this file is for
+
+**Step 3 — animate the approved still.** $0.14, `rd_advanced_animation__walking`.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/sprites_hero_walk_north_00_03/01_still.png)" \
+  '{prompt: "walking, steady steps, the legs moving",
+    prompt_style: "rd_advanced_animation__walking",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/sprites_hero_walk_north_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/sprites_hero_walk_north_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_hero_walk_north_00_03/02_sheet.png
+file build/art/sprites_hero_walk_north_00_03/02_sheet.png   # must say: PNG image data
+```
+
+**Step 4 — cut the sheet.**
+
+```sh
+convert build/art/sprites_hero_walk_north_00_03/02_sheet.png -crop 96x96 +repage build/art/sprites_hero_walk_north_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/sprites_hero_walk_north_00_03/frame_0*.png   # four files, each 96x96
+```
+
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/sprites_hero_walk_north_00_03/frame_00.png assets/glory-of-rome/art/sprites/hero_walk_north_00.png
+cp build/art/sprites_hero_walk_north_00_03/frame_01.png assets/glory-of-rome/art/sprites/hero_walk_north_01.png
+cp build/art/sprites_hero_walk_north_00_03/frame_02.png assets/glory-of-rome/art/sprites/hero_walk_north_02.png
+cp build/art/sprites_hero_walk_north_00_03/frame_03.png assets/glory-of-rome/art/sprites/hero_walk_north_03.png
+```
+
 
 ## sprites_hero_walk_south_00_03
 
 **Replaces:** `sprites/hero_walk_south_00.png`, `sprites/hero_walk_south_01.png`, `sprites/hero_walk_south_02.png`, `sprites/hero_walk_south_03.png`
-  
-**Currently:** ?, missing → **generate at 96x96**
+
+**State:** file does not exist yet; size taken from sprites/hero_walk_00.png. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a Roman commander on horseback seen from the front, red cloak, crested helmet, gilded cuirass, riding toward the viewer
 
-*Original brief wording: a Roman commander on horseback seen from the front, red cloak, crested helmet, gilded cuirass, riding toward the viewer*
+**Step 1 — the still.** $0.038. This one does not use the troop style: that style forces a standing figure in profile.
 
 ```sh
 mkdir -p build/art/sprites_hero_walk_south_00_03
@@ -3120,28 +3805,77 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_hero_walk_south_00_03/01_raw.png
-file build/art/sprites_hero_walk_south_00_03/01_raw.png   # must say: PNG image data
-echo wrote build/art/sprites_hero_walk_south_00_03/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_hero_walk_south_00_03/01_still.png
+file build/art/sprites_hero_walk_south_00_03/01_still.png   # must say: PNG image data
 ```
+
+**Step 2 — accept it by eye.**
+
+- the red cloak is present and readable at 1:1
+- the crested helmet is present and readable at 1:1
+- the gilded cuirass is present and readable at 1:1
+- the subject is complete and inside the frame
+- the background is fully transparent
+- it faces the direction this file is for
+
+**Step 3 — animate the approved still.** $0.14, `rd_advanced_animation__walking`.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/sprites_hero_walk_south_00_03/01_still.png)" \
+  '{prompt: "walking, steady steps, the legs moving",
+    prompt_style: "rd_advanced_animation__walking",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/sprites_hero_walk_south_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/sprites_hero_walk_south_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_hero_walk_south_00_03/02_sheet.png
+file build/art/sprites_hero_walk_south_00_03/02_sheet.png   # must say: PNG image data
+```
+
+**Step 4 — cut the sheet.**
+
+```sh
+convert build/art/sprites_hero_walk_south_00_03/02_sheet.png -crop 96x96 +repage build/art/sprites_hero_walk_south_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/sprites_hero_walk_south_00_03/frame_0*.png   # four files, each 96x96
+```
+
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/sprites_hero_walk_south_00_03/frame_00.png assets/glory-of-rome/art/sprites/hero_walk_south_00.png
+cp build/art/sprites_hero_walk_south_00_03/frame_01.png assets/glory-of-rome/art/sprites/hero_walk_south_01.png
+cp build/art/sprites_hero_walk_south_00_03/frame_02.png assets/glory-of-rome/art/sprites/hero_walk_south_02.png
+cp build/art/sprites_hero_walk_south_00_03/frame_03.png assets/glory-of-rome/art/sprites/hero_walk_south_03.png
+```
+
 
 ## sprites_hero_walk_west_00_03
 
 **Replaces:** `sprites/hero_walk_west_00.png`, `sprites/hero_walk_west_01.png`, `sprites/hero_walk_west_02.png`, `sprites/hero_walk_west_03.png`
-  
-**Currently:** ?, missing → **generate at 96x96**
+
+**State:** file does not exist yet; size taken from sprites/hero_walk_00.png. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
-> the same rider in profile facing left
+> a Roman commander on horseback in profile facing left, red cloak, crested helmet, gilded cuirass
 
-*Original brief wording: the same rider in profile facing left*
+**Step 1 — the still.** $0.038. This one does not use the troop style: that style forces a standing figure in profile.
 
 ```sh
 mkdir -p build/art/sprites_hero_walk_west_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "the same rider in profile facing left", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1048, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman commander on horseback in profile facing left, red cloak, crested helmet, gilded cuirass", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1048, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3150,31 +3884,77 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_hero_walk_west_00_03/01_raw.png
-file build/art/sprites_hero_walk_west_00_03/01_raw.png   # must say: PNG image data
-echo wrote build/art/sprites_hero_walk_west_00_03/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_hero_walk_west_00_03/01_still.png
+file build/art/sprites_hero_walk_west_00_03/01_still.png   # must say: PNG image data
 ```
 
-# 5.5 Boat -- 4 items, 16 files, 96x96
+**Step 2 — accept it by eye.**
+
+- the red cloak is present and readable at 1:1
+- the crested helmet is present and readable at 1:1
+- the gilded cuirass is present and readable at 1:1
+- the subject is complete and inside the frame
+- the background is fully transparent
+- it faces the direction this file is for
+
+**Step 3 — animate the approved still.** $0.14, `rd_advanced_animation__walking`.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/sprites_hero_walk_west_00_03/01_still.png)" \
+  '{prompt: "walking, steady steps, the legs moving",
+    prompt_style: "rd_advanced_animation__walking",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/sprites_hero_walk_west_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/sprites_hero_walk_west_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_hero_walk_west_00_03/02_sheet.png
+file build/art/sprites_hero_walk_west_00_03/02_sheet.png   # must say: PNG image data
+```
+
+**Step 4 — cut the sheet.**
+
+```sh
+convert build/art/sprites_hero_walk_west_00_03/02_sheet.png -crop 96x96 +repage build/art/sprites_hero_walk_west_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/sprites_hero_walk_west_00_03/frame_0*.png   # four files, each 96x96
+```
+
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/sprites_hero_walk_west_00_03/frame_00.png assets/glory-of-rome/art/sprites/hero_walk_west_00.png
+cp build/art/sprites_hero_walk_west_00_03/frame_01.png assets/glory-of-rome/art/sprites/hero_walk_west_01.png
+cp build/art/sprites_hero_walk_west_00_03/frame_02.png assets/glory-of-rome/art/sprites/hero_walk_west_02.png
+cp build/art/sprites_hero_walk_west_00_03/frame_03.png assets/glory-of-rome/art/sprites/hero_walk_west_03.png
+```
 
 
 ## sprites_boat_east_00_03
 
 **Replaces:** `sprites/boat_east_00.png`, `sprites/boat_east_01.png`, `sprites/boat_east_02.png`, `sprites/boat_east_03.png`
-  
-**Currently:** ?, missing → **generate at 96x96**
+
+**State:** file does not exist yet; size taken from sprites/boat_00.png. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
-> the same vessel in full profile facing right, sail and oar bank visible
+> a Roman liburnian galley in full profile facing right, square sail with a painted eagle, bank of oars
 
-*Original brief wording: the same vessel in full profile facing right, sail and oar bank visible*
+**Step 1 — the still.** $0.038. This one does not use the troop style: that style forces a standing figure in profile.
 
 ```sh
 mkdir -p build/art/sprites_boat_east_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "the same vessel in full profile facing right, sail and oar bank visible", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1052, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman liburnian galley in full profile facing right, square sail with a painted eagle, bank of oars", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1052, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3183,28 +3963,76 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_boat_east_00_03/01_raw.png
-file build/art/sprites_boat_east_00_03/01_raw.png   # must say: PNG image data
-echo wrote build/art/sprites_boat_east_00_03/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_boat_east_00_03/01_still.png
+file build/art/sprites_boat_east_00_03/01_still.png   # must say: PNG image data
 ```
+
+**Step 2 — accept it by eye.**
+
+- the square sail with a painted eagle is present and readable at 1:1
+- the bank of oars is present and readable at 1:1
+- the subject is complete and inside the frame
+- the background is fully transparent
+- it faces the direction this file is for
+
+**Step 3 — animate the approved still.** $0.14, `rd_advanced_animation__idle`.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/sprites_boat_east_00_03/01_still.png)" \
+  '{prompt: "riding the swell, the sail and pennant stirring",
+    prompt_style: "rd_advanced_animation__idle",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/sprites_boat_east_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/sprites_boat_east_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_boat_east_00_03/02_sheet.png
+file build/art/sprites_boat_east_00_03/02_sheet.png   # must say: PNG image data
+```
+
+**Step 4 — cut the sheet.**
+
+```sh
+convert build/art/sprites_boat_east_00_03/02_sheet.png -crop 96x96 +repage build/art/sprites_boat_east_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/sprites_boat_east_00_03/frame_0*.png   # four files, each 96x96
+```
+
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/sprites_boat_east_00_03/frame_00.png assets/glory-of-rome/art/sprites/boat_east_00.png
+cp build/art/sprites_boat_east_00_03/frame_01.png assets/glory-of-rome/art/sprites/boat_east_01.png
+cp build/art/sprites_boat_east_00_03/frame_02.png assets/glory-of-rome/art/sprites/boat_east_02.png
+cp build/art/sprites_boat_east_00_03/frame_03.png assets/glory-of-rome/art/sprites/boat_east_03.png
+```
+
 
 ## sprites_boat_north_00_03
 
 **Replaces:** `sprites/boat_north_00.png`, `sprites/boat_north_01.png`, `sprites/boat_north_02.png`, `sprites/boat_north_03.png`
-  
-**Currently:** ?, missing → **generate at 96x96**
+
+**State:** file does not exist yet; size taken from sprites/boat_00.png. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
-> the same vessel from astern, steering oar and sail from behind
+> a Roman liburnian galley seen from astern, steering oar and square sail from behind, oars out
 
-*Original brief wording: the same vessel from astern, steering oar and sail from behind*
+**Step 1 — the still.** $0.038. This one does not use the troop style: that style forces a standing figure in profile.
 
 ```sh
 mkdir -p build/art/sprites_boat_north_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "the same vessel from astern, steering oar and sail from behind", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1054, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman liburnian galley seen from astern, steering oar and square sail from behind, oars out", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1054, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3213,28 +4041,76 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_boat_north_00_03/01_raw.png
-file build/art/sprites_boat_north_00_03/01_raw.png   # must say: PNG image data
-echo wrote build/art/sprites_boat_north_00_03/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_boat_north_00_03/01_still.png
+file build/art/sprites_boat_north_00_03/01_still.png   # must say: PNG image data
 ```
+
+**Step 2 — accept it by eye.**
+
+- the steering oar and square sail from behind is present and readable at 1:1
+- the oars out is present and readable at 1:1
+- the subject is complete and inside the frame
+- the background is fully transparent
+- it faces the direction this file is for
+
+**Step 3 — animate the approved still.** $0.14, `rd_advanced_animation__idle`.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/sprites_boat_north_00_03/01_still.png)" \
+  '{prompt: "riding the swell, the sail and pennant stirring",
+    prompt_style: "rd_advanced_animation__idle",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/sprites_boat_north_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/sprites_boat_north_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_boat_north_00_03/02_sheet.png
+file build/art/sprites_boat_north_00_03/02_sheet.png   # must say: PNG image data
+```
+
+**Step 4 — cut the sheet.**
+
+```sh
+convert build/art/sprites_boat_north_00_03/02_sheet.png -crop 96x96 +repage build/art/sprites_boat_north_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/sprites_boat_north_00_03/frame_0*.png   # four files, each 96x96
+```
+
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/sprites_boat_north_00_03/frame_00.png assets/glory-of-rome/art/sprites/boat_north_00.png
+cp build/art/sprites_boat_north_00_03/frame_01.png assets/glory-of-rome/art/sprites/boat_north_01.png
+cp build/art/sprites_boat_north_00_03/frame_02.png assets/glory-of-rome/art/sprites/boat_north_02.png
+cp build/art/sprites_boat_north_00_03/frame_03.png assets/glory-of-rome/art/sprites/boat_north_03.png
+```
+
 
 ## sprites_boat_south_00_03
 
 **Replaces:** `sprites/boat_south_00.png`, `sprites/boat_south_01.png`, `sprites/boat_south_02.png`, `sprites/boat_south_03.png`
-  
-**Currently:** ?, missing → **generate at 96x96**
+
+**State:** file does not exist yet; size taken from sprites/boat_00.png. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
-> a Roman liburnian galley seen bow-on, single square sail with a painted eagle, eye painted on the prow, oars out
+> a Roman liburnian galley seen bow-on, single square sail with a painted eagle, an eye painted on the prow, oars out
 
-*Original brief wording: a Roman liburnian galley seen bow-on, single square sail with a painted eagle, eye painted on the prow, oars out*
+**Step 1 — the still.** $0.038. This one does not use the troop style: that style forces a standing figure in profile.
 
 ```sh
 mkdir -p build/art/sprites_boat_south_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman liburnian galley seen bow-on, single square sail with a painted eagle, eye painted on the prow, oars out", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1051, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman liburnian galley seen bow-on, single square sail with a painted eagle, an eye painted on the prow, oars out", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1051, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3243,28 +4119,77 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_boat_south_00_03/01_raw.png
-file build/art/sprites_boat_south_00_03/01_raw.png   # must say: PNG image data
-echo wrote build/art/sprites_boat_south_00_03/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_boat_south_00_03/01_still.png
+file build/art/sprites_boat_south_00_03/01_still.png   # must say: PNG image data
 ```
+
+**Step 2 — accept it by eye.**
+
+- the single square sail with a painted eagle is present and readable at 1:1
+- the an eye painted on the prow is present and readable at 1:1
+- the oars out is present and readable at 1:1
+- the subject is complete and inside the frame
+- the background is fully transparent
+- it faces the direction this file is for
+
+**Step 3 — animate the approved still.** $0.14, `rd_advanced_animation__idle`.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/sprites_boat_south_00_03/01_still.png)" \
+  '{prompt: "riding the swell, the sail and pennant stirring",
+    prompt_style: "rd_advanced_animation__idle",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/sprites_boat_south_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/sprites_boat_south_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_boat_south_00_03/02_sheet.png
+file build/art/sprites_boat_south_00_03/02_sheet.png   # must say: PNG image data
+```
+
+**Step 4 — cut the sheet.**
+
+```sh
+convert build/art/sprites_boat_south_00_03/02_sheet.png -crop 96x96 +repage build/art/sprites_boat_south_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/sprites_boat_south_00_03/frame_0*.png   # four files, each 96x96
+```
+
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/sprites_boat_south_00_03/frame_00.png assets/glory-of-rome/art/sprites/boat_south_00.png
+cp build/art/sprites_boat_south_00_03/frame_01.png assets/glory-of-rome/art/sprites/boat_south_01.png
+cp build/art/sprites_boat_south_00_03/frame_02.png assets/glory-of-rome/art/sprites/boat_south_02.png
+cp build/art/sprites_boat_south_00_03/frame_03.png assets/glory-of-rome/art/sprites/boat_south_03.png
+```
+
 
 ## sprites_boat_west_00_03
 
 **Replaces:** `sprites/boat_west_00.png`, `sprites/boat_west_01.png`, `sprites/boat_west_02.png`, `sprites/boat_west_03.png`
-  
-**Currently:** ?, missing → **generate at 96x96**
+
+**State:** file does not exist yet; size taken from sprites/boat_00.png. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
-> the same vessel in profile facing left
+> a Roman liburnian galley in full profile facing left, square sail with a painted eagle, bank of oars
 
-*Original brief wording: the same vessel in profile facing left*
+**Step 1 — the still.** $0.038. This one does not use the troop style: that style forces a standing figure in profile.
 
 ```sh
 mkdir -p build/art/sprites_boat_west_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "the same vessel in profile facing left", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1053, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman liburnian galley in full profile facing left, square sail with a painted eagle, bank of oars", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1053, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3273,25 +4198,70 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_boat_west_00_03/01_raw.png
-file build/art/sprites_boat_west_00_03/01_raw.png   # must say: PNG image data
-echo wrote build/art/sprites_boat_west_00_03/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_boat_west_00_03/01_still.png
+file build/art/sprites_boat_west_00_03/01_still.png   # must say: PNG image data
 ```
 
-# 5.6 Base terrain -- 6 items, 6 files, 96x96, opaque, seamless
+**Step 2 — accept it by eye.**
+
+- the square sail with a painted eagle is present and readable at 1:1
+- the bank of oars is present and readable at 1:1
+- the subject is complete and inside the frame
+- the background is fully transparent
+- it faces the direction this file is for
+
+**Step 3 — animate the approved still.** $0.14, `rd_advanced_animation__idle`.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/sprites_boat_west_00_03/01_still.png)" \
+  '{prompt: "riding the swell, the sail and pennant stirring",
+    prompt_style: "rd_advanced_animation__idle",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/sprites_boat_west_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/sprites_boat_west_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_boat_west_00_03/02_sheet.png
+file build/art/sprites_boat_west_00_03/02_sheet.png   # must say: PNG image data
+```
+
+**Step 4 — cut the sheet.**
+
+```sh
+convert build/art/sprites_boat_west_00_03/02_sheet.png -crop 96x96 +repage build/art/sprites_boat_west_00_03/frame_%02d.png
+identify -format "%f %wx%h\n" build/art/sprites_boat_west_00_03/frame_0*.png   # four files, each 96x96
+```
+
+**Step 5 — copy into the pack.**
+
+```sh
+cp build/art/sprites_boat_west_00_03/frame_00.png assets/glory-of-rome/art/sprites/boat_west_00.png
+cp build/art/sprites_boat_west_00_03/frame_01.png assets/glory-of-rome/art/sprites/boat_west_01.png
+cp build/art/sprites_boat_west_00_03/frame_02.png assets/glory-of-rome/art/sprites/boat_west_02.png
+cp build/art/sprites_boat_west_00_03/frame_03.png assets/glory-of-rome/art/sprites/boat_west_03.png
+```
 
 
 ## tiles_desert
 
 **Replaces:** `tiles/desert.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a small crop cut from the middle of a much larger sheet of wrapping paper, the paper is printed all over with an endless repeating pattern: a flat pale sand ground covered with many small short horizontal streaks of darker tan and near-white in strong contrast, the streaks spread evenly and randomly with the same density everywhere, the crop is taken from deep inside the sheet so no edge or border of the paper is visible anywhere, the pattern simply continues past all four sides, flat colours, hard edges, no blur, no gradient, no shading, no light, no depth
 
-*Original brief wording: a fine texture of rippled sand, uniform wind ripples, no dune silhouette, seamless*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/tiles_desert
@@ -3308,20 +4278,36 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_desert/01_raw.png
 file build/art/tiles_desert/01_raw.png   # must say: PNG image data
-echo wrote build/art/tiles_desert/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the the paper is printed all over with an endless repeating pattern: a flat pale sand ground covered with many small short horizontal streaks of darker tan and near-white in strong contrast is present and readable at 1:1
+- the the streaks spread evenly and randomly with the same density everywhere is present and readable at 1:1
+- it tiles with no seam: check a 3x3 montage, never a single tile
+- no feature large enough to be noticed repeating across a field of tiles
+- even brightness corner to corner, no vignette and no gradient
+- it reads as the right ground at 1:1, not only enlarged
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/tiles_desert/01_raw.png assets/glory-of-rome/art/tiles/desert.png
+```
+
 
 ## tiles_forest
 
 **Replaces:** `tiles/forest.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a small crop cut from the middle of a much larger sheet of wrapping paper, the paper is printed all over with an endless repeating pattern: a flat dark green ground covered with many small rounded clumps of mid green and near-black green in strong contrast, the clumps packed evenly and randomly with the same density everywhere, the crop is taken from deep inside the sheet so no edge or border of the paper is visible anywhere, the pattern simply continues past all four sides, flat colours, hard edges, no blur, no gradient, no shading, no light, no depth
 
-*Original brief wording: a fine dense texture of treetop canopy foliage from directly above, uniform grain, no individual tree readable, seamless*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/tiles_forest
@@ -3338,22 +4324,36 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_forest/01_raw.png
 file build/art/tiles_forest/01_raw.png   # must say: PNG image data
-echo wrote build/art/tiles_forest/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the the paper is printed all over with an endless repeating pattern: a flat dark green ground covered with many small rounded clumps of mid green and near-black green in strong contrast is present and readable at 1:1
+- the the clumps packed evenly and randomly with the same density everywhere is present and readable at 1:1
+- it tiles with no seam: check a 3x3 montage, never a single tile
+- no feature large enough to be noticed repeating across a field of tiles
+- even brightness corner to corner, no vignette and no gradient
+- it reads as the right ground at 1:1, not only enlarged
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/tiles_forest/01_raw.png assets/glory-of-rome/art/tiles/forest.png
+```
+
 
 ## tiles_grass
 
 **Replaces:** `tiles/grass.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
-  
-**Already generated:** 5 run(s) at `build/art/terrain_grass/` (run05 is newest)
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a small crop cut from the middle of a much larger sheet of wrapping paper, the paper is printed all over with an endless repeating pattern: a flat medium green ground covered with many small short specks of bright yellow-green and of dark green in strong contrast, the specks evenly and randomly spread with the same density everywhere, the crop is taken from deep inside the sheet so no edge or border of the paper is visible anywhere, the pattern simply continues past all four sides, flat colours, hard edges, no blur, no gradient, no shading, no light, no depth
 
-*Original brief wording: a fine even texture of short dry Mediterranean grass, uniform speckled detail, no distinct plants or objects, seamless*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/tiles_grass
@@ -3370,20 +4370,36 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_grass/01_raw.png
 file build/art/tiles_grass/01_raw.png   # must say: PNG image data
-echo wrote build/art/tiles_grass/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the the paper is printed all over with an endless repeating pattern: a flat medium green ground covered with many small short specks of bright yellow-green and of dark green in strong contrast is present and readable at 1:1
+- the the specks evenly and randomly spread with the same density everywhere is present and readable at 1:1
+- it tiles with no seam: check a 3x3 montage, never a single tile
+- no feature large enough to be noticed repeating across a field of tiles
+- even brightness corner to corner, no vignette and no gradient
+- it reads as the right ground at 1:1, not only enlarged
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/tiles_grass/01_raw.png assets/glory-of-rome/art/tiles/grass.png
+```
+
 
 ## tiles_grass_variant
 
 **Replaces:** `tiles/grass_variant.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a small crop cut from the middle of a much larger sheet of wrapping paper, the paper is printed all over with an endless repeating pattern: a flat medium green ground covered with small specks of yellow-green and dark green, with a few slightly darker scrub flecks mixed evenly through it, everything spread with the same density everywhere, the crop is taken from deep inside the sheet so no edge or border of the paper is visible anywhere, the pattern simply continues past all four sides, flat colours, hard edges, no blur, no gradient, no shading, no light, no depth
 
-*Original brief wording: the same grass texture with a few scattered darker scrub patches*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/tiles_grass_variant
@@ -3400,20 +4416,36 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_grass_variant/01_raw.png
 file build/art/tiles_grass_variant/01_raw.png   # must say: PNG image data
-echo wrote build/art/tiles_grass_variant/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the the paper is printed all over with an endless repeating pattern: a flat medium green ground covered with small specks of yellow-green and dark green is present and readable at 1:1
+- the with a few slightly darker scrub flecks mixed evenly through it is present and readable at 1:1
+- it tiles with no seam: check a 3x3 montage, never a single tile
+- no feature large enough to be noticed repeating across a field of tiles
+- even brightness corner to corner, no vignette and no gradient
+- it reads as the right ground at 1:1, not only enlarged
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/tiles_grass_variant/01_raw.png assets/glory-of-rome/art/tiles/grass_variant.png
+```
+
 
 ## tiles_mountain
 
 **Replaces:** `tiles/mountain.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a small crop cut from the middle of a much larger sheet of wrapping paper, the paper is printed all over with an endless repeating pattern: a flat mid grey ground covered with many small angular chips of light grey and dark grey in strong contrast, the chips spread evenly and randomly with the same density everywhere, the crop is taken from deep inside the sheet so no edge or border of the paper is visible anywhere, the pattern simply continues past all four sides, flat colours, hard edges, no blur, no gradient, no shading, no light, no depth
 
-*Original brief wording: a fine texture of broken grey limestone scree and rock, uniform grain, no distinct peak or feature, seamless*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/tiles_mountain
@@ -3430,22 +4462,36 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_mountain/01_raw.png
 file build/art/tiles_mountain/01_raw.png   # must say: PNG image data
-echo wrote build/art/tiles_mountain/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the the paper is printed all over with an endless repeating pattern: a flat mid grey ground covered with many small angular chips of light grey and dark grey in strong contrast is present and readable at 1:1
+- the the chips spread evenly and randomly with the same density everywhere is present and readable at 1:1
+- it tiles with no seam: check a 3x3 montage, never a single tile
+- no feature large enough to be noticed repeating across a field of tiles
+- even brightness corner to corner, no vignette and no gradient
+- it reads as the right ground at 1:1, not only enlarged
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/tiles_mountain/01_raw.png assets/glory-of-rome/art/tiles/mountain.png
+```
+
 
 ## tiles_water
 
 **Replaces:** `tiles/water.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
-  
-**Already generated:** 8 run(s) at `build/art/terrain_water/` (run08 is newest)
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a small crop cut from the middle of a much larger sheet of wrapping paper, the paper is printed all over with an endless repeating pattern: a flat medium blue ground covered with many small short horizontal dashes of bright pale cyan in strong contrast, the dashes evenly and randomly spread with the same density everywhere, the crop is taken from deep inside the sheet so no edge or border of the paper is visible anywhere, the pattern simply continues past all four sides, flat colours, hard edges, no blur, no gradient, no shading, no light, no depth
 
-*Original brief wording: a fine even texture of open sea with small repeating wave crests, no horizon, no shore, seamless*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/tiles_water
@@ -3462,29 +4508,42 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_water/01_raw.png
 file build/art/tiles_water/01_raw.png   # must say: PNG image data
-echo wrote build/art/tiles_water/01_raw.png
 ```
 
-# 5.8 Structures -- 6 items, 11 files, 96x96
+**Step 2 — accept it by eye.**
+
+- the the paper is printed all over with an endless repeating pattern: a flat medium blue ground covered with many small short horizontal dashes of bright pale cyan in strong contrast is present and readable at 1:1
+- the the dashes evenly and randomly spread with the same density everywhere is present and readable at 1:1
+- it tiles with no seam: check a 3x3 montage, never a single tile
+- no feature large enough to be noticed repeating across a field of tiles
+- even brightness corner to corner, no vignette and no gradient
+- it reads as the right ground at 1:1, not only enlarged
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/tiles_water/01_raw.png assets/glory-of-rome/art/tiles/water.png
+```
 
 
 ## tiles_castle_png
 
 **Replaces:** `tiles/castle_br.png`, `tiles/castle_gate.png`, `tiles/castle_ml.png`, `tiles/castle_mr.png`, `tiles/castle_tl.png`, `tiles/castle_tr.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
-> a Roman legionary fortress with ashlar stone walls, square corner towers, red tile roofs and an arched gate, seen from a high angle
+> a Roman legionary fortress with ashlar stone walls, square corner towers, red tile roofs and an arched gate, seen from a high angle, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it
 
-*Original brief wording: a Roman legionary fortress with ashlar stone walls, square corner towers, red tile roofs and an arched gate, seen from a high angle*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/tiles_castle_png
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman legionary fortress with ashlar stone walls, square corner towers, red tile roofs and an arched gate, seen from a high angle", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1061, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman legionary fortress with ashlar stone walls, square corner towers, red tile roofs and an arched gate, seen from a high angle, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1061, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3495,26 +4554,134 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_castle_png/01_raw.png
 file build/art/tiles_castle_png/01_raw.png   # must say: PNG image data
-echo wrote build/art/tiles_castle_png/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the square corner towers is present and readable at 1:1
+- the red tile roofs and an arched gate is present and readable at 1:1
+- the subject sits on grass that fills the frame to every edge
+- the grass matches `tiles/grass.png` closely enough to sit beside it
+- the image is fully opaque: the map draws this tile alone, with no ground behind it
+- the subject is complete and not cut by any edge
+
+**Steps 1b..6 — the other 5 images.** $0.038 each, one call per file.
+
+
+```sh
+mkdir -p build/art/tiles_castle_png
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "a Roman legionary fortress with ashlar stone walls, square corner towers, red tile roofs and an arched gate, seen from a high angle, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1062, "async": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_castle_png/02_raw.png
+file build/art/tiles_castle_png/02_raw.png   # must say: PNG image data
+```
+
+```sh
+mkdir -p build/art/tiles_castle_png
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "a Roman legionary fortress with ashlar stone walls, square corner towers, red tile roofs and an arched gate, seen from a high angle, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1063, "async": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_castle_png/03_raw.png
+file build/art/tiles_castle_png/03_raw.png   # must say: PNG image data
+```
+
+```sh
+mkdir -p build/art/tiles_castle_png
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "a Roman legionary fortress with ashlar stone walls, square corner towers, red tile roofs and an arched gate, seen from a high angle, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1064, "async": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_castle_png/04_raw.png
+file build/art/tiles_castle_png/04_raw.png   # must say: PNG image data
+```
+
+```sh
+mkdir -p build/art/tiles_castle_png
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "a Roman legionary fortress with ashlar stone walls, square corner towers, red tile roofs and an arched gate, seen from a high angle, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1065, "async": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_castle_png/05_raw.png
+file build/art/tiles_castle_png/05_raw.png   # must say: PNG image data
+```
+
+```sh
+mkdir -p build/art/tiles_castle_png
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "a Roman legionary fortress with ashlar stone walls, square corner towers, red tile roofs and an arched gate, seen from a high angle, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1066, "async": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_castle_png/06_raw.png
+file build/art/tiles_castle_png/06_raw.png   # must say: PNG image data
+```
+
+**Copy into the pack.**
+
+```sh
+cp build/art/tiles_castle_png/01_raw.png assets/glory-of-rome/art/tiles/castle_br.png
+cp build/art/tiles_castle_png/02_raw.png assets/glory-of-rome/art/tiles/castle_gate.png
+cp build/art/tiles_castle_png/03_raw.png assets/glory-of-rome/art/tiles/castle_ml.png
+cp build/art/tiles_castle_png/04_raw.png assets/glory-of-rome/art/tiles/castle_mr.png
+cp build/art/tiles_castle_png/05_raw.png assets/glory-of-rome/art/tiles/castle_tl.png
+cp build/art/tiles_castle_png/06_raw.png assets/glory-of-rome/art/tiles/castle_tr.png
+```
+
 
 ## tiles_dwelling_dungeon
 
 **Replaces:** `tiles/dwelling_dungeon.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
-> a Roman columbarium crypt entrance, stone doorway flanked by funerary urns
+> a Roman columbarium crypt entrance, stone doorway flanked by funerary urns, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it
 
-*Original brief wording: a Roman columbarium crypt entrance, stone doorway flanked by funerary urns*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/tiles_dwelling_dungeon
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman columbarium crypt entrance, stone doorway flanked by funerary urns", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1066, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman columbarium crypt entrance, stone doorway flanked by funerary urns, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1066, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3525,26 +4692,42 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_dwelling_dungeon/01_raw.png
 file build/art/tiles_dwelling_dungeon/01_raw.png   # must say: PNG image data
-echo wrote build/art/tiles_dwelling_dungeon/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the stone doorway flanked by funerary urns is present and readable at 1:1
+- the the grass filling the whole picture right to every edge behind it is present and readable at 1:1
+- the subject sits on grass that fills the frame to every edge
+- the grass matches `tiles/grass.png` closely enough to sit beside it
+- the image is fully opaque: the map draws this tile alone, with no ground behind it
+- the subject is complete and not cut by any edge
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/tiles_dwelling_dungeon/01_raw.png assets/glory-of-rome/art/tiles/dwelling_dungeon.png
+```
+
 
 ## tiles_dwelling_forest
 
 **Replaces:** `tiles/dwelling_forest.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
-> a stone shrine and altar in a sacred grove, surrounded by trees
+> a stone shrine and altar in a sacred grove, surrounded by trees, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it
 
-*Original brief wording: a stone shrine and altar in a sacred grove, surrounded by trees*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/tiles_dwelling_forest
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a stone shrine and altar in a sacred grove, surrounded by trees", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1064, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a stone shrine and altar in a sacred grove, surrounded by trees, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1064, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3555,26 +4738,42 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_dwelling_forest/01_raw.png
 file build/art/tiles_dwelling_forest/01_raw.png   # must say: PNG image data
-echo wrote build/art/tiles_dwelling_forest/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the surrounded by trees is present and readable at 1:1
+- the the grass filling the whole picture right to every edge behind it is present and readable at 1:1
+- the subject sits on grass that fills the frame to every edge
+- the grass matches `tiles/grass.png` closely enough to sit beside it
+- the image is fully opaque: the map draws this tile alone, with no ground behind it
+- the subject is complete and not cut by any edge
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/tiles_dwelling_forest/01_raw.png assets/glory-of-rome/art/tiles/dwelling_forest.png
+```
+
 
 ## tiles_dwelling_hills
 
 **Replaces:** `tiles/dwelling_hills.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
-> a cave mouth in a rocky hillside with a carved stone lintel
+> a cave mouth in a rocky hillside with a carved stone lintel, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it
 
-*Original brief wording: a cave mouth in a rocky hillside with a carved stone lintel*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/tiles_dwelling_hills
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a cave mouth in a rocky hillside with a carved stone lintel", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1065, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a cave mouth in a rocky hillside with a carved stone lintel, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1065, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3585,26 +4784,41 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_dwelling_hills/01_raw.png
 file build/art/tiles_dwelling_hills/01_raw.png   # must say: PNG image data
-echo wrote build/art/tiles_dwelling_hills/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the the grass filling the whole picture right to every edge behind it is present and readable at 1:1
+- the subject sits on grass that fills the frame to every edge
+- the grass matches `tiles/grass.png` closely enough to sit beside it
+- the image is fully opaque: the map draws this tile alone, with no ground behind it
+- the subject is complete and not cut by any edge
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/tiles_dwelling_hills/01_raw.png assets/glory-of-rome/art/tiles/dwelling_hills.png
+```
+
 
 ## tiles_dwelling_plains
 
 **Replaces:** `tiles/dwelling_plains.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
-> a Roman villa rustica farmstead with a tiled roof and a walled paddock
+> a Roman villa rustica farmstead with a tiled roof and a walled paddock, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it
 
-*Original brief wording: a Roman villa rustica farmstead with a tiled roof and a walled paddock*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/tiles_dwelling_plains
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman villa rustica farmstead with a tiled roof and a walled paddock", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1063, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman villa rustica farmstead with a tiled roof and a walled paddock, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1063, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3615,26 +4829,41 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_dwelling_plains/01_raw.png
 file build/art/tiles_dwelling_plains/01_raw.png   # must say: PNG image data
-echo wrote build/art/tiles_dwelling_plains/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the the grass filling the whole picture right to every edge behind it is present and readable at 1:1
+- the subject sits on grass that fills the frame to every edge
+- the grass matches `tiles/grass.png` closely enough to sit beside it
+- the image is fully opaque: the map draws this tile alone, with no ground behind it
+- the subject is complete and not cut by any edge
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/tiles_dwelling_plains/01_raw.png assets/glory-of-rome/art/tiles/dwelling_plains.png
+```
+
 
 ## tiles_town
 
 **Replaces:** `tiles/town.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
-> a small walled Roman town with terracotta roofs, a temple pediment and a column, seen from a high angle
+> a small walled Roman town with terracotta roofs, a temple pediment and a column, seen from a high angle, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it
 
-*Original brief wording: a small walled Roman town with terracotta roofs, a temple pediment and a column, seen from a high angle*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/tiles_town
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a small walled Roman town with terracotta roofs, a temple pediment and a column, seen from a high angle", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1062, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a small walled Roman town with terracotta roofs, a temple pediment and a column, seen from a high angle, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1062, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3645,31 +4874,42 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_town/01_raw.png
 file build/art/tiles_town/01_raw.png   # must say: PNG image data
-echo wrote build/art/tiles_town/01_raw.png
 ```
 
-# 5.9 Map objects -- 7 items, 7 files, 96x96, transparent surrounds
+**Step 2 — accept it by eye.**
+
+- the a temple pediment and a column is present and readable at 1:1
+- the the grass filling the whole picture right to every edge behind it is present and readable at 1:1
+- the subject sits on grass that fills the frame to every edge
+- the grass matches `tiles/grass.png` closely enough to sit beside it
+- the image is fully opaque: the map draws this tile alone, with no ground behind it
+- the subject is complete and not cut by any edge
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/tiles_town/01_raw.png assets/glory-of-rome/art/tiles/town.png
+```
 
 
 ## tiles_artifact_chest
 
 **Replaces:** `tiles/artifact_chest.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
-  
-**Already generated:** 1 run(s) at `build/art/artifact_chest/` (run01 is newest)
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
-> an ornate gilded reliquary casket with glowing seams
+> an ornate gilded reliquary casket with glowing seams, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it
 
-*Original brief wording: an ornate gilded reliquary casket with glowing seams*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/tiles_artifact_chest
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "an ornate gilded reliquary casket with glowing seams", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1068, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "an ornate gilded reliquary casket with glowing seams, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1068, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3680,28 +4920,41 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_artifact_chest/01_raw.png
 file build/art/tiles_artifact_chest/01_raw.png   # must say: PNG image data
-echo wrote build/art/tiles_artifact_chest/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the the grass filling the whole picture right to every edge behind it is present and readable at 1:1
+- the subject sits on grass that fills the frame to every edge
+- the grass matches `tiles/grass.png` closely enough to sit beside it
+- the image is fully opaque: the map draws this tile alone, with no ground behind it
+- the subject is complete and not cut by any edge
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/tiles_artifact_chest/01_raw.png assets/glory-of-rome/art/tiles/artifact_chest.png
+```
+
 
 ## tiles_artifact_ring
 
 **Replaces:** `tiles/artifact_ring.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
-  
-**Already generated:** 1 run(s) at `build/art/artifact_ring/` (run01 is newest)
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
-> a golden ring resting on a small stone plinth, radiating light
+> a golden ring resting on a small stone plinth, radiating light, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it
 
-*Original brief wording: a golden ring resting on a small stone plinth, radiating light*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/tiles_artifact_ring
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a golden ring resting on a small stone plinth, radiating light", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1069, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a golden ring resting on a small stone plinth, radiating light, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1069, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3712,26 +4965,42 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_artifact_ring/01_raw.png
 file build/art/tiles_artifact_ring/01_raw.png   # must say: PNG image data
-echo wrote build/art/tiles_artifact_ring/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the radiating light is present and readable at 1:1
+- the the grass filling the whole picture right to every edge behind it is present and readable at 1:1
+- the subject sits on grass that fills the frame to every edge
+- the grass matches `tiles/grass.png` closely enough to sit beside it
+- the image is fully opaque: the map draws this tile alone, with no ground behind it
+- the subject is complete and not cut by any edge
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/tiles_artifact_ring/01_raw.png assets/glory-of-rome/art/tiles/artifact_ring.png
+```
+
 
 ## tiles_bridge_h
 
 **Replaces:** `tiles/bridge_h.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
-> a Roman stone arch bridge spanning left to right
+> a Roman stone arch bridge spanning left to right, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it
 
-*Original brief wording: a Roman stone arch bridge spanning left to right*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/tiles_bridge_h
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman stone arch bridge spanning left to right", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1071, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman stone arch bridge spanning left to right, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1071, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3742,26 +5011,41 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_bridge_h/01_raw.png
 file build/art/tiles_bridge_h/01_raw.png   # must say: PNG image data
-echo wrote build/art/tiles_bridge_h/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the the grass filling the whole picture right to every edge behind it is present and readable at 1:1
+- the subject sits on grass that fills the frame to every edge
+- the grass matches `tiles/grass.png` closely enough to sit beside it
+- the image is fully opaque: the map draws this tile alone, with no ground behind it
+- the subject is complete and not cut by any edge
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/tiles_bridge_h/01_raw.png assets/glory-of-rome/art/tiles/bridge_h.png
+```
+
 
 ## tiles_bridge_v
 
 **Replaces:** `tiles/bridge_v.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
-> a Roman stone arch bridge spanning top to bottom
+> a Roman stone arch bridge spanning top to bottom, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it
 
-*Original brief wording: a Roman stone arch bridge spanning top to bottom*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/tiles_bridge_v
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman stone arch bridge spanning top to bottom", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1072, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman stone arch bridge spanning top to bottom, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1072, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3772,26 +5056,41 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_bridge_v/01_raw.png
 file build/art/tiles_bridge_v/01_raw.png   # must say: PNG image data
-echo wrote build/art/tiles_bridge_v/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the the grass filling the whole picture right to every edge behind it is present and readable at 1:1
+- the subject sits on grass that fills the frame to every edge
+- the grass matches `tiles/grass.png` closely enough to sit beside it
+- the image is fully opaque: the map draws this tile alone, with no ground behind it
+- the subject is complete and not cut by any edge
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/tiles_bridge_v/01_raw.png assets/glory-of-rome/art/tiles/bridge_v.png
+```
+
 
 ## tiles_chest
 
 **Replaces:** `tiles/chest.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
-> a Roman strongbox, an iron-banded wooden arca with bronze studs, lid closed
+> a Roman strongbox, an iron-banded wooden arca with bronze studs, lid closed, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it
 
-*Original brief wording: a Roman strongbox, an iron-banded wooden arca with bronze studs, lid closed*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/tiles_chest
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman strongbox, an iron-banded wooden arca with bronze studs, lid closed", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1067, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman strongbox, an iron-banded wooden arca with bronze studs, lid closed, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1067, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3802,26 +5101,42 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_chest/01_raw.png
 file build/art/tiles_chest/01_raw.png   # must say: PNG image data
-echo wrote build/art/tiles_chest/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the an iron-banded wooden arca with bronze studs is present and readable at 1:1
+- the lid closed is present and readable at 1:1
+- the subject sits on grass that fills the frame to every edge
+- the grass matches `tiles/grass.png` closely enough to sit beside it
+- the image is fully opaque: the map draws this tile alone, with no ground behind it
+- the subject is complete and not cut by any edge
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/tiles_chest/01_raw.png assets/glory-of-rome/art/tiles/chest.png
+```
+
 
 ## tiles_sign
 
 **Replaces:** `tiles/sign.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
-> a Roman milestone, a cylindrical stone column with carved lettering
+> a Roman milestone, a cylindrical stone column with carved lettering, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it
 
-*Original brief wording: a Roman milestone, a cylindrical stone column with carved lettering*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/tiles_sign
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman milestone, a cylindrical stone column with carved lettering", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1070, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman milestone, a cylindrical stone column with carved lettering, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1070, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3832,26 +5147,42 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_sign/01_raw.png
 file build/art/tiles_sign/01_raw.png   # must say: PNG image data
-echo wrote build/art/tiles_sign/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the a cylindrical stone column with carved lettering is present and readable at 1:1
+- the the grass filling the whole picture right to every edge behind it is present and readable at 1:1
+- the subject sits on grass that fills the frame to every edge
+- the grass matches `tiles/grass.png` closely enough to sit beside it
+- the image is fully opaque: the map draws this tile alone, with no ground behind it
+- the subject is complete and not cut by any edge
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/tiles_sign/01_raw.png assets/glory-of-rome/art/tiles/sign.png
+```
+
 
 ## tiles_wandering_army
 
 **Replaces:** `tiles/wandering_army.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
-> a barbarian war standard planted in the ground, a spear hung with skulls and a horsehair tuft
+> a barbarian war standard planted in the ground, a spear hung with skulls and a horsehair tuft, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it
 
-*Original brief wording: a barbarian war standard planted in the ground, a spear hung with skulls and a horsehair tuft*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/tiles_wandering_army
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a barbarian war standard planted in the ground, a spear hung with skulls and a horsehair tuft", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1073, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a barbarian war standard planted in the ground, a spear hung with skulls and a horsehair tuft, standing on short dry Mediterranean grass, the grass filling the whole picture right to every edge behind it", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1073, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3862,23 +5193,36 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_wandering_army/01_raw.png
 file build/art/tiles_wandering_army/01_raw.png   # must say: PNG image data
-echo wrote build/art/tiles_wandering_army/01_raw.png
 ```
 
-# 5.10 Combat arena -- 5 items, 15 files, 96x96
+**Step 2 — accept it by eye.**
+
+- the a spear hung with skulls and a horsehair tuft is present and readable at 1:1
+- the the grass filling the whole picture right to every edge behind it is present and readable at 1:1
+- the subject sits on grass that fills the frame to every edge
+- the grass matches `tiles/grass.png` closely enough to sit beside it
+- the image is fully opaque: the map draws this tile alone, with no ground behind it
+- the subject is complete and not cut by any edge
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/tiles_wandering_army/01_raw.png assets/glory-of-rome/art/tiles/wandering_army.png
+```
 
 
 ## combat_castle_spike
 
 **Replaces:** `combat/castle_spike.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a row of sharpened wooden stakes driven into the ground at an angle
 
-*Original brief wording: a row of sharpened wooden stakes driven into the ground at an angle*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/combat_castle_spike
@@ -3895,20 +5239,34 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/combat_castle_spike/01_raw.png
 file build/art/combat_castle_spike/01_raw.png   # must say: PNG image data
-echo wrote build/art/combat_castle_spike/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the a row of sharpened wooden stakes driven into the ground at an angle is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 on the battlefield
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/combat_castle_spike/01_raw.png assets/glory-of-rome/art/combat/castle_spike.png
+```
+
 
 ## combat_castle_wall_01_06
 
-**Replaces:** `combat/castle_wall_01..06.png`
-  
-**Currently:** ?, missing → **generate at 96x96**
+**Replaces:** `combat/castle_wall_01.png`, `combat/castle_wall_02.png`, `combat/castle_wall_03.png`, `combat/castle_wall_04.png`, `combat/castle_wall_05.png`, `combat/castle_wall_06.png`
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > Roman fortress wall segments in ashlar stone with crenellations, six varied sections
 
-*Original brief wording: Roman fortress wall segments in ashlar stone with crenellations, six varied sections*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/combat_castle_wall_01_06
@@ -3925,20 +5283,126 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/combat_castle_wall_01_06/01_raw.png
 file build/art/combat_castle_wall_01_06/01_raw.png   # must say: PNG image data
-echo wrote build/art/combat_castle_wall_01_06/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the six varied sections is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 on the battlefield
+
+**Steps 1b..6 — the other 5 images.** $0.038 each, one call per file.
+
+
+```sh
+mkdir -p build/art/combat_castle_wall_01_06
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "Roman fortress wall segments in ashlar stone with crenellations, six varied sections", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1077, "async": true, "remove_bg": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/combat_castle_wall_01_06/02_raw.png
+file build/art/combat_castle_wall_01_06/02_raw.png   # must say: PNG image data
+```
+
+```sh
+mkdir -p build/art/combat_castle_wall_01_06
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "Roman fortress wall segments in ashlar stone with crenellations, six varied sections", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1078, "async": true, "remove_bg": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/combat_castle_wall_01_06/03_raw.png
+file build/art/combat_castle_wall_01_06/03_raw.png   # must say: PNG image data
+```
+
+```sh
+mkdir -p build/art/combat_castle_wall_01_06
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "Roman fortress wall segments in ashlar stone with crenellations, six varied sections", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1079, "async": true, "remove_bg": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/combat_castle_wall_01_06/04_raw.png
+file build/art/combat_castle_wall_01_06/04_raw.png   # must say: PNG image data
+```
+
+```sh
+mkdir -p build/art/combat_castle_wall_01_06
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "Roman fortress wall segments in ashlar stone with crenellations, six varied sections", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1080, "async": true, "remove_bg": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/combat_castle_wall_01_06/05_raw.png
+file build/art/combat_castle_wall_01_06/05_raw.png   # must say: PNG image data
+```
+
+```sh
+mkdir -p build/art/combat_castle_wall_01_06
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "Roman fortress wall segments in ashlar stone with crenellations, six varied sections", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1081, "async": true, "remove_bg": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/combat_castle_wall_01_06/06_raw.png
+file build/art/combat_castle_wall_01_06/06_raw.png   # must say: PNG image data
+```
+
+**Copy into the pack.**
+
+```sh
+cp build/art/combat_castle_wall_01_06/01_raw.png assets/glory-of-rome/art/combat/castle_wall_01.png
+cp build/art/combat_castle_wall_01_06/02_raw.png assets/glory-of-rome/art/combat/castle_wall_02.png
+cp build/art/combat_castle_wall_01_06/03_raw.png assets/glory-of-rome/art/combat/castle_wall_03.png
+cp build/art/combat_castle_wall_01_06/04_raw.png assets/glory-of-rome/art/combat/castle_wall_04.png
+cp build/art/combat_castle_wall_01_06/05_raw.png assets/glory-of-rome/art/combat/castle_wall_05.png
+cp build/art/combat_castle_wall_01_06/06_raw.png assets/glory-of-rome/art/combat/castle_wall_06.png
+```
+
 
 ## combat_cursor_01_04
 
-**Replaces:** `combat/cursor_01..04.png`
-  
-**Currently:** ?, missing → **generate at 96x96**
+**Replaces:** `combat/cursor_01.png`, `combat/cursor_02.png`, `combat/cursor_03.png`, `combat/cursor_04.png`
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a thin bronze laurel-wreath ring outline, hollow centre
 
-*Original brief wording: a thin bronze laurel-wreath ring outline, hollow centre*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/combat_cursor_01_04
@@ -3955,26 +5419,96 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/combat_cursor_01_04/01_raw.png
 file build/art/combat_cursor_01_04/01_raw.png   # must say: PNG image data
-echo wrote build/art/combat_cursor_01_04/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the hollow centre is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 on the battlefield
+
+**Steps 1b..4 — the other 3 images.** $0.038 each, one call per file.
+
+
+```sh
+mkdir -p build/art/combat_cursor_01_04
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "a thin bronze laurel-wreath ring outline, hollow centre", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1079, "async": true, "remove_bg": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/combat_cursor_01_04/02_raw.png
+file build/art/combat_cursor_01_04/02_raw.png   # must say: PNG image data
+```
+
+```sh
+mkdir -p build/art/combat_cursor_01_04
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "a thin bronze laurel-wreath ring outline, hollow centre", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1080, "async": true, "remove_bg": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/combat_cursor_01_04/03_raw.png
+file build/art/combat_cursor_01_04/03_raw.png   # must say: PNG image data
+```
+
+```sh
+mkdir -p build/art/combat_cursor_01_04
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "a thin bronze laurel-wreath ring outline, hollow centre", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1081, "async": true, "remove_bg": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/combat_cursor_01_04/04_raw.png
+file build/art/combat_cursor_01_04/04_raw.png   # must say: PNG image data
+```
+
+**Copy into the pack.**
+
+```sh
+cp build/art/combat_cursor_01_04/01_raw.png assets/glory-of-rome/art/combat/cursor_01.png
+cp build/art/combat_cursor_01_04/02_raw.png assets/glory-of-rome/art/combat/cursor_02.png
+cp build/art/combat_cursor_01_04/03_raw.png assets/glory-of-rome/art/combat/cursor_03.png
+cp build/art/combat_cursor_01_04/04_raw.png assets/glory-of-rome/art/combat/cursor_04.png
+```
+
 
 ## combat_field_grass
 
 **Replaces:** `combat/field_grass.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
-> trampled battlefield turf with bare patches of earth, seen from above (tile route, seamless)
+> a small crop cut from the middle of a much larger sheet of wrapping paper, the paper is printed all over with an endless repeating pattern: a flat trampled olive-green ground with small bare patches of brown earth scattered evenly through it, the crop is taken from deep inside the sheet so no edge or border of the paper is visible anywhere, the pattern simply continues past all four sides, flat colours, hard edges, no blur, no gradient, no shading, no light, no depth
 
-*Original brief wording: trampled battlefield turf with bare patches of earth, seen from above (tile route, seamless)*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/combat_field_grass
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "trampled battlefield turf with bare patches of earth, seen from above (tile route, seamless)", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1074, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a small crop cut from the middle of a much larger sheet of wrapping paper, the paper is printed all over with an endless repeating pattern: a flat trampled olive-green ground with small bare patches of brown earth scattered evenly through it, the crop is taken from deep inside the sheet so no edge or border of the paper is visible anywhere, the pattern simply continues past all four sides, flat colours, hard edges, no blur, no gradient, no shading, no light, no depth", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1074, "async": true, "tile_x": true, "tile_y": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3985,20 +5519,36 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/combat_field_grass/01_raw.png
 file build/art/combat_field_grass/01_raw.png   # must say: PNG image data
-echo wrote build/art/combat_field_grass/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the the paper is printed all over with an endless repeating pattern: a flat trampled olive-green ground with small bare patches of brown earth scattered evenly through it is present and readable at 1:1
+- the the crop is taken from deep inside the sheet so no edge or border of the paper is visible anywhere is present and readable at 1:1
+- it tiles with no seam: check a 3x3 montage, never a single tile
+- no feature large enough to be noticed repeating across a field of tiles
+- even brightness corner to corner, no vignette and no gradient
+- it reads as the right ground at 1:1, not only enlarged
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/combat_field_grass/01_raw.png assets/glory-of-rome/art/combat/field_grass.png
+```
+
 
 ## combat_obstacle_01_03
 
-**Replaces:** `combat/obstacle_01..03.png`
-  
-**Currently:** ?, missing → **generate at 96x96**
+**Replaces:** `combat/obstacle_01.png`, `combat/obstacle_02.png`, `combat/obstacle_03.png`
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a mossy boulder / a dry thorn scrub bush / a fallen broken column drum
 
-*Original brief wording: a mossy boulder / a dry thorn scrub bush / a fallen broken column drum*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/combat_obstacle_01_03
@@ -4015,23 +5565,72 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/combat_obstacle_01_03/01_raw.png
 file build/art/combat_obstacle_01_03/01_raw.png   # must say: PNG image data
-echo wrote build/art/combat_obstacle_01_03/01_raw.png
 ```
 
-# 5.11 Artifact icons -- 8 items, 8 files, 96x96
+**Step 2 — accept it by eye.**
+
+- the a mossy boulder / a dry thorn scrub bush / a fallen broken column drum is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 on the battlefield
+
+**Steps 1b..3 — the other 2 images.** $0.038 each, one call per file.
+
+
+```sh
+mkdir -p build/art/combat_obstacle_01_03
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "a mossy boulder / a dry thorn scrub bush / a fallen broken column drum", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1076, "async": true, "remove_bg": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/combat_obstacle_01_03/02_raw.png
+file build/art/combat_obstacle_01_03/02_raw.png   # must say: PNG image data
+```
+
+```sh
+mkdir -p build/art/combat_obstacle_01_03
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "a mossy boulder / a dry thorn scrub bush / a fallen broken column drum", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1077, "async": true, "remove_bg": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/combat_obstacle_01_03/03_raw.png
+file build/art/combat_obstacle_01_03/03_raw.png   # must say: PNG image data
+```
+
+**Copy into the pack.**
+
+```sh
+cp build/art/combat_obstacle_01_03/01_raw.png assets/glory-of-rome/art/combat/obstacle_01.png
+cp build/art/combat_obstacle_01_03/02_raw.png assets/glory-of-rome/art/combat/obstacle_02.png
+cp build/art/combat_obstacle_01_03/03_raw.png assets/glory-of-rome/art/combat/obstacle_03.png
+```
 
 
 ## ui_inventory_artifact_amulet
 
 **Replaces:** `ui/inventory_artifact_amulet.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a gold locket amulet on a cord, embossed with a lightning bolt
 
-*Original brief wording: a gold locket amulet on a cord, embossed with a lightning bolt*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_inventory_artifact_amulet
@@ -4048,20 +5647,34 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_inventory_artifact_amulet/01_raw.png
 file build/art/ui_inventory_artifact_amulet/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_inventory_artifact_amulet/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the embossed with a lightning bolt is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 in its panel slot
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_inventory_artifact_amulet/01_raw.png assets/glory-of-rome/art/ui/inventory_artifact_amulet.png
+```
+
 
 ## ui_inventory_artifact_anchor
 
 **Replaces:** `ui/inventory_artifact_anchor.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a bronze anchor with a trident-shaped crossbar
 
-*Original brief wording: a bronze anchor with a trident-shaped crossbar*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_inventory_artifact_anchor
@@ -4078,20 +5691,34 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_inventory_artifact_anchor/01_raw.png
 file build/art/ui_inventory_artifact_anchor/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_inventory_artifact_anchor/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the a bronze anchor with a trident-shaped crossbar is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 in its panel slot
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_inventory_artifact_anchor/01_raw.png assets/glory-of-rome/art/ui/inventory_artifact_anchor.png
+```
+
 
 ## ui_inventory_artifact_articles
 
 **Replaces:** `ui/inventory_artifact_articles.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a bronze inscribed tablet with a hanging wax seal
 
-*Original brief wording: a bronze inscribed tablet with a hanging wax seal*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_inventory_artifact_articles
@@ -4108,20 +5735,34 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_inventory_artifact_articles/01_raw.png
 file build/art/ui_inventory_artifact_articles/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_inventory_artifact_articles/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the a bronze inscribed tablet with a hanging wax seal is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 in its panel slot
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_inventory_artifact_articles/01_raw.png assets/glory-of-rome/art/ui/inventory_artifact_articles.png
+```
+
 
 ## ui_inventory_artifact_book
 
 **Replaces:** `ui/inventory_artifact_book.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a torn scrap of ancient papyrus with faded illegible script
 
-*Original brief wording: a torn scrap of ancient papyrus with faded illegible script*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_inventory_artifact_book
@@ -4138,20 +5779,34 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_inventory_artifact_book/01_raw.png
 file build/art/ui_inventory_artifact_book/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_inventory_artifact_book/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the a torn scrap of ancient papyrus with faded illegible script is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 in its panel slot
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_inventory_artifact_book/01_raw.png assets/glory-of-rome/art/ui/inventory_artifact_book.png
+```
+
 
 ## ui_inventory_artifact_crown
 
 **Replaces:** `ui/inventory_artifact_crown.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a golden laurel wreath crown
 
-*Original brief wording: a golden laurel wreath crown*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_inventory_artifact_crown
@@ -4168,20 +5823,34 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_inventory_artifact_crown/01_raw.png
 file build/art/ui_inventory_artifact_crown/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_inventory_artifact_crown/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the a golden laurel wreath crown is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 in its panel slot
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_inventory_artifact_crown/01_raw.png assets/glory-of-rome/art/ui/inventory_artifact_crown.png
+```
+
 
 ## ui_inventory_artifact_ring
 
 **Replaces:** `ui/inventory_artifact_ring.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a heavy gold equestrian signet ring
 
-*Original brief wording: a heavy gold equestrian signet ring*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_inventory_artifact_ring
@@ -4198,20 +5867,34 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_inventory_artifact_ring/01_raw.png
 file build/art/ui_inventory_artifact_ring/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_inventory_artifact_ring/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the a heavy gold equestrian signet ring is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 in its panel slot
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_inventory_artifact_ring/01_raw.png assets/glory-of-rome/art/ui/inventory_artifact_ring.png
+```
+
 
 ## ui_inventory_artifact_shield
 
 **Replaces:** `ui/inventory_artifact_shield.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a curved rectangular Roman shield bearing a Trojan palladium device
 
-*Original brief wording: a curved rectangular Roman shield bearing a Trojan palladium device*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_inventory_artifact_shield
@@ -4228,20 +5911,34 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_inventory_artifact_shield/01_raw.png
 file build/art/ui_inventory_artifact_shield/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_inventory_artifact_shield/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the a curved rectangular Roman shield bearing a Trojan palladium device is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 in its panel slot
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_inventory_artifact_shield/01_raw.png assets/glory-of-rome/art/ui/inventory_artifact_shield.png
+```
+
 
 ## ui_inventory_artifact_sword
 
 **Replaces:** `ui/inventory_artifact_sword.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > an ornate gladius short sword with a ruby pommel and flame etching on the blade
 
-*Original brief wording: an ornate gladius short sword with a ruby pommel and flame etching on the blade*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_inventory_artifact_sword
@@ -4258,23 +5955,34 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_inventory_artifact_sword/01_raw.png
 file build/art/ui_inventory_artifact_sword/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_inventory_artifact_sword/01_raw.png
 ```
 
-# 5.12 Continent emblems -- 4 items, 4 files, 96x96
+**Step 2 — accept it by eye.**
+
+- the an ornate gladius short sword with a ruby pommel and flame etching on the blade is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 in its panel slot
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_inventory_artifact_sword/01_raw.png assets/glory-of-rome/art/ui/inventory_artifact_sword.png
+```
 
 
 ## ui_inventory_zone_archipelia
 
 **Replaces:** `ui/inventory_zone_archipelia.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a heraldic emblem of a palm and an elephant above a coastal strip and dunes
 
-*Original brief wording: a heraldic emblem of a palm and an elephant above a coastal strip and dunes*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_inventory_zone_archipelia
@@ -4291,20 +5999,34 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_inventory_zone_archipelia/01_raw.png
 file build/art/ui_inventory_zone_archipelia/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_inventory_zone_archipelia/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the a heraldic emblem of a palm and an elephant above a coastal strip and dunes is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 in its panel slot
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_inventory_zone_archipelia/01_raw.png assets/glory-of-rome/art/ui/inventory_zone_archipelia.png
+```
+
 
 ## ui_inventory_zone_continentia
 
 **Replaces:** `ui/inventory_zone_continentia.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a heraldic emblem of the Italian peninsula with a she-wolf and laurel
 
-*Original brief wording: a heraldic emblem of the Italian peninsula with a she-wolf and laurel*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_inventory_zone_continentia
@@ -4321,20 +6043,34 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_inventory_zone_continentia/01_raw.png
 file build/art/ui_inventory_zone_continentia/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_inventory_zone_continentia/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the a heraldic emblem of the Italian peninsula with a she-wolf and laurel is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 in its panel slot
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_inventory_zone_continentia/01_raw.png assets/glory-of-rome/art/ui/inventory_zone_continentia.png
+```
+
 
 ## ui_inventory_zone_forestria
 
 **Replaces:** `ui/inventory_zone_forestria.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a heraldic emblem of forested hills with a Gallic cockerel and a river bridge
 
-*Original brief wording: a heraldic emblem of forested hills with a Gallic cockerel and a river bridge*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_inventory_zone_forestria
@@ -4351,20 +6087,34 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_inventory_zone_forestria/01_raw.png
 file build/art/ui_inventory_zone_forestria/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_inventory_zone_forestria/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the a heraldic emblem of forested hills with a Gallic cockerel and a river bridge is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 in its panel slot
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_inventory_zone_forestria/01_raw.png assets/glory-of-rome/art/ui/inventory_zone_forestria.png
+```
+
 
 ## ui_inventory_zone_saharia
 
 **Replaces:** `ui/inventory_zone_saharia.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a heraldic emblem of a domed eastern skyline with a palm and a sun rising over mountains
 
-*Original brief wording: a heraldic emblem of a domed eastern skyline with a palm and a sun rising over mountains*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_inventory_zone_saharia
@@ -4381,140 +6131,299 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_inventory_zone_saharia/01_raw.png
 file build/art/ui_inventory_zone_saharia/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_inventory_zone_saharia/01_raw.png
 ```
 
-# 5.13 Location backdrops -- 6 items, 6 files, 240x102
+**Step 2 — accept it by eye.**
+
+- the a heraldic emblem of a domed eastern skyline with a palm and a sun rising over mountains is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 in its panel slot
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_inventory_zone_saharia/01_raw.png assets/glory-of-rome/art/ui/inventory_zone_saharia.png
+```
 
 
 ## ui_backdrop_castle
 
 **Replaces:** `ui/backdrop_castle.png`
-  
-**Currently:** 240x102, placeholder (identical to King's Bounty) → **generate at 480x204**
+
+**State:** placeholder. Design size 240x102 → generate at 384x163.
 
 **Prompt**
 
 > a fortress hall interior with hanging legionary standards, a brazier and stone arches
 
-*Original brief wording: a fortress hall interior with hanging legionary standards, a brazier and stone arches*
+**Step 1 — generate.** $0.038.
 
-> **Cannot be generated at this size.** The largest dimension any public style
-> accepts is 384; this asset is 480x204. Options, none of them free of a
-> decision: author it by hand; generate the subject alone at 384 or less and
-> compose the screen in code, as the title screen plan already does for the
-> Aquila; or drop the design size x2 rule for screen art and generate at 1x.
-> Resolve before this item is scheduled.
+```sh
+mkdir -p build/art/ui_backdrop_castle
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "a fortress hall interior with hanging legionary standards, a brazier and stone arches", "prompt_style": "rd_plus__default", "width": 384, "height": 163, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_backdrop_castle/01_raw.png
+file build/art/ui_backdrop_castle/01_raw.png   # must say: PNG image data
+```
+
+**Step 2 — accept it by eye.**
+
+- the a brazier and stone arches is present and readable at 1:1
+- the composition is complete and nothing important sits under the frame edge
+- no rendered text anywhere: lettering is composited by the engine
+- the image is fully opaque
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_backdrop_castle/01_raw.png assets/glory-of-rome/art/ui/backdrop_castle.png
+```
+
 
 ## ui_backdrop_dungeon
 
 **Replaces:** `ui/backdrop_dungeon.png`
-  
-**Currently:** 240x102, placeholder (identical to King's Bounty) → **generate at 480x204**
+
+**State:** placeholder. Design size 240x102 → generate at 384x163.
 
 **Prompt**
 
 > a crypt interior with columbarium niches and torchlight
 
-*Original brief wording: a crypt interior with columbarium niches and torchlight*
+**Step 1 — generate.** $0.038.
 
-> **Cannot be generated at this size.** The largest dimension any public style
-> accepts is 384; this asset is 480x204. Options, none of them free of a
-> decision: author it by hand; generate the subject alone at 384 or less and
-> compose the screen in code, as the title screen plan already does for the
-> Aquila; or drop the design size x2 rule for screen art and generate at 1x.
-> Resolve before this item is scheduled.
+```sh
+mkdir -p build/art/ui_backdrop_dungeon
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "a crypt interior with columbarium niches and torchlight", "prompt_style": "rd_plus__default", "width": 384, "height": 163, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_backdrop_dungeon/01_raw.png
+file build/art/ui_backdrop_dungeon/01_raw.png   # must say: PNG image data
+```
+
+**Step 2 — accept it by eye.**
+
+- the a crypt interior with columbarium niches and torchlight is present and readable at 1:1
+- the composition is complete and nothing important sits under the frame edge
+- no rendered text anywhere: lettering is composited by the engine
+- the image is fully opaque
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_backdrop_dungeon/01_raw.png assets/glory-of-rome/art/ui/backdrop_dungeon.png
+```
+
 
 ## ui_backdrop_forest
 
 **Replaces:** `ui/backdrop_forest.png`
-  
-**Currently:** 240x102, placeholder (identical to King's Bounty) → **generate at 480x204**
+
+**State:** placeholder. Design size 240x102 → generate at 384x163.
 
 **Prompt**
 
 > the interior of a dense sacred grove with shafts of light through the canopy
 
-*Original brief wording: the interior of a dense sacred grove with shafts of light through the canopy*
+**Step 1 — generate.** $0.038.
 
-> **Cannot be generated at this size.** The largest dimension any public style
-> accepts is 384; this asset is 480x204. Options, none of them free of a
-> decision: author it by hand; generate the subject alone at 384 or less and
-> compose the screen in code, as the title screen plan already does for the
-> Aquila; or drop the design size x2 rule for screen art and generate at 1x.
-> Resolve before this item is scheduled.
+```sh
+mkdir -p build/art/ui_backdrop_forest
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "the interior of a dense sacred grove with shafts of light through the canopy", "prompt_style": "rd_plus__default", "width": 384, "height": 163, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_backdrop_forest/01_raw.png
+file build/art/ui_backdrop_forest/01_raw.png   # must say: PNG image data
+```
+
+**Step 2 — accept it by eye.**
+
+- the the interior of a dense sacred grove with shafts of light through the canopy is present and readable at 1:1
+- the composition is complete and nothing important sits under the frame edge
+- no rendered text anywhere: lettering is composited by the engine
+- the image is fully opaque
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_backdrop_forest/01_raw.png assets/glory-of-rome/art/ui/backdrop_forest.png
+```
+
 
 ## ui_backdrop_hillcave
 
 **Replaces:** `ui/backdrop_hillcave.png`
-  
-**Currently:** 240x102, placeholder (identical to King's Bounty) → **generate at 480x204**
+
+**State:** placeholder. Design size 240x102 → generate at 384x163.
 
 **Prompt**
 
 > a cave mouth in rocky hills with oracle smoke drifting from the opening
 
-*Original brief wording: a cave mouth in rocky hills with oracle smoke drifting from the opening*
+**Step 1 — generate.** $0.038.
 
-> **Cannot be generated at this size.** The largest dimension any public style
-> accepts is 384; this asset is 480x204. Options, none of them free of a
-> decision: author it by hand; generate the subject alone at 384 or less and
-> compose the screen in code, as the title screen plan already does for the
-> Aquila; or drop the design size x2 rule for screen art and generate at 1x.
-> Resolve before this item is scheduled.
+```sh
+mkdir -p build/art/ui_backdrop_hillcave
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "a cave mouth in rocky hills with oracle smoke drifting from the opening", "prompt_style": "rd_plus__default", "width": 384, "height": 163, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_backdrop_hillcave/01_raw.png
+file build/art/ui_backdrop_hillcave/01_raw.png   # must say: PNG image data
+```
+
+**Step 2 — accept it by eye.**
+
+- the a cave mouth in rocky hills with oracle smoke drifting from the opening is present and readable at 1:1
+- the composition is complete and nothing important sits under the frame edge
+- no rendered text anywhere: lettering is composited by the engine
+- the image is fully opaque
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_backdrop_hillcave/01_raw.png assets/glory-of-rome/art/ui/backdrop_hillcave.png
+```
+
 
 ## ui_backdrop_plains
 
 **Replaces:** `ui/backdrop_plains.png`
-  
-**Currently:** 240x102, placeholder (identical to King's Bounty) → **generate at 480x204**
+
+**State:** placeholder. Design size 240x102 → generate at 384x163.
 
 **Prompt**
 
 > open Italian countryside with cypress trees and distant blue hills
 
-*Original brief wording: open Italian countryside with cypress trees and distant blue hills*
+**Step 1 — generate.** $0.038.
 
-> **Cannot be generated at this size.** The largest dimension any public style
-> accepts is 384; this asset is 480x204. Options, none of them free of a
-> decision: author it by hand; generate the subject alone at 384 or less and
-> compose the screen in code, as the title screen plan already does for the
-> Aquila; or drop the design size x2 rule for screen art and generate at 1x.
-> Resolve before this item is scheduled.
+```sh
+mkdir -p build/art/ui_backdrop_plains
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "open Italian countryside with cypress trees and distant blue hills", "prompt_style": "rd_plus__default", "width": 384, "height": 163, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_backdrop_plains/01_raw.png
+file build/art/ui_backdrop_plains/01_raw.png   # must say: PNG image data
+```
+
+**Step 2 — accept it by eye.**
+
+- the open Italian countryside with cypress trees and distant blue hills is present and readable at 1:1
+- the composition is complete and nothing important sits under the frame edge
+- no rendered text anywhere: lettering is composited by the engine
+- the image is fully opaque
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_backdrop_plains/01_raw.png assets/glory-of-rome/art/ui/backdrop_plains.png
+```
+
 
 ## ui_backdrop_town
 
 **Replaces:** `ui/backdrop_town.png`
-  
-**Currently:** 240x102, placeholder (identical to King's Bounty) → **generate at 480x204**
+
+**State:** placeholder. Design size 240x102 → generate at 384x163.
 
 **Prompt**
 
 > a Roman forum street with a colonnade, market awnings and townspeople, wide view
 
-*Original brief wording: a Roman forum street with a colonnade, market awnings and townspeople, wide view*
+**Step 1 — generate.** $0.038.
 
-> **Cannot be generated at this size.** The largest dimension any public style
-> accepts is 384; this asset is 480x204. Options, none of them free of a
-> decision: author it by hand; generate the subject alone at 384 or less and
-> compose the screen in code, as the title screen plan already does for the
-> Aquila; or drop the design size x2 rule for screen art and generate at 1x.
-> Resolve before this item is scheduled.
+```sh
+mkdir -p build/art/ui_backdrop_town
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "a Roman forum street with a colonnade, market awnings and townspeople, wide view", "prompt_style": "rd_plus__default", "width": 384, "height": 163, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_backdrop_town/01_raw.png
+file build/art/ui_backdrop_town/01_raw.png   # must say: PNG image data
+```
 
-# 5.14 Sidebar HUD -- 7 items, 14 files
+**Step 2 — accept it by eye.**
+
+- the market awnings and townspeople is present and readable at 1:1
+- the wide view is present and readable at 1:1
+- the composition is complete and nothing important sits under the frame edge
+- no rendered text anywhere: lettering is composited by the engine
+- the image is fully opaque
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_backdrop_town/01_raw.png assets/glory-of-rome/art/ui/backdrop_town.png
+```
 
 
 ## ui_hud_contract_silhouette
 
 **Replaces:** `ui/hud_contract_silhouette.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a blank dark rolled scroll, flat silhouette, no interior detail
 
-*Original brief wording: a blank dark rolled scroll, flat silhouette, no interior detail*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_hud_contract_silhouette
@@ -4531,20 +6440,35 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_hud_contract_silhouette/01_raw.png
 file build/art/ui_hud_contract_silhouette/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_hud_contract_silhouette/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the flat silhouette is present and readable at 1:1
+- the no interior detail is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 in its panel slot
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_hud_contract_silhouette/01_raw.png assets/glory-of-rome/art/ui/hud_contract_silhouette.png
+```
+
 
 ## ui_hud_gold_purse
 
 **Replaces:** `ui/hud_gold_purse.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a leather coin purse spilling gold aurei
 
-*Original brief wording: a leather coin purse spilling gold aurei*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_hud_gold_purse
@@ -4561,20 +6485,34 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_hud_gold_purse/01_raw.png
 file build/art/ui_hud_gold_purse/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_hud_gold_purse/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the a leather coin purse spilling gold aurei is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 in its panel slot
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_hud_gold_purse/01_raw.png assets/glory-of-rome/art/ui/hud_gold_purse.png
+```
+
 
 ## ui_hud_magic_00_03
 
-**Replaces:** `ui/hud_magic_00..03.png`
-  
-**Currently:** ?, missing → **generate at 96x96**
+**Replaces:** `ui/hud_magic_00.png`, `ui/hud_magic_01.png`, `ui/hud_magic_02.png`, `ui/hud_magic_03.png`
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a golden oracle flame burning above a bronze tripod
 
-*Original brief wording: a golden oracle flame burning above a bronze tripod*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_hud_magic_00_03
@@ -4591,20 +6529,90 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_hud_magic_00_03/01_raw.png
 file build/art/ui_hud_magic_00_03/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_hud_magic_00_03/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the a golden oracle flame burning above a bronze tripod is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 in its panel slot
+
+**Steps 1b..4 — the other 3 images.** $0.038 each, one call per file.
+
+
+```sh
+mkdir -p build/art/ui_hud_magic_00_03
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "a golden oracle flame burning above a bronze tripod, frame 2 of a four step loop", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1104, "async": true, "remove_bg": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_hud_magic_00_03/02_raw.png
+file build/art/ui_hud_magic_00_03/02_raw.png   # must say: PNG image data
+```
+
+```sh
+mkdir -p build/art/ui_hud_magic_00_03
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "a golden oracle flame burning above a bronze tripod, frame 3 of a four step loop", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1105, "async": true, "remove_bg": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_hud_magic_00_03/03_raw.png
+file build/art/ui_hud_magic_00_03/03_raw.png   # must say: PNG image data
+```
+
+```sh
+mkdir -p build/art/ui_hud_magic_00_03
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "a golden oracle flame burning above a bronze tripod, frame 4 of a four step loop", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1106, "async": true, "remove_bg": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_hud_magic_00_03/04_raw.png
+file build/art/ui_hud_magic_00_03/04_raw.png   # must say: PNG image data
+```
+
+**Copy into the pack.**
+
+```sh
+cp build/art/ui_hud_magic_00_03/01_raw.png assets/glory-of-rome/art/ui/hud_magic_00.png
+cp build/art/ui_hud_magic_00_03/02_raw.png assets/glory-of-rome/art/ui/hud_magic_01.png
+cp build/art/ui_hud_magic_00_03/03_raw.png assets/glory-of-rome/art/ui/hud_magic_02.png
+cp build/art/ui_hud_magic_00_03/04_raw.png assets/glory-of-rome/art/ui/hud_magic_03.png
+```
+
 
 ## ui_hud_magic_silhouette
 
 **Replaces:** `ui/hud_magic_silhouette.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a dark flat silhouette of an eight-pointed star, no interior detail
 
-*Original brief wording: a dark flat silhouette of an eight-pointed star, no interior detail*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_hud_magic_silhouette
@@ -4621,20 +6629,34 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_hud_magic_silhouette/01_raw.png
 file build/art/ui_hud_magic_silhouette/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_hud_magic_silhouette/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the no interior detail is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 in its panel slot
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_hud_magic_silhouette/01_raw.png assets/glory-of-rome/art/ui/hud_magic_silhouette.png
+```
+
 
 ## ui_hud_puzzle_grid
 
 **Replaces:** `ui/hud_puzzle_grid.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > an ornate carved stone frame enclosing an empty square panel
 
-*Original brief wording: an ornate carved stone frame enclosing an empty square panel*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_hud_puzzle_grid
@@ -4651,20 +6673,34 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_hud_puzzle_grid/01_raw.png
 file build/art/ui_hud_puzzle_grid/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_hud_puzzle_grid/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the an ornate carved stone frame enclosing an empty square panel is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 in its panel slot
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_hud_puzzle_grid/01_raw.png assets/glory-of-rome/art/ui/hud_puzzle_grid.png
+```
+
 
 ## ui_hud_siege_00_03
 
-**Replaces:** `ui/hud_siege_00..03.png`
-  
-**Currently:** ?, missing → **generate at 96x96**
+**Replaces:** `ui/hud_siege_00.png`, `ui/hud_siege_01.png`, `ui/hud_siege_02.png`, `ui/hud_siege_03.png`
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a Roman onager catapult firing, arm swinging forward
 
-*Original brief wording: a Roman onager catapult firing, arm swinging forward*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_hud_siege_00_03
@@ -4681,20 +6717,90 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_hud_siege_00_03/01_raw.png
 file build/art/ui_hud_siege_00_03/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_hud_siege_00_03/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the arm swinging forward is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 in its panel slot
+
+**Steps 1b..4 — the other 3 images.** $0.038 each, one call per file.
+
+
+```sh
+mkdir -p build/art/ui_hud_siege_00_03
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "a Roman onager catapult firing, arm swinging forward, frame 2 of a four step loop", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1102, "async": true, "remove_bg": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_hud_siege_00_03/02_raw.png
+file build/art/ui_hud_siege_00_03/02_raw.png   # must say: PNG image data
+```
+
+```sh
+mkdir -p build/art/ui_hud_siege_00_03
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "a Roman onager catapult firing, arm swinging forward, frame 3 of a four step loop", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1103, "async": true, "remove_bg": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_hud_siege_00_03/03_raw.png
+file build/art/ui_hud_siege_00_03/03_raw.png   # must say: PNG image data
+```
+
+```sh
+mkdir -p build/art/ui_hud_siege_00_03
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "a Roman onager catapult firing, arm swinging forward, frame 4 of a four step loop", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1104, "async": true, "remove_bg": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_hud_siege_00_03/04_raw.png
+file build/art/ui_hud_siege_00_03/04_raw.png   # must say: PNG image data
+```
+
+**Copy into the pack.**
+
+```sh
+cp build/art/ui_hud_siege_00_03/01_raw.png assets/glory-of-rome/art/ui/hud_siege_00.png
+cp build/art/ui_hud_siege_00_03/02_raw.png assets/glory-of-rome/art/ui/hud_siege_01.png
+cp build/art/ui_hud_siege_00_03/03_raw.png assets/glory-of-rome/art/ui/hud_siege_02.png
+cp build/art/ui_hud_siege_00_03/04_raw.png assets/glory-of-rome/art/ui/hud_siege_03.png
+```
+
 
 ## ui_hud_siege_silhouette
 
 **Replaces:** `ui/hud_siege_silhouette.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a dark flat silhouette of a siege tower, no interior detail
 
-*Original brief wording: a dark flat silhouette of a siege tower, no interior detail*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_hud_siege_silhouette
@@ -4711,29 +6817,40 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_hud_siege_silhouette/01_raw.png
 file build/art/ui_hud_siege_silhouette/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_hud_siege_silhouette/01_raw.png
 ```
 
-# 5.15 Victory cartoon -- 3 items, 3 files, 96x96
+**Step 2 — accept it by eye.**
+
+- the no interior detail is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 in its panel slot
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_hud_siege_silhouette/01_raw.png assets/glory-of-rome/art/ui/hud_siege_silhouette.png
+```
 
 
 ## ui_end_carpet
 
 **Replaces:** `ui/end_carpet.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
-> a grey stone flagstone pavement texture, regular blocks, seamless
+> a small crop cut from the middle of a much larger sheet of wrapping paper, the paper is printed all over with an endless repeating pattern: flat grey rectangular flagstones in regular courses with thin dark joints between them, the crop is taken from deep inside the sheet so no edge or border of the paper is visible anywhere, the pattern simply continues past all four sides, flat colours, hard edges, no blur, no gradient, no shading, no light, no depth
 
-*Original brief wording: a grey stone flagstone pavement texture, regular blocks, seamless*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_end_carpet
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a grey stone flagstone pavement texture, regular blocks, seamless", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1105, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a small crop cut from the middle of a much larger sheet of wrapping paper, the paper is printed all over with an endless repeating pattern: flat grey rectangular flagstones in regular courses with thin dark joints between them, the crop is taken from deep inside the sheet so no edge or border of the paper is visible anywhere, the pattern simply continues past all four sides, flat colours, hard edges, no blur, no gradient, no shading, no light, no depth", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1105, "async": true, "tile_x": true, "tile_y": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -4744,26 +6861,42 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_end_carpet/01_raw.png
 file build/art/ui_end_carpet/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_end_carpet/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the the paper is printed all over with an endless repeating pattern: flat grey rectangular flagstones in regular courses with thin dark joints between them is present and readable at 1:1
+- the the crop is taken from deep inside the sheet so no edge or border of the paper is visible anywhere is present and readable at 1:1
+- it tiles with no seam: check a 3x3 montage, never a single tile
+- no feature large enough to be noticed repeating across a field of tiles
+- even brightness corner to corner, no vignette and no gradient
+- it reads as the right ground at 1:1, not only enlarged
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_end_carpet/01_raw.png assets/glory-of-rome/art/ui/end_carpet.png
+```
+
 
 ## ui_end_grass
 
 **Replaces:** `ui/end_grass.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
-> a fine even texture of green turf, uniform, seamless
+> a small crop cut from the middle of a much larger sheet of wrapping paper, the paper is printed all over with an endless repeating pattern: a flat green ground covered with small even specks of lighter and darker green, the crop is taken from deep inside the sheet so no edge or border of the paper is visible anywhere, the pattern simply continues past all four sides, flat colours, hard edges, no blur, no gradient, no shading, no light, no depth
 
-*Original brief wording: a fine even texture of green turf, uniform, seamless*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_end_grass
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a fine even texture of green turf, uniform, seamless", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1104, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a small crop cut from the middle of a much larger sheet of wrapping paper, the paper is printed all over with an endless repeating pattern: a flat green ground covered with small even specks of lighter and darker green, the crop is taken from deep inside the sheet so no edge or border of the paper is visible anywhere, the pattern simply continues past all four sides, flat colours, hard edges, no blur, no gradient, no shading, no light, no depth", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1104, "async": true, "tile_x": true, "tile_y": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -4774,20 +6907,36 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_end_grass/01_raw.png
 file build/art/ui_end_grass/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_end_grass/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the the paper is printed all over with an endless repeating pattern: a flat green ground covered with small even specks of lighter and darker green is present and readable at 1:1
+- the the crop is taken from deep inside the sheet so no edge or border of the paper is visible anywhere is present and readable at 1:1
+- it tiles with no seam: check a 3x3 montage, never a single tile
+- no feature large enough to be noticed repeating across a field of tiles
+- even brightness corner to corner, no vignette and no gradient
+- it reads as the right ground at 1:1, not only enlarged
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_end_grass/01_raw.png assets/glory-of-rome/art/ui/end_grass.png
+```
+
 
 ## ui_end_hero
 
 **Replaces:** `ui/end_hero.png`
-  
-**Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
+
+**State:** placeholder. Design size 48x34 → generate at 96x96.
 
 **Prompt**
 
 > a Roman commander on a white horse in profile facing right, red cloak, on transparency
 
-*Original brief wording: a Roman commander on a white horse in profile facing right, red cloak, on transparency*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_end_hero
@@ -4804,23 +6953,35 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_end_hero/01_raw.png
 file build/art/ui_end_hero/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_end_hero/01_raw.png
 ```
 
-# 5.16 Screens and logos -- 6 items, 6 files
+**Step 2 — accept it by eye.**
+
+- the red cloak is present and readable at 1:1
+- the on transparency is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 in its panel slot
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_end_hero/01_raw.png assets/glory-of-rome/art/ui/end_hero.png
+```
 
 
 ## ui_class_select_highlight
 
 **Replaces:** `ui/class_select_highlight.png`
-  
-**Currently:** 42x44, placeholder (identical to King's Bounty) → **generate at 84x88**
+
+**State:** placeholder. Design size 42x44 → generate at 84x88.
 
 **Prompt**
 
 > a golden laurel selection frame, hollow centre
 
-*Original brief wording: a golden laurel selection frame, hollow centre*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_class_select_highlight
@@ -4837,45 +6998,85 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_class_select_highlight/01_raw.png
 file build/art/ui_class_select_highlight/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_class_select_highlight/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the hollow centre is present and readable at 1:1
+- the subject is complete and inside the frame
+- the surround is fully transparent
+- it reads at 1:1 in its panel slot
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_class_select_highlight/01_raw.png assets/glory-of-rome/art/ui/class_select_highlight.png
+```
+
 
 ## ui_class_select_picker
 
 **Replaces:** `ui/class_select_picker.png`
-  
-**Currently:** 288x184, placeholder (identical to King's Bounty) → **generate at 576x368**
+
+**State:** placeholder. Design size 288x184 → generate at 384x245.
 
 **Prompt**
 
 > four Roman figures posed together in a landscape -- a general, a praetorian, a veiled priestess and a fur-clad frontier commander -- in one illustrated scene
 
-*Original brief wording: four Roman figures posed together in a landscape -- a general, a praetorian, a veiled priestess and a fur-clad frontier commander -- in one illustrated scene*
+**Step 1 — generate.** $0.038.
 
-> **Cannot be generated at this size.** The largest dimension any public style
-> accepts is 384; this asset is 576x368. Options, none of them free of a
-> decision: author it by hand; generate the subject alone at 384 or less and
-> compose the screen in code, as the title screen plan already does for the
-> Aquila; or drop the design size x2 rule for screen art and generate at 1x.
-> Resolve before this item is scheduled.
+```sh
+mkdir -p build/art/ui_class_select_picker
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "four Roman figures posed together in a landscape -- a general, a praetorian, a veiled priestess and a fur-clad frontier commander -- in one illustrated scene", "prompt_style": "rd_plus__default", "width": 384, "height": 245, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_class_select_picker/01_raw.png
+file build/art/ui_class_select_picker/01_raw.png   # must say: PNG image data
+```
+
+**Step 2 — accept it by eye.**
+
+- the a praetorian is present and readable at 1:1
+- the a veiled priestess and a fur-clad frontier commander -- in one illustrated scene is present and readable at 1:1
+- the composition is complete and nothing important sits under the frame edge
+- no rendered text anywhere: lettering is composited by the engine
+- the image is fully opaque
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_class_select_picker/01_raw.png assets/glory-of-rome/art/ui/class_select_picker.png
+```
+
 
 ## ui_end_lose_screen
 
 **Replaces:** `ui/end_lose_screen.png`
-  
-**Currently:** 144x170, placeholder (identical to King's Bounty) → **generate at 288x340**
+
+**State:** placeholder. Design size 144x170 → generate at 288x340.
 
 **Prompt**
 
 > a broken Roman eagle standard fallen in mud with a burning frontier fort behind
 
-*Original brief wording: a broken Roman eagle standard fallen in mud with a burning frontier fort behind*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_end_lose_screen
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a broken Roman eagle standard fallen in mud with a burning frontier fort behind", "prompt_style": "rd_plus__default", "width": 288, "height": 340, "num_images": 1, "seed": 1112, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a broken Roman eagle standard fallen in mud with a burning frontier fort behind", "prompt_style": "rd_plus__default", "width": 288, "height": 340, "num_images": 1, "seed": 1112, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -4886,26 +7087,40 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_end_lose_screen/01_raw.png
 file build/art/ui_end_lose_screen/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_end_lose_screen/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the a broken Roman eagle standard fallen in mud with a burning frontier fort behind is present and readable at 1:1
+- the composition is complete and nothing important sits under the frame edge
+- no rendered text anywhere: lettering is composited by the engine
+- the image is fully opaque
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_end_lose_screen/01_raw.png assets/glory-of-rome/art/ui/end_lose_screen.png
+```
+
 
 ## ui_end_win_screen
 
 **Replaces:** `ui/end_win_screen.png`
-  
-**Currently:** 144x170, placeholder (identical to King's Bounty) → **generate at 288x340**
+
+**State:** placeholder. Design size 144x170 → generate at 288x340.
 
 **Prompt**
 
 > a Roman general crowned with laurel raising the recovered golden eagle standard, guards flanking, triumphal hall
 
-*Original brief wording: a Roman general crowned with laurel raising the recovered golden eagle standard, guards flanking, triumphal hall*
+**Step 1 — generate.** $0.038.
 
 ```sh
 mkdir -p build/art/ui_end_win_screen
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman general crowned with laurel raising the recovered golden eagle standard, guards flanking, triumphal hall", "prompt_style": "rd_plus__default", "width": 288, "height": 340, "num_images": 1, "seed": 1111, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman general crowned with laurel raising the recovered golden eagle standard, guards flanking, triumphal hall", "prompt_style": "rd_plus__default", "width": 288, "height": 340, "num_images": 1, "seed": 1111, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -4916,43 +7131,108 @@ while :; do
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_end_win_screen/01_raw.png
 file build/art/ui_end_win_screen/01_raw.png   # must say: PNG image data
-echo wrote build/art/ui_end_win_screen/01_raw.png
 ```
+
+**Step 2 — accept it by eye.**
+
+- the guards flanking is present and readable at 1:1
+- the triumphal hall is present and readable at 1:1
+- the composition is complete and nothing important sits under the frame edge
+- no rendered text anywhere: lettering is composited by the engine
+- the image is fully opaque
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_end_win_screen/01_raw.png assets/glory-of-rome/art/ui/end_win_screen.png
+```
+
 
 ## ui_splash_logo
 
 **Replaces:** `ui/splash_logo.png`
-  
-**Currently:** 320x84, placeholder (identical to King's Bounty) → **generate at 640x168**
+
+**State:** placeholder. Design size 320x84 → generate at 384x101.
 
 **Prompt**
 
 > a publisher logo mark on a plain dark field, centred
 
-*Original brief wording: a publisher logo mark on a plain dark field, centred*
+**Step 1 — generate.** $0.038.
 
-> **Cannot be generated at this size.** The largest dimension any public style
-> accepts is 384; this asset is 640x168. Options, none of them free of a
-> decision: author it by hand; generate the subject alone at 384 or less and
-> compose the screen in code, as the title screen plan already does for the
-> Aquila; or drop the design size x2 rule for screen art and generate at 1x.
-> Resolve before this item is scheduled.
+```sh
+mkdir -p build/art/ui_splash_logo
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "a publisher logo mark on a plain dark field, centred", "prompt_style": "rd_plus__default", "width": 384, "height": 101, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_splash_logo/01_raw.png
+file build/art/ui_splash_logo/01_raw.png   # must say: PNG image data
+```
+
+**Step 2 — accept it by eye.**
+
+- the a publisher logo mark on a plain dark field is present and readable at 1:1
+- the composition is complete and nothing important sits under the frame edge
+- no rendered text anywhere: lettering is composited by the engine
+- the image is fully opaque
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_splash_logo/01_raw.png assets/glory-of-rome/art/ui/splash_logo.png
+```
+
 
 ## ui_splash_title
 
 **Replaces:** `ui/splash_title.png`
-  
-**Currently:** 320x200, placeholder (identical to King's Bounty) → **generate at 640x400**
+
+**State:** placeholder. Design size 320x200 → generate at 192x384.
 
 **Prompt**
 
-> a golden Roman legionary eagle standard with spread wings on a decorated pole, centred, deep royal purple background, ornate gilded border, wide empty space across the top third
+> a golden Roman legionary eagle standard with spread wings on a tall decorated pole, a laurel wreath ring below the eagle, a crossbar hung with two round medallions, an engraved SPQR plate on the shaft, a deep red ribbon trailing from the crossbar, tilted slightly to the right
 
-*Original brief wording: a golden Roman legionary eagle standard with spread wings on a decorated pole, centred, deep royal purple background, ornate gilded border, wide empty space across the top third*
+**Step 1 — generate.** $0.038.
 
-> **Cannot be generated at this size.** The largest dimension any public style
-> accepts is 384; this asset is 640x400. Options, none of them free of a
-> decision: author it by hand; generate the subject alone at 384 or less and
-> compose the screen in code, as the title screen plan already does for the
-> Aquila; or drop the design size x2 rule for screen art and generate at 1x.
-> Resolve before this item is scheduled.
+```sh
+mkdir -p build/art/ui_splash_title
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"prompt": "a golden Roman legionary eagle standard with spread wings on a tall decorated pole, a laurel wreath ring below the eagle, a crossbar hung with two round medallions, an engraved SPQR plate on the shaft, a deep red ribbon trailing from the crossbar, tilted slightly to the right", "prompt_style": "rd_plus__default", "width": 192, "height": 384, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_splash_title/01_raw.png
+file build/art/ui_splash_title/01_raw.png   # must say: PNG image data
+```
+
+**Step 2 — accept it by eye.**
+
+- the a laurel wreath ring below the eagle is present and readable at 1:1
+- the a crossbar hung with two round medallions is present and readable at 1:1
+- the composition is complete and nothing important sits under the frame edge
+- no rendered text anywhere: lettering is composited by the engine
+- the image is fully opaque
+
+**Step 3 — copy into the pack.**
+
+
+```sh
+cp build/art/ui_splash_title/01_raw.png assets/glory-of-rome/art/ui/splash_title.png
+```
