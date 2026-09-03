@@ -114,22 +114,28 @@ Those four files are the troop's animation array, in order.
 - `async: true` on every call, so the task id exists before the charge.
 - Token from `~/.config/retrodiffusion/token`. No environment variables.
 - Nothing writes into `assets/`. Approved finals are copied across by hand.
+- **Map tiles are opaque with their ground baked in.** `map_render.c` draws each
+  tile alone over a black fill and only puts terrain underneath a
+  wandering-army sprite, so a transparent object tile shows black.
+- **Hero and boat do not use the troop style**, which would force every facing
+  into a standing profile. They take `rd_plus__classic` with `remove_bg`, then
+  `rd_advanced_animation__walking` or `__idle`.
 - One call per asset.
 
 ---
 
 ## 4. Costs
 
-| | per item | count | total |
+| route | per item | items | total |
 |---|---|---|---|
-| troop or villain, still + animation | $0.32 | 42 | $13.44 |
-| cell and screen art, still only | $0.038 | 56 | $2.13 |
-| base terrain | $0.038 | 6 | $0.23 |
+| troops and villains: still + attack animation | $0.32 | 42 | $13.44 |
+| hero and boat: still + walk or idle animation | $0.178 | 9 | $1.60 |
+| base terrain and tiled ground | $0.038 | 9 | $0.34 |
+| everything else, still only | $0.038 | 53 | $3.09 |
+| **all 113 items, once** | | | **$18.47** |
 
 Custom styles bill at RD Pro rates. The flat `rd_plus__*` styles are $0.038 at
 96x96.
-
----
 
 ## 5. Validated
 
