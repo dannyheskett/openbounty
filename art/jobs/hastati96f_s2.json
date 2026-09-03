@@ -1,0 +1,38 @@
+{
+  "id": "hastati96f_s2",
+  "_note": "Seed test 1 of 2. IDENTICAL to hastati96f in every field except seed (1101 -> 2202). Nothing about the prompt changes. WHY: every conclusion in this session rests on one generation at seed 1101. This decides whether the wording is a recipe or a lottery -- i.e. whether ~113 assets cost about one call each, or whether the real workflow is generate-several-and-choose. Run05 showed the model can return a bare-chested, legless figure from a near-identical prompt, so the failure mode is real.",
+  "_pack_path": "art/troops/pikemen_00.png",
+  "_replaces": "48x34, 14 colours, rows 1-33, 40/48 columns wide, head-to-body 1:4.1",
+  "prompt": "A full length Roman legionary standing with a red crested helmet and a tall rectangular red and gold shield, holding a spear level, in profile facing right, stocky and broad shouldered, game sprite, solid neutral grey background",
+  "style": "rd_plus__classic",
+  "width": 96,
+  "height": 96,
+  "seed": 2202,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "raw_only": true,
+  "target": [
+    96,
+    96
+  ],
+  "figure": true,
+  "_acceptance": {
+    "spec": [
+      "body in profile AND armour and feet intact: run05 had a true profile but bare midriff, no lorica, and legs ending in a stump. That combination is the thing under test",
+      "exactly 96x96, 0 partial-alpha pixels",
+      "crest clear of the top row, both feet drawn and standing, nothing sliced by an edge",
+      "broad silhouette -- the reference fills 40 of 48 columns, so roughly 80 of 96 here",
+      "head about a quarter of the figure height, not the 1:6 slender build",
+      "spear held level across the body, not vertical",
+      "no eye whites, no pupils",
+      "reads at 1:1 over grass, not only at 8x"
+    ],
+    "regressions_to_watch": [
+      "scenery again -- if the grey tag does not take, the fix is structural (an isolated-asset style), not more adjectives",
+      "the grey field survives as opaque pixels because remove_bg did not key it out",
+      "the figure shrinks in frame: on 15 Aug, wording that removed the background cost silhouette width (43 -> 28 of 48 columns)",
+      "vertical spear -- ignored at every attempt so far"
+    ]
+  },
+  "_review_rule": "Look at both returned images at 1:1 and 8x beside the KB pikeman. Note the reference is WIDER than tall (40x33 in a 48x34 tile) because its spear is held level across the body -- that horizontal spear is what fills the tile. An upright figure with a vertical spear cannot match those proportions however tall it is."
+}

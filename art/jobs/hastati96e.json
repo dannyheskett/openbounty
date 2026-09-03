@@ -1,0 +1,38 @@
+{
+  "id": "hastati96e",
+  "_note": "Fifth figure at 96x96. ONE PHRASE CHANGED from hastati96d: 'side view facing right' -> 'in profile facing right'. Seed 1101 and every other field unchanged, so the variable is isolated against run04 exactly as run04 isolated 'horizontally' against run03. WHY: the same class of error as 'level'. 'Side view' is a description of an idea in common words; 'profile' is the term an artist uses, and RD's prompting FAQ says to use 'industry standard terms instead of trying to describe the idea using common words'. Every run so far has drawn a frontal body with the head turned, which cannot anchor a directional set.",
+  "_pack_path": "art/troops/pikemen_00.png",
+  "_replaces": "48x34, 14 colours, rows 1-33, 40/48 columns wide, head-to-body 1:4.1",
+  "prompt": "A full length Roman legionary standing with a red crested helmet and a tall rectangular red and gold shield, holding a spear horizontally across his body, in profile facing right, stocky and broad shouldered, game sprite, solid neutral grey background",
+  "style": "rd_plus__classic",
+  "width": 96,
+  "height": 96,
+  "seed": 1101,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "raw_only": true,
+  "target": [
+    96,
+    96
+  ],
+  "figure": true,
+  "_acceptance": {
+    "spec": [
+      "the BODY is in profile, not frontal with the head turned -- that is the variable under test",
+      "exactly 96x96, 0 partial-alpha pixels",
+      "crest clear of the top row, both feet drawn and standing, nothing sliced by an edge",
+      "broad silhouette -- the reference fills 40 of 48 columns, so roughly 80 of 96 here",
+      "head about a quarter of the figure height, not the 1:6 slender build",
+      "spear held level across the body, not vertical",
+      "no eye whites, no pupils",
+      "reads at 1:1 over grass, not only at 8x"
+    ],
+    "regressions_to_watch": [
+      "scenery again -- if the grey tag does not take, the fix is structural (an isolated-asset style), not more adjectives",
+      "the grey field survives as opaque pixels because remove_bg did not key it out",
+      "the figure shrinks in frame: on 15 Aug, wording that removed the background cost silhouette width (43 -> 28 of 48 columns)",
+      "vertical spear -- ignored at every attempt so far"
+    ]
+  },
+  "_review_rule": "Look at both returned images at 1:1 and 8x beside the KB pikeman. Note the reference is WIDER than tall (40x33 in a 48x34 tile) because its spear is held level across the body -- that horizontal spear is what fills the tile. An upright figure with a vertical spear cannot match those proportions however tall it is."
+}

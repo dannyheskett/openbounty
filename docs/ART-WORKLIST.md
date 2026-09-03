@@ -1,9 +1,33 @@
-# Glory of Rome — art prompts and commands
+# Glory of Rome — art inventory
 
-Everything needed to generate the pack, in one file. No scripts.
+What to generate, item by item: the files each produces, its state on disk, the
+prompt, and a command. 113 items, 271 files.
 
-113 items. Each entry lists the files it replaces, the prompt, and the
-commands to generate it and write the PNG.
+**Method lives in `ART-PIPELINE.md`, not here.** That file is written from
+measured results and supersedes this one wherever they disagree. What remains
+authoritative here is the *inventory*: which files exist, what each depicts, and
+the subject wording.
+
+## What in this file is superseded
+
+- **Figure prompts carry rendering words** — "bold flat blocks of colour, few
+  colours, hard dark outline, strong contrast, no soft shading, no gradients".
+  Retro Diffusion's own documentation says never to write those: the style
+  carries the rendering, the prompt carries the subject. Every run that included
+  them produced a worse figure than the short subject-only prompts that replaced
+  them.
+- **`rd_plus__low_res` in the commands.** Its catalogue description has no
+  outline in it. `rd_plus__classic` is "strongly outlined... simple shading and
+  clear design", and figures now go through the custom style built on top of
+  that look.
+- **The $0.038 per image line below.** True for the flat route; a generation
+  through the custom style is **$0.18**, because custom styles are an RD Pro
+  template.
+- **Section headings saying 48x34.** The tile is 96x96. The per-item "generate
+  at" sizes were already correct; the headings were not.
+
+Terrain, objects and screen art are unaffected — their prompts and commands
+still describe what to do.
 
 ## Before you start
 
@@ -11,27 +35,27 @@ commands to generate it and write the PNG.
 TOKEN=$(cat ~/.config/retrodiffusion/token)
 ```
 
-Every item below follows the same three steps: POST to get a task id, poll until
-it succeeds, decode the base64 to a PNG. Cost is $0.038 per image.
+Each entry POSTs to get a task id, polls until it succeeds, then decodes the
+base64 to a PNG.
 
-## Rules these commands already follow
+## Rules these commands follow
 
-- **96x96** for anything in a map or combat cell; screen art at its design size x2.
+- **96x96** for anything in a map or combat cell; screen art at design size x2.
 - **`tile_x`/`tile_y`** on base terrain only, for the seamless wrap.
-- **No `input_palette`.** It hard-constrains the whole image to the supplied palette
-  and collapses structure — it returned 3-colour all-green artifact tiles.
-- **Terrain prompts describe a pattern, never the subject.** Naming "sea" or "grass"
-  makes the model light a scene and bake in a gradient or an edge vignette that reads
-  as a lattice when tiled.
+- **No `input_palette`.** It hard-constrains the whole image to the supplied
+  palette and collapses structure — it returned 3-colour all-green artifact
+  tiles.
+- **Terrain prompts describe a pattern, never the subject.** Naming "sea" or
+  "grass" makes the model light a scene and bake in a gradient or an edge
+  vignette that reads as a lattice when tiled.
 - **`async: true`** so the task id is returned before any charge can be lost.
-
-- Terrain edges (48 files) are **not** generated — composite them from the new base
-  and grass tiles using the reference edge's alpha mask.
+- Terrain edges (48 files) are **not** generated — composite them from the new
+  base and grass tiles using the reference edge's alpha mask.
 
 ---
 
 
-# 5.1 Troops -- 25 items, 100 files, 48x34, 4 frames
+# 5.1 Troops -- 25 items, 100 files, 96x96, 4 frames
 
 
 ## troops_archers_00_03
@@ -759,7 +783,7 @@ echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_zombies_00_
 echo wrote build/art/troops_zombies_00_03/01_raw.png
 ```
 
-# 5.2 Villains -- 17 items, 68 files, 48x34, 4 frames
+# 5.2 Villains -- 17 items, 68 files, 96x96, 4 frames
 
 
 ## villains_alaric_00_03
@@ -1374,7 +1398,7 @@ echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/classes_sorceress/
 echo wrote build/art/classes_sorceress/01_raw.png
 ```
 
-# 5.4 Hero -- 16 walk + 16 idle files, 48x34
+# 5.4 Hero -- 16 walk + 16 idle files, 96x96
 
 
 ## sprites_hero_idle_facing_00_03
@@ -1522,7 +1546,7 @@ echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/sprites_hero_walk_
 echo wrote build/art/sprites_hero_walk_west_00_03/01_raw.png
 ```
 
-# 5.5 Boat -- 4 items, 16 files, 48x34
+# 5.5 Boat -- 4 items, 16 files, 96x96
 
 
 ## sprites_boat_east_00_03
@@ -1641,7 +1665,7 @@ echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/sprites_boat_west_
 echo wrote build/art/sprites_boat_west_00_03/01_raw.png
 ```
 
-# 5.6 Base terrain -- 6 items, 6 files, 48x34, opaque, seamless
+# 5.6 Base terrain -- 6 items, 6 files, 96x96, opaque, seamless
 
 
 ## tiles_desert
@@ -1822,7 +1846,7 @@ echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/tiles_water/01_raw
 echo wrote build/art/tiles_water/01_raw.png
 ```
 
-# 5.8 Structures -- 6 items, 11 files, 48x34
+# 5.8 Structures -- 6 items, 11 files, 96x96
 
 
 ## tiles_castle_png
@@ -1999,7 +2023,7 @@ echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/tiles_town/01_raw.
 echo wrote build/art/tiles_town/01_raw.png
 ```
 
-# 5.9 Map objects -- 7 items, 7 files, 48x34, transparent surrounds
+# 5.9 Map objects -- 7 items, 7 files, 96x96, transparent surrounds
 
 
 ## tiles_artifact_chest
@@ -2209,7 +2233,7 @@ echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/tiles_wandering_ar
 echo wrote build/art/tiles_wandering_army/01_raw.png
 ```
 
-# 5.10 Combat arena -- 5 items, 15 files, 48x34
+# 5.10 Combat arena -- 5 items, 15 files, 96x96
 
 
 ## combat_castle_spike
@@ -2357,7 +2381,7 @@ echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/combat_obstacle_01
 echo wrote build/art/combat_obstacle_01_03/01_raw.png
 ```
 
-# 5.11 Artifact icons -- 8 items, 8 files, 48x34
+# 5.11 Artifact icons -- 8 items, 8 files, 96x96
 
 
 ## ui_inventory_artifact_amulet
@@ -2592,7 +2616,7 @@ echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_inventory_artif
 echo wrote build/art/ui_inventory_artifact_sword/01_raw.png
 ```
 
-# 5.12 Continent emblems -- 4 items, 4 files, 48x34
+# 5.12 Continent emblems -- 4 items, 4 files, 96x96
 
 
 ## ui_inventory_zone_archipelia
@@ -3094,7 +3118,7 @@ echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_hud_siege_silho
 echo wrote build/art/ui_hud_siege_silhouette/01_raw.png
 ```
 
-# 5.15 Victory cartoon -- 3 items, 3 files, 48x34
+# 5.15 Victory cartoon -- 3 items, 3 files, 96x96
 
 
 ## ui_end_carpet

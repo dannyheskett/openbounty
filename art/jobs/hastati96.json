@@ -1,0 +1,34 @@
+{
+  "id": "hastati96",
+  "_note": "First figure at the 96x96 tier. Prompt-only, no post-processing. Subject-only wording: the 15 Aug runs that failed carried 60 words of style instruction ('hard dark outline', 'no gradients', 'flat blocks'), which RD's docs say never to write because the style carries the rendering. Style is rd_plus__classic ('strongly outlined pixel art with a focus on simple shading and clear design') -- the only style that produced KB's register in the four controlled runs; low_res has no outline in its description. classic's range is 32-192, so 96 sits mid-range instead of scraping its 32px floor as 34 did. bypass_prompt_expansion is OFF: measured, expansion ON gave the clean outlined figure and OFF gave a cropped close-up. Seed 1101 matches the earlier Hastati runs.",
+  "_pack_path": "art/troops/pikemen_00.png",
+  "_replaces": "48x34, 14 colours, rows 1-33, 40/48 columns wide, head-to-body 1:4.1",
+  "prompt": "A Roman legionary with a red crested helmet and a tall rectangular red and gold shield, holding a spear level, side view facing right, stocky and broad shouldered",
+  "style": "rd_plus__classic",
+  "width": 96,
+  "height": 96,
+  "seed": 1101,
+  "remove_bg": true,
+  "raw_only": true,
+  "target": [96, 96],
+  "figure": true,
+  "_acceptance": {
+    "spec": [
+      "exactly 96x96",
+      "0 partial-alpha pixels",
+      "the whole figure inside the frame: crest clear of the top row, both feet drawn and standing on the ground, nothing sliced by an edge",
+      "broad silhouette -- the reference fills 40 of its 48 columns, so roughly 80 of 96 here",
+      "head about a quarter of the figure height; not the 1:6 slender build text-to-image defaults to",
+      "spear held level across the body, not vertical",
+      "no eye whites, no pupils",
+      "reads at 1:1 over grass, not only at 8x"
+    ],
+    "regressions_to_watch": [
+      "vertical spear -- 'holding a spear level' was ignored in every attempt at 48x34",
+      "a painted scene: sky, hills, ground. remove_bg will not strip it because it is deliberate content",
+      "slender 1:6 build, thin tapering limbs, soft rounded face -- the anime read",
+      "washed-out speckle instead of KB's flat blocks; the reference is 14 colours"
+    ]
+  },
+  "_review_rule": "Look at it at 1:1 and at 8x beside the KB pikeman before reporting anything. The metrics band in qa() was written for a 48-wide tile and its silhouette-width and colour-count thresholds are stale here -- they are a floor, never the verdict."
+}

@@ -1,0 +1,38 @@
+{
+  "id": "hastati_style_cs3",
+  "_note": "Coherence test, seed 3303 of three. Same three seeds as runs 06/07/08, which through rd_plus__classic returned sprites varying 29-49% in width, with the shield changing arms, boots becoming sandals and the skirt changing colour. Now generated through user__glory_of_rome_troops_bac676cd, a custom style built from run06 as its reference image, with llm_instructions banning scenery, a user_prompt_template supplying the framing, and force_bg_removal on. force_palette is deliberately OFF: it hard-constrains output to the reference palette and produced 3-colour all-green artifact tiles on 17 Aug. The prompt here is SUBJECT ONLY -- the style now carries the framing that used to be tagged onto every prompt. NOTE: custom styles are an RD Pro template and bill at $0.18, not $0.038. RD Pro mis-framed 2 of 3 generations in July testing.",
+  "_pack_path": "art/troops/pikemen_00.png",
+  "_replaces": "48x34, 14 colours, rows 1-33, 40/48 columns wide, head-to-body 1:4.1",
+  "prompt": "A Roman legionary with a red crested helmet and a tall rectangular red and gold shield, holding a spear, stocky and broad shouldered",
+  "style": "user__glory_of_rome_troops_bac676cd",
+  "width": 96,
+  "height": 96,
+  "seed": 3303,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "raw_only": true,
+  "target": [
+    96,
+    96
+  ],
+  "figure": true,
+  "_acceptance": {
+    "spec": [
+      "consistency across the three seeds is the thing under test: same apparent size, same shield arm, same armour and skirt colour, same footwear",
+      "exactly 96x96, 0 partial-alpha pixels",
+      "crest clear of the top row, both feet drawn and standing, nothing sliced by an edge",
+      "broad silhouette -- the reference fills 40 of 48 columns, so roughly 80 of 96 here",
+      "head about a quarter of the figure height, not the 1:6 slender build",
+      "spear held level across the body, not vertical",
+      "no eye whites, no pupils",
+      "reads at 1:1 over grass, not only at 8x"
+    ],
+    "regressions_to_watch": [
+      "scenery again -- if the grey tag does not take, the fix is structural (an isolated-asset style), not more adjectives",
+      "the grey field survives as opaque pixels because remove_bg did not key it out",
+      "the figure shrinks in frame: on 15 Aug, wording that removed the background cost silhouette width (43 -> 28 of 48 columns)",
+      "vertical spear -- ignored at every attempt so far"
+    ]
+  },
+  "_review_rule": "Look at both returned images at 1:1 and 8x beside the KB pikeman. Note the reference is WIDER than tall (40x33 in a 48x34 tile) because its spear is held level across the body -- that horizontal spear is what fills the tile. An upright figure with a vertical spear cannot match those proportions however tall it is."
+}

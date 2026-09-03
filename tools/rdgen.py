@@ -110,11 +110,35 @@ def latest_run_dir(job_id):
 
 # ---- job spec --------------------------------------------------------------
 
+# Every key a job may carry. Keys beginning with "_" are notes for the reader
+# and are never sent. Anything else is refused rather than ignored: a job once
+# carried return_non_bg_removed, which this file did not forward, and the run
+# went out silently without it -- a paid call that could not answer the question
+# it was made to answer.
+JOB_KEYS = {
+    # rdgen's own controls
+    "id", "prompt", "style", "width", "height", "target",
+    "raw_only", "figure", "headroom_rows",
+    "input_image_path", "input_palette_path", "input_image_keep_alpha",
+    # forwarded to the API by request_payload()
+    "seed", "remove_bg", "tile_x", "tile_y", "frames_duration",
+    "return_spritesheet", "input_palette", "strength",
+    "bypass_prompt_expansion", "return_non_bg_removed",
+}
+
+
 def load_job(path):
     job = json.load(open(path))
     for k in ("id", "prompt", "style", "width", "height", "target"):
         if k not in job:
             sys.exit(f"rdgen: job {path} missing required key '{k}'")
+    unknown = sorted(k for k in job if not k.startswith("_") and k not in JOB_KEYS)
+    if unknown:
+        sys.exit(f"rdgen: job {path} has unknown key(s): {', '.join(unknown)}\n"
+                 f"       rdgen would ignore them and submit a paid request that\n"
+                 f"       is not the one described by the job. Add each to\n"
+                 f"       JOB_KEYS (and to request_payload if the API takes it),\n"
+                 f"       or prefix it with '_' if it is only a note.")
     job["_path"] = path
     return job
 
@@ -129,7 +153,7 @@ def request_payload(job, *, check_cost=False):
     }
     for k in ("seed", "remove_bg", "tile_x", "tile_y", "frames_duration",
               "return_spritesheet", "input_palette", "strength",
-              "bypass_prompt_expansion"):
+              "bypass_prompt_expansion", "return_non_bg_removed"):
         if k in job:
             p[k] = job[k]
     # input_palette: DO NOT USE to "anchor" or "match" a colour. It HARD
@@ -151,12 +175,22 @@ def request_payload(job, *, check_cost=False):
         pal = Image.open(job["input_palette_path"]).convert("RGB")
         pb = io.BytesIO(); pal.save(pb, format="PNG")
         p["input_palette"] = base64.b64encode(pb.getvalue()).decode()
+    # input_image_keep_alpha: send the PNG exactly as it is, alpha intact.
+    # The API reference says input_image must be RGB without transparency, but
+    # the animation docs say "a transparent start frame yields a transparent
+    # GIF" -- both cannot be true. Flattening onto white would guarantee opaque
+    # frames, and restoring alpha afterwards is post-processing, which is
+    # banned. A check_cost with an RGBA payload is accepted rather than
+    # rejected, so this lets the claim be tested for real.
     if job.get("input_image_path"):
         src = Image.open(job["input_image_path"]).convert("RGBA")
-        flat = Image.new("RGB", src.size, (255, 255, 255))
-        flat.paste(src, (0, 0), src)
+        if job.get("input_image_keep_alpha"):
+            out = src
+        else:
+            out = Image.new("RGB", src.size, (255, 255, 255))
+            out.paste(src, (0, 0), src)
         buf = io.BytesIO()
-        flat.save(buf, format="PNG")
+        out.save(buf, format="PNG")
         p["input_image"] = base64.b64encode(buf.getvalue()).decode()
     if check_cost:
         p["check_cost"] = True
@@ -430,10 +464,17 @@ def cmd_run(args):
         sys.exit(f"rdgen: no image returned: {json.dumps(res)[:300]}")
     print(f"charged ${res.get('balance_cost')}  request {res.get('request_id')}")
 
+    # Write EVERY image the response carries, not just the first. Options like
+    # return_non_bg_removed and return_pre_palette return a second paid image in
+    # the same list, and keeping only imgs[0] silently destroys it.
     raw_p = os.path.join(work, "01_raw.png")
     open(raw_p, "wb").write(base64.b64decode(imgs[0]))
+    for i, extra in enumerate(imgs[1:], start=2):
+        extra_p = os.path.join(work, f"01_raw_{i}.png")
+        open(extra_p, "wb").write(base64.b64decode(extra))
+        print(f"also returned: {extra_p}")
     raw = Image.open(raw_p).convert("RGBA")
-    print(f"raw {raw.size}")
+    print(f"raw {raw.size}  ({len(imgs)} image(s) returned)")
 
     final_p = transform(tok, raw, job, work)
     final = Image.open(final_p).convert("RGBA")
