@@ -1,0 +1,17 @@
+{
+  "id": "p4_lowres_noexp",
+  "prompt": "A Roman legionary soldier with a red crested helmet, holding a spear, facing right",
+  "style": "rd_plus__low_res",
+  "width": 48,
+  "height": 34,
+  "seed": 1101,
+  "remove_bg": true,
+  "bypass_prompt_expansion": true,
+  "target": [
+    48,
+    34
+  ],
+  "figure": true,
+  "raw_only": true,
+  "_note": "Prompt-only test. Deliverable is 01_raw.png untouched."
+}

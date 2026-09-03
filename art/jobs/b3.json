@@ -1,0 +1,16 @@
+{
+  "id": "b3",
+  "prompt": "A Roman legionary soldier holding a spear, red crested helmet and armour, standing alone against a blank background, side view",
+  "style": "rd_plus__classic",
+  "width": 48,
+  "height": 34,
+  "seed": 1101,
+  "remove_bg": true,
+  "bypass_prompt_expansion": false,
+  "target": [
+    48,
+    34
+  ],
+  "figure": true,
+  "raw_only": true
+}

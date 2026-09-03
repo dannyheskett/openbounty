@@ -1,0 +1,55 @@
+{
+  "id": "pal_65",
+  "_note": "Phase 0 reference frame. Native 48x34: generating at 2x and downscaling was tested against this and lost -- it produced a hammer, a front-facing pose, and mush. Subject only in the prompt; never write 'pixel art'.",
+  "_pack_path": "art/troops/pikemen_00.png",
+  "prompt": "a Roman legionary soldier facing right, bronze helmet with a red crest, bronze banded armour, red tunic and kilt, holding a spear level in both hands, bold flat colour, thick dark outline",
+  "style": "rd_plus__low_res",
+  "width": 48,
+  "height": 34,
+  "seed": 1207,
+  "remove_bg": true,
+  "target": [
+    48,
+    34
+  ],
+  "figure": true,
+  "_acceptance": {
+    "spec": [
+      "exactly 48x34",
+      "0 partial-alpha pixels",
+      "colour count close to the reference's 14, not merely under 40",
+      "BOTH FEET fully drawn and visible, standing on the ground, not cropped by the frame",
+      "crest complete with a clear row above it -- reference occupies rows 1..33",
+      "silhouette at least 30 of 48 columns wide",
+      "head about 1/4 of figure height, thickset build",
+      "no eye whites, no pupils",
+      "bold flat colour with a hard outline; no gradients"
+    ],
+    "regressions_to_watch": [
+      "flat monochrome bronze -- the red tunic was lost at generation last time, not in palette conversion",
+      "curved oval shield instead of the tall rectangular scutum",
+      "narrow silhouette -- the earlier attempt occupied only 18 of 48 columns",
+      "crest clipped at the top edge -- the first native run put 9 opaque pixels on row 0"
+    ]
+  },
+  "_prompt_rules": [
+    "Every constraint below is in the prompt text on purpose. They are not notes and not",
+    "reminders -- they run on every generation and are visible in the job file.",
+    "  1. FEET: 'both feet complete and fully visible standing flat on the ground, legs and",
+    "     boots drawn in full, nothing cut off at the bottom edge.' A run shipped with the",
+    "     legs sliced off by the frame and the QA passed it, because the check only asked",
+    "     whether any pixel touched the bottom row.",
+    "  2. TOP: 'empty space above the helmet crest, the crest complete and not touching the",
+    "     top edge.' A run shipped with the crest clipped and the QA scored it as ideal,",
+    "     because the check rewarded maximum height fill.",
+    "  3. BUILD: 'head about one quarter of the total height.' Measured from the reference",
+    "     sprites (1:4.1); an earlier run came back slim and tall and read as another game.",
+    "  4. RENDER: 'bold flat blocks of colour, few colours, hard dark outline, no gradients.'",
+    "     The reference is 14 colours; a 31 colour result passed a self-invented 12-40 band",
+    "     and still read thin and washed out beside it."
+  ],
+  "_review_rule": "Look at the image at 10x beside the reference before reporting anything. The metrics are a floor, never the verdict. Do not report PASS from a script.",
+  "input_image_path": "assets/kings-bounty/art/troops/pikemen_00.png",
+  "strength": 0.65,
+  "input_palette_path": "build/art/_inputs/roman_palette.png"
+}

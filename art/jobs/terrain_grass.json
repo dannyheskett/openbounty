@@ -1,0 +1,36 @@
+{
+  "id": "terrain_grass",
+  "_note": "Accepted run05. 29.5% of every tile placed. Run05 still shows faint diagonal streaking and reads olive rather than the vivid green of the original -- open. Native 96x96, raw_only. METHOD, learned over 13 generations and costing $0.49: never name the subject. Saying 'sea water' or 'grass' invokes a lit SCENE and the model bakes in a top-to-bottom lighting gradient (measured -52) or an edge vignette (-21 to -37) that reads as a lattice once tiled. Describing the PATTERN instead -- 'a small crop cut from the middle of a much larger sheet of wrapping paper, printed with...' -- removes both: water went to -1.4, grass to +0.7. Two other levers were tested and did NOT matter: bypass_prompt_expansion (no measurable effect, -35.7 vs -34.9 on the same seed) and seed choice (three grass seeds all vignetted -21 to -33). tile_x/tile_y DO work -- they hold the wrap to under 1 level -- but they cannot stop the model shading the tile's own interior.",
+  "_pack_path": "art/tiles/grass.png",
+  "_replaces": "48x34, 5 colours: flat green noise",
+  "prompt": "a small crop cut from the middle of a much larger sheet of wrapping paper, the paper is printed all over with an endless repeating pattern: a flat medium green ground covered with many small short specks of bright yellow-green and of dark green in strong contrast, the specks evenly and randomly spread with the same density everywhere, the crop is taken from deep inside the sheet so no edge or border of the paper is visible anywhere, the pattern simply continues past all four sides, flat colours, hard edges, no blur, no gradient, no shading, no light, no depth",
+  "style": "rd_plus__low_res",
+  "width": 96,
+  "height": 96,
+  "seed": 3205,
+  "tile_x": true,
+  "tile_y": true,
+  "raw_only": true,
+  "target": [
+    96,
+    96
+  ],
+  "figure": false,
+  "_acceptance": {
+    "spec": [
+      "exactly 96x96",
+      "seam: |vertical delta| and |horizontal delta| under 3",
+      "no landmark: 16x16 block-mean spread under 5",
+      "no vignette: edge-minus-centre within +/-3",
+      "contrast: p95-p5 luminance spread at least 25 (the reference grass is the number to beat)",
+      "reads as grass at 1:1 in a field of 50 tiles, not only at 8x zoom"
+    ],
+    "regressions_to_watch": [
+      "an edge vignette -- the model frames anything it thinks is a square. Never say square or tile.",
+      "individually drawn blades or a single flower become a motif repeating across the whole map",
+      "a top-to-bottom lighting gradient, which bands at every tile boundary. Naming a real subject invites it: 'sea water' cost -52 before the pattern framing removed it.",
+      "too little contrast: a flat field of one green reads as dead ground at 1:1"
+    ]
+  },
+  "_review_rule": "Judge as a 4x4 tiled field at 1:1, beside the existing tile. A single tile at 8x tells you nothing about whether it repeats acceptably. The metrics above are a floor, never the verdict."
+}

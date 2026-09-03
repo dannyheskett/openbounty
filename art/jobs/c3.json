@@ -1,0 +1,16 @@
+{
+  "id": "c3",
+  "prompt": "A full length Roman legionary soldier standing with his legs apart holding a long spear across his body, red crested helmet, side view",
+  "style": "rd_plus__classic",
+  "width": 48,
+  "height": 34,
+  "seed": 4242,
+  "remove_bg": true,
+  "bypass_prompt_expansion": false,
+  "target": [
+    48,
+    34
+  ],
+  "figure": true,
+  "raw_only": true
+}

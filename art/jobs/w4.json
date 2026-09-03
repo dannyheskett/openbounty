@@ -1,0 +1,16 @@
+{
+  "id": "w4",
+  "prompt": "A tall Roman legionary soldier in armour standing with a spear, red crested helmet, full figure, facing right",
+  "style": "rd_plus__classic",
+  "width": 48,
+  "height": 34,
+  "seed": 1101,
+  "remove_bg": true,
+  "bypass_prompt_expansion": false,
+  "target": [
+    48,
+    34
+  ],
+  "figure": true,
+  "raw_only": true
+}
