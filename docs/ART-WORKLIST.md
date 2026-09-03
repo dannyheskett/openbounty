@@ -92,7 +92,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_archers_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_archers_00_03/01_still.png
+file build/art/troops_archers_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -121,7 +122,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_archers_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_archers_00_03/02_sheet.png
+file build/art/troops_archers_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -157,7 +159,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_archmages_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_archmages_00_03/01_still.png
+file build/art/troops_archmages_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -186,7 +189,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_archmages_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_archmages_00_03/02_sheet.png
+file build/art/troops_archmages_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -222,7 +226,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_barbarians_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_barbarians_00_03/01_still.png
+file build/art/troops_barbarians_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -251,7 +256,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_barbarians_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_barbarians_00_03/02_sheet.png
+file build/art/troops_barbarians_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -287,7 +293,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_cavalry_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_cavalry_00_03/01_still.png
+file build/art/troops_cavalry_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -316,7 +323,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_cavalry_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_cavalry_00_03/02_sheet.png
+file build/art/troops_cavalry_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -352,7 +360,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_demons_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_demons_00_03/01_still.png
+file build/art/troops_demons_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -381,7 +390,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_demons_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_demons_00_03/02_sheet.png
+file build/art/troops_demons_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -417,7 +427,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_dragons_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_dragons_00_03/01_still.png
+file build/art/troops_dragons_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -446,7 +457,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_dragons_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_dragons_00_03/02_sheet.png
+file build/art/troops_dragons_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -482,7 +494,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_druids_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_druids_00_03/01_still.png
+file build/art/troops_druids_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -511,7 +524,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_druids_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_druids_00_03/02_sheet.png
+file build/art/troops_druids_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -547,7 +561,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_dwarves_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_dwarves_00_03/01_still.png
+file build/art/troops_dwarves_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -576,7 +591,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_dwarves_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_dwarves_00_03/02_sheet.png
+file build/art/troops_dwarves_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -612,7 +628,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_elves_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_elves_00_03/01_still.png
+file build/art/troops_elves_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -641,7 +658,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_elves_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_elves_00_03/02_sheet.png
+file build/art/troops_elves_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -677,7 +695,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_ghosts_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_ghosts_00_03/01_still.png
+file build/art/troops_ghosts_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -706,7 +725,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_ghosts_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_ghosts_00_03/02_sheet.png
+file build/art/troops_ghosts_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -742,7 +762,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_giants_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_giants_00_03/01_still.png
+file build/art/troops_giants_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -771,7 +792,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_giants_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_giants_00_03/02_sheet.png
+file build/art/troops_giants_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -807,7 +829,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_gnomes_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_gnomes_00_03/01_still.png
+file build/art/troops_gnomes_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -836,7 +859,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_gnomes_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_gnomes_00_03/02_sheet.png
+file build/art/troops_gnomes_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -872,7 +896,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_knights_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_knights_00_03/01_still.png
+file build/art/troops_knights_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -901,7 +926,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_knights_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_knights_00_03/02_sheet.png
+file build/art/troops_knights_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -937,7 +963,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_militia_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_militia_00_03/01_still.png
+file build/art/troops_militia_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -966,7 +993,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_militia_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_militia_00_03/02_sheet.png
+file build/art/troops_militia_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -1002,7 +1030,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_nomads_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_nomads_00_03/01_still.png
+file build/art/troops_nomads_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -1031,7 +1060,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_nomads_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_nomads_00_03/02_sheet.png
+file build/art/troops_nomads_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -1067,7 +1097,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_ogres_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_ogres_00_03/01_still.png
+file build/art/troops_ogres_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -1096,7 +1127,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_ogres_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_ogres_00_03/02_sheet.png
+file build/art/troops_ogres_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -1132,7 +1164,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_orcs_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_orcs_00_03/01_still.png
+file build/art/troops_orcs_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -1161,7 +1194,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_orcs_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_orcs_00_03/02_sheet.png
+file build/art/troops_orcs_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -1197,7 +1231,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_peasants_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_peasants_00_03/01_still.png
+file build/art/troops_peasants_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -1226,7 +1261,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_peasants_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_peasants_00_03/02_sheet.png
+file build/art/troops_peasants_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -1262,7 +1298,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_pikemen_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_pikemen_00_03/01_still.png
+file build/art/troops_pikemen_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -1291,7 +1328,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_pikemen_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_pikemen_00_03/02_sheet.png
+file build/art/troops_pikemen_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -1327,7 +1365,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_skeletons_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_skeletons_00_03/01_still.png
+file build/art/troops_skeletons_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -1356,7 +1395,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_skeletons_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_skeletons_00_03/02_sheet.png
+file build/art/troops_skeletons_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -1392,7 +1432,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_sprites_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_sprites_00_03/01_still.png
+file build/art/troops_sprites_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -1421,7 +1462,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_sprites_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_sprites_00_03/02_sheet.png
+file build/art/troops_sprites_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -1457,7 +1499,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_trolls_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_trolls_00_03/01_still.png
+file build/art/troops_trolls_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -1486,7 +1529,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_trolls_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_trolls_00_03/02_sheet.png
+file build/art/troops_trolls_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -1522,7 +1566,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_vampires_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_vampires_00_03/01_still.png
+file build/art/troops_vampires_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -1551,7 +1596,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_vampires_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_vampires_00_03/02_sheet.png
+file build/art/troops_vampires_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -1587,7 +1633,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_wolves_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_wolves_00_03/01_still.png
+file build/art/troops_wolves_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -1616,7 +1663,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_wolves_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_wolves_00_03/02_sheet.png
+file build/art/troops_wolves_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -1652,7 +1700,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_zombies_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_zombies_00_03/01_still.png
+file build/art/troops_zombies_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -1681,7 +1730,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_zombies_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_zombies_00_03/02_sheet.png
+file build/art/troops_zombies_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -1717,7 +1767,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_alaric_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_alaric_00_03/01_still.png
+file build/art/villains_alaric_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -1746,7 +1797,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_alaric_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_alaric_00_03/02_sheet.png
+file build/art/villains_alaric_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -1782,7 +1834,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_arminius_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_arminius_00_03/01_still.png
+file build/art/villains_arminius_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -1811,7 +1864,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_arminius_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_arminius_00_03/02_sheet.png
+file build/art/villains_arminius_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -1847,7 +1901,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_attila_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_attila_00_03/01_still.png
+file build/art/villains_attila_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -1876,7 +1931,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_attila_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_attila_00_03/02_sheet.png
+file build/art/villains_attila_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -1912,7 +1968,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_boudica_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_boudica_00_03/01_still.png
+file build/art/villains_boudica_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -1941,7 +1998,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_boudica_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_boudica_00_03/02_sheet.png
+file build/art/villains_boudica_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -1977,7 +2035,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_brennus_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_brennus_00_03/01_still.png
+file build/art/villains_brennus_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -2006,7 +2065,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_brennus_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_brennus_00_03/02_sheet.png
+file build/art/villains_brennus_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -2042,7 +2102,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_catiline_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_catiline_00_03/01_still.png
+file build/art/villains_catiline_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -2071,7 +2132,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_catiline_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_catiline_00_03/02_sheet.png
+file build/art/villains_catiline_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -2107,7 +2169,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_civilis_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_civilis_00_03/01_still.png
+file build/art/villains_civilis_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -2136,7 +2199,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_civilis_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_civilis_00_03/02_sheet.png
+file build/art/villains_civilis_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -2172,7 +2236,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_gildo_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_gildo_00_03/01_still.png
+file build/art/villains_gildo_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -2201,7 +2266,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_gildo_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_gildo_00_03/02_sheet.png
+file build/art/villains_gildo_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -2237,7 +2303,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_hannibal_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_hannibal_00_03/01_still.png
+file build/art/villains_hannibal_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -2266,7 +2333,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_hannibal_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_hannibal_00_03/02_sheet.png
+file build/art/villains_hannibal_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -2302,7 +2370,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_jugurtha_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_jugurtha_00_03/01_still.png
+file build/art/villains_jugurtha_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -2331,7 +2400,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_jugurtha_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_jugurtha_00_03/02_sheet.png
+file build/art/villains_jugurtha_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -2367,7 +2437,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_mithridates_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_mithridates_00_03/01_still.png
+file build/art/villains_mithridates_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -2396,7 +2467,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_mithridates_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_mithridates_00_03/02_sheet.png
+file build/art/villains_mithridates_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -2432,7 +2504,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_pyrrhus_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_pyrrhus_00_03/01_still.png
+file build/art/villains_pyrrhus_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -2461,7 +2534,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_pyrrhus_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_pyrrhus_00_03/02_sheet.png
+file build/art/villains_pyrrhus_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -2497,7 +2571,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_shapur_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_shapur_00_03/01_still.png
+file build/art/villains_shapur_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -2526,7 +2601,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_shapur_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_shapur_00_03/02_sheet.png
+file build/art/villains_shapur_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -2562,7 +2638,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_spartacus_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_spartacus_00_03/01_still.png
+file build/art/villains_spartacus_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -2591,7 +2668,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_spartacus_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_spartacus_00_03/02_sheet.png
+file build/art/villains_spartacus_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -2627,7 +2705,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_tacfarinas_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_tacfarinas_00_03/01_still.png
+file build/art/villains_tacfarinas_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -2656,7 +2735,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_tacfarinas_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_tacfarinas_00_03/02_sheet.png
+file build/art/villains_tacfarinas_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -2692,7 +2772,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_vercingetorix_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_vercingetorix_00_03/01_still.png
+file build/art/villains_vercingetorix_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -2721,7 +2802,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_vercingetorix_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_vercingetorix_00_03/02_sheet.png
+file build/art/villains_vercingetorix_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -2757,7 +2839,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_zenobia_00_03/01_still.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_zenobia_00_03/01_still.png
+file build/art/villains_zenobia_00_03/01_still.png   # must say: PNG image data
 ```
 
 **Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
@@ -2786,7 +2869,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_zenobia_00_03/02_sheet.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/villains_zenobia_00_03/02_sheet.png
+file build/art/villains_zenobia_00_03/02_sheet.png   # must say: PNG image data
 ```
 
 **Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
@@ -2821,7 +2905,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/classes_barbarian/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/classes_barbarian/01_raw.png
+file build/art/classes_barbarian/01_raw.png   # must say: PNG image data
 echo wrote build/art/classes_barbarian/01_raw.png
 ```
 
@@ -2850,7 +2935,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/classes_knight/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/classes_knight/01_raw.png
+file build/art/classes_knight/01_raw.png   # must say: PNG image data
 echo wrote build/art/classes_knight/01_raw.png
 ```
 
@@ -2879,7 +2965,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/classes_paladin/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/classes_paladin/01_raw.png
+file build/art/classes_paladin/01_raw.png   # must say: PNG image data
 echo wrote build/art/classes_paladin/01_raw.png
 ```
 
@@ -2908,7 +2995,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/classes_sorceress/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/classes_sorceress/01_raw.png
+file build/art/classes_sorceress/01_raw.png   # must say: PNG image data
 echo wrote build/art/classes_sorceress/01_raw.png
 ```
 
@@ -2940,7 +3028,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/sprites_hero_idle_facing_00_03/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_hero_idle_facing_00_03/01_raw.png
+file build/art/sprites_hero_idle_facing_00_03/01_raw.png   # must say: PNG image data
 echo wrote build/art/sprites_hero_idle_facing_00_03/01_raw.png
 ```
 
@@ -2969,7 +3058,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/sprites_hero_walk_east_00_03/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_hero_walk_east_00_03/01_raw.png
+file build/art/sprites_hero_walk_east_00_03/01_raw.png   # must say: PNG image data
 echo wrote build/art/sprites_hero_walk_east_00_03/01_raw.png
 ```
 
@@ -2998,7 +3088,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/sprites_hero_walk_north_00_03/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_hero_walk_north_00_03/01_raw.png
+file build/art/sprites_hero_walk_north_00_03/01_raw.png   # must say: PNG image data
 echo wrote build/art/sprites_hero_walk_north_00_03/01_raw.png
 ```
 
@@ -3027,7 +3118,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/sprites_hero_walk_south_00_03/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_hero_walk_south_00_03/01_raw.png
+file build/art/sprites_hero_walk_south_00_03/01_raw.png   # must say: PNG image data
 echo wrote build/art/sprites_hero_walk_south_00_03/01_raw.png
 ```
 
@@ -3056,7 +3148,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/sprites_hero_walk_west_00_03/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_hero_walk_west_00_03/01_raw.png
+file build/art/sprites_hero_walk_west_00_03/01_raw.png   # must say: PNG image data
 echo wrote build/art/sprites_hero_walk_west_00_03/01_raw.png
 ```
 
@@ -3088,7 +3181,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/sprites_boat_east_00_03/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_boat_east_00_03/01_raw.png
+file build/art/sprites_boat_east_00_03/01_raw.png   # must say: PNG image data
 echo wrote build/art/sprites_boat_east_00_03/01_raw.png
 ```
 
@@ -3117,7 +3211,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/sprites_boat_north_00_03/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_boat_north_00_03/01_raw.png
+file build/art/sprites_boat_north_00_03/01_raw.png   # must say: PNG image data
 echo wrote build/art/sprites_boat_north_00_03/01_raw.png
 ```
 
@@ -3146,7 +3241,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/sprites_boat_south_00_03/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_boat_south_00_03/01_raw.png
+file build/art/sprites_boat_south_00_03/01_raw.png   # must say: PNG image data
 echo wrote build/art/sprites_boat_south_00_03/01_raw.png
 ```
 
@@ -3175,7 +3271,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/sprites_boat_west_00_03/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/sprites_boat_west_00_03/01_raw.png
+file build/art/sprites_boat_west_00_03/01_raw.png   # must say: PNG image data
 echo wrote build/art/sprites_boat_west_00_03/01_raw.png
 ```
 
@@ -3207,7 +3304,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/tiles_desert/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_desert/01_raw.png
+file build/art/tiles_desert/01_raw.png   # must say: PNG image data
 echo wrote build/art/tiles_desert/01_raw.png
 ```
 
@@ -3236,7 +3334,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/tiles_forest/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_forest/01_raw.png
+file build/art/tiles_forest/01_raw.png   # must say: PNG image data
 echo wrote build/art/tiles_forest/01_raw.png
 ```
 
@@ -3267,7 +3366,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/tiles_grass/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_grass/01_raw.png
+file build/art/tiles_grass/01_raw.png   # must say: PNG image data
 echo wrote build/art/tiles_grass/01_raw.png
 ```
 
@@ -3296,7 +3396,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/tiles_grass_variant/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_grass_variant/01_raw.png
+file build/art/tiles_grass_variant/01_raw.png   # must say: PNG image data
 echo wrote build/art/tiles_grass_variant/01_raw.png
 ```
 
@@ -3325,7 +3426,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/tiles_mountain/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_mountain/01_raw.png
+file build/art/tiles_mountain/01_raw.png   # must say: PNG image data
 echo wrote build/art/tiles_mountain/01_raw.png
 ```
 
@@ -3356,7 +3458,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/tiles_water/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_water/01_raw.png
+file build/art/tiles_water/01_raw.png   # must say: PNG image data
 echo wrote build/art/tiles_water/01_raw.png
 ```
 
@@ -3388,7 +3491,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/tiles_castle_png/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_castle_png/01_raw.png
+file build/art/tiles_castle_png/01_raw.png   # must say: PNG image data
 echo wrote build/art/tiles_castle_png/01_raw.png
 ```
 
@@ -3417,7 +3521,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/tiles_dwelling_dungeon/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_dwelling_dungeon/01_raw.png
+file build/art/tiles_dwelling_dungeon/01_raw.png   # must say: PNG image data
 echo wrote build/art/tiles_dwelling_dungeon/01_raw.png
 ```
 
@@ -3446,7 +3551,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/tiles_dwelling_forest/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_dwelling_forest/01_raw.png
+file build/art/tiles_dwelling_forest/01_raw.png   # must say: PNG image data
 echo wrote build/art/tiles_dwelling_forest/01_raw.png
 ```
 
@@ -3475,7 +3581,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/tiles_dwelling_hills/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_dwelling_hills/01_raw.png
+file build/art/tiles_dwelling_hills/01_raw.png   # must say: PNG image data
 echo wrote build/art/tiles_dwelling_hills/01_raw.png
 ```
 
@@ -3504,7 +3611,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/tiles_dwelling_plains/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_dwelling_plains/01_raw.png
+file build/art/tiles_dwelling_plains/01_raw.png   # must say: PNG image data
 echo wrote build/art/tiles_dwelling_plains/01_raw.png
 ```
 
@@ -3533,7 +3641,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/tiles_town/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_town/01_raw.png
+file build/art/tiles_town/01_raw.png   # must say: PNG image data
 echo wrote build/art/tiles_town/01_raw.png
 ```
 
@@ -3567,7 +3676,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/tiles_artifact_chest/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_artifact_chest/01_raw.png
+file build/art/tiles_artifact_chest/01_raw.png   # must say: PNG image data
 echo wrote build/art/tiles_artifact_chest/01_raw.png
 ```
 
@@ -3598,7 +3708,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/tiles_artifact_ring/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_artifact_ring/01_raw.png
+file build/art/tiles_artifact_ring/01_raw.png   # must say: PNG image data
 echo wrote build/art/tiles_artifact_ring/01_raw.png
 ```
 
@@ -3627,7 +3738,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/tiles_bridge_h/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_bridge_h/01_raw.png
+file build/art/tiles_bridge_h/01_raw.png   # must say: PNG image data
 echo wrote build/art/tiles_bridge_h/01_raw.png
 ```
 
@@ -3656,7 +3768,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/tiles_bridge_v/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_bridge_v/01_raw.png
+file build/art/tiles_bridge_v/01_raw.png   # must say: PNG image data
 echo wrote build/art/tiles_bridge_v/01_raw.png
 ```
 
@@ -3685,7 +3798,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/tiles_chest/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_chest/01_raw.png
+file build/art/tiles_chest/01_raw.png   # must say: PNG image data
 echo wrote build/art/tiles_chest/01_raw.png
 ```
 
@@ -3714,7 +3828,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/tiles_sign/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_sign/01_raw.png
+file build/art/tiles_sign/01_raw.png   # must say: PNG image data
 echo wrote build/art/tiles_sign/01_raw.png
 ```
 
@@ -3743,7 +3858,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/tiles_wandering_army/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/tiles_wandering_army/01_raw.png
+file build/art/tiles_wandering_army/01_raw.png   # must say: PNG image data
 echo wrote build/art/tiles_wandering_army/01_raw.png
 ```
 
@@ -3775,7 +3891,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/combat_castle_spike/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/combat_castle_spike/01_raw.png
+file build/art/combat_castle_spike/01_raw.png   # must say: PNG image data
 echo wrote build/art/combat_castle_spike/01_raw.png
 ```
 
@@ -3804,7 +3921,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/combat_castle_wall_01_06/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/combat_castle_wall_01_06/01_raw.png
+file build/art/combat_castle_wall_01_06/01_raw.png   # must say: PNG image data
 echo wrote build/art/combat_castle_wall_01_06/01_raw.png
 ```
 
@@ -3833,7 +3951,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/combat_cursor_01_04/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/combat_cursor_01_04/01_raw.png
+file build/art/combat_cursor_01_04/01_raw.png   # must say: PNG image data
 echo wrote build/art/combat_cursor_01_04/01_raw.png
 ```
 
@@ -3862,7 +3981,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/combat_field_grass/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/combat_field_grass/01_raw.png
+file build/art/combat_field_grass/01_raw.png   # must say: PNG image data
 echo wrote build/art/combat_field_grass/01_raw.png
 ```
 
@@ -3891,7 +4011,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/combat_obstacle_01_03/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/combat_obstacle_01_03/01_raw.png
+file build/art/combat_obstacle_01_03/01_raw.png   # must say: PNG image data
 echo wrote build/art/combat_obstacle_01_03/01_raw.png
 ```
 
@@ -3923,7 +4044,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_inventory_artifact_amulet/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_inventory_artifact_amulet/01_raw.png
+file build/art/ui_inventory_artifact_amulet/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_inventory_artifact_amulet/01_raw.png
 ```
 
@@ -3952,7 +4074,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_inventory_artifact_anchor/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_inventory_artifact_anchor/01_raw.png
+file build/art/ui_inventory_artifact_anchor/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_inventory_artifact_anchor/01_raw.png
 ```
 
@@ -3981,7 +4104,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_inventory_artifact_articles/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_inventory_artifact_articles/01_raw.png
+file build/art/ui_inventory_artifact_articles/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_inventory_artifact_articles/01_raw.png
 ```
 
@@ -4010,7 +4134,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_inventory_artifact_book/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_inventory_artifact_book/01_raw.png
+file build/art/ui_inventory_artifact_book/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_inventory_artifact_book/01_raw.png
 ```
 
@@ -4039,7 +4164,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_inventory_artifact_crown/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_inventory_artifact_crown/01_raw.png
+file build/art/ui_inventory_artifact_crown/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_inventory_artifact_crown/01_raw.png
 ```
 
@@ -4068,7 +4194,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_inventory_artifact_ring/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_inventory_artifact_ring/01_raw.png
+file build/art/ui_inventory_artifact_ring/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_inventory_artifact_ring/01_raw.png
 ```
 
@@ -4097,7 +4224,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_inventory_artifact_shield/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_inventory_artifact_shield/01_raw.png
+file build/art/ui_inventory_artifact_shield/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_inventory_artifact_shield/01_raw.png
 ```
 
@@ -4126,7 +4254,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_inventory_artifact_sword/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_inventory_artifact_sword/01_raw.png
+file build/art/ui_inventory_artifact_sword/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_inventory_artifact_sword/01_raw.png
 ```
 
@@ -4158,7 +4287,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_inventory_zone_archipelia/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_inventory_zone_archipelia/01_raw.png
+file build/art/ui_inventory_zone_archipelia/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_inventory_zone_archipelia/01_raw.png
 ```
 
@@ -4187,7 +4317,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_inventory_zone_continentia/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_inventory_zone_continentia/01_raw.png
+file build/art/ui_inventory_zone_continentia/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_inventory_zone_continentia/01_raw.png
 ```
 
@@ -4216,7 +4347,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_inventory_zone_forestria/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_inventory_zone_forestria/01_raw.png
+file build/art/ui_inventory_zone_forestria/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_inventory_zone_forestria/01_raw.png
 ```
 
@@ -4245,7 +4377,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_inventory_zone_saharia/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_inventory_zone_saharia/01_raw.png
+file build/art/ui_inventory_zone_saharia/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_inventory_zone_saharia/01_raw.png
 ```
 
@@ -4394,7 +4527,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_hud_contract_silhouette/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_hud_contract_silhouette/01_raw.png
+file build/art/ui_hud_contract_silhouette/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_hud_contract_silhouette/01_raw.png
 ```
 
@@ -4423,7 +4557,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_hud_gold_purse/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_hud_gold_purse/01_raw.png
+file build/art/ui_hud_gold_purse/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_hud_gold_purse/01_raw.png
 ```
 
@@ -4452,7 +4587,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_hud_magic_00_03/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_hud_magic_00_03/01_raw.png
+file build/art/ui_hud_magic_00_03/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_hud_magic_00_03/01_raw.png
 ```
 
@@ -4481,7 +4617,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_hud_magic_silhouette/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_hud_magic_silhouette/01_raw.png
+file build/art/ui_hud_magic_silhouette/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_hud_magic_silhouette/01_raw.png
 ```
 
@@ -4510,7 +4647,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_hud_puzzle_grid/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_hud_puzzle_grid/01_raw.png
+file build/art/ui_hud_puzzle_grid/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_hud_puzzle_grid/01_raw.png
 ```
 
@@ -4539,7 +4677,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_hud_siege_00_03/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_hud_siege_00_03/01_raw.png
+file build/art/ui_hud_siege_00_03/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_hud_siege_00_03/01_raw.png
 ```
 
@@ -4568,7 +4707,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_hud_siege_silhouette/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_hud_siege_silhouette/01_raw.png
+file build/art/ui_hud_siege_silhouette/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_hud_siege_silhouette/01_raw.png
 ```
 
@@ -4600,7 +4740,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_end_carpet/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_end_carpet/01_raw.png
+file build/art/ui_end_carpet/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_end_carpet/01_raw.png
 ```
 
@@ -4629,7 +4770,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_end_grass/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_end_grass/01_raw.png
+file build/art/ui_end_grass/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_end_grass/01_raw.png
 ```
 
@@ -4658,7 +4800,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_end_hero/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_end_hero/01_raw.png
+file build/art/ui_end_hero/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_end_hero/01_raw.png
 ```
 
@@ -4690,7 +4833,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_class_select_highlight/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_class_select_highlight/01_raw.png
+file build/art/ui_class_select_highlight/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_class_select_highlight/01_raw.png
 ```
 
@@ -4738,7 +4882,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_end_lose_screen/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_end_lose_screen/01_raw.png
+file build/art/ui_end_lose_screen/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_end_lose_screen/01_raw.png
 ```
 
@@ -4767,7 +4912,8 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_end_win_screen/01_raw.png
+echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_end_win_screen/01_raw.png
+file build/art/ui_end_win_screen/01_raw.png   # must say: PNG image data
 echo wrote build/art/ui_end_win_screen/01_raw.png
 ```
 

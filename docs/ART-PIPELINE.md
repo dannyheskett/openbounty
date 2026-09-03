@@ -70,6 +70,18 @@ jq -n --arg img "$(base64 -w0 build/art/<id>/01_still.png)" \
     input_image: $img, async: true}' > build/art/<id>/anim_request.json
 ```
 
+### Decoding the poll response
+
+The task poll returns `{status, task_id, result: {...}}` — the image is at
+**`.result.base64_images[0]`**, not `.base64_images[0]`. The work list carried
+the shallow path for three weeks and it silently wrote a 3-byte file: `jq`
+prints `null`, `base64 -d` decodes it to nothing, and the shell reports no
+error. The call had already been charged. Every command now ends with a `file`
+check that must say `PNG image data`.
+
+Recovery, if it happens again: the request id is printed by the submit step, and
+`GET /v1/inferences/requests/{id}` returns a signed URL for 24 hours.
+
 ### Step 4 — cut the sheet
 
 It returns a **192x192 PNG: a 2x2 grid of 96x96 cells**, transparent, binary
