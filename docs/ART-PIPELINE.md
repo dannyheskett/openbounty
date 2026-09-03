@@ -98,8 +98,9 @@ Those four files are the troop's animation array, in order.
 
 ## 3. Rules
 
-- **96x96** for anything in a map or combat cell; screen art at design size x2,
-  up to a maximum dimension of **384**, the largest any public style accepts.
+- **96x96** for anything in a map or combat cell; screen art at design size x2.
+  `rd_plus__environment` generates scenes up to 640x400, which covers every
+  screen asset in the pack at full size.
 - **Subject only in the prompt.** The style carries the rendering; prompts carry
   no framing, background or rendering words.
 - **Name a background colour that cannot occur in the subject.** The background
@@ -131,8 +132,9 @@ Those four files are the troop's animation array, in order.
 | troops and villains: still + attack animation | $0.32 | 42 | $13.44 |
 | hero and boat: still + walk or idle animation | $0.178 | 9 | $1.60 |
 | base terrain and tiled ground | $0.038 | 9 | $0.34 |
-| everything else, still only | $0.038 | 53 | $3.09 |
-| **all 113 items, once** | | | **$18.47** |
+| screens, backdrops and class portraits | $0.074-$0.153 | 15 | $1.44 |
+| map tiles, icons and combat pieces | $0.038 | 38 | $1.94 |
+| **all 113 items, once** | | | **$18.76** |
 
 Custom styles bill at RD Pro rates. The flat `rd_plus__*` styles are $0.038 at
 96x96.

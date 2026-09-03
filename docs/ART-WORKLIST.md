@@ -1,32 +1,31 @@
 # Glory of Rome — art inventory and commands
 
-113 items, 299 files. Every entry below carries the files it
-produces, the state those files are in today, the prompt, and commands that have
-been checked against the API. The process itself is described in
-`ART-PIPELINE.md`.
+113 items, 299 files. Every entry carries the files it produces, the
+state those files are in today, the prompt, and commands checked against the
+API. The process is described in `ART-PIPELINE.md`.
 
 ```sh
 TOKEN=$(cat ~/.config/retrodiffusion/token)
 ```
 
-Output lands under `build/art/<id>/`. The final step of each entry copies the
-approved files into `assets/glory-of-rome/art/`; nothing before that step writes
-into the pack.
+Output lands under `build/art/<id>/`. The last step of each entry copies the
+approved files into `assets/glory-of-rome/art/`; nothing before it writes into
+the pack.
 
 ## Certified
 
-Every command in this file was verified on 2026-09-03 with `check_cost: true`,
-the API's free dry run, which validates a request and generates nothing:
+Every command was verified on 2026-09-03 with `check_cost: true`, the API's free
+dry run, which validates a request and generates nothing:
 
-- **134 generation payloads** accepted by the API, $11.33 to run them all once
+- **134 generation payloads** accepted, $11.62 to run them all once
 - **51 animation payloads** accepted, $7.14
-- **Total to generate the pack once: $18.47**
+- **Total to generate the pack once: $18.76**
 - **350 shell blocks**, all parsing under `bash -n`
 - Every `convert` crop checked against a real 192x192 sheet: four 96x96 files
-- **299 copy targets**, every one a real path in the pack except the 48
-  hero and boat directional files, which are new slots with no art yet
+- **299 copy targets**, every one a real path in the pack except the 48 hero
+  and boat directional files, which are new slots with no art yet
 
-## Four routes
+## Five routes
 
 **1. Troops and villains — 42 items, $0.32 each.** Five steps, and step 2 is a
 stop. The still comes from `user__glory_of_rome_troops_bac676cd`, which supplies
@@ -37,26 +36,29 @@ uploaded untouched so its alpha carries into the frames, and the returned
 
 **2. Hero and boat — 9 items, $0.178 each.** Same shape, but the still uses
 `rd_plus__classic` with `remove_bg` rather than the troop style, which would
-force every one of them into a standing profile. The animation is
-`rd_advanced_animation__walking` for the four hero facings and
+force all nine into a standing profile. The animation is
+`rd_advanced_animation__walking` for the four hero facings, and
 `rd_advanced_animation__idle` for the hero at rest and the four boat views.
 
 **3. Base terrain and tiled ground — 9 items, $0.038 each.** `rd_plus__low_res`
-with `tile_x`/`tile_y`, opaque, and prompts that describe a *pattern* rather
-than a subject. Keep that wording exactly as it is.
+with `tile_x`/`tile_y`, opaque, prompts describing a *pattern* rather than a
+subject. Keep that wording exactly as it is.
 
-**4. Everything else — 53 items, $0.038 each.** `rd_plus__classic` up to 192px
-and `rd_plus__default` above it. Map tiles are opaque with the ground baked in,
-because `map_render.c` draws each tile alone over a black fill and only puts
-terrain underneath a wandering-army sprite. Sprites, icons and combat pieces
-carry `remove_bg`.
+**4. Screens, backdrops and class portraits — 15 items.** `rd_plus__environment`
+— "one-point perspective scenes with outlines and strong shapes" — at full
+design size x2, up to 640x400. Opaque.
+
+**5. Map tiles, icons and combat pieces — 38 items, $0.038 each.**
+`rd_plus__classic` up to 192px, `rd_plus__default` above it. Map tiles are
+opaque with the ground baked in, because `map_render.c` draws each tile alone
+over a black fill and only puts terrain under a wandering-army sprite. Icons,
+sprites and combat pieces carry `remove_bg`.
 
 ## Rules
 
-- **96x96** for anything in a map or combat cell. Screen art at design size x2,
-  capped so no dimension exceeds **384**, the largest any public style accepts.
+- **96x96** for anything in a map or combat cell. Screen art at design size x2.
 - **Subject only in the prompt.** The style carries the rendering.
-- **No scenery** in a figure prompt. The background remover cannot strip drawn
+- **No scenery in a figure prompt.** The background remover cannot strip drawn
   ground, and a named background colour must be one that cannot occur in the
   subject.
 - **No `input_palette`.**
@@ -3370,7 +3372,7 @@ cp build/art/villains_zenobia_00_03/frame_03.png assets/glory-of-rome/art/villai
 mkdir -p build/art/classes_barbarian
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a weathered frontier commander in mail over furs with a wolf-pelt cloak and iron torc, standing on a rock at a forest frontier", "prompt_style": "rd_plus__default", "width": 192, "height": 204, "num_images": 1, "seed": 1045, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a weathered frontier commander in mail over furs with a wolf-pelt cloak and iron torc, standing on a rock at a forest frontier", "prompt_style": "rd_plus__environment", "width": 192, "height": 204, "num_images": 1, "seed": 1045, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3414,7 +3416,7 @@ cp build/art/classes_barbarian/01_raw.png assets/glory-of-rome/art/classes/barba
 mkdir -p build/art/classes_knight
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman general in a muscled bronze cuirass with lion-head shoulder pieces, red paludamentum cloak, crested helmet under one arm, standing before a distant fortified camp at sunset", "prompt_style": "rd_plus__default", "width": 192, "height": 204, "num_images": 1, "seed": 1042, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman general in a muscled bronze cuirass with lion-head shoulder pieces, red paludamentum cloak, crested helmet under one arm, standing before a distant fortified camp at sunset", "prompt_style": "rd_plus__environment", "width": 192, "height": 204, "num_images": 1, "seed": 1042, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3459,7 +3461,7 @@ cp build/art/classes_knight/01_raw.png assets/glory-of-rome/art/classes/knight.p
 mkdir -p build/art/classes_paladin
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Praetorian guardsman in an ornate scorpion-embossed cuirass with a tall black transverse crest, kneeling at a candlelit altar in a marble shrine", "prompt_style": "rd_plus__default", "width": 192, "height": 204, "num_images": 1, "seed": 1043, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a Praetorian guardsman in an ornate scorpion-embossed cuirass with a tall black transverse crest, kneeling at a candlelit altar in a marble shrine", "prompt_style": "rd_plus__environment", "width": 192, "height": 204, "num_images": 1, "seed": 1043, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3503,7 +3505,7 @@ cp build/art/classes_paladin/01_raw.png assets/glory-of-rome/art/classes/paladin
 mkdir -p build/art/classes_sorceress
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a veiled Vestal oracle-priestess in white robes with a gold fillet, holding a laurel sprig, standing in a temple interior lit by a sacred flame", "prompt_style": "rd_plus__default", "width": 192, "height": 204, "num_images": 1, "seed": 1044, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a veiled Vestal oracle-priestess in white robes with a gold fillet, holding a laurel sprig, standing in a temple interior lit by a sacred flame", "prompt_style": "rd_plus__environment", "width": 192, "height": 204, "num_images": 1, "seed": 1044, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -6152,7 +6154,7 @@ cp build/art/ui_inventory_zone_saharia/01_raw.png assets/glory-of-rome/art/ui/in
 
 **Replaces:** `ui/backdrop_castle.png`
 
-**State:** placeholder. Design size 240x102 → generate at 384x163.
+**State:** placeholder. Design size 240x102 → generate at 480x204.
 
 **Prompt**
 
@@ -6164,7 +6166,7 @@ cp build/art/ui_inventory_zone_saharia/01_raw.png assets/glory-of-rome/art/ui/in
 mkdir -p build/art/ui_backdrop_castle
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a fortress hall interior with hanging legionary standards, a brazier and stone arches", "prompt_style": "rd_plus__default", "width": 384, "height": 163, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a fortress hall interior with hanging legionary standards, a brazier and stone arches", "prompt_style": "rd_plus__environment", "width": 480, "height": 204, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -6196,7 +6198,7 @@ cp build/art/ui_backdrop_castle/01_raw.png assets/glory-of-rome/art/ui/backdrop_
 
 **Replaces:** `ui/backdrop_dungeon.png`
 
-**State:** placeholder. Design size 240x102 → generate at 384x163.
+**State:** placeholder. Design size 240x102 → generate at 480x204.
 
 **Prompt**
 
@@ -6208,7 +6210,7 @@ cp build/art/ui_backdrop_castle/01_raw.png assets/glory-of-rome/art/ui/backdrop_
 mkdir -p build/art/ui_backdrop_dungeon
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a crypt interior with columbarium niches and torchlight", "prompt_style": "rd_plus__default", "width": 384, "height": 163, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a crypt interior with columbarium niches and torchlight", "prompt_style": "rd_plus__environment", "width": 480, "height": 204, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -6240,7 +6242,7 @@ cp build/art/ui_backdrop_dungeon/01_raw.png assets/glory-of-rome/art/ui/backdrop
 
 **Replaces:** `ui/backdrop_forest.png`
 
-**State:** placeholder. Design size 240x102 → generate at 384x163.
+**State:** placeholder. Design size 240x102 → generate at 480x204.
 
 **Prompt**
 
@@ -6252,7 +6254,7 @@ cp build/art/ui_backdrop_dungeon/01_raw.png assets/glory-of-rome/art/ui/backdrop
 mkdir -p build/art/ui_backdrop_forest
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "the interior of a dense sacred grove with shafts of light through the canopy", "prompt_style": "rd_plus__default", "width": 384, "height": 163, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "the interior of a dense sacred grove with shafts of light through the canopy", "prompt_style": "rd_plus__environment", "width": 480, "height": 204, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -6284,7 +6286,7 @@ cp build/art/ui_backdrop_forest/01_raw.png assets/glory-of-rome/art/ui/backdrop_
 
 **Replaces:** `ui/backdrop_hillcave.png`
 
-**State:** placeholder. Design size 240x102 → generate at 384x163.
+**State:** placeholder. Design size 240x102 → generate at 480x204.
 
 **Prompt**
 
@@ -6296,7 +6298,7 @@ cp build/art/ui_backdrop_forest/01_raw.png assets/glory-of-rome/art/ui/backdrop_
 mkdir -p build/art/ui_backdrop_hillcave
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a cave mouth in rocky hills with oracle smoke drifting from the opening", "prompt_style": "rd_plus__default", "width": 384, "height": 163, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a cave mouth in rocky hills with oracle smoke drifting from the opening", "prompt_style": "rd_plus__environment", "width": 480, "height": 204, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -6328,7 +6330,7 @@ cp build/art/ui_backdrop_hillcave/01_raw.png assets/glory-of-rome/art/ui/backdro
 
 **Replaces:** `ui/backdrop_plains.png`
 
-**State:** placeholder. Design size 240x102 → generate at 384x163.
+**State:** placeholder. Design size 240x102 → generate at 480x204.
 
 **Prompt**
 
@@ -6340,7 +6342,7 @@ cp build/art/ui_backdrop_hillcave/01_raw.png assets/glory-of-rome/art/ui/backdro
 mkdir -p build/art/ui_backdrop_plains
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "open Italian countryside with cypress trees and distant blue hills", "prompt_style": "rd_plus__default", "width": 384, "height": 163, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "open Italian countryside with cypress trees and distant blue hills", "prompt_style": "rd_plus__environment", "width": 480, "height": 204, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -6372,7 +6374,7 @@ cp build/art/ui_backdrop_plains/01_raw.png assets/glory-of-rome/art/ui/backdrop_
 
 **Replaces:** `ui/backdrop_town.png`
 
-**State:** placeholder. Design size 240x102 → generate at 384x163.
+**State:** placeholder. Design size 240x102 → generate at 480x204.
 
 **Prompt**
 
@@ -6384,7 +6386,7 @@ cp build/art/ui_backdrop_plains/01_raw.png assets/glory-of-rome/art/ui/backdrop_
 mkdir -p build/art/ui_backdrop_town
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman forum street with a colonnade, market awnings and townspeople, wide view", "prompt_style": "rd_plus__default", "width": 384, "height": 163, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman forum street with a colonnade, market awnings and townspeople, wide view", "prompt_style": "rd_plus__environment", "width": 480, "height": 204, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -7019,7 +7021,7 @@ cp build/art/ui_class_select_highlight/01_raw.png assets/glory-of-rome/art/ui/cl
 
 **Replaces:** `ui/class_select_picker.png`
 
-**State:** placeholder. Design size 288x184 → generate at 384x245.
+**State:** placeholder. Design size 288x184 → generate at 576x368.
 
 **Prompt**
 
@@ -7031,7 +7033,7 @@ cp build/art/ui_class_select_highlight/01_raw.png assets/glory-of-rome/art/ui/cl
 mkdir -p build/art/ui_class_select_picker
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "four Roman figures posed together in a landscape -- a general, a praetorian, a veiled priestess and a fur-clad frontier commander -- in one illustrated scene", "prompt_style": "rd_plus__default", "width": 384, "height": 245, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "four Roman figures posed together in a landscape -- a general, a praetorian, a veiled priestess and a fur-clad frontier commander -- in one illustrated scene", "prompt_style": "rd_plus__environment", "width": 576, "height": 368, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -7076,7 +7078,7 @@ cp build/art/ui_class_select_picker/01_raw.png assets/glory-of-rome/art/ui/class
 mkdir -p build/art/ui_end_lose_screen
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a broken Roman eagle standard fallen in mud with a burning frontier fort behind", "prompt_style": "rd_plus__default", "width": 288, "height": 340, "num_images": 1, "seed": 1112, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a broken Roman eagle standard fallen in mud with a burning frontier fort behind", "prompt_style": "rd_plus__environment", "width": 288, "height": 340, "num_images": 1, "seed": 1112, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -7120,7 +7122,7 @@ cp build/art/ui_end_lose_screen/01_raw.png assets/glory-of-rome/art/ui/end_lose_
 mkdir -p build/art/ui_end_win_screen
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman general crowned with laurel raising the recovered golden eagle standard, guards flanking, triumphal hall", "prompt_style": "rd_plus__default", "width": 288, "height": 340, "num_images": 1, "seed": 1111, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman general crowned with laurel raising the recovered golden eagle standard, guards flanking, triumphal hall", "prompt_style": "rd_plus__environment", "width": 288, "height": 340, "num_images": 1, "seed": 1111, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -7153,7 +7155,7 @@ cp build/art/ui_end_win_screen/01_raw.png assets/glory-of-rome/art/ui/end_win_sc
 
 **Replaces:** `ui/splash_logo.png`
 
-**State:** placeholder. Design size 320x84 → generate at 384x101.
+**State:** placeholder. Design size 320x84 → generate at 640x168.
 
 **Prompt**
 
@@ -7165,7 +7167,7 @@ cp build/art/ui_end_win_screen/01_raw.png assets/glory-of-rome/art/ui/end_win_sc
 mkdir -p build/art/ui_splash_logo
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a publisher logo mark on a plain dark field, centred", "prompt_style": "rd_plus__default", "width": 384, "height": 101, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a publisher logo mark on a plain dark field, centred", "prompt_style": "rd_plus__environment", "width": 640, "height": 168, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -7197,11 +7199,11 @@ cp build/art/ui_splash_logo/01_raw.png assets/glory-of-rome/art/ui/splash_logo.p
 
 **Replaces:** `ui/splash_title.png`
 
-**State:** placeholder. Design size 320x200 → generate at 192x384.
+**State:** placeholder. Design size 320x200 → generate at 640x400.
 
 **Prompt**
 
-> a golden Roman legionary eagle standard with spread wings on a tall decorated pole, a laurel wreath ring below the eagle, a crossbar hung with two round medallions, an engraved SPQR plate on the shaft, a deep red ribbon trailing from the crossbar, tilted slightly to the right
+> a golden Roman legionary eagle standard with spread wings on a tall decorated pole, a laurel wreath ring below the eagle, an engraved SPQR plate on the shaft, standing against a deep royal purple field inside an ornate gilded border, wide empty space across the top third
 
 **Step 1 — generate.** $0.038.
 
@@ -7209,7 +7211,7 @@ cp build/art/ui_splash_logo/01_raw.png assets/glory-of-rome/art/ui/splash_logo.p
 mkdir -p build/art/ui_splash_title
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a golden Roman legionary eagle standard with spread wings on a tall decorated pole, a laurel wreath ring below the eagle, a crossbar hung with two round medallions, an engraved SPQR plate on the shaft, a deep red ribbon trailing from the crossbar, tilted slightly to the right", "prompt_style": "rd_plus__default", "width": 192, "height": 384, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a golden Roman legionary eagle standard with spread wings on a tall decorated pole, a laurel wreath ring below the eagle, an engraved SPQR plate on the shaft, standing against a deep royal purple field inside an ornate gilded border, wide empty space across the top third", "prompt_style": "rd_plus__environment", "width": 640, "height": 400, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -7225,7 +7227,7 @@ file build/art/ui_splash_title/01_raw.png   # must say: PNG image data
 **Step 2 — accept it by eye.**
 
 - the a laurel wreath ring below the eagle is present and readable at 1:1
-- the a crossbar hung with two round medallions is present and readable at 1:1
+- the an engraved SPQR plate on the shaft is present and readable at 1:1
 - the composition is complete and nothing important sits under the frame edge
 - no rendered text anywhere: lettering is composited by the engine
 - the image is fully opaque
