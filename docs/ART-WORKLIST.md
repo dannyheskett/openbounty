@@ -1,54 +1,62 @@
-# Glory of Rome — art inventory
+# Glory of Rome — art inventory and commands
 
-What to generate, item by item: the files each produces, its state on disk, the
-prompt, and a command. 113 items, 271 files.
-
-**Method lives in `ART-PIPELINE.md`, not here.** That file is written from
-measured results and supersedes this one wherever they disagree. What remains
-authoritative here is the *inventory*: which files exist, what each depicts, and
-the subject wording.
-
-## What in this file is superseded
-
-- **Figure prompts carry rendering words** — "bold flat blocks of colour, few
-  colours, hard dark outline, strong contrast, no soft shading, no gradients".
-  Retro Diffusion's own documentation says never to write those: the style
-  carries the rendering, the prompt carries the subject. Every run that included
-  them produced a worse figure than the short subject-only prompts that replaced
-  them.
-- **`rd_plus__low_res` in the commands.** Its catalogue description has no
-  outline in it. `rd_plus__classic` is "strongly outlined... simple shading and
-  clear design", and figures now go through the custom style built on top of
-  that look.
-- **The $0.038 per image line below.** True for the flat route; a generation
-  through the custom style is **$0.18**, because custom styles are an RD Pro
-  template.
-- **Section headings saying 48x34.** The tile is 96x96. The per-item "generate
-  at" sizes were already correct; the headings were not.
-
-Terrain, objects and screen art are unaffected — their prompts and commands
-still describe what to do.
-
-## Before you start
+113 items, 271 files. Each entry gives the files it produces, its state on disk,
+the prompt, and the commands to run. Method and the evidence behind it are in
+`ART-PIPELINE.md`.
 
 ```sh
 TOKEN=$(cat ~/.config/retrodiffusion/token)
 ```
 
-Each entry POSTs to get a task id, polls until it succeeds, then decodes the
-base64 to a PNG.
+Everything lands under `build/art/<id>/`. Nothing here writes into `assets/` —
+approved finals are copied across by hand.
 
-## Rules these commands follow
+## Four routes, and how much each is actually proven
+
+**1. Troops and villains — 42 items. Proven end to end on 2026-09-03.**
+Four steps per item, and step 2 is a stop:
+
+1. **The still**, $0.18, through the custom style
+   `user__glory_of_rome_troops_bac676cd`. The prompt is **subject only** — the
+   style appends *"full length, standing in profile facing right, game sprite,
+   solid neutral grey background"* and forbids scenery.
+2. **Look at it.** At 1:1 and 8x against the reference. Nothing proceeds on a
+   metric; the QA script's thresholds were written for a 48-wide tile and its
+   width, colour and feet checks are meaningless at 96.
+3. **Animate the approved still**, $0.14, `rd_advanced_animation__attack`,
+   `frames_duration: 4`, `return_spritesheet: true`. The still is uploaded
+   untouched with its alpha intact — that is what makes the frames transparent.
+4. **Cut the sheet**: it returns 192x192, a 2x2 grid of 96x96 cells.
+
+$0.32 an item, ≈$13.50 for all 42.
+
+**2. Cell and screen art — 56 items. Provisional. Never generated.**
+`rd_plus__classic` up to 192px and `rd_plus__default` above it, chosen off the
+published size ranges rather than from any result. $0.038 each. Two things to
+settle before spending on them: nothing has tested these prompts, and a
+different style means these assets will **not** match the troops — which is the
+exact coherence problem the custom style was built to solve. Expect to need a
+second custom style for objects, and possibly a third for screens.
+
+**3. Base terrain — 6 items. Proven in August, do not touch the wording.**
+`rd_plus__low_res` with `tile_x`/`tile_y`, and prompts that describe a *pattern*
+rather than a subject. Naming "sea" or "grass" makes the model light a scene and
+bake in a gradient or an edge vignette that reads as a lattice once tiled. That
+wording cost 13 generations to find.
+
+**4. Nine screen assets cannot be generated at their stated size.**
+480x204 up to 640x400, against a 384px ceiling on every public style. Each says
+so in place, with the options.
+
+## Standing rules
 
 - **96x96** for anything in a map or combat cell; screen art at design size x2.
-- **`tile_x`/`tile_y`** on base terrain only, for the seamless wrap.
-- **No `input_palette`.** It hard-constrains the whole image to the supplied
-  palette and collapses structure — it returned 3-colour all-green artifact
-  tiles.
-- **Terrain prompts describe a pattern, never the subject.** Naming "sea" or
-  "grass" makes the model light a scene and bake in a gradient or an edge
-  vignette that reads as a lattice when tiled.
-- **`async: true`** so the task id is returned before any charge can be lost.
+- **Subject only in the prompt.** Never rendering words — the style carries the
+  look, and every prompt that argued with it produced a worse figure.
+- **No `input_palette`.** It hard-constrains the image to the supplied palette
+  and collapses structure; it returned 3-colour all-green artifact tiles.
+- **`async: true`**, so the task id exists before any charge can be lost.
+- **One call per item.** If a subject comes back wrong, record why and move on.
 - Terrain edges (48 files) are **not** generated — composite them from the new
   base and grass tiles using the reference edge's alpha mask.
 
@@ -59,22 +67,23 @@ base64 to a PNG.
 
 
 ## troops_archers_00_03
-
 **Replaces:** `troops/archers_00.png`, `troops/archers_01.png`, `troops/archers_02.png`, `troops/archers_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a Roman velite skirmisher in a wolfskin headdress over a helmet, small round parma shield, throwing a javelin, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Roman velite skirmisher in a wolfskin headdress over a helmet, small round parma shield, throwing a javelin
 
 *Original brief wording: a Roman velite skirmisher in a wolfskin headdress over a helmet, small round parma shield, throwing a javelin*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_archers_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman velite skirmisher in a wolfskin headdress over a helmet, small round parma shield, throwing a javelin, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1008, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman velite skirmisher in a wolfskin headdress over a helmet, small round parma shield, throwing a javelin", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1008, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -83,27 +92,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_archers_00_03/01_raw.png
-echo wrote build/art/troops_archers_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_archers_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_archers_00_03/01_still.png)" \
+  '{prompt: "levelling the spear and thrusting it forward, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_archers_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_archers_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_archers_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_archers_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_archers_00_03/frame_%02d.png
 ```
 
 ## troops_archmages_00_03
-
 **Replaces:** `troops/archmages_00.png`, `troops/archmages_01.png`, `troops/archmages_02.png`, `troops/archmages_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a winged Fury, a gaunt female spirit with dark feathered wings, snakes in her hair, clutching a burning torch, hovering, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a winged Fury, a gaunt female spirit with dark feathered wings, snakes in her hair, clutching a burning torch, hovering
 
 *Original brief wording: a winged Fury, a gaunt female spirit with dark feathered wings, snakes in her hair, clutching a burning torch, hovering*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_archmages_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a winged Fury, a gaunt female spirit with dark feathered wings, snakes in her hair, clutching a burning torch, hovering, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1020, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a winged Fury, a gaunt female spirit with dark feathered wings, snakes in her hair, clutching a burning torch, hovering", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1020, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -112,27 +157,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_archmages_00_03/01_raw.png
-echo wrote build/art/troops_archmages_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_archmages_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_archmages_00_03/01_still.png)" \
+  '{prompt: "surging forward to strike, then drifting back",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_archmages_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_archmages_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_archmages_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_archmages_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_archmages_00_03/frame_%02d.png
 ```
 
 ## troops_barbarians_00_03
-
 **Replaces:** `troops/barbarians_00.png`, `troops/barbarians_01.png`, `troops/barbarians_02.png`, `troops/barbarians_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a Sarmatian steppe warrior in full scale armour of overlapping plates, conical helmet, long lance, fur-trimmed cloak, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Sarmatian steppe warrior in full scale armour of overlapping plates, conical helmet, long lance, fur-trimmed cloak
 
 *Original brief wording: a Sarmatian steppe warrior in full scale armour of overlapping plates, conical helmet, long lance, fur-trimmed cloak*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_barbarians_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Sarmatian steppe warrior in full scale armour of overlapping plates, conical helmet, long lance, fur-trimmed cloak, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1016, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Sarmatian steppe warrior in full scale armour of overlapping plates, conical helmet, long lance, fur-trimmed cloak", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1016, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -141,27 +222,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_barbarians_00_03/01_raw.png
-echo wrote build/art/troops_barbarians_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_barbarians_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_barbarians_00_03/01_still.png)" \
+  '{prompt: "levelling the spear and thrusting it forward, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_barbarians_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_barbarians_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_barbarians_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_barbarians_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_barbarians_00_03/frame_%02d.png
 ```
 
 ## troops_cavalry_00_03
-
 **Replaces:** `troops/cavalry_00.png`, `troops/cavalry_01.png`, `troops/cavalry_02.png`, `troops/cavalry_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a Roman cavalryman on a galloping horse, oval shield and crested helmet, couched lance, cloak streaming behind, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Roman cavalryman on a galloping horse, oval shield and crested helmet, couched lance, cloak streaming behind
 
 *Original brief wording: a Roman cavalryman on a galloping horse, oval shield and crested helmet, couched lance, cloak streaming behind*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_cavalry_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman cavalryman on a galloping horse, oval shield and crested helmet, couched lance, cloak streaming behind, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1018, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman cavalryman on a galloping horse, oval shield and crested helmet, couched lance, cloak streaming behind", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1018, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -170,27 +287,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_cavalry_00_03/01_raw.png
-echo wrote build/art/troops_cavalry_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_cavalry_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_cavalry_00_03/01_still.png)" \
+  '{prompt: "levelling the spear and thrusting it forward, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_cavalry_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_cavalry_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_cavalry_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_cavalry_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_cavalry_00_03/frame_%02d.png
 ```
 
 ## troops_demons_00_03
-
 **Replaces:** `troops/demons_00.png`, `troops/demons_01.png`, `troops/demons_02.png`, `troops/demons_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a shape-shifting devourer of Hecate, a lean winged demon with one bronze leg, bat wings, swinging a scythe, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a shape-shifting devourer of Hecate, a lean winged demon with one bronze leg, bat wings, swinging a scythe
 
 *Original brief wording: a shape-shifting devourer of Hecate, a lean winged demon with one bronze leg, bat wings, swinging a scythe*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_demons_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a shape-shifting devourer of Hecate, a lean winged demon with one bronze leg, bat wings, swinging a scythe, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1023, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a shape-shifting devourer of Hecate, a lean winged demon with one bronze leg, bat wings, swinging a scythe", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1023, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -199,27 +352,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_demons_00_03/01_raw.png
-echo wrote build/art/troops_demons_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_demons_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_demons_00_03/01_still.png)" \
+  '{prompt: "swinging the sword forward and striking, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_demons_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_demons_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_demons_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_demons_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_demons_00_03/frame_%02d.png
 ```
 
 ## troops_dragons_00_03
-
 **Replaces:** `troops/dragons_00.png`, `troops/dragons_01.png`, `troops/dragons_02.png`, `troops/dragons_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a great scaled dragon, wings spread, long serpentine neck, jaws open, standing on clawed feet, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a great scaled dragon, wings spread, long serpentine neck, jaws open, standing on clawed feet
 
 *Original brief wording: a great scaled dragon, wings spread, long serpentine neck, jaws open, standing on clawed feet*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_dragons_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a great scaled dragon, wings spread, long serpentine neck, jaws open, standing on clawed feet, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1024, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a great scaled dragon, wings spread, long serpentine neck, jaws open, standing on clawed feet", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1024, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -228,27 +417,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_dragons_00_03/01_raw.png
-echo wrote build/art/troops_dragons_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_dragons_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_dragons_00_03/01_still.png)" \
+  '{prompt: "lunging forward and striking with its jaws, then settling back",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_dragons_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_dragons_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_dragons_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_dragons_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_dragons_00_03/frame_%02d.png
 ```
 
 ## troops_druids_00_03
-
 **Replaces:** `troops/druids_00.png`, `troops/druids_01.png`, `troops/druids_02.png`, `troops/druids_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a Celtic druid in a long white robe, oak-leaf wreath, holding a golden sickle and a gnarled staff, mist at his feet, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Celtic druid in a long white robe, oak-leaf wreath, holding a golden sickle and a gnarled staff, mist at his feet
 
 *Original brief wording: a Celtic druid in a long white robe, oak-leaf wreath, holding a golden sickle and a gnarled staff, mist at his feet*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_druids_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Celtic druid in a long white robe, oak-leaf wreath, holding a golden sickle and a gnarled staff, mist at his feet, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1019, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Celtic druid in a long white robe, oak-leaf wreath, holding a golden sickle and a gnarled staff, mist at his feet", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1019, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -257,27 +482,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_druids_00_03/01_raw.png
-echo wrote build/art/troops_druids_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_druids_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_druids_00_03/01_still.png)" \
+  '{prompt: "swinging the sword forward and striking, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_druids_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_druids_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_druids_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_druids_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_druids_00_03/frame_%02d.png
 ```
 
 ## troops_dwarves_00_03
-
 **Replaces:** `troops/dwarves_00.png`, `troops/dwarves_01.png`, `troops/dwarves_02.png`, `troops/dwarves_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a stocky Ligurian mountain tribesman, thick beard, fur cloak over a leather cuirass, wielding a heavy axe, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a stocky Ligurian mountain tribesman, thick beard, fur cloak over a leather cuirass, wielding a heavy axe
 
 *Original brief wording: a stocky Ligurian mountain tribesman, thick beard, fur cloak over a leather cuirass, wielding a heavy axe*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_dwarves_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a stocky Ligurian mountain tribesman, thick beard, fur cloak over a leather cuirass, wielding a heavy axe, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1012, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a stocky Ligurian mountain tribesman, thick beard, fur cloak over a leather cuirass, wielding a heavy axe", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1012, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -286,27 +547,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_dwarves_00_03/01_raw.png
-echo wrote build/art/troops_dwarves_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_dwarves_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_dwarves_00_03/01_still.png)" \
+  '{prompt: "swinging the weapon overhead and striking down, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_dwarves_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_dwarves_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_dwarves_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_dwarves_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_dwarves_00_03/frame_%02d.png
 ```
 
 ## troops_elves_00_03
-
 **Replaces:** `troops/elves_00.png`, `troops/elves_01.png`, `troops/elves_02.png`, `troops/elves_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a forest spirit archer in bark-toned robes with leaf-patterned cloak, drawing a longbow, antlered circlet, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a forest spirit archer in bark-toned robes with leaf-patterned cloak, drawing a longbow, antlered circlet
 
 *Original brief wording: a forest spirit archer in bark-toned robes with leaf-patterned cloak, drawing a longbow, antlered circlet*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_elves_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a forest spirit archer in bark-toned robes with leaf-patterned cloak, drawing a longbow, antlered circlet, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1009, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a forest spirit archer in bark-toned robes with leaf-patterned cloak, drawing a longbow, antlered circlet", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1009, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -315,27 +612,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_elves_00_03/01_raw.png
-echo wrote build/art/troops_elves_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_elves_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_elves_00_03/01_still.png)" \
+  '{prompt: "drawing the bow and loosing an arrow, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_elves_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_elves_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_elves_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_elves_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_elves_00_03/frame_%02d.png
 ```
 
 ## troops_ghosts_00_03
-
 **Replaces:** `troops/ghosts_00.png`, `troops/ghosts_01.png`, `troops/ghosts_02.png`, `troops/ghosts_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a translucent ancestral shade, a hollow robed figure with no legs, trailing into vapour, faintly glowing, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a translucent ancestral shade, a hollow robed figure with no legs, trailing into vapour, faintly glowing
 
 *Original brief wording: a translucent ancestral shade, a hollow robed figure with no legs, trailing into vapour, faintly glowing*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_ghosts_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a translucent ancestral shade, a hollow robed figure with no legs, trailing into vapour, faintly glowing, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1013, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a translucent ancestral shade, a hollow robed figure with no legs, trailing into vapour, faintly glowing", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1013, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -344,27 +677,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_ghosts_00_03/01_raw.png
-echo wrote build/art/troops_ghosts_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_ghosts_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_ghosts_00_03/01_still.png)" \
+  '{prompt: "surging forward to strike, then drifting back",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_ghosts_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_ghosts_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_ghosts_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_ghosts_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_ghosts_00_03/frame_%02d.png
 ```
 
 ## troops_giants_00_03
-
 **Replaces:** `troops/giants_00.png`, `troops/giants_01.png`, `troops/giants_02.png`, `troops/giants_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a towering giant with serpent-scaled legs, wild hair and beard, raising a boulder overhead to throw, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a towering giant with serpent-scaled legs, wild hair and beard, raising a boulder overhead to throw
 
 *Original brief wording: a towering giant with serpent-scaled legs, wild hair and beard, raising a boulder overhead to throw*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_giants_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a towering giant with serpent-scaled legs, wild hair and beard, raising a boulder overhead to throw, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1022, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a towering giant with serpent-scaled legs, wild hair and beard, raising a boulder overhead to throw", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1022, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -373,27 +742,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_giants_00_03/01_raw.png
-echo wrote build/art/troops_giants_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_giants_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_giants_00_03/01_still.png)" \
+  '{prompt: "swinging the weapon overhead and striking down, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_giants_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_giants_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_giants_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_giants_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_giants_00_03/frame_%02d.png
 ```
 
 ## troops_gnomes_00_03
-
 **Replaces:** `troops/gnomes_00.png`, `troops/gnomes_01.png`, `troops/gnomes_02.png`, `troops/gnomes_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a small woodland faun, goat legs and curling horns, shaggy pelt, holding a crooked branch, mischievous, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a small woodland faun, goat legs and curling horns, shaggy pelt, holding a crooked branch, mischievous
 
 *Original brief wording: a small woodland faun, goat legs and curling horns, shaggy pelt, holding a crooked branch, mischievous*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_gnomes_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a small woodland faun, goat legs and curling horns, shaggy pelt, holding a crooked branch, mischievous, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1006, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a small woodland faun, goat legs and curling horns, shaggy pelt, holding a crooked branch, mischievous", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1006, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -402,27 +807,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_gnomes_00_03/01_raw.png
-echo wrote build/art/troops_gnomes_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_gnomes_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_gnomes_00_03/01_still.png)" \
+  '{prompt: "striking forward, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_gnomes_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_gnomes_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_gnomes_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_gnomes_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_gnomes_00_03/frame_%02d.png
 ```
 
 ## troops_knights_00_03
-
 **Replaces:** `troops/knights_00.png`, `troops/knights_01.png`, `troops/knights_02.png`, `troops/knights_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> an elite Praetorian guardsman in polished ornate muscled cuirass, tall transverse-crested helmet, oval shield with scorpion emblem, gladius drawn, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> an elite Praetorian guardsman in polished ornate muscled cuirass, tall transverse-crested helmet, oval shield with scorpion emblem, gladius drawn
 
 *Original brief wording: an elite Praetorian guardsman in polished ornate muscled cuirass, tall transverse-crested helmet, oval shield with scorpion emblem, gladius drawn*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_knights_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "an elite Praetorian guardsman in polished ornate muscled cuirass, tall transverse-crested helmet, oval shield with scorpion emblem, gladius drawn, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1014, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "an elite Praetorian guardsman in polished ornate muscled cuirass, tall transverse-crested helmet, oval shield with scorpion emblem, gladius drawn", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1014, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -431,27 +872,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_knights_00_03/01_raw.png
-echo wrote build/art/troops_knights_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_knights_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_knights_00_03/01_still.png)" \
+  '{prompt: "swinging the sword forward and striking, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_knights_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_knights_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_knights_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_knights_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_knights_00_03/frame_%02d.png
 ```
 
 ## troops_militia_00_03
-
 **Replaces:** `troops/militia_00.png`, `troops/militia_01.png`, `troops/militia_02.png`, `troops/militia_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a raw Roman recruit in a plain undyed tunic and simple leather cap, holding a short spear and a small round shield, standing stiffly, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a raw Roman recruit in a plain undyed tunic and simple leather cap, holding a short spear and a small round shield, standing stiffly
 
 *Original brief wording: a raw Roman recruit in a plain undyed tunic and simple leather cap, holding a short spear and a small round shield, standing stiffly*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_militia_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a raw Roman recruit in a plain undyed tunic and simple leather cap, holding a short spear and a small round shield, standing stiffly, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1002, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a raw Roman recruit in a plain undyed tunic and simple leather cap, holding a short spear and a small round shield, standing stiffly", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1002, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -460,27 +937,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_militia_00_03/01_raw.png
-echo wrote build/art/troops_militia_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_militia_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_militia_00_03/01_still.png)" \
+  '{prompt: "levelling the spear and thrusting it forward, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_militia_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_militia_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_militia_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_militia_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_militia_00_03/frame_%02d.png
 ```
 
 ## troops_nomads_00_03
-
 **Replaces:** `troops/nomads_00.png`, `troops/nomads_01.png`, `troops/nomads_02.png`, `troops/nomads_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a Numidian light horseman riding bareback, no saddle or bridle, bare-chested in a leopard skin, hurling a javelin, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Numidian light horseman riding bareback, no saddle or bridle, bare-chested in a leopard skin, hurling a javelin
 
 *Original brief wording: a Numidian light horseman riding bareback, no saddle or bridle, bare-chested in a leopard skin, hurling a javelin*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_nomads_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Numidian light horseman riding bareback, no saddle or bridle, bare-chested in a leopard skin, hurling a javelin, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1011, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Numidian light horseman riding bareback, no saddle or bridle, bare-chested in a leopard skin, hurling a javelin", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1011, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -489,27 +1002,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_nomads_00_03/01_raw.png
-echo wrote build/art/troops_nomads_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_nomads_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_nomads_00_03/01_still.png)" \
+  '{prompt: "levelling the spear and thrusting it forward, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_nomads_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_nomads_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_nomads_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_nomads_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_nomads_00_03/frame_%02d.png
 ```
 
 ## troops_ogres_00_03
-
 **Replaces:** `troops/ogres_00.png`, `troops/ogres_01.png`, `troops/ogres_02.png`, `troops/ogres_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a huge one-eyed cave giant, single central eye, bare muscled torso, blacksmith's leather apron, swinging a massive hammer, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a huge one-eyed cave giant, single central eye, bare muscled torso, blacksmith's leather apron, swinging a massive hammer
 
 *Original brief wording: a huge one-eyed cave giant, single central eye, bare muscled torso, blacksmith's leather apron, swinging a massive hammer*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_ogres_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a huge one-eyed cave giant, single central eye, bare muscled torso, blacksmith's leather apron, swinging a massive hammer, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1015, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a huge one-eyed cave giant, single central eye, bare muscled torso, blacksmith's leather apron, swinging a massive hammer", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1015, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -518,27 +1067,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_ogres_00_03/01_raw.png
-echo wrote build/art/troops_ogres_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_ogres_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_ogres_00_03/01_still.png)" \
+  '{prompt: "swinging the weapon overhead and striking down, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_ogres_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_ogres_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_ogres_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_ogres_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_ogres_00_03/frame_%02d.png
 ```
 
 ## troops_orcs_00_03
-
 **Replaces:** `troops/orcs_00.png`, `troops/orcs_01.png`, `troops/orcs_02.png`, `troops/orcs_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a Balearic slinger, bare-chested and wiry, whirling a leather sling above his head, pouch of stones at his hip, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Balearic slinger, bare-chested and wiry, whirling a leather sling above his head, pouch of stones at his hip
 
 *Original brief wording: a Balearic slinger, bare-chested and wiry, whirling a leather sling above his head, pouch of stones at his hip*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_orcs_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Balearic slinger, bare-chested and wiry, whirling a leather sling above his head, pouch of stones at his hip, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1007, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Balearic slinger, bare-chested and wiry, whirling a leather sling above his head, pouch of stones at his hip", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1007, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -547,27 +1132,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_orcs_00_03/01_raw.png
-echo wrote build/art/troops_orcs_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_orcs_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_orcs_00_03/01_still.png)" \
+  '{prompt: "whirling the sling and releasing the stone, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_orcs_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_orcs_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_orcs_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_orcs_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_orcs_00_03/frame_%02d.png
 ```
 
 ## troops_peasants_00_03
-
 **Replaces:** `troops/peasants_00.png`, `troops/peasants_01.png`, `troops/peasants_02.png`, `troops/peasants_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a ragged Roman tenant farmer in a torn dirty tunic, barefoot, holding a wooden pitchfork, stooped and unarmoured, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a ragged Roman tenant farmer in a torn dirty tunic, barefoot, holding a wooden pitchfork, stooped and unarmoured
 
 *Original brief wording: a ragged Roman tenant farmer in a torn dirty tunic, barefoot, holding a wooden pitchfork, stooped and unarmoured*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_peasants_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a ragged Roman tenant farmer in a torn dirty tunic, barefoot, holding a wooden pitchfork, stooped and unarmoured, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1000, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a ragged Roman tenant farmer in a torn dirty tunic, barefoot, holding a wooden pitchfork, stooped and unarmoured", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -576,27 +1197,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_peasants_00_03/01_raw.png
-echo wrote build/art/troops_peasants_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_peasants_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_peasants_00_03/01_still.png)" \
+  '{prompt: "striking forward, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_peasants_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_peasants_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_peasants_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_peasants_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_peasants_00_03/frame_%02d.png
 ```
 
 ## troops_pikemen_00_03
-
 **Replaces:** `troops/pikemen_00.png`, `troops/pikemen_01.png`, `troops/pikemen_02.png`, `troops/pikemen_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a Roman hastatus legionary in banded lorica segmentata, crested galea helmet, tall rectangular red and gold scutum, thrusting a spear forward, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Roman hastatus legionary in banded lorica segmentata, crested galea helmet, tall rectangular red and gold scutum, thrusting a spear forward
 
 *Original brief wording: a Roman hastatus legionary in banded lorica segmentata, crested galea helmet, tall rectangular red and gold scutum, thrusting a spear forward*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_pikemen_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman hastatus legionary in banded lorica segmentata, crested galea helmet, tall rectangular red and gold scutum, thrusting a spear forward, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1010, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman hastatus legionary in banded lorica segmentata, crested galea helmet, tall rectangular red and gold scutum, thrusting a spear forward", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1010, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -605,27 +1262,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_pikemen_00_03/01_raw.png
-echo wrote build/art/troops_pikemen_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_pikemen_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_pikemen_00_03/01_still.png)" \
+  '{prompt: "levelling the spear and thrusting it forward, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_pikemen_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_pikemen_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_pikemen_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_pikemen_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_pikemen_00_03/frame_%02d.png
 ```
 
 ## troops_skeletons_00_03
-
 **Replaces:** `troops/skeletons_00.png`, `troops/skeletons_01.png`, `troops/skeletons_02.png`, `troops/skeletons_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a walking human skeleton in a rotted Roman tunic, hollow eye sockets, carrying a rusted short sword, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a walking human skeleton in a rotted Roman tunic, hollow eye sockets, carrying a rusted short sword
 
 *Original brief wording: a walking human skeleton in a rotted Roman tunic, hollow eye sockets, carrying a rusted short sword*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_skeletons_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a walking human skeleton in a rotted Roman tunic, hollow eye sockets, carrying a rusted short sword, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1004, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a walking human skeleton in a rotted Roman tunic, hollow eye sockets, carrying a rusted short sword", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1004, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -634,27 +1327,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_skeletons_00_03/01_raw.png
-echo wrote build/art/troops_skeletons_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_skeletons_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_skeletons_00_03/01_still.png)" \
+  '{prompt: "swinging the sword forward and striking, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_skeletons_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_skeletons_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_skeletons_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_skeletons_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_skeletons_00_03/frame_%02d.png
 ```
 
 ## troops_sprites_00_03
-
 **Replaces:** `troops/sprites_00.png`, `troops/sprites_01.png`, `troops/sprites_02.png`, `troops/sprites_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a tiny glowing household spirit, a small floating robed figure with a faint halo, translucent and weightless, hovering above the ground, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a tiny glowing household spirit, a small floating robed figure with a faint halo, translucent and weightless, hovering above the ground
 
 *Original brief wording: a tiny glowing household spirit, a small floating robed figure with a faint halo, translucent and weightless, hovering above the ground*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_sprites_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a tiny glowing household spirit, a small floating robed figure with a faint halo, translucent and weightless, hovering above the ground, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1001, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a tiny glowing household spirit, a small floating robed figure with a faint halo, translucent and weightless, hovering above the ground", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1001, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -663,27 +1392,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_sprites_00_03/01_raw.png
-echo wrote build/art/troops_sprites_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_sprites_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_sprites_00_03/01_still.png)" \
+  '{prompt: "surging forward to strike, then drifting back",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_sprites_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_sprites_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_sprites_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_sprites_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_sprites_00_03/frame_%02d.png
 ```
 
 ## troops_trolls_00_03
-
 **Replaces:** `troops/trolls_00.png`, `troops/trolls_01.png`, `troops/trolls_02.png`, `troops/trolls_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a hulking earth-giant, hunched, skin caked in soil and moss, enormous hands, regenerating wounds glowing faintly, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a hulking earth-giant, hunched, skin caked in soil and moss, enormous hands, regenerating wounds glowing faintly
 
 *Original brief wording: a hulking earth-giant, hunched, skin caked in soil and moss, enormous hands, regenerating wounds glowing faintly*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_trolls_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a hulking earth-giant, hunched, skin caked in soil and moss, enormous hands, regenerating wounds glowing faintly, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1017, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a hulking earth-giant, hunched, skin caked in soil and moss, enormous hands, regenerating wounds glowing faintly", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1017, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -692,27 +1457,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_trolls_00_03/01_raw.png
-echo wrote build/art/troops_trolls_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_trolls_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_trolls_00_03/01_still.png)" \
+  '{prompt: "striking forward, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_trolls_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_trolls_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_trolls_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_trolls_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_trolls_00_03/frame_%02d.png
 ```
 
 ## troops_vampires_00_03
-
 **Replaces:** `troops/vampires_00.png`, `troops/vampires_01.png`, `troops/vampires_02.png`, `troops/vampires_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a screech-owl vampire, a hunched winged creature with owl features and a human face, bloodied talons, membranous wings spread, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a screech-owl vampire, a hunched winged creature with owl features and a human face, bloodied talons, membranous wings spread
 
 *Original brief wording: a screech-owl vampire, a hunched winged creature with owl features and a human face, bloodied talons, membranous wings spread*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_vampires_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a screech-owl vampire, a hunched winged creature with owl features and a human face, bloodied talons, membranous wings spread, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1021, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a screech-owl vampire, a hunched winged creature with owl features and a human face, bloodied talons, membranous wings spread", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1021, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -721,27 +1522,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_vampires_00_03/01_raw.png
-echo wrote build/art/troops_vampires_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_vampires_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_vampires_00_03/01_still.png)" \
+  '{prompt: "lunging forward and striking with its jaws, then settling back",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_vampires_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_vampires_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_vampires_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_vampires_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_vampires_00_03/frame_%02d.png
 ```
 
 ## troops_wolves_00_03
-
 **Replaces:** `troops/wolves_00.png`, `troops/wolves_01.png`, `troops/wolves_02.png`, `troops/wolves_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a lean grey wolf, snarling, head low, in mid-prowl, seen from the side, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a lean grey wolf, snarling, head low, in mid-prowl, seen from the side
 
 *Original brief wording: a lean grey wolf, snarling, head low, in mid-prowl, seen from the side*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_wolves_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a lean grey wolf, snarling, head low, in mid-prowl, seen from the side, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1003, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a lean grey wolf, snarling, head low, in mid-prowl, seen from the side", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1003, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -750,27 +1587,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_wolves_00_03/01_raw.png
-echo wrote build/art/troops_wolves_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_wolves_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_wolves_00_03/01_still.png)" \
+  '{prompt: "lunging forward and striking with its jaws, then settling back",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_wolves_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_wolves_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_wolves_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_wolves_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_wolves_00_03/frame_%02d.png
 ```
 
 ## troops_zombies_00_03
-
 **Replaces:** `troops/zombies_00.png`, `troops/zombies_01.png`, `troops/zombies_02.png`, `troops/zombies_03.png`
-  
 **Currently:** 48x34, placeholder (identical to King's Bounty) → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a shambling rotted corpse in grave wrappings, arms hanging, hunched and slow, grey-green flesh, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a shambling rotted corpse in grave wrappings, arms hanging, hunched and slow, grey-green flesh
 
 *Original brief wording: a shambling rotted corpse in grave wrappings, arms hanging, hunched and slow, grey-green flesh*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/troops_zombies_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a shambling rotted corpse in grave wrappings, arms hanging, hunched and slow, grey-green flesh, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1005, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a shambling rotted corpse in grave wrappings, arms hanging, hunched and slow, grey-green flesh", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1005, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -779,30 +1652,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_zombies_00_03/01_raw.png
-echo wrote build/art/troops_zombies_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_zombies_00_03/01_still.png
 ```
 
-# 5.2 Villains -- 17 items, 68 files, 96x96, 4 frames
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
 
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/troops_zombies_00_03/01_still.png)" \
+  '{prompt: "striking forward, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/troops_zombies_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/troops_zombies_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/troops_zombies_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/troops_zombies_00_03/02_sheet.png -crop 96x96 +repage build/art/troops_zombies_00_03/frame_%02d.png
+```
 
 ## villains_alaric_00_03
-
 **Replaces:** `villains/alaric_00.png`, `villains/alaric_01.png`, `villains/alaric_02.png`, `villains/alaric_03.png`
-  
 **Currently:** 48x34, already replaced → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a Visigoth king in looted Roman armour over furs, iron crown, heavy broadsword, a sacked city's smoke behind him, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Visigoth king in looted Roman armour over furs, iron crown, heavy broadsword, a sacked city's smoke behind him
 
 *Original brief wording: a Visigoth king in looted Roman armour over furs, iron crown, heavy broadsword, a sacked city's smoke behind him*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/villains_alaric_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Visigoth king in looted Roman armour over furs, iron crown, heavy broadsword, a sacked city's smoke behind him, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1040, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Visigoth king in looted Roman armour over furs, iron crown, heavy broadsword, a sacked city's smoke behind him", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1040, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -811,27 +1717,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_alaric_00_03/01_raw.png
-echo wrote build/art/villains_alaric_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_alaric_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/villains_alaric_00_03/01_still.png)" \
+  '{prompt: "swinging the sword forward and striking, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/villains_alaric_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/villains_alaric_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_alaric_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/villains_alaric_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_alaric_00_03/frame_%02d.png
 ```
 
 ## villains_arminius_00_03
-
 **Replaces:** `villains/arminius_00.png`, `villains/arminius_01.png`, `villains/arminius_02.png`, `villains/arminius_03.png`
-  
 **Currently:** 48x34, already replaced → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a Cheruscan chieftain in a bearskin over Roman mail, wolf-skull helmet, framea spear, standing among forest shadow, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Cheruscan chieftain in a bearskin over Roman mail, wolf-skull helmet, framea spear, standing among forest shadow
 
 *Original brief wording: a Cheruscan chieftain in a bearskin over Roman mail, wolf-skull helmet, framea spear, standing among forest shadow*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/villains_arminius_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Cheruscan chieftain in a bearskin over Roman mail, wolf-skull helmet, framea spear, standing among forest shadow, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1033, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Cheruscan chieftain in a bearskin over Roman mail, wolf-skull helmet, framea spear, standing among forest shadow", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1033, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -840,27 +1782,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_arminius_00_03/01_raw.png
-echo wrote build/art/villains_arminius_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_arminius_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/villains_arminius_00_03/01_still.png)" \
+  '{prompt: "levelling the spear and thrusting it forward, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/villains_arminius_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/villains_arminius_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_arminius_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/villains_arminius_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_arminius_00_03/frame_%02d.png
 ```
 
 ## villains_attila_00_03
-
 **Replaces:** `villains/attila_00.png`, `villains/attila_01.png`, `villains/attila_02.png`, `villains/attila_03.png`
-  
 **Currently:** 48x34, already replaced → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> the Hun warlord, wiry and fierce with a thin braided beard, lamellar armour and fur, composite bow and horsehair standard, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> the Hun warlord, wiry and fierce with a thin braided beard, lamellar armour and fur, composite bow and horsehair standard
 
 *Original brief wording: the Hun warlord, wiry and fierce with a thin braided beard, lamellar armour and fur, composite bow and horsehair standard*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/villains_attila_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "the Hun warlord, wiry and fierce with a thin braided beard, lamellar armour and fur, composite bow and horsehair standard, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1041, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "the Hun warlord, wiry and fierce with a thin braided beard, lamellar armour and fur, composite bow and horsehair standard", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1041, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -869,27 +1847,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_attila_00_03/01_raw.png
-echo wrote build/art/villains_attila_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_attila_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/villains_attila_00_03/01_still.png)" \
+  '{prompt: "drawing the bow and loosing an arrow, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/villains_attila_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/villains_attila_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_attila_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/villains_attila_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_attila_00_03/frame_%02d.png
 ```
 
 ## villains_boudica_00_03
-
 **Replaces:** `villains/boudica_00.png`, `villains/boudica_01.png`, `villains/boudica_02.png`, `villains/boudica_03.png`
-  
 **Currently:** 48x34, already replaced → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a tall Iceni warrior queen with long red hair, heavy torc at her throat, checked cloak, spear in hand, fierce, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a tall Iceni warrior queen with long red hair, heavy torc at her throat, checked cloak, spear in hand, fierce
 
 *Original brief wording: a tall Iceni warrior queen with long red hair, heavy torc at her throat, checked cloak, spear in hand, fierce*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/villains_boudica_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a tall Iceni warrior queen with long red hair, heavy torc at her throat, checked cloak, spear in hand, fierce, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1029, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a tall Iceni warrior queen with long red hair, heavy torc at her throat, checked cloak, spear in hand, fierce", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1029, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -898,27 +1912,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_boudica_00_03/01_raw.png
-echo wrote build/art/villains_boudica_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_boudica_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/villains_boudica_00_03/01_still.png)" \
+  '{prompt: "levelling the spear and thrusting it forward, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/villains_boudica_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/villains_boudica_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_boudica_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/villains_boudica_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_boudica_00_03/frame_%02d.png
 ```
 
 ## villains_brennus_00_03
-
 **Replaces:** `villains/brennus_00.png`, `villains/brennus_01.png`, `villains/brennus_02.png`, `villains/brennus_03.png`
-  
 **Currently:** 48x34, already replaced → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a Gallic warchief with a drooping moustache and lime-spiked hair, bare-chested with a heavy gold torc, long sword raised, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Gallic warchief with a drooping moustache and lime-spiked hair, bare-chested with a heavy gold torc, long sword raised
 
 *Original brief wording: a Gallic warchief with a drooping moustache and lime-spiked hair, bare-chested with a heavy gold torc, long sword raised*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/villains_brennus_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Gallic warchief with a drooping moustache and lime-spiked hair, bare-chested with a heavy gold torc, long sword raised, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1031, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Gallic warchief with a drooping moustache and lime-spiked hair, bare-chested with a heavy gold torc, long sword raised", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1031, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -927,27 +1977,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_brennus_00_03/01_raw.png
-echo wrote build/art/villains_brennus_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_brennus_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/villains_brennus_00_03/01_still.png)" \
+  '{prompt: "swinging the sword forward and striking, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/villains_brennus_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/villains_brennus_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_brennus_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/villains_brennus_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_brennus_00_03/frame_%02d.png
 ```
 
 ## villains_catiline_00_03
-
 **Replaces:** `villains/catiline_00.png`, `villains/catiline_01.png`, `villains/catiline_02.png`, `villains/catiline_03.png`
-  
 **Currently:** 48x34, already replaced → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a disgraced Roman senator in a stained toga, gaunt and hollow-eyed, dagger half-hidden in the folds, conspiratorial, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a disgraced Roman senator in a stained toga, gaunt and hollow-eyed, dagger half-hidden in the folds, conspiratorial
 
 *Original brief wording: a disgraced Roman senator in a stained toga, gaunt and hollow-eyed, dagger half-hidden in the folds, conspiratorial*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/villains_catiline_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a disgraced Roman senator in a stained toga, gaunt and hollow-eyed, dagger half-hidden in the folds, conspiratorial, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1025, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a disgraced Roman senator in a stained toga, gaunt and hollow-eyed, dagger half-hidden in the folds, conspiratorial", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1025, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -956,27 +2042,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_catiline_00_03/01_raw.png
-echo wrote build/art/villains_catiline_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_catiline_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/villains_catiline_00_03/01_still.png)" \
+  '{prompt: "striking forward, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/villains_catiline_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/villains_catiline_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_catiline_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/villains_catiline_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_catiline_00_03/frame_%02d.png
 ```
 
 ## villains_civilis_00_03
-
 **Replaces:** `villains/civilis_00.png`, `villains/civilis_01.png`, `villains/civilis_02.png`, `villains/civilis_03.png`
-  
 **Currently:** 48x34, already replaced → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a Batavian auxiliary commander, one eye missing, Roman mail worn over Germanic trousers, long blond hair, holding a Roman standard, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Batavian auxiliary commander, one eye missing, Roman mail worn over Germanic trousers, long blond hair, holding a Roman standard
 
 *Original brief wording: a Batavian auxiliary commander, one eye missing, Roman mail worn over Germanic trousers, long blond hair, holding a Roman standard*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/villains_civilis_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Batavian auxiliary commander, one eye missing, Roman mail worn over Germanic trousers, long blond hair, holding a Roman standard, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1030, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Batavian auxiliary commander, one eye missing, Roman mail worn over Germanic trousers, long blond hair, holding a Roman standard", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1030, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -985,27 +2107,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_civilis_00_03/01_raw.png
-echo wrote build/art/villains_civilis_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_civilis_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/villains_civilis_00_03/01_still.png)" \
+  '{prompt: "striking forward, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/villains_civilis_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/villains_civilis_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_civilis_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/villains_civilis_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_civilis_00_03/frame_%02d.png
 ```
 
 ## villains_gildo_00_03
-
 **Replaces:** `villains/gildo_00.png`, `villains/gildo_01.png`, `villains/gildo_02.png`, `villains/gildo_03.png`
-  
 **Currently:** 48x34, already replaced → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a Moorish count in flowing white desert robes over Roman officer armour, curved blade, dark-skinned and imposing, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Moorish count in flowing white desert robes over Roman officer armour, curved blade, dark-skinned and imposing
 
 *Original brief wording: a Moorish count in flowing white desert robes over Roman officer armour, curved blade, dark-skinned and imposing*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/villains_gildo_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Moorish count in flowing white desert robes over Roman officer armour, curved blade, dark-skinned and imposing, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1034, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Moorish count in flowing white desert robes over Roman officer armour, curved blade, dark-skinned and imposing", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1034, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1014,27 +2172,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_gildo_00_03/01_raw.png
-echo wrote build/art/villains_gildo_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_gildo_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/villains_gildo_00_03/01_still.png)" \
+  '{prompt: "swinging the sword forward and striking, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/villains_gildo_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/villains_gildo_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_gildo_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/villains_gildo_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_gildo_00_03/frame_%02d.png
 ```
 
 ## villains_hannibal_00_03
-
 **Replaces:** `villains/hannibal_00.png`, `villains/hannibal_01.png`, `villains/hannibal_02.png`, `villains/hannibal_03.png`
-  
 **Currently:** 48x34, already replaced → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a Carthaginian general in a crested Punic helmet, one eye scarred and blind, purple cloak, curved falcata sword, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Carthaginian general in a crested Punic helmet, one eye scarred and blind, purple cloak, curved falcata sword
 
 *Original brief wording: a Carthaginian general in a crested Punic helmet, one eye scarred and blind, purple cloak, curved falcata sword*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/villains_hannibal_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Carthaginian general in a crested Punic helmet, one eye scarred and blind, purple cloak, curved falcata sword, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1037, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Carthaginian general in a crested Punic helmet, one eye scarred and blind, purple cloak, curved falcata sword", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1037, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1043,27 +2237,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_hannibal_00_03/01_raw.png
-echo wrote build/art/villains_hannibal_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_hannibal_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/villains_hannibal_00_03/01_still.png)" \
+  '{prompt: "swinging the sword forward and striking, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/villains_hannibal_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/villains_hannibal_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_hannibal_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/villains_hannibal_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_hannibal_00_03/frame_%02d.png
 ```
 
 ## villains_jugurtha_00_03
-
 **Replaces:** `villains/jugurtha_00.png`, `villains/jugurtha_01.png`, `villains/jugurtha_02.png`, `villains/jugurtha_03.png`
-  
 **Currently:** 48x34, already replaced → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a Numidian king in an ornate gold circlet and rich embroidered robes over a cuirass, arms folded, imperious, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Numidian king in an ornate gold circlet and rich embroidered robes over a cuirass, arms folded, imperious
 
 *Original brief wording: a Numidian king in an ornate gold circlet and rich embroidered robes over a cuirass, arms folded, imperious*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/villains_jugurtha_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Numidian king in an ornate gold circlet and rich embroidered robes over a cuirass, arms folded, imperious, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1028, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Numidian king in an ornate gold circlet and rich embroidered robes over a cuirass, arms folded, imperious", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1028, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1072,27 +2302,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_jugurtha_00_03/01_raw.png
-echo wrote build/art/villains_jugurtha_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_jugurtha_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/villains_jugurtha_00_03/01_still.png)" \
+  '{prompt: "raising the staff and casting, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/villains_jugurtha_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/villains_jugurtha_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_jugurtha_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/villains_jugurtha_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_jugurtha_00_03/frame_%02d.png
 ```
 
 ## villains_mithridates_00_03
-
 **Replaces:** `villains/mithridates_00.png`, `villains/mithridates_01.png`, `villains/mithridates_02.png`, `villains/mithridates_03.png`
-  
 **Currently:** 48x34, already replaced → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> an eastern king in a Persian tiara and richly patterned robes, jewelled scabbard, holding a phial of poison, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> an eastern king in a Persian tiara and richly patterned robes, jewelled scabbard, holding a phial of poison
 
 *Original brief wording: an eastern king in a Persian tiara and richly patterned robes, jewelled scabbard, holding a phial of poison*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/villains_mithridates_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "an eastern king in a Persian tiara and richly patterned robes, jewelled scabbard, holding a phial of poison, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1036, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "an eastern king in a Persian tiara and richly patterned robes, jewelled scabbard, holding a phial of poison", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1036, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1101,27 +2367,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_mithridates_00_03/01_raw.png
-echo wrote build/art/villains_mithridates_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_mithridates_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/villains_mithridates_00_03/01_still.png)" \
+  '{prompt: "raising the staff and casting, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/villains_mithridates_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/villains_mithridates_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_mithridates_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/villains_mithridates_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_mithridates_00_03/frame_%02d.png
 ```
 
 ## villains_pyrrhus_00_03
-
 **Replaces:** `villains/pyrrhus_00.png`, `villains/pyrrhus_01.png`, `villains/pyrrhus_02.png`, `villains/pyrrhus_03.png`
-  
 **Currently:** 48x34, already replaced → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a Hellenistic king in a plumed Corinthian helmet and gilded muscled cuirass, round hoplite shield, long sarissa spear, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Hellenistic king in a plumed Corinthian helmet and gilded muscled cuirass, round hoplite shield, long sarissa spear
 
 *Original brief wording: a Hellenistic king in a plumed Corinthian helmet and gilded muscled cuirass, round hoplite shield, long sarissa spear*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/villains_pyrrhus_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Hellenistic king in a plumed Corinthian helmet and gilded muscled cuirass, round hoplite shield, long sarissa spear, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1035, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Hellenistic king in a plumed Corinthian helmet and gilded muscled cuirass, round hoplite shield, long sarissa spear", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1035, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1130,27 +2432,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_pyrrhus_00_03/01_raw.png
-echo wrote build/art/villains_pyrrhus_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_pyrrhus_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/villains_pyrrhus_00_03/01_still.png)" \
+  '{prompt: "levelling the spear and thrusting it forward, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/villains_pyrrhus_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/villains_pyrrhus_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_pyrrhus_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/villains_pyrrhus_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_pyrrhus_00_03/frame_%02d.png
 ```
 
 ## villains_shapur_00_03
-
 **Replaces:** `villains/shapur_00.png`, `villains/shapur_01.png`, `villains/shapur_02.png`, `villains/shapur_03.png`
-  
 **Currently:** 48x34, already replaced → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a Sasanian shah in a towering jewelled korymbos crown, full cataphract scale armour, long straight sword, regal, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Sasanian shah in a towering jewelled korymbos crown, full cataphract scale armour, long straight sword, regal
 
 *Original brief wording: a Sasanian shah in a towering jewelled korymbos crown, full cataphract scale armour, long straight sword, regal*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/villains_shapur_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Sasanian shah in a towering jewelled korymbos crown, full cataphract scale armour, long straight sword, regal, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1039, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Sasanian shah in a towering jewelled korymbos crown, full cataphract scale armour, long straight sword, regal", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1039, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1159,27 +2497,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_shapur_00_03/01_raw.png
-echo wrote build/art/villains_shapur_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_shapur_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/villains_shapur_00_03/01_still.png)" \
+  '{prompt: "swinging the sword forward and striking, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/villains_shapur_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/villains_shapur_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_shapur_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/villains_shapur_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_shapur_00_03/frame_%02d.png
 ```
 
 ## villains_spartacus_00_03
-
 **Replaces:** `villains/spartacus_00.png`, `villains/spartacus_01.png`, `villains/spartacus_02.png`, `villains/spartacus_03.png`
-  
 **Currently:** 48x34, already replaced → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a Thracian gladiator, bare-chested and scarred, gladiator helmet with a grille visor, short curved sica sword and small square shield, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Thracian gladiator, bare-chested and scarred, gladiator helmet with a grille visor, short curved sica sword and small square shield
 
 *Original brief wording: a Thracian gladiator, bare-chested and scarred, gladiator helmet with a grille visor, short curved sica sword and small square shield*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/villains_spartacus_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Thracian gladiator, bare-chested and scarred, gladiator helmet with a grille visor, short curved sica sword and small square shield, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1026, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Thracian gladiator, bare-chested and scarred, gladiator helmet with a grille visor, short curved sica sword and small square shield", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1026, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1188,27 +2562,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_spartacus_00_03/01_raw.png
-echo wrote build/art/villains_spartacus_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_spartacus_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/villains_spartacus_00_03/01_still.png)" \
+  '{prompt: "swinging the sword forward and striking, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/villains_spartacus_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/villains_spartacus_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_spartacus_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/villains_spartacus_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_spartacus_00_03/frame_%02d.png
 ```
 
 ## villains_tacfarinas_00_03
-
 **Replaces:** `villains/tacfarinas_00.png`, `villains/tacfarinas_01.png`, `villains/tacfarinas_02.png`, `villains/tacfarinas_03.png`
-  
 **Currently:** 48x34, already replaced → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a Numidian deserter chieftain in a Roman military cloak over desert robes, javelins across his back, sun-darkened, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Numidian deserter chieftain in a Roman military cloak over desert robes, javelins across his back, sun-darkened
 
 *Original brief wording: a Numidian deserter chieftain in a Roman military cloak over desert robes, javelins across his back, sun-darkened*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/villains_tacfarinas_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Numidian deserter chieftain in a Roman military cloak over desert robes, javelins across his back, sun-darkened, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1027, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Numidian deserter chieftain in a Roman military cloak over desert robes, javelins across his back, sun-darkened", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1027, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1217,27 +2627,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_tacfarinas_00_03/01_raw.png
-echo wrote build/art/villains_tacfarinas_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_tacfarinas_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/villains_tacfarinas_00_03/01_still.png)" \
+  '{prompt: "levelling the spear and thrusting it forward, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/villains_tacfarinas_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/villains_tacfarinas_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_tacfarinas_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/villains_tacfarinas_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_tacfarinas_00_03/frame_%02d.png
 ```
 
 ## villains_vercingetorix_00_03
-
 **Replaces:** `villains/vercingetorix_00.png`, `villains/vercingetorix_01.png`, `villains/vercingetorix_02.png`, `villains/vercingetorix_03.png`
-  
 **Currently:** 48x34, already replaced → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a Gallic king in a horned helmet and mail shirt, long moustache, oval shield with a swirling Celtic device, longsword, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Gallic king in a horned helmet and mail shirt, long moustache, oval shield with a swirling Celtic device, longsword
 
 *Original brief wording: a Gallic king in a horned helmet and mail shirt, long moustache, oval shield with a swirling Celtic device, longsword*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/villains_vercingetorix_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Gallic king in a horned helmet and mail shirt, long moustache, oval shield with a swirling Celtic device, longsword, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1032, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Gallic king in a horned helmet and mail shirt, long moustache, oval shield with a swirling Celtic device, longsword", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1032, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1246,27 +2692,63 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_vercingetorix_00_03/01_raw.png
-echo wrote build/art/villains_vercingetorix_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_vercingetorix_00_03/01_still.png
+```
+
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
+
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/villains_vercingetorix_00_03/01_still.png)" \
+  '{prompt: "swinging the sword forward and striking, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/villains_vercingetorix_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/villains_vercingetorix_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_vercingetorix_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/villains_vercingetorix_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_vercingetorix_00_03/frame_%02d.png
 ```
 
 ## villains_zenobia_00_03
-
 **Replaces:** `villains/zenobia_00.png`, `villains/zenobia_01.png`, `villains/zenobia_02.png`, `villains/zenobia_03.png`
-  
 **Currently:** 48x34, already replaced → **generate at 96x96**
 
-**Prompt**
+**Prompt** (subject only; the style supplies framing, pose and background)
 
-> a Palmyrene warrior queen in gilded scale armour and an eastern diadem, dark braided hair, ornate curved sword, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Palmyrene warrior queen in gilded scale armour and an eastern diadem, dark braided hair, ornate curved sword
 
 *Original brief wording: a Palmyrene warrior queen in gilded scale armour and an eastern diadem, dark braided hair, ornate curved sword*
+
+
+**Step 1 — the still.** $0.18.
 
 ```sh
 mkdir -p build/art/villains_zenobia_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Palmyrene warrior queen in gilded scale armour and an eastern diadem, dark braided hair, ornate curved sword, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1038, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Palmyrene warrior queen in gilded scale armour and an eastern diadem, dark braided hair, ornate curved sword", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1038, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1275,12 +2757,44 @@ while :; do
   [ "$S" = failed ] && { echo "$R"; break; }
   sleep 5
 done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_zenobia_00_03/01_raw.png
-echo wrote build/art/villains_zenobia_00_03/01_raw.png
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_zenobia_00_03/01_still.png
 ```
 
-# 5.3 Class portraits -- 4 items, 4 files, 96x102
+**Step 2 — look at it.** At 1:1 and at 8x, against `assets/kings-bounty/art/troops/pikemen_00.png`.
+Check the whole figure is inside the frame, both feet are drawn, the armour or
+equipment survived, and the shield is on the same arm as every other troop. If it
+is wrong, write down what was wrong and move on. Do not re-roll it.
 
+**Step 3 — animate the approved still.** $0.14. The still goes up untouched, alpha
+intact; that is what makes the returned frames transparent.
+
+```sh
+jq -n --arg img "$(base64 -w0 build/art/villains_zenobia_00_03/01_still.png)" \
+  '{prompt: "swinging the sword forward and striking, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/villains_zenobia_00_03/anim_request.json
+TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
+  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d @build/art/villains_zenobia_00_03/anim_request.json | jq -r .task_id)
+echo "task $TASK"
+while :; do
+  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
+  S=$(echo "$R" | jq -r .status); echo "$S"
+  [ "$S" = succeeded ] && break
+  [ "$S" = failed ] && { echo "$R"; break; }
+  sleep 5
+done
+echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/villains_zenobia_00_03/02_sheet.png
+```
+
+**Step 4 — cut the sheet.** It comes back 192x192: a 2x2 grid of 96x96 cells, read
+left to right, top to bottom.
+
+```sh
+convert build/art/villains_zenobia_00_03/02_sheet.png -crop 96x96 +repage build/art/villains_zenobia_00_03/frame_%02d.png
+```
 
 ## classes_barbarian
 
@@ -1290,7 +2804,7 @@ echo wrote build/art/villains_zenobia_00_03/01_raw.png
 
 **Prompt**
 
-> a weathered frontier commander in mail over furs with a wolf-pelt cloak and iron torc, standing on a rock at a forest frontier, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a weathered frontier commander in mail over furs with a wolf-pelt cloak and iron torc, standing on a rock at a forest frontier
 
 *Original brief wording: a weathered frontier commander in mail over furs with a wolf-pelt cloak and iron torc, standing on a rock at a forest frontier*
 
@@ -1298,7 +2812,7 @@ echo wrote build/art/villains_zenobia_00_03/01_raw.png
 mkdir -p build/art/classes_barbarian
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a weathered frontier commander in mail over furs with a wolf-pelt cloak and iron torc, standing on a rock at a forest frontier, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 192, "height": 204, "num_images": 1, "seed": 1045, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a weathered frontier commander in mail over furs with a wolf-pelt cloak and iron torc, standing on a rock at a forest frontier", "prompt_style": "rd_plus__default", "width": 192, "height": 204, "num_images": 1, "seed": 1045, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1319,7 +2833,7 @@ echo wrote build/art/classes_barbarian/01_raw.png
 
 **Prompt**
 
-> a Roman general in a muscled bronze cuirass with lion-head shoulder pieces, red paludamentum cloak, crested helmet under one arm, standing before a distant fortified camp at sunset, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Roman general in a muscled bronze cuirass with lion-head shoulder pieces, red paludamentum cloak, crested helmet under one arm, standing before a distant fortified camp at sunset
 
 *Original brief wording: a Roman general in a muscled bronze cuirass with lion-head shoulder pieces, red paludamentum cloak, crested helmet under one arm, standing before a distant fortified camp at sunset*
 
@@ -1327,7 +2841,7 @@ echo wrote build/art/classes_barbarian/01_raw.png
 mkdir -p build/art/classes_knight
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman general in a muscled bronze cuirass with lion-head shoulder pieces, red paludamentum cloak, crested helmet under one arm, standing before a distant fortified camp at sunset, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 192, "height": 204, "num_images": 1, "seed": 1042, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman general in a muscled bronze cuirass with lion-head shoulder pieces, red paludamentum cloak, crested helmet under one arm, standing before a distant fortified camp at sunset", "prompt_style": "rd_plus__default", "width": 192, "height": 204, "num_images": 1, "seed": 1042, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1348,7 +2862,7 @@ echo wrote build/art/classes_knight/01_raw.png
 
 **Prompt**
 
-> a Praetorian guardsman in an ornate scorpion-embossed cuirass with a tall black transverse crest, kneeling at a candlelit altar in a marble shrine, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Praetorian guardsman in an ornate scorpion-embossed cuirass with a tall black transverse crest, kneeling at a candlelit altar in a marble shrine
 
 *Original brief wording: a Praetorian guardsman in an ornate scorpion-embossed cuirass with a tall black transverse crest, kneeling at a candlelit altar in a marble shrine*
 
@@ -1356,7 +2870,7 @@ echo wrote build/art/classes_knight/01_raw.png
 mkdir -p build/art/classes_paladin
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Praetorian guardsman in an ornate scorpion-embossed cuirass with a tall black transverse crest, kneeling at a candlelit altar in a marble shrine, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 192, "height": 204, "num_images": 1, "seed": 1043, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a Praetorian guardsman in an ornate scorpion-embossed cuirass with a tall black transverse crest, kneeling at a candlelit altar in a marble shrine", "prompt_style": "rd_plus__default", "width": 192, "height": 204, "num_images": 1, "seed": 1043, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1377,7 +2891,7 @@ echo wrote build/art/classes_paladin/01_raw.png
 
 **Prompt**
 
-> a veiled Vestal oracle-priestess in white robes with a gold fillet, holding a laurel sprig, standing in a temple interior lit by a sacred flame, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a veiled Vestal oracle-priestess in white robes with a gold fillet, holding a laurel sprig, standing in a temple interior lit by a sacred flame
 
 *Original brief wording: a veiled Vestal oracle-priestess in white robes with a gold fillet, holding a laurel sprig, standing in a temple interior lit by a sacred flame*
 
@@ -1385,7 +2899,7 @@ echo wrote build/art/classes_paladin/01_raw.png
 mkdir -p build/art/classes_sorceress
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a veiled Vestal oracle-priestess in white robes with a gold fillet, holding a laurel sprig, standing in a temple interior lit by a sacred flame, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 192, "height": 204, "num_images": 1, "seed": 1044, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a veiled Vestal oracle-priestess in white robes with a gold fillet, holding a laurel sprig, standing in a temple interior lit by a sacred flame", "prompt_style": "rd_plus__default", "width": 192, "height": 204, "num_images": 1, "seed": 1044, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1409,7 +2923,7 @@ echo wrote build/art/classes_sorceress/01_raw.png
 
 **Prompt**
 
-> the same rider at rest, horse shifting weight, cloak stirring, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> the same rider at rest, horse shifting weight, cloak stirring
 
 *Original brief wording: the same rider at rest, horse shifting weight, cloak stirring*
 
@@ -1417,7 +2931,7 @@ echo wrote build/art/classes_sorceress/01_raw.png
 mkdir -p build/art/sprites_hero_idle_facing_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "the same rider at rest, horse shifting weight, cloak stirring, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1050, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "the same rider at rest, horse shifting weight, cloak stirring", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1050, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1438,7 +2952,7 @@ echo wrote build/art/sprites_hero_idle_facing_00_03/01_raw.png
 
 **Prompt**
 
-> the same rider in profile facing right, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> the same rider in profile facing right
 
 *Original brief wording: the same rider in profile facing right*
 
@@ -1446,7 +2960,7 @@ echo wrote build/art/sprites_hero_idle_facing_00_03/01_raw.png
 mkdir -p build/art/sprites_hero_walk_east_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "the same rider in profile facing right, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1047, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "the same rider in profile facing right", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1047, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1467,7 +2981,7 @@ echo wrote build/art/sprites_hero_walk_east_00_03/01_raw.png
 
 **Prompt**
 
-> the same rider seen from behind, cloak and crest from the rear, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> the same rider seen from behind, cloak and crest from the rear
 
 *Original brief wording: the same rider seen from behind, cloak and crest from the rear*
 
@@ -1475,7 +2989,7 @@ echo wrote build/art/sprites_hero_walk_east_00_03/01_raw.png
 mkdir -p build/art/sprites_hero_walk_north_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "the same rider seen from behind, cloak and crest from the rear, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1049, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "the same rider seen from behind, cloak and crest from the rear", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1049, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1496,7 +3010,7 @@ echo wrote build/art/sprites_hero_walk_north_00_03/01_raw.png
 
 **Prompt**
 
-> a Roman commander on horseback seen from the front, red cloak, crested helmet, gilded cuirass, riding toward the viewer, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Roman commander on horseback seen from the front, red cloak, crested helmet, gilded cuirass, riding toward the viewer
 
 *Original brief wording: a Roman commander on horseback seen from the front, red cloak, crested helmet, gilded cuirass, riding toward the viewer*
 
@@ -1504,7 +3018,7 @@ echo wrote build/art/sprites_hero_walk_north_00_03/01_raw.png
 mkdir -p build/art/sprites_hero_walk_south_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman commander on horseback seen from the front, red cloak, crested helmet, gilded cuirass, riding toward the viewer, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1046, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman commander on horseback seen from the front, red cloak, crested helmet, gilded cuirass, riding toward the viewer", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1046, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1525,7 +3039,7 @@ echo wrote build/art/sprites_hero_walk_south_00_03/01_raw.png
 
 **Prompt**
 
-> the same rider in profile facing left, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> the same rider in profile facing left
 
 *Original brief wording: the same rider in profile facing left*
 
@@ -1533,7 +3047,7 @@ echo wrote build/art/sprites_hero_walk_south_00_03/01_raw.png
 mkdir -p build/art/sprites_hero_walk_west_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "the same rider in profile facing left, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1048, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "the same rider in profile facing left", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1048, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1557,7 +3071,7 @@ echo wrote build/art/sprites_hero_walk_west_00_03/01_raw.png
 
 **Prompt**
 
-> the same vessel in full profile facing right, sail and oar bank visible, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> the same vessel in full profile facing right, sail and oar bank visible
 
 *Original brief wording: the same vessel in full profile facing right, sail and oar bank visible*
 
@@ -1565,7 +3079,7 @@ echo wrote build/art/sprites_hero_walk_west_00_03/01_raw.png
 mkdir -p build/art/sprites_boat_east_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "the same vessel in full profile facing right, sail and oar bank visible, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1052, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "the same vessel in full profile facing right, sail and oar bank visible", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1052, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1586,7 +3100,7 @@ echo wrote build/art/sprites_boat_east_00_03/01_raw.png
 
 **Prompt**
 
-> the same vessel from astern, steering oar and sail from behind, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> the same vessel from astern, steering oar and sail from behind
 
 *Original brief wording: the same vessel from astern, steering oar and sail from behind*
 
@@ -1594,7 +3108,7 @@ echo wrote build/art/sprites_boat_east_00_03/01_raw.png
 mkdir -p build/art/sprites_boat_north_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "the same vessel from astern, steering oar and sail from behind, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1054, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "the same vessel from astern, steering oar and sail from behind", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1054, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1615,7 +3129,7 @@ echo wrote build/art/sprites_boat_north_00_03/01_raw.png
 
 **Prompt**
 
-> a Roman liburnian galley seen bow-on, single square sail with a painted eagle, eye painted on the prow, oars out, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Roman liburnian galley seen bow-on, single square sail with a painted eagle, eye painted on the prow, oars out
 
 *Original brief wording: a Roman liburnian galley seen bow-on, single square sail with a painted eagle, eye painted on the prow, oars out*
 
@@ -1623,7 +3137,7 @@ echo wrote build/art/sprites_boat_north_00_03/01_raw.png
 mkdir -p build/art/sprites_boat_south_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman liburnian galley seen bow-on, single square sail with a painted eagle, eye painted on the prow, oars out, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1051, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman liburnian galley seen bow-on, single square sail with a painted eagle, eye painted on the prow, oars out", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1051, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1644,7 +3158,7 @@ echo wrote build/art/sprites_boat_south_00_03/01_raw.png
 
 **Prompt**
 
-> the same vessel in profile facing left, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> the same vessel in profile facing left
 
 *Original brief wording: the same vessel in profile facing left*
 
@@ -1652,7 +3166,7 @@ echo wrote build/art/sprites_boat_south_00_03/01_raw.png
 mkdir -p build/art/sprites_boat_west_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "the same vessel in profile facing left, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1053, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "the same vessel in profile facing left", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1053, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1857,7 +3371,7 @@ echo wrote build/art/tiles_water/01_raw.png
 
 **Prompt**
 
-> a Roman legionary fortress with ashlar stone walls, square corner towers, red tile roofs and an arched gate, seen from a high angle, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Roman legionary fortress with ashlar stone walls, square corner towers, red tile roofs and an arched gate, seen from a high angle
 
 *Original brief wording: a Roman legionary fortress with ashlar stone walls, square corner towers, red tile roofs and an arched gate, seen from a high angle*
 
@@ -1865,7 +3379,7 @@ echo wrote build/art/tiles_water/01_raw.png
 mkdir -p build/art/tiles_castle_png
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman legionary fortress with ashlar stone walls, square corner towers, red tile roofs and an arched gate, seen from a high angle, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1061, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman legionary fortress with ashlar stone walls, square corner towers, red tile roofs and an arched gate, seen from a high angle", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1061, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1886,7 +3400,7 @@ echo wrote build/art/tiles_castle_png/01_raw.png
 
 **Prompt**
 
-> a Roman columbarium crypt entrance, stone doorway flanked by funerary urns, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Roman columbarium crypt entrance, stone doorway flanked by funerary urns
 
 *Original brief wording: a Roman columbarium crypt entrance, stone doorway flanked by funerary urns*
 
@@ -1894,7 +3408,7 @@ echo wrote build/art/tiles_castle_png/01_raw.png
 mkdir -p build/art/tiles_dwelling_dungeon
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman columbarium crypt entrance, stone doorway flanked by funerary urns, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1066, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman columbarium crypt entrance, stone doorway flanked by funerary urns", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1066, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1915,7 +3429,7 @@ echo wrote build/art/tiles_dwelling_dungeon/01_raw.png
 
 **Prompt**
 
-> a stone shrine and altar in a sacred grove, surrounded by trees, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a stone shrine and altar in a sacred grove, surrounded by trees
 
 *Original brief wording: a stone shrine and altar in a sacred grove, surrounded by trees*
 
@@ -1923,7 +3437,7 @@ echo wrote build/art/tiles_dwelling_dungeon/01_raw.png
 mkdir -p build/art/tiles_dwelling_forest
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a stone shrine and altar in a sacred grove, surrounded by trees, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1064, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a stone shrine and altar in a sacred grove, surrounded by trees", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1064, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1944,7 +3458,7 @@ echo wrote build/art/tiles_dwelling_forest/01_raw.png
 
 **Prompt**
 
-> a cave mouth in a rocky hillside with a carved stone lintel, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a cave mouth in a rocky hillside with a carved stone lintel
 
 *Original brief wording: a cave mouth in a rocky hillside with a carved stone lintel*
 
@@ -1952,7 +3466,7 @@ echo wrote build/art/tiles_dwelling_forest/01_raw.png
 mkdir -p build/art/tiles_dwelling_hills
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a cave mouth in a rocky hillside with a carved stone lintel, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1065, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a cave mouth in a rocky hillside with a carved stone lintel", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1065, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -1973,7 +3487,7 @@ echo wrote build/art/tiles_dwelling_hills/01_raw.png
 
 **Prompt**
 
-> a Roman villa rustica farmstead with a tiled roof and a walled paddock, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Roman villa rustica farmstead with a tiled roof and a walled paddock
 
 *Original brief wording: a Roman villa rustica farmstead with a tiled roof and a walled paddock*
 
@@ -1981,7 +3495,7 @@ echo wrote build/art/tiles_dwelling_hills/01_raw.png
 mkdir -p build/art/tiles_dwelling_plains
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman villa rustica farmstead with a tiled roof and a walled paddock, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1063, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman villa rustica farmstead with a tiled roof and a walled paddock", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1063, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2002,7 +3516,7 @@ echo wrote build/art/tiles_dwelling_plains/01_raw.png
 
 **Prompt**
 
-> a small walled Roman town with terracotta roofs, a temple pediment and a column, seen from a high angle, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a small walled Roman town with terracotta roofs, a temple pediment and a column, seen from a high angle
 
 *Original brief wording: a small walled Roman town with terracotta roofs, a temple pediment and a column, seen from a high angle*
 
@@ -2010,7 +3524,7 @@ echo wrote build/art/tiles_dwelling_plains/01_raw.png
 mkdir -p build/art/tiles_town
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a small walled Roman town with terracotta roofs, a temple pediment and a column, seen from a high angle, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1062, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a small walled Roman town with terracotta roofs, a temple pediment and a column, seen from a high angle", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1062, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2036,7 +3550,7 @@ echo wrote build/art/tiles_town/01_raw.png
 
 **Prompt**
 
-> an ornate gilded reliquary casket with glowing seams, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> an ornate gilded reliquary casket with glowing seams
 
 *Original brief wording: an ornate gilded reliquary casket with glowing seams*
 
@@ -2044,7 +3558,7 @@ echo wrote build/art/tiles_town/01_raw.png
 mkdir -p build/art/tiles_artifact_chest
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "an ornate gilded reliquary casket with glowing seams, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1068, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "an ornate gilded reliquary casket with glowing seams", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1068, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2067,7 +3581,7 @@ echo wrote build/art/tiles_artifact_chest/01_raw.png
 
 **Prompt**
 
-> a golden ring resting on a small stone plinth, radiating light, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a golden ring resting on a small stone plinth, radiating light
 
 *Original brief wording: a golden ring resting on a small stone plinth, radiating light*
 
@@ -2075,7 +3589,7 @@ echo wrote build/art/tiles_artifact_chest/01_raw.png
 mkdir -p build/art/tiles_artifact_ring
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a golden ring resting on a small stone plinth, radiating light, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1069, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a golden ring resting on a small stone plinth, radiating light", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1069, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2096,7 +3610,7 @@ echo wrote build/art/tiles_artifact_ring/01_raw.png
 
 **Prompt**
 
-> a Roman stone arch bridge spanning left to right, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Roman stone arch bridge spanning left to right
 
 *Original brief wording: a Roman stone arch bridge spanning left to right*
 
@@ -2104,7 +3618,7 @@ echo wrote build/art/tiles_artifact_ring/01_raw.png
 mkdir -p build/art/tiles_bridge_h
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman stone arch bridge spanning left to right, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1071, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman stone arch bridge spanning left to right", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1071, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2125,7 +3639,7 @@ echo wrote build/art/tiles_bridge_h/01_raw.png
 
 **Prompt**
 
-> a Roman stone arch bridge spanning top to bottom, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Roman stone arch bridge spanning top to bottom
 
 *Original brief wording: a Roman stone arch bridge spanning top to bottom*
 
@@ -2133,7 +3647,7 @@ echo wrote build/art/tiles_bridge_h/01_raw.png
 mkdir -p build/art/tiles_bridge_v
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman stone arch bridge spanning top to bottom, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1072, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman stone arch bridge spanning top to bottom", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1072, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2154,7 +3668,7 @@ echo wrote build/art/tiles_bridge_v/01_raw.png
 
 **Prompt**
 
-> a Roman strongbox, an iron-banded wooden arca with bronze studs, lid closed, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Roman strongbox, an iron-banded wooden arca with bronze studs, lid closed
 
 *Original brief wording: a Roman strongbox, an iron-banded wooden arca with bronze studs, lid closed*
 
@@ -2162,7 +3676,7 @@ echo wrote build/art/tiles_bridge_v/01_raw.png
 mkdir -p build/art/tiles_chest
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman strongbox, an iron-banded wooden arca with bronze studs, lid closed, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1067, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman strongbox, an iron-banded wooden arca with bronze studs, lid closed", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1067, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2183,7 +3697,7 @@ echo wrote build/art/tiles_chest/01_raw.png
 
 **Prompt**
 
-> a Roman milestone, a cylindrical stone column with carved lettering, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Roman milestone, a cylindrical stone column with carved lettering
 
 *Original brief wording: a Roman milestone, a cylindrical stone column with carved lettering*
 
@@ -2191,7 +3705,7 @@ echo wrote build/art/tiles_chest/01_raw.png
 mkdir -p build/art/tiles_sign
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman milestone, a cylindrical stone column with carved lettering, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1070, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman milestone, a cylindrical stone column with carved lettering", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1070, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2212,7 +3726,7 @@ echo wrote build/art/tiles_sign/01_raw.png
 
 **Prompt**
 
-> a barbarian war standard planted in the ground, a spear hung with skulls and a horsehair tuft, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a barbarian war standard planted in the ground, a spear hung with skulls and a horsehair tuft
 
 *Original brief wording: a barbarian war standard planted in the ground, a spear hung with skulls and a horsehair tuft*
 
@@ -2220,7 +3734,7 @@ echo wrote build/art/tiles_sign/01_raw.png
 mkdir -p build/art/tiles_wandering_army
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a barbarian war standard planted in the ground, a spear hung with skulls and a horsehair tuft, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1073, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a barbarian war standard planted in the ground, a spear hung with skulls and a horsehair tuft", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1073, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2244,7 +3758,7 @@ echo wrote build/art/tiles_wandering_army/01_raw.png
 
 **Prompt**
 
-> a row of sharpened wooden stakes driven into the ground at an angle, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a row of sharpened wooden stakes driven into the ground at an angle
 
 *Original brief wording: a row of sharpened wooden stakes driven into the ground at an angle*
 
@@ -2252,7 +3766,7 @@ echo wrote build/art/tiles_wandering_army/01_raw.png
 mkdir -p build/art/combat_castle_spike
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a row of sharpened wooden stakes driven into the ground at an angle, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1077, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a row of sharpened wooden stakes driven into the ground at an angle", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1077, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2273,7 +3787,7 @@ echo wrote build/art/combat_castle_spike/01_raw.png
 
 **Prompt**
 
-> Roman fortress wall segments in ashlar stone with crenellations, six varied sections, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> Roman fortress wall segments in ashlar stone with crenellations, six varied sections
 
 *Original brief wording: Roman fortress wall segments in ashlar stone with crenellations, six varied sections*
 
@@ -2281,7 +3795,7 @@ echo wrote build/art/combat_castle_spike/01_raw.png
 mkdir -p build/art/combat_castle_wall_01_06
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "Roman fortress wall segments in ashlar stone with crenellations, six varied sections, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1076, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "Roman fortress wall segments in ashlar stone with crenellations, six varied sections", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1076, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2302,7 +3816,7 @@ echo wrote build/art/combat_castle_wall_01_06/01_raw.png
 
 **Prompt**
 
-> a thin bronze laurel-wreath ring outline, hollow centre, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a thin bronze laurel-wreath ring outline, hollow centre
 
 *Original brief wording: a thin bronze laurel-wreath ring outline, hollow centre*
 
@@ -2310,7 +3824,7 @@ echo wrote build/art/combat_castle_wall_01_06/01_raw.png
 mkdir -p build/art/combat_cursor_01_04
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a thin bronze laurel-wreath ring outline, hollow centre, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1078, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a thin bronze laurel-wreath ring outline, hollow centre", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1078, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2331,7 +3845,7 @@ echo wrote build/art/combat_cursor_01_04/01_raw.png
 
 **Prompt**
 
-> trampled battlefield turf with bare patches of earth, seen from above (tile route, seamless), the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> trampled battlefield turf with bare patches of earth, seen from above (tile route, seamless)
 
 *Original brief wording: trampled battlefield turf with bare patches of earth, seen from above (tile route, seamless)*
 
@@ -2339,7 +3853,7 @@ echo wrote build/art/combat_cursor_01_04/01_raw.png
 mkdir -p build/art/combat_field_grass
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "trampled battlefield turf with bare patches of earth, seen from above (tile route, seamless), the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1074, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "trampled battlefield turf with bare patches of earth, seen from above (tile route, seamless)", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1074, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2360,7 +3874,7 @@ echo wrote build/art/combat_field_grass/01_raw.png
 
 **Prompt**
 
-> a mossy boulder / a dry thorn scrub bush / a fallen broken column drum, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a mossy boulder / a dry thorn scrub bush / a fallen broken column drum
 
 *Original brief wording: a mossy boulder / a dry thorn scrub bush / a fallen broken column drum*
 
@@ -2368,7 +3882,7 @@ echo wrote build/art/combat_field_grass/01_raw.png
 mkdir -p build/art/combat_obstacle_01_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a mossy boulder / a dry thorn scrub bush / a fallen broken column drum, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1075, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a mossy boulder / a dry thorn scrub bush / a fallen broken column drum", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1075, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2392,7 +3906,7 @@ echo wrote build/art/combat_obstacle_01_03/01_raw.png
 
 **Prompt**
 
-> a gold locket amulet on a cord, embossed with a lightning bolt, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a gold locket amulet on a cord, embossed with a lightning bolt
 
 *Original brief wording: a gold locket amulet on a cord, embossed with a lightning bolt*
 
@@ -2400,7 +3914,7 @@ echo wrote build/art/combat_obstacle_01_03/01_raw.png
 mkdir -p build/art/ui_inventory_artifact_amulet
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a gold locket amulet on a cord, embossed with a lightning bolt, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1083, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a gold locket amulet on a cord, embossed with a lightning bolt", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1083, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2421,7 +3935,7 @@ echo wrote build/art/ui_inventory_artifact_amulet/01_raw.png
 
 **Prompt**
 
-> a bronze anchor with a trident-shaped crossbar, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a bronze anchor with a trident-shaped crossbar
 
 *Original brief wording: a bronze anchor with a trident-shaped crossbar*
 
@@ -2429,7 +3943,7 @@ echo wrote build/art/ui_inventory_artifact_amulet/01_raw.png
 mkdir -p build/art/ui_inventory_artifact_anchor
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a bronze anchor with a trident-shaped crossbar, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1086, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a bronze anchor with a trident-shaped crossbar", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1086, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2450,7 +3964,7 @@ echo wrote build/art/ui_inventory_artifact_anchor/01_raw.png
 
 **Prompt**
 
-> a bronze inscribed tablet with a hanging wax seal, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a bronze inscribed tablet with a hanging wax seal
 
 *Original brief wording: a bronze inscribed tablet with a hanging wax seal*
 
@@ -2458,7 +3972,7 @@ echo wrote build/art/ui_inventory_artifact_anchor/01_raw.png
 mkdir -p build/art/ui_inventory_artifact_articles
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a bronze inscribed tablet with a hanging wax seal, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1082, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a bronze inscribed tablet with a hanging wax seal", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1082, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2479,7 +3993,7 @@ echo wrote build/art/ui_inventory_artifact_articles/01_raw.png
 
 **Prompt**
 
-> a torn scrap of ancient papyrus with faded illegible script, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a torn scrap of ancient papyrus with faded illegible script
 
 *Original brief wording: a torn scrap of ancient papyrus with faded illegible script*
 
@@ -2487,7 +4001,7 @@ echo wrote build/art/ui_inventory_artifact_articles/01_raw.png
 mkdir -p build/art/ui_inventory_artifact_book
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a torn scrap of ancient papyrus with faded illegible script, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1085, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a torn scrap of ancient papyrus with faded illegible script", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1085, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2508,7 +4022,7 @@ echo wrote build/art/ui_inventory_artifact_book/01_raw.png
 
 **Prompt**
 
-> a golden laurel wreath crown, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a golden laurel wreath crown
 
 *Original brief wording: a golden laurel wreath crown*
 
@@ -2516,7 +4030,7 @@ echo wrote build/art/ui_inventory_artifact_book/01_raw.png
 mkdir -p build/art/ui_inventory_artifact_crown
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a golden laurel wreath crown, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1081, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a golden laurel wreath crown", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1081, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2537,7 +4051,7 @@ echo wrote build/art/ui_inventory_artifact_crown/01_raw.png
 
 **Prompt**
 
-> a heavy gold equestrian signet ring, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a heavy gold equestrian signet ring
 
 *Original brief wording: a heavy gold equestrian signet ring*
 
@@ -2545,7 +4059,7 @@ echo wrote build/art/ui_inventory_artifact_crown/01_raw.png
 mkdir -p build/art/ui_inventory_artifact_ring
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a heavy gold equestrian signet ring, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1084, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a heavy gold equestrian signet ring", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1084, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2566,7 +4080,7 @@ echo wrote build/art/ui_inventory_artifact_ring/01_raw.png
 
 **Prompt**
 
-> a curved rectangular Roman shield bearing a Trojan palladium device, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a curved rectangular Roman shield bearing a Trojan palladium device
 
 *Original brief wording: a curved rectangular Roman shield bearing a Trojan palladium device*
 
@@ -2574,7 +4088,7 @@ echo wrote build/art/ui_inventory_artifact_ring/01_raw.png
 mkdir -p build/art/ui_inventory_artifact_shield
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a curved rectangular Roman shield bearing a Trojan palladium device, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1080, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a curved rectangular Roman shield bearing a Trojan palladium device", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1080, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2595,7 +4109,7 @@ echo wrote build/art/ui_inventory_artifact_shield/01_raw.png
 
 **Prompt**
 
-> an ornate gladius short sword with a ruby pommel and flame etching on the blade, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> an ornate gladius short sword with a ruby pommel and flame etching on the blade
 
 *Original brief wording: an ornate gladius short sword with a ruby pommel and flame etching on the blade*
 
@@ -2603,7 +4117,7 @@ echo wrote build/art/ui_inventory_artifact_shield/01_raw.png
 mkdir -p build/art/ui_inventory_artifact_sword
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "an ornate gladius short sword with a ruby pommel and flame etching on the blade, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1079, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "an ornate gladius short sword with a ruby pommel and flame etching on the blade", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1079, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2627,7 +4141,7 @@ echo wrote build/art/ui_inventory_artifact_sword/01_raw.png
 
 **Prompt**
 
-> a heraldic emblem of a palm and an elephant above a coastal strip and dunes, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a heraldic emblem of a palm and an elephant above a coastal strip and dunes
 
 *Original brief wording: a heraldic emblem of a palm and an elephant above a coastal strip and dunes*
 
@@ -2635,7 +4149,7 @@ echo wrote build/art/ui_inventory_artifact_sword/01_raw.png
 mkdir -p build/art/ui_inventory_zone_archipelia
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a heraldic emblem of a palm and an elephant above a coastal strip and dunes, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1089, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a heraldic emblem of a palm and an elephant above a coastal strip and dunes", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1089, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2656,7 +4170,7 @@ echo wrote build/art/ui_inventory_zone_archipelia/01_raw.png
 
 **Prompt**
 
-> a heraldic emblem of the Italian peninsula with a she-wolf and laurel, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a heraldic emblem of the Italian peninsula with a she-wolf and laurel
 
 *Original brief wording: a heraldic emblem of the Italian peninsula with a she-wolf and laurel*
 
@@ -2664,7 +4178,7 @@ echo wrote build/art/ui_inventory_zone_archipelia/01_raw.png
 mkdir -p build/art/ui_inventory_zone_continentia
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a heraldic emblem of the Italian peninsula with a she-wolf and laurel, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1087, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a heraldic emblem of the Italian peninsula with a she-wolf and laurel", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1087, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2685,7 +4199,7 @@ echo wrote build/art/ui_inventory_zone_continentia/01_raw.png
 
 **Prompt**
 
-> a heraldic emblem of forested hills with a Gallic cockerel and a river bridge, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a heraldic emblem of forested hills with a Gallic cockerel and a river bridge
 
 *Original brief wording: a heraldic emblem of forested hills with a Gallic cockerel and a river bridge*
 
@@ -2693,7 +4207,7 @@ echo wrote build/art/ui_inventory_zone_continentia/01_raw.png
 mkdir -p build/art/ui_inventory_zone_forestria
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a heraldic emblem of forested hills with a Gallic cockerel and a river bridge, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1088, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a heraldic emblem of forested hills with a Gallic cockerel and a river bridge", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1088, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2714,7 +4228,7 @@ echo wrote build/art/ui_inventory_zone_forestria/01_raw.png
 
 **Prompt**
 
-> a heraldic emblem of a domed eastern skyline with a palm and a sun rising over mountains, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a heraldic emblem of a domed eastern skyline with a palm and a sun rising over mountains
 
 *Original brief wording: a heraldic emblem of a domed eastern skyline with a palm and a sun rising over mountains*
 
@@ -2722,7 +4236,7 @@ echo wrote build/art/ui_inventory_zone_forestria/01_raw.png
 mkdir -p build/art/ui_inventory_zone_saharia
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a heraldic emblem of a domed eastern skyline with a palm and a sun rising over mountains, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1090, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a heraldic emblem of a domed eastern skyline with a palm and a sun rising over mountains", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1090, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2746,26 +4260,16 @@ echo wrote build/art/ui_inventory_zone_saharia/01_raw.png
 
 **Prompt**
 
-> a fortress hall interior with hanging legionary standards, a brazier and stone arches, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a fortress hall interior with hanging legionary standards, a brazier and stone arches
 
 *Original brief wording: a fortress hall interior with hanging legionary standards, a brazier and stone arches*
 
-```sh
-mkdir -p build/art/ui_backdrop_castle
-TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
-  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a fortress hall interior with hanging legionary standards, a brazier and stone arches, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 480, "height": 204, "num_images": 1, "seed": 1092, "async": true}' | jq -r .task_id)
-echo "task $TASK"
-while :; do
-  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
-  S=$(echo "$R" | jq -r .status); echo "$S"
-  [ "$S" = succeeded ] && break
-  [ "$S" = failed ] && { echo "$R"; break; }
-  sleep 5
-done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_backdrop_castle/01_raw.png
-echo wrote build/art/ui_backdrop_castle/01_raw.png
-```
+> **Cannot be generated at this size.** The largest dimension any public style
+> accepts is 384; this asset is 480x204. Options, none of them free of a
+> decision: author it by hand; generate the subject alone at 384 or less and
+> compose the screen in code, as the title screen plan already does for the
+> Aquila; or drop the design size x2 rule for screen art and generate at 1x.
+> Resolve before this item is scheduled.
 
 ## ui_backdrop_dungeon
 
@@ -2775,26 +4279,16 @@ echo wrote build/art/ui_backdrop_castle/01_raw.png
 
 **Prompt**
 
-> a crypt interior with columbarium niches and torchlight, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a crypt interior with columbarium niches and torchlight
 
 *Original brief wording: a crypt interior with columbarium niches and torchlight*
 
-```sh
-mkdir -p build/art/ui_backdrop_dungeon
-TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
-  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a crypt interior with columbarium niches and torchlight, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 480, "height": 204, "num_images": 1, "seed": 1096, "async": true}' | jq -r .task_id)
-echo "task $TASK"
-while :; do
-  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
-  S=$(echo "$R" | jq -r .status); echo "$S"
-  [ "$S" = succeeded ] && break
-  [ "$S" = failed ] && { echo "$R"; break; }
-  sleep 5
-done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_backdrop_dungeon/01_raw.png
-echo wrote build/art/ui_backdrop_dungeon/01_raw.png
-```
+> **Cannot be generated at this size.** The largest dimension any public style
+> accepts is 384; this asset is 480x204. Options, none of them free of a
+> decision: author it by hand; generate the subject alone at 384 or less and
+> compose the screen in code, as the title screen plan already does for the
+> Aquila; or drop the design size x2 rule for screen art and generate at 1x.
+> Resolve before this item is scheduled.
 
 ## ui_backdrop_forest
 
@@ -2804,26 +4298,16 @@ echo wrote build/art/ui_backdrop_dungeon/01_raw.png
 
 **Prompt**
 
-> the interior of a dense sacred grove with shafts of light through the canopy, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> the interior of a dense sacred grove with shafts of light through the canopy
 
 *Original brief wording: the interior of a dense sacred grove with shafts of light through the canopy*
 
-```sh
-mkdir -p build/art/ui_backdrop_forest
-TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
-  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "the interior of a dense sacred grove with shafts of light through the canopy, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 480, "height": 204, "num_images": 1, "seed": 1094, "async": true}' | jq -r .task_id)
-echo "task $TASK"
-while :; do
-  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
-  S=$(echo "$R" | jq -r .status); echo "$S"
-  [ "$S" = succeeded ] && break
-  [ "$S" = failed ] && { echo "$R"; break; }
-  sleep 5
-done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_backdrop_forest/01_raw.png
-echo wrote build/art/ui_backdrop_forest/01_raw.png
-```
+> **Cannot be generated at this size.** The largest dimension any public style
+> accepts is 384; this asset is 480x204. Options, none of them free of a
+> decision: author it by hand; generate the subject alone at 384 or less and
+> compose the screen in code, as the title screen plan already does for the
+> Aquila; or drop the design size x2 rule for screen art and generate at 1x.
+> Resolve before this item is scheduled.
 
 ## ui_backdrop_hillcave
 
@@ -2833,26 +4317,16 @@ echo wrote build/art/ui_backdrop_forest/01_raw.png
 
 **Prompt**
 
-> a cave mouth in rocky hills with oracle smoke drifting from the opening, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a cave mouth in rocky hills with oracle smoke drifting from the opening
 
 *Original brief wording: a cave mouth in rocky hills with oracle smoke drifting from the opening*
 
-```sh
-mkdir -p build/art/ui_backdrop_hillcave
-TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
-  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a cave mouth in rocky hills with oracle smoke drifting from the opening, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 480, "height": 204, "num_images": 1, "seed": 1095, "async": true}' | jq -r .task_id)
-echo "task $TASK"
-while :; do
-  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
-  S=$(echo "$R" | jq -r .status); echo "$S"
-  [ "$S" = succeeded ] && break
-  [ "$S" = failed ] && { echo "$R"; break; }
-  sleep 5
-done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_backdrop_hillcave/01_raw.png
-echo wrote build/art/ui_backdrop_hillcave/01_raw.png
-```
+> **Cannot be generated at this size.** The largest dimension any public style
+> accepts is 384; this asset is 480x204. Options, none of them free of a
+> decision: author it by hand; generate the subject alone at 384 or less and
+> compose the screen in code, as the title screen plan already does for the
+> Aquila; or drop the design size x2 rule for screen art and generate at 1x.
+> Resolve before this item is scheduled.
 
 ## ui_backdrop_plains
 
@@ -2862,26 +4336,16 @@ echo wrote build/art/ui_backdrop_hillcave/01_raw.png
 
 **Prompt**
 
-> open Italian countryside with cypress trees and distant blue hills, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> open Italian countryside with cypress trees and distant blue hills
 
 *Original brief wording: open Italian countryside with cypress trees and distant blue hills*
 
-```sh
-mkdir -p build/art/ui_backdrop_plains
-TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
-  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "open Italian countryside with cypress trees and distant blue hills, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 480, "height": 204, "num_images": 1, "seed": 1093, "async": true}' | jq -r .task_id)
-echo "task $TASK"
-while :; do
-  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
-  S=$(echo "$R" | jq -r .status); echo "$S"
-  [ "$S" = succeeded ] && break
-  [ "$S" = failed ] && { echo "$R"; break; }
-  sleep 5
-done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_backdrop_plains/01_raw.png
-echo wrote build/art/ui_backdrop_plains/01_raw.png
-```
+> **Cannot be generated at this size.** The largest dimension any public style
+> accepts is 384; this asset is 480x204. Options, none of them free of a
+> decision: author it by hand; generate the subject alone at 384 or less and
+> compose the screen in code, as the title screen plan already does for the
+> Aquila; or drop the design size x2 rule for screen art and generate at 1x.
+> Resolve before this item is scheduled.
 
 ## ui_backdrop_town
 
@@ -2891,26 +4355,16 @@ echo wrote build/art/ui_backdrop_plains/01_raw.png
 
 **Prompt**
 
-> a Roman forum street with a colonnade, market awnings and townspeople, wide view, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Roman forum street with a colonnade, market awnings and townspeople, wide view
 
 *Original brief wording: a Roman forum street with a colonnade, market awnings and townspeople, wide view*
 
-```sh
-mkdir -p build/art/ui_backdrop_town
-TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
-  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman forum street with a colonnade, market awnings and townspeople, wide view, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 480, "height": 204, "num_images": 1, "seed": 1091, "async": true}' | jq -r .task_id)
-echo "task $TASK"
-while :; do
-  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
-  S=$(echo "$R" | jq -r .status); echo "$S"
-  [ "$S" = succeeded ] && break
-  [ "$S" = failed ] && { echo "$R"; break; }
-  sleep 5
-done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_backdrop_town/01_raw.png
-echo wrote build/art/ui_backdrop_town/01_raw.png
-```
+> **Cannot be generated at this size.** The largest dimension any public style
+> accepts is 384; this asset is 480x204. Options, none of them free of a
+> decision: author it by hand; generate the subject alone at 384 or less and
+> compose the screen in code, as the title screen plan already does for the
+> Aquila; or drop the design size x2 rule for screen art and generate at 1x.
+> Resolve before this item is scheduled.
 
 # 5.14 Sidebar HUD -- 7 items, 14 files
 
@@ -2923,7 +4377,7 @@ echo wrote build/art/ui_backdrop_town/01_raw.png
 
 **Prompt**
 
-> a blank dark rolled scroll, flat silhouette, no interior detail, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a blank dark rolled scroll, flat silhouette, no interior detail
 
 *Original brief wording: a blank dark rolled scroll, flat silhouette, no interior detail*
 
@@ -2931,7 +4385,7 @@ echo wrote build/art/ui_backdrop_town/01_raw.png
 mkdir -p build/art/ui_hud_contract_silhouette
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a blank dark rolled scroll, flat silhouette, no interior detail, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1099, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a blank dark rolled scroll, flat silhouette, no interior detail", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1099, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2952,7 +4406,7 @@ echo wrote build/art/ui_hud_contract_silhouette/01_raw.png
 
 **Prompt**
 
-> a leather coin purse spilling gold aurei, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a leather coin purse spilling gold aurei
 
 *Original brief wording: a leather coin purse spilling gold aurei*
 
@@ -2960,7 +4414,7 @@ echo wrote build/art/ui_hud_contract_silhouette/01_raw.png
 mkdir -p build/art/ui_hud_gold_purse
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a leather coin purse spilling gold aurei, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1097, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a leather coin purse spilling gold aurei", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1097, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -2981,7 +4435,7 @@ echo wrote build/art/ui_hud_gold_purse/01_raw.png
 
 **Prompt**
 
-> a golden oracle flame burning above a bronze tripod, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a golden oracle flame burning above a bronze tripod
 
 *Original brief wording: a golden oracle flame burning above a bronze tripod*
 
@@ -2989,7 +4443,7 @@ echo wrote build/art/ui_hud_gold_purse/01_raw.png
 mkdir -p build/art/ui_hud_magic_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a golden oracle flame burning above a bronze tripod, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1103, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a golden oracle flame burning above a bronze tripod", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1103, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3010,7 +4464,7 @@ echo wrote build/art/ui_hud_magic_00_03/01_raw.png
 
 **Prompt**
 
-> a dark flat silhouette of an eight-pointed star, no interior detail, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a dark flat silhouette of an eight-pointed star, no interior detail
 
 *Original brief wording: a dark flat silhouette of an eight-pointed star, no interior detail*
 
@@ -3018,7 +4472,7 @@ echo wrote build/art/ui_hud_magic_00_03/01_raw.png
 mkdir -p build/art/ui_hud_magic_silhouette
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a dark flat silhouette of an eight-pointed star, no interior detail, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1102, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a dark flat silhouette of an eight-pointed star, no interior detail", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1102, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3039,7 +4493,7 @@ echo wrote build/art/ui_hud_magic_silhouette/01_raw.png
 
 **Prompt**
 
-> an ornate carved stone frame enclosing an empty square panel, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> an ornate carved stone frame enclosing an empty square panel
 
 *Original brief wording: an ornate carved stone frame enclosing an empty square panel*
 
@@ -3047,7 +4501,7 @@ echo wrote build/art/ui_hud_magic_silhouette/01_raw.png
 mkdir -p build/art/ui_hud_puzzle_grid
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "an ornate carved stone frame enclosing an empty square panel, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1098, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "an ornate carved stone frame enclosing an empty square panel", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1098, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3068,7 +4522,7 @@ echo wrote build/art/ui_hud_puzzle_grid/01_raw.png
 
 **Prompt**
 
-> a Roman onager catapult firing, arm swinging forward, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Roman onager catapult firing, arm swinging forward
 
 *Original brief wording: a Roman onager catapult firing, arm swinging forward*
 
@@ -3076,7 +4530,7 @@ echo wrote build/art/ui_hud_puzzle_grid/01_raw.png
 mkdir -p build/art/ui_hud_siege_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman onager catapult firing, arm swinging forward, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1101, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman onager catapult firing, arm swinging forward", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1101, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3097,7 +4551,7 @@ echo wrote build/art/ui_hud_siege_00_03/01_raw.png
 
 **Prompt**
 
-> a dark flat silhouette of a siege tower, no interior detail, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a dark flat silhouette of a siege tower, no interior detail
 
 *Original brief wording: a dark flat silhouette of a siege tower, no interior detail*
 
@@ -3105,7 +4559,7 @@ echo wrote build/art/ui_hud_siege_00_03/01_raw.png
 mkdir -p build/art/ui_hud_siege_silhouette
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a dark flat silhouette of a siege tower, no interior detail, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1100, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a dark flat silhouette of a siege tower, no interior detail", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1100, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3129,7 +4583,7 @@ echo wrote build/art/ui_hud_siege_silhouette/01_raw.png
 
 **Prompt**
 
-> a grey stone flagstone pavement texture, regular blocks, seamless, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a grey stone flagstone pavement texture, regular blocks, seamless
 
 *Original brief wording: a grey stone flagstone pavement texture, regular blocks, seamless*
 
@@ -3137,7 +4591,7 @@ echo wrote build/art/ui_hud_siege_silhouette/01_raw.png
 mkdir -p build/art/ui_end_carpet
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a grey stone flagstone pavement texture, regular blocks, seamless, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1105, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a grey stone flagstone pavement texture, regular blocks, seamless", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1105, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3158,7 +4612,7 @@ echo wrote build/art/ui_end_carpet/01_raw.png
 
 **Prompt**
 
-> a fine even texture of green turf, uniform, seamless, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a fine even texture of green turf, uniform, seamless
 
 *Original brief wording: a fine even texture of green turf, uniform, seamless*
 
@@ -3166,7 +4620,7 @@ echo wrote build/art/ui_end_carpet/01_raw.png
 mkdir -p build/art/ui_end_grass
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a fine even texture of green turf, uniform, seamless, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1104, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a fine even texture of green turf, uniform, seamless", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1104, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3187,7 +4641,7 @@ echo wrote build/art/ui_end_grass/01_raw.png
 
 **Prompt**
 
-> a Roman commander on a white horse in profile facing right, red cloak, on transparency, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Roman commander on a white horse in profile facing right, red cloak, on transparency
 
 *Original brief wording: a Roman commander on a white horse in profile facing right, red cloak, on transparency*
 
@@ -3195,7 +4649,7 @@ echo wrote build/art/ui_end_grass/01_raw.png
 mkdir -p build/art/ui_end_hero
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman commander on a white horse in profile facing right, red cloak, on transparency, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 96, "height": 96, "num_images": 1, "seed": 1106, "async": true, "remove_bg": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman commander on a white horse in profile facing right, red cloak, on transparency", "prompt_style": "rd_plus__classic", "width": 96, "height": 96, "num_images": 1, "seed": 1106, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3219,7 +4673,7 @@ echo wrote build/art/ui_end_hero/01_raw.png
 
 **Prompt**
 
-> a golden laurel selection frame, hollow centre, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a golden laurel selection frame, hollow centre
 
 *Original brief wording: a golden laurel selection frame, hollow centre*
 
@@ -3227,7 +4681,7 @@ echo wrote build/art/ui_end_hero/01_raw.png
 mkdir -p build/art/ui_class_select_highlight
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a golden laurel selection frame, hollow centre, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 84, "height": 88, "num_images": 1, "seed": 1110, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a golden laurel selection frame, hollow centre", "prompt_style": "rd_plus__classic", "width": 84, "height": 88, "num_images": 1, "seed": 1110, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3248,26 +4702,16 @@ echo wrote build/art/ui_class_select_highlight/01_raw.png
 
 **Prompt**
 
-> four Roman figures posed together in a landscape -- a general, a praetorian, a veiled priestess and a fur-clad frontier commander -- in one illustrated scene, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> four Roman figures posed together in a landscape -- a general, a praetorian, a veiled priestess and a fur-clad frontier commander -- in one illustrated scene
 
 *Original brief wording: four Roman figures posed together in a landscape -- a general, a praetorian, a veiled priestess and a fur-clad frontier commander -- in one illustrated scene*
 
-```sh
-mkdir -p build/art/ui_class_select_picker
-TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
-  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "four Roman figures posed together in a landscape -- a general, a praetorian, a veiled priestess and a fur-clad frontier commander -- in one illustrated scene, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 576, "height": 368, "num_images": 1, "seed": 1109, "async": true}' | jq -r .task_id)
-echo "task $TASK"
-while :; do
-  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
-  S=$(echo "$R" | jq -r .status); echo "$S"
-  [ "$S" = succeeded ] && break
-  [ "$S" = failed ] && { echo "$R"; break; }
-  sleep 5
-done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_class_select_picker/01_raw.png
-echo wrote build/art/ui_class_select_picker/01_raw.png
-```
+> **Cannot be generated at this size.** The largest dimension any public style
+> accepts is 384; this asset is 576x368. Options, none of them free of a
+> decision: author it by hand; generate the subject alone at 384 or less and
+> compose the screen in code, as the title screen plan already does for the
+> Aquila; or drop the design size x2 rule for screen art and generate at 1x.
+> Resolve before this item is scheduled.
 
 ## ui_end_lose_screen
 
@@ -3277,7 +4721,7 @@ echo wrote build/art/ui_class_select_picker/01_raw.png
 
 **Prompt**
 
-> a broken Roman eagle standard fallen in mud with a burning frontier fort behind, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a broken Roman eagle standard fallen in mud with a burning frontier fort behind
 
 *Original brief wording: a broken Roman eagle standard fallen in mud with a burning frontier fort behind*
 
@@ -3285,7 +4729,7 @@ echo wrote build/art/ui_class_select_picker/01_raw.png
 mkdir -p build/art/ui_end_lose_screen
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a broken Roman eagle standard fallen in mud with a burning frontier fort behind, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 288, "height": 340, "num_images": 1, "seed": 1112, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a broken Roman eagle standard fallen in mud with a burning frontier fort behind", "prompt_style": "rd_plus__default", "width": 288, "height": 340, "num_images": 1, "seed": 1112, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3306,7 +4750,7 @@ echo wrote build/art/ui_end_lose_screen/01_raw.png
 
 **Prompt**
 
-> a Roman general crowned with laurel raising the recovered golden eagle standard, guards flanking, triumphal hall, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a Roman general crowned with laurel raising the recovered golden eagle standard, guards flanking, triumphal hall
 
 *Original brief wording: a Roman general crowned with laurel raising the recovered golden eagle standard, guards flanking, triumphal hall*
 
@@ -3314,7 +4758,7 @@ echo wrote build/art/ui_end_lose_screen/01_raw.png
 mkdir -p build/art/ui_end_win_screen
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman general crowned with laurel raising the recovered golden eagle standard, guards flanking, triumphal hall, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 288, "height": 340, "num_images": 1, "seed": 1111, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a Roman general crowned with laurel raising the recovered golden eagle standard, guards flanking, triumphal hall", "prompt_style": "rd_plus__default", "width": 288, "height": 340, "num_images": 1, "seed": 1111, "async": true, "remove_bg": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -3335,26 +4779,16 @@ echo wrote build/art/ui_end_win_screen/01_raw.png
 
 **Prompt**
 
-> a publisher logo mark on a plain dark field, centred, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a publisher logo mark on a plain dark field, centred
 
 *Original brief wording: a publisher logo mark on a plain dark field, centred*
 
-```sh
-mkdir -p build/art/ui_splash_logo
-TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
-  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a publisher logo mark on a plain dark field, centred, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 640, "height": 168, "num_images": 1, "seed": 1108, "async": true}' | jq -r .task_id)
-echo "task $TASK"
-while :; do
-  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
-  S=$(echo "$R" | jq -r .status); echo "$S"
-  [ "$S" = succeeded ] && break
-  [ "$S" = failed ] && { echo "$R"; break; }
-  sleep 5
-done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_splash_logo/01_raw.png
-echo wrote build/art/ui_splash_logo/01_raw.png
-```
+> **Cannot be generated at this size.** The largest dimension any public style
+> accepts is 384; this asset is 640x168. Options, none of them free of a
+> decision: author it by hand; generate the subject alone at 384 or less and
+> compose the screen in code, as the title screen plan already does for the
+> Aquila; or drop the design size x2 rule for screen art and generate at 1x.
+> Resolve before this item is scheduled.
 
 ## ui_splash_title
 
@@ -3364,23 +4798,13 @@ echo wrote build/art/ui_splash_logo/01_raw.png
 
 **Prompt**
 
-> a golden Roman legionary eagle standard with spread wings on a decorated pole, centred, deep royal purple background, ornate gilded border, wide empty space across the top third, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text
+> a golden Roman legionary eagle standard with spread wings on a decorated pole, centred, deep royal purple background, ornate gilded border, wide empty space across the top third
 
 *Original brief wording: a golden Roman legionary eagle standard with spread wings on a decorated pole, centred, deep royal purple background, ornate gilded border, wide empty space across the top third*
 
-```sh
-mkdir -p build/art/ui_splash_title
-TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
-  -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a golden Roman legionary eagle standard with spread wings on a decorated pole, centred, deep royal purple background, ornate gilded border, wide empty space across the top third, the whole subject complete and well inside the picture with clear space on every side, nothing touching or cut off by any edge, bold flat blocks of colour, few colours, hard dark outline, strong contrast, no soft shading, no gradients, no blur, no text", "prompt_style": "rd_plus__low_res", "width": 640, "height": 400, "num_images": 1, "seed": 1107, "async": true}' | jq -r .task_id)
-echo "task $TASK"
-while :; do
-  R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
-  S=$(echo "$R" | jq -r .status); echo "$S"
-  [ "$S" = succeeded ] && break
-  [ "$S" = failed ] && { echo "$R"; break; }
-  sleep 5
-done
-echo "$R" | jq -r '.base64_images[0]' | base64 -d > build/art/ui_splash_title/01_raw.png
-echo wrote build/art/ui_splash_title/01_raw.png
-```
+> **Cannot be generated at this size.** The largest dimension any public style
+> accepts is 384; this asset is 640x400. Options, none of them free of a
+> decision: author it by hand; generate the subject alone at 384 or less and
+> compose the screen in code, as the title screen plan already does for the
+> Aquila; or drop the design size x2 rule for screen art and generate at 1x.
+> Resolve before this item is scheduled.

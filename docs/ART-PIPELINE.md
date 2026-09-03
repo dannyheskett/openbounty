@@ -3,26 +3,28 @@
 Written 2026-09-03, from a session that produced the first usable troop sprite
 and the first working attack animation. Twelve paid calls, $0.98.
 
-This file is the authority on **method**. `ART-WORKLIST.md` remains the
-authority on **inventory** — which files exist, what each depicts — but its
-per-item commands describe the older flat-style route and are superseded for
-figures by the recipe below.
+This file is the authority on **method** and the evidence behind it.
+`ART-WORKLIST.md` is the work list: the same method, written out as runnable
+commands for all 113 items. The two agree; if they ever stop agreeing, this file
+is the one that was measured.
 
 ---
 
 ## 1. The recipe
 
-### A still
+Four steps per figure. Step 2 is a stop, not a formality.
+
+### Step 1 — the still ($0.18)
 
 ```
-style   user__glory_of_rome_troops_bac676cd     ($0.18, RD Pro rates)
+style   user__glory_of_rome_troops_bac676cd     (RD Pro rates)
 size    96x96 native
 prompt  SUBJECT ONLY. No framing, no background, no rendering words.
-flags   async, raw_only
+flags   async
 ```
 
-The custom style carries everything that used to be repeated in each prompt.
-It was created free via `POST /v1/styles` with:
+The custom style carries everything that used to be repeated in each prompt. It
+was created free via `POST /v1/styles` with:
 
 - **reference_images**: one approved sprite (`build/art/hastati_style_cs1`)
 - **reference_caption**: a plain description of that sprite
@@ -34,26 +36,71 @@ It was created free via `POST /v1/styles` with:
 - **force_palette**: deliberately OFF — it hard-constrains output to the
   reference palette and collapsed structure both times it was tried
 
-So a troop prompt is now just: *"A Roman legionary with a red crested helmet
-and a tall rectangular red and gold shield, holding a spear, stocky and broad
+So a troop prompt is now just: *"A Roman legionary with a red crested helmet and
+a tall rectangular red and gold shield, holding a spear, stocky and broad
 shouldered."*
 
-### An animation
+### Step 2 — look at it
+
+At 1:1 and at 8x against the King's Bounty reference, before anything is
+animated or accepted. `rdgen.py`'s QA thresholds were written for a 48-wide tile
+— its silhouette, colour-count and feet checks are meaningless at 96, and its
+"feet on bottom row" check passed a sprite whose legs ended in a stump. Metrics
+are a floor, never a verdict.
+
+If the still is wrong, record what was wrong and move on. Do not re-roll it.
+
+### Step 3 — animate the approved still ($0.14)
 
 ```
-style   rd_advanced_animation__attack            ($0.14)
-size    96x96 native, matching the start frame
-input   the approved still, sent RGBA and untouched
+style   rd_advanced_animation__attack
+size    96x96, matching the start frame
+input   the approved still, uploaded untouched with alpha intact
 flags   frames_duration 4, return_spritesheet true, async
 ```
 
-Returns a **192x192 PNG: a 2x2 grid of 96x96 cells**, transparent, binary
-alpha. Cut into four frames, which is decoding a container rather than editing
-pixels.
+Building the payload with `jq` keeps the base64 out of the shell:
 
-**$0.32 per animated troop.** 25 troops ≈ $8. All 113 inventory items through
-the custom style ≈ $20, against ≈ $4.30 on the flat `rd_plus__classic` route
-that cannot hold a set together.
+```sh
+jq -n --arg img "$(base64 -w0 build/art/<id>/01_still.png)" \
+  '{prompt: "levelling the spear and thrusting it forward, feet planted",
+    prompt_style: "rd_advanced_animation__attack",
+    width: 96, height: 96, num_images: 1,
+    frames_duration: 4, return_spritesheet: true,
+    input_image: $img, async: true}' > build/art/<id>/anim_request.json
+```
+
+### Step 4 — cut the sheet
+
+It returns a **192x192 PNG: a 2x2 grid of 96x96 cells**, transparent, binary
+alpha, read left to right then top to bottom.
+
+```sh
+convert build/art/<id>/02_sheet.png -crop 96x96 +repage build/art/<id>/frame_%02d.png
+```
+
+Verified pixel-identical to cutting the same sheet in Pillow. This is decoding a
+container, not editing pixels.
+
+### Cost
+
+**$0.32 per animated troop.** 42 troops and villains ≈ $13.50. The other 71
+items are $0.038 each on the flat route, but see the warning below.
+
+### What is NOT proven
+
+Only the figure route above has been run end to end. The 56 cell-and-screen
+items in the work list use `rd_plus__classic` and `rd_plus__default`, chosen off
+published size ranges and **never generated**. Worse, a different style means
+they will not match the troops — the exact coherence failure the custom style
+exists to fix. Assume a second custom style is needed for objects, and possibly
+a third for screens, and budget a probe before committing to those 56.
+
+**Nine screen assets cannot be generated at their stated size at all**: they run
+from 480x204 to 640x400, and no public style accepts a dimension above 384.
+Either author them, or generate the subject small and compose the screen in code
+as the title-screen plan already does for the Aquila, or drop the design-size-x2
+rule for screen art.
 
 ### Rules that survive from earlier work
 
@@ -218,6 +265,18 @@ Costed, gated, and ordered so the cheap unknowns die first.
    is judged in the game rather than on a web page.
 4. **Flip the manifest** to `tile_h: 96` with `ui_scale: 2`. One line. The
    remaining 48x34 art will stretch until replaced, which is expected.
+
+### Phase A2 — the 56 unproven items
+
+Before any of the cell-and-screen art is scheduled, two things must be settled,
+and neither is a generation:
+
+- **Do objects need their own style?** A chest generated on `rd_plus__classic`
+  will not match a troop generated on the custom style. Either build a second
+  custom style from an approved object, or accept the mismatch deliberately.
+  One probe item answers it, $0.038 plus $0.18 for the styled comparison.
+- **What happens to the nine oversize screen assets?** 480x204 to 640x400
+  against a 384 ceiling. Author, compose in code, or generate at 1x.
 
 ### Phase B — prove the recipe generalises (≈ $1.30)
 
