@@ -18,8 +18,8 @@ POST /v1/styles
 |---|---|
 | `reference_images` | one approved sprite (`build/art/hastati_style_cs1`) |
 | `reference_caption` | a plain description of that sprite |
-| `llm_instructions` | full-length standing figure in profile, whole body inside the frame, flat background, no scenery |
-| `user_prompt_template` | `{prompt}, full length, standing in profile facing right, game sprite, solid neutral grey background` |
+| `llm_instructions` | full-length standing figure in profile, whole body inside the frame, a solid flat bright magenta field that never appears on the character, no scenery |
+| `user_prompt_template` | `{prompt}, full length, standing in profile facing right, game sprite, solid bright magenta background` |
 | `force_bg_removal` | true |
 | `force_palette` | false |
 
