@@ -4317,7 +4317,7 @@ the tail is clipped. Animation not yet accepted: five attempts, best is
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
-> a lean grey and tan wolf standing side on with its legs gathered under it, head lowered and turned forward, snarling with jaws open and fangs bared, tail low
+> a wolf standing side on, snarling
 
 **Step 1 — the still.** $0.18.
 
@@ -4325,7 +4325,7 @@ the tail is clipped. Animation not yet accepted: five attempts, best is
 mkdir -p build/art/troops_wolves_00_03
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a lean grey and tan wolf standing side on with its legs gathered under it, head lowered and turned forward, snarling with jaws open and fangs bared, tail low", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1105, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a wolf standing side on, snarling", "prompt_style": "user__glory_of_rome_troops_bac676cd", "width": 96, "height": 96, "num_images": 1, "seed": 1105, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
