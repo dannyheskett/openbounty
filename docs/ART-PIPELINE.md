@@ -86,8 +86,14 @@ it is".
 
 ## 4. The frames
 
-The response is a 192x192 sheet, a 2x2 grid of 96x96 cells. `rdgen` writes them
-as `frame_00..03.png`. Watch the animation, then:
+The response is a sheet of frame cells, 2x2 for four frames; `rdgen` derives
+the grid from the image and writes `frame_00..03.png`. When the job was padded
+to 128 for motion room (`pad_to`), the frames come back 128x128 and go down to
+96x96 through the API's k-centroid tool, `/edit/tools/k_centroid_downscale`
+(`rdgen.k_centroid`, free, area-weighted), not a local resample and not a
+crop. The tool flattens the frame onto white, so the alpha is put back from
+the 128 frame's own mask, area-averaged to 96 and thresholded at half. Watch
+the animation, then:
 
 ```
 cp build/art/<id>/run01/frame_0N.png assets/glory-of-rome/art/troops/<name>_0N.png
