@@ -2570,7 +2570,11 @@ cp build/art/troops_archers_00_03/frame_03.png assets/glory-of-rome/art/troops/a
 
 **Replaces:** `troops/archmages_00.png`, `troops/archmages_01.png`, `troops/archmages_02.png`, `troops/archmages_03.png`
 
-**State:** still generated 2026-09-03 at seed 1020 and accepted (96x96, 37 colours, figure on rows 7-88); the four pack files are still placeholder. Design size 48x34 → generate at 96x96.
+**State:** accepted. Still generated 2026-09-03 at seed 1020 —
+`build/art/troops_archmages_00_03/01_still.png`, 96x96, 37 colours, figure on
+rows 7-88. Four attack frames accepted at
+`build/art/furiae_attack4/run01/frame_00..03.png`, the arm reaching x=86 on the
+last frame. The four pack files are still placeholder.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
@@ -2604,11 +2608,14 @@ file build/art/troops_archmages_00_03/01_still.png   # must say: PNG image data
 - both feet are drawn and the figure stands on them
 - it reads at 1:1 over grass, forest and desert, not only enlarged
 
-**Step 3 — animate the approved still.** $0.14.
+**Step 3 — animate the approved still.** $0.14. Naming the action does not
+work: "attacking with the torch" produced a hover with no reach, twice. What
+works is naming the arc and its endpoints — where the swing starts, where it
+finishes, and that the arm reaches full extension.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_archmages_00_03/01_still.png)" \
-  '{prompt: "surging forward to strike, wings beating, then drifting back",
+  '{prompt: "A wide overhead swing, the torch carried from behind her head in a long arc down past her knee and out to full reach, wings thrown back, lunging forward",
     prompt_style: "rd_advanced_animation__attack",
     width: 96, height: 96, num_images: 1,
     frames_duration: 4, return_spritesheet: true,
