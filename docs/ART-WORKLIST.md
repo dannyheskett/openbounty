@@ -77,21 +77,24 @@ over a black fill and only puts terrain under a wandering-army sprite.
 
 ## classes_barbarian
 
-**Replaces:** `classes/barbarian.png`
+**Replaces:** `classes/barbarian.png` (Dux)
 
-**State:** placeholder. Design size 96x102 → generate at 192x204.
+**State:** DONE. Generated 192x204 through `rd_pro__default` and copied into the pack.
+Source kept at `build/art/classes_barbarian/final.png`.
 
 **Prompt**
 
-> a weathered frontier commander in mail over furs with a wolf-pelt cloak and iron torc, standing on a rock at a forest frontier
+> A weathered frontier commander in mail over furs with a wolf-pelt cloak and an iron torc, a forest edge behind him, waist-up, the figure filling the frame
 
-**Step 1 — generate.** $0.038.
+**Step 1 — generate.** $0.18, `rd_pro__default`. This call defines the character;
+the class-select picker later references it, so it must be approved before the
+picker is generated.
 
 ```sh
 mkdir -p build/art/classes_barbarian
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a weathered frontier commander in mail over furs with a wolf-pelt cloak and iron torc, standing on a rock at a forest frontier", "prompt_style": "rd_plus__environment", "width": 192, "height": 204, "num_images": 1, "seed": 1045, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "A weathered frontier commander in mail over furs with a wolf-pelt cloak and an iron torc, a forest edge behind him, waist-up, the figure filling the frame", "prompt_style": "rd_pro__default", "width": 192, "height": 204, "num_images": 1, "seed": 2004, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -101,41 +104,38 @@ while :; do
   sleep 5
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/classes_barbarian/01_raw.png
-file build/art/classes_barbarian/01_raw.png   # must say: PNG image data
+file build/art/classes_barbarian/01_raw.png   # must say: PNG image data, 192 x 204
 ```
 
-**Step 2 — accept it by eye.**
-
-- the a weathered frontier commander in mail over furs with a wolf-pelt cloak and iron torc is present and readable at 1:1
-- the figure is complete head to foot
-- the scene behind the figure is deliberate, not an accident of framing
-- the image is fully opaque
+**Step 2 — accept it by eye.** Complete head to foot, background deliberate,
+fully opaque, no rendered text, readable at 1:1 in a 192x204 slot.
 
 **Step 3 — copy into the pack.**
-
 
 ```sh
 cp build/art/classes_barbarian/01_raw.png assets/glory-of-rome/art/classes/barbarian.png
 ```
 
-
 ## classes_knight
 
-**Replaces:** `classes/knight.png`
+**Replaces:** `classes/knight.png` (Legatus)
 
-**State:** placeholder. Design size 96x102 → generate at 192x204.
+**State:** DONE. Generated 192x204 through `rd_pro__default` and copied into the pack.
+Source kept at `build/art/classes_knight/final.png`.
 
 **Prompt**
 
-> a Roman general in a muscled bronze cuirass with lion-head shoulder pieces, red paludamentum cloak, crested helmet under one arm, standing before a distant fortified camp at sunset
+> A Roman general in a muscled bronze cuirass with lion-head shoulder pieces and a red paludamentum cloak, crested helmet under one arm, a fortified camp at sunset behind him, waist-up, the figure filling the frame
 
-**Step 1 — generate.** $0.038.
+**Step 1 — generate.** $0.18, `rd_pro__default`. This call defines the character;
+the class-select picker later references it, so it must be approved before the
+picker is generated.
 
 ```sh
 mkdir -p build/art/classes_knight
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Roman general in a muscled bronze cuirass with lion-head shoulder pieces, red paludamentum cloak, crested helmet under one arm, standing before a distant fortified camp at sunset", "prompt_style": "rd_plus__environment", "width": 192, "height": 204, "num_images": 1, "seed": 1042, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "A Roman general in a muscled bronze cuirass with lion-head shoulder pieces and a red paludamentum cloak, crested helmet under one arm, a fortified camp at sunset behind him, waist-up, the figure filling the frame", "prompt_style": "rd_pro__default", "width": 192, "height": 204, "num_images": 1, "seed": 2001, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -145,42 +145,38 @@ while :; do
   sleep 5
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/classes_knight/01_raw.png
-file build/art/classes_knight/01_raw.png   # must say: PNG image data
+file build/art/classes_knight/01_raw.png   # must say: PNG image data, 192 x 204
 ```
 
-**Step 2 — accept it by eye.**
-
-- the red paludamentum cloak is present and readable at 1:1
-- the crested helmet under one arm is present and readable at 1:1
-- the figure is complete head to foot
-- the scene behind the figure is deliberate, not an accident of framing
-- the image is fully opaque
+**Step 2 — accept it by eye.** Complete head to foot, background deliberate,
+fully opaque, no rendered text, readable at 1:1 in a 192x204 slot.
 
 **Step 3 — copy into the pack.**
-
 
 ```sh
 cp build/art/classes_knight/01_raw.png assets/glory-of-rome/art/classes/knight.png
 ```
 
-
 ## classes_paladin
 
-**Replaces:** `classes/paladin.png`
+**Replaces:** `classes/paladin.png` (Praetorianus)
 
-**State:** placeholder. Design size 96x102 → generate at 192x204.
+**State:** DONE. Generated 192x204 through `rd_pro__default` and copied into the pack.
+Source kept at `build/art/classes_paladin/final.png`.
 
 **Prompt**
 
-> a Praetorian guardsman in an ornate scorpion-embossed cuirass with a tall black transverse crest, kneeling at a candlelit altar in a marble shrine
+> A Roman warrior-priest, his head veiled with a white toga worn over a gilded cuirass, holding a sacrificial patera over a burning altar flame, white and gold, waist-up, the figure filling the frame
 
-**Step 1 — generate.** $0.038.
+**Step 1 — generate.** $0.18, `rd_pro__default`. This call defines the character;
+the class-select picker later references it, so it must be approved before the
+picker is generated.
 
 ```sh
 mkdir -p build/art/classes_paladin
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a Praetorian guardsman in an ornate scorpion-embossed cuirass with a tall black transverse crest, kneeling at a candlelit altar in a marble shrine", "prompt_style": "rd_plus__environment", "width": 192, "height": 204, "num_images": 1, "seed": 1043, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "A Roman warrior-priest, his head veiled with a white toga worn over a gilded cuirass, holding a sacrificial patera over a burning altar flame, white and gold, waist-up, the figure filling the frame", "prompt_style": "rd_pro__default", "width": 192, "height": 204, "num_images": 1, "seed": 2002, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -190,41 +186,38 @@ while :; do
   sleep 5
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/classes_paladin/01_raw.png
-file build/art/classes_paladin/01_raw.png   # must say: PNG image data
+file build/art/classes_paladin/01_raw.png   # must say: PNG image data, 192 x 204
 ```
 
-**Step 2 — accept it by eye.**
-
-- the kneeling at a candlelit altar in a marble shrine is present and readable at 1:1
-- the figure is complete head to foot
-- the scene behind the figure is deliberate, not an accident of framing
-- the image is fully opaque
+**Step 2 — accept it by eye.** Complete head to foot, background deliberate,
+fully opaque, no rendered text, readable at 1:1 in a 192x204 slot.
 
 **Step 3 — copy into the pack.**
-
 
 ```sh
 cp build/art/classes_paladin/01_raw.png assets/glory-of-rome/art/classes/paladin.png
 ```
 
-
 ## classes_sorceress
 
-**Replaces:** `classes/sorceress.png`
+**Replaces:** `classes/sorceress.png` (Sibylla)
 
-**State:** placeholder. Design size 96x102 → generate at 192x204.
+**State:** DONE. Generated 192x204 through `rd_pro__default` and copied into the pack.
+Source kept at `build/art/classes_sorceress/final.png`.
 
 **Prompt**
 
-> a veiled Vestal oracle-priestess in white robes with a gold fillet, holding a laurel sprig, standing in a temple interior lit by a sacred flame
+> A veiled Vestal oracle-priestess in white robes with a gold fillet, holding a laurel sprig, a temple interior lit by a sacred flame behind her, waist-up, the figure filling the frame
 
-**Step 1 — generate.** $0.038.
+**Step 1 — generate.** $0.18, `rd_pro__default`. This call defines the character;
+the class-select picker later references it, so it must be approved before the
+picker is generated.
 
 ```sh
 mkdir -p build/art/classes_sorceress
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a veiled Vestal oracle-priestess in white robes with a gold fillet, holding a laurel sprig, standing in a temple interior lit by a sacred flame", "prompt_style": "rd_plus__environment", "width": 192, "height": 204, "num_images": 1, "seed": 1044, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "A veiled Vestal oracle-priestess in white robes with a gold fillet, holding a laurel sprig, a temple interior lit by a sacred flame behind her, waist-up, the figure filling the frame", "prompt_style": "rd_pro__default", "width": 192, "height": 204, "num_images": 1, "seed": 2003, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -234,23 +227,17 @@ while :; do
   sleep 5
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/classes_sorceress/01_raw.png
-file build/art/classes_sorceress/01_raw.png   # must say: PNG image data
+file build/art/classes_sorceress/01_raw.png   # must say: PNG image data, 192 x 204
 ```
 
-**Step 2 — accept it by eye.**
-
-- the a veiled Vestal oracle-priestess in white robes with a gold fillet is present and readable at 1:1
-- the figure is complete head to foot
-- the scene behind the figure is deliberate, not an accident of framing
-- the image is fully opaque
+**Step 2 — accept it by eye.** Complete head to foot, background deliberate,
+fully opaque, no rendered text, readable at 1:1 in a 192x204 slot.
 
 **Step 3 — copy into the pack.**
-
 
 ```sh
 cp build/art/classes_sorceress/01_raw.png assets/glory-of-rome/art/classes/sorceress.png
 ```
-
 
 ## combat_castle_spike
 
@@ -4785,19 +4772,36 @@ cp build/art/ui_class_select_highlight/01_raw.png assets/glory-of-rome/art/ui/cl
 
 **Replaces:** `ui/class_select_picker.png`
 
-**State:** placeholder. Design size 288x184 → generate at 576x368.
+**State:** DONE. Generated 256x164 through `rd_pro__default` with the four class
+portraits passed as `reference_images`, and copied into the pack. Source kept at
+`build/art/ui_class_select_picker/04_raw.png`. 256 is RD Pro's ceiling and RD Pro
+is the only family that accepts reference images.
+
+**Requires all four class portraits to be approved first** — they are passed as
+reference images so the picker shows the same four people rather than four new
+ones.
 
 **Prompt**
 
-> four Roman figures posed together in a landscape -- a general, a praetorian, a veiled priestess and a fur-clad frontier commander -- in one illustrated scene
+> The same four Romans standing shoulder to shoulder and filling the frame from top to bottom, shown from the knees up, evenly spaced, left to right: the general in the bronze muscled cuirass with the deep red cloak; the priest with no helmet, his head covered by a white toga hood over a gilded cuirass, holding a bronze dish; the priestess in white robes and veil with a gold fillet, holding a green laurel sprig; the grey-bearded frontier commander in iron mail under a russet fur mantle; only a narrow strip of Italian landscape visible behind them
 
-**Step 1 — generate.** $0.038.
+**Step 1 — generate with the four portraits as references.** $0.18.
 
 ```sh
 mkdir -p build/art/ui_class_select_picker
+jq -n \
+  --arg a "$(base64 -w0 assets/glory-of-rome/art/classes/knight.png)" \
+  --arg b "$(base64 -w0 assets/glory-of-rome/art/classes/paladin.png)" \
+  --arg c "$(base64 -w0 assets/glory-of-rome/art/classes/sorceress.png)" \
+  --arg d "$(base64 -w0 assets/glory-of-rome/art/classes/barbarian.png)" \
+  '{prompt: "The same four Romans standing shoulder to shoulder and filling the frame from top to bottom, shown from the knees up, evenly spaced, left to right: the general in the bronze muscled cuirass with the deep red cloak; the priest with no helmet, his head covered by a white toga hood over a gilded cuirass, holding a bronze dish; the priestess in white robes and veil with a gold fillet, holding a green laurel sprig; the grey-bearded frontier commander in iron mail under a russet fur mantle; only a narrow strip of Italian landscape visible behind them",
+    prompt_style: "rd_pro__default",
+    width: 256, height: 164, num_images: 1,
+    reference_images: [$a, $b, $c, $d],
+    async: true}' > build/art/ui_class_select_picker/request.json
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "four Roman figures posed together in a landscape -- a general, a praetorian, a veiled priestess and a fur-clad frontier commander -- in one illustrated scene", "prompt_style": "rd_plus__environment", "width": 576, "height": 368, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
+  -d @build/art/ui_class_select_picker/request.json | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -4807,24 +4811,21 @@ while :; do
   sleep 5
 done
 echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/ui_class_select_picker/01_raw.png
-file build/art/ui_class_select_picker/01_raw.png   # must say: PNG image data
+file build/art/ui_class_select_picker/01_raw.png   # must say: PNG image data, 256 x 164
 ```
 
-**Step 2 — accept it by eye.**
-
-- the a praetorian is present and readable at 1:1
-- the a veiled priestess and a fur-clad frontier commander -- in one illustrated scene is present and readable at 1:1
-- the composition is complete and nothing important sits under the frame edge
-- no rendered text anywhere: lettering is composited by the engine
-- the image is fully opaque
+**Step 2 — accept it by eye.** Four figures in four equal columns, left to right
+in manifest order (knight, paladin, sorceress, barbarian = A, B, C, D), none
+straddling a column boundary — `touch_region` splits the bitmap into `pw / 4`
+columns and a figure across a boundary makes the wrong class selectable. Each
+figure must be recognisably the character from its portrait: same armour, same
+cloak colour, same headgear. Fully opaque, no rendered text.
 
 **Step 3 — copy into the pack.**
-
 
 ```sh
 cp build/art/ui_class_select_picker/01_raw.png assets/glory-of-rome/art/ui/class_select_picker.png
 ```
-
 
 ## ui_end_carpet
 
@@ -5971,7 +5972,7 @@ cp build/art/ui_inventory_zone_saharia/01_raw.png assets/glory-of-rome/art/ui/in
 mkdir -p build/art/ui_splash_logo
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a publisher logo mark on a plain dark field, centred", "prompt_style": "rd_plus__environment", "width": 640, "height": 168, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a publisher logo mark on a plain dark field, centred", "prompt_style": "rd_plus__environment", "width": 512, "height": 134, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
@@ -6015,7 +6016,7 @@ cp build/art/ui_splash_logo/01_raw.png assets/glory-of-rome/art/ui/splash_logo.p
 mkdir -p build/art/ui_splash_title
 TASK=$(curl -sS -X POST https://api.retrodiffusion.ai/v1/inferences \
   -H "X-RD-Token: $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prompt": "a golden Roman legionary eagle standard with spread wings on a tall decorated pole, a laurel wreath ring below the eagle, an engraved SPQR plate on the shaft, standing against a deep royal purple field inside an ornate gilded border, wide empty space across the top third", "prompt_style": "rd_plus__environment", "width": 640, "height": 400, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
+  -d '{"prompt": "a golden Roman legionary eagle standard with spread wings on a tall decorated pole, a laurel wreath ring below the eagle, an engraved SPQR plate on the shaft, standing against a deep royal purple field inside an ornate gilded border, wide empty space across the top third", "prompt_style": "rd_plus__environment", "width": 512, "height": 320, "num_images": 1, "seed": 1000, "async": true}' | jq -r .task_id)
 echo "task $TASK"
 while :; do
   R=$(curl -sS https://api.retrodiffusion.ai/v1/inferences/tasks/$TASK -H "X-RD-Token: $TOKEN")
