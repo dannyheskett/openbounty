@@ -836,13 +836,30 @@ except where a deviation is explicitly flagged (§34).
 
 ### 9.7 Castle and town tile placement
 
-- **REQ-228.** A castle has been stamped as a 3×2 footprint centred on its
-  `gate_x/gate_y`: the gate tile (interactive `CASTLE_GATE`, walkable) sits at
-  `(x, y)`; the five surrounding tiles are wall pieces (non-interactive,
-  `blocks_foot = true`). Castles may declare extra decorative wall pieces (the
-  King's castle has 24). A town has been a single `INTERACT_TOWN` tile with a
+- **REQ-228.** A castle has been stamped as one of two footprints, chosen per
+  catalog entry by `castles[].footprint` (`engine/resources.c parse_castles`,
+  `engine/map.c stamp_objects`):
+  - **`3x2`**, the default when the key is absent: a block centred on the
+    gate. The gate tile (interactive `CASTLE_GATE`, walkable) sits at `(x, y)`;
+    the five surrounding tiles are wall pieces (`castle_tl/br/tr/ml/mr`,
+    non-interactive, `blocks_foot = true`).
+  - **`1x1`**: the gate tile alone, drawn with the single `castle` art, so the
+    castle sits on the map the way a town does. No wall tiles; the eight
+    neighbours keep their `.dat` terrain. The `castle` art is transparent: the
+    renderer (`src/map_render.c map_render_draw`) draws a tile's plain terrain
+    beneath every object tile before the object's own art, so the castle
+    stands on the ground it occupies (ART-SPEC §4). An opaque object covers
+    that ground and draws exactly as before.
+  An unrecognised value has printed a notice and stamped `3x2`. Castles may
+  declare extra decorative wall pieces (the King's castle has 24), honoured
+  for either footprint. A town has been a single `INTERACT_TOWN` tile with a
   `boat_spawn_x/y` used when a boat is rented. When a castle's `gate` object is
-  absent, the gate landing tile is computed as `(x, y+1)`.
+  absent, the gate landing tile is computed as `(x, y+1)`. The art manifest
+  (`resources_art_manifest`) has listed a footprint's castle art only when some
+  castle in the pack uses it (`map_castle_art_names`), so a pack ships only the
+  pieces it stamps. Everything else about a castle, the visit flow, sieges,
+  garrisons, contracts, the Castle Gate landing, the foe doorstep rule, keys off
+  the gate tile and is the same for both footprints.
 
 ### 9.8 Terrain edge variants (baked, not generated)
 

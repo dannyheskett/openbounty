@@ -3,6 +3,7 @@
 // and metadata (sign title, etc.).
 
 #include "greatest.h"
+#include "adventure.h"
 #include "map.h"
 #include "tile.h"
 #include "fixtures.h"
@@ -100,6 +101,72 @@ TEST hero_spawn_coords_present(void) {
     PASS();
 }
 
+// A castle stamps as its catalog entry's footprint (REQ-228). Azram is the
+// first Continentia castle, gate (30,36), and the .dat holds plain grass under
+// all six tiles, so the two footprints are told apart by what the stamp adds.
+static int castle_index(const Resources *res, const char *id) {
+    for (int i = 0; i < res->castle_count; i++)
+        if (strcmp(res->castles[i].id, id) == 0) return i;
+    return -1;
+}
+
+TEST castle_default_footprint_stamps_gate_and_five_walls(void) {
+    Resources *res = fx_load_resources();
+    ASSERT(res);
+    Map *m = calloc(1, sizeof *m);
+    ASSERT(m);
+    ASSERT(MapLoadZone(m, res, "continentia"));
+    const Tile *gate = MapGetTile(m, 30, 36);
+    ASSERT(gate);
+    ASSERT_EQ(INTERACT_CASTLE_GATE, gate->interactive);
+    ASSERT_STR_EQ("azram", gate->id);
+    ASSERT_STR_EQ("castle_gate", gate->art);
+    ASSERT_FALSE(gate->blocks_foot);
+    struct { int x, y; const char *art; } walls[5] = {
+        { 29, 35, "castle_tl" }, { 30, 35, "castle_br" }, { 31, 35, "castle_tr" },
+        { 29, 36, "castle_ml" }, { 31, 36, "castle_mr" },
+    };
+    for (int i = 0; i < 5; i++) {
+        const Tile *t = MapGetTile(m, walls[i].x, walls[i].y);
+        ASSERT(t);
+        ASSERT_STR_EQ(walls[i].art, t->art);
+        ASSERT(t->blocks_foot);
+        ASSERT_EQ(INTERACT_NONE, t->interactive);
+        ASSERT_FALSE(adventure_walkable_on_foot(t));
+    }
+    free(m); resources_free(res); free(res);
+    PASS();
+}
+
+TEST castle_1x1_footprint_stamps_only_the_gate_tile(void) {
+    Resources *res = fx_load_resources();
+    ASSERT(res);
+    int ci = castle_index(res, "azram");
+    ASSERT(ci >= 0);
+    res->castles[ci].footprint = RES_CASTLE_FOOTPRINT_1X1;
+    Map *m = calloc(1, sizeof *m);
+    ASSERT(m);
+    ASSERT(MapLoadZone(m, res, "continentia"));
+    const Tile *gate = MapGetTile(m, 30, 36);
+    ASSERT(gate);
+    ASSERT_EQ(INTERACT_CASTLE_GATE, gate->interactive);
+    ASSERT_STR_EQ("azram", gate->id);
+    ASSERT_STR_EQ("castle", gate->art);
+    ASSERT_FALSE(gate->blocks_foot);
+    // The five tiles a 3x2 castle would wall off stay plain .dat terrain.
+    int around[5][2] = { {29,35}, {30,35}, {31,35}, {29,36}, {31,36} };
+    for (int i = 0; i < 5; i++) {
+        const Tile *t = MapGetTile(m, around[i][0], around[i][1]);
+        ASSERT(t);
+        ASSERT_STR_EQ("grass", t->art);
+        ASSERT_FALSE(t->blocks_foot);
+        ASSERT_EQ(INTERACT_NONE, t->interactive);
+        ASSERT(adventure_walkable_on_foot(t));
+    }
+    free(m); resources_free(res); free(res);
+    PASS();
+}
+
 SUITE(unit_map_overlay_suite) {
     RUN_TEST(sign_at_known_coord_has_expected_title);
     RUN_TEST(get_tile_in_bounds_returns_non_null);
@@ -108,4 +175,6 @@ SUITE(unit_map_overlay_suite) {
     RUN_TEST(clear_interactive_removes_overlay_metadata);
     RUN_TEST(clear_interactive_out_of_bounds_no_op);
     RUN_TEST(hero_spawn_coords_present);
+    RUN_TEST(castle_default_footprint_stamps_gate_and_five_walls);
+    RUN_TEST(castle_1x1_footprint_stamps_only_the_gate_tile);
 }

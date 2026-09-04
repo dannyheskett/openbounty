@@ -129,8 +129,11 @@ bool   gb_object_move(GbObject *o, int x, int y);
 bool   gb_object_delete(GbObject *o);
 cJSON *gb_object_create(cJSON *doc, const char *zone_id, GbObjKind kind,
                         int x, int y);
-void   gb_castle_footprint(int gate_x, int gate_y, int *x0, int *y0,
-                           int *w, int *h);
+// A castle's map footprint (REQ-228): 3x2 around the gate unless the entry
+// declares "footprint": "1x1", when it is the gate tile alone.
+bool   gb_castle_is_single(cJSON *node);
+void   gb_castle_footprint(bool single, int gate_x, int gate_y,
+                           int *x0, int *y0, int *w, int *h);
 
 int         gb_zone_count(cJSON *doc);
 const char *gb_zone_id_at(cJSON *doc, int index);

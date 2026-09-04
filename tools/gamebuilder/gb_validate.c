@@ -231,12 +231,13 @@ static void check_zone_spatial(GbFindings *F, GbWorkspace *ws,
         int gx = sub_int(c, "gate", "x", int_of(c, "gate_x", int_of(c, "x", -1)));
         int gy = sub_int(c, "gate", "y", int_of(c, "gate_y", int_of(c, "y", -1)));
         if (gx < 0 || gy < 0) continue;
+        bool single = gb_castle_is_single(c);
         int fx, fy, fw, fh;
-        gb_castle_footprint(gx, gy, &fx, &fy, &fw, &fh);
+        gb_castle_footprint(single, gx, gy, &fx, &fy, &fw, &fh);
         if (fx < 0 || fy < 0 || fx + fw > g.w || fy + fh > g.h)
             add(F, GB_TIER_SPATIAL, str_of(c, "id", "castle"),
-                "Its 3x2 footprint at (%d,%d) runs off the edge of the map.",
-                gx, gy);
+                "Its %s footprint at (%d,%d) runs off the edge of the map.",
+                single ? "1x1" : "3x2", gx, gy);
     }
 
     // The salt budget draws from chest placeholders (REQ-231).

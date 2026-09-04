@@ -201,6 +201,14 @@ typedef struct {
     char audience_final_rank[320];
 } ResCastleSpecial;
 
+// Map footprint of a castle (REQ-228). 3x2 is the classic stamp: the gate
+// tile plus five wall tiles. 1x1 is the gate tile alone, drawn with the
+// single `castle` art, so the castle sits on the map the way a town does.
+typedef enum {
+    RES_CASTLE_FOOTPRINT_3X2 = 0,
+    RES_CASTLE_FOOTPRINT_1X1
+} ResCastleFootprint;
+
 typedef struct {
     int  index;
     char id[RES_ID_LEN];
@@ -212,6 +220,7 @@ typedef struct {
     int  difficulty_tier;         // 0-3 (plains/forest/hill/dungeon), used by
                                   // roll_creature-style monster generation.
                                   //  castle_difficulty[].
+    ResCastleFootprint footprint; // "footprint": "3x2" (default) or "1x1"
     ResCastleSpecial special;
 } ResCastle;
 
@@ -1050,6 +1059,10 @@ const ResTown   *resources_zone_town(const Resources *r, const ResZone *z, int n
 const ResCastle *resources_castle_at(const Resources *r,
                                      const char *zone, int x, int y);
 const ResCastle *resources_castle_by_id(const Resources *r, const char *id);
+// Parse a castles[].footprint string. Absent/empty and "3x2" are the default;
+// "1x1" is the single-tile castle. Returns false (and writes the default) for
+// anything else, so the caller can report the unknown value.
+bool resources_parse_castle_footprint(const char *s, ResCastleFootprint *out);
 
 // The home/audience castle -- the King's castle (contract audiences, the recruit
 // home pool); never a gate destination. The "which castle is home" rule lives

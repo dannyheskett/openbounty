@@ -219,11 +219,23 @@ cJSON *gb_object_create(cJSON *doc, const char *zone_id, GbObjKind kind,
     return node;
 }
 
-// A castle occupies 3x2: the walkable gate plus five blocking wall tiles
-// (REQ-228). Placement must know that, or a castle overlaps terrain the
+// A castle occupies 3x2 -- the walkable gate plus five blocking wall tiles --
+// unless its entry declares "footprint": "1x1", when it is the gate tile alone
+// (REQ-228). Placement must know which, or a castle overlaps terrain the
 // player then cannot walk through.
-void gb_castle_footprint(int gate_x, int gate_y, int *x0, int *y0,
-                         int *w, int *h) {
+bool gb_castle_is_single(cJSON *node) {
+    return node && strcmp(str_of(node, "footprint", ""), "1x1") == 0;
+}
+
+void gb_castle_footprint(bool single, int gate_x, int gate_y,
+                         int *x0, int *y0, int *w, int *h) {
+    if (single) {
+        *x0 = gate_x;
+        *y0 = gate_y;
+        *w  = 1;
+        *h  = 1;
+        return;
+    }
     *x0 = gate_x - 1;
     *y0 = gate_y - 1;
     *w  = 3;

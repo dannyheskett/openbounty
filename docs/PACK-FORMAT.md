@@ -188,6 +188,19 @@ artifacts, foes, telecaves, navmaps, orbs) are **not** placed via map
 characters. They live in the zone's JSON arrays and are stamped onto
 the map at load time.
 
+A castle is stamped as a 3×2 block by default: its gate tile at `x, y`
+plus five blocking wall tiles above and beside it, drawn with the
+`castle_tl/br/tr/ml/mr` and `castle_gate` tile art. A catalog entry that
+declares `"footprint": "1x1"` is stamped as the gate tile alone, drawn
+with `art/tiles/castle.png`, the way a town is:
+
+```json
+{ "id": "capua", "name": "Capua", "x": 41, "y": 53, "zone": "italia",
+  "difficulty_tier": 0, "footprint": "1x1" }
+```
+
+A pack only needs the castle art for the footprints it uses.
+
 ---
 
 ## 7. Palettes

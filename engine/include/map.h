@@ -88,4 +88,9 @@ bool MapClearFoeStamp(Map *map, int x, int y);
 // enumerating a pack's art must include them. Returns a static array.
 const char *const *map_object_art_names(int *out_count);
 
+// The castle art for one footprint (REQ-228): the six pieces of the 3x2 stamp,
+// or the single `castle` tile of a 1x1 castle. Read off the same tables
+// stamp_objects paints from, so the manifest cannot drift from the map.
+const char *const *map_castle_art_names(ResCastleFootprint fp, int *out_count);
+
 #endif

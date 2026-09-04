@@ -205,9 +205,10 @@ this describes work not yet done.
   armies, and the zone's hero spawn, home spawn and magic alcove.
 - **GB-211.** Objects shall be edited **on the map**, in place, not through a
   coordinate form — placement is a spatial decision.
-- **GB-212.** A castle shall be placed as its true **3×2 footprint** (walkable
-  gate plus five blocking wall tiles, `REQ-228`) with the footprint shown, and
-  placement refused where it will not fit.
+- **GB-212.** A castle shall be placed as its true footprint (`REQ-228`): the
+  **3×2 block** of walkable gate plus five blocking wall tiles by default, or
+  the gate tile alone when the entry declares `"footprint": "1x1"`, with the
+  footprint shown, and placement refused where it will not fit.
 - **GB-213.** Each object type shall have a properties panel: a town's boat
   dock, intel castle and pinned spell; a castle's difficulty tier and villain;
   a sign's title and body; a dwelling's troop; a foe army's stacks.

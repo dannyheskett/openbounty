@@ -48,9 +48,42 @@ TEST villains_count_seventeen(void) {
     PASS();
 }
 
+// castles[].footprint (REQ-228): absent and "3x2" are the classic stamp, "1x1"
+// the single-tile castle, and anything else falls back to 3x2 and is reported
+// through the parser's return value.
+TEST castle_footprint_string_parses(void) {
+    ResCastleFootprint fp = RES_CASTLE_FOOTPRINT_1X1;
+    ASSERT(resources_parse_castle_footprint("1x1", &fp));
+    ASSERT_EQ(RES_CASTLE_FOOTPRINT_1X1, fp);
+    ASSERT(resources_parse_castle_footprint("3x2", &fp));
+    ASSERT_EQ(RES_CASTLE_FOOTPRINT_3X2, fp);
+    fp = RES_CASTLE_FOOTPRINT_1X1;
+    ASSERT(resources_parse_castle_footprint("", &fp));
+    ASSERT_EQ(RES_CASTLE_FOOTPRINT_3X2, fp);
+    fp = RES_CASTLE_FOOTPRINT_1X1;
+    ASSERT(resources_parse_castle_footprint(NULL, &fp));
+    ASSERT_EQ(RES_CASTLE_FOOTPRINT_3X2, fp);
+    fp = RES_CASTLE_FOOTPRINT_1X1;
+    ASSERT_FALSE(resources_parse_castle_footprint("2x2", &fp));
+    ASSERT_EQ(RES_CASTLE_FOOTPRINT_3X2, fp);
+    PASS();
+}
+
+TEST castles_default_to_the_3x2_footprint(void) {
+    Resources *r = fx_load_resources();
+    ASSERT(r);
+    ASSERT(r->castle_count > 0);
+    for (int i = 0; i < r->castle_count; i++)
+        ASSERT_EQ(RES_CASTLE_FOOTPRINT_3X2, r->castles[i].footprint);
+    resources_free(r); free(r);
+    PASS();
+}
+
 SUITE(unit_resources_suite) {
     RUN_TEST(troops_catalog_nonempty);
     RUN_TEST(spells_catalog_complete);
     RUN_TEST(classes_catalog_four);
     RUN_TEST(villains_count_seventeen);
+    RUN_TEST(castle_footprint_string_parses);
+    RUN_TEST(castles_default_to_the_3x2_footprint);
 }

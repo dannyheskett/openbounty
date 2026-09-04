@@ -180,6 +180,13 @@ static void parse_castles(Resources *res, cJSON *arr) {
             c->gate_y = json_int(gate, "y", c->gate_y);
         }
         c->difficulty_tier = json_int(it, "difficulty_tier", 0);
+        // Map footprint (REQ-228): absent means the classic 3x2 stamp.
+        {
+            const char *fp = json_str(it, "footprint", "");
+            if (!resources_parse_castle_footprint(fp, &c->footprint) && fp[0])
+                fprintf(stdout, "resources: castle '%s' footprint '%s' unknown, "
+                        "using 3x2\n", c->id, fp);
+        }
 
         memset(&c->special, 0, sizeof(c->special));
         cJSON *sp = cJSON_GetObjectItem(it, "special");
@@ -2182,6 +2189,16 @@ const ResCastle *resources_castle_by_id(const Resources *r, const char *id) {
     return NULL;
 }
 
+bool resources_parse_castle_footprint(const char *s, ResCastleFootprint *out) {
+    if (out) *out = RES_CASTLE_FOOTPRINT_3X2;
+    if (!s || !s[0] || strcmp(s, "3x2") == 0) return true;
+    if (strcmp(s, "1x1") == 0) {
+        if (out) *out = RES_CASTLE_FOOTPRINT_1X1;
+        return true;
+    }
+    return false;
+}
+
 bool resources_castle_is_home(const ResCastle *rc) {
     return rc && strcmp(rc->special.flow, "audience") == 0;
 }
@@ -2374,6 +2391,23 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
             char p[RES_PATH_LEN];
             snprintf(p, sizeof p, "art/tiles/%s.png", obj[i]);
             art_add(out, cap, &n, p);
+        }
+        // Castle art follows the footprint (REQ-228): a pack ships the six
+        // 3x2 pieces only if some castle stamps 3x2, and the single `castle`
+        // tile only if some castle stamps 1x1.
+        bool used[2] = { false, false };
+        for (int i = 0; i < res->castle_count; i++)
+            used[res->castles[i].footprint == RES_CASTLE_FOOTPRINT_1X1] = true;
+        for (int fp = 0; fp < 2; fp++) {
+            if (!used[fp]) continue;
+            int nc = 0;
+            const char *const *cn =
+                map_castle_art_names((ResCastleFootprint)fp, &nc);
+            for (int i = 0; i < nc; i++) {
+                char p[RES_PATH_LEN];
+                snprintf(p, sizeof p, "art/tiles/%s.png", cn[i]);
+                art_add(out, cap, &n, p);
+            }
         }
     }
 

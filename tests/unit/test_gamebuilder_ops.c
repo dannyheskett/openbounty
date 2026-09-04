@@ -269,13 +269,31 @@ TEST castle_move_updates_gate_and_catalog(void) {
     PASS();
 }
 
-TEST castle_footprint_is_three_by_two(void) {
+TEST castle_footprint_is_three_by_two_by_default(void) {
     int x, y, w, h;
-    gb_castle_footprint(10, 10, &x, &y, &w, &h);
+    gb_castle_footprint(false, 10, 10, &x, &y, &w, &h);
     ASSERT_EQ(3, w);
     ASSERT_EQ(2, h);
     ASSERT_EQ(9, x);
     ASSERT_EQ(9, y);
+    // No "footprint" key means the classic stamp (REQ-228).
+    cJSON *node = cJSON_CreateObject();
+    ASSERT_FALSE(gb_castle_is_single(node));
+    cJSON_Delete(node);
+    PASS();
+}
+
+TEST castle_footprint_is_one_tile_when_declared(void) {
+    cJSON *node = cJSON_CreateObject();
+    cJSON_AddStringToObject(node, "footprint", "1x1");
+    ASSERT(gb_castle_is_single(node));
+    int x, y, w, h;
+    gb_castle_footprint(gb_castle_is_single(node), 10, 10, &x, &y, &w, &h);
+    ASSERT_EQ(1, w);
+    ASSERT_EQ(1, h);
+    ASSERT_EQ(10, x);
+    ASSERT_EQ(10, y);
+    cJSON_Delete(node);
     PASS();
 }
 
@@ -464,7 +482,8 @@ SUITE(unit_gamebuilder_ops_suite) {
     RUN_TEST(objects_collect_move_and_delete);
     RUN_TEST(spawn_points_move_but_cannot_be_deleted);
     RUN_TEST(castle_move_updates_gate_and_catalog);
-    RUN_TEST(castle_footprint_is_three_by_two);
+    RUN_TEST(castle_footprint_is_three_by_two_by_default);
+    RUN_TEST(castle_footprint_is_one_tile_when_declared);
     RUN_TEST(validate_flags_a_boat_trap);
     RUN_TEST(validate_ignores_a_pond_with_no_dock);
     RUN_TEST(validate_flags_zone_with_too_few_castles);

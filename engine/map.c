@@ -120,6 +120,46 @@ static Tile *tile_at(Map *map, int x, int y) {
     return &map->tiles[y][x];
 }
 
+// The castle stamps (REQ-228), one table per footprint. stamp_objects paints
+// from these and map_castle_art_names reads the art names off them, so the
+// art manifest cannot drift from what the map draws.
+//
+// 3x2: a 3-wide x 2-tall block centred on the gate. The JSON-authored (x, y)
+// is the gate at bottom-centre:
+//
+//   (x-1, y-1)=tl   (x, y-1)=br_top   (x+1, y-1)=tr
+//   (x-1, y  )=ml   (x, y  )=GATE     (x+1, y  )=mr
+//
+// (The 'br' suffix is misleading -- it sits at the top-middle in the source
+// art. We preserve the asset names.) The five wall tiles are decorative-only
+// (no interactive flag) and block player movement; the gate carries the
+// interactive flag.
+//
+// 1x1: the gate tile alone, drawn with the single `castle` art, so the castle
+// sits on the map the way a town does.
+typedef struct { int dx, dy; const char *art; bool gate; } CastlePart;
+
+static const CastlePart CASTLE_3X2_PARTS[] = {
+    { -1, -1, "castle_tl",   false },
+    {  0, -1, "castle_br",   false },
+    { +1, -1, "castle_tr",   false },
+    { -1,  0, "castle_ml",   false },
+    {  0,  0, "castle_gate", true  },
+    { +1,  0, "castle_mr",   false },
+};
+static const CastlePart CASTLE_1X1_PARTS[] = {
+    {  0,  0, "castle", true },
+};
+
+static const CastlePart *castle_parts(ResCastleFootprint fp, int *out_count) {
+    if (fp == RES_CASTLE_FOOTPRINT_1X1) {
+        *out_count = (int)(sizeof CASTLE_1X1_PARTS / sizeof CASTLE_1X1_PARTS[0]);
+        return CASTLE_1X1_PARTS;
+    }
+    *out_count = (int)(sizeof CASTLE_3X2_PARTS / sizeof CASTLE_3X2_PARTS[0]);
+    return CASTLE_3X2_PARTS;
+}
+
 // stamp_objects: paint all JSON-authored objects onto the map. This is
 // the single source of truth for object placement -- the .dat tilemap is
 // pure terrain and never carries object glyphs. Each branch sets BOTH
@@ -149,31 +189,19 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
         copy_string(t->art, sizeof(t->art), "town");
     }
     for (int i = 0; i < z->castle_count; i++) {
-        // Castle is a 3-wide x 2-tall block centered on the gate. The
-        // JSON-authored (x, y) is the gate at bottom-center:
-        //
-        //   (x-1, y-1)=tl   (x, y-1)=br_top   (x+1, y-1)=tr
-        //   (x-1, y  )=ml   (x, y  )=GATE     (x+1, y  )=mr
-        //
-        // (The 'br' suffix is misleading -- it sits at the top-middle in
-        // the source art. We preserve the asset names.)
-        // The 5 wall tiles are decorative-only (no interactive flag) and
-        // block player movement; the gate carries the interactive flag.
+        // The footprint is the catalog entry's choice (REQ-228); a zone castle
+        // with no catalog entry stamps the classic 3x2.
         int cx = z->castles[i].x;
         int cy = z->castles[i].y;
-        struct { int dx, dy; const char *art; } parts[6] = {
-            { -1, -1, "castle_tl" },
-            {  0, -1, "castle_br" },
-            { +1, -1, "castle_tr" },
-            { -1,  0, "castle_ml" },
-            {  0,  0, "castle_gate" },
-            { +1,  0, "castle_mr" },
-        };
-        for (int p = 0; p < 6; p++) {
+        const ResCastle *rc = resources_castle_by_id(res, z->castles[i].id);
+        ResCastleFootprint fp = rc ? rc->footprint : RES_CASTLE_FOOTPRINT_3X2;
+        int nparts = 0;
+        const CastlePart *parts = castle_parts(fp, &nparts);
+        for (int p = 0; p < nparts; p++) {
             Tile *t = tile_at(map, cx + parts[p].dx, cy + parts[p].dy);
             if (!t) continue;
             copy_string(t->art, sizeof(t->art), parts[p].art);
-            if (p == 4) {
+            if (parts[p].gate) {
                 // Gate: interactive entry point.
                 t->interactive = INTERACT_CASTLE_GATE;
                 copy_string(t->id, sizeof(t->id), z->castles[i].id);
@@ -399,18 +427,29 @@ void MapClearInteractive(Map *map, int x, int y) {
     }
 }
 
-// Art names this module stamps onto tiles for placed objects (castles, towns,
+// Art names this module stamps onto tiles for placed objects (towns,
 // dwellings, chests, signs, bridges, foes). They are NOT in game.json -- the
 // engine chooses them by interact kind -- so resources_art_manifest() has to
-// ask for them rather than duplicate the list and drift from it.
+// ask for them rather than duplicate the list and drift from it. Castle art
+// depends on the footprint and is served by map_castle_art_names.
 const char *const *map_object_art_names(int *out_count) {
     static const char *const NAMES[] = {
-        "castle_tl", "castle_tr", "castle_br", "castle_ml", "castle_mr",
-        "castle_gate", "town", "chest", "artifact_chest", "artifact_ring",
+        "town", "chest", "artifact_chest", "artifact_ring",
         "sign", "bridge_h", "bridge_v", "wandering_army",
         "dwelling_plains", "dwelling_forest", "dwelling_hills",
         "dwelling_dungeon",
     };
     if (out_count) *out_count = (int)(sizeof NAMES / sizeof NAMES[0]);
     return NAMES;
+}
+
+const char *const *map_castle_art_names(ResCastleFootprint fp, int *out_count) {
+    // Filled from the stamp tables, so the names live in one place.
+    static const char *names[2][8];
+    int which = (fp == RES_CASTLE_FOOTPRINT_1X1) ? 1 : 0;
+    int n = 0;
+    const CastlePart *parts = castle_parts(fp, &n);
+    for (int i = 0; i < n && i < 8; i++) names[which][i] = parts[i].art;
+    if (out_count) *out_count = n;
+    return names[which];
 }

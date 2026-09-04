@@ -197,10 +197,11 @@ static void draw_objects(GbMapView *v, const GbObjectList *L, int selected) {
             px > v->origin.x + v->size.x || py > v->origin.y + v->size.y) continue;
 
         if (o->kind == GB_OBJ_CASTLE) {
-            // Show the real 3x2 footprint, not a dot: a castle that does not
-            // fit is the commonest placement mistake.
+            // Show the real footprint, not a dot: a castle that does not fit
+            // is the commonest placement mistake.
             int fx, fy, fw, fh;
-            gb_castle_footprint(o->x, o->y, &fx, &fy, &fw, &fh);
+            gb_castle_footprint(gb_castle_is_single(o->node), o->x, o->y,
+                                &fx, &fy, &fw, &fh);
             Rectangle r = { v->origin.x + v->pan.x + fx * tw,
                             v->origin.y + v->pan.y + fy * th,
                             fw * tw, fh * th };
@@ -304,13 +305,15 @@ void gb_inspect_tile(GbTileInfo *out, const MapGrid *g, const GbObjectList *L,
             if (L->item[i].x != x || L->item[i].y != y) continue;
             out->obj[out->objects++] = &L->item[i];
         }
-        // A castle occupies 3x2, so a tile can be inside one without being its
-        // gate. Report that too, or the author wonders why the tile is blocked.
+        // A 3x2 castle has five wall tiles besides its gate, so a tile can be
+        // inside one without being its gate. Report that too, or the author
+        // wonders why the tile is blocked. A 1x1 castle has no such tiles.
         for (int i = 0; i < L->count && out->objects < GB_INSPECT_MAX_OBJ; i++) {
             if (L->item[i].kind != GB_OBJ_CASTLE) continue;
             if (L->item[i].x == x && L->item[i].y == y) continue;
             int fx, fy, fw, fh;
-            gb_castle_footprint(L->item[i].x, L->item[i].y, &fx, &fy, &fw, &fh);
+            gb_castle_footprint(gb_castle_is_single(L->item[i].node),
+                                L->item[i].x, L->item[i].y, &fx, &fy, &fw, &fh);
             if (x >= fx && x < fx + fw && y >= fy && y < fy + fh)
                 out->obj[out->objects++] = &L->item[i];
         }
