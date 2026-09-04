@@ -1,0 +1,14 @@
+{
+ "id": "velites",
+ "_note": "Light skirmisher. Neutral stance, javelin upright: the vendor's rule is that a neutral pose gives the best character results, and the upright javelin is the travel the animation will spend.",
+ "prompt": "a lean Roman velite skirmisher in a wolfskin headdress over a helmet, a small round parma shield on his left arm, a javelin held upright in his right hand",
+ "style": "user__glory_of_rome_troops_bac676cd",
+ "width": 96,
+ "height": 96,
+ "remove_bg": true,
+ "return_non_bg_removed": true,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": true,
+ "target": [96, 96]
+}
