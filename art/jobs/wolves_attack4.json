@@ -1,0 +1,19 @@
+{
+ "id": "wolves_attack4",
+ "_note": "Fourth Lupi attack. Names both weapons explicitly: bite with the teeth, swipe with the front paw.",
+ "prompt": "The wolf attacks: it bites with its teeth, jaws wide open and fangs bared, and swipes with its front paw, the paw raised off the ground and striking forward, claws out",
+ "style": "rd_advanced_animation__attack",
+ "width": 96,
+ "height": 96,
+ "frames_duration": 4,
+ "return_spritesheet": true,
+ "input_image_path": "build/art/troops_wolves/run01/01_raw.png",
+ "input_image_keep_alpha": true,
+ "raw_only": true,
+ "target": [
+  96,
+  96
+ ],
+ "figure": false,
+ "_pack_path": "art/troops/wolves_00..03.png"
+}

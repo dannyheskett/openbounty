@@ -4310,7 +4310,10 @@ cp build/art/troops_vampires_00_03/frame_03.png assets/glory-of-rome/art/troops/
 
 **Replaces:** `troops/wolves_00.png`, `troops/wolves_01.png`, `troops/wolves_02.png`, `troops/wolves_03.png`
 
-**State:** placeholder. Design size 48x34 → generate at 96x96.
+**State:** still accepted at `build/art/troops_wolves/run01/01_raw.png` —
+96x96, 46 colours, body on rows 34-82, and it touches the left edge at x=0 so
+the tail is clipped. Animation not yet accepted: five attempts, best is
+`build/art/wolves_attack2/run01`.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
@@ -4343,11 +4346,17 @@ file build/art/troops_wolves_00_03/01_still.png   # must say: PNG image data
 - both feet are drawn and the figure stands on them
 - it reads at 1:1 over grass, forest and desert, not only enlarged
 
-**Step 3 — animate the approved still.** $0.14.
+**Step 3 — animate the approved still.** $0.14. Five wordings tried. The one
+below is the best: jaws wide in every frame and the body visibly gathering then
+extending, widths 89, 79, 84, 92. What failed: "a lunge forward" and "a snapping
+bite" both returned a plain walk cycle with no change in width; naming the teeth
+opened the jaws but left the front legs planted; naming a raised paw and a
+rear-up produced no lift at all. This model will not take a quadruped off the
+ground.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_wolves_00_03/01_still.png)" \
-  '{prompt: "lunging forward and striking with its jaws, then settling back",
+  '{prompt: "A pounce, the haunches gathering under the body then the head and shoulders driving out past the front paws to full reach, jaws wide open, front legs off the ground",
     prompt_style: "rd_advanced_animation__attack",
     width: 96, height: 96, num_images: 1,
     frames_duration: 4, return_spritesheet: true,

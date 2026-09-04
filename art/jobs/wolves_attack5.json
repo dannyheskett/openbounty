@@ -1,0 +1,19 @@
+{
+ "id": "wolves_attack5",
+ "_note": "Fifth Lupi attack. Run 4 got the teeth but the front legs never left the ground; this makes the raised paw the primary action.",
+ "prompt": "It rears up and swipes: the front paw lifts high off the ground and slashes forward with claws spread, the other forepaw planted, jaws wide open and fangs bared",
+ "style": "rd_advanced_animation__attack",
+ "width": 96,
+ "height": 96,
+ "frames_duration": 4,
+ "return_spritesheet": true,
+ "input_image_path": "build/art/troops_wolves/run01/01_raw.png",
+ "input_image_keep_alpha": true,
+ "raw_only": true,
+ "target": [
+  96,
+  96
+ ],
+ "figure": false,
+ "_pack_path": "art/troops/wolves_00..03.png"
+}
