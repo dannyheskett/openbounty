@@ -76,23 +76,24 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
             int py = oy + ty * CL_TILE_H;
             Rectangle dst = { (float)px, (float)py,
                               (float)CL_TILE_W, (float)CL_TILE_H };
-            Texture2D tex = (Texture2D){ 0 };
-            if (t->interactive == INTERACT_FOE) {
-                tex = foe_map_sprite(g, s, t->id, g->anim_frame);
-                // A troop-override sprite (issue #9) is transparent, unlike the
-                // opaque generic wandering_army tile. Draw the preserved base
-                // terrain under it first, or its background is the black map
-                // fill instead of the ground the foe stands on.
-                if (tex.id) {
-                    Texture2D ground = tile_cache_get(TerrainName(t->terrain));
-                    if (ground.id) {
-                        Rectangle gsrc = { 0, 0, (float)ground.width,
-                                           (float)ground.height };
-                        DrawTexturePro(ground, gsrc, dst, (Vector2){ 0, 0 },
-                                       0.0f, WHITE);
-                    }
+            // An object tile is drawn over its ground (ART-SPEC section 4):
+            // the plain terrain tile first, then the object's art. A
+            // transparent object -- a troop-override foe sprite (issue #9),
+            // the 1x1 castle -- then stands on the ground it occupies instead
+            // of the black map fill; an opaque object covers the ground
+            // completely, so nothing that drew before this draws differently.
+            if (t->interactive != INTERACT_NONE) {
+                Texture2D ground = tile_cache_get(TerrainName(t->terrain));
+                if (ground.id) {
+                    Rectangle gsrc = { 0, 0, (float)ground.width,
+                                       (float)ground.height };
+                    DrawTexturePro(ground, gsrc, dst, (Vector2){ 0, 0 },
+                                   0.0f, WHITE);
                 }
             }
+            Texture2D tex = (Texture2D){ 0 };
+            if (t->interactive == INTERACT_FOE)
+                tex = foe_map_sprite(g, s, t->id, g->anim_frame);
             if (tex.id == 0) tex = tile_cache_get(t->art);
             if (tex.id == 0) continue;
             Rectangle src = { 0, 0, (float)tex.width, (float)tex.height };
