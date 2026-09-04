@@ -1,0 +1,18 @@
+{
+ "id": "hastati_custom4_shield",
+ "_note": "Identical to hastati_custom4 except the motion sentence. Shield and spear move together, as the drill has it.",
+ "prompt": "he steps into the blow: the shield drives forward ahead of him and the spear comes down from upright to horizontal beside it, both feet stay planted",
+ "style": "rd_advanced_animation__custom_action",
+ "width": 96,
+ "height": 96,
+ "frames_duration": 4,
+ "return_spritesheet": true,
+ "input_image_path": "build/art/hastati_minimal/run02/01_raw.png",
+ "input_image_keep_alpha": true,
+ "raw_only": true,
+ "target": [
+  96,
+  96
+ ],
+ "figure": false
+}

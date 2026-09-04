@@ -1,0 +1,18 @@
+{
+ "id": "hastati_desc",
+ "_note": "custom_action, 4 frames, a full description of the arc rather than a short action name.",
+ "prompt": "An overhand spear thrust: he raises the spear high beside his helmet, brings the point down over the top of the shield, and drives it forward as he steps in, the shield held square in front of him",
+ "style": "rd_advanced_animation__custom_action",
+ "width": 96,
+ "height": 96,
+ "frames_duration": 4,
+ "return_spritesheet": true,
+ "input_image_path": "build/art/hastati_minimal/run02/01_raw.png",
+ "input_image_keep_alpha": true,
+ "raw_only": true,
+ "target": [
+  96,
+  96
+ ],
+ "figure": false
+}

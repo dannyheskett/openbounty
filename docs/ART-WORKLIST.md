@@ -3900,10 +3900,9 @@ cp build/art/troops_peasants_00_03/frame_03.png assets/glory-of-rome/art/troops/
 
 **Replaces:** `troops/pikemen_00.png`, `troops/pikemen_01.png`, `troops/pikemen_02.png`, `troops/pikemen_03.png`
 
-**State:** done, pending your approval. Still at
-`build/art/hastati_minimal/run02/01_raw.png`; four attack frames at
-`build/art/hastati_custom4/run01/frame_00..03.png`. The four pack files are
-still placeholder.
+**State:** accepted. Still at `build/art/hastati_minimal/run02/01_raw.png`;
+four attack frames at `build/art/hastati_attack_chest/run01/frame_00..03.png`.
+The four pack files are still placeholder.
 
 **Prompt** (subject only; the style supplies framing, pose and background)
 
@@ -3936,16 +3935,16 @@ file build/art/troops_pikemen_00_03/01_still.png   # must say: PNG image data
 - both feet are drawn and he stands on them
 - it reads at 1:1 over grass, forest and desert, not only enlarged
 
-**Step 3 — animate the approved still.** $0.25, `rd_advanced_animation__custom_action`
-at **`frames_duration: 4`**. `__attack` was tried four times on this subject and
-chose to raise the shield every time; `custom_action` takes the motion as
-described. Four frames, not six: six loses the spear entirely in the middle of
-the swing.
+**Step 3 — animate the approved still.** $0.14,
+`rd_advanced_animation__attack` at **`frames_duration: 4`**. `__attack` keeps
+the shield and the spear attached in every frame; `custom_action` produces the
+motion but sheds one prop or the other by the third frame. Four frames, not six:
+six loses the spear entirely in the middle of the swing.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/troops_pikemen_00_03/01_still.png)" \
-  '{prompt: "the spear swings down from upright to horizontal and drives forward past the shield, both feet stay planted, the shield stays still",
-    prompt_style: "rd_advanced_animation__custom_action",
+  '{prompt: "An overhand spear thrust at chest height over the top of the shield, spear held level with the chest, shield pushed forward, stepping in",
+    prompt_style: "rd_advanced_animation__attack",
     width: 96, height: 96, num_images: 1,
     frames_duration: 4, return_spritesheet: true,
     input_image: $img, async: true}' > build/art/troops_pikemen_00_03/anim_request.json
@@ -3964,10 +3963,11 @@ echo "$R" | jq -r '.result.base64_images[0]' | base64 -d > build/art/troops_pike
 file build/art/troops_pikemen_00_03/02_sheet.png   # must say: PNG image data
 ```
 
-**Step 4 — accept the animation by eye.** The silhouette must widen frame to
-frame as the spear comes down and extends. The accepted run measured 47, 60, 62
-and 81 pixels wide; the reference pikeman's thrust is 80. The spear must be
-present in every frame and both feet planted throughout.
+**Step 4 — accept the animation by eye.** The accepted run measured 49, 57, 67
+and 60 pixels wide, with the spear reaching x=78 on rows 54-58 in the last
+frame. Required in every frame: the spear in his hand, the shield rectangular on
+his left arm with its painted device intact, and both feet on the ground. The
+shield losing its device or going ragged at the edges is the usual failure.
 
 **Step 5 — cut the sheet** (192x192, a 2x2 grid read left to right, top to bottom).
 

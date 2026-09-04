@@ -1,0 +1,18 @@
+{
+ "id": "hastati_attack_overhand",
+ "_note": "rd_advanced_animation__attack at 4 frames. Every __attack run kept the sprite intact; every __custom_action run shed the props. This pairs the tighter style with the thrust wording.",
+ "prompt": "An overhand spear thrust over the top of the shield, spear held high, shield pushed forward, stepping in",
+ "style": "rd_advanced_animation__attack",
+ "width": 96,
+ "height": 96,
+ "frames_duration": 4,
+ "return_spritesheet": true,
+ "input_image_path": "build/art/hastati_minimal/run02/01_raw.png",
+ "input_image_keep_alpha": true,
+ "raw_only": true,
+ "target": [
+  96,
+  96
+ ],
+ "figure": false
+}
