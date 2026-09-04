@@ -1,0 +1,19 @@
+{
+ "id": "furiae_attack3",
+ "_note": "Third Furiae attack. The first two hovered; this names the arc and the reach, which is what worked on the Hastati.",
+ "prompt": "A big overhead swing, the torch arm raised high then swept all the way down and forward to full reach, wings beating, stepping in",
+ "style": "rd_advanced_animation__attack",
+ "width": 96,
+ "height": 96,
+ "frames_duration": 4,
+ "return_spritesheet": true,
+ "input_image_path": "build/art/troops_archmages_00_03/01_still.png",
+ "input_image_keep_alpha": true,
+ "raw_only": true,
+ "target": [
+  96,
+  96
+ ],
+ "figure": false,
+ "_pack_path": "art/troops/archmages_00..03.png"
+}
