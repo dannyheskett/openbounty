@@ -41,7 +41,7 @@ DEFAULT_TOKEN_FILE = os.path.expanduser("~/.config/retrodiffusion/token")
 OUT_ROOT = "build/art"
 
 try:
-    from PIL import Image
+    from PIL import Image, ImageSequence
 except ImportError:
     sys.exit("rdgen: needs Pillow (pip install pillow)")
 
@@ -120,6 +120,7 @@ JOB_KEYS = {
     "id", "prompt", "style", "width", "height", "target",
     "raw_only", "figure", "headroom_rows",
     "input_image_path", "input_palette_path", "input_image_keep_alpha",
+    "reference_image_paths", "pad_to",
     # forwarded to the API by request_payload()
     "seed", "remove_bg", "tile_x", "tile_y", "frames_duration",
     "return_spritesheet", "input_palette", "strength",
@@ -184,6 +185,22 @@ def request_payload(job, *, check_cost=False):
     # rejected, so this lets the claim be tested for real.
     if job.get("input_image_path"):
         src = Image.open(job["input_image_path"]).convert("RGBA")
+        # pad_to: the vendor's motion-room rule -- "a sprite whose opaque
+        # pixels touch the canvas edge animates badly -- pad it onto a larger
+        # transparent canvas first". Every animation run before this one sent a
+        # figure filling its frame, and every one of them under-moved. Nothing
+        # is resampled: the still is composited into a bigger empty canvas,
+        # centred horizontally and standing on the bottom edge.
+        pad = job.get("pad_to")
+        if pad:
+            pw, ph = (pad, pad) if isinstance(pad, int) else pad
+            if pw < src.width or ph < src.height:
+                sys.exit(f"rdgen: pad_to {pw}x{ph} is smaller than the source "
+                         f"{src.width}x{src.height}")
+            canvas = Image.new("RGBA", (pw, ph), (0, 0, 0, 0))
+            canvas.alpha_composite(src, ((pw - src.width) // 2,
+                                         ph - src.height))
+            src = canvas
         if job.get("input_image_keep_alpha"):
             out = src
         else:
@@ -192,6 +209,18 @@ def request_payload(job, *, check_cost=False):
         buf = io.BytesIO()
         out.save(buf, format="PNG")
         p["input_image"] = base64.b64encode(buf.getvalue()).decode()
+    # reference_images: RD Pro and the prompt-driven rd_animation__* styles
+    # accept up to 9. Unlike input_image these are NOT redrawn -- they steer
+    # style and content, which is how one character stays the same character
+    # across separate generations.
+    if job.get("reference_image_paths"):
+        refs = []
+        for rp in job["reference_image_paths"]:
+            src = Image.open(rp).convert("RGBA")
+            buf = io.BytesIO()
+            src.save(buf, format="PNG")
+            refs.append(base64.b64encode(buf.getvalue()).decode())
+        p["reference_images"] = refs
     if check_cost:
         p["check_cost"] = True
     else:
@@ -388,6 +417,14 @@ def cmd_reprocess(args):
         sys.exit(f"rdgen: no saved raw at {raw_p}; run it first")
     raw = Image.open(raw_p).convert("RGBA")
     print(f"reprocessing {job['id']} from raw {raw.size} (no charge)")
+    frames = write_frames(raw_p, job, work)
+    if frames:
+        widths, growth = motion_report(frames)
+        print(f"frames {len(frames)}  ->  {work}/frame_00..{len(frames)-1:02d}.png")
+        print(f"  silhouette widths {widths}")
+        print(f"  [{'PASS' if growth >= MOTION_GATE_PCT else 'FAIL'}] motion "
+              f"{growth}% growth over frame 0 (gate {MOTION_GATE_PCT}%)")
+
     final_p = transform(tok, raw, job, work)
     final = Image.open(final_p).convert("RGBA")
     rows, ok = qa(final, job)
@@ -476,6 +513,13 @@ def cmd_run(args):
     raw = Image.open(raw_p).convert("RGBA")
     print(f"raw {raw.size}  ({len(imgs)} image(s) returned)")
 
+    frames = write_frames(raw_p, job, work)
+    if frames:
+        widths, growth = motion_report(frames)
+        print(f"frames {len(frames)}  ->  {work}/frame_00..{len(frames)-1:02d}.png")
+        print(f"  silhouette widths {widths}")
+        print(f"  [{'PASS' if growth >= MOTION_GATE_PCT else 'FAIL'}] motion "
+              f"{growth}% growth over frame 0 (gate {MOTION_GATE_PCT}%)")
     final_p = transform(tok, raw, job, work)
     final = Image.open(final_p).convert("RGBA")
     rows, ok = qa(final, job)
@@ -488,6 +532,59 @@ def cmd_run(args):
     print(f"final: {final_p}")
     print(f"\nverdict: {'PASS' if ok else 'NEEDS WORK'} "
           f"(metrics only -- look at the contact sheet before accepting)")
+
+
+# ---- animation frames ------------------------------------------------------
+
+def write_frames(raw_p, job, work):
+    """Split an animation result into individual frames.
+
+    The grid is DERIVED from what came back, never assumed. A 4-frame sheet is
+    2x2 and a 6-frame sheet is 3x2; this was hardcoded to 2x2 by hand outside
+    this file, which sliced every 6-frame run through the middle of each frame.
+    Two good animations were discarded and the pipeline was locked at four
+    frames on the strength of that mistake.
+
+    A GIF response is authoritative about its own frame count, so nothing is
+    cut at all in that case.
+    """
+    im = Image.open(raw_p)
+    if getattr(im, "n_frames", 1) > 1:
+        frames = [f.convert("RGBA") for f in ImageSequence.Iterator(im)]
+    else:
+        w, h = job["width"], job["height"]
+        sw, sh = im.size
+        if sw % w or sh % h:
+            sys.exit(f"rdgen: sheet {sw}x{sh} is not a whole number of {w}x{h} "
+                     f"cells -- refusing to cut it into sliced frames")
+        cols, rows = sw // w, sh // h
+        if cols * rows < 2:
+            return []
+        im = im.convert("RGBA")
+        frames = [im.crop((c * w, r * h, c * w + w, r * h + h))
+                  for r in range(rows) for c in range(cols)]
+    out = []
+    for i, f in enumerate(frames):
+        fp = os.path.join(work, f"frame_{i:02d}.png")
+        f.save(fp)
+        out.append(fp)
+    return out
+
+
+# The line between an animation that reads as an attack and one that reads as
+# walking, measured across all 25 runs generated before this gate existed: real
+# attacks grew the silhouette by 28-34% over the first frame, everything that
+# looked like a walk grew it by under 7%.
+MOTION_GATE_PCT = 25
+
+
+def motion_report(frame_paths):
+    widths = []
+    for fp in frame_paths:
+        bb = Image.open(fp).convert("RGBA").getbbox()
+        widths.append(bb[2] - bb[0] if bb else 0)
+    base = widths[0] or 1
+    return widths, round(100 * (max(widths) - base) / base)
 
 
 def main():

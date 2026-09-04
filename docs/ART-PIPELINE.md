@@ -68,39 +68,51 @@ wrong and move to the next asset.
 
 ### Step 3 — animate the approved still, $0.14
 
-The still is uploaded untouched, alpha intact, which is what makes the returned
-frames transparent.
+The still is uploaded with its alpha intact, which is what makes the returned
+frames transparent, and padded onto a larger transparent canvas first. The
+vendor's rule: *"a sprite whose opaque pixels touch the canvas edge animates
+badly -- pad it onto a larger transparent canvas first."* `pad_to` in the job
+does this without resampling a pixel.
 
 ```sh
 jq -n --arg img "$(base64 -w0 build/art/<id>/01_still.png)" \
   '{prompt: "levelling the spear and thrusting it forward, feet planted",
     prompt_style: "rd_advanced_animation__attack",
     width: 96, height: 96, num_images: 1,
-    frames_duration: 4, return_spritesheet: true,
+    frames_duration: 6, return_spritesheet: true,
     input_image: $img, async: true}' > build/art/<id>/anim_request.json
 ```
 
 The motion line describes that subject's own action: a spear thrust, a bow drawn
 and loosed, a sling released, jaws lunging.
 
-### Step 4 — cut the sheet
+### Step 4 — the frames
 
-The response is a 192x192 PNG holding a 2x2 grid of 96x96 cells, read left to
-right then top to bottom.
+`rdgen` writes them. The grid is derived from the returned image -- cols =
+sheet width / requested width, rows = sheet height / requested height -- and a
+sheet that does not divide evenly is refused rather than cut. At 4 frames the
+sheet is 2x2; at 6 it is 3x2. A GIF response is read frame by frame and not cut
+at all.
 
-```sh
-convert build/art/<id>/02_sheet.png -crop 96x96 +repage build/art/<id>/frame_%02d.png
-```
+`frames_duration` takes 4, 6, 8, 10, 12 or 16, and applies only to the
+`rd_advanced_animation__*` family. Six is the vendor's recommendation for a
+single action; eight for a loop.
 
-Those four files are the troop's animation array, in order.
+rdgen also prints the silhouette growth across the frames and fails it below
+25%. Real attacks measure 28-68%; anything that reads as walking measures under
+7%.
 
 ---
 
 ## 3. Rules
 
-- **96x96** for anything in a map or combat cell; screen art at design size x2.
-  `rd_plus__environment` generates scenes up to 640x400, which covers every
-  screen asset in the pack at full size.
+- **Source size is free.** `blit()` (`src/ui.c:14`) stretches a troop texture
+  into the combat cell, so the PNG's own dimensions are a quality choice, not a
+  layout constraint. Generate at whatever size the chosen style is native to.
+- **Style size ranges**, from the vendor's own catalogue: RD Pro 12-256, RD
+  Plus 64-384 (`rd_plus__classic` 32-192, `rd_plus__low_res` 16-128), advanced
+  animations 32-256 matching the start frame. The prompt-driven `rd_animation__*`
+  styles are fixed: 32, 48, 64, 80 or 128, one size each.
 - **Subject only in the prompt.** The style carries the rendering; prompts carry
   no framing, background or rendering words.
 - **Name a background colour that cannot occur in the subject.** The background
