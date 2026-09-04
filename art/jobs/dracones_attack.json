@@ -1,0 +1,18 @@
+{
+  "id": "dracones_attack",
+  "_note": "Padded 96 -> 128 for motion room. Path with two named endpoints, then what stays still. Frames come back 128 and are downscaled to 96 through the API's k-centroid tool (flattened onto black, alpha from coverage), as ART-PIPELINE records.",
+  "prompt": "the head and neck drive forward from drawn back to full reach out in front of the body, the jaws opening wide as they go, then the neck draws back to where it began and the jaws close, the wings stay spread and the clawed feet stay planted",
+  "style": "rd_advanced_animation__custom_action",
+  "width": 128,
+  "height": 128,
+  "seed": 5182,
+  "frames_duration": 4,
+  "return_spritesheet": true,
+  "input_image_path": "build/art/dracones/run01/01_raw.png",
+  "input_image_keep_alpha": true,
+  "pad_to": 128,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [128, 128]
+}
