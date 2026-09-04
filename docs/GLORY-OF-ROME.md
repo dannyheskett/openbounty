@@ -613,8 +613,10 @@ Real requirements, not guidelines:
   45–75.
 - **More contract-eligible castles than villains, with margin.** Italia hosts
   six, so it wants 10–12.
-- **Castles are 3 × 2 footprints** — one walkable gate plus five blocking wall
-  tiles. They need flat room.
+- **Castles are single tiles.** Every catalog entry declares
+  `"footprint": "1x1"` (REQ-228): the gate tile alone, drawn with
+  `art/tiles/castle.png`, the way a town sits on the map. No wall tiles, so the
+  only room a castle needs is its tile and the gate landing below it.
 - Exactly one `is_home` zone (Italia); one `magic_alcove` and one
   `hero_spawn` per zone.
 

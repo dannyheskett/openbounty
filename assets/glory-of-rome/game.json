@@ -7,7 +7,7 @@
 	"render":	{
 		"mode":	"modern",
 		"tile_w":	96,
-		"tile_h":	68,
+		"tile_h":	96,
 		"tiles_w":	7,
 		"tiles_h":	7, "ui_scale": 2 },
 	"world":	{
@@ -1593,6 +1593,7 @@
 			"y":	45,
 			"zone":	"italia",
 			"difficulty_tier":	0,
+			"footprint":	"1x1",
 			"special":	{
 				"flow":	"audience",
 				"excluded_from_siege":	true,
@@ -1617,7 +1618,8 @@
 			"x":	41,
 			"y":	53,
 			"zone":	"italia",
-			"difficulty_tier":	0
+			"difficulty_tier":	0,
+			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_italia_3",
@@ -1625,7 +1627,8 @@
 			"x":	39,
 			"y":	62,
 			"zone":	"italia",
-			"difficulty_tier":	0
+			"difficulty_tier":	0,
+			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_italia_4",
@@ -1633,7 +1636,8 @@
 			"x":	46,
 			"y":	74,
 			"zone":	"italia",
-			"difficulty_tier":	1
+			"difficulty_tier":	1,
+			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_italia_5",
@@ -1641,7 +1645,8 @@
 			"x":	46,
 			"y":	86,
 			"zone":	"italia",
-			"difficulty_tier":	1
+			"difficulty_tier":	1,
+			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_italia_6",
@@ -1649,7 +1654,8 @@
 			"x":	35,
 			"y":	101,
 			"zone":	"italia",
-			"difficulty_tier":	1
+			"difficulty_tier":	1,
+			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_italia_7",
@@ -1657,7 +1663,8 @@
 			"x":	44,
 			"y":	21,
 			"zone":	"italia",
-			"difficulty_tier":	0
+			"difficulty_tier":	0,
+			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_italia_8",
@@ -1665,7 +1672,8 @@
 			"x":	20,
 			"y":	10,
 			"zone":	"italia",
-			"difficulty_tier":	0
+			"difficulty_tier":	0,
+			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_italia_9",
@@ -1673,7 +1681,8 @@
 			"x":	9,
 			"y":	14,
 			"zone":	"italia",
-			"difficulty_tier":	0
+			"difficulty_tier":	0,
+			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_italia_10",
@@ -1681,7 +1690,8 @@
 			"x":	48,
 			"y":	80,
 			"zone":	"italia",
-			"difficulty_tier":	1
+			"difficulty_tier":	1,
+			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_galliae_1",
@@ -1689,7 +1699,8 @@
 			"x":	30,
 			"y":	23,
 			"zone":	"galliae",
-			"difficulty_tier":	1
+			"difficulty_tier":	1,
+			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_galliae_2",
@@ -1697,7 +1708,8 @@
 			"x":	40,
 			"y":	28,
 			"zone":	"galliae",
-			"difficulty_tier":	1
+			"difficulty_tier":	1,
+			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_galliae_3",
@@ -1705,7 +1717,8 @@
 			"x":	30,
 			"y":	44,
 			"zone":	"galliae",
-			"difficulty_tier":	1
+			"difficulty_tier":	1,
+			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_galliae_4",
@@ -1713,7 +1726,8 @@
 			"x":	47,
 			"y":	22,
 			"zone":	"galliae",
-			"difficulty_tier":	1
+			"difficulty_tier":	1,
+			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_galliae_5",
@@ -1721,7 +1735,8 @@
 			"x":	30,
 			"y":	52,
 			"zone":	"galliae",
-			"difficulty_tier":	1
+			"difficulty_tier":	1,
+			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_galliae_6",
@@ -1729,7 +1744,8 @@
 			"x":	22,
 			"y":	35,
 			"zone":	"galliae",
-			"difficulty_tier":	1
+			"difficulty_tier":	1,
+			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_africa_1",
@@ -1737,7 +1753,8 @@
 			"x":	20,
 			"y":	7,
 			"zone":	"africa",
-			"difficulty_tier":	1
+			"difficulty_tier":	1,
+			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_africa_2",
@@ -1745,7 +1762,8 @@
 			"x":	10,
 			"y":	15,
 			"zone":	"africa",
-			"difficulty_tier":	1
+			"difficulty_tier":	1,
+			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_africa_3",
@@ -1753,7 +1771,8 @@
 			"x":	28,
 			"y":	15,
 			"zone":	"africa",
-			"difficulty_tier":	1
+			"difficulty_tier":	1,
+			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_africa_4",
@@ -1761,7 +1780,8 @@
 			"x":	40,
 			"y":	7,
 			"zone":	"africa",
-			"difficulty_tier":	1
+			"difficulty_tier":	1,
+			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_africa_5",
@@ -1769,7 +1789,8 @@
 			"x":	44,
 			"y":	15,
 			"zone":	"africa",
-			"difficulty_tier":	1
+			"difficulty_tier":	1,
+			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_africa_6",
@@ -1777,7 +1798,8 @@
 			"x":	49,
 			"y":	7,
 			"zone":	"africa",
-			"difficulty_tier":	1
+			"difficulty_tier":	1,
+			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_oriens_1",
@@ -1785,7 +1807,8 @@
 			"x":	40,
 			"y":	7,
 			"zone":	"oriens",
-			"difficulty_tier":	2
+			"difficulty_tier":	2,
+			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_oriens_2",
@@ -1793,7 +1816,8 @@
 			"x":	10,
 			"y":	17,
 			"zone":	"oriens",
-			"difficulty_tier":	2
+			"difficulty_tier":	2,
+			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_oriens_3",
@@ -1801,7 +1825,8 @@
 			"x":	48,
 			"y":	23,
 			"zone":	"oriens",
-			"difficulty_tier":	2
+			"difficulty_tier":	2,
+			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_oriens_4",
@@ -1809,7 +1834,8 @@
 			"x":	48,
 			"y":	38,
 			"zone":	"oriens",
-			"difficulty_tier":	2
+			"difficulty_tier":	2,
+			"footprint":	"1x1"
 		}],
 	"troops":	[{
 			"index":	0,

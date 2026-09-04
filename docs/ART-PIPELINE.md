@@ -110,6 +110,12 @@ and record both prompts in `ART-WORKLIST.md`.
 - **Base terrain** — `rd_plus__low_res` with `tile_x` and `tile_y`, opaque, the
   prompt describing a pattern rather than a subject: "a small crop cut from the
   middle of a much larger sheet of wrapping paper, printed all over with…".
+- **Object tiles** (the 1x1 castle) — `rd_plus__low_res`, 96x96, `figure: false`,
+  `remove_bg: true` with the magenta background named in the prompt and the
+  subject framed as "an isolated cut-out game sprite … drawn without any
+  ground plane". The ground is not in the art: the renderer draws the terrain
+  tile beneath every object tile. Asking for "no ground" alone did not work;
+  naming what lies below the walls (the background) and changing the seed did.
 - **Terrain edges** — composited from the finished base and grass tiles using
   the reference edge's alpha mask.
 

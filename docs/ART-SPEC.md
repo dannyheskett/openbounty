@@ -62,7 +62,7 @@ size in the right-hand column.
 
 | category | count | path |
 |---|---|---|
-| terrain and map objects | 72 | `art/tiles/` |
+| terrain and map objects | 67 | `art/tiles/` |
 | troop sprites and their animation frames | 100 | `art/troops/` |
 | villain portraits and frames | 68 | `art/villains/` |
 | combat field, obstacles, castle walls, cursors | 15 | `art/combat/` |
@@ -141,9 +141,10 @@ Both prerequisites this spec depended on are done:
 - The font glyph size is measured off the strip, so a pack can ship a
   higher-resolution font and have it drawn 1:1.
 
-What remains is the manifest flip -- `tile_h` 68 -> 96 -- which belongs with
-the new art, because the existing 48 x 34 sprites would stretch to a square
-until they are replaced.
+The manifest flip is done: Rome declares `tile_h` 96 (2026-09-04), so the
+cell is square and 96 x 96 art draws 1:1. Every tile or sprite still at
+48 x 34 stretches to a square until it is replaced; `ART-WORKLIST.md` is
+the list of what replaces them.
 
 ## 6. Verifying
 
