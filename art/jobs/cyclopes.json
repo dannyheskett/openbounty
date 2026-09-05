@@ -1,0 +1,18 @@
+{
+  "id": "cyclopes",
+  "_note": "run02 (hammer at rest on the ground) animated into a shoulder-high lift with a doubled hammer head; the shouldered still (rdgen reused the freed run01 number after run01 was deleted) shoulders the hammer with the head behind him so the swing is one arc up, over and down, and takes a new seed. The troop style appends the full-length profile, game-sprite and magenta-background clauses. Animate at 96 without padding.",
+  "prompt": "a huge one-eyed cave giant, single central eye, bare muscled torso, a heavy leather smith apron, a massive hammer resting across his right shoulder with the shaft in his right hand and the single hammer head behind him",
+  "style": "user__glory_of_rome_troops_bac676cd",
+  "width": 96,
+  "height": 96,
+  "seed": 5804,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": true,
+  "target": [
+    96,
+    96
+  ]
+}

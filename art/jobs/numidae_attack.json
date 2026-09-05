@@ -1,0 +1,20 @@
+{
+  "id": "numidae_attack",
+  "_note": "Animated at 96 with no padding from the accepted run02 still. Motion line as recorded in ART-WORKLIST.",
+  "prompt": "the horse surges forward one stride to the right and the falcata sweeps down and across from upright to full reach in front at shoulder height, then the horse settles back and the sword returns upright, the shield stays on his arm",
+  "style": "rd_advanced_animation__custom_action",
+  "width": 96,
+  "height": 96,
+  "seed": 5903,
+  "frames_duration": 4,
+  "return_spritesheet": true,
+  "input_image_path": "build/art/numidae/run02/01_raw.png",
+  "input_image_keep_alpha": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ]
+}

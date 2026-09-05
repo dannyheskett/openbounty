@@ -1,0 +1,20 @@
+{
+  "id": "antaei_attack",
+  "_note": "Animated at 96 with no padding from the approved run01 still, the route of the last troops. Motion line: path, two endpoints, then what stays still. Installed 2026-09-04 as the grey-granite recolour of run01: every opaque pixel except the pale glowing wounds (s<0.25, v>0.6) set to hue 0.60, saturation x0.25, value x1.2+0.08, done locally, because the generated moss-and-soil greens vanished against the grass.",
+  "prompt": "both enormous fists rise together from his sides up above his head, then slam straight down in front of him to the ground with the shoulders following, then lift back to where they started, both feet stay planted, the hunched back stays hunched",
+  "style": "rd_advanced_animation__custom_action",
+  "width": 96,
+  "height": 96,
+  "seed": 5502,
+  "frames_duration": 4,
+  "return_spritesheet": true,
+  "input_image_path": "build/art/antaei/run01/01_raw.png",
+  "input_image_keep_alpha": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ]
+}

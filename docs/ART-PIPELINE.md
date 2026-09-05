@@ -108,11 +108,23 @@ and record both prompts in `ART-WORKLIST.md`.
 - **A small unit** — generate *and* animate at 64x64, then composite each frame
   into a 96x96 transparent canvas at offset (16, 32). Two thirds height, by
   construction.
-- **Class portraits** — 192x204, `rd_pro__default`, opaque, no `remove_bg`.
-- **The class-select picker** — 256x164, `rd_pro__default`, with all four
-  approved portraits passed as `reference_images` and the prompt written as "the
-  same general in the bronze cuirass…". The four figures sit one per column,
-  left to right, in manifest order.
+- **Screen-shaped art** — the class portraits, the class-select picker, the
+  title and the six location backdrops all come from one engine,
+  `rd_pro__default`: opaque, no `remove_bg`, `bypass_prompt_expansion`,
+  `raw_only`, the prompt from the worklist row and nothing appended. They are
+  authored at the design size and the shell scales them by `ui_scale`, an exact
+  2x, so they all scale alike. RD Pro caps a side at 256 (see the caps below),
+  which is why design x2 is not the rule here: it fits only the portraits
+  (96x102 -> 192x204, how they were made); the backdrops are 240x102; the title
+  and picker, whose design sizes are wider than 256, were made at 256x164 and
+  are stretched to their rectangle.
+- **The class-select picker** — additionally passes all four approved portraits
+  as `reference_images`, the prompt written as "the same general in the bronze
+  cuirass…". The four figures sit one per column, left to right, in manifest
+  order.
+- **Location backdrops** — `figure: false`, `target [240, 102]`; the job is
+  `art/jobs/backdrop_castle.json`, the other five differ only in id, prompt and
+  seed.
 - **Base terrain** — `rd_plus__low_res` with `tile_x` and `tile_y`, opaque, the
   prompt describing a pattern rather than a subject: "a small crop cut from the
   middle of a much larger sheet of wrapping paper, printed all over with…".
@@ -124,6 +136,51 @@ and record both prompts in `ART-WORKLIST.md`.
   naming what lies below the walls (the background) and changing the seed did.
 - **Terrain edges** — composited from the finished base and grass tiles using
   the reference edge's alpha mask.
+- **The publisher splash** (`art/ui/splash_logo.png`, 320x84, transparent) —
+  composed, not generated whole, because generated lettering garbles. The
+  words are rendered locally from C059 Bold at 1-bit, white with the old
+  logo's red shading offset below and right; only the 44x44 emblem is
+  generated (`rd_pro__default`, `remove_bg`, magenta named in the prompt) and
+  pasted where the old globe sat; coins and sparkles are drawn.
+- **Making room for a motion** — when a still already holds its weapon out
+  (the Coloni fork ended 6 px from the edge), or a finished set is too big for
+  its cell (the Lupi), scale it to 80% through the k-centroid tool (black
+  flatten, alpha from coverage), then place it with the feet on row 88, the
+  ground line the men stand on, using one offset for every frame of a set so
+  the loop does not jitter. Animate the scaled still at 96 with no padding;
+  the padded 128 route shrinks a figure to three quarters (Manes, Dracones).
+- **Recolouring** — when a set reads fine but its colours vanish against the
+  grass (the Antaei's moss and soil), recolour the approved frames locally in
+  HSV rather than regenerating: every opaque pixel except the pale highlights
+  takes the new hue, and the pose and motion stay exactly as approved.
+
+---
+
+## Engines and their size caps
+
+One engine per kind of art, so each kind reads as one set. The caps are per
+side, per style, and they come from the API's own catalogue:
+
+```
+curl -H "X-RD-Token: $(cat ~/.config/retrodiffusion/token)" \
+  "https://api.retrodiffusion.ai/v2/styles/selector?model=rd_pro"
+```
+
+| kind | engine | authored at | cap (2026-09-04) |
+|---|---|---|---|
+| troop stills | `user__glory_of_rome_troops_bac676cd` | 96x96 | RD Pro template; not listed by the selector |
+| troop animation | `rd_advanced_animation__custom_action` | 96 or 128 | 32 to 256 |
+| terrain and object tiles | `rd_plus__low_res` | 96x96 | 16 to 128 |
+| screen-shaped art | `rd_pro__default` | design size (portraits x2) | 12 to 256 |
+
+Check the selector before promising a size. The cost check does not validate
+size: `rdgen cost` (and the `check_cost` call inside `run`) accepts and prices
+an oversize request, and the task then fails at inference with
+`inference_failed`, "Unable to run inference.", and no charge. That is what
+480x204 and 480x208 on `rd_pro__default` did on 2026-09-04. Only two styles
+reach 512 (`rd_plus__environment` and the internal `rd_plus__no_style`); they
+are a different engine and are not used for anything, so no piece changes look
+against its neighbours.
 
 ---
 

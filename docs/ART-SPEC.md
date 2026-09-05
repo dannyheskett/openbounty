@@ -44,8 +44,12 @@ Everything an artist delivers falls into one of two classes:
 sidebar panel. Authored at exactly `tile_w x tile_h`: **96 x 96**.
 
 **Screen-shaped art** — chrome, portraits, backdrops, splash screens. Authored
-at its design size times `ui_scale`. The design sizes are the original 320 x 200
-layout's, and they are listed in the table below so nobody has to derive them.
+at the size in the table below and scaled by `ui_scale` at draw time. The design
+sizes are the original 320 x 200 layout's, listed so nobody has to derive them.
+The generated pieces (title, picker, portraits, backdrops) all come from one
+engine, RD Pro, which caps a side at 256 (ART-PIPELINE, "Engines and their size
+caps"), so they are authored at the design size, an exact 2x on screen; the
+portraits are the one generated piece small enough to be made at x2.
 
 A third multiplier, the **presentation scale**, blows the whole finished buffer
 up (1x, 2x, 3x, ...). It is a per-machine viewing preference and changes nothing
@@ -73,17 +77,17 @@ These are one class on purpose: the same troop PNG is drawn into a combat cell,
 an army-roster row, a location screen and the victory cartoon. One square size
 means it is correct in all of them.
 
-### Screen-shaped — design size x 2
+### Screen-shaped — design size x 2, except the generated pieces (RD Pro cap 256)
 
 | asset | design | authored | path |
 |---|---|---|---|
 | chrome frame | 320 x 200 | **640 x 400** | `art/ui/chrome_overworld.png` |
-| splash title | 320 x 200 | **640 x 400** | `art/ui/` |
+| splash title | 320 x 200 | **256 x 164** (RD Pro cap, stretched to its rect) | `art/ui/` |
 | splash logo | 320 x 84 | **640 x 168** | `art/ui/` |
 | status bar strip | 320 x 5 | **640 x 10** | `art/ui/hud_bar_strip.png` |
-| class picker | 288 x 184 | **576 x 368** | `art/ui/` |
-| location backdrops | 240 x 102 | **480 x 204** | `art/ui/` (6) |
-| ending win / lose | 144 x 170 | **288 x 340** | `art/ui/` (2) |
+| class picker | 288 x 184 | **256 x 164** (RD Pro cap, stretched to its rect) | `art/ui/` |
+| location backdrops | 240 x 102 | **240 x 102** (design size; RD Pro cap) | `art/ui/` (6) |
+| ending win / lose | 144 x 170 | **144 x 170** (design size; RD Pro cap) | `art/ui/` (2) |
 | class portraits | 96 x 102 | **192 x 204** | `art/classes/` (4) |
 | class-select highlight | 42 x 44 | **84 x 88** | `art/ui/` |
 | puzzle cover chip | 9 x 6 | **18 x 12** | `art/ui/` |

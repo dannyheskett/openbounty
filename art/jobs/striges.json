@@ -1,0 +1,18 @@
+{
+  "id": "striges",
+  "_note": "Prompt as written in ART-WORKLIST. Neutral stance so the attack is the travel the animation spends. The troop style appends the full-length profile, game-sprite and magenta-background clauses. Animate at 96 without padding.",
+  "prompt": "a screech-owl vampire, a hunched winged creature with owl features and a human face, bloodied talons, membranous wings spread",
+  "style": "user__glory_of_rome_troops_bac676cd",
+  "width": 96,
+  "height": 96,
+  "seed": 5601,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": true,
+  "target": [
+    96,
+    96
+  ]
+}

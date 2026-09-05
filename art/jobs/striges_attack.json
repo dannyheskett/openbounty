@@ -1,0 +1,20 @@
+{
+  "id": "striges_attack",
+  "_note": "Animated at 96 with no padding from the run01 still scaled to 66% through the API's k-centroid tool (black flatten, alpha from coverage) and re-centred with the feet on row 88, because the still spans 94 of 96 columns. Motion line: path, two endpoints, then what stays still.",
+  "prompt": "it lunges forward and down to the right with both taloned feet thrust out in front of it, raking downward, the wings beating back behind it, then it springs back up to where it started with the wings spread, the human face keeps facing forward",
+  "style": "rd_advanced_animation__custom_action",
+  "width": 96,
+  "height": 96,
+  "seed": 5602,
+  "frames_duration": 4,
+  "return_spritesheet": true,
+  "input_image_path": "build/art/striges/run01/01_scaled66.png",
+  "input_image_keep_alpha": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ]
+}

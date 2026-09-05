@@ -1,0 +1,16 @@
+{
+  "id": "backdrop_dungeon",
+  "_note": "Location backdrop, same route as art/jobs/backdrop_castle.json: rd_pro__default at the 240x102 design size (RD Pro caps a side at 256), opaque, scaled 2x by the shell.",
+  "prompt": "a crypt interior with columbarium niches and torchlight",
+  "style": "rd_pro__default",
+  "width": 240,
+  "height": 102,
+  "seed": 6106,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    240,
+    102
+  ]
+}

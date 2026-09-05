@@ -1,0 +1,20 @@
+{
+  "id": "tirones_attack",
+  "_note": "The Hastati and Velites route: rd_advanced_animation__custom_action at 96x96 with no padding, so the frames keep the still's size (the padded 128 route shrank the figure to three quarters in runs 01-02). Path with two named endpoints, then what stays still. Input is the accepted run04 still. run04: run03 swung the blade across to the left, so the direction is named as the way he faces, toward the right edge, seed incremented.",
+  "prompt": "the blade starts low on his left beside the shield and sweeps across in front of him toward the right, the way he faces, ending with his arm straight out to the right at chest height and the point toward the right edge, then comes back to where it started, the shield stays raised in front of his chest, both feet stay planted",
+  "style": "rd_advanced_animation__custom_action",
+  "width": 96,
+  "height": 96,
+  "seed": 5314,
+  "frames_duration": 4,
+  "return_spritesheet": true,
+  "input_image_path": "build/art/tirones/run04/01_raw.png",
+  "input_image_keep_alpha": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ]
+}

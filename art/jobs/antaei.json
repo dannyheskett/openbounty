@@ -1,0 +1,18 @@
+{
+  "id": "antaei",
+  "_note": "Prompt as written in ART-WORKLIST. Neutral stance so the attack is the travel the animation spends. The troop style appends the full-length profile, game-sprite and magenta-background clauses. Animate at 96 without padding, the route of the last four troops.",
+  "prompt": "a hulking earth-giant, hunched, skin caked in soil and moss, enormous hands, regenerating wounds glowing faintly",
+  "style": "user__glory_of_rome_troops_bac676cd",
+  "width": 96,
+  "height": 96,
+  "seed": 5501,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": true,
+  "target": [
+    96,
+    96
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "id": "end_lose_screen",
+  "prompt": "a broken Roman eagle standard fallen in mud with a burning frontier fort behind, the mud strewn with the gear of fallen legionaries: a snapped gladius, a dented crested helmet, a split rectangular scutum shield, a bent pilum and scattered mail, no people anywhere",
+  "style": "rd_pro__default",
+  "width": 144,
+  "height": 170,
+  "seed": 6302,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    144,
+    170
+  ],
+  "_pack_path": "art/ui/end_lose_screen.png",
+  "_note": "Ending lose screen, screen-shaped route: rd_pro__default at the 144x170 design size (RD Pro caps a side at 256, so x2 = 288x340 does not fit; the shell scales it by an exact 2x), opaque, no references since there is no figure. Worklist prompt plus 'no people anywhere'. run02 adds the fallen legionaries' gear in the mud (snapped gladius, dented helmet, split scutum, bent pilum, mail), seed incremented."
+}
