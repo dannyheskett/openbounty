@@ -107,7 +107,10 @@ and record both prompts in `ART-WORKLIST.md`.
 
 - **A small unit** — generate *and* animate at 64x64, then composite each frame
   into a 96x96 transparent canvas at offset (16, 32). Two thirds height, by
-  construction.
+  construction. The Lares went this way. If the 64 animation mangles the
+  weapon (the Fauni's branch doubled twice), generate and animate at 96 like
+  the men and scale the four frames to 66% together through the k-centroid
+  tool, one shared offset, feet on row 88.
 - **Screen-shaped art** — the class portraits, the class-select picker, the
   title and the six location backdrops all come from one engine,
   `rd_pro__default`: opaque, no `remove_bg`, `bypass_prompt_expansion`,

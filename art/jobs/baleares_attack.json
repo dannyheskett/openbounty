@@ -1,0 +1,20 @@
+{
+  "id": "baleares_attack",
+  "_note": "Batch of 2026-09-05. Still scaled to 80% through the API's k-centroid tool (black flatten, alpha from coverage), feet on row 88, for motion room. Animated at 96 with no padding. Motion line: path, two endpoints, then what stays still.",
+  "prompt": "he whirls the sling once in a circle above his head and releases the stone forward to the right, his arm following through in front of him, then the arm drops back to his side, both feet stay planted",
+  "style": "rd_advanced_animation__custom_action",
+  "width": 96,
+  "height": 96,
+  "seed": 6154,
+  "frames_duration": 4,
+  "return_spritesheet": true,
+  "input_image_path": "build/art/baleares/run02/01_scaled80.png",
+  "input_image_keep_alpha": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "id": "gigantes",
+  "_note": "Batch of 2026-09-05, prompt rewritten from the worklist row into a neutral stance with the weapon at rest, so the attack is the animation's travel. Animate at 96 without padding.",
+  "prompt": "a towering giant with serpent-scaled legs, wild hair and beard, bare chest, holding a large boulder at rest against his chest in both hands",
+  "style": "user__glory_of_rome_troops_bac676cd",
+  "width": 96,
+  "height": 96,
+  "seed": 6131,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": true,
+  "target": [
+    96,
+    96
+  ]
+}

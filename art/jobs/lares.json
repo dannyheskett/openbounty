@@ -1,0 +1,18 @@
+{
+  "id": "lares",
+  "_note": "Batch of 2026-09-05, prompt rewritten from the worklist row into a neutral stance with the weapon at rest, so the attack is the animation's travel. Small unit: generated and animated at 64x64, then composited into 96x96 at offset (16, 32), per ART-PIPELINE.",
+  "prompt": "a tiny glowing household spirit, a small floating robed figure with a faint golden halo, translucent and weightless, hovering just above the ground with its hands folded",
+  "style": "user__glory_of_rome_troops_bac676cd",
+  "width": 64,
+  "height": 64,
+  "seed": 6171,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": true,
+  "target": [
+    64,
+    64
+  ]
+}
