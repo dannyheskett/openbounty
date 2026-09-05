@@ -764,6 +764,11 @@ typedef struct {
     char id[RES_ID_LEN];
     char name[RES_NAME_LEN];
     char map_path[RES_PATH_LEN];
+    // Optional terrain art folder: when set, every tile_codes art name for
+    // this zone resolves under art/tiles/<tile_set>/ instead of art/tiles/.
+    // Empty means the shared set. Object tiles (towns, castles, chests...)
+    // are never affected.
+    char tile_set[RES_ID_LEN];
     int  width, height;
     int  hero_spawn_x, hero_spawn_y;
     int  neighbor_count;

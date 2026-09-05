@@ -83,7 +83,9 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
             // of the black map fill; an opaque object covers the ground
             // completely, so nothing that drew before this draws differently.
             if (t->interactive != INTERACT_NONE) {
-                Texture2D ground = tile_cache_get(TerrainName(t->terrain));
+                char ga[TILE_ART_NAME_LEN];
+                Texture2D ground = tile_cache_get(
+                    MapTerrainArt(m, TerrainName(t->terrain), ga, sizeof ga));
                 if (ground.id) {
                     Rectangle gsrc = { 0, 0, (float)ground.width,
                                        (float)ground.height };

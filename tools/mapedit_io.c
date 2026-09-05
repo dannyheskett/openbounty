@@ -91,6 +91,7 @@ bool mapedit_load(MapGrid *m, const Resources *res, const char *zone_id) {
     m->w = z->width;
     m->h = z->height;
     snprintf(m->zone_id, sizeof m->zone_id, "%s", zone_id);
+    snprintf(m->tile_set, sizeof m->tile_set, "%s", z->tile_set);
     snprintf(m->dat_path, sizeof m->dat_path, "%s", z->map_path);
     for (int y = 0; y < m->h; y++)
         for (int x = 0; x < m->w; x++)

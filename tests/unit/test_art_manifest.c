@@ -112,6 +112,35 @@ TEST castle_art_follows_the_footprint(void) {
     PASS();
 }
 
+TEST terrain_art_is_listed_per_tile_set(void) {
+    // The shared art/tiles/ set is listed while some zone draws it; a zone
+    // that declares "tile_set" adds art/tiles/<set>/<art>.png for every tile
+    // code, once per distinct set; and when every zone declares a set the
+    // shared names drop out, so a pack ships exactly the terrain it draws.
+    Resources *r = fx_load_resources();
+    ASSERT(r);
+    ASSERT(r->zone_count >= 2);
+    int n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    ASSERT(manifest_has(n, "art/tiles/grass.png"));
+    ASSERT_FALSE(manifest_has(n, "art/tiles/alpha/grass.png"));
+
+    strcpy(r->zones[0].tile_set, "alpha");
+    n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    ASSERT(manifest_has(n, "art/tiles/grass.png"));
+    ASSERT(manifest_has(n, "art/tiles/alpha/grass.png"));
+    ASSERT(manifest_has(n, "art/tiles/alpha/water_edge_01.png"));
+
+    for (int i = 0; i < r->zone_count; i++) strcpy(r->zones[i].tile_set, "alpha");
+    n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    ASSERT_FALSE(manifest_has(n, "art/tiles/grass.png"));
+    int alpha = 0;
+    for (int i = 0; i < n; i++)
+        if (strcmp(s_paths[i], "art/tiles/alpha/grass.png") == 0) alpha++;
+    ASSERT_EQ(1, alpha);
+    resources_free(r); free(r);
+    PASS();
+}
+
 TEST a_pack_may_name_its_own_font(void) {
     // The path was compiled into main.c. Defaulted, not hardcoded, now.
     Resources *r = fx_load_resources();
@@ -128,5 +157,6 @@ SUITE(unit_art_manifest_suite) {
     RUN_TEST(manifest_covers_every_category);
     RUN_TEST(placed_object_names_are_asked_for_not_copied);
     RUN_TEST(castle_art_follows_the_footprint);
+    RUN_TEST(terrain_art_is_listed_per_tile_set);
     RUN_TEST(a_pack_may_name_its_own_font);
 }

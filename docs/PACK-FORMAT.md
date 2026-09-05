@@ -201,6 +201,22 @@ with `art/tiles/castle.png`, the way a town is:
 
 A pack only needs the castle art for the footprints it uses.
 
+**Per-zone terrain art.** A zone may declare `"tile_set": "<folder>"`. Every
+`tile_codes` art name for that zone then resolves under
+`art/tiles/<folder>/` instead of `art/tiles/`, so one `.dat` and one
+`tile_codes` table serve every continent while each draws its own grass,
+forest, water, edges and bridges. The folder must hold a file for every
+`tile_codes` art the pack declares; the art manifest lists them, so
+validation catches a missing one. Object tiles (towns, castles, chests,
+signs, dwellings) are never affected. A zone without the key draws the
+shared `art/tiles/` set, so packs that predate the key load unchanged, and
+the shared set is only required while some zone still uses it.
+
+```json
+{ "id": "galliae", "name": "Galliae", "map": "maps/galliae.dat",
+  "tile_set": "galliae", ... }
+```
+
 ---
 
 ## 7. Palettes

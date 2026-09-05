@@ -358,6 +358,7 @@ static void parse_zones(Resources *res, cJSON *arr) {
             const char *p = (strncmp(rel, legacy, llen) == 0) ? rel + llen : rel;
             resources_resolve_path(res, p, z->map_path, sizeof z->map_path);
         }
+        copy_str(z->tile_set, sizeof(z->tile_set), json_str(it, "tile_set", ""));
         z->width  = json_int(it, "width",  64);
         z->height = json_int(it, "height", 64);
         cJSON *hs = cJSON_GetObjectItem(it, "hero_spawn");
@@ -2412,12 +2413,33 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
     }
 
     // Tile art: tile_codes carry a bare name that tile_cache resolves under
-    // art/tiles/. Expand it here so callers see real paths.
-    for (int i = 0; i < RES_TILE_CODE_COUNT; i++) {
-        if (!res->tile_codes[i].present || !res->tile_codes[i].art[0]) continue;
-        char p[RES_PATH_LEN];
-        snprintf(p, sizeof p, "art/tiles/%s.png", res->tile_codes[i].art);
-        art_add(out, cap, &n, p);
+    // art/tiles/, or under art/tiles/<tile_set>/ for a zone that declares a
+    // set. List the shared set only while some zone uses it, and each
+    // declared set once, so a pack ships exactly the terrain it draws.
+    bool shared = (res->zone_count == 0);
+    for (int zi = 0; zi < res->zone_count; zi++)
+        if (!res->zones[zi].tile_set[0]) shared = true;
+    for (int zi = -1; zi < res->zone_count; zi++) {
+        const char *set = NULL;
+        if (zi < 0) {
+            if (!shared) continue;
+        } else {
+            set = res->zones[zi].tile_set;
+            if (!set[0]) continue;
+            bool dup = false;
+            for (int k = 0; k < zi; k++)
+                if (strcmp(res->zones[k].tile_set, set) == 0) dup = true;
+            if (dup) continue;
+        }
+        for (int i = 0; i < RES_TILE_CODE_COUNT; i++) {
+            if (!res->tile_codes[i].present || !res->tile_codes[i].art[0]) continue;
+            char p[RES_PATH_LEN];
+            if (set)
+                snprintf(p, sizeof p, "art/tiles/%s/%s.png", set, res->tile_codes[i].art);
+            else
+                snprintf(p, sizeof p, "art/tiles/%s.png", res->tile_codes[i].art);
+            art_add(out, cap, &n, p);
+        }
     }
 
     return n;

@@ -360,10 +360,29 @@ static void draw_art(GbWorkspace *ws, int top) {
     int y = y0 + 22, shown = 0, missing = 0;
 
     if (M.art_category == 0) {
+        // Terrain is listed once per tile set: the shared art/tiles/ while
+        // some zone uses it, then each zone's declared tile_set folder
+        // (PACK-FORMAT section 6), the way the engine's manifest lists it.
+        const char *sets[RES_MAX_ZONES + 1];
+        int set_count = 0;
+        bool shared = (ws->res.zone_count == 0);
+        for (int zi = 0; zi < ws->res.zone_count; zi++) {
+            const char *ts = ws->res.zones[zi].tile_set;
+            if (!ts[0]) { shared = true; continue; }
+            bool dup = false;
+            for (int k = 0; k < set_count; k++)
+                if (strcmp(sets[k], ts) == 0) dup = true;
+            if (!dup) sets[set_count++] = ts;
+        }
+        int first = shared ? 0 : 1;
         cJSON *tc = cJSON_GetObjectItem(ws->doc, "tile_codes");
+        for (int si = first; si <= set_count; si++)
         for (cJSON *c = tc ? tc->child : NULL; c; c = c->next) {
-            const char *art = str_of(c, "art", NULL);
-            if (!art) continue;
+            const char *stem = str_of(c, "art", NULL);
+            if (!stem) continue;
+            char art[96];
+            if (si == 0) snprintf(art, sizeof art, "%s", stem);
+            else snprintf(art, sizeof art, "%s/%s", sets[si - 1], stem);
             Texture2D t = tile_cache_get(art);
             int col = shown % 10, rw = shown / 10;
             int px = 16 + col * 108, py = y + rw * 84;

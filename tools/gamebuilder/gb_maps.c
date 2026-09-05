@@ -163,7 +163,13 @@ static void draw_terrain(GbMapView *v, const MapGrid *g) {
                 DrawRectangleRec(dst, TERRAIN_COL[c->terrain]);
                 continue;
             }
-            Texture2D t = tile_cache_get(mapedit_art_for(c->terrain, c->variant));
+            // Terrain art lives under the zone's tile set folder when it
+            // declares one, exactly as engine/map.c MapTerrainArt resolves it.
+            char art[64];
+            snprintf(art, sizeof art, "%s%s%s", g->tile_set,
+                     g->tile_set[0] ? "/" : "",
+                     mapedit_art_for(c->terrain, c->variant));
+            Texture2D t = tile_cache_get(art);
             if (t.id) {
                 Rectangle src = { 0, 0, (float)t.width, (float)t.height };
                 DrawTexturePro(t, src, dst, (Vector2){ 0, 0 }, 0, WHITE);

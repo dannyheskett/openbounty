@@ -86,7 +86,8 @@ int try_build_bridge(Game *g, Map *map, int dx, int dy) {
         map->tiles[ny][nx].interactive = INTERACT_NONE;
         map->tiles[ny][nx].blocks_foot = false;
         map->tiles[ny][nx].is_bridge = true;
-        strncpy(map->tiles[ny][nx].art, bridge_art, TILE_ART_NAME_LEN - 1);
+        MapTerrainArt(map, bridge_art, map->tiles[ny][nx].art,
+                      sizeof(map->tiles[ny][nx].art));
 
         built++;
         if (built >= 2) break;  // builds max 2 tiles (or up to 5 water tiles)

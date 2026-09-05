@@ -15,11 +15,21 @@ static void copy_string(char *dst, size_t dst_size, const char *src) {
 
 // Translate one character from the .dat into a Tile, using the tile_codes
 // lookup in Resources. Returns false if the byte has no mapping.
-static bool fill_tile_from_code(Tile *t, const Resources *res, unsigned char c) {
+const char *MapTerrainArt(const Map *map, const char *stem, char *out, size_t cap) {
+    if (!out || cap == 0) return "";
+    if (map && map->tile_set[0])
+        snprintf(out, cap, "%s/%s", map->tile_set, stem ? stem : "");
+    else
+        snprintf(out, cap, "%s", stem ? stem : "");
+    return out;
+}
+
+static bool fill_tile_from_code(const Map *map, Tile *t, const Resources *res,
+                                unsigned char c) {
     if (c >= RES_TILE_CODE_COUNT) return false;
     const ResTileCode *tc = &res->tile_codes[c];
     if (!tc->present) return false;
-    copy_string(t->art, sizeof(t->art), tc->art);
+    MapTerrainArt(map, tc->art, t->art, sizeof(t->art));
     t->terrain     = (Terrain)tc->terrain;
     t->blocks_foot = tc->blocks_foot;
     t->is_bridge   = tc->is_bridge;
@@ -32,8 +42,8 @@ static bool fill_tile_from_code(Tile *t, const Resources *res, unsigned char c) 
     return true;
 }
 
-static void default_tile(Tile *t) {
-    copy_string(t->art, sizeof(t->art), "grass");
+static void default_tile(const Map *map, Tile *t) {
+    MapTerrainArt(map, "grass", t->art, sizeof(t->art));
     t->terrain     = TERRAIN_GRASS;
     t->blocks_foot = false;
     t->is_bridge   = false;
@@ -76,6 +86,7 @@ static bool load_dat(Map *map, const Resources *res, const ResZone *zone) {
         return false;
     }
     copy_string(map->name, sizeof(map->name), zone->id);
+    copy_string(map->tile_set, sizeof(map->tile_set), zone->tile_set);
     map->hero_spawn_x = zone->hero_spawn_x;
     map->hero_spawn_y = zone->hero_spawn_y;
     map->navmap_x = map->navmap_y = -1;
@@ -83,7 +94,7 @@ static bool load_dat(Map *map, const Resources *res, const ResZone *zone) {
 
     for (int y = 0; y < map->height; y++)
         for (int x = 0; x < map->width; x++)
-            default_tile(&map->tiles[y][x]);
+            default_tile(map, &map->tiles[y][x]);
 
     const char *p   = (const char *)bytes;
     const char *end = (const char *)bytes + sz;
@@ -93,7 +104,7 @@ static bool load_dat(Map *map, const Resources *res, const ResZone *zone) {
         int x = 0;
         while (p < end && *p != '\n' && *p != '\r' && x < map->width) {
             unsigned char c = (unsigned char)*p++;
-            if (!fill_tile_from_code(&map->tiles[y][x], res, c)) {
+            if (!fill_tile_from_code(map, &map->tiles[y][x], res, c)) {
                 fprintf(stdout,
                         "MapLoadZone: %s:%d:%d unknown tile code 0x%02x '%c'\n",
                         zone->map_path, y + 1, x + 1, c,
@@ -418,9 +429,9 @@ void MapClearInteractive(Map *map, int x, int y) {
     // edges, alcoves on mountain-variant tiles, etc.). Water stays
     // water so picked-up floating interactives don't become walkable.
     if (t->terrain == TERRAIN_WATER) {
-        copy_string(t->art, sizeof(t->art), "water");
+        MapTerrainArt(map, "water", t->art, sizeof(t->art));
     } else {
-        copy_string(t->art, sizeof(t->art), "grass");
+        MapTerrainArt(map, "grass", t->art, sizeof(t->art));
         t->terrain     = TERRAIN_GRASS;
         t->blocks_foot = false;
         t->is_bridge   = false;

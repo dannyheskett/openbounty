@@ -275,6 +275,10 @@ this describes work not yet done.
 
 ## 12. Pixel editor
 
+- **GB-244a.** The map view draws a zone's terrain from its `tile_set`
+  folder when the zone declares one, and the Art tab lists terrain once per
+  tile set (the shared set only while some zone uses it), matching the
+  engine's manifest (REQ-227a).
 - **GB-250.** The editor shall include a **pixel editor** for pack sprites and
   tiles, opened from the art catalogue on any image.
 - **GB-251.** It shall be **constrained to the pack**: the image's own

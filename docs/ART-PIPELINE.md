@@ -131,12 +131,32 @@ and record both prompts in `ART-WORKLIST.md`.
 - **Base terrain** — `rd_plus__low_res` with `tile_x` and `tile_y`, opaque, the
   prompt describing a pattern rather than a subject: "a small crop cut from the
   middle of a much larger sheet of wrapping paper, printed all over with…".
-- **Object tiles** (the 1x1 castle) — `rd_plus__low_res`, 96x96, `figure: false`,
-  `remove_bg: true` with the magenta background named in the prompt and the
-  subject framed as "an isolated cut-out game sprite … drawn without any
-  ground plane". The ground is not in the art: the renderer draws the terrain
-  tile beneath every object tile. Asking for "no ground" alone did not work;
-  naming what lies below the walls (the background) and changing the seed did.
+- **Object tiles** (the per-zone towns; the 1x1 castle is an older
+  `rd_plus__low_res` placeholder to be redone on this route) — `rd_pro__topdown`,
+  96x96, `figure: false`, `remove_bg: true` with the magenta background named in
+  the prompt, **no reference image**. Settled on 2026-09-05 after an engine test
+  on one prompt across `rd_plus__low_res`, `rd_tile__tile_object`,
+  `rd_plus__topdown_asset` and `rd_pro__topdown`; only the last read as a town
+  with a facing and no slab. What the runs taught, in order of weight:
+  - A facing cue is required. "Seen from a high angle" alone gives an
+    isometric diorama on a plinth, every time. "The buildings seen from the
+    front and above with their doors facing the viewer" gives the game's view.
+  - A reference image (the castle tile) made the model fill the frame edge to
+    edge, three runs out of three; dropping it fixed the framing in one. The
+    docs say references "re-imagine" the source, so use them for a character
+    that must recur, not for palette.
+  - Generating smaller (RD Pro goes down to 12px) does not make a margin; the
+    model fills whatever canvas it gets. Margin wording is ignored too. The
+    seed is the lever for framing.
+  - Freestanding is wording: "no wall, fence or gate, only the flat magenta
+    background between and below the buildings". A road drawn "from the bottom
+    edge" makes the model fill and crop the frame; "a short stub of paved road
+    between the middle buildings, the road the only ground drawn" keeps the
+    framing about half the time, so budget two seeds per tile with a road.
+  - Prompt expansion has no effect on `rd_plus__low_res` (byte-identical
+    output either way).
+  The ground is not in the art: the renderer draws the terrain tile beneath
+  every object tile.
 - **Terrain edges** — composited from the finished base and grass tiles using
   the reference edge's alpha mask.
 - **The publisher splash** (`art/ui/splash_logo.png`, 320x84, transparent) —
@@ -144,7 +164,10 @@ and record both prompts in `ART-WORKLIST.md`.
   words are rendered locally from C059 Bold at 1-bit, white with the old
   logo's red shading offset below and right; only the 44x44 emblem is
   generated (`rd_pro__default`, `remove_bg`, magenta named in the prompt) and
-  pasted where the old globe sat; coins and sparkles are drawn.
+  pasted where the old globe sat; coins and sparkles are drawn. The
+  composition is `tools/splashlogo.py`. The emblem is a Mediterranean globe in
+  a laurel wreath; an earlier eagle emblem was dropped because it read as a
+  Reich eagle.
 - **Making room for a motion** — when a still already holds its weapon out
   (the Coloni fork ended 6 px from the edge), or a finished set is too big for
   its cell (the Lupi), scale it to 80% through the k-centroid tool (black
@@ -173,7 +196,8 @@ curl -H "X-RD-Token: $(cat ~/.config/retrodiffusion/token)" \
 |---|---|---|---|
 | troop stills | `user__glory_of_rome_troops_bac676cd` | 96x96 | RD Pro template; not listed by the selector |
 | troop animation | `rd_advanced_animation__custom_action` | 96 or 128 | 32 to 256 |
-| terrain and object tiles | `rd_plus__low_res` | 96x96 | 16 to 128 |
+| terrain tiles | `rd_plus__low_res` | 96x96 | 16 to 128 |
+| object tiles (towns) | `rd_pro__topdown` | 96x96 | 12 to 256 |
 | screen-shaped art | `rd_pro__default` | design size (portraits x2) | 12 to 256 |
 
 Check the selector before promising a size. The cost check does not validate

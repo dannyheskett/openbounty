@@ -833,6 +833,14 @@ except where a deviation is explicitly flagged (§34).
   are ignored. Each byte is looked up in `Resources.tile_codes[128]` to produce
   an art name plus terrain/blocking flags; short rows are padded with grass.
   The shipped pack uses 54 distinct tile codes (§Appendix A).
+- **REQ-227a.** A zone that declares `tile_set` has had every terrain art
+  name it stamps prefixed with `<tile_set>/` (`engine/map.c MapTerrainArt`),
+  including the grass padding, the grass or water a cleared object reverts
+  to, and bridge tiles built by the Bridge spell, so the shell's tile cache
+  loads `art/tiles/<tile_set>/<art>.png`. Object art stamped from the zone
+  lists is never prefixed. A zone without the key is unchanged. The art
+  manifest lists the shared terrain only while some zone draws it, and each
+  declared set once.
 
 ### 9.7 Castle and town tile placement
 

@@ -66,7 +66,7 @@ size in the right-hand column.
 
 | category | count | path |
 |---|---|---|
-| terrain and map objects | 67 | `art/tiles/` |
+| terrain and map objects | 67 | `art/tiles/` (a zone with `tile_set` draws its terrain from `art/tiles/<set>/` instead; objects stay shared) |
 | troop sprites and their animation frames | 100 | `art/troops/` |
 | villain portraits and frames | 68 | `art/villains/` |
 | combat field, obstacles, castle walls, cursors | 15 | `art/combat/` |

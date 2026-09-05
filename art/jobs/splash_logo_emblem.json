@@ -1,10 +1,10 @@
 {
   "id": "splash_logo_emblem",
-  "prompt": "a small game emblem of a bronze Roman globe wrapped in a golden laurel wreath with a golden eagle perched on top, wings half spread, solid magenta background",
+  "prompt": "a small game emblem of a bronze globe showing the Mediterranean Sea in blue with the coasts of Italy, Greece, North Africa and Spain around it in raised bronze, wrapped in a golden laurel wreath, solid magenta background",
   "style": "rd_pro__default",
   "width": 44,
   "height": 44,
-  "seed": 6401,
+  "seed": 6402,
   "remove_bg": true,
   "return_non_bg_removed": true,
   "bypass_prompt_expansion": true,
@@ -15,5 +15,5 @@
     44
   ],
   "_pack_path": "art/ui/splash_logo.png (composited)",
-  "_note": "The emblem for the publisher splash, the homage to the old logo's globe. The lettering ('Dan' / 'Heskett' / 'Presents...') is rendered locally in C059 Bold as 1-bit white with red shading, because generated text garbles; only this 44x44 emblem is generated, on rd_pro__default like every other screen piece, then composited into the 320x84 transparent field with drawn coins and sparkles."
+  "_note": "The emblem for the publisher splash, the homage to the old logo's globe. The lettering ('Dan' / 'Heskett' / 'Presents...') is rendered locally in C059 Bold as 1-bit white with red shading, because generated text garbles; only this 44x44 emblem is generated, on rd_pro__default like every other screen piece, then composited by tools/splashlogo.py into the 320x84 transparent field with drawn coins and sparkles. run02 (2026-09-05): the eagle is dropped (it read too close to a Reich eagle); the globe now shows the Mediterranean, so the emblem is the map of the game."
 }

@@ -40,6 +40,7 @@ typedef struct {
     int     w, h;
     MapCell cell[MAPEDIT_MAX_H][MAPEDIT_MAX_W];
     char    zone_id[32];
+    char    tile_set[32];   // the zone's terrain art folder, "" = shared
     char    dat_path[192];
     bool    dirty;
 } MapGrid;

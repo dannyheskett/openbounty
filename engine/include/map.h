@@ -3,10 +3,11 @@
 
 #include <stdbool.h>
 #include "tile.h"
+#include <stddef.h>
 
 #define MAP_MAX_W 64
 #define MAP_MAX_H 128
-#define TILE_ART_NAME_LEN  24
+#define TILE_ART_NAME_LEN  48   // "<tile_set>/<terrain art>" must fit
 #define TILE_ID_LEN        24
 
 #define TILE_SIGN_TITLE_LEN 48
@@ -39,8 +40,17 @@ typedef struct {
     int  navmap_y;
     int  orb_x;
     int  orb_y;
+    // The zone's terrain art folder ("" = the shared art/tiles/). Every
+    // terrain art name stamped into a Tile goes through MapTerrainArt so
+    // the prefix is applied in exactly one place.
+    char tile_set[32];
     Tile tiles[MAP_MAX_H][MAP_MAX_W];
 } Map;
+
+// Write the art name for a terrain art stem in this map's tile set into
+// `out`: "<tile_set>/<stem>" when the map declares a set, else the stem.
+// Returns `out`.
+const char *MapTerrainArt(const Map *map, const char *stem, char *out, size_t cap);
 
 // Pull in Resources so the loader sees it. (It's a small header.)
 #include "resources.h"
