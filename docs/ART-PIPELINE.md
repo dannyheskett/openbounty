@@ -128,9 +128,24 @@ and record both prompts in `ART-WORKLIST.md`.
 - **Location backdrops** — `figure: false`, `target [240, 102]`; the job is
   `art/jobs/backdrop_castle.json`, the other five differ only in id, prompt and
   seed.
-- **Base terrain** — `rd_plus__low_res` with `tile_x` and `tile_y`, opaque, the
-  prompt describing a pattern rather than a subject: "a small crop cut from the
-  middle of a much larger sheet of wrapping paper, printed all over with…".
+- **Base terrain** (grass, grass_variant, forest, mountain, desert) —
+  `rd_tile__single_tile`, the API's purpose-built seamless tile style (cap 64;
+  its craft guide sizes single tiles at 16 to 32), at **48x48**, laid 2x2 by
+  `tools/tile2x2.py` into the 96x96 pack tile at native pixel density, so the
+  repeat period is 48. The terrain is described plainly, "seen from directly
+  above ... the same everywhere". Settled 2026-09-05 after nine runs on the
+  earlier route (`rd_plus__low_res` with `tile_x`/`tile_y` and a prompt
+  describing a crop of printed wrapping paper): that route holds the wrap but
+  the model shades each tile's interior, which repeats as a lattice across a
+  field (a rim on grass, a diamond on forest), and no wording, seed or
+  prompt-expansion setting removed it. The tile style does not shade the
+  interior. Judge every terrain as a 4x4 field at 1:1
+  (`build/art/terrain_review.py`), never a single tile zoomed. No
+  post-processing of terrain (Dan, 2026-09-05).
+  - **Water is the exception**: the installed tile is the earlier low_res
+    route (seed 3107), kept because the tile style drew water as a bevelled
+    block face with a lit rim on two runs with different wording. It is flat,
+    seamless and approved, so it stays.
 - **Object tiles** (the per-zone towns; the 1x1 castle is an older
   `rd_plus__low_res` placeholder to be redone on this route) — `rd_pro__topdown`,
   96x96, `figure: false`, `remove_bg: true` with the magenta background named in
@@ -157,8 +172,13 @@ and record both prompts in `ART-WORKLIST.md`.
     output either way).
   The ground is not in the art: the renderer draws the terrain tile beneath
   every object tile.
-- **Terrain edges** — composited from the finished base and grass tiles using
-  the reference edge's alpha mask.
+- **Terrain edges** (48 files) — not generated. `tools/tileedges.py`
+  composites each from the installed base and grass tiles: the original
+  48x34 edge tile under `art/reference/edges/` is read as a shape (each pixel
+  is terrain or grass by which original base's colours it is nearest), the
+  mask is resized to the pack tile and filled with the new bases, so every
+  edge seams with its neighbours by construction. Re-run it whenever a base
+  changes; with a tile-set argument it writes a zone's folder.
 - **The publisher splash** (`art/ui/splash_logo.png`, 320x84, transparent) —
   composed, not generated whole, because generated lettering garbles. The
   words are rendered locally from C059 Bold at 1-bit, white with the old
@@ -196,7 +216,7 @@ curl -H "X-RD-Token: $(cat ~/.config/retrodiffusion/token)" \
 |---|---|---|---|
 | troop stills | `user__glory_of_rome_troops_bac676cd` | 96x96 | RD Pro template; not listed by the selector |
 | troop animation | `rd_advanced_animation__custom_action` | 96 or 128 | 32 to 256 |
-| terrain tiles | `rd_plus__low_res` | 96x96 | 16 to 128 |
+| terrain tiles | `rd_tile__single_tile` (water: `rd_plus__low_res`) | 48x48 laid 2x2 | 16 to 64 |
 | object tiles (towns) | `rd_pro__topdown` | 96x96 | 12 to 256 |
 | screen-shaped art | `rd_pro__default` | design size (portraits x2) | 12 to 256 |
 

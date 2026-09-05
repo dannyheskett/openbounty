@@ -96,8 +96,8 @@ def render_flat(rows, w, h, codes, scale):
     return img
 
 
-def render_tiles(rows, w, h, codes, pack_dir, tile_set=""):
-    TW, TH = 48, 34
+def render_tiles(rows, w, h, codes, pack_dir, tile_set="", cell=(48, 34)):
+    TW, TH = cell
     img = Image.new("RGB", (w * TW, h * TH), (0, 0, 0))
     cache = {}
     for y in range(h):
@@ -152,8 +152,9 @@ def main():
         for z in pack.get("zones", []):
             if zone_id and z.get("id") == zone_id:
                 tile_set = z.get("tile_set", "")
-        img = render_tiles(rows, w, h, codes, pack_dir, tile_set)
-        cell = (48, 34)
+        r = pack.get("render", {})
+        cell = (int(r.get("tile_w", 48)), int(r.get("tile_h", 34)))
+        img = render_tiles(rows, w, h, codes, pack_dir, tile_set, cell)
     else:
         img = render_flat(rows, w, h, codes, scale)
         cell = (scale, scale)
