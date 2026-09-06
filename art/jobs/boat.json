@@ -1,0 +1,19 @@
+{
+  "id": "boat",
+  "prompt": "an isolated cut-out game sprite of a Greek penteconter war galley in profile facing right, a long low wooden hull with a bronze ram at the bow, a single bank of oars along the side, a furled square sail on one mast, a curved stern post, drawn without any water: the hull's keel is the bottom of the sprite and only the flat magenta background lies below and around it, the whole ship complete and well inside the picture, nothing touching or cut off by any edge, solid magenta background",
+  "style": "rd_pro__topdown",
+  "width": 96,
+  "height": 96,
+  "seed": 7801,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/sprites/boat_00.png (frame 0 of 4)",
+  "_note": "The hero's boat (2026-09-06): a penteconter, transparent sprite drawn over the water tile at the hero's position, faces right and is mirrored west. Object route; the four-frame loop follows on custom action with expansion on."
+}
