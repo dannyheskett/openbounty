@@ -1,17 +1,19 @@
 {
   "id": "castle",
-  "prompt": "an isolated cut-out game sprite of a Roman fortress, gleaming white marble walls in ashlar courses, square corner towers with flat red tile roofs, crenellated battlements, a monumental front gatehouse framed by tall Roman columns under a triangular pediment, a heavy iron portcullis lowered in the arched gateway, a golden legionary eagle standard above the gate, seen from a high angle, drawn without any ground plane: the lowest row of wall stones is the bottom of the sprite and only the flat magenta background lies below and around it, the whole fortress complete and well inside the picture, nothing touching or cut off by any edge, solid magenta background",
-  "style": "rd_plus__low_res",
+  "prompt": "an isolated cut-out game sprite of a Roman fortress, gleaming white marble walls in ashlar courses, square corner towers with flat red tile roofs, crenellated battlements, a monumental gatehouse framed by columns under a triangular pediment, a golden legionary eagle standard above the gate, seen from the front and above with the gate facing the viewer, a freestanding building with no ground under it: the lowest row of stones is the bottom of the sprite and only the flat magenta background shows below and around it, the whole building complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background",
+  "style": "rd_pro__topdown",
   "width": 96,
   "height": 96,
-  "seed": 2711,
+  "seed": 7161,
   "remove_bg": true,
   "return_non_bg_removed": true,
   "bypass_prompt_expansion": true,
   "raw_only": true,
   "figure": false,
-  "target": [96, 96],
+  "target": [
+    96,
+    96
+  ],
   "_pack_path": "art/tiles/castle.png",
-  "_note": "The 1x1 castle tile (REQ-228) with a transparent background: the renderer draws the terrain tile beneath every object tile, so the ground is not baked in. Same removal route as the troops: magenta background named in the prompt, remove_bg strips it. run04's cut-out framing (no ground plane) is kept; the subject is re-described as a Roman fortress -- white walls, columns, portcullis -- with a new seed.",
-  "_review_rule": "Look at it at 1:1 over grass.png (the contact sheet does this): the fortress complete and well inside the square, no ground of its own under the walls, no magenta fringe, alpha fully on or off, and it reads as Roman at 1:1, not only at 8x."
+  "_note": "Map object on the town route (2026-09-06): rd_pro__topdown, 96x96, magenta named and removed, no reference image, a facing cue, freestanding with no ground. Expansion bypassed as for the towns (the expansion finding is for the animation engine)."
 }

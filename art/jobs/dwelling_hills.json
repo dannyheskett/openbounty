@@ -1,0 +1,19 @@
+{
+  "id": "dwelling_hills",
+  "prompt": "an isolated cut-out game sprite of a cave mouth in a rocky hillside with a carved stone lintel over the opening, seen from the front and above with the gate facing the viewer, a freestanding building with no ground under it: the lowest row of stones is the bottom of the sprite and only the flat magenta background shows below and around it, the whole building complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background",
+  "style": "rd_pro__topdown",
+  "width": 96,
+  "height": 96,
+  "seed": 7191,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/tiles/dwelling_hills.png",
+  "_note": "Map object on the town route (2026-09-06): rd_pro__topdown, 96x96, magenta named and removed, no reference image, a facing cue, freestanding with no ground. Expansion bypassed as for the towns (the expansion finding is for the animation engine)."
+}
