@@ -989,6 +989,10 @@ typedef struct {
         char splash_title[RES_PATH_LEN];     // game title (second splash)
         char class_picker[RES_PATH_LEN];     // 288x184 A-D class portrait image
         char class_highlight[RES_PATH_LEN];  // 42x44 cursor glow for class picker
+        // Palette colour name (e.g. "YELLOW") for the frame the shell draws
+        // round every panel slot: HUD panels, inventory cells, contract face.
+        // Empty: the shell draws no frame and the art carries its own.
+        char panel_frame[16];
         char orb[RES_PATH_LEN];              // orb of power tile overlay
     } sprites;
 

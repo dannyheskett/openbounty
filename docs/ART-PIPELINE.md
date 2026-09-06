@@ -218,7 +218,8 @@ and record both prompts in `ART-WORKLIST.md`.
   The installed troop loops were made with it off and stay as approved; any
   re-run or new troop tests expansion on first.
 - **Inventory icons** (`art/ui/inventory_artifact_*`, `inventory_zone_*`) —
-  opaque framed cards like the original pack's, drawn in the inventory belt
+  opaque cards **with no frame in the art** (the shell draws one, see
+  "Frames" below), drawn in the inventory belt
   and the puzzle grid at the tile size: `rd_pro__default`, 96x96, no
   references, the object "painted as a small game inventory icon ... inside a
   thin gold frame", and **no writing, lettering, banner or ribbon** named in
@@ -227,12 +228,20 @@ and record both prompts in `ART-WORKLIST.md`.
   `sprites.ui.view_icons_extra` in zone order; without that key the map
   grid of the inventory draws nothing.
 - **HUD panels** (`art/ui/hud_*`) — the inventory icon route for the seven
-  stills (opaque framed cards, `rd_pro__default`, no lettering); the siege
+  stills (opaque cards, no frame in the art, `rd_pro__default`, no lettering); the siege
   and magic cycles are the villain loop route on the framed still (custom
   action, four frames, expansion on, "static background, smooth loop"). The
   sidebar cycles a loop at two frames a second, so the magic loop is a colour
   change (gold to violet), not a flicker, or the change is invisible at that
   rate. `hud_bar_strip` is the 320x5 divider and stays hand-drawn.
+- **Frames** — no generated piece carries a painted frame or border. The
+  model draws a different frame every run (gold, thin, missing), so the
+  frame is the shell's: `sprites.ui.panel_frame` names the colour and
+  `ui_panel_frame` draws it round HUD panels, inventory cells and the
+  contract face. Prompts for those pieces say "filling the whole picture edge
+  to edge, no frame, no border". The one allowed edge treatment is a villain
+  portrait's flat colour bar, and only when it is identical on all eight
+  frames of that villain. (Ruled 2026-09-06; twenty pieces regenerated.)
 - **The publisher splash** (`art/ui/splash_logo.png`, 320x84, transparent) —
   composed, not generated whole, because generated lettering garbles. The
   words are rendered locally from C059 Bold at 1-bit, white with the old

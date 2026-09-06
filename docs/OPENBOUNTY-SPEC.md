@@ -838,6 +838,10 @@ except where a deviation is explicitly flagged (§34).
   manifest lists each declared stem once and the shared `town` tile only
   while some town lacks an `art` of its own, so `kings-bounty`, which
   declares none, is unchanged.
+- **REQ-165a.** When `sprites.ui.panel_frame` names a palette colour the
+  shell has drawn a frame round every panel slot (`ui_panel_frame`: HUD
+  panels, inventory cells, contract face) so the art carries none; absent,
+  nothing is drawn and packs with painted frames are unchanged.
 - **REQ-163a.** A class entry has optionally carried a `hero` block (walk,
   idle, boat, tile) parsed into `Resources.class_hero[]`
   (`resources_class_hero`); the shell draws the chosen class's sets for the

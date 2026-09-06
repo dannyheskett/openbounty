@@ -34,6 +34,7 @@ static void blit_panel(Texture2D t, int x, int y) {
     Rectangle dst = { (float)x, (float)y,
                       (float)CL_SIDEBAR_W, (float)CL_TILE_H };
     DrawTexturePro(t, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+    ui_panel_frame(x, y, CL_SIDEBAR_W, CL_TILE_H);
 }
 
 void hud_draw(const Game *g, const Sprites *s) {
@@ -108,6 +109,7 @@ void hud_draw(const Game *g, const Sprites *s) {
                 ui_blit(s->puzzle_cover, cx, cy, cw, ch);
             }
         }
+        ui_panel_frame(x, y, CL_SIDEBAR_W, CL_TILE_H);
     }
     y += CL_TILE_H;
 

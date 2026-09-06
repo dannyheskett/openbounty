@@ -705,6 +705,7 @@ int shell_run_game(int argc, char **argv) {
     // extractor was written against.
     bfont_init(res.sprites.font);
     palette_init(res.sprites.palette);
+    ui_set_panel_frame(res.sprites.panel_frame);
 
     Sprites sprites;
     sprites_load(&sprites, &res);

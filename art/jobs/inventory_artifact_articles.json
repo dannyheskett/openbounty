@@ -1,10 +1,10 @@
 {
   "id": "inventory_artifact_articles",
-  "prompt": "a bronze tablet with a plain hammered surface and a hanging red wax seal on a cord, painted as a small game inventory icon, the object large and centred on a plain dark parchment background inside a thin gold frame that runs along all four edges of the picture, no writing, no lettering, no banner, no ribbon",
+  "prompt": "a bronze tablet with a plain hammered surface and a hanging red wax seal on a cord, painted as a small game inventory icon, the object large and centred on a plain dark parchment background that fills the whole picture edge to edge, no frame, no border, no writing, no lettering, no banner, no ribbon",
   "style": "rd_pro__default",
   "width": 96,
   "height": 96,
-  "seed": 7522,
+  "seed": 7523,
   "bypass_prompt_expansion": true,
   "raw_only": true,
   "figure": false,
@@ -13,5 +13,5 @@
     96
   ],
   "_pack_path": "art/ui/inventory_artifact_articles.png",
-  "_note": "Inventory icon (2026-09-06): opaque framed card like the original pack's, drawn in the inventory belt and the puzzle grid at the tile size; rd_pro__default, the screen engine, 96x96, no references. run02: no words on anything (Dan): lettering, banner and the Gallic cockerel removed; seed incremented."
+  "_note": "Inventory icon (2026-09-06): opaque framed card like the original pack's, drawn in the inventory belt and the puzzle grid at the tile size; rd_pro__default, the screen engine, 96x96, no references. run02: no words on anything (Dan): lettering, banner and the Gallic cockerel removed; seed incremented. Regenerated without a painted frame (2026-09-06): the shell draws the frame (sprites.ui.panel_frame)."
 }

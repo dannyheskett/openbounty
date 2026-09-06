@@ -16,6 +16,13 @@
 // CL_TILE_W/H, anything else is its design size times CL_UI.
 void ui_blit(Texture2D t, int x, int y, int w, int h);
 
+// The frame the shell draws round a panel slot when the pack names a
+// palette colour in sprites.ui.panel_frame (see ui_set_panel_frame): a
+// one-design-pixel outer line in that colour and a darker inner line, so the
+// art itself carries no frame. No-op when the pack names none.
+void ui_set_panel_frame(const char *palette_name);
+void ui_panel_frame(int x, int y, int w, int h);
+
 // As ui_blit, but flipped horizontally. Sprites are authored facing right;
 // combat mirrors the AI side rather than shipping a second strip.
 void ui_blit_mirrored(Texture2D t, int x, int y, int w, int h);

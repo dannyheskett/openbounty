@@ -838,6 +838,8 @@ static void parse_sprites(Resources *res, cJSON *obj) {
                  json_str(ui, "dungeon_backdrop", ""));
         copy_str(res->sprites.ending_win, sizeof(res->sprites.ending_win),
                  json_str(ui, "ending_win", ""));
+        copy_str(res->sprites.panel_frame, sizeof(res->sprites.panel_frame),
+                 json_str(ui, "panel_frame", ""));
         copy_str(res->sprites.ending_lose, sizeof(res->sprites.ending_lose),
                  json_str(ui, "ending_lose", ""));
         copy_str(res->sprites.orb, sizeof(res->sprites.orb),

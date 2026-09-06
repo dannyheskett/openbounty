@@ -157,6 +157,7 @@ static void draw_character(const Game *g, const Sprites *s) {
         int row = i / 4;
         ui_blit(tex, inv_x + col * item_w, inv_y + row * item_h,
                 item_w, item_h);
+        ui_panel_frame(inv_x + col * item_w, inv_y + row * item_h, item_w, item_h);
     }
 
     // Map grid: 2 cols x 2 rows starting at col 4. Only stamp tile when
@@ -170,6 +171,7 @@ static void draw_character(const Game *g, const Sprites *s) {
         int row = i / 2;
         ui_blit(tex, map_x + col * item_w, inv_y + row * item_h,
                 item_w, item_h);
+        ui_panel_frame(map_x + col * item_w, inv_y + row * item_h, item_w, item_h);
     }
 }
 
@@ -388,6 +390,7 @@ static void draw_contract(const Game *g, const Sprites *s) {
     int face_w = CL_TILE_W;
     int face_h = CL_TILE_H;
     ui_blit(face, tx, ty, face_w, face_h);
+    ui_panel_frame(tx, ty, face_w, face_h);
     DrawRectangleLines(tx - CL_UI, ty - CL_UI,
                        face_w + 2 * CL_UI, face_h + 2 * CL_UI,
                        PAL_CLR(YELLOW));

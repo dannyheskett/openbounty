@@ -1,0 +1,17 @@
+{
+  "id": "splash_title",
+  "prompt": "a golden Roman legionary eagle standard with spread wings on a tall decorated pole, a laurel wreath ring below the eagle, an engraved SPQR plate on the shaft, standing against a deep royal purple field, wide empty space across the top third, no frame, no border",
+  "style": "rd_pro__default",
+  "width": 256,
+  "height": 164,
+  "seed": 6501,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    256,
+    164
+  ],
+  "_pack_path": "art/ui/splash_title.png",
+  "_note": "Title screen regenerated without its painted border (2026-09-06); screen route, rd_pro__default at the 256x164 size the shell draws it at."
+}

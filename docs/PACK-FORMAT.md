@@ -214,6 +214,14 @@ with `art/tiles/castle.png`, the way a town is:
 
 A pack only needs the castle art for the footprints it uses.
 
+**Panel frame.** `sprites.ui.panel_frame` names a palette colour
+(`YELLOW`, `GREY`, ... or a raw index) and the shell then draws a
+one-design-pixel frame in that colour, with a darker inner line, round every
+panel slot: the HUD panels, the inventory belt cells and the contract face.
+Art for those slots is authored edge to edge with no frame of its own.
+Absent, the shell draws nothing and the art carries its own frame, which is
+how `kings-bounty` ships.
+
 **Per-town art.** A town catalog entry may declare `"art": "<stem>"`, a
 tile under `art/tiles/`, and the engine stamps that tile at the town's
 position instead of the shared `art/tiles/town.png`. Absent means `town`, so

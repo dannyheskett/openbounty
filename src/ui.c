@@ -2,6 +2,8 @@
 #include "input_host.h"
 #include "ui_host.h"
 #include "ui.h"
+#include "layout.h"
+#include "palette.h"
 #include "touch.h"
 #include "overlay.h"     // overlay_dialog_page_count (renderer owns the wrap)
 #include "player_io.h"   // engine player-IO message queue
@@ -154,3 +156,40 @@ const char *toast_text_current(void) {
     return toast_text;
 }
 
+// ---- Panel frame ------------------------------------------------------------
+
+static int s_panel_frame = -1;   // palette index, -1 = off
+
+void ui_set_panel_frame(const char *palette_name) {
+    static const struct { const char *name; int idx; } NAMES[] = {
+        { "DGREEN", PAL_IDX_DGREEN }, { "DCYAN", PAL_IDX_DCYAN },
+        { "DRED", PAL_IDX_DRED },     { "MAGENTA", PAL_IDX_MAGENTA },
+        { "BROWN", PAL_IDX_BROWN },   { "GREY", PAL_IDX_GREY },
+        { "DGREY", PAL_IDX_DGREY },   { "BLUE", PAL_IDX_BLUE },
+        { "GREEN", PAL_IDX_GREEN },   { "CYAN", PAL_IDX_CYAN },
+        { "RED", PAL_IDX_RED },       { "VIOLET", PAL_IDX_VIOLET },
+        { "YELLOW", PAL_IDX_YELLOW }, { "WHITE", PAL_IDX_WHITE },
+    };
+    s_panel_frame = -1;
+    if (!palette_name || !palette_name[0]) return;
+    for (size_t i = 0; i < sizeof NAMES / sizeof NAMES[0]; i++)
+        if (strcmp(NAMES[i].name, palette_name) == 0) { s_panel_frame = NAMES[i].idx; return; }
+    // A raw palette index is accepted too ("200").
+    int idx = atoi(palette_name);
+    if (idx > 0 && idx < PAL_SIZE) s_panel_frame = idx;
+}
+
+void ui_panel_frame(int x, int y, int w, int h) {
+    if (s_panel_frame < 0) return;
+    int t = CL_UI;
+    Color outer = PAL[s_panel_frame];
+    Color inner = PAL[PAL_IDX_DGREY];
+    DrawRectangle(x, y, w, t, outer);
+    DrawRectangle(x, y + h - t, w, t, outer);
+    DrawRectangle(x, y, t, h, outer);
+    DrawRectangle(x + w - t, y, t, h, outer);
+    DrawRectangle(x + t, y + t, w - 2 * t, t, inner);
+    DrawRectangle(x + t, y + h - 2 * t, w - 2 * t, t, inner);
+    DrawRectangle(x + t, y + t, t, h - 2 * t, inner);
+    DrawRectangle(x + w - 2 * t, y + t, t, h - 2 * t, inner);
+}
