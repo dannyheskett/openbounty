@@ -1,5 +1,5 @@
 {
-  "id": "hero",
+  "id": "hero_legatus",
   "prompt": "a Roman commander on horseback in profile facing right, red cloak, crested helmet, gilded cuirass, the horse standing still with all four feet on the ground",
   "style": "user__glory_of_rome_troops_bac676cd",
   "width": 96,
@@ -14,6 +14,6 @@
     96,
     96
   ],
-  "_pack_path": "art/ui/end_hero.png and the start frame of art/sprites/hero_walk_00..",
+  "_pack_path": "art/classes/legatus_hero.png (and ending.hero_tile as art/ui/end_hero.png)",
   "_note": "The hero still (2026-09-06): troop route, the worklist's hero prompt. Installed as the win-cartoon hero tile and kept as the start frame for the hero walk animation."
 }

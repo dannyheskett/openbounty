@@ -2432,6 +2432,9 @@
 			"id":	"knight",
 			"name":	"Legatus",
 			"portrait":	"art/classes/legatus.png",
+			"hero":	{
+				"tile":	"art/classes/legatus_hero.png"
+			},
 			"starting_gold":	7500,
 			"starting_troops":	[{
 					"id":	"militia",
@@ -2486,6 +2489,9 @@
 			"id":	"paladin",
 			"name":	"Praetorianus",
 			"portrait":	"art/classes/praetorianus.png",
+			"hero":	{
+				"tile":	"art/classes/praetorianus_hero.png"
+			},
 			"starting_gold":	10000,
 			"starting_troops":	[{
 					"id":	"peasants",
@@ -2540,6 +2546,9 @@
 			"id":	"sorceress",
 			"name":	"Sibylla",
 			"portrait":	"art/classes/sibylla.png",
+			"hero":	{
+				"tile":	"art/classes/sibylla_hero.png"
+			},
 			"starting_gold":	10000,
 			"starting_troops":	[{
 					"id":	"peasants",
@@ -2594,6 +2603,9 @@
 			"id":	"barbarian",
 			"name":	"Dux",
 			"portrait":	"art/classes/dux.png",
+			"hero":	{
+				"tile":	"art/classes/dux_hero.png"
+			},
 			"starting_gold":	7500,
 			"starting_troops":	[{
 					"id":	"wolves",
