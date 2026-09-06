@@ -1,10 +1,10 @@
 {
   "id": "sign",
-  "prompt": "an isolated cut-out game sprite of a wooden signpost, a tall post with a pointed board nailed to it, Roman lettering carved on the board, seen from the front and above, a freestanding object with no ground under it: its lowest edge is the bottom of the sprite and only the flat magenta background shows below and around it, the whole object complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background",
+  "prompt": "an isolated cut-out game sprite of a wooden signpost, a tall post with a plain pointed board nailed to it, the board blank, no writing, no lettering, seen from the front and above, a freestanding object with no ground under it: its lowest edge is the bottom of the sprite and only the flat magenta background shows below and around it, the whole object complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background",
   "style": "rd_pro__topdown",
   "width": 96,
   "height": 96,
-  "seed": 7242,
+  "seed": 7243,
   "remove_bg": true,
   "return_non_bg_removed": true,
   "bypass_prompt_expansion": true,
@@ -15,5 +15,5 @@
     96
   ],
   "_pack_path": "art/tiles/sign.png",
-  "_note": "Map object on the object route (2026-09-06): rd_pro__topdown, 96x96, magenta named and removed, no reference, freestanding with no ground. run02: run01 was a milestone drum that did not read as a sign, seed incremented."
+  "_note": "Map object on the object route (2026-09-06): rd_pro__topdown, 96x96, magenta named and removed, no reference, freestanding with no ground. run02: run01 was a milestone drum that did not read as a sign, seed incremented. run03: no letters on the board (Dan), seed incremented."
 }
