@@ -1924,7 +1924,7 @@
 			"max_population":	200,
 			"growth_per_week":	6,
 			"morale_group":	"C",
-			"anim":	["art/troops/lares_00.png", "art/troops/lares_01.png", "art/troops/lares_02.png", "art/troops/lares_03.png"],
+			"anim":	["art/troops/lares_00.png", "art/troops/lares_01.png", "art/troops/lares_02.png", "art/troops/lares_03.png", "art/troops/lares_04.png", "art/troops/lares_05.png"],
 			"tier_counts":	[10, 15, 30, 50]
 		}, {
 			"index":	2,
