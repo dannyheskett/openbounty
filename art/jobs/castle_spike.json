@@ -1,0 +1,19 @@
+{
+  "prompt": "an isolated cut-out game sprite of a bright burst of orange and white sparks radiating from a centre point, only the flat magenta background around it, solid magenta background",
+  "style": "rd_pro__topdown",
+  "width": 96,
+  "height": 96,
+  "seed": 7943,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "target": [
+    96,
+    96
+  ],
+  "_note": "Combat damage burst, transparent. Re-run: the API's remove_bg left the magenta field on the first run, seed incremented. Re-run: 267 magenta pixels left in the spark tips.",
+  "id": "castle_spike",
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "_pack_path": "art/combat/castle_spike.png"
+}

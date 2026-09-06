@@ -1,0 +1,19 @@
+{
+  "id": "castle_walls",
+  "prompt": "an isolated cut-out game sprite of a Roman fortress enclosure seen from directly above, very thick white ashlar walls with crenellations, each wall as thick as one sixth of the picture's width, one running the full height of the picture pressed against the left edge and another pressed against the right edge, joined along the bottom edge by a wall of the same thickness with a wide open gateway in its middle, a massive square crenellated tower at each of the two bottom corners, the top edge open with no wall, only the flat magenta background inside and outside the walls, solid magenta background",
+  "style": "rd_pro__topdown",
+  "width": 252,
+  "height": 210,
+  "seed": 8002,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    252,
+    210
+  ],
+  "_pack_path": "art/combat/castle_wall_01..06.png (sliced)",
+  "_note": "Siege walls (2026-09-07): the whole enclosure generated as ONE picture at the board's 6x5 proportions (42px cells, RD Pro cap 256) and cut into the six wall cells the engine's fixed layout uses: code 8 = column 0 row 1, 9 = column 5 row 1, 5 = column 0 row 4, 6 = column 5 row 4, 7 = column 1 row 4, 10 = column 4 row 4. Six separately generated pieces never joined (2026-09-07 batch, rejected). Slicing is the one local step, done by build/art/slice_walls.py, like the 2x2 tile lay. run02: walls asked for a sixth of the width thick, pressed against the edges, since run01's were a third of a cell."
+}

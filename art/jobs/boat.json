@@ -1,10 +1,10 @@
 {
   "id": "boat",
-  "prompt": "an isolated cut-out game sprite of a Greek penteconter war galley in profile facing right, a long low wooden hull with a bronze ram at the bow, a single bank of oars along the side, a furled square sail on one mast, a curved stern post, drawn without any water: the hull's keel is the bottom of the sprite and only the flat magenta background lies below and around it, the whole ship complete and well inside the picture, nothing touching or cut off by any edge, solid magenta background",
+  "prompt": "an isolated cut-out game sprite of a Roman war galley in profile facing right, a low wooden hull with a bronze ram at the bow and a curved stern post, one mast carrying a full square sail of cream linen cloth, a row of oars along the side angled down into the water, drawn without any water: the keel is the bottom of the sprite and only the flat magenta background lies below and around it, the whole ship complete and well inside the picture, nothing touching or cut off by any edge, solid magenta background",
   "style": "rd_pro__topdown",
   "width": 96,
   "height": 96,
-  "seed": 7801,
+  "seed": 7831,
   "remove_bg": true,
   "return_non_bg_removed": true,
   "bypass_prompt_expansion": true,
@@ -14,6 +14,6 @@
     96,
     96
   ],
-  "_pack_path": "art/sprites/boat_00.png (frame 0 of 4)",
-  "_note": "The hero's boat (2026-09-06): a penteconter, transparent sprite drawn over the water tile at the hero's position, faces right and is mirrored west. Object route; the four-frame loop follows on custom action with expansion on."
+  "_pack_path": "art/sprites/boat_00.png (frame 0)",
+  "_note": "The hero's boat, reset 2026-09-07: a plain prompt, sail named as cream linen, no oar count (the engine does not hold a count). Object route, transparent; loop on custom action, four frames, expansion on."
 }

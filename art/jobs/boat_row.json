@@ -1,10 +1,10 @@
 {
   "id": "boat_row",
-  "prompt": "oars sweeping back through the water in unison, hull and sail still, smooth loop",
+  "prompt": "the oars sweep together from angled forward to angled back, hull, mast and sail still, smooth loop",
   "style": "rd_advanced_animation__custom_action",
   "width": 96,
   "height": 96,
-  "seed": 7802,
+  "seed": 7832,
   "frames_duration": 4,
   "return_spritesheet": true,
   "input_image_path": "build/art/boat/run01/01_raw.png",
@@ -17,5 +17,5 @@
     96
   ],
   "_pack_path": "art/sprites/boat_00..03.png",
-  "_note": "Boat loop (2026-09-06): custom action on the transparent still, four frames, expansion on, tag prompt. Installed with the frame order REVERSED (frame_03 -> boat_00 ... frame_00 -> boat_03) because the generated stroke ran the wrong way for a ship facing right; reversing the playback order fixes it with no new run (Dan)."
+  "_note": "Boat loop, reset 2026-09-07: custom action on the still, four frames, expansion on, one stroke named, hull and sail told to stay still."
 }

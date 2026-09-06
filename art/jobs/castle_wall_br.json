@@ -1,0 +1,21 @@
+{
+  "id": "castle_wall_br",
+  "prompt": "a square tile completely filled by the corner of a white ashlar Roman fortress wall, one wall arriving from the top edge and turning to leave by the left edge, a crenellated parapet along the full right edge and the full bottom edge, a paved stone walkway inside the turn, the same white ashlar masonry and pale walkway as the reference walls, seen from directly above, flat, opaque, the masonry filling the whole square right to every edge, no background visible, no frame",
+  "style": "rd_pro__topdown",
+  "width": 96,
+  "height": 96,
+  "seed": 8132,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/combat/castle_wall_02.png",
+  "_note": "Siege wall cell (2026-09-07): an opaque 96 tile filled edge to edge with wall in one top-down viewpoint so the engine's repeated cells join; no background removal. Earlier: six separate sprites in three viewpoints (rejected), then one whole-board picture sliced at 42px (rejected: coarse, thin, repeats broke the towers). run02: run01 corners drew an interior and a grey wall; now with the two wall runs as references so the masonry matches, tower dropped.",
+  "reference_image_paths": [
+    "build/art/castle_wall_v/run01/01_raw.png",
+    "build/art/castle_wall_h/run01/01_raw.png"
+  ]
+}
