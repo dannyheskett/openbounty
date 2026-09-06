@@ -140,9 +140,31 @@ TEST terrain_art_lives_under_the_zone_tile_set(void) {
     PASS();
 }
 
+TEST town_stamps_its_own_art_or_the_shared_tile(void) {
+    Resources *res = calloc(1, sizeof *res);
+    Map       *m   = calloc(1, sizeof *m);
+    ASSERT(res && m);
+    ASSERT(resources_load(res, ASSET_PATH));
+    ASSERT(MapLoadZone(m, res, "continentia"));
+    int tx = -1, ty = -1;
+    for (int y = 0; y < m->height && tx < 0; y++)
+        for (int x = 0; x < m->width; x++)
+            if (MapGetTile(m, x, y)->interactive == INTERACT_TOWN) { tx = x; ty = y; break; }
+    ASSERT(tx >= 0);
+    ASSERT_STR_EQ("town", MapGetTile(m, tx, ty)->art);
+    const char *id = MapGetTile(m, tx, ty)->id;
+    for (int i = 0; i < res->town_count; i++)
+        if (strcmp(res->towns[i].id, id) == 0) strcpy(res->towns[i].art, "town_x");
+    ASSERT(MapLoadZone(m, res, "continentia"));
+    ASSERT_STR_EQ("town_x", MapGetTile(m, tx, ty)->art);
+    resources_free(res); free(res); free(m);
+    PASS();
+}
+
 SUITE(unit_map_suite) {
     RUN_TEST(terrain_art_is_bare_without_a_tile_set);
     RUN_TEST(terrain_art_lives_under_the_zone_tile_set);
+    RUN_TEST(town_stamps_its_own_art_or_the_shared_tile);
     RUN_TEST(in_bounds_corners_and_outside);
     RUN_TEST(load_continentia_succeeds);
     RUN_TEST(get_tile_at_known_chest_position);

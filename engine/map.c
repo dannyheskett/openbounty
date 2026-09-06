@@ -197,7 +197,9 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
         copy_string(t->id, sizeof(t->id), zt->id);
         t->boat_spawn_x = zt->boat_x;
         t->boat_spawn_y = zt->boat_y;
-        copy_string(t->art, sizeof(t->art), "town");
+        // A town draws its own tile when the catalog entry names one
+        // (`art`, a stem under art/tiles/), else the shared "town" tile.
+        copy_string(t->art, sizeof(t->art), zt->art[0] ? zt->art : "town");
     }
     for (int i = 0; i < z->castle_count; i++) {
         // The footprint is the catalog entry's choice (REQ-228); a zone castle
@@ -444,8 +446,10 @@ void MapClearInteractive(Map *map, int x, int y) {
 // ask for them rather than duplicate the list and drift from it. Castle art
 // depends on the footprint and is served by map_castle_art_names.
 const char *const *map_object_art_names(int *out_count) {
+    // "town" is not here: town art is per catalog entry (ResTown.art, default
+    // "town") and the manifest lists it from the catalog.
     static const char *const NAMES[] = {
-        "town", "chest", "artifact_chest", "artifact_ring",
+        "chest", "artifact_chest", "artifact_ring",
         "sign", "bridge_h", "bridge_v", "wandering_army",
         "dwelling_plains", "dwelling_forest", "dwelling_hills",
         "dwelling_dungeon",

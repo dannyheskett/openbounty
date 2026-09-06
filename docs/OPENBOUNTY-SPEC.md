@@ -833,6 +833,11 @@ except where a deviation is explicitly flagged (§34).
   are ignored. Each byte is looked up in `Resources.tile_codes[128]` to produce
   an art name plus terrain/blocking flags; short rows are padded with grass.
   The shipped pack uses 54 distinct tile codes (§Appendix A).
+- **REQ-228a.** A town has been stamped with its catalog entry's `art` stem
+  when one is declared (`engine/map.c stamp_objects`), else `town`. The art
+  manifest lists each declared stem once and the shared `town` tile only
+  while some town lacks an `art` of its own, so `kings-bounty`, which
+  declares none, is unchanged.
 - **REQ-227a.** A zone that declares `tile_set` has had every terrain art
   name it stamps prefixed with `<tile_set>/` (`engine/map.c MapTerrainArt`),
   including the grass padding, the grass or water a cleared object reverts

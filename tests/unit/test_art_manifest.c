@@ -65,8 +65,9 @@ TEST placed_object_names_are_asked_for_not_copied(void) {
     int n = 0;
     const char *const *names = map_object_art_names(&n);
     ASSERT(names);
-    ASSERT(n >= 12);
+    ASSERT(n >= 11);
     for (int i = 0; i < n; i++) ASSERT(strncmp(names[i], "castle", 6) != 0);
+    for (int i = 0; i < n; i++) ASSERT(strcmp(names[i], "town") != 0);
     int n3 = 0;
     const char *const *c3 = map_castle_art_names(RES_CASTLE_FOOTPRINT_3X2, &n3);
     ASSERT_EQ(6, n3);
@@ -141,6 +142,30 @@ TEST terrain_art_is_listed_per_tile_set(void) {
     PASS();
 }
 
+TEST town_art_is_listed_per_catalog_entry(void) {
+    // The shared town tile is listed while some town lacks `art`; a town
+    // that declares one adds its stem; when every town declares, the shared
+    // tile drops out (REQ-228a).
+    Resources *r = fx_load_resources();
+    ASSERT(r);
+    ASSERT(r->town_count >= 2);
+    int n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    ASSERT(manifest_has(n, "art/tiles/town.png"));
+    ASSERT_FALSE(manifest_has(n, "art/tiles/town_x.png"));
+    strcpy(r->towns[0].art, "town_x");
+    n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    ASSERT(manifest_has(n, "art/tiles/town.png"));
+    ASSERT(manifest_has(n, "art/tiles/town_x.png"));
+    for (int i = 0; i < r->town_count; i++) strcpy(r->towns[i].art, "town_x");
+    n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    ASSERT_FALSE(manifest_has(n, "art/tiles/town.png"));
+    int c = 0;
+    for (int i = 0; i < n; i++) if (strcmp(s_paths[i], "art/tiles/town_x.png") == 0) c++;
+    ASSERT_EQ(1, c);
+    resources_free(r); free(r);
+    PASS();
+}
+
 TEST a_pack_may_name_its_own_font(void) {
     // The path was compiled into main.c. Defaulted, not hardcoded, now.
     Resources *r = fx_load_resources();
@@ -158,5 +183,6 @@ SUITE(unit_art_manifest_suite) {
     RUN_TEST(placed_object_names_are_asked_for_not_copied);
     RUN_TEST(castle_art_follows_the_footprint);
     RUN_TEST(terrain_art_is_listed_per_tile_set);
+    RUN_TEST(town_art_is_listed_per_catalog_entry);
     RUN_TEST(a_pack_may_name_its_own_font);
 }

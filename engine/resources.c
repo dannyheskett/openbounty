@@ -154,6 +154,9 @@ static void parse_towns(Resources *res, cJSON *arr) {
                  json_str(it, "intel_castle", ""));
         copy_str(t->pinned_spell, sizeof(t->pinned_spell),
                  json_str(it, "pinned_spell", ""));
+        // Optional per-town tile art (a bare stem under art/tiles/). Absent
+        // means the shared "town" tile, so older packs stamp as before.
+        copy_str(t->art, sizeof(t->art), json_str(it, "art", ""));
     }
 }
 
@@ -2392,6 +2395,19 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
             char p[RES_PATH_LEN];
             snprintf(p, sizeof p, "art/tiles/%s.png", obj[i]);
             art_add(out, cap, &n, p);
+        }
+        // Town art is per catalog entry: the shared "town" tile only while
+        // some town has no `art` of its own, plus each declared stem once.
+        {
+            bool shared = (res->town_count == 0);
+            for (int i = 0; i < res->town_count; i++) {
+                const char *a = res->towns[i].art;
+                if (!a[0]) { shared = true; continue; }
+                char p[RES_PATH_LEN];
+                snprintf(p, sizeof p, "art/tiles/%s.png", a);
+                art_add(out, cap, &n, p);
+            }
+            if (shared) art_add(out, cap, &n, "art/tiles/town.png");
         }
         // Castle art follows the footprint (REQ-228): a pack ships the six
         // 3x2 pieces only if some castle stamps 3x2, and the single `castle`

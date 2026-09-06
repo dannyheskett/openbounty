@@ -201,6 +201,17 @@ with `art/tiles/castle.png`, the way a town is:
 
 A pack only needs the castle art for the footprints it uses.
 
+**Per-town art.** A town catalog entry may declare `"art": "<stem>"`, a
+tile under `art/tiles/`, and the engine stamps that tile at the town's
+position instead of the shared `art/tiles/town.png`. Absent means `town`, so
+older packs are unchanged; the shared tile is only required while some town
+still uses it, and the art manifest lists each declared stem once.
+
+```json
+{ "id": "massilia", "name": "Massilia", "art": "town_galliae", "x": 28, "y": 21,
+  "zone": "galliae", ... }
+```
+
 **Per-zone terrain art.** A zone may declare `"tile_set": "<folder>"`. Every
 `tile_codes` art name for that zone then resolves under
 `art/tiles/<folder>/` instead of `art/tiles/`, so one `.dat` and one

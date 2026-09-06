@@ -1187,6 +1187,7 @@
 			"index":	0,
 			"id":	"ostia",
 			"name":	"Ostia",
+			"art":	"town_italia",
 			"x":	39,
 			"y":	51,
 			"boat":	{
@@ -1204,6 +1205,7 @@
 			"index":	1,
 			"id":	"puteoli",
 			"name":	"Puteoli",
+			"art":	"town_italia",
 			"x":	37,
 			"y":	62,
 			"boat":	{
@@ -1220,6 +1222,7 @@
 			"index":	2,
 			"id":	"cumae",
 			"name":	"Cumae",
+			"art":	"town_italia",
 			"x":	45,
 			"y":	72,
 			"boat":	{
@@ -1236,6 +1239,7 @@
 			"index":	3,
 			"id":	"tarracina",
 			"name":	"Tarracina",
+			"art":	"town_italia",
 			"x":	45,
 			"y":	84,
 			"boat":	{
@@ -1252,6 +1256,7 @@
 			"index":	4,
 			"id":	"pisae",
 			"name":	"Pisae",
+			"art":	"town_italia",
 			"x":	33,
 			"y":	99,
 			"boat":	{
@@ -1268,6 +1273,7 @@
 			"index":	5,
 			"id":	"ancona",
 			"name":	"Ancona",
+			"art":	"town_italia",
 			"x":	42,
 			"y":	20,
 			"boat":	{
@@ -1284,6 +1290,7 @@
 			"index":	6,
 			"id":	"ravenna",
 			"name":	"Ravenna",
+			"art":	"town_italia",
 			"x":	18,
 			"y":	10,
 			"boat":	{
@@ -1300,6 +1307,7 @@
 			"index":	7,
 			"id":	"mediolanum",
 			"name":	"Mediolanum",
+			"art":	"town_italia",
 			"x":	7,
 			"y":	12,
 			"boat":	{
@@ -1316,6 +1324,7 @@
 			"index":	8,
 			"id":	"croton",
 			"name":	"Croton",
+			"art":	"town_italia",
 			"x":	47,
 			"y":	78,
 			"boat":	{
@@ -1332,6 +1341,7 @@
 			"index":	9,
 			"id":	"massilia",
 			"name":	"Massilia",
+			"art":	"town_galliae",
 			"x":	28,
 			"y":	21,
 			"boat":	{
@@ -1348,6 +1358,7 @@
 			"index":	10,
 			"id":	"narbo",
 			"name":	"Narbo",
+			"art":	"town_galliae",
 			"x":	38,
 			"y":	26,
 			"boat":	{
@@ -1364,6 +1375,7 @@
 			"index":	11,
 			"id":	"tolosa",
 			"name":	"Tolosa",
+			"art":	"town_galliae",
 			"x":	28,
 			"y":	42,
 			"boat":	{
@@ -1380,6 +1392,7 @@
 			"index":	12,
 			"id":	"burdigala",
 			"name":	"Burdigala",
+			"art":	"town_galliae",
 			"x":	45,
 			"y":	20,
 			"boat":	{
@@ -1396,6 +1409,7 @@
 			"index":	13,
 			"id":	"vienna",
 			"name":	"Vienna",
+			"art":	"town_galliae",
 			"x":	28,
 			"y":	50,
 			"boat":	{
@@ -1412,6 +1426,7 @@
 			"index":	14,
 			"id":	"aquae_sextiae",
 			"name":	"Aquae Sextiae",
+			"art":	"town_galliae",
 			"x":	20,
 			"y":	35,
 			"boat":	{
@@ -1428,6 +1443,7 @@
 			"index":	15,
 			"id":	"utica",
 			"name":	"Utica",
+			"art":	"town_africa",
 			"x":	18,
 			"y":	7,
 			"boat":	{
@@ -1444,6 +1460,7 @@
 			"index":	16,
 			"id":	"thapsus",
 			"name":	"Thapsus",
+			"art":	"town_africa",
 			"x":	8,
 			"y":	14,
 			"boat":	{
@@ -1460,6 +1477,7 @@
 			"index":	17,
 			"id":	"sabratha",
 			"name":	"Sabratha",
+			"art":	"town_africa",
 			"x":	26,
 			"y":	14,
 			"boat":	{
@@ -1476,6 +1494,7 @@
 			"index":	18,
 			"id":	"hadrumetum",
 			"name":	"Hadrumetum",
+			"art":	"town_africa",
 			"x":	38,
 			"y":	7,
 			"boat":	{
@@ -1492,6 +1511,7 @@
 			"index":	19,
 			"id":	"oea",
 			"name":	"Oea",
+			"art":	"town_africa",
 			"x":	42,
 			"y":	13,
 			"boat":	{
@@ -1508,6 +1528,7 @@
 			"index":	20,
 			"id":	"ptolemais",
 			"name":	"Ptolemais",
+			"art":	"town_africa",
 			"x":	47,
 			"y":	7,
 			"boat":	{
@@ -1524,6 +1545,7 @@
 			"index":	21,
 			"id":	"tarsus",
 			"name":	"Tarsus",
+			"art":	"town_oriens",
 			"x":	38,
 			"y":	5,
 			"boat":	{
@@ -1540,6 +1562,7 @@
 			"index":	22,
 			"id":	"smyrna",
 			"name":	"Smyrna",
+			"art":	"town_oriens",
 			"x":	8,
 			"y":	15,
 			"boat":	{
@@ -1556,6 +1579,7 @@
 			"index":	23,
 			"id":	"nicomedia",
 			"name":	"Nicomedia",
+			"art":	"town_oriens",
 			"x":	46,
 			"y":	21,
 			"boat":	{
@@ -1572,6 +1596,7 @@
 			"index":	24,
 			"id":	"damascus",
 			"name":	"Damascus",
+			"art":	"town_oriens",
 			"x":	46,
 			"y":	36,
 			"boat":	{

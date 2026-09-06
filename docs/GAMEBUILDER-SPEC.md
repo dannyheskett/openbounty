@@ -279,6 +279,9 @@ this describes work not yet done.
   folder when the zone declares one, and the Art tab lists terrain once per
   tile set (the shared set only while some zone uses it), matching the
   engine's manifest (REQ-227a).
+- **GB-244b.** A town's optional `art` key is edited through the generic
+  catalog form (GB-2xx); no dedicated control. The map view draws the
+  shared `town` marker regardless of the key.
 - **GB-250.** The editor shall include a **pixel editor** for pack sprites and
   tiles, opened from the art catalogue on any image.
 - **GB-251.** It shall be **constrained to the pack**: the image's own

@@ -181,6 +181,7 @@ typedef struct {
                                   // this town reports on. Empty = none.
     char pinned_spell[RES_ID_LEN];// spell id pre-placed here by salt_spells.
                                   // Empty = no pin (any town may pin in mods).
+    char art[RES_TILE_ART_LEN];   // tile art stem under art/tiles/ ("" = "town")
 } ResTown;
 
 // Special-castle behavior (King Maximus and other quest castles).
