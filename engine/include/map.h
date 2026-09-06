@@ -44,6 +44,9 @@ typedef struct {
     // terrain art name stamped into a Tile goes through MapTerrainArt so
     // the prefix is applied in exactly one place.
     char tile_set[32];
+    // The zone's wandering-army art stem ("wandering_army" unless the zone
+    // declares `army_art`); every foe stamp reads it from here.
+    char army_art[TILE_ART_NAME_LEN];
     Tile tiles[MAP_MAX_H][MAP_MAX_W];
 } Map;
 

@@ -65,7 +65,8 @@ TEST placed_object_names_are_asked_for_not_copied(void) {
     int n = 0;
     const char *const *names = map_object_art_names(&n);
     ASSERT(names);
-    ASSERT(n >= 11);
+    ASSERT(n >= 10);
+    for (int i = 0; i < n; i++) ASSERT(strcmp(names[i], "wandering_army") != 0);
     for (int i = 0; i < n; i++) ASSERT(strncmp(names[i], "castle", 6) != 0);
     for (int i = 0; i < n; i++) ASSERT(strcmp(names[i], "town") != 0);
     int n3 = 0;
@@ -166,6 +167,23 @@ TEST town_art_is_listed_per_catalog_entry(void) {
     PASS();
 }
 
+TEST army_art_is_listed_per_zone(void) {
+    Resources *r = fx_load_resources();
+    ASSERT(r);
+    ASSERT(r->zone_count >= 2);
+    int n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    ASSERT(manifest_has(n, "art/tiles/wandering_army.png"));
+    strcpy(r->zones[0].army_art, "army_x");
+    n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    ASSERT(manifest_has(n, "art/tiles/wandering_army.png"));
+    ASSERT(manifest_has(n, "art/tiles/army_x.png"));
+    for (int i = 0; i < r->zone_count; i++) strcpy(r->zones[i].army_art, "army_x");
+    n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    ASSERT_FALSE(manifest_has(n, "art/tiles/wandering_army.png"));
+    resources_free(r); free(r);
+    PASS();
+}
+
 TEST a_pack_may_name_its_own_font(void) {
     // The path was compiled into main.c. Defaulted, not hardcoded, now.
     Resources *r = fx_load_resources();
@@ -184,5 +202,6 @@ SUITE(unit_art_manifest_suite) {
     RUN_TEST(castle_art_follows_the_footprint);
     RUN_TEST(terrain_art_is_listed_per_tile_set);
     RUN_TEST(town_art_is_listed_per_catalog_entry);
+    RUN_TEST(army_art_is_listed_per_zone);
     RUN_TEST(a_pack_may_name_its_own_font);
 }

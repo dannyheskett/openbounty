@@ -87,6 +87,8 @@ static bool load_dat(Map *map, const Resources *res, const ResZone *zone) {
     }
     copy_string(map->name, sizeof(map->name), zone->id);
     copy_string(map->tile_set, sizeof(map->tile_set), zone->tile_set);
+    copy_string(map->army_art, sizeof(map->army_art),
+                zone->army_art[0] ? zone->army_art : "wandering_army");
     map->hero_spawn_x = zone->hero_spawn_x;
     map->hero_spawn_y = zone->hero_spawn_y;
     map->navmap_x = map->navmap_y = -1;
@@ -369,7 +371,8 @@ void MapStampFoe(Map *map, int x, int y, const char *placement_id) {
         return;
     t->interactive = INTERACT_FOE;
     copy_string(t->id, sizeof(t->id), placement_id);
-    copy_string(t->art, sizeof(t->art), "wandering_army");
+    copy_string(t->art, sizeof(t->art),
+                map->army_art[0] ? map->army_art : "wandering_army");
 }
 
 bool MapClearFoeStamp(Map *map, int x, int y) {
@@ -446,11 +449,12 @@ void MapClearInteractive(Map *map, int x, int y) {
 // ask for them rather than duplicate the list and drift from it. Castle art
 // depends on the footprint and is served by map_castle_art_names.
 const char *const *map_object_art_names(int *out_count) {
-    // "town" is not here: town art is per catalog entry (ResTown.art, default
-    // "town") and the manifest lists it from the catalog.
+    // "town" and "wandering_army" are not here: town art is per catalog entry
+    // (ResTown.art) and army art per zone (ResZone.army_art); the manifest
+    // lists both from the declarations.
     static const char *const NAMES[] = {
         "chest", "artifact_chest", "artifact_ring",
-        "sign", "bridge_h", "bridge_v", "wandering_army",
+        "sign", "bridge_h", "bridge_v",
         "dwelling_plains", "dwelling_forest", "dwelling_hills",
         "dwelling_dungeon",
     };

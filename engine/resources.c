@@ -362,6 +362,7 @@ static void parse_zones(Resources *res, cJSON *arr) {
             resources_resolve_path(res, p, z->map_path, sizeof z->map_path);
         }
         copy_str(z->tile_set, sizeof(z->tile_set), json_str(it, "tile_set", ""));
+        copy_str(z->army_art, sizeof(z->army_art), json_str(it, "army_art", ""));
         z->width  = json_int(it, "width",  64);
         z->height = json_int(it, "height", 64);
         cJSON *hs = cJSON_GetObjectItem(it, "hero_spawn");
@@ -2408,6 +2409,19 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
                 art_add(out, cap, &n, p);
             }
             if (shared) art_add(out, cap, &n, "art/tiles/town.png");
+        }
+        // Wandering-army art is per zone: the shared tile only while some
+        // zone has no `army_art`, plus each declared stem once.
+        {
+            bool shared = (res->zone_count == 0);
+            for (int i = 0; i < res->zone_count; i++) {
+                const char *a = res->zones[i].army_art;
+                if (!a[0]) { shared = true; continue; }
+                char p[RES_PATH_LEN];
+                snprintf(p, sizeof p, "art/tiles/%s.png", a);
+                art_add(out, cap, &n, p);
+            }
+            if (shared) art_add(out, cap, &n, "art/tiles/wandering_army.png");
         }
         // Castle art follows the footprint (REQ-228): a pack ships the six
         // 3x2 pieces only if some castle stamps 3x2, and the single `castle`

@@ -161,10 +161,29 @@ TEST town_stamps_its_own_art_or_the_shared_tile(void) {
     PASS();
 }
 
+TEST foes_stamp_the_zone_army_art(void) {
+    Resources *res = calloc(1, sizeof *res);
+    Map       *m   = calloc(1, sizeof *m);
+    ASSERT(res && m);
+    ASSERT(resources_load(res, ASSET_PATH));
+    ASSERT(MapLoadZone(m, res, "continentia"));
+    ASSERT_STR_EQ("wandering_army", m->army_art);
+    MapStampFoe(m, 5, 5, "foe_test");
+    ASSERT_STR_EQ("wandering_army", MapGetTile(m, 5, 5)->art);
+    ResZone *z = (ResZone *)resources_zone_by_id(res, "continentia");
+    strcpy(z->army_art, "army_x");
+    ASSERT(MapLoadZone(m, res, "continentia"));
+    MapStampFoe(m, 5, 5, "foe_test");
+    ASSERT_STR_EQ("army_x", MapGetTile(m, 5, 5)->art);
+    resources_free(res); free(res); free(m);
+    PASS();
+}
+
 SUITE(unit_map_suite) {
     RUN_TEST(terrain_art_is_bare_without_a_tile_set);
     RUN_TEST(terrain_art_lives_under_the_zone_tile_set);
     RUN_TEST(town_stamps_its_own_art_or_the_shared_tile);
+    RUN_TEST(foes_stamp_the_zone_army_art);
     RUN_TEST(in_bounds_corners_and_outside);
     RUN_TEST(load_continentia_succeeds);
     RUN_TEST(get_tile_at_known_chest_position);

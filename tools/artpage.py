@@ -23,7 +23,7 @@ GROUPS = {
     "sprites": [("hero", r"hero_.*"), ("boat", r"boat_.*")],
     "tiles": [("terrain", r"(grass|grass_variant|forest|mountain|desert|water)"),
               ("places", r"(castle|town|town_.*|dwelling_.*)"),
-              ("objects", r"(artifact_.*|chest|sign|wandering_army|bridge_.*)"),
+              ("objects", r"(artifact_.*|chest|sign|wandering_army.*|bridge_.*)"),
               ("desert edges", r"desert_edge_.*"), ("forest edges", r"forest_edge_.*"),
               ("mountain edges", r"mountain_edge_.*"), ("water edges", r"water_edge_.*")],
     "troops": [],       # one row per troop, filled below

@@ -770,6 +770,9 @@ typedef struct {
     // Empty means the shared set. Object tiles (towns, castles, chests...)
     // are never affected.
     char tile_set[RES_ID_LEN];
+    // Optional wandering-army tile art for this zone (a stem under
+    // art/tiles/). Empty means the shared "wandering_army".
+    char army_art[RES_TILE_ART_LEN];
     int  width, height;
     int  hero_spawn_x, hero_spawn_y;
     int  neighbor_count;

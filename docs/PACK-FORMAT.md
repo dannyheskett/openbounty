@@ -212,6 +212,12 @@ still uses it, and the art manifest lists each declared stem once.
   "zone": "galliae", ... }
 ```
 
+**Per-zone wandering-army art.** A zone may declare
+`"army_art": "<stem>"`, a tile under `art/tiles/`; every wandering foe in
+that zone, declared or salted, then draws that tile instead of the shared
+`art/tiles/wandering_army.png`. Absent means the shared tile, which is only
+required while some zone still uses it.
+
 **Per-zone terrain art.** A zone may declare `"tile_set": "<folder>"`. Every
 `tile_codes` art name for that zone then resolves under
 `art/tiles/<folder>/` instead of `art/tiles/`, so one `.dat` and one

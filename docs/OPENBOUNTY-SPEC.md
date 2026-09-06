@@ -838,6 +838,11 @@ except where a deviation is explicitly flagged (§34).
   manifest lists each declared stem once and the shared `town` tile only
   while some town lacks an `art` of its own, so `kings-bounty`, which
   declares none, is unchanged.
+- **REQ-228b.** A wandering foe has been stamped with its zone's `army_art`
+  stem when the zone declares one (`Map.army_art`, read by both foe stamp
+  sites), else `wandering_army`; the map draws that tile for every foe (the
+  lead-troop sprite of issue #9 was reverted 2026-09-06). The manifest lists
+  each declared stem once and the shared tile only while some zone lacks one.
 - **REQ-227a.** A zone that declares `tile_set` has had every terrain art
   name it stamps prefixed with `<tile_set>/` (`engine/map.c MapTerrainArt`),
   including the grass padding, the grass or water a cleared object reverts
