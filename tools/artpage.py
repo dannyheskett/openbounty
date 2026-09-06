@@ -16,7 +16,7 @@ ART = "assets/glory-of-rome/art"
 # (section, [(subsection, regex over the file stem)]) -- first match wins;
 # anything unmatched lands in "other" at the end of its section.
 GROUPS = {
-    "classes": [("portraits", r"(dux|legatus|praetorianus|sibylla)"), ("heroes", r".*_hero")],
+    "classes": [("portraits", r"(dux|legatus|praetorianus|sibylla)"), ("heroes", r".*_hero"), ("hero walks", r".*_walk_\d+")],
     "combat": [("field", r"field_.*"), ("castle walls", r"castle_.*"),
                ("obstacles", r"obstacle_.*"), ("cursor", r"cursor_.*")],
     "font": [("font", r".*")],

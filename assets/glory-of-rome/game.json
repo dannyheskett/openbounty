@@ -2455,7 +2455,8 @@
 			"name":	"Legatus",
 			"portrait":	"art/classes/legatus.png",
 			"hero":	{
-				"tile":	"art/classes/legatus_hero.png"
+				"tile":	"art/classes/legatus_hero.png",
+				"walk":	["art/classes/legatus_walk_00.png", "art/classes/legatus_walk_01.png", "art/classes/legatus_walk_02.png", "art/classes/legatus_walk_03.png"]
 			},
 			"starting_gold":	7500,
 			"starting_troops":	[{
@@ -2512,7 +2513,8 @@
 			"name":	"Praetorianus",
 			"portrait":	"art/classes/praetorianus.png",
 			"hero":	{
-				"tile":	"art/classes/praetorianus_hero.png"
+				"tile":	"art/classes/praetorianus_hero.png",
+				"walk":	["art/classes/praetorianus_walk_00.png", "art/classes/praetorianus_walk_01.png", "art/classes/praetorianus_walk_02.png", "art/classes/praetorianus_walk_03.png"]
 			},
 			"starting_gold":	10000,
 			"starting_troops":	[{
@@ -2569,7 +2571,8 @@
 			"name":	"Sibylla",
 			"portrait":	"art/classes/sibylla.png",
 			"hero":	{
-				"tile":	"art/classes/sibylla_hero.png"
+				"tile":	"art/classes/sibylla_hero.png",
+				"walk":	["art/classes/sibylla_walk_00.png", "art/classes/sibylla_walk_01.png", "art/classes/sibylla_walk_02.png", "art/classes/sibylla_walk_03.png"]
 			},
 			"starting_gold":	10000,
 			"starting_troops":	[{
@@ -2626,7 +2629,8 @@
 			"name":	"Dux",
 			"portrait":	"art/classes/dux.png",
 			"hero":	{
-				"tile":	"art/classes/dux_hero.png"
+				"tile":	"art/classes/dux_hero.png",
+				"walk":	["art/classes/dux_walk_00.png", "art/classes/dux_walk_01.png", "art/classes/dux_walk_02.png", "art/classes/dux_walk_03.png"]
 			},
 			"starting_gold":	7500,
 			"starting_troops":	[{
