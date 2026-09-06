@@ -180,6 +180,10 @@
 					"x":	47,
 					"y":	78,
 					"id":	"croton"
+				}, {
+					"x":	37,
+					"y":	45,
+					"id":	"roma"
 				}],
 			"castles":	[{
 					"x":	38,
@@ -1613,6 +1617,24 @@
 			},
 			"zone":	"oriens",
 			"intel_castle":	"castle_oriens_4"
+		}, {
+				"index":	25,
+				"id":	"roma",
+				"name":	"Roma",
+				"art":	"town_rome",
+				"x":	37,
+				"y":	45,
+				"boat":	{
+					"x":	-1,
+					"y":	-1
+				},
+				"gate":	{
+					"x":	37,
+					"y":	46
+				},
+				"zone":	"italia",
+				"intel_castle":	"castle_italia_0",
+				"pinned_spell":	""
 		}],
 	"castles":	[{
 			"index":	0,
