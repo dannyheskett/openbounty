@@ -184,6 +184,24 @@ TEST army_art_is_listed_per_zone(void) {
     PASS();
 }
 
+TEST class_hero_art_is_listed_when_declared(void) {
+    Resources *r = fx_load_resources();
+    ASSERT(r);
+    ASSERT(r->classes_count >= 1);
+    ASSERT(resources_class_hero(r, r->classes[0].id) == NULL);
+    int n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    ASSERT_FALSE(manifest_has(n, "art/classes/x_hero.png"));
+    strcpy(r->class_hero[0].tile, "art/classes/x_hero.png");
+    r->class_hero[0].walk.count[0] = 1;
+    strcpy(r->class_hero[0].walk.frames[0][0], "art/classes/x_walk_00.png");
+    ASSERT(resources_class_hero(r, r->classes[0].id) != NULL);
+    n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    ASSERT(manifest_has(n, "art/classes/x_hero.png"));
+    ASSERT(manifest_has(n, "art/classes/x_walk_00.png"));
+    resources_free(r); free(r);
+    PASS();
+}
+
 TEST a_pack_may_name_its_own_font(void) {
     // The path was compiled into main.c. Defaulted, not hardcoded, now.
     Resources *r = fx_load_resources();
@@ -203,5 +221,6 @@ SUITE(unit_art_manifest_suite) {
     RUN_TEST(terrain_art_is_listed_per_tile_set);
     RUN_TEST(town_art_is_listed_per_catalog_entry);
     RUN_TEST(army_art_is_listed_per_zone);
+    RUN_TEST(class_hero_art_is_listed_when_declared);
     RUN_TEST(a_pack_may_name_its_own_font);
 }

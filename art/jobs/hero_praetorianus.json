@@ -1,0 +1,19 @@
+{
+  "id": "hero_praetorianus",
+  "prompt": "a Roman praetorian officer on horseback in profile facing right, white cloak with a purple border, gilded scale cuirass, plumed helmet, the horse standing still with all four feet on the ground",
+  "style": "user__glory_of_rome_troops_bac676cd",
+  "width": 96,
+  "height": 96,
+  "seed": 7411,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": true,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/classes/praetorianus_hero.png",
+  "_note": "Per-class mounted hero still (2026-09-06), troop route: the win-cartoon hero tile for this class and the start frame of its map walk. The Legatus is the earlier hero still (seed 7401)."
+}

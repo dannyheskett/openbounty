@@ -55,6 +55,13 @@ void sprites_load(Sprites *s, const Resources *res) {
     int nc = classes_count();
     if (nc > 4) nc = 4;
     for (int i = 0; i < nc; i++) {
+        const ResClassHero *h = &res->class_hero[i];
+        load_anim_set(&s->class_hero_walk[i], &h->walk);
+        load_anim_set(&s->class_hero_idle[i], &h->idle);
+        load_anim_set(&s->class_hero_boat[i], &h->boat);
+        if (h->tile[0]) s->class_end_hero[i] = load_rel(h->tile);
+    }
+    for (int i = 0; i < nc; i++) {
         const ClassDef *c = class_by_index(i);
         s->class_portrait[i] = c ? load_rel(c->portrait) : (Texture2D){ 0 };
     }
@@ -213,5 +220,36 @@ void sprites_unload(Sprites *s) {
     UnloadTexture(s->end_grass);
     UnloadTexture(s->end_carpet);
     UnloadTexture(s->end_hero);
+    for (int i = 0; i < 4; i++) {
+        SpriteAnim *ca[3] = { &s->class_hero_walk[i], &s->class_hero_idle[i],
+                              &s->class_hero_boat[i] };
+        for (int k = 0; k < 3; k++)
+            for (int f = 0; f < OB_FACE_COUNT; f++)
+                for (int j = 0; j < ca[k]->frames[f]; j++)
+                    UnloadTexture(ca[k]->tex[f][j]);
+        UnloadTexture(s->class_end_hero[i]);
+    }
     UnloadTexture(s->end_throne);
+}
+
+static int class_slot(const char *class_id) {
+    if (!class_id || !class_id[0]) return -1;
+    const ClassDef *c = class_by_id(class_id);
+    return (c && c->index >= 0 && c->index < 4) ? c->index : -1;
+}
+
+const SpriteAnim *sprites_hero_anim(const Sprites *s, const char *class_id, int kind) {
+    const SpriteAnim *global = kind == 1 ? &s->hero_idle
+                             : kind == 2 ? &s->hero_boat : &s->hero_walk;
+    int i = class_slot(class_id);
+    if (i < 0) return global;
+    const SpriteAnim *own = kind == 1 ? &s->class_hero_idle[i]
+                          : kind == 2 ? &s->class_hero_boat[i] : &s->class_hero_walk[i];
+    return sprites_anim_present(own) ? own : global;
+}
+
+Texture2D sprites_end_hero(const Sprites *s, const char *class_id) {
+    int i = class_slot(class_id);
+    if (i >= 0 && s->class_end_hero[i].id) return s->class_end_hero[i];
+    return s->end_hero;
 }

@@ -838,6 +838,12 @@ except where a deviation is explicitly flagged (§34).
   manifest lists each declared stem once and the shared `town` tile only
   while some town lacks an `art` of its own, so `kings-bounty`, which
   declares none, is unchanged.
+- **REQ-163a.** A class entry has optionally carried a `hero` block (walk,
+  idle, boat, tile) parsed into `Resources.class_hero[]`
+  (`resources_class_hero`); the shell draws the chosen class's sets for the
+  map hero and the win-cartoon tile (`sprites_hero_anim`, `sprites_end_hero`)
+  and falls back to the pack-wide `sprites.hero` and `ending.hero_tile` for
+  anything undeclared, so `kings-bounty`, which declares none, is unchanged.
 - **REQ-228b.** A wandering foe has been stamped with its zone's `army_art`
   stem when the zone declares one (`Map.army_art`, read by both foe stamp
   sites), else `wandering_army`; the map draws that tile for every foe (the

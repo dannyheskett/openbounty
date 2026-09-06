@@ -1042,7 +1042,7 @@ int shell_run_game(int argc, char **argv) {
                 if (game.stats.won) {
                     // The agent found the scepter: play the ending a human
                     // victory gets, then hand off the cleared board.
-                    run_end_cartoon(&render_target, &res, &sprites);
+                    run_end_cartoon(&render_target, &res, &sprites, &game);
                     show_win_game(&game, &res);
                     won_handoff = true;
                 } else {
@@ -1082,7 +1082,7 @@ int shell_run_game(int argc, char **argv) {
                 shell_autoplay_end();
                 autoplay_mode = false;
                 if (game.stats.won) {
-                    run_end_cartoon(&render_target, &res, &sprites);
+                    run_end_cartoon(&render_target, &res, &sprites, &game);
                     show_win_game(&game, &res);
                     won_handoff = true;
                 } else {

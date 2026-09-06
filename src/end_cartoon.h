@@ -18,8 +18,10 @@
 //
 // No-op (returns immediately) if any of the required tile paths are
 // missing from res->ending.
+struct Game;
 void run_end_cartoon(RenderTexture2D *rt,
                              const Resources *res,
-                             const Sprites *sprites);
+                             const Sprites *sprites,
+                             const struct Game *game);
 
 #endif

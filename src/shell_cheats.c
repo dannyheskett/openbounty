@@ -112,7 +112,7 @@ CheatResult cheat_menu_tick(Game *game, Map *map, Fog *fog,
     case 'W':
         s_cheat_menu_active = false;
         dialog_dismiss();
-        run_end_cartoon(render_target, res, sprites);
+        run_end_cartoon(render_target, res, sprites, game);
         show_win_game(game, res);
         return CHEAT_DISPATCHED_TERMINAL;
     case 'L':

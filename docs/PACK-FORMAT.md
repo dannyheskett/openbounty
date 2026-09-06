@@ -130,6 +130,19 @@ four-frame walk north is legal.
 it, he holds frame 0 between steps, which is what every pack did before `idle`
 existed.
 
+**Per-class hero art.** A class entry may carry its own `hero` block with the
+same `walk` / `idle` / `boat` keys, plus `tile`, the win-cartoon hero tile:
+
+```json
+{ "id": "knight", "name": "Legatus", "portrait": "art/classes/legatus.png",
+  "hero": { "tile": "art/classes/legatus_hero.png",
+            "walk": ["art/classes/legatus_walk_00.png", "..."] }, ... }
+```
+
+The map and the win cartoon draw the chosen class's art when it is declared
+and fall back to `sprites.hero` and `ending.hero_tile` for anything the class
+leaves out, so packs that declare nothing are unchanged.
+
 Tile images live under `art/tiles/` by convention. Each `tile_codes`
 entry maps an ASCII character (used in `.dat` map files) to a tile
 record:

@@ -128,6 +128,8 @@ static char *slurp(const char *path) {
 // ---- In-place section parsers ---------------------------------------------
 // Each parses a JSON array nested inside the single game.json root object.
 
+static void parse_anim_set(cJSON *obj, ResAnimSet *out);
+
 static void parse_towns(Resources *res, cJSON *arr) {
     res->town_count = 0;
     if (!cJSON_IsArray(arr)) return;
@@ -587,6 +589,19 @@ static void parse_classes(Resources *res, cJSON *arr) {
         copy_str(c->name,     sizeof(c->name),     json_str(it, "name", ""));
         copy_str(c->portrait, sizeof(c->portrait), json_str(it, "portrait", ""));
         c->starting_gold = json_int(it, "starting_gold", 0);
+        {
+            // Optional per-class hero art, declared like sprites.hero plus a
+            // win-cartoon tile. Parallel slot in res->class_hero.
+            ResClassHero *h = &res->class_hero[res->classes_count - 1];
+            memset(h, 0, sizeof *h);
+            cJSON *hero = cJSON_GetObjectItem(it, "hero");
+            if (cJSON_IsObject(hero)) {
+                parse_anim_set(cJSON_GetObjectItem(hero, "walk"), &h->walk);
+                parse_anim_set(cJSON_GetObjectItem(hero, "idle"), &h->idle);
+                parse_anim_set(cJSON_GetObjectItem(hero, "boat"), &h->boat);
+                copy_str(h->tile, sizeof h->tile, json_str(hero, "tile", ""));
+            }
+        }
 
         cJSON *st = cJSON_GetObjectItem(it, "starting_troops");
         int si = 0;
@@ -2353,8 +2368,13 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
     art_add(out, cap, &n, res->ending.hero_tile);
     art_add(out, cap, &n, res->ending.throne_backdrop);
 
-    for (int i = 0; i < res->classes_count; i++)
+    for (int i = 0; i < res->classes_count; i++) {
         art_add(out, cap, &n, res->classes[i].portrait);
+        art_add_anim(out, cap, &n, &res->class_hero[i].walk);
+        art_add_anim(out, cap, &n, &res->class_hero[i].idle);
+        art_add_anim(out, cap, &n, &res->class_hero[i].boat);
+        art_add(out, cap, &n, res->class_hero[i].tile);
+    }
 
     for (int i = 0; i < res->troops_count; i++) {
         art_add(out, cap, &n, res->troops[i].sprite);
@@ -2473,4 +2493,17 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
     }
 
     return n;
+}
+
+const ResClassHero *resources_class_hero(const Resources *r, const char *class_id) {
+    if (!r || !class_id) return NULL;
+    for (int i = 0; i < r->classes_count; i++) {
+        if (strcmp(r->classes[i].id, class_id) != 0) continue;
+        const ResClassHero *h = &r->class_hero[i];
+        bool any = h->tile[0] != '\0';
+        for (int f = 0; f < OB_FACE_COUNT && !any; f++)
+            any = h->walk.count[f] || h->idle.count[f] || h->boat.count[f];
+        return any ? h : NULL;
+    }
+    return NULL;
 }

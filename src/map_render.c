@@ -121,12 +121,13 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
     // The hero holds still between steps, so pick the idle set when the pack
     // shipped one and the walk cycle isn't running.
     bool mirror = false;
-    const SpriteAnim *set = &s->hero_walk;
+    const char *cid = g->character.cls.id;
+    const SpriteAnim *set = sprites_hero_anim(s, cid, 0);
     if (g->travel_mode != TRAVEL_BOAT && !g->anim_moving &&
-        sprites_anim_present(&s->hero_idle)) {
-        set = &s->hero_idle;
+        sprites_anim_present(sprites_hero_anim(s, cid, 1))) {
+        set = sprites_hero_anim(s, cid, 1);
     }
-    if (g->travel_mode == TRAVEL_BOAT) set = &s->hero_boat;
+    if (g->travel_mode == TRAVEL_BOAT) set = sprites_hero_anim(s, cid, 2);
     Texture2D hsprite = sprites_anim_tex(set, g->position.facing,
                                          g->anim_frame, &mirror);
     if (g->travel_mode != TRAVEL_BOAT && g->character.mount == MOUNT_FLY) {

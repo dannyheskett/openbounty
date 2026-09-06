@@ -26,6 +26,13 @@ typedef struct {
     SpriteAnim hero_walk;
     SpriteAnim hero_idle;
     SpriteAnim hero_boat;
+    // Per-class hero art, parallel to the class catalog; empty sets and a zero
+    // texture where a class declared none. Read through sprites_hero_anim /
+    // sprites_end_hero, which fall back to the pack-wide sets above.
+    SpriteAnim class_hero_walk[4];
+    SpriteAnim class_hero_idle[4];
+    SpriteAnim class_hero_boat[4];
+    Texture2D  class_end_hero[4];
 
     Texture2D class_portrait[4];
     // villain_portrait[i] = frame 0 (still image, kept for compatibility).
@@ -126,6 +133,12 @@ static inline bool sprites_anim_present(const SpriteAnim *a) {
 }
 
 void sprites_load(Sprites *s, const Resources *res);
+
+// The hero animation set for a class: 0 = walk, 1 = idle, 2 = boat. The
+// class's own set when the pack declared one, else the pack-wide set.
+const SpriteAnim *sprites_hero_anim(const Sprites *s, const char *class_id, int kind);
+// The win-cartoon hero tile for a class, else the pack-wide ending tile.
+Texture2D sprites_end_hero(const Sprites *s, const char *class_id);
 void sprites_unload(Sprites *s);
 
 #endif

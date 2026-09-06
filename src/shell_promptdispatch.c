@@ -136,7 +136,7 @@ bool prompt_dispatch_tick(ShellCtx *ctx) {
 
     // Host-side presentation -- the engine cannot do these.
     if (pres.won_game) {
-        run_end_cartoon(ctx->render_target, r_, ctx->sprites);
+        run_end_cartoon(ctx->render_target, r_, ctx->sprites, g);
         show_win_game(g, r_);
     } else if (pres.game_over) {
         show_lose_game(g, r_);

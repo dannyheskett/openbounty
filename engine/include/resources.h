@@ -49,6 +49,13 @@ typedef struct {
     char frames[OB_FACE_COUNT][OB_ANIM_FRAMES_MAX][RES_PATH_LEN];
 } ResAnimSet;
 
+// Optional per-class hero art (a class entry's "hero" block). Any part a
+// class leaves out falls back to the pack-wide sprites.hero / ending.hero_tile.
+typedef struct {
+    ResAnimSet walk, idle, boat;
+    char tile[RES_PATH_LEN];      // win-cartoon hero tile
+} ResClassHero;
+
 typedef struct {
     int day_steps;
     int week_days;
@@ -836,6 +843,8 @@ typedef struct {
 
     int         zone_count;
     ResZone     zones[RES_MAX_ZONES];
+    // Parallel to classes[]: per-class hero art, all-zero when undeclared.
+    ResClassHero class_hero[CAT_CLASSES_MAX];
 
     // Indexed by raw byte from the .dat. `present == false` means unused.
     ResTileCode tile_codes[RES_TILE_CODE_COUNT];
@@ -1080,6 +1089,8 @@ bool resources_castle_is_home(const ResCastle *rc);            // rc may be NULL
 const ResCastle *resources_home_castle(const Resources *r);    // NULL if none
 
 const ResZone   *resources_zone_by_id(const Resources *r, const char *id);
+// The per-class hero art for a class id, or NULL when the class declared none.
+const ResClassHero *resources_class_hero(const Resources *r, const char *class_id);
 // Index of zone `id` in r->zones[] (parallel to Game.world.zones_discovered[]),
 // or -1 if unknown. The ONE zone-id -> index lookup (callers add their own
 // GAME_CONTINENTS bound before indexing zones_discovered[]).

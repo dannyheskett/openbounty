@@ -1,4 +1,5 @@
 #include "end_cartoon.h"
+#include "game.h"
 #include "frame_host.h"
 #include "layout.h"
 #include "present.h"
@@ -49,6 +50,7 @@ static void draw_tile(Texture2D tex, int gx, int gy, int origin_x, int origin_y,
 }
 
 static void draw_cartoon_frame(const Resources *res, const Sprites *sprites,
+                               Texture2D hero,
                                int origin_x, int origin_y,
                                int tick, int frame) {
     int gw = res->ending.grid_width;
@@ -80,8 +82,7 @@ static void draw_cartoon_frame(const Resources *res, const Sprites *sprites,
     // Hero. Draws once hero_prog >= 0 (i.e. from frame 5 onward).
     if (hero_prog >= 0) {
         int y = (gh - 1) - hero_prog;
-        draw_tile(sprites->end_hero, carpet_col, y,
-                  origin_x, origin_y, false);
+        draw_tile(hero, carpet_col, y, origin_x, origin_y, false);
     }
 
     // Troop border. layout: iterate troops, fill x=0..3 then x=5,
@@ -107,11 +108,13 @@ static void draw_cartoon_frame(const Resources *res, const Sprites *sprites,
 
 void run_end_cartoon(RenderTexture2D *rt,
                              const Resources *res,
-                             const Sprites *sprites) {
+                             const Sprites *sprites,
+                             const struct Game *game) {
     if (!rt || !res || !sprites) return;
+    // The hero tile is the player's class's own when the pack declares one.
+    Texture2D hero = sprites_end_hero(sprites, game ? game->character.cls.id : NULL);
     // Skip silently if the tile art isn't configured.
-    if (!sprites->end_grass.id || !sprites->end_carpet.id ||
-        !sprites->end_hero.id) return;
+    if (!sprites->end_grass.id || !sprites->end_carpet.id || !hero.id) return;
 
     int gw = res->ending.grid_width  > 0 ? res->ending.grid_width  : 6;
     int gh = res->ending.grid_height > 0 ? res->ending.grid_height : 5;
@@ -152,7 +155,7 @@ void run_end_cartoon(RenderTexture2D *rt,
 
         BeginTextureMode(*rt);
         ClearBackground(BLACK);
-        draw_cartoon_frame(res, sprites, origin_x, origin_y, tick, frame);
+        draw_cartoon_frame(res, sprites, hero, origin_x, origin_y, tick, frame);
         EndTextureMode();
 
         present_scaled(*rt);
