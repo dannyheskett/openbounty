@@ -1,0 +1,17 @@
+{
+  "id": "hud_contract_silhouette",
+  "prompt": "a black silhouette of a hooded bust against a deep blue background, painted as a small game sidebar panel inside a thin gold frame that runs along all four edges of the picture, no writing, no lettering",
+  "style": "rd_pro__default",
+  "width": 96,
+  "height": 96,
+  "seed": 7701,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/ui/hud_contract_silhouette.png",
+  "_note": "HUD sidebar panel (2026-09-06), the inventory icon route: opaque framed card, rd_pro__default, 96x96, no references, no lettering. The siege and magic stills are frame 0 of their four-frame loops."
+}

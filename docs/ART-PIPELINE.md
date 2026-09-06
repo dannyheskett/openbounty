@@ -226,6 +226,13 @@ and record both prompts in `ART-WORKLIST.md`.
   and rune-like inscriptions. The four zone icons are declared in
   `sprites.ui.view_icons_extra` in zone order; without that key the map
   grid of the inventory draws nothing.
+- **HUD panels** (`art/ui/hud_*`) — the inventory icon route for the seven
+  stills (opaque framed cards, `rd_pro__default`, no lettering); the siege
+  and magic cycles are the villain loop route on the framed still (custom
+  action, four frames, expansion on, "static background, smooth loop"). The
+  sidebar cycles a loop at two frames a second, so the magic loop is a colour
+  change (gold to violet), not a flicker, or the change is invisible at that
+  rate. `hud_bar_strip` is the 320x5 divider and stays hand-drawn.
 - **The publisher splash** (`art/ui/splash_logo.png`, 320x84, transparent) —
   composed, not generated whole, because generated lettering garbles. The
   words are rendered locally from C059 Bold at 1-bit, white with the old

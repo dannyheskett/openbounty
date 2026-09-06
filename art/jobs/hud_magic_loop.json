@@ -1,0 +1,21 @@
+{
+  "id": "hud_magic_loop",
+  "prompt": "sacred flame changing colour, gold to blue to violet to red, static brazier, static background, smooth loop",
+  "style": "rd_advanced_animation__custom_action",
+  "width": 96,
+  "height": 96,
+  "seed": 7742,
+  "frames_duration": 4,
+  "return_spritesheet": true,
+  "input_image_path": "build/art/hud_magic_00/run01/01_raw.png",
+  "input_image_keep_alpha": false,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/ui/hud_magic_00..03.png",
+  "_note": "HUD panel loop (2026-09-06): custom action on the opaque framed still, four frames, expansion on, tag prompt; the sidebar cycles it at two frames a second."
+}
