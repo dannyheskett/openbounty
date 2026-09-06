@@ -1,10 +1,10 @@
 {
   "id": "inventory_zone_galliae",
-  "prompt": "a heraldic emblem of forested hills with a stone river bridge under them, painted as a small game inventory icon, the object large and centred on a plain dark parchment background that fills the whole picture edge to edge, no frame, no border, no writing, no lettering, no banner, no ribbon",
+  "prompt": "a heraldic emblem of forested hills with a stone river bridge under them, painted as a small game inventory icon, the object large and centred on a plain dark parchment background that fills the whole picture edge to edge, no frame, no border, no inset panel, no inner rectangle, the background one continuous surface right to every edge, no writing, no lettering, no banner, no ribbon",
   "style": "rd_pro__default",
   "width": 96,
   "height": 96,
-  "seed": 7593,
+  "seed": 7594,
   "bypass_prompt_expansion": true,
   "raw_only": true,
   "figure": false,
@@ -13,5 +13,5 @@
     96
   ],
   "_pack_path": "art/ui/inventory_zone_galliae.png",
-  "_note": "Inventory icon (2026-09-06): opaque framed card like the original pack's, drawn in the inventory belt and the puzzle grid at the tile size; rd_pro__default, the screen engine, 96x96, no references. run02: no words on anything (Dan): lettering, banner and the Gallic cockerel removed; seed incremented. Regenerated without a painted frame (2026-09-06): the shell draws the frame (sprites.ui.panel_frame)."
+  "_note": "Inventory icon (2026-09-06): opaque framed card like the original pack's, drawn in the inventory belt and the puzzle grid at the tile size; rd_pro__default, the screen engine, 96x96, no references. run02: no words on anything (Dan): lettering, banner and the Gallic cockerel removed; seed incremented. Regenerated without a painted frame (2026-09-06): the shell draws the frame (sprites.ui.panel_frame). Re-run: the previous run still painted an inset panel; wording strengthened, seed incremented."
 }
