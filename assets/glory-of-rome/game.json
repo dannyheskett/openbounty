@@ -3446,6 +3446,7 @@
 			"dungeon_backdrop":	"art/ui/backdrop_dungeon.png",
 			"ending_win":	"art/ui/end_win_screen.png",
 			"ending_lose":	"art/ui/end_lose_screen.png",
+			"view_icons_extra":	["art/ui/inventory_zone_italia.png", "art/ui/inventory_zone_galliae.png", "art/ui/inventory_zone_africa.png", "art/ui/inventory_zone_oriens.png"],
 			"view_icons_extra":	["art/ui/inventory_zone_continentia.png", "art/ui/inventory_zone_forestria.png", "art/ui/inventory_zone_archipelia.png", "art/ui/inventory_zone_saharia.png"],
 			"chrome_overworld":	"art/ui/chrome_overworld.png",
 			"splash_logo":	"art/ui/splash_logo.png",

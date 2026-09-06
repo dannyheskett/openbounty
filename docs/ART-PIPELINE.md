@@ -211,6 +211,15 @@ and record both prompts in `ART-WORKLIST.md`.
   between a held background and a redrawn one. Leave it on for animations.
   The installed troop loops were made with it off and stay as approved; any
   re-run or new troop tests expansion on first.
+- **Inventory icons** (`art/ui/inventory_artifact_*`, `inventory_zone_*`) —
+  opaque framed cards like the original pack's, drawn in the inventory belt
+  and the puzzle grid at the tile size: `rd_pro__default`, 96x96, no
+  references, the object "painted as a small game inventory icon ... inside a
+  thin gold frame", and **no writing, lettering, banner or ribbon** named in
+  the prompt, because the model otherwise invents captions ("COASTAL PALMS")
+  and rune-like inscriptions. The four zone icons are declared in
+  `sprites.ui.view_icons_extra` in zone order; without that key the map
+  grid of the inventory draws nothing.
 - **The publisher splash** (`art/ui/splash_logo.png`, 320x84, transparent) —
   composed, not generated whole, because generated lettering garbles. The
   words are rendered locally from C059 Bold at 1-bit, white with the old

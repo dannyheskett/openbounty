@@ -1,0 +1,17 @@
+{
+  "id": "inventory_zone_italia",
+  "prompt": "a heraldic emblem of the Italian peninsula with a she-wolf and laurel, painted as a small game inventory icon, the object large and centred on a plain dark parchment background inside a thin gold frame that runs along all four edges of the picture",
+  "style": "rd_pro__default",
+  "width": 96,
+  "height": 96,
+  "seed": 7581,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/ui/inventory_zone_italia.png",
+  "_note": "Inventory icon (2026-09-06): opaque framed card like the original pack's, drawn in the inventory belt and the puzzle grid at the tile size; rd_pro__default, the screen engine, 96x96, no references."
+}
