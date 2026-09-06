@@ -180,13 +180,12 @@ and record both prompts in `ART-WORKLIST.md`.
     output either way).
   The ground is not in the art: the renderer draws the terrain tile beneath
   every object tile.
-- **Bridges** (`bridge_h`, `bridge_v`) — object route, transparent: the deck
-  runs edge to edge in one axis so a run stacks end to end, and the renderer
-  draws the zone's water under every bridge tile (REQ-229b). An opaque deck
-  with its own water never matches the installed water. The horizontal one
-  needs the deck described as "lying sideways, wider than tall, entering from
-  the left edge and leaving by the right"; "left to right" alone came out
-  vertical.
+- **Bridges** (`bridge_h`, `bridge_v`) — a road, as in the original pack: an
+  opaque square of grey stone paving with a lighter kerb along the two edges
+  the road does not cross, so tiles stack end to end. Object engine
+  (`rd_pro__topdown`), no background removal, no water in the picture.
+  (2026-09-06: five runs were wasted describing a transparent deck over
+  water; the original tile never had water in it.)
 - **Terrain edges** (48 files) — not generated. `tools/tileedges.py`
   composites each from the installed base and grass tiles: the original
   48x34 edge tile under `art/reference/edges/` is read as a shape (each pixel

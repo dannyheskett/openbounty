@@ -1,10 +1,10 @@
 {
   "id": "bridge_v",
-  "prompt": "an isolated cut-out game sprite of a vertical Roman stone bridge deck of plain grey masonry paving, a low parapet along its left edge and along its right edge, the deck entering from the top edge of the picture and leaving by the bottom edge, taller than it is wide, seen from directly above, cut off flat by the top and bottom edges, only the flat magenta background showing to the left and right of the deck, solid magenta background",
+  "prompt": "a square tile of grey stone paving in even rows of rectangular blocks, filling the whole picture edge to edge, with a raised kerb of lighter stone running along the full left edge and the full right edge, the top and bottom edges open so the paving continues past them, seen from directly above, flat, opaque",
   "style": "rd_pro__topdown",
   "width": 96,
   "height": 96,
-  "seed": 7613,
+  "seed": 7631,
   "bypass_prompt_expansion": true,
   "raw_only": true,
   "figure": false,
@@ -13,7 +13,5 @@
     96
   ],
   "_pack_path": "art/tiles/bridge_v.png",
-  "_note": "Bridge tile (2026-09-06): a terrain code whose deck runs edge to edge in one axis so a run stacks end to end (the Bridge spell lays two at a time). Transparent deck: the renderer draws the zone's water tile under every bridge tile (src/map_render.c), so the water always matches its neighbours and follows the zone's tile set. run01 was opaque with its own water, which did not match the installed water and drew a frame around the vertical one. run03: run02's arch pattern seen from above was not approved; the deck is now plain paving with parapets, the same masonry as bridge_h.",
-  "remove_bg": true,
-  "return_non_bg_removed": true
+  "_note": "Bridge tile (2026-09-06): a road, as in the original pack. Opaque square of stone paving with a kerb along the two edges the road does not cross, so tiles stack end to end. Object engine, no background removal, no water."
 }
