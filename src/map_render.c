@@ -62,10 +62,14 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
             // transparent object -- the 1x1 castle, a town -- then stands on the ground it occupies instead
             // of the black map fill; an opaque object covers the ground
             // completely, so nothing that drew before this draws differently.
-            if (t->interactive != INTERACT_NONE) {
+            // A bridge is a terrain code, not an object, but it is drawn the
+            // same way: the zone's water tile first, then the transparent
+            // deck, so the deck sits on the same water as the tiles around it.
+            if (t->interactive != INTERACT_NONE || t->is_bridge) {
                 char ga[TILE_ART_NAME_LEN];
-                Texture2D ground = tile_cache_get(
-                    MapTerrainArt(m, TerrainName(t->terrain), ga, sizeof ga));
+                Texture2D ground = tile_cache_get(MapTerrainArt(
+                    m, t->is_bridge ? "water" : TerrainName(t->terrain),
+                    ga, sizeof ga));
                 if (ground.id) {
                     Rectangle gsrc = { 0, 0, (float)ground.width,
                                        (float)ground.height };

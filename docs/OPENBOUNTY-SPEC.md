@@ -844,6 +844,10 @@ except where a deviation is explicitly flagged (§34).
   map hero and the win-cartoon tile (`sprites_hero_anim`, `sprites_end_hero`)
   and falls back to the pack-wide `sprites.hero` and `ending.hero_tile` for
   anything undeclared, so `kings-bounty`, which declares none, is unchanged.
+- **REQ-229b.** A bridge tile (`is_bridge`) has been drawn like an object:
+  the zone's water tile first (`MapTerrainArt(map, "water")`), then the
+  bridge art, so a transparent deck sits on the water its neighbours draw and
+  follows the zone's tile set (`src/map_render.c`).
 - **REQ-228b.** A wandering foe has been stamped with its zone's `army_art`
   stem when the zone declares one (`Map.army_art`, read by both foe stamp
   sites), else `wandering_army`; the map draws that tile for every foe (the

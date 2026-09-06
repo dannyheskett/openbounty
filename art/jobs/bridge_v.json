@@ -1,0 +1,19 @@
+{
+  "id": "bridge_v",
+  "prompt": "an isolated cut-out game sprite of a vertical Roman stone bridge deck of plain grey masonry paving, a low parapet along its left edge and along its right edge, the deck entering from the top edge of the picture and leaving by the bottom edge, taller than it is wide, seen from directly above, cut off flat by the top and bottom edges, only the flat magenta background showing to the left and right of the deck, solid magenta background",
+  "style": "rd_pro__topdown",
+  "width": 96,
+  "height": 96,
+  "seed": 7613,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/tiles/bridge_v.png",
+  "_note": "Bridge tile (2026-09-06): a terrain code whose deck runs edge to edge in one axis so a run stacks end to end (the Bridge spell lays two at a time). Transparent deck: the renderer draws the zone's water tile under every bridge tile (src/map_render.c), so the water always matches its neighbours and follows the zone's tile set. run01 was opaque with its own water, which did not match the installed water and drew a frame around the vertical one. run03: run02's arch pattern seen from above was not approved; the deck is now plain paving with parapets, the same masonry as bridge_h.",
+  "remove_bg": true,
+  "return_non_bg_removed": true
+}
