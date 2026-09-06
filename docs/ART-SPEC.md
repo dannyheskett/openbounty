@@ -125,8 +125,10 @@ the middle span is tiled, not stretched.
 - **PNG, 32-bit RGBA.**
 - **Alpha is binary.** Fully opaque or fully transparent. Soft edges read as
   dirt, and the QA counts partial-alpha pixels as a failure.
-- **Sprites need real transparent backgrounds.** Troops, villains, the hero and
-  map objects draw *over* terrain. No baked-in ground, no drop shadow onto
+- **Sprites need real transparent backgrounds.** Troops, the hero and map
+  objects draw *over* terrain. Villains are not sprites: they are opaque
+  bust portraits with a painted background, drawn as faces in the contract
+  view, the HUD chip and the puzzle grid. No baked-in ground, no drop shadow onto
   transparency.
 - **Terrain tiles are fully opaque** and must tile seamlessly against their own
   kind on all four edges.

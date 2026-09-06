@@ -179,6 +179,30 @@ and record both prompts in `ART-WORKLIST.md`.
   mask is resized to the pack tile and filled with the new bases, so every
   edge seams with its neighbours by construction. Re-run it whenever a base
   changes; with a tile-set argument it writes a zone's folder.
+- **Villain portraits** (`art/villains/<name>_00..07.png`) — villains are not
+  sprites: they are opaque head-and-shoulders portraits drawn as faces in the
+  contract view, the HUD contract chip and the puzzle grid. Still:
+  `rd_pro__default` at 96x96, opaque, the four class portraits as
+  `reference_images`, the prompt "a head-and-shoulders portrait, the face
+  filling the frame, of ..." with a setting behind the head. Loop:
+  `rd_advanced_animation__custom_action` on the untouched still, **eight
+  frames**, **prompt expansion left on** (`bypass_prompt_expansion: false`),
+  a short tag-form prompt in the engine maker's shape: "snarling face, static
+  background, smooth loop". Settled 2026-09-05 on Hannibal, measured as
+  pixels changed against frame 0 outside the face: custom action with
+  expansion on, 1217 over seven frames and all of it on the helmet brow and
+  chin strap; the same engine with expansion off at four frames redrew the
+  whole figure (1600 on one frame); the idle style moved the body on every
+  frame (9700) with expansion on or off, because it is built for a standing
+  figure. Judge a loop by that measurement and the 3x gif, not a single
+  frame. No processing of the still or the frames.
+- **Prompt expansion** — every job before 2026-09-05 set
+  `bypass_prompt_expansion: true`, on the strength of one measurement on a
+  low_res still where it changed nothing (and the town test on the same
+  style was byte-identical). On the animation engine it is the difference
+  between a held background and a redrawn one. Leave it on for animations.
+  The installed troop loops were made with it off and stay as approved; any
+  re-run or new troop tests expansion on first.
 - **The publisher splash** (`art/ui/splash_logo.png`, 320x84, transparent) —
   composed, not generated whole, because generated lettering garbles. The
   words are rendered locally from C059 Bold at 1-bit, white with the old

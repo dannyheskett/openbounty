@@ -1,0 +1,24 @@
+{
+  "id": "hannibal",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Carthaginian general in a crested Punic helmet, one eye scarred and blind, purple cloak, snowy Alpine peaks and an elephant behind him",
+  "style": "rd_pro__default",
+  "width": 96,
+  "height": 96,
+  "seed": 8101,
+  "reference_image_paths": [
+    "assets/glory-of-rome/art/classes/dux.png",
+    "assets/glory-of-rome/art/classes/legatus.png",
+    "assets/glory-of-rome/art/classes/praetorianus.png",
+    "assets/glory-of-rome/art/classes/sibylla.png"
+  ],
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/villains/hannibal_00.png (frame 0 of 4)",
+  "_note": "Villain portrait, the first on this route (2026-09-05). Villains are opaque head-and-shoulders portraits drawn as faces in the contract view, HUD chip and puzzle grid, not sprites; the earlier worklist rows described combat sprites and were rewritten. Same engine as the class portraits (rd_pro__default) at the 96x96 tile size the views draw them in, opaque, the four class portraits as references so the villains render in the same hand. The four frames come from the custom-action engine on this still with the row's facial loop.",
+  "_animation": "narrows his good eye and sets his jaw, then a slow knowing smile"
+}

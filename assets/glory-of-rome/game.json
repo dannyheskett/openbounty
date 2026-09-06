@@ -2158,7 +2158,7 @@
 			"max_population":	100,
 			"growth_per_week":	3,
 			"morale_group":	"C",
-			"anim":	["art/troops/sarmatae_00.png", "art/troops/sarmatae_01.png", "art/troops/sarmatae_02.png", "art/troops/sarmatae_03.png"],
+			"anim":	["art/troops/sarmatae_00.png", "art/troops/sarmatae_01.png", "art/troops/sarmatae_02.png", "art/troops/sarmatae_03.png", "art/troops/sarmatae_04.png", "art/troops/sarmatae_05.png"],
 			"tier_counts":	[2, 3, 5, 8]
 		}, {
 			"index":	17,
