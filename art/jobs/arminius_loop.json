@@ -4,7 +4,7 @@
   "style": "rd_advanced_animation__custom_action",
   "width": 96,
   "height": 96,
-  "seed": 8311,
+  "seed": 8312,
   "frames_duration": 8,
   "return_spritesheet": true,
   "input_image_path": "build/art/arminius/run01/01_raw.png",
@@ -17,5 +17,5 @@
     96
   ],
   "_pack_path": "art/villains/arminius_00..07.png",
-  "_note": "Villain face loop (2026-09-05), the route proven on Hannibal: custom action on the untouched approved still, eight frames, prompt expansion on, the worklist row's tag prompt. Judged by pixels changed outside the face and the 3x gif."
+  "_note": "Villain face loop (2026-09-05), the route proven on Hannibal: custom action on the untouched approved still, eight frames, prompt expansion on, the worklist row's tag prompt. Judged by pixels changed outside the face and the 3x gif. retry after inference_failed (no charge), seed incremented."
 }

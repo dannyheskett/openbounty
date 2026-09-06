@@ -2770,6 +2770,7 @@
 			"reward":	12000,
 			"puzzle_cell":	6,
 			"portrait":	"art/villains/brennus_00.png",
+			"anim":	["art/villains/brennus_00.png", "art/villains/brennus_01.png", "art/villains/brennus_02.png", "art/villains/brennus_03.png", "art/villains/brennus_04.png", "art/villains/brennus_05.png", "art/villains/brennus_06.png", "art/villains/brennus_07.png"],
 			"army":	[{
 					"troop":	"barbarians",
 					"count":	4
@@ -2819,6 +2820,7 @@
 			"reward":	16000,
 			"puzzle_cell":	8,
 			"portrait":	"art/villains/arminius_00.png",
+			"anim":	["art/villains/arminius_00.png", "art/villains/arminius_01.png", "art/villains/arminius_02.png", "art/villains/arminius_03.png", "art/villains/arminius_04.png", "art/villains/arminius_05.png", "art/villains/arminius_06.png", "art/villains/arminius_07.png"],
 			"army":	[{
 					"troop":	"barbarians",
 					"count":	4
@@ -2865,6 +2867,7 @@
 			"reward":	20000,
 			"puzzle_cell":	10,
 			"portrait":	"art/villains/pyrrhus_00.png",
+			"anim":	["art/villains/pyrrhus_00.png", "art/villains/pyrrhus_01.png", "art/villains/pyrrhus_02.png", "art/villains/pyrrhus_03.png", "art/villains/pyrrhus_04.png", "art/villains/pyrrhus_05.png", "art/villains/pyrrhus_06.png", "art/villains/pyrrhus_07.png"],
 			"army":	[{
 					"troop":	"pikemen",
 					"count":	9
@@ -3005,6 +3008,7 @@
 			"reward":	50000,
 			"puzzle_cell":	16,
 			"portrait":	"art/villains/attila_00.png",
+			"anim":	["art/villains/attila_00.png", "art/villains/attila_01.png", "art/villains/attila_02.png", "art/villains/attila_03.png", "art/villains/attila_04.png", "art/villains/attila_05.png", "art/villains/attila_06.png", "art/villains/attila_07.png"],
 			"army":	[{
 					"troop":	"dragons",
 					"count":	1
