@@ -85,7 +85,7 @@ def cell(section, stem):
         w = int.from_bytes(f.read(4), "big")
     span = max(1, -(-(w + 14) // 114))  # 108px columns, 6px gap; 96px content + 14px padding and border
     style = f' style="grid-column:span {span};width:auto"' if span > 1 else ""
-    return f'<figure class="c"{style}><img src="{src}" alt="{escape(stem)}"><figcaption title="{escape(stem)}">{escape(stem.split("/", 1)[-1])}</figcaption></figure>'
+    return f'<figure class="c"{style}><img src="{src}" alt="{escape(stem)}"><figcaption title="{escape(stem)}">{escape(stem.split("/", 1)[-1]).replace("_", "_<wbr>")}</figcaption></figure>'
 
 
 def main():
@@ -111,9 +111,9 @@ h1{{color:#eee;font-size:18px;margin:34px 0 4px;text-transform:capitalize}}
 h2{{color:#8cf;font-size:13px;font-weight:normal;margin:14px 0 6px;text-transform:capitalize}}
 small{{color:#666;font-weight:normal;font-size:11px}}
 .row{{display:grid;grid-template-columns:repeat(auto-fill,108px);gap:6px;align-items:end}}
-.c{{margin:0;padding:6px;background:#262626;border:1px solid #333;text-align:center;width:96px;box-sizing:content-box}}
+.c{{margin:0;padding:6px;background:#262626;border:1px solid #333;text-align:center;width:96px;box-sizing:content-box;align-self:start}}
 .c img{{image-rendering:pixelated;display:block;margin:0 auto}}
-figcaption{{font-size:10px;color:#aaa;margin-top:4px;background:#1b1b1b;padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+figcaption{{font-size:10px;color:#aaa;margin-top:4px;background:#1b1b1b;padding:1px 4px;overflow-wrap:anywhere;line-height:1.25}}
 </style>
 <nav>{nav} <small>{total} files</small></nav>
 {''.join(body)}
