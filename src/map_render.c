@@ -11,29 +11,10 @@
 // on each side of the hero are visible, plus the hero tile.
 #define RADIUS  (CL_MAP_TILES_W / 2)   // 2
 
-// The world-map sprite for a wandering foe: its lead troop (first non-empty
-// garrison stack), animated, so a stack of ogres/skeletons/archers shows that
-// creature instead of a single generic footman (issue #9). Returns {0} when
-// the foe or its troop can't be resolved, so the caller falls back to the
-// generic wandering-army art.
-static Texture2D foe_map_sprite(const Game *g, const Sprites *s,
-                                const char *foe_id, int frame) {
-    if (!g || !foe_id || !foe_id[0]) return (Texture2D){ 0 };
-    const FoeState *f = GameFindFoeConst(g, foe_id);
-    if (!f) return (Texture2D){ 0 };
-    for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
-        if (!f->garrison[i].id[0] || f->garrison[i].count <= 0) continue;
-        const TroopDef *t = troop_by_id(f->garrison[i].id);
-        if (!t || t->index < 0 || t->index >= 25) return (Texture2D){ 0 };
-        Texture2D a =
-            s->troop_anim[t->index][sprites_frame(frame,
-                                                 s->troop_anim_frames[t->index])];
-        if (!a.id) a = s->troop_sprite[t->index];
-        return a;
-    }
-    return (Texture2D){ 0 };
-}
-
+// A wandering foe draws the generic wandering-army tile, the same as every
+// other placed object. An earlier change (issue #9) drew the foe's lead troop
+// sprite instead; reverted 2026-09-06 so the map reads as the original did,
+// in every pack.
 void map_render_draw(const Game *g, const Map *m, const Fog *f,
                       const Sprites *s) {
     if (!g || !m) return;
@@ -78,8 +59,7 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
                               (float)CL_TILE_W, (float)CL_TILE_H };
             // An object tile is drawn over its ground (ART-SPEC section 4):
             // the plain terrain tile first, then the object's art. A
-            // transparent object -- a troop-override foe sprite (issue #9),
-            // the 1x1 castle -- then stands on the ground it occupies instead
+            // transparent object -- the 1x1 castle, a town -- then stands on the ground it occupies instead
             // of the black map fill; an opaque object covers the ground
             // completely, so nothing that drew before this draws differently.
             if (t->interactive != INTERACT_NONE) {
@@ -93,10 +73,7 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
                                    0.0f, WHITE);
                 }
             }
-            Texture2D tex = (Texture2D){ 0 };
-            if (t->interactive == INTERACT_FOE)
-                tex = foe_map_sprite(g, s, t->id, g->anim_frame);
-            if (tex.id == 0) tex = tile_cache_get(t->art);
+            Texture2D tex = tile_cache_get(t->art);
             if (tex.id == 0) continue;
             Rectangle src = { 0, 0, (float)tex.width, (float)tex.height };
             DrawTexturePro(tex, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
