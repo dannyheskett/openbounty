@@ -155,8 +155,7 @@ and record both prompts in `ART-WORKLIST.md`.
     route (seed 3107), kept because the tile style drew water as a bevelled
     block face with a lit rim on two runs with different wording. It is flat,
     seamless and approved, so it stays.
-- **Object tiles** (the per-zone towns; the 1x1 castle is an older
-  `rd_plus__low_res` placeholder to be redone on this route) — `rd_pro__topdown`,
+- **Object tiles** (the per-zone towns, the castle, the four dwellings) — `rd_pro__topdown`,
   96x96, `figure: false`, `remove_bg: true` with the magenta background named in
   the prompt, **no reference image**. Settled on 2026-09-05 after an engine test
   on one prompt across `rd_plus__low_res`, `rd_tile__tile_object`,
