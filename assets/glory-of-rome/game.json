@@ -2168,7 +2168,7 @@
 			"spoils_factor":	100,
 			"abilities":	"",
 			"dwelling":	"castle",
-			"max_population":	250,
+			"max_population":	0,
 			"growth_per_week":	3,
 			"morale_group":	"B",
 			"anim":	["art/troops/praetoriani_00.png", "art/troops/praetoriani_01.png", "art/troops/praetoriani_02.png", "art/troops/praetoriani_03.png"],
