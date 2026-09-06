@@ -1,0 +1,24 @@
+{
+  "id": "mithridates",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of an eastern king in a Persian tiara and richly patterned robes, holding a small phial of poison, a Pontic mountain fortress behind him",
+  "style": "rd_pro__default",
+  "width": 96,
+  "height": 96,
+  "seed": 8291,
+  "reference_image_paths": [
+    "assets/glory-of-rome/art/classes/dux.png",
+    "assets/glory-of-rome/art/classes/legatus.png",
+    "assets/glory-of-rome/art/classes/praetorianus.png",
+    "assets/glory-of-rome/art/classes/sibylla.png"
+  ],
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/villains/mithridates_00.png (frame 0 of 8)",
+  "_animation": "thin poisoner's smile, phial lifted, static background, smooth loop",
+  "_note": "Villain portrait still (2026-09-05), the Hannibal route: rd_pro__default, 96x96 opaque, the four class portraits as references. Prompt expansion left on for the stills from Alaric onward (Hannibal's still was made with it off)."
+}

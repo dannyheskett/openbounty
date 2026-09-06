@@ -1,0 +1,24 @@
+{
+  "id": "vercingetorix",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Gallic king in a horned helmet and mail shirt, long moustache, a hilltop oppidum with a Roman siege wall behind him",
+  "style": "rd_pro__default",
+  "width": 96,
+  "height": 96,
+  "seed": 8341,
+  "reference_image_paths": [
+    "assets/glory-of-rome/art/classes/dux.png",
+    "assets/glory-of-rome/art/classes/legatus.png",
+    "assets/glory-of-rome/art/classes/praetorianus.png",
+    "assets/glory-of-rome/art/classes/sibylla.png"
+  ],
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/villains/vercingetorix_00.png (frame 0 of 8)",
+  "_animation": "glowering face, moustache bristling, static background, smooth loop",
+  "_note": "Villain portrait still (2026-09-05), the Hannibal route: rd_pro__default, 96x96 opaque, the four class portraits as references. Prompt expansion left on for the stills from Alaric onward (Hannibal's still was made with it off)."
+}

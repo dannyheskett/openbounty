@@ -1,0 +1,21 @@
+{
+  "id": "spartacus_loop",
+  "prompt": "roaring face, teeth bared, static background, smooth loop",
+  "style": "rd_advanced_animation__custom_action",
+  "width": 96,
+  "height": 96,
+  "seed": 8431,
+  "frames_duration": 8,
+  "return_spritesheet": true,
+  "input_image_path": "build/art/spartacus/run01/01_raw.png",
+  "input_image_keep_alpha": false,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/villains/spartacus_00..07.png",
+  "_note": "Villain face loop (2026-09-05), the route proven on Hannibal: custom action on the untouched approved still, eight frames, prompt expansion on, the worklist row's tag prompt. Judged by pixels changed outside the face and the 3x gif."
+}
