@@ -74,7 +74,16 @@ reads at 1:1 over grass.
 
 - `rd_advanced_animation__custom_action`
 - 96x96 — the size the frames come back at, and the size a troop file is
-- `frames_duration: 4` — the pack's cycle length
+- `frames_duration` — the frame count is per troop, not fixed: the pack's
+  `anim` list for the troop is the cycle (1 to 16 frames, `OB_ANIM_FRAMES_MAX`),
+  so install however many frames the run returns and declare them. Four was
+  the count for every set through 2026-09-05; the API guide gives **six for a
+  single action** and eight for a breathing loop, and the Sarmatae swing at
+  four ended with an empty hand where six had room for the return. Use six
+  for attacks from now on.
+- `bypass_prompt_expansion` — **leave expansion on** (`false`) for
+  animations; see "Prompt expansion" below. The example above is the
+  pre-2026-09-05 form.
 - `input_image_keep_alpha: true` — what makes the frames transparent
 
 The motion line names the path and its two endpoints, then what stays still:
@@ -239,7 +248,9 @@ curl -H "X-RD-Token: $(cat ~/.config/retrodiffusion/token)" \
 | kind | engine | authored at | cap (2026-09-04) |
 |---|---|---|---|
 | troop stills | `user__glory_of_rome_troops_bac676cd` | 96x96 | RD Pro template; not listed by the selector |
-| troop animation | `rd_advanced_animation__custom_action` | 96 or 128 | 32 to 256 |
+| troop animation | `rd_advanced_animation__custom_action`, six frames, expansion on | 96 or 128 | 32 to 256 |
+| villain still | `rd_pro__default`, class portraits as references | 96x96 opaque | 12 to 256 |
+| villain loop | `rd_advanced_animation__custom_action`, eight frames, expansion on | 96x96 | 32 to 256 |
 | terrain tiles | `rd_tile__single_tile` (water: `rd_plus__low_res`) | 48x48 laid 2x2 | 16 to 64 |
 | object tiles (towns) | `rd_pro__topdown` | 96x96 | 12 to 256 |
 | screen-shaped art | `rd_pro__default` | design size (portraits x2) | 12 to 256 |
