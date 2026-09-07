@@ -196,14 +196,16 @@ and record both prompts in `ART-WORKLIST.md`.
 - **Villain portraits** (`art/villains/<name>_00..07.png`) — villains are not
   sprites: they are opaque head-and-shoulders portraits drawn as faces in the
   contract view, the HUD contract chip and the puzzle grid. Still:
-  `rd_pro__default` at 96x96, opaque, **no reference images** (measured
-  2026-09-07 on Jugurtha, same prompt and seed: with the four 192x204 class
-  portraits as references the 96x96 still is letterboxed with flat colour
-  bars on two to four sides; without them the scene runs to every edge), the
-  prompt "a head-and-shoulders portrait, the face
-  filling the frame, of ..." with a setting behind the head. Loop:
-  `rd_advanced_animation__custom_action` on the untouched still, **eight
-  frames**, **prompt expansion left on** (`bypass_prompt_expansion: false`),
+  `rd_pro__default` at **128x128**, opaque, no reference images, the prompt
+  "a head-and-shoulders portrait, the face filling the frame, of ..." with a
+  setting behind the head. At 96 and at 104 the engine paints a frame round
+  the picture on most seeds regardless of the prompt (2026-09-07: Attila
+  framed on four of four runs at 96 and 104, with and without references and
+  with "no frame, no border" in the prompt; at 128 all four villains tried
+  came back frame-free). Measure with a 1 to 8 pixel edge-ring check, not a
+  6 pixel strip, or thin frames pass. Loop:
+  `rd_advanced_animation__custom_action` on the untouched 128 still at 128,
+  **eight frames**, **prompt expansion left on** (`bypass_prompt_expansion: false`),
   a short tag-form prompt in the engine maker's shape: "snarling face, static
   background, smooth loop". Settled 2026-09-05 on Hannibal, measured as
   pixels changed against frame 0 outside the face: custom action with
@@ -212,7 +214,10 @@ and record both prompts in `ART-WORKLIST.md`.
   whole figure (1600 on one frame); the idle style moved the body on every
   frame (9700) with expansion on or off, because it is built for a standing
   figure. Judge a loop by that measurement and the 3x gif, not a single
-  frame. No processing of the still or the frames.
+  frame. The only processing is the last step: each returned 128 frame is
+  centre-cropped to 96 with `tools/cropcentre.py` (Dan's order, 2026-09-07,
+  villain portraits only). Crop after the loop, never before, so the motion
+  is made on the same picture the crop is taken from.
 - **Prompt expansion** — every job before 2026-09-05 set
   `bypass_prompt_expansion: true`, on the strength of one measurement on a
   low_res still where it changed nothing (and the town test on the same
