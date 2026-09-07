@@ -1920,7 +1920,9 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   persisted in `Game.stats.options[7]` (parallel to `res->controls.items[]`):
   animation delay, sounds, walk-beep, animation toggle, CGA, music, volume.
   Meta keys: Alt+Enter fullscreen, backtick screenshot
-  (`screenshots/shot_NNNN.png`, `src/screenshot.c`), `Q` save-and-quit,
+  (`screenshots/shot_NNNN.png`, `src/screenshot.c`, the folder created on
+  first use; the automatic `char_NNNN` save on entering the Character view
+  was removed 2026-09-07), `Q` save-and-quit,
   `Ctrl+Q` fast quit (`src/shell_fastquit.c`).
 - **REQ-442.** **Touch/pointer input** (`src/touch.c`) translates taps into
   synthetic key events injected at the `input_host` shim

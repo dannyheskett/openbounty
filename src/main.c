@@ -1423,18 +1423,12 @@ int shell_run_game(int argc, char **argv) {
         present_scaled(render_target);
         frame_host_end_frame();
 
-        // Screenshots (dev builds only; see screenshot.c):
-        //   - backtick (`) -> "shot" prefix, on demand
-        //   - VIEW_CHARACTER rising edge -> "char" prefix (auto, for layout diffs)
+        // Screenshot on demand: backtick (`) -> screenshots/shot_NNNN.png.
+        // An automatic save on entering the Character view (a layout-diff
+        // hook from the first commit) used to sit here; it wrote into a
+        // folder that a fresh checkout does not have and warned on every
+        // start-up. Removed 2026-09-07.
         screenshot_tick(render_target, "shot");
-        {
-            static bool prev_char_view = false;
-            bool cur_char_view = (views_active() == VIEW_CHARACTER);
-            if (cur_char_view && !prev_char_view) {
-                screenshot_save(render_target, "char");
-            }
-            prev_char_view = cur_char_view;
-        }
 
     }
 
