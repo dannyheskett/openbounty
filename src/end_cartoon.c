@@ -6,6 +6,7 @@
 #include "screenshot.h"
 #include "ui.h"
 #include "tables.h"
+#include "tile_cache.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -50,7 +51,7 @@ static void draw_tile(Texture2D tex, int gx, int gy, int origin_x, int origin_y,
 }
 
 static void draw_cartoon_frame(const Resources *res, const Sprites *sprites,
-                               Texture2D hero,
+                               Texture2D grass, Texture2D hero,
                                int origin_x, int origin_y,
                                int tick, int frame) {
     int gw = res->ending.grid_width;
@@ -68,7 +69,7 @@ static void draw_cartoon_frame(const Resources *res, const Sprites *sprites,
     // Grass across the whole grid.
     for (int y = 0; y < gh; y++) {
         for (int x = 0; x < gw; x++) {
-            draw_tile(sprites->end_grass, x, y, origin_x, origin_y, false);
+            draw_tile(grass, x, y, origin_x, origin_y, false);
         }
     }
 
@@ -113,8 +114,12 @@ void run_end_cartoon(RenderTexture2D *rt,
     if (!rt || !res || !sprites) return;
     // The hero tile is the player's class's own when the pack declares one.
     Texture2D hero = sprites_end_hero(sprites, game ? game->character.cls.id : NULL);
+    // The grass backdrop is the pack's ending.grass_tile when declared, else
+    // the map's own grass tile, so a pack need not ship the tile twice.
+    Texture2D grass = sprites->end_grass;
+    if (!grass.id) grass = tile_cache_get("grass");
     // Skip silently if the tile art isn't configured.
-    if (!sprites->end_grass.id || !sprites->end_carpet.id || !hero.id) return;
+    if (!grass.id || !sprites->end_carpet.id || !hero.id) return;
 
     int gw = res->ending.grid_width  > 0 ? res->ending.grid_width  : 6;
     int gh = res->ending.grid_height > 0 ? res->ending.grid_height : 5;
@@ -155,7 +160,7 @@ void run_end_cartoon(RenderTexture2D *rt,
 
         BeginTextureMode(*rt);
         ClearBackground(BLACK);
-        draw_cartoon_frame(res, sprites, hero, origin_x, origin_y, tick, frame);
+        draw_cartoon_frame(res, sprites, grass, hero, origin_x, origin_y, tick, frame);
         EndTextureMode();
 
         present_scaled(*rt);

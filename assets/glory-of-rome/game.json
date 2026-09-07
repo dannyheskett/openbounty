@@ -3507,9 +3507,7 @@
 		}
 	},
 	"ending":	{
-		"grass_tile":	"art/ui/end_grass.png",
 		"carpet_tile":	"art/ui/end_carpet.png",
-		"hero_tile":	"art/ui/end_hero.png",
 		"throne_backdrop":	"art/ui/end_lose_screen.png",
 		"grid_width":	6,
 		"grid_height":	5,

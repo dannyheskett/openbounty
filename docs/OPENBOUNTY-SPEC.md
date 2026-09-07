@@ -852,6 +852,9 @@ except where a deviation is explicitly flagged (§34).
   map hero and the win-cartoon tile (`sprites_hero_anim`, `sprites_end_hero`)
   and falls back to the pack-wide `sprites.hero` and `ending.hero_tile` for
   anything undeclared, so `kings-bounty`, which declares none, is unchanged.
+  The cartoon's grass backdrop is `ending.grass_tile` when declared, else the
+  map's `grass` tile from the tile cache (2026-09-07), so `glory-of-rome`
+  declares neither `grass_tile` nor `hero_tile` and ships neither file.
 - **REQ-228b.** A wandering foe has been stamped with its zone's `army_art`
   stem when the zone declares one (`Map.army_art`, read by both foe stamp
   sites), else `wandering_army`; the map draws that tile for every foe (the

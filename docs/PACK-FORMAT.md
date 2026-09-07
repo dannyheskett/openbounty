@@ -141,7 +141,10 @@ same `walk` / `idle` / `boat` keys, plus `tile`, the win-cartoon hero tile:
 
 The map and the win cartoon draw the chosen class's art when it is declared
 and fall back to `sprites.hero` and `ending.hero_tile` for anything the class
-leaves out, so packs that declare nothing are unchanged.
+leaves out, so packs that declare nothing are unchanged. A pack whose classes
+all declare a hero tile may leave `ending.hero_tile` out, and a pack may leave
+`ending.grass_tile` out: the cartoon then draws the map's `grass` tile
+(`glory-of-rome` does both; `kings-bounty` declares both tiles).
 
 Tile images live under `art/tiles/` by convention. Each `tile_codes`
 entry maps an ASCII character (used in `.dat` map files) to a tile
