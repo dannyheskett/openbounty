@@ -1,10 +1,10 @@
 {
   "id": "hud_gold_purse",
-  "prompt": "a bulging brown leather coin purse tied with a cord, a few gold coins spilling beside it, on grey flagstones, painted as a small game sidebar panel, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering",
+  "prompt": "a bulging brown leather coin purse tied with a cord with a few gold coins beside it, sitting on a grey flagstone shelf in the upper two thirds of the picture, the whole lower third of the picture a plain flat black band with nothing drawn on it, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering",
   "style": "rd_pro__default",
   "width": 96,
   "height": 96,
-  "seed": 7762,
+  "seed": 7862,
   "bypass_prompt_expansion": true,
   "raw_only": true,
   "figure": false,
@@ -13,5 +13,5 @@
     96
   ],
   "_pack_path": "art/ui/hud_gold_purse.png",
-  "_note": "HUD sidebar panel (2026-09-06), the inventory icon route: opaque framed card, rd_pro__default, 96x96, no references, no lettering. The siege and magic stills are frame 0 of their four-frame loops. Regenerated without a painted frame (2026-09-06): the shell draws the frame."
+  "_note": "HUD sidebar panel (2026-09-06), the inventory icon route: opaque framed card, rd_pro__default, 96x96, no references, no lettering. The siege and magic stills are frame 0 of their four-frame loops. Regenerated without a painted frame (2026-09-06): the shell draws the frame. 2026-09-07: lower third left as a flat black band so the HUD gold figure (bottom 10 of 34 cell rows) sits on plain colour."
 }
