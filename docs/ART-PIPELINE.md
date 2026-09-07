@@ -242,6 +242,18 @@ and record both prompts in `ART-WORKLIST.md`.
   to edge, no frame, no border". The one allowed edge treatment is a villain
   portrait's flat colour bar, and only when it is identical on all eight
   frames of that villain. (Ruled 2026-09-06; twenty pieces regenerated.)
+- **Combat set** (`art/combat/*`) — not generated. `tools/siegewalls.py`
+  remakes the original 48x34 pieces at 96: each original pixel is classified
+  into a material, the map is scaled to the cell, and every material is
+  re-rendered at pixel scale (three-tone brick courses over a grout, two-tone
+  merlons over the black shadow band, a lighter top face, the moat as a
+  smooth shape with a clean dark bank, rubble scattered at the breach), so
+  layout and features match the original exactly. It also draws the
+  top-down back wall band the shell places above the siege board
+  (`sprites.ui.siege_back_wall`, `_left`, `_right`), with the moat turning
+  the corners on a curve and the wall bands mitred. Generated wall pieces
+  were tried on 2026-09-07 and rejected: the API cannot make six cells that
+  join, and a whole-board picture is too coarse under the 256 cap.
 - **The publisher splash** (`art/ui/splash_logo.png`, 320x84, transparent) —
   composed, not generated whole, because generated lettering garbles. The
   words are rendered locally from C059 Bold at 1-bit, white with the old

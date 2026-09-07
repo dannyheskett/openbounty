@@ -80,6 +80,8 @@ typedef struct {
     Texture2D end_carpet;
     Texture2D end_hero;
     Texture2D end_throne;
+    Texture2D siege_back_wall;            // optional band above the siege board
+    Texture2D siege_back_wall_end[2];     // its end cells, left and right
 
     // Combat tileset .
     //   [0]      grass field background

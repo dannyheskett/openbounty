@@ -838,6 +838,10 @@ except where a deviation is explicitly flagged (§34).
   manifest lists each declared stem once and the shared `town` tile only
   while some town lacks an `art` of its own, so `kings-bounty`, which
   declares none, is unchanged.
+- **REQ-165b.** In a siege the shell has drawn a decorative band above row 0
+  from `sprites.ui.siege_back_wall` (end cells from `_left` / `_right`) over
+  field tiles, when the pack names them; outside the grid, so nothing in
+  play changes and packs without the keys draw nothing.
 - **REQ-165a.** When `sprites.ui.panel_frame` names a palette colour the
   shell has drawn a frame round every panel slot (`ui_panel_frame`: HUD
   panels, inventory cells, contract face) so the art carries none; absent,

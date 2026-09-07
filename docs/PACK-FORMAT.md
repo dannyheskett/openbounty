@@ -222,6 +222,12 @@ Art for those slots is authored edge to edge with no frame of its own.
 Absent, the shell draws nothing and the art carries its own frame, which is
 how `kings-bounty` ships.
 
+**Siege back wall.** `sprites.ui.siege_back_wall` names a cell-sized tile the
+shell repeats across the band above the siege board, with
+`siege_back_wall_left` / `_right` for the band's end cells; field tiles are
+drawn beneath. Decorative, outside the grid, siege only; absent, nothing is
+drawn.
+
 **Per-town art.** A town catalog entry may declare `"art": "<stem>"`, a
 tile under `art/tiles/`, and the engine stamps that tile at the town's
 position instead of the shared `art/tiles/town.png`. Absent means `town`, so

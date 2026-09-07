@@ -840,6 +840,12 @@ static void parse_sprites(Resources *res, cJSON *obj) {
                  json_str(ui, "ending_win", ""));
         copy_str(res->sprites.panel_frame, sizeof(res->sprites.panel_frame),
                  json_str(ui, "panel_frame", ""));
+        copy_str(res->sprites.siege_back_wall, sizeof(res->sprites.siege_back_wall),
+                 json_str(ui, "siege_back_wall", ""));
+        copy_str(res->sprites.siege_back_wall_left, sizeof(res->sprites.siege_back_wall_left),
+                 json_str(ui, "siege_back_wall_left", ""));
+        copy_str(res->sprites.siege_back_wall_right, sizeof(res->sprites.siege_back_wall_right),
+                 json_str(ui, "siege_back_wall_right", ""));
         copy_str(res->sprites.ending_lose, sizeof(res->sprites.ending_lose),
                  json_str(ui, "ending_lose", ""));
         copy_str(res->sprites.orb, sizeof(res->sprites.orb),
@@ -2346,6 +2352,9 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
     art_add(out, cap, &n, res->sprites.dungeon_backdrop);
     art_add(out, cap, &n, res->sprites.ending_win);
     art_add(out, cap, &n, res->sprites.ending_lose);
+    art_add(out, cap, &n, res->sprites.siege_back_wall);
+    art_add(out, cap, &n, res->sprites.siege_back_wall_left);
+    art_add(out, cap, &n, res->sprites.siege_back_wall_right);
     for (int i = 0; i < res->sprites.view_icons_extra_count; i++)
         art_add(out, cap, &n, res->sprites.view_icons_extra[i]);
     art_add(out, cap, &n, res->sprites.hud_contract_silhouette);

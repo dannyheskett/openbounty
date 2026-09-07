@@ -168,6 +168,12 @@ void sprites_load(Sprites *s, const Resources *res) {
     s->end_grass  = load_rel(res->ending.grass_tile);
     s->end_carpet = load_rel(res->ending.carpet_tile);
     s->end_hero   = load_rel(res->ending.hero_tile);
+    if (res->sprites.siege_back_wall[0])
+        s->siege_back_wall = load_rel(res->sprites.siege_back_wall);
+    if (res->sprites.siege_back_wall_left[0])
+        s->siege_back_wall_end[0] = load_rel(res->sprites.siege_back_wall_left);
+    if (res->sprites.siege_back_wall_right[0])
+        s->siege_back_wall_end[1] = load_rel(res->sprites.siege_back_wall_right);
     s->end_throne = load_rel(res->ending.throne_backdrop);
 
     // Combat tileset, in the role order the renderer indexes by. The list
@@ -220,6 +226,9 @@ void sprites_unload(Sprites *s) {
     UnloadTexture(s->end_grass);
     UnloadTexture(s->end_carpet);
     UnloadTexture(s->end_hero);
+    UnloadTexture(s->siege_back_wall);
+    UnloadTexture(s->siege_back_wall_end[0]);
+    UnloadTexture(s->siege_back_wall_end[1]);
     for (int i = 0; i < 4; i++) {
         SpriteAnim *ca[3] = { &s->class_hero_walk[i], &s->class_hero_idle[i],
                               &s->class_hero_boat[i] };

@@ -993,6 +993,11 @@ typedef struct {
         // round every panel slot: HUD panels, inventory cells, contract face.
         // Empty: the shell draws no frame and the art carries its own.
         char panel_frame[16];
+        // Optional decorative wall the shell draws across the band above the
+        // siege board (a cell-sized tile repeated six times). Empty: nothing.
+        char siege_back_wall[RES_PATH_LEN];
+        char siege_back_wall_left[RES_PATH_LEN];   // optional end cells of the band
+        char siege_back_wall_right[RES_PATH_LEN];
         char orb[RES_PATH_LEN];              // orb of power tile overlay
     } sprites;
 

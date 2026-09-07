@@ -154,6 +154,25 @@ void combat_render_frame(const Combat *c, const Game *g,
         }
     }
 
+    // Siege back wall: a decorative run across the band above row 0, field
+    // tiles beneath it, only when the pack names one (sprites.ui.siege_back_wall)
+    // and only for a siege. Outside the grid, so nothing in play changes.
+    if (c->castle && sprites->siege_back_wall.id) {
+        for (int x = 0; x < COMBAT_W; x++) {
+            int px, py;
+            cell_origin(x, 0, &px, &py);
+            py -= CL_COMBAT_CELL_H;
+            draw_tile(sprites, 0, px, py);
+            Texture2D t = sprites->siege_back_wall;
+            if (x == 0 && sprites->siege_back_wall_end[0].id) t = sprites->siege_back_wall_end[0];
+            if (x == COMBAT_W - 1 && sprites->siege_back_wall_end[1].id) t = sprites->siege_back_wall_end[1];
+            Rectangle src = { 0, 0, (float)t.width, (float)t.height };
+            Rectangle dst = { (float)px, (float)py,
+                              (float)CL_COMBAT_CELL_W, (float)CL_COMBAT_CELL_H };
+            DrawTexturePro(t, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+        }
+    }
+
     // Stamp obstacles. omap codes:
     //   1, 2, 3      -> field obstacles (frames 1, 2, 3)
     //   5..10        -> castle wall pieces (frames 5..10)
