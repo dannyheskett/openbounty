@@ -1,16 +1,10 @@
 {
   "id": "jugurtha",
-  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Numidian king in an ornate gold circlet and rich embroidered robes over a cuirass, arms folded, imperious, a desert palace behind him",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Numidian king in an ornate gold circlet and rich embroidered robes over a cuirass, arms folded, imperious, a desert palace behind him, the background scene continuing with detail right up to the top edge, the bottom edge, the left edge and the right edge, no plain strip or band of flat colour along any edge, no bar, no border, no frame",
   "style": "rd_pro__default",
   "width": 96,
   "height": 96,
-  "seed": 8281,
-  "reference_image_paths": [
-    "assets/glory-of-rome/art/classes/dux.png",
-    "assets/glory-of-rome/art/classes/legatus.png",
-    "assets/glory-of-rome/art/classes/praetorianus.png",
-    "assets/glory-of-rome/art/classes/sibylla.png"
-  ],
+  "seed": 8284,
   "bypass_prompt_expansion": false,
   "raw_only": true,
   "figure": false,
@@ -20,5 +14,5 @@
   ],
   "_pack_path": "art/villains/jugurtha_00.png (frame 0 of 8)",
   "_animation": "sneering face, brow raised, static background, smooth loop",
-  "_note": "Villain portrait still (2026-09-05), the Hannibal route: rd_pro__default, 96x96 opaque, the four class portraits as references. Prompt expansion left on for the stills from Alaric onward (Hannibal's still was made with it off)."
+  "_note": "Villain portrait still (2026-09-05), the Hannibal route: rd_pro__default, 96x96 opaque, the four class portraits as references. Prompt expansion left on for the stills from Alaric onward (Hannibal's still was made with it off). Re-run 2026-09-07: the earlier still carried a flat colour bar on two or three sides; the scene is told to fill the square, seed incremented. Re-run at Dan's request, seed incremented. Re-run: a flat strip remained along one edge; every edge named. run05: NO reference images. Measured 2026-09-07: the four class portraits (192x204) as references letterbox the 96x96 still with flat bars; the same prompt and seed without them fills the frame."
 }

@@ -196,8 +196,11 @@ and record both prompts in `ART-WORKLIST.md`.
 - **Villain portraits** (`art/villains/<name>_00..07.png`) — villains are not
   sprites: they are opaque head-and-shoulders portraits drawn as faces in the
   contract view, the HUD contract chip and the puzzle grid. Still:
-  `rd_pro__default` at 96x96, opaque, the four class portraits as
-  `reference_images`, the prompt "a head-and-shoulders portrait, the face
+  `rd_pro__default` at 96x96, opaque, **no reference images** (measured
+  2026-09-07 on Jugurtha, same prompt and seed: with the four 192x204 class
+  portraits as references the 96x96 still is letterboxed with flat colour
+  bars on two to four sides; without them the scene runs to every edge), the
+  prompt "a head-and-shoulders portrait, the face
   filling the frame, of ..." with a setting behind the head. Loop:
   `rd_advanced_animation__custom_action` on the untouched still, **eight
   frames**, **prompt expansion left on** (`bypass_prompt_expansion: false`),
