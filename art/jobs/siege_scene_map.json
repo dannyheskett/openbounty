@@ -1,0 +1,16 @@
+{
+  "id": "siege_scene_map",
+  "prompt": "an orthographic strategy game battlefield map seen from directly overhead like a floor plan, a square castle courtyard of flat plain green grass in the centre with nothing on it, no trees, no bushes, no rocks, surrounded by a thick grey stone battlement wall on the top side, the left side and the right side, and a bottom wall broken wide open in its middle where the gate has been smashed, with rubble at the broken ends, and outside the walls a moat of blue water running along the left edge, the right edge and the bottom edge of the picture, the top wall meeting the top edge, everything square and aligned to the picture edges, no perspective, no people, no text",
+  "style": "rd_plus__topdown_map",
+  "width": 384,
+  "height": 384,
+  "seed": 8812,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    384,
+    384
+  ],
+  "_note": "2026-09-07: second round on the topdown map style at 384 (four 96 cells); empty courtyard, wide breach."
+}

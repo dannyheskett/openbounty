@@ -1,0 +1,16 @@
+{
+  "id": "siege_scene",
+  "prompt": "an orthographic strategy game battlefield map seen from directly overhead like a floor plan, a square castle courtyard of flat green grass in the centre, surrounded by a thick grey stone battlement wall on the top side, the left side and the right side, and a bottom wall broken open in its middle where the gate has been smashed, and outside the walls a moat of blue water running along the left edge, the right edge and the bottom edge of the picture, the top wall meeting the top edge, everything square and aligned to the picture edges, no perspective, no people, no text",
+  "style": "rd_plus__environment",
+  "width": 512,
+  "height": 512,
+  "seed": 8802,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    512,
+    512
+  ],
+  "_note": "2026-09-07: one-picture siege field experiment at Dan's request; to be sliced into 96 tiles if approved."
+}

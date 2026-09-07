@@ -1,14 +1,13 @@
 {
   "id": "gigantes_attack",
-  "_note": "Batch of 2026-09-05. Still scaled to 66% through the API's k-centroid tool (black flatten, alpha from coverage), feet on row 88, for motion room. Animated at 96 with no padding. Motion line: path, two endpoints, then what stays still.",
-  "prompt": "he lifts the boulder up over his head in both hands and hurls it forward to the right, his arms following through in front of him, then his arms drop back to his chest, the serpent legs stay planted",
+  "prompt": "he swings the boulder back to his left side in both hands, then hurls it sideways across his body to the right and the boulder flies off straight ahead to the right, his arms following through in front of him, then his arms drop back to his hip, both feet stay planted",
   "style": "rd_advanced_animation__custom_action",
   "width": 96,
   "height": 96,
-  "seed": 6132,
+  "seed": 6232,
   "frames_duration": 4,
   "return_spritesheet": true,
-  "input_image_path": "build/art/gigantes/run01/01_scaled66.png",
+  "input_image_path": "build/art/gigantes/run03/01_raw.png",
   "input_image_keep_alpha": true,
   "bypass_prompt_expansion": true,
   "raw_only": true,
@@ -16,5 +15,7 @@
   "target": [
     96,
     96
-  ]
+  ],
+  "_pack_path": "art/troops/gigantes_00..03.png",
+  "_note": "2026-09-07: job copied whole from silvani_attack (the approved release loop); sideways hurl so the giant keeps the frame (Dan). Still is gigantes run03."
 }
