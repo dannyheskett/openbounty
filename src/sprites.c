@@ -175,6 +175,16 @@ void sprites_load(Sprites *s, const Resources *res) {
     if (res->sprites.siege_back_wall_right[0])
         s->siege_back_wall_end[1] = load_rel(res->sprites.siege_back_wall_right);
     s->end_throne = load_rel(res->ending.throne_backdrop);
+    // Siege grid: all or nothing, so a half-loaded grid never mixes with the
+    // per-code walls on the same board.
+    s->siege_grid_ok = res->sprites.siege_grid[0] != '\0';
+    for (int y = 0; y <= COMBAT_H; y++)
+        for (int x = 0; x < COMBAT_W; x++) {
+            char p[RES_PATH_LEN];
+            if (resources_siege_grid_path(res, x, y, p, sizeof p))
+                s->siege_grid[y][x] = load_rel(p);
+            if (s->siege_grid[y][x].id == 0) s->siege_grid_ok = false;
+        }
 
     // Combat tileset, in the role order the renderer indexes by. The list
     // lives in the manifest now (res->sprites.combat) rather than here, so a
@@ -229,6 +239,8 @@ void sprites_unload(Sprites *s) {
     UnloadTexture(s->siege_back_wall);
     UnloadTexture(s->siege_back_wall_end[0]);
     UnloadTexture(s->siege_back_wall_end[1]);
+    for (int y = 0; y <= COMBAT_H; y++)
+        for (int x = 0; x < COMBAT_W; x++) UnloadTexture(s->siege_grid[y][x]);
     for (int i = 0; i < 4; i++) {
         SpriteAnim *ca[3] = { &s->class_hero_walk[i], &s->class_hero_idle[i],
                               &s->class_hero_boat[i] };

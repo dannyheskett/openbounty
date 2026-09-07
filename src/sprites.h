@@ -2,7 +2,8 @@
 #define OB_SPRITES_H
 
 #include "raylib.h"
-#include "resources.h"   // OB_ANIM_FRAMES_MAX (via tables.h)
+#include "resources.h"
+#include "combat.h"   // OB_ANIM_FRAMES_MAX (via tables.h)
 
 // Bundle of all non-tile textures used across the game. One instance is
 // loaded at startup and passed (const) to drawing modules. Arrays are
@@ -82,6 +83,11 @@ typedef struct {
     Texture2D end_throne;
     Texture2D siege_back_wall;            // optional band above the siege board
     Texture2D siege_back_wall_end[2];     // its end cells, left and right
+    // Optional full siege grid (sprites.ui.siege_grid): row 0 the band above
+    // the board, rows 1..COMBAT_H the board. siege_grid_ok only when every
+    // tile loaded; then the renderer draws these instead of the per-code walls.
+    bool      siege_grid_ok;
+    Texture2D siege_grid[COMBAT_H + 1][COMBAT_W];
 
     // Combat tileset .
     //   [0]      grass field background

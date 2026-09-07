@@ -842,6 +842,15 @@ except where a deviation is explicitly flagged (§34).
   from `sprites.ui.siege_back_wall` (end cells from `_left` / `_right`) over
   field tiles, when the pack names them; outside the grid, so nothing in
   play changes and packs without the keys draw nothing.
+- **REQ-165c.** When `sprites.ui.siege_grid` names a prefix, the engine has
+  expanded it to one path per cell of the band plus board
+  (`resources_siege_grid_path`, `COMBAT_W x (COMBAT_H + 1)` entries in the
+  manifest) and the shell, in a siege only and only when every cell loaded,
+  has drawn each cell's own tile as the ground, row 0 in the band above the
+  board, and skipped the wall codes 5..10 at the obstacle stamp; the
+  `siege_back_wall*` band is not drawn then. `castle_omap` and movement are
+  untouched. Absent, REQ-165b and the per-code pieces apply, so
+  `kings-bounty` is unchanged (2026-09-07).
 - **REQ-165a.** When `sprites.ui.panel_frame` names a palette colour the
   shell has drawn a frame round every panel slot (`ui_panel_frame`: HUD
   panels, inventory cells, contract face) so the art carries none; absent,

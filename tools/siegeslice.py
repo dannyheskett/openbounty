@@ -2,7 +2,8 @@
 """Slice a 384x384 overhead castle picture into the 96px combat pieces and
 compose the siege screen from them.
 
-    python3 tools/siegeslice.py <scene.png> <out-dir>
+    python3 tools/siegeslice.py <scene.png> <out-dir>          (recipe mode)
+    python3 tools/siegeslice.py <scene.png> <out-dir> --grid   (36 cells, untouched)
 
 The picture is a 4x4 grid of 96 cells: the top row is the back wall (with
 its two corners), the side columns are the left and right walls, the bottom
@@ -41,6 +42,22 @@ src = sys.argv[1]
 out = sys.argv[2]
 os.makedirs(out, exist_ok=True)
 im = Image.open(src).convert("RGBA")
+
+if "--grid" in sys.argv:
+    # Grid mode: the whole picture is the siege board plus its back band, a
+    # 6x6 grid of equal cells (sprites.ui.siege_grid). Every cell is written
+    # untouched as cell_<x>_<y>.png at the picture's own cell size; the shell
+    # scales each to the combat cell. No assembly, no mock.
+    W, H = 6, 6
+    assert im.width % W == 0 and im.height % H == 0, im.size
+    cw, ch = im.width // W, im.height // H
+    for y in range(H):
+        for x in range(W):
+            im.crop((x * cw, y * ch, x * cw + cw, y * ch + ch)).save(
+                os.path.join(out, f"cell_{x}_{y}.png"))
+    print(f"{W * H} cells of {cw}x{ch} in {out}")
+    sys.exit(0)
+
 assert im.size == (384, 384), im.size
 T = 96
 

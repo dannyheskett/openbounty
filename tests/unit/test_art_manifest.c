@@ -12,6 +12,7 @@
 #include "resources.h"
 #include "tables.h"
 #include "map.h"
+#include "combat.h"
 #include "pack.h"
 #include "fixtures.h"
 
@@ -213,7 +214,33 @@ TEST a_pack_may_name_its_own_font(void) {
     PASS();
 }
 
+TEST siege_grid_is_listed_only_when_declared(void) {
+    // sprites.ui.siege_grid names a prefix; the manifest expands it to one
+    // path per cell of the band plus board (REQ-165c). Absent, nothing.
+    Resources *r = fx_load_resources();
+    ASSERT(r);
+    int n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    for (int i = 0; i < n; i++)
+        ASSERT_FALSE(strstr(s_paths[i], "art/combat/siege/"));
+    char p[RES_PATH_LEN];
+    ASSERT_FALSE(resources_siege_grid_path(r, 0, 0, p, sizeof p));
+    ASSERT_EQ(0, (int)p[0]);
+
+    strcpy(r->sprites.siege_grid, "art/combat/siege/cell");
+    int m = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    ASSERT_EQ(n + COMBAT_W * (COMBAT_H + 1), m);
+    ASSERT(manifest_has(m, "art/combat/siege/cell_0_0.png"));
+    ASSERT(manifest_has(m, "art/combat/siege/cell_5_5.png"));
+    ASSERT(resources_siege_grid_path(r, 5, COMBAT_H, p, sizeof p));
+    ASSERT_STR_EQ("art/combat/siege/cell_5_5.png", p);
+    ASSERT_FALSE(resources_siege_grid_path(r, COMBAT_W, 0, p, sizeof p));
+    ASSERT_FALSE(resources_siege_grid_path(r, 0, COMBAT_H + 1, p, sizeof p));
+    resources_free(r); free(r);
+    PASS();
+}
+
 SUITE(unit_art_manifest_suite) {
+    RUN_TEST(siege_grid_is_listed_only_when_declared);
     RUN_TEST(every_manifest_path_exists_in_the_pack);
     RUN_TEST(manifest_covers_every_category);
     RUN_TEST(placed_object_names_are_asked_for_not_copied);

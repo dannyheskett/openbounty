@@ -4,6 +4,7 @@
 #include "assets_bytes.h"   // LoadAssetBytes / UnloadAssetBytes
 #include "pack.h"
 #include "tile.h"
+#include "combat.h"     // COMBAT_W / COMBAT_H for the siege grid
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -846,6 +847,8 @@ static void parse_sprites(Resources *res, cJSON *obj) {
                  json_str(ui, "siege_back_wall_left", ""));
         copy_str(res->sprites.siege_back_wall_right, sizeof(res->sprites.siege_back_wall_right),
                  json_str(ui, "siege_back_wall_right", ""));
+        copy_str(res->sprites.siege_grid, sizeof(res->sprites.siege_grid),
+                 json_str(ui, "siege_grid", ""));
         copy_str(res->sprites.ending_lose, sizeof(res->sprites.ending_lose),
                  json_str(ui, "ending_lose", ""));
         copy_str(res->sprites.orb, sizeof(res->sprites.orb),
@@ -2355,6 +2358,12 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
     art_add(out, cap, &n, res->sprites.siege_back_wall);
     art_add(out, cap, &n, res->sprites.siege_back_wall_left);
     art_add(out, cap, &n, res->sprites.siege_back_wall_right);
+    for (int y = 0; y <= COMBAT_H; y++)
+        for (int x = 0; x < COMBAT_W; x++) {
+            char p[RES_PATH_LEN];
+            if (resources_siege_grid_path(res, x, y, p, sizeof p))
+                art_add(out, cap, &n, p);
+        }
     for (int i = 0; i < res->sprites.view_icons_extra_count; i++)
         art_add(out, cap, &n, res->sprites.view_icons_extra[i]);
     art_add(out, cap, &n, res->sprites.hud_contract_silhouette);
@@ -2517,4 +2526,13 @@ const ResClassHero *resources_class_hero(const Resources *r, const char *class_i
         return any ? h : NULL;
     }
     return NULL;
+}
+
+bool resources_siege_grid_path(const Resources *res, int x, int y,
+                               char *out, int cap) {
+    if (out && cap > 0) out[0] = '\0';
+    if (!res || !out || cap <= 0 || !res->sprites.siege_grid[0]) return false;
+    if (x < 0 || x >= COMBAT_W || y < 0 || y > COMBAT_H) return false;
+    snprintf(out, (size_t)cap, "%s_%d_%d.png", res->sprites.siege_grid, x, y);
+    return true;
 }

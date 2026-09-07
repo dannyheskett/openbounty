@@ -79,6 +79,16 @@ TEST castles_default_to_the_3x2_footprint(void) {
     PASS();
 }
 
+TEST siege_grid_defaults_to_empty(void) {
+    // The fixture pack declares no sprites.ui.siege_grid, so the per-code
+    // siege walls apply (legacy mode).
+    Resources *r = fx_load_resources();
+    ASSERT(r);
+    ASSERT_EQ(0, (int)r->sprites.siege_grid[0]);
+    resources_free(r); free(r);
+    PASS();
+}
+
 SUITE(unit_resources_suite) {
     RUN_TEST(troops_catalog_nonempty);
     RUN_TEST(spells_catalog_complete);
@@ -86,4 +96,5 @@ SUITE(unit_resources_suite) {
     RUN_TEST(villains_count_seventeen);
     RUN_TEST(castle_footprint_string_parses);
     RUN_TEST(castles_default_to_the_3x2_footprint);
+    RUN_TEST(siege_grid_defaults_to_empty);
 }

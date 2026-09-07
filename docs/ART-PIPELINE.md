@@ -261,7 +261,22 @@ and record both prompts in `ART-WORKLIST.md`.
   (`sprites.ui.siege_back_wall`, `_left`, `_right`), with the moat turning
   the corners on a curve and the wall bands mitred. Generated wall pieces
   were tried on 2026-09-07 and rejected: the API cannot make six cells that
-  join, and a whole-board picture is too coarse under the 256 cap.
+  join, and a whole-board picture is too coarse under the 256 cap. Those
+  pieces remain the fallback (the default `sprites.combat` list) but Rome
+  no longer draws them in a siege, see the next entry.
+- **Siege grid** (`art/combat/siege/cell_<x>_<y>.png`, 36 cells at 64) —
+  the whole siege board plus its back band as one picture, sliced into
+  cells (`sprites.ui.siege_grid`, REQ-165c), settled 2026-09-07. Route:
+  `rd_plus__topdown_map` (the only style that draws a true overhead plan;
+  `rd_plus__environment` composes a perspective scene every time) at 384,
+  first from a prompt to get the castle, then **img2img** on the 6x6 board
+  composed from the sliced pieces (`tools/siegeslice.py` recipe mode, the
+  band included, k-centroid to 384x384, `strength` 0.55) so the layout is
+  fixed by the source and the engine repaints one continuous field over it.
+  Then `tools/siegeslice.py --grid` writes the 36 cells untouched at 64; the
+  shell scales each to the 96 cell. Why not pieces: a per-code piece repeats
+  in every cell of its code, so a gatehouse, two different broken ends and a
+  moat under the bottom wall only cannot be drawn that way.
 - **The title screen** (`art/ui/splash_title.png`, 256x164) — the eagle is
   generated (screen route, no border); the words are drawn by
   `tools/splashtitle.py` from C059 Bold, gold with dark shading, title above

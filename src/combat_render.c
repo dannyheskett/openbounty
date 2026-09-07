@@ -144,20 +144,41 @@ void combat_render_frame(const Combat *c, const Game *g,
     // combat field sits inside the inner area.
     DrawRectangle(0, 0, CL_SCREEN_W, CL_SCREEN_H, PAL_CLR(BLACK));
 
+    // A siege on a pack that ships a full siege grid (sprites.ui.siege_grid)
+    // draws each cell's own tile as the ground, with the walls painted in the
+    // tiles; the per-code wall pieces are then not drawn. Draw-only: the
+    // omap still blocks the wall cells exactly as before.
+    const bool grid = c->castle && sprites->siege_grid_ok;
+
     // Tile the field with frame_00 (grass background). One tile per
     // cell; doubles as the open-field backdrop.
     for (int y = 0; y < COMBAT_H; y++) {
         for (int x = 0; x < COMBAT_W; x++) {
             int px, py;
             cell_origin(x, y, &px, &py);
-            draw_tile(sprites, 0, px, py);
+            if (grid)
+                ui_blit(sprites->siege_grid[y + 1][x], px, py,
+                        CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
+            else
+                draw_tile(sprites, 0, px, py);
+        }
+    }
+
+    // Siege grid band: row 0 of the grid across the band above the board.
+    if (grid) {
+        for (int x = 0; x < COMBAT_W; x++) {
+            int px, py;
+            cell_origin(x, 0, &px, &py);
+            py -= CL_COMBAT_CELL_H;
+            ui_blit(sprites->siege_grid[0][x], px, py,
+                    CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
         }
     }
 
     // Siege back wall: a decorative run across the band above row 0, field
     // tiles beneath it, only when the pack names one (sprites.ui.siege_back_wall)
     // and only for a siege. Outside the grid, so nothing in play changes.
-    if (c->castle && sprites->siege_back_wall.id) {
+    if (!grid && c->castle && sprites->siege_back_wall.id) {
         for (int x = 0; x < COMBAT_W; x++) {
             int px, py;
             cell_origin(x, 0, &px, &py);
@@ -180,6 +201,7 @@ void combat_render_frame(const Combat *c, const Game *g,
         for (int x = 0; x < COMBAT_W; x++) {
             unsigned char code = c->omap[y][x];
             if (!code) continue;
+            if (grid && code >= 5 && code <= 10) continue;   // walls are in the tiles
             int px, py;
             cell_origin(x, y, &px, &py);
             draw_tile(sprites, code, px, py);

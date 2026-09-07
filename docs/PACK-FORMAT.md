@@ -231,6 +231,16 @@ shell repeats across the band above the siege board, with
 drawn beneath. Decorative, outside the grid, siege only; absent, nothing is
 drawn.
 
+**Siege grid.** `sprites.ui.siege_grid` names a path prefix for a full grid of
+siege tiles, one file per cell: `<prefix>_<x>_<y>.png` for `x` in `0..5` and
+`y` in `0..5`, row 0 the band above the board and rows 1..5 the board's rows
+0..4 (36 files). In a siege the shell draws each cell's own tile as the ground
+and nothing for the wall codes, since the walls are painted in the tiles; the
+tiles may be any size and are scaled to the cell. When it is set the
+`siege_back_wall*` keys are ignored. Draw-only: the castle layout still
+blocks the wall cells. Absent, the per-code wall pieces draw as above
+(`kings-bounty` declares none; `glory-of-rome` ships 36 cells at 64).
+
 **Per-town art.** A town catalog entry may declare `"art": "<stem>"`, a
 tile under `art/tiles/`, and the engine stamps that tile at the town's
 position instead of the shared `art/tiles/town.png`. Absent means `town`, so

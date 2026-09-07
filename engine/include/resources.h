@@ -998,6 +998,12 @@ typedef struct {
         char siege_back_wall[RES_PATH_LEN];
         char siege_back_wall_left[RES_PATH_LEN];   // optional end cells of the band
         char siege_back_wall_right[RES_PATH_LEN];
+        // Optional full grid of siege tiles, one file per cell: the prefix of
+        // "<prefix>_<x>_<y>.png" for x in 0..COMBAT_W-1 and y in 0..COMBAT_H,
+        // row 0 being the band above the board. When set, the shell draws each
+        // cell's own tile as the siege ground and nothing for the wall codes,
+        // and the siege_back_wall keys are ignored. Empty: the per-code walls.
+        char siege_grid[RES_PATH_LEN];
         char orb[RES_PATH_LEN];              // orb of power tile overlay
     } sprites;
 
@@ -1090,6 +1096,12 @@ const ResCastle *resources_castle_by_id(const Resources *r, const char *id);
 // "1x1" is the single-tile castle. Returns false (and writes the default) for
 // anything else, so the caller can report the unknown value.
 bool resources_parse_castle_footprint(const char *s, ResCastleFootprint *out);
+
+// The siege grid tile for board column x and grid row y (row 0 = the band
+// above the board, rows 1..COMBAT_H = board rows 0..COMBAT_H-1), built from
+// sprites.siege_grid. False, and out empty, when the pack declares no grid.
+bool resources_siege_grid_path(const Resources *res, int x, int y,
+                               char *out, int cap);
 
 // The home/audience castle -- the King's castle (contract audiences, the recruit
 // home pool); never a gate destination. The "which castle is home" rule lives

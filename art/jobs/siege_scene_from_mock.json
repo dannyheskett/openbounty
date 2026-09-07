@@ -15,5 +15,6 @@
     384,
     384
   ],
-  "_note": "2026-09-07: img2img on the 6x6 siege mock (back band included), k-centroid to 384x384 (64 per cell)."
+  "_note": "2026-09-07: img2img on the 6x6 siege mock (back band included), k-centroid to 384x384 (64 per cell).",
+  "_pack_path": "art/combat/siege/cell_<x>_<y>.png (36 cells at 64, tools/siegeslice.py --grid)"
 }
