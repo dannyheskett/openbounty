@@ -1,10 +1,10 @@
 {
   "id": "velites_attack",
-  "prompt": "he raises the javelin from upright at his side up to his shoulder and draws his right arm back behind his head, then hurls the same single javelin forward and it flies off straight ahead to the right, his right arm following through out in front of him at shoulder height, then the arm drops back to his side, both feet stay planted, the round shield stays on his left arm the whole time, the wolfskin stays on his head",
+  "prompt": "he raises the javelin from upright at his side up to his shoulder and draws his right arm back behind his head, then thrusts his right arm forward to full reach in front of him at shoulder height with the same single javelin still gripped in his hand and pointing straight ahead to the right, the javelin never leaves his hand, then the arm draws back to his side, both feet stay planted, the round shield stays on his left arm the whole time, the wolfskin stays on his head",
   "style": "rd_advanced_animation__custom_action",
   "width": 96,
   "height": 96,
-  "seed": 6215,
+  "seed": 6216,
   "frames_duration": 4,
   "return_spritesheet": true,
   "input_image_path": "build/art/velites/run03/01_raw.png",
@@ -17,5 +17,5 @@
     96
   ],
   "_pack_path": "art/troops/velites_00..03.png",
-  "_note": "2026-09-07: job copied whole from silvani_attack (the approved archer release loop); only the still, seed and motion sentence differ. Still is velites run03, at rest, javelin upright."
+  "_note": "2026-09-07: job copied whole from silvani_attack (the approved archer release loop); only the still, seed and motion sentence differ. Still is velites run03, at rest, javelin upright. run06: javelin kept in hand on every frame at Dan's order; nothing else changed."
 }
