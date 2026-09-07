@@ -254,6 +254,11 @@ and record both prompts in `ART-WORKLIST.md`.
   the corners on a curve and the wall bands mitred. Generated wall pieces
   were tried on 2026-09-07 and rejected: the API cannot make six cells that
   join, and a whole-board picture is too coarse under the 256 cap.
+- **The title screen** (`art/ui/splash_title.png`, 256x164) — the eagle is
+  generated (screen route, no border); the words are drawn by
+  `tools/splashtitle.py` from C059 Bold, gold with dark shading, title above
+  the eagle and subtitle across the pole, for the same reason as the
+  publisher splash: generated lettering garbles.
 - **The publisher splash** (`art/ui/splash_logo.png`, 320x84, transparent) —
   composed, not generated whole, because generated lettering garbles. The
   words are rendered locally from C059 Bold at 1-bit, white with the old
