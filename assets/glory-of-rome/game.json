@@ -3498,7 +3498,7 @@
 		"hud":	{
 			"contract_silhouette":	"art/ui/hud_contract_silhouette.png",
 			"siege_silhouette":	"art/ui/hud_siege_silhouette.png",
-			"siege_animation":	["art/ui/hud_siege_00.png", "art/ui/hud_siege_01.png", "art/ui/hud_siege_02.png", "art/ui/hud_siege_03.png"],
+			"siege_animation":	["art/ui/hud_siege_00.png", "art/ui/hud_siege_01.png", "art/ui/hud_siege_02.png", "art/ui/hud_siege_03.png", "art/ui/hud_siege_04.png", "art/ui/hud_siege_05.png", "art/ui/hud_siege_06.png", "art/ui/hud_siege_07.png"],
 			"magic_silhouette":	"art/ui/hud_magic_silhouette.png",
 			"magic_animation":	["art/ui/hud_magic_00.png", "art/ui/hud_magic_01.png", "art/ui/hud_magic_02.png", "art/ui/hud_magic_03.png"],
 			"puzzle_grid":	"art/ui/hud_puzzle_grid.png",
