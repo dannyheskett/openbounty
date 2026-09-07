@@ -2,16 +2,16 @@
   "id": "hud_magic_00",
   "prompt": "a bronze tripod brazier with a bright orange flame rising from it against a deep blue background, painted as a small game sidebar panel, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering",
   "style": "rd_pro__default",
-  "width": 96,
-  "height": 96,
-  "seed": 7742,
+  "width": 128,
+  "height": 128,
+  "seed": 8742,
   "bypass_prompt_expansion": true,
   "raw_only": true,
   "figure": false,
   "target": [
-    96,
-    96
+    128,
+    128
   ],
   "_pack_path": "art/ui/hud_magic_00.png",
-  "_note": "HUD sidebar panel (2026-09-06), the inventory icon route: opaque framed card, rd_pro__default, 96x96, no references, no lettering. The siege and magic stills are frame 0 of their four-frame loops. Regenerated without a painted frame (2026-09-06): the shell draws the frame."
+  "_note": "HUD sidebar panel (2026-09-06), the inventory icon route: opaque framed card, rd_pro__default, 96x96, no references, no lettering. The siege and magic stills are frame 0 of their four-frame loops. Regenerated without a painted frame (2026-09-06): the shell draws the frame. 2026-09-07: 128 route (as the villains): still at 128, loop at 128, frames centre-cropped to 96 to drop the painted frame."
 }
