@@ -315,6 +315,113 @@ def obstacle(name, seed):
     return soften(render(material_map(name), seed, relay_bricks=False), seed)
 
 
+
+# ---- obstacles, drawn: rubble, bushes, a broken wall ----------------------------
+
+BUSH = (34, 110, 40, 255)
+BUSH_LT = (70, 150, 60, 255)
+BUSH_DK = (18, 70, 28, 255)
+SHADOW = (0, 0, 0, 90)
+
+
+def cast_shadow(d, box):
+    x0, y0, x1, y1 = box
+    d.ellipse((x0, y0, x1, y1), fill=SHADOW)
+
+
+def stone_block(d, box, seed, tones=(HILITE, STONE, STONE_DK)):
+    """One rounded rubble stone with a lit top, mid body, dark underside and an ink edge."""
+    x0, y0, x1, y1 = box
+    d.rounded_rectangle((x0, y0, x1, y1), radius=3, fill=tones[1], outline=GROUT)
+    d.line((x0 + 2, y0 + 1, x1 - 2, y0 + 1), fill=tones[0])
+    d.line((x0 + 2, y1 - 1, x1 - 2, y1 - 1), fill=tones[2])
+    d.line((x1 - 1, y0 + 2, x1 - 1, y1 - 2), fill=tones[2])
+
+
+def rubble():
+    """A heap of fallen masonry: large blocks on top of small debris, olive
+    stones among them, a shadow underneath."""
+    im = Image.new("RGBA", (N, N), CLEAR)
+    d = ImageDraw.Draw(im)
+    r = lcg(51)
+    cast_shadow(d, (10, 58, 88, 90))
+    for _ in range(90):
+        x, y = 14 + next(r) % 68, 44 + next(r) % 42
+        if (x - 48) ** 2 / 36 ** 2 + (y - 68) ** 2 / 20 ** 2 < 1:
+            d.point((x, y), fill=(STONE_DK, GROUT, OLIVE, STONE)[next(r) % 4])
+    blocks = [(16, 62, 40, 78), (44, 66, 70, 82), (30, 48, 56, 64), (60, 52, 82, 66),
+              (22, 74, 44, 86), (52, 76, 78, 88), (38, 36, 60, 50), (66, 42, 84, 54)]
+    for i, b in enumerate(blocks):
+        tone = (HILITE, STONE, STONE_DK) if i % 3 else (STONE, STONE_DK, GROUT)
+        if i == 4:
+            tone = (OLIVE, OLIVE, GROUT)
+        stone_block(d, b, seed=i, tones=tone)
+    return im
+
+
+def bushes():
+    """A clump of rounded bushes with a lit crown, a dark underside, leaf
+    flecks, and a shadow on the ground."""
+    im = Image.new("RGBA", (N, N), CLEAR)
+    d = ImageDraw.Draw(im)
+    r = lcg(61)
+    cast_shadow(d, (12, 66, 84, 90))
+    for (cx, cy, rx, ry) in ((30, 60, 22, 18), (62, 56, 24, 20), (46, 44, 18, 15), (46, 70, 16, 12)):
+        d.ellipse((cx - rx, cy - ry, cx + rx, cy + ry), fill=BUSH, outline=BUSH_DK)
+        d.chord((cx - rx, cy - ry, cx + rx, cy + ry), 20, 160, fill=BUSH_DK)
+        d.ellipse((cx - rx + 4, cy - ry + 3, cx + rx - 8, cy - 2), fill=BUSH_LT)
+        for _ in range(40):
+            x, y = cx - rx + next(r) % (2 * rx), cy - ry + next(r) % (2 * ry)
+            if (x - cx) ** 2 / rx ** 2 + (y - cy) ** 2 / ry ** 2 < 0.8:
+                d.point((x, y), fill=(BUSH_LT, BUSH_DK, BUSH)[next(r) % 3])
+    return im
+
+
+def broken_wall():
+    """A stub of ruined wall: brick courses standing on a base, the top edge
+    broken to a jagged line, rubble at its feet."""
+    im = Image.new("RGBA", (N, N), CLEAR)
+    d = ImageDraw.Draw(im)
+    px = im.load()
+    r = lcg(71)
+    cast_shadow(d, (8, 70, 90, 92))
+    x0, x1 = 14, 82
+    tops = []
+    h = 40
+    for x in range(x0, x1):
+        if next(r) % 5 == 0:
+            h += (next(r) % 9) - 4
+        h = max(28, min(56, h))
+        tops.append(h)
+    course = 8
+    row = 0
+    for y in range(24, 86, course):
+        off = 6 if row % 2 else 0
+        for bx in range(x0 - off, x1, 12):
+            for x in range(bx, bx + 12):
+                if not (x0 <= x < x1):
+                    continue
+                for yy in range(max(y, tops[x - x0]), min(y + course, 84)):
+                    tone = HILITE if yy - y < 2 else (STONE if yy - y < 5 else STONE_DK)
+                    if x >= bx + 10 or yy >= y + course - 1:
+                        tone = GROUT
+                    px[x, yy] = tone
+        row += 1
+    for x in range(x0, x1):
+        t = tops[x - x0]
+        px[x, t] = GROUT
+        px[x, t + 1] = MER_LIGHT
+    d.line((x0, tops[0], x0, 84), fill=GROUT)
+    d.line((x1 - 1, tops[-1], x1 - 1, 84), fill=GROUT)
+    d.rectangle((x0, 84, x1 - 1, 87), fill=GROUT)
+    for _ in range(60):
+        x, y = 6 + next(r) % 84, 80 + next(r) % 12
+        px[x, y] = (STONE_DK, STONE, GROUT, OLIVE)[next(r) % 4]
+    for b in ((4, 78, 16, 86), (78, 80, 92, 88), (40, 84, 54, 92)):
+        stone_block(d, b, 1)
+    return im
+
+
 def burst():
     return soften(render(material_map("castle_spike"), 31, relay_bricks=False), 31)
 
@@ -352,9 +459,7 @@ def main():
         "castle_wall_back_l": back_corner(True),
         "castle_wall_back_r": back_corner(False),
         "castle_spike": burst(),
-        "obstacle_01": obstacle("obstacle_01", 11),
-        "obstacle_02": obstacle("obstacle_02", 12),
-        "obstacle_03": obstacle("obstacle_03", 13),
+        # obstacle_01..03 are generated (art/jobs/obstacle_0N.json), not drawn
         "cursor_01": cursor("cursor_01"),
         "cursor_02": cursor("cursor_02"),
         "cursor_03": cursor("cursor_03"),
