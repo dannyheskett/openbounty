@@ -152,6 +152,48 @@ cell is square and 96 x 96 art draws 1:1. Every tile or sprite still at
 48 x 34 stretches to a square until it is replaced; `ART-WORKLIST.md` is
 the list of what replaces them.
 
+### Rendering state, measured 2026-09-07
+
+What the shell does today in modern mode, read from `src/layout.c`,
+`src/present.c`, `src/chrome.c`, `src/bfont.c` and `src/main.c`:
+
+- **Buffer and scale.** The buffer is the window divided by the presentation
+  scale; default 1, so one buffer pixel is one screen pixel. A bigger window
+  shows more tiles, not bigger ones. Legacy is the opposite: a fixed 320 x 200
+  buffer at the largest integer scale (2..5) that fits, centred and
+  letterboxed. Scales above 1 are a menu choice, clamped to the window.
+- **Viewport.** The map pane is the interior minus the chrome bands and the
+  one-tile sidebar. It holds whole tiles only, an odd count each way, floor 5,
+  ceiling 63. Space left over stays black inside the frame, on the right and
+  at the bottom: the tile field is not centred in the pane, so the hero sits
+  left of and above the window centre by up to a tile.
+- **Two pixel densities on one screen.** Tile-shaped art draws at 1x with
+  one-pixel detail. Everything sized by `ui_scale` (frame bands, status, bar,
+  font, dialogs) is the legacy design doubled, two-pixel detail. Rome still
+  ships the legacy pieces for all of it: `chrome_overworld.png` 320 x 200,
+  `hud_bar_strip.png` 320 x 5, `rome-font.png` 1024 x 8. The chrome is a
+  nine-slice (section 3) cut at `16 * ui_scale` by `8 * ui_scale`, so from a
+  320 x 200 source the corners take half transparent interior and the frame
+  draws thinner than its slot; the bar strip is tiled at native width and
+  doubled in height only; the font is the 8-pixel glyph doubled.
+- **Screen art.** The picker and title are 256 x 164 drawn at their width
+  times `ui_scale`, 512 x 328, centred in a black window of any size.
+- **Combat.** Cells equal the tile; the 6 x 5 board is 576 x 480 at 1x,
+  centred in the map pane, so on a 1920-wide window it is under a third of the
+  width unless the player raises the scale.
+- **DPI.** No high-DPI window flag and no DPI query. Harmless on X. On a
+  Windows or macOS display at 150 or 200 percent the OS scales the window
+  bilinearly and the pixels blur.
+- **Filtering.** Every texture and the render target use point sampling and
+  the present is an integer scale, so nothing blurs inside the game's own path.
+- **Minimum window** for Rome: 640 x 540, from the 6 x 5 board and the 5-tile
+  viewport floor.
+
+What follows for the HUD frame rebuild: author the frame, bar and font at the
+pack's own density, sized to the bands (32 and 16 at `ui_scale` 2, a 16-pixel
+glyph with one-pixel detail), not as doubled legacy bitmaps. Centring the tile
+field in the pane is a small layout change, separate from the art.
+
 ## 6. Verifying
 
 `tools/capture.sh` and `tools/walkthrough.sh` drive a running game and pull
