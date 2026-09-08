@@ -231,6 +231,12 @@ shell repeats across the band above the siege board, with
 drawn beneath. Decorative, outside the grid, siege only; absent, nothing is
 drawn.
 
+**Combat ground.** `sprites.ui.combat_ground` is `"field"` (default) or
+`"terrain"`. With `"terrain"` the shell draws the map tile the hero stands on
+under every combat cell (grass, desert, ...; water falls back to grass) and the
+pack ships no field tile: `sprites.combat[0]` is left out of the manifest.
+`kings-bounty` declares nothing and draws its field tile as before.
+
 **Siege grid.** `sprites.ui.siege_grid` names a path prefix for a full grid of
 siege tiles, one file per cell: `<prefix>_<x>_<y>.png` for `x` in `0..5` and
 `y` in `0..5`, row 0 the band above the board and rows 1..5 the board's rows

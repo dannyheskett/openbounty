@@ -10,6 +10,11 @@
 // BeginDrawing / EndDrawing and for any post-frame scaling. The
 // renderer paints into the same 320x200 design space the rest of
 // the chrome uses.
+// Ground drawn under every combat cell when set (sprites.ui.combat_ground
+// "terrain": the map tile the hero stands on); a zero texture means the
+// pack's field tile, sprites.combat[0]. Set by the shell before RunCombat.
+void combat_render_set_ground(Texture2D ground);
+
 void combat_render_frame(const Combat *c, const Game *g,
                          const Sprites *sprites);
 

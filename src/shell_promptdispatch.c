@@ -18,6 +18,9 @@
 #include <string.h>
 
 #include "combat_loop.h"
+#include "tile.h"
+#include "map.h"
+#include "tile_cache.h"
 #include "end_cartoon.h"
 #include "flow_resolve.h"
 #include "flows.h"
@@ -50,7 +53,24 @@ static FlowAnswer to_flow_answer(PromptResult r, int number) {
 // Build a CombatTarget for a castle/foe siege, run the rendered fight, and
 // return the outcome. Centralizes the shell-only RunCombat call so each flow
 // just supplies identity.
+// The combat ground: with sprites.ui.combat_ground "terrain" the map tile the
+// hero stands on (grass, desert, ...); water, which the hero only crosses by
+// boat, falls back to grass. Otherwise the pack's field tile.
+void shell_set_combat_ground(ShellCtx *ctx) {
+    Texture2D none = { 0 };
+    if (!resources_combat_ground_is_terrain(ctx->res) || !ctx->map) {
+        combat_render_set_ground(none);
+        return;
+    }
+    const Tile *t = MapGetTile(ctx->map, ctx->game->position.x, ctx->game->position.y);
+    const char *terrain = t ? TerrainName(t->terrain) : "grass";
+    if (strcmp(terrain, "water") == 0) terrain = "grass";
+    char art[TILE_ART_NAME_LEN];
+    combat_render_set_ground(tile_cache_get(MapTerrainArt(ctx->map, terrain, art, sizeof art)));
+}
+
 static CombatResult run_castle_combat(ShellCtx *ctx, const char *castle_id) {
+    shell_set_combat_ground(ctx);
     Game            *g  = ctx->game;
     const Resources *r_ = ctx->res;
     CastleRecord *cr = GameFindCastle(g, castle_id);
@@ -118,6 +138,7 @@ bool prompt_dispatch_tick(ShellCtx *ctx) {
         tgt.seed_key = pending_foe_id;      // stable identity for RNG seed
         if (foe) { tgt.garrison = foe->garrison;
                    tgt.garrison_slots = GAME_ARMY_SLOTS; }
+        shell_set_combat_ground(ctx);
         CombatResult cr = RunCombat(g, ctx->sprites, ctx->render_target,
                                     COMBAT_MODE_FOE, &tgt);
         outcome = (cr == COMBAT_RESULT_WIN) ? PLAYER_IO_COMBAT_WON

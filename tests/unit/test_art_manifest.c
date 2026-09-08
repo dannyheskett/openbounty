@@ -239,7 +239,26 @@ TEST siege_grid_is_listed_only_when_declared(void) {
     PASS();
 }
 
+TEST combat_field_tile_is_dropped_when_ground_is_terrain(void) {
+    // sprites.ui.combat_ground "terrain": the hero's map tile is the combat
+    // ground, so sprites.combat[0] is not part of the pack (REQ-165d).
+    Resources *r = fx_load_resources();
+    ASSERT(r);
+    ASSERT_FALSE(resources_combat_ground_is_terrain(r));
+    int n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    ASSERT(manifest_has(n, r->sprites.combat[0]));
+    strcpy(r->sprites.combat_ground, "terrain");
+    ASSERT(resources_combat_ground_is_terrain(r));
+    int m = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    ASSERT_EQ(n - 1, m);
+    ASSERT_FALSE(manifest_has(m, r->sprites.combat[0]));
+    ASSERT(manifest_has(m, r->sprites.combat[1]));
+    resources_free(r); free(r);
+    PASS();
+}
+
 SUITE(unit_art_manifest_suite) {
+    RUN_TEST(combat_field_tile_is_dropped_when_ground_is_terrain);
     RUN_TEST(siege_grid_is_listed_only_when_declared);
     RUN_TEST(every_manifest_path_exists_in_the_pack);
     RUN_TEST(manifest_covers_every_category);

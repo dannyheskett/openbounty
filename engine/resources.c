@@ -791,6 +791,7 @@ static void parse_sprites(Resources *res, cJSON *obj) {
             copy_str(res->sprites.combat[i], RES_PATH_LEN, COMBAT_DEFAULT[i]);
         res->sprites.combat_count = RES_COMBAT_TILES;
     }
+    copy_str(res->sprites.combat_ground, sizeof res->sprites.combat_ground, "field");
     copy_str(res->sprites.font, sizeof res->sprites.font,
              "art/font/kb-font.png");
     copy_str(res->sprites.palette, sizeof res->sprites.palette,
@@ -849,6 +850,8 @@ static void parse_sprites(Resources *res, cJSON *obj) {
                  json_str(ui, "siege_back_wall_right", ""));
         copy_str(res->sprites.siege_grid, sizeof(res->sprites.siege_grid),
                  json_str(ui, "siege_grid", ""));
+        copy_str(res->sprites.combat_ground, sizeof(res->sprites.combat_ground),
+                 json_str(ui, "combat_ground", "field"));
         copy_str(res->sprites.ending_lose, sizeof(res->sprites.ending_lose),
                  json_str(ui, "ending_lose", ""));
         copy_str(res->sprites.orb, sizeof(res->sprites.orb),
@@ -2342,8 +2345,10 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
     art_add_anim(out, cap, &n, &res->sprites.hero_idle);
     art_add_anim(out, cap, &n, &res->sprites.hero_boat);
 
-    for (int i = 0; i < res->sprites.combat_count; i++)
+    for (int i = 0; i < res->sprites.combat_count; i++) {
+        if (i == 0 && resources_combat_ground_is_terrain(res)) continue;  // no field tile shipped
         art_add(out, cap, &n, res->sprites.combat[i]);
+    }
 
     art_add(out, cap, &n, res->sprites.font);
     art_add(out, cap, &n, res->sprites.puzzle_cover);
@@ -2535,4 +2540,8 @@ bool resources_siege_grid_path(const Resources *res, int x, int y,
     if (x < 0 || x >= COMBAT_W || y < 0 || y > COMBAT_H) return false;
     snprintf(out, (size_t)cap, "%s_%d_%d.png", res->sprites.siege_grid, x, y);
     return true;
+}
+
+bool resources_combat_ground_is_terrain(const Resources *res) {
+    return res && strcmp(res->sprites.combat_ground, "terrain") == 0;
 }

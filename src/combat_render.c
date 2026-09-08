@@ -87,6 +87,10 @@ void combat_format_title(const Combat *c, const Game *g, char *buf, int cap) {
 
 // ----- Cell math -------------------------------------------------------------
 
+static Texture2D s_ground;   // see combat_render_set_ground
+
+void combat_render_set_ground(Texture2D ground) { s_ground = ground; }
+
 static void cell_origin(int gx, int gy, int *px, int *py) {
     *px = CL_COMBAT_X + gx * CL_COMBAT_CELL_W;
     *py = CL_COMBAT_Y + gy * CL_COMBAT_CELL_H;
@@ -159,6 +163,8 @@ void combat_render_frame(const Combat *c, const Game *g,
             if (grid)
                 ui_blit(sprites->siege_grid[y + 1][x], px, py,
                         CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
+            else if (s_ground.id)
+                ui_blit(s_ground, px, py, CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
             else
                 draw_tile(sprites, 0, px, py);
         }
@@ -183,7 +189,8 @@ void combat_render_frame(const Combat *c, const Game *g,
             int px, py;
             cell_origin(x, 0, &px, &py);
             py -= CL_COMBAT_CELL_H;
-            draw_tile(sprites, 0, px, py);
+            if (s_ground.id) ui_blit(s_ground, px, py, CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
+            else draw_tile(sprites, 0, px, py);
             Texture2D t = sprites->siege_back_wall;
             if (x == 0 && sprites->siege_back_wall_end[0].id) t = sprites->siege_back_wall_end[0];
             if (x == COMBAT_W - 1 && sprites->siege_back_wall_end[1].id) t = sprites->siege_back_wall_end[1];

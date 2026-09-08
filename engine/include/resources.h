@@ -1004,6 +1004,10 @@ typedef struct {
         // cell's own tile as the siege ground and nothing for the wall codes,
         // and the siege_back_wall keys are ignored. Empty: the per-code walls.
         char siege_grid[RES_PATH_LEN];
+        // Combat ground: "field" (default) draws sprites.combat[0] under every
+        // cell; "terrain" draws the map tile the hero stands on instead and
+        // combat[0] is not part of the pack.
+        char combat_ground[16];
         char orb[RES_PATH_LEN];              // orb of power tile overlay
     } sprites;
 
@@ -1102,6 +1106,10 @@ bool resources_parse_castle_footprint(const char *s, ResCastleFootprint *out);
 // sprites.siege_grid. False, and out empty, when the pack declares no grid.
 bool resources_siege_grid_path(const Resources *res, int x, int y,
                                char *out, int cap);
+
+// True when the pack draws the hero's map terrain as the combat ground
+// (sprites.ui.combat_ground == "terrain") rather than sprites.combat[0].
+bool resources_combat_ground_is_terrain(const Resources *res);
 
 // The home/audience castle -- the King's castle (contract audiences, the recruit
 // home pool); never a gate destination. The "which castle is home" rule lives

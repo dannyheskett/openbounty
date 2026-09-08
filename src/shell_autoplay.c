@@ -13,6 +13,7 @@
 #include "audio.h"
 #include "bfont.h"
 #include "combat_replay.h"
+#include "shell_promptdispatch.h"
 #include "frame_host.h"
 #include "layout.h"
 #include "present.h"        // CL_SCREEN_W/H
@@ -194,6 +195,7 @@ static void animate_pending_combat(ShellCtx *ctx) {
                                 NULL, &rec);
     }
     GameRngRestore(rng);
+    shell_set_combat_ground(ctx);
     RenderCombatRecord(ctx, mode, &rec, ctx->sprites, ctx->render_target);
 }
 

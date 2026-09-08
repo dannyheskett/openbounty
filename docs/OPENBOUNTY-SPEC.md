@@ -851,6 +851,13 @@ except where a deviation is explicitly flagged (§34).
   `siege_back_wall*` band is not drawn then. `castle_omap` and movement are
   untouched. Absent, REQ-165b and the per-code pieces apply, so
   `kings-bounty` is unchanged (2026-09-07).
+- **REQ-165d.** With `sprites.ui.combat_ground` `"terrain"`
+  (`resources_combat_ground_is_terrain`), the shell has set the combat ground
+  before every fight (`combat_render_set_ground`, from
+  `shell_promptdispatch.c`) to the hero's map tile, water falling back to
+  grass, and drawn it under every cell and the siege band in place of
+  `sprites.combat[0]`, which the manifest then omits. Absent or `"field"`,
+  the field tile draws as before, so `kings-bounty` is unchanged (2026-09-08).
 - **REQ-165a.** When `sprites.ui.panel_frame` names a palette colour the
   shell has drawn a frame round every panel slot (`ui_panel_frame`: HUD
   panels, inventory cells, contract face) so the art carries none; absent,
