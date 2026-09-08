@@ -243,7 +243,8 @@ siege tiles, one file per cell: `<prefix>_<x>_<y>.png` for `x` in `0..5` and
 0..4 (36 files). In a siege the shell draws each cell's own tile as the ground
 and nothing for the wall codes, since the walls are painted in the tiles; the
 tiles may be any size and are scaled to the cell. When it is set the
-`siege_back_wall*` keys are ignored. Draw-only: the castle layout still
+`siege_back_wall*` keys are ignored and the per-code wall pieces,
+`sprites.combat[5..10]`, leave the manifest, so the pack need not ship them. Draw-only: the castle layout still
 blocks the wall cells. Absent, the per-code wall pieces draw as above
 (`kings-bounty` declares none; `glory-of-rome` ships 36 cells at 64).
 

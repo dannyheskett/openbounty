@@ -848,8 +848,9 @@ except where a deviation is explicitly flagged (§34).
   manifest) and the shell, in a siege only and only when every cell loaded,
   has drawn each cell's own tile as the ground, row 0 in the band above the
   board, and skipped the wall codes 5..10 at the obstacle stamp; the
-  `siege_back_wall*` band is not drawn then. `castle_omap` and movement are
-  untouched. Absent, REQ-165b and the per-code pieces apply, so
+  `siege_back_wall*` band is not drawn then, and `sprites.combat[5..10]`
+  leave the manifest (Rome ships no wall pieces, 2026-09-08). `castle_omap`
+  and movement are untouched. Absent, REQ-165b and the per-code pieces apply, so
   `kings-bounty` is unchanged (2026-09-07).
 - **REQ-165d.** With `sprites.ui.combat_ground` `"terrain"`
   (`resources_combat_ground_is_terrain`), the shell has set the combat ground

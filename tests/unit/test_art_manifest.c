@@ -228,9 +228,12 @@ TEST siege_grid_is_listed_only_when_declared(void) {
 
     strcpy(r->sprites.siege_grid, "art/combat/siege/cell");
     int m = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
-    ASSERT_EQ(n + COMBAT_W * (COMBAT_H + 1), m);
+    ASSERT_EQ(n + COMBAT_W * (COMBAT_H + 1) - 6, m);
     ASSERT(manifest_has(m, "art/combat/siege/cell_0_0.png"));
     ASSERT(manifest_has(m, "art/combat/siege/cell_5_5.png"));
+    // the per-code wall pieces (combat[5..10]) leave the manifest with the grid
+    for (int i = 5; i <= 10; i++) ASSERT_FALSE(manifest_has(m, r->sprites.combat[i]));
+    ASSERT(manifest_has(m, r->sprites.combat[11]));
     ASSERT(resources_siege_grid_path(r, 5, COMBAT_H, p, sizeof p));
     ASSERT_STR_EQ("art/combat/siege/cell_5_5.png", p);
     ASSERT_FALSE(resources_siege_grid_path(r, COMBAT_W, 0, p, sizeof p));

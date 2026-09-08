@@ -2347,6 +2347,7 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
 
     for (int i = 0; i < res->sprites.combat_count; i++) {
         if (i == 0 && resources_combat_ground_is_terrain(res)) continue;  // no field tile shipped
+        if (i >= 5 && i <= 10 && res->sprites.siege_grid[0]) continue;    // walls are in the siege grid
         art_add(out, cap, &n, res->sprites.combat[i]);
     }
 
