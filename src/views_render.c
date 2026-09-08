@@ -516,7 +516,18 @@ static void puzzle_load_scepter_map(const Game *g) {
 }
 
 static void draw_puzzle(const Game *g, const Sprites *s) {
-    draw_view_panel();
+    // The panel is the grid: five tiles square, centred in the map pane. The
+    // shared content rect is 240x170 times ui_scale, which only equals five
+    // tiles when the tile is 48x34; with a 96px tile the grid is 480 tall
+    // against a 340 panel and spilled out of the frame top and bottom. In
+    // legacy this is exactly the content rect, at 16,22, as before.
+    {
+        int pw = CL_TILE_W * 5, ph = CL_TILE_H * 5;
+        int px = CL_MAP_X + (CL_MAP_W - pw) / 2;
+        int py = CL_MAP_Y + (CL_MAP_H - ph) / 2;
+        DrawRectangle(px, py, pw, ph, PAL_CLR(DGREY));
+        ui_window_frame(px, py, pw, ph, PAL_CLR(DRED));
+    }
 
     // Cells span ONLY the map area (240x170), NOT the sidebar -- matches
     // . Each cell is 48x34, same as a map tile, so
@@ -529,8 +540,8 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
     // and this lands on the historic grid.
     int cell_w = CL_TILE_W;
     int cell_h = CL_TILE_H;
-    int grid_x = VIEW_X + (VIEW_W - cell_w * 5) / 2;
-    int grid_y = VIEW_Y + (VIEW_H - cell_h * 5) / 2;
+    int grid_x = CL_MAP_X + (CL_MAP_W - cell_w * 5) / 2;
+    int grid_y = CL_MAP_Y + (CL_MAP_H - cell_h * 5) / 2;
 
     puzzle_load_scepter_map(g);
 
