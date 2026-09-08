@@ -1896,6 +1896,32 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   240×170, hero centred, camera clamped at zone edges); a **right sidebar**
   (48px: portrait, contract/siege/magic/puzzle icons, gold); and a **bottom**
   region that drops out for dialogs and prompts.
+- **REQ-430a.** A modern pack may fix its buffer with `render.native_w` /
+  `native_h` (`CL_IS_NATIVE`, `src/layout.c`): the screen is that size, the
+  viewport is exactly the declared tile count, and the leftover space widens
+  the chrome bands (`g_layout.frame_l/r/t/b`, read by the `CL_FRAME_*`
+  macros) so the map stays centred. `layout_fit_window` is then a no-op, the
+  minimum window is the buffer, and `present_scale` shows the buffer at the
+  largest of 1x, 2x, 3x that fits (`CL_SCALE_MAX_NATIVE`), letterboxed. The
+  Scale control cycles 1x → 2x → 3x → 1x, wrapping at what the monitor can
+  hold, and resizes the window to the buffer times the scale
+  (`present_zoom_window`; not in fullscreen). The camera centres the hero
+  with a radius per axis (`RADIUS_X`, `RADIUS_Y` in `src/map_render.c`), so a
+  7 x 5 viewport centres on both. Legacy and a modern pack without a native
+  size behave as before (2026-09-08).
+- **REQ-430b.** **Code-drawn chrome.** A modern pack without
+  `sprites.ui.chrome_overworld` gets the gold lattice (`src/lattice.c`): a
+  cross-hatch pattern built once as a texture at `ui_scale` and tiled from the
+  screen origin. `chrome_draw` and `chrome_draw_with_status` fill the four
+  frame bands and the bar band with it; `ui_panel_frame` draws it as a
+  two-unit ring inside each HUD panel; `ui_window_frame` draws a four-unit
+  ring just outside every window rect, replacing the one-pixel line at the
+  prompt, location-menu, credits, encode-dialog, view (character, army, gate,
+  puzzle, map, spells), contract-panel, dialog-box and combat spell-menu
+  sites, which in legacy still draw the line in their historic colour.
+  Splash, title and class-picker art draws at the largest whole scale that
+  fits the buffer (`ui_fit_scale`; legacy stays at 1x). Rome ships no chrome
+  bitmap or bar strip (2026-09-08).
 
 ### 29.2 Views
 

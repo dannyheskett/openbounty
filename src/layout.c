@@ -27,7 +27,18 @@ ClLayout g_layout = {
     .is_modern = 0,
     .pack_tiles_w = 5, .pack_tiles_h = 5,
     .ui_scale = 1,
+    .frame_l = 16, .frame_r = 16, .frame_t = 8, .frame_b = 8,
+    .is_native = 0,
 };
+
+// The chrome bands at their thinnest: the DOS_frame_ui[] strips times the
+// pack's ui_scale. Every mode starts from these; a fixed buffer widens them.
+static void set_base_frame(void) {
+    g_layout.frame_l = 16 * g_layout.ui_scale;
+    g_layout.frame_r = 16 * g_layout.ui_scale;
+    g_layout.frame_t =  8 * g_layout.ui_scale;
+    g_layout.frame_b =  8 * g_layout.ui_scale;
+}
 
 void layout_init(const struct Resources *res) {
     if (!res) return;
@@ -40,6 +51,7 @@ void layout_init(const struct Resources *res) {
     g_layout.pack_tiles_w = r->tiles_w;
     g_layout.pack_tiles_h = r->tiles_h;
     g_layout.ui_scale     = (r->ui_scale > 0) ? r->ui_scale : 1;
+    set_base_frame();
 
     g_layout.map_w     = g_layout.tile_w * g_layout.tiles_w;
     g_layout.map_h     = g_layout.tile_h * g_layout.tiles_h;
@@ -49,6 +61,26 @@ void layout_init(const struct Resources *res) {
                        + g_layout.sidebar_w + CL_FRAME_RIGHT_W;
     g_layout.screen_h  = CL_FRAME_TOP_H + CL_STATUS_H + CL_BAR_H
                        + g_layout.map_h + CL_FRAME_BOTTOM_H;
+
+    // A fixed buffer: the pack said how big the screen is, and the viewport
+    // is exactly the declared tile count. Whatever the viewport, sidebar and
+    // thin bands do not cover is split between the two side bands and between
+    // the top and bottom bands, so the map keeps its centre. Rome's 960x540
+    // with 7x5 tiles of 96 gives 96-pixel sides and 16-pixel top and bottom.
+    // resources_load has already rejected a buffer too small to hold it.
+    g_layout.is_native = 0;
+    if (r->mode == RENDER_MODE_MODERN && r->native_w > 0 && r->native_h > 0 &&
+        r->native_w >= g_layout.screen_w && r->native_h >= g_layout.screen_h) {
+        int slack_w = r->native_w - g_layout.screen_w;
+        int slack_h = r->native_h - g_layout.screen_h;
+        g_layout.frame_l += slack_w / 2;
+        g_layout.frame_r += slack_w - slack_w / 2;
+        g_layout.frame_t += slack_h / 2;
+        g_layout.frame_b += slack_h - slack_h / 2;
+        g_layout.screen_w  = r->native_w;
+        g_layout.screen_h  = r->native_h;
+        g_layout.is_native = 1;
+    }
 
     // Legacy opens at 2x because 320x200 is tiny on a modern display. A modern
     // pack is already large -- 800x702 at 2x would be 1600x1404 and taller than
@@ -70,6 +102,12 @@ static int odd_clamp(int n) {
 }
 
 void layout_min_window(int *out_w, int *out_h) {
+    // A fixed buffer is the floor: it is shown whole at 1x or not at all.
+    if (g_layout.is_native) {
+        if (out_w) *out_w = g_layout.screen_w;
+        if (out_h) *out_h = g_layout.screen_h;
+        return;
+    }
     // Two things set the floor, and the pack's tile size moves both, so this
     // cannot be a constant:
     //
@@ -100,6 +138,7 @@ void layout_min_window(int *out_w, int *out_h) {
 
 bool layout_fit_window(int win_w, int win_h, int scale) {
     if (!g_layout.is_modern) return false;   // legacy geometry is fixed
+    if (g_layout.is_native) return false;    // so is a declared buffer
     if (scale < 1) scale = 1;
 
     // Chrome bands are fixed pixel furniture and do not scale with the tile,

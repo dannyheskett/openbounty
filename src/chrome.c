@@ -5,6 +5,7 @@
 #include "resources.h"
 #include "views.h"
 #include "ui.h"
+#include "lattice.h"
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -12,11 +13,12 @@
 // reads it to know whether to render the fast-quit prompt in the status bar.
 extern bool main_fast_quit_active(void);
 
-// Outerworld chrome: a pixel-exact 320x200 bitmap. The bitmap carries
-// the outer frame (left/right 16px, top 8px, bottom 8px) with transparent
-// interior. Status bar background, bar strip, and status text are painted
-// procedurally on top because they're dynamic (difficulty color, text
-// contents, mode).
+// Outerworld chrome. Legacy: a pixel-exact 320x200 bitmap carrying the outer
+// frame (left/right 16px, top 8px, bottom 8px) with transparent interior, and
+// a bar strip bitmap under the status line. Modern without a bitmap: the gold
+// lattice (src/lattice.c), drawn to the layout's band sizes. Status bar
+// background and text are painted procedurally in both because they're
+// dynamic (difficulty color, text contents, mode).
 
 // Status bar background color, sourced from res->colors.difficulty_*
 // (game.json colors.difficulty_bar). Defaults match the canonical
@@ -103,6 +105,22 @@ static void draw_chrome_frame(Texture2D tex) {
     }
 }
 
+// The code-drawn chrome. A modern pack that ships no chrome bitmap gets the
+// gold lattice: the four frame bands at the layout's thickness (which absorb
+// the buffer's spare space when the pack fixed its size) and the bar band
+// between the status line and the map. Legacy packs, and any pack that still
+// ships a bitmap, are untouched.
+static bool use_lattice(const Sprites *s) {
+    return CL_IS_MODERN && !(s && s->chrome_overworld.id);
+}
+
+static void draw_lattice_chrome(void) {
+    lattice_ring(0, 0, CL_SCREEN_W, CL_SCREEN_H,
+                 CL_FRAME_LEFT_W, CL_FRAME_RIGHT_W,
+                 CL_FRAME_TOP_H, CL_FRAME_BOTTOM_H);
+    lattice_fill(CL_STATUS_X, CL_BAR_Y, CL_STATUS_W, CL_BAR_H);
+}
+
 static Color status_bg_for_difficulty(Difficulty d) {
     const Resources *res = resources_current();
     if (res) {
@@ -138,9 +156,11 @@ void chrome_draw_with_status(const Game *g, const Sprites *s,
         g ? g->character.difficulty : DIFFICULTY_NORMAL);
     DrawRectangle(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H,
                   status_bg);
-    if (s) draw_bar_strip(s->hud_bar_strip);
-    if (s && s->chrome_overworld.id) {
-        draw_chrome_frame(s->chrome_overworld);
+    if (use_lattice(s)) {
+        draw_lattice_chrome();
+    } else {
+        if (s) draw_bar_strip(s->hud_bar_strip);
+        if (s && s->chrome_overworld.id) draw_chrome_frame(s->chrome_overworld);
     }
     if (status_text && status_text[0]) {
         bfont_draw(status_text, CL_STATUS_X + 1, CL_STATUS_Y + 1,
@@ -159,14 +179,16 @@ void chrome_draw(const Game *g, const Sprites *s) {
     DrawRectangle(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H,
                   status_bg);
 
-    // Middle bar (bar_strip.png) at y=17, 5px tall. 320 wide; the chrome
-    // bitmap's side columns will paint over the outer 16px after this.
-    if (s) draw_bar_strip(s->hud_bar_strip);
+    if (use_lattice(s)) {
+        draw_lattice_chrome();
+    } else {
+        // Middle bar (bar_strip.png) at y=17, 5px tall. 320 wide; the chrome
+        // bitmap's side columns will paint over the outer 16px after this.
+        if (s) draw_bar_strip(s->hud_bar_strip);
 
-    // Blit the chrome bitmap over everything. Its interior is transparent
-    // so the status bar + bar strip drawn above remain visible.
-    if (s && s->chrome_overworld.id) {
-        draw_chrome_frame(s->chrome_overworld);
+        // Blit the chrome bitmap over everything. Its interior is transparent
+        // so the status bar + bar strip drawn above remain visible.
+        if (s && s->chrome_overworld.id) draw_chrome_frame(s->chrome_overworld);
     }
 
     // Status text (white, on top of the fill). Three modes:

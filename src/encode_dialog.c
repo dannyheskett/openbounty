@@ -8,6 +8,7 @@
 #include "bfont.h"
 #include "palette.h"
 #include "layout.h"
+#include "ui.h"
 #include "present.h"
 #include "raylib.h"
 #include "frame_host.h"
@@ -58,7 +59,7 @@ static void draw_panel(const EncodeProgress *p, const char *footer) {
 
     // Solid panel background covers anything from the previous frame.
     DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
-    DrawRectangleLines(x, y, w, h, PAL_CLR(YELLOW));
+    ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
 
     int tx = x + pad;
     int ty = y + pad;

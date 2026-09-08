@@ -15,6 +15,7 @@
 
 #include "home_castle.h"
 #include "layout.h"
+#include "ui.h"
 #include "palette.h"
 #include "bfont.h"
 #include "views.h"
@@ -96,7 +97,7 @@ void screen_home_castle_draw(const Game *g, const Sprites *s) {
     int w = CL_PANEL_W;
     int h = CL_PANEL_H;
     DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
-    DrawRectangleLines(x, y, w, h, PAL_CLR(YELLOW));
+    ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
 
     int pad = CL_PANEL_PAD_X;   // 1px: the panel holds exactly CL_PANEL_COLS glyphs
     int row_h = BFONT_GLYPH_H + CL_UI;

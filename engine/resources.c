@@ -1992,6 +1992,8 @@ bool resources_load(Resources *res, const char *manifest_path) {
             res->render.tiles_w = json_int(jr, "tiles_w",  7);
             res->render.tiles_h = json_int(jr, "tiles_h",  7);
             res->render.ui_scale = json_int(jr, "ui_scale", 1);
+            res->render.native_w = json_int(jr, "native_w", 0);
+            res->render.native_h = json_int(jr, "native_h", 0);
         } else {
             res->render.mode = RENDER_MODE_NONE;
             res->render.ui_scale = 1;
@@ -2014,6 +2016,23 @@ bool resources_load(Resources *res, const char *manifest_path) {
                     res->render.tile_w, res->render.tile_h,
                     res->render.ui_scale);
             return false;
+        }
+        // A fixed buffer must hold the viewport, the one-tile sidebar and the
+        // thinnest chrome bands (16 and 8 pixels a side, status 9, bar 5, all
+        // times ui_scale); the shell puts whatever is left into the bands.
+        {
+            const ResRender *r = &res->render;
+            int need_w = r->tiles_w * r->tile_w + r->tile_w + 32 * r->ui_scale;
+            int need_h = r->tiles_h * r->tile_h + 30 * r->ui_scale;
+            bool none = (r->native_w == 0 && r->native_h == 0);
+            if (!none && (r->native_w < need_w || r->native_h < need_h)) {
+                fprintf(stdout,
+                        "resources: render.native_w/native_h %dx%d cannot hold "
+                        "the %dx%d viewport (needs at least %dx%d)\n",
+                        r->native_w, r->native_h, r->tiles_w, r->tiles_h,
+                        need_w, need_h);
+                return false;
+            }
         }
     }
 

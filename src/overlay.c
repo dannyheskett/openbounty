@@ -40,6 +40,11 @@ static void draw_panel(int x, int y, int w, int h, Color bg) {
     Rectangle r = { (float)x, (float)y, (float)w, (float)h };
     float roundness = 0.05f;
     int segments = 6;
+    if (CL_IS_MODERN) {
+        DrawRectangle(x, y, w, h, bg);
+        ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
+        return;
+    }
     DrawRectangleRounded(r, roundness, segments, bg);
     DrawRectangleRoundedLines(r, roundness, segments, PAL_CLR(YELLOW));
 }

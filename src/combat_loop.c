@@ -354,7 +354,7 @@ static void combat_present(const Combat *c, const Game *g,
     // input per frame.
     if (c->cast_phase == COMBAT_CAST_PICK_SPELL) {
         DrawRectangle(40, 30, 240, 130, PAL_CLR(DBLUE));
-        DrawRectangleLines(40, 30, 240, 130, PAL_CLR(YELLOW));
+        ui_window_frame(40, 30, 240, 130, PAL_CLR(YELLOW));
         const Game *gw = c->heroes[c->side];
         const ResUI *ui = &gw->res->ui;
         bfont_draw(ui->combat_spells_title,      140, 36, PAL_CLR(YELLOW));

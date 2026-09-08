@@ -23,6 +23,18 @@ void ui_blit(Texture2D t, int x, int y, int w, int h);
 void ui_set_panel_frame(const char *palette_name);
 void ui_panel_frame(int x, int y, int w, int h);
 
+// Border of a window: a prompt, a view, a location menu, a modal. Legacy draws
+// the one-pixel line in `legacy` it always has. Modern draws the gold lattice
+// ring (src/lattice.c), four units thick just OUTSIDE the rect, so every
+// window on screen carries the same chrome as the frame and the HUD panels
+// and its content is untouched.
+void ui_window_frame(int x, int y, int w, int h, Color legacy);
+
+// Largest whole multiple of a picture that fits the space, floored at 1. In
+// legacy this is ui_scale (1) as it always was; in modern a title, splash or
+// picker fills as much of the fixed buffer as a whole scale allows.
+int ui_fit_scale(int tex_w, int tex_h, int avail_w, int avail_h);
+
 // As ui_blit, but flipped horizontally. Sprites are authored facing right;
 // combat mirrors the AI side rather than shipping a second strip.
 void ui_blit_mirrored(Texture2D t, int x, int y, int w, int h);

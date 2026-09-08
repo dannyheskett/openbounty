@@ -28,6 +28,15 @@ int present_get_scale(void) {
 
 int present_max_scale(int win_w, int win_h) {
     if (!CL_IS_MODERN) return CL_SCALE_MAX;
+    // A fixed buffer is shown at 1x, 2x or 3x: the largest that fits.
+    if (CL_IS_NATIVE) {
+        int fx = win_w / CL_SCREEN_W;
+        int fy = win_h / CL_SCREEN_H;
+        int fit = (fx < fy) ? fx : fy;
+        if (fit < 1) fit = 1;
+        if (fit > CL_SCALE_MAX_NATIVE) fit = CL_SCALE_MAX_NATIVE;
+        return fit;
+    }
     // Measured against the SMALLEST viewport the layout will shrink to, never
     // against the current screen size. That size is itself derived from the
     // scale, so measuring against it feeds back on itself: a larger scale
@@ -75,8 +84,21 @@ int present_scale(int win_w, int win_h) {
     //
     // The setting is whatever the player chose, clamped to what the window can
     // actually show so the menu's label never disagrees with the picture.
+    //
+    // A fixed buffer (render.native_w/native_h) is the other way about: the
+    // buffer never changes, so the window is what the zoom sizes. The blit is
+    // still the chosen scale clamped to the window, which is what keeps a
+    // fullscreen or hand-resized window letterboxed rather than cropped.
     int fit = present_max_scale(win_w, win_h);
     return (s_scale < fit) ? s_scale : fit;
+}
+
+void present_zoom_window(int scale) {
+    if (!CL_IS_NATIVE) return;
+    if (scale < 1) scale = 1;
+    if (scale > CL_SCALE_MAX_NATIVE) scale = CL_SCALE_MAX_NATIVE;
+    if (IsWindowFullscreen() || IsWindowMaximized()) return;
+    SetWindowSize(CL_SCREEN_W * scale, CL_SCREEN_H * scale);
 }
 
 bool present_refit(RenderTexture2D *rt) {

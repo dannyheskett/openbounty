@@ -9,7 +9,10 @@
 		"tile_w":	96,
 		"tile_h":	96,
 		"tiles_w":	7,
-		"tiles_h":	7, "ui_scale": 2 },
+		"tiles_h":	5,
+		"ui_scale":	2,
+		"native_w":	960,
+		"native_h":	540 },
 	"world":	{
 		"language":	"en",
 		"max_army_slots":	5,
@@ -3488,7 +3491,6 @@
 			"combat_ground":	"terrain",
 			"view_icons_extra":	["art/ui/inventory_zone_italia.png", "art/ui/inventory_zone_galliae.png", "art/ui/inventory_zone_africa.png", "art/ui/inventory_zone_oriens.png"],
 			"view_icons_extra":	["art/ui/inventory_zone_continentia.png", "art/ui/inventory_zone_forestria.png", "art/ui/inventory_zone_archipelia.png", "art/ui/inventory_zone_saharia.png"],
-			"chrome_overworld":	"art/ui/chrome_overworld.png",
 			"splash_logo":	"art/ui/splash_logo.png",
 			"splash_title":	"art/ui/splash_title.png",
 			"class_picker":	"art/ui/class_select_picker.png",
@@ -3501,8 +3503,7 @@
 			"magic_silhouette":	"art/ui/hud_magic_silhouette.png",
 			"magic_animation":	["art/ui/hud_magic_00.png", "art/ui/hud_magic_01.png", "art/ui/hud_magic_02.png", "art/ui/hud_magic_03.png"],
 			"puzzle_grid":	"art/ui/hud_puzzle_grid.png",
-			"gold_purse":	"art/ui/hud_gold_purse.png",
-			"bar_strip":	"art/ui/hud_bar_strip.png"
+			"gold_purse":	"art/ui/hud_gold_purse.png"
 		}
 	},
 	"ending":	{

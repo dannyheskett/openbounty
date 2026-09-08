@@ -50,8 +50,9 @@ static void frame_begin(RenderTexture2D *rt) {
 static void draw_class_picker_backdrop(const Sprites *sprites) {
     if (!sprites || !sprites->class_picker.id) return;
     Texture2D t = sprites->class_picker;
-    int pw = t.width  * CL_UI;
-    int ph = t.height * CL_UI;
+    int fs = ui_fit_scale(t.width, t.height, CL_SCREEN_W, CL_SCREEN_H);
+    int pw = t.width  * fs;
+    int ph = t.height * fs;
     ui_blit(t, (CL_SCREEN_W - pw) / 2, (CL_SCREEN_H - ph) / 2, pw, ph);
 }
 
@@ -73,7 +74,7 @@ static void frame_end(RenderTexture2D *rt) {
 
 static void panel(int x, int y, int w, int h) {
     DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
-    DrawRectangleLines(x, y, w, h, PAL_CLR(YELLOW));
+    ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
 }
 
 // Drain any queued typed characters from raylib's input queue. Call this
@@ -129,10 +130,11 @@ static bool run_splash(RenderTexture2D *rt,
 
         frame_begin(rt);
         ClearBackground(bg_color);
-        // Splash art is authored in the 320x200 design space like everything
-        // else, so it scales with the rest of the furniture.
-        int iw = tex.width  * CL_UI;
-        int ih = tex.height * CL_UI;
+        // Splash art is authored in the 320x200 design space; legacy draws
+        // it at 1x, modern at the largest whole scale the buffer holds.
+        int fs = ui_fit_scale(tex.width, tex.height, CL_SCREEN_W, CL_SCREEN_H);
+        int iw = tex.width  * fs;
+        int ih = tex.height * fs;
         ui_blit(tex, (CL_SCREEN_W - iw) / 2, (CL_SCREEN_H - ih) / 2, iw, ih);
         EndTextureMode();
 
@@ -342,8 +344,11 @@ static bool run_class_select(const Resources *res,
         // the screen out from under us when the window is resized.
         int pw = 288 * CL_UI, ph = 184 * CL_UI;
         if (sprites && sprites->class_picker.id) {
-            pw = sprites->class_picker.width  * CL_UI;
-            ph = sprites->class_picker.height * CL_UI;
+            int fs = ui_fit_scale(sprites->class_picker.width,
+                                  sprites->class_picker.height,
+                                  CL_SCREEN_W, CL_SCREEN_H);
+            pw = sprites->class_picker.width  * fs;
+            ph = sprites->class_picker.height * fs;
             int px = (CL_SCREEN_W - pw) / 2;
             int py = (CL_SCREEN_H - ph) / 2;
             ui_blit(sprites->class_picker, px, py, pw, ph);

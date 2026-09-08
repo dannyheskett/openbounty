@@ -962,8 +962,22 @@ bool views_controls_row_disabled(const struct Game *g, int row) {
 // bigger ones. Wrapping at the measured maximum rather than a constant is what
 // keeps the label honest -- an entry that the window cannot show would render
 // clamped and say something else.
+//
+// A fixed buffer (CL_IS_NATIVE) cycles 1x -> 2x -> 3x -> 1x and resizes the
+// window to the buffer times the scale, wrapping at the largest one the monitor
+// can hold whole.
 void views_controls_advance_scale(void) {
     int s = present_get_scale() + 1;
+    if (CL_IS_NATIVE) {
+        int mon = GetCurrentMonitor();
+        int fit = present_max_scale(GetMonitorWidth(mon), GetMonitorHeight(mon));
+        if (IsWindowFullscreen())
+            fit = present_max_scale(GetScreenWidth(), GetScreenHeight());
+        if (s > fit) s = 1;
+        present_set_scale(s);
+        present_zoom_window(s);
+        return;
+    }
     if (s > present_max_scale(GetScreenWidth(), GetScreenHeight())) s = 1;
     present_set_scale(s);
 }

@@ -40,7 +40,7 @@
 // Solid-fill background + 1px yellow border for a view panel.
 static void draw_view_panel(void) {
     DrawRectangle(VIEW_X, VIEW_Y, VIEW_W, VIEW_H, PAL_CLR(DGREY));
-    DrawRectangleLines(VIEW_X, VIEW_Y, VIEW_W, VIEW_H, PAL_CLR(DRED));
+    ui_window_frame(VIEW_X, VIEW_Y, VIEW_W, VIEW_H, PAL_CLR(DRED));
 }
 
 // Thin horizontal rule between rows.
@@ -62,6 +62,8 @@ static void draw_character(const Game *g, const Sprites *s) {
     int vx = FULL_VIEW_X;
     int vw = FULL_VIEW_W;
     DrawRectangle(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DGREY));
+    // Modern: the lattice ring round the card; legacy drew no border here.
+    if (CL_IS_MODERN) ui_window_frame(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DGREY));
 
     const ClassDef *cls = class_by_id(g->character.cls.id);
     // Authored 96x102 in the 320x200 design space; the slot scales with the
@@ -211,7 +213,7 @@ static void draw_army(const Game *g, const Sprites *s) {
     int vx = FULL_VIEW_X;
     int vw = FULL_VIEW_W;
     DrawRectangle(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DGREY));
-    DrawRectangleLines(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DRED));
+    ui_window_frame(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DRED));
 
     // The row holds a troop sprite, so its height is a tile. It also carries
     // three lines of text beside that sprite, so it must clear 3 glyphs however
@@ -337,8 +339,13 @@ static void draw_contract(const Game *g, const Sprites *s) {
                         (float)panel_w, (float)panel_h };
         float roundness = 0.05f;
         int segments = 6;
-        DrawRectangleRounded(r, roundness, segments, PAL_CLR(DBLUE));
-        DrawRectangleRoundedLines(r, roundness, segments, PAL_CLR(YELLOW));
+        if (CL_IS_MODERN) {
+            DrawRectangle(panel_x, panel_y, panel_w, panel_h, PAL_CLR(DBLUE));
+            ui_window_frame(panel_x, panel_y, panel_w, panel_h, PAL_CLR(YELLOW));
+        } else {
+            DrawRectangleRounded(r, roundness, segments, PAL_CLR(DBLUE));
+            DrawRectangleRoundedLines(r, roundness, segments, PAL_CLR(YELLOW));
+        }
     }
 
     int pad = VIEW_PAD;
@@ -373,8 +380,13 @@ static void draw_contract(const Game *g, const Sprites *s) {
                         (float)panel_w, (float)panel_h };
         float roundness = 0.05f;
         int segments = 6;
-        DrawRectangleRounded(r, roundness, segments, PAL_CLR(DBLUE));
-        DrawRectangleRoundedLines(r, roundness, segments, PAL_CLR(YELLOW));
+        if (CL_IS_MODERN) {
+            DrawRectangle(panel_x, panel_y, panel_w, panel_h, PAL_CLR(DBLUE));
+            ui_window_frame(panel_x, panel_y, panel_w, panel_h, PAL_CLR(YELLOW));
+        } else {
+            DrawRectangleRounded(r, roundness, segments, PAL_CLR(DBLUE));
+            DrawRectangleRoundedLines(r, roundness, segments, PAL_CLR(YELLOW));
+        }
     }
     tx = panel_x + pad;
     ty = panel_y + pad;
@@ -840,7 +852,7 @@ static void draw_gate(void) {
     int vx = FULL_VIEW_X;
     int vw = FULL_VIEW_W;
     DrawRectangle(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DGREY));
-    DrawRectangleLines(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DRED));
+    ui_window_frame(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DRED));
 
     const ResUI *ui = &resources_current()->ui;
     const char *title = views_gate_is_town() ? ui->gate_title_town

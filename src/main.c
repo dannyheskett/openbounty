@@ -34,6 +34,7 @@
 
 #include <sys/stat.h>
 #include "layout.h"
+#include "lattice.h"
 #include "present.h"
 #include "palette.h"
 #include "chrome.h"
@@ -757,6 +758,7 @@ int shell_run_game(int argc, char **argv) {
         UnloadRenderTexture(render_target_startup);
         sprites_unload(&sprites);
         bfont_shutdown();
+        lattice_shutdown();
         CloseWindow();
         resources_free(&res);
         pack_stack_clear();
@@ -830,6 +832,7 @@ int shell_run_game(int argc, char **argv) {
         UnloadRenderTexture(render_target_startup);
         sprites_unload(&sprites);
         bfont_shutdown();
+        lattice_shutdown();
         CloseWindow();
         resources_free(&res);
         pack_stack_clear();
@@ -1446,6 +1449,7 @@ int shell_run_game(int argc, char **argv) {
     UnloadRenderTexture(render_target);
     bfont_shutdown();
     sprites_unload(&sprites);
+    lattice_shutdown();
     CloseWindow();
     resources_free(&res);
     pack_stack_clear();

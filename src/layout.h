@@ -28,6 +28,11 @@ typedef struct {
     int pack_tiles_w, pack_tiles_h;  // the viewport the pack declared: a
                                      // guaranteed minimum, not a fixed size
     int ui_scale;              // multiplies the font and the chrome bands
+    int frame_l, frame_r;      // chrome side bands, in pixels
+    int frame_t, frame_b;      // chrome top and bottom bands
+    int is_native;             // 1 when the pack fixed the buffer size: the
+                               // screen never follows the window; present.c
+                               // shows it at 1x, 2x or 3x and letterboxes
 } ClLayout;
 
 extern ClLayout g_layout;
@@ -81,6 +86,11 @@ void layout_min_window(int *out_w, int *out_h);
 #define CL_SCALE_MIN      2   // 640x400
 #define CL_SCALE_MAX      5   // desktop -> 1600x1000
 #define CL_SCALE_MAX_WEB  3   // browser -> 960x600
+// A fixed buffer (CL_IS_NATIVE) is shown at 1x, 2x or 3x only.
+#define CL_SCALE_MAX_NATIVE 3
+
+// True when the pack fixed its buffer size (render.native_w/native_h).
+#define CL_IS_NATIVE (g_layout.is_native)
 
 // Tile dimensions. Pack-declared; 48x34 in legacy mode.
 #define CL_TILE_W (g_layout.tile_w)
@@ -95,11 +105,15 @@ void layout_min_window(int *out_w, int *out_h);
 // Multiplied by the pack's ui_scale: a pack that doubles its tile doubles its
 // furniture too, or it gets a 16px frame and an 8px font around 192px tiles.
 // At ui_scale 1 each of these is the literal it replaced.
+//
+// A pack with a fixed buffer (render.native_w/native_h) gets wider bands: the
+// space the viewport does not use is split between the two sides, so the map
+// stays centred. layout_init sets the four; nothing else writes them.
 #define CL_UI             (g_layout.ui_scale)
-#define CL_FRAME_TOP_H    ( 8 * CL_UI)
-#define CL_FRAME_BOTTOM_H ( 8 * CL_UI)
-#define CL_FRAME_LEFT_W   (16 * CL_UI)
-#define CL_FRAME_RIGHT_W  (16 * CL_UI)
+#define CL_FRAME_TOP_H    (g_layout.frame_t)
+#define CL_FRAME_BOTTOM_H (g_layout.frame_b)
+#define CL_FRAME_LEFT_W   (g_layout.frame_l)
+#define CL_FRAME_RIGHT_W  (g_layout.frame_r)
 #define CL_BAR_H          ( 5 * CL_UI)
 #define CL_BAR_Y          (17 * CL_UI)
 

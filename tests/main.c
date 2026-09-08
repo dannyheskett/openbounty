@@ -31,6 +31,7 @@ SUITE_EXTERN(unit_resources_suite);
 SUITE_EXTERN(unit_anim_frames_suite);
 SUITE_EXTERN(unit_facing_suite);
 SUITE_EXTERN(unit_touch_map_suite);
+SUITE_EXTERN(unit_layout_suite);
 SUITE_EXTERN(unit_art_manifest_suite);
 SUITE_EXTERN(unit_strings_agnostic_suite);
 SUITE_EXTERN(unit_pack_suite);
@@ -83,6 +84,7 @@ int main(int argc, char **argv) {
     RUN_SUITE(unit_anim_frames_suite);
     RUN_SUITE(unit_facing_suite);
     RUN_SUITE(unit_touch_map_suite);
+    RUN_SUITE(unit_layout_suite);
     RUN_SUITE(unit_art_manifest_suite);
     RUN_SUITE(unit_strings_agnostic_suite);
     RUN_SUITE(unit_pack_suite);

@@ -162,6 +162,11 @@ typedef struct {
                               // that doubles its tile must say so, or its
                               // furniture stays at 320x200 size around giant
                               // tiles. Legacy is 1.
+    int native_w, native_h;   // modern only, optional: a FIXED buffer size.
+                              // The viewport (tiles_w x tiles_h) sits in it and
+                              // the space left over becomes chrome bands; the
+                              // window shows the buffer at 1x, 2x or 3x. Zero
+                              // means the buffer is derived from the window.
 } ResRender;
 
 typedef struct {

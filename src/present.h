@@ -48,8 +48,15 @@ int  present_get_scale(void);
 
 // Largest scale this window can show without dropping below the minimum
 // viewport. The Scale menu wraps here, so the label always matches what is
-// actually rendered.
+// actually rendered. For a fixed buffer (CL_IS_NATIVE) it is the largest of
+// 1x, 2x, 3x whose whole buffer fits the window.
 int  present_max_scale(int win_w, int win_h);
+
+// Fixed buffer only: resize the window to the buffer times `scale` (1..3), so
+// the zoom is a whole-window ratio of the buffer rather than a crop of it.
+// Does nothing in fullscreen, when maximised, or for a buffer that follows
+// the window.
+void present_zoom_window(int scale);
 
 // Begin the frame and blit `rt` to the window, integer-scaled and centred,
 // with black letterbox around it. Takes the render texture BY VALUE; most

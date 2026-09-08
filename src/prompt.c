@@ -3,6 +3,7 @@
 #include "prompt.h"
 #include "touch.h"
 #include "layout.h"
+#include "ui.h"
 #include "palette.h"
 #include "bfont.h"
 #include "resources.h"
@@ -247,7 +248,7 @@ void prompt_draw(void) {
     else                              bottom_rows = 1;
 
     DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
-    DrawRectangleLines(x, y, w, h, PAL_CLR(YELLOW));
+    ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
 
     int tx = x + pad;
     int ty = y + pad;

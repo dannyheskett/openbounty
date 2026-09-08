@@ -3,6 +3,7 @@
 #include "ui_host.h"
 #include "ui.h"
 #include "layout.h"
+#include "lattice.h"
 #include "palette.h"
 #include "touch.h"
 #include "overlay.h"     // overlay_dialog_page_count (renderer owns the wrap)
@@ -182,6 +183,10 @@ void ui_set_panel_frame(const char *palette_name) {
 void ui_panel_frame(int x, int y, int w, int h) {
     if (s_panel_frame < 0) return;
     int t = CL_UI;
+    if (CL_IS_MODERN) {
+        lattice_ring(x, y, w, h, 2 * t, 2 * t, 2 * t, 2 * t);
+        return;
+    }
     Color outer = PAL[s_panel_frame];
     Color inner = PAL[PAL_IDX_DGREY];
     DrawRectangle(x, y, w, t, outer);
@@ -192,4 +197,20 @@ void ui_panel_frame(int x, int y, int w, int h) {
     DrawRectangle(x + t, y + h - 2 * t, w - 2 * t, t, inner);
     DrawRectangle(x + t, y + t, t, h - 2 * t, inner);
     DrawRectangle(x + w - 2 * t, y + t, t, h - 2 * t, inner);
+}
+
+void ui_window_frame(int x, int y, int w, int h, Color legacy) {
+    if (!CL_IS_MODERN) { DrawRectangleLines(x, y, w, h, legacy); return; }
+    // Outside the rect: the window's content keeps every pixel it had, and
+    // nothing drawn after this can paint over the ring.
+    int t = 4 * CL_UI;
+    lattice_ring(x - t, y - t, w + 2 * t, h + 2 * t, t, t, t, t);
+}
+
+int ui_fit_scale(int tex_w, int tex_h, int avail_w, int avail_h) {
+    if (!CL_IS_MODERN) return CL_UI;
+    if (tex_w <= 0 || tex_h <= 0) return 1;
+    int sx = avail_w / tex_w, sy = avail_h / tex_h;
+    int s = (sx < sy) ? sx : sy;
+    return (s < 1) ? 1 : s;
 }

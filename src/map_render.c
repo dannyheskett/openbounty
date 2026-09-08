@@ -7,9 +7,12 @@
 #include <string.h>
 
 // Viewport centering (OpenKB's game.c:1157): the hero is held centered in the
-// 5x5 viewport except when the camera is clamped at a map edge. 2 tiles
-// on each side of the hero are visible, plus the hero tile.
-#define RADIUS  (CL_MAP_TILES_W / 2)   // 2
+// viewport except when the camera is clamped at a map edge. Half the tile
+// count (2 in the 5x5 original) on each side of the hero is visible, plus the
+// hero tile. Each axis has its own radius: a 7x5 viewport centred with the
+// width's radius put the hero a row low.
+#define RADIUS_X  (CL_MAP_TILES_W / 2)
+#define RADIUS_Y  (CL_MAP_TILES_H / 2)
 
 // A wandering foe draws the generic wandering-army tile, the same as every
 // other placed object. An earlier change (issue #9) drew the foe's lead troop
@@ -20,8 +23,8 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
     if (!g || !m) return;
 
     // Compute the top-left visible tile (camera anchor). Clamp at map edges.
-    int cam_x = g->position.x - RADIUS;
-    int cam_y = g->position.y - RADIUS;
+    int cam_x = g->position.x - RADIUS_X;
+    int cam_y = g->position.y - RADIUS_Y;
     if (cam_x < 0) cam_x = 0;
     if (cam_y < 0) cam_y = 0;
     if (cam_x > m->width  - CL_MAP_TILES_W) cam_x = m->width  - CL_MAP_TILES_W;

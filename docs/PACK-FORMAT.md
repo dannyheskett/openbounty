@@ -49,6 +49,7 @@ All paths are relative to the pack root. Required fields are marked.
 | `controls`    | object   | Settings-menu rows. |
 | `colors`      | object   | Difficulty-bar colors, minimap palette. |
 | `audio`       | object   | Music track list, SFX paths. |
+| `render`      | object ✱ | Screen geometry: `mode`, tile size, viewport, `ui_scale`, optional fixed buffer (see §2.1). |
 | `sprites`     | object ✱ | Texture-atlas paths (see §4). |
 | `tile_codes`  | object ✱ | Map-character → terrain mapping. |
 | `troops`      | array  ✱ | Troop catalog. |
@@ -64,6 +65,38 @@ All paths are relative to the pack root. Required fields are marked.
 | `strings`     | object   | All user-visible text (see §5). |
 | `credits`     | object   | Credits-screen lines. |
 | `ending`      | object   | Victory cartoon parameters. |
+
+### 2.1 `render`
+
+```json
+"render": { "mode": "modern", "tile_w": 96, "tile_h": 96, "tiles_w": 7, "tiles_h": 5,
+            "ui_scale": 2, "native_w": 960, "native_h": 540 }
+```
+
+`mode` is required: `"legacy"` is the 320 x 200 layout (48 x 34 tiles, 5 x 5
+viewport, `ui_scale` 1, the other keys ignored); `"modern"` takes the tile
+size, the viewport in tiles (odd on both axes) and `ui_scale`, which
+multiplies the font and the chrome bands.
+
+`native_w` / `native_h` (modern only, optional) fix the buffer size. Without
+them the buffer follows the window and the viewport grows to fill it. With
+them the screen is exactly that size, the viewport is exactly `tiles_w` x
+`tiles_h`, and the space the viewport, the one-tile sidebar and the thinnest
+chrome bands do not use is split between the left and right bands and between
+the top and bottom bands, so the map stays centred. The window opens at 1x and
+the Scale control cycles 1x, 2x, 3x, resizing the window to the buffer times
+the scale; a window of any other size shows the buffer at the largest of those
+that fits, letterboxed. The buffer must hold the viewport (the loader rejects
+one that cannot). Rome: 960 x 540 with 7 x 5 tiles of 96 gives 96-pixel side
+bands and 16-pixel top and bottom bands.
+
+A modern pack that ships no `sprites.ui.chrome_overworld` gets its chrome
+drawn in code: the gold lattice (`src/lattice.c`) fills the frame bands and
+the bar under the status line, borders every HUD panel
+(`sprites.ui.panel_frame` still has to name a colour to turn panel borders
+on) and rings every window (prompts, dialogs, views, location menus).
+`sprites.hud.bar_strip` is then unused too. A legacy pack, or one that ships
+the bitmap, draws it as before.
 
 ---
 
