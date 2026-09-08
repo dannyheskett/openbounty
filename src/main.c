@@ -704,7 +704,7 @@ int shell_run_game(int argc, char **argv) {
     // Font strip and palette come from the manifest. They were compiled in
     // here, which meant every pack had to ship a file named for the game the
     // extractor was written against.
-    bfont_init(res.sprites.font);
+    bfont_init((const struct Resources *)&res);
     palette_init(res.sprites.palette);
     ui_set_panel_frame(res.sprites.panel_frame);
 

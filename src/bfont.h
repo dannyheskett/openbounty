@@ -28,8 +28,28 @@ int bfont_glyph_h(void);
 #define BFONT_GLYPH_W  (bfont_glyph_w())
 #define BFONT_GLYPH_H  (bfont_glyph_h())
 
-bool    bfont_init(const char *png_path);
+// Load the pack's font. A modern pack may declare a TrueType/OpenType file
+// in its "font" block: it is rasterised at load, anti-aliased, and FITTED to
+// the cell -- the size steps down from the declared one until the tallest
+// and widest glyph ink fit 8 * ui_scale. The advance is then the widest ink
+// plus one, capped at the cell, so text packs as tight as the face allows.
+// Without that block, or if it fails, the bitmap strip in sprites.font loads
+// exactly as it always has.
+struct Resources;
+bool    bfont_init(const struct Resources *res);
 void    bfont_shutdown(void);
+
+// Rasterisation zoom for the TrueType route: the atlas is built at cell
+// times `zoom` so a frame rendered at that zoom draws sharp glyphs. Design
+// units are unchanged. The strip route ignores it. Rebuilds lazily.
+void    bfont_set_zoom(int zoom);
+
+// Pure helpers behind the fit, kept free of GL so they can be unit tested.
+// Given per-glyph ink boxes (width, top, bottom relative to the line top),
+// fit says whether they all sit inside a cell; advance is the step.
+bool    bfont_fits(const int *w, const int *top, const int *bottom, int n,
+                   int cell_w, int cell_h);
+int     bfont_advance_for(int max_ink_w, int cell_w);
 bool    bfont_ready(void);
 
 // `text` may contain '\n'; newlines advance y by BFONT_GLYPH_H.

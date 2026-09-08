@@ -154,6 +154,16 @@ typedef enum {
     RENDER_MODE_MODERN,       // pack-declared tile size and viewport
 } RenderMode;
 
+// A TrueType/OpenType font declared by a modern pack ("font" block). The
+// shell rasterises it at load into the layout's fixed glyph cell. Empty
+// `file` means the pack uses its bitmap strip (sprites.font) as always.
+typedef struct {
+    char file[RES_PATH_LEN];      // .ttf/.otf inside the pack
+    int  size;                    // requested pixel size; 0 = largest that fits the cell
+    int  caps;                    // 1: every string is drawn in capitals
+    char license[RES_PATH_LEN];   // licence text shipped beside it (manifest only)
+} ResFont;
+
 typedef struct {
     RenderMode mode;
     int tile_w, tile_h;       // modern only; legacy forces 48x34
@@ -836,6 +846,7 @@ typedef struct {
     ResSpawn    spawn;
     ResWorld    world;
     ResRender   render;
+    ResFont     font;
     ResTuning   tuning;
     ResColors   colors;
     ResUI       ui;

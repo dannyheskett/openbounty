@@ -1922,6 +1922,19 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   Splash, title and class-picker art draws at the largest whole scale that
   fits the buffer (`ui_fit_scale`; legacy stays at 1x). Rome ships no chrome
   bitmap or bar strip (2026-09-08).
+- **REQ-430c.** **Pack-declared TrueType font.** A modern pack may declare a
+  `font` block (`file`, optional `size`, `caps`, `license`; `ResFont`,
+  `engine/resources.c`). `bfont_init` (`src/bfont.c`) rasterises it through
+  raylib's `LoadFontData` with anti-aliasing, fitting the size down from the
+  request until every glyph's ink fits the `8 * ui_scale` cell
+  (`bfont_fits`), sets the advance to the widest ink plus one capped at the
+  cell (`bfont_advance_for`; `bfont_glyph_w` returns it, so every measure
+  and wrap site packs tighter with no layout change), centres each glyph in
+  its advance on one baseline, maps the twirl control codes to `| / - \`
+  at draw time, and uppercases when `caps` is set. The file and licence are
+  listed by `resources_art_manifest`. Absent or failed, the strip route runs
+  exactly as before; legacy is untouched. Rome ships Cinzel Bold (SIL OFL)
+  at 15 px, caps (2026-09-08).
 
 ### 29.2 Views
 

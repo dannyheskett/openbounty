@@ -50,6 +50,7 @@ All paths are relative to the pack root. Required fields are marked.
 | `colors`      | object   | Difficulty-bar colors, minimap palette. |
 | `audio`       | object   | Music track list, SFX paths. |
 | `render`      | object ✱ | Screen geometry: `mode`, tile size, viewport, `ui_scale`, optional fixed buffer (see §2.1). |
+| `font`        | object   | A TrueType/OpenType font rasterised at load into the glyph cell (see §2.2). Absent: the bitmap strip in `sprites.font`. |
 | `sprites`     | object ✱ | Texture-atlas paths (see §4). |
 | `tile_codes`  | object ✱ | Map-character → terrain mapping. |
 | `troops`      | array  ✱ | Troop catalog. |
@@ -97,6 +98,28 @@ the bar under the status line, borders every HUD panel
 on) and rings every window (prompts, dialogs, views, location menus).
 `sprites.hud.bar_strip` is then unused too. A legacy pack, or one that ships
 the bitmap, draws it as before.
+
+### 2.2 `font`
+
+```json
+"font": { "file": "art/font/Cinzel-Bold.ttf", "size": 15, "caps": true,
+          "license": "art/font/OFL-Cinzel.txt" }
+```
+
+Modern packs only. `file` is a `.ttf` or `.otf` inside the pack; `size` is
+the requested pixel size (6..64; omit it for the largest that fits); `caps`
+true draws every string in capitals; `license` is the licence text shipped
+beside the font. The file and the licence are both in the art manifest, so
+the archive carries them.
+
+The shell rasterises the face at load with anti-aliasing and fits it to the
+layout's glyph cell, `8 * ui_scale` square: the size steps down from the
+requested one until the tallest and widest glyph ink fit the cell. The
+advance is then the widest ink plus one pixel, capped at the cell, so a
+narrow face packs tighter than the cell and lines only get shorter. Glyphs
+are centred in their advance and share one baseline. The start-up log
+reports the fitted size and advance. If the file fails to load the strip in
+`sprites.font` is used instead. Legacy packs never read this block.
 
 ---
 

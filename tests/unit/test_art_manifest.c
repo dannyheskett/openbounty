@@ -203,6 +203,26 @@ TEST class_hero_art_is_listed_when_declared(void) {
     PASS();
 }
 
+TEST a_ttf_font_and_its_licence_are_in_the_manifest(void) {
+    Resources *r = fx_load_resources();
+    ASSERT(r != NULL);
+    ASSERT_EQ(0, r->font.file[0]);                  // kings-bounty declares no TTF
+    char (*paths)[RES_PATH_LEN] = s_paths;
+    int before = resources_art_manifest(r, paths, RES_ART_MANIFEST_MAX);
+    snprintf(r->font.file, sizeof r->font.file, "art/font/Face.ttf");
+    snprintf(r->font.license, sizeof r->font.license, "art/font/OFL.txt");
+    int after = resources_art_manifest(r, paths, RES_ART_MANIFEST_MAX);
+    ASSERT_EQ(before + 2, after);
+    bool ttf = false, lic = false;
+    for (int i = 0; i < after; i++) {
+        if (strcmp(paths[i], "art/font/Face.ttf") == 0) ttf = true;
+        if (strcmp(paths[i], "art/font/OFL.txt") == 0) lic = true;
+    }
+    ASSERT(ttf); ASSERT(lic);
+    resources_free(r); free(r);
+    PASS();
+}
+
 TEST a_pack_may_name_its_own_font(void) {
     // The path was compiled into main.c. Defaulted, not hardcoded, now.
     Resources *r = fx_load_resources();
@@ -272,4 +292,5 @@ SUITE(unit_art_manifest_suite) {
     RUN_TEST(army_art_is_listed_per_zone);
     RUN_TEST(class_hero_art_is_listed_when_declared);
     RUN_TEST(a_pack_may_name_its_own_font);
+    RUN_TEST(a_ttf_font_and_its_licence_are_in_the_manifest);
 }

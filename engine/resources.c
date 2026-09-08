@@ -1972,6 +1972,28 @@ bool resources_load(Resources *res, const char *manifest_path) {
         }
     }
 
+    // Optional TrueType font (modern packs). The strip in sprites.font stays
+    // the fallback; the shell prefers this when it loads.
+    {
+        cJSON *jf = cJSON_GetObjectItem(root, "font");
+        memset(&res->font, 0, sizeof res->font);
+        if (jf && cJSON_IsObject(jf)) {
+            copy_str(res->font.file, sizeof res->font.file, json_str(jf, "file", ""));
+            copy_str(res->font.license, sizeof res->font.license, json_str(jf, "license", ""));
+            res->font.size = json_int(jf, "size", 0);
+            cJSON *jc = cJSON_GetObjectItem(jf, "caps");
+            res->font.caps = (jc && cJSON_IsTrue(jc)) ? 1 : 0;
+            if (!res->font.file[0] || res->font.size < 0 ||
+                (res->font.size && (res->font.size < 6 || res->font.size > 64))) {
+                fprintf(stdout,
+                        "resources: font block needs a file and a size of 6..64 "
+                        "(or none) (got \"%s\", %d)\n",
+                        res->font.file, res->font.size);
+                return false;
+            }
+        }
+    }
+
     // Render geometry. Required: a pack is authored for one mode or the other
     // and guessing would silently mis-size every tile. resources_load returns
     // false when it is missing, and the caller reports it fatally.
@@ -2371,6 +2393,8 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
     }
 
     art_add(out, cap, &n, res->sprites.font);
+    art_add(out, cap, &n, res->font.file);       // no-ops when the pack has no TTF
+    art_add(out, cap, &n, res->font.license);
     art_add(out, cap, &n, res->sprites.puzzle_cover);
     art_add(out, cap, &n, res->sprites.town_backdrop);
     art_add(out, cap, &n, res->sprites.castle_backdrop);

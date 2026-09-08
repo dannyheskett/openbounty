@@ -94,12 +94,14 @@ means it is correct in all of them.
 
 ### Font
 
-The bitmap font is a single horizontal strip of 128 glyphs, ASCII order, no
-padding. At `ui_scale` 2 a glyph is **16 x 16**, so the strip is **2048 x 16**.
+Rome declares a TrueType face in `game.json` (`font` block, PACK-FORMAT
+§2.2): Cinzel Bold, SIL OFL, rasterised at load with anti-aliasing and
+fitted to the 16 x 16 glyph cell, drawn in capitals. The 8 x 8 strip
+`rome-font.png` stays in the pack as the fallback.
 
-Rome currently ships `1024 x 8` (an 8 x 8 glyph), which the engine blows up 2x.
-The engine reads the glyph size off the strip, so dropping a 2048 x 16 file in
-is all that is needed.
+The bitmap strip route, which legacy uses, is a single horizontal strip of
+128 glyphs, ASCII order, no padding, read at whatever glyph size it was
+authored and drawn into the `8 * ui_scale` cell.
 
 ## 3. The chrome is drawn in code; a bitmap frame is a nine-slice
 
