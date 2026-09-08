@@ -11,7 +11,7 @@
 		"tiles_w":	7,
 		"tiles_h":	5,
 		"ui_scale":	2,
-		"native_w":	960,
+		"native_w":	832,
 		"native_h":	540 },
 	"world":	{
 		"language":	"en",

@@ -65,8 +65,8 @@ void layout_init(const struct Resources *res) {
     // A fixed buffer: the pack said how big the screen is, and the viewport
     // is exactly the declared tile count. Whatever the viewport, sidebar and
     // thin bands do not cover is split between the two side bands and between
-    // the top and bottom bands, so the map keeps its centre. Rome's 960x540
-    // with 7x5 tiles of 96 gives 96-pixel sides and 16-pixel top and bottom.
+    // the top and bottom bands, so the map keeps its centre. Rome's 832x540
+    // with 7x5 tiles of 96 gives 32-pixel sides and 16-pixel top and bottom.
     // resources_load has already rejected a buffer too small to hold it.
     g_layout.is_native = 0;
     if (r->mode == RENDER_MODE_MODERN && r->native_w > 0 && r->native_h > 0 &&

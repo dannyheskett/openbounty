@@ -107,9 +107,9 @@ Rome ships no chrome bitmap. Its frame bands, the bar under the status line,
 the HUD panel borders and every window border are the gold lattice drawn by
 `src/lattice.c`: a cross-hatch of two gold strands on dark wood, bright where
 they cross, one repeat every 8 units (16 px at `ui_scale` 2), railed in gold
-with a dark line inside the rail. The buffer is fixed at 960 x 540
-(`render.native_w/native_h`) with a 7 x 5 viewport, so the side bands are 96
-px and the top and bottom 16 px; the window opens at 1x and the Scale control
+with a dark line inside the rail. The buffer is fixed at 832 x 540
+(`render.native_w/native_h`) with a 7 x 5 viewport, the minimum that holds
+it, so the side bands are 32 px and the top and bottom 16 px; the window opens at 1x and the Scale control
 steps 1x, 2x, 3x. Screen art (splash, title, picker) draws at the largest
 whole scale that fits: the 256 x 164 picker at 3x, 768 x 492.
 
@@ -201,7 +201,7 @@ What the shell does today in modern mode, read from `src/layout.c`,
   viewport floor.
 
 Superseded 2026-09-08: the frame and bar are now drawn in code (section 3),
-the buffer is fixed at 960 x 540 with the map centred, and the zoom is 1x, 2x
+the buffer is fixed at 832 x 540 with the map centred, and the zoom is 1x, 2x
 or 3x of that buffer. The font is still the 8-pixel glyph doubled.
 
 ## 6. Verifying

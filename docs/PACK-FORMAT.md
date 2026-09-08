@@ -70,7 +70,7 @@ All paths are relative to the pack root. Required fields are marked.
 
 ```json
 "render": { "mode": "modern", "tile_w": 96, "tile_h": 96, "tiles_w": 7, "tiles_h": 5,
-            "ui_scale": 2, "native_w": 960, "native_h": 540 }
+            "ui_scale": 2, "native_w": 832, "native_h": 540 }
 ```
 
 `mode` is required: `"legacy"` is the 320 x 200 layout (48 x 34 tiles, 5 x 5
@@ -87,8 +87,8 @@ the top and bottom bands, so the map stays centred. The window opens at 1x and
 the Scale control cycles 1x, 2x, 3x, resizing the window to the buffer times
 the scale; a window of any other size shows the buffer at the largest of those
 that fits, letterboxed. The buffer must hold the viewport (the loader rejects
-one that cannot). Rome: 960 x 540 with 7 x 5 tiles of 96 gives 96-pixel side
-bands and 16-pixel top and bottom bands.
+one that cannot). Rome: 832 x 540 with 7 x 5 tiles of 96 gives 32-pixel side
+bands and 16-pixel top and bottom bands, the minimum for that viewport.
 
 A modern pack that ships no `sprites.ui.chrome_overworld` gets its chrome
 drawn in code: the gold lattice (`src/lattice.c`) fills the frame bands and
