@@ -22,11 +22,11 @@
 // is the backdrop the modal panel sits on top of.
 static void frame_begin(RenderTexture2D *rt) {
     present_refit(rt);
-    BeginTextureMode(*rt);
+    present_begin(rt);
 }
 
 static void frame_end(RenderTexture2D *rt) {
-    EndTextureMode();
+    present_end();
     present_scaled(*rt);
     frame_host_end_frame();
 }

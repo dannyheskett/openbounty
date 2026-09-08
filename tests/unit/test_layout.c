@@ -79,6 +79,26 @@ TEST native_scale_is_one_two_or_three(void) {
     PASS();
 }
 
+TEST native_target_is_the_buffer_times_the_zoom(void) {
+    rome_like();
+    int w, h;
+    present_set_scale(3);
+    present_target_size(1920, 1080, &w, &h);     // 3x does not fit, 2x does
+    ASSERT_EQ(832 * 2, w);
+    ASSERT_EQ(540 * 2, h);
+    present_target_size(832, 540, &w, &h);
+    ASSERT_EQ(832, w);
+    ASSERT_EQ(540, h);
+    present_set_scale(1);
+    present_target_size(2496, 1620, &w, &h);     // the choice, not the fit
+    ASSERT_EQ(832, w);
+    legacy();
+    present_target_size(1920, 1080, &w, &h);     // legacy: the screen, never zoomed
+    ASSERT_EQ(320, w);
+    ASSERT_EQ(200, h);
+    PASS();
+}
+
 TEST legacy_geometry_is_unchanged(void) {
     legacy();
     ASSERT_FALSE(CL_IS_MODERN);
@@ -118,6 +138,7 @@ SUITE(unit_layout_suite) {
     RUN_TEST(native_buffer_fixes_the_screen_and_widens_the_bands);
     RUN_TEST(native_buffer_ignores_the_window);
     RUN_TEST(native_scale_is_one_two_or_three);
+    RUN_TEST(native_target_is_the_buffer_times_the_zoom);
     RUN_TEST(legacy_geometry_is_unchanged);
     RUN_TEST(modern_without_native_still_follows_the_window);
     // Leave the layout as the fixture pack expects it.

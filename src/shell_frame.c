@@ -24,9 +24,9 @@ void shell_present_frame(const Game *game, const Map *map, const Fog *fog,
                          const Sprites *sprites, void *render_target) {
     RenderTexture2D *target = (RenderTexture2D *)render_target;
     present_refit(target);
-    BeginTextureMode(*target);
+    present_begin(target);
     draw_frame(game, map, fog, sprites);
-    EndTextureMode();
+    present_end();
 
     present_scaled(*target);
     frame_host_end_frame();

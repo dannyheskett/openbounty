@@ -51,7 +51,7 @@ static void draw_processing(ShellCtx *ctx, int done, int total) {
     RenderTexture2D *target = (RenderTexture2D *)ctx->render_target;
     present_refit(target);
     const int W = CL_SCREEN_W, H = CL_SCREEN_H;
-    BeginTextureMode(*target);
+    present_begin(target);
     ClearBackground(BLACK);
     // A centered KB-style panel: blue field, yellow border.
     int pw = 240 * CL_UI, ph = 90 * CL_UI;
@@ -73,7 +73,7 @@ static void draw_processing(ShellCtx *ctx, int done, int total) {
     char buf[64];
     snprintf(buf, sizeof buf, "%d / %d objectives", done, total);
     bfont_draw_centered(buf, W / 2, by + bh + 8 * CL_UI, PAL[15]);
-    EndTextureMode();
+    present_end();
 
     // Scale + letterbox blit (same pattern as shell_present_frame).
     present_scaled(*target);

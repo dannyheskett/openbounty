@@ -1417,9 +1417,9 @@ int shell_run_game(int argc, char **argv) {
         present_refit(&render_target);
 
         // Render into the offscreen target.
-        BeginTextureMode(render_target);
+        present_begin(&render_target);
         draw_frame(&game, &map, &fog, &sprites);
-        EndTextureMode();
+        present_end();
 
         // Blit centered + letterboxed at the largest integer scale that fits,
         // within the bounds in layout.h (see present.c).

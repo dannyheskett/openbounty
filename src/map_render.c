@@ -1,5 +1,6 @@
 #include "map_render.h"
 #include "layout.h"
+#include "present.h"
 #include "palette.h"
 #include "tables.h"     // troop_by_id (flying hero shows the lead troop)
 #include "tile_cache.h"
@@ -36,7 +37,12 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
     if (cam_y < 0) cam_y = 0;
 
     // Scissor so partial tiles at the map boundary don't spill.
-    BeginScissorMode(CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H);
+    // The scissor is in framebuffer pixels, not design pixels: a fixed
+    // buffer renders at zoom, so scale the rect (present_get_zoom is 1 else).
+    {
+        int z = present_get_zoom();
+        BeginScissorMode(CL_MAP_X * z, CL_MAP_Y * z, CL_MAP_W * z, CL_MAP_H * z);
+    }
 
     // Fill unseen tiles as black. This also blacks out the sub-tile slack: in
     // modern mode the pane is the whole interior of the frame, which is rarely

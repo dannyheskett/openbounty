@@ -112,6 +112,10 @@ true draws every string in capitals; `license` is the licence text shipped
 beside the font. The file and the licence are both in the art manifest, so
 the archive carries them.
 
+At 2x and 3x the frame is rendered at that zoom and the face is rasterised
+again at cell times zoom, so text is sharp at every zoom while art stays
+pixel-identical.
+
 The shell rasterises the face at load with anti-aliasing and fits it to the
 layout's glyph cell, `8 * ui_scale` square: the size steps down from the
 requested one until the tallest and widest glyph ink fit the cell. The

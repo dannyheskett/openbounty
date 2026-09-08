@@ -40,7 +40,7 @@ static void frame_begin(RenderTexture2D *rt) {
     // it has to re-fit too. Without this, resizing the window during character
     // select leaves the buffer at its launch size and present_scaled crops it.
     present_refit(rt);
-    BeginTextureMode(*rt);
+    present_begin(rt);
     ClearBackground(PAL_CLR(BLACK));
 }
 
@@ -63,7 +63,7 @@ static void draw_class_picker_status_hint(const Resources *res) {
 }
 
 static void frame_end(RenderTexture2D *rt) {
-    EndTextureMode();
+    present_end();
 
     present_scaled(*rt);
     frame_host_end_frame();
@@ -136,7 +136,7 @@ static bool run_splash(RenderTexture2D *rt,
         int iw = tex.width  * fs;
         int ih = tex.height * fs;
         ui_blit(tex, (CL_SCREEN_W - iw) / 2, (CL_SCREEN_H - ih) / 2, iw, ih);
-        EndTextureMode();
+        present_end();
 
         present_scaled(*rt);
         frame_host_end_frame();

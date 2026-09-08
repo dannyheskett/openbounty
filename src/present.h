@@ -27,6 +27,24 @@
 // returns false.
 bool present_refit(RenderTexture2D *rt);
 
+// The size the render target should be for this window: the screen size, or
+// for a fixed buffer (CL_IS_NATIVE) the screen times the presentation scale,
+// so the frame is RENDERED at zoom and text rasterised at that zoom lands
+// sharp. Pure arithmetic, testable without a window.
+void present_target_size(int win_w, int win_h, int *w, int *h);
+
+// The zoom the current target is rendered at: the presentation scale for a
+// fixed buffer, 1 for everything else. Anything that works in framebuffer
+// pixels rather than design pixels (a scissor rect) multiplies by this.
+int  present_get_zoom(void);
+
+// Begin/end drawing a frame into the target. For a fixed buffer this wraps
+// the drawing in a camera at the zoom, so every draw call keeps its design
+// coordinates and the art comes out pixel-identical to the integer blit it
+// replaces. Legacy is a plain BeginTextureMode/EndTextureMode.
+void present_begin(RenderTexture2D *rt);
+void present_end(void);
+
 // The integer scale to blit at, for a window of this size. Pure arithmetic --
 // no GL, no window -- so it is testable on its own.
 //

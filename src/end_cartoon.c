@@ -158,10 +158,10 @@ void run_end_cartoon(RenderTexture2D *rt,
         if (origin_x < CL_MAP_X) origin_x = CL_MAP_X;
         if (origin_y < CL_MAP_Y) origin_y = CL_MAP_Y;
 
-        BeginTextureMode(*rt);
+        present_begin(rt);
         ClearBackground(BLACK);
         draw_cartoon_frame(res, sprites, grass, hero, origin_x, origin_y, tick, frame);
-        EndTextureMode();
+        present_end();
 
         present_scaled(*rt);
         frame_host_end_frame();

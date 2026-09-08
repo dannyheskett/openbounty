@@ -137,7 +137,10 @@ static bool tt_build(int zoom) {
     int cell_h = 8 * g_layout.ui_scale * zoom;
     int codepoints[TT_COUNT];
     for (int i = 0; i < TT_COUNT; i++) codepoints[i] = TT_FIRST + i;
-    int start = (g_tt_req > 0) ? g_tt_req * zoom : 64 * zoom;
+    // At a higher zoom start from the zoom-1 fit scaled up, so the face keeps
+    // the same size and the same advance at every zoom (only sharper).
+    int start = (zoom > 1 && g_tt_px > 0) ? g_tt_px * zoom
+              : (g_tt_req > 0) ? g_tt_req * zoom : 64 * zoom;
     for (int px = start; px >= 4; px--) {
         int count = 0;
         GlyphInfo *gl = LoadFontData(g_tt_bytes, (int)g_tt_size, px, codepoints, TT_COUNT, FONT_DEFAULT, &count);
@@ -169,7 +172,8 @@ static bool tt_build(int zoom) {
         g_tt_zoom = zoom;
         g_tt_top = lo;
         g_tt_ink_h = hi - lo;
-        g_tt_adv = bfont_advance_for((mw + zoom - 1) / zoom, 8 * g_layout.ui_scale);
+        if (zoom == 1 || g_tt_adv == 0)
+            g_tt_adv = bfont_advance_for((mw + zoom - 1) / zoom, 8 * g_layout.ui_scale);
         if (zoom == 1) g_tt_px = px;
         return true;
     }

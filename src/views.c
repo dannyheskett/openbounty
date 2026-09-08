@@ -969,6 +969,9 @@ bool views_controls_row_disabled(const struct Game *g, int row) {
 void views_controls_advance_scale(void) {
     int s = present_get_scale() + 1;
     if (CL_IS_NATIVE) {
+        // A movie needs one frame size, and a fixed buffer renders at the
+        // zoom, so the zoom is locked while the recorder runs.
+        if (recorder_active()) return;
         int mon = GetCurrentMonitor();
         int fit = present_max_scale(GetMonitorWidth(mon), GetMonitorHeight(mon));
         if (IsWindowFullscreen())

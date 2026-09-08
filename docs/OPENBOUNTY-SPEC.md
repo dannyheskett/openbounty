@@ -1935,6 +1935,18 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   listed by `resources_art_manifest`. Absent or failed, the strip route runs
   exactly as before; legacy is untouched. Rome ships Cinzel Bold (SIL OFL)
   at 15 px, caps (2026-09-08).
+- **REQ-430d.** **Rendered at zoom.** For a fixed buffer (`CL_IS_NATIVE`)
+  the render target is the buffer times the presentation scale
+  (`present_target_size`, `present_refit`), every frame site draws through
+  `present_begin`/`present_end`, a camera at that zoom, so all draw calls
+  keep design coordinates and art is pixel-identical to the integer blit it
+  replaces; `present_scaled` blits the target 1:1 and stores the zoom so
+  `present_window_to_screen` still yields design pixels. The map scissor
+  multiplies by `present_get_zoom`. `bfont_set_zoom` rebuilds the TrueType
+  atlas at cell times zoom, from the zoom-1 fit scaled up so size and advance
+  never change, only sharpness. The zoom is locked while the recorder runs
+  (one frame size per movie). Legacy: plain `BeginTextureMode`, 320x200
+  target, unchanged (2026-09-08).
 
 ### 29.2 Views
 

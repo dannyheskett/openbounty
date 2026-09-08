@@ -1,6 +1,7 @@
 #include "present.h"
 #include "layout.h"
 #include "touch.h"
+#include "bfont.h"
 
 // The blit rect of the last present_scaled, in window pixels, and the scale
 // it used. This is what turns a tap's window position back into design-space
@@ -13,6 +14,31 @@ static int s_dst_x, s_dst_y, s_dst_w, s_dst_h, s_dst_scale = 1;
 // the game, not of the pack and not of the save. The project writes no config
 // file and stats.options[] is serialized into saves, so neither is a home.
 static int s_scale = 1;
+
+// Zoom the current target is rendered at (fixed buffers only; else 1).
+static int s_zoom = 1;
+
+int present_get_zoom(void) { return s_zoom; }
+
+void present_target_size(int win_w, int win_h, int *w, int *h) {
+    int z = CL_IS_NATIVE ? present_scale(win_w, win_h) : 1;
+    if (w) *w = CL_SCREEN_W * z;
+    if (h) *h = CL_SCREEN_H * z;
+}
+
+void present_begin(RenderTexture2D *rt) {
+    BeginTextureMode(*rt);
+    if (CL_IS_NATIVE && s_zoom > 1) {
+        Camera2D cam = { 0 };
+        cam.zoom = (float)s_zoom;
+        BeginMode2D(cam);
+    }
+}
+
+void present_end(void) {
+    if (CL_IS_NATIVE && s_zoom > 1) EndMode2D();
+    EndTextureMode();
+}
 
 void present_set_scale(int scale) {
     // Never touches the window. Scale is pixel size, not window size: a higher
@@ -105,6 +131,21 @@ bool present_refit(RenderTexture2D *rt) {
     if (!rt) return false;
     int win_w = GetScreenWidth();
     int win_h = GetScreenHeight();
+    if (CL_IS_NATIVE) {
+        // The buffer never follows the window, but the zoom does: the target
+        // is the buffer times the zoom, reallocated when the zoom changes.
+        int z = present_scale(win_w, win_h);
+        int w, h;
+        present_target_size(win_w, win_h, &w, &h);
+        bool changed = (rt->texture.width != w || rt->texture.height != h);
+        if (changed) {
+            UnloadRenderTexture(*rt);
+            *rt = LoadRenderTexture(w, h);
+            SetTextureFilter(rt->texture, TEXTURE_FILTER_POINT);
+        }
+        if (z != s_zoom) { s_zoom = z; bfont_set_zoom(z); }
+        return changed;
+    }
     if (!layout_fit_window(win_w, win_h, present_scale(win_w, win_h)))
         return false;
     UnloadRenderTexture(*rt);
@@ -123,6 +164,8 @@ void present_scaled(RenderTexture2D rt) {
 
     int dst_w = CL_SCREEN_W * scale;
     int dst_h = CL_SCREEN_H * scale;
+    // A fixed buffer was rendered at the zoom already: blit it 1:1.
+    if (CL_IS_NATIVE) { dst_w = rt.texture.width; dst_h = rt.texture.height; scale = s_zoom; }
 
     // A RenderTexture2D is stored y-flipped, hence the negative src height.
     Rectangle src = { 0, 0,

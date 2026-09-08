@@ -340,7 +340,7 @@ static void combat_present(const Combat *c, const Game *g,
                            const Sprites *sprites,
                            RenderTexture2D *target) {
     present_refit(target);
-    BeginTextureMode(*target);
+    present_begin(target);
     combat_render_frame(c, g, sprites);
     // Open view (Options / Controls / Army / Character) draws over the
     // battlefield, on top of the still-visible field. map/fog are NULL
@@ -381,7 +381,7 @@ static void combat_present(const Combat *c, const Game *g,
     // Give-up confirm and any other y/n / numeric prompt draws on top
     // of everything else as a bottom-frame modal.
     if (prompt_is_active()) prompt_draw();
-    EndTextureMode();
+    present_end();
 
     present_scaled(*target);
     frame_host_end_frame();
