@@ -37,7 +37,7 @@ TEST from_nothing_to_a_packaged_pack(void) {
 
     // 2. Load and paint the map ----------------------------------------------
     static MapGrid g;
-    ASSERT(mapedit_load(&g, &ws.res, zid));
+    ASSERT(gb_map_load(&g, &ws.res, zid));
     ASSERT_EQ(24, g.w);
     ASSERT_EQ(24, g.h);
 
@@ -53,8 +53,8 @@ TEST from_nothing_to_a_packaged_pack(void) {
 
     // furnish must give the new forest its edge variants
     int unresolved = 0;
-    mapedit_despeckle(&g);
-    int furnished = mapedit_furnish(&g, &unresolved);
+    gb_map_despeckle(&g);
+    int furnished = gb_map_furnish(&g, &unresolved);
     ASSERT(furnished > 0);
     ASSERT_EQ(0, unresolved);
 
@@ -117,7 +117,7 @@ TEST from_nothing_to_a_packaged_pack(void) {
 
     // 8. Save both the manifest and the map ----------------------------------
     ASSERTm(err, gb_workspace_save(&ws, err, sizeof err));
-    ASSERT(mapedit_save(&g, &ws.res));
+    ASSERT(gb_map_save(&g, &ws.res));
 
     // 9. Package --------------------------------------------------------------
     ASSERTm(err, gb_package(&ws, E2E_ZIP, err, sizeof err));

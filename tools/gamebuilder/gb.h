@@ -12,7 +12,7 @@
 #define OB_GB_H
 
 #include "cJSON.h"
-#include "mapedit.h"
+#include "gb_map.h"
 #include "resources.h"
 
 #include <stdarg.h>

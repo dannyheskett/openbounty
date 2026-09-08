@@ -81,8 +81,8 @@ static void load_zone(int index) {
     if (!zid || index < 0 || index >= GB_MAX_ZONES) return;
     if (!G.grid_loaded[index]) {
         if (!G.ws.res_valid) gb_workspace_reproject(&G.ws);
-        if (mapedit_load(&G.grid[index], &G.ws.res, zid)) {
-            mapedit_furnish(&G.grid[index], NULL);
+        if (gb_map_load(&G.grid[index], &G.ws.res, zid)) {
+            gb_map_furnish(&G.grid[index], NULL);
             G.grid_loaded[index] = true;
         } else {
             snprintf(G.message, sizeof G.message,
@@ -105,7 +105,7 @@ static MapGrid *grid_for(void *user, int zone) {
 static void after_tiles(void *user, int zone) {
     (void)user;
     if (zone >= 0 && zone < GB_MAX_ZONES && G.grid_loaded[zone])
-        mapedit_furnish(&G.grid[zone], NULL);
+        gb_map_furnish(&G.grid[zone], NULL);
 }
 
 static void open_path(const char *path) {
@@ -233,7 +233,7 @@ static void do_save(void) {
     int written = 0;
     for (int i = 0; i < GB_MAX_ZONES; i++) {
         if (G.grid_loaded[i] && G.grid[i].dirty) {
-            if (mapedit_save(&G.grid[i], &G.ws.res)) written++;
+            if (gb_map_save(&G.grid[i], &G.ws.res)) written++;
         }
     }
     gb_autosave_discard(&G.ws);

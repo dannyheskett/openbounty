@@ -1,4 +1,4 @@
-// openbounty-mapedit -- GUI map editor for pack zones.
+// GameBuilder map layer: the zone grid, its furnishing and its .dat io.
 //
 // Edits the two files that define a zone's map:
 //   maps/<zone>.dat      terrain, one byte per tile (this file's MapGrid)
@@ -45,34 +45,34 @@ typedef struct {
     bool    dirty;
 } MapGrid;
 
-// --- furnishing (tools/mapedit_furnish.c) -----------------------------------
+// --- furnishing (tools/gb_map_furnish.c) -----------------------------------
 
 // Absorb tiles whose neighbour pattern has no legal edge variant. Returns the
-// number of tiles changed. Run before mapedit_furnish().
-int mapedit_despeckle(MapGrid *m);
+// number of tiles changed. Run before gb_map_furnish().
+int gb_map_despeckle(MapGrid *m);
 
 // Assign every tile's edge variant from its neighbours. Returns the number of
 // tiles given a variant; writes the count that had no legal variant (which
 // should be zero after despeckle) to *unresolved_out when non-NULL.
-int mapedit_furnish(MapGrid *m, int *unresolved_out);
+int gb_map_furnish(MapGrid *m, int *unresolved_out);
 
-// --- io (tools/mapedit_io.c) ------------------------------------------------
+// --- io (tools/gamebuilder/gb_map_io.c) ------------------------------------------------
 
 // Read a zone's .dat through the pack, resolving each byte to a terrain and
 // variant via the pack's tile_codes table. Returns false and leaves *m
 // untouched on failure.
-bool mapedit_load(MapGrid *m, const Resources *res, const char *zone_id);
+bool gb_map_load(MapGrid *m, const Resources *res, const char *zone_id);
 
 // Despeckle, furnish, then write the .dat back. The written file is the
 // fully rendered map.
-bool mapedit_save(MapGrid *m, const Resources *res);
+bool gb_map_save(MapGrid *m, const Resources *res);
 
 // The tile-code byte for a (terrain, variant) pair, or 0 when the pack
 // declares no such tile.
-char mapedit_code_for(const Resources *res, Terrain t, int variant);
+char gb_map_code_for(const Resources *res, Terrain t, int variant);
 
 // The art stem for a (terrain, variant) pair, e.g. "water_edge_10". Returns
 // a pointer to a static buffer.
-const char *mapedit_art_for(Terrain t, int variant);
+const char *gb_map_art_for(Terrain t, int variant);
 
 #endif

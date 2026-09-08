@@ -5,7 +5,7 @@
 // way, so a pack that renames or renumbers its codes keeps working and the
 // editor cannot drift from what the engine loads.
 
-#include "mapedit.h"
+#include "gb_map.h"
 
 #include "assets_bytes.h"
 #include "pack.h"
@@ -18,7 +18,7 @@ static const char *TERRAIN_STEM[TERRAIN_COUNT] = {
     "grass", "forest", "mountain", "water", "desert"
 };
 
-const char *mapedit_art_for(Terrain t, int variant) {
+const char *gb_map_art_for(Terrain t, int variant) {
     static char buf[RES_TILE_ART_LEN];
     if (t < 0 || t >= TERRAIN_COUNT) return "grass";
     if (variant < 0) {
@@ -29,8 +29,8 @@ const char *mapedit_art_for(Terrain t, int variant) {
     return buf;
 }
 
-char mapedit_code_for(const Resources *res, Terrain t, int variant) {
-    const char *want = mapedit_art_for(t, variant);
+char gb_map_code_for(const Resources *res, Terrain t, int variant) {
+    const char *want = gb_map_art_for(t, variant);
     for (int i = 0; i < RES_TILE_CODE_COUNT; i++) {
         if (!res->tile_codes[i].present) continue;
         if (strcmp(res->tile_codes[i].art, want) == 0) return (char)i;
@@ -40,7 +40,7 @@ char mapedit_code_for(const Resources *res, Terrain t, int variant) {
 
 // The plain-terrain code, used when a variant the pack lacks is requested.
 static char plain_code(const Resources *res, Terrain t) {
-    char c = mapedit_code_for(res, t, -1);
+    char c = gb_map_code_for(res, t, -1);
     return c ? c : '.';
 }
 
@@ -59,22 +59,22 @@ static void art_to_cell(const Resources *res, unsigned char code,
     }
     // Neither an edge variant nor the plain tile for its terrain: a
     // decorative alternate. Preserve the byte verbatim.
-    if (strcmp(art, mapedit_art_for(out->terrain, -1)) != 0) {
+    if (strcmp(art, gb_map_art_for(out->terrain, -1)) != 0) {
         out->decor = (char)code;
     }
 }
 
-bool mapedit_load(MapGrid *m, const Resources *res, const char *zone_id) {
+bool gb_map_load(MapGrid *m, const Resources *res, const char *zone_id) {
     const ResZone *z = NULL;
     for (int i = 0; i < res->zone_count; i++) {
         if (strcmp(res->zones[i].id, zone_id) == 0) { z = &res->zones[i]; break; }
     }
     if (!z) {
-        fprintf(stderr, "mapedit: no zone '%s' in this pack\n", zone_id);
+        fprintf(stderr, "gamebuilder: no zone '%s' in this pack\n", zone_id);
         return false;
     }
     if (z->width > MAPEDIT_MAX_W || z->height > MAPEDIT_MAX_H) {
-        fprintf(stderr, "mapedit: zone '%s' is %dx%d, over the %dx%d ceiling "
+        fprintf(stderr, "gamebuilder: zone '%s' is %dx%d, over the %dx%d ceiling "
                         "(MAP_MAX_W/H in engine/include/map.h)\n",
                 zone_id, z->width, z->height, MAPEDIT_MAX_W, MAPEDIT_MAX_H);
         return false;
@@ -83,7 +83,7 @@ bool mapedit_load(MapGrid *m, const Resources *res, const char *zone_id) {
     size_t sz = 0;
     const unsigned char *bytes = LoadAssetBytes(z->map_path, &sz);
     if (!bytes) {
-        fprintf(stderr, "mapedit: cannot read %s\n", z->map_path);
+        fprintf(stderr, "gamebuilder: cannot read %s\n", z->map_path);
         return false;
     }
 
@@ -113,7 +113,7 @@ bool mapedit_load(MapGrid *m, const Resources *res, const char *zone_id) {
             if (c < RES_TILE_CODE_COUNT && res->tile_codes[c].present) {
                 art_to_cell(res, c, &m->cell[y][x]);
             } else {
-                fprintf(stderr, "mapedit: %s:%d:%d unknown tile code 0x%02x\n",
+                fprintf(stderr, "gamebuilder: %s:%d:%d unknown tile code 0x%02x\n",
                         z->map_path, y + 1, x + 1, c);
             }
             x++;
@@ -126,10 +126,10 @@ bool mapedit_load(MapGrid *m, const Resources *res, const char *zone_id) {
     return true;
 }
 
-bool mapedit_save(MapGrid *m, const Resources *res) {
-    int speckles = mapedit_despeckle(m);
+bool gb_map_save(MapGrid *m, const Resources *res) {
+    int speckles = gb_map_despeckle(m);
     int unresolved = 0;
-    int furnished = mapedit_furnish(m, &unresolved);
+    int furnished = gb_map_furnish(m, &unresolved);
 
     // The .dat is written to the pack directory on disk. An archive pack
     // (.openbounty) has no loose tree to write into -- pack_hash() is set for
@@ -137,7 +137,7 @@ bool mapedit_save(MapGrid *m, const Resources *res) {
     const Pack *pk = pack_stack_top();
     const char *root = pack_path(pk);
     if (!root || !*root || (pack_hash(pk) && *pack_hash(pk))) {
-        fprintf(stderr, "mapedit: this pack is a .openbounty archive; open a "
+        fprintf(stderr, "gamebuilder: this pack is a .openbounty archive; open a "
                         "loose directory with --pack <dir> to save\n");
         return false;
     }
@@ -145,11 +145,11 @@ bool mapedit_save(MapGrid *m, const Resources *res) {
     snprintf(full, sizeof full, "%s/%s", root, m->dat_path);
     FILE *f = fopen(full, "wb");
     if (!f) {
-        fprintf(stderr, "mapedit: cannot write %s\n", full);
+        fprintf(stderr, "gamebuilder: cannot write %s\n", full);
         return false;
     }
 
-    fprintf(f, "# %s -- %dx%d. Written by openbounty-mapedit.\n"
+    fprintf(f, "# %s -- %dx%d. Written by openbounty-gamebuilder.\n"
                "# Fully rendered: edge variants are baked in (REQ-229). The\n"
                "# engine computes nothing about appearance at load.\n",
             m->zone_id, m->w, m->h);
@@ -160,7 +160,7 @@ bool mapedit_save(MapGrid *m, const Resources *res) {
             if (cell->decor && cell->variant < 0) {
                 c = cell->decor;          // decorative alternate, kept as-is
             } else {
-                c = mapedit_code_for(res, cell->terrain, cell->variant);
+                c = gb_map_code_for(res, cell->terrain, cell->variant);
                 if (!c) c = plain_code(res, cell->terrain);
             }
             fputc(c, f);

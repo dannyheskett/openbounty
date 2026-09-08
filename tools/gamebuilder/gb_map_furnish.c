@@ -22,7 +22,7 @@
 // three-cardinal tiles: the original authors shaped terrain so the case
 // cannot arise, and despeckle enforces the same discipline mechanically.
 
-#include "mapedit.h"
+#include "gb_map.h"
 
 #include <string.h>
 
@@ -53,7 +53,7 @@ static Terrain neighbour_terrain(const MapGrid *m, int x, int y, int d,
     return in_bounds(m, nx, ny) ? m->cell[ny][nx].terrain : own;
 }
 
-int mapedit_despeckle(MapGrid *m) {
+int gb_map_despeckle(MapGrid *m) {
     int total = 0;
     for (int pass = 0; pass < 32; pass++) {
         int fixed = 0;
@@ -115,7 +115,7 @@ int mapedit_despeckle(MapGrid *m) {
     return total;
 }
 
-int mapedit_furnish(MapGrid *m, int *unresolved_out) {
+int gb_map_furnish(MapGrid *m, int *unresolved_out) {
     int changed = 0, unresolved = 0;
 
     for (int y = 0; y < m->h; y++) {

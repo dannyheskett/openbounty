@@ -306,7 +306,7 @@ TEST validate_flags_a_boat_trap(void) {
     // Carve an enclosed pond and put a town dock in it. Enclosed water alone is
     // harmless -- this must fire because a DOCK is on it.
     static MapGrid g;
-    ASSERT(mapedit_load(&g, &ws.res, "testzone"));
+    ASSERT(gb_map_load(&g, &ws.res, "testzone"));
     for (int y = 8; y <= 10; y++)
         for (int x = 8; x <= 10; x++) g.cell[y][x].terrain = TERRAIN_WATER;
 
@@ -339,7 +339,7 @@ TEST validate_ignores_a_pond_with_no_dock(void) {
     GbWorkspace ws = {0};
     ASSERT(ops_open(&ws));
     static MapGrid g;
-    ASSERT(mapedit_load(&g, &ws.res, "testzone"));
+    ASSERT(gb_map_load(&g, &ws.res, "testzone"));
     for (int y = 8; y <= 10; y++)
         for (int x = 8; x <= 10; x++) g.cell[y][x].terrain = TERRAIN_WATER;
 

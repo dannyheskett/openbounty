@@ -88,7 +88,6 @@ PACK_DIR   := build/$(BUILD)/assets
 PACKS := $(addprefix $(PACK_DIR)/,$(addsuffix .openbounty,$(PACK_NAMES)))
 
 OUT_TEST      := build/openbounty-test
-OUT_MAPEDIT   := build/openbounty-mapedit
 OUT_GB        := build/openbounty-gamebuilder
 OUT_ENGLIB    := build/libobengine.a
 LIBTEST_STAMP := build/libtest-pass.stamp
@@ -400,26 +399,12 @@ TEST_SRC := $(filter-out src/main.c,$(SHELL_SRC)) $(TOOL_SRC) \
             tools/gamebuilder/gb_undo.c tools/gamebuilder/gb_objects.c \
             tools/gamebuilder/gb_validate.c tools/gamebuilder/gb_package.c \
             tools/gamebuilder/gb_archive.c tools/gamebuilder/gb_checklist.c \
-            tools/mapedit_io.c tools/mapedit_furnish.c \
+            tools/gamebuilder/gb_map_io.c tools/gamebuilder/gb_map_furnish.c \
             $(DEMO_SRC) $(AUTOPLAY_SRC) \
             $(TEST_ONLY_SRC)
 
 $(OUT_TEST): $(TEST_SRC) $(OUT_ENGLIB) build/version.h Makefile | build
 	gcc $(CFLAGS) -Ithird_party/greatest -Itests -Itools/gamebuilder $(TEST_SRC) $(OUT_ENGLIB) -o $(OUT_TEST) $(LDFLAGS)
-
-# ---------------------------------------------------------------------------
-# openbounty-mapedit: GUI zone map editor. Author-time only -- never built by
-# `make all` and never packaged into a release archive. Links the engine
-# archive plus the shell's tile_cache/assets so the canvas is drawn by exactly
-# the code that draws the game.
-MAPEDIT_SRC := tools/mapedit_main.c tools/mapedit_io.c tools/mapedit_furnish.c \
-               src/tile_cache.c src/assets.c
-
-.PHONY: mapedit
-mapedit: $(OUT_MAPEDIT)
-
-$(OUT_MAPEDIT): $(MAPEDIT_SRC) $(OUT_ENGLIB) build/version.h Makefile | build
-	gcc $(CFLAGS) $(MAPEDIT_SRC) $(OUT_ENGLIB) -o $(OUT_MAPEDIT) $(LDFLAGS)
 
 # ---------------------------------------------------------------------------
 # openbounty-gamebuilder: the game-pack editor (docs/GAMEBUILDER-SPEC.md).
@@ -430,7 +415,6 @@ $(OUT_MAPEDIT): $(MAPEDIT_SRC) $(OUT_ENGLIB) build/version.h Makefile | build
 # palette are shared with the game, not reimplemented, so the editor's canvas
 # cannot drift from what the game draws.
 GB_SRC := $(wildcard tools/gamebuilder/*.c) \
-          tools/mapedit_io.c tools/mapedit_furnish.c \
           src/tile_cache.c src/assets.c src/palette.c
 GB_CFLAGS := $(CFLAGS) -Ithird_party/raygui -Itools/gamebuilder
 

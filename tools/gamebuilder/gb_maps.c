@@ -168,7 +168,7 @@ static void draw_terrain(GbMapView *v, const MapGrid *g) {
             char art[64];
             snprintf(art, sizeof art, "%s%s%s", g->tile_set,
                      g->tile_set[0] ? "/" : "",
-                     mapedit_art_for(c->terrain, c->variant));
+                     gb_map_art_for(c->terrain, c->variant));
             Texture2D t = tile_cache_get(art);
             if (t.id) {
                 Rectangle src = { 0, 0, (float)t.width, (float)t.height };
@@ -296,8 +296,8 @@ void gb_inspect_tile(GbTileInfo *out, const MapGrid *g, const GbObjectList *L,
     out->terrain = c->terrain;
     out->variant = c->variant;
     out->decorative = (c->decor != 0);
-    out->art     = mapedit_art_for(c->terrain, c->variant);
-    out->code    = c->decor ? c->decor : mapedit_code_for(res, c->terrain,
+    out->art     = gb_map_art_for(c->terrain, c->variant);
+    out->code    = c->decor ? c->decor : gb_map_code_for(res, c->terrain,
                                                           c->variant);
     // Walkability comes from the pack's own tile_codes entry, not from a
     // guess about the terrain -- a bridge is grass that water rules ignore.
@@ -371,14 +371,14 @@ void gb_mapview_frame(GbMapView *v, MapGrid *g, GbObjectList *objs,
             } else if (v->tool == GB_TOOL_PAINT && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) stroke_begin(v, g);
                 paint_at(v, g, cx, cy);
-                mapedit_despeckle(g);
-                mapedit_furnish(g, NULL);
+                gb_map_despeckle(g);
+                gb_map_furnish(g, NULL);
             } else if (v->tool == GB_TOOL_FILL &&
                        IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 stroke_begin(v, g);
                 flood_at(v, g, cx, cy);
-                mapedit_despeckle(g);
-                mapedit_furnish(g, NULL);
+                gb_map_despeckle(g);
+                gb_map_furnish(g, NULL);
                 stroke_commit(v, g, undo, "flood fill");
             } else if (v->tool == GB_TOOL_RECT) {
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -388,8 +388,8 @@ void gb_mapview_frame(GbMapView *v, MapGrid *g, GbObjectList *objs,
                 } else if (v->dragging && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
                     rect_fill(v, g, (int)v->drag_from.x, (int)v->drag_from.y,
                               cx, cy);
-                    mapedit_despeckle(g);
-                    mapedit_furnish(g, NULL);
+                    gb_map_despeckle(g);
+                    gb_map_furnish(g, NULL);
                     stroke_commit(v, g, undo, "rectangle");
                     v->dragging = false;
                 }

@@ -74,8 +74,8 @@ this describes work not yet done.
   which base pack to layer, which zone to edit — is chosen by pointing and
   clicking inside the application. There shall be no flag that is the only way
   to reach a feature, and no workflow that requires a terminal.
-  (The current `openbounty-mapedit`, which takes `--pack` / `--zone` /
-  `--base`, is a development stepping stone and is superseded by this.)
+  (The earlier `openbounty-mapedit`, a command-line stepping stone, was
+  removed on 2026-09-08; its map layer lives on as `tools/gamebuilder/gb_map_*`.)
 - **GB-016.** The editor shall open on a **start screen**: New Pack, Open Pack,
   and a list of recently opened packs. It shall never open into an empty or
   undefined state.
