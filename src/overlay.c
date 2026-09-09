@@ -210,6 +210,21 @@ static void draw_menu(void) {
     // Size the panel to the menu content.
     int row_h = GH + 2 * CL_UI;
     int w = 160 * CL_UI;
+    if (CL_IS_MODERN) {
+        // A proportional face has no column count to size by: the widest
+        // entry, or the title, sets the width.
+        int widest = title ? bfont_text_width(title) : 0;
+        for (int i = 0; i < count; i++) {
+            const char *label = views_menu_entry_label(i);
+            if (!label) continue;
+            char buf[64];
+            snprintf(buf, sizeof buf, "%s >", label);
+            int lw = bfont_text_width(buf);
+            if (lw > widest) widest = lw;
+        }
+        int need = widest + GW + 16 * CL_UI;
+        if (need > w) w = need;
+    }
     int h = (count + 2) * row_h + 8 * CL_UI;   // title + entries + hint
     int x = CL_MAP_X + (CL_MAP_W - w) / 2;
     int y = CL_MAP_Y + (CL_MAP_H - h) / 2;

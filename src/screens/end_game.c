@@ -102,6 +102,16 @@ void screen_end_game_draw(const Game *g, const Sprites *s) {
 
     const char *p = s_body;
     char line[160];
+    if (CL_IS_MODERN) {
+        // Proportional face: wrap by pixel width; the body's single newlines
+        // (authored for 18 columns) reflow, blank lines stay paragraph breaks.
+        while (*p && ty + line_h <= floor_y) {
+            if (bfont_take_line(&p, text_w, line, (int)sizeof line) <= 0) break;
+            bfont_draw(line, tx, ty, PAL_CLR(WHITE));
+            ty += line_h;
+        }
+        return;
+    }
     while (*p && ty + line_h <= floor_y) {
         int n = 0;
         // Read one logical line (up to '\n' or NUL).

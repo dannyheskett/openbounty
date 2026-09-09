@@ -518,7 +518,7 @@ static bool run_create_game(const Resources *res,
         bfont_draw(name_buf, name_x, name_y, PAL_CLR(WHITE));
         if (!has_name && show_caret && name_len < 10) {
             // Blinking caret after the last typed char.
-            int cx = name_x + name_len * GW;
+            int cx = name_x + bfont_text_width(name_buf);
             DrawRectangle(cx, name_y, 1, GH, PAL_CLR(YELLOW));
         }
 
@@ -769,7 +769,7 @@ static bool run_credits(RenderTexture2D *rt, const Resources *res,
             char line[64];
             expand_version(line, sizeof(line),
                            res->credits.copyright[c], res->version);
-            int tw = (int)strlen(line) * GW;
+            int tw = bfont_text_width(line);
             int cx = px + (panel_w - tw) / 2;
             bfont_draw(line, cx, ty, PAL_CLR(WHITE));
             ty += line_h;

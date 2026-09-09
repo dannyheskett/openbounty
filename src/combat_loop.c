@@ -352,7 +352,8 @@ static void combat_present(const Combat *c, const Game *g,
     // Spell-pick menu overlay. Drawn while the cast state machine is
     // in PICK_SPELL phase; the outer loop drives combat_cast_step one
     // input per frame.
-    if (c->cast_phase == COMBAT_CAST_PICK_SPELL) {
+    if (c->cast_phase == COMBAT_CAST_PICK_SPELL && !CL_IS_MODERN) {
+        // Legacy: the historic 320x200 positions, untouched.
         DrawRectangle(40, 30, 240, 130, PAL_CLR(DBLUE));
         ui_window_frame(40, 30, 240, 130, PAL_CLR(YELLOW));
         const Game *gw = c->heroes[c->side];
@@ -372,6 +373,34 @@ static void combat_present(const Combat *c, const Game *g,
             touch_region(56, 64 + i * 10, 224, 10, KEY_A + i);
         }
         bfont_draw(ui->combat_spells_prompt, 70, 144, PAL_CLR(WHITE));
+    } else if (c->cast_phase == COMBAT_CAST_PICK_SPELL) {
+        // Modern: the same panel laid out from the font, centred in the map
+        // pane: a title row, a column header, seven spell rows, a prompt.
+        const Game *gw = c->heroes[c->side];
+        const ResUI *ui = &gw->res->ui;
+        int row_h = BFONT_GLYPH_H + 2 * CL_UI;
+        int pad = 6 * CL_UI;
+        int w = 30 * BFONT_GLYPH_W + 2 * pad;
+        int h = 10 * row_h + 2 * pad + row_h / 2;
+        int x = CL_MAP_X + (CL_MAP_W - w) / 2;
+        int y = CL_MAP_Y + (CL_MAP_H - h) / 2;
+        DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
+        ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
+        int ty = y + pad;
+        bfont_draw_centered(ui->combat_spells_title, x + w / 2, ty, PAL_CLR(YELLOW));
+        ty += row_h;
+        bfont_draw(ui->combat_spells_col_combat, x + pad, ty, PAL_CLR(YELLOW));
+        ty += row_h + row_h / 2;
+        char line[64];
+        for (int i = 0; i < 7; i++) {
+            int count = gw->spells.counts[i];
+            const SpellDef *sd = spell_by_index(i);
+            snprintf(line, sizeof line, "%d %-12s %c", count, sd->name, 'A' + i);
+            bfont_draw(line, x + pad, ty, PAL_CLR(WHITE));
+            touch_region(x, ty, w, row_h, KEY_A + i);
+            ty += row_h;
+        }
+        bfont_draw_centered(ui->combat_spells_prompt, x + w / 2, y + h - pad - BFONT_GLYPH_H, PAL_CLR(WHITE));
     }
     // Victory dialog : centered modal
     // floating over the still-rendered battlefield. Defeat does not

@@ -158,8 +158,12 @@ void screen_dwelling_draw(const Game *g, const Sprites *s) {
     {
         // Right-align the gold part to column 20 (spec aligns the GP=
         // text to the right side of the inner rect).
-        int gp_x = tx + 20 * BFONT_GLYPH_W;
-        bfont_draw(gold_part, gp_x, ty, PAL_CLR(WHITE));
+        if (CL_IS_MODERN) {
+            bfont_draw_right(gold_part, x + w - pad, ty, PAL_CLR(WHITE));
+        } else {
+            int gp_x = tx + 20 * BFONT_GLYPH_W;
+            bfont_draw(gold_part, gp_x, ty, PAL_CLR(WHITE));
+        }
     }
     ty += row_h;
 

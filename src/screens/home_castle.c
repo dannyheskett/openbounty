@@ -108,6 +108,14 @@ void screen_home_castle_draw(const Game *g, const Sprites *s) {
     int ty = y + pad;
     const char *p = body;
     char line[96];
+    if (CL_IS_MODERN) {
+        while (*p && ty + row_h <= y + h - pad) {
+            if (bfont_take_line(&p, w - 2 * pad, line, (int)sizeof line) <= 0) break;
+            bfont_draw(line, tx, ty, PAL_CLR(WHITE));
+            ty += row_h;
+        }
+        return;
+    }
     while (*p && ty + row_h <= y + h - pad) {
         int n = 0;
         while (*p && *p != '\n' && n + 1 < (int)sizeof(line)) {
