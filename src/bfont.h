@@ -28,28 +28,39 @@ int bfont_glyph_h(void);
 #define BFONT_GLYPH_W  (bfont_glyph_w())
 #define BFONT_GLYPH_H  (bfont_glyph_h())
 
-// Load the pack's font. A modern pack may declare a TrueType/OpenType file
-// in its "font" block: it is rasterised at load, anti-aliased, and FITTED to
-// the cell -- the size steps down from the declared one until the tallest
-// and widest glyph ink fit 8 * ui_scale. The advance is then the widest ink
-// plus one, capped at the cell, so text packs as tight as the face allows.
-// Without that block, or if it fails, the bitmap strip in sprites.font loads
-// exactly as it always has.
+// Load the pack's font. Two routes behind one set of names:
+//
+//   legacy, or any pack without a "font" block: the bitmap strip in
+//   sprites.font, drawn into the 8 * ui_scale cell, unchanged;
+//
+//   modern with a "font" block: the proportional TrueType backend (text.c)
+//   at the size the pack declares, anti-aliased, on its own metrics.
+//   BFONT_GLYPH_H is then the face's line height and BFONT_GLYPH_W the
+//   advance of '0', so layout that counts rows and columns follows the font.
+//
+// bfont_preload_metrics runs BEFORE layout_init (no GL: it reads the font
+// bytes and computes the metrics the layout needs); bfont_init builds the
+// texture once the window exists.
 struct Resources;
+bool    bfont_preload_metrics(const struct Resources *res);
 bool    bfont_init(const struct Resources *res);
 void    bfont_shutdown(void);
+bool    bfont_is_modern(void);
 
-// Rasterisation zoom for the TrueType route: the atlas is built at cell
-// times `zoom` so a frame rendered at that zoom draws sharp glyphs. Design
-// units are unchanged. The strip route ignores it. Rebuilds lazily.
+// Rasterisation zoom for the TrueType route (see present.c); the strip
+// route ignores it.
 void    bfont_set_zoom(int zoom);
 
-// Pure helpers behind the fit, kept free of GL so they can be unit tested.
-// Given per-glyph ink boxes (width, top, bottom relative to the line top),
-// fit says whether they all sit inside a cell; advance is the step.
-bool    bfont_fits(const int *w, const int *top, const int *bottom, int n,
-                   int cell_w, int cell_h);
-int     bfont_advance_for(int max_ink_w, int cell_w);
+// Word wrap to a pixel width: copies one line into `out`, breaking at the
+// last space, advances *p, returns the characters consumed (0 at the end).
+// Legacy wraps by max_w / BFONT_GLYPH_W characters and keeps every '\n' as a
+// line break, as the dialog and prompt always did. Modern wraps by the real
+// glyph advances; a single '\n' is a space and a blank line ends a paragraph,
+// so text authored pre-wrapped for the old 30 columns reflows.
+int     bfont_take_line(const char **p, int max_w, char *out, int cap);
+
+int     bfont_text_width(const char *text);
+void    bfont_draw_right(const char *text, int x_right, int y, Color c);
 bool    bfont_ready(void);
 
 // `text` may contain '\n'; newlines advance y by BFONT_GLYPH_H.

@@ -6,7 +6,7 @@
 	"pack_kind":	"base",
 	"font":	{
 		"file":	"art/font/Cinzel-Bold.ttf",
-		"size":	15,
+		"size":	20,
 		"caps":	true,
 		"license":	"art/font/OFL-Cinzel.txt" },
 	"render":	{

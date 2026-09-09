@@ -49,36 +49,8 @@ static void draw_panel(int x, int y, int w, int h, Color bg) {
     DrawRectangleRoundedLines(r, roundness, segments, PAL_CLR(YELLOW));
 }
 
-// Word-wrap helper. Breaks `text` into lines of at most `max_chars`
-// chars each, writing one line per call and advancing `*p`. Returns the
-// number of chars consumed (0 when done).
-static int consume_line(const char **p, int max_chars,
-                        char *out, int out_sz) {
-    int n = 0;
-    // Skip leading spaces/tabs (but not newlines -- they're significant).
-    while (**p == ' ' || **p == '\t') (*p)++;
-    // Copy until newline, end, or max_chars hit.
-    while (**p && **p != '\n' && n + 1 < out_sz && n < max_chars) {
-        out[n++] = **p; (*p)++;
-    }
-    // If we stopped mid-word, back up to last space so we break at word.
-    if (**p && **p != '\n' && n >= max_chars) {
-        int back = n;
-        while (back > 0 && out[back - 1] != ' ') back--;
-        if (back > 0) {
-            // Rewind source pointer by (n - back) and truncate output.
-            int over = n - back;
-            *p -= over;
-            n = back;
-        }
-    }
-    out[n] = '\0';
-    if (**p == '\n') (*p)++;
-    return n + 1;  // consumed at least newline or text
-}
-
 // Pages the current dialog body wraps to in the bottom panel. Counts WRAPPED
-// lines the same way draw_dialog_ex renders them -- same consume_line, same
+// lines the same way draw_dialog_ex renders them -- same bfont_take_line, same
 // CL_PANEL_COLS width, same rows-per-page -- so the pager (dialog_advance)
 // and the display never disagree. The old pager counted raw newlines, so a
 // long word-wrapped paragraph with few newlines was scored as one page and
@@ -90,7 +62,7 @@ int overlay_dialog_page_count(void) {
     const char *p = body;
     char line[128];
     while (*p) {
-        if (consume_line(&p, CL_PANEL_COLS, line, (int)sizeof line) <= 0) break;
+        if (bfont_take_line(&p, CL_PANEL_COLS * GW, line, (int)sizeof line) <= 0) break;
         lines++;
     }
     int pages = (lines + DLG_BOTTOM_BODY_LINES - 1) / DLG_BOTTOM_BODY_LINES;
@@ -180,15 +152,18 @@ static void draw_dialog_ex(DialogMode mode) {
     // Bottom panel: the column budget is fixed by layout (one-sided margin --
     // see CL_PANEL_COLS). The centered modal has equal margins, so the
     // symmetric formula is right for it.
-    int max_chars = (mode == DLG_MODE_CENTERED_MODAL)
-                        ? (w - 2 * pad_x) / GW
-                        : CL_PANEL_COLS;
+    // Wrap width in pixels. The bottom panel's budget is fixed by layout
+    // (one-sided margin, see CL_PANEL_COLS); the centred modal has equal
+    // margins. In legacy these divide back to the old column counts.
+    int max_w = (mode == DLG_MODE_CENTERED_MODAL)
+                    ? (w - 2 * pad_x)
+                    : CL_PANEL_COLS * GW;
 
     if (header_rows) {
         const char *hp = hdr;
         char hline[128];
         for (int i = 0; i < header_rows; i++) {
-            consume_line(&hp, max_chars, hline, (int)sizeof(hline));
+            bfont_take_line(&hp, max_w, hline, (int)sizeof(hline));
             if (mode == DLG_MODE_CENTERED_MODAL) {
                 bfont_draw_centered(hline, x + w / 2, ty, PAL_CLR(YELLOW));
             } else {
@@ -206,15 +181,15 @@ static void draw_dialog_ex(DialogMode mode) {
     char line[128];
 
     while (*p && lines_skipped < current_page * body_lines) {
-        int got = consume_line(&p, max_chars, line, (int)sizeof(line));
+        int got = bfont_take_line(&p, max_w, line, (int)sizeof(line));
         if (got <= 0) break;
         lines_skipped++;
     }
 
     int lines_drawn = 0;
     while (*p && lines_drawn < body_lines) {
-        int got = consume_line(&p, max_chars,
-                               line, (int)sizeof(line));
+        int got = bfont_take_line(&p, max_w,
+                                  line, (int)sizeof(line));
         if (got <= 0) break;
         bfont_draw(line, tx, ty, PAL_CLR(WHITE));
         ty += GH;
@@ -515,13 +490,13 @@ static void draw_town(const Game *g, const Sprites *s) {
 
         int itx = x + pad;
         int ity = y + pad;
-        int max_chars = (w - 2 * pad) / GW;
+        int max_w = w - 2 * pad;
         int body_lines = lines;        // popup uses the full menu height
         const char *p = info;
         char line[128];
         int nl = 0;
         while (*p && nl < body_lines) {
-            consume_line(&p, max_chars, line, (int)sizeof(line));
+            bfont_take_line(&p, max_w, line, (int)sizeof(line));
             bfont_draw(line, itx, ity, PAL_CLR(WHITE));
             ity += row_h;
             nl++;

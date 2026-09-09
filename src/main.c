@@ -678,6 +678,11 @@ int shell_run_game(int argc, char **argv) {
         return 2;
     }
 
+    // A modern pack's TrueType font decides the line height the layout reads
+    // (status band, dialog panel), so its metrics are computed first, CPU
+    // only; the texture comes after the window.
+    bfont_preload_metrics((const struct Resources *)&res);
+
     // Geometry comes from the pack, so it must be resolved before the window
     // and the render target are sized. resources_load already rejected a pack
     // that declared no render.mode.

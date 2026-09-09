@@ -69,6 +69,23 @@ void layout_init(const struct Resources *res) {
     // with 7x5 tiles of 96 gives 32-pixel sides and 16-pixel top and bottom.
     // resources_load has already rejected a buffer too small to hold it.
     g_layout.is_native = 0;
+    // A modern font makes the status band taller than the 9 units the base
+    // bands were summed with; the top and bottom bands give that back, down
+    // to a floor of two units (the lattice rail), before the buffer is
+    // judged too small.
+    if (r->mode == RENDER_MODE_MODERN && r->native_h > 0 && r->native_h < g_layout.screen_h) {
+        int short_by = g_layout.screen_h - r->native_h;
+        int floor_b = 2 * g_layout.ui_scale;
+        int give = (g_layout.frame_t - floor_b) + (g_layout.frame_b - floor_b);
+        if (give >= short_by) {
+            int t = short_by / 2, b = short_by - short_by / 2;
+            if (g_layout.frame_t - t < floor_b) { b += floor_b - (g_layout.frame_t - t); t = g_layout.frame_t - floor_b; }
+            if (g_layout.frame_b - b < floor_b) { t += floor_b - (g_layout.frame_b - b); b = g_layout.frame_b - floor_b; }
+            g_layout.frame_t -= t;
+            g_layout.frame_b -= b;
+            g_layout.screen_h = r->native_h;
+        }
+    }
     if (r->mode == RENDER_MODE_MODERN && r->native_w > 0 && r->native_h > 0 &&
         r->native_w >= g_layout.screen_w && r->native_h >= g_layout.screen_h) {
         int slack_w = r->native_w - g_layout.screen_w;

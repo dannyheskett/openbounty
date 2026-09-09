@@ -107,23 +107,24 @@ the bitmap, draws it as before.
 ```
 
 Modern packs only. `file` is a `.ttf` or `.otf` inside the pack; `size` is
-the requested pixel size (6..64; omit it for the largest that fits); `caps`
-true draws every string in capitals; `license` is the licence text shipped
-beside the font. The file and the licence are both in the art manifest, so
-the archive carries them.
+the pixel size it is drawn at (6..64, default 16); `caps` true draws every
+string in capitals; `license` is the licence text shipped beside the font.
+The file and the licence are both in the art manifest, so the archive
+carries them.
 
-At 2x and 3x the frame is rendered at that zoom and the face is rasterised
-again at cell times zoom, so text is sharp at every zoom while art stays
-pixel-identical.
-
-The shell rasterises the face at load with anti-aliasing and fits it to the
-layout's glyph cell, `8 * ui_scale` square: the size steps down from the
-requested one until the tallest and widest glyph ink fit the cell. The
-advance is then the widest ink plus one pixel, capped at the cell, so a
-narrow face packs tighter than the cell and lines only get shorter. Glyphs
-are centred in their advance and share one baseline. The start-up log
-reports the fitted size and advance. If the file fails to load the strip in
-`sprites.font` is used instead. Legacy packs never read this block.
+With this block the shell draws text proportionally: the face is rasterised
+at `size` with anti-aliasing, each glyph advances by its own width, and
+lines are the face's line height. The layout follows the font rather than
+the other way round: the status band is one line plus padding, the message
+panel is eight lines plus padding, list rows are a line high, and a fixed
+buffer gives the extra height back from its top and bottom bands. Word wrap
+is by pixel width; a single newline in a string is a space and a blank line
+is a paragraph break, so text authored pre-wrapped for the old 30 columns
+reflows. At 2x and 3x the atlas is rebuilt at that zoom, so text is sharp
+while art stays pixel-identical. The start-up log reports the size, line
+height and digit width. If the file fails to load the strip in
+`sprites.font` is used instead, in its 8 x 8 cell. Legacy packs never read
+this block: they keep the strip, the cell and their character wrap exactly.
 
 ---
 

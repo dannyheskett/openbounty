@@ -197,30 +197,6 @@ PromptResult prompt_update(void) {
     return PROMPT_RESULT_NONE;
 }
 
-// Word-wrap helper: fills `out` with as much of `*p` as fits in
-// `max_chars` characters at the 8-pixel glyph width, stopping at word
-// boundaries. Advances *p.
-static int take_line(const char **p, int max_chars,
-                     char *out, int out_sz) {
-    int n = 0;
-    while (**p == ' ' || **p == '\t') (*p)++;
-    while (**p && **p != '\n' && n + 1 < out_sz && n < max_chars) {
-        out[n++] = **p; (*p)++;
-    }
-    if (**p && **p != '\n' && n >= max_chars) {
-        int back = n;
-        while (back > 0 && out[back - 1] != ' ') back--;
-        if (back > 0) {
-            int over = n - back;
-            *p -= over;
-            n = back;
-        }
-    }
-    out[n] = '\0';
-    if (**p == '\n') (*p)++;
-    return n;
-}
-
 void prompt_draw(void) {
     if (g_kind == PK_NONE) return;
 
@@ -235,8 +211,9 @@ void prompt_draw(void) {
     int w = CL_PANEL_W;
     int h = CL_PANEL_H;
     // Fixed by layout, not (w - 2*pad): the panel's margin is one-sided.
-    // See CL_PANEL_COLS in layout.h.
-    int max_chars = CL_PANEL_COLS;
+    // See CL_PANEL_COLS in layout.h. In pixels, so a proportional face wraps
+    // by its own advances; legacy divides back to 30 columns.
+    int max_w = CL_PANEL_COLS * BFONT_GLYPH_W;
 
     // Reserve rows at the bottom for hint chrome (rendered after the body).
     //   text-input      -> 2 (typed value + hint)
@@ -273,7 +250,7 @@ void prompt_draw(void) {
         int body_step  = BFONT_GLYPH_H;                 // 8px (no leading)
         int body_floor = y + h - pad - bottom_rows * row_h;
         while (*p && ty + body_step <= body_floor) {
-            take_line(&p, max_chars, line, (int)sizeof(line));
+            bfont_take_line(&p, max_w, line, (int)sizeof(line));
             bfont_draw(line, tx, ty, PAL_CLR(WHITE));
             ty += body_step;
         }

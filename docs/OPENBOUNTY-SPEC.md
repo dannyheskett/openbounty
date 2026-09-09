@@ -1922,19 +1922,24 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   Splash, title and class-picker art draws at the largest whole scale that
   fits the buffer (`ui_fit_scale`; legacy stays at 1x). Rome ships no chrome
   bitmap or bar strip (2026-09-08).
-- **REQ-430c.** **Pack-declared TrueType font.** A modern pack may declare a
-  `font` block (`file`, optional `size`, `caps`, `license`; `ResFont`,
-  `engine/resources.c`). `bfont_init` (`src/bfont.c`) rasterises it through
-  raylib's `LoadFontData` with anti-aliasing, fitting the size down from the
-  request until every glyph's ink fits the `8 * ui_scale` cell
-  (`bfont_fits`), sets the advance to the widest ink plus one capped at the
-  cell (`bfont_advance_for`; `bfont_glyph_w` returns it, so every measure
-  and wrap site packs tighter with no layout change), centres each glyph in
-  its advance on one baseline, maps the twirl control codes to `| / - \`
-  at draw time, and uppercases when `caps` is set. The file and licence are
-  listed by `resources_art_manifest`. Absent or failed, the strip route runs
-  exactly as before; legacy is untouched. Rome ships Cinzel Bold (SIL OFL)
-  at 15 px, caps (2026-09-08).
+- **REQ-430c.** **Pack-declared TrueType font, proportional.** A modern
+  pack may declare a `font` block (`file`, `size`, `caps`, `license`;
+  `ResFont`, `engine/resources.c`, both paths in the manifest). The shell
+  has two text backends behind the `bfont_*` names: the bitmap strip in its
+  `8 * ui_scale` cell (legacy, and any pack without the block, unchanged),
+  and `src/text.c`, which rasterises the face at `size` through raylib's
+  `LoadFontData`, draws with the font's own advances on its baseline, and
+  uppercases when `caps` is set. `bfont_preload_metrics` runs before
+  `layout_init` (CPU only) so `BFONT_GLYPH_H` is the face's line height and
+  `BFONT_GLYPH_W` the advance of `0`; `CL_STATUS_H` and `CL_PANEL_H`
+  (`src/layout.h`) are expressed in those and evaluate to 9 and 68 in
+  legacy. `bfont_take_line` wraps to a pixel width: legacy by
+  `max_w / 8` characters keeping every newline (the wrap the dialog and
+  prompt carried as private copies); modern by real advances, a single
+  newline a space and a blank line a paragraph break. `layout_init` lets a
+  fixed buffer's top and bottom bands shrink to a two-unit floor to hold a
+  taller status band. Rome ships Cinzel Bold (SIL OFL) at 20 px, caps
+  (2026-09-09).
 - **REQ-430d.** **Rendered at zoom.** For a fixed buffer (`CL_IS_NATIVE`)
   the render target is the buffer times the presentation scale
   (`present_target_size`, `present_refit`), every frame site draws through
@@ -1943,8 +1948,7 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   replaces; `present_scaled` blits the target 1:1 and stores the zoom so
   `present_window_to_screen` still yields design pixels. The map scissor
   multiplies by `present_get_zoom`. `bfont_set_zoom` rebuilds the TrueType
-  atlas at cell times zoom, from the zoom-1 fit scaled up so size and advance
-  never change, only sharpness. The zoom is locked while the recorder runs
+  atlas at size times zoom; design metrics never change, only sharpness. The zoom is locked while the recorder runs
   (one frame size per movie). Legacy: plain `BeginTextureMode`, 320x200
   target, unchanged (2026-09-08).
 

@@ -1,68 +1,86 @@
-// The TrueType font route: the fit and advance arithmetic (pure), and the
-// shipped Rome face rasterised through raylib's CPU-side loader at the
-// declared size, to show it fits the 16 px cell the layout gives it.
+// Text wrapping and the metrics the layout reads, on both routes.
+//
+// Legacy: bfont_take_line wraps by max_w / 8 characters and keeps every
+// newline, which is the word-wrap the dialog and prompt panels carried as
+// private copies. Modern: text_take_line wraps by the face's real advances,
+// treats a single newline as a space and a blank line as a paragraph break.
 
 #include "greatest.h"
 #include "bfont.h"
-#include "raylib.h"
-#include <stdio.h>
-#include <stdlib.h>
+#include "text.h"
+#include "layout.h"
+#include "resources.h"
+#include <string.h>
 
-TEST fits_when_ink_is_inside_the_cell(void) {
-    int w[3] = { 10, 0, 12 }, top[3] = { 2, 0, 3 }, bottom[3] = { 14, 0, 16 };
-    ASSERT(bfont_fits(w, top, bottom, 3, 16, 16));      // span 2..16 = 14, width 12
-    int w2[2] = { 17, 8 }, t2[2] = { 0, 0 }, b2[2] = { 10, 10 };
-    ASSERT_FALSE(bfont_fits(w2, t2, b2, 2, 16, 16));    // too wide
-    int w3[2] = { 8, 8 }, t3[2] = { -2, 0 }, b3[2] = { 10, 15 };
-    ASSERT_FALSE(bfont_fits(w3, t3, b3, 2, 16, 16));    // span -2..15 = 17, too tall
-    int w4[1] = { 0 }, t4[1] = { 0 }, b4[1] = { 0 };
-    ASSERT_FALSE(bfont_fits(w4, t4, b4, 1, 16, 16));    // nothing but spaces
+static void legacy_layout(void) {
+    Resources r;
+    memset(&r, 0, sizeof r);
+    r.render.mode = RENDER_MODE_LEGACY;
+    r.render.tile_w = 48; r.render.tile_h = 34; r.render.tiles_w = 5; r.render.tiles_h = 5; r.render.ui_scale = 1;
+    layout_init((const struct Resources *)&r);
+}
+
+TEST legacy_wrap_is_thirty_columns_breaking_at_spaces(void) {
+    legacy_layout();
+    ASSERT_EQ(8, BFONT_GLYPH_W);
+    const char *p = "The quick brown fox jumps over the lazy dog and keeps running";
+    char line[128];
+    // The old wrap backs up to the last space whenever it fills all 30
+    // cells, even when the next character is itself a space: 25, not 30.
+    ASSERT(bfont_take_line(&p, 30 * 8, line, sizeof line) > 0);
+    // ... and it leaves that space on the end of the line.
+    ASSERT_STR_EQ("The quick brown fox jumps ", line);
+    ASSERT(bfont_take_line(&p, 30 * 8, line, sizeof line) > 0);
+    ASSERT_STR_EQ("over the lazy dog and keeps ", line);
+    ASSERT(bfont_take_line(&p, 30 * 8, line, sizeof line) > 0);
+    ASSERT_STR_EQ("running", line);
+    ASSERT_EQ(0, bfont_take_line(&p, 30 * 8, line, sizeof line));
     PASS();
 }
 
-TEST advance_is_widest_ink_plus_one_capped_at_the_cell(void) {
-    ASSERT_EQ(11, bfont_advance_for(10, 16));
-    ASSERT_EQ(16, bfont_advance_for(15, 16));
-    ASSERT_EQ(16, bfont_advance_for(40, 16));
-    ASSERT_EQ(1, bfont_advance_for(0, 16));
+TEST legacy_wrap_keeps_every_newline(void) {
+    legacy_layout();
+    const char *p = "one\ntwo\n\nfour";
+    char line[64];
+    bfont_take_line(&p, 240, line, sizeof line); ASSERT_STR_EQ("one", line);
+    bfont_take_line(&p, 240, line, sizeof line); ASSERT_STR_EQ("two", line);
+    bfont_take_line(&p, 240, line, sizeof line); ASSERT_STR_EQ("", line);      // the blank line stays
+    bfont_take_line(&p, 240, line, sizeof line); ASSERT_STR_EQ("four", line);
     PASS();
 }
 
-static unsigned char *read_file(const char *path, long *n) {
-    FILE *f = fopen(path, "rb");
-    if (!f) return NULL;
-    fseek(f, 0, SEEK_END); *n = ftell(f); fseek(f, 0, SEEK_SET);
-    unsigned char *b = malloc((size_t)*n);
-    if (fread(b, 1, (size_t)*n, f) != (size_t)*n) { free(b); fclose(f); return NULL; }
-    fclose(f);
-    return b;
+TEST legacy_metrics_are_the_old_literals(void) {
+    legacy_layout();
+    ASSERT_EQ(9, CL_STATUS_H);
+    ASSERT_EQ(68, CL_PANEL_H);
+    ASSERT_EQ(8, bfont_line_height());
+    PASS();
 }
 
-TEST rome_face_fits_its_cell_at_the_declared_size(void) {
-    long n = 0;
-    unsigned char *bytes = read_file("assets/glory-of-rome/art/font/Cinzel-Bold.ttf", &n);
-    ASSERT(bytes != NULL);
-    int cps[95];
-    for (int i = 0; i < 95; i++) cps[i] = 32 + i;
-    int count = 0;
-    GlyphInfo *g = LoadFontData(bytes, (int)n, 15, cps, 95, FONT_DEFAULT, &count);
-    ASSERT(g != NULL);
-    ASSERT_EQ(95, count);
-    int w[95], top[95], bottom[95], mw = 0;
-    for (int i = 0; i < 95; i++) {
-        w[i] = g[i].image.width; top[i] = g[i].offsetY; bottom[i] = g[i].offsetY + g[i].image.height;
-        if (w[i] > mw) mw = w[i];
-    }
-    ASSERT(bfont_fits(w, top, bottom, 95, 16, 16));
-    int adv = bfont_advance_for(mw, 16);
-    ASSERT(adv >= 8 && adv <= 16);
-    UnloadFontData(g, count);
-    free(bytes);
+TEST modern_wrap_uses_the_face_and_reflows_newlines(void) {
+    ASSERT(text_preload_file("assets/glory-of-rome/art/font/Cinzel-Bold.ttf", 20, 1));
+    ASSERT(text_line_h() >= 20);
+    ASSERT(text_digit_w() > 0);
+    // A width that holds either line but not "THE QUICK BROWN"
+    int w_a = text_width("THE QUICK"), w_b = text_width("BROWN FOX");
+    int max_w = (w_a > w_b ? w_a : w_b) + 2;
+    ASSERT(text_width("THE QUICK BROWN") > max_w);
+    const char *p = "The quick\nbrown fox\n\nSecond paragraph";
+    char line[64];
+    ASSERT(text_take_line(&p, max_w, line, sizeof line) > 0);
+    ASSERT_STR_EQ("The quick", line);            // the single newline became a space, then wrapped
+    ASSERT(text_take_line(&p, max_w, line, sizeof line) > 0);
+    ASSERT_STR_EQ("brown fox", line);            // ends at the paragraph break
+    ASSERT(text_take_line(&p, 10000, line, sizeof line) > 0);
+    ASSERT_STR_EQ("Second paragraph", line);
+    ASSERT_EQ(0, text_take_line(&p, 10000, line, sizeof line));
+    text_shutdown();
     PASS();
 }
 
 SUITE(unit_bfont_suite) {
-    RUN_TEST(fits_when_ink_is_inside_the_cell);
-    RUN_TEST(advance_is_widest_ink_plus_one_capped_at_the_cell);
-    RUN_TEST(rome_face_fits_its_cell_at_the_declared_size);
+    RUN_TEST(legacy_wrap_is_thirty_columns_breaking_at_spaces);
+    RUN_TEST(legacy_wrap_keeps_every_newline);
+    RUN_TEST(legacy_metrics_are_the_old_literals);
+    RUN_TEST(modern_wrap_uses_the_face_and_reflows_newlines);
 }

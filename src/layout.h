@@ -123,10 +123,14 @@ void layout_min_window(int *out_w, int *out_h);
 //   status.y = top_frame->h;                     (= 8)
 //   status.w = screen->w - left - right;          (= 288)
 //   status.h = font.h + zoom;                     (zoom=1, font.h=8 => 9)
+// The band is one text line plus a unit of padding. The line is 8 * ui_scale
+// on the bitmap strip (legacy: 9, as always) and the face's own line height
+// when a modern pack declares a TrueType font (see bfont.h).
+int bfont_glyph_h(void);
 #define CL_STATUS_X       CL_FRAME_LEFT_W
 #define CL_STATUS_Y       CL_FRAME_TOP_H
 #define CL_STATUS_W       (CL_SCREEN_W - CL_FRAME_LEFT_W - CL_FRAME_RIGHT_W)
-#define CL_STATUS_H       (9 * CL_UI)
+#define CL_STATUS_H       (bfont_glyph_h() + CL_UI)
 
 // Map viewport rect.
 // From OpenKB's game.c:116-119:
@@ -199,7 +203,7 @@ void layout_min_window(int *out_w, int *out_h);
 
 #define CL_PANEL_X        (CL_CONTENT_X - 5 * CL_UI)
 #define CL_PANEL_W        (CL_CONTENT_W + 5 * CL_UI)
-#define CL_PANEL_H        (68 * CL_UI)
+#define CL_PANEL_H        (8 * bfont_glyph_h() + 4 * CL_UI)   // eight text lines and padding: legacy 68
 #define CL_PANEL_Y        (CL_CONTENT_Y + CL_CONTENT_H - CL_PANEL_H)
 #define CL_PANEL_PAD_X    (4 * CL_UI)
 #define CL_PANEL_COLS     30

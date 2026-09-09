@@ -163,7 +163,7 @@ void chrome_draw_with_status(const Game *g, const Sprites *s,
         if (s && s->chrome_overworld.id) draw_chrome_frame(s->chrome_overworld);
     }
     if (status_text && status_text[0]) {
-        bfont_draw(status_text, CL_STATUS_X + 1, CL_STATUS_Y + 1,
+        bfont_draw(status_text, CL_STATUS_X + 1, CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0),
                    PAL_CLR(WHITE));
     }
 }
@@ -206,12 +206,12 @@ void chrome_draw(const Game *g, const Sprites *s) {
                               : " Quit without saving (y/n) ";
             bfont_draw_centered(txt,
                                 CL_STATUS_X + CL_STATUS_W / 2,
-                                CL_STATUS_Y + 1,
+                                CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0),
                                 PAL_CLR(WHITE));
         } else if (views_wants_exit_hint() || dialog_is_active()) {
             bfont_draw_centered(ui->press_esc_to_exit,
                                 CL_STATUS_X + CL_STATUS_W / 2,
-                                CL_STATUS_Y + 1,
+                                CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0),
                                 PAL_CLR(WHITE));
         } else {
             char buf[64], nbuf[16];
@@ -239,7 +239,7 @@ void chrome_draw(const Game *g, const Sprites *s) {
                              g->stats.days_left);
                 }
             }
-            bfont_draw(buf, CL_STATUS_X + 1, CL_STATUS_Y + 1, PAL_CLR(WHITE));
+            bfont_draw(buf, CL_STATUS_X + 1, CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0), PAL_CLR(WHITE));
         }
     }
 }

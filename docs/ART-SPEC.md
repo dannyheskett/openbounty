@@ -95,8 +95,9 @@ means it is correct in all of them.
 ### Font
 
 Rome declares a TrueType face in `game.json` (`font` block, PACK-FORMAT
-§2.2): Cinzel Bold, SIL OFL, rasterised at load with anti-aliasing and
-fitted to the 16 x 16 glyph cell, drawn in capitals. The 8 x 8 strip
+§2.2): Cinzel Bold, SIL OFL, drawn proportionally at 20 px with
+anti-aliasing, in capitals; the status band, message panel and list rows
+take their height from the face. The 8 x 8 strip
 `rome-font.png` stays in the pack as the fallback.
 
 The bitmap strip route, which legacy uses, is a single horizontal strip of
