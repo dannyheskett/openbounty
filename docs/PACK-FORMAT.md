@@ -107,7 +107,9 @@ the bitmap, draws it as before.
 ```
 
 Modern packs only. `file` is a `.ttf` or `.otf` inside the pack; `size` is
-the pixel size it is drawn at (6..64, default 16); `caps` true draws every
+the height of the line box in pixels, ascent plus descent, the meaning
+raylib gives a font size (6..64, default 16; a 28 draws capitals about
+15 px tall in Space Mono); `caps` true draws every
 string in capitals; `license` is the licence text shipped beside the font.
 The file and the licence are both in the art manifest, so the archive
 carries them.
@@ -120,9 +122,8 @@ the face's line height. The layout follows the font rather than
 the other way round: the status band is one line plus padding, the message
 panel is eight lines plus padding, list rows are a line high, and a fixed
 buffer gives the extra height back from its top and bottom bands. Word wrap
-is by pixel width; a single newline in a string is a space and a blank line
-is a paragraph break, so text authored pre-wrapped for the old 30 columns
-reflows. At 2x and 3x the atlas is rebuilt at that zoom, so text is sharp
+is by pixel width and every authored newline is kept, so menus and tables
+in the strings hold their shape. At 2x and 3x the atlas is rebuilt at that zoom, so text is sharp
 while art stays pixel-identical. The start-up log reports the size, line
 height and digit width. If the file fails to load the strip in
 `sprites.font` is used instead, in its 8 x 8 cell. Legacy packs never read

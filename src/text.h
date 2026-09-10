@@ -42,9 +42,9 @@ int  text_width(const char *s);  // width of one line in design pixels (stops at
 void text_draw(const char *s, int x, int y, Color c);
 
 // Pixel-width word wrap. Copies one line of at most `max_w` pixels into
-// `out`, breaking at the last space, and advances *p. A single '\n' in the
-// source is a space; a blank line is a paragraph break and ends the line.
-// Returns the number of characters consumed, 0 when *p is exhausted.
+// `out`, breaking at the last space, and advances *p. Every '\n' is a line
+// break, exactly as authored: menus and tables in the pack's strings rely
+// on their line breaks. Returns the characters consumed, 0 at the end.
 int  text_take_line(const char **p, int max_w, char *out, int cap);
 
 #endif

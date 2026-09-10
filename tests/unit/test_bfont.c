@@ -57,7 +57,7 @@ TEST legacy_metrics_are_the_old_literals(void) {
     PASS();
 }
 
-TEST modern_wrap_uses_the_face_and_reflows_newlines(void) {
+TEST modern_wrap_uses_the_face_and_keeps_newlines(void) {
     ASSERT(text_preload_file("assets/glory-of-rome/art/font/SpaceMono-Bold.ttf", 20, 0));
     ASSERT(text_line_h() >= 20);
     ASSERT(text_digit_w() > 0);
@@ -65,12 +65,14 @@ TEST modern_wrap_uses_the_face_and_reflows_newlines(void) {
     int w_a = text_width("The quick"), w_b = text_width("brown fox");
     int max_w = (w_a > w_b ? w_a : w_b) + 2;
     ASSERT(text_width("The quick brown") > max_w);
-    const char *p = "The quick\nbrown fox\n\nSecond paragraph";
+    const char *p = "The quick brown fox\n\nSecond paragraph";
     char line[64];
     ASSERT(text_take_line(&p, max_w, line, sizeof line) > 0);
-    ASSERT_STR_EQ("The quick", line);            // the single newline became a space, then wrapped
+    ASSERT_STR_EQ("The quick", line);            // wrapped by the face's cell width
     ASSERT(text_take_line(&p, max_w, line, sizeof line) > 0);
-    ASSERT_STR_EQ("brown fox", line);            // ends at the paragraph break
+    ASSERT_STR_EQ("brown fox", line);            // then the authored line break
+    ASSERT(text_take_line(&p, 10000, line, sizeof line) > 0);
+    ASSERT_STR_EQ("", line);                     // the blank line stays a blank line
     ASSERT(text_take_line(&p, 10000, line, sizeof line) > 0);
     ASSERT_STR_EQ("Second paragraph", line);
     ASSERT_EQ(0, text_take_line(&p, 10000, line, sizeof line));
@@ -82,5 +84,5 @@ SUITE(unit_bfont_suite) {
     RUN_TEST(legacy_wrap_is_thirty_columns_breaking_at_spaces);
     RUN_TEST(legacy_wrap_keeps_every_newline);
     RUN_TEST(legacy_metrics_are_the_old_literals);
-    RUN_TEST(modern_wrap_uses_the_face_and_reflows_newlines);
+    RUN_TEST(modern_wrap_uses_the_face_and_keeps_newlines);
 }

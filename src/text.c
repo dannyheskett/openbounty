@@ -71,10 +71,10 @@ static bool preload_metrics(const char *name, int size, int caps) {
     // glyph's bottom is the line's ink height.
     int deepest = 0, widest = 0;
     for (int i = 0; i < count; i++) {
+        // the cell is the widest ADVANCE; a glyph whose ink overhangs its
+        // advance by a pixel or two (a wide W in some monos) simply overhangs
         int a = g[i].advanceX > 0 ? g[i].advanceX : g[i].image.width;
-        int ink = g[i].offsetX + g[i].image.width;
         if (a > widest) widest = a;
-        if (ink > widest) widest = ink;
         s_ink_w[i] = g[i].image.width;
         s_ink_x[i] = g[i].offsetX;
         int b = g[i].offsetY + g[i].image.height;
@@ -192,20 +192,9 @@ int text_take_line(const char **p, int max_w, char *out, int cap) {
     int n = 0, w = 0;
     int last_space = -1, w_at_space = 0;
     const char *src_at_space = NULL;
-    // Leading spaces are dropped, and so is a single newline left over from
-    // the previous line's break (a blank line is a paragraph break, kept).
-    while (*s == ' ' || *s == '\t' || (*s == '\n' && s[1] != '\n')) s++;
-    while (*s && n + 1 < cap) {
+    while (*s == ' ' || *s == '\t') s++;
+    while (*s && *s != '\n' && n + 1 < cap) {
         unsigned char ch = (unsigned char)*s;
-        if (ch == '\n') {
-            if (s[1] == '\n') {          // paragraph break: consume both, end the line
-                s += 2;
-                *p = s;
-                out[n] = '\0';
-                return n + 2;
-            }
-            ch = ' ';                    // a single newline is a space
-        }
         int adv = s_adv[codepoint(ch) - T_FIRST];
         if (w + adv > max_w && n > 0) {
             if (ch != ' ' && last_space >= 0) {   // mid-word: back up to the last space
@@ -221,7 +210,8 @@ int text_take_line(const char **p, int max_w, char *out, int cap) {
         s++;
     }
     while (n > 0 && out[n - 1] == ' ') n--;       // no trailing space on a line
-    while (*s == ' ' || (*s == '\n' && s[1] != '\n')) s++;   // nor a leading one on the next
+    while (*s == ' ') s++;                         // nor a leading one on the next
+    if (*s == '\n') s++;                          // a newline is a line break, as authored
     out[n] = '\0';
     int consumed = (int)(s - *p);
     *p = s;

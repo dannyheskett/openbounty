@@ -18,10 +18,13 @@
 // View panels are fixed-size content: 30 columns of text and a hand-placed
 // portrait and grid. They draw into the shared content rect, which is centred in
 // the map pane rather than filling it -- see CL_CONTENT_* in layout.h.
+// Width is the content rect (30 columns of text). Height is the whole map
+// pane: in legacy the two are the same 170 rows, and a modern pack's taller
+// font needs the pane's full height for the character card's rows.
 #define VIEW_X       CL_CONTENT_X
-#define VIEW_Y       CL_CONTENT_Y
+#define VIEW_Y       CL_MAP_Y
 #define VIEW_W       CL_CONTENT_W
-#define VIEW_H       CL_CONTENT_H
+#define VIEW_H       CL_MAP_H
 #define VIEW_PAD     (4 * CL_UI)
 
 // Wide views (Character, Army, Gate) get the content rect plus a sidebar's
@@ -130,7 +133,10 @@ static void draw_character(const Game *g, const Sprites *s) {
     // Inventory belt (full content width). Yellow outline; dark-red empty
     // slots inside; artifact icons / zone tiles overlay when found.
     int inv_x = vx;
+    // Under the portrait, or under the last stat row when a taller font
+    // pushes the rows past it (legacy: the rows end inside the portrait).
     int inv_y = VIEW_Y + portrait_h;
+    if (y + CL_UI > inv_y) inv_y = y + CL_UI;
     // A belt slot holds tile-shaped art -- artifact icons and zone map tiles --
     // so it IS a tile. Centred, because 6 tiles is narrower than the panel once
     // the tile stops being exactly a sixth of it. In legacy 6*48 == 288 == vw,

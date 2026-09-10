@@ -55,8 +55,7 @@ void    bfont_set_zoom(int zoom);
 // last space, advances *p, returns the characters consumed (0 at the end).
 // Legacy wraps by max_w / BFONT_GLYPH_W characters and keeps every '\n' as a
 // line break, as the dialog and prompt always did. Modern wraps by the real
-// glyph advances; a single '\n' is a space and a blank line ends a paragraph,
-// so text authored pre-wrapped for the old 30 columns reflows.
+// glyph cell and keeps every '\n' too, so authored menus and tables hold.
 int     bfont_take_line(const char **p, int max_w, char *out, int cap);
 
 int     bfont_text_width(const char *text);

@@ -1935,11 +1935,12 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   (`src/layout.h`) are expressed in those and evaluate to 9 and 68 in
   legacy. `bfont_take_line` wraps to a pixel width: legacy by
   `max_w / 8` characters keeping every newline (the wrap the dialog and
-  prompt carried as private copies); modern by real advances, a single
-  newline a space and a blank line a paragraph break. `layout_init` lets a
+  prompt carried as private copies); modern by the face's cell, every
+  newline kept as authored. `layout_init` lets a
   fixed buffer's top and bottom bands shrink to a two-unit floor to hold a
-  taller status band. Rome ships Space Mono Bold (SIL OFL) at 20 px
-  (2026-09-09).
+  taller status band. Rome ships Space Mono Bold (SIL OFL) at 28 (line box; capitals about
+  15 px) (2026-09-09). Views take the map pane's full height (`VIEW_H`),
+  which in legacy is the content rect it always was.
 - **REQ-430d.** **Rendered at zoom.** For a fixed buffer (`CL_IS_NATIVE`)
   the render target is the buffer times the presentation scale
   (`present_target_size`, `present_refit`), every frame site draws through

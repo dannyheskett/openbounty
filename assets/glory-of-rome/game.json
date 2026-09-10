@@ -6,7 +6,7 @@
 	"pack_kind":	"base",
 	"font":	{
 		"file":	"art/font/SpaceMono-Bold.ttf",
-		"size":	20,
+		"size":	28,
 		"caps":	false,
 		"license":	"art/font/OFL-SpaceMono.txt" },
 	"render":	{
