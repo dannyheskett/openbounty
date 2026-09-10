@@ -63,4 +63,9 @@ InputState input_poll(void);
 // Returns false when no gamepad is connected.
 bool gamepad_pressed_cancel(void);
 
+// Pressed-edge d-pad / left-stick direction (-1, 0, 1 per axis), and the
+// confirm button (A / Cross). Both false without a gamepad.
+bool input_gamepad_dir(int *dx, int *dy);
+bool input_gamepad_confirm(void);
+
 #endif

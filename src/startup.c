@@ -11,6 +11,7 @@
 #include "screenshot.h"
 #include "ui.h"
 #include "select.h"
+#include "textsel.h"
 #include "tables.h"
 #include "resources.h"
 #include "raylib.h"
@@ -420,6 +421,14 @@ static bool run_class_select(const Resources *res,
 //   rows 5-8 col 0 (only when has_name): ">" next to the selected row.
 // ---------------------------------------------------------------------------
 
+// The name field takes letters, digits and spaces, ten characters.
+static bool name_char_allowed(const char *buf, int len, int ch) {
+    (void)buf;
+    if (len >= 10) return false;
+    return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') ||
+           (ch >= '0' && ch <= '9') || ch == ' ';
+}
+
 static bool run_create_game(const Resources *res,
                             const Sprites   *sprites,
                             RenderTexture2D *rt,
@@ -429,6 +438,8 @@ static bool run_create_game(const Resources *res,
     bool has_name = false;
     int  sel = 1;             // initial difficulty is Normal
     double cursor_blink = 0;
+    TextSel ts = { 0, false };   // modern: the letter selector when there is no keyboard
+    bool selector = false;
 
     // Look up class title via out->class_id (set by run_class_select).
     const ClassDef *cls = class_by_id(out->class_id);
@@ -463,11 +474,21 @@ static bool run_create_game(const Resources *res,
 
         int tapped = touch_tapped_row(TOUCH_LIST_STARTUP);
         if (!has_name) {
-            // Touch: on-screen keyboard feeds the same char queue.
-            touch_request(TOUCH_CHROME_KEYBOARD);
+            // Modern: without a keyboard, or once a pad or touch has been
+            // used, the in-game letter selector takes the field; typing
+            // still works alongside it. Legacy keeps the window keyboard.
+            selector = CL_IS_MODERN &&
+                       (input_text_mode() == TEXT_MODE_SELECTOR || input_pad_or_touch_seen());
+            if (!selector) touch_request(TOUCH_CHROME_KEYBOARD);
+            bool done = false;
+            if (selector) {
+                done = textsel_input(&ts, name_buf, &name_len, (int)sizeof name_buf,
+                                     TOUCH_LIST_TEXTSEL, name_char_allowed);
+            }
             // Name entry phase. Enter confirms; BACKSPACE deletes; alpha/
-            // digit/space appends.
-            if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER)) {
+            // digit/space appends. With the selector up, Enter picks a cell
+            // instead, and OK on the grid is the confirm.
+            if (done || (!selector && (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER)))) {
                 if (name_len == 0) {
                     // We default to world.default_name on empty name
                     // (from game.json) so the flow always completes.
@@ -480,7 +501,7 @@ static bool run_create_game(const Resources *res,
                     name_buf[0] = (char)(name_buf[0] - 'a' + 'A');
                 }
                 has_name = true;
-            } else if (input_key_pressed(KEY_BACKSPACE) && name_len > 0) {
+            } else if (!selector && input_key_pressed(KEY_BACKSPACE) && name_len > 0) {
                 name_buf[--name_len] = '\0';
             } else {
                 int ch = input_get_char_pressed();
@@ -592,6 +613,15 @@ static bool run_create_game(const Resources *res,
                        x + GW, ROW_Y(10), PAL_CLR(WHITE));
         }
 
+        if (!has_name && selector) {
+            int cw = 2 * GW, chh = GH + 4 * CL_UI;
+            int gx = x + (w - textsel_w(false, cw)) / 2;
+            int gy = y + h + 4 * CL_UI;
+            DrawRectangle(gx - 2 * CL_UI, gy - 2 * CL_UI,
+                          textsel_w(false, cw) + 4 * CL_UI, textsel_h(false, chh) + 4 * CL_UI,
+                          PAL_CLR(DBLUE));
+            textsel_draw(&ts, gx, gy, cw, chh, PAL_CLR(YELLOW), PAL_CLR(DBLUE), TOUCH_LIST_TEXTSEL);
+        }
         #undef ROW_Y
         frame_end(rt);
     }

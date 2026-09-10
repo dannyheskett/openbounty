@@ -32,8 +32,43 @@ static void poll_direction(InputState *in) {
 // Gamepad input is additive to keyboard input; the pad doesn't disable
 // keys. If the pad isn't connected, IsGamepadAvailable returns false
 // and every check no-ops.
+// Pressed-edge d-pad or stick direction, for menus and the letter
+// selector. The stick counts once per engagement, not every frame.
+bool input_gamepad_dir(int *dx, int *dy) {
+    if (!IsGamepadAvailable(GAMEPAD_ID)) return false;
+    int x = 0, y = 0;
+    if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_LEFT_FACE_LEFT))  x = -1;
+    if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) x =  1;
+    if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_LEFT_FACE_UP))    y = -1;
+    if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_LEFT_FACE_DOWN))  y =  1;
+    static bool stick_was = false;
+    float ax = GetGamepadAxisMovement(GAMEPAD_ID, GAMEPAD_AXIS_LEFT_X);
+    float ay = GetGamepadAxisMovement(GAMEPAD_ID, GAMEPAD_AXIS_LEFT_Y);
+    bool engaged = (ax >  GAMEPAD_AXIS_DEADZONE || ax < -GAMEPAD_AXIS_DEADZONE ||
+                    ay >  GAMEPAD_AXIS_DEADZONE || ay < -GAMEPAD_AXIS_DEADZONE);
+    if (engaged && !stick_was) {
+        if (ax >  GAMEPAD_AXIS_DEADZONE) x =  1;
+        if (ax < -GAMEPAD_AXIS_DEADZONE) x = -1;
+        if (ay >  GAMEPAD_AXIS_DEADZONE) y =  1;
+        if (ay < -GAMEPAD_AXIS_DEADZONE) y = -1;
+    }
+    stick_was = engaged;
+    if (x || y) input_host_note_gamepad();
+    if (dx) *dx = x;
+    if (dy) *dy = y;
+    return x || y;
+}
+
+bool input_gamepad_confirm(void) {
+    if (!IsGamepadAvailable(GAMEPAD_ID)) return false;
+    bool p = IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_RIGHT_FACE_DOWN);
+    if (p) input_host_note_gamepad();
+    return p;
+}
+
 static void poll_gamepad(InputState *in) {
     if (!IsGamepadAvailable(GAMEPAD_ID)) return;
+    if (GetGamepadButtonPressed() != 0) input_host_note_gamepad();
 
     // Movement: d-pad first, fall back to left stick.
     int dx = 0, dy = 0;
@@ -78,7 +113,9 @@ static void poll_gamepad(InputState *in) {
 
 bool gamepad_pressed_cancel(void) {
     if (!IsGamepadAvailable(GAMEPAD_ID)) return false;
-    return IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_RIGHT_FACE_RIGHT);
+    bool p = IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_RIGHT_FACE_RIGHT);
+    if (p) input_host_note_gamepad();
+    return p;
 }
 
 InputState input_poll(void) {

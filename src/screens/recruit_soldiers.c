@@ -26,6 +26,7 @@
 #include "game.h"
 #include "ui.h"
 #include "select.h"
+#include "textsel.h"
 #include "raylib.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -197,10 +198,25 @@ static int poll_idle_input(void) {
 //   1  ENTER pressed: digits in s_input_buf are the value
 //   2  ESC pressed: cancel (whom -> 0)
 //   0  still entering / nothing this frame
+static TextSel s_ts = { 0, true };   // modern: the digit selector
+static bool s_selector = false;
+
+static bool digit_allowed(const char *buf, int len, int ch) {
+    (void)buf;
+    return len < INPUT_MAX_LEN && ch >= '0' && ch <= '9';
+}
+
 static int poll_count_input(void) {
     touch_request(TOUCH_CHROME_BACK);
-    touch_request(TOUCH_CHROME_DIGITS);
+    s_selector = CL_IS_MODERN &&
+                 (input_text_mode() == TEXT_MODE_SELECTOR || input_pad_or_touch_seen());
+    if (!s_selector) touch_request(TOUCH_CHROME_DIGITS);
     if (input_key_pressed(KEY_ESCAPE)) return 2;
+    if (s_selector) {
+        if (textsel_input(&s_ts, s_input_buf, &s_input_len, INPUT_MAX_LEN + 1,
+                          TOUCH_LIST_TEXTSEL, digit_allowed)) return 1;
+        return 0;
+    }
     if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER)) return 1;
     if (input_key_pressed(KEY_BACKSPACE) && s_input_len > 0) {
         s_input_len--;
@@ -438,6 +454,11 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
         snprintf(buf_with_cursor, sizeof(buf_with_cursor), "%s_",
                  s_input_buf);
         bfont_draw(buf_with_cursor, rx, rby + 3 * row_h, PAL_CLR(WHITE));
+        if (s_selector) {
+            int cw = 2 * BFONT_GLYPH_W, chh = BFONT_GLYPH_H + 2 * CL_UI;
+            textsel_draw(&s_ts, rx, rby + 4 * row_h + CL_UI, cw, chh,
+                         PAL_CLR(YELLOW), PAL_CLR(DBLUE), TOUCH_LIST_TEXTSEL);
+        }
     }
 }
 

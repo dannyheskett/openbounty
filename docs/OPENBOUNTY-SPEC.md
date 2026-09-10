@@ -1968,6 +1968,25 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   legacy `sel_input` returns nothing and `sel_row` draws plain text, so
   every legacy screen keeps its own handling and pixels; numeric and A/B
   prompts and the debug menu keep their key form (2026-09-09).
+- **REQ-430f.** **Keyboard detection and the letter selector (modern).**
+  `input_host` latches which physical devices have been used: a real key
+  event (not an injected one), a touch contact, a gamepad button or stick
+  (`input_host_note_gamepad`, called from `src/input.c`).
+  `input_has_keyboard` is true once a key has been seen, and before that
+  true unless touch or a gamepad was seen first; `input_text_mode` maps it
+  to typed entry or the selector. `src/textsel.c` is the selector: an
+  in-game grid drawn in the buffer, A..Z SPC DEL OK in 6 x 5 or 7 8 9 DEL /
+  4 5 6 OK / 1 2 3 0 for numbers, moved by arrows, keypad or the gamepad
+  d-pad and stick (`input_gamepad_dir`), picked by Enter or the A button
+  (`input_gamepad_confirm`), deleted by Backspace or B, or tapped
+  (`TOUCH_LIST_TEXTSEL`); the cursor cell is inverted. It writes the field's
+  buffer directly, through the same bounds the typed path applies. Wired
+  into the hero name (`startup.c`), the recruit count
+  (`recruit_soldiers.c`) and the numeric prompt (`prompt.c`), shown when
+  text mode is the selector or when a pad or touch has been used, with
+  typing still accepted alongside. Keyboard-only sessions see no change.
+  Legacy keeps typed entry and its window-chrome keyboard and digit pad
+  (2026-09-10).
 
 ### 29.2 Views
 

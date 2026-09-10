@@ -40,4 +40,16 @@ bool input_pointer_released(void);            // release edge this frame
 // Desktop mouse users never flip it, so they get taps without the chrome.
 bool input_touch_active(void);
 
+// ---- text entry mode ----------------------------------------------------------
+//
+// Whether a keyboard is present is inferred from what has been used: a real
+// key press latches it for the session; before any key, a desktop is assumed
+// to have one unless touch or a gamepad was seen first. Text fields type
+// when there is a keyboard and show the in-game letter selector when not.
+typedef enum { TEXT_MODE_KEYBOARD = 0, TEXT_MODE_SELECTOR } InputTextMode;
+bool          input_has_keyboard(void);
+InputTextMode input_text_mode(void);
+bool          input_pad_or_touch_seen(void);   // selector is offered alongside typing
+void          input_host_note_gamepad(void);   // called by input.c on any pad event
+
 #endif

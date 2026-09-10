@@ -55,6 +55,7 @@ enum {
     TOUCH_LIST_COMBAT_SPELLS,// combat spell menu rows
     TOUCH_LIST_PROMPT,       // yes/no prompt rows
     TOUCH_LIST_CLASS,        // class picker columns
+    TOUCH_LIST_TEXTSEL,      // letter selector cells
 };
 void touch_region_row(int x, int y, int w, int h, int list_id, int row);
 int  touch_tapped_row(int list_id);   // row tapped, -1 = none this frame

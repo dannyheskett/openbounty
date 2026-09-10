@@ -5,6 +5,7 @@
 #include "layout.h"
 #include "ui.h"
 #include "select.h"
+#include "textsel.h"
 #include "palette.h"
 #include "bfont.h"
 #include "resources.h"
@@ -26,6 +27,12 @@ static PromptKind g_kind = PK_NONE;
 static char g_header[64];
 static char g_body[256];
 static int  g_yn_cursor = 0;   // modern yes/no rows: 0 = Yes, 1 = No
+static TextSel g_ts = { 0, true };   // modern numeric selector
+static bool g_selector = false;
+
+// The same bound the typed path applies: room for the digit, and the
+// number it makes must not pass max_value.
+static bool prompt_digit_allowed(const char *buf, int len, int ch);
 static int  g_max_choice = 5;
 static int  g_text_max_digits = 4;
 static int  g_text_max_value  = 9999;
@@ -71,8 +78,18 @@ void prompt_ab_open(const char *header, const char *body) {
     emit_open_trace("ab");
 }
 
+static bool prompt_digit_allowed(const char *buf, int len, int ch) {
+    if (ch < '0' || ch > '9' || len >= g_text_max_digits) return false;
+    char cand[8];
+    int n = (len < 6) ? len : 6;
+    for (int i = 0; i < n; i++) cand[i] = buf[i];
+    cand[n] = (char)ch; cand[n + 1] = '\0';
+    return atoi(cand) <= g_text_max_value;
+}
+
 void prompt_text_input_open(const char *header, const char *body,
                             int max_digits, int max_value) {
+    g_ts.cursor = 0;
     g_kind = PK_TEXT_INPUT;
     if (max_digits < 1) max_digits = 1;
     if (max_digits > 6) max_digits = 6;
@@ -122,7 +139,11 @@ PromptResult prompt_update(void) {
     if      (g_kind == PK_YES_NO)     touch_request_prompt_yesno();
     else if (g_kind == PK_NUMERIC)    touch_request_prompt_numeric(g_max_choice);
     else if (g_kind == PK_AB_CHOICE)  touch_request_prompt_ab();
-    else if (g_kind == PK_TEXT_INPUT) touch_request(TOUCH_CHROME_DIGITS);
+    else if (g_kind == PK_TEXT_INPUT) {
+        g_selector = CL_IS_MODERN &&
+                     (input_text_mode() == TEXT_MODE_SELECTOR || input_pad_or_touch_seen());
+        if (!g_selector) touch_request(TOUCH_CHROME_DIGITS);
+    }
 
     if (input_key_pressed(KEY_ESCAPE)) {
         prompt_dismiss();
@@ -176,6 +197,16 @@ PromptResult prompt_update(void) {
         return PROMPT_RESULT_NONE;
     }
 
+    if (g_kind == PK_TEXT_INPUT && g_selector) {
+        if (textsel_input(&g_ts, g_text_buf, &g_text_len, (int)sizeof g_text_buf,
+                          TOUCH_LIST_TEXTSEL, prompt_digit_allowed)) {
+            // Committed, the same way Enter commits the typed value: close
+            // by kind only so prompt_text_input_value() still reads the buffer.
+            g_kind = PK_NONE;
+            return PROMPT_RESULT_YES;
+        }
+        return PROMPT_RESULT_NONE;
+    }
     if (g_kind == PK_TEXT_INPUT) {
         // Digit keys -- append if room and the candidate number wouldn't
         // exceed max_value.
@@ -235,7 +266,7 @@ void prompt_draw(void) {
     //   yes/no, numeric -> 1 (hint only)
     //   A/B choice      -> 0 (body names the keys; chrome-less)
     int bottom_rows;
-    if (g_kind == PK_TEXT_INPUT)      bottom_rows = 2;
+    if (g_kind == PK_TEXT_INPUT)      bottom_rows = g_selector ? 5 : 2;   // typed line + hint, or the digit grid
     else if (g_kind == PK_AB_CHOICE)  bottom_rows = 0;
     else if (g_kind == PK_YES_NO && CL_IS_MODERN) bottom_rows = 2;   // the Yes/No rows
     else                              bottom_rows = 1;
@@ -282,9 +313,16 @@ void prompt_draw(void) {
                  g_text_len > 0 ? g_text_buf : "");
         bfont_draw_centered(typed,
                             x + w / 2, y + h - row_h * 2 - 2, PAL_CLR(WHITE));
-        bfont_draw_centered(ui ? ui->prompt_text_hint
-                               : "(Enter to confirm / ESC cancel)",
-                            x + w / 2, y + h - row_h - 2, PAL_CLR(YELLOW));
+        if (g_selector) {
+            int cw = 2 * BFONT_GLYPH_W, chh = BFONT_GLYPH_H + 2 * CL_UI;
+            textsel_draw(&g_ts, x + w - pad - textsel_w(true, cw) - 2 * CL_UI,
+                         y + h - pad - textsel_h(true, chh), cw, chh,
+                         PAL_CLR(YELLOW), PAL_CLR(DBLUE), TOUCH_LIST_TEXTSEL);
+        } else {
+            bfont_draw_centered(ui ? ui->prompt_text_hint
+                                   : "(Enter to confirm / ESC cancel)",
+                                x + w / 2, y + h - row_h - 2, PAL_CLR(YELLOW));
+        }
     } else if (g_kind == PK_NUMERIC && g_max_choice != 5) {
         char buf[32];
         if (ui) {

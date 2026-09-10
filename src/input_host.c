@@ -32,22 +32,43 @@ static bool injected_has(int key) {
     return false;
 }
 
+// ---- input sources ----------------------------------------------------------
+//
+// Which physical devices have been seen this session. A real key event
+// (not an injected one) latches the keyboard; the touch layer latches
+// touch; input.c latches the gamepad. input_has_keyboard decides whether
+// text fields are typed or use the in-game letter selector.
+
+static bool s_key_seen;
+static bool s_pad_seen;
+
+static bool note_key(bool real) {
+    if (real) s_key_seen = true;
+    return real;
+}
+
+void input_host_note_gamepad(void) { s_pad_seen = true; }
+
 bool input_key_pressed(int key) {
-    return IsKeyPressed(key) || injected_has(key);
+    return note_key(IsKeyPressed(key)) || injected_has(key);
 }
 
 bool input_key_down(int key) {
-    return IsKeyDown(key) || injected_has(key);
+    return note_key(IsKeyDown(key)) || injected_has(key);
 }
 
 int input_get_key_pressed(void) {
     if (s_key_drain < s_key_count) return s_keys[s_key_drain++];
-    return GetKeyPressed();
+    int k = GetKeyPressed();
+    if (k) s_key_seen = true;
+    return k;
 }
 
 int input_get_char_pressed(void) {
     if (s_char_drain < s_char_count) return s_chars[s_char_drain++];
-    return GetCharPressed();
+    int c = GetCharPressed();
+    if (c) s_key_seen = true;
+    return c;
 }
 
 // ---- pointer --------------------------------------------------------------
@@ -81,4 +102,22 @@ bool input_pointer_released(void) {
 bool input_touch_active(void) {
     latch_touch();
     return s_touch_seen;
+}
+
+bool input_has_keyboard(void) {
+    latch_touch();
+    if (s_key_seen) return true;
+    // Nothing typed yet: a desktop is assumed to have a keyboard until a
+    // touch or a gamepad shows up first; the web build assumes none once
+    // either has been seen.
+    return !(s_touch_seen || s_pad_seen);
+}
+
+InputTextMode input_text_mode(void) {
+    return input_has_keyboard() ? TEXT_MODE_KEYBOARD : TEXT_MODE_SELECTOR;
+}
+
+bool input_pad_or_touch_seen(void) {
+    latch_touch();
+    return s_touch_seen || s_pad_seen;
 }
