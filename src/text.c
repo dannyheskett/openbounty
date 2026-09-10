@@ -16,10 +16,16 @@ static int    s_px = 0;                  // declared size, design pixels
 static int    s_caps = 0;
 static char   s_name[256];
 
-// Metrics at zoom 1, design pixels. adv[] is the advance per printable
-// glyph; line_h is ascent + descent from stb's vertical metrics as raylib
-// reports them (the loaded glyph offsets are relative to the line top).
-static int    s_adv[T_COUNT];
+// Metrics at zoom 1, design pixels. Every glyph advances by ONE fixed
+// width, the widest advance the face has over the printable set: the
+// screens lay columns out by character count (menus, tables, the controls
+// list), so a proportional advance breaks their alignment. A monospaced
+// face gives its own advance; a proportional one gets letter-spaced to its
+// widest glyph, which is why packs should declare a monospaced face.
+// line_h is the line's ink height plus lead (offsets are line-top relative).
+static int    s_adv[T_COUNT];            // all equal: the fixed advance
+static int    s_ink_w[T_COUNT];          // each glyph's own ink width, to centre it in the cell
+static int    s_ink_x[T_COUNT];          // its left bearing
 static int    s_line_h = 0;
 static int    s_digit_w = 0;
 
@@ -63,17 +69,23 @@ static bool preload_metrics(const char *name, int size, int caps) {
     // descent the face actually uses at this size; the line is that plus a
     // little lead. offsetY is measured from the line top, so the tallest
     // glyph's bottom is the line's ink height.
-    int deepest = 0;
+    int deepest = 0, widest = 0;
     for (int i = 0; i < count; i++) {
-        s_adv[i] = g[i].advanceX > 0 ? g[i].advanceX : g[i].image.width;
+        int a = g[i].advanceX > 0 ? g[i].advanceX : g[i].image.width;
+        int ink = g[i].offsetX + g[i].image.width;
+        if (a > widest) widest = a;
+        if (ink > widest) widest = ink;
+        s_ink_w[i] = g[i].image.width;
+        s_ink_x[i] = g[i].offsetX;
         int b = g[i].offsetY + g[i].image.height;
         if (b > deepest) deepest = b;
     }
+    for (int i = 0; i < count; i++) s_adv[i] = widest;
     s_line_h = (deepest > s_px) ? deepest : s_px;
     s_line_h += (s_px + 7) / 8;          // lead: an eighth of the size
-    s_digit_w = s_adv['0' - T_FIRST];
+    s_digit_w = widest;
     UnloadFontData(g, count);
-    fprintf(stdout, "text: %s at %dpx, line %d, digit %d%s\n",
+    fprintf(stdout, "text: %s at %dpx, line %d, cell %d%s\n",
             name, s_px, s_line_h, s_digit_w, s_caps ? ", caps" : "");
     return true;
 }
@@ -165,8 +177,10 @@ void text_draw(const char *s, int x, int y, Color c) {
         const GlyphInfo *g = &s_font.glyphs[gi];
         if (g->image.width > 0 && g->image.height > 0) {
             Rectangle src = s_font.recs[gi];
-            Rectangle dst = { (float)cx + (float)g->offsetX / z, (float)cy + (float)g->offsetY / z,
-                              src.width / z, src.height / z };
+            // centred in the fixed cell: a narrow glyph sits in the middle
+            float w = src.width / z;
+            float dx = (float)cx + ((float)s_adv[gi] - w) / 2.0f;
+            Rectangle dst = { dx, (float)cy + (float)g->offsetY / z, w, src.height / z };
             DrawTexturePro(s_font.texture, src, dst, (Vector2){ 0, 0 }, 0.0f, c);
         }
         cx += s_adv[gi];

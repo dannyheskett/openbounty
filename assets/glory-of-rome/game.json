@@ -5,10 +5,10 @@
 	"pack_name":	"Glory of Rome",
 	"pack_kind":	"base",
 	"font":	{
-		"file":	"art/font/Cinzel-Bold.ttf",
+		"file":	"art/font/SpaceMono-Bold.ttf",
 		"size":	20,
-		"caps":	true,
-		"license":	"art/font/OFL-Cinzel.txt" },
+		"caps":	false,
+		"license":	"art/font/OFL-SpaceMono.txt" },
 	"render":	{
 		"mode":	"modern",
 		"tile_w":	96,

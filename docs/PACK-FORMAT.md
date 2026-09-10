@@ -102,8 +102,8 @@ the bitmap, draws it as before.
 ### 2.2 `font`
 
 ```json
-"font": { "file": "art/font/Cinzel-Bold.ttf", "size": 15, "caps": true,
-          "license": "art/font/OFL-Cinzel.txt" }
+"font": { "file": "art/font/SpaceMono-Bold.ttf", "size": 20, "caps": false,
+          "license": "art/font/OFL-SpaceMono.txt" }
 ```
 
 Modern packs only. `file` is a `.ttf` or `.otf` inside the pack; `size` is
@@ -112,9 +112,11 @@ string in capitals; `license` is the licence text shipped beside the font.
 The file and the licence are both in the art manifest, so the archive
 carries them.
 
-With this block the shell draws text proportionally: the face is rasterised
-at `size` with anti-aliasing, each glyph advances by its own width, and
-lines are the face's line height. The layout follows the font rather than
+With this block the shell draws text from the face at `size`, anti-aliased,
+in a FIXED cell: every glyph advances by the face's widest advance and is
+centred in it, so the screens' column layouts hold. Declare a monospaced
+face; a proportional one gets letter-spaced to its widest glyph. Lines are
+the face's line height. The layout follows the font rather than
 the other way round: the status band is one line plus padding, the message
 panel is eight lines plus padding, list rows are a line high, and a fixed
 buffer gives the extra height back from its top and bottom bands. Word wrap

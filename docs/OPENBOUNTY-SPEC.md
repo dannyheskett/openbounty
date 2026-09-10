@@ -1928,8 +1928,8 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   has two text backends behind the `bfont_*` names: the bitmap strip in its
   `8 * ui_scale` cell (legacy, and any pack without the block, unchanged),
   and `src/text.c`, which rasterises the face at `size` through raylib's
-  `LoadFontData`, draws with the font's own advances on its baseline, and
-  uppercases when `caps` is set. `bfont_preload_metrics` runs before
+  `LoadFontData`, draws every glyph centred in one fixed cell (the face's
+  widest advance) on its baseline, and uppercases when `caps` is set. `bfont_preload_metrics` runs before
   `layout_init` (CPU only) so `BFONT_GLYPH_H` is the face's line height and
   `BFONT_GLYPH_W` the advance of `0`; `CL_STATUS_H` and `CL_PANEL_H`
   (`src/layout.h`) are expressed in those and evaluate to 9 and 68 in
@@ -1938,7 +1938,7 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   prompt carried as private copies); modern by real advances, a single
   newline a space and a blank line a paragraph break. `layout_init` lets a
   fixed buffer's top and bottom bands shrink to a two-unit floor to hold a
-  taller status band. Rome ships Cinzel Bold (SIL OFL) at 20 px, caps
+  taller status band. Rome ships Space Mono Bold (SIL OFL) at 20 px
   (2026-09-09).
 - **REQ-430d.** **Rendered at zoom.** For a fixed buffer (`CL_IS_NATIVE`)
   the render target is the buffer times the presentation scale

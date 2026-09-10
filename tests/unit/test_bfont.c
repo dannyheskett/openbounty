@@ -58,13 +58,13 @@ TEST legacy_metrics_are_the_old_literals(void) {
 }
 
 TEST modern_wrap_uses_the_face_and_reflows_newlines(void) {
-    ASSERT(text_preload_file("assets/glory-of-rome/art/font/Cinzel-Bold.ttf", 20, 1));
+    ASSERT(text_preload_file("assets/glory-of-rome/art/font/SpaceMono-Bold.ttf", 20, 0));
     ASSERT(text_line_h() >= 20);
     ASSERT(text_digit_w() > 0);
     // A width that holds either line but not "THE QUICK BROWN"
-    int w_a = text_width("THE QUICK"), w_b = text_width("BROWN FOX");
+    int w_a = text_width("The quick"), w_b = text_width("brown fox");
     int max_w = (w_a > w_b ? w_a : w_b) + 2;
-    ASSERT(text_width("THE QUICK BROWN") > max_w);
+    ASSERT(text_width("The quick brown") > max_w);
     const char *p = "The quick\nbrown fox\n\nSecond paragraph";
     char line[64];
     ASSERT(text_take_line(&p, max_w, line, sizeof line) > 0);
