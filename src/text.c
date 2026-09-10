@@ -85,8 +85,7 @@ static bool preload_metrics(const char *name, int size, int caps) {
     s_line_h += (s_px + 7) / 8;          // lead: an eighth of the size
     s_digit_w = widest;
     UnloadFontData(g, count);
-    fprintf(stdout, "text: %s at %dpx, line %d, cell %d%s\n",
-            name, s_px, s_line_h, s_digit_w, s_caps ? ", caps" : "");
+    (void)name;
     return true;
 }
 

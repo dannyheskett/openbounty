@@ -109,7 +109,9 @@ static void audio_init_device(const Resources *res) {
     }
 
     if (!ready) {
+#ifndef NDEBUG
         fprintf(stdout, "[audio] no audio device available; controls disabled\n");
+#endif
         return;
     }
 

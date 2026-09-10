@@ -650,7 +650,7 @@ int shell_run_game(int argc, char **argv) {
     pack_stack_push(pack);
 
     // Silence raylib's per-asset INFO chatter; keep warnings + errors.
-    SetTraceLogLevel(LOG_WARNING);
+    SetTraceLogLevel(LOG_ERROR);   // the shell reports its own conditions; raylib's warnings are noise at the prompt
 
     Resources res;
     if (!resources_load(&res, "game.json")) {
@@ -789,8 +789,10 @@ int shell_run_game(int argc, char **argv) {
         // GameInitSeeded derives one from time + name + class instead.
         GameInitSeeded(&game, choice.name, pclass, choice.difficulty, NULL,
                        seed_index);
+#ifndef NDEBUG
         fprintf(stdout, "[main] seed: %d%s\n", game.seed_index,
                 seed_index >= 0 ? "" : " (derived)");
+#endif
 
         //  -- post-create_game informational modal.
         char body[256];
