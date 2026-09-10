@@ -102,14 +102,14 @@ the bitmap, draws it as before.
 ### 2.2 `font`
 
 ```json
-"font": { "file": "art/font/SpaceMono-Bold.ttf", "size": 20, "caps": false,
-          "license": "art/font/OFL-SpaceMono.txt" }
+"font": { "file": "art/font/PressStart2P-Regular.ttf", "size": 16, "caps": false,
+          "license": "art/font/OFL-PressStart2P.txt" }
 ```
 
 Modern packs only. `file` is a `.ttf` or `.otf` inside the pack; `size` is
 the height of the line box in pixels, ascent plus descent, the meaning
-raylib gives a font size (6..64, default 16; a 28 draws capitals about
-15 px tall in Space Mono); `caps` true draws every
+raylib gives a font size (6..64, default 16; a pixel face such as Press Start 2P is crisp at
+whole multiples of its 8 px grid, 16 or 24); `caps` true draws every
 string in capitals; `license` is the licence text shipped beside the font.
 The file and the licence are both in the art manifest, so the archive
 carries them.

@@ -58,8 +58,8 @@ TEST legacy_metrics_are_the_old_literals(void) {
 }
 
 TEST modern_wrap_uses_the_face_and_keeps_newlines(void) {
-    ASSERT(text_preload_file("assets/glory-of-rome/art/font/SpaceMono-Bold.ttf", 20, 0));
-    ASSERT(text_line_h() >= 20);
+    ASSERT(text_preload_file("assets/glory-of-rome/art/font/PressStart2P-Regular.ttf", 16, 0));
+    ASSERT(text_line_h() >= 16);
     ASSERT(text_digit_w() > 0);
     // A width that holds either line but not "THE QUICK BROWN"
     int w_a = text_width("The quick"), w_b = text_width("brown fox");

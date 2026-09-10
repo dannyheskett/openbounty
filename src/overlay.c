@@ -62,7 +62,8 @@ int overlay_dialog_page_count(void) {
     const char *p = body;
     char line[128];
     while (*p) {
-        if (bfont_take_line(&p, CL_PANEL_COLS * GW, line, (int)sizeof line) <= 0) break;
+        int max_w = CL_IS_MODERN ? CL_PANEL_W - 2 * CL_PANEL_PAD_X : CL_PANEL_COLS * GW;
+        if (bfont_take_line(&p, max_w, line, (int)sizeof line) <= 0) break;
         lines++;
     }
     int pages = (lines + DLG_BOTTOM_BODY_LINES - 1) / DLG_BOTTOM_BODY_LINES;
@@ -155,7 +156,7 @@ static void draw_dialog_ex(DialogMode mode) {
     // Wrap width in pixels. The bottom panel's budget is fixed by layout
     // (one-sided margin, see CL_PANEL_COLS); the centred modal has equal
     // margins. In legacy these divide back to the old column counts.
-    int max_w = (mode == DLG_MODE_CENTERED_MODAL)
+    int max_w = (mode == DLG_MODE_CENTERED_MODAL || CL_IS_MODERN)
                     ? (w - 2 * pad_x)
                     : CL_PANEL_COLS * GW;
 

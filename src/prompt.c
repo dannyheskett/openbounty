@@ -213,7 +213,7 @@ void prompt_draw(void) {
     // Fixed by layout, not (w - 2*pad): the panel's margin is one-sided.
     // See CL_PANEL_COLS in layout.h. In pixels, so a proportional face wraps
     // by its own advances; legacy divides back to 30 columns.
-    int max_w = CL_PANEL_COLS * BFONT_GLYPH_W;
+    int max_w = CL_IS_MODERN ? (w - 2 * pad) : CL_PANEL_COLS * BFONT_GLYPH_W;
 
     // Reserve rows at the bottom for hint chrome (rendered after the body).
     //   text-input      -> 2 (typed value + hint)

@@ -1938,8 +1938,9 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   prompt carried as private copies); modern by the face's cell, every
   newline kept as authored. `layout_init` lets a
   fixed buffer's top and bottom bands shrink to a two-unit floor to hold a
-  taller status band. Rome ships Space Mono Bold (SIL OFL) at 28 (line box; capitals about
-  15 px) (2026-09-09). Views take the map pane's full height (`VIEW_H`),
+  taller status band. Rome ships Press Start 2P (SIL OFL) at 16, a 16 px cell (2026-09-09).
+  Modern panels wrap to their own inner width rather than the legacy
+  30-column budget. Views take the map pane's full height (`VIEW_H`),
   which in legacy is the content rect it always was.
 - **REQ-430d.** **Rendered at zoom.** For a fixed buffer (`CL_IS_NATIVE`)
   the render target is the buffer times the presentation scale

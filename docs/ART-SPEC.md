@@ -95,7 +95,7 @@ means it is correct in all of them.
 ### Font
 
 Rome declares a TrueType face in `game.json` (`font` block, PACK-FORMAT
-§2.2): Space Mono Bold, SIL OFL, drawn at size 28 (an 11 px cell) in a fixed cell with
+§2.2): Press Start 2P, SIL OFL, drawn at 16 (a 16 px cell) in a fixed cell with
 anti-aliasing; the status band, message panel and list rows take their
 height from the face. The 8 x 8 strip
 `rome-font.png` stays in the pack as the fallback.
