@@ -52,7 +52,7 @@ elif SIZE == 64:
     BASE = 59
 else:
     SPRITES = "build/art/pixellab/o96_trees"
-    CROWNS = [3, 5, 6, 7]                # crowns without a ground shadow: the interior shows no dark bars
+    CROWNS = [3, 7]                      # the two true overhead crowns; 5 and 6 show trunks, 0/1/2 carry ground shadows
     BORDER = 3
     FRONT = [0, 7, 1]
     BASE = 87
@@ -77,7 +77,7 @@ else:
     EVEN = list(range(0, 96, PITCH))
     ODD = [x + PITCH // 2 for x in EVEN]
     CROSS = [x for x in ODD if x + SIZE > 96][0]   # the border tree's column
-WIDE = ([0, 6, 7] if TERRAIN == "forest" else [0, 6, 5]) if SIZE == 96 else CROWNS   # widest forms, for tucking against an open side
+WIDE = ([7, 3] if TERRAIN == "forest" else [0, 6, 5]) if SIZE == 96 else CROWNS   # widest crowns, for tucking against an open side
 INSET = SIZE // 3 if TERRAIN == "mountain" else SIZE // 4   # how much of a form must lie inside the terrain line
 EDGE_IN = SIZE // 8                     # how far a crown on an open west/east side tucks past the border
 FRONT_PITCH = SIZE // 3 if TERRAIN == "mountain" else SIZE // 2   # ledges overlap: 32; trees 16, 32, 48
@@ -143,9 +143,10 @@ def tile(code, v):
             # above the top edge are the same trees the tile above draws at
             # its bottom, and the canopy continues across the border
             rr = r % (96 // ROW)
-            slot = (rr * 7 + k * 5 + (0 if crossing else rot * 3)) * 2654435761 % 2**32
+            slot = ((rr + 1) * 73856093) ^ ((k + 1) * 19349663) ^ ((0 if crossing else rot + 1) * 83492791)
+            slot = (slot ^ (slot >> 13)) * 2654435761 % 2**32
             if x == CROSS: i = BORDER
-            else: i = CROWNS[(slot >> 8) % len(CROWNS)]
+            else: i = CROWNS[(slot >> 7) % len(CROWNS)]
             if y < 0 and north_open: continue
             # crowns have transparent margins, so on an open west or east
             # side the outermost crown tucks past the border a little rather
@@ -155,13 +156,14 @@ def tile(code, v):
                 i = WIDE[(r + k + rot) % len(WIDE)]
             if crossing and east_open:
                 # nothing may cross an open east border, but the wood must
-                # still reach it: the west neighbour's crossing trees still
-                # continue in from the left, as the wrap would have drawn
-                # them, and one wide crown stands flush with the border
+                # still reach it: one wide crown stands flush with the
+                # border, BEHIND the west neighbour's crossing trees, which
+                # continue in from the left as the wrap would have drawn
+                # them (they must stay in front, or the border shows a cut)
+                if x == CROSS:
+                    rows.append([WIDE[(r + k + rot) % len(WIDE)], 96 - SIZE + EDGE_IN, y])
                 rows.append([i, x - 96, y])
-                if x != CROSS: continue
-                x = 96 - SIZE + EDGE_IN
-                i = WIDE[(r + k + rot) % len(WIDE)]
+                continue
             # the whole crown must be in the wood, not just its centre, or a
             # crown at the tile corner fills in a rounded corner
             if not all(in_wood(code, x + dx, y + dy) for dx in (INSET, SIZE - INSET) for dy in (INSET, SIZE - INSET)): continue
