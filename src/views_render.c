@@ -80,7 +80,7 @@ static void draw_character(const Game *g, const Sprites *s) {
 
     int sx = vx + portrait_w;
     int lh = GH;          // row height = font glyph height; no overlap
-    int bh = GH / 2;      // blank-row gap
+    int bh = CL_IS_MODERN ? GH / 4 : GH / 2;   // blank-row gap; tighter with a tall face
     char buf[64];
     const ResUI *ui = &g->res->ui;
 
@@ -143,6 +143,13 @@ static void draw_character(const Game *g, const Sprites *s) {
     // so the offset is zero and this lands where it always did.
     int item_w = CL_TILE_W;
     int item_h = CL_TILE_H;
+    // Modern: when the stat rows have pushed the belt down and two tile rows
+    // no longer fit above the view's bottom edge, the belt draws at half a
+    // tile per slot (the art is tile-shaped and scales cleanly by two).
+    if (CL_IS_MODERN && inv_y + item_h * 2 > VIEW_Y + VIEW_H) {
+        item_w = CL_TILE_W / 2;
+        item_h = CL_TILE_H / 2;
+    }
     int belt_w = item_w * 6;
     int belt_h = item_h * 2;
     inv_x += (vw - belt_w) / 2;
