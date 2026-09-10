@@ -37,6 +37,7 @@ bool pack_select_flow(const PackEntry *list, int n, int *chosen) {
     InitWindow(W, H, "OpenBounty, select pack");
     SetTargetFPS(60);
     SetExitKey(KEY_NULL);
+    HideCursor();   // no mouse support: rows answer to keys and touch
 
     PackSelectState st = { 0, false, false };
 

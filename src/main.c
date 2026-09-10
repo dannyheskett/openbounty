@@ -699,6 +699,7 @@ int shell_run_game(int argc, char **argv) {
     layout_min_window(&min_w, &min_h);
     SetWindowMinSize(min_w, min_h);
     if (want_fullscreen) ToggleFullscreen();
+    HideCursor();   // no mouse support, ever: taps are touch, and no cursor is drawn
     // Modern starts at 1x -- one buffer pixel to one screen pixel, the
     // resolution the pack was authored for. Maximising shows more tiles rather
     // than bigger ones; higher scales are an explicit choice for a 4K panel.

@@ -27,10 +27,11 @@ void input_host_clear_injected(void);
 
 // ---- pointer --------------------------------------------------------------
 //
-// Mouse and single-touch, unified. raylib's web backend feeds the first
-// touch through the mouse position/buttons, so reading the mouse covers
-// both a desktop click and a tap; the touch API is only consulted to latch
-// input_touch_active(), which gates the on-screen touch chrome.
+// Single touch. There is no mouse support and no cursor: raylib's backends
+// deliver a finger through the mouse position/buttons, so those are read,
+// but only while a touch contact is present, so a desktop mouse does
+// nothing. input_touch_active() latches that a touch has ever been seen
+// and gates the on-screen touch chrome.
 
 bool input_pointer_pressed(int *x, int *y);   // press edge this frame
 bool input_pointer_down(int *x, int *y);      // held

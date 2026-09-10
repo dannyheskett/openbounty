@@ -79,8 +79,17 @@ static void latch_touch(void) {
     if (!s_touch_seen && GetTouchPointCount() > 0) s_touch_seen = true;
 }
 
-bool input_pointer_pressed(int *x, int *y) {
+// A pointer event is a TOUCH, never a mouse: the game has no mouse
+// support and never shows a cursor. raylib's backends deliver a finger
+// through the mouse API, so the mouse reads below are how a tap arrives,
+// gated on a touch contact being present so a desktop mouse does nothing.
+static bool touching(void) {
     latch_touch();
+    return GetTouchPointCount() > 0;
+}
+
+bool input_pointer_pressed(int *x, int *y) {
+    if (!touching()) return false;
     if (!IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) return false;
     if (x) *x = GetMouseX();
     if (y) *y = GetMouseY();
@@ -88,7 +97,7 @@ bool input_pointer_pressed(int *x, int *y) {
 }
 
 bool input_pointer_down(int *x, int *y) {
-    latch_touch();
+    if (!touching()) return false;
     if (!IsMouseButtonDown(MOUSE_BUTTON_LEFT)) return false;
     if (x) *x = GetMouseX();
     if (y) *y = GetMouseY();
