@@ -25,6 +25,7 @@
 #include "resources.h"
 #include "game.h"
 #include "ui.h"
+#include "select.h"
 #include "raylib.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -166,9 +167,18 @@ static int recompute_max(const Game *g, int slot) {
 //   6    SYN tick (animation only)
 //   -1   ESC
 //   0    nothing
+static int s_cursor = 0;   // modern: the selected troop row
+
 static int poll_idle_input(void) {
     touch_request(TOUCH_CHROME_BACK);
     if (input_key_pressed(KEY_ESCAPE)) return -1;
+    {   // Modern: up/down and Enter, or a tapped row; letters in both modes.
+        SelList l = { 5, s_cursor };
+        int row = -1;
+        SelEvent ev = sel_input(&l, TOUCH_LIST_RECRUIT, 0, &row);
+        s_cursor = l.cursor;
+        if (ev == SEL_CONFIRM) return row + 1;
+    }
     for (int i = 0; i < 5; i++) {
         if (input_key_pressed(KEY_A + i)) return i + 1;
     }
@@ -369,12 +379,18 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
             snprintf(line, sizeof(line), "%c) %-11s%d",
                      'A' + i, t->name, t->recruit_cost);
         }
-        bfont_draw(line, tx, troop_ty + i * row_h, PAL_CLR(WHITE));
-        // Touch: rows answer to their letters (only while idle -- during
-        // count entry the digit pad owns input).
-        if (s_whom == 0 && !unreachable)
-            touch_region(tx, troop_ty + i * row_h,
-                         20 * BFONT_GLYPH_W, row_h, KEY_A + i);
+        if (CL_IS_MODERN) {
+            sel_row(tx, troop_ty + i * row_h, 20 * BFONT_GLYPH_W, row_h, tx, line,
+                    s_whom == 0 && s_cursor == i, PAL_CLR(WHITE), PAL_CLR(DBLUE),
+                    (s_whom == 0 && !unreachable) ? TOUCH_LIST_RECRUIT : 0, i);
+        } else {
+            bfont_draw(line, tx, troop_ty + i * row_h, PAL_CLR(WHITE));
+            // Touch: rows answer to their letters (only while idle -- during
+            // count entry the digit pad owns input).
+            if (s_whom == 0 && !unreachable)
+                touch_region(tx, troop_ty + i * row_h,
+                             20 * BFONT_GLYPH_W, row_h, KEY_A + i);
+        }
     }
 
     // ---- RIGHT SIDE ---------------------------------------------------

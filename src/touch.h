@@ -49,6 +49,12 @@ enum {
     TOUCH_LIST_CONTROLS,     // controls/settings panel
     TOUCH_LIST_STARTUP,      // startup cursored menus (one at a time)
     TOUCH_LIST_PACKS,        // pack picker
+    TOUCH_LIST_TOWN,         // town visit menu rows
+    TOUCH_LIST_RECRUIT,      // recruit soldiers troop rows
+    TOUCH_LIST_CASTLE,       // own-castle garrison slots
+    TOUCH_LIST_COMBAT_SPELLS,// combat spell menu rows
+    TOUCH_LIST_PROMPT,       // yes/no prompt rows
+    TOUCH_LIST_CLASS,        // class picker columns
 };
 void touch_region_row(int x, int y, int w, int h, int list_id, int row);
 int  touch_tapped_row(int list_id);   // row tapped, -1 = none this frame

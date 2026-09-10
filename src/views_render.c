@@ -1,5 +1,6 @@
 #include "views.h"
 #include "touch.h"
+#include "select.h"
 #include "layout.h"
 #include "palette.h"
 #include "bfont.h"
@@ -842,21 +843,32 @@ static void draw_spells(const Game *g) {
         Color rc = (ca > 0) ? PAL_CLR(WHITE) : PAL_CLR(DGREY);
 
         char buf[64];
+        int cur = views_spells_cursor();
         if (sc) {
             snprintf(buf, sizeof(buf), "%2d %c %s",
                      cc, (char)('A' + i), sc->name);
-            bfont_draw(buf, col_l, row_y + i * row_h, lc);
-            touch_region_row(VIEW_X + VIEW_PAD, row_y + i * row_h,
-                             VIEW_W / 2 - VIEW_PAD, row_h,
-                             TOUCH_LIST_SPELLS, i);
+            if (CL_IS_MODERN) {
+                sel_row(VIEW_X + VIEW_PAD, row_y + i * row_h, VIEW_W / 2 - VIEW_PAD, row_h,
+                        col_l, buf, cur == i, lc, PAL_CLR(DGREY), TOUCH_LIST_SPELLS, i);
+            } else {
+                bfont_draw(buf, col_l, row_y + i * row_h, lc);
+                touch_region_row(VIEW_X + VIEW_PAD, row_y + i * row_h,
+                                 VIEW_W / 2 - VIEW_PAD, row_h,
+                                 TOUCH_LIST_SPELLS, i);
+            }
         }
         if (sa) {
             snprintf(buf, sizeof(buf), "%c %-12s %2d",
                      (char)('A' + i), sa->name, ca);
-            bfont_draw(buf, col_r, row_y + i * row_h, rc);
-            touch_region_row(VIEW_X + VIEW_W / 2, row_y + i * row_h,
-                             VIEW_W / 2 - VIEW_PAD, row_h,
-                             TOUCH_LIST_SPELLS, 7 + i);
+            if (CL_IS_MODERN) {
+                sel_row(VIEW_X + VIEW_W / 2, row_y + i * row_h, VIEW_W / 2 - VIEW_PAD, row_h,
+                        col_r, buf, cur == 7 + i, rc, PAL_CLR(DGREY), TOUCH_LIST_SPELLS, 7 + i);
+            } else {
+                bfont_draw(buf, col_r, row_y + i * row_h, rc);
+                touch_region_row(VIEW_X + VIEW_W / 2, row_y + i * row_h,
+                                 VIEW_W / 2 - VIEW_PAD, row_h,
+                                 TOUCH_LIST_SPELLS, 7 + i);
+            }
         }
     }
 }
@@ -908,11 +920,16 @@ static void draw_gate(void) {
             // matching the letter the picker actually accepts, not the row idx.
             char key = (char)toupper((unsigned char)d->name[0]);
             snprintf(buf, sizeof buf, "%s%c) %.*s",
-                     sel ? ">" : " ", key,
+                     (sel && !CL_IS_MODERN) ? ">" : " ", key,
                      GATE_NAME_COL, d->name);
-            bfont_draw(buf, x, y, fg);
-            touch_region_row(x, y, vw / 2 - VIEW_PAD, row_h,
-                             TOUCH_LIST_GATE, idx);
+            if (CL_IS_MODERN) {
+                sel_row(x, y, vw / 2 - VIEW_PAD, row_h, x, buf, sel, fg, PAL_CLR(DGREY),
+                        TOUCH_LIST_GATE, idx);
+            } else {
+                bfont_draw(buf, x, y, fg);
+                touch_region_row(x, y, vw / 2 - VIEW_PAD, row_h,
+                                 TOUCH_LIST_GATE, idx);
+            }
         }
     }
 

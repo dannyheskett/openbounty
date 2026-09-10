@@ -10,6 +10,7 @@
 #include "savegame.h"
 #include "screenshot.h"
 #include "ui.h"
+#include "select.h"
 #include "tables.h"
 #include "resources.h"
 #include "raylib.h"
@@ -273,8 +274,13 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
             } else {
                 snprintf(line, sizeof(line), "%2d. %s", i + 1, empty_lbl);
             }
-            bfont_draw(line, x + pad, ty, fg);
-            touch_region_row(x, ty, w, row_h, TOUCH_LIST_STARTUP, i);
+            if (CL_IS_MODERN) {
+                sel_row(x, ty, w, row_h, x + pad, line, i == cursor, fg, PAL_CLR(DBLUE),
+                        TOUCH_LIST_STARTUP, i);
+            } else {
+                bfont_draw(line, x + pad, ty, fg);
+                touch_region_row(x, ty, w, row_h, TOUCH_LIST_STARTUP, i);
+            }
             ty += row_h;
         }
         // "New game" row -- slot index `new_row == SAVE_SLOT_COUNT`, one row
@@ -285,8 +291,13 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
         char ng_line[64];
         snprintf(ng_line, sizeof ng_line, "    %s",
                  ui->startup_save_picker_new_game);
-        bfont_draw(ng_line, x + pad, ty, nfg);
-        touch_region_row(x, ty, w, row_h, TOUCH_LIST_STARTUP, new_row);
+        if (CL_IS_MODERN) {
+            sel_row(x, ty, w, row_h, x + pad, ng_line, cursor == new_row, nfg, PAL_CLR(DBLUE),
+                    TOUCH_LIST_STARTUP, new_row);
+        } else {
+            bfont_draw(ng_line, x + pad, ty, nfg);
+            touch_region_row(x, ty, w, row_h, TOUCH_LIST_STARTUP, new_row);
+        }
 
         // Hint fits in the 33-char content width (280 - 2*pad).
         // Source: res.ui.startup_controls_hint (game.json strings.startup).
@@ -310,12 +321,26 @@ static bool run_class_select(const Resources *res,
     int n = res->classes_count;
     if (n < 1) n = 1;
     if (n > 4) n = 4;
+    int class_cursor = 0;   // modern: Left/Right move it, Enter picks
 
     while (!frame_host_should_close()) {
         touch_request(TOUCH_CHROME_BACK);
         if (input_key_pressed(KEY_ESCAPE)) {
             out->action = STARTUP_QUIT;
             return false;
+        }
+        if (CL_IS_MODERN) {
+            if (input_key_pressed(KEY_LEFT))  class_cursor = sel_wrap(class_cursor, -1, n);
+            if (input_key_pressed(KEY_RIGHT)) class_cursor = sel_wrap(class_cursor, 1, n);
+            int tapped = touch_tapped_row(TOUCH_LIST_CLASS);
+            if (tapped >= 0 && tapped < n) class_cursor = tapped;
+            if (tapped >= 0 || input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER)) {
+                const ClassDef *c = class_by_index(class_cursor);
+                safe_copy(out->class_id, sizeof(out->class_id), c ? c->id : "knight");
+                out->action = STARTUP_NEW;
+                drain_char_queue();
+                return true;
+            }
         }
         // L for Load
         if (input_key_pressed(KEY_L)) {
@@ -354,8 +379,14 @@ static bool run_class_select(const Resources *res,
             ui_blit(sprites->class_picker, px, py, pw, ph);
             // Touch: the picker art shows the classes side by side, one
             // column each; tapping a column picks that class (A-D).
-            for (int k = 0; k < n; k++)
-                touch_region(px + k * (pw / n), py, pw / n, ph, KEY_A + k);
+            for (int k = 0; k < n; k++) {
+                if (CL_IS_MODERN) touch_region_row(px + k * (pw / n), py, pw / n, ph, TOUCH_LIST_CLASS, k);
+                else              touch_region(px + k * (pw / n), py, pw / n, ph, KEY_A + k);
+            }
+            // Modern: the selected column carries the lattice ring.
+            if (CL_IS_MODERN)
+                ui_window_frame(px + class_cursor * (pw / n) + 4 * CL_UI, py + 4 * CL_UI,
+                                pw / n - 8 * CL_UI, ph - 8 * CL_UI, PAL_CLR(YELLOW));
         } else {
             // Fallback: text list if asset missing.
             bfont_draw(res->ui.startup_class_picker_missing,
@@ -534,10 +565,15 @@ static bool run_create_game(const Resources *res,
             char line[32];
             snprintf(line, sizeof(line), "   %-11s %3d    %s",
                      rows[i].label, days, rows[i].score);
-            bfont_draw(line, x + GW, ROW_Y(5 + i), PAL_CLR(WHITE));
-            if (has_name)
-                touch_region_row(x, ROW_Y(5 + i), w, GH,
-                                 TOUCH_LIST_STARTUP, i);
+            if (CL_IS_MODERN && has_name) {
+                sel_row(x, ROW_Y(5 + i), w, GH, x + GW, line, sel == i,
+                        PAL_CLR(WHITE), PAL_CLR(DBLUE), TOUCH_LIST_STARTUP, i);
+            } else {
+                bfont_draw(line, x + GW, ROW_Y(5 + i), PAL_CLR(WHITE));
+                if (has_name)
+                    touch_region_row(x, ROW_Y(5 + i), w, GH,
+                                     TOUCH_LIST_STARTUP, i);
+            }
         }
 
         // After has_name: draw the ">" cursor at col 0 of the selected row,
@@ -547,7 +583,7 @@ static bool run_create_game(const Resources *res,
             //   menu.x + fs->w, menu.y + fs->h * 5  (i.e. col 1, row 5)
             // and walks down 4 rows. The cursor column is the same column as
             // the "   " prefix in the difficulty lines (col 1).
-            bfont_draw(">", x + GW, ROW_Y(5 + sel), PAL_CLR(WHITE));
+            if (!CL_IS_MODERN) bfont_draw(">", x + GW, ROW_Y(5 + sel), PAL_CLR(WHITE));
 
             // Hint on row 10: "\x18\x19 to select   Ent to Accept"
             // -- 0x18 and 0x19 are CP437 up/down arrows. Our bfont is ASCII-

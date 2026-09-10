@@ -19,6 +19,7 @@
 #include "savepath.h"
 #include "game.h"
 #include "bfont.h"
+#include "select.h"
 #include "sprites.h"
 #include "tile_cache.h"
 #include "adventure.h"
@@ -1239,8 +1240,18 @@ int shell_run_game(int argc, char **argv) {
             } else if (input_key_pressed(KEY_SPACE)) {
                 screen_own_castle_toggle_mode();
             } else {
+                // Modern: up/down move the slot cursor and Enter or a tap
+                // acts on it; the letters act directly in both modes.
+                int chosen = -1;
+                {
+                    SelList l = { 5, screen_own_castle_cursor() };
+                    int row = -1;
+                    SelEvent ev = sel_input(&l, TOUCH_LIST_CASTLE, 0, &row);
+                    screen_own_castle_set_cursor(l.cursor);
+                    if (ev == SEL_CONFIRM) chosen = row;
+                }
                 for (int k = 0; k < 5; k++) {
-                    if (!input_key_pressed(KEY_A + k)) continue;
+                    if (k != chosen && !input_key_pressed(KEY_A + k)) continue;
                     const char *cid = screen_own_castle_castle_id();
                     int rc;
                     if (screen_own_castle_is_garrison_mode()) {

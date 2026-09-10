@@ -1,6 +1,7 @@
 #include "input_host.h"
 #include "views.h"
 #include "touch.h"
+#include "select.h"
 #include "present.h"
 #include "layout.h"
 #include "player_io.h"   // engine views arrive via the player-IO queue
@@ -29,12 +30,16 @@ static struct {
     bool active;       // in cast mode (not just viewing)
     int  column;       // 0=combat, 1=adventure
     int  chosen;       // spell index after A-G press, -1=none
+    int  cursor;       // modern: the selected row, 0..13 (column * 7 + slot)
 } spell_state = { 0 };
+
+int views_spells_cursor(void) { return CL_IS_MODERN ? spell_state.cursor : -1; }
 
 void views_spells_set_mode(bool cast_mode) {
     spell_state.active = cast_mode;
     spell_state.column = 1;  // default to adventure column for overworld
     spell_state.chosen = -1;
+    spell_state.cursor = 7;
 }
 
 int views_spells_chosen(void) {
@@ -54,12 +59,25 @@ bool views_spells_update(void) {
         views_dismiss();
         return true;
     }
-    if (input_key_pressed(KEY_LEFT))  spell_state.column = 0;
-    if (input_key_pressed(KEY_RIGHT)) spell_state.column = 1;
+    if (input_key_pressed(KEY_LEFT))  { spell_state.column = 0; spell_state.cursor %= 7; }
+    if (input_key_pressed(KEY_RIGHT)) { spell_state.column = 1; spell_state.cursor = 7 + spell_state.cursor % 7; }
     if (input_key_pressed(KEY_ESCAPE)) {
         spell_state.active = false;
         views_dismiss();
         return false;
+    }
+    // Modern: up/down move within the column, Enter casts the cursor row;
+    // the letters still cast directly in either mode.
+    {
+        SelList l = { 7, spell_state.cursor % 7 };
+        int row = -1;
+        SelEvent ev = sel_input(&l, 0, 0, &row);
+        spell_state.cursor = spell_state.column * 7 + l.cursor;
+        if (ev == SEL_CONFIRM) {
+            spell_state.chosen = spell_state.cursor;
+            views_dismiss();
+            return true;
+        }
     }
     for (int i = 0; i < 7; i++) {
         if (input_key_pressed(KEY_A + i)) {
@@ -818,6 +836,15 @@ bool views_town_update(Game *g) {
     if (input_key_pressed(KEY_ESCAPE)) {
         views_dismiss();
         return true;
+    }
+    {   // Modern: a tapped row selects and confirms (the renderer registers
+        // TOUCH_LIST_TOWN rows; legacy rows inject their letters instead).
+        int tapped = touch_tapped_row(TOUCH_LIST_TOWN);
+        if (tapped >= 0 && tapped < TOWN_ROW_COUNT) {
+            town.cursor = tapped;
+            town_do_row(g, (TownRow)tapped);
+            return true;
+        }
     }
     if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_W) || input_key_pressed(KEY_KP_8)) {
         town.cursor = (town.cursor - 1 + TOWN_ROW_COUNT) % TOWN_ROW_COUNT;

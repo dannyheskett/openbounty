@@ -4,6 +4,7 @@
 #include "touch.h"
 #include "layout.h"
 #include "ui.h"
+#include "select.h"
 #include "palette.h"
 #include "bfont.h"
 #include "resources.h"
@@ -24,6 +25,7 @@ typedef enum {
 static PromptKind g_kind = PK_NONE;
 static char g_header[64];
 static char g_body[256];
+static int  g_yn_cursor = 0;   // modern yes/no rows: 0 = Yes, 1 = No
 static int  g_max_choice = 5;
 static int  g_text_max_digits = 4;
 static int  g_text_max_value  = 9999;
@@ -45,6 +47,7 @@ static void emit_open_trace(const char *kind) {
 }
 
 void prompt_yes_no_open(const char *header, const char *body) {
+    g_yn_cursor = 0;
     g_kind = PK_YES_NO;
     copy_to(g_header, sizeof(g_header), header);
     copy_to(g_body,   sizeof(g_body),   body);
@@ -130,6 +133,18 @@ PromptResult prompt_update(void) {
         // A forced (static-guardian) foe fight cannot be declined: confirm it
         // immediately, without waiting for a keypress -- no decline offered.
         if (pending_foe_forced) { prompt_dismiss(); return PROMPT_RESULT_YES; }
+        // Modern: two rows, Yes and No, with the cursor; Enter confirms the
+        // cursor row (so Enter is no longer a blind yes), Y and N still answer.
+        if (CL_IS_MODERN) {
+            SelList l = { 2, g_yn_cursor };
+            int row = -1;
+            SelEvent ev = sel_input(&l, TOUCH_LIST_PROMPT, 0, &row);
+            g_yn_cursor = l.cursor;
+            if (ev == SEL_CONFIRM) { prompt_dismiss(); return row == 0 ? PROMPT_RESULT_YES : PROMPT_RESULT_NO; }
+            if (input_key_pressed(KEY_Y)) { prompt_dismiss(); return PROMPT_RESULT_YES; }
+            if (input_key_pressed(KEY_N)) { prompt_dismiss(); return PROMPT_RESULT_NO;  }
+            return PROMPT_RESULT_NONE;
+        }
         if (input_key_pressed(KEY_Y)) { prompt_dismiss(); return PROMPT_RESULT_YES; }
         if (input_key_pressed(KEY_N)) { prompt_dismiss(); return PROMPT_RESULT_NO;  }
         // also accepts Enter as "yes" in some prompts.
@@ -222,6 +237,7 @@ void prompt_draw(void) {
     int bottom_rows;
     if (g_kind == PK_TEXT_INPUT)      bottom_rows = 2;
     else if (g_kind == PK_AB_CHOICE)  bottom_rows = 0;
+    else if (g_kind == PK_YES_NO && CL_IS_MODERN) bottom_rows = 2;   // the Yes/No rows
     else                              bottom_rows = 1;
 
     DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
@@ -284,6 +300,14 @@ void prompt_draw(void) {
                             x + w / 2, y + h - row_h - 2, PAL_CLR(YELLOW));
     } else if (g_kind == PK_AB_CHOICE) {
         // Chrome-less  -- body already names A) / B).
+    } else if (g_kind == PK_YES_NO && CL_IS_MODERN) {
+        // Two selectable rows in place of the "(y/n)?" hint.
+        const char *labels[2] = { "Yes", "No" };
+        int ry = y + h - pad - 2 * row_h;
+        for (int i = 0; i < 2; i++) {
+            sel_row(x + pad, ry + i * row_h, w - 2 * pad, row_h, x + pad + 2 * CL_UI, labels[i],
+                    g_yn_cursor == i, PAL_CLR(YELLOW), PAL_CLR(DBLUE), TOUCH_LIST_PROMPT, i);
+        }
     } else {
         const char *hint;
         if (ui) {

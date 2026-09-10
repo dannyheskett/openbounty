@@ -14,6 +14,7 @@
 #include "tables.h"
 #include "resources.h"
 #include "ui.h"
+#include "select.h"
 #include "raylib.h"
 #include "recorder.h"
 #include "audio.h"
@@ -127,6 +128,9 @@ static bool combat_read_dir(int *dx, int *dy) {
 // Returns 1 when the casting unit's turn is consumed (effect applied
 // successfully). 0 when still mid-cast or cancelled/no-effect.
 // Resets c->cast_phase = NONE on success, cancel, and no-effect.
+// Modern: the spell menu's cursor row. Shell state, not combat state.
+static int s_cast_cursor = 0;
+
 int combat_cast_step(Combat *c, Game *g, const Sprites *sprites,
                      void *render_target) {
     (void)sprites; (void)render_target;
@@ -144,7 +148,14 @@ int combat_cast_step(Combat *c, Game *g, const Sprites *sprites,
             return 0;
         }
         int picked = -1;
-        for (int i = 0; i < 7; i++) {
+        {   // Modern: cursor rows, Enter or a tap picks; letters in both modes.
+            SelList l = { 7, s_cast_cursor };
+            int row = -1;
+            SelEvent ev = sel_input(&l, TOUCH_LIST_COMBAT_SPELLS, 0, &row);
+            s_cast_cursor = l.cursor;
+            if (ev == SEL_CONFIRM) picked = row;
+        }
+        for (int i = 0; i < 7 && picked < 0; i++) {
             if (input_key_pressed(KEY_A + i)) { picked = i; break; }
         }
         if (picked < 0) return 0;
@@ -396,8 +407,8 @@ static void combat_present(const Combat *c, const Game *g,
             int count = gw->spells.counts[i];
             const SpellDef *sd = spell_by_index(i);
             snprintf(line, sizeof line, "%d %-12s %c", count, sd->name, 'A' + i);
-            bfont_draw(line, x + pad, ty, PAL_CLR(WHITE));
-            touch_region(x, ty, w, row_h, KEY_A + i);
+            sel_row(x, ty, w, row_h, x + pad, line, s_cast_cursor == i,
+                    PAL_CLR(WHITE), PAL_CLR(DBLUE), TOUCH_LIST_COMBAT_SPELLS, i);
             ty += row_h;
         }
         bfont_draw_centered(ui->combat_spells_prompt, x + w / 2, y + h - pad - BFONT_GLYPH_H, PAL_CLR(WHITE));

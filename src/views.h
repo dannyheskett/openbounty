@@ -86,6 +86,7 @@ bool views_menu_entry_is_submenu(int i);
 // Returns the cursor position in the active menu (0..count-1), or -1 if
 // not in menu.
 int  views_menu_cursor(void);
+int  views_spells_cursor(void);      // modern: 0..13, legacy: -1
 
 // Town display name (from views_open_town), or NULL if not in VIEW_TOWN.
 const char *views_town_display_name(void);

@@ -1953,6 +1953,21 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   atlas at size times zoom; design metrics never change, only sharpness. The zoom is locked while the recorder runs
   (one frame size per movie). Legacy: plain `BeginTextureMode`, 320x200
   target, unchanged (2026-09-08).
+- **REQ-430e.** **Cursor selection on every menu (modern).** One helper,
+  `src/select.c`: `sel_input` moves a list cursor with Up/Down (W/S,
+  KP8/KP2), confirms with Enter/KP Enter/Space, and treats a tapped row
+  (`touch_tapped_row`) or the screen's hotkey as select-and-confirm;
+  `sel_row` draws the cursor row inverted, a bar in the row colour with
+  the text in the panel colour, and registers the row's tap region. Wired
+  into the town menu, game menu, controls, gate picker, spell panel
+  (Left/Right switch column), combat spell menu, recruit soldiers, own
+  castle slots, the save picker and difficulty rows, the class picker (a
+  lattice ring on the selected column, Left/Right, Enter), and the yes/no
+  prompt (Yes and No rows; Enter confirms the cursor row rather than
+  answering yes). The old letters and digits still answer everywhere. In
+  legacy `sel_input` returns nothing and `sel_row` draws plain text, so
+  every legacy screen keeps its own handling and pixels; numeric and A/B
+  prompts and the debug menu keep their key form (2026-09-09).
 
 ### 29.2 Views
 

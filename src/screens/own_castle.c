@@ -1,6 +1,8 @@
 #include "own_castle.h"
 #include "layout.h"
 #include "ui.h"
+#include "select.h"
+#include "touch.h"
 #include "palette.h"
 #include "bfont.h"
 #include "views.h"
@@ -71,6 +73,10 @@ void screen_own_castle_open(Game *g, const char *castle_id) {
                                             NULL, NULL);
     if (r) snprintf(r->castle_id, sizeof r->castle_id, "%s", castle_id);
 }
+
+static int s_cursor = 0;   // modern: the selected slot row
+int  screen_own_castle_cursor(void) { return s_cursor; }
+void screen_own_castle_set_cursor(int r) { s_cursor = (r < 0) ? 0 : (r > 4 ? 4 : r); }
 
 bool screen_own_castle_is_garrison_mode(void) {
     return s_garrison_mode;
@@ -156,7 +162,12 @@ void screen_own_castle_draw(const Game *g, const Sprites *s) {
         } else {
             snprintf(line, sizeof(line), "%c) %-11s-", 'A' + i, "(empty)");
         }
-        bfont_draw(line, tx, ty, PAL_CLR(WHITE));
+        if (CL_IS_MODERN) {
+            sel_row(x, ty, w, row_h, tx, line, s_cursor == i,
+                    PAL_CLR(WHITE), PAL_CLR(DBLUE), TOUCH_LIST_CASTLE, i);
+        } else {
+            bfont_draw(line, tx, ty, PAL_CLR(WHITE));
+        }
         ty += row_h;
     }
 }

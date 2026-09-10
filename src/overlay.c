@@ -1,5 +1,6 @@
 #include "overlay.h"
 #include "touch.h"
+#include "select.h"
 #include "layout.h"
 #include "palette.h"
 #include "views.h"
@@ -250,9 +251,14 @@ static void draw_menu(void) {
         if (is_sub) snprintf(buf, sizeof(buf), "%s >", label);
         else        snprintf(buf, sizeof(buf), "%s", label);
 
-        if (sel) bfont_draw(">", tx, ty, PAL_CLR(YELLOW));
-        bfont_draw(buf, tx + GW + 4 * CL_UI, ty, fg);
-        touch_region_row(x, ty, w, row_h, TOUCH_LIST_MENU, i);
+        if (CL_IS_MODERN) {
+            sel_row(x, ty, w, row_h, tx + GW + 4 * CL_UI, buf, sel, fg, PAL_CLR(DBLUE),
+                    TOUCH_LIST_MENU, i);
+        } else {
+            if (sel) bfont_draw(">", tx, ty, PAL_CLR(YELLOW));
+            bfont_draw(buf, tx + GW + 4 * CL_UI, ty, fg);
+            touch_region_row(x, ty, w, row_h, TOUCH_LIST_MENU, i);
+        }
         ty += row_h;
     }
 }
@@ -485,12 +491,19 @@ static void draw_town(const Game *g, const Sprites *s) {
         views_town_row_text(g, r, row, sizeof(row));
         bool sel = (r == cursor);
         Color fg = sel ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
-        bfont_draw(row, tx, ty, fg);
-        // Touch: rows answer to their letters directly. Only while the
-        // menu is showing -- with the info popup up, any tap dismisses it
-        // (the update fn's any-key path), so no row regions then.
-        if (!info || !info[0])
-            touch_region(x, ty, w, row_h, KEY_A + r);
+        bool live = !(info && info[0]);
+        if (CL_IS_MODERN) {
+            // Modern: the cursor row inverted; a tap on a row selects and
+            // confirms it (views_town_update reads TOUCH_LIST_TOWN).
+            sel_row(x, ty, w, row_h, tx, row, sel, fg, PAL_CLR(DBLUE),
+                    live ? TOUCH_LIST_TOWN : 0, r);
+        } else {
+            bfont_draw(row, tx, ty, fg);
+            // Touch: rows answer to their letters directly. Only while the
+            // menu is showing -- with the info popup up, any tap dismisses it
+            // (the update fn's any-key path), so no row regions then.
+            if (live) touch_region(x, ty, w, row_h, KEY_A + r);
+        }
         ty += row_h;
     }
 
@@ -654,7 +667,13 @@ static void draw_controls(const Game *g) {
         char label[48];
         snprintf(label, sizeof(label), "%c %s",
                  '1' + k, g->res->controls.items[i].label);
-        bfont_draw(label, tx, ty, fg);
+        Color vfg = fg;   // value colour; inverted with the row in modern
+        if (CL_IS_MODERN) {
+            sel_row(x, ty, w, GH + 2, tx, label, is_selected && !disabled, fg, PAL_CLR(DBLUE), 0, 0);
+            if (is_selected && !disabled) vfg = PAL_CLR(DBLUE);
+        } else {
+            bfont_draw(label, tx, ty, fg);
+        }
         // Touch: rows answer to their digit (select + advance in one).
         touch_region(x, ty, w, GH + 2, KEY_ONE + k);
 
@@ -664,7 +683,7 @@ static void draw_controls(const Game *g) {
             const char *text = (val == 1) ? ui_ctl->controls_on
                                           : ui_ctl->controls_off;
             int tw = (int)bfont_measure(text).x;
-            bfont_draw(text, x + w - pad - tw, ty, fg);
+            bfont_draw(text, x + w - pad - tw, ty, vfg);
         } else {
             int range = g->res->controls.items[i].range;
             if (range > 10) range = 10;
@@ -673,7 +692,9 @@ static void draw_controls(const Game *g) {
                 char buf[2] = { (char)('0' + n), 0 };
                 Color nc;
                 if (disabled) nc = PAL_CLR(DGREY);
-                else          nc = (n == val) ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
+                else if (vfg.r == PAL_CLR(DBLUE).r && vfg.g == PAL_CLR(DBLUE).g && vfg.b == PAL_CLR(DBLUE).b)
+                                nc = (n == val) ? PAL_CLR(WHITE) : PAL_CLR(DBLUE);   // inverted row: the set digit stands out
+                else            nc = (n == val) ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
                 bfont_draw(buf, sx + n * GW, ty, nc);
             }
         }
@@ -689,14 +710,14 @@ static void draw_controls(const Game *g) {
         Color fg = is_selected ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
         char label[48];
         snprintf(label, sizeof(label), "%c Scale", '1' + vis);
-        bfont_draw(label, tx, ty, fg);
+        sel_row(x, ty, w, GH + 2, tx, label, is_selected, fg, PAL_CLR(DBLUE), 0, 0);
         touch_region(x, ty, w, GH + 2, KEY_ONE + vis);
 
         int sc = views_controls_scale_value();
         char val[16];
         snprintf(val, sizeof(val), "%dx", sc);
         int vw = (int)bfont_measure(val).x;
-        bfont_draw(val, x + w - pad - vw, ty, fg);
+        bfont_draw(val, x + w - pad - vw, ty, is_selected ? PAL_CLR(DBLUE) : fg);
     }
 }
 
