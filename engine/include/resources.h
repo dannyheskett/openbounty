@@ -177,6 +177,9 @@ typedef struct {
                               // the space left over becomes chrome bands; the
                               // window shows the buffer at 1x, 2x or 3x. Zero
                               // means the buffer is derived from the window.
+    int dim;                  // modern only: how much the scene darkens under a
+                              // detail view, prompt or dialog, 0..100 percent
+                              // of black (REQ-430g). Default 55. Legacy is 0.
 } ResRender;
 
 typedef struct {

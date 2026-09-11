@@ -179,7 +179,45 @@ TEST foes_stamp_the_zone_army_art(void) {
     PASS();
 }
 
+// A foe crossing a cell leaves the cell's own art behind (REQ-229f): the
+// road or grass variant it stood on is drawn under it and comes back when it
+// moves on. Consumed objects on any other ground still turn into grass.
+TEST clearing_an_overlay_restores_the_cells_own_art(void) {
+    Resources *res = calloc(1, sizeof *res);
+    Map       *m   = calloc(1, sizeof *m);
+    ASSERT(res && m);
+    ASSERT(resources_load(res, ASSET_PATH));
+    ASSERT(MapLoadZone(m, res, "continentia"));
+    int dx = -1, dy = -1, mx = -1, my = -1;
+    for (int y = 0; y < m->height && (dx < 0 || mx < 0); y++)
+        for (int x = 0; x < m->width; x++) {
+            const Tile *t = MapGetTile(m, x, y);
+            if (t->interactive != INTERACT_NONE) continue;
+            if (dx < 0 && strcmp(t->art, "grass_variant") == 0) { dx = x; dy = y; }
+            if (mx < 0 && t->terrain == TERRAIN_MOUNTAIN) { mx = x; my = y; }
+        }
+    ASSERT(dx >= 0 && mx >= 0);
+    char before[TILE_ART_NAME_LEN];
+    strcpy(before, MapGetTile(m, dx, dy)->art);
+    ASSERT_STR_EQ(before, MapGetTile(m, dx, dy)->ground);
+    MapStampFoe(m, dx, dy, "foe_test");
+    ASSERT_STR_EQ("wandering_army", MapGetTile(m, dx, dy)->art);
+    ASSERT_STR_EQ(before, MapGetTile(m, dx, dy)->ground);     // the ground is kept under it
+    ASSERT(MapClearFoeStamp(m, dx, dy));
+    ASSERT_STR_EQ(before, MapGetTile(m, dx, dy)->art);        // and comes back
+    ASSERT_EQ(TERRAIN_GRASS, MapGetTile(m, dx, dy)->terrain);
+    // impassable ground: the old rule, a cleared object leaves grass
+    Tile *mt = (Tile *)MapGetTile(m, mx, my);
+    mt->interactive = INTERACT_DWELLING_HILLS;
+    MapClearInteractive(m, mx, my);
+    ASSERT_EQ(TERRAIN_GRASS, mt->terrain);
+    ASSERT(strstr(mt->art, "grass") != NULL);
+    resources_free(res); free(res); free(m);
+    PASS();
+}
+
 SUITE(unit_map_suite) {
+    RUN_TEST(clearing_an_overlay_restores_the_cells_own_art);
     RUN_TEST(terrain_art_is_bare_without_a_tile_set);
     RUN_TEST(terrain_art_lives_under_the_zone_tile_set);
     RUN_TEST(town_stamps_its_own_art_or_the_shared_tile);

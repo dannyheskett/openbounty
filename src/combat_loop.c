@@ -358,7 +358,10 @@ static void combat_present(const Combat *c, const Game *g,
     // because the views combat can open never read them (WORLDMAP isn't
     // reachable from combat).
     if (views_active() != VIEW_NONE) {
-        overlay_draw(g, NULL, NULL, sprites);
+        overlay_draw(g, NULL, NULL, sprites);      // dims the field itself
+    } else if (c->cast_phase == COMBAT_CAST_PICK_SPELL ||
+               dialog_is_active() || prompt_is_active()) {
+        overlay_dim_scene();                       // modern: panel over a dimmed field
     }
     // Spell-pick menu overlay. Drawn while the cast state machine is
     // in PICK_SPELL phase; the outer loop drives combat_cast_step one

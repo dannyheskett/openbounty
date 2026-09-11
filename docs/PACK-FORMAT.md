@@ -79,6 +79,8 @@ viewport, `ui_scale` 1, the other keys ignored); `"modern"` takes the tile
 size, the viewport in tiles (odd on both axes) and `ui_scale`, which
 multiplies the font and the chrome bands.
 
+`dim` (modern only, optional, default 55) is the percent of black laid over the map and sidebar under any detail view, prompt or dialog (OPENBOUNTY-SPEC REQ-430g); 0 turns it off.
+
 `native_w` / `native_h` (modern only, optional) fix the buffer size. Without
 them the buffer follows the window and the viewport grows to fill it. With
 them the screen is exactly that size, the viewport is exactly `tiles_w` x

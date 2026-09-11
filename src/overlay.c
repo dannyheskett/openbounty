@@ -14,6 +14,7 @@
 #include "bfont.h"
 #include "ui.h"
 #include "views_render.h"
+#include "resources.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -349,7 +350,9 @@ static void draw_location_backdrop(const Game *g, const Sprites *s,
     // Black fill around the backdrop to clear any residual map-area pixels
     // before the bottom panel is drawn over them. The backdrop no longer
     // starts at the pane's corner, so this has to cover the whole pane rather
-    // than just the strip underneath it.
+    // than just the strip underneath it. Modern skips it: the card floats on
+    // the dimmed map like every other detail view (REQ-430g).
+    if (CL_IS_MODERN) return;
     if (bd_y > CL_MAP_Y)
         DrawRectangle(CL_MAP_X, CL_MAP_Y, CL_MAP_W, bd_y - CL_MAP_Y,
                       PAL_CLR(BLACK));
@@ -725,9 +728,31 @@ static void draw_controls(const Game *g) {
 // Top-level dispatcher.
 // ---------------------------------------------------------------------------
 
+int overlay_dim_alpha(int percent) {
+    if (percent < 0) percent = 0;
+    if (percent > 100) percent = 100;
+    return percent * 255 / 100;
+}
+
+void overlay_dim_scene(void) {
+    if (!CL_IS_MODERN) return;
+    const Resources *r = resources_current();
+    int a = overlay_dim_alpha(r ? r->render.dim : 0);
+    if (a == 0) return;
+    // The whole chrome interior: map pane plus sidebar, not the status band
+    // or the frame, so the frame keeps its weight and the band stays legible.
+    Color shade = { 0, 0, 0, (unsigned char)a };
+    DrawRectangle(CL_MAP_X, CL_MAP_Y, CL_MAP_W + CL_SIDEBAR_W, CL_MAP_H, shade);
+}
+
 void overlay_draw(const Game *g, const Map *m, const Fog *f,
                           const Sprites *s) {
     ViewKind v = views_active();
+
+    // Modern: a detail view, a prompt or a dialog sits on a dimmed scene, so
+    // the panel is what the eye lands on. The toast alone does not dim.
+    if (v != VIEW_NONE || prompt_is_active() || dialog_is_active())
+        overlay_dim_scene();
 
     if (v == VIEW_OPTIONS) {
         draw_options(g);

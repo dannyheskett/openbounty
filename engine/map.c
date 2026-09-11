@@ -24,12 +24,19 @@ const char *MapTerrainArt(const Map *map, const char *stem, char *out, size_t ca
     return out;
 }
 
+// The bare stem of a tile art name ("set/road_ew" -> "road_ew").
+static const char *art_stem(const char *art) {
+    const char *slash = strrchr(art, '/');
+    return slash ? slash + 1 : art;
+}
+
 static bool fill_tile_from_code(const Map *map, Tile *t, const Resources *res,
                                 unsigned char c) {
     if (c >= RES_TILE_CODE_COUNT) return false;
     const ResTileCode *tc = &res->tile_codes[c];
     if (!tc->present) return false;
     MapTerrainArt(map, tc->art, t->art, sizeof(t->art));
+    copy_string(t->ground, sizeof(t->ground), t->art);
     t->terrain     = (Terrain)tc->terrain;
     t->blocks_foot = tc->blocks_foot;
     t->is_bridge   = tc->is_bridge;
@@ -44,6 +51,7 @@ static bool fill_tile_from_code(const Map *map, Tile *t, const Resources *res,
 
 static void default_tile(const Map *map, Tile *t) {
     MapTerrainArt(map, "grass", t->art, sizeof(t->art));
+    copy_string(t->ground, sizeof(t->ground), t->art);
     t->terrain     = TERRAIN_GRASS;
     t->blocks_foot = false;
     t->is_bridge   = false;
@@ -428,19 +436,31 @@ void MapClearInteractive(Map *map, int x, int y) {
     Tile *t = &map->tiles[y][x];
     t->interactive = INTERACT_NONE;
     t->id[0] = '\0';
-    // Revert to plain walkable terrain. sets consumed tiles to
-    // byte 0x00 (grass), so the tile becomes passable regardless of
-    // what it used to be underneath (dwellings often sit on mountain
-    // edges, alcoves on mountain-variant tiles, etc.). Water stays
-    // water so picked-up floating interactives don't become walkable.
+    // Revert to the cell's own terrain art (REQ-229f): a road, a grass
+    // variant or a desert piece comes back as the map drew it. The original
+    // game set consumed tiles to byte 0x00 (grass) so they became passable
+    // regardless of what was underneath (dwellings often sit on mountain
+    // edges, alcoves on mountain-variant tiles); that still holds where the
+    // ground is not walkable. Water stays water so picked-up floating
+    // interactives don't become walkable.
     if (t->terrain == TERRAIN_WATER) {
         MapTerrainArt(map, "water", t->art, sizeof(t->art));
+        return;
+    }
+    // Only grass-terrain ground comes back (roads, grass variants): a
+    // consumed object on desert or a mountain edge still leaves plain grass,
+    // exactly as the original game did, so the legacy pack plays unchanged.
+    Terrain ground = t->ground[0] ? TerrainFromArt(art_stem(t->ground)) : TERRAIN_GRASS;
+    if (t->ground[0] && ground == TERRAIN_GRASS) {
+        copy_string(t->art, sizeof(t->art), t->ground);
+        t->terrain = TERRAIN_GRASS;
     } else {
         MapTerrainArt(map, "grass", t->art, sizeof(t->art));
-        t->terrain     = TERRAIN_GRASS;
-        t->blocks_foot = false;
-        t->is_bridge   = false;
+        copy_string(t->ground, sizeof(t->ground), t->art);
+        t->terrain = TERRAIN_GRASS;
     }
+    t->blocks_foot = false;
+    t->is_bridge   = false;
 }
 
 // Art names this module stamps onto tiles for placed objects (towns,

@@ -982,6 +982,17 @@ except where a deviation is explicitly flagged (§34).
   and stitching tools as the twelve, so every side that is open is a
   terminal edge and every closed side the standard interface.
 
+- **REQ-229f.** A tile keeps its own terrain art (`Tile.ground`) beside
+  the art it draws. An object stamped on a cell (a foe, a chest, a town)
+  replaces only the drawn art; the renderer draws `ground` beneath the
+  object, and `MapClearInteractive` restores `ground` when the object goes.
+  So a road or a grass variant survives a foe walking over it. Only
+  grass-terrain ground is restored: on any other ground (desert, a dwelling
+  on a mountain edge) the original rule still applies and the cleared cell
+  becomes plain grass, so the legacy pack plays exactly as before; water
+  stays water. Fixed 2026-09-10: the clear wrote the literal "grass" into
+  every vacated cell, which erased roads for the rest of the game.
+
 ### 9.9 Roads (grass-terrain tile codes)
 
 - **REQ-229c.** A road is a **tile, not an object**: a `tile_codes` entry
@@ -2018,6 +2029,17 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   legacy `sel_input` returns nothing and `sel_row` draws plain text, so
   every legacy screen keeps its own handling and pixels; numeric and A/B
   prompts and the debug menu keep their key form (2026-09-09).
+- **REQ-430g.** **Dimmed scene under detail views (modern).** Whenever a
+  view, a prompt or a dialog is open, `overlay_draw` first darkens the
+  chrome interior (map pane and sidebar, not the status band or frame) with
+  black at the pack's `render.dim` percent (default 55, 0 disables), then
+  draws the panel, so the panel is what the eye lands on and the live map
+  stays readable behind it. Location screens (town, castles, dwelling,
+  alcove, recruit) no longer black out the pane around their backdrop card
+  in modern; the card floats on the dimmed map. Combat dims the field under
+  its spell picker, the victory dialog, prompts and any opened view. Toasts
+  do not dim. `overlay_dim_scene` / `overlay_dim_alpha` (`src/overlay.c`);
+  legacy never dims and draws exactly as before.
 - **REQ-430f.** **Keyboard detection and the letter selector (modern).**
   `input_host` latches which physical devices have been used: a real key
   event (not an injected one), a touch contact, a gamepad button or stick

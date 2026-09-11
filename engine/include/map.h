@@ -15,6 +15,9 @@
 
 typedef struct {
     char     art[TILE_ART_NAME_LEN];   // sprite filename base (e.g. "water", "castle_roof")
+    char     ground[TILE_ART_NAME_LEN];// the cell's OWN terrain art from the map (a road, an
+                                       // edge piece); what an object stands on and what comes
+                                       // back when the object is cleared (REQ-229f)
     Terrain  terrain;                  // derived from art at load time
     Interact interactive;              // INTERACT_NONE if no overlay
     char     id[TILE_ID_LEN];          // optional named instance ("kings_castle"), empty if none

@@ -78,8 +78,9 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
             char va[TILE_ART_NAME_LEN];
             if (t->interactive != INTERACT_NONE) {
                 char ga[TILE_ART_NAME_LEN];
-                Texture2D ground = tile_cache_get(tilevar_art(
-                    MapTerrainArt(m, TerrainName(t->terrain), ga, sizeof ga), mx, my, va, sizeof va));
+                const char *gart = t->ground[0] ? t->ground
+                                   : MapTerrainArt(m, TerrainName(t->terrain), ga, sizeof ga);
+                Texture2D ground = tile_cache_get(tilevar_art(gart, mx, my, va, sizeof va));
                 if (ground.id) {
                     Rectangle gsrc = { 0, 0, (float)ground.width,
                                        (float)ground.height };

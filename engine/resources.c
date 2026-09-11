@@ -2018,6 +2018,7 @@ bool resources_load(Resources *res, const char *manifest_path) {
             res->render.tiles_w = 5;
             res->render.tiles_h = 5;
             res->render.ui_scale = 1;
+            res->render.dim = 0;
         } else if (strcmp(mode, "modern") == 0) {
             res->render.mode    = RENDER_MODE_MODERN;
             res->render.tile_w  = json_int(jr, "tile_w",  96);
@@ -2027,6 +2028,9 @@ bool resources_load(Resources *res, const char *manifest_path) {
             res->render.ui_scale = json_int(jr, "ui_scale", 1);
             res->render.native_w = json_int(jr, "native_w", 0);
             res->render.native_h = json_int(jr, "native_h", 0);
+            res->render.dim = json_int(jr, "dim", 55);
+            if (res->render.dim < 0) res->render.dim = 0;
+            if (res->render.dim > 100) res->render.dim = 100;
         } else {
             res->render.mode = RENDER_MODE_NONE;
             res->render.ui_scale = 1;

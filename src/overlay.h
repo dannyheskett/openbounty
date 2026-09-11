@@ -25,4 +25,13 @@ void overlay_draw_dialog_centered(void);
 // The pager uses this so its page count matches what the renderer displays.
 int overlay_dialog_page_count(void);
 
+// Modern: darken the chrome interior (map pane and sidebar) under a detail
+// view, prompt or dialog, by the pack's render.dim percent (REQ-430g). A
+// no-op in legacy and at 0. Combat calls it over the battlefield before its
+// own panels.
+void overlay_dim_scene(void);
+
+// The alpha byte for a dim percent, clamped to 0..100. Pure.
+int  overlay_dim_alpha(int percent);
+
 #endif
