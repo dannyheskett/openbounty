@@ -381,6 +381,16 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
     // their cost.
     int troop_ty = ty + row_h + 1;
     int total_lead = g->stats.leadership_current;
+    // Name column: legacy pads to 11 as the original did; modern pads to the
+    // longest name in the pool plus one, so "Praetoriani" keeps its gap.
+    int name_w = 11;
+    if (CL_IS_MODERN) {
+        for (int i = 0; i < 5; i++) {
+            if (i >= s_pool_count || s_pool[i] < 0) continue;
+            const TroopDef *t = troop_by_index(s_pool[i]);
+            if (t && (int)strlen(t->name) + 1 > name_w) name_w = (int)strlen(t->name) + 1;
+        }
+    }
     for (int i = 0; i < 5; i++) {
         if (i >= s_pool_count || s_pool[i] < 0) continue;
         const TroopDef *t = troop_by_index(s_pool[i]);
@@ -389,11 +399,11 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
                            (total_lead < t->hit_points * 6);
         char line[64];
         if (unreachable) {
-            snprintf(line, sizeof(line), "%c) %-11sn/a",
-                     'A' + i, t->name);
+            snprintf(line, sizeof(line), "%c) %-*sn/a",
+                     'A' + i, name_w, t->name);
         } else {
-            snprintf(line, sizeof(line), "%c) %-11s%d",
-                     'A' + i, t->name, t->recruit_cost);
+            snprintf(line, sizeof(line), "%c) %-*s%d",
+                     'A' + i, name_w, t->name, t->recruit_cost);
         }
         if (CL_IS_MODERN) {
             sel_row(tx, troop_ty + i * row_h, 20 * BFONT_GLYPH_W, row_h, tx, line,

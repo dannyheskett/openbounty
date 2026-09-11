@@ -127,31 +127,31 @@
 					"y":	18,
 					"id":	"sign_italia_1",
 					"title":	"The Rubicon",
-					"body":	"Beyond this stream\nlies Italia herself.\nCross under arms and\nthere is no return."
+					"body":	"Beyond this stream lies Italia herself. Cross under arms and there is no return."
 				}, {
 					"x":	42,
 					"y":	56,
 					"id":	"sign_italia_2",
 					"title":	"The Via Appia",
-					"body":	"The Appian Way runs\nsouth to Brundisium\nand the sea."
+					"body":	"The Appian Way runs south to Brundisium and the sea."
 				}, {
 					"x":	36,
 					"y":	46,
 					"id":	"sign_italia_3",
 					"title":	"Roma",
-					"body":	"All roads lead here.\nEmperor Traianus holds\ncourt within."
+					"body":	"All roads lead here. Emperor Traianus holds court within."
 				}, {
 					"x":	30,
 					"y":	50,
 					"id":	"sign_italia_4",
 					"title":	"The Apennines",
-					"body":	"This stony spine\ndivides the peninsula,\ncoast from coast."
+					"body":	"This stony spine divides the peninsula, coast from coast."
 				}, {
 					"x":	37,
 					"y":	100,
 					"id":	"sign_italia_5",
 					"title":	"The Strait",
-					"body":	"Across the water lies\nSicilia, granary of\nthe Republic."
+					"body":	"Across the water lies Sicilia, granary of the Republic."
 				}],
 			"towns":	[{
 					"x":	39,
@@ -705,19 +705,19 @@
 					"y":	29,
 					"id":	"sign_galliae_1",
 					"title":	"Alesia",
-					"body":	"Here Vercingetorix\nlaid down his arms\nbefore Caesar."
+					"body":	"Here Vercingetorix laid down his arms before Caesar."
 				}, {
 					"x":	46,
 					"y":	30,
 					"id":	"sign_galliae_2",
 					"title":	"The Rhine",
-					"body":	"This river marks the\nedge of the world.\nBeyond it, Germania."
+					"body":	"This river marks the edge of the world. Beyond it, Germania."
 				}, {
 					"x":	22,
 					"y":	21,
 					"id":	"sign_galliae_3",
 					"title":	"Britannia",
-					"body":	"Across the northern\nsea lies Britannia,\nand Londinium upon it."
+					"body":	"Across the northern sea lies Britannia, and Londinium upon it."
 				}],
 			"dwellings":	[],
 			"armies":	[],
@@ -923,19 +923,19 @@
 					"y":	8,
 					"id":	"sign_africa_1",
 					"title":	"Carthago",
-					"body":	"Thrice Rome fought\nher; thrice she fell.\nCarthago delenda est."
+					"body":	"Thrice Rome fought her; thrice she fell. Carthago delenda est."
 				}, {
 					"x":	25,
 					"y":	16,
 					"id":	"sign_africa_2",
 					"title":	"The Sahara",
-					"body":	"South lies the sand.\nA day of marching\nbuys a single tile."
+					"body":	"South lies the sand. A day of marching buys a single tile."
 				}, {
 					"x":	36,
 					"y":	8,
 					"id":	"sign_africa_3",
 					"title":	"The Grain Fleet",
-					"body":	"From these ports the\ncorn ships sail to\nfeed a million in Roma."
+					"body":	"From these ports the corn ships sail to feed a million in Roma."
 				}],
 			"dwellings":	[],
 			"armies":	[],
@@ -1141,19 +1141,19 @@
 					"y":	37,
 					"id":	"sign_oriens_1",
 					"title":	"Palmyra",
-					"body":	"Oasis of the caravans,\nwhere Zenobia named\nherself Augusta."
+					"body":	"Oasis of the caravans, where Zenobia named herself Augusta."
 				}, {
 					"x":	44,
 					"y":	20,
 					"id":	"sign_oriens_2",
 					"title":	"The Frontier",
-					"body":	"East lies Parthia,\nthe border Rome\nnever truly held."
+					"body":	"East lies Parthia, the border Rome never truly held."
 				}, {
 					"x":	38,
 					"y":	8,
 					"id":	"sign_oriens_3",
 					"title":	"The Silk Road",
-					"body":	"The road from the East\nends here. Its wealth\npasses through Antiochia."
+					"body":	"The road from the East ends here. Its wealth passes through Antiochia."
 				}],
 			"dwellings":	[],
 			"armies":	[],
@@ -1662,13 +1662,13 @@
 				"win_condition":	"scepter",
 				"dialog":	{
 					"header":	"Roma, Seat of Traianus",
-					"body":	"Emperor Traianus bids you\nwelcome, Hero.\n\nReturn with the stolen Aquila\nof the Legions and all the\nprovinces of Rome are yours."
+					"body":	"Emperor Traianus bids you welcome, Hero.\n\nReturn with the stolen Aquila of the Legions and all the provinces of Rome are yours."
 				},
 				"audience":	{
-					"intro":	"Trumpets announce your\narrival with imperial fanfare.\n\nEmperor Traianus rises from his\nthrone to greet you and\nproclaims:           (space)",
-					"rank_up":	"\n\nCongratulations %NAME%,\n\nI now raise you to the rank of\n%RANK%.\n",
-					"more_needed":	"\n\nMy dear %NAME%,\n\nI can aid you better after\nyou've captured %NEEDED% more\nvillains.",
-					"final_rank":	"\n\n%NAME% the %RANK%,\n\nHurry and recover the Aquila\nof the Legions, or all Rome\nwill be lost!"
+					"intro":	"Trumpets announce your arrival with imperial fanfare.\n\nEmperor Traianus rises from his throne to greet you and proclaims:",
+					"rank_up":	"Congratulations %NAME%,\n\nI now raise you to the rank of %RANK%.\n",
+					"more_needed":	"My dear %NAME%,\n\nI can aid you better after you've captured %NEEDED% more villains.",
+					"final_rank":	"%NAME% the %RANK%,\n\nHurry and recover the Aquila of the Legions, or all Rome will be lost!"
 				}
 			}
 		}, {
@@ -3194,7 +3194,8 @@
 		},
 		",":	{
 			"art":	"grass_variant",
-			"terrain":	"grass"
+			"terrain":	"grass",
+			"variants":	["grass_01", "grass_02", "grass_03", "grass_04", "grass_05", "grass_06", "grass_07", "grass_08", "grass_09", "grass_10"]
 		},
 		"-":	{
 			"art":	"desert_edge_03",
@@ -3202,8 +3203,7 @@
 		},
 		".":	{
 			"art":	"grass",
-			"terrain":	"grass",
-			"variants":	["grass", "grass", "grass_01", "grass_02", "grass_03", "grass_04", "grass_05", "grass_06"]
+			"terrain":	"grass"
 		},
 		"/":	{
 			"art":	"desert_edge_04",

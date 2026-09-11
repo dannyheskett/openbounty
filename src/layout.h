@@ -201,8 +201,11 @@ int bfont_glyph_h(void);
 #define CL_CONTENT_X      (CL_MAP_X + (CL_MAP_W - CL_CONTENT_W) / 2)
 #define CL_CONTENT_Y      (CL_MAP_Y + (CL_MAP_H - CL_CONTENT_H) / 2)
 
-#define CL_PANEL_X        (CL_CONTENT_X - 5 * CL_UI)
-#define CL_PANEL_W        (CL_CONTENT_W + 5 * CL_UI)
+// Modern: the panel is exactly the content rect, so the backdrop card, every
+// dialog, prompt and location menu share one left edge and one width
+// (REQ-430h). Legacy keeps its one-sided 5px margin.
+#define CL_PANEL_X        (CL_IS_MODERN ? CL_CONTENT_X : (CL_CONTENT_X - 5 * CL_UI))
+#define CL_PANEL_W        (CL_IS_MODERN ? CL_CONTENT_W : (CL_CONTENT_W + 5 * CL_UI))
 #define CL_PANEL_H        (8 * bfont_glyph_h() + 4 * CL_UI)   // eight text lines and padding: legacy 68
 #define CL_PANEL_Y        (CL_CONTENT_Y + CL_CONTENT_H - CL_PANEL_H)
 #define CL_PANEL_PAD_X    (4 * CL_UI)

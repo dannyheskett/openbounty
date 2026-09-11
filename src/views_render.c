@@ -97,7 +97,7 @@ static void draw_character(const Game *g, const Sprites *s) {
     // string is empty when count is 0.
     #define ROW_LABEL_VAL(label, count) do { \
         bfont_draw((label), label_x, y, PAL_CLR(WHITE)); \
-        if ((count) != 0) { \
+        if ((count) != 0 || CL_IS_MODERN) { \
             snprintf(buf, sizeof(buf), "%d", (count)); \
             int tw = (int)bfont_measure(buf).x; \
             bfont_draw(buf, val_right - tw, y, PAL_CLR(WHITE)); \
@@ -247,9 +247,11 @@ static void draw_army(const Game *g, const Sprites *s) {
         int sprite_w = CL_TILE_W;
         int sprite_h = CL_TILE_H;
 
-        DrawRectangle(vx + pad, ry, sprite_w, sprite_h, PAL_CLR(DGREEN));
+        bool filled = g->army[i].id[0] && g->army[i].count != 0;
+        if (filled || !CL_IS_MODERN)      // modern: an empty slot stays panel-coloured
+            DrawRectangle(vx + pad, ry, sprite_w, sprite_h, PAL_CLR(DGREEN));
 
-        if (!g->army[i].id[0] || g->army[i].count == 0) continue;
+        if (!filled) continue;
         const TroopDef *t = troop_by_id(g->army[i].id);
         if (!t) continue;
 
@@ -314,11 +316,20 @@ static void draw_army(const Game *g, const Sprites *s) {
 
 // Draw a multi-line text block starting at (x, y); returns the y after the
 // last line drawn. Respects embedded newlines in the source text.
-static int draw_text_block(const char *text, int x, int y, Color c) {
+static int draw_text_block(const char *text, int x, int y, int w, Color c) {
     if (!text) return y;
     const char *p = text;
     char line[96];
     int ly = y;
+    if (CL_IS_MODERN) {
+        // Modern: wrap to the panel width; authored newlines still break.
+        while (*p) {
+            if (bfont_take_line(&p, w, line, (int)sizeof line) <= 0) break;
+            bfont_draw(line, x, ly, c);
+            ly += GH;
+        }
+        return ly;
+    }
     while (*p) {
         int n = 0;
         while (*p && *p != '\n' && n + 1 < (int)sizeof(line)) {
@@ -478,7 +489,7 @@ static void draw_contract(const Game *g, const Sprites *s) {
         bfont_draw(ui->cv_features_header,
                    panel_x + pad, sy, PAL_CLR(YELLOW));
         sy += GH;
-        sy = draw_text_block(vd->features, panel_x + pad, sy, PAL_CLR(WHITE));
+        sy = draw_text_block(vd->features, panel_x + pad, sy, panel_w - 2 * pad, PAL_CLR(WHITE));
         sy += 2;
     }
 
@@ -487,7 +498,7 @@ static void draw_contract(const Game *g, const Sprites *s) {
         bfont_draw(ui->cv_crimes_header,
                    panel_x + pad, sy, PAL_CLR(YELLOW));
         sy += GH;
-        sy = draw_text_block(vd->crimes, panel_x + pad, sy, PAL_CLR(WHITE));
+        sy = draw_text_block(vd->crimes, panel_x + pad, sy, panel_w - 2 * pad, PAL_CLR(WHITE));
     }
 }
 

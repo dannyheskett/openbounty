@@ -1,0 +1,16 @@
+{
+  "style": "rd_tile__single_tile",
+  "width": 16,
+  "height": 16,
+  "target": [
+    16,
+    16
+  ],
+  "raw_only": true,
+  "figure": false,
+  "bypass_prompt_expansion": true,
+  "prompt": "dark mossy meadow grass seen from directly above, dense short blades, even, the same everywhere, no objects",
+  "_note": "2026-09-11: 16 px base grass on rd_tile__single_tile. The style rejects tile_x/tile_y (inference fails); it is seamless by itself.",
+  "id": "grass16_base_2",
+  "seed": 7102
+}

@@ -252,7 +252,7 @@ typedef struct {
 
 // ---- Tile code (single byte in the .dat -> art + flags) -------------------
 
-#define RES_TILE_VARIANTS 8        // cosmetic art variants a code may declare (a name may repeat to weight it)
+#define RES_TILE_VARIANTS 12       // cosmetic art variants a code may declare (a name may repeat to weight it)
 
 typedef struct {
     bool present;                 // false = unused code

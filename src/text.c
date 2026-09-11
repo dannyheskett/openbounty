@@ -8,7 +8,9 @@
 #include <string.h>
 
 #define T_FIRST 32
-#define T_COUNT 95                       // printable ASCII 32..126
+#define T_ASCII 95                       // printable ASCII 32..126
+#define T_COUNT (T_ASCII + 4)            // plus the four arrows the legacy control codes name
+static const int T_ARROWS[4] = { 0x2193, 0x2191, 0x2192, 0x2190 };   // 0x18 down, 0x19 up, 0x1A right, 0x1B left
 
 static const unsigned char *s_bytes = NULL;
 static size_t s_size = 0;
@@ -42,14 +44,16 @@ static int codepoint(unsigned char ch) {
         case 0x1C: return '\\';
         default: break;
     }
+    if (ch >= 0x18 && ch <= 0x1B) return T_FIRST + T_ASCII + (ch - 0x18);   // an arrow slot
     if (s_caps) ch = (unsigned char)toupper(ch);
-    if (ch < T_FIRST || ch >= T_FIRST + T_COUNT) return ' ';
+    if (ch < T_FIRST || ch >= T_FIRST + T_ASCII) return ' ';
     return ch;
 }
 
 static GlyphInfo *load_glyphs(int px, int *count) {
     int cps[T_COUNT];
-    for (int i = 0; i < T_COUNT; i++) cps[i] = T_FIRST + i;
+    for (int i = 0; i < T_ASCII; i++) cps[i] = T_FIRST + i;
+    for (int i = 0; i < 4; i++) cps[T_ASCII + i] = T_ARROWS[i];
     *count = 0;
     GlyphInfo *g = LoadFontData(s_bytes, (int)s_size, px, cps, T_COUNT, FONT_DEFAULT, count);
     if (g && *count != T_COUNT) { UnloadFontData(g, *count); g = NULL; }

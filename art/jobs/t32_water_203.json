@@ -1,0 +1,25 @@
+{
+ "lower_description": "mossy meadow grass",
+ "tile_size": {
+  "width": 32,
+  "height": 32
+ },
+ "mode": "standard",
+ "shape_style": "round",
+ "enhance": false,
+ "view": "high top-down",
+ "outline": "lineless",
+ "shading": "medium shading",
+ "detail": "medium detail",
+ "text_guidance_scale": 8.0,
+ "seed": 161,
+ "lower_base_tile_id": "d1de924b-3a56-495d-bc54-e2253bde8d24",
+ "lower_reference_image": {
+  "type": "base64",
+  "base64": "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAFJElEQVR4nI2X2XIbRxJFT2ZVNwCRlEgJ0IAzpC3ZfpuI+Qx/2/ze+MXhMG3ZQ1rcYBOSQBNAd1X6odAbNjkjOtCo7WZm3Vxavv3vf8wiQCCYQgAcOImIOsql4bzQFhWt36NFRCGdkeaqsUqquW3iAcQp2OqPq6YcFtkAFwUjdg4VU4xmQNOiZl4aZeszYvrVBBUZj7Ldau4R0ebgtph0x0w3liRlAY6PPde3RW2VxbAT0GLXpevY0SLRkkGVEiaRs5Hf2GMRdDzKCMEIZvW9iTo+J7LFItFqPOBFOBxoAn+dc3G52Lpeb+8C048BJ2t3bYpK81SHf3XW5+hAtxLLIpyfZgRTxBknx45XJ57MJ229dx3FxZT6bzVx9jpPh8kmwtfnA368fMJnSdmOck4Rp3x6jJRl4M+58f/f5gBpj4Bz654CfflS65Hxy6zWTFasiRZrN95OFjiJlIXVc/945ep9jshkUvLmdMDvDyXgyNY8O36ZcX6a1Ubqh1nJeOgoy8DNQ+DqblmzuonxwC/XC6azlCtmT7G24noyJ+vBn48R5x24NJaIHLj5o8A7IcscxdK4n6azy2Agiu975eY+LaIVpzHG+l5FHZ7tIup4f1OQe2OxWOKdo5VMGsYTUVGCGV4cZQnDE1mF4XO3Whzqpy1V6LUfsYaIwSrM5pw2+PphP/6SOAGg01nAOemABtPPhFm6v/YaJ0Iw25tDosU6u/pc+PDBUCdxRZjKAod3sqF9V6GAE3Atfp2P844Bm3u6YnFFwirnV8mnvUnXTvAZ/PvtMwC+OO1zdNS4PPPK4QDOx4PEJ3YXoTp823lgHVy0yQWiiSeHA8fNdMnJcU5pgcmkZL4oV8SD6afkftmV+Lcp07ZyPc9X4D6DsjBu7kuODzMmDyUP04DPhV7mOR3lfP9uxvA4pyytvutd0i5e3iSChY0CU11JNd7rKxCYzgqcRGZPUis4mwdCgNkcZk9Fpz+oLV3rIaKlsNSz1zmijm++POSrswOynusUI1EoC5j8vqCXCbeTYqNYTT8GDp75DqoonVqyTZloEc281r3Az1ePnI/6e+nrW9Tf5+Z6jcSaS+qk434VRd+9n+NF+OnyidNhn6LsEqFJTM2V1MloTc9t5BNTnCTwL8ZZ3bJVHqgzrM+6m5oI6HKhY906YVfOcQKjk4ybPwoARsOMg77n4tenem0oU6+pAFd3S4ZHGTj4/mK+E3Cf1M2MKcHA+5Rdj587Dvqex8eyzqSi4HNJv5Urbx5SUxILSWlW9gNu80bbA1d3yzoj9r1wMSlILTe0i1WTBywSzHjxahP573ojWsTlkYAyX5S8Oe3R7yn/u3hsgdN5107ns6273QO+Hl4AhwPHeNhYOF/EVSu2vc/cGm/tItM0qmut1OqlHesqytGBcvXbkvGoB8DsKfD1WW9nldwZ8CnUAmevc7IevP1nH6epcG2zPMsFdYKFpH3fK1d3S8oCvvvhE71evvJCt2HRbbFbBvAOBn0l84qVcP+w5HToCGXTDwK8eJGAQ4BgRuaVZweem4dQu+tZX1gWn/FAW5HhK89omDH9BJf3c0bDjOvbEnHG2y/zGtwk8jANvPlXzuNTSe6Fd+/nCaxV2fZ9Z2gbvOqGQzAGWdrkxfAiuFVvb0FSC97iBkCxMJalsU+2EbrTa1YRMf0IJ4cpNc6XwtXdkrxnXF4XW+vExa8zYH/i2BVNtQLrHyI/Xz3iRfEZzOfWFKHK/fXygKjj6Pl2lM/lkL8Amkyas+hqFz8AAAAASUVORK5CYII=",
+  "format": "png"
+ },
+ "upper_description": "deep blue sea water with gentle waves",
+ "transition_description": "shoreline with pale shallow water and wet sand",
+ "transition_size": 0.0
+}

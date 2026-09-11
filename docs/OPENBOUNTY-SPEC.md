@@ -2040,6 +2040,20 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   its spell picker, the victory dialog, prompts and any opened view. Toasts
   do not dim. `overlay_dim_scene` / `overlay_dim_alpha` (`src/overlay.c`);
   legacy never dims and draws exactly as before.
+- **REQ-430h.** **One panel rect (modern).** (Every panel's size and position by circumstance is tabulated in `docs/UI-PANELS.md`.) Every bottom text panel, the
+  message dialog, the prompts, the town, castle, dwelling, alcove and recruit
+  menus, is exactly the content rect in width and left edge (`CL_PANEL_X`,
+  `CL_PANEL_W`), eight text lines tall, bottom-aligned in the content rect,
+  and the location backdrop card sits directly above it at the same edge and
+  width. Legacy keeps its one-sided 5 px margin. Also settled with the
+  2026-09-11 overlay audit: dialog headers wrap like body text (the audience
+  passes the Emperor's words as the header); the four legacy arrow control
+  codes render as the font's arrow glyphs; the Options panel sizes itself to
+  its list and splits the keybinds into two columns when they do not fit;
+  recruit rows pad the name to the longest in the pool; empty army slots stay
+  panel-coloured; the character card prints zeros; Escape on the map opens
+  the Game Menu (`INPUT_ACTION_GAME_MENU`). Legacy is unchanged in all of these.
+
 - **REQ-430f.** **Keyboard detection and the letter selector (modern).**
   `input_host` latches which physical devices have been used: a real key
   event (not an injected one), a touch contact, a gamepad button or stick

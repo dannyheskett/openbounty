@@ -1,0 +1,8 @@
+{
+ "description": "dark mossy meadow grass, mostly flat and even, low contrast, a few short blade clusters and slightly darker patches, seen from directly above",
+ "tile_type": "square_topdown",
+ "tile_size": 32,
+ "tile_view": "top-down",
+ "outline_mode": "segmentation",
+ "seed": 8102
+}

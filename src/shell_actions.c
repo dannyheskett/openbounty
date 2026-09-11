@@ -57,6 +57,7 @@ void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
         }
         break;
     case INPUT_ACTION_OPTIONS_MENU:    views_set(VIEW_OPTIONS);   break;
+    case INPUT_ACTION_GAME_MENU:       views_set(VIEW_MENU);      break;
     case INPUT_ACTION_SAVE_QUIT: {
         // Q saves unconditionally, then displays a "Press Ctrl-Q to
         // Quit / any other key to continue" dialog. The dialog handler

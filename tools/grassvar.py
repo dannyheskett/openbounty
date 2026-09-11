@@ -23,6 +23,18 @@ src, out = sys.argv[1], sys.argv[2]
 count = int(sys.argv[sys.argv.index("--count") + 1]) if "--count" in sys.argv else 3
 seed = int(sys.argv[sys.argv.index("--seed") + 1]) if "--seed" in sys.argv else 1
 extra = [sys.argv[i + 1] for i, a in enumerate(sys.argv) if a == "--set"]
+# --decor DIR --decor-ids 0,1,2 [--decor-n 2] [--patch-rate 0.5]: small transparent
+# objects (32 px) laid fully inside each variant, never crossing a tile line,
+# on top of the grass; a variant carries a patch only at --patch-rate.
+decor_dir = sys.argv[sys.argv.index("--decor") + 1] if "--decor" in sys.argv else None
+decor_ids = [int(x) for x in sys.argv[sys.argv.index("--decor-ids") + 1].split(",")] if "--decor-ids" in sys.argv else []
+decor_n = int(sys.argv[sys.argv.index("--decor-n") + 1]) if "--decor-n" in sys.argv else 2
+decor_rate = float(sys.argv[sys.argv.index("--decor-rate") + 1]) if "--decor-rate" in sys.argv else 1.0   # share of variants that get objects
+patch_rate = float(sys.argv[sys.argv.index("--patch-rate") + 1]) if "--patch-rate" in sys.argv else 1.0
+# --mottle N: N small one- or two-vertex patches of the first set's upper
+# terrain scattered through EVERY tile, base included, so the ground reads as
+# a soft mottle of two close tones instead of one flat colour
+mottle = int(sys.argv[sys.argv.index("--mottle") + 1]) if "--mottle" in sys.argv else 0
 os.makedirs(out, exist_ok=True)
 
 
@@ -102,7 +114,8 @@ plain = Image.new("RGBA", (96, 96))
 for b in range(N):
     for a in range(N): plain.paste(grass, (a * S, b * S))
 made = {}
-sizes = [3, 5, 4, 6, 2, 7] if N >= 6 else [1, 2, 3, 2, 1, 4]
+patch_size = int(sys.argv[sys.argv.index("--patch-size") + 1]) if "--patch-size" in sys.argv else 0   # vertices per patch, 0 = the default mix
+sizes = [patch_size] * 6 if patch_size else ([3, 5, 4, 6, 2, 7] if N >= 6 else [1, 2, 3, 2, 1, 4])
 for k in range(count):
     # one patch from one set; every other variant adds a small patch from another set
     a = SETS[k % len(SETS)]
@@ -110,9 +123,39 @@ for k in range(count):
     if len(SETS) > 1 and k % 2 == 1:
         b_ = SETS[(k + 1) % len(SETS)]
         layers.append((blob(rng, 2), b_))
-    made[f"grass_{k + 1:02d}"] = build(layers)
+    if rng.random() > patch_rate:
+        layers = []
+    if mottle:
+        v = [["l"] * (N + 1) for _ in range(N + 1)]
+        for _ in range(mottle):
+            b = blob(rng, rng.choice((1, 1, 2)))
+            for yy in range(N + 1):
+                for xx in range(N + 1):
+                    if b[yy][xx] == "u": v[yy][xx] = "u"
+        layers = [(v, SETS[0])] + layers
+    im = build(layers)
+    if decor_dir and decor_ids and rng.random() < decor_rate:
+        placed = []
+        for _ in range(rng.randint(1, decor_n)):
+            i = rng.choice(decor_ids)
+            sp = Image.open(os.path.join(decor_dir, f"tile_{i:02d}.png")).convert("RGBA")
+            bb = sp.getbbox() or (0, 0, sp.width, sp.height)
+            for _try in range(20):
+                x = rng.randint(-bb[0], 96 - bb[2]); y = rng.randint(-bb[1], 96 - bb[3])
+                box = (x + bb[0], y + bb[1], x + bb[2], y + bb[3])
+                if all(box[2] <= q[0] or box[0] >= q[2] or box[3] <= q[1] or box[1] >= q[3] for q in placed):
+                    im.alpha_composite(sp, (x, y)); placed.append(box); break
+    made[f"grass_{k + 1:02d}"] = im
 for name, im in made.items():
     im.save(os.path.join(out, name + ".png"))
+if mottle:
+    v = [["l"] * (N + 1) for _ in range(N + 1)]
+    for _ in range(mottle):
+        b = blob(rng, rng.choice((1, 1, 2)))
+        for yy in range(N + 1):
+            for xx in range(N + 1):
+                if b[yy][xx] == "u": v[yy][xx] = "u"
+    plain = build([(v, SETS[0])])
 plain.save(os.path.join(out, "grass.png"))
 
 # a field: plain and variants mixed as the shell would, 8x6 cells

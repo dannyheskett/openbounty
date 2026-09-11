@@ -1,0 +1,13 @@
+{
+ "lower_description": "plains",
+ "upper_description": "dirt",
+ "tile_size": {
+  "width": 16,
+  "height": 16
+ },
+ "mode": "standard",
+ "shape_style": "round",
+ "enhance": true,
+ "view": "high top-down",
+ "seed": 9104
+}

@@ -165,8 +165,12 @@ static void draw_dialog_ex(DialogMode mode) {
     if (header_rows) {
         const char *hp = hdr;
         char hline[128];
-        for (int i = 0; i < header_rows; i++) {
-            bfont_take_line(&hp, max_w, hline, (int)sizeof(hline));
+        // Modern: the header is prose and wraps like the body (the audience
+        // passes the king's words as the header); legacy draws one line per
+        // authored newline, as it always did.
+        int rows_left = CL_IS_MODERN ? DLG_BOTTOM_BODY_LINES + 1 : header_rows;
+        for (int i = 0; i < rows_left && (CL_IS_MODERN ? *hp != '\0' : true); i++) {
+            if (bfont_take_line(&hp, max_w, hline, (int)sizeof(hline)) <= 0 && CL_IS_MODERN) break;
             if (mode == DLG_MODE_CENTERED_MODAL) {
                 bfont_draw_centered(hline, x + w / 2, ty, PAL_CLR(YELLOW));
             } else {
@@ -446,6 +450,9 @@ static void draw_town(const Game *g, const Sprites *s) {
     int x = CL_FRAME_LEFT_W
           + ((CL_SCREEN_W - CL_FRAME_LEFT_W - CL_FRAME_RIGHT_W) - w) / 2;
     int y = CL_MAP_Y + CL_MAP_H - h;
+    if (CL_IS_MODERN) {            // the standard panel rect (REQ-430h)
+        w = CL_PANEL_W; x = CL_PANEL_X; y = CL_PANEL_Y + CL_PANEL_H - h;
+    }
 
     draw_panel(x, y, w, h, PAL_CLR(DBLUE));
 
@@ -551,6 +558,20 @@ static void draw_options(const Game *g) {
     int rows = 19;
     int w = cols * GW + 2 * pad;
     int h = rows * GH + 2 * pad;
+    // Modern: the list decides the panel. Movement rows on top, then the
+    // keybinds; when they will not fit the pane in one column they go in two.
+    int kb_n = (g && g->res) ? g->res->ui.keybind_count : 0;
+    int kb_cols = 1;
+    if (CL_IS_MODERN) {
+        int fit = (CL_MAP_H - 2 * pad) / GH - 8 - 1;
+        kb_cols = (kb_n > fit) ? 2 : 1;
+        int kb_rows = (kb_n + kb_cols - 1) / kb_cols;
+        rows = 8 + 1 + kb_rows;
+        w = (kb_cols == 2 ? 2 * 24 : 28) * GW + 2 * pad;
+        if (w > CL_PANEL_W + CL_SIDEBAR_W) w = CL_PANEL_W + CL_SIDEBAR_W;
+        h = rows * GH + 2 * pad;
+        if (h > CL_MAP_H) h = CL_MAP_H;
+    }
     // Anchored to the content rect, not the pane. The panel is a fixed 28
     // columns, so on a wide pane the pane's left edge strands it in the
     // corner. The content rect IS the pane in legacy, so this stays at 16.
@@ -585,8 +606,11 @@ static void draw_options(const Game *g) {
     const ResUI *ui = (g && g->res) ? &g->res->ui : NULL;
     int n = ui ? ui->keybind_count : 0;
     int max_row = (y + h - pad - ty) / GH;
-    if (n > max_row) n = max_row;
+    if (kb_cols == 1 && n > max_row) n = max_row;
 
+    int col_w = (w - 2 * pad) / kb_cols;
+    int per_col = (n + kb_cols - 1) / kb_cols;
+    int ty0 = ty;
     for (int i = 0; i < n; i++) {
         const ResKeybind *kb = &ui->keybinds[i];
         // Skip mount-conditional entries if they don't apply.
@@ -595,8 +619,10 @@ static void draw_options(const Game *g) {
         if (strcmp(kb->key, "N") == 0 && g->character.mount != MOUNT_SAIL) continue;
         char buf[48];
         snprintf(buf, sizeof(buf), "%-4s %s", kb->key, kb->label);
-        bfont_draw(buf, tx, ty, PAL_CLR(WHITE));
-        ty += GH;
+        int cx = tx + (kb_cols == 2 ? (i / per_col) * col_w : 0);
+        int cy = kb_cols == 2 ? ty0 + (i % per_col) * GH : ty;
+        bfont_draw(buf, cx, cy, PAL_CLR(WHITE));
+        if (kb_cols == 1) ty += GH;
     }
 }
 

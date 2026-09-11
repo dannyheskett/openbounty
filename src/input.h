@@ -45,6 +45,7 @@ typedef enum {
     INPUT_ACTION_NEW_CONTINENT,
     // Meta
     INPUT_ACTION_OPTIONS_MENU,
+    INPUT_ACTION_GAME_MENU,        // modern: Escape on the map
     INPUT_ACTION_SAVE_QUIT,
     INPUT_ACTION_FAST_QUIT,
     INPUT_ACTION_REST,          // numpad 5: rest one day in place

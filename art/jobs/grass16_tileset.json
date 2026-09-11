@@ -1,0 +1,5 @@
+{"id": "grass16_tileset",
+ "prompt": "dark mossy meadow grass, and the same grass with scattered weeds, small grey pebbles and tiny wildflowers",
+ "style": "rd_tile__tileset", "width": 16, "height": 16, "seed": 7201,
+ "raw_only": true, "figure": false, "target": [64, 80],
+ "_note": "2026-09-11: rd_tile__tileset at 16 px, one wang-style sheet (4x5 tiles per the documented example), $0.10. Cells classified by corner afterwards."}
