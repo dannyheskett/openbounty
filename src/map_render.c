@@ -4,6 +4,7 @@
 #include "palette.h"
 #include "tables.h"     // troop_by_id (flying hero shows the lead troop)
 #include "tile_cache.h"
+#include "tilevar.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -71,10 +72,14 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
             // transparent object -- the 1x1 castle, a town -- then stands on the ground it occupies instead
             // of the black map fill; an opaque object covers the ground
             // completely, so nothing that drew before this draws differently.
+            // A code with cosmetic variants draws one of them, chosen per
+            // cell for the session (src/tilevar.c); the ground under an
+            // object goes through the same pick so it matches its neighbours.
+            char va[TILE_ART_NAME_LEN];
             if (t->interactive != INTERACT_NONE) {
                 char ga[TILE_ART_NAME_LEN];
-                Texture2D ground = tile_cache_get(
-                    MapTerrainArt(m, TerrainName(t->terrain), ga, sizeof ga));
+                Texture2D ground = tile_cache_get(tilevar_art(
+                    MapTerrainArt(m, TerrainName(t->terrain), ga, sizeof ga), mx, my, va, sizeof va));
                 if (ground.id) {
                     Rectangle gsrc = { 0, 0, (float)ground.width,
                                        (float)ground.height };
@@ -82,7 +87,7 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
                                    0.0f, WHITE);
                 }
             }
-            Texture2D tex = tile_cache_get(t->art);
+            Texture2D tex = tile_cache_get(tilevar_art(t->art, mx, my, va, sizeof va));
             if (tex.id == 0) continue;
             Rectangle src = { 0, 0, (float)tex.width, (float)tex.height };
             DrawTexturePro(tex, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);

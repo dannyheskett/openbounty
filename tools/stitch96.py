@@ -18,7 +18,10 @@ needs, which is what makes walking up to a shore or a cliff feel close.
 
 Imperfection. Interior vertices next to that fringe flip to grass at random
 (seeded), only where at least two orthogonal neighbours are already grass, so
-the fringe bulges and nicks instead of running straight. Border vertices never
+the fringe bulges and nicks instead of running straight. --rough R also lets
+a vertex with ONE grass neighbour flip at rate R, which opens bays off a
+straight shore; the creep then spreads from the bay, so the coast wanders.
+Two passes, so a bay can be two sub-tiles deep. Border vertices never
 change: they are shared with the neighbouring tile.
 
 Cliff sets (transition_size 1.0, 25 tiles) carry a third corner value,
@@ -62,9 +65,12 @@ import glob, json, os, random, sys
 from PIL import Image
 
 STD = {1: "lllu", 2: "lull", 3: "llul", 4: "ulll", 5: "uuul", 6: "uluu",
-       7: "uulu", 8: "luuu", 9: "ulul", 10: "lulu", 11: "lluu", 12: "uull"}
+       7: "uulu", 8: "luuu", 9: "ulul", 10: "lulu", 11: "lluu", 12: "uull",
+       # spits and strips (REQ-229e): given by their OPEN SIDES, not corners
+       13: "S:NS", 14: "S:EW", 15: "S:NES", 16: "S:ESW", 17: "S:SWN", 18: "S:WNE", 19: "S:NESW"}
 WATER = {0: "llul", 1: "lllu", 2: "lull", 3: "ulll", 4: "uuul", 5: "uluu",
-         6: "uulu", 7: "luuu", 8: "ulul", 9: "lulu", 10: "lluu", 11: "uull"}
+         6: "uulu", 7: "luuu", 8: "ulul", 9: "lulu", 10: "lluu", 11: "uull",
+         12: "S:NS", 13: "S:EW", 14: "S:NES", 15: "S:ESW", 16: "S:SWN", 17: "S:WNE", 18: "S:NESW"}
 VAL = {"l": 0, "u": 1, "t": 2}
 
 
@@ -74,6 +80,7 @@ def arg(name, default, conv=str):
 
 src, terrain, out = sys.argv[1], sys.argv[2], sys.argv[3]
 seed = arg("--seed", 1, int)
+rough = arg("--rough", 0.0, float)   # bays: a vertex beside a straight fringe creeps to grass at this rate
 invert = "--invert" in sys.argv
 pool_dir, pool_rate = arg("--pool", None), arg("--pool-rate", 0.5, float)
 decor_dir, decor_rate = arg("--decor", None), arg("--decor-rate", 0.2, float)
@@ -138,18 +145,36 @@ def pick(rows):
     return best
 
 
+def sides_vertices(open_sides):
+    """A cell given by its open (grass) sides: every vertex on an open side
+    is grass, so a corner is grass when either side at it is open, and the
+    rest is terrain. A neighbour across a closed side derives the same
+    border from its own sides, so the two agree vertex for vertex."""
+    v = [["u"] * (N + 1) for _ in range(N + 1)]
+    for i in range(N + 1):
+        if "N" in open_sides: v[0][i] = "l"
+        if "S" in open_sides: v[N][i] = "l"
+    for j in range(N + 1):
+        if "W" in open_sides: v[j][0] = "l"
+        if "E" in open_sides: v[j][N] = "l"
+    return v
+
+
 def vertices(corners, rng):
     if corners == "llll":
         return [["l"] * (N + 1) for _ in range(N + 1)]
-    nw, ne, sw, se = corners
-    v = [["u"] * (N + 1) for _ in range(N + 1)]   # v[j][i]
-    for i in range(N + 1):
-        if nw == "l" and ne == "l": v[0][i] = "l"
-        if sw == "l" and se == "l": v[N][i] = "l"
-    for j in range(N + 1):
-        if nw == "l" and sw == "l": v[j][0] = "l"
-        if ne == "l" and se == "l": v[j][N] = "l"
-    v[0][0], v[0][N], v[N][0], v[N][N] = nw, ne, sw, se
+    if corners.startswith("S:"):
+        v = sides_vertices(corners[2:])
+    else:
+        nw, ne, sw, se = corners
+        v = [["u"] * (N + 1) for _ in range(N + 1)]   # v[j][i]
+        for i in range(N + 1):
+            if nw == "l" and ne == "l": v[0][i] = "l"
+            if sw == "l" and se == "l": v[N][i] = "l"
+        for j in range(N + 1):
+            if nw == "l" and sw == "l": v[j][0] = "l"
+            if ne == "l" and se == "l": v[j][N] = "l"
+        v[0][0], v[0][N], v[N][0], v[N][N] = nw, ne, sw, se
     # Imperfection: interior vertices beside the fringe creep to grass. In a
     # cliff set a creep is only allowed where the vertex above is already
     # grass, so it never opens a new wall of its own.
@@ -163,6 +188,8 @@ def vertices(corners, rng):
                         continue
                     if near >= 2 and rng.random() < 0.35:
                         v[j][i] = "l"
+                    elif near == 1 and rough > 0 and rng.random() < rough:
+                        v[j][i] = "l"           # a bay opens off a straight shore
     if has_wall:
         # Crags: along a south fringe, runs of columns bite two rows deeper,
         # so the wall steps. A step must be two rows or more: the set has a

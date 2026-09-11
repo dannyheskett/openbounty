@@ -249,12 +249,19 @@ typedef struct {
 
 // ---- Tile code (single byte in the .dat -> art + flags) -------------------
 
+#define RES_TILE_VARIANTS 8        // cosmetic art variants a code may declare (a name may repeat to weight it)
+
 typedef struct {
     bool present;                 // false = unused code
     char art[RES_TILE_ART_LEN];
     int  terrain;                 // Terrain enum value (see tile.h)
     bool blocks_foot;
     bool is_bridge;
+    // Optional cosmetic variants of `art` (same terrain, same flags). The
+    // shell picks one per cell at draw time (src/tilevar.c); the engine,
+    // the .dat and saves never see them (OPENBOUNTY-SPEC REQ-229d).
+    int  variant_count;
+    char variants[RES_TILE_VARIANTS][RES_TILE_ART_LEN];
 } ResTileCode;
 
 // ---- Per-zone object placements -------------------------------------------

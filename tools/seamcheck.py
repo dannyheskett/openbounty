@@ -24,10 +24,13 @@ from PIL import Image
 lay = json.load(open(sys.argv[1]))
 spr = lay["sprites"]
 OPEN = {11: "N", 12: "S", 9: "E", 10: "W", 1: "NW", 3: "NE", 2: "SW", 4: "SE",
-        5: "", 6: "", 7: "", 8: "", 0: ""}
+        5: "", 6: "", 7: "", 8: "", 0: "",
+        # spits and strips (2026-09-10, REQ-229e): opposite sides open, three
+        # sides open (named by the attached side's opposite), and an island
+        13: "NS", 14: "EW", 15: "NES", 16: "ESW", 17: "SWN", 18: "WNE", 19: "NESW"}
 name = [k for k in lay["tiles"] if "_edge_" not in k][0]
 tiles = {0: lay["tiles"][name]}
-for c in range(1, 13):
+for c in range(1, 20):
     tiles[c] = lay["tiles"][f"{name}_edge_{c:02d}"]
 _bb = {}
 def bbox(i):

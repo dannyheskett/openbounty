@@ -3201,7 +3201,8 @@
 		},
 		".":	{
 			"art":	"grass",
-			"terrain":	"grass"
+			"terrain":	"grass",
+			"variants":	["grass", "grass", "grass_01", "grass_02", "grass_03", "grass_04", "grass_05", "grass_06"]
 		},
 		"/":	{
 			"art":	"desert_edge_04",
@@ -3419,6 +3420,168 @@
 		},
 		"e":	{
 			"art":	"water_edge_11",
+			"terrain":	"water"
+		},
+		"f":	{
+			"art":	"road_ns",
+			"terrain":	"grass"
+		},
+		"g":	{
+			"art":	"road_ew",
+			"terrain":	"grass"
+		},
+		"h":	{
+			"art":	"road_ne",
+			"terrain":	"grass"
+		},
+		"i":	{
+			"art":	"road_es",
+			"terrain":	"grass"
+		},
+		"j":	{
+			"art":	"road_sw",
+			"terrain":	"grass"
+		},
+		"k":	{
+			"art":	"road_wn",
+			"terrain":	"grass"
+		},
+		"l":	{
+			"art":	"road_nesw",
+			"terrain":	"grass"
+		},
+		"m":	{
+			"art":	"road_nwse",
+			"terrain":	"grass"
+		},
+		"n":	{
+			"art":	"road_n_sw",
+			"terrain":	"grass"
+		},
+		"o":	{
+			"art":	"road_n_se",
+			"terrain":	"grass"
+		},
+		"p":	{
+			"art":	"road_s_nw",
+			"terrain":	"grass"
+		},
+		"q":	{
+			"art":	"road_s_ne",
+			"terrain":	"grass"
+		},
+		"r":	{
+			"art":	"road_e_nw",
+			"terrain":	"grass"
+		},
+		"s":	{
+			"art":	"road_e_sw",
+			"terrain":	"grass"
+		},
+		"t":	{
+			"art":	"road_w_ne",
+			"terrain":	"grass"
+		},
+		"u":	{
+			"art":	"road_w_se",
+			"terrain":	"grass"
+		},
+		"v":	{
+			"art":	"road_c_nw",
+			"terrain":	"grass"
+		},
+		"w":	{
+			"art":	"road_c_ne",
+			"terrain":	"grass"
+		},
+		"x":	{
+			"art":	"road_c_sw",
+			"terrain":	"grass"
+		},
+		"y":	{
+			"art":	"road_c_se",
+			"terrain":	"grass"
+		},
+		"!":	{
+			"art":	"forest_edge_13",
+			"terrain":	"forest",
+			"blocks_foot":	true
+		},
+		"$":	{
+			"art":	"forest_edge_14",
+			"terrain":	"forest",
+			"blocks_foot":	true
+		},
+		"%":	{
+			"art":	"forest_edge_15",
+			"terrain":	"forest",
+			"blocks_foot":	true
+		},
+		"&":	{
+			"art":	"forest_edge_16",
+			"terrain":	"forest",
+			"blocks_foot":	true
+		},
+		"'":	{
+			"art":	"forest_edge_17",
+			"terrain":	"forest",
+			"blocks_foot":	true
+		},
+		"(":	{
+			"art":	"forest_edge_18",
+			"terrain":	"forest",
+			"blocks_foot":	true
+		},
+		")":	{
+			"art":	"forest_edge_19",
+			"terrain":	"forest",
+			"blocks_foot":	true
+		},
+		"8":	{
+			"art":	"mountain_edge_13",
+			"terrain":	"mountain",
+			"blocks_foot":	true
+		},
+		"9":	{
+			"art":	"mountain_edge_14",
+			"terrain":	"mountain",
+			"blocks_foot":	true
+		},
+		":":	{
+			"art":	"mountain_edge_15",
+			"terrain":	"mountain",
+			"blocks_foot":	true
+		},
+		";":	{
+			"art":	"mountain_edge_16",
+			"terrain":	"mountain",
+			"blocks_foot":	true
+		},
+		"V":	{
+			"art":	"mountain_edge_17",
+			"terrain":	"mountain",
+			"blocks_foot":	true
+		},
+		"W":	{
+			"art":	"mountain_edge_18",
+			"terrain":	"mountain",
+			"blocks_foot":	true
+		},
+		"X":	{
+			"art":	"mountain_edge_19",
+			"terrain":	"mountain",
+			"blocks_foot":	true
+		},
+		"z":	{
+			"art":	"water_edge_12",
+			"terrain":	"water"
+		},
+		"{":	{
+			"art":	"water_edge_13",
+			"terrain":	"water"
+		},
+		"|":	{
+			"art":	"water_edge_18",
 			"terrain":	"water"
 		},
 		"~":	{

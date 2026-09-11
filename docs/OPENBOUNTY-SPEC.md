@@ -971,6 +971,56 @@ except where a deviation is explicitly flagged (§34).
 
 ---
 
+- **REQ-229e.** Seven more variants close the shapes REQ-229a leaves
+  undefined, keyed by the tile's OPEN (differing) cardinals: `13` N+S,
+  `14` E+W (one-wide strips), `15` N+E+S, `16` E+S+W, `17` S+W+N, `18`
+  W+N+E (spits, attached on the remaining side), `19` all four (an island).
+  Water is 0-based as before (`12`..`18`). `glory-of-rome` ships all seven
+  for forest and mountain and the two strips and the island for water; the
+  four shipped zones contain no other shape. `tools/gen_italia.py furnish`
+  and `tools/spitfix.py` assign them; the art comes from the same lattice
+  and stitching tools as the twelve, so every side that is open is a
+  terminal edge and every closed side the standard interface.
+
+### 9.9 Roads (grass-terrain tile codes)
+
+- **REQ-229c.** A road is a **tile, not an object**: a `tile_codes` entry
+  with `terrain: grass` and its own art, exactly like `grass_variant`. The
+  engine needs no road concept: walkability and move cost come from the
+  terrain (grass, cost 1, unchanged), salt and foe logic see grass, and the
+  renderer draws the entry's art. The map author bakes the road pieces into
+  the `.dat` like the edge variants (REQ-229). `glory-of-rome` ships twenty
+  pieces under codes `f`..`y`: straights `road_ns`/`road_ew`; the four
+  curves `road_ne`, `road_es`, `road_sw`, `road_wn` (named by their two
+  exits); the diagonals `road_nesw`/`road_nwse`; eight joins from a straight
+  exit to a diagonal corner (`road_n_sw`, `road_n_se`, `road_s_nw`,
+  `road_s_ne`, `road_e_nw`, `road_e_sw`, `road_w_ne`, `road_w_se`); and the
+  four **companions** `road_c_nw/ne/sw/se`, grass with the road's triangle in
+  one corner. A diagonal passes through a tile corner that two side
+  neighbours share, so the author places the companions on those two cells
+  (a `road_nwse` at (x, y) takes `road_c_sw` at (x+1, y) and `road_c_ne` at
+  (x, y+1); a `road_nesw` takes `road_c_se` at (x-1, y)... see
+  `tools/roadtile.py`). Every straight exit is a 32 px band centred on the
+  side and every diagonal exit the same corner triangle, so any piece joins
+  any other; the pieces are stitched from a 16 px dirt-over-grass tileset
+  by `tools/roadtile.py`, which checks that contract. An object on a road
+  cell replaces its code, so roads end on the cell beside a gate or town.
+
+- **REQ-229d.** A tile code may declare cosmetic **`variants`**, up to eight
+  art names with the same terrain and flags (a name may repeat to weight
+  it; the base art counts once more). The shell (`src/tilevar.c`) picks one
+  per cell when it draws, from the cell's x, y and a seed drawn once per
+  launch, so a field of one code is not a single stamp and shuffles between
+  launches. This is the one stated exception to "nothing about appearance
+  is computed at game time" (REQ-229): the choice is draw-time only and
+  cosmetic. The `.dat`, the engine, saves, replays and byte determinism
+  never see it. The ground drawn under an object goes through the same
+  pick. Every variant must join every other and the base at any edge, which
+  the pack guarantees by keeping variant edges identical to the base
+  (`glory-of-rome`: `grass_01..06`, the grass with a patch of dry grass
+  inside, from `tools/grassvar.py`). Packs that declare no variants draw
+  exactly as before; the legacy pack declares none.
+
 ## 10. Salt: per-zone object placement
 
 ### 10.1 Salt budget

@@ -1,0 +1,13 @@
+{
+  "id": "canopy_tile",
+  "prompt": "dense dark green broadleaf forest canopy seen from directly above, tightly packed round tree tops, the same everywhere",
+  "style": "rd_tile__single_tile",
+  "width": 32,
+  "height": 32,
+  "seed": 9001,
+  "raw_only": true,
+  "figure": false,
+  "target": [32, 32],
+  "bypass_prompt_expansion": true,
+  "_note": "2026-09-07: seamless 32 canopy tile, the upper-terrain reference for the PixelLab forest set so every tile shares one tree grid."
+}

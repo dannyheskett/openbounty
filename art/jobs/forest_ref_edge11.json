@@ -1,0 +1,14 @@
+{
+  "id": "forest_ref_edge11",
+  "prompt": "A dense forest of dark green broadleaf tree canopies packed tightly together, ending in a hard uneven tree line with tree trunks showing along its lower edge, on short dull olive-green grass, seen from directly above, drawn with fine detail.",
+  "style": "rd_pro__topdown",
+  "width": 128,
+  "height": 128,
+  "seed": 8981,
+  "reference_image_paths": ["assets/kings-bounty/art/tiles/forest_edge_11.png"],
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [128, 128],
+  "_note": "2026-09-07: one tile by the run02 recipe: the legacy edge tile itself as the reference, run02's prompt and seed, 128 to be centre-cropped to 96."
+}

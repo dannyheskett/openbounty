@@ -53,7 +53,7 @@ out = sys.argv[1]
 SPR = sys.argv[sys.argv.index("--sprites") + 1]
 NAME = sys.argv[sys.argv.index("--name") + 1] if "--name" in sys.argv else "forest"
 TERRAIN = sys.argv[sys.argv.index("--terrain") + 1] if "--terrain" in sys.argv else "forest"
-GRASS = "build/art/pixellab/t16_water/tile_06.png"
+GRASS = "assets/glory-of-rome/art/tiles/grass.png"   # the pack grass itself (96, from the 32 px set t32_grass_a, 2026-09-10)
 
 _bbox = {}
 def bbox(i):
@@ -64,18 +64,24 @@ def bbox(i):
 
 if TERRAIN == "forest":
     CROWN = int(sys.argv[sys.argv.index("--crown") + 1])
-    UPPER = [[CROWN, CROWN], [CROWN, CROWN]]   # rows -12, 12: x 0 and x 48
-    LOWER = [[CROWN, CROWN], [CROWN, CROWN]]   # rows 36, 60: flush west and east
-    EDGE = CROWN
+    UPPER = [[CROWN, CROWN], [CROWN, CROWN]]
+    LOWER = [[CROWN, CROWN], [CROWN, CROWN]]
+    # edge crowns on a terminal west/east side: (sprite, inset from the line, place)
+    EDGE_W = [(CROWN, 0, "top"), (CROWN, 12, "mid"), (CROWN, 5, "bottom")]
+    EDGE_E = [(CROWN, 8, "top"), (CROWN, 0, "mid"), (CROWN, 14, "bottom")]
     LEDGE = None
 else:
-    UPPER = [[6, 0], [7, 0]]      # rocks per slot, the same in every tile; the
-    LOWER = [[6, 5], [5, 7]]      # boulder (0) straddles east: its top and bottom points close the corners
-    EDGE = 3                      # the tooth: a narrow spire flush to a west/east terminal line
-    LEDGE = 2                     # the ledge: the cliff face along a south terminal side, behind the rocks
+    UPPER = [[6, 0], [7, 1]]      # rocks per slot, the same in every tile; the boulder (0)
+    LOWER = [[6, 5], [5, 7]]      # and the crag (1) straddle east: their top and bottom points close the corners
+    EDGE_W = [(7, 4, "top"), (3, 12, "mid"), (5, 0, "bottom")]
+    EDGE_E = [(3, 0, "top"), (6, 14, "mid"), (0, 6, "bottom")]
+    LEDGE = None                  # no cliff slab: its straight bottom and ends squared the outer corners (2026-09-10)
 
 OPEN = {11: "N", 12: "S", 9: "E", 10: "W", 1: "NW", 3: "NE", 2: "SW", 4: "SE",
-        5: "", 6: "", 7: "", 8: "", 0: ""}
+        5: "", 6: "", 7: "", 8: "", 0: "",
+        # spits and strips (2026-09-10, REQ-229e): opposite sides open, three
+        # sides open (named by the attached side's opposite), and an island
+        13: "NS", 14: "EW", 15: "NES", 16: "ESW", 17: "SWN", 18: "WNE", 19: "NESW"}
 
 
 def ink(i, x, y):
@@ -123,34 +129,34 @@ def widest_row(i, left):
     if left: return min(p, key=lambda y: (p[y][0], abs(y - 48)))
     return max(p, key=lambda y: (p[y][1], -abs(y - 48)))
 
-LOWER1_Y = 36
+LOWER_Y = (36, 58)
+# the lower rows stop short of the west and east lines by these insets
+# (row, side), so no shared sprite ever lies along a west or east line and
+# a terminal side's silhouette is not the line
+LOWER_INSET = ((12, 8), (8, 12)) if TERRAIN != "forest" else ((0, 0), (0, 0))   # a tree closes no corner from its trunk, so its lower rows stay flush
 
 
 def period():
     """One 96 period of the lattice: (sprite, x, y, layer). Layer 0 is the
     lower rows (drawn first), 1 the upper rows."""
     pts = []
-    # lower row 1: flush to the west and east lines by ink box
-    for j in range(2):
-        i = LOWER[0][j]; l, t, r, b = bbox(i)
-        pts.append((i, -l if j == 0 else 96 - r, LOWER1_Y, 0))
-    # lower row 2: the row of widest ink sits on the south line, flush to the
-    # west/east line at that row, so the sprite's widest point closes the
-    # corner from inside while touching the line only there
-    for j in range(2):
-        i = LOWER[1][j]; yr = widest_row(i, j == 0); l, r = profile(i)[yr]
-        pts.append((i, -l if j == 0 else 95 - r, 95 - yr, 0))
+    # lower rows: inset from the west and east lines by ink box
+    for k in range(2):
+        for j in range(2):
+            i = LOWER[k][j]; l, t, r, b = bbox(i); ins = LOWER_INSET[k][j]
+            pts.append((i, -l + ins if j == 0 else 96 - r - ins, LOWER_Y[k], 0))
     # upper top row: ink tops on the north line; the straddler's topmost
     # point sits on the east line, closing the corner from below
     for j in range(2):
         i = UPPER[0][j]; l, t, r, b = bbox(i)
         pts.append((i, 0 if j == 0 else 96 - extreme_col(i, True), -t, 1))
-    # upper bottom row: ink bottoms 1 px above the south line; the straddler
-    # sits at x = 24 so its middle (a trunk, on trees) is behind the flush
-    # lower-row sprite and not in the notch where two of those meet at the line
-    for j in range(2):
-        i = UPPER[1][j]; l, t, r, b = bbox(i)
-        pts.append((i, 0 if j == 0 else 48, 95 - b, 1))
+    # upper bottom row: the inside sprite ends 1 px above the south line;
+    # the straddler's lowest point sits on the east line at the south line,
+    # closing the corner from above (a round-bottomed sprite: short run)
+    i = UPPER[1][0]; l, t, r, b = bbox(i)
+    pts.append((i, 0, 95 - b, 1))
+    i = UPPER[1][1]; l, t, r, b = bbox(i)
+    pts.append((i, 96 - extreme_col(i, False), 96 - b, 1))
     return pts
 
 
@@ -191,11 +197,20 @@ def tile(code):
         if not touches(i, x, y): continue
         if crossings(i, x, y) & set(open_sides): continue   # would cross a terminal line
         keep.append((i, x, y, lay))
-    eL, eT, eR, eB = bbox(EDGE)
-    ey = -eT                                   # ink top on the line, fully inside
-    if ey + eB > 96: ey = 96 - eB
-    if "W" in open_sides: keep.append((EDGE, -eL, ey, 2))
-    if "E" in open_sides: keep.append((EDGE, 96 - eR, ey, 2))
+    # Terminal west/east: edge sprites fully inside the tile, each at its
+    # own inset and height, so the silhouette is rocks and notches, not the
+    # line. On an outer corner the sprite nearest the corner is left out,
+    # which cuts the corner back.
+    for side, spec in (("W", EDGE_W), ("E", EDGE_E)):
+        if side not in open_sides: continue
+        for (i, ins, place) in spec:
+            if place == "top" and "N" in open_sides: continue
+            if place == "bottom" and "S" in open_sides: continue
+            l, t, r, b = bbox(i)
+            y = {"top": 1 - t, "mid": 48 - (t + b) // 2, "bottom": 95 - b}[place]
+            x = -l + ins if side == "W" else 96 - r - ins
+            x = max(-l, min(96 - r, x))          # fully inside, whatever the inset
+            keep.append((i, x, y, 2))
     if LEDGE is not None and "S" in open_sides:
         lL, lT, lR, lB = bbox(LEDGE)
         ly = 96 - lB
@@ -217,7 +232,7 @@ def tile(code):
 check_lattice()
 lay = {"sprites": SPR, "grass": GRASS, "tiles": {}}
 lay["tiles"][NAME] = tile(0)
-for code in range(1, 13):
+for code in range(1, 20):
     lay["tiles"][f"{NAME}_edge_{code:02d}"] = tile(code)
 json.dump(lay, open(out, "w"), indent=1)
 

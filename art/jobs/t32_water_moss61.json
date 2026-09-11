@@ -1,0 +1,19 @@
+{
+ "lower_description": "dense mossy meadow grass, deep rich green, thick and soft, seen from directly above, even, the same everywhere",
+ "tile_size": {
+  "width": 32,
+  "height": 32
+ },
+ "mode": "standard",
+ "shape_style": "round",
+ "enhance": false,
+ "view": "high top-down",
+ "outline": "lineless",
+ "shading": "medium shading",
+ "detail": "medium detail",
+ "text_guidance_scale": 8.0,
+ "seed": 61,
+ "upper_description": "deep blue sea water with gentle waves",
+ "transition_description": "shoreline with pale shallow water and wet sand",
+ "transition_size": 0.0
+}

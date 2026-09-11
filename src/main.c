@@ -22,6 +22,7 @@
 #include "select.h"
 #include "sprites.h"
 #include "tile_cache.h"
+#include "tilevar.h"
 #include "adventure.h"
 #include "views.h"
 #include "ui.h"
@@ -718,6 +719,8 @@ int shell_run_game(int argc, char **argv) {
     Sprites sprites;
     sprites_load(&sprites, &res);
     tile_cache_attach(&res);
+    // Cosmetic tile variants: a fresh shuffle every launch (draw-time only).
+    tilevar_init((const struct Resources *)&res, (unsigned)time(NULL));
 
     // Fit the layout to the window before anything allocates a target. In
     // modern the buffer is the window divided by the scale; without this the

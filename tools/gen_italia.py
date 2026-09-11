@@ -407,6 +407,15 @@ OTHER_IDX = {'N': 11, 'S': 12, 'E': 9, 'W': 10,
              'NE': 6, 'SE': 5, 'SW': 7, 'NW': 8}
 
 
+# Spits and strips (REQ-229e), keyed by the OPEN cardinals; forest and
+# mountain ship all seven (13..19), water ships 12, 13 and 18 (0-based).
+SPIT_IDX = {frozenset('NS'): 13, frozenset('EW'): 14, frozenset('NES'): 15,
+            frozenset('ESW'): 16, frozenset('SWN'): 17, frozenset('WNE'): 18,
+            frozenset('NESW'): 19}
+WATER_SPIT_BASE = -1
+WATER_SPITS = {13, 14, 19}
+
+
 def furnish(g, codes):
     """Rewrite plain terrain tiles into their edge variants in place."""
     art2code = {v['art']: k for k, v in codes.items()}
@@ -427,7 +436,7 @@ def furnish(g, codes):
                     and terr[g[y + dy][x + dx]] != t}
             if not diff:
                 continue
-            card = diff & {'N', 'S', 'E', 'W'}
+            card = frozenset(diff & {'N', 'S', 'E', 'W'})
             m = WATER_IDX if t == 'water' else OTHER_IDX
             if card == {'N', 'E'}:
                 idx = m['NE_c']
@@ -445,6 +454,9 @@ def furnish(g, codes):
                     unresolved.append((x, y, t, 'multi-diagonal'))
                     continue
                 idx = m[next(iter(d))]
+            elif card in SPIT_IDX and (t != 'water' or SPIT_IDX[card] in WATER_SPITS):
+                # spits and strips (REQ-229e): opposite sides, three sides, island
+                idx = SPIT_IDX[card] + (WATER_SPIT_BASE if t == 'water' else 0)
             else:
                 unresolved.append((x, y, t, f'{len(card)} cardinals'))
                 continue

@@ -222,7 +222,7 @@ record:
 ```
 
 `terrain` must be one of: `grass`, `forest`, `mountain`, `water`,
-`desert`. `blocks_foot` and `is_bridge` are booleans that interact with
+`desert`. Several codes may share a terrain with different art: `glory-of-rome` has a grass variant and twenty road pieces (`road_*`) that are plain grass to the engine (OPENBOUNTY-SPEC REQ-229c). An optional `variants` list (up to eight art names, repeats allowed to weight them) gives a code cosmetic alternates the shell picks per cell at draw time (OPENBOUNTY-SPEC REQ-229d). `blocks_foot` and `is_bridge` are booleans that interact with
 walkability (a non-blocking terrain or `is_bridge` lets the hero walk).
 
 ---

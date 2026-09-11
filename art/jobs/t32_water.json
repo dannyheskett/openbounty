@@ -1,0 +1,25 @@
+{
+ "lower_description": "short green meadow grass, even medium green, seen from above",
+ "tile_size": {
+  "width": 32,
+  "height": 32
+ },
+ "mode": "standard",
+ "shape_style": "round",
+ "enhance": false,
+ "view": "high top-down",
+ "outline": "lineless",
+ "shading": "medium shading",
+ "detail": "medium detail",
+ "text_guidance_scale": 8.0,
+ "seed": 31,
+ "lower_base_tile_id": "8de72f5c-9d4d-432a-9058-39d365aede04",
+ "lower_reference_image": {
+  "type": "base64",
+  "base64": "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB2klEQVR4nO2WSZLbMAxFHyjYTVXaZ8vpcqIcKFWRK1ZLlJAFCKrd2ZmLbMSNBvJj+BgI+fHzu1HX7WqsuwBwv3/w/v7GXHxPB1CBufg5gF+/FzS/0YNPfFmXZBSD/K0KTvb1COsurLs8KX8Vr1mhmFs3LYIOUDa32K0FMKYC4wBlEOZSPape9eDTJRnjYI0aFX+GkLA4J+GxydP+OBi9+DSVZ2oAP1g9mRbhklzBOPxLZy9ecxKmYpCMYkLZfON2NRiOeGUNZca8Q1ZXlBNd+FQMcnKKmlWVumnxf3PxOLd9kZbdvfgUcZyLU3a7ekwD3LwB2AUVaf8+58Gr+DQt0mJ3uzowvrMesQ3hQfFjq7R24lMcCnBWr+VYc4F5t+ZF0BurF58iNlHDl2Q8Nvcg9lSkJdM41BKr9d+LbzkAtNgFXbFU3Is4F01G5ciBV/EaMdKBRiF4yeQEY+3vt1pGKkIxQwdpAnvwaaolEskRtKoI8354EUI+exWKevDqlhlZj9oMOkMB+Pu8+7sLcrpvV+vC67oL7FDkGRx0haXFDGpHW/fagLS23w58ah1tOy6TdRfKn8Uzdau3mzh4LrQL6H7/oBd/zgPnPHDOA+c8cM4D5zxwzgP/fR74C35ErywmuzD9AAAAAElFTkSuQmCC",
+  "format": "png"
+ },
+ "upper_description": "deep blue sea water with gentle waves",
+ "transition_description": "shoreline with pale shallow water and wet sand",
+ "transition_size": 0.0
+}

@@ -27,10 +27,10 @@ def code(cells, x, y):
     card = "".join(s for s, (dx, dy) in (("N", (0, -1)), ("S", (0, 1)), ("E", (1, 0)), ("W", (-1, 0))) if g(dx, dy))
     if card:
         if card in TABLE: return TABLE[card]
-        if len(card) == 2:
-            k = "".join(sorted(card, key="NSEW".index))
-            k = {"NE": "NE", "NW": "NW", "SE": "SE", "SW": "SW"}.get(k, k)
-            return TABLE.get(k)
+        k = "".join(sorted(card, key="NSEW".index))
+        if len(card) == 2 and k in TABLE: return TABLE[k]
+        spit = {"NS": 13, "EW": 14, "NES": 15, "ESW": 16, "NSW": 17, "NEW": 18, "NSEW": 19}
+        if k in spit: return spit[k] - (1 if water else 0)
         return None
     for s, (dx, dy) in (("ne", (1, -1)), ("se", (1, 1)), ("sw", (-1, 1)), ("nw", (-1, -1))):
         if g(dx, dy): return TABLE[s]

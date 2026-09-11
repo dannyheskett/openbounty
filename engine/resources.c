@@ -262,6 +262,17 @@ static void parse_tile_codes(Resources *res, cJSON *obj) {
         cJSON *jib = cJSON_GetObjectItem(entry, "is_bridge");
         tc->blocks_foot = cJSON_IsBool(jbf) && cJSON_IsTrue(jbf);
         tc->is_bridge   = cJSON_IsBool(jib) && cJSON_IsTrue(jib);
+        tc->variant_count = 0;
+        cJSON *jv = cJSON_GetObjectItem(entry, "variants");
+        if (cJSON_IsArray(jv)) {
+            cJSON *v;
+            cJSON_ArrayForEach(v, jv) {
+                if (!cJSON_IsString(v) || !v->valuestring[0]) continue;
+                if (tc->variant_count >= RES_TILE_VARIANTS) break;
+                copy_str(tc->variants[tc->variant_count], RES_TILE_ART_LEN, v->valuestring);
+                tc->variant_count++;
+            }
+        }
     }
 }
 
@@ -2558,6 +2569,13 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
             else
                 snprintf(p, sizeof p, "art/tiles/%s.png", res->tile_codes[i].art);
             art_add(out, cap, &n, p);
+            for (int v = 0; v < res->tile_codes[i].variant_count; v++) {
+                if (set)
+                    snprintf(p, sizeof p, "art/tiles/%s/%s.png", set, res->tile_codes[i].variants[v]);
+                else
+                    snprintf(p, sizeof p, "art/tiles/%s.png", res->tile_codes[i].variants[v]);
+                art_add(out, cap, &n, p);
+            }
         }
     }
 
