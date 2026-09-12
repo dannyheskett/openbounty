@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "combat_loop.h"
+#include "combat_render.h"
 #include "tile.h"
 #include "map.h"
 #include "tile_cache.h"

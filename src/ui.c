@@ -12,6 +12,7 @@
 #include "recorder.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>   // atoi, for a raw palette index in ui_set_panel_frame
 
 // ---- texture blit ----------------------------------------------------------
 static void blit(Texture2D t, int x, int y, int w, int h, bool mirror) {
