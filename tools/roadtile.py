@@ -18,10 +18,13 @@ A diagonal passes through the tile corner, which two side neighbours
 share, so those cells take a COMPANION piece: grass with the road's
 triangle in that corner (road_c_nw, _ne, _sw, _se).
 
-Pieces (20): road_ns, road_ew; curves road_ne, road_es, road_sw, road_wn
+Pieces (24): road_ns, road_ew; curves road_ne, road_es, road_sw, road_wn
 (named by their two exits); diagonals road_nesw, road_nwse; joins from a
 straight exit to a diagonal corner road_n_sw, road_n_se, road_s_nw,
-road_s_ne, road_e_nw, road_e_sw, road_w_ne, road_w_se; companions.
+road_s_ne, road_e_nw, road_e_sw, road_w_ne, road_w_se; companions; and the
+four ENDS road_n, road_e, road_s, road_w, named by their one exit -- the
+road enters through that side at the full contract width and feathers away
+to nothing inside the tile, so a run can stop in open grass.
 
 Imperfection: an interior vertex with two or more grass neighbours flips
 to grass at random (seeded), which nicks inner corners; border vertices
@@ -77,6 +80,39 @@ def arc(x, y, cx, cy):
     return 32 <= ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5 <= 64
 
 
+# An end: the road enters through one side at the contract width and its
+# half-width tapers to zero at a tip inside the tile, so the dirt feathers
+# out into grass. END_TIP is how far from the far side the tip sits; the
+# power keeps the band near full width for the first half and draws the last
+# of it out into a long thin tail, which the sweep's edge noise then breaks
+# into speckle -- a road petering out rather than one cut off square.
+END_TIP = 16.0
+END_POW = 1.5
+
+
+def end_w(u):
+    """Half width at run position u: HW at the entry side, 0 at the tip."""
+    if u <= 0.0: return -1.0                      # past the tip: all grass
+    return HW * (min(u, 1.0) ** END_POW)
+
+
+def end_run(side, x, y):
+    """(u, a): position along the run from the tip, and distance off its centre."""
+    span = 96.0 - END_TIP
+    if   side == "s": return (y - END_TIP) / span, abs(x - 48)
+    elif side == "n": return ((96 - y) - END_TIP) / span, abs(x - 48)
+    elif side == "e": return (x - END_TIP) / span, abs(y - 48)
+    else:             return ((96 - x) - END_TIP) / span, abs(y - 48)
+
+
+def sd_end(side):
+    def f(x, y):
+        u, a = end_run(side, x, y)
+        w = end_w(u)
+        return a - w if w >= 0.0 else 96.0
+    return f
+
+
 SHAPES = {
     "road_ns":   lambda x, y: ns(x, y),
     "road_ew":   lambda x, y: ew(x, y),
@@ -98,6 +134,10 @@ SHAPES = {
     "road_c_se": lambda x, y: x + y >= 192 - DW,
     "road_c_ne": lambda x, y: x - y >= 96 - DW,
     "road_c_sw": lambda x, y: y - x >= 96 - DW,
+    "road_n": lambda x, y: sd_end("n")(x, y) <= 0,
+    "road_e": lambda x, y: sd_end("e")(x, y) <= 0,
+    "road_s": lambda x, y: sd_end("s")(x, y) <= 0,
+    "road_w": lambda x, y: sd_end("w")(x, y) <= 0,
 }
 
 
@@ -204,6 +244,8 @@ SD = {
     "road_c_se": lambda x, y: sd_nesw(x - 96, y),
     "road_c_ne": lambda x, y: sd_nwse(x, y + 96),   # the NW-SE diagonal of the cell below
     "road_c_sw": lambda x, y: sd_nwse(x + 96, y),   # the NW-SE diagonal of the cell to the west
+    "road_n": sd_end("n"), "road_e": sd_end("e"),
+    "road_s": sd_end("s"), "road_w": sd_end("w"),
 }
 NOISE_CELL = 8
 _lat = None
@@ -328,7 +370,7 @@ for name in SHAPES:
     made[name].save(os.path.join(out, name + ".png"))
 
 names = list(SHAPES)
-sheet = Image.new("RGBA", (5 * 100, 4 * 100), (40, 40, 40, 255))
+sheet = Image.new("RGBA", (5 * 100, ((len(names) + 4) // 5) * 100), (40, 40, 40, 255))
 for i, n in enumerate(names):
     sheet.paste(made[n], ((i % 5) * 100, (i // 5) * 100))
 sheet.save(os.path.join(out, "sheet.png"))
@@ -341,13 +383,18 @@ MOCK = [
     ".....f.....",
     ".....ox....",
     ".....wmx...",
-    "......wrgg.",
+    "......wrgg1",
+    "...2.......",
+    "...f...4gg3",
+    "...f.......",
+    "...5.......",
 ]
 W = max(len(r) for r in MOCK); H = len(MOCK)
 code = {"f": "road_ns", "g": "road_ew", "h": "road_ne", "i": "road_es", "j": "road_sw", "k": "road_wn",
         "l": "road_nesw", "m": "road_nwse", "n": "road_n_sw", "o": "road_n_se", "p": "road_s_nw", "q": "road_s_ne",
         "r": "road_e_nw", "s": "road_e_sw", "t": "road_w_ne", "u": "road_w_se",
-        "v": "road_c_nw", "w": "road_c_ne", "x": "road_c_sw", "y": "road_c_se"}
+        "v": "road_c_nw", "w": "road_c_ne", "x": "road_c_sw", "y": "road_c_se",
+        "1": "road_w", "2": "road_s", "3": "road_w", "4": "road_e", "5": "road_n"}
 mock = Image.new("RGBA", (W * 96, H * 96))
 for j, row in enumerate(MOCK):
     for i in range(W):

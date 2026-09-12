@@ -302,7 +302,7 @@ void gb_inspect_tile(GbTileInfo *out, const MapGrid *g, const GbObjectList *L,
     // Walkability comes from the pack's own tile_codes entry, not from a
     // guess about the terrain -- a bridge is grass that water rules ignore.
     unsigned char b = (unsigned char)out->code;
-    if (b < RES_TILE_CODE_COUNT && res->tile_codes[b].present) {
+    if (res->tile_codes[b].present) {
         out->blocks_foot = res->tile_codes[b].blocks_foot;
         out->is_bridge   = res->tile_codes[b].is_bridge;
     }

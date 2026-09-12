@@ -21,5 +21,6 @@
  },
  "upper_description": "packed dirt road, dry dusty brown earth, even, seen from above",
  "transition_description": "worn ragged edge where bare dirt meets the grass, a few small stones",
- "transition_size": 0.0
+ "transition_size": 0.0,
+ "_note": "Tried and NOT shipped. 16 px dirt over meadow grass; the roads that shipped came from t32_dirt_203.json instead. Re-run 2026-09-12 on the assumption it was the shipped set and it did not reproduce it: the dirt came back mean (169,119,92) over 6 colours against the installed (131,89,64) over 19, with no colour in common, so the PixelLab seed is not reproducible across calls. One wasted call. Do not reach for this job to rebuild roads."
 }

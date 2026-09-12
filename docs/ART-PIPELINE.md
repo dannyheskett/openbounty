@@ -352,3 +352,56 @@ python3 tools/rdgen.py reprocess art/jobs/<id>.json     # re-cut and re-check, n
 - Nothing writes into `assets/`; approved finals are copied by hand.
 - Review on a page: `art.html` at the repo root shows the whole pack and
   refreshes from disk.
+
+---
+
+## Terrain sets: the other API
+
+Retro Diffusion makes every figure, object and screen in the pack. It does not
+make the **terrain** that one surface fades into another over. That comes from
+PixelLab, and the two are separate routes with separate tokens and separate
+drivers. One engine per kind of art still holds: RD owns sprites and screens,
+PixelLab owns terrain sets.
+
+```
+python3 tools/pltileset.py  build/art/<id> art/jobs/<id>.json   # create-tileset
+python3 tools/pltilespro.py ...                                 # Tiles Pro sets
+```
+
+- Token from `~/.config/pixellab/token`. No environment variables.
+- A `create-tileset` job names a **lower** terrain and an **upper** one and the
+  transition between them, and returns 16 tiles: the two plain surfaces and
+  every corner combination. `tile_size` is 16 or 32.
+- `lower_base_tile_id` chains the set to a terrain some earlier set already
+  produced, so two sets share one grass instead of each inventing its own.
+  The terrain ids are printed on every run; `art/jobs/t32_dirt_203.json` and
+  its successor both chain to `d1de924b`.
+- **The seed does not reproduce a set.** Re-running a job unchanged returns
+  different pixels: `t16_dirt.json` was re-run on 2026-09-12 and came back a
+  different brown with no colour in common with the first run. So a set that
+  has shipped cannot be rebuilt from its job file -- which is why every job
+  file carries a `_note` saying what it produced, and why the `_note` is the
+  only record there is.
+
+### Roads
+
+Roads are not a terrain set the game loads. `tools/roadtile.py` **sweeps** the
+set into the 24 road pieces the pack ships:
+
+```
+python3 tools/roadtile.py <set-dir> <out-dir> --sweep [--rim N] [--rim-shade F]
+```
+
+Every piece is a signed-distance shape -- a straight band, a true quarter
+circle, a 45 degree diagonal, or an end that tapers away -- filled with the
+set's plain **upper** tile and left as the pack's own `grass.png` outside, with
+a periodic value noise on the boundary so the edge is ragged but continuous
+across a tile line. Two consequences worth knowing before writing a prompt:
+
+- Only the plain upper tile reaches the game. The set's transition tiles, and
+  any kerb or edging the prompt asked for, are discarded. A border along the
+  road has to come from `--rim` / `--rim-shade`, which paint it after the fact.
+- Every straight exit is the same 32 px band and every diagonal the same corner
+  triangle, so any piece joins any other. `roadtile.py` checks that contract on
+  every run and prints how many sides carry an unexpected pattern; it must
+  print `0`.

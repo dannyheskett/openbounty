@@ -252,7 +252,8 @@ static void parse_tile_codes(Resources *res, cJSON *obj) {
     cJSON *entry;
     cJSON_ArrayForEach(entry, obj) {
         const char *key = entry->string;
-        if (!key || !key[0] || (unsigned char)key[0] >= RES_TILE_CODE_COUNT) continue;
+        if (!key || !key[0]) continue;
+        // Any byte is a valid code: the table spans the byte range.
         int idx = (unsigned char)key[0];
         ResTileCode *tc = &res->tile_codes[idx];
         tc->present = true;

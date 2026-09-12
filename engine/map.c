@@ -32,7 +32,7 @@ static const char *art_stem(const char *art) {
 
 static bool fill_tile_from_code(const Map *map, Tile *t, const Resources *res,
                                 unsigned char c) {
-    if (c >= RES_TILE_CODE_COUNT) return false;
+    // Every byte indexes the table (RES_TILE_CODE_COUNT spans the range).
     const ResTileCode *tc = &res->tile_codes[c];
     if (!tc->present) return false;
     MapTerrainArt(map, tc->art, t->art, sizeof(t->art));

@@ -1,3 +1,9 @@
-{"description": "packed dirt road through short green meadow grass, even medium green, seen from above",
- "tile_type": "square_topdown", "tile_size": 32, "tile_feature": "roads",
- "tile_view": "top-down", "seed": 5}
+{
+ "description": "packed dirt road through short green meadow grass, even medium green, seen from above",
+ "tile_type": "square_topdown",
+ "tile_size": 32,
+ "tile_feature": "roads",
+ "tile_view": "top-down",
+ "seed": 5,
+ "_note": "Tried and NOT shipped: the PixelLab Tiles Pro route (tile_feature 'roads', 18 sub-tiles of 32 px on an edge rule), which tools/roadtile.py consumes with --pro, stamping a 3x3 of sub-tiles per 96 px piece. The --sweep route over t32_dirt_203.json won because it gives true circular curves and 45 degree diagonals rather than a 32 px staircase."
+}

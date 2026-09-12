@@ -110,7 +110,7 @@ bool gb_map_load(MapGrid *m, const Resources *res, const char *zone_id) {
         int x = 0;
         while (p < end && *p != '\n' && *p != '\r' && x < m->w) {
             unsigned char c = (unsigned char)*p++;
-            if (c < RES_TILE_CODE_COUNT && res->tile_codes[c].present) {
+            if (res->tile_codes[c].present) {
                 art_to_cell(res, c, &m->cell[y][x]);
             } else {
                 fprintf(stderr, "gamebuilder: %s:%d:%d unknown tile code 0x%02x\n",

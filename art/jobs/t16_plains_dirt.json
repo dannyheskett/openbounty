@@ -9,5 +9,6 @@
  "shape_style": "round",
  "enhance": true,
  "view": "high top-down",
- "seed": 9104
+ "seed": 9104,
+ "_note": "Tried and NOT shipped. 16 px, terse two-word descriptions with enhance on, which leaves the look to the model. t32_dirt_203.json is what shipped."
 }

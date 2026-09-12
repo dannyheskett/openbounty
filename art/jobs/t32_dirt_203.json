@@ -21,5 +21,6 @@
  },
  "upper_description": "packed dirt road, dry brown earth",
  "transition_description": "worn ragged edge where bare dirt meets the grass",
- "transition_size": 0.0
+ "transition_size": 0.0,
+ "_note": "The dirt roads that shipped 2026-09-11 (commit 21e1a9d), superseding the first generation from e944680. 32 px PixelLab create-tileset chained to the mossy grass base d1de924b, then swept into the twenty 96 px pieces by tools/roadtile.py --sweep (defaults: half width 16, rag 3.0, rim 0, seed 1); the sweep takes only the plain upper tile and the pack's own grass.png, so the set's transition tiles never reach the game. Installed dirt reads mean (131,89,64) over 19 colours. Superseded 2026-09-12 by t32_cobble_203.json."
 }

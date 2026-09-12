@@ -23,7 +23,12 @@
 #define RES_SIGN_TITLE_LEN    64
 #define RES_SIGN_BODY_LEN    128
 #define RES_PATH_LEN         128
-#define RES_TILE_CODE_COUNT  128     // indexed by raw byte
+// Indexed by raw map byte, so the table spans the whole byte range: a map
+// file's code can be any of 256 values and always indexes this table. It was
+// 128 (printable ASCII and below) until Rome used 91 of them and the road
+// end pieces needed four more. A map that uses a code above 127 is no longer
+// plain ASCII -- the reader is byte-wise, so such a file is latin-1.
+#define RES_TILE_CODE_COUNT  256
 #define RES_TILE_ART_LEN      24
 // Animation cycle lengths: OB_ANIM_FRAMES_MAX / _DEFAULT, in tables.h.
 #define RES_COMBAT_TILES      15     // combat tileset, fixed role order
