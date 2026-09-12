@@ -5,10 +5,18 @@ it is, and what sits behind it. Numbers are for Glory of Rome's modern
 layout (832x540 buffer, 96 px tiles, `ui_scale` 2, Press Start 2P at 16, so
 one text line is 18 px and one glyph is 16 px wide); the legacy pack keeps
 the original 320x200 geometry in every case and is noted only where it
-differs. Source of truth: `src/layout.h` (rects), `src/overlay.c`,
-`src/prompt.c`, `src/views_render.c`, `src/screens/*.c`,
-`src/combat_loop.c`. Ratified rules: OPENBOUNTY-SPEC REQ-430g (dim) and
-REQ-430h (one panel rect).
+differs. Source of truth: `src/layout.h` (rects), `src/screens/*.c`,
+`src/combat_loop.c`, and the forked draw layer below. Ratified rules:
+OPENBOUNTY-SPEC REQ-430g (dim), REQ-430h (one panel rect) and REQ-430i (the
+fork).
+
+**Which file to edit.** The overlay, the detail views and the prompt panel
+are forked (REQ-430i). A change to the modern numbers in this document is a
+change to `src/modern/overlay.c`, `src/modern/views_render.c` or
+`src/modern/prompt.c`. The matching `src/legacy/` file is FROZEN -- it is
+the DOS original and is never edited to serve a modern need. `src/overlay.c`,
+`src/views_render.c` and `src/prompt.c` are dispatchers: they decide WHICH
+panel is drawn and own the state, never how it looks.
 
 ## The rects everything is measured from
 

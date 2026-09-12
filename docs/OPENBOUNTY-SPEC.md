@@ -2053,6 +2053,22 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   recruit rows pad the name to the longest in the pool; empty army slots stay
   panel-coloured; the character card prints zeros; Escape on the map opens
   the Game Menu (`INPUT_ACTION_GAME_MENU`). Legacy is unchanged in all of these.
+- **REQ-430i.** **The draw layer is forked; legacy is frozen.** The overlay,
+  the detail views and the prompt panel each exist twice: `src/legacy/` holds
+  the DOS original's drawing and `src/modern/` holds the modern UI's, with
+  `src/overlay.c`, `src/views_render.c` and `src/prompt.c` reduced to
+  dispatchers that keep the public entry points, the layer order and any state
+  (the dialog's text and page, the world map's reveal flag, the prompt's state
+  machine) and send only the drawing to one side or the other, through
+  `*_impl.h`. Legacy's copies are frozen: their behaviour is the specification,
+  so they are not edited to serve anything modern needs, and new UI work lands
+  in `src/modern/` alone. `tests/unit/test_legacy_freeze.c` holds legacy's
+  geometry and pure logic to fixed values -- chrome bands, map, sidebar,
+  content and panel rects, window scale, the 30-column wrap, dialog paging,
+  prompt state, and the two modern-only selectors staying inert -- so a modern
+  change that would move a legacy pixel fails the build instead of shipping.
+  `src/layout.h` is deliberately NOT forked: both paths draw into one
+  coordinate system (2026-09-12).
 
 - **REQ-430f.** **Keyboard detection and the letter selector (modern).**
   `input_host` latches which physical devices have been used: a real key
