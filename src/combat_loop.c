@@ -20,6 +20,7 @@
 #include "audio.h"
 #include "bfont.h"
 #include "layout.h"
+#include "modern/mlayout.h"
 #include "present.h"
 #include "chrome.h"
 #include "palette.h"
@@ -388,16 +389,14 @@ static void combat_present(const Combat *c, const Game *g,
         }
         bfont_draw(ui->combat_spells_prompt, 70, 144, PAL_CLR(WHITE));
     } else if (c->cast_phase == COMBAT_CAST_PICK_SPELL) {
-        // Modern: the same panel laid out from the font, centred in the map
-        // pane: a title row, a column header, seven spell rows, a prompt.
+        // Modern: the large layout (REQ-430j): a title row, a column header,
+        // seven spell rows, a prompt.
         const Game *gw = c->heroes[c->side];
         const ResUI *ui = &gw->res->ui;
+        ML_Rect lr = ml_large();
         int row_h = BFONT_GLYPH_H + 2 * CL_UI;
-        int pad = 6 * CL_UI;
-        int w = CL_PANEL_WIDE_W;
-        int h = 10 * row_h + 2 * pad + row_h / 2;
-        int x = CL_CENTER_IN_PANE_X(w);
-        int y = CL_CENTER_IN_PANE_Y(h);
+        int pad = ML_PAD;
+        int w = lr.w, h = lr.h, x = lr.x, y = lr.y;
         DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
         ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
         int ty = y + pad;
