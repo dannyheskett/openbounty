@@ -108,6 +108,7 @@
 				"x":	37,
 				"y":	46
 			},
+			"alcove_art":	"alcove",
 			"magic_alcove":	{
 				"x":	8,
 				"y":	16
@@ -725,6 +726,7 @@
 				"x":	9,
 				"y":	20
 			},
+			"alcove_art":	"alcove",
 			"magic_alcove":	{
 				"x":	24,
 				"y":	24
@@ -943,6 +945,7 @@
 				"x":	7,
 				"y":	7
 			},
+			"alcove_art":	"alcove",
 			"magic_alcove":	{
 				"x":	24,
 				"y":	8
@@ -1161,6 +1164,7 @@
 				"x":	9,
 				"y":	6
 			},
+			"alcove_art":	"alcove",
 			"magic_alcove":	{
 				"x":	41,
 				"y":	7
@@ -3668,6 +3672,8 @@
 			"plains_backdrop":	"art/ui/backdrop_plains.png",
 			"forest_backdrop":	"art/ui/backdrop_forest.png",
 			"hillcave_backdrop":	"art/ui/backdrop_hillcave.png",
+			"alcove_backdrop":	"art/ui/backdrop_alcove.png",
+			"alcove_figure":	"art/ui/alcove_augur_00.png",
 			"dungeon_backdrop":	"art/ui/backdrop_dungeon.png",
 			"ending_win":	"art/ui/end_win_screen.png",
 			"ending_lose":	"art/ui/end_lose_screen.png",
