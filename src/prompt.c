@@ -1,6 +1,7 @@
 #include "input_host.h"
 #include "ui_host.h"
 #include "prompt.h"
+#include "prompt_impl.h"
 #include "touch.h"
 #include "layout.h"
 #include "ui.h"
@@ -14,14 +15,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-typedef enum {
-    PK_NONE = 0,
-    PK_YES_NO,
-    PK_NUMERIC,
-    PK_AB_CHOICE,
-    PK_TEXT_INPUT,
-} PromptKind;
 
 static PromptKind g_kind = PK_NONE;
 static char g_header[64];
@@ -243,118 +236,25 @@ PromptResult prompt_update(void) {
     return PROMPT_RESULT_NONE;
 }
 
+// A read-only window onto the state above, so the two draw paths can render
+// the prompt without owning any of it.
+const PromptView *prompt_view(void) {
+    static PromptView v;
+    v.kind       = g_kind;
+    v.header     = g_header;
+    v.body       = g_body;
+    v.max_choice = g_max_choice;
+    v.yn_cursor  = g_yn_cursor;
+    v.selector   = g_selector;
+    v.text_buf   = g_text_buf;
+    v.text_len   = g_text_len;
+    v.ts         = &g_ts;
+    return &v;
+}
+
 void prompt_draw(void) {
     if (g_kind == PK_NONE) return;
-
-    int row_h = BFONT_GLYPH_H + CL_UI;
-    int pad = CL_PANEL_PAD_X;   // 1px: the panel holds exactly CL_PANEL_COLS glyphs
-    //  draws KB_BottomFrame at a FIXED size: 30 chars
-    // wide x 8 chars tall + a few extra pixels. Width matches the map
-    // area; sidebar stays visible to the right. Body text starts at the
-    // top of the inner area; short content leaves blank rows below.
-    int x = CL_PANEL_X;
-    int y = CL_PANEL_Y;
-    int w = CL_PANEL_W;
-    int h = CL_PANEL_H;
-    // Fixed by layout, not (w - 2*pad): the panel's margin is one-sided.
-    // See CL_PANEL_COLS in layout.h. In pixels, so a proportional face wraps
-    // by its own advances; legacy divides back to 30 columns.
-    int max_w = CL_IS_MODERN ? (w - 2 * pad) : CL_PANEL_COLS * BFONT_GLYPH_W;
-
-    // Reserve rows at the bottom for hint chrome (rendered after the body).
-    //   text-input      -> 2 (typed value + hint)
-    //   yes/no, numeric -> 1 (hint only)
-    //   A/B choice      -> 0 (body names the keys; chrome-less)
-    int bottom_rows;
-    if (g_kind == PK_TEXT_INPUT)      bottom_rows = g_selector ? 5 : 2;   // typed line + hint, or the digit grid
-    else if (g_kind == PK_AB_CHOICE)  bottom_rows = 0;
-    else if (g_kind == PK_YES_NO && CL_IS_MODERN) bottom_rows = 2;   // the Yes/No rows
-    else                              bottom_rows = 1;
-
-    DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
-    ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
-
-    int tx = x + pad;
-    int ty = y + pad;
-
-    if (g_header[0]) {
-        bfont_draw(g_header, tx, ty, PAL_CLR(YELLOW));
-        ty += row_h + 2;
-    }
-
-    // Body: render every line that fits inside the inner rect, leaving
-    // bottom_rows free for the hint chrome at the very bottom.
-    //
-    // Body lines advance by BFONT_GLYPH_H (8px), NOT row_h (9px). The panel's
-    // 60px content area (68 - 2*pad) holds exactly 7 glyph rows at 8px but only 6
-    // at 9px -- the 1px-per-line leading of row_h clipped the 7th line of the
-    // 7-line chest "gold / distribute to peasants" choice. The message-dialog
-    // path (overlay.c) already steps body text by GH=8; match it so equal-length
-    // bodies render identically in both. row_h still spaces the header + hint.
-    {
-        const char *p = g_body;
-        char line[160];
-        int body_step  = BFONT_GLYPH_H;                 // 8px (no leading)
-        int body_floor = y + h - pad - bottom_rows * row_h;
-        while (*p && ty + body_step <= body_floor) {
-            bfont_take_line(&p, max_w, line, (int)sizeof(line));
-            bfont_draw(line, tx, ty, PAL_CLR(WHITE));
-            ty += body_step;
-        }
-    }
-
-    // Hint line at the bottom of the panel.
-    const Resources *res = resources_current();
-    const ResUI *ui = res ? &res->ui : NULL;
-    if (g_kind == PK_TEXT_INPUT) {
-        // Show current input value, a caret, and Enter/Esc hint.
-        char typed[16];
-        snprintf(typed, sizeof(typed), "%s_",
-                 g_text_len > 0 ? g_text_buf : "");
-        bfont_draw_centered(typed,
-                            x + w / 2, y + h - row_h * 2 - 2, PAL_CLR(WHITE));
-        if (g_selector) {
-            int cw = 2 * BFONT_GLYPH_W, chh = BFONT_GLYPH_H + 2 * CL_UI;
-            textsel_draw(&g_ts, x + w - pad - textsel_w(true, cw) - 2 * CL_UI,
-                         y + h - pad - textsel_h(true, chh), cw, chh,
-                         PAL_CLR(YELLOW), PAL_CLR(DBLUE), TOUCH_LIST_TEXTSEL);
-        } else {
-            bfont_draw_centered(ui ? ui->prompt_text_hint
-                                   : "(Enter to confirm / ESC cancel)",
-                                x + w / 2, y + h - row_h - 2, PAL_CLR(YELLOW));
-        }
-    } else if (g_kind == PK_NUMERIC && g_max_choice != 5) {
-        char buf[32];
-        if (ui) {
-            char cbuf[12];
-            snprintf(cbuf, sizeof cbuf, "%d", g_max_choice);
-            ResTemplateVar v[] = { { "COUNT", cbuf } };
-            resources_format_template(buf, sizeof buf,
-                                      ui->prompt_numeric_range_hint, v, 1);
-        } else {
-            snprintf(buf, sizeof(buf), "(1-%d or ESC)", g_max_choice);
-        }
-        bfont_draw_centered(buf,
-                            x + w / 2, y + h - row_h - 2, PAL_CLR(YELLOW));
-    } else if (g_kind == PK_AB_CHOICE) {
-        // Chrome-less  -- body already names A) / B).
-    } else if (g_kind == PK_YES_NO && CL_IS_MODERN) {
-        // Two selectable rows in place of the "(y/n)?" hint.
-        const char *labels[2] = { "Yes", "No" };
-        int ry = y + h - pad - 2 * row_h;
-        for (int i = 0; i < 2; i++) {
-            sel_row(x + pad, ry + i * row_h, w - 2 * pad, row_h, x + pad + 2 * CL_UI, labels[i],
-                    g_yn_cursor == i, PAL_CLR(YELLOW), PAL_CLR(DBLUE), TOUCH_LIST_PROMPT, i);
-        }
-    } else {
-        const char *hint;
-        if (ui) {
-            hint = (g_kind == PK_YES_NO) ? ui->prompt_yes_no_hint
-                                         : ui->prompt_numeric_5_hint;
-        } else {
-            hint = (g_kind == PK_YES_NO) ? "(y/n)?" : "(1-5 or ESC)";
-        }
-        bfont_draw_centered(hint,
-                            x + w / 2, y + h - row_h - 2, PAL_CLR(YELLOW));
-    }
+    const PromptView *v = prompt_view();
+    if (CL_IS_MODERN) modern_prompt_draw(v);
+    else              legacy_prompt_draw(v);
 }
