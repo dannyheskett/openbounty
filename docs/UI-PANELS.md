@@ -73,7 +73,7 @@ edge.
 ### full screen
 
 Army is five rows of a full tile, filling the 480 exactly. The world map draws
-whole pixels per map cell against 768x480 (Italia, 64x128, gets 3). The
+whole pixels per map cell against 778x480 (Italia, 64x128, gets 3). The
 puzzle's five-tile grid is centred in the rect.
 
 ## The game menu
