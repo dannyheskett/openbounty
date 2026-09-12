@@ -35,21 +35,19 @@ static ML_Rect pane(void) {
     return r;
 }
 
-// The screen's horizontal spacing is split three ways: left edge, the band
-// between the map pane and the HUD, right edge. 800 = 11 + 672 + 10 + 96 + 11.
-TEST spacing_is_equal_left_middle_right(void) {
+// The screen's horizontal spacing is split 3 : 2 : 3: left edge, the band
+// between the map pane and the HUD, right edge. 800 = 12 + 672 + 8 + 96 + 12.
+TEST spacing_is_three_two_three(void) {
     rome();
     ASSERT_EQ(800, CL_SCREEN_W);
-    ASSERT_EQ(11, CL_FRAME_LEFT_W);
-    ASSERT_EQ(10, CL_SIDEBAR_GAP);
-    ASSERT_EQ(11, CL_FRAME_RIGHT_W);
-    ASSERT_EQ(11, CL_MAP_X);
+    ASSERT_EQ(12, CL_FRAME_LEFT_W);
+    ASSERT_EQ(8,  CL_SIDEBAR_GAP);
+    ASSERT_EQ(12, CL_FRAME_RIGHT_W);
+    ASSERT_EQ(12, CL_MAP_X);
     ASSERT_EQ(672, CL_MAP_W);
-    ASSERT_EQ(693, CL_SIDEBAR_X);
+    ASSERT_EQ(692, CL_SIDEBAR_X);
     ASSERT_EQ(96, CL_SIDEBAR_W);
     ASSERT_EQ(CL_SCREEN_W - CL_FRAME_RIGHT_W, CL_SIDEBAR_X + CL_SIDEBAR_W);
-    // No two of the three differ by more than the one pixel 32 cannot share.
-    ASSERT(CL_FRAME_LEFT_W - CL_SIDEBAR_GAP <= 1 && CL_FRAME_RIGHT_W - CL_SIDEBAR_GAP <= 1);
     PASS();
 }
 
@@ -57,7 +55,7 @@ TEST spacing_is_equal_left_middle_right(void) {
 TEST small_is_inset_by_the_spacing_on_the_bottom(void) {
     rome();
     int S = ml_space();
-    ASSERT_EQ(10, S);
+    ASSERT_EQ(8, S);
     ML_Rect r = ml_small();
     ASSERT_EQ(CL_MAP_X + S, r.x);
     ASSERT_EQ(CL_MAP_W - 2 * S, r.w);
@@ -90,13 +88,13 @@ TEST location_backdrop_is_integer_3x_inset_and_text_fills_below(void) {
     ML_Rect t = ml_loc_text();
     ASSERT_EQ(CL_MAP_X + S, b.x);
     ASSERT_EQ(CL_MAP_Y + S, b.y);
-    ASSERT_EQ(652, b.w);
+    ASSERT_EQ(656, b.w);
     ASSERT_EQ(306, b.h);            // 102 x 3
     ASSERT_EQ(b.y + b.h, t.y);      // one shared edge
     ASSERT_EQ(b.x, t.x);
-    ASSERT_EQ(652, t.w);
+    ASSERT_EQ(656, t.w);
     ASSERT_EQ(CL_MAP_Y + CL_MAP_H - S, t.y + t.h);
-    ASSERT_EQ(154, t.h);
+    ASSERT_EQ(158, t.h);          // 480 - 8 - 306 - 8
     ASSERT(inside(b, pane()));
     ASSERT(inside(t, pane()));
     PASS();
@@ -109,7 +107,7 @@ TEST full_covers_pane_band_and_hud_not_the_status_band(void) {
     ML_Rect r = ml_full();
     ASSERT_EQ(CL_MAP_X, r.x);
     ASSERT_EQ(CL_MAP_Y, r.y);
-    ASSERT_EQ(778, r.w);            // 672 + 10 + 96
+    ASSERT_EQ(776, r.w);            // 672 + 8 + 96
     ASSERT_EQ(480, r.h);
     ASSERT_EQ(CL_SIDEBAR_X + CL_SIDEBAR_W, r.x + r.w);
     ASSERT(r.y >= CL_STATUS_Y + CL_STATUS_H);
@@ -119,7 +117,7 @@ TEST full_covers_pane_band_and_hud_not_the_status_band(void) {
 
 // Capacity is measured, not declared: it follows the loaded font. Rome's
 // 16 px face and 18 px lines, stated once so a layout change that starves a
-// panel of text shows up here: small 39 x 6, large 35 x 20, location 39 x 7,
+// panel of text shows up here: small 40 x 6, large 35 x 20, location 40 x 7,
 // full 47 x 25.
 TEST capacity_follows_the_glyph(void) {
     rome();
@@ -127,15 +125,15 @@ TEST capacity_follows_the_glyph(void) {
     ASSERT_EQ((s.w - 2 * ML_PAD) / BFONT_GLYPH_W, ml_cols(s));
     ASSERT_EQ((f.h - 2 * ML_PAD) / BFONT_GLYPH_H, ml_lines(f));
     int rome_small_h = ML_SMALL_LINES * 18 + 2 * ML_PAD;
-    ASSERT_EQ(39, (s.w - 2 * ML_PAD) / 16);  ASSERT_EQ(6,  (rome_small_h - 2 * ML_PAD) / 18);
+    ASSERT_EQ(40, (s.w - 2 * ML_PAD) / 16);  ASSERT_EQ(6,  (rome_small_h - 2 * ML_PAD) / 18);
     ASSERT_EQ(35, (l.w - 2 * ML_PAD) / 16);  ASSERT_EQ(20, (l.h - 2 * ML_PAD) / 18);
-    ASSERT_EQ(39, (t.w - 2 * ML_PAD) / 16);  ASSERT_EQ(7,  (t.h - 2 * ML_PAD) / 18);
+    ASSERT_EQ(40, (t.w - 2 * ML_PAD) / 16);  ASSERT_EQ(7,  (t.h - 2 * ML_PAD) / 18);
     ASSERT_EQ(47, (f.w - 2 * ML_PAD) / 16);  ASSERT_EQ(25, (f.h - 2 * ML_PAD) / 18);
     PASS();
 }
 
 SUITE(unit_modern_layout_suite) {
-    RUN_TEST(spacing_is_equal_left_middle_right);
+    RUN_TEST(spacing_is_three_two_three);
     RUN_TEST(small_is_inset_by_the_spacing_on_the_bottom);
     RUN_TEST(large_is_six_by_four_tiles_centred);
     RUN_TEST(location_backdrop_is_integer_3x_inset_and_text_fills_below);

@@ -23,14 +23,14 @@ serve a modern need.
 
 | band | Rome | rule |
 |---|---|---|
-| left edge | x 0-11, lattice | the horizontal space the pane and HUD leave, split three ways |
-| map pane | x 11, 672x480 | 7x5 tiles of 96 |
-| middle band | x 683-693, lattice | the same module as the side bands: a gold rail against each panel, the pattern between |
-| HUD sidebar | x 693, 96x480 | one tile wide |
-| right edge | x 789-800, lattice | the third share; a remainder the three cannot share goes to the two edges |
+| left edge | x 0-12, lattice | the horizontal space the pane and HUD leave, split 3 : 2 : 3 |
+| map pane | x 12, 672x480 | 7x5 tiles of 96 |
+| middle band | x 684-692, lattice | the same module as the side bands: a gold rail against each panel, the pattern between |
+| HUD sidebar | x 692, 96x480 | one tile wide |
+| right edge | x 788-800, lattice | the third share, equal to the left |
 | status band | above the pane | one text line plus padding |
 
-800 = 11 + 672 + 10 + 96 + 11. Vertically there is no room to match: the
+800 = 12 + 672 + 8 + 96 + 12. Vertically there is no room to match: the
 pane and the status band take 499 of 510, so the top and bottom bands stay
 thin. No modern panel reads `ui_scale`.
 
@@ -41,13 +41,13 @@ follows the font.
 
 | layout | rect | text | used by |
 |---|---|---|---|
-| **small** | six text lines plus padding tall (124), the pane's width, inset 10 from its left, right and bottom edges: 652x124 | 39 x 6 | yes/no, numeric, A/B and count prompts; any message whose header and whole body fit |
+| **small** | six text lines plus padding tall (124), the pane's width, inset 8 from its left, right and bottom edges: 656x124 | 40 x 6 | yes/no, numeric, A/B and count prompts; any message whose header and whole body fit |
 | **large** | 6x4 tiles centred in the pane: 576x384 | 35 x 20 | longer messages, the Emperor's audience, the game menu, its Controls page, the combat spell picker, the victory dialog |
-| **location** | backdrop inset 10 from the pane's left, top and right, at the smallest integer scale that covers 652 (3x: 720 cropped 34 px each side, 652x306); text area directly under it, down to 10 above the pane's bottom: 652x154 | 39 x 7 | town, home castle, own castle, dwelling, alcove, recruit |
-| **full screen** | the pane, the middle band and the HUD edge to edge, status band left visible: 778x480 | 47 x 25 | Army, Character, Contract, Spells, Gate, World map, Puzzle, Win, Lose |
+| **location** | backdrop inset 8 from the pane's left, top and right, at the smallest integer scale that covers 656 (3x: 720 cropped 32 px each side, 656x306); text area directly under it, down to 8 above the pane's bottom: 656x158 | 40 x 7 | town, home castle, own castle, dwelling, alcove, recruit |
+| **full screen** | the pane, the middle band and the HUD edge to edge, status band left visible: 776x480 | 47 x 25 | Army, Character, Contract, Spells, Gate, World map, Puzzle, Win, Lose |
 | toast | one line, top of the pane, centred | 1 line | toasts |
 
-Panels on the map keep the screen's own spacing (10) from the pane's edges,
+Panels on the map keep the middle band's width (8) from the pane's edges,
 so each sits inside the pane with the border the pane sits inside the screen
 with. Full screen is not inset: it is a screen, laid out in whole tiles (Army
 is five rows of 96 filling the 480), which a margin would cut.
@@ -73,7 +73,7 @@ edge.
 ### full screen
 
 Army is five rows of a full tile, filling the 480 exactly. The world map draws
-whole pixels per map cell against 778x480 (Italia, 64x128, gets 3). The
+whole pixels per map cell against 776x480 (Italia, 64x128, gets 3). The
 puzzle's five-tile grid is centred in the rect.
 
 ## The game menu

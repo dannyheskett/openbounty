@@ -40,12 +40,11 @@ TEST native_buffer_fixes_the_screen_and_widens_the_bands(void) {
     ASSERT_EQ(5, CL_MAP_TILES_H);
     ASSERT_EQ(672, CL_MAP_W);
     ASSERT_EQ(480, CL_MAP_H);
-    // 832 - 672 map - 96 sidebar = 64 spare, split three ways -- left edge,
-    // the band between map and HUD, right edge -- 21 each with the one left
-    // over on the right.
-    ASSERT_EQ(21, CL_FRAME_LEFT_W);
-    ASSERT_EQ(21, CL_SIDEBAR_GAP);
-    ASSERT_EQ(22, CL_FRAME_RIGHT_W);
+    // 832 - 672 map - 96 sidebar = 64 spare, split 3 : 2 : 3 -- left edge,
+    // the band between map and HUD, right edge.
+    ASSERT_EQ(24, CL_FRAME_LEFT_W);
+    ASSERT_EQ(16, CL_SIDEBAR_GAP);
+    ASSERT_EQ(24, CL_FRAME_RIGHT_W);
     // 540 - 18 status - 10 bar - 480 map = 32 spare, split 16 and 16.
     ASSERT_EQ(16, CL_FRAME_TOP_H);
     ASSERT_EQ(16, CL_FRAME_BOTTOM_H);

@@ -102,18 +102,18 @@ void layout_init(const struct Resources *res) {
         g_layout.screen_h  = r->native_h;
         g_layout.is_native = 1;
 
-        // Equal spacing across the screen: the horizontal space the map pane
-        // and the HUD do not use is split three ways -- left edge, a band
-        // between the pane and the HUD, right edge -- instead of two with the
-        // HUD flush against the map. A remainder the three cannot share evenly
-        // goes to the two outer edges, where it reads as the screen's border.
-        // Rome's 800 = 11 + 672 + 10 + 96 + 11.
+        // Spacing across the screen: the horizontal space the map pane and the
+        // HUD do not use is split three ways -- left edge, a band between the
+        // pane and the HUD, right edge -- in the proportion 3 : 2 : 3, so the
+        // middle band is two thirds of an edge instead of the HUD sitting
+        // flush against the map. What the proportion leaves goes to the two
+        // edges. Rome's 800 = 12 + 672 + 8 + 96 + 12.
         int spare = r->native_w - g_layout.map_w - g_layout.sidebar_w;
-        int each = spare / 3;
-        int rem  = spare - 3 * each;
-        g_layout.sidebar_gap = each;
-        g_layout.frame_l = each + rem / 2;
-        g_layout.frame_r = each + (rem - rem / 2);
+        int gap  = spare * 2 / 8;
+        int side = spare - gap;
+        g_layout.sidebar_gap = gap;
+        g_layout.frame_l = side / 2;
+        g_layout.frame_r = side - side / 2;
     }
 
     // Legacy opens at 2x because 320x200 is tiny on a modern display. A modern
