@@ -76,50 +76,51 @@ int input_get_char_pressed(void) {
     return c;
 }
 
-// ---- pointer --------------------------------------------------------------
+// ---- touch ----------------------------------------------------------------
+//
+// The game has NO mouse support: no mouse call is made anywhere, and no
+// cursor is drawn. A finger is read through raylib's touch API alone
+// (GetTouchPointCount / GetTouchPosition), so a desktop mouse does nothing at
+// all. The touch API reports whether a contact is down and where, not press
+// and release edges, so the contact is sampled once a frame
+// (input_touch_sample) and the edges come from this frame against the last.
 
-static bool s_touch_seen;
+static bool    s_touch_seen;
+static bool    s_touch_now, s_touch_prev;
+static Vector2 s_touch_pos;
 
-static void latch_touch(void) {
-    if (!s_touch_seen && GetTouchPointCount() > 0) s_touch_seen = true;
+void input_touch_sample(void) {
+    s_touch_prev = s_touch_now;
+    s_touch_now  = GetTouchPointCount() > 0;
+    if (s_touch_now) {
+        s_touch_pos  = GetTouchPosition(0);
+        s_touch_seen = true;
+    }
 }
 
-// A pointer event is a TOUCH, never a mouse: the game has no mouse
-// support and never shows a cursor. raylib's backends deliver a finger
-// through the mouse API, so the mouse reads below are how a tap arrives,
-// gated on a touch contact being present so a desktop mouse does nothing.
-static bool touching(void) {
-    latch_touch();
-    return GetTouchPointCount() > 0;
-}
-
-bool input_pointer_pressed(int *x, int *y) {
-    if (!touching()) return false;
-    if (!IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) return false;
-    if (x) *x = GetMouseX();
-    if (y) *y = GetMouseY();
+bool input_touch_pressed(int *x, int *y) {
+    if (!(s_touch_now && !s_touch_prev)) return false;
+    if (x) *x = (int)s_touch_pos.x;
+    if (y) *y = (int)s_touch_pos.y;
     return true;
 }
 
-bool input_pointer_down(int *x, int *y) {
-    if (!touching()) return false;
-    if (!IsMouseButtonDown(MOUSE_BUTTON_LEFT)) return false;
-    if (x) *x = GetMouseX();
-    if (y) *y = GetMouseY();
+bool input_touch_down(int *x, int *y) {
+    if (!s_touch_now) return false;
+    if (x) *x = (int)s_touch_pos.x;
+    if (y) *y = (int)s_touch_pos.y;
     return true;
 }
 
-bool input_pointer_released(void) {
-    return IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
+bool input_touch_released(void) {
+    return s_touch_prev && !s_touch_now;
 }
 
 bool input_touch_active(void) {
-    latch_touch();
     return s_touch_seen;
 }
 
 bool input_has_keyboard(void) {
-    latch_touch();
     if (s_key_seen) return true;
     // Nothing typed yet: a desktop is assumed to have a keyboard until a
     // touch or a gamepad shows up first; the web build assumes none once
@@ -132,6 +133,5 @@ InputTextMode input_text_mode(void) {
 }
 
 bool input_pad_or_touch_seen(void) {
-    latch_touch();
     return s_touch_seen || s_pad_seen;
 }

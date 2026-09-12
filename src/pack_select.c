@@ -56,13 +56,14 @@ bool pack_select_flow(const PackEntry *list, int n, int *chosen) {
             if (input_key_pressed(KEY_ONE + i)) in.digit = i;
         }
 
-        // Touch/mouse: this screen never goes through the touch layer (it
-        // draws straight to the window, no render target), so hit-test the
-        // row rects drawn below in window pixels right here. A tap selects
-        // and confirms in one go.
+        // Touch: this screen never goes through the touch layer (it draws
+        // straight to the window, no render target), so it samples the contact
+        // itself and hit-tests the row rects drawn below in window pixels. A
+        // tap selects and confirms in one go.
         {
             int mx, my;
-            if (input_pointer_pressed(&mx, &my)) {
+            input_touch_sample();
+            if (input_touch_pressed(&mx, &my)) {
                 int row_h = 24;
                 int top = (H - n * row_h) / 2 - 8;
                 int x = W / 2 - 200;

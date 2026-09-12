@@ -29,20 +29,21 @@ void input_host_clear_injected(void);
 // input reads it; this holds one key across the clear, the way a tap arrives.
 void input_host_inject_key_next_frame(int key);
 
-// ---- pointer --------------------------------------------------------------
+// ---- touch ----------------------------------------------------------------
 //
-// Single touch. There is no mouse support and no cursor: raylib's backends
-// deliver a finger through the mouse position/buttons, so those are read,
-// but only while a touch contact is present, so a desktop mouse does
-// nothing. input_touch_active() latches that a touch has ever been seen
-// and gates the on-screen touch chrome.
+// Single touch, read through raylib's touch API only. There is NO mouse
+// support: no mouse call is made anywhere in the game and no cursor is drawn,
+// so a desktop mouse does nothing. Call input_touch_sample() once a frame
+// (touch_frame does, and so does any loop that reads touch without it); the
+// press and release edges are this frame's contact against the last one's.
 
-bool input_pointer_pressed(int *x, int *y);   // press edge this frame
-bool input_pointer_down(int *x, int *y);      // held
-bool input_pointer_released(void);            // release edge this frame
+void input_touch_sample(void);
+bool input_touch_pressed(int *x, int *y);     // press edge this frame
+bool input_touch_down(int *x, int *y);        // contact held
+bool input_touch_released(void);              // release edge this frame
 
-// True once any real touch contact has ever been seen this session.
-// Desktop mouse users never flip it, so they get taps without the chrome.
+// True once any touch contact has ever been seen this session; gates the
+// on-screen touch chrome.
 bool input_touch_active(void);
 
 // ---- text entry mode ----------------------------------------------------------

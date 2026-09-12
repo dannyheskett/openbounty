@@ -191,22 +191,23 @@ static void resolve_tap(int wx, int wy, bool *was_map) {
 
 void touch_frame(void) {
     input_host_clear_injected();
+    input_touch_sample();
     s_tapped_list = 0;
     s_tapped_row  = -1;
     s_tapped_grid = 0;
 
     int wx, wy;
-    if (input_pointer_pressed(&wx, &wy)) {
+    if (input_touch_pressed(&wx, &wy)) {
         resolve_tap(wx, wy, &s_press_on_map);
         s_next_repeat = frame_host_time() + REPEAT_FIRST_DELAY;
-    } else if (s_press_on_map && input_pointer_down(&wx, &wy)) {
+    } else if (s_press_on_map && input_touch_down(&wx, &wy)) {
         if (frame_host_time() >= s_next_repeat) {
             bool on_map;
             resolve_tap(wx, wy, &on_map);
             if (!on_map) s_press_on_map = false;   // finger drifted off
             s_next_repeat = frame_host_time() + REPEAT_INTERVAL;
         }
-    } else if (!input_pointer_down(NULL, NULL)) {
+    } else if (!input_touch_down(NULL, NULL)) {
         s_press_on_map = false;
     }
 
