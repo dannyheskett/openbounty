@@ -417,7 +417,7 @@ bool search_run(ExecCtx *ctx, int *out_best_done, int *out_total) {
     int obj_total = 0;
     SearchNode *best = NULL;            // most-done state seen (MISS report)
     bool hit = false;
-    long expansions = 0, evicted = 0, childless = 0, looped = 0;
+    long expansions = 0, evicted = 0, looped = 0;
     long stat_ok = 0, stat_kept = 0, stat_fail = 0, stat_term = 0;
     long last_best_x = 0, restarts = 0;
 
@@ -581,7 +581,8 @@ bool search_run(ExecCtx *ctx, int *out_best_done, int *out_total) {
         // reference to d first.
         SearchNode *child = NULL;
         if (r == PLANNER_STEP_FAIL || r == PLANNER_STEP_TERMINAL) {
-            childless++;
+            // A childless expansion is exactly stat_fail + stat_term, both of
+            // which the progress line already prints.
             if (r == PLANNER_STEP_FAIL) stat_fail++; else stat_term++;
             // Persist the failure memory into the node so its remaining
             // branches see it (ordering tiers key off stuck/ever_failed).

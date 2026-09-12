@@ -293,7 +293,7 @@ typedef struct {
     unsigned         key;             // XOR key used; kept for save-load parity
 } ScepterLocation;
 
-typedef struct Game {
+struct Game {
     const Resources *res;             // loaded at startup; never owned by Game
     int              version;         // always SAVE_VERSION at runtime
     uint64_t         seed;            // RNG seed for this game
@@ -352,7 +352,7 @@ typedef struct Game {
     // and value-copyable, so Game stays a sound deep copy via `Game tmp = *g;`
     // (autoplay combat prediction + worldsnap rely on this). Reset by GameInit.
     PlayerIoQueue    player_io;
-} Game;
+};
 
 // ----- Lifecycle ------------------------------------------------------------
 

@@ -36,7 +36,7 @@ TEST art_substitutes_only_declared_stems_and_keeps_the_set(void) {
     ResTileCode *g = &r.tile_codes['.'];
     g->present = true; strcpy(g->art, "grass");
     g->variant_count = 2; strcpy(g->variants[0], "grass_01"); strcpy(g->variants[1], "grass_02");
-    tilevar_init(&r, 5u);
+    tilevar_init((const struct Resources *)&r, 5u);
     char buf[64];
     int base = 0, v1 = 0, v2 = 0;
     for (int y = 0; y < 16; y++)

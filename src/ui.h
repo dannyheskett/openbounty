@@ -40,7 +40,7 @@ int ui_fit_scale(int tex_w, int tex_h, int avail_w, int avail_h);
 void ui_blit_mirrored(Texture2D t, int x, int y, int w, int h);
 
 // Forward decl: the engine Game (carries the player-IO request queue).
-typedef struct Game Game;
+#include "game_fwd.h"
 
 // UI layer: dialog (press-any-key message), toast (transient banner), and
 // the any-key helper. The pause menu itself lives in src/views.c. Nothing

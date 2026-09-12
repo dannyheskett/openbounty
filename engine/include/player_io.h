@@ -45,7 +45,7 @@
 // typedefs (map.h/fog.h/resources.h above), so they must be the real
 // declarations -- a `struct Map` forward-decl would be a DIFFERENT, incomplete
 // type. The API takes Game*; player_io.c includes game.h for the full def.
-typedef struct Game Game;
+#include "game_fwd.h"
 
 // What ROLE a player-facing request plays. A consumer dispatches on this.
 typedef enum {

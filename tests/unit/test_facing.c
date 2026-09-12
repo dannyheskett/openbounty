@@ -10,6 +10,7 @@
 #include "map.h"
 #include "fog.h"
 #include "savegame.h"
+#include "step.h"      // GameStep
 #include "fixtures.h"
 #include "sprites.h"
 

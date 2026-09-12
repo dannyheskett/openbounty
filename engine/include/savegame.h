@@ -24,7 +24,7 @@ typedef enum {
 
 // Forward-declared so savegame.h doesn't need to drag game.h into every
 // file that includes map.h.
-typedef struct Game Game;
+#include "game_fwd.h"
 
 SaveResult SaveGameWrite(const char *path,
                          const Game *game,
