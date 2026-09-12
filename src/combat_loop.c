@@ -394,10 +394,10 @@ static void combat_present(const Combat *c, const Game *g,
         const ResUI *ui = &gw->res->ui;
         int row_h = BFONT_GLYPH_H + 2 * CL_UI;
         int pad = 6 * CL_UI;
-        int w = 30 * BFONT_GLYPH_W + 2 * pad;
+        int w = CL_PANEL_WIDE_W;
         int h = 10 * row_h + 2 * pad + row_h / 2;
-        int x = CL_MAP_X + (CL_MAP_W - w) / 2;
-        int y = CL_MAP_Y + (CL_MAP_H - h) / 2;
+        int x = CL_CENTER_IN_PANE_X(w);
+        int y = CL_CENTER_IN_PANE_Y(h);
         DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
         ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
         int ty = y + pad;

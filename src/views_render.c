@@ -548,8 +548,8 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
     // legacy this is exactly the content rect, at 16,22, as before.
     {
         int pw = CL_TILE_W * 5, ph = CL_TILE_H * 5;
-        int px = CL_MAP_X + (CL_MAP_W - pw) / 2;
-        int py = CL_MAP_Y + (CL_MAP_H - ph) / 2;
+        int px = CL_CENTER_IN_PANE_X(pw);
+        int py = CL_CENTER_IN_PANE_Y(ph);
         DrawRectangle(px, py, pw, ph, PAL_CLR(DGREY));
         ui_window_frame(px, py, pw, ph, PAL_CLR(DRED));
     }

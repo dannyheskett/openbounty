@@ -211,4 +211,20 @@ int bfont_glyph_h(void);
 #define CL_PANEL_PAD_X    (4 * CL_UI)
 #define CL_PANEL_COLS     30
 
+// Modern: every floating panel (Game Menu, Options, Controls, the combat
+// spell picker) picks one of exactly two widths instead of computing its
+// own -- STD matches the content rect, WIDE adds the sidebar's width for
+// panels that need the extra room. Legacy is untouched and keeps its own
+// per-panel column counts.
+#define CL_PANEL_STD_W    CL_CONTENT_W
+#define CL_PANEL_WIDE_W   (CL_CONTENT_W + CL_SIDEBAR_W)
+
+// Modern: the recurring "centred in the map pane" / "centred on the whole
+// screen" position formulas, named so every floating panel computes its
+// spot the same way instead of re-deriving it.
+#define CL_CENTER_IN_PANE_X(w)    (CL_MAP_X + (CL_MAP_W - (w)) / 2)
+#define CL_CENTER_IN_PANE_Y(h)    (CL_MAP_Y + (CL_MAP_H - (h)) / 2)
+#define CL_CENTER_ON_SCREEN_X(w)  ((CL_SCREEN_W - (w)) / 2)
+#define CL_CENTER_ON_SCREEN_Y(h)  ((CL_SCREEN_H - (h)) / 2)
+
 #endif

@@ -113,8 +113,8 @@ static void draw_dialog_ex(DialogMode mode) {
         // of glyphs, centered on the 320x200 screen.
         w = 36 * GW;
         h = 16 * GH;                    // 128px, rows 0..127 (border on 127)
-        x = (CL_SCREEN_W - w) / 2;
-        y = (CL_SCREEN_H - h) / 2;
+        x = CL_CENTER_ON_SCREEN_X(w);
+        y = CL_CENTER_ON_SCREEN_Y(h);
         body_lines = 14;  // leaves room for header + spinner
         // pad_y + header(8) + gap + 14*8 must clear the bottom border:
         //   2 + 8 + 4 + 112 = 126  -> last row 125, border 127. Fits.
@@ -229,12 +229,14 @@ static void draw_menu(void) {
             int lw = bfont_text_width(buf);
             if (lw > widest) widest = lw;
         }
+        // Shrink-to-fit, but capped at the standard panel width rather than
+        // growing to whatever the widest entry needs.
         int need = widest + GW + 16 * CL_UI;
-        if (need > w) w = need;
+        w = (need > CL_PANEL_STD_W) ? CL_PANEL_STD_W : need;
     }
     int h = (count + 2) * row_h + 8 * CL_UI;   // title + entries + hint
-    int x = CL_MAP_X + (CL_MAP_W - w) / 2;
-    int y = CL_MAP_Y + (CL_MAP_H - h) / 2;
+    int x = CL_CENTER_IN_PANE_X(w);
+    int y = CL_CENTER_IN_PANE_Y(h);
 
     draw_panel(x, y, w, h, PAL_CLR(DBLUE));
 
@@ -422,36 +424,75 @@ static int town_backdrop_troop(const Game *g, const char *key) {
     return pool[h % (unsigned long)npool];
 }
 
+// Town only (modern): the backdrop fills the whole map pane width and the
+// full height left above the full-width panel, instead of the fixed 240x102
+// card every other location screen uses. The source crops on width to match
+// the target aspect ratio, so the art fills the box with no gap and no
+// stretch -- same idea as a CSS "cover" background.
+static void draw_town_backdrop(const Sprites *s, int troop_idx,
+                                int troop_frame, int bd_h) {
+    int bd_x = CL_MAP_X, bd_y = CL_MAP_Y, bd_w = CL_MAP_W;
+    Texture2D bd = loc_texture(s, LOC_TOWN);
+    if (bd.id && bd.width > 0 && bd.height > 0) {
+        float scale = (float)bd_h / (float)bd.height;
+        float src_w = (float)bd_w / scale;
+        if (src_w > bd.width) src_w = (float)bd.width;
+        Rectangle src = { ((float)bd.width - src_w) / 2.0f, 0, src_w, (float)bd.height };
+        Rectangle dst = { (float)bd_x, (float)bd_y, (float)bd_w, (float)bd_h };
+        DrawTexturePro(bd, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+    } else {
+        DrawRectangle(bd_x, bd_y, bd_w, bd_h, PAL_CLR(BLACK));
+    }
+
+    const int troop_lift = 4 * CL_UI;
+    if (s && troop_idx >= 0 && troop_idx < 25) {
+        int frame = sprites_frame(troop_frame, s->troop_anim_frames[troop_idx]);
+        Texture2D ts = s->troop_anim[troop_idx][frame];
+        if (!ts.id) ts = s->troop_sprite[troop_idx];
+        if (ts.id && ts.width > 0) {
+            int tw = CL_TILE_W, th = CL_TILE_H;
+            ui_blit(ts, bd_x + tw, bd_y + bd_h - th - troop_lift, tw, th);
+        }
+    }
+}
+
 static void draw_town(const Game *g, const Sprites *s) {
     const char *name = views_town_display_name();
     const char *info = views_town_info_text();
     int rows = views_town_row_count();
     int cursor = views_town_cursor();
 
-    // visit_town draws the town backdrop at (16, 22) and
-    // animates a random castle-class troop on top. Delegated to the
-    // generic location-backdrop helper. Town view doesn't own a SYN-tick
-    // frame counter yet; derive a free-running tick from real time at the
-    // SYN cadence (~150ms per frame -> 6.7fps).
+    // Town view doesn't own a SYN-tick frame counter yet; derive a
+    // free-running tick from real time at the SYN cadence (~150ms per
+    // frame -> 6.7fps).
     int troop_idx = town_backdrop_troop(g, name);
     int town_frame = (int)(GetTime() * 6.66);
-    draw_location_backdrop(g, s, LOC_TOWN, troop_idx, town_frame);
 
-    // Menu panel: placed below the backdrop in the bottom-frame area.
-    // Header is 2 rows (Town of NAME + GP=NK) 
+    // Menu panel. Header is 2 rows (Town of NAME + GP=NK) plus the A..E rows.
     int row_h = GH + CL_UI;
     int pad = 4 * CL_UI;
     int lines = 2 /* header rows */ + rows;
     int h = lines * row_h + 2 * pad + 4 * CL_UI;
-    // Sized from the content rect plus a sidebar, like every other location
-    // panel, so it lines up under the backdrop instead of spanning the whole
-    // pane. In legacy this is 288 wide at x=16 -- what it has always been.
-    int w = CL_CONTENT_W + CL_SIDEBAR_W;
-    int x = CL_FRAME_LEFT_W
+
+    int w, x, y;
+    if (CL_IS_MODERN) {
+        // Town gets the whole map side of the screen: a full-pane-width
+        // panel, and the backdrop maxed out to fill the height left above
+        // it (draw_town_backdrop). Every other location screen still shares
+        // the standard panel rect (REQ-430h) via draw_location_backdrop.
+        w = CL_MAP_W;
+        x = CL_MAP_X;
+        y = CL_MAP_Y + CL_MAP_H - h;
+        draw_town_backdrop(s, troop_idx, town_frame, CL_MAP_H - h);
+    } else {
+        // Sized from the content rect plus a sidebar, so it lines up under
+        // the backdrop instead of spanning the whole pane. 288 wide at
+        // x=16 -- what it has always been.
+        w = CL_CONTENT_W + CL_SIDEBAR_W;
+        x = CL_FRAME_LEFT_W
           + ((CL_SCREEN_W - CL_FRAME_LEFT_W - CL_FRAME_RIGHT_W) - w) / 2;
-    int y = CL_MAP_Y + CL_MAP_H - h;
-    if (CL_IS_MODERN) {            // the standard panel rect (REQ-430h)
-        w = CL_PANEL_W; x = CL_PANEL_X; y = CL_PANEL_Y + CL_PANEL_H - h;
+        y = CL_MAP_Y + CL_MAP_H - h;
+        draw_location_backdrop(g, s, LOC_TOWN, troop_idx, town_frame);
     }
 
     draw_panel(x, y, w, h, PAL_CLR(DBLUE));
@@ -567,8 +608,7 @@ static void draw_options(const Game *g) {
         kb_cols = (kb_n > fit) ? 2 : 1;
         int kb_rows = (kb_n + kb_cols - 1) / kb_cols;
         rows = 8 + 1 + kb_rows;
-        w = (kb_cols == 2 ? 2 * 24 : 28) * GW + 2 * pad;
-        if (w > CL_PANEL_W + CL_SIDEBAR_W) w = CL_PANEL_W + CL_SIDEBAR_W;
+        w = (kb_cols == 2) ? CL_PANEL_WIDE_W : CL_PANEL_STD_W;
         h = rows * GH + 2 * pad;
         if (h > CL_MAP_H) h = CL_MAP_H;
     }
@@ -666,7 +706,7 @@ static void draw_controls(const Game *g) {
     int pad = 3;
     int cols = 18;
     int rows = vis + 1 + (CL_IS_MODERN ? 1 : 0);  // title, and Scale in modern
-    int w = cols * GW + 2 * pad;
+    int w = CL_IS_MODERN ? CL_PANEL_STD_W : (cols * GW + 2 * pad);
     int h = rows * (GH + 2) + 2 * pad;
     int x = CL_MAP_X;
     int y = CL_STATUS_Y + CL_STATUS_H + CL_BAR_H;
