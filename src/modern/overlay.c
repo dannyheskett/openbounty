@@ -11,6 +11,7 @@
 
 #include "overlay.h"
 #include "overlay_impl.h"
+#include "modern/mlayout.h"
 #include "touch.h"
 #include "select.h"
 #include "layout.h"
@@ -28,11 +29,6 @@
 #define GW  BFONT_GLYPH_W
 #define GH  BFONT_GLYPH_H
 
-// Body rows per page in the bottom message panel. Single-sourced: both the
-// renderer (draw_dialog_ex) and the page-count the pager reads
-// (overlay_dialog_page_count) must use the same value, or dialog_advance and
-// the display disagree about how many pages a message has.
-#define DLG_BOTTOM_BODY_LINES 7
 
 // ---------------------------------------------------------------------------
 // Bottom message frame: a solid black strip covering the map viewport from
@@ -52,19 +48,50 @@ static void draw_panel(int x, int y, int w, int h, Color bg) {
 // and the display never disagree. The old pager counted raw newlines, so a
 // long word-wrapped paragraph with few newlines was scored as one page and
 // its overflow was unreachable.
-int modern_overlay_dialog_page_count(void) {
-    const char *body = dialog_body_text();
-    if (!body || !body[0]) return 1;
-    int lines = 0;
-    const char *p = body;
-    char line[128];
+// Wrapped line count of `text` at `max_w`, as bfont_take_line breaks it.
+static int wrapped_lines(const char *text, int max_w) {
+    int n = 0;
+    const char *p = text ? text : "";
+    char line[160];
     while (*p) {
-        int max_w = CL_PANEL_W - 2 * CL_PANEL_PAD_X;
         if (bfont_take_line(&p, max_w, line, (int)sizeof line) <= 0) break;
-        lines++;
+        n++;
     }
-    int pages = (lines + DLG_BOTTOM_BODY_LINES - 1) / DLG_BOTTOM_BODY_LINES;
-    return pages < 1 ? 1 : pages;
+    return n;
+}
+
+// Which layout a message uses and how it pages. One function, called by both
+// the pager and the panel, so the two can never disagree about how many pages
+// a message has. A message goes in the small band when its header and whole
+// body fit there; otherwise in the large rect, paging if even that is short.
+typedef struct {
+    ML_Rect r;
+    int     header_lines;
+    int     body_per_page;
+    int     pages;
+} DialogFit;
+
+static DialogFit dialog_fit(bool force_large) {
+    const char *hdr = dialog_header_text();
+    const char *body = dialog_body_text();
+    DialogFit f;
+    for (int pass = force_large ? 1 : 0; pass < 2; pass++) {
+        f.r = pass ? ml_large() : ml_small();
+        int max_w = f.r.w - 2 * ML_PAD;
+        int cap = ml_lines(f.r);
+        f.header_lines = (hdr && hdr[0]) ? wrapped_lines(hdr, max_w) : 0;
+        int body_lines = wrapped_lines(body, max_w);
+        f.body_per_page = cap - f.header_lines;
+        if (f.body_per_page < 1) f.body_per_page = 1;
+        f.pages = (body_lines + f.body_per_page - 1) / f.body_per_page;
+        if (f.pages < 1) f.pages = 1;
+        if (pass == 0 && f.pages == 1) return f;   // it fits the small band
+    }
+    return f;
+}
+
+int modern_overlay_dialog_page_count(void) {
+    return dialog_fit(false).pages;
 }
 
 // ---------------------------------------------------------------------------
@@ -94,102 +121,39 @@ void modern_overlay_draw_dialog_centered(void) { draw_dialog_ex(DLG_MODE_CENTERE
 static void draw_dialog_ex(DialogMode mode) {
     const char *hdr = dialog_header_text();
     const char *body = dialog_body_text();
+    // Victory always takes the large rect; everything else picks by size.
+    DialogFit f = dialog_fit(mode == DLG_MODE_CENTERED_MODAL);
+    ML_Rect r = f.r;
 
-    // Horizontal padding is independent of vertical: pad_x sets the text
-    // inset and the wrap width, pad_y only buys space the glyph rows have
-    // to share. They were one value, and at 4px the vertical budget did not
-    // add up -- see the row arithmetic below.
-    int pad_x, pad_y, header_gap;
-    int x, y, w, h, body_lines;
+    draw_panel(r.x, r.y, r.w, r.h, PAL_CLR(DBLUE));
 
-    if (mode == DLG_MODE_CENTERED_MODAL) {
-        // Victory layout: 36 cols x 16 rows
-        // of glyphs, centered on the 320x200 screen.
-        w = 36 * GW;
-        h = 16 * GH;                    // 128px, rows 0..127 (border on 127)
-        x = CL_CENTER_ON_SCREEN_X(w);
-        y = CL_CENTER_ON_SCREEN_Y(h);
-        body_lines = 14;  // leaves room for header + spinner
-        // pad_y + header(8) + gap + 14*8 must clear the bottom border:
-        //   2 + 8 + 4 + 112 = 126  -> last row 125, border 127. Fits.
-        // (Was pad 4 + gap 8 = 132, overflowing the panel by 4px.)
-        pad_x = 4;          // 288px wide; 4px inset still yields 35 cols
-        pad_y = 2;
-        header_gap = 4;
-    } else {
-        // Bottom-frame rectangle, same as every
-        // persistent menu (home castle, own castle, dwelling, ...).
-        x = CL_PANEL_X;
-        y = CL_PANEL_Y;
-        w = CL_PANEL_W;
-        h = CL_PANEL_H;                 // 68px, rows 0..67 (border on 67)
-        body_lines = DLG_BOTTOM_BODY_LINES;
-        // Glyphs are GH=8 tall and stack with no leading, so 7 body rows
-        // plus a 1-row header cost a fixed 64px. That leaves 4px for
-        // pad_y + gap, and the last glyph row must stop short of the
-        // border:
-        //   2 + 8 + 1 + 56 = 67  -> last row 66, border 67. Fits.
-        // (Was pad 4 + gap 2 = 70, clipping the 7th line by 2px.)
-        pad_x = CL_PANEL_PAD_X;   // 1, so max_chars comes out at 30
-        pad_y = 2;
-        header_gap = 1;
+    int tx = r.x + ML_PAD;
+    int ty = r.y + ML_PAD;
+    int max_w = r.w - 2 * ML_PAD;
+    char line[160];
+
+    // The header is prose and wraps like the body -- the audience passes the
+    // Emperor's words as the header. Centred in the victory dialog.
+    const char *hp = hdr ? hdr : "";
+    for (int i = 0; i < f.header_lines && *hp; i++) {
+        if (bfont_take_line(&hp, max_w, line, (int)sizeof line) <= 0) break;
+        if (mode == DLG_MODE_CENTERED_MODAL)
+            bfont_draw_centered(line, r.x + r.w / 2, ty, PAL_CLR(YELLOW));
+        else
+            bfont_draw(line, tx, ty, PAL_CLR(YELLOW));
+        ty += GH;
     }
 
-    // Count header rows (newline-separated).
-    int header_rows = 0;
-    if (hdr && hdr[0]) {
-        header_rows = 1;
-        for (const char *p = hdr; *p; p++) if (*p == '\n') header_rows++;
-    }
-
-    draw_panel(x, y, w, h, PAL_CLR(DBLUE));
-
-    int tx = x + pad_x;
-    int ty = y + pad_y;
-    // Wrap width in pixels. A proportional face has no column count to wrap
-    // by, so both dialog modes measure the panel's own inner width.
-    int max_w = w - 2 * pad_x;
-
-    if (header_rows) {
-        const char *hp = hdr;
-        char hline[128];
-        // The header is prose and wraps like the body -- the audience passes
-        // the king's words as the header.
-        int rows_left = DLG_BOTTOM_BODY_LINES + 1;
-        for (int i = 0; i < rows_left && *hp != '\0'; i++) {
-            if (bfont_take_line(&hp, max_w, hline, (int)sizeof(hline)) <= 0) break;
-            if (mode == DLG_MODE_CENTERED_MODAL) {
-                bfont_draw_centered(hline, x + w / 2, ty, PAL_CLR(YELLOW));
-            } else {
-                bfont_draw(hline, tx, ty, PAL_CLR(YELLOW));
-            }
-            ty += GH;
-        }
-        ty += header_gap;
-    }
-
-    // Body: word-wrap to panel width; skip to current page and draw body_lines rows.
+    // Body: skip the pages already read, then draw one page.
     const char *p = body ? body : "";
-    int current_page = dialog_page_current();
-    int lines_skipped = 0;
-    char line[128];
-
-    while (*p && lines_skipped < current_page * body_lines) {
-        int got = bfont_take_line(&p, max_w, line, (int)sizeof(line));
-        if (got <= 0) break;
-        lines_skipped++;
-    }
-
-    int lines_drawn = 0;
-    while (*p && lines_drawn < body_lines) {
-        int got = bfont_take_line(&p, max_w,
-                                  line, (int)sizeof(line));
-        if (got <= 0) break;
+    int skip = dialog_page_current() * f.body_per_page;
+    for (int i = 0; i < skip && *p; i++)
+        if (bfont_take_line(&p, max_w, line, (int)sizeof line) <= 0) break;
+    for (int i = 0; i < f.body_per_page && *p; i++) {
+        if (bfont_take_line(&p, max_w, line, (int)sizeof line) <= 0) break;
         bfont_draw(line, tx, ty, PAL_CLR(WHITE));
         ty += GH;
-        lines_drawn++;
     }
-
 }
 
 // ---------------------------------------------------------------------------
