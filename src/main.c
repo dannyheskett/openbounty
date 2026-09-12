@@ -924,16 +924,26 @@ int shell_run_game(int argc, char **argv) {
         }
     }
 
-    // Audio: open device, load music streams, start the openworld
-    // track. Honors the user's saved Sounds + Music toggles.
-    audio_init(&res);
-    if (!audio_is_available()) {
-        // No playback device: pin Sounds/Music/Volume to 0 so the
-        // controls panel and the live audio push agree. The rows are
-        // also rendered grayed-out and ignore input.
+    // Audio: open the device, load the music streams, start the openworld
+    // track, honouring the saved Sounds + Music toggles. Opening the device
+    // can block for tens of seconds (a slow sound server under WSL); done here
+    // on the main thread it froze the window on the last startup frame between
+    // choosing a character and the game appearing. Interactive play opens it
+    // in the background and the game starts at once; --autoplay and --demo
+    // keep the synchronous open, because game options are part of their
+    // byte-exact state and a no-device fallback landing mid-run would change
+    // it.
+    if (demo_mode || autoplay_mode) audio_init_blocking(&res);
+    else                            audio_init(&res);
+    // No playback device: pin Sounds/Music/Volume to 0 so the controls panel
+    // and the live audio push agree (the rows are also greyed out and ignore
+    // input). Checked again each frame below until the open resolves.
+    bool audio_pinned = false;
+    if (audio_status() == AUDIO_UNAVAILABLE) {
         game.stats.options[1] = 0;  // Sounds
         game.stats.options[5] = 0;  // Music
         game.stats.options[6] = 0;  // Volume
+        audio_pinned = true;
     }
     audio_set_sounds_enabled(game.stats.options[1] != 0);
     audio_set_music_enabled (game.stats.options[5] != 0);
@@ -990,6 +1000,13 @@ int shell_run_game(int argc, char **argv) {
         audio_set_music_enabled (game.stats.options[5] != 0);
         audio_set_master_volume (game.stats.options[6]);
         audio_tick();
+        if (!audio_pinned && audio_status() == AUDIO_UNAVAILABLE) {
+            // The background open finished without a device.
+            game.stats.options[1] = 0;
+            game.stats.options[5] = 0;
+            game.stats.options[6] = 0;
+            audio_pinned = true;
+        }
         if ((input_key_down(KEY_LEFT_ALT) || input_key_down(KEY_RIGHT_ALT)) &&
             input_key_pressed(KEY_ENTER)) {
             ToggleFullscreen();

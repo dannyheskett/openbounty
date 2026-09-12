@@ -1063,7 +1063,9 @@ static bool controls_row_is_audio(const struct Game *g, int row) {
 }
 
 bool views_controls_row_disabled(const struct Game *g, int row) {
-    return controls_row_is_audio(g, row) && !audio_is_available();
+    // Only once the device has definitely failed: while it is still opening
+    // in the background the rows stay live.
+    return controls_row_is_audio(g, row) && audio_status() == AUDIO_UNAVAILABLE;
 }
 
 // The Scale row is not one of the pack's controls: it is appended by the shell

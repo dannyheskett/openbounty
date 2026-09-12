@@ -31,6 +31,8 @@
 
 #if defined(__EMSCRIPTEN__)
 #include <emscripten.h>
+#else
+#include <pthread.h>
 #endif
 
 // Volume tuning constants. Both kept under 1.0 so master=9 + tune-on-music
@@ -63,6 +65,9 @@ static bool        s_have_combat    = false;
 static const unsigned char *s_openworld_bytes = NULL;
 static const unsigned char *s_combat_bytes    = NULL;
 static AudioTrack  s_active_track   = AUDIO_TRACK_NONE;
+// A track asked for before the device was ready; started when it is.
+static AudioTrack  s_wanted_track   = AUDIO_TRACK_NONE;
+static AudioStatus s_status         = AUDIO_PENDING;
 
 // ---------- helpers ---------------------------------------------------------
 
@@ -87,9 +92,9 @@ static void apply_music_volume(void) {
 // Open the device and load every tune/stream out of the pack. Called
 // directly on desktop; deferred until the first user gesture on web (see
 // the audio_init wrapper below).
-static void audio_init_device(const Resources *res) {
-    if (s_inited) return;
-
+// Open the playback device. The one call that can block for a long time, and
+// the only part of audio that may run off the main thread.
+static bool open_device(void) {
     // ALSA dumps a wall of "function snd_func_concat returned error"
     // noise to stderr when no device is available (common in WSL,
     // headless CI). Redirect stderr to /dev/null around InitAudioDevice
@@ -108,13 +113,11 @@ static void audio_init_device(const Resources *res) {
         close(saved_stderr);
     }
 
-    if (!ready) {
-#ifndef NDEBUG
-        fprintf(stdout, "[audio] no audio device available; controls disabled\n");
-#endif
-        return;
-    }
+    return ready;
+}
 
+// Load every tune and music stream out of the pack. Main thread only.
+static void load_assets(const Resources *res) {
     // Tune sounds: load each WAV out of the active pack. Missing
     // entries leave their slot empty; audio_play_tune skips silently.
     if (res) {
@@ -169,6 +172,30 @@ static void audio_init_device(const Resources *res) {
     s_inited = true;
 }
 
+// Finish once the device has answered: load, then start whatever track the
+// game has already asked for. Main thread only.
+static void finish_open(const Resources *res, bool ready) {
+    if (!ready) {
+        s_status = AUDIO_UNAVAILABLE;
+#ifndef NDEBUG
+        fprintf(stdout, "[audio] no audio device available; controls disabled\n");
+#endif
+        return;
+    }
+    load_assets(res);
+    s_status = AUDIO_READY;
+    if (s_wanted_track != AUDIO_TRACK_NONE) audio_set_track(s_wanted_track);
+}
+
+void audio_init_blocking(const Resources *res) {
+    if (s_inited || s_status != AUDIO_PENDING) return;
+    finish_open(res, open_device());
+}
+
+AudioStatus audio_status(void) {
+    return s_status;
+}
+
 #if defined(__EMSCRIPTEN__)
 // Web: browsers refuse to start an AudioContext until the user has
 // interacted with the page. A device opened during startup comes up
@@ -193,12 +220,41 @@ static bool web_gesture_seen(void) {
     return emscripten_run_script_int("window.__ob_gesture | 0") != 0;
 }
 #else
+// Desktop: the device opens on a detached thread. The worker writes only
+// s_worker_ready and then s_worker_done; the main thread reads s_worker_done
+// once a frame in audio_tick and never touches audio until it is set.
+static const Resources *s_pending_res = NULL;
+static volatile int     s_worker_done  = 0;
+static volatile int     s_worker_ready = 0;
+static bool             s_worker_started = false;
+
+static void *open_device_worker(void *arg) {
+    (void)arg;
+    s_worker_ready = open_device() ? 1 : 0;
+    s_worker_done  = 1;
+    return NULL;
+}
+
 void audio_init(const Resources *res) {
-    audio_init_device(res);
+    if (s_inited || s_worker_started) return;
+    s_pending_res = res;
+    pthread_t t;
+    if (pthread_create(&t, NULL, open_device_worker, NULL) == 0) {
+        pthread_detach(t);
+        s_worker_started = true;
+    } else {
+        // No thread: open it here, as it always was.
+        finish_open(res, open_device());
+    }
 }
 #endif
 
 void audio_shutdown(void) {
+#if !defined(__EMSCRIPTEN__)
+    // The device is still being opened on the worker: leave it alone rather
+    // than close a device mid-open. Process exit reclaims it.
+    if (s_worker_started && !s_worker_done) return;
+#endif
     if (!s_inited) return;
 
     if (s_have_openworld) UnloadMusicStream(s_music_openworld);
@@ -224,8 +280,11 @@ void audio_tick(void) {
     // every frame.
     if (!s_inited && s_init_deferred && web_gesture_seen()) {
         s_init_deferred = false;
-        audio_init_device(s_pending_res);
+        finish_open(s_pending_res, open_device());
     }
+#else
+    if (s_worker_started && s_status == AUDIO_PENDING && s_worker_done)
+        finish_open(s_pending_res, s_worker_ready != 0);
 #endif
     if (!s_inited) return;
 
@@ -283,7 +342,7 @@ void audio_play_tune(AudioTuneId t) {
 }
 
 void audio_set_track(AudioTrack t) {
-    if (!s_inited) return;
+    if (!s_inited) { s_wanted_track = t; return; }   // started once ready
     if (t == s_active_track) return;
 
     // Stop the old.
