@@ -15,10 +15,10 @@
 		"tile_h":	96,
 		"tiles_w":	7,
 		"tiles_h":	5,
-		"ui_scale":	2,
+		"ui_scale":	1,
 		"dim":	55,
-		"native_w":	832,
-		"native_h":	540 },
+		"native_w":	800,
+		"native_h":	510 },
 	"world":	{
 		"language":	"en",
 		"max_army_slots":	5,

@@ -115,7 +115,12 @@ void layout_min_window(int *out_w, int *out_h);
 #define CL_FRAME_LEFT_W   (g_layout.frame_l)
 #define CL_FRAME_RIGHT_W  (g_layout.frame_r)
 #define CL_BAR_H          ( 5 * CL_UI)
-#define CL_BAR_Y          (17 * CL_UI)
+// The bar sits directly under the status band. Legacy's status line is a
+// fixed 9 units (frame_t 8 + status 9 = 17 = 17*ui_scale), so the old literal
+// happened to match; a modern pack's TrueType status line is not 9 units, so
+// the literal must give way to the real computed offset -- CL_STATUS_H is
+// declared below, but macros resolve at use, not at this line.
+#define CL_BAR_Y          (CL_FRAME_TOP_H + CL_STATUS_H)
 
 // Status strip between top frame and bar.
 // From OpenKB's game.c:111-114:
