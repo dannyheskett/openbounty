@@ -1,6 +1,7 @@
 // src/shell_actions.c
 
 #include "shell_actions.h"
+#include "layout.h"
 
 #include <stdio.h>
 
@@ -56,7 +57,8 @@ void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
             views_spells_set_mode(true);
         }
         break;
-    case INPUT_ACTION_OPTIONS_MENU:    views_set(VIEW_OPTIONS);   break;
+    // Modern retires the Options panel: the one menu lists every hotkey.
+    case INPUT_ACTION_OPTIONS_MENU:    views_set(CL_IS_MODERN ? VIEW_MENU : VIEW_OPTIONS); break;
     case INPUT_ACTION_GAME_MENU:       views_set(VIEW_MENU);      break;
     case INPUT_ACTION_SAVE_QUIT: {
         // Q saves unconditionally, then displays a "Press Ctrl-Q to

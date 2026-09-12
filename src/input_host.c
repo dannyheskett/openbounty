@@ -21,9 +21,14 @@ void input_host_inject_char(int ch) {
     if (ch != 0 && s_char_count < INJECT_MAX) s_chars[s_char_count++] = ch;
 }
 
+static int s_next_key = 0;
+
+void input_host_inject_key_next_frame(int key) { s_next_key = key; }
+
 void input_host_clear_injected(void) {
     s_key_count = s_key_drain = 0;
     s_char_count = s_char_drain = 0;
+    if (s_next_key) { input_host_inject_key(s_next_key); s_next_key = 0; }
 }
 
 static bool injected_has(int key) {

@@ -28,5 +28,8 @@ bool menu_save(void *ud);
 bool menu_load(void *ud);
 bool menu_new(void *ud);
 bool menu_quit(void *ud);
+// Whether a hotkey row applies to the hero as he stands: Fly only when not
+// flying, Land only when flying, and so on (the Options panel's old filter).
+bool menu_key_available(int key, void *ud);
 
 #endif

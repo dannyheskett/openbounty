@@ -884,7 +884,9 @@ int shell_run_game(int argc, char **argv) {
     MenuCallbacks menu_cbs = {
         .on_save = menu_save, .on_load = menu_load,
         .on_new  = menu_new,  .on_quit = menu_quit,
+        .key_available = menu_key_available,
     };
+    views_menu_bind(&menu_cbs, &menu_ctx);
 
     // Render target was allocated above (render_target_startup)
     // so the pre-game flow can draw into it; reuse here.

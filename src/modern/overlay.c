@@ -165,49 +165,34 @@ void modern_overlay_draw_menu(void) {
     int count = views_menu_entry_count();
     int cursor = views_menu_cursor();
 
-    // Size the panel to the menu content.
-    int row_h = GH + 2 * CL_UI;
-    // A proportional face has no column count to size by: the widest entry,
-    // or the title, sets the width.
-    int widest = title ? bfont_text_width(title) : 0;
-    for (int i = 0; i < count; i++) {
-        const char *label = views_menu_entry_label(i);
-        if (!label) continue;
-        char buf[64];
-        snprintf(buf, sizeof buf, "%s >", label);
-        int lw = bfont_text_width(buf);
-        if (lw > widest) widest = lw;
-    }
-    // Shrink-to-fit, but capped at the standard panel width rather than
-    // growing to whatever the widest entry needs.
-    int need = widest + GW + 16 * CL_UI;
-    int w = (need > CL_PANEL_STD_W) ? CL_PANEL_STD_W : need;
-    int h = (count + 2) * row_h + 8 * CL_UI;   // title + entries + hint
-    int x = CL_CENTER_IN_PANE_X(w);
-    int y = CL_CENTER_IN_PANE_Y(h);
+    // The large layout (REQ-430j): the title, then one row per entry, each
+    // row's hotkey right-aligned so the menu doubles as the keybind reference.
+    ML_Rect r = ml_large();
+    int row_h = GH + 2;
+    draw_panel(r.x, r.y, r.w, r.h, PAL_CLR(DBLUE));
 
-    draw_panel(x, y, w, h, PAL_CLR(DBLUE));
-
-    int tx = x + 6 * CL_UI;
-    int ty = y + 4 * CL_UI;
+    int tx = r.x + ML_PAD;
+    int right = r.x + r.w - ML_PAD;
+    int ty = r.y + ML_PAD;
     if (title) {
-        bfont_draw_centered(title, x + w / 2, ty, PAL_CLR(YELLOW));
-        ty += row_h + 2 * CL_UI;
+        bfont_draw_centered(title, r.x + r.w / 2, ty, PAL_CLR(YELLOW));
+        ty += row_h + row_h / 2;
     }
 
     for (int i = 0; i < count; i++) {
         const char *label = views_menu_entry_label(i);
         if (!label) continue;
-        bool is_sub = views_menu_entry_is_submenu(i);
+        if (ty + row_h > r.y + r.h - ML_PAD) break;       // never past the panel
         bool sel = (i == cursor);
-
         Color fg = sel ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
         char buf[64];
-        if (is_sub) snprintf(buf, sizeof(buf), "%s >", label);
-        else        snprintf(buf, sizeof(buf), "%s", label);
-
-        sel_row(x, ty, w, row_h, tx + GW + 4 * CL_UI, buf, sel, fg, PAL_CLR(DBLUE),
-                TOUCH_LIST_MENU, i);
+        if (views_menu_entry_is_submenu(i)) snprintf(buf, sizeof buf, "%s >", label);
+        else                                snprintf(buf, sizeof buf, "%s", label);
+        sel_row(r.x + ML_PAD / 2, ty, r.w - ML_PAD, row_h, tx, buf, sel, fg,
+                PAL_CLR(DBLUE), TOUCH_LIST_MENU, i);
+        const char *hk = views_menu_entry_hotkey(i);
+        if (hk && hk[0])
+            bfont_draw_right(hk, right, ty + 1, sel ? PAL_CLR(DBLUE) : PAL_CLR(YELLOW));
         ty += row_h;
     }
 }
@@ -571,14 +556,11 @@ void modern_overlay_draw_controls(const Game *g) {
     }
     if (vis == 0) return;
 
-    // controls_menu opens flush against the left edge of the map
-    // area so the live game stays visible to the right (page 5 of refs).
-    int pad = 3;
-    int rows = vis + 2;                           // title, settings, Scale
-    int w = CL_PANEL_STD_W;
-    int h = rows * (GH + 2) + 2 * pad;
-    int x = CL_MAP_X;
-    int y = CL_STATUS_Y + CL_STATUS_H + CL_BAR_H;
+    // The large layout, the same rect as the game menu it opens from
+    // (REQ-430j), so Controls reads as a page of that menu.
+    ML_Rect lr = ml_large();
+    int pad = ML_PAD;
+    int w = lr.w, h = lr.h, x = lr.x, y = lr.y;
 
     draw_panel(x, y, w, h, PAL_CLR(DBLUE));
 

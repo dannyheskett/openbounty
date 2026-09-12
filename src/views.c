@@ -190,6 +190,8 @@ typedef enum {
     MENU_KIND_VIEW,       // switch to MenuEntry.view
     MENU_KIND_ACTION,     // call MenuEntry.action on callbacks
     MENU_KIND_BACK,       // pop to previous page (or close at root)
+    MENU_KIND_KEY,        // modern: close the menu and press MenuEntry.key
+    MENU_KIND_PUSH_VIEW,  // modern: open MenuEntry.view over the menu
 } MenuKind;
 
 typedef enum {
@@ -205,8 +207,10 @@ typedef struct {
     const char            *label;
     MenuKind               kind;
     const struct MenuPage *page;   // MENU_KIND_SUBMENU
-    ViewKind               view;   // MENU_KIND_VIEW
+    ViewKind               view;   // MENU_KIND_VIEW / MENU_KIND_PUSH_VIEW
     MenuAction             action; // MENU_KIND_ACTION
+    int                    key;    // MENU_KIND_KEY: the raylib key it presses
+    const char            *hotkey; // shown beside the row, or NULL
 } MenuEntry;
 
 typedef struct MenuPage {
@@ -221,33 +225,33 @@ typedef struct MenuPage {
 // Resources singleton. Static struct fields are initialized to safe defaults
 // so a missing Resources still yields a usable menu.
 static MenuEntry VIEWS_ENTRIES[] = {
-    { "Army",      MENU_KIND_VIEW,   NULL, VIEW_ARMY,      MENU_ACT_NONE },
-    { "Spells",    MENU_KIND_VIEW,   NULL, VIEW_SPELLS,    MENU_ACT_NONE },
-    { "Character", MENU_KIND_VIEW,   NULL, VIEW_CHARACTER, MENU_ACT_NONE },
-    { "Contract",  MENU_KIND_VIEW,   NULL, VIEW_CONTRACT,  MENU_ACT_NONE },
-    { "Puzzle",    MENU_KIND_VIEW,   NULL, VIEW_PUZZLE,    MENU_ACT_NONE },
-    { "View Map",  MENU_KIND_VIEW,   NULL, VIEW_WORLDMAP,  MENU_ACT_NONE },
-    { "Back",      MENU_KIND_BACK,   NULL, VIEW_NONE,      MENU_ACT_NONE },
+    { "Army",      MENU_KIND_VIEW,   NULL, VIEW_ARMY,      MENU_ACT_NONE, 0, NULL },
+    { "Spells",    MENU_KIND_VIEW,   NULL, VIEW_SPELLS,    MENU_ACT_NONE, 0, NULL },
+    { "Character", MENU_KIND_VIEW,   NULL, VIEW_CHARACTER, MENU_ACT_NONE, 0, NULL },
+    { "Contract",  MENU_KIND_VIEW,   NULL, VIEW_CONTRACT,  MENU_ACT_NONE, 0, NULL },
+    { "Puzzle",    MENU_KIND_VIEW,   NULL, VIEW_PUZZLE,    MENU_ACT_NONE, 0, NULL },
+    { "View Map",  MENU_KIND_VIEW,   NULL, VIEW_WORLDMAP,  MENU_ACT_NONE, 0, NULL },
+    { "Back",      MENU_KIND_BACK,   NULL, VIEW_NONE,      MENU_ACT_NONE, 0, NULL },
 };
 static MenuPage VIEWS_PAGE = {
     "Views", VIEWS_ENTRIES, (int)(sizeof(VIEWS_ENTRIES) / sizeof(VIEWS_ENTRIES[0]))
 };
 
 static MenuEntry SYSTEM_ENTRIES[] = {
-    { "Save",      MENU_KIND_ACTION, NULL, VIEW_NONE, MENU_ACT_SAVE },
-    { "Load",      MENU_KIND_ACTION, NULL, VIEW_NONE, MENU_ACT_LOAD },
-    { "New Game",  MENU_KIND_ACTION, NULL, VIEW_NONE, MENU_ACT_NEW  },
-    { "Back",      MENU_KIND_BACK,   NULL, VIEW_NONE, MENU_ACT_NONE },
+    { "Save",      MENU_KIND_ACTION, NULL, VIEW_NONE, MENU_ACT_SAVE, 0, NULL },
+    { "Load",      MENU_KIND_ACTION, NULL, VIEW_NONE, MENU_ACT_LOAD, 0, NULL },
+    { "New Game",  MENU_KIND_ACTION, NULL, VIEW_NONE, MENU_ACT_NEW, 0, NULL },
+    { "Back",      MENU_KIND_BACK,   NULL, VIEW_NONE, MENU_ACT_NONE, 0, NULL },
 };
 static MenuPage SYSTEM_PAGE = {
     "Options", SYSTEM_ENTRIES, (int)(sizeof(SYSTEM_ENTRIES) / sizeof(SYSTEM_ENTRIES[0]))
 };
 
 static MenuEntry ROOT_ENTRIES[] = {
-    { "Views",   MENU_KIND_SUBMENU, &VIEWS_PAGE,  VIEW_NONE, MENU_ACT_NONE },
-    { "Options", MENU_KIND_SUBMENU, &SYSTEM_PAGE, VIEW_NONE, MENU_ACT_NONE },
-    { "Back",    MENU_KIND_BACK,    NULL,         VIEW_NONE, MENU_ACT_NONE },
-    { "Exit",    MENU_KIND_ACTION,  NULL,         VIEW_NONE, MENU_ACT_QUIT },
+    { "Views",   MENU_KIND_SUBMENU, &VIEWS_PAGE,  VIEW_NONE, MENU_ACT_NONE, 0, NULL },
+    { "Options", MENU_KIND_SUBMENU, &SYSTEM_PAGE, VIEW_NONE, MENU_ACT_NONE, 0, NULL },
+    { "Back",    MENU_KIND_BACK,    NULL,         VIEW_NONE, MENU_ACT_NONE, 0, NULL },
+    { "Exit",    MENU_KIND_ACTION,  NULL,         VIEW_NONE, MENU_ACT_QUIT, 0, NULL },
 };
 static MenuPage ROOT_PAGE = {
     "Game Menu", ROOT_ENTRIES, (int)(sizeof(ROOT_ENTRIES) / sizeof(ROOT_ENTRIES[0]))
@@ -295,10 +299,74 @@ typedef struct {
 static MenuFrame menu_stack[MENU_STACK_MAX];
 static int       menu_depth = 0;   // 0 = closed; 1 = root; >1 = nested
 
+// ----- Modern: one menu --------------------------------------------------------
+// Modern has ONE game menu (REQ-430j): every screen and action a keyboard
+// reaches by a letter, each row showing that letter, then Controls, Save,
+// Load, New Game and Exit. The rows are the pack's own `keybinds` list, which
+// already pairs each hotkey with its label, so the menu is the keybind
+// reference too and the separate Options panel is gone. Choosing a row closes
+// the menu and presses its key on the next frame, so every action runs the
+// exact path its keypress runs -- there is no second table of what A does.
+static const MenuCallbacks *s_menu_cbs = NULL;
+static void                *s_menu_ud  = NULL;
+
+void views_menu_bind(const MenuCallbacks *cbs, void *userdata) {
+    s_menu_cbs = cbs;
+    s_menu_ud  = userdata;
+}
+
+#define MODERN_MENU_MAX 24
+static MenuEntry MODERN_ENTRIES[MODERN_MENU_MAX];
+static char      MODERN_HOTKEYS[MODERN_MENU_MAX][4];
+static MenuPage  MODERN_PAGE = { "Game Menu", MODERN_ENTRIES, 0 };
+
+static void modern_menu_build(void) {
+    const Resources *res = resources_current();
+    int n = 0;
+    const char *controls_label = "Controls";
+    if (res) {
+        const ResUI *ui = &res->ui;
+        MODERN_PAGE.title = ui->menu_root_title;
+        for (int i = 0; i < ui->keybind_count && n < MODERN_MENU_MAX - 5; i++) {
+            const ResKeybind *kb = &ui->keybinds[i];
+            // A single letter is a screen or an action; anything longer is a
+            // movement key (Up, PgDn), which is not a menu row.
+            if (!kb->key[0] || kb->key[1] || !isalpha((unsigned char)kb->key[0])) continue;
+            char c = (char)toupper((unsigned char)kb->key[0]);
+            if (c == 'C') { controls_label = kb->label; continue; }   // its own row
+            if (c == 'Q') continue;          // Save and Exit are rows already
+            int key = KEY_A + (c - 'A');
+            if (s_menu_cbs && s_menu_cbs->key_available &&
+                !s_menu_cbs->key_available(key, s_menu_ud)) continue;
+            MODERN_HOTKEYS[n][0] = c; MODERN_HOTKEYS[n][1] = '\0';
+            MODERN_ENTRIES[n] = (MenuEntry){ kb->label, MENU_KIND_KEY, NULL,
+                                             VIEW_NONE, MENU_ACT_NONE, key,
+                                             MODERN_HOTKEYS[n] };
+            n++;
+        }
+        MODERN_ENTRIES[n++] = (MenuEntry){ controls_label, MENU_KIND_PUSH_VIEW, NULL,
+                                           VIEW_CONTROLS, MENU_ACT_NONE, 0, "C" };
+        MODERN_ENTRIES[n++] = (MenuEntry){ ui->menu_save, MENU_KIND_ACTION, NULL,
+                                           VIEW_NONE, MENU_ACT_SAVE, 0, NULL };
+        MODERN_ENTRIES[n++] = (MenuEntry){ ui->menu_load, MENU_KIND_ACTION, NULL,
+                                           VIEW_NONE, MENU_ACT_LOAD, 0, NULL };
+        MODERN_ENTRIES[n++] = (MenuEntry){ ui->menu_new_game, MENU_KIND_ACTION, NULL,
+                                           VIEW_NONE, MENU_ACT_NEW, 0, NULL };
+        MODERN_ENTRIES[n++] = (MenuEntry){ ui->menu_exit, MENU_KIND_ACTION, NULL,
+                                           VIEW_NONE, MENU_ACT_QUIT, 0, NULL };
+    }
+    MODERN_PAGE.count = n;
+}
+
 static void menu_open_root(void) {
     menus_bind_labels();
     menu_depth = 1;
-    menu_stack[0] = (MenuFrame){ &ROOT_PAGE, 0 };
+    if (CL_IS_MODERN) {
+        modern_menu_build();
+        menu_stack[0] = (MenuFrame){ &MODERN_PAGE, 0 };
+    } else {
+        menu_stack[0] = (MenuFrame){ &ROOT_PAGE, 0 };
+    }
 }
 
 static void menu_push(const MenuPage *p) {
@@ -462,6 +530,17 @@ bool views_menu_update(const MenuCallbacks *cbs, void *userdata) {
                 break;
             case MENU_KIND_BACK:
                 menu_pop_or_close();
+                break;
+            case MENU_KIND_KEY:
+                // Close, then press the row's key next frame: the same path
+                // the keypress runs, whatever the key does.
+                menu_depth = 0;
+                views_dismiss();
+                input_host_inject_key_next_frame(e->key);
+                break;
+            case MENU_KIND_PUSH_VIEW:
+                // Over the menu, so closing it comes back here.
+                views_push(e->view);
                 break;
         }
         return true;
@@ -897,6 +976,13 @@ bool views_menu_entry_is_submenu(int i) {
     if (!f || !f->page) return false;
     if (i < 0 || i >= f->page->count) return false;
     return f->page->entries[i].kind == MENU_KIND_SUBMENU;
+}
+
+const char *views_menu_entry_hotkey(int i) {
+    if (view_stack_top() != VIEW_MENU) return NULL;
+    const MenuFrame *f = menu_top();
+    if (!f || !f->page || i < 0 || i >= f->page->count) return NULL;
+    return f->page->entries[i].hotkey;
 }
 
 int views_menu_cursor(void) {

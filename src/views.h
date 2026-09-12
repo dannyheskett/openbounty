@@ -19,7 +19,17 @@ typedef struct {
     bool (*on_load)(void *userdata);
     bool (*on_new)(void *userdata);
     bool (*on_quit)(void *userdata);
+    // Modern: whether a hotkey row applies right now (Fly only when not
+    // flying, and so on). NULL means every row applies.
+    bool (*key_available)(int key, void *userdata);
 } MenuCallbacks;
+
+// The callbacks the menu uses when it opens, so the modern root page can be
+// built with the rows that apply at that moment. Call once at startup.
+void views_menu_bind(const MenuCallbacks *cbs, void *userdata);
+
+// The hotkey shown beside a menu row ("A"), or NULL for a row without one.
+const char *views_menu_entry_hotkey(int i);
 
 // views_active() is declared in engine/include/ui_host.h since engine
 // code (state_serialize, flows) also calls it.

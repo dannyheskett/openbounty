@@ -63,3 +63,13 @@ bool menu_quit(void *ud) {
     *c->quit_flag = true;
     return true;
 }
+
+bool menu_key_available(int key, void *ud) {
+    MenuCtx *c = (MenuCtx *)ud;
+    if (!c || !c->game) return true;
+    int mount = c->game->character.mount;
+    if (key == KEY_F) return mount != MOUNT_FLY;
+    if (key == KEY_L) return mount == MOUNT_FLY;
+    if (key == KEY_N) return mount == MOUNT_SAIL;
+    return true;
+}
