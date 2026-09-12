@@ -1,4 +1,5 @@
 #include "layout.h"
+#include "bfont.h"
 #include "resources.h"
 #include "combat.h"   // COMBAT_W / COMBAT_H -- the battlefield does not resize
 
@@ -53,6 +54,8 @@ void layout_init(const struct Resources *res) {
     g_layout.pack_tiles_h = r->tiles_h;
     g_layout.ui_scale     = (r->ui_scale > 0) ? r->ui_scale : 1;
     g_layout.sidebar_gap  = 0;
+    g_layout.status_h     = 0;
+    g_layout.bar_h        = 0;
     set_base_frame();
 
     g_layout.map_w     = g_layout.tile_w * g_layout.tiles_w;
@@ -114,6 +117,22 @@ void layout_init(const struct Resources *res) {
         g_layout.sidebar_gap = gap;
         g_layout.frame_l = side / 2;
         g_layout.frame_r = side - side / 2;
+
+        // The vertical stack mirrors the horizontal one: top edge, status
+        // band, band, map pane, bottom edge -- the status band standing in
+        // for the HUD, the band under it the same width as the one beside the
+        // HUD, and both outer edges as thick as the side edges. The status
+        // band takes what is left, provided that still holds a text line;
+        // otherwise the buffer is too short to mirror and keeps the frames
+        // computed above. Rome's 532 = 12 + 20 + 8 + 480 + 12.
+        int edge = g_layout.frame_l;
+        int status = r->native_h - g_layout.map_h - 2 * edge - gap;
+        if (status >= bfont_glyph_h()) {
+            g_layout.frame_t  = edge;
+            g_layout.frame_b  = edge;
+            g_layout.bar_h    = gap;
+            g_layout.status_h = status;
+        }
     }
 
     // Legacy opens at 2x because 320x200 is tiny on a modern display. A modern

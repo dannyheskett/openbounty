@@ -118,7 +118,10 @@ static void draw_lattice_chrome(void) {
     lattice_ring(0, 0, CL_SCREEN_W, CL_SCREEN_H,
                  CL_FRAME_LEFT_W, CL_FRAME_RIGHT_W,
                  CL_FRAME_TOP_H, CL_FRAME_BOTTOM_H);
-    lattice_fill(CL_STATUS_X, CL_BAR_Y, CL_STATUS_W, CL_BAR_H);
+    if (CL_SIDEBAR_GAP > 0)
+        lattice_band_h(CL_STATUS_X, CL_BAR_Y, CL_STATUS_W, CL_BAR_H);
+    else
+        lattice_fill(CL_STATUS_X, CL_BAR_Y, CL_STATUS_W, CL_BAR_H);
     if (CL_SIDEBAR_GAP > 0)
         lattice_band_v(CL_MAP_X + CL_MAP_W, CL_MAP_Y, CL_SIDEBAR_GAP, CL_MAP_H);
 }

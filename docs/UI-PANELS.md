@@ -3,7 +3,7 @@
 Every text panel, dialog and prompt the shell draws in **modern** mode, where
 it goes and how big it is. Modern has five named layouts and nothing else
 (OPENBOUNTY-SPEC REQ-430j); every panel is one of them. Numbers are for Glory
-of Rome: an 800x510 buffer, 96 px tiles, a 7x5 viewport, Press Start 2P at 16
+of Rome: an 800x532 buffer, 96 px tiles, a 7x5 viewport, Press Start 2P at 16
 (one glyph 16 px wide, one line 18 px). Ratified rules: REQ-430g (dim),
 REQ-430i (the forked draw layer), REQ-430j (the layouts and the one menu).
 
@@ -28,11 +28,14 @@ serve a modern need.
 | middle band | x 684-692, lattice | the same module as the side bands: a gold rail against each panel, the pattern between |
 | HUD sidebar | x 692, 96x480 | one tile wide |
 | right edge | x 788-800, lattice | the third share, equal to the left |
-| status band | above the pane | one text line plus padding |
+| status band | y 12, 776x20 | the vertical counterpart of the HUD: what the mirrored stack leaves once the edges and band are placed |
+| band under the status | y 32-40, lattice | the same module and width as the middle band |
 
-800 = 12 + 672 + 8 + 96 + 12. Vertically there is no room to match: the
-pane and the status band take 499 of 510, so the top and bottom bands stay
-thin. No modern panel reads `ui_scale`.
+800 = 12 + 672 + 8 + 96 + 12 across, and the vertical stack mirrors it:
+532 = 12 (top edge) + 20 (status band) + 8 (band) + 480 (map pane) + 12
+(bottom edge). The status band stands where the HUD stands, the band under it
+is the band beside the HUD, and every outer edge is 12. No modern panel reads
+`ui_scale`.
 
 ## The five layouts
 

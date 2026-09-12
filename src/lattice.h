@@ -33,6 +33,10 @@ void lattice_ring(int x, int y, int w, int h, int l, int r, int t, int b);
 // top and bottom meet the ring, whose rails already close them.
 void lattice_band_v(int x, int y, int w, int h);
 
+// The horizontal counterpart: a band of the pattern between the status band
+// and the map, railed on its top and bottom edges only.
+void lattice_band_h(int x, int y, int w, int h);
+
 // Release the pattern texture. Safe when nothing was built.
 void lattice_shutdown(void);
 

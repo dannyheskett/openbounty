@@ -1,6 +1,6 @@
 // The modern screen and its five named layouts (src/layout.c,
 // src/modern/mlayout.c, REQ-430j), for a pack shaped like Rome: 96 px tiles,
-// a 7x5 viewport, a fixed 800x510 buffer.
+// a 7x5 viewport, a fixed 800x532 buffer.
 //
 // Vertical positions are asserted against the map pane rather than as bare
 // numbers, because the pane's top edge follows the status band and the status
@@ -21,7 +21,7 @@ static void rome(void) {
     s_res.render.tile_w = 96;  s_res.render.tile_h = 96;
     s_res.render.tiles_w = 7;  s_res.render.tiles_h = 5;
     s_res.render.ui_scale = 1;
-    s_res.render.native_w = 800; s_res.render.native_h = 510;
+    s_res.render.native_w = 800; s_res.render.native_h = 532;
     layout_init((const struct Resources *)&s_res);
 }
 
@@ -48,6 +48,38 @@ TEST spacing_is_three_two_three(void) {
     ASSERT_EQ(692, CL_SIDEBAR_X);
     ASSERT_EQ(96, CL_SIDEBAR_W);
     ASSERT_EQ(CL_SCREEN_W - CL_FRAME_RIGHT_W, CL_SIDEBAR_X + CL_SIDEBAR_W);
+    PASS();
+}
+
+// The vertical stack mirrors the horizontal one: top edge, status band,
+// band, map pane, bottom edge -- the outer edges as thick as the side edges
+// and the band under the status line as wide as the band beside the HUD.
+// 532 = 12 + 20 + 8 + 480 + 12.
+TEST vertical_mirrors_horizontal(void) {
+    rome();
+    ASSERT_EQ(532, CL_SCREEN_H);
+    ASSERT_EQ(CL_FRAME_LEFT_W, CL_FRAME_TOP_H);
+    ASSERT_EQ(CL_FRAME_RIGHT_W, CL_FRAME_BOTTOM_H);
+    ASSERT_EQ(12, CL_FRAME_TOP_H);
+    ASSERT_EQ(20, CL_STATUS_H);
+    ASSERT_EQ(CL_SIDEBAR_GAP, CL_BAR_H);
+    ASSERT_EQ(8, CL_BAR_H);
+    ASSERT_EQ(12, CL_STATUS_Y);
+    ASSERT_EQ(32, CL_BAR_Y);
+    ASSERT_EQ(40, CL_MAP_Y);
+    ASSERT_EQ(CL_SCREEN_H - CL_FRAME_BOTTOM_H, CL_MAP_Y + CL_MAP_H);
+    PASS();
+}
+
+// A buffer too short to mirror keeps the old frames rather than squeezing the
+// status band below a text line.
+TEST short_buffer_does_not_mirror(void) {
+    rome();
+    s_res.render.native_h = 510;
+    layout_init((const struct Resources *)&s_res);
+    ASSERT_EQ(510, CL_SCREEN_H);
+    ASSERT(CL_FRAME_TOP_H < CL_FRAME_LEFT_W);
+    ASSERT_EQ(CL_SCREEN_H, CL_FRAME_TOP_H + CL_STATUS_H + CL_BAR_H + CL_MAP_H + CL_FRAME_BOTTOM_H);
     PASS();
 }
 
@@ -134,6 +166,8 @@ TEST capacity_follows_the_glyph(void) {
 
 SUITE(unit_modern_layout_suite) {
     RUN_TEST(spacing_is_three_two_three);
+    RUN_TEST(vertical_mirrors_horizontal);
+    RUN_TEST(short_buffer_does_not_mirror);
     RUN_TEST(small_is_inset_by_the_spacing_on_the_bottom);
     RUN_TEST(large_is_six_by_four_tiles_centred);
     RUN_TEST(location_backdrop_is_integer_3x_inset_and_text_fills_below);

@@ -30,6 +30,9 @@ typedef struct {
     int ui_scale;              // multiplies the font and the chrome bands
     int frame_l, frame_r;      // chrome side bands, in pixels
     int frame_t, frame_b;      // chrome top and bottom bands
+    int status_h, bar_h;       // modern fixed buffer: the status band and the
+                               // band under it, set so the vertical stack
+                               // mirrors the horizontal one. 0: the formulas.
     int sidebar_gap;           // modern fixed buffer: the band between the map
                                // pane and the HUD, as wide as the side bands so
                                // left edge, middle and right edge match. 0 else.
@@ -117,7 +120,7 @@ void layout_min_window(int *out_w, int *out_h);
 #define CL_FRAME_BOTTOM_H (g_layout.frame_b)
 #define CL_FRAME_LEFT_W   (g_layout.frame_l)
 #define CL_FRAME_RIGHT_W  (g_layout.frame_r)
-#define CL_BAR_H          ( 5 * CL_UI)
+#define CL_BAR_H          (g_layout.bar_h ? g_layout.bar_h : 5 * CL_UI)
 // The bar sits directly under the status band. Legacy's status line is a
 // fixed 9 units (frame_t 8 + status 9 = 17 = 17*ui_scale), so the old literal
 // happened to match; a modern pack's TrueType status line is not 9 units, so
@@ -138,7 +141,7 @@ int bfont_glyph_h(void);
 #define CL_STATUS_X       CL_FRAME_LEFT_W
 #define CL_STATUS_Y       CL_FRAME_TOP_H
 #define CL_STATUS_W       (CL_SCREEN_W - CL_FRAME_LEFT_W - CL_FRAME_RIGHT_W)
-#define CL_STATUS_H       (bfont_glyph_h() + CL_UI)
+#define CL_STATUS_H       (g_layout.status_h ? g_layout.status_h : bfont_glyph_h() + CL_UI)
 
 // Map viewport rect.
 // From OpenKB's game.c:116-119:

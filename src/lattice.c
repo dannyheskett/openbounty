@@ -88,12 +88,31 @@ void lattice_fill(int x, int y, int w, int h) {
     rail(x, y, w, h);
 }
 
+// The ring draws its rails as gold with an ink line against the pattern once
+// a band is wide enough to spare it (six units); the bands between panels do
+// the same, so all of them are one module.
 void lattice_band_v(int x, int y, int w, int h) {
     if (w <= 0 || h <= 0) return;
     tile(x, y, w, h);
     int u = CL_UI;
     DrawRectangle(x, y, u, h, C_RAIL);
     DrawRectangle(x + w - u, y, u, h, C_RAIL);
+    if (w >= 6 * u) {
+        DrawRectangle(x + u, y, u, h, C_INK);
+        DrawRectangle(x + w - 2 * u, y, u, h, C_INK);
+    }
+}
+
+void lattice_band_h(int x, int y, int w, int h) {
+    if (w <= 0 || h <= 0) return;
+    tile(x, y, w, h);
+    int u = CL_UI;
+    DrawRectangle(x, y, w, u, C_RAIL);
+    DrawRectangle(x, y + h - u, w, u, C_RAIL);
+    if (h >= 6 * u) {
+        DrawRectangle(x, y + u, w, u, C_INK);
+        DrawRectangle(x, y + h - 2 * u, w, u, C_INK);
+    }
 }
 
 void lattice_ring(int x, int y, int w, int h, int l, int r, int t, int b) {
