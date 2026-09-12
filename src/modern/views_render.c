@@ -336,17 +336,14 @@ static int draw_text_block(const char *text, int x, int y, int w, Color c) {
 static void draw_contract(const Game *g, const Sprites *s) {
     views_contract_set_active(g && g->contract.active_id[0] != '\0');
 
-    // Contract view: blue panel covers map cols 0-4, rows 1-3
-    // (3 tiles tall = 102px). Top map row + bottom map row remain visible;
-    // HUD sidebar untouched. Don't override the status bar -- it stays
-    // normal ("Options / Controls / Days Left:NNN").
-    // x and w must come from the SAME rect. They used to be the content rect
-    // and the pane respectively, which put the left edge at the centred panel
-    // and the right edge a pane-width further on -- off the screen entirely.
-    int panel_x = FULL_VIEW_X + 2 * CL_UI;
-    int panel_y = VIEW_Y + CL_TILE_H;        // 1 tile down
-    int panel_w = FULL_VIEW_W - 4 * CL_UI;   // 2px inset on each side
-    int panel_h = CL_TILE_H * 3;             // 3 tiles tall
+    // The full-screen layout like every other view (REQ-430j). The original
+    // left a map row showing above and below the panel and the villain's face
+    // in the HUD slot; stretched across the HUD that exposed two HUD icons and
+    // hid the rest, so the panel now takes the whole rect.
+    int panel_x = VIEW_X;
+    int panel_y = VIEW_Y;
+    int panel_w = VIEW_W;
+    int panel_h = VIEW_H;
 
     // Blue panel with the lattice border.
     DrawRectangle(panel_x, panel_y, panel_w, panel_h, PAL_CLR(DBLUE));
@@ -375,14 +372,7 @@ static void draw_contract(const Game *g, const Sprites *s) {
         return;
     }
 
-    // ACTIVE CONTRACT case: taller blue panel (4 tiles tall) covering
-    // rows 1-4. Top map row stays visible (row 0); HUD slot at top-right
-    // shows the villain face; gold purse at bottom-right of HUD.
-    panel_h = CL_TILE_H * 4;
-    DrawRectangle(panel_x, panel_y, panel_w, panel_h, PAL_CLR(DBLUE));
-    ui_window_frame(panel_x, panel_y, panel_w, panel_h, PAL_CLR(YELLOW));
-    tx = panel_x + pad;
-    ty = panel_y + pad;
+    // Active contract: the same full-screen panel.
 
     const VillainDef *v = villain_by_id(g->contract.active_id);
     if (!v) return;
@@ -509,18 +499,9 @@ static void puzzle_load_scepter_map(const Game *g) {
 }
 
 static void draw_puzzle(const Game *g, const Sprites *s) {
-    // The panel is the grid: five tiles square, centred in the map pane. The
-    // shared content rect is 240x170 times ui_scale, which only equals five
-    // tiles when the tile is 48x34; with a 96px tile the grid is 480 tall
-    // against a 340 panel and spilled out of the frame top and bottom. In
-    // legacy this is exactly the content rect, at 16,22, as before.
-    {
-        int pw = CL_TILE_W * 5, ph = CL_TILE_H * 5;
-        int px = CL_CENTER_IN_PANE_X(pw);
-        int py = CL_CENTER_IN_PANE_Y(ph);
-        DrawRectangle(px, py, pw, ph, PAL_CLR(DGREY));
-        ui_window_frame(px, py, pw, ph, PAL_CLR(DRED));
-    }
+    // The full-screen layout: the panel fills the whole rect, HUD included,
+    // and the five-tile grid centres in it below.
+    draw_view_panel();
 
     // Cells span ONLY the map area (240x170), NOT the sidebar -- matches
     // . Each cell is 48x34, same as a map tile, so

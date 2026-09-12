@@ -213,42 +213,42 @@ def build():
         if sc:
             h.append("<h2>The location screen, as draw_location_backdrop composes it</h2>")
             h.append('<p class="note">The figure stands where the pack places him, in the '
-                     'backdrop&rsquo;s own 240&times;102 units, so he scales with the card. Shown at '
-                     'ui_scale 1 (card 240&times;102) and 2 (card 480&times;204), both at 2&times; zoom.</p>')
+                     'backdrop&rsquo;s own 240&times;102 units, so he lands on the same spot at any scale.</p>')
             # The pack's own placement, in the backdrop's 240x102 design units,
             # exactly as draw_location_backdrop reads it. Without one, the
             # figure falls back to the tile-sized troop slot.
             import json as _json
             ui_decl = _json.load(open(os.path.join(ROOT, "assets/glory-of-rome/game.json")))["sprites"]["ui"]
             pl = ui_decl.get("alcove_figure_place")
-            for ui in (1, 2):
-                bw, bh = 240 * ui, 102 * ui
-                z = 2
-                if pl:
-                    fx, fy = pl["x"] * ui, pl["y"] * ui
-                    fw, fh = pl["w"] * ui, pl.get("h", pl["w"]) * ui
-                    how = "pack placement x %d y %d, %dx%d units" % (pl["x"], pl["y"], pl["w"], pl.get("h", pl["w"]))
-                else:
-                    fx, fy, fw, fh = TILE, bh - TILE - 4 * ui, TILE, TILE
-                    how = "no placement declared: the troop slot"
-                h.append(f'<p class="note">ui_scale {ui} &mdash; {how}</p>')
-                frames = ["assets/glory-of-rome/" + f for f in ui_decl.get("alcove_figure_animation", [])] or [sc["figure"]]
-                ms = ui_decl.get("alcove_figure_frame_ms") or 50
-                cyc = ms * len(frames) / 1000.0
-                pct = 100.0 / len(frames)
-                h.append(f'<style>@keyframes fr{len(frames)}{{0%{{opacity:1}}{pct:.4f}%{{opacity:0}}100%{{opacity:0}}}}</style>')
-                h.append(f'<div class="scene" style="width:{bw * z}px;height:{bh * z}px">'
-                         f'<img src="{src(sc["backdrop"])}" style="left:0;top:0;'
-                         f'width:{bw * z}px;height:{bh * z}px">')
-                # One <img> per frame, each visible for exactly one step. The
-                # frames are the real PNGs in the order game.json declares, at
-                # the pack's own frame_ms -- a playback, not a composite.
-                for i, fp in enumerate(frames):
-                    anim = (f'opacity:0;animation:fr{len(frames)} {cyc:.3f}s steps(1) infinite;'
-                            f'animation-delay:{i * ms / 1000.0 - cyc:.3f}s;') if len(frames) > 1 else ''
-                    h.append(f'<img src="{src(fp)}" style="left:{fx * z}px;top:{fy * z}px;'
-                             f'width:{fw * z}px;height:{fh * z}px;{anim}">')
-                h.append('</div>')
+            # The location layout (REQ-430j): the backdrop across the 672 px map
+            # pane at the smallest integer scale that covers it (3x, 720 wide,
+            # 24 px cut from each side), the figure placed in backdrop units
+            # times that scale, less the crop. Exactly draw_location_backdrop.
+            PANE_W = 672
+            S = -(-PANE_W // 240)
+            crop = (240 * S - PANE_W) // 2
+            bh = 102 * S
+            z = 1
+            if pl:
+                fx = pl["x"] * S - crop; fy = pl["y"] * S
+                fw = pl["w"] * S; fh = pl.get("h", pl["w"]) * S
+            else:
+                fx, fy, fw, fh = TILE, bh - TILE, TILE, TILE
+            frames = ["assets/glory-of-rome/" + f for f in ui_decl.get("alcove_figure_animation", [])] or [sc["figure"]]
+            ms = ui_decl.get("alcove_figure_frame_ms") or 50
+            cyc = ms * len(frames) / 1000.0
+            pct = 100.0 / len(frames)
+            h.append(f'<p class="note">the location layout: backdrop at {S}&times;, {crop}&thinsp;px cropped each side, 672&times;{bh}; figure at {fw}&times;{fh}</p>')
+            h.append(f'<style>@keyframes fr{len(frames)}{{0%{{opacity:1}}{pct:.4f}%{{opacity:0}}100%{{opacity:0}}}}</style>')
+            h.append(f'<div class="scene" style="width:{PANE_W * z}px;height:{bh * z}px">'
+                     f'<img src="{src(sc["backdrop"])}" style="left:{-crop * z}px;top:0;'
+                     f'width:{240 * S * z}px;height:{bh * z}px">')
+            for i, fp in enumerate(frames):
+                anim = (f'opacity:0;animation:fr{len(frames)} {cyc:.3f}s steps(1) infinite;'
+                        f'animation-delay:{i * ms / 1000.0 - cyc:.3f}s;') if len(frames) > 1 else ''
+                h.append(f'<img src="{src(fp)}" style="left:{fx * z}px;top:{fy * z}px;'
+                         f'width:{fw * z}px;height:{fh * z}px;{anim}">')
+            h.append('</div>')
             frames = ["assets/glory-of-rome/" + f for f in ui_decl.get("alcove_figure_animation", [])]
             if frames:
                 h.append("<h2>The loop, frame by frame in play order</h2>")
