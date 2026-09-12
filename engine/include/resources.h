@@ -1073,6 +1073,11 @@ void resources_resolve_path(const Resources *res, const char *rel,
 // inside game.json are resolved relative to the manifest file's directory.
 // Returns true on success; writes a human-readable error to stderr on
 // failure and leaves `*res` in an indeterminate state.
+// The tile code a tile_codes key names: the key's own byte for a
+// single-character key, or the byte a two-digit "\xNN" hex escape spells.
+// -1 if the key names no code. Pure; unit tested.
+int resources_tile_code_from_key(const char *key);
+
 bool resources_load(Resources *res, const char *manifest_path);
 
 // Every pack-relative art path this manifest resolves to, de-duplicated.

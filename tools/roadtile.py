@@ -2,6 +2,7 @@
 """Road tiles from a PixelLab 16 px dirt-over-grass tileset.
 
     python3 tools/roadtile.py <set-dir> <out-dir> [--seed N]
+    python3 tools/roadtile.py <set-dir> <out-dir> --sweep [--rim N --rim-shade F]
 
 A road piece is a 96 px tile built the way tools/stitch96.py builds a
 terrain tile: a 7x7 grid of vertices, each grass (l) or dirt (u), and the
@@ -80,36 +81,87 @@ def arc(x, y, cx, cy):
     return 32 <= ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5 <= 64
 
 
-# An end: the road enters through one side at the contract width and its
-# half-width tapers to zero at a tip inside the tile, so the dirt feathers
-# out into grass. END_TIP is how far from the far side the tip sits; the
-# power keeps the band near full width for the first half and draws the last
-# of it out into a long thin tail, which the sweep's edge noise then breaks
-# into speckle -- a road petering out rather than one cut off square.
-END_TIP = 16.0
-END_POW = 1.5
-
-
-def end_w(u):
-    """Half width at run position u: HW at the entry side, 0 at the tip."""
-    if u <= 0.0: return -1.0                      # past the tip: all grass
-    return HW * (min(u, 1.0) ** END_POW)
+# An end: the road enters through one side at the contract width, runs at that
+# width for the first half of the tile, then narrows and frays away, so the
+# paving peters out instead of stopping square.
+#
+# END_FULL matters twice over: the band must be at EXACTLY the contract width
+# where it leaves the tile or the piece beside it does not line up, and a road
+# that starts narrowing immediately reads as a deliberate wedge -- a
+# spearhead -- rather than a road that ends. Half the tile at full width, a
+# little over a third narrowing, the rest grass.
+END_TIP  = 12.0    # px of clear grass beyond the tip
+END_FULL = 48.0    # px of full-width band at the entry edge
+# How much harder the edge noise bites at the tip than at the entry edge. The
+# fray is what turns the last of the band into scattered stones; it is scaled
+# by how far along the run a pixel is, so it is exactly zero where the piece
+# has to meet its neighbour.
+END_FRAY = 3.5
+# Below about one stone's width there is no room for a stone, so the band stops
+# being paving and becomes a line of joint colour -- a crack, not a road. The
+# half width never goes under roughly one cobble; the front and the fray end
+# the run instead.
+END_MIN_W = 6.0
+# What an end must NOT look like: a band narrowing evenly on both sides of a
+# straight centreline down to a point. That is one tapered object, not a road
+# running out, and at a road's width it reads worse than that.
+#
+# So narrowing does very little of the work here. The run stays near full
+# width and is CUT OFF at a slanted front, which the fray then breaks up: the
+# paving simply stops, on a ragged diagonal. On top of that each side of the
+# band has its own (gentle) power, the centreline leans off true as the run
+# dies, and the slant tilts a different way for each of the four pieces, so no
+# two ends are rotations of one shape.
+#
+# All four terms are scaled by u, so at the entry edge every end is exactly
+# the straight contract: both half widths HW, centre 48, front not yet biting.
+#   (power of the low edge, power of the high edge, lean px, slant)
+END_ASYM = {
+    "n": (0.45, 0.30, +5.0, +0.60),
+    "e": (0.30, 0.50, -4.0, -0.55),
+    "s": (0.50, 0.32, -6.0, -0.65),
+    "w": (0.32, 0.48, +4.0, +0.50),
+}
 
 
 def end_run(side, x, y):
-    """(u, a): position along the run from the tip, and distance off its centre."""
-    span = 96.0 - END_TIP
-    if   side == "s": return (y - END_TIP) / span, abs(x - 48)
-    elif side == "n": return ((96 - y) - END_TIP) / span, abs(x - 48)
-    elif side == "e": return (x - END_TIP) / span, abs(y - 48)
-    else:             return ((96 - x) - END_TIP) / span, abs(y - 48)
+    """(u, off): how far along the run, and the signed offset off its centre.
+
+    u is 1 or more where the band is at full contract width and 0 at the tip.
+    """
+    span = 96.0 - END_TIP - END_FULL
+    if   side == "s": return (y - END_TIP) / span, x - 48.0
+    elif side == "n": return ((96 - y) - END_TIP) / span, x - 48.0
+    elif side == "e": return (x - END_TIP) / span, y - 48.0
+    else:             return ((96 - x) - END_TIP) / span, y - 48.0
 
 
 def sd_end(side):
+    p_lo, p_hi, lean, slant = END_ASYM[side]
+    span = 96.0 - END_TIP - END_FULL
+
     def f(x, y):
-        u, a = end_run(side, x, y)
-        w = end_w(u)
-        return a - w if w >= 0.0 else 96.0
+        u, off = end_run(side, x, y)
+        if u <= 0.0: return 96.0                  # past the tip: all grass
+        t = min(u, 1.0)
+        off -= lean * (1.0 - t)                   # the centreline drifts
+        w_lo = max(HW * (t ** p_lo), END_MIN_W)
+        w_hi = max(HW * (t ** p_hi), END_MIN_W)
+        # Three ways to be outside the road: past either edge of the band, or
+        # past the slanted front where the paving stops. The front is a line
+        # across the run, not square to it, so the end is a diagonal.
+        front = slant * off - u * span
+        return max(off - w_hi, -off - w_lo, front)
+    return f
+
+
+def fray_end(side):
+    """Noise multiplier for an end piece: 1 at the entry edge, END_FRAY at the
+    tip, so the join stays exact and only the dying part of the run breaks up."""
+    def f(x, y):
+        u, _ = end_run(side, x, y)
+        t = 1.0 - max(0.0, min(1.0, u))
+        return 1.0 + (END_FRAY - 1.0) * t
     return f
 
 
@@ -198,6 +250,11 @@ def check_contract(made_v):
 SWEEP = "--sweep" in sys.argv
 RAG = float(sys.argv[sys.argv.index("--rag") + 1]) if "--rag" in sys.argv else 3.0
 RIM = float(sys.argv[sys.argv.index("--rim") + 1]) if "--rim" in sys.argv else 0.0   # px of rim just inside the edge
+# --rim-shade F: the rim is the road's own colour at that pixel times F, so the
+# border is predictably "the paving, a shade darker" whatever the set returned.
+# Without it the rim takes rim_colour(), the colour the set itself paints where
+# the two terrains meet.
+RIM_SHADE = float(sys.argv[sys.argv.index("--rim-shade") + 1]) if "--rim-shade" in sys.argv else 0.0
 
 
 def rim_colour():
@@ -247,6 +304,11 @@ SD = {
     "road_n": sd_end("n"), "road_e": sd_end("e"),
     "road_s": sd_end("s"), "road_w": sd_end("w"),
 }
+# Only the ends fray; every other piece keeps one noise amplitude end to end.
+FRAY = {
+    "road_n": fray_end("n"), "road_e": fray_end("e"),
+    "road_s": fray_end("s"), "road_w": fray_end("w"),
+}
 NOISE_CELL = 8
 _lat = None
 def noise(x, y):
@@ -269,12 +331,24 @@ def noise(x, y):
 def sweep(name, dirt96, g96):
     im = g96.copy(); px = im.load(); dp = dirt96.load()
     sd = SD[name]
-    rc = rim_colour() + (255,)
+    fray = FRAY.get(name)
+    # rim_colour() reads the set's transition tiles, so only pay for it when
+    # the rim actually wants that colour.
+    rc = (rim_colour() + (255,)) if (RIM > 0 and not RIM_SHADE) else None
     for y in range(96):
         for x in range(96):
-            d = sd(x + 0.5, y + 0.5) + RAG * noise(x + 0.5, y + 0.5)
+            amp = fray(x + 0.5, y + 0.5) if fray else 1.0
+            d = sd(x + 0.5, y + 0.5) + RAG * amp * noise(x + 0.5, y + 0.5)
             if d <= 0:
-                px[x, y] = rc if d > -RIM else dp[x, y]
+                if d > -RIM:
+                    if RIM_SHADE:
+                        r, g, b, a = dp[x, y]
+                        px[x, y] = (int(r * RIM_SHADE), int(g * RIM_SHADE),
+                                    int(b * RIM_SHADE), a)
+                    else:
+                        px[x, y] = rc
+                else:
+                    px[x, y] = dp[x, y]
     return im
 
 

@@ -1000,8 +1000,9 @@ except where a deviation is explicitly flagged (§34).
   engine needs no road concept: walkability and move cost come from the
   terrain (grass, cost 1, unchanged), salt and foe logic see grass, and the
   renderer draws the entry's art. The map author bakes the road pieces into
-  the `.dat` like the edge variants (REQ-229). `glory-of-rome` ships twenty
-  pieces under codes `f`..`y`: straights `road_ns`/`road_ew`; the four
+  the `.dat` like the edge variants (REQ-229). `glory-of-rome` ships
+  twenty-four pieces, codes `f`..`y` and `\x80`..`\x83`: straights
+  `road_ns`/`road_ew`; the four
   curves `road_ne`, `road_es`, `road_sw`, `road_wn` (named by their two
   exits); the diagonals `road_nesw`/`road_nwse`; eight joins from a straight
   exit to a diagonal corner (`road_n_sw`, `road_n_se`, `road_s_nw`,
@@ -1011,11 +1012,27 @@ except where a deviation is explicitly flagged (§34).
   neighbours share, so the author places the companions on those two cells
   (a `road_nwse` at (x, y) takes `road_c_sw` at (x+1, y) and `road_c_ne` at
   (x, y+1); a `road_nesw` takes `road_c_se` at (x-1, y)... see
-  `tools/roadtile.py`). Every straight exit is a 32 px band centred on the
-  side and every diagonal exit the same corner triangle, so any piece joins
-  any other; the pieces are stitched from a 16 px dirt-over-grass tileset
-  by `tools/roadtile.py`, which checks that contract. An object on a road
-  cell replaces its code, so roads end on the cell beside a gate or town.
+  `tools/roadtile.py`). Last, the four **ends** `road_n`, `road_e`, `road_s`,
+  `road_w`, named by their one exit: the road enters through that side at the
+  full band width and stops inside the tile, so a run can finish in open
+  grass rather than only where an object replaces its code (an object on a
+  road cell still does that, which is why a road needs no end piece beside a
+  gate or town).
+
+  Every straight exit is a 32 px band centred on the side and every diagonal
+  exit the same corner triangle, so any piece joins any other, ends included;
+  `tools/roadtile.py` checks that contract on every run. The pieces are not
+  drawn: the tool sweeps them out of a PixelLab terrain set, filling each
+  piece's signed-distance shape with the set's road tile and leaving the
+  pack's own grass outside (see docs/ART-PIPELINE.md). Rome's surface is
+  cobblestone as of 2026-09-12, from `art/jobs/t32_cobble_203.json`, with a
+  two-pixel edging course a shade darker than the paving painted by the
+  sweep's `--rim` / `--rim-shade` -- the set's own transition tiles are
+  discarded, so an edging described in a prompt would never reach the game.
+  An end's last stretch is cut off at a slanted front and frayed by the
+  boundary noise, so the paving breaks up into loose stones instead of
+  tapering to a point; the fray is scaled to zero at the exit side, where the
+  contract has to hold exactly.
 
 - **REQ-229d.** A tile code may declare cosmetic **`variants`**, up to eight
   art names with the same terrain and flags (a name may repeat to weight

@@ -3,7 +3,8 @@
 
     python3 tools/pltileset.py <out-dir> <request.json>
 
-The request file is the JSON body (no images). Token at ~/.config/pixellab/token.
+The request file is the JSON body (no images); keys starting with "_" are
+our own notes and are not sent. Token at ~/.config/pixellab/token.
 Writes submit.json, result.json, tile_NN.png, tiles_meta.json, sheet.png and
 a 7x6 mock (map_mock_1x.png / _3x.png) laid out by corner pattern, and prints
 the terrain ids (the lower id is what later sets chain to) and seam figures.
@@ -16,6 +17,10 @@ os.makedirs(out, exist_ok=True)
 tok = open(os.path.expanduser("~/.config/pixellab/token")).read().strip()
 H = {"Authorization": "Bearer " + tok, "Content-Type": "application/json"}
 body = json.load(open(reqp))
+# A key starting with "_" is our own record, not part of the request -- the
+# same convention rdgen uses. The API rejects an unknown field outright (422),
+# so a job file's _note would make it unrunnable if it were posted.
+body = {k: v for k, v in body.items() if not k.startswith("_")}
 json.dump(body, open(os.path.join(out, "request.json"), "w"), indent=1)
 req = urllib.request.Request("https://api.pixellab.ai/v2/create-tileset", data=json.dumps(body).encode(), headers=H, method="POST")
 try:

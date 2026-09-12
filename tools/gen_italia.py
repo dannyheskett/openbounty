@@ -500,7 +500,8 @@ def main():
 
     out = os.path.join(root, "assets", "glory-of-rome", "maps", "italia.dat")
     os.makedirs(os.path.dirname(out), exist_ok=True)
-    with open(out, "w") as f:
+    # latin-1: a map byte over 127 is a tile code, not UTF-8 text.
+    with open(out, "w", encoding="latin-1") as f:
         f.write(HEADER + "\n".join("".join(r) for r in g) + "\n")
     distinct = len({c for r in g for c in r})
     print(f"wrote {out} ({W}x{H})")

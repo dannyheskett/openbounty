@@ -246,15 +246,43 @@ static Terrain terrain_from_name(const char *s) {
     return TERRAIN_GRASS;
 }
 
+// A tile code is one raw byte of a map file. The key that names it is that
+// byte itself for the 94 printable ASCII ones, and a two-digit hex escape
+// "\xNN" for the rest -- 91 of the printable codes are already spoken for, and
+// a raw byte above 127 cannot be written as a JSON key: cJSON turns a \u
+// escape into UTF-8, so only a codepoint under 0x80 survives as a single byte
+// (see utf16_literal_to_utf8). The escape keeps game.json plain ASCII and
+// valid UTF-8 while still naming any of the 256 codes. A map file that uses
+// one is no longer ASCII -- the reader is byte-wise, so such a file is latin-1
+// (tools/mapcheck.py and its neighbours read them that way).
+//
+// Returns the code, or -1 if the key names none.
+int resources_tile_code_from_key(const char *key) {
+    if (!key || !key[0]) return -1;
+    if (key[0] == '\\' && (key[1] == 'x' || key[1] == 'X') &&
+        key[2] && key[3] && !key[4]) {
+        int v = 0;
+        for (int i = 2; i < 4; i++) {
+            int c = (unsigned char)key[i], d;
+            if      (c >= '0' && c <= '9') d = c - '0';
+            else if (c >= 'a' && c <= 'f') d = c - 'a' + 10;
+            else if (c >= 'A' && c <= 'F') d = c - 'A' + 10;
+            else return -1;
+            v = v * 16 + d;
+        }
+        return v;
+    }
+    if (key[1]) return -1;               // more than one character, not an escape
+    return (unsigned char)key[0];
+}
+
 static void parse_tile_codes(Resources *res, cJSON *obj) {
     for (int i = 0; i < RES_TILE_CODE_COUNT; i++) res->tile_codes[i].present = false;
     if (!cJSON_IsObject(obj)) return;
     cJSON *entry;
     cJSON_ArrayForEach(entry, obj) {
-        const char *key = entry->string;
-        if (!key || !key[0]) continue;
-        // Any byte is a valid code: the table spans the byte range.
-        int idx = (unsigned char)key[0];
+        int idx = resources_tile_code_from_key(entry->string);
+        if (idx < 0 || idx >= RES_TILE_CODE_COUNT) continue;
         ResTileCode *tc = &res->tile_codes[idx];
         tc->present = true;
         copy_str(tc->art, sizeof(tc->art), json_str(entry, "art", ""));

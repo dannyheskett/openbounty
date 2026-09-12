@@ -3503,6 +3503,22 @@
 			"art":	"road_c_se",
 			"terrain":	"grass"
 		},
+		"\\x80":	{
+			"art":	"road_n",
+			"terrain":	"grass"
+		},
+		"\\x81":	{
+			"art":	"road_e",
+			"terrain":	"grass"
+		},
+		"\\x82":	{
+			"art":	"road_s",
+			"terrain":	"grass"
+		},
+		"\\x83":	{
+			"art":	"road_w",
+			"terrain":	"grass"
+		},
 		"!":	{
 			"art":	"forest_edge_13",
 			"terrain":	"forest",

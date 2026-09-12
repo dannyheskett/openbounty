@@ -31,9 +31,32 @@ import sys
 from collections import deque
 
 
+# A tile_codes key names one raw byte of a map file: the key's own character,
+# or a two-digit "\\xNN" hex escape for a byte with no printable spelling (see
+# resources_tile_code_from_key in engine/resources.c). Map files are therefore
+# read as latin-1, not UTF-8: a byte over 127 is one character, whatever it is.
+def code_char(key):
+    if len(key) == 4 and key[0] == "\\" and key[1] in "xX":
+        try:
+            return chr(int(key[2:], 16))
+        except ValueError:
+            return None
+    return key if len(key) == 1 else None
+
+
+def decode_codes(tile_codes):
+    """{code character: entry}, the escapes resolved."""
+    out = {}
+    for k, v in tile_codes.items():
+        c = code_char(k)
+        if c is not None:
+            out[c] = v
+    return out
+
+
 def load_codes(pack_dir):
     with open(os.path.join(pack_dir, "game.json")) as f:
-        return json.load(f)["tile_codes"]
+        return decode_codes(json.load(f)["tile_codes"])
 
 
 def zone_objects(pack_dir, zone_id):
@@ -61,7 +84,7 @@ def zone_objects(pack_dir, zone_id):
 
 def read_map(path):
     rows = []
-    with open(path) as f:
+    with open(path, encoding="latin-1") as f:
         for line in f:
             line = line.rstrip("\n").rstrip("\r")
             if not line or line.startswith("#"):

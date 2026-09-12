@@ -24,6 +24,9 @@ def req(method, path, body=None):
         return e.code, json.loads(e.read() or b"{}")
 
 body = json.load(open(sys.argv[1]))
+# "_"-prefixed keys are our own record, not part of the request (rdgen's
+# convention). The API rejects unknown fields with a 422.
+body = {k: v for k, v in body.items() if not k.startswith("_")}
 out = sys.argv[2]
 os.makedirs(out, exist_ok=True)
 st, resp = req("POST", "/create-tiles-pro", body)

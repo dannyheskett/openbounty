@@ -47,9 +47,22 @@ def load_pack(pack_dir):
         return json.load(f)
 
 
+# A tile_codes key names one raw byte of a map file: the key's own character,
+# or a two-digit "\\xNN" hex escape for a byte with no printable spelling (see
+# resources_tile_code_from_key in engine/resources.c). Map files are read as
+# latin-1, not UTF-8: a byte over 127 is one character, whatever it is.
+def code_char(key):
+    if len(key) == 4 and key[0] == "\\" and key[1] in "xX":
+        try:
+            return chr(int(key[2:], 16))
+        except ValueError:
+            return None
+    return key if len(key) == 1 else None
+
+
 def read_map(path):
     rows = []
-    with open(path) as f:
+    with open(path, encoding="latin-1") as f:
         for line in f:
             line = line.rstrip("\r\n")
             if not line or line.startswith("#"):
@@ -144,7 +157,8 @@ def main():
         args.remove(zone_id)
 
     pack = load_pack(pack_dir)
-    codes = pack["tile_codes"]
+    codes = {c: v for c, v in ((code_char(k), v)
+                               for k, v in pack["tile_codes"].items()) if c}
     rows, w, h = read_map(map_path)
 
     if "--tiles" in flags:

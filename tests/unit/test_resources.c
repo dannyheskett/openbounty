@@ -89,7 +89,32 @@ TEST siege_grid_defaults_to_empty(void) {
     PASS();
 }
 
+// A tile code is one raw byte of a map file. Printable ASCII names itself; a
+// byte with no printable spelling -- and every byte over 127, which cannot be
+// a JSON key at all because cJSON encodes a \u escape as UTF-8 -- is named by
+// a two-digit hex escape instead. Rome's four road ends are \x80..\x83.
+TEST tile_code_key_names_a_byte(void) {
+    ASSERT_EQ('.',  resources_tile_code_from_key("."));
+    ASSERT_EQ('y',  resources_tile_code_from_key("y"));
+    ASSERT_EQ(0x80, resources_tile_code_from_key("\\x80"));
+    ASSERT_EQ(0x83, resources_tile_code_from_key("\\x83"));
+    ASSERT_EQ(0xff, resources_tile_code_from_key("\\xFF"));
+    ASSERT_EQ(0x0a, resources_tile_code_from_key("\\x0a"));   // either case
+    ASSERT_EQ(0x0a, resources_tile_code_from_key("\\X0A"));
+    // A backslash is still a code in its own right when it stands alone.
+    ASSERT_EQ('\\', resources_tile_code_from_key("\\"));
+    // Nothing else names a code.
+    ASSERT_EQ(-1, resources_tile_code_from_key(""));
+    ASSERT_EQ(-1, resources_tile_code_from_key(NULL));
+    ASSERT_EQ(-1, resources_tile_code_from_key("ab"));
+    ASSERT_EQ(-1, resources_tile_code_from_key("\\x8"));
+    ASSERT_EQ(-1, resources_tile_code_from_key("\\x800"));
+    ASSERT_EQ(-1, resources_tile_code_from_key("\\xgg"));
+    PASS();
+}
+
 SUITE(unit_resources_suite) {
+    RUN_TEST(tile_code_key_names_a_byte);
     RUN_TEST(troops_catalog_nonempty);
     RUN_TEST(spells_catalog_complete);
     RUN_TEST(classes_catalog_four);

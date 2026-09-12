@@ -15,13 +15,20 @@ import glob, json, os, sys
 
 pack = sys.argv[1]
 dry = "--dry" in sys.argv
-tc = json.load(open(os.path.join(pack, "game.json")))["tile_codes"]
+_tc_raw = json.load(open(os.path.join(pack, "game.json")))["tile_codes"]
+# A key may be a "\\xNN" escape naming a byte with no printable spelling
+# (resources_tile_code_from_key); resolve it to the character the map holds.
+def _code_char(k):
+    if len(k) == 4 and k[0] == "\\" and k[1] in "xX":
+        return chr(int(k[2:], 16))
+    return k
+tc = {_code_char(k): v for k, v in _tc_raw.items()}
 art2code = {v["art"]: k for k, v in tc.items()}
 SPIT = {frozenset("NS"): 13, frozenset("EW"): 14, frozenset("NES"): 15,
         frozenset("ESW"): 16, frozenset("SWN"): 17, frozenset("WNE"): 18, frozenset("NESW"): 19}
 
 for path in sorted(glob.glob(os.path.join(pack, "maps", "*.dat"))):
-    lines = open(path).read().split("\n")
+    lines = open(path, encoding="latin-1").read().split("\n")
     head = [i for i, l in enumerate(lines) if l.startswith("#")]
     off = head[-1] + 1 if head else 0
     rows = [list(l) for l in lines[off:] if l]
@@ -49,4 +56,4 @@ for path in sorted(glob.glob(os.path.join(pack, "maps", "*.dat"))):
     for c in changed: print("   ", c)
     if changed and not dry:
         lines[off:off + H] = ["".join(r) for r in rows]
-        open(path, "w").write("\n".join(lines))
+        open(path, "w", encoding="latin-1").write("\n".join(lines))
