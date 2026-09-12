@@ -10,6 +10,7 @@
 
 #include "views.h"
 #include "views_render_impl.h"
+#include "modern/mlayout.h"
 #include "touch.h"
 #include "select.h"
 #include "layout.h"
@@ -27,30 +28,20 @@
 #define GW  BFONT_GLYPH_W
 #define GH  BFONT_GLYPH_H
 
-// View panels are fixed-size content: 30 columns of text and a hand-placed
-// portrait and grid. They draw into the shared content rect, which is centred in
-// the map pane rather than filling it -- see CL_CONTENT_* in layout.h.
-// Width is the content rect (30 columns of text). Height is the whole map
-// pane: in legacy the two are the same 170 rows, and a modern pack's taller
-// font needs the pane's full height for the character card's rows.
-#define VIEW_X       CL_CONTENT_X
-#define VIEW_Y       CL_MAP_Y
-#define VIEW_W       CL_CONTENT_W
-#define VIEW_H       CL_MAP_H
-#define VIEW_PAD     (4 * CL_UI)
+// Every modern detail view takes the full-screen layout (REQ-430j): the map
+// pane plus the HUD, the status band left visible above it. One rect for
+// all of them, computed from the pane -- the content rect times ui_scale this
+// used to read is the DOS original's 240x170 and held 14 characters a line.
+#define VIEW_X       (ml_full().x)
+#define VIEW_Y       (ml_full().y)
+#define VIEW_W       (ml_full().w)
+#define VIEW_H       (ml_full().h)
+#define VIEW_PAD     ML_PAD
 
-// Wide views (Character, Army, Gate) get the content rect plus a sidebar's
-// worth of extra width -- their right-hand stat column needs it. This is a
-// WIDER FIXED SIZE, not the pane: sizing it from the pane stretched a 30-column
-// layout across the whole window, putting labels at one edge and values at the
-// other. In legacy it is 288 wide at x=16, exactly as before.
-// Centred in the chrome interior, the same construction CL_COMBAT_X uses --
-// NOT in the map pane, which would put legacy at x=-8 because the view is
-// wider than the pane by exactly the sidebar.
-#define FULL_VIEW_W  (CL_CONTENT_W + CL_SIDEBAR_W)
-#define FULL_VIEW_X  (CL_FRAME_LEFT_W + \
-                      ((CL_SCREEN_W - CL_FRAME_LEFT_W - CL_FRAME_RIGHT_W) \
-                       - FULL_VIEW_W) / 2)
+// The "wide" views (Character, Army, Gate) were the content rect plus a
+// sidebar; with every view full screen, wide and narrow are the same rect.
+#define FULL_VIEW_W  VIEW_W
+#define FULL_VIEW_X  VIEW_X
 
 // Solid-fill background + 1px yellow border for a view panel.
 static void draw_view_panel(void) {
@@ -254,7 +245,8 @@ static void draw_army(const Game *g, const Sprites *s) {
     int anim_tick = (int)(GetTime() * 8.0);
 
     for (int i = 0; i < 5; i++) {
-        int ry = VIEW_Y + pad + i * row_h;
+        // Five rows of a full tile are exactly the view's 480: no top pad.
+        int ry = VIEW_Y + i * row_h;
         int sprite_w = CL_TILE_W;
         int sprite_h = CL_TILE_H;
 
@@ -541,8 +533,8 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
     // and this lands on the historic grid.
     int cell_w = CL_TILE_W;
     int cell_h = CL_TILE_H;
-    int grid_x = CL_MAP_X + (CL_MAP_W - cell_w * 5) / 2;
-    int grid_y = CL_MAP_Y + (CL_MAP_H - cell_h * 5) / 2;
+    int grid_x = VIEW_X + (VIEW_W - cell_w * 5) / 2;
+    int grid_y = VIEW_Y + (VIEW_H - cell_h * 5) / 2;
 
     puzzle_load_scepter_map(g);
 

@@ -1,5 +1,6 @@
 #include "end_game.h"
 #include "layout.h"
+#include "modern/mlayout.h"
 #include "palette.h"
 #include "bfont.h"
 #include "views.h"
@@ -54,6 +55,11 @@ void screen_end_game_draw(const Game *g, const Sprites *s) {
                        - total_w) / 2;
     int total_top   = CL_MAP_Y;
     int total_h     = CL_SCREEN_H - CL_MAP_Y - CL_FRAME_BOTTOM_H;
+    if (CL_IS_MODERN) {
+        // The full-screen layout, like every other detail view (REQ-430j).
+        ML_Rect fr = ml_full();
+        total_w = fr.w; total_left = fr.x; total_top = fr.y; total_h = fr.h;
+    }
 
     // Black around it, then the panel itself (CS_ENDING background).
     DrawRectangle(CL_MAP_X, CL_MAP_Y, CL_MAP_W + CL_SIDEBAR_W, CL_MAP_H,
