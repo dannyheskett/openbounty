@@ -2104,6 +2104,30 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   `src/layout.h` is deliberately NOT forked: both paths draw into one
   coordinate system (2026-09-12).
 
+- **REQ-430j.** **Five named layouts and one menu (modern).** Every modern
+  panel draws into one of five rects, computed from the map pane, the sidebar
+  and the tile and never from `ui_scale` (`src/modern/mlayout.c`): **small**,
+  the full pane width one tile tall along its bottom, for prompts and any
+  message that fits; **large**, six by four tiles centred in the pane, for
+  longer messages, the game menu and its Controls page, and combat's spell
+  picker and victory dialog; **location**, the backdrop across the top of the
+  pane at the smallest whole-number scale that covers its width (cropped
+  evenly at the sides) with the text area directly under it reaching the HUD,
+  shared by the town, both castles, the dwelling, the alcove and recruiting;
+  **full screen**, the pane plus the HUD with the status band left visible,
+  for every detail view; and the toast, unchanged. A message or prompt takes
+  the small band when its header, whole body and answer rows fit, and the
+  large rect otherwise; the pager asks the same function that places the
+  panel, so the page count and the panel cannot disagree. Modern has one game
+  menu: a row for every single-letter entry in the pack's `keybinds`, with its
+  hotkey shown, filtered to what applies to the hero (Fly only when not
+  flying), then Controls, Save, Load, New Game and Exit. Choosing a row closes
+  the menu and presses its key on the next frame, so every action runs the path
+  its keypress does. `O` opens the menu and the Options panel is retired in
+  modern. Legacy keeps `CL_CONTENT_*` / `CL_PANEL_*`, its own menu and the
+  Options panel; the location screens reach their text rect through
+  `screens_text_rect`, which the freeze tests pin to the legacy panel
+  (2026-09-12).
 - **REQ-430f.** **Keyboard detection and the letter selector (modern).**
   `input_host` latches which physical devices have been used: a real key
   event (not an injected one), a touch contact, a gamepad button or stick
