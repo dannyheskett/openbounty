@@ -107,6 +107,12 @@ TEST legacy_panel_rect(void) {
     ASSERT_EQ(68,  CL_PANEL_H);
     ASSERT_EQ(124, CL_PANEL_Y);
     ASSERT_EQ(256, CL_PANEL_X + CL_PANEL_W);   // flush with the sidebar
+    // The location screens now ask the dispatcher for their text rect; in
+    // legacy it must still be exactly this panel, with its 4 px pad.
+    int x, y, w, h;
+    screens_text_rect(&x, &y, &w, &h);
+    ASSERT_EQ(11, x);  ASSERT_EQ(124, y);  ASSERT_EQ(245, w);  ASSERT_EQ(68, h);
+    ASSERT_EQ(4, screens_text_pad());
     PASS();
 }
 

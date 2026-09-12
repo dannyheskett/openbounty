@@ -31,6 +31,13 @@ int overlay_dialog_page_count(void);
 // own panels.
 void overlay_dim_scene(void);
 
+// The rect a location screen (home castle, own castle, dwelling, recruit)
+// draws its text panel into, and the padding inside it. Modern: the location
+// layout's text area under the backdrop (REQ-430j). Legacy: the bottom panel
+// rect it has always used.
+void screens_text_rect(int *x, int *y, int *w, int *h);
+int  screens_text_pad(void);
+
 // The alpha byte for a dim percent, clamped to 0..100. Pure.
 int  overlay_dim_alpha(int percent);
 

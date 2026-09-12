@@ -1,5 +1,6 @@
 #include "dwelling.h"
 #include "layout.h"
+#include "overlay.h"
 #include "ui.h"
 #include "palette.h"
 #include "bfont.h"
@@ -98,14 +99,12 @@ void screen_dwelling_draw(const Game *g, const Sprites *s) {
                                    s_troop_idx, DWELLING_FRAME);
 
     // Bottom panel -- verbatim  banner.
-    int x = CL_PANEL_X;
-    int y = CL_PANEL_Y;
-    int w = CL_PANEL_W;
-    int h = CL_PANEL_H;
+    int x, y, w, h;
+    screens_text_rect(&x, &y, &w, &h);
     DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
     ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
 
-    int pad = CL_PANEL_PAD_X;   // 1px: the panel holds exactly CL_PANEL_COLS glyphs
+    int pad = screens_text_pad();   // legacy 4: the panel holds exactly CL_PANEL_COLS glyphs
     int row_h = BFONT_GLYPH_H + CL_UI;
     int tx = x + pad;
     int ty = y + pad;

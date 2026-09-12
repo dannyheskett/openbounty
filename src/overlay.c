@@ -13,6 +13,7 @@
 
 #include "overlay.h"
 #include "overlay_impl.h"
+#include "modern/mlayout.h"
 #include "layout.h"
 #include "views.h"
 #include "prompt.h"
@@ -61,6 +62,19 @@ void screens_draw_location_backdrop(const Game *g, const Sprites *s,
         modern_overlay_draw_location_backdrop(g, s, loc_kind, troop_idx, troop_frame);
     else
         legacy_overlay_draw_location_backdrop(g, s, loc_kind, troop_idx, troop_frame);
+}
+
+void screens_text_rect(int *x, int *y, int *w, int *h) {
+    if (CL_IS_MODERN) {
+        ML_Rect r = ml_loc_text();
+        *x = r.x; *y = r.y; *w = r.w; *h = r.h;
+    } else {
+        *x = CL_PANEL_X; *y = CL_PANEL_Y; *w = CL_PANEL_W; *h = CL_PANEL_H;
+    }
+}
+
+int screens_text_pad(void) {
+    return CL_IS_MODERN ? ML_PAD : CL_PANEL_PAD_X;
 }
 
 // The alpha byte for a dim percent, clamped to 0..100. Pure, and the same

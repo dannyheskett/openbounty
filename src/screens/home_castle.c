@@ -15,6 +15,7 @@
 
 #include "home_castle.h"
 #include "layout.h"
+#include "overlay.h"
 #include "ui.h"
 #include "palette.h"
 #include "bfont.h"
@@ -92,14 +93,12 @@ void screen_home_castle_draw(const Game *g, const Sprites *s) {
     //   "B) Audience with the King\n"
     // We use res.banners.body_home_castle so localization stays
     // possible; default fallback matches the verbatim source layout.
-    int x = CL_PANEL_X;
-    int y = CL_PANEL_Y;
-    int w = CL_PANEL_W;
-    int h = CL_PANEL_H;
+    int x, y, w, h;
+    screens_text_rect(&x, &y, &w, &h);
     DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
     ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
 
-    int pad = CL_PANEL_PAD_X;   // 1px: the panel holds exactly CL_PANEL_COLS glyphs
+    int pad = screens_text_pad();   // legacy 4: the panel holds exactly CL_PANEL_COLS glyphs
     int row_h = BFONT_GLYPH_H + CL_UI;
 
     const char *body = g->res->banners.body_home_castle;

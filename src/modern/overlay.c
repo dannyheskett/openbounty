@@ -263,65 +263,52 @@ static Texture2D loc_texture(const Sprites *s, LocKind kind) {
 static void draw_location_backdrop(const Game *g, const Sprites *s,
                                    LocKind kind, int troop_idx,
                                    int troop_frame) {
-    // The backdrop is fixed-size content, so it belongs in the content rect
-    // like the view panels do -- anchoring it to the map pane pinned it to the
-    // top-left corner of a pane many times its size. 240x102 is its authored
-    // size in the 320x200 design space.
-    int bd_x = CL_CONTENT_X;
-    int bd_y = CL_CONTENT_Y;
-    int bd_w = 240 * CL_UI;
-    int bd_h = 102 * CL_UI;
+    // The location layout (REQ-430j): the backdrop across the top of the map
+    // pane at the smallest whole-number scale that covers its width, the
+    // overshoot cropped evenly off the two sides. The text area sits directly
+    // under it, so the two share one edge instead of overlapping.
+    ML_Rect b = ml_loc_backdrop();
+    int S = ml_loc_scale();
+    int crop = (ML_BACKDROP_W * S - b.w) / 2;    // screen px cut from each side
     Texture2D bd = loc_texture(s, kind);
-    if (bd.id && bd.width > 0) {
-        ui_blit(bd, bd_x, bd_y, bd_w, bd_h);
+    if (bd.id && bd.width > 0 && bd.height > 0) {
+        float px_per_src = (float)(ML_BACKDROP_W * S) / (float)bd.width;
+        Rectangle src = { crop / px_per_src, 0,
+                          b.w / px_per_src, b.h / px_per_src };
+        Rectangle dst = { (float)b.x, (float)b.y, (float)b.w, (float)b.h };
+        DrawTexturePro(bd, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
     } else {
-        DrawRectangle(bd_x, bd_y, bd_w, bd_h, PAL_CLR(BLACK));
+        DrawRectangle(b.x, b.y, b.w, b.h, PAL_CLR(BLACK));
     }
 
-    // Animated troop sprite: 4-frame strip pinned to bottom-left, inset
-    // one sprite-width (x = troop_w * 1). Lifted a few pixels off the backdrop
-    // bottom so it clears the menu/dialog panel drawn just below (otherwise the
-    // sprite's feet overlap the panel's top border).
-    const int troop_lift = 4 * CL_UI;
     // The alcove keeps its own figure rather than borrowing a troop sprite:
-    // the place is a person, not a creature that dwells there. Its frames sit
-    // in the same slot and cycle on the same tick, so the geometry below is
-    // one rule for both.
+    // the place is a person, not a creature that dwells there.
     Texture2D fig = { 0 };
     if (kind == LOC_ALCOVE && s && s->alcove_figure.id) {
         fig = s->alcove_figure_anim[sprites_frame(troop_frame,
                                                   s->alcove_figure_frames)];
         if (!fig.id) fig = s->alcove_figure;
     }
-    if (fig.id) {
-        const Resources *r = (g && g->res) ? g->res : NULL;
-        if (r && r->sprites.alcove_figure_w > 0) {
-            // Placed by the pack, in the backdrop's own design units, so the
-            // figure scales with the card rather than with the tile: a 96 px
-            // tile on a 240x102 card is nearly the whole card.
-            ui_blit(fig, bd_x + r->sprites.alcove_figure_x * CL_UI,
-                         bd_y + r->sprites.alcove_figure_y * CL_UI,
-                         r->sprites.alcove_figure_w * CL_UI,
-                         r->sprites.alcove_figure_h * CL_UI);
-        } else {
-            int tw = CL_TILE_W, th = CL_TILE_H;
-            ui_blit(fig, bd_x + tw, bd_y + bd_h - th - troop_lift, tw, th);
-        }
-    } else if (s && troop_idx >= 0 && troop_idx < 25) {
-        // troop_frame arrives as a free-running tick; the troop's own
-        // declared cycle length decides where in the strip that lands.
-        int frame = sprites_frame(troop_frame, s->troop_anim_frames[troop_idx]);
-        Texture2D ts = s->troop_anim[troop_idx][frame];
-        if (!ts.id) ts = s->troop_sprite[troop_idx];
-        if (ts.id && ts.width > 0) {
-            // Tile-shaped: this is the same troop sprite the combat field and
-            // the army roster draw, so it gets the same slot.
-            int tw = CL_TILE_W;
-            int th = CL_TILE_H;
-            ui_blit(ts, bd_x + tw, bd_y + bd_h - th - troop_lift, tw, th);
-        }
+    const Resources *r = (g && g->res) ? g->res : NULL;
+    if (fig.id && r && r->sprites.alcove_figure_w > 0) {
+        // Placed by the pack in the backdrop's own 240x102 units, so it lands
+        // on the same spot whatever scale the backdrop is drawn at.
+        ui_blit(fig, b.x + r->sprites.alcove_figure_x * S - crop,
+                     b.y + r->sprites.alcove_figure_y * S,
+                     r->sprites.alcove_figure_w * S,
+                     r->sprites.alcove_figure_h * S);
+        return;
     }
-
+    // Otherwise the tile-sized slot a troop sprite always filled: one tile in
+    // from the left, standing on the backdrop's bottom edge.
+    Texture2D ts = fig;
+    if (!ts.id && s && troop_idx >= 0 && troop_idx < 25) {
+        int frame = sprites_frame(troop_frame, s->troop_anim_frames[troop_idx]);
+        ts = s->troop_anim[troop_idx][frame];
+        if (!ts.id) ts = s->troop_sprite[troop_idx];
+    }
+    if (ts.id && ts.width > 0)
+        ui_blit(ts, b.x + CL_TILE_W, b.y + b.h - CL_TILE_H, CL_TILE_W, CL_TILE_H);
 }
 
 // Public bridge for screen modules in src/screens/. Takes an int
@@ -376,38 +363,6 @@ static int town_backdrop_troop(const Game *g, const char *key) {
     return pool[h % (unsigned long)npool];
 }
 
-// Town only (modern): the backdrop fills the whole map pane width and the
-// full height left above the full-width panel, instead of the fixed 240x102
-// card every other location screen uses. The source crops on width to match
-// the target aspect ratio, so the art fills the box with no gap and no
-// stretch -- same idea as a CSS "cover" background.
-static void draw_town_backdrop(const Sprites *s, int troop_idx,
-                                int troop_frame, int bd_h) {
-    int bd_x = CL_MAP_X, bd_y = CL_MAP_Y, bd_w = CL_MAP_W;
-    Texture2D bd = loc_texture(s, LOC_TOWN);
-    if (bd.id && bd.width > 0 && bd.height > 0) {
-        float scale = (float)bd_h / (float)bd.height;
-        float src_w = (float)bd_w / scale;
-        if (src_w > bd.width) src_w = (float)bd.width;
-        Rectangle src = { ((float)bd.width - src_w) / 2.0f, 0, src_w, (float)bd.height };
-        Rectangle dst = { (float)bd_x, (float)bd_y, (float)bd_w, (float)bd_h };
-        DrawTexturePro(bd, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
-    } else {
-        DrawRectangle(bd_x, bd_y, bd_w, bd_h, PAL_CLR(BLACK));
-    }
-
-    const int troop_lift = 4 * CL_UI;
-    if (s && troop_idx >= 0 && troop_idx < 25) {
-        int frame = sprites_frame(troop_frame, s->troop_anim_frames[troop_idx]);
-        Texture2D ts = s->troop_anim[troop_idx][frame];
-        if (!ts.id) ts = s->troop_sprite[troop_idx];
-        if (ts.id && ts.width > 0) {
-            int tw = CL_TILE_W, th = CL_TILE_H;
-            ui_blit(ts, bd_x + tw, bd_y + bd_h - th - troop_lift, tw, th);
-        }
-    }
-}
-
 void modern_overlay_draw_town(const Game *g, const Sprites *s) {
     const char *name = views_town_display_name();
     const char *info = views_town_info_text();
@@ -420,28 +375,18 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
     int troop_idx = town_backdrop_troop(g, name);
     int town_frame = (int)(GetTime() * 6.66);
 
-    // Menu panel. Header is 2 rows (Town of NAME + GP=NK) plus the A..E rows.
-    int row_h = GH + CL_UI;
-    int pad = 4 * CL_UI;
-    int lines = 2 /* header rows */ + rows;
-    int h = lines * row_h + 2 * pad + 4 * CL_UI;
-
-    // Town gets the whole map side of the screen: a full-pane-width panel, and
-    // the backdrop maxed out to fill the height left above it. Every other
-    // location screen shares the standard panel rect (REQ-430h) via
-    // draw_location_backdrop.
-    int w = CL_MAP_W;
-    int x = CL_MAP_X;
-    int y = CL_MAP_Y + CL_MAP_H - h;
-    draw_town_backdrop(s, troop_idx, town_frame, CL_MAP_H - h);
+    // The location layout, the same as every other location screen: the
+    // backdrop above, the text area under it reaching the HUD.
+    int row_h = GH;
+    int pad = ML_PAD;
+    draw_location_backdrop(g, s, LOC_TOWN, troop_idx, town_frame);
+    ML_Rect tr = ml_loc_text();
+    int x = tr.x, y = tr.y, w = tr.w, h = tr.h;
 
     draw_panel(x, y, w, h, PAL_CLR(DBLUE));
 
     int tx = x + pad;
-    // : header rendered at `text->y - fs->h/4 - fs->h/8`,
-    // a few pixels above the inner-text top.
-    int ty = y + pad - row_h / 4 - row_h / 8;
-    if (ty < y + CL_UI) ty = y + CL_UI;
+    int ty = y + pad;
 
     // Header row 1: "Town of <name>" (templates from strings.banners).
     const ResBanners *bn = (g && g->res) ? &g->res->banners : NULL;
@@ -474,7 +419,7 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
     }
     Vector2 gpm = bfont_measure(gp);
     bfont_draw(gp, x + w - (int)gpm.x - pad, ty, PAL_CLR(YELLOW));
-    ty += row_h + 2;
+    ty += row_h;
 
     // Rows A..E.
     for (int r = 0; r < rows; r++) {
@@ -503,7 +448,7 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
         int itx = x + pad;
         int ity = y + pad;
         int max_w = w - 2 * pad;
-        int body_lines = lines;        // popup uses the full menu height
+        int body_lines = ml_lines(tr);   // the popup has the whole text area
         const char *p = info;
         char line[128];
         int nl = 0;
