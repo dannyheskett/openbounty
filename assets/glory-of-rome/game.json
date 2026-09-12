@@ -3681,6 +3681,7 @@
 				"h":	48
 			},
 			"alcove_figure_frame_ms":	180,
+			"alcove_figure_animation":	["art/ui/alcove_augur_00.png", "art/ui/alcove_augur_01.png", "art/ui/alcove_augur_02.png", "art/ui/alcove_augur_03.png", "art/ui/alcove_augur_04.png", "art/ui/alcove_augur_05.png", "art/ui/alcove_augur_06.png", "art/ui/alcove_augur_07.png", "art/ui/alcove_augur_08.png", "art/ui/alcove_augur_09.png", "art/ui/alcove_augur_10.png", "art/ui/alcove_augur_11.png", "art/ui/alcove_augur_12.png", "art/ui/alcove_augur_13.png"],
 			"dungeon_backdrop":	"art/ui/backdrop_dungeon.png",
 			"ending_win":	"art/ui/end_win_screen.png",
 			"ending_lose":	"art/ui/end_lose_screen.png",

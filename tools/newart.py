@@ -232,12 +232,34 @@ def build():
                     fx, fy, fw, fh = TILE, bh - TILE - 4 * ui, TILE, TILE
                     how = "no placement declared: the troop slot"
                 h.append(f'<p class="note">ui_scale {ui} &mdash; {how}</p>')
+                frames = ["assets/glory-of-rome/" + f for f in ui_decl.get("alcove_figure_animation", [])] or [sc["figure"]]
+                ms = ui_decl.get("alcove_figure_frame_ms") or 50
+                cyc = ms * len(frames) / 1000.0
+                pct = 100.0 / len(frames)
+                h.append(f'<style>@keyframes fr{len(frames)}{{0%{{opacity:1}}{pct:.4f}%{{opacity:0}}100%{{opacity:0}}}}</style>')
                 h.append(f'<div class="scene" style="width:{bw * z}px;height:{bh * z}px">'
                          f'<img src="{src(sc["backdrop"])}" style="left:0;top:0;'
-                         f'width:{bw * z}px;height:{bh * z}px">'
-                         f'<img src="{src(sc["figure"])}" style="left:{fx * z}px;'
-                         f'top:{fy * z}px;width:{fw * z}px;height:{fh * z}px">'
-                         f'</div>')
+                         f'width:{bw * z}px;height:{bh * z}px">')
+                # One <img> per frame, each visible for exactly one step. The
+                # frames are the real PNGs in the order game.json declares, at
+                # the pack's own frame_ms -- a playback, not a composite.
+                for i, fp in enumerate(frames):
+                    anim = (f'opacity:0;animation:fr{len(frames)} {cyc:.3f}s steps(1) infinite;'
+                            f'animation-delay:{i * ms / 1000.0 - cyc:.3f}s;') if len(frames) > 1 else ''
+                    h.append(f'<img src="{src(fp)}" style="left:{fx * z}px;top:{fy * z}px;'
+                             f'width:{fw * z}px;height:{fh * z}px;{anim}">')
+                h.append('</div>')
+            frames = ["assets/glory-of-rome/" + f for f in ui_decl.get("alcove_figure_animation", [])]
+            if frames:
+                h.append("<h2>The loop, frame by frame in play order</h2>")
+                h.append('<p class="note">The raven spreads its wings, beats once and folds them while '
+                         'the augur turns to watch: a bird&rsquo;s sign is what an augur reads. Played '
+                         'forward then back, so no step is a jump the model did not draw; on disk the 14 '
+                         'frames are a plain numbered run, 08&ndash;13 copies of 06 down to 01.</p>'
+                         '<div class="strip">')
+                for i, fp in enumerate(frames):
+                    h.append(on_grass(fp, 1, "%d: %s" % (i, os.path.basename(fp)[-6:-4])))
+                h.append("</div>")
             h.append("<h2>The backdrop it replaced</h2><div class=\"pair\">")
             for lbl, p in (("backdrop_alcove (new)", sc["backdrop"]),
                            ("backdrop_hillcave (borrowed, still the hill dwelling's)",
