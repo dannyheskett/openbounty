@@ -1,0 +1,19 @@
+{
+ "id": "alcove_augur",
+ "prompt": "an elderly Roman augur, a state priest of the auspices, standing at rest in a heavy scarlet-striped trabea toga over a white tunic, bare-headed with a full white beard, holding the lituus upright in his right hand -- a short smooth staff of pale wood curving over in a single hook at the top, no knot and no ornament -- and a large black raven perched calmly on his outstretched left forearm",
+ "style": "user__glory_of_rome_troops_bac676cd",
+ "width": 96,
+ "height": 96,
+ "seed": 7412,
+ "remove_bg": true,
+ "return_non_bg_removed": true,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": true,
+ "target": [
+  96,
+  96
+ ],
+ "_pack_path": "art/ui/alcove_augur_00.png (frame 0 of 4)",
+ "_note": "The figure who keeps the magic alcove (2026-09-12). Troop route, the pack's trained troop style at 96x96 with magenta removed, because he stands in the same tile-shaped slot on the backdrop that a troop sprite used to fill -- the screen animated Fauni there, a leftover from the original hard-coding Gnomes at the archmage's home. Neutral stance with the lituus at rest, so the gesture is the travel the loop spends. Deliberately NOT the Sibylla class portrait, which is a veiled priestess in white with a laurel sprig: this is a bearded male priest in the striped trabea with the crooked staff and a raven, so the oracle and the player are never the same figure."
+}

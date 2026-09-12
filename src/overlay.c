@@ -50,6 +50,7 @@ int overlay_dialog_page_count(void) {
 // Constants (must match LocKind enum order):
 //   1 = LOC_CASTLE  2 = LOC_TOWN     3 = LOC_PLAINS
 //   4 = LOC_FOREST  5 = LOC_HILLCAVE 6 = LOC_DUNGEON
+//   7 = LOC_ALCOVE
 //
 // `troop_frame` is the 0..3 animation frame the caller owns. The screens
 // advance their own frame from SYN ticks.

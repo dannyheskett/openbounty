@@ -406,6 +406,7 @@ static void parse_zones(Resources *res, cJSON *arr) {
         }
         copy_str(z->tile_set, sizeof(z->tile_set), json_str(it, "tile_set", ""));
         copy_str(z->army_art, sizeof(z->army_art), json_str(it, "army_art", ""));
+        copy_str(z->alcove_art, sizeof(z->alcove_art), json_str(it, "alcove_art", ""));
         z->width  = json_int(it, "width",  64);
         z->height = json_int(it, "height", 64);
         cJSON *hs = cJSON_GetObjectItem(it, "hero_spawn");
@@ -876,6 +877,14 @@ static void parse_sprites(Resources *res, cJSON *obj) {
                  json_str(ui, "forest_backdrop", ""));
         copy_str(res->sprites.hillcave_backdrop, sizeof(res->sprites.hillcave_backdrop),
                  json_str(ui, "hillcave_backdrop", ""));
+        copy_str(res->sprites.alcove_backdrop, sizeof(res->sprites.alcove_backdrop),
+                 json_str(ui, "alcove_backdrop", ""));
+        copy_str(res->sprites.alcove_figure, sizeof(res->sprites.alcove_figure),
+                 json_str(ui, "alcove_figure", ""));
+        parse_string_array(cJSON_GetObjectItem(ui, "alcove_figure_animation"),
+                           res->sprites.alcove_figure_animation,
+                           OB_ANIM_FRAMES_MAX,
+                           &res->sprites.alcove_figure_animation_count);
         copy_str(res->sprites.dungeon_backdrop, sizeof(res->sprites.dungeon_backdrop),
                  json_str(ui, "dungeon_backdrop", ""));
         copy_str(res->sprites.ending_win, sizeof(res->sprites.ending_win),
@@ -2446,6 +2455,10 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
     art_add(out, cap, &n, res->sprites.forest_backdrop);
     art_add(out, cap, &n, res->sprites.hillcave_backdrop);
     art_add(out, cap, &n, res->sprites.dungeon_backdrop);
+    art_add(out, cap, &n, res->sprites.alcove_backdrop);
+    art_add(out, cap, &n, res->sprites.alcove_figure);
+    for (int i = 0; i < res->sprites.alcove_figure_animation_count; i++)
+        art_add(out, cap, &n, res->sprites.alcove_figure_animation[i]);
     art_add(out, cap, &n, res->sprites.ending_win);
     art_add(out, cap, &n, res->sprites.ending_lose);
     art_add(out, cap, &n, res->sprites.siege_back_wall);
@@ -2555,6 +2568,17 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
                 art_add(out, cap, &n, p);
             }
             if (shared) art_add(out, cap, &n, "art/tiles/wandering_army.png");
+        }
+        // The alcove tile is per zone the same way: the hills-dwelling sprite
+        // it borrows only while some zone leaves `alcove_art` unset, plus each
+        // declared stem once. map_object_art_names already lists the borrowed
+        // one, so nothing is added for the fallback here.
+        for (int i = 0; i < res->zone_count; i++) {
+            const char *a = res->zones[i].alcove_art;
+            if (!a[0]) continue;
+            char p[RES_PATH_LEN];
+            snprintf(p, sizeof p, "art/tiles/%s.png", a);
+            art_add(out, cap, &n, p);
         }
         // Castle art follows the footprint (REQ-228): a pack ships the six
         // 3x2 pieces only if some castle stamps 3x2, and the single `castle`

@@ -271,6 +271,7 @@ typedef enum {
     LOC_FOREST,
     LOC_HILLCAVE,
     LOC_DUNGEON,
+    LOC_ALCOVE,
 } LocKind;
 
 static Texture2D loc_texture(const Sprites *s, LocKind kind) {
@@ -282,6 +283,9 @@ static Texture2D loc_texture(const Sprites *s, LocKind kind) {
         case LOC_FOREST:   return s->forest_backdrop;
         case LOC_HILLCAVE: return s->hillcave_backdrop;
         case LOC_DUNGEON:  return s->dungeon_backdrop;
+        // The alcove borrows the hill cave until a pack gives it its own.
+        case LOC_ALCOVE:   return s->alcove_backdrop.id ? s->alcove_backdrop
+                                                        : s->hillcave_backdrop;
         case LOC_NONE: default: return (Texture2D){ 0 };
     }
 }
@@ -316,7 +320,20 @@ static void draw_location_backdrop(const Game *g, const Sprites *s,
     // bottom so it clears the menu/dialog panel drawn just below (otherwise the
     // sprite's feet overlap the panel's top border).
     const int troop_lift = 4 * CL_UI;
-    if (s && troop_idx >= 0 && troop_idx < 25) {
+    // The alcove keeps its own figure rather than borrowing a troop sprite:
+    // the place is a person, not a creature that dwells there. Its frames sit
+    // in the same slot and cycle on the same tick, so the geometry below is
+    // one rule for both.
+    Texture2D fig = { 0 };
+    if (kind == LOC_ALCOVE && s && s->alcove_figure.id) {
+        fig = s->alcove_figure_anim[sprites_frame(troop_frame,
+                                                  s->alcove_figure_frames)];
+        if (!fig.id) fig = s->alcove_figure;
+    }
+    if (fig.id) {
+        int tw = CL_TILE_W, th = CL_TILE_H;
+        ui_blit(fig, bd_x + tw, bd_y + bd_h - th - troop_lift, tw, th);
+    } else if (s && troop_idx >= 0 && troop_idx < 25) {
         // troop_frame arrives as a free-running tick; the troop's own
         // declared cycle length decides where in the strip that lands.
         int frame = sprites_frame(troop_frame, s->troop_anim_frames[troop_idx]);
@@ -338,6 +355,7 @@ static void draw_location_backdrop(const Game *g, const Sprites *s,
 // Constants (must match LocKind enum order):
 //   1 = LOC_CASTLE  2 = LOC_TOWN     3 = LOC_PLAINS
 //   4 = LOC_FOREST  5 = LOC_HILLCAVE 6 = LOC_DUNGEON
+//   7 = LOC_ALCOVE
 //
 // `troop_frame` is the 0..3 animation frame the caller owns. The
 // screens advance their own frame from SYN ticks (e.g. recruit_soldiers

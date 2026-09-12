@@ -1,0 +1,21 @@
+{
+ "id": "alcove_augur_loop",
+ "prompt": "the lituus rises from at rest beside him until the hooked end is level with his head, sweeps a short arc across in front of him as if quartering the sky, then returns to where it started, the raven's head turning to follow it, both feet planted, the toga and the beard still, smooth loop",
+ "style": "rd_advanced_animation__custom_action",
+ "width": 96,
+ "height": 96,
+ "seed": 8402,
+ "frames_duration": 4,
+ "return_spritesheet": true,
+ "input_image_path": "build/art/alcove_augur/run01/01_raw.png",
+ "input_image_keep_alpha": true,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  96,
+  96
+ ],
+ "_pack_path": "art/ui/alcove_augur_00..03.png",
+ "_note": "The alcove figure's idle loop (2026-09-12), animated at 96 with no padding from the approved still, the route the last troops took. Motion line: path, two endpoints, then what stays still. Four frames, to cycle on the same tick the troop strip used (sprites_frame over alcove_figure_frames)."
+}

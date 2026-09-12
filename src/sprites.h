@@ -68,6 +68,13 @@ typedef struct {
     Texture2D hud_siege_anim[OB_ANIM_FRAMES_MAX];
     int       hud_magic_anim_frames;
     Texture2D hud_magic_anim[OB_ANIM_FRAMES_MAX];
+    // The magic alcove's own backdrop and the figure who keeps it. Both are
+    // optional; id 0 means the pack declared none and the alcove falls back to
+    // the hill cave's backdrop and to animating a troop.
+    Texture2D alcove_backdrop;
+    Texture2D alcove_figure;
+    int       alcove_figure_frames;
+    Texture2D alcove_figure_anim[OB_ANIM_FRAMES_MAX];
     Texture2D hud_bar_strip;             // 320x5 horizontal middle bar
     Texture2D chrome_overworld;          // 320x200 chrome frame (transparent interior)
     Texture2D splash_logo;                // 320x84 publisher logo

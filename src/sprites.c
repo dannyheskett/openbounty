@@ -141,6 +141,13 @@ void sprites_load(Sprites *s, const Resources *res) {
     s->forest_backdrop  = load_rel(res->sprites.forest_backdrop);
     s->hillcave_backdrop= load_rel(res->sprites.hillcave_backdrop);
     s->dungeon_backdrop = load_rel(res->sprites.dungeon_backdrop);
+    s->alcove_backdrop  = load_rel(res->sprites.alcove_backdrop);
+    s->alcove_figure    = load_rel(res->sprites.alcove_figure);
+    s->alcove_figure_frames = res->sprites.alcove_figure_animation_count;
+    if (s->alcove_figure_frames > OB_ANIM_FRAMES_MAX)
+        s->alcove_figure_frames = OB_ANIM_FRAMES_MAX;
+    for (int i = 0; i < s->alcove_figure_frames; i++)
+        s->alcove_figure_anim[i] = load_rel(res->sprites.alcove_figure_animation[i]);
     s->ending_win       = load_rel(res->sprites.ending_win);
     s->ending_lose      = load_rel(res->sprites.ending_lose);
 
@@ -222,6 +229,10 @@ void sprites_unload(Sprites *s) {
     UnloadTexture(s->forest_backdrop);
     UnloadTexture(s->hillcave_backdrop);
     UnloadTexture(s->dungeon_backdrop);
+    UnloadTexture(s->alcove_backdrop);
+    UnloadTexture(s->alcove_figure);
+    for (int i = 0; i < s->alcove_figure_frames; i++)
+        UnloadTexture(s->alcove_figure_anim[i]);
     UnloadTexture(s->ending_win);
     UnloadTexture(s->ending_lose);
     UnloadTexture(s->hud_contract_silhouette);

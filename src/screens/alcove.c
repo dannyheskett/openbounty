@@ -11,11 +11,14 @@
 extern void screens_draw_location_backdrop(const Game *g, const Sprites *s,
                                            int loc_kind, int troop_idx,
                                            int troop_frame);
-#define SCREEN_LOC_HILLCAVE 5
+#define SCREEN_LOC_ALCOVE 7
 
-// Backdrop animation is hard-coded to Gnomes (troop id "gnomes")
-// even though the alcove is Aurange's home.
-static int s_gnomes_idx = -1;
+// The figure on the backdrop is the pack's `sprites.ui.alcove_figure` when it
+// declares one. Without it the screen falls back to animating a troop, which
+// is all it could do before: the original hard-coded Gnomes here even though
+// the alcove is the archmage's home, and a pack that names no figure of its
+// own keeps that behaviour exactly.
+static int s_fallback_troop_idx = -1;
 
 // frame counter advanced on each SYN tick of the yes/no prompt
 // (SHORT_WAIT = 50ms cadence).
@@ -26,7 +29,7 @@ static double s_last_tick = 0.0;
 void screen_alcove_open(Game *g) {
     if (!g) return;
     const TroopDef *t = troop_by_id("gnomes");
-    s_gnomes_idx = t ? t->index : -1;
+    s_fallback_troop_idx = t ? t->index : -1;
     s_frame = 0;
     s_last_tick = 0.0;
     // Enqueue the view; shell sync pushes / autoplay acks. Statics stay.
@@ -41,8 +44,8 @@ void screen_alcove_draw(const Game *g, const Sprites *s) {
         s_last_tick = now;
         s_frame = (s_frame + 1) % OB_ANIM_TICK_WRAP;
     }
-    screens_draw_location_backdrop(g, s, SCREEN_LOC_HILLCAVE,
-                                   s_gnomes_idx, s_frame);
+    screens_draw_location_backdrop(g, s, SCREEN_LOC_ALCOVE,
+                                   s_fallback_troop_idx, s_frame);
 
     // The greeting banner is rendered by the yes/no prompt overlay
     // (prompt_yes_no_open with res.banners.alcove_offer body, opened

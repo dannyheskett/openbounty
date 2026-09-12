@@ -1053,6 +1053,23 @@ except where a deviation is explicitly flagged (§34).
 
 ### 10.1 Salt budget
 
+- **REQ-229g.** **The magic alcove names its own art.** The alcove borrowed
+  three other assets, each chosen in C rather than declared: the
+  hills-dwelling tile for its map icon (`engine/map.c`), the hill cave's
+  backdrop, and a troop sprite for the figure on it -- `src/screens/alcove.c`
+  hard-coded the troop id `gnomes`, which in `glory-of-rome` draws Fauni, and
+  the comment admitted it was a leftover from the original, where the alcove
+  was the archmage's home. A pack may now declare all three: a zone's
+  `alcove_art` names the map tile (per zone, exactly as `army_art` does), and
+  `sprites.ui.alcove_backdrop`, `sprites.ui.alcove_figure` and
+  `sprites.ui.alcove_figure_animation` name the location backdrop and the
+  figure's frames. Each is optional and each falls back to what the alcove
+  borrowed before, so a pack that declares none behaves exactly as it did:
+  `kings-bounty` still shows a hill cave with its gnomes. The figure cycles on
+  the same tick and fills the same tile-shaped slot the troop strip did, so the
+  backdrop geometry is one rule for both. The location kind `LOC_ALCOVE` (7)
+  exists so the screen can ask for its own backdrop instead of the hill
+  cave's.
 - **REQ-230.** Each zone has declared a `salt` block: `artifacts`, `navmaps`,
   `orbs`, `telecaves`, `dwellings`, `friendly_foes` (counts), plus
   `preferred_troops[]` and `dwelling_range[lo, hi]` for dwelling troop

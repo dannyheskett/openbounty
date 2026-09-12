@@ -810,6 +810,10 @@ typedef struct {
     // Optional wandering-army tile art for this zone (a stem under
     // art/tiles/). Empty means the shared "wandering_army".
     char army_art[RES_TILE_ART_LEN];
+    // The map tile the zone's magic alcove is drawn with. Empty falls back to
+    // the hills-dwelling sprite, which is what the alcove borrowed before it
+    // could name its own art.
+    char alcove_art[RES_TILE_ART_LEN];
     int  width, height;
     int  hero_spawn_x, hero_spawn_y;
     int  neighbor_count;
@@ -1010,6 +1014,14 @@ typedef struct {
         char hud_magic_silhouette[RES_PATH_LEN];
         int  hud_magic_animation_count;
         char hud_magic_animation[OB_ANIM_FRAMES_MAX][RES_PATH_LEN];
+        // The magic alcove's own backdrop and the figure who keeps it. Both
+        // optional: without the backdrop the alcove borrows the hill cave's,
+        // and without the figure it animates whatever troop the screen names,
+        // which is what it did before a pack could declare either.
+        char alcove_backdrop[RES_PATH_LEN];
+        char alcove_figure[RES_PATH_LEN];
+        int  alcove_figure_animation_count;
+        char alcove_figure_animation[OB_ANIM_FRAMES_MAX][RES_PATH_LEN];
         char hud_puzzle_grid[RES_PATH_LEN];
         char hud_gold_purse[RES_PATH_LEN];
         char hud_bar_strip[RES_PATH_LEN];   // 320x5 middle bar (GR_SELECT, 1)

@@ -288,8 +288,9 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
         }
         copy_string(t->id, sizeof(t->id), z->dwellings[i].id);
     }
-    // Archmage Aurange's alcove. Rendered with the hills-dwelling sprite
-    // (the alcove reuses the hill-cave art). Walking here triggers the
+    // The magic alcove. Drawn with the zone's own `alcove_art` when it
+    // declares one, otherwise the hills-dwelling sprite it borrowed before a
+    // pack could name its own. Walking here triggers the
     // spell-teaching flow in step.c. The interactive flag also lets
     // render code distinguish alcove tiles from regular hills dwellings
     // if it ever wants to differentiate.
@@ -297,7 +298,8 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
         Tile *t = tile_at(map, z->magic_alcove_x, z->magic_alcove_y);
         if (t) {
             t->interactive = INTERACT_ALCOVE;
-            copy_string(t->art, sizeof(t->art), "dwelling_hills");
+            copy_string(t->art, sizeof(t->art),
+                        z->alcove_art[0] ? z->alcove_art : "dwelling_hills");
             copy_string(t->id,  sizeof(t->id),  "alcove");
             // The alcove sits on a mountain-edge tile; force it walkable
             // so the player can step on it (the sprite implies a passable
