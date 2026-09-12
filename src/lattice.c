@@ -88,6 +88,14 @@ void lattice_fill(int x, int y, int w, int h) {
     rail(x, y, w, h);
 }
 
+void lattice_band_v(int x, int y, int w, int h) {
+    if (w <= 0 || h <= 0) return;
+    tile(x, y, w, h);
+    int u = CL_UI;
+    DrawRectangle(x, y, u, h, C_RAIL);
+    DrawRectangle(x + w - u, y, u, h, C_RAIL);
+}
+
 void lattice_ring(int x, int y, int w, int h, int l, int r, int t, int b) {
     if (w <= 0 || h <= 0) return;
     if (l + r >= w || t + b >= h) { lattice_fill(x, y, w, h); return; }

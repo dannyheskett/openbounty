@@ -648,5 +648,5 @@ void modern_overlay_dim_scene(void) {
     // The whole chrome interior: map pane plus sidebar, not the status band
     // or the frame, so the frame keeps its weight and the band stays legible.
     Color shade = { 0, 0, 0, (unsigned char)a };
-    DrawRectangle(CL_MAP_X, CL_MAP_Y, CL_MAP_W + CL_SIDEBAR_W, CL_MAP_H, shade);
+    DrawRectangle(CL_MAP_X, CL_MAP_Y, CL_SIDEBAR_X + CL_SIDEBAR_W - CL_MAP_X, CL_MAP_H, shade);
 }

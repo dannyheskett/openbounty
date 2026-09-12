@@ -3,14 +3,15 @@
 // The modern UI's five named layouts (REQ-430j). Every modern panel draws into
 // one of these, so every screen of a kind renders the same way:
 //
-//   small      full pane width, one tile tall, bottom of the map pane --
-//              prompts and any message that fits
+//   small      six text lines tall, the pane's width, inset from its edges
+//              by the screen's spacing -- prompts and any message that fits
 //   large      six by four tiles, centred in the map pane -- long messages,
 //              the game menu, combat's spell picker and victory
 //   location   a backdrop across the pane top at an integer scale, and the
-//              text area under it, reaching the HUD -- the six location screens
-//   full       the map pane plus the HUD, status band left visible -- every
-//              detail view
+//              text area under it, both inset by the spacing -- the six
+//              location screens
+//   full       the map pane, the band and the HUD edge to edge, status band
+//              left visible -- every detail view
 //   (toast     one line at the top of the pane, unchanged)
 //
 // All of it is computed from the map pane, the sidebar and the tile, never
@@ -26,9 +27,15 @@ typedef struct { int x, y, w, h; } ML_Rect;
 // Horizontal and vertical padding inside every modern panel, in pixels.
 #define ML_PAD 8
 
+// Text lines the small band holds (it is sized from these and the font).
+#define ML_SMALL_LINES 6
+
 // The backdrop art's authored size, and the integer scale it is drawn at.
 #define ML_BACKDROP_W 240
 #define ML_BACKDROP_H 102
+
+// The margin every map panel keeps from the map pane's edges.
+int     ml_space(void);
 
 ML_Rect ml_small(void);
 ML_Rect ml_large(void);

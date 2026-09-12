@@ -26,6 +26,13 @@ void lattice_fill(int x, int y, int w, int h);
 // not touched.
 void lattice_ring(int x, int y, int w, int h, int l, int r, int t, int b);
 
+// A vertical band of the pattern between two panels, railed in gold on its
+// left and right edges only: the same module the ring's side bands are made
+// of (a gold rail against each panel, the pattern between), so a band between
+// the map and the HUD reads exactly like the bands at the screen's edges. Its
+// top and bottom meet the ring, whose rails already close them.
+void lattice_band_v(int x, int y, int w, int h);
+
 // Release the pattern texture. Safe when nothing was built.
 void lattice_shutdown(void);
 

@@ -221,10 +221,10 @@ def build():
             ui_decl = _json.load(open(os.path.join(ROOT, "assets/glory-of-rome/game.json")))["sprites"]["ui"]
             pl = ui_decl.get("alcove_figure_place")
             # The location layout (REQ-430j): the backdrop across the 672 px map
-            # pane at the smallest integer scale that covers it (3x, 720 wide,
-            # 24 px cut from each side), the figure placed in backdrop units
+            # panel (652 wide, the pane inset by 10) at the smallest integer scale
+            # that covers it (3x, 720 wide, 34 px cut from each side), the figure placed in backdrop units
             # times that scale, less the crop. Exactly draw_location_backdrop.
-            PANE_W = 672
+            PANE_W = 672 - 2 * 10          # the location panel, inset by the screen's spacing
             S = -(-PANE_W // 240)
             crop = (240 * S - PANE_W) // 2
             bh = 102 * S

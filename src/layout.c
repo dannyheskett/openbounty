@@ -28,6 +28,7 @@ ClLayout g_layout = {
     .pack_tiles_w = 5, .pack_tiles_h = 5,
     .ui_scale = 1,
     .frame_l = 16, .frame_r = 16, .frame_t = 8, .frame_b = 8,
+    .sidebar_gap = 0,
     .is_native = 0,
 };
 
@@ -51,6 +52,7 @@ void layout_init(const struct Resources *res) {
     g_layout.pack_tiles_w = r->tiles_w;
     g_layout.pack_tiles_h = r->tiles_h;
     g_layout.ui_scale     = (r->ui_scale > 0) ? r->ui_scale : 1;
+    g_layout.sidebar_gap  = 0;
     set_base_frame();
 
     g_layout.map_w     = g_layout.tile_w * g_layout.tiles_w;
@@ -99,6 +101,19 @@ void layout_init(const struct Resources *res) {
         g_layout.screen_w  = r->native_w;
         g_layout.screen_h  = r->native_h;
         g_layout.is_native = 1;
+
+        // Equal spacing across the screen: the horizontal space the map pane
+        // and the HUD do not use is split three ways -- left edge, a band
+        // between the pane and the HUD, right edge -- instead of two with the
+        // HUD flush against the map. A remainder the three cannot share evenly
+        // goes to the two outer edges, where it reads as the screen's border.
+        // Rome's 800 = 11 + 672 + 10 + 96 + 11.
+        int spare = r->native_w - g_layout.map_w - g_layout.sidebar_w;
+        int each = spare / 3;
+        int rem  = spare - 3 * each;
+        g_layout.sidebar_gap = each;
+        g_layout.frame_l = each + rem / 2;
+        g_layout.frame_r = each + (rem - rem / 2);
     }
 
     // Legacy opens at 2x because 320x200 is tiny on a modern display. A modern

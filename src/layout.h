@@ -30,6 +30,9 @@ typedef struct {
     int ui_scale;              // multiplies the font and the chrome bands
     int frame_l, frame_r;      // chrome side bands, in pixels
     int frame_t, frame_b;      // chrome top and bottom bands
+    int sidebar_gap;           // modern fixed buffer: the band between the map
+                               // pane and the HUD, as wide as the side bands so
+                               // left edge, middle and right edge match. 0 else.
     int is_native;             // 1 when the pack fixed the buffer size: the
                                // screen never follows the window; present.c
                                // shows it at 1x, 2x or 3x and letterboxes
@@ -153,7 +156,8 @@ int bfont_glyph_h(void);
 #define CL_MAP_TILES_H    (g_layout.tiles_h)
 
 // Sidebar column (between map.w end and right frame start).
-#define CL_SIDEBAR_X      (CL_MAP_X + CL_MAP_W)                       // 256
+#define CL_SIDEBAR_GAP    (g_layout.sidebar_gap)                      // legacy 0
+#define CL_SIDEBAR_X      (CL_MAP_X + CL_MAP_W + CL_SIDEBAR_GAP)      // 256
 #define CL_SIDEBAR_Y      CL_MAP_Y
 #define CL_SIDEBAR_W      (g_layout.sidebar_w)                        // one tile
 #define CL_SIDEBAR_H      CL_MAP_H

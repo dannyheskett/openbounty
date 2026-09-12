@@ -62,7 +62,7 @@ void screen_end_game_draw(const Game *g, const Sprites *s) {
     }
 
     // Black around it, then the panel itself (CS_ENDING background).
-    DrawRectangle(CL_MAP_X, CL_MAP_Y, CL_MAP_W + CL_SIDEBAR_W, CL_MAP_H,
+    DrawRectangle(CL_MAP_X, CL_MAP_Y, CL_SIDEBAR_X + CL_SIDEBAR_W - CL_MAP_X, CL_MAP_H,
                   PAL_CLR(BLACK));
     DrawRectangle(total_left, total_top, total_w, total_h, PAL_CLR(DBLUE));
 

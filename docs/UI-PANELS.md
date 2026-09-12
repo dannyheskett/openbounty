@@ -19,17 +19,20 @@ the four shared location screens (`src/screens/home_castle.c`,
 `screens_text_rect`. The `src/legacy/` copies are FROZEN and never edited to
 serve a modern need.
 
-## The map pane everything is measured from
+## The screen
 
-| rect | Rome | derived from |
+| band | Rome | rule |
 |---|---|---|
-| map pane | x 16, 672x480 | 7x5 tiles of 96 |
-| HUD sidebar | x 688, 96x480 | one tile wide, right of the pane |
+| left edge | x 0-11, lattice | the horizontal space the pane and HUD leave, split three ways |
+| map pane | x 11, 672x480 | 7x5 tiles of 96 |
+| middle band | x 683-693, lattice | the same module as the side bands: a gold rail against each panel, the pattern between |
+| HUD sidebar | x 693, 96x480 | one tile wide |
+| right edge | x 789-800, lattice | the third share; a remainder the three cannot share goes to the two edges |
 | status band | above the pane | one text line plus padding |
 
-No modern panel reads `ui_scale`. The DOS original's 240x170 content rect
-times `ui_scale` is what made a 672 px pane hold 14 characters a line; it is
-legacy geometry only.
+800 = 11 + 672 + 10 + 96 + 11. Vertically there is no room to match: the
+pane and the status band take 499 of 510, so the top and bottom bands stay
+thin. No modern panel reads `ui_scale`.
 
 ## The five layouts
 
@@ -38,11 +41,16 @@ follows the font.
 
 | layout | rect | text | used by |
 |---|---|---|---|
-| **small** | full pane width, one tile tall, on the pane's bottom edge: 672x96 | 41 x 4 | yes/no, numeric, A/B and count prompts; any message whose header and whole body fit |
+| **small** | six text lines plus padding tall (124), the pane's width, inset 10 from its left, right and bottom edges: 652x124 | 39 x 6 | yes/no, numeric, A/B and count prompts; any message whose header and whole body fit |
 | **large** | 6x4 tiles centred in the pane: 576x384 | 35 x 20 | longer messages, the Emperor's audience, the game menu, its Controls page, the combat spell picker, the victory dialog |
-| **location** | backdrop across the pane top at the smallest integer scale that covers 672 (3x: 720 cropped 24 px each side, 672x306); text area directly under it to the pane's bottom, reaching the HUD: 672x174 | 41 x 8 | town, home castle, own castle, dwelling, alcove, recruit |
-| **full screen** | the pane plus the HUD, status band left visible: 768x480 | 47 x 25 | Army, Character, Contract, Spells, Gate, World map, Puzzle, Win, Lose |
+| **location** | backdrop inset 10 from the pane's left, top and right, at the smallest integer scale that covers 652 (3x: 720 cropped 34 px each side, 652x306); text area directly under it, down to 10 above the pane's bottom: 652x154 | 39 x 7 | town, home castle, own castle, dwelling, alcove, recruit |
+| **full screen** | the pane, the middle band and the HUD edge to edge, status band left visible: 778x480 | 47 x 25 | Army, Character, Contract, Spells, Gate, World map, Puzzle, Win, Lose |
 | toast | one line, top of the pane, centred | 1 line | toasts |
+
+Panels on the map keep the screen's own spacing (10) from the pane's edges,
+so each sits inside the pane with the border the pane sits inside the screen
+with. Full screen is not inset: it is a screen, laid out in whole tiles (Army
+is five rows of 96 filling the 480), which a margin would cut.
 
 ### small or large
 
