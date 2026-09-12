@@ -190,7 +190,10 @@ def build():
 
         for title, rows in b.get("runs", []):
             h.append(f"<h2>{title}</h2>")
-            h.append(scene(rows, ROAD_CODE, 2))
+            # 1x: a run is wide (18 tiles is 1728 px) and a run that scrolls
+            # sideways cannot be judged as a run. The pieces below are at 2x
+            # for looking at the stones.
+            h.append(scene(rows, ROAD_CODE, 1))
 
         if b.get("pieces"):
             h.append("<h2>Every piece, on the pack's own grass</h2>")
