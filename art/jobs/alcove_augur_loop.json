@@ -1,11 +1,11 @@
 {
  "id": "alcove_augur_loop",
- "prompt": "the lituus rises from at rest beside him until the hooked end is level with his head, sweeps a short arc across in front of him as if quartering the sky, then returns to where it started, the raven's head turning to follow it, both feet planted, the toga and the beard still, smooth loop",
+ "prompt": "taking the auspices: his right arm lifts the lituus from at rest beside him up high above his head with the hooked tip pointing at the sky and his face tilting up to follow it, the staff then traces one slow wide arc across the sky from his left to his right as if marking out the heavens, then lowers back to where it started, the raven on his left forearm steady, both feet planted, the toga and the beard still, smooth loop",
  "style": "rd_advanced_animation__custom_action",
  "width": 96,
  "height": 96,
  "seed": 8402,
- "frames_duration": 4,
+ "frames_duration": 8,
  "return_spritesheet": true,
  "input_image_path": "build/art/alcove_augur/run01/01_raw.png",
  "input_image_keep_alpha": true,
@@ -17,5 +17,5 @@
   96
  ],
  "_pack_path": "art/ui/alcove_augur_00..03.png",
- "_note": "The alcove figure's idle loop (2026-09-12), animated at 96 with no padding from the approved still, the route the last troops took. Motion line: path, two endpoints, then what stays still. Four frames, to cycle on the same tick the troop strip used (sprites_frame over alcove_figure_frames)."
+ "_note": "The alcove figure's idle loop (2026-09-12), animated at 96 with no padding from the approved still, the route the last troops took. The gesture is the augur's own rite rather than a generic blessing: he raises the lituus and quarters the sky, which is what 'templum' named. Motion line: path, the endpoints, then what stays still. Eight frames, as the villain loops use, because four cannot carry a raise-sweep-lower. The screen holds each frame for sprites.ui.alcove_figure_frame_ms; its own 50 ms tick would loop the gesture several times a second."
 }

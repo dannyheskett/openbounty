@@ -44,8 +44,17 @@ void screen_alcove_draw(const Game *g, const Sprites *s) {
         s_last_tick = now;
         s_frame = (s_frame + 1) % OB_ANIM_TICK_WRAP;
     }
+    // A declared figure may set its own pace. The screen's tick is 50 ms --
+    // right for the original's jittering gnome, far too fast for a figure
+    // that performs a gesture, which at that rate would loop several times a
+    // second. Held frames come from the clock, so the pace is real time
+    // whatever the render rate.
+    int frame = s_frame;
+    const Resources *r = (g && g->res) ? g->res : NULL;
+    if (r && s && s->alcove_figure.id && r->sprites.alcove_figure_frame_ms > 0)
+        frame = (int)(GetTime() * 1000.0 / r->sprites.alcove_figure_frame_ms);
     screens_draw_location_backdrop(g, s, SCREEN_LOC_ALCOVE,
-                                   s_fallback_troop_idx, s_frame);
+                                   s_fallback_troop_idx, frame);
 
     // The greeting banner is rendered by the yes/no prompt overlay
     // (prompt_yes_no_open with res.banners.alcove_offer body, opened

@@ -74,11 +74,11 @@ img{image-rendering:pixelated;display:block}
 <h1 id="alcove">The magic alcove: an auguraculum</h1>
 <p class="blurb">Where a non-priest class buys the knowledge of magic. An augur read a quartered region of sky, and templum was his word for it, so the precinct is roofless on purpose. The figure is a state priest with the lituus and a raven -- deliberately unlike the Sibylla class portrait, which is a veiled priestess in white, so the oracle and the player are never the same figure.</p>
 <h2>The location screen, as draw_location_backdrop composes it</h2>
-<p class="note">The figure sits one tile in from the left and one tile up from the card&rsquo;s bottom edge, less a 4&thinsp;px lift &mdash; the same slot a troop sprite filled. Shown at Rome&rsquo;s ui_scale 1 (card 240&times;102) and at 2 (card 480&times;204), both at 2&times; zoom.</p>
-<p class="note">ui_scale 1</p>
-<div class="scene" style="width:480px;height:204px"><img src="assets/glory-of-rome/art/ui/backdrop_alcove.png" style="left:0;top:0;width:480px;height:204px"><img src="assets/glory-of-rome/art/ui/alcove_augur_00.png" style="left:192px;top:4px;width:192px;height:192px"></div>
-<p class="note">ui_scale 2</p>
-<div class="scene" style="width:960px;height:408px"><img src="assets/glory-of-rome/art/ui/backdrop_alcove.png" style="left:0;top:0;width:960px;height:408px"><img src="assets/glory-of-rome/art/ui/alcove_augur_00.png" style="left:192px;top:200px;width:192px;height:192px"></div>
+<p class="note">The figure stands where the pack places him, in the backdrop&rsquo;s own 240&times;102 units, so he scales with the card. Shown at ui_scale 1 (card 240&times;102) and 2 (card 480&times;204), both at 2&times; zoom.</p>
+<p class="note">ui_scale 1 &mdash; pack placement x 50 y 43, 48x48 units</p>
+<div class="scene" style="width:480px;height:204px"><img src="assets/glory-of-rome/art/ui/backdrop_alcove.png" style="left:0;top:0;width:480px;height:204px"><img src="assets/glory-of-rome/art/ui/alcove_augur_00.png" style="left:100px;top:86px;width:96px;height:96px"></div>
+<p class="note">ui_scale 2 &mdash; pack placement x 50 y 43, 48x48 units</p>
+<div class="scene" style="width:960px;height:408px"><img src="assets/glory-of-rome/art/ui/backdrop_alcove.png" style="left:0;top:0;width:960px;height:408px"><img src="assets/glory-of-rome/art/ui/alcove_augur_00.png" style="left:200px;top:172px;width:192px;height:192px"></div>
 <h2>The backdrop it replaced</h2><div class="pair">
 <figure class="cell"><img src="assets/glory-of-rome/art/ui/backdrop_alcove.png" style="width:480px;height:204px"><figcaption>backdrop_alcove (new)</figcaption></figure>
 <figure class="cell"><img src="build/art/old/backdrop_hillcave.png" style="width:480px;height:204px"><figcaption>backdrop_hillcave (borrowed, still the hill dwelling's)</figcaption></figure>

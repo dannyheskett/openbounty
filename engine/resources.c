@@ -885,6 +885,20 @@ static void parse_sprites(Resources *res, cJSON *obj) {
                            res->sprites.alcove_figure_animation,
                            OB_ANIM_FRAMES_MAX,
                            &res->sprites.alcove_figure_animation_count);
+        {
+            cJSON *pl = cJSON_GetObjectItem(ui, "alcove_figure_place");
+            res->sprites.alcove_figure_x = json_int(pl, "x", 0);
+            res->sprites.alcove_figure_y = json_int(pl, "y", 0);
+            res->sprites.alcove_figure_w = json_int(pl, "w", 0);
+            res->sprites.alcove_figure_h = json_int(pl, "h", 0);
+            if (res->sprites.alcove_figure_w < 0) res->sprites.alcove_figure_w = 0;
+            if (res->sprites.alcove_figure_h <= 0)
+                res->sprites.alcove_figure_h = res->sprites.alcove_figure_w;
+            res->sprites.alcove_figure_frame_ms =
+                json_int(ui, "alcove_figure_frame_ms", 0);
+            if (res->sprites.alcove_figure_frame_ms < 0)
+                res->sprites.alcove_figure_frame_ms = 0;
+        }
         copy_str(res->sprites.dungeon_backdrop, sizeof(res->sprites.dungeon_backdrop),
                  json_str(ui, "dungeon_backdrop", ""));
         copy_str(res->sprites.ending_win, sizeof(res->sprites.ending_win),

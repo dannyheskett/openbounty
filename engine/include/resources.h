@@ -1022,6 +1022,14 @@ typedef struct {
         char alcove_figure[RES_PATH_LEN];
         int  alcove_figure_animation_count;
         char alcove_figure_animation[OB_ANIM_FRAMES_MAX][RES_PATH_LEN];
+        // Where the figure stands, in the backdrop's own 240x102 design units
+        // (the card scales by ui_scale, and so does this). w 0 means none was
+        // declared: the figure takes the tile-sized troop slot, one tile in
+        // from the left and one up from the card's bottom edge.
+        int  alcove_figure_x, alcove_figure_y, alcove_figure_w, alcove_figure_h;
+        // Milliseconds each frame is held. 0 means the screen's own tick,
+        // which is what a troop strip on that screen always played at.
+        int  alcove_figure_frame_ms;
         char hud_puzzle_grid[RES_PATH_LEN];
         char hud_gold_purse[RES_PATH_LEN];
         char hud_bar_strip[RES_PATH_LEN];   // 320x5 middle bar (GR_SELECT, 1)

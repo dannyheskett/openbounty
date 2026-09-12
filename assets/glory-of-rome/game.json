@@ -3674,6 +3674,13 @@
 			"hillcave_backdrop":	"art/ui/backdrop_hillcave.png",
 			"alcove_backdrop":	"art/ui/backdrop_alcove.png",
 			"alcove_figure":	"art/ui/alcove_augur_00.png",
+			"alcove_figure_place":	{
+				"x":	50,
+				"y":	43,
+				"w":	48,
+				"h":	48
+			},
+			"alcove_figure_frame_ms":	180,
 			"dungeon_backdrop":	"art/ui/backdrop_dungeon.png",
 			"ending_win":	"art/ui/end_win_screen.png",
 			"ending_lose":	"art/ui/end_lose_screen.png",

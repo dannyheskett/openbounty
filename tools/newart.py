@@ -212,21 +212,31 @@ def build():
         sc = b.get("screen")
         if sc:
             h.append("<h2>The location screen, as draw_location_backdrop composes it</h2>")
-            h.append('<p class="note">The figure sits one tile in from the left and one tile '
-                     'up from the card&rsquo;s bottom edge, less a 4&thinsp;px lift &mdash; the same slot a '
-                     'troop sprite filled. Shown at Rome&rsquo;s ui_scale 1 (card 240&times;102) and at 2 '
-                     '(card 480&times;204), both at 2&times; zoom.</p>')
+            h.append('<p class="note">The figure stands where the pack places him, in the '
+                     'backdrop&rsquo;s own 240&times;102 units, so he scales with the card. Shown at '
+                     'ui_scale 1 (card 240&times;102) and 2 (card 480&times;204), both at 2&times; zoom.</p>')
+            # The pack's own placement, in the backdrop's 240x102 design units,
+            # exactly as draw_location_backdrop reads it. Without one, the
+            # figure falls back to the tile-sized troop slot.
+            import json as _json
+            ui_decl = _json.load(open(os.path.join(ROOT, "assets/glory-of-rome/game.json")))["sprites"]["ui"]
+            pl = ui_decl.get("alcove_figure_place")
             for ui in (1, 2):
                 bw, bh = 240 * ui, 102 * ui
                 z = 2
-                lift = 4 * ui
-                fy = bh - TILE - lift
-                h.append(f'<p class="note">ui_scale {ui}</p>')
+                if pl:
+                    fx, fy = pl["x"] * ui, pl["y"] * ui
+                    fw, fh = pl["w"] * ui, pl.get("h", pl["w"]) * ui
+                    how = "pack placement x %d y %d, %dx%d units" % (pl["x"], pl["y"], pl["w"], pl.get("h", pl["w"]))
+                else:
+                    fx, fy, fw, fh = TILE, bh - TILE - 4 * ui, TILE, TILE
+                    how = "no placement declared: the troop slot"
+                h.append(f'<p class="note">ui_scale {ui} &mdash; {how}</p>')
                 h.append(f'<div class="scene" style="width:{bw * z}px;height:{bh * z}px">'
                          f'<img src="{src(sc["backdrop"])}" style="left:0;top:0;'
                          f'width:{bw * z}px;height:{bh * z}px">'
-                         f'<img src="{src(sc["figure"])}" style="left:{TILE * z}px;'
-                         f'top:{fy * z}px;width:{TILE * z}px;height:{TILE * z}px">'
+                         f'<img src="{src(sc["figure"])}" style="left:{fx * z}px;'
+                         f'top:{fy * z}px;width:{fw * z}px;height:{fh * z}px">'
                          f'</div>')
             h.append("<h2>The backdrop it replaced</h2><div class=\"pair\">")
             for lbl, p in (("backdrop_alcove (new)", sc["backdrop"]),

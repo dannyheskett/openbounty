@@ -292,7 +292,6 @@ static Texture2D loc_texture(const Sprites *s, LocKind kind) {
 static void draw_location_backdrop(const Game *g, const Sprites *s,
                                    LocKind kind, int troop_idx,
                                    int troop_frame) {
-    (void)g;
     // The backdrop is fixed-size content, so it belongs in the content rect
     // like the view panels do -- anchoring it to the map pane pinned it to the
     // top-left corner of a pane many times its size. 240x102 is its authored
@@ -324,8 +323,19 @@ static void draw_location_backdrop(const Game *g, const Sprites *s,
         if (!fig.id) fig = s->alcove_figure;
     }
     if (fig.id) {
-        int tw = CL_TILE_W, th = CL_TILE_H;
-        ui_blit(fig, bd_x + tw, bd_y + bd_h - th - troop_lift, tw, th);
+        const Resources *r = (g && g->res) ? g->res : NULL;
+        if (r && r->sprites.alcove_figure_w > 0) {
+            // Placed by the pack, in the backdrop's own design units, so the
+            // figure scales with the card rather than with the tile: a 96 px
+            // tile on a 240x102 card is nearly the whole card.
+            ui_blit(fig, bd_x + r->sprites.alcove_figure_x * CL_UI,
+                         bd_y + r->sprites.alcove_figure_y * CL_UI,
+                         r->sprites.alcove_figure_w * CL_UI,
+                         r->sprites.alcove_figure_h * CL_UI);
+        } else {
+            int tw = CL_TILE_W, th = CL_TILE_H;
+            ui_blit(fig, bd_x + tw, bd_y + bd_h - th - troop_lift, tw, th);
+        }
     } else if (s && troop_idx >= 0 && troop_idx < 25) {
         // troop_frame arrives as a free-running tick; the troop's own
         // declared cycle length decides where in the strip that lands.
