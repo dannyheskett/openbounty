@@ -117,7 +117,7 @@ bool GameStep(Game *game, Map *map, Fog *fog,
         }
     }
 
-    FogReveal(fog, map, nx, ny, res->world.fog_sight);
+    FogRevealFor(res, fog, map, nx, ny);
 
     bool bounced = false;
     // (game.c:6522): interactive tiles do not fire while flying.
@@ -484,7 +484,7 @@ bool GameStep(Game *game, Map *map, Fog *fog,
                 game->position.y = dst->y;
                 game->position.last_x = dst->x;
                 game->position.last_y = dst->y;
-                FogReveal(fog, map, dst->x, dst->y, res->world.fog_sight);
+                FogRevealFor(res, fog, map, dst->x, dst->y);
                 resources_format_template(tmsg, sizeof tmsg,
                                           res->banners.telecave_teleport,
                                           NULL, 0);

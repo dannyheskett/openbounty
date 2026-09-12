@@ -862,8 +862,7 @@ int shell_run_game(int argc, char **argv) {
     // trusts the fog bytes stored in the save. Match that behavior -- for
     // LOAD, the Fog struct was populated by SaveGameRead above.
     if (choice.action == STARTUP_NEW) {
-        FogReveal(&fog, &map, game.position.x, game.position.y,
-                  res.world.fog_sight);
+        FogRevealFor(&res, &fog, &map, game.position.x, game.position.y);
     }
 
     bool quit_requested = false;

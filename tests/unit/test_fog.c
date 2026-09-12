@@ -75,6 +75,44 @@ TEST reveal_radius_arg_is_ignored(void) {
     PASS();
 }
 
+// FogRevealRadius honours its radius: radius 3 is a 7x7 square.
+TEST reveal_radius_honours_the_radius(void) {
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, "continentia", FIXTURE_SEED));
+    int cx = 20, cy = 20;
+    FogRevealRadius(f, m, cx, cy, 3);
+    for (int dy = -3; dy <= 3; dy++)
+        for (int dx = -3; dx <= 3; dx++)
+            ASSERT(FogSeen(f, cx + dx, cy + dy));
+    ASSERT_FALSE(FogSeen(f, cx + 4, cy));
+    ASSERT_FALSE(FogSeen(f, cx, cy - 4));
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
+// The pack's reveal: legacy is the original's 5x5 whatever fog_sight says;
+// modern honours fog_sight, so a 7-wide viewport has no unexplored columns.
+TEST reveal_for_is_authentic_in_legacy_and_honours_fog_sight_in_modern(void) {
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, "continentia", FIXTURE_SEED));
+    ASSERT_EQ(3, res->world.fog_sight);          // what both shipped packs declare
+
+    res->render.mode = RENDER_MODE_LEGACY;
+    FogRevealFor(res, f, m, 20, 20);
+    ASSERT(FogSeen(f, 22, 22));
+    ASSERT_FALSE(FogSeen(f, 23, 20));            // still the authentic 5x5
+
+    FogInit(f);
+    res->render.mode = RENDER_MODE_MODERN;
+    FogRevealFor(res, f, m, 20, 20);
+    ASSERT(FogSeen(f, 23, 23));                  // 7x7
+    ASSERT_FALSE(FogSeen(f, 24, 20));
+
+    res->render.mode = RENDER_MODE_LEGACY;       // leave the shared fixture as found
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
 TEST seen_out_of_bounds_returns_false(void) {
     Fog f; FogInit(&f);
     ASSERT_FALSE(FogSeen(&f, -1, 0));
@@ -119,6 +157,8 @@ SUITE(unit_fog_suite) {
     RUN_TEST(reveal_marks_5x5_square);
     RUN_TEST(reveal_clamps_at_map_edges);
     RUN_TEST(reveal_radius_arg_is_ignored);
+    RUN_TEST(reveal_radius_honours_the_radius);
+    RUN_TEST(reveal_for_is_authentic_in_legacy_and_honours_fog_sight_in_modern);
     RUN_TEST(seen_out_of_bounds_returns_false);
     RUN_TEST(fog_survives_save_load_round_trip);
 }

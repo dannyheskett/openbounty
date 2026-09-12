@@ -2001,7 +2001,7 @@ bool GameSwitchZone(Game *g, Map *map, Fog *fog, const char *zone_id) {
     } else {
         FogInit(fog);
     }
-    FogReveal(fog, map, g->position.x, g->position.y, g->res->world.fog_sight);
+    FogRevealFor(g->res, fog, map, g->position.x, g->position.y);
     // Mark discovered.
     if (zi >= 0 && zi < GAME_CONTINENTS) g->world.zones_discovered[zi] = true;
     {

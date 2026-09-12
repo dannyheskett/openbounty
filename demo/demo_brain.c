@@ -1121,8 +1121,7 @@ replan:
                    res->zones[dest].id, g->stats.days_left);
             if (GameSwitchZone(g, map, fog, res->zones[dest].id)) {
                 GameSpendWeek(g, &comm);
-                FogReveal(fog, map, g->position.x, g->position.y,
-                          res->world.fog_sight);
+                FogRevealFor(res, fog, map, g->position.x, g->position.y);
                 st->waits = 0;
                 return true;
             }
@@ -1173,8 +1172,7 @@ replan:
                    res->zones[dest].id, g->stats.days_left);
             if (GameSwitchZone(g, map, fog, res->zones[dest].id)) {
                 GameSpendWeek(g, &comm);
-                FogReveal(fog, map, g->position.x, g->position.y,
-                          res->world.fog_sight);
+                FogRevealFor(res, fog, map, g->position.x, g->position.y);
                 st->waits = 0;
                 return true;
             }

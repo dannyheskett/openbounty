@@ -133,8 +133,7 @@ bool demo_run(const DemoConfig *cfg, DemoResult *out) {
     bool ok = MapLoadZoneWithPlacements(map, res, res->world.starting_zone, game);
     if (ok) {
         GameApplyTileMutations(game, map, game->position.zone);
-        FogReveal(fog, map, game->position.x, game->position.y,
-                  res->world.fog_sight);
+        FogRevealFor(res, fog, map, game->position.x, game->position.y);
         demo_begin(game, map, fog, res);
         int t = 0;
         while (demo_tick(game, map, fog, res) && ++t < DEMO_MAX_TICKS) {}

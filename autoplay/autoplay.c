@@ -106,8 +106,7 @@ bool autoplay_run(const AutoplayConfig *cfg, AutoplayResult *out) {
                                         game);
     if (ok) {
         GameApplyTileMutations(game, map, game->position.zone);
-        FogReveal(fog, map, game->position.x, game->position.y,
-                  res->world.fog_sight);
+        FogRevealFor(res, fog, map, game->position.x, game->position.y);
         // GameInit read days_left from the difficulty's pack knob.
         int start_days =
             res->time.days_per_difficulty[(int)game->character.difficulty];

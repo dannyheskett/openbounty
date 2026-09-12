@@ -52,8 +52,7 @@ bool menu_new(void *ud) {
     c->game->boat.x = -1;
     c->game->boat.y = -1;
     FogInit(c->fog);
-    FogReveal(c->fog, c->map, c->game->position.x, c->game->position.y,
-              c->res->world.fog_sight);
+    FogRevealFor(c->res, c->fog, c->map, c->game->position.x, c->game->position.y);
     toast_show(c->res->ui.toast_new_game);
     return true;
 }
