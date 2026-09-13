@@ -505,6 +505,7 @@ static bool run_title_menu(const Resources *res, const Sprites *sprites,
         int h = ml_list_height(ROW_COUNT);
         int x = (CL_SCREEN_W - w) / 2;
         int y = CL_SCREEN_H / 2 + (CL_SCREEN_H / 2 - h) / 2 - CL_SCREEN_H / 16;
+        if (title_sequence_ok(sprites)) y -= 40;   // clear of the subtitle at the art's foot
         panel(x, y, w, h);
         ml_list_draw(x, y, w, h, ROW_COUNT, l.cursor, title_row, (void *)labels,
                      TOUCH_LIST_STARTUP, PAL_CLR(DBLUE));
