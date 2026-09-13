@@ -133,6 +133,13 @@ typedef struct {
     // only while a square around the hero is free (GameFoeCanEvade). Off by
     // default, so a pack that does not ask keeps the free decline.
     bool evade_needs_free_square;
+    // game.json "audiences": the modern home castle's Blessing and Tribute
+    // (GameSeekBlessing, GamePayTribute). Off unless the object is present.
+    bool audiences;
+    int  blessing_leadership_pct;   // one time, once every artifact is found
+    int  tribute_cost;              // gold per tribute; any number of times
+    int  tribute_leadership_pct;
+    int  tribute_magic_pct;         // spell power and spell capacity each
     int boat_cost_normal;
     int boat_cost_cheap;
     int siege_cost;
@@ -245,12 +252,23 @@ typedef struct {
     char audience_rank_up[320];
     char audience_more_needed[320];
     char audience_final_rank[320];
+    // economy.audiences: the Emperor's words for Blessing and Tribute
+    // (%NEEDED% = artifacts still missing / gold still short).
+    char audience_blessing_granted[320];
+    char audience_blessing_needed[320];
+    char audience_blessing_already[320];
+    char audience_tribute_paid[320];
+    char audience_tribute_needed[320];
     // Modern castle screen (all optional): portraits[] ids of the ruler's
     // portrait and standing figure, and of the image shown on promotion to
     // each rank (promotion[r], r = the new rank index; "" = none).
     char portrait[RES_ID_LEN];
     char figure[RES_ID_LEN];
     char promotion[4][RES_ID_LEN];
+    // The barracks keeper shown on the main and Recruit pages (the ruler then
+    // appears only on Audience); "" = the ruler everywhere.
+    char barracks_portrait[RES_ID_LEN];
+    char barracks_figure[RES_ID_LEN];
 } ResCastleSpecial;
 
 // Map footprint of a castle (REQ-228). 3x2 is the classic stamp: the gate
@@ -486,6 +504,12 @@ typedef struct {
     char castle_gain_leadership[RES_BANNER_LEN];
     char castle_gain_commission[RES_BANNER_LEN];
     char castle_gain_spells[RES_BANNER_LEN];
+    char castle_gain_spell_power[RES_BANNER_LEN];
+    char castle_action_promotion[RES_BANNER_LEN];
+    char castle_action_blessing[RES_BANNER_LEN];
+    char castle_action_tribute[RES_BANNER_LEN];
+    char castle_tribute_confirm[RES_BANNER_LEN];
+    char castle_artifacts[RES_BANNER_LEN];
     char castle_over_leadership[RES_BANNER_LEN];
     char castle_count_of[RES_BANNER_LEN];
     char castle_cost[RES_BANNER_LEN];

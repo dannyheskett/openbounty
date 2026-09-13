@@ -1,0 +1,20 @@
+{
+  "id": "praefectus_castrorum_figure",
+  "prompt": "a Roman praefectus castrorum standing at rest, a tough grey-bearded veteran camp prefect in a battered steel lorica segmentata over a red tunic, a crested centurion helmet under one arm, a vine-staff in his other hand",
+  "style": "user__glory_of_rome_troops_bac676cd",
+  "width": 96,
+  "height": 96,
+  "seed": 9961,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": true,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/ui/praefectus_castrorum_figure_00..07.png",
+  "_animation": "breathes slowly and taps the vine-staff once against his palm, his body, helmet and feet all completely still, smooth loop",
+  "_note": "Camp prefect standing on the home castle backdrop (2026-09-13): head townsperson figure route, troop style at 96, magenta removed, no crop."
+}

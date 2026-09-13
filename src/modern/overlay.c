@@ -999,7 +999,11 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
     } else {
         DrawRectangle(r.x, top, bw, bh, PAL_CLR(BLACK));
     }
-    int figure = (home && rc) ? resources_portrait_index(res, rc->special.figure) : -1;
+    // The barracks keeper stands in the castle; the ruler only on Audience.
+    bool barracks = rc && page != MC_AUDIENCE;
+    const char *fig_id = !rc ? "" : (barracks && rc->special.barracks_figure[0])
+                                  ? rc->special.barracks_figure : rc->special.figure;
+    int figure = (home && rc) ? resources_portrait_index(res, fig_id) : -1;
     if (s && figure >= 0 && s->portrait_frames[figure] > 0) {
         ui_blit(s->portrait_anim[figure][sprites_frame((int)(GetTime() * 1000.0 / 180.0),
                                                        s->portrait_frames[figure])],
@@ -1032,7 +1036,8 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
         DrawRectangle(fx, top, fs, fs, PAL_CLR(BLACK));
         if (ts.id) ui_blit(ts, fx, top, fs, fs);
     } else if (home && rc) {
-        int idx = resources_portrait_index(res, rc->special.portrait);
+        int idx = resources_portrait_index(res, (barracks && rc->special.barracks_portrait[0])
+                                                    ? rc->special.barracks_portrait : rc->special.portrait);
         if (page == MC_AUDIENCE && aud == GAME_AUDIENCE_PROMOTED + 1 &&
             aud_rank >= 0 && aud_rank < 4) {
             int pi = resources_portrait_index(res, rc->special.promotion[aud_rank]);
@@ -1096,7 +1101,45 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
     } else if (page == MC_AUDIENCE) {
         const ClassDef *cls = class_by_id(g->character.cls.id);
         int rank = g->character.cls.rank_index;
-        if (aud && rc) {
+        const ResEconomy *ec = &res->economy;
+        int ares = 0, aneed = 0;
+        GameAudienceGain gain;
+        McAudience akind = modern_castle_audience_result(&ares, &aneed, &gain);
+        if (ares && rc) {
+            // The Emperor's answer to a Blessing or Tribute, and what it gave.
+            const char *tmpl = akind == MC_AUD_BLESSING
+                ? (ares == GAME_BLESSING_GRANTED + 1 ? rc->special.audience_blessing_granted
+                   : ares == GAME_BLESSING_NEED_ARTIFACTS + 1 ? rc->special.audience_blessing_needed
+                   : rc->special.audience_blessing_already)
+                : (ares == 1 ? rc->special.audience_tribute_paid : rc->special.audience_tribute_needed);
+            audience_substitute(g, aneed, tmpl, buf, sizeof buf);
+            town_text_add(&t, buf, PAL_CLR(WHITE));
+            if (gain.leadership > 0 || gain.spell_power > 0 || gain.max_spells > 0) town_text_gap(&t);
+            if (gain.leadership > 0) {
+                snprintf(nb, sizeof nb, "%d", gain.leadership);
+                castle_fmt(buf, sizeof buf, bn->castle_gain_leadership, nb, NULL);
+                town_text_add(&t, buf, PAL_CLR(YELLOW));
+            }
+            if (gain.spell_power > 0) {
+                snprintf(nb, sizeof nb, "%d", gain.spell_power);
+                castle_fmt(buf, sizeof buf, bn->castle_gain_spell_power, nb, NULL);
+                town_text_add(&t, buf, PAL_CLR(YELLOW));
+            }
+            if (gain.max_spells > 0) {
+                snprintf(nb, sizeof nb, "%d", gain.max_spells);
+                castle_fmt(buf, sizeof buf, bn->castle_gain_spells, nb, NULL);
+                town_text_add(&t, buf, PAL_CLR(YELLOW));
+            }
+        } else if (ec->audiences && !aud && cursor == 1) {
+            snprintf(nb, sizeof nb, "%d", GameArtifactsFound(g));
+            snprintf(mb, sizeof mb, "%d", artifacts_count() < 8 ? artifacts_count() : 8);
+            castle_fmt(buf, sizeof buf, bn->castle_artifacts, nb, mb);
+            town_text_add(&t, buf, PAL_CLR(WHITE));
+        } else if (ec->audiences && !aud && cursor == 2) {
+            snprintf(nb, sizeof nb, "%d", ec->tribute_cost);
+            castle_fmt(buf, sizeof buf, bn->castle_cost, nb, NULL);
+            town_text_add(&t, buf, PAL_CLR(WHITE));
+        } else if (aud && rc) {
             const char *tmpl = aud == GAME_AUDIENCE_PROMOTED + 1 ? rc->special.audience_rank_up
                              : aud == GAME_AUDIENCE_MORE_NEEDED + 1 ? rc->special.audience_more_needed
                              : rc->special.audience_final_rank;

@@ -2187,6 +2187,15 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   Any key or tap skips to the end; the sequence plays once per run, and the
   credits, the load picker and a return to the title show the finished
   screen. Without all three the title is `splash_title`, still (2026-09-13).
+- **REQ-430q.** **Blessing and Tribute (modern home castle).** With
+  `game.json` `audiences`, `GameSeekBlessing` grants once, when every artifact
+  is found (enemies left or not), leadership + `blessing_leadership_pct` (50)
+  of the base; `GamePayTribute` takes `tribute_cost` (50000) gold, any number of
+  times, for leadership + `tribute_leadership_pct` (25) and spell power and
+  spell capacity each + `tribute_magic_pct` (25) of what the hero has then
+  (at least 1 of a stat above 0). A short purse pays nothing. `stats.blessed`
+  and `stats.tributes` are saved only for such a pack; autoplay uses neither
+  (2026-09-13).
 - **REQ-430f.** **Keyboard detection and the letter selector (modern).**
   `input_host` latches which physical devices have been used: a real key
   event (not an injected one), a touch contact, a gamepad button or stick

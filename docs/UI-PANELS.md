@@ -154,6 +154,14 @@ Withdraw >, listing the army's or the garrison's stacks; any part of a stack
 moves, and withdrawing warns when the army would exceed its leadership. Esc
 goes back a level. Legacy's castle screens are unchanged.
 
+With `game.json` `audiences` (Glory of Rome), the castle's barracks keeper
+(`special.barracks_portrait` / `barracks_figure`) stands on the main and Recruit
+pages and the ruler appears only on Audience, whose rows are Promotion,
+Blessing and Tribute. Moving the cursor shows the rank, the artifacts found or
+the tribute's cost; picking a row gives the ruler's answer (one short screen:
+what was granted and the gains, or what is still needed). Tribute asks Yes/No
+before paying.
+
 ## Combat action menu
 
 Enter, or a tap on the active unit, opens Actions in the large rect: Wait,

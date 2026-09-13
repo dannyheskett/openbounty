@@ -41,6 +41,16 @@ const char *modern_castle_message(void);
 // The last audience: 0 none yet this visit, else its GameAudienceOutcome + 1;
 // *needed the enemies still wanted, *rank the rank index promoted to.
 int         modern_castle_audience(int *needed, int *rank);
+// economy.audiences: which audience the Audience page's last answer is for.
+typedef enum { MC_AUD_PROMOTION = 0, MC_AUD_BLESSING, MC_AUD_TRIBUTE } McAudience;
+// The last Blessing or Tribute this visit: *result 0 none yet, Blessing its
+// GameBlessingOutcome + 1, Tribute 1 paid or 2 short; *needed the artifacts
+// missing or gold short; *gain what it gave.
+McAudience  modern_castle_audience_result(int *result, int *needed, GameAudienceGain *gain);
+// A tribute waits on Yes/No: true once, writing the question into body. The
+// main loop opens the prompt and on Yes calls modern_castle_confirm_yes.
+bool        modern_castle_take_confirm(const Game *g, char *body, int cap);
+void        modern_castle_confirm_yes(Game *g);
 // The five castle troops in recruit order (by cost); returns the count.
 int         modern_castle_pool(int *out, int cap);
 

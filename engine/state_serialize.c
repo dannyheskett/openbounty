@@ -306,6 +306,10 @@ cJSON *state_build_snapshot(const Game *g,
         cJSON_AddBoolToObject  (s, "game_over", g->stats.game_over);
         cJSON_AddBoolToObject  (s, "won", g->stats.won);
         cJSON_AddNumberToObject(s, "last_commission", g->stats.last_commission);
+        if (g->res && g->res->economy.audiences) {
+            cJSON_AddBoolToObject  (s, "blessed", g->stats.blessed);
+            cJSON_AddNumberToObject(s, "tributes", g->stats.tributes);
+        }
         cJSON *opts = cJSON_CreateArray();
         for (int i = 0; i < 7; i++) {
             cJSON_AddItemToArray(opts, cJSON_CreateNumber(g->stats.options[i]));

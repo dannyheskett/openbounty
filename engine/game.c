@@ -1603,6 +1603,52 @@ GameAudienceOutcome GameAudienceWithKing(Game *g, int *out_needed) {
     return GAME_AUDIENCE_PROMOTED;
 }
 
+// pct of v, at least 1 when v is above 0.
+static int pct_gain(int v, int pct) {
+    if (v <= 0 || pct <= 0) return 0;
+    int d = (int)((long long)v * pct / 100);
+    return d < 1 ? 1 : d;
+}
+
+GameBlessingOutcome GameSeekBlessing(Game *g, int *out_needed, GameAudienceGain *gain) {
+    if (out_needed) *out_needed = 0;
+    if (gain) memset(gain, 0, sizeof *gain);
+    if (g->stats.blessed) return GAME_BLESSING_ALREADY;
+    int total = artifacts_count() < 8 ? artifacts_count() : 8;   // artifacts.found[8]
+    int missing = total - GameArtifactsFound(g);
+    if (missing > 0) {
+        if (out_needed) *out_needed = missing;
+        return GAME_BLESSING_NEED_ARTIFACTS;
+    }
+    int d = pct_gain(g->stats.leadership_base, g->res->economy.blessing_leadership_pct);
+    g->stats.leadership_base += d;
+    g->stats.leadership_current += d;   // re-syncs to base at end_week
+    g->stats.blessed = true;
+    if (gain) gain->leadership = d;
+    return GAME_BLESSING_GRANTED;
+}
+
+bool GamePayTribute(Game *g, int *out_needed, GameAudienceGain *gain) {
+    const ResEconomy *ec = &g->res->economy;
+    if (out_needed) *out_needed = 0;
+    if (gain) memset(gain, 0, sizeof *gain);
+    if (g->stats.gold < ec->tribute_cost) {
+        if (out_needed) *out_needed = ec->tribute_cost - g->stats.gold;
+        return false;
+    }
+    g->stats.gold -= ec->tribute_cost;
+    int dl = pct_gain(g->stats.leadership_base, ec->tribute_leadership_pct);
+    int dp = pct_gain(g->stats.spell_power, ec->tribute_magic_pct);
+    int dm = pct_gain(g->stats.max_spells, ec->tribute_magic_pct);
+    g->stats.leadership_base += dl;
+    g->stats.leadership_current += dl;
+    g->stats.spell_power += dp;
+    g->stats.max_spells += dm;
+    g->stats.tributes++;
+    if (gain) { gain->leadership = dl; gain->spell_power = dp; gain->max_spells = dm; }
+    return true;
+}
+
 int GameArmyTotalLeadership(const Game *g) {
     int total = 0;
     for (int i = 0; i < GAME_ARMY_SLOTS; i++) {

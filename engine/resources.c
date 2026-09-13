@@ -226,6 +226,10 @@ static void parse_castles(Resources *res, cJSON *arr) {
                      json_str(sp, "portrait", ""));
             copy_str(c->special.figure, sizeof(c->special.figure),
                      json_str(sp, "figure", ""));
+            copy_str(c->special.barracks_portrait, sizeof(c->special.barracks_portrait),
+                     json_str(sp, "barracks_portrait", ""));
+            copy_str(c->special.barracks_figure, sizeof(c->special.barracks_figure),
+                     json_str(sp, "barracks_figure", ""));
             {
                 cJSON *pr = cJSON_GetObjectItem(sp, "promotion");
                 for (int r = 0; r < 4; r++) {
@@ -248,6 +252,16 @@ static void parse_castles(Resources *res, cJSON *arr) {
                 copy_str(c->special.audience_final_rank,
                          sizeof(c->special.audience_final_rank),
                          json_str(au, "final_rank", ""));
+                copy_str(c->special.audience_blessing_granted, sizeof(c->special.audience_blessing_granted),
+                         json_str(au, "blessing_granted", ""));
+                copy_str(c->special.audience_blessing_needed, sizeof(c->special.audience_blessing_needed),
+                         json_str(au, "blessing_needed", ""));
+                copy_str(c->special.audience_blessing_already, sizeof(c->special.audience_blessing_already),
+                         json_str(au, "blessing_already", ""));
+                copy_str(c->special.audience_tribute_paid, sizeof(c->special.audience_tribute_paid),
+                         json_str(au, "tribute_paid", ""));
+                copy_str(c->special.audience_tribute_needed, sizeof(c->special.audience_tribute_needed),
+                         json_str(au, "tribute_needed", ""));
             }
         }
     }
@@ -1297,6 +1311,12 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(castle_gain_leadership, "castle_gain_leadership");
     SET_BANNER(castle_gain_commission, "castle_gain_commission");
     SET_BANNER(castle_gain_spells, "castle_gain_spells");
+    SET_BANNER(castle_gain_spell_power, "castle_gain_spell_power");
+    SET_BANNER(castle_action_promotion, "castle_action_promotion");
+    SET_BANNER(castle_action_blessing, "castle_action_blessing");
+    SET_BANNER(castle_action_tribute, "castle_action_tribute");
+    SET_BANNER(castle_tribute_confirm, "castle_tribute_confirm");
+    SET_BANNER(castle_artifacts, "castle_artifacts");
     SET_BANNER(castle_over_leadership, "castle_over_leadership");
     SET_BANNER(castle_count_of, "castle_count_of");
     SET_BANNER(castle_cost, "castle_cost");
@@ -2001,6 +2021,12 @@ bool resources_load(Resources *res, const char *manifest_path) {
         cJSON *jfo = cJSON_GetObjectItem(root, "foes");
         cJSON *jev = cJSON_IsObject(jfo) ? cJSON_GetObjectItem(jfo, "evade_needs_free_square") : NULL;
         res->economy.evade_needs_free_square = cJSON_IsTrue(jev);
+        cJSON *jau = cJSON_GetObjectItem(root, "audiences");
+        res->economy.audiences = cJSON_IsObject(jau);
+        res->economy.blessing_leadership_pct = json_int(jau, "blessing_leadership_pct", 50);
+        res->economy.tribute_cost            = json_int(jau, "tribute_cost", 50000);
+        res->economy.tribute_leadership_pct  = json_int(jau, "tribute_leadership_pct", 25);
+        res->economy.tribute_magic_pct       = json_int(jau, "tribute_magic_pct", 25);
     }
     res->economy.boat_cost_normal = json_int(jec, "boat_cost_normal", 500);
     res->economy.boat_cost_cheap  = json_int(jec, "boat_cost_cheap",  100);

@@ -29,6 +29,12 @@ static struct {
     int    audience;          // GameAudienceOutcome + 1, 0 = none this visit
     int    audience_needed;
     int    audience_rank;
+    // economy.audiences: the last Blessing or Tribute this visit.
+    McAudience aud_kind;
+    int    aud_result;        // 0 none; Blessing: GameBlessingOutcome + 1; Tribute: 1 paid, 2 short
+    int    aud_needed;
+    GameAudienceGain gain;
+    bool   ask_tribute;       // a Yes/No waits to be opened
 } mc;
 
 int modern_castle_pool(int *out, int cap) {
@@ -69,6 +75,32 @@ bool modern_castle_stepper(int *value, int *max) {
     return true;
 }
 
+static bool audiences(const Game *g) {
+    return mc.home && g && g->res && g->res->economy.audiences;
+}
+
+McAudience modern_castle_audience_result(int *result, int *needed, GameAudienceGain *gain) {
+    if (result) *result = mc.aud_result;
+    if (needed) *needed = mc.aud_needed;
+    if (gain) *gain = mc.gain;
+    return mc.aud_kind;
+}
+
+bool modern_castle_take_confirm(const Game *g, char *body, int cap) {
+    if (!mc.ask_tribute) return false;
+    mc.ask_tribute = false;
+    char gold[16];
+    snprintf(gold, sizeof gold, "%d", g->res->economy.tribute_cost);
+    ResTemplateVar v[] = { { "GOLD", gold } };
+    resources_format_template(body, cap, g->res->banners.castle_tribute_confirm, v, 1);
+    return true;
+}
+
+void modern_castle_confirm_yes(Game *g) {
+    mc.aud_kind = MC_AUD_TRIBUTE;
+    mc.aud_result = GamePayTribute(g, &mc.aud_needed, &mc.gain) ? 1 : 2;
+}
+
 int modern_castle_audience(int *needed, int *rank) {
     if (needed) *needed = mc.audience_needed;
     if (rank) *rank = mc.audience_rank;
@@ -92,7 +124,7 @@ int modern_castle_rows(const Game *g) {
     switch (mc.page) {
         case MC_MENU:     return 2;
         case MC_RECRUIT:  return modern_castle_pool(pool, POOL_MAX) + 1;
-        case MC_AUDIENCE: return 2;
+        case MC_AUDIENCE: return audiences(g) ? 4 : 2;
         case MC_GARRISON: return stacks(g, false, tmp) + 1;
         case MC_WITHDRAW: return stacks(g, true, tmp) + 1;
         case MC_PROMOTION: return 1;
@@ -130,7 +162,10 @@ void modern_castle_row(const Game *g, int i, char *out, int cap,
             break;
         }
         case MC_AUDIENCE:
-            snprintf(out, (size_t)cap, "%s", bn->castle_action_audience);
+            snprintf(out, (size_t)cap, "%s", !audiences(g) ? bn->castle_action_audience
+                                             : i == 0 ? bn->castle_action_promotion
+                                             : i == 1 ? bn->castle_action_blessing
+                                                      : bn->castle_action_tribute);
             return;
         case MC_GARRISON:
             stacks(g, false, slots);
@@ -181,6 +216,7 @@ static void act(Game *g, int i) {
                           : (i == 0 ? MC_GARRISON : MC_WITHDRAW);
         mc.list_cursor = 0;
         mc.audience = 0;
+        mc.aud_result = 0;
         return;
     }
     if (i == modern_castle_rows(g) - 1) {        // Back
@@ -203,6 +239,21 @@ static void act(Game *g, int i) {
             break;
         }
         case MC_AUDIENCE: {
+            mc.aud_result = 0;
+            mc.audience = 0;
+            if (audiences(g) && i == 1) {
+                mc.aud_kind = MC_AUD_BLESSING;
+                mc.aud_result = (int)GameSeekBlessing(g, &mc.aud_needed, &mc.gain) + 1;
+                break;
+            }
+            if (audiences(g) && i == 2) {
+                // A full purse asks Yes/No first; a short one hears why at once.
+                mc.aud_kind = MC_AUD_TRIBUTE;
+                if (g->stats.gold >= g->res->economy.tribute_cost) mc.ask_tribute = true;
+                else mc.aud_result = GamePayTribute(g, &mc.aud_needed, &mc.gain) ? 1 : 2;
+                break;
+            }
+            mc.aud_kind = MC_AUD_PROMOTION;
             // Always granted: a promotion when one is due, else the Emperor's word.
             int needed = 0;
             GameAudienceOutcome o = GameAudienceWithKing(g, &needed);
@@ -297,10 +348,12 @@ bool modern_castle_update(Game *g) {
     if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_W) || input_key_pressed(KEY_KP_8)) {
         *cur = (*cur - 1 + rows) % rows;
         mc.audience = (mc.page == MC_AUDIENCE) ? mc.audience : 0;
+        if (audiences(g)) { mc.audience = 0; mc.aud_result = 0; }
         return false;
     }
     if (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_S) || input_key_pressed(KEY_KP_2)) {
         *cur = (*cur + 1) % rows;
+        if (audiences(g)) { mc.audience = 0; mc.aud_result = 0; }
         return false;
     }
     if (pressed_confirm()) act(g, *cur);

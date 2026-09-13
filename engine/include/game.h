@@ -232,6 +232,9 @@ typedef struct {
     bool             won;                 // set when the scepter is recovered (search on its tile)
     int              last_commission;     // amount paid at the most recent week-end (for UI)
     int              last_astrology_troop; // troop idx broadcast at last week-end (for UI)
+    // economy.audiences: the Emperor's blessing received (once), tributes paid.
+    bool             blessed;
+    int              tributes;
     // Controls-menu settings . Parallel to
     // res->controls.items[]. Stored per-game so preferences persist in
     // the save file.
@@ -795,6 +798,28 @@ typedef enum {
 // reports the outcome; *out_needed (may be NULL) receives how many MORE villains
 // are still needed, meaningful only for GAME_AUDIENCE_MORE_NEEDED.
 GameAudienceOutcome GameAudienceWithKing(Game *g, int *out_needed);
+
+// economy.audiences (the modern home castle). Gains applied to a stat, for the
+// screen to report.
+typedef struct {
+    int leadership, spell_power, max_spells;
+} GameAudienceGain;
+
+typedef enum {
+    GAME_BLESSING_GRANTED = 0,
+    GAME_BLESSING_NEED_ARTIFACTS,   // *out_needed = artifacts still missing
+    GAME_BLESSING_ALREADY,          // one time only
+} GameBlessingOutcome;
+
+// Seek the Emperor's blessing: once every artifact is found (enemies left or
+// not), leadership grows by blessing_leadership_pct, one time only.
+GameBlessingOutcome GameSeekBlessing(Game *g, int *out_needed, GameAudienceGain *gain);
+
+// Pay a tribute of tribute_cost gold: leadership grows by tribute_leadership_pct
+// and spell power and spell capacity each by tribute_magic_pct, of what the
+// hero has now (at least 1 of a stat above 0). Any number of times. Returns
+// false, paying nothing, when the purse is short (*out_needed = the gold short).
+bool GamePayTribute(Game *g, int *out_needed, GameAudienceGain *gain);
 
 // Army helpers.
 int  GameArmyTotalLeadership(const Game *g);     // sum of troop->hp * count for all stacks

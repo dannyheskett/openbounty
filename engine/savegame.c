@@ -220,6 +220,7 @@ SaveResult SaveGameRead(const char *path,
         GS_INT(steps_left_today, "steps_left_today");
         GS_INT(days_left, "days_left");
         GS_INT(last_commission, "last_commission");
+        GS_INT(tributes, "tributes");
         #undef GS_INT
         cJSON *jkm = cJSON_GetObjectItem(js, "knows_magic");
         g->stats.knows_magic = cJSON_IsBool(jkm) ? cJSON_IsTrue(jkm) : false;
@@ -227,6 +228,7 @@ SaveResult SaveGameRead(const char *path,
         g->stats.game_over = cJSON_IsBool(jgo) ? cJSON_IsTrue(jgo) : false;
         cJSON *jwon = cJSON_GetObjectItem(js, "won");
         g->stats.won = cJSON_IsBool(jwon) ? cJSON_IsTrue(jwon) : false;
+        g->stats.blessed = cJSON_IsTrue(cJSON_GetObjectItem(js, "blessed"));
         cJSON *jopts = cJSON_GetObjectItem(js, "options");
         if (cJSON_IsArray(jopts)) {
             int i = 0;

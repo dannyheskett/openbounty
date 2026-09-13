@@ -72,6 +72,12 @@ static cJSON *gb_placeholder_strings(void) {
     cJSON_AddStringToObject(o, "castle_gain_leadership", "castle_gain_leadership");
     cJSON_AddStringToObject(o, "castle_gain_commission", "castle_gain_commission");
     cJSON_AddStringToObject(o, "castle_gain_spells", "castle_gain_spells");
+    cJSON_AddStringToObject(o, "castle_gain_spell_power", "castle_gain_spell_power");
+    cJSON_AddStringToObject(o, "castle_action_promotion", "castle_action_promotion");
+    cJSON_AddStringToObject(o, "castle_action_blessing", "castle_action_blessing");
+    cJSON_AddStringToObject(o, "castle_action_tribute", "castle_action_tribute");
+    cJSON_AddStringToObject(o, "castle_tribute_confirm", "castle_tribute_confirm");
+    cJSON_AddStringToObject(o, "castle_artifacts", "castle_artifacts");
     cJSON_AddStringToObject(o, "castle_over_leadership", "castle_over_leadership");
     cJSON_AddStringToObject(o, "castle_count_of", "castle_count_of");
     cJSON_AddStringToObject(o, "castle_cost", "castle_cost");

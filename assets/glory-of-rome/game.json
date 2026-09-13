@@ -45,6 +45,12 @@
 	"foes":	{
 		"evade_needs_free_square":	true
 	},
+	"audiences":	{
+		"blessing_leadership_pct":	50,
+		"tribute_cost":	50000,
+		"tribute_leadership_pct":	25,
+		"tribute_magic_pct":	25
+	},
 	"economy":	{
 		"alcove_cost":	5000,
 		"boat_cost_cheap":	100,
@@ -1890,7 +1896,12 @@
 					"intro":	"Trumpets announce your arrival with imperial fanfare.\n\nEmperor Traianus rises from his throne to greet you and proclaims:",
 					"rank_up":	"Congratulations %NAME%,\n\nI now raise you to the rank of %RANK%.\n",
 					"more_needed":	"My dear %NAME%,\n\nI can aid you better after you've captured %NEEDED% more enemies.",
-					"final_rank":	"%NAME% the %RANK%,\n\nHurry and recover the Aquila of the Legions, or all Roma will be lost!"
+					"final_rank":	"%NAME% the %RANK%,\n\nHurry and recover the Aquila of the Legions, or all Roma will be lost!",
+					"blessing_granted":	"Kneel, %NAME%.\n\nYou have returned every sacred artifact of Roma to her keeping. Rise with the blessing of your Emperor and of the gods.",
+					"blessing_needed":	"My dear %NAME%,\n\nI bless only one who has gathered every sacred artifact of Roma. Find the %NEEDED% still missing, then come before me again.",
+					"blessing_already":	"%NAME%, you already carry my blessing.\n\nIt is given only once.",
+					"tribute_paid":	"Roma thanks you, %NAME%.\n\nYour gift will be spoken of in the Senate, and the gods will remember it on the field.",
+					"tribute_needed":	"%NAME%, a tribute to your Emperor is 50000 gold.\n\nYou are %NEEDED% gold short. Return when your purse can bear it."
 				}
 			}
 		}, {

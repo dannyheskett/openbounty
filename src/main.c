@@ -884,6 +884,7 @@ title:;
     bool quit_requested = false;
     bool new_game_requested = false;   // modern New Game row chosen: ask
     bool new_game_asking = false;      // its yes/no prompt is up
+    bool castle_asking = false;        // modern home castle: Yes/No before a tribute
     bool town_asking = false;          // modern town: a Yes/No before an action is up
     // Set when a demo run WON (scepter recovered): the win cartoon + win
     // screen play as the ending, then control is handed to the human on the
@@ -1080,6 +1081,13 @@ title:;
             PromptResult r = prompt_update();
             if (r != PROMPT_RESULT_NONE) town_asking = false;
             if (r == PROMPT_RESULT_YES) views_town_confirm_yes(&game);
+            goto end_input;
+        }
+
+        if (castle_asking) {
+            PromptResult r = prompt_update();
+            if (r != PROMPT_RESULT_NONE) castle_asking = false;
+            if (r == PROMPT_RESULT_YES) modern_castle_confirm_yes(&game);
             goto end_input;
         }
 
@@ -1281,6 +1289,11 @@ title:;
             if (modern_castle_update(&game)) {
                 views_dismiss();
                 pending_castle_id[0] = '\0';
+            }
+            char ask[RES_BANNER_LEN];
+            if (views_active() == VIEW_HOME_CASTLE && modern_castle_take_confirm(&game, ask, sizeof ask)) {
+                prompt_yes_no_open(NULL, ask);
+                castle_asking = true;
             }
         } else if (views_active() == VIEW_HOME_CASTLE && !dialog_is_active()) {
             //  /  +

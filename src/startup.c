@@ -113,7 +113,7 @@ static void screen_open(void) { input_host_flush(SCREEN_GUARD); }
 // then the eagle slides left and the menu appears. Played once per run; any
 // key or tap skips to the end, and coming back to the title shows the end.
 #define TITLE_EAGLE_X0   80
-#define TITLE_EAGLE_X1  -14
+#define TITLE_EAGLE_X1    1    // left wing (art column 2) three pixels in from the edge
 #define TITLE_EAGLE_Y    18
 #define TITLE_HOLD      1.0    // seconds on purple
 #define TITLE_FADED     2.5    // battle fully in
@@ -353,6 +353,8 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
             const ResUI *mui = mr ? &mr->ui : NULL;
             // The standard large rect (REQ-430j).
             ML_Rect lr = ml_large();
+            lr.x = (CL_SCREEN_W - lr.w) / 2;   // no sidebar here: centre on the screen
+            lr.y = (CL_SCREEN_H - lr.h) / 2;
             int mpad = ML_PAD;
             int mw = lr.w, mx = lr.x, my = lr.y;
             panel(lr.x, lr.y, lr.w, lr.h);
@@ -546,13 +548,22 @@ static bool run_class_select(const Resources *res,
         }
         if (CL_IS_MODERN) {
             if (class_cursor < 0 && frame_host_time() - opened >= 2.0) class_cursor = 0;
+            // Any other key during that wait picks out the first figure at
+            // once; it does not also choose it.
+            bool woke = false;
+            if (class_cursor < 0 && !input_key_pressed(KEY_LEFT) && !input_key_pressed(KEY_RIGHT) &&
+                !input_key_pressed(KEY_ESCAPE)) {
+                for (int k = input_get_key_pressed(); k != 0; k = input_get_key_pressed())
+                    woke = true;
+                if (woke) class_cursor = 0;
+            }
             if (input_key_pressed(KEY_LEFT)) {
                 class_cursor = class_cursor < 0 ? n - 1 : sel_wrap(class_cursor, -1, n);
             }
             if (input_key_pressed(KEY_RIGHT)) {
                 class_cursor = class_cursor < 0 ? 0 : sel_wrap(class_cursor, 1, n);
             }
-            bool enter = input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER);
+            bool enter = !woke && (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER));
             int tapped = touch_tapped_row(TOUCH_LIST_CLASS);
             if (tapped >= 0 && tapped < n) class_cursor = tapped;
             if (tapped >= 0 || (enter && class_cursor >= 0)) {
@@ -805,6 +816,10 @@ static bool run_create_game(const Resources *res,
             // The standard large rect (REQ-430j) with the standard padding:
             // text ML_PAD in from the frame, selection bars ML_PAD / 2.
             ML_Rect lr = ml_large();
+            // ml_large centres on the map pane; this screen has no sidebar, so
+            // centre on the whole screen.
+            lr.x = (CL_SCREEN_W - lr.w) / 2;
+            lr.y = (CL_SCREEN_H - lr.h) / 2;
             int mrow = GH + 4;
             int mx = lr.x, my = lr.y, mw = lr.w;
             panel(lr.x, lr.y, lr.w, lr.h);
