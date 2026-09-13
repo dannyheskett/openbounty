@@ -229,7 +229,9 @@
 			"character":	"Character",
 			"contract":	"Contract",
 			"puzzle":	"Puzzle",
-			"view_map":	"View Map"
+			"view_map":	"View Map",
+			"screens":	"Screens",
+			"actions":	"Actions"
 		}
 	},
 	"stats":	{

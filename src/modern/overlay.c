@@ -165,14 +165,12 @@ void modern_overlay_draw_menu(void) {
     int count = views_menu_entry_count();
     int cursor = views_menu_cursor();
 
-    // The large layout (REQ-430j): the title, then one row per entry, each
-    // row's hotkey right-aligned so the menu doubles as the keybind reference.
+    // The large layout (REQ-430j): the title, then one row per entry.
     ML_Rect r = ml_large();
     int row_h = GH + 2;
     draw_panel(r.x, r.y, r.w, r.h, PAL_CLR(DBLUE));
 
     int tx = r.x + ML_PAD;
-    int right = r.x + r.w - ML_PAD;
     int ty = r.y + ML_PAD;
     if (title) {
         bfont_draw_centered(title, r.x + r.w / 2, ty, PAL_CLR(YELLOW));
@@ -190,9 +188,6 @@ void modern_overlay_draw_menu(void) {
         else                                snprintf(buf, sizeof buf, "%s", label);
         sel_row(r.x + ML_PAD / 2, ty, r.w - ML_PAD, row_h, tx, buf, sel, fg,
                 PAL_CLR(DBLUE), TOUCH_LIST_MENU, i);
-        const char *hk = views_menu_entry_hotkey(i);
-        if (hk && hk[0])
-            bfont_draw_right(hk, right, ty + 1, sel ? PAL_CLR(DBLUE) : PAL_CLR(YELLOW));
         ty += row_h;
     }
 }

@@ -191,6 +191,26 @@ TEST debug_row_only_with_debug_flag(void) {
     PASS();
 }
 
+// The modern root is Screens and Actions pages, then Controls, Save, Load,
+// New Game and Exit; no row carries a key letter.
+TEST root_is_screens_actions_then_system_rows(void) {
+    rome();
+    strcpy(s_res.ui.menu_screens, "Screens");  strcpy(s_res.ui.menu_actions, "Actions");
+    strcpy(s_res.ui.menu_save, "Save");        strcpy(s_res.ui.menu_load, "Load");
+    strcpy(s_res.ui.menu_new_game, "New Game"); strcpy(s_res.ui.menu_exit, "Exit");
+    resources_republish(&s_res);
+    views_menu_bind(NULL, NULL);
+    views_set(VIEW_MENU);
+    static const char *want[] = { "Screens", "Actions", "Controls", "Save", "Load", "New Game", "Exit" };
+    ASSERT_EQ(7, views_menu_entry_count());
+    for (int i = 0; i < 7; i++) ASSERT_STR_EQ(want[i], views_menu_entry_label(i));
+    ASSERT(views_menu_entry_is_submenu(0));
+    ASSERT(views_menu_entry_is_submenu(1));
+    views_set(VIEW_NONE);
+    resources_republish(NULL);
+    PASS();
+}
+
 SUITE(unit_modern_layout_suite) {
     RUN_TEST(spacing_is_three_two_three);
     RUN_TEST(vertical_mirrors_horizontal);
@@ -201,4 +221,5 @@ SUITE(unit_modern_layout_suite) {
     RUN_TEST(full_covers_pane_band_and_hud_not_the_status_band);
     RUN_TEST(capacity_follows_the_glyph);
     RUN_TEST(debug_row_only_with_debug_flag);
+    RUN_TEST(root_is_screens_actions_then_system_rows);
 }

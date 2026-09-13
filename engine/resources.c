@@ -1413,6 +1413,8 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
             UI_SET(menu_contract,  "contract");
             UI_SET(menu_puzzle,    "puzzle");
             UI_SET(menu_view_map,  "view_map");
+            UI_SET(menu_screens,   "screens");
+            UI_SET(menu_actions,   "actions");
         }
     }
 

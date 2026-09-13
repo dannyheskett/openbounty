@@ -197,6 +197,8 @@ static cJSON *gb_placeholder_strings(void) {
     cJSON_AddStringToObject(o2, "contract", "contract");
     cJSON_AddStringToObject(o2, "puzzle", "puzzle");
     cJSON_AddStringToObject(o2, "view_map", "view_map");
+    cJSON_AddStringToObject(o2, "screens", "screens");
+    cJSON_AddStringToObject(o2, "actions", "actions");
     o = cJSON_AddObjectToObject(s, "stats");
     cJSON_AddStringToObject(o, "leadership", "leadership");
     cJSON_AddStringToObject(o, "commission", "commission");

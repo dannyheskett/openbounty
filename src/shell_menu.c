@@ -70,5 +70,10 @@ bool menu_key_available(int key, void *ud) {
     if (key == KEY_F) return mount != MOUNT_FLY;
     if (key == KEY_L) return mount == MOUNT_FLY;
     if (key == KEY_N) return mount == MOUNT_SAIL;
+    if (key == KEY_D) {                  // the key path needs a troop to dismiss
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++)
+            if (c->game->army[i].id[0] && c->game->army[i].count > 0) return true;
+        return false;
+    }
     return true;
 }

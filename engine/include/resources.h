@@ -611,6 +611,8 @@ typedef struct {
     char menu_contract[RES_UI_LABEL_LEN];
     char menu_puzzle[RES_UI_LABEL_LEN];
     char menu_view_map[RES_UI_LABEL_LEN];
+    char menu_screens[RES_UI_LABEL_LEN];   // modern game menu pages
+    char menu_actions[RES_UI_LABEL_LEN];
 
     // Character-view stat labels.
     char stat_leadership[RES_UI_LABEL_LEN];

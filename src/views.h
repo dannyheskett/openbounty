@@ -28,9 +28,6 @@ typedef struct {
 // built with the rows that apply at that moment. Call once at startup.
 void views_menu_bind(const MenuCallbacks *cbs, void *userdata);
 
-// The hotkey shown beside a menu row ("A"), or NULL for a row without one.
-const char *views_menu_entry_hotkey(int i);
-
 // --debug: the modern game menu carries a Debug page of cheat rows. Off by
 // default, and then no cheat is reachable at all.
 void views_menu_set_debug(bool on);

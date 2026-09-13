@@ -229,7 +229,9 @@
 			"character":	"Character",
 			"contract":	"Contract",
 			"puzzle":	"Puzzle",
-			"view_map":	"View Map"
+			"view_map":	"View Map",
+			"screens":	"Screens",
+			"actions":	"Actions"
 		}
 	},
 	"stats":	{
@@ -357,6 +359,15 @@
 		}, {
 			"key":	"W",
 			"label":	"Wait End Week"
+		}, {
+			"key":	"D",
+			"label":	"Dismiss Army"
+		}, {
+			"key":	"N",
+			"label":	"New Continent"
+		}, {
+			"key":	"5",
+			"label":	"Rest"
 		}, {
 			"key":	"Q",
 			"label":	"Quit and Save"

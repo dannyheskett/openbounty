@@ -57,7 +57,7 @@ void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
             views_spells_set_mode(true);
         }
         break;
-    // Modern retires the Options panel: the one menu lists every hotkey.
+    // Modern retires the Options panel: the one menu has a row for every action.
     case INPUT_ACTION_OPTIONS_MENU:    views_set(CL_IS_MODERN ? VIEW_MENU : VIEW_OPTIONS); break;
     case INPUT_ACTION_GAME_MENU:       views_set(VIEW_MENU);      break;
     case INPUT_ACTION_SAVE_QUIT: {
