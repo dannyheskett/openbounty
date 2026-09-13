@@ -248,20 +248,95 @@ int combat_cast_step(Combat *c, Game *g, const Sprites *sprites,
     return 0;
 }
 
+// ----- Modern: the action menu --------------------------------------------------
+// Modern combat is menu driven: Enter, or a tap on the active unit, opens a
+// menu of what the unit and the hero can do now. A row closes the menu and
+// presses its key on the next frame, so it runs the exact path the key runs;
+// the keys stay as shortcuts. Rows that cannot apply are left out.
+#define COMBAT_ACT_MAX 8
+static bool s_act_open   = false;
+static int  s_act_cursor = 0;
+
+static int combat_action_rows(const Combat *c, const Game *g,
+                              int keys[], const char *labels[]) {
+    const ResUI *ui = &g->res->ui;
+    int n = 0;
+    const CombatUnit *u = (c->unit_id >= 0) ? &c->units[c->side][c->unit_id] : NULL;
+    keys[n] = KEY_SPACE; labels[n++] = ui->combat_act_wait;
+    if (u && u->shots > 0 && !combat_unit_surrounded(c, c->side, c->unit_id)) {
+        keys[n] = KEY_S; labels[n++] = ui->combat_act_shoot;
+    }
+    const TroopDef *t = u ? troop_by_index(u->troop_idx) : NULL;
+    if (t && (t->abilities & TROOP_ABIL_FLY) && u->flights > 0) {
+        keys[n] = KEY_F; labels[n++] = ui->combat_act_fly;
+    }
+    const Game *hero = c->heroes[c->side];
+    if (hero && hero->stats.knows_magic && c->spells_this_round < 1) {
+        keys[n] = KEY_U; labels[n++] = ui->combat_act_cast;
+    }
+    keys[n] = KEY_A; labels[n++] = ui->menu_army;
+    keys[n] = KEY_V; labels[n++] = ui->menu_character;
+    keys[n] = KEY_C; labels[n++] = ui->combat_act_controls;
+    keys[n] = KEY_G; labels[n++] = ui->combat_act_give_up;
+    return n;
+}
+
+static void combat_action_menu_draw(const Combat *c, const Game *g) {
+    int keys[COMBAT_ACT_MAX];
+    const char *labels[COMBAT_ACT_MAX];
+    int n = combat_action_rows(c, g, keys, labels);
+    if (s_act_cursor >= n) s_act_cursor = 0;
+    ML_Rect r = ml_large();
+    int row_h = BFONT_GLYPH_H + 2;
+    DrawRectangle(r.x, r.y, r.w, r.h, PAL_CLR(DBLUE));
+    ui_window_frame(r.x, r.y, r.w, r.h, PAL_CLR(YELLOW));
+    int ty = r.y + ML_PAD;
+    bfont_draw_centered(g->res->ui.menu_actions, r.x + r.w / 2, ty, PAL_CLR(YELLOW));
+    ty += row_h + row_h / 2;
+    for (int i = 0; i < n; i++) {
+        sel_row(r.x + ML_PAD / 2, ty, r.w - ML_PAD, row_h, r.x + ML_PAD, labels[i],
+                s_act_cursor == i, PAL_CLR(WHITE), PAL_CLR(DBLUE),
+                TOUCH_LIST_COMBAT_ACTIONS, i);
+        ty += row_h;
+    }
+}
+
 static int combat_player_action_full(Combat *c, const Game *g,
                                      const Sprites *sprites,
                                      RenderTexture2D *target) {
     (void)sprites; (void)target;
     // Touch: tap a battlefield cell to step the active unit toward it (one
-    // tap, one step, like the adventure map); the bar carries the verbs.
-    touch_request(TOUCH_CHROME_COMBAT);
+    // tap, one step, like the adventure map). Legacy: the bar carries the
+    // verbs. Modern: a tap on the active unit opens the action menu.
+    if (!CL_IS_MODERN) touch_request(TOUCH_CHROME_COMBAT);
+    if (CL_IS_MODERN && s_act_open) {
+        int keys[COMBAT_ACT_MAX];
+        const char *labels[COMBAT_ACT_MAX];
+        int n = combat_action_rows(c, g, keys, labels);
+        touch_request(TOUCH_CHROME_BACK);
+        SelList l = { n, s_act_cursor };
+        int row = -1;
+        SelEvent ev = sel_input(&l, TOUCH_LIST_COMBAT_ACTIONS, 0, &row);
+        s_act_cursor = l.cursor;
+        if (ev == SEL_CONFIRM && row >= 0 && row < n) {
+            s_act_open = false;
+            input_host_inject_key_next_frame(keys[row]);
+        }
+        return 0;
+    }
     if (c->unit_id >= 0) {
         const CombatUnit *au = &c->units[c->side][c->unit_id];
         touch_region_map(CL_COMBAT_X, CL_COMBAT_Y,
                          COMBAT_W * CL_COMBAT_CELL_W,
                          COMBAT_H * CL_COMBAT_CELL_H,
                          CL_COMBAT_CELL_W, CL_COMBAT_CELL_H,
-                         au->x, au->y, 0);
+                         au->x, au->y, CL_IS_MODERN ? KEY_ENTER : 0);
+    }
+    if (CL_IS_MODERN &&
+        (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER))) {
+        s_act_open   = true;
+        s_act_cursor = 0;
+        return 0;
     }
     int dx, dy;
     if (combat_read_dir(&dx, &dy)) {
@@ -360,10 +435,12 @@ static void combat_present(const Combat *c, const Game *g,
     // reachable from combat).
     if (views_active() != VIEW_NONE) {
         overlay_draw(g, NULL, NULL, sprites);      // dims the field itself
-    } else if (c->cast_phase == COMBAT_CAST_PICK_SPELL ||
+    } else if (c->cast_phase == COMBAT_CAST_PICK_SPELL || s_act_open ||
                dialog_is_active() || prompt_is_active()) {
         overlay_dim_scene();                       // modern: panel over a dimmed field
     }
+    if (s_act_open && views_active() == VIEW_NONE && CL_IS_MODERN)
+        combat_action_menu_draw(c, g);
     // Spell-pick menu overlay. Drawn while the cast state machine is
     // in PICK_SPELL phase; the outer loop drives combat_cast_step one
     // input per frame.
@@ -510,6 +587,7 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         recorder_capture(tag);
     }
     audio_set_track(AUDIO_TRACK_COMBAT);
+    s_act_open = false;
 
     // Prime the turn machinery: pretend AI just finished, refresh
     // counters, find first actable player unit.
@@ -558,6 +636,10 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
                 views_dismiss();
                 continue;
             }
+            if (s_act_open) {           // modern action menu: ESC closes it
+                s_act_open = false;
+                continue;
+            }
             if (!c.picker_active && c.cast_phase == COMBAT_CAST_NONE)
                 continue;   // nothing armed: ESC is a no-op
             // else: let the cast / shoot-fly picker branch handle the cancel.
@@ -571,7 +653,7 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
             // Swap between Options and Controls without leaving the menu.
             if (views_active() == VIEW_OPTIONS && input_key_pressed(KEY_C)) {
                 views_set(VIEW_CONTROLS);
-            } else if (views_active() == VIEW_CONTROLS &&
+            } else if (views_active() == VIEW_CONTROLS && !CL_IS_MODERN &&
                        input_key_pressed(KEY_O)) {
                 views_set(VIEW_OPTIONS);
             } else if (views_active() == VIEW_CONTROLS) {
@@ -614,8 +696,9 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         // Gate KEY_A on no-active-picker: A is also "confirm" for the
         // picker, and we don't want a picker confirm to accidentally
         // open the Army view.
-        if (c.cast_phase == COMBAT_CAST_NONE && !c.picker_active) {
-            if (input_key_pressed(KEY_O)) {
+        if (c.cast_phase == COMBAT_CAST_NONE && !c.picker_active && !s_act_open) {
+            // Modern retires the Options panel; the action menu has the rest.
+            if (!CL_IS_MODERN && input_key_pressed(KEY_O)) {
                 views_set(VIEW_OPTIONS);
                 continue;
             }

@@ -730,6 +730,12 @@ typedef struct {
     char worldmap_row_your_map[RES_UI_LABEL_LEN];
     char worldmap_row_whole_map[RES_UI_LABEL_LEN];
     char class_select_load[RES_UI_LABEL_LEN];
+    char combat_act_wait[RES_UI_LABEL_LEN];
+    char combat_act_shoot[RES_UI_LABEL_LEN];
+    char combat_act_fly[RES_UI_LABEL_LEN];
+    char combat_act_cast[RES_UI_LABEL_LEN];
+    char combat_act_controls[RES_UI_LABEL_LEN];
+    char combat_act_give_up[RES_UI_LABEL_LEN];
 
     // Gate-landing view titles (town vs. castle gate).
     char gate_title_town[RES_UI_LABEL_LEN];
