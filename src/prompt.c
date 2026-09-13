@@ -2,6 +2,7 @@
 #include "ui_host.h"
 #include "prompt.h"
 #include "prompt_impl.h"
+#include "modern/mlist.h"
 #include "touch.h"
 #include "layout.h"
 #include "ui.h"
@@ -29,6 +30,7 @@ static bool prompt_digit_allowed(const char *buf, int len, int ch);
 static int  g_max_choice = 5;
 static int  g_text_max_digits = 4;
 static int  g_text_max_value  = 9999;
+static int  g_step_value      = 0;     // modern count entry: the stepper
 static char g_text_buf[8];
 static int  g_text_len = 0;
 
@@ -170,6 +172,7 @@ void prompt_text_input_open(const char *header, const char *body,
     g_text_max_value = max_value;
     g_text_len = 0;
     g_text_buf[0] = '\0';
+    g_step_value = max_value > 0 ? max_value : 0;   // modern: the stepper starts at the most
     copy_to(g_header, sizeof(g_header), header);
     copy_to(g_body,   sizeof(g_body),   body);
     emit_open_trace("text");
@@ -227,9 +230,9 @@ PromptResult prompt_update(void) {
     else if (g_kind == PK_NUMERIC)    { if (!CL_IS_MODERN) touch_request_prompt_numeric(g_max_choice); }
     else if (g_kind == PK_AB_CHOICE)  { if (!CL_IS_MODERN) touch_request_prompt_ab(); }
     else if (g_kind == PK_TEXT_INPUT) {
-        g_selector = CL_IS_MODERN &&
-                     (input_text_mode() == TEXT_MODE_SELECTOR || input_pad_or_touch_seen());
-        if (!g_selector) touch_request(TOUCH_CHROME_DIGITS);
+        // Modern counts use the stepper (REQ-430n): no digit grid, no digit chrome.
+        g_selector = false;
+        if (!CL_IS_MODERN) touch_request(TOUCH_CHROME_DIGITS);
     }
 
     if (input_key_pressed(KEY_ESCAPE)) {
@@ -284,6 +287,20 @@ PromptResult prompt_update(void) {
         return choice_rows_update();
     }
 
+    if (g_kind == PK_TEXT_INPUT && CL_IS_MODERN) {
+        // The count stepper: Left/Right one, Down/Up ten, Enter commits the
+        // value into the text buffer the flow reads (prompt_text_input_value).
+        int lo = g_text_max_value > 0 ? 1 : 0;
+        ml_stepper_keys(&g_step_value, lo, g_text_max_value > 0 ? g_text_max_value : 0);
+        if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
+            input_key_pressed(KEY_SPACE)) {
+            snprintf(g_text_buf, sizeof g_text_buf, "%d", g_step_value);
+            g_text_len = (int)strlen(g_text_buf);
+            g_kind = PK_NONE;
+            return PROMPT_RESULT_YES;
+        }
+        return PROMPT_RESULT_NONE;
+    }
     if (g_kind == PK_TEXT_INPUT && g_selector) {
         if (textsel_input(&g_ts, g_text_buf, &g_text_len, (int)sizeof g_text_buf,
                           TOUCH_LIST_TEXTSEL, prompt_digit_allowed)) {
@@ -347,6 +364,8 @@ const PromptView *prompt_view(void) {
     v.choice_n      = g_choice_n;
     v.choices       = (const char (*)[96])g_choice;
     v.choice_cursor = g_choice_cursor;
+    v.step_value = g_step_value;
+    v.step_max   = g_text_max_value;
     return &v;
 }
 

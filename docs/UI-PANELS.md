@@ -105,6 +105,43 @@ skips it. A list with more rows than its column holds scrolls to keep the
 cursor row in view. First used by the town screen (menu and every detail list); other
 modern lists move to it as they are touched.
 
+## Question dialogs
+
+Every modern question (yes/no, a numbered choice, the chest's A/B, a count)
+draws one way: the header and body, a lattice band, then the answers -- two
+standard select rows (Yes, No), one row per choice (a long choice keeps to one
+line), or the count stepper for a count (the dwelling recruit: it starts at the
+most allowed, Enter recruits that many). The panel runs the map pane's width
+inside its margin and sits on the pane's bottom edge so the hero at the centre
+stays in view; it is as tall as its text and answers, and past the pane's top
+its rows scroll instead. Up/Down move, Enter or a tap answers, Esc is No or
+Cancel; Y and N, the digits and A/B still answer directly. The game menu,
+Controls (value at each row's right), the title menu, the load picker, the
+difficulty rows, the world map's orb row, the spells view (two columns of
+seven) and the gate picker (three columns) use the same rows. Combat's own
+menus are not changed yet.
+
+## Count stepper
+
+Choosing how many troops to recruit, garrison or withdraw opens a stepper along
+the bottom of the detail panel: `<<  <   20 of 50   >  >>`, starting at the
+most allowed. Left/Right step by one, Down/Up by ten, Enter moves the count,
+Esc puts it away; every arrow and the count itself are tap targets for the key
+they stand for. The stepper holds the keys while it is open.
+
+## Castles (modern)
+
+The home castle and a castle the hero owns use the town screen's layout: the
+castle backdrop at 2x (the ruler standing on it at the home castle), the
+portrait slot, the siege and gold tiles, standard select rows and the detail
+panel. The home castle offers Recruit > (the castle troops, each shown at 2x
+with its statistics, then the stepper) and Audience > (Request audience, always
+available: a promotion when one is due, shown with that rank's promotion image
+and the gains, else the ruler's word). An owned castle offers Garrison > and
+Withdraw >, listing the army's or the garrison's stacks; any part of a stack
+moves, and withdrawing warns when the army would exceed its leadership. Esc
+goes back a level. Legacy's castle screens are unchanged.
+
 ## Combat action menu
 
 Enter, or a tap on the active unit, opens Actions in the large rect: Wait,

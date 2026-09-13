@@ -10,8 +10,8 @@
 #include "ui.h"
 
 // %NAME%/%RANK%/%NEEDED%/%S% substitution for audience text.
-static void audience_substitute(const Game *game, int needed,
-                                const char *src, char *out, size_t out_sz) {
+void audience_substitute(const Game *game, int needed,
+                         const char *src, char *out, size_t out_sz) {
     if (out_sz == 0) return;
     char *dst = out;
     char *end = out + out_sz - 1;

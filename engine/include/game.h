@@ -561,6 +561,13 @@ int GameGarrisonTroop(Game *g, const char *castle_id, int slot);
 // Returns 0 on success, 1 if no army slot available.
 int GameUngarrisonTroop(Game *g, const char *castle_id, int slot);
 
+// The same moves for `count` troops of the stack (1..its size). The whole stack
+// behaves exactly as above; part of one leaves the rest where it was, so moving
+// part of the hero's last stack is allowed. Returns as above, and 1 for a count
+// out of range.
+int GameGarrisonTroopCount(Game *g, const char *castle_id, int slot, int count);
+int GameUngarrisonTroopCount(Game *g, const char *castle_id, int slot, int count);
+
 // Slide non-empty army stacks down so the filled slots run 0..N-1 with
 // no gaps. Called after any operation that vacates a slot (garrison,
 // dismiss, post-combat losses). Order is preserved.

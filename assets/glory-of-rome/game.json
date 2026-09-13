@@ -1295,6 +1295,21 @@
 		}, {
 			"id":	"townhead_oriens",
 			"anim":	["art/portraits/townhead_oriens_00.png", "art/portraits/townhead_oriens_01.png", "art/portraits/townhead_oriens_02.png", "art/portraits/townhead_oriens_03.png", "art/portraits/townhead_oriens_04.png", "art/portraits/townhead_oriens_05.png", "art/portraits/townhead_oriens_06.png", "art/portraits/townhead_oriens_07.png"]
+		}, {
+			"id":	"emperor_traianus",
+			"anim":	["art/portraits/emperor_traianus_00.png", "art/portraits/emperor_traianus_01.png", "art/portraits/emperor_traianus_02.png", "art/portraits/emperor_traianus_03.png", "art/portraits/emperor_traianus_04.png", "art/portraits/emperor_traianus_05.png", "art/portraits/emperor_traianus_06.png", "art/portraits/emperor_traianus_07.png", "art/portraits/emperor_traianus_08.png", "art/portraits/emperor_traianus_09.png", "art/portraits/emperor_traianus_10.png", "art/portraits/emperor_traianus_11.png", "art/portraits/emperor_traianus_12.png", "art/portraits/emperor_traianus_13.png"]
+		}, {
+			"id":	"emperor_traianus_figure",
+			"anim":	["art/ui/emperor_traianus_figure_00.png", "art/ui/emperor_traianus_figure_01.png", "art/ui/emperor_traianus_figure_02.png", "art/ui/emperor_traianus_figure_03.png", "art/ui/emperor_traianus_figure_04.png", "art/ui/emperor_traianus_figure_05.png", "art/ui/emperor_traianus_figure_06.png", "art/ui/emperor_traianus_figure_07.png"]
+		}, {
+			"id":	"promotion_rank_1",
+			"anim":	["art/ui/promotion_rank_1.png"]
+		}, {
+			"id":	"promotion_rank_2",
+			"anim":	["art/ui/promotion_rank_2.png"]
+		}, {
+			"id":	"promotion_rank_3",
+			"anim":	["art/ui/promotion_rank_3.png"]
 		}],
 	"towns":	[{
 			"index":	0,
@@ -1853,9 +1868,13 @@
 			"y":	45,
 			"zone":	"italia",
 			"difficulty_tier":	0,
+			"art":	"castle_palatium",
 			"footprint":	"1x1",
 			"special":	{
 				"flow":	"audience",
+				"portrait":	"emperor_traianus",
+				"figure":	"emperor_traianus_figure",
+				"promotion":	["", "promotion_rank_1", "promotion_rank_2", "promotion_rank_3"],
 				"excluded_from_siege":	true,
 				"excluded_from_intel":	true,
 				"excluded_from_contract":	true,

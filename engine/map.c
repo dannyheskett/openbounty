@@ -223,7 +223,9 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
         for (int p = 0; p < nparts; p++) {
             Tile *t = tile_at(map, cx + parts[p].dx, cy + parts[p].dy);
             if (!t) continue;
-            copy_string(t->art, sizeof(t->art), parts[p].art);
+            // A 1x1 castle draws its own tile when the catalog names one.
+            const char *art = (nparts == 1 && rc && rc->art[0]) ? rc->art : parts[p].art;
+            copy_string(t->art, sizeof(t->art), art);
             if (parts[p].gate) {
                 // Gate: interactive entry point.
                 t->interactive = INTERACT_CASTLE_GATE;

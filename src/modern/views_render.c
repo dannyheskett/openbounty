@@ -11,6 +11,7 @@
 #include "views.h"
 #include "views_render_impl.h"
 #include "modern/mlayout.h"
+#include "modern/mlist.h"
 #include "touch.h"
 #include "select.h"
 #include "layout.h"
@@ -770,10 +771,12 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
         const ResUI *ui = &g->res->ui;
         const char *label = views_render_worldmap_whole() ? ui->worldmap_row_your_map
                                                           : ui->worldmap_row_whole_map;
-        int rw = bfont_text_width(label) + 2 * VIEW_PAD;
+        int rw = bfont_text_width(label) + 4 * VIEW_PAD;
         int rx = VIEW_X + (VIEW_W - rw) / 2;
         int ry = gy + grid_h + 2 + row_h;
-        sel_row(rx, ry, rw, row_h, rx + VIEW_PAD, label, true,
+        int rh = ml_row_h();                 // a standard select row (REQ-430n)
+        if (ry + rh > VIEW_Y + VIEW_H) ry = VIEW_Y + VIEW_H - rh;
+        sel_row(rx, ry, rw, rh, rx + 2 * VIEW_PAD, label, true,
                 PAL_CLR(YELLOW), PAL_CLR(DGREY), TOUCH_LIST_PROMPT, 0);
     }
 }
@@ -782,6 +785,17 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
 //  SPELLS VIEW -- combat + adventure spell lists
 //  Two columns: Combat (0..6) on left, Adventuring (7..13) on right.
 // ---------------------------------------------------------------------------
+
+typedef struct { const Game *g; } SpellsCtx;
+
+static bool spell_row(void *ctx, int i, char *label, char *right, int cap) {
+    const Game *g = ((const SpellsCtx *)ctx)->g;
+    const SpellDef *sp = spell_by_index(i);
+    int cnt = g->spells.counts[i];
+    snprintf(label, (size_t)cap, "%s", sp ? sp->name : "");
+    snprintf(right, 48, "%d", cnt);
+    return cnt > 0;
+}
 
 static void draw_spells(const Game *g) {
     draw_view_panel();
@@ -793,36 +807,20 @@ static void draw_spells(const Game *g) {
                         PAL_CLR(YELLOW));
 
     int head_y = VIEW_Y + VIEW_PAD + GH + 4;
-    int col_l = VIEW_X + VIEW_PAD + 4;
-    int col_r = VIEW_X + VIEW_W / 2 + 4;
-    bfont_draw(ui->sv_combat_col,    col_l, head_y, PAL_CLR(YELLOW));
-    bfont_draw(ui->sv_adventure_col, col_r, head_y, PAL_CLR(YELLOW));
+    int half = VIEW_W / 2;
+    bfont_draw(ui->sv_combat_col,    VIEW_X + VIEW_PAD, head_y, PAL_CLR(YELLOW));
+    bfont_draw(ui->sv_adventure_col, VIEW_X + half + VIEW_PAD, head_y, PAL_CLR(YELLOW));
 
+    // Two columns of seven standard select rows (REQ-430n): combat 0..6 on
+    // the left, adventure 7..13 on the right; a spell with no charges is grey.
     int row_y = head_y + GH + 4;
-    int row_h = GH + CL_UI;
-    for (int i = 0; i < 7; i++) {
-        const SpellDef *sc = spell_by_index(i);
-        const SpellDef *sa = spell_by_index(i + 7);
-        int cc = g->spells.counts[i];
-        int ca = g->spells.counts[i + 7];
-        Color lc = (cc > 0) ? PAL_CLR(WHITE) : PAL_CLR(DGREY);
-        Color rc = (ca > 0) ? PAL_CLR(WHITE) : PAL_CLR(DGREY);
-
-        char buf[64];
-        int cur = views_spells_cursor();
-        if (sc) {
-            snprintf(buf, sizeof(buf), "%2d %c %s",
-                     cc, (char)('A' + i), sc->name);
-            sel_row(VIEW_X + VIEW_PAD, row_y + i * row_h, VIEW_W / 2 - VIEW_PAD, row_h,
-                    col_l, buf, cur == i, lc, PAL_CLR(DGREY), TOUCH_LIST_SPELLS, i);
-        }
-        if (sa) {
-            snprintf(buf, sizeof(buf), "%c %-12s %2d",
-                     (char)('A' + i), sa->name, ca);
-            sel_row(VIEW_X + VIEW_W / 2, row_y + i * row_h, VIEW_W / 2 - VIEW_PAD, row_h,
-                    col_r, buf, cur == 7 + i, rc, PAL_CLR(DGREY), TOUCH_LIST_SPELLS, 7 + i);
-        }
-    }
+    int h = VIEW_Y + VIEW_H - row_y;
+    int cur = views_spells_cursor();
+    SpellsCtx c = { g };
+    ml_list_draw_ex(VIEW_X, row_y, half, h, 7, cur < 7 ? cur : -1,
+                    spell_row, &c, TOUCH_LIST_SPELLS, PAL_CLR(DGREY), 0);
+    ml_list_draw_ex(VIEW_X + half, row_y, VIEW_W - half, h, 7, cur >= 7 ? cur - 7 : -1,
+                    spell_row, &c, TOUCH_LIST_SPELLS, PAL_CLR(DGREY), 7);
 }
 
 // ---------------------------------------------------------------------------
@@ -834,6 +832,16 @@ static void draw_spells(const Game *g) {
 // ---------------------------------------------------------------------------
 
 #define GATE_NAME_COL 14
+
+// Columns of standard select rows the modern gate picker uses; views.c reads
+// the same number for Left/Right.
+static bool gate_row(void *ctx, int i, char *label, char *right, int cap) {
+    (void)ctx;
+    const GateDestination *d = views_gate_dest(i);
+    right[0] = '\0';
+    snprintf(label, (size_t)cap, "%s", d ? d->name : "");
+    return d != NULL;
+}
 
 static void draw_gate(void) {
     // Full content width (map + sidebar): town names can be long.
@@ -847,41 +855,23 @@ static void draw_gate(void) {
                                              : ui->gate_title_castle;
     bfont_draw_centered(title, vx + vw / 2, VIEW_Y + VIEW_PAD, PAL_CLR(YELLOW));
 
+    // Three columns of standard select rows (REQ-430n), filled top to bottom;
+    // the name alone in each row (its first letter still picks it).
     int n = views_gate_count();
     int cursor = views_gate_cursor();
-    int left = (n + 1) / 2;   // ceil(n/2) rows in the left column
-
-    int row_y = VIEW_Y + VIEW_PAD + GH + 6;
-    int row_h = GH + 2;
-    int col_l = vx + VIEW_PAD + 2;
-    int col_r = vx + vw / 2 + 2;
-
-    for (int r = 0; r < left; r++) {
-        // Left-column entry r; right-column entry r+left (if present).
-        for (int side = 0; side < 2; side++) {
-            int idx = (side == 0) ? r : r + left;
-            if (idx >= n) continue;
-            const GateDestination *d = views_gate_dest(idx);
-            if (!d) continue;
-            int x = (side == 0) ? col_l : col_r;
-            int y = row_y + r * row_h;
-            bool sel = (idx == cursor);
-            Color fg = sel ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
-            char buf[80];
-            // Key each row by the first letter of its name (OPENKB-SPEC 11.5),
-            // matching the letter the picker actually accepts, not the row idx.
-            char key = (char)toupper((unsigned char)d->name[0]);
-            snprintf(buf, sizeof buf, "%s%c) %.*s",
-                     " ", key,
-                     GATE_NAME_COL, d->name);
-            sel_row(x, y, vw / 2 - VIEW_PAD, row_h, x, buf, sel, fg, PAL_CLR(DGREY),
-                    TOUCH_LIST_GATE, idx);
-        }
+    int row_y = VIEW_Y + VIEW_PAD + GH + VIEW_PAD;
+    int h = VIEW_Y + VIEW_H - row_y;
+    int per = views_gate_rows_per_column();
+    int cols = VIEWS_GATE_COLUMNS;
+    int cw = vw / cols;
+    for (int c = 0; c < cols; c++) {
+        int base = c * per;
+        if (base >= n) break;
+        int cnt = n - base < per ? n - base : per;
+        int cur = (cursor >= base && cursor < base + cnt) ? cursor - base : -1;
+        ml_list_draw_ex(vx + c * cw, row_y, c == cols - 1 ? vw - c * cw : cw, h, cnt, cur,
+                        gate_row, NULL, TOUCH_LIST_GATE, PAL_CLR(DGREY), base);
     }
-
-    // Footer hint.
-    bfont_draw(ui->gate_footer_hint,
-               vx + VIEW_PAD + 2, VIEW_Y + VIEW_H - GH - 3, PAL_CLR(GREY));
 }
 
 // ---------------------------------------------------------------------------

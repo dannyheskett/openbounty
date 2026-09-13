@@ -26,6 +26,9 @@
 #include "tables.h"
 #include "resources.h"
 #include "raylib.h"
+#include "modern/castle.h"
+#include "overlay_impl.h"
+#include "pending.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -71,6 +74,7 @@ void screen_home_castle_open(Game *g) {
     s_frame = 0;
     s_last_tick = 0.0;
     s_cursor = 0;
+    if (CL_IS_MODERN) modern_castle_open(g, true, pending_castle_id);
     // Enqueue the view; the shell's per-frame sync pushes it (human play) or
     // autoplay acks it (no UI, never accumulates a stack). Context statics above
     // stay as-is.
@@ -78,6 +82,7 @@ void screen_home_castle_open(Game *g) {
 }
 
 void screen_home_castle_draw(const Game *g, const Sprites *s) {
+    if (CL_IS_MODERN) { modern_overlay_draw_castle(g, s); return; }
     // Source 2285-2286: frame++ on each SYN tick (throne_room_or_barracks
     // SOFT_WAIT cadence, 150ms). We drive it from real time at the same
     // cadence so the backdrop animates regardless of render fps.

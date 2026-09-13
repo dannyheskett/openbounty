@@ -190,6 +190,7 @@ static void parse_castles(Resources *res, cJSON *arr) {
             c->gate_y = json_int(gate, "y", c->gate_y);
         }
         c->difficulty_tier = json_int(it, "difficulty_tier", 0);
+        copy_str(c->art, sizeof(c->art), json_str(it, "art", ""));
         // Map footprint (REQ-228): absent means the classic 3x2 stamp.
         {
             const char *fp = json_str(it, "footprint", "");
@@ -220,6 +221,18 @@ static void parse_castles(Resources *res, cJSON *arr) {
                 copy_str(c->special.dialog_body,
                          sizeof(c->special.dialog_body),
                          json_str(dlg, "body", ""));
+            }
+            copy_str(c->special.portrait, sizeof(c->special.portrait),
+                     json_str(sp, "portrait", ""));
+            copy_str(c->special.figure, sizeof(c->special.figure),
+                     json_str(sp, "figure", ""));
+            {
+                cJSON *pr = cJSON_GetObjectItem(sp, "promotion");
+                for (int r = 0; r < 4; r++) {
+                    cJSON *e = cJSON_IsArray(pr) ? cJSON_GetArrayItem(pr, r) : NULL;
+                    copy_str(c->special.promotion[r], sizeof(c->special.promotion[r]),
+                             cJSON_IsString(e) ? e->valuestring : "");
+                }
             }
             cJSON *au = cJSON_GetObjectItem(sp, "audience");
             if (cJSON_IsObject(au)) {
@@ -1256,6 +1269,29 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(town_detail_boat_dock,   "town_detail_boat_dock");
     SET_BANNER(town_detail_intel,       "town_detail_intel");
     SET_BANNER(town_contract_confirm,   "town_contract_confirm");
+    SET_BANNER(castle_menu_recruit, "castle_menu_recruit");
+    SET_BANNER(castle_continue, "castle_continue");
+    SET_BANNER(castle_menu_audience, "castle_menu_audience");
+    SET_BANNER(castle_menu_garrison, "castle_menu_garrison");
+    SET_BANNER(castle_menu_withdraw, "castle_menu_withdraw");
+    SET_BANNER(castle_action_audience, "castle_action_audience");
+    SET_BANNER(castle_invite_recruit, "castle_invite_recruit");
+    SET_BANNER(castle_invite_audience, "castle_invite_audience");
+    SET_BANNER(castle_invite_garrison, "castle_invite_garrison");
+    SET_BANNER(castle_invite_withdraw, "castle_invite_withdraw");
+    SET_BANNER(castle_have, "castle_have");
+    SET_BANNER(castle_in_garrison, "castle_in_garrison");
+    SET_BANNER(castle_can_recruit, "castle_can_recruit");
+    SET_BANNER(castle_rank, "castle_rank");
+    SET_BANNER(castle_next_rank, "castle_next_rank");
+    SET_BANNER(castle_needed, "castle_needed");
+    SET_BANNER(castle_gain_leadership, "castle_gain_leadership");
+    SET_BANNER(castle_gain_commission, "castle_gain_commission");
+    SET_BANNER(castle_gain_spells, "castle_gain_spells");
+    SET_BANNER(castle_over_leadership, "castle_over_leadership");
+    SET_BANNER(castle_count_of, "castle_count_of");
+    SET_BANNER(castle_cost, "castle_cost");
+    SET_BANNER(castle_no_troops, "castle_no_troops");
     SET_BANNER(town_temple_needs_rites, "town_temple_needs_rites");
     SET_BANNER(town_back, "town_back");
     SET_BANNER(town_menu_boat, "town_menu_boat");
@@ -1570,6 +1606,8 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(prompt_text_hint,          "text_hint");
         UI_SET(prompt_numeric_range_hint, "numeric_range_hint");
         UI_SET(prompt_yes_no_hint,        "yes_no_hint");
+        UI_SET(prompt_yes,                "yes");
+        UI_SET(prompt_no,                 "no");
         UI_SET(prompt_numeric_5_hint,     "numeric_5_hint");
     }
 
@@ -2745,6 +2783,12 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
             if (!a[0]) continue;
             char p[RES_PATH_LEN];
             snprintf(p, sizeof p, "art/tiles/%s.png", a);
+            art_add(out, cap, &n, p);
+        }
+        for (int i = 0; i < res->castle_count; i++) {
+            if (!res->castles[i].art[0]) continue;
+            char p[RES_PATH_LEN];
+            snprintf(p, sizeof p, "art/tiles/%s.png", res->castles[i].art);
             art_add(out, cap, &n, p);
         }
         // Castle art follows the footprint (REQ-228): a pack ships the six

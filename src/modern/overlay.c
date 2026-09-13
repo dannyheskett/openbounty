@@ -22,6 +22,9 @@
 #include "resources.h"
 #include "lattice.h"
 #include "hud.h"
+#include "modern/castle.h"
+#include "modern/mlist.h"
+#include "shell_audience.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -162,36 +165,33 @@ static void draw_dialog_ex(DialogMode mode) {
 // Game menu (nested, cursor-driven).
 // ---------------------------------------------------------------------------
 
+static bool menu_row(void *ctx, int i, char *label, char *right, int cap) {
+    (void)ctx;
+    right[0] = '\0';
+    const char *l = views_menu_entry_label(i);
+    if (views_menu_entry_is_submenu(i)) snprintf(label, (size_t)cap, "%s >", l ? l : "");
+    else                                snprintf(label, (size_t)cap, "%s", l ? l : "");
+    return true;
+}
+
 void modern_overlay_draw_menu(void) {
     const char *title = views_menu_title();
     int count = views_menu_entry_count();
     int cursor = views_menu_cursor();
 
-    // The large layout (REQ-430j): the title, then one row per entry.
+    // The large layout (REQ-430j): the title, then the entries as standard
+    // select rows (REQ-430n), scrolling when they outrun the panel.
     ML_Rect r = ml_large();
-    int row_h = GH + 2;
     draw_panel(r.x, r.y, r.w, r.h, PAL_CLR(DBLUE));
-
-    int tx = r.x + ML_PAD;
     int ty = r.y + ML_PAD;
     if (title) {
         bfont_draw_centered(title, r.x + r.w / 2, ty, PAL_CLR(YELLOW));
-        ty += row_h + row_h / 2;
+        ty += GH + ML_PAD;
     }
-
-    for (int i = 0; i < count; i++) {
-        const char *label = views_menu_entry_label(i);
-        if (!label) continue;
-        if (ty + row_h > r.y + r.h - ML_PAD) break;       // never past the panel
-        bool sel = (i == cursor);
-        Color fg = sel ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
-        char buf[64];
-        if (views_menu_entry_is_submenu(i)) snprintf(buf, sizeof buf, "%s >", label);
-        else                                snprintf(buf, sizeof buf, "%s", label);
-        sel_row(r.x + ML_PAD / 2, ty, r.w - ML_PAD, row_h, tx, buf, sel, fg,
-                PAL_CLR(DBLUE), TOUCH_LIST_MENU, i);
-        ty += row_h;
-    }
+    lattice_band_h(r.x, ty, r.w, 4);
+    ty += 4;
+    ml_list_draw(r.x, ty, r.w, r.y + r.h - ty, count, cursor, menu_row, NULL,
+                 TOUCH_LIST_MENU, PAL_CLR(DBLUE));
 }
 
 // ---------------------------------------------------------------------------
@@ -834,6 +834,373 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
     }
 }
 
+// =============================================================================
+//  Modern castle screens (home castle, owned castle) -- the town layout
+// =============================================================================
+
+// "Label value" with the label in yellow.
+static void town_text_pair(TownText *t, const char *label, const char *value) {
+    char buf[160];
+    snprintf(buf, sizeof buf, "%s %s", label, value);
+    int first = t->n;
+    town_text_add(t, buf, PAL_CLR(WHITE));
+    if (first < t->n) {
+        int lab = (int)strlen(label);
+        int len = (int)strlen(t->line[first].text);
+        t->line[first].label = lab < len ? lab : len;
+    }
+}
+
+static void castle_fmt(char *out, int cap, const char *tmpl, const char *count,
+                       const char *max) {
+    ResTemplateVar v[] = { { "COUNT", count }, { "MAX", max ? max : "" },
+                           { "RANK", count }, { "GOLD", count } };
+    resources_format_template(out, cap, tmpl, v, 4);
+}
+
+static void draw_portrait_anim(const Sprites *s, int idx, int x, int y, int size,
+                               double fps) {
+    if (!s || idx < 0 || s->portrait_frames[idx] <= 0) {
+        DrawRectangle(x, y, size, size, PAL_CLR(BLACK));
+        return;
+    }
+    ui_blit(s->portrait_anim[idx][sprites_frame((int)(GetTime() * fps),
+                                                s->portrait_frames[idx])],
+            x, y, size, size);
+}
+
+static int castle_pick_troop(const Game *g, const char *key) {
+    int pool[8];
+    int n = modern_castle_pool(pool, 8);
+    if (n < 1) return -1;
+    unsigned long h = g ? (g->seed ^ 0x0CA571E5u) : 0;
+    for (const char *p = key; p && *p; p++) h = h * 131u + (unsigned char)*p;
+    return pool[h % (unsigned long)n];
+}
+
+// The Promotion page: the win/lose screen's layout -- the award image at its
+// authored size times the UI scale on the right, the Emperor's words and the
+// rank's gains beside it, and a Continue row under the text.
+static void castle_draw_promotion(const Game *g, const Sprites *s, const ResCastle *rc) {
+    const Resources *res = g->res;
+    const ResBanners *bn = &res->banners;
+    ML_Rect r = ml_full();
+    int pad = ML_PAD;
+    DrawRectangle(r.x, r.y, r.w, r.h, PAL_CLR(DBLUE));
+    int aud_needed = 0, rank = 0;
+    modern_castle_audience(&aud_needed, &rank);
+    int idx = (rc && rank >= 0 && rank < 4) ? resources_portrait_index(res, rc->special.promotion[rank]) : -1;
+    int img_w = 0;
+    if (s && idx >= 0 && s->portrait_frames[idx] > 0) {
+        Texture2D img = s->portrait_anim[idx][0];
+        if (img.id && img.width > 0 && img.height > 0) {
+            int sc = CL_UI;
+            if (img.height * sc > r.h) sc = ui_fit_scale(img.width, img.height, r.w, r.h);
+            img_w = img.width * sc;
+            ui_blit(img, r.x + r.w - img_w, r.y, img_w, img.height * sc);
+        }
+    }
+    const int INSET = pad + 4;
+    int tx = r.x + INSET, tw = r.w - img_w - 2 * INSET;
+    TownText t = { .n = 0, .max_w = tw };
+    char buf[RES_BANNER_LEN], nb[16];
+    if (rc) {
+        audience_substitute(g, aud_needed, rc->special.audience_rank_up, buf, sizeof buf);
+        town_text_add(&t, buf, PAL_CLR(WHITE));
+    }
+    const ClassDef *cls = class_by_id(g->character.cls.id);
+    if (cls && rank > 0) {
+        int l0, s0, p0, c0, l1, s1, p1, c1;
+        class_stats_at_rank(cls, rank - 1, &l0, &s0, &p0, &c0);
+        class_stats_at_rank(cls, rank, &l1, &s1, &p1, &c1);
+        town_text_gap(&t);
+        snprintf(nb, sizeof nb, "%d", l1 - l0);
+        castle_fmt(buf, sizeof buf, bn->castle_gain_leadership, nb, NULL);
+        town_text_add(&t, buf, PAL_CLR(YELLOW));
+        snprintf(nb, sizeof nb, "%d", c1 - c0);
+        castle_fmt(buf, sizeof buf, bn->castle_gain_commission, nb, NULL);
+        town_text_add(&t, buf, PAL_CLR(YELLOW));
+        if (s1 - s0 > 0) {
+            snprintf(nb, sizeof nb, "%d", s1 - s0);
+            castle_fmt(buf, sizeof buf, bn->castle_gain_spells, nb, NULL);
+            town_text_add(&t, buf, PAL_CLR(YELLOW));
+        }
+    }
+    int rh = ml_row_h();
+    int row_y = r.y + r.h - rh - ML_ROW_RULE;
+    int ty = r.y + INSET;
+    for (int i = 0; i < t.n && ty + GH <= row_y; i++) {
+        bfont_draw(t.line[i].text, tx, ty, t.line[i].fg);
+        ty += GH + 2;
+    }
+    char label[64];
+    modern_castle_row(g, 0, label, sizeof label, NULL);
+    lattice_band_h(r.x, row_y - ML_ROW_RULE, r.w - img_w, ML_ROW_RULE);
+    sel_row(r.x, row_y, r.w - img_w, rh, r.x + pad, label, true,
+            PAL_CLR(YELLOW), PAL_CLR(DBLUE), TOUCH_LIST_CASTLE, 0);
+}
+
+void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
+    if (!g || !g->res) return;
+    if (modern_castle_page() == MC_PROMOTION) {
+        castle_draw_promotion(g, s, resources_castle_by_id(g->res, modern_castle_id()));
+        return;
+    }
+    const Resources *res = g->res;
+    const ResBanners *bn = &res->banners;
+    const ResUI *ui = &res->ui;
+    const char *cid = modern_castle_id();
+    const ResCastle *rc = resources_castle_by_id(res, cid);
+    const CastleRecord *cr = GameFindCastleConst(g, cid);
+    bool home = modern_castle_is_home();
+    McPage page = modern_castle_page();
+    int cursor = modern_castle_cursor();
+    int rows = modern_castle_rows(g);
+
+    const int BS = 2, BAND = 4, RULE = ML_ROW_RULE;
+    int pad = ML_PAD;
+    ML_Rect r = ml_full();
+    int right = r.x + r.w, bottom = r.y + r.h;
+    DrawRectangle(r.x, r.y, r.w, r.h, PAL_CLR(DBLUE));
+
+    // Title strip: the castle's name (and "> <page>"), its zone on the right.
+    int title_h = GH + 14;
+    char title[128];
+    snprintf(title, sizeof title, "%s", (rc && rc->name[0]) ? rc->name : cid);
+    if (page != MC_MENU) {
+        char label[64];
+        const char *tp[] = { "", bn->castle_menu_recruit, bn->castle_menu_audience,
+                             bn->castle_menu_garrison, bn->castle_menu_withdraw };
+        snprintf(label, sizeof label, "%s", tp[page]);
+        size_t n = strlen(title);
+        snprintf(title + n, sizeof title - n, " > %s", label);
+    }
+    bfont_draw(title, r.x + pad, r.y + (title_h - GH) / 2, PAL_CLR(YELLOW));
+    const ResZone *z = rc ? resources_zone_by_id(res, rc->zone) : NULL;
+    if (z && z->name[0])
+        bfont_draw(z->name, right - pad - (int)bfont_measure(z->name).x,
+                   r.y + (title_h - GH) / 2, PAL_CLR(YELLOW));
+    lattice_band_h(r.x, r.y + title_h, r.w, BAND);
+
+    // Backdrop at 2x, cut to the portrait's height; the ruler (or a castle
+    // troop) standing on it at 1x.
+    int top = r.y + title_h + BAND;
+    int fs = CL_TILE_W * BS;
+    int bw = ML_BACKDROP_W * BS, bh = fs;
+    Texture2D bd = loc_texture(s, LOC_CASTLE);
+    if (bd.id && bd.height > 0) {
+        float src_h = (float)bd.height * (float)bh / (float)(ML_BACKDROP_H * BS);
+        Rectangle src = { 0, (float)bd.height - src_h, (float)bd.width, src_h };
+        Rectangle dst = { (float)r.x, (float)top, (float)bw, (float)bh };
+        DrawTexturePro(bd, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+    } else {
+        DrawRectangle(r.x, top, bw, bh, PAL_CLR(BLACK));
+    }
+    int figure = (home && rc) ? resources_portrait_index(res, rc->special.figure) : -1;
+    if (s && figure >= 0 && s->portrait_frames[figure] > 0) {
+        ui_blit(s->portrait_anim[figure][sprites_frame((int)(GetTime() * 1000.0 / 180.0),
+                                                       s->portrait_frames[figure])],
+                r.x + CL_TILE_W / 2, top + bh - CL_TILE_H, CL_TILE_W, CL_TILE_H);
+    } else if (s) {
+        int ti = castle_pick_troop(g, cid);
+        if (ti >= 0) {
+            Texture2D ts = s->troop_anim[ti][sprites_frame(sprites_stand((int)(GetTime() * 6.66)),
+                                                           s->troop_anim_frames[ti])];
+            if (!ts.id) ts = s->troop_sprite[ti];
+            if (ts.id) ui_blit(ts, r.x + CL_TILE_W / 2, top + bh - CL_TILE_H, CL_TILE_W, CL_TILE_H);
+        }
+    }
+    lattice_band_v(r.x + bw, top, BAND, bh);
+
+    // Portrait slot: the troop under the cursor at 2x on a troop page; the
+    // promotion image after a promotion; else the ruler's portrait.
+    int fx = r.x + bw + BAND;
+    char label[64];
+    const char *row_troop = NULL;
+    if (page != MC_MENU && page != MC_AUDIENCE)
+        modern_castle_row(g, cursor, label, sizeof label, &row_troop);
+    int aud_needed = 0, aud_rank = 0;
+    int aud = modern_castle_audience(&aud_needed, &aud_rank);
+    const TroopDef *pt = row_troop ? troop_by_id(row_troop) : NULL;
+    if (pt && s) {
+        Texture2D ts = s->troop_anim[pt->index][sprites_frame(sprites_stand((int)(GetTime() * 6.66)),
+                                                              s->troop_anim_frames[pt->index])];
+        if (!ts.id) ts = s->troop_sprite[pt->index];
+        DrawRectangle(fx, top, fs, fs, PAL_CLR(BLACK));
+        if (ts.id) ui_blit(ts, fx, top, fs, fs);
+    } else if (home && rc) {
+        int idx = resources_portrait_index(res, rc->special.portrait);
+        if (page == MC_AUDIENCE && aud == GAME_AUDIENCE_PROMOTED + 1 &&
+            aud_rank >= 0 && aud_rank < 4) {
+            int pi = resources_portrait_index(res, rc->special.promotion[aud_rank]);
+            if (pi >= 0) idx = pi;
+        }
+        draw_portrait_anim(s, idx, fx, top, fs, 2.0);
+    } else {
+        DrawRectangle(fx, top, fs, fs, PAL_CLR(BLACK));
+    }
+    lattice_band_v(fx + fs, top, BAND, bh);
+    int hx = fx + fs + BAND;
+    hud_draw_siege_tile(g, s, hx, top);
+    hud_draw_gold_tile(g, s, hx, top + CL_TILE_H);
+
+    int low = top + bh;
+    lattice_band_h(r.x, low, r.w, BAND);
+    low += BAND;
+
+    // Left column: standard select rows, stacked from the top.
+    int mw = 16 * GW;
+    int lh = bottom - low;
+    int rh = ml_row_h();
+    int vis = (lh + RULE) / (rh + RULE);
+    int first = 0;
+    if (rows > vis && vis > 0) {
+        first = cursor - vis + 1;
+        if (first < 0) first = 0;
+        if (first > rows - vis) first = rows - vis;
+    }
+    for (int i = first; i < rows; i++) {
+        int ry = low + (i - first) * (rh + RULE);
+        if (ry + rh > bottom) break;
+        modern_castle_row(g, i, label, sizeof label, NULL);
+        bool sel = (i == cursor);
+        sel_row(r.x, ry, mw, rh, r.x + pad, label, sel,
+                sel ? PAL_CLR(YELLOW) : PAL_CLR(WHITE), PAL_CLR(DBLUE),
+                TOUCH_LIST_CASTLE, i);
+        lattice_band_h(r.x, ry + rh, mw, RULE);
+    }
+    lattice_band_v(r.x + mw, low, BAND, lh);
+
+    // Detail panel.
+    const int INSET = pad + 4;
+    int dx = r.x + mw + BAND + INSET;
+    int dw = right - dx - INSET;
+    int line_h = GH + 2;
+    int step_v = 0, step_max = 0;
+    bool stepper = modern_castle_stepper(&step_v, &step_max);
+    TownText t = { .n = 0, .max_w = dw };
+    char buf[RES_BANNER_LEN], nb[16], mb[16];
+    const char *msg = modern_castle_message();
+    if (msg) {
+        town_text_add(&t, msg, PAL_CLR(WHITE));
+    } else if (page == MC_MENU) {
+        const char *inv = home ? (cursor == 0 ? bn->castle_invite_recruit : bn->castle_invite_audience)
+                               : (cursor == 0 ? bn->castle_invite_garrison : bn->castle_invite_withdraw);
+        ResTemplateVar v[] = { { "HERO", g->character.name },
+                               { "CASTLE", (rc && rc->name[0]) ? rc->name : cid } };
+        resources_format_template(buf, sizeof buf, inv, v, 2);
+        town_text_add(&t, buf, PAL_CLR(WHITE));
+    } else if (page == MC_AUDIENCE) {
+        const ClassDef *cls = class_by_id(g->character.cls.id);
+        int rank = g->character.cls.rank_index;
+        if (aud && rc) {
+            const char *tmpl = aud == GAME_AUDIENCE_PROMOTED + 1 ? rc->special.audience_rank_up
+                             : aud == GAME_AUDIENCE_MORE_NEEDED + 1 ? rc->special.audience_more_needed
+                             : rc->special.audience_final_rank;
+            audience_substitute(g, aud_needed, tmpl, buf, sizeof buf);
+            town_text_add(&t, buf, PAL_CLR(WHITE));
+            if (aud == GAME_AUDIENCE_PROMOTED + 1 && cls && rank > 0) {
+                int l0, s0, p0, c0, l1, s1, p1, c1;
+                class_stats_at_rank(cls, rank - 1, &l0, &s0, &p0, &c0);
+                class_stats_at_rank(cls, rank, &l1, &s1, &p1, &c1);
+                town_text_gap(&t);
+                snprintf(nb, sizeof nb, "%d", l1 - l0);
+                castle_fmt(buf, sizeof buf, bn->castle_gain_leadership, nb, NULL);
+                town_text_add(&t, buf, PAL_CLR(YELLOW));
+                snprintf(nb, sizeof nb, "%d", c1 - c0);
+                castle_fmt(buf, sizeof buf, bn->castle_gain_commission, nb, NULL);
+                town_text_add(&t, buf, PAL_CLR(YELLOW));
+                if (s1 - s0 > 0) {
+                    snprintf(nb, sizeof nb, "%d", s1 - s0);
+                    castle_fmt(buf, sizeof buf, bn->castle_gain_spells, nb, NULL);
+                    town_text_add(&t, buf, PAL_CLR(YELLOW));
+                }
+            }
+        } else {
+            castle_fmt(buf, sizeof buf, bn->castle_rank, g->character.cls.rank_title, NULL);
+            town_text_add(&t, buf, PAL_CLR(WHITE));
+            if (cls && rank + 1 < cls->rank_count) {
+                castle_fmt(buf, sizeof buf, bn->castle_next_rank, cls->ranks[rank + 1].name, NULL);
+                town_text_add(&t, buf, PAL_CLR(WHITE));
+                int need = cls->ranks[rank + 1].villains_needed - GameVillainsCaught(g);
+                snprintf(nb, sizeof nb, "%d", need > 0 ? need : 0);
+                castle_fmt(buf, sizeof buf, bn->castle_needed, nb, NULL);
+                town_text_add(&t, buf, PAL_CLR(WHITE));
+            }
+        }
+    } else if (pt) {
+        town_text_add(&t, pt->name, PAL_CLR(YELLOW));
+        snprintf(nb, sizeof nb, "%d", pt->skill_level); town_text_pair(&t, ui->army_skill, nb);
+        snprintf(nb, sizeof nb, "%d", pt->move_rate);   town_text_pair(&t, ui->army_move, nb);
+        snprintf(nb, sizeof nb, "%d", pt->hit_points);  town_text_pair(&t, ui->army_hit_points, nb);
+        snprintf(nb, sizeof nb, "%d-%d", pt->melee_min, pt->melee_max); town_text_pair(&t, ui->army_damage, nb);
+        snprintf(nb, sizeof nb, "%d", pt->recruit_cost); town_text_pair(&t, ui->army_g_cost, nb);
+        town_text_gap(&t);
+        int in_army = 0, in_garrison = 0;
+        for (int k = 0; k < GAME_ARMY_SLOTS; k++) {
+            if (strcmp(g->army[k].id, pt->id) == 0) in_army += g->army[k].count;
+            if (cr && strcmp(cr->garrison[k].id, pt->id) == 0) in_garrison += cr->garrison[k].count;
+        }
+        snprintf(nb, sizeof nb, "%d", in_army);
+        castle_fmt(buf, sizeof buf, bn->castle_have, nb, NULL);
+        town_text_add(&t, buf, PAL_CLR(WHITE));
+        if (page == MC_RECRUIT) {
+            int m = GameMaxRecruitable(g, pt->id);
+            if (m < 0) m = 0;
+            if (pt->recruit_cost > 0 && g->stats.gold / pt->recruit_cost < m)
+                m = g->stats.gold / pt->recruit_cost;
+            snprintf(nb, sizeof nb, "%d", m);
+            castle_fmt(buf, sizeof buf, bn->castle_can_recruit, nb, NULL);
+            town_text_add(&t, buf, PAL_CLR(WHITE));
+        } else {
+            snprintf(nb, sizeof nb, "%d", in_garrison);
+            castle_fmt(buf, sizeof buf, bn->castle_in_garrison, nb, NULL);
+            town_text_add(&t, buf, PAL_CLR(WHITE));
+            int moving = stepper ? step_v : in_garrison;
+            if (page == MC_WITHDRAW &&
+                GameArmyTotalLeadership(g) + pt->hit_points * moving > g->stats.leadership_current) {
+                town_text_gap(&t);
+                town_text_add(&t, bn->castle_over_leadership, PAL_CLR(YELLOW));
+            }
+        }
+    } else if (rows == 1 && (page == MC_GARRISON || page == MC_WITHDRAW)) {
+        town_text_add(&t, bn->castle_no_troops, PAL_CLR(WHITE));
+    }
+
+    int ty = low + INSET;
+    int per = (lh - 2 * INSET) / line_h - (stepper ? 3 : 0);
+    for (int i = 0; i < t.n && i < per; i++) {
+        const TownLine *l = &t.line[i];
+        if (l->label > 0) {
+            char lab[72];
+            snprintf(lab, sizeof lab, "%.*s", l->label, l->text);
+            bfont_draw(lab, dx, ty, PAL_CLR(YELLOW));
+            bfont_draw(l->text + l->label, dx + (int)bfont_measure(lab).x, ty, l->fg);
+        } else {
+            bfont_draw(l->text, dx, ty, l->fg);
+        }
+        ty += line_h;
+    }
+
+    // The count stepper, along the bottom of the panel:
+    //   Cost: N gold                      (recruiting)
+    //   <<  <   20 of 50   >  >>
+    // Left/Right step one, Down/Up ten, Enter moves, Esc cancels; each arrow
+    // is a tap target for the key it stands for.
+    if (stepper) {
+        int sy = bottom - INSET - 2 * GH - 4;
+        if (page == MC_RECRUIT && pt) {
+            snprintf(nb, sizeof nb, "%d", pt->recruit_cost * step_v);
+            castle_fmt(buf, sizeof buf, bn->castle_cost, nb, NULL);
+            bfont_draw(buf, dx, sy - line_h, PAL_CLR(WHITE));
+        }
+        snprintf(nb, sizeof nb, "%d", step_v);
+        snprintf(mb, sizeof mb, "%d", step_max);
+        castle_fmt(buf, sizeof buf, bn->castle_count_of, nb, mb);
+        ml_stepper_draw(dx, sy, dw, buf);
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Options screen (O key). A single text panel below the status bar
 // listing every adventure keybinding. Matches options_menu() 
@@ -929,100 +1296,63 @@ void modern_overlay_draw_toast(void) {
 // Controls settings panel .
 // ---------------------------------------------------------------------------
 
+typedef struct { const Game *g; int vis_idx[8]; int vis; } ControlsCtx;
+
+static bool controls_row(void *ctx, int k, char *label, char *right, int cap) {
+    const ControlsCtx *c = (const ControlsCtx *)ctx;
+    const Game *g = c->g;
+    const ResUI *ui = &g->res->ui;
+    if (k == c->vis) {   // the shell's Scale row
+        snprintf(label, (size_t)cap, "Scale");
+        snprintf(right, 48, "%dx", views_controls_scale_value());
+        return true;
+    }
+    int i = c->vis_idx[k];
+    snprintf(label, (size_t)cap, "%s", g->res->controls.items[i].label);
+    int val = g->stats.options[i];
+    if (strcmp(g->res->controls.items[i].type, "bool") == 0)
+        snprintf(right, 48, "%s", val == 1 ? ui->controls_on : ui->controls_off);
+    else
+        snprintf(right, 48, "%d", val);
+    return !views_controls_row_disabled(g, i);
+}
+
 void modern_overlay_draw_controls(const Game *g) {
     if (!g || !g->res) return;
     int count = g->res->controls.count;
-    int cursor = views_controls_cursor();
-    if (cursor >= count) cursor = count ? count - 1 : 0;
 
-    // Visible settings: skip anything marked hidden (CGA in our data).
-    int vis_idx[8];
-    int vis = 0;
-    for (int i = 0; i < count && vis < 8; i++) {
+    // Visible settings: skip anything marked hidden (CGA in our data), then the
+    // shell's Scale row. The cursor counts visible rows (main.c).
+    ControlsCtx c = { .g = g, .vis = 0 };
+    for (int i = 0; i < count && c.vis < 8; i++) {
         if (g->res->controls.items[i].hidden) continue;
-        vis_idx[vis++] = i;
+        c.vis_idx[c.vis++] = i;
     }
-    if (vis == 0) return;
+    if (c.vis == 0) return;
+    int cur_k = views_controls_cursor();
+    if (cur_k < 0) cur_k = 0;
+    if (cur_k > c.vis) cur_k = c.vis;
 
     // The large layout, the same rect as the game menu it opens from
-    // (REQ-430j), so Controls reads as a page of that menu.
+    // (REQ-430j), its settings as standard select rows with the value at the
+    // right (REQ-430n).
     ML_Rect lr = ml_large();
-    int pad = ML_PAD;
-    int w = lr.w, h = lr.h, x = lr.x, y = lr.y;
-
-    draw_panel(x, y, w, h, PAL_CLR(DBLUE));
-
-    int tx = x + pad;
-    int ty = y + pad;
-
-    // Title row (highlighted, centered-ish).
-    const ResUI *ui_ctl = (g && g->res) ? &g->res->ui : NULL;
-    bfont_draw(ui_ctl ? ui_ctl->controls_title : " Controls ",
-               tx, ty, PAL_CLR(YELLOW));
-    ty += GH + 2;
-
-    for (int k = 0; k < vis; k++) {
-        int i = vis_idx[k];
-        bool is_selected = (i == cursor);
-        bool disabled    = views_controls_row_disabled(g, i);
-        Color fg;
-        if (disabled) {
-            fg = PAL_CLR(DGREY);
-        } else {
-            fg = is_selected ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
-        }
-
-        char label[48];
-        snprintf(label, sizeof(label), "%c %s",
-                 '1' + k, g->res->controls.items[i].label);
-        Color vfg = fg;   // value colour; inverted with the row
-        sel_row(x, ty, w, GH + 2, tx, label, is_selected && !disabled, fg, PAL_CLR(DBLUE), 0, 0);
-        if (is_selected && !disabled) vfg = PAL_CLR(DBLUE);
-        // Touch: rows answer to their digit (select + advance in one).
-        touch_region(x, ty, w, GH + 2, KEY_ONE + k);
-
-        int val = g->stats.options[i];
-        const char *type = g->res->controls.items[i].type;
-        if (strcmp(type, "bool") == 0) {
-            const char *text = (val == 1) ? ui_ctl->controls_on
-                                          : ui_ctl->controls_off;
-            int tw = (int)bfont_measure(text).x;
-            bfont_draw(text, x + w - pad - tw, ty, vfg);
-        } else {
-            int range = g->res->controls.items[i].range;
-            if (range > 10) range = 10;
-            int sx = x + w - pad - range * GW;
-            for (int n = 0; n < range; n++) {
-                char buf[2] = { (char)('0' + n), 0 };
-                Color nc;
-                if (disabled) nc = PAL_CLR(DGREY);
-                else if (vfg.r == PAL_CLR(DBLUE).r && vfg.g == PAL_CLR(DBLUE).g && vfg.b == PAL_CLR(DBLUE).b)
-                                nc = (n == val) ? PAL_CLR(WHITE) : PAL_CLR(DBLUE);   // inverted row: the set digit stands out
-                else            nc = (n == val) ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
-                bfont_draw(buf, sx + n * GW, ty, nc);
-            }
-        }
-        ty += GH + 2;
-    }
-
-    // Scale: appended by the shell, not part of the pack's controls. Backed by
-    // present.c rather than stats.options[], because a display preference must
-    // not travel inside a save file. There is no legacy counterpart: a legacy
-    // pack looks exactly as it did before render modes existed.
-    {
-        bool is_selected = (cursor == vis);
-        Color fg = is_selected ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
-        char label[48];
-        snprintf(label, sizeof(label), "%c Scale", '1' + vis);
-        sel_row(x, ty, w, GH + 2, tx, label, is_selected, fg, PAL_CLR(DBLUE), 0, 0);
-        touch_region(x, ty, w, GH + 2, KEY_ONE + vis);
-
-        int sc = views_controls_scale_value();
-        char val[16];
-        snprintf(val, sizeof(val), "%dx", sc);
-        int vw = (int)bfont_measure(val).x;
-        bfont_draw(val, x + w - pad - vw, ty, is_selected ? PAL_CLR(DBLUE) : fg);
-    }
+    draw_panel(lr.x, lr.y, lr.w, lr.h, PAL_CLR(DBLUE));
+    const ResUI *ui = &g->res->ui;
+    int ty = lr.y + ML_PAD;
+    bfont_draw(ui->controls_title, lr.x + ML_PAD, ty, PAL_CLR(YELLOW));
+    ty += GH + ML_PAD;
+    lattice_band_h(lr.x, ty, lr.w, 4);
+    ty += 4;
+    int rows = c.vis + 1;
+    int h = lr.y + lr.h - ty;
+    ml_list_draw(lr.x, ty, lr.w, h, rows, cur_k, controls_row, &c, 0, PAL_CLR(DBLUE));
+    // Taps answer to each row's digit (select and advance in one), as before.
+    int vis_rows = ml_list_fit(h);
+    int first = ml_list_first(rows, cur_k, vis_rows);
+    for (int k = first; k < rows && k < first + vis_rows; k++)
+        touch_region(lr.x, ty + (k - first) * (ml_row_h() + ML_ROW_RULE), lr.w, ml_row_h(),
+                     KEY_ONE + k);
 }
 
 // ---------------------------------------------------------------------------

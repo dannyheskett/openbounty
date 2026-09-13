@@ -11,6 +11,8 @@
 #include "tables.h"
 #include "resources.h"
 #include "raylib.h"
+#include "modern/castle.h"
+#include "overlay_impl.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -73,6 +75,7 @@ void screen_own_castle_open(Game *g, const char *castle_id) {
     s_anim_troop_idx = pick_castle_troop(g);
     s_frame = 0;
     s_last_tick = 0.0;
+    if (CL_IS_MODERN) modern_castle_open(g, false, castle_id);
     // Enqueue the view (carry the castle id in the request payload too); the
     // shell sync pushes it / autoplay acks it. Context statics above stay as-is.
     PlayerRequest *r = player_io_raise_view(g, VIEW_OWN_CASTLE, /*replace=*/false,
@@ -96,6 +99,7 @@ const char *screen_own_castle_castle_id(void) {
 }
 
 void screen_own_castle_draw(const Game *g, const Sprites *s) {
+    if (CL_IS_MODERN) { modern_overlay_draw_castle(g, s); return; }
     // 1) Castle backdrop. Advance frame at  SYN cadence.
     double now = GetTime();
     if (now - s_last_tick >= OWN_CASTLE_TICK) {

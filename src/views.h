@@ -224,6 +224,9 @@ void views_gate_open(const GateDestination *dests, int count,
                      bool is_town);
 // Read accessors for the renderer.
 int  views_gate_count(void);
+// Modern: the gate picker's columns of standard rows, and rows in each.
+#define VIEWS_GATE_COLUMNS 3
+int  views_gate_rows_per_column(void);
 bool views_gate_is_town(void);
 int  views_gate_cursor(void);
 const GateDestination *views_gate_dest(int idx);

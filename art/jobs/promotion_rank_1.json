@@ -1,0 +1,17 @@
+{
+  "id": "promotion_rank_1",
+  "prompt": "Emperor Traianus, a regal clean-shaven grey-haired Roman emperor in a golden laurel wreath and a deep imperial purple toga with gold embroidery over a gilded cuirass, standing before his marble throne under purple hangings and presenting a round silver phalera medal on a leather harness toward the viewer as an award, a proud stern expression, the award catching the light and the brightest thing in the scene, marble columns and a golden eagle standard behind him, the scene filling the whole picture edge to edge",
+  "style": "rd_pro__default",
+  "width": 144,
+  "height": 170,
+  "seed": 6301,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    144,
+    170
+  ],
+  "_pack_path": "art/ui/promotion_rank_1.png",
+  "_note": "Promotion image (2026-09-13), first promotion award: silver phalerae: the modern home castle's Promotion page, the same 144x170 size and route as end_win_screen / end_lose_screen (rd_pro__default, opaque, drawn at the pack's UI scale beside the text). No class shown; no reference images."
+}

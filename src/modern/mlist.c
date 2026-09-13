@@ -1,0 +1,109 @@
+// src/modern/mlist.c -- the standard modern select list and count stepper
+// (see mlist.h).
+
+#include "modern/mlist.h"
+#include "modern/mlayout.h"
+#include "input_host.h"
+#include "lattice.h"
+#include "select.h"
+#include "touch.h"
+#include "palette.h"
+#include "bfont.h"
+#include <string.h>
+
+int ml_list_first(int count, int cursor, int vis) {
+    if (vis < 1 || count <= vis) return 0;
+    int first = cursor - vis + 1;
+    if (first < 0) first = 0;
+    if (first > count - vis) first = count - vis;
+    return first;
+}
+
+int ml_list_fit(int h) {
+    int n = (h + ML_ROW_RULE) / (ml_row_h() + ML_ROW_RULE);
+    return n < 1 ? 1 : n;
+}
+
+int ml_list_height(int rows) {
+    return rows * (ml_row_h() + ML_ROW_RULE);
+}
+
+int ml_list_draw(int x, int y, int w, int h, int count, int cursor,
+                 MlRowFn fn, void *ctx, int touch_list, Color bg) {
+    return ml_list_draw_ex(x, y, w, h, count, cursor, fn, ctx, touch_list, bg, 0);
+}
+
+int ml_list_draw_ex(int x, int y, int w, int h, int count, int cursor,
+                    MlRowFn fn, void *ctx, int touch_list, Color bg, int touch_base) {
+    int rh = ml_row_h(), pitch = rh + ML_ROW_RULE;
+    int vis = ml_list_fit(h);
+    int first = ml_list_first(count, cursor < 0 ? 0 : cursor, vis);
+    int shown = 0;
+    for (int i = first; i < count && shown < vis; i++, shown++) {
+        char label[96] = "", right[48] = "";
+        bool enabled = fn ? fn(ctx, touch_base + i, label, right, (int)sizeof label) : true;
+        int ry = y + shown * pitch;
+        bool sel = (i == cursor);
+        Color fg = !enabled ? PAL_CLR(DGREY) : sel ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
+        sel_row(x, ry, w, rh, x + ML_PAD, label, sel, fg, bg,
+                enabled ? touch_list : 0, touch_base + i);
+        int ty = ry + (rh - bfont_line_height()) / 2;
+        if (right[0]) {
+            int tw = (int)bfont_measure(right).x;
+            bfont_draw(right, x + w - ML_PAD - tw, ty, sel ? bg : fg);
+        }
+        // More rows above or below: a small arrow at the row's right edge.
+        int ax = x + w - ML_PAD / 2 - 6;
+        if (shown == 0 && first > 0)
+            DrawTriangle((Vector2){ (float)ax, (float)ry + 4 }, (Vector2){ (float)ax - 5, (float)ry + 12 },
+                         (Vector2){ (float)ax + 5, (float)ry + 12 }, sel ? bg : PAL_CLR(YELLOW));
+        if (shown == vis - 1 && i + 1 < count)
+            DrawTriangle((Vector2){ (float)ax - 5, (float)(ry + rh - 12) }, (Vector2){ (float)ax, (float)(ry + rh - 4) },
+                         (Vector2){ (float)ax + 5, (float)(ry + rh - 12) }, sel ? bg : PAL_CLR(YELLOW));
+        lattice_band_h(x, ry + rh, w, ML_ROW_RULE);
+    }
+    return shown;
+}
+
+int ml_stepper_height(void) { return BFONT_GLYPH_H * 2; }
+
+void ml_stepper_draw(int x, int y, int w, const char *text) {
+    int gh = BFONT_GLYPH_H;
+    int bw = gh * 2, bh = gh * 2, pad = ML_PAD;
+    int xs[4] = { x, x + bw + pad, x + w - 2 * bw - pad, x + w - bw };
+    int keys[4] = { KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_UP };
+    for (int k = 0; k < 4; k++) {
+        int bx = xs[k];
+        DrawRectangleLines(bx, y, bw, bh, PAL_CLR(YELLOW));
+        int cy = y + bh / 2;
+        bool leftward = (k < 2);
+        int arrows = (k == 0 || k == 3) ? 2 : 1;
+        for (int a = 0; a < arrows; a++) {
+            float ax = (float)(bx + bw / 2 + (arrows == 2 ? (a == 0 ? -6 : 6) : 0));
+            if (leftward)
+                DrawTriangle((Vector2){ ax + 5, (float)cy - 7 }, (Vector2){ ax - 5, (float)cy },
+                             (Vector2){ ax + 5, (float)cy + 7 }, PAL_CLR(YELLOW));
+            else
+                DrawTriangle((Vector2){ ax - 5, (float)cy - 7 }, (Vector2){ ax - 5, (float)cy + 7 },
+                             (Vector2){ ax + 5, (float)cy }, PAL_CLR(YELLOW));
+        }
+        touch_region(bx, y, bw, bh, keys[k]);
+    }
+    int tw = (int)bfont_measure(text).x;
+    int mid = x + w / 2;
+    bfont_draw(text, mid - tw / 2, y + (bh - gh) / 2, PAL_CLR(YELLOW));
+    touch_region(mid - tw / 2 - pad, y, tw + 2 * pad, bh, KEY_ENTER);
+}
+
+bool ml_stepper_keys(int *value, int lo, int hi) {
+    int v = *value;
+    if (input_key_pressed(KEY_LEFT))  v -= 1;
+    if (input_key_pressed(KEY_RIGHT)) v += 1;
+    if (input_key_pressed(KEY_DOWN))  v -= 10;
+    if (input_key_pressed(KEY_UP))    v += 10;
+    if (v < lo) v = lo;
+    if (v > hi) v = hi;
+    bool changed = (v != *value);
+    *value = v;
+    return changed;
+}

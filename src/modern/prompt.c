@@ -11,6 +11,8 @@
 
 #include "prompt_impl.h"
 #include "modern/mlayout.h"
+#include "modern/mlist.h"
+#include "lattice.h"
 #include "layout.h"
 #include "ui.h"
 #include "select.h"
@@ -22,146 +24,109 @@
 #include "raylib.h"
 #include <stdio.h>
 
+// Question dialogs (REQ-430n): the header and body, a lattice band, then the
+// answers -- standard select rows (Yes/No, or one row per choice), or the count
+// stepper for a count. The panel runs the width of the map pane inside its
+// margin and sits on the pane's bottom edge, so the hero at the centre stays in
+// view; it is as tall as its text and answers, and when that would pass the top
+// of the pane the answer rows scroll instead.
+
+typedef struct { const PromptView *p; int max_w; } RowCtx;
+
+static bool prompt_row(void *ctx, int i, char *label, char *right, int cap) {
+    const RowCtx *rc = (const RowCtx *)ctx;
+    const PromptView *p = rc->p;
+    right[0] = '\0';
+    if (p->kind == PK_YES_NO) {
+        const Resources *res = resources_current();
+        const char *s = res ? (i == 0 ? res->ui.prompt_yes : res->ui.prompt_no)
+                            : (i == 0 ? "Yes" : "No");
+        snprintf(label, (size_t)cap, "%s", s);
+        return true;
+    }
+    // A choice keeps to one line: the part that fits the row.
+    const char *q = p->choices[i];
+    if (bfont_take_line(&q, rc->max_w, label, cap) <= 0) label[0] = '\0';
+    return true;
+}
+
 void modern_prompt_draw(const PromptView *p) {
     if (!p || p->kind == PK_NONE) return;
 
-    int row_h = BFONT_GLYPH_H;
-    int pad = ML_PAD;
+    const int BAND = 4;
+    const int INSET = ML_PAD + 4;
+    int line_h = BFONT_GLYPH_H + 2;
+    int sp = ml_space();
+    int x = CL_MAP_X + sp, w = CL_MAP_W - 2 * sp;
+    int bottom = CL_MAP_Y + CL_MAP_H - sp;
+    int max_h = CL_MAP_H - 2 * sp;
+    int text_w = w - 2 * INSET;
 
-    // Numeric and A/B prompts answer by rows, one per choice, each as many
-    // lines as its label wraps to; the body above them is the lead text.
     bool choices = (p->kind == PK_NUMERIC || p->kind == PK_AB_CHOICE) && p->choice_n > 0;
     const char *body = choices ? p->lead : p->body;
 
-    // Rows kept at the bottom for the answer chrome, drawn after the body.
-    //   text-input      -> 2 (typed value + hint), or 5 for the digit grid
-    //   yes/no          -> 2 (the Yes and No rows)
-    //   numeric, A/B    -> the choice rows' lines
-    int bottom_rows = 0;
-    if (p->kind == PK_TEXT_INPUT)      bottom_rows = p->selector ? 5 : 2;
-    else if (p->kind == PK_YES_NO)     bottom_rows = 2;
-
-    // The small band along the bottom of the map pane when the whole prompt
-    // fits it, so the hero at the centre tile stays in view while the question
-    // is answered; the large rect when it does not (REQ-430j). The same rule
-    // as a message dialog, with the answer rows counted in.
-    ML_Rect rr = ml_small();
-    int choice_lines[8] = { 0 };
-    for (int pass = 0; pass < 2; pass++) {
-        if (choices) {
-            bottom_rows = 0;
-            for (int i = 0; i < p->choice_n && i < 8; i++) {
-                const char *q = p->choices[i];
-                char probe[160];
-                int n = 0;
-                while (*q && bfont_take_line(&q, rr.w - 4 * pad, probe, (int)sizeof probe) > 0) n++;
-                choice_lines[i] = n > 0 ? n : 1;
-                bottom_rows += choice_lines[i];
-            }
-        }
-        if (pass == 1) break;
-        int max_w_small = rr.w - 2 * pad;
-        int need = (p->header[0] ? 1 : 0) + bottom_rows;
+    // Text height: header, then the wrapped body.
+    int text_lines = p->header[0] ? 1 : 0;
+    {
         const char *q = body;
         char probe[160];
-        while (*q && bfont_take_line(&q, max_w_small, probe, (int)sizeof probe) > 0) need++;
-        if (need <= ml_lines(rr)) break;
-        rr = ml_large();
+        while (*q && bfont_take_line(&q, text_w, probe, (int)sizeof probe) > 0) text_lines++;
     }
-    int x = rr.x, y = rr.y, w = rr.w, h = rr.h;
-    int max_w = w - 2 * pad;
+    int rows = (p->kind == PK_YES_NO) ? 2 : choices ? p->choice_n : 0;
+    bool stepper = (p->kind == PK_TEXT_INPUT);
+    int answers_h = stepper ? 2 * INSET + ml_stepper_height()
+                  : rows > 0 ? ml_list_height(rows) : 0;
+    int text_h = 2 * INSET + text_lines * line_h;
+    int h = text_h + (answers_h > 0 ? BAND + answers_h : 0);
+    if (h > max_h) {
+        // Keep at least one answer row; the rest scroll.
+        int room = max_h - text_h - BAND;
+        int min_ans = stepper ? answers_h : ml_list_height(1);
+        if (room < min_ans) room = min_ans;
+        if (answers_h > room) answers_h = room;
+        h = text_h + BAND + answers_h;
+        if (h > max_h) { text_h -= h - max_h; h = max_h; }
+    }
+    int y = bottom - h;
 
     DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
     ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
 
-    int tx = x + pad;
-    int ty = y + pad;
-
-    if (p->header[0]) {
+    // Text.
+    int tx = x + INSET, ty = y + INSET;
+    int text_floor = y + text_h - INSET;
+    if (p->header[0] && ty + line_h <= text_floor) {
         bfont_draw(p->header, tx, ty, PAL_CLR(YELLOW));
-        ty += row_h;
+        ty += line_h;
     }
-
-    // Body: render every line that fits inside the inner rect, leaving
-    // bottom_rows free for the hint chrome at the very bottom. Body lines
-    // advance by the glyph height with no leading, matching the message
-    // dialog, so equal-length bodies render identically in both.
     {
         const char *q = body;
         char line[160];
-        int body_step  = BFONT_GLYPH_H;
-        int body_floor = y + h - pad - bottom_rows * row_h;
-        while (*q && ty + body_step <= body_floor) {
-            bfont_take_line(&q, max_w, line, (int)sizeof(line));
+        while (*q && ty + line_h <= text_floor + 2) {
+            if (bfont_take_line(&q, text_w, line, (int)sizeof line) <= 0) break;
             bfont_draw(line, tx, ty, PAL_CLR(WHITE));
-            ty += body_step;
+            ty += line_h;
         }
     }
+    if (answers_h <= 0) return;
 
-    // Hint chrome at the bottom of the panel.
-    const Resources *res = resources_current();
-    const ResUI *ui = res ? &res->ui : NULL;
-    if (p->kind == PK_TEXT_INPUT) {
-        // Show current input value, a caret, and Enter/Esc hint.
-        char typed[16];
-        snprintf(typed, sizeof(typed), "%s_",
-                 p->text_len > 0 ? p->text_buf : "");
-        bfont_draw_centered(typed,
-                            x + w / 2, y + h - pad - row_h * 2, PAL_CLR(WHITE));
-        if (p->selector) {
-            int cw = 2 * BFONT_GLYPH_W, chh = BFONT_GLYPH_H + 2 * CL_UI;
-            textsel_draw(p->ts, x + w - pad - textsel_w(true, cw) - 2 * CL_UI,
-                         y + h - pad - textsel_h(true, chh), cw, chh,
-                         PAL_CLR(YELLOW), PAL_CLR(DBLUE), TOUCH_LIST_TEXTSEL);
-        } else {
-            bfont_draw_centered(ui ? ui->prompt_text_hint
-                                   : "(Enter to confirm / ESC cancel)",
-                                x + w / 2, y + h - pad - row_h, PAL_CLR(YELLOW));
-        }
-    } else if (choices) {
-        // One row per choice; a long label wraps inside its own bar.
-        int ry = y + h - pad - bottom_rows * row_h;
-        for (int i = 0; i < p->choice_n && i < 8; i++) {
-            int rh = choice_lines[i] * row_h;
-            bool sel = (p->choice_cursor == i);
-            int rx = x + pad, rw = w - 2 * pad;
-            if (sel) DrawRectangle(rx, ry, rw, rh, PAL_CLR(YELLOW));
-            const char *q = p->choices[i];
-            char line[160];
-            int ly = ry;
-            while (*q && bfont_take_line(&q, w - 4 * pad, line, (int)sizeof line) > 0) {
-                bfont_draw(line, rx + pad, ly, sel ? PAL_CLR(DBLUE) : PAL_CLR(YELLOW));
-                ly += row_h;
-            }
-            touch_region_row(rx, ry, rw, rh, TOUCH_LIST_PROMPT, i);
-            ry += rh;
-        }
-    } else if (p->kind == PK_NUMERIC && p->max_choice != 5) {
-        char buf[32];
-        if (ui) {
-            char cbuf[12];
-            snprintf(cbuf, sizeof cbuf, "%d", p->max_choice);
-            ResTemplateVar v[] = { { "COUNT", cbuf } };
-            resources_format_template(buf, sizeof buf,
-                                      ui->prompt_numeric_range_hint, v, 1);
-        } else {
-            snprintf(buf, sizeof(buf), "(1-%d or ESC)", p->max_choice);
-        }
-        bfont_draw_centered(buf,
-                            x + w / 2, y + h - pad - row_h, PAL_CLR(YELLOW));
-    } else if (p->kind == PK_AB_CHOICE) {
-        // Chrome-less -- the body already names A) / B).
-    } else if (p->kind == PK_YES_NO) {
-        // Two selectable rows in place of the "(y/n)?" hint.
-        const char *labels[2] = { "Yes", "No" };
-        int ry = y + h - pad - 2 * row_h;
-        for (int i = 0; i < 2; i++) {
-            sel_row(x + pad, ry + i * row_h, w - 2 * pad, row_h, x + pad + 2 * CL_UI, labels[i],
-                    p->yn_cursor == i, PAL_CLR(YELLOW), PAL_CLR(DBLUE), TOUCH_LIST_PROMPT, i);
-        }
-    } else {
-        const char *hint = ui ? ui->prompt_numeric_5_hint : "(1-5 or ESC)";
-        bfont_draw_centered(hint,
-                            x + w / 2, y + h - pad - row_h, PAL_CLR(YELLOW));
+    int ay = y + text_h;
+    lattice_band_h(x, ay, w, BAND);
+    ay += BAND;
+
+    if (stepper) {
+        const Resources *res = resources_current();
+        char nb[16], mb[16], text[64];
+        snprintf(nb, sizeof nb, "%d", p->step_value);
+        snprintf(mb, sizeof mb, "%d", p->step_max > 0 ? p->step_max : 0);
+        ResTemplateVar v[] = { { "COUNT", nb }, { "MAX", mb } };
+        resources_format_template(text, sizeof text,
+                                  res ? res->banners.castle_count_of : "%COUNT% of %MAX%", v, 2);
+        ml_stepper_draw(x + INSET, ay + INSET, w - 2 * INSET, text);
+        return;
     }
+    RowCtx ctx = { p, w - 2 * ML_PAD };
+    int cursor = (p->kind == PK_YES_NO) ? p->yn_cursor : p->choice_cursor;
+    ml_list_draw(x, ay, w, answers_h, rows, cursor, prompt_row, &ctx,
+                 TOUCH_LIST_PROMPT, PAL_CLR(DBLUE));
 }

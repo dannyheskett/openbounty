@@ -2153,6 +2153,25 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   longer than its column scrolls to keep the cursor in view. Defined
   once as `ml_row_h` / `ML_ROW_RULE` in `src/modern/mlayout.h` and documented
   in `docs/UI-PANELS.md`; the town screen uses it first (2026-09-13).
+- **REQ-430m.** **Modern castles and the count stepper.** The home castle and
+  owned castles use the town screen's layout (sections, pages of rows and Back,
+  Esc back a level). Recruit lists the castle troops with their statistics;
+  Audience is always available and promotes when a promotion is due, showing
+  the castle's `special.promotion[rank]` image and the rank's gains; the ruler's
+  portrait and standing figure come from `special.portrait` / `special.figure`.
+  Garrison and Withdraw move any part of a stack (`GameGarrisonTroopCount`,
+  `GameUngarrisonTroopCount`; a whole stack is exactly the original move, and
+  only a whole last stack is refused). Counts are chosen with the count
+  stepper documented in `docs/UI-PANELS.md`. Legacy unchanged (2026-09-13).
+- **REQ-430n.** **Question dialogs and lists on standard rows (modern).** Every
+  modern question draws its text, a lattice band, then standard select rows
+  (Yes/No from `strings.prompts.yes` / `no`, one row per numbered or A/B
+  choice) or the count stepper for a count, in a panel on the map pane's
+  bottom edge sized to its content, its rows scrolling past the pane's top.
+  The game menu, Controls, title menu, load picker, difficulty rows, world map
+  orb row, spells view and gate picker use the same rows (`src/modern/mlist.c`).
+  Combat's Actions menu and spell picker are unchanged for now; legacy is
+  unchanged (2026-09-13).
 - **REQ-430f.** **Keyboard detection and the letter selector (modern).**
   `input_host` latches which physical devices have been used: a real key
   event (not an injected one), a touch contact, a gamepad button or stick

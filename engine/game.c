@@ -2364,21 +2364,28 @@ static bool garrison_location_ok(const Game *g, const char *castle_id) {
     return cr && cr->owner_kind == CASTLE_OWNER_PLAYER;
 }
 
-//  garrison_troop.
-int GameGarrisonTroop(Game *g, const char *castle_id, int slot) {
+//  garrison_troop, generalised to part of a stack. Moving the whole stack is
+// exactly the original: refused when it is the hero's last, and the army is
+// compacted. Moving part of it always leaves the stack in the army, so it is
+// never the last-army refusal.
+int GameGarrisonTroopCount(Game *g, const char *castle_id, int slot, int count) {
     if (!g || slot < 0 || slot >= GAME_ARMY_SLOTS) return 1;
     if (!garrison_location_ok(g, castle_id)) return 1;
     const ArmyStack *src = &g->army[slot];
     if (!src->id[0] || src->count == 0) return 1;
+    if (count <= 0 || count > src->count) return 1;
+    bool whole = (count == src->count);
 
     // Refuse if this would leave the player with no army (
     // game->player_troops[1]; we count non-empty slots other than `slot`).
-    int remaining = 0;
-    for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
-        if (i == slot) continue;
-        if (g->army[i].id[0] && g->army[i].count > 0) { remaining++; break; }
+    if (whole) {
+        int remaining = 0;
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+            if (i == slot) continue;
+            if (g->army[i].id[0] && g->army[i].count > 0) { remaining++; break; }
+        }
+        if (remaining == 0) return 2;
     }
-    if (remaining == 0) return 2;
 
     CastleRecord *cr = GameFindCastle(g, castle_id);
     if (!cr) return 1;
@@ -2397,8 +2404,12 @@ int GameGarrisonTroop(Game *g, const char *castle_id, int slot) {
     if (dst < 0) return 1;
 
     copy_id(cr->garrison[dst].id, sizeof(cr->garrison[dst].id), src->id);
-    cr->garrison[dst].count += src->count;
+    cr->garrison[dst].count += count;
 
+    if (!whole) {
+        g->army[slot].count -= count;
+        return 0;
+    }
     // Remove from player. dismiss_troop zeroes the stack and
     // leaves a gap; openbounty compacts so the filled slots stay
     // contiguous (matches the visible UI expectation that A/B/C/...
@@ -2409,14 +2420,22 @@ int GameGarrisonTroop(Game *g, const char *castle_id, int slot) {
     return 0;
 }
 
-//  ungarrison_troop.
-int GameUngarrisonTroop(Game *g, const char *castle_id, int slot) {
+int GameGarrisonTroop(Game *g, const char *castle_id, int slot) {
+    if (!g || slot < 0 || slot >= GAME_ARMY_SLOTS) return 1;
+    return GameGarrisonTroopCount(g, castle_id, slot, g->army[slot].count);
+}
+
+//  ungarrison_troop, generalised to part of a stack. The whole stack is the
+// original move (the garrison is compacted); part of it leaves the rest there.
+int GameUngarrisonTroopCount(Game *g, const char *castle_id, int slot, int count) {
     if (!g || slot < 0 || slot >= GAME_ARMY_SLOTS) return 1;
     if (!garrison_location_ok(g, castle_id)) return 1;
     CastleRecord *cr = GameFindCastle(g, castle_id);
     if (!cr) return 1;
     const Unit *src = &cr->garrison[slot];
     if (!src->id[0] || src->count == 0) return 1;
+    if (count <= 0 || count > src->count) return 1;
+    bool whole = (count == src->count);
 
     // Find matching army stack or empty slot.
     int dst = -1;
@@ -2432,8 +2451,12 @@ int GameUngarrisonTroop(Game *g, const char *castle_id, int slot) {
     if (dst < 0) return 1;
 
     copy_id(g->army[dst].id, sizeof(g->army[dst].id), src->id);
-    g->army[dst].count += src->count;
+    g->army[dst].count += count;
 
+    if (!whole) {
+        cr->garrison[slot].count -= count;
+        return 0;
+    }
     // Compact the garrison .
     for (int i = slot; i < GAME_ARMY_SLOTS - 1; i++) {
         copy_id(cr->garrison[i].id, sizeof(cr->garrison[i].id),
@@ -2443,6 +2466,13 @@ int GameUngarrisonTroop(Game *g, const char *castle_id, int slot) {
     cr->garrison[GAME_ARMY_SLOTS - 1].id[0] = '\0';
     cr->garrison[GAME_ARMY_SLOTS - 1].count = 0;
     return 0;
+}
+
+int GameUngarrisonTroop(Game *g, const char *castle_id, int slot) {
+    if (!g || slot < 0 || slot >= GAME_ARMY_SLOTS) return 1;
+    const CastleRecord *cr = GameFindCastleConst(g, castle_id);
+    if (!cr) return 1;
+    return GameUngarrisonTroopCount(g, castle_id, slot, cr->garrison[slot].count);
 }
 
 bool GameTroopFlies(const TroopDef *t) {

@@ -4,6 +4,8 @@
 #include "touch.h"
 #include "layout.h"
 #include "modern/mlayout.h"
+#include "modern/mlist.h"
+#include "lattice.h"
 #include "present.h"
 #include "palette.h"
 #include "chrome.h"
@@ -189,6 +191,48 @@ static void scan_slots(SlotSet *s) {
     }
 }
 
+// Standard select-row labels for the modern startup lists (REQ-430n).
+static bool load_slot_row(void *ctx, int i, char *label, char *right, int cap) {
+    const SlotSet *slots = (const SlotSet *)ctx;
+    const Resources *r = resources_current();
+    right[0] = '\0';
+    if (slots->hdrs[i].exists) {
+        snprintf(label, (size_t)cap, "%2d  %-10.10s %-13.13s", i + 1,
+                 slots->hdrs[i].name, slots->hdrs[i].rank_title);
+        snprintf(right, 48, "%dd", slots->hdrs[i].days_left);
+    } else {
+        snprintf(label, (size_t)cap, "%2d  %s", i + 1,
+                 r ? r->ui.startup_save_picker_empty : "(empty)");
+    }
+    return true;
+}
+
+static bool title_row(void *ctx, int i, char *label, char *right, int cap) {
+    const char **labels = (const char **)ctx;
+    right[0] = '\0';
+    snprintf(label, (size_t)cap, "%s", labels[i]);
+    return true;
+}
+
+typedef struct {
+    const Resources *res;
+    const char *labels[4];
+    const char *scores[4];
+    bool has_name;
+} DiffCtx;
+
+static bool difficulty_row(void *ctx, int i, char *label, char *right, int cap) {
+    const DiffCtx *d = (const DiffCtx *)ctx;
+    char sc[8];
+    snprintf(sc, sizeof sc, "%s", d->scores[i]);
+    char *p = sc;
+    while (*p == ' ') p++;
+    snprintf(label, (size_t)cap, "%-12.12s %4d", d->labels[i],
+             d->res->time.days_per_difficulty[i]);
+    snprintf(right, 48, "%s", p);
+    return d->has_name;
+}
+
 static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
                             StartupChoice *out) {
     SlotSet slots;
@@ -266,28 +310,17 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
             const ResUI *mui = mr ? &mr->ui : NULL;
             // The standard large rect (REQ-430j).
             ML_Rect lr = ml_large();
-            int mpad = ML_PAD, mrow = GH + 4;
+            int mpad = ML_PAD;
             int mw = lr.w, mx = lr.x, my = lr.y;
             panel(lr.x, lr.y, lr.w, lr.h);
             bfont_draw_centered(mui ? mui->title_load_adventure : "Load Saved Game",
                                 mx + mw / 2, my + mpad, PAL_CLR(YELLOW));
-            int mty = my + mpad + mrow + mrow / 2;
-            for (int i = 0; i < SAVE_SLOT_COUNT; i++) {
-                char line[80];
-                bool has = slots.hdrs[i].exists;
-                if (has) {
-                    snprintf(line, sizeof line, "%2d  %-10.10s %-13.13s %4dd", i + 1,
-                             slots.hdrs[i].name, slots.hdrs[i].rank_title,
-                             slots.hdrs[i].days_left);
-                } else {
-                    snprintf(line, sizeof line, "%2d  %s", i + 1,
-                             mui ? mui->startup_save_picker_empty : "(empty)");
-                }
-                sel_row(mx + mpad / 2, mty, mw - mpad, mrow, mx + mpad, line, i == cursor,
-                        has ? PAL_CLR(YELLOW) : PAL_CLR(GREY), PAL_CLR(DBLUE),
-                        TOUCH_LIST_STARTUP, i);
-                mty += mrow;
-            }
+            // The slots as standard select rows (REQ-430n), scrolling.
+            int mty = my + mpad + GH + mpad;
+            lattice_band_h(mx, mty, mw, 4);
+            mty += 4;
+            ml_list_draw(mx, mty, mw, my + lr.h - mty, SAVE_SLOT_COUNT, cursor,
+                         load_slot_row, &slots, TOUCH_LIST_STARTUP, PAL_CLR(DBLUE));
             frame_end(rt);
             continue;
         }
@@ -400,24 +433,19 @@ static bool run_title_menu(const Resources *res, const Sprites *sprites,
         // The menu sits on the title page, over the lower half of the art.
         frame_begin(rt);
         draw_title_backdrop(sprites);
-        int row_h = GH + 4;
-        int pad = 12;
+        // Standard select rows (REQ-430n) in a panel sized to them.
         int w = 0;
         for (int i = 0; i < ROW_COUNT; i++) {
             int tw = bfont_text_width(labels[i]);
             if (tw > w) w = tw;
         }
-        w += 2 * pad + 32;
-        int h = ROW_COUNT * row_h + 2 * pad;
+        w += 2 * ML_PAD + 64;
+        int h = ml_list_height(ROW_COUNT);
         int x = (CL_SCREEN_W - w) / 2;
         int y = CL_SCREEN_H / 2 + (CL_SCREEN_H / 2 - h) / 2 - CL_SCREEN_H / 16;
         panel(x, y, w, h);
-        for (int i = 0; i < ROW_COUNT; i++) {
-            int ty = y + pad + i * row_h;
-            int tx = x + (w - bfont_text_width(labels[i])) / 2;
-            sel_row(x + pad / 2, ty, w - pad, row_h, tx, labels[i], l.cursor == i,
-                    PAL_CLR(YELLOW), PAL_CLR(DBLUE), TOUCH_LIST_STARTUP, i);
-        }
+        ml_list_draw(x, y, w, h, ROW_COUNT, l.cursor, title_row, (void *)labels,
+                     TOUCH_LIST_STARTUP, PAL_CLR(DBLUE));
         frame_end(rt);
     }
     out->action = STARTUP_QUIT;
@@ -747,27 +775,24 @@ static bool run_create_game(const Resources *res,
                     char *tok = p;
                     while (*p && *p != ' ') p++;
                     if (*p) *p++ = '\0';
-                    if (*tok) bfont_draw(tok, cx0 + col[k] * GW, ty,
+                    // The last column sits over the scores, right-aligned in the rows.
+                    int hx = (k == 2) ? mx + mw - ML_PAD - bfont_text_width(tok)
+                                      : cx0 + col[k] * GW;
+                    if (*tok) bfont_draw(tok, hx, ty,
                                          has_name ? PAL_CLR(YELLOW) : PAL_CLR(GREY));
                 }
             }
             ty += mrow;
-            for (int i = 0; i < n; i++) {
-                int days = res->time.days_per_difficulty[i];
-                char line[48];
-                char sc[8];
-                snprintf(sc, sizeof sc, "%s", rows[i].score);
-                char *scp = sc;
-                while (*scp == ' ') scp++;
-                snprintf(line, sizeof line, "%-12.12s %4d    %s", rows[i].label, days, scp);
-                if (has_name) {
-                    sel_row(mx + ML_PAD / 2, ty, mw - ML_PAD, mrow, cx0, line, sel == i,
-                            PAL_CLR(WHITE), PAL_CLR(DBLUE), TOUCH_LIST_STARTUP, i);
-                } else {
-                    bfont_draw(line, cx0, ty + 2, PAL_CLR(GREY));
-                }
-                ty += mrow;
-            }
+            // The difficulties as standard select rows (REQ-430n); grey and
+            // not tappable until a name is entered.
+            DiffCtx dc = { res, { 0 }, { 0 }, has_name };
+            for (int k = 0; k < n; k++) { dc.labels[k] = rows[k].label; dc.scores[k] = rows[k].score; }
+            lattice_band_h(mx, ty, mw, 4);
+            ty += 4;
+            ml_list_draw(mx, ty, mw, ml_list_height(n), n, has_name ? sel : -1,
+                         difficulty_row, &dc, has_name ? TOUCH_LIST_STARTUP : 0,
+                         PAL_CLR(DBLUE));
+            ty += ml_list_height(n);
 
             if (!has_name && selector) {
                 int cw = 2 * GW, chh = GH + 4;

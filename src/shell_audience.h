@@ -11,4 +11,8 @@
 
 void run_audience_dialog(Game *game, const ResCastle *rc);
 
+// %NAME% / %RANK% / %NEEDED% / %S% substitution for the audience texts.
+void audience_substitute(const Game *game, int needed,
+                         const char *src, char *out, size_t out_sz);
+
 #endif

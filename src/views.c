@@ -118,6 +118,10 @@ void views_gate_open(const GateDestination *dests, int count, bool is_town) {
 }
 
 int  views_gate_count(void)   { return gate_view.count; }
+int  views_gate_rows_per_column(void) {
+    int n = (gate_view.count + VIEWS_GATE_COLUMNS - 1) / VIEWS_GATE_COLUMNS;
+    return n < 1 ? 1 : n;
+}
 bool views_gate_is_town(void) { return gate_view.is_town; }
 int  views_gate_cursor(void)  { return gate_view.cursor; }
 
@@ -136,6 +140,8 @@ bool views_gate_update(void) {
     int n = gate_view.count;
     if (n <= 0) return false;
     int left = (n + 1) / 2;   // rows in the left column (matches the renderer)
+    // Modern: three columns of standard rows, each this many rows long.
+    if (CL_IS_MODERN) left = views_gate_rows_per_column();
 
     touch_request(TOUCH_CHROME_BACK);
     int tapped = touch_tapped_row(TOUCH_LIST_GATE);
@@ -170,7 +176,7 @@ bool views_gate_update(void) {
         if (gate_view.cursor < 0) gate_view.cursor = n - 1;
     }
     // Left/Right jump between the two columns, preserving the row offset.
-    if (input_key_pressed(KEY_RIGHT) && gate_view.cursor < left) {
+    if (input_key_pressed(KEY_RIGHT) && (CL_IS_MODERN || gate_view.cursor < left)) {
         int target = gate_view.cursor + left;
         if (target < n) gate_view.cursor = target;
     }

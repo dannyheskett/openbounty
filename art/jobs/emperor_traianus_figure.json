@@ -1,0 +1,20 @@
+{
+  "id": "emperor_traianus_figure",
+  "prompt": "Emperor Traianus standing at rest, a regal grey-haired Roman emperor in a deep imperial purple toga with gold embroidery over a gilded cuirass, a golden laurel wreath on his head, one hand resting on a tall gilded sceptre",
+  "style": "user__glory_of_rome_troops_bac676cd",
+  "width": 96,
+  "height": 96,
+  "seed": 9921,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": true,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/ui/emperor_traianus_figure_00..07.png",
+  "_animation": "breathes slowly and lifts his chin a little and lowers it, his body, sceptre, toga and feet all completely still, smooth loop",
+  "_note": "Traianus standing on the home castle backdrop (2026-09-13): the head townsperson figure route, troop style at 96, magenta removed, no crop."
+}

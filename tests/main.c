@@ -21,6 +21,8 @@ SUITE_EXTERN(unit_map_suite);
 SUITE_EXTERN(unit_map_more_suite);
 SUITE_EXTERN(unit_map_overlay_suite);
 SUITE_EXTERN(unit_foe_follow_suite);
+SUITE_EXTERN(unit_garrison_partial_suite);
+SUITE_EXTERN(unit_mlist_suite);
 SUITE_EXTERN(unit_fog_suite);
 SUITE_EXTERN(unit_tables_suite);
 SUITE_EXTERN(unit_tables_defensive_suite);
@@ -79,6 +81,8 @@ int main(int argc, char **argv) {
     RUN_SUITE(unit_terrain_suite);
     RUN_SUITE(unit_map_suite);
     RUN_SUITE(unit_foe_follow_suite);
+    RUN_SUITE(unit_garrison_partial_suite);
+    RUN_SUITE(unit_mlist_suite);
     RUN_SUITE(unit_map_more_suite);
     RUN_SUITE(unit_map_overlay_suite);
     RUN_SUITE(unit_fog_suite);

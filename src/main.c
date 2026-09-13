@@ -101,6 +101,7 @@
 // run_audience_dialog() (King Maximus audience flow) moved to
 // src/shell_audience.{c,h}.
 #include "shell_audience.h"
+#include "modern/castle.h"
 
 // Per-frame draw_frame() dispatcher moved to src/shell_frame.{c,h}.
 #include "shell_frame.h"
@@ -1273,6 +1274,13 @@ title:;
                                      views_gate_is_town() ? "town_gate"
                                                           : "castle_gate");
                 }
+            }
+        } else if ((views_active() == VIEW_HOME_CASTLE || views_active() == VIEW_OWN_CASTLE) &&
+                   !dialog_is_active() && CL_IS_MODERN) {
+            // Modern castles: the town-style screen owns its input.
+            if (modern_castle_update(&game)) {
+                views_dismiss();
+                pending_castle_id[0] = '\0';
             }
         } else if (views_active() == VIEW_HOME_CASTLE && !dialog_is_active()) {
             //  /  +

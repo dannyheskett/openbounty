@@ -42,6 +42,9 @@ typedef struct {
     int            choice_n;
     const char   (*choices)[96];
     int            choice_cursor;
+    // Modern count entry: the stepper's value and its top.
+    int            step_value;
+    int            step_max;
 } PromptView;
 
 const PromptView *prompt_view(void);

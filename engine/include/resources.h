@@ -241,6 +241,12 @@ typedef struct {
     char audience_rank_up[320];
     char audience_more_needed[320];
     char audience_final_rank[320];
+    // Modern castle screen (all optional): portraits[] ids of the ruler's
+    // portrait and standing figure, and of the image shown on promotion to
+    // each rank (promotion[r], r = the new rank index; "" = none).
+    char portrait[RES_ID_LEN];
+    char figure[RES_ID_LEN];
+    char promotion[4][RES_ID_LEN];
 } ResCastleSpecial;
 
 // Map footprint of a castle (REQ-228). 3x2 is the classic stamp: the gate
@@ -263,6 +269,7 @@ typedef struct {
                                   // roll_creature-style monster generation.
                                   //  castle_difficulty[].
     ResCastleFootprint footprint; // "footprint": "3x2" (default) or "1x1"
+    char art[RES_TILE_ART_LEN];   // 1x1 only: its own tile art stem under art/tiles/ ("" = "castle")
     ResCastleSpecial special;
 } ResCastle;
 
@@ -452,6 +459,30 @@ typedef struct {
     char town_detail_boat_dock[RES_BANNER_LEN];  // %X% %Y%
     char town_detail_intel[RES_BANNER_LEN];      // %CASTLE%
     char town_contract_confirm[RES_BANNER_LEN];
+    // Modern castle screens (home castle recruit/audience, own castle garrison).
+    char castle_menu_recruit[RES_BANNER_LEN];
+    char castle_continue[RES_BANNER_LEN];
+    char castle_menu_audience[RES_BANNER_LEN];
+    char castle_menu_garrison[RES_BANNER_LEN];
+    char castle_menu_withdraw[RES_BANNER_LEN];
+    char castle_action_audience[RES_BANNER_LEN];
+    char castle_invite_recruit[RES_BANNER_LEN];
+    char castle_invite_audience[RES_BANNER_LEN];
+    char castle_invite_garrison[RES_BANNER_LEN];
+    char castle_invite_withdraw[RES_BANNER_LEN];
+    char castle_have[RES_BANNER_LEN];
+    char castle_in_garrison[RES_BANNER_LEN];
+    char castle_can_recruit[RES_BANNER_LEN];
+    char castle_rank[RES_BANNER_LEN];
+    char castle_next_rank[RES_BANNER_LEN];
+    char castle_needed[RES_BANNER_LEN];
+    char castle_gain_leadership[RES_BANNER_LEN];
+    char castle_gain_commission[RES_BANNER_LEN];
+    char castle_gain_spells[RES_BANNER_LEN];
+    char castle_over_leadership[RES_BANNER_LEN];
+    char castle_count_of[RES_BANNER_LEN];
+    char castle_cost[RES_BANNER_LEN];
+    char castle_no_troops[RES_BANNER_LEN];
     char town_temple_needs_rites[RES_BANNER_LEN]; // %HERO% %ZONE% %X% %Y% (the zone's alcove)
     char town_back[RES_BANNER_LEN];              // the Back row of a town section page
     char town_menu_boat[RES_BANNER_LEN];
@@ -735,6 +766,8 @@ typedef struct {
     char prompt_text_hint[RES_UI_LABEL_LEN * 2];
     char prompt_numeric_range_hint[RES_UI_LABEL_LEN];
     char prompt_yes_no_hint[RES_UI_LABEL_LEN];
+    char prompt_yes[RES_UI_LABEL_LEN];         // modern yes/no answer rows
+    char prompt_no[RES_UI_LABEL_LEN];
     char prompt_numeric_5_hint[RES_UI_LABEL_LEN];
 
     // Dialog/prompt header titles (game.json strings.dialog_titles).

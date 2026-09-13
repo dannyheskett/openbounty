@@ -39,6 +39,7 @@ void modern_overlay_draw_dialog_centered(void);
 int  modern_overlay_dialog_page_count(void);
 void modern_overlay_draw_menu(void);
 void modern_overlay_draw_town(const Game *g, const Sprites *s);
+void modern_overlay_draw_castle(const Game *g, const Sprites *s);
 void modern_overlay_draw_options(const Game *g);
 void modern_overlay_draw_controls(const Game *g);
 void modern_overlay_draw_toast(void);
