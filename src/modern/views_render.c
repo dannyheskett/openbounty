@@ -433,7 +433,10 @@ static void draw_contract(const Game *g, const Sprites *s) {
         if (!g->castles[i].id[0]) continue;
         if (g->castles[i].owner_kind != CASTLE_OWNER_VILLAIN) continue;
         if (strcmp(g->castles[i].villain_id, v->id) != 0) continue;
-        if (g->castles[i].known) castle_name = g->castles[i].id;
+        if (g->castles[i].known) {
+            const ResCastle *rc = resources_castle_by_id(g->res, g->castles[i].id);
+            castle_name = (rc && rc->name[0]) ? rc->name : g->castles[i].id;
+        }
         break;
     }
     {

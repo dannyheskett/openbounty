@@ -182,6 +182,10 @@ bool GameStep(Game *game, Map *map, Fog *fog,
             // visit regardless of outcome.
             CastleRecord *cr_mut = GameFindCastle(game, ir.castle_id);
             if (cr_mut) cr_mut->visited = true;
+            // Standing at an enemy's gate tells you whose castle it is: the
+            // castle's location is known from then on, as Augury reveals it.
+            if (cr_mut && cr_mut->owner_kind == CASTLE_OWNER_VILLAIN)
+                cr_mut->known = true;
             const CastleRecord *cr = GameFindCastleConst(game, ir.castle_id);
             const ResCastle *rc = resources_castle_by_id(res, ir.castle_id);
             char header[64];

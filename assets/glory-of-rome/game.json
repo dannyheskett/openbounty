@@ -162,8 +162,8 @@
 					"body":	"Across the water lies Sicilia, granary of the Republic."
 				}],
 			"towns":	[{
-					"x":	39,
-					"y":	51,
+					"x":	42,
+					"y":	43,
 					"id":	"ostia"
 				}, {
 					"x":	37,
@@ -1225,7 +1225,7 @@
 		}],
 	"portraits":	[{
 			"id":	"informant_market",
-			"anim":	["art/portraits/informant_market_00.png", "art/portraits/informant_market_01.png", "art/portraits/informant_market_02.png", "art/portraits/informant_market_03.png", "art/portraits/informant_market_04.png", "art/portraits/informant_market_05.png", "art/portraits/informant_market_06.png", "art/portraits/informant_market_07.png"]
+			"anim":	["art/portraits/informant_market_00.png", "art/portraits/informant_market_01.png", "art/portraits/informant_market_02.png", "art/portraits/informant_market_03.png", "art/portraits/informant_market_04.png", "art/portraits/informant_market_05.png", "art/portraits/informant_market_06.png", "art/portraits/informant_market_07.png", "art/portraits/informant_market_08.png", "art/portraits/informant_market_09.png", "art/portraits/informant_market_10.png", "art/portraits/informant_market_11.png", "art/portraits/informant_market_12.png", "art/portraits/informant_market_13.png"]
 		}, {
 			"id":	"informant_taverner",
 			"anim":	["art/portraits/informant_taverner_00.png", "art/portraits/informant_taverner_01.png", "art/portraits/informant_taverner_02.png", "art/portraits/informant_taverner_03.png", "art/portraits/informant_taverner_04.png", "art/portraits/informant_taverner_05.png", "art/portraits/informant_taverner_06.png", "art/portraits/informant_taverner_07.png"]
@@ -1240,7 +1240,7 @@
 			"anim":	["art/portraits/pontifex_italia_00.png", "art/portraits/pontifex_italia_01.png", "art/portraits/pontifex_italia_02.png", "art/portraits/pontifex_italia_03.png", "art/portraits/pontifex_italia_04.png", "art/portraits/pontifex_italia_05.png", "art/portraits/pontifex_italia_06.png", "art/portraits/pontifex_italia_07.png"]
 		}, {
 			"id":	"pontifex_galliae",
-			"anim":	["art/portraits/pontifex_galliae_00.png", "art/portraits/pontifex_galliae_01.png", "art/portraits/pontifex_galliae_02.png", "art/portraits/pontifex_galliae_03.png", "art/portraits/pontifex_galliae_04.png", "art/portraits/pontifex_galliae_05.png", "art/portraits/pontifex_galliae_06.png", "art/portraits/pontifex_galliae_07.png"]
+			"anim":	["art/portraits/pontifex_galliae_00.png", "art/portraits/pontifex_galliae_01.png", "art/portraits/pontifex_galliae_02.png", "art/portraits/pontifex_galliae_03.png", "art/portraits/pontifex_galliae_04.png", "art/portraits/pontifex_galliae_05.png", "art/portraits/pontifex_galliae_06.png", "art/portraits/pontifex_galliae_07.png", "art/portraits/pontifex_galliae_08.png", "art/portraits/pontifex_galliae_09.png", "art/portraits/pontifex_galliae_10.png", "art/portraits/pontifex_galliae_11.png", "art/portraits/pontifex_galliae_12.png", "art/portraits/pontifex_galliae_13.png"]
 		}, {
 			"id":	"pontifex_africa",
 			"anim":	["art/portraits/pontifex_africa_00.png", "art/portraits/pontifex_africa_01.png", "art/portraits/pontifex_africa_02.png", "art/portraits/pontifex_africa_03.png", "art/portraits/pontifex_africa_04.png", "art/portraits/pontifex_africa_05.png", "art/portraits/pontifex_africa_06.png", "art/portraits/pontifex_africa_07.png"]
@@ -1264,7 +1264,7 @@
 			"anim":	["art/portraits/siege_italia_00.png", "art/portraits/siege_italia_01.png", "art/portraits/siege_italia_02.png", "art/portraits/siege_italia_03.png", "art/portraits/siege_italia_04.png", "art/portraits/siege_italia_05.png", "art/portraits/siege_italia_06.png", "art/portraits/siege_italia_07.png"]
 		}, {
 			"id":	"siege_galliae",
-			"anim":	["art/portraits/siege_galliae_00.png", "art/portraits/siege_galliae_01.png", "art/portraits/siege_galliae_02.png", "art/portraits/siege_galliae_03.png", "art/portraits/siege_galliae_04.png", "art/portraits/siege_galliae_05.png", "art/portraits/siege_galliae_06.png", "art/portraits/siege_galliae_07.png"]
+			"anim":	["art/portraits/siege_galliae_00.png", "art/portraits/siege_galliae_01.png", "art/portraits/siege_galliae_02.png", "art/portraits/siege_galliae_03.png", "art/portraits/siege_galliae_04.png", "art/portraits/siege_galliae_05.png", "art/portraits/siege_galliae_06.png", "art/portraits/siege_galliae_07.png", "art/portraits/siege_galliae_08.png", "art/portraits/siege_galliae_09.png", "art/portraits/siege_galliae_10.png", "art/portraits/siege_galliae_11.png", "art/portraits/siege_galliae_12.png", "art/portraits/siege_galliae_13.png"]
 		}, {
 			"id":	"siege_africa",
 			"anim":	["art/portraits/siege_africa_00.png", "art/portraits/siege_africa_01.png", "art/portraits/siege_africa_02.png", "art/portraits/siege_africa_03.png", "art/portraits/siege_africa_04.png", "art/portraits/siege_africa_05.png", "art/portraits/siege_africa_06.png", "art/portraits/siege_africa_07.png"]
@@ -1305,15 +1305,15 @@
 			"informant":	"informant_market",
 			"name":	"Ostia",
 			"art":	"town_italia",
-			"x":	39,
-			"y":	51,
+			"x":	42,
+			"y":	43,
 			"boat":	{
-				"x":	-1,
-				"y":	-1
+				"x":	43,
+				"y":	42
 			},
 			"gate":	{
-				"x":	39,
-				"y":	52
+				"x":	42,
+				"y":	44
 			},
 			"zone":	"italia",
 			"intel_castle":	"castle_italia_2",

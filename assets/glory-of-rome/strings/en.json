@@ -540,6 +540,7 @@
 		"raise_control":	"Imperium is the right to command, given by the gods and the people of Roma.\n\nWith this rite your authority grows: your leadership rises, and a higher leadership lets you lead larger stacks without losing control of them."
 	},
 	"town_docks":	{
+		"ostia":	"Your boat will be tied up at the river quay just north-east of the city gate.",
 		"mediolanum":	"Your boat will be moored at the landing just south-west of the city.",
 		"pisae":	"Your boat will wait in the harbour a short walk west of the city.",
 		"ancona":	"Your boat will wait in the harbour a short walk south-east of the city.",
@@ -554,6 +555,7 @@
 	"town_invitations":	{
 		"ostia":	{
 			"contracts":	"Welcome to Ostia, %HERO%, the harbour of Roma herself. The Emperor's enemies are named in my ledger. Come this way, and let us discuss your contract.",
+			"boat":	"Hail, %HERO%! Every grain ship bound for Roma passes Ostia, and mine are the fastest on the Tiber. Come and see my boats.",
 			"information":	"Every ship into Ostia brings a rumour, %HERO%, and the dockhands bring them all to me. Sit, and I'll tell you what is said of the castles.",
 			"temple":	"Castor and Pollux guard the sailors of Ostia, %HERO%. Enter their temple, and I will teach you a rite.",
 			"siege":	"The grain barges carry timber as well as corn, %HERO%. Come to our workshop and see the engines built from it."
