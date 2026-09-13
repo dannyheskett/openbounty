@@ -119,9 +119,28 @@ bool views_town_row_text(const struct Game *g, int row,
 // Number of town rows (always 5 in KB: A-E).
 int  views_town_row_count(void);
 
+// False for a row that is shown greyed out and cannot be chosen. Modern enables
+// the boat row only at a town whose dock lies within TOWN_BOAT_RANGE tiles;
+// legacy enables every row.
+bool views_town_row_enabled(const struct Game *g, int row);
+
+// Modern: the short menu label for a town row (the pack's town_menu_* strings).
+bool views_town_menu_label(const struct Game *g, int row, char *out, int out_sz);
+
 // Town info panel (the "You don't have enough gold!" popup that overlays
 // the action list). Returns NULL if no info is active.
 const char *views_town_info_text(void);
+
+// Modern: the detail panel's current page; the renderer reports how many pages
+// its text needs so Left/Right stay in range.
+int  views_town_detail_page(void);
+void views_town_set_detail_pages(int pages);
+
+// Modern: New contract asks Yes/No first. The main loop takes the request
+// (true once per press), opens the prompt, and on Yes calls
+// views_town_take_contract, which takes it with no result message.
+bool views_town_take_contract_request(void);
+void views_town_take_contract(Game *g);
 
 // Town action row the cursor is on (0..4).
 int  views_town_cursor(void);

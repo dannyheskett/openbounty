@@ -400,6 +400,16 @@ typedef struct {
     char town_spell_can_learn[RES_BANNER_LEN];   // %LEFT% %S% (s/empty)
     char town_siege_already[RES_BANNER_LEN];
     char town_siege_purchased[RES_BANNER_LEN];
+    // Modern town menu: short row labels, and lines for the detail panel.
+    char town_menu_contract[RES_BANNER_LEN];
+    char town_menu_boat_rent[RES_BANNER_LEN];
+    char town_menu_boat_cancel[RES_BANNER_LEN];
+    char town_menu_info[RES_BANNER_LEN];
+    char town_menu_spell[RES_BANNER_LEN];
+    char town_menu_siege[RES_BANNER_LEN];
+    char town_detail_boat_dock[RES_BANNER_LEN];  // %X% %Y%
+    char town_detail_intel[RES_BANNER_LEN];      // %CASTLE%
+    char town_contract_confirm[RES_BANNER_LEN];
 
     // Spell-effect dialog bodies .
     // Substitutions: %STEPS%, %CASTLE%, %COUNT%, %QTY%, %TROOP%, %AMOUNT%.

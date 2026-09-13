@@ -96,7 +96,8 @@ static void draw_cartoon_frame(const Resources *res, const Sprites *sprites,
         int x = 0, y = 0;
         for (int i = 0; i < nt && y < gh; i++) {
             bool flip = (x == gw - 1);
-            int frame_idx = sprites_frame(tick, sprites->troop_anim_frames[i]);
+            int frame_idx = sprites_frame(CL_IS_MODERN ? sprites_stand(tick) : tick,
+                                          sprites->troop_anim_frames[i]);
             Texture2D tex = sprites->troop_anim[i][frame_idx];
             if (!tex.id) tex = sprites->troop_sprite[i];
             draw_tile(tex, x, y, origin_x, origin_y, flip);

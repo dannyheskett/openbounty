@@ -11,6 +11,7 @@
 #include "recorder.h"
 #include "shell_cheats.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
@@ -626,6 +627,11 @@ typedef struct {
     // first and returns to the action list on dismiss.
     char info_body[512];
     bool info_active;
+    // Modern: the detail panel's page, and how many pages the renderer last
+    // laid its text out into (Left/Right page within that).
+    int  detail_page;
+    int  detail_pages;
+    bool contract_confirm;   // modern: New contract waits on a Yes/No
 } TownState;
 static TownState town;
 
@@ -660,6 +666,7 @@ static void town_show_info(const char *body) {
     }
     town.info_body[n] = '\0';
     town.info_active = true;
+    town.detail_page = 0;
 }
 
 static void town_format_row(const Game *g, TownRow r, char *out, size_t n) {
@@ -941,9 +948,40 @@ static void town_do_siege(Game *g) {
     town_show_info(buf);
 }
 
+// Modern: a boat is rented only near the sea -- the town's dock must be set and
+// no more than this many tiles from the town in either direction.
+#define TOWN_BOAT_RANGE 4
+
+bool views_town_row_enabled(const Game *g, int row) {
+    if (row < 0 || row >= TOWN_ROW_COUNT) return false;
+    if (row != TOWN_ROW_BOAT || !CL_IS_MODERN) return true;
+    const ResTown *t = (g && g->res) ? resources_town_by_id(g->res, town.record_key)
+                                     : NULL;
+    if (!t || t->boat_x < 0 || t->boat_y < 0) return false;
+    int dx = abs(t->boat_x - t->x), dy = abs(t->boat_y - t->y);
+    return dx <= TOWN_BOAT_RANGE && dy <= TOWN_BOAT_RANGE;
+}
+
+// The next offered row from `from`, stepping by `dir` (+1 / -1) with wrap.
+static int town_next_row(const Game *g, int from, int dir) {
+    int r = from;
+    for (int i = 0; i < TOWN_ROW_COUNT; i++) {
+        r = (r + dir + TOWN_ROW_COUNT) % TOWN_ROW_COUNT;
+        if (views_town_row_enabled(g, r)) return r;
+    }
+    return from;
+}
+
 static void town_do_row(Game *g, TownRow r) {
+    if (!views_town_row_enabled(g, r)) return;
+    town.detail_page = 0;
     switch (r) {
-        case TOWN_ROW_CONTRACT: town_do_contract(g); break;
+        case TOWN_ROW_CONTRACT:
+            // Modern asks first (the main loop owns the prompt); legacy takes
+            // it at once, as the original did.
+            if (CL_IS_MODERN) town.contract_confirm = true;
+            else              town_do_contract(g);
+            break;
         case TOWN_ROW_BOAT:     town_do_boat(g);     break;
         case TOWN_ROW_INFO:     town_do_info(g);     break;
         case TOWN_ROW_SPELL:    town_do_spell(g);    break;
@@ -957,17 +995,32 @@ bool views_town_update(Game *g) {
 
     touch_request(TOUCH_CHROME_BACK);
 
+    // Modern: Left/Right page the detail panel (Up/Down belong to the menu).
+    if (CL_IS_MODERN && town.detail_pages > 1) {
+        if (input_key_pressed(KEY_RIGHT) && town.detail_page + 1 < town.detail_pages) {
+            town.detail_page++;
+            return true;
+        }
+        if (input_key_pressed(KEY_LEFT) && town.detail_page > 0) {
+            town.detail_page--;
+            return true;
+        }
+    }
+
     if (town.info_active) {
         // Any key dismisses the info panel and returns to the menu.
         touch_region_any(KEY_ENTER);
         if (input_key_pressed(KEY_ESCAPE) || input_key_pressed(KEY_ENTER) ||
             input_key_pressed(KEY_KP_ENTER) || input_key_pressed(KEY_SPACE)) {
             town.info_active = false;
+            town.detail_page = 0;
             return true;
         }
         // Letters A-E also dismiss so the player can chain actions.
         for (int k = KEY_A; k <= KEY_E; k++) {
-            if (input_key_pressed(k)) { town.info_active = false; return true; }
+            if (input_key_pressed(k)) {
+                town.info_active = false; town.detail_page = 0; return true;
+            }
         }
         return true;
     }
@@ -986,11 +1039,13 @@ bool views_town_update(Game *g) {
         }
     }
     if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_W) || input_key_pressed(KEY_KP_8)) {
-        town.cursor = (town.cursor - 1 + TOWN_ROW_COUNT) % TOWN_ROW_COUNT;
+        town.cursor = town_next_row(g, town.cursor, -1);
+        town.detail_page = 0;
         return true;
     }
     if (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_S) || input_key_pressed(KEY_KP_2)) {
-        town.cursor = (town.cursor + 1) % TOWN_ROW_COUNT;
+        town.cursor = town_next_row(g, town.cursor, +1);
+        town.detail_page = 0;
         return true;
     }
     if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
@@ -998,8 +1053,13 @@ bool views_town_update(Game *g) {
         town_do_row(g, (TownRow)town.cursor);
         return true;
     }
+    // The letters are legacy's: its rows are labelled A-E. Modern shows no
+    // letters, so they would be hidden shortcuts.
+    if (CL_IS_MODERN) return false;
     if (input_key_pressed(KEY_A)) { town.cursor = TOWN_ROW_CONTRACT; town_do_row(g, TOWN_ROW_CONTRACT); return true; }
-    if (input_key_pressed(KEY_B)) { town.cursor = TOWN_ROW_BOAT;     town_do_row(g, TOWN_ROW_BOAT);     return true; }
+    if (input_key_pressed(KEY_B) && views_town_row_enabled(g, TOWN_ROW_BOAT)) {
+        town.cursor = TOWN_ROW_BOAT; town_do_row(g, TOWN_ROW_BOAT); return true;
+    }
     if (input_key_pressed(KEY_C)) { town.cursor = TOWN_ROW_INFO;     town_do_row(g, TOWN_ROW_INFO);     return true; }
     if (input_key_pressed(KEY_D)) { town.cursor = TOWN_ROW_SPELL;    town_do_row(g, TOWN_ROW_SPELL);    return true; }
     if (input_key_pressed(KEY_E)) { town.cursor = TOWN_ROW_SIEGE;    town_do_row(g, TOWN_ROW_SIEGE);    return true; }
@@ -1061,6 +1121,23 @@ bool views_town_row_text(const Game *g, int row, char *out, int out_sz) {
     return true;
 }
 
+bool views_town_menu_label(const Game *g, int row, char *out, int out_sz) {
+    if (!g || !g->res || row < 0 || row >= TOWN_ROW_COUNT) return false;
+    const ResBanners *bn = &g->res->banners;
+    const char *s = "";
+    switch ((TownRow)row) {
+        case TOWN_ROW_CONTRACT: s = bn->town_menu_contract; break;
+        case TOWN_ROW_BOAT:     s = g->boat.has_boat ? bn->town_menu_boat_cancel
+                                                     : bn->town_menu_boat_rent; break;
+        case TOWN_ROW_INFO:     s = bn->town_menu_info;  break;
+        case TOWN_ROW_SPELL:    s = bn->town_menu_spell; break;
+        case TOWN_ROW_SIEGE:    s = bn->town_menu_siege; break;
+        default: break;
+    }
+    resources_format_template(out, out_sz, s, NULL, 0);
+    return true;
+}
+
 int views_town_row_count(void) {
     return TOWN_ROW_COUNT;
 }
@@ -1068,6 +1145,26 @@ int views_town_row_count(void) {
 const char *views_town_info_text(void) {
     if (view_stack_top() != VIEW_TOWN || !town.info_active) return NULL;
     return town.info_body;
+}
+
+bool views_town_take_contract_request(void) {
+    bool r = town.contract_confirm;
+    town.contract_confirm = false;
+    return r;
+}
+
+void views_town_take_contract(Game *g) {
+    if (view_stack_top() != VIEW_TOWN) return;
+    GameTakeNextContract(g);   // the face, the dots and the details show it
+    town.cursor = TOWN_ROW_CONTRACT;
+    town.detail_page = 0;
+}
+
+int views_town_detail_page(void) { return town.detail_page; }
+
+void views_town_set_detail_pages(int pages) {
+    town.detail_pages = pages < 1 ? 1 : pages;
+    if (town.detail_page >= town.detail_pages) town.detail_page = town.detail_pages - 1;
 }
 
 int views_town_cursor(void) {

@@ -41,6 +41,15 @@ static cJSON *gb_placeholder_strings(void) {
     cJSON_AddStringToObject(o, "town_spell_can_learn", "town_spell_can_learn");
     cJSON_AddStringToObject(o, "town_siege_already", "town_siege_already");
     cJSON_AddStringToObject(o, "town_siege_purchased", "town_siege_purchased");
+    cJSON_AddStringToObject(o, "town_menu_contract", "town_menu_contract");
+    cJSON_AddStringToObject(o, "town_menu_boat_rent", "town_menu_boat_rent");
+    cJSON_AddStringToObject(o, "town_menu_boat_cancel", "town_menu_boat_cancel");
+    cJSON_AddStringToObject(o, "town_menu_info", "town_menu_info");
+    cJSON_AddStringToObject(o, "town_menu_spell", "town_menu_spell");
+    cJSON_AddStringToObject(o, "town_menu_siege", "town_menu_siege");
+    cJSON_AddStringToObject(o, "town_detail_boat_dock", "town_detail_boat_dock");
+    cJSON_AddStringToObject(o, "town_detail_intel", "town_detail_intel");
+    cJSON_AddStringToObject(o, "town_contract_confirm", "town_contract_confirm");
     cJSON_AddStringToObject(o, "spell_time_stop", "spell_time_stop");
     cJSON_AddStringToObject(o, "spell_find_villain_no_contract", "spell_find_villain_no_contract");
     cJSON_AddStringToObject(o, "spell_find_villain_success", "spell_find_villain_success");

@@ -17,7 +17,7 @@
 		"chest_new_spell":	"You have captured a mischevious imp which has been terrorizing the region. In exchange for its release, you receive:\n\n%COUNT% %SPELL% spell.",
 		"chest_empty":	"The chest was empty!",
 		"town_header":	"Town of %NAME%",
-		"town_gold_label":	"GP=%GOLD%K",
+		"town_gold_label":	"GP=%GOLD%",
 		"town_row_contract":	"A) Get New Contract",
 		"town_row_boat_rent":	"B) Rent boat (%COST% week)",
 		"town_row_boat_cancel":	"B) Cancel boat rental",
@@ -45,6 +45,15 @@
 		"town_spell_can_learn":	"You can learn %LEFT% more spell%S%.",
 		"town_siege_already":	"You have siege weapons!",
 		"town_siege_purchased":	"Siege weapons purchased.",
+		"town_menu_contract":	"New contract",
+		"town_menu_boat_rent":	"Rent boat",
+		"town_menu_boat_cancel":	"Cancel boat",
+		"town_menu_info":	"Information",
+		"town_menu_spell":	"Buy spell",
+		"town_menu_siege":	"Siege weapons",
+		"town_detail_boat_dock":	"Boat dock: %X%,%Y%",
+		"town_detail_intel":	"Reports on castle %CASTLE%.",
+		"town_contract_confirm":	"Take a new contract?",
 		"spell_time_stop":	"Time has stopped for %STEPS% steps.",
 		"spell_find_villain_no_contract":	"You have no contract.",
 		"spell_find_villain_success":	"You have found %CASTLE%!",
@@ -259,7 +268,7 @@
 		"gold":	"Gold",
 		"spell_power":	"Spell power",
 		"max_spells":	"Max # of spells",
-		"villains_caught":	"Villains caught",
+		"villains_caught":	"Enemies caught",
 		"artifacts_found":	"Artifacts found",
 		"castles_garrisoned":	"Castles garrisoned",
 		"followers_killed":	"Followers killed",
@@ -431,5 +440,75 @@
 		"lose_fallback":	"Sorry.",
 		"win_fallback":	"Congratulations!",
 		"combat_victory":	"Victory!"
+	},
+	"villain_descriptions":	{
+		"catiline":	{
+			"alias":	"The Conspirator",
+			"crimes":	"Twice defeated for the consulship, he turned to murder. He plotted to kill the consuls and set fires across Rome, and when the plot was exposed he fled to Etruria to raise an army of debtors, ruined nobles and bitter veterans against the Republic."
+		},
+		"spartacus":	{
+			"alias":	"The Thracian",
+			"crimes":	"He broke out of the gladiator school at Capua with seventy men armed with kitchen knives. Runaway slaves flocked to him in their tens of thousands, and he has beaten every praetor and consul sent against him from one end of Italy to the other."
+		},
+		"tacfarinas":	{
+			"alias":	"The Deserter",
+			"crimes":	"Trained in Rome's own auxiliaries, he deserted and turned the Musulamii into raiders. For seven years he has struck the farms and forts of Africa and melted into the desert before any legion could bring him to battle."
+		},
+		"jugurtha":	{
+			"alias":	"King of Numidia",
+			"crimes":	"He murdered both his royal cousins to take all of Numidia, and put every Italian merchant in Cirta to the sword. When the Senate summoned him, he bought its members and left Rome sneering that it was a city for sale."
+		},
+		"boudica":	{
+			"alias":	"Queen of the Iceni",
+			"crimes":	"Flogged by Rome's agents, her daughters shamed and her lands seized, she raised the tribes in fury. Her host burned Camulodunum, Londinium and Verulamium to the ground and put their people to death by the tens of thousands."
+		},
+		"civilis":	{
+			"alias":	"The One-Eyed",
+			"crimes":	"A Batavian prince who served Rome for twenty-five years, he turned its own auxiliary cohorts against the Rhine legions. He besieged Vetera until its garrison starved, and fights Rome with the very drill Rome taught him."
+		},
+		"brennus":	{
+			"alias":	"Woe to the Vanquished",
+			"crimes":	"His Gallic host shattered the legions at the Allia and poured into an undefended Rome. He burned the city and besieged the Capitol, and when the gold of the ransom was weighed, he threw his sword onto the scales and laughed."
+		},
+		"vercingetorix":	{
+			"alias":	"King of Warriors",
+			"crimes":	"He united the quarrelling tribes of Gaul under one command for the first time. He burned his own towns and fields to starve the legions, and threw Caesar back from the walls of Gergovia."
+		},
+		"arminius":	{
+			"alias":	"The Betrayer",
+			"crimes":	"A prince of the Cherusci raised as a Roman officer, he won Varus's trust and then led him into the Teutoburg Forest. There, in rain and mud, he destroyed three legions to the last man and nailed their skulls to the trees."
+		},
+		"gildo":	{
+			"alias":	"The Moorish Count",
+			"crimes":	"Made Count of Africa to guard the province, he kept it as his own kingdom. He has held back the grain fleet on which the city depends, and left the people of Rome to face famine while he declares for a rival emperor."
+		},
+		"pyrrhus":	{
+			"alias":	"King of Epirus",
+			"crimes":	"Cousin of Alexander, he landed in Italy with a professional phalanx and twenty war elephants. He broke the legions at Heraclea and again at Asculum, winning both battles at a cost that would have ruined any lesser king."
+		},
+		"mithridates":	{
+			"alias":	"The Poison King",
+			"crimes":	"Immune to every poison from years of small doses, he overran Rome's province of Asia. In a single day he had every Roman and Italian there put to death, eighty thousand men, women and children, and he has fought Rome for forty years since."
+		},
+		"hannibal":	{
+			"alias":	"Son of Hamilcar",
+			"crimes":	"Sworn as a boy to eternal hatred of Rome, he crossed the Alps in winter with an army and its elephants. He destroyed Roman armies at Trebia and Lake Trasimene, and at Cannae slaughtered more Romans in one afternoon than any enemy before him."
+		},
+		"zenobia":	{
+			"alias":	"Queen of Palmyra",
+			"crimes":	"Ruling in her son's name, she has torn the East away from Rome. Her cataphracts have taken Egypt, Syria and much of Anatolia, and something far worse than armoured horsemen is said to ride out of the desert at her call."
+		},
+		"shapur":	{
+			"alias":	"King of Kings",
+			"crimes":	"The Sassanid shah defeated a Roman army at Edessa and took the Emperor Valerian captive, the first emperor ever taken alive. He has carved the scene into the cliffs of Persia, and holds the Emperor as a slave to this day."
+		},
+		"alaric":	{
+			"alias":	"King of the Visigoths",
+			"crimes":	"Once a commander in Rome's own service, he turned on the Empire when it broke faith with his people. He besieged Rome three times, and on the third sacked the city, the first enemy to take it in eight hundred years, leaving its dead restless behind him."
+		},
+		"attila":	{
+			"alias":	"The Scourge of God",
+			"crimes":	"King of the Huns, he has burned the cities of the Balkans and extracted tribute in gold from Constantinople. He crossed the Rhine into Gaul, and now his horsemen ride over the Alps into Italy itself."
+		}
 	}
 }

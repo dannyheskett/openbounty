@@ -20,6 +20,8 @@
 #include "bfont.h"
 #include "ui.h"
 #include "resources.h"
+#include "lattice.h"
+#include "hud.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -283,7 +285,8 @@ static void draw_location_backdrop(const Game *g, const Sprites *s,
     // from the left, standing on the backdrop's bottom edge.
     Texture2D ts = fig;
     if (!ts.id && s && troop_idx >= 0 && troop_idx < 25) {
-        int frame = sprites_frame(troop_frame, s->troop_anim_frames[troop_idx]);
+        int frame = sprites_frame(sprites_stand(troop_frame),
+                                  s->troop_anim_frames[troop_idx]);
         ts = s->troop_anim[troop_idx][frame];
         if (!ts.id) ts = s->troop_sprite[troop_idx];
     }
@@ -312,6 +315,7 @@ void modern_overlay_draw_location_backdrop(const Game *g, const Sprites *s,
         case 4: k = LOC_FOREST;   break;
         case 5: k = LOC_HILLCAVE; break;
         case 6: k = LOC_DUNGEON;  break;
+        case 7: k = LOC_ALCOVE;   break;
         default: break;
     }
     draw_location_backdrop(g, s, k, troop_idx, troop_frame);
@@ -343,6 +347,125 @@ static int town_backdrop_troop(const Game *g, const char *key) {
     return pool[h % (unsigned long)npool];
 }
 
+// The detail panel's text, wrapped to its width and laid out as lines so it
+// can be split into pages.
+#define TOWN_DETAIL_LINES 64
+typedef struct {
+    char  text[72];
+    Color fg;
+} TownLine;
+typedef struct {
+    TownLine line[TOWN_DETAIL_LINES];
+    int      n;
+    int      max_w;
+} TownText;
+
+static void town_text_add(TownText *t, const char *text, Color fg) {
+    const char *p = text ? text : "";
+    if (!*p) return;
+    while (*p && t->n < TOWN_DETAIL_LINES) {
+        TownLine *l = &t->line[t->n];
+        if (bfont_take_line(&p, t->max_w, l->text, (int)sizeof l->text) <= 0) break;
+        l->fg = fg;
+        t->n++;
+    }
+}
+
+static void town_text_gap(TownText *t) {
+    if (t->n > 0 && t->n < TOWN_DETAIL_LINES) t->line[t->n++].text[0] = '\0';
+}
+
+// Facts about the cursor row, from the game state.
+static void town_compose_detail(const Game *g, int row, TownText *t) {
+    if (!g || !g->res) return;
+    const Resources *res = g->res;
+    const ResBanners *bn = &res->banners;
+    const ResUI *ui = &res->ui;
+    char buf[RES_BANNER_LEN];
+
+    if (row == TOWN_ROW_CONTRACT) {
+        const VillainDef *v = g->contract.active_id[0]
+                            ? villain_by_id(g->contract.active_id) : NULL;
+        if (!v) { town_text_add(t, ui->cv_title_no_contract, PAL_CLR(WHITE)); return; }
+        const ResVillainDesc *d = resources_villain_desc(res, v->id);
+        char val[RES_VDESC_TEXT_LEN];
+        ResTemplateVar vars[] = { { "VALUE", val } };
+        snprintf(val, sizeof val, "%s", v->name);
+        resources_format_template(buf, sizeof buf, ui->cv_label_name, vars, 1);
+        town_text_add(t, buf, PAL_CLR(YELLOW));
+        if (d && d->alias[0]) {
+            snprintf(val, sizeof val, "%s", d->alias);
+            resources_format_template(buf, sizeof buf, ui->cv_label_alias, vars, 1);
+            town_text_add(t, buf, PAL_CLR(WHITE));
+        }
+        snprintf(val, sizeof val, "%d", v->reward);
+        resources_format_template(buf, sizeof buf, ui->cv_label_reward, vars, 1);
+        town_text_add(t, buf, PAL_CLR(WHITE));
+        const ResZone *z = resources_zone_by_id(res, v->zone);
+        snprintf(val, sizeof val, "%s", (z && z->name[0]) ? z->name : v->zone);
+        resources_format_template(buf, sizeof buf, ui->cv_label_last_seen, vars, 1);
+        town_text_add(t, buf, PAL_CLR(WHITE));
+        snprintf(val, sizeof val, "%s", ui->cv_castle_unknown);
+        for (int i = 0; i < GAME_CASTLES; i++) {
+            const CastleRecord *c = &g->castles[i];
+            if (!c->known || strcmp(c->villain_id, v->id) != 0) continue;
+            const ResCastle *rc = resources_castle_by_id(res, c->id);
+            snprintf(val, sizeof val, "%s", (rc && rc->name[0]) ? rc->name : c->id);
+            break;
+        }
+        resources_format_template(buf, sizeof buf, ui->cv_label_castle, vars, 1);
+        town_text_add(t, buf, PAL_CLR(WHITE));
+        if (d && d->features[0]) {
+            town_text_gap(t);
+            town_text_add(t, ui->cv_features_header, PAL_CLR(YELLOW));
+            town_text_add(t, d->features, PAL_CLR(WHITE));
+        }
+        if (d && d->crimes[0]) {
+            town_text_gap(t);
+            town_text_add(t, ui->cv_crimes_header, PAL_CLR(YELLOW));
+            town_text_add(t, d->crimes, PAL_CLR(WHITE));
+        }
+        return;
+    }
+
+    // Every other row leads with the pack's full row text, prices included.
+    char head[128];
+    views_town_row_text(g, row, head, sizeof head);
+    if (head[0] >= 'A' && head[0] <= 'Z' && head[1] == ')' && head[2] == ' ')
+        memmove(head, head + 3, strlen(head + 3) + 1);
+    town_text_add(t, head, PAL_CLR(YELLOW));
+
+    const char *key = views_town_record_key();
+    const ResTown *tw = key ? resources_town_by_id(res, key) : NULL;
+    if (row == TOWN_ROW_BOAT && tw && tw->boat_x >= 0 && tw->boat_y >= 0) {
+        char bx[12], by[12];
+        snprintf(bx, sizeof bx, "%d", tw->boat_x);
+        snprintf(by, sizeof by, "%d", tw->boat_y);
+        ResTemplateVar vars[] = { { "X", bx }, { "Y", by } };
+        resources_format_template(buf, sizeof buf, bn->town_detail_boat_dock, vars, 2);
+        town_text_gap(t);
+        town_text_add(t, buf, PAL_CLR(WHITE));
+    } else if (row == TOWN_ROW_INFO && tw && tw->intel_castle[0]) {
+        const ResCastle *rc = resources_castle_by_id(res, tw->intel_castle);
+        ResTemplateVar vars[] = { { "CASTLE", (rc && rc->name[0]) ? rc->name
+                                                                  : tw->intel_castle } };
+        resources_format_template(buf, sizeof buf, bn->town_detail_intel, vars, 1);
+        town_text_gap(t);
+        town_text_add(t, buf, PAL_CLR(WHITE));
+    } else if (row == TOWN_ROW_SPELL && key) {
+        for (int i = 0; i < GAME_TOWNS; i++) {
+            if (strcmp(g->towns[i].id, key) != 0) continue;
+            const SpellDef *sp = g->towns[i].spell_for_sale[0]
+                               ? spell_by_id(g->towns[i].spell_for_sale) : NULL;
+            if (sp && sp->description[0]) {
+                town_text_gap(t);
+                town_text_add(t, sp->description, PAL_CLR(WHITE));
+            }
+            break;
+        }
+    }
+}
+
 void modern_overlay_draw_town(const Game *g, const Sprites *s) {
     const char *name = views_town_display_name();
     const char *info = views_town_info_text();
@@ -355,92 +478,145 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
     int troop_idx = town_backdrop_troop(g, name);
     int town_frame = (int)(GetTime() * 6.66);
 
-    // The location layout, the same as every other location screen: the
-    // backdrop above, the text area under it reaching the HUD.
-    int row_h = GH;
+    // Full screen: the pane, the band and the HUD, tiled exactly, the boxes
+    // split by the lattice. On Rome's 776x480:
+    //   title 776x22
+    //   backdrop 480x204 (2x) | face 192x204 (2x + dots) | siege, gold 96x204
+    //   menu 256x246 (5 rows)  | detail 516x246
+    const int BS = 2;
+    const int BAND = 4;
     int pad = ML_PAD;
-    draw_location_backdrop(g, s, LOC_TOWN, troop_idx, town_frame);
-    ML_Rect tr = ml_loc_text();
-    int x = tr.x, y = tr.y, w = tr.w, h = tr.h;
+    ML_Rect r = ml_full();
+    int right = r.x + r.w, bottom = r.y + r.h;
+    DrawRectangle(r.x, r.y, r.w, r.h, PAL_CLR(DBLUE));
 
-    draw_panel(x, y, w, h, PAL_CLR(DBLUE));
-
-    int tx = x + pad;
-    int ty = y + pad;
-
-    // Header row 1: "Town of <name>" (templates from strings.banners).
+    // Title strip.
+    int title_h = GH + 6;
     const ResBanners *bn = (g && g->res) ? &g->res->banners : NULL;
-    char header[96];
+    char header[96] = "";
     if (bn) {
-        ResTemplateVar vars[] = { { "NAME", (name && name[0]) ? name : "" } };
-        resources_format_template(header, sizeof header, bn->town_header,
-                                  vars, 1);
-    } else {
-        snprintf(header, sizeof header, "Town of %s",
-                 (name && name[0]) ? name : "");
+        ResTemplateVar hv[] = { { "NAME", (name && name[0]) ? name : "" } };
+        resources_format_template(header, sizeof header, bn->town_header, hv, 1);
     }
-    bfont_draw(header, tx, ty, PAL_CLR(YELLOW));
-    ty += row_h;
+    bfont_draw(header, r.x + pad, r.y + (title_h - GH) / 2, PAL_CLR(YELLOW));
+    lattice_band_h(r.x, r.y + title_h, r.w, BAND);
 
-    // Header row 2: GP=<gold/1000>K, right-aligned. 
-    // formats `"                    GP=%dK\n"` -- 20 spaces of leading pad
-    // followed by the label, which on a 30-col panel puts GP at the right
-    // edge. We keep that visual by right-aligning to the panel.
-    char gp[24];
-    if (bn) {
-        char gbuf[16];
-        int gold_k = g ? (g->stats.gold / 1000) : 0;
-        snprintf(gbuf, sizeof gbuf, "%d", gold_k);
-        ResTemplateVar vars[] = { { "GOLD", gbuf } };
-        resources_format_template(gp, sizeof gp, bn->town_gold_label,
-                                  vars, 1);
-    } else {
-        snprintf(gp, sizeof gp, "GP=%dK", g ? (g->stats.gold / 1000) : 0);
+    // Top row: backdrop at 2x with the troop at 1x on its bottom edge.
+    int top = r.y + title_h + BAND;
+    int bw = ML_BACKDROP_W * BS, bh = ML_BACKDROP_H * BS;
+    Texture2D bd = loc_texture(s, LOC_TOWN);
+    if (bd.id) ui_blit(bd, r.x, top, bw, bh);
+    else       DrawRectangle(r.x, top, bw, bh, PAL_CLR(BLACK));
+    if (s && troop_idx >= 0 && troop_idx < 25) {
+        Texture2D ts = s->troop_anim[troop_idx][sprites_frame(sprites_stand(town_frame),
+                                                s->troop_anim_frames[troop_idx])];
+        if (!ts.id) ts = s->troop_sprite[troop_idx];
+        if (ts.id) ui_blit(ts, r.x + CL_TILE_W / 2, top + bh - CL_TILE_H,
+                           CL_TILE_W, CL_TILE_H);
     }
-    Vector2 gpm = bfont_measure(gp);
-    bfont_draw(gp, x + w - (int)gpm.x - pad, ty, PAL_CLR(YELLOW));
-    ty += row_h;
+    lattice_band_v(r.x + bw, top, BAND, bh);
 
-    // Rows A..E.
-    for (int r = 0; r < rows; r++) {
-        char row[96];
-        views_town_row_text(g, r, row, sizeof(row));
-        // The pack's rows carry their key letter ("A) Get New Contract");
-        // modern is menu driven and drops it.
-        if (row[0] >= 'A' && row[0] <= 'Z' && row[1] == ')' && row[2] == ' ')
-            memmove(row, row + 3, strlen(row + 3) + 1);
-        bool sel = (r == cursor);
-        Color fg = sel ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
-        bool live = !(info && info[0]);
-        // The cursor row inverted; a tap on a row selects and confirms it
-        // (views_town_update reads TOUCH_LIST_TOWN).
-        sel_row(x, ty, w, row_h, tx, row, sel, fg, PAL_CLR(DBLUE),
-                live ? TOUCH_LIST_TOWN : 0, r);
-        ty += row_h;
+    // The wanted face at 2x (or the empty silhouette), and under it one dot
+    // per contract in the rotation, the current one filled.
+    int fs = CL_TILE_W * BS;
+    int fx = r.x + bw + BAND;
+    const VillainDef *v = (g && g->contract.active_id[0])
+                        ? villain_by_id(g->contract.active_id) : NULL;
+    if (v && s && v->index >= 0 && v->index < 17) {
+        Texture2D face = s->villain_anim[v->index][sprites_frame(
+            (int)(GetTime() * 2.0), s->villain_anim_frames[v->index])];
+        if (!face.id) face = s->villain_portrait[v->index];
+        ui_blit(face, fx, top, fs, fs);
+    } else if (s && s->hud_contract_silhouette.id) {
+        ui_blit(s->hud_contract_silhouette, fx, top, fs, fs);
     }
+    int n = (g && g->res) ? g->res->contract.cycle_length : 0;
+    if (v && n > 1) {
+        const int DOT = 3, STEP = 12;
+        int dy = top + fs + (bh - fs) / 2;
+        int dx0 = fx + fs / 2 - (n - 1) * STEP / 2;
+        for (int i = 0; i < n; i++) {
+            if (i == g->contract.last_contract)
+                DrawCircle(dx0 + i * STEP, dy, DOT + 1, PAL_CLR(YELLOW));
+            else
+                DrawCircleLines(dx0 + i * STEP, dy, DOT, PAL_CLR(YELLOW));
+        }
+    }
+    lattice_band_v(fx + fs, top, BAND, bh);
 
-    // Info overlay (popups like "Not enough gold!" + gather-information
-    // intel). The bottom box replaces the bottom-frame text while
-    // keeping the same yellow-bordered blue interior -- the popup occupies
-    // the menu's rect with the menu text replaced. We mirror that: same
-    // panel color, same rect, draw the popup background over the menu
-    // text we just rendered. (The menu rows underneath are visually
-    // covered.)
-    if (info && info[0]) {
-        draw_panel(x, y, w, h, PAL_CLR(DBLUE));
+    // The HUD's own siege weapons tile over its gold purse.
+    int hx = fx + fs + BAND;
+    int hgap = (bh - 2 * CL_TILE_H) / 3;
+    hud_draw_siege_tile(g, s, hx, top + hgap);
+    hud_draw_gold_tile(g, s, hx, top + 2 * hgap + CL_TILE_H);
 
-        int itx = x + pad;
-        int ity = y + pad;
-        int max_w = w - 2 * pad;
-        int body_lines = ml_lines(tr);   // the popup has the whole text area
-        const char *p = info;
-        char line[128];
-        int nl = 0;
-        while (*p && nl < body_lines) {
-            bfont_take_line(&p, max_w, line, (int)sizeof(line));
-            bfont_draw(line, itx, ity, PAL_CLR(WHITE));
-            ity += row_h;
-            nl++;
+    int low = top + bh;
+    lattice_band_h(r.x, low, r.w, BAND);
+    low += BAND;
+
+    // Menu (left): rows fill the height, split by a thin rail.
+    const int RULE = 2;
+    int mw = 16 * GW;
+    int lh = bottom - low;
+    int rh = rows > 0 ? (lh - (rows - 1) * RULE) / rows : lh;
+    bool live = !(info && info[0]);
+    for (int i = 0; i < rows; i++) {
+        char label[64];
+        views_town_menu_label(g, i, label, sizeof label);
+        bool enabled = views_town_row_enabled(g, i);
+        bool sel = enabled && i == cursor;
+        Color fg = !enabled ? PAL_CLR(DGREY) : sel ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
+        int ry = low + i * (rh + RULE);
+        int h = (i == rows - 1) ? bottom - ry : rh;
+        // The cursor row inverted; a tap on an enabled row selects and confirms
+        // it (views_town_update reads TOUCH_LIST_TOWN).
+        sel_row(r.x, ry, mw, h, r.x + pad, label, sel, fg, PAL_CLR(DBLUE),
+                (live && enabled) ? TOUCH_LIST_TOWN : 0, i);
+        if (i > 0) lattice_band_h(r.x, ry - RULE, mw, RULE);
+    }
+    lattice_band_v(r.x + mw, low, BAND, lh);
+
+    // Detail (right): the cursor row's facts, or a result while one is up,
+    // paged with Left/Right when it runs long.
+    int dx = r.x + mw + BAND + pad;
+    int dw = right - dx - pad;
+    int line_h = GH + 2;
+    int lines_per_page = (lh - 2 * pad) / line_h;
+    TownText t = { .n = 0, .max_w = dw };
+    if (!live) town_text_add(&t, info, PAL_CLR(WHITE));
+    else       town_compose_detail(g, cursor, &t);
+    int pages = 1;
+    if (t.n > lines_per_page && lines_per_page > 1) {
+        lines_per_page -= 1;                       // the last line holds the pager
+        pages = (t.n + lines_per_page - 1) / lines_per_page;
+    }
+    views_town_set_detail_pages(pages);
+    int page = views_town_detail_page();
+    int ty = low + pad;
+    for (int i = page * lines_per_page; i < t.n && i < (page + 1) * lines_per_page; i++) {
+        bfont_draw(t.line[i].text, dx, ty, t.line[i].fg);
+        ty += line_h;
+    }
+    if (pages > 1) {
+        // "1/2" between the arrows, bottom right; an arrow shows only where
+        // there is a page to go to, and a tap on it pages.
+        char pg[32];
+        snprintf(pg, sizeof pg, "%d/%d", page + 1, pages);
+        int py = bottom - pad - GH;
+        int aw = GH;
+        int nx = right - pad - aw;
+        int tx = nx - pad - (int)bfont_measure(pg).x;
+        int px = tx - pad - aw;
+        bfont_draw(pg, tx, py, PAL_CLR(YELLOW));
+        if (page > 0) {
+            DrawTriangle((Vector2){ px + aw, py }, (Vector2){ px, py + GH / 2 },
+                         (Vector2){ px + aw, py + GH }, PAL_CLR(YELLOW));
+            touch_region(px, py, aw, GH, KEY_LEFT);
+        }
+        if (page + 1 < pages) {
+            DrawTriangle((Vector2){ nx, py }, (Vector2){ nx, py + GH },
+                         (Vector2){ nx + aw, py + GH / 2 }, PAL_CLR(YELLOW));
+            touch_region(nx, py, aw, GH, KEY_RIGHT);
         }
     }
 }

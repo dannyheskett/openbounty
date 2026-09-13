@@ -500,8 +500,8 @@
 					"y":	16,
 					"id":	"wandering_army_024"
 				}, {
-					"x":	9,
-					"y":	16,
+					"x":	13,
+					"y":	18,
 					"id":	"wandering_army_025"
 				}, {
 					"x":	41,
@@ -1281,8 +1281,8 @@
 			"x":	33,
 			"y":	99,
 			"boat":	{
-				"x":	-1,
-				"y":	-1
+				"x":	29,
+				"y":	98
 			},
 			"gate":	{
 				"x":	33,
@@ -1298,8 +1298,8 @@
 			"x":	42,
 			"y":	20,
 			"boat":	{
-				"x":	-1,
-				"y":	-1
+				"x":	46,
+				"y":	24
 			},
 			"gate":	{
 				"x":	42,
@@ -1671,7 +1671,7 @@
 				"audience":	{
 					"intro":	"Trumpets announce your arrival with imperial fanfare.\n\nEmperor Traianus rises from his throne to greet you and proclaims:",
 					"rank_up":	"Congratulations %NAME%,\n\nI now raise you to the rank of %RANK%.\n",
-					"more_needed":	"My dear %NAME%,\n\nI can aid you better after you've captured %NEEDED% more villains.",
+					"more_needed":	"My dear %NAME%,\n\nI can aid you better after you've captured %NEEDED% more enemies.",
 					"final_rank":	"%NAME% the %RANK%,\n\nHurry and recover the Aquila of the Legions, or all Rome will be lost!"
 				}
 			}

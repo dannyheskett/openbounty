@@ -143,8 +143,11 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
         set = sprites_hero_anim(s, cid, 1);
     }
     if (g->travel_mode == TRAVEL_BOAT) set = sprites_hero_anim(s, cid, 2);
+    int tick = g->anim_frame;
+    if (CL_IS_MODERN && g->travel_mode != TRAVEL_BOAT && !g->anim_moving)
+        tick = sprites_stand(tick);
     Texture2D hsprite = sprites_anim_tex(set, g->position.facing,
-                                         g->anim_frame, &mirror);
+                                         tick, &mirror);
     if (g->travel_mode != TRAVEL_BOAT && g->character.mount == MOUNT_FLY) {
         for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
             if (!g->army[i].id[0] || g->army[i].count <= 0) continue;
@@ -152,7 +155,7 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
             if (t && t->index >= 0 && t->index < 25) {
                 Texture2D a =
                     s->troop_anim[t->index]
-                                 [sprites_frame(g->anim_frame,
+                                 [sprites_frame(tick,
                                                 s->troop_anim_frames[t->index])];
                 if (!a.id) a = s->troop_sprite[t->index];
                 // Troop sprites are single-strip, so flight goes back to the

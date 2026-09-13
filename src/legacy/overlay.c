@@ -390,6 +390,7 @@ void legacy_overlay_draw_location_backdrop(const Game *g, const Sprites *s,
         case 4: k = LOC_FOREST;   break;
         case 5: k = LOC_HILLCAVE; break;
         case 6: k = LOC_DUNGEON;  break;
+        case 7: k = LOC_ALCOVE;   break;
         default: break;
     }
     draw_location_backdrop(g, s, k, troop_idx, troop_frame);

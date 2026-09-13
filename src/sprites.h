@@ -117,6 +117,12 @@ static inline int sprites_frame(int counter, int count) {
     return counter % count;
 }
 
+// Modern: a standing figure rocks between frames 0 and 1 instead of playing its
+// whole strip, which reads as an attack. Pass the result as the counter.
+static inline int sprites_stand(int counter) {
+    return (counter < 0 ? -counter : counter) % 2;
+}
+
 // Pick the texture for `facing` at animation tick `counter`, and report
 // through *out_mirror whether the caller must flip it horizontally.
 //

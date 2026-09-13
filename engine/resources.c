@@ -1223,6 +1223,15 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(town_spell_can_learn,    "town_spell_can_learn");
     SET_BANNER(town_siege_already,      "town_siege_already");
     SET_BANNER(town_siege_purchased,    "town_siege_purchased");
+    SET_BANNER(town_menu_contract,      "town_menu_contract");
+    SET_BANNER(town_menu_boat_rent,     "town_menu_boat_rent");
+    SET_BANNER(town_menu_boat_cancel,   "town_menu_boat_cancel");
+    SET_BANNER(town_menu_info,          "town_menu_info");
+    SET_BANNER(town_menu_spell,         "town_menu_spell");
+    SET_BANNER(town_menu_siege,         "town_menu_siege");
+    SET_BANNER(town_detail_boat_dock,   "town_detail_boat_dock");
+    SET_BANNER(town_detail_intel,       "town_detail_intel");
+    SET_BANNER(town_contract_confirm,   "town_contract_confirm");
     SET_BANNER(spell_time_stop,                "spell_time_stop");
     SET_BANNER(spell_find_villain_no_contract, "spell_find_villain_no_contract");
     SET_BANNER(spell_find_villain_success,     "spell_find_villain_success");

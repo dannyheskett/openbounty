@@ -259,7 +259,7 @@ static void draw_army(const Game *g, const Sprites *s) {
         if (!t) continue;
 
         Texture2D tex =
-            s->troop_anim[t->index][sprites_frame(anim_tick,
+            s->troop_anim[t->index][sprites_frame(sprites_stand(anim_tick),
                                                  s->troop_anim_frames[t->index])];
         if (!tex.id) tex = s->troop_sprite[t->index];
         ui_blit(tex, vx + pad, ry, sprite_w, sprite_h);

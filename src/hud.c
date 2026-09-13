@@ -37,6 +37,33 @@ static void blit_panel(Texture2D t, int x, int y) {
     ui_panel_frame(x, y, CL_SIDEBAR_W, CL_TILE_H);
 }
 
+// One HUD tile each, at (x, y): the siege weapons (silhouette until owned) and
+// the gold purse with the gold on it. Shared with the modern town screen so
+// its tiles are the HUD's.
+void hud_draw_siege_tile(const Game *g, const Sprites *s, int x, int y) {
+    if (!s) return;
+    if (g && g->stats.siege_weapons) {
+        int frame = sprites_frame((int)(GetTime() * 2.0),
+                                  s->hud_siege_anim_frames);
+        blit_panel(s->hud_siege_anim[frame], x, y);
+    } else {
+        blit_panel(s->hud_siege_silhouette, x, y);
+    }
+}
+
+void hud_draw_gold_tile(const Game *g, const Sprites *s, int x, int y) {
+    if (!s) return;
+    blit_panel(s->hud_gold_purse, x, y);
+    if (g) {
+        char gold_str[12];
+        snprintf(gold_str, sizeof(gold_str), "%d", g->stats.gold);
+        Vector2 gsz = bfont_measure(gold_str);
+        int gx = x + CL_SIDEBAR_W - (int)gsz.x - 2 * CL_UI;
+        int gy = y + CL_TILE_H - BFONT_GLYPH_H - 2 * CL_UI;
+        bfont_draw(gold_str, gx, gy, PAL_CLR(YELLOW));
+    }
+}
+
 void hud_draw(const Game *g, const Sprites *s) {
     if (!s) return;
     int x = CL_SIDEBAR_X;
@@ -60,13 +87,7 @@ void hud_draw(const Game *g, const Sprites *s) {
     y += CL_TILE_H;
 
     // 2. Siege weapons: silhouette when not owned, animated cart when owned.
-    if (g && g->stats.siege_weapons) {
-        int frame = sprites_frame((int)(GetTime() * 2.0),
-                                  s->hud_siege_anim_frames);
-        blit_panel(s->hud_siege_anim[frame], x, y);
-    } else {
-        blit_panel(s->hud_siege_silhouette, x, y);
-    }
+    hud_draw_siege_tile(g, s, x, y);
     y += CL_TILE_H;
 
     // 3. Magic star: silhouette until knows_magic, then animated star.
@@ -114,13 +135,5 @@ void hud_draw(const Game *g, const Sprites *s) {
     y += CL_TILE_H;
 
     // 5. Gold purse + numeric label.
-    blit_panel(s->hud_gold_purse, x, y);
-    if (g) {
-        char gold_str[12];
-        snprintf(gold_str, sizeof(gold_str), "%d", g->stats.gold);
-        Vector2 gsz = bfont_measure(gold_str);
-        int gx = x + CL_SIDEBAR_W - (int)gsz.x - 2 * CL_UI;
-        int gy = y + CL_TILE_H - BFONT_GLYPH_H - 2 * CL_UI;
-        bfont_draw(gold_str, gx, gy, PAL_CLR(YELLOW));
-    }
+    hud_draw_gold_tile(g, s, x, y);
 }
