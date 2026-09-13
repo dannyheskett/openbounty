@@ -108,8 +108,51 @@ static void advance_input_frame(void) {
 #define SCREEN_GUARD 0.25
 static void screen_open(void) { input_host_flush(SCREEN_GUARD); }
 
+// Modern title sequence (REQ-430p), in the 256x164 art's own pixels: the
+// title words and eagle standard on purple, the battle fades in behind them,
+// then the eagle slides left and the menu appears. Played once per run; any
+// key or tap skips to the end, and coming back to the title shows the end.
+#define TITLE_EAGLE_X0   80
+#define TITLE_EAGLE_X1  -14
+#define TITLE_EAGLE_Y    18
+#define TITLE_HOLD      1.0    // seconds on purple
+#define TITLE_FADED     2.5    // battle fully in
+#define TITLE_END       3.5    // eagle in place, menu up
+static bool s_title_played;
+
+static bool title_sequence_ok(const Sprites *s) {
+    return CL_IS_MODERN && s && s->title_battle.id && s->title_eagle.id && s->title_words.id;
+}
+
+static float title_phase(double t, double from, double to) {
+    float f = (float)((t - from) / (to - from));
+    return f < 0 ? 0 : f > 1 ? 1 : f;
+}
+
+static void draw_title_sequence(const Sprites *s, double t) {
+    Texture2D b = s->title_battle, e = s->title_eagle;
+    int fs = ui_fit_scale(b.width, b.height, CL_SCREEN_W, CL_SCREEN_H);
+    int pw = b.width * fs, ph = b.height * fs;
+    int ox = (CL_SCREEN_W - pw) / 2, oy = (CL_SCREEN_H - ph) / 2;
+    DrawRectangle(ox, oy, pw, ph, (Color){ 65, 9, 104, 255 });
+    unsigned char a = (unsigned char)(255 * title_phase(t, TITLE_HOLD, TITLE_FADED));
+    DrawTexturePro(b, (Rectangle){ 0, 0, (float)b.width, (float)b.height },
+                   (Rectangle){ (float)ox, (float)oy, (float)pw, (float)ph },
+                   (Vector2){ 0, 0 }, 0.0f, (Color){ 255, 255, 255, a });
+    // Eased slide, whole art pixels so the eagle stays on the art's grid.
+    float k = title_phase(t, TITLE_FADED, TITLE_END);
+    k = k * k * (3 - 2 * k);
+    int ex = TITLE_EAGLE_X0 + (int)((TITLE_EAGLE_X1 - TITLE_EAGLE_X0) * k - 0.5f);
+    int z = present_get_zoom();
+    BeginScissorMode(ox * z, oy * z, pw * z, ph * z);   // the eagle leaves the art's edge
+    ui_blit(e, ox + ex * fs, oy + TITLE_EAGLE_Y * fs, e.width * fs, e.height * fs);
+    EndScissorMode();
+    ui_blit(s->title_words, ox, oy, pw, ph);
+}
+
 // The title art as the backdrop (modern: title menu, credits, save picker).
 static void draw_title_backdrop(const Sprites *sprites) {
+    if (title_sequence_ok(sprites)) { draw_title_sequence(sprites, TITLE_END); return; }
     if (!sprites || !sprites->splash_title.id) return;
     Texture2D t = sprites->splash_title;
     int fs = ui_fit_scale(t.width, t.height, CL_SCREEN_W, CL_SCREEN_H);
@@ -413,7 +456,26 @@ static bool run_title_menu(const Resources *res, const Sprites *sprites,
 
     screen_open();
     SelList l = { ROW_COUNT, 0 };
+    bool playing = title_sequence_ok(sprites) && !s_title_played;
+    double started = frame_host_time();
     while (!frame_host_should_close()) {
+        // The sequence takes no menu input: a key or tap only skips it.
+        double t = TITLE_END;
+        if (playing) {
+            t = frame_host_time() - started;
+            if (any_key_pressed() || t >= TITLE_END) {
+                playing = false;
+                s_title_played = true;
+                t = TITLE_END;
+                screen_open();
+            }
+        }
+        if (playing) {
+            frame_begin(rt);
+            draw_title_sequence(sprites, t);
+            frame_end(rt);
+            continue;
+        }
         if (input_key_pressed(KEY_ESCAPE)) break;
         int row = -1;
         if (sel_input(&l, TOUCH_LIST_STARTUP, 0, &row) == SEL_CONFIRM && row >= 0) {

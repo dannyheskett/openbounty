@@ -2180,6 +2180,13 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   for the pending decision (`pending_foe_evade_blocked`, judged after any bounce
   back), and autoplay and the demo must fight when it is set. Packs without the
   setting keep the free decline (2026-09-13).
+- **REQ-430p.** **Title sequence (modern).** With `sprites.ui.title_battle`,
+  `title_eagle` and `title_words` all declared, the title menu opens on the
+  words and eagle standard over purple; the battle fades in from 1.0 s to
+  2.5 s, the eagle slides left from 2.5 s to 3.5 s, and the menu then appears.
+  Any key or tap skips to the end; the sequence plays once per run, and the
+  credits, the load picker and a return to the title show the finished
+  screen. Without all three the title is `splash_title`, still (2026-09-13).
 - **REQ-430f.** **Keyboard detection and the letter selector (modern).**
   `input_host` latches which physical devices have been used: a real key
   event (not an injected one), a touch contact, a gamepad button or stick

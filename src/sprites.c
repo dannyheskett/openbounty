@@ -175,6 +175,9 @@ void sprites_load(Sprites *s, const Resources *res) {
     s->chrome_overworld = load_rel(res->sprites.chrome_overworld);
     s->splash_logo      = load_rel(res->sprites.splash_logo);
     s->splash_title     = load_rel(res->sprites.splash_title);
+    s->title_battle     = load_rel(res->sprites.title_battle);
+    s->title_eagle      = load_rel(res->sprites.title_eagle);
+    s->title_words      = load_rel(res->sprites.title_words);
     s->class_picker     = load_rel(res->sprites.class_picker);
     s->class_highlight  = load_rel(res->sprites.class_highlight);
     for (int i = 0; i < res->sprites.class_picker_selected_count; i++)
@@ -259,6 +262,9 @@ void sprites_unload(Sprites *s) {
     UnloadTexture(s->chrome_overworld);
     UnloadTexture(s->splash_logo);
     UnloadTexture(s->splash_title);
+    UnloadTexture(s->title_battle);
+    UnloadTexture(s->title_eagle);
+    UnloadTexture(s->title_words);
     UnloadTexture(s->class_picker);
     UnloadTexture(s->class_highlight);
     for (int i = 0; i < 4; i++) UnloadTexture(s->class_picker_selected[i]);

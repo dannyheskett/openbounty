@@ -966,6 +966,12 @@ static void parse_sprites(Resources *res, cJSON *obj) {
         copy_str(res->sprites.splash_title,
                  sizeof(res->sprites.splash_title),
                  json_str(ui, "splash_title", ""));
+        copy_str(res->sprites.title_battle, sizeof(res->sprites.title_battle),
+                 json_str(ui, "title_battle", ""));
+        copy_str(res->sprites.title_eagle, sizeof(res->sprites.title_eagle),
+                 json_str(ui, "title_eagle", ""));
+        copy_str(res->sprites.title_words, sizeof(res->sprites.title_words),
+                 json_str(ui, "title_words", ""));
         copy_str(res->sprites.class_picker,
                  sizeof(res->sprites.class_picker),
                  json_str(ui, "class_picker", ""));
@@ -2690,6 +2696,9 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
     art_add(out, cap, &n, res->sprites.chrome_overworld);
     art_add(out, cap, &n, res->sprites.splash_logo);
     art_add(out, cap, &n, res->sprites.splash_title);
+    art_add(out, cap, &n, res->sprites.title_battle);
+    art_add(out, cap, &n, res->sprites.title_eagle);
+    art_add(out, cap, &n, res->sprites.title_words);
     art_add(out, cap, &n, res->sprites.class_picker);
     art_add(out, cap, &n, res->sprites.class_highlight);
     for (int i = 0; i < res->sprites.class_picker_selected_count; i++)

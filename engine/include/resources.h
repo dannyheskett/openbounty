@@ -1179,6 +1179,12 @@ typedef struct {
                                              // exact copy of reference chrome.
         char splash_logo[RES_PATH_LEN];      // publisher logo (first splash)
         char splash_title[RES_PATH_LEN];     // game title (second splash)
+        // Modern title sequence layers, all 256x164 but the eagle (96x164):
+        // the battle fades in over the purple, the eagle standard slides left.
+        // All three or none; otherwise the title is splash_title, still.
+        char title_battle[RES_PATH_LEN];
+        char title_eagle[RES_PATH_LEN];
+        char title_words[RES_PATH_LEN];
         char class_picker[RES_PATH_LEN];     // 288x184 A-D class portrait image
         char class_highlight[RES_PATH_LEN];  // 42x44 cursor glow for class picker
         // Modern class select: the picker with one figure picked out, per class

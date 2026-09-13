@@ -83,6 +83,7 @@ typedef struct {
     Texture2D chrome_overworld;          // 320x200 chrome frame (transparent interior)
     Texture2D splash_logo;                // 320x84 publisher logo
     Texture2D splash_title;               // 320x200 game title
+    Texture2D title_battle, title_eagle, title_words;   // modern title sequence layers
     Texture2D class_picker;               // 288x184 class portraits (A-D)
     Texture2D class_highlight;            // 42x44 cursor glow over current pick
     Texture2D class_picker_selected[4];   // modern: the picker with one figure picked out
