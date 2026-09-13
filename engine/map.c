@@ -6,6 +6,33 @@
 #include <stdlib.h>
 #include <string.h>
 
+const char *MapStrGet(const Map *map, MapStr s) {
+    if (!map || s == 0 || s >= map->str_count) return "";
+    return map->pool + map->str_off[s];
+}
+
+MapStr MapStrIntern(Map *map, const char *s) {
+    if (!map || !s || !s[0]) return 0;
+    if (map->str_count == 0) {                 // index 0 is ""
+        map->str_off[0] = 0;
+        map->pool[0] = '\0';
+        map->pool_used = 1;
+        map->str_count = 1;
+    }
+    for (int i = 1; i < map->str_count; i++)
+        if (strcmp(map->pool + map->str_off[i], s) == 0) return (MapStr)i;
+    size_t n = strlen(s) + 1;
+    if (map->str_count >= MAP_MAX_STRINGS || map->pool_used + n > MAP_POOL_BYTES) {
+        fprintf(stdout, "map: string pool full (%d strings, %d bytes) adding '%s'\n",
+                map->str_count, map->pool_used, s);
+        abort();
+    }
+    map->str_off[map->str_count] = (uint16_t)map->pool_used;
+    memcpy(map->pool + map->pool_used, s, n);
+    map->pool_used += (int)n;
+    return (MapStr)map->str_count++;
+}
+
 static void copy_string(char *dst, size_t dst_size, const char *src) {
     if (!src) { dst[0] = '\0'; return; }
     size_t i = 0;
@@ -30,35 +57,39 @@ static const char *art_stem(const char *art) {
     return slash ? slash + 1 : art;
 }
 
-static bool fill_tile_from_code(const Map *map, Tile *t, const Resources *res,
+static bool fill_tile_from_code(Map *map, Tile *t, const Resources *res,
                                 unsigned char c) {
     // Every byte indexes the table (RES_TILE_CODE_COUNT spans the range).
     const ResTileCode *tc = &res->tile_codes[c];
     if (!tc->present) return false;
-    MapTerrainArt(map, tc->art, t->art, sizeof(t->art));
-    copy_string(t->ground, sizeof(t->ground), t->art);
-    t->terrain     = (Terrain)tc->terrain;
+    char art[TILE_ART_NAME_LEN];
+    MapTerrainArt(map, tc->art, art, sizeof art);
+    t->art         = MapStrIntern(map, art);
+    t->ground      = t->art;
+    t->terrain     = (uint8_t)tc->terrain;
     t->blocks_foot = tc->blocks_foot;
     t->is_bridge   = tc->is_bridge;
     t->interactive = INTERACT_NONE;
-    t->id[0]       = '\0';
-    t->sign_title[0] = '\0';
-    t->sign_body[0]  = '\0';
+    t->id          = 0;
+    t->sign_title  = 0;
+    t->sign_body   = 0;
     t->boat_spawn_x  = -1;
     t->boat_spawn_y  = -1;
     return true;
 }
 
-static void default_tile(const Map *map, Tile *t) {
-    MapTerrainArt(map, "grass", t->art, sizeof(t->art));
-    copy_string(t->ground, sizeof(t->ground), t->art);
+static void default_tile(Map *map, Tile *t) {
+    char art[TILE_ART_NAME_LEN];
+    MapTerrainArt(map, "grass", art, sizeof art);
+    t->art         = MapStrIntern(map, art);
+    t->ground      = t->art;
     t->terrain     = TERRAIN_GRASS;
     t->blocks_foot = false;
     t->is_bridge   = false;
     t->interactive = INTERACT_NONE;
-    t->id[0]       = '\0';
-    t->sign_title[0] = '\0';
-    t->sign_body[0]  = '\0';
+    t->id          = 0;
+    t->sign_title  = 0;
+    t->sign_body   = 0;
     t->boat_spawn_x  = -1;
     t->boat_spawn_y  = -1;
 }
@@ -193,10 +224,10 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
         Tile *t = tile_at(map, z->signs[i].x, z->signs[i].y);
         if (!t) continue;
         t->interactive = INTERACT_SIGN;
-        copy_string(t->id,         sizeof(t->id),         z->signs[i].id);
-        copy_string(t->sign_title, sizeof(t->sign_title), z->signs[i].title);
-        copy_string(t->sign_body,  sizeof(t->sign_body),  z->signs[i].body);
-        copy_string(t->art,        sizeof(t->art),        "sign");
+        TileSetId(map, t, z->signs[i].id);
+        t->sign_title = MapStrIntern(map, z->signs[i].title);
+        t->sign_body = MapStrIntern(map, z->signs[i].body);
+        TileSetArt(map, t, "sign");
     }
     for (int i = 0; i < z->town_count; i++) {
         const ResTown *zt = resources_zone_town(res, z, i);
@@ -204,12 +235,12 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
         Tile *t = tile_at(map, zt->x, zt->y);
         if (!t) continue;
         t->interactive = INTERACT_TOWN;
-        copy_string(t->id, sizeof(t->id), zt->id);
+        TileSetId(map, t, zt->id);
         t->boat_spawn_x = zt->boat_x;
         t->boat_spawn_y = zt->boat_y;
         // A town draws its own tile when the catalog entry names one
         // (`art`, a stem under art/tiles/), else the shared "town" tile.
-        copy_string(t->art, sizeof(t->art), zt->art[0] ? zt->art : "town");
+        TileSetArt(map, t, zt->art[0] ? zt->art : "town");
     }
     for (int i = 0; i < z->castle_count; i++) {
         // The footprint is the catalog entry's choice (REQ-228); a zone castle
@@ -225,11 +256,11 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
             if (!t) continue;
             // A 1x1 castle draws its own tile when the catalog names one.
             const char *art = (nparts == 1 && rc && rc->art[0]) ? rc->art : parts[p].art;
-            copy_string(t->art, sizeof(t->art), art);
+            TileSetArt(map, t, art);
             if (parts[p].gate) {
                 // Gate: interactive entry point.
                 t->interactive = INTERACT_CASTLE_GATE;
-                copy_string(t->id, sizeof(t->id), z->castles[i].id);
+                TileSetId(map, t, z->castles[i].id);
                 t->blocks_foot = false;
             } else {
                 // Wall: decorative scenery, blocks the player.
@@ -244,7 +275,7 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
             const ResCastleDecor *d = &z->castles[i].decorations[p];
             Tile *t = tile_at(map, cx + d->dx, cy + d->dy);
             if (!t || !d->art[0]) continue;
-            copy_string(t->art, sizeof(t->art), d->art);
+            TileSetArt(map, t, d->art);
             t->blocks_foot = true;
         }
     }
@@ -258,18 +289,18 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
         Tile *t = tile_at(map, z->chests[i].x, z->chests[i].y);
         if (!t) continue;
         t->interactive = INTERACT_TREASURE_CHEST;
-        copy_string(t->id, sizeof(t->id), z->chests[i].id);
-        copy_string(t->art, sizeof(t->art), "chest");
+        TileSetId(map, t, z->chests[i].id);
+        TileSetArt(map, t, "chest");
     }
     for (int i = 0; i < z->artifact_count; i++) {
         Tile *t = tile_at(map, z->artifacts[i].x, z->artifacts[i].y);
         if (!t) continue;
         t->interactive = INTERACT_ARTIFACT;
-        copy_string(t->id, sizeof(t->id), z->artifacts[i].id);
+        TileSetId(map, t, z->artifacts[i].id);
         // Both artifact tile bytes (0x92/0x93) display the same
         // chest-style art; the artifact identity is reveal-on-pickup,
         // not from the world tile.
-        copy_string(t->art, sizeof(t->art), "artifact_chest");
+        TileSetArt(map, t, "artifact_chest");
     }
     for (int i = 0; i < z->dwelling_count; i++) {
         Tile *t = tile_at(map, z->dwellings[i].x, z->dwellings[i].y);
@@ -277,18 +308,18 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
         const char *k = z->dwellings[i].kind;
         if      (strcmp(k, "plains")  == 0) {
             t->interactive = INTERACT_DWELLING_PLAINS;
-            copy_string(t->art, sizeof(t->art), "dwelling_plains");
+            TileSetArt(map, t, "dwelling_plains");
         } else if (strcmp(k, "forest")  == 0) {
             t->interactive = INTERACT_DWELLING_FOREST;
-            copy_string(t->art, sizeof(t->art), "dwelling_forest");
+            TileSetArt(map, t, "dwelling_forest");
         } else if (strcmp(k, "hills")   == 0) {
             t->interactive = INTERACT_DWELLING_HILLS;
-            copy_string(t->art, sizeof(t->art), "dwelling_hills");
+            TileSetArt(map, t, "dwelling_hills");
         } else if (strcmp(k, "dungeon") == 0) {
             t->interactive = INTERACT_DWELLING_DUNGEON;
-            copy_string(t->art, sizeof(t->art), "dwelling_dungeon");
+            TileSetArt(map, t, "dwelling_dungeon");
         }
-        copy_string(t->id, sizeof(t->id), z->dwellings[i].id);
+        TileSetId(map, t, z->dwellings[i].id);
     }
     // The magic alcove. Drawn with the zone's own `alcove_art` when it
     // declares one, otherwise the hills-dwelling sprite it borrowed before a
@@ -300,9 +331,8 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
         Tile *t = tile_at(map, z->magic_alcove_x, z->magic_alcove_y);
         if (t) {
             t->interactive = INTERACT_ALCOVE;
-            copy_string(t->art, sizeof(t->art),
-                        z->alcove_art[0] ? z->alcove_art : "dwelling_hills");
-            copy_string(t->id,  sizeof(t->id),  "alcove");
+            TileSetArt(map, t, z->alcove_art[0] ? z->alcove_art : "dwelling_hills");
+            TileSetId(map, t, "alcove");
             // The alcove sits on a mountain-edge tile; force it walkable
             // so the player can step on it (the sprite implies a passable
             // cave entrance regardless of the underlying terrain).
@@ -350,9 +380,9 @@ static void stamp_placements(Map *map, const Game *game, const char *zone_id) {
         Tile *t = tile_at(map, p->x, p->y);
         if (!t) continue;
         t->interactive = (Interact)p->kind;
-        copy_string(t->id, sizeof(t->id), p->id);
+        TileSetId(map, t, p->id);
         const char *art = placement_art(p->kind);
-        if (art) copy_string(t->art, sizeof(t->art), art);
+        if (art) TileSetArt(map, t, art);
     }
     // All foes -- friendly and hostile -- stamped from the live FoeState
     // table. This is one-tile-type model (0x91); friendly vs
@@ -382,9 +412,8 @@ void MapStampFoe(Map *map, int x, int y, const char *placement_id) {
         !spurious_chest)
         return;
     t->interactive = INTERACT_FOE;
-    copy_string(t->id, sizeof(t->id), placement_id);
-    copy_string(t->art, sizeof(t->art),
-                map->army_art[0] ? map->army_art : "wandering_army");
+    TileSetId(map, t, placement_id);
+    TileSetArt(map, t, map->army_art[0] ? map->army_art : "wandering_army");
 }
 
 bool MapClearFoeStamp(Map *map, int x, int y) {
@@ -439,7 +468,7 @@ void MapClearInteractive(Map *map, int x, int y) {
     if (!MapInBounds(map, x, y)) return;
     Tile *t = &map->tiles[y][x];
     t->interactive = INTERACT_NONE;
-    t->id[0] = '\0';
+    t->id = 0;
     // Revert to the cell's own terrain art (REQ-229f): a road, a grass
     // variant or a desert piece comes back as the map drew it. The original
     // game set consumed tiles to byte 0x00 (grass) so they became passable
@@ -447,20 +476,22 @@ void MapClearInteractive(Map *map, int x, int y) {
     // edges, alcoves on mountain-variant tiles); that still holds where the
     // ground is not walkable. Water stays water so picked-up floating
     // interactives don't become walkable.
+    char art[TILE_ART_NAME_LEN];
     if (t->terrain == TERRAIN_WATER) {
-        MapTerrainArt(map, "water", t->art, sizeof(t->art));
+        TileSetArt(map, t, MapTerrainArt(map, "water", art, sizeof art));
         return;
     }
     // Only grass-terrain ground comes back (roads, grass variants): a
     // consumed object on desert or a mountain edge still leaves plain grass,
     // exactly as the original game did, so the legacy pack plays unchanged.
-    Terrain ground = t->ground[0] ? TerrainFromArt(art_stem(t->ground)) : TERRAIN_GRASS;
-    if (t->ground[0] && ground == TERRAIN_GRASS) {
-        copy_string(t->art, sizeof(t->art), t->ground);
+    const char *gname = TileGround(map, t);
+    Terrain ground = gname[0] ? TerrainFromArt(art_stem(gname)) : TERRAIN_GRASS;
+    if (gname[0] && ground == TERRAIN_GRASS) {
+        t->art = t->ground;
         t->terrain = TERRAIN_GRASS;
     } else {
-        MapTerrainArt(map, "grass", t->art, sizeof(t->art));
-        copy_string(t->ground, sizeof(t->ground), t->art);
+        t->art = MapStrIntern(map, MapTerrainArt(map, "grass", art, sizeof art));
+        t->ground = t->art;
         t->terrain = TERRAIN_GRASS;
     }
     t->blocks_foot = false;

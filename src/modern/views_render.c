@@ -598,8 +598,8 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
                     int mx = cam_x + i;
                     int my = cam_y + j;
                     const Tile *t = MapGetTile(&s_puzzle_scepter_map, mx, my);
-                    if (t && t->art[0]) {
-                        Texture2D tex = tile_cache_get(t->art);
+                    if (t && t->art) {
+                        Texture2D tex = tile_cache_get(TileArt(&s_puzzle_scepter_map, t));
                         if (tex.id) {
                             Rectangle src = { 0, 0,
                                               (float)tex.width,

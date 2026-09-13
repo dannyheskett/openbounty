@@ -78,7 +78,7 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
             char va[TILE_ART_NAME_LEN];
             if (t->interactive != INTERACT_NONE) {
                 char ga[TILE_ART_NAME_LEN];
-                const char *gart = t->ground[0] ? t->ground
+                const char *gart = t->ground ? TileGround(m, t)
                                    : MapTerrainArt(m, TerrainName(t->terrain), ga, sizeof ga);
                 Texture2D ground = tile_cache_get(tilevar_art(gart, mx, my, va, sizeof va));
                 if (ground.id) {
@@ -88,7 +88,7 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
                                    0.0f, WHITE);
                 }
             }
-            Texture2D tex = tile_cache_get(tilevar_art(t->art, mx, my, va, sizeof va));
+            Texture2D tex = tile_cache_get(tilevar_art(TileArt(m, t), mx, my, va, sizeof va));
             if (tex.id == 0) continue;
             Rectangle src = { 0, 0, (float)tex.width, (float)tex.height };
             DrawTexturePro(tex, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);

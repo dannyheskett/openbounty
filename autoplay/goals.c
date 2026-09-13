@@ -61,23 +61,23 @@ static void enumerate_noncombat(const Game *g, const Map *map, int zi,
                      x & (MAP_MAX_W - 1), y & (MAP_MAX_H - 1));
             switch (t->interactive) {
             case INTERACT_TREASURE_CHEST:
-                s = add_step(out, STEP_CHEST, zi, x, y, t->id);
+                s = add_step(out, STEP_CHEST, zi, x, y, TileId(map, t));
                 if (s) set_label(s, "chest", coord);
                 break;
             case INTERACT_ARTIFACT:
-                s = add_step(out, STEP_ARTIFACT, zi, x, y, t->id);
+                s = add_step(out, STEP_ARTIFACT, zi, x, y, TileId(map, t));
                 if (s) set_label(s, "artifact", coord);
                 break;
             case INTERACT_NAVMAP:
-                s = add_step(out, STEP_NAVMAP, zi, x, y, t->id);
+                s = add_step(out, STEP_NAVMAP, zi, x, y, TileId(map, t));
                 if (s) set_label(s, "navmap", coord);
                 break;
             case INTERACT_ORB:
-                s = add_step(out, STEP_ORB, zi, x, y, t->id);
+                s = add_step(out, STEP_ORB, zi, x, y, TileId(map, t));
                 if (s) set_label(s, "orb", coord);
                 break;
             case INTERACT_ALCOVE:
-                s = add_step(out, STEP_ALCOVE, zi, x, y, t->id);
+                s = add_step(out, STEP_ALCOVE, zi, x, y, TileId(map, t));
                 if (s) set_label(s, "alcove", coord);
                 break;
             default:

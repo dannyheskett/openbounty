@@ -50,6 +50,6 @@ typedef struct {
 // Handle a step onto an interactive tile. Pops a dialog if applicable.
 // `zone` is the hero's current zone id, used to resolve which artifact
 // an INTERACT_ARTIFACT tile grants.
-InteractResult adventure_handle_interact(const Tile *t, const char *zone);
+InteractResult adventure_handle_interact(const Map *map, const Tile *t, const char *zone);
 
 #endif

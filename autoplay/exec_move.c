@@ -1517,7 +1517,7 @@ static int move_to_once(ExecCtx *ctx, const NavPoint *targets, int n,
                     if (!nt) { printf("[NAV]  n(%+d,%+d)=NULL\n", dx, dy);
                                continue; }
                     printf("[NAV]  n(%+d,%+d) art=%s terr=%d int=%d blocks=%d "
-                           "foot=%d\n", dx, dy, nt->art, (int)nt->terrain,
+                           "foot=%d\n", dx, dy, TileArt(ctx->map, nt), (int)nt->terrain,
                            (int)nt->interactive, (int)nt->blocks_foot,
                            (int)adventure_walkable_on_foot(nt));
                 }

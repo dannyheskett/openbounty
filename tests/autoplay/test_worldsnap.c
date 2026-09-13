@@ -39,6 +39,7 @@ static WsFixture ws_make(void) {
 }
 
 static void ws_free(WsFixture *fx) {
+    worldsnap_release(fx->snap);
     free(fx->snap);
     free(fx->f);
     free(fx->m);
@@ -80,7 +81,34 @@ TEST worldsnap_restores_world_rng(void) {
     PASS();
 }
 
+// A snapshot of a small map restored over a larger live map (a zone change
+// between capture and restore) comes back bit-identical to a fresh load of the
+// small map: the cells beyond its width x height are zero again.
+TEST worldsnap_small_map_over_large_live_map(void) {
+    WsFixture fx = ws_make();
+    fx.m->width = 20;
+    fx.m->height = 10;
+    fx.m->tiles[2][3].art = 7;
+    uint32_t before = worldsnap_fingerprint(fx.g, fx.m, fx.f);
+    worldsnap_capture(fx.snap, fx.g, fx.m, fx.f);
+    // The live map becomes a larger one with cells set everywhere.
+    fx.m->width = MAP_MAX_W;
+    fx.m->height = MAP_MAX_H;
+    for (int y = 0; y < MAP_MAX_H; y++)
+        for (int x = 0; x < MAP_MAX_W; x++) fx.m->tiles[y][x].terrain = TERRAIN_FOREST;
+    worldsnap_restore(fx.snap, fx.g, fx.m, fx.f);
+    ASSERT_EQ(20, fx.m->width);
+    ASSERT_EQ(10, fx.m->height);
+    ASSERT_EQ(0, fx.m->tiles[50][50].terrain);
+    ASSERT_EQ(0, fx.m->tiles[5][30].terrain);
+    ASSERT_EQ(7, fx.m->tiles[2][3].art);
+    ASSERT_EQ_FMT(before, worldsnap_fingerprint(fx.g, fx.m, fx.f), "%u");
+    ws_free(&fx);
+    PASS();
+}
+
 SUITE(autoplay_worldsnap_suite) {
     RUN_TEST(worldsnap_restores_bit_identically);
+    RUN_TEST(worldsnap_small_map_over_large_live_map);
     RUN_TEST(worldsnap_restores_world_rng);
 }

@@ -181,7 +181,7 @@ bool exec_step_strands(ExecCtx *ctx, const PlanStep *step) {
                                                     step->y + ndy);
                         if (!nt) continue;
                         printf("[STRAND]  n(%+d,%+d) art=%s terr=%d int=%d "
-                               "foot=%d\n", ndx, ndy, nt->art,
+                               "foot=%d\n", ndx, ndy, TileArt(ctx->map, nt),
                                (int)nt->terrain, (int)nt->interactive,
                                (int)adventure_walkable_on_foot(nt));
                     }

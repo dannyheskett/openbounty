@@ -325,7 +325,7 @@ static bool planner_attempt(ExecCtx *ctx, const PlanStep *step, ObjState *st) {
                                                 ctx->g->position.y + dy2);
                     if (t2)
                         printf("[PLANNER]  n(%+d,%+d) art=%s terr=%d int=%d "
-                               "blocks=%d\n", dx2, dy2, t2->art,
+                               "blocks=%d\n", dx2, dy2, TileArt(ctx->map, t2),
                                (int)t2->terrain, (int)t2->interactive,
                                (int)t2->blocks_foot);
                 }
@@ -483,7 +483,7 @@ static int scarce_winner_swap(ExecCtx *ctx, const PlanStepSet *set,
 bool planner_open(ExecCtx *ctx, PlannerRun *run) {
     static Map scratch;   // enumeration-time zone loads
     if (!s_snap) {
-        s_snap = (WorldSnapshot *)malloc(sizeof *s_snap);
+        s_snap = (WorldSnapshot *)calloc(1, sizeof *s_snap);
         if (!s_snap) return false;
     }
     if (!plansteps_enumerate(ctx->g, &scratch, &s_set)) return false;
@@ -507,6 +507,7 @@ bool planner_open(ExecCtx *ctx, PlannerRun *run) {
 }
 
 void planner_close(void) {
+    worldsnap_release(s_snap);
     free(s_snap);
     s_snap = NULL;
 }

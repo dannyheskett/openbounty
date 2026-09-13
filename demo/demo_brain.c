@@ -704,7 +704,7 @@ static void scan_zone(const Game *g, const Map *map, const Fog *fog,
                 const TownRecord *tr = NULL;
                 for (int i = 0; i < GAME_TOWNS; i++)
                     if (g->towns[i].id[0] &&
-                        strcmp(g->towns[i].id, t->id) == 0) {
+                        strcmp(g->towns[i].id, TileId(map, t)) == 0) {
                         tr = &g->towns[i];
                         break;
                     }
@@ -714,23 +714,24 @@ static void scan_zone(const Game *g, const Map *map, const Fog *fog,
                 break;
             }
             case INTERACT_CASTLE_GATE: {
-                if (!t->id[0]) break;
+                const char *tid = TileId(map, t);
+                if (!tid[0]) break;
                 if (!g->stats.siege_weapons) break;   // gates bounce without them
-                const ResCastle *rc = resources_castle_by_id(res, t->id);
+                const ResCastle *rc = resources_castle_by_id(res, tid);
                 if (!rc || resources_castle_is_home(rc)) break;
-                const CastleRecord *cr = GameFindCastleConst(g, t->id);
+                const CastleRecord *cr = GameFindCastleConst(g, tid);
                 if (cr && cr->visited && cr->owner_kind == CASTLE_OWNER_PLAYER)
                     break;                        // ours already
                 // What the prompts taught us: a villain castle is a target
                 // only while its lord is under contract; monster castles are
                 // gated by the declined-power memory; unknown owners are
                 // always worth a look (the peek is free).
-                const DemoIntel *in = intel_find(t->id);
+                const DemoIntel *in = intel_find(tid);
                 if (in && in->villain &&
                     (!g->contract.active_id[0] ||
                      strcmp(in->villain_id, g->contract.active_id) != 0))
                     break;
-                if (in && !retry_worthy(t->id, ours)) break;
+                if (in && !retry_worthy(tid, ours)) break;
                 if (sc->castle_d < 0 || d < sc->castle_d) {
                     sc->castle_x = x; sc->castle_y = y; sc->castle_d = d;
                 }

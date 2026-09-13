@@ -131,8 +131,8 @@ static cJSON *build_tile_window(const Game *g, const Map *map, const Fog *fog) {
                                         InteractToString(t->interactive));
             }
             if (t->blocks_foot) cJSON_AddNumberToObject(cell, "b", 1);
-            if (t->id[0]) cJSON_AddStringToObject(cell, "id", t->id);
-            if (t->art[0]) cJSON_AddStringToObject(cell, "art", t->art);
+            if (t->id) cJSON_AddStringToObject(cell, "id", TileId(map, t));
+            if (t->art) cJSON_AddStringToObject(cell, "art", TileArt(map, t));
             if (t->is_bridge) cJSON_AddNumberToObject(cell, "br", 1);
 
             // Resolved "would the hero step here right now?" predicate.

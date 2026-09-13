@@ -2,6 +2,7 @@
 #define OB_MAP_H
 
 #include <stdbool.h>
+#include <stdint.h>
 #include "tile.h"
 #include <stddef.h>
 
@@ -13,20 +14,29 @@
 #define TILE_SIGN_TITLE_LEN 48
 #define TILE_SIGN_BODY_LEN  96
 
+// A tile's text (art names, ids, signpost text) lives once in its Map's string
+// pool; the tile holds small indices into it (0 = the empty string). A tile is
+// then a few bytes, so the grid, and every autoplay snapshot of it, costs what
+// the loaded map needs rather than the text copied into every cell. Busiest
+// shipped map (kings-bounty continentia): 252 strings, 3.8 KB of text.
+#define MAP_MAX_STRINGS    1024
+#define MAP_POOL_BYTES     16384
+typedef uint16_t MapStr;
+
 typedef struct {
-    char     art[TILE_ART_NAME_LEN];   // sprite filename base (e.g. "water", "castle_roof")
-    char     ground[TILE_ART_NAME_LEN];// the cell's OWN terrain art from the map (a road, an
+    MapStr   art;                      // sprite filename base (e.g. "water", "castle_roof")
+    MapStr   ground;                   // the cell's OWN terrain art from the map (a road, an
                                        // edge piece); what an object stands on and what comes
                                        // back when the object is cleared (REQ-229f)
-    Terrain  terrain;                  // derived from art at load time
-    Interact interactive;              // INTERACT_NONE if no overlay
-    char     id[TILE_ID_LEN];          // optional named instance ("kings_castle"), empty if none
+    MapStr   id;                       // optional named instance ("kings_castle"), 0 if none
+    MapStr   sign_title;               // 0 if not a sign
+    MapStr   sign_body;                // 0 if no body or not a sign
+    uint8_t  terrain;                  // Terrain, derived from art at load time
+    uint8_t  interactive;              // Interact, INTERACT_NONE if no overlay
     bool     blocks_foot;              // castle walls and similar visual blockers
     bool     is_bridge;                // bridge_h / bridge_v (walkable in both modes)
-    char     sign_title[TILE_SIGN_TITLE_LEN];  // empty if not a sign
-    char     sign_body[TILE_SIGN_BODY_LEN];    // empty if no body or not a sign
-    int      boat_spawn_x;  // for town tiles: where the rented boat appears; -1 if unset
-    int      boat_spawn_y;
+    int16_t  boat_spawn_x;  // for town tiles: where the rented boat appears; -1 if unset
+    int16_t  boat_spawn_y;
 } Tile;
 
 typedef struct {
@@ -50,8 +60,30 @@ typedef struct {
     // The zone's wandering-army art stem ("wandering_army" unless the zone
     // declares `army_art`); every foe stamp reads it from here.
     char army_art[TILE_ART_NAME_LEN];
+    // The string pool the tiles index (see Tile). Rebuilt by every load.
+    int      str_count;                // strings in use, index 0 = ""
+    int      pool_used;                // bytes of `pool` in use
+    uint16_t str_off[MAP_MAX_STRINGS];
+    char     pool[MAP_POOL_BYTES];
     Tile tiles[MAP_MAX_H][MAP_MAX_W];
 } Map;
+
+// The string a tile field holds ("" for 0 or out of range).
+const char *MapStrGet(const Map *map, MapStr s);
+// The pool index of `s` in this map, adding it if new ("" and NULL are 0). A
+// pool that runs out stops the program with a message: a silently dropped name
+// would draw the wrong tile.
+MapStr MapStrIntern(Map *map, const char *s);
+
+// A tile's text, read and written through its map's pool.
+static inline const char *TileArt(const Map *m, const Tile *t)       { return MapStrGet(m, t->art); }
+static inline const char *TileGround(const Map *m, const Tile *t)    { return MapStrGet(m, t->ground); }
+static inline const char *TileId(const Map *m, const Tile *t)        { return MapStrGet(m, t->id); }
+static inline const char *TileSignTitle(const Map *m, const Tile *t) { return MapStrGet(m, t->sign_title); }
+static inline const char *TileSignBody(const Map *m, const Tile *t)  { return MapStrGet(m, t->sign_body); }
+static inline void TileSetArt(Map *m, Tile *t, const char *s)    { t->art = MapStrIntern(m, s); }
+static inline void TileSetGround(Map *m, Tile *t, const char *s) { t->ground = MapStrIntern(m, s); }
+static inline void TileSetId(Map *m, Tile *t, const char *s)     { t->id = MapStrIntern(m, s); }
 
 // Write the art name for a terrain art stem in this map's tile set into
 // `out`: "<tile_set>/<stem>" when the map declares a set, else the stem.

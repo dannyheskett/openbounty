@@ -123,7 +123,7 @@ bool GameStep(Game *game, Map *map, Fog *fog,
     // (game.c:6522): interactive tiles do not fire while flying.
     // The hero passes over castles/towns/signs without triggering them.
     if (!flying && nt->interactive != INTERACT_NONE) {
-        InteractResult ir = adventure_handle_interact(nt, game->position.zone);
+        InteractResult ir = adventure_handle_interact(map, nt, game->position.zone);
         if (ir.opened_dialog) {
             // Sign-post text composed Game-free by adventure_handle_interact;
             // raise it through the uniform queue.

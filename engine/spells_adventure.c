@@ -81,13 +81,14 @@ int try_build_bridge(Game *g, Map *map, int dx, int dy) {
         const Tile *t = MapGetTile(map, nx, ny);
         if (t->terrain != TERRAIN_WATER) break;
 
-        map->tiles[ny][nx].art[0] = '\0';
         map->tiles[ny][nx].terrain = TERRAIN_GRASS;
         map->tiles[ny][nx].interactive = INTERACT_NONE;
         map->tiles[ny][nx].blocks_foot = false;
         map->tiles[ny][nx].is_bridge = true;
-        MapTerrainArt(map, bridge_art, map->tiles[ny][nx].art,
-                      sizeof(map->tiles[ny][nx].art));
+        {
+            char art[TILE_ART_NAME_LEN];
+            TileSetArt(map, &map->tiles[ny][nx], MapTerrainArt(map, bridge_art, art, sizeof art));
+        }
 
         built++;
         if (built >= 2) break;  // builds max 2 tiles (or up to 5 water tiles)

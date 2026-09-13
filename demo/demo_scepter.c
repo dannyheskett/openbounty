@@ -81,7 +81,7 @@ void demo_scepter_update(const Game *g, const Fog *live_fog) {
             if (!cell_revealed(g, row, col)) continue;
             const Tile *t = MapGetTile(&s_shown_map, camx + col, camy + row);
             if (!t) continue;
-            snprintf(shown[row][col], TILE_ART_NAME_LEN, "%s", t->art);
+            snprintf(shown[row][col], TILE_ART_NAME_LEN, "%s", TileArt(&s_shown_map, t));
             nshown++;
         }
     if (nshown == 0) return;
@@ -115,7 +115,7 @@ void demo_scepter_update(const Game *g, const Fog *live_fog) {
                         int mx = cx + col, my = cy + row;
                         const Tile *ct = MapGetTile(m, mx, my);
                         if (!ct || !FogSeen(zfog, mx, my) ||
-                            strcmp(ct->art, shown[row][col]) != 0)
+                            strcmp(TileArt(m, ct), shown[row][col]) != 0)
                             ok = false;
                     }
                 if (!ok) continue;

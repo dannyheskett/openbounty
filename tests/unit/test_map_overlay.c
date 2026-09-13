@@ -20,7 +20,7 @@ TEST sign_at_known_coord_has_expected_title(void) {
     const Tile *t = MapGetTile(m, 3, 60);
     ASSERT(t);
     ASSERT_EQ(INTERACT_SIGN, t->interactive);
-    ASSERT_STR_EQ("Treasure Island", t->sign_title);
+    ASSERT_STR_EQ("Treasure Island", TileSignTitle(m, t));
 
     fx_free_game_full(res, g, m, f);
     PASS();
@@ -72,7 +72,7 @@ TEST clear_interactive_removes_overlay_metadata(void) {
     const Tile *after = MapGetTile(m, 3, 60);
     ASSERT(after);
     ASSERT_EQ(INTERACT_NONE, after->interactive);
-    ASSERT_EQ('\0', after->id[0]);
+    ASSERT_EQ('\0', TileId(m, after)[0]);
 
     fx_free_game_full(res, g, m, f);
     PASS();
@@ -119,8 +119,8 @@ TEST castle_default_footprint_stamps_gate_and_five_walls(void) {
     const Tile *gate = MapGetTile(m, 30, 36);
     ASSERT(gate);
     ASSERT_EQ(INTERACT_CASTLE_GATE, gate->interactive);
-    ASSERT_STR_EQ("azram", gate->id);
-    ASSERT_STR_EQ("castle_gate", gate->art);
+    ASSERT_STR_EQ("azram", TileId(m, gate));
+    ASSERT_STR_EQ("castle_gate", TileArt(m, gate));
     ASSERT_FALSE(gate->blocks_foot);
     struct { int x, y; const char *art; } walls[5] = {
         { 29, 35, "castle_tl" }, { 30, 35, "castle_br" }, { 31, 35, "castle_tr" },
@@ -129,7 +129,7 @@ TEST castle_default_footprint_stamps_gate_and_five_walls(void) {
     for (int i = 0; i < 5; i++) {
         const Tile *t = MapGetTile(m, walls[i].x, walls[i].y);
         ASSERT(t);
-        ASSERT_STR_EQ(walls[i].art, t->art);
+        ASSERT_STR_EQ(walls[i].art, TileArt(m, t));
         ASSERT(t->blocks_foot);
         ASSERT_EQ(INTERACT_NONE, t->interactive);
         ASSERT_FALSE(adventure_walkable_on_foot(t));
@@ -150,15 +150,15 @@ TEST castle_1x1_footprint_stamps_only_the_gate_tile(void) {
     const Tile *gate = MapGetTile(m, 30, 36);
     ASSERT(gate);
     ASSERT_EQ(INTERACT_CASTLE_GATE, gate->interactive);
-    ASSERT_STR_EQ("azram", gate->id);
-    ASSERT_STR_EQ("castle", gate->art);
+    ASSERT_STR_EQ("azram", TileId(m, gate));
+    ASSERT_STR_EQ("castle", TileArt(m, gate));
     ASSERT_FALSE(gate->blocks_foot);
     // The five tiles a 3x2 castle would wall off stay plain .dat terrain.
     int around[5][2] = { {29,35}, {30,35}, {31,35}, {29,36}, {31,36} };
     for (int i = 0; i < 5; i++) {
         const Tile *t = MapGetTile(m, around[i][0], around[i][1]);
         ASSERT(t);
-        ASSERT_STR_EQ("grass", t->art);
+        ASSERT_STR_EQ("grass", TileArt(m, t));
         ASSERT_FALSE(t->blocks_foot);
         ASSERT_EQ(INTERACT_NONE, t->interactive);
         ASSERT(adventure_walkable_on_foot(t));

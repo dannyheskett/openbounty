@@ -74,7 +74,7 @@ TEST live_foe_stays_stamped(void) {
     const Tile *t = MapGetTile(m, 5, 5);
     ASSERT(t != NULL);
     ASSERT_EQ(INTERACT_FOE, t->interactive);
-    ASSERT_EQ(0, strcmp(t->id, "foe0"));
+    ASSERT_EQ(0, strcmp(TileId(m, t), "foe0"));
     free(g); free(m);
     PASS();
 }

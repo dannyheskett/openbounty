@@ -2,6 +2,11 @@
 
 #include "worldsnap.h"
 
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "pending.h"
 #include "spells_adventure.h"
 
@@ -12,11 +17,38 @@ static bool s_calendar_dead = false;
 void worldsnap_reset_calendar_dead(void) { s_calendar_dead = false; }
 bool worldsnap_calendar_dead(void) { return s_calendar_dead; }
 
+#define MAP_HEAD_BYTES offsetof(Map, tiles)
+
+void worldsnap_release(WorldSnapshot *snap) {
+    if (!snap) return;
+    free(snap->map_bytes);
+    snap->map_bytes = NULL;
+    snap->map_cap = 0;
+}
+
 void worldsnap_capture(WorldSnapshot *snap, const Game *g, const Map *map,
                        const Fog *fog) {
     if (!snap || !g || !map || !fog) return;
+    int w = map->width, h = map->height;
+    if (w < 0 || w > MAP_MAX_W) w = 0;
+    if (h < 0 || h > MAP_MAX_H) h = 0;
+    size_t need = MAP_HEAD_BYTES + (size_t)w * (size_t)h * sizeof(Tile);
+    if (snap->map_cap < need) {
+        unsigned char *nb = (unsigned char *)realloc(snap->map_bytes, need);
+        if (!nb) {
+            fprintf(stdout, "worldsnap: out of memory (%zu bytes)\n", need);
+            abort();
+        }
+        snap->map_bytes = nb;
+        snap->map_cap = need;
+    }
+    memcpy(snap->map_bytes, map, MAP_HEAD_BYTES);
+    unsigned char *p = snap->map_bytes + MAP_HEAD_BYTES;
+    for (int y = 0; y < h; y++) {
+        memcpy(p, map->tiles[y], (size_t)w * sizeof(Tile));
+        p += (size_t)w * sizeof(Tile);
+    }
     snap->game = *g;
-    snap->map = *map;
     snap->fog = *fog;
     snap->rng = GameRngSnapshot();
     ledger_snap(&snap->ledger);
@@ -35,7 +67,22 @@ void worldsnap_restore(const WorldSnapshot *snap, Game *g, Map *map, Fog *fog) {
         !snap->game.stats.won)
         s_calendar_dead = true;
     *g = snap->game;
-    *map = snap->map;
+    // The map: the header, then the stored rows; cells the live map used beyond
+    // the restored map's area go back to zero, as a fresh load leaves them.
+    int old_w = map->width, old_h = map->height;
+    if (old_w < 0 || old_w > MAP_MAX_W) old_w = MAP_MAX_W;
+    if (old_h < 0 || old_h > MAP_MAX_H) old_h = MAP_MAX_H;
+    memcpy(map, snap->map_bytes, MAP_HEAD_BYTES);
+    int w = map->width, h = map->height;
+    const unsigned char *p = snap->map_bytes + MAP_HEAD_BYTES;
+    for (int y = 0; y < h; y++) {
+        memcpy(map->tiles[y], p, (size_t)w * sizeof(Tile));
+        p += (size_t)w * sizeof(Tile);
+        if (y < old_h && old_w > w)
+            memset(&map->tiles[y][w], 0, (size_t)(old_w - w) * sizeof(Tile));
+    }
+    for (int y = h; y < old_h; y++)
+        memset(map->tiles[y], 0, (size_t)old_w * sizeof(Tile));
     *fog = snap->fog;
     GameRngRestore(snap->rng);
     ledger_unsnap(&snap->ledger);

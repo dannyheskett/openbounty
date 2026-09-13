@@ -2776,17 +2776,8 @@ int GameFoesFollow(Game *g, Map *map) {
         // Otherwise stamp the new tile with the foe.
         Tile *dst = &map->tiles[best_y][best_x];
         dst->interactive = INTERACT_FOE;
-        size_t k = 0;
-        while (k + 1 < sizeof(dst->id) && f->placement_id[k]) {
-            dst->id[k] = f->placement_id[k]; k++;
-        }
-        dst->id[k] = '\0';
-        const char *fa = map->army_art[0] ? map->army_art : "wandering_army";
-        size_t a = 0;
-        while (a + 1 < sizeof(dst->art) && fa[a]) {
-            dst->art[a] = fa[a]; a++;
-        }
-        dst->art[a] = '\0';
+        TileSetId(map, dst, f->placement_id);
+        TileSetArt(map, dst, map->army_art[0] ? map->army_art : "wandering_army");
     }
     return collided;
 }
