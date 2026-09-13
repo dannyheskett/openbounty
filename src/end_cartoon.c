@@ -134,7 +134,8 @@ void run_end_cartoon(RenderTexture2D *rt,
                                    // ~60Hz timer advancing through tick 0..3.
 
     while (!frame_host_should_close() && !done) {
-        if (any_key_pressed()) { done = true; break; }
+        // Modern: a tap counts too, as on every other any-key screen.
+        if (CL_IS_MODERN ? ui_any_key_pressed() : any_key_pressed()) { done = true; break; }
 
         if (GetTime() - last_advance >= tick_interval) {
             last_advance = GetTime();

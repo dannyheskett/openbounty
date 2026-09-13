@@ -1238,14 +1238,23 @@ int shell_run_game(int argc, char **argv) {
             // (run_audience_dialog -> open_dialog) is handled by the
             // downstream dialog branch instead -- dialog has its own
             // SPACE-to-advance flow over the persistent backdrop.
+            // Modern: up/down and Enter or a tap pick a row; A and B act
+            // directly in both modes.
+            int pick = -1;
+            {
+                SelList l = { 2, screen_home_castle_cursor() };
+                int row = -1;
+                if (sel_input(&l, TOUCH_LIST_CASTLE, 0, &row) == SEL_CONFIRM) pick = row;
+                screen_home_castle_set_cursor(l.cursor);
+            }
             if (input_key_pressed(KEY_ESCAPE) || gamepad_pressed_cancel()) {
                 views_dismiss();
                 pending_castle_id[0] = '\0';
-            } else if (input_key_pressed(KEY_A)) {
+            } else if (pick == 0 || input_key_pressed(KEY_A)) {
                 // A) Recruit Soldiers -- push the dedicated recruit
                 // sub-screen (5 troops + gold + key hint).
                 screen_recruit_soldiers_open(&game);
-            } else if (input_key_pressed(KEY_B)) {
+            } else if (pick == 1 || input_key_pressed(KEY_B)) {
                 // B) Audience with the King -- modal popup over the
                 // castle backdrop. Run after panel render so it overlays.
                 const ResCastle *rc2 =
@@ -1273,13 +1282,17 @@ int shell_run_game(int argc, char **argv) {
             } else {
                 // Modern: up/down move the slot cursor and Enter or a tap
                 // acts on it; the letters act directly in both modes.
+                // Row 0 is the Garrison / Remove mode, rows 1-5 the slots.
                 int chosen = -1;
                 {
-                    SelList l = { 5, screen_own_castle_cursor() };
+                    SelList l = { 6, screen_own_castle_cursor() };
                     int row = -1;
                     SelEvent ev = sel_input(&l, TOUCH_LIST_CASTLE, 0, &row);
                     screen_own_castle_set_cursor(l.cursor);
-                    if (ev == SEL_CONFIRM) chosen = row;
+                    if (ev == SEL_CONFIRM) {
+                        if (row == 0) screen_own_castle_toggle_mode();
+                        else          chosen = row - 1;
+                    }
                 }
                 for (int k = 0; k < 5; k++) {
                     if (k != chosen && !input_key_pressed(KEY_A + k)) continue;
@@ -1314,15 +1327,27 @@ int shell_run_game(int argc, char **argv) {
             // a persistent view (e.g. audience-with-king over
             // VIEW_HOME_CASTLE) doesn't have its dismiss key also tear
             // down the underlying view.
-            if (views_active() == VIEW_WORLDMAP && input_key_pressed(KEY_SPACE)) {
+            //
+            // Modern draws the toggle as a row under the map (with the orb):
+            // Enter, Space or a tap on it swaps the map.
+            bool worldmap_row = false;
+            bool has_orb = false;
+            if (views_active() == VIEW_WORLDMAP) {
                 int zi = -1;
                 for (int i = 0; i < res.zone_count; i++) {
                     if (strcmp(res.zones[i].id, game.position.zone) == 0) {
                         zi = i; break;
                     }
                 }
-                bool has_orb = (zi >= 0 && zi < GAME_CONTINENTS &&
-                                game.world.orbs_found[zi]);
+                has_orb = (zi >= 0 && zi < GAME_CONTINENTS && game.world.orbs_found[zi]);
+                if (has_orb && CL_IS_MODERN) {
+                    SelList l = { 1, 0 };
+                    worldmap_row = sel_input(&l, TOUCH_LIST_PROMPT, 0, NULL) == SEL_CONFIRM;
+                }
+            }
+            if (worldmap_row) {
+                views_render_worldmap_toggle_hero_only();
+            } else if (views_active() == VIEW_WORLDMAP && input_key_pressed(KEY_SPACE)) {
                 if (has_orb) {
                     views_render_worldmap_toggle_hero_only();
                 } else {

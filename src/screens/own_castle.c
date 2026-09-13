@@ -38,6 +38,10 @@ static bool s_garrison_mode = false;
 // Animated troop chosen on open. Stays stable for the visit.
 static int s_anim_troop_idx = -1;
 
+// Modern: the selected row. Row 0 is the Garrison / Remove mode, rows 1-5 the
+// five slots.
+static int s_cursor = 1;
+
 static int pick_castle_troop(const Game *g) {
     int total = troops_count();
     int pool[8];
@@ -65,6 +69,7 @@ void screen_own_castle_open(Game *g, const char *castle_id) {
     }
     s_castle_id[n] = '\0';
     s_garrison_mode = false;   // starts in REMOVE mode.
+    s_cursor = 1;
     s_anim_troop_idx = pick_castle_troop(g);
     s_frame = 0;
     s_last_tick = 0.0;
@@ -75,9 +80,8 @@ void screen_own_castle_open(Game *g, const char *castle_id) {
     if (r) snprintf(r->castle_id, sizeof r->castle_id, "%s", castle_id);
 }
 
-static int s_cursor = 0;   // modern: the selected slot row
 int  screen_own_castle_cursor(void) { return s_cursor; }
-void screen_own_castle_set_cursor(int r) { s_cursor = (r < 0) ? 0 : (r > 4 ? 4 : r); }
+void screen_own_castle_set_cursor(int r) { s_cursor = (r < 0) ? 0 : (r > 5 ? 5 : r); }
 
 bool screen_own_castle_is_garrison_mode(void) {
     return s_garrison_mode;
@@ -129,7 +133,14 @@ void screen_own_castle_draw(const Game *g, const Sprites *s) {
     const char *mode_label = s_garrison_mode
         ? ui->own_castle_mode_garrison
         : ui->own_castle_mode_remove;
-    bfont_draw(mode_label, tx, ty, PAL_CLR(WHITE));
+    if (CL_IS_MODERN) {
+        // A row: choosing it flips the mode (Space still does).
+        mode_label = s_garrison_mode ? ui->own_castle_row_garrison : ui->own_castle_row_remove;
+        sel_row(x, ty, w, row_h, tx, mode_label, s_cursor == 0,
+                PAL_CLR(WHITE), PAL_CLR(DBLUE), TOUCH_LIST_CASTLE, 0);
+    } else {
+        bfont_draw(mode_label, tx, ty, PAL_CLR(WHITE));
+    }
     ty += row_h + 1;   // small gap
 
     // 5 rows. In GARRISON mode list the player's army (move into
@@ -154,17 +165,17 @@ void screen_own_castle_draw(const Game *g, const Sprites *s) {
                 count = cr->garrison[i].count;
             }
         }
-        if (id) {
-            const TroopDef *t = troop_by_id(id);
-            const char *name = (t && t->name[0]) ? t->name : id;
-            snprintf(line, sizeof(line), "%c) %-11s%d", 'A' + i, name, count);
-        } else {
-            snprintf(line, sizeof(line), "%c) %-11s-", 'A' + i, "(empty)");
-        }
+        const TroopDef *t = id ? troop_by_id(id) : NULL;
+        const char *name = id ? ((t && t->name[0]) ? t->name : id) : "(empty)";
         if (CL_IS_MODERN) {
-            sel_row(x, ty, w, row_h, tx, line, s_cursor == i,
-                    PAL_CLR(WHITE), PAL_CLR(DBLUE), TOUCH_LIST_CASTLE, i);
+            // No key letters in modern: the rows are the choice.
+            if (id) snprintf(line, sizeof(line), "%-14s%d", name, count);
+            else    snprintf(line, sizeof(line), "%-14s-", name);
+            sel_row(x, ty, w, row_h, tx, line, s_cursor == i + 1,
+                    PAL_CLR(WHITE), PAL_CLR(DBLUE), TOUCH_LIST_CASTLE, i + 1);
         } else {
+            if (id) snprintf(line, sizeof(line), "%c) %-11s%d", 'A' + i, name, count);
+            else    snprintf(line, sizeof(line), "%c) %-11s-", 'A' + i, name);
             bfont_draw(line, tx, ty, PAL_CLR(WHITE));
         }
         ty += row_h;

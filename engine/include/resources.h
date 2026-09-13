@@ -722,6 +722,14 @@ typedef struct {
     // Own-castle garrison/remove mode labels.
     char own_castle_mode_garrison[RES_UI_LABEL_LEN];
     char own_castle_mode_remove[RES_UI_LABEL_LEN];
+    // Modern menu rows (location screens, world map, class select).
+    char home_castle_recruit[RES_UI_LABEL_LEN];
+    char home_castle_audience[RES_UI_LABEL_LEN];
+    char own_castle_row_garrison[RES_UI_LABEL_LEN];
+    char own_castle_row_remove[RES_UI_LABEL_LEN];
+    char worldmap_row_your_map[RES_UI_LABEL_LEN];
+    char worldmap_row_whole_map[RES_UI_LABEL_LEN];
+    char class_select_load[RES_UI_LABEL_LEN];
 
     // Gate-landing view titles (town vs. castle gate).
     char gate_title_town[RES_UI_LABEL_LEN];

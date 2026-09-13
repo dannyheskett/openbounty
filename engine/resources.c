@@ -1545,6 +1545,13 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(recruit_soldiers_how_many, "recruit_soldiers_how_many");
         UI_SET(own_castle_mode_garrison, "own_castle_mode_garrison");
         UI_SET(own_castle_mode_remove,   "own_castle_mode_remove");
+        UI_SET(home_castle_recruit, "home_castle_recruit");
+        UI_SET(home_castle_audience, "home_castle_audience");
+        UI_SET(own_castle_row_garrison, "own_castle_row_garrison");
+        UI_SET(own_castle_row_remove, "own_castle_row_remove");
+        UI_SET(worldmap_row_your_map, "worldmap_row_your_map");
+        UI_SET(worldmap_row_whole_map, "worldmap_row_whole_map");
+        UI_SET(class_select_load, "class_select_load");
         UI_SET(gate_title_town,          "gate_title_town");
         UI_SET(gate_title_castle,        "gate_title_castle");
         UI_SET(gate_footer_hint,         "gate_footer_hint");

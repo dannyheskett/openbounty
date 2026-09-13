@@ -684,15 +684,8 @@ static void draw_worldmap_exit_hint(const Game *g) {
     // KB_TopBox strings.
     DrawRectangle(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H,
                   PAL_CLR(DRED));
-    const ResUI *ui = &g->res->ui;
-    const char *txt;
-    if (!worldmap_has_orb(g)) {
-        txt = ui->press_esc_to_exit;
-    } else if (views_render_worldmap_whole()) {
-        txt = ui->worldmap_hint_your_map;
-    } else {
-        txt = ui->worldmap_hint_whole_map;
-    }
+    // The reveal is a row under the map, so the band only says how to leave.
+    const char *txt = g->res->ui.press_esc_to_exit;
     bfont_draw_centered(txt,
                         CL_STATUS_X + CL_STATUS_W / 2,
                         CL_STATUS_Y + 1,
@@ -708,15 +701,17 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
     bool reveal_all = worldmap_has_orb(g) && views_render_worldmap_whole();
 
     // Compute pixel-per-tile that fits the view panel, integer scaling.
+    // Under the map: the coordinates line, then the reveal row.
+    int row_h = GH + 2;
     int avail_w = VIEW_W - 2 * VIEW_PAD;
-    int avail_h = VIEW_H - 2 * VIEW_PAD;
+    int avail_h = VIEW_H - 2 * VIEW_PAD - 2 * row_h;
     int pix = (avail_w / m->width < avail_h / m->height)
               ? avail_w / m->width : avail_h / m->height;
     if (pix < 1) pix = 1;
     int grid_w = pix * m->width;
     int grid_h = pix * m->height;
     int gx = VIEW_X + (VIEW_W - grid_w) / 2;
-    int gy = VIEW_Y + (VIEW_H - grid_h) / 2;
+    int gy = VIEW_Y + VIEW_PAD + (avail_h - grid_h) / 2;
 
     DrawRectangle(gx, gy, grid_w, grid_h, PAL_CLR(BLACK));
 
@@ -765,6 +760,19 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
     snprintf(buf, sizeof(buf), "X=%d Y=%d",
              g->position.x, g->position.y);
     bfont_draw(buf, gx, gy + grid_h + 2, PAL_CLR(WHITE));
+
+    // With the orb: one row that swaps your map and the whole map (Enter,
+    // Space or a tap; main.c reads it).
+    if (worldmap_has_orb(g)) {
+        const ResUI *ui = &g->res->ui;
+        const char *label = views_render_worldmap_whole() ? ui->worldmap_row_your_map
+                                                          : ui->worldmap_row_whole_map;
+        int rw = bfont_text_width(label) + 2 * VIEW_PAD;
+        int rx = VIEW_X + (VIEW_W - rw) / 2;
+        int ry = gy + grid_h + 2 + row_h;
+        sel_row(rx, ry, rw, row_h, rx + VIEW_PAD, label, true,
+                PAL_CLR(YELLOW), PAL_CLR(DGREY), TOUCH_LIST_PROMPT, 0);
+    }
 }
 
 // ---------------------------------------------------------------------------

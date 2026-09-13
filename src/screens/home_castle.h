@@ -28,4 +28,8 @@ void screen_home_castle_open(Game *g);
 // cadence (150ms).
 void screen_home_castle_draw(const Game *g, const Sprites *s);
 
+// Modern: the selected row (0 Recruit Soldiers, 1 Audience).
+int  screen_home_castle_cursor(void);
+void screen_home_castle_set_cursor(int r);
+
 #endif

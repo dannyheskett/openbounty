@@ -29,7 +29,8 @@ void screen_own_castle_draw(const Game *g, const Sprites *s);
 // of 5 troops the A-E key refers to.
 bool screen_own_castle_is_garrison_mode(void);
 
-// Modern: the selected slot row (0..4), moved by main.c through sel_input.
+// Modern: the selected row, moved by main.c through sel_input: 0 is the
+// Garrison / Remove mode, 1-5 the slots.
 int  screen_own_castle_cursor(void);
 void screen_own_castle_set_cursor(int r);
 

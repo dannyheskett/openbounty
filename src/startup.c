@@ -323,6 +323,7 @@ static bool run_class_select(const Resources *res,
     if (n < 1) n = 1;
     if (n > 4) n = 4;
     int class_cursor = 0;   // modern: Left/Right move it, Enter picks
+    bool load_focus = false; // modern: Down moves to the Load row, Up back
 
     while (!frame_host_should_close()) {
         touch_request(TOUCH_CHROME_BACK);
@@ -331,11 +332,19 @@ static bool run_class_select(const Resources *res,
             return false;
         }
         if (CL_IS_MODERN) {
-            if (input_key_pressed(KEY_LEFT))  class_cursor = sel_wrap(class_cursor, -1, n);
-            if (input_key_pressed(KEY_RIGHT)) class_cursor = sel_wrap(class_cursor, 1, n);
+            if (input_key_pressed(KEY_LEFT))  { class_cursor = sel_wrap(class_cursor, -1, n); load_focus = false; }
+            if (input_key_pressed(KEY_RIGHT)) { class_cursor = sel_wrap(class_cursor, 1, n);  load_focus = false; }
+            if (input_key_pressed(KEY_DOWN)) load_focus = true;
+            if (input_key_pressed(KEY_UP))   load_focus = false;
+            bool enter = input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER);
+            if (touch_tapped_row(TOUCH_LIST_STARTUP) == 0 || (enter && load_focus)) {
+                out->action = STARTUP_LOAD;
+                drain_char_queue();
+                return true;
+            }
             int tapped = touch_tapped_row(TOUCH_LIST_CLASS);
             if (tapped >= 0 && tapped < n) class_cursor = tapped;
-            if (tapped >= 0 || input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER)) {
+            if (tapped >= 0 || enter) {
                 const ClassDef *c = class_by_index(class_cursor);
                 safe_copy(out->class_id, sizeof(out->class_id), c ? c->id : "knight");
                 out->action = STARTUP_NEW;
@@ -384,10 +393,21 @@ static bool run_class_select(const Resources *res,
                 if (CL_IS_MODERN) touch_region_row(px + k * (pw / n), py, pw / n, ph, TOUCH_LIST_CLASS, k);
                 else              touch_region(px + k * (pw / n), py, pw / n, ph, KEY_A + k);
             }
-            // Modern: the selected column carries the lattice ring.
-            if (CL_IS_MODERN)
-                ui_window_frame(px + class_cursor * (pw / n) + 4 * CL_UI, py + 4 * CL_UI,
-                                pw / n - 8 * CL_UI, ph - 8 * CL_UI, PAL_CLR(YELLOW));
+            // Modern: the selected column carries the lattice ring; under the
+            // portraits, the Load row.
+            if (CL_IS_MODERN) {
+                if (!load_focus)
+                    ui_window_frame(px + class_cursor * (pw / n) + 4 * CL_UI, py + 4 * CL_UI,
+                                    pw / n - 8 * CL_UI, ph - 8 * CL_UI, PAL_CLR(YELLOW));
+                const char *load = res->ui.class_select_load;
+                int rh = GH + 2;
+                int rw = bfont_text_width(load) + 16;
+                int rx = (CL_SCREEN_W - rw) / 2;
+                int ry = py + ph + 8;
+                if (ry + rh > CL_SCREEN_H) ry = CL_SCREEN_H - rh;
+                sel_row(rx, ry, rw, rh, rx + 8, load, load_focus, PAL_CLR(YELLOW),
+                        PAL_CLR(BLACK), TOUCH_LIST_STARTUP, 0);
+            }
         } else {
             // Fallback: text list if asset missing.
             bfont_draw(res->ui.startup_class_picker_missing,

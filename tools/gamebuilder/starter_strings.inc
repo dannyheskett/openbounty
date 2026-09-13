@@ -171,6 +171,13 @@ static cJSON *gb_placeholder_strings(void) {
     cJSON_AddStringToObject(o, "recruit_soldiers_how_many", "recruit_soldiers_how_many");
     cJSON_AddStringToObject(o, "own_castle_mode_garrison", "own_castle_mode_garrison");
     cJSON_AddStringToObject(o, "own_castle_mode_remove", "own_castle_mode_remove");
+    cJSON_AddStringToObject(o, "home_castle_recruit", "home_castle_recruit");
+    cJSON_AddStringToObject(o, "home_castle_audience", "home_castle_audience");
+    cJSON_AddStringToObject(o, "own_castle_row_garrison", "own_castle_row_garrison");
+    cJSON_AddStringToObject(o, "own_castle_row_remove", "own_castle_row_remove");
+    cJSON_AddStringToObject(o, "worldmap_row_your_map", "worldmap_row_your_map");
+    cJSON_AddStringToObject(o, "worldmap_row_whole_map", "worldmap_row_whole_map");
+    cJSON_AddStringToObject(o, "class_select_load", "class_select_load");
     cJSON_AddStringToObject(o, "gate_title_town", "gate_title_town");
     cJSON_AddStringToObject(o, "gate_title_castle", "gate_title_castle");
     cJSON_AddStringToObject(o, "gate_footer_hint", "gate_footer_hint");
