@@ -23,7 +23,7 @@ typedef enum {
 } GateMenuResult;
 
 // Per-frame pump. Call from the main loop's input section (beside
-// cheat_menu_tick). Opens the picker when a gate spell armed gate_state, drives
+// the debug menu). Opens the picker when a gate spell armed gate_state, drives
 // letter/ESC input while it's up, and teleports on a choice.
 GateMenuResult gate_menu_tick(Game *game, Map *map, Fog *fog);
 

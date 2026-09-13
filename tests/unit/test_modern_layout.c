@@ -11,6 +11,7 @@
 #include "resources.h"
 #include "bfont.h"
 #include "modern/mlayout.h"
+#include "views.h"
 #include <string.h>
 
 static Resources s_res;
@@ -164,6 +165,32 @@ TEST capacity_follows_the_glyph(void) {
     PASS();
 }
 
+
+// --debug gates the game menu's Debug page (src/views.c): without the flag the
+// modern root has no Debug row, so no cheat is reachable.
+static int menu_has_debug_row(bool debug) {
+    rome();
+    resources_republish(&s_res);
+    views_menu_bind(NULL, NULL);
+    views_menu_set_debug(debug);
+    views_set(VIEW_MENU);
+    int found = 0;
+    for (int i = 0; i < views_menu_entry_count(); i++) {
+        const char *l = views_menu_entry_label(i);
+        if (l && strcmp(l, "Debug") == 0) found = 1;
+    }
+    views_set(VIEW_NONE);
+    views_menu_set_debug(false);
+    resources_republish(NULL);
+    return found;
+}
+
+TEST debug_row_only_with_debug_flag(void) {
+    ASSERT_EQ(0, menu_has_debug_row(false));
+    ASSERT_EQ(1, menu_has_debug_row(true));
+    PASS();
+}
+
 SUITE(unit_modern_layout_suite) {
     RUN_TEST(spacing_is_three_two_three);
     RUN_TEST(vertical_mirrors_horizontal);
@@ -173,4 +200,5 @@ SUITE(unit_modern_layout_suite) {
     RUN_TEST(location_backdrop_is_integer_3x_inset_and_text_fills_below);
     RUN_TEST(full_covers_pane_band_and_hud_not_the_status_band);
     RUN_TEST(capacity_follows_the_glyph);
+    RUN_TEST(debug_row_only_with_debug_flag);
 }

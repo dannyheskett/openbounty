@@ -9,6 +9,7 @@
 #include "audio.h"
 #include "tables.h"
 #include "recorder.h"
+#include "shell_cheats.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
@@ -192,6 +193,7 @@ typedef enum {
     MENU_KIND_BACK,       // pop to previous page (or close at root)
     MENU_KIND_KEY,        // modern: close the menu and press MenuEntry.key
     MENU_KIND_PUSH_VIEW,  // modern: open MenuEntry.view over the menu
+    MENU_KIND_CHEAT,      // --debug: close the menu and apply cheat MenuEntry.key
 } MenuKind;
 
 typedef enum {
@@ -320,6 +322,30 @@ static MenuEntry MODERN_ENTRIES[MODERN_MENU_MAX];
 static char      MODERN_HOTKEYS[MODERN_MENU_MAX][4];
 static MenuPage  MODERN_PAGE = { "Game Menu", MODERN_ENTRIES, 0 };
 
+// ----- --debug: the Debug page ---------------------------------------------------
+static bool      s_debug = false;
+static int       s_pending_cheat = -1;
+static MenuEntry DEBUG_ENTRIES[CHEAT_COUNT + 1];
+static MenuPage  DEBUG_PAGE = { "Debug", DEBUG_ENTRIES, 0 };
+
+void views_menu_set_debug(bool on) { s_debug = on; }
+
+int views_menu_take_cheat(void) {
+    int c = s_pending_cheat;
+    s_pending_cheat = -1;
+    return c;
+}
+
+static void debug_page_build(const char *back_label) {
+    int n = 0;
+    for (int i = 0; i < CHEAT_COUNT; i++)
+        DEBUG_ENTRIES[n++] = (MenuEntry){ cheat_label((CheatAction)i), MENU_KIND_CHEAT,
+                                          NULL, VIEW_NONE, MENU_ACT_NONE, i, NULL };
+    DEBUG_ENTRIES[n++] = (MenuEntry){ back_label ? back_label : "Back", MENU_KIND_BACK,
+                                      NULL, VIEW_NONE, MENU_ACT_NONE, 0, NULL };
+    DEBUG_PAGE.count = n;
+}
+
 static void modern_menu_build(void) {
     const Resources *res = resources_current();
     int n = 0;
@@ -327,7 +353,7 @@ static void modern_menu_build(void) {
     if (res) {
         const ResUI *ui = &res->ui;
         MODERN_PAGE.title = ui->menu_root_title;
-        for (int i = 0; i < ui->keybind_count && n < MODERN_MENU_MAX - 5; i++) {
+        for (int i = 0; i < ui->keybind_count && n < MODERN_MENU_MAX - 6; i++) {
             const ResKeybind *kb = &ui->keybinds[i];
             // A single letter is a screen or an action; anything longer is a
             // movement key (Up, PgDn), which is not a menu row.
@@ -354,6 +380,12 @@ static void modern_menu_build(void) {
                                            VIEW_NONE, MENU_ACT_NEW, 0, NULL };
         MODERN_ENTRIES[n++] = (MenuEntry){ ui->menu_exit, MENU_KIND_ACTION, NULL,
                                            VIEW_NONE, MENU_ACT_QUIT, 0, NULL };
+        // Only with --debug: without it the cheats have no row and no key.
+        if (s_debug) {
+            debug_page_build(ui->menu_back);
+            MODERN_ENTRIES[n++] = (MenuEntry){ "Debug", MENU_KIND_SUBMENU, &DEBUG_PAGE,
+                                               VIEW_NONE, MENU_ACT_NONE, 0, NULL };
+        }
     }
     MODERN_PAGE.count = n;
 }
@@ -541,6 +573,11 @@ bool views_menu_update(const MenuCallbacks *cbs, void *userdata) {
             case MENU_KIND_PUSH_VIEW:
                 // Over the menu, so closing it comes back here.
                 views_push(e->view);
+                break;
+            case MENU_KIND_CHEAT:
+                menu_depth = 0;
+                views_dismiss();
+                s_pending_cheat = e->key;
                 break;
         }
         return true;

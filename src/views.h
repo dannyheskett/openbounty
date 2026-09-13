@@ -31,6 +31,15 @@ void views_menu_bind(const MenuCallbacks *cbs, void *userdata);
 // The hotkey shown beside a menu row ("A"), or NULL for a row without one.
 const char *views_menu_entry_hotkey(int i);
 
+// --debug: the modern game menu carries a Debug page of cheat rows. Off by
+// default, and then no cheat is reachable at all.
+void views_menu_set_debug(bool on);
+
+// The cheat a Debug row asked for this frame, as a CheatAction, or -1. The menu
+// closes itself; the caller applies the cheat (it needs the map, fog, sprites
+// and render target the menu does not have). Reading clears it.
+int  views_menu_take_cheat(void);
+
 // views_active() is declared in engine/include/ui_host.h since engine
 // code (state_serialize, flows) also calls it.
 void     views_set(ViewKind v);   // Replace stack with [v] (or empty if VIEW_NONE).

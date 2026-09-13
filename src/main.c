@@ -257,6 +257,7 @@ int shell_run_game(int argc, char **argv) {
     const char *pack_dir_dst = NULL;
     // --movie [path]: record gameplay to an MP4. With no arg, defaults
     // to <user-data>/openbounty/movie-<timestamp>.mp4.
+    bool        debug_flag      = false;   // --debug: the Debug page of cheats
     bool        movie_requested = false;
     const char *movie_path_arg  = NULL;
     // --seed N: pick catalog world N (0..255) for a reproducible run. -1 means
@@ -303,7 +304,7 @@ int shell_run_game(int argc, char **argv) {
             return 0;
         } else if (strcmp(a, "--help") == 0 || strcmp(a, "-h") == 0) {
             printf("openbounty build %s\n"
-                   "Usage: %s [--fullscreen] [--pack <name|path>] [--save-dir <dir>]\n"
+                   "Usage: %s [--fullscreen] [--pack <name|path>] [--save-dir <dir>] [--debug]\n"
                    "       %*s [--movie [<path>]] [--seed 0-255] [--version]\n"
                    "       %s --demo [--headless] [--seed 0-255] [--verbose] [--movie [<path>]]\n"
                    "       %s --autoplay [--headless] [--seed 0-255] [--verbose]\n"
@@ -336,6 +337,10 @@ int shell_run_game(int argc, char **argv) {
         } else if (strcmp(a, "--out-dir") == 0) {
             if (i + 1 >= argc) { fprintf(stderr, "openbounty: --out-dir requires <dir>\n"); return 2; }
             extract_out_dir = argv[++i];
+        } else if (strcmp(a, "--debug") == 0) {
+            // The Debug page of cheats in the modern game menu. Without this
+            // flag no cheat is reachable.
+            debug_flag = true;
         } else if (strcmp(a, "--movie") == 0) {
             movie_requested = true;
             // Optional next-arg path: only consumed if it doesn't look
@@ -886,6 +891,7 @@ int shell_run_game(int argc, char **argv) {
         .key_available = menu_key_available,
     };
     views_menu_bind(&menu_cbs, &menu_ctx);
+    views_menu_set_debug(debug_flag);
 
     // Render target was allocated above (render_target_startup)
     // so the pre-game flow can draw into it; reuse here.
@@ -1012,12 +1018,6 @@ int shell_run_game(int argc, char **argv) {
             ToggleFullscreen();
         }
 
-        // F10 -> debug cheat menu (implementation in shell_cheats.{c,h}).
-        // W/L cheats short-circuit normal per-frame logic.
-        if (cheat_menu_tick(&game, &map, &fog, &res, &sprites,
-                            &render_target) == CHEAT_DISPATCHED_TERMINAL) {
-            continue;
-        }
 
         bool overlay = (views_active() != VIEW_NONE) || dialog_is_active() ||
                        prompt_is_active();
@@ -1147,6 +1147,13 @@ int shell_run_game(int argc, char **argv) {
             // prompt is up (or just resolved); skip the rest of input
         } else if (views_active() == VIEW_MENU) {
             views_menu_update(&menu_cbs, &menu_ctx);
+            // A Debug row (--debug only) closes the menu and names a cheat.
+            int cheat = views_menu_take_cheat();
+            if (cheat >= 0 &&
+                cheat_apply((CheatAction)cheat, &game, &map, &fog, &res, &sprites,
+                            &render_target) == CHEAT_DISPATCHED_TERMINAL) {
+                continue;
+            }
         } else if (views_active() == VIEW_TOWN) {
             views_town_update(&game);
         } else if (views_active() == VIEW_CONTROLS) {
