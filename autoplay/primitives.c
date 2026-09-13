@@ -451,7 +451,9 @@ static bool exec_fetch(ExecCtx *ctx, const PlanStep *step, ExecCause *out_cause)
 static bool exec_learn(ExecCtx *ctx, const PlanStep *step, ExecCause *out_cause,
                        char *why, int why_sz) {
     Game *g = ctx->g;
-    int cost = ctx->res->economy.alcove_cost;
+    const char *zid = (step->zone_index >= 0 && step->zone_index < ctx->res->zone_count)
+                    ? ctx->res->zones[step->zone_index].id : g->position.zone;
+    int cost = GameAlcoveCost(g, zid);
     if (g->stats.gold < cost) {
         // A broke arrival is a typed GOLD defer before stepping onto the tile
         // (AP-081); the funded wait covers the fee at fixpoint time.

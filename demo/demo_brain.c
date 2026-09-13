@@ -580,6 +580,7 @@ static bool town_business(Game *g, const Resources *res) {
                 break;
             }
         if (rsp && tr && tr->spell_for_sale[0] &&
+            GameTownHasRites(g, tr->id) &&
             spell_index_by_id(tr->spell_for_sale) == ridx &&
             GameKnownSpells(g) < g->stats.max_spells &&
             g->stats.gold > rsp->cost + 600) {
@@ -826,6 +827,7 @@ static void scan_zone(const Game *g, const Map *map, const Fog *fog,
             for (int i = 0; i < GAME_TOWNS; i++) {
                 const TownRecord *tr = &g->towns[i];
                 if (!tr->id[0] || !tr->visited || !tr->spell_for_sale[0]) continue;
+                if (!GameTownHasRites(g, tr->id)) continue;
                 if (spell_index_by_id(tr->spell_for_sale) != ridx) continue;
                 const ResTown *rt = resources_town_by_id(res, tr->id);
                 if (!rt || strcmp(rt->zone, g->position.zone) != 0) continue;

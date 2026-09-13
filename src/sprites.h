@@ -63,6 +63,7 @@ typedef struct {
     Texture2D ending_lose;
 
     Texture2D hud_contract_silhouette;
+    Texture2D hud_boat_silhouette;
     Texture2D hud_siege_silhouette;
     Texture2D hud_magic_silhouette;
     Texture2D hud_puzzle_grid;

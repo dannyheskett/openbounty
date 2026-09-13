@@ -1,0 +1,21 @@
+{
+  "id": "townhead_africa_loop",
+  "prompt": "a slow courteous nod, eyes smiling, static background, smooth loop",
+  "style": "rd_advanced_animation__custom_action",
+  "width": 128,
+  "height": 128,
+  "seed": 9803,
+  "frames_duration": 8,
+  "return_spritesheet": true,
+  "input_image_path": "build/art/townhead_africa/run01/01_raw.png",
+  "input_image_keep_alpha": false,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "_pack_path": "art/portraits/townhead_africa_00..07.png",
+  "_note": "Head townsperson portrait loop (2026-09-13): custom action on run01, eight frames at 128, each frame centre-cropped to 96."
+}

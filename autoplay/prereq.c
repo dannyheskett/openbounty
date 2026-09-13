@@ -62,9 +62,12 @@ unsigned prereq_gated(const ExecCtx *ctx, const PlanStep *step,
     case STEP_ALCOVE:
         // The one permitted resource gate: magic is bought here for the alcove
         // price, so the step is dead until the wallet clears it.
-        if (!g->stats.knows_magic &&
-            g->stats.gold < ctx->res->economy.alcove_cost)
-            m |= PREREQ_MAGIC;
+        {
+            const char *zid = (step->zone_index >= 0 && step->zone_index < ctx->res->zone_count)
+                            ? ctx->res->zones[step->zone_index].id : g->position.zone;
+            if (!GameHasRites(g, zid) && g->stats.gold < GameAlcoveCost(g, zid))
+                m |= PREREQ_MAGIC;
+        }
         break;
     case STEP_SCEPTER:
         // Finale (AP-052, re-homed from the planner's select loop): the dig

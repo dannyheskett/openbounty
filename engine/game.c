@@ -277,9 +277,14 @@ void GameInitSeeded(Game *g, const char *name, int pclass, int difficulty,
     // (). The alcove is an overlay at the tile declared
     // in zones[].magic_alcove; marking it consumed stops MapLoadZone /
     // stamp_objects from rendering an interactive on that tile.
+    // With rites per zone, such a class knows only the home zone's rites, and
+    // only that alcove is spent.
     if (g->stats.knows_magic && g->res) {
+        bool per_zone = g->res->economy.rites_per_zone;
         for (int zi = 0; zi < g->res->zone_count; zi++) {
             const ResZone *z = &g->res->zones[zi];
+            if (per_zone && strcmp(z->id, g->res->world.starting_zone) != 0) continue;
+            if (per_zone && zi < GAME_CONTINENTS) g->world.zone_rites[zi] = true;
             if (z->magic_alcove_x < 0 || z->magic_alcove_y < 0) continue;
             GameAddConsumed(g, z->id, z->magic_alcove_x, z->magic_alcove_y);
         }
@@ -1342,6 +1347,26 @@ SiegeBuyResult GameBuySiege(Game *g) {
     return SIEGE_BUY_OK;
 }
 
+int GameAlcoveCost(const Game *g, const char *zone_id) {
+    if (!g || !g->res) return 0;
+    const ResZone *z = zone_id ? resources_zone_by_id(g->res, zone_id) : NULL;
+    return (z && z->alcove_cost >= 0) ? z->alcove_cost : g->res->economy.alcove_cost;
+}
+
+bool GameHasRites(const Game *g, const char *zone_id) {
+    if (!g) return false;
+    if (!g->res || !g->res->economy.rites_per_zone) return g->stats.knows_magic;
+    int zi = zone_id ? resources_zone_index(g->res, zone_id) : -1;
+    return zi >= 0 && zi < GAME_CONTINENTS && g->world.zone_rites[zi];
+}
+
+bool GameTownHasRites(const Game *g, const char *town_id) {
+    if (!g || !g->res) return false;
+    if (!g->res->economy.rites_per_zone) return true;   // one magic: towns sell to anyone
+    const ResTown *t = town_id ? resources_town_by_id(g->res, town_id) : NULL;
+    return t && GameHasRites(g, t->zone);
+}
+
 SpellBuyResult GameBuySpell(Game *g, const char *town_id) {
     if (!g || !town_id || !town_id[0]) return SPELL_BUY_NO_SPELL;
     // A spell is bought ONLY at the town you are visiting (the town menu's Spell
@@ -1354,6 +1379,8 @@ SpellBuyResult GameBuySpell(Game *g, const char *town_id) {
     const SpellDef *sp =
         (t && t->spell_for_sale[0]) ? spell_by_id(t->spell_for_sale) : NULL;
     if (!sp) return SPELL_BUY_NO_SPELL;
+    if (g->res && g->res->economy.rites_per_zone && !GameTownHasRites(g, town_id))
+        return SPELL_BUY_NO_RITES;
     if (GameKnownSpells(g) >= g->stats.max_spells) return SPELL_BUY_AT_CAP;
     if (g->stats.gold <= sp->cost) return SPELL_BUY_NO_GOLD;  // KB: <= fails
     g->spells.counts[sp->index]++;

@@ -2146,6 +2146,13 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   `--debug`, as a Debug page at the end of the modern game menu; without the
   flag no key or row reaches them in either mode (F10 is gone). Legacy is
   otherwise unchanged (2026-09-12).
+- **REQ-430l.** **Standard select rows (modern).** A list of choices is drawn
+  as rows half a tile tall (never shorter than a text line plus padding),
+  stacked from the top of their column with a 2 px rail under each, and never
+  stretched to fill the column; the height below them stays empty, and a list
+  longer than its column scrolls to keep the cursor in view. Defined
+  once as `ml_row_h` / `ML_ROW_RULE` in `src/modern/mlayout.h` and documented
+  in `docs/UI-PANELS.md`; the town screen uses it first (2026-09-13).
 - **REQ-430f.** **Keyboard detection and the letter selector (modern).**
   `input_host` latches which physical devices have been used: a real key
   event (not an injected one), a touch contact, a gamepad button or stick

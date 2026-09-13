@@ -275,18 +275,26 @@ void flow_apply_alcove(Game *g, Map *map, const Resources *res,
     if (ans.kind != FLOW_ANS_YES) return;
     const ResBanners *bn = &res->banners;
     char msg[RES_BANNER_LEN];
-    if (g->stats.gold < res->economy.alcove_cost) {
+    int cost = GameAlcoveCost(g, g->position.zone);
+    const ResZone *z = resources_zone_by_id(res, g->position.zone);
+    const char *zname = (z && z->name[0]) ? z->name : g->position.zone;
+    if (g->stats.gold < cost) {
         char cbuf[16];
-        snprintf(cbuf, sizeof cbuf, "%d", res->economy.alcove_cost);
-        ResTemplateVar vars[] = { { "COST", cbuf } };
-        resources_format_template(msg, sizeof msg, bn->alcove_no_gold, vars, 1);
+        snprintf(cbuf, sizeof cbuf, "%d", cost);
+        ResTemplateVar vars[] = { { "COST", cbuf }, { "ZONE", zname } };
+        resources_format_template(msg, sizeof msg, bn->alcove_no_gold, vars, 2);
         player_io_message(g, res->ui.dt_alcove_result, msg);
     } else {
-        g->stats.gold -= res->economy.alcove_cost;
+        g->stats.gold -= cost;
         g->stats.knows_magic = true;
+        if (res->economy.rites_per_zone) {
+            int zi = resources_zone_index(res, g->position.zone);
+            if (zi >= 0 && zi < GAME_CONTINENTS) g->world.zone_rites[zi] = true;
+        }
         MapClearInteractive(map, g->position.x, g->position.y);
         GameAddConsumed(g, g->position.zone, g->position.x, g->position.y);
-        resources_format_template(msg, sizeof msg, bn->alcove_taught, NULL, 0);
+        ResTemplateVar vars[] = { { "ZONE", zname } };
+        resources_format_template(msg, sizeof msg, bn->alcove_taught, vars, 1);
         player_io_message(g, res->ui.dt_alcove_result, msg);
     }
 }

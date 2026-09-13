@@ -1,0 +1,18 @@
+{
+  "id": "townhead_galliae",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Gallic town chief with a long fair moustache, a checked cloak and a gold torc at his neck, a timber hall with a thatched roof behind him",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 9802,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "_pack_path": "art/portraits/townhead_galliae_00..07.png",
+  "_animation": "a hearty grin, moustache lifting, static background, smooth loop",
+  "_note": "Head townsperson portrait (2026-09-13): the Contracts section of the modern town main page, the same person as the standing headman figure on the backdrop. Town-portrait route: still at 128, eight-frame loop at 128, each frame centre-cropped to 96."
+}

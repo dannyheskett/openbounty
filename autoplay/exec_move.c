@@ -1352,7 +1352,7 @@ static void maybe_gate_restock_stops(ExecCtx *ctx) {
     for (int i = 0; i < n; i++) {
         const TownRecord *tr = town_record_at(ctx, dests[i].zone,
                                               dests[i].x, dests[i].y);
-        if (!tr) continue;
+        if (!tr || !GameTownHasRites(g, tr->id)) continue;
         if (out < 0 && strcmp(tr->spell_for_sale, ts_sd->id) == 0) {
             out = i;
             snprintf(out_tid, sizeof out_tid, "%s", tr->id);

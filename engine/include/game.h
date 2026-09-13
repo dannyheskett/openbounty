@@ -275,6 +275,10 @@ typedef struct {
 
 typedef struct {
     bool             zones_discovered[GAME_CONTINENTS];
+    // economy.rites_per_zone: the zones whose sacred rites the hero has learned
+    // (at that zone's alcove, or the home zone for a class that starts knowing
+    // magic). Unused when the pack keeps one magic.
+    bool             zone_rites[GAME_CONTINENTS];
     bool             orbs_found[GAME_CONTINENTS];
     // Per-continent fog snapshots. Active continent's fog lives in main.c's
     // standalone Fog. On zone switch the outgoing fog is copied into this
@@ -720,7 +724,18 @@ typedef enum {
     SPELL_BUY_NO_SPELL,     // no spell for sale at this town (or unknown town)
     SPELL_BUY_AT_CAP,       // already know max_spells distinct spells
     SPELL_BUY_NO_GOLD,      // gold <= cost
+    SPELL_BUY_NO_RITES,     // economy.rites_per_zone: the town's zone rites not learned
 } SpellBuyResult;
+
+// The price of the alcove in `zone_id`: the zone's own, else economy.alcove_cost.
+int  GameAlcoveCost(const Game *g, const char *zone_id);
+// Whether the hero may learn spells in `zone_id`: that zone's rites when the
+// pack gates magic per zone, else simply knowing magic.
+bool GameHasRites(const Game *g, const char *zone_id);
+// Whether the town `town_id` will sell the hero spells: its zone's rites when the
+// pack gates magic per zone; always, when it does not (the original sold spells
+// to a hero who did not yet know magic).
+bool GameTownHasRites(const Game *g, const char *town_id);
 
 // Buy the spell for sale at town `town_id` (the town's spell_for_sale). Mutation
 // only -- gold/cap/availability gates and spells.counts[idx]++ -- lifted from the

@@ -91,7 +91,8 @@ void hud_draw(const Game *g, const Sprites *s) {
     y += CL_TILE_H;
 
     // 3. Magic star: silhouette until knows_magic, then animated star.
-    if (g && g->stats.knows_magic) {
+    // Lit for the rites of the zone the hero stands in (one magic: knowing it).
+    if (g && GameHasRites(g, g->position.zone)) {
         int frame = sprites_frame((int)(GetTime() * 2.0),
                                   s->hud_magic_anim_frames);
         blit_panel(s->hud_magic_anim[frame], x, y);

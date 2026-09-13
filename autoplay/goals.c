@@ -205,7 +205,10 @@ bool planstep_is_done(const Game *g, const PlanStep *step) {
     case STEP_ORB:
         return tile_consumed(g, step->zone_index, step->x, step->y);
     case STEP_ALCOVE:
-        return g->stats.knows_magic;
+        // One magic, or with rites per zone this alcove's zone's rites.
+        return (g->res && step->zone_index >= 0 && step->zone_index < g->res->zone_count)
+             ? GameHasRites(g, g->res->zones[step->zone_index].id)
+             : g->stats.knows_magic;
     case STEP_SIEGE_WEAPONS:
         return g->stats.siege_weapons != 0;
     case STEP_MONSTER_CASTLE: {

@@ -36,7 +36,8 @@
 #define RES_END_BODY_LEN     512     // win/lose body text
 #define RES_VDESC_TEXT_LEN   320     // per-villain features / crimes block
 #define RES_SPELL_LORE_LEN   1024    // per-spell long description (strings.spell_lore)
-#define RES_MAX_PORTRAITS    16      // portraits[]: town informants and priests
+#define RES_MAX_PORTRAITS    32      // portraits[]: town people (informants, priests, boat masters...)
+#define RES_DOCK_TEXT_LEN    256     // strings.town_docks: where a town's boat waits
 
 // ---- Sub-structures --------------------------------------------------------
 
@@ -123,7 +124,11 @@ typedef struct {
 } ResChest;
 
 typedef struct {
-    int alcove_cost;
+    int alcove_cost;              // the alcove's price; a zone may set its own
+    // Modern rites (game.json "magic.rites_per_zone"): each zone's alcove
+    // teaches that zone's rites, and its towns sell spells only to a hero who
+    // has them. Off by default, so a pack that does not ask keeps one magic.
+    bool rites_per_zone;
     int boat_cost_normal;
     int boat_cost_cheap;
     int siege_cost;
@@ -215,6 +220,9 @@ typedef struct {
                                   // Empty = no pin (any town may pin in mods).
     char art[RES_TILE_ART_LEN];   // tile art stem under art/tiles/ ("" = "town")
     char informant[RES_ID_LEN];   // portraits[] id shown for the town's report ("" = none)
+    char headman[RES_ID_LEN];     // portraits[] id of the figure on the town backdrop
+    char townhead[RES_ID_LEN];    // portraits[] id of that person's portrait (Contracts, main page)
+    char invitations[RES_ID_LEN]; // strings.town_invitations block spoken on the main page
 } ResTown;
 
 // Special-castle behavior (King Maximus and other quest castles).
@@ -358,6 +366,24 @@ typedef struct {
 } ResPortrait;
 
 typedef struct {
+    char id[RES_ID_LEN];
+    char text[RES_DOCK_TEXT_LEN];
+} ResTownDock;
+
+// One strings.town_invitations block (one per town, named by the town's
+// "invitations"): what each town section's person says on
+// the modern town main page. %HERO% and %TOWN% substitute.
+#define RES_INVITE_LEN 256
+typedef struct {
+    char id[RES_ID_LEN];
+    char contracts[RES_INVITE_LEN];
+    char boat[RES_INVITE_LEN];
+    char information[RES_INVITE_LEN];
+    char temple[RES_INVITE_LEN];
+    char siege[RES_INVITE_LEN];
+} ResTownInvite;
+
+typedef struct {
     char header[RES_NAME_LEN];
     char body[RES_END_BODY_LEN];
     char footer[RES_NAME_LEN];
@@ -426,6 +452,14 @@ typedef struct {
     char town_detail_boat_dock[RES_BANNER_LEN];  // %X% %Y%
     char town_detail_intel[RES_BANNER_LEN];      // %CASTLE%
     char town_contract_confirm[RES_BANNER_LEN];
+    char town_temple_needs_rites[RES_BANNER_LEN]; // %HERO% %ZONE% %X% %Y% (the zone's alcove)
+    char town_back[RES_BANNER_LEN];              // the Back row of a town section page
+    char town_menu_boat[RES_BANNER_LEN];
+    char town_action_spell[RES_BANNER_LEN];
+    char town_action_siege[RES_BANNER_LEN];
+    char town_action_owned[RES_BANNER_LEN];
+    char town_boat_no_master[RES_BANNER_LEN];
+    char town_siege_lore[RES_BANNER_LEN];
     char town_confirm_boat_rent[RES_BANNER_LEN];
     char town_confirm_boat_cancel[RES_BANNER_LEN];
     char town_confirm_spell[RES_BANNER_LEN];
@@ -868,6 +902,9 @@ typedef struct {
     // could name its own art.
     char alcove_art[RES_TILE_ART_LEN];
     char pontifex[RES_ID_LEN];    // portraits[] id of the priest who sells spells here
+    int  alcove_cost;             // this zone's alcove price; -1 = economy.alcove_cost
+    char boatmaster[RES_ID_LEN];  // portraits[] id of the zone's boat master
+    char siegemaster[RES_ID_LEN]; // portraits[] id of the zone's siege engineer
     int  width, height;
     int  hero_spawn_x, hero_spawn_y;
     int  neighbor_count;
@@ -1032,6 +1069,10 @@ typedef struct {
     ResSpellLore    spell_lore[CAT_SPELLS_MAX];
     int             portrait_count;
     ResPortrait     portraits[RES_MAX_PORTRAITS];
+    int             town_dock_count;
+    ResTownDock     town_docks[RES_MAX_TOWNS];
+    int             town_invite_count;
+    ResTownInvite   town_invites[RES_MAX_TOWNS];
 
     // Role-fixed sprite manifest (assets that aren't per-catalog-entry).
     struct {
@@ -1067,6 +1108,7 @@ typedef struct {
         char view_icons_extra[RES_EXTRA_ICONS][RES_PATH_LEN];
         // HUD panels.
         char hud_contract_silhouette[RES_PATH_LEN];
+        char hud_boat_silhouette[RES_PATH_LEN];     // optional: the town Boat screen with no boat master
         char hud_siege_silhouette[RES_PATH_LEN];
         int  hud_siege_animation_count;
         char hud_siege_animation[OB_ANIM_FRAMES_MAX][RES_PATH_LEN];
@@ -1246,6 +1288,10 @@ int              resources_zone_index(const Resources *r, const char *id);
 
 const ResVillainDesc *resources_villain_desc(const Resources *r,
                                              const char *villain_id);
+// A strings.town_invitations block by id, or NULL.
+const ResTownInvite *resources_town_invite(const Resources *r, const char *id);
+// Where the town's boat waits (strings.town_docks), or NULL.
+const char *resources_town_dock(const Resources *r, const char *town_id);
 // Index of portraits[] entry `id`, or -1.
 int resources_portrait_index(const Resources *r, const char *id);
 // The spell's long description from strings.spell_lore, or NULL.

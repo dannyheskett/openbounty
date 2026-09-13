@@ -1,12 +1,12 @@
 {
 	"lose":	{
 		"header":	"",
-		"body":	"%NAME% they call the %RANK%, you have doomed us all. Rome is leaderless without the Aquila. All hope is lost. The rebels go unpunished and the legions scatter. The people are terrified and your army has abandoned your cause. All because you wasted your time so carelessly.\n\nFinal Score: %SCORE%",
+		"body":	"%NAME% they call the %RANK%, you have doomed us all. Roma is leaderless without the Aquila. All hope is lost. The rebels go unpunished and the legions scatter. The people are terrified and your army has abandoned your cause. All because you wasted your time so carelessly.\n\nFinal Score: %SCORE%",
 		"footer":	""
 	},
 	"win":	{
 		"header":	"",
-		"body":	"Rome is saved, %NAME%! You have crushed the rebels and recovered the Aquila of the Legions. Order is restored across the provinces.\n\nHistory will remember the name of %NAME%, the %RANK%-who-saved us all.\n\nYou keep all the castles and your commission is tripled.\n\nFinal Score: %SCORE%",
+		"body":	"Roma is saved, %NAME%! You have crushed the rebels and recovered the Aquila of the Legions. Order is restored across the provinces.\n\nHistory will remember the name of %NAME%, the %RANK%-who-saved us all.\n\nYou keep all the castles and your commission is tripled.\n\nFinal Score: %SCORE%",
 		"footer":	""
 	},
 	"banners":	{
@@ -46,14 +46,22 @@
 		"town_siege_already":	"You have siege weapons!",
 		"town_siege_purchased":	"Siege weapons purchased.",
 		"town_menu_contract":	"Contracts",
-		"town_menu_boat_rent":	"Rent boat",
-		"town_menu_boat_cancel":	"Cancel boat",
+		"town_menu_boat_rent":	"Rent",
+		"town_menu_boat_cancel":	"Cancel",
 		"town_menu_info":	"Information",
-		"town_menu_spell":	"Buy spell",
-		"town_menu_siege":	"Siege weapons",
+		"town_menu_spell":	"Temple",
+		"town_menu_siege":	"Siege works",
 		"town_detail_boat_dock":	"Boat dock: %X%,%Y%",
 		"town_detail_intel":	"Reports on castle %CASTLE%.",
 		"town_contract_confirm":	"Take this contract?",
+		"town_temple_needs_rites":	"The gods of %ZONE% do not know you, %HERO%. Seek the Augur of %ZONE% at %X%,%Y% and learn the sacred rites before I teach you any spell here.",
+		"town_back":	"\u001b Back",
+		"town_menu_boat":	"Boat",
+		"town_action_spell":	"Buy",
+		"town_action_siege":	"Buy",
+		"town_action_owned":	"Owned",
+		"town_boat_no_master":	"There is no boat master in this town.",
+		"town_siege_lore":	"Roma's engineers build the machines that break a city's walls: ballistae that throw iron bolts, and onagers that hurl stone.\n\nNo army can lay siege to a castle without them. Once bought, the siege train follows your army wherever it marches.",
 		"town_confirm_boat_rent":	"Rent a boat for %COST% gold a week?",
 		"town_confirm_boat_cancel":	"Cancel your boat rental?",
 		"town_confirm_spell":	"Buy the %SPELL% spell for %SPELL_COST% gold?",
@@ -82,9 +90,9 @@
 		"encounter_hostile_unknown":	"a hostile band\n",
 		"encounter_hostile_count_named":	"%LABEL% %TROOP%\n",
 		"encounter_hostile_count_numeric":	"%COUNT% %TROOP%\n",
-		"alcove_offer":	"The venerable Augur will teach you the secrets of spell casting for %COST% gold.\n\nAccept?",
-		"alcove_already":	"The Augur nods. You already know magic.",
-		"alcove_taught":	"The Augur teaches you the arcane arts. You now know the ways of magic.",
+		"alcove_offer":	"The venerable Augur will teach you the sacred rites of %ZONE% for %COST% gold. With them you may cast spells, and learn new ones in the temples of %ZONE%.\n\nAccept?",
+		"alcove_already":	"The Augur nods. You already know the sacred rites of %ZONE%.",
+		"alcove_taught":	"The Augur teaches you the sacred rites of %ZONE%. The temples of %ZONE% will now teach you their spells.",
 		"alcove_no_gold":	"You have not enough gold! %COST% is required. Begone until you do!",
 		"no_spell_banner":	"You have not been trained in the art of spellcasting yet. Visit the Augur in %ZONE% at %X%,%Y% for this ability.",
 		"new_game_intro":	"%NAME% the %CLASS%, A new game is being created. Please wait while I perform godlike actions to make this game playable.",
@@ -448,7 +456,7 @@
 	"villain_descriptions":	{
 		"catiline":	{
 			"alias":	"The Conspirator",
-			"crimes":	"Twice defeated for the consulship, he turned to murder. He plotted to kill the consuls and set fires across Rome, and when the plot was exposed he fled to Etruria to raise an army of debtors, ruined nobles and bitter veterans against the Republic."
+			"crimes":	"Twice defeated for the consulship, he turned to murder. He plotted to kill the consuls and set fires across Roma, and when the plot was exposed he fled to Etruria to raise an army of debtors, ruined nobles and bitter veterans against the Republic."
 		},
 		"spartacus":	{
 			"alias":	"The Thracian",
@@ -456,23 +464,23 @@
 		},
 		"tacfarinas":	{
 			"alias":	"The Deserter",
-			"crimes":	"Trained in Rome's own auxiliaries, he deserted and turned the Musulamii into raiders. For seven years he has struck the farms and forts of Africa and melted into the desert before any legion could bring him to battle."
+			"crimes":	"Trained in Roma's own auxiliaries, he deserted and turned the Musulamii into raiders. For seven years he has struck the farms and forts of Africa and melted into the desert before any legion could bring him to battle."
 		},
 		"jugurtha":	{
 			"alias":	"King of Numidia",
-			"crimes":	"He murdered both his royal cousins to take all of Numidia, and put every Italian merchant in Cirta to the sword. When the Senate summoned him, he bought its members and left Rome sneering that it was a city for sale."
+			"crimes":	"He murdered both his royal cousins to take all of Numidia, and put every Italian merchant in Cirta to the sword. When the Senate summoned him, he bought its members and left Roma sneering that it was a city for sale."
 		},
 		"boudica":	{
 			"alias":	"Queen of the Iceni",
-			"crimes":	"Flogged by Rome's agents, her daughters shamed and her lands seized, she raised the tribes in fury. Her host burned Camulodunum, Londinium and Verulamium to the ground and put their people to death by the tens of thousands."
+			"crimes":	"Flogged by Roma's agents, her daughters shamed and her lands seized, she raised the tribes in fury. Her host burned Camulodunum, Londinium and Verulamium to the ground and put their people to death by the tens of thousands."
 		},
 		"civilis":	{
 			"alias":	"The One-Eyed",
-			"crimes":	"A Batavian prince who served Rome for twenty-five years, he turned its own auxiliary cohorts against the Rhine legions. He besieged Vetera until its garrison starved, and fights Rome with the very drill Rome taught him."
+			"crimes":	"A Batavian prince who served Roma for twenty-five years, he turned its own auxiliary cohorts against the Rhine legions. He besieged Vetera until its garrison starved, and fights Roma with the very drill Roma taught him."
 		},
 		"brennus":	{
 			"alias":	"Woe to the Vanquished",
-			"crimes":	"His Gallic host shattered the legions at the Allia and poured into an undefended Rome. He burned the city and besieged the Capitol, and when the gold of the ransom was weighed, he threw his sword onto the scales and laughed."
+			"crimes":	"His Gallic host shattered the legions at the Allia and poured into an undefended Roma. He burned the city and besieged the Capitol, and when the gold of the ransom was weighed, he threw his sword onto the scales and laughed."
 		},
 		"vercingetorix":	{
 			"alias":	"King of Warriors",
@@ -484,7 +492,7 @@
 		},
 		"gildo":	{
 			"alias":	"The Moorish Count",
-			"crimes":	"Made Count of Africa to guard the province, he kept it as his own kingdom. He has held back the grain fleet on which the city depends, and left the people of Rome to face famine while he declares for a rival emperor."
+			"crimes":	"Made Count of Africa to guard the province, he kept it as his own kingdom. He has held back the grain fleet on which the city depends, and left the people of Roma to face famine while he declares for a rival emperor."
 		},
 		"pyrrhus":	{
 			"alias":	"King of Epirus",
@@ -492,15 +500,15 @@
 		},
 		"mithridates":	{
 			"alias":	"The Poison King",
-			"crimes":	"Immune to every poison from years of small doses, he overran Rome's province of Asia. In a single day he had every Roman and Italian there put to death, eighty thousand men, women and children, and he has fought Rome for forty years since."
+			"crimes":	"Immune to every poison from years of small doses, he overran Roma's province of Asia. In a single day he had every Roman and Italian there put to death, eighty thousand men, women and children, and he has fought Roma for forty years since."
 		},
 		"hannibal":	{
 			"alias":	"Son of Hamilcar",
-			"crimes":	"Sworn as a boy to eternal hatred of Rome, he crossed the Alps in winter with an army and its elephants. He destroyed Roman armies at Trebia and Lake Trasimene, and at Cannae slaughtered more Romans in one afternoon than any enemy before him."
+			"crimes":	"Sworn as a boy to eternal hatred of Roma, he crossed the Alps in winter with an army and its elephants. He destroyed Roman armies at Trebia and Lake Trasimene, and at Cannae slaughtered more Romans in one afternoon than any enemy before him."
 		},
 		"zenobia":	{
 			"alias":	"Queen of Palmyra",
-			"crimes":	"Ruling in her son's name, she has torn the East away from Rome. Her cataphracts have taken Egypt, Syria and much of Anatolia, and something far worse than armoured horsemen is said to ride out of the desert at her call."
+			"crimes":	"Ruling in her son's name, she has torn the East away from Roma. Her cataphracts have taken Egypt, Syria and much of Anatolia, and something far worse than armoured horsemen is said to ride out of the desert at her call."
 		},
 		"shapur":	{
 			"alias":	"King of Kings",
@@ -508,7 +516,7 @@
 		},
 		"alaric":	{
 			"alias":	"King of the Visigoths",
-			"crimes":	"Once a commander in Rome's own service, he turned on the Empire when it broke faith with his people. He besieged Rome three times, and on the third sacked the city, the first enemy to take it in eight hundred years, leaving its dead restless behind him."
+			"crimes":	"Once a commander in Roma's own service, he turned on the Empire when it broke faith with his people. He besieged Roma three times, and on the third sacked the city, the first enemy to take it in eight hundred years, leaving its dead restless behind him."
 		},
 		"attila":	{
 			"alias":	"The Scourge of God",
@@ -516,19 +524,199 @@
 		}
 	},
 	"spell_lore":	{
-		"clone":	"The priests of Rome have always shaped images of the gods. The Simulacrum shapes an image of your own soldiers, drawn out of the altar smoke, and it fights as truly as the men it copies.\n\nCast over one of your own stacks in battle, it adds more of those troops to the line. The greater your spell power, the more answer the call. It works only on your own army.",
+		"clone":	"The priests of Roma have always shaped images of the gods. The Simulacrum shapes an image of your own soldiers, drawn out of the altar smoke, and it fights as truly as the men it copies.\n\nCast over one of your own stacks in battle, it adds more of those troops to the line. The greater your spell power, the more answer the call. It works only on your own army.",
 		"teleport":	"Mercury carries the words of the gods faster than any horse, and he will carry an army too.\n\nWith this rite you lift any one stack on the field, yours or the enemy's, and set it down on open ground of your choosing.",
 		"fireball":	"The smith of the gods keeps his forge beneath the mountains of Sicily, and this rite borrows a coal from it.\n\nA ball of fire falls on one enemy stack and burns for 25 damage for each point of your spell power. It strikes where you choose, at any range.",
 		"lightning":	"The thunderbolt is Jupiter's own weapon, and every augur knows the sky's warning.\n\nFulmen calls a bolt down on one enemy stack for 10 damage for each point of your spell power. It is weaker than Vulcan's Fire, and far cheaper.",
 		"freeze":	"Perseus carried the Gorgon's head on his shield, and any who looked on it turned to stone. This rite lends that gaze for a moment.\n\nOne enemy stack meets it and stands frozen in place, unable to act. It is the cheapest of the battle rites the temples sell.",
 		"resurrect":	"Aesculapius, the god of healing, once raised the dead, and Jupiter struck him down for it. His priests still keep the rite, and they sell it dearly.\n\nCast over one of your own stacks, it calls back soldiers who have fallen from its ranks. The greater your spell power, the more return. It is the costliest rite in any temple.",
-		"turn_undead":	"At the Lemuria, Rome drives out the restless spirits of the dead. On the battlefield the same rite tears at anything that walks without a soul.\n\nIt deals 50 damage for each point of your spell power, but only to the undead. Against the living it does nothing at all.",
-		"bridge":	"Pontifex means \"bridge-builder.\" The oldest priesthood of Rome began with the sacred bridge over the Tiber, and the title and the rite are the same word.\n\nCast it at the water's edge and choose a direction, and a bridge rises across the water before you, so your army can march where only a boat could go.",
+		"turn_undead":	"At the Lemuria, Roma drives out the restless spirits of the dead. On the battlefield the same rite tears at anything that walks without a soul.\n\nIt deals 50 damage for each point of your spell power, but only to the undead. Against the living it does nothing at all.",
+		"bridge":	"Pontifex means \"bridge-builder.\" The oldest priesthood of Roma began with the sacred bridge over the Tiber, and the title and the rite are the same word.\n\nCast it at the water's edge and choose a direction, and a bridge rises across the water before you, so your army can march where only a boat could go.",
 		"time_stop":	"The great march: legions that covered in one day what other armies covered in three. This rite stretches the day itself.\n\nFor 10 steps for each point of your spell power, time holds still, and your army moves without the calendar turning.",
-		"find_villain":	"Before any great undertaking, Rome asks the birds. The augur marks out a quarter of the sky and reads the flight of what crosses it.\n\nCast this rite while you hold a contract and the signs show the castle where your quarry is hiding. Without a contract the birds have nothing to say.",
+		"find_villain":	"Before any great undertaking, Roma asks the birds. The augur marks out a quarter of the sky and reads the flight of what crosses it.\n\nCast this rite while you hold a contract and the signs show the castle where your quarry is hiding. Without a contract the birds have nothing to say.",
 		"castle_gate":	"The imperial post keeps fresh horses at every station on every road, so the Emperor's messengers never stop. This rite puts your army on that road.\n\nCast it and choose any castle you have already visited, and you arrive there at once. It cannot take you somewhere you have never been.",
-		"town_gate":	"All roads lead to Rome, and every Roman town stands on one.\n\nCast this rite and choose any town you have already visited, and the road carries you straight there. It costs half as much as the Cursus Publicus.",
+		"town_gate":	"All roads lead to Roma, and every Roman town stands on one.\n\nCast this rite and choose any town you have already visited, and the road carries you straight there. It costs half as much as the Cursus Publicus.",
 		"instant_army":	"The dilectus is the levy: the day the consul calls the citizens and chooses who will march. This rite calls that levy wherever you stand.\n\nFresh troops come to join your army. The greater your spell power and the higher your rank, the more of them answer. They need room in your army to join.",
-		"raise_control":	"Imperium is the right to command, given by the gods and the people of Rome.\n\nWith this rite your authority grows: your leadership rises, and a higher leadership lets you lead larger stacks without losing control of them."
+		"raise_control":	"Imperium is the right to command, given by the gods and the people of Roma.\n\nWith this rite your authority grows: your leadership rises, and a higher leadership lets you lead larger stacks without losing control of them."
+	},
+	"town_docks":	{
+		"mediolanum":	"Your boat will be moored at the landing just south-west of the city.",
+		"pisae":	"Your boat will wait in the harbour a short walk west of the city.",
+		"ancona":	"Your boat will wait in the harbour a short walk south-east of the city.",
+		"massilia":	"Your boat will be tied up at the quay just north-east of the city walls.",
+		"burdigala":	"Your boat will lie at the river quay right beside the north-west gate.",
+		"utica":	"Your boat will wait in the harbour just north of the city.",
+		"hadrumetum":	"Your boat will be moored at the quay just north-west of the city.",
+		"ptolemais":	"Your boat will wait at the harbour mole just north of the city.",
+		"tarsus":	"Your boat will lie at the river landing beside the north-west gate.",
+		"nicomedia":	"Your boat will be moored at the quay beside the north-east gate."
+	},
+	"town_invitations":	{
+		"ostia":	{
+			"contracts":	"Welcome to Ostia, %HERO%, the harbour of Roma herself. The Emperor's enemies are named in my ledger. Come this way, and let us discuss your contract.",
+			"information":	"Every ship into Ostia brings a rumour, %HERO%, and the dockhands bring them all to me. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Castor and Pollux guard the sailors of Ostia, %HERO%. Enter their temple, and I will teach you a rite.",
+			"siege":	"The grain barges carry timber as well as corn, %HERO%. Come to our workshop and see the engines built from it."
+		},
+		"puteoli":	{
+			"contracts":	"Welcome to Puteoli, %HERO%. The sulphur smoke hides many a traitor. Come this way, and let us discuss your contract.",
+			"information":	"The merchants of Alexandria gossip on our quays, %HERO%, and I listen. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Serapis has a house in Puteoli, %HERO%, brought here by the grain fleet. Enter, and I will teach you a rite.",
+			"siege":	"Our concrete sets even under the sea, %HERO%, and our engines are as strong. Come to the workshop and see them."
+		},
+		"cumae":	{
+			"contracts":	"Welcome to Cumae, %HERO%, where the Sibyl once spoke. Her prophecies named enemies of Roma. Come this way, and let us discuss your contract.",
+			"information":	"The caves of Cumae echo with whispers, %HERO%, and I hear most of them. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Apollo's temple stands above the Sibyl's cave, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"Cumae is the oldest Greek city in Italia, %HERO%, and its walls taught us how walls fall. Come to the workshop."
+		},
+		"tarracina":	{
+			"contracts":	"Welcome to Tarracina, %HERO%, where the Via Appia meets the sea. Roma's enemies travel that road too. Come this way, and let us discuss your contract.",
+			"information":	"Every traveller on the Via Appia stops in Tarracina, %HERO%, and talks. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Jupiter Anxur watches from the cliff above Tarracina, %HERO%. Enter his temple, and I will teach you a rite.",
+			"siege":	"We cut the Via Appia through solid rock here, %HERO%. Come to the workshop and see what else our tools can break."
+		},
+		"pisae":	{
+			"contracts":	"Welcome to Pisae, %HERO%. Our marble goes to Roma, and so do our reports of her enemies. Come this way, and let us discuss your contract.",
+			"boat":	"Hail, %HERO%! Pisae has sent ships down the Arnus since before Roma was built. Come and see my boats.",
+			"information":	"The marble quarrymen of Pisae see who comes over the hills, %HERO%. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"The gods of the Etruscans still linger in Pisae, %HERO%. Enter the temple, and I will teach you a rite.",
+			"siege":	"Our shipwrights build siege towers when they aren't building hulls, %HERO%. Come to the workshop and see them."
+		},
+		"ancona":	{
+			"contracts":	"Welcome to Ancona, %HERO%, the elbow of the Adriatic. Roma's enemies watch this coast. Come this way, and let us discuss your contract.",
+			"boat":	"Greetings, %HERO%! From Ancona the ships cross to Dalmatia and back. Come and see my boats.",
+			"information":	"Sailors from across the Adriatic drink in Ancona, %HERO%, and they talk. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Venus keeps her temple on the headland of Ancona, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"Ancona's harbour walls were built by legion engineers, %HERO%. Their workshop still stands. Come and see."
+		},
+		"ravenna":	{
+			"contracts":	"Welcome to Ravenna, %HERO%, home of the Adriatic fleet. The admirals keep a list of Roma's enemies. Come this way, and let us discuss your contract.",
+			"information":	"Ravenna stands among marshes, %HERO%, and news crosses them slowly but surely to me. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Neptune is honoured above all in Ravenna, %HERO%. Enter his temple, and I will teach you a rite.",
+			"siege":	"The fleet's engineers winter in Ravenna, %HERO%. Come to their workshop and see the engines they build."
+		},
+		"mediolanum":	{
+			"contracts":	"Welcome to Mediolanum, %HERO%, gateway to the Alps. Enemies of Roma come down through the passes. Come this way, and let us discuss your contract.",
+			"boat":	"Hail, %HERO%! The lakes and rivers of the north carry more than you would think. Come and see my boats.",
+			"information":	"Traders from beyond the Alps pass through Mediolanum, %HERO%, and I buy their news. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Minerva watches over Mediolanum, %HERO%. Enter her temple, and I will teach you a rite.",
+			"siege":	"Mediolanum's smiths forge iron from the Alpine mines, %HERO%. Come to the workshop and see our engines."
+		},
+		"croton":	{
+			"contracts":	"Welcome to Croton, %HERO%, city of Milo the wrestler. We still admire strength against Roma's enemies. Come this way, and let us discuss your contract.",
+			"information":	"Croton faces the sea to the east, %HERO%, and every Greek ship brings news. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Hera Lacinia's temple stands on the cape of Croton, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"Pythagoras taught mathematics here, %HERO%, and our engineers still use it to aim. Come to the workshop."
+		},
+		"roma":	{
+			"contracts":	"Welcome to Roma, %HERO%, the city of the Emperor. The Senate itself names the enemies it wants taken. Come this way, and let us discuss your contract.",
+			"information":	"Nothing happens in the Empire that isn't whispered in the Forum first, %HERO%. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Jupiter Best and Greatest rules from the Capitol, %HERO%. Enter his temple, and I will teach you a rite.",
+			"siege":	"The legions' own engineers work in Roma, %HERO%. Come to the arsenal and see the engines of the Empire."
+		},
+		"massilia":	{
+			"contracts":	"Welcome to Massilia, %HERO%, Roma's oldest friend in Gaul. The Gauls beyond our walls are not so friendly. Come this way, and let us discuss your contract.",
+			"boat":	"Well met, %HERO%! Massilian ships have sailed to the tin islands and back. Come and see mine.",
+			"information":	"Greek merchants in Massilia trade with every tribe in Gaul, %HERO%, and trade in news too. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Artemis of Ephesus has watched over Massilia since the Greeks founded it, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"Massilia once held off Caesar's siege for months, %HERO%. We learned a great deal. Come to the workshop."
+		},
+		"narbo":	{
+			"contracts":	"Welcome to Narbo, %HERO%, first colony of Roma in Gaul. The province still has its rebels. Come this way, and let us discuss your contract.",
+			"information":	"The Via Domitia runs through Narbo to Hispania, %HERO%, and every courier talks. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"The veterans of Narbo built a temple to Augustus, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"The Tenth Legion's veterans settled here, %HERO%, and they still build engines. Come to the workshop."
+		},
+		"tolosa":	{
+			"contracts":	"Welcome to Tolosa, %HERO%. Our famous gold was cursed, and so are Roma's enemies. Come this way, and let us discuss your contract.",
+			"information":	"The tribes of the southwest trade in Tolosa, %HERO%, and I hear what they say. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"The sacred lake of Tolosa once held a treasure of gold, %HERO%. Enter the temple, and I will teach you a rite.",
+			"siege":	"Tolosa's walls are brick, and our engineers know brick, %HERO%. Come to the workshop and see our engines."
+		},
+		"burdigala":	{
+			"contracts":	"Welcome to Burdigala, %HERO%, on the great river. Roma's enemies trade in our markets under false names. Come this way, and let us discuss your contract.",
+			"boat":	"Well met, %HERO%! Burdigala's wine goes out on the tide, and so could you. Come and see my boats.",
+			"information":	"Wine merchants from all Gaul meet in Burdigala, %HERO%, and wine loosens tongues. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"The tutelary goddess of Burdigala keeps her shrine by the river, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"The river brings oak from the forests to Burdigala, %HERO%. Come to the workshop and see what we build from it."
+		},
+		"vienna":	{
+			"contracts":	"Welcome to Vienna, %HERO%, jewel of the Rhodanus. Even rich cities have enemies. Come this way, and let us discuss your contract.",
+			"information":	"Boats on the Rhodanus carry news from Lugdunum to the sea, %HERO%, and all of it stops here. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Augustus and Livia share a temple in our forum, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"The Allobroges fought Roma from these hills, %HERO%, and taught our engineers much. Come to the workshop."
+		},
+		"aquae_sextiae":	{
+			"contracts":	"Welcome to Aquae Sextiae, %HERO%, where Marius destroyed the Teutones. Roma still needs such victories. Come this way, and let us discuss your contract.",
+			"information":	"Travellers come to Aquae Sextiae for the hot springs, %HERO%, and talk in the baths. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"The spirit of the springs is holy here, %HERO%. Enter the temple, and I will teach you a rite.",
+			"siege":	"Marius's engineers left their workshops here, %HERO%, and we have kept them working. Come and see."
+		},
+		"utica":	{
+			"contracts":	"Welcome to Utica, %HERO%, capital of the province. The governor keeps a list of Roma's enemies. Come this way, and let us discuss your contract.",
+			"boat":	"Greetings, %HERO%! Utica is older than Carthago, and so is her harbour. Come and see my ships.",
+			"information":	"The governor's clerks in Utica gossip freely, %HERO%, if you know where to drink. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Cato died here rather than yield, %HERO%, and the gods remember such men. Enter the temple, and I will teach you a rite.",
+			"siege":	"Scipio besieged Utica from the sea and the land, %HERO%. We keep his engines in working order. Come and see."
+		},
+		"thapsus":	{
+			"contracts":	"Welcome to Thapsus, %HERO%, where Caesar broke the last of his rivals. Roma's enemies still gather in Africa. Come this way, and let us discuss your contract.",
+			"information":	"The oil merchants of Thapsus hear everything along the coast, %HERO%. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Caelestis, the heavenly goddess, keeps her temple in Thapsus, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"The elephants of Thapsus were no match for Caesar's engines, %HERO%. Come to the workshop and see them."
+		},
+		"sabratha":	{
+			"contracts":	"Welcome to Sabratha, %HERO%. The caravan routes bring us gold, ivory and Roma's enemies. Come this way, and let us discuss your contract.",
+			"information":	"The caravan masters of Sabratha know every oasis and every rumour, %HERO%. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Liber Pater, the vine god, is honoured in Sabratha, %HERO%. Enter his temple, and I will teach you a rite.",
+			"siege":	"Our theatre was built with the same cranes that build siege engines, %HERO%. Come to the workshop and see."
+		},
+		"hadrumetum":	{
+			"contracts":	"Welcome to Hadrumetum, %HERO%. The Phoenicians founded us, and Roma keeps us. Come this way, and let us discuss your contract.",
+			"boat":	"Greetings, %HERO%! Hadrumetum's ships sail wherever the oil trade goes. Come and see mine.",
+			"information":	"Hannibal landed at Hadrumetum once, %HERO%, and we still watch the sea for news. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Baal Hammon is honoured here under the name of Saturn, %HERO%. Enter his temple, and I will teach you a rite.",
+			"siege":	"Hadrumetum's catacombs were cut by engineers, %HERO%, and so are our engines. Come to the workshop."
+		},
+		"oea":	{
+			"contracts":	"Welcome to Oea, %HERO%, at the edge of the great desert. Roma's enemies hide in the sand. Come this way, and let us discuss your contract.",
+			"information":	"The Garamantes trade with Oea across the desert, %HERO%, and bring stories with their salt. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Apollo shines hard on Oea, %HERO%. Enter his temple, and I will teach you a rite.",
+			"siege":	"Desert raiders have tested Oea's walls for centuries, %HERO%. Come to the workshop and see how we answer them."
+		},
+		"ptolemais":	{
+			"contracts":	"Welcome to Ptolemais, %HERO%, city of the Ptolemies. Their old enemies became Roma's. Come this way, and let us discuss your contract.",
+			"boat":	"Greetings, %HERO%! Ptolemais sends ships to Alexandria every week. Come and see my fleet.",
+			"information":	"Greek, Egyptian and Roman traders all pass through Ptolemais, %HERO%, and I speak all their tongues. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Isis and Serapis are honoured together in Ptolemais, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"Alexandrian engineers designed our engines, %HERO%, the finest in the world. Come to the workshop."
+		},
+		"tarsus":	{
+			"contracts":	"Welcome to Tarsus, %HERO%, where Antony first met Cleopatra. The East remains full of intrigue. Come this way, and let us discuss your contract.",
+			"boat":	"Greetings, %HERO%! Ships sail up the Cydnus right to our gates. Come and see mine.",
+			"information":	"Tarsus guards the Cilician Gates, %HERO%, and every army that passes is noted. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Sandan, the hero-god of Tarsus, is honoured here with fire, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"The Cilician pirates' fortresses fell to engines built in Tarsus, %HERO%. Come to the workshop and see them."
+		},
+		"smyrna":	{
+			"contracts":	"Welcome to Smyrna, %HERO%, crown of Ionia. Roma's enemies envy our wealth. Come this way, and let us discuss your contract.",
+			"information":	"Smyrna claims to be Homer's birthplace, %HERO%, and we still love a good story. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Smyrna built the first temple to the goddess Roma, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"The Lydian kings once besieged Smyrna, %HERO%, and we learned from them. Come to the workshop."
+		},
+		"nicomedia":	{
+			"contracts":	"Welcome to Nicomedia, %HERO%, the old royal city of Bithynia. The East has kings who would be free of Roma. Come this way, and let us discuss your contract.",
+			"boat":	"Greetings, %HERO%! Nicomedia's gulf opens to the Propontis and the whole world beyond. Come and see my ships.",
+			"information":	"The Bithynian court left many secrets behind in Nicomedia, %HERO%, and I have collected them. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Demeter's temple in Nicomedia is older than Roma's rule, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"The shipwrights of Nicomedia build engines as well as galleys, %HERO%. Come to the workshop and see."
+		},
+		"damascus":	{
+			"contracts":	"Welcome to Damascus, %HERO%, oldest of cities. The desert kings watch Roma from beyond our walls. Come this way, and let us discuss your contract.",
+			"information":	"Every caravan from Arabia and Persia stops in Damascus, %HERO%, and their news with it. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Jupiter Damascenus has a vast temple in our city, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"Damascus steel makes the finest fittings for siege engines, %HERO%. Come to the workshop and see."
+		}
 	}
 }

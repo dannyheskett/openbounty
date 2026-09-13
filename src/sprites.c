@@ -159,6 +159,8 @@ void sprites_load(Sprites *s, const Resources *res) {
 
     // HUD panels.
     s->hud_contract_silhouette = load_rel(res->sprites.hud_contract_silhouette);
+    if (res->sprites.hud_boat_silhouette[0])
+        s->hud_boat_silhouette = load_rel(res->sprites.hud_boat_silhouette);
     s->hud_siege_silhouette    = load_rel(res->sprites.hud_siege_silhouette);
     s->hud_magic_silhouette    = load_rel(res->sprites.hud_magic_silhouette);
     s->hud_puzzle_grid         = load_rel(res->sprites.hud_puzzle_grid);
@@ -246,6 +248,7 @@ void sprites_unload(Sprites *s) {
     UnloadTexture(s->ending_win);
     UnloadTexture(s->ending_lose);
     UnloadTexture(s->hud_contract_silhouette);
+    UnloadTexture(s->hud_boat_silhouette);
     UnloadTexture(s->hud_siege_silhouette);
     UnloadTexture(s->hud_magic_silhouette);
     UnloadTexture(s->hud_puzzle_grid);

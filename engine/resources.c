@@ -161,6 +161,9 @@ static void parse_towns(Resources *res, cJSON *arr) {
         // means the shared "town" tile, so older packs stamp as before.
         copy_str(t->art, sizeof(t->art), json_str(it, "art", ""));
         copy_str(t->informant, sizeof(t->informant), json_str(it, "informant", ""));
+        copy_str(t->headman, sizeof(t->headman), json_str(it, "headman", ""));
+        copy_str(t->townhead, sizeof(t->townhead), json_str(it, "townhead", ""));
+        copy_str(t->invitations, sizeof(t->invitations), json_str(it, "invitations", ""));
     }
 }
 
@@ -409,6 +412,9 @@ static void parse_zones(Resources *res, cJSON *arr) {
         copy_str(z->army_art, sizeof(z->army_art), json_str(it, "army_art", ""));
         copy_str(z->alcove_art, sizeof(z->alcove_art), json_str(it, "alcove_art", ""));
         copy_str(z->pontifex, sizeof(z->pontifex), json_str(it, "pontifex", ""));
+        z->alcove_cost = json_int(it, "alcove_cost", -1);
+        copy_str(z->boatmaster, sizeof(z->boatmaster), json_str(it, "boatmaster", ""));
+        copy_str(z->siegemaster, sizeof(z->siegemaster), json_str(it, "siegemaster", ""));
         z->width  = json_int(it, "width",  64);
         z->height = json_int(it, "height", 64);
         cJSON *hs = cJSON_GetObjectItem(it, "hero_spawn");
@@ -963,6 +969,9 @@ static void parse_sprites(Resources *res, cJSON *obj) {
         copy_str(res->sprites.hud_contract_silhouette,
                  sizeof(res->sprites.hud_contract_silhouette),
                  json_str(hud, "contract_silhouette", ""));
+        copy_str(res->sprites.hud_boat_silhouette,
+                 sizeof(res->sprites.hud_boat_silhouette),
+                 json_str(hud, "boat_silhouette", ""));
         copy_str(res->sprites.hud_siege_silhouette,
                  sizeof(res->sprites.hud_siege_silhouette),
                  json_str(hud, "siege_silhouette", ""));
@@ -1247,6 +1256,14 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(town_detail_boat_dock,   "town_detail_boat_dock");
     SET_BANNER(town_detail_intel,       "town_detail_intel");
     SET_BANNER(town_contract_confirm,   "town_contract_confirm");
+    SET_BANNER(town_temple_needs_rites, "town_temple_needs_rites");
+    SET_BANNER(town_back, "town_back");
+    SET_BANNER(town_menu_boat, "town_menu_boat");
+    SET_BANNER(town_action_spell, "town_action_spell");
+    SET_BANNER(town_action_siege, "town_action_siege");
+    SET_BANNER(town_action_owned, "town_action_owned");
+    SET_BANNER(town_boat_no_master, "town_boat_no_master");
+    SET_BANNER(town_siege_lore, "town_siege_lore");
     SET_BANNER(town_confirm_boat_rent, "town_confirm_boat_rent");
     SET_BANNER(town_confirm_boat_cancel, "town_confirm_boat_cancel");
     SET_BANNER(town_confirm_spell, "town_confirm_spell");
@@ -1691,6 +1708,36 @@ static void parse_strings(Resources *res, cJSON *obj) {
         }
     }
 
+    res->town_invite_count = 0;
+    cJSON *ti = cJSON_GetObjectItem(obj, "town_invitations");
+    if (cJSON_IsObject(ti)) {
+        cJSON *entry;
+        cJSON_ArrayForEach(entry, ti) {
+            if (res->town_invite_count >= RES_MAX_TOWNS) break;
+            if (!entry->string || !entry->string[0] || !cJSON_IsObject(entry)) continue;
+            ResTownInvite *v = &res->town_invites[res->town_invite_count++];
+            copy_str(v->id,          sizeof(v->id),          entry->string);
+            copy_str(v->contracts,   sizeof(v->contracts),   json_str(entry, "contracts", ""));
+            copy_str(v->boat,        sizeof(v->boat),        json_str(entry, "boat", ""));
+            copy_str(v->information, sizeof(v->information), json_str(entry, "information", ""));
+            copy_str(v->temple,      sizeof(v->temple),      json_str(entry, "temple", ""));
+            copy_str(v->siege,       sizeof(v->siege),       json_str(entry, "siege", ""));
+        }
+    }
+
+    res->town_dock_count = 0;
+    cJSON *td = cJSON_GetObjectItem(obj, "town_docks");
+    if (cJSON_IsObject(td)) {
+        cJSON *entry;
+        cJSON_ArrayForEach(entry, td) {
+            if (res->town_dock_count >= RES_MAX_TOWNS) break;
+            if (!entry->string || !entry->string[0] || !cJSON_IsString(entry)) continue;
+            ResTownDock *d = &res->town_docks[res->town_dock_count++];
+            copy_str(d->id,   sizeof(d->id),   entry->string);
+            copy_str(d->text, sizeof(d->text), entry->valuestring);
+        }
+    }
+
     res->spell_lore_count = 0;
     cJSON *sl = cJSON_GetObjectItem(obj, "spell_lore");
     if (cJSON_IsObject(sl)) {
@@ -1900,6 +1947,11 @@ bool resources_load(Resources *res, const char *manifest_path) {
 
     cJSON *jec = cJSON_GetObjectItem(root, "economy");
     res->economy.alcove_cost      = json_int(jec, "alcove_cost",     5000);
+    {
+        cJSON *jmg = cJSON_GetObjectItem(root, "magic");
+        cJSON *jrp = cJSON_IsObject(jmg) ? cJSON_GetObjectItem(jmg, "rites_per_zone") : NULL;
+        res->economy.rites_per_zone = cJSON_IsTrue(jrp);
+    }
     res->economy.boat_cost_normal = json_int(jec, "boat_cost_normal", 500);
     res->economy.boat_cost_cheap  = json_int(jec, "boat_cost_cheap",  100);
     res->economy.siege_cost       = json_int(jec, "siege_cost",      3000);
@@ -2443,6 +2495,20 @@ const ResVillainDesc *resources_villain_desc(const Resources *r,
     return NULL;
 }
 
+const ResTownInvite *resources_town_invite(const Resources *r, const char *id) {
+    if (!r || !id || !id[0]) return NULL;
+    for (int i = 0; i < r->town_invite_count; i++)
+        if (strcmp(r->town_invites[i].id, id) == 0) return &r->town_invites[i];
+    return NULL;
+}
+
+const char *resources_town_dock(const Resources *r, const char *town_id) {
+    if (!r || !town_id) return NULL;
+    for (int i = 0; i < r->town_dock_count; i++)
+        if (strcmp(r->town_docks[i].id, town_id) == 0) return r->town_docks[i].text;
+    return NULL;
+}
+
 int resources_portrait_index(const Resources *r, const char *id) {
     if (!r || !id || !id[0]) return -1;
     for (int i = 0; i < r->portrait_count; i++)
@@ -2567,6 +2633,7 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
     for (int i = 0; i < res->sprites.view_icons_extra_count; i++)
         art_add(out, cap, &n, res->sprites.view_icons_extra[i]);
     art_add(out, cap, &n, res->sprites.hud_contract_silhouette);
+    art_add(out, cap, &n, res->sprites.hud_boat_silhouette);
     art_add(out, cap, &n, res->sprites.hud_siege_silhouette);
     for (int i = 0; i < res->sprites.hud_siege_animation_count; i++)
         art_add(out, cap, &n, res->sprites.hud_siege_animation[i]);

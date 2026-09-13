@@ -1,0 +1,20 @@
+{
+  "id": "headman_italia",
+  "prompt": "a Roman town magistrate standing at rest in a white toga with a broad purple border, grey-haired and clean-shaven, holding a wax tablet at his side",
+  "style": "user__glory_of_rome_troops_bac676cd",
+  "width": 96,
+  "height": 96,
+  "seed": 9701,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": true,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/ui/headman_italia_00..07.png",
+  "_animation": "breathes slowly and turns his head a little to one side and back, his body, arms, toga and feet all completely still, smooth loop",
+  "_note": "The town's head townsperson (2026-09-13), one per continent, standing on the town backdrop in the tile-sized slot the troop used to fill. The alcove figure's route: the pack's trained troop style at 96x96, magenta removed, no crop."
+}

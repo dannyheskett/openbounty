@@ -66,6 +66,12 @@ ML_Rect ml_loc_text(void) {
     return r;
 }
 
+int ml_row_h(void) {
+    int h = CL_TILE_H / 2;
+    int min = BFONT_GLYPH_H + ML_PAD;
+    return h < min ? min : h;
+}
+
 int ml_cols(ML_Rect r) {
     int gw = BFONT_GLYPH_W;
     return gw > 0 ? (r.w - 2 * ML_PAD) / gw : 0;

@@ -367,6 +367,15 @@ SaveResult SaveGameRead(const char *path,
                 }
             }
         }
+        cJSON *jrites = cJSON_GetObjectItem(jw, "zone_rites");
+        if (cJSON_IsArray(jrites)) {
+            cJSON *it;
+            cJSON_ArrayForEach(it, jrites) {
+                if (!cJSON_IsString(it) || !g->res) continue;
+                int i = resources_zone_index(g->res, it->valuestring);
+                if (i >= 0 && i < GAME_CONTINENTS) g->world.zone_rites[i] = true;
+            }
+        }
         cJSON *jorbs = cJSON_GetObjectItem(jw, "orbs_found");
         if (cJSON_IsArray(jorbs)) {
             cJSON *it;

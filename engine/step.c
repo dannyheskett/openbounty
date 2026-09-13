@@ -293,13 +293,16 @@ bool GameStep(Game *game, Map *map, Fog *fog,
             }
         }
         if (ir.opened_alcove) {
-            if (!game->stats.knows_magic) {
+            // One magic, or with rites per zone this zone's rites.
+            const ResZone *az = resources_zone_by_id(res, game->position.zone);
+            const char *azname = (az && az->name[0]) ? az->name : game->position.zone;
+            if (!GameHasRites(game, game->position.zone)) {
                 char body[256], cbuf[16];
-                snprintf(cbuf, sizeof cbuf, "%d", res->economy.alcove_cost);
-                ResTemplateVar vars[] = { { "COST", cbuf } };
+                snprintf(cbuf, sizeof cbuf, "%d", GameAlcoveCost(game, game->position.zone));
+                ResTemplateVar vars[] = { { "COST", cbuf }, { "ZONE", azname } };
                 resources_format_template(body, sizeof body,
                                           res->banners.alcove_offer,
-                                          vars, 1);
+                                          vars, 2);
                 screen_alcove_open(game);
                 pending_flow = FLOW_ALCOVE;
                 prompt_yes_no_open(res->ui.dt_alcove_offer, body);
@@ -307,9 +310,10 @@ bool GameStep(Game *game, Map *map, Fog *fog,
                                          res->ui.dt_alcove_offer, body);
             } else {
                 char body[RES_BANNER_LEN];
+                ResTemplateVar vars[] = { { "ZONE", azname } };
                 resources_format_template(body, sizeof body,
                                           res->banners.alcove_already,
-                                          NULL, 0);
+                                          vars, 1);
                 player_io_message(game, NULL, body);
             }
             if (ir.bounce_back) {

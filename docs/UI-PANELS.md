@@ -92,6 +92,19 @@ Actions row closes the menu and presses its key on the next frame, so the
 action runs the path its keypress does. Controls opens over the menu in the
 same rect and closes back to it. Every row is tappable.
 
+## Select rows
+
+The standard for every modern list of choices (`ml_row_h`, `ML_ROW_RULE` in
+`src/modern/mlayout.h`). A row is half a tile tall: 48 on Rome's 96 tile, room
+for one text line centred or a 48 px icon beside it, and a comfortable touch
+target; never shorter than a text line plus 8 of padding. Rows stack from the
+top of their column with a 2 px rail under each. They do not stretch to fill
+the column: whatever height is left below the last rail stays empty. The
+cursor row is inverted; a row that cannot be chosen is grey and the cursor
+skips it. A list with more rows than its column holds scrolls to keep the
+cursor row in view. First used by the town screen (menu and every detail list); other
+modern lists move to it as they are touched.
+
 ## Combat action menu
 
 Enter, or a tap on the active unit, opens Actions in the large rect: Wait,

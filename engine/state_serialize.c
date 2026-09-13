@@ -414,6 +414,13 @@ cJSON *state_build_snapshot(const Game *g,
                 cJSON_AddItemToArray(orbs, cJSON_CreateString(z->id));
         }
         cJSON_AddItemToObject(w, "zones_discovered", disc);
+        if (g->res && g->res->economy.rites_per_zone) {
+            cJSON *rites = cJSON_CreateArray();
+            for (int i = 0; i < nz; i++)
+                if (g->world.zone_rites[i])
+                    cJSON_AddItemToArray(rites, cJSON_CreateString(g->res->zones[i].id));
+            cJSON_AddItemToObject(w, "zone_rites", rites);
+        }
         cJSON_AddItemToObject(w, "orbs_found", orbs);
         // Puzzle reveal state is derived from g->contract.villains_caught[]
         // and g->artifacts.found[], not stored separately. Older save

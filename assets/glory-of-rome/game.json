@@ -39,6 +39,9 @@
 			"impossible":	200
 		}
 	},
+	"magic":	{
+		"rites_per_zone":	true
+	},
 	"economy":	{
 		"alcove_cost":	5000,
 		"boat_cost_cheap":	100,
@@ -110,6 +113,9 @@
 			},
 			"alcove_art":	"alcove",
 			"pontifex":	"pontifex_italia",
+			"alcove_cost":	2500,
+			"boatmaster":	"boatmaster_italia",
+			"siegemaster":	"siege_italia",
 			"magic_alcove":	{
 				"x":	8,
 				"y":	16
@@ -729,6 +735,9 @@
 			},
 			"alcove_art":	"alcove",
 			"pontifex":	"pontifex_galliae",
+			"alcove_cost":	5000,
+			"boatmaster":	"boatmaster_galliae",
+			"siegemaster":	"siege_galliae",
 			"magic_alcove":	{
 				"x":	24,
 				"y":	24
@@ -927,7 +936,7 @@
 					"y":	8,
 					"id":	"sign_africa_1",
 					"title":	"Carthago",
-					"body":	"Thrice Rome fought her; thrice she fell. Carthago delenda est."
+					"body":	"Thrice Roma fought her; thrice she fell. Carthago delenda est."
 				}, {
 					"x":	25,
 					"y":	16,
@@ -949,6 +958,9 @@
 			},
 			"alcove_art":	"alcove",
 			"pontifex":	"pontifex_africa",
+			"alcove_cost":	7500,
+			"boatmaster":	"boatmaster_africa",
+			"siegemaster":	"siege_africa",
 			"magic_alcove":	{
 				"x":	24,
 				"y":	8
@@ -1153,7 +1165,7 @@
 					"y":	20,
 					"id":	"sign_oriens_2",
 					"title":	"The Frontier",
-					"body":	"East lies Parthia, the border Rome never truly held."
+					"body":	"East lies Parthia, the border Roma never truly held."
 				}, {
 					"x":	38,
 					"y":	8,
@@ -1169,6 +1181,9 @@
 			},
 			"alcove_art":	"alcove",
 			"pontifex":	"pontifex_oriens",
+			"alcove_cost":	10000,
+			"boatmaster":	"boatmaster_oriens",
+			"siegemaster":	"siege_oriens",
 			"magic_alcove":	{
 				"x":	41,
 				"y":	7
@@ -1232,10 +1247,61 @@
 		}, {
 			"id":	"pontifex_oriens",
 			"anim":	["art/portraits/pontifex_oriens_00.png", "art/portraits/pontifex_oriens_01.png", "art/portraits/pontifex_oriens_02.png", "art/portraits/pontifex_oriens_03.png", "art/portraits/pontifex_oriens_04.png", "art/portraits/pontifex_oriens_05.png", "art/portraits/pontifex_oriens_06.png", "art/portraits/pontifex_oriens_07.png"]
+		}, {
+			"id":	"boatmaster_italia",
+			"anim":	["art/portraits/boatmaster_italia_00.png", "art/portraits/boatmaster_italia_01.png", "art/portraits/boatmaster_italia_02.png", "art/portraits/boatmaster_italia_03.png", "art/portraits/boatmaster_italia_04.png", "art/portraits/boatmaster_italia_05.png", "art/portraits/boatmaster_italia_06.png", "art/portraits/boatmaster_italia_07.png"]
+		}, {
+			"id":	"boatmaster_galliae",
+			"anim":	["art/portraits/boatmaster_galliae_00.png", "art/portraits/boatmaster_galliae_01.png", "art/portraits/boatmaster_galliae_02.png", "art/portraits/boatmaster_galliae_03.png", "art/portraits/boatmaster_galliae_04.png", "art/portraits/boatmaster_galliae_05.png", "art/portraits/boatmaster_galliae_06.png", "art/portraits/boatmaster_galliae_07.png"]
+		}, {
+			"id":	"boatmaster_africa",
+			"anim":	["art/portraits/boatmaster_africa_00.png", "art/portraits/boatmaster_africa_01.png", "art/portraits/boatmaster_africa_02.png", "art/portraits/boatmaster_africa_03.png", "art/portraits/boatmaster_africa_04.png", "art/portraits/boatmaster_africa_05.png", "art/portraits/boatmaster_africa_06.png", "art/portraits/boatmaster_africa_07.png"]
+		}, {
+			"id":	"boatmaster_oriens",
+			"anim":	["art/portraits/boatmaster_oriens_00.png", "art/portraits/boatmaster_oriens_01.png", "art/portraits/boatmaster_oriens_02.png", "art/portraits/boatmaster_oriens_03.png", "art/portraits/boatmaster_oriens_04.png", "art/portraits/boatmaster_oriens_05.png", "art/portraits/boatmaster_oriens_06.png", "art/portraits/boatmaster_oriens_07.png"]
+		}, {
+			"id":	"siege_italia",
+			"anim":	["art/portraits/siege_italia_00.png", "art/portraits/siege_italia_01.png", "art/portraits/siege_italia_02.png", "art/portraits/siege_italia_03.png", "art/portraits/siege_italia_04.png", "art/portraits/siege_italia_05.png", "art/portraits/siege_italia_06.png", "art/portraits/siege_italia_07.png"]
+		}, {
+			"id":	"siege_galliae",
+			"anim":	["art/portraits/siege_galliae_00.png", "art/portraits/siege_galliae_01.png", "art/portraits/siege_galliae_02.png", "art/portraits/siege_galliae_03.png", "art/portraits/siege_galliae_04.png", "art/portraits/siege_galliae_05.png", "art/portraits/siege_galliae_06.png", "art/portraits/siege_galliae_07.png"]
+		}, {
+			"id":	"siege_africa",
+			"anim":	["art/portraits/siege_africa_00.png", "art/portraits/siege_africa_01.png", "art/portraits/siege_africa_02.png", "art/portraits/siege_africa_03.png", "art/portraits/siege_africa_04.png", "art/portraits/siege_africa_05.png", "art/portraits/siege_africa_06.png", "art/portraits/siege_africa_07.png"]
+		}, {
+			"id":	"siege_oriens",
+			"anim":	["art/portraits/siege_oriens_00.png", "art/portraits/siege_oriens_01.png", "art/portraits/siege_oriens_02.png", "art/portraits/siege_oriens_03.png", "art/portraits/siege_oriens_04.png", "art/portraits/siege_oriens_05.png", "art/portraits/siege_oriens_06.png", "art/portraits/siege_oriens_07.png"]
+		}, {
+			"id":	"headman_italia",
+			"anim":	["art/ui/headman_italia_00.png", "art/ui/headman_italia_01.png", "art/ui/headman_italia_02.png", "art/ui/headman_italia_03.png", "art/ui/headman_italia_04.png", "art/ui/headman_italia_05.png", "art/ui/headman_italia_06.png", "art/ui/headman_italia_07.png"]
+		}, {
+			"id":	"headman_galliae",
+			"anim":	["art/ui/headman_galliae_00.png", "art/ui/headman_galliae_01.png", "art/ui/headman_galliae_02.png", "art/ui/headman_galliae_03.png", "art/ui/headman_galliae_04.png", "art/ui/headman_galliae_05.png", "art/ui/headman_galliae_06.png", "art/ui/headman_galliae_07.png"]
+		}, {
+			"id":	"headman_africa",
+			"anim":	["art/ui/headman_africa_00.png", "art/ui/headman_africa_01.png", "art/ui/headman_africa_02.png", "art/ui/headman_africa_03.png", "art/ui/headman_africa_04.png", "art/ui/headman_africa_05.png", "art/ui/headman_africa_06.png", "art/ui/headman_africa_07.png"]
+		}, {
+			"id":	"headman_oriens",
+			"anim":	["art/ui/headman_oriens_00.png", "art/ui/headman_oriens_01.png", "art/ui/headman_oriens_02.png", "art/ui/headman_oriens_03.png", "art/ui/headman_oriens_04.png", "art/ui/headman_oriens_05.png", "art/ui/headman_oriens_06.png", "art/ui/headman_oriens_07.png"]
+		}, {
+			"id":	"townhead_italia",
+			"anim":	["art/portraits/townhead_italia_00.png", "art/portraits/townhead_italia_01.png", "art/portraits/townhead_italia_02.png", "art/portraits/townhead_italia_03.png", "art/portraits/townhead_italia_04.png", "art/portraits/townhead_italia_05.png", "art/portraits/townhead_italia_06.png", "art/portraits/townhead_italia_07.png"]
+		}, {
+			"id":	"townhead_galliae",
+			"anim":	["art/portraits/townhead_galliae_00.png", "art/portraits/townhead_galliae_01.png", "art/portraits/townhead_galliae_02.png", "art/portraits/townhead_galliae_03.png", "art/portraits/townhead_galliae_04.png", "art/portraits/townhead_galliae_05.png", "art/portraits/townhead_galliae_06.png", "art/portraits/townhead_galliae_07.png"]
+		}, {
+			"id":	"townhead_africa",
+			"anim":	["art/portraits/townhead_africa_00.png", "art/portraits/townhead_africa_01.png", "art/portraits/townhead_africa_02.png", "art/portraits/townhead_africa_03.png", "art/portraits/townhead_africa_04.png", "art/portraits/townhead_africa_05.png", "art/portraits/townhead_africa_06.png", "art/portraits/townhead_africa_07.png"]
+		}, {
+			"id":	"townhead_oriens",
+			"anim":	["art/portraits/townhead_oriens_00.png", "art/portraits/townhead_oriens_01.png", "art/portraits/townhead_oriens_02.png", "art/portraits/townhead_oriens_03.png", "art/portraits/townhead_oriens_04.png", "art/portraits/townhead_oriens_05.png", "art/portraits/townhead_oriens_06.png", "art/portraits/townhead_oriens_07.png"]
 		}],
 	"towns":	[{
 			"index":	0,
 			"id":	"ostia",
+			"headman":	"headman_italia",
+			"townhead":	"townhead_italia",
+			"invitations":	"ostia",
 			"informant":	"informant_market",
 			"name":	"Ostia",
 			"art":	"town_italia",
@@ -1255,6 +1321,9 @@
 		}, {
 			"index":	1,
 			"id":	"puteoli",
+			"headman":	"headman_italia",
+			"townhead":	"townhead_italia",
+			"invitations":	"puteoli",
 			"informant":	"informant_taverner",
 			"name":	"Puteoli",
 			"art":	"town_italia",
@@ -1273,6 +1342,9 @@
 		}, {
 			"index":	2,
 			"id":	"cumae",
+			"headman":	"headman_italia",
+			"townhead":	"townhead_italia",
+			"invitations":	"cumae",
 			"informant":	"informant_urchin",
 			"name":	"Cumae",
 			"art":	"town_italia",
@@ -1291,6 +1363,9 @@
 		}, {
 			"index":	3,
 			"id":	"tarracina",
+			"headman":	"headman_italia",
+			"townhead":	"townhead_italia",
+			"invitations":	"tarracina",
 			"informant":	"informant_veteran",
 			"name":	"Tarracina",
 			"art":	"town_italia",
@@ -1309,6 +1384,9 @@
 		}, {
 			"index":	4,
 			"id":	"pisae",
+			"headman":	"headman_italia",
+			"townhead":	"townhead_italia",
+			"invitations":	"pisae",
 			"informant":	"informant_market",
 			"name":	"Pisae",
 			"art":	"town_italia",
@@ -1327,6 +1405,9 @@
 		}, {
 			"index":	5,
 			"id":	"ancona",
+			"headman":	"headman_italia",
+			"townhead":	"townhead_italia",
+			"invitations":	"ancona",
 			"informant":	"informant_taverner",
 			"name":	"Ancona",
 			"art":	"town_italia",
@@ -1345,6 +1426,9 @@
 		}, {
 			"index":	6,
 			"id":	"ravenna",
+			"headman":	"headman_italia",
+			"townhead":	"townhead_italia",
+			"invitations":	"ravenna",
 			"informant":	"informant_veteran",
 			"name":	"Ravenna",
 			"art":	"town_italia",
@@ -1363,6 +1447,9 @@
 		}, {
 			"index":	7,
 			"id":	"mediolanum",
+			"headman":	"headman_italia",
+			"townhead":	"townhead_italia",
+			"invitations":	"mediolanum",
 			"informant":	"informant_urchin",
 			"name":	"Mediolanum",
 			"art":	"town_italia",
@@ -1381,6 +1468,9 @@
 		}, {
 			"index":	8,
 			"id":	"croton",
+			"headman":	"headman_italia",
+			"townhead":	"townhead_italia",
+			"invitations":	"croton",
 			"informant":	"informant_market",
 			"name":	"Croton",
 			"art":	"town_italia",
@@ -1399,6 +1489,9 @@
 		}, {
 			"index":	9,
 			"id":	"massilia",
+			"headman":	"headman_galliae",
+			"townhead":	"townhead_galliae",
+			"invitations":	"massilia",
 			"informant":	"informant_market",
 			"name":	"Massilia",
 			"art":	"town_galliae",
@@ -1417,6 +1510,9 @@
 		}, {
 			"index":	10,
 			"id":	"narbo",
+			"headman":	"headman_galliae",
+			"townhead":	"townhead_galliae",
+			"invitations":	"narbo",
 			"informant":	"informant_taverner",
 			"name":	"Narbo",
 			"art":	"town_galliae",
@@ -1435,6 +1531,9 @@
 		}, {
 			"index":	11,
 			"id":	"tolosa",
+			"headman":	"headman_galliae",
+			"townhead":	"townhead_galliae",
+			"invitations":	"tolosa",
 			"informant":	"informant_veteran",
 			"name":	"Tolosa",
 			"art":	"town_galliae",
@@ -1453,6 +1552,9 @@
 		}, {
 			"index":	12,
 			"id":	"burdigala",
+			"headman":	"headman_galliae",
+			"townhead":	"townhead_galliae",
+			"invitations":	"burdigala",
 			"informant":	"informant_market",
 			"name":	"Burdigala",
 			"art":	"town_galliae",
@@ -1471,6 +1573,9 @@
 		}, {
 			"index":	13,
 			"id":	"vienna",
+			"headman":	"headman_galliae",
+			"townhead":	"townhead_galliae",
+			"invitations":	"vienna",
 			"informant":	"informant_urchin",
 			"name":	"Vienna",
 			"art":	"town_galliae",
@@ -1489,6 +1594,9 @@
 		}, {
 			"index":	14,
 			"id":	"aquae_sextiae",
+			"headman":	"headman_galliae",
+			"townhead":	"townhead_galliae",
+			"invitations":	"aquae_sextiae",
 			"informant":	"informant_taverner",
 			"name":	"Aquae Sextiae",
 			"art":	"town_galliae",
@@ -1507,6 +1615,9 @@
 		}, {
 			"index":	15,
 			"id":	"utica",
+			"headman":	"headman_africa",
+			"townhead":	"townhead_africa",
+			"invitations":	"utica",
 			"informant":	"informant_market",
 			"name":	"Utica",
 			"art":	"town_africa",
@@ -1525,6 +1636,9 @@
 		}, {
 			"index":	16,
 			"id":	"thapsus",
+			"headman":	"headman_africa",
+			"townhead":	"townhead_africa",
+			"invitations":	"thapsus",
 			"informant":	"informant_veteran",
 			"name":	"Thapsus",
 			"art":	"town_africa",
@@ -1543,6 +1657,9 @@
 		}, {
 			"index":	17,
 			"id":	"sabratha",
+			"headman":	"headman_africa",
+			"townhead":	"townhead_africa",
+			"invitations":	"sabratha",
 			"informant":	"informant_urchin",
 			"name":	"Sabratha",
 			"art":	"town_africa",
@@ -1561,6 +1678,9 @@
 		}, {
 			"index":	18,
 			"id":	"hadrumetum",
+			"headman":	"headman_africa",
+			"townhead":	"townhead_africa",
+			"invitations":	"hadrumetum",
 			"informant":	"informant_taverner",
 			"name":	"Hadrumetum",
 			"art":	"town_africa",
@@ -1579,6 +1699,9 @@
 		}, {
 			"index":	19,
 			"id":	"oea",
+			"headman":	"headman_africa",
+			"townhead":	"townhead_africa",
+			"invitations":	"oea",
 			"informant":	"informant_veteran",
 			"name":	"Oea",
 			"art":	"town_africa",
@@ -1597,6 +1720,9 @@
 		}, {
 			"index":	20,
 			"id":	"ptolemais",
+			"headman":	"headman_africa",
+			"townhead":	"townhead_africa",
+			"invitations":	"ptolemais",
 			"informant":	"informant_market",
 			"name":	"Ptolemais",
 			"art":	"town_africa",
@@ -1615,6 +1741,9 @@
 		}, {
 			"index":	21,
 			"id":	"tarsus",
+			"headman":	"headman_oriens",
+			"townhead":	"townhead_oriens",
+			"invitations":	"tarsus",
 			"informant":	"informant_taverner",
 			"name":	"Tarsus",
 			"art":	"town_oriens",
@@ -1633,6 +1762,9 @@
 		}, {
 			"index":	22,
 			"id":	"smyrna",
+			"headman":	"headman_oriens",
+			"townhead":	"townhead_oriens",
+			"invitations":	"smyrna",
 			"informant":	"informant_market",
 			"name":	"Smyrna",
 			"art":	"town_oriens",
@@ -1651,6 +1783,9 @@
 		}, {
 			"index":	23,
 			"id":	"nicomedia",
+			"headman":	"headman_oriens",
+			"townhead":	"townhead_oriens",
+			"invitations":	"nicomedia",
 			"informant":	"informant_veteran",
 			"name":	"Nicomedia",
 			"art":	"town_oriens",
@@ -1669,6 +1804,9 @@
 		}, {
 			"index":	24,
 			"id":	"damascus",
+			"headman":	"headman_oriens",
+			"townhead":	"townhead_oriens",
+			"invitations":	"damascus",
 			"informant":	"informant_urchin",
 			"name":	"Damascus",
 			"art":	"town_oriens",
@@ -1687,6 +1825,9 @@
 		}, {
 				"index":	25,
 				"id":	"roma",
+			"headman":	"headman_italia",
+			"townhead":	"townhead_italia",
+			"invitations":	"roma",
 			"informant":	"informant_urchin",
 				"name":	"Roma",
 				"art":	"town_rome",
@@ -1721,13 +1862,13 @@
 				"win_condition":	"scepter",
 				"dialog":	{
 					"header":	"Roma, Seat of Traianus",
-					"body":	"Emperor Traianus bids you welcome, Hero.\n\nReturn with the stolen Aquila of the Legions and all the provinces of Rome are yours."
+					"body":	"Emperor Traianus bids you welcome, Hero.\n\nReturn with the stolen Aquila of the Legions and all the provinces of Roma are yours."
 				},
 				"audience":	{
 					"intro":	"Trumpets announce your arrival with imperial fanfare.\n\nEmperor Traianus rises from his throne to greet you and proclaims:",
 					"rank_up":	"Congratulations %NAME%,\n\nI now raise you to the rank of %RANK%.\n",
 					"more_needed":	"My dear %NAME%,\n\nI can aid you better after you've captured %NEEDED% more enemies.",
-					"final_rank":	"%NAME% the %RANK%,\n\nHurry and recover the Aquila of the Legions, or all Rome will be lost!"
+					"final_rank":	"%NAME% the %RANK%,\n\nHurry and recover the Aquila of the Legions, or all Roma will be lost!"
 				}
 			}
 		}, {
@@ -3753,6 +3894,7 @@
 		},
 		"hud":	{
 			"contract_silhouette":	"art/ui/hud_contract_silhouette.png",
+			"boat_silhouette":	"art/ui/hud_boat_silhouette.png",
 			"siege_silhouette":	"art/ui/hud_siege_silhouette.png",
 			"siege_animation":	["art/ui/hud_siege_00.png", "art/ui/hud_siege_01.png", "art/ui/hud_siege_02.png", "art/ui/hud_siege_03.png", "art/ui/hud_siege_04.png", "art/ui/hud_siege_05.png", "art/ui/hud_siege_06.png", "art/ui/hud_siege_07.png"],
 			"magic_silhouette":	"art/ui/hud_magic_silhouette.png",

@@ -409,7 +409,7 @@ static void town_text_labeled(TownText *t, const char *tmpl, const char *value) 
 static const VillainDef *town_shown_villain(const Game *g) {
     const char *id = g->contract.active_id;
     if (views_town_list() == TOWN_LIST_CONTRACTS) {
-        int slot = views_town_contract_slot(g, views_town_contract_cursor());
+        int slot = views_town_contract_slot(g, views_town_list_cursor());
         if (slot >= 0) id = g->contract.cycle[slot];
     }
     return (id && id[0]) ? villain_by_id(id) : NULL;
@@ -449,54 +449,91 @@ static void town_compose_contract(const Game *g, const VillainDef *v, TownText *
 }
 
 // Facts about the row under the cursor, from the game state.
-static void town_compose_detail(const Game *g, TownText *t) {
-    if (!g || !g->res) return;
-    const Resources *res = g->res;
-    const ResBanners *bn = &res->banners;
-    char buf[RES_BANNER_LEN];
-
-    int row = views_town_cursor();
-    if (views_town_list() == TOWN_LIST_CONTRACTS || row == TOWN_ROW_CONTRACT) {
-        town_compose_contract(g, town_shown_villain(g), t);
-        return;
+// The screen whose facts are on show: the detail screen open, or on the menu
+// the one the cursor row opens.
+static TownList town_screen(void) {
+    TownList l = views_town_list();
+    if (l != TOWN_LIST_MENU) return l;
+    switch (views_town_cursor()) {
+        case TOWN_ROW_CONTRACT: return TOWN_LIST_CONTRACTS;
+        case TOWN_ROW_INFO:     return TOWN_LIST_INFO;
+        case TOWN_ROW_BOAT:     return TOWN_LIST_BOAT;
+        case TOWN_ROW_SPELL:    return TOWN_LIST_TEMPLE;
+        case TOWN_ROW_SIEGE:    return TOWN_LIST_SIEGE;
+        default:                return TOWN_LIST_MENU;
     }
-    if (row == TOWN_ROW_INFO) {
-        char intel[512];
-        views_town_intel_text(g, intel, sizeof intel);
-        town_text_add(t, intel, PAL_CLR(WHITE));
-        return;
-    }
+}
 
-    // The rest lead with the pack's full row text, prices included.
+// The pack's full row text for a menu row, prices included, its legacy key
+// letter dropped.
+static void town_row_head(const Game *g, TownRow row, TownText *t) {
     char head[128];
     views_town_row_text(g, row, head, sizeof head);
     if (head[0] >= 'A' && head[0] <= 'Z' && head[1] == ')' && head[2] == ' ')
         memmove(head, head + 3, strlen(head + 3) + 1);
     town_text_add(t, head, PAL_CLR(YELLOW));
+}
 
+// Facts for the screen on show, from the game state.
+static void town_compose_detail(const Game *g, TownText *t) {
+    if (!g || !g->res) return;
+    const Resources *res = g->res;
+    const ResBanners *bn = &res->banners;
+    char buf[RES_BANNER_LEN];
     const char *key = views_town_record_key();
-    const ResTown *tw = key ? resources_town_by_id(res, key) : NULL;
-    if (row == TOWN_ROW_BOAT && tw && tw->boat_x >= 0 && tw->boat_y >= 0) {
-        char bx[12], by[12];
-        snprintf(bx, sizeof bx, "%d", tw->boat_x);
-        snprintf(by, sizeof by, "%d", tw->boat_y);
-        ResTemplateVar vars[] = { { "X", bx }, { "Y", by } };
-        resources_format_template(buf, sizeof buf, bn->town_detail_boat_dock, vars, 2);
-        town_text_gap(t);
-        town_text_add(t, buf, PAL_CLR(WHITE));
-    } else if (row == TOWN_ROW_SPELL && key) {
-        for (int i = 0; i < GAME_TOWNS; i++) {
-            if (strcmp(g->towns[i].id, key) != 0) continue;
-            const SpellDef *sp = g->towns[i].spell_for_sale[0]
-                               ? spell_by_id(g->towns[i].spell_for_sale) : NULL;
-            const char *lore = sp ? resources_spell_lore(res, sp->id) : NULL;
-            if (!lore || !lore[0]) lore = sp ? sp->description : NULL;
+
+    switch (town_screen()) {
+        case TOWN_LIST_CONTRACTS:
+            town_compose_contract(g, town_shown_villain(g), t);
+            break;
+        case TOWN_LIST_INFO: {
+            char intel[512];
+            views_town_intel_text(g, intel, sizeof intel);
+            town_text_add(t, intel, PAL_CLR(WHITE));
+            break;
+        }
+        case TOWN_LIST_BOAT: {
+            if (!views_town_boat_available(g)) {
+                town_text_add(t, bn->town_boat_no_master, PAL_CLR(WHITE));
+                break;
+            }
+            town_row_head(g, TOWN_ROW_BOAT, t);
+            const char *dock = key ? resources_town_dock(res, key) : NULL;
+            if (dock && dock[0]) {
+                town_text_gap(t);
+                town_text_add(t, dock, PAL_CLR(WHITE));
+            }
+            break;
+        }
+        case TOWN_LIST_TEMPLE: {
+            town_row_head(g, TOWN_ROW_SPELL, t);
+            const SpellDef *sp = views_town_spell(g);
+            if (!sp) break;
+            const char *lore = resources_spell_lore(res, sp->id);
+            if (!lore || !lore[0]) lore = sp->description;
             if (lore && lore[0]) {
                 town_text_gap(t);
                 town_text_add(t, lore, PAL_CLR(WHITE));
             }
+            int left = g->stats.max_spells - GameKnownSpells(g);
+            if (left <= 0) {
+                resources_format_template(buf, sizeof buf, bn->town_spell_at_cap, NULL, 0);
+            } else {
+                char lbuf[16];
+                snprintf(lbuf, sizeof lbuf, "%d", left);
+                ResTemplateVar vars[] = { { "LEFT", lbuf }, { "S", left == 1 ? "" : "s" } };
+                resources_format_template(buf, sizeof buf, bn->town_spell_can_learn, vars, 2);
+            }
+            town_text_gap(t);
+            town_text_add(t, buf, PAL_CLR(WHITE));
             break;
         }
+        case TOWN_LIST_SIEGE:
+            town_row_head(g, TOWN_ROW_SIEGE, t);
+            town_text_gap(t);
+            town_text_add(t, bn->town_siege_lore, PAL_CLR(WHITE));
+            break;
+        default: break;
     }
 }
 
@@ -530,7 +567,9 @@ static int town_paginate(const TownText *t, int per, int *starts, int max_pages)
 void modern_overlay_draw_town(const Game *g, const Sprites *s) {
     const char *name = views_town_display_name();
     const char *info = views_town_info_text();
-    bool contracts = (views_town_list() == TOWN_LIST_CONTRACTS);
+    TownList list = views_town_list();
+    bool menu = (list == TOWN_LIST_MENU);
+    TownList screen = town_screen();
 
     // Town view doesn't own a SYN-tick frame counter yet; derive a
     // free-running tick from real time at the SYN cadence (~150ms per
@@ -551,16 +590,18 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
     DrawRectangle(r.x, r.y, r.w, r.h, PAL_CLR(DBLUE));
     const Resources *res = (g && g->res) ? g->res : NULL;
 
-    // Title strip: "Town of <name>" (and "> Contracts" in that list), the
+    // Title strip: "Town of <name>" (and "> <screen>" in a detail), the
     // town's zone on the right.
-    int title_h = GH + 6;
+    int title_h = GH + 14;   // 30: the section rows below fill their column exactly
     char header[128] = "";
     if (res) {
         ResTemplateVar hv[] = { { "NAME", (name && name[0]) ? name : "" } };
         resources_format_template(header, sizeof header, res->banners.town_header, hv, 1);
-        if (contracts) {
+        if (!menu) {
+            char label[64];
+            views_town_menu_label(g, views_town_cursor(), label, sizeof label);
             size_t n = strlen(header);
-            snprintf(header + n, sizeof header - n, " > %.60s", res->banners.town_menu_contract);
+            snprintf(header + n, sizeof header - n, " > %s", label);
         }
         const char *key = views_town_record_key();
         const ResTown *tw = key ? resources_town_by_id(res, key) : NULL;
@@ -587,7 +628,17 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
     } else {
         DrawRectangle(r.x, top, bw, bh, PAL_CLR(BLACK));
     }
-    if (s && troop_idx >= 0 && troop_idx < 25) {
+    // The town's head townsperson stands where a troop used to, at 1x on the
+    // bottom edge, playing their loop; a pack that names none keeps the troop.
+    const char *tkey = views_town_record_key();
+    const ResTown *town_res = (res && tkey) ? resources_town_by_id(res, tkey) : NULL;
+    const ResZone *zone_res = town_res ? resources_zone_by_id(res, town_res->zone) : NULL;
+    int headman = town_res ? resources_portrait_index(res, town_res->headman) : -1;
+    if (s && headman >= 0 && s->portrait_frames[headman] > 0) {
+        ui_blit(s->portrait_anim[headman][sprites_frame((int)(GetTime() * 1000.0 / 180.0),
+                                                        s->portrait_frames[headman])],
+                r.x + CL_TILE_W / 2, top + bh - CL_TILE_H, CL_TILE_W, CL_TILE_H);
+    } else if (s && troop_idx >= 0 && troop_idx < 25) {
         Texture2D ts = s->troop_anim[troop_idx][sprites_frame(sprites_stand(town_frame),
                                                 s->troop_anim_frames[troop_idx])];
         if (!ts.id) ts = s->troop_sprite[troop_idx];
@@ -596,25 +647,32 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
     }
     lattice_band_v(r.x + bw, top, BAND, bh);
 
-    // The portrait slot at 2x follows the row: the town's informant on
-    // Information, the zone's priest on Buy spell, otherwise the wanted face
-    // (or the empty silhouette).
+    // The portrait slot at 2x shows the person of the screen on show: the
+    // wanted face (or the empty silhouette) for Contracts, the informant, the
+    // continent's boat master (none where the town has no dock), priest and
+    // siege engineer.
     int fx = r.x + bw + BAND;
     const VillainDef *v = g ? town_shown_villain(g) : NULL;
-    int who = -1;
-    if (res && !contracts) {
-        const char *key = views_town_record_key();
-        const ResTown *tw = key ? resources_town_by_id(res, key) : NULL;
-        const ResZone *z = tw ? resources_zone_by_id(res, tw->zone) : NULL;
-        if (views_town_cursor() == TOWN_ROW_INFO && tw)
-            who = resources_portrait_index(res, tw->informant);
-        else if (views_town_cursor() == TOWN_ROW_SPELL && z)
-            who = resources_portrait_index(res, z->pontifex);
+    const char *who_id = NULL;
+    switch (screen) {
+        case TOWN_LIST_CONTRACTS: who_id = (menu && town_res) ? town_res->townhead : NULL; break;
+        case TOWN_LIST_INFO:   who_id = town_res ? town_res->informant : NULL; break;
+        case TOWN_LIST_BOAT:   who_id = (zone_res && views_town_boat_available(g))
+                                      ? zone_res->boatmaster : NULL; break;
+        case TOWN_LIST_TEMPLE: who_id = zone_res ? zone_res->pontifex : NULL; break;
+        case TOWN_LIST_SIEGE:  who_id = zone_res ? zone_res->siegemaster : NULL; break;
+        default: break;
     }
-    if (who >= 0 && s && s->portrait_frames[who] > 0) {
-        ui_blit(s->portrait_anim[who][sprites_frame((int)(GetTime() * 2.0),
-                                                    s->portrait_frames[who])],
-                fx, top, fs, fs);
+    int who = (res && who_id) ? resources_portrait_index(res, who_id) : -1;
+    if (screen != TOWN_LIST_CONTRACTS || menu) {
+        if (who >= 0 && s && s->portrait_frames[who] > 0)
+            ui_blit(s->portrait_anim[who][sprites_frame((int)(GetTime() * 2.0),
+                                                        s->portrait_frames[who])],
+                    fx, top, fs, fs);
+        else if (screen == TOWN_LIST_BOAT && s && s->hud_boat_silhouette.id)
+            ui_blit(s->hud_boat_silhouette, fx, top, fs, fs);   // no boat here
+        else
+            DrawRectangle(fx, top, fs, fs, PAL_CLR(BLACK));
     } else if (v && s && v->index >= 0 && v->index < 17) {
         Texture2D face = s->villain_anim[v->index][sprites_frame(
             (int)(GetTime() * 2.0), s->villain_anim_frames[v->index])];
@@ -634,66 +692,111 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
     lattice_band_h(r.x, low, r.w, BAND);
     low += BAND;
 
-    // Left column: the menu, or the contracts on offer then Back. Rows fill
-    // the height, split by a thin rail; the cursor row is inverted.
-    const int RULE = 2;
+    // Left column: the menu (every row opens a detail, marked ">"), or the
+    // detail's rows then Back. Standard select rows (ml_row_h, a rail under
+    // each), stacked from the top; the height left below stays empty. The
+    // cursor row is inverted.
+    const int RULE = ML_ROW_RULE;
     int mw = 16 * GW;
     int lh = bottom - low;
-    int rows = contracts ? (g ? views_town_contract_rows(g) : 1) : views_town_row_count();
-    int cursor = contracts ? views_town_contract_cursor() : views_town_cursor();
-    int rh = rows > 0 ? (lh - (rows - 1) * RULE) / rows : lh;
-    for (int i = 0; i < rows; i++) {
+    int rows = views_town_list_rows(g);
+    int cursor = views_town_list_cursor();
+    int rh = ml_row_h();
+    // A list longer than the column scrolls to keep the cursor in view.
+    int vis = (lh + RULE) / (rh + RULE);
+    int first = 0;
+    if (rows > vis && vis > 0) {
+        first = cursor - vis + 1;
+        if (first < 0) first = 0;
+        if (first > rows - vis) first = rows - vis;
+    }
+    for (int i = first; i < rows; i++) {
         char label[64] = "";
         bool enabled = true, held = false;
-        if (contracts) {
-            int slot = views_town_contract_slot(g, i);
-            if (slot < 0) {
-                snprintf(label, sizeof label, "%s", res ? res->ui.menu_back : "Back");
-            } else {
-                const VillainDef *cv = villain_by_id(g->contract.cycle[slot]);
-                snprintf(label, sizeof label, "%s", cv ? cv->name : g->contract.cycle[slot]);
-                held = strcmp(g->contract.cycle[slot], g->contract.active_id) == 0;
-            }
-        } else {
-            views_town_menu_label(g, i, label, sizeof label);
-            if (i == TOWN_ROW_CONTRACT) {
-                size_t n = strlen(label);
-                snprintf(label + n, sizeof label - n, " >");
-            }
-            enabled = views_town_row_enabled(g, i);
+        views_town_list_row(g, i, label, sizeof label, &enabled, &held);
+        if (menu) {
+            size_t n = strlen(label);
+            snprintf(label + n, sizeof label - n, " >");
         }
-        bool sel = enabled && i == cursor;
-        Color fg = !enabled ? PAL_CLR(DGREY) : sel ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
-        int ry = low + i * (rh + RULE);
-        int h = (i == rows - 1) ? bottom - ry : rh;
-        int tx = r.x + pad + (contracts ? GW : 0);
-        // A tap on an enabled row selects and confirms it.
+        bool back = !menu && i == rows - 1;
+        bool sel = i == cursor;
+        Color fg = !(enabled || back) ? PAL_CLR(DGREY) : sel ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
+        int ry = low + (i - first) * (rh + RULE);
+        int h = rh;
+        if (ry + h > bottom) break;
+        int tx = r.x + pad + (list == TOWN_LIST_CONTRACTS ? GW : 0);
+        // A tap on a row that can be chosen selects and carries it out.
         sel_row(r.x, ry, mw, h, tx, label, sel, fg, PAL_CLR(DBLUE),
-                enabled ? TOUCH_LIST_TOWN : 0, i);
+                (enabled || back) ? TOUCH_LIST_TOWN : 0, i);
         if (held)   // the contract held: a dot before its name
             DrawCircle(r.x + pad + GW / 2 - 2, ry + h / 2, 4,
                        sel ? PAL_CLR(DBLUE) : PAL_CLR(YELLOW));
-        if (i > 0) lattice_band_h(r.x, ry - RULE, mw, RULE);
+        lattice_band_h(r.x, ry + h, mw, RULE);
     }
     lattice_band_v(r.x + mw, low, BAND, lh);
 
     // Detail (right): a result message until the next key, else the facts
-    // for the row under the cursor; paged when it runs long.
+    // for the screen on show. A detail screen pages its text (Up/Down); the
+    // menu shows the first page as a summary.
     const int INSET = pad + 4;
     int dx = r.x + mw + BAND + INSET;
     int dw = right - dx - INSET;
     int line_h = GH + 2;
     int per = (lh - 2 * INSET) / line_h;
     TownText t = { .n = 0, .max_w = dw };
-    if (info && info[0]) town_text_add(&t, info, PAL_CLR(WHITE));
-    else                 town_compose_detail(g, &t);
+    if (info && info[0]) {
+        town_text_add(&t, info, PAL_CLR(WHITE));
+    } else if (menu) {
+        // The main page: the section's person invites you in. Boat at a town
+        // with no boat master says there is none.
+        const ResTownInvite *inv = (res && town_res)
+                                 ? resources_town_invite(res, town_res->invitations) : NULL;
+        const char *line = NULL;
+        char rites[RES_BANNER_LEN];
+        if (inv) switch (screen) {
+            case TOWN_LIST_CONTRACTS: line = inv->contracts; break;
+            case TOWN_LIST_BOAT:      line = views_town_boat_available(g) ? inv->boat
+                                                          : res->banners.town_boat_no_master; break;
+            case TOWN_LIST_INFO:      line = inv->information; break;
+            case TOWN_LIST_TEMPLE:
+                if (!views_town_row_enabled(g, TOWN_ROW_SPELL)) {
+                    views_town_rites_text(g, rites, sizeof rites);
+                    line = rites;
+                } else {
+                    line = inv->temple;
+                }
+                break;
+            case TOWN_LIST_SIEGE:     line = inv->siege; break;
+            default: break;
+        }
+        if (line && line[0]) {
+            char text[RES_BANNER_LEN];
+            ResTemplateVar vars[] = {
+                { "HERO", g ? g->character.name : "" },
+                { "TOWN", (name && name[0]) ? name : "" },
+            };
+            resources_format_template(text, sizeof text, line, vars, 2);
+            town_text_add(&t, text, PAL_CLR(WHITE));
+        }
+    } else {
+        town_compose_detail(g, &t);
+    }
     int starts[16];
     int pages = 1;
     starts[0] = 0;
     if (t.n > per && per > 1) pages = town_paginate(&t, per - 1, starts, 16);  // last line: pager
-    views_town_set_detail_pages(pages);
-    int page = views_town_detail_page();
-    int end = (page + 1 < pages) ? starts[page + 1] : t.n;
+    int page = 0, end = t.n;
+    if (menu) {
+        // The summary: the first page only, and no pager.
+        if (pages > 1) end = starts[1];
+        if (end > per) end = per;
+        pages = 1;
+        views_town_set_detail_pages(1);
+    } else {
+        views_town_set_detail_pages(pages);
+        page = views_town_detail_page();
+        end = (page + 1 < pages) ? starts[page + 1] : t.n;
+    }
     int ty = low + INSET;
     for (int i = starts[page]; i < end; i++) {
         const TownLine *l = &t.line[i];
@@ -709,8 +812,7 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
     }
     if (pages > 1) {
         // "1/2" between the arrows, bottom right; an arrow shows only where
-        // there is a page to go to, and a tap on it pages (Up/Down in the
-        // Contracts list, PgUp/PgDn elsewhere).
+        // there is a page to go to, and a tap on it pages (Up/Down).
         char pg[32];
         snprintf(pg, sizeof pg, "%d/%d", page + 1, pages);
         int py = bottom - INSET - GH;
@@ -722,12 +824,12 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
         if (page > 0) {
             DrawTriangle((Vector2){ px + aw / 2, py }, (Vector2){ px, py + GH },
                          (Vector2){ px + aw, py + GH }, PAL_CLR(YELLOW));
-            touch_region(px, py, aw, GH, contracts ? KEY_UP : KEY_PAGE_UP);
+            touch_region(px, py, aw, GH, KEY_UP);
         }
         if (page + 1 < pages) {
             DrawTriangle((Vector2){ nx, py }, (Vector2){ nx + aw / 2, py + GH },
                          (Vector2){ nx + aw, py }, PAL_CLR(YELLOW));
-            touch_region(nx, py, aw, GH, contracts ? KEY_DOWN : KEY_PAGE_DOWN);
+            touch_region(nx, py, aw, GH, KEY_DOWN);
         }
     }
 }

@@ -975,6 +975,7 @@ static const char *town_selling_spell(const Game *g, int spell_idx) {
     if (!sd) return NULL;
     for (int i = 0; i < GAME_TOWNS; i++) {
         if (!g->towns[i].id[0]) continue;
+        if (!GameTownHasRites(g, g->towns[i].id)) continue;   // it will not sell yet
         if (strcmp(g->towns[i].spell_for_sale, sd->id) == 0)
             return g->towns[i].id;
     }

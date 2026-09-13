@@ -34,6 +34,15 @@ typedef struct { int x, y, w, h; } ML_Rect;
 #define ML_BACKDROP_W 240
 #define ML_BACKDROP_H 102
 
+// Select rows (the standard for every modern list of choices). A row is half a
+// tile tall -- 48 on Rome's 96 tile, room for one text line centred or a 48 px
+// icon beside it, and a comfortable touch target -- and never shorter than a
+// text line plus its padding. Rows are stacked from the top of their column
+// with a ML_ROW_RULE rail between them and under the last; they never stretch
+// to fill the column, and whatever height is left below them stays empty.
+#define ML_ROW_RULE 2
+int     ml_row_h(void);
+
 // The margin every map panel keeps from the map pane's edges.
 int     ml_space(void);
 

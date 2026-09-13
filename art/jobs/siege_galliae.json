@@ -1,0 +1,18 @@
+{
+  "id": "siege_galliae",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Gallic carpenter engineer in a leather apron with a heavy wooden mallet on his shoulder, a timber siege tower rising in a forest clearing behind him",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 9606,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "_pack_path": "art/portraits/siege_galliae_00..07.png",
+  "_animation": "wiping his brow, a tired satisfied breath, static background, smooth loop",
+  "_note": "Town detail portrait (2026-09-13): boat master (Boat detail) or siege engineer (Siege works detail), one per continent. Same route as the informants and priests: still at 128, eight-frame loop at 128, each frame centre-cropped to 96 (Dan-approved for town portraits)."
+}

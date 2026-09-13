@@ -1,0 +1,18 @@
+{
+  "id": "siege_africa",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Numidian siege engineer in a white robe over mail holding a coil of sinew rope, stone-throwing catapults in a sun-baked workshop yard behind him",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 9607,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "_pack_path": "art/portraits/siege_africa_00..07.png",
+  "_animation": "eyes lifting to the catapults, a proud smile, static background, smooth loop",
+  "_note": "Town detail portrait (2026-09-13): boat master (Boat detail) or siege engineer (Siege works detail), one per continent. Same route as the informants and priests: still at 128, eight-frame loop at 128, each frame centre-cropped to 96 (Dan-approved for town portraits)."
+}

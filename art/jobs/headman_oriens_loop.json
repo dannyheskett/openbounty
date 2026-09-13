@@ -1,0 +1,21 @@
+{
+  "id": "headman_oriens_loop",
+  "prompt": "breathes slowly and lifts his chin a little and lowers it, his body, staff, robe and feet all completely still, smooth loop",
+  "style": "rd_advanced_animation__custom_action",
+  "width": 96,
+  "height": 96,
+  "seed": 9704,
+  "frames_duration": 8,
+  "return_spritesheet": true,
+  "input_image_path": "build/art/headman_oriens/run01/01_raw.png",
+  "input_image_keep_alpha": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/ui/headman_oriens_00..07.png",
+  "_note": "Head townsperson idle loop (2026-09-13): the alcove figure's loop route, eight frames at 96 on run01, alpha kept."
+}
