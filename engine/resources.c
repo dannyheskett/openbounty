@@ -585,6 +585,7 @@ static void parse_troops(Resources *res, cJSON *arr) {
         copy_str(t->id,       sizeof(t->id),       json_str(it, "id", ""));
         copy_str(t->name,     sizeof(t->name),     json_str(it, "name", ""));
         copy_str(t->sprite,   sizeof(t->sprite),   json_str(it, "sprite", ""));
+        copy_str(t->portrait, sizeof(t->portrait), json_str(it, "portrait", ""));
         // Via parse_string_array so a non-string entry is skipped rather than
         // burning a slot: the hand-rolled loop this replaces advanced its
         // index outside the type check, leaving an empty frame mid-cycle.
@@ -2746,6 +2747,7 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
 
     for (int i = 0; i < res->troops_count; i++) {
         art_add(out, cap, &n, res->troops[i].sprite);
+        art_add(out, cap, &n, res->troops[i].portrait);
         for (int f = 0; f < res->troops[i].anim_count; f++)
             art_add(out, cap, &n, res->troops[i].anim[f]);
     }

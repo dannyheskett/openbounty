@@ -46,6 +46,7 @@ typedef struct {
     Texture2D portrait_anim[RES_MAX_PORTRAITS][OB_ANIM_FRAMES_MAX];
     Texture2D view_icon[14];
     Texture2D troop_sprite[25];
+    Texture2D troop_portrait[25];         // modern: still portrait, id 0 = none
     int       troop_anim_frames[25];    // 0 = no animation, use troop_sprite
     Texture2D troop_anim[25][OB_ANIM_FRAMES_MAX];   // idle animation (troop.anim[])
     Texture2D puzzle_cover;

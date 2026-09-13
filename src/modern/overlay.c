@@ -1034,6 +1034,7 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
                                                               s->troop_anim_frames[pt->index])];
         if (!ts.id) ts = s->troop_sprite[pt->index];
         DrawRectangle(fx, top, fs, fs, PAL_CLR(BLACK));
+        if (s->troop_portrait[pt->index].id) ts = s->troop_portrait[pt->index];   // the troop's portrait, when it has one
         if (ts.id) ui_blit(ts, fx, top, fs, fs);
     } else if (home && rc) {
         int idx = resources_portrait_index(res, (barracks && rc->special.barracks_portrait[0])

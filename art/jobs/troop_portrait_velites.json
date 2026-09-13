@@ -1,0 +1,20 @@
+{
+  "id": "troop_portrait_velites",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Roman skirmisher, a lean young man wearing a grey wolf pelt over his head and shoulders, a brown tunic, a small round shield and a light throwing javelin, a rocky hillside behind him",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 9972,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "reference_image_paths": [
+    "assets/glory-of-rome/art/troops/velites_00.png"
+  ],
+  "_pack_path": "art/portraits/troop_velites.png",
+  "_note": "Static troop portrait (2026-09-13): shown in the home castle's Recruit portrait slot. 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos) at Dan's request, keeping the background rather than cropping. No animation."
+}

@@ -132,6 +132,7 @@ void sprites_load(Sprites *s, const Resources *res) {
     for (int i = 0; i < nt; i++) {
         const TroopDef *t = troop_by_index(i);
         s->troop_sprite[i] = t ? load_rel(t->sprite) : (Texture2D){ 0 };
+        s->troop_portrait[i] = t ? load_rel(t->portrait) : (Texture2D){ 0 };
         s->troop_anim_frames[i] = t ? t->anim_count : 0;
         for (int f = 0; f < s->troop_anim_frames[i]; f++) {
             s->troop_anim[i][f] =
@@ -234,6 +235,7 @@ void sprites_unload(Sprites *s) {
     for (int i = 0; i < 14; i++) UnloadTexture(s->view_icon[i]);
     for (int i = 0; i < 25; i++) {
         UnloadTexture(s->troop_sprite[i]);
+        UnloadTexture(s->troop_portrait[i]);
         for (int f = 0; f < OB_ANIM_FRAMES_MAX; f++) UnloadTexture(s->troop_anim[i][f]);
     }
     for (int i = 0; i < 15; i++) UnloadTexture(s->combat_tile[i]);

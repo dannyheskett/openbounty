@@ -64,6 +64,7 @@ typedef struct {
     char id[CAT_ID_LEN];
     char name[CAT_NAME_LEN];
     char sprite[CAT_PATH_LEN];
+    char portrait[CAT_PATH_LEN];   // modern: a still portrait (96x96); "" = none
     // Idle animation (army view + combat + map foes). anim_count is the
     // declared cycle length; 0 means the troop ships no animation and
     // consumers fall back to the still `sprite`.
