@@ -184,6 +184,7 @@
 		"worldmap_row_your_map":	"Show your map",
 		"worldmap_row_whole_map":	"Show whole map",
 		"class_select_load":	"Load saved game",
+		"class_select_arrows":	"Use the arrow keys to choose a character",
 		"combat_act_wait":	"Wait",
 		"combat_act_shoot":	"Shoot",
 		"combat_act_fly":	"Fly",

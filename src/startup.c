@@ -322,7 +322,9 @@ static bool run_class_select(const Resources *res,
     int n = res->classes_count;
     if (n < 1) n = 1;
     if (n > 4) n = 4;
-    int class_cursor = 0;   // modern: Left/Right move it, Enter picks
+    // Modern: the carousel starts on the whole painting with no one picked;
+    // Left/Right step through the figures, Enter picks.
+    int class_cursor = CL_IS_MODERN ? -1 : 0;
     bool load_focus = false; // modern: Down moves to the Load row, Up back
 
     while (!frame_host_should_close()) {
@@ -332,8 +334,14 @@ static bool run_class_select(const Resources *res,
             return false;
         }
         if (CL_IS_MODERN) {
-            if (input_key_pressed(KEY_LEFT))  { class_cursor = sel_wrap(class_cursor, -1, n); load_focus = false; }
-            if (input_key_pressed(KEY_RIGHT)) { class_cursor = sel_wrap(class_cursor, 1, n);  load_focus = false; }
+            if (input_key_pressed(KEY_LEFT)) {
+                class_cursor = class_cursor < 0 ? n - 1 : sel_wrap(class_cursor, -1, n);
+                load_focus = false;
+            }
+            if (input_key_pressed(KEY_RIGHT)) {
+                class_cursor = class_cursor < 0 ? 0 : sel_wrap(class_cursor, 1, n);
+                load_focus = false;
+            }
             if (input_key_pressed(KEY_DOWN)) load_focus = true;
             if (input_key_pressed(KEY_UP))   load_focus = false;
             bool enter = input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER);
@@ -344,7 +352,7 @@ static bool run_class_select(const Resources *res,
             }
             int tapped = touch_tapped_row(TOUCH_LIST_CLASS);
             if (tapped >= 0 && tapped < n) class_cursor = tapped;
-            if (tapped >= 0 || enter) {
+            if (tapped >= 0 || (enter && class_cursor >= 0)) {
                 const ClassDef *c = class_by_index(class_cursor);
                 safe_copy(out->class_id, sizeof(out->class_id), c ? c->id : "knight");
                 out->action = STARTUP_NEW;
@@ -386,20 +394,28 @@ static bool run_class_select(const Resources *res,
             ph = sprites->class_picker.height * fs;
             int px = (CL_SCREEN_W - pw) / 2;
             int py = (CL_SCREEN_H - ph) / 2;
-            ui_blit(sprites->class_picker, px, py, pw, ph);
+            // Modern: the carousel frame for the picked figure, pre-rendered
+            // with the others dimmed and the figure ringed in gold
+            // (tools/classpicker.py); the whole painting before anyone is
+            // picked or while the Load row has the cursor.
+            bool picked = CL_IS_MODERN && class_cursor >= 0 && !load_focus;
+            bool carousel = picked && class_cursor < 4 &&
+                            sprites->class_picker_selected[class_cursor].id;
+            ui_blit(carousel ? sprites->class_picker_selected[class_cursor]
+                             : sprites->class_picker, px, py, pw, ph);
             // Touch: the picker art shows the classes side by side, one
             // column each; tapping a column picks that class (A-D).
             for (int k = 0; k < n; k++) {
                 if (CL_IS_MODERN) touch_region_row(px + k * (pw / n), py, pw / n, ph, TOUCH_LIST_CLASS, k);
                 else              touch_region(px + k * (pw / n), py, pw / n, ph, KEY_A + k);
             }
-            // Modern: the other figures are dimmed and the selected one keeps
-            // full colour, a gold frame and its name in a bar at its feet.
-            // Under the portraits, the Load row; while it has the cursor no
-            // figure is selected.
+            // Modern: a bar across the bottom of the painting names the picked
+            // figure, or says how to pick one. A pack without carousel frames
+            // dims by column instead. Under the painting, the Load row; while
+            // it has the cursor no figure is picked.
             if (CL_IS_MODERN) {
                 int rh = GH + 2;
-                if (!load_focus) {
+                if (picked && !carousel) {
                     int cw = pw / n;
                     for (int k = 0; k < n; k++)
                         if (k != class_cursor)
@@ -407,12 +423,15 @@ static bool run_class_select(const Resources *res,
                     int cx = px + class_cursor * cw;
                     for (int t = 0; t < 3; t++)
                         DrawRectangleLines(cx + t, py + t, cw - 2 * t, ph - 2 * t, PAL_CLR(YELLOW));
-                    const ClassDef *c = class_by_index(class_cursor);
-                    if (c && c->name[0]) {
-                        DrawRectangle(cx + 3, py + ph - 3 - rh, cw - 6, rh, PAL_CLR(YELLOW));
-                        bfont_draw_centered(c->name, cx + cw / 2, py + ph - 3 - rh + 1,
-                                            PAL_CLR(DBLUE));
-                    }
+                }
+                const ClassDef *pc = picked ? class_by_index(class_cursor) : NULL;
+                const char *bar = pc ? pc->name
+                                : (!load_focus ? res->ui.class_select_arrows : NULL);
+                if (bar && bar[0]) {
+                    int bw = bfont_text_width(bar) + 16;
+                    int bx = px + (pw - bw) / 2, by = py + ph - 6 - rh;
+                    DrawRectangle(bx, by, bw, rh, PAL_CLR(YELLOW));
+                    bfont_draw_centered(bar, px + pw / 2, by + 1, PAL_CLR(DBLUE));
                 }
                 const char *load = res->ui.class_select_load;
                 int rw = bfont_text_width(load) + 16;

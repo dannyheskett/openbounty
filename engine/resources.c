@@ -938,6 +938,9 @@ static void parse_sprites(Resources *res, cJSON *obj) {
         copy_str(res->sprites.class_highlight,
                  sizeof(res->sprites.class_highlight),
                  json_str(ui, "class_highlight", ""));
+        parse_string_array(cJSON_GetObjectItem(ui, "class_picker_selected"),
+                           res->sprites.class_picker_selected, 4,
+                           &res->sprites.class_picker_selected_count);
     }
 
     cJSON *hud = cJSON_GetObjectItem(obj, "hud");
@@ -1552,6 +1555,7 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(worldmap_row_your_map, "worldmap_row_your_map");
         UI_SET(worldmap_row_whole_map, "worldmap_row_whole_map");
         UI_SET(class_select_load, "class_select_load");
+        UI_SET(class_select_arrows, "class_select_arrows");
         UI_SET(combat_act_wait, "combat_act_wait");
         UI_SET(combat_act_shoot, "combat_act_shoot");
         UI_SET(combat_act_fly, "combat_act_fly");
@@ -2516,6 +2520,8 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
     art_add(out, cap, &n, res->sprites.splash_title);
     art_add(out, cap, &n, res->sprites.class_picker);
     art_add(out, cap, &n, res->sprites.class_highlight);
+    for (int i = 0; i < res->sprites.class_picker_selected_count; i++)
+        art_add(out, cap, &n, res->sprites.class_picker_selected[i]);
     art_add(out, cap, &n, res->sprites.orb);
 
     art_add(out, cap, &n, res->ending.grass_tile);

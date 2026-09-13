@@ -3693,7 +3693,8 @@
 			"splash_logo":	"art/ui/splash_logo.png",
 			"splash_title":	"art/ui/splash_title.png",
 			"class_picker":	"art/ui/class_select_picker.png",
-			"class_highlight":	"art/ui/class_select_highlight.png"
+			"class_highlight":	"art/ui/class_select_highlight.png",
+			"class_picker_selected":	["art/ui/class_select_picker_0.png", "art/ui/class_select_picker_1.png", "art/ui/class_select_picker_2.png", "art/ui/class_select_picker_3.png"]
 		},
 		"hud":	{
 			"contract_silhouette":	"art/ui/hud_contract_silhouette.png",

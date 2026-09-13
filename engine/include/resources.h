@@ -730,6 +730,7 @@ typedef struct {
     char worldmap_row_your_map[RES_UI_LABEL_LEN];
     char worldmap_row_whole_map[RES_UI_LABEL_LEN];
     char class_select_load[RES_UI_LABEL_LEN];
+    char class_select_arrows[RES_UI_LABEL_LEN * 2];
     char combat_act_wait[RES_UI_LABEL_LEN];
     char combat_act_shoot[RES_UI_LABEL_LEN];
     char combat_act_fly[RES_UI_LABEL_LEN];
@@ -1056,6 +1057,10 @@ typedef struct {
         char splash_title[RES_PATH_LEN];     // game title (second splash)
         char class_picker[RES_PATH_LEN];     // 288x184 A-D class portrait image
         char class_highlight[RES_PATH_LEN];  // 42x44 cursor glow for class picker
+        // Modern class select: the picker with one figure picked out, per class
+        // in catalog order (tools/classpicker.py).
+        int  class_picker_selected_count;
+        char class_picker_selected[4][RES_PATH_LEN];
         // Palette colour name (e.g. "YELLOW") for the frame the shell draws
         // round every panel slot: HUD panels, inventory cells, contract face.
         // Empty: the shell draws no frame and the art carries its own.

@@ -169,6 +169,8 @@ void sprites_load(Sprites *s, const Resources *res) {
     s->splash_title     = load_rel(res->sprites.splash_title);
     s->class_picker     = load_rel(res->sprites.class_picker);
     s->class_highlight  = load_rel(res->sprites.class_highlight);
+    for (int i = 0; i < res->sprites.class_picker_selected_count; i++)
+        s->class_picker_selected[i] = load_rel(res->sprites.class_picker_selected[i]);
     s->orb              = load_rel(res->sprites.orb);
 
     // Victory cartoon tiles.
@@ -248,6 +250,7 @@ void sprites_unload(Sprites *s) {
     UnloadTexture(s->splash_title);
     UnloadTexture(s->class_picker);
     UnloadTexture(s->class_highlight);
+    for (int i = 0; i < 4; i++) UnloadTexture(s->class_picker_selected[i]);
     UnloadTexture(s->orb);
     UnloadTexture(s->end_grass);
     UnloadTexture(s->end_carpet);

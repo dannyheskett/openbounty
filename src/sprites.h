@@ -81,6 +81,7 @@ typedef struct {
     Texture2D splash_title;               // 320x200 game title
     Texture2D class_picker;               // 288x184 class portraits (A-D)
     Texture2D class_highlight;            // 42x44 cursor glow over current pick
+    Texture2D class_picker_selected[4];   // modern: the picker with one figure picked out
     Texture2D orb;                        // orb of power tile overlay
 
     // Victory cartoon .
