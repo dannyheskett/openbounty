@@ -731,6 +731,12 @@ typedef struct {
     char worldmap_row_whole_map[RES_UI_LABEL_LEN];
     char class_select_load[RES_UI_LABEL_LEN];
     char class_select_arrows[RES_UI_LABEL_LEN * 2];
+    // Modern title menu (before class select) and the in-game New Game.
+    char title_new_adventure[RES_UI_LABEL_LEN];
+    char title_load_adventure[RES_UI_LABEL_LEN];
+    char title_credits[RES_UI_LABEL_LEN];
+    char new_game_confirm[RES_UI_LABEL_LEN * 2];
+    char hero_name_label[RES_UI_LABEL_LEN];
     char combat_act_wait[RES_UI_LABEL_LEN];
     char combat_act_shoot[RES_UI_LABEL_LEN];
     char combat_act_fly[RES_UI_LABEL_LEN];

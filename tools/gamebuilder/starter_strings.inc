@@ -179,6 +179,11 @@ static cJSON *gb_placeholder_strings(void) {
     cJSON_AddStringToObject(o, "worldmap_row_whole_map", "worldmap_row_whole_map");
     cJSON_AddStringToObject(o, "class_select_load", "class_select_load");
     cJSON_AddStringToObject(o, "class_select_arrows", "class_select_arrows");
+    cJSON_AddStringToObject(o, "title_new_adventure", "title_new_adventure");
+    cJSON_AddStringToObject(o, "title_load_adventure", "title_load_adventure");
+    cJSON_AddStringToObject(o, "title_credits", "title_credits");
+    cJSON_AddStringToObject(o, "new_game_confirm", "new_game_confirm");
+    cJSON_AddStringToObject(o, "hero_name_label", "hero_name_label");
     cJSON_AddStringToObject(o, "combat_act_wait", "combat_act_wait");
     cJSON_AddStringToObject(o, "combat_act_shoot", "combat_act_shoot");
     cJSON_AddStringToObject(o, "combat_act_fly", "combat_act_fly");

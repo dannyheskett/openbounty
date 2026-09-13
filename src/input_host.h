@@ -24,6 +24,12 @@ void input_host_inject_key(int key);   // seen by input_key_pressed/_down
                                        // and input_get_key_pressed
 void input_host_inject_char(int ch);   // seen by input_get_char_pressed
 void input_host_clear_injected(void);
+
+// A new screen or the end of a load: throw away every key and character
+// pressed before now (raylib's queues and the injected ones) and ignore
+// presses for `guard_seconds`, so keys hit while the game was busy do not
+// answer the screen that follows.
+void input_host_flush(double guard_seconds);
 // Inject `key` as a press on the NEXT frame. A key injected during a frame's
 // update is cleared at that frame's end (touch_frame), before the next frame's
 // input reads it; this holds one key across the clear, the way a tap arrives.

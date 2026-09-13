@@ -743,6 +743,11 @@ int shell_run_game(int argc, char **argv) {
     // Pre-game flow: pick slot + new-game wizard. --demo / --autoplay bypass
     // the wizard and synthesize a deterministic new game: the agent plays it,
     // so there's no human to run the menus. Seed defaults to the mode default.
+    // Modern's in-game New Game comes back here, past the splashes, to the
+    // title menu (back_to_title).
+    bool back_to_title = false;
+    bool audio_started = false;
+title:;
     StartupChoice choice = { 0 };
     if (demo_mode || autoplay_mode) {
         if (seed_index < 0)
@@ -768,8 +773,10 @@ int shell_run_game(int argc, char **argv) {
         choice.difficulty = autoplay_mode ? autoplay_level
                                           : DEMO_HERO_DIFFICULTY;
     } else if (!startup_flow(&res, &sprites,
-                             &render_target_startup, &choice)) {
+                             &render_target_startup, &choice, back_to_title)) {
         // User quit before choosing.
+        audio_shutdown();
+        recorder_shutdown();
         UnloadRenderTexture(render_target_startup);
         sprites_unload(&sprites);
         bfont_shutdown();
@@ -779,6 +786,8 @@ int shell_run_game(int argc, char **argv) {
         pack_stack_clear();
         return 0;
     }
+
+    back_to_title = false;
 
     Map map;
     Fog fog;
@@ -812,7 +821,8 @@ int shell_run_game(int argc, char **argv) {
                  "game playable.",
                  game.character.name,
                  game.character.cls.rank_title);
-        player_io_message(&game, NULL, body);
+        // Modern goes straight into the game.
+        if (!CL_IS_MODERN) player_io_message(&game, NULL, body);
     } else {
         // LOAD: hydrate Game from the chosen slot. GameInit first with
         // defaults so all fields have sane values the loader can overwrite.
@@ -871,6 +881,8 @@ int shell_run_game(int argc, char **argv) {
     }
 
     bool quit_requested = false;
+    bool new_game_requested = false;   // modern New Game row chosen: ask
+    bool new_game_asking = false;      // its yes/no prompt is up
     // Set when a demo run WON (scepter recovered): the win cartoon + win
     // screen play as the ending, then control is handed to the human on the
     // cleared world. The engine's show_win_game sets game_over (the real
@@ -884,6 +896,7 @@ int shell_run_game(int argc, char **argv) {
         .spawn_x = spawn_x, .spawn_y = spawn_y,
         .quit_flag = &quit_requested,
         .hud_pref = game.hud_visible,
+        .new_game_flag = &new_game_requested,
     };
     MenuCallbacks menu_cbs = {
         .on_save = menu_save, .on_load = menu_load,
@@ -901,7 +914,7 @@ int shell_run_game(int argc, char **argv) {
     // PNGs on logical-tick mutations into a hidden temp dir, then mux
     // to one .mp4 at shutdown. Off when --movie wasn't passed, in
     // which case every recorder_capture() call is a free no-op.
-    if (movie_requested) {
+    if (movie_requested && !recorder_active()) {
         char movie_path[1024];
         if (movie_path_arg) {
             snprintf(movie_path, sizeof movie_path, "%s", movie_path_arg);
@@ -939,8 +952,10 @@ int shell_run_game(int argc, char **argv) {
     // keep the synchronous open, because game options are part of their
     // byte-exact state and a no-device fallback landing mid-run would change
     // it.
-    if (demo_mode || autoplay_mode) audio_init_blocking(&res);
+    if (audio_started)              { /* back from the title menu: already open */ }
+    else if (demo_mode || autoplay_mode) audio_init_blocking(&res);
     else                            audio_init(&res);
+    audio_started = true;
     // No playback device: pin Sounds/Music/Volume to 0 so the controls panel
     // and the live audio push agree (the rows are also greyed out and ignore
     // input). Checked again each frame below until the open resolves.
@@ -1000,6 +1015,10 @@ int shell_run_game(int argc, char **argv) {
         }
     }
 
+    // The load is over: keys pressed while it ran must not answer the first
+    // dialog or step the hero.
+    input_host_flush(0.3);
+
     while (!frame_host_should_close() && !quit_requested) {
         // Audio: drive music streaming + react to live toggle changes.
         audio_set_sounds_enabled(game.stats.options[1] != 0);
@@ -1046,6 +1065,14 @@ int shell_run_game(int argc, char **argv) {
         shell_pump_player_io_view(&game);
 
         // ==== Input ====
+
+        // Modern New Game: confirm, then leave the loop for the title menu.
+        if (new_game_asking) {
+            PromptResult r = prompt_update();
+            if (r != PROMPT_RESULT_NONE) new_game_asking = false;
+            if (r == PROMPT_RESULT_YES) { back_to_title = true; quit_requested = true; }
+            goto end_input;
+        }
 
         // Fast-quit (Ctrl+Q) status-bar prompt.
         if (fast_quit_is_active()) {
@@ -1147,6 +1174,11 @@ int shell_run_game(int argc, char **argv) {
             // prompt is up (or just resolved); skip the rest of input
         } else if (views_active() == VIEW_MENU) {
             views_menu_update(&menu_cbs, &menu_ctx);
+            if (new_game_requested) {
+                new_game_requested = false;
+                prompt_yes_no_open(NULL, res.ui.new_game_confirm);
+                new_game_asking = true;
+            }
             // A Debug row (--debug only) closes the menu and names a cheat.
             int cheat = views_menu_take_cheat();
             if (cheat >= 0 &&
@@ -1505,6 +1537,16 @@ int shell_run_game(int argc, char **argv) {
         // start-up. Removed 2026-09-07.
         screenshot_tick(render_target, "shot");
 
+    }
+
+    // New Game from the in-game menu: clear what the session left on screen
+    // and go back to the title menu. The window, audio and render target stay.
+    if (back_to_title && !frame_host_should_close()) {
+        views_set(VIEW_NONE);
+        dialog_dismiss();
+        prompt_dismiss();
+        pending_reset();
+        goto title;
     }
 
     // Encode --movie session to its MP4. Runs AFTER the main loop exits,

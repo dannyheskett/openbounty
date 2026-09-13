@@ -1556,6 +1556,11 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(worldmap_row_whole_map, "worldmap_row_whole_map");
         UI_SET(class_select_load, "class_select_load");
         UI_SET(class_select_arrows, "class_select_arrows");
+        UI_SET(title_new_adventure, "title_new_adventure");
+        UI_SET(title_load_adventure, "title_load_adventure");
+        UI_SET(title_credits, "title_credits");
+        UI_SET(new_game_confirm, "new_game_confirm");
+        UI_SET(hero_name_label, "hero_name_label");
         UI_SET(combat_act_wait, "combat_act_wait");
         UI_SET(combat_act_shoot, "combat_act_shoot");
         UI_SET(combat_act_fly, "combat_act_fly");

@@ -1,6 +1,7 @@
 // src/shell_menu.c
 
 #include "shell_menu.h"
+#include "layout.h"
 
 #include "savegame.h"
 #include "savepath.h"
@@ -45,6 +46,11 @@ bool menu_load(void *ud) {
 
 bool menu_new(void *ud) {
     MenuCtx *c = (MenuCtx *)ud;
+    // Modern: a real new game, through the title menu. main.c asks first.
+    if (CL_IS_MODERN && c->new_game_flag) {
+        *c->new_game_flag = true;
+        return true;
+    }
     c->game->position.x = c->spawn_x;
     c->game->position.y = c->spawn_y;
     c->game->travel_mode = TRAVEL_WALK;

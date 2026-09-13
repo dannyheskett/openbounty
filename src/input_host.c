@@ -23,6 +23,20 @@ void input_host_inject_char(int ch) {
 
 static int s_next_key = 0;
 
+// Screen changes and loads: keys pressed while the game was busy sit in
+// raylib's queue and would answer the next screen ("skip you forward").
+static double s_guard_until = 0.0;
+static bool guarded(void) { return GetTime() < s_guard_until; }
+
+void input_host_flush(double guard_seconds) {
+    while (GetKeyPressed() != 0) {}
+    while (GetCharPressed() != 0) {}
+    s_key_count = s_key_drain = 0;
+    s_char_count = s_char_drain = 0;
+    s_next_key = 0;
+    s_guard_until = GetTime() + guard_seconds;
+}
+
 void input_host_inject_key_next_frame(int key) { s_next_key = key; }
 
 void input_host_clear_injected(void) {
@@ -55,6 +69,7 @@ static bool note_key(bool real) {
 void input_host_note_gamepad(void) { s_pad_seen = true; }
 
 bool input_key_pressed(int key) {
+    if (guarded()) return false;
     return note_key(IsKeyPressed(key)) || injected_has(key);
 }
 
@@ -63,6 +78,7 @@ bool input_key_down(int key) {
 }
 
 int input_get_key_pressed(void) {
+    if (guarded()) { while (GetKeyPressed() != 0) {} return 0; }
     if (s_key_drain < s_key_count) return s_keys[s_key_drain++];
     int k = GetKeyPressed();
     if (k) s_key_seen = true;
@@ -70,6 +86,7 @@ int input_get_key_pressed(void) {
 }
 
 int input_get_char_pressed(void) {
+    if (guarded()) { while (GetCharPressed() != 0) {} return 0; }
     if (s_char_drain < s_char_count) return s_chars[s_char_drain++];
     int c = GetCharPressed();
     if (c) s_key_seen = true;

@@ -3,6 +3,7 @@
 #include "startup.h"
 #include "touch.h"
 #include "layout.h"
+#include "modern/mlayout.h"
 #include "present.h"
 #include "palette.h"
 #include "chrome.h"
@@ -100,6 +101,20 @@ static void advance_input_frame(void) {
     input_host_clear_injected();
 }
 
+// Every startup screen opens with this: keys pressed during the screen before,
+// or while loading, must not answer this one.
+#define SCREEN_GUARD 0.25
+static void screen_open(void) { input_host_flush(SCREEN_GUARD); }
+
+// The title art as the backdrop (modern: title menu, credits, save picker).
+static void draw_title_backdrop(const Sprites *sprites) {
+    if (!sprites || !sprites->splash_title.id) return;
+    Texture2D t = sprites->splash_title;
+    int fs = ui_fit_scale(t.width, t.height, CL_SCREEN_W, CL_SCREEN_H);
+    int pw = t.width * fs, ph = t.height * fs;
+    ui_blit(t, (CL_SCREEN_W - pw) / 2, (CL_SCREEN_H - ph) / 2, pw, ph);
+}
+
 // Helper: true if any key was pressed this frame (other than pure
 // modifier keys).  behavior.
 static bool any_key_pressed(void) {
@@ -124,6 +139,7 @@ static bool run_splash(RenderTexture2D *rt,
                        Texture2D tex,
                        Color bg_color) {
     if (!tex.id) return true;   // Missing asset: skip silently.
+    screen_open();
     double start_time = frame_host_time();
     double timeout = 2.5;
     while (!frame_host_should_close()) {
@@ -177,16 +193,18 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
                             StartupChoice *out) {
     SlotSet slots;
     scan_slots(&slots);
+    screen_open();
 
     int cursor = 0;
     // Row index = 0..SAVE_SLOT_COUNT-1 for slots, SAVE_SLOT_COUNT for "New".
-    int row_count = SAVE_SLOT_COUNT + 1;
-    int new_row   = SAVE_SLOT_COUNT;
+    // Modern has no "New game" row: New Game lives on the title menu.
+    int row_count = SAVE_SLOT_COUNT + (CL_IS_MODERN ? 0 : 1);
+    int new_row   = CL_IS_MODERN ? -1 : SAVE_SLOT_COUNT;
 
     // Cursor lands on the first existing slot, else on "New". Saves are
     // physically segregated by pack (<user-data>/openbounty/saves/<pack_id>/),
     // so every slot we see here belongs to the active pack.
-    cursor = new_row;
+    cursor = CL_IS_MODERN ? 0 : new_row;
     for (int i = 0; i < SAVE_SLOT_COUNT; i++) {
         if (slots.hdrs[i].exists) { cursor = i; break; }
     }
@@ -229,7 +247,7 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
                 out->action = STARTUP_LOAD;
                 out->slot   = cursor;
                 return true;
-            } else {
+            } else if (!CL_IS_MODERN) {
                 // Empty slot chosen directly -> new game into that slot.
                 out->action = STARTUP_NEW;
                 out->slot   = cursor;
@@ -239,6 +257,40 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
 
         // ---- Render --------------------------------------------------
         frame_begin(rt);
+        if (CL_IS_MODERN) {
+            // Modern: a panel sized to its text over the title art: the
+            // title, then one row per slot -- name, rank and days left for a
+            // save, "(empty)" in grey for none.
+            draw_title_backdrop(sprites);
+            const Resources *mr = resources_current();
+            const ResUI *mui = mr ? &mr->ui : NULL;
+            // The standard large rect (REQ-430j).
+            ML_Rect lr = ml_large();
+            int mpad = ML_PAD, mrow = GH + 4;
+            int mw = lr.w, mx = lr.x, my = lr.y;
+            panel(lr.x, lr.y, lr.w, lr.h);
+            bfont_draw_centered(mui ? mui->title_load_adventure : "Load Saved Game",
+                                mx + mw / 2, my + mpad, PAL_CLR(YELLOW));
+            int mty = my + mpad + mrow + mrow / 2;
+            for (int i = 0; i < SAVE_SLOT_COUNT; i++) {
+                char line[80];
+                bool has = slots.hdrs[i].exists;
+                if (has) {
+                    snprintf(line, sizeof line, "%2d  %-10.10s %-13.13s %4dd", i + 1,
+                             slots.hdrs[i].name, slots.hdrs[i].rank_title,
+                             slots.hdrs[i].days_left);
+                } else {
+                    snprintf(line, sizeof line, "%2d  %s", i + 1,
+                             mui ? mui->startup_save_picker_empty : "(empty)");
+                }
+                sel_row(mx + mpad / 2, mty, mw - mpad, mrow, mx + mpad, line, i == cursor,
+                        has ? PAL_CLR(YELLOW) : PAL_CLR(GREY), PAL_CLR(DBLUE),
+                        TOUCH_LIST_STARTUP, i);
+                mty += mrow;
+            }
+            frame_end(rt);
+            continue;
+        }
         draw_class_picker_backdrop(sprites);
         draw_class_picker_status_hint(resources_current());
 
@@ -248,7 +300,7 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
         int header_h = GH + 4 * CL_UI;  // title plus a little breathing room
         int gap_h    = 4 * CL_UI;       // last body row to instructions
         int instr_h  = GH;              // "UP/DN select ..." line
-        int body_h   = row_count * row_h;
+        int body_h   = (SAVE_SLOT_COUNT + 1) * row_h;
         int w = 280 * CL_UI;
         int h = pad + header_h + body_h + gap_h + instr_h + pad;
         int x = (CL_SCREEN_W - w) / 2;
@@ -292,10 +344,7 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
         char ng_line[64];
         snprintf(ng_line, sizeof ng_line, "    %s",
                  ui->startup_save_picker_new_game);
-        if (CL_IS_MODERN) {
-            sel_row(x, ty, w, row_h, x + pad, ng_line, cursor == new_row, nfg, PAL_CLR(DBLUE),
-                    TOUCH_LIST_STARTUP, new_row);
-        } else {
+        if (!CL_IS_MODERN) {
             bfont_draw(ng_line, x + pad, ty, nfg);
             touch_region_row(x, ty, w, row_h, TOUCH_LIST_STARTUP, new_row);
         }
@@ -305,6 +354,70 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
         const char *hint = ui->startup_controls_hint;
         bfont_draw(hint, x + pad, y + h - pad - instr_h, PAL_CLR(GREY));
 
+        frame_end(rt);
+    }
+    out->action = STARTUP_QUIT;
+    return false;
+}
+
+// ---------------------------------------------------------------------------
+// Title menu (modern), on the title art: New Game, Load Saved Game,
+// Credits, Exit. Sets out->action to STARTUP_NEW (go to class
+// select) or STARTUP_BACK (go to the save picker); Credits shows the credits
+// and comes back. Returns false on Exit, Escape or a closed window.
+// ---------------------------------------------------------------------------
+
+static bool run_credits(RenderTexture2D *rt, const Resources *res,
+                        const Sprites *sprites);
+
+static bool run_title_menu(const Resources *res, const Sprites *sprites,
+                           RenderTexture2D *rt, StartupChoice *out) {
+    enum { ROW_NEW, ROW_LOAD, ROW_CREDITS, ROW_EXIT, ROW_COUNT };
+    const ResUI *ui = &res->ui;
+    const char *labels[ROW_COUNT] = {
+        ui->title_new_adventure, ui->title_load_adventure, ui->title_credits, ui->menu_exit,
+    };
+
+    screen_open();
+    SelList l = { ROW_COUNT, 0 };
+    while (!frame_host_should_close()) {
+        if (input_key_pressed(KEY_ESCAPE)) break;
+        int row = -1;
+        if (sel_input(&l, TOUCH_LIST_STARTUP, 0, &row) == SEL_CONFIRM && row >= 0) {
+            advance_input_frame();
+            drain_char_queue();
+            switch (row) {
+            case ROW_NEW:  out->action = STARTUP_NEW;  return true;
+            case ROW_LOAD: out->action = STARTUP_BACK; return true;
+            case ROW_CREDITS:
+                if (!run_credits(rt, res, sprites)) { out->action = STARTUP_QUIT; return false; }
+                screen_open();
+                continue;
+            default:       out->action = STARTUP_QUIT; return false;
+            }
+        }
+
+        // The menu sits on the title page, over the lower half of the art.
+        frame_begin(rt);
+        draw_title_backdrop(sprites);
+        int row_h = GH + 4;
+        int pad = 12;
+        int w = 0;
+        for (int i = 0; i < ROW_COUNT; i++) {
+            int tw = bfont_text_width(labels[i]);
+            if (tw > w) w = tw;
+        }
+        w += 2 * pad + 32;
+        int h = ROW_COUNT * row_h + 2 * pad;
+        int x = (CL_SCREEN_W - w) / 2;
+        int y = CL_SCREEN_H / 2 + (CL_SCREEN_H / 2 - h) / 2 - CL_SCREEN_H / 16;
+        panel(x, y, w, h);
+        for (int i = 0; i < ROW_COUNT; i++) {
+            int ty = y + pad + i * row_h;
+            int tx = x + (w - bfont_text_width(labels[i])) / 2;
+            sel_row(x + pad / 2, ty, w - pad, row_h, tx, labels[i], l.cursor == i,
+                    PAL_CLR(YELLOW), PAL_CLR(DBLUE), TOUCH_LIST_STARTUP, i);
+        }
         frame_end(rt);
     }
     out->action = STARTUP_QUIT;
@@ -322,34 +435,33 @@ static bool run_class_select(const Resources *res,
     int n = res->classes_count;
     if (n < 1) n = 1;
     if (n > 4) n = 4;
+    screen_open();
     // Modern: the carousel starts on the whole painting with no one picked;
     // Left/Right step through the figures, Enter picks.
     int class_cursor = CL_IS_MODERN ? -1 : 0;
-    bool load_focus = false; // modern: Down moves to the Load row, Up back
+    double opened = frame_host_time();   // modern: nothing picked after 2 s -> the first class
 
     while (!frame_host_should_close()) {
         touch_request(TOUCH_CHROME_BACK);
         if (input_key_pressed(KEY_ESCAPE)) {
+            // Modern: back to the title menu. Legacy: class select is the root.
+            if (CL_IS_MODERN) {
+                out->action = STARTUP_BACK;
+                advance_input_frame();
+                return true;
+            }
             out->action = STARTUP_QUIT;
             return false;
         }
         if (CL_IS_MODERN) {
+            if (class_cursor < 0 && frame_host_time() - opened >= 2.0) class_cursor = 0;
             if (input_key_pressed(KEY_LEFT)) {
                 class_cursor = class_cursor < 0 ? n - 1 : sel_wrap(class_cursor, -1, n);
-                load_focus = false;
             }
             if (input_key_pressed(KEY_RIGHT)) {
                 class_cursor = class_cursor < 0 ? 0 : sel_wrap(class_cursor, 1, n);
-                load_focus = false;
             }
-            if (input_key_pressed(KEY_DOWN)) load_focus = true;
-            if (input_key_pressed(KEY_UP))   load_focus = false;
             bool enter = input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER);
-            if (touch_tapped_row(TOUCH_LIST_STARTUP) == 0 || (enter && load_focus)) {
-                out->action = STARTUP_LOAD;
-                drain_char_queue();
-                return true;
-            }
             int tapped = touch_tapped_row(TOUCH_LIST_CLASS);
             if (tapped >= 0 && tapped < n) class_cursor = tapped;
             if (tapped >= 0 || (enter && class_cursor >= 0)) {
@@ -360,15 +472,15 @@ static bool run_class_select(const Resources *res,
                 return true;
             }
         }
-        // L for Load
-        if (input_key_pressed(KEY_L)) {
+        // L for Load (legacy; modern loads from the title menu)
+        if (!CL_IS_MODERN && input_key_pressed(KEY_L)) {
             out->action = STARTUP_LOAD;
             drain_char_queue();   // don't leak the 'L' into name entry
             return true;
         }
         // A/B/C/D pick directly .
         static const int keys[4] = { KEY_A, KEY_B, KEY_C, KEY_D };
-        for (int k = 0; k < n; k++) {
+        for (int k = 0; k < n && !CL_IS_MODERN; k++) {
             if (input_key_pressed(keys[k])) {
                 const ClassDef *c = class_by_index(k);
                 safe_copy(out->class_id, sizeof(out->class_id),
@@ -397,8 +509,8 @@ static bool run_class_select(const Resources *res,
             // Modern: the carousel frame for the picked figure, pre-rendered
             // with the others dimmed and the figure ringed in gold
             // (tools/classpicker.py); the whole painting before anyone is
-            // picked or while the Load row has the cursor.
-            bool picked = CL_IS_MODERN && class_cursor >= 0 && !load_focus;
+            // picked.
+            bool picked = CL_IS_MODERN && class_cursor >= 0;
             bool carousel = picked && class_cursor < 4 &&
                             sprites->class_picker_selected[class_cursor].id;
             ui_blit(carousel ? sprites->class_picker_selected[class_cursor]
@@ -409,12 +521,9 @@ static bool run_class_select(const Resources *res,
                 if (CL_IS_MODERN) touch_region_row(px + k * (pw / n), py, pw / n, ph, TOUCH_LIST_CLASS, k);
                 else              touch_region(px + k * (pw / n), py, pw / n, ph, KEY_A + k);
             }
-            // Modern: a bar across the bottom of the painting names the picked
-            // figure, or says how to pick one. A pack without carousel frames
-            // dims by column instead. Under the painting, the Load row; while
-            // it has the cursor no figure is picked.
+            // Modern: the red header names the picked figure. A pack without
+            // carousel frames dims by column instead.
             if (CL_IS_MODERN) {
-                int rh = GH + 2;
                 if (picked && !carousel) {
                     int cw = pw / n;
                     for (int k = 0; k < n; k++)
@@ -424,24 +533,6 @@ static bool run_class_select(const Resources *res,
                     for (int t = 0; t < 3; t++)
                         DrawRectangleLines(cx + t, py + t, cw - 2 * t, ph - 2 * t, PAL_CLR(YELLOW));
                 }
-                const ClassDef *pc = picked ? class_by_index(class_cursor) : NULL;
-                const char *bar = pc ? pc->name
-                                : (!load_focus ? res->ui.class_select_arrows : NULL);
-                if (bar && bar[0]) {
-                    int bw = bfont_text_width(bar) + 16;
-                    int bx = px + (pw - bw) / 2, by = py + ph - 6 - rh;
-                    DrawRectangle(bx, by, bw, rh, PAL_CLR(YELLOW));
-                    bfont_draw_centered(bar, px + pw / 2, by + 1, PAL_CLR(DBLUE));
-                }
-                const char *load = res->ui.class_select_load;
-                int rw = bfont_text_width(load) + 16;
-                int rx = (CL_SCREEN_W - rw) / 2;
-                // In the strip under the picker when it has room, else over
-                // the picker's bottom edge.
-                int below = CL_SCREEN_H - (py + ph);
-                int ry = (below >= rh) ? py + ph + (below - rh) / 2 : py + ph - rh;
-                sel_row(rx, ry, rw, rh, rx + 8, load, load_focus, PAL_CLR(YELLOW),
-                        PAL_CLR(BLACK), TOUCH_LIST_STARTUP, 0);
             }
         } else {
             // Fallback: text list if asset missing.
@@ -449,9 +540,13 @@ static bool run_class_select(const Resources *res,
                        40 * CL_UI, 90 * CL_UI, PAL_CLR(YELLOW));
         }
 
-        // Status-bar hint at top ().
+        // Status-bar hint at top (). Modern: the picked figure's class.
         DrawRectangle(0, 0, CL_SCREEN_W, GH + 2, PAL_CLR(DRED));
         const char *hint = res->ui.startup_class_select_hint;
+        if (CL_IS_MODERN && class_cursor >= 0) {
+            const ClassDef *pc = class_by_index(class_cursor);
+            if (pc && pc->name[0]) hint = pc->name;
+        }
         bfont_draw_centered(hint, CL_SCREEN_W / 2, 1, PAL_CLR(WHITE));
 
         frame_end(rt);
@@ -495,6 +590,7 @@ static bool run_create_game(const Resources *res,
     double cursor_blink = 0;
     TextSel ts = { 0, false };   // modern: the letter selector when there is no keyboard
     bool selector = false;
+    screen_open();
 
     // Look up class title via out->class_id (set by run_class_select).
     const ClassDef *cls = class_by_id(out->class_id);
@@ -598,6 +694,93 @@ static bool run_create_game(const Resources *res,
 
         // ---- Render  ----
         frame_begin(rt);
+        if (CL_IS_MODERN) {
+            // Modern: the chosen figure's carousel frame behind, its class in
+            // the red header, and a panel sized to its text: a Name field
+            // (the default name in grey until something is typed), then the
+            // difficulty rows.
+            Texture2D bg = sprites ? sprites->class_picker : (Texture2D){ 0 };
+            if (sprites && cls && cls->index >= 0 && cls->index < 4 &&
+                sprites->class_picker_selected[cls->index].id)
+                bg = sprites->class_picker_selected[cls->index];
+            if (bg.id) {
+                int fs = ui_fit_scale(bg.width, bg.height, CL_SCREEN_W, CL_SCREEN_H);
+                ui_blit(bg, (CL_SCREEN_W - bg.width * fs) / 2,
+                        (CL_SCREEN_H - bg.height * fs) / 2, bg.width * fs, bg.height * fs);
+            }
+            DrawRectangle(0, 0, CL_SCREEN_W, GH + 2, PAL_CLR(DRED));
+            bfont_draw_centered(class_title, CL_SCREEN_W / 2, 1, PAL_CLR(WHITE));
+
+            // The standard large rect (REQ-430j) with the standard padding:
+            // text ML_PAD in from the frame, selection bars ML_PAD / 2.
+            ML_Rect lr = ml_large();
+            int mrow = GH + 4;
+            int mx = lr.x, my = lr.y, mw = lr.w;
+            panel(lr.x, lr.y, lr.w, lr.h);
+            int cx0 = mx + ML_PAD;
+            int ty = my + ML_PAD;
+
+            // "Hero Name: " then the name as plain text, the default in grey
+            // until something is typed, and a caret while typing.
+            const char *label = res->ui.hero_name_label;
+            bfont_draw(label, cx0, ty, PAL_CLR(YELLOW));
+            int fx = cx0 + bfont_text_width(label) + GW;
+            if (name_len > 0 || has_name) {
+                bfont_draw(name_buf, fx, ty, PAL_CLR(WHITE));
+            } else if (!has_name) {
+                bfont_draw(res->world.default_name, fx, ty, PAL_CLR(GREY));
+            }
+            if (!has_name && show_caret && name_len < 10) {
+                int cx = fx + bfont_text_width(name_buf);
+                DrawRectangle(cx, ty + GH - 2, GW, 2, PAL_CLR(YELLOW));
+            }
+            ty += 2 * mrow;
+
+            // The pack's header is three words; each sits over its column.
+            {
+                static const int col[3] = { 0, 13, 21 };
+                char hdr[64];
+                snprintf(hdr, sizeof hdr, "%s", res->ui.startup_new_game_table_header);
+                char *p = hdr;
+                for (int k = 0; k < 3 && *p; k++) {
+                    while (*p == ' ') p++;
+                    char *tok = p;
+                    while (*p && *p != ' ') p++;
+                    if (*p) *p++ = '\0';
+                    if (*tok) bfont_draw(tok, cx0 + col[k] * GW, ty,
+                                         has_name ? PAL_CLR(YELLOW) : PAL_CLR(GREY));
+                }
+            }
+            ty += mrow;
+            for (int i = 0; i < n; i++) {
+                int days = res->time.days_per_difficulty[i];
+                char line[48];
+                char sc[8];
+                snprintf(sc, sizeof sc, "%s", rows[i].score);
+                char *scp = sc;
+                while (*scp == ' ') scp++;
+                snprintf(line, sizeof line, "%-12.12s %4d    %s", rows[i].label, days, scp);
+                if (has_name) {
+                    sel_row(mx + ML_PAD / 2, ty, mw - ML_PAD, mrow, cx0, line, sel == i,
+                            PAL_CLR(WHITE), PAL_CLR(DBLUE), TOUCH_LIST_STARTUP, i);
+                } else {
+                    bfont_draw(line, cx0, ty + 2, PAL_CLR(GREY));
+                }
+                ty += mrow;
+            }
+
+            if (!has_name && selector) {
+                int cw = 2 * GW, chh = GH + 4;
+                int gx = mx + (mw - textsel_w(false, cw)) / 2;
+                int gy = ty + mrow / 2;
+                DrawRectangle(gx - 2, gy - 2, textsel_w(false, cw) + 4,
+                              textsel_h(false, chh) + 4, PAL_CLR(DBLUE));
+                textsel_draw(&ts, gx, gy, cw, chh, PAL_CLR(YELLOW), PAL_CLR(DBLUE),
+                             TOUCH_LIST_TEXTSEL);
+            }
+            frame_end(rt);
+            continue;
+        }
         draw_class_picker_backdrop(sprites);
         draw_class_picker_status_hint(res);
 
@@ -755,6 +938,7 @@ static bool run_new_game_intro(RenderTexture2D *rt,
     int px = (CL_SCREEN_W - panel_w) / 2;
     int py = (CL_SCREEN_H - panel_h) / 2;
 
+    screen_open();
     double start = frame_host_time();
     double timeout = 4.0;
     while (!frame_host_should_close()) {
@@ -858,17 +1042,25 @@ static bool run_credits(RenderTexture2D *rt, const Resources *res,
     int px = (CL_SCREEN_W - panel_w) / 2;
     int py = (CL_SCREEN_H - panel_h) / 2;
 
+    screen_open();
     double start = frame_host_time();
     double timeout = 2.5;
     while (!frame_host_should_close()) {
-        if (any_key_pressed() || (frame_host_time() - start) >= timeout) return true;
+        // Modern opens the credits from the title menu, so they stay up until
+        // a key; legacy runs them once at startup on a timer.
+        if (any_key_pressed() || (!CL_IS_MODERN && (frame_host_time() - start) >= timeout))
+            return true;
 
         frame_begin(rt);
 
-        // Backdrop: the class-select cartoon -- credits drape over the
-        // character-pick screen.
-        draw_class_picker_backdrop(sprites);
-        draw_class_picker_status_hint(res);
+        // Backdrop: legacy drapes the credits over the character-pick screen;
+        // modern over the title art, since class select is not next.
+        if (CL_IS_MODERN) {
+            draw_title_backdrop(sprites);
+        } else {
+            draw_class_picker_backdrop(sprites);
+            draw_class_picker_status_hint(res);
+        }
 
         panel(px, py, panel_w, panel_h);
 
@@ -922,21 +1114,21 @@ static bool run_credits(RenderTexture2D *rt, const Resources *res,
 bool startup_flow(const Resources *res,
                           const Sprites   *sprites,
                           void            *chrome_target,
-                          StartupChoice   *out) {
+                          StartupChoice   *out,
+                          bool             skip_intro) {
     RenderTexture2D *rt = (RenderTexture2D *)chrome_target;
     memset(out, 0, sizeof(*out));
 
-    // Always show class select first
-
     // Splash 1: publisher logo on black.
-    if (sprites && !run_splash(rt, sprites->splash_logo,
+    if (!skip_intro && sprites && !run_splash(rt, sprites->splash_logo,
                                (Color){ 0x00, 0x00, 0x00, 0xFF })) {
         out->action = STARTUP_QUIT;
         return false;
     }
 
-    // Splash 2: game title on black .
-    if (sprites && !run_splash(rt, sprites->splash_title,
+    // Splash 2: game title on black. Modern skips it: the title menu is
+    // drawn on the title art.
+    if (!skip_intro && !CL_IS_MODERN && sprites && !run_splash(rt, sprites->splash_title,
                                (Color){ 0x00, 0x00, 0x00, 0xFF })) {
         out->action = STARTUP_QUIT;
         return false;
@@ -945,14 +1137,37 @@ bool startup_flow(const Resources *res,
     // Credits screen . Drawn over the
     // class-select cartoon so the picker is visible behind. Skipped
     // silently if the game pack doesn't define any credit lines.
-    if (!run_credits(rt, res, sprites)) {
+    if (!skip_intro && !CL_IS_MODERN && !run_credits(rt, res, sprites)) {
         out->action = STARTUP_QUIT;
         return false;
     }
 
-    // Main startup loop: class select is the root. Sub-screens (save
-    // picker, new-game) ESC back here; only ESC at class select exits.
-    for (;;) {
+    // Modern: the title menu is the root. Load Saved Game opens the
+    // save picker; New Game runs class select and then name and
+    // difficulty; Credits are shown from it. Escape on each screen goes back one step, and Escape
+    // (or Exit) on the title menu quits.
+    for (; CL_IS_MODERN;) {
+        if (!run_title_menu(res, sprites, rt, out)) return false;
+        if (out->action == STARTUP_BACK) {                         // Load
+            if (!run_save_picker(rt, sprites, out)) return false;
+            if (out->action == STARTUP_LOAD) break;
+            continue;
+        }
+        bool to_title = false;                                     // New Game
+        for (;;) {
+            if (!run_class_select(res, sprites, rt, out)) return false;
+            if (out->action == STARTUP_BACK) { to_title = true; break; }
+            if (!run_create_game(res, sprites, rt, out)) return false;
+            if (out->action == STARTUP_BACK) continue;
+            break;
+        }
+        if (to_title) continue;
+        break;
+    }
+
+    // Legacy: class select is the root. Sub-screens (save picker, new-game)
+    // ESC back here; only ESC at class select exits.
+    for (; !CL_IS_MODERN;) {
         if (!run_class_select(res, sprites, rt, out)) return false;
 
         if (out->action == STARTUP_LOAD) {
@@ -974,7 +1189,8 @@ bool startup_flow(const Resources *res,
     // New-game intro screen: "<Name> the <Class>, A new game is
     // being created. Please wait while I perform godlike actions to make
     // this game playable." Auto-advances after a few seconds.
-    if (out->action == STARTUP_NEW) {
+    // Modern goes straight into the game.
+    if (out->action == STARTUP_NEW && !CL_IS_MODERN) {
         run_new_game_intro(rt, res, sprites, out, out->name);
     }
 
