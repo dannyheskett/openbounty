@@ -44,8 +44,8 @@ follows the font.
 
 | layout | rect | text | used by |
 |---|---|---|---|
-| **small** | six text lines plus padding tall (124), the pane's width, inset 8 from its left, right and bottom edges: 656x124 | 40 x 6 | yes/no, numeric, A/B and count prompts; any message whose header and whole body fit |
-| **large** | 6x4 tiles centred in the pane: 576x384 | 35 x 20 | longer messages, the Emperor's audience, the game menu, its Controls page, the combat spell picker, the victory dialog |
+| **small** | six text lines plus padding tall (124), the pane's width, inset 8 from its left, right and bottom edges: 656x124 | 40 x 6 | yes/no, numeric, A/B and count prompts (numeric and A/B answer by rows, which count toward the fit); any message whose header and whole body fit |
+| **large** | 6x4 tiles centred in the pane: 576x384 | 35 x 20 | longer messages, the Emperor's audience, the game menu, its Controls page, the combat action menu and spell picker, the victory dialog |
 | **location** | backdrop inset 8 from the pane's left, top and right, at the smallest integer scale that covers 656 (3x: 720 cropped 32 px each side, 656x306); text area directly under it, down to 8 above the pane's bottom: 656x158 | 40 x 7 | town, home castle, own castle, dwelling, alcove, recruit |
 | **full screen** | the pane, the middle band and the HUD edge to edge, status band left visible: 776x480 | 47 x 25 | Army, Character, Contract, Spells, Gate, World map, Puzzle, Win, Lose |
 | toast | one line, top of the pane, centred | 1 line | toasts |
@@ -81,13 +81,23 @@ puzzle's five-tile grid is centred in the rect.
 
 ## The game menu
 
-Opened by Escape or O. One page in the large rect: a row for every
-single-letter entry in the pack's `keybinds`, its hotkey right-aligned, left
-out when it does not apply to the hero as he stands (Fly while flying, Land
-while walking, New Continent off a boat); then Controls, Save, Load, New Game
-and Exit. A row closes the menu and presses its key on the next frame, so the
+Opened by Escape or O, in the large rect: Screens >, Actions >, Controls,
+Save, Load, New Game, Exit, and Debug > when started with `--debug`
+(REQ-430k). Screens and Actions are built from the pack's `keybinds`
+(Screens: Army, Contract, Auto-mapping, Puzzle, Character; Actions: the rest,
+including Dismiss Army, New Continent and Rest), a row left out when it does
+not apply to the hero as he stands (Fly while flying, Land while walking, New
+Continent off a boat, Dismiss with no troops). No row shows a key. A Screens or
+Actions row closes the menu and presses its key on the next frame, so the
 action runs the path its keypress does. Controls opens over the menu in the
 same rect and closes back to it. Every row is tappable.
+
+## Combat action menu
+
+Enter, or a tap on the active unit, opens Actions in the large rect: Wait,
+Shoot, Fly, Cast a spell, Army, Character, Controls, Give up, without the rows
+that cannot apply (no shots or surrounded, cannot fly, a spell already cast
+this round, no magic). Escape closes it.
 
 ## Dim
 
@@ -100,4 +110,4 @@ view.
 ## Status band text
 
 "Press 'ESC' to exit" while any view or dialog is open; otherwise the
-Options / Controls / Days Left line; the fast-quit question overrides both.
+Options / Controls / Days Left line. Fast quit asks with the yes/no prompt.

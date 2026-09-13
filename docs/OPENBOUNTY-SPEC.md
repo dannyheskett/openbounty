@@ -2119,15 +2119,33 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   the small band when its header, whole body and answer rows fit, and the
   large rect otherwise; the pager asks the same function that places the
   panel, so the page count and the panel cannot disagree. Modern has one game
-  menu: a row for every single-letter entry in the pack's `keybinds`, with its
-  hotkey shown, filtered to what applies to the hero (Fly only when not
-  flying), then Controls, Save, Load, New Game and Exit. Choosing a row closes
-  the menu and presses its key on the next frame, so every action runs the path
-  its keypress does. `O` opens the menu and the Options panel is retired in
+  menu: Screens and Actions pages built from the pack's `keybinds` (a single
+  letter, or `5` for rest), filtered to what applies to the hero (Fly only
+  when not flying), then Controls, Save, Load, New Game and Exit; no row shows
+  a key. Choosing a Screens or Actions row closes the menu and presses its key
+  on the next frame, so every action runs the path its keypress does. `O` opens the menu and the Options panel is retired in
   modern. Legacy keeps `CL_CONTENT_*` / `CL_PANEL_*`, its own menu and the
   Options panel; the location screens reach their text rect through
   `screens_text_rect`, which the freeze tests pin to the legacy panel
   (2026-09-12).
+- **REQ-430k.** **Menu driven (modern) and `--debug`.** In modern every
+  action is a row reached by the arrows and Enter or a tap; keys remain as
+  shortcuts and nothing is reachable only by a key. Rows carry no key letters.
+  The home castle has Recruit and Audience rows; the own castle's first row
+  flips Garrison / Remove; the world map, with the orb, has a row that swaps
+  your map and the whole map; class select dims the unselected figures, frames
+  and names the selected one, and has a Load saved game row; numeric and A/B
+  prompts answer by rows taken from the body's own choice lines (`1. Italia`,
+  `A) Take the gold`) or set by the opener (dismiss lists the troops), and the
+  touch answer bar is not shown; Ctrl+Q asks with the yes/no prompt; a tap
+  skips the end cartoon. In combat, Enter or a tap on the active unit opens an
+  Actions menu in the large rect -- Wait, Shoot, Fly, Cast a spell, Army,
+  Character, Controls, Give up, less the rows that cannot apply -- whose rows
+  press their key next frame; the Options panel and the touch verb bar are not
+  used. The debug cheats are reachable only when the game is started with
+  `--debug`, as a Debug page at the end of the modern game menu; without the
+  flag no key or row reaches them in either mode (F10 is gone). Legacy is
+  otherwise unchanged (2026-09-12).
 - **REQ-430f.** **Keyboard detection and the letter selector (modern).**
   `input_host` latches which physical devices have been used: a real key
   event (not an injected one), a touch contact, a gamepad button or stick
