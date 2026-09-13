@@ -739,6 +739,10 @@ TownRecord *GameTouchTown(Game *g, const char *town_id);
 // villain id (pointer into the cycle buffer), or NULL if the cycle is
 // empty.
 const char *GameTakeNextContract(Game *g);
+// Take the contract in rotation slot `slot` (0..cycle_length-1) instead of the
+// next one: the modern town lets the player browse the rotation and pick.
+// Town-only, like GameTakeNextContract. Returns the villain id, or NULL.
+const char *GameTakeContractAt(Game *g, int slot);
 
 // True iff `villain_id`'s contract can be taken right now -- its id is in an active
 // contract-cycle slot (or is already the active contract). A villain not yet in

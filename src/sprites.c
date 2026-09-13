@@ -109,6 +109,12 @@ void sprites_load(Sprites *s, const Resources *res) {
         }
     }
 
+    for (int i = 0; i < res->portrait_count && i < RES_MAX_PORTRAITS; i++) {
+        s->portrait_frames[i] = res->portraits[i].anim_count;
+        for (int f = 0; f < res->portraits[i].anim_count; f++)
+            s->portrait_anim[i][f] = load_rel(res->portraits[i].anim[f]);
+    }
+
     // View icons 0..7 from artifact catalog, 8..13 from sprites.view_icons_extra.
     int na = artifacts_count();
     if (na > 8) na = 8;
@@ -218,6 +224,8 @@ void sprites_unload(Sprites *s) {
         UnloadTexture(s->villain_portrait[i]);
         for (int f = 0; f < OB_ANIM_FRAMES_MAX; f++) UnloadTexture(s->villain_anim[i][f]);
     }
+    for (int i = 0; i < RES_MAX_PORTRAITS; i++)
+        for (int f = 0; f < s->portrait_frames[i]; f++) UnloadTexture(s->portrait_anim[i][f]);
     for (int i = 0; i < 14; i++) UnloadTexture(s->view_icon[i]);
     for (int i = 0; i < 25; i++) {
         UnloadTexture(s->troop_sprite[i]);

@@ -109,6 +109,7 @@
 				"y":	46
 			},
 			"alcove_art":	"alcove",
+			"pontifex":	"pontifex_italia",
 			"magic_alcove":	{
 				"x":	8,
 				"y":	16
@@ -727,6 +728,7 @@
 				"y":	20
 			},
 			"alcove_art":	"alcove",
+			"pontifex":	"pontifex_galliae",
 			"magic_alcove":	{
 				"x":	24,
 				"y":	24
@@ -946,6 +948,7 @@
 				"y":	7
 			},
 			"alcove_art":	"alcove",
+			"pontifex":	"pontifex_africa",
 			"magic_alcove":	{
 				"x":	24,
 				"y":	8
@@ -1165,6 +1168,7 @@
 				"y":	6
 			},
 			"alcove_art":	"alcove",
+			"pontifex":	"pontifex_oriens",
 			"magic_alcove":	{
 				"x":	41,
 				"y":	7
@@ -1204,9 +1208,35 @@
 					"id":	"castle_oriens_4"
 				}]
 		}],
+	"portraits":	[{
+			"id":	"informant_market",
+			"anim":	["art/portraits/informant_market_00.png", "art/portraits/informant_market_01.png", "art/portraits/informant_market_02.png", "art/portraits/informant_market_03.png", "art/portraits/informant_market_04.png", "art/portraits/informant_market_05.png", "art/portraits/informant_market_06.png", "art/portraits/informant_market_07.png"]
+		}, {
+			"id":	"informant_taverner",
+			"anim":	["art/portraits/informant_taverner_00.png", "art/portraits/informant_taverner_01.png", "art/portraits/informant_taverner_02.png", "art/portraits/informant_taverner_03.png", "art/portraits/informant_taverner_04.png", "art/portraits/informant_taverner_05.png", "art/portraits/informant_taverner_06.png", "art/portraits/informant_taverner_07.png"]
+		}, {
+			"id":	"informant_veteran",
+			"anim":	["art/portraits/informant_veteran_00.png", "art/portraits/informant_veteran_01.png", "art/portraits/informant_veteran_02.png", "art/portraits/informant_veteran_03.png", "art/portraits/informant_veteran_04.png", "art/portraits/informant_veteran_05.png", "art/portraits/informant_veteran_06.png", "art/portraits/informant_veteran_07.png"]
+		}, {
+			"id":	"informant_urchin",
+			"anim":	["art/portraits/informant_urchin_00.png", "art/portraits/informant_urchin_01.png", "art/portraits/informant_urchin_02.png", "art/portraits/informant_urchin_03.png", "art/portraits/informant_urchin_04.png", "art/portraits/informant_urchin_05.png", "art/portraits/informant_urchin_06.png", "art/portraits/informant_urchin_07.png"]
+		}, {
+			"id":	"pontifex_italia",
+			"anim":	["art/portraits/pontifex_italia_00.png", "art/portraits/pontifex_italia_01.png", "art/portraits/pontifex_italia_02.png", "art/portraits/pontifex_italia_03.png", "art/portraits/pontifex_italia_04.png", "art/portraits/pontifex_italia_05.png", "art/portraits/pontifex_italia_06.png", "art/portraits/pontifex_italia_07.png"]
+		}, {
+			"id":	"pontifex_galliae",
+			"anim":	["art/portraits/pontifex_galliae_00.png", "art/portraits/pontifex_galliae_01.png", "art/portraits/pontifex_galliae_02.png", "art/portraits/pontifex_galliae_03.png", "art/portraits/pontifex_galliae_04.png", "art/portraits/pontifex_galliae_05.png", "art/portraits/pontifex_galliae_06.png", "art/portraits/pontifex_galliae_07.png"]
+		}, {
+			"id":	"pontifex_africa",
+			"anim":	["art/portraits/pontifex_africa_00.png", "art/portraits/pontifex_africa_01.png", "art/portraits/pontifex_africa_02.png", "art/portraits/pontifex_africa_03.png", "art/portraits/pontifex_africa_04.png", "art/portraits/pontifex_africa_05.png", "art/portraits/pontifex_africa_06.png", "art/portraits/pontifex_africa_07.png"]
+		}, {
+			"id":	"pontifex_oriens",
+			"anim":	["art/portraits/pontifex_oriens_00.png", "art/portraits/pontifex_oriens_01.png", "art/portraits/pontifex_oriens_02.png", "art/portraits/pontifex_oriens_03.png", "art/portraits/pontifex_oriens_04.png", "art/portraits/pontifex_oriens_05.png", "art/portraits/pontifex_oriens_06.png", "art/portraits/pontifex_oriens_07.png"]
+		}],
 	"towns":	[{
 			"index":	0,
 			"id":	"ostia",
+			"informant":	"informant_market",
 			"name":	"Ostia",
 			"art":	"town_italia",
 			"x":	39,
@@ -1225,6 +1255,7 @@
 		}, {
 			"index":	1,
 			"id":	"puteoli",
+			"informant":	"informant_taverner",
 			"name":	"Puteoli",
 			"art":	"town_italia",
 			"x":	37,
@@ -1242,6 +1273,7 @@
 		}, {
 			"index":	2,
 			"id":	"cumae",
+			"informant":	"informant_urchin",
 			"name":	"Cumae",
 			"art":	"town_italia",
 			"x":	45,
@@ -1259,6 +1291,7 @@
 		}, {
 			"index":	3,
 			"id":	"tarracina",
+			"informant":	"informant_veteran",
 			"name":	"Tarracina",
 			"art":	"town_italia",
 			"x":	45,
@@ -1276,6 +1309,7 @@
 		}, {
 			"index":	4,
 			"id":	"pisae",
+			"informant":	"informant_market",
 			"name":	"Pisae",
 			"art":	"town_italia",
 			"x":	33,
@@ -1293,6 +1327,7 @@
 		}, {
 			"index":	5,
 			"id":	"ancona",
+			"informant":	"informant_taverner",
 			"name":	"Ancona",
 			"art":	"town_italia",
 			"x":	42,
@@ -1310,6 +1345,7 @@
 		}, {
 			"index":	6,
 			"id":	"ravenna",
+			"informant":	"informant_veteran",
 			"name":	"Ravenna",
 			"art":	"town_italia",
 			"x":	18,
@@ -1327,6 +1363,7 @@
 		}, {
 			"index":	7,
 			"id":	"mediolanum",
+			"informant":	"informant_urchin",
 			"name":	"Mediolanum",
 			"art":	"town_italia",
 			"x":	7,
@@ -1344,6 +1381,7 @@
 		}, {
 			"index":	8,
 			"id":	"croton",
+			"informant":	"informant_market",
 			"name":	"Croton",
 			"art":	"town_italia",
 			"x":	47,
@@ -1361,6 +1399,7 @@
 		}, {
 			"index":	9,
 			"id":	"massilia",
+			"informant":	"informant_market",
 			"name":	"Massilia",
 			"art":	"town_galliae",
 			"x":	28,
@@ -1378,6 +1417,7 @@
 		}, {
 			"index":	10,
 			"id":	"narbo",
+			"informant":	"informant_taverner",
 			"name":	"Narbo",
 			"art":	"town_galliae",
 			"x":	38,
@@ -1395,6 +1435,7 @@
 		}, {
 			"index":	11,
 			"id":	"tolosa",
+			"informant":	"informant_veteran",
 			"name":	"Tolosa",
 			"art":	"town_galliae",
 			"x":	28,
@@ -1412,6 +1453,7 @@
 		}, {
 			"index":	12,
 			"id":	"burdigala",
+			"informant":	"informant_market",
 			"name":	"Burdigala",
 			"art":	"town_galliae",
 			"x":	45,
@@ -1429,6 +1471,7 @@
 		}, {
 			"index":	13,
 			"id":	"vienna",
+			"informant":	"informant_urchin",
 			"name":	"Vienna",
 			"art":	"town_galliae",
 			"x":	28,
@@ -1446,6 +1489,7 @@
 		}, {
 			"index":	14,
 			"id":	"aquae_sextiae",
+			"informant":	"informant_taverner",
 			"name":	"Aquae Sextiae",
 			"art":	"town_galliae",
 			"x":	20,
@@ -1463,6 +1507,7 @@
 		}, {
 			"index":	15,
 			"id":	"utica",
+			"informant":	"informant_market",
 			"name":	"Utica",
 			"art":	"town_africa",
 			"x":	18,
@@ -1480,6 +1525,7 @@
 		}, {
 			"index":	16,
 			"id":	"thapsus",
+			"informant":	"informant_veteran",
 			"name":	"Thapsus",
 			"art":	"town_africa",
 			"x":	8,
@@ -1497,6 +1543,7 @@
 		}, {
 			"index":	17,
 			"id":	"sabratha",
+			"informant":	"informant_urchin",
 			"name":	"Sabratha",
 			"art":	"town_africa",
 			"x":	26,
@@ -1514,6 +1561,7 @@
 		}, {
 			"index":	18,
 			"id":	"hadrumetum",
+			"informant":	"informant_taverner",
 			"name":	"Hadrumetum",
 			"art":	"town_africa",
 			"x":	38,
@@ -1531,6 +1579,7 @@
 		}, {
 			"index":	19,
 			"id":	"oea",
+			"informant":	"informant_veteran",
 			"name":	"Oea",
 			"art":	"town_africa",
 			"x":	42,
@@ -1548,6 +1597,7 @@
 		}, {
 			"index":	20,
 			"id":	"ptolemais",
+			"informant":	"informant_market",
 			"name":	"Ptolemais",
 			"art":	"town_africa",
 			"x":	47,
@@ -1565,6 +1615,7 @@
 		}, {
 			"index":	21,
 			"id":	"tarsus",
+			"informant":	"informant_taverner",
 			"name":	"Tarsus",
 			"art":	"town_oriens",
 			"x":	38,
@@ -1582,6 +1633,7 @@
 		}, {
 			"index":	22,
 			"id":	"smyrna",
+			"informant":	"informant_market",
 			"name":	"Smyrna",
 			"art":	"town_oriens",
 			"x":	8,
@@ -1599,6 +1651,7 @@
 		}, {
 			"index":	23,
 			"id":	"nicomedia",
+			"informant":	"informant_veteran",
 			"name":	"Nicomedia",
 			"art":	"town_oriens",
 			"x":	46,
@@ -1616,6 +1669,7 @@
 		}, {
 			"index":	24,
 			"id":	"damascus",
+			"informant":	"informant_urchin",
 			"name":	"Damascus",
 			"art":	"town_oriens",
 			"x":	46,
@@ -1633,6 +1687,7 @@
 		}, {
 				"index":	25,
 				"id":	"roma",
+			"informant":	"informant_urchin",
 				"name":	"Roma",
 				"art":	"town_rome",
 				"x":	37,

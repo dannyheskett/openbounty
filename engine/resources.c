@@ -160,6 +160,7 @@ static void parse_towns(Resources *res, cJSON *arr) {
         // Optional per-town tile art (a bare stem under art/tiles/). Absent
         // means the shared "town" tile, so older packs stamp as before.
         copy_str(t->art, sizeof(t->art), json_str(it, "art", ""));
+        copy_str(t->informant, sizeof(t->informant), json_str(it, "informant", ""));
     }
 }
 
@@ -407,6 +408,7 @@ static void parse_zones(Resources *res, cJSON *arr) {
         copy_str(z->tile_set, sizeof(z->tile_set), json_str(it, "tile_set", ""));
         copy_str(z->army_art, sizeof(z->army_art), json_str(it, "army_art", ""));
         copy_str(z->alcove_art, sizeof(z->alcove_art), json_str(it, "alcove_art", ""));
+        copy_str(z->pontifex, sizeof(z->pontifex), json_str(it, "pontifex", ""));
         z->width  = json_int(it, "width",  64);
         z->height = json_int(it, "height", 64);
         cJSON *hs = cJSON_GetObjectItem(it, "hero_spawn");
@@ -678,6 +680,19 @@ static void parse_classes(Resources *res, cJSON *arr) {
                 rd->instant_army    = json_int(r, "instant_army", 0);
             }
         }
+    }
+}
+
+static void parse_portraits(Resources *res, cJSON *arr) {
+    res->portrait_count = 0;
+    if (!cJSON_IsArray(arr)) return;
+    cJSON *it;
+    cJSON_ArrayForEach(it, arr) {
+        if (res->portrait_count >= RES_MAX_PORTRAITS) break;
+        ResPortrait *p = &res->portraits[res->portrait_count++];
+        copy_str(p->id, sizeof(p->id), json_str(it, "id", ""));
+        parse_path_array(cJSON_GetObjectItem(it, "anim"), p->anim[0],
+                         CAT_PATH_LEN, OB_ANIM_FRAMES_MAX, &p->anim_count);
     }
 }
 
@@ -1232,6 +1247,10 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(town_detail_boat_dock,   "town_detail_boat_dock");
     SET_BANNER(town_detail_intel,       "town_detail_intel");
     SET_BANNER(town_contract_confirm,   "town_contract_confirm");
+    SET_BANNER(town_confirm_boat_rent, "town_confirm_boat_rent");
+    SET_BANNER(town_confirm_boat_cancel, "town_confirm_boat_cancel");
+    SET_BANNER(town_confirm_spell, "town_confirm_spell");
+    SET_BANNER(town_confirm_siege, "town_confirm_siege");
     SET_BANNER(spell_time_stop,                "spell_time_stop");
     SET_BANNER(spell_find_villain_no_contract, "spell_find_villain_no_contract");
     SET_BANNER(spell_find_villain_success,     "spell_find_villain_success");
@@ -1669,6 +1688,19 @@ static void parse_strings(Resources *res, cJSON *obj) {
             copy_str(d->alias,    sizeof(d->alias),    json_str(entry, "alias", ""));
             copy_str(d->features, sizeof(d->features), json_str(entry, "features", ""));
             copy_str(d->crimes,   sizeof(d->crimes),   json_str(entry, "crimes", ""));
+        }
+    }
+
+    res->spell_lore_count = 0;
+    cJSON *sl = cJSON_GetObjectItem(obj, "spell_lore");
+    if (cJSON_IsObject(sl)) {
+        cJSON *entry;
+        cJSON_ArrayForEach(entry, sl) {
+            if (res->spell_lore_count >= CAT_SPELLS_MAX) break;
+            if (!entry->string || !entry->string[0] || !cJSON_IsString(entry)) continue;
+            ResSpellLore *l = &res->spell_lore[res->spell_lore_count++];
+            copy_str(l->id,   sizeof(l->id),   entry->string);
+            copy_str(l->text, sizeof(l->text), entry->valuestring);
         }
     }
 }
@@ -2201,6 +2233,7 @@ bool resources_load(Resources *res, const char *manifest_path) {
     parse_spells(res,      cJSON_GetObjectItem(root, "spells"));
     parse_classes(res,     cJSON_GetObjectItem(root, "classes"));
     parse_villains(res,    cJSON_GetObjectItem(root, "villains"));
+    parse_portraits(res,   cJSON_GetObjectItem(root, "portraits"));
     parse_artifacts(res,   cJSON_GetObjectItem(root, "artifacts"));
 
     // Catalog-capacity contracts: a pack that exceeds a fixed engine array
@@ -2410,6 +2443,20 @@ const ResVillainDesc *resources_villain_desc(const Resources *r,
     return NULL;
 }
 
+int resources_portrait_index(const Resources *r, const char *id) {
+    if (!r || !id || !id[0]) return -1;
+    for (int i = 0; i < r->portrait_count; i++)
+        if (strcmp(r->portraits[i].id, id) == 0) return i;
+    return -1;
+}
+
+const char *resources_spell_lore(const Resources *r, const char *spell_id) {
+    if (!r || !spell_id) return NULL;
+    for (int i = 0; i < r->spell_lore_count; i++)
+        if (strcmp(r->spell_lore[i].id, spell_id) == 0) return r->spell_lore[i].text;
+    return NULL;
+}
+
 const char *resources_count_bucket_label(const ResCountBucket *buckets,
                                          int n, int count,
                                          const char *fallback) {
@@ -2556,6 +2603,10 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
         for (int f = 0; f < res->troops[i].anim_count; f++)
             art_add(out, cap, &n, res->troops[i].anim[f]);
     }
+
+    for (int i = 0; i < res->portrait_count; i++)
+        for (int f = 0; f < res->portraits[i].anim_count; f++)
+            art_add(out, cap, &n, res->portraits[i].anim[f]);
 
     for (int i = 0; i < res->villains_count; i++) {
         const VillainDef *v = &res->villains[i];

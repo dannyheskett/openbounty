@@ -136,11 +136,31 @@ const char *views_town_info_text(void);
 int  views_town_detail_page(void);
 void views_town_set_detail_pages(int pages);
 
-// Modern: New contract asks Yes/No first. The main loop takes the request
-// (true once per press), opens the prompt, and on Yes calls
-// views_town_take_contract, which takes it with no result message.
-bool views_town_take_contract_request(void);
-void views_town_take_contract(Game *g);
+// ---- Modern town ------------------------------------------------------------
+// The left column shows the menu or, after Enter on Contracts, the contracts on
+// offer (one row per contract, then Back).
+typedef enum { TOWN_LIST_MENU = 0, TOWN_LIST_CONTRACTS } TownList;
+TownList views_town_list(void);
+int  views_town_contract_cursor(void);
+int  views_town_contract_rows(const struct Game *g);           // contracts + Back
+int  views_town_contract_slot(const struct Game *g, int row);  // rotation slot; -1 = Back
+
+// Anything that changes the game asks Yes/No. The main loop takes the request
+// once (writing the question into body), opens the prompt, and on Yes calls
+// views_town_confirm_yes, which carries the action out.
+typedef enum {
+    TOWN_CONFIRM_NONE = 0,
+    TOWN_CONFIRM_CONTRACT,
+    TOWN_CONFIRM_BOAT_RENT,
+    TOWN_CONFIRM_BOAT_CANCEL,
+    TOWN_CONFIRM_SPELL,
+    TOWN_CONFIRM_SIEGE,
+} TownConfirm;
+TownConfirm views_town_take_confirm(const struct Game *g, char *body, int cap);
+void views_town_confirm_yes(Game *g);
+
+// The Information row's report, formatted for this town.
+void views_town_intel_text(const struct Game *g, char *out, int cap);
 
 // Town action row the cursor is on (0..4).
 int  views_town_cursor(void);

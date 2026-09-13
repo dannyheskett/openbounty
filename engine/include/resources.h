@@ -35,6 +35,8 @@
 #define RES_EXTRA_ICONS        8     // view_icons_extra cap 
 #define RES_END_BODY_LEN     512     // win/lose body text
 #define RES_VDESC_TEXT_LEN   320     // per-villain features / crimes block
+#define RES_SPELL_LORE_LEN   1024    // per-spell long description (strings.spell_lore)
+#define RES_MAX_PORTRAITS    16      // portraits[]: town informants and priests
 
 // ---- Sub-structures --------------------------------------------------------
 
@@ -212,6 +214,7 @@ typedef struct {
     char pinned_spell[RES_ID_LEN];// spell id pre-placed here by salt_spells.
                                   // Empty = no pin (any town may pin in mods).
     char art[RES_TILE_ART_LEN];   // tile art stem under art/tiles/ ("" = "town")
+    char informant[RES_ID_LEN];   // portraits[] id shown for the town's report ("" = none)
 } ResTown;
 
 // Special-castle behavior (King Maximus and other quest castles).
@@ -342,6 +345,19 @@ typedef struct {
 } ResVillainDesc;
 
 typedef struct {
+    char id[RES_ID_LEN];
+    char text[RES_SPELL_LORE_LEN];
+} ResSpellLore;
+
+// A portrait with an idle loop (game.json portraits[]): the town's informant
+// and the zone's priest, drawn in the modern town's portrait slot.
+typedef struct {
+    char id[RES_ID_LEN];
+    int  anim_count;
+    char anim[OB_ANIM_FRAMES_MAX][CAT_PATH_LEN];
+} ResPortrait;
+
+typedef struct {
     char header[RES_NAME_LEN];
     char body[RES_END_BODY_LEN];
     char footer[RES_NAME_LEN];
@@ -410,6 +426,10 @@ typedef struct {
     char town_detail_boat_dock[RES_BANNER_LEN];  // %X% %Y%
     char town_detail_intel[RES_BANNER_LEN];      // %CASTLE%
     char town_contract_confirm[RES_BANNER_LEN];
+    char town_confirm_boat_rent[RES_BANNER_LEN];
+    char town_confirm_boat_cancel[RES_BANNER_LEN];
+    char town_confirm_spell[RES_BANNER_LEN];
+    char town_confirm_siege[RES_BANNER_LEN];
 
     // Spell-effect dialog bodies .
     // Substitutions: %STEPS%, %CASTLE%, %COUNT%, %QTY%, %TROOP%, %AMOUNT%.
@@ -847,6 +867,7 @@ typedef struct {
     // the hills-dwelling sprite, which is what the alcove borrowed before it
     // could name its own art.
     char alcove_art[RES_TILE_ART_LEN];
+    char pontifex[RES_ID_LEN];    // portraits[] id of the priest who sells spells here
     int  width, height;
     int  hero_spawn_x, hero_spawn_y;
     int  neighbor_count;
@@ -1006,6 +1027,11 @@ typedef struct {
     // Per-villain description blocks (strings.villain_descriptions).
     int             villain_desc_count;
     ResVillainDesc  villain_descs[CAT_VILLAINS_MAX];
+    // Per-spell long descriptions (strings.spell_lore), optional.
+    int             spell_lore_count;
+    ResSpellLore    spell_lore[CAT_SPELLS_MAX];
+    int             portrait_count;
+    ResPortrait     portraits[RES_MAX_PORTRAITS];
 
     // Role-fixed sprite manifest (assets that aren't per-catalog-entry).
     struct {
@@ -1220,6 +1246,10 @@ int              resources_zone_index(const Resources *r, const char *id);
 
 const ResVillainDesc *resources_villain_desc(const Resources *r,
                                              const char *villain_id);
+// Index of portraits[] entry `id`, or -1.
+int resources_portrait_index(const Resources *r, const char *id);
+// The spell's long description from strings.spell_lore, or NULL.
+const char *resources_spell_lore(const Resources *r, const char *spell_id);
 
 // Look up the first ResCountBucket whose `threshold >= count`. Returns
 // `fallback` (typically empty string) if the bucket list is empty.

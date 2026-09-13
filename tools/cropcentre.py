@@ -6,7 +6,7 @@
 The rd_pro__default engine draws a painted frame round most 96x96 portraits.
 Generating at 128x128 and keeping the centre 96x96 discards up to 16px of
 frame on each side with no resampling. Approved for villain portraits only
-(2026-09-07)."""
+(2026-09-07), and for the eight town portraits (2026-09-13)."""
 import sys
 from PIL import Image
 src, dst = sys.argv[1], sys.argv[2]

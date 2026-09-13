@@ -1,0 +1,21 @@
+{
+  "id": "informant_taverner_loop",
+  "prompt": "slow conspiratorial wink, cloth still in hand, static background, smooth loop",
+  "style": "rd_advanced_animation__custom_action",
+  "width": 128,
+  "height": 128,
+  "seed": 9502,
+  "frames_duration": 8,
+  "return_spritesheet": true,
+  "input_image_path": "build/art/informant_taverner/run01/01_raw.png",
+  "input_image_keep_alpha": false,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "_pack_path": "art/portraits/informant_taverner_00..07.png",
+  "_note": "Town portrait loop (2026-09-13), the villain route: custom action on the untouched approved still (run01), eight frames at 128, prompt expansion on; each frame is then centre-cropped to 96 with tools/cropcentre.py (Dan-approved for these 8)."
+}

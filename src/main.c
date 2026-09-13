@@ -883,7 +883,7 @@ title:;
     bool quit_requested = false;
     bool new_game_requested = false;   // modern New Game row chosen: ask
     bool new_game_asking = false;      // its yes/no prompt is up
-    bool town_contract_asking = false; // modern town: New contract's yes/no is up
+    bool town_asking = false;          // modern town: a Yes/No before an action is up
     // Set when a demo run WON (scepter recovered): the win cartoon + win
     // screen play as the ending, then control is handed to the human on the
     // cleared world. The engine's show_win_game sets game_over (the real
@@ -1074,11 +1074,11 @@ title:;
             if (r == PROMPT_RESULT_YES) { back_to_title = true; quit_requested = true; }
             goto end_input;
         }
-        // Modern town: confirm New contract, then take it.
-        if (town_contract_asking) {
+        // Modern town: an action waits on its Yes/No.
+        if (town_asking) {
             PromptResult r = prompt_update();
-            if (r != PROMPT_RESULT_NONE) town_contract_asking = false;
-            if (r == PROMPT_RESULT_YES) views_town_take_contract(&game);
+            if (r != PROMPT_RESULT_NONE) town_asking = false;
+            if (r == PROMPT_RESULT_YES) views_town_confirm_yes(&game);
             goto end_input;
         }
 
@@ -1196,9 +1196,10 @@ title:;
             }
         } else if (views_active() == VIEW_TOWN) {
             views_town_update(&game);
-            if (views_town_take_contract_request()) {
-                prompt_yes_no_open(NULL, res.banners.town_contract_confirm);
-                town_contract_asking = true;
+            char ask[RES_BANNER_LEN];
+            if (views_town_take_confirm(&game, ask, sizeof ask) != TOWN_CONFIRM_NONE) {
+                prompt_yes_no_open(NULL, ask);
+                town_asking = true;
             }
         } else if (views_active() == VIEW_CONTROLS) {
             // Navigate rows with Up/Down; digit keys 1..N jump to and

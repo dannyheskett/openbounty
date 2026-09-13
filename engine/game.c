@@ -1430,6 +1430,23 @@ const char *GameTakeNextContract(Game *g) {
     return g->contract.active_id;
 }
 
+const char *GameTakeContractAt(Game *g, int slot) {
+    if (!g || !g->position.in_town[0]) return NULL;
+    int n = g->res->contract.cycle_length;
+    if (n < 1) n = 1;
+    if (slot < 0 || slot >= n || slot >= CONTRACT_CYCLE_MAX) return NULL;
+    const char *vid = g->contract.cycle[slot];
+    if (!vid[0]) return NULL;
+    g->contract.last_contract = slot;
+    copy_id(g->contract.active_id, sizeof(g->contract.active_id), vid);
+    {
+        char tag[64];
+        snprintf(tag, sizeof tag, "contract:new:%s", vid);
+        recorder_capture(tag);
+    }
+    return g->contract.active_id;
+}
+
 bool GameFulfillContract(Game *g, const char *villain_id) {
     if (!g || !villain_id || !villain_id[0]) return false;
     const VillainDef *v = villain_by_id(villain_id);

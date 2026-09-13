@@ -45,7 +45,7 @@
 		"town_spell_can_learn":	"You can learn %LEFT% more spell%S%.",
 		"town_siege_already":	"You have siege weapons!",
 		"town_siege_purchased":	"Siege weapons purchased.",
-		"town_menu_contract":	"New contract",
+		"town_menu_contract":	"Contracts",
 		"town_menu_boat_rent":	"Rent boat",
 		"town_menu_boat_cancel":	"Cancel boat",
 		"town_menu_info":	"Information",
@@ -53,7 +53,11 @@
 		"town_menu_siege":	"Siege weapons",
 		"town_detail_boat_dock":	"Boat dock: %X%,%Y%",
 		"town_detail_intel":	"Reports on castle %CASTLE%.",
-		"town_contract_confirm":	"Take a new contract?",
+		"town_contract_confirm":	"Take this contract?",
+		"town_confirm_boat_rent":	"Rent a boat for %COST% gold a week?",
+		"town_confirm_boat_cancel":	"Cancel your boat rental?",
+		"town_confirm_spell":	"Buy the %SPELL% spell for %SPELL_COST% gold?",
+		"town_confirm_siege":	"Buy siege weapons for %SIEGE_COST% gold?",
 		"spell_time_stop":	"Time has stopped for %STEPS% steps.",
 		"spell_find_villain_no_contract":	"You have no contract.",
 		"spell_find_villain_success":	"You have found %CASTLE%!",
@@ -510,5 +514,21 @@
 			"alias":	"The Scourge of God",
 			"crimes":	"King of the Huns, he has burned the cities of the Balkans and extracted tribute in gold from Constantinople. He crossed the Rhine into Gaul, and now his horsemen ride over the Alps into Italy itself."
 		}
+	},
+	"spell_lore":	{
+		"clone":	"The priests of Rome have always shaped images of the gods. The Simulacrum shapes an image of your own soldiers, drawn out of the altar smoke, and it fights as truly as the men it copies.\n\nCast over one of your own stacks in battle, it adds more of those troops to the line. The greater your spell power, the more answer the call. It works only on your own army.",
+		"teleport":	"Mercury carries the words of the gods faster than any horse, and he will carry an army too.\n\nWith this rite you lift any one stack on the field, yours or the enemy's, and set it down on open ground of your choosing.",
+		"fireball":	"The smith of the gods keeps his forge beneath the mountains of Sicily, and this rite borrows a coal from it.\n\nA ball of fire falls on one enemy stack and burns for 25 damage for each point of your spell power. It strikes where you choose, at any range.",
+		"lightning":	"The thunderbolt is Jupiter's own weapon, and every augur knows the sky's warning.\n\nFulmen calls a bolt down on one enemy stack for 10 damage for each point of your spell power. It is weaker than Vulcan's Fire, and far cheaper.",
+		"freeze":	"Perseus carried the Gorgon's head on his shield, and any who looked on it turned to stone. This rite lends that gaze for a moment.\n\nOne enemy stack meets it and stands frozen in place, unable to act. It is the cheapest of the battle rites the temples sell.",
+		"resurrect":	"Aesculapius, the god of healing, once raised the dead, and Jupiter struck him down for it. His priests still keep the rite, and they sell it dearly.\n\nCast over one of your own stacks, it calls back soldiers who have fallen from its ranks. The greater your spell power, the more return. It is the costliest rite in any temple.",
+		"turn_undead":	"At the Lemuria, Rome drives out the restless spirits of the dead. On the battlefield the same rite tears at anything that walks without a soul.\n\nIt deals 50 damage for each point of your spell power, but only to the undead. Against the living it does nothing at all.",
+		"bridge":	"Pontifex means \"bridge-builder.\" The oldest priesthood of Rome began with the sacred bridge over the Tiber, and the title and the rite are the same word.\n\nCast it at the water's edge and choose a direction, and a bridge rises across the water before you, so your army can march where only a boat could go.",
+		"time_stop":	"The great march: legions that covered in one day what other armies covered in three. This rite stretches the day itself.\n\nFor 10 steps for each point of your spell power, time holds still, and your army moves without the calendar turning.",
+		"find_villain":	"Before any great undertaking, Rome asks the birds. The augur marks out a quarter of the sky and reads the flight of what crosses it.\n\nCast this rite while you hold a contract and the signs show the castle where your quarry is hiding. Without a contract the birds have nothing to say.",
+		"castle_gate":	"The imperial post keeps fresh horses at every station on every road, so the Emperor's messengers never stop. This rite puts your army on that road.\n\nCast it and choose any castle you have already visited, and you arrive there at once. It cannot take you somewhere you have never been.",
+		"town_gate":	"All roads lead to Rome, and every Roman town stands on one.\n\nCast this rite and choose any town you have already visited, and the road carries you straight there. It costs half as much as the Cursus Publicus.",
+		"instant_army":	"The dilectus is the levy: the day the consul calls the citizens and chooses who will march. This rite calls that levy wherever you stand.\n\nFresh troops come to join your army. The greater your spell power and the higher your rank, the more of them answer. They need room in your army to join.",
+		"raise_control":	"Imperium is the right to command, given by the gods and the people of Rome.\n\nWith this rite your authority grows: your leadership rises, and a higher leadership lets you lead larger stacks without losing control of them."
 	}
 }

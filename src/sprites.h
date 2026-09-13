@@ -41,6 +41,9 @@ typedef struct {
     Texture2D villain_portrait[17];
     int       villain_anim_frames[17];
     Texture2D villain_anim[17][OB_ANIM_FRAMES_MAX];
+    // portraits[] (town informants, priests), parallel to res->portraits.
+    int       portrait_frames[RES_MAX_PORTRAITS];
+    Texture2D portrait_anim[RES_MAX_PORTRAITS][OB_ANIM_FRAMES_MAX];
     Texture2D view_icon[14];
     Texture2D troop_sprite[25];
     int       troop_anim_frames[25];    // 0 = no animation, use troop_sprite
