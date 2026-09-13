@@ -393,18 +393,34 @@ static bool run_class_select(const Resources *res,
                 if (CL_IS_MODERN) touch_region_row(px + k * (pw / n), py, pw / n, ph, TOUCH_LIST_CLASS, k);
                 else              touch_region(px + k * (pw / n), py, pw / n, ph, KEY_A + k);
             }
-            // Modern: the selected column carries the lattice ring; under the
-            // portraits, the Load row.
+            // Modern: the other figures are dimmed and the selected one keeps
+            // full colour, a gold frame and its name in a bar at its feet.
+            // Under the portraits, the Load row; while it has the cursor no
+            // figure is selected.
             if (CL_IS_MODERN) {
-                if (!load_focus)
-                    ui_window_frame(px + class_cursor * (pw / n) + 4 * CL_UI, py + 4 * CL_UI,
-                                    pw / n - 8 * CL_UI, ph - 8 * CL_UI, PAL_CLR(YELLOW));
-                const char *load = res->ui.class_select_load;
                 int rh = GH + 2;
+                if (!load_focus) {
+                    int cw = pw / n;
+                    for (int k = 0; k < n; k++)
+                        if (k != class_cursor)
+                            DrawRectangle(px + k * cw, py, cw, ph, (Color){ 0, 0, 0, 150 });
+                    int cx = px + class_cursor * cw;
+                    for (int t = 0; t < 3; t++)
+                        DrawRectangleLines(cx + t, py + t, cw - 2 * t, ph - 2 * t, PAL_CLR(YELLOW));
+                    const ClassDef *c = class_by_index(class_cursor);
+                    if (c && c->name[0]) {
+                        DrawRectangle(cx + 3, py + ph - 3 - rh, cw - 6, rh, PAL_CLR(YELLOW));
+                        bfont_draw_centered(c->name, cx + cw / 2, py + ph - 3 - rh + 1,
+                                            PAL_CLR(DBLUE));
+                    }
+                }
+                const char *load = res->ui.class_select_load;
                 int rw = bfont_text_width(load) + 16;
                 int rx = (CL_SCREEN_W - rw) / 2;
-                int ry = py + ph + 8;
-                if (ry + rh > CL_SCREEN_H) ry = CL_SCREEN_H - rh;
+                // In the strip under the picker when it has room, else over
+                // the picker's bottom edge.
+                int below = CL_SCREEN_H - (py + ph);
+                int ry = (below >= rh) ? py + ph + (below - rh) / 2 : py + ph - rh;
                 sel_row(rx, ry, rw, rh, rx + 8, load, load_focus, PAL_CLR(YELLOW),
                         PAL_CLR(BLACK), TOUCH_LIST_STARTUP, 0);
             }
