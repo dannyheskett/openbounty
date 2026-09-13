@@ -1311,6 +1311,12 @@
 			"id":	"emperor_traianus_figure",
 			"anim":	["art/ui/emperor_traianus_figure_00.png", "art/ui/emperor_traianus_figure_01.png", "art/ui/emperor_traianus_figure_02.png", "art/ui/emperor_traianus_figure_03.png", "art/ui/emperor_traianus_figure_04.png", "art/ui/emperor_traianus_figure_05.png", "art/ui/emperor_traianus_figure_06.png", "art/ui/emperor_traianus_figure_07.png"]
 		}, {
+			"id":	"praefectus_castrorum",
+			"anim":	["art/portraits/praefectus_castrorum_00.png", "art/portraits/praefectus_castrorum_01.png", "art/portraits/praefectus_castrorum_02.png", "art/portraits/praefectus_castrorum_03.png", "art/portraits/praefectus_castrorum_04.png", "art/portraits/praefectus_castrorum_05.png", "art/portraits/praefectus_castrorum_06.png", "art/portraits/praefectus_castrorum_07.png"]
+		}, {
+			"id":	"praefectus_castrorum_figure",
+			"anim":	["art/ui/praefectus_castrorum_figure_00.png", "art/ui/praefectus_castrorum_figure_01.png", "art/ui/praefectus_castrorum_figure_02.png", "art/ui/praefectus_castrorum_figure_03.png", "art/ui/praefectus_castrorum_figure_04.png", "art/ui/praefectus_castrorum_figure_05.png", "art/ui/praefectus_castrorum_figure_06.png", "art/ui/praefectus_castrorum_figure_07.png"]
+		}, {
 			"id":	"promotion_rank_1",
 			"anim":	["art/ui/promotion_rank_1.png"]
 		}, {
@@ -1883,6 +1889,8 @@
 				"flow":	"audience",
 				"portrait":	"emperor_traianus",
 				"figure":	"emperor_traianus_figure",
+				"barracks_portrait":	"praefectus_castrorum",
+				"barracks_figure":	"praefectus_castrorum_figure",
 				"promotion":	["", "promotion_rank_1", "promotion_rank_2", "promotion_rank_3"],
 				"excluded_from_siege":	true,
 				"excluded_from_intel":	true,
