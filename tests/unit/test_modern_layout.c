@@ -12,6 +12,8 @@
 #include "bfont.h"
 #include "modern/mlayout.h"
 #include "views.h"
+#include "prompt.h"
+#include "prompt_impl.h"
 #include <string.h>
 
 static Resources s_res;
@@ -211,6 +213,33 @@ TEST root_is_screens_actions_then_system_rows(void) {
     PASS();
 }
 
+// Numeric and A/B prompts answer by rows: the body's own choice lines become
+// the rows (a line without a prefix continues the choice above it), and the
+// rest of the body is the lead text.
+TEST prompt_choice_lines_become_rows(void) {
+    prompt_ab_open("", "You may:\nA) Take the gold.\nB) Give it to the\npeasants.");
+    const PromptView *v = prompt_view();
+    ASSERT_STR_EQ("You may:\n", v->lead);
+    ASSERT_EQ(2, v->choice_n);
+    ASSERT_STR_EQ("Take the gold.", v->choices[0]);
+    ASSERT_STR_EQ("Give it to the peasants.", v->choices[1]);
+    prompt_dismiss();
+
+    prompt_numeric_open("Go to which continent?", "1. Italia\n2. Gallia\n", 2);
+    v = prompt_view();
+    ASSERT_EQ(2, v->choice_n);
+    ASSERT_STR_EQ("Gallia", v->choices[1]);
+    prompt_dismiss();
+
+    // No choice lines: the answers are the rows.
+    prompt_numeric_open("", "Which?", 3);
+    v = prompt_view();
+    ASSERT_EQ(3, v->choice_n);
+    ASSERT_STR_EQ("3", v->choices[2]);
+    prompt_dismiss();
+    PASS();
+}
+
 SUITE(unit_modern_layout_suite) {
     RUN_TEST(spacing_is_three_two_three);
     RUN_TEST(vertical_mirrors_horizontal);
@@ -222,4 +251,5 @@ SUITE(unit_modern_layout_suite) {
     RUN_TEST(capacity_follows_the_glyph);
     RUN_TEST(debug_row_only_with_debug_flag);
     RUN_TEST(root_is_screens_actions_then_system_rows);
+    RUN_TEST(prompt_choice_lines_become_rows);
 }

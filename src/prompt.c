@@ -32,6 +32,84 @@ static int  g_text_max_value  = 9999;
 static char g_text_buf[8];
 static int  g_text_len = 0;
 
+// Modern numeric and A/B prompts answer by rows. The rows come from the body's
+// own choice lines ("1. Italia", "A) Take the gold"), or from
+// prompt_set_choices when the body names none.
+#define PROMPT_CHOICES_MAX 5
+static char g_lead[256];
+static char g_choice[PROMPT_CHOICES_MAX][96];
+static int  g_choice_value[PROMPT_CHOICES_MAX];
+static int  g_choice_n = 0;
+static int  g_choice_cursor = 0;
+
+// A choice line: optional spaces, then a digit 1-5 (numeric) or A/B (A/B),
+// then '.' or ')'. Returns the answer (1-based) and sets *label, or 0.
+static int choice_prefix(const char *s, bool ab, const char **label) {
+    while (*s == ' ') s++;
+    int v = 0;
+    if (ab && (s[0] == 'A' || s[0] == 'B')) v = s[0] - 'A' + 1;
+    else if (!ab && s[0] >= '1' && s[0] <= '5') v = s[0] - '0';
+    if (!v || (s[1] != '.' && s[1] != ')')) return 0;
+    s += 2;
+    while (*s == ' ') s++;
+    *label = s;
+    return v;
+}
+
+static void append(char *dst, int cap, const char *src, int n) {
+    int len = (int)strlen(dst);
+    while (n-- > 0 && *src && len + 1 < cap) dst[len++] = *src++;
+    dst[len] = '\0';
+}
+
+// Splits g_body into the lead text and the choice rows. A line that follows a
+// choice without a prefix of its own continues it.
+static void parse_choices(bool ab, int max_choice) {
+    g_lead[0] = '\0';
+    g_choice_n = 0;
+    g_choice_cursor = 0;
+    const char *p = g_body;
+    while (*p) {
+        const char *e = strchr(p, '\n');
+        int n = e ? (int)(e - p) : (int)strlen(p);
+        char line[256];
+        snprintf(line, sizeof line, "%.*s", n, p);
+        const char *label = NULL;
+        int v = choice_prefix(line, ab, &label);
+        if (v && g_choice_n < PROMPT_CHOICES_MAX) {
+            snprintf(g_choice[g_choice_n], sizeof g_choice[0], "%s", label);
+            g_choice_value[g_choice_n++] = v;
+        } else if (g_choice_n > 0 && line[0]) {
+            append(g_choice[g_choice_n - 1], sizeof g_choice[0], " ", 1);
+            append(g_choice[g_choice_n - 1], sizeof g_choice[0], line, n);
+        } else if (g_choice_n == 0) {
+            append(g_lead, sizeof g_lead, p, n);
+            if (e) append(g_lead, sizeof g_lead, "\n", 1);
+        }
+        p = e ? e + 1 : p + n;
+    }
+    if (g_choice_n == 0) {
+        // Nothing named: the answers themselves are the rows.
+        int count = ab ? 2 : max_choice;
+        for (int i = 0; i < count && i < PROMPT_CHOICES_MAX; i++) {
+            if (ab) snprintf(g_choice[i], sizeof g_choice[0], "%c", 'A' + i);
+            else    snprintf(g_choice[i], sizeof g_choice[0], "%d", i + 1);
+            g_choice_value[i] = i + 1;
+        }
+        g_choice_n = count;
+    }
+}
+
+void prompt_set_choices(const char *const *labels, const int *values, int n) {
+    if (n > PROMPT_CHOICES_MAX) n = PROMPT_CHOICES_MAX;
+    for (int i = 0; i < n; i++) {
+        snprintf(g_choice[i], sizeof g_choice[0], "%s", labels[i]);
+        g_choice_value[i] = values[i];
+    }
+    g_choice_n = n;
+    g_choice_cursor = 0;
+}
+
 static void copy_to(char *dst, int dst_sz, const char *src) {
     int n = 0;
     if (src) while (n + 1 < dst_sz && src[n]) { dst[n] = src[n]; n++; }
@@ -61,6 +139,7 @@ void prompt_numeric_open(const char *header, const char *body, int max_choice) {
     g_max_choice = max_choice;
     copy_to(g_header, sizeof(g_header), header);
     copy_to(g_body,   sizeof(g_body),   body);
+    parse_choices(false, max_choice);
     emit_open_trace("numeric");
 }
 
@@ -68,6 +147,7 @@ void prompt_ab_open(const char *header, const char *body) {
     g_kind = PK_AB_CHOICE;
     copy_to(g_header, sizeof(g_header), header);
     copy_to(g_body,   sizeof(g_body),   body);
+    parse_choices(true, 2);
     emit_open_trace("ab");
 }
 
@@ -124,14 +204,28 @@ void prompt_dismiss(void) {
     if (was_active) recorder_capture("prompt:close");
 }
 
+// Modern: up/down and Enter or a tap answer a numeric or A/B prompt by row.
+// The digit and letter keys are read first, so keypad 2 and 8 still answer.
+static PromptResult choice_rows_update(void) {
+    if (!CL_IS_MODERN || g_choice_n <= 0) return PROMPT_RESULT_NONE;
+    SelList l = { g_choice_n, g_choice_cursor };
+    int row = -1;
+    SelEvent ev = sel_input(&l, TOUCH_LIST_PROMPT, 0, &row);
+    g_choice_cursor = l.cursor;
+    if (ev != SEL_CONFIRM || row < 0 || row >= g_choice_n) return PROMPT_RESULT_NONE;
+    int v = g_choice_value[row];
+    prompt_dismiss();
+    return (PromptResult)(PROMPT_RESULT_1 + v - 1);
+}
+
 PromptResult prompt_update(void) {
     if (g_kind == PK_NONE) return PROMPT_RESULT_NONE;
 
     // Touch: on-screen answer buttons for the keys read below, plus ESC.
     touch_request(TOUCH_CHROME_BACK);
     if      (g_kind == PK_YES_NO)     touch_request_prompt_yesno();
-    else if (g_kind == PK_NUMERIC)    touch_request_prompt_numeric(g_max_choice);
-    else if (g_kind == PK_AB_CHOICE)  touch_request_prompt_ab();
+    else if (g_kind == PK_NUMERIC)    { if (!CL_IS_MODERN) touch_request_prompt_numeric(g_max_choice); }
+    else if (g_kind == PK_AB_CHOICE)  { if (!CL_IS_MODERN) touch_request_prompt_ab(); }
     else if (g_kind == PK_TEXT_INPUT) {
         g_selector = CL_IS_MODERN &&
                      (input_text_mode() == TEXT_MODE_SELECTOR || input_pad_or_touch_seen());
@@ -181,13 +275,13 @@ PromptResult prompt_update(void) {
                 return (PromptResult)(PROMPT_RESULT_1 + i);
             }
         }
-        return PROMPT_RESULT_NONE;
+        return choice_rows_update();
     }
 
     if (g_kind == PK_AB_CHOICE) {
         if (input_key_pressed(KEY_A)) { prompt_dismiss(); return PROMPT_RESULT_1; }
         if (input_key_pressed(KEY_B)) { prompt_dismiss(); return PROMPT_RESULT_2; }
-        return PROMPT_RESULT_NONE;
+        return choice_rows_update();
     }
 
     if (g_kind == PK_TEXT_INPUT && g_selector) {
@@ -249,6 +343,10 @@ const PromptView *prompt_view(void) {
     v.text_buf   = g_text_buf;
     v.text_len   = g_text_len;
     v.ts         = &g_ts;
+    v.lead          = g_lead;
+    v.choice_n      = g_choice_n;
+    v.choices       = (const char (*)[96])g_choice;
+    v.choice_cursor = g_choice_cursor;
     return &v;
 }
 

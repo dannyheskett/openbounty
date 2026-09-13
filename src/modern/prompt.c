@@ -28,29 +28,45 @@ void modern_prompt_draw(const PromptView *p) {
     int row_h = BFONT_GLYPH_H;
     int pad = ML_PAD;
 
+    // Numeric and A/B prompts answer by rows, one per choice, each as many
+    // lines as its label wraps to; the body above them is the lead text.
+    bool choices = (p->kind == PK_NUMERIC || p->kind == PK_AB_CHOICE) && p->choice_n > 0;
+    const char *body = choices ? p->lead : p->body;
+
     // Rows kept at the bottom for the answer chrome, drawn after the body.
     //   text-input      -> 2 (typed value + hint), or 5 for the digit grid
     //   yes/no          -> 2 (the Yes and No rows)
-    //   numeric         -> 1 (hint only)
-    //   A/B choice      -> 0 (body names the keys; chrome-less)
-    int bottom_rows;
+    //   numeric, A/B    -> the choice rows' lines
+    int bottom_rows = 0;
     if (p->kind == PK_TEXT_INPUT)      bottom_rows = p->selector ? 5 : 2;
-    else if (p->kind == PK_AB_CHOICE)  bottom_rows = 0;
     else if (p->kind == PK_YES_NO)     bottom_rows = 2;
-    else                               bottom_rows = 1;
 
     // The small band along the bottom of the map pane when the whole prompt
     // fits it, so the hero at the centre tile stays in view while the question
     // is answered; the large rect when it does not (REQ-430j). The same rule
     // as a message dialog, with the answer rows counted in.
     ML_Rect rr = ml_small();
-    {
+    int choice_lines[8] = { 0 };
+    for (int pass = 0; pass < 2; pass++) {
+        if (choices) {
+            bottom_rows = 0;
+            for (int i = 0; i < p->choice_n && i < 8; i++) {
+                const char *q = p->choices[i];
+                char probe[160];
+                int n = 0;
+                while (*q && bfont_take_line(&q, rr.w - 4 * pad, probe, (int)sizeof probe) > 0) n++;
+                choice_lines[i] = n > 0 ? n : 1;
+                bottom_rows += choice_lines[i];
+            }
+        }
+        if (pass == 1) break;
         int max_w_small = rr.w - 2 * pad;
         int need = (p->header[0] ? 1 : 0) + bottom_rows;
-        const char *q = p->body;
+        const char *q = body;
         char probe[160];
         while (*q && bfont_take_line(&q, max_w_small, probe, (int)sizeof probe) > 0) need++;
-        if (need > ml_lines(rr)) rr = ml_large();
+        if (need <= ml_lines(rr)) break;
+        rr = ml_large();
     }
     int x = rr.x, y = rr.y, w = rr.w, h = rr.h;
     int max_w = w - 2 * pad;
@@ -71,7 +87,7 @@ void modern_prompt_draw(const PromptView *p) {
     // advance by the glyph height with no leading, matching the message
     // dialog, so equal-length bodies render identically in both.
     {
-        const char *q = p->body;
+        const char *q = body;
         char line[160];
         int body_step  = BFONT_GLYPH_H;
         int body_floor = y + h - pad - bottom_rows * row_h;
@@ -101,6 +117,24 @@ void modern_prompt_draw(const PromptView *p) {
             bfont_draw_centered(ui ? ui->prompt_text_hint
                                    : "(Enter to confirm / ESC cancel)",
                                 x + w / 2, y + h - pad - row_h, PAL_CLR(YELLOW));
+        }
+    } else if (choices) {
+        // One row per choice; a long label wraps inside its own bar.
+        int ry = y + h - pad - bottom_rows * row_h;
+        for (int i = 0; i < p->choice_n && i < 8; i++) {
+            int rh = choice_lines[i] * row_h;
+            bool sel = (p->choice_cursor == i);
+            int rx = x + pad, rw = w - 2 * pad;
+            if (sel) DrawRectangle(rx, ry, rw, rh, PAL_CLR(YELLOW));
+            const char *q = p->choices[i];
+            char line[160];
+            int ly = ry;
+            while (*q && bfont_take_line(&q, w - 4 * pad, line, (int)sizeof line) > 0) {
+                bfont_draw(line, rx + pad, ly, sel ? PAL_CLR(DBLUE) : PAL_CLR(YELLOW));
+                ly += row_h;
+            }
+            touch_region_row(rx, ry, rw, rh, TOUCH_LIST_PROMPT, i);
+            ry += rh;
         }
     } else if (p->kind == PK_NUMERIC && p->max_choice != 5) {
         char buf[32];

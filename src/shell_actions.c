@@ -125,6 +125,20 @@ void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
                                       NULL, 0);
             prompt_numeric_open(r_->ui.dt_dismiss_army, body,
                                 GAME_ARMY_SLOTS);
+            // The rows are the troops, each answering its slot's number.
+            char names[GAME_ARMY_SLOTS][48];
+            const char *labels[GAME_ARMY_SLOTS];
+            int values[GAME_ARMY_SLOTS], n = 0;
+            for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+                if (!g->army[i].id[0] || g->army[i].count <= 0) continue;
+                const TroopDef *t = troop_by_id(g->army[i].id);
+                snprintf(names[n], sizeof names[0], "%.30s (%d)",
+                         (t && t->name[0]) ? t->name : g->army[i].id, g->army[i].count);
+                labels[n] = names[n];
+                values[n] = i + 1;
+                n++;
+            }
+            prompt_set_choices(labels, values, n);
             PlayerRequest *pr = player_io_raise_decision(
                 g, FLOW_DISMISS_ARMY, REQ_PROMPT_NUMERIC,
                 r_->ui.dt_dismiss_army, body);

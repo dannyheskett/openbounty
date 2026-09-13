@@ -35,6 +35,13 @@ typedef struct {
     const char    *text_buf;     // text input: what has been typed
     int            text_len;
     const TextSel *ts;           // modern: the digit grid's cursor
+    // Modern numeric and A/B prompts: one row per choice. `lead` is the body
+    // without the choice lines; each choice is a label and the answer it gives
+    // (1 = PROMPT_RESULT_1).
+    const char    *lead;
+    int            choice_n;
+    const char   (*choices)[96];
+    int            choice_cursor;
 } PromptView;
 
 const PromptView *prompt_view(void);
