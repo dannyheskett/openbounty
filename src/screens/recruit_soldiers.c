@@ -397,7 +397,11 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
         bool unreachable = (t->hit_points <= 0) ||
                            (total_lead < t->hit_points * 6);
         char line[64];
-        if (unreachable) {
+        if (CL_IS_MODERN) {
+            // No key letters: the rows are the choice.
+            if (unreachable) snprintf(line, sizeof(line), "%-*sn/a", name_w + 3, t->name);
+            else             snprintf(line, sizeof(line), "%-*s%d", name_w + 3, t->name, t->recruit_cost);
+        } else if (unreachable) {
             snprintf(line, sizeof(line), "%c) %-*sn/a",
                      'A' + i, name_w, t->name);
         } else {
@@ -433,8 +437,9 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
 
     // "(A-C) " column hint from the pack (kept 6 glyphs so the column math
     // below lines up).
-    bfont_draw(ui->recruit_col_hint, rx, rby, PAL_CLR(WHITE));
-    int after_hint_x = rx + 6 * BFONT_GLYPH_W;   // after "(A-C) "
+    // Modern drops the letter hint and names the chosen troop instead.
+    if (!CL_IS_MODERN) bfont_draw(ui->recruit_col_hint, rx, rby, PAL_CLR(WHITE));
+    int after_hint_x = CL_IS_MODERN ? rx : rx + 6 * BFONT_GLYPH_W;   // after "(A-C) "
 
     if (s_whom == 0) {
         // twirl[] = "\x1D\x05\x1F\x1C" -- bitmap-font codepoints for
@@ -447,7 +452,9 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
     } else {
         // letter, Max=N, How Many, blank.
         char letter[2] = { (char)('A' + s_whom - 1), '\0' };
-        bfont_draw(letter, after_hint_x, rby, PAL_CLR(WHITE));
+        const TroopDef *wt = (CL_IS_MODERN && s_whom - 1 < s_pool_count && s_pool[s_whom - 1] >= 0)
+                             ? troop_by_index(s_pool[s_whom - 1]) : NULL;
+        bfont_draw(wt ? wt->name : letter, after_hint_x, rby, PAL_CLR(WHITE));
 
         char maxbuf[24];
         snprintf(maxbuf, sizeof(maxbuf), "Max=%d", s_max);

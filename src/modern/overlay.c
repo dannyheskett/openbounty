@@ -405,6 +405,10 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
     for (int r = 0; r < rows; r++) {
         char row[96];
         views_town_row_text(g, r, row, sizeof(row));
+        // The pack's rows carry their key letter ("A) Get New Contract");
+        // modern is menu driven and drops it.
+        if (row[0] >= 'A' && row[0] <= 'Z' && row[1] == ')' && row[2] == ' ')
+            memmove(row, row + 3, strlen(row + 3) + 1);
         bool sel = (r == cursor);
         Color fg = sel ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
         bool live = !(info && info[0]);
