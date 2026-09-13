@@ -1,5 +1,6 @@
 #include "game.h"
 #include "map.h"
+#include "adventure.h"
 #include "savegame.h"
 #include "fatal.h"
 #include "ui_host.h"   // recorder_capture, audio_play_tune + AudioTuneId
@@ -1345,6 +1346,31 @@ SiegeBuyResult GameBuySiege(Game *g) {
     g->stats.gold -= cost;
     g->stats.siege_weapons = 1;
     return SIEGE_BUY_OK;
+}
+
+bool GameFoeCanEvade(const Game *g, const Map *map) {
+    if (!g || !map) return false;
+    if (!g->res || !g->res->economy.evade_needs_free_square) return true;
+    for (int dy = -1; dy <= 1; dy++) {
+        for (int dx = -1; dx <= 1; dx++) {
+            if (!dx && !dy) continue;
+            int x = g->position.x + dx, y = g->position.y + dy;
+            const Tile *t = MapGetTile(map, x, y);
+            if (!t || t->interactive != INTERACT_NONE) continue;
+            bool ok = (g->character.mount == MOUNT_FLY) ? adventure_walkable_in_flight(t)
+                    : (g->travel_mode == TRAVEL_BOAT)   ? (t->terrain == TERRAIN_WATER || t->is_bridge)
+                    :                                     adventure_walkable_on_foot(t);
+            if (!ok) continue;
+            bool foe_here = false;
+            for (int i = 0; i < g->foe_count && !foe_here; i++) {
+                const FoeState *f = &g->foes[i];
+                foe_here = f->alive && f->x == x && f->y == y &&
+                           strcmp(f->zone, g->position.zone) == 0;
+            }
+            if (!foe_here) return true;
+        }
+    }
+    return false;
 }
 
 int GameAlcoveCost(const Game *g, const char *zone_id) {

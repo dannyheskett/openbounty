@@ -22,6 +22,9 @@
 #include "resources.h"
 #include "lattice.h"
 #include "hud.h"
+#include "prompt.h"
+#include "prompt_impl.h"
+#include "pending.h"
 #include "modern/castle.h"
 #include "modern/mlist.h"
 #include "shell_audience.h"
@@ -1198,6 +1201,101 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
         snprintf(mb, sizeof mb, "%d", step_max);
         castle_fmt(buf, sizeof buf, bn->castle_count_of, nb, mb);
         ml_stepper_draw(dx, sy, dw, buf);
+    }
+}
+
+// =============================================================================
+//  Modern foe view: a hostile band on the map (the town layout)
+// =============================================================================
+// Title "Foes!" and the zone; the plains backdrop at 2x with the band's lead
+// troop standing on it; that troop at 2x in the portrait slot; the siege and
+// gold tiles; rows Fight and Evade (Evade grey when there is nowhere to run);
+// the encounter text beside them. The prompt behind it (src/prompt.c) owns the
+// answer: Fight is Yes, Evade is No.
+
+static bool foe_row(void *ctx, int i, char *label, char *right, int cap) {
+    const Game *g = (const Game *)ctx;
+    const ResBanners *bn = &g->res->banners;
+    right[0] = '\0';
+    snprintf(label, (size_t)cap, "%s", i == 0 ? bn->foe_fight : bn->foe_evade);
+    return i == 0 || !pending_foe_evade_blocked;
+}
+
+void modern_overlay_draw_foe(const Game *g, const Sprites *s) {
+    if (!g || !g->res) return;
+    const Resources *res = g->res;
+    const ResBanners *bn = &res->banners;
+    const PromptView *pv = prompt_view();
+    const int BS = 2, BAND = 4;
+    int pad = ML_PAD;
+    ML_Rect r = ml_full();
+    int right = r.x + r.w, bottom = r.y + r.h;
+    DrawRectangle(r.x, r.y, r.w, r.h, PAL_CLR(DBLUE));
+
+    int title_h = GH + 14;
+    bfont_draw(res->ui.dt_foes, r.x + pad, r.y + (title_h - GH) / 2, PAL_CLR(YELLOW));
+    const ResZone *z = resources_zone_by_id(res, g->position.zone);
+    if (z && z->name[0])
+        bfont_draw(z->name, right - pad - (int)bfont_measure(z->name).x,
+                   r.y + (title_h - GH) / 2, PAL_CLR(YELLOW));
+    lattice_band_h(r.x, r.y + title_h, r.w, BAND);
+
+    // The band's lead troop: the first stack of its garrison.
+    const FoeState *f = pending_foe_id[0] ? GameFindFoeConst(g, pending_foe_id) : NULL;
+    const TroopDef *lead = NULL;
+    for (int i = 0; f && i < GAME_ARMY_SLOTS && !lead; i++)
+        if (f->garrison[i].id[0] && f->garrison[i].count > 0) lead = troop_by_id(f->garrison[i].id);
+
+    int top = r.y + title_h + BAND;
+    int fs = CL_TILE_W * BS;
+    int bw = ML_BACKDROP_W * BS, bh = fs;
+    Texture2D bd = loc_texture(s, LOC_PLAINS);
+    if (bd.id && bd.height > 0) {
+        float src_h = (float)bd.height * (float)bh / (float)(ML_BACKDROP_H * BS);
+        Rectangle src = { 0, (float)bd.height - src_h, (float)bd.width, src_h };
+        Rectangle dst = { (float)r.x, (float)top, (float)bw, (float)bh };
+        DrawTexturePro(bd, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+    } else {
+        DrawRectangle(r.x, top, bw, bh, PAL_CLR(BLACK));
+    }
+    Texture2D lt = { 0 };
+    if (lead && s) {
+        lt = s->troop_anim[lead->index][sprites_frame(sprites_stand((int)(GetTime() * 6.66)),
+                                                      s->troop_anim_frames[lead->index])];
+        if (!lt.id) lt = s->troop_sprite[lead->index];
+    }
+    if (lt.id) ui_blit(lt, r.x + CL_TILE_W / 2, top + bh - CL_TILE_H, CL_TILE_W, CL_TILE_H);
+    lattice_band_v(r.x + bw, top, BAND, bh);
+
+    int fx = r.x + bw + BAND;
+    DrawRectangle(fx, top, fs, fs, PAL_CLR(BLACK));
+    if (lt.id) ui_blit(lt, fx, top, fs, fs);
+    lattice_band_v(fx + fs, top, BAND, bh);
+    int hx = fx + fs + BAND;
+    hud_draw_siege_tile(g, s, hx, top);
+    hud_draw_gold_tile(g, s, hx, top + CL_TILE_H);
+
+    int low = top + bh;
+    lattice_band_h(r.x, low, r.w, BAND);
+    low += BAND;
+    int mw = 16 * GW, lh = bottom - low;
+    ml_list_draw(r.x, low, mw, lh, 2, pv ? pv->yn_cursor : 0, foe_row, (void *)g,
+                 TOUCH_LIST_PROMPT, PAL_CLR(DBLUE));
+    lattice_band_v(r.x + mw, low, BAND, lh);
+
+    // The encounter text (the prompt body: "You encounter:" and the stacks).
+    const int INSET = pad + 4;
+    int dx = r.x + mw + BAND + INSET, dw = right - dx - INSET;
+    TownText t = { .n = 0, .max_w = dw };
+    town_text_add(&t, prompt_body_text(), PAL_CLR(WHITE));
+    if (pending_foe_evade_blocked) {
+        town_text_gap(&t);
+        town_text_add(&t, bn->foe_evade_blocked, PAL_CLR(YELLOW));
+    }
+    int ty = low + INSET;
+    for (int i = 0; i < t.n && ty + GH <= bottom - INSET; i++) {
+        bfont_draw(t.line[i].text, dx, ty, t.line[i].fg);
+        ty += GH + 2;
     }
 }
 

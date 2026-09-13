@@ -60,6 +60,9 @@ extern char pending_castle_id[24];
 // Hostile-foe attack prompt state.
 extern char pending_foe_id[24];
 extern bool pending_foe_forced;   // static-foe fight: no decline, auto-confirm
+// economy.evade_needs_free_square: no free square around the hero, so the
+// hostile foe cannot be evaded -- the fight is the only answer (GameFoeCanEvade).
+extern bool pending_foe_evade_blocked;
 extern int  pending_foe_x, pending_foe_y;
 
 // Gold-chest choice prompt state .

@@ -734,6 +734,12 @@ typedef enum {
     SPELL_BUY_NO_RITES,     // economy.rites_per_zone: the town's zone rites not learned
 } SpellBuyResult;
 
+// Whether the hero can evade a hostile foe from where they stand: always,
+// unless the pack sets economy.evade_needs_free_square, and then only while
+// one of the 8 squares around the hero is one they could move onto (walkable
+// for how they travel, inside the map) with nothing on it.
+bool GameFoeCanEvade(const Game *g, const Map *map);
+
 // The price of the alcove in `zone_id`: the zone's own, else economy.alcove_cost.
 int  GameAlcoveCost(const Game *g, const char *zone_id);
 // Whether the hero may learn spells in `zone_id`: that zone's rites when the

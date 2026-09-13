@@ -2172,6 +2172,14 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   orb row, spells view and gate picker use the same rows (`src/modern/mlist.c`).
   Combat's Actions menu and spell picker are unchanged for now; legacy is
   unchanged (2026-09-13).
+- **REQ-430o.** **Foe view and the evade rule.** A hostile foe on the map opens
+  the modern foe view (docs/UI-PANELS.md) with Fight and Evade. With
+  `game.json` `foes.evade_needs_free_square` set, `GameFoeCanEvade` allows
+  Evade only while one of the 8 squares around the hero is walkable for how
+  they travel and has no object or foe on it; the engine records the result
+  for the pending decision (`pending_foe_evade_blocked`, judged after any bounce
+  back), and autoplay and the demo must fight when it is set. Packs without the
+  setting keep the free decline (2026-09-13).
 - **REQ-430f.** **Keyboard detection and the letter selector (modern).**
   `input_host` latches which physical devices have been used: a real key
   event (not an injected one), a touch contact, a gamepad button or stick

@@ -1269,6 +1269,9 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(town_detail_boat_dock,   "town_detail_boat_dock");
     SET_BANNER(town_detail_intel,       "town_detail_intel");
     SET_BANNER(town_contract_confirm,   "town_contract_confirm");
+    SET_BANNER(foe_fight, "foe_fight");
+    SET_BANNER(foe_evade, "foe_evade");
+    SET_BANNER(foe_evade_blocked, "foe_evade_blocked");
     SET_BANNER(castle_menu_recruit, "castle_menu_recruit");
     SET_BANNER(castle_continue, "castle_continue");
     SET_BANNER(castle_menu_audience, "castle_menu_audience");
@@ -1989,6 +1992,9 @@ bool resources_load(Resources *res, const char *manifest_path) {
         cJSON *jmg = cJSON_GetObjectItem(root, "magic");
         cJSON *jrp = cJSON_IsObject(jmg) ? cJSON_GetObjectItem(jmg, "rites_per_zone") : NULL;
         res->economy.rites_per_zone = cJSON_IsTrue(jrp);
+        cJSON *jfo = cJSON_GetObjectItem(root, "foes");
+        cJSON *jev = cJSON_IsObject(jfo) ? cJSON_GetObjectItem(jfo, "evade_needs_free_square") : NULL;
+        res->economy.evade_needs_free_square = cJSON_IsTrue(jev);
     }
     res->economy.boat_cost_normal = json_int(jec, "boat_cost_normal", 500);
     res->economy.boat_cost_cheap  = json_int(jec, "boat_cost_cheap",  100);

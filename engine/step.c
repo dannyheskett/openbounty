@@ -632,5 +632,9 @@ bool GameStep(Game *game, Map *map, Fog *fog,
             show_lose_game(game, res);
         }
     }
+    // A hostile foe raised this step is judged from where the hero now stands
+    // (after any bounce back): with no free square around, it cannot be evaded.
+    pending_foe_evade_blocked = (pending_flow == FLOW_ATTACK_FOE) &&
+                                !GameFoeCanEvade(game, map);
     return !bounced;
 }

@@ -1,0 +1,18 @@
+{
+  "id": "augur_portrait",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of an elderly Roman augur with a full white beard, bare-headed, in a heavy toga with a broad scarlet stripe over a white tunic, holding a short pale wooden staff that curls over into a single hook at the top, a black raven perched on his shoulder, an open hilltop sky with distant birds behind him",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 9931,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "_pack_path": "art/portraits/augur_portrait_00..07.png",
+  "_animation": "the raven turns its head, the augur's eyes lift slowly to the sky and back, static background, smooth loop",
+  "_note": "The Augur's portrait (2026-09-13) for the modern alcove view's portrait slot, the same man as the alcove_augur figure (white beard, scarlet-striped toga, lituus, raven). Town-portrait route: still and loop at 128, frames cropped to 96 from the top."
+}

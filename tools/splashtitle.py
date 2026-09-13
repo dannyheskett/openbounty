@@ -7,6 +7,10 @@ splash (tools/splashlogo.py): generated lettering garbles, drawn lettering
 does not.
 
     python3 tools/splashtitle.py <eagle.png> <out.png>
+    python3 tools/splashtitle.py --words <out.png>
+
+--words writes only the lettering on a transparent 256x164 field: the modern
+title screen composites it over the purple, then the battle, in code.
 """
 import sys
 from PIL import Image, ImageDraw, ImageFont
@@ -36,7 +40,8 @@ def bitmap_text(text, size, col, shade):
 
 
 def compose(eagle_path):
-    base = Image.open(eagle_path).convert("RGBA")
+    base = (Image.new("RGBA", (256, 164), (0, 0, 0, 0)) if eagle_path is None
+            else Image.open(eagle_path).convert("RGBA"))
     W, H = base.size
     line1 = bitmap_text("OPEN BOUNTY", 20, GOLD, GOLD_DK)
     line2 = bitmap_text("THE GLORY OF ROME", 13, GOLD, GOLD_DK)
@@ -52,5 +57,9 @@ def compose(eagle_path):
 
 
 if __name__ == "__main__":
-    compose(sys.argv[1]).save(sys.argv[2])
-    print("wrote", sys.argv[2])
+    if sys.argv[1] == "--words":
+        compose(None).save(sys.argv[2])
+        print("wrote", sys.argv[2])
+    else:
+        compose(sys.argv[1]).save(sys.argv[2])
+        print("wrote", sys.argv[2])

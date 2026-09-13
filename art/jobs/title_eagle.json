@@ -1,0 +1,19 @@
+{
+  "id": "title_eagle",
+  "prompt": "a golden Roman legionary eagle standard with spread wings on a tall decorated pole, a laurel wreath ring below the eagle, an engraved SPQR plate on the shaft, the whole standard upright and complete from the eagle's wingtips down to the foot of the pole, isolated, nothing touching or cut off by any edge, solid magenta background",
+  "style": "rd_pro__default",
+  "width": 96,
+  "height": 164,
+  "seed": 6602,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    164
+  ],
+  "_pack_path": "art/ui/title_eagle.png",
+  "_note": "Title screen eagle standard as a cut-out (2026-09-13), the same standard as splash_title, so the modern title can slide it left while the battle fades in. rd_pro__default at the title's height, magenta removed."
+}

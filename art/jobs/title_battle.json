@@ -1,0 +1,17 @@
+{
+  "id": "title_battle",
+  "prompt": "a vast Roman battle seen from a hillside, disciplined legions in tight formation with red rectangular shields and bronze helmets advancing across a plain, golden eagle standards and red vexillum banners raised above the ranks, a barbarian host massed beyond them, dust rising, a calm pale sky filling the top third of the picture, the scene filling the whole picture edge to edge, no text, no frame, no border",
+  "style": "rd_pro__default",
+  "width": 256,
+  "height": 164,
+  "seed": 6601,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    256,
+    164
+  ],
+  "_pack_path": "art/ui/title_battle.png",
+  "_note": "Title screen battle (2026-09-13): fades in behind the title words, replacing the purple field, on the modern title screen. Screen route, rd_pro__default at the title's 256x164 so the pixels match; the top third kept calm for the words."
+}

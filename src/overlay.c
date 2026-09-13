@@ -13,6 +13,7 @@
 
 #include "overlay.h"
 #include "overlay_impl.h"
+#include "pending.h"
 #include "modern/mlayout.h"
 #include "layout.h"
 #include "views.h"
@@ -157,7 +158,9 @@ void overlay_draw(const Game *g, const Map *m, const Fog *f,
 
     // Modal prompt (yes/no, numeric picker): replaces the bottom frame.
     if (prompt_is_active()) {
-        prompt_draw();
+        // Modern: a hostile foe gets its own full-screen view (Fight / Evade).
+        if (CL_IS_MODERN && pending_flow == FLOW_ATTACK_FOE) modern_overlay_draw_foe(g, s);
+        else                                                prompt_draw();
     }
 
     // Dialog LAST, so it covers a prompt that is up at the same time. Both are

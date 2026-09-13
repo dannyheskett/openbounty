@@ -20,6 +20,7 @@ char pending_castle_id[24] = { 0 };
 
 char pending_foe_id[24] = { 0 };
 bool pending_foe_forced = false;
+bool pending_foe_evade_blocked = false;
 int  pending_foe_x = -1, pending_foe_y = -1;
 
 int  pending_chest_gold       = 0;
@@ -45,6 +46,7 @@ void pending_reset(void) {
     pending_castle_id[0] = '\0';
     pending_foe_id[0] = '\0';
     pending_foe_forced = false;
+    pending_foe_evade_blocked = false;
     pending_foe_x = pending_foe_y = -1;
     pending_chest_gold = 0;
     pending_chest_leadership = 0;

@@ -2,6 +2,7 @@
 #include "ui_host.h"
 #include "prompt.h"
 #include "prompt_impl.h"
+#include "pending.h"
 #include "modern/mlist.h"
 #include "touch.h"
 #include "layout.h"
@@ -235,7 +236,12 @@ PromptResult prompt_update(void) {
         if (!CL_IS_MODERN) touch_request(TOUCH_CHROME_DIGITS);
     }
 
+    // Modern foe view: Fight / Evade. With nowhere to run, Evade (No, Esc) is
+    // not an answer -- only Fight is.
+    bool foe_view = CL_IS_MODERN && g_kind == PK_YES_NO && pending_flow == FLOW_ATTACK_FOE;
+    bool no_evade = foe_view && pending_foe_evade_blocked;
     if (input_key_pressed(KEY_ESCAPE)) {
+        if (no_evade) return PROMPT_RESULT_NONE;
         prompt_dismiss();
         return PROMPT_RESULT_CANCEL;
     }
@@ -250,10 +256,15 @@ PromptResult prompt_update(void) {
             SelList l = { 2, g_yn_cursor };
             int row = -1;
             SelEvent ev = sel_input(&l, TOUCH_LIST_PROMPT, 0, &row);
+            if (no_evade) l.cursor = 0;          // Evade is not a row to rest on
             g_yn_cursor = l.cursor;
-            if (ev == SEL_CONFIRM) { prompt_dismiss(); return row == 0 ? PROMPT_RESULT_YES : PROMPT_RESULT_NO; }
+            if (ev == SEL_CONFIRM) {
+                if (no_evade && row != 0) return PROMPT_RESULT_NONE;
+                prompt_dismiss();
+                return row == 0 ? PROMPT_RESULT_YES : PROMPT_RESULT_NO;
+            }
             if (input_key_pressed(KEY_Y)) { prompt_dismiss(); return PROMPT_RESULT_YES; }
-            if (input_key_pressed(KEY_N)) { prompt_dismiss(); return PROMPT_RESULT_NO;  }
+            if (input_key_pressed(KEY_N) && !no_evade) { prompt_dismiss(); return PROMPT_RESULT_NO; }
             return PROMPT_RESULT_NONE;
         }
         if (input_key_pressed(KEY_Y)) { prompt_dismiss(); return PROMPT_RESULT_YES; }

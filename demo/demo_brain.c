@@ -388,7 +388,7 @@ static bool resolve_combat_flow(Game *g, Map *map, Fog *fog,
                 g->contract.active_id) == 0);
     // Cornered: no other move exists -- take the fight at any odds (losing
     // runs the game's own temp death, the escape from a sealed pocket).
-    bool desperate = s_st.cornered && !siege;
+    bool desperate = (s_st.cornered || pending_foe_evade_blocked) && !siege;
     if (desperate) s_st.cornered = false;
 
     DemoHooks *hk = demo_hooks();

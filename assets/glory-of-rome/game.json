@@ -42,6 +42,9 @@
 	"magic":	{
 		"rites_per_zone":	true
 	},
+	"foes":	{
+		"evade_needs_free_square":	true
+	},
 	"economy":	{
 		"alcove_cost":	5000,
 		"boat_cost_cheap":	100,

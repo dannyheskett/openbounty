@@ -121,6 +121,18 @@ difficulty rows, the world map's orb row, the spells view (two columns of
 seven) and the gate picker (three columns) use the same rows. Combat's own
 menus are not changed yet.
 
+## Foe view (modern)
+
+Meeting a hostile band on the map opens a full-screen view on the town layout
+instead of the yes/no prompt: "Foes!" and the zone in the title strip, the
+plains backdrop at 2x with the band's lead troop (its first stack) standing on
+it, that troop at 2x in the portrait slot, the siege and gold tiles, then rows
+Fight and Evade beside the encounter text. Fight starts the battle; Evade (or
+Esc) leaves the hero where they stand, as declining always did. When the pack
+sets `foes.evade_needs_free_square` and none of the 8 squares around the hero
+is free to move onto, Evade is grey, the text says there is nowhere to run, and
+only Fight answers. A static guardian still starts its fight without asking.
+
 ## Count stepper
 
 Choosing how many troops to recruit, garrison or withdraw opens a stepper along

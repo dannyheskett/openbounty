@@ -71,6 +71,8 @@ bool exec_answer_pending(ExecCtx *ctx, bool fight_ok) {
                                                 f->garrison, 0, &ai_hp);
                 }
             }
+            // No free square to evade to: the fight cannot be declined.
+            if (pending_foe_evade_blocked) fight = true;
             CombatResult r;
             if (!exec_fight(ctx, fight, &r)) return false;
             break;

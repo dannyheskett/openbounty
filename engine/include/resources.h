@@ -129,6 +129,10 @@ typedef struct {
     // teaches that zone's rites, and its towns sell spells only to a hero who
     // has them. Off by default, so a pack that does not ask keeps one magic.
     bool rites_per_zone;
+    // game.json "foes.evade_needs_free_square": a hostile foe can be evaded
+    // only while a square around the hero is free (GameFoeCanEvade). Off by
+    // default, so a pack that does not ask keeps the free decline.
+    bool evade_needs_free_square;
     int boat_cost_normal;
     int boat_cost_cheap;
     int siege_cost;
@@ -459,6 +463,9 @@ typedef struct {
     char town_detail_boat_dock[RES_BANNER_LEN];  // %X% %Y%
     char town_detail_intel[RES_BANNER_LEN];      // %CASTLE%
     char town_contract_confirm[RES_BANNER_LEN];
+    char foe_fight[RES_BANNER_LEN];
+    char foe_evade[RES_BANNER_LEN];
+    char foe_evade_blocked[RES_BANNER_LEN];
     // Modern castle screens (home castle recruit/audience, own castle garrison).
     char castle_menu_recruit[RES_BANNER_LEN];
     char castle_continue[RES_BANNER_LEN];
