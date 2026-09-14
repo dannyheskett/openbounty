@@ -9,6 +9,8 @@
 static struct {
     bool pending;
     bool begun;
+    bool revealed;
+    int  cursor;
     int  gold_before, gold_after;
     int  recruited;
     char troop_id[32];
@@ -38,6 +40,9 @@ void loc_deal_absorb(const char *text) {
 }
 
 bool loc_deal_pending(void) { return deal.pending; }
+bool loc_deal_revealed(void) { return deal.begun || deal.revealed; }
+void loc_deal_reveal(void)   { deal.revealed = true; }
+int *loc_deal_cursor(void)   { return &deal.cursor; }
 
 void loc_deal_text(const Game *g, char *out, int cap) {
     out[0] = '\0';

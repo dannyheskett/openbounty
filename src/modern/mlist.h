@@ -46,6 +46,8 @@ void ml_stepper_draw(int x, int y, int w, const char *text);
 // line with `left` and `right` at its ends (the cost, the gold left). Returns
 // the height drawn (ml_count_panel_height()).
 int  ml_count_panel_height(void);
+// Just the -10 / -1 / number / +1 / +10 row centred in (x, w) at y; returns its height.
+int  ml_count_buttons(int x, int y, int w, int value);
 int  ml_count_panel(int x, int y, int w, const char *heading, int value, const char *sub,
                     const char *left, const char *right);
 // Apply one frame of stepper keys to *value within [lo, hi]. Returns true when

@@ -138,13 +138,9 @@ int ml_count_panel_height(void) {
     return ML_PAD + gh + ML_PAD + gh * 2 + ML_PAD / 2 + gh + ML_PAD + gh + ML_PAD;
 }
 
-int ml_count_panel(int x, int y, int w, const char *heading, int value, const char *sub,
-                   const char *left, const char *right) {
+int ml_count_buttons(int x, int y, int w, int value) {
     const int gh = BFONT_GLYPH_H, pad = ML_PAD;
-    int ty = y + pad;
-    bfont_draw(heading ? heading : "", x + pad, ty, PAL_CLR(YELLOW));
-    ty += gh + pad;
-    // The buttons and the number.
+    int ty = y;
     static const char *const LABELS[4] = { "-10", "-1", "+1", "+10" };
     static const int KEYS[4] = { KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_UP };
     int bh = gh * 2, bw = (int)bfont_measure("+10").x + 2 * pad;
@@ -163,7 +159,17 @@ int ml_count_panel(int x, int y, int w, const char *heading, int value, const ch
     DrawRectangle(mid - box_w / 2, ty, box_w, bh, PAL_CLR(BLACK));
     DrawRectangleLines(mid - box_w / 2, ty, box_w, bh, PAL_CLR(WHITE));
     bfont_draw(nb, mid - (int)bfont_measure(nb).x / 2, ty + (bh - gh) / 2, PAL_CLR(WHITE));
-    ty += bh + pad / 2;
+    return bh;
+}
+
+int ml_count_panel(int x, int y, int w, const char *heading, int value, const char *sub,
+                   const char *left, const char *right) {
+    const int gh = BFONT_GLYPH_H, pad = ML_PAD;
+    int ty = y + pad;
+    int mid = x + w / 2;
+    bfont_draw(heading ? heading : "", x + pad, ty, PAL_CLR(YELLOW));
+    ty += gh + pad;
+    ty += ml_count_buttons(x, ty, w, value) + pad / 2;
     if (sub && sub[0]) bfont_draw(sub, mid - (int)bfont_measure(sub).x / 2, ty, PAL_CLR(WHITE));
     ty += gh + pad;
     if (left && left[0])   bfont_draw(left, x + pad, ty, PAL_CLR(WHITE));

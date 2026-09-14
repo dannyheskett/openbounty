@@ -74,10 +74,21 @@ typedef enum {
 // One queued request. A flat value (no pointers) so Game stays value-copyable.
 // Role-specific fields are grouped; unused groups are zero. The decision
 // scratch deliberately mirrors the pending.h field set.
+// A message's picture hint: who or what it is about, for a shell that can show
+// it (the modern in-lay dialog). Presentation only; nothing reads it back.
+typedef enum {
+    REQ_FACE_NONE = 0,
+    REQ_FACE_VILLAIN,     // face_index = VillainDef.index
+    REQ_FACE_TROOP,       // face_index = TroopDef.index
+    REQ_FACE_ARTIFACT,    // face_index = artifact index
+} ReqFace;
+
 typedef struct {
     ReqRole role;
     char    header[PLAYER_IO_HEADER_CAP];
     char    body[PLAYER_IO_BODY_CAP];
+    ReqFace face;             // role == REQ_MESSAGE: the picture hint
+    int     face_index;
 
     // ---- role == REQ_DECISION -------------------------------------------
     PendingFlow    flow;          // which decision this is (FLOW_*)

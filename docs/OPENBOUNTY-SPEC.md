@@ -2210,6 +2210,12 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   the reason rather than removed. In-game Save and Load pick one of the ten
   slots; overwriting, loading and Exit ask Yes/No. Legacy menus are unchanged
   (2026-09-13).
+- **REQ-430t.** **In-lay dialog (modern).** A queued message may carry a
+  picture hint (`PlayerRequest.face` / `face_index`: enemy, troop, artifact);
+  the modern shell shows such a message as an in-lay dialog with the picture at
+  2x (docs/UI-PANELS.md), legacy ignores it. The capture message is composed
+  from `banners.capture_*` (King's Bounty keeps its original wording) and
+  carries the captured enemy's face (2026-09-14).
 - **REQ-430f.** **Keyboard detection and the letter selector (modern).**
   `input_host` latches which physical devices have been used: a real key
   event (not an injected one), a touch contact, a gamepad button or stick

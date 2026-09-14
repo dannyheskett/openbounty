@@ -21,6 +21,7 @@
 #include "bfont.h"
 #include "layout.h"
 #include "modern/mlayout.h"
+#include "overlay_impl.h"
 #include "modern/mlist.h"
 #include "modern/gamemenu.h"
 #include "lattice.h"
@@ -482,6 +483,7 @@ static void combat_present(const Combat *c, const Game *g,
     present_refit(target);
     present_begin(target);
     ml_set_area(ML_AREA_FULL);     // the field is full width: panels centre on it
+    if (CL_IS_MODERN) modern_overlay_set_sprites(sprites);
     combat_render_frame(c, g, sprites);
     // Open view (Options / Controls / Army / Character) draws over the
     // battlefield, on top of the still-visible field. map/fog are NULL

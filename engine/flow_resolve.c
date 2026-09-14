@@ -200,30 +200,20 @@ bool flow_apply_siege_villain(Game *g, const Resources *res,
     }
 
     if (caught_vid[0]) {
-        char body[640];
-        if (contract_match) {
-            int n = snprintf(body, sizeof body,
-                "...and the capture of %s.\n\n"
-                "For fulfilling your contract\n"
-                "you receive an additional\n"
-                "%d gold as bounty...\n"
-                "and a piece of the map to\n"
-                "the stolen scepter.",
-                vname, reward_gold);
-            if (ranked_up && n > 0 && n < (int)sizeof body) {
-                snprintf(body + n, sizeof body - (size_t)n,
-                         "\n\nYou are promoted to %s!",
-                         g->character.cls.rank_title);
-            }
-        } else {
-            snprintf(body, sizeof body,
-                "...and the capture of %s.\n\n"
-                "Since you did not have the\n"
-                "proper contract, the Lord\n"
-                "has been set free.",
-                vname);
+        const ResBanners *bn = &g->res->banners;
+        char body[640], title[128], gb[16];
+        snprintf(gb, sizeof gb, "%d", reward_gold);
+        ResTemplateVar v[] = { { "NAME", vname }, { "GOLD", gb },
+                               { "RANK", g->character.cls.rank_title } };
+        resources_format_template(body, sizeof body,
+                                  contract_match ? bn->capture_contract : bn->capture_free, v, 3);
+        if (contract_match && ranked_up) {
+            size_t n = strlen(body);
+            resources_format_template(body + n, (int)(sizeof body - n), bn->capture_promoted, v, 3);
         }
-        player_io_message(g, "Capture", body);
+        resources_format_template(title, sizeof title, bn->capture_title, v, 3);
+        PlayerRequest *msg = player_io_message(g, title, body);
+        if (msg && captured) { msg->face = REQ_FACE_VILLAIN; msg->face_index = captured->index; }
     }
     return false;
 }

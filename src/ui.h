@@ -83,6 +83,8 @@ bool shell_pump_player_io_message(Game *g);
 // Read-only accessors for renderers.
 const char *dialog_header_text(void);
 const char *dialog_body_text(void);
+// The open message's picture hint (a ReqFace; 0 = none), *index its subject.
+int dialog_face(int *index);
 
 // Dialog pagination (for multi-page text like at King's castle).
 int  dialog_page_current(void);

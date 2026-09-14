@@ -36,6 +36,8 @@ void legacy_overlay_draw_location_backdrop(const Game *g, const Sprites *s,
 
 void modern_overlay_draw_dialog(void);
 void modern_overlay_draw_dialog_centered(void);
+// The sprites the modern in-lay dialog draws its picture from.
+void modern_overlay_set_sprites(const Sprites *s);
 int  modern_overlay_dialog_page_count(void);
 void modern_overlay_draw_town(const Game *g, const Sprites *s);
 void modern_overlay_draw_castle(const Game *g, const Sprites *s);

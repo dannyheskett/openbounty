@@ -1201,8 +1201,21 @@ title:;
                 loc_deal_absorb(dialog_body_text());
                 dialog_dismiss();
             }
+            if (loc_deal_pending() && !prompt_is_active() && !loc_deal_revealed()) {
+                // The panorama first: its action row brings up the in-lay, Leave exits.
+                touch_request(TOUCH_CHROME_BACK);
+                int *cur = loc_deal_cursor();
+                int tapped = touch_tapped_row(TOUCH_LIST_PROMPT);
+                if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_DOWN)) *cur = 1 - *cur;
+                if (tapped >= 0) *cur = tapped;
+                bool go = tapped >= 0 || input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
+                          input_key_pressed(KEY_SPACE);
+                if (input_key_pressed(KEY_ESCAPE) || (go && *cur == 1)) { loc_deal_clear(); views_dismiss(); }
+                else if (go) loc_deal_reveal();
+                goto end_input;
+            }
             if (loc_deal_pending() && !prompt_is_active()) {
-                // The deal is on show: Leave (Enter, Escape or a tap) closes it.
+                // The deal is on show: Continue (Enter, Escape or a tap) closes it.
                 touch_request(TOUCH_CHROME_BACK);
                 int tapped = touch_tapped_row(TOUCH_LIST_PROMPT);
                 if (tapped == 0 || input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||

@@ -106,6 +106,8 @@ int  views_spells_cursor(void);      // modern: 0..13, legacy: -1
 
 // Town display name (from views_open_town), or NULL if not in VIEW_TOWN.
 const char *views_town_display_name(void);
+// Modern: a boat / spell / siege outcome is showing as a dialog (until Continue).
+bool views_town_result_dialog(void);
 
 // Town record id (canonical id for g->towns[] lookup), or NULL if not
 // in VIEW_TOWN.

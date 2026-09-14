@@ -3006,13 +3006,13 @@
 				}]
 		}, {
 			"index":	2,
-			"id":	"tacfarinas",
-			"name":	"Tacfarinas",
-			"zone":	"africa",
+			"id":	"brennus",
+			"name":	"Brennus",
+			"zone":	"italia",
 			"reward":	7000,
 			"puzzle_cell":	2,
-			"portrait":	"art/villains/tacfarinas_00.png",
-			"anim":	["art/villains/tacfarinas_00.png", "art/villains/tacfarinas_01.png", "art/villains/tacfarinas_02.png", "art/villains/tacfarinas_03.png", "art/villains/tacfarinas_04.png", "art/villains/tacfarinas_05.png", "art/villains/tacfarinas_06.png", "art/villains/tacfarinas_07.png"],
+			"portrait":	"art/villains/brennus_00.png",
+			"anim":	["art/villains/brennus_00.png", "art/villains/brennus_01.png", "art/villains/brennus_02.png", "art/villains/brennus_03.png", "art/villains/brennus_04.png", "art/villains/brennus_05.png", "art/villains/brennus_06.png", "art/villains/brennus_07.png"],
 			"army":	[{
 					"troop":	"peasants",
 					"count":	8
@@ -3031,13 +3031,13 @@
 				}]
 		}, {
 			"index":	3,
-			"id":	"jugurtha",
-			"name":	"Jugurtha",
-			"zone":	"africa",
+			"id":	"pyrrhus",
+			"name":	"Pyrrhus",
+			"zone":	"italia",
 			"reward":	8000,
 			"puzzle_cell":	3,
-			"portrait":	"art/villains/jugurtha_00.png",
-			"anim":	["art/villains/jugurtha_00.png", "art/villains/jugurtha_01.png", "art/villains/jugurtha_02.png", "art/villains/jugurtha_03.png", "art/villains/jugurtha_04.png", "art/villains/jugurtha_05.png", "art/villains/jugurtha_06.png", "art/villains/jugurtha_07.png"],
+			"portrait":	"art/villains/pyrrhus_00.png",
+			"anim":	["art/villains/pyrrhus_00.png", "art/villains/pyrrhus_01.png", "art/villains/pyrrhus_02.png", "art/villains/pyrrhus_03.png", "art/villains/pyrrhus_04.png", "art/villains/pyrrhus_05.png", "art/villains/pyrrhus_06.png", "art/villains/pyrrhus_07.png"],
 			"army":	[{
 					"troop":	"nomads",
 					"count":	5
@@ -3056,13 +3056,13 @@
 				}]
 		}, {
 			"index":	4,
-			"id":	"boudica",
-			"name":	"Boudica",
-			"zone":	"galliae",
+			"id":	"alaric",
+			"name":	"Alaric",
+			"zone":	"italia",
 			"reward":	9000,
 			"puzzle_cell":	4,
-			"portrait":	"art/villains/boudica_00.png",
-			"anim":	["art/villains/boudica_00.png", "art/villains/boudica_01.png", "art/villains/boudica_02.png", "art/villains/boudica_03.png", "art/villains/boudica_04.png", "art/villains/boudica_05.png", "art/villains/boudica_06.png", "art/villains/boudica_07.png"],
+			"portrait":	"art/villains/alaric_00.png",
+			"anim":	["art/villains/alaric_00.png", "art/villains/alaric_01.png", "art/villains/alaric_02.png", "art/villains/alaric_03.png", "art/villains/alaric_04.png", "art/villains/alaric_05.png", "art/villains/alaric_06.png", "art/villains/alaric_07.png"],
 			"army":	[{
 					"troop":	"peasants",
 					"count":	10
@@ -3081,13 +3081,13 @@
 				}]
 		}, {
 			"index":	5,
-			"id":	"civilis",
-			"name":	"Civilis",
-			"zone":	"galliae",
+			"id":	"attila",
+			"name":	"Attila",
+			"zone":	"italia",
 			"reward":	10000,
 			"puzzle_cell":	5,
-			"portrait":	"art/villains/civilis_00.png",
-			"anim":	["art/villains/civilis_00.png", "art/villains/civilis_01.png", "art/villains/civilis_02.png", "art/villains/civilis_03.png", "art/villains/civilis_04.png", "art/villains/civilis_05.png", "art/villains/civilis_06.png", "art/villains/civilis_07.png"],
+			"portrait":	"art/villains/attila_00.png",
+			"anim":	["art/villains/attila_00.png", "art/villains/attila_01.png", "art/villains/attila_02.png", "art/villains/attila_03.png", "art/villains/attila_04.png", "art/villains/attila_05.png", "art/villains/attila_06.png", "art/villains/attila_07.png"],
 			"army":	[{
 					"troop":	"pikemen",
 					"count":	6
@@ -3106,13 +3106,13 @@
 				}]
 		}, {
 			"index":	6,
-			"id":	"brennus",
-			"name":	"Brennus",
-			"zone":	"italia",
+			"id":	"boudica",
+			"name":	"Boudica",
+			"zone":	"galliae",
 			"reward":	12000,
 			"puzzle_cell":	6,
-			"portrait":	"art/villains/brennus_00.png",
-			"anim":	["art/villains/brennus_00.png", "art/villains/brennus_01.png", "art/villains/brennus_02.png", "art/villains/brennus_03.png", "art/villains/brennus_04.png", "art/villains/brennus_05.png", "art/villains/brennus_06.png", "art/villains/brennus_07.png"],
+			"portrait":	"art/villains/boudica_00.png",
+			"anim":	["art/villains/boudica_00.png", "art/villains/boudica_01.png", "art/villains/boudica_02.png", "art/villains/boudica_03.png", "art/villains/boudica_04.png", "art/villains/boudica_05.png", "art/villains/boudica_06.png", "art/villains/boudica_07.png"],
 			"army":	[{
 					"troop":	"barbarians",
 					"count":	4
@@ -3131,13 +3131,13 @@
 				}]
 		}, {
 			"index":	7,
-			"id":	"vercingetorix",
-			"name":	"Vercingetorix",
+			"id":	"civilis",
+			"name":	"Civilis",
 			"zone":	"galliae",
 			"reward":	14000,
 			"puzzle_cell":	7,
-			"portrait":	"art/villains/vercingetorix_00.png",
-			"anim":	["art/villains/vercingetorix_00.png", "art/villains/vercingetorix_01.png", "art/villains/vercingetorix_02.png", "art/villains/vercingetorix_03.png", "art/villains/vercingetorix_04.png", "art/villains/vercingetorix_05.png", "art/villains/vercingetorix_06.png", "art/villains/vercingetorix_07.png"],
+			"portrait":	"art/villains/civilis_00.png",
+			"anim":	["art/villains/civilis_00.png", "art/villains/civilis_01.png", "art/villains/civilis_02.png", "art/villains/civilis_03.png", "art/villains/civilis_04.png", "art/villains/civilis_05.png", "art/villains/civilis_06.png", "art/villains/civilis_07.png"],
 			"army":	[{
 					"troop":	"barbarians",
 					"count":	4
@@ -3156,13 +3156,13 @@
 				}]
 		}, {
 			"index":	8,
-			"id":	"arminius",
-			"name":	"Arminius",
+			"id":	"vercingetorix",
+			"name":	"Vercingetorix",
 			"zone":	"galliae",
 			"reward":	16000,
 			"puzzle_cell":	8,
-			"portrait":	"art/villains/arminius_00.png",
-			"anim":	["art/villains/arminius_00.png", "art/villains/arminius_01.png", "art/villains/arminius_02.png", "art/villains/arminius_03.png", "art/villains/arminius_04.png", "art/villains/arminius_05.png", "art/villains/arminius_06.png", "art/villains/arminius_07.png"],
+			"portrait":	"art/villains/vercingetorix_00.png",
+			"anim":	["art/villains/vercingetorix_00.png", "art/villains/vercingetorix_01.png", "art/villains/vercingetorix_02.png", "art/villains/vercingetorix_03.png", "art/villains/vercingetorix_04.png", "art/villains/vercingetorix_05.png", "art/villains/vercingetorix_06.png", "art/villains/vercingetorix_07.png"],
 			"army":	[{
 					"troop":	"barbarians",
 					"count":	4
@@ -3181,13 +3181,13 @@
 				}]
 		}, {
 			"index":	9,
-			"id":	"gildo",
-			"name":	"Gildo",
-			"zone":	"africa",
+			"id":	"arminius",
+			"name":	"Arminius",
+			"zone":	"galliae",
 			"reward":	18000,
 			"puzzle_cell":	9,
-			"portrait":	"art/villains/gildo_00.png",
-			"anim":	["art/villains/gildo_00.png", "art/villains/gildo_01.png", "art/villains/gildo_02.png", "art/villains/gildo_03.png", "art/villains/gildo_04.png", "art/villains/gildo_05.png", "art/villains/gildo_06.png", "art/villains/gildo_07.png"],
+			"portrait":	"art/villains/arminius_00.png",
+			"anim":	["art/villains/arminius_00.png", "art/villains/arminius_01.png", "art/villains/arminius_02.png", "art/villains/arminius_03.png", "art/villains/arminius_04.png", "art/villains/arminius_05.png", "art/villains/arminius_06.png", "art/villains/arminius_07.png"],
 			"army":	[{
 					"troop":	"nomads",
 					"count":	8
@@ -3203,13 +3203,13 @@
 				}]
 		}, {
 			"index":	10,
-			"id":	"pyrrhus",
-			"name":	"Pyrrhus",
-			"zone":	"italia",
+			"id":	"tacfarinas",
+			"name":	"Tacfarinas",
+			"zone":	"africa",
 			"reward":	20000,
 			"puzzle_cell":	10,
-			"portrait":	"art/villains/pyrrhus_00.png",
-			"anim":	["art/villains/pyrrhus_00.png", "art/villains/pyrrhus_01.png", "art/villains/pyrrhus_02.png", "art/villains/pyrrhus_03.png", "art/villains/pyrrhus_04.png", "art/villains/pyrrhus_05.png", "art/villains/pyrrhus_06.png", "art/villains/pyrrhus_07.png"],
+			"portrait":	"art/villains/tacfarinas_00.png",
+			"anim":	["art/villains/tacfarinas_00.png", "art/villains/tacfarinas_01.png", "art/villains/tacfarinas_02.png", "art/villains/tacfarinas_03.png", "art/villains/tacfarinas_04.png", "art/villains/tacfarinas_05.png", "art/villains/tacfarinas_06.png", "art/villains/tacfarinas_07.png"],
 			"army":	[{
 					"troop":	"pikemen",
 					"count":	9
@@ -3225,13 +3225,13 @@
 				}]
 		}, {
 			"index":	11,
-			"id":	"mithridates",
-			"name":	"Mithridates",
-			"zone":	"oriens",
+			"id":	"jugurtha",
+			"name":	"Jugurtha",
+			"zone":	"africa",
 			"reward":	25000,
 			"puzzle_cell":	11,
-			"portrait":	"art/villains/mithridates_00.png",
-			"anim":	["art/villains/mithridates_00.png", "art/villains/mithridates_01.png", "art/villains/mithridates_02.png", "art/villains/mithridates_03.png", "art/villains/mithridates_04.png", "art/villains/mithridates_05.png", "art/villains/mithridates_06.png", "art/villains/mithridates_07.png"],
+			"portrait":	"art/villains/jugurtha_00.png",
+			"anim":	["art/villains/jugurtha_00.png", "art/villains/jugurtha_01.png", "art/villains/jugurtha_02.png", "art/villains/jugurtha_03.png", "art/villains/jugurtha_04.png", "art/villains/jugurtha_05.png", "art/villains/jugurtha_06.png", "art/villains/jugurtha_07.png"],
 			"army":	[{
 					"troop":	"nomads",
 					"count":	9
@@ -3244,13 +3244,13 @@
 				}]
 		}, {
 			"index":	12,
-			"id":	"hannibal",
-			"name":	"Hannibal",
+			"id":	"gildo",
+			"name":	"Gildo",
 			"zone":	"africa",
 			"reward":	30000,
 			"puzzle_cell":	12,
-			"portrait":	"art/villains/hannibal_00.png",
-			"anim":	["art/villains/hannibal_00.png", "art/villains/hannibal_01.png", "art/villains/hannibal_02.png", "art/villains/hannibal_03.png", "art/villains/hannibal_04.png", "art/villains/hannibal_05.png", "art/villains/hannibal_06.png", "art/villains/hannibal_07.png"],
+			"portrait":	"art/villains/gildo_00.png",
+			"anim":	["art/villains/gildo_00.png", "art/villains/gildo_01.png", "art/villains/gildo_02.png", "art/villains/gildo_03.png", "art/villains/gildo_04.png", "art/villains/gildo_05.png", "art/villains/gildo_06.png", "art/villains/gildo_07.png"],
 			"army":	[{
 					"troop":	"nomads",
 					"count":	10
@@ -3269,13 +3269,13 @@
 				}]
 		}, {
 			"index":	13,
-			"id":	"zenobia",
-			"name":	"Zenobia",
-			"zone":	"oriens",
+			"id":	"hannibal",
+			"name":	"Hannibal",
+			"zone":	"africa",
 			"reward":	35000,
 			"puzzle_cell":	13,
-			"portrait":	"art/villains/zenobia_00.png",
-			"anim":	["art/villains/zenobia_00.png", "art/villains/zenobia_01.png", "art/villains/zenobia_02.png", "art/villains/zenobia_03.png", "art/villains/zenobia_04.png", "art/villains/zenobia_05.png", "art/villains/zenobia_06.png", "art/villains/zenobia_07.png"],
+			"portrait":	"art/villains/hannibal_00.png",
+			"anim":	["art/villains/hannibal_00.png", "art/villains/hannibal_01.png", "art/villains/hannibal_02.png", "art/villains/hannibal_03.png", "art/villains/hannibal_04.png", "art/villains/hannibal_05.png", "art/villains/hannibal_06.png", "art/villains/hannibal_07.png"],
 			"army":	[{
 					"troop":	"barbarians",
 					"count":	6
@@ -3294,13 +3294,13 @@
 				}]
 		}, {
 			"index":	14,
-			"id":	"shapur",
-			"name":	"Shapur",
+			"id":	"mithridates",
+			"name":	"Mithridates",
 			"zone":	"oriens",
 			"reward":	40000,
 			"puzzle_cell":	14,
-			"portrait":	"art/villains/shapur_00.png",
-			"anim":	["art/villains/shapur_00.png", "art/villains/shapur_01.png", "art/villains/shapur_02.png", "art/villains/shapur_03.png", "art/villains/shapur_04.png", "art/villains/shapur_05.png", "art/villains/shapur_06.png", "art/villains/shapur_07.png"],
+			"portrait":	"art/villains/mithridates_00.png",
+			"anim":	["art/villains/mithridates_00.png", "art/villains/mithridates_01.png", "art/villains/mithridates_02.png", "art/villains/mithridates_03.png", "art/villains/mithridates_04.png", "art/villains/mithridates_05.png", "art/villains/mithridates_06.png", "art/villains/mithridates_07.png"],
 			"army":	[{
 					"troop":	"barbarians",
 					"count":	6
@@ -3319,13 +3319,13 @@
 				}]
 		}, {
 			"index":	15,
-			"id":	"alaric",
-			"name":	"Alaric",
-			"zone":	"italia",
+			"id":	"zenobia",
+			"name":	"Zenobia",
+			"zone":	"oriens",
 			"reward":	45000,
 			"puzzle_cell":	15,
-			"portrait":	"art/villains/alaric_00.png",
-			"anim":	["art/villains/alaric_00.png", "art/villains/alaric_01.png", "art/villains/alaric_02.png", "art/villains/alaric_03.png", "art/villains/alaric_04.png", "art/villains/alaric_05.png", "art/villains/alaric_06.png", "art/villains/alaric_07.png"],
+			"portrait":	"art/villains/zenobia_00.png",
+			"anim":	["art/villains/zenobia_00.png", "art/villains/zenobia_01.png", "art/villains/zenobia_02.png", "art/villains/zenobia_03.png", "art/villains/zenobia_04.png", "art/villains/zenobia_05.png", "art/villains/zenobia_06.png", "art/villains/zenobia_07.png"],
 			"army":	[{
 					"troop":	"barbarians",
 					"count":	7
@@ -3344,13 +3344,13 @@
 				}]
 		}, {
 			"index":	16,
-			"id":	"attila",
-			"name":	"Attila",
-			"zone":	"italia",
+			"id":	"shapur",
+			"name":	"Shapur",
+			"zone":	"oriens",
 			"reward":	50000,
 			"puzzle_cell":	16,
-			"portrait":	"art/villains/attila_00.png",
-			"anim":	["art/villains/attila_00.png", "art/villains/attila_01.png", "art/villains/attila_02.png", "art/villains/attila_03.png", "art/villains/attila_04.png", "art/villains/attila_05.png", "art/villains/attila_06.png", "art/villains/attila_07.png"],
+			"portrait":	"art/villains/shapur_00.png",
+			"anim":	["art/villains/shapur_00.png", "art/villains/shapur_01.png", "art/villains/shapur_02.png", "art/villains/shapur_03.png", "art/villains/shapur_04.png", "art/villains/shapur_05.png", "art/villains/shapur_06.png", "art/villains/shapur_07.png"],
 			"army":	[{
 					"troop":	"dragons",
 					"count":	1

@@ -517,6 +517,7 @@ typedef struct {
     int         lcursor;     // cursor in a detail list
     TownConfirm confirm;
     TownConfirm asked;       // the one the open prompt is answering
+    bool        result_dialog;   // modern: the outcome shows as a dialog until Continue
     int         confirm_slot;
 } TownState;
 static TownState town;
@@ -1066,7 +1067,21 @@ static void town_list_do_row(Game *g, int i) {
     }
 }
 
+bool views_town_result_dialog(void) {
+    return view_stack_top() == VIEW_TOWN && town.result_dialog;
+}
+
 static bool town_modern_update(Game *g) {
+    if (town.result_dialog) {
+        // Continue: any key or a tap closes it, back to the main page.
+        if (ui_any_key_pressed() || touch_tapped_row(TOUCH_LIST_PROMPT) == 0) {
+            town.result_dialog = false;
+            town.info_active = false;
+            town.list = TOWN_LIST_MENU;
+            town.detail_page = 0;
+        }
+        return true;
+    }
     bool menu = (town.list == TOWN_LIST_MENU);
     int rows = views_town_list_rows(g);
 
@@ -1299,6 +1314,12 @@ void views_town_confirm_yes(Game *g) {
         case TOWN_CONFIRM_SIEGE:       town_do_siege(g); break;
         default: break;
     }
+    // Modern: the boat, spell and siege outcomes are said in a dialog with the
+    // section's person, and Continue returns to the town's main page.
+    if (CL_IS_MODERN && town.info_active &&
+        (town.asked == TOWN_CONFIRM_BOAT_RENT || town.asked == TOWN_CONFIRM_BOAT_CANCEL ||
+         town.asked == TOWN_CONFIRM_SPELL || town.asked == TOWN_CONFIRM_SIEGE))
+        town.result_dialog = true;
     town.asked = TOWN_CONFIRM_NONE;
     town.detail_page = 0;
 }

@@ -585,6 +585,10 @@ typedef struct {
     char count_garrison[RES_BANNER_LEN];
     char count_withdraw[RES_BANNER_LEN];
     char count_cancel[RES_BANNER_LEN];
+    char capture_title[RES_BANNER_LEN];
+    char capture_contract[RES_BANNER_LEN];
+    char capture_free[RES_BANNER_LEN];
+    char capture_promoted[RES_BANNER_LEN];
     char gmd_leave[RES_BANNER_LEN];
     char gmd_army[RES_BANNER_LEN];
     char gmd_character[RES_BANNER_LEN];

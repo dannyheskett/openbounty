@@ -56,6 +56,7 @@ static bool dialog_active = false;
 static char dialog_header[256];
 static char dialog_body[512];
 static int  dialog_page = 0;    // current page offset for pagination
+static int  dialog_face_kind = 0, dialog_face_idx = 0;   // the message's picture hint
 
 static void copy_to(char *dst, size_t dst_sz, const char *src) {
     size_t n = 0;
@@ -74,6 +75,7 @@ void open_dialog(const char *header, const char *body) {
 // vertical center of the fixed-size bottom panel. Data strings stay
 // clean; layout decisions stay in the renderer.
 void open_dialog_flags(const char *header, const char *body, int flags) {
+    dialog_face_kind = 0;
     copy_to(dialog_header, sizeof(dialog_header), header);
     if ((flags & MSG_FLAG_PADDED) && body) {
         char padded[sizeof(dialog_body)];
@@ -109,6 +111,7 @@ void dialog_dismiss(void)     {
 }
 
 const char *dialog_header_text(void) { return dialog_header; }
+int dialog_face(int *index) { if (index) *index = dialog_face_idx; return dialog_active ? dialog_face_kind : 0; }
 const char *dialog_body_text(void)   { return dialog_body;   }
 
 bool shell_pump_player_io_message(Game *g) {
@@ -121,6 +124,8 @@ bool shell_pump_player_io_message(Game *g) {
     const PlayerRequest *r = player_io_front(g);
     if (!r || r->role != REQ_MESSAGE) return false;
     open_dialog(r->header[0] ? r->header : NULL, r->body);
+    dialog_face_kind = (int)r->face;
+    dialog_face_idx = r->face_index;
     player_io_ack(g);   // consumed: it now lives in the shell dialog
     return true;
 }

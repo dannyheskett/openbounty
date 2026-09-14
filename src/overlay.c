@@ -124,6 +124,7 @@ static void draw_toast(void) {
 void overlay_draw(const Game *g, const Map *m, const Fog *f,
                           const Sprites *s) {
     ViewKind v = views_active();
+    if (CL_IS_MODERN) modern_overlay_set_sprites(s);
     // Panels centre on what is behind them: the map pane only while the map
     // itself shows (no view, or Controls opened straight from the map).
     // Combat draws its views through here with no map (m == NULL): the

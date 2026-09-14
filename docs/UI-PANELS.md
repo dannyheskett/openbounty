@@ -221,21 +221,31 @@ the device in use: "[Esc]" once a keyboard is used, "(B)" for a gamepad,
 nothing on touch. The give-up question reads "Give up the battle?", the spell
 picker "Cast which spell?" (letters still pick). Legacy keeps its notes.
 
+## In-lay dialog (modern, trial)
+
+A message that carries a picture hint (`PlayerRequest.face`: an enemy, a troop,
+an artifact) opens as an in-lay instead of the plain message box: a large framed
+dialog centred over the screen with the message header as its title, the
+picture at 2x (192x192) on the left, the words beside it, and Continue (any key
+or a tap). The first user is the capture after a castle siege: the enemy's
+animated face, then the bounty and map piece, or that the prisoner was set free
+(strings `capture_*`). The town's boat, spell and siege outcomes and the temple
+and dwelling confirmations use the same dialog with their person's portrait.
+
 ## Temple and dwelling (modern)
 
-The scene is the screen. Under the title strip (the temple's name or the
-dwelling and its troop, the zone at the right) the backdrop is drawn whole at
-3x (720x306 on Rome, centred), with the Augur where the pack places him or the
-dwelling's troop standing at 2x. Two in-lays sit on the scene: the words in a
-dark box at the top left (the offer; after a deal, what happened) and the
-portrait at its own 96 in a frame at the bottom right (the Augur's
-`sprites.ui.alcove_portrait`, the troop's portrait). One line under the scene
-gives your gold and the price or how many you can recruit; the answers are
-full-width rows (Learn the rites / Leave, Recruit / Leave). Recruit turns the
-rows into the full-width count stepper. After a deal the screen stays: the
-in-lay carries the Augur's reply or how many troops joined, and the gold before
-and after (`src/modern/location.c`), and the only row is Leave. A known zone's
-temple opens the same way with the Augur's words and Leave.
+Panorama, action, confirmation, map. The scene is the screen: under the title
+strip (the temple's name or the dwelling and its troop, the zone at the right)
+the backdrop whole at 3x (720x306 on Rome, centred), with the Augur where the
+pack places him or the dwelling's troop standing at 2x, and nothing over it.
+Under the scene, what is on offer and your purse; the answers are full-width
+rows (Learn the rites / Leave, Recruit / Leave). At a dwelling, Recruit opens
+"How many?" as an in-lay on the scene with "Recruit 20" / Cancel. Once the deal
+is done a large framed dialog opens over the scene: the portrait at 2x (the
+Augur's `sprites.ui.alcove_portrait`, the troop's portrait), the confirmation
+beside it (the Augur's reply, or how many troops joined, and the gold before and
+after; `src/modern/location.c`), and Continue, which returns to the map. A known
+zone's temple opens with the Augur's words in the same dialog.
 
 ## Combat action menu
 
