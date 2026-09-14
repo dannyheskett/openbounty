@@ -5,6 +5,7 @@
 #include "layout.h"
 #include "modern/mlayout.h"
 #include "modern/mlist.h"
+#include "modern/saveslots.h"
 #include "lattice.h"
 #include "present.h"
 #include "palette.h"
@@ -47,6 +48,7 @@ static void frame_begin(RenderTexture2D *rt) {
     present_refit(rt);
     present_begin(rt);
     ClearBackground(PAL_CLR(BLACK));
+    ml_set_area(ML_AREA_SCREEN);   // startup panels centre on the whole screen
 }
 
 // Draw the class-select cartoon as the screen backdrop, so dialog
@@ -216,40 +218,7 @@ static bool run_splash(RenderTexture2D *rt,
 // Returns: action=LOAD with slot set, or action=NEW with slot set.
 // ---------------------------------------------------------------------------
 
-typedef struct {
-    SaveHeader hdrs[SAVE_SLOT_COUNT];
-    int   existing;
-} SlotSet;
-
-static void scan_slots(SlotSet *s) {
-    memset(s, 0, sizeof(*s));
-    const Resources *r = resources_current();
-    const char *pid = (r && r->pack_id[0]) ? r->pack_id : NULL;
-    for (int i = 0; i < SAVE_SLOT_COUNT; i++) {
-        char path[512];
-        if (!SavePathGetSlot(pid, i, path, sizeof(path))) continue;
-        if (SaveGameReadHeader(path, &s->hdrs[i]) == SAVE_OK &&
-            s->hdrs[i].exists) {
-            s->existing++;
-        }
-    }
-}
-
-// Standard select-row labels for the modern startup lists (REQ-430n).
-static bool load_slot_row(void *ctx, int i, char *label, char *right, int cap) {
-    const SlotSet *slots = (const SlotSet *)ctx;
-    const Resources *r = resources_current();
-    right[0] = '\0';
-    if (slots->hdrs[i].exists) {
-        snprintf(label, (size_t)cap, "%2d  %-10.10s %-13.13s", i + 1,
-                 slots->hdrs[i].name, slots->hdrs[i].rank_title);
-        snprintf(right, 48, "%dd", slots->hdrs[i].days_left);
-    } else {
-        snprintf(label, (size_t)cap, "%2d  %s", i + 1,
-                 r ? r->ui.startup_save_picker_empty : "(empty)");
-    }
-    return true;
-}
+// The slots and their rows: src/modern/saveslots.c (the in-game menu uses them too).
 
 static bool title_row(void *ctx, int i, char *label, char *right, int cap) {
     const char **labels = (const char **)ctx;
@@ -280,7 +249,7 @@ static bool difficulty_row(void *ctx, int i, char *label, char *right, int cap) 
 static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
                             StartupChoice *out) {
     SlotSet slots;
-    scan_slots(&slots);
+    saveslots_scan(&slots);
     screen_open();
 
     int cursor = 0;
@@ -354,8 +323,6 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
             const ResUI *mui = mr ? &mr->ui : NULL;
             // The standard large rect (REQ-430j).
             ML_Rect lr = ml_large();
-            lr.x = (CL_SCREEN_W - lr.w) / 2;   // no sidebar here: centre on the screen
-            lr.y = (CL_SCREEN_H - lr.h) / 2;
             int mpad = ML_PAD;
             int mw = lr.w, mx = lr.x, my = lr.y;
             panel(lr.x, lr.y, lr.w, lr.h);
@@ -369,7 +336,7 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
             lattice_band_h(mx, mty, mw, 4);
             mty += 4;
             ml_list_draw(mx, mty, mw, my + lr.h - mty, SAVE_SLOT_COUNT, cursor,
-                         load_slot_row, &slots, TOUCH_LIST_STARTUP, PAL_CLR(DBLUE));
+                         saveslots_row, &slots, TOUCH_LIST_STARTUP, PAL_CLR(DBLUE));
             frame_end(rt);
             continue;
         }
@@ -842,10 +809,6 @@ static bool run_create_game(const Resources *res,
             // The standard large rect (REQ-430j) with the standard padding:
             // text ML_PAD in from the frame, selection bars ML_PAD / 2.
             ML_Rect lr = ml_large();
-            // ml_large centres on the map pane; this screen has no sidebar, so
-            // centre on the whole screen.
-            lr.x = (CL_SCREEN_W - lr.w) / 2;
-            lr.y = (CL_SCREEN_H - lr.h) / 2;
             int mrow = GH + 4;
             int mx = lr.x, my = lr.y, mw = lr.w;
             panel(lr.x, lr.y, lr.w, lr.h);

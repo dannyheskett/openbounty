@@ -5,7 +5,7 @@
 //
 //   small      six text lines tall, the pane's width, inset from its edges
 //              by the screen's spacing -- prompts and any message that fits
-//   large      six by four tiles, centred in the map pane -- long messages,
+//   large      six by four tiles, centred on ml_area() -- long messages,
 //              the game menu, combat's spell picker and victory
 //   location   a backdrop across the pane top at an integer scale, and the
 //              text area under it, both inset by the spacing -- the six
@@ -23,6 +23,14 @@
 #define OB_MODERN_MLAYOUT_H
 
 typedef struct { int x, y, w, h; } ML_Rect;
+
+// What a panel (small, large, a question, a toast) is centred on: the area
+// actually behind it. The adventure map with its HUD: the map pane. Combat and
+// every full-screen view: the full width under the status band. Startup: the
+// whole screen. Whoever draws the backdrop sets it for the frame.
+typedef enum { ML_AREA_MAP = 0, ML_AREA_FULL, ML_AREA_SCREEN } MlArea;
+void    ml_set_area(MlArea a);
+ML_Rect ml_area(void);
 
 // Horizontal and vertical padding inside every modern panel, in pixels.
 #define ML_PAD 8

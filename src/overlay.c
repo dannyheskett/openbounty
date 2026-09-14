@@ -13,6 +13,7 @@
 
 #include "overlay.h"
 #include "overlay_impl.h"
+#include "modern/gamemenu.h"
 #include "pending.h"
 #include "modern/mlayout.h"
 #include "layout.h"
@@ -97,8 +98,7 @@ void overlay_dim_scene(void) {
 // ---------------------------------------------------------------------------
 
 static void draw_menu(void) {
-    if (CL_IS_MODERN) modern_overlay_draw_menu();
-    else              legacy_overlay_draw_menu();
+    legacy_overlay_draw_menu();
 }
 
 static void draw_town(const Game *g, const Sprites *s) {
@@ -124,6 +124,15 @@ static void draw_toast(void) {
 void overlay_draw(const Game *g, const Map *m, const Fog *f,
                           const Sprites *s) {
     ViewKind v = views_active();
+    // Panels centre on what is behind them: the map pane only while the map
+    // itself shows (no view, or Controls opened straight from the map).
+    // Combat draws its views through here with no map (m == NULL): the
+    // battlefield behind them is full width.
+    if (CL_IS_MODERN) {
+        bool map_behind = m && (v == VIEW_NONE || (v == VIEW_CONTROLS && views_depth() == 1));
+        ml_set_area(map_behind && !(prompt_is_active() && pending_flow == FLOW_ATTACK_FOE)
+                    ? ML_AREA_MAP : ML_AREA_FULL);
+    }
 
     // Modern: a detail view, a prompt or a dialog sits on a dimmed scene, so
     // the panel is what the eye lands on. The toast alone does not dim.
@@ -134,6 +143,8 @@ void overlay_draw(const Game *g, const Map *m, const Fog *f,
         draw_options(g);
     } else if (v == VIEW_CONTROLS) {
         draw_controls(g);
+    } else if (v == VIEW_MENU && CL_IS_MODERN) {
+        modern_gamemenu_draw(g);
     } else if (v == VIEW_MENU) {
         draw_menu();
     } else if (v == VIEW_TOWN) {

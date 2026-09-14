@@ -22,6 +22,7 @@
 #include "layout.h"
 #include "modern/mlayout.h"
 #include "modern/mlist.h"
+#include "modern/gamemenu.h"
 #include "lattice.h"
 #include "present.h"
 #include "chrome.h"
@@ -255,58 +256,86 @@ int combat_cast_step(Combat *c, Game *g, const Sprites *sprites,
 // menu of what the unit and the hero can do now. A row closes the menu and
 // presses its key on the next frame, so it runs the exact path the key runs;
 // the keys stay as shortcuts. Rows that cannot apply are left out.
-#define COMBAT_ACT_MAX 8
-static bool s_act_open   = false;
-static int  s_act_cursor = 0;
+static bool s_act_open = false;
 
-static int combat_action_rows(const Combat *c, const Game *g,
-                              int keys[], const char *labels[]) {
+// The menu's pages (REQ-430s): the top level and its three pages. It opens on
+// the Unit page; Back from there goes to the top level, Back again closes.
+enum { CM_ROOT = 0, CM_UNIT, CM_HERO, CM_GAME };
+static int s_act_page[3], s_act_cursor[3], s_act_depth = 0;
+
+static void combat_menu_open(void) {
+    s_act_open = true;
+    s_act_page[0] = CM_ROOT; s_act_cursor[0] = 0;
+    s_act_page[1] = CM_UNIT; s_act_cursor[1] = 0;
+    s_act_depth = 2;
+}
+
+static void combat_menu_page(const Combat *c, const Game *g, int id, GmPage *p) {
     const ResUI *ui = &g->res->ui;
-    int n = 0;
-    const CombatUnit *u = (c->unit_id >= 0) ? &c->units[c->side][c->unit_id] : NULL;
-    keys[n] = KEY_SPACE; labels[n++] = ui->combat_act_wait;
-    if (u && u->shots > 0 && !combat_unit_surrounded(c, c->side, c->unit_id)) {
-        keys[n] = KEY_S; labels[n++] = ui->combat_act_shoot;
+    const ResBanners *bn = &g->res->banners;
+    memset(p, 0, sizeof *p);
+    #define ROW(l, d, sc, k, en) do { if (p->n < GM_ROWS_MAX) p->item[p->n++] = (GmItem){ l, d, sc, k, en }; } while (0)
+    switch (id) {
+    case CM_ROOT:
+        p->title = ui->gm_actions;
+        ROW(ui->gm_unit, bn->gmd_unit, "", GM_ACT_PAGE + CM_UNIT, true);
+        ROW(ui->gm_hero, bn->gmd_combat_army, "", GM_ACT_PAGE + CM_HERO, true);
+        ROW(ui->gm_game, bn->gmd_controls, "", GM_ACT_PAGE + CM_GAME, true);
+        ROW(ui->gm_back, bn->gmd_back, "", GM_ACT_BACK, true);
+        break;
+    case CM_UNIT: {
+        const CombatUnit *u = (c->unit_id >= 0) ? &c->units[c->side][c->unit_id] : NULL;
+        const TroopDef *t = u ? troop_by_index(u->troop_idx) : NULL;
+        const Game *hero = c->heroes[c->side];
+        bool shots = u && u->shots > 0;
+        bool close = u && combat_unit_surrounded(c, c->side, c->unit_id);
+        bool fly = t && (t->abilities & TROOP_ABIL_FLY) && u->flights > 0;
+        bool magic = hero && hero->stats.knows_magic;
+        bool spell_left = c->spells_this_round < 1;
+        p->title = ui->gm_unit;
+        ROW(ui->gm_wait, bn->gmd_wait, "", KEY_SPACE, true);
+        ROW(ui->gm_shoot, !shots ? bn->gmr_no_shots : close ? bn->gmr_adjacent : bn->gmd_shoot,
+            "S", KEY_S, shots && !close);
+        ROW(ui->gm_fly, fly ? bn->gmd_unit_fly : bn->gmr_cannot_fly, "F", KEY_F, fly);
+        ROW(ui->gm_cast, !magic ? bn->gmr_no_magic : !spell_left ? bn->gmr_one_spell : bn->gmd_combat_cast,
+            "U", KEY_U, magic && spell_left);
+        ROW(ui->gm_back, bn->gmd_back_up, "", GM_ACT_BACK, true);
+        break;
     }
-    const TroopDef *t = u ? troop_by_index(u->troop_idx) : NULL;
-    if (t && (t->abilities & TROOP_ABIL_FLY) && u->flights > 0) {
-        keys[n] = KEY_F; labels[n++] = ui->combat_act_fly;
+    case CM_HERO:
+        p->title = ui->gm_hero;
+        ROW(ui->gm_army, bn->gmd_combat_army, "A", KEY_A, true);
+        ROW(ui->gm_character, bn->gmd_combat_character, "V", KEY_V, true);
+        ROW(ui->gm_back, bn->gmd_back_up, "", GM_ACT_BACK, true);
+        break;
+    case CM_GAME:
+        p->title = ui->gm_game;
+        ROW(ui->gm_controls, bn->gmd_controls, "C", KEY_C, true);
+        ROW(ui->gm_back, bn->gmd_back_up, "", GM_ACT_BACK, true);
+        ROW(ui->gm_give_up, bn->gmd_give_up, "G", KEY_G, true);   // last, like Exit
+        break;
     }
-    const Game *hero = c->heroes[c->side];
-    if (hero && hero->stats.knows_magic && c->spells_this_round < 1) {
-        keys[n] = KEY_U; labels[n++] = ui->combat_act_cast;
-    }
-    keys[n] = KEY_A; labels[n++] = ui->menu_army;
-    keys[n] = KEY_V; labels[n++] = ui->menu_character;
-    keys[n] = KEY_C; labels[n++] = ui->combat_act_controls;
-    keys[n] = KEY_G; labels[n++] = ui->combat_act_give_up;
-    return n;
+    #undef ROW
 }
 
-static bool combat_label_row(void *ctx, int i, char *label, char *right, int cap) {
-    const char **labels = (const char **)ctx;
-    right[0] = '\0';
-    snprintf(label, (size_t)cap, "%s", labels[i]);
-    return true;
-}
-
-// The game menu's layout (REQ-430n): the title, a rail, then standard select
-// rows, scrolling when they outrun the panel.
+// The large panel: the path, the page's rows, the description beside them.
 static void combat_action_menu_draw(const Combat *c, const Game *g) {
-    int keys[COMBAT_ACT_MAX];
-    const char *labels[COMBAT_ACT_MAX];
-    int n = combat_action_rows(c, g, keys, labels);
-    if (s_act_cursor >= n) s_act_cursor = 0;
+    if (s_act_depth < 1) return;
+    int d = s_act_depth - 1;
+    GmPage p;
+    combat_menu_page(c, g, s_act_page[d], &p);
+    char path[96] = "";
+    for (int i = 0; i < s_act_depth; i++) {
+        GmPage pi;
+        combat_menu_page(c, g, s_act_page[i], &pi);
+        size_t n = strlen(path);
+        snprintf(path + n, sizeof path - n, "%s%s", i ? " > " : "", pi.title ? pi.title : "");
+    }
     ML_Rect r = ml_large();
-    DrawRectangle(r.x, r.y, r.w, r.h, PAL_CLR(DBLUE));
+    int cursor = s_act_cursor[d] < p.n ? s_act_cursor[d] : p.n - 1;
+    gm_draw_page(&p, path, "", r.x, r.y, r.w, r.h, 16 * BFONT_GLYPH_W, cursor,
+                 TOUCH_LIST_COMBAT_ACTIONS, NULL, NULL);
     ui_window_frame(r.x, r.y, r.w, r.h, PAL_CLR(YELLOW));
-    int ty = r.y + ML_PAD;
-    bfont_draw_centered(g->res->ui.menu_actions, r.x + r.w / 2, ty, PAL_CLR(YELLOW));
-    ty += BFONT_GLYPH_H + ML_PAD;
-    lattice_band_h(r.x, ty, r.w, 4);
-    ty += 4;
-    ml_list_draw(r.x, ty, r.w, r.y + r.h - ty, n, s_act_cursor, combat_label_row,
-                 (void *)labels, TOUCH_LIST_COMBAT_ACTIONS, PAL_CLR(DBLUE));
 }
 
 typedef struct { const Game *hero; } SpellRowCtx;
@@ -329,17 +358,22 @@ static int combat_player_action_full(Combat *c, const Game *g,
     // verbs. Modern: a tap on the active unit opens the action menu.
     if (!CL_IS_MODERN) touch_request(TOUCH_CHROME_COMBAT);
     if (CL_IS_MODERN && s_act_open) {
-        int keys[COMBAT_ACT_MAX];
-        const char *labels[COMBAT_ACT_MAX];
-        int n = combat_action_rows(c, g, keys, labels);
-        touch_request(TOUCH_CHROME_BACK);
-        SelList l = { n, s_act_cursor };
-        int row = -1;
-        SelEvent ev = sel_input(&l, TOUCH_LIST_COMBAT_ACTIONS, 0, &row);
-        s_act_cursor = l.cursor;
-        if (ev == SEL_CONFIRM && row >= 0 && row < n) {
+        int d = s_act_depth - 1;
+        GmPage p;
+        combat_menu_page(c, g, s_act_page[d], &p);
+        GmEvent ev = gm_page_input(&p, &s_act_cursor[d], TOUCH_LIST_COMBAT_ACTIONS);
+        int key = (ev == GM_EV_ACT) ? p.item[s_act_cursor[d]].key : 0;
+        if (ev == GM_EV_BACK || key == GM_ACT_BACK) {
+            if (--s_act_depth < 1) s_act_open = false;
+        } else if (key >= GM_ACT_PAGE && key < GM_ACT_USER) {
+            if (s_act_depth < 3) {
+                s_act_page[s_act_depth] = key - GM_ACT_PAGE;
+                s_act_cursor[s_act_depth] = 0;
+                s_act_depth++;
+            }
+        } else if (key) {
             s_act_open = false;
-            input_host_inject_key_next_frame(keys[row]);
+            input_host_inject_key_next_frame(key);
         }
         return 0;
     }
@@ -353,8 +387,7 @@ static int combat_player_action_full(Combat *c, const Game *g,
     }
     if (CL_IS_MODERN &&
         (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER))) {
-        s_act_open   = true;
-        s_act_cursor = 0;
+        combat_menu_open();
         return 0;
     }
     int dx, dy;
@@ -448,6 +481,7 @@ static void combat_present(const Combat *c, const Game *g,
                            RenderTexture2D *target) {
     present_refit(target);
     present_begin(target);
+    ml_set_area(ML_AREA_FULL);     // the field is full width: panels centre on it
     combat_render_frame(c, g, sprites);
     // Open view (Options / Controls / Army / Character) draws over the
     // battlefield, on top of the still-visible field. map/fog are NULL
@@ -657,8 +691,8 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
                 views_dismiss();
                 continue;
             }
-            if (s_act_open) {           // modern action menu: ESC closes it
-                s_act_open = false;
+            if (s_act_open) {           // modern action menu: ESC goes back a page
+                if (--s_act_depth < 1) s_act_open = false;
                 continue;
             }
             if (!c.picker_active && c.cast_phase == COMBAT_CAST_NONE) {
@@ -666,8 +700,7 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
                 // action menu on the player's turn; legacy: a no-op.
                 if (CL_IS_MODERN && c.side == COMBAT_SIDE_PLAYER && c.unit_id >= 0 &&
                     !c.units[c.side][c.unit_id].out_of_control) {
-                    s_act_open = true;
-                    s_act_cursor = 0;
+                    combat_menu_open();
                 }
                 continue;
             }

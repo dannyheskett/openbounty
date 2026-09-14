@@ -2202,6 +2202,14 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   the view open through the answer's message and closes it when no prompt,
   dialog or queued request remains. With `economy.rites_per_zone` a known
   zone's temple raises the alcove view behind its message (2026-09-13).
+- **REQ-430s.** **Game and combat menus (modern).** Traditional drill-down
+  menus (`src/modern/gamemenu.c`, docs/UI-PANELS.md): one column of rows per
+  page ending in Back, the path in the title strip, a description beside the
+  rows. Game menu: Hero, World, Game; Debug first and Exit last on Game. The
+  combat menu opens on its Unit page. Rows that do not apply are greyed with
+  the reason rather than removed. In-game Save and Load pick one of the ten
+  slots; overwriting, loading and Exit ask Yes/No. Legacy menus are unchanged
+  (2026-09-13).
 - **REQ-430f.** **Keyboard detection and the letter selector (modern).**
   `input_host` latches which physical devices have been used: a real key
   event (not an injected one), a touch contact, a gamepad button or stick

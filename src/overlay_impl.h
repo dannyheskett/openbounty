@@ -37,7 +37,6 @@ void legacy_overlay_draw_location_backdrop(const Game *g, const Sprites *s,
 void modern_overlay_draw_dialog(void);
 void modern_overlay_draw_dialog_centered(void);
 int  modern_overlay_dialog_page_count(void);
-void modern_overlay_draw_menu(void);
 void modern_overlay_draw_town(const Game *g, const Sprites *s);
 void modern_overlay_draw_castle(const Game *g, const Sprites *s);
 void modern_overlay_draw_foe(const Game *g, const Sprites *s);

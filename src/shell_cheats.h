@@ -41,6 +41,8 @@ typedef enum {
 
 // The row label for a cheat on the Debug page.
 const char *cheat_label(CheatAction a);
+// What it does, one line, for the Debug page.
+const char *cheat_desc(CheatAction a);
 
 CheatResult cheat_apply(CheatAction a, Game *game, Map *map, Fog *fog,
                         const Resources *res, const Sprites *sprites,

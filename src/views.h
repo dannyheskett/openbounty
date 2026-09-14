@@ -19,9 +19,6 @@ typedef struct {
     bool (*on_load)(void *userdata);
     bool (*on_new)(void *userdata);
     bool (*on_quit)(void *userdata);
-    // Modern: whether a hotkey row applies right now (Fly only when not
-    // flying, and so on). NULL means every row applies.
-    bool (*key_available)(int key, void *userdata);
 } MenuCallbacks;
 
 // The callbacks the menu uses when it opens, so the modern root page can be
@@ -36,6 +33,9 @@ void views_menu_set_debug(bool on);
 // closes itself; the caller applies the cheat (it needs the map, fog, sprites
 // and render target the menu does not have). Reading clears it.
 int  views_menu_take_cheat(void);
+
+// How many views are stacked (0 = none).
+int views_depth(void);
 
 // views_active() is declared in engine/include/ui_host.h since engine
 // code (state_serialize, flows) also calls it.
@@ -246,6 +246,7 @@ typedef enum {
     TOWN_ROW_SPELL,
     TOWN_ROW_SIEGE,
     TOWN_ROW_COUNT,
+    TOWN_ROW_LEAVE = TOWN_ROW_COUNT,   // modern: the main page's last row, Leave
 } TownRow;
 
 #endif

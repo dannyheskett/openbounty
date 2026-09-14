@@ -102,6 +102,7 @@
 // src/shell_audience.{c,h}.
 #include "shell_audience.h"
 #include "modern/castle.h"
+#include "modern/gamemenu.h"
 
 // Per-frame draw_frame() dispatcher moved to src/shell_frame.{c,h}.
 #include "shell_frame.h"
@@ -884,6 +885,7 @@ title:;
     bool quit_requested = false;
     bool new_game_requested = false;   // modern New Game row chosen: ask
     bool new_game_asking = false;      // its yes/no prompt is up
+    bool menu_asking = false;          // modern game menu: Yes/No before exit, load or overwrite
     bool castle_asking = false;        // modern home castle: Yes/No before a tribute
     bool town_asking = false;          // modern town: a Yes/No before an action is up
     // Set when a demo run WON (scepter recovered): the win cartoon + win
@@ -904,7 +906,6 @@ title:;
     MenuCallbacks menu_cbs = {
         .on_save = menu_save, .on_load = menu_load,
         .on_new  = menu_new,  .on_quit = menu_quit,
-        .key_available = menu_key_available,
     };
     views_menu_bind(&menu_cbs, &menu_ctx);
     views_menu_set_debug(debug_flag);
@@ -1084,6 +1085,12 @@ title:;
             goto end_input;
         }
 
+        if (menu_asking) {
+            PromptResult r = prompt_update();
+            if (r != PROMPT_RESULT_NONE) menu_asking = false;
+            if (r == PROMPT_RESULT_YES) modern_gamemenu_confirm_yes();
+            goto end_input;
+        }
         if (castle_asking) {
             PromptResult r = prompt_update();
             if (r != PROMPT_RESULT_NONE) castle_asking = false;
@@ -1197,7 +1204,24 @@ title:;
         if (prompt_dispatch_tick(&sctx)) {
             // prompt is up (or just resolved); skip the rest of input
         } else if (views_active() == VIEW_MENU) {
-            views_menu_update(&menu_cbs, &menu_ctx);
+            if (CL_IS_MODERN) {
+                modern_gamemenu_update(&game);
+                char ask[RES_BANNER_LEN];
+                if (modern_gamemenu_take_confirm(&game, ask, sizeof ask)) {
+                    prompt_yes_no_open(NULL, ask);
+                    menu_asking = true;
+                }
+                int slot = 0;
+                switch (modern_gamemenu_take_action(&slot)) {
+                    case GM_DO_SAVE: menu_ctx.slot = slot; menu_save(&menu_ctx); views_dismiss(); break;
+                    case GM_DO_LOAD: menu_ctx.slot = slot; if (menu_load(&menu_ctx)) views_dismiss(); break;
+                    case GM_DO_NEW:  menu_new(&menu_ctx); views_dismiss(); break;
+                    case GM_DO_EXIT: menu_quit(&menu_ctx); break;
+                    case GM_DO_NONE: break;
+                }
+            } else {
+                views_menu_update(&menu_cbs, &menu_ctx);
+            }
             if (new_game_requested) {
                 new_game_requested = false;
                 prompt_yes_no_open(NULL, res.ui.new_game_confirm);

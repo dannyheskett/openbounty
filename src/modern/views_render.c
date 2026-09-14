@@ -46,8 +46,9 @@
 
 // Solid-fill background + 1px yellow border for a view panel.
 static void draw_view_panel(void) {
+    // The screen chrome already frames the full rect; a window ring here would
+    // be drawn outside it, over the chrome, and stand proud of the status band.
     DrawRectangle(VIEW_X, VIEW_Y, VIEW_W, VIEW_H, PAL_CLR(DGREY));
-    ui_window_frame(VIEW_X, VIEW_Y, VIEW_W, VIEW_H, PAL_CLR(DRED));
 }
 
 // Thin horizontal rule between rows.
@@ -68,9 +69,7 @@ static void draw_character(const Game *g, const Sprites *s) {
     // Full content width (covers HUD); solid black background per ref.
     int vx = FULL_VIEW_X;
     int vw = FULL_VIEW_W;
-    DrawRectangle(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DGREY));
-    // The lattice ring round the card.
-    ui_window_frame(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DGREY));
+    DrawRectangle(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DGREY));   // framed by the chrome
 
     const ClassDef *cls = class_by_id(g->character.cls.id);
     // Authored 96x102 in the 320x200 design space; the slot scales with the
@@ -229,8 +228,7 @@ static void draw_army(const Game *g, const Sprites *s) {
     // -- the right-column stats need the extra width to lay out cleanly.
     int vx = FULL_VIEW_X;
     int vw = FULL_VIEW_W;
-    DrawRectangle(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DGREY));
-    ui_window_frame(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DRED));
+    DrawRectangle(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DGREY));   // framed by the chrome
 
     // The row holds a troop sprite, so its height is a tile. It also carries
     // three lines of text beside that sprite, so it must clear 3 glyphs however
@@ -346,9 +344,8 @@ static void draw_contract(const Game *g, const Sprites *s) {
     int panel_w = VIEW_W;
     int panel_h = VIEW_H;
 
-    // Blue panel with the lattice border.
+    // Blue panel, framed by the chrome.
     DrawRectangle(panel_x, panel_y, panel_w, panel_h, PAL_CLR(DBLUE));
-    ui_window_frame(panel_x, panel_y, panel_w, panel_h, PAL_CLR(YELLOW));
 
     int pad = VIEW_PAD;
     int tx = panel_x + pad;
@@ -850,8 +847,7 @@ static void draw_gate(void) {
     // Full content width (map + sidebar): town names can be long.
     int vx = FULL_VIEW_X;
     int vw = FULL_VIEW_W;
-    DrawRectangle(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DGREY));
-    ui_window_frame(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DRED));
+    DrawRectangle(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DGREY));   // framed by the chrome
 
     const ResUI *ui = &resources_current()->ui;
     const char *title = views_gate_is_town() ? ui->gate_title_town

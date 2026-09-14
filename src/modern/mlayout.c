@@ -15,20 +15,32 @@ int ml_space(void) {
 // Small: six text lines plus padding, the pane's width less the margin, the
 // margin above the pane's bottom edge. Sized from the font rather than the
 // tile, so a message has room to breathe whatever face the pack ships.
+static MlArea s_area = ML_AREA_MAP;
+
+void ml_set_area(MlArea a) { s_area = a; }
+
+ML_Rect ml_area(void) {
+    if (s_area == ML_AREA_FULL) return ml_full();
+    if (s_area == ML_AREA_SCREEN) return (ML_Rect){ 0, 0, CL_SCREEN_W, CL_SCREEN_H };
+    return (ML_Rect){ CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H };
+}
+
 ML_Rect ml_small(void) {
     int S = ml_space();
+    ML_Rect a = ml_area();
     int h = ML_SMALL_LINES * BFONT_GLYPH_H + 2 * ML_PAD;
-    ML_Rect r = { CL_MAP_X + S, CL_MAP_Y + CL_MAP_H - S - h, CL_MAP_W - 2 * S, h };
+    ML_Rect r = { a.x + S, a.y + a.h - S - h, a.w - 2 * S, h };
     return r;
 }
 
 ML_Rect ml_large(void) {
     // Six by four tiles, never closer to the pane's edges than the margin.
     int S = ml_space();
+    ML_Rect a = ml_area();
     int w = 6 * CL_TILE_W, h = 4 * CL_TILE_H;
-    if (w > CL_MAP_W - 2 * S) w = CL_MAP_W - 2 * S;
-    if (h > CL_MAP_H - 2 * S) h = CL_MAP_H - 2 * S;
-    ML_Rect r = { CL_MAP_X + (CL_MAP_W - w) / 2, CL_MAP_Y + (CL_MAP_H - h) / 2, w, h };
+    if (w > a.w - 2 * S) w = a.w - 2 * S;
+    if (h > a.h - 2 * S) h = a.h - 2 * S;
+    ML_Rect r = { a.x + (a.w - w) / 2, a.y + (a.h - h) / 2, w, h };
     return r;
 }
 

@@ -19,7 +19,7 @@ bool menu_save(void *ud) {
     MenuCtx *c = (MenuCtx *)ud;
     char path[1024];
     const char *pid = c->res->pack_id[0] ? c->res->pack_id : NULL;
-    if (!SavePathGetSlot(pid, 0, path, sizeof(path))) {
+    if (!SavePathGetSlot(pid, c->slot, path, sizeof(path))) {
         toast_show(c->res->ui.toast_save_cancelled);
         return true;
     }
@@ -34,7 +34,7 @@ bool menu_load(void *ud) {
     MenuCtx *c = (MenuCtx *)ud;
     char path[1024];
     const char *pid = c->res->pack_id[0] ? c->res->pack_id : NULL;
-    if (!SavePathGetSlot(pid, 0, path, sizeof(path))) {
+    if (!SavePathGetSlot(pid, c->slot, path, sizeof(path))) {
         toast_show(c->res->ui.toast_load_cancelled);
         return false;
     }
@@ -66,20 +66,5 @@ bool menu_new(void *ud) {
 bool menu_quit(void *ud) {
     MenuCtx *c = (MenuCtx *)ud;
     *c->quit_flag = true;
-    return true;
-}
-
-bool menu_key_available(int key, void *ud) {
-    MenuCtx *c = (MenuCtx *)ud;
-    if (!c || !c->game) return true;
-    int mount = c->game->character.mount;
-    if (key == KEY_F) return mount != MOUNT_FLY;
-    if (key == KEY_L) return mount == MOUNT_FLY;
-    if (key == KEY_N) return mount == MOUNT_SAIL;
-    if (key == KEY_D) {                  // the key path needs a troop to dismiss
-        for (int i = 0; i < GAME_ARMY_SLOTS; i++)
-            if (c->game->army[i].id[0] && c->game->army[i].count > 0) return true;
-        return false;
-    }
     return true;
 }

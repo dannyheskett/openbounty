@@ -79,18 +79,38 @@ Army is five rows of a full tile, filling the 480 exactly. The world map draws
 whole pixels per map cell against 776x480 (Italia, 64x128, gets 3). The
 puzzle's five-tile grid is centred in the rect.
 
+## What a panel is centred on
+
+The small and large layouts, questions and toasts centre on the area behind
+them (`ml_area`, src/modern/mlayout.c): the map pane while the adventure map
+and its HUD show; the full width under the status band over combat and every
+full-screen view (menu, town, castle, temple, dwelling, the detail views); the
+whole screen at startup. The screen drawing the backdrop sets it each frame.
+
 ## The game menu
 
-Opened by Escape or O, in the large rect: Screens >, Actions >, Controls,
-Save, Load, New Game, Exit, and Debug > when started with `--debug`
-(REQ-430k). Screens and Actions are built from the pack's `keybinds`
-(Screens: Army, Contract, Auto-mapping, Puzzle, Character; Actions: the rest,
-including Dismiss Army, New Continent and Rest), a row left out when it does
-not apply to the hero as he stands (Fly while flying, Land while walking, New
-Continent off a boat, Dismiss with no troops). No row shows a key. A Screens or
-Actions row closes the menu and presses its key on the next frame, so the
-action runs the path its keypress does. Controls opens over the menu in the
-same rect and closes back to it. Every row is tappable.
+Opened by Escape, O or a tap on the top bar (REQ-430s): a traditional
+drill-down menu on one full screen (`src/modern/gamemenu.c`). Each page is one
+column of standard rows ending in Back; a row that opens a page shows ">". The
+title strip shows the path ("Menu > Game > Save") and the zone; the panel
+beside the rows describes the row under the cursor, in yellow when it says why
+a greyed row does not apply.
+
+- **Menu:** Hero >, World >, Game >, Back
+- **Hero:** Army, Character, Contract, Puzzle, Dismiss, Back
+- **World:** Map, Cast a spell, Search, Fly (Land while flying), End the week,
+  Rest, Set sail, Back
+- **Game:** Debug > (first, with `--debug`), Save >, Load >, Controls,
+  New Game, Back, Exit (always last)
+- **Save / Load:** the ten slots (the title's slot rows), Back
+
+Greyed rows can be selected (no troops to dismiss, only while sailing, no saved
+games, an empty slot to load). With a keyboard in use each row shows its
+shortcut at the right. Up/Down move and scroll; the scroll arrows on a long
+page are tap targets. Enter or a tap opens or acts; Escape, Back or the top bar
+goes up a page and closes the menu from the top. A Hero or World row closes
+the menu and presses its key on the next frame. Controls opens over the menu.
+Saving over a slot, loading and Exit ask Yes/No.
 
 ## Select rows
 
@@ -154,6 +174,10 @@ Withdraw >, listing the army's or the garrison's stacks; any part of a stack
 moves, and withdrawing warns when the army would exceed its leadership. Esc
 goes back a level. Legacy's castle screens are unchanged.
 
+The main page of the town, the home castle and an owned castle ends in a
+**Leave** row (the same as Escape: back to the map), like the temple and
+dwelling screens.
+
 With `game.json` `audiences` (Glory of Rome), the castle's barracks keeper
 (`special.barracks_portrait` / `barracks_figure`) stands on the main and Recruit
 pages and the ruler appears only on Audience, whose rows are Promotion,
@@ -190,10 +214,13 @@ are known opens the same screen with only Leave.
 
 ## Combat action menu
 
-Enter, or a tap on the active unit, opens Actions in the large rect: Wait,
-Shoot, Fly, Cast a spell, Army, Character, Controls, Give up, without the rows
-that cannot apply (no shots or surrounded, cannot fly, a spell already cast
-this round, no magic). Escape closes it.
+Enter or a tap on the active unit, Escape or a tap on the top bar opens Actions
+in the large rect, the same drill-down pages as the game menu, on the **Unit**
+page: Wait, Shoot, Fly, Cast a spell, Back. Back (or Escape) goes to the top
+level (Unit >, Hero >, Game >, Back): **Hero** holds Army and Character,
+**Game** Controls and Give up (last). Rows that cannot apply are greyed with the
+reason (no shots left, enemies too close, cannot fly, one spell a round, no
+magic).
 
 ## Dim
 

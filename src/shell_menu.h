@@ -23,14 +23,12 @@ typedef struct {
     bool            *quit_flag;
     bool             hud_pref;
     bool            *new_game_flag;   // modern: New Game asks, then returns to the title menu
+    int              slot;            // modern: the save slot the menu picked (0-based)
 } MenuCtx;
 
 bool menu_save(void *ud);
 bool menu_load(void *ud);
 bool menu_new(void *ud);
 bool menu_quit(void *ud);
-// Whether a hotkey row applies to the hero as he stands: Fly only when not
-// flying, Land only when flying, and so on (the Options panel's old filter).
-bool menu_key_available(int key, void *ud);
 
 #endif

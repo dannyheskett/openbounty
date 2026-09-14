@@ -57,9 +57,10 @@ void modern_prompt_draw(const PromptView *p) {
     const int INSET = ML_PAD + 4;
     int line_h = BFONT_GLYPH_H + 2;
     int sp = ml_space();
-    int x = CL_MAP_X + sp, w = CL_MAP_W - 2 * sp;
-    int bottom = CL_MAP_Y + CL_MAP_H - sp;
-    int max_h = CL_MAP_H - 2 * sp;
+    ML_Rect area = ml_area();     // centred on what is behind it
+    int x = area.x + sp, w = area.w - 2 * sp;
+    int bottom = area.y + area.h - sp;
+    int max_h = area.h - 2 * sp;
     int text_w = w - 2 * INSET;
 
     bool choices = (p->kind == PK_NUMERIC || p->kind == PK_AB_CHOICE) && p->choice_n > 0;

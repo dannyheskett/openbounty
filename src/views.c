@@ -9,7 +9,7 @@
 #include "audio.h"
 #include "tables.h"
 #include "recorder.h"
-#include "shell_cheats.h"
+#include "modern/gamemenu.h"
 #include "ui.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -199,9 +199,6 @@ typedef enum {
     MENU_KIND_VIEW,       // switch to MenuEntry.view
     MENU_KIND_ACTION,     // call MenuEntry.action on callbacks
     MENU_KIND_BACK,       // pop to previous page (or close at root)
-    MENU_KIND_KEY,        // modern: close the menu and press MenuEntry.key
-    MENU_KIND_PUSH_VIEW,  // modern: open MenuEntry.view over the menu
-    MENU_KIND_CHEAT,      // --debug: close the menu and apply cheat MenuEntry.key
 } MenuKind;
 
 typedef enum {
@@ -217,9 +214,9 @@ typedef struct {
     const char            *label;
     MenuKind               kind;
     const struct MenuPage *page;   // MENU_KIND_SUBMENU
-    ViewKind               view;   // MENU_KIND_VIEW / MENU_KIND_PUSH_VIEW
+    ViewKind               view;   // MENU_KIND_VIEW
     MenuAction             action; // MENU_KIND_ACTION
-    int                    key;    // MENU_KIND_KEY: the raylib key; MENU_KIND_CHEAT: the cheat
+    int                    key;    // unused
 } MenuEntry;
 
 typedef struct MenuPage {
@@ -309,127 +306,18 @@ static MenuFrame menu_stack[MENU_STACK_MAX];
 static int       menu_depth = 0;   // 0 = closed; 1 = root; >1 = nested
 
 // ----- Modern: one menu --------------------------------------------------------
-// Modern has ONE game menu (REQ-430j): a Screens page and an Actions page built
-// from the pack's own `keybinds`, then Controls, Save, Load, New Game and Exit
-// (and Debug with --debug). Choosing a Screens or Actions row closes the menu
-// and presses its key on the next frame, so every action runs the exact path
-// its keypress runs -- there is no second table of what A does. Rows show no
-// key letters: modern is menu driven, and the keys are shortcuts only.
-static const MenuCallbacks *s_menu_cbs = NULL;
-static void                *s_menu_ud  = NULL;
-
-void views_menu_bind(const MenuCallbacks *cbs, void *userdata) {
-    s_menu_cbs = cbs;
-    s_menu_ud  = userdata;
-}
-
-#define MODERN_MENU_MAX 24
-static MenuEntry MODERN_ENTRIES[MODERN_MENU_MAX];
-static MenuPage  MODERN_PAGE = { "Game Menu", MODERN_ENTRIES, 0 };
-static MenuEntry SCREENS_ENTRIES[MODERN_MENU_MAX];
-static MenuPage  SCREENS_PAGE = { "Screens", SCREENS_ENTRIES, 0 };
-static MenuEntry ACTIONS_ENTRIES[MODERN_MENU_MAX];
-static MenuPage  ACTIONS_PAGE = { "Actions", ACTIONS_ENTRIES, 0 };
-
-// ----- --debug: the Debug page ---------------------------------------------------
-static bool      s_debug = false;
-static int       s_pending_cheat = -1;
-static MenuEntry DEBUG_ENTRIES[CHEAT_COUNT + 1];
-static MenuPage  DEBUG_PAGE = { "Debug", DEBUG_ENTRIES, 0 };
-
+// Modern's game menu is its own full screen (src/modern/gamemenu.c, REQ-430s);
+// the pages below are legacy's.
+static bool s_debug = false;
+void views_menu_bind(const MenuCallbacks *cbs, void *userdata) { (void)cbs; (void)userdata; }
 void views_menu_set_debug(bool on) { s_debug = on; }
-
-int views_menu_take_cheat(void) {
-    int c = s_pending_cheat;
-    s_pending_cheat = -1;
-    return c;
-}
-
-static void debug_page_build(const char *back_label) {
-    int n = 0;
-    for (int i = 0; i < CHEAT_COUNT; i++)
-        DEBUG_ENTRIES[n++] = (MenuEntry){ cheat_label((CheatAction)i), MENU_KIND_CHEAT,
-                                          NULL, VIEW_NONE, MENU_ACT_NONE, i };
-    DEBUG_ENTRIES[n++] = (MenuEntry){ back_label, MENU_KIND_BACK,
-                                      NULL, VIEW_NONE, MENU_ACT_NONE, 0 };
-    DEBUG_PAGE.count = n;
-}
-
-// The raylib key a keybind presses, or 0 for one that is not a menu row: a
-// single letter, or "5" (rest, the keypad key). Movement keys (Up, PgDn) are
-// not rows.
-static int keybind_key(const char *k) {
-    if (!k[0] || k[1]) return 0;
-    if (k[0] == '5') return KEY_KP_5;
-    if (!isalpha((unsigned char)k[0])) return 0;
-    return KEY_A + (toupper((unsigned char)k[0]) - 'A');
-}
-
-// Keys that open a screen; every other row key is an action.
-static bool key_is_screen(int key) {
-    return key == KEY_A || key == KEY_V || key == KEY_I || key == KEY_P || key == KEY_M;
-}
-
-static void modern_menu_build(void) {
-    const Resources *res = resources_current();
-    int n = 0, ns = 0, na = 0;
-    if (res) {
-        const ResUI *ui = &res->ui;
-        const char *controls_label = "Controls";
-        MODERN_PAGE.title  = ui->menu_root_title;
-        SCREENS_PAGE.title = ui->menu_screens;
-        ACTIONS_PAGE.title = ui->menu_actions;
-        for (int i = 0; i < ui->keybind_count; i++) {
-            const ResKeybind *kb = &ui->keybinds[i];
-            int key = keybind_key(kb->key);
-            if (!key) continue;
-            if (key == KEY_C) { controls_label = kb->label; continue; }   // its own row
-            if (key == KEY_Q) continue;          // Save and Exit are rows already
-            if (s_menu_cbs && s_menu_cbs->key_available &&
-                !s_menu_cbs->key_available(key, s_menu_ud)) continue;
-            MenuEntry e = { kb->label, MENU_KIND_KEY, NULL, VIEW_NONE, MENU_ACT_NONE, key };
-            if (key_is_screen(key)) { if (ns < MODERN_MENU_MAX - 1) SCREENS_ENTRIES[ns++] = e; }
-            else                    { if (na < MODERN_MENU_MAX - 1) ACTIONS_ENTRIES[na++] = e; }
-        }
-        SCREENS_ENTRIES[ns++] = (MenuEntry){ ui->menu_back, MENU_KIND_BACK, NULL,
-                                             VIEW_NONE, MENU_ACT_NONE, 0 };
-        ACTIONS_ENTRIES[na++] = (MenuEntry){ ui->menu_back, MENU_KIND_BACK, NULL,
-                                             VIEW_NONE, MENU_ACT_NONE, 0 };
-        MODERN_ENTRIES[n++] = (MenuEntry){ ui->menu_screens, MENU_KIND_SUBMENU, &SCREENS_PAGE,
-                                           VIEW_NONE, MENU_ACT_NONE, 0 };
-        MODERN_ENTRIES[n++] = (MenuEntry){ ui->menu_actions, MENU_KIND_SUBMENU, &ACTIONS_PAGE,
-                                           VIEW_NONE, MENU_ACT_NONE, 0 };
-        MODERN_ENTRIES[n++] = (MenuEntry){ controls_label, MENU_KIND_PUSH_VIEW, NULL,
-                                           VIEW_CONTROLS, MENU_ACT_NONE, 0 };
-        MODERN_ENTRIES[n++] = (MenuEntry){ ui->menu_save, MENU_KIND_ACTION, NULL,
-                                           VIEW_NONE, MENU_ACT_SAVE, 0 };
-        MODERN_ENTRIES[n++] = (MenuEntry){ ui->menu_load, MENU_KIND_ACTION, NULL,
-                                           VIEW_NONE, MENU_ACT_LOAD, 0 };
-        MODERN_ENTRIES[n++] = (MenuEntry){ ui->menu_new_game, MENU_KIND_ACTION, NULL,
-                                           VIEW_NONE, MENU_ACT_NEW, 0 };
-        MODERN_ENTRIES[n++] = (MenuEntry){ ui->menu_exit, MENU_KIND_ACTION, NULL,
-                                           VIEW_NONE, MENU_ACT_QUIT, 0 };
-        // Only with --debug: without it the cheats have no row and no key.
-        if (s_debug) {
-            debug_page_build(ui->menu_back);
-            MODERN_ENTRIES[n++] = (MenuEntry){ "Debug", MENU_KIND_SUBMENU, &DEBUG_PAGE,
-                                               VIEW_NONE, MENU_ACT_NONE, 0 };
-        }
-    }
-    SCREENS_PAGE.count = ns;
-    ACTIONS_PAGE.count = na;
-    MODERN_PAGE.count  = n;
-}
+int  views_menu_take_cheat(void) { return CL_IS_MODERN ? modern_gamemenu_take_cheat() : -1; }
 
 static void menu_open_root(void) {
     menus_bind_labels();
     menu_depth = 1;
-    if (CL_IS_MODERN) {
-        modern_menu_build();
-        menu_stack[0] = (MenuFrame){ &MODERN_PAGE, 0 };
-    } else {
-        menu_stack[0] = (MenuFrame){ &ROOT_PAGE, 0 };
-    }
+    if (CL_IS_MODERN) modern_gamemenu_open(s_debug);
+    menu_stack[0] = (MenuFrame){ &ROOT_PAGE, 0 };
 }
 
 static void menu_push(const MenuPage *p) {
@@ -451,6 +339,7 @@ static const MenuFrame *menu_top(void) {
 }
 
 ViewKind views_active(void)    { return view_stack_top(); }
+int      views_depth(void)     { return view_stack_depth; }
 
 void     views_set(ViewKind v) {
     // Replace the stack with a single entry (or clear if VIEW_NONE).
@@ -593,22 +482,6 @@ bool views_menu_update(const MenuCallbacks *cbs, void *userdata) {
                 break;
             case MENU_KIND_BACK:
                 menu_pop_or_close();
-                break;
-            case MENU_KIND_KEY:
-                // Close, then press the row's key next frame: the same path
-                // the keypress runs, whatever the key does.
-                menu_depth = 0;
-                views_dismiss();
-                input_host_inject_key_next_frame(e->key);
-                break;
-            case MENU_KIND_PUSH_VIEW:
-                // Over the menu, so closing it comes back here.
-                views_push(e->view);
-                break;
-            case MENU_KIND_CHEAT:
-                menu_depth = 0;
-                views_dismiss();
-                s_pending_cheat = e->key;
                 break;
         }
         return true;
@@ -1057,7 +930,7 @@ static TownList town_list_for_row(TownRow r) {
 
 int views_town_list_rows(const Game *g) {
     if (!g) return 1;
-    if (town.list == TOWN_LIST_MENU) return TOWN_ROW_COUNT;
+    if (town.list == TOWN_LIST_MENU) return TOWN_ROW_COUNT + (CL_IS_MODERN ? 1 : 0);   // + Leave
     if (town.list == TOWN_LIST_CONTRACTS) {
         int k = 0, n = town_cycle_len(g);
         for (int i = 0; i < n; i++) if (g->contract.cycle[i][0]) k++;
@@ -1078,6 +951,10 @@ bool views_town_list_row(const Game *g, int i, char *out, int cap,
     if (!g || !g->res || i < 0 || i >= views_town_list_rows(g)) return false;
     const ResBanners *bn = &g->res->banners;
     if (town.list == TOWN_LIST_MENU) {
+        if (i == TOWN_ROW_LEAVE) {
+            snprintf(out, (size_t)cap, "%s", bn->location_leave);
+            return true;
+        }
         if (enabled) *enabled = views_town_row_enabled(g, i);
         return views_town_menu_label(g, i, out, cap);
     }
@@ -1203,6 +1080,7 @@ static bool town_modern_update(Game *g) {
     }
     int tapped = touch_tapped_row(TOUCH_LIST_TOWN);
     if (tapped >= 0 && tapped < rows) {
+        if (menu && tapped == TOWN_ROW_LEAVE) { views_dismiss(); return true; }
         if (menu) { town.cursor = tapped; town_open(g, (TownRow)tapped); }
         else      { town.lcursor = tapped; town.detail_page = 0; town_list_do_row(g, tapped); }
         return true;
@@ -1212,7 +1090,7 @@ static bool town_modern_update(Game *g) {
             : (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_S) ||
                input_key_pressed(KEY_KP_2)) ? +1 : 0;
     if (dir && menu) {
-        town.cursor = (town.cursor + dir + TOWN_ROW_COUNT) % TOWN_ROW_COUNT;
+        town.cursor = (town.cursor + dir + rows) % rows;
         town.detail_page = 0;
         return true;
     }
@@ -1236,8 +1114,9 @@ static bool town_modern_update(Game *g) {
     }
     if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
         input_key_pressed(KEY_SPACE)) {
-        if (menu) town_open(g, (TownRow)town.cursor);
-        else      town_list_do_row(g, town.lcursor);
+        if (menu && town.cursor == TOWN_ROW_LEAVE) views_dismiss();
+        else if (menu) town_open(g, (TownRow)town.cursor);
+        else           town_list_do_row(g, town.lcursor);
         return true;
     }
     return false;

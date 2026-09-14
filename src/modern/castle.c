@@ -122,7 +122,7 @@ static int stacks(const Game *g, bool garrison, int *out) {
 int modern_castle_rows(const Game *g) {
     int tmp[GAME_ARMY_SLOTS], pool[POOL_MAX];
     switch (mc.page) {
-        case MC_MENU:     return 2;
+        case MC_MENU:     return 3;   // two sections, Leave
         case MC_RECRUIT:  return modern_castle_pool(pool, POOL_MAX) + 1;
         case MC_AUDIENCE: return audiences(g) ? 4 : 2;
         case MC_GARRISON: return stacks(g, false, tmp) + 1;
@@ -142,6 +142,7 @@ void modern_castle_row(const Game *g, int i, char *out, int cap,
         return;
     }
     if (mc.page == MC_MENU) {
+        if (i == 2) { snprintf(out, (size_t)cap, "%s", bn->location_leave); return; }
         const char *s = mc.home ? (i == 0 ? bn->castle_menu_recruit : bn->castle_menu_audience)
                                 : (i == 0 ? bn->castle_menu_garrison : bn->castle_menu_withdraw);
         snprintf(out, (size_t)cap, "%s >", s);
@@ -340,6 +341,8 @@ bool modern_castle_update(Game *g) {
         return false;
     }
     int tapped = touch_tapped_row(TOUCH_LIST_CASTLE);
+    if (mc.page == MC_MENU && tapped == 2) return true;                      // Leave
+    if (mc.page == MC_MENU && *cur == 2 && pressed_confirm()) return true;
     if (tapped >= 0 && tapped < rows) {
         *cur = tapped;
         act(g, tapped);

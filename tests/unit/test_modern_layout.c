@@ -12,6 +12,7 @@
 #include "bfont.h"
 #include "modern/mlayout.h"
 #include "views.h"
+#include "modern/gamemenu.h"
 #include "prompt.h"
 #include "prompt_impl.h"
 #include <string.h>
@@ -168,48 +169,51 @@ TEST capacity_follows_the_glyph(void) {
 }
 
 
-// --debug gates the game menu's Debug page (src/views.c): without the flag the
-// modern root has no Debug row, so no cheat is reachable.
-static int menu_has_debug_row(bool debug) {
+// The modern game menu (src/modern/gamemenu.c): drill-down pages. The top
+// level is Hero, World, Game and Back; Debug is first on the Game page and only
+// with --debug; Exit is always last; a row that does not apply is greyed with
+// its reason as the description.
+static void menu_page(bool debug, bool troops, GmPageId id, GmPage *p) {
     rome();
+    strcpy(s_res.ui.gm_debug, "Debug");
+    strcpy(s_res.ui.gm_exit, "Exit");
+    strcpy(s_res.ui.gm_army, "Army");
+    strcpy(s_res.banners.gmr_no_troops, "No troops.");
     resources_republish(&s_res);
-    views_menu_bind(NULL, NULL);
-    views_menu_set_debug(debug);
-    views_set(VIEW_MENU);
-    int found = 0;
-    for (int i = 0; i < views_menu_entry_count(); i++) {
-        const char *l = views_menu_entry_label(i);
-        if (l && strcmp(l, "Debug") == 0) found = 1;
-    }
-    views_set(VIEW_NONE);
-    views_menu_set_debug(false);
+    static Game g;
+    memset(&g, 0, sizeof g);
+    g.res = &s_res;
+    if (troops) { strcpy(g.army[0].id, "militia"); g.army[0].count = 5; }
+    modern_gamemenu_open(debug);
+    modern_gamemenu_page(&g, id, p);
     resources_republish(NULL);
-    return found;
 }
 
 TEST debug_row_only_with_debug_flag(void) {
-    ASSERT_EQ(0, menu_has_debug_row(false));
-    ASSERT_EQ(1, menu_has_debug_row(true));
+    GmPage p;
+    menu_page(false, true, GM_PAGE_GAME, &p);
+    for (int i = 0; i < p.n; i++) ASSERT(strcmp(p.item[i].label, "Debug") != 0);
+    menu_page(true, true, GM_PAGE_GAME, &p);
+    ASSERT_STR_EQ("Debug", p.item[0].label);             // first
+    ASSERT_STR_EQ("Exit", p.item[p.n - 1].label);        // Exit last
     PASS();
 }
 
-// The modern root is Screens and Actions pages, then Controls, Save, Load,
-// New Game and Exit; no row carries a key letter.
-TEST root_is_screens_actions_then_system_rows(void) {
-    rome();
-    strcpy(s_res.ui.menu_screens, "Screens");  strcpy(s_res.ui.menu_actions, "Actions");
-    strcpy(s_res.ui.menu_save, "Save");        strcpy(s_res.ui.menu_load, "Load");
-    strcpy(s_res.ui.menu_new_game, "New Game"); strcpy(s_res.ui.menu_exit, "Exit");
-    resources_republish(&s_res);
-    views_menu_bind(NULL, NULL);
-    views_set(VIEW_MENU);
-    static const char *want[] = { "Screens", "Actions", "Controls", "Save", "Load", "New Game", "Exit" };
-    ASSERT_EQ(7, views_menu_entry_count());
-    for (int i = 0; i < 7; i++) ASSERT_STR_EQ(want[i], views_menu_entry_label(i));
-    ASSERT(views_menu_entry_is_submenu(0));
-    ASSERT(views_menu_entry_is_submenu(1));
-    views_set(VIEW_NONE);
-    resources_republish(NULL);
+TEST menu_pages_drill_down(void) {
+    GmPage p;
+    menu_page(false, true, GM_PAGE_ROOT, &p);
+    ASSERT_EQ(4, p.n);                                   // Hero, World, Game, Back
+    ASSERT_EQ(GM_ACT_PAGE + GM_PAGE_HERO, p.item[0].key);
+    ASSERT_EQ(GM_ACT_BACK, p.item[3].key);
+    menu_page(false, true, GM_PAGE_HERO, &p);
+    ASSERT_STR_EQ("Army", p.item[0].label);
+    ASSERT_EQ(GM_ACT_BACK, p.item[p.n - 1].key);          // Back last
+    ASSERT(p.item[4].enabled);                            // troops: Dismiss applies
+    menu_page(false, false, GM_PAGE_HERO, &p);
+    ASSERT_FALSE(p.item[4].enabled);                      // none: greyed, with why
+    ASSERT_STR_EQ("No troops.", p.item[4].desc);
+    menu_page(false, true, GM_PAGE_SAVE, &p);
+    ASSERT_EQ(11, p.n);                                   // ten slots and Back
     PASS();
 }
 
@@ -250,6 +254,6 @@ SUITE(unit_modern_layout_suite) {
     RUN_TEST(full_covers_pane_band_and_hud_not_the_status_band);
     RUN_TEST(capacity_follows_the_glyph);
     RUN_TEST(debug_row_only_with_debug_flag);
-    RUN_TEST(root_is_screens_actions_then_system_rows);
+    RUN_TEST(menu_pages_drill_down);
     RUN_TEST(prompt_choice_lines_become_rows);
 }

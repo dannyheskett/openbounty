@@ -22,6 +22,24 @@ static const char *const CHEAT_LABELS[CHEAT_COUNT] = {
     [CHEAT_LOSE]       = "Lose",
 };
 
+// What each cheat does, for the Debug page's description panel.
+static const char *const CHEAT_DESCS[CHEAT_COUNT] = {
+    [CHEAT_GOLD]       = "Adds 50,000 gold to your purse.",
+    [CHEAT_LEADERSHIP] = "Adds 100 to your leadership.",
+    [CHEAT_MAGIC]      = "Adds 1 to spell power and 1 to spell capacity.",
+    [CHEAT_SPELLS]     = "Adds one charge of every spell to your book.",
+    [CHEAT_SIEGE]      = "Gives you siege weapons.",
+    [CHEAT_FLIGHT]     = "Lets your army fly.",
+    [CHEAT_ZONE]       = "Reveals the next undiscovered continent.",
+    [CHEAT_FOG]        = "Clears the fog from this continent's map.",
+    [CHEAT_WIN]        = "Ends the game as a victory.",
+    [CHEAT_LOSE]       = "Ends the game as a defeat.",
+};
+
+const char *cheat_desc(CheatAction a) {
+    return (a >= 0 && a < CHEAT_COUNT) ? CHEAT_DESCS[a] : "";
+}
+
 const char *cheat_label(CheatAction a) {
     return (a >= 0 && a < CHEAT_COUNT) ? CHEAT_LABELS[a] : "";
 }

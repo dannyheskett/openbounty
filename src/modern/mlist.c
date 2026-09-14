@@ -40,6 +40,16 @@ int ml_list_draw_ex(int x, int y, int w, int h, int count, int cursor,
     int vis = ml_list_fit(h);
     int first = ml_list_first(count, cursor < 0 ? 0 : cursor, vis);
     int shown = 0;
+    // More rows above or below: the arrow at the row's right edge is a tap
+    // target that moves the cursor (so the list scrolls) -- registered before
+    // the rows, since the first region hit wins.
+    if (touch_list) {
+        int aw = ML_PAD * 3;
+        if (first > 0)
+            touch_region(x + w - aw, y, aw, rh, KEY_UP);
+        if (first + vis < count)
+            touch_region(x + w - aw, y + (vis - 1) * pitch, aw, rh, KEY_DOWN);
+    }
     for (int i = first; i < count && shown < vis; i++, shown++) {
         char label[96] = "", right[48] = "";
         bool enabled = fn ? fn(ctx, touch_base + i, label, right, (int)sizeof label) : true;

@@ -182,35 +182,6 @@ static void draw_dialog_ex(DialogMode mode) {
 // Game menu (nested, cursor-driven).
 // ---------------------------------------------------------------------------
 
-static bool menu_row(void *ctx, int i, char *label, char *right, int cap) {
-    (void)ctx;
-    right[0] = '\0';
-    const char *l = views_menu_entry_label(i);
-    if (views_menu_entry_is_submenu(i)) snprintf(label, (size_t)cap, "%s >", l ? l : "");
-    else                                snprintf(label, (size_t)cap, "%s", l ? l : "");
-    return true;
-}
-
-void modern_overlay_draw_menu(void) {
-    const char *title = views_menu_title();
-    int count = views_menu_entry_count();
-    int cursor = views_menu_cursor();
-
-    // The large layout (REQ-430j): the title, then the entries as standard
-    // select rows (REQ-430n), scrolling when they outrun the panel.
-    ML_Rect r = ml_large();
-    draw_panel(r.x, r.y, r.w, r.h, PAL_CLR(DBLUE));
-    int ty = r.y + ML_PAD;
-    if (title) {
-        bfont_draw_centered(title, r.x + r.w / 2, ty, PAL_CLR(YELLOW));
-        ty += GH + ML_PAD;
-    }
-    lattice_band_h(r.x, ty, r.w, 4);
-    ty += 4;
-    ml_list_draw(r.x, ty, r.w, r.y + r.h - ty, count, cursor, menu_row, NULL,
-                 TOUCH_LIST_MENU, PAL_CLR(DBLUE));
-}
-
 // ---------------------------------------------------------------------------
 // Town menu (bottom frame, A..E letter rows).
 // ---------------------------------------------------------------------------
@@ -678,7 +649,7 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
                                       ? zone_res->boatmaster : NULL; break;
         case TOWN_LIST_TEMPLE: who_id = zone_res ? zone_res->pontifex : NULL; break;
         case TOWN_LIST_SIEGE:  who_id = zone_res ? zone_res->siegemaster : NULL; break;
-        default: break;
+        default:               who_id = town_res ? town_res->townhead : NULL; break;   // Leave
     }
     int who = (res && who_id) ? resources_portrait_index(res, who_id) : -1;
     if (screen != TOWN_LIST_CONTRACTS || menu) {
@@ -731,7 +702,7 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
         char label[64] = "";
         bool enabled = true, held = false;
         views_town_list_row(g, i, label, sizeof label, &enabled, &held);
-        if (menu) {
+        if (menu && i != TOWN_ROW_LEAVE) {
             size_t n = strlen(label);
             snprintf(label + n, sizeof label - n, " >");
         }
@@ -786,6 +757,7 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
             case TOWN_LIST_SIEGE:     line = inv->siege; break;
             default: break;
         }
+        if (views_town_cursor() == TOWN_ROW_LEAVE) line = res->banners.gmd_leave;
         if (line && line[0]) {
             char text[RES_BANNER_LEN];
             ResTemplateVar vars[] = {
@@ -1107,7 +1079,8 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
     if (msg) {
         town_text_add(&t, msg, PAL_CLR(WHITE));
     } else if (page == MC_MENU) {
-        const char *inv = home ? (cursor == 0 ? bn->castle_invite_recruit : bn->castle_invite_audience)
+        const char *inv = cursor == 2 ? bn->gmd_leave
+                        : home ? (cursor == 0 ? bn->castle_invite_recruit : bn->castle_invite_audience)
                                : (cursor == 0 ? bn->castle_invite_garrison : bn->castle_invite_withdraw);
         ResTemplateVar v[] = { { "HERO", g->character.name },
                                { "CASTLE", (rc && rc->name[0]) ? rc->name : cid } };
@@ -1442,8 +1415,9 @@ void modern_overlay_draw_toast(void) {
     Vector2 m = bfont_measure(msg);
     int w = (int)m.x + 8;
     int h = GH + 4;
-    int x = CL_MAP_X + (CL_MAP_W - w) / 2;
-    int y = CL_MAP_Y + 2;
+    ML_Rect a = ml_area();
+    int x = a.x + (a.w - w) / 2;
+    int y = a.y + 2;
     draw_panel(x, y, w, h, PAL_CLR(BLACK));
     bfont_draw(msg, x + 4, y + 2, PAL_CLR(YELLOW));
 }
