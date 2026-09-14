@@ -614,6 +614,11 @@ typedef struct {
 
     // Status bar (chrome.c). Substitutions: %DAYS%, %STEPS%.
     char status_days_left[RES_BANNER_LEN];
+    // Modern: the top bar opens the menu, so it reads "Menu" in place of
+    // "Options / Controls".
+    char status_days_left_modern[RES_BANNER_LEN];
+    char status_time_stop_modern[RES_BANNER_LEN];
+    char status_menu_prefix[RES_BANNER_LEN];
     char status_time_stop[RES_BANNER_LEN];
 
     // Composite prompt bodies (system flows that have %TOKEN%-style values).

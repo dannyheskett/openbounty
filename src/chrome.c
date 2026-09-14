@@ -6,6 +6,8 @@
 #include "views.h"
 #include "ui.h"
 #include "lattice.h"
+#include "prompt.h"
+#include "touch.h"
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -226,7 +228,9 @@ void chrome_draw(const Game *g, const Sprites *s) {
                 ResTemplateVar vars[] = { { "STEPS", nbuf } };
                 if (bn) {
                     resources_format_template(buf, sizeof buf,
-                                              bn->status_time_stop, vars, 1);
+                                              (CL_IS_MODERN && bn->status_time_stop_modern[0])
+                                                  ? bn->status_time_stop_modern : bn->status_time_stop,
+                                              vars, 1);
                 } else {
                     snprintf(buf, sizeof buf,
                              " Options / Controls / Time Stop:%d ",
@@ -237,7 +241,9 @@ void chrome_draw(const Game *g, const Sprites *s) {
                 ResTemplateVar vars[] = { { "DAYS", nbuf } };
                 if (bn) {
                     resources_format_template(buf, sizeof buf,
-                                              bn->status_days_left, vars, 1);
+                                              (CL_IS_MODERN && bn->status_days_left_modern[0])
+                                                  ? bn->status_days_left_modern : bn->status_days_left,
+                                              vars, 1);
                 } else {
                     snprintf(buf, sizeof buf,
                              " Options / Controls / Days Left:%d ",
@@ -245,6 +251,9 @@ void chrome_draw(const Game *g, const Sprites *s) {
                 }
             }
             bfont_draw(buf, CL_STATUS_X + 1, CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0), PAL_CLR(WHITE));
+            // Modern: a tap on the bar is Escape, which opens the game menu.
+            if (CL_IS_MODERN && views_active() == VIEW_NONE && !prompt_is_active())
+                touch_region(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H, KEY_ESCAPE);
         }
     }
 }

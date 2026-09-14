@@ -1,0 +1,20 @@
+{
+  "id": "troop_portrait_dracones",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a green dragon, its horned head and long neck filling the frame, green scales with a pale yellow belly, sharp teeth, green wings behind it, a mountain peak and sky behind it",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 10000,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "reference_image_paths": [
+    "assets/glory-of-rome/art/troops/dracones_00.png"
+  ],
+  "_pack_path": "art/portraits/troop_dracones.png",
+  "_note": "Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation."
+}

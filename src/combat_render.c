@@ -53,10 +53,13 @@ void combat_format_title(const Combat *c, const Game *g, char *buf, int cap) {
         }
         // Append ",Sn" only when the active unit has remaining shots;
         // melee-only stacks show "Mn" alone.
+        // Modern: the bar opens the action menu, so it reads "Menu".
+        const char *pre = (CL_IS_MODERN && g && g->res && g->res->banners.status_menu_prefix[0])
+                              ? g->res->banners.status_menu_prefix : " Options / ";
         if (shots > 0) {
-            snprintf(buf, cap, " Options / %s M%d,S%d", name, moves, shots);
+            snprintf(buf, cap, "%s%s M%d,S%d", pre, name, moves, shots);
         } else {
-            snprintf(buf, cap, " Options / %s M%d", name, moves);
+            snprintf(buf, cap, "%s%s M%d", pre, name, moves);
         }
     } else {
         const char *p_name = "Army";

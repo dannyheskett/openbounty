@@ -118,6 +118,7 @@ static void screen_open(void) { input_host_flush(SCREEN_GUARD); }
 #define TITLE_HOLD      1.0    // seconds on purple
 #define TITLE_FADED     2.5    // battle fully in
 #define TITLE_END       3.5    // eagle in place, menu up
+#define TITLE_MENU_IN   3.0    // the menu fades in from here to TITLE_END
 static bool s_title_played;
 
 static bool title_sequence_ok(const Sprites *s) {
@@ -448,6 +449,25 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
 static bool run_credits(RenderTexture2D *rt, const Resources *res,
                         const Sprites *sprites);
 
+// The title menu's panel and rows; touch_list 0 registers no tap regions.
+static void draw_title_menu(const Sprites *sprites, const char **labels, int count,
+                            int cursor, int touch_list) {
+    // Standard select rows (REQ-430n) in a panel sized to them.
+    int w = 0;
+    for (int i = 0; i < count; i++) {
+        int tw = bfont_text_width(labels[i]);
+        if (tw > w) w = tw;
+    }
+    w += 2 * ML_PAD + 64;
+    int h = ml_list_height(count);
+    int x = (CL_SCREEN_W - w) / 2;
+    int y = CL_SCREEN_H / 2 + (CL_SCREEN_H / 2 - h) / 2 - CL_SCREEN_H / 16;
+    if (title_sequence_ok(sprites)) y -= 40;   // clear of the subtitle at the art's foot
+    panel(x, y, w, h);
+    ml_list_draw(x, y, w, h, count, cursor, title_row, (void *)labels,
+                 touch_list, PAL_CLR(DBLUE));
+}
+
 static bool run_title_menu(const Resources *res, const Sprites *sprites,
                            RenderTexture2D *rt, StartupChoice *out) {
     enum { ROW_NEW, ROW_LOAD, ROW_CREDITS, ROW_EXIT, ROW_COUNT };
@@ -460,6 +480,7 @@ static bool run_title_menu(const Resources *res, const Sprites *sprites,
     SelList l = { ROW_COUNT, 0 };
     bool playing = title_sequence_ok(sprites) && !s_title_played;
     double started = frame_host_time();
+    RenderTexture2D menu_rt = { 0 };
     while (!frame_host_should_close()) {
         // The sequence takes no menu input: a key or tap only skips it.
         double t = TITLE_END;
@@ -473,11 +494,26 @@ static bool run_title_menu(const Resources *res, const Sprites *sprites,
             }
         }
         if (playing) {
+            // The fading menu is drawn once into its own texture, then onto
+            // the scene at the fade's alpha; it takes no taps until it is up.
+            float a = title_phase(t, TITLE_MENU_IN, TITLE_END);
+            if (a > 0 && !menu_rt.id) menu_rt = LoadRenderTexture(CL_SCREEN_W, CL_SCREEN_H);
+            if (a > 0 && menu_rt.id) {
+                BeginTextureMode(menu_rt);
+                ClearBackground(BLANK);
+                draw_title_menu(sprites, labels, ROW_COUNT, l.cursor, 0);
+                EndTextureMode();
+            }
             frame_begin(rt);
             draw_title_sequence(sprites, t);
+            if (a > 0 && menu_rt.id)
+                DrawTextureRec(menu_rt.texture,
+                               (Rectangle){ 0, 0, (float)CL_SCREEN_W, -(float)CL_SCREEN_H },
+                               (Vector2){ 0, 0 }, (Color){ 255, 255, 255, (unsigned char)(255 * a) });
             frame_end(rt);
             continue;
         }
+        if (menu_rt.id) { UnloadRenderTexture(menu_rt); menu_rt = (RenderTexture2D){ 0 }; }
         if (input_key_pressed(KEY_ESCAPE)) break;
         int row = -1;
         if (sel_input(&l, TOUCH_LIST_STARTUP, 0, &row) == SEL_CONFIRM && row >= 0) {
@@ -497,20 +533,7 @@ static bool run_title_menu(const Resources *res, const Sprites *sprites,
         // The menu sits on the title page, over the lower half of the art.
         frame_begin(rt);
         draw_title_backdrop(sprites);
-        // Standard select rows (REQ-430n) in a panel sized to them.
-        int w = 0;
-        for (int i = 0; i < ROW_COUNT; i++) {
-            int tw = bfont_text_width(labels[i]);
-            if (tw > w) w = tw;
-        }
-        w += 2 * ML_PAD + 64;
-        int h = ml_list_height(ROW_COUNT);
-        int x = (CL_SCREEN_W - w) / 2;
-        int y = CL_SCREEN_H / 2 + (CL_SCREEN_H / 2 - h) / 2 - CL_SCREEN_H / 16;
-        if (title_sequence_ok(sprites)) y -= 40;   // clear of the subtitle at the art's foot
-        panel(x, y, w, h);
-        ml_list_draw(x, y, w, h, ROW_COUNT, l.cursor, title_row, (void *)labels,
-                     TOUCH_LIST_STARTUP, PAL_CLR(DBLUE));
+        draw_title_menu(sprites, labels, ROW_COUNT, l.cursor, TOUCH_LIST_STARTUP);
         frame_end(rt);
     }
     out->action = STARTUP_QUIT;

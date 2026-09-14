@@ -150,6 +150,9 @@ static cJSON *gb_placeholder_strings(void) {
     cJSON_AddStringToObject(o, "budget_army", "budget_army");
     cJSON_AddStringToObject(o, "budget_balance", "budget_balance");
     cJSON_AddStringToObject(o, "status_days_left", "status_days_left");
+    cJSON_AddStringToObject(o, "status_days_left_modern", "status_days_left_modern");
+    cJSON_AddStringToObject(o, "status_time_stop_modern", "status_time_stop_modern");
+    cJSON_AddStringToObject(o, "status_menu_prefix", "status_menu_prefix");
     cJSON_AddStringToObject(o, "status_time_stop", "status_time_stop");
     cJSON_AddStringToObject(o, "body_save_confirm", "body_save_confirm");
     cJSON_AddStringToObject(o, "body_search", "body_search");

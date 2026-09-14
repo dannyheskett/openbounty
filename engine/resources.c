@@ -1393,6 +1393,9 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(budget_balance,                 "budget_balance");
     SET_BANNER(status_days_left,               "status_days_left");
     SET_BANNER(status_time_stop,               "status_time_stop");
+    SET_BANNER(status_days_left_modern,        "status_days_left_modern");
+    SET_BANNER(status_time_stop_modern,        "status_time_stop_modern");
+    SET_BANNER(status_menu_prefix,             "status_menu_prefix");
     SET_BANNER(body_save_confirm,              "body_save_confirm");
     SET_BANNER(body_search,                    "body_search");
     SET_BANNER(body_dismiss_pick,              "body_dismiss_pick");
