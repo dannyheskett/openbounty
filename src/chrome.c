@@ -117,7 +117,10 @@ static bool use_lattice(const Sprites *s) {
     return CL_IS_MODERN && !(s && s->chrome_overworld.id);
 }
 
-static void draw_lattice_chrome(void) {
+static void draw_lattice_chrome_ex(bool map_rail);
+static void draw_lattice_chrome(void) { draw_lattice_chrome_ex(true); }
+
+static void draw_lattice_chrome_ex(bool map_rail) {
     lattice_ring(0, 0, CL_SCREEN_W, CL_SCREEN_H,
                  CL_FRAME_LEFT_W, CL_FRAME_RIGHT_W,
                  CL_FRAME_TOP_H, CL_FRAME_BOTTOM_H);
@@ -125,7 +128,7 @@ static void draw_lattice_chrome(void) {
         lattice_band_h(CL_STATUS_X, CL_BAR_Y, CL_STATUS_W, CL_BAR_H);
     else
         lattice_fill(CL_STATUS_X, CL_BAR_Y, CL_STATUS_W, CL_BAR_H);
-    if (CL_SIDEBAR_GAP > 0)
+    if (map_rail && CL_SIDEBAR_GAP > 0)   // the rail between map and HUD; not over combat
         lattice_band_v(CL_MAP_X + CL_MAP_W, CL_MAP_Y, CL_SIDEBAR_GAP, CL_MAP_H);
 }
 
@@ -165,7 +168,7 @@ void chrome_draw_with_status(const Game *g, const Sprites *s,
     DrawRectangle(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H,
                   status_bg);
     if (use_lattice(s)) {
-        draw_lattice_chrome();
+        draw_lattice_chrome_ex(false);
     } else {
         if (s) draw_bar_strip(s->hud_bar_strip);
         if (s && s->chrome_overworld.id) draw_chrome_frame(s->chrome_overworld);
@@ -216,7 +219,7 @@ void chrome_draw(const Game *g, const Sprites *s) {
                                 CL_STATUS_X + CL_STATUS_W / 2,
                                 CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0),
                                 PAL_CLR(WHITE));
-        } else if (CL_IS_MODERN && (views_wants_exit_hint() || dialog_is_active())) {
+        } else if (CL_IS_MODERN && (views_active() != VIEW_NONE || dialog_is_active() || prompt_is_active())) {
             // Modern: "< Back" with the key for the device; the bar is the button.
             char hb[96];
             ml_hint_text(hb, sizeof hb, ui->hint_back, ui->key_esc, ui->pad_back);

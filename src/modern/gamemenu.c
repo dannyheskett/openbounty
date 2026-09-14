@@ -183,6 +183,13 @@ void modern_gamemenu_page(const Game *g, GmPageId id, GmPage *p) {
     }
 }
 
+void modern_gamemenu_gallery(int n, const GmPageId *pages, int cursor) {
+    gm.depth = 0;
+    for (int i = 0; i < n && i < GM_DEPTH_MAX; i++) { gm.page[i] = pages[i]; gm.cursor[i] = 0; gm.depth++; }
+    if (gm.depth < 1) { gm.page[0] = GM_PAGE_ROOT; gm.depth = 1; }
+    gm.cursor[gm.depth - 1] = cursor;
+}
+
 static void go_back(void) {
     if (gm.depth > 1) gm.depth--;
     else              views_dismiss();

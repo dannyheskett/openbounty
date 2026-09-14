@@ -188,6 +188,7 @@ int prompt_text_input_value(void) {
 }
 
 bool prompt_is_active(void) { return g_kind != PK_NONE; }
+void prompt_gallery_step_open(bool open) { g_step_open = open; }
 
 const char *prompt_kind_str(void) {
     switch (g_kind) {

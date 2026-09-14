@@ -37,6 +37,7 @@ static struct {
 } spell_state = { 0 };
 
 int views_spells_cursor(void) { return CL_IS_MODERN ? spell_state.cursor : -1; }
+bool views_spells_casting(void) { return spell_state.active; }
 
 void views_spells_set_mode(bool cast_mode) {
     spell_state.active = cast_mode;
@@ -1065,6 +1066,18 @@ static void town_list_do_row(Game *g, int i) {
         case TOWN_LIST_SIEGE:  town_ask(TOWN_CONFIRM_SIEGE); break;
         default: break;
     }
+}
+
+void views_gallery_town(const Game *g, int row, int lcursor, const char *info, bool dialog) {
+    town.list = (row < 0) ? TOWN_LIST_MENU : town_list_for_row((TownRow)row);
+    if (row >= 0) town.cursor = row;
+    else          town.cursor = lcursor;
+    town.lcursor = lcursor;
+    town.detail_page = 0;
+    town.info_active = false;
+    if (info && info[0]) town_show_info(info);
+    town.result_dialog = dialog;
+    (void)g;
 }
 
 bool views_town_result_dialog(void) {

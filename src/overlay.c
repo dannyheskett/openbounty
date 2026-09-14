@@ -168,7 +168,8 @@ void overlay_draw(const Game *g, const Map *m, const Fog *f,
         screen_end_game_draw(g, s);
     } else if (v == VIEW_ARMY      || v == VIEW_CHARACTER ||
                v == VIEW_CONTRACT  || v == VIEW_PUZZLE    ||
-               v == VIEW_WORLDMAP  || v == VIEW_SPELLS) {
+               v == VIEW_WORLDMAP  || v == VIEW_SPELLS    ||
+               v == VIEW_GATE) {
         views_render_draw(g, m, f, s);
     }
 

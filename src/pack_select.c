@@ -4,6 +4,7 @@
 #include "frame_host.h"
 #include "input_host.h"
 #include "pack_select.h"
+#include "pack.h"
 #include "raylib.h"
 
 #include <stdio.h>
@@ -41,6 +42,17 @@ bool pack_select_flow(const PackEntry *list, int n, int *chosen) {
 
     PackSelectState st = { 0, false, false };
 
+    // The packs' own titles from their manifests ("The Glory of Rome"), the
+    // file name when a pack has none. Rows are touch-sized.
+    char titles[16][96];
+    for (int i = 0; i < n && i < 16; i++) {
+        Pack *pk = pack_open(list[i].path);
+        const char *t = pk ? pack_name(pk) : "";
+        snprintf(titles[i], sizeof titles[i], "%s", (t && t[0]) ? t : list[i].name);
+        if (pk) pack_close(pk);
+    }
+    const int ROW_H = 48, ROW_W = 440, FONT = 28;
+
     while (!st.done) {
 
         PackSelectInput in;
@@ -64,13 +76,11 @@ bool pack_select_flow(const PackEntry *list, int n, int *chosen) {
             int mx, my;
             input_touch_sample();
             if (input_touch_pressed(&mx, &my)) {
-                int row_h = 24;
-                int top = (H - n * row_h) / 2 - 8;
-                int x = W / 2 - 200;
+                int top = (H - n * ROW_H) / 2;
+                int x = (W - ROW_W) / 2;
                 for (int i = 0; i < n; i++) {
-                    int y = top + i * row_h;
-                    if (mx >= x - 6 && mx < x - 6 + 412 &&
-                        my >= y - 2 && my < y - 2 + row_h) {
+                    int y = top + i * ROW_H;
+                    if (mx >= x && mx < x + ROW_W && my >= y && my < y + ROW_H) {
                         in.digit = i;
                         in.confirm = true;
                         break;
@@ -90,22 +100,21 @@ bool pack_select_flow(const PackEntry *list, int n, int *chosen) {
         int tw = MeasureText(title, 24);
         DrawText(title, (W - tw) / 2, 32, 24, RAYWHITE);
 
-        int row_h = 24;
-        int list_h = n * row_h;
-        int top = (H - list_h) / 2 - 8;
+        int top = (H - n * ROW_H) / 2;
         for (int i = 0; i < n; i++) {
-            char line[96];
-            snprintf(line, sizeof line, " %d. %s", i + 1, list[i].name);
+            const char *line = i < 16 ? titles[i] : list[i].name;
             Color fg = (i == cursor) ? YELLOW : RAYWHITE;
-            int x = W / 2 - 200;
-            int y = top + i * row_h;
+            int x = (W - ROW_W) / 2;
+            int y = top + i * ROW_H;
             if (i == cursor) {
-                DrawRectangle(x - 6, y - 2, 412, row_h, (Color){ 40, 40, 70, 255 });
+                DrawRectangle(x, y, ROW_W, ROW_H, (Color){ 40, 40, 70, 255 });
+                DrawRectangleLines(x, y, ROW_W, ROW_H, YELLOW);
             }
-            DrawText(line, x, y, 20, fg);
+            int lw = MeasureText(line, FONT);
+            DrawText(line, x + (ROW_W - lw) / 2, y + (ROW_H - FONT) / 2, FONT, fg);
         }
 
-        const char *hint = "UP/DN select   ENTER load   ESC quit";
+        const char *hint = "Tap a pack, or choose with the arrows and Enter";
         int hw = MeasureText(hint, 16);
         DrawText(hint, (W - hw) / 2, H - 40, 16, GRAY);
 

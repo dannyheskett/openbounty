@@ -108,6 +108,29 @@ static void draw_cartoon_frame(const Resources *res, const Sprites *sprites,
     }
 }
 
+// --gallery: draw one frame of the cartoon (frame 0..frame_count) into rt.
+void end_cartoon_gallery_draw(RenderTexture2D *rt, const Resources *res,
+                              const Sprites *sprites, const struct Game *game, int frame) {
+    Texture2D hero = sprites_end_hero(sprites, game ? game->character.cls.id : NULL);
+    Texture2D grass = sprites->end_grass;
+    if (!grass.id) grass = tile_cache_get("grass");
+    int gw = res->ending.grid_width  > 0 ? res->ending.grid_width  : 6;
+    int gh = res->ending.grid_height > 0 ? res->ending.grid_height : 5;
+    present_refit(rt);
+    int origin_x = CL_MAP_X + (CL_MAP_W - gw * CL_TILE_W) / 2;
+    int origin_y = CL_MAP_Y + (CL_MAP_H - gh * CL_TILE_H) / 2;
+    if (origin_x < CL_MAP_X) origin_x = CL_MAP_X;
+    if (origin_y < CL_MAP_Y) origin_y = CL_MAP_Y;
+    if (CL_IS_MODERN) {   // the cartoon has the whole screen: centre it there
+        origin_x = (CL_SCREEN_W - gw * CL_TILE_W) / 2;
+        origin_y = (CL_SCREEN_H - gh * CL_TILE_H) / 2;
+    }
+    present_begin(rt);
+    ClearBackground(BLACK);
+    draw_cartoon_frame(res, sprites, grass, hero, origin_x, origin_y, 0, frame);
+    present_end();
+}
+
 void run_end_cartoon(RenderTexture2D *rt,
                              const Resources *res,
                              const Sprites *sprites,
@@ -159,6 +182,10 @@ void run_end_cartoon(RenderTexture2D *rt,
         int origin_y = CL_MAP_Y + (CL_MAP_H - gh * CL_TILE_H) / 2;
         if (origin_x < CL_MAP_X) origin_x = CL_MAP_X;
         if (origin_y < CL_MAP_Y) origin_y = CL_MAP_Y;
+        if (CL_IS_MODERN) {   // the cartoon has the whole screen: centre it there
+            origin_x = (CL_SCREEN_W - gw * CL_TILE_W) / 2;
+            origin_y = (CL_SCREEN_H - gh * CL_TILE_H) / 2;
+        }
 
         present_begin(rt);
         ClearBackground(BLACK);

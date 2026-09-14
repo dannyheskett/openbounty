@@ -264,6 +264,13 @@ static bool s_act_open = false;
 enum { CM_ROOT = 0, CM_UNIT, CM_HERO, CM_GAME };
 static int s_act_page[3], s_act_cursor[3], s_act_depth = 0;
 
+void combat_gallery_menu(bool open) {
+    s_act_open = open;
+    s_act_page[0] = CM_ROOT; s_act_cursor[0] = 0;
+    s_act_page[1] = CM_UNIT; s_act_cursor[1] = 0;
+    s_act_depth = open ? 2 : 0;
+}
+
 static void combat_menu_open(void) {
     s_act_open = true;
     s_act_page[0] = CM_ROOT; s_act_cursor[0] = 0;

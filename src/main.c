@@ -104,6 +104,7 @@
 #include "modern/castle.h"
 #include "modern/gamemenu.h"
 #include "modern/location.h"
+#include "shell_gallery.h"
 
 // Per-frame draw_frame() dispatcher moved to src/shell_frame.{c,h}.
 #include "shell_frame.h"
@@ -263,6 +264,7 @@ int shell_run_game(int argc, char **argv) {
     bool        debug_flag      = false;   // --debug: the Debug page of cheats
     bool        movie_requested = false;
     const char *movie_path_arg  = NULL;
+    const char *gallery_dir     = NULL;   // --gallery <dir>: capture every modern screen
     // --seed N: pick catalog world N (0..255) for a reproducible run. -1 means
     // "not asked for" -- the world is derived from time + name + class instead.
     int seed_index = -1;
@@ -399,6 +401,8 @@ int shell_run_game(int argc, char **argv) {
                 vp_lo = (int)lo;
                 vp_hi = (int)hi;
             }
+        } else if (strcmp(a, "--gallery") == 0 && i + 1 < argc) {
+            gallery_dir = argv[++i];
         } else if (strcmp(a, "--headless") == 0) {
             headless_mode = true;
         } else if (strcmp(a, "--verbose") == 0) {
@@ -752,7 +756,7 @@ int shell_run_game(int argc, char **argv) {
     bool audio_started = false;
 title:;
     StartupChoice choice = { 0 };
-    if (demo_mode || autoplay_mode) {
+    if (demo_mode || autoplay_mode || gallery_dir) {
         if (seed_index < 0)
             seed_index = autoplay_mode ? AUTOPLAY_DEFAULT_SEED_INDEX
                                        : DEMO_DEFAULT_SEED_INDEX;
@@ -914,6 +918,15 @@ title:;
     // Render target was allocated above (render_target_startup)
     // so the pre-game flow can draw into it; reuse here.
     RenderTexture2D render_target = render_target_startup;
+    if (gallery_dir) {
+        // Layout audit: capture every modern screen, then quit.
+        int rc = gallery_run(&game, &map, &fog, &res, &sprites, &render_target, gallery_dir);
+        UnloadRenderTexture(render_target);
+        sprites_unload(&sprites);
+        CloseWindow();
+        resources_free(&res);
+        return rc;
+    }
 
     // Recorder: when --movie was passed, capture state + framebuffer
     // PNGs on logical-tick mutations into a hidden temp dir, then mux
@@ -1331,7 +1344,10 @@ title:;
                 if (spell_idx >= 0) {
                     dispatch_adventure_spell(&game, spell_idx);
                 }
-            } else if (ui_any_key_pressed()) {
+            } else if ((!CL_IS_MODERN || !views_spells_casting()) && ui_any_key_pressed()) {
+                // Legacy, or only looking: any other key closes. Modern casting
+                // keeps its keys -- the arrows move the cursor and Escape closes
+                // (views_spells_update); an arrow here used to close the list.
                 views_dismiss();
             }
         } else if (views_active() == VIEW_GATE) {

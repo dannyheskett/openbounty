@@ -71,6 +71,8 @@ int  modern_gamemenu_take_cheat(void);
 // Page ids, for tests and for opening a page directly.
 typedef enum { GM_PAGE_ROOT = 0, GM_PAGE_HERO, GM_PAGE_WORLD, GM_PAGE_GAME,
                GM_PAGE_SAVE, GM_PAGE_LOAD, GM_PAGE_DEBUG } GmPageId;
+// --gallery: open the pages in `pages` (the path), the cursor on `cursor`.
+void modern_gamemenu_gallery(int n, const GmPageId *pages, int cursor);
 // The rows of a page as they stand now (for tests).
 void modern_gamemenu_page(const Game *g, GmPageId id, GmPage *out);
 

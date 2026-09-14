@@ -58,12 +58,24 @@ int ml_list_draw_ex(int x, int y, int w, int h, int count, int cursor,
         int ry = y + shown * pitch;
         bool sel = (i == cursor);
         Color fg = !enabled ? PAL_CLR(DGREY) : sel ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
-        sel_row(x, ry, w, rh, x + ML_PAD, label, sel, fg, bg,
-                enabled ? touch_list : 0, touch_base + i);
+        char *nl = strchr(label, '\n');
+        if (nl) {
+            // Two lines: the fill and tap region from sel_row, the lines drawn here.
+            *nl = '\0';
+            sel_row(x, ry, w, rh, x + ML_PAD, "", sel, fg, bg, enabled ? touch_list : 0, touch_base + i);
+            int lh2 = bfont_line_height();
+            int ty2 = ry + (rh - 2 * lh2) / 2;
+            Color tc = sel ? (enabled ? bg : PAL_CLR(GREY)) : fg;
+            bfont_draw(label, x + ML_PAD, ty2, tc);
+            bfont_draw(nl + 1, x + ML_PAD, ty2 + lh2, tc);
+        } else {
+            sel_row(x, ry, w, rh, x + ML_PAD, label, sel, fg, bg,
+                    enabled ? touch_list : 0, touch_base + i);
+        }
         int ty = ry + (rh - bfont_line_height()) / 2;
         if (right[0]) {
             int tw = (int)bfont_measure(right).x;
-            bfont_draw(right, x + w - ML_PAD - tw, ty, sel ? bg : fg);
+            bfont_draw(right, x + w - ML_PAD - tw, ty, (sel && enabled) ? bg : sel ? PAL_CLR(GREY) : fg);
         }
         // More rows above or below: a small arrow at the row's right edge.
         int ax = x + w - ML_PAD / 2 - 6;

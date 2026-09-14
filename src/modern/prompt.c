@@ -44,9 +44,15 @@ static bool prompt_row(void *ctx, int i, char *label, char *right, int cap) {
         snprintf(label, (size_t)cap, "%s", s);
         return true;
     }
-    // A choice keeps to one line: the part that fits the row.
+    // A choice takes up to two lines in its row (a row is tall enough); a
+    // second line is joined with a newline, which the list draws below the first.
     const char *q = p->choices[i];
-    if (bfont_take_line(&q, rc->max_w, label, cap) <= 0) label[0] = '\0';
+    char l1[96] = "", l2[96] = "";
+    if (bfont_take_line(&q, rc->max_w, l1, (int)sizeof l1) <= 0) l1[0] = '\0';
+    while (*q == ' ') q++;
+    if (*q && bfont_take_line(&q, rc->max_w, l2, (int)sizeof l2) <= 0) l2[0] = '\0';
+    if (l2[0]) snprintf(label, (size_t)cap, "%s\n%s", l1, l2);
+    else       snprintf(label, (size_t)cap, "%s", l1);
     return true;
 }
 

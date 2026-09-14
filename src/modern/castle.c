@@ -62,6 +62,20 @@ void modern_castle_open(const Game *g, bool home, const char *castle_id) {
     snprintf(mc.castle_id, sizeof mc.castle_id, "%s", castle_id ? castle_id : "");
 }
 
+void modern_castle_gallery_audience(int audience, int rank) {
+    mc.audience = audience;
+    mc.audience_rank = rank;
+}
+
+void modern_castle_gallery(McPage page, int cursor, int step_value, int step_max) {
+    mc.page = page;
+    if (page == MC_MENU) mc.menu_cursor = cursor; else mc.list_cursor = cursor;
+    mc.step_on = step_max > 0;
+    mc.step_value = step_value;
+    mc.step_max = step_max;
+    mc.step_row = cursor;
+}
+
 bool        modern_castle_is_home(void) { return mc.home; }
 const char *modern_castle_id(void)      { return mc.castle_id; }
 McPage      modern_castle_page(void)    { return mc.page; }

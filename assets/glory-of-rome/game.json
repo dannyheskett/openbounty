@@ -4000,9 +4000,12 @@
 		}
 	},
 	"credits":	{
-		"image":	"art/ui/class_select_highlight.png",
+		"image":	"",
 		"groups":	[{
-				"label":	"King's Bounty Designed By:",
+				"label":	"The Glory of Rome:",
+				"names":	["An OpenBounty game pack"]
+			}, {
+				"label":	"Based on King's Bounty, designed by:",
 				"names":	["Jon Van Caneghem"]
 			}, {
 				"label":	"Programmed By:",

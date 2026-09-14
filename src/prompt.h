@@ -57,6 +57,8 @@ void prompt_text_input_open(const char *header, const char *body,
 int  prompt_text_input_value(void);
 
 bool prompt_is_active(void);
+// --gallery: the dwelling's count step up (true) or its Recruit/Leave rows.
+void prompt_gallery_step_open(bool open);
 void prompt_dismiss(void);
 
 // Read-only accessors for the harness / state serializer. The kind is

@@ -238,13 +238,15 @@ Panorama, action, confirmation, map. The scene is the screen: under the title
 strip (the temple's name or the dwelling and its troop, the zone at the right)
 the backdrop whole at 3x (720x306 on Rome, centred), with the Augur where the
 pack places him or the dwelling's troop standing at 2x, and nothing over it.
-Under the scene, what is on offer and your purse; the answers are full-width
-rows (Learn the rites / Leave, Recruit / Leave). At a dwelling, Recruit opens
+Under the scene, a one- or two-sentence introduction (`temple_intro`,
+`dwelling_intro`: what is offered and its price; no purse, that is the HUD's);
+the answers are full-width rows (Learn the rites / Leave, Recruit / Leave). At a dwelling, Recruit opens
 "How many?" as an in-lay on the scene with "Recruit 20" / Cancel. Once the deal
 is done a large framed dialog opens over the scene: the portrait at 2x (the
 Augur's `sprites.ui.alcove_portrait`, the troop's portrait), the confirmation
-beside it (the Augur's reply, or how many troops joined, and the gold before and
-after; `src/modern/location.c`), and Continue, which returns to the map. A known
+beside it (the Augur's reply, or how many troops joined; `src/modern/location.c`),
+titled with what happened ("Rites learned", "The Augur refuses", "Recruits join
+you"), and Continue, which returns to the map. A known
 zone's temple opens with the Augur's words in the same dialog.
 
 ## Combat action menu

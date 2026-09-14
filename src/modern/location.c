@@ -40,6 +40,14 @@ void loc_deal_absorb(const char *text) {
 }
 
 bool loc_deal_pending(void) { return deal.pending; }
+
+const char *loc_deal_title(const Game *g, bool temple) {
+    if (!g || !g->res) return "";
+    const ResBanners *bn = &g->res->banners;
+    bool paid = deal.begun && deal.gold_after < deal.gold_before;
+    if (temple) return paid ? bn->loc_title_taught : deal.begun ? bn->loc_title_refused : bn->loc_title_known;
+    return deal.recruited > 0 ? bn->loc_title_joined : bn->loc_title_none;
+}
 bool loc_deal_revealed(void) { return deal.begun || deal.revealed; }
 void loc_deal_reveal(void)   { deal.revealed = true; }
 int *loc_deal_cursor(void)   { return &deal.cursor; }
@@ -58,13 +66,5 @@ void loc_deal_text(const Game *g, char *out, int cap) {
         ResTemplateVar v[] = { { "COUNT", cb }, { "TROOP", t ? t->name : deal.troop_id } };
         resources_format_template(line, sizeof line, bn->loc_joined, v, 2);
         off += snprintf(out + off, (size_t)(cap - off), "%s%s", off ? "\n" : "", line);
-    }
-    if (deal.begun && deal.gold_after != deal.gold_before && off < cap) {
-        char fb[16], tb[16], line[RES_BANNER_LEN];
-        snprintf(fb, sizeof fb, "%d", deal.gold_before);
-        snprintf(tb, sizeof tb, "%d", deal.gold_after);
-        ResTemplateVar v[] = { { "FROM", fb }, { "TO", tb } };
-        resources_format_template(line, sizeof line, bn->loc_gold_change, v, 2);
-        snprintf(out + off, (size_t)(cap - off), "%s%s", off ? "\n\n" : "", line);
     }
 }

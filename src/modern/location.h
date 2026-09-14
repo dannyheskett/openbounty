@@ -25,8 +25,10 @@ bool loc_deal_revealed(void);
 void loc_deal_reveal(void);
 // The panorama's row cursor while such a message waits.
 int *loc_deal_cursor(void);
-// The in-lay text for the result (message, what joined, the purse before and after).
+// The in-lay text for the result (the message, what joined). Gold is the HUD's job.
 void loc_deal_text(const Game *g, char *out, int cap);
+// What happened, as the dialog's title ("Rites learned", "Recruits join you").
+const char *loc_deal_title(const Game *g, bool temple);
 void loc_deal_clear(void);
 
 #endif

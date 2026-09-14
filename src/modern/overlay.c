@@ -359,6 +359,8 @@ typedef struct {
     int   label;    // bytes of `text` drawn yellow before the rest; 0 = none
     Color fg;
     bool  block;    // starts a block kept on one page when it fits one
+    char  text2[40];   // a second "label value" drawn from the panel's middle; "" = none
+    int   label2;
 } TownLine;
 typedef struct {
     TownLine line[TOWN_DETAIL_LINES];
@@ -579,12 +581,15 @@ static void result_dialog(const Game *g, const char *title, Texture2D face, cons
     bfont_draw(title ? title : "", d.x + pad, d.y + (title_h - GH) / 2, PAL_CLR(YELLOW));
     lattice_band_h(d.x, d.y + title_h, d.w, BAND);
     int top = d.y + title_h + BAND;
+    int rows_y = d.y + d.h - ml_row_h() - ML_ROW_RULE;
     DrawRectangle(d.x, top, size, size, PAL_CLR(BLACK));
     if (face.id) ui_blit(face, d.x, top, size, size);
-    lattice_band_v(d.x + size, top, BAND, size);
+    // The portrait's column is closed: a rail under the picture, and the rail
+    // beside it running down to the answers.
+    lattice_band_h(d.x, top + size, size, BAND);
+    lattice_band_v(d.x + size, top, BAND, rows_y - BAND - top);
     const int INSET = pad + 4;
     int tx = d.x + size + BAND + INSET;
-    int rows_y = d.y + d.h - ml_row_h() - ML_ROW_RULE;
     int ty = top + INSET;
     for (int i = 0; i < t->n && ty + GH <= rows_y - BAND; i++, ty += GH + 2)
         bfont_draw(t->line[i].text, tx, ty, t->line[i].fg);
@@ -794,6 +799,24 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
                        sel ? PAL_CLR(DBLUE) : PAL_CLR(YELLOW));
         lattice_band_h(r.x, ry + h, mw, RULE);
     }
+    // More rows above or below: arrows at the column's right edge (tap targets),
+    // and a drag over the column scrolls it.
+    {
+        int shown_rows = vis < rows - first ? vis : rows - first;
+        int ax = r.x + mw - pad / 2 - 6;
+        if (first > 0) {
+            DrawTriangle((Vector2){ (float)ax, (float)low + 4 }, (Vector2){ (float)ax - 5, (float)low + 12 },
+                         (Vector2){ (float)ax + 5, (float)low + 12 }, PAL_CLR(YELLOW));
+            touch_region(r.x + mw - 3 * pad, low, 3 * pad, rh, KEY_UP);
+        }
+        if (first + shown_rows < rows) {
+            int by = low + (shown_rows - 1) * (rh + RULE) + rh;
+            DrawTriangle((Vector2){ (float)ax - 5, (float)by - 12 }, (Vector2){ (float)ax, (float)by - 4 },
+                         (Vector2){ (float)ax + 5, (float)by - 12 }, PAL_CLR(YELLOW));
+            touch_region(r.x + mw - 3 * pad, by - rh, 3 * pad, rh, KEY_DOWN);
+        }
+        if (rows > vis) touch_region_scroll(r.x, low, mw, vis * (rh + RULE), rh + RULE);
+    }
     lattice_band_v(r.x + mw, low, BAND, lh);
 
     // Detail (right): a result message until the next key, else the facts
@@ -919,6 +942,19 @@ static void town_text_pair(TownText *t, const char *label, const char *value) {
         int lab = (int)strlen(label);
         int len = (int)strlen(t->line[first].text);
         t->line[first].label = lab < len ? lab : len;
+    }
+}
+
+// Two "label value" pairs on one line, the second from the panel's middle.
+static void town_text_pair2(TownText *t, const char *l1, const char *v1,
+                            const char *l2, const char *v2) {
+    int first = t->n;
+    town_text_pair(t, l1, v1);
+    if (first < t->n) {
+        TownLine *l = &t->line[first];
+        snprintf(l->text2, sizeof l->text2, "%s %s", l2, v2);
+        int lab = (int)strlen(l2), len = (int)strlen(l->text2);
+        l->label2 = lab < len ? lab : len;
     }
 }
 
@@ -1077,7 +1113,18 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
                                                        s->portrait_frames[figure])],
                 r.x + CL_TILE_W / 2, top + bh - 2 * CL_TILE_H, 2 * CL_TILE_W, 2 * CL_TILE_H);
     } else if (s) {
-        int ti = castle_pick_troop(g, cid);
+        // A castle of your own shows the troop it holds most of; an empty
+        // garrison, no one. (The home castle without a keeper keeps a troop.)
+        int ti = -1;
+        if (!home) {
+            int most = 0;
+            for (int k = 0; cr && k < GAME_ARMY_SLOTS; k++) {
+                const TroopDef *gt = cr->garrison[k].id[0] ? troop_by_id(cr->garrison[k].id) : NULL;
+                if (gt && cr->garrison[k].count > most) { most = cr->garrison[k].count; ti = gt->index; }
+            }
+        } else {
+            ti = castle_pick_troop(g, cid);
+        }
         if (ti >= 0) {
             Texture2D ts = s->troop_anim[ti][sprites_frame(sprites_stand((int)(GetTime() * 6.66)),
                                                            s->troop_anim_frames[ti])];
@@ -1142,9 +1189,6 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
                 snprintf(vb, sizeof vb, "%d", pt->recruit_cost * cv);
                 ResTemplateVar cv1[] = { { "GOLD", vb } };
                 resources_format_template(left, sizeof left, bn->count_cost, cv1, 1);
-                snprintf(vb, sizeof vb, "%d", g->stats.gold - pt->recruit_cost * cv);
-                ResTemplateVar cv2[] = { { "GOLD", vb } };
-                resources_format_template(rightt, sizeof rightt, bn->count_gold_left, cv2, 1);
             }
             ml_count_panel(r.x, low, r.w, heading, cv, sub, left, rightt);
             // The two answers as full-width rows along the foot.
@@ -1291,10 +1335,13 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
         }
     } else if (pt) {
         town_text_add(&t, pt->name, PAL_CLR(YELLOW));
-        snprintf(nb, sizeof nb, "%d", pt->skill_level); town_text_pair(&t, ui->army_skill, nb);
-        snprintf(nb, sizeof nb, "%d", pt->move_rate);   town_text_pair(&t, ui->army_move, nb);
-        snprintf(nb, sizeof nb, "%d", pt->hit_points);  town_text_pair(&t, ui->army_hit_points, nb);
-        snprintf(nb, sizeof nb, "%d-%d", pt->melee_min, pt->melee_max); town_text_pair(&t, ui->army_damage, nb);
+        // The numbers two to a line, so the counts and any warning fit the panel.
+        snprintf(nb, sizeof nb, "%d", pt->skill_level);
+        snprintf(mb, sizeof mb, "%d", pt->move_rate);
+        town_text_pair2(&t, ui->army_skill, nb, ui->army_move, mb);
+        snprintf(nb, sizeof nb, "%d", pt->hit_points);
+        snprintf(mb, sizeof mb, "%d-%d", pt->melee_min, pt->melee_max);
+        town_text_pair2(&t, ui->army_hit_points, nb, ui->army_damage, mb);
         snprintf(nb, sizeof nb, "%d", pt->recruit_cost); town_text_pair(&t, ui->army_g_cost, nb);
         town_text_gap(&t);
         int in_army = 0, in_garrison = 0;
@@ -1343,6 +1390,13 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
             bfont_draw(l->text + l->label, dx + (int)bfont_measure(lab).x, ty, l->fg);
         } else {
             bfont_draw(l->text, dx, ty, l->fg);
+        }
+        if (l->text2[0]) {
+            char lab[40];
+            int x2 = dx + dw / 2;
+            snprintf(lab, sizeof lab, "%.*s", l->label2, l->text2);
+            bfont_draw(lab, x2, ty, PAL_CLR(YELLOW));
+            bfont_draw(l->text2 + l->label2, x2 + (int)bfont_measure(lab).x, ty, l->fg);
         }
         ty += line_h;
     }
@@ -1710,9 +1764,20 @@ static LocLayout loc_frame(const Game *g, const Sprites *s, const char *title, L
     if (bd.id) ui_blit(bd, L.scene.x, L.scene.y, bw, bh);
     int rows_h = ml_list_height(2);
     L.rows_y = r.y + r.h - rows_h;
-    lattice_band_h(r.x, L.rows_y - BAND, r.w, BAND);
+    lattice_band_h(r.x, L.rows_y - 2, r.w, 2);   // thin: the introduction needs two full lines above it
     L.info_y = top + bh + (L.rows_y - BAND - (top + bh) - GH) / 2;
     return L;
+}
+
+// The introduction: up to two lines in the band between the scene and the rows.
+static void loc_intro(const LocLayout *L, const char *text) {
+    ML_Rect r = ml_full();
+    TownText t = { .n = 0, .max_w = r.w - 2 * ML_PAD };
+    town_text_add(&t, text, PAL_CLR(WHITE));
+    int band_top = L->scene.y + L->scene.h, band_h = L->rows_y - 2 - band_top;
+    int lines = t.n < 2 ? t.n : 2;
+    int y = band_top + (band_h - lines * GH) / 2;     // lines GH apart, inside the band
+    for (int i = 0; i < lines; i++) bfont_draw(t.line[i].text, r.x + ML_PAD, y + i * GH, PAL_CLR(WHITE));
 }
 
 static void loc_rows(const LocLayout *L, LocRows *rows, int n, int cursor) {
@@ -1761,15 +1826,15 @@ void modern_overlay_draw_temple(const Game *g, const Sprites *s) {
     } else if (loc_deal_pending() && !loc_deal_revealed()) {
         loc_rows(&L, &rows, 2, *loc_deal_cursor());       // the panorama before the words
     } else {
-        loc_result_dialog(g, bn->temple_title, s ? s->alcove_portrait : (Texture2D){ 0 });
+        loc_result_dialog(g, loc_deal_title(g, true), s ? s->alcove_portrait : (Texture2D){ 0 });
     }
-    // The numbers line: your gold, and the price.
-    char line[2 * RES_BANNER_LEN + 32], cl[RES_BANNER_LEN];
-    snprintf(nb, sizeof nb, "%d", g->stats.gold);
-    castle_fmt(cl, sizeof cl, bn->castle_cost, cost, NULL);
-    snprintf(line, sizeof line, "%s %s   %s", ui->cv_gold, nb, cl);
-    if ((prompt_is_active() && pending_flow == FLOW_ALCOVE) || (loc_deal_pending() && !loc_deal_revealed()))
-        bfont_draw(line, r.x + ML_PAD, L.info_y, PAL_CLR(WHITE));
+    // The introduction under the scene: a sentence or two on what is offered.
+    if ((prompt_is_active() && pending_flow == FLOW_ALCOVE) || (loc_deal_pending() && !loc_deal_revealed())) {
+        ResTemplateVar iv[] = { { "ZONE", (z && z->name[0]) ? z->name : g->position.zone }, { "COST", cost } };
+        resources_format_template(buf, sizeof buf, bn->temple_intro, iv, 2);
+        loc_intro(&L, buf);
+    }
+    (void)nb; (void)ui; (void)r;
 }
 
 void modern_overlay_draw_dwelling(const Game *g, const Sprites *s) {
@@ -1805,30 +1870,21 @@ void modern_overlay_draw_dwelling(const Game *g, const Sprites *s) {
     const PromptView *pv = prompt_view();
     bool offer = prompt_is_active() && pending_flow == FLOW_RECRUIT;
 
-    // The numbers line: how many live here and the price, your gold, and how
-    // many you can take (or why none).
-    snprintf(nb, sizeof nb, "%d", pop);
-    ResTemplateVar av[] = { { "COUNT", nb }, { "TROOP", tr ? tr->name : "" } };
-    resources_format_template(buf, sizeof buf, ui->dwelling_info_available, av, 2);
-    char gold[16], each[RES_BANNER_LEN];
-    snprintf(gold, sizeof gold, "%d", g->stats.gold);
-    snprintf(nb, sizeof nb, "%d", cost);
-    castle_fmt(each, sizeof each, bn->castle_cost, nb, NULL);
-    if (cap > 0) {
-        char cb[16];
-        snprintf(cb, sizeof cb, "%d", cap);
-        castle_fmt(part, sizeof part, bn->castle_can_recruit, cb, NULL);
-    } else {
-        snprintf(part, sizeof part, "%s", (tr && g->stats.gold < tr->recruit_cost) ? bn->town_no_gold
-                                                                                  : bn->army_cannot_handle);
+    // The introduction under the scene: who dwells here and what they ask; when
+    // none can be recruited, why.
+    if ((offer && !pv->step_open) || (loc_deal_pending() && !loc_deal_revealed())) {
+        char cb[16], pb[16];
+        snprintf(pb, sizeof pb, "%d", pop);
+        snprintf(cb, sizeof cb, "%d", cost);
+        ResTemplateVar iv[] = { { "COUNT", pb }, { "TROOP", tr ? tr->name : "" }, { "COST", cb } };
+        char intro[2 * RES_BANNER_LEN + 2];
+        resources_format_template(buf, sizeof buf, bn->dwelling_intro, iv, 3);
+        snprintf(intro, sizeof intro, "%s%s%s", buf, cap <= 0 ? " " : "",
+                 cap > 0 ? "" : (tr && g->stats.gold < tr->recruit_cost) ? bn->town_no_gold
+                                                                         : bn->army_cannot_handle);
+        loc_intro(&L, intro);
     }
-    // Two lines in the band under the scene: what is on offer, then your purse
-    // and how many you can take.
-    int band_top = L.scene.y + L.scene.h;
-    snprintf(line, sizeof line, "%s. %s", buf, each);
-    if (offer && !pv->step_open) bfont_draw(line, r.x + ML_PAD, band_top - 1, PAL_CLR(WHITE));
-    snprintf(line, sizeof line, "%s %s   %s", ui->cv_gold, gold, part);
-    if (offer && !pv->step_open) bfont_draw(line, r.x + ML_PAD, band_top + GH - 1, PAL_CLR(YELLOW));
+    (void)line; (void)part; (void)nb; (void)r;
 
     LocRows rows = { { bn->dwelling_recruit_row, bn->location_leave }, { cap > 0, true } };
     if (offer && pv->step_open) {
@@ -1868,10 +1924,6 @@ void modern_overlay_draw_dwelling(const Game *g, const Sprites *s) {
         ResTemplateVar c1[] = { { "GOLD", vb } };
         resources_format_template(tl, sizeof tl, bn->count_cost, c1, 1);
         town_text_add(&t, tl, PAL_CLR(YELLOW));
-        snprintf(vb, sizeof vb, "%d", g->stats.gold - cost * pv->step_value);
-        ResTemplateVar c2[] = { { "GOLD", vb } };
-        resources_format_template(tl, sizeof tl, bn->count_gold_left, c2, 1);
-        town_text_add(&t, tl, PAL_CLR(YELLOW));
         int ty = top + INSET;
         for (int i = 0; i < t.n && ty + GH <= top + size; i++, ty += GH + 2)
             bfont_draw(t.line[i].text, tx, ty, t.line[i].fg);
@@ -1893,6 +1945,6 @@ void modern_overlay_draw_dwelling(const Game *g, const Sprites *s) {
         rows.enabled[0] = true;
         loc_rows(&L, &rows, 2, *loc_deal_cursor());       // the panorama before the words
     } else {
-        loc_result_dialog(g, title, face);             // the confirmation, then the map
+        loc_result_dialog(g, loc_deal_title(g, false), face);   // the confirmation, then the map
     }
 }

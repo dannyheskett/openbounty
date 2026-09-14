@@ -103,11 +103,16 @@ bool views_menu_entry_is_submenu(int i);
 // not in menu.
 int  views_menu_cursor(void);
 int  views_spells_cursor(void);      // modern: 0..13, legacy: -1
+bool views_spells_casting(void);     // the Spells view was opened to cast
 
 // Town display name (from views_open_town), or NULL if not in VIEW_TOWN.
 const char *views_town_display_name(void);
 // Modern: a boat / spell / siege outcome is showing as a dialog (until Continue).
 bool views_town_result_dialog(void);
+// --gallery: put the town screen in a state to capture (row < 0: the main page
+// with the cursor on lcursor; else that section's page), with an optional
+// result message, shown as its dialog when `dialog`.
+void views_gallery_town(const struct Game *g, int row, int lcursor, const char *info, bool dialog);
 
 // Town record id (canonical id for g->towns[] lookup), or NULL if not
 // in VIEW_TOWN.

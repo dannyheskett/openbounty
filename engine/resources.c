@@ -1394,6 +1394,13 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(capture_contract, "capture_contract");
     SET_BANNER(capture_free, "capture_free");
     SET_BANNER(capture_promoted, "capture_promoted");
+    SET_BANNER(temple_intro, "temple_intro");
+    SET_BANNER(dwelling_intro, "dwelling_intro");
+    SET_BANNER(loc_title_taught, "loc_title_taught");
+    SET_BANNER(loc_title_refused, "loc_title_refused");
+    SET_BANNER(loc_title_known, "loc_title_known");
+    SET_BANNER(loc_title_joined, "loc_title_joined");
+    SET_BANNER(loc_title_none, "loc_title_none");
     SET_BANNER(gmd_leave, "gmd_leave");
     SET_BANNER(gmd_army, "gmd_army");
     SET_BANNER(gmd_character, "gmd_character");

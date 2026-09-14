@@ -148,6 +148,13 @@ static cJSON *gb_placeholder_strings(void) {
     cJSON_AddStringToObject(o, "capture_contract", "capture_contract");
     cJSON_AddStringToObject(o, "capture_free", "capture_free");
     cJSON_AddStringToObject(o, "capture_promoted", "capture_promoted");
+    cJSON_AddStringToObject(o, "temple_intro", "temple_intro");
+    cJSON_AddStringToObject(o, "dwelling_intro", "dwelling_intro");
+    cJSON_AddStringToObject(o, "loc_title_taught", "loc_title_taught");
+    cJSON_AddStringToObject(o, "loc_title_refused", "loc_title_refused");
+    cJSON_AddStringToObject(o, "loc_title_known", "loc_title_known");
+    cJSON_AddStringToObject(o, "loc_title_joined", "loc_title_joined");
+    cJSON_AddStringToObject(o, "loc_title_none", "loc_title_none");
     cJSON_AddStringToObject(o, "gmd_army", "gmd_army");
     cJSON_AddStringToObject(o, "gmd_character", "gmd_character");
     cJSON_AddStringToObject(o, "gmd_contract", "gmd_contract");

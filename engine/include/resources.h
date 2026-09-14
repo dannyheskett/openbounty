@@ -589,6 +589,13 @@ typedef struct {
     char capture_contract[RES_BANNER_LEN];
     char capture_free[RES_BANNER_LEN];
     char capture_promoted[RES_BANNER_LEN];
+    char temple_intro[RES_BANNER_LEN];
+    char dwelling_intro[RES_BANNER_LEN];
+    char loc_title_taught[RES_BANNER_LEN];
+    char loc_title_refused[RES_BANNER_LEN];
+    char loc_title_known[RES_BANNER_LEN];
+    char loc_title_joined[RES_BANNER_LEN];
+    char loc_title_none[RES_BANNER_LEN];
     char gmd_leave[RES_BANNER_LEN];
     char gmd_army[RES_BANNER_LEN];
     char gmd_character[RES_BANNER_LEN];

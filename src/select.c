@@ -1,4 +1,5 @@
 #include "select.h"
+#include "palette.h"
 #include "bfont.h"
 #include "input_host.h"
 #include "layout.h"
@@ -46,7 +47,15 @@ SelEvent sel_input(SelList *l, int touch_list, int hotkey_base, int *row) {
 
 void sel_row(int x, int y, int w, int h, int text_x, const char *text,
              bool selected, Color fg, Color bg, int touch_list, int row) {
-    if (CL_IS_MODERN && selected) {
+    Color dg = PAL_CLR(DGREY);
+    bool greyed = fg.r == dg.r && fg.g == dg.g && fg.b == dg.b;
+    if (CL_IS_MODERN && selected && greyed) {
+        // A row that cannot be chosen, under the cursor: the panel's own fill
+        // with a yellow outline, the label in light grey -- readable, not lit.
+        DrawRectangle(x, y, w, h, bg);
+        DrawRectangleLines(x + 1, y + 1, w - 2, h - 2, PAL_CLR(YELLOW));
+        bfont_draw(text, text_x, y + (h - bfont_line_height()) / 2, PAL_CLR(GREY));
+    } else if (CL_IS_MODERN && selected) {
         DrawRectangle(x, y, w, h, fg);
         bfont_draw(text, text_x, y + (h - bfont_line_height()) / 2, bg);
     } else {
