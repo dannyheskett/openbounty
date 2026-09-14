@@ -575,6 +575,16 @@ typedef struct {
     char fv_your_army[RES_BANNER_LEN];
     char loc_joined[RES_BANNER_LEN];
     char loc_gold_change[RES_BANNER_LEN];
+    char count_heading[RES_BANNER_LEN];
+    char count_of_lead[RES_BANNER_LEN];
+    char count_of_army[RES_BANNER_LEN];
+    char count_of_garrison[RES_BANNER_LEN];
+    char count_cost[RES_BANNER_LEN];
+    char count_gold_left[RES_BANNER_LEN];
+    char count_recruit[RES_BANNER_LEN];
+    char count_garrison[RES_BANNER_LEN];
+    char count_withdraw[RES_BANNER_LEN];
+    char count_cancel[RES_BANNER_LEN];
     char gmd_leave[RES_BANNER_LEN];
     char gmd_army[RES_BANNER_LEN];
     char gmd_character[RES_BANNER_LEN];

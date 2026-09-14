@@ -133,6 +133,44 @@ int ml_hint_button(int x, int y, const char *label, const char *kb_key, const ch
     return w;
 }
 
+int ml_count_panel_height(void) {
+    int gh = BFONT_GLYPH_H;
+    return ML_PAD + gh + ML_PAD + gh * 2 + ML_PAD / 2 + gh + ML_PAD + gh + ML_PAD;
+}
+
+int ml_count_panel(int x, int y, int w, const char *heading, int value, const char *sub,
+                   const char *left, const char *right) {
+    const int gh = BFONT_GLYPH_H, pad = ML_PAD;
+    int ty = y + pad;
+    bfont_draw(heading ? heading : "", x + pad, ty, PAL_CLR(YELLOW));
+    ty += gh + pad;
+    // The buttons and the number.
+    static const char *const LABELS[4] = { "-10", "-1", "+1", "+10" };
+    static const int KEYS[4] = { KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_UP };
+    int bh = gh * 2, bw = (int)bfont_measure("+10").x + 2 * pad;
+    int mid = x + w / 2;
+    int box_w = (int)bfont_measure("00000").x + 4 * pad;
+    int xs[4] = { mid - box_w / 2 - 2 * pad - 2 * bw, mid - box_w / 2 - pad - bw,
+                  mid + box_w / 2 + pad, mid + box_w / 2 + 2 * pad + bw };
+    for (int k = 0; k < 4; k++) {
+        DrawRectangleLines(xs[k], ty, bw, bh, PAL_CLR(YELLOW));
+        int lw = (int)bfont_measure(LABELS[k]).x;
+        bfont_draw(LABELS[k], xs[k] + (bw - lw) / 2, ty + (bh - gh) / 2, PAL_CLR(YELLOW));
+        touch_region(xs[k], ty, bw, bh, KEYS[k]);
+    }
+    char nb[16];
+    snprintf(nb, sizeof nb, "%d", value);
+    DrawRectangle(mid - box_w / 2, ty, box_w, bh, PAL_CLR(BLACK));
+    DrawRectangleLines(mid - box_w / 2, ty, box_w, bh, PAL_CLR(WHITE));
+    bfont_draw(nb, mid - (int)bfont_measure(nb).x / 2, ty + (bh - gh) / 2, PAL_CLR(WHITE));
+    ty += bh + pad / 2;
+    if (sub && sub[0]) bfont_draw(sub, mid - (int)bfont_measure(sub).x / 2, ty, PAL_CLR(WHITE));
+    ty += gh + pad;
+    if (left && left[0])   bfont_draw(left, x + pad, ty, PAL_CLR(WHITE));
+    if (right && right[0]) bfont_draw(right, x + w - pad - (int)bfont_measure(right).x, ty, PAL_CLR(WHITE));
+    return ml_count_panel_height();
+}
+
 bool ml_stepper_keys(int *value, int lo, int hi) {
     int v = *value;
     if (input_key_pressed(KEY_LEFT))  v -= 1;

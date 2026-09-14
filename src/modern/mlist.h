@@ -40,6 +40,14 @@ int  ml_list_draw_ex(int x, int y, int w, int h, int count, int cursor,
 // Up +10) and the count text is one for Enter. `text` is the count text.
 int  ml_stepper_height(void);
 void ml_stepper_draw(int x, int y, int w, const char *text);
+// The "How many?" step: in (x, y, w), a heading, then -10 / -1 buttons, the
+// number framed in the middle, +1 / +10 buttons (each a tap target for Down /
+// Left / Right / Up), `sub` centred under it ("of 20 you can lead"), and a
+// line with `left` and `right` at its ends (the cost, the gold left). Returns
+// the height drawn (ml_count_panel_height()).
+int  ml_count_panel_height(void);
+int  ml_count_panel(int x, int y, int w, const char *heading, int value, const char *sub,
+                    const char *left, const char *right);
 // Apply one frame of stepper keys to *value within [lo, hi]. Returns true when
 // the value changed.
 bool ml_stepper_keys(int *value, int lo, int hi);

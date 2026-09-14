@@ -331,8 +331,9 @@ bool modern_castle_update(Game *g) {
     // one, Down/Up by ten, Enter moves the count, Esc puts it away.
     if (mc.step_on) {
         ml_stepper_keys(&mc.step_value, 1, mc.step_max);
-        if (input_key_pressed(KEY_ESCAPE)) mc.step_on = false;
-        else if (pressed_confirm())        commit(g);
+        int tapped = touch_tapped_row(TOUCH_LIST_CASTLE);    // "Recruit 20" / Cancel
+        if (input_key_pressed(KEY_ESCAPE) || tapped == 1) mc.step_on = false;
+        else if (pressed_confirm() || tapped == 0)         commit(g);
         return false;
     }
 

@@ -246,9 +246,18 @@ PromptResult prompt_update(void) {
     // Modern dwelling: Recruit / Leave rows first; Recruit opens the stepper,
     // and Esc puts the stepper away before it leaves.
     bool dwelling = CL_IS_MODERN && g_kind == PK_TEXT_INPUT && pending_flow == FLOW_RECRUIT;
-    if (dwelling && g_step_open && input_key_pressed(KEY_ESCAPE)) {
-        g_step_open = false;
-        return PROMPT_RESULT_NONE;
+    if (dwelling && g_step_open) {
+        int tapped = touch_tapped_row(TOUCH_LIST_PROMPT);    // "Recruit 20" / Cancel
+        if (input_key_pressed(KEY_ESCAPE) || tapped == 1) {
+            g_step_open = false;
+            return PROMPT_RESULT_NONE;
+        }
+        if (tapped == 0) {
+            snprintf(g_text_buf, sizeof g_text_buf, "%d", g_step_value);
+            g_text_len = (int)strlen(g_text_buf);
+            g_kind = PK_NONE;
+            return PROMPT_RESULT_YES;
+        }
     }
     if (input_key_pressed(KEY_ESCAPE)) {
         if (no_evade) return PROMPT_RESULT_NONE;

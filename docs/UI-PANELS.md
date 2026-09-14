@@ -172,13 +172,18 @@ title strip -- or, in yellow, that there is nowhere to run when no square is
 free. Along the foot, Fight and Evade are full-width standard rows, as in the
 question dialog (Up/Down, Enter or a tap; Evade greyed when blocked).
 
-## Count stepper
+## How many (modern)
 
-Choosing how many troops to recruit, garrison or withdraw opens a stepper along
-the bottom of the detail panel: `<<  <   20 of 50   >  >>`, starting at the
-most allowed. Left/Right step by one, Down/Up by ten, Enter moves the count,
-Esc puts it away; every arrow and the count itself are tap targets for the key
-they stand for. The stepper holds the keys while it is open.
+Choosing a count is its own step. After picking what to recruit (castle
+Recruit, a dwelling's Recruit row) or which troop to garrison or withdraw, a
+"How many?" panel takes over (`ml_count_panel`, src/modern/mlist.c): the
+heading ("How many Hastati?"), labelled -10 / -1 / +1 / +10 buttons round the
+number framed in the middle, "of 20 you can lead" (in your army, in the
+garrison) under it, and when recruiting the cost and the gold left. The answers
+are full-width rows: "Recruit 20" (Garrison / Withdraw) and Cancel. Left/Right
+step one, Down/Up ten, Enter or a tap on the first row carries it out, Escape
+or Cancel goes back. At the castle the panel fills the screen's lower half; at
+a dwelling it is an in-lay centred on the scene.
 
 ## Castles (modern)
 

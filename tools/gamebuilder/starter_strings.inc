@@ -134,6 +134,16 @@ static cJSON *gb_placeholder_strings(void) {
     cJSON_AddStringToObject(o, "fv_your_army", "fv_your_army");
     cJSON_AddStringToObject(o, "loc_joined", "loc_joined");
     cJSON_AddStringToObject(o, "loc_gold_change", "loc_gold_change");
+    cJSON_AddStringToObject(o, "count_heading", "count_heading");
+    cJSON_AddStringToObject(o, "count_of_lead", "count_of_lead");
+    cJSON_AddStringToObject(o, "count_of_army", "count_of_army");
+    cJSON_AddStringToObject(o, "count_of_garrison", "count_of_garrison");
+    cJSON_AddStringToObject(o, "count_cost", "count_cost");
+    cJSON_AddStringToObject(o, "count_gold_left", "count_gold_left");
+    cJSON_AddStringToObject(o, "count_recruit", "count_recruit");
+    cJSON_AddStringToObject(o, "count_garrison", "count_garrison");
+    cJSON_AddStringToObject(o, "count_withdraw", "count_withdraw");
+    cJSON_AddStringToObject(o, "count_cancel", "count_cancel");
     cJSON_AddStringToObject(o, "gmd_army", "gmd_army");
     cJSON_AddStringToObject(o, "gmd_character", "gmd_character");
     cJSON_AddStringToObject(o, "gmd_contract", "gmd_contract");

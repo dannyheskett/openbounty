@@ -1043,6 +1043,47 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
     lattice_band_h(r.x, low, r.w, BAND);
     low += BAND;
 
+    // The second step, "How many?": the whole lower half becomes the count
+    // panel, with "Recruit 20" (or Garrison / Withdraw) and Cancel as rows.
+    {
+        int cv = 0, cmax = 0;
+        if (modern_castle_stepper(&cv, &cmax) && pt) {
+            char heading[RES_BANNER_LEN], sub[RES_BANNER_LEN], left[RES_BANNER_LEN] = "",
+                 rightt[RES_BANNER_LEN] = "", mx[16], vb[16];
+            ResTemplateVar hv[] = { { "TROOP", pt->name } };
+            resources_format_template(heading, sizeof heading, bn->count_heading, hv, 1);
+            snprintf(mx, sizeof mx, "%d", cmax);
+            ResTemplateVar sv[] = { { "MAX", mx } };
+            resources_format_template(sub, sizeof sub, page == MC_RECRUIT ? bn->count_of_lead
+                                      : page == MC_GARRISON ? bn->count_of_army : bn->count_of_garrison, sv, 1);
+            if (page == MC_RECRUIT) {
+                snprintf(vb, sizeof vb, "%d", pt->recruit_cost * cv);
+                ResTemplateVar cv1[] = { { "GOLD", vb } };
+                resources_format_template(left, sizeof left, bn->count_cost, cv1, 1);
+                snprintf(vb, sizeof vb, "%d", g->stats.gold - pt->recruit_cost * cv);
+                ResTemplateVar cv2[] = { { "GOLD", vb } };
+                resources_format_template(rightt, sizeof rightt, bn->count_gold_left, cv2, 1);
+            }
+            ml_count_panel(r.x, low, r.w, heading, cv, sub, left, rightt);
+            // The two answers as full-width rows along the foot.
+            static char act_label[RES_BANNER_LEN];
+            snprintf(vb, sizeof vb, "%d", cv);
+            ResTemplateVar av[] = { { "COUNT", vb } };
+            resources_format_template(act_label, sizeof act_label, page == MC_RECRUIT ? bn->count_recruit
+                                      : page == MC_GARRISON ? bn->count_garrison : bn->count_withdraw, av, 1);
+            int ry = bottom - ml_list_height(2);
+            lattice_band_h(r.x, ry - BAND, r.w, BAND);
+            int rh2 = ml_row_h();
+            sel_row(r.x, ry, r.w, rh2, r.x + ML_PAD, act_label, true, PAL_CLR(YELLOW), PAL_CLR(DBLUE),
+                    TOUCH_LIST_CASTLE, 0);
+            lattice_band_h(r.x, ry + rh2, r.w, ML_ROW_RULE);
+            sel_row(r.x, ry + rh2 + ML_ROW_RULE, r.w, rh2, r.x + ML_PAD, bn->count_cancel, false,
+                    PAL_CLR(WHITE), PAL_CLR(DBLUE), TOUCH_LIST_CASTLE, 1);
+            lattice_band_h(r.x, ry + 2 * rh2 + ML_ROW_RULE, r.w, ML_ROW_RULE);
+            return;
+        }
+    }
+
     // Left column: standard select rows, stacked from the top.
     int mw = 16 * GW;
     int lh = bottom - low;
@@ -1210,7 +1251,7 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
     }
 
     int ty = low + INSET;
-    int per = (lh - 2 * INSET) / line_h - (stepper ? 3 : 0);
+    int per = (lh - 2 * INSET) / line_h;
     for (int i = 0; i < t.n && i < per; i++) {
         const TownLine *l = &t.line[i];
         if (l->label > 0) {
@@ -1222,24 +1263,6 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
             bfont_draw(l->text, dx, ty, l->fg);
         }
         ty += line_h;
-    }
-
-    // The count stepper, along the bottom of the panel:
-    //   Cost: N gold                      (recruiting)
-    //   <<  <   20 of 50   >  >>
-    // Left/Right step one, Down/Up ten, Enter moves, Esc cancels; each arrow
-    // is a tap target for the key it stands for.
-    if (stepper) {
-        int sy = bottom - INSET - 2 * GH - 4;
-        if (page == MC_RECRUIT && pt) {
-            snprintf(nb, sizeof nb, "%d", pt->recruit_cost * step_v);
-            castle_fmt(buf, sizeof buf, bn->castle_cost, nb, NULL);
-            bfont_draw(buf, dx, sy - line_h, PAL_CLR(WHITE));
-        }
-        snprintf(nb, sizeof nb, "%d", step_v);
-        snprintf(mb, sizeof mb, "%d", step_max);
-        castle_fmt(buf, sizeof buf, bn->castle_count_of, nb, mb);
-        ml_stepper_draw(dx, sy, dw, buf);
     }
 }
 
@@ -1749,13 +1772,31 @@ void modern_overlay_draw_dwelling(const Game *g, const Sprites *s) {
 
     LocRows rows = { { bn->dwelling_recruit_row, bn->location_leave }, { cap > 0, true } };
     if (offer && pv->step_open) {
-        // The count stepper across the width in place of the rows.
-        char sv[16], sm[16];
-        snprintf(sv, sizeof sv, "%d", pv->step_value);
-        snprintf(sm, sizeof sm, "%d", pv->step_max);
-        castle_fmt(buf, sizeof buf, bn->castle_count_of, sv, sm);
-        int hh = ml_list_height(2);
-        ml_stepper_draw(r.x + ML_PAD, L.rows_y + (hh - ml_stepper_height()) / 2, r.w - 2 * ML_PAD, buf);
+        // The second step, "How many?": a panel in-lay centred on the scene,
+        // and "Recruit 20" / Cancel as the rows.
+        char heading[RES_BANNER_LEN], sub[RES_BANNER_LEN], left[RES_BANNER_LEN], rightt[RES_BANNER_LEN], vb[16];
+        ResTemplateVar hv[] = { { "TROOP", tr ? tr->name : "" } };
+        resources_format_template(heading, sizeof heading, bn->count_heading, hv, 1);
+        snprintf(vb, sizeof vb, "%d", pv->step_max);
+        ResTemplateVar sv[] = { { "MAX", vb } };
+        resources_format_template(sub, sizeof sub, bn->count_of_lead, sv, 1);
+        snprintf(vb, sizeof vb, "%d", cost * pv->step_value);
+        ResTemplateVar c1[] = { { "GOLD", vb } };
+        resources_format_template(left, sizeof left, bn->count_cost, c1, 1);
+        snprintf(vb, sizeof vb, "%d", g->stats.gold - cost * pv->step_value);
+        ResTemplateVar c2[] = { { "GOLD", vb } };
+        resources_format_template(rightt, sizeof rightt, bn->count_gold_left, c2, 1);
+        int pw = L.scene.w * 2 / 3, ph = ml_count_panel_height();
+        int px = L.scene.x + (L.scene.w - pw) / 2, py = L.scene.y + (L.scene.h - ph) / 2;
+        DrawRectangle(px, py, pw, ph, (Color){ 0, 0, 0, 200 });
+        DrawRectangleLines(px, py, pw, ph, PAL_CLR(YELLOW));
+        ml_count_panel(px, py, pw, heading, pv->step_value, sub, left, rightt);
+        static char act_label[RES_BANNER_LEN];
+        snprintf(vb, sizeof vb, "%d", pv->step_value);
+        ResTemplateVar av[] = { { "COUNT", vb } };
+        resources_format_template(act_label, sizeof act_label, bn->count_recruit, av, 1);
+        LocRows step_rows = { { act_label, bn->count_cancel }, { true, true } };
+        loc_rows(&L, &step_rows, 2, 0);
     } else if (offer) {
         loc_rows(&L, &rows, 2, pv->yn_cursor);
     } else {
