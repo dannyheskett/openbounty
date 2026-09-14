@@ -20,6 +20,9 @@
 
 void legacy_views_render_draw(const Game *g, const Map *m, const Fog *f,
                               const Sprites *s);
+// Modern world map: the places list's input (true: the keys were the view's).
+bool modern_worldmap_input(const Game *g);
+void modern_worldmap_gallery(int cursor);
 void modern_views_render_draw(const Game *g, const Map *m, const Fog *f,
                               const Sprites *s);
 

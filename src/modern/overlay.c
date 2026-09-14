@@ -222,6 +222,24 @@ static void draw_face_dialog(void) {
     else if (kind == REQ_FACE_TROOP)                              face = troop_face(s, idx);
     else if (kind == REQ_FACE_ARTIFACT && s && idx >= 0 && idx < 8) face = s->view_icon[idx];
     else if (kind == REQ_FACE_PORTRAIT)                           face = portrait_frame(s, idx, 2.0);
+    if (kind == REQ_FACE_SCENE && s && idx >= 0 && idx < 4 && s->class_disgraced[idx].id) {
+        // A scene: the whole screen, the backdrop at 3x with the words under
+        // it and Continue along the foot.
+        ml_set_area(ML_AREA_FULL);
+        const Texture2D bd = s->class_disgraced[idx];
+        const int bw = 3 * ML_BACKDROP_W, bh = 3 * ML_BACKDROP_H;
+        const char *hdr = dialog_header_text();
+        int text_w = bw - 2 * UK_INSET;
+        int lines = wrapped_lines(dialog_body_text(), text_w);
+        int h = uk_title_h() + UK_BAND + bh + 2 * UK_INSET + lines * uk_line_h()
+              + UK_BAND + ml_list_height(1);
+        ML_Rect b = uk_inlay(bw, h, hdr, NULL);
+        ui_blit(bd, b.x, b.y, bw, bh);
+        UkRows rows = { { res->banners.castle_continue }, { true } };
+        int foot = uk_foot_rows(b, 1, 0, uk_rows_fn, &rows, TOUCH_LIST_PROMPT);
+        uk_flow(b.x + UK_INSET, b.y + bh + UK_INSET, text_w, b.x, 0, foot, dialog_body_text(), PAL_CLR(WHITE));
+        return;
+    }
     uk_result_inlay(dialog_header_text(), face, dialog_body_text(), res->banners.castle_continue,
                     TOUCH_LIST_PROMPT);
 }
@@ -509,13 +527,9 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
     Texture2D fig = portrait_frame(s, head, 1000.0 / 180.0);
     if (!fig.id) fig = troop_standing(s, town_backdrop_troop(g, name));
     uk_scene_figure(&L, fig, CL_TILE_W);
-    uk_scene_intro(&L, buf);
     bool visiting = views_town_visiting();
-    char visit[RES_BANNER_LEN + 4];
-    snprintf(visit, sizeof visit, "%s >", bn->town_visit);
-    UkRows scene_rows = { { visit, bn->location_leave }, { true, true } };
-    uk_scene_rows(&L, 2, visiting ? -1 : views_town_scene_cursor(), uk_rows_fn, &scene_rows,
-                  visiting ? 0 : TOUCH_LIST_TOWN);
+    const char *scene_labels[2] = { bn->town_visit, bn->location_leave };
+    uk_scene_split(&L, buf, scene_labels, visiting ? -1 : views_town_scene_cursor(), visiting ? 0 : TOUCH_LIST_TOWN);
     if (!visiting) return;
 
     TownList list = views_town_list();
@@ -872,7 +886,7 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
                                   : page == MC_GARRISON ? bn->count_garrison : bn->count_withdraw, av, 1);
         const char *lines[] = { sub, cost };
         Color colors[] = { PAL_CLR(WHITE), PAL_CLR(YELLOW) };
-        uk_count_inlay(heading, troop_face(s, pt->index), lines, colors, 2, cv, act_label, bn->count_cancel,
+        uk_count_inlay(heading, troop_face(s, pt->index), lines, colors, 2, cv, cmax, act_label, bn->count_cancel,
                        TOUCH_LIST_CASTLE);
         return;
     }
@@ -1079,12 +1093,16 @@ void modern_overlay_draw_foe(const Game *g, const Sprites *s) {
         troops[shown] = t;
         counts[shown++] = u->count;
     }
-    // The band on the plains at 1x, facing the hero.
-    for (int k = 0; k < shown; k++) {
-        Texture2D fig = troop_standing(s, troops[k]->index);
-        int slot = L.scene.w / (shown + 1);
-        int fh = tile < L.scene.h ? tile : L.scene.h;
-        if (fig.id) ui_blit_mirrored(fig, L.scene.x + slot * (k + 1) - tile / 2, L.scene.y + L.scene.h - fh, tile, fh);
+    // The band on the plains at 1x, facing the hero, each troop standing over
+    // its own card.
+    {
+        int sw0 = (L.full.w - 4 * UK_BAND) / 5;
+        for (int k = 0; k < shown; k++) {
+            Texture2D fig = troop_standing(s, troops[k]->index);
+            int cx = L.full.x + k * (sw0 + UK_BAND) + sw0 / 2;
+            int fh = tile < L.scene.h ? tile : L.scene.h;
+            if (fig.id) ui_blit_mirrored(fig, cx - tile / 2, L.scene.y + L.scene.h - fh, tile, fh);
+        }
     }
     lattice_band_h(L.full.x, L.intro_y, L.full.w, UK_BAND);
 
@@ -1340,7 +1358,7 @@ void modern_overlay_draw_dwelling(const Game *g, const Sprites *s) {
         resources_format_template(act_label, sizeof act_label, bn->count_recruit, av, 1);
         const char *lines[] = { avail, each, "", lead, total };
         Color colors[] = { PAL_CLR(WHITE), PAL_CLR(WHITE), PAL_CLR(WHITE), PAL_CLR(WHITE), PAL_CLR(YELLOW) };
-        uk_count_inlay(heading, face, lines, colors, 5, pv->step_value, act_label, bn->count_cancel,
+        uk_count_inlay(heading, face, lines, colors, 5, pv->step_value, pv->step_max, act_label, bn->count_cancel,
                        TOUCH_LIST_PROMPT);
     } else if (offer) {
         uk_scene_rows(&L, 2, pv->yn_cursor, uk_rows_fn, &rows, TOUCH_LIST_PROMPT);

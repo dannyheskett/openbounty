@@ -16,7 +16,15 @@ void perform_temp_death(Game *g, Map *map, Fog *fog, const Resources *res) {
     resources_format_template(body, sizeof body, res->banners.temp_death,
                               NULL, 0);
     PlayerRequest *msg = player_io_message(g, NULL, body);
-    // Modern: the Emperor who summoned you, in the in-lay.
+    // Modern: the hero's disgraced scene when the pack has one, else the
+    // Emperor who summoned you, in the in-lay.
+    const ClassDef *cls = class_by_id(g->character.cls.id);
+    if (msg && CL_IS_MODERN && cls && cls->index >= 0 && cls->index < 4 &&
+        res->class_hero[cls->index].disgraced[0]) {
+        msg->face = REQ_FACE_SCENE;
+        msg->face_index = cls->index;
+        return;
+    }
     for (int i = 0; msg && CL_IS_MODERN && i < res->castle_count; i++) {
         if (!resources_castle_is_home(&res->castles[i])) continue;
         int idx = resources_portrait_index(res, res->castles[i].special.portrait);

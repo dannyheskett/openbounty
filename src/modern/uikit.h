@@ -97,6 +97,10 @@ void    uk_scene_figure(const UkScene *L, Texture2D t, int x);
 void    uk_scene_intro(const UkScene *L, const char *text);
 void    uk_scene_rows(const UkScene *L, int n, int cursor, MlRowFn fn, void *ctx, int touch_list);
 
+// The space under a scene as one frame: the words at the left half, the two
+// answers as buttons side by side at the right half (tapped as rows 0 and 1).
+void    uk_scene_split(const UkScene *L, const char *text, const char *labels[2], int cursor, int touch_list);
+
 // A row source over a fixed list of labels.
 typedef struct { const char *label[8]; bool enabled[8]; } UkRows;
 bool uk_rows_fn(void *ctx, int i, char *label, char *right, int cap);
@@ -105,7 +109,7 @@ bool uk_rows_fn(void *ctx, int i, char *label, char *right, int cap);
 // buttons, and "Recruit 20" / Cancel as rows (tapped as rows 0 and 1 of
 // touch_list).
 void uk_count_inlay(const char *title, Texture2D face, const char *lines[], Color colors[], int nlines,
-                    int value, const char *act_label, const char *cancel_label, int touch_list);
+                    int value, int max, const char *act_label, const char *cancel_label, int touch_list);
 
 // A confirmation in-lay: title, picture at 2x (none: the words take the width),
 // the words, and one row (Continue).

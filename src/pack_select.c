@@ -1,11 +1,12 @@
-// Pre-game pack selector. Runs before any pack is loaded, so it
-// deliberately uses only raylib built-ins (default font, plain colors).
+// Pre-game pack selector. Runs before any pack is loaded, so it carries its
+// own face: Liberation Sans, embedded (src/font_sans.inc, SIL OFL 1.1).
 
 #include "frame_host.h"
 #include "input_host.h"
 #include "pack_select.h"
 #include "pack.h"
 #include "raylib.h"
+#include "font_sans.inc"
 
 #include <stdio.h>
 #include <string.h>
@@ -52,6 +53,11 @@ bool pack_select_flow(const PackEntry *list, int n, int *chosen) {
         if (pk) pack_close(pk);
     }
     const int ROW_H = 48, ROW_W = 440, FONT = 28;
+    // Both sizes loaded at their own pixel size, so the glyphs are drawn 1:1.
+    Font face = LoadFontFromMemory(".ttf", FONT_SANS, FONT_SANS_LEN, FONT, NULL, 0);
+    Font small = LoadFontFromMemory(".ttf", FONT_SANS, FONT_SANS_LEN, 18, NULL, 0);
+    SetTextureFilter(face.texture, TEXTURE_FILTER_BILINEAR);
+    SetTextureFilter(small.texture, TEXTURE_FILTER_BILINEAR);
 
     while (!st.done) {
 
@@ -97,8 +103,8 @@ bool pack_select_flow(const PackEntry *list, int n, int *chosen) {
         ClearBackground((Color){ 16, 16, 32, 255 });
 
         const char *title = "Select Game Pack";
-        int tw = MeasureText(title, 24);
-        DrawText(title, (W - tw) / 2, 32, 24, RAYWHITE);
+        int tw = (int)MeasureTextEx(face, title, FONT, 0).x;
+        DrawTextEx(face, title, (Vector2){ (float)((W - tw) / 2), 32 }, FONT, 0, RAYWHITE);
 
         int top = (H - n * ROW_H) / 2;
         // A framed panel like the game's own: a gold edge, a rule under each
@@ -116,13 +122,14 @@ bool pack_select_flow(const PackEntry *list, int n, int *chosen) {
             int y = top + i * ROW_H;
             if (i == cursor) DrawRectangle(x, y, ROW_W, ROW_H - 2, YELLOW);
             if (i + 1 < n) DrawRectangle(x, y + ROW_H - 2, ROW_W, 2, (Color){ 120, 96, 40, 255 });
-            int lw = MeasureText(line, FONT);
-            DrawText(line, x + (ROW_W - lw) / 2, y + (ROW_H - FONT) / 2, FONT, fg);
+            int lw = (int)MeasureTextEx(face, line, FONT, 0).x;
+            DrawTextEx(face, line, (Vector2){ (float)(x + (ROW_W - lw) / 2), (float)(y + (ROW_H - FONT) / 2) },
+                       FONT, 0, fg);
         }
 
         const char *hint = "Tap a pack, or choose with the arrows and Enter";
-        int hw = MeasureText(hint, 16);
-        DrawText(hint, (W - hw) / 2, H - 40, 16, GRAY);
+        int hw = (int)MeasureTextEx(small, hint, 18, 0).x;
+        DrawTextEx(small, hint, (Vector2){ (float)((W - hw) / 2), (float)(H - 40) }, 18, 0, GRAY);
 
         EndDrawing();
         PollInputEvents();
@@ -132,6 +139,8 @@ bool pack_select_flow(const PackEntry *list, int n, int *chosen) {
         frame_host_yield();
     }
 
+    UnloadFont(face);
+    UnloadFont(small);
     CloseWindow();
     if (st.quit) return false;
     *chosen = st.cursor;

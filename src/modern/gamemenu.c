@@ -183,7 +183,7 @@ void modern_gamemenu_page(const Game *g, GmPageId id, GmPage *p) {
     case GM_PAGE_SAVE:
     case GM_PAGE_LOAD:
         p->title = id == GM_PAGE_SAVE ? ui->gm_save : ui->gm_load;
-        for (int i = 0; i < SAVE_SLOT_COUNT; i++)
+        for (int i = 0; i < MODERN_SAVE_SLOTS; i++)
             add(p, "", id == GM_PAGE_SAVE ? bn->gmd_save : bn->gmd_load, bn->gmr_empty_slot, "",
                 ACT_SLOT + i, id == GM_PAGE_SAVE || gm.slots.hdrs[i].exists);
         add(p, ui->gm_back, bn->gmd_back_up, NULL, "", GM_ACT_BACK, true);
@@ -285,7 +285,7 @@ int modern_gamemenu_take_cheat(void) {
 // Slot pages: the rows carry the save headers ("1  Name  Rank  600d").
 static bool slot_row(void *ctx, int i, char *label, char *right, int cap) {
     const GmPage *p = (const GmPage *)ctx;
-    if (i >= SAVE_SLOT_COUNT) return page_row(ctx, i, label, right, cap);
+    if (i >= MODERN_SAVE_SLOTS) return page_row(ctx, i, label, right, cap);
     saveslots_row(&gm.slots, i, label, right, cap);
     return p->item[i].enabled;
 }

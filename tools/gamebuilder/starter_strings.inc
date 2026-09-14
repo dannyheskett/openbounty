@@ -19,6 +19,11 @@ static cJSON *gb_placeholder_strings(void) {
     cJSON_AddStringToObject(o, "cv_no_contract_hint", "cv_no_contract_hint");
     cJSON_AddStringToObject(o, "puzzle_legend", "puzzle_legend");
     cJSON_AddStringToObject(o, "gate_travel", "gate_travel");
+    cJSON_AddStringToObject(o, "worldmap_all", "worldmap_all");
+    cJSON_AddStringToObject(o, "worldmap_you", "worldmap_you");
+    cJSON_AddStringToObject(o, "worldmap_boat", "worldmap_boat");
+    cJSON_AddStringToObject(o, "worldmap_boat_elsewhere", "worldmap_boat_elsewhere");
+    cJSON_AddStringToObject(o, "worldmap_no_boat", "worldmap_no_boat");
     cJSON_AddStringToObject(o, "class_desc_knight", "class_desc_knight");
     cJSON_AddStringToObject(o, "class_desc_paladin", "class_desc_paladin");
     cJSON_AddStringToObject(o, "class_desc_sorceress", "class_desc_sorceress");
@@ -155,6 +160,8 @@ static cJSON *gb_placeholder_strings(void) {
     cJSON_AddStringToObject(o, "count_garrison", "count_garrison");
     cJSON_AddStringToObject(o, "count_withdraw", "count_withdraw");
     cJSON_AddStringToObject(o, "count_cancel", "count_cancel");
+    cJSON_AddStringToObject(o, "count_min", "count_min");
+    cJSON_AddStringToObject(o, "count_max", "count_max");
     cJSON_AddStringToObject(o, "capture_title", "capture_title");
     cJSON_AddStringToObject(o, "capture_contract", "capture_contract");
     cJSON_AddStringToObject(o, "capture_free", "capture_free");
@@ -240,6 +247,9 @@ static cJSON *gb_placeholder_strings(void) {
     cJSON_AddStringToObject(o, "status_days_left_modern", "status_days_left_modern");
     cJSON_AddStringToObject(o, "status_time_stop_modern", "status_time_stop_modern");
     cJSON_AddStringToObject(o, "status_menu_prefix", "status_menu_prefix");
+    cJSON_AddStringToObject(o, "status_game_menu", "status_game_menu");
+    cJSON_AddStringToObject(o, "status_days_remaining", "status_days_remaining");
+    cJSON_AddStringToObject(o, "status_time_stop_remaining", "status_time_stop_remaining");
     cJSON_AddStringToObject(o, "status_time_stop", "status_time_stop");
     cJSON_AddStringToObject(o, "body_save_confirm", "body_save_confirm");
     cJSON_AddStringToObject(o, "body_search", "body_search");

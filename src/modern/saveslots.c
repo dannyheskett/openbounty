@@ -9,10 +9,12 @@ void saveslots_scan(SlotSet *s) {
     memset(s, 0, sizeof(*s));
     const Resources *r = resources_current();
     const char *pid = (r && r->pack_id[0]) ? r->pack_id : NULL;
+    // Every slot is read (legacy's picker shows all of them); `existing`
+    // counts the ones the modern screens offer.
     for (int i = 0; i < SAVE_SLOT_COUNT; i++) {
         char path[512];
         if (!SavePathGetSlot(pid, i, path, sizeof(path))) continue;
-        if (SaveGameReadHeader(path, &s->hdrs[i]) == SAVE_OK && s->hdrs[i].exists)
+        if (SaveGameReadHeader(path, &s->hdrs[i]) == SAVE_OK && s->hdrs[i].exists && i < MODERN_SAVE_SLOTS)
             s->existing++;
     }
 }

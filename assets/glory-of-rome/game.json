@@ -2731,6 +2731,7 @@
 			"portrait":	"art/classes/legatus.png",
 			"hero":	{
 				"tile":	"art/classes/legatus_hero.png",
+				"disgraced":	"art/ui/disgraced_legatus.png",
 				"walk":	["art/classes/legatus_walk_00.png", "art/classes/legatus_walk_01.png", "art/classes/legatus_walk_02.png", "art/classes/legatus_walk_03.png"]
 			},
 			"starting_gold":	7500,
@@ -2789,6 +2790,7 @@
 			"portrait":	"art/classes/praetorianus.png",
 			"hero":	{
 				"tile":	"art/classes/praetorianus_hero.png",
+				"disgraced":	"art/ui/disgraced_praetorianus.png",
 				"walk":	["art/classes/praetorianus_walk_00.png", "art/classes/praetorianus_walk_01.png", "art/classes/praetorianus_walk_02.png", "art/classes/praetorianus_walk_03.png"]
 			},
 			"starting_gold":	10000,
@@ -2847,6 +2849,7 @@
 			"portrait":	"art/classes/sibylla.png",
 			"hero":	{
 				"tile":	"art/classes/sibylla_hero.png",
+				"disgraced":	"art/ui/disgraced_sibylla.png",
 				"walk":	["art/classes/sibylla_walk_00.png", "art/classes/sibylla_walk_01.png", "art/classes/sibylla_walk_02.png", "art/classes/sibylla_walk_03.png"]
 			},
 			"starting_gold":	10000,
@@ -2905,6 +2908,7 @@
 			"portrait":	"art/classes/dux.png",
 			"hero":	{
 				"tile":	"art/classes/dux_hero.png",
+				"disgraced":	"art/ui/disgraced_dux.png",
 				"walk":	["art/classes/dux_walk_00.png", "art/classes/dux_walk_01.png", "art/classes/dux_walk_02.png", "art/classes/dux_walk_03.png"]
 			},
 			"starting_gold":	7500,
@@ -4008,13 +4012,10 @@
 				"label":	"Based on King's Bounty, designed by:",
 				"names":	["Jon Van Caneghem"]
 			}, {
-				"label":	"Programmed By:",
-				"names":	["Mark Caldwell", "Andy Caldwell"]
-			}, {
-				"label":	"Graphics By:",
-				"names":	["Kenneth L. Mayfield", "Vincent DeQuattro, Jr."]
+				"label":	"Programming and Art:",
+				"names":	["Dan Heskett"]
 			}],
-		"copyright":	["Copyright 1990", "New World Computing, Inc", "All Rights Reserved"]
+		"copyright":	["King's Bounty copyright 1990", "New World Computing, Inc"]
 	},
 	"audio":	{
 		"tracks":	{

@@ -217,20 +217,61 @@ void uk_scene_rows(const UkScene *L, int n, int cursor, MlRowFn fn, void *ctx, i
                  touch_list, uk_ink());
 }
 
+void uk_scene_split(const UkScene *L, const char *text, const char *labels[2], int cursor, int touch_list) {
+    const ML_Rect r = L->full;
+    int top = L->intro_y, bottom = r.y + r.h;
+    DrawRectangle(r.x, top, r.w, bottom - top, uk_fill());
+    lattice_band_h(r.x, top, r.w, UK_BAND);
+    top += UK_BAND;
+    // The words at the left, the buttons at the right: the buttons get what
+    // their labels need, the words the rest (never less than 40%).
+    const char *l0 = labels[0] ? labels[0] : "", *l1 = labels[1] ? labels[1] : "";
+    int w0 = bfont_text_width(l0) + 2 * UK_INSET, w1 = bfont_text_width(l1) + 2 * UK_INSET;
+    int need = w0 + w1 + UK_INSET + 2 * UK_INSET + UK_BAND;
+    int half = r.w - need;
+    if (half < r.w * 2 / 5) half = r.w * 2 / 5;
+    if (half > r.w / 2) half = r.w / 2;
+    int tw = half - 2 * UK_INSET;
+    int lines = uk_lines(text, tw);
+    int fit = (bottom - top - 2 * ML_PAD) / uk_line_h();
+    if (lines > fit) lines = fit;
+    int ty = top + (bottom - top - lines * uk_line_h()) / 2;
+    uk_flow(r.x + UK_INSET, ty, tw, r.x, 0, bottom - ML_PAD, text, PAL_CLR(WHITE));
+    lattice_band_v(r.x + half, top, UK_BAND, bottom - top);
+    // The two buttons side by side, centred in their half, as tall as a row;
+    // any width to spare is shared between them.
+    int area_x = r.x + half + UK_BAND + UK_INSET, area_w = r.x + r.w - UK_INSET - area_x;
+    int spare = area_w - (w0 + w1 + UK_INSET);
+    if (spare > 0) { w0 += spare / 2; w1 += spare - spare / 2; }
+    int bh = ml_row_h(), by = top + (bottom - top - bh) / 2;
+    int xs[2] = { area_x, area_x + w0 + UK_INSET }, ws[2] = { w0, w1 };
+    for (int i = 0; i < 2; i++) {
+        bool sel = i == cursor;
+        const char *lab = i ? l1 : l0;
+        if (sel) DrawRectangle(xs[i], by, ws[i], bh, PAL_CLR(YELLOW));
+        else     DrawRectangleLines(xs[i], by, ws[i], bh, (Color){ 200, 160, 60, 255 });
+        int lw = bfont_text_width(lab);
+        bfont_draw(lab, xs[i] + (ws[i] - lw) / 2, by + (bh - bfont_line_height()) / 2,
+                   sel ? uk_ink() : PAL_CLR(WHITE));
+        if (touch_list) touch_region_row(xs[i], by, ws[i], bh, touch_list, i);
+    }
+}
+
 // ---- in-lays -----------------------------------------------------------------------
 
 void uk_count_inlay(const char *title, Texture2D face, const char *lines[], Color colors[], int nlines,
-                    int value, const char *act_label, const char *cancel_label, int touch_list) {
-    // The picture and its words, the count buttons across the width under
-    // them, then the two rows.
-    const int size = 2 * CL_TILE_W, bh = 2 * GH;
-    int h = uk_title_h() + UK_BAND + UK_INSET + size + ML_PAD + bh + ML_PAD + UK_BAND + ml_list_height(2);
+                    int value, int max, const char *act_label, const char *cancel_label, int touch_list) {
+    // The picture and its words, the count row across the width under them,
+    // then the two rows.
+    const int size = 2 * CL_TILE_W;
+    int ch = ml_count_buttons_height();
+    int h = uk_title_h() + UK_BAND + UK_INSET + size + UK_INSET + ch + UK_INSET + UK_BAND + ml_list_height(2);
     ML_Rect b = uk_inlay(UK_INLAY_W, h, title, NULL);
     int px = b.x + UK_INSET, py = b.y + UK_INSET;
     int text_x = px + size + UK_INSET, text_w = b.x + b.w - UK_INSET - text_x;
     UkRows rows = { { act_label, cancel_label }, { true, true } };
     int foot = uk_foot_rows(b, 2, 0, uk_rows_fn, &rows, touch_list);
-    int by = foot - ML_PAD - bh;
+    int by = foot - UK_INSET - ch;
     uk_picture(face, px, py, size, size);
     int y = py;
     for (int i = 0; i < nlines; i++) {
@@ -238,7 +279,7 @@ void uk_count_inlay(const char *title, Texture2D face, const char *lines[], Colo
         if (!lines[i][0]) { y += GH / 2; continue; }
         y = uk_flow(text_x, y, text_w, text_x, 0, py + size, lines[i], colors ? colors[i] : PAL_CLR(WHITE));
     }
-    ml_count_buttons(b.x, by, b.w, value);
+    ml_count_buttons(b.x + UK_INSET, by, b.w - 2 * UK_INSET, value, max);
 }
 
 void uk_result_inlay(const char *title, Texture2D face, const char *text, const char *row_label,

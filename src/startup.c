@@ -257,14 +257,15 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
     int cursor = 0;
     // Row index = 0..SAVE_SLOT_COUNT-1 for slots, SAVE_SLOT_COUNT for "New".
     // Modern has no "New game" row: New Game lives on the title menu.
-    int row_count = SAVE_SLOT_COUNT + (CL_IS_MODERN ? 0 : 1);
+    int nslots    = CL_IS_MODERN ? MODERN_SAVE_SLOTS : SAVE_SLOT_COUNT;
+    int row_count = nslots + (CL_IS_MODERN ? 0 : 1);
     int new_row   = CL_IS_MODERN ? -1 : SAVE_SLOT_COUNT;
 
     // Cursor lands on the first existing slot, else on "New". Saves are
     // physically segregated by pack (<user-data>/openbounty/saves/<pack_id>/),
     // so every slot we see here belongs to the active pack.
     cursor = CL_IS_MODERN ? 0 : new_row;
-    for (int i = 0; i < SAVE_SLOT_COUNT; i++) {
+    for (int i = 0; i < nslots; i++) {
         if (slots.hdrs[i].exists) { cursor = i; break; }
     }
 
@@ -326,7 +327,7 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
             // An in-lay as tall as its slots: the title with Back at the
             // right (startup has no top bar), then a row per slot.
             int fit_rows = ml_list_fit(CL_SCREEN_H - 40 - uk_title_h() - UK_BAND);
-            if (fit_rows > SAVE_SLOT_COUNT) fit_rows = SAVE_SLOT_COUNT;
+            if (fit_rows > nslots) fit_rows = nslots;
             int mw = 656, mh = uk_title_h() + UK_BAND + ml_list_height(fit_rows);
             int mx = (CL_SCREEN_W - mw) / 2, my = (CL_SCREEN_H - mh) / 2;
             DrawRectangle(0, 0, CL_SCREEN_W, CL_SCREEN_H, (Color){ 0, 0, 0, 110 });
@@ -335,7 +336,7 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
             if (mui)
                 ml_hint_button(mx + mw - ML_PAD - ml_hint_width(mui->hint_back, mui->key_esc, mui->pad_back),
                                my + 3, mui->hint_back, mui->key_esc, mui->pad_back, KEY_ESCAPE);
-            ml_list_draw(mx, mty, mw, my + mh - mty, SAVE_SLOT_COUNT, cursor,
+            ml_list_draw(mx, mty, mw, my + mh - mty, nslots, cursor,
                          saveslots_row, &slots, TOUCH_LIST_STARTUP, uk_ink());
             frame_end(rt);
             continue;

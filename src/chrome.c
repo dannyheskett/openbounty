@@ -9,6 +9,7 @@
 #include "prompt.h"
 #include "touch.h"
 #include "modern/mlist.h"
+#include "modern/mlayout.h"
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -235,6 +236,24 @@ void chrome_draw(const Game *g, const Sprites *s) {
         } else {
             char buf[64], nbuf[16];
             const ResBanners *bn = (g->res) ? &g->res->banners : NULL;
+            if (CL_IS_MODERN && bn && ui) {
+                // Modern: the bar is the Game Menu button -- its name at the
+                // left (with Esc on a keyboard), the days remaining at the
+                // right; a tap anywhere on it opens the menu.
+                int ty = CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0);
+                char left[96], right[96];
+                ml_hint_text(left, sizeof left, bn->status_game_menu, ui->key_esc, ui->pad_back);
+                bool stop = g->stats.time_stop > 0;
+                snprintf(nbuf, sizeof nbuf, "%d", stop ? g->stats.time_stop : g->stats.days_left);
+                ResTemplateVar rv[] = { { "DAYS", nbuf }, { "STEPS", nbuf } };
+                resources_format_template(right, sizeof right,
+                                          stop ? bn->status_time_stop_remaining : bn->status_days_remaining, rv, 2);
+                bfont_draw(left, CL_STATUS_X + ML_PAD, ty, PAL_CLR(WHITE));
+                bfont_draw_right(right, CL_STATUS_X + CL_STATUS_W - ML_PAD, ty, PAL_CLR(WHITE));
+                if (views_active() == VIEW_NONE && !prompt_is_active())
+                    touch_region(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H, KEY_ESCAPE);
+                return;
+            }
             if (g->stats.time_stop > 0) {
                 snprintf(nbuf, sizeof nbuf, "%d", g->stats.time_stop);
                 ResTemplateVar vars[] = { { "STEPS", nbuf } };

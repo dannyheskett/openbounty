@@ -36,6 +36,7 @@ typedef struct {
     Texture2D  class_end_hero[4];
 
     Texture2D class_portrait[4];
+    Texture2D class_disgraced[4];   // modern: the temporary-death scene, when the pack has one
     // villain_portrait[i] = frame 0 (still image, kept for compatibility).
     // villain_anim[i][0..villain_anim_frames[i]-1] = the animation strip.
     Texture2D villain_portrait[17];

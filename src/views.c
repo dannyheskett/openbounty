@@ -141,11 +141,18 @@ bool views_gate_update(void) {
     int n = gate_view.count;
     if (n <= 0) return false;
     int left = (n + 1) / 2;   // rows in the left column (matches the renderer)
-    // Modern: three columns of standard rows, each this many rows long.
-    if (CL_IS_MODERN) left = views_gate_rows_per_column();
+    // Modern: one list, so Left/Right do nothing.
+    if (CL_IS_MODERN) left = n;
 
     touch_request(TOUCH_CHROME_BACK);
     int tapped = touch_tapped_row(TOUCH_LIST_GATE);
+    if (CL_IS_MODERN && tapped >= 0 && tapped < n && tapped != gate_view.cursor) {
+        // Modern: a tap picks the place and shows its map; the Travel row (or
+        // a second tap) goes there.
+        gate_view.cursor = tapped;
+        return true;
+    }
+    if (CL_IS_MODERN && touch_tapped_row(TOUCH_LIST_PROMPT) == 0) tapped = gate_view.cursor;
     if (tapped >= 0 && tapped < n) {
         gate_view.chosen = tapped;
         views_dismiss();
@@ -1108,7 +1115,8 @@ static bool town_modern_update(Game *g) {
         bool go = tapped >= 0 || input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
                   input_key_pressed(KEY_SPACE);
         if (input_key_pressed(KEY_ESCAPE)) { views_dismiss(); return true; }
-        if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_W) ||
+        if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_LEFT) ||
+            input_key_pressed(KEY_RIGHT) || input_key_pressed(KEY_W) ||
             input_key_pressed(KEY_S) || input_key_pressed(KEY_KP_8) || input_key_pressed(KEY_KP_2)) {
             town.scene_cursor = 1 - town.scene_cursor;
             return true;

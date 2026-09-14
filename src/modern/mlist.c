@@ -9,6 +9,7 @@
 #include "touch.h"
 #include "palette.h"
 #include "bfont.h"
+#include "resources.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -150,29 +151,47 @@ int ml_count_panel_height(void) {
     return ML_PAD + gh + ML_PAD + gh * 2 + ML_PAD / 2 + gh + ML_PAD + gh + ML_PAD;
 }
 
-int ml_count_buttons(int x, int y, int w, int value) {
-    const int gh = BFONT_GLYPH_H, pad = ML_PAD;
-    int ty = y;
-    static const char *const LABELS[4] = { "-10", "-1", "+1", "+10" };
-    static const int KEYS[4] = { KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_UP };
-    int bh = gh * 2, bw = (int)bfont_measure("+10").x + 2 * pad;
-    int mid = x + w / 2;
-    int box_w = (int)bfont_measure("00000").x + 4 * pad;
-    int xs[4] = { mid - box_w / 2 - 2 * pad - 2 * bw, mid - box_w / 2 - pad - bw,
-                  mid + box_w / 2 + pad, mid + box_w / 2 + 2 * pad + bw };
-    for (int k = 0; k < 4; k++) {
-        DrawRectangleLines(xs[k], ty, bw, bh, PAL_CLR(YELLOW));
-        int lw = (int)bfont_measure(LABELS[k]).x;
-        bfont_draw(LABELS[k], xs[k] + (bw - lw) / 2, ty + (bh - gh) / 2, PAL_CLR(YELLOW));
-        touch_region(xs[k], ty, bw, bh, KEYS[k]);
+int ml_count_buttons(int x, int y, int w, int value, int max) {
+    // One row of touch-sized buttons -- the least, -10, -1, the count, +1,
+    // +10, the most -- and under it a bar filled as far as the count goes.
+    const int gh = BFONT_GLYPH_H, pad = ML_PAD, bh = ml_row_h();
+    const Resources *res = resources_current();
+    const char *lo = (res && res->banners.count_min[0]) ? res->banners.count_min : "1";
+    const char *hi = (res && res->banners.count_max[0]) ? res->banners.count_max : "";
+    const char *labels[6] = { lo, "-10", "-1", "+1", "+10", hi };
+    static const int KEYS[6] = { KEY_HOME, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_END };
+    int value_w = (int)bfont_measure("00000").x + 4 * pad;
+    int bw = (w - value_w - 6 * pad) / 6;
+    int cx = x;
+    Color edge = (Color){ 200, 160, 60, 255 };
+    for (int k = 0; k < 7; k++) {
+        if (k == 3) {
+            // The count, white on black.
+            char nb[16];
+            snprintf(nb, sizeof nb, "%d", value);
+            DrawRectangle(cx, y, value_w, bh, PAL_CLR(BLACK));
+            DrawRectangleLines(cx, y, value_w, bh, PAL_CLR(WHITE));
+            bfont_draw(nb, cx + (value_w - (int)bfont_measure(nb).x) / 2, y + (bh - gh) / 2, PAL_CLR(WHITE));
+            cx += value_w + pad;
+            continue;
+        }
+        int b = k < 3 ? k : k - 1;
+        if (!labels[b][0]) { cx += bw + pad; continue; }
+        DrawRectangleLines(cx, y, bw, bh, edge);
+        DrawRectangleLines(cx + 1, y + 1, bw - 2, bh - 2, edge);
+        int lw = (int)bfont_measure(labels[b]).x;
+        bfont_draw(labels[b], cx + (bw - lw) / 2, y + (bh - gh) / 2, PAL_CLR(YELLOW));
+        touch_region(cx, y, bw, bh, KEYS[b]);
+        cx += bw + pad;
     }
-    char nb[16];
-    snprintf(nb, sizeof nb, "%d", value);
-    DrawRectangle(mid - box_w / 2, ty, box_w, bh, PAL_CLR(BLACK));
-    DrawRectangleLines(mid - box_w / 2, ty, box_w, bh, PAL_CLR(WHITE));
-    bfont_draw(nb, mid - (int)bfont_measure(nb).x / 2, ty + (bh - gh) / 2, PAL_CLR(WHITE));
-    return bh;
+    int bar_y = y + bh + pad, bar_h = 8;
+    DrawRectangle(x, bar_y, w, bar_h, PAL_CLR(BLACK));
+    if (max > 0) DrawRectangle(x, bar_y, (int)((long)w * value / max), bar_h, edge);
+    DrawRectangleLines(x, bar_y, w, bar_h, (Color){ 90, 72, 30, 255 });
+    return bh + pad + bar_h;
 }
+
+int ml_count_buttons_height(void) { return ml_row_h() + ML_PAD + 8; }
 
 int ml_count_panel(int x, int y, int w, const char *heading, int value, const char *sub,
                    const char *left, const char *right) {
@@ -181,7 +200,7 @@ int ml_count_panel(int x, int y, int w, const char *heading, int value, const ch
     int mid = x + w / 2;
     bfont_draw(heading ? heading : "", x + pad, ty, PAL_CLR(YELLOW));
     ty += gh + pad;
-    ty += ml_count_buttons(x, ty, w, value) + pad / 2;
+    ty += ml_count_buttons(x, ty, w, value, 0) + pad / 2;
     if (sub && sub[0]) bfont_draw(sub, mid - (int)bfont_measure(sub).x / 2, ty, PAL_CLR(WHITE));
     ty += gh + pad;
     if (left && left[0])   bfont_draw(left, x + pad, ty, PAL_CLR(WHITE));
@@ -195,6 +214,8 @@ bool ml_stepper_keys(int *value, int lo, int hi) {
     if (input_key_pressed(KEY_RIGHT)) v += 1;
     if (input_key_pressed(KEY_DOWN))  v -= 10;
     if (input_key_pressed(KEY_UP))    v += 10;
+    if (input_key_pressed(KEY_HOME))  v = lo;
+    if (input_key_pressed(KEY_END))   v = hi;
     if (v < lo) v = lo;
     if (v > hi) v = hi;
     bool changed = (v != *value);

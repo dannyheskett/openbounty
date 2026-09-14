@@ -65,6 +65,7 @@ void sprites_load(Sprites *s, const Resources *res) {
     for (int i = 0; i < nc; i++) {
         const ClassDef *c = class_by_index(i);
         s->class_portrait[i] = c ? load_rel(c->portrait) : (Texture2D){ 0 };
+        s->class_disgraced[i] = load_rel(res->class_hero[i].disgraced);
     }
 
     // Villain portraits from the villain catalog. Load the static portrait
@@ -232,6 +233,7 @@ void sprites_unload(Sprites *s) {
             for (int i = 0; i < OB_ANIM_FRAMES_MAX; i++)
                 UnloadTexture(hero_anims[a]->tex[f][i]);
     for (int i = 0; i < 4;  i++) UnloadTexture(s->class_portrait[i]);
+    for (int i = 0; i < 4;  i++) UnloadTexture(s->class_disgraced[i]);
     for (int i = 0; i < 17; i++) {
         UnloadTexture(s->villain_portrait[i]);
         for (int f = 0; f < OB_ANIM_FRAMES_MAX; f++) UnloadTexture(s->villain_anim[i][f]);

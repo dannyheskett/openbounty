@@ -213,7 +213,7 @@ TEST menu_pages_drill_down(void) {
     ASSERT_FALSE(p.item[4].enabled);                      // none: greyed, with why
     ASSERT_STR_EQ("No troops.", p.item[4].desc);
     menu_page(false, true, GM_PAGE_SAVE, &p);
-    ASSERT_EQ(11, p.n);                                   // ten slots and Back
+    ASSERT_EQ(6, p.n);                                    // five slots and Back
     PASS();
 }
 

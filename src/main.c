@@ -58,6 +58,7 @@
 #include "combat_loop.h"
 #include <time.h>
 #include "views_render.h"
+#include "views_render_impl.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1478,7 +1479,10 @@ title:;
             // Enter, Space or a tap on it swaps the map.
             bool worldmap_row = false;
             bool has_orb = false;
-            if (views_active() == VIEW_WORLDMAP) {
+            bool wm_modern = CL_IS_MODERN && views_active() == VIEW_WORLDMAP && modern_worldmap_input(&game);
+            if (wm_modern) {
+                // Modern: the places list owns the keys (src/modern/views_render.c).
+            } else if (views_active() == VIEW_WORLDMAP) {
                 int zi = -1;
                 for (int i = 0; i < res.zone_count; i++) {
                     if (strcmp(res.zones[i].id, game.position.zone) == 0) {
@@ -1491,7 +1495,9 @@ title:;
                     worldmap_row = sel_input(&l, TOUCH_LIST_PROMPT, 0, NULL) == SEL_CONFIRM;
                 }
             }
-            if (worldmap_row) {
+            if (wm_modern) {
+                // handled above
+            } else if (worldmap_row) {
                 views_render_worldmap_toggle_hero_only();
             } else if (views_active() == VIEW_WORLDMAP && input_key_pressed(KEY_SPACE)) {
                 if (has_orb) {

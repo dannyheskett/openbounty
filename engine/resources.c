@@ -678,6 +678,7 @@ static void parse_classes(Resources *res, cJSON *arr) {
                 parse_anim_set(cJSON_GetObjectItem(hero, "idle"), &h->idle);
                 parse_anim_set(cJSON_GetObjectItem(hero, "boat"), &h->boat);
                 copy_str(h->tile, sizeof h->tile, json_str(hero, "tile", ""));
+                copy_str(h->disgraced, sizeof h->disgraced, json_str(hero, "disgraced", ""));
             }
         }
 
@@ -1266,6 +1267,11 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(cv_no_contract_hint, "cv_no_contract_hint");
     SET_BANNER(puzzle_legend, "puzzle_legend");
     SET_BANNER(gate_travel, "gate_travel");
+    SET_BANNER(worldmap_all, "worldmap_all");
+    SET_BANNER(worldmap_you, "worldmap_you");
+    SET_BANNER(worldmap_boat, "worldmap_boat");
+    SET_BANNER(worldmap_boat_elsewhere, "worldmap_boat_elsewhere");
+    SET_BANNER(worldmap_no_boat, "worldmap_no_boat");
     SET_BANNER(class_desc_knight, "class_desc_knight");
     SET_BANNER(class_desc_paladin, "class_desc_paladin");
     SET_BANNER(class_desc_sorceress, "class_desc_sorceress");
@@ -1401,6 +1407,8 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(count_garrison, "count_garrison");
     SET_BANNER(count_withdraw, "count_withdraw");
     SET_BANNER(count_cancel, "count_cancel");
+    SET_BANNER(count_min, "count_min");
+    SET_BANNER(count_max, "count_max");
     SET_BANNER(capture_title, "capture_title");
     SET_BANNER(capture_contract, "capture_contract");
     SET_BANNER(capture_free, "capture_free");
@@ -1490,6 +1498,9 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(status_days_left_modern,        "status_days_left_modern");
     SET_BANNER(status_time_stop_modern,        "status_time_stop_modern");
     SET_BANNER(status_menu_prefix,             "status_menu_prefix");
+    SET_BANNER(status_game_menu, "status_game_menu");
+    SET_BANNER(status_days_remaining, "status_days_remaining");
+    SET_BANNER(status_time_stop_remaining, "status_time_stop_remaining");
     SET_BANNER(body_save_confirm,              "body_save_confirm");
     SET_BANNER(body_search,                    "body_search");
     SET_BANNER(body_dismiss_pick,              "body_dismiss_pick");
@@ -2916,6 +2927,7 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
         art_add_anim(out, cap, &n, &res->class_hero[i].idle);
         art_add_anim(out, cap, &n, &res->class_hero[i].boat);
         art_add(out, cap, &n, res->class_hero[i].tile);
+        art_add(out, cap, &n, res->class_hero[i].disgraced);
     }
 
     for (int i = 0; i < res->troops_count; i++) {

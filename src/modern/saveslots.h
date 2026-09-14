@@ -8,6 +8,9 @@
 #include "savepath.h"
 #include <stdbool.h>
 
+// The modern screens offer the first five slots.
+#define MODERN_SAVE_SLOTS 5
+
 typedef struct {
     SaveHeader hdrs[SAVE_SLOT_COUNT];
     int        existing;

@@ -47,7 +47,7 @@ static void draw_modern(const Game *g, const Sprites *s) {
         while (sc > 1 && img.height * sc > foot - r.y) sc--;
         iw = img.width * sc;
         int ih = img.height * sc;
-        ui_blit(img, r.x, r.y + (foot - r.y - ih) / 2, iw, ih);
+        ui_blit(img, r.x, r.y, iw, ih);                     // flush with the top
         lattice_band_v(r.x + iw, r.y, UK_BAND, foot - r.y);
     }
     int tx = r.x + iw + UK_BAND + UK_INSET;

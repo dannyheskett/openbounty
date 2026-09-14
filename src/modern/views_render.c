@@ -22,7 +22,10 @@
 #include "ui.h"
 #include "views.h"
 #include "tile_cache.h"
+#include "tilevar.h"
 #include "tables.h"
+#include "input_host.h"
+#include "views_render.h"
 #include "resources.h"
 #include <stdio.h>
 #include <string.h>
@@ -334,7 +337,8 @@ static void draw_contract(const Game *g, const Sprites *s) {
         uk_doc_add(&d, ui->cv_crimes_header, PAL_CLR(YELLOW));
         uk_doc_add(&d, vd->crimes, PAL_CLR(WHITE));
     }
-    uk_doc_draw(&d, a, size, size, -1, true);
+    // One column beside the portrait all the way down, never under it.
+    uk_doc_draw(&d, a, size, a.h, -1, true);
 }
 
 // ---------------------------------------------------------------------------
@@ -590,96 +594,203 @@ static void draw_worldmap_exit_hint(const Game *g) {
                         PAL_CLR(WHITE));
 }
 
+// The places list: "All of <continent>", then the towns and castles of this
+// continent the hero has visited. Choosing one zooms the map in on it.
+typedef struct { char name[64]; int x, y; bool castle; } WmPlace;
+static int s_wm_cursor;
+static bool s_wm_open;
+
+static int worldmap_places(const Game *g, WmPlace *out, int cap) {
+    const Resources *r = g->res;
+    int n = 0;
+    for (int i = 0; i < r->town_count && n < cap; i++) {
+        const ResTown *tw = &r->towns[i];
+        if (strcmp(tw->zone, g->position.zone) != 0 || tw->x < 0) continue;
+        bool visited = false;
+        for (int k = 0; k < GAME_TOWNS; k++)
+            if (strcmp(g->towns[k].id, tw->id) == 0) { visited = g->towns[k].visited; break; }
+        if (!visited) continue;
+        snprintf(out[n].name, sizeof out[n].name, "%s", tw->name[0] ? tw->name : tw->id);
+        out[n].x = tw->x; out[n].y = tw->y; out[n].castle = false; n++;
+    }
+    for (int i = 0; i < r->castle_count && n < cap; i++) {
+        const ResCastle *c = &r->castles[i];
+        if (strcmp(c->zone, g->position.zone) != 0 || c->x < 0) continue;
+        const CastleRecord *cr = GameFindCastleConst(g, c->id);
+        if (!cr || !cr->visited) continue;
+        snprintf(out[n].name, sizeof out[n].name, "%s", c->name[0] ? c->name : c->id);
+        out[n].x = c->x; out[n].y = c->y; out[n].castle = true; n++;
+    }
+    return n;
+}
+
+typedef struct { const Game *g; const WmPlace *p; int n; } WmRows;
+
+static bool worldmap_row_fn(void *ctx, int i, char *label, char *right, int cap) {
+    const WmRows *w = (const WmRows *)ctx;
+    right[0] = '\0';
+    if (i == 0) {
+        const ResZone *z = resources_zone_by_id(w->g->res, w->g->position.zone);
+        ResTemplateVar v[] = { { "ZONE", (z && z->name[0]) ? z->name : w->g->position.zone } };
+        resources_format_template(label, cap, w->g->res->banners.worldmap_all, v, 1);
+    } else {
+        snprintf(label, (size_t)cap, "%s", w->p[i - 1].name);
+    }
+    return true;
+}
+
+// Rows the side panel's list shows, given whether the orb row is under it.
+static int worldmap_list_h(bool orb) {
+    const int foot = 2 * (GH + 4) + 2 * ML_PAD + UK_BAND;
+    return VIEW_H - uk_title_h() - UK_BAND - foot - (orb ? ml_row_h() + UK_BAND : 0);
+}
+
+bool modern_worldmap_input(const Game *g) {
+    if (views_active() != VIEW_WORLDMAP || !g || !g->res) { s_wm_open = false; return false; }
+    if (!s_wm_open) { s_wm_open = true; s_wm_cursor = 0; }
+    WmPlace places[64];
+    int n = worldmap_places(g, places, 64) + 1;
+    if (s_wm_cursor >= n) s_wm_cursor = n - 1;
+    touch_request(TOUCH_CHROME_BACK);
+    int tapped = touch_tapped_row(TOUCH_LIST_MENU);
+    if (tapped >= 0 && tapped < n) { s_wm_cursor = tapped; return true; }
+    if (input_key_pressed(KEY_ESCAPE)) { views_dismiss(); s_wm_open = false; return true; }
+    if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_KP_8)) { s_wm_cursor = (s_wm_cursor - 1 + n) % n; return true; }
+    if (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2)) { s_wm_cursor = (s_wm_cursor + 1) % n; return true; }
+    bool orb = worldmap_has_orb(g);
+    if (orb && (touch_tapped_row(TOUCH_LIST_PROMPT) == 0 || input_key_pressed(KEY_SPACE) ||
+                input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER))) {
+        views_render_worldmap_toggle_hero_only();
+        return true;
+    }
+    return true;     // the view holds the keys; Esc or Back leaves
+}
+
 static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
     uk_sheet();
     (void)draw_worldmap_exit_hint;
-
     if (!m || m->width <= 0 || m->height <= 0) return;
+    const ResUI *ui = &g->res->ui;
+    const ResBanners *bn = &g->res->banners;
+    bool orb = worldmap_has_orb(g);
+    bool reveal_all = orb && views_render_worldmap_whole();
 
-    bool reveal_all = worldmap_has_orb(g) && views_render_worldmap_whole();
+    WmPlace places[64];
+    int np = worldmap_places(g, places, 64);
+    int cursor = s_wm_open ? s_wm_cursor : 0;
+    if (cursor > np) cursor = np;
 
-    // The map at the largest whole scale the height allows, at the left; the
-    // continent, the position and the reveal row beside it.
+    // The map at the left: the whole continent at the largest whole scale,
+    // or three times that over the chosen place.
     const int side_w = 280;
-    int avail_w = VIEW_W - side_w - UK_BAND - 2 * VIEW_PAD;
-    int avail_h = VIEW_H - 2 * VIEW_PAD;
-    int pix = (avail_w / m->width < avail_h / m->height)
-              ? avail_w / m->width : avail_h / m->height;
-    if (pix < 1) pix = 1;
-    int grid_w = pix * m->width;
-    int grid_h = pix * m->height;
     int map_w = VIEW_W - side_w - UK_BAND;
+    int avail_w = map_w - 2 * VIEW_PAD, avail_h = VIEW_H - 2 * VIEW_PAD;
+    int pix = (avail_w / m->width < avail_h / m->height) ? avail_w / m->width : avail_h / m->height;
+    if (pix < 1) pix = 1;
+    int cam_x = 0, cam_y = 0, cols = m->width, rows = m->height;
+    const WmPlace *sel = cursor > 0 ? &places[cursor - 1] : NULL;
+    if (sel) {
+        pix *= 3;
+        cols = avail_w / pix; rows = avail_h / pix;
+        if (cols > m->width) cols = m->width;
+        if (rows > m->height) rows = m->height;
+        cam_x = sel->x - cols / 2; cam_y = sel->y - rows / 2;
+        if (cam_x > m->width - cols) cam_x = m->width - cols;
+        if (cam_y > m->height - rows) cam_y = m->height - rows;
+        if (cam_x < 0) cam_x = 0;
+        if (cam_y < 0) cam_y = 0;
+    }
+    int grid_w = pix * cols, grid_h = pix * rows;
     int gx = VIEW_X + (map_w - grid_w) / 2;
     int gy = VIEW_Y + (VIEW_H - grid_h) / 2;
-    {
-        int sx = VIEW_X + map_w;
-        lattice_band_v(sx, VIEW_Y, UK_BAND, VIEW_H);
-        const ResZone *z = resources_zone_by_id(g->res, g->position.zone);
-        int top = uk_title(sx + UK_BAND, VIEW_Y, side_w, (z && z->name[0]) ? z->name : g->position.zone, NULL,
-                           PAL_CLR(YELLOW));
-        char pos[48];
-        snprintf(pos, sizeof pos, "X=%d Y=%d", g->position.x, g->position.y);
-        bfont_draw(pos, sx + UK_BAND + UK_INSET, top + UK_INSET, PAL_CLR(WHITE));
-    }
-
     DrawRectangle(gx, gy, grid_w, grid_h, PAL_CLR(BLACK));
-
-    const ResColors *mm_col = (g && g->res) ? &g->res->colors : NULL;
-    for (int y = 0; y < m->height; y++) {
-        for (int x = 0; x < m->width; x++) {
-            if (!reveal_all && !FogSeen(f, x, y)) continue;
-            const Tile *t = MapGetTile(m, x, y);
+    const ResColors *mm_col = &g->res->colors;
+    for (int y = 0; y < rows; y++) {
+        for (int x = 0; x < cols; x++) {
+            int mx = cam_x + x, my = cam_y + y;
+            if (!reveal_all && !FogSeen(f, mx, my)) continue;
+            const Tile *t = MapGetTile(m, mx, my);
             if (!t) continue;
-            DrawRectangle(gx + x * pix, gy + y * pix, pix, pix,
-                          terrain_minimap_color(mm_col, t->terrain));
+            DrawRectangle(gx + x * pix, gy + y * pix, pix, pix, terrain_minimap_color(mm_col, t->terrain));
         }
     }
-
-    // Castle/town markers for the current zone: towns = green,
-    // castles = red. Fog-gated in normal view, always shown when the
-    // orb has revealed the whole map.
     const Resources *r = g->res;
-    if (r) {
-        for (int i = 0; i < r->town_count; i++) {
-            const ResTown *tw = &r->towns[i];
-            if (strcmp(tw->zone, g->position.zone) != 0) continue;
-            if (tw->x < 0 || tw->y < 0) continue;
-            if (!reveal_all && !FogSeen(f, tw->x, tw->y)) continue;
-            DrawRectangle(gx + tw->x * pix, gy + tw->y * pix,
-                          pix, pix, PAL_CLR(GREEN));
-        }
-        for (int i = 0; i < r->castle_count; i++) {
-            const ResCastle *c = &r->castles[i];
-            if (strcmp(c->zone, g->position.zone) != 0) continue;
-            if (c->x < 0 || c->y < 0) continue;
-            if (!reveal_all && !FogSeen(f, c->x, c->y)) continue;
-            DrawRectangle(gx + c->x * pix, gy + c->y * pix,
-                          pix, pix, PAL_CLR(RED));
-        }
+    // A marker: a filled cell with a dark edge, so it reads on any terrain.
+    #define MARK(mx, my, col) do { int _x = gx + ((mx) - cam_x) * pix, _y = gy + ((my) - cam_y) * pix; \
+        DrawRectangle(_x, _y, pix, pix, col); \
+        if (pix >= 4) DrawRectangleLines(_x, _y, pix, pix, PAL_CLR(BLACK)); } while (0)
+    #define IN_VIEW(px, py) ((px) >= cam_x && (px) < cam_x + cols && (py) >= cam_y && (py) < cam_y + rows)
+    for (int i = 0; i < r->town_count; i++) {
+        const ResTown *tw = &r->towns[i];
+        if (strcmp(tw->zone, g->position.zone) != 0 || tw->x < 0 || !IN_VIEW(tw->x, tw->y)) continue;
+        if (!reveal_all && !FogSeen(f, tw->x, tw->y)) continue;
+        MARK(tw->x, tw->y, PAL_CLR(WHITE));
     }
-
-    // Hero position as a blinking yellow/red pixel.
+    for (int i = 0; i < r->castle_count; i++) {
+        const ResCastle *c = &r->castles[i];
+        if (strcmp(c->zone, g->position.zone) != 0 || c->x < 0 || !IN_VIEW(c->x, c->y)) continue;
+        if (!reveal_all && !FogSeen(f, c->x, c->y)) continue;
+        MARK(c->x, c->y, PAL_CLR(RED));
+    }
     unsigned k = (unsigned)(GetTime() * 3.0);
-    Color blink = (k & 1) ? PAL_CLR(YELLOW) : PAL_CLR(RED);
-    DrawRectangle(gx + g->position.x * pix,
-                  gy + g->position.y * pix,
-                  pix, pix, blink);
-
-
-    // With the orb: one row that swaps your map and the whole map (Enter,
-    // Space or a tap; main.c reads it).
-    if (worldmap_has_orb(g)) {
-        const ResUI *ui = &g->res->ui;
-        const char *label = views_render_worldmap_whole() ? ui->worldmap_row_your_map
-                                                          : ui->worldmap_row_whole_map;
-        int rx = VIEW_X + map_w + UK_BAND, rw = side_w;
-        int rh = ml_row_h();                 // a standard select row (REQ-430n)
-        int ry = VIEW_Y + VIEW_H - rh;
-        lattice_band_h(rx, ry - UK_BAND, rw, UK_BAND);
-        sel_row(rx, ry, rw, rh, rx + ML_PAD, label, true,
-                PAL_CLR(YELLOW), uk_ink(), TOUCH_LIST_PROMPT, 0);
+    // The chosen place: a ring around it.
+    if (sel) {
+        int rx = gx + (sel->x - cam_x) * pix, ry = gy + (sel->y - cam_y) * pix;
+        for (int t = 0; t < 3; t++)
+            DrawRectangleLines(rx - pix - t, ry - pix - t, 3 * pix + 2 * t, 3 * pix + 2 * t,
+                               t == 1 ? PAL_CLR(YELLOW) : PAL_CLR(BLACK));
     }
+    // The boat (white) and the hero (blinking), always.
+    if (g->boat.has_boat && strcmp(g->boat.zone, g->position.zone) == 0 && IN_VIEW(g->boat.x, g->boat.y))
+        MARK(g->boat.x, g->boat.y, PAL_CLR(CYAN));
+    if (IN_VIEW(g->position.x, g->position.y))
+        MARK(g->position.x, g->position.y, (k & 1) ? PAL_CLR(YELLOW) : PAL_CLR(MAGENTA));
+    #undef IN_VIEW
+    #undef MARK
+
+    // The side panel: the continent, the places, where you and your boat are.
+    int sx = VIEW_X + map_w;
+    lattice_band_v(sx, VIEW_Y, UK_BAND, VIEW_H);
+    int px = sx + UK_BAND, pw = VIEW_X + VIEW_W - px;
+    const ResZone *z = resources_zone_by_id(r, g->position.zone);
+    int top = uk_title(px, VIEW_Y, pw, (z && z->name[0]) ? z->name : g->position.zone, NULL, PAL_CLR(YELLOW));
+    WmRows wr = { g, places, np };
+    int list_h = worldmap_list_h(orb);
+    ml_list_draw(px, top, pw, list_h, np + 1, cursor, worldmap_row_fn, &wr, TOUCH_LIST_MENU, uk_ink());
+    int y = VIEW_Y + VIEW_H;
+    if (orb) {
+        const char *label = views_render_worldmap_whole() ? ui->worldmap_row_your_map : ui->worldmap_row_whole_map;
+        y -= ml_row_h();
+        lattice_band_h(px, y - UK_BAND, pw, UK_BAND);
+        sel_row(px, y, pw, ml_row_h(), px + ML_PAD, label, false, PAL_CLR(WHITE), uk_ink(), TOUCH_LIST_PROMPT, 0);
+        y -= UK_BAND;
+    }
+    int foot_h = 2 * (GH + 4) + 2 * ML_PAD;
+    y -= foot_h;
+    lattice_band_h(px, y - UK_BAND, pw, UK_BAND);
+    char xb[12], yb[12], line[RES_BANNER_LEN];
+    snprintf(xb, sizeof xb, "%d", g->position.x);
+    snprintf(yb, sizeof yb, "%d", g->position.y);
+    ResTemplateVar yv[] = { { "X", xb }, { "Y", yb } };
+    resources_format_template(line, sizeof line, bn->worldmap_you, yv, 2);
+    bfont_draw(line, px + ML_PAD, y + ML_PAD, PAL_CLR(WHITE));
+    if (!g->boat.has_boat) {
+        snprintf(line, sizeof line, "%s", bn->worldmap_no_boat);
+    } else if (strcmp(g->boat.zone, g->position.zone) != 0) {
+        const ResZone *bz = resources_zone_by_id(r, g->boat.zone);
+        ResTemplateVar bv[] = { { "ZONE", (bz && bz->name[0]) ? bz->name : g->boat.zone } };
+        resources_format_template(line, sizeof line, bn->worldmap_boat_elsewhere, bv, 1);
+    } else {
+        snprintf(xb, sizeof xb, "%d", g->boat.x);
+        snprintf(yb, sizeof yb, "%d", g->boat.y);
+        ResTemplateVar bv[] = { { "X", xb }, { "Y", yb } };
+        resources_format_template(line, sizeof line, bn->worldmap_boat, bv, 2);
+    }
+    bfont_draw(line, px + ML_PAD, y + ML_PAD + GH + 4, PAL_CLR(WHITE));
 }
+
+// --gallery: the list's cursor.
+void modern_worldmap_gallery(int cursor) { s_wm_open = true; s_wm_cursor = cursor; }
 
 // ---------------------------------------------------------------------------
 //  SPELLS VIEW -- combat + adventure spell lists
@@ -758,41 +869,73 @@ static bool gate_row(void *ctx, int i, char *label, char *right, int cap) {
     return d != NULL;
 }
 
+// The destination's surroundings, drawn from its continent's map (loaded once
+// per continent, like the puzzle's).
+static Map  s_gate_map;
+static char s_gate_zone[24];
+
+static void draw_gate_map(const Resources *res, const GateDestination *d, ML_Rect a) {
+    DrawRectangle(a.x, a.y, a.w, a.h, PAL_CLR(BLACK));
+    if (!d) return;
+    if (strcmp(s_gate_zone, d->zone) != 0) {
+        if (!MapLoadZone(&s_gate_map, res, d->zone)) { s_gate_zone[0] = '\0'; return; }
+        snprintf(s_gate_zone, sizeof s_gate_zone, "%s", d->zone);
+    }
+    const Map *m = &s_gate_map;
+    const int cell = CL_TILE_W / 2;
+    int cols = a.w / cell, rows = a.h / cell;
+    int ox = a.x + (a.w - cols * cell) / 2, oy = a.y + (a.h - rows * cell) / 2;
+    int cam_x = d->x - cols / 2, cam_y = d->y - rows / 2;
+    for (int ty = 0; ty < rows; ty++) {
+        for (int tx = 0; tx < cols; tx++) {
+            int mx = cam_x + tx, my = cam_y + ty;
+            if (mx < 0 || my < 0 || mx >= m->width || my >= m->height) continue;
+            const Tile *t = MapGetTile(m, mx, my);
+            if (!t) continue;
+            Rectangle dst = { (float)(ox + tx * cell), (float)(oy + ty * cell), (float)cell, (float)cell };
+            char va[TILE_ART_NAME_LEN];
+            if (t->interactive != INTERACT_NONE) {
+                char ga[TILE_ART_NAME_LEN];
+                const char *gart = t->ground ? TileGround(m, t) : MapTerrainArt(m, TerrainName(t->terrain), ga, sizeof ga);
+                Texture2D ground = tile_cache_get(tilevar_art(gart, mx, my, va, sizeof va));
+                if (ground.id) DrawTexturePro(ground, (Rectangle){ 0, 0, (float)ground.width, (float)ground.height },
+                                              dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+            }
+            Texture2D tex = tile_cache_get(tilevar_art(TileArt(m, t), mx, my, va, sizeof va));
+            if (tex.id) DrawTexturePro(tex, (Rectangle){ 0, 0, (float)tex.width, (float)tex.height },
+                                       dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+        }
+    }
+    // The landing square ringed.
+    int rx = ox + (d->x - cam_x) * cell, ry = oy + (d->y - cam_y) * cell;
+    for (int t = 0; t < 3; t++)
+        DrawRectangleLines(rx - t, ry - t, cell + 2 * t, cell + 2 * t, t == 1 ? PAL_CLR(YELLOW) : PAL_CLR(BLACK));
+}
+
 static void draw_gate(void) {
-    // An in-lay over the dimmed map: the destinations in columns, and where
-    // the one under the cursor is along the foot. Back is the top bar.
+    // An in-lay over the dimmed map: the destinations as one list at the left,
+    // the chosen one's surroundings at the right, and Travel along the foot.
+    // Back is the top bar.
     const Resources *res = resources_current();
     const ResUI *ui = &res->ui;
     const char *title = views_gate_is_town() ? ui->gate_title_town : ui->gate_title_castle;
     int n = views_gate_count();
     int cursor = views_gate_cursor();
-    int per = views_gate_rows_per_column();
-    int cols = VIEWS_GATE_COLUMNS;
-    int shown_rows = n < per ? n : per;
-    if (shown_rows < 1) shown_rows = 1;
-    int foot_h = UK_BAND + 2 * ML_PAD + uk_line_h();
-    int h = uk_title_h() + UK_BAND + ml_list_height(shown_rows) + foot_h;
-    ML_Rect b = uk_inlay(ml_full().w, h, title, NULL);
-    int cw = b.w / cols;
-    int rows_h = ml_list_height(shown_rows);
-    for (int c = 0; c < cols; c++) {
-        int base = c * per;
-        if (base >= n) break;
-        int cnt = n - base < per ? n - base : per;
-        int cur = (cursor >= base && cursor < base + cnt) ? cursor - base : -1;
-        ml_list_draw_ex(b.x + c * cw, b.y, c == cols - 1 ? b.w - c * cw : cw, rows_h, cnt, cur,
-                        gate_row, NULL, TOUCH_LIST_GATE, uk_ink(), base);
-    }
-    int fy = b.y + rows_h;
-    lattice_band_h(b.x, fy, b.w, UK_BAND);
+    ML_Rect b = uk_inlay(ml_full().w, UK_TALL_H, title, NULL);
     const GateDestination *d = views_gate_dest(cursor);
+    char travel[RES_BANNER_LEN] = "";
     if (d) {
         const ResZone *z = resources_zone_by_id(res, d->zone);
-        char buf[RES_BANNER_LEN];
         ResTemplateVar v[] = { { "TOWN", d->name }, { "ZONE", (z && z->name[0]) ? z->name : d->zone } };
-        resources_format_template(buf, sizeof buf, res->banners.gate_travel, v, 2);
-        bfont_draw(buf, b.x + UK_INSET, fy + UK_BAND + ML_PAD, PAL_CLR(WHITE));
+        resources_format_template(travel, sizeof travel, res->banners.gate_travel, v, 2);
     }
+    UkRows foot_rows = { { travel }, { d != NULL } };
+    int foot = uk_foot_rows(b, 1, 0, uk_rows_fn, &foot_rows, TOUCH_LIST_PROMPT);
+    int lw = 14 * GW + 2 * ML_PAD;
+    ml_list_draw(b.x, b.y, lw, foot - b.y, n, cursor, gate_row, NULL, TOUCH_LIST_GATE, uk_ink());
+    lattice_band_v(b.x + lw, b.y, UK_BAND, foot - b.y);
+    ML_Rect a = { b.x + lw + UK_BAND, b.y, b.x + b.w - (b.x + lw + UK_BAND), foot - b.y };
+    draw_gate_map(res, d, a);
 }
 
 // ---------------------------------------------------------------------------

@@ -7,6 +7,8 @@
 // target to <dir>/<name>.png. No input is read, so nothing can be dropped.
 
 #include "shell_gallery.h"
+#include "views_render.h"
+#include "views_render_impl.h"
 #include "spells_adventure.h"
 #include "shell_frame.h"
 #include "raylib.h"
@@ -120,10 +122,16 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     char tb[RES_BANNER_LEN];
     ResTemplateVar vars[] = { { "DAYS", "10" }, { "ZONE", "Italia" }, { "X", "12" }, { "Y", "40" },
                               { "COST", "2500" }, { "HERO", g->character.name } };
-    reset(&G); resources_format_template(tb, sizeof tb, bn->body_search, vars, 6);
-    open_dialog(NULL, tb); shot(&G, "03_message_small");
-    reset(&G); resources_format_template(tb, sizeof tb, bn->alcove_offer_modern, vars, 6);
-    open_dialog(ui->dt_search, tb); shot(&G, "04_message_titled");
+    // Real messages, as the engine sends them: no room in the army
+    // (flow_resolve.c), and the Time Stop spell (spells_adventure.c).
+    reset(&G); open_dialog(NULL, bn->no_troop_slots); shot(&G, "03_message_small");
+    reset(&G);
+    {
+        ResTemplateVar sv[] = { { "STEPS", "10" } };
+        resources_format_template(tb, sizeof tb, bn->spell_time_stop, sv, 1);
+        open_dialog(spell_header("time_stop", "Time Stop"), tb);
+    }
+    shot(&G, "04_message_titled");
     reset(&G); resources_format_template(tb, sizeof tb, bn->no_spell_banner, vars, 6);
     open_dialog(NULL, tb); shot(&G, "05_message_long");
     reset(&G); resources_format_template(tb, sizeof tb, bn->body_search, vars, 6);
@@ -201,16 +209,23 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     // Temporary death: sent back to the Emperor in disgrace.
     reset(&G);
     {
+        // The hero's own disgraced scene, as shell_tempdeath.c sends it; then
+        // each class's scene for review.
+        const ClassDef *hc = class_by_id(g->character.cls.id);
         PlayerRequest *r = player_io_message(g, NULL, bn->temp_death);
-        for (int i = 0; r && i < res->castle_count; i++) {
-            if (!resources_castle_is_home(&res->castles[i])) continue;
-            int idx = resources_portrait_index(res, res->castles[i].special.portrait);
-            if (idx >= 0) { r->face = REQ_FACE_PORTRAIT; r->face_index = idx; }
-            break;
-        }
+        if (r && hc) { r->face = REQ_FACE_SCENE; r->face_index = hc->index; }
         shell_pump_player_io_message(g);
     }
     shot(&G, "09f_temporary_death");
+    for (int ci = 0; ci < res->classes_count && ci < 4; ci++) {
+        reset(&G);
+        PlayerRequest *r = player_io_message(g, NULL, bn->temp_death);
+        if (r) { r->face = REQ_FACE_SCENE; r->face_index = ci; }
+        shell_pump_player_io_message(g);
+        char nm[64];
+        snprintf(nm, sizeof nm, "09f_temporary_death_%s", res->classes[ci].id);
+        shot(&G, nm);
+    }
 
     // The bridge spell asks for a direction.
     reset(&G); bridge_state = BRIDGE_STATE_DIRECTION; open_dialog(NULL, bn->spell_bridge_prompt);
@@ -241,7 +256,35 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     views_contract_set_active(true);
     reset(&G); views_set(VIEW_CONTRACT); shot(&G, "22_contract_held");
     reset(&G); views_set(VIEW_PUZZLE); shot(&G, "23_puzzle");
-    reset(&G); views_set(VIEW_WORLDMAP); shot(&G, "24_worldmap");
+    {
+        // Places visited on this continent, the orb's whole map, a boat.
+        int zi = 0;
+        for (int i = 0; i < res->zone_count; i++) if (strcmp(res->zones[i].id, g->position.zone) == 0) zi = i;
+        bool keep_orb = g->world.orbs_found[zi];
+        g->world.orbs_found[zi] = true;
+        int marked = 0;
+        for (int i = 0; i < res->town_count && marked < 3; i++) {
+            if (strcmp(res->towns[i].zone, g->position.zone) != 0) continue;
+            for (int k = 0; k < GAME_TOWNS; k++)
+                if (strcmp(g->towns[k].id, res->towns[i].id) == 0) { g->towns[k].visited = true; marked++; }
+        }
+        for (int i = 0; i < res->castle_count; i++) {
+            if (strcmp(res->castles[i].zone, g->position.zone) != 0) continue;
+            CastleRecord *cr = GameFindCastle(g, res->castles[i].id);
+            if (cr) { cr->visited = true; break; }
+        }
+        bool keep_boat = g->boat.has_boat;
+        g->boat.has_boat = true;
+        g->boat.x = g->position.x + 3; g->boat.y = g->position.y + 2;
+        cpy(g->boat.zone, sizeof g->boat.zone, g->position.zone);
+        if (!views_render_worldmap_whole()) views_render_worldmap_toggle_hero_only();
+        reset(&G); views_set(VIEW_WORLDMAP); modern_worldmap_gallery(0); shot(&G, "24_worldmap");
+        reset(&G); views_set(VIEW_WORLDMAP); modern_worldmap_gallery(1); shot(&G, "24b_worldmap_place");
+        modern_worldmap_gallery(0);
+        views_render_worldmap_toggle_hero_only();
+        g->world.orbs_found[zi] = keep_orb;
+        g->boat.has_boat = keep_boat;
+    }
     reset(&G); views_set(VIEW_SPELLS); views_spells_set_mode(true); shot(&G, "25_spells");
     reset(&G);
     {

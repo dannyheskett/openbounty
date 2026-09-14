@@ -61,6 +61,7 @@ typedef struct {
 typedef struct {
     ResAnimSet walk, idle, boat;
     char tile[RES_PATH_LEN];      // win-cartoon hero tile
+    char disgraced[RES_PATH_LEN]; // modern: the temporary-death scene (a 240x102 backdrop)
 } ResClassHero;
 
 typedef struct {
@@ -441,6 +442,11 @@ typedef struct {
     char cv_no_contract_hint[RES_BANNER_LEN];
     char puzzle_legend[RES_BANNER_LEN];
     char gate_travel[RES_BANNER_LEN];
+    char worldmap_all[RES_BANNER_LEN];
+    char worldmap_you[RES_BANNER_LEN];
+    char worldmap_boat[RES_BANNER_LEN];
+    char worldmap_boat_elsewhere[RES_BANNER_LEN];
+    char worldmap_no_boat[RES_BANNER_LEN];
     char class_desc_knight[RES_BANNER_LEN];
     char class_desc_paladin[RES_BANNER_LEN];
     char class_desc_sorceress[RES_BANNER_LEN];
@@ -596,6 +602,8 @@ typedef struct {
     char count_garrison[RES_BANNER_LEN];
     char count_withdraw[RES_BANNER_LEN];
     char count_cancel[RES_BANNER_LEN];
+    char count_min[RES_BANNER_LEN];
+    char count_max[RES_BANNER_LEN];
     char capture_title[RES_BANNER_LEN];
     char capture_contract[RES_BANNER_LEN];
     char capture_free[RES_BANNER_LEN];
@@ -707,6 +715,9 @@ typedef struct {
     char status_days_left_modern[RES_BANNER_LEN];
     char status_time_stop_modern[RES_BANNER_LEN];
     char status_menu_prefix[RES_BANNER_LEN];
+    char status_game_menu[RES_BANNER_LEN];
+    char status_days_remaining[RES_BANNER_LEN];
+    char status_time_stop_remaining[RES_BANNER_LEN];
     char status_time_stop[RES_BANNER_LEN];
 
     // Composite prompt bodies (system flows that have %TOKEN%-style values).
