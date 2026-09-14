@@ -44,4 +44,11 @@ void ml_stepper_draw(int x, int y, int w, const char *text);
 // the value changed.
 bool ml_stepper_keys(int *value, int lo, int hi);
 
+// Hint buttons: `label` with the key for the device in use -- " [Esc]" once a
+// keyboard is in use, " (B)" for a gamepad, nothing on touch -- written to out.
+void ml_hint_text(char *out, int cap, const char *label, const char *kb_key, const char *pad_key);
+// A framed hint button GH + 8 tall at (x, y); a tap presses `key`. Returns its width.
+int  ml_hint_width(const char *label, const char *kb_key, const char *pad_key);
+int  ml_hint_button(int x, int y, const char *label, const char *kb_key, const char *pad_key, int key);
+
 #endif

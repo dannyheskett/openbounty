@@ -370,7 +370,8 @@ static int combat_player_action_full(Combat *c, const Game *g,
         // Open a y/n give-up confirm; the outer combat loop polls
         // prompt_update() and writes c->result to 2 on YES.
         if (g && g->res) {
-            prompt_yes_no_open(g->res->banners.combat_give_up_header,
+            prompt_yes_no_open(CL_IS_MODERN ? g->res->ui.give_up_header_modern
+                                            : g->res->banners.combat_give_up_header,
                                g->res->banners.combat_give_up_body);
         }
         return 0;
@@ -508,7 +509,9 @@ static void combat_present(const Combat *c, const Game *g,
         SpellRowCtx sc = { gw };
         ml_list_draw(x, ty, w, prompt_y - pad - ty, 7, s_cast_cursor, combat_spell_row,
                      &sc, TOUCH_LIST_COMBAT_SPELLS, PAL_CLR(DBLUE));
-        bfont_draw_centered(ui->combat_spells_prompt, x + w / 2, prompt_y, PAL_CLR(WHITE));
+        bfont_draw(ui->combat_spells_prompt_modern, x + pad, prompt_y, PAL_CLR(WHITE));
+        ml_hint_button(x + w - pad - ml_hint_width(ui->hint_back, ui->key_esc, ui->pad_back),
+                       prompt_y - 4, ui->hint_back, ui->key_esc, ui->pad_back, KEY_ESCAPE);
     }
     // Victory dialog : centered modal
     // floating over the still-rendered battlefield. Defeat does not

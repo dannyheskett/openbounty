@@ -144,6 +144,10 @@ void overlay_draw(const Game *g, const Map *m, const Fog *f,
         screen_recruit_soldiers_draw(g, s);
     } else if (v == VIEW_OWN_CASTLE) {
         screen_own_castle_draw(g, s);
+    } else if (v == VIEW_DWELLING && CL_IS_MODERN) {
+        modern_overlay_draw_dwelling(g, s);        // draws its prompt and answer too
+    } else if (v == VIEW_ALCOVE && CL_IS_MODERN) {
+        modern_overlay_draw_temple(g, s);
     } else if (v == VIEW_DWELLING) {
         screen_dwelling_draw(g, s);
     } else if (v == VIEW_ALCOVE) {
@@ -156,8 +160,9 @@ void overlay_draw(const Game *g, const Map *m, const Fog *f,
         views_render_draw(g, m, f, s);
     }
 
+    bool loc_screen = CL_IS_MODERN && (v == VIEW_DWELLING || v == VIEW_ALCOVE);
     // Modal prompt (yes/no, numeric picker): replaces the bottom frame.
-    if (prompt_is_active()) {
+    if (prompt_is_active() && !loc_screen) {
         // Modern: a hostile foe gets its own full-screen view (Fight / Evade).
         if (CL_IS_MODERN && pending_flow == FLOW_ATTACK_FOE) modern_overlay_draw_foe(g, s);
         else                                                prompt_draw();
@@ -168,7 +173,7 @@ void overlay_draw(const Game *g, const Map *m, const Fog *f,
     // it is open (see the prompt_dispatch_tick gate in main.c, issue #19) -- the
     // visible modal has to be the one the next key talks to. Once the dialog is
     // dismissed the prompt underneath is revealed and answers as usual.
-    if (dialog_is_active()) {
+    if (dialog_is_active() && !loc_screen) {
         overlay_draw_dialog();
     }
 

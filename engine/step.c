@@ -318,6 +318,8 @@ bool GameStep(Game *game, Map *map, Fog *fog,
                 resources_format_template(body, sizeof body,
                                           res->banners.alcove_already,
                                           vars, 1);
+                // With rites per zone the temple screen opens behind the words.
+                if (res->economy.rites_per_zone) screen_alcove_open(game);
                 player_io_message(game, NULL, body);
             }
             if (ir.bounce_back) {

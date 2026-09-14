@@ -92,6 +92,14 @@ static const char *dwelling_kind_name(const Game *g, DwellingKind k) {
     }
 }
 
+const char *screen_dwelling_info(const Game *g, int *troop_idx, int *pop, int *cost, int *cap) {
+    if (troop_idx) *troop_idx = s_troop_idx;
+    if (pop) *pop = s_pop;
+    if (cost) *cost = s_cost;
+    if (cap) *cap = s_cap;
+    return dwelling_kind_name(g, s_kind);
+}
+
 void screen_dwelling_draw(const Game *g, const Sprites *s) {
     // Source 2967: draw_location(2 + rtype, troop_id, 0) -- frame is
     // always 0 (no animation in dwelling visits per the source).

@@ -1360,6 +1360,11 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(encounter_hostile_count_numeric,"encounter_hostile_count_numeric");
     SET_BANNER(alcove_offer,                   "alcove_offer");
     SET_BANNER(alcove_already,                 "alcove_already");
+    SET_BANNER(temple_title, "temple_title");
+    SET_BANNER(temple_learn, "temple_learn");
+    SET_BANNER(location_leave, "location_leave");
+    SET_BANNER(alcove_offer_modern, "alcove_offer_modern");
+    SET_BANNER(dwelling_recruit_row, "dwelling_recruit_row");
     SET_BANNER(alcove_taught,                  "alcove_taught");
     SET_BANNER(alcove_no_gold,                 "alcove_no_gold");
     SET_BANNER(no_spell_banner,                "no_spell_banner");
@@ -1502,6 +1507,16 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
     if (cJSON_IsObject(jui)) {
         cJSON *obj = jui;
         UI_SET(press_esc_to_exit, "press_esc_to_exit");
+        UI_SET(hint_back, "hint_back");
+        UI_SET(hint_quit, "hint_quit");
+        UI_SET(hint_continue, "hint_continue");
+        UI_SET(key_esc, "key_esc");
+        UI_SET(key_ctrl_q, "key_ctrl_q");
+        UI_SET(pad_back, "pad_back");
+        UI_SET(pad_confirm, "pad_confirm");
+        UI_SET(give_up_header_modern, "give_up_header_modern");
+        UI_SET(save_confirm_modern, "save_confirm_modern");
+        UI_SET(combat_spells_prompt_modern, "combat_spells_prompt_modern");
         UI_SET(quit_to_dos_prompt, "quit_to_dos_prompt");
         UI_SET(out_of_control,    "out_of_control");
         UI_SET(worldmap_hint_your_map,  "worldmap_hint_your_map");

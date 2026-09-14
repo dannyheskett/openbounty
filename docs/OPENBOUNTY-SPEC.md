@@ -2196,6 +2196,12 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   (at least 1 of a stat above 0). A short purse pays nothing. `stats.blessed`
   and `stats.tributes` are saved only for such a pack; autoplay uses neither
   (2026-09-13).
+- **REQ-430r.** **Temple and dwelling screens (modern).** VIEW_ALCOVE and
+  VIEW_DWELLING draw their own full screens over the unchanged FLOW_ALCOVE
+  yes/no and FLOW_RECRUIT count prompts (docs/UI-PANELS.md). The shell keeps
+  the view open through the answer's message and closes it when no prompt,
+  dialog or queued request remains. With `economy.rites_per_zone` a known
+  zone's temple raises the alcove view behind its message (2026-09-13).
 - **REQ-430f.** **Keyboard detection and the letter selector (modern).**
   `input_host` latches which physical devices have been used: a real key
   event (not an injected one), a touch contact, a gamepad button or stick

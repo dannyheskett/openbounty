@@ -165,7 +165,11 @@ bool prompt_dispatch_tick(ShellCtx *ctx) {
     }
     if (pres.temp_death) perform_temp_death(g, m, f, r_);
     if (pres.week_commission > 0) schedule_week_end(g, pres.week_commission);
-    if (pres.dismiss_view != VIEW_NONE &&
+    // Modern temple and dwelling screens stay up to show the answer; the main
+    // loop closes them once nothing is left to show (main.c).
+    bool loc_screen = CL_IS_MODERN &&
+        (pres.dismiss_view == VIEW_ALCOVE || pres.dismiss_view == VIEW_DWELLING);
+    if (pres.dismiss_view != VIEW_NONE && !loc_screen &&
         views_active() == pres.dismiss_view) views_dismiss();
 
     if (pres.chain_dismiss_last && pres.chain_slot >= 0) {

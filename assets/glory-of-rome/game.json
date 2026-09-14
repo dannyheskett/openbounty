@@ -3951,7 +3951,6 @@
 			"siege_grid":	"art/combat/siege/cell",
 			"combat_ground":	"terrain",
 			"view_icons_extra":	["art/ui/inventory_zone_italia.png", "art/ui/inventory_zone_galliae.png", "art/ui/inventory_zone_africa.png", "art/ui/inventory_zone_oriens.png"],
-			"view_icons_extra":	["art/ui/inventory_zone_continentia.png", "art/ui/inventory_zone_forestria.png", "art/ui/inventory_zone_archipelia.png", "art/ui/inventory_zone_saharia.png"],
 			"splash_logo":	"art/ui/splash_logo.png",
 			"splash_title":	"art/ui/splash_title.png",
 			"title_battle":	"art/ui/title_battle.png",

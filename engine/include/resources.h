@@ -561,6 +561,12 @@ typedef struct {
     // Substitutions: %COST%.
     char alcove_offer[RES_BANNER_LEN];
     char alcove_already[RES_BANNER_LEN];
+    // Modern temple and dwelling screens.
+    char temple_title[RES_BANNER_LEN];
+    char temple_learn[RES_BANNER_LEN];
+    char location_leave[RES_BANNER_LEN];
+    char alcove_offer_modern[RES_BANNER_LEN];
+    char dwelling_recruit_row[RES_BANNER_LEN];
     char alcove_taught[RES_BANNER_LEN];
     char alcove_no_gold[RES_BANNER_LEN];
     char no_spell_banner[RES_BANNER_LEN];
@@ -718,6 +724,17 @@ typedef struct {
 typedef struct {
     // Generic UI strings.
     char press_esc_to_exit[RES_UI_LABEL_LEN];
+    // Modern hint buttons: labels, key names by device, key-free texts.
+    char hint_back[RES_UI_LABEL_LEN];
+    char hint_quit[RES_UI_LABEL_LEN];
+    char hint_continue[RES_UI_LABEL_LEN];
+    char key_esc[RES_UI_LABEL_LEN];
+    char key_ctrl_q[RES_UI_LABEL_LEN];
+    char pad_back[RES_UI_LABEL_LEN];
+    char pad_confirm[RES_UI_LABEL_LEN];
+    char give_up_header_modern[RES_UI_LABEL_LEN];
+    char save_confirm_modern[RES_UI_LABEL_LEN];
+    char combat_spells_prompt_modern[RES_UI_LABEL_LEN];
     // Status-bar fast-quit prompt (). Rendered into the
     // top status bar via KB_TopBox, not a bottom dialog.
     char quit_to_dos_prompt[RES_UI_LABEL_LEN * 2];

@@ -689,7 +689,10 @@ static void draw_worldmap_exit_hint(const Game *g) {
     DrawRectangle(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H,
                   PAL_CLR(DRED));
     // The reveal is a row under the map, so the band only says how to leave.
-    const char *txt = g->res->ui.press_esc_to_exit;
+    const ResUI *ui = &g->res->ui;
+    char txt[96];
+    ml_hint_text(txt, sizeof txt, ui->hint_back, ui->key_esc, ui->pad_back);
+    touch_region(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H, KEY_ESCAPE);
     bfont_draw_centered(txt,
                         CL_STATUS_X + CL_STATUS_W / 2,
                         CL_STATUS_Y + 1,
@@ -854,6 +857,8 @@ static void draw_gate(void) {
     const char *title = views_gate_is_town() ? ui->gate_title_town
                                              : ui->gate_title_castle;
     bfont_draw_centered(title, vx + vw / 2, VIEW_Y + VIEW_PAD, PAL_CLR(YELLOW));
+    ml_hint_button(vx + vw - VIEW_PAD - ml_hint_width(ui->hint_back, ui->key_esc, ui->pad_back),
+                   VIEW_Y + VIEW_PAD - 4, ui->hint_back, ui->key_esc, ui->pad_back, KEY_ESCAPE);
 
     // Three columns of standard select rows (REQ-430n), filled top to bottom;
     // the name alone in each row (its first letter still picks it).

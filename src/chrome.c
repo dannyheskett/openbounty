@@ -8,6 +8,7 @@
 #include "lattice.h"
 #include "prompt.h"
 #include "touch.h"
+#include "modern/mlist.h"
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -215,6 +216,14 @@ void chrome_draw(const Game *g, const Sprites *s) {
                                 CL_STATUS_X + CL_STATUS_W / 2,
                                 CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0),
                                 PAL_CLR(WHITE));
+        } else if (CL_IS_MODERN && (views_wants_exit_hint() || dialog_is_active())) {
+            // Modern: "< Back" with the key for the device; the bar is the button.
+            char hb[96];
+            ml_hint_text(hb, sizeof hb, ui->hint_back, ui->key_esc, ui->pad_back);
+            bfont_draw_centered(hb, CL_STATUS_X + CL_STATUS_W / 2,
+                                CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0),
+                                PAL_CLR(WHITE));
+            touch_region(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H, KEY_ESCAPE);
         } else if (views_wants_exit_hint() || dialog_is_active()) {
             bfont_draw_centered(ui->press_esc_to_exit,
                                 CL_STATUS_X + CL_STATUS_W / 2,

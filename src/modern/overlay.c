@@ -28,6 +28,8 @@
 #include "modern/castle.h"
 #include "modern/mlist.h"
 #include "shell_audience.h"
+#include "screens/dwelling.h"
+#include "ui.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -161,6 +163,18 @@ static void draw_dialog_ex(DialogMode mode) {
         if (bfont_take_line(&p, max_w, line, (int)sizeof line) <= 0) break;
         bfont_draw(line, tx, ty, PAL_CLR(WHITE));
         ty += GH;
+    }
+
+    // The save message offers its two ways on: Quit and Continue.
+    const Resources *res = resources_current();
+    if (res && body && strcmp(body, res->ui.save_confirm_modern) == 0) {
+        const ResUI *ui = &res->ui;
+        int by = r.y + r.h - ML_PAD - (GH + 8);
+        int cw = ml_hint_width(ui->hint_continue, NULL, NULL);
+        int qw = ml_hint_width(ui->hint_quit, ui->key_ctrl_q, NULL);
+        int bx = r.x + r.w - ML_PAD - cw;
+        ml_hint_button(bx, by, ui->hint_continue, NULL, NULL, KEY_ENTER);
+        ml_hint_button(bx - ML_PAD - qw, by, ui->hint_quit, ui->key_ctrl_q, NULL, KEY_Q);
     }
 }
 
@@ -1509,4 +1523,201 @@ void modern_overlay_dim_scene(void) {
     // or the frame, so the frame keeps its weight and the band stays legible.
     Color shade = { 0, 0, 0, (unsigned char)a };
     DrawRectangle(CL_MAP_X, CL_MAP_Y, CL_SIDEBAR_X + CL_SIDEBAR_W - CL_MAP_X, CL_MAP_H, shade);
+}
+
+// =============================================================================
+//  Temple (the Augur's alcove) and dwelling screens -- their own layouts, not
+//  the town's. Drawn over the location view while its Yes/No or count prompt,
+//  or the answer that follows it, is up.
+// =============================================================================
+
+// The title strip every full screen opens with: title left, zone right.
+static int loc_title_strip(const Game *g, ML_Rect r, const char *title) {
+    int title_h = GH + 14, pad = ML_PAD;
+    bfont_draw(title, r.x + pad, r.y + (title_h - GH) / 2, PAL_CLR(YELLOW));
+    const ResZone *z = resources_zone_by_id(g->res, g->position.zone);
+    if (z && z->name[0])
+        bfont_draw(z->name, r.x + r.w - pad - (int)bfont_measure(z->name).x,
+                   r.y + (title_h - GH) / 2, PAL_CLR(YELLOW));
+    lattice_band_h(r.x, r.y + title_h, r.w, 4);
+    return r.y + title_h + 4;
+}
+
+typedef struct { const char *label[2]; bool enabled[2]; } LocRows;
+
+static bool loc_row(void *ctx, int i, char *label, char *right, int cap) {
+    const LocRows *lr = (const LocRows *)ctx;
+    right[0] = '\0';
+    snprintf(label, (size_t)cap, "%s", lr->label[i]);
+    return lr->enabled[i];
+}
+
+// Rows on the left, wrapped text on the right, under `low`.
+static void loc_lower(ML_Rect r, int low, LocRows *rows, int nrows, int cursor,
+                      TownText *t, int dx) {
+    int bottom = r.y + r.h, mw = 16 * GW, lh = bottom - low;
+    ml_list_draw(r.x, low, mw, lh, nrows, cursor, loc_row, rows, TOUCH_LIST_PROMPT, PAL_CLR(DBLUE));
+    lattice_band_v(r.x + mw, low, 4, lh);
+    int ty = low + ML_PAD + 4;
+    for (int i = 0; i < t->n && ty + GH <= bottom - ML_PAD; i++) {
+        bfont_draw(t->line[i].text, dx, ty, t->line[i].fg);
+        ty += GH + 2;
+    }
+}
+
+void modern_overlay_draw_temple(const Game *g, const Sprites *s) {
+    if (!g || !g->res) return;
+    const Resources *res = g->res;
+    const ResBanners *bn = &res->banners;
+    ML_Rect r = ml_full();
+    DrawRectangle(r.x, r.y, r.w, r.h, PAL_CLR(DBLUE));
+    int top = loc_title_strip(g, r, bn->temple_title);
+
+    // The precinct across the full width at the largest whole scale that fits
+    // (3 on the standard screen), centred; the Augur where the pack places him.
+    int S = r.w / ML_BACKDROP_W;
+    if (S > 3) S = 3;
+    if (S < 1) S = 1;
+    int bw = ML_BACKDROP_W * S, bh = ML_BACKDROP_H * S;
+    int bx = r.x + (r.w - bw) / 2;
+    Texture2D bd = loc_texture(s, LOC_ALCOVE);
+    if (bd.id) ui_blit(bd, bx, top, bw, bh);
+    else       DrawRectangle(bx, top, bw, bh, PAL_CLR(BLACK));
+    if (s && s->alcove_figure.id && res->sprites.alcove_figure_w > 0) {
+        int ms = res->sprites.alcove_figure_frame_ms > 0 ? res->sprites.alcove_figure_frame_ms : 180;
+        Texture2D fig = s->alcove_figure_anim[sprites_frame((int)(GetTime() * 1000.0 / ms),
+                                                            s->alcove_figure_frames)];
+        if (!fig.id) fig = s->alcove_figure;
+        ui_blit(fig, bx + res->sprites.alcove_figure_x * S, top + res->sprites.alcove_figure_y * S,
+                res->sprites.alcove_figure_w * S, res->sprites.alcove_figure_h * S);
+    }
+    int low = top + bh;
+    lattice_band_h(r.x, low, r.w, 4);
+    low += 4;
+
+    const int INSET = ML_PAD + 4;
+    int dx = r.x + 16 * GW + 4 + INSET, dw = r.x + r.w - dx - INSET;
+    TownText t = { .n = 0, .max_w = dw };
+    LocRows rows = { { bn->temple_learn, bn->location_leave }, { true, true } };
+    const PromptView *pv = prompt_view();
+    if (prompt_is_active() && pending_flow == FLOW_ALCOVE) {
+        // The offer, then its price and the purse.
+        const ResZone *z = resources_zone_by_id(res, g->position.zone);
+        char buf[RES_BANNER_LEN], cost[16];
+        snprintf(cost, sizeof cost, "%d", GameAlcoveCost(g, g->position.zone));
+        ResTemplateVar v[] = { { "ZONE", (z && z->name[0]) ? z->name : g->position.zone },
+                               { "COST", cost } };
+        resources_format_template(buf, sizeof buf, bn->alcove_offer_modern, v, 2);
+        town_text_add(&t, buf, PAL_CLR(WHITE));
+        town_text_gap(&t);
+        castle_fmt(buf, sizeof buf, bn->castle_cost, cost, NULL);
+        town_text_add(&t, buf, PAL_CLR(YELLOW));
+        loc_lower(r, low, &rows, 2, pv->yn_cursor, &t, dx);
+    } else {
+        // The Augur's answer (taught, no gold, rites already known): Leave.
+        town_text_add(&t, dialog_is_active() ? dialog_body_text() : "", PAL_CLR(WHITE));
+        rows.label[0] = bn->location_leave;
+        loc_lower(r, low, &rows, 1, 0, &t, dx);
+    }
+}
+
+void modern_overlay_draw_dwelling(const Game *g, const Sprites *s) {
+    if (!g || !g->res) return;
+    const Resources *res = g->res;
+    const ResBanners *bn = &res->banners;
+    const ResUI *ui = &res->ui;
+    int ti = -1, pop = 0, cost = 0, cap = 0;
+    const char *kind = screen_dwelling_info(g, &ti, &pop, &cost, &cap);
+    const TroopDef *tr = (ti >= 0) ? troop_by_index(ti) : NULL;
+    ML_Rect r = ml_full();
+    DrawRectangle(r.x, r.y, r.w, r.h, PAL_CLR(DBLUE));
+    char title[128];
+    snprintf(title, sizeof title, "%s - %s", kind ? kind : "", tr ? tr->name : "");
+    int top = loc_title_strip(g, r, title);
+
+    // The dwelling at 2x (cut to the portrait's height) with the troop
+    // standing in it; the troop's portrait at 2x beside it; the purse.
+    const int BS = 2, BAND = 4;
+    int fs = CL_TILE_W * BS, bw = ML_BACKDROP_W * BS, bh = fs;
+    LocKind lk = LOC_PLAINS;
+    if (kind && strcmp(kind, ui->dwelling_kind_forest) == 0)  lk = LOC_FOREST;
+    if (kind && strcmp(kind, ui->dwelling_kind_hill) == 0)    lk = LOC_HILLCAVE;
+    if (kind && strcmp(kind, ui->dwelling_kind_dungeon) == 0) lk = LOC_DUNGEON;
+    Texture2D bd = loc_texture(s, lk);
+    if (bd.id && bd.height > 0) {
+        float src_h = (float)bd.height * (float)bh / (float)(ML_BACKDROP_H * BS);
+        Rectangle src = { 0, (float)bd.height - src_h, (float)bd.width, src_h };
+        DrawTexturePro(bd, src, (Rectangle){ (float)r.x, (float)top, (float)bw, (float)bh },
+                       (Vector2){ 0, 0 }, 0.0f, WHITE);
+    } else {
+        DrawRectangle(r.x, top, bw, bh, PAL_CLR(BLACK));
+    }
+    Texture2D ts = { 0 };
+    if (tr && s) {
+        ts = s->troop_anim[ti][sprites_frame(sprites_stand((int)(GetTime() * 6.66)),
+                                             s->troop_anim_frames[ti])];
+        if (!ts.id) ts = s->troop_sprite[ti];
+    }
+    if (ts.id) ui_blit(ts, r.x + CL_TILE_W / 2, top + bh - CL_TILE_H, CL_TILE_W, CL_TILE_H);
+    lattice_band_v(r.x + bw, top, BAND, bh);
+    int fx = r.x + bw + BAND;
+    DrawRectangle(fx, top, fs, fs, PAL_CLR(BLACK));
+    Texture2D pt = (tr && s && s->troop_portrait[ti].id) ? s->troop_portrait[ti] : ts;
+    if (pt.id) ui_blit(pt, fx, top, fs, fs);
+    lattice_band_v(fx + fs, top, BAND, bh);
+    int hx = fx + fs + BAND;
+    hud_draw_siege_tile(g, s, hx, top);
+    hud_draw_gold_tile(g, s, hx, top + CL_TILE_H);
+    int low = top + bh;
+    lattice_band_h(r.x, low, r.w, BAND);
+    low += BAND;
+
+    const int INSET = ML_PAD + 4;
+    int dx = r.x + 16 * GW + BAND + INSET, dw = r.x + r.w - dx - INSET;
+    TownText t = { .n = 0, .max_w = dw };
+    LocRows rows = { { bn->dwelling_recruit_row, bn->location_leave }, { cap > 0, true } };
+    const PromptView *pv = prompt_view();
+    char buf[RES_BANNER_LEN], nb[16];
+    if (prompt_is_active() && pending_flow == FLOW_RECRUIT) {
+        snprintf(nb, sizeof nb, "%d", pop);
+        ResTemplateVar av[] = { { "COUNT", nb }, { "TROOP", tr ? tr->name : "" } };
+        resources_format_template(buf, sizeof buf, ui->dwelling_info_available, av, 2);
+        town_text_add(&t, buf, PAL_CLR(WHITE));
+        snprintf(nb, sizeof nb, "%d", cost);
+        castle_fmt(buf, sizeof buf, bn->castle_cost, nb, NULL);
+        town_text_add(&t, buf, PAL_CLR(WHITE));
+        town_text_gap(&t);
+        if (cap > 0) {
+            snprintf(nb, sizeof nb, "%d", cap);
+            castle_fmt(buf, sizeof buf, bn->castle_can_recruit, nb, NULL);
+            town_text_add(&t, buf, PAL_CLR(YELLOW));
+        } else {
+            // Why none: the purse, else leadership.
+            town_text_add(&t, (tr && g->stats.gold < tr->recruit_cost) ? bn->town_no_gold
+                                                                       : bn->army_cannot_handle,
+                          PAL_CLR(YELLOW));
+        }
+        if (pv->step_open) {
+            // The stepper replaces the rows while it is up.
+            int mw = 16 * GW, bottom = r.y + r.h;
+            lattice_band_v(r.x + mw, low, BAND, bottom - low);
+            char sv[32], sm[16];
+            snprintf(sv, sizeof sv, "%d", pv->step_value);
+            snprintf(sm, sizeof sm, "%d", pv->step_max);
+            castle_fmt(buf, sizeof buf, bn->castle_count_of, sv, sm);
+            ml_stepper_draw(r.x + ML_PAD, low + ML_PAD, mw - 2 * ML_PAD, buf);
+            int ty = low + ML_PAD + 4;
+            for (int i = 0; i < t.n && ty + GH <= bottom - ML_PAD; i++) {
+                bfont_draw(t.line[i].text, dx, ty, t.line[i].fg);
+                ty += GH + 2;
+            }
+        } else {
+            loc_lower(r, low, &rows, 2, pv->yn_cursor, &t, dx);
+        }
+    } else {
+        town_text_add(&t, dialog_is_active() ? dialog_body_text() : "", PAL_CLR(WHITE));
+        rows.label[0] = bn->location_leave;
+        rows.enabled[0] = true;
+        loc_lower(r, low, &rows, 1, 0, &t, dx);
+    }
 }

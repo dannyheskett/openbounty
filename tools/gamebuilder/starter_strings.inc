@@ -120,6 +120,11 @@ static cJSON *gb_placeholder_strings(void) {
     cJSON_AddStringToObject(o, "encounter_hostile_count_numeric", "encounter_hostile_count_numeric");
     cJSON_AddStringToObject(o, "alcove_offer", "alcove_offer");
     cJSON_AddStringToObject(o, "alcove_already", "alcove_already");
+    cJSON_AddStringToObject(o, "temple_title", "temple_title");
+    cJSON_AddStringToObject(o, "temple_learn", "temple_learn");
+    cJSON_AddStringToObject(o, "location_leave", "location_leave");
+    cJSON_AddStringToObject(o, "alcove_offer_modern", "alcove_offer_modern");
+    cJSON_AddStringToObject(o, "dwelling_recruit_row", "dwelling_recruit_row");
     cJSON_AddStringToObject(o, "alcove_taught", "alcove_taught");
     cJSON_AddStringToObject(o, "alcove_no_gold", "alcove_no_gold");
     cJSON_AddStringToObject(o, "no_spell_banner", "no_spell_banner");
@@ -210,6 +215,16 @@ static cJSON *gb_placeholder_strings(void) {
     cJSON_AddStringToObject(o, "exit_hint", "exit_hint");
     o = cJSON_AddObjectToObject(s, "ui");
     cJSON_AddStringToObject(o, "press_esc_to_exit", "press_esc_to_exit");
+    cJSON_AddStringToObject(o, "hint_back", "hint_back");
+    cJSON_AddStringToObject(o, "hint_quit", "hint_quit");
+    cJSON_AddStringToObject(o, "hint_continue", "hint_continue");
+    cJSON_AddStringToObject(o, "key_esc", "key_esc");
+    cJSON_AddStringToObject(o, "key_ctrl_q", "key_ctrl_q");
+    cJSON_AddStringToObject(o, "pad_back", "pad_back");
+    cJSON_AddStringToObject(o, "pad_confirm", "pad_confirm");
+    cJSON_AddStringToObject(o, "give_up_header_modern", "give_up_header_modern");
+    cJSON_AddStringToObject(o, "save_confirm_modern", "save_confirm_modern");
+    cJSON_AddStringToObject(o, "combat_spells_prompt_modern", "combat_spells_prompt_modern");
     cJSON_AddStringToObject(o, "quit_to_dos_prompt", "quit_to_dos_prompt");
     cJSON_AddStringToObject(o, "out_of_control", "out_of_control");
     cJSON_AddStringToObject(o, "worldmap_hint_your_map", "worldmap_hint_your_map");

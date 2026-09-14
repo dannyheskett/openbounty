@@ -9,6 +9,7 @@
 #include "touch.h"
 #include "palette.h"
 #include "bfont.h"
+#include <stdio.h>
 #include <string.h>
 
 int ml_list_first(int count, int cursor, int vis) {
@@ -93,6 +94,31 @@ void ml_stepper_draw(int x, int y, int w, const char *text) {
     int mid = x + w / 2;
     bfont_draw(text, mid - tw / 2, y + (bh - gh) / 2, PAL_CLR(YELLOW));
     touch_region(mid - tw / 2 - pad, y, tw + 2 * pad, bh, KEY_ENTER);
+}
+
+void ml_hint_text(char *out, int cap, const char *label, const char *kb_key, const char *pad_key) {
+    if (input_has_keyboard() && kb_key && kb_key[0])
+        snprintf(out, (size_t)cap, "%s [%s]", label, kb_key);
+    else if (!input_touch_active() && input_pad_or_touch_seen() && pad_key && pad_key[0])
+        snprintf(out, (size_t)cap, "%s (%s)", label, pad_key);
+    else
+        snprintf(out, (size_t)cap, "%s", label);
+}
+
+int ml_hint_width(const char *label, const char *kb_key, const char *pad_key) {
+    char t[96];
+    ml_hint_text(t, sizeof t, label, kb_key, pad_key);
+    return (int)bfont_measure(t).x + 2 * ML_PAD;
+}
+
+int ml_hint_button(int x, int y, const char *label, const char *kb_key, const char *pad_key, int key) {
+    char t[96];
+    ml_hint_text(t, sizeof t, label, kb_key, pad_key);
+    int w = (int)bfont_measure(t).x + 2 * ML_PAD, h = BFONT_GLYPH_H + 8;
+    DrawRectangleLines(x, y, w, h, PAL_CLR(YELLOW));
+    bfont_draw(t, x + ML_PAD, y + 4, PAL_CLR(YELLOW));
+    touch_region(x, y, w, h, key);
+    return w;
 }
 
 bool ml_stepper_keys(int *value, int lo, int hi) {

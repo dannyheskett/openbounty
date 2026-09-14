@@ -73,7 +73,8 @@ void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
         {
             char body[RES_BANNER_LEN];
             resources_format_template(body, sizeof body,
-                                      r_->banners.body_save_confirm,
+                                      CL_IS_MODERN ? r_->ui.save_confirm_modern
+                                                   : r_->banners.body_save_confirm,
                                       NULL, 0);
             player_io_message(g, NULL, body);
         }

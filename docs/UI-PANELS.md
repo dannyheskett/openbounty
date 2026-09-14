@@ -162,6 +162,32 @@ the tribute's cost; picking a row gives the ruler's answer (one short screen:
 what was granted and the gains, or what is still needed). Tribute asks Yes/No
 before paying.
 
+## Hint buttons (modern)
+
+On-screen notes name no keys. A way out or on is a small framed button
+(`ml_hint_button`, src/modern/mlist.c) that a tap presses: "< Back" on the
+top bar while a view or message is open (the whole bar is the button), on the
+world map band, the gate spell and load picker titles and the combat spell
+picker; Quit and Continue on the save message. The key follows the label for
+the device in use: "[Esc]" once a keyboard is used, "(B)" for a gamepad,
+nothing on touch. The give-up question reads "Give up the battle?", the spell
+picker "Cast which spell?" (letters still pick). Legacy keeps its notes.
+
+## Temple and dwelling (modern)
+
+Their own full screens, not the town's layout. The temple (the Augur's alcove)
+is a scene: the title strip ("Temple of the Augur", the zone), the precinct
+backdrop across the full width at the largest whole scale up to 3x with the
+Augur placed by the pack, then Learn the rites / Leave rows beside the offer
+and its cost. The dwelling shows its backdrop at 2x with the troop standing in
+it, the troop's portrait at 2x and the siege and gold tiles, then Recruit /
+Leave beside what is available, the cost and how many can be recruited (or why
+none). Recruit opens the count stepper in place of the rows; Esc puts it away,
+Esc again leaves. The answer (taught, not enough gold, recruited, rites
+already known) shows on the same screen with a Leave row, and the screen
+closes when nothing is left to show. With rites per zone a temple whose rites
+are known opens the same screen with only Leave.
+
 ## Combat action menu
 
 Enter, or a tap on the active unit, opens Actions in the large rect: Wait,

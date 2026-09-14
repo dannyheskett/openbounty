@@ -1184,6 +1184,13 @@ title:;
             goto end_input;
         }
 
+        // Modern temple and dwelling screens stay up through their answer; once
+        // no prompt, dialog or queued request is left, they close.
+        if (CL_IS_MODERN && (views_active() == VIEW_ALCOVE || views_active() == VIEW_DWELLING) &&
+            !prompt_is_active() && !dialog_is_active() && !player_io_front(&game)) {
+            views_dismiss();
+        }
+
         // prompt_dispatch_tick returns false while a message dialog is up, so
         // the chain falls through to the dialog branch below and the message is
         // dismissed before the prompt is answered (issue #19).
@@ -1473,7 +1480,11 @@ title:;
                 // advances page or dismisses. Since Ctrl-Q is the only post-dialog action, we
                 // check it here for all dialogs (harmless elsewhere).
                 bool ctrl = input_key_down(KEY_LEFT_CONTROL) || input_key_down(KEY_RIGHT_CONTROL);
-                if (ctrl && input_key_pressed(KEY_Q)) {
+                // Modern save message: its Quit button presses a bare Q.
+                bool save_quit = CL_IS_MODERN && dialog_body_text() &&
+                                 strcmp(dialog_body_text(), res.ui.save_confirm_modern) == 0 &&
+                                 input_key_pressed(KEY_Q);
+                if ((ctrl && input_key_pressed(KEY_Q)) || save_quit) {
                     dialog_dismiss();
                     quit_requested = true;
                 } else if (ui_any_key_pressed()) {

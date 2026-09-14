@@ -361,6 +361,9 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
             panel(lr.x, lr.y, lr.w, lr.h);
             bfont_draw_centered(mui ? mui->title_load_adventure : "Load Saved Game",
                                 mx + mw / 2, my + mpad, PAL_CLR(YELLOW));
+            if (mui)
+                ml_hint_button(mx + mw - mpad - ml_hint_width(mui->hint_back, mui->key_esc, mui->pad_back),
+                               my + mpad - 4, mui->hint_back, mui->key_esc, mui->pad_back, KEY_ESCAPE);
             // The slots as standard select rows (REQ-430n), scrolling.
             int mty = my + mpad + GH + mpad;
             lattice_band_h(mx, mty, mw, 4);

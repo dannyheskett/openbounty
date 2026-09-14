@@ -31,6 +31,7 @@ static bool prompt_digit_allowed(const char *buf, int len, int ch);
 static int  g_max_choice = 5;
 static int  g_text_max_digits = 4;
 static int  g_text_max_value  = 9999;
+static bool g_step_open       = false; // modern dwelling: Recruit opened the stepper
 static int  g_step_value      = 0;     // modern count entry: the stepper
 static char g_text_buf[8];
 static int  g_text_len = 0;
@@ -174,6 +175,8 @@ void prompt_text_input_open(const char *header, const char *body,
     g_text_len = 0;
     g_text_buf[0] = '\0';
     g_step_value = max_value > 0 ? max_value : 0;   // modern: the stepper starts at the most
+    g_step_open = false;
+    g_yn_cursor = 0;
     copy_to(g_header, sizeof(g_header), header);
     copy_to(g_body,   sizeof(g_body),   body);
     emit_open_trace("text");
@@ -240,6 +243,13 @@ PromptResult prompt_update(void) {
     // not an answer -- only Fight is.
     bool foe_view = CL_IS_MODERN && g_kind == PK_YES_NO && pending_flow == FLOW_ATTACK_FOE;
     bool no_evade = foe_view && pending_foe_evade_blocked;
+    // Modern dwelling: Recruit / Leave rows first; Recruit opens the stepper,
+    // and Esc puts the stepper away before it leaves.
+    bool dwelling = CL_IS_MODERN && g_kind == PK_TEXT_INPUT && pending_flow == FLOW_RECRUIT;
+    if (dwelling && g_step_open && input_key_pressed(KEY_ESCAPE)) {
+        g_step_open = false;
+        return PROMPT_RESULT_NONE;
+    }
     if (input_key_pressed(KEY_ESCAPE)) {
         if (no_evade) return PROMPT_RESULT_NONE;
         prompt_dismiss();
@@ -298,6 +308,15 @@ PromptResult prompt_update(void) {
         return choice_rows_update();
     }
 
+    if (dwelling && !g_step_open) {
+        SelList l = { 2, g_yn_cursor };
+        int row = -1;
+        SelEvent ev = sel_input(&l, TOUCH_LIST_PROMPT, 0, &row);
+        g_yn_cursor = l.cursor;
+        if (ev == SEL_CONFIRM && row == 0 && g_text_max_value > 0) g_step_open = true;
+        if (ev == SEL_CONFIRM && row == 1) { prompt_dismiss(); return PROMPT_RESULT_CANCEL; }
+        return PROMPT_RESULT_NONE;
+    }
     if (g_kind == PK_TEXT_INPUT && CL_IS_MODERN) {
         // The count stepper: Left/Right one, Down/Up ten, Enter commits the
         // value into the text buffer the flow reads (prompt_text_input_value).
@@ -377,6 +396,7 @@ const PromptView *prompt_view(void) {
     v.choice_cursor = g_choice_cursor;
     v.step_value = g_step_value;
     v.step_max   = g_text_max_value;
+    v.step_open  = g_step_open;
     return &v;
 }
 

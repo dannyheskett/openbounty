@@ -45,6 +45,7 @@ typedef struct {
     // Modern count entry: the stepper's value and its top.
     int            step_value;
     int            step_max;
+    bool           step_open;    // modern dwelling: the stepper is up (else the rows)
 } PromptView;
 
 const PromptView *prompt_view(void);
