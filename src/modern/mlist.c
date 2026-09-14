@@ -43,6 +43,8 @@ int ml_list_draw_ex(int x, int y, int w, int h, int count, int cursor,
     // More rows above or below: the arrow at the row's right edge is a tap
     // target that moves the cursor (so the list scrolls) -- registered before
     // the rows, since the first region hit wins.
+    if (touch_list && count > vis)
+        touch_region_scroll(x, y, w, vis * pitch, pitch);    // drag to scroll
     if (touch_list) {
         int aw = ML_PAD * 3;
         if (first > 0)

@@ -3936,6 +3936,7 @@
 			"hillcave_backdrop":	"art/ui/backdrop_hillcave.png",
 			"alcove_backdrop":	"art/ui/backdrop_alcove.png",
 			"alcove_figure":	"art/ui/alcove_augur_00.png",
+			"alcove_portrait":	"art/portraits/augur_portrait.png",
 			"alcove_figure_place":	{
 				"x":	50,
 				"y":	43,

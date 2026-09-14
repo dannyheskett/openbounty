@@ -189,6 +189,10 @@ static void set_message(const char *s) {
 
 // The most of a castle troop the hero can recruit now: what leadership can
 // control and what the purse pays for.
+bool modern_castle_troop_offered(const Game *g, const TroopDef *t) {
+    return g && t && t->hit_points > 0 && g->stats.leadership_current >= t->hit_points * 6;
+}
+
 static int recruit_max(const Game *g, const TroopDef *t) {
     int m = GameMaxRecruitable(g, t->id);
     if (m < 0) m = 0;
@@ -230,6 +234,7 @@ static void act(Game *g, int i) {
             modern_castle_pool(pool, POOL_MAX);
             const TroopDef *t = troop_by_index(pool[i]);
             if (!t) return;
+            if (!modern_castle_troop_offered(g, t)) return;     // greyed: not yet offered
             int max = recruit_max(g, t);
             if (max <= 0) {
                 set_message(GameMaxRecruitable(g, t->id) <= 0 ? bn->army_cannot_handle

@@ -59,6 +59,9 @@ enum {
     TOUCH_LIST_COMBAT_ACTIONS, // modern combat action menu rows
 };
 void touch_region_row(int x, int y, int w, int h, int list_id, int row);
+// A list taller than its space: a vertical drag over it moves it a row per
+// `step` pixels (injecting Up/Down), and a tap on it resolves on release.
+void touch_region_scroll(int x, int y, int w, int h, int step);
 int  touch_tapped_row(int list_id);   // row tapped, -1 = none this frame
 
 // Absolute-cell grid (the combat target picker): a tap reports the tile it

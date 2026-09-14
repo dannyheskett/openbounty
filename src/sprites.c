@@ -3,6 +3,7 @@
 #include "tables.h"
 #include "resources.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 // Sprite paths in game.json are pack-relative; LoadAssetTexture reads
@@ -109,7 +110,11 @@ void sprites_load(Sprites *s, const Resources *res) {
         }
     }
 
-    for (int i = 0; i < res->portrait_count && i < RES_MAX_PORTRAITS; i++) {
+    s->portrait_count = res->portrait_count;
+    s->portrait_frames = s->portrait_count ? calloc((size_t)s->portrait_count, sizeof *s->portrait_frames) : NULL;
+    s->portrait_anim   = s->portrait_count ? calloc((size_t)s->portrait_count, sizeof *s->portrait_anim) : NULL;
+    if (!s->portrait_frames || !s->portrait_anim) s->portrait_count = 0;
+    for (int i = 0; i < s->portrait_count; i++) {
         s->portrait_frames[i] = res->portraits[i].anim_count;
         for (int f = 0; f < res->portraits[i].anim_count; f++)
             s->portrait_anim[i][f] = load_rel(res->portraits[i].anim[f]);
@@ -177,6 +182,7 @@ void sprites_load(Sprites *s, const Resources *res) {
     s->splash_logo      = load_rel(res->sprites.splash_logo);
     s->splash_title     = load_rel(res->sprites.splash_title);
     s->title_battle     = load_rel(res->sprites.title_battle);
+    s->alcove_portrait  = load_rel(res->sprites.alcove_portrait);
     s->title_eagle      = load_rel(res->sprites.title_eagle);
     s->title_words      = load_rel(res->sprites.title_words);
     s->class_picker     = load_rel(res->sprites.class_picker);
@@ -230,8 +236,13 @@ void sprites_unload(Sprites *s) {
         UnloadTexture(s->villain_portrait[i]);
         for (int f = 0; f < OB_ANIM_FRAMES_MAX; f++) UnloadTexture(s->villain_anim[i][f]);
     }
-    for (int i = 0; i < RES_MAX_PORTRAITS; i++)
+    for (int i = 0; i < s->portrait_count; i++)
         for (int f = 0; f < s->portrait_frames[i]; f++) UnloadTexture(s->portrait_anim[i][f]);
+    free(s->portrait_frames);
+    free(s->portrait_anim);
+    s->portrait_frames = NULL;
+    s->portrait_anim = NULL;
+    s->portrait_count = 0;
     for (int i = 0; i < 14; i++) UnloadTexture(s->view_icon[i]);
     for (int i = 0; i < 25; i++) {
         UnloadTexture(s->troop_sprite[i]);
@@ -265,6 +276,7 @@ void sprites_unload(Sprites *s) {
     UnloadTexture(s->splash_logo);
     UnloadTexture(s->splash_title);
     UnloadTexture(s->title_battle);
+    UnloadTexture(s->alcove_portrait);
     UnloadTexture(s->title_eagle);
     UnloadTexture(s->title_words);
     UnloadTexture(s->class_picker);

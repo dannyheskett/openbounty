@@ -51,6 +51,9 @@ McAudience  modern_castle_audience_result(int *result, int *needed, GameAudience
 // main loop opens the prompt and on Yes calls modern_castle_confirm_yes.
 bool        modern_castle_take_confirm(const Game *g, char *body, int cap);
 void        modern_castle_confirm_yes(Game *g);
+// Whether the castle will offer this troop at all: the original rule, a
+// leadership of at least six of them (src/screens/recruit_soldiers.c).
+bool        modern_castle_troop_offered(const Game *g, const TroopDef *t);
 // The five castle troops in recruit order (by cost); returns the count.
 int         modern_castle_pool(int *out, int cap);
 

@@ -13,6 +13,7 @@
 // run combat or touch render/view state.
 
 #include "shell_promptdispatch.h"
+#include "modern/location.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -151,10 +152,19 @@ bool prompt_dispatch_tick(ShellCtx *ctx) {
     int typed = (flow == FLOW_RECRUIT && r == PROMPT_RESULT_YES)
                   ? prompt_text_input_value() : 0;
 
+    // Modern temple and dwelling screens stay up to show the deal: note the
+    // purse (and which troop) before the router carries the answer out.
+    bool deal = CL_IS_MODERN && r == PROMPT_RESULT_YES &&
+                (flow == FLOW_RECRUIT || flow == FLOW_ALCOVE);
+    char deal_troop[32];
+    snprintf(deal_troop, sizeof deal_troop, "%s", flow == FLOW_RECRUIT ? pending_dwelling_troop : "");
+    if (deal) loc_deal_begin(g);
+
     // ONE shared router (mode parity): mutate engine state for this
     // flow, returning the host-side presentation directives we act on below.
     PlayerIoPresentation pres;
     player_io_answer(g, m, f, r_, to_flow_answer(r, typed), outcome, &pres);
+    if (deal) loc_deal_done(g, typed, deal_troop);
 
     // Host-side presentation -- the engine cannot do these.
     if (pres.won_game) {

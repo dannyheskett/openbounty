@@ -36,7 +36,6 @@
 #define RES_END_BODY_LEN     512     // win/lose body text
 #define RES_VDESC_TEXT_LEN   320     // per-villain features / crimes block
 #define RES_SPELL_LORE_LEN   1024    // per-spell long description (strings.spell_lore)
-#define RES_MAX_PORTRAITS    32      // portraits[]: town people (informants, priests, boat masters...)
 #define RES_DOCK_TEXT_LEN    256     // strings.town_docks: where a town's boat waits
 
 // ---- Sub-structures --------------------------------------------------------
@@ -498,6 +497,7 @@ typedef struct {
     char castle_have[RES_BANNER_LEN];
     char castle_in_garrison[RES_BANNER_LEN];
     char castle_can_recruit[RES_BANNER_LEN];
+    char castle_needs_leadership[RES_BANNER_LEN];
     char castle_rank[RES_BANNER_LEN];
     char castle_next_rank[RES_BANNER_LEN];
     char castle_needed[RES_BANNER_LEN];
@@ -572,6 +572,9 @@ typedef struct {
     char gmd_game[RES_BANNER_LEN];
     char gmd_back_up[RES_BANNER_LEN];
     char gmd_unit[RES_BANNER_LEN];
+    char fv_your_army[RES_BANNER_LEN];
+    char loc_joined[RES_BANNER_LEN];
+    char loc_gold_change[RES_BANNER_LEN];
     char gmd_leave[RES_BANNER_LEN];
     char gmd_army[RES_BANNER_LEN];
     char gmd_character[RES_BANNER_LEN];
@@ -771,6 +774,38 @@ typedef struct {
 typedef struct {
     // Generic UI strings.
     char press_esc_to_exit[RES_UI_LABEL_LEN];
+    // Modern foe view: short stat labels.
+    char fv_hp[RES_UI_LABEL_LEN];
+    char fv_skill[RES_UI_LABEL_LEN];
+    char fv_dmg[RES_UI_LABEL_LEN];
+    char fv_move[RES_UI_LABEL_LEN];
+    char fv_range[RES_UI_LABEL_LEN];
+    char fv_flies[RES_UI_LABEL_LEN];
+    // Modern character view.
+    char cv_army[RES_UI_LABEL_LEN];
+    char cv_magic[RES_UI_LABEL_LEN];
+    char cv_campaign[RES_UI_LABEL_LEN];
+    char cv_leadership[RES_UI_LABEL_LEN];
+    char cv_commission[RES_UI_LABEL_LEN];
+    char cv_gold[RES_UI_LABEL_LEN];
+    char cv_spell_power[RES_UI_LABEL_LEN];
+    char cv_spell_capacity[RES_UI_LABEL_LEN];
+    char cv_captured[RES_UI_LABEL_LEN];
+    char cv_artifacts[RES_UI_LABEL_LEN];
+    char cv_castles[RES_UI_LABEL_LEN];
+    char cv_followers[RES_UI_LABEL_LEN];
+    char cv_score[RES_UI_LABEL_LEN];
+    char cv_days[RES_UI_LABEL_LEN];
+    char cv_sacred[RES_UI_LABEL_LEN];
+    char cv_continents[RES_UI_LABEL_LEN];
+    char cv_honours[RES_UI_LABEL_LEN];
+    char cv_blessed[RES_UI_LABEL_LEN];
+    char cv_tributes[RES_UI_LABEL_LEN];
+    char cv_rites[RES_UI_LABEL_LEN];
+    char cv_yes[RES_UI_LABEL_LEN];
+    char cv_no[RES_UI_LABEL_LEN];
+    char cv_next[RES_UI_LABEL_LEN];
+    char cv_top_rank[RES_UI_LABEL_LEN];
     // Modern hint buttons: labels, key names by device, key-free texts.
     char hint_back[RES_UI_LABEL_LEN];
     char hint_quit[RES_UI_LABEL_LEN];
@@ -1230,8 +1265,10 @@ typedef struct {
     // Per-spell long descriptions (strings.spell_lore), optional.
     int             spell_lore_count;
     ResSpellLore    spell_lore[CAT_SPELLS_MAX];
+    // portraits[]: as many as the pack declares (heap, released by
+    // resources_free) -- town people, castle keepers, promotion images.
     int             portrait_count;
-    ResPortrait     portraits[RES_MAX_PORTRAITS];
+    ResPortrait    *portraits;
     int             town_dock_count;
     ResTownDock     town_docks[RES_MAX_TOWNS];
     int             town_invite_count;
@@ -1302,6 +1339,7 @@ typedef struct {
                                              // exact copy of reference chrome.
         char splash_logo[RES_PATH_LEN];      // publisher logo (first splash)
         char splash_title[RES_PATH_LEN];     // game title (second splash)
+        char alcove_portrait[RES_PATH_LEN];  // modern temple: the keeper's portrait (96)
         // Modern title sequence layers, all 256x164 but the eagle (96x164):
         // the battle fades in over the purple, the eagle standard slides left.
         // All three or none; otherwise the title is splash_title, still.

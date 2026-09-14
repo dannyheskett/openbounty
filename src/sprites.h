@@ -42,8 +42,10 @@ typedef struct {
     int       villain_anim_frames[17];
     Texture2D villain_anim[17][OB_ANIM_FRAMES_MAX];
     // portraits[] (town informants, priests), parallel to res->portraits.
-    int       portrait_frames[RES_MAX_PORTRAITS];
-    Texture2D portrait_anim[RES_MAX_PORTRAITS][OB_ANIM_FRAMES_MAX];
+    // Heap, portrait_count entries (as many as the pack declares).
+    int        portrait_count;
+    int       *portrait_frames;
+    Texture2D (*portrait_anim)[OB_ANIM_FRAMES_MAX];
     Texture2D view_icon[14];
     Texture2D troop_sprite[25];
     Texture2D troop_portrait[25];         // modern: still portrait, id 0 = none
@@ -85,6 +87,7 @@ typedef struct {
     Texture2D splash_logo;                // 320x84 publisher logo
     Texture2D splash_title;               // 320x200 game title
     Texture2D title_battle, title_eagle, title_words;   // modern title sequence layers
+    Texture2D alcove_portrait;            // modern temple: the keeper's portrait
     Texture2D class_picker;               // 288x184 class portraits (A-D)
     Texture2D class_highlight;            // 42x44 cursor glow over current pick
     Texture2D class_picker_selected[4];   // modern: the picker with one figure picked out

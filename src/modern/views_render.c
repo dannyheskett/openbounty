@@ -11,6 +11,7 @@
 #include "views.h"
 #include "views_render_impl.h"
 #include "modern/mlayout.h"
+#include "lattice.h"
 #include "modern/mlist.h"
 #include "touch.h"
 #include "select.h"
@@ -61,135 +62,136 @@ static void draw_rule(int x, int y, int w) {
 //  Portrait on left, stat table on right, artifact belt below.
 // ---------------------------------------------------------------------------
 
-// Pixel-exact port of .
-// Layout constants are derived 's dynamic math with fs->h=8,
-// sys->zoom=1, DOS_TILE_W=48, DOS_TILE_H=34. Every magic number here
-// has a comment naming the OpenKB source it came from.
+// The character sheet (modern): the class portrait at its full 192x204, the
+// numbers in headed groups in two columns beside it, then the sacred artifacts
+// and the continents as full 96 px icons, and the pack's honours (blessing,
+// tributes, rites) where it has them. On Rome's 776x480 the rows add up to the
+// height exactly.
+static void cv_row(const char *label, const char *value, int x, int w, int y) {
+    bfont_draw(label, x, y, PAL_CLR(WHITE));
+    bfont_draw(value, x + w - (int)bfont_measure(value).x, y, PAL_CLR(WHITE));
+}
+
+static void cv_icon(Texture2D tex, bool have, int x, int y, int size) {
+    DrawRectangle(x, y, size, size, PAL_CLR(BLACK));
+    if (have && tex.id) {
+        ui_blit(tex, x, y, size, size);
+        ui_panel_frame(x, y, size, size);
+    } else {
+        DrawRectangleLines(x, y, size, size, PAL_CLR(DGREY));
+    }
+}
+
 static void draw_character(const Game *g, const Sprites *s) {
-    // Full content width (covers HUD); solid black background per ref.
-    int vx = FULL_VIEW_X;
-    int vw = FULL_VIEW_W;
-    DrawRectangle(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DGREY));   // framed by the chrome
-
-    const ClassDef *cls = class_by_id(g->character.cls.id);
-    // Authored 96x102 in the 320x200 design space; the slot scales with the
-    // rest of the furniture rather than staying at the texture's own size.
-    int portrait_w = 96 * CL_UI;
-    int portrait_h = 102 * CL_UI;
-    if (cls) {
-        ui_blit(s->class_portrait[cls->index], vx, VIEW_Y,
-                portrait_w, portrait_h);
-    }
-
-    int sx = vx + portrait_w;
-    int lh = GH;          // row height = font glyph height; no overlap
-    int bh = GH / 4;   // blank-row gap; tight, the face is tall
-    char buf[64];
     const ResUI *ui = &g->res->ui;
+    const ML_Rect r = ml_full();
+    const int pad = ML_PAD, BAND = 4, THIN = 2;
+    const int line = GH + 2, head = GH + 4;
+    const int tile = CL_TILE_W;
+    DrawRectangle(r.x, r.y, r.w, r.h, PAL_CLR(DBLUE));   // framed by the chrome
+    char buf[96], nb[32], mb[32];
 
-    // Render label + value rows. Value column right-aligned within the
-    // stats area; blank string when value == 0 (per page 1 reference).
-    int label_pad = CL_UI;
-    int label_x = sx + label_pad;
-    int val_right = vx + vw - 2 * CL_UI;   // right edge, 2px inset
-
-    int y = VIEW_Y + CL_UI;
-
-    // Row helper: draw label left-aligned and value right-aligned. value
-    // string is empty when count is 0.
-    #define ROW_LABEL_VAL(label, count) do { \
-        bfont_draw((label), label_x, y, PAL_CLR(WHITE)); \
-        { \
-            snprintf(buf, sizeof(buf), "%d", (count)); \
-            int tw = (int)bfont_measure(buf).x; \
-            bfont_draw(buf, val_right - tw, y, PAL_CLR(WHITE)); \
-        } \
-        y += lh; \
-    } while (0)
-    #define ROW_BLANK() do { y += bh; } while (0)
-    #define ROW_NAME() do { \
-        snprintf(buf, sizeof(buf), "%s the %s", \
-                 g->character.name, g->character.cls.rank_title); \
-        bfont_draw(buf, label_x, y, PAL_CLR(WHITE)); \
-        y += lh; \
-    } while (0)
-
-    ROW_NAME();
-    ROW_LABEL_VAL(ui->stat_leadership,         g->stats.leadership_current);
-    ROW_LABEL_VAL(ui->stat_commission,         g->stats.commission_weekly);
-    ROW_LABEL_VAL(ui->stat_gold,               g->stats.gold);
-    ROW_BLANK();
-    ROW_LABEL_VAL(ui->stat_spell_power,        g->stats.spell_power);
-    ROW_LABEL_VAL(ui->stat_max_spells,         g->stats.max_spells);
-    ROW_BLANK();
-    ROW_LABEL_VAL(ui->stat_villains_caught,    GameVillainsCaught(g));
-    ROW_LABEL_VAL(ui->stat_artifacts_found,    GameArtifactsFound(g));
-    ROW_BLANK();
-    ROW_LABEL_VAL(ui->stat_castles_garrisoned, GameCastlesOwned(g));
-    ROW_LABEL_VAL(ui->stat_followers_killed,   g->stats.followers_killed);
-    ROW_LABEL_VAL(ui->stat_current_score,      GameComputeScore(g));
-
-    #undef ROW_LABEL_VAL
-    #undef ROW_BLANK
-    #undef ROW_NAME
-
-    // Inventory belt (full content width). Yellow outline; dark-red empty
-    // slots inside; artifact icons / zone tiles overlay when found.
-    int inv_x = vx;
-    // Under the portrait, or under the last stat row when a taller font
-    // pushes the rows past it (legacy: the rows end inside the portrait).
-    int inv_y = VIEW_Y + portrait_h;
-    if (y + CL_UI > inv_y) inv_y = y + CL_UI;
-    // A belt slot holds tile-shaped art -- artifact icons and zone map tiles --
-    // so it IS a tile. Centred, because 6 tiles is narrower than the panel once
-    // the tile stops being exactly a sixth of it. In legacy 6*48 == 288 == vw,
-    // so the offset is zero and this lands where it always did.
-    int item_w = CL_TILE_W;
-    int item_h = CL_TILE_H;
-    // Modern: when the stat rows have pushed the belt down and two tile rows
-    // no longer fit above the view's bottom edge, the belt draws at half a
-    // tile per slot (the art is tile-shaped and scales cleanly by two).
-    if (inv_y + item_h * 2 > VIEW_Y + VIEW_H) {
-        item_w = CL_TILE_W / 2;
-        item_h = CL_TILE_H / 2;
+    // Title: name and rank; the next rank and how far off it is at the right.
+    int title_h = GH + 14;
+    snprintf(buf, sizeof buf, "%s the %s", g->character.name, g->character.cls.rank_title);
+    bfont_draw(buf, r.x + pad, r.y + (title_h - GH) / 2, PAL_CLR(YELLOW));
+    const ClassDef *cls = class_by_id(g->character.cls.id);
+    int rank = g->character.cls.rank_index;
+    if (cls && rank + 1 < cls->rank_count) {
+        int need = cls->ranks[rank + 1].villains_needed - GameVillainsCaught(g);
+        snprintf(nb, sizeof nb, "%d", need > 0 ? need : 0);
+        ResTemplateVar v[] = { { "RANK", cls->ranks[rank + 1].name }, { "COUNT", nb } };
+        resources_format_template(buf, sizeof buf, ui->cv_next, v, 2);
+    } else {
+        snprintf(buf, sizeof buf, "%s", ui->cv_top_rank);
     }
-    int belt_w = item_w * 6;
-    int belt_h = item_h * 2;
-    inv_x += (vw - belt_w) / 2;
+    bfont_draw(buf, r.x + r.w - pad - (int)bfont_measure(buf).x, r.y + (title_h - GH) / 2, PAL_CLR(YELLOW));
+    lattice_band_h(r.x, r.y + title_h, r.w, BAND);
+    int top = r.y + title_h + BAND;
 
-    // Inner fill: dark red (empty-slot color).
-    DrawRectangle(inv_x, inv_y, belt_w, belt_h, PAL_CLR(DRED));
-    // Light-grey outline + grid lines.
-    DrawRectangleLines(inv_x, inv_y, belt_w, belt_h, PAL_CLR(GREY));
-    for (int c = 1; c < 6; c++) {
-        DrawRectangle(inv_x + c * item_w, inv_y, CL_UI, belt_h, PAL_CLR(GREY));
-    }
-    DrawRectangle(inv_x, inv_y + item_h, belt_w, CL_UI, PAL_CLR(GREY));
+    // Portrait at its authored size.
+    int pw = 192, ph = 204;
+    if (cls && s->class_portrait[cls->index].id) ui_blit(s->class_portrait[cls->index], r.x, top, pw, ph);
+    else DrawRectangle(r.x, top, pw, ph, PAL_CLR(BLACK));
+    lattice_band_v(r.x + pw, top, BAND, ph);
 
-    // Artifact grid: 4 cols x 2 rows. Only stamp icon when found.
-    for (int i = 0; i < 8; i++) {
-        if (!g->artifacts.found[i]) continue;
-        Texture2D tex = s->view_icon[i];
-        if (!tex.id) continue;
-        int col = i % 4;
-        int row = i / 4;
-        ui_blit(tex, inv_x + col * item_w, inv_y + row * item_h,
-                item_w, item_h);
-        ui_panel_frame(inv_x + col * item_w, inv_y + row * item_h, item_w, item_h);
-    }
+    // Two columns of numbers under their headings.
+    int cx = r.x + pw + BAND, cw = (r.x + r.w - cx) / 2;
+    int lx = cx + pad, lw = cw - 2 * pad;
+    int rx = cx + cw + pad, rw = r.x + r.w - rx - pad;
+    lattice_band_v(cx + cw - 2, top, BAND, ph);
+    int y = top + THIN;
+    bfont_draw(ui->cv_army, lx, y, PAL_CLR(YELLOW));                      y += head;
+    snprintf(nb, sizeof nb, "%d", g->stats.leadership_current);  cv_row(ui->cv_leadership, nb, lx, lw, y); y += line;
+    snprintf(nb, sizeof nb, "%d", g->stats.commission_weekly);   cv_row(ui->cv_commission, nb, lx, lw, y); y += line;
+    snprintf(nb, sizeof nb, "%d", g->stats.gold);                cv_row(ui->cv_gold, nb, lx, lw, y);       y += line + THIN;
+    bfont_draw(ui->cv_magic, lx, y, PAL_CLR(YELLOW));                     y += head;
+    snprintf(nb, sizeof nb, "%d", g->stats.spell_power);         cv_row(ui->cv_spell_power, nb, lx, lw, y); y += line;
+    snprintf(nb, sizeof nb, "%d", g->stats.max_spells);          cv_row(ui->cv_spell_capacity, nb, lx, lw, y);
 
-    // Map grid: 2 cols x 2 rows starting at col 4. Only stamp tile when
-    // zone discovered.
-    int map_x = inv_x + 4 * item_w;
-    for (int i = 0; i < 4; i++) {
-        if (!g->world.zones_discovered[i]) continue;
-        Texture2D tex = s->view_icon[8 + i];
-        if (!tex.id) continue;
-        int col = i % 2;
-        int row = i / 2;
-        ui_blit(tex, map_x + col * item_w, inv_y + row * item_h,
-                item_w, item_h);
-        ui_panel_frame(map_x + col * item_w, inv_y + row * item_h, item_w, item_h);
+    int total_v = 0;
+    for (int i = 0; i < g->res->villains_count && i < CAT_VILLAINS_MAX; i++) total_v++;
+    int total_a = artifacts_count() < 8 ? artifacts_count() : 8;
+    y = top + THIN;
+    bfont_draw(ui->cv_campaign, rx, y, PAL_CLR(YELLOW));                  y += head;
+    snprintf(nb, sizeof nb, "%d/%d", GameVillainsCaught(g), total_v); cv_row(ui->cv_captured, nb, rx, rw, y);  y += line;
+    snprintf(nb, sizeof nb, "%d/%d", GameArtifactsFound(g), total_a); cv_row(ui->cv_artifacts, nb, rx, rw, y); y += line;
+    snprintf(nb, sizeof nb, "%d", GameCastlesOwned(g));          cv_row(ui->cv_castles, nb, rx, rw, y);    y += line;
+    snprintf(nb, sizeof nb, "%d", g->stats.followers_killed);    cv_row(ui->cv_followers, nb, rx, rw, y);  y += line;
+    snprintf(nb, sizeof nb, "%d", GameComputeScore(g));          cv_row(ui->cv_score, nb, rx, rw, y);      y += line;
+    snprintf(nb, sizeof nb, "%d", g->stats.days_left);           cv_row(ui->cv_days, nb, rx, rw, y);
+
+    // The sacred artifacts: eight full icons across; a missing one is dark.
+    y = top + ph;
+    lattice_band_h(r.x, y, r.w, THIN);
+    y += THIN;
+    bfont_draw(ui->cv_sacred, r.x + pad, y + 2, PAL_CLR(YELLOW));
+    y += head;
+    int ax = r.x + (r.w - 8 * tile) / 2;
+    for (int i = 0; i < 8; i++)
+        cv_icon(s->view_icon[i], i < total_a && g->artifacts.found[i], ax + i * tile, y, tile);
+    y += tile;
+
+    // The continents, and beside them the pack's honours.
+    lattice_band_h(r.x, y, r.w, THIN);
+    y += THIN;
+    bfont_draw(ui->cv_continents, r.x + pad, y + 2, PAL_CLR(YELLOW));
+    int nz = g->res->zone_count < 4 ? g->res->zone_count : 4;
+    const ResEconomy *ec = &g->res->economy;
+    bool honours = ec->audiences || ec->rites_per_zone;
+    int hx = ax + 4 * tile + BAND + pad;
+    if (honours) bfont_draw(ui->cv_honours, hx, y + 2, PAL_CLR(YELLOW));
+    y += head;
+    for (int i = 0; i < 4; i++)
+        cv_icon(s->view_icon[8 + i], i < nz && g->world.zones_discovered[i], ax + i * tile, y, tile);
+    if (honours) {
+        lattice_band_v(ax + 4 * tile, y - head, BAND, head + tile);
+        int hw = r.x + r.w - pad - hx, hy = y;
+        if (ec->audiences) {
+            snprintf(mb, sizeof mb, "%s", g->stats.blessed ? ui->cv_yes : ui->cv_no);
+            cv_row(ui->cv_blessed, mb, hx, hw / 2 - pad, hy);
+            snprintf(nb, sizeof nb, "%d", g->stats.tributes);
+            cv_row(ui->cv_tributes, nb, hx + hw / 2 + pad, hw / 2 - pad, hy);
+            hy += line;
+        }
+        if (ec->rites_per_zone) {
+            char rites[160];
+            size_t off = (size_t)snprintf(rites, sizeof rites, "%s:", ui->cv_rites);
+            int shown = 0;
+            for (int i = 0; i < g->res->zone_count && i < GAME_CONTINENTS; i++) {
+                if (!g->world.zone_rites[i]) continue;
+                const char *zn = g->res->zones[i].name[0] ? g->res->zones[i].name : g->res->zones[i].id;
+                off += (size_t)snprintf(rites + off, sizeof rites - off, "%s %s", shown ? "," : "", zn);
+                if (off >= sizeof rites) break;
+                shown++;
+            }
+            const char *p = rites;
+            char ln[160];
+            while (*p && hy + GH <= y + tile && bfont_take_line(&p, hw, ln, (int)sizeof ln) > 0) {
+                bfont_draw(ln, hx, hy, PAL_CLR(WHITE));
+                hy += line;
+            }
+        }
     }
 }
 

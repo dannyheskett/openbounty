@@ -87,6 +87,24 @@ and its HUD show; the full width under the status band over combat and every
 full-screen view (menu, town, castle, temple, dwelling, the detail views); the
 whole screen at startup. The screen drawing the backdrop sets it each frame.
 
+## Character sheet (modern)
+
+Full screen: the name and rank in the title strip with the next rank and how
+many more captures it needs at the right; the class portrait at its authored
+192x204; beside it two headed columns (Army: leadership, commission, gold;
+Magic: spell power, spell capacity; Campaign: captured, artifacts, castles,
+followers lost, score, days left); then the eight sacred artifacts as 96 px
+icons (a missing one dark), the continents as 96 px icons, and beside them the
+pack's honours (blessing and tributes, rites known) where it has them.
+
+## Drag to scroll (modern)
+
+A list with more rows than its space scrolls under a finger: every row's height
+of vertical drag moves it one row (the finger up shows later rows), and a tap
+on such a list resolves when the finger lifts without moving
+(`touch_region_scroll`, src/touch.c). The small arrows at a long list's edges
+are tap targets too.
+
 ## The game menu
 
 Opened by Escape, O or a tap on the top bar (REQ-430s): a traditional
@@ -143,15 +161,16 @@ menus are not changed yet.
 
 ## Foe view (modern)
 
-Meeting a hostile band on the map opens a full-screen view on the town layout
-instead of the yes/no prompt: "Foes!" and the zone in the title strip, the
-plains backdrop at 2x with the band's lead troop (its first stack) standing on
-it, that troop at 2x in the portrait slot, the siege and gold tiles, then rows
-Fight and Evade beside the encounter text. Fight starts the battle; Evade (or
-Esc) leaves the hero where they stand, as declining always did. When the pack
-sets `foes.evade_needs_free_square` and none of the 8 squares around the hero
-is free to move onto, Evade is grey, the text says there is nowhere to run, and
-only Fight answers. A static guardian still starts its fight without asking.
+A hostile band opens a full screen instead of the yes/no prompt: "Foes!" and
+the zone in the title strip, then five vertical stripes (152 px wide on Rome's
+776, 4 px rails between), one per enemy troop: the troop's portrait at 1x, how
+many (worded as the encounter message words it: a number, or "A horde of" and
+the like), its name (a word too long for the stripe breaks with a hyphen), then
+HP, skill, move, damage, range when it shoots, and Fly when it flies, one to a
+line. Your own army (how many troops, your leadership) is at the right of the
+title strip -- or, in yellow, that there is nowhere to run when no square is
+free. Along the foot, Fight and Evade are full-width standard rows, as in the
+question dialog (Up/Down, Enter or a tap; Evade greyed when blocked).
 
 ## Count stepper
 
@@ -199,18 +218,19 @@ picker "Cast which spell?" (letters still pick). Legacy keeps its notes.
 
 ## Temple and dwelling (modern)
 
-Their own full screens, not the town's layout. The temple (the Augur's alcove)
-is a scene: the title strip ("Temple of the Augur", the zone), the precinct
-backdrop across the full width at the largest whole scale up to 3x with the
-Augur placed by the pack, then Learn the rites / Leave rows beside the offer
-and its cost. The dwelling shows its backdrop at 2x with the troop standing in
-it, the troop's portrait at 2x and the siege and gold tiles, then Recruit /
-Leave beside what is available, the cost and how many can be recruited (or why
-none). Recruit opens the count stepper in place of the rows; Esc puts it away,
-Esc again leaves. The answer (taught, not enough gold, recruited, rites
-already known) shows on the same screen with a Leave row, and the screen
-closes when nothing is left to show. With rites per zone a temple whose rites
-are known opens the same screen with only Leave.
+The scene is the screen. Under the title strip (the temple's name or the
+dwelling and its troop, the zone at the right) the backdrop is drawn whole at
+3x (720x306 on Rome, centred), with the Augur where the pack places him or the
+dwelling's troop standing at 2x. Two in-lays sit on the scene: the words in a
+dark box at the top left (the offer; after a deal, what happened) and the
+portrait at its own 96 in a frame at the bottom right (the Augur's
+`sprites.ui.alcove_portrait`, the troop's portrait). One line under the scene
+gives your gold and the price or how many you can recruit; the answers are
+full-width rows (Learn the rites / Leave, Recruit / Leave). Recruit turns the
+rows into the full-width count stepper. After a deal the screen stays: the
+in-lay carries the Augur's reply or how many troops joined, and the gold before
+and after (`src/modern/location.c`), and the only row is Leave. A known zone's
+temple opens the same way with the Augur's words and Leave.
 
 ## Combat action menu
 

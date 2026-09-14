@@ -17,6 +17,7 @@ typedef enum {
     REGION_MAP,      // design-space tile viewport -> direction key
     REGION_ROW,      // design-space rect -> (list_id, row) for cursor lists
     REGION_GRID,     // design-space tile grid -> absolute (cx, cy)
+    REGION_SCROLL,   // design-space list that a vertical drag scrolls
 } RegionKind;
 
 typedef struct {
@@ -28,6 +29,7 @@ typedef struct {
     int center_tx, center_ty;
     int center_key;
     int list_id, row;             // REGION_ROW
+    int step;                     // REGION_SCROLL: pixels of drag per row
 } Region;
 
 // Row / cell tapped last touch_frame, readable by this frame's update code.
@@ -78,6 +80,14 @@ void touch_region_map(int x, int y, int w, int h,
     r.tile_w = tile_w; r.tile_h = tile_h;
     r.center_tx = center_tx; r.center_ty = center_ty;
     r.center_key = center_key;
+    add_region(r);
+}
+
+void touch_region_scroll(int x, int y, int w, int h, int step) {
+    Region r = { 0 };
+    r.kind = REGION_SCROLL;
+    r.x = x; r.y = y; r.w = w; r.h = h;
+    r.step = step > 0 ? step : 1;
     add_region(r);
 }
 
@@ -165,7 +175,7 @@ static void resolve_tap(int wx, int wy, bool *was_map) {
 
     for (int i = 0; i < s_region_count; i++) {
         const Region *r = &s_regions[i];
-        if (r->kind == REGION_WINDOW || !rect_has(r, sx, sy)) continue;
+        if (r->kind == REGION_WINDOW || r->kind == REGION_SCROLL || !rect_has(r, sx, sy)) continue;
         if (r->kind == REGION_MAP) {
             int key = map_region_key(r, sx, sy);
             if (key) { input_host_inject_key(key); *was_map = true; }
@@ -189,6 +199,23 @@ static void resolve_tap(int wx, int wy, bool *was_map) {
     if (s_any_key) input_host_inject_key(s_any_key);
 }
 
+// Drag scrolling: a press inside a scrolling list waits. Moving the finger a
+// row's height moves the list one row (the finger up shows later rows, as a
+// Down press does); letting go without moving is the tap, resolved then.
+#define DRAG_SLOP 10
+static bool s_drag;           // a press is being held over a scrolling list
+static bool s_drag_moved;
+static int  s_drag_wx, s_drag_wy;   // where it went down (window)
+static int  s_drag_last_sy;         // screen y at the last step
+static int  s_drag_step;
+
+static const Region *scroll_region_at(int sx, int sy) {
+    for (int i = 0; i < s_region_count; i++)
+        if (s_regions[i].kind == REGION_SCROLL && rect_has(&s_regions[i], sx, sy))
+            return &s_regions[i];
+    return NULL;
+}
+
 void touch_frame(void) {
     input_host_clear_injected();
     input_touch_sample();
@@ -197,7 +224,33 @@ void touch_frame(void) {
     s_tapped_grid = 0;
 
     int wx, wy;
-    if (input_touch_pressed(&wx, &wy)) {
+    int sx, sy;
+    if (s_drag) {
+        if (input_touch_down(&wx, &wy)) {
+            if (present_window_to_screen(wx, wy, &sx, &sy)) {
+                int dy = sy - s_drag_last_sy;
+                if (!s_drag_moved && (dy > DRAG_SLOP || dy < -DRAG_SLOP)) s_drag_moved = true;
+                if (s_drag_moved && (dy >= s_drag_step || dy <= -s_drag_step)) {
+                    input_host_inject_key(dy < 0 ? KEY_DOWN : KEY_UP);   // one row a frame
+                    s_drag_last_sy += dy < 0 ? -s_drag_step : s_drag_step;
+                }
+            }
+        } else {
+            if (!s_drag_moved) {                       // no movement: it was a tap
+                bool on_map;
+                resolve_tap(s_drag_wx, s_drag_wy, &on_map);
+            }
+            s_drag = false;
+        }
+    } else if (input_touch_pressed(&wx, &wy) && present_window_to_screen(wx, wy, &sx, &sy) &&
+               scroll_region_at(sx, sy)) {
+        const Region *sr = scroll_region_at(sx, sy);
+        s_drag = true;
+        s_drag_moved = false;
+        s_drag_wx = wx; s_drag_wy = wy;
+        s_drag_last_sy = sy;
+        s_drag_step = sr->step;
+    } else if (input_touch_pressed(&wx, &wy)) {
         resolve_tap(wx, wy, &s_press_on_map);
         s_next_repeat = frame_host_time() + REPEAT_FIRST_DELAY;
     } else if (s_press_on_map && input_touch_down(&wx, &wy)) {

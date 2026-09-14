@@ -5,6 +5,7 @@
 #include "palette.h"
 #include "bfont.h"
 #include "views.h"
+#include "modern/location.h"
 #include "player_io.h"   // engine views route through the player-IO queue
 #include "tables.h"
 #include "raylib.h"
@@ -41,6 +42,7 @@ void screen_dwelling_open(Game *g,
                           int gold,
                           int cap) {
     if (!g) return;
+    loc_deal_clear();   // modern: a fresh visit shows no old deal
     s_kind = kind;
     const TroopDef *t = (troop_id && troop_id[0]) ? troop_by_id(troop_id) : NULL;
     s_troop_idx = t ? t->index : -1;

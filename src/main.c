@@ -103,6 +103,7 @@
 #include "shell_audience.h"
 #include "modern/castle.h"
 #include "modern/gamemenu.h"
+#include "modern/location.h"
 
 // Per-frame draw_frame() dispatcher moved to src/shell_frame.{c,h}.
 #include "shell_frame.h"
@@ -1193,9 +1194,28 @@ title:;
 
         // Modern temple and dwelling screens stay up through their answer; once
         // no prompt, dialog or queued request is left, they close.
-        if (CL_IS_MODERN && (views_active() == VIEW_ALCOVE || views_active() == VIEW_DWELLING) &&
-            !prompt_is_active() && !dialog_is_active() && !player_io_front(&game)) {
-            views_dismiss();
+        if (CL_IS_MODERN && (views_active() == VIEW_ALCOVE || views_active() == VIEW_DWELLING)) {
+            // A message raised over the screen (the Augur's reply, a refusal)
+            // becomes the in-lay's text rather than a dialog box over the scene.
+            if (dialog_is_active()) {
+                loc_deal_absorb(dialog_body_text());
+                dialog_dismiss();
+            }
+            if (loc_deal_pending() && !prompt_is_active()) {
+                // The deal is on show: Leave (Enter, Escape or a tap) closes it.
+                touch_request(TOUCH_CHROME_BACK);
+                int tapped = touch_tapped_row(TOUCH_LIST_PROMPT);
+                if (tapped == 0 || input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
+                    input_key_pressed(KEY_SPACE) || input_key_pressed(KEY_ESCAPE)) {
+                    loc_deal_clear();
+                    views_dismiss();
+                }
+                goto end_input;
+            }
+            if (!prompt_is_active() && !dialog_is_active() && !player_io_front(&game)) {
+                loc_deal_clear();
+                views_dismiss();
+            }
         }
 
         // prompt_dispatch_tick returns false while a message dialog is up, so

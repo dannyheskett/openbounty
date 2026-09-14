@@ -3,6 +3,7 @@
 #include "palette.h"
 #include "bfont.h"
 #include "views.h"
+#include "modern/location.h"
 #include "player_io.h"   // engine views route through the player-IO queue
 #include "tables.h"
 #include "raylib.h"
@@ -28,6 +29,7 @@ static double s_last_tick = 0.0;
 
 void screen_alcove_open(Game *g) {
     if (!g) return;
+    loc_deal_clear();   // modern: a fresh visit shows no old deal
     const TroopDef *t = troop_by_id("gnomes");
     s_fallback_troop_idx = t ? t->index : -1;
     s_frame = 0;

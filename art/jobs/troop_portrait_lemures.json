@@ -1,10 +1,10 @@
 {
   "id": "troop_portrait_lemures",
-  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a lemur, a pale grey restless dead man with sunken empty eyes, gaunt grey skin stretched over his skull, hunched shoulders, a misty graveyard at night behind him",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a restless dead Roman man, a gaunt hairless human corpse with grey cracked skin, sunken hollow eyes and a thin grim mouth, a torn burial shroud over his bony shoulders, a misty graveyard at night with Roman tombstones behind him",
   "style": "rd_pro__default",
   "width": 128,
   "height": 128,
-  "seed": 9985,
+  "seed": 10085,
   "bypass_prompt_expansion": false,
   "raw_only": true,
   "figure": false,
@@ -16,5 +16,5 @@
     "assets/glory-of-rome/art/troops/lemures_00.png"
   ],
   "_pack_path": "art/portraits/troop_lemures.png",
-  "_note": "Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation."
+  "_note": "Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation. run02: run01 drew a lemur (the animal); prompt rewritten as a restless dead man, no 'lemur' word, new seed."
 }

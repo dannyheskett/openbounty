@@ -719,10 +719,15 @@ static void parse_classes(Resources *res, cJSON *arr) {
 
 static void parse_portraits(Resources *res, cJSON *arr) {
     res->portrait_count = 0;
-    if (!cJSON_IsArray(arr)) return;
+    free(res->portraits);
+    res->portraits = NULL;
+    int n = cJSON_IsArray(arr) ? cJSON_GetArraySize(arr) : 0;
+    if (n <= 0) return;
+    res->portraits = calloc((size_t)n, sizeof *res->portraits);
+    if (!res->portraits) { fprintf(stderr, "resources: out of memory for %d portraits\n", n); return; }
     cJSON *it;
     cJSON_ArrayForEach(it, arr) {
-        if (res->portrait_count >= RES_MAX_PORTRAITS) break;
+        if (res->portrait_count >= n) break;
         ResPortrait *p = &res->portraits[res->portrait_count++];
         copy_str(p->id, sizeof(p->id), json_str(it, "id", ""));
         parse_path_array(cJSON_GetObjectItem(it, "anim"), p->anim[0],
@@ -981,6 +986,8 @@ static void parse_sprites(Resources *res, cJSON *obj) {
         copy_str(res->sprites.splash_title,
                  sizeof(res->sprites.splash_title),
                  json_str(ui, "splash_title", ""));
+        copy_str(res->sprites.alcove_portrait, sizeof(res->sprites.alcove_portrait),
+                 json_str(ui, "alcove_portrait", ""));
         copy_str(res->sprites.title_battle, sizeof(res->sprites.title_battle),
                  json_str(ui, "title_battle", ""));
         copy_str(res->sprites.title_eagle, sizeof(res->sprites.title_eagle),
@@ -1305,6 +1312,7 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(castle_invite_withdraw, "castle_invite_withdraw");
     SET_BANNER(castle_have, "castle_have");
     SET_BANNER(castle_in_garrison, "castle_in_garrison");
+    SET_BANNER(castle_needs_leadership, "castle_needs_leadership");
     SET_BANNER(castle_can_recruit, "castle_can_recruit");
     SET_BANNER(castle_rank, "castle_rank");
     SET_BANNER(castle_next_rank, "castle_next_rank");
@@ -1369,6 +1377,9 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(gmd_game, "gmd_game");
     SET_BANNER(gmd_back_up, "gmd_back_up");
     SET_BANNER(gmd_unit, "gmd_unit");
+    SET_BANNER(fv_your_army, "fv_your_army");
+    SET_BANNER(loc_joined, "loc_joined");
+    SET_BANNER(loc_gold_change, "loc_gold_change");
     SET_BANNER(gmd_leave, "gmd_leave");
     SET_BANNER(gmd_army, "gmd_army");
     SET_BANNER(gmd_character, "gmd_character");
@@ -1553,6 +1564,36 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
     if (cJSON_IsObject(jui)) {
         cJSON *obj = jui;
         UI_SET(press_esc_to_exit, "press_esc_to_exit");
+        UI_SET(fv_hp, "fv_hp");
+        UI_SET(fv_skill, "fv_skill");
+        UI_SET(fv_dmg, "fv_dmg");
+        UI_SET(fv_move, "fv_move");
+        UI_SET(fv_range, "fv_range");
+        UI_SET(fv_flies, "fv_flies");
+        UI_SET(cv_army, "cv_army");
+        UI_SET(cv_magic, "cv_magic");
+        UI_SET(cv_campaign, "cv_campaign");
+        UI_SET(cv_leadership, "cv_leadership");
+        UI_SET(cv_commission, "cv_commission");
+        UI_SET(cv_gold, "cv_gold");
+        UI_SET(cv_spell_power, "cv_spell_power");
+        UI_SET(cv_spell_capacity, "cv_spell_capacity");
+        UI_SET(cv_captured, "cv_captured");
+        UI_SET(cv_artifacts, "cv_artifacts");
+        UI_SET(cv_castles, "cv_castles");
+        UI_SET(cv_followers, "cv_followers");
+        UI_SET(cv_score, "cv_score");
+        UI_SET(cv_days, "cv_days");
+        UI_SET(cv_sacred, "cv_sacred");
+        UI_SET(cv_continents, "cv_continents");
+        UI_SET(cv_honours, "cv_honours");
+        UI_SET(cv_blessed, "cv_blessed");
+        UI_SET(cv_tributes, "cv_tributes");
+        UI_SET(cv_rites, "cv_rites");
+        UI_SET(cv_yes, "cv_yes");
+        UI_SET(cv_no, "cv_no");
+        UI_SET(cv_next, "cv_next");
+        UI_SET(cv_top_rank, "cv_top_rank");
         UI_SET(hint_back, "hint_back");
         UI_SET(hint_quit, "hint_quit");
         UI_SET(hint_continue, "hint_continue");
@@ -2555,7 +2596,13 @@ bool resources_load(Resources *res, const char *manifest_path) {
 
 void resources_free(Resources *res) {
     if (g_resources == res) g_resources = NULL;
-    // Nothing heap-owned; catalogs and per-zone objects are inline.
+    // The portraits are the one heap-owned table (sized from the pack); every
+    // other catalog and per-zone object is inline.
+    if (res) {
+        free(res->portraits);
+        res->portraits = NULL;
+        res->portrait_count = 0;
+    }
 }
 
 void resources_republish(const Resources *res) {
@@ -2816,6 +2863,7 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
     art_add(out, cap, &n, res->sprites.chrome_overworld);
     art_add(out, cap, &n, res->sprites.splash_logo);
     art_add(out, cap, &n, res->sprites.splash_title);
+    art_add(out, cap, &n, res->sprites.alcove_portrait);
     art_add(out, cap, &n, res->sprites.title_battle);
     art_add(out, cap, &n, res->sprites.title_eagle);
     art_add(out, cap, &n, res->sprites.title_words);

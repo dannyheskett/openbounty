@@ -12,7 +12,9 @@
     128,
     128
   ],
-  "_pack_path": "art/portraits/augur_portrait_00..07.png",
-  "_animation": "the raven turns its head, the augur's eyes lift slowly to the sky and back, static background, smooth loop",
-  "_note": "The Augur's portrait (2026-09-13) for the modern alcove view's portrait slot, the same man as the alcove_augur figure (white beard, scarlet-striped toga, lituus, raven). Town-portrait route: still and loop at 128, frames cropped to 96 from the top."
+  "_pack_path": "art/portraits/augur_portrait.png",
+  "_note": "The Augur's portrait (2026-09-14) for the modern temple screen's portrait in-lay: the same man as the alcove_augur figure (white beard, scarlet-striped toga, lituus, raven), the figure as reference. Static: 128 still resized whole to 96, like the troop portraits. run01 (2026-09-13) was interrupted and produced no image.",
+  "reference_image_paths": [
+    "assets/glory-of-rome/art/ui/alcove_augur_00.png"
+  ]
 }
