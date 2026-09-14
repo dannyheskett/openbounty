@@ -12,6 +12,7 @@
 #include "prompt_impl.h"
 #include "modern/mlayout.h"
 #include "modern/mlist.h"
+#include "modern/uikit.h"
 #include "lattice.h"
 #include "layout.h"
 #include "ui.h"
@@ -22,6 +23,9 @@
 #include "bfont.h"
 #include "resources.h"
 #include "raylib.h"
+#include "pending.h"
+#include "overlay_impl.h"
+#include "tables.h"
 #include <stdio.h>
 
 // Question dialogs (REQ-430n): the header and body, a lattice band, then the
@@ -56,15 +60,48 @@ static bool prompt_row(void *ctx, int i, char *label, char *right, int cap) {
     return true;
 }
 
+// Troops wishing to join: an in-lay with their portrait at 2x, the words
+// beside it, Yes / No along the foot.
+static bool draw_join_inlay(const PromptView *p) {
+    if (p->kind != PK_YES_NO || pending_flow != FLOW_ACCEPT_FRIENDLY) return false;
+    const Sprites *s = modern_overlay_sprites();
+    const TroopDef *t = pending_dwelling_troop[0] ? troop_by_id(pending_dwelling_troop) : NULL;
+    if (!s || !t) return false;
+    Texture2D face = s->troop_portrait[t->index].id ? s->troop_portrait[t->index] : s->troop_sprite[t->index];
+    if (!face.id) return false;
+    const int size = 2 * CL_TILE_W, w = UK_INLAY_W;
+    UkDoc d = { 0 };
+    uk_doc_add(&d, p->body, PAL_CLR(WHITE));
+    ML_Rect probe = { 0, 0, w - 2 * UK_INSET, 0 };
+    int body = uk_doc_height(&d, probe, size, size);
+    if (body < size) body = size;
+    int h = 2 * UK_INSET + body + ML_PAD + UK_BAND + ml_list_height(2);
+    ML_Rect a = ml_area();
+    int x = a.x + (a.w - w) / 2, y = a.y + (a.h - h) / 2;
+    uk_panel(x, y, w, h);
+    ML_Rect b = { x, y, w, h };
+    RowCtx ctx = { p, w - 2 * ML_PAD };
+    int foot = uk_foot_rows(b, 2, p->yn_cursor, prompt_row, &ctx, TOUCH_LIST_PROMPT);
+    uk_picture(face, x + UK_INSET, y + UK_INSET, size, size);
+    ML_Rect ta = { x + UK_INSET, y + UK_INSET, w - 2 * UK_INSET, foot - ML_PAD - (y + UK_INSET) };
+    uk_doc_draw(&d, ta, size, size, -1, true);
+    return true;
+}
+
 void modern_prompt_draw(const PromptView *p) {
     if (!p || p->kind == PK_NONE) return;
+    if (draw_join_inlay(p)) return;
 
     const int BAND = 4;
-    const int INSET = ML_PAD + 4;
+    const int INSET = UK_INSET;
     int line_h = BFONT_GLYPH_H + 2;
     int sp = ml_space();
     ML_Rect area = ml_area();     // centred on what is behind it
+    // Over the map: a band along the pane's foot, so the hero stays in view.
+    // Over a screen (a place, combat): an in-lay in its middle.
+    bool inlay = area.w == ml_full().w && area.h == ml_full().h;
     int x = area.x + sp, w = area.w - 2 * sp;
+    if (inlay) { w = UK_INLAY_W; x = area.x + (area.w - w) / 2; }
     int bottom = area.y + area.h - sp;
     int max_h = area.h - 2 * sp;
     int text_w = w - 2 * INSET;
@@ -94,10 +131,10 @@ void modern_prompt_draw(const PromptView *p) {
         h = text_h + BAND + answers_h;
         if (h > max_h) { text_h -= h - max_h; h = max_h; }
     }
-    int y = bottom - h;
+    int y = inlay ? area.y + (area.h - h) / 2 : bottom - h;
 
-    DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
-    ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
+    if (inlay) uk_dim();
+    uk_panel(x, y, w, h);
 
     // Text.
     int tx = x + INSET, ty = y + INSET;
@@ -135,5 +172,5 @@ void modern_prompt_draw(const PromptView *p) {
     RowCtx ctx = { p, w - 2 * ML_PAD };
     int cursor = (p->kind == PK_YES_NO) ? p->yn_cursor : p->choice_cursor;
     ml_list_draw(x, ay, w, answers_h, rows, cursor, prompt_row, &ctx,
-                 TOUCH_LIST_PROMPT, PAL_CLR(DBLUE));
+                 TOUCH_LIST_PROMPT, uk_ink());
 }

@@ -7,6 +7,7 @@
 // target to <dir>/<name>.png. No input is read, so nothing can be dropped.
 
 #include "shell_gallery.h"
+#include "spells_adventure.h"
 #include "shell_frame.h"
 #include "raylib.h"
 #include "layout.h"
@@ -175,6 +176,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         ResTemplateVar jv[] = { { "COUNT", "20" }, { "TROOP", t->name } };
         resources_format_template(tb, sizeof tb, bn->encounter_join_numeric, jv, 2);
         pending_flow = FLOW_ACCEPT_FRIENDLY;
+        cpy(pending_dwelling_troop, sizeof pending_dwelling_troop, t->id);
         prompt_yes_no_open("", tb);
     }
     shot(&G, "09d_troops_join");
@@ -197,10 +199,22 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     shot(&G, "09e_navigate");
 
     // Temporary death: sent back to the Emperor in disgrace.
-    reset(&G); open_dialog(NULL, bn->temp_death); shot(&G, "09f_temporary_death");
+    reset(&G);
+    {
+        PlayerRequest *r = player_io_message(g, NULL, bn->temp_death);
+        for (int i = 0; r && i < res->castle_count; i++) {
+            if (!resources_castle_is_home(&res->castles[i])) continue;
+            int idx = resources_portrait_index(res, res->castles[i].special.portrait);
+            if (idx >= 0) { r->face = REQ_FACE_PORTRAIT; r->face_index = idx; }
+            break;
+        }
+        shell_pump_player_io_message(g);
+    }
+    shot(&G, "09f_temporary_death");
 
     // The bridge spell asks for a direction.
-    reset(&G); open_dialog(NULL, bn->spell_bridge_prompt); shot(&G, "09g_bridge_direction");
+    reset(&G); bridge_state = BRIDGE_STATE_DIRECTION; open_dialog(NULL, bn->spell_bridge_prompt);
+    shot(&G, "09g_bridge_direction"); bridge_state = BRIDGE_STATE_NONE;
 
     // ---- the game menu --------------------------------------------------------
     {
@@ -247,8 +261,9 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     if (tw) {
         cpy(g->position.in_town, sizeof g->position.in_town, tw->id);
         views_open_town(tw->name, tw->id, tw->boat_x, tw->boat_y);
+        reset(&G); views_set(VIEW_TOWN); views_gallery_town_scene(0); shot(&G, "30_town_main");
         static const struct { int row; const char *name; } T[] = {
-            { -1, "30_town_main" }, { TOWN_ROW_CONTRACT, "31_town_contracts" },
+            { -1, "30b_town_services" }, { TOWN_ROW_CONTRACT, "31_town_contracts" },
             { TOWN_ROW_BOAT, "32_town_boat" }, { TOWN_ROW_INFO, "33_town_information" },
             { TOWN_ROW_SPELL, "34_town_temple" }, { TOWN_ROW_SIEGE, "35_town_siege" },
         };
@@ -256,7 +271,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
             reset(&G); views_set(VIEW_TOWN); views_gallery_town(g, T[i].row, 0, NULL, false);
             shot(&G, T[i].name);
         }
-        reset(&G); views_set(VIEW_TOWN); views_gallery_town(g, TOWN_ROW_LEAVE < 0 ? 0 : -1, TOWN_ROW_LEAVE, NULL, false);
+        reset(&G); views_set(VIEW_TOWN); views_gallery_town_scene(1);
         shot(&G, "36_town_leave_row");
         reset(&G); views_set(VIEW_TOWN); views_gallery_town(g, TOWN_ROW_SIEGE, 0, NULL, false);
         prompt_yes_no_open(NULL, "Buy siege weapons for 3000 gold?");
@@ -281,6 +296,9 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_RECRUIT, 4, 0, 0); shot(&G, "42_castle_recruit_greyed");
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_RECRUIT, 1, 18, 30); shot(&G, "43_castle_how_many");
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_AUDIENCE, 0, 0, 0); shot(&G, "44_castle_audience");
+        reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_AUDIENCE, 0, 0, 0);
+        modern_castle_gallery_audience(GAME_AUDIENCE_MORE_NEEDED + 1, 0); shot(&G, "44b_castle_audience_answer");
+        modern_castle_gallery_audience(0, 0);
         {
             int keep = g->character.cls.rank_index;
             g->character.cls.rank_index = 1;
@@ -411,8 +429,17 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     reset(&G);
     end_cartoon_gallery_draw(rt, res, s, g, 4);  save_target(&G, "79a_victory_cartoon_start");
     end_cartoon_gallery_draw(rt, res, s, g, 10); save_target(&G, "79b_victory_cartoon_end");
-    reset(&G); screen_end_game_open(true, res->win_text.body); views_set(VIEW_WIN); shot(&G, "80_win");
-    reset(&G); screen_end_game_open(false, res->lose_text.body); views_set(VIEW_LOSE); shot(&G, "81_lose");
+    {
+        // The words as the game says them (engine/flows.c format_end_text).
+        char score[16], end_body[RES_END_BODY_LEN];
+        snprintf(score, sizeof score, "%d", GameComputeScore(g));
+        ResTemplateVar ev[] = { { "NAME", g->character.name }, { "RANK", g->character.cls.rank_title },
+                                { "SCORE", score } };
+        resources_format_template(end_body, sizeof end_body, res->win_text.body, ev, 3);
+        reset(&G); screen_end_game_open(true, end_body); views_set(VIEW_WIN); shot(&G, "80_win");
+        resources_format_template(end_body, sizeof end_body, res->lose_text.body, ev, 3);
+        reset(&G); screen_end_game_open(false, end_body); views_set(VIEW_LOSE); shot(&G, "81_lose");
+    }
 
     reset(&G);
     if (G.manifest) fclose(G.manifest);

@@ -13,6 +13,17 @@ static cJSON *gb_placeholder_strings(void) {
     cJSON_AddStringToObject(o, "chest_new_spell", "chest_new_spell");
     cJSON_AddStringToObject(o, "chest_empty", "chest_empty");
     cJSON_AddStringToObject(o, "town_header", "town_header");
+    cJSON_AddStringToObject(o, "town_intro", "town_intro");
+    cJSON_AddStringToObject(o, "town_visit", "town_visit");
+    cJSON_AddStringToObject(o, "cv_wanted", "cv_wanted");
+    cJSON_AddStringToObject(o, "cv_no_contract_hint", "cv_no_contract_hint");
+    cJSON_AddStringToObject(o, "puzzle_legend", "puzzle_legend");
+    cJSON_AddStringToObject(o, "gate_travel", "gate_travel");
+    cJSON_AddStringToObject(o, "class_desc_knight", "class_desc_knight");
+    cJSON_AddStringToObject(o, "class_desc_paladin", "class_desc_paladin");
+    cJSON_AddStringToObject(o, "class_desc_sorceress", "class_desc_sorceress");
+    cJSON_AddStringToObject(o, "class_desc_barbarian", "class_desc_barbarian");
+    cJSON_AddStringToObject(o, "spell_bridge_prompt_modern", "spell_bridge_prompt_modern");
     cJSON_AddStringToObject(o, "town_gold_label", "town_gold_label");
     cJSON_AddStringToObject(o, "town_row_contract", "town_row_contract");
     cJSON_AddStringToObject(o, "town_row_boat_rent", "town_row_boat_rent");

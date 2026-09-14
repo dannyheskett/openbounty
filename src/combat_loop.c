@@ -23,6 +23,7 @@
 #include "modern/mlayout.h"
 #include "overlay_impl.h"
 #include "modern/mlist.h"
+#include "modern/uikit.h"
 #include "modern/gamemenu.h"
 #include "lattice.h"
 #include "present.h"
@@ -341,9 +342,8 @@ static void combat_action_menu_draw(const Combat *c, const Game *g) {
     }
     ML_Rect r = ml_large();
     int cursor = s_act_cursor[d] < p.n ? s_act_cursor[d] : p.n - 1;
-    gm_draw_page(&p, path, "", r.x, r.y, r.w, r.h, 16 * BFONT_GLYPH_W, cursor,
+    gm_draw_page(&p, path, "", r.x, r.y, 480, r.h, 0, cursor,
                  TOUCH_LIST_COMBAT_ACTIONS, NULL, NULL);
-    ui_window_frame(r.x, r.y, r.w, r.h, PAL_CLR(YELLOW));
 }
 
 typedef struct { const Game *hero; } SpellRowCtx;
@@ -533,28 +533,27 @@ static void combat_present(const Combat *c, const Game *g,
         }
         bfont_draw(ui->combat_spells_prompt, 70, 144, PAL_CLR(WHITE));
     } else if (c->cast_phase == COMBAT_CAST_PICK_SPELL) {
-        // Modern: the large layout (REQ-430j): a title row, a column header,
-        // seven spell rows, a prompt.
+        // Modern: an in-lay over the field -- the spells as rows, the one
+        // under the cursor described along the foot, Back in the title strip.
         const Game *gw = c->heroes[c->side];
         const ResUI *ui = &gw->res->ui;
-        ML_Rect lr = ml_large();
-        int pad = ML_PAD;
-        int w = lr.w, h = lr.h, x = lr.x, y = lr.y;
-        DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
-        ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
-        int ty = y + pad;
-        bfont_draw_centered(ui->combat_spells_title, x + w / 2, ty, PAL_CLR(YELLOW));
-        ty += BFONT_GLYPH_H + pad;
-        lattice_band_h(x, ty, w, 4);
-        ty += 4;
-        // Seven standard rows (REQ-430n) above the prompt, scrolling to the cursor.
-        int prompt_y = y + h - pad - BFONT_GLYPH_H;
+        const int lh = uk_line_h(), w = 480;
+        int foot_h = UK_BAND + 2 * UK_INSET + 2 * lh - 2;
+        int h = uk_title_h() + UK_BAND + ml_list_height(7) + foot_h;
+        ML_Rect b = uk_inlay(w, h, ui->combat_spells_title, NULL);
+        int bw = ml_hint_width(ui->hint_back, ui->key_esc, ui->pad_back);
+        ml_hint_button(b.x + b.w - ML_PAD - bw, b.y - UK_BAND - uk_title_h() + 3, ui->hint_back, ui->key_esc,
+                       ui->pad_back, KEY_ESCAPE);
         SpellRowCtx sc = { gw };
-        ml_list_draw(x, ty, w, prompt_y - pad - ty, 7, s_cast_cursor, combat_spell_row,
-                     &sc, TOUCH_LIST_COMBAT_SPELLS, PAL_CLR(DBLUE));
-        bfont_draw(ui->combat_spells_prompt_modern, x + pad, prompt_y, PAL_CLR(WHITE));
-        ml_hint_button(x + w - pad - ml_hint_width(ui->hint_back, ui->key_esc, ui->pad_back),
-                       prompt_y - 4, ui->hint_back, ui->key_esc, ui->pad_back, KEY_ESCAPE);
+        ml_list_draw(b.x, b.y, b.w, ml_list_height(7), 7, s_cast_cursor, combat_spell_row,
+                     &sc, TOUCH_LIST_COMBAT_SPELLS, uk_ink());
+        int fy = b.y + ml_list_height(7);
+        lattice_band_h(b.x, fy, b.w, UK_BAND);
+        const SpellDef *sd = spell_by_index(s_cast_cursor);
+        const char *desc = sd ? sd->description : ui->combat_spells_prompt_modern;
+        uk_flow(b.x + UK_INSET, fy + UK_BAND + UK_INSET, b.w - 2 * UK_INSET, b.x, 0,
+                fy + UK_BAND + UK_INSET + 2 * lh, desc && desc[0] ? desc : ui->combat_spells_prompt_modern,
+                PAL_CLR(WHITE));
     }
     // Victory dialog : centered modal
     // floating over the still-rendered battlefield. Defeat does not

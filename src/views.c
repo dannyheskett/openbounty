@@ -520,6 +520,10 @@ typedef struct {
     TownConfirm asked;       // the one the open prompt is answering
     bool        result_dialog;   // modern: the outcome shows as a dialog until Continue
     int         confirm_slot;
+    // Modern: the town's scene comes first (Visit the town, Leave); the
+    // services list is an in-lay over it once visiting.
+    bool        visit;
+    int         scene_cursor;
 } TownState;
 static TownState town;
 
@@ -953,8 +957,8 @@ bool views_town_list_row(const Game *g, int i, char *out, int cap,
     if (!g || !g->res || i < 0 || i >= views_town_list_rows(g)) return false;
     const ResBanners *bn = &g->res->banners;
     if (town.list == TOWN_LIST_MENU) {
-        if (i == TOWN_ROW_LEAVE) {
-            snprintf(out, (size_t)cap, "%s", bn->location_leave);
+        if (i == TOWN_ROW_LEAVE) {      // modern: back to the town's scene
+            resources_format_template(out, cap, bn->town_back, NULL, 0);
             return true;
         }
         if (enabled) *enabled = views_town_row_enabled(g, i);
@@ -1077,16 +1081,46 @@ void views_gallery_town(const Game *g, int row, int lcursor, const char *info, b
     town.info_active = false;
     if (info && info[0]) town_show_info(info);
     town.result_dialog = dialog;
+    town.visit = true;
     (void)g;
 }
+
+void views_gallery_town_scene(int cursor) {
+    town.list = TOWN_LIST_MENU;
+    town.visit = false;
+    town.scene_cursor = cursor;
+    town.info_active = false;
+    town.result_dialog = false;
+}
+
+bool views_town_visiting(void) { return town.visit; }
+int  views_town_scene_cursor(void) { return town.scene_cursor; }
 
 bool views_town_result_dialog(void) {
     return view_stack_top() == VIEW_TOWN && town.result_dialog;
 }
 
 static bool town_modern_update(Game *g) {
+    if (!town.visit) {
+        // The scene: Visit the town, or Leave.
+        int tapped = touch_tapped_row(TOUCH_LIST_TOWN);
+        if (tapped == 0 || tapped == 1) town.scene_cursor = tapped;
+        bool go = tapped >= 0 || input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
+                  input_key_pressed(KEY_SPACE);
+        if (input_key_pressed(KEY_ESCAPE)) { views_dismiss(); return true; }
+        if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_W) ||
+            input_key_pressed(KEY_S) || input_key_pressed(KEY_KP_8) || input_key_pressed(KEY_KP_2)) {
+            town.scene_cursor = 1 - town.scene_cursor;
+            return true;
+        }
+        if (go) {
+            if (town.scene_cursor == 0) { town.visit = true; town.cursor = TOWN_ROW_CONTRACT; }
+            else                        views_dismiss();
+        }
+        return true;
+    }
     if (town.result_dialog) {
-        // Continue: any key or a tap closes it, back to the main page.
+        // Continue: any key or a tap closes it, back to the services.
         if (ui_any_key_pressed() || touch_tapped_row(TOUCH_LIST_PROMPT) == 0) {
             town.result_dialog = false;
             town.info_active = false;
@@ -1102,13 +1136,13 @@ static bool town_modern_update(Game *g) {
     if (town.info_active && ui_any_key_pressed()) town.info_active = false;
 
     if (input_key_pressed(KEY_ESCAPE)) {
-        if (menu) views_dismiss();
+        if (menu) town.visit = false;
         else      { town.list = TOWN_LIST_MENU; town.detail_page = 0; }
         return true;
     }
     int tapped = touch_tapped_row(TOUCH_LIST_TOWN);
     if (tapped >= 0 && tapped < rows) {
-        if (menu && tapped == TOWN_ROW_LEAVE) { views_dismiss(); return true; }
+        if (menu && tapped == TOWN_ROW_LEAVE) { town.visit = false; return true; }
         if (menu) { town.cursor = tapped; town_open(g, (TownRow)tapped); }
         else      { town.lcursor = tapped; town.detail_page = 0; town_list_do_row(g, tapped); }
         return true;
@@ -1142,7 +1176,7 @@ static bool town_modern_update(Game *g) {
     }
     if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
         input_key_pressed(KEY_SPACE)) {
-        if (menu && town.cursor == TOWN_ROW_LEAVE) views_dismiss();
+        if (menu && town.cursor == TOWN_ROW_LEAVE) town.visit = false;
         else if (menu) town_open(g, (TownRow)town.cursor);
         else           town_list_do_row(g, town.lcursor);
         return true;
@@ -1383,6 +1417,7 @@ int views_town_cursor(void) {
 bool views_town_demo_step_cursor(int target_row) {
     if (view_stack_top() != VIEW_TOWN) return true;
     if (target_row < 0 || target_row >= TOWN_ROW_COUNT) return true;
+    town.visit = true;
     if (town.cursor == target_row) return true;
     if (town.cursor < target_row) town.cursor++;
     else                          town.cursor--;

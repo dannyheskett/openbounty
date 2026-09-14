@@ -2,6 +2,7 @@
 
 #include "modern/gamemenu.h"
 #include "modern/mlayout.h"
+#include "modern/uikit.h"
 #include "modern/saveslots.h"
 #include "shell_cheats.h"
 #include "input_host.h"
@@ -48,34 +49,47 @@ static bool page_row(void *ctx, int i, char *label, char *right, int cap) {
 void gm_draw_page(const GmPage *p, const char *path, const char *right_title,
                   int x, int y, int w, int h, int list_w, int cursor, int touch_list,
                   MlRowFn row_fn, void *row_ctx) {
-    const int pad = ML_PAD, BAND = 4, GH = BFONT_GLYPH_H;
-    DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
-    int title_h = GH + 14;
-    bfont_draw(path ? path : "", x + pad, y + (title_h - GH) / 2, PAL_CLR(YELLOW));
-    if (right_title && right_title[0])
-        bfont_draw(right_title, x + w - pad - (int)bfont_measure(right_title).x,
-                   y + (title_h - GH) / 2, PAL_CLR(YELLOW));
-    lattice_band_h(x, y + title_h, w, BAND);
-    int top = y + title_h + BAND, bottom = y + h;
-
-    ml_list_draw(x, top, list_w, bottom - top, p->n, cursor,
-                 row_fn ? row_fn : page_row, row_fn ? row_ctx : (void *)p,
-                 touch_list, PAL_CLR(DBLUE));
-    lattice_band_v(x + list_w, top, BAND, bottom - top);
-
-    // The description of the row under the cursor, wrapped beside the rows;
-    // yellow when it says why the row is greyed.
-    const int INSET = pad + 4;
-    int dx = x + list_w + BAND + INSET, dw = x + w - dx - INSET;
+    // An in-lay `w` wide over the dimmed screen: the path as its title, the
+    // rows at full width, and the description of the row under the cursor
+    // along the foot (yellow when it says why the row is greyed).
+    (void)x; (void)y; (void)h; (void)list_w;
+    const int GH = BFONT_GLYPH_H, lh = uk_line_h();
+    int text_w = w - 2 * UK_INSET;
+    int foot_lines = 1;
+    for (int i = 0; i < p->n; i++) {
+        int n = p->item[i].desc ? uk_lines(p->item[i].desc, text_w) : 0;
+        if (n > foot_lines) foot_lines = n;
+    }
+    if (foot_lines > 3) foot_lines = 3;
+    ML_Rect area = ml_area();
+    int head = uk_title_h() + UK_BAND;
+    int rows_h = ml_list_height(p->n);
+    int pad = UK_INSET;
+    int foot_h = UK_BAND + 2 * pad + foot_lines * lh - 2;
+    int max_h = area.h - 2 * ml_space();
+    if (head + rows_h + foot_h > max_h) {
+        // A long page: the full height, and the description as few lines as fit.
+        max_h = area.h;
+        pad = ML_PAD;
+        while (foot_lines > 1 && head + rows_h + UK_BAND + 2 * pad + foot_lines * lh - 2 > max_h) foot_lines--;
+        foot_h = UK_BAND + 2 * pad + foot_lines * lh - 2;
+        if (head + rows_h + foot_h > max_h) rows_h = ml_list_height(ml_list_fit(max_h - head - foot_h));
+    }
+    ML_Rect b = uk_inlay(w, head + rows_h + foot_h, path, right_title);
+    ml_list_draw(b.x, b.y, b.w, rows_h, p->n, cursor,
+                 row_fn ? row_fn : page_row, row_fn ? row_ctx : (void *)p, touch_list, uk_ink());
+    int fy = b.y + rows_h;
+    lattice_band_h(b.x, fy, b.w, UK_BAND);
     const char *d = (cursor >= 0 && cursor < p->n) ? p->item[cursor].desc : NULL;
     Color fg = (cursor >= 0 && cursor < p->n && !p->item[cursor].enabled) ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
     char line[160];
-    int ty = top + INSET;
-    while (d && *d && ty + GH <= bottom - INSET) {
-        if (bfont_take_line(&d, dw, line, (int)sizeof line) <= 0) break;
-        bfont_draw(line, dx, ty, fg);
-        ty += GH + 2;
+    int ty = fy + UK_BAND + pad;
+    for (int i = 0; d && *d && i < foot_lines; i++) {
+        if (bfont_take_line(&d, text_w, line, (int)sizeof line) <= 0) break;
+        bfont_draw(line, b.x + UK_INSET, ty, fg);
+        ty += lh;
     }
+    (void)GH;
 }
 
 // ---- the game menu ------------------------------------------------------------------
@@ -290,21 +304,9 @@ void modern_gamemenu_draw(const Game *g) {
         snprintf(path + n, sizeof path - n, "%s%s", i ? " > " : "", pi.title ? pi.title : "");
     }
     const ResZone *z = resources_zone_by_id(g->res, g->position.zone);
-    ML_Rect r = ml_full();
     bool slots = gm.page[d] == GM_PAGE_SAVE || gm.page[d] == GM_PAGE_LOAD;
-    // The rows column fits the page's longest label (and its shortcut): at
-    // least 16 characters, at most half the screen; slot rows take two thirds.
-    int list_w = 16 * BFONT_GLYPH_W;
-    for (int i = 0; i < p.n && !slots; i++) {
-        char label[96], right[48];
-        page_row(&p, i, label, right, (int)sizeof label);
-        int need = bfont_text_width(label) + 2 * ML_PAD
-                 + (right[0] ? bfont_text_width(right) + 2 * ML_PAD : 0);
-        if (need > list_w) list_w = need;
-    }
-    if (slots) list_w = r.w * 2 / 3;
-    else if (list_w > r.w / 2) list_w = r.w / 2;
     int cursor = gm.cursor[d] < p.n ? gm.cursor[d] : p.n - 1;
-    gm_draw_page(&p, path, z ? z->name : "", r.x, r.y, r.w, r.h, list_w, cursor, TOUCH_LIST_MENU,
+    ML_Rect r = ml_full();
+    gm_draw_page(&p, path, z ? z->name : "", r.x, r.y, slots ? 656 : UK_INLAY_W, r.h, 0, cursor, TOUCH_LIST_MENU,
                  slots ? slot_row : NULL, &p);
 }

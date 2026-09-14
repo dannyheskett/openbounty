@@ -80,6 +80,7 @@ bool        modern_castle_is_home(void) { return mc.home; }
 const char *modern_castle_id(void)      { return mc.castle_id; }
 McPage      modern_castle_page(void)    { return mc.page; }
 int modern_castle_cursor(void) { return mc.page == MC_MENU ? mc.menu_cursor : mc.list_cursor; }
+int modern_castle_menu_cursor(void) { return mc.menu_cursor; }
 const char *modern_castle_message(void) { return mc.message[0] ? mc.message : NULL; }
 
 bool modern_castle_stepper(int *value, int *max) {
@@ -228,6 +229,7 @@ static void act(Game *g, int i) {
     const ResBanners *bn = &g->res->banners;
     if (mc.page == MC_PROMOTION) {         // Continue: back to the audience
         mc.page = MC_AUDIENCE;
+        mc.audience = 0;
         return;
     }
     if (mc.page == MC_MENU) {
@@ -338,8 +340,16 @@ static bool pressed_confirm(void) {
 
 bool modern_castle_update(Game *g) {
     touch_request(TOUCH_CHROME_BACK);
-    // A message stays only until the next key; the key still does its job.
-    if (mc.message[0] && ui_any_key_pressed()) mc.message[0] = '\0';
+    // A message or the Emperor's answer shows in its own in-lay: any key or a
+    // tap on Continue puts it away, and does nothing else.
+    if (mc.message[0] || (mc.page == MC_AUDIENCE && (mc.aud_result || mc.audience))) {
+        if (ui_any_key_pressed() || touch_tapped_row(TOUCH_LIST_PROMPT) == 0) {
+            mc.message[0] = '\0';
+            mc.aud_result = 0;
+            mc.audience = 0;
+        }
+        return false;
+    }
 
     // The count stepper holds the keys while it is open: Left/Right step by
     // one, Down/Up by ten, Enter moves the count, Esc puts it away.
@@ -370,13 +380,10 @@ bool modern_castle_update(Game *g) {
     }
     if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_W) || input_key_pressed(KEY_KP_8)) {
         *cur = (*cur - 1 + rows) % rows;
-        mc.audience = (mc.page == MC_AUDIENCE) ? mc.audience : 0;
-        if (audiences(g)) { mc.audience = 0; mc.aud_result = 0; }
         return false;
     }
     if (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_S) || input_key_pressed(KEY_KP_2)) {
         *cur = (*cur + 1) % rows;
-        if (audiences(g)) { mc.audience = 0; mc.aud_result = 0; }
         return false;
     }
     if (pressed_confirm()) act(g, *cur);

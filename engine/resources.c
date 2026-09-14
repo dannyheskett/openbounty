@@ -1260,6 +1260,17 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(chest_new_spell,   "chest_new_spell");
     SET_BANNER(chest_empty,       "chest_empty");
     SET_BANNER(town_header,             "town_header");
+    SET_BANNER(town_intro, "town_intro");
+    SET_BANNER(town_visit, "town_visit");
+    SET_BANNER(cv_wanted, "cv_wanted");
+    SET_BANNER(cv_no_contract_hint, "cv_no_contract_hint");
+    SET_BANNER(puzzle_legend, "puzzle_legend");
+    SET_BANNER(gate_travel, "gate_travel");
+    SET_BANNER(class_desc_knight, "class_desc_knight");
+    SET_BANNER(class_desc_paladin, "class_desc_paladin");
+    SET_BANNER(class_desc_sorceress, "class_desc_sorceress");
+    SET_BANNER(class_desc_barbarian, "class_desc_barbarian");
+    SET_BANNER(spell_bridge_prompt_modern, "spell_bridge_prompt_modern");
     SET_BANNER(town_gold_label,         "town_gold_label");
     SET_BANNER(town_row_contract,       "town_row_contract");
     SET_BANNER(town_row_boat_rent,      "town_row_boat_rent");

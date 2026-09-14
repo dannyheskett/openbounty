@@ -1,10 +1,15 @@
 #include "end_game.h"
 #include "layout.h"
 #include "modern/mlayout.h"
+#include "modern/uikit.h"
+#include "resources.h"
+#include "touch.h"
+#include "ui.h"
 #include "palette.h"
 #include "bfont.h"
 #include "views.h"
 #include "raylib.h"
+#include "lattice.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -28,8 +33,29 @@ void screen_end_game_open(bool won, const char *body) {
     // renderer; the shell's per-frame sync pushes the view.
 }
 
+// Modern: a ceremony -- the ending picture at 2x at the left, the words
+// beside it, Continue along the foot.
+static void draw_modern(const Game *g, const Sprites *s) {
+    const ML_Rect r = ml_full();
+    uk_sheet();
+    UkRows rows = { { (g && g->res) ? g->res->banners.castle_continue : "" }, { true } };
+    int foot = uk_foot_rows(r, 1, 0, uk_rows_fn, &rows, TOUCH_LIST_PROMPT);
+    Texture2D img = s_won ? s->ending_win : s->ending_lose;
+    int iw = 0;
+    if (img.id && img.width > 0 && img.height > 0) {
+        int sc = 3;
+        while (sc > 1 && img.height * sc > foot - r.y) sc--;
+        iw = img.width * sc;
+        int ih = img.height * sc;
+        ui_blit(img, r.x, r.y + (foot - r.y - ih) / 2, iw, ih);
+        lattice_band_v(r.x + iw, r.y, UK_BAND, foot - r.y);
+    }
+    int tx = r.x + iw + UK_BAND + UK_INSET;
+    uk_flow(tx, r.y + UK_INSET, r.x + r.w - UK_INSET - tx, tx, 0, foot - ML_PAD, s_body, PAL_CLR(WHITE));
+}
+
 void screen_end_game_draw(const Game *g, const Sprites *s) {
-    (void)g;
+    if (CL_IS_MODERN) { draw_modern(g, s); return; }
 
     // Layout matches OpenKB's win_game / lose_game (its game.c:4431):
     //   full = the map+sidebar area minus right chrome

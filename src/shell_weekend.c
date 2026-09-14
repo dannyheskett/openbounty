@@ -9,6 +9,8 @@
 #include "tables.h"
 #include "ui.h"
 #include "views.h"
+#include "layout.h"
+#include "player_io.h"
 
 // End-of-week budget screen displays per-troop cost
 // as count * full recruit_cost and sums those for the "Army" total --
@@ -42,7 +44,8 @@ bool pump_week_end_dialog(const Game *g) {
         ResTemplateVar bvars[] = { { "TROOP", creature } };
         resources_format_template(body, sizeof body,
                                   bn->astrology_body, bvars, 1);
-        player_io_message((Game *)g, header, body);
+        PlayerRequest *msg = player_io_message((Game *)g, header, body);
+        if (msg && CL_IS_MODERN) { msg->face = REQ_FACE_TROOP; msg->face_index = t->index; }
         pending_week_phase = WK_PHASE_BUDGET;
         return true;
     }

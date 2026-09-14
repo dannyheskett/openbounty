@@ -13,6 +13,7 @@
 #include "modern/mlayout.h"
 #include "lattice.h"
 #include "modern/mlist.h"
+#include "modern/uikit.h"
 #include "touch.h"
 #include "select.h"
 #include "layout.h"
@@ -45,18 +46,6 @@
 #define FULL_VIEW_W  VIEW_W
 #define FULL_VIEW_X  VIEW_X
 
-// Solid-fill background + 1px yellow border for a view panel.
-static void draw_view_panel(void) {
-    // The screen chrome already frames the full rect; a window ring here would
-    // be drawn outside it, over the chrome, and stand proud of the status band.
-    DrawRectangle(VIEW_X, VIEW_Y, VIEW_W, VIEW_H, PAL_CLR(DGREY));
-}
-
-// Thin horizontal rule between rows.
-static void draw_rule(int x, int y, int w) {
-    DrawRectangle(x, y, w, CL_UI, PAL_CLR(DRED));
-}
-
 // ---------------------------------------------------------------------------
 //  CHARACTER VIEW -- 
 //  Portrait on left, stat table on right, artifact belt below.
@@ -72,42 +61,41 @@ static void cv_row(const char *label, const char *value, int x, int w, int y) {
     bfont_draw(value, x + w - (int)bfont_measure(value).x, y, PAL_CLR(WHITE));
 }
 
+// An icon slot: the icon when held; else its ghost, dark, so the set reads
+// as a collection with pieces still to find.
 static void cv_icon(Texture2D tex, bool have, int x, int y, int size) {
     DrawRectangle(x, y, size, size, PAL_CLR(BLACK));
-    if (have && tex.id) {
-        ui_blit(tex, x, y, size, size);
-        ui_panel_frame(x, y, size, size);
-    } else {
-        DrawRectangleLines(x, y, size, size, PAL_CLR(DGREY));
+    if (tex.id) {
+        Rectangle src = { 0, 0, (float)tex.width, (float)tex.height };
+        Rectangle dst = { (float)x, (float)y, (float)size, (float)size };
+        DrawTexturePro(tex, src, dst, (Vector2){ 0, 0 }, 0.0f, have ? WHITE : (Color){ 60, 60, 70, 255 });
     }
+    DrawRectangleLines(x, y, size, size, have ? (Color){ 150, 118, 48, 255 } : (Color){ 60, 52, 34, 255 });
 }
 
 static void draw_character(const Game *g, const Sprites *s) {
     const ResUI *ui = &g->res->ui;
     const ML_Rect r = ml_full();
-    const int pad = ML_PAD, BAND = 4, THIN = 2;
-    const int line = GH + 2, head = GH + 4;
+    const int pad = UK_INSET, BAND = UK_BAND, THIN = 2;
+    const int line = GH + 2, head = GH + 6;
     const int tile = CL_TILE_W;
-    DrawRectangle(r.x, r.y, r.w, r.h, PAL_CLR(DBLUE));   // framed by the chrome
+    uk_sheet();
     char buf[96], nb[32], mb[32];
 
     // Title: name and rank; the next rank and how far off it is at the right.
-    int title_h = GH + 14;
     snprintf(buf, sizeof buf, "%s the %s", g->character.name, g->character.cls.rank_title);
-    bfont_draw(buf, r.x + pad, r.y + (title_h - GH) / 2, PAL_CLR(YELLOW));
     const ClassDef *cls = class_by_id(g->character.cls.id);
     int rank = g->character.cls.rank_index;
+    char right[96];
     if (cls && rank + 1 < cls->rank_count) {
         int need = cls->ranks[rank + 1].villains_needed - GameVillainsCaught(g);
         snprintf(nb, sizeof nb, "%d", need > 0 ? need : 0);
         ResTemplateVar v[] = { { "RANK", cls->ranks[rank + 1].name }, { "COUNT", nb } };
-        resources_format_template(buf, sizeof buf, ui->cv_next, v, 2);
+        resources_format_template(right, sizeof right, ui->cv_next, v, 2);
     } else {
-        snprintf(buf, sizeof buf, "%s", ui->cv_top_rank);
+        snprintf(right, sizeof right, "%s", ui->cv_top_rank);
     }
-    bfont_draw(buf, r.x + r.w - pad - (int)bfont_measure(buf).x, r.y + (title_h - GH) / 2, PAL_CLR(YELLOW));
-    lattice_band_h(r.x, r.y + title_h, r.w, BAND);
-    int top = r.y + title_h + BAND;
+    int top = uk_title(r.x, r.y, r.w, buf, right, PAL_CLR(YELLOW));
 
     // Portrait at its authored size.
     int pw = 192, ph = 204;
@@ -120,11 +108,11 @@ static void draw_character(const Game *g, const Sprites *s) {
     int lx = cx + pad, lw = cw - 2 * pad;
     int rx = cx + cw + pad, rw = r.x + r.w - rx - pad;
     lattice_band_v(cx + cw - 2, top, BAND, ph);
-    int y = top + THIN;
+    int y = top + 6;
     bfont_draw(ui->cv_army, lx, y, PAL_CLR(YELLOW));                      y += head;
     snprintf(nb, sizeof nb, "%d", g->stats.leadership_current);  cv_row(ui->cv_leadership, nb, lx, lw, y); y += line;
     snprintf(nb, sizeof nb, "%d", g->stats.commission_weekly);   cv_row(ui->cv_commission, nb, lx, lw, y); y += line;
-    snprintf(nb, sizeof nb, "%d", g->stats.gold);                cv_row(ui->cv_gold, nb, lx, lw, y);       y += line + THIN;
+    snprintf(nb, sizeof nb, "%d", g->stats.gold);                cv_row(ui->cv_gold, nb, lx, lw, y);       y += line + 6;
     bfont_draw(ui->cv_magic, lx, y, PAL_CLR(YELLOW));                     y += head;
     snprintf(nb, sizeof nb, "%d", g->stats.spell_power);         cv_row(ui->cv_spell_power, nb, lx, lw, y); y += line;
     snprintf(nb, sizeof nb, "%d", g->stats.max_spells);          cv_row(ui->cv_spell_capacity, nb, lx, lw, y);
@@ -132,7 +120,7 @@ static void draw_character(const Game *g, const Sprites *s) {
     int total_v = 0;
     for (int i = 0; i < g->res->villains_count && i < CAT_VILLAINS_MAX; i++) total_v++;
     int total_a = artifacts_count() < 8 ? artifacts_count() : 8;
-    y = top + THIN;
+    y = top + 6;
     bfont_draw(ui->cv_campaign, rx, y, PAL_CLR(YELLOW));                  y += head;
     snprintf(nb, sizeof nb, "%d/%d", GameVillainsCaught(g), total_v); cv_row(ui->cv_captured, nb, rx, rw, y);  y += line;
     snprintf(nb, sizeof nb, "%d/%d", GameArtifactsFound(g), total_a); cv_row(ui->cv_artifacts, nb, rx, rw, y); y += line;
@@ -141,13 +129,13 @@ static void draw_character(const Game *g, const Sprites *s) {
     snprintf(nb, sizeof nb, "%d", GameComputeScore(g));          cv_row(ui->cv_score, nb, rx, rw, y);      y += line;
     snprintf(nb, sizeof nb, "%d", g->stats.days_left);           cv_row(ui->cv_days, nb, rx, rw, y);
 
-    // The sacred artifacts: eight full icons across; a missing one is dark.
+    // The sacred artifacts: eight full icons across; one still to find is a ghost.
     y = top + ph;
     lattice_band_h(r.x, y, r.w, THIN);
     y += THIN;
-    bfont_draw(ui->cv_sacred, r.x + pad, y + 2, PAL_CLR(YELLOW));
-    y += head;
     int ax = r.x + (r.w - 8 * tile) / 2;
+    bfont_draw(ui->cv_sacred, ax, y + 3, PAL_CLR(YELLOW));
+    y += head;
     for (int i = 0; i < 8; i++)
         cv_icon(s->view_icon[i], i < total_a && g->artifacts.found[i], ax + i * tile, y, tile);
     y += tile;
@@ -155,23 +143,25 @@ static void draw_character(const Game *g, const Sprites *s) {
     // The continents, and beside them the pack's honours.
     lattice_band_h(r.x, y, r.w, THIN);
     y += THIN;
-    bfont_draw(ui->cv_continents, r.x + pad, y + 2, PAL_CLR(YELLOW));
+    bfont_draw(ui->cv_continents, ax, y + 3, PAL_CLR(YELLOW));
     int nz = g->res->zone_count < 4 ? g->res->zone_count : 4;
     const ResEconomy *ec = &g->res->economy;
     bool honours = ec->audiences || ec->rites_per_zone;
     int hx = ax + 4 * tile + BAND + pad;
-    if (honours) bfont_draw(ui->cv_honours, hx, y + 2, PAL_CLR(YELLOW));
+    if (honours) bfont_draw(ui->cv_honours, hx, y + 3, PAL_CLR(YELLOW));
     y += head;
     for (int i = 0; i < 4; i++)
-        cv_icon(s->view_icon[8 + i], i < nz && g->world.zones_discovered[i], ax + i * tile, y, tile);
+        cv_icon(i < nz ? s->view_icon[8 + i] : (Texture2D){ 0 }, i < nz && g->world.zones_discovered[i],
+                ax + i * tile, y, tile);
     if (honours) {
         lattice_band_v(ax + 4 * tile, y - head, BAND, head + tile);
-        int hw = r.x + r.w - pad - hx, hy = y;
+        int hw = r.x + r.w - pad - hx, hy = y + 4;
         if (ec->audiences) {
             snprintf(mb, sizeof mb, "%s", g->stats.blessed ? ui->cv_yes : ui->cv_no);
-            cv_row(ui->cv_blessed, mb, hx, hw / 2 - pad, hy);
+            cv_row(ui->cv_blessed, mb, hx, hw, hy);
+            hy += line;
             snprintf(nb, sizeof nb, "%d", g->stats.tributes);
-            cv_row(ui->cv_tributes, nb, hx + hw / 2 + pad, hw / 2 - pad, hy);
+            cv_row(ui->cv_tributes, nb, hx, hw, hy);
             hy += line;
         }
         if (ec->rites_per_zone) {
@@ -185,12 +175,7 @@ static void draw_character(const Game *g, const Sprites *s) {
                 if (off >= sizeof rites) break;
                 shown++;
             }
-            const char *p = rites;
-            char ln[160];
-            while (*p && hy + GH <= y + tile && bfont_take_line(&p, hw, ln, (int)sizeof ln) > 0) {
-                bfont_draw(ln, hx, hy, PAL_CLR(WHITE));
-                hy += line;
-            }
+            if (shown) uk_flow(hx, hy, hw, hx, 0, y + tile, rites, PAL_CLR(WHITE));
         }
     }
 }
@@ -226,91 +211,59 @@ static const char *army_slot_morale(const Game *g, int slot) {
 }
 
 static void draw_army(const Game *g, const Sprites *s) {
-    // view_army covers the full screen including the HUD area
-    // -- the right-column stats need the extra width to lay out cleanly.
-    int vx = FULL_VIEW_X;
-    int vw = FULL_VIEW_W;
-    DrawRectangle(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DGREY));   // framed by the chrome
-
-    // The row holds a troop sprite, so its height is a tile. It also carries
-    // three lines of text beside that sprite, so it must clear 3 glyphs however
-    // the pack scales -- hence the floor, which a short tile would otherwise
-    // violate. In legacy the tile is 34 and 3 glyphs are 24, so the floor never
-    // binds and the row is 34 as it always was.
-    int pad = 2 * CL_UI;
-    int row_h = CL_TILE_H;
-    if (row_h < 3 * GH + pad) row_h = 3 * GH + pad;
-
-    // view_army tick-animates each troop's idle strip over however many
-    // frames the troop declares. ~8 Hz matches the HUD villain anim cadence.
-    int anim_tick = (int)(GetTime() * 8.0);
-
+    // Five rows of a full tile, exactly the 480: each troop's portrait, then
+    // its name and how many, its morale at the right, and its numbers in
+    // aligned columns under them.
+    const ML_Rect r = ml_full();
+    const ResUI *ui = &g->res->ui;
+    const int tile = CL_TILE_W, lh = GH + 4;
+    uk_sheet();
+    int col[3] = { 0, 0, 0 };
+    int tx0 = r.x + tile + UK_INSET;
+    int cw = (r.x + r.w - UK_INSET - tx0) / 3;
+    for (int k = 0; k < 3; k++) col[k] = tx0 + k * cw;
     for (int i = 0; i < 5; i++) {
-        // Five rows of a full tile are exactly the view's 480: no top pad.
-        int ry = VIEW_Y + i * row_h;
-        int sprite_w = CL_TILE_W;
-        int sprite_h = CL_TILE_H;
-
+        int ry = r.y + i * tile;
+        if (i > 0) lattice_band_h(r.x, ry - 1, r.w, 2);
         bool filled = g->army[i].id[0] && g->army[i].count != 0;
-        if (filled)      // an empty slot stays panel-coloured
-            DrawRectangle(vx + pad, ry, sprite_w, sprite_h, PAL_CLR(DGREEN));
-
-        if (!filled) continue;
-        const TroopDef *t = troop_by_id(g->army[i].id);
-        if (!t) continue;
-
-        Texture2D tex =
-            s->troop_anim[t->index][sprites_frame(sprites_stand(anim_tick),
-                                                 s->troop_anim_frames[t->index])];
-        if (!tex.id) tex = s->troop_sprite[t->index];
-        ui_blit(tex, vx + pad, ry, sprite_w, sprite_h);
-
-        // Two columns of stats to the right.
-        int tx = vx + pad + sprite_w + 4 * CL_UI;
-        int ty = ry + 2 * CL_UI;
-        char buf[96];
-
-        const ResUI *ui = &g->res->ui;
-        // The original army roster always shows exact troop counts. (The
-        // "Army Size" fuzzy-display toggle was never in the original game.)
-        snprintf(buf, sizeof(buf), "%3d %s", g->army[i].count, t->name);
-        bfont_draw(buf, tx, ty, PAL_CLR(WHITE));
-        snprintf(buf, sizeof(buf), "%s%2d %s%2d",
-                 ui->army_skill, t->skill_level,
-                 ui->army_move,  t->move_rate);
-        bfont_draw(buf, tx, ty + GH, PAL_CLR(WHITE));
-        // OOC test, per-row (matches unit_under_control in combat.c):
-        //   hp * count > leadership  -> out of control
-        // Boundary (hp*count == leadership) is NOT OOC: a Knight
-        // (lead=100) can fully recruit up to 10 Pikemen (10*10=100)
-        // and they remain under control.
-        Color morale_color = PAL_CLR(WHITE);
-        int free_lead = g->stats.leadership_current
-                      - t->hit_points * g->army[i].count;
-        if (free_lead < 0) {
-            morale_color = PAL_CLR(RED);
-            snprintf(buf, sizeof(buf), "%s", ui->out_of_control);
-        } else {
-            snprintf(buf, sizeof(buf), "%s%s",
-                     ui->army_morale, army_slot_morale(g, i));
+        const TroopDef *t = filled ? troop_by_id(g->army[i].id) : NULL;
+        if (!t) {
+            DrawRectangle(r.x + 2, ry + 2, tile - 4, tile - 4, PAL_CLR(BLACK));
+            DrawRectangleLines(r.x + 2, ry + 2, tile - 4, tile - 4, (Color){ 60, 52, 34, 255 });
+            continue;
         }
-        bfont_draw(buf, tx, ty + GH * 2, morale_color);
-
-        // Right column: hit points, damage, cost.
-        int rx = tx + 16 * GW;
-        int total_hp = t->hit_points * g->army[i].count;
-        snprintf(buf, sizeof(buf), "%s%d", ui->army_hit_points, total_hp);
-        bfont_draw(buf, rx, ty, PAL_CLR(WHITE));
-        snprintf(buf, sizeof(buf), "%s%d-%d", ui->army_damage,
-                 t->melee_min * g->army[i].count,
-                 t->melee_max * g->army[i].count);
-        bfont_draw(buf, rx, ty + GH, PAL_CLR(WHITE));
-        snprintf(buf, sizeof(buf), "%s%d", ui->army_g_cost,
-                 (t->recruit_cost / 10) * g->army[i].count);
-        bfont_draw(buf, rx, ty + GH * 2, PAL_CLR(WHITE));
-
-        if (i < 4) draw_rule(vx + pad, ry + row_h - CL_UI,
-                             vw - 2 * pad);
+        Texture2D face = s->troop_portrait[t->index].id ? s->troop_portrait[t->index] : s->troop_sprite[t->index];
+        uk_picture(face, r.x + 1, ry + 1, tile - 2, tile - 2);
+        int ty = ry + (tile - 3 * lh) / 2 + 2;
+        char buf[96];
+        snprintf(buf, sizeof buf, "%d %s", g->army[i].count, t->name);
+        bfont_draw(buf, tx0, ty, PAL_CLR(YELLOW));
+        int free_lead = g->stats.leadership_current - t->hit_points * g->army[i].count;
+        const char *mor = free_lead < 0 ? ui->out_of_control : NULL;
+        char mbuf[64];
+        if (!mor) { snprintf(mbuf, sizeof mbuf, "%s%s", ui->army_morale, army_slot_morale(g, i)); mor = mbuf; }
+        const char *mw = army_slot_morale(g, i);
+        Color mc = free_lead < 0 ? PAL_CLR(RED)
+                 : strcmp(mw, ui->morale_low) == 0 ? PAL_CLR(RED)
+                 : strcmp(mw, ui->morale_high) == 0 ? PAL_CLR(GREEN) : PAL_CLR(WHITE);
+        bfont_draw_right(mor, r.x + r.w - UK_INSET, ty, mc);
+        ty += lh;
+        struct { const char *l; char v[32]; } cell[6];
+        cell[0].l = ui->army_skill;      snprintf(cell[0].v, 32, "%d", t->skill_level);
+        cell[1].l = ui->army_move;       snprintf(cell[1].v, 32, "%d", t->move_rate);
+        cell[2].l = ui->army_g_cost;     snprintf(cell[2].v, 32, "%d", (t->recruit_cost / 10) * g->army[i].count);
+        cell[3].l = ui->army_hit_points; snprintf(cell[3].v, 32, "%d", t->hit_points * g->army[i].count);
+        cell[4].l = ui->army_damage;     snprintf(cell[4].v, 32, "%d-%d", t->melee_min * g->army[i].count,
+                                                  t->melee_max * g->army[i].count);
+        cell[5].l = "";                  cell[5].v[0] = '\0';
+        for (int k = 0; k < 6; k++) {
+            int cx = col[k % 3], cy = ty + (k / 3) * lh;
+            if (!cell[k].l[0] && !cell[k].v[0]) continue;
+            // The value one space after the column's longer label.
+            int lw = bfont_text_width(cell[k % 3].l), lw2 = bfont_text_width(cell[k % 3 + 3].l);
+            bfont_draw(cell[k].l, cx, cy, PAL_CLR(GREY));
+            bfont_draw(cell[k].v, cx + (lw > lw2 ? lw : lw2) + GW, cy, PAL_CLR(WHITE));
+        }
     }
 }
 
@@ -318,120 +271,51 @@ static void draw_army(const Game *g, const Sprites *s) {
 //  CONTRACT VIEW -- 
 // ---------------------------------------------------------------------------
 
-// Draw a multi-line text block starting at (x, y); returns the y after the
-// last line drawn. Respects embedded newlines in the source text.
-static int draw_text_block(const char *text, int x, int y, int w, Color c) {
-    if (!text) return y;
-    const char *p = text;
-    char line[96];
-    int ly = y;
-    // Wrap to the panel width; authored newlines still break.
-    while (*p) {
-        if (bfont_take_line(&p, w, line, (int)sizeof line) <= 0) break;
-        bfont_draw(line, x, ly, c);
-        ly += GH;
-    }
-    return ly;
-}
-
 static void draw_contract(const Game *g, const Sprites *s) {
     views_contract_set_active(g && g->contract.active_id[0] != '\0');
-
-    // The full-screen layout like every other view (REQ-430j). The original
-    // left a map row showing above and below the panel and the villain's face
-    // in the HUD slot; stretched across the HUD that exposed two HUD icons and
-    // hid the rest, so the panel now takes the whole rect.
-    int panel_x = VIEW_X;
-    int panel_y = VIEW_Y;
-    int panel_w = VIEW_W;
-    int panel_h = VIEW_H;
-
-    // Blue panel, framed by the chrome.
-    DrawRectangle(panel_x, panel_y, panel_w, panel_h, PAL_CLR(DBLUE));
-
-    int pad = VIEW_PAD;
-    int tx = panel_x + pad;
-    int ty = panel_y + pad;
-
+    const ML_Rect r = ml_full();
     const ResUI *ui = &g->res->ui;
-    if (!g->contract.active_id[0]) {
-        // No contract: silhouette box top-left, "You have no Contract!"
-        // centered in the remaining space.
-        // Tile-shaped: the silhouette is the same art the HUD panel shows.
-        int box_w = CL_TILE_W;
-        int box_h = CL_TILE_H;
-        DrawRectangleLines(tx - CL_UI, ty - CL_UI,
-                           box_w + 2 * CL_UI, box_h + 2 * CL_UI,
-                           PAL_CLR(YELLOW));
-        ui_blit(s ? s->hud_contract_silhouette : (Texture2D){ 0 },
-                tx, ty, box_w, box_h);
-        bfont_draw_centered(ui->cv_title_no_contract,
-                            panel_x + panel_w / 2,
-                            panel_y + panel_h / 2 - GH / 2,
-                            PAL_CLR(WHITE));
+    const ResBanners *bn = &g->res->banners;
+    const int size = 2 * CL_TILE_W;
+    uk_sheet();
+    const VillainDef *v = g->contract.active_id[0] ? villain_by_id(g->contract.active_id) : NULL;
+    if (!v) {
+        // No contract: the empty silhouette at 2x and where to get one.
+        int top = uk_title(r.x, r.y, r.w, ui->cv_title_no_contract, NULL, PAL_CLR(YELLOW));
+        int by = top + (r.y + r.h - top - size - 3 * uk_line_h()) / 2;
+        uk_picture(s ? s->hud_contract_silhouette : (Texture2D){ 0 }, r.x + (r.w - size) / 2, by, size, size);
+        int tw = 34 * GW, ty = by + size + UK_INSET;
+        const char *p = bn->cv_no_contract_hint;
+        char line[160];
+        while (*p && bfont_take_line(&p, tw, line, (int)sizeof line) > 0) {
+            bfont_draw_centered(line, r.x + r.w / 2, ty, PAL_CLR(WHITE));
+            ty += uk_line_h();
+        }
         return;
     }
+    const ResVillainDesc *vd = resources_villain_desc(g->res, v->id);
+    char title[96], reward[64], rb[16];
+    ResTemplateVar tv[] = { { "NAME", v->name } };
+    resources_format_template(title, sizeof title, bn->cv_wanted, tv, 1);
+    snprintf(rb, sizeof rb, "%d", v->reward);
+    ResTemplateVar rv[] = { { "VALUE", rb } };
+    resources_format_template(reward, sizeof reward, ui->cv_label_reward, rv, 1);
+    int top = uk_title(r.x, r.y, r.w, title, reward, PAL_CLR(YELLOW));
 
-    // Active contract: the same full-screen panel.
-
-    const VillainDef *v = villain_by_id(g->contract.active_id);
-    if (!v) return;
-
-    // Villain portrait on left (animated when strip is available).
-    int frame = sprites_frame((int)(GetTime() * 2.0),
-                              s->villain_anim_frames[v->index]);
+    int frame = sprites_frame((int)(GetTime() * 2.0), s->villain_anim_frames[v->index]);
     Texture2D face = s->villain_anim[v->index][frame];
     if (!face.id) face = s->villain_portrait[v->index];
-    int face_w = CL_TILE_W;
-    int face_h = CL_TILE_H;
-    ui_blit(face, tx, ty, face_w, face_h);
-    ui_panel_frame(tx, ty, face_w, face_h);
-    DrawRectangleLines(tx - CL_UI, ty - CL_UI,
-                       face_w + 2 * CL_UI, face_h + 2 * CL_UI,
-                       PAL_CLR(YELLOW));
+    ML_Rect a = { r.x + UK_INSET, top + UK_INSET, r.w - 2 * UK_INSET, r.y + r.h - UK_INSET - (top + UK_INSET) };
+    uk_picture(face, a.x, a.y, size, size);
 
-    // Pull the description from game.json resources.
-    const ResVillainDesc *vd = resources_villain_desc(g->res, v->id);
-
-    int sx = tx + face_w + BFONT_GLYPH_W;
-    int sy = ty;
-    char buf[96];
-
-    // All header labels in YELLOW (). Lines: Name,
-    // Alias, Reward, Last Seen, Castle.
-    {
-        ResTemplateVar v_[] = { { "VALUE", v->name } };
-        resources_format_template(buf, sizeof buf, ui->cv_label_name, v_, 1);
-        bfont_draw(buf, sx, sy, PAL_CLR(YELLOW)); sy += GH;
-    }
-    {
-        const char *alias = (vd && vd->alias[0]) ? vd->alias : ui->cv_alias_none;
-        ResTemplateVar v_[] = { { "VALUE", alias } };
-        resources_format_template(buf, sizeof buf, ui->cv_label_alias, v_, 1);
-        bfont_draw(buf, sx, sy, PAL_CLR(YELLOW)); sy += GH;
-    }
-    {
-        char rbuf[16];
-        snprintf(rbuf, sizeof rbuf, "%d", v->reward);
-        ResTemplateVar v_[] = { { "VALUE", rbuf } };
-        resources_format_template(buf, sizeof buf, ui->cv_label_reward, v_, 1);
-        bfont_draw(buf, sx, sy, PAL_CLR(YELLOW)); sy += GH;
-    }
-    {
-        const ResZone *vz = resources_zone_by_id(g->res, v->zone);
-        const char *zone_label = (vz && vz->name[0]) ? vz->name : v->zone;
-        ResTemplateVar v_[] = { { "VALUE", zone_label } };
-        resources_format_template(buf, sizeof buf, ui->cv_label_last_seen,
-                                  v_, 1);
-        bfont_draw(buf, sx, sy, PAL_CLR(YELLOW)); sy += GH;
-    }
-
-    // Castle -- populated from castle catalog when contract.active has a
-    // known castle (owner_kind == CASTLE_OWNER_VILLAIN, villain_id ==).
+    UkDoc d = { 0 };
+    uk_doc_labeled(&d, ui->cv_label_name, v->name);
+    uk_doc_labeled(&d, ui->cv_label_alias, (vd && vd->alias[0]) ? vd->alias : ui->cv_alias_none);
+    const ResZone *vz = resources_zone_by_id(g->res, v->zone);
+    uk_doc_labeled(&d, ui->cv_label_last_seen, (vz && vz->name[0]) ? vz->name : v->zone);
     const char *castle_name = ui->cv_castle_unknown;
     for (int i = 0; i < GAME_CASTLES; i++) {
-        if (!g->castles[i].id[0]) continue;
-        if (g->castles[i].owner_kind != CASTLE_OWNER_VILLAIN) continue;
+        if (!g->castles[i].id[0] || g->castles[i].owner_kind != CASTLE_OWNER_VILLAIN) continue;
         if (strcmp(g->castles[i].villain_id, v->id) != 0) continue;
         if (g->castles[i].known) {
             const ResCastle *rc = resources_castle_by_id(g->res, g->castles[i].id);
@@ -439,28 +323,18 @@ static void draw_contract(const Game *g, const Sprites *s) {
         }
         break;
     }
-    {
-        ResTemplateVar v_[] = { { "VALUE", castle_name } };
-        resources_format_template(buf, sizeof buf, ui->cv_label_castle, v_, 1);
-        bfont_draw(buf, sx, sy, PAL_CLR(YELLOW)); sy += GH + 2;
-    }
-
-    // Features block (use the full panel width below the header band).
+    uk_doc_labeled(&d, ui->cv_label_castle, castle_name);
     if (vd && vd->features[0]) {
-        bfont_draw(ui->cv_features_header,
-                   panel_x + pad, sy, PAL_CLR(YELLOW));
-        sy += GH;
-        sy = draw_text_block(vd->features, panel_x + pad, sy, panel_w - 2 * pad, PAL_CLR(WHITE));
-        sy += 2;
+        uk_doc_gap(&d);
+        uk_doc_add(&d, ui->cv_features_header, PAL_CLR(YELLOW));
+        uk_doc_add(&d, vd->features, PAL_CLR(WHITE));
     }
-
-    // Crimes block.
     if (vd && vd->crimes[0]) {
-        bfont_draw(ui->cv_crimes_header,
-                   panel_x + pad, sy, PAL_CLR(YELLOW));
-        sy += GH;
-        sy = draw_text_block(vd->crimes, panel_x + pad, sy, panel_w - 2 * pad, PAL_CLR(WHITE));
+        uk_doc_gap(&d);
+        uk_doc_add(&d, ui->cv_crimes_header, PAL_CLR(YELLOW));
+        uk_doc_add(&d, vd->crimes, PAL_CLR(WHITE));
     }
+    uk_doc_draw(&d, a, size, size, -1, true);
 }
 
 // ---------------------------------------------------------------------------
@@ -502,9 +376,27 @@ static void puzzle_load_scepter_map(const Game *g) {
 }
 
 static void draw_puzzle(const Game *g, const Sprites *s) {
-    // The full-screen layout: the panel fills the whole rect, HUD included,
-    // and the five-tile grid centres in it below.
-    draw_view_panel();
+    // The grid of five tiles at the left, whole; beside it what it is and how
+    // much of it is uncovered.
+    uk_sheet();
+    {
+        const ML_Rect r = ml_full();
+        const ResUI *ui = &g->res->ui;
+        int px = r.x + 5 * CL_TILE_W + UK_BAND;
+        lattice_band_v(px - UK_BAND, r.y, UK_BAND, r.h);
+        int top = uk_title(px, r.y, r.x + r.w - px, g->res->ui.gm_puzzle, NULL, PAL_CLR(YELLOW));
+        int x = px + UK_INSET, w = r.x + r.w - UK_INSET - x;
+        int y = uk_flow(x, top + UK_INSET, w, x, 0, r.y + r.h, g->res->banners.puzzle_legend, PAL_CLR(WHITE));
+        char nb[32];
+        int total_v = g->res->villains_count < CAT_VILLAINS_MAX ? g->res->villains_count : CAT_VILLAINS_MAX;
+        int total_a = artifacts_count() < 8 ? artifacts_count() : 8;
+        y += uk_line_h();
+        snprintf(nb, sizeof nb, "%d/%d", GameVillainsCaught(g), total_v);
+        bfont_draw(ui->cv_captured, x, y, PAL_CLR(YELLOW)); bfont_draw_right(nb, x + w, y, PAL_CLR(WHITE));
+        y += uk_line_h();
+        snprintf(nb, sizeof nb, "%d/%d", GameArtifactsFound(g), total_a);
+        bfont_draw(ui->cv_artifacts, x, y, PAL_CLR(YELLOW)); bfont_draw_right(nb, x + w, y, PAL_CLR(WHITE));
+    }
 
     // Cells span ONLY the map area (240x170), NOT the sidebar -- matches
     // . Each cell is 48x34, same as a map tile, so
@@ -517,7 +409,7 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
     // and this lands on the historic grid.
     int cell_w = CL_TILE_W;
     int cell_h = CL_TILE_H;
-    int grid_x = VIEW_X + (VIEW_W - cell_w * 5) / 2;
+    int grid_x = VIEW_X;
     int grid_y = VIEW_Y + (VIEW_H - cell_h * 5) / 2;
 
     puzzle_load_scepter_map(g);
@@ -699,25 +591,36 @@ static void draw_worldmap_exit_hint(const Game *g) {
 }
 
 static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
-    draw_view_panel();
-    draw_worldmap_exit_hint(g);
+    uk_sheet();
+    (void)draw_worldmap_exit_hint;
 
     if (!m || m->width <= 0 || m->height <= 0) return;
 
     bool reveal_all = worldmap_has_orb(g) && views_render_worldmap_whole();
 
-    // Compute pixel-per-tile that fits the view panel, integer scaling.
-    // Under the map: the coordinates line, then the reveal row.
-    int row_h = GH + 2;
-    int avail_w = VIEW_W - 2 * VIEW_PAD;
-    int avail_h = VIEW_H - 2 * VIEW_PAD - 2 * row_h;
+    // The map at the largest whole scale the height allows, at the left; the
+    // continent, the position and the reveal row beside it.
+    const int side_w = 280;
+    int avail_w = VIEW_W - side_w - UK_BAND - 2 * VIEW_PAD;
+    int avail_h = VIEW_H - 2 * VIEW_PAD;
     int pix = (avail_w / m->width < avail_h / m->height)
               ? avail_w / m->width : avail_h / m->height;
     if (pix < 1) pix = 1;
     int grid_w = pix * m->width;
     int grid_h = pix * m->height;
-    int gx = VIEW_X + (VIEW_W - grid_w) / 2;
-    int gy = VIEW_Y + VIEW_PAD + (avail_h - grid_h) / 2;
+    int map_w = VIEW_W - side_w - UK_BAND;
+    int gx = VIEW_X + (map_w - grid_w) / 2;
+    int gy = VIEW_Y + (VIEW_H - grid_h) / 2;
+    {
+        int sx = VIEW_X + map_w;
+        lattice_band_v(sx, VIEW_Y, UK_BAND, VIEW_H);
+        const ResZone *z = resources_zone_by_id(g->res, g->position.zone);
+        int top = uk_title(sx + UK_BAND, VIEW_Y, side_w, (z && z->name[0]) ? z->name : g->position.zone, NULL,
+                           PAL_CLR(YELLOW));
+        char pos[48];
+        snprintf(pos, sizeof pos, "X=%d Y=%d", g->position.x, g->position.y);
+        bfont_draw(pos, sx + UK_BAND + UK_INSET, top + UK_INSET, PAL_CLR(WHITE));
+    }
 
     DrawRectangle(gx, gy, grid_w, grid_h, PAL_CLR(BLACK));
 
@@ -762,10 +665,6 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
                   gy + g->position.y * pix,
                   pix, pix, blink);
 
-    char buf[48];
-    snprintf(buf, sizeof(buf), "X=%d Y=%d",
-             g->position.x, g->position.y);
-    bfont_draw(buf, gx, gy + grid_h + 2, PAL_CLR(WHITE));
 
     // With the orb: one row that swaps your map and the whole map (Enter,
     // Space or a tap; main.c reads it).
@@ -773,13 +672,12 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
         const ResUI *ui = &g->res->ui;
         const char *label = views_render_worldmap_whole() ? ui->worldmap_row_your_map
                                                           : ui->worldmap_row_whole_map;
-        int rw = bfont_text_width(label) + 4 * VIEW_PAD;
-        int rx = VIEW_X + (VIEW_W - rw) / 2;
-        int ry = gy + grid_h + 2 + row_h;
+        int rx = VIEW_X + map_w + UK_BAND, rw = side_w;
         int rh = ml_row_h();                 // a standard select row (REQ-430n)
-        if (ry + rh > VIEW_Y + VIEW_H) ry = VIEW_Y + VIEW_H - rh;
-        sel_row(rx, ry, rw, rh, rx + 2 * VIEW_PAD, label, true,
-                PAL_CLR(YELLOW), PAL_CLR(DGREY), TOUCH_LIST_PROMPT, 0);
+        int ry = VIEW_Y + VIEW_H - rh;
+        lattice_band_h(rx, ry - UK_BAND, rw, UK_BAND);
+        sel_row(rx, ry, rw, rh, rx + ML_PAD, label, true,
+                PAL_CLR(YELLOW), uk_ink(), TOUCH_LIST_PROMPT, 0);
     }
 }
 
@@ -800,29 +698,44 @@ static bool spell_row(void *ctx, int i, char *label, char *right, int cap) {
 }
 
 static void draw_spells(const Game *g) {
-    draw_view_panel();
-
+    // The two lists side by side under their headings, and the spell under the
+    // cursor described along the foot.
+    const ML_Rect r = ml_full();
     const ResUI *ui = &g->res->ui;
-    bfont_draw_centered(ui->sv_title,
-                        VIEW_X + VIEW_W / 2,
-                        VIEW_Y + VIEW_PAD,
-                        PAL_CLR(YELLOW));
-
-    int head_y = VIEW_Y + VIEW_PAD + GH + 4;
-    int half = VIEW_W / 2;
-    bfont_draw(ui->sv_combat_col,    VIEW_X + VIEW_PAD, head_y, PAL_CLR(YELLOW));
-    bfont_draw(ui->sv_adventure_col, VIEW_X + half + VIEW_PAD, head_y, PAL_CLR(YELLOW));
-
-    // Two columns of seven standard select rows (REQ-430n): combat 0..6 on
-    // the left, adventure 7..13 on the right; a spell with no charges is grey.
-    int row_y = head_y + GH + 4;
-    int h = VIEW_Y + VIEW_H - row_y;
+    uk_sheet();
+    int top = uk_title(r.x, r.y, r.w, ui->sv_title, NULL, PAL_CLR(YELLOW));
+    int half = r.w / 2;
+    bfont_draw(ui->sv_combat_col,    r.x + ML_PAD, top + 4, PAL_CLR(YELLOW));
+    bfont_draw(ui->sv_adventure_col, r.x + half + UK_BAND + ML_PAD, top + 4, PAL_CLR(YELLOW));
+    int row_y = top + GH + 8;
+    int rows_h = ml_list_height(7);
     int cur = views_spells_cursor();
     SpellsCtx c = { g };
-    ml_list_draw_ex(VIEW_X, row_y, half, h, 7, cur < 7 ? cur : -1,
-                    spell_row, &c, TOUCH_LIST_SPELLS, PAL_CLR(DGREY), 0);
-    ml_list_draw_ex(VIEW_X + half, row_y, VIEW_W - half, h, 7, cur >= 7 ? cur - 7 : -1,
-                    spell_row, &c, TOUCH_LIST_SPELLS, PAL_CLR(DGREY), 7);
+    ml_list_draw_ex(r.x, row_y, half, rows_h, 7, cur < 7 ? cur : -1,
+                    spell_row, &c, TOUCH_LIST_SPELLS, uk_ink(), 0);
+    lattice_band_v(r.x + half, top, UK_BAND, row_y + rows_h - top);
+    ml_list_draw_ex(r.x + half + UK_BAND, row_y, r.w - half - UK_BAND, rows_h, 7, cur >= 7 ? cur - 7 : -1,
+                    spell_row, &c, TOUCH_LIST_SPELLS, uk_ink(), 7);
+    int fy = row_y + rows_h;
+    lattice_band_h(r.x, fy, r.w, UK_BAND);
+    const SpellDef *sp = (cur >= 0) ? spell_by_index(cur) : NULL;
+    const char *desc = sp ? sp->description : NULL;
+    if ((!desc || !desc[0]) && sp) desc = resources_spell_lore(g->res, sp->id);
+    if (desc) {
+        // As many whole sentences as the foot holds.
+        int tw = r.w - 2 * UK_INSET, fit = (r.y + r.h - (fy + UK_BAND + 6)) / uk_line_h();
+        char text[512];
+        snprintf(text, sizeof text, "%s", desc);
+        while (uk_lines(text, tw) > fit) {
+            char *end = NULL;
+            for (char *q = text; *q; q++)
+                if ((q[0] == '.' || q[0] == '!' || q[0] == '?') && (q[1] == ' ' || q[1] == '"') && q[1]) end = q;
+            if (!end) break;
+            end[1] = '\0';
+            if (end[0] && end + 1 > text && uk_lines(text, tw) <= fit) break;
+        }
+        uk_flow(r.x + UK_INSET, fy + UK_BAND + 6, tw, r.x, 0, r.y + r.h, text, PAL_CLR(WHITE));
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -846,34 +759,39 @@ static bool gate_row(void *ctx, int i, char *label, char *right, int cap) {
 }
 
 static void draw_gate(void) {
-    // Full content width (map + sidebar): town names can be long.
-    int vx = FULL_VIEW_X;
-    int vw = FULL_VIEW_W;
-    DrawRectangle(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DGREY));   // framed by the chrome
-
-    const ResUI *ui = &resources_current()->ui;
-    const char *title = views_gate_is_town() ? ui->gate_title_town
-                                             : ui->gate_title_castle;
-    bfont_draw_centered(title, vx + vw / 2, VIEW_Y + VIEW_PAD, PAL_CLR(YELLOW));
-    ml_hint_button(vx + vw - VIEW_PAD - ml_hint_width(ui->hint_back, ui->key_esc, ui->pad_back),
-                   VIEW_Y + VIEW_PAD - 4, ui->hint_back, ui->key_esc, ui->pad_back, KEY_ESCAPE);
-
-    // Three columns of standard select rows (REQ-430n), filled top to bottom;
-    // the name alone in each row (its first letter still picks it).
+    // An in-lay over the dimmed map: the destinations in columns, and where
+    // the one under the cursor is along the foot. Back is the top bar.
+    const Resources *res = resources_current();
+    const ResUI *ui = &res->ui;
+    const char *title = views_gate_is_town() ? ui->gate_title_town : ui->gate_title_castle;
     int n = views_gate_count();
     int cursor = views_gate_cursor();
-    int row_y = VIEW_Y + VIEW_PAD + GH + VIEW_PAD;
-    int h = VIEW_Y + VIEW_H - row_y;
     int per = views_gate_rows_per_column();
     int cols = VIEWS_GATE_COLUMNS;
-    int cw = vw / cols;
+    int shown_rows = n < per ? n : per;
+    if (shown_rows < 1) shown_rows = 1;
+    int foot_h = UK_BAND + 2 * ML_PAD + uk_line_h();
+    int h = uk_title_h() + UK_BAND + ml_list_height(shown_rows) + foot_h;
+    ML_Rect b = uk_inlay(ml_full().w, h, title, NULL);
+    int cw = b.w / cols;
+    int rows_h = ml_list_height(shown_rows);
     for (int c = 0; c < cols; c++) {
         int base = c * per;
         if (base >= n) break;
         int cnt = n - base < per ? n - base : per;
         int cur = (cursor >= base && cursor < base + cnt) ? cursor - base : -1;
-        ml_list_draw_ex(vx + c * cw, row_y, c == cols - 1 ? vw - c * cw : cw, h, cnt, cur,
-                        gate_row, NULL, TOUCH_LIST_GATE, PAL_CLR(DGREY), base);
+        ml_list_draw_ex(b.x + c * cw, b.y, c == cols - 1 ? b.w - c * cw : cw, rows_h, cnt, cur,
+                        gate_row, NULL, TOUCH_LIST_GATE, uk_ink(), base);
+    }
+    int fy = b.y + rows_h;
+    lattice_band_h(b.x, fy, b.w, UK_BAND);
+    const GateDestination *d = views_gate_dest(cursor);
+    if (d) {
+        const ResZone *z = resources_zone_by_id(res, d->zone);
+        char buf[RES_BANNER_LEN];
+        ResTemplateVar v[] = { { "TOWN", d->name }, { "ZONE", (z && z->name[0]) ? z->name : d->zone } };
+        resources_format_template(buf, sizeof buf, res->banners.gate_travel, v, 2);
+        bfont_draw(buf, b.x + UK_INSET, fy + UK_BAND + ML_PAD, PAL_CLR(WHITE));
     }
 }
 

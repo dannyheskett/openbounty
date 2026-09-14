@@ -5,6 +5,7 @@
 #include "layout.h"
 #include "modern/mlayout.h"
 #include "modern/mlist.h"
+#include "modern/uikit.h"
 #include "modern/saveslots.h"
 #include "lattice.h"
 #include "present.h"
@@ -80,6 +81,7 @@ static void frame_end(RenderTexture2D *rt) {
 }
 
 static void panel(int x, int y, int w, int h) {
+    if (CL_IS_MODERN) { uk_panel(x, y, w, h); return; }
     DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
     ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
 }
@@ -243,7 +245,7 @@ static bool difficulty_row(void *ctx, int i, char *label, char *right, int cap) 
     snprintf(label, (size_t)cap, "%-12.12s %4d", d->labels[i],
              d->res->time.days_per_difficulty[i]);
     snprintf(right, 48, "%s", p);
-    return d->has_name;
+    return true;          // readable before a name; chosen only after one
 }
 
 static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
@@ -321,22 +323,20 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
             draw_title_backdrop(sprites);
             const Resources *mr = resources_current();
             const ResUI *mui = mr ? &mr->ui : NULL;
-            // The standard large rect (REQ-430j).
-            ML_Rect lr = ml_large();
-            int mpad = ML_PAD;
-            int mw = lr.w, mx = lr.x, my = lr.y;
-            panel(lr.x, lr.y, lr.w, lr.h);
-            bfont_draw(mui ? mui->title_load_adventure : "Load Saved Game",
-                       mx + mpad, my + mpad, PAL_CLR(YELLOW));   // left: the Back button is at the right
+            // An in-lay as tall as its slots: the title with Back at the
+            // right (startup has no top bar), then a row per slot.
+            int fit_rows = ml_list_fit(CL_SCREEN_H - 40 - uk_title_h() - UK_BAND);
+            if (fit_rows > SAVE_SLOT_COUNT) fit_rows = SAVE_SLOT_COUNT;
+            int mw = 656, mh = uk_title_h() + UK_BAND + ml_list_height(fit_rows);
+            int mx = (CL_SCREEN_W - mw) / 2, my = (CL_SCREEN_H - mh) / 2;
+            DrawRectangle(0, 0, CL_SCREEN_W, CL_SCREEN_H, (Color){ 0, 0, 0, 110 });
+            panel(mx, my, mw, mh);
+            int mty = uk_title(mx, my, mw, mui ? mui->title_load_adventure : "", NULL, PAL_CLR(YELLOW));
             if (mui)
-                ml_hint_button(mx + mw - mpad - ml_hint_width(mui->hint_back, mui->key_esc, mui->pad_back),
-                               my + mpad - 4, mui->hint_back, mui->key_esc, mui->pad_back, KEY_ESCAPE);
-            // The slots as standard select rows (REQ-430n), scrolling.
-            int mty = my + mpad + GH + mpad;
-            lattice_band_h(mx, mty, mw, 4);
-            mty += 4;
-            ml_list_draw(mx, mty, mw, my + lr.h - mty, SAVE_SLOT_COUNT, cursor,
-                         saveslots_row, &slots, TOUCH_LIST_STARTUP, PAL_CLR(DBLUE));
+                ml_hint_button(mx + mw - ML_PAD - ml_hint_width(mui->hint_back, mui->key_esc, mui->pad_back),
+                               my + 3, mui->hint_back, mui->key_esc, mui->pad_back, KEY_ESCAPE);
+            ml_list_draw(mx, mty, mw, my + mh - mty, SAVE_SLOT_COUNT, cursor,
+                         saveslots_row, &slots, TOUCH_LIST_STARTUP, uk_ink());
             frame_end(rt);
             continue;
         }
@@ -435,7 +435,7 @@ static void draw_title_menu(const Sprites *sprites, const char **labels, int cou
     if (title_sequence_ok(sprites)) y -= 40;   // clear of the subtitle at the art's foot
     panel(x, y, w, h);
     ml_list_draw(x, y, w, h, count, cursor, title_row, (void *)labels,
-                 touch_list, PAL_CLR(DBLUE));
+                 touch_list, uk_ink());
 }
 
 static bool run_title_menu(const Resources *res, const Sprites *sprites,
@@ -635,6 +635,24 @@ static bool run_class_select(const Resources *res,
                        40 * CL_UI, 90 * CL_UI, PAL_CLR(YELLOW));
         }
 
+        // Modern: the picked figure's caption along the foot -- its class and
+        // what it is like.
+        if (CL_IS_MODERN && class_cursor >= 0) {
+            const ClassDef *pc = class_by_index(class_cursor);
+            const ResBanners *bn = &res->banners;
+            const char *desc = !pc ? "" : strcmp(pc->id, "knight") == 0 ? bn->class_desc_knight
+                             : strcmp(pc->id, "paladin") == 0 ? bn->class_desc_paladin
+                             : strcmp(pc->id, "sorceress") == 0 ? bn->class_desc_sorceress
+                             : strcmp(pc->id, "barbarian") == 0 ? bn->class_desc_barbarian : "";
+            int cw = 700, tw = cw - 2 * UK_INSET;
+            int lines = uk_lines(desc, tw);
+            int chh = 2 * UK_INSET + (1 + lines) * uk_line_h();
+            int cx = (CL_SCREEN_W - cw) / 2, cy = CL_SCREEN_H - chh - 16;
+            panel(cx, cy, cw, chh);
+            bfont_draw(pc ? pc->name : "", cx + UK_INSET, cy + UK_INSET, PAL_CLR(YELLOW));
+            uk_flow(cx + UK_INSET, cy + UK_INSET + uk_line_h(), tw, cx, 0, cy + chh, desc, PAL_CLR(WHITE));
+        }
+
         // Status-bar hint at top (). Modern: the picked figure's class.
         DrawRectangle(0, 0, CL_SCREEN_W, GH + 2, PAL_CLR(DRED));
         const char *hint = res->ui.startup_class_select_hint;
@@ -806,14 +824,18 @@ static bool run_create_game(const Resources *res,
             DrawRectangle(0, 0, CL_SCREEN_W, GH + 2, PAL_CLR(DRED));
             bfont_draw_centered(class_title, CL_SCREEN_W / 2, 1, PAL_CLR(WHITE));
 
-            // The standard large rect (REQ-430j) with the standard padding:
-            // text ML_PAD in from the frame, selection bars ML_PAD / 2.
-            ML_Rect lr = ml_large();
+            // An in-lay as tall as what it holds: the name, the difficulty
+            // table, and the letter selector while it takes the name.
             int mrow = GH + 4;
-            int mx = lr.x, my = lr.y, mw = lr.w;
-            panel(lr.x, lr.y, lr.w, lr.h);
-            int cx0 = mx + ML_PAD;
-            int ty = my + ML_PAD;
+            int mw = UK_INLAY_W;
+            int sel_h = (!has_name && selector) ? textsel_h(false, GH + 4) + mrow : 0;
+            int mh = UK_INSET + 3 * mrow + UK_BAND + ml_list_height(n) + sel_h;
+            int mx = (CL_SCREEN_W - mw) / 2, my = (CL_SCREEN_H - mh) / 2;
+            if (my < GH + 8) my = GH + 8;
+            DrawRectangle(0, GH + 2, CL_SCREEN_W, CL_SCREEN_H, (Color){ 0, 0, 0, 110 });
+            panel(mx, my, mw, mh);
+            int cx0 = mx + UK_INSET;
+            int ty = my + UK_INSET;
 
             // "Hero Name: " then the name as plain text, the default in grey
             // until something is typed, and a caret while typing.
@@ -846,7 +868,7 @@ static bool run_create_game(const Resources *res,
                     int hx = (k == 2) ? mx + mw - ML_PAD - bfont_text_width(tok)
                                       : cx0 + col[k] * GW;
                     if (*tok) bfont_draw(tok, hx, ty,
-                                         has_name ? PAL_CLR(YELLOW) : PAL_CLR(GREY));
+                                         PAL_CLR(YELLOW));
                 }
             }
             ty += mrow;
@@ -858,16 +880,14 @@ static bool run_create_game(const Resources *res,
             ty += 4;
             ml_list_draw(mx, ty, mw, ml_list_height(n), n, has_name ? sel : -1,
                          difficulty_row, &dc, has_name ? TOUCH_LIST_STARTUP : 0,
-                         PAL_CLR(DBLUE));
+                         uk_ink());
             ty += ml_list_height(n);
 
             if (!has_name && selector) {
                 int cw = 2 * GW, chh = GH + 4;
                 int gx = mx + (mw - textsel_w(false, cw)) / 2;
                 int gy = ty + mrow / 2;
-                DrawRectangle(gx - 2, gy - 2, textsel_w(false, cw) + 4,
-                              textsel_h(false, chh) + 4, PAL_CLR(DBLUE));
-                textsel_draw(&ts, gx, gy, cw, chh, PAL_CLR(YELLOW), PAL_CLR(DBLUE),
+                textsel_draw(&ts, gx, gy, cw, chh, PAL_CLR(YELLOW), uk_ink(),
                              TOUCH_LIST_TEXTSEL);
             }
             frame_end(rt);
@@ -1131,6 +1151,12 @@ static bool run_credits(RenderTexture2D *rt, const Resources *res,
     int min_panel_h = pad * 2 + image_h;
     if (panel_h < min_panel_h) panel_h = min_panel_h;
 
+    // Modern: a Back row along the foot (any key or tap still closes them).
+    if (CL_IS_MODERN) {
+        pad = UK_INSET;
+        panel_h += 2 * (UK_INSET - 6) + UK_BAND + ml_list_height(1);
+        panel_w += 2 * (UK_INSET - 6);
+    }
     int px = (CL_SCREEN_W - panel_w) / 2;
     int py = (CL_SCREEN_H - panel_h) / 2;
 
@@ -1178,6 +1204,14 @@ static bool run_credits(RenderTexture2D *rt, const Resources *res,
             int cx = px + (panel_w - tw) / 2;
             bfont_draw(line, cx, ty, PAL_CLR(WHITE));
             ty += line_h;
+        }
+
+        if (CL_IS_MODERN) {
+            const char *back[1] = { res->ui.gm_back };
+            int ry = py + panel_h - ml_list_height(1);
+            lattice_band_h(px, ry - UK_BAND, panel_w, UK_BAND);
+            ml_list_draw(px, ry, panel_w, ml_list_height(1), 1, 0, title_row, (void *)back,
+                         TOUCH_LIST_STARTUP, uk_ink());
         }
 
         // Inset image (re-using class_select_highlight). Vertically

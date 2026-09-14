@@ -5,6 +5,7 @@
 #include "layout.h"
 #include "ui.h"
 #include "chrome.h"
+#include "lattice.h"
 #include "raylib.h"
 #include <stdio.h>
 #include <stdarg.h>
@@ -172,6 +173,30 @@ void combat_render_frame(const Combat *c, const Game *g,
             else
                 draw_tile(sprites, 0, px, py);
         }
+    }
+
+    // Modern: the bars either side of the field are the same ground, darkened,
+    // with a lattice rail where the field ends.
+    if (CL_IS_MODERN) {
+        int fx = CL_COMBAT_X, fw = COMBAT_W * CL_COMBAT_CELL_W;
+        int top = CL_COMBAT_Y - (c->castle ? CL_COMBAT_CELL_H : 0);
+        int fh = COMBAT_H * CL_COMBAT_CELL_H + (CL_COMBAT_Y - top);
+        for (int side = 0; side < 2; side++) {
+            for (int k = 1; ; k++) {
+                int px = side ? fx + fw + (k - 1) * CL_COMBAT_CELL_W : fx - k * CL_COMBAT_CELL_W;
+                if (side ? px >= CL_SCREEN_W : px + CL_COMBAT_CELL_W <= 0) break;
+                for (int y = 0; y < COMBAT_H; y++) {
+                    int py = CL_COMBAT_Y + y * CL_COMBAT_CELL_H;
+                    if (s_ground.id) ui_blit(s_ground, px, py, CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
+                    else draw_tile(sprites, 0, px, py);
+                }
+            }
+        }
+        Color shade = { 0, 0, 0, 150 };
+        DrawRectangle(0, top, fx, fh, shade);
+        DrawRectangle(fx + fw, top, CL_SCREEN_W - fx - fw, fh, shade);
+        lattice_band_v(fx - 4, top, 4, fh);
+        lattice_band_v(fx + fw, top, 4, fh);
     }
 
     // Siege grid band: row 0 of the grid across the band above the board.

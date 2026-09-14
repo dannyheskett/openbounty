@@ -81,6 +81,7 @@ typedef enum {
     REQ_FACE_VILLAIN,     // face_index = VillainDef.index
     REQ_FACE_TROOP,       // face_index = TroopDef.index
     REQ_FACE_ARTIFACT,    // face_index = artifact index
+    REQ_FACE_PORTRAIT,    // face_index = the pack's portrait index (a person)
 } ReqFace;
 
 typedef struct {

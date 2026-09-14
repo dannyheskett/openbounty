@@ -101,15 +101,21 @@ bool pack_select_flow(const PackEntry *list, int n, int *chosen) {
         DrawText(title, (W - tw) / 2, 32, 24, RAYWHITE);
 
         int top = (H - n * ROW_H) / 2;
+        // A framed panel like the game's own: a gold edge, a rule under each
+        // row, the chosen row lit gold with dark words.
+        {
+            int x = (W - ROW_W) / 2;
+            DrawRectangle(x - 6, top - 6, ROW_W + 12, n * ROW_H + 12, (Color){ 12, 14, 30, 255 });
+            DrawRectangleLinesEx((Rectangle){ (float)(x - 6), (float)(top - 6), (float)(ROW_W + 12),
+                                              (float)(n * ROW_H + 12) }, 3, (Color){ 200, 160, 60, 255 });
+        }
         for (int i = 0; i < n; i++) {
             const char *line = i < 16 ? titles[i] : list[i].name;
-            Color fg = (i == cursor) ? YELLOW : RAYWHITE;
+            Color fg = (i == cursor) ? (Color){ 16, 18, 36, 255 } : RAYWHITE;
             int x = (W - ROW_W) / 2;
             int y = top + i * ROW_H;
-            if (i == cursor) {
-                DrawRectangle(x, y, ROW_W, ROW_H, (Color){ 40, 40, 70, 255 });
-                DrawRectangleLines(x, y, ROW_W, ROW_H, YELLOW);
-            }
+            if (i == cursor) DrawRectangle(x, y, ROW_W, ROW_H - 2, YELLOW);
+            if (i + 1 < n) DrawRectangle(x, y + ROW_H - 2, ROW_W, 2, (Color){ 120, 96, 40, 255 });
             int lw = MeasureText(line, FONT);
             DrawText(line, x + (ROW_W - lw) / 2, y + (ROW_H - FONT) / 2, FONT, fg);
         }

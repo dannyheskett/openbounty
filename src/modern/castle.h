@@ -33,6 +33,7 @@ void        modern_castle_gallery_audience(int audience, int rank);
 const char *modern_castle_id(void);
 McPage      modern_castle_page(void);
 int         modern_castle_cursor(void);      // on the page shown
+int         modern_castle_menu_cursor(void); // on the castle's own rows
 int         modern_castle_rows(const Game *g);
 // Row i's label; *troop_id (may be NULL) names the troop the row stands for.
 void        modern_castle_row(const Game *g, int i, char *out, int cap,

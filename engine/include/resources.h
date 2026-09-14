@@ -435,6 +435,17 @@ typedef struct {
     // Town overlay header + sticky widgets .
     // Substitutions: %NAME%, %GOLD%.
     char town_header[RES_BANNER_LEN];
+    char town_intro[RES_BANNER_LEN];
+    char town_visit[RES_BANNER_LEN];
+    char cv_wanted[RES_BANNER_LEN];
+    char cv_no_contract_hint[RES_BANNER_LEN];
+    char puzzle_legend[RES_BANNER_LEN];
+    char gate_travel[RES_BANNER_LEN];
+    char class_desc_knight[RES_BANNER_LEN];
+    char class_desc_paladin[RES_BANNER_LEN];
+    char class_desc_sorceress[RES_BANNER_LEN];
+    char class_desc_barbarian[RES_BANNER_LEN];
+    char spell_bridge_prompt_modern[RES_BANNER_LEN];
     char town_gold_label[RES_BANNER_LEN];
 
     // Town menu rows. The boat/spell/siege rows toggle between two
@@ -1443,7 +1454,7 @@ bool resources_load(Resources *res, const char *manifest_path);
 // names map.c stamps by interact kind -- so no caller could answer that
 // question without replicating all five. Tile names, the villain stem
 // fallback and the object names are expanded here so callers see real paths.
-#define RES_ART_MANIFEST_MAX 512
+#define RES_ART_MANIFEST_MAX 2048
 int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
                            int cap);
 // Override the locale used for the next resources_load. Strings load from

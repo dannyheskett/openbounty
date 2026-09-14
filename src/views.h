@@ -113,6 +113,10 @@ bool views_town_result_dialog(void);
 // with the cursor on lcursor; else that section's page), with an optional
 // result message, shown as its dialog when `dialog`.
 void views_gallery_town(const struct Game *g, int row, int lcursor, const char *info, bool dialog);
+void views_gallery_town_scene(int cursor);
+// Modern: the services in-lay is open over the scene (else the scene's rows).
+bool views_town_visiting(void);
+int  views_town_scene_cursor(void);
 
 // Town record id (canonical id for g->towns[] lookup), or NULL if not
 // in VIEW_TOWN.

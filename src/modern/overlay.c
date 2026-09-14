@@ -1,8 +1,10 @@
 // src/modern/overlay.c
 //
 // The overlay for a pack that declared render.mode "modern": square tiles, a
-// TrueType face, one panel rect (REQ-430h), the inverted cursor row (REQ-430e)
-// and the dimmed scene beneath (REQ-430g). Modern UI work happens here.
+// TrueType face, the inverted cursor row (REQ-430e) and the dimmed scene
+// beneath (REQ-430g). Every panel here is built from the shared kit
+// (src/modern/uikit.h): place screens are a scene with rows, and what a place
+// offers opens as an in-lay over it.
 //
 // The DOS original's overlay is in src/legacy/overlay.c and is frozen: it must
 // not be edited to serve anything in this file.
@@ -12,6 +14,7 @@
 #include "overlay.h"
 #include "overlay_impl.h"
 #include "modern/mlayout.h"
+#include "modern/uikit.h"
 #include "touch.h"
 #include "select.h"
 #include "layout.h"
@@ -26,55 +29,32 @@
 #include "prompt_impl.h"
 #include "pending.h"
 #include "player_io.h"
+#include "spells_adventure.h"
 #include "modern/castle.h"
 #include "modern/mlist.h"
+#include "modern/location.h"
 #include "shell_audience.h"
 #include "screens/dwelling.h"
-#include "ui.h"
 #include <stdio.h>
 #include <string.h>
 
-// Width of a glyph + 1px spacing between glyphs . Bitmap font is
-// fixed-pitch 8x8 with no extra spacing so chars-per-line at width W is
-// W / BFONT_GLYPH_W.
 #define GW  BFONT_GLYPH_W
 #define GH  BFONT_GLYPH_H
 
+// =============================================================================
+//  Messages
+// =============================================================================
 
-// ---------------------------------------------------------------------------
-// Bottom message frame: a solid black strip covering the map viewport from
-// the status bar downward, plus a 1px yellow frame. This rendering reserves the
-// entire bottom portion of the screen for long messages (KB_BottomBox); we
-// draw into the map viewport because that's the biggest available area.
-// ---------------------------------------------------------------------------
-
-static void draw_panel(int x, int y, int w, int h, Color bg) {
-    DrawRectangle(x, y, w, h, bg);
-    ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
-}
-
-// Pages the current dialog body wraps to in the bottom panel. Counts WRAPPED
-// lines the same way draw_dialog_ex renders them -- same bfont_take_line, same
-// CL_PANEL_COLS width, same rows-per-page -- so the pager (dialog_advance)
-// and the display never disagree. The old pager counted raw newlines, so a
-// long word-wrapped paragraph with few newlines was scored as one page and
-// its overflow was unreachable.
 // Wrapped line count of `text` at `max_w`, as bfont_take_line breaks it.
 static int wrapped_lines(const char *text, int max_w) {
-    int n = 0;
-    const char *p = text ? text : "";
-    char line[160];
-    while (*p) {
-        if (bfont_take_line(&p, max_w, line, (int)sizeof line) <= 0) break;
-        n++;
-    }
-    return n;
+    return uk_lines(text, max_w);
 }
 
 // Which layout a message uses and how it pages. One function, called by both
 // the pager and the panel, so the two can never disagree about how many pages
-// a message has. A message goes in the small band when its header and whole
-// body fit there; otherwise in the large rect, paging if even that is short.
+// a message has. A message goes in the band along the pane's foot when its
+// header and whole body fit there; otherwise in the large rect, paging if even
+// that is short.
 typedef struct {
     ML_Rect r;
     int     header_lines;
@@ -88,15 +68,15 @@ static DialogFit dialog_fit(bool force_large) {
     DialogFit f;
     for (int pass = force_large ? 1 : 0; pass < 2; pass++) {
         f.r = pass ? ml_large() : ml_small();
-        int max_w = f.r.w - 2 * ML_PAD;
-        int cap = ml_lines(f.r);
+        int max_w = f.r.w - 2 * UK_INSET;
+        int cap = (f.r.h - 2 * UK_INSET) / GH;
         f.header_lines = (hdr && hdr[0]) ? wrapped_lines(hdr, max_w) : 0;
         int body_lines = wrapped_lines(body, max_w);
         f.body_per_page = cap - f.header_lines;
         if (f.body_per_page < 1) f.body_per_page = 1;
         f.pages = (body_lines + f.body_per_page - 1) / f.body_per_page;
         if (f.pages < 1) f.pages = 1;
-        if (pass == 0 && f.pages == 1) return f;   // it fits the small band
+        if (pass == 0 && f.pages == 1) return f;   // it fits the band
     }
     return f;
 }
@@ -106,32 +86,13 @@ int modern_overlay_dialog_page_count(void) {
     return dialog_fit(false).pages;
 }
 
-// ---------------------------------------------------------------------------
-// Dialog (bottom message framestyle).
-// ---------------------------------------------------------------------------
+typedef enum { DLG_MODE_BOTTOM = 0, DLG_MODE_CENTERED_MODAL } DialogMode;
 
-
-// Dialog draw modes:
-//   BOTTOM        -- bottom box (CL_PANEL_*, 30 cols x ~10 rows).
-//                   Sits over the bottom frame so adventure-mode sidebar
-//                   stays visible.
-//   CENTERED_MODAL -- victory layout: a 36-col x 16-row
-//                   border, centered on screen (RECT_Text(16,36) +
-//                   RECT_Center). Used for the victory banner so the
-//                   dialog floats over the still-rendered battlefield
-//                   instead of replacing the bottom frame.
-typedef enum {
-    DLG_MODE_BOTTOM = 0,
-    DLG_MODE_CENTERED_MODAL,
-} DialogMode;
-
-static void draw_dialog_ex(DialogMode mode);
-
-// The sprites the dialog in-lay draws its picture from (set by whoever draws
-// the frame: overlay_draw, combat's presenter).
 static const Sprites *s_dialog_sprites;
 void modern_overlay_set_sprites(const Sprites *s) { s_dialog_sprites = s; }
+const Sprites *modern_overlay_sprites(void) { return s_dialog_sprites; }
 
+static void draw_dialog_ex(DialogMode mode);
 static void draw_face_dialog(void);
 
 void modern_overlay_draw_dialog(void) {
@@ -146,34 +107,64 @@ void modern_overlay_draw_dialog_centered(void) {
 static void draw_dialog_ex(DialogMode mode) {
     const char *hdr = dialog_header_text();
     const char *body = dialog_body_text();
-    // Victory always takes the large rect; everything else picks by size.
-    DialogFit f = dialog_fit(mode == DLG_MODE_CENTERED_MODAL);
-    ML_Rect r = f.r;
+    const Resources *res = resources_current();
+    if (res && bridge_state == BRIDGE_STATE_DIRECTION && mode == DLG_MODE_BOTTOM) {
+        // The bridge asks for a square: the four beside the hero outlined, and
+        // words for a touch screen as well as the keys.
+        body = res->banners.spell_bridge_prompt_modern;
+        int hx = CL_MAP_X + (CL_MAP_TILES_W / 2) * CL_TILE_W, hy = CL_MAP_Y + (CL_MAP_TILES_H / 2) * CL_TILE_H;
+        static const int d[4][2] = { { 0, -1 }, { 1, 0 }, { 0, 1 }, { -1, 0 } };
+        for (int k = 0; k < 4; k++)
+            for (int t = 0; t < 3; t++)
+                DrawRectangleLines(hx + d[k][0] * CL_TILE_W + t, hy + d[k][1] * CL_TILE_H + t,
+                                   CL_TILE_W - 2 * t, CL_TILE_H - 2 * t, PAL_CLR(YELLOW));
+    }
+    bool save = res && body && strcmp(body, res->ui.save_confirm_modern) == 0;
+    int max_w;
+    char line[200];
 
-    draw_panel(r.x, r.y, r.w, r.h, PAL_CLR(DBLUE));
-
-    int tx = r.x + ML_PAD;
-    int ty = r.y + ML_PAD;
-    int max_w = r.w - 2 * ML_PAD;
-    char line[160];
-
-    // The header is prose and wraps like the body -- the audience passes the
-    // Emperor's words as the header. Centred in the victory dialog.
-    const char *hp = hdr ? hdr : "";
-    for (int i = 0; i < f.header_lines && *hp; i++) {
-        if (bfont_take_line(&hp, max_w, line, (int)sizeof line) <= 0) break;
-        if (mode == DLG_MODE_CENTERED_MODAL)
-            bfont_draw_centered(line, r.x + r.w / 2, ty, PAL_CLR(YELLOW));
-        else
-            bfont_draw(line, tx, ty, PAL_CLR(YELLOW));
-        ty += GH;
+    if (mode == DLG_MODE_CENTERED_MODAL) {
+        // Victory: an in-lay sized to its words, the header as its title.
+        int w = UK_INLAY_W;
+        max_w = w - 2 * UK_INSET;
+        int lines = wrapped_lines(body, max_w);
+        int h = uk_title_h() + UK_BAND + 2 * UK_INSET + (lines < 2 ? 2 : lines) * uk_line_h();
+        ML_Rect b = uk_inlay(w, h, hdr, NULL);
+        uk_flow(b.x + UK_INSET, b.y + UK_INSET, max_w, b.x, 0, b.y + b.h, body, PAL_CLR(WHITE));
+        return;
     }
 
-    // Body: skip the pages already read, then draw one page.
+    // Along the pane's foot, as tall as the page it shows (two lines at least).
+    DialogFit f = dialog_fit(false);
+    ML_Rect r = f.r;
+    max_w = r.w - 2 * UK_INSET;
     const char *p = body ? body : "";
     int skip = dialog_page_current() * f.body_per_page;
     for (int i = 0; i < skip && *p; i++)
         if (bfont_take_line(&p, max_w, line, (int)sizeof line) <= 0) break;
+    int page_lines = 0;
+    {
+        const char *q = p;
+        while (*q && page_lines < f.body_per_page && bfont_take_line(&q, max_w, line, (int)sizeof line) > 0)
+            page_lines++;
+    }
+    int lines = f.header_lines + page_lines;
+    if (lines < 2) lines = 2;
+    int btn_h = save ? GH + 8 + ML_PAD : 0;
+    int h = 2 * UK_INSET + lines * GH + btn_h;
+    if (h > r.h && r.h == ml_small().h) h = r.h;
+    int bottom = r.y + r.h;
+    r.y = bottom - h;
+    r.h = h;
+    uk_panel(r.x, r.y, r.w, r.h);
+
+    int tx = r.x + UK_INSET, ty = r.y + UK_INSET;
+    const char *hp = hdr ? hdr : "";
+    for (int i = 0; i < f.header_lines && *hp; i++) {
+        if (bfont_take_line(&hp, max_w, line, (int)sizeof line) <= 0) break;
+        bfont_draw(line, tx, ty, PAL_CLR(YELLOW));
+        ty += GH;
+    }
     for (int i = 0; i < f.body_per_page && *p; i++) {
         if (bfont_take_line(&p, max_w, line, (int)sizeof line) <= 0) break;
         bfont_draw(line, tx, ty, PAL_CLR(WHITE));
@@ -181,36 +172,63 @@ static void draw_dialog_ex(DialogMode mode) {
     }
 
     // The save message offers its two ways on: Quit and Continue.
-    const Resources *res = resources_current();
-    if (res && body && strcmp(body, res->ui.save_confirm_modern) == 0) {
+    if (save) {
         const ResUI *ui = &res->ui;
-        int by = r.y + r.h - ML_PAD - (GH + 8);
+        int by = r.y + r.h - UK_INSET - (GH + 8);
         int cw = ml_hint_width(ui->hint_continue, NULL, NULL);
         int qw = ml_hint_width(ui->hint_quit, ui->key_ctrl_q, NULL);
-        int bx = r.x + r.w - ML_PAD - cw;
+        int bx = r.x + r.w - UK_INSET - cw;
         ml_hint_button(bx, by, ui->hint_continue, NULL, NULL, KEY_ENTER);
         ml_hint_button(bx - ML_PAD - qw, by, ui->hint_quit, ui->key_ctrl_q, NULL, KEY_Q);
     }
 }
 
-// ---------------------------------------------------------------------------
-// Game menu (nested, cursor-driven).
-// ---------------------------------------------------------------------------
+// A portrait's current frame (animated), or nothing.
+static Texture2D portrait_frame(const Sprites *s, int idx, double fps) {
+    if (!s || idx < 0 || s->portrait_frames[idx] <= 0) return (Texture2D){ 0 };
+    return s->portrait_anim[idx][sprites_frame((int)(GetTime() * fps), s->portrait_frames[idx])];
+}
 
-// ---------------------------------------------------------------------------
-// Town menu (bottom frame, A..E letter rows).
-// ---------------------------------------------------------------------------
+static Texture2D villain_face(const Sprites *s, int idx) {
+    if (!s || idx < 0 || idx >= 17) return (Texture2D){ 0 };
+    Texture2D face = s->villain_anim_frames[idx] > 0
+        ? s->villain_anim[idx][sprites_frame((int)(GetTime() * 2.0), s->villain_anim_frames[idx])]
+        : s->villain_portrait[idx];
+    return face.id ? face : s->villain_portrait[idx];
+}
 
-// ---------------------------------------------------------------------------
-// Location-backdrop renderer . Picks one of 6 backdrop
-// PNGs and animates a troop sprite at the bottom-left, replacing the world
-// map area. Used by every "location screen" view (TOWN, HOME_CASTLE,
-// OWN_CASTLE, DWELLING, ALCOVE, RECRUIT_SOLDIERS).
-//
-// The backdrop is 240x102; we draw at the map area's top-left (16,22). The
-// troop sprite is inset one sprite-width and pinned to the bottom of the
-// backdrop, drawn beneath the bottom panel.
-// ---------------------------------------------------------------------------
+static Texture2D troop_face(const Sprites *s, int idx) {
+    if (!s || idx < 0 || idx >= 25) return (Texture2D){ 0 };
+    return s->troop_portrait[idx].id ? s->troop_portrait[idx] : s->troop_sprite[idx];
+}
+
+static Texture2D troop_standing(const Sprites *s, int idx) {
+    if (!s || idx < 0 || idx >= 25) return (Texture2D){ 0 };
+    Texture2D t = s->troop_anim[idx][sprites_frame(sprites_stand((int)(GetTime() * 6.66)),
+                                                   s->troop_anim_frames[idx])];
+    return t.id ? t : s->troop_sprite[idx];
+}
+
+// A message with a picture hint (REQ-430t): the in-lay -- the header as its
+// title, the picture at 2x, the words flowing beside and beneath it, Continue.
+static void draw_face_dialog(void) {
+    const Resources *res = resources_current();
+    if (!res) return;
+    int idx = 0;
+    int kind = dialog_face(&idx);
+    const Sprites *s = s_dialog_sprites;
+    Texture2D face = { 0 };
+    if (kind == REQ_FACE_VILLAIN)                                 face = villain_face(s, idx);
+    else if (kind == REQ_FACE_TROOP)                              face = troop_face(s, idx);
+    else if (kind == REQ_FACE_ARTIFACT && s && idx >= 0 && idx < 8) face = s->view_icon[idx];
+    else if (kind == REQ_FACE_PORTRAIT)                           face = portrait_frame(s, idx, 2.0);
+    uk_result_inlay(dialog_header_text(), face, dialog_body_text(), res->banners.castle_continue,
+                    TOUCH_LIST_PROMPT);
+}
+
+// =============================================================================
+//  Location backdrops (the legacy-shaped screens modules still call this)
+// =============================================================================
 
 typedef enum {
     LOC_NONE = 0,
@@ -239,57 +257,37 @@ static Texture2D loc_texture(const Sprites *s, LocKind kind) {
     }
 }
 
-// Draw the backdrop + animated troop. troop_idx is a Game troop index
-// (0..24); troop_frame is the 0..3 animation frame the screen owns.
-// draw_location takes (loc_id, troop_id, frame) -- the screen
-// advances `frame` from SYN ticks. We mirror that contract.
-//
-// Exposed via screens_draw_location_backdrop() below for screen modules.
 static void draw_location_backdrop(const Game *g, const Sprites *s,
                                    LocKind kind, int troop_idx,
                                    int troop_frame) {
-    // The location layout (REQ-430j): the backdrop across the top of the map
-    // pane at the smallest whole-number scale that covers its width, the
-    // overshoot cropped evenly off the two sides. The text area sits directly
-    // under it, so the two share one edge instead of overlapping.
     ML_Rect b = ml_loc_backdrop();
     int S = ml_loc_scale();
-    int crop = (ML_BACKDROP_W * S - b.w) / 2;    // screen px cut from each side
+    int crop = (ML_BACKDROP_W * S - b.w) / 2;
     Texture2D bd = loc_texture(s, kind);
     if (bd.id && bd.width > 0 && bd.height > 0) {
         float px_per_src = (float)(ML_BACKDROP_W * S) / (float)bd.width;
-        Rectangle src = { crop / px_per_src, 0,
-                          b.w / px_per_src, b.h / px_per_src };
+        Rectangle src = { crop / px_per_src, 0, b.w / px_per_src, b.h / px_per_src };
         Rectangle dst = { (float)b.x, (float)b.y, (float)b.w, (float)b.h };
         DrawTexturePro(bd, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
     } else {
         DrawRectangle(b.x, b.y, b.w, b.h, PAL_CLR(BLACK));
     }
-
-    // The alcove keeps its own figure rather than borrowing a troop sprite:
-    // the place is a person, not a creature that dwells there.
     Texture2D fig = { 0 };
     if (kind == LOC_ALCOVE && s && s->alcove_figure.id) {
-        fig = s->alcove_figure_anim[sprites_frame(troop_frame,
-                                                  s->alcove_figure_frames)];
+        fig = s->alcove_figure_anim[sprites_frame(troop_frame, s->alcove_figure_frames)];
         if (!fig.id) fig = s->alcove_figure;
     }
     const Resources *r = (g && g->res) ? g->res : NULL;
     if (fig.id && r && r->sprites.alcove_figure_w > 0) {
-        // Placed by the pack in the backdrop's own 240x102 units, so it lands
-        // on the same spot whatever scale the backdrop is drawn at.
         ui_blit(fig, b.x + r->sprites.alcove_figure_x * S - crop,
                      b.y + r->sprites.alcove_figure_y * S,
                      r->sprites.alcove_figure_w * S,
                      r->sprites.alcove_figure_h * S);
         return;
     }
-    // Otherwise the tile-sized slot a troop sprite always filled: one tile in
-    // from the left, standing on the backdrop's bottom edge.
     Texture2D ts = fig;
     if (!ts.id && s && troop_idx >= 0 && troop_idx < 25) {
-        int frame = sprites_frame(sprites_stand(troop_frame),
-                                  s->troop_anim_frames[troop_idx]);
+        int frame = sprites_frame(sprites_stand(troop_frame), s->troop_anim_frames[troop_idx]);
         ts = s->troop_anim[troop_idx][frame];
         if (!ts.id) ts = s->troop_sprite[troop_idx];
     }
@@ -297,116 +295,30 @@ static void draw_location_backdrop(const Game *g, const Sprites *s,
         ui_blit(ts, b.x + CL_TILE_W, b.y + b.h - CL_TILE_H, CL_TILE_W, CL_TILE_H);
 }
 
-// Public bridge for screen modules in src/screens/. Takes an int
-// for loc_kind so the LocKind enum can stay private to this file.
-// Constants (must match LocKind enum order):
-//   1 = LOC_CASTLE  2 = LOC_TOWN     3 = LOC_PLAINS
-//   4 = LOC_FOREST  5 = LOC_HILLCAVE 6 = LOC_DUNGEON
-//   7 = LOC_ALCOVE
-//
-// `troop_frame` is the 0..3 animation frame the caller owns. The
-// screens advance their own frame from SYN ticks (e.g. recruit_soldiers
-// game.c:2148 / 2216-2217).
 void modern_overlay_draw_location_backdrop(const Game *g, const Sprites *s,
                                     int loc_kind, int troop_idx,
                                     int troop_frame) {
-    LocKind k = LOC_NONE;
-    switch (loc_kind) {
-        case 1: k = LOC_CASTLE;   break;
-        case 2: k = LOC_TOWN;     break;
-        case 3: k = LOC_PLAINS;   break;
-        case 4: k = LOC_FOREST;   break;
-        case 5: k = LOC_HILLCAVE; break;
-        case 6: k = LOC_DUNGEON;  break;
-        case 7: k = LOC_ALCOVE;   break;
-        default: break;
-    }
+    LocKind k = (loc_kind >= 1 && loc_kind <= 7) ? (LocKind)loc_kind : LOC_NONE;
     draw_location_backdrop(g, s, k, troop_idx, troop_frame);
 }
 
+// =============================================================================
+//  Town -- the scene (Visit the town, Leave), the services in-lay, and an
+//  in-lay per service with its person at 2x
+// =============================================================================
+
 static int town_backdrop_troop(const Game *g, const char *key) {
-    // Deterministic pick per (seed, town id). Limit the pool to troops
-    // that dwell at castles (militia/archers/pikemen/cavalry/knights) --
-    // the "civilian" army that would idle in a human town. Matches the
-    // home_troops[] filter used for recruit_soldiers
-    // (dwells == DWELLING_CASTLE).
     int nt = troops_count();
     int pool[32];
     int npool = 0;
     for (int i = 0; i < nt && npool < 32; i++) {
         const TroopDef *t = troop_by_index(i);
-        if (!t) continue;
-        if (strcmp(t->dwelling, "castle") == 0) pool[npool++] = i;
-    }
-    if (npool < 1) {
-        // Fallback: use the whole catalog.
-        if (nt < 1) nt = 1;
-        unsigned long h = g ? g->seed ^ 0xA1B2C3u : 0;
-        for (const char *p = key; p && *p; p++) h = h * 131u + (unsigned char)*p;
-        return (int)(h % (unsigned long)nt);
+        if (t && strcmp(t->dwelling, "castle") == 0) pool[npool++] = i;
     }
     unsigned long h = g ? g->seed ^ 0xA1B2C3u : 0;
     for (const char *p = key; p && *p; p++) h = h * 131u + (unsigned char)*p;
+    if (npool < 1) return nt > 0 ? (int)(h % (unsigned long)nt) : 0;
     return pool[h % (unsigned long)npool];
-}
-
-// The detail panel's text, wrapped to its width and laid out as lines so it
-// can be split into pages. A line may carry a yellow label before a white
-// value, and a line may start a block that pages keep whole.
-#define TOWN_DETAIL_LINES 64
-typedef struct {
-    char  text[72];
-    int   label;    // bytes of `text` drawn yellow before the rest; 0 = none
-    Color fg;
-    bool  block;    // starts a block kept on one page when it fits one
-    char  text2[40];   // a second "label value" drawn from the panel's middle; "" = none
-    int   label2;
-} TownLine;
-typedef struct {
-    TownLine line[TOWN_DETAIL_LINES];
-    int      n;
-    int      max_w;
-    bool     next_block;
-} TownText;
-
-static void town_text_add(TownText *t, const char *text, Color fg) {
-    const char *p = text ? text : "";
-    while (*p && t->n < TOWN_DETAIL_LINES) {
-        TownLine *l = &t->line[t->n];
-        if (bfont_take_line(&p, t->max_w, l->text, (int)sizeof l->text) <= 0) break;
-        l->fg = fg;
-        l->label = 0;
-        l->block = t->next_block;
-        t->next_block = false;
-        t->n++;
-    }
-}
-
-// A block break: a blank line, and the next line starts a block.
-static void town_text_gap(TownText *t) {
-    if (t->n > 0 && t->n < TOWN_DETAIL_LINES) {
-        TownLine *l = &t->line[t->n++];
-        l->text[0] = '\0';
-        l->label = 0;
-        l->block = false;
-    }
-    t->next_block = true;
-}
-
-// "Label: value" from a template holding %VALUE%: the part before the value
-// is drawn yellow, the value white.
-static void town_text_labeled(TownText *t, const char *tmpl, const char *value) {
-    char buf[RES_BANNER_LEN];
-    ResTemplateVar vars[] = { { "VALUE", value } };
-    resources_format_template(buf, sizeof buf, tmpl, vars, 1);
-    const char *at = tmpl ? strstr(tmpl, "%VALUE%") : NULL;
-    int first = t->n;
-    town_text_add(t, buf, PAL_CLR(WHITE));
-    if (at && first < t->n) {
-        int lab = (int)(at - tmpl);
-        int len = (int)strlen(t->line[first].text);
-        t->line[first].label = lab < len ? lab : len;
-    }
 }
 
 // The contract to describe: the Contracts list row under the cursor, else the
@@ -420,18 +332,18 @@ static const VillainDef *town_shown_villain(const Game *g) {
     return (id && id[0]) ? villain_by_id(id) : NULL;
 }
 
-static void town_compose_contract(const Game *g, const VillainDef *v, TownText *t) {
+static void compose_contract(const Game *g, const VillainDef *v, UkDoc *d) {
     const Resources *res = g->res;
     const ResUI *ui = &res->ui;
-    if (!v) { town_text_add(t, ui->cv_title_no_contract, PAL_CLR(WHITE)); return; }
-    const ResVillainDesc *d = resources_villain_desc(res, v->id);
+    if (!v) { uk_doc_add(d, ui->cv_title_no_contract, PAL_CLR(WHITE)); return; }
+    const ResVillainDesc *vd = resources_villain_desc(res, v->id);
     char val[RES_VDESC_TEXT_LEN];
-    town_text_labeled(t, ui->cv_label_name, v->name);
-    if (d && d->alias[0]) town_text_labeled(t, ui->cv_label_alias, d->alias);
+    uk_doc_labeled(d, ui->cv_label_name, v->name);
+    if (vd && vd->alias[0]) uk_doc_labeled(d, ui->cv_label_alias, vd->alias);
     snprintf(val, sizeof val, "%d", v->reward);
-    town_text_labeled(t, ui->cv_label_reward, val);
+    uk_doc_labeled(d, ui->cv_label_reward, val);
     const ResZone *z = resources_zone_by_id(res, v->zone);
-    town_text_labeled(t, ui->cv_label_last_seen, (z && z->name[0]) ? z->name : v->zone);
+    uk_doc_labeled(d, ui->cv_label_last_seen, (z && z->name[0]) ? z->name : v->zone);
     snprintf(val, sizeof val, "%s", ui->cv_castle_unknown);
     for (int i = 0; i < GAME_CASTLES; i++) {
         const CastleRecord *c = &g->castles[i];
@@ -440,86 +352,59 @@ static void town_compose_contract(const Game *g, const VillainDef *v, TownText *
         snprintf(val, sizeof val, "%s", (rc && rc->name[0]) ? rc->name : c->id);
         break;
     }
-    town_text_labeled(t, ui->cv_label_castle, val);
-    if (d && d->features[0]) {
-        town_text_gap(t);
-        town_text_add(t, ui->cv_features_header, PAL_CLR(YELLOW));
-        town_text_add(t, d->features, PAL_CLR(WHITE));
+    uk_doc_labeled(d, ui->cv_label_castle, val);
+    if (vd && vd->features[0]) {
+        uk_doc_gap(d);
+        uk_doc_add(d, ui->cv_features_header, PAL_CLR(YELLOW));
+        uk_doc_add(d, vd->features, PAL_CLR(WHITE));
     }
-    if (d && d->crimes[0]) {
-        town_text_gap(t);
-        town_text_add(t, ui->cv_crimes_header, PAL_CLR(YELLOW));
-        town_text_add(t, d->crimes, PAL_CLR(WHITE));
-    }
-}
-
-// Facts about the row under the cursor, from the game state.
-// The screen whose facts are on show: the detail screen open, or on the menu
-// the one the cursor row opens.
-static TownList town_screen(void) {
-    TownList l = views_town_list();
-    if (l != TOWN_LIST_MENU) return l;
-    switch (views_town_cursor()) {
-        case TOWN_ROW_CONTRACT: return TOWN_LIST_CONTRACTS;
-        case TOWN_ROW_INFO:     return TOWN_LIST_INFO;
-        case TOWN_ROW_BOAT:     return TOWN_LIST_BOAT;
-        case TOWN_ROW_SPELL:    return TOWN_LIST_TEMPLE;
-        case TOWN_ROW_SIEGE:    return TOWN_LIST_SIEGE;
-        default:                return TOWN_LIST_MENU;
+    if (vd && vd->crimes[0]) {
+        uk_doc_gap(d);
+        uk_doc_add(d, ui->cv_crimes_header, PAL_CLR(YELLOW));
+        uk_doc_add(d, vd->crimes, PAL_CLR(WHITE));
     }
 }
 
-// The pack's full row text for a menu row, prices included, its legacy key
+// The pack's full row text for a service, prices included, its legacy key
 // letter dropped.
-static void town_row_head(const Game *g, TownRow row, TownText *t) {
+static void town_row_head(const Game *g, TownRow row, UkDoc *d) {
     char head[128];
     views_town_row_text(g, row, head, sizeof head);
     if (head[0] >= 'A' && head[0] <= 'Z' && head[1] == ')' && head[2] == ' ')
         memmove(head, head + 3, strlen(head + 3) + 1);
-    town_text_add(t, head, PAL_CLR(YELLOW));
+    uk_doc_add(d, head, PAL_CLR(YELLOW));
 }
 
-// Facts for the screen on show, from the game state.
-static void town_compose_detail(const Game *g, TownText *t) {
-    if (!g || !g->res) return;
+// The service in-lay's words, from the game state.
+static void compose_service(const Game *g, TownList list, UkDoc *d) {
     const Resources *res = g->res;
     const ResBanners *bn = &res->banners;
     char buf[RES_BANNER_LEN];
     const char *key = views_town_record_key();
-
-    switch (town_screen()) {
+    switch (list) {
         case TOWN_LIST_CONTRACTS:
-            town_compose_contract(g, town_shown_villain(g), t);
+            compose_contract(g, town_shown_villain(g), d);
             break;
         case TOWN_LIST_INFO: {
             char intel[512];
             views_town_intel_text(g, intel, sizeof intel);
-            town_text_add(t, intel, PAL_CLR(WHITE));
+            uk_doc_add(d, intel, PAL_CLR(WHITE));
             break;
         }
         case TOWN_LIST_BOAT: {
-            if (!views_town_boat_available(g)) {
-                town_text_add(t, bn->town_boat_no_master, PAL_CLR(WHITE));
-                break;
-            }
-            town_row_head(g, TOWN_ROW_BOAT, t);
+            if (!views_town_boat_available(g)) { uk_doc_add(d, bn->town_boat_no_master, PAL_CLR(WHITE)); break; }
+            town_row_head(g, TOWN_ROW_BOAT, d);
             const char *dock = key ? resources_town_dock(res, key) : NULL;
-            if (dock && dock[0]) {
-                town_text_gap(t);
-                town_text_add(t, dock, PAL_CLR(WHITE));
-            }
+            if (dock && dock[0]) { uk_doc_gap(d); uk_doc_add(d, dock, PAL_CLR(WHITE)); }
             break;
         }
         case TOWN_LIST_TEMPLE: {
-            town_row_head(g, TOWN_ROW_SPELL, t);
+            town_row_head(g, TOWN_ROW_SPELL, d);
             const SpellDef *sp = views_town_spell(g);
             if (!sp) break;
             const char *lore = resources_spell_lore(res, sp->id);
             if (!lore || !lore[0]) lore = sp->description;
-            if (lore && lore[0]) {
-                town_text_gap(t);
-                town_text_add(t, lore, PAL_CLR(WHITE));
-            }
+            if (lore && lore[0]) { uk_doc_gap(d); uk_doc_add(d, lore, PAL_CLR(WHITE)); }
             int left = g->stats.max_spells - GameKnownSpells(g);
             if (left <= 0) {
                 resources_format_template(buf, sizeof buf, bn->town_spell_at_cap, NULL, 0);
@@ -529,451 +414,232 @@ static void town_compose_detail(const Game *g, TownText *t) {
                 ResTemplateVar vars[] = { { "LEFT", lbuf }, { "S", left == 1 ? "" : "s" } };
                 resources_format_template(buf, sizeof buf, bn->town_spell_can_learn, vars, 2);
             }
-            town_text_gap(t);
-            town_text_add(t, buf, PAL_CLR(WHITE));
+            uk_doc_gap(d);
+            uk_doc_add(d, buf, PAL_CLR(WHITE));
             break;
         }
         case TOWN_LIST_SIEGE:
-            town_row_head(g, TOWN_ROW_SIEGE, t);
-            town_text_gap(t);
-            town_text_add(t, bn->town_siege_lore, PAL_CLR(WHITE));
+            town_row_head(g, TOWN_ROW_SIEGE, d);
+            uk_doc_gap(d);
+            uk_doc_add(d, bn->town_siege_lore, PAL_CLR(WHITE));
             break;
         default: break;
     }
 }
 
-// Split the lines into pages of `per` lines. A block that would straddle a
-// page break, and fits on a page of its own, starts the next page instead.
-// starts[] receives each page's first line; returns the page count.
-static int town_paginate(const TownText *t, int per, int *starts, int max_pages) {
-    int pages = 0, used = 0;
-    starts[pages++] = 0;
-    for (int i = 0; i < t->n; i++) {
-        if (t->line[i].block && used > 0) {
-            int len = 1;
-            while (i + len < t->n && !t->line[i + len].block) len++;
-            if (used + len > per && len <= per) used = per;   // push to next page
-        }
-        if (used == per) {
-            if (pages == max_pages) break;
-            used = 0;
-            if (t->line[i].text[0] == '\0') {   // no blank line atop a page
-                starts[pages++] = i + 1;
-                continue;
-            }
-            starts[pages++] = i;
-        }
-        used++;
+static TownList town_list_for(int row) {
+    switch (row) {
+        case TOWN_ROW_CONTRACT: return TOWN_LIST_CONTRACTS;
+        case TOWN_ROW_INFO:     return TOWN_LIST_INFO;
+        case TOWN_ROW_BOAT:     return TOWN_LIST_BOAT;
+        case TOWN_ROW_SPELL:    return TOWN_LIST_TEMPLE;
+        case TOWN_ROW_SIEGE:    return TOWN_LIST_SIEGE;
+        default:                return TOWN_LIST_MENU;
     }
-    if (pages > 1 && starts[pages - 1] >= t->n) pages--;   // nothing left for it
-    return pages;
 }
 
-// A confirmation dialog (REQ-430t): a large framed panel over the screen with a
-// portrait at 2x, the words beside it (already laid out in `t`), and Continue.
-static void result_dialog(const Game *g, const char *title, Texture2D face, const TownText *t) {
-    const ResBanners *bn = &g->res->banners;
-    ML_Rect d = ml_large();
-    const int pad = ML_PAD, BAND = 4, size = 2 * CL_TILE_W;
-    DrawRectangle(d.x, d.y, d.w, d.h, PAL_CLR(DBLUE));
-    ui_window_frame(d.x, d.y, d.w, d.h, PAL_CLR(YELLOW));
-    int title_h = GH + 14;
-    bfont_draw(title ? title : "", d.x + pad, d.y + (title_h - GH) / 2, PAL_CLR(YELLOW));
-    lattice_band_h(d.x, d.y + title_h, d.w, BAND);
-    int top = d.y + title_h + BAND;
-    int rows_y = d.y + d.h - ml_row_h() - ML_ROW_RULE;
-    DrawRectangle(d.x, top, size, size, PAL_CLR(BLACK));
-    if (face.id) ui_blit(face, d.x, top, size, size);
-    // The portrait's column is closed: a rail under the picture, and the rail
-    // beside it running down to the answers.
-    lattice_band_h(d.x, top + size, size, BAND);
-    lattice_band_v(d.x + size, top, BAND, rows_y - BAND - top);
-    const int INSET = pad + 4;
-    int tx = d.x + size + BAND + INSET;
-    int ty = top + INSET;
-    for (int i = 0; i < t->n && ty + GH <= rows_y - BAND; i++, ty += GH + 2)
-        bfont_draw(t->line[i].text, tx, ty, t->line[i].fg);
-    lattice_band_h(d.x, rows_y - BAND, d.w, BAND);
-    sel_row(d.x, rows_y, d.w, ml_row_h(), d.x + pad, bn->castle_continue, true,
-            PAL_CLR(YELLOW), PAL_CLR(DBLUE), TOUCH_LIST_PROMPT, 0);
-}
-
-// A message with a picture hint (REQ-430t): the in-lay dialog -- the header as
-// its title, the enemy's face (a troop's portrait, an artifact) at 2x, the words
-// beside it, Continue. Any key or a tap continues (the main loop's dialog input).
-static void draw_face_dialog(void) {
-    const Resources *res = resources_current();
-    if (!res) return;
-    int idx = 0;
-    int kind = dialog_face(&idx);
-    const Sprites *s = s_dialog_sprites;
-    Texture2D face = { 0 };
-    if (s && kind == REQ_FACE_VILLAIN && idx >= 0 && idx < 17) {
-        face = s->villain_anim_frames[idx] > 0
-             ? s->villain_anim[idx][sprites_frame((int)(GetTime() * 2.0), s->villain_anim_frames[idx])]
-             : s->villain_portrait[idx];
-        if (!face.id) face = s->villain_portrait[idx];
-    } else if (s && kind == REQ_FACE_TROOP && idx >= 0 && idx < 25) {
-        face = s->troop_portrait[idx].id ? s->troop_portrait[idx] : s->troop_sprite[idx];
-    } else if (s && kind == REQ_FACE_ARTIFACT && idx >= 0 && idx < 8) {
-        face = s->view_icon[idx];
+// The person of a service, as a portrait index (-1: none).
+static int town_person(const Game *g, TownList list) {
+    const Resources *res = g->res;
+    const char *key = views_town_record_key();
+    const ResTown *tw = key ? resources_town_by_id(res, key) : NULL;
+    const ResZone *z = tw ? resources_zone_by_id(res, tw->zone) : NULL;
+    const char *id = NULL;
+    switch (list) {
+        case TOWN_LIST_INFO:   id = tw ? tw->informant : NULL; break;
+        case TOWN_LIST_BOAT:   id = (z && views_town_boat_available(g)) ? z->boatmaster : NULL; break;
+        case TOWN_LIST_TEMPLE: id = z ? z->pontifex : NULL; break;
+        case TOWN_LIST_SIEGE:  id = z ? z->siegemaster : NULL; break;
+        default:               id = tw ? tw->townhead : NULL; break;
     }
-    TownText t = { .n = 0, .max_w = ml_large().w - 2 * CL_TILE_W - 4 - 2 * (ML_PAD + 4) };
-    town_text_add(&t, dialog_body_text(), PAL_CLR(WHITE));
-    // A Game is only needed for the Continue label.
-    static Game g_labels;
-    g_labels.res = res;
-    result_dialog(&g_labels, dialog_header_text(), face, &t);
+    return id ? resources_portrait_index(res, id) : -1;
 }
 
-static int result_text_w(void) {
-    return ml_large().w - 2 * CL_TILE_W - 4 - 2 * (ML_PAD + 4);
+typedef struct { const Game *g; bool menu; } TownRowsCtx;
+
+static bool town_row_fn(void *ctx, int i, char *label, char *right, int cap) {
+    const TownRowsCtx *c = (const TownRowsCtx *)ctx;
+    bool enabled = true, held = false;
+    char buf[64] = "";
+    views_town_list_row(c->g, i, buf, sizeof buf, &enabled, &held);
+    right[0] = '\0';
+    bool back = i == views_town_list_rows(c->g) - 1;
+    if (c->menu && !back)                         snprintf(label, (size_t)cap, "%s >", buf);
+    else if (views_town_list() == TOWN_LIST_CONTRACTS && !back) snprintf(label, (size_t)cap, " %s", buf);
+    else                                          snprintf(label, (size_t)cap, "%s", buf);
+    return enabled || back;
+}
+
+static void town_title(const Game *g, char *out, int cap, bool with_section) {
+    const char *name = views_town_display_name();
+    ResTemplateVar hv[] = { { "NAME", (name && name[0]) ? name : "" } };
+    resources_format_template(out, cap, g->res->banners.town_header, hv, 1);
+    if (with_section) {
+        char label[64];
+        views_town_menu_label(g, views_town_cursor(), label, sizeof label);
+        size_t n = strlen(out);
+        snprintf(out + n, (size_t)cap - n, " > %s", label);
+    }
+}
+
+static const char *town_zone_name(const Game *g) {
+    const char *key = views_town_record_key();
+    const ResTown *tw = key ? resources_town_by_id(g->res, key) : NULL;
+    const ResZone *z = tw ? resources_zone_by_id(g->res, tw->zone) : NULL;
+    return (z && z->name[0]) ? z->name : "";
 }
 
 void modern_overlay_draw_town(const Game *g, const Sprites *s) {
+    if (!g || !g->res) return;
+    const Resources *res = g->res;
+    const ResBanners *bn = &res->banners;
     const char *name = views_town_display_name();
-    const char *info = views_town_info_text();
+    const char *key = views_town_record_key();
+    const ResTown *tw = key ? resources_town_by_id(res, key) : NULL;
+    char title[128], gold[48], buf[RES_BANNER_LEN];
+    town_title(g, title, sizeof title, false);
+    uk_gold_text(g, gold, sizeof gold);
+
+    // The scene: the square at 3x, the head townsperson standing in it at 2x.
+    ResTemplateVar iv[] = { { "HERO", g->character.name }, { "TOWN", (name && name[0]) ? name : "" },
+                            { "ZONE", town_zone_name(g) } };
+    resources_format_template(buf, sizeof buf, bn->town_intro, iv, 3);
+    UkScene L = uk_scene_for(title, gold, loc_texture(s, LOC_TOWN), 2, buf);
+    int head = tw ? resources_portrait_index(res, tw->headman) : -1;
+    Texture2D fig = portrait_frame(s, head, 1000.0 / 180.0);
+    if (!fig.id) fig = troop_standing(s, town_backdrop_troop(g, name));
+    uk_scene_figure(&L, fig, CL_TILE_W);
+    uk_scene_intro(&L, buf);
+    bool visiting = views_town_visiting();
+    char visit[RES_BANNER_LEN + 4];
+    snprintf(visit, sizeof visit, "%s >", bn->town_visit);
+    UkRows scene_rows = { { visit, bn->location_leave }, { true, true } };
+    uk_scene_rows(&L, 2, visiting ? -1 : views_town_scene_cursor(), uk_rows_fn, &scene_rows,
+                  visiting ? 0 : TOUCH_LIST_TOWN);
+    if (!visiting) return;
+
     TownList list = views_town_list();
-    bool menu = (list == TOWN_LIST_MENU);
-    TownList screen = town_screen();
-
-    // Town view doesn't own a SYN-tick frame counter yet; derive a
-    // free-running tick from real time at the SYN cadence (~150ms per
-    // frame -> 6.7fps).
-    int troop_idx = town_backdrop_troop(g, name);
-    int town_frame = (int)(GetTime() * 6.66);
-
-    // Full screen: the pane, the band and the HUD, tiled exactly, the boxes
-    // split by the lattice. On Rome's 776x480:
-    //   title 776x22
-    //   backdrop 480x192 (2x, top cut) | face 192x192 (2x) | siege 96, gold 96
-    //   list 256x258                   | detail 516x258
-    const int BS = 2;
-    const int BAND = 4;
-    int pad = ML_PAD;
-    ML_Rect r = ml_full();
-    int right = r.x + r.w, bottom = r.y + r.h;
-    DrawRectangle(r.x, r.y, r.w, r.h, PAL_CLR(DBLUE));
-    const Resources *res = (g && g->res) ? g->res : NULL;
-
-    // Title strip: "Town of <name>" (and "> <screen>" in a detail), the
-    // town's zone on the right.
-    int title_h = GH + 14;   // 30: the section rows below fill their column exactly
-    char header[128] = "";
-    if (res) {
-        ResTemplateVar hv[] = { { "NAME", (name && name[0]) ? name : "" } };
-        resources_format_template(header, sizeof header, res->banners.town_header, hv, 1);
-        if (!menu) {
-            char label[64];
-            views_town_menu_label(g, views_town_cursor(), label, sizeof label);
-            size_t n = strlen(header);
-            snprintf(header + n, sizeof header - n, " > %s", label);
-        }
-        const char *key = views_town_record_key();
-        const ResTown *tw = key ? resources_town_by_id(res, key) : NULL;
-        const ResZone *z = tw ? resources_zone_by_id(res, tw->zone) : NULL;
-        if (z && z->name[0])
-            bfont_draw(z->name, right - pad - (int)bfont_measure(z->name).x,
-                       r.y + (title_h - GH) / 2, PAL_CLR(YELLOW));
-    }
-    bfont_draw(header, r.x + pad, r.y + (title_h - GH) / 2, PAL_CLR(YELLOW));
-    lattice_band_h(r.x, r.y + title_h, r.w, BAND);
-
-    // Top row: as tall as the 2x face, so the face and the two HUD tiles sit
-    // flush. The backdrop is drawn at 2x with its top rows cut to that height
-    // (the ground stays, so the troop at 2x still stands on its bottom edge).
-    int top = r.y + title_h + BAND;
-    int fs = CL_TILE_W * BS;
-    int bw = ML_BACKDROP_W * BS, bh = fs;
-    Texture2D bd = loc_texture(s, LOC_TOWN);
-    if (bd.id && bd.height > 0) {
-        float src_h = (float)bd.height * (float)bh / (float)(ML_BACKDROP_H * BS);
-        Rectangle src = { 0, (float)bd.height - src_h, (float)bd.width, src_h };
-        Rectangle dst = { (float)r.x, (float)top, (float)bw, (float)bh };
-        DrawTexturePro(bd, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
-    } else {
-        DrawRectangle(r.x, top, bw, bh, PAL_CLR(BLACK));
-    }
-    // The town's head townsperson stands where a troop used to, at 2x on the
-    // bottom edge, playing their loop; a pack that names none keeps the troop.
-    const char *tkey = views_town_record_key();
-    const ResTown *town_res = (res && tkey) ? resources_town_by_id(res, tkey) : NULL;
-    const ResZone *zone_res = town_res ? resources_zone_by_id(res, town_res->zone) : NULL;
-    int headman = town_res ? resources_portrait_index(res, town_res->headman) : -1;
-    if (s && headman >= 0 && s->portrait_frames[headman] > 0) {
-        ui_blit(s->portrait_anim[headman][sprites_frame((int)(GetTime() * 1000.0 / 180.0),
-                                                        s->portrait_frames[headman])],
-                r.x + CL_TILE_W / 2, top + bh - 2 * CL_TILE_H, 2 * CL_TILE_W, 2 * CL_TILE_H);
-    } else if (s && troop_idx >= 0 && troop_idx < 25) {
-        Texture2D ts = s->troop_anim[troop_idx][sprites_frame(sprites_stand(town_frame),
-                                                s->troop_anim_frames[troop_idx])];
-        if (!ts.id) ts = s->troop_sprite[troop_idx];
-        if (ts.id) ui_blit(ts, r.x + CL_TILE_W / 2, top + bh - 2 * CL_TILE_H,
-                           2 * CL_TILE_W, 2 * CL_TILE_H);
-    }
-    lattice_band_v(r.x + bw, top, BAND, bh);
-
-    // The portrait slot at 2x shows the person of the screen on show: the
-    // wanted face (or the empty silhouette) for Contracts, the informant, the
-    // continent's boat master (none where the town has no dock), priest and
-    // siege engineer.
-    int fx = r.x + bw + BAND;
-    const VillainDef *v = g ? town_shown_villain(g) : NULL;
-    const char *who_id = NULL;
-    switch (screen) {
-        case TOWN_LIST_CONTRACTS: who_id = (menu && town_res) ? town_res->townhead : NULL; break;
-        case TOWN_LIST_INFO:   who_id = town_res ? town_res->informant : NULL; break;
-        case TOWN_LIST_BOAT:   who_id = (zone_res && views_town_boat_available(g))
-                                      ? zone_res->boatmaster : NULL; break;
-        case TOWN_LIST_TEMPLE: who_id = zone_res ? zone_res->pontifex : NULL; break;
-        case TOWN_LIST_SIEGE:  who_id = zone_res ? zone_res->siegemaster : NULL; break;
-        default:               who_id = town_res ? town_res->townhead : NULL; break;   // Leave
-    }
-    int who = (res && who_id) ? resources_portrait_index(res, who_id) : -1;
-    if (screen != TOWN_LIST_CONTRACTS || menu) {
-        if (who >= 0 && s && s->portrait_frames[who] > 0)
-            ui_blit(s->portrait_anim[who][sprites_frame((int)(GetTime() * 2.0),
-                                                        s->portrait_frames[who])],
-                    fx, top, fs, fs);
-        else if (screen == TOWN_LIST_BOAT && s && s->hud_boat_silhouette.id)
-            ui_blit(s->hud_boat_silhouette, fx, top, fs, fs);   // no boat here
-        else
-            DrawRectangle(fx, top, fs, fs, PAL_CLR(BLACK));
-    } else if (v && s && v->index >= 0 && v->index < 17) {
-        Texture2D face = s->villain_anim[v->index][sprites_frame(
-            (int)(GetTime() * 2.0), s->villain_anim_frames[v->index])];
-        if (!face.id) face = s->villain_portrait[v->index];
-        ui_blit(face, fx, top, fs, fs);
-    } else if (s && s->hud_contract_silhouette.id) {
-        ui_blit(s->hud_contract_silhouette, fx, top, fs, fs);
-    }
-    lattice_band_v(fx + fs, top, BAND, bh);
-
-    // The HUD's own siege weapons tile over its gold purse, flush.
-    int hx = fx + fs + BAND;
-    hud_draw_siege_tile(g, s, hx, top);
-    hud_draw_gold_tile(g, s, hx, top + CL_TILE_H);
-
-    int low = top + bh;
-    lattice_band_h(r.x, low, r.w, BAND);
-    low += BAND;
-
-    // Left column: the menu (every row opens a detail, marked ">"), or the
-    // detail's rows then Back. Standard select rows (ml_row_h, a rail under
-    // each), stacked from the top; the height left below stays empty. The
-    // cursor row is inverted.
-    const int RULE = ML_ROW_RULE;
-    int mw = 16 * GW;
-    int lh = bottom - low;
+    bool menu = list == TOWN_LIST_MENU;
+    const char *info = views_town_info_text();
+    TownRowsCtx rc = { g, menu };
     int rows = views_town_list_rows(g);
     int cursor = views_town_list_cursor();
-    int rh = ml_row_h();
-    // A list longer than the column scrolls to keep the cursor in view.
-    int vis = (lh + RULE) / (rh + RULE);
-    int first = 0;
-    if (rows > vis && vis > 0) {
-        first = cursor - vis + 1;
-        if (first < 0) first = 0;
-        if (first > rows - vis) first = rows - vis;
-    }
-    for (int i = first; i < rows; i++) {
-        char label[64] = "";
-        bool enabled = true, held = false;
-        views_town_list_row(g, i, label, sizeof label, &enabled, &held);
-        if (menu && i != TOWN_ROW_LEAVE) {
-            size_t n = strlen(label);
-            snprintf(label + n, sizeof label - n, " >");
-        }
-        bool back = !menu && i == rows - 1;
-        bool sel = i == cursor;
-        Color fg = !(enabled || back) ? PAL_CLR(DGREY) : sel ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
-        int ry = low + (i - first) * (rh + RULE);
-        int h = rh;
-        if (ry + h > bottom) break;
-        int tx = r.x + pad + (list == TOWN_LIST_CONTRACTS ? GW : 0);
-        // A tap on a row that can be chosen selects and carries it out.
-        sel_row(r.x, ry, mw, h, tx, label, sel, fg, PAL_CLR(DBLUE),
-                (enabled || back) ? TOUCH_LIST_TOWN : 0, i);
-        if (held)   // the contract held: a dot before its name
-            DrawCircle(r.x + pad + GW / 2 - 2, ry + h / 2, 4,
-                       sel ? PAL_CLR(DBLUE) : PAL_CLR(YELLOW));
-        lattice_band_h(r.x, ry + h, mw, RULE);
-    }
-    // More rows above or below: arrows at the column's right edge (tap targets),
-    // and a drag over the column scrolls it.
-    {
-        int shown_rows = vis < rows - first ? vis : rows - first;
-        int ax = r.x + mw - pad / 2 - 6;
-        if (first > 0) {
-            DrawTriangle((Vector2){ (float)ax, (float)low + 4 }, (Vector2){ (float)ax - 5, (float)low + 12 },
-                         (Vector2){ (float)ax + 5, (float)low + 12 }, PAL_CLR(YELLOW));
-            touch_region(r.x + mw - 3 * pad, low, 3 * pad, rh, KEY_UP);
-        }
-        if (first + shown_rows < rows) {
-            int by = low + (shown_rows - 1) * (rh + RULE) + rh;
-            DrawTriangle((Vector2){ (float)ax - 5, (float)by - 12 }, (Vector2){ (float)ax, (float)by - 4 },
-                         (Vector2){ (float)ax + 5, (float)by - 12 }, PAL_CLR(YELLOW));
-            touch_region(r.x + mw - 3 * pad, by - rh, 3 * pad, rh, KEY_DOWN);
-        }
-        if (rows > vis) touch_region_scroll(r.x, low, mw, vis * (rh + RULE), rh + RULE);
-    }
-    lattice_band_v(r.x + mw, low, BAND, lh);
 
-    // Detail (right): a result message until the next key, else the facts
-    // for the screen on show. A detail screen pages its text (Up/Down); the
-    // menu shows the first page as a summary.
-    const int INSET = pad + 4;
-    int dx = r.x + mw + BAND + INSET;
-    int dw = right - dx - INSET;
-    int line_h = GH + 2;
-    int per = (lh - 2 * INSET) / line_h;
-    TownText t = { .n = 0, .max_w = dw };
-    if (info && info[0]) {
-        town_text_add(&t, info, PAL_CLR(WHITE));
-    } else if (menu) {
-        // The main page: the section's person invites you in. Boat at a town
-        // with no boat master says there is none.
-        const ResTownInvite *inv = (res && town_res)
-                                 ? resources_town_invite(res, town_res->invitations) : NULL;
-        const char *line = NULL;
-        char rites[RES_BANNER_LEN];
-        if (inv) switch (screen) {
-            case TOWN_LIST_CONTRACTS: line = inv->contracts; break;
-            case TOWN_LIST_BOAT:      line = views_town_boat_available(g) ? inv->boat
-                                                          : res->banners.town_boat_no_master; break;
-            case TOWN_LIST_INFO:      line = inv->information; break;
-            case TOWN_LIST_TEMPLE:
-                if (!views_town_row_enabled(g, TOWN_ROW_SPELL)) {
-                    views_town_rites_text(g, rites, sizeof rites);
-                    line = rites;
-                } else {
-                    line = inv->temple;
-                }
-                break;
-            case TOWN_LIST_SIEGE:     line = inv->siege; break;
-            default: break;
+    if (menu || list == TOWN_LIST_CONTRACTS) {
+        // The services, or the enemies on offer: rows at the left, and beside
+        // them the person (or the face) at 2x and their words.
+        char t2[128];
+        town_title(g, t2, sizeof t2, !menu);
+        ML_Rect b = uk_inlay(ml_full().w, UK_TALL_H, t2, town_zone_name(g));
+        int lw = 14 * GW + 2 * ML_PAD;
+        ml_list_draw(b.x, b.y, lw, b.h, rows, cursor, town_row_fn, &rc, TOUCH_LIST_TOWN, uk_ink());
+        if (list == TOWN_LIST_CONTRACTS) {
+            // The contract held: a dot before its name.
+            int vis = ml_list_fit(b.h), first = ml_list_first(rows, cursor, vis);
+            for (int i = first; i < rows - 1 && i < first + vis; i++) {
+                int slot = views_town_contract_slot(g, i);
+                if (slot < 0 || strcmp(g->contract.cycle[slot], g->contract.active_id) != 0) continue;
+                int ry = b.y + (i - first) * (ml_row_h() + ML_ROW_RULE);
+                DrawCircle(b.x + ML_PAD + GW / 2 - 2, ry + ml_row_h() / 2, 3,
+                           i == cursor ? uk_ink() : PAL_CLR(YELLOW));
+            }
         }
-        if (views_town_cursor() == TOWN_ROW_LEAVE) line = res->banners.gmd_leave;
-        if (line && line[0]) {
-            char text[RES_BANNER_LEN];
-            ResTemplateVar vars[] = {
-                { "HERO", g ? g->character.name : "" },
-                { "TOWN", (name && name[0]) ? name : "" },
-            };
-            resources_format_template(text, sizeof text, line, vars, 2);
-            town_text_add(&t, text, PAL_CLR(WHITE));
-        }
-    } else {
-        town_compose_detail(g, &t);
-    }
-    int starts[16];
-    int pages = 1;
-    starts[0] = 0;
-    if (t.n > per && per > 1) pages = town_paginate(&t, per - 1, starts, 16);  // last line: pager
-    int page = 0, end = t.n;
-    if (menu) {
-        // The summary: the first page only, and no pager.
-        if (pages > 1) end = starts[1];
-        if (end > per) end = per;
-        pages = 1;
-        views_town_set_detail_pages(1);
-    } else {
-        views_town_set_detail_pages(pages);
-        page = views_town_detail_page();
-        end = (page + 1 < pages) ? starts[page + 1] : t.n;
-    }
-    int ty = low + INSET;
-    for (int i = starts[page]; i < end; i++) {
-        const TownLine *l = &t.line[i];
-        if (l->label > 0) {
-            char lab[72];
-            snprintf(lab, sizeof lab, "%.*s", l->label, l->text);
-            bfont_draw(lab, dx, ty, PAL_CLR(YELLOW));
-            bfont_draw(l->text + l->label, dx + (int)bfont_measure(lab).x, ty, l->fg);
-        } else {
-            bfont_draw(l->text, dx, ty, l->fg);
-        }
-        ty += line_h;
-    }
-    if (pages > 1) {
-        // "1/2" between the arrows, bottom right; an arrow shows only where
-        // there is a page to go to, and a tap on it pages (Up/Down).
-        char pg[32];
-        snprintf(pg, sizeof pg, "%d/%d", page + 1, pages);
-        int py = bottom - INSET - GH;
-        int aw = GH;
-        int nx = right - INSET - aw;
-        int tx = nx - pad - (int)bfont_measure(pg).x;
-        int px = tx - pad - aw;
-        bfont_draw(pg, tx, py, PAL_CLR(YELLOW));
-        if (page > 0) {
-            DrawTriangle((Vector2){ px + aw / 2, py }, (Vector2){ px, py + GH },
-                         (Vector2){ px + aw, py + GH }, PAL_CLR(YELLOW));
-            touch_region(px, py, aw, GH, KEY_UP);
-        }
-        if (page + 1 < pages) {
-            DrawTriangle((Vector2){ nx, py }, (Vector2){ nx + aw / 2, py + GH },
-                         (Vector2){ nx + aw, py }, PAL_CLR(YELLOW));
-            touch_region(nx, py, aw, GH, KEY_DOWN);
-        }
-    }
-    // A boat, spell or siege outcome: the section's person says it in a dialog.
-    if (views_town_result_dialog() && info) {
+        lattice_band_v(b.x + lw, b.y, UK_BAND, b.h);
+        ML_Rect a = { b.x + lw + UK_BAND + UK_INSET, b.y + UK_INSET, 0, 0 };
+        a.w = b.x + b.w - UK_INSET - a.x;
+        a.h = b.y + b.h - UK_INSET - a.y;
+        const int size = 2 * CL_TILE_W;
         Texture2D face = { 0 };
-        if (who >= 0 && s && s->portrait_frames[who] > 0)
-            face = s->portrait_anim[who][sprites_frame((int)(GetTime() * 2.0), s->portrait_frames[who])];
-        TownText rt = { .n = 0, .max_w = result_text_w() };
-        town_text_add(&rt, info, PAL_CLR(WHITE));
-        result_dialog(g, header, face, &rt);
+        TownList shown = menu ? town_list_for(views_town_cursor()) : list;
+        if (menu && views_town_cursor() == TOWN_ROW_LEAVE) shown = TOWN_LIST_MENU;
+        if (list == TOWN_LIST_CONTRACTS) {
+            const VillainDef *v = town_shown_villain(g);
+            face = v ? villain_face(s, v->index) : (s ? s->hud_contract_silhouette : (Texture2D){ 0 });
+        } else if (shown == TOWN_LIST_BOAT && !views_town_boat_available(g)) {
+            face = s ? s->hud_boat_silhouette : (Texture2D){ 0 };
+        } else {
+            face = portrait_frame(s, town_person(g, shown), 2.0);
+        }
+        if (face.id) uk_picture(face, a.x, a.y, size, size);
+        UkDoc d = { 0 };
+        if (info && info[0]) {
+            uk_doc_add(&d, info, PAL_CLR(WHITE));
+        } else if (menu) {
+            const ResTownInvite *inv = tw ? resources_town_invite(res, tw->invitations) : NULL;
+            const char *line = NULL;
+            char rites[RES_BANNER_LEN];
+            if (inv) switch (shown) {
+                case TOWN_LIST_CONTRACTS: line = inv->contracts; break;
+                case TOWN_LIST_BOAT:      line = views_town_boat_available(g) ? inv->boat : bn->town_boat_no_master; break;
+                case TOWN_LIST_INFO:      line = inv->information; break;
+                case TOWN_LIST_TEMPLE:
+                    if (!views_town_row_enabled(g, TOWN_ROW_SPELL)) { views_town_rites_text(g, rites, sizeof rites); line = rites; }
+                    else line = inv->temple;
+                    break;
+                case TOWN_LIST_SIEGE:     line = inv->siege; break;
+                default:                  line = bn->gmd_back; break;
+            }
+            if (line && line[0]) {
+                ResTemplateVar vars[] = { { "HERO", g->character.name }, { "TOWN", (name && name[0]) ? name : "" } };
+                resources_format_template(buf, sizeof buf, line, vars, 2);
+                uk_doc_add(&d, buf, PAL_CLR(WHITE));
+            }
+        } else {
+            compose_service(g, list, &d);
+        }
+        if (menu) {
+            uk_doc_draw(&d, a, face.id ? size : 0, size, -1, true);
+        } else {
+            int pages = uk_doc_draw(&d, a, face.id ? size : 0, size, 0, false);
+            views_town_set_detail_pages(pages);
+            uk_doc_draw(&d, a, face.id ? size : 0, size, views_town_detail_page(), true);
+        }
+    } else {
+        // A service: its person at 2x and their words, the service's answer and
+        // Back along the foot.
+        // As tall as the picture or the words, whichever is taller.
+        char t2[128];
+        town_title(g, t2, sizeof t2, true);
+        const int size = 2 * CL_TILE_W;
+        Texture2D face = portrait_frame(s, town_person(g, list), 2.0);
+        if (!face.id && list == TOWN_LIST_BOAT && s) face = s->hud_boat_silhouette;
+        UkDoc d = { 0 };
+        if (info && info[0]) uk_doc_add(&d, info, PAL_CLR(WHITE));
+        else                 compose_service(g, list, &d);
+        ML_Rect probe = { 0, 0, UK_WIDE_W - 2 * UK_INSET, 0 };
+        int body = uk_doc_height(&d, probe, face.id ? size : 0, size);
+        if (face.id && body < size) body = size;
+        int h = uk_title_h() + UK_BAND + 2 * UK_INSET + body + ML_PAD + UK_BAND + ml_list_height(rows);
+        if (h > UK_TALL_H) h = UK_TALL_H;
+        ML_Rect b = uk_inlay(UK_WIDE_W, h, t2, town_zone_name(g));
+        int foot = uk_foot_rows(b, rows, cursor, town_row_fn, &rc, TOUCH_LIST_TOWN);
+        ML_Rect a = { b.x + UK_INSET, b.y + UK_INSET, b.w - 2 * UK_INSET, foot - ML_PAD - (b.y + UK_INSET) };
+        int pic = size < a.h ? size : a.h;
+        if (face.id) uk_picture(face, a.x, a.y, pic, pic);
+        int pages = uk_doc_draw(&d, a, face.id ? pic : 0, pic, 0, false);
+        views_town_set_detail_pages(pages);
+        uk_doc_draw(&d, a, face.id ? pic : 0, pic, views_town_detail_page(), true);
+    }
+
+    // A boat, spell or siege outcome: the section's person says it.
+    if (views_town_result_dialog() && info) {
+        char t2[128];
+        town_title(g, t2, sizeof t2, true);
+        Texture2D face = portrait_frame(s, town_person(g, list == TOWN_LIST_MENU
+                                                      ? town_list_for(views_town_cursor()) : list), 2.0);
+        uk_result_inlay(t2, face, info, bn->castle_continue, TOUCH_LIST_PROMPT);
     }
 }
 
 // =============================================================================
-//  Modern castle screens (home castle, owned castle) -- the town layout
+//  Castles -- the scene (Recruit / Audience / Leave, or Garrison / Withdraw /
+//  Leave), each page an in-lay over it
 // =============================================================================
 
-// "Label value" with the label in yellow.
-static void town_text_pair(TownText *t, const char *label, const char *value) {
-    char buf[160];
-    snprintf(buf, sizeof buf, "%s %s", label, value);
-    int first = t->n;
-    town_text_add(t, buf, PAL_CLR(WHITE));
-    if (first < t->n) {
-        int lab = (int)strlen(label);
-        int len = (int)strlen(t->line[first].text);
-        t->line[first].label = lab < len ? lab : len;
-    }
-}
-
-// Two "label value" pairs on one line, the second from the panel's middle.
-static void town_text_pair2(TownText *t, const char *l1, const char *v1,
-                            const char *l2, const char *v2) {
-    int first = t->n;
-    town_text_pair(t, l1, v1);
-    if (first < t->n) {
-        TownLine *l = &t->line[first];
-        snprintf(l->text2, sizeof l->text2, "%s %s", l2, v2);
-        int lab = (int)strlen(l2), len = (int)strlen(l->text2);
-        l->label2 = lab < len ? lab : len;
-    }
-}
-
-static void castle_fmt(char *out, int cap, const char *tmpl, const char *count,
-                       const char *max) {
+static void castle_fmt(char *out, int cap, const char *tmpl, const char *count, const char *max) {
     ResTemplateVar v[] = { { "COUNT", count }, { "MAX", max ? max : "" },
                            { "RANK", count }, { "GOLD", count } };
     resources_format_template(out, cap, tmpl, v, 4);
-}
-
-static void draw_portrait_anim(const Sprites *s, int idx, int x, int y, int size,
-                               double fps) {
-    if (!s || idx < 0 || s->portrait_frames[idx] <= 0) {
-        DrawRectangle(x, y, size, size, PAL_CLR(BLACK));
-        return;
-    }
-    ui_blit(s->portrait_anim[idx][sprites_frame((int)(GetTime() * fps),
-                                                s->portrait_frames[idx])],
-            x, y, size, size);
 }
 
 static int castle_pick_troop(const Game *g, const char *key) {
@@ -985,136 +651,163 @@ static int castle_pick_troop(const Game *g, const char *key) {
     return pool[h % (unsigned long)n];
 }
 
-// The Promotion page: the win/lose screen's layout -- the award image at its
-// authored size times the UI scale on the right, the Emperor's words and the
-// rank's gains beside it, and a Continue row under the text.
+static void castle_gains(const Game *g, int rank, UkDoc *d) {
+    const ResBanners *bn = &g->res->banners;
+    const ClassDef *cls = class_by_id(g->character.cls.id);
+    if (!cls || rank <= 0) return;
+    char buf[RES_BANNER_LEN], nb[16];
+    int l0, s0, p0, c0, l1, s1, p1, c1;
+    class_stats_at_rank(cls, rank - 1, &l0, &s0, &p0, &c0);
+    class_stats_at_rank(cls, rank, &l1, &s1, &p1, &c1);
+    uk_doc_gap(d);
+    snprintf(nb, sizeof nb, "%d", l1 - l0);
+    castle_fmt(buf, sizeof buf, bn->castle_gain_leadership, nb, NULL);
+    uk_doc_add(d, buf, PAL_CLR(YELLOW));
+    snprintf(nb, sizeof nb, "%d", c1 - c0);
+    castle_fmt(buf, sizeof buf, bn->castle_gain_commission, nb, NULL);
+    uk_doc_add(d, buf, PAL_CLR(YELLOW));
+    if (s1 - s0 > 0) {
+        snprintf(nb, sizeof nb, "%d", s1 - s0);
+        castle_fmt(buf, sizeof buf, bn->castle_gain_spells, nb, NULL);
+        uk_doc_add(d, buf, PAL_CLR(YELLOW));
+    }
+}
+
+// The Promotion ceremony: the award at 2x, the Emperor's words and the rank's
+// gains beside it, Continue.
 static void castle_draw_promotion(const Game *g, const Sprites *s, const ResCastle *rc) {
     const Resources *res = g->res;
-    const ResBanners *bn = &res->banners;
-    ML_Rect r = ml_full();
-    int pad = ML_PAD;
-    DrawRectangle(r.x, r.y, r.w, r.h, PAL_CLR(DBLUE));
-    int aud_needed = 0, rank = 0;
-    modern_castle_audience(&aud_needed, &rank);
-    int idx = (rc && rank >= 0 && rank < 4) ? resources_portrait_index(res, rc->special.promotion[rank]) : -1;
-    int img_w = 0;
-    if (s && idx >= 0 && s->portrait_frames[idx] > 0) {
-        Texture2D img = s->portrait_anim[idx][0];
-        if (img.id && img.width > 0 && img.height > 0) {
-            int sc = CL_UI;
-            if (img.height * sc > r.h) sc = ui_fit_scale(img.width, img.height, r.w, r.h);
-            img_w = img.width * sc;
-            ui_blit(img, r.x + r.w - img_w, r.y, img_w, img.height * sc);
-        }
-    }
-    const int INSET = pad + 4;
-    int tx = r.x + INSET, tw = r.w - img_w - 2 * INSET;
-    TownText t = { .n = 0, .max_w = tw };
-    char buf[RES_BANNER_LEN], nb[16];
-    if (rc) {
-        audience_substitute(g, aud_needed, rc->special.audience_rank_up, buf, sizeof buf);
-        town_text_add(&t, buf, PAL_CLR(WHITE));
-    }
-    const ClassDef *cls = class_by_id(g->character.cls.id);
-    if (cls && rank > 0) {
-        int l0, s0, p0, c0, l1, s1, p1, c1;
-        class_stats_at_rank(cls, rank - 1, &l0, &s0, &p0, &c0);
-        class_stats_at_rank(cls, rank, &l1, &s1, &p1, &c1);
-        town_text_gap(&t);
-        snprintf(nb, sizeof nb, "%d", l1 - l0);
-        castle_fmt(buf, sizeof buf, bn->castle_gain_leadership, nb, NULL);
-        town_text_add(&t, buf, PAL_CLR(YELLOW));
-        snprintf(nb, sizeof nb, "%d", c1 - c0);
-        castle_fmt(buf, sizeof buf, bn->castle_gain_commission, nb, NULL);
-        town_text_add(&t, buf, PAL_CLR(YELLOW));
-        if (s1 - s0 > 0) {
-            snprintf(nb, sizeof nb, "%d", s1 - s0);
-            castle_fmt(buf, sizeof buf, bn->castle_gain_spells, nb, NULL);
-            town_text_add(&t, buf, PAL_CLR(YELLOW));
-        }
-    }
-    int rh = ml_row_h();
-    int row_y = r.y + r.h - rh - ML_ROW_RULE;
-    int ty = r.y + INSET;
-    for (int i = 0; i < t.n && ty + GH <= row_y; i++) {
-        bfont_draw(t.line[i].text, tx, ty, t.line[i].fg);
-        ty += GH + 2;
-    }
+    int needed = 0, rank = 0;
+    modern_castle_audience(&needed, &rank);
+    ML_Rect b = uk_inlay(UK_WIDE_W, UK_TALL_H, res->banners.castle_action_promotion, g->character.cls.rank_title);
     char label[64];
     modern_castle_row(g, 0, label, sizeof label, NULL);
-    lattice_band_h(r.x, row_y - ML_ROW_RULE, r.w - img_w, ML_ROW_RULE);
-    sel_row(r.x, row_y, r.w - img_w, rh, r.x + pad, label, true,
-            PAL_CLR(YELLOW), PAL_CLR(DBLUE), TOUCH_LIST_CASTLE, 0);
+    UkRows rows = { { label }, { true } };
+    int foot = uk_foot_rows(b, 1, 0, uk_rows_fn, &rows, TOUCH_LIST_CASTLE);
+    int idx = (rc && rank >= 0 && rank < 4) ? resources_portrait_index(res, rc->special.promotion[rank]) : -1;
+    Texture2D img = portrait_frame(s, idx, 0.0);
+    int iw = 0, ih = 0;
+    int avail_h = foot - ML_PAD - b.y;
+    if (img.id && img.width > 0 && img.height > 0) {
+        int sc = 2;
+        while (sc > 1 && img.height * sc > avail_h) sc--;
+        iw = img.width * sc;
+        ih = img.height * sc;
+        if (ih > avail_h) ih = avail_h;
+        ui_blit(img, b.x, b.y, iw, ih);
+        lattice_band_v(b.x + iw, b.y, UK_BAND, foot - b.y);
+    }
+    ML_Rect a = { b.x + iw + UK_BAND + UK_INSET, b.y + UK_INSET, 0, 0 };
+    a.w = b.x + b.w - UK_INSET - a.x;
+    a.h = foot - ML_PAD - a.y;
+    UkDoc d = { 0 };
+    char buf[RES_BANNER_LEN];
+    if (rc) {
+        audience_substitute(g, needed, rc->special.audience_rank_up, buf, sizeof buf);
+        uk_doc_add(&d, buf, PAL_CLR(WHITE));
+    }
+    castle_gains(g, rank, &d);
+    uk_doc_draw(&d, a, 0, 0, -1, true);
+}
+
+// The troop a castle page's row stands for, with its numbers beside its
+// portrait: what it is, and what you have and can move.
+static void castle_troop_detail(const Game *g, const Sprites *s, const TroopDef *pt, McPage page,
+                                const CastleRecord *cr, ML_Rect a) {
+    const ResBanners *bn = &g->res->banners;
+    const ResUI *ui = &g->res->ui;
+    const int size = 2 * CL_TILE_W;
+    uk_picture(troop_face(s, pt->index), a.x, a.y, size, size);
+    char buf[RES_BANNER_LEN], nb[32];
+    int x = a.x + size + UK_INSET, y = a.y;
+    int lh = uk_line_h();
+    bfont_draw(pt->name, x, y, PAL_CLR(YELLOW));
+    y += lh + 4;
+    struct { const char *label; char value[32]; } rows[5];
+    snprintf(rows[0].value, 32, "%d", pt->skill_level);                      rows[0].label = ui->army_skill;
+    snprintf(rows[1].value, 32, "%d", pt->move_rate);                        rows[1].label = ui->army_move;
+    snprintf(rows[2].value, 32, "%d", pt->hit_points);                       rows[2].label = ui->army_hit_points;
+    snprintf(rows[3].value, 32, "%d-%d", pt->melee_min, pt->melee_max);      rows[3].label = ui->army_damage;
+    snprintf(rows[4].value, 32, "%d", pt->recruit_cost);                     rows[4].label = ui->army_g_cost;
+    int vx = a.x + a.w;
+    for (int i = 0; i < 5; i++, y += lh) {
+        bfont_draw(rows[i].label, x, y, PAL_CLR(WHITE));
+        bfont_draw_right(rows[i].value, vx, y, PAL_CLR(WHITE));
+    }
+    int in_army = 0, in_garrison = 0;
+    for (int k = 0; k < GAME_ARMY_SLOTS; k++) {
+        if (strcmp(g->army[k].id, pt->id) == 0) in_army += g->army[k].count;
+        if (cr && strcmp(cr->garrison[k].id, pt->id) == 0) in_garrison += cr->garrison[k].count;
+    }
+    UkDoc d = { 0 };
+    snprintf(nb, sizeof nb, "%d", in_army);
+    castle_fmt(buf, sizeof buf, bn->castle_have, nb, NULL);
+    uk_doc_add(&d, buf, PAL_CLR(WHITE));
+    if (page == MC_RECRUIT && !modern_castle_troop_offered(g, pt)) {
+        snprintf(nb, sizeof nb, "%d", pt->hit_points * 6);
+        castle_fmt(buf, sizeof buf, bn->castle_needs_leadership, nb, NULL);
+        uk_doc_add(&d, buf, PAL_CLR(YELLOW));
+    } else if (page == MC_RECRUIT) {
+        int m = GameMaxRecruitable(g, pt->id);
+        if (m < 0) m = 0;
+        if (pt->recruit_cost > 0 && g->stats.gold / pt->recruit_cost < m) m = g->stats.gold / pt->recruit_cost;
+        snprintf(nb, sizeof nb, "%d", m);
+        castle_fmt(buf, sizeof buf, bn->castle_can_recruit, nb, NULL);
+        uk_doc_add(&d, buf, PAL_CLR(WHITE));
+    } else {
+        snprintf(nb, sizeof nb, "%d", in_garrison);
+        castle_fmt(buf, sizeof buf, bn->castle_in_garrison, nb, NULL);
+        uk_doc_add(&d, buf, PAL_CLR(WHITE));
+        if (page == MC_WITHDRAW &&
+            GameArmyTotalLeadership(g) + pt->hit_points * in_garrison > g->stats.leadership_current) {
+            uk_doc_gap(&d);
+            uk_doc_add(&d, bn->castle_over_leadership, PAL_CLR(YELLOW));
+        }
+    }
+    ML_Rect under = { a.x, a.y + size + ML_PAD + 4, a.w, a.y + a.h - (a.y + size + ML_PAD + 4) };
+    uk_doc_draw(&d, under, 0, 0, -1, true);
+}
+
+typedef struct { const Game *g; } CastleRowsCtx;
+
+static bool castle_row_fn(void *ctx, int i, char *label, char *right, int cap) {
+    const Game *g = ((const CastleRowsCtx *)ctx)->g;
+    const char *id = NULL;
+    right[0] = '\0';
+    modern_castle_row(g, i, label, cap, &id);
+    const TroopDef *t = (modern_castle_page() == MC_RECRUIT && id) ? troop_by_id(id) : NULL;
+    return !t || modern_castle_troop_offered(g, t);
 }
 
 void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
     if (!g || !g->res) return;
-    if (modern_castle_page() == MC_PROMOTION) {
-        castle_draw_promotion(g, s, resources_castle_by_id(g->res, modern_castle_id()));
-        return;
-    }
     const Resources *res = g->res;
     const ResBanners *bn = &res->banners;
-    const ResUI *ui = &res->ui;
     const char *cid = modern_castle_id();
     const ResCastle *rc = resources_castle_by_id(res, cid);
     const CastleRecord *cr = GameFindCastleConst(g, cid);
     bool home = modern_castle_is_home();
     McPage page = modern_castle_page();
     int cursor = modern_castle_cursor();
-    int rows = modern_castle_rows(g);
+    const char *cname = (rc && rc->name[0]) ? rc->name : cid;
+    char gold[48], buf[RES_BANNER_LEN];
+    uk_gold_text(g, gold, sizeof gold);
 
-    const int BS = 2, BAND = 4, RULE = ML_ROW_RULE;
-    int pad = ML_PAD;
-    ML_Rect r = ml_full();
-    int right = r.x + r.w, bottom = r.y + r.h;
-    DrawRectangle(r.x, r.y, r.w, r.h, PAL_CLR(DBLUE));
-
-    // Title strip: the castle's name (and "> <page>"), its zone on the right.
-    int title_h = GH + 14;
-    char title[128];
-    snprintf(title, sizeof title, "%s", (rc && rc->name[0]) ? rc->name : cid);
-    if (page != MC_MENU) {
-        char label[64];
-        const char *tp[] = { "", bn->castle_menu_recruit, bn->castle_menu_audience,
-                             bn->castle_menu_garrison, bn->castle_menu_withdraw };
-        snprintf(label, sizeof label, "%s", tp[page]);
-        size_t n = strlen(title);
-        snprintf(title + n, sizeof title - n, " > %s", label);
-    }
-    bfont_draw(title, r.x + pad, r.y + (title_h - GH) / 2, PAL_CLR(YELLOW));
-    const ResZone *z = rc ? resources_zone_by_id(res, rc->zone) : NULL;
-    if (z && z->name[0])
-        bfont_draw(z->name, right - pad - (int)bfont_measure(z->name).x,
-                   r.y + (title_h - GH) / 2, PAL_CLR(YELLOW));
-    lattice_band_h(r.x, r.y + title_h, r.w, BAND);
-
-    // Backdrop at 2x, cut to the portrait's height; the ruler (or a castle
-    // troop) standing on it at 2x, its pixels matching the backdrop.
-    int top = r.y + title_h + BAND;
-    int fs = CL_TILE_W * BS;
-    int bw = ML_BACKDROP_W * BS, bh = fs;
-    Texture2D bd = loc_texture(s, LOC_CASTLE);
-    if (bd.id && bd.height > 0) {
-        float src_h = (float)bd.height * (float)bh / (float)(ML_BACKDROP_H * BS);
-        Rectangle src = { 0, (float)bd.height - src_h, (float)bd.width, src_h };
-        Rectangle dst = { (float)r.x, (float)top, (float)bw, (float)bh };
-        DrawTexturePro(bd, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
-    } else {
-        DrawRectangle(r.x, top, bw, bh, PAL_CLR(BLACK));
-    }
-    // The barracks keeper stands in the castle; the ruler only on Audience.
-    bool barracks = rc && page != MC_AUDIENCE;
+    // The scene: the barracks at 3x, their keeper (or the Emperor on Audience)
+    // standing in it at 2x; a castle of your own shows the troop it holds most.
+    int mcur = modern_castle_menu_cursor();
+    const char *inv = mcur == 2 ? bn->gmd_leave
+                    : home ? (mcur == 0 ? bn->castle_invite_recruit : bn->castle_invite_audience)
+                           : (mcur == 0 ? bn->castle_invite_garrison : bn->castle_invite_withdraw);
+    ResTemplateVar v[] = { { "HERO", g->character.name }, { "CASTLE", cname } };
+    resources_format_template(buf, sizeof buf, inv, v, 2);
+    UkScene L = uk_scene_for(cname, gold, loc_texture(s, LOC_CASTLE), 3, buf);
+    bool barracks = rc && page != MC_AUDIENCE && page != MC_PROMOTION;
     const char *fig_id = !rc ? "" : (barracks && rc->special.barracks_figure[0])
                                   ? rc->special.barracks_figure : rc->special.figure;
-    int figure = (home && rc) ? resources_portrait_index(res, fig_id) : -1;
-    if (s && figure >= 0 && s->portrait_frames[figure] > 0) {
-        ui_blit(s->portrait_anim[figure][sprites_frame((int)(GetTime() * 1000.0 / 180.0),
-                                                       s->portrait_frames[figure])],
-                r.x + CL_TILE_W / 2, top + bh - 2 * CL_TILE_H, 2 * CL_TILE_W, 2 * CL_TILE_H);
-    } else if (s) {
-        // A castle of your own shows the troop it holds most of; an empty
-        // garrison, no one. (The home castle without a keeper keeps a troop.)
+    Texture2D fig = (home && rc) ? portrait_frame(s, resources_portrait_index(res, fig_id), 1000.0 / 180.0)
+                                 : (Texture2D){ 0 };
+    if (!fig.id) {
         int ti = -1;
         if (!home) {
             int most = 0;
@@ -1125,291 +818,189 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
         } else {
             ti = castle_pick_troop(g, cid);
         }
-        if (ti >= 0) {
-            Texture2D ts = s->troop_anim[ti][sprites_frame(sprites_stand((int)(GetTime() * 6.66)),
-                                                           s->troop_anim_frames[ti])];
-            if (!ts.id) ts = s->troop_sprite[ti];
-            if (ts.id) ui_blit(ts, r.x + CL_TILE_W / 2, top + bh - 2 * CL_TILE_H, 2 * CL_TILE_W, 2 * CL_TILE_H);
-        }
+        fig = troop_standing(s, ti);
     }
-    lattice_band_v(r.x + bw, top, BAND, bh);
+    uk_scene_figure(&L, fig, CL_TILE_W);
+    uk_scene_intro(&L, buf);
+    char r0[RES_BANNER_LEN + 4], r1[RES_BANNER_LEN + 4];
+    snprintf(r0, sizeof r0, "%s >", home ? bn->castle_menu_recruit : bn->castle_menu_garrison);
+    snprintf(r1, sizeof r1, "%s >", home ? bn->castle_menu_audience : bn->castle_menu_withdraw);
+    UkRows menu_rows = { { r0, r1, bn->location_leave }, { true, true, true } };
+    bool on_menu = page == MC_MENU;
+    uk_scene_rows(&L, 3, on_menu ? mcur : -1, uk_rows_fn, &menu_rows, on_menu ? TOUCH_LIST_CASTLE : 0);
 
-    // Portrait slot: the troop under the cursor at 2x on a troop page; the
-    // promotion image after a promotion; else the ruler's portrait.
-    int fx = r.x + bw + BAND;
-    char label[64];
-    const char *row_troop = NULL;
-    if (page != MC_MENU && page != MC_AUDIENCE)
-        modern_castle_row(g, cursor, label, sizeof label, &row_troop);
-    int aud_needed = 0, aud_rank = 0;
-    int aud = modern_castle_audience(&aud_needed, &aud_rank);
-    const TroopDef *pt = row_troop ? troop_by_id(row_troop) : NULL;
-    if (pt && s) {
-        Texture2D ts = s->troop_anim[pt->index][sprites_frame(sprites_stand((int)(GetTime() * 6.66)),
-                                                              s->troop_anim_frames[pt->index])];
-        if (!ts.id) ts = s->troop_sprite[pt->index];
-        DrawRectangle(fx, top, fs, fs, PAL_CLR(BLACK));
-        if (s->troop_portrait[pt->index].id) ts = s->troop_portrait[pt->index];   // the troop's portrait, when it has one
-        if (ts.id) ui_blit(ts, fx, top, fs, fs);
-    } else if (home && rc) {
-        int idx = resources_portrait_index(res, (barracks && rc->special.barracks_portrait[0])
-                                                    ? rc->special.barracks_portrait : rc->special.portrait);
-        if (page == MC_AUDIENCE && aud == GAME_AUDIENCE_PROMOTED + 1 &&
-            aud_rank >= 0 && aud_rank < 4) {
-            int pi = resources_portrait_index(res, rc->special.promotion[aud_rank]);
-            if (pi >= 0) idx = pi;
-        }
-        draw_portrait_anim(s, idx, fx, top, fs, 2.0);
-    } else {
-        DrawRectangle(fx, top, fs, fs, PAL_CLR(BLACK));
-    }
-    lattice_band_v(fx + fs, top, BAND, bh);
-    int hx = fx + fs + BAND;
-    hud_draw_siege_tile(g, s, hx, top);
-    hud_draw_gold_tile(g, s, hx, top + CL_TILE_H);
-
-    int low = top + bh;
-    lattice_band_h(r.x, low, r.w, BAND);
-    low += BAND;
-
-    // The second step, "How many?": the whole lower half becomes the count
-    // panel, with "Recruit 20" (or Garrison / Withdraw) and Cancel as rows.
-    {
-        int cv = 0, cmax = 0;
-        if (modern_castle_stepper(&cv, &cmax) && pt) {
-            char heading[RES_BANNER_LEN], sub[RES_BANNER_LEN], left[RES_BANNER_LEN] = "",
-                 rightt[RES_BANNER_LEN] = "", mx[16], vb[16];
-            ResTemplateVar hv[] = { { "TROOP", pt->name } };
-            resources_format_template(heading, sizeof heading, bn->count_heading, hv, 1);
-            snprintf(mx, sizeof mx, "%d", cmax);
-            ResTemplateVar sv[] = { { "MAX", mx } };
-            resources_format_template(sub, sizeof sub, page == MC_RECRUIT ? bn->count_of_lead
-                                      : page == MC_GARRISON ? bn->count_of_army : bn->count_of_garrison, sv, 1);
-            if (page == MC_RECRUIT) {
-                snprintf(vb, sizeof vb, "%d", pt->recruit_cost * cv);
-                ResTemplateVar cv1[] = { { "GOLD", vb } };
-                resources_format_template(left, sizeof left, bn->count_cost, cv1, 1);
-            }
-            ml_count_panel(r.x, low, r.w, heading, cv, sub, left, rightt);
-            // The two answers as full-width rows along the foot.
-            static char act_label[RES_BANNER_LEN];
-            snprintf(vb, sizeof vb, "%d", cv);
-            ResTemplateVar av[] = { { "COUNT", vb } };
-            resources_format_template(act_label, sizeof act_label, page == MC_RECRUIT ? bn->count_recruit
-                                      : page == MC_GARRISON ? bn->count_garrison : bn->count_withdraw, av, 1);
-            int ry = bottom - ml_list_height(2);
-            lattice_band_h(r.x, ry - BAND, r.w, BAND);
-            int rh2 = ml_row_h();
-            sel_row(r.x, ry, r.w, rh2, r.x + ML_PAD, act_label, true, PAL_CLR(YELLOW), PAL_CLR(DBLUE),
-                    TOUCH_LIST_CASTLE, 0);
-            lattice_band_h(r.x, ry + rh2, r.w, ML_ROW_RULE);
-            sel_row(r.x, ry + rh2 + ML_ROW_RULE, r.w, rh2, r.x + ML_PAD, bn->count_cancel, false,
-                    PAL_CLR(WHITE), PAL_CLR(DBLUE), TOUCH_LIST_CASTLE, 1);
-            lattice_band_h(r.x, ry + 2 * rh2 + ML_ROW_RULE, r.w, ML_ROW_RULE);
-            return;
-        }
-    }
-
-    // Left column: standard select rows, stacked from the top.
-    int mw = 16 * GW;
-    int lh = bottom - low;
-    int rh = ml_row_h();
-    int vis = (lh + RULE) / (rh + RULE);
-    int first = 0;
-    if (rows > vis && vis > 0) {
-        first = cursor - vis + 1;
-        if (first < 0) first = 0;
-        if (first > rows - vis) first = rows - vis;
-    }
-    for (int i = first; i < rows; i++) {
-        int ry = low + (i - first) * (rh + RULE);
-        if (ry + rh > bottom) break;
-        const char *row_id = NULL;
-        modern_castle_row(g, i, label, sizeof label, &row_id);
-        bool sel = (i == cursor);
-        // A troop the castle does not offer yet is greyed; selecting it shows why.
-        const TroopDef *rt = (page == MC_RECRUIT && row_id) ? troop_by_id(row_id) : NULL;
-        bool offered = !rt || modern_castle_troop_offered(g, rt);
-        sel_row(r.x, ry, mw, rh, r.x + pad, label, sel,
-                !offered ? PAL_CLR(DGREY) : sel ? PAL_CLR(YELLOW) : PAL_CLR(WHITE), PAL_CLR(DBLUE),
-                TOUCH_LIST_CASTLE, i);
-        lattice_band_h(r.x, ry + rh, mw, RULE);
-    }
-    lattice_band_v(r.x + mw, low, BAND, lh);
-
-    // Detail panel.
-    const int INSET = pad + 4;
-    int dx = r.x + mw + BAND + INSET;
-    int dw = right - dx - INSET;
-    int line_h = GH + 2;
-    int step_v = 0, step_max = 0;
-    bool stepper = modern_castle_stepper(&step_v, &step_max);
-    TownText t = { .n = 0, .max_w = dw };
-    char buf[RES_BANNER_LEN], nb[16], mb[16];
     const char *msg = modern_castle_message();
-    if (msg) {
-        town_text_add(&t, msg, PAL_CLR(WHITE));
-    } else if (page == MC_MENU) {
-        const char *inv = cursor == 2 ? bn->gmd_leave
-                        : home ? (cursor == 0 ? bn->castle_invite_recruit : bn->castle_invite_audience)
-                               : (cursor == 0 ? bn->castle_invite_garrison : bn->castle_invite_withdraw);
-        ResTemplateVar v[] = { { "HERO", g->character.name },
-                               { "CASTLE", (rc && rc->name[0]) ? rc->name : cid } };
-        resources_format_template(buf, sizeof buf, inv, v, 2);
-        town_text_add(&t, buf, PAL_CLR(WHITE));
-    } else if (page == MC_AUDIENCE) {
+    Texture2D keeper = (home && rc) ? portrait_frame(s, resources_portrait_index(res,
+                           rc->special.barracks_portrait[0] ? rc->special.barracks_portrait : rc->special.portrait), 2.0)
+                                    : (Texture2D){ 0 };
+    if (on_menu) {
+        if (msg) uk_result_inlay(cname, keeper, msg, bn->castle_continue, TOUCH_LIST_PROMPT);
+        return;
+    }
+    if (page == MC_PROMOTION) { castle_draw_promotion(g, s, rc); return; }
+
+    const char *titles[] = { "", bn->castle_menu_recruit, bn->castle_menu_audience,
+                             bn->castle_menu_garrison, bn->castle_menu_withdraw, "" };
+    char title[128];
+    snprintf(title, sizeof title, "%s > %s", cname, titles[page]);
+    int rows = modern_castle_rows(g);
+    CastleRowsCtx cc = { g };
+
+    // The second step, "How many?": its own in-lay.
+    int cv = 0, cmax = 0;
+    const char *row_troop = NULL;
+    char label[64];
+    if (page != MC_AUDIENCE) modern_castle_row(g, cursor, label, sizeof label, &row_troop);
+    const TroopDef *pt = row_troop ? troop_by_id(row_troop) : NULL;
+    if (modern_castle_stepper(&cv, &cmax) && pt) {
+        char heading[RES_BANNER_LEN], sub[RES_BANNER_LEN], cost[RES_BANNER_LEN] = "", mx[16], vb[16];
+        static char act_label[RES_BANNER_LEN];
+        ResTemplateVar hv[] = { { "TROOP", pt->name } };
+        resources_format_template(heading, sizeof heading, bn->count_heading, hv, 1);
+        snprintf(mx, sizeof mx, "%d", cmax);
+        ResTemplateVar sv[] = { { "MAX", mx } };
+        resources_format_template(sub, sizeof sub, page == MC_RECRUIT ? bn->count_of_lead
+                                  : page == MC_GARRISON ? bn->count_of_army : bn->count_of_garrison, sv, 1);
+        if (page == MC_RECRUIT) {
+            snprintf(vb, sizeof vb, "%d", pt->recruit_cost * cv);
+            ResTemplateVar c1[] = { { "GOLD", vb } };
+            resources_format_template(cost, sizeof cost, bn->count_cost, c1, 1);
+        }
+        snprintf(vb, sizeof vb, "%d", cv);
+        ResTemplateVar av[] = { { "COUNT", vb } };
+        resources_format_template(act_label, sizeof act_label, page == MC_RECRUIT ? bn->count_recruit
+                                  : page == MC_GARRISON ? bn->count_garrison : bn->count_withdraw, av, 1);
+        const char *lines[] = { sub, cost };
+        Color colors[] = { PAL_CLR(WHITE), PAL_CLR(YELLOW) };
+        uk_count_inlay(heading, troop_face(s, pt->index), lines, colors, 2, cv, act_label, bn->count_cancel,
+                       TOUCH_LIST_CASTLE);
+        return;
+    }
+
+    if (page == MC_AUDIENCE) {
+        // The Emperor at 2x and where the hero stands; the audiences along the foot.
+        ML_Rect b = uk_inlay(UK_WIDE_W, UK_TALL_H, title, g->character.cls.rank_title);
+        int foot = uk_foot_rows(b, rows, cursor, castle_row_fn, &cc, TOUCH_LIST_CASTLE);
+        const int size = 2 * CL_TILE_W;
+        ML_Rect a = { b.x + UK_INSET, b.y + UK_INSET, b.w - 2 * UK_INSET, foot - ML_PAD - (b.y + UK_INSET) };
+        int pic = size < a.h ? size : a.h;
+        Texture2D emperor = rc ? portrait_frame(s, resources_portrait_index(res, rc->special.portrait), 2.0)
+                               : (Texture2D){ 0 };
+        if (emperor.id) uk_picture(emperor, a.x, a.y, pic, pic);
+        UkDoc d = { 0 };
         const ClassDef *cls = class_by_id(g->character.cls.id);
         int rank = g->character.cls.rank_index;
         const ResEconomy *ec = &res->economy;
-        int ares = 0, aneed = 0;
+        char nb[16], mb[16];
+        if (ec->audiences && cursor == 1) {
+            snprintf(nb, sizeof nb, "%d", GameArtifactsFound(g));
+            snprintf(mb, sizeof mb, "%d", artifacts_count() < 8 ? artifacts_count() : 8);
+            castle_fmt(buf, sizeof buf, bn->castle_artifacts, nb, mb);
+            uk_doc_add(&d, buf, PAL_CLR(WHITE));
+        } else if (ec->audiences && cursor == 2) {
+            snprintf(nb, sizeof nb, "%d", ec->tribute_cost);
+            castle_fmt(buf, sizeof buf, bn->castle_cost, nb, NULL);
+            uk_doc_add(&d, buf, PAL_CLR(WHITE));
+        } else {
+            castle_fmt(buf, sizeof buf, bn->castle_rank, g->character.cls.rank_title, NULL);
+            uk_doc_add(&d, buf, PAL_CLR(WHITE));
+            if (cls && rank + 1 < cls->rank_count) {
+                castle_fmt(buf, sizeof buf, bn->castle_next_rank, cls->ranks[rank + 1].name, NULL);
+                uk_doc_add(&d, buf, PAL_CLR(WHITE));
+                int need = cls->ranks[rank + 1].villains_needed - GameVillainsCaught(g);
+                snprintf(nb, sizeof nb, "%d", need > 0 ? need : 0);
+                castle_fmt(buf, sizeof buf, bn->castle_needed, nb, NULL);
+                uk_doc_add(&d, buf, PAL_CLR(WHITE));
+            }
+        }
+        uk_doc_draw(&d, a, emperor.id ? pic : 0, pic, -1, true);
+
+        // The Emperor's answer, in its own in-lay until Continue.
+        int ares = 0, aneed = 0, aud_needed = 0, aud_rank = 0;
         GameAudienceGain gain;
         McAudience akind = modern_castle_audience_result(&ares, &aneed, &gain);
+        int aud = modern_castle_audience(&aud_needed, &aud_rank);
+        UkDoc rd = { 0 };
         if (ares && rc) {
-            // The Emperor's answer to a Blessing or Tribute, and what it gave.
             const char *tmpl = akind == MC_AUD_BLESSING
                 ? (ares == GAME_BLESSING_GRANTED + 1 ? rc->special.audience_blessing_granted
                    : ares == GAME_BLESSING_NEED_ARTIFACTS + 1 ? rc->special.audience_blessing_needed
                    : rc->special.audience_blessing_already)
                 : (ares == 1 ? rc->special.audience_tribute_paid : rc->special.audience_tribute_needed);
             audience_substitute(g, aneed, tmpl, buf, sizeof buf);
-            town_text_add(&t, buf, PAL_CLR(WHITE));
-            if (gain.leadership > 0 || gain.spell_power > 0 || gain.max_spells > 0) town_text_gap(&t);
+            uk_doc_add(&rd, buf, PAL_CLR(WHITE));
+            if (gain.leadership > 0 || gain.spell_power > 0 || gain.max_spells > 0) uk_doc_gap(&rd);
             if (gain.leadership > 0) {
                 snprintf(nb, sizeof nb, "%d", gain.leadership);
                 castle_fmt(buf, sizeof buf, bn->castle_gain_leadership, nb, NULL);
-                town_text_add(&t, buf, PAL_CLR(YELLOW));
+                uk_doc_add(&rd, buf, PAL_CLR(YELLOW));
             }
             if (gain.spell_power > 0) {
                 snprintf(nb, sizeof nb, "%d", gain.spell_power);
                 castle_fmt(buf, sizeof buf, bn->castle_gain_spell_power, nb, NULL);
-                town_text_add(&t, buf, PAL_CLR(YELLOW));
+                uk_doc_add(&rd, buf, PAL_CLR(YELLOW));
             }
             if (gain.max_spells > 0) {
                 snprintf(nb, sizeof nb, "%d", gain.max_spells);
                 castle_fmt(buf, sizeof buf, bn->castle_gain_spells, nb, NULL);
-                town_text_add(&t, buf, PAL_CLR(YELLOW));
+                uk_doc_add(&rd, buf, PAL_CLR(YELLOW));
             }
-        } else if (ec->audiences && !aud && cursor == 1) {
-            snprintf(nb, sizeof nb, "%d", GameArtifactsFound(g));
-            snprintf(mb, sizeof mb, "%d", artifacts_count() < 8 ? artifacts_count() : 8);
-            castle_fmt(buf, sizeof buf, bn->castle_artifacts, nb, mb);
-            town_text_add(&t, buf, PAL_CLR(WHITE));
-        } else if (ec->audiences && !aud && cursor == 2) {
-            snprintf(nb, sizeof nb, "%d", ec->tribute_cost);
-            castle_fmt(buf, sizeof buf, bn->castle_cost, nb, NULL);
-            town_text_add(&t, buf, PAL_CLR(WHITE));
         } else if (aud && rc) {
             const char *tmpl = aud == GAME_AUDIENCE_PROMOTED + 1 ? rc->special.audience_rank_up
                              : aud == GAME_AUDIENCE_MORE_NEEDED + 1 ? rc->special.audience_more_needed
                              : rc->special.audience_final_rank;
             audience_substitute(g, aud_needed, tmpl, buf, sizeof buf);
-            town_text_add(&t, buf, PAL_CLR(WHITE));
-            if (aud == GAME_AUDIENCE_PROMOTED + 1 && cls && rank > 0) {
-                int l0, s0, p0, c0, l1, s1, p1, c1;
-                class_stats_at_rank(cls, rank - 1, &l0, &s0, &p0, &c0);
-                class_stats_at_rank(cls, rank, &l1, &s1, &p1, &c1);
-                town_text_gap(&t);
-                snprintf(nb, sizeof nb, "%d", l1 - l0);
-                castle_fmt(buf, sizeof buf, bn->castle_gain_leadership, nb, NULL);
-                town_text_add(&t, buf, PAL_CLR(YELLOW));
-                snprintf(nb, sizeof nb, "%d", c1 - c0);
-                castle_fmt(buf, sizeof buf, bn->castle_gain_commission, nb, NULL);
-                town_text_add(&t, buf, PAL_CLR(YELLOW));
-                if (s1 - s0 > 0) {
-                    snprintf(nb, sizeof nb, "%d", s1 - s0);
-                    castle_fmt(buf, sizeof buf, bn->castle_gain_spells, nb, NULL);
-                    town_text_add(&t, buf, PAL_CLR(YELLOW));
-                }
-            }
-        } else {
-            castle_fmt(buf, sizeof buf, bn->castle_rank, g->character.cls.rank_title, NULL);
-            town_text_add(&t, buf, PAL_CLR(WHITE));
-            if (cls && rank + 1 < cls->rank_count) {
-                castle_fmt(buf, sizeof buf, bn->castle_next_rank, cls->ranks[rank + 1].name, NULL);
-                town_text_add(&t, buf, PAL_CLR(WHITE));
-                int need = cls->ranks[rank + 1].villains_needed - GameVillainsCaught(g);
-                snprintf(nb, sizeof nb, "%d", need > 0 ? need : 0);
-                castle_fmt(buf, sizeof buf, bn->castle_needed, nb, NULL);
-                town_text_add(&t, buf, PAL_CLR(WHITE));
-            }
+            uk_doc_add(&rd, buf, PAL_CLR(WHITE));
+        } else if (msg) {
+            uk_doc_add(&rd, msg, PAL_CLR(WHITE));
         }
-    } else if (pt) {
-        town_text_add(&t, pt->name, PAL_CLR(YELLOW));
-        // The numbers two to a line, so the counts and any warning fit the panel.
-        snprintf(nb, sizeof nb, "%d", pt->skill_level);
-        snprintf(mb, sizeof mb, "%d", pt->move_rate);
-        town_text_pair2(&t, ui->army_skill, nb, ui->army_move, mb);
-        snprintf(nb, sizeof nb, "%d", pt->hit_points);
-        snprintf(mb, sizeof mb, "%d-%d", pt->melee_min, pt->melee_max);
-        town_text_pair2(&t, ui->army_hit_points, nb, ui->army_damage, mb);
-        snprintf(nb, sizeof nb, "%d", pt->recruit_cost); town_text_pair(&t, ui->army_g_cost, nb);
-        town_text_gap(&t);
-        int in_army = 0, in_garrison = 0;
-        for (int k = 0; k < GAME_ARMY_SLOTS; k++) {
-            if (strcmp(g->army[k].id, pt->id) == 0) in_army += g->army[k].count;
-            if (cr && strcmp(cr->garrison[k].id, pt->id) == 0) in_garrison += cr->garrison[k].count;
+        if (rd.n > 0) {
+            const char *rt = akind == MC_AUD_BLESSING && ares ? bn->castle_action_blessing
+                           : akind == MC_AUD_TRIBUTE && ares ? bn->castle_action_tribute
+                           : bn->castle_action_promotion;
+            ML_Rect rb = uk_inlay(UK_INLAY_W, UK_INLAY_H, rt, NULL);
+            UkRows cont = { { bn->castle_continue }, { true } };
+            int rf = uk_foot_rows(rb, 1, 0, uk_rows_fn, &cont, TOUCH_LIST_PROMPT);
+            ML_Rect ra = { rb.x + UK_INSET, rb.y + UK_INSET, rb.w - 2 * UK_INSET, rf - ML_PAD - (rb.y + UK_INSET) };
+            int rp = size < ra.h ? size : ra.h;
+            if (emperor.id) uk_picture(emperor, ra.x, ra.y, rp, rp);
+            uk_doc_draw(&rd, ra, emperor.id ? rp : 0, rp, -1, true);
         }
-        snprintf(nb, sizeof nb, "%d", in_army);
-        castle_fmt(buf, sizeof buf, bn->castle_have, nb, NULL);
-        town_text_add(&t, buf, PAL_CLR(WHITE));
-        if (page == MC_RECRUIT && !modern_castle_troop_offered(g, pt)) {
-            snprintf(nb, sizeof nb, "%d", pt->hit_points * 6);
-            castle_fmt(buf, sizeof buf, bn->castle_needs_leadership, nb, NULL);
-            town_text_add(&t, buf, PAL_CLR(YELLOW));
-        } else if (page == MC_RECRUIT) {
-            int m = GameMaxRecruitable(g, pt->id);
-            if (m < 0) m = 0;
-            if (pt->recruit_cost > 0 && g->stats.gold / pt->recruit_cost < m)
-                m = g->stats.gold / pt->recruit_cost;
-            snprintf(nb, sizeof nb, "%d", m);
-            castle_fmt(buf, sizeof buf, bn->castle_can_recruit, nb, NULL);
-            town_text_add(&t, buf, PAL_CLR(WHITE));
-        } else {
-            snprintf(nb, sizeof nb, "%d", in_garrison);
-            castle_fmt(buf, sizeof buf, bn->castle_in_garrison, nb, NULL);
-            town_text_add(&t, buf, PAL_CLR(WHITE));
-            int moving = stepper ? step_v : in_garrison;
-            if (page == MC_WITHDRAW &&
-                GameArmyTotalLeadership(g) + pt->hit_points * moving > g->stats.leadership_current) {
-                town_text_gap(&t);
-                town_text_add(&t, bn->castle_over_leadership, PAL_CLR(YELLOW));
-            }
-        }
-    } else if (rows == 1 && (page == MC_GARRISON || page == MC_WITHDRAW)) {
-        town_text_add(&t, bn->castle_no_troops, PAL_CLR(WHITE));
+        return;
     }
 
-    int ty = low + INSET;
-    int per = (lh - 2 * INSET) / line_h;
-    for (int i = 0; i < t.n && i < per; i++) {
-        const TownLine *l = &t.line[i];
-        if (l->label > 0) {
-            char lab[72];
-            snprintf(lab, sizeof lab, "%.*s", l->label, l->text);
-            bfont_draw(lab, dx, ty, PAL_CLR(YELLOW));
-            bfont_draw(l->text + l->label, dx + (int)bfont_measure(lab).x, ty, l->fg);
-        } else {
-            bfont_draw(l->text, dx, ty, l->fg);
-        }
-        if (l->text2[0]) {
-            char lab[40];
-            int x2 = dx + dw / 2;
-            snprintf(lab, sizeof lab, "%.*s", l->label2, l->text2);
-            bfont_draw(lab, x2, ty, PAL_CLR(YELLOW));
-            bfont_draw(l->text2 + l->label2, x2 + (int)bfont_measure(lab).x, ty, l->fg);
-        }
-        ty += line_h;
+    // Recruit, Garrison, Withdraw: the troops at the left, the one under the
+    // cursor beside them.
+    // As tall as the rows or the troop's picture and numbers.
+    int detail = 2 * UK_INSET + 2 * CL_TILE_W + ML_PAD + 4 + 6 * uk_line_h();
+    int body_h = ml_list_height(rows) > detail ? ml_list_height(rows) : detail;
+    ML_Rect b = uk_inlay(UK_WIDE_W, uk_title_h() + UK_BAND + body_h, title, NULL);
+    int lw = 15 * GW + 2 * ML_PAD;
+    ml_list_draw(b.x, b.y, lw, b.h, rows, cursor, castle_row_fn, &cc, TOUCH_LIST_CASTLE, uk_ink());
+    lattice_band_v(b.x + lw, b.y, UK_BAND, b.h);
+    ML_Rect a = { b.x + lw + UK_BAND + UK_INSET, b.y + UK_INSET, 0, 0 };
+    a.w = b.x + b.w - UK_INSET - a.x;
+    a.h = b.y + b.h - UK_INSET - a.y;
+    if (pt) {
+        castle_troop_detail(g, s, pt, page, cr, a);
+    } else if (rows == 1 && (page == MC_GARRISON || page == MC_WITHDRAW)) {
+        UkDoc d = { 0 };
+        uk_doc_add(&d, bn->castle_no_troops, PAL_CLR(WHITE));
+        uk_doc_draw(&d, a, 0, 0, -1, true);
+    } else {
+        UkDoc d = { 0 };
+        ResTemplateVar v2[] = { { "HERO", g->character.name }, { "CASTLE", cname } };
+        resources_format_template(buf, sizeof buf, page == MC_RECRUIT ? bn->castle_invite_recruit
+                                  : page == MC_GARRISON ? bn->castle_invite_garrison : bn->castle_invite_withdraw, v2, 2);
+        uk_doc_add(&d, buf, PAL_CLR(WHITE));
+        uk_doc_draw(&d, a, 0, 0, -1, true);
     }
+    if (msg) uk_result_inlay(title, keeper, msg, bn->castle_continue, TOUCH_LIST_PROMPT);
 }
 
 // =============================================================================
-//  Modern foe view: a hostile band on the map (the town layout)
+//  Foe -- the enemy standing on the plains, a card per troop, Fight / Evade
 // =============================================================================
-// Title "Foes!" and the zone; the plains backdrop at 2x with the band's lead
-// troop standing on it; that troop at 2x in the portrait slot; the siege and
-// gold tiles; rows Fight and Evade (Evade grey when there is nowhere to run);
-// the encounter text beside them. The prompt behind it (src/prompt.c) owns the
-// answer: Fight is Yes, Evade is No.
 
 static bool foe_row(void *ctx, int i, char *label, char *right, int cap) {
     const Game *g = (const Game *)ctx;
@@ -1429,7 +1020,6 @@ static int foe_text_centred(const char *text, int cx, int y, int w, int max_line
         const char *q = p;
         if (bfont_take_line(&q, w, line, (int)sizeof line) <= 0) break;
         if (bfont_text_width(line) > w) {
-            // One word wider than the stripe: as many letters as fit, and a hyphen.
             int n = 0;
             char part[96];
             while (p[n] && p[n] != ' ' && n < (int)sizeof part - 2) {
@@ -1460,104 +1050,80 @@ void modern_overlay_draw_foe(const Game *g, const Sprites *s) {
     const ResBanners *bn = &res->banners;
     const ResUI *ui = &res->ui;
     const PromptView *pv = prompt_view();
-    const int BAND = 4, tile = CL_TILE_W;
-    int pad = ML_PAD;
-    ML_Rect r = ml_full();
-    int right = r.x + r.w, bottom = r.y + r.h;
-    DrawRectangle(r.x, r.y, r.w, r.h, PAL_CLR(DBLUE));
+    const int tile = CL_TILE_W, lh = GH + 2;
 
-    // Title strip: "Foes!" at the left; your own army at the right, or, when
-    // there is no free square, that there is nowhere to run.
-    int title_h = GH + 14;
-    bfont_draw(ui->dt_foes, r.x + pad, r.y + (title_h - GH) / 2, PAL_CLR(YELLOW));
-    {
-        char buf[RES_BANNER_LEN];
-        if (pending_foe_evade_blocked) {
-            snprintf(buf, sizeof buf, "%s", bn->foe_evade_blocked);
-        } else {
-            int n = 0;
-            for (int i = 0; i < GAME_ARMY_SLOTS; i++)
-                if (g->army[i].id[0] && g->army[i].count > 0) n++;
-            char cb[16], lb[16];
-            snprintf(cb, sizeof cb, "%d", n);
-            snprintf(lb, sizeof lb, "%d", g->stats.leadership_current);
-            ResTemplateVar v[] = { { "COUNT", cb }, { "LEAD", lb } };
-            resources_format_template(buf, sizeof buf, bn->fv_your_army, v, 2);
-        }
-        bfont_draw(buf, right - pad - (int)bfont_measure(buf).x, r.y + (title_h - GH) / 2,
-                   pending_foe_evade_blocked ? PAL_CLR(YELLOW) : PAL_CLR(WHITE));
+    char right[RES_BANNER_LEN];
+    if (pending_foe_evade_blocked) {
+        snprintf(right, sizeof right, "%s", bn->foe_evade_blocked);
+    } else {
+        int n = 0;
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++)
+            if (g->army[i].id[0] && g->army[i].count > 0) n++;
+        char cb[16], lb[16];
+        snprintf(cb, sizeof cb, "%d", n);
+        snprintf(lb, sizeof lb, "%d", g->stats.leadership_current);
+        ResTemplateVar v[] = { { "COUNT", cb }, { "LEAD", lb } };
+        resources_format_template(right, sizeof right, bn->fv_your_army, v, 2);
     }
-    lattice_band_h(r.x, r.y + title_h, r.w, BAND);
-    int top = r.y + title_h + BAND;
+    // The cards need a portrait, the count, two lines of name and two of numbers.
+    const int card_h = ML_PAD + tile + 4 + 5 * lh + 4;
+    UkScene L = uk_scene_ex(ui->dt_foes, right, loc_texture(s, LOC_PLAINS), 2, card_h);
 
-    // Along the foot: Fight and Evade as full-width standard rows, the
-    // question dialog's answers (REQ-430n).
-    int foot_h = ml_list_height(2);
-    int foot = bottom - foot_h;
-    lattice_band_h(r.x, foot - BAND, r.w, BAND);
-    ml_list_draw(r.x, foot, r.w, foot_h, 2, pv ? pv->yn_cursor : 0, foe_row, (void *)g,
-                 TOUCH_LIST_PROMPT, PAL_CLR(DBLUE));
-
-    // Five vertical stripes, one per enemy troop: the portrait, how many (worded
-    // as the encounter words it), the name, then its numbers one to a line.
-    const int STRIPES = 5;
-    int sw = (r.w - (STRIPES - 1) * BAND) / STRIPES;
-    int sh = foot - BAND - top;
-    for (int k = 1; k < STRIPES; k++)
-        lattice_band_v(r.x + k * sw + (k - 1) * BAND, top, BAND, sh);
     const FoeState *f = pending_foe_id[0] ? GameFindFoeConst(g, pending_foe_id) : NULL;
-    int shown = 0;
-    for (int i = 0; f && i < GAME_ARMY_SLOTS && shown < STRIPES; i++) {
+    const TroopDef *troops[5];
+    int counts[5], shown = 0;
+    for (int i = 0; f && i < GAME_ARMY_SLOTS && shown < 5; i++) {
         const Unit *u = &f->garrison[i];
         const TroopDef *t = (u->id[0] && u->count > 0) ? troop_by_id(u->id) : NULL;
         if (!t) continue;
-        int sx = r.x + shown * (sw + BAND);
-        int cx = sx + sw / 2, tw = sw - pad;
-        shown++;
-        Texture2D face = { 0 };
-        if (s) face = s->troop_portrait[t->index].id ? s->troop_portrait[t->index] : s->troop_sprite[t->index];
-        int gap = pad / 2;
-        int py = top + gap;
-        DrawRectangle(cx - tile / 2, py, tile, tile, PAL_CLR(BLACK));
-        if (face.id) ui_blit(face, cx - tile / 2, py, tile, tile);
-        int ty = py + tile + gap;
+        troops[shown] = t;
+        counts[shown++] = u->count;
+    }
+    // The band on the plains at 1x, facing the hero.
+    for (int k = 0; k < shown; k++) {
+        Texture2D fig = troop_standing(s, troops[k]->index);
+        int slot = L.scene.w / (shown + 1);
+        int fh = tile < L.scene.h ? tile : L.scene.h;
+        if (fig.id) ui_blit_mirrored(fig, L.scene.x + slot * (k + 1) - tile / 2, L.scene.y + L.scene.h - fh, tile, fh);
+    }
+    lattice_band_h(L.full.x, L.intro_y, L.full.w, UK_BAND);
+
+    // A card per troop: portrait, how many (worded as the encounter words it),
+    // the name, its hit points and damage.
+    const int STRIPES = 5;
+    int top = L.intro_y + UK_BAND;
+    int sw = (L.full.w - (STRIPES - 1) * UK_BAND) / STRIPES;
+    int sh = L.rows_y - ML_ROW_RULE - top;
+    for (int k = 1; k < STRIPES; k++)
+        lattice_band_v(L.full.x + k * sw + (k - 1) * UK_BAND, top, UK_BAND, sh);
+    for (int k = 0; k < shown; k++) {
+        const TroopDef *t = troops[k];
+        int sx = L.full.x + k * (sw + UK_BAND);
+        int cx = sx + sw / 2, tw = sw - ML_PAD;
+        uk_picture(troop_face(s, t->index), cx - tile / 2, top + ML_PAD, tile, tile);
+        int ty = top + ML_PAD + tile + 4;
         char buf[64];
-        const char *label = GameNumberName(g, u->count);
+        const char *label = GameNumberName(g, counts[k]);
         if (label[0]) snprintf(buf, sizeof buf, "%s", label);
-        else          snprintf(buf, sizeof buf, "%d", u->count);
-        ty = foe_text_centred(buf, cx, ty, tw, 3, PAL_CLR(WHITE));
-        ty = foe_text_centred(t->name, cx, ty, tw, 2, PAL_CLR(YELLOW));
-        ty += gap;
+        else          snprintf(buf, sizeof buf, "%d", counts[k]);
+        ty = foe_text_centred(buf, cx, ty, tw, 1, PAL_CLR(WHITE));
+        int name_y = ty;
+        foe_text_centred(t->name, cx, ty, tw, 2, PAL_CLR(YELLOW));
+        ty = name_y + 2 * lh;
         snprintf(buf, sizeof buf, "%s %d", ui->fv_hp, t->hit_points);
         ty = foe_text_centred(buf, cx, ty, tw, 1, PAL_CLR(WHITE));
-        snprintf(buf, sizeof buf, "%s %d", ui->fv_skill, t->skill_level);
-        ty = foe_text_centred(buf, cx, ty, tw, 1, PAL_CLR(WHITE));
-        snprintf(buf, sizeof buf, "%s %d", ui->fv_move, t->move_rate);
-        ty = foe_text_centred(buf, cx, ty, tw, 1, PAL_CLR(WHITE));
         snprintf(buf, sizeof buf, "%s %d-%d", ui->fv_dmg, t->melee_min, t->melee_max);
-        ty = foe_text_centred(buf, cx, ty, tw, 1, PAL_CLR(WHITE));
-        if (t->ranged_max > 0) {
-            snprintf(buf, sizeof buf, "%s %d-%d", ui->fv_range, t->ranged_min, t->ranged_max);
-            ty = foe_text_centred(buf, cx, ty, tw, 1, PAL_CLR(WHITE));
-        }
-        if (t->abilities & TROOP_ABIL_FLY)
-            ty = foe_text_centred(ui->fv_flies, cx, ty, tw, 1, PAL_CLR(WHITE));
+        foe_text_centred(buf, cx, ty, tw, 1, PAL_CLR(WHITE));
     }
+    uk_scene_rows(&L, 2, pv ? pv->yn_cursor : 0, foe_row, (void *)g, TOUCH_LIST_PROMPT);
 }
 
 // ---------------------------------------------------------------------------
-// Options screen (O key). A single text panel below the status bar
-// listing every adventure keybinding. Matches options_menu() 
-// (OpenKB's game.c:5144-5275). Esc or any key closes.
+// Options screen (O key): the movement keys and the keybinds.
 // ---------------------------------------------------------------------------
 
 void modern_overlay_draw_options(const Game *g) {
-    // : movement-reference rows on top
-    // (8 direction keys + numpad equivalents), then the lettered command
-    // list below. One unified blue panel below the status bar.
-    int pad = 3 * CL_UI;
-    // The list decides the panel. Movement rows on top, then the keybinds;
-    // when they will not fit the pane in one column they go in two.
+    int pad = UK_INSET;
     int kb_n = (g && g->res) ? g->res->ui.keybind_count : 0;
     int fit = (CL_MAP_H - 2 * pad) / GH - 8 - 1;
     int kb_cols = (kb_n > fit) ? 2 : 1;
@@ -1566,20 +1132,12 @@ void modern_overlay_draw_options(const Game *g) {
     int w = (kb_cols == 2) ? CL_PANEL_WIDE_W : CL_PANEL_STD_W;
     int h = rows * GH + 2 * pad;
     if (h > CL_MAP_H) h = CL_MAP_H;
-    // Anchored to the content rect, not the pane. The panel is a fixed 28
-    // columns, so on a wide pane the pane's left edge strands it in the
-    // corner. The content rect IS the pane in legacy, so this stays at 16.
     int x = CL_CONTENT_X;
     int y = CL_STATUS_Y + CL_STATUS_H + CL_BAR_H;
-
-    draw_panel(x, y, w, h, PAL_CLR(DBLUE));
-
-    int tx = x + pad;
-    int ty = y + pad;
-
-    // Movement reference.
+    uk_panel(x, y, w, h);
+    int tx = x + pad, ty = y + pad;
     static const struct { const char *keys; const char *label; } mv[8] = {
-        { "\x18 or 2",   "Move Down"      },  // arrow-glyph codepoint, plus numpad 2
+        { "\x18 or 2",   "Move Down"      },
         { "\x1B or 4",   "Move Left"      },
         { "\x1A or 6",   "Move Right"     },
         { "\x19 or 8",   "Move Up"        },
@@ -1594,20 +1152,15 @@ void modern_overlay_draw_options(const Game *g) {
         bfont_draw(buf, tx, ty, PAL_CLR(WHITE));
         ty += GH;
     }
-
-    // Items are laid out as "<key label>  <item name>" per line, matching
-    // options_menu rendering order. Source: res.ui.keybinds.
     const ResUI *ui = (g && g->res) ? &g->res->ui : NULL;
     int n = ui ? ui->keybind_count : 0;
     int max_row = (y + h - pad - ty) / GH;
     if (kb_cols == 1 && n > max_row) n = max_row;
-
     int col_w = (w - 2 * pad) / kb_cols;
     int per_col = (n + kb_cols - 1) / kb_cols;
     int ty0 = ty;
     for (int i = 0; i < n; i++) {
         const ResKeybind *kb = &ui->keybinds[i];
-        // Skip mount-conditional entries if they don't apply.
         if (strcmp(kb->key, "F") == 0 && g->character.mount == MOUNT_FLY) continue;
         if (strcmp(kb->key, "L") == 0 && g->character.mount != MOUNT_FLY) continue;
         if (strcmp(kb->key, "N") == 0 && g->character.mount != MOUNT_SAIL) continue;
@@ -1621,24 +1174,23 @@ void modern_overlay_draw_options(const Game *g) {
 }
 
 // ---------------------------------------------------------------------------
-// Toast -- small strip at the top of the map area.
+// Toast -- one line at the top of the area behind it.
 // ---------------------------------------------------------------------------
 
 void modern_overlay_draw_toast(void) {
     const char *msg = toast_text_current();
     if (!msg) return;
-    Vector2 m = bfont_measure(msg);
-    int w = (int)m.x + 8;
-    int h = GH + 4;
+    int w = bfont_text_width(msg) + 2 * UK_INSET;
+    int h = GH + 10;
     ML_Rect a = ml_area();
     int x = a.x + (a.w - w) / 2;
-    int y = a.y + 2;
-    draw_panel(x, y, w, h, PAL_CLR(BLACK));
-    bfont_draw(msg, x + 4, y + 2, PAL_CLR(YELLOW));
+    int y = a.y + ml_space();
+    uk_panel(x, y, w, h);
+    bfont_draw(msg, x + UK_INSET, y + 5, PAL_CLR(YELLOW));
 }
 
 // ---------------------------------------------------------------------------
-// Controls settings panel .
+// Controls: an in-lay as tall as its settings.
 // ---------------------------------------------------------------------------
 
 typedef struct { const Game *g; int vis_idx[8]; int vis; } ControlsCtx;
@@ -1665,9 +1217,6 @@ static bool controls_row(void *ctx, int k, char *label, char *right, int cap) {
 void modern_overlay_draw_controls(const Game *g) {
     if (!g || !g->res) return;
     int count = g->res->controls.count;
-
-    // Visible settings: skip anything marked hidden (CGA in our data), then the
-    // shell's Scale row. The cursor counts visible rows (main.c).
     ControlsCtx c = { .g = g, .vis = 0 };
     for (int i = 0; i < count && c.vis < 8; i++) {
         if (g->res->controls.items[i].hidden) continue;
@@ -1677,27 +1226,15 @@ void modern_overlay_draw_controls(const Game *g) {
     int cur_k = views_controls_cursor();
     if (cur_k < 0) cur_k = 0;
     if (cur_k > c.vis) cur_k = c.vis;
-
-    // The large layout, the same rect as the game menu it opens from
-    // (REQ-430j), its settings as standard select rows with the value at the
-    // right (REQ-430n).
-    ML_Rect lr = ml_large();
-    draw_panel(lr.x, lr.y, lr.w, lr.h, PAL_CLR(DBLUE));
-    const ResUI *ui = &g->res->ui;
-    int ty = lr.y + ML_PAD;
-    bfont_draw(ui->controls_title, lr.x + ML_PAD, ty, PAL_CLR(YELLOW));
-    ty += GH + ML_PAD;
-    lattice_band_h(lr.x, ty, lr.w, 4);
-    ty += 4;
     int rows = c.vis + 1;
-    int h = lr.y + lr.h - ty;
-    ml_list_draw(lr.x, ty, lr.w, h, rows, cur_k, controls_row, &c, 0, PAL_CLR(DBLUE));
-    // Taps answer to each row's digit (select and advance in one), as before.
-    int vis_rows = ml_list_fit(h);
+    int h = uk_title_h() + UK_BAND + ml_list_height(rows);
+    ML_Rect b = uk_inlay(UK_INLAY_W, h, g->res->ui.controls_title, NULL);
+    ml_list_draw(b.x, b.y, b.w, b.h, rows, cur_k, controls_row, &c, 0, uk_ink());
+    // Taps answer to each row's digit (select and advance in one).
+    int vis_rows = ml_list_fit(b.h);
     int first = ml_list_first(rows, cur_k, vis_rows);
     for (int k = first; k < rows && k < first + vis_rows; k++)
-        touch_region(lr.x, ty + (k - first) * (ml_row_h() + ML_ROW_RULE), lr.w, ml_row_h(),
-                     KEY_ONE + k);
+        touch_region(b.x, b.y + (k - first) * (ml_row_h() + ML_ROW_RULE), b.w, ml_row_h(), KEY_ONE + k);
 }
 
 // ---------------------------------------------------------------------------
@@ -1708,133 +1245,46 @@ void modern_overlay_dim_scene(void) {
     const Resources *r = resources_current();
     int a = overlay_dim_alpha(r ? r->render.dim : 0);
     if (a == 0) return;
-    // The whole chrome interior: map pane plus sidebar, not the status band
-    // or the frame, so the frame keeps its weight and the band stays legible.
     Color shade = { 0, 0, 0, (unsigned char)a };
     DrawRectangle(CL_MAP_X, CL_MAP_Y, CL_SIDEBAR_X + CL_SIDEBAR_W - CL_MAP_X, CL_MAP_H, shade);
 }
 
 // =============================================================================
-//  Temple (the Augur's alcove) and dwelling screens -- their own layout: the
-//  scene is the screen. The backdrop whole at 3x with its keeper or troop
-//  standing in it; the words in a dark in-lay at its top left, the portrait in
-//  a framed in-lay at its bottom right; one line of numbers under it; the
-//  answers as full-width rows. After a deal the in-lay says what happened and
-//  the only row is Leave. On Rome's 776x480: 36 + 306 + 34 + 4 + 100.
+//  Temple (the Augur's alcove) and dwelling -- the scene, then the in-lay
+//  after a deal (the panorama always shows first)
 // =============================================================================
-
-#include "modern/location.h"
-
-typedef struct { const char *label[2]; bool enabled[2]; } LocRows;
-
-static bool loc_row(void *ctx, int i, char *label, char *right, int cap) {
-    const LocRows *lr = (const LocRows *)ctx;
-    right[0] = '\0';
-    snprintf(label, (size_t)cap, "%s", lr->label[i]);
-    return lr->enabled[i];
-}
-
-typedef struct {
-    ML_Rect scene;     // the backdrop as drawn
-    int     scale;
-    int     info_y;    // the numbers line
-    int     rows_y;    // the answers
-} LocLayout;
-
-static LocLayout loc_frame(const Game *g, const Sprites *s, const char *title, LocKind kind) {
-    ML_Rect r = ml_full();
-    const int pad = ML_PAD, BAND = 4;
-    DrawRectangle(r.x, r.y, r.w, r.h, PAL_CLR(DBLUE));
-    int title_h = GH + 14;
-    bfont_draw(title, r.x + pad, r.y + (title_h - GH) / 2, PAL_CLR(YELLOW));
-    const ResZone *z = resources_zone_by_id(g->res, g->position.zone);
-    if (z && z->name[0])
-        bfont_draw(z->name, r.x + r.w - pad - (int)bfont_measure(z->name).x,
-                   r.y + (title_h - GH) / 2, PAL_CLR(YELLOW));
-    lattice_band_h(r.x, r.y + title_h, r.w, BAND);
-    LocLayout L;
-    int top = r.y + title_h + BAND;
-    L.scale = r.w / ML_BACKDROP_W;
-    if (L.scale > 3) L.scale = 3;
-    if (L.scale < 1) L.scale = 1;
-    int bw = ML_BACKDROP_W * L.scale, bh = ML_BACKDROP_H * L.scale;
-    L.scene = (ML_Rect){ r.x + (r.w - bw) / 2, top, bw, bh };
-    DrawRectangle(r.x, top, r.w, bh, PAL_CLR(BLACK));
-    Texture2D bd = loc_texture(s, kind);
-    if (bd.id) ui_blit(bd, L.scene.x, L.scene.y, bw, bh);
-    int rows_h = ml_list_height(2);
-    L.rows_y = r.y + r.h - rows_h;
-    lattice_band_h(r.x, L.rows_y - 2, r.w, 2);   // thin: the introduction needs two full lines above it
-    L.info_y = top + bh + (L.rows_y - BAND - (top + bh) - GH) / 2;
-    return L;
-}
-
-// The introduction: up to two lines in the band between the scene and the rows.
-static void loc_intro(const LocLayout *L, const char *text) {
-    ML_Rect r = ml_full();
-    TownText t = { .n = 0, .max_w = r.w - 2 * ML_PAD };
-    town_text_add(&t, text, PAL_CLR(WHITE));
-    int band_top = L->scene.y + L->scene.h, band_h = L->rows_y - 2 - band_top;
-    int lines = t.n < 2 ? t.n : 2;
-    int y = band_top + (band_h - lines * GH) / 2;     // lines GH apart, inside the band
-    for (int i = 0; i < lines; i++) bfont_draw(t.line[i].text, r.x + ML_PAD, y + i * GH, PAL_CLR(WHITE));
-}
-
-static void loc_rows(const LocLayout *L, LocRows *rows, int n, int cursor) {
-    ML_Rect r = ml_full();
-    ml_list_draw(r.x, L->rows_y, r.w, ml_list_height(2), n, cursor, loc_row, rows,
-                 TOUCH_LIST_PROMPT, PAL_CLR(DBLUE));
-}
-
-// The confirmation in-lay after a deal: a large framed dialog over the scene
-// with the portrait at 2x, the words beside it, and Continue (back to the map).
-static void loc_result_dialog(const Game *g, const char *title, Texture2D face) {
-    char buf[RES_BANNER_LEN];
-    loc_deal_text(g, buf, sizeof buf);
-    const ML_Rect d = ml_large();
-    TownText t = { .n = 0, .max_w = d.w - 2 * CL_TILE_W - 4 - 2 * (ML_PAD + 4) };
-    town_text_add(&t, buf, PAL_CLR(WHITE));
-    result_dialog(g, title, face, &t);
-}
 
 void modern_overlay_draw_temple(const Game *g, const Sprites *s) {
     if (!g || !g->res) return;
     const Resources *res = g->res;
     const ResBanners *bn = &res->banners;
-    const ResUI *ui = &res->ui;
-    LocLayout L = loc_frame(g, s, bn->temple_title, LOC_ALCOVE);
-
-    // The Augur where the pack places him, at the scene's scale.
+    char gold[48], buf[RES_BANNER_LEN], cost[16];
+    uk_gold_text(g, gold, sizeof gold);
+    UkScene L = uk_scene(bn->temple_title, gold, loc_texture(s, LOC_ALCOVE), 2);
     if (s && s->alcove_figure.id && res->sprites.alcove_figure_w > 0) {
         int ms = res->sprites.alcove_figure_frame_ms > 0 ? res->sprites.alcove_figure_frame_ms : 180;
-        Texture2D fig = s->alcove_figure_anim[sprites_frame((int)(GetTime() * 1000.0 / ms),
-                                                            s->alcove_figure_frames)];
+        Texture2D fig = s->alcove_figure_anim[sprites_frame((int)(GetTime() * 1000.0 / ms), s->alcove_figure_frames)];
         if (!fig.id) fig = s->alcove_figure;
-        ui_blit(fig, L.scene.x + res->sprites.alcove_figure_x * L.scale,
-                L.scene.y + res->sprites.alcove_figure_y * L.scale,
-                res->sprites.alcove_figure_w * L.scale, res->sprites.alcove_figure_h * L.scale);
+        uk_scene_blit(&L, fig, res->sprites.alcove_figure_x, res->sprites.alcove_figure_y,
+                      res->sprites.alcove_figure_w, res->sprites.alcove_figure_h);
     }
-    char buf[RES_BANNER_LEN], nb[16], cost[16];
     const ResZone *z = resources_zone_by_id(res, g->position.zone);
     snprintf(cost, sizeof cost, "%d", GameAlcoveCost(g, g->position.zone));
-    ML_Rect r = ml_full();
-    LocRows rows = { { bn->temple_learn, bn->location_leave }, { true, true } };
+    ResTemplateVar iv[] = { { "ZONE", (z && z->name[0]) ? z->name : g->position.zone }, { "COST", cost } };
+    resources_format_template(buf, sizeof buf, bn->temple_intro, iv, 2);
+    uk_scene_intro(&L, buf);
+    UkRows rows = { { bn->temple_learn, bn->location_leave }, { true, true } };
     const PromptView *pv = prompt_view();
-    (void)z; (void)buf;
     if (prompt_is_active() && pending_flow == FLOW_ALCOVE) {
-        loc_rows(&L, &rows, 2, pv->yn_cursor);            // the panorama and the choice
+        uk_scene_rows(&L, 2, pv->yn_cursor, uk_rows_fn, &rows, TOUCH_LIST_PROMPT);
     } else if (loc_deal_pending() && !loc_deal_revealed()) {
-        loc_rows(&L, &rows, 2, *loc_deal_cursor());       // the panorama before the words
+        uk_scene_rows(&L, 2, *loc_deal_cursor(), uk_rows_fn, &rows, TOUCH_LIST_PROMPT);
     } else {
-        loc_result_dialog(g, loc_deal_title(g, true), s ? s->alcove_portrait : (Texture2D){ 0 });
+        uk_scene_rows(&L, 2, -1, uk_rows_fn, &rows, 0);
+        loc_deal_text(g, buf, sizeof buf);
+        uk_result_inlay(loc_deal_title(g, true), s ? s->alcove_portrait : (Texture2D){ 0 }, buf,
+                        bn->castle_continue, TOUCH_LIST_PROMPT);
     }
-    // The introduction under the scene: a sentence or two on what is offered.
-    if ((prompt_is_active() && pending_flow == FLOW_ALCOVE) || (loc_deal_pending() && !loc_deal_revealed())) {
-        ResTemplateVar iv[] = { { "ZONE", (z && z->name[0]) ? z->name : g->position.zone }, { "COST", cost } };
-        resources_format_template(buf, sizeof buf, bn->temple_intro, iv, 2);
-        loc_intro(&L, buf);
-    }
-    (void)nb; (void)ui; (void)r;
 }
 
 void modern_overlay_draw_dwelling(const Game *g, const Sprites *s) {
@@ -1845,106 +1295,61 @@ void modern_overlay_draw_dwelling(const Game *g, const Sprites *s) {
     int ti = -1, pop = 0, cost = 0, cap = 0;
     const char *kind = screen_dwelling_info(g, &ti, &pop, &cost, &cap);
     const TroopDef *tr = (ti >= 0) ? troop_by_index(ti) : NULL;
-    char title[128];
+    char title[128], gold[48], buf[RES_BANNER_LEN];
     snprintf(title, sizeof title, "%s - %s", kind ? kind : "", tr ? tr->name : "");
+    uk_gold_text(g, gold, sizeof gold);
     LocKind lk = LOC_PLAINS;
     if (kind && strcmp(kind, ui->dwelling_kind_forest) == 0)  lk = LOC_FOREST;
     if (kind && strcmp(kind, ui->dwelling_kind_hill) == 0)    lk = LOC_HILLCAVE;
     if (kind && strcmp(kind, ui->dwelling_kind_dungeon) == 0) lk = LOC_DUNGEON;
-    LocLayout L = loc_frame(g, s, title, lk);
+    UkScene L = uk_scene(title, gold, loc_texture(s, lk), 2);
+    uk_scene_figure(&L, troop_standing(s, ti), CL_TILE_W);
+    Texture2D face = troop_face(s, ti);
 
-    // The troop standing in the scene at 2x, a tile in from the left.
-    Texture2D fig = { 0 };
-    if (tr && s) {
-        fig = s->troop_anim[ti][sprites_frame(sprites_stand((int)(GetTime() * 6.66)),
-                                              s->troop_anim_frames[ti])];
-        if (!fig.id) fig = s->troop_sprite[ti];
-    }
-    if (fig.id)
-        ui_blit(fig, L.scene.x + CL_TILE_W, L.scene.y + L.scene.h - 2 * CL_TILE_H,
-                2 * CL_TILE_W, 2 * CL_TILE_H);
-    Texture2D face = (tr && s && s->troop_portrait[ti].id) ? s->troop_portrait[ti] : fig;
+    char cb[16], pb[16];
+    snprintf(pb, sizeof pb, "%d", pop);
+    snprintf(cb, sizeof cb, "%d", cost);
+    ResTemplateVar iv[] = { { "COUNT", pb }, { "TROOP", tr ? tr->name : "" }, { "COST", cb } };
+    char intro[2 * RES_BANNER_LEN + 2];
+    resources_format_template(buf, sizeof buf, bn->dwelling_intro, iv, 3);
+    snprintf(intro, sizeof intro, "%s%s%s", buf, cap <= 0 ? " " : "",
+             cap > 0 ? "" : (tr && g->stats.gold < tr->recruit_cost) ? bn->town_no_gold : bn->army_cannot_handle);
+    uk_scene_intro(&L, intro);
 
-    char buf[RES_BANNER_LEN], nb[16], line[3 * RES_BANNER_LEN], part[RES_BANNER_LEN];
-    ML_Rect r = ml_full();
     const PromptView *pv = prompt_view();
     bool offer = prompt_is_active() && pending_flow == FLOW_RECRUIT;
-
-    // The introduction under the scene: who dwells here and what they ask; when
-    // none can be recruited, why.
-    if ((offer && !pv->step_open) || (loc_deal_pending() && !loc_deal_revealed())) {
-        char cb[16], pb[16];
-        snprintf(pb, sizeof pb, "%d", pop);
-        snprintf(cb, sizeof cb, "%d", cost);
-        ResTemplateVar iv[] = { { "COUNT", pb }, { "TROOP", tr ? tr->name : "" }, { "COST", cb } };
-        char intro[2 * RES_BANNER_LEN + 2];
-        resources_format_template(buf, sizeof buf, bn->dwelling_intro, iv, 3);
-        snprintf(intro, sizeof intro, "%s%s%s", buf, cap <= 0 ? " " : "",
-                 cap > 0 ? "" : (tr && g->stats.gold < tr->recruit_cost) ? bn->town_no_gold
-                                                                         : bn->army_cannot_handle);
-        loc_intro(&L, intro);
-    }
-    (void)line; (void)part; (void)nb; (void)r;
-
-    LocRows rows = { { bn->dwelling_recruit_row, bn->location_leave }, { cap > 0, true } };
+    UkRows rows = { { bn->dwelling_recruit_row, bn->location_leave }, { cap > 0, true } };
     if (offer && pv->step_open) {
-        // The second step, "How many?", as the in-lay dialog: the troop's
-        // portrait at 2x, what is on offer and what it will cost beside it, the
-        // count buttons under them, and "Recruit 20" / Cancel as its rows.
-        ML_Rect d = ml_large();
-        const int pad = ML_PAD, BAND = 4, size = 2 * CL_TILE_W;
-        char heading[RES_BANNER_LEN], vb[16], tl[RES_BANNER_LEN];
-        DrawRectangle(d.x, d.y, d.w, d.h, PAL_CLR(DBLUE));
-        ui_window_frame(d.x, d.y, d.w, d.h, PAL_CLR(YELLOW));
-        int title_h = GH + 14;
+        uk_scene_rows(&L, 2, -1, uk_rows_fn, &rows, 0);
+        char heading[RES_BANNER_LEN], avail[RES_BANNER_LEN], each[RES_BANNER_LEN], lead[RES_BANNER_LEN],
+             total[RES_BANNER_LEN], vb[16];
+        static char act_label[RES_BANNER_LEN];
         ResTemplateVar hv[] = { { "TROOP", tr ? tr->name : "" } };
         resources_format_template(heading, sizeof heading, bn->count_heading, hv, 1);
-        bfont_draw(heading, d.x + pad, d.y + (title_h - GH) / 2, PAL_CLR(YELLOW));
-        lattice_band_h(d.x, d.y + title_h, d.w, BAND);
-        int top = d.y + title_h + BAND;
-        DrawRectangle(d.x, top, size, size, PAL_CLR(BLACK));
-        if (face.id) ui_blit(face, d.x, top, size, size);
-        lattice_band_v(d.x + size, top, BAND, size);
-        const int INSET = pad + 4;
-        int tx = d.x + size + BAND + INSET, tw = d.x + d.w - tx - INSET;
-        TownText t = { .n = 0, .max_w = tw };
-        snprintf(vb, sizeof vb, "%d", pop);
-        ResTemplateVar av2[] = { { "COUNT", vb }, { "TROOP", tr ? tr->name : "" } };
-        resources_format_template(tl, sizeof tl, ui->dwelling_info_available, av2, 2);
-        town_text_add(&t, tl, PAL_CLR(WHITE));
-        snprintf(vb, sizeof vb, "%d", cost);
-        castle_fmt(tl, sizeof tl, bn->castle_cost, vb, NULL);
-        town_text_add(&t, tl, PAL_CLR(WHITE));
-        town_text_gap(&t);
+        ResTemplateVar av2[] = { { "COUNT", pb }, { "TROOP", tr ? tr->name : "" } };
+        resources_format_template(avail, sizeof avail, ui->dwelling_info_available, av2, 2);
+        castle_fmt(each, sizeof each, bn->castle_cost, cb, NULL);
         snprintf(vb, sizeof vb, "%d", pv->step_max);
         ResTemplateVar sv[] = { { "MAX", vb } };
-        resources_format_template(tl, sizeof tl, bn->count_of_lead, sv, 1);
-        town_text_add(&t, tl, PAL_CLR(WHITE));
+        resources_format_template(lead, sizeof lead, bn->count_of_lead, sv, 1);
         snprintf(vb, sizeof vb, "%d", cost * pv->step_value);
         ResTemplateVar c1[] = { { "GOLD", vb } };
-        resources_format_template(tl, sizeof tl, bn->count_cost, c1, 1);
-        town_text_add(&t, tl, PAL_CLR(YELLOW));
-        int ty = top + INSET;
-        for (int i = 0; i < t.n && ty + GH <= top + size; i++, ty += GH + 2)
-            bfont_draw(t.line[i].text, tx, ty, t.line[i].fg);
-        int by = top + size + pad;
-        lattice_band_h(d.x, top + size, d.w, BAND);
-        ml_count_buttons(d.x, by, d.w, pv->step_value);
-        static char act_label[RES_BANNER_LEN];
+        resources_format_template(total, sizeof total, bn->count_cost, c1, 1);
         snprintf(vb, sizeof vb, "%d", pv->step_value);
         ResTemplateVar av[] = { { "COUNT", vb } };
         resources_format_template(act_label, sizeof act_label, bn->count_recruit, av, 1);
-        LocRows step_rows = { { act_label, bn->count_cancel }, { true, true } };
-        int rows_y = d.y + d.h - ml_list_height(2);
-        lattice_band_h(d.x, rows_y - BAND, d.w, BAND);
-        ml_list_draw(d.x, rows_y, d.w, ml_list_height(2), 2, 0, loc_row, &step_rows,
-                     TOUCH_LIST_PROMPT, PAL_CLR(DBLUE));
+        const char *lines[] = { avail, each, "", lead, total };
+        Color colors[] = { PAL_CLR(WHITE), PAL_CLR(WHITE), PAL_CLR(WHITE), PAL_CLR(WHITE), PAL_CLR(YELLOW) };
+        uk_count_inlay(heading, face, lines, colors, 5, pv->step_value, act_label, bn->count_cancel,
+                       TOUCH_LIST_PROMPT);
     } else if (offer) {
-        loc_rows(&L, &rows, 2, pv->yn_cursor);
+        uk_scene_rows(&L, 2, pv->yn_cursor, uk_rows_fn, &rows, TOUCH_LIST_PROMPT);
     } else if (loc_deal_pending() && !loc_deal_revealed()) {
         rows.enabled[0] = true;
-        loc_rows(&L, &rows, 2, *loc_deal_cursor());       // the panorama before the words
+        uk_scene_rows(&L, 2, *loc_deal_cursor(), uk_rows_fn, &rows, TOUCH_LIST_PROMPT);
     } else {
-        loc_result_dialog(g, loc_deal_title(g, false), face);   // the confirmation, then the map
+        uk_scene_rows(&L, 2, -1, uk_rows_fn, &rows, 0);
+        loc_deal_text(g, buf, sizeof buf);
+        uk_result_inlay(loc_deal_title(g, false), face, buf, bn->castle_continue, TOUCH_LIST_PROMPT);
     }
 }
