@@ -41,6 +41,11 @@ static bool prompt_row(void *ctx, int i, char *label, char *right, int cap) {
     const RowCtx *rc = (const RowCtx *)ctx;
     const PromptView *p = rc->p;
     right[0] = '\0';
+    if (p->kind == PK_NUMERIC && i == p->choice_n) {      // modern: the Cancel row under the choices
+        const Resources *res = resources_current();
+        snprintf(label, (size_t)cap, "%s", res ? res->banners.count_cancel : "Cancel");
+        return true;
+    }
     if (p->kind == PK_YES_NO) {
         const Resources *res = resources_current();
         const char *s = res ? (i == 0 ? res->ui.prompt_yes : res->ui.prompt_no)
@@ -87,13 +92,39 @@ static Texture2D join_face(const PromptView *p) {
 void modern_prompt_draw(const PromptView *p) {
     if (!p || p->kind == PK_NONE) return;
     // A Yes/No question is a card: its words, then Yes and No as buttons.
-    if (p->kind == PK_YES_NO) { draw_yes_no_card(p, join_face(p)); return; }
+    if (p->kind == PK_YES_NO && (join_face(p).id || (ml_area().w == ml_full().w && ml_area().h == ml_full().h))) {
+        draw_yes_no_card(p, join_face(p));
+        return;
+    }
 
     const int BAND = 4;
     const int INSET = UK_INSET;
     int line_h = BFONT_GLYPH_H + 2;
     int sp = ml_space();
     ML_Rect area = ml_area();     // centred on what is behind it
+    {
+        // On the map: the one map message-and-question look (uk_ask).
+        bool over_map = !(area.w == ml_full().w && area.h == ml_full().h);
+        bool choices_map = (p->kind == PK_NUMERIC || p->kind == PK_AB_CHOICE) && p->choice_n > 0;
+        if (over_map && (p->kind == PK_YES_NO || choices_map)) {
+            const char *words = choices_map ? p->lead : p->body;
+            int tw = uk_message_text_w();
+            static char wl[12][200];
+            const char *lines[12];
+            int nl = 0;
+            const char *q = words ? words : "";
+            while (nl < 12 && *q && bfont_take_line(&q, tw, wl[nl], (int)sizeof wl[nl]) > 0) { lines[nl] = wl[nl]; nl++; }
+            RowCtx ctx = { p, uk_message_text_w() };
+            int n_rows = p->kind == PK_YES_NO ? 2 : p->choice_n + (p->kind == PK_NUMERIC ? 1 : 0);
+            int cursor = p->kind == PK_YES_NO ? p->yn_cursor : p->choice_cursor;
+            // A question with a title but no other words: the title is the
+            // question, so it reads as white words, not a gold title.
+            const char *title = p->header;
+            if (nl == 0 && title && title[0]) { lines[0] = title; nl = 1; title = NULL; }
+            uk_ask(title, lines, nl, n_rows, cursor, prompt_row, &ctx, TOUCH_LIST_PROMPT);
+            return;
+        }
+    }
     // Over the map: a band along the pane's foot, so the hero stays in view.
     // Over a screen (a place, combat): an in-lay in its middle.
     bool inlay = area.w == ml_full().w && area.h == ml_full().h;

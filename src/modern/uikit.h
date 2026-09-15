@@ -143,6 +143,11 @@ int  uk_doc_draw(const UkDoc *d, ML_Rect area, int pic_w, int pic_h, int page, b
 // The height the words take in one page at area's width (beside the picture).
 int  uk_doc_height(const UkDoc *d, ML_Rect area, int pic_w, int pic_h);
 
+// The same card from words already laid out (the Emperor's answers, whose
+// gains are yellow lines).
+void uk_result_doc(const char *title, Texture2D face, const UkDoc *doc, const char *row_label,
+                   int touch_list);
+
 // ---- the card: the one panel model -------------------------------------------------
 //
 // A framed panel sized to what it holds: an optional title strip; an optional
@@ -171,5 +176,17 @@ typedef struct { ML_Rect card; ML_Rect extra; } UkCardOut;
 
 // Lay out and draw the card; out (may be NULL) gives the extra block's rect.
 void uk_card(const UkCard *c, UkCardOut *out);
+
+// ---- the map message and question ------------------------------------------------
+//
+// Every message and question on the map, one look: the width of the map pane
+// less its margin, on its foot; an optional gold title line; the white words
+// directly under it; a lattice band; then 0-6 full-width answer rows (a
+// message has one, Continue). As tall as what it holds.
+#define UK_ASK_ROWS      6
+#define UK_MESSAGE_LINES 6          // a message's body lines per page
+int  uk_message_text_w(void);       // the width its words wrap to
+void uk_ask(const char *title, const char *const lines[], int n_lines,
+            int n_rows, int cursor, MlRowFn fn, void *ctx, int touch_list);
 
 #endif

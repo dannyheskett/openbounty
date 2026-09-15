@@ -216,10 +216,16 @@ void prompt_dismiss(void) {
 // The digit and letter keys are read first, so keypad 2 and 8 still answer.
 static PromptResult choice_rows_update(void) {
     if (!CL_IS_MODERN || g_choice_n <= 0) return PROMPT_RESULT_NONE;
-    SelList l = { g_choice_n, g_choice_cursor };
+    // A numbered choice ends with a Cancel row.
+    bool cancel_row = g_kind == PK_NUMERIC;
+    SelList l = { g_choice_n + (cancel_row ? 1 : 0), g_choice_cursor };
     int row = -1;
     SelEvent ev = sel_input(&l, TOUCH_LIST_PROMPT, 0, &row);
     g_choice_cursor = l.cursor;
+    if (cancel_row && ev == SEL_CONFIRM && row == g_choice_n) {
+        prompt_dismiss();
+        return PROMPT_RESULT_CANCEL;
+    }
     if (ev != SEL_CONFIRM || row < 0 || row >= g_choice_n) return PROMPT_RESULT_NONE;
     int v = g_choice_value[row];
     prompt_dismiss();

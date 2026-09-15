@@ -148,6 +148,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     reset(&G); resources_format_template(tb, sizeof tb, bn->body_search, vars, 6);
     prompt_yes_no_open(ui->dt_search, tb);
     shot(&G, "06_question_yes_no");
+    reset(&G); prompt_yes_no_open(NULL, ui->quit_to_dos_prompt); shot(&G, "06b_quit_without_saving");
     reset(&G);
     {
         const char *labels[3] = { "Tirones (40)", "Velites (25)", "Hastati (12)" };

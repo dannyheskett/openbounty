@@ -253,6 +253,42 @@ void uk_scene_rows(const UkScene *L, int n, int cursor, MlRowFn fn, void *ctx, i
                  touch_list, uk_ink());
 }
 
+// ---- the standard message ----------------------------------------------------------
+
+static ML_Rect message_rect(void) {
+    ML_Rect a = ml_area();
+    int sp = ml_space();
+    return (ML_Rect){ a.x + sp, a.y, a.w - 2 * sp, a.h - sp };
+}
+
+int uk_message_text_w(void) { return message_rect().w - 2 * UK_INSET; }
+
+void uk_ask(const char *title, const char *const lines[], int n_lines,
+            int n_rows, int cursor, MlRowFn fn, void *ctx, int touch_list) {
+    ML_Rect a = message_rect();
+    const int lh = uk_line_h();
+    bool titled = title && title[0];
+    if (n_rows > UK_ASK_ROWS) n_rows = UK_ASK_ROWS;
+    int text_lines = (titled ? 1 : 0) + n_lines;
+    if (text_lines < 1) text_lines = 1;
+    int rows_h = n_rows > 0 ? UK_BAND + ml_list_height(n_rows) : 0;
+    int h = 2 * UK_INSET + text_lines * lh + rows_h;
+    int y = a.y + a.h - h;
+    uk_panel(a.x, y, a.w, h);
+    int ty = y + UK_INSET;
+    if (titled) {
+        bfont_draw(title, a.x + UK_INSET, ty, PAL_CLR(YELLOW));
+        ty += lh;
+    }
+    for (int i = 0; i < n_lines; i++, ty += lh)
+        bfont_draw(lines[i] ? lines[i] : "", a.x + UK_INSET, ty, PAL_CLR(WHITE));
+    if (n_rows > 0) {
+        int ry = y + h - ml_list_height(n_rows);
+        lattice_band_h(a.x, ry - UK_BAND, a.w, UK_BAND);
+        ml_list_draw(a.x, ry, a.w, ml_list_height(n_rows), n_rows, cursor, fn, ctx, touch_list, uk_ink());
+    }
+}
+
 // ---- in-lays -----------------------------------------------------------------------
 
 void uk_count_inlay(const char *title, Texture2D face, const char *lines[], Color colors[], int nlines,
@@ -277,10 +313,38 @@ void uk_result_inlay(const char *title, Texture2D face, const char *text, const 
                      int touch_list) {
     UkDoc d = { 0 };
     uk_doc_add(&d, text, PAL_CLR(WHITE));
-    UkCard c = { .title = title, .face = face, .doc = &d, .answers = { row_label }, .n_answers = 1,
-                 .cursor = 0, .touch_list = touch_list };
-    uk_card(&c, NULL);
+    uk_result_doc(title, face, &d, row_label, touch_list);
 }
+
+void uk_result_doc(const char *title, Texture2D face, const UkDoc *doc, const char *row_label,
+                   int touch_list) {
+    // Every result is the same size: the title strip, the picture at 2x with
+    // the words in one column beside it, and Continue along the foot.
+    const int size = 2 * CL_TILE_W;
+    const int w = UK_INLAY_W;
+    // The body holds the longest words any result has (the Emperor's answer
+    // with its gains), so every result is the same size.
+    int body_h = 12 * uk_line_h();
+    if (body_h < size) body_h = size;
+    const int h = uk_title_h() + UK_BAND + 2 * UK_INSET + body_h + UK_BAND + ml_list_height(1);
+    ML_Rect a = ml_area();
+    int sp = ml_space();
+    int cw = w > a.w - 2 * sp ? a.w - 2 * sp : w;
+    int ch = h > a.h ? a.h : h;
+    int x = a.x + (a.w - cw) / 2, y = a.y + (a.h - ch) / 2;
+    uk_dim();
+    uk_panel(x, y, cw, ch);
+    int top = uk_title(x, y, cw, title, NULL, PAL_CLR(YELLOW));
+    UkRows rows = { { row_label }, { true } };
+    ML_Rect body = { x, top, cw, y + ch - top };
+    int foot = uk_foot_rows(body, 1, 0, uk_rows_fn, &rows, touch_list);
+    int px = x + UK_INSET, py = top + UK_INSET;
+    int pic = size;
+    if (face.id) uk_picture(face, px, py, pic, pic);
+    ML_Rect area = { px, py, cw - 2 * UK_INSET, foot - ML_PAD - py };
+    uk_doc_draw(doc, area, face.id ? pic : 0, area.h, -1, true);
+}
+
 
 // ---- paged words beside a picture ------------------------------------------------
 

@@ -50,41 +50,18 @@ static int wrapped_lines(const char *text, int max_w) {
     return uk_lines(text, max_w);
 }
 
-// Which layout a message uses and how it pages. One function, called by both
-// the pager and the panel, so the two can never disagree about how many pages
-// a message has. A message goes in the band along the pane's foot when its
-// header and whole body fit there; otherwise in the large rect, paging if even
-// that is short.
-typedef struct {
-    ML_Rect r;
-    int     header_lines;
-    int     body_per_page;
-    int     pages;
-} DialogFit;
 
-static DialogFit dialog_fit(bool force_large) {
-    const char *hdr = dialog_header_text();
-    const char *body = dialog_body_text();
-    DialogFit f;
-    for (int pass = force_large ? 1 : 0; pass < 2; pass++) {
-        f.r = pass ? ml_large() : ml_small();
-        int max_w = f.r.w - 2 * UK_INSET;
-        if (max_w > 40 * GW) max_w = 40 * GW;      // the card's widest column
-        int cap = (f.r.h - 2 * UK_INSET) / GH;
-        f.header_lines = (hdr && hdr[0]) ? wrapped_lines(hdr, max_w) : 0;
-        int body_lines = wrapped_lines(body, max_w);
-        f.body_per_page = cap - f.header_lines;
-        if (f.body_per_page < 1) f.body_per_page = 1;
-        f.pages = (body_lines + f.body_per_page - 1) / f.body_per_page;
-        if (f.pages < 1) f.pages = 1;
-        if (pass == 0 && f.pages == 1) return f;   // it fits the band
-    }
-    return f;
+// The standard message's pages: its words wrapped to the message's width,
+// UK_MESSAGE_LINES to a page. The pager and the drawing both count here.
+static int message_pages(void) {
+    int n = uk_lines(dialog_body_text(), uk_message_text_w());
+    int pages = (n + UK_MESSAGE_LINES - 1) / UK_MESSAGE_LINES;
+    return pages < 1 ? 1 : pages;
 }
 
 int modern_overlay_dialog_page_count(void) {
     if (dialog_face(NULL)) return 1;   // the in-lay shows its words on one page
-    return dialog_fit(false).pages;
+    return message_pages();
 }
 
 typedef enum { DLG_MODE_BOTTOM = 0, DLG_MODE_CENTERED_MODAL } DialogMode;
@@ -124,35 +101,33 @@ static void draw_dialog_ex(DialogMode mode) {
     char line[200];
 
     if (mode == DLG_MODE_CENTERED_MODAL) {
-        // Victory: a card sized to its words, the header as its title.
+        // Victory: a card sized to its words, the header as its title, and
+        // Continue like every other message.
         UkDoc d = { 0 };
         uk_doc_add(&d, body, PAL_CLR(WHITE));
-        UkCard c = { .title = hdr, .doc = &d };
+        UkCard c = { .title = hdr, .doc = &d, .n_answers = 1, .touch_list = TOUCH_LIST_PROMPT };
+        c.answers[0] = res ? res->banners.castle_continue : "";
         uk_card(&c, NULL);
         return;
     }
 
-    // Along the pane's foot: a card as wide as its words and as tall as the
-    // page it shows. The words are cut into pages at the card's widest column.
-    DialogFit f = dialog_fit(false);
-    max_w = f.r.w - 2 * UK_INSET;
-    if (max_w > 40 * GW) max_w = 40 * GW;
+    // The standard message: the page's lines, the title, Continue (the bridge,
+    // which waits for a square, has none).
+    int text_w = uk_message_text_w();
     const char *p = body ? body : "";
-    int skip = dialog_page_current() * f.body_per_page;
-    for (int i = 0; i < skip && *p; i++)
-        if (bfont_take_line(&p, max_w, line, (int)sizeof line) <= 0) break;
-    UkDoc d = { 0 };
-    const char *hp = hdr ? hdr : "";
-    for (int i = 0; i < f.header_lines && *hp; i++) {
-        if (bfont_take_line(&hp, max_w, line, (int)sizeof line) <= 0) break;
-        uk_doc_add(&d, line, PAL_CLR(YELLOW));
+    for (int i = 0; i < dialog_page_current() * UK_MESSAGE_LINES && *p; i++)
+        if (bfont_take_line(&p, text_w, line, (int)sizeof line) <= 0) break;
+    static char page_lines[UK_MESSAGE_LINES][200];
+    const char *lines[UK_MESSAGE_LINES];
+    int n = 0;
+    while (n < UK_MESSAGE_LINES && *p && bfont_take_line(&p, text_w, page_lines[n], (int)sizeof page_lines[n]) > 0) {
+        lines[n] = page_lines[n];
+        n++;
     }
-    for (int i = 0; i < f.body_per_page && *p; i++) {
-        if (bfont_take_line(&p, max_w, line, (int)sizeof line) <= 0) break;
-        uk_doc_add(&d, line, PAL_CLR(WHITE));
-    }
-    UkCard c = { .doc = &d, .at_foot = true, .no_dim = true };
-    uk_card(&c, NULL);
+    bool bridge = bridge_state == BRIDGE_STATE_DIRECTION;
+    UkRows cont = { { res ? res->banners.castle_continue : "" }, { true } };
+    uk_ask(hdr, lines, n, bridge ? 0 : 1, 0, uk_rows_fn, &cont, 0);
+    (void)max_w;
 }
 
 // A portrait's current frame (animated), or nothing.
@@ -530,10 +505,17 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
         face = portrait_frame(s, town_person(g, shown), 2.0);
     }
 
+    // The outcome of a service: the same card as the temple's and the
+    // dwelling's -- the person at 2x, their words, Continue.
+    if (views_town_result_dialog() && info) {
+        uk_result_inlay(t2, face, info, bn->castle_continue, TOUCH_LIST_PROMPT);
+        views_town_set_detail_pages(1);
+        return;
+    }
     UkDoc d = { 0 };
     const PromptView *pv = prompt_view();
     bool asking = prompt_is_active() && pv && pv->kind == PK_YES_NO;
-    bool result = views_town_result_dialog() && info;
+    bool result = false;
     if (asking) {
         uk_doc_add(&d, pv->body, PAL_CLR(WHITE));
     } else if (info && info[0]) {
@@ -960,9 +942,7 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
             const char *rt = akind == MC_AUD_BLESSING && ares ? bn->castle_action_blessing
                            : akind == MC_AUD_TRIBUTE && ares ? bn->castle_action_tribute
                            : bn->castle_action_promotion;
-            UkCard c = { .title = rt, .face = emperor, .doc = &rd, .answers = { bn->castle_continue },
-                         .n_answers = 1, .touch_list = TOUCH_LIST_PROMPT };
-            uk_card(&c, NULL);
+            uk_result_doc(rt, emperor, &rd, bn->castle_continue, TOUCH_LIST_PROMPT);
         }
         return;
     }
