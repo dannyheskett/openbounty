@@ -56,10 +56,8 @@ void gm_draw_page(const GmPage *p, const char *path, const char *right_title,
 
 // ---- the game menu ----------------------------------------------------------------
 void modern_gamemenu_open(bool debug);
-// Open on the save slots (every save goes through them); then_quit: the save
-// was Save and Quit, so it ends with Quit / Continue.
-void modern_gamemenu_open_save(bool then_quit);
-bool modern_gamemenu_take_quit_after_save(void);
+// Open on the save slots (every save goes through them).
+void modern_gamemenu_open_save(void);
 void modern_gamemenu_update(Game *g);    // input while VIEW_MENU is up
 void modern_gamemenu_draw(const Game *g);
 

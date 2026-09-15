@@ -1262,22 +1262,15 @@ title:;
                 switch (modern_gamemenu_take_action(&slot)) {
                     case GM_DO_SAVE: {
                         menu_ctx.slot = slot;
-                        bool quit_after = modern_gamemenu_take_quit_after_save();
                         menu_save(&menu_ctx);
                         views_dismiss();
                         char body[RES_BANNER_LEN], sb[12], db[12];
-                        if (quit_after) {
-                            // Save and Quit: the message that offers Quit / Continue.
-                            resources_format_template(body, sizeof body, res.ui.save_confirm_modern, NULL, 0);
-                            player_io_message(&game, NULL, body);
-                        } else {
-                            snprintf(sb, sizeof sb, "%d", slot + 1);
-                            snprintf(db, sizeof db, "%d", game.stats.days_left);
-                            ResTemplateVar sv[] = { { "SLOT", sb }, { "NAME", game.character.name },
-                                                    { "RANK", game.character.cls.rank_title }, { "DAYS", db } };
-                            resources_format_template(body, sizeof body, res.banners.save_done, sv, 4);
-                            player_io_message(&game, res.banners.save_done_title, body);
-                        }
+                        snprintf(sb, sizeof sb, "%d", slot + 1);
+                        snprintf(db, sizeof db, "%d", game.stats.days_left);
+                        ResTemplateVar sv[] = { { "SLOT", sb }, { "NAME", game.character.name },
+                                                { "RANK", game.character.cls.rank_title }, { "DAYS", db } };
+                        resources_format_template(body, sizeof body, res.banners.save_done, sv, 4);
+                        player_io_message(&game, res.banners.save_done_title, body);
                         break;
                     }
                     case GM_DO_LOAD: menu_ctx.slot = slot; if (menu_load(&menu_ctx)) views_dismiss(); break;
@@ -1578,11 +1571,7 @@ title:;
                 // advances page or dismisses. Since Ctrl-Q is the only post-dialog action, we
                 // check it here for all dialogs (harmless elsewhere).
                 bool ctrl = input_key_down(KEY_LEFT_CONTROL) || input_key_down(KEY_RIGHT_CONTROL);
-                // Modern save message: its Quit button presses a bare Q.
-                bool save_quit = CL_IS_MODERN && dialog_body_text() &&
-                                 strcmp(dialog_body_text(), res.ui.save_confirm_modern) == 0 &&
-                                 input_key_pressed(KEY_Q);
-                if ((ctrl && input_key_pressed(KEY_Q)) || save_quit) {
+                if (ctrl && input_key_pressed(KEY_Q)) {
                     dialog_dismiss();
                     quit_requested = true;
                 } else if (ui_any_key_pressed()) {

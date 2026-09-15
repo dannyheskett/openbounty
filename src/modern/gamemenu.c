@@ -130,25 +130,14 @@ static struct {
     int      cheat;
 } gm = { .cheat = -1 };
 
-static bool s_quit_after_save;
-
-void modern_gamemenu_open_save(bool then_quit) {
-    // Straight to the save slots (Back closes the menu), and remember whether
-    // this save was asked for by Save and Quit.
+void modern_gamemenu_open_save(void) {
+    // Straight to the save slots; Back closes the menu.
     gm.page[0] = GM_PAGE_SAVE;
     gm.cursor[0] = 0;
     gm.depth = 1;
-    s_quit_after_save = then_quit;
-}
-
-bool modern_gamemenu_take_quit_after_save(void) {
-    bool q = s_quit_after_save;
-    s_quit_after_save = false;
-    return q;
 }
 
 void modern_gamemenu_open(bool debug) {
-    s_quit_after_save = false;
     memset(gm.page, 0, sizeof gm.page);
     memset(gm.cursor, 0, sizeof gm.cursor);
     gm.depth = 1;

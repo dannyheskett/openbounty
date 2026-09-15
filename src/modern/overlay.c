@@ -120,7 +120,6 @@ static void draw_dialog_ex(DialogMode mode) {
                 DrawRectangleLines(hx + d[k][0] * CL_TILE_W + t, hy + d[k][1] * CL_TILE_H + t,
                                    CL_TILE_W - 2 * t, CL_TILE_H - 2 * t, PAL_CLR(YELLOW));
     }
-    bool save = res && body && strcmp(body, res->ui.save_confirm_modern) == 0;
     int max_w;
     char line[200];
 
@@ -152,20 +151,8 @@ static void draw_dialog_ex(DialogMode mode) {
         if (bfont_take_line(&p, max_w, line, (int)sizeof line) <= 0) break;
         uk_doc_add(&d, line, PAL_CLR(WHITE));
     }
-    UkCard c = { .doc = &d, .at_foot = !(res && save), .extra_h = save ? GH + 8 : 0, .no_dim = true };
-    UkCardOut o;
-    uk_card(&c, &o);
-
-    // The save message offers its two ways on: Quit and Continue.
-    if (save) {
-        const ResUI *ui = &res->ui;
-        int by = o.extra.y;
-        int cw = ml_hint_width(ui->hint_continue, NULL, NULL);
-        int qw = ml_hint_width(ui->hint_quit, ui->key_ctrl_q, NULL);
-        int bx = o.extra.x + o.extra.w - cw;
-        ml_hint_button(bx, by, ui->hint_continue, NULL, NULL, KEY_ENTER);
-        ml_hint_button(bx - ML_PAD - qw, by, ui->hint_quit, ui->key_ctrl_q, NULL, KEY_Q);
-    }
+    UkCard c = { .doc = &d, .at_foot = true, .no_dim = true };
+    uk_card(&c, NULL);
 }
 
 // A portrait's current frame (animated), or nothing.

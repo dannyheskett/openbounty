@@ -63,9 +63,9 @@ void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
     case INPUT_ACTION_GAME_MENU:       views_set(VIEW_MENU);      break;
     case INPUT_ACTION_SAVE_QUIT: {
         if (CL_IS_MODERN) {
-            // Modern: every save goes through the slots; Quit / Continue follows.
+            // Modern: every save goes through the slots.
             views_set(VIEW_MENU);
-            modern_gamemenu_open_save(true);
+            modern_gamemenu_open_save();
             break;
         }
         // Q saves unconditionally, then displays a "Press Ctrl-Q to
@@ -80,8 +80,7 @@ void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
         {
             char body[RES_BANNER_LEN];
             resources_format_template(body, sizeof body,
-                                      CL_IS_MODERN ? r_->ui.save_confirm_modern
-                                                   : r_->banners.body_save_confirm,
+                                      r_->banners.body_save_confirm,
                                       NULL, 0);
             player_io_message(g, NULL, body);
         }
