@@ -524,17 +524,69 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
     TownList list = views_town_list();
     bool menu = list == TOWN_LIST_MENU;
     const char *info = views_town_info_text();
-    TownRowsCtx rc = { g, menu };
     int rows = views_town_list_rows(g);
     int cursor = views_town_list_cursor();
+    TownList shown = menu ? town_list_for(views_town_cursor()) : list;
+    if (menu && views_town_cursor() == TOWN_ROW_LEAVE) shown = TOWN_LIST_MENU;
 
-    if (menu || list == TOWN_LIST_CONTRACTS) {
-        // The services, or the enemies on offer: rows at the left, and beside
-        // them the person (or the face) at 2x and their words.
-        char t2[128];
-        town_title(g, t2, sizeof t2, !menu);
-        ML_Rect b = uk_inlay(ml_full().w, UK_TALL_H, t2, town_zone_name(g));
-        int lw = 14 * GW + 2 * ML_PAD;
+    // Every town panel is one frame: the same size and place, the title strip,
+    // the rows in a column at the left, the person (or the wanted face) at 2x
+    // and their words at the right. The services, a contract, a service, its
+    // question and its outcome differ only in their rows and words.
+    char t2[128];
+    town_title(g, t2, sizeof t2, !menu);
+    Texture2D face = { 0 };
+    if (list == TOWN_LIST_CONTRACTS) {
+        const VillainDef *v = town_shown_villain(g);
+        face = v ? villain_face(s, v->index) : (s ? s->hud_contract_silhouette : (Texture2D){ 0 });
+    } else if (shown == TOWN_LIST_BOAT && !views_town_boat_available(g)) {
+        face = s ? s->hud_boat_silhouette : (Texture2D){ 0 };
+    } else {
+        face = portrait_frame(s, town_person(g, shown), 2.0);
+    }
+
+    UkDoc d = { 0 };
+    const PromptView *pv = prompt_view();
+    bool asking = prompt_is_active() && pv && pv->kind == PK_YES_NO;
+    bool result = views_town_result_dialog() && info;
+    if (asking) {
+        uk_doc_add(&d, pv->body, PAL_CLR(WHITE));
+    } else if (info && info[0]) {
+        uk_doc_add(&d, info, PAL_CLR(WHITE));
+    } else if (menu) {
+        const ResTownInvite *inv = tw ? resources_town_invite(res, tw->invitations) : NULL;
+        const char *line = NULL;
+        char rites[RES_BANNER_LEN];
+        if (inv) switch (shown) {
+            case TOWN_LIST_CONTRACTS: line = inv->contracts; break;
+            case TOWN_LIST_BOAT:      line = views_town_boat_available(g) ? inv->boat : bn->town_boat_no_master; break;
+            case TOWN_LIST_INFO:      line = inv->information; break;
+            case TOWN_LIST_TEMPLE:
+                if (!views_town_row_enabled(g, TOWN_ROW_SPELL)) { views_town_rites_text(g, rites, sizeof rites); line = rites; }
+                else line = inv->temple;
+                break;
+            case TOWN_LIST_SIEGE:     line = inv->siege; break;
+            default:                  line = bn->gmd_back; break;
+        }
+        if (line && line[0]) {
+            ResTemplateVar vars[] = { { "HERO", g->character.name }, { "TOWN", (name && name[0]) ? name : "" } };
+            resources_format_template(buf, sizeof buf, line, vars, 2);
+            uk_doc_add(&d, buf, PAL_CLR(WHITE));
+        }
+    } else {
+        compose_service(g, list, &d);
+    }
+
+    ML_Rect b = uk_inlay(ml_full().w, UK_TALL_H, t2, town_zone_name(g));
+    int lw = 14 * GW + 2 * ML_PAD;
+    if (asking || result) {
+        // The question's answers, or Continue, take the rows' place.
+        const Resources *r0 = res;
+        UkRows qr = { { asking ? r0->ui.prompt_yes : bn->castle_continue, r0->ui.prompt_no }, { true, true } };
+        ml_list_draw(b.x, b.y, lw, b.h, asking ? 2 : 1, asking ? pv->yn_cursor : 0, uk_rows_fn, &qr,
+                     TOUCH_LIST_PROMPT, uk_ink());
+    } else if (menu || list == TOWN_LIST_CONTRACTS) {
+        TownRowsCtx rc = { g, menu };
         ml_list_draw(b.x, b.y, lw, b.h, rows, cursor, town_row_fn, &rc, TOUCH_LIST_TOWN, uk_ink());
         if (list == TOWN_LIST_CONTRACTS) {
             // The contract held: a dot before its name.
@@ -547,92 +599,28 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
                            i == cursor ? uk_ink() : PAL_CLR(YELLOW));
             }
         }
-        lattice_band_v(b.x + lw, b.y, UK_BAND, b.h);
-        ML_Rect a = { b.x + lw + UK_BAND + UK_INSET, b.y + UK_INSET, 0, 0 };
-        a.w = b.x + b.w - UK_INSET - a.x;
-        a.h = b.y + b.h - UK_INSET - a.y;
-        const int size = 2 * CL_TILE_W;
-        Texture2D face = { 0 };
-        TownList shown = menu ? town_list_for(views_town_cursor()) : list;
-        if (menu && views_town_cursor() == TOWN_ROW_LEAVE) shown = TOWN_LIST_MENU;
-        if (list == TOWN_LIST_CONTRACTS) {
-            const VillainDef *v = town_shown_villain(g);
-            face = v ? villain_face(s, v->index) : (s ? s->hud_contract_silhouette : (Texture2D){ 0 });
-        } else if (shown == TOWN_LIST_BOAT && !views_town_boat_available(g)) {
-            face = s ? s->hud_boat_silhouette : (Texture2D){ 0 };
-        } else {
-            face = portrait_frame(s, town_person(g, shown), 2.0);
-        }
-        if (face.id) uk_picture(face, a.x, a.y, size, size);
-        UkDoc d = { 0 };
-        if (info && info[0]) {
-            uk_doc_add(&d, info, PAL_CLR(WHITE));
-        } else if (menu) {
-            const ResTownInvite *inv = tw ? resources_town_invite(res, tw->invitations) : NULL;
-            const char *line = NULL;
-            char rites[RES_BANNER_LEN];
-            if (inv) switch (shown) {
-                case TOWN_LIST_CONTRACTS: line = inv->contracts; break;
-                case TOWN_LIST_BOAT:      line = views_town_boat_available(g) ? inv->boat : bn->town_boat_no_master; break;
-                case TOWN_LIST_INFO:      line = inv->information; break;
-                case TOWN_LIST_TEMPLE:
-                    if (!views_town_row_enabled(g, TOWN_ROW_SPELL)) { views_town_rites_text(g, rites, sizeof rites); line = rites; }
-                    else line = inv->temple;
-                    break;
-                case TOWN_LIST_SIEGE:     line = inv->siege; break;
-                default:                  line = bn->gmd_back; break;
-            }
-            if (line && line[0]) {
-                ResTemplateVar vars[] = { { "HERO", g->character.name }, { "TOWN", (name && name[0]) ? name : "" } };
-                resources_format_template(buf, sizeof buf, line, vars, 2);
-                uk_doc_add(&d, buf, PAL_CLR(WHITE));
-            }
-        } else {
-            compose_service(g, list, &d);
-        }
-        if (menu) {
-            uk_doc_draw(&d, a, face.id ? size : 0, size, -1, true);
-        } else {
-            int pages = uk_doc_draw(&d, a, face.id ? size : 0, size, 0, false);
-            views_town_set_detail_pages(pages);
-            uk_doc_draw(&d, a, face.id ? size : 0, size, views_town_detail_page(), true);
-        }
     } else {
-        // A service: its person at 2x and their words, the service's answer and
-        // Back along the foot.
-        // A service: a card with its person at 2x, their words beside them,
-        // and the service's answer and Back as buttons under the words.
-        char t2[128];
-        town_title(g, t2, sizeof t2, true);
-        Texture2D face = portrait_frame(s, town_person(g, list), 2.0);
-        if (!face.id && list == TOWN_LIST_BOAT && s) face = s->hud_boat_silhouette;
-        UkDoc d = { 0 };
-        if (info && info[0]) uk_doc_add(&d, info, PAL_CLR(WHITE));
-        else                 compose_service(g, list, &d);
-        static char labels[UK_CARD_ANSWERS][64];
-        UkCard c = { .title = t2, .right = town_zone_name(g), .face = face, .doc = &d,
-                     .cursor = cursor, .touch_list = TOUCH_LIST_TOWN };
-        int first_row = list == TOWN_LIST_INFO ? rows - 1 : 0;   // Information: its castle is words, not an answer
-        for (int i = first_row; i < rows && c.n_answers < UK_CARD_ANSWERS; i++) {
-            bool en = true, held = false;
-            views_town_list_row(g, i, labels[c.n_answers], sizeof labels[c.n_answers], &en, &held);
-            c.answers[c.n_answers] = labels[c.n_answers];
-            c.disabled[c.n_answers] = !en && i != rows - 1;
-            c.n_answers++;
-        }
-        c.cursor = cursor - first_row;
-        c.touch_base = first_row;
-        views_town_set_detail_pages(1);
-        uk_card(&c, NULL);
+        // A service's own rows: its answer and Back (Information: Back only,
+        // its castle is in the words).
+        TownRowsCtx rc = { g, false };
+        int first_row = list == TOWN_LIST_INFO ? rows - 1 : 0;
+        ml_list_draw_ex(b.x, b.y, lw, b.h, rows - first_row, cursor - first_row, town_row_fn, &rc,
+                        TOUCH_LIST_TOWN, uk_ink(), first_row);
     }
+    lattice_band_v(b.x + lw, b.y, UK_BAND, b.h);
 
-    // A boat, spell or siege outcome: the section's person says it.
-    if (views_town_result_dialog() && info) {
-        char t2[128];
-        town_title(g, t2, sizeof t2, true);
-        Texture2D face = portrait_frame(s, town_person(g, list == TOWN_LIST_MENU
-                                                      ? town_list_for(views_town_cursor()) : list), 2.0);
-        uk_result_inlay(t2, face, info, bn->castle_continue, TOUCH_LIST_PROMPT);
+    ML_Rect a = { b.x + lw + UK_BAND + UK_INSET, b.y + UK_INSET, 0, 0 };
+    a.w = b.x + b.w - UK_INSET - a.x;
+    a.h = b.y + b.h - UK_INSET - a.y;
+    const int size = 2 * CL_TILE_W;
+    if (face.id) uk_picture(face, a.x, a.y, size, size);
+    if (menu || asking || result) {
+        views_town_set_detail_pages(1);
+        uk_doc_draw(&d, a, face.id ? size : 0, size, -1, true);
+    } else {
+        int pages = uk_doc_draw(&d, a, face.id ? size : 0, size, 0, false);
+        views_town_set_detail_pages(pages);
+        uk_doc_draw(&d, a, face.id ? size : 0, size, views_town_detail_page(), true);
     }
 }
 
