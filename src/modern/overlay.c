@@ -512,9 +512,13 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
     Texture2D fig = portrait_frame(s, head, 1000.0 / 180.0);
     if (!fig.id) fig = troop_standing(s, town_backdrop_troop(g, name));
     uk_scene_figure(&L, fig, CL_TILE_W);
+    uk_scene_intro(&L, buf);
     bool visiting = views_town_visiting();
-    const char *scene_labels[2] = { bn->town_visit, bn->location_leave };
-    uk_scene_split(&L, buf, scene_labels, visiting ? -1 : views_town_scene_cursor(), visiting ? 0 : TOUCH_LIST_TOWN);
+    char visit[RES_BANNER_LEN + 4];
+    snprintf(visit, sizeof visit, "%s >", bn->town_visit);
+    UkRows scene_rows = { { visit, bn->location_leave }, { true, true } };
+    uk_scene_rows(&L, 2, visiting ? -1 : views_town_scene_cursor(), uk_rows_fn, &scene_rows,
+                  visiting ? 0 : TOUCH_LIST_TOWN);
     if (!visiting) return;
 
     TownList list = views_town_list();
@@ -802,9 +806,22 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
                            : (mcur == 0 ? bn->castle_invite_garrison : bn->castle_invite_withdraw);
     ResTemplateVar v[] = { { "HERO", g->character.name }, { "CASTLE", cname } };
     resources_format_template(buf, sizeof buf, inv, v, 2);
-    // The whole backdrop, then a fixed frame: the words at the left, the
-    // castle's three answers stacked at the right.
-    UkScene L = uk_scene(cname, gold, loc_texture(s, LOC_CASTLE), 2);
+    // The backdrop, the words under it, the three answers as rows. The words'
+    // band is as tall as the longest of the three invitations, so nothing
+    // moves as the cursor does.
+    char longest[RES_BANNER_LEN] = "";
+    {
+        const char *invs[3] = { home ? bn->castle_invite_recruit : bn->castle_invite_garrison,
+                                home ? bn->castle_invite_audience : bn->castle_invite_withdraw, bn->gmd_leave };
+        int most = -1;
+        for (int k = 0; k < 3; k++) {
+            char tb[RES_BANNER_LEN];
+            resources_format_template(tb, sizeof tb, invs[k], v, 2);
+            int n = uk_lines(tb, ml_full().w - 2 * ML_PAD);
+            if (n > most) { most = n; snprintf(longest, sizeof longest, "%s", tb); }
+        }
+    }
+    UkScene L = uk_scene_for(cname, gold, loc_texture(s, LOC_CASTLE), 3, longest);
     bool barracks = rc && page != MC_AUDIENCE && page != MC_PROMOTION;
     const char *fig_id = !rc ? "" : (barracks && rc->special.barracks_figure[0])
                                   ? rc->special.barracks_figure : rc->special.figure;
@@ -824,11 +841,13 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
         fig = troop_standing(s, ti);
     }
     uk_scene_figure(&L, fig, CL_TILE_W);
-    const char *menu_labels[3] = { home ? bn->castle_menu_recruit : bn->castle_menu_garrison,
-                                   home ? bn->castle_menu_audience : bn->castle_menu_withdraw,
-                                   bn->location_leave };
+    uk_scene_intro(&L, buf);
+    char r0[RES_BANNER_LEN + 4], r1[RES_BANNER_LEN + 4];
+    snprintf(r0, sizeof r0, "%s >", home ? bn->castle_menu_recruit : bn->castle_menu_garrison);
+    snprintf(r1, sizeof r1, "%s >", home ? bn->castle_menu_audience : bn->castle_menu_withdraw);
+    UkRows menu_rows = { { r0, r1, bn->location_leave }, { true, true, true } };
     bool on_menu = page == MC_MENU;
-    uk_scene_split_n(&L, buf, menu_labels, 3, on_menu ? mcur : -1, on_menu ? TOUCH_LIST_CASTLE : 0);
+    uk_scene_rows(&L, 3, on_menu ? mcur : -1, uk_rows_fn, &menu_rows, on_menu ? TOUCH_LIST_CASTLE : 0);
 
     const char *msg = modern_castle_message();
     Texture2D keeper = (home && rc) ? portrait_frame(s, resources_portrait_index(res,

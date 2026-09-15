@@ -97,11 +97,6 @@ void    uk_scene_figure(const UkScene *L, Texture2D t, int x);
 void    uk_scene_intro(const UkScene *L, const char *text);
 void    uk_scene_rows(const UkScene *L, int n, int cursor, MlRowFn fn, void *ctx, int touch_list);
 
-// The space under a scene as one frame: the words at the left half, the two
-// answers as buttons side by side at the right half (tapped as rows 0 and 1).
-void    uk_scene_split(const UkScene *L, const char *text, const char *labels[2], int cursor, int touch_list);
-// As uk_scene_split with n answers: two side by side, three or more stacked.
-void    uk_scene_split_n(const UkScene *L, const char *text, const char *labels[], int n, int cursor, int touch_list);
 
 // A row source over a fixed list of labels.
 typedef struct { const char *label[8]; bool enabled[8]; } UkRows;
@@ -151,19 +146,18 @@ int  uk_doc_height(const UkDoc *d, ML_Rect area, int pic_w, int pic_h);
 // ---- the card: the one panel model -------------------------------------------------
 //
 // A framed panel sized to what it holds: an optional title strip; an optional
-// picture, always at 2x, with the words in one column beside it; the answers
-// as label-sized buttons under the words in that column (they follow the words
-// down when the words are longer than the picture); optionally a block the
-// full width of the card between the body and the buttons (the count row).
-// The narrowest column that fits beside the picture is chosen, so short words
-// make a narrow card and long words a wide one.
+// picture, always at 2x, with the words in one column beside it; optionally a
+// block the full width of the card under them (the count row); the answers as
+// full-width rows stacked along the foot. The narrowest column that fits
+// beside the picture is chosen, so short words make a narrow card and long
+// words a wide one.
 
 #define UK_CARD_ANSWERS 4
 typedef struct {
     const char  *title, *right;               // title strip (NULL: none)
     Texture2D    face;                        // 2x picture (id 0: none)
     const UkDoc *doc;                         // the words (may be NULL)
-    const char  *answers[UK_CARD_ANSWERS];    // fixed answers, as buttons
+    const char  *answers[UK_CARD_ANSWERS];    // fixed answers, as rows
     bool         disabled[UK_CARD_ANSWERS];
     int          n_answers, cursor, touch_list;
     int          touch_base;                  // the first answer's row in touch_list
@@ -180,10 +174,5 @@ void uk_card(const UkCard *c, UkCardOut *out);
 // --gallery only: draw cards with the two mock-up proposals.
 void uk_card_mockup(bool on);
 bool uk_card_mockup_on(void);
-// A row of label-sized buttons from (x, y); returns the width drawn.
-int  uk_buttons(int x, int y, const char *const labels[], const bool disabled[], int n, int cursor, int touch_list,
-                int touch_base);
-int  uk_buttons_width(const char *const labels[], int n);
-#define UK_BUTTON_H 48
 
 #endif
