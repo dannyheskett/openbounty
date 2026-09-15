@@ -62,35 +62,32 @@ static bool prompt_row(void *ctx, int i, char *label, char *right, int cap) {
 
 // Troops wishing to join: an in-lay with their portrait at 2x, the words
 // beside it, Yes / No along the foot.
-static bool draw_join_inlay(const PromptView *p) {
-    if (p->kind != PK_YES_NO || pending_flow != FLOW_ACCEPT_FRIENDLY) return false;
-    const Sprites *s = modern_overlay_sprites();
-    const TroopDef *t = pending_dwelling_troop[0] ? troop_by_id(pending_dwelling_troop) : NULL;
-    if (!s || !t) return false;
-    Texture2D face = s->troop_portrait[t->index].id ? s->troop_portrait[t->index] : s->troop_sprite[t->index];
-    if (!face.id) return false;
-    const int size = 2 * CL_TILE_W, w = UK_INLAY_W;
+static void draw_yes_no_card(const PromptView *p, Texture2D face) {
+    const Resources *res = resources_current();
     UkDoc d = { 0 };
     uk_doc_add(&d, p->body, PAL_CLR(WHITE));
-    ML_Rect probe = { 0, 0, w - 2 * UK_INSET, 0 };
-    int body = uk_doc_height(&d, probe, size, size);
-    if (body < size) body = size;
-    int h = 2 * UK_INSET + body + ML_PAD + UK_BAND + ml_list_height(2);
-    ML_Rect a = ml_area();
-    int x = a.x + (a.w - w) / 2, y = a.y + (a.h - h) / 2;
-    uk_panel(x, y, w, h);
-    ML_Rect b = { x, y, w, h };
-    RowCtx ctx = { p, w - 2 * ML_PAD };
-    int foot = uk_foot_rows(b, 2, p->yn_cursor, prompt_row, &ctx, TOUCH_LIST_PROMPT);
-    uk_picture(face, x + UK_INSET, y + UK_INSET, size, size);
-    ML_Rect ta = { x + UK_INSET, y + UK_INSET, w - 2 * UK_INSET, foot - ML_PAD - (y + UK_INSET) };
-    uk_doc_draw(&d, ta, size, size, -1, true);
-    return true;
+    ML_Rect area = ml_area();
+    bool over_screen = area.w == ml_full().w && area.h == ml_full().h;
+    UkCard c = { .title = p->header, .face = face, .doc = &d,
+                 .answers = { res ? res->ui.prompt_yes : "Yes", res ? res->ui.prompt_no : "No" },
+                 .n_answers = 2, .cursor = p->yn_cursor, .touch_list = TOUCH_LIST_PROMPT,
+                 .at_foot = !over_screen && !face.id, .no_dim = !over_screen };
+    uk_card(&c, NULL);
+}
+
+// Troops wishing to join: their portrait at 2x beside the words.
+static Texture2D join_face(const PromptView *p) {
+    if (p->kind != PK_YES_NO || pending_flow != FLOW_ACCEPT_FRIENDLY) return (Texture2D){ 0 };
+    const Sprites *s = modern_overlay_sprites();
+    const TroopDef *t = pending_dwelling_troop[0] ? troop_by_id(pending_dwelling_troop) : NULL;
+    if (!s || !t) return (Texture2D){ 0 };
+    return s->troop_portrait[t->index].id ? s->troop_portrait[t->index] : s->troop_sprite[t->index];
 }
 
 void modern_prompt_draw(const PromptView *p) {
     if (!p || p->kind == PK_NONE) return;
-    if (draw_join_inlay(p)) return;
+    // A Yes/No question is a card: its words, then Yes and No as buttons.
+    if (p->kind == PK_YES_NO) { draw_yes_no_card(p, join_face(p)); return; }
 
     const int BAND = 4;
     const int INSET = UK_INSET;

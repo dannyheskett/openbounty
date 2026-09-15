@@ -118,7 +118,18 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
 
     // ---- the map and its panels ----------------------------------------------
     reset(&G); shot(&G, "01_map");
-    reset(&G); toast_show(ui->toast_save_ok); shot(&G, "02_map_toast");
+    reset(&G);
+    {
+        // A save: the message src/main.c sends after the slot is written.
+        char sbody[RES_BANNER_LEN], dd[12];
+        snprintf(dd, sizeof dd, "%d", g->stats.days_left);
+        ResTemplateVar sv[] = { { "SLOT", "2" }, { "NAME", g->character.name },
+                                { "RANK", g->character.cls.rank_title }, { "DAYS", dd } };
+        resources_format_template(sbody, sizeof sbody, bn->save_done, sv, 4);
+        player_io_message(g, bn->save_done_title, sbody);
+        shell_pump_player_io_message(g);
+    }
+    shot(&G, "02_map_toast");
     char tb[RES_BANNER_LEN];
     ResTemplateVar vars[] = { { "DAYS", "10" }, { "ZONE", "Italia" }, { "X", "12" }, { "Y", "40" },
                               { "COST", "2500" }, { "HERO", g->character.name } };

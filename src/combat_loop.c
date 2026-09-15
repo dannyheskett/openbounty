@@ -342,7 +342,15 @@ static void combat_action_menu_draw(const Combat *c, const Game *g) {
     }
     ML_Rect r = ml_large();
     int cursor = s_act_cursor[d] < p.n ? s_act_cursor[d] : p.n - 1;
-    gm_draw_page(&p, path, "", r.x, r.y, 480, r.h, 0, cursor,
+    int menu_w = 400;
+    for (int id = CM_ROOT; id <= CM_GAME; id++) {
+        GmPage pi;
+        combat_menu_page(c, g, id, &pi);
+        int pw = gm_page_width(&pi, path);
+        if (pw > menu_w) menu_w = pw;
+    }
+    if (uk_card_mockup_on()) menu_w = UK_INLAY_W;
+    gm_draw_page(&p, path, "", r.x, r.y, menu_w, r.h, 0, cursor,
                  TOUCH_LIST_COMBAT_ACTIONS, NULL, NULL);
 }
 

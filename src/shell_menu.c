@@ -25,7 +25,10 @@ bool menu_save(void *ud) {
     }
     SaveResult r = SaveGameWrite(path, c->game, c->map, c->fog);
     SavePathFlush();
-    if (r == SAVE_OK) toast_show(c->res->ui.toast_save_ok);
+    if (r == SAVE_OK) {
+        // Modern says it in a message (src/main.c); legacy keeps the toast.
+        if (!CL_IS_MODERN) toast_show(c->res->ui.toast_save_ok);
+    }
     else toast_with_reason(c->res->ui.toast_save_failed, SaveResultText(r));
     return true;
 }

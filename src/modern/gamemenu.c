@@ -46,6 +46,23 @@ static bool page_row(void *ctx, int i, char *label, char *right, int cap) {
     return it->enabled;
 }
 
+int gm_page_width(const GmPage *p, const char *path) {
+    // The widest row (its label, the submenu mark and its key) and the path.
+    int w = bfont_text_width(path ? path : "") + 2 * ML_PAD + 12 * BFONT_GLYPH_W;
+    for (int i = 0; i < p->n; i++) {
+        char label[96], right[48];
+        page_row((void *)p, i, label, right, (int)sizeof label);
+        int need = bfont_text_width(label) + (right[0] ? bfont_text_width(right) + 4 * BFONT_GLYPH_W : 0) + 4 * ML_PAD;
+        if (need > w) w = need;
+    }
+    // And room for every description in two lines.
+    for (int i = 0; i < p->n; i++) {
+        int need = (p->item[i].desc ? bfont_text_width(p->item[i].desc) : 0) / 2 + 4 * BFONT_GLYPH_W + 2 * UK_INSET;
+        if (need > w) w = need;
+    }
+    return w < 400 ? 400 : w;
+}
+
 void gm_draw_page(const GmPage *p, const char *path, const char *right_title,
                   int x, int y, int w, int h, int list_w, int cursor, int touch_list,
                   MlRowFn row_fn, void *row_ctx) {
@@ -71,7 +88,7 @@ void gm_draw_page(const GmPage *p, const char *path, const char *right_title,
         // A long page: the full height, and the description as few lines as fit.
         max_h = area.h;
         pad = ML_PAD;
-        while (foot_lines > 1 && head + rows_h + UK_BAND + 2 * pad + foot_lines * lh - 2 > max_h) foot_lines--;
+        if (foot_lines > 2) foot_lines = 2;       // the description keeps two lines; the rows scroll
         foot_h = UK_BAND + 2 * pad + foot_lines * lh - 2;
         if (head + rows_h + foot_h > max_h) rows_h = ml_list_height(ml_list_fit(max_h - head - foot_h));
     }
@@ -113,7 +130,25 @@ static struct {
     int      cheat;
 } gm = { .cheat = -1 };
 
+static bool s_quit_after_save;
+
+void modern_gamemenu_open_save(bool then_quit) {
+    // Straight to the save slots (Back closes the menu), and remember whether
+    // this save was asked for by Save and Quit.
+    gm.page[0] = GM_PAGE_SAVE;
+    gm.cursor[0] = 0;
+    gm.depth = 1;
+    s_quit_after_save = then_quit;
+}
+
+bool modern_gamemenu_take_quit_after_save(void) {
+    bool q = s_quit_after_save;
+    s_quit_after_save = false;
+    return q;
+}
+
 void modern_gamemenu_open(bool debug) {
+    s_quit_after_save = false;
     memset(gm.page, 0, sizeof gm.page);
     memset(gm.cursor, 0, sizeof gm.cursor);
     gm.depth = 1;
@@ -307,6 +342,17 @@ void modern_gamemenu_draw(const Game *g) {
     bool slots = gm.page[d] == GM_PAGE_SAVE || gm.page[d] == GM_PAGE_LOAD;
     int cursor = gm.cursor[d] < p.n ? gm.cursor[d] : p.n - 1;
     ML_Rect r = ml_full();
-    gm_draw_page(&p, path, z ? z->name : "", r.x, r.y, slots ? 656 : UK_INLAY_W, r.h, 0, cursor, TOUCH_LIST_MENU,
+    // One width for the whole menu (every page but the save slots, which are
+    // wider rows), so it keeps its size as you go in and out of its pages.
+    int menu_w = 400;
+    for (int id = GM_PAGE_ROOT; id <= GM_PAGE_DEBUG; id++) {
+        if (id == GM_PAGE_SAVE || id == GM_PAGE_LOAD || (id == GM_PAGE_DEBUG && !gm.debug)) continue;
+        GmPage pi;
+        modern_gamemenu_page(g, (GmPageId)id, &pi);
+        int pw = gm_page_width(&pi, path);
+        if (pw > menu_w) menu_w = pw;
+    }
+    if (uk_card_mockup_on()) menu_w = UK_INLAY_W;
+    gm_draw_page(&p, path, z ? z->name : "", r.x, r.y, slots ? 656 : menu_w, r.h, 0, cursor, TOUCH_LIST_MENU,
                  slots ? slot_row : NULL, &p);
 }

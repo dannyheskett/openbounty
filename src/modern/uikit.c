@@ -127,21 +127,21 @@ bool uk_rows_fn(void *ctx, int i, char *label, char *right, int cap) {
 // ---- the place scene ---------------------------------------------------------------
 
 UkScene uk_scene(const char *title, const char *right, Texture2D bd, int rows) {
-    return uk_scene_ex(title, right, bd, rows, 2 * GH);
+    return uk_scene_ex(title, right, bd, rows, 2 * uk_line_h() + 2 * ML_PAD);
 }
 
 UkScene uk_scene_for(const char *title, const char *right, Texture2D bd, int rows, const char *intro) {
     int n = uk_lines(intro, ml_full().w - 2 * ML_PAD);
     if (n < 2) n = 2;
     if (n > 3) n = 3;
-    return uk_scene_ex(title, right, bd, rows, n * GH);
+    return uk_scene_ex(title, right, bd, rows, n * uk_line_h() + 2 * ML_PAD);
 }
 
 UkScene uk_scene_ex(const char *title, const char *right, Texture2D bd, int rows, int intro_min) {
     UkScene L;
     L.full = ml_full();
     ML_Rect r = L.full;
-    L.rows = rows < 2 ? 2 : rows;
+    L.rows = rows < 1 ? 1 : rows;
     DrawRectangle(r.x, r.y, r.w, r.h, uk_fill());
     int top = uk_title(r.x, r.y, r.w, title, right, PAL_CLR(YELLOW));
     L.scale = r.w / ML_BACKDROP_W;
@@ -152,7 +152,7 @@ UkScene uk_scene_ex(const char *title, const char *right, Texture2D bd, int rows
     L.rows_y = r.y + r.h - rows_h;
     // Whatever the rows and the introduction need comes off the backdrop's top,
     // in whole source pixels so the art stays square.
-    int room = L.rows_y - ML_ROW_RULE - intro_min - top;
+    int room = L.rows_y - ML_ROW_RULE - intro_min - UK_BAND - top;
     L.trim = 0;
     if (bh > room) {
         int src_cut = (bh - room + L.scale - 1) / L.scale;
@@ -172,7 +172,9 @@ UkScene uk_scene_ex(const char *title, const char *right, Texture2D bd, int rows
         lattice_band_v(r.x, top, side, L.scene.h);
         lattice_band_v(L.scene.x + L.scene.w, top, r.x + r.w - (L.scene.x + L.scene.w), L.scene.h);
     }
-    L.intro_y = L.scene.y + L.scene.h;
+    // A lattice divider between the backdrop and the words under it.
+    lattice_band_h(r.x, L.scene.y + L.scene.h, r.w, UK_BAND);
+    L.intro_y = L.scene.y + L.scene.h + UK_BAND;
     L.intro_h = L.rows_y - ML_ROW_RULE - L.intro_y;
     lattice_band_h(r.x, L.rows_y - ML_ROW_RULE, r.w, ML_ROW_RULE);
     return L;
@@ -206,10 +208,10 @@ void uk_scene_intro(const UkScene *L, const char *text) {
     char l[3][200];
     int n = 0;
     while (n < 3 && *p && bfont_take_line(&p, w, l[n], (int)sizeof l[n]) > 0) n++;
-    int fit = L->intro_h / GH;
+    int fit = L->intro_h / uk_line_h();
     if (n > fit) n = fit;
-    int y = L->intro_y + (L->intro_h - n * GH) / 2;
-    for (int i = 0; i < n; i++) bfont_draw(l[i], r.x + ML_PAD, y + i * GH, PAL_CLR(WHITE));
+    int y = L->intro_y + (L->intro_h - n * uk_line_h()) / 2;
+    for (int i = 0; i < n; i++) bfont_draw(l[i], r.x + ML_PAD, y + i * uk_line_h(), PAL_CLR(WHITE));
 }
 
 void uk_scene_rows(const UkScene *L, int n, int cursor, MlRowFn fn, void *ctx, int touch_list) {
@@ -225,8 +227,6 @@ void uk_scene_split_n(const UkScene *L, const char *text, const char *labels[], 
     const ML_Rect r = L->full;
     int top = L->intro_y, bottom = r.y + r.h;
     DrawRectangle(r.x, top, r.w, bottom - top, uk_fill());
-    lattice_band_h(r.x, top, r.w, UK_BAND);
-    top += UK_BAND;
     if (n < 1) n = 1;
     if (n > 4) n = 4;
     // The buttons: two side by side; three or more stacked, so the words keep
@@ -285,47 +285,29 @@ void uk_scene_split_n(const UkScene *L, const char *text, const char *labels[], 
 
 void uk_count_inlay(const char *title, Texture2D face, const char *lines[], Color colors[], int nlines,
                     int value, int max, const char *act_label, const char *cancel_label, int touch_list) {
-    // The picture and its words, the count row across the width under them,
-    // then the two rows.
-    const int size = 2 * CL_TILE_W;
-    int ch = ml_count_buttons_height();
-    int h = uk_title_h() + UK_BAND + UK_INSET + size + UK_INSET + ch + UK_INSET + UK_BAND + ml_list_height(2);
-    ML_Rect b = uk_inlay(UK_INLAY_W, h, title, NULL);
-    int px = b.x + UK_INSET, py = b.y + UK_INSET;
-    int text_x = px + size + UK_INSET, text_w = b.x + b.w - UK_INSET - text_x;
-    UkRows rows = { { act_label, cancel_label }, { true, true } };
-    int foot = uk_foot_rows(b, 2, 0, uk_rows_fn, &rows, touch_list);
-    int by = foot - UK_INSET - ch;
-    uk_picture(face, px, py, size, size);
-    int y = py;
+    // A card: the troop at 2x and what is on offer beside it, the count row
+    // across the card, then Recruit and Cancel.
+    UkDoc d = { 0 };
     for (int i = 0; i < nlines; i++) {
         if (!lines[i]) continue;
-        if (!lines[i][0]) { y += GH / 2; continue; }
-        y = uk_flow(text_x, y, text_w, text_x, 0, py + size, lines[i], colors ? colors[i] : PAL_CLR(WHITE));
+        if (!lines[i][0]) { uk_doc_gap(&d); continue; }
+        uk_doc_add(&d, lines[i], colors ? colors[i] : PAL_CLR(WHITE));
     }
-    ml_count_buttons(b.x + UK_INSET, by, b.w - 2 * UK_INSET, value, max);
+    UkCard c = { .title = title, .face = face, .doc = &d, .answers = { act_label, cancel_label },
+                 .n_answers = 2, .cursor = 0, .touch_list = touch_list,
+                 .extra_h = ml_count_buttons_height(), .min_w = UK_INLAY_W };
+    UkCardOut o;
+    uk_card(&c, &o);
+    ml_count_buttons(o.extra.x, o.extra.y, o.extra.w, value, max);
 }
 
 void uk_result_inlay(const char *title, Texture2D face, const char *text, const char *row_label,
                      int touch_list) {
-    // As tall as the picture or the words, whichever is taller.
-    const int size = 2 * CL_TILE_W;
     UkDoc d = { 0 };
     uk_doc_add(&d, text, PAL_CLR(WHITE));
-    int w = UK_INLAY_W - 2 * UK_INSET;
-    ML_Rect probe = { 0, 0, w, 0 };
-    int body = uk_doc_height(&d, probe, face.id ? size : 0, size);
-    if (face.id && body < size) body = size;
-    if (body < 3 * uk_line_h()) body = 3 * uk_line_h();
-    int h = uk_title_h() + UK_BAND + 2 * UK_INSET + body + ML_PAD + UK_BAND + ml_list_height(1);
-    if (h > UK_TALL_H) h = UK_TALL_H;
-    ML_Rect b = uk_inlay(UK_INLAY_W, h, title, NULL);
-    UkRows rows = { { row_label }, { true } };
-    int foot = uk_foot_rows(b, 1, 0, uk_rows_fn, &rows, touch_list);
-    ML_Rect a = { b.x + UK_INSET, b.y + UK_INSET, w, foot - ML_PAD - (b.y + UK_INSET) };
-    int pic = size < a.h ? size : a.h;
-    if (face.id) uk_picture(face, a.x, a.y, pic, pic);
-    uk_doc_draw(&d, a, face.id ? pic : 0, pic, -1, true);
+    UkCard c = { .title = title, .face = face, .doc = &d, .answers = { row_label }, .n_answers = 1,
+                 .cursor = 0, .touch_list = touch_list };
+    uk_card(&c, NULL);
 }
 
 // ---- paged words beside a picture ------------------------------------------------
@@ -359,10 +341,11 @@ void uk_doc_labeled(UkDoc *d, const char *tmpl, const char *value) {
     }
 }
 
-static int s_doc_h;
+static int s_doc_h, s_doc_last_w, s_doc_prev_w;   // the last layout's height and its last two lines' widths
 
 int uk_doc_height(const UkDoc *d, ML_Rect a, int pic_w, int pic_h) {
     a.h = 100000;
+    s_doc_last_w = s_doc_prev_w = 0;
     uk_doc_draw(d, a, pic_w, pic_h, -1, false);
     return s_doc_h;
 }
@@ -397,6 +380,8 @@ int uk_doc_draw(const UkDoc *d, ML_Rect a, int pic_w, int pic_h, int page, bool 
             int lw = a.x + a.w - lx;
             const char *start = p;
             if (bfont_take_line(&p, lw, line, (int)sizeof line) <= 0) break;
+            s_doc_prev_w = s_doc_last_w;
+            s_doc_last_w = (lx - a.x) + bfont_text_width(line);
             if (draw && pages - 1 == page) {
                 int lab = first ? d->label[i] : 0;
                 int n = (int)strlen(line);
@@ -432,4 +417,160 @@ int uk_doc_draw(const UkDoc *d, ML_Rect a, int pic_w, int pic_h, int page, bool 
         if (page + 1 < pages) touch_region(nx - 8, py - 8, aw + 16, GH + 16, KEY_DOWN);
     }
     return pages;
+}
+
+// ---- the card --------------------------------------------------------------------
+
+static int button_w(const char *label) {
+    int w = bfont_text_width(label ? label : "") + 2 * UK_INSET;
+    return w < 96 ? 96 : w;
+}
+
+int uk_buttons_width(const char *const labels[], int n) {
+    int w = 0;
+    for (int i = 0; i < n; i++) w += button_w(labels[i]) + (i ? UK_INSET : 0);
+    return w;
+}
+
+int uk_buttons(int x, int y, const char *const labels[], const bool disabled[], int n, int cursor, int touch_list,
+               int touch_base) {
+    int cx = x;
+    for (int i = 0; i < n; i++) {
+        int w = button_w(labels[i]);
+        bool sel = i == cursor, off = disabled && disabled[i];
+        Color edge = off ? (Color){ 80, 70, 50, 255 } : (Color){ 200, 160, 60, 255 };
+        if (sel && !off) DrawRectangle(cx, y, w, UK_BUTTON_H, PAL_CLR(YELLOW));
+        else {
+            DrawRectangleLines(cx, y, w, UK_BUTTON_H, sel ? PAL_CLR(YELLOW) : edge);
+            if (sel) DrawRectangleLines(cx + 1, y + 1, w - 2, UK_BUTTON_H - 2, PAL_CLR(YELLOW));
+        }
+        const char *lab = labels[i] ? labels[i] : "";
+        bfont_draw(lab, cx + (w - bfont_text_width(lab)) / 2, y + (UK_BUTTON_H - bfont_line_height()) / 2,
+                   (sel && !off) ? uk_ink() : off ? PAL_CLR(DGREY) : PAL_CLR(WHITE));
+        if (touch_list && !off) touch_region_row(cx, y, w, UK_BUTTON_H, touch_list, touch_base + i);
+        cx += w + UK_INSET;
+    }
+    return cx - x - (n ? UK_INSET : 0);
+}
+
+// --gallery mock-up: the conforming card (see uk_card_conform).
+static bool s_card_mockup;
+void uk_card_mockup(bool on) { s_card_mockup = on; }
+bool uk_card_mockup_on(void) { return s_card_mockup; }
+
+// The conforming card: one width (576), a title strip always, the picture at
+// top-left, the words from the same spot, the buttons in a row along the
+// bottom at the right, centred on what is behind it, its body at least the
+// picture's height and growing by whole lines.
+static void uk_card_conform(const UkCard *c, UkCardOut *out) {
+    ML_Rect a = ml_area();
+    const Resources *res = resources_current();
+    const int pic = c->face.id ? 2 * CL_TILE_W : 0;
+    const int inset = UK_INSET, gap = ML_PAD + 4, lh = uk_line_h();
+    const char *title = (c->title && c->title[0]) ? c->title
+                      : !res ? "" : c->n_answers >= 2 ? res->banners.card_title_question : res->banners.card_title_message;
+    int w = c->min_w > UK_INLAY_W ? c->min_w : UK_INLAY_W;
+    int cx_off = inset + (pic ? pic + inset : 0);
+    int col = w - cx_off - inset;
+    ML_Rect probe = { 0, 0, col, 0 };
+    int words_h = c->doc ? uk_doc_height(c->doc, probe, 0, 0) : 0;
+    words_h = (words_h + lh - 1) / lh * lh;
+    int body_h = words_h > pic ? words_h : pic;
+    int head = uk_title_h() + UK_BAND;
+    int extra_block = c->extra_h ? gap + c->extra_h : 0;
+    int answers_h = c->n_answers > 0 ? gap + UK_BUTTON_H : 0;
+    int h = head + 2 * inset + body_h + extra_block + answers_h;
+    if (h > a.h - 2 * ml_space()) h = a.h - 2 * ml_space();
+    int x = a.x + (a.w - w) / 2, y = a.y + (a.h - h) / 2;
+    if (!c->no_dim || c->at_foot) uk_dim();
+    uk_panel(x, y, w, h);
+    int top = uk_title(x, y, w, title, c->right, PAL_CLR(YELLOW));
+    int bx = x + inset, by = top + inset;
+    if (pic) uk_picture(c->face, bx, by, pic, pic);
+    if (c->doc) {
+        ML_Rect area = { x + cx_off, by, col, (y + h) - inset - by };
+        uk_doc_draw(c->doc, area, 0, 0, -1, true);
+    }
+    int ey = by + body_h + gap;
+    if (out) {
+        out->card = (ML_Rect){ x, y, w, h };
+        out->extra = (ML_Rect){ bx, ey, w - 2 * inset, c->extra_h };
+    }
+    if (c->n_answers > 0) {
+        int bw = uk_buttons_width(c->answers, c->n_answers);
+        uk_buttons(x + w - inset - bw, y + h - inset - UK_BUTTON_H, c->answers, c->disabled, c->n_answers,
+                   c->cursor, c->touch_list, c->touch_base);
+    }
+}
+
+void uk_card(const UkCard *c, UkCardOut *out) {
+    if (s_card_mockup) { uk_card_conform(c, out); return; }
+    ML_Rect a = ml_area();
+    const int pic = c->face.id ? 2 * CL_TILE_W : 0;
+    const int inset = UK_INSET, gap = ML_PAD + 4;
+    int head = (c->title && c->title[0]) || (c->right && c->right[0]) ? uk_title_h() + UK_BAND : 0;
+    int bw = c->n_answers > 0 ? uk_buttons_width(c->answers, c->n_answers) : 0;
+    int answers_h = c->n_answers > 0 ? gap + UK_BUTTON_H : 0;
+    int max_w = a.w - 2 * ml_space();
+    int col_max = max_w - 2 * inset - (pic ? pic + inset : 0);
+    if (col_max > 40 * BFONT_GLYPH_W) col_max = 40 * BFONT_GLYPH_W;
+    int col_min = 20 * BFONT_GLYPH_W;
+    if (col_min < bw && c->extra_h == 0) col_min = bw;
+    int want_min = c->min_w - 2 * inset - (pic ? pic + inset : 0);
+    if (col_min < want_min) col_min = want_min;
+    if (col_min > col_max) col_min = col_max;
+    // The words' natural width on one line, for a card without a picture.
+    int natural = 0;
+    for (int i = 0; c->doc && i < c->doc->n; i++) {
+        int tw = bfont_text_width(c->doc->pool + c->doc->off[i]);
+        if (tw > natural) natural = tw;
+    }
+    ML_Rect probe = { 0, 0, 0, 0 };
+    int col = col_min, words_h = 0;
+    if (pic) {
+        // The narrowest column whose words and answers fit beside the picture;
+        // failing that, the widest (the fewest lines).
+        col = col_max;
+        for (int w = col_min; w <= col_max; w += BFONT_GLYPH_W) {
+            probe.w = w;
+            int h = c->doc ? uk_doc_height(c->doc, probe, 0, 0) : 0;
+            if (h + (c->extra_h ? 0 : answers_h) <= pic) { col = w; break; }
+        }
+    } else {
+        col = natural + 2;
+        if (col < col_min) col = col_min;
+        if (col > col_max) col = col_max;
+    }
+    probe.w = col;
+    words_h = c->doc ? uk_doc_height(c->doc, probe, 0, 0) : 0;
+    int column_h = words_h + (c->extra_h ? 0 : answers_h);
+    int body_h = column_h > pic ? column_h : pic;
+    int w = 2 * inset + (pic ? pic + inset : 0) + col;
+    if (w < c->min_w) w = c->min_w;
+    if (w > max_w) w = max_w;
+    int extra_block = c->extra_h ? gap + c->extra_h + answers_h : 0;
+    int h = head + 2 * inset + body_h + extra_block;
+    if (h > a.h - 2 * ml_space()) h = a.h - 2 * ml_space();
+    int x = a.x + (a.w - w) / 2;
+    int y = c->at_foot ? a.y + a.h - ml_space() - h : a.y + (a.h - h) / 2;
+    if (!c->no_dim && !c->at_foot) uk_dim();
+    uk_panel(x, y, w, h);
+    int top = head ? uk_title(x, y, w, c->title, c->right, PAL_CLR(YELLOW)) : y;
+    int bx = x + inset, by = top + inset;
+    if (pic) uk_picture(c->face, bx, by, pic, pic);
+    int cx = bx + (pic ? pic + inset : 0), cw = x + w - inset - cx;
+    if (c->doc) {
+        ML_Rect area = { cx, by, cw, (y + h) - inset - by };
+        uk_doc_draw(c->doc, area, 0, 0, -1, true);
+    }
+    int ey = by + body_h + gap;
+    if (out) {
+        out->card = (ML_Rect){ x, y, w, h };
+        out->extra = (ML_Rect){ bx, ey, w - 2 * inset, c->extra_h };
+    }
+    if (c->n_answers > 0) {
+        int ay = c->extra_h ? ey + c->extra_h + gap : by + words_h + gap;
+        int ax = c->extra_h ? bx : cx;
+        uk_buttons(ax, ay, c->answers, c->disabled, c->n_answers, c->cursor, c->touch_list, c->touch_base);
+    }
 }

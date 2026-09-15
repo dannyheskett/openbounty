@@ -1159,6 +1159,13 @@ static bool town_modern_update(Game *g) {
                input_key_pressed(KEY_KP_8)) ? -1
             : (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_S) ||
                input_key_pressed(KEY_KP_2)) ? +1 : 0;
+    // Modern: a service's answers are buttons side by side; Left and Right
+    // move between them.
+    if (!menu && town.list != TOWN_LIST_CONTRACTS &&
+        (input_key_pressed(KEY_LEFT) || input_key_pressed(KEY_RIGHT))) {
+        town.lcursor = town_list_step(g, town.lcursor, input_key_pressed(KEY_LEFT) ? -1 : +1);
+        return true;
+    }
     if (dir && menu) {
         town.cursor = (town.cursor + dir + rows) % rows;
         town.detail_page = 0;

@@ -276,6 +276,8 @@ PromptResult prompt_update(void) {
             SelList l = { 2, g_yn_cursor };
             int row = -1;
             SelEvent ev = sel_input(&l, TOUCH_LIST_PROMPT, 0, &row);
+            // The answers are buttons side by side: Left and Right move too.
+            if (input_key_pressed(KEY_LEFT) || input_key_pressed(KEY_RIGHT)) l.cursor = 1 - l.cursor;
             if (no_evade) l.cursor = 0;          // Evade is not a row to rest on
             g_yn_cursor = l.cursor;
             if (ev == SEL_CONFIRM) {

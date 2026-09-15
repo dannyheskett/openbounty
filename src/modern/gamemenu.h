@@ -48,12 +48,18 @@ GmEvent gm_page_input(const GmPage *p, int *cursor, int touch_list);
 // Draw a page in (x, y, w, h): the path in a title strip, the rows in a column
 // `list_w` wide (scrolling to the cursor), the description beside them.
 // `row_fn` / `row_ctx` may give the rows their own labels (NULL: the items').
+// The width a page's rows need (at least 400).
+int  gm_page_width(const GmPage *p, const char *path);
 void gm_draw_page(const GmPage *p, const char *path, const char *right_title,
                   int x, int y, int w, int h, int list_w, int cursor, int touch_list,
                   MlRowFn row_fn, void *row_ctx);
 
 // ---- the game menu ----------------------------------------------------------------
 void modern_gamemenu_open(bool debug);
+// Open on the save slots (every save goes through them); then_quit: the save
+// was Save and Quit, so it ends with Quit / Continue.
+void modern_gamemenu_open_save(bool then_quit);
+bool modern_gamemenu_take_quit_after_save(void);
 void modern_gamemenu_update(Game *g);    // input while VIEW_MENU is up
 void modern_gamemenu_draw(const Game *g);
 

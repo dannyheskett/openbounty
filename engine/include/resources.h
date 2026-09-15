@@ -452,6 +452,10 @@ typedef struct {
     char class_desc_sorceress[RES_BANNER_LEN];
     char class_desc_barbarian[RES_BANNER_LEN];
     char spell_bridge_prompt_modern[RES_BANNER_LEN];
+    char card_title_message[RES_BANNER_LEN];
+    char card_title_question[RES_BANNER_LEN];
+    char save_done_title[RES_BANNER_LEN];
+    char save_done[RES_BANNER_LEN];
     char town_gold_label[RES_BANNER_LEN];
 
     // Town menu rows. The boat/spell/siege rows toggle between two

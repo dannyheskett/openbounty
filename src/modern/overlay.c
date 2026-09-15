@@ -69,6 +69,8 @@ static DialogFit dialog_fit(bool force_large) {
     for (int pass = force_large ? 1 : 0; pass < 2; pass++) {
         f.r = pass ? ml_large() : ml_small();
         int max_w = f.r.w - 2 * UK_INSET;
+        if (max_w > 40 * GW) max_w = 40 * GW;      // the card's widest column
+        if (uk_card_mockup_on()) max_w = UK_INLAY_W - 2 * UK_INSET;
         int cap = (f.r.h - 2 * UK_INSET) / GH;
         f.header_lines = (hdr && hdr[0]) ? wrapped_lines(hdr, max_w) : 0;
         int body_lines = wrapped_lines(body, max_w);
@@ -124,60 +126,45 @@ static void draw_dialog_ex(DialogMode mode) {
     char line[200];
 
     if (mode == DLG_MODE_CENTERED_MODAL) {
-        // Victory: an in-lay sized to its words, the header as its title.
-        int w = UK_INLAY_W;
-        max_w = w - 2 * UK_INSET;
-        int lines = wrapped_lines(body, max_w);
-        int h = uk_title_h() + UK_BAND + 2 * UK_INSET + (lines < 2 ? 2 : lines) * uk_line_h();
-        ML_Rect b = uk_inlay(w, h, hdr, NULL);
-        uk_flow(b.x + UK_INSET, b.y + UK_INSET, max_w, b.x, 0, b.y + b.h, body, PAL_CLR(WHITE));
+        // Victory: a card sized to its words, the header as its title.
+        UkDoc d = { 0 };
+        uk_doc_add(&d, body, PAL_CLR(WHITE));
+        UkCard c = { .title = hdr, .doc = &d };
+        uk_card(&c, NULL);
         return;
     }
 
-    // Along the pane's foot, as tall as the page it shows (two lines at least).
+    // Along the pane's foot: a card as wide as its words and as tall as the
+    // page it shows. The words are cut into pages at the card's widest column.
     DialogFit f = dialog_fit(false);
-    ML_Rect r = f.r;
-    max_w = r.w - 2 * UK_INSET;
+    max_w = f.r.w - 2 * UK_INSET;
+    if (max_w > 40 * GW) max_w = 40 * GW;
+    if (uk_card_mockup_on()) max_w = UK_INLAY_W - 2 * UK_INSET;
     const char *p = body ? body : "";
     int skip = dialog_page_current() * f.body_per_page;
     for (int i = 0; i < skip && *p; i++)
         if (bfont_take_line(&p, max_w, line, (int)sizeof line) <= 0) break;
-    int page_lines = 0;
-    {
-        const char *q = p;
-        while (*q && page_lines < f.body_per_page && bfont_take_line(&q, max_w, line, (int)sizeof line) > 0)
-            page_lines++;
-    }
-    int lines = f.header_lines + page_lines;
-    if (lines < 2) lines = 2;
-    int btn_h = save ? GH + 8 + ML_PAD : 0;
-    int h = 2 * UK_INSET + lines * GH + btn_h;
-    if (h > r.h && r.h == ml_small().h) h = r.h;
-    int bottom = r.y + r.h;
-    r.y = bottom - h;
-    r.h = h;
-    uk_panel(r.x, r.y, r.w, r.h);
-
-    int tx = r.x + UK_INSET, ty = r.y + UK_INSET;
+    UkDoc d = { 0 };
     const char *hp = hdr ? hdr : "";
     for (int i = 0; i < f.header_lines && *hp; i++) {
         if (bfont_take_line(&hp, max_w, line, (int)sizeof line) <= 0) break;
-        bfont_draw(line, tx, ty, PAL_CLR(YELLOW));
-        ty += GH;
+        uk_doc_add(&d, line, PAL_CLR(YELLOW));
     }
     for (int i = 0; i < f.body_per_page && *p; i++) {
         if (bfont_take_line(&p, max_w, line, (int)sizeof line) <= 0) break;
-        bfont_draw(line, tx, ty, PAL_CLR(WHITE));
-        ty += GH;
+        uk_doc_add(&d, line, PAL_CLR(WHITE));
     }
+    UkCard c = { .doc = &d, .at_foot = !(res && save), .extra_h = save ? GH + 8 : 0, .no_dim = true };
+    UkCardOut o;
+    uk_card(&c, &o);
 
     // The save message offers its two ways on: Quit and Continue.
     if (save) {
         const ResUI *ui = &res->ui;
-        int by = r.y + r.h - UK_INSET - (GH + 8);
+        int by = o.extra.y;
         int cw = ml_hint_width(ui->hint_continue, NULL, NULL);
         int qw = ml_hint_width(ui->hint_quit, ui->key_ctrl_q, NULL);
-        int bx = r.x + r.w - UK_INSET - cw;
+        int bx = o.extra.x + o.extra.w - cw;
         ml_hint_button(bx, by, ui->hint_continue, NULL, NULL, KEY_ENTER);
         ml_hint_button(bx - ML_PAD - qw, by, ui->hint_quit, ui->key_ctrl_q, NULL, KEY_Q);
     }
@@ -223,21 +210,19 @@ static void draw_face_dialog(void) {
     else if (kind == REQ_FACE_ARTIFACT && s && idx >= 0 && idx < 8) face = s->view_icon[idx];
     else if (kind == REQ_FACE_PORTRAIT)                           face = portrait_frame(s, idx, 2.0);
     if (kind == REQ_FACE_SCENE && s && idx >= 0 && idx < 4 && s->class_disgraced[idx].id) {
-        // A scene: the whole screen, the backdrop at 3x with the words under
-        // it and Continue along the foot.
-        ml_set_area(ML_AREA_FULL);
-        const Texture2D bd = s->class_disgraced[idx];
-        const int bw = 3 * ML_BACKDROP_W, bh = 3 * ML_BACKDROP_H;
+        // A scene, framed like a place: the title strip, the backdrop at 3x
+        // with the lattice either side, a divider, the words, Continue.
         const char *hdr = dialog_header_text();
-        int text_w = bw - 2 * UK_INSET;
-        int lines = wrapped_lines(dialog_body_text(), text_w);
-        int h = uk_title_h() + UK_BAND + bh + 2 * UK_INSET + lines * uk_line_h()
-              + UK_BAND + ml_list_height(1);
-        ML_Rect b = uk_inlay(bw, h, hdr, NULL);
-        ui_blit(bd, b.x, b.y, bw, bh);
+        const char *title = (hdr && hdr[0]) ? hdr : "";
+        for (int i = 0; !title[0] && i < res->castle_count; i++)
+            if (resources_castle_is_home(&res->castles[i])) title = res->castles[i].name;
+        const char *body = dialog_body_text();
+        int lines = wrapped_lines(body, ml_full().w - 2 * ML_PAD);
+        UkScene L = uk_scene_ex(title, NULL, s->class_disgraced[idx], 1, lines * uk_line_h() + 3 * ML_PAD);
+        uk_flow(L.full.x + ML_PAD, L.intro_y + ML_PAD, L.full.w - 2 * ML_PAD, L.full.x, 0, L.rows_y - ML_ROW_RULE,
+                body, PAL_CLR(WHITE));
         UkRows rows = { { res->banners.castle_continue }, { true } };
-        int foot = uk_foot_rows(b, 1, 0, uk_rows_fn, &rows, TOUCH_LIST_PROMPT);
-        uk_flow(b.x + UK_INSET, b.y + bh + UK_INSET, text_w, b.x, 0, foot, dialog_body_text(), PAL_CLR(WHITE));
+        uk_scene_rows(&L, 1, 0, uk_rows_fn, &rows, TOUCH_LIST_PROMPT);
         return;
     }
     uk_result_inlay(dialog_header_text(), face, dialog_body_text(), res->banners.castle_continue,
@@ -611,28 +596,30 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
     } else {
         // A service: its person at 2x and their words, the service's answer and
         // Back along the foot.
-        // As tall as the picture or the words, whichever is taller.
+        // A service: a card with its person at 2x, their words beside them,
+        // and the service's answer and Back as buttons under the words.
         char t2[128];
         town_title(g, t2, sizeof t2, true);
-        const int size = 2 * CL_TILE_W;
         Texture2D face = portrait_frame(s, town_person(g, list), 2.0);
         if (!face.id && list == TOWN_LIST_BOAT && s) face = s->hud_boat_silhouette;
         UkDoc d = { 0 };
         if (info && info[0]) uk_doc_add(&d, info, PAL_CLR(WHITE));
         else                 compose_service(g, list, &d);
-        ML_Rect probe = { 0, 0, UK_WIDE_W - 2 * UK_INSET, 0 };
-        int body = uk_doc_height(&d, probe, face.id ? size : 0, size);
-        if (face.id && body < size) body = size;
-        int h = uk_title_h() + UK_BAND + 2 * UK_INSET + body + ML_PAD + UK_BAND + ml_list_height(rows);
-        if (h > UK_TALL_H) h = UK_TALL_H;
-        ML_Rect b = uk_inlay(UK_WIDE_W, h, t2, town_zone_name(g));
-        int foot = uk_foot_rows(b, rows, cursor, town_row_fn, &rc, TOUCH_LIST_TOWN);
-        ML_Rect a = { b.x + UK_INSET, b.y + UK_INSET, b.w - 2 * UK_INSET, foot - ML_PAD - (b.y + UK_INSET) };
-        int pic = size < a.h ? size : a.h;
-        if (face.id) uk_picture(face, a.x, a.y, pic, pic);
-        int pages = uk_doc_draw(&d, a, face.id ? pic : 0, pic, 0, false);
-        views_town_set_detail_pages(pages);
-        uk_doc_draw(&d, a, face.id ? pic : 0, pic, views_town_detail_page(), true);
+        static char labels[UK_CARD_ANSWERS][64];
+        UkCard c = { .title = t2, .right = town_zone_name(g), .face = face, .doc = &d,
+                     .cursor = cursor, .touch_list = TOUCH_LIST_TOWN };
+        int first_row = list == TOWN_LIST_INFO ? rows - 1 : 0;   // Information: its castle is words, not an answer
+        for (int i = first_row; i < rows && c.n_answers < UK_CARD_ANSWERS; i++) {
+            bool en = true, held = false;
+            views_town_list_row(g, i, labels[c.n_answers], sizeof labels[c.n_answers], &en, &held);
+            c.answers[c.n_answers] = labels[c.n_answers];
+            c.disabled[c.n_answers] = !en && i != rows - 1;
+            c.n_answers++;
+        }
+        c.cursor = cursor - first_row;
+        c.touch_base = first_row;
+        views_town_set_detail_pages(1);
+        uk_card(&c, NULL);
     }
 
     // A boat, spell or siege outcome: the section's person says it.
@@ -972,18 +959,9 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
             const char *rt = akind == MC_AUD_BLESSING && ares ? bn->castle_action_blessing
                            : akind == MC_AUD_TRIBUTE && ares ? bn->castle_action_tribute
                            : bn->castle_action_promotion;
-            // As tall as the Emperor's picture or his words, whichever is taller.
-            ML_Rect probe = { 0, 0, UK_INLAY_W - 2 * UK_INSET, 0 };
-            int body = uk_doc_height(&rd, probe, emperor.id ? size : 0, size);
-            if (body < size) body = size;
-            int rh = uk_title_h() + UK_BAND + 2 * UK_INSET + body + ML_PAD + UK_BAND + ml_list_height(1);
-            ML_Rect rb = uk_inlay(UK_INLAY_W, rh, rt, NULL);
-            UkRows cont = { { bn->castle_continue }, { true } };
-            int rf = uk_foot_rows(rb, 1, 0, uk_rows_fn, &cont, TOUCH_LIST_PROMPT);
-            ML_Rect ra = { rb.x + UK_INSET, rb.y + UK_INSET, rb.w - 2 * UK_INSET, rf - ML_PAD - (rb.y + UK_INSET) };
-            int rp = size < ra.h ? size : ra.h;
-            if (emperor.id) uk_picture(emperor, ra.x, ra.y, rp, rp);
-            uk_doc_draw(&rd, ra, emperor.id ? rp : 0, rp, -1, true);
+            UkCard c = { .title = rt, .face = emperor, .doc = &rd, .answers = { bn->castle_continue },
+                         .n_answers = 1, .touch_list = TOUCH_LIST_PROMPT };
+            uk_card(&c, NULL);
         }
         return;
     }
@@ -1109,12 +1087,11 @@ void modern_overlay_draw_foe(const Game *g, const Sprites *s) {
             if (fig.id) ui_blit_mirrored(fig, cx - tile / 2, L.scene.y + L.scene.h - fh, tile, fh);
         }
     }
-    lattice_band_h(L.full.x, L.intro_y, L.full.w, UK_BAND);
 
     // A card per troop: portrait, how many (worded as the encounter words it),
     // the name, its hit points and damage.
     const int STRIPES = 5;
-    int top = L.intro_y + UK_BAND;
+    int top = L.intro_y;
     int sw = (L.full.w - (STRIPES - 1) * UK_BAND) / STRIPES;
     int sh = L.rows_y - ML_ROW_RULE - top;
     for (int k = 1; k < STRIPES; k++)
@@ -1251,7 +1228,15 @@ void modern_overlay_draw_controls(const Game *g) {
     if (cur_k > c.vis) cur_k = c.vis;
     int rows = c.vis + 1;
     int h = uk_title_h() + UK_BAND + ml_list_height(rows);
-    ML_Rect b = uk_inlay(UK_INLAY_W, h, g->res->ui.controls_title, NULL);
+    // As wide as its longest setting and value.
+    int w = 400;
+    for (int k = 0; k < rows; k++) {
+        char label[96], right[48] = "";
+        controls_row(&c, k, label, right, (int)sizeof label);
+        int need = bfont_text_width(label) + bfont_text_width(right) + 6 * GW + 2 * ML_PAD;
+        if (need > w) w = need;
+    }
+    ML_Rect b = uk_inlay(w, h, g->res->ui.controls_title, NULL);
     ml_list_draw(b.x, b.y, b.w, b.h, rows, cur_k, controls_row, &c, 0, uk_ink());
     // Taps answer to each row's digit (select and advance in one).
     int vis_rows = ml_list_fit(b.h);

@@ -1277,6 +1277,10 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(class_desc_sorceress, "class_desc_sorceress");
     SET_BANNER(class_desc_barbarian, "class_desc_barbarian");
     SET_BANNER(spell_bridge_prompt_modern, "spell_bridge_prompt_modern");
+    SET_BANNER(card_title_message, "card_title_message");
+    SET_BANNER(card_title_question, "card_title_question");
+    SET_BANNER(save_done_title, "save_done_title");
+    SET_BANNER(save_done, "save_done");
     SET_BANNER(town_gold_label,         "town_gold_label");
     SET_BANNER(town_row_contract,       "town_row_contract");
     SET_BANNER(town_row_boat_rent,      "town_row_boat_rent");

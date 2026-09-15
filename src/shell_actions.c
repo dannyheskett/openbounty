@@ -14,6 +14,7 @@
 #include "tile.h"
 #include "ui.h"
 #include "views.h"
+#include "modern/gamemenu.h"
 
 void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
     Game            *g  = ctx->game;
@@ -61,6 +62,12 @@ void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
     case INPUT_ACTION_OPTIONS_MENU:    views_set(CL_IS_MODERN ? VIEW_MENU : VIEW_OPTIONS); break;
     case INPUT_ACTION_GAME_MENU:       views_set(VIEW_MENU);      break;
     case INPUT_ACTION_SAVE_QUIT: {
+        if (CL_IS_MODERN) {
+            // Modern: every save goes through the slots; Quit / Continue follows.
+            views_set(VIEW_MENU);
+            modern_gamemenu_open_save(true);
+            break;
+        }
         // Q saves unconditionally, then displays a "Press Ctrl-Q to
         // Quit / any other key to continue" dialog. The dialog handler
         // at the bottom of the main loop watches Ctrl-Q to exit.

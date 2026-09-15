@@ -29,6 +29,10 @@ static cJSON *gb_placeholder_strings(void) {
     cJSON_AddStringToObject(o, "class_desc_sorceress", "class_desc_sorceress");
     cJSON_AddStringToObject(o, "class_desc_barbarian", "class_desc_barbarian");
     cJSON_AddStringToObject(o, "spell_bridge_prompt_modern", "spell_bridge_prompt_modern");
+    cJSON_AddStringToObject(o, "card_title_message", "card_title_message");
+    cJSON_AddStringToObject(o, "card_title_question", "card_title_question");
+    cJSON_AddStringToObject(o, "save_done_title", "save_done_title");
+    cJSON_AddStringToObject(o, "save_done", "save_done");
     cJSON_AddStringToObject(o, "town_gold_label", "town_gold_label");
     cJSON_AddStringToObject(o, "town_row_contract", "town_row_contract");
     cJSON_AddStringToObject(o, "town_row_boat_rent", "town_row_boat_rent");

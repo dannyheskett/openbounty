@@ -148,4 +148,42 @@ int  uk_doc_draw(const UkDoc *d, ML_Rect area, int pic_w, int pic_h, int page, b
 // The height the words take in one page at area's width (beside the picture).
 int  uk_doc_height(const UkDoc *d, ML_Rect area, int pic_w, int pic_h);
 
+// ---- the card: the one panel model -------------------------------------------------
+//
+// A framed panel sized to what it holds: an optional title strip; an optional
+// picture, always at 2x, with the words in one column beside it; the answers
+// as label-sized buttons under the words in that column (they follow the words
+// down when the words are longer than the picture); optionally a block the
+// full width of the card between the body and the buttons (the count row).
+// The narrowest column that fits beside the picture is chosen, so short words
+// make a narrow card and long words a wide one.
+
+#define UK_CARD_ANSWERS 4
+typedef struct {
+    const char  *title, *right;               // title strip (NULL: none)
+    Texture2D    face;                        // 2x picture (id 0: none)
+    const UkDoc *doc;                         // the words (may be NULL)
+    const char  *answers[UK_CARD_ANSWERS];    // fixed answers, as buttons
+    bool         disabled[UK_CARD_ANSWERS];
+    int          n_answers, cursor, touch_list;
+    int          touch_base;                  // the first answer's row in touch_list
+    int          extra_h;                     // full-width block under the body (0: none)
+    int          min_w;                       // the card at least this wide
+    bool         at_foot;                     // on the area's foot (the map), else centred
+    bool         no_dim;
+} UkCard;
+
+typedef struct { ML_Rect card; ML_Rect extra; } UkCardOut;
+
+// Lay out and draw the card; out (may be NULL) gives the extra block's rect.
+void uk_card(const UkCard *c, UkCardOut *out);
+// --gallery only: draw cards with the two mock-up proposals.
+void uk_card_mockup(bool on);
+bool uk_card_mockup_on(void);
+// A row of label-sized buttons from (x, y); returns the width drawn.
+int  uk_buttons(int x, int y, const char *const labels[], const bool disabled[], int n, int cursor, int touch_list,
+                int touch_base);
+int  uk_buttons_width(const char *const labels[], int n);
+#define UK_BUTTON_H 48
+
 #endif
