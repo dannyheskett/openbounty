@@ -218,42 +218,66 @@ void uk_scene_rows(const UkScene *L, int n, int cursor, MlRowFn fn, void *ctx, i
 }
 
 void uk_scene_split(const UkScene *L, const char *text, const char *labels[2], int cursor, int touch_list) {
+    uk_scene_split_n(L, text, labels, 2, cursor, touch_list);
+}
+
+void uk_scene_split_n(const UkScene *L, const char *text, const char *labels[], int n, int cursor, int touch_list) {
     const ML_Rect r = L->full;
     int top = L->intro_y, bottom = r.y + r.h;
     DrawRectangle(r.x, top, r.w, bottom - top, uk_fill());
     lattice_band_h(r.x, top, r.w, UK_BAND);
     top += UK_BAND;
-    // The words at the left, the buttons at the right: the buttons get what
-    // their labels need, the words the rest (never less than 40%).
-    const char *l0 = labels[0] ? labels[0] : "", *l1 = labels[1] ? labels[1] : "";
-    int w0 = bfont_text_width(l0) + 2 * UK_INSET, w1 = bfont_text_width(l1) + 2 * UK_INSET;
-    int need = w0 + w1 + UK_INSET + 2 * UK_INSET + UK_BAND;
-    int half = r.w - need;
-    if (half < r.w * 2 / 5) half = r.w * 2 / 5;
-    if (half > r.w / 2) half = r.w / 2;
+    if (n < 1) n = 1;
+    if (n > 4) n = 4;
+    // The buttons: two side by side; three or more stacked, so the words keep
+    // most of the width. Each is as wide as its label needs, at least.
+    int ws[4], widest = 0, sum = 0;
+    for (int i = 0; i < n; i++) {
+        ws[i] = bfont_text_width(labels[i] ? labels[i] : "") + 2 * UK_INSET;
+        if (ws[i] > widest) widest = ws[i];
+        sum += ws[i];
+    }
+    bool stacked = n > 2;
+    int buttons_w = stacked ? widest + 2 * UK_INSET : sum + (n - 1) * UK_INSET + 2 * UK_INSET;
+    int half = r.w - buttons_w - UK_BAND;
+    if (!stacked) {
+        if (half < r.w * 2 / 5) half = r.w * 2 / 5;
+        if (half > r.w / 2) half = r.w / 2;
+    }
+    // The words, in a fixed area: the same place whichever button is chosen.
     int tw = half - 2 * UK_INSET;
-    int lines = uk_lines(text, tw);
     int fit = (bottom - top - 2 * ML_PAD) / uk_line_h();
+    int lines = uk_lines(text, tw);
     if (lines > fit) lines = fit;
-    int ty = top + (bottom - top - lines * uk_line_h()) / 2;
+    int ty = top + UK_INSET;            // top-aligned: the words never move
     uk_flow(r.x + UK_INSET, ty, tw, r.x, 0, bottom - ML_PAD, text, PAL_CLR(WHITE));
     lattice_band_v(r.x + half, top, UK_BAND, bottom - top);
-    // The two buttons side by side, centred in their half, as tall as a row;
-    // any width to spare is shared between them.
     int area_x = r.x + half + UK_BAND + UK_INSET, area_w = r.x + r.w - UK_INSET - area_x;
-    int spare = area_w - (w0 + w1 + UK_INSET);
-    if (spare > 0) { w0 += spare / 2; w1 += spare - spare / 2; }
-    int bh = ml_row_h(), by = top + (bottom - top - bh) / 2;
-    int xs[2] = { area_x, area_x + w0 + UK_INSET }, ws[2] = { w0, w1 };
-    for (int i = 0; i < 2; i++) {
+    int xs[4], ys[4], bws[4], bh;
+    if (stacked) {
+        int gap = 4;
+        bh = (bottom - top - 2 * gap - (n - 1) * gap) / n;
+        if (bh > ml_row_h()) bh = ml_row_h();
+        int y0 = top + (bottom - top - (n * bh + (n - 1) * gap)) / 2;
+        for (int i = 0; i < n; i++) { xs[i] = area_x; ys[i] = y0 + i * (bh + gap); bws[i] = area_w; }
+    } else {
+        bh = ml_row_h();
+        int spare = area_w - (sum + (n - 1) * UK_INSET), x = area_x;
+        for (int i = 0; i < n; i++) {
+            bws[i] = ws[i] + (spare > 0 ? spare / n + (i == n - 1 ? spare % n : 0) : 0);
+            xs[i] = x; ys[i] = top + (bottom - top - bh) / 2;
+            x += bws[i] + UK_INSET;
+        }
+    }
+    for (int i = 0; i < n; i++) {
         bool sel = i == cursor;
-        const char *lab = i ? l1 : l0;
-        if (sel) DrawRectangle(xs[i], by, ws[i], bh, PAL_CLR(YELLOW));
-        else     DrawRectangleLines(xs[i], by, ws[i], bh, (Color){ 200, 160, 60, 255 });
+        const char *lab = labels[i] ? labels[i] : "";
+        if (sel) DrawRectangle(xs[i], ys[i], bws[i], bh, PAL_CLR(YELLOW));
+        else     DrawRectangleLines(xs[i], ys[i], bws[i], bh, (Color){ 200, 160, 60, 255 });
         int lw = bfont_text_width(lab);
-        bfont_draw(lab, xs[i] + (ws[i] - lw) / 2, by + (bh - bfont_line_height()) / 2,
+        bfont_draw(lab, xs[i] + (bws[i] - lw) / 2, ys[i] + (bh - bfont_line_height()) / 2,
                    sel ? uk_ink() : PAL_CLR(WHITE));
-        if (touch_list) touch_region_row(xs[i], by, ws[i], bh, touch_list, i);
+        if (touch_list) touch_region_row(xs[i], ys[i], bws[i], bh, touch_list, i);
     }
 }
 
@@ -348,11 +372,13 @@ int uk_doc_draw(const UkDoc *d, ML_Rect a, int pic_w, int pic_h, int page, bool 
     bool pager = page >= 0;          // page < 0: the first page, no pager
     if (page < 0) page = 0;
     int pic_r = pic_w > 0 ? a.x + pic_w + UK_INSET : a.x;
-    int pic_b = a.y + pic_h + ML_PAD;
+    // Beside a picture the words stay in one column all the way down; they
+    // never wrap back under it.
+    int pic_b = pic_w > 0 ? a.y + (a.h > pic_h ? a.h : pic_h) + ML_PAD : a.y + pic_h + ML_PAD;
     int top = a.y;
     if (pic_w > 0 && a.x + a.w - pic_r < 16 * BFONT_GLYPH_W) {
         // Too narrow beside the picture to read: the words start under it.
-        top = pic_b;
+        top = a.y + pic_h + ML_PAD;
         pic_w = 0;
     }
     // Layout pass: walk every line, starting a new page when the next one

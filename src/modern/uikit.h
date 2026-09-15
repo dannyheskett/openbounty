@@ -100,6 +100,8 @@ void    uk_scene_rows(const UkScene *L, int n, int cursor, MlRowFn fn, void *ctx
 // The space under a scene as one frame: the words at the left half, the two
 // answers as buttons side by side at the right half (tapped as rows 0 and 1).
 void    uk_scene_split(const UkScene *L, const char *text, const char *labels[2], int cursor, int touch_list);
+// As uk_scene_split with n answers: two side by side, three or more stacked.
+void    uk_scene_split_n(const UkScene *L, const char *text, const char *labels[], int n, int cursor, int touch_list);
 
 // A row source over a fixed list of labels.
 typedef struct { const char *label[8]; bool enabled[8]; } UkRows;

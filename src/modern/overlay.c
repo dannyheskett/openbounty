@@ -815,7 +815,9 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
                            : (mcur == 0 ? bn->castle_invite_garrison : bn->castle_invite_withdraw);
     ResTemplateVar v[] = { { "HERO", g->character.name }, { "CASTLE", cname } };
     resources_format_template(buf, sizeof buf, inv, v, 2);
-    UkScene L = uk_scene_for(cname, gold, loc_texture(s, LOC_CASTLE), 3, buf);
+    // The whole backdrop, then a fixed frame: the words at the left, the
+    // castle's three answers stacked at the right.
+    UkScene L = uk_scene(cname, gold, loc_texture(s, LOC_CASTLE), 2);
     bool barracks = rc && page != MC_AUDIENCE && page != MC_PROMOTION;
     const char *fig_id = !rc ? "" : (barracks && rc->special.barracks_figure[0])
                                   ? rc->special.barracks_figure : rc->special.figure;
@@ -835,13 +837,11 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
         fig = troop_standing(s, ti);
     }
     uk_scene_figure(&L, fig, CL_TILE_W);
-    uk_scene_intro(&L, buf);
-    char r0[RES_BANNER_LEN + 4], r1[RES_BANNER_LEN + 4];
-    snprintf(r0, sizeof r0, "%s >", home ? bn->castle_menu_recruit : bn->castle_menu_garrison);
-    snprintf(r1, sizeof r1, "%s >", home ? bn->castle_menu_audience : bn->castle_menu_withdraw);
-    UkRows menu_rows = { { r0, r1, bn->location_leave }, { true, true, true } };
+    const char *menu_labels[3] = { home ? bn->castle_menu_recruit : bn->castle_menu_garrison,
+                                   home ? bn->castle_menu_audience : bn->castle_menu_withdraw,
+                                   bn->location_leave };
     bool on_menu = page == MC_MENU;
-    uk_scene_rows(&L, 3, on_menu ? mcur : -1, uk_rows_fn, &menu_rows, on_menu ? TOUCH_LIST_CASTLE : 0);
+    uk_scene_split_n(&L, buf, menu_labels, 3, on_menu ? mcur : -1, on_menu ? TOUCH_LIST_CASTLE : 0);
 
     const char *msg = modern_castle_message();
     Texture2D keeper = (home && rc) ? portrait_frame(s, resources_portrait_index(res,
@@ -972,7 +972,12 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
             const char *rt = akind == MC_AUD_BLESSING && ares ? bn->castle_action_blessing
                            : akind == MC_AUD_TRIBUTE && ares ? bn->castle_action_tribute
                            : bn->castle_action_promotion;
-            ML_Rect rb = uk_inlay(UK_INLAY_W, UK_INLAY_H, rt, NULL);
+            // As tall as the Emperor's picture or his words, whichever is taller.
+            ML_Rect probe = { 0, 0, UK_INLAY_W - 2 * UK_INSET, 0 };
+            int body = uk_doc_height(&rd, probe, emperor.id ? size : 0, size);
+            if (body < size) body = size;
+            int rh = uk_title_h() + UK_BAND + 2 * UK_INSET + body + ML_PAD + UK_BAND + ml_list_height(1);
+            ML_Rect rb = uk_inlay(UK_INLAY_W, rh, rt, NULL);
             UkRows cont = { { bn->castle_continue }, { true } };
             int rf = uk_foot_rows(rb, 1, 0, uk_rows_fn, &cont, TOUCH_LIST_PROMPT);
             ML_Rect ra = { rb.x + UK_INSET, rb.y + UK_INSET, rb.w - 2 * UK_INSET, rf - ML_PAD - (rb.y + UK_INSET) };

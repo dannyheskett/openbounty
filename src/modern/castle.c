@@ -94,6 +94,13 @@ static bool audiences(const Game *g) {
     return mc.home && g && g->res && g->res->economy.audiences;
 }
 
+void modern_castle_gallery_answer(McAudience kind, int result, GameAudienceGain gain) {
+    mc.aud_kind = kind;
+    mc.aud_result = result;
+    mc.aud_needed = 0;
+    mc.gain = gain;
+}
+
 McAudience modern_castle_audience_result(int *result, int *needed, GameAudienceGain *gain) {
     if (result) *result = mc.aud_result;
     if (needed) *needed = mc.aud_needed;

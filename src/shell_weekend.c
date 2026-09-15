@@ -3,6 +3,7 @@
 #include "shell_weekend.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #include "pending.h"
 #include "prompt.h"
@@ -107,6 +108,34 @@ bool pump_week_end_dialog(const Game *g) {
         // Build 5 body rows, left + gap + right.
         char body[320];
         int bo = 0;
+        if (CL_IS_MODERN) {
+            // Modern: columns as wide as their widest entry, so any number
+            // lines up: labels left, amounts right-aligned, troop names left,
+            // costs right-aligned. The font is fixed-pitch.
+            int lw = 0, vw = 0, tw = 0, cw = 0;
+            char nb[16];
+            for (int i = 0; i < 5; i++) {
+                int n = (int)strlen(left_labels[i]); if (n > lw) lw = n;
+                n = snprintf(nb, sizeof nb, "%d", left_values[i]); if (n > vw) vw = n;
+                if (i < rn) {
+                    n = (int)strlen(rtroop[i]); if (n > tw) tw = n;
+                    n = snprintf(nb, sizeof nb, "%d", rcost[i]); if (n > cw) cw = n;
+                }
+            }
+            for (int i = 0; i < 5; i++) {
+                if (i < rn)
+                    bo += snprintf(body + bo, sizeof(body) - (size_t)bo, "%-*s %*d  %-*s %*d\n",
+                                   lw, left_labels[i], vw, left_values[i], tw, rtroop[i], cw, rcost[i]);
+                else
+                    bo += snprintf(body + bo, sizeof(body) - (size_t)bo, "%-*s %*d\n",
+                                   lw, left_labels[i], vw, left_values[i]);
+                if (bo >= (int)sizeof(body)) { bo = (int)sizeof(body) - 1; break; }
+            }
+            player_io_message((Game *)g, header, body);
+            pending_week_phase = WK_PHASE_NONE;
+            pending_week_paid  = 0;
+            return true;
+        }
         for (int i = 0; i < 5; i++) {
             // Left: "<label7>% 6d" = 13 chars.
             char left[16];

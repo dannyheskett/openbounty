@@ -51,6 +51,8 @@ typedef enum { MC_AUD_PROMOTION = 0, MC_AUD_BLESSING, MC_AUD_TRIBUTE } McAudienc
 // GameBlessingOutcome + 1, Tribute 1 paid or 2 short; *needed the artifacts
 // missing or gold short; *gain what it gave.
 McAudience  modern_castle_audience_result(int *result, int *needed, GameAudienceGain *gain);
+// --gallery: a Blessing or Tribute answer on show.
+void        modern_castle_gallery_answer(McAudience kind, int result, GameAudienceGain gain);
 // A tribute waits on Yes/No: true once, writing the question into body. The
 // main loop opens the prompt and on Yes calls modern_castle_confirm_yes.
 bool        modern_castle_take_confirm(const Game *g, char *body, int cap);

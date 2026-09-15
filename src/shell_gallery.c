@@ -165,6 +165,19 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     pending_week_phase = WK_PHASE_BUDGET;
     pump_week_end_dialog(g); shell_pump_player_io_message(g);
     shot(&G, "09b_week_end_budget");
+    {
+        // The same report late in a campaign: six-figure gold and a big army.
+        Game keep = *g;
+        g->stats.gold = 279635;
+        pending_week_paid = 1000;
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++)
+            if (g->army[i].id[0] && g->army[i].count > 0) g->army[i].count *= 40;
+        reset(&G);
+        pending_week_phase = WK_PHASE_BUDGET;
+        pump_week_end_dialog(g); shell_pump_player_io_message(g);
+        shot(&G, "09b2_week_end_budget_large");
+        *g = keep;
+    }
     pending_week_phase = WK_PHASE_NONE;
 
     // A treasure chest: gold or leadership.
@@ -342,6 +355,14 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_AUDIENCE, 0, 0, 0);
         modern_castle_gallery_audience(GAME_AUDIENCE_MORE_NEEDED + 1, 0); shot(&G, "44b_castle_audience_answer");
         modern_castle_gallery_audience(0, 0);
+        {
+            GameAudienceGain gain = { 0 };
+            gain.leadership = 25; gain.spell_power = 1; gain.max_spells = 1;
+            reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_AUDIENCE, 2, 0, 0);
+            modern_castle_gallery_answer(MC_AUD_TRIBUTE, 1, gain); shot(&G, "44c_castle_tribute_answer");
+            GameAudienceGain none = { 0 };
+            modern_castle_gallery_answer(MC_AUD_PROMOTION, 0, none);
+        }
         {
             int keep = g->character.cls.rank_index;
             g->character.cls.rank_index = 1;
