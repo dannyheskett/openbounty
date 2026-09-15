@@ -614,6 +614,15 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
 //  Leave), each page an in-lay over it
 // =============================================================================
 
+// A castle page as a full screen: the whole rect, its title strip; returns
+// the body under it.
+static ML_Rect castle_page_rect(const char *title, const char *right) {
+    ML_Rect r = ml_full();
+    uk_sheet();
+    int top = uk_title(r.x, r.y, r.w, title, right, PAL_CLR(YELLOW));
+    return (ML_Rect){ r.x, top, r.w, r.y + r.h - top };
+}
+
 static void castle_fmt(char *out, int cap, const char *tmpl, const char *count, const char *max) {
     ResTemplateVar v[] = { { "COUNT", count }, { "MAX", max ? max : "" },
                            { "RANK", count }, { "GOLD", count } };
@@ -872,7 +881,7 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
 
     if (page == MC_AUDIENCE) {
         // The Emperor at 2x and where the hero stands; the audiences along the foot.
-        ML_Rect b = uk_inlay(UK_WIDE_W, UK_TALL_H, title, g->character.cls.rank_title);
+        ML_Rect b = castle_page_rect(title, g->character.cls.rank_title);
         int foot = uk_foot_rows(b, rows, cursor, castle_row_fn, &cc, TOUCH_LIST_CASTLE);
         const int size = 2 * CL_TILE_W;
         ML_Rect a = { b.x + UK_INSET, b.y + UK_INSET, b.w - 2 * UK_INSET, foot - ML_PAD - (b.y + UK_INSET) };
@@ -963,7 +972,8 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
     // As tall as the rows or the troop's picture and numbers.
     int detail = 2 * UK_INSET + 2 * CL_TILE_W + ML_PAD + 4 + 6 * uk_line_h();
     int body_h = ml_list_height(rows) > detail ? ml_list_height(rows) : detail;
-    ML_Rect b = uk_inlay(UK_WIDE_W, uk_title_h() + UK_BAND + body_h, title, NULL);
+    (void)body_h;
+    ML_Rect b = castle_page_rect(title, NULL);
     int lw = 15 * GW + 2 * ML_PAD;
     ml_list_draw(b.x, b.y, lw, b.h, rows, cursor, castle_row_fn, &cc, TOUCH_LIST_CASTLE, uk_ink());
     lattice_band_v(b.x + lw, b.y, UK_BAND, b.h);
