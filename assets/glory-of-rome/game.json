@@ -1909,7 +1909,7 @@
 					"blessing_needed":	"%NAME%, beloved of the gods,\n\nI bless only one who has gathered every sacred artifact of Roma. Find the %NEEDED% still missing, then come before me again.",
 					"blessing_already":	"%NAME%, beloved of the gods,\n\nyou already carry my blessing.\n\nIt is given only once.",
 					"tribute_paid":	"Amice %NAME%,\n\nRoma thanks you. Your gift will be spoken of in the Senate, and the gods will remember it on the field.",
-					"tribute_needed":	"Amice %NAME%,\n\na tribute to your Emperor is 50000 gold.\n\nYou are %NEEDED% gold short. Return when your purse can bear it."
+					"tribute_needed":	"Amice %NAME%,\n\nTribute to your Emperor is 50000 gold.\n\nYou are %NEEDED% gold short. Return when your purse can bear it."
 				}
 			}
 		}, {

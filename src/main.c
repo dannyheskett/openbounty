@@ -106,7 +106,6 @@
 #include "modern/gamemenu.h"
 #include "modern/location.h"
 #include "shell_gallery.h"
-#include "modern/uikit.h"
 
 // Per-frame draw_frame() dispatcher moved to src/shell_frame.{c,h}.
 #include "shell_frame.h"
@@ -267,7 +266,6 @@ int shell_run_game(int argc, char **argv) {
     bool        movie_requested = false;
     const char *movie_path_arg  = NULL;
     const char *gallery_dir     = NULL;   // --gallery <dir>: capture every modern screen
-    bool        gallery_mockup  = false;  // --gallery-mockup: capture the card mock-up proposals
     // --seed N: pick catalog world N (0..255) for a reproducible run. -1 means
     // "not asked for" -- the world is derived from time + name + class instead.
     int seed_index = -1;
@@ -406,8 +404,6 @@ int shell_run_game(int argc, char **argv) {
             }
         } else if (strcmp(a, "--gallery") == 0 && i + 1 < argc) {
             gallery_dir = argv[++i];
-        } else if (strcmp(a, "--gallery-mockup") == 0) {
-            gallery_mockup = true;
         } else if (strcmp(a, "--headless") == 0) {
             headless_mode = true;
         } else if (strcmp(a, "--verbose") == 0) {
@@ -925,7 +921,6 @@ title:;
     RenderTexture2D render_target = render_target_startup;
     if (gallery_dir) {
         // Layout audit: capture every modern screen, then quit.
-        if (gallery_mockup) uk_card_mockup(true);
         int rc = gallery_run(&game, &map, &fog, &res, &sprites, &render_target, gallery_dir);
         UnloadRenderTexture(render_target);
         sprites_unload(&sprites);

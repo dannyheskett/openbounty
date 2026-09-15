@@ -171,8 +171,5 @@ typedef struct { ML_Rect card; ML_Rect extra; } UkCardOut;
 
 // Lay out and draw the card; out (may be NULL) gives the extra block's rect.
 void uk_card(const UkCard *c, UkCardOut *out);
-// --gallery only: draw cards with the two mock-up proposals.
-void uk_card_mockup(bool on);
-bool uk_card_mockup_on(void);
 
 #endif

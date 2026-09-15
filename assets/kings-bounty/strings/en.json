@@ -33,8 +33,6 @@
 		"class_desc_sorceress":	"A wielder of magic. Casts spells from the start and the strongest; the smallest army.",
 		"class_desc_barbarian":	"A fierce warlord. Strong leadership and a high commission; no talent for magic.",
 		"spell_bridge_prompt_modern":	"Tap the square beside you to bridge, or use the arrows.",
-		"card_title_message":	"Message",
-		"card_title_question":	"Question",
 		"save_done_title":	"Game saved",
 		"save_done":	"Your game is saved in slot %SLOT%: %NAME% the %RANK%, %DAYS% days left.",
 		"town_gold_label":	"GP=%GOLD%K",

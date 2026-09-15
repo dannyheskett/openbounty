@@ -349,7 +349,6 @@ static void combat_action_menu_draw(const Combat *c, const Game *g) {
         int pw = gm_page_width(&pi, path);
         if (pw > menu_w) menu_w = pw;
     }
-    if (uk_card_mockup_on()) menu_w = UK_INLAY_W;
     gm_draw_page(&p, path, "", r.x, r.y, menu_w, r.h, 0, cursor,
                  TOUCH_LIST_COMBAT_ACTIONS, NULL, NULL);
 }

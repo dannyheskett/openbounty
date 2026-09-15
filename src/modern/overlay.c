@@ -70,7 +70,6 @@ static DialogFit dialog_fit(bool force_large) {
         f.r = pass ? ml_large() : ml_small();
         int max_w = f.r.w - 2 * UK_INSET;
         if (max_w > 40 * GW) max_w = 40 * GW;      // the card's widest column
-        if (uk_card_mockup_on()) max_w = UK_INLAY_W - 2 * UK_INSET;
         int cap = (f.r.h - 2 * UK_INSET) / GH;
         f.header_lines = (hdr && hdr[0]) ? wrapped_lines(hdr, max_w) : 0;
         int body_lines = wrapped_lines(body, max_w);
@@ -139,7 +138,6 @@ static void draw_dialog_ex(DialogMode mode) {
     DialogFit f = dialog_fit(false);
     max_w = f.r.w - 2 * UK_INSET;
     if (max_w > 40 * GW) max_w = 40 * GW;
-    if (uk_card_mockup_on()) max_w = UK_INLAY_W - 2 * UK_INSET;
     const char *p = body ? body : "";
     int skip = dialog_page_current() * f.body_per_page;
     for (int i = 0; i < skip && *p; i++)

@@ -369,60 +369,7 @@ static bool card_row_fn(void *ctx, int i, char *label, char *right, int cap) {
     return k >= 0 && k < c->n_answers && !c->disabled[k];
 }
 
-// --gallery mock-up: the conforming card (see uk_card_conform).
-static bool s_card_mockup;
-void uk_card_mockup(bool on) { s_card_mockup = on; }
-bool uk_card_mockup_on(void) { return s_card_mockup; }
-
-// The conforming card: one width (576), a title strip always, the picture at
-// top-left, the words from the same spot, the buttons in a row along the
-// bottom at the right, centred on what is behind it, its body at least the
-// picture's height and growing by whole lines.
-static void uk_card_conform(const UkCard *c, UkCardOut *out) {
-    ML_Rect a = ml_area();
-    const Resources *res = resources_current();
-    const int pic = c->face.id ? 2 * CL_TILE_W : 0;
-    const int inset = UK_INSET, gap = ML_PAD + 4, lh = uk_line_h();
-    const char *title = (c->title && c->title[0]) ? c->title
-                      : !res ? "" : c->n_answers >= 2 ? res->banners.card_title_question : res->banners.card_title_message;
-    int w = c->min_w > UK_INLAY_W ? c->min_w : UK_INLAY_W;
-    int cx_off = inset + (pic ? pic + inset : 0);
-    int col = w - cx_off - inset;
-    ML_Rect probe = { 0, 0, col, 0 };
-    int words_h = c->doc ? uk_doc_height(c->doc, probe, 0, 0) : 0;
-    words_h = (words_h + lh - 1) / lh * lh;
-    int body_h = words_h > pic ? words_h : pic;
-    int head = uk_title_h() + UK_BAND;
-    int extra_block = c->extra_h ? gap + c->extra_h : 0;
-    int answers_h = c->n_answers > 0 ? UK_BAND + ml_list_height(c->n_answers) - inset : 0;
-    int h = head + 2 * inset + body_h + extra_block + answers_h;
-    if (h > a.h - 2 * ml_space()) h = a.h - 2 * ml_space();
-    int x = a.x + (a.w - w) / 2, y = a.y + (a.h - h) / 2;
-    if (!c->no_dim || c->at_foot) uk_dim();
-    uk_panel(x, y, w, h);
-    int top = uk_title(x, y, w, title, c->right, PAL_CLR(YELLOW));
-    int bx = x + inset, by = top + inset;
-    if (pic) uk_picture(c->face, bx, by, pic, pic);
-    if (c->doc) {
-        ML_Rect area = { x + cx_off, by, col, (y + h) - inset - by };
-        uk_doc_draw(c->doc, area, 0, 0, -1, true);
-    }
-    int ey = by + body_h + gap;
-    if (out) {
-        out->card = (ML_Rect){ x, y, w, h };
-        out->extra = (ML_Rect){ bx, ey, w - 2 * inset, c->extra_h };
-    }
-    if (c->n_answers > 0) {
-        int ry = y + h - ml_list_height(c->n_answers);
-        lattice_band_h(x, ry - UK_BAND, w, UK_BAND);
-        CardRowsCtx rc = { c };
-        ml_list_draw_ex(x, ry, w, ml_list_height(c->n_answers), c->n_answers, c->cursor, card_row_fn, &rc,
-                        c->touch_list, uk_ink(), c->touch_base);
-    }
-}
-
 void uk_card(const UkCard *c, UkCardOut *out) {
-    if (s_card_mockup) { uk_card_conform(c, out); return; }
     ML_Rect a = ml_area();
     const int pic = c->face.id ? 2 * CL_TILE_W : 0;
     const int inset = UK_INSET, gap = ML_PAD + 4;

@@ -352,7 +352,6 @@ void modern_gamemenu_draw(const Game *g) {
         int pw = gm_page_width(&pi, path);
         if (pw > menu_w) menu_w = pw;
     }
-    if (uk_card_mockup_on()) menu_w = UK_INLAY_W;
     gm_draw_page(&p, path, z ? z->name : "", r.x, r.y, slots ? 656 : menu_w, r.h, 0, cursor, TOUCH_LIST_MENU,
                  slots ? slot_row : NULL, &p);
 }
