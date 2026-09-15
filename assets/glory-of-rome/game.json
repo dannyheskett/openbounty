@@ -3939,6 +3939,9 @@
 			"forest_backdrop":	"art/ui/backdrop_forest.png",
 			"hillcave_backdrop":	"art/ui/backdrop_hillcave.png",
 			"alcove_backdrop":	"art/ui/backdrop_alcove.png",
+			"scene_column_capital":	"art/ui/scene_column_capital.png",
+			"scene_column_shaft":	"art/ui/scene_column_shaft.png",
+			"scene_column_base":	"art/ui/scene_column_base.png",
 			"alcove_figure":	"art/ui/alcove_augur_00.png",
 			"alcove_portrait":	"art/portraits/augur_portrait.png",
 			"alcove_figure_place":	{

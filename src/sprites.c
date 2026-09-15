@@ -155,6 +155,9 @@ void sprites_load(Sprites *s, const Resources *res) {
     s->hillcave_backdrop= load_rel(res->sprites.hillcave_backdrop);
     s->dungeon_backdrop = load_rel(res->sprites.dungeon_backdrop);
     s->alcove_backdrop  = load_rel(res->sprites.alcove_backdrop);
+    s->scene_column[0]  = load_rel(res->sprites.scene_column_capital);
+    s->scene_column[1]  = load_rel(res->sprites.scene_column_shaft);
+    s->scene_column[2]  = load_rel(res->sprites.scene_column_base);
     s->alcove_figure    = load_rel(res->sprites.alcove_figure);
     s->alcove_figure_frames = res->sprites.alcove_figure_animation_count;
     if (s->alcove_figure_frames > OB_ANIM_FRAMES_MAX)
@@ -260,6 +263,7 @@ void sprites_unload(Sprites *s) {
     UnloadTexture(s->hillcave_backdrop);
     UnloadTexture(s->dungeon_backdrop);
     UnloadTexture(s->alcove_backdrop);
+    for (int i = 0; i < 3; i++) UnloadTexture(s->scene_column[i]);
     UnloadTexture(s->alcove_figure);
     for (int i = 0; i < s->alcove_figure_frames; i++)
         UnloadTexture(s->alcove_figure_anim[i]);

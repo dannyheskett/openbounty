@@ -9,6 +9,8 @@
 #include "bfont.h"
 #include "ui.h"
 #include "touch.h"
+#include "overlay_impl.h"
+#include "sprites.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -126,6 +128,27 @@ bool uk_rows_fn(void *ctx, int i, char *label, char *right, int cap) {
 
 // ---- the place scene ---------------------------------------------------------------
 
+// One piece of the column, `h` rows of it from its top, at 1x; mirrored for the
+// right bar so the ivy faces in on both sides.
+static void column_piece(Texture2D t, int x, int y, int w, int h, bool mirror) {
+    if (!t.id || h <= 0) return;
+    if (h > t.height) h = t.height;
+    Rectangle src = { 0, 0, (float)(mirror ? -t.width : t.width), (float)h };
+    Rectangle dst = { (float)x, (float)y, (float)w, (float)h };
+    DrawTexturePro(t, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+}
+
+// A column exactly `h` tall: the capital at the top, the base at the bottom,
+// the shaft repeated between them.
+static void draw_column(const Sprites *sp, int x, int y, int w, int h, bool mirror) {
+    Texture2D cap = sp->scene_column[0], shaft = sp->scene_column[1], base = sp->scene_column[2];
+    column_piece(cap, x, y, w, cap.height, mirror);
+    int end = y + h - base.height;
+    for (int cy = y + cap.height; cy < end; cy += shaft.height)
+        column_piece(shaft, x, cy, w, end - cy, mirror);
+    column_piece(base, x, end, w, base.height, mirror);
+}
+
 UkScene uk_scene(const char *title, const char *right, Texture2D bd, int rows) {
     return uk_scene_ex(title, right, bd, rows, 2 * uk_line_h() + 2 * ML_PAD);
 }
@@ -166,11 +189,22 @@ UkScene uk_scene_ex(const char *title, const char *right, Texture2D bd, int rows
         Rectangle dst = { (float)L.scene.x, (float)L.scene.y, (float)L.scene.w, (float)L.scene.h };
         DrawTexturePro(bd, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
     }
-    // The picture frame: the lattice in the bars either side of the backdrop.
+    // The picture frame: a column in each bar beside the backdrop when the
+    // pack has one (capital, shaft repeated, base; mirrored on the right),
+    // else the lattice.
     int side = L.scene.x - r.x;
     if (side > 0) {
-        lattice_band_v(r.x, top, side, L.scene.h);
-        lattice_band_v(L.scene.x + L.scene.w, top, r.x + r.w - (L.scene.x + L.scene.w), L.scene.h);
+        const Sprites *sp = modern_overlay_sprites();
+        int rx = L.scene.x + L.scene.w, rw = r.x + r.w - rx;
+        if (sp && sp->scene_column[0].id && sp->scene_column[1].id && sp->scene_column[2].id) {
+            DrawRectangle(r.x, top, side, L.scene.h, uk_fill());
+            DrawRectangle(rx, top, rw, L.scene.h, uk_fill());
+            draw_column(sp, r.x, top, side, L.scene.h, false);
+            draw_column(sp, rx, top, rw, L.scene.h, true);
+        } else {
+            lattice_band_v(r.x, top, side, L.scene.h);
+            lattice_band_v(rx, top, rw, L.scene.h);
+        }
     }
     // A lattice divider between the backdrop and the words under it.
     lattice_band_h(r.x, L.scene.y + L.scene.h, r.w, UK_BAND);

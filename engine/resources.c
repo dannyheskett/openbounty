@@ -934,6 +934,12 @@ static void parse_sprites(Resources *res, cJSON *obj) {
                  json_str(ui, "hillcave_backdrop", ""));
         copy_str(res->sprites.alcove_backdrop, sizeof(res->sprites.alcove_backdrop),
                  json_str(ui, "alcove_backdrop", ""));
+        copy_str(res->sprites.scene_column_capital, sizeof(res->sprites.scene_column_capital),
+                 json_str(ui, "scene_column_capital", ""));
+        copy_str(res->sprites.scene_column_shaft, sizeof(res->sprites.scene_column_shaft),
+                 json_str(ui, "scene_column_shaft", ""));
+        copy_str(res->sprites.scene_column_base, sizeof(res->sprites.scene_column_base),
+                 json_str(ui, "scene_column_base", ""));
         copy_str(res->sprites.alcove_figure, sizeof(res->sprites.alcove_figure),
                  json_str(ui, "alcove_figure", ""));
         parse_string_array(cJSON_GetObjectItem(ui, "alcove_figure_animation"),
@@ -2878,6 +2884,9 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
     art_add(out, cap, &n, res->sprites.hillcave_backdrop);
     art_add(out, cap, &n, res->sprites.dungeon_backdrop);
     art_add(out, cap, &n, res->sprites.alcove_backdrop);
+    art_add(out, cap, &n, res->sprites.scene_column_capital);
+    art_add(out, cap, &n, res->sprites.scene_column_shaft);
+    art_add(out, cap, &n, res->sprites.scene_column_base);
     art_add(out, cap, &n, res->sprites.alcove_figure);
     for (int i = 0; i < res->sprites.alcove_figure_animation_count; i++)
         art_add(out, cap, &n, res->sprites.alcove_figure_animation[i]);

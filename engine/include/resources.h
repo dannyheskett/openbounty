@@ -1365,6 +1365,11 @@ typedef struct {
         // and without the figure it animates whatever troop the screen names,
         // which is what it did before a pack could declare either.
         char alcove_backdrop[RES_PATH_LEN];
+        // Modern: the column in the bars beside a place backdrop -- its capital,
+        // a shaft piece repeated between, and its base ("" = the lattice).
+        char scene_column_capital[RES_PATH_LEN];
+        char scene_column_shaft[RES_PATH_LEN];
+        char scene_column_base[RES_PATH_LEN];
         char alcove_figure[RES_PATH_LEN];
         int  alcove_figure_animation_count;
         char alcove_figure_animation[OB_ANIM_FRAMES_MAX][RES_PATH_LEN];
