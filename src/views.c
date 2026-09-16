@@ -724,6 +724,25 @@ static void town_format_intel(const Game *g, char *out, size_t cap) {
 
     const ResTown *rt = g->res
         ? resources_town_by_id(g->res, town.record_key) : NULL;
+    // A town whose informant deals in the sacred artifacts rather than in
+    // garrisons (Roma): where one of them still lies.
+    if (rt && rt->intel_artifact) {
+        char zone_id[32] = "";
+        int ax = 0, ay = 0;
+        if (!GameTownArtifactIntel(g, rt->id, zone_id, sizeof zone_id, &ax, &ay)) {
+            snprintf(out, cap, "%s", bn->town_intel_artifact_none);
+            return;
+        }
+        const ResZone *az = resources_zone_by_id(g->res, zone_id);
+        char xs[16], ys[16];
+        snprintf(xs, sizeof xs, "%d", ax);
+        snprintf(ys, sizeof ys, "%d", ay);
+        ResTemplateVar av[] = { { "ZONE", (az && az->name[0]) ? az->name : zone_id },
+                                { "X", xs }, { "Y", ys } };
+        resources_format_template(buf, sizeof buf, bn->town_intel_artifact, av, 3);
+        snprintf(out, cap, "%s", buf);
+        return;
+    }
     if (!rt || !rt->intel_castle[0]) {
         resources_format_template(buf, sizeof buf, bn->town_intel_unavailable,
                                   NULL, 0);

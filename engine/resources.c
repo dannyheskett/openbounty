@@ -164,6 +164,8 @@ static void parse_towns(Resources *res, cJSON *arr) {
         copy_str(t->headman, sizeof(t->headman), json_str(it, "headman", ""));
         copy_str(t->townhead, sizeof(t->townhead), json_str(it, "townhead", ""));
         copy_str(t->invitations, sizeof(t->invitations), json_str(it, "invitations", ""));
+        // A town whose informant reports on the sacred artifacts, not a castle.
+        t->intel_artifact = cJSON_IsTrue(cJSON_GetObjectItem(it, "intel_artifact"));
     }
 }
 
@@ -1276,6 +1278,7 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(chest_empty,       "chest_empty");
     SET_BANNER(town_header,             "town_header");
     SET_BANNER(town_intro, "town_intro");
+    SET_BANNER(town_intro_inland, "town_intro_inland");
     SET_BANNER(town_visit, "town_visit");
     SET_BANNER(cv_wanted, "cv_wanted");
     SET_BANNER(cv_no_contract_hint, "cv_no_contract_hint");
@@ -1316,6 +1319,15 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(town_intel_count_numeric,"town_intel_count_numeric");
     SET_BANNER(town_intel_monsters_generic, "town_intel_monsters_generic");
     SET_BANNER(town_intel_no_garrison,  "town_intel_no_garrison");
+    SET_BANNER(town_intel_artifact,      "town_intel_artifact");
+    SET_BANNER(town_intel_artifact_none, "town_intel_artifact_none");
+    SET_BANNER(artifact_found,           "artifact_found");
+    SET_BANNER(artifact_map_piece,       "artifact_map_piece");
+    SET_BANNER(castle_header,            "castle_header");
+    SET_BANNER(castle_siege_monsters,    "castle_siege_monsters");
+    SET_BANNER(castle_uncharted,         "castle_uncharted");
+    SET_BANNER(search_nothing,           "search_nothing");
+    SET_BANNER(zone_unreachable,         "zone_unreachable");
     SET_BANNER(town_spell_unavailable,  "town_spell_unavailable");
     SET_BANNER(town_spell_at_cap,       "town_spell_at_cap");
     SET_BANNER(town_spell_can_learn,    "town_spell_can_learn");
@@ -1475,6 +1487,7 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(gmr_cannot_fly, "gmr_cannot_fly");
     SET_BANNER(gmr_one_spell, "gmr_one_spell");
     SET_BANNER(gmr_no_magic, "gmr_no_magic");
+    SET_BANNER(gmr_no_spell_held, "gmr_no_spell_held");
     SET_BANNER(gmr_empty_slot, "gmr_empty_slot");
     SET_BANNER(gmc_overwrite, "gmc_overwrite");
     SET_BANNER(gmc_load, "gmc_load");

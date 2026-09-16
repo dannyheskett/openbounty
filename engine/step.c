@@ -162,17 +162,18 @@ bool GameStep(Game *game, Map *map, Fog *fog,
             if (a && GameClaimArtifact(game, ir.artifact_idx)) {
                 MapClearInteractive(map, nx, ny);
                 GameAddConsumed(game, game->position.zone, nx, ny);
-                // : header holds the
-                // full artifact flavor paragraph (our `effect`), body is
-                // the "map to the scepter" footer. Matches KB_BottomBox
-                // (header + two-line body).
-                char header[256];
-                snprintf(header, sizeof(header),
-                         "You have found %s!\n%s",
-                         a->name, a->effect);
-                player_io_message(game, header,
-                    "...and a piece of the map to\n"
-                    "the stolen scepter.");
+                // The header names what you found; the body is the artifact's
+                // own flavour from the pack, then the map-piece footer. Both
+                // come from the pack's strings -- a Roman artifact must not
+                // talk about a scepter.
+                char header[256], body_a[512];
+                ResTemplateVar av[] = { { "ARTIFACT", a->name } };
+                resources_format_template(header, sizeof header,
+                                          res->banners.artifact_found, av, 1);
+                snprintf(body_a, sizeof body_a, "%s%s%s",
+                         a->effect[0] ? a->effect : "", a->effect[0] ? "\n\n" : "",
+                         res->banners.artifact_map_piece);
+                player_io_message(game, header, body_a);
             }
         }
         if (ir.opened_castle) {
@@ -239,14 +240,15 @@ bool GameStep(Game *game, Map *map, Fog *fog,
                 // The "(y/n)?" prompt chrome is drawn by prompt_draw() itself
                 // (the PK_YES_NO hint line); baking it into the body too is what
                 // produced the doubled "(y/n)?" -- so the body ends at the verb.
+                // The question alone: the Yes/No rows are the buttons, so no
+                // hand-centred "Lay Siege" is baked into the words.
                 char prompt_body[320];
-                snprintf(prompt_body, sizeof(prompt_body),
-                    "Various groups of monsters\n"
-                    "occupy this castle.\n\n\n"
-                    "                Lay Siege");
+                snprintf(prompt_body, sizeof prompt_body, "%s",
+                         res->banners.castle_siege_monsters);
                 char prompt_header[64];
-                snprintf(prompt_header, sizeof(prompt_header), "Castle %s",
-                         rc && rc->name[0] ? rc->name : ir.castle_id);
+                ResTemplateVar cv[] = { { "NAME", rc && rc->name[0] ? rc->name : ir.castle_id } };
+                resources_format_template(prompt_header, sizeof prompt_header,
+                                          res->banners.castle_header, cv, 1);
                 pending_flow = FLOW_SIEGE_MONSTER;
                 prompt_yes_no_open(prompt_header, prompt_body);
                 player_io_raise_decision(game, FLOW_SIEGE_MONSTER,
@@ -289,8 +291,8 @@ bool GameStep(Game *game, Map *map, Fog *fog,
                 header[0] = '\0';
                 body[0]   = '\0';
             } else {
-                snprintf(header, sizeof(header), "Castle");
-                snprintf(body, sizeof(body), "An uncharted castle.");
+                header[0] = '\0';      // the line stands on its own
+                snprintf(body, sizeof(body), "%s", res->banners.castle_uncharted);
             }
             if (header[0] || body[0]) {
                 player_io_message(game, header, body);

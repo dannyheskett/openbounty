@@ -36,6 +36,7 @@
 
 void combat_present_public(const Combat *c, const Game *g, const Sprites *sprites, void *render_target);
 void combat_gallery_menu(bool open);
+void combat_gallery_cast_page(void);
 void end_cartoon_gallery_draw(RenderTexture2D *rt, const Resources *res, const Sprites *sprites,
                               const struct Game *game, int frame);
 
@@ -143,6 +144,17 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         open_dialog(spell_header("time_stop", "Time Stop"), tb);
     }
     shot(&G, "04_message_titled");
+    // The artifact message: the engine's longest title, which wraps to two
+    // lines. It used to print the second line under the body's first.
+    reset(&G);
+    {
+        char hb[192], bb[512];
+        ResTemplateVar av[] = { { "ARTIFACT", "The Sibylline Fragment" } };
+        resources_format_template(hb, sizeof hb, bn->artifact_found, av, 1);
+        snprintf(bb, sizeof bb, "Unknown power.\n\n%s", bn->artifact_map_piece);
+        open_dialog(hb, bb);
+    }
+    shot(&G, "04b_message_artifact");
     reset(&G); resources_format_template(tb, sizeof tb, bn->no_spell_banner, vars, 6);
     open_dialog(NULL, tb); shot(&G, "05_message_long");
     reset(&G); resources_format_template(tb, sizeof tb, bn->body_search, vars, 6);
@@ -357,6 +369,21 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         g->position.in_town[0] = '\0';
     }
 
+    // A town with no dock, whose informant reports on the sacred artifacts
+    // instead of a castle's garrison (Rome's Roma). Packs without one skip it.
+    const ResTown *inland = NULL;
+    for (int i = 0; i < res->town_count; i++)
+        if (res->towns[i].intel_artifact) { inland = &res->towns[i]; break; }
+    if (inland) {
+        cpy(g->position.in_town, sizeof g->position.in_town, inland->id);
+        views_open_town(inland->name, inland->id, inland->boat_x, inland->boat_y);
+        reset(&G); views_set(VIEW_TOWN); views_gallery_town_scene(0);
+        shot(&G, "39_town_inland");
+        reset(&G); views_set(VIEW_TOWN); views_gallery_town(g, TOWN_ROW_INFO, 0, NULL, false);
+        shot(&G, "39b_town_artifact_intel");
+        g->position.in_town[0] = '\0';
+    }
+
     // ---- castles -----------------------------------------------------------------
     const ResCastle *home = NULL, *other = NULL;
     for (int i = 0; i < res->castle_count; i++) {
@@ -494,10 +521,10 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         for (int i = 0; i < 3; i++) combat_present_public(&c, g, s, rt);
         save_target(&G, "71c_combat_army_view");
         views_set(VIEW_NONE);
-        c.cast_phase = COMBAT_CAST_PICK_SPELL;
+        combat_gallery_cast_page();
         for (int i = 0; i < 3; i++) combat_present_public(&c, g, s, rt);
         save_target(&G, "72_combat_spells");
-        c.cast_phase = COMBAT_CAST_NONE;
+        combat_gallery_menu(false);
         prompt_yes_no_open(ui->give_up_header_modern, bn->combat_give_up_body);
         for (int i = 0; i < 3; i++) combat_present_public(&c, g, s, rt);
         save_target(&G, "73_combat_give_up");

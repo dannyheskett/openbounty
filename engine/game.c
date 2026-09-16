@@ -1701,6 +1701,50 @@ int GameArtifactsFound(const Game *g) {
     return n;
 }
 
+// A town whose informant reports on the sacred artifacts rather than on a
+// castle: which one he names, and where it lies. Candidates are the artifacts
+// not yet found -- salt-placed ones from g->placements[], JSON-authored ones
+// from the zone catalog -- and the choice is a pure hash of the seed and the
+// town, never a draw from the game RNG, so a given seed always answers alike.
+// As artifacts are claimed the list shrinks and the town names another.
+bool GameTownArtifactIntel(const Game *g, const char *town_id,
+                           char *out_zone, int zone_cap, int *out_x, int *out_y) {
+    if (!g || !g->res || !town_id) return false;
+    const Resources *r = g->res;
+
+    // Gather the unfound ones, in a fixed order (placements, then catalog).
+    struct { const char *zone; int x, y; } cand[GAME_MAX_PLACEMENTS + 32];
+    int n = 0;
+    for (int i = 0; i < g->placement_count && n < (int)(sizeof cand / sizeof cand[0]); i++) {
+        const SaltedPlacement *p = &g->placements[i];
+        if (p->kind != INTERACT_ARTIFACT) continue;
+        const ArtifactDef *a = artifact_by_id(p->id);
+        if (!a || g->artifacts.found[a->index]) continue;
+        cand[n].zone = p->zone; cand[n].x = p->x; cand[n].y = p->y; n++;
+    }
+    for (int z = 0; z < r->zone_count && n < (int)(sizeof cand / sizeof cand[0]); z++) {
+        const ResZone *rz = &r->zones[z];
+        for (int i = 0; i < rz->artifact_count && n < (int)(sizeof cand / sizeof cand[0]); i++) {
+            const ArtifactDef *a = artifact_by_id(rz->artifacts[i].id);
+            if (!a || g->artifacts.found[a->index]) continue;
+            cand[n].zone = rz->id; cand[n].x = rz->artifacts[i].x; cand[n].y = rz->artifacts[i].y; n++;
+        }
+    }
+    if (n == 0) return false;
+
+    // A pure hash of the seed and the town's id: stable, and different towns
+    // name different chests.
+    uint64_t h = g->seed * 1099511628211ull;
+    for (const char *p = town_id; *p; p++) h = (h ^ (unsigned char)*p) * 1099511628211ull;
+    h ^= h >> 29;
+    int pick = (int)(h % (uint64_t)n);
+
+    if (out_zone && zone_cap > 0) snprintf(out_zone, (size_t)zone_cap, "%s", cand[pick].zone);
+    if (out_x) *out_x = cand[pick].x;
+    if (out_y) *out_y = cand[pick].y;
+    return true;
+}
+
 int GameCastlesOwned(const Game *g) {
     int n = 0;
     for (int i = 0; i < GAME_CASTLES; i++) {

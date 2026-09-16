@@ -9,6 +9,7 @@
 #include "bfont.h"
 #include "ui.h"
 #include "touch.h"
+#include "overlay.h"
 #include "overlay_impl.h"
 #include "sprites.h"
 #include <stdio.h>
@@ -63,8 +64,13 @@ void uk_gold_text(const Game *g, char *out, int cap) {
 }
 
 void uk_dim(void) {
+    // One dim for the whole of modern: the pack's render.dim, the same value
+    // modern_overlay_dim_scene uses, so a panel over a screen and a panel over
+    // the map darken alike. A pack that sets none gets a light default.
+    const Resources *res = resources_current();
+    int pct = (res && res->render.dim > 0) ? res->render.dim : 45;
     ML_Rect r = ml_full();
-    DrawRectangle(r.x, r.y, r.w, r.h, (Color){ 0, 0, 0, 120 });
+    DrawRectangle(r.x, r.y, r.w, r.h, (Color){ 0, 0, 0, (unsigned char)overlay_dim_alpha(pct) });
 }
 
 ML_Rect uk_inlay(int w, int h, const char *title, const char *right) {
@@ -160,25 +166,21 @@ UkScene uk_scene_for(const char *title, const char *right, Texture2D bd, int row
     return uk_scene_ex(title, right, bd, rows, n * uk_line_h() + 2 * ML_PAD);
 }
 
-UkScene uk_scene_ex(const char *title, const char *right, Texture2D bd, int rows, int intro_min) {
+// The backdrop as a band at `top`, at most `band_h` tall: its top trimmed in
+// whole source pixels so the art stays square, the columns (or the lattice) in
+// the bars beside it, and a lattice divider under it. Whatever the caller puts
+// below starts at scene.y + scene.h + UK_BAND.
+static UkScene scene_band(ML_Rect r, int top, Texture2D bd, int band_h) {
     UkScene L;
-    L.full = ml_full();
-    ML_Rect r = L.full;
-    L.rows = rows < 1 ? 1 : rows;
-    DrawRectangle(r.x, r.y, r.w, r.h, uk_fill());
-    int top = uk_title(r.x, r.y, r.w, title, right, PAL_CLR(YELLOW));
+    memset(&L, 0, sizeof L);
+    L.full = r;
     L.scale = r.w / ML_BACKDROP_W;
     if (L.scale > 3) L.scale = 3;
     if (L.scale < 1) L.scale = 1;
     int bw = ML_BACKDROP_W * L.scale, bh = ML_BACKDROP_H * L.scale;
-    int rows_h = ml_list_height(L.rows);
-    L.rows_y = r.y + r.h - rows_h;
-    // Whatever the rows and the introduction need comes off the backdrop's top,
-    // in whole source pixels so the art stays square.
-    int room = L.rows_y - ML_ROW_RULE - intro_min - UK_BAND - top;
     L.trim = 0;
-    if (bh > room) {
-        int src_cut = (bh - room + L.scale - 1) / L.scale;
+    if (bh > band_h) {
+        int src_cut = (bh - band_h + L.scale - 1) / L.scale;
         L.trim = src_cut * L.scale;
     }
     L.scene = (ML_Rect){ r.x + (r.w - bw) / 2, top, bw, bh - L.trim };
@@ -206,12 +208,45 @@ UkScene uk_scene_ex(const char *title, const char *right, Texture2D bd, int rows
             lattice_band_v(rx, top, rw, L.scene.h);
         }
     }
-    // A lattice divider between the backdrop and the words under it.
     lattice_band_h(r.x, L.scene.y + L.scene.h, r.w, UK_BAND);
-    L.intro_y = L.scene.y + L.scene.h + UK_BAND;
-    L.intro_h = L.rows_y - ML_ROW_RULE - L.intro_y;
-    lattice_band_h(r.x, L.rows_y - ML_ROW_RULE, r.w, ML_ROW_RULE);
     return L;
+}
+
+UkScene uk_scene_ex(const char *title, const char *right, Texture2D bd, int rows, int intro_min) {
+    ML_Rect r = ml_full();
+    DrawRectangle(r.x, r.y, r.w, r.h, uk_fill());
+    int top = uk_title(r.x, r.y, r.w, title, right, PAL_CLR(YELLOW));
+    int n = rows < 1 ? 1 : rows;
+    int rows_h = ml_list_height(n);
+    int rows_y = r.y + r.h - rows_h;
+    // Whatever the rows and the introduction need comes off the backdrop's top.
+    UkScene L = scene_band(r, top, bd, rows_y - ML_ROW_RULE - intro_min - UK_BAND - top);
+    L.rows = n;
+    L.rows_y = rows_y;
+    L.intro_y = L.scene.y + L.scene.h + UK_BAND;
+    L.intro_h = rows_y - ML_ROW_RULE - L.intro_y;
+    lattice_band_h(r.x, rows_y - ML_ROW_RULE, r.w, ML_ROW_RULE);
+    return L;
+}
+
+UkMuster uk_muster(const char *title, const char *right, Texture2D bd, int list_rows, int list_w) {
+    UkMuster M;
+    ML_Rect r = ml_full();
+    DrawRectangle(r.x, r.y, r.w, r.h, uk_fill());
+    int top = uk_title(r.x, r.y, r.w, title, right, PAL_CLR(YELLOW));
+    int n = list_rows < 1 ? 1 : list_rows;
+    // The band is what is left over the two columns -- sized so a figure at 2x
+    // stands whole in it.
+    int body_min = ml_list_height(n);
+    M.top = scene_band(r, top, bd, r.y + r.h - body_min - UK_BAND - top);
+    int by = M.top.scene.y + M.top.scene.h + UK_BAND;
+    int bh = r.y + r.h - by;
+    if (list_w > r.w / 2) list_w = r.w / 2;
+    M.list = (ML_Rect){ r.x, by, list_w, bh };
+    lattice_band_v(r.x + list_w, by, UK_BAND, bh);
+    int dx = r.x + list_w + UK_BAND + UK_INSET;
+    M.detail = (ML_Rect){ dx, by + ML_PAD, r.x + r.w - UK_INSET - dx, bh - 2 * ML_PAD };
+    return M;
 }
 
 void uk_scene_blit(const UkScene *L, Texture2D t, int bx, int by, int bw, int bh) {
@@ -263,23 +298,43 @@ static ML_Rect message_rect(void) {
 
 int uk_message_text_w(void) { return message_rect().w - 2 * UK_INSET; }
 
-void uk_ask(const char *title, const char *const lines[], int n_lines,
-            int n_rows, int cursor, MlRowFn fn, void *ctx, int touch_list) {
-    ML_Rect a = message_rect();
+// The centred card is UK_INLAY_W wide, never the whole screen, so its words
+// wrap narrower than a map message's.
+int uk_ask_over_text_w(void) {
+    ML_Rect full = ml_area();
+    int w = UK_INLAY_W;
+    if (w > full.w - 2 * ml_space()) w = full.w - 2 * ml_space();
+    return w - 2 * UK_INSET;
+}
+
+// The title, wrapped to `w` and cut to UK_ASK_TITLE_LINES: how many lines it
+// takes, written into `out` when it is given. A title may arrive with its own
+// newlines (the engine's artifact message), so it is wrapped like the body and
+// never drawn as one line.
+#define UK_ASK_TITLE_LINES 3
+static int ask_title_lines(const char *title, int w, char out[][200]) {
+    if (!title || !title[0]) return 0;
+    const char *p = title;
+    char tmp[200];
+    int n = 0;
+    while (n < UK_ASK_TITLE_LINES && *p && bfont_take_line(&p, w, tmp, (int)sizeof tmp) > 0) {
+        if (out) snprintf(out[n], 200, "%s", tmp);
+        n++;
+    }
+    return n;
+}
+
+// The one shape, drawn in `a`: the gold title, the white words, a lattice band,
+// then the answers as full-width rows along the foot.
+static void ask_draw(ML_Rect a, int y, int h, const char *title, const char *const lines[],
+                     int n_lines, int n_rows, int cursor, MlRowFn fn, void *ctx, int touch_list) {
     const int lh = uk_line_h();
-    bool titled = title && title[0];
-    if (n_rows > UK_ASK_ROWS) n_rows = UK_ASK_ROWS;
-    int text_lines = (titled ? 1 : 0) + n_lines;
-    if (text_lines < 1) text_lines = 1;
-    int rows_h = n_rows > 0 ? UK_BAND + ml_list_height(n_rows) : 0;
-    int h = 2 * UK_INSET + text_lines * lh + rows_h;
-    int y = a.y + a.h - h;
+    char tl[UK_ASK_TITLE_LINES][200];
+    int n_title = ask_title_lines(title, a.w - 2 * UK_INSET, tl);
     uk_panel(a.x, y, a.w, h);
     int ty = y + UK_INSET;
-    if (titled) {
-        bfont_draw(title, a.x + UK_INSET, ty, PAL_CLR(YELLOW));
-        ty += lh;
-    }
+    for (int i = 0; i < n_title; i++, ty += lh)
+        bfont_draw(tl[i], a.x + UK_INSET, ty, PAL_CLR(YELLOW));
     for (int i = 0; i < n_lines; i++, ty += lh)
         bfont_draw(lines[i] ? lines[i] : "", a.x + UK_INSET, ty, PAL_CLR(WHITE));
     if (n_rows > 0) {
@@ -287,6 +342,33 @@ void uk_ask(const char *title, const char *const lines[], int n_lines,
         lattice_band_h(a.x, ry - UK_BAND, a.w, UK_BAND);
         ml_list_draw(a.x, ry, a.w, ml_list_height(n_rows), n_rows, cursor, fn, ctx, touch_list, uk_ink());
     }
+}
+
+static int ask_height(ML_Rect a, const char *title, int n_lines, int n_rows) {
+    int text_lines = ask_title_lines(title, a.w - 2 * UK_INSET, NULL) + n_lines;
+    if (text_lines < 1) text_lines = 1;
+    int rows_h = n_rows > 0 ? UK_BAND + ml_list_height(n_rows) : 0;
+    return 2 * UK_INSET + text_lines * uk_line_h() + rows_h;
+}
+
+void uk_ask(const char *title, const char *const lines[], int n_lines,
+            int n_rows, int cursor, MlRowFn fn, void *ctx, int touch_list) {
+    ML_Rect a = message_rect();
+    if (n_rows > UK_ASK_ROWS) n_rows = UK_ASK_ROWS;
+    int h = ask_height(a, title, n_lines, n_rows);
+    ask_draw(a, a.y + a.h - h, h, title, lines, n_lines, n_rows, cursor, fn, ctx, touch_list);
+}
+
+void uk_ask_over(const char *title, const char *const lines[], int n_lines,
+                 int n_rows, int cursor, MlRowFn fn, void *ctx, int touch_list) {
+    ML_Rect full = ml_area();
+    if (n_rows > UK_ASK_ROWS) n_rows = UK_ASK_ROWS;
+    ML_Rect a = { full.x + (full.w - UK_INLAY_W) / 2, full.y, UK_INLAY_W, full.h };
+    if (a.w > full.w - 2 * ml_space()) { a.w = full.w - 2 * ml_space(); a.x = full.x + ml_space(); }
+    int h = ask_height(a, title, n_lines, n_rows);
+    if (h > full.h) h = full.h;
+    uk_dim();
+    ask_draw(a, full.y + (full.h - h) / 2, h, title, lines, n_lines, n_rows, cursor, fn, ctx, touch_list);
 }
 
 // ---- in-lays -----------------------------------------------------------------------

@@ -234,6 +234,8 @@ typedef struct {
     char headman[RES_ID_LEN];     // portraits[] id of the figure on the town backdrop
     char townhead[RES_ID_LEN];    // portraits[] id of that person's portrait (Contracts, main page)
     char invitations[RES_ID_LEN]; // strings.town_invitations block spoken on the main page
+    bool intel_artifact;          // informant names an artifact's whereabouts,
+                                  // not a castle's garrison (intel_castle unused)
 } ResTown;
 
 // Special-castle behavior (King Maximus and other quest castles).
@@ -439,6 +441,7 @@ typedef struct {
     // Substitutions: %NAME%, %GOLD%.
     char town_header[RES_BANNER_LEN];
     char town_intro[RES_BANNER_LEN];
+    char town_intro_inland[RES_BANNER_LEN];   // a town with no dock: no harbour
     char town_visit[RES_BANNER_LEN];
     char cv_wanted[RES_BANNER_LEN];
     char cv_no_contract_hint[RES_BANNER_LEN];
@@ -486,6 +489,19 @@ typedef struct {
     char town_intel_count_numeric[RES_BANNER_LEN];// %COUNT% %TROOP%
     char town_intel_monsters_generic[RES_BANNER_LEN];
     char town_intel_no_garrison[RES_BANNER_LEN];
+    // A town whose informant reports on artifacts rather than a castle
+    // (ResTown.intel_artifact): %ZONE%, %X%, %Y%.
+    char town_intel_artifact[RES_BANNER_LEN];
+    char town_intel_artifact_none[RES_BANNER_LEN];
+    // Messages the engine raises through player_io_message. Substitutions:
+    // artifact_found %ARTIFACT%, castle_header %NAME%.
+    char artifact_found[RES_BANNER_LEN];
+    char artifact_map_piece[RES_BANNER_LEN];
+    char castle_header[RES_BANNER_LEN];
+    char castle_siege_monsters[RES_BANNER_LEN];
+    char castle_uncharted[RES_BANNER_LEN];
+    char search_nothing[RES_BANNER_LEN];
+    char zone_unreachable[RES_BANNER_LEN];
     char town_spell_unavailable[RES_BANNER_LEN];
     char town_spell_at_cap[RES_BANNER_LEN];
     char town_spell_can_learn[RES_BANNER_LEN];   // %LEFT% %S% (s/empty)
@@ -658,6 +674,7 @@ typedef struct {
     char gmr_cannot_fly[RES_BANNER_LEN];
     char gmr_one_spell[RES_BANNER_LEN];
     char gmr_no_magic[RES_BANNER_LEN];
+    char gmr_no_spell_held[RES_BANNER_LEN];
     char gmr_empty_slot[RES_BANNER_LEN];
     char gmc_overwrite[RES_BANNER_LEN];
     char gmc_load[RES_BANNER_LEN];

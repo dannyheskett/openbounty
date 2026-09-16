@@ -101,13 +101,19 @@ static void draw_dialog_ex(DialogMode mode) {
     char line[200];
 
     if (mode == DLG_MODE_CENTERED_MODAL) {
-        // Victory: a card sized to its words, the header as its title, and
-        // Continue like every other message.
-        UkDoc d = { 0 };
-        uk_doc_add(&d, body, PAL_CLR(WHITE));
-        UkCard c = { .title = hdr, .doc = &d, .n_answers = 1, .touch_list = TOUCH_LIST_PROMPT };
-        c.answers[0] = res ? res->banners.castle_continue : "";
-        uk_card(&c, NULL);
+        // Victory and every other message over a screen: the same shape as a
+        // map message, centred on the dimmed field (the combat helper).
+        int tw = uk_ask_over_text_w();
+        const char *q = body ? body : "";
+        static char cl[UK_MESSAGE_LINES][200];
+        const char *clines[UK_MESSAGE_LINES];
+        int cn = 0;
+        while (cn < UK_MESSAGE_LINES && *q && bfont_take_line(&q, tw, cl[cn], (int)sizeof cl[cn]) > 0) {
+            clines[cn] = cl[cn];
+            cn++;
+        }
+        UkRows one = { { res ? res->banners.castle_continue : "" }, { true } };
+        uk_ask_over(hdr, clines, cn, 1, 0, uk_rows_fn, &one, TOUCH_LIST_PROMPT);
         return;
     }
 
@@ -466,7 +472,10 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
     // The scene: the square at 3x, the head townsperson standing in it at 2x.
     ResTemplateVar iv[] = { { "HERO", g->character.name }, { "TOWN", (name && name[0]) ? name : "" },
                             { "ZONE", town_zone_name(g) } };
-    resources_format_template(buf, sizeof buf, bn->town_intro, iv, 3);
+    // A town with no dock does not boast a harbour.
+    const char *intro = (tw && tw->boat_x < 0 && bn->town_intro_inland[0])
+                      ? bn->town_intro_inland : bn->town_intro;
+    resources_format_template(buf, sizeof buf, intro, iv, 3);
     UkScene L = uk_scene_for(title, gold, loc_texture(s, LOC_TOWN), 2, buf);
     int head = tw ? resources_portrait_index(res, tw->headman) : -1;
     Texture2D fig = portrait_frame(s, head, 1000.0 / 180.0);
@@ -680,7 +689,7 @@ static void castle_troop_detail(const Game *g, const Sprites *s, const TroopDef 
     const int size = 2 * CL_TILE_W;
     uk_picture(troop_face(s, pt->index), a.x, a.y, size, size);
     char buf[RES_BANNER_LEN], nb[32];
-    int x = a.x + size + UK_INSET, y = a.y;
+    int x = a.x + size + ML_PAD, y = a.y;
     int lh = uk_line_h();
     bfont_draw(pt->name, x, y, PAL_CLR(YELLOW));
     y += lh + 4;
@@ -690,7 +699,9 @@ static void castle_troop_detail(const Game *g, const Sprites *s, const TroopDef 
     snprintf(rows[2].value, 32, "%d", pt->hit_points);                       rows[2].label = ui->army_hit_points;
     snprintf(rows[3].value, 32, "%d-%d", pt->melee_min, pt->melee_max);      rows[3].label = ui->army_damage;
     snprintf(rows[4].value, 32, "%d", pt->recruit_cost);                     rows[4].label = ui->army_g_cost;
-    int vx = a.x + a.w;
+    int tw = a.x + a.w - x;
+    if (tw > 20 * GW) tw = 20 * GW;
+    int vx = x + tw;
     for (int i = 0; i < 5; i++, y += lh) {
         bfont_draw(rows[i].label, x, y, PAL_CLR(WHITE));
         bfont_draw_right(rows[i].value, vx, y, PAL_CLR(WHITE));
@@ -700,14 +711,18 @@ static void castle_troop_detail(const Game *g, const Sprites *s, const TroopDef 
         if (strcmp(g->army[k].id, pt->id) == 0) in_army += g->army[k].count;
         if (cr && strcmp(cr->garrison[k].id, pt->id) == 0) in_garrison += cr->garrison[k].count;
     }
+    // What you have and can move goes under the numbers, still beside the
+    // picture, so no line wraps back under it; a caution -- too few men to
+    // lead, or an army grown past your leadership -- runs in yellow along the
+    // card's foot, where it has the whole width.
     UkDoc d = { 0 };
+    char note[RES_BANNER_LEN] = "";
     snprintf(nb, sizeof nb, "%d", in_army);
     castle_fmt(buf, sizeof buf, bn->castle_have, nb, NULL);
     uk_doc_add(&d, buf, PAL_CLR(WHITE));
     if (page == MC_RECRUIT && !modern_castle_troop_offered(g, pt)) {
         snprintf(nb, sizeof nb, "%d", pt->hit_points * 6);
-        castle_fmt(buf, sizeof buf, bn->castle_needs_leadership, nb, NULL);
-        uk_doc_add(&d, buf, PAL_CLR(YELLOW));
+        castle_fmt(note, sizeof note, bn->castle_needs_leadership, nb, NULL);
     } else if (page == MC_RECRUIT) {
         int m = GameMaxRecruitable(g, pt->id);
         if (m < 0) m = 0;
@@ -720,12 +735,17 @@ static void castle_troop_detail(const Game *g, const Sprites *s, const TroopDef 
         castle_fmt(buf, sizeof buf, bn->castle_in_garrison, nb, NULL);
         uk_doc_add(&d, buf, PAL_CLR(WHITE));
         if (page == MC_WITHDRAW &&
-            GameArmyTotalLeadership(g) + pt->hit_points * in_garrison > g->stats.leadership_current) {
-            uk_doc_gap(&d);
-            uk_doc_add(&d, bn->castle_over_leadership, PAL_CLR(YELLOW));
-        }
+            GameArmyTotalLeadership(g) + pt->hit_points * in_garrison > g->stats.leadership_current)
+            snprintf(note, sizeof note, "%s", bn->castle_over_leadership);
     }
-    ML_Rect under = { a.x, a.y + size + ML_PAD + 4, a.w, a.y + a.h - (a.y + size + ML_PAD + 4) };
+    int foot = a.y + a.h;
+    if (note[0]) {
+        int n = uk_lines(note, a.w);
+        foot -= n * lh;
+        uk_flow(a.x, foot, a.w, 0, 0, a.y + a.h, note, PAL_CLR(YELLOW));
+        foot -= ML_PAD;
+    }
+    ML_Rect under = { x, y + ML_PAD, a.x + a.w - x, foot - (y + ML_PAD) };
     uk_doc_draw(&d, under, 0, 0, -1, true);
 }
 
@@ -840,31 +860,6 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
     char label[64];
     if (page != MC_AUDIENCE) modern_castle_row(g, cursor, label, sizeof label, &row_troop);
     const TroopDef *pt = row_troop ? troop_by_id(row_troop) : NULL;
-    if (modern_castle_stepper(&cv, &cmax) && pt) {
-        char heading[RES_BANNER_LEN], sub[RES_BANNER_LEN], cost[RES_BANNER_LEN] = "", mx[16], vb[16];
-        static char act_label[RES_BANNER_LEN];
-        ResTemplateVar hv[] = { { "TROOP", pt->name } };
-        resources_format_template(heading, sizeof heading, bn->count_heading, hv, 1);
-        snprintf(mx, sizeof mx, "%d", cmax);
-        ResTemplateVar sv[] = { { "MAX", mx } };
-        resources_format_template(sub, sizeof sub, page == MC_RECRUIT ? bn->count_of_lead
-                                  : page == MC_GARRISON ? bn->count_of_army : bn->count_of_garrison, sv, 1);
-        if (page == MC_RECRUIT) {
-            snprintf(vb, sizeof vb, "%d", pt->recruit_cost * cv);
-            ResTemplateVar c1[] = { { "GOLD", vb } };
-            resources_format_template(cost, sizeof cost, bn->count_cost, c1, 1);
-        }
-        snprintf(vb, sizeof vb, "%d", cv);
-        ResTemplateVar av[] = { { "COUNT", vb } };
-        resources_format_template(act_label, sizeof act_label, page == MC_RECRUIT ? bn->count_recruit
-                                  : page == MC_GARRISON ? bn->count_garrison : bn->count_withdraw, av, 1);
-        const char *lines[] = { sub, cost };
-        Color colors[] = { PAL_CLR(WHITE), PAL_CLR(YELLOW) };
-        uk_count_inlay(heading, troop_face(s, pt->index), lines, colors, 2, cv, cmax, act_label, bn->count_cancel,
-                       TOUCH_LIST_CASTLE);
-        return;
-    }
-
     if (page == MC_AUDIENCE) {
         // The throne room: the Emperor standing before his throne, where the
         // hero stands under it, and the audiences as rows.
@@ -959,20 +954,15 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
         return;
     }
 
-    // Recruit, Garrison, Withdraw: the troops at the left, the one under the
-    // cursor beside them.
-    // As tall as the rows or the troop's picture and numbers.
-    int detail = 2 * UK_INSET + 2 * CL_TILE_W + ML_PAD + 4 + 6 * uk_line_h();
-    // The troops as an in-lay over the scene, so the armoury (or the hall)
-    // and its keeper stay in view behind them.
-    int body_h = ml_list_height(rows) > detail ? ml_list_height(rows) : detail;
-    ML_Rect b = uk_inlay(UK_WIDE_W, uk_title_h() + UK_BAND + body_h, title, NULL);
-    int lw = 15 * GW + 2 * ML_PAD;
-    ml_list_draw(b.x, b.y, lw, b.h, rows, cursor, castle_row_fn, &cc, TOUCH_LIST_CASTLE, uk_ink());
-    lattice_band_v(b.x + lw, b.y, UK_BAND, b.h);
-    ML_Rect a = { b.x + lw + UK_BAND + UK_INSET, b.y + UK_INSET, 0, 0 };
-    a.w = b.x + b.w - UK_INSET - a.x;
-    a.h = b.y + b.h - UK_INSET - a.y;
+    // Recruit, Garrison, Withdraw: the room itself, with its keeper standing in
+    // it across the top, the roll of troops at the left, and the one under the
+    // cursor beside it. The band is sized so the keeper stands whole at 2x;
+    // five rows show and the last scrolls.
+    UkMuster M = uk_muster(title, gold, bd, 5, 13 * GW + 2 * ML_PAD);
+    uk_scene_figure(&M.top, fig, CL_TILE_W);
+    ml_list_draw(M.list.x, M.list.y, M.list.w, M.list.h, rows, cursor, castle_row_fn, &cc,
+                 TOUCH_LIST_CASTLE, uk_ink());
+    ML_Rect a = M.detail;
     if (pt) {
         castle_troop_detail(g, s, pt, page, cr, a);
     } else if (rows == 1 && (page == MC_GARRISON || page == MC_WITHDRAW)) {
@@ -987,6 +977,32 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
         uk_doc_add(&d, buf, PAL_CLR(WHITE));
         uk_doc_draw(&d, a, 0, 0, -1, true);
     }
+    // "How many?" and the result stand over the page, as a moment does.
+    if (modern_castle_stepper(&cv, &cmax) && pt) {
+        char heading[RES_BANNER_LEN], sub[RES_BANNER_LEN], cost[RES_BANNER_LEN] = "", mx[16], vb[16];
+        static char act_label[RES_BANNER_LEN];
+        ResTemplateVar hv[] = { { "TROOP", pt->name } };
+        resources_format_template(heading, sizeof heading, bn->count_heading, hv, 1);
+        snprintf(mx, sizeof mx, "%d", cmax);
+        ResTemplateVar sv[] = { { "MAX", mx } };
+        resources_format_template(sub, sizeof sub, page == MC_RECRUIT ? bn->count_of_lead
+                                  : page == MC_GARRISON ? bn->count_of_army : bn->count_of_garrison, sv, 1);
+        if (page == MC_RECRUIT) {
+            snprintf(vb, sizeof vb, "%d", pt->recruit_cost * cv);
+            ResTemplateVar c1[] = { { "GOLD", vb } };
+            resources_format_template(cost, sizeof cost, bn->count_cost, c1, 1);
+        }
+        snprintf(vb, sizeof vb, "%d", cv);
+        ResTemplateVar av[] = { { "COUNT", vb } };
+        resources_format_template(act_label, sizeof act_label, page == MC_RECRUIT ? bn->count_recruit
+                                  : page == MC_GARRISON ? bn->count_garrison : bn->count_withdraw, av, 1);
+        const char *lines[] = { sub, cost };
+        Color colors[] = { PAL_CLR(WHITE), PAL_CLR(YELLOW) };
+        uk_count_inlay(heading, troop_face(s, pt->index), lines, colors, 2, cv, cmax, act_label, bn->count_cancel,
+                       TOUCH_LIST_CASTLE);
+        return;
+    }
+
     if (msg) uk_result_inlay(title, keeper, msg, bn->castle_continue, TOUCH_LIST_PROMPT);
 }
 

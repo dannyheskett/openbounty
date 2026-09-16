@@ -16,7 +16,7 @@
 		"tiles_w":	7,
 		"tiles_h":	5,
 		"ui_scale":	1,
-		"dim":	55,
+		"dim":	35,
 		"native_w":	800,
 		"native_h":	532 },
 	"world":	{
@@ -1884,7 +1884,8 @@
 					"y":	46
 				},
 				"zone":	"italia",
-				"intel_castle":	"castle_italia_0",
+				"intel_castle":	"",
+				"intel_artifact":	true,
 				"pinned_spell":	""
 		}],
 	"castles":	[{

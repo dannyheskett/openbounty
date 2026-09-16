@@ -64,6 +64,8 @@ static bool file_allowlisted(const char *path) {
         "src/shell_autoplay.c",// oracle progress overlay
         "src/shell_demo.c",    // demo-mode telemetry
         "src/encode_dialog.c", // movie-encode dev tool
+        "src/shell_gallery.c", // --gallery capture harness: sample wording only
+        "src/shell_cheats.c",  // --debug cheats: never reachable in a shipped game
     };
     for (size_t i = 0; i < sizeof files / sizeof *files; i++) {
         if (strstr(path, files[i])) return true;
@@ -74,6 +76,83 @@ static bool file_allowlisted(const char *path) {
 // The only literal allowed at a renderer: the selection-cursor glyph.
 static bool literal_allowlisted(const char *lit) {
     return strcmp(lit, ">") == 0;
+}
+
+// Calls that raise a message or a question to the player: their words are pack
+// strings too, wherever they sit in the argument list. A Roman artifact that
+// talks about a "scepter" is what this catches.
+static const char *const RAISE_CALLS[] = {
+    "player_io_message(",
+    "player_io_raise_decision(",
+};
+
+// Wording, as opposed to an id, a format spec or an escape: four or more
+// letters that are not a %-conversion, and either a space or a capitalised
+// word -- so "An uncharted castle." is caught and the id "time_stop" is not.
+static bool literal_has_words(const char *lit) {
+    int letters = 0;
+    bool spaced = false, capitalised = false;
+    for (const char *p = lit; *p; p++) {
+        if (*p == '\\' && p[1]) { p++; continue; }              // an escape
+        if (*p == '%' && p[1]) { p++; continue; }                // a conversion
+        if (*p == ' ') { spaced = true; continue; }
+        if (*p >= 'A' && *p <= 'Z') { capitalised = true; letters++; continue; }
+        if (*p >= 'a' && *p <= 'z') letters++;
+    }
+    return letters >= 4 && (spaced || capitalised);
+}
+
+// Flag every worded literal inside a player_io_* call, which may run over
+// several lines. Returns the count; `first` takes the first offender.
+static int scan_raise_calls(const char *path, char *first, size_t firstsz) {
+    FILE *f = fopen(path, "rb");
+    if (!f) return 0;
+    char line[2048];
+    int lineno = 0, hits = 0, depth = 0, call_line = 0;
+    while (fgets(line, sizeof line, f)) {
+        lineno++;
+        const char *p = line;
+        if (depth == 0) {
+            const char *at = NULL;
+            for (size_t t = 0; t < sizeof RAISE_CALLS / sizeof *RAISE_CALLS; t++) {
+                const char *h = strstr(line, RAISE_CALLS[t]);
+                if (h && (!at || h < at)) at = h + strlen(RAISE_CALLS[t]);
+            }
+            if (!at) continue;
+            depth = 1;
+            call_line = lineno;
+            p = at;
+        }
+        for (; *p; p++) {
+            if (*p == '(') { depth++; continue; }
+            if (*p == ')') { if (--depth <= 0) { depth = 0; break; } continue; }
+            if (strncmp(p, "spell_header(", 13) == 0) {
+                // spell_header(id, "Name"): the literal is a fallback the
+                // strict loader makes unreachable. Skip the whole call.
+                int d2 = 0;
+                for (p += 12; *p; p++) {
+                    if (*p == '(') d2++;
+                    else if (*p == ')') { if (--d2 <= 0) break; }
+                }
+                if (!*p) break;
+                continue;
+            }
+            if (*p != '"') continue;
+            char buf[256];
+            size_t n = 0;
+            for (p++; *p && *p != '"' && n + 1 < sizeof buf; p++) {
+                if (*p == '\\' && p[1]) buf[n++] = *p++;
+                buf[n++] = *p;
+            }
+            buf[n] = '\0';
+            if (!literal_has_words(buf)) continue;
+            hits++;
+            if (first[0] == '\0')
+                snprintf(first, firstsz, "%s:%d player_io_*(.. \"%s\" ..)", path, call_line, buf);
+        }
+    }
+    fclose(f);
+    return hits;
 }
 
 // Scan one .c file. Returns the violation count; writes the first offender
@@ -127,6 +206,7 @@ static int scan_tree(const char *root, char *first, size_t firstsz) {
         if (len < 2 || strcmp(e->d_name + len - 2, ".c") != 0) continue;
         if (file_allowlisted(path)) continue;
         hits += scan_c_file(path, first, firstsz);
+        hits += scan_raise_calls(path, first, firstsz);
     }
     closedir(d);
     return hits;

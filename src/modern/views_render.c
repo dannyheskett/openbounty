@@ -833,17 +833,27 @@ static void draw_spells(const Game *g) {
     const char *desc = sp ? sp->description : NULL;
     if ((!desc || !desc[0]) && sp) desc = resources_spell_lore(g->res, sp->id);
     if (desc) {
-        // As many whole sentences as the foot holds.
+        // As many whole sentences as the foot holds. A sentence ends after its
+        // full stop AND any quotation mark closing it, so "bridge-builder."
+        // keeps its quote.
         int tw = r.w - 2 * UK_INSET, fit = (r.y + r.h - (fy + UK_BAND + 6)) / uk_line_h();
         char text[512];
         snprintf(text, sizeof text, "%s", desc);
-        while (uk_lines(text, tw) > fit) {
-            char *end = NULL;
-            for (char *q = text; *q; q++)
-                if ((q[0] == '.' || q[0] == '!' || q[0] == '?') && (q[1] == ' ' || q[1] == '"') && q[1]) end = q;
-            if (!end) break;
-            end[1] = '\0';
-            if (end[0] && end + 1 > text && uk_lines(text, tw) <= fit) break;
+        if (uk_lines(text, tw) > fit) {
+            int keep = 0;
+            for (int i = 0; text[i]; i++) {
+                if (text[i] != '.' && text[i] != '!' && text[i] != '?') continue;
+                int e = i + 1;
+                if (text[e] == '"' || text[e] == '\'') e++;
+                if (text[e] && text[e] != ' ' && text[e] != '\n') continue;
+                char save = text[e];
+                text[e] = '\0';
+                bool fits = uk_lines(text, tw) <= fit;
+                text[e] = save;
+                if (!fits) break;
+                keep = e;
+            }
+            if (keep > 0) text[keep] = '\0';   // nothing whole fits: let it clip
         }
         uk_flow(r.x + UK_INSET, fy + UK_BAND + 6, tw, r.x, 0, r.y + r.h, text, PAL_CLR(WHITE));
     }

@@ -14,6 +14,16 @@ static cJSON *gb_placeholder_strings(void) {
     cJSON_AddStringToObject(o, "chest_empty", "chest_empty");
     cJSON_AddStringToObject(o, "town_header", "town_header");
     cJSON_AddStringToObject(o, "town_intro", "town_intro");
+    cJSON_AddStringToObject(o, "town_intro_inland", "town_intro_inland");
+    cJSON_AddStringToObject(o, "town_intel_artifact", "town_intel_artifact");
+    cJSON_AddStringToObject(o, "town_intel_artifact_none", "town_intel_artifact_none");
+    cJSON_AddStringToObject(o, "artifact_found", "artifact_found");
+    cJSON_AddStringToObject(o, "artifact_map_piece", "artifact_map_piece");
+    cJSON_AddStringToObject(o, "castle_header", "castle_header");
+    cJSON_AddStringToObject(o, "castle_siege_monsters", "castle_siege_monsters");
+    cJSON_AddStringToObject(o, "castle_uncharted", "castle_uncharted");
+    cJSON_AddStringToObject(o, "search_nothing", "search_nothing");
+    cJSON_AddStringToObject(o, "zone_unreachable", "zone_unreachable");
     cJSON_AddStringToObject(o, "town_visit", "town_visit");
     cJSON_AddStringToObject(o, "cv_wanted", "cv_wanted");
     cJSON_AddStringToObject(o, "cv_no_contract_hint", "cv_no_contract_hint");
@@ -213,6 +223,7 @@ static cJSON *gb_placeholder_strings(void) {
     cJSON_AddStringToObject(o, "gmr_cannot_fly", "gmr_cannot_fly");
     cJSON_AddStringToObject(o, "gmr_one_spell", "gmr_one_spell");
     cJSON_AddStringToObject(o, "gmr_no_magic", "gmr_no_magic");
+    cJSON_AddStringToObject(o, "gmr_no_spell_held", "gmr_no_spell_held");
     cJSON_AddStringToObject(o, "gmr_empty_slot", "gmr_empty_slot");
     cJSON_AddStringToObject(o, "gmc_overwrite", "gmc_overwrite");
     cJSON_AddStringToObject(o, "gmc_load", "gmc_load");

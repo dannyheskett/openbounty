@@ -64,9 +64,7 @@ bool flow_apply_search(Game *g, const Resources *res, FlowAnswer ans,
         if (out_game_over) *out_game_over = true;
     } else {
         if (weeks > 0 && out_week_commission) *out_week_commission = paid;
-        player_io_message(g, NULL,
-            "Your search of this area has\n"
-            "revealed nothing.");
+        player_io_message(g, NULL, res->banners.search_nothing);
     }
     return false;
 }
@@ -359,7 +357,7 @@ bool flow_apply_navigate(Game *g, Map *map, Fog *fog,
 
     const char *target = zones[idx];
     if (!GameSwitchZone(g, map, fog, target)) {
-        player_io_message(g, NULL, "Cannot reach that continent.");
+        player_io_message(g, NULL, g->res->banners.zone_unreachable);
         return false;
     }
     int paid = 0;

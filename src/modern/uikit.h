@@ -97,6 +97,21 @@ void    uk_scene_figure(const UkScene *L, Texture2D t, int x);
 void    uk_scene_intro(const UkScene *L, const char *text);
 void    uk_scene_rows(const UkScene *L, int n, int cursor, MlRowFn fn, void *ctx, int touch_list);
 
+// ---- the muster: a scene over two columns --------------------------------------------
+//
+// The castle's Recruit, Garrison and Withdraw pages: the title strip, the
+// backdrop as a band with its keeper standing in it at 2x (uk_scene_figure on
+// `top`), a lattice divider, then the roll of troops at the left and the one
+// under the cursor beside it. The band takes whatever the list leaves.
+typedef struct {
+    UkScene top;        // the band; use uk_scene_figure / uk_scene_blit on it
+    ML_Rect list;       // the left column, for ml_list_draw
+    ML_Rect detail;     // the right column, its inset already taken
+} UkMuster;
+
+UkMuster uk_muster(const char *title, const char *right, Texture2D backdrop,
+                   int list_rows, int list_w);
+
 
 // A row source over a fixed list of labels.
 typedef struct { const char *label[8]; bool enabled[8]; } UkRows;
@@ -186,7 +201,12 @@ void uk_card(const UkCard *c, UkCardOut *out);
 #define UK_ASK_ROWS      6
 #define UK_MESSAGE_LINES 6          // a message's body lines per page
 int  uk_message_text_w(void);       // the width its words wrap to
+int  uk_ask_over_text_w(void);      // the same, for uk_ask_over's card
 void uk_ask(const char *title, const char *const lines[], int n_lines,
             int n_rows, int cursor, MlRowFn fn, void *ctx, int touch_list);
+// The same shape over a screen or the battlefield: a card centred on the dimmed
+// area instead of a band on the map pane's foot. The combat helper.
+void uk_ask_over(const char *title, const char *const lines[], int n_lines,
+                 int n_rows, int cursor, MlRowFn fn, void *ctx, int touch_list);
 
 #endif

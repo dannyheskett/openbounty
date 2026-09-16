@@ -137,10 +137,32 @@ static bool combat_read_dir(int *dx, int *dy) {
 // Modern: the spell menu's cursor row. Shell state, not combat state.
 static int s_cast_cursor = 0;
 
+// Spell `idx` chosen: check the charge, then set the picker up for that
+// spell's target filter -- shared with the engine dispatcher and the autoplay
+// policy so shell and autoplay agree on legal targets. Entered from the combat
+// menu's Cast page (modern) or the lettered picker (legacy).
+void combat_begin_cast(Combat *c, Game *gw, int idx) {
+    const ResCombatLog *cl_pre = combat_log_strings(c);
+    if (!gw || idx < 0 || idx >= 7) { c->cast_phase = COMBAT_CAST_NONE; return; }
+    if (gw->spells.counts[idx] <= 0) {
+        combat_log_template(c, cl_pre->no_spell_type, NULL, 0);
+        c->cast_phase = COMBAT_CAST_NONE;
+        return;
+    }
+    c->cast_spell_idx = idx;
+    c->pick_filter   = combat_spell_target_filter(idx);
+    c->pick_reason   = COMBAT_PICK_REASON_SPELL_TARGET;
+    c->picker_active = true;
+    if (c->unit_id >= 0) {
+        c->cursor_x = c->units[c->side][c->unit_id].x;
+        c->cursor_y = c->units[c->side][c->unit_id].y;
+    }
+    c->cast_phase = COMBAT_CAST_PICK_TARGET;
+}
+
 int combat_cast_step(Combat *c, Game *g, const Sprites *sprites,
                      void *render_target) {
     (void)sprites; (void)render_target;
-    const ResCombatLog *cl_pre = combat_log_strings(c);
     Game *gw = c->heroes[c->side];
     if (!gw) {
         c->cast_phase = COMBAT_CAST_NONE;
@@ -165,25 +187,7 @@ int combat_cast_step(Combat *c, Game *g, const Sprites *sprites,
             if (input_key_pressed(KEY_A + i)) { picked = i; break; }
         }
         if (picked < 0) return 0;
-        if (gw->spells.counts[picked] <= 0) {
-            combat_log_template(c, cl_pre->no_spell_type, NULL, 0);
-            c->cast_phase = COMBAT_CAST_NONE;
-            return 0;
-        }
-        c->cast_spell_idx = picked;
-        // Set up the picker for this spell's target filter -- shared with the
-        // engine cast dispatcher / autoplay policy so shell + autoplay
-        // agree on legal targets from one source.
-        int filter = combat_spell_target_filter(picked);
-        CombatPickReason reason = COMBAT_PICK_REASON_SPELL_TARGET;
-        c->pick_filter   = filter;
-        c->pick_reason   = reason;
-        c->picker_active = true;
-        if (c->unit_id >= 0) {
-            c->cursor_x = c->units[c->side][c->unit_id].x;
-            c->cursor_y = c->units[c->side][c->unit_id].y;
-        }
-        c->cast_phase = COMBAT_CAST_PICK_TARGET;
+        combat_begin_cast(c, gw, picked);
         return 0;
     }
     if (c->cast_phase == COMBAT_CAST_PICK_TARGET) {
@@ -262,7 +266,7 @@ static bool s_act_open = false;
 
 // The menu's pages (REQ-430s): the top level and its three pages. It opens on
 // the Unit page; Back from there goes to the top level, Back again closes.
-enum { CM_ROOT = 0, CM_UNIT, CM_HERO, CM_GAME };
+enum { CM_ROOT = 0, CM_UNIT, CM_HERO, CM_GAME, CM_CAST };
 static int s_act_page[3], s_act_cursor[3], s_act_depth = 0;
 
 void combat_gallery_menu(bool open) {
@@ -272,11 +276,41 @@ void combat_gallery_menu(bool open) {
     s_act_depth = open ? 2 : 0;
 }
 
+// --gallery: the menu opened on its Cast page (Actions > Unit > Spells).
+void combat_gallery_cast_page(void) {
+    combat_gallery_menu(true);
+    s_act_page[2] = CM_CAST; s_act_cursor[2] = 0;
+    s_act_depth = 3;
+}
+
 static void combat_menu_open(void) {
     s_act_open = true;
     s_act_page[0] = CM_ROOT; s_act_cursor[0] = 0;
     s_act_page[1] = CM_UNIT; s_act_cursor[1] = 0;
     s_act_depth = 2;
+}
+
+// What a spell does, for the menu's description block: the last paragraph of
+// its lore (the lore opens with the myth and closes with the effect), cut to
+// its first sentence so it reads whole in two lines.
+static const char *spell_brief(const Resources *res, const SpellDef *sd, int slot) {
+    static char briefs[7][200];
+    if (slot < 0 || slot >= 7) return "";
+    char *brief = briefs[slot];
+    const size_t brief_cap = sizeof briefs[0];
+    const char *t = (sd && sd->description[0]) ? sd->description
+                  : (sd ? resources_spell_lore(res, sd->id) : "");
+    if (!t || !t[0]) return "";
+    const char *last = t;
+    for (const char *q = t; q[0] && q[1]; q++)
+        if (q[0] == '\n' && q[1] == '\n') last = q + 2;
+    snprintf(brief, brief_cap, "%s", last);
+    for (char *q = brief; *q; q++) {
+        if (*q != '.' && *q != '!' && *q != '?') continue;
+        if (q[1] == '"' || q[1] == '\'') q++;
+        if (q[1] == '\0' || q[1] == ' ' || q[1] == '\n') { q[1] = '\0'; break; }
+    }
+    return brief;
 }
 
 static void combat_menu_page(const Combat *c, const Game *g, int id, GmPage *p) {
@@ -307,7 +341,7 @@ static void combat_menu_page(const Combat *c, const Game *g, int id, GmPage *p) 
             "S", KEY_S, shots && !close);
         ROW(ui->gm_fly, fly ? bn->gmd_unit_fly : bn->gmr_cannot_fly, "F", KEY_F, fly);
         ROW(ui->gm_cast, !magic ? bn->gmr_no_magic : !spell_left ? bn->gmr_one_spell : bn->gmd_combat_cast,
-            "U", KEY_U, magic && spell_left);
+            "U", GM_ACT_PAGE + CM_CAST, magic && spell_left);
         ROW(ui->gm_back, bn->gmd_back_up, "", GM_ACT_BACK, true);
         break;
     }
@@ -317,6 +351,20 @@ static void combat_menu_page(const Combat *c, const Game *g, int id, GmPage *p) 
         ROW(ui->gm_character, bn->gmd_combat_character, "V", KEY_V, true);
         ROW(ui->gm_back, bn->gmd_back_up, "", GM_ACT_BACK, true);
         break;
+    case CM_CAST: {
+        // The spells as a page of this menu: no letters, no in-panel Back, the
+        // spell's lore as the description beside them.
+        const Game *hero = c->heroes[c->side];
+        p->title = ui->combat_spells_title;
+        for (int i = 0; i < 7; i++) {
+            const SpellDef *sd = spell_by_index(i);
+            int held = hero ? hero->spells.counts[i] : 0;
+            ROW(sd ? sd->name : "", held > 0 ? spell_brief(g->res, sd, i) : bn->gmr_no_spell_held, "",
+                GM_ACT_USER + i, held > 0);
+        }
+        ROW(ui->gm_back, bn->gmd_back_up, "", GM_ACT_BACK, true);
+        break;
+    }
     case CM_GAME:
         p->title = ui->gm_game;
         ROW(ui->gm_controls, bn->gmd_controls, "C", KEY_C, true);
@@ -325,6 +373,19 @@ static void combat_menu_page(const Combat *c, const Game *g, int id, GmPage *p) 
         break;
     }
     #undef ROW
+}
+
+typedef struct { const Game *hero; const GmPage *page; } SpellRowCtx;
+
+// A row of the menu's Cast page: the spell's name, the charges held at the
+// right. No letter -- the menu is cursored and tapped, like every other list.
+static bool combat_spell_row(void *ctx, int i, char *label, char *right, int cap) {
+    const SpellRowCtx *sc = (const SpellRowCtx *)ctx;
+    const GmItem *it = &sc->page->item[i];
+    snprintf(label, (size_t)cap, "%s", it->label ? it->label : "");
+    if (i < 7 && sc->hero) snprintf(right, 48, "%d", sc->hero->spells.counts[i]);
+    else right[0] = '\0';
+    return it->enabled;
 }
 
 // The large panel: the path, the page's rows, the description beside them.
@@ -343,26 +404,20 @@ static void combat_action_menu_draw(const Combat *c, const Game *g) {
     ML_Rect r = ml_large();
     int cursor = s_act_cursor[d] < p.n ? s_act_cursor[d] : p.n - 1;
     int menu_w = 400;
-    for (int id = CM_ROOT; id <= CM_GAME; id++) {
+    for (int id = CM_ROOT; id <= CM_CAST; id++) {
         GmPage pi;
         combat_menu_page(c, g, id, &pi);
         int pw = gm_page_width(&pi, path);
         if (pw > menu_w) menu_w = pw;
     }
+    // The Cast page shows each spell's charges at the row's right.
+    bool cast = s_act_page[d] == CM_CAST;
+    SpellRowCtx sc = { c->heroes[c->side], &p };
     gm_draw_page(&p, path, "", r.x, r.y, menu_w, r.h, 0, cursor,
-                 TOUCH_LIST_COMBAT_ACTIONS, NULL, NULL);
+                 TOUCH_LIST_COMBAT_ACTIONS, cast ? combat_spell_row : NULL, cast ? &sc : NULL);
 }
 
-typedef struct { const Game *hero; } SpellRowCtx;
 
-// A combat spell row: its letter and name, the charges held at the right.
-static bool combat_spell_row(void *ctx, int i, char *label, char *right, int cap) {
-    const SpellRowCtx *sc = (const SpellRowCtx *)ctx;
-    const SpellDef *sd = spell_by_index(i);
-    snprintf(label, (size_t)cap, "%c  %s", 'A' + i, sd ? sd->name : "");
-    snprintf(right, 48, "%d", sc->hero->spells.counts[i]);
-    return true;
-}
 
 static int combat_player_action_full(Combat *c, const Game *g,
                                      const Sprites *sprites,
@@ -386,6 +441,10 @@ static int combat_player_action_full(Combat *c, const Game *g,
                 s_act_cursor[s_act_depth] = 0;
                 s_act_depth++;
             }
+        } else if (key >= GM_ACT_USER) {
+            // A spell on the Cast page: close the menu and pick its target.
+            s_act_open = false;
+            combat_begin_cast(c, c->heroes[c->side], key - GM_ACT_USER);
         } else if (key) {
             s_act_open = false;
             input_host_inject_key_next_frame(key);
@@ -478,7 +537,14 @@ static int combat_player_action_full(Combat *c, const Game *g,
             combat_log_template(c, cl_pre->cannot_cast, NULL, 0);
             return 0;
         }
-        c->cast_phase = COMBAT_CAST_PICK_SPELL;
+        if (CL_IS_MODERN) {
+            combat_menu_open();
+            s_act_page[s_act_depth] = CM_CAST;
+            s_act_cursor[s_act_depth] = 0;
+            s_act_depth++;
+        } else {
+            c->cast_phase = COMBAT_CAST_PICK_SPELL;
+        }
         return 0;
     }
     if (input_key_pressed(KEY_C)) {
@@ -505,10 +571,9 @@ static void combat_present(const Combat *c, const Game *g,
     // reachable from combat).
     if (views_active() != VIEW_NONE) {
         overlay_draw(g, NULL, NULL, sprites);      // dims the field itself
-    } else if (c->cast_phase == COMBAT_CAST_PICK_SPELL || s_act_open ||
-               dialog_is_active() || prompt_is_active()) {
-        overlay_dim_scene();                       // modern: panel over a dimmed field
     }
+    // Every modern panel dims the field behind it (uk_inlay / uk_ask_over), so
+    // the field is never dimmed twice.
     if (s_act_open && views_active() == VIEW_NONE && CL_IS_MODERN)
         combat_action_menu_draw(c, g);
     // Modern: the top bar is touchable and acts as Escape (the action menu).
@@ -539,29 +604,9 @@ static void combat_present(const Combat *c, const Game *g,
             touch_region(56, 64 + i * 10, 224, 10, KEY_A + i);
         }
         bfont_draw(ui->combat_spells_prompt, 70, 144, PAL_CLR(WHITE));
-    } else if (c->cast_phase == COMBAT_CAST_PICK_SPELL) {
-        // Modern: an in-lay over the field -- the spells as rows, the one
-        // under the cursor described along the foot, Back in the title strip.
-        const Game *gw = c->heroes[c->side];
-        const ResUI *ui = &gw->res->ui;
-        const int lh = uk_line_h(), w = 480;
-        int foot_h = UK_BAND + 2 * UK_INSET + 2 * lh - 2;
-        int h = uk_title_h() + UK_BAND + ml_list_height(7) + foot_h;
-        ML_Rect b = uk_inlay(w, h, ui->combat_spells_title, NULL);
-        int bw = ml_hint_width(ui->hint_back, ui->key_esc, ui->pad_back);
-        ml_hint_button(b.x + b.w - ML_PAD - bw, b.y - UK_BAND - uk_title_h() + 3, ui->hint_back, ui->key_esc,
-                       ui->pad_back, KEY_ESCAPE);
-        SpellRowCtx sc = { gw };
-        ml_list_draw(b.x, b.y, b.w, ml_list_height(7), 7, s_cast_cursor, combat_spell_row,
-                     &sc, TOUCH_LIST_COMBAT_SPELLS, uk_ink());
-        int fy = b.y + ml_list_height(7);
-        lattice_band_h(b.x, fy, b.w, UK_BAND);
-        const SpellDef *sd = spell_by_index(s_cast_cursor);
-        const char *desc = sd ? sd->description : ui->combat_spells_prompt_modern;
-        uk_flow(b.x + UK_INSET, fy + UK_BAND + UK_INSET, b.w - 2 * UK_INSET, b.x, 0,
-                fy + UK_BAND + UK_INSET + 2 * lh, desc && desc[0] ? desc : ui->combat_spells_prompt_modern,
-                PAL_CLR(WHITE));
     }
+    // Modern has no picker of its own: the spells are a page of the combat
+    // menu (CM_CAST), drawn by combat_action_menu_draw like every other page.
     // Victory dialog : centered modal
     // floating over the still-rendered battlefield. Defeat does not
     // draw here -- combat exits silently and perform_temp_death shows

@@ -828,6 +828,11 @@ int  GameArmyStackCount(const Game *g);          // number of non-empty stacks
 // Count helpers used by view_character.
 int  GameVillainsCaught(const Game *g);
 int  GameArtifactsFound(const Game *g);
+// Where a town's informant says a sacred artifact lies: its zone id and square,
+// chosen from the seed and the town id among the artifacts not yet found.
+// False when every artifact is already in hand.
+bool GameTownArtifactIntel(const Game *g, const char *town_id,
+                           char *out_zone, int zone_cap, int *out_x, int *out_y);
 int  GameCastlesOwned(const Game *g);
 
 // . Base formula:

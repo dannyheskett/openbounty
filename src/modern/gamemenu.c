@@ -72,6 +72,10 @@ void gm_draw_page(const GmPage *p, const char *path, const char *right_title,
     // the options. A page with more rows than fit scrolls.
     (void)x; (void)y; (void)h; (void)list_w;
     const int lh = uk_line_h();
+    // uk_inlay clamps a panel to the area; the words must wrap to the width it
+    // actually gets, or a long description runs off the panel's right edge.
+    int max_w = ml_area().w - 2 * ml_space();
+    if (w > max_w) w = max_w;
     int text_w = w - 2 * UK_INSET;
     const int desc_lines = 2;
     int head = uk_title_h() + UK_BAND;
