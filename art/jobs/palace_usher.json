@@ -1,0 +1,20 @@
+{
+ "id": "palace_usher",
+ "prompt": "a Roman palace usher standing at rest, a clean-shaven middle-aged chamberlain in a long white tunic with a purple border under a light grey cloak, a slim gilded staff of office upright in one hand, a folded wax tablet in the other, calm and formal",
+ "style": "user__glory_of_rome_troops_bac676cd",
+ "width": 96,
+ "height": 96,
+ "seed": 9971,
+ "remove_bg": true,
+ "return_non_bg_removed": true,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": true,
+ "target": [
+  96,
+  96
+ ],
+ "_pack_path": "art/ui/palace_usher_00..07.png",
+ "_animation": "breathes slowly and tips the staff of office once, his body, head and feet completely still, smooth loop",
+ "_note": "The Emperor's chamberlain, who greets you in the palace atrium (2026-09-15): the figure route the camp prefect and the Augur use -- troop style at 96, magenta removed, no crop."
+}

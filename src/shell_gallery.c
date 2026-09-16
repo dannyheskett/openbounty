@@ -347,6 +347,13 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         reset(&G); views_set(VIEW_TOWN);
         views_gallery_town(g, TOWN_ROW_SIEGE, 0, "Your engineers load the siege weapons onto carts. You can now lay siege to castles.", true);
         shot(&G, "38_town_result_inlay");
+        reset(&G); views_set(VIEW_TOWN);
+        views_gallery_town(g, TOWN_ROW_CONTRACT, 0,
+                           "New contract: Catiline. Reward: 5000 gold. Last seen on Italia.", true);
+        shot(&G, "38b_town_result_contract");
+        reset(&G); views_set(VIEW_TOWN);
+        views_gallery_town(g, TOWN_ROW_BOAT, 0, "The boat is yours for the week. It waits at the quay.", true);
+        shot(&G, "38c_town_result_boat");
         g->position.in_town[0] = '\0';
     }
 

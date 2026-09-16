@@ -78,14 +78,17 @@ int ml_list_draw_ex(int x, int y, int w, int h, int count, int cursor,
             int tw = (int)bfont_measure(right).x;
             bfont_draw(right, x + w - ML_PAD - tw, ty, (sel && enabled) ? bg : sel ? PAL_CLR(GREY) : fg);
         }
-        // More rows above or below: a small arrow at the row's right edge.
+        // More rows above or below: a small arrow at the row's right edge. On
+        // the lit cursor row it is drawn in the panel's own colour; a greyed
+        // cursor row keeps its dark fill, so the arrow stays gold there.
         int ax = x + w - ML_PAD / 2 - 6;
+        Color arrow = (sel && enabled) ? bg : PAL_CLR(YELLOW);
         if (shown == 0 && first > 0)
             DrawTriangle((Vector2){ (float)ax, (float)ry + 4 }, (Vector2){ (float)ax - 5, (float)ry + 12 },
-                         (Vector2){ (float)ax + 5, (float)ry + 12 }, sel ? bg : PAL_CLR(YELLOW));
+                         (Vector2){ (float)ax + 5, (float)ry + 12 }, arrow);
         if (shown == vis - 1 && i + 1 < count)
             DrawTriangle((Vector2){ (float)ax - 5, (float)(ry + rh - 12) }, (Vector2){ (float)ax, (float)(ry + rh - 4) },
-                         (Vector2){ (float)ax + 5, (float)(ry + rh - 12) }, sel ? bg : PAL_CLR(YELLOW));
+                         (Vector2){ (float)ax + 5, (float)(ry + rh - 12) }, arrow);
         lattice_band_h(x, ry + rh, w, ML_ROW_RULE);
     }
     return shown;

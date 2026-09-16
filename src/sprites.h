@@ -81,6 +81,7 @@ typedef struct {
     // the hill cave's backdrop and to animating a troop.
     Texture2D alcove_backdrop;
     Texture2D scene_column[3];   // modern: capital, shaft, base (id 0: the lattice)
+    Texture2D palace[3];         // the Emperor's castle: welcome, barracks, throne
     Texture2D alcove_figure;
     int       alcove_figure_frames;
     Texture2D alcove_figure_anim[OB_ANIM_FRAMES_MAX];

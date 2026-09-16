@@ -112,6 +112,8 @@
 		"town_action_siege":	"Buy",
 		"town_action_owned":	"Owned",
 		"town_boat_no_master":	"There is no boat master in this town.",
+		"town_boat_rented":	"The boat is yours for the week. It waits at the quay.",
+		"town_boat_returned":	"You hand back the boat. The rental is ended.",
 		"town_siege_lore":	"Roma's engineers build the machines that break a city's walls: ballistae that throw iron bolts, and onagers that hurl stone.\n\nNo army can lay siege to a castle without them. Once bought, the siege train follows your army wherever it marches.",
 		"town_confirm_boat_rent":	"Rent a boat for %COST% gold a week?",
 		"town_confirm_boat_cancel":	"Cancel your boat rental?",

@@ -108,6 +108,8 @@ static cJSON *gb_placeholder_strings(void) {
     cJSON_AddStringToObject(o, "town_action_siege", "town_action_siege");
     cJSON_AddStringToObject(o, "town_action_owned", "town_action_owned");
     cJSON_AddStringToObject(o, "town_boat_no_master", "town_boat_no_master");
+    cJSON_AddStringToObject(o, "town_boat_rented", "town_boat_rented");
+    cJSON_AddStringToObject(o, "town_boat_returned", "town_boat_returned");
     cJSON_AddStringToObject(o, "town_siege_lore", "town_siege_lore");
     cJSON_AddStringToObject(o, "town_confirm_boat_rent", "town_confirm_boat_rent");
     cJSON_AddStringToObject(o, "town_confirm_boat_cancel", "town_confirm_boat_cancel");

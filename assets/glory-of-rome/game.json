@@ -1314,6 +1314,18 @@
 			"id":	"praefectus_castrorum",
 			"anim":	["art/portraits/praefectus_castrorum_00.png", "art/portraits/praefectus_castrorum_01.png", "art/portraits/praefectus_castrorum_02.png", "art/portraits/praefectus_castrorum_03.png", "art/portraits/praefectus_castrorum_04.png", "art/portraits/praefectus_castrorum_05.png", "art/portraits/praefectus_castrorum_06.png", "art/portraits/praefectus_castrorum_07.png"]
 		}, {
+			"id":	"palace_usher",
+			"anim":	[
+				"art/ui/palace_usher_00.png",
+				"art/ui/palace_usher_01.png",
+				"art/ui/palace_usher_02.png",
+				"art/ui/palace_usher_03.png",
+				"art/ui/palace_usher_04.png",
+				"art/ui/palace_usher_05.png",
+				"art/ui/palace_usher_06.png",
+				"art/ui/palace_usher_07.png"
+			]
+		}, {
 			"id":	"praefectus_castrorum_figure",
 			"anim":	["art/ui/praefectus_castrorum_figure_00.png", "art/ui/praefectus_castrorum_figure_01.png", "art/ui/praefectus_castrorum_figure_02.png", "art/ui/praefectus_castrorum_figure_03.png", "art/ui/praefectus_castrorum_figure_04.png", "art/ui/praefectus_castrorum_figure_05.png", "art/ui/praefectus_castrorum_figure_06.png", "art/ui/praefectus_castrorum_figure_07.png"]
 		}, {
@@ -1891,6 +1903,7 @@
 				"figure":	"emperor_traianus_figure",
 				"barracks_portrait":	"praefectus_castrorum",
 				"barracks_figure":	"praefectus_castrorum_figure",
+				"greeter_figure":	"palace_usher",
 				"promotion":	["", "promotion_rank_1", "promotion_rank_2", "promotion_rank_3"],
 				"excluded_from_siege":	true,
 				"excluded_from_intel":	true,
@@ -3939,6 +3952,9 @@
 			"forest_backdrop":	"art/ui/backdrop_forest.png",
 			"hillcave_backdrop":	"art/ui/backdrop_hillcave.png",
 			"alcove_backdrop":	"art/ui/backdrop_alcove.png",
+			"palace_welcome":	"art/ui/backdrop_palace_welcome.png",
+			"palace_barracks":	"art/ui/backdrop_palace_barracks.png",
+			"palace_throne":	"art/ui/backdrop_palace_throne.png",
 			"scene_column_capital":	"art/ui/scene_column_capital.png",
 			"scene_column_shaft":	"art/ui/scene_column_shaft.png",
 			"scene_column_base":	"art/ui/scene_column_base.png",

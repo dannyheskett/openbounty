@@ -596,14 +596,6 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
 //  Leave), each page an in-lay over it
 // =============================================================================
 
-// A castle page as a full screen: the whole rect, its title strip; returns
-// the body under it.
-static ML_Rect castle_page_rect(const char *title, const char *right) {
-    ML_Rect r = ml_full();
-    uk_sheet();
-    int top = uk_title(r.x, r.y, r.w, title, right, PAL_CLR(YELLOW));
-    return (ML_Rect){ r.x, top, r.w, r.y + r.h - top };
-}
 
 static void castle_fmt(char *out, int cap, const char *tmpl, const char *count, const char *max) {
     ResTemplateVar v[] = { { "COUNT", count }, { "MAX", max ? max : "" },
@@ -785,10 +777,21 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
             if (n > most) { most = n; snprintf(longest, sizeof longest, "%s", tb); }
         }
     }
-    UkScene L = uk_scene_for(cname, gold, loc_texture(s, LOC_CASTLE), 3, longest);
-    bool barracks = rc && page != MC_AUDIENCE && page != MC_PROMOTION;
-    const char *fig_id = !rc ? "" : (barracks && rc->special.barracks_figure[0])
-                                  ? rc->special.barracks_figure : rc->special.figure;
+    // The Emperor's palace has a scene of its own for each page: the atrium
+    // where his usher greets you, the armoury where the master of arms
+    // musters recruits, and the throne room where the Emperor receives you.
+    // Every other castle keeps the shared hall.
+    bool audience = page == MC_AUDIENCE || page == MC_PROMOTION;
+    Texture2D bd = loc_texture(s, LOC_CASTLE);
+    if (home && s) {
+        Texture2D own = audience ? s->palace[2] : (page == MC_MENU ? s->palace[0] : s->palace[1]);
+        if (own.id) bd = own;
+    }
+    UkScene L = uk_scene_for(cname, gold, bd, 3, longest);
+    const char *fig_id = !rc ? ""
+                       : audience ? rc->special.figure
+                       : (page == MC_MENU && rc->special.greeter_figure[0]) ? rc->special.greeter_figure
+                       : rc->special.barracks_figure[0] ? rc->special.barracks_figure : rc->special.figure;
     Texture2D fig = (home && rc) ? portrait_frame(s, resources_portrait_index(res, fig_id), 1000.0 / 180.0)
                                  : (Texture2D){ 0 };
     if (!fig.id) {
@@ -804,7 +807,7 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
         }
         fig = troop_standing(s, ti);
     }
-    uk_scene_figure(&L, fig, CL_TILE_W);
+    uk_scene_figure(&L, fig, audience ? (L.scene.w - 2 * CL_TILE_W) / 2 : CL_TILE_W);
     uk_scene_intro(&L, buf);
     char r0[RES_BANNER_LEN + 4], r1[RES_BANNER_LEN + 4];
     snprintf(r0, sizeof r0, "%s >", home ? bn->castle_menu_recruit : bn->castle_menu_garrison);
@@ -815,7 +818,8 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
 
     const char *msg = modern_castle_message();
     Texture2D keeper = (home && rc) ? portrait_frame(s, resources_portrait_index(res,
-                           rc->special.barracks_portrait[0] ? rc->special.barracks_portrait : rc->special.portrait), 2.0)
+                           (!audience && rc->special.barracks_portrait[0]) ? rc->special.barracks_portrait
+                                                                          : rc->special.portrait), 2.0)
                                     : (Texture2D){ 0 };
     if (on_menu) {
         if (msg) uk_result_inlay(cname, keeper, msg, bn->castle_continue, TOUCH_LIST_PROMPT);
@@ -862,15 +866,10 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
     }
 
     if (page == MC_AUDIENCE) {
-        // The Emperor at 2x and where the hero stands; the audiences along the foot.
-        ML_Rect b = castle_page_rect(title, g->character.cls.rank_title);
-        int foot = uk_foot_rows(b, rows, cursor, castle_row_fn, &cc, TOUCH_LIST_CASTLE);
-        const int size = 2 * CL_TILE_W;
-        ML_Rect a = { b.x + UK_INSET, b.y + UK_INSET, b.w - 2 * UK_INSET, foot - ML_PAD - (b.y + UK_INSET) };
-        int pic = size < a.h ? size : a.h;
+        // The throne room: the Emperor standing before his throne, where the
+        // hero stands under it, and the audiences as rows.
         Texture2D emperor = rc ? portrait_frame(s, resources_portrait_index(res, rc->special.portrait), 2.0)
                                : (Texture2D){ 0 };
-        if (emperor.id) uk_picture(emperor, a.x, a.y, pic, pic);
         UkDoc d = { 0 };
         const ClassDef *cls = class_by_id(g->character.cls.id);
         int rank = g->character.cls.rank_index;
@@ -897,7 +896,20 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
                 uk_doc_add(&d, buf, PAL_CLR(WHITE));
             }
         }
-        uk_doc_draw(&d, a, emperor.id ? pic : 0, pic, -1, true);
+        // The scene: the throne room with its four audiences as rows, and
+        // where the hero stands written under it.
+        char where[3 * RES_BANNER_LEN] = "";
+        for (int i = 0; i < d.n; i++) {
+            size_t n = strlen(where);
+            snprintf(where + n, sizeof where - n, "%s%s", n ? "  " : "", d.pool + d.off[i]);
+        }
+        Texture2D throne = (s && s->palace[2].id) ? s->palace[2] : loc_texture(s, LOC_CASTLE);
+        UkScene A = uk_scene_for(title, g->character.cls.rank_title, throne, rows, where);
+        Texture2D emp_fig = rc ? portrait_frame(s, resources_portrait_index(res, rc->special.figure),
+                                                1000.0 / 180.0) : (Texture2D){ 0 };
+        uk_scene_figure(&A, emp_fig, (A.scene.w - 2 * CL_TILE_W) / 2);
+        uk_scene_intro(&A, where);
+        uk_scene_rows(&A, rows, cursor, castle_row_fn, &cc, TOUCH_LIST_CASTLE);
 
         // The Emperor's answer, in its own in-lay until Continue.
         int ares = 0, aneed = 0, aud_needed = 0, aud_rank = 0;
@@ -951,9 +963,10 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
     // cursor beside them.
     // As tall as the rows or the troop's picture and numbers.
     int detail = 2 * UK_INSET + 2 * CL_TILE_W + ML_PAD + 4 + 6 * uk_line_h();
+    // The troops as an in-lay over the scene, so the armoury (or the hall)
+    // and its keeper stay in view behind them.
     int body_h = ml_list_height(rows) > detail ? ml_list_height(rows) : detail;
-    (void)body_h;
-    ML_Rect b = castle_page_rect(title, NULL);
+    ML_Rect b = uk_inlay(UK_WIDE_W, uk_title_h() + UK_BAND + body_h, title, NULL);
     int lw = 15 * GW + 2 * ML_PAD;
     ml_list_draw(b.x, b.y, lw, b.h, rows, cursor, castle_row_fn, &cc, TOUCH_LIST_CASTLE, uk_ink());
     lattice_band_v(b.x + lw, b.y, UK_BAND, b.h);

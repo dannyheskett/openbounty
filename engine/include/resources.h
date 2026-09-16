@@ -269,6 +269,8 @@ typedef struct {
     // appears only on Audience); "" = the ruler everywhere.
     char barracks_portrait[RES_ID_LEN];
     char barracks_figure[RES_ID_LEN];
+    // The figure who greets you in the hall (the Emperor's palace usher).
+    char greeter_figure[RES_ID_LEN];
 } ResCastleSpecial;
 
 // Map footprint of a castle (REQ-228). 3x2 is the classic stamp: the gate
@@ -540,6 +542,8 @@ typedef struct {
     char town_action_siege[RES_BANNER_LEN];
     char town_action_owned[RES_BANNER_LEN];
     char town_boat_no_master[RES_BANNER_LEN];
+    char town_boat_rented[RES_BANNER_LEN];
+    char town_boat_returned[RES_BANNER_LEN];
     char town_siege_lore[RES_BANNER_LEN];
     char town_confirm_boat_rent[RES_BANNER_LEN];
     char town_confirm_boat_cancel[RES_BANNER_LEN];
@@ -1367,6 +1371,11 @@ typedef struct {
         char alcove_backdrop[RES_PATH_LEN];
         // Modern: the column in the bars beside a place backdrop -- its capital,
         // a shaft piece repeated between, and its base ("" = the lattice).
+        // The Emperor's own castle: its three scenes (welcome, recruit,
+        // audience). Empty: the shared castle backdrop.
+        char palace_welcome[RES_PATH_LEN];
+        char palace_barracks[RES_PATH_LEN];
+        char palace_throne[RES_PATH_LEN];
         char scene_column_capital[RES_PATH_LEN];
         char scene_column_shaft[RES_PATH_LEN];
         char scene_column_base[RES_PATH_LEN];

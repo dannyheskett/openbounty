@@ -668,7 +668,11 @@ static void town_do_boat(Game *g) {
                                       bn->town_boat_vacate_first, NULL, 0);
             town_show_info(buf);
         }
-        // BOAT_CANCEL_OK: silent (menu redraw shows the rent row again).
+        if (r == BOAT_CANCEL_OK && CL_IS_MODERN) {
+            resources_format_template(buf, sizeof buf, bn->town_boat_returned, NULL, 0);
+            town_show_info(buf);
+        }
+        // Legacy: silent (the menu redraw shows the rent row again).
         return;
     }
     BoatActionResult r = GameRentBoat(g, town.boat_x, town.boat_y,
@@ -676,6 +680,10 @@ static void town_do_boat(Game *g) {
     if (r == BOAT_RENT_NO_GOLD) {
         // KB: `if (gold <= boat_cost)` -- exact-match also fails.
         resources_format_template(buf, sizeof buf, bn->town_no_gold, NULL, 0);
+        town_show_info(buf);
+    } else if (r == BOAT_RENT_OK && CL_IS_MODERN) {
+        // Modern: the boat master says it is done, like every other service.
+        resources_format_template(buf, sizeof buf, bn->town_boat_rented, NULL, 0);
         town_show_info(buf);
     }
     // BOAT_RENT_OK: no success popup -- menu redraw shows "Cancel boat rental"
@@ -1361,7 +1369,23 @@ TownConfirm views_town_take_confirm(const Game *g, char *body, int cap) {
 void views_town_confirm_yes(Game *g) {
     if (view_stack_top() != VIEW_TOWN || !g) return;
     switch (town.asked) {
-        case TOWN_CONFIRM_CONTRACT:    GameTakeContractAt(g, town.confirm_slot); break;
+        case TOWN_CONFIRM_CONTRACT: {
+            GameTakeContractAt(g, town.confirm_slot);
+            // Modern: the clerk names the contract you took, like every other
+            // service's outcome.
+            const VillainDef *v = villain_by_id(g->contract.cycle[town.confirm_slot]);
+            if (CL_IS_MODERN && v) {
+                const ResBanners *bn = &g->res->banners;
+                char body[RES_BANNER_LEN], rb[16];
+                snprintf(rb, sizeof rb, "%d", v->reward);
+                const ResZone *vz = resources_zone_by_id(g->res, v->zone);
+                ResTemplateVar vars[] = { { "VILLAIN", v->name }, { "REWARD", rb },
+                                          { "ZONE", (vz && vz->name[0]) ? vz->name : v->zone } };
+                resources_format_template(body, sizeof body, bn->town_contract_new, vars, 3);
+                town_show_info(body);
+            }
+            break;
+        }
         case TOWN_CONFIRM_BOAT_RENT:
         case TOWN_CONFIRM_BOAT_CANCEL: town_do_boat(g);  break;
         case TOWN_CONFIRM_SPELL:       town_do_spell(g); break;
@@ -1370,10 +1394,7 @@ void views_town_confirm_yes(Game *g) {
     }
     // Modern: the boat, spell and siege outcomes are said in a dialog with the
     // section's person, and Continue returns to the town's main page.
-    if (CL_IS_MODERN && town.info_active &&
-        (town.asked == TOWN_CONFIRM_BOAT_RENT || town.asked == TOWN_CONFIRM_BOAT_CANCEL ||
-         town.asked == TOWN_CONFIRM_SPELL || town.asked == TOWN_CONFIRM_SIEGE))
-        town.result_dialog = true;
+    if (CL_IS_MODERN && town.info_active) town.result_dialog = true;
     town.asked = TOWN_CONFIRM_NONE;
     town.detail_page = 0;
 }

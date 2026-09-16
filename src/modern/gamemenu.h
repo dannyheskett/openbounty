@@ -16,6 +16,9 @@
 #include <stdbool.h>
 
 #define GM_ROWS_MAX 16
+// Options a page shows at once; a longer page scrolls. Every menu page is
+// this tall, so the panel never changes size from page to page.
+#define GM_PAGE_ROWS 7
 #define GM_DEPTH_MAX 4
 
 typedef struct {

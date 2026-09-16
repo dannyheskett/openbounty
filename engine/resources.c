@@ -230,6 +230,8 @@ static void parse_castles(Resources *res, cJSON *arr) {
                      json_str(sp, "barracks_portrait", ""));
             copy_str(c->special.barracks_figure, sizeof(c->special.barracks_figure),
                      json_str(sp, "barracks_figure", ""));
+            copy_str(c->special.greeter_figure, sizeof(c->special.greeter_figure),
+                     json_str(sp, "greeter_figure", ""));
             {
                 cJSON *pr = cJSON_GetObjectItem(sp, "promotion");
                 for (int r = 0; r < 4; r++) {
@@ -934,6 +936,12 @@ static void parse_sprites(Resources *res, cJSON *obj) {
                  json_str(ui, "hillcave_backdrop", ""));
         copy_str(res->sprites.alcove_backdrop, sizeof(res->sprites.alcove_backdrop),
                  json_str(ui, "alcove_backdrop", ""));
+        copy_str(res->sprites.palace_welcome, sizeof(res->sprites.palace_welcome),
+                 json_str(ui, "palace_welcome", ""));
+        copy_str(res->sprites.palace_barracks, sizeof(res->sprites.palace_barracks),
+                 json_str(ui, "palace_barracks", ""));
+        copy_str(res->sprites.palace_throne, sizeof(res->sprites.palace_throne),
+                 json_str(ui, "palace_throne", ""));
         copy_str(res->sprites.scene_column_capital, sizeof(res->sprites.scene_column_capital),
                  json_str(ui, "scene_column_capital", ""));
         copy_str(res->sprites.scene_column_shaft, sizeof(res->sprites.scene_column_shaft),
@@ -1362,6 +1370,8 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(town_action_siege, "town_action_siege");
     SET_BANNER(town_action_owned, "town_action_owned");
     SET_BANNER(town_boat_no_master, "town_boat_no_master");
+    SET_BANNER(town_boat_rented, "town_boat_rented");
+    SET_BANNER(town_boat_returned, "town_boat_returned");
     SET_BANNER(town_siege_lore, "town_siege_lore");
     SET_BANNER(town_confirm_boat_rent, "town_confirm_boat_rent");
     SET_BANNER(town_confirm_boat_cancel, "town_confirm_boat_cancel");
@@ -2884,6 +2894,9 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
     art_add(out, cap, &n, res->sprites.hillcave_backdrop);
     art_add(out, cap, &n, res->sprites.dungeon_backdrop);
     art_add(out, cap, &n, res->sprites.alcove_backdrop);
+    art_add(out, cap, &n, res->sprites.palace_welcome);
+    art_add(out, cap, &n, res->sprites.palace_barracks);
+    art_add(out, cap, &n, res->sprites.palace_throne);
     art_add(out, cap, &n, res->sprites.scene_column_capital);
     art_add(out, cap, &n, res->sprites.scene_column_shaft);
     art_add(out, cap, &n, res->sprites.scene_column_base);
