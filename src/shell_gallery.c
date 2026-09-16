@@ -282,6 +282,20 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(3, p5, 0); shot(&G, "14_menu_save_slots");
         reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(2, p4, 0);
         prompt_yes_no_open(NULL, bn->gmc_exit); shot(&G, "15_menu_exit_question");
+        // The menu's other confirmations, each over the page that asks it.
+        {
+            ResTemplateVar sv[] = { { "SLOT", "2" } };
+            char ask[RES_BANNER_LEN];
+            reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(3, p5, 1);
+            resources_format_template(ask, sizeof ask, bn->gmc_overwrite, sv, 1);
+            prompt_yes_no_open(NULL, ask); shot(&G, "15b_menu_overwrite_question");
+            GmPageId p6[3] = { GM_PAGE_ROOT, GM_PAGE_GAME, GM_PAGE_LOAD };
+            reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(3, p6, 1);
+            resources_format_template(ask, sizeof ask, bn->gmc_load, sv, 1);
+            prompt_yes_no_open(NULL, ask); shot(&G, "15c_menu_load_question");
+            reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(2, p4, 3);
+            prompt_yes_no_open(NULL, ui->new_game_confirm); shot(&G, "15d_menu_new_game_question");
+        }
         reset(&G); views_set(VIEW_MENU); views_push(VIEW_CONTROLS); shot(&G, "16_controls");
     }
 
@@ -398,6 +412,15 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_RECRUIT, 4, 0, 0); shot(&G, "42_castle_recruit_greyed");
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_RECRUIT, 1, 18, 30); shot(&G, "43_castle_how_many");
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_AUDIENCE, 0, 0, 0); shot(&G, "44_castle_audience");
+        // Tribute asks first: the question over the Audience scene.
+        {
+            char gold[16], ask[RES_BANNER_LEN];
+            snprintf(gold, sizeof gold, "%d", res->economy.tribute_cost);
+            ResTemplateVar tv[] = { { "GOLD", gold } };
+            resources_format_template(ask, sizeof ask, bn->castle_tribute_confirm, tv, 1);
+            reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_AUDIENCE, 2, 0, 0);
+            prompt_yes_no_open(NULL, ask); shot(&G, "44a_castle_tribute_question");
+        }
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_AUDIENCE, 0, 0, 0);
         modern_castle_gallery_audience(GAME_AUDIENCE_MORE_NEEDED + 1, 0); shot(&G, "44b_castle_audience_answer");
         modern_castle_gallery_audience(0, 0);
