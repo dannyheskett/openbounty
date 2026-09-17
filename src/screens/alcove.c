@@ -7,6 +7,7 @@
 #include "player_io.h"   // engine views route through the player-IO queue
 #include "tables.h"
 #include "raylib.h"
+#include "ui.h"
 #include <string.h>
 
 extern void screens_draw_location_backdrop(const Game *g, const Sprites *s,
@@ -35,13 +36,13 @@ void screen_alcove_open(Game *g) {
     s_frame = 0;
     s_last_tick = 0.0;
     // Enqueue the view; shell sync pushes / autoplay acks. Statics stay.
-    player_io_raise_view(g, VIEW_ALCOVE, /*replace=*/false, NULL, NULL);
+    player_io_screen(g, VIEW_ALCOVE, /*replace=*/false, NULL, NULL);
 }
 
 void screen_alcove_draw(const Game *g, const Sprites *s) {
     // Source 2890: draw_location(2 + DWELLING_HILLCAVE, creature, frame)
     // -- frame advances on each yes_no_interactive SYN tick (50ms).
-    double now = GetTime();
+    double now = ui_anim_time();
     if (now - s_last_tick >= ALCOVE_TICK) {
         s_last_tick = now;
         s_frame = ob_anim_tick(s_frame);
@@ -54,7 +55,7 @@ void screen_alcove_draw(const Game *g, const Sprites *s) {
     int frame = s_frame;
     const Resources *r = (g && g->res) ? g->res : NULL;
     if (r && s && s->alcove_figure.id && r->sprites.alcove_figure_frame_ms > 0)
-        frame = (int)(GetTime() * 1000.0 / r->sprites.alcove_figure_frame_ms);
+        frame = (int)(ui_anim_time() * 1000.0 / r->sprites.alcove_figure_frame_ms);
     screens_draw_location_backdrop(g, s, SCREEN_LOC_ALCOVE,
                                    s_fallback_troop_idx, frame);
 

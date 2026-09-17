@@ -70,8 +70,7 @@ bool autoplay_apply_rec_action(struct ExecCtx *ctx, const RecPrim *p) {
         return GameUngarrisonTroop(g, p->id, p->a) == 0;
     case RA_DISMISS: {
         pending_flow = FLOW_DISMISS_ARMY;
-        player_io_raise_decision(g, FLOW_DISMISS_ARMY, REQ_PROMPT_NUMERIC,
-                                 NULL, NULL);
+        player_io_ask_self(g, FLOW_DISMISS_ARMY, REQ_PROMPT_NUMERIC);
         FlowAnswer ans = { (PromptAnswer)(FLOW_ANS_1 + p->a), 0 };
         PlayerIoPresentation pres;
         player_io_answer(g, ctx->map, ctx->fog, ctx->res, ans,
@@ -81,16 +80,14 @@ bool autoplay_apply_rec_action(struct ExecCtx *ctx, const RecPrim *p) {
     case RA_DISMISS_LAST: {
         // The maroon escape's confirm chain, replayed end to end.
         pending_flow = FLOW_DISMISS_ARMY;
-        player_io_raise_decision(g, FLOW_DISMISS_ARMY, REQ_PROMPT_NUMERIC,
-                                 NULL, NULL);
+        player_io_ask_self(g, FLOW_DISMISS_ARMY, REQ_PROMPT_NUMERIC);
         FlowAnswer pick = { (PromptAnswer)(FLOW_ANS_1 + p->a), 0 };
         PlayerIoPresentation pres;
         player_io_answer(g, ctx->map, ctx->fog, ctx->res, pick,
                          PLAYER_IO_COMBAT_NOT_RUN, &pres);
         if (!pres.chain_dismiss_last) return false;
         pending_flow = FLOW_DISMISS_LAST;
-        player_io_raise_decision(g, FLOW_DISMISS_LAST, REQ_PROMPT_YES_NO,
-                                 NULL, NULL);
+        player_io_ask_self(g, FLOW_DISMISS_LAST, REQ_PROMPT_YES_NO);
         FlowAnswer yes = { FLOW_ANS_YES, 0 };
         PlayerIoPresentation pres2;
         player_io_answer(g, ctx->map, ctx->fog, ctx->res, yes,
@@ -169,8 +166,7 @@ bool autoplay_apply_rec_action(struct ExecCtx *ctx, const RecPrim *p) {
         if (pick < 0) return false;
         pending_nav_count = count;
         pending_flow = FLOW_NAVIGATE;
-        player_io_raise_decision(g, FLOW_NAVIGATE, REQ_PROMPT_NUMERIC,
-                                 "", "");
+        player_io_ask_self(g, FLOW_NAVIGATE, REQ_PROMPT_NUMERIC);
         FlowAnswer ans = { (PromptAnswer)(FLOW_ANS_1 + pick), 0 };
         PlayerIoPresentation pres;
         player_io_answer(g, ctx->map, ctx->fog, ctx->res, ans,
@@ -179,8 +175,7 @@ bool autoplay_apply_rec_action(struct ExecCtx *ctx, const RecPrim *p) {
     }
     case RA_SEARCH: {
         pending_flow = FLOW_SEARCH;
-        player_io_raise_decision(g, FLOW_SEARCH, REQ_PROMPT_YES_NO,
-                                 NULL, NULL);
+        player_io_ask_self(g, FLOW_SEARCH, REQ_PROMPT_YES_NO);
         FlowAnswer yes = { FLOW_ANS_YES, 0 };
         PlayerIoPresentation pres;
         player_io_answer(g, ctx->map, ctx->fog, ctx->res, yes,
@@ -197,8 +192,7 @@ bool autoplay_apply_rec_action(struct ExecCtx *ctx, const RecPrim *p) {
     case RA_DISCARD_SPELL: {
         pending_discard_spell_idx = p->a;
         pending_flow = FLOW_DISCARD_SPELL;
-        player_io_raise_decision(g, FLOW_DISCARD_SPELL, REQ_PROMPT_YES_NO,
-                                 NULL, NULL);
+        player_io_ask_self(g, FLOW_DISCARD_SPELL, REQ_PROMPT_YES_NO);
         FlowAnswer yes = { FLOW_ANS_YES, 0 };
         PlayerIoPresentation pres;
         player_io_answer(g, ctx->map, ctx->fog, ctx->res, yes,

@@ -859,8 +859,7 @@ static bool exec_dig(ExecCtx *ctx, const PlanStep *step, ExecCause *out_cause,
         if (g->position.x == step->x && g->position.y == step->y &&
             hero_zone_index(ctx) == step->zone_index) {
             pending_flow = FLOW_SEARCH;
-            player_io_raise_decision(g, FLOW_SEARCH, REQ_PROMPT_YES_NO,
-                                     NULL, NULL);
+            player_io_ask_self(g, FLOW_SEARCH, REQ_PROMPT_YES_NO);
             rec_push_action(g, RA_SEARCH, NULL, 0, 0);
             FlowAnswer yes = { FLOW_ANS_YES, 0 };
             PlayerIoPresentation pres;

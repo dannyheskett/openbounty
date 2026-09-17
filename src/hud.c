@@ -44,7 +44,7 @@ void hud_draw_siege_tile(const Game *g, const Sprites *s, int x, int y) {
     if (!s) return;
     if (g && g->stats.siege_weapons) {
         blit_panel(sprites_strip(s->hud_siege_anim, s->hud_siege_anim_frames,
-                                 (int)(GetTime() * 2.0)), x, y);
+                                 (int)(ui_anim_time() * 2.0)), x, y);
     } else {
         blit_panel(s->hud_siege_silhouette, x, y);
     }
@@ -78,7 +78,7 @@ void hud_draw(const Game *g, const Sprites *s) {
             // animation strip if loaded; fall back to the static portrait.
             Texture2D face = sprites_strip(s->villain_anim[v->index],
                                            s->villain_anim_frames[v->index],
-                                           (int)(GetTime() * 2.0));
+                                           (int)(ui_anim_time() * 2.0));
             if (!face.id) face = s->villain_portrait[v->index];
             blit_panel(face, x, y);
         }
@@ -93,7 +93,7 @@ void hud_draw(const Game *g, const Sprites *s) {
     // Lit for the rites of the zone the hero stands in (one magic: knowing it).
     if (g && GameHasRites(g, g->position.zone)) {
         blit_panel(sprites_strip(s->hud_magic_anim, s->hud_magic_anim_frames,
-                                 (int)(GetTime() * 2.0)), x, y);
+                                 (int)(ui_anim_time() * 2.0)), x, y);
     } else {
         blit_panel(s->hud_magic_silhouette, x, y);
     }

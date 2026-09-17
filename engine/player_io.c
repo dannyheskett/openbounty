@@ -17,6 +17,7 @@
 #include "pending.h"       // the decision scratch this queue mirrors
 #include "flow_resolve.h"  // flow_apply_* cores + RecruitParams/FriendlyParams
 #include "combat.h"        // CombatResult
+#include "ui_host.h"       // the host prompt an ask opens
 
 // Copy a possibly-NULL C string into a fixed buffer, always NUL-terminated.
 static void copy_str(char *dst, int cap, const char *src) {
@@ -65,82 +66,137 @@ static PlayerRequest *enqueue(Game *g, ReqRole role,
     return r;
 }
 
-PlayerRequest *player_io_enqueue_decision(Game *g, PendingFlow flow,
-                                          ReqPromptKind kind,
-                                          const char *header,
-                                          const char *body) {
-    PlayerRequest *r = enqueue(g, REQ_DECISION, header, body);
-    if (!r) return NULL;
-    r->flow = flow;
-    r->prompt_kind = kind;
+// ---- one helper per kind ----------------------------------------------------
+
+static PlayerRequest *note_of(Game *g, ReqKind kind, const char *title, const char *body) {
+    PlayerRequest *r = enqueue(g, REQ_MESSAGE, title, body);
+    if (r) r->kind = kind;
     return r;
 }
 
-PlayerRequest *player_io_enqueue_message(Game *g,
-                                         const char *header, const char *body) {
-    return enqueue(g, REQ_MESSAGE, header, body);
+PlayerRequest *player_io_note(Game *g, const char *title, const char *body) {
+    return note_of(g, PIO_NOTE, title, body);
 }
 
-PlayerRequest *player_io_enqueue_view(Game *g, ViewKind view,
-                                      const char *header, const char *body) {
-    PlayerRequest *r = enqueue(g, REQ_VIEW, header, body);
-    if (!r) return NULL;
-    r->view = view;
+PlayerRequest *player_io_note_face(Game *g, const char *title, const char *body,
+                                   ReqFace face, int face_index) {
+    PlayerRequest *r = note_of(g, PIO_NOTE_FACE, title, body);
+    if (r) { r->face = face; r->face_index = face_index; }
     return r;
 }
 
-PlayerRequest *player_io_raise_decision(Game *g, PendingFlow flow,
-                                        ReqPromptKind kind,
-                                        const char *header, const char *body) {
-    // The queue is a MIRROR of the authoritative pending_flow, and the
-    // engine raises exactly ONE decision at a time. Worldsnap restore (plan
-    // simulation) can leave a stale decision mirror in the queue (the queue is in
-    // Game and reverts; pending_flow does not), so before mirroring the new
-    // decision, evict any decision already queued -- there is only ever one live.
-    // Messages are left intact (they drain on their own). Without this, stale
-    // decision mirrors accumulate across simulations and overflow the queue.
-    if (g) {
-        PlayerIoQueue *q = &g->player_io;
-        int kept = 0;
-        for (int i = 0; i < q->count; i++) {
-            int idx = (q->head + i) % q->cap;
-            if (q->slot[idx].role == REQ_DECISION) continue;   // drop stale decision
-            // Compact kept (message) entries toward the head.
-            int dst = (q->head + kept) % q->cap;
-            if (dst != idx) q->slot[dst] = q->slot[idx];
-            kept++;
-        }
-        q->count = kept;
-    }
-    return player_io_enqueue_decision(g, flow, kind, header, body);
+PlayerRequest *player_io_note_in_place(Game *g, const char *title, const char *body) {
+    return note_of(g, PIO_NOTE_IN_PLACE, title, body);
 }
 
-PlayerRequest *player_io_message(Game *g, const char *header, const char *body) {
-    return player_io_enqueue_message(g, header, body);
+PlayerRequest *player_io_note_scene(Game *g, const char *title, const char *body,
+                                    int scene_index) {
+    PlayerRequest *r = note_of(g, PIO_NOTE_SCENE, title, body);
+    if (r) { r->face = REQ_FACE_SCENE; r->face_index = scene_index; }
+    return r;
 }
 
-PlayerRequest *player_io_raise_view(Game *g, ViewKind view, bool replace,
-                                    const char *header, const char *body) {
-    // One engine view is presented at a time, like decisions. A stale REQ_VIEW
-    // can linger in the queue after a worldsnap restore (queue is in Game and
-    // reverts; the shell stack does not), so evict any already-queued view before
-    // mirroring the new one -- keep messages/decisions intact. Without this, stale
-    // view mirrors accumulate across plan simulations and overflow the queue.
-    if (g) {
-        PlayerIoQueue *q = &g->player_io;
-        int kept = 0;
-        for (int i = 0; i < q->count; i++) {
-            int idx = (q->head + i) % q->cap;
-            if (q->slot[idx].role == REQ_VIEW) continue;   // drop stale view
-            int dst = (q->head + kept) % q->cap;
-            if (dst != idx) q->slot[dst] = q->slot[idx];
-            kept++;
-        }
-        q->count = kept;
+// Evict every queued request of `role`, keeping the rest in order. The queue
+// mirrors the authoritative pending_flow / view stack, and only ONE decision and
+// ONE view are ever live: a worldsnap restore (plan simulation) can leave a
+// stale mirror behind, which would otherwise pile up.
+static void evict_role(Game *g, ReqRole role) {
+    if (!g) return;
+    PlayerIoQueue *q = &g->player_io;
+    int kept = 0;
+    for (int i = 0; i < q->count; i++) {
+        int idx = (q->head + i) % q->cap;
+        if (q->slot[idx].role == role) continue;
+        int dst = (q->head + kept) % q->cap;
+        if (dst != idx) q->slot[dst] = q->slot[idx];
+        kept++;
     }
-    PlayerRequest *r = player_io_enqueue_view(g, view, header, body);
-    if (!r) return NULL;
-    r->view_replace = replace;
+    q->count = kept;
+}
+
+// Every ask: the queued request, the mirrored prompt kind, and the host prompt
+// the shell renders. `open_host` is false only for the self-answered kind.
+static PlayerRequest *ask_of(Game *g, ReqKind kind, PendingFlow flow,
+                             ReqPromptKind prompt, const char *title, const char *body,
+                             int digits, int max_value, bool open_host) {
+    evict_role(g, REQ_DECISION);
+    PlayerRequest *r = enqueue(g, REQ_DECISION, title, body);
+    if (r) {
+        r->kind = kind;
+        r->flow = flow;
+        r->prompt_kind = prompt;
+        r->prompt_digits = digits;
+        r->prompt_max = max_value;
+    }
+    if (open_host) {
+        const char *h = title ? title : "";
+        const char *b = body ? body : "";
+        if (prompt == REQ_PROMPT_YES_NO)      prompt_yes_no_open(h, b);
+        else if (prompt == REQ_PROMPT_AB)     prompt_ab_open(h, b);
+        else if (prompt == REQ_PROMPT_TEXT)   prompt_text_input_open(h, b, digits, max_value);
+        // REQ_PROMPT_NUMERIC: the host opens its own picker (the shell's list).
+    }
+    if (kind != PIO_ASK_SELF) prompt_set_req_kind(kind);
+    return r;
+}
+
+PlayerRequest *player_io_ask(Game *g, PendingFlow flow, ReqPromptKind prompt,
+                             const char *title, const char *body) {
+    return ask_of(g, PIO_ASK, flow, prompt, title, body, 0, 0, true);
+}
+
+PlayerRequest *player_io_ask_face(Game *g, PendingFlow flow, ReqPromptKind prompt,
+                                  const char *title, const char *body,
+                                  ReqFace face, int face_index) {
+    PlayerRequest *r = ask_of(g, PIO_ASK_FACE, flow, prompt, title, body, 0, 0, true);
+    if (r) { r->face = face; r->face_index = face_index; }
+    prompt_set_req_face((int)face, face_index);
+    return r;
+}
+
+PlayerRequest *player_io_ask_in_place(Game *g, PendingFlow flow, ReqPromptKind prompt,
+                                      const char *title, const char *body) {
+    return ask_of(g, PIO_ASK_IN_PLACE, flow, prompt, title, body, 0, 0, true);
+}
+
+PlayerRequest *player_io_ask_scene(Game *g, PendingFlow flow, ReqPromptKind prompt,
+                                   const char *title, const char *body) {
+    return ask_of(g, PIO_ASK_SCENE, flow, prompt, title, body, 0, 0, true);
+}
+
+PlayerRequest *player_io_ask_number(Game *g, PendingFlow flow,
+                                    const char *title, const char *body,
+                                    int digits, int max_value) {
+    return ask_of(g, PIO_ASK_NUMBER, flow, REQ_PROMPT_TEXT, title, body,
+                  digits, max_value, true);
+}
+
+PlayerRequest *player_io_ask_number_in_place(Game *g, PendingFlow flow,
+                                             const char *title, const char *body,
+                                             int digits, int max_value) {
+    return ask_of(g, PIO_ASK_NUMBER_IN_PLACE, flow, REQ_PROMPT_TEXT, title, body,
+                  digits, max_value, true);
+}
+
+PlayerRequest *player_io_ask_choice(Game *g, PendingFlow flow,
+                                    const char *title, const char *body, int count) {
+    return ask_of(g, PIO_ASK_CHOICE, flow, REQ_PROMPT_NUMERIC, title, body,
+                  0, count, true);
+}
+
+PlayerRequest *player_io_ask_self(Game *g, PendingFlow flow, ReqPromptKind prompt) {
+    return ask_of(g, PIO_ASK_SELF, flow, prompt, NULL, NULL, 0, 0, false);
+}
+
+PlayerRequest *player_io_screen(Game *g, ViewKind view, bool replace,
+                                const char *title, const char *body) {
+    evict_role(g, REQ_VIEW);
+    PlayerRequest *r = enqueue(g, REQ_VIEW, title, body);
+    if (r) {
+        r->kind = PIO_SCREEN;
+        r->view = view;
+        r->view_replace = replace;
+    }
     return r;
 }
 

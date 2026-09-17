@@ -46,6 +46,7 @@ SUITE_EXTERN(unit_overlay_dim_suite);
 SUITE_EXTERN(unit_art_manifest_suite);
 SUITE_EXTERN(unit_strings_agnostic_suite);
 SUITE_EXTERN(unit_no_state_copy_suite);
+SUITE_EXTERN(unit_io_kinds_suite);
 SUITE_EXTERN(unit_pack_suite);
 SUITE_EXTERN(unit_pack_select_suite);
 SUITE_EXTERN(unit_combat_rng_suite);
@@ -109,6 +110,7 @@ int main(int argc, char **argv) {
     RUN_SUITE(unit_art_manifest_suite);
     RUN_SUITE(unit_strings_agnostic_suite);
     RUN_SUITE(unit_no_state_copy_suite);
+    RUN_SUITE(unit_io_kinds_suite);
     RUN_SUITE(unit_pack_suite);
     RUN_SUITE(unit_pack_select_suite);
     RUN_SUITE(unit_combat_rng_suite);

@@ -81,5 +81,5 @@ void run_audience_dialog(Game *game, const ResCastle *rc) {
     char fanfare[400];
     audience_substitute(game, needed, rc->special.audience_intro,
                         fanfare, sizeof(fanfare));
-    player_io_message(game, NULL, fanfare);
+    player_io_note_in_place(game, NULL, fanfare);
 }

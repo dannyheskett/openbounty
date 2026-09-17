@@ -216,7 +216,7 @@ static bool apply_one_prim(ShellCtx *ctx) {
     // entry opens the town screen exactly like a walked one); the
     // hold-then-dismiss cycle then reads and clears them.
     while (shell_pump_player_io_view(ctx->game)) {}
-    shell_pump_player_io_message(ctx->game);
+    shell_pump_note(ctx->game);
     if (pending_flow == FLOW_NONE && prompt_is_active()) prompt_dismiss();
     return true;
 }

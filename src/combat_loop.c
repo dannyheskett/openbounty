@@ -456,6 +456,7 @@ static int combat_player_action_full(Combat *c, const Game *g,
             prompt_yes_no_open(CL_IS_MODERN ? g->res->ui.give_up_header_modern
                                             : g->res->banners.combat_give_up_header,
                                g->res->banners.combat_give_up_body);
+            prompt_set_req_kind(PIO_ASK_OVER_FIELD);
         }
         return 0;
     }
@@ -588,7 +589,7 @@ static void combat_present(const Combat *c, const Game *g,
     // floating over the still-rendered battlefield. Defeat does not
     // draw here -- combat exits silently and perform_temp_death shows
     // the disgrace message at the home castle ().
-    if (dialog_is_active()) overlay_draw_dialog_centered();
+    if (dialog_is_active()) overlay_draw_note();
     // Give-up confirm and any other y/n / numeric prompt draws on top
     // of everything else as a bottom-frame modal.
     if (prompt_is_active()) prompt_draw();
@@ -924,7 +925,7 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
             resources_format_template(body, sizeof body,
                                       bn->combat_victory_unnamed, vars, 2);
         }
-        open_dialog(g->res->ui.dt_combat_victory, body);
+        open_dialog_kind(g->res->ui.dt_combat_victory, body, PIO_NOTE_OVER_FIELD);
         combat_wait_for_dialog_ack(&c, g, sprites, rt);
         // Write surviving troops back to g->army so the player keeps
         // their losses. Vacated slots get compacted afterwards so the

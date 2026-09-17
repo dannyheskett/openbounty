@@ -104,6 +104,15 @@ static void parse_choices(bool ab, int max_choice) {
     }
 }
 
+// The kind of the open question (ui_host.h). Every open resets it to the plain
+// foot question; the raiser names the real one right after.
+static ReqKind g_req_kind = PIO_ASK;
+static int g_req_face, g_req_face_idx;
+void prompt_set_req_kind(ReqKind kind) { g_req_kind = kind; }
+ReqKind prompt_req_kind(void) { return g_req_kind; }
+void prompt_set_req_face(int face, int face_index) { g_req_face = face; g_req_face_idx = face_index; }
+int prompt_req_face(int *index) { if (index) *index = g_req_face_idx; return g_req_face; }
+
 void prompt_set_choices(const char *const *labels, const int *values, int n) {
     if (n > PROMPT_CHOICES_MAX) n = PROMPT_CHOICES_MAX;
     for (int i = 0; i < n; i++) {
@@ -131,6 +140,8 @@ static void emit_open_trace(const char *kind) {
 void prompt_yes_no_open(const char *header, const char *body) {
     g_yn_cursor = 0;
     g_kind = PK_YES_NO;
+    g_req_kind = PIO_ASK;
+    g_req_face = 0;
     copy_to(g_header, sizeof(g_header), header);
     copy_to(g_body,   sizeof(g_body),   body);
     emit_open_trace("yes_no");
@@ -138,6 +149,8 @@ void prompt_yes_no_open(const char *header, const char *body) {
 
 void prompt_numeric_open(const char *header, const char *body, int max_choice) {
     g_kind = PK_NUMERIC;
+    g_req_kind = PIO_ASK;
+    g_req_face = 0;
     if (max_choice < 1) max_choice = 1;
     if (max_choice > 5) max_choice = 5;
     g_max_choice = max_choice;
@@ -149,6 +162,8 @@ void prompt_numeric_open(const char *header, const char *body, int max_choice) {
 
 void prompt_ab_open(const char *header, const char *body) {
     g_kind = PK_AB_CHOICE;
+    g_req_kind = PIO_ASK;
+    g_req_face = 0;
     copy_to(g_header, sizeof(g_header), header);
     copy_to(g_body,   sizeof(g_body),   body);
     parse_choices(true, 2);
@@ -168,6 +183,8 @@ void prompt_text_input_open(const char *header, const char *body,
                             int max_digits, int max_value) {
     g_ts.cursor = 0;
     g_kind = PK_TEXT_INPUT;
+    g_req_kind = PIO_ASK;
+    g_req_face = 0;
     if (max_digits < 1) max_digits = 1;
     if (max_digits > 6) max_digits = 6;
     g_text_max_digits = max_digits;
@@ -248,11 +265,11 @@ PromptResult prompt_update(void) {
 
     // Modern foe view: Fight / Evade. With nowhere to run, Evade (No, Esc) is
     // not an answer -- only Fight is.
-    bool foe_view = CL_IS_MODERN && g_kind == PK_YES_NO && pending_flow == FLOW_ATTACK_FOE;
+    bool foe_view = CL_IS_MODERN && g_req_kind == PIO_ASK_SCENE;
     bool no_evade = foe_view && pending_foe_evade_blocked;
     // Modern dwelling: Recruit / Leave rows first; Recruit opens the stepper,
     // and Esc puts the stepper away before it leaves.
-    bool dwelling = CL_IS_MODERN && g_kind == PK_TEXT_INPUT && pending_flow == FLOW_RECRUIT;
+    bool dwelling = CL_IS_MODERN && g_req_kind == PIO_ASK_NUMBER_IN_PLACE;
     if (dwelling && g_step_open) {
         int tapped = touch_tapped_row(TOUCH_LIST_PROMPT);    // "Recruit 20" / Cancel
         if (input_key_pressed(KEY_ESCAPE) || tapped == 1) {

@@ -152,7 +152,7 @@ void run_end_cartoon(RenderTexture2D *rt,
     int tick = 0;
     int frame = 0;
     bool done = false;
-    double last_advance = GetTime();
+    double last_advance = ui_anim_time();
     double tick_interval = 0.08;   // ~12 ticks per second -- 
                                    // ~60Hz timer advancing through tick 0..3.
 
@@ -160,8 +160,8 @@ void run_end_cartoon(RenderTexture2D *rt,
         // Modern: a tap counts too, as on every other any-key screen.
         if (CL_IS_MODERN ? ui_any_key_pressed() : any_key_pressed()) { done = true; break; }
 
-        if (GetTime() - last_advance >= tick_interval) {
-            last_advance = GetTime();
+        if (ui_anim_time() - last_advance >= tick_interval) {
+            last_advance = ui_anim_time();
             tick++;
             // advances the animation frame every 2nd and 4th tick
             // of a 4-tick cycle (draw_cartoon_frame:4384). Emulate by

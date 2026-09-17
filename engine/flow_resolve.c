@@ -28,7 +28,7 @@
 static void open_dialog_padded(Game *g, const char *header, const char *body) {
     char padded[700];
     snprintf(padded, sizeof padded, "\n\n\n%s", body ? body : "");
-    player_io_message(g, header, padded);
+    player_io_note_in_place(g, header, padded);   // the dwelling screen is up
 }
 
 bool flow_apply_search(Game *g, const Resources *res, FlowAnswer ans,
@@ -64,7 +64,7 @@ bool flow_apply_search(Game *g, const Resources *res, FlowAnswer ans,
         if (out_game_over) *out_game_over = true;
     } else {
         if (weeks > 0 && out_week_commission) *out_week_commission = paid;
-        player_io_message(g, NULL, res->banners.search_nothing);
+        player_io_note(g, NULL, res->banners.search_nothing);
     }
     return false;
 }
@@ -210,8 +210,8 @@ bool flow_apply_siege_villain(Game *g, const Resources *res,
             resources_format_template(body + n, (int)(sizeof body - n), bn->capture_promoted, v, 3);
         }
         resources_format_template(title, sizeof title, bn->capture_title, v, 3);
-        PlayerRequest *msg = player_io_message(g, title, body);
-        if (msg && captured) { msg->face = REQ_FACE_VILLAIN; msg->face_index = captured->index; }
+        if (captured) player_io_note_face(g, title, body, REQ_FACE_VILLAIN, captured->index);
+        else          player_io_note(g, title, body);
     }
     return false;
 }
@@ -271,7 +271,7 @@ void flow_apply_alcove(Game *g, Map *map, const Resources *res,
         snprintf(cbuf, sizeof cbuf, "%d", cost);
         ResTemplateVar vars[] = { { "COST", cbuf }, { "ZONE", zname } };
         resources_format_template(msg, sizeof msg, bn->alcove_no_gold, vars, 2);
-        player_io_message(g, res->ui.dt_alcove_result, msg);
+        player_io_note_in_place(g, res->ui.dt_alcove_result, msg);
     } else {
         g->stats.gold -= cost;
         g->stats.knows_magic = true;
@@ -283,7 +283,7 @@ void flow_apply_alcove(Game *g, Map *map, const Resources *res,
         GameAddConsumed(g, g->position.zone, g->position.x, g->position.y);
         ResTemplateVar vars[] = { { "ZONE", zname } };
         resources_format_template(msg, sizeof msg, bn->alcove_taught, vars, 1);
-        player_io_message(g, res->ui.dt_alcove_result, msg);
+        player_io_note_in_place(g, res->ui.dt_alcove_result, msg);
     }
 }
 
@@ -302,7 +302,7 @@ void flow_apply_recruit(Game *g, const RecruitParams *params, FlowAnswer ans) {
     if (rc == 1) {
         open_dialog_padded(g, NULL, g->res->banners.town_no_gold);
     } else if (rc == 2) {
-        player_io_message(g, NULL, g->res->banners.no_troop_slots);
+        player_io_note_in_place(g, NULL, g->res->banners.no_troop_slots);
     } else if (rc == 0) {
         // Success ONLY: reduce dwelling population. rc=3 (over leadership) and
         // rc=4 (location refusal) must NOT decrement -- the player received no
@@ -357,7 +357,7 @@ bool flow_apply_navigate(Game *g, Map *map, Fog *fog,
 
     const char *target = zones[idx];
     if (!GameSwitchZone(g, map, fog, target)) {
-        player_io_message(g, NULL, g->res->banners.zone_unreachable);
+        player_io_note(g, NULL, g->res->banners.zone_unreachable);
         return false;
     }
     int paid = 0;

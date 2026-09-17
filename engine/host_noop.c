@@ -13,6 +13,8 @@
 #include <stddef.h>
 
 // ---- Modal prompts ---------------------------------------------------------
+void prompt_set_req_kind(ReqKind k)                          { (void)k; }
+void prompt_set_req_face(int f, int i)                       { (void)f; (void)i; }
 void prompt_yes_no_open(const char *h, const char *b)        { (void)h; (void)b; }
 void prompt_ab_open(const char *h, const char *b)            { (void)h; (void)b; }
 void prompt_text_input_open(const char *h, const char *b,

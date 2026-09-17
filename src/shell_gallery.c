@@ -175,6 +175,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     char mpath[1024];
     snprintf(mpath, sizeof mpath, "%s/manifest.txt", dir);
     Gal G = { g, m, f, res, s, rt, dir, fopen(mpath, "w") };
+    ui_anim_freeze(true);   // every animated frame the same from run to run
     const ResUI *ui = &res->ui;
     const ResBanners *bn = &res->banners;
 
@@ -200,8 +201,8 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         ResTemplateVar sv[] = { { "SLOT", "2" }, { "NAME", g->character.name },
                                 { "RANK", g->character.cls.rank_title }, { "DAYS", dd } };
         resources_format_template(sbody, sizeof sbody, bn->save_done, sv, 4);
-        player_io_message(g, bn->save_done_title, sbody);
-        shell_pump_player_io_message(g);
+        player_io_note(g, bn->save_done_title, sbody);
+        shell_pump_note(g);
     }
     shot(&G, "02_map_toast");
     char tb[RES_BANNER_LEN];
@@ -244,10 +245,10 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     shot(&G, "07_question_choices");
     reset(&G);
     {
-        PlayerRequest *r = player_io_message(g, "Captured: Brennus",
-            "...and the capture of Brennus.\n\nFor fulfilling your contract you receive a bounty of 7000 gold, and a piece of the map to the stolen Aquila.");
-        if (r) { r->face = REQ_FACE_VILLAIN; r->face_index = 2; }
-        shell_pump_player_io_message(g);
+        player_io_note_face(g, "Captured: Brennus",
+            "...and the capture of Brennus.\n\nFor fulfilling your contract you receive a bounty of 7000 gold, and a piece of the map to the stolen Aquila.",
+            REQ_FACE_VILLAIN, 2);
+        shell_pump_note(g);
     }
     shot(&G, "08_inlay_capture");
 
@@ -256,11 +257,11 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     pending_week_phase = WK_PHASE_ASTROLOGY;
     pending_week_id = 3;
     pending_astrology_troop_idx = 6;
-    pump_week_end_dialog(g); shell_pump_player_io_message(g);
+    pump_week_end_dialog(g); shell_pump_note(g);
     shot(&G, "09a_week_end_astrology");
     reset(&G);
     pending_week_phase = WK_PHASE_BUDGET;
-    pump_week_end_dialog(g); shell_pump_player_io_message(g);
+    pump_week_end_dialog(g); shell_pump_note(g);
     shot(&G, "09b_week_end_budget");
     {
         // The same report late in a campaign: six-figure gold and a big army.
@@ -272,7 +273,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
             if (g->army[i].id[0] && g->army[i].count > 0) g->army[i].count *= 40;
         reset(&G);
         pending_week_phase = WK_PHASE_BUDGET;
-        pump_week_end_dialog(g); shell_pump_player_io_message(g);
+        pump_week_end_dialog(g); shell_pump_note(g);
         shot(&G, "09b2_week_end_budget_large");
         GameCopy(g, &keep);
         GameFree(&keep);
@@ -298,6 +299,8 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         pending_flow = FLOW_ACCEPT_FRIENDLY;
         cpy(pending_dwelling_troop, sizeof pending_dwelling_troop, t->id);
         prompt_yes_no_open("", tb);
+        prompt_set_req_kind(PIO_ASK_FACE);          // as engine/flows.c raises it
+        prompt_set_req_face(REQ_FACE_TROOP, t->index);
     }
     shot(&G, "09d_troops_join");
 
@@ -324,16 +327,15 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         // The hero's own disgraced scene, as shell_tempdeath.c sends it; then
         // each class's scene for review.
         const ClassDef *hc = class_by_id(g->character.cls.id);
-        PlayerRequest *r = player_io_message(g, NULL, bn->temp_death);
-        if (r && hc) { r->face = REQ_FACE_SCENE; r->face_index = hc->index; }
-        shell_pump_player_io_message(g);
+        if (hc) player_io_note_scene(g, NULL, bn->temp_death, hc->index);
+        else    player_io_note(g, NULL, bn->temp_death);
+        shell_pump_note(g);
     }
     shot(&G, "09f_temporary_death");
     for (int ci = 0; ci < res->classes_count && ci < 4; ci++) {
         reset(&G);
-        PlayerRequest *r = player_io_message(g, NULL, bn->temp_death);
-        if (r) { r->face = REQ_FACE_SCENE; r->face_index = ci; }
-        shell_pump_player_io_message(g);
+        player_io_note_scene(g, NULL, bn->temp_death, ci);
+        shell_pump_note(g);
         char nm[64];
         snprintf(nm, sizeof nm, "09f_temporary_death_%s", res->classes[ci].id);
         shot(&G, nm);
@@ -356,20 +358,20 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(2, p4, 0); shot(&G, "13_menu_game");
         reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(3, p5, 0); shot(&G, "14_menu_save_slots");
         reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(2, p4, 0);
-        prompt_yes_no_open(NULL, bn->gmc_exit); shot(&G, "15_menu_exit_question"); tap_yes_no("15_menu_exit_question", TOUCH_LIST_MENU);
+        prompt_yes_no_open(NULL, bn->gmc_exit); prompt_set_req_kind(PIO_ASK_IN_PLACE); shot(&G, "15_menu_exit_question"); tap_yes_no("15_menu_exit_question", TOUCH_LIST_MENU);
         // The menu's other confirmations, each over the page that asks it.
         {
             ResTemplateVar sv[] = { { "SLOT", "2" } };
             char ask[RES_BANNER_LEN];
             reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(3, p5, 1);
             resources_format_template(ask, sizeof ask, bn->gmc_overwrite, sv, 1);
-            prompt_yes_no_open(NULL, ask); shot(&G, "15b_menu_overwrite_question"); tap_yes_no("15b_menu_overwrite_question", TOUCH_LIST_MENU);
+            prompt_yes_no_open(NULL, ask); prompt_set_req_kind(PIO_ASK_IN_PLACE); shot(&G, "15b_menu_overwrite_question"); tap_yes_no("15b_menu_overwrite_question", TOUCH_LIST_MENU);
             GmPageId p6[3] = { GM_PAGE_ROOT, GM_PAGE_GAME, GM_PAGE_LOAD };
             reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(3, p6, 1);
             resources_format_template(ask, sizeof ask, bn->gmc_load, sv, 1);
-            prompt_yes_no_open(NULL, ask); shot(&G, "15c_menu_load_question"); tap_yes_no("15c_menu_load_question", TOUCH_LIST_MENU);
+            prompt_yes_no_open(NULL, ask); prompt_set_req_kind(PIO_ASK_IN_PLACE); shot(&G, "15c_menu_load_question"); tap_yes_no("15c_menu_load_question", TOUCH_LIST_MENU);
             reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(2, p4, 3);
-            prompt_yes_no_open(NULL, ui->new_game_confirm); shot(&G, "15d_menu_new_game_question"); tap_yes_no("15d_menu_new_game_question", TOUCH_LIST_MENU);
+            prompt_yes_no_open(NULL, ui->new_game_confirm); prompt_set_req_kind(PIO_ASK_IN_PLACE); shot(&G, "15d_menu_new_game_question"); tap_yes_no("15d_menu_new_game_question", TOUCH_LIST_MENU);
         }
         reset(&G); views_set(VIEW_MENU); views_push(VIEW_CONTROLS); shot(&G, "16_controls");
     }
@@ -448,7 +450,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         reset(&G); views_set(VIEW_TOWN); views_gallery_town_scene(1);
         shot(&G, "36_town_leave_row");
         reset(&G); views_set(VIEW_TOWN); views_gallery_town(g, TOWN_ROW_SIEGE, 0, NULL, false);
-        prompt_yes_no_open(NULL, "Buy siege weapons for 3000 gold?");
+        prompt_yes_no_open(NULL, "Buy siege weapons for 3000 gold?"); prompt_set_req_kind(PIO_ASK_IN_PLACE);
         shot(&G, "37_town_question"); tap_yes_no("37_town_question", TOUCH_LIST_TOWN);
         reset(&G); views_set(VIEW_TOWN);
         views_gallery_town(g, TOWN_ROW_SIEGE, 0, "Your engineers load the siege weapons onto carts. You can now lay siege to castles.", true);
@@ -499,7 +501,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
             ResTemplateVar tv[] = { { "GOLD", gold } };
             resources_format_template(ask, sizeof ask, bn->castle_tribute_confirm, tv, 1);
             reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_AUDIENCE, 2, 0, 0);
-            prompt_yes_no_open(NULL, ask); shot(&G, "44a_castle_tribute_question"); tap_yes_no("44a_castle_tribute_question", TOUCH_LIST_CASTLE);
+            prompt_yes_no_open(NULL, ask); prompt_set_req_kind(PIO_ASK_IN_PLACE); shot(&G, "44a_castle_tribute_question"); tap_yes_no("44a_castle_tribute_question", TOUCH_LIST_CASTLE);
         }
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_AUDIENCE, 0, 0, 0);
         modern_castle_gallery_audience(GAME_AUDIENCE_MORE_NEEDED + 1, 0); shot(&G, "44b_castle_audience_answer"); tap_continue("44b_castle_audience_answer", TOUCH_LIST_CASTLE);
@@ -551,7 +553,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         reset(&G);
         cpy(pending_foe_id, sizeof pending_foe_id, fo->placement_id);
         pending_flow = FLOW_ATTACK_FOE;
-        prompt_yes_no_open(ui->dt_foes, "You encounter:");
+        prompt_yes_no_open(ui->dt_foes, "You encounter:"); prompt_set_req_kind(PIO_ASK_SCENE);
         shot(&G, "50_foe_five_troops");
         for (int k = 2; k < GAME_ARMY_SLOTS; k++) { fo->garrison[k].id[0] = '\0'; fo->garrison[k].count = 0; }
         pending_foe_evade_blocked = true;
@@ -561,7 +563,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
 
     // ---- temple and dwelling ----------------------------------------------------------
     reset(&G); views_set(VIEW_ALCOVE); pending_flow = FLOW_ALCOVE;
-    prompt_yes_no_open(ui->dt_alcove_offer, bn->alcove_offer_modern);
+    prompt_yes_no_open(ui->dt_alcove_offer, bn->alcove_offer_modern); prompt_set_req_kind(PIO_ASK_IN_PLACE);
     shot(&G, "60_temple"); tap_yes_no("60_temple", 0);
     reset(&G); views_set(VIEW_ALCOVE);
     loc_deal_begin(g); g->stats.gold -= 5000; loc_deal_done(g, 0, NULL); g->stats.gold += 5000;
@@ -575,7 +577,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         views_set(VIEW_DWELLING);
         g->player_io.count = 0;
         pending_flow = FLOW_RECRUIT;
-        prompt_text_input_open(t->name, "", 4, 24);
+        prompt_text_input_open(t->name, "", 4, 24); prompt_set_req_kind(PIO_ASK_NUMBER_IN_PLACE);
         shot(&G, "62_dwelling"); tap_yes_no("62_dwelling", 0);
         prompt_gallery_step_open(true);
         shot(&G, "63_dwelling_how_many"); tap_yes_no("63_dwelling_how_many", 0); tap_key("63_dwelling_how_many", KEY_UP); tap_key("63_dwelling_how_many", KEY_DOWN);
@@ -628,11 +630,12 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         for (int i = 0; i < 3; i++) combat_present_public(&c, g, s, rt);
         save_target(&G, "72_combat_spells");
         combat_gallery_menu(false);
-        prompt_yes_no_open(ui->give_up_header_modern, bn->combat_give_up_body);
+        prompt_yes_no_open(ui->give_up_header_modern, bn->combat_give_up_body); prompt_set_req_kind(PIO_ASK_OVER_FIELD);
         for (int i = 0; i < 3; i++) combat_present_public(&c, g, s, rt);
         save_target(&G, "73_combat_give_up");
         prompt_dismiss();
-        open_dialog(ui->dt_combat_victory, "You have defeated the hostile band.\n\nSpoils: 1,250 gold.");
+        open_dialog_kind(ui->dt_combat_victory, "You have defeated the hostile band.\n\nSpoils: 1,250 gold.",
+                         PIO_NOTE_OVER_FIELD);
         for (int i = 0; i < 3; i++) combat_present_public(&c, g, s, rt);
         save_target(&G, "74_combat_victory");
         dialog_dismiss();
@@ -657,5 +660,6 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     reset(&G);
     if (G.manifest) fclose(G.manifest);
     fprintf(stdout, "[tapcheck] %d checks, %d failed\n", s_tap_checks, s_tap_fails);
+    ui_anim_freeze(false);
     return s_tap_fails ? 1 : 0;
 }

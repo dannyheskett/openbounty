@@ -956,7 +956,7 @@ static bool nav_travel_hop(ExecCtx *ctx, int dest_zi, ExecCause *out_cause) {
     if (pick < 0) { if (out_cause) *out_cause = EXEC_CAUSE_REACH; return false; }
     pending_nav_count = count;
     pending_flow = FLOW_NAVIGATE;
-    player_io_raise_decision(g, FLOW_NAVIGATE, REQ_PROMPT_NUMERIC, "", "");
+    player_io_ask_self(g, FLOW_NAVIGATE, REQ_PROMPT_NUMERIC);
     rec_push_action(g, RA_TRAVEL_ZONE, res->zones[dest_zi].id, 0, 0);
     FlowAnswer ans = { (PromptAnswer)(FLOW_ANS_1 + pick), 0 };
     PlayerIoPresentation pres;

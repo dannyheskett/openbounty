@@ -33,15 +33,16 @@
 // The public entry points, each one mode's draw.
 // ---------------------------------------------------------------------------
 
-void overlay_draw_dialog(void) {
-    if (CL_IS_MODERN) modern_overlay_draw_dialog();
-    else              legacy_overlay_draw_dialog();
+// A note, drawn as the kind it was raised as. Legacy keeps its two shapes --
+// the foot of the map, or centred over a combat field -- exactly as before.
+void overlay_draw_note(void) {
+    bool over_field = dialog_kind() == PIO_NOTE_OVER_FIELD;
+    if (CL_IS_MODERN) modern_overlay_draw_note();
+    else if (over_field) legacy_overlay_draw_dialog_centered();
+    else                 legacy_overlay_draw_dialog();
 }
 
-void overlay_draw_dialog_centered(void) {
-    if (CL_IS_MODERN) modern_overlay_draw_dialog_centered();
-    else              legacy_overlay_draw_dialog_centered();
-}
+
 
 int overlay_dialog_page_count(void) {
     return CL_IS_MODERN ? modern_overlay_dialog_page_count()
@@ -131,8 +132,9 @@ void overlay_draw(const Game *g, const Map *m, const Fog *f,
     // battlefield behind them is full width.
     if (CL_IS_MODERN) {
         bool map_behind = m && (v == VIEW_NONE || (v == VIEW_CONTROLS && views_depth() == 1));
-        ml_set_area(map_behind && !(prompt_is_active() && pending_flow == FLOW_ATTACK_FOE)
-                    ? ML_AREA_MAP : ML_AREA_FULL);
+        // A question raised as a scene of its own covers the whole pane.
+        bool scene_ask = prompt_is_active() && prompt_req_kind() == PIO_ASK_SCENE;
+        ml_set_area(map_behind && !scene_ask ? ML_AREA_MAP : ML_AREA_FULL);
     }
 
     // Modern: a detail view, a prompt or a dialog sits on a dimmed scene, so
@@ -173,17 +175,21 @@ void overlay_draw(const Game *g, const Map *m, const Fog *f,
         views_render_draw(g, m, f, s);
     }
 
-    bool loc_screen = CL_IS_MODERN && (v == VIEW_DWELLING || v == VIEW_ALCOVE);
-    // Modern: a town draws its own questions inside its panel, and the home
-    // castle asks in its own scene -- never a panel over the step that asked.
-    bool town_asks = CL_IS_MODERN && v == VIEW_TOWN && views_town_visiting() && prompt_is_active();
-    bool castle_asks = CL_IS_MODERN && v == VIEW_HOME_CASTLE && prompt_is_active();
-    bool menu_asks = CL_IS_MODERN && v == VIEW_MENU && prompt_is_active();
-    // Modal prompt (yes/no, numeric picker): replaces the bottom frame.
-    if (prompt_is_active() && !loc_screen && !town_asks && !castle_asks && !menu_asks) {
-        // Modern: a hostile foe gets its own full-screen view (Fight / Evade).
-        if (CL_IS_MODERN && pending_flow == FLOW_ATTACK_FOE) modern_overlay_draw_foe(g, s);
-        else                                                prompt_draw();
+    // The question, drawn as the kind it was raised as (player_io.h). An
+    // in-place question belongs to the screen that is up -- the town's panel,
+    // the castle's scene, the menu's page, a location screen -- and that screen
+    // has already drawn it; a scene question (a hostile foe) gets a screen of
+    // its own; everything else is the bottom frame.
+    if (prompt_is_active()) {
+        ReqKind ak = prompt_req_kind();
+        bool in_place = CL_IS_MODERN && (ak == PIO_ASK_IN_PLACE || ak == PIO_ASK_NUMBER_IN_PLACE);
+        if (in_place) {
+            /* the open screen drew it */
+        } else if (CL_IS_MODERN && ak == PIO_ASK_SCENE) {
+            modern_overlay_draw_foe(g, s);
+        } else {
+            prompt_draw();
+        }
     }
 
     // Dialog LAST, so it covers a prompt that is up at the same time. Both are
@@ -191,8 +197,9 @@ void overlay_draw(const Game *g, const Map *m, const Fog *f,
     // it is open (see the prompt_dispatch_tick gate in main.c, issue #19) -- the
     // visible modal has to be the one the next key talks to. Once the dialog is
     // dismissed the prompt underneath is revealed and answers as usual.
-    if (dialog_is_active() && !loc_screen) {
-        overlay_draw_dialog();
+    if (dialog_is_active() &&
+        !(CL_IS_MODERN && dialog_kind() == PIO_NOTE_IN_PLACE)) {
+        overlay_draw_note();
     }
 
     // Toast always last so it floats above other layers.

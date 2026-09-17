@@ -34,8 +34,7 @@ void legacy_overlay_draw_location_backdrop(const Game *g, const Sprites *s,
                                            int loc_kind, int troop_idx,
                                            int troop_frame);
 
-void modern_overlay_draw_dialog(void);
-void modern_overlay_draw_dialog_centered(void);
+void modern_overlay_draw_note(void);
 // The sprites the modern in-lay dialog draws its picture from.
 void modern_overlay_set_sprites(const Sprites *s);
 const Sprites *modern_overlay_sprites(void);

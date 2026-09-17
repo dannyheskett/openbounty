@@ -61,7 +61,7 @@ void screen_dwelling_open(Game *g,
     s_cap  = cap;
     // Enqueue the view (carry recruit numbers in the payload); shell sync
     // pushes / autoplay acks. Context statics above stay as-is.
-    PlayerRequest *r = player_io_raise_view(g, VIEW_DWELLING, /*replace=*/false,
+    PlayerRequest *r = player_io_screen(g, VIEW_DWELLING, /*replace=*/false,
                                             NULL, NULL);
     if (r) { r->dwelling_kind = kind; r->view_pop = dwelling_pop;
              r->view_cost = recruit_cost; r->view_gold = gold; r->view_cap = cap; }

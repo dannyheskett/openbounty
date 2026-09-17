@@ -831,7 +831,7 @@ title:;
                  game.character.name,
                  game.character.cls.rank_title);
         // Modern goes straight into the game.
-        if (!CL_IS_MODERN) player_io_message(&game, NULL, body);
+        if (!CL_IS_MODERN) player_io_note(&game, NULL, body);
     } else {
         // LOAD: hydrate Game from the chosen slot. GameInit first with
         // defaults so all fields have sane values the loader can overwrite.
@@ -855,7 +855,7 @@ title:;
                  "your bountying enjoyment!",
                  game.character.name,
                  game.character.cls.rank_title);
-        player_io_message(&game, NULL, body);
+        player_io_note(&game, NULL, body);
     }
 
     // Load the starting zone now that placements are populated. For NEW
@@ -1075,7 +1075,7 @@ title:;
         // captures, etc.) into the shell dialog so the engine's uniform
         // messages render through the existing dialog UI. One per frame when the
         // dialog slot is free; the human dismisses with any key as before.
-        shell_pump_player_io_message(&game);
+        shell_pump_note(&game);
 
         // Sync engine VIEWS (town / home-castle / own-castle / alcove / dwelling /
         // win / lose) from the queue onto the shell view stack. The human
@@ -1257,6 +1257,7 @@ title:;
                 char ask[RES_BANNER_LEN];
                 if (modern_gamemenu_take_confirm(&game, ask, sizeof ask)) {
                     prompt_yes_no_open(NULL, ask);
+                    prompt_set_req_kind(PIO_ASK_IN_PLACE);   // the menu asks in its own page
                     menu_asking = true;
                 }
                 int slot = 0;
@@ -1271,7 +1272,7 @@ title:;
                         ResTemplateVar sv[] = { { "SLOT", sb }, { "NAME", game.character.name },
                                                 { "RANK", game.character.cls.rank_title }, { "DAYS", db } };
                         resources_format_template(body, sizeof body, res.banners.save_done, sv, 4);
-                        player_io_message(&game, res.banners.save_done_title, body);
+                        player_io_note(&game, res.banners.save_done_title, body);
                         break;
                     }
                     case GM_DO_LOAD: menu_ctx.slot = slot; if (menu_load(&menu_ctx)) views_dismiss(); break;
@@ -1285,6 +1286,7 @@ title:;
             if (new_game_requested) {
                 new_game_requested = false;
                 prompt_yes_no_open(NULL, res.ui.new_game_confirm);
+                prompt_set_req_kind(PIO_ASK_IN_PLACE);
                 new_game_asking = true;
             }
             // A Debug row (--debug only) closes the menu and names a cheat.
@@ -1299,6 +1301,7 @@ title:;
             char ask[RES_BANNER_LEN];
             if (views_town_take_confirm(&game, ask, sizeof ask) != TOWN_CONFIRM_NONE) {
                 prompt_yes_no_open(NULL, ask);
+                prompt_set_req_kind(PIO_ASK_IN_PLACE);   // the town asks in its own panel
                 town_asking = true;
             }
         } else if (views_active() == VIEW_CONTROLS) {
@@ -1387,6 +1390,7 @@ title:;
             char ask[RES_BANNER_LEN];
             if (views_active() == VIEW_HOME_CASTLE && modern_castle_take_confirm(&game, ask, sizeof ask)) {
                 prompt_yes_no_open(NULL, ask);
+                prompt_set_req_kind(PIO_ASK_IN_PLACE);   // the castle asks in its own scene
                 castle_asking = true;
             }
         } else if (views_active() == VIEW_HOME_CASTLE && !dialog_is_active()) {
@@ -1461,16 +1465,16 @@ title:;
                     if (screen_own_castle_is_garrison_mode()) {
                         rc = GameGarrisonTroop(&game, cid, k);
                         if (rc == 2) {
-                            player_io_message(&game, NULL,
+                            player_io_note(&game, NULL,
                                 game.res->banners.cannot_garrison_last);
                         } else if (rc == 1) {
-                            player_io_message(&game, NULL,
+                            player_io_note(&game, NULL,
                                 game.res->banners.no_troop_slots);
                         }
                     } else {
                         rc = GameUngarrisonTroop(&game, cid, k);
                         if (rc == 1) {
-                            player_io_message(&game, NULL,
+                            player_io_note(&game, NULL,
                                 game.res->banners.no_troop_slots);
                         }
                     }
@@ -1555,13 +1559,13 @@ title:;
                                                   bn->spell_bridge_built,
                                                   vars, 1);
                         dialog_dismiss();
-                        player_io_message(&game, spell_header("bridge", "Bridge"), msg);
+                        player_io_note(&game, spell_header("bridge", "Bridge"), msg);
                     } else {
                         resources_format_template(msg, sizeof msg,
                                                   bn->spell_bridge_invalid,
                                                   NULL, 0);
                         dialog_dismiss();
-                        player_io_message(&game, spell_header("bridge", "Bridge"), msg);
+                        player_io_note(&game, spell_header("bridge", "Bridge"), msg);
                     }
                 } else if (input_key_pressed(KEY_ESCAPE) || gamepad_pressed_cancel()) {
                     bridge_state = BRIDGE_STATE_NONE;
@@ -1592,7 +1596,7 @@ title:;
                             snprintf(body, sizeof(body), "%s",
                                      pending_audience_message);
                             pending_audience_message[0] = '\0';
-                            player_io_message(&game, body, "");
+                            player_io_note(&game, body, "");
                         }
                     }
                 }

@@ -57,6 +57,7 @@ static char dialog_header[256];
 static char dialog_body[512];
 static int  dialog_page = 0;    // current page offset for pagination
 static int  dialog_face_kind = 0, dialog_face_idx = 0;   // the message's picture hint
+static ReqKind dialog_req_kind = PIO_NOTE;               // what the raiser called it
 
 static void copy_to(char *dst, size_t dst_sz, const char *src) {
     size_t n = 0;
@@ -70,12 +71,22 @@ void open_dialog(const char *header, const char *body) {
     open_dialog_flags(header, body, MSG_FLAG_NONE);
 }
 
+// A note the host raises itself, saying what kind it is (combat's victory
+// banner sits over the field, not on the map's foot).
+void open_dialog_kind(const char *header, const char *body, ReqKind kind) {
+    open_dialog_flags(header, body, MSG_FLAG_NONE);
+    dialog_req_kind = kind;
+}
+
+ReqKind dialog_kind(void) { return dialog_req_kind; }
+
 // MSG_PADDED handling lives here so callers don't have to know about
 // layout. PADDED prepends "\n\n\n" to push the body down toward the
 // vertical center of the fixed-size bottom panel. Data strings stay
 // clean; layout decisions stay in the renderer.
 void open_dialog_flags(const char *header, const char *body, int flags) {
     dialog_face_kind = 0;
+    dialog_req_kind = PIO_NOTE;
     copy_to(dialog_header, sizeof(dialog_header), header);
     if ((flags & MSG_FLAG_PADDED) && body) {
         char padded[sizeof(dialog_body)];
@@ -114,7 +125,7 @@ const char *dialog_header_text(void) { return dialog_header; }
 int dialog_face(int *index) { if (index) *index = dialog_face_idx; return dialog_active ? dialog_face_kind : 0; }
 const char *dialog_body_text(void)   { return dialog_body;   }
 
-bool shell_pump_player_io_message(Game *g) {
+bool shell_pump_note(Game *g) {
     // One message at a time: only surface a queued REQ_MESSAGE when the dialog
     // slot is free, so each message gets its own press-any-key dismissal (the
     // engine raises them one per interaction; FIFO order is preserved). A queued
@@ -124,6 +135,7 @@ bool shell_pump_player_io_message(Game *g) {
     const PlayerRequest *r = player_io_front(g);
     if (!r || r->role != REQ_MESSAGE) return false;
     open_dialog(r->header[0] ? r->header : NULL, r->body);
+    dialog_req_kind = r->kind;
     dialog_face_kind = (int)r->face;
     dialog_face_idx = r->face_index;
     player_io_ack(g);   // consumed: it now lives in the shell dialog
@@ -152,6 +164,11 @@ bool dialog_advance(void) {
 // ---- Toast -----------------------------------------------------------------
 static char   toast_text[128];
 static double toast_until;
+
+// The drawing clock (ui.h): frozen while the gallery captures.
+static bool s_anim_frozen;
+void   ui_anim_freeze(bool frozen) { s_anim_frozen = frozen; }
+double ui_anim_time(void) { return s_anim_frozen ? 0.0 : frame_host_time(); }
 
 void toast_show(const char *msg) {
     copy_to(toast_text, sizeof(toast_text), msg);

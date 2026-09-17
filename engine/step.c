@@ -127,8 +127,8 @@ bool GameStep(Game *game, Map *map, Fog *fog,
         if (ir.opened_dialog) {
             // Sign-post text composed Game-free by adventure_handle_interact;
             // raise it through the uniform queue.
-            player_io_message(game, ir.dialog_header[0] ? ir.dialog_header : NULL,
-                              ir.dialog_body);
+            player_io_note(game, ir.dialog_header[0] ? ir.dialog_header : NULL,
+                           ir.dialog_body);
         }
         if (ir.entered_town) {
             // The hero is now AT this town: town transaction cores key off this.
@@ -147,8 +147,8 @@ bool GameStep(Game *game, Map *map, Fog *fog,
             // resets the shell stack). views_open_town set the town context
             // statics above.
             {
-                PlayerRequest *r = player_io_raise_view(game, VIEW_TOWN,
-                                                        /*replace=*/true, NULL, NULL);
+                PlayerRequest *r = player_io_screen(game, VIEW_TOWN,
+                                                    /*replace=*/true, NULL, NULL);
                 if (r) {
                     snprintf(r->view_record_key, sizeof r->view_record_key,
                              "%s", ir.town_id);
@@ -173,7 +173,7 @@ bool GameStep(Game *game, Map *map, Fog *fog,
                 snprintf(body_a, sizeof body_a, "%s%s%s",
                          a->effect[0] ? a->effect : "", a->effect[0] ? "\n\n" : "",
                          res->banners.artifact_map_piece);
-                player_io_message(game, header, body_a);
+                player_io_note(game, header, body_a);
             }
         }
         if (ir.opened_castle) {
@@ -250,10 +250,8 @@ bool GameStep(Game *game, Map *map, Fog *fog,
                 resources_format_template(prompt_header, sizeof prompt_header,
                                           res->banners.castle_header, cv, 1);
                 pending_flow = FLOW_SIEGE_MONSTER;
-                prompt_yes_no_open(prompt_header, prompt_body);
-                player_io_raise_decision(game, FLOW_SIEGE_MONSTER,
-                                         REQ_PROMPT_YES_NO,
-                                         prompt_header, prompt_body);
+                player_io_ask(game, FLOW_SIEGE_MONSTER, REQ_PROMPT_YES_NO,
+                              prompt_header, prompt_body);
                 header[0] = '\0';
                 body[0]   = '\0';
             } else if (cr && cr->owner_kind == CASTLE_OWNER_VILLAIN &&
@@ -284,10 +282,8 @@ bool GameStep(Game *game, Map *map, Fog *fog,
                 snprintf(prompt_header, sizeof(prompt_header), "Castle %s",
                          rc && rc->name[0] ? rc->name : ir.castle_id);
                 pending_flow = FLOW_SIEGE_VILLAIN;
-                prompt_yes_no_open(prompt_header, prompt_body);
-                player_io_raise_decision(game, FLOW_SIEGE_VILLAIN,
-                                         REQ_PROMPT_YES_NO,
-                                         prompt_header, prompt_body);
+                player_io_ask(game, FLOW_SIEGE_VILLAIN, REQ_PROMPT_YES_NO,
+                              prompt_header, prompt_body);
                 header[0] = '\0';
                 body[0]   = '\0';
             } else {
@@ -295,7 +291,7 @@ bool GameStep(Game *game, Map *map, Fog *fog,
                 snprintf(body, sizeof(body), "%s", res->banners.castle_uncharted);
             }
             if (header[0] || body[0]) {
-                player_io_message(game, header, body);
+                player_io_note(game, header, body);
             }
         }
         if (ir.opened_alcove) {
@@ -311,9 +307,9 @@ bool GameStep(Game *game, Map *map, Fog *fog,
                                           vars, 2);
                 screen_alcove_open(game);
                 pending_flow = FLOW_ALCOVE;
-                prompt_yes_no_open(res->ui.dt_alcove_offer, body);
-                player_io_raise_decision(game, FLOW_ALCOVE, REQ_PROMPT_YES_NO,
-                                         res->ui.dt_alcove_offer, body);
+                // The temple screen is open behind it, so it asks there.
+                player_io_ask_in_place(game, FLOW_ALCOVE, REQ_PROMPT_YES_NO,
+                                       res->ui.dt_alcove_offer, body);
             } else {
                 char body[RES_BANNER_LEN];
                 ResTemplateVar vars[] = { { "ZONE", azname } };
@@ -321,8 +317,12 @@ bool GameStep(Game *game, Map *map, Fog *fog,
                                           res->banners.alcove_already,
                                           vars, 1);
                 // With rites per zone the temple screen opens behind the words.
-                if (res->economy.rites_per_zone) screen_alcove_open(game);
-                player_io_message(game, NULL, body);
+                if (res->economy.rites_per_zone) {
+                    screen_alcove_open(game);
+                    player_io_note_in_place(game, NULL, body);
+                } else {
+                    player_io_note(game, NULL, body);
+                }
             }
             if (ir.bounce_back) {
                 game->position.x = prev_x;
@@ -410,26 +410,21 @@ bool GameStep(Game *game, Map *map, Fog *fog,
                                      d->count, t->recruit_cost,
                                      game->stats.gold, cap);
                 pending_flow = FLOW_RECRUIT;
-                prompt_text_input_open(header, body, 4,
-                                       cap > 0 ? cap : 0);
-                {
-                    PlayerRequest *pr = player_io_raise_decision(
-                        game, FLOW_RECRUIT, REQ_PROMPT_TEXT, header, body);
-                    if (pr) { pr->prompt_digits = 4;
-                              pr->prompt_max = (cap > 0 ? cap : 0); }
-                }
+                // The dwelling screen is open: it asks how many there.
+                player_io_ask_number_in_place(game, FLOW_RECRUIT, header, body,
+                                              4, cap > 0 ? cap : 0);
             } else if (t) {
                 char msg[RES_BANNER_LEN];
                 resources_format_template(msg, sizeof msg,
                                           res->banners.dwelling_none_this_week,
                                           NULL, 0);
-                player_io_message(game, NULL, msg);
+                player_io_note(game, NULL, msg);
             } else {
                 char msg[RES_BANNER_LEN];
                 resources_format_template(msg, sizeof msg,
                                           res->banners.dwelling_empty,
                                           NULL, 0);
-                player_io_message(game, NULL, msg);
+                player_io_note(game, NULL, msg);
             }
         }
         if (ir.opened_chest) {
@@ -455,11 +450,9 @@ bool GameStep(Game *game, Map *map, Fog *fog,
                 pending_chest_gold       = cp.pending_gold;
                 pending_chest_leadership = cp.pending_leadership;
                 pending_flow = FLOW_CHEST_CHOICE;
-                prompt_ab_open("", body);
-                player_io_raise_decision(game, FLOW_CHEST_CHOICE,
-                                         REQ_PROMPT_AB, "", body);
+                player_io_ask(game, FLOW_CHEST_CHOICE, REQ_PROMPT_AB, "", body);
             } else {
-                player_io_message(game, NULL, body);
+                player_io_note(game, NULL, body);
             }
         }
         if (ir.opened_telecave) {
@@ -500,12 +493,12 @@ bool GameStep(Game *game, Map *map, Fog *fog,
                 resources_format_template(tmsg, sizeof tmsg,
                                           res->banners.telecave_teleport,
                                           NULL, 0);
-                player_io_message(game, res->ui.dt_teleport_cave, tmsg);
+                player_io_note(game, res->ui.dt_teleport_cave, tmsg);
             } else {
                 resources_format_template(tmsg, sizeof tmsg,
                                           res->banners.telecave_inert,
                                           NULL, 0);
-                player_io_message(game, res->ui.dt_teleport_cave, tmsg);
+                player_io_note(game, res->ui.dt_teleport_cave, tmsg);
             }
         }
         if (ir.opened_navmap) {
@@ -550,7 +543,7 @@ bool GameStep(Game *game, Map *map, Fog *fog,
                 resources_format_template(body, sizeof body,
                                           res->banners.navmap_pickup,
                                           vars, 1);
-                player_io_message(game, NULL, body);
+                player_io_note(game, NULL, body);
             } else {
                 // All zones already discovered: consume the navmap
                 // silently. No port-authored fallback dialog.
@@ -577,7 +570,7 @@ bool GameStep(Game *game, Map *map, Fog *fog,
             resources_format_template(body, sizeof body,
                                       res->banners.crystal_ball_pickup,
                                       vars, 1);
-            player_io_message(game, res->ui.dt_crystal_ball, body);
+            player_io_note(game, res->ui.dt_crystal_ball, body);
         }
         if (ir.opened_foe) {
             const FoeState *f = GameFindFoeConst(game, ir.foe_id);

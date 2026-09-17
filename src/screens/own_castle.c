@@ -82,7 +82,7 @@ void screen_own_castle_open(Game *g, const char *castle_id) {
     if (CL_IS_MODERN) modern_castle_open(g, false, castle_id);
     // Enqueue the view (carry the castle id in the request payload too); the
     // shell sync pushes it / autoplay acks it. Context statics above stay as-is.
-    PlayerRequest *r = player_io_raise_view(g, VIEW_OWN_CASTLE, /*replace=*/false,
+    PlayerRequest *r = player_io_screen(g, VIEW_OWN_CASTLE, /*replace=*/false,
                                             NULL, NULL);
     if (r) snprintf(r->castle_id, sizeof r->castle_id, "%s", castle_id);
 }
@@ -105,7 +105,7 @@ const char *screen_own_castle_castle_id(void) {
 void screen_own_castle_draw(const Game *g, const Sprites *s) {
     if (CL_IS_MODERN) { modern_overlay_draw_castle(g, s); return; }
     // 1) Castle backdrop. Advance frame at  SYN cadence.
-    double now = GetTime();
+    double now = ui_anim_time();
     if (now - s_last_tick >= OWN_CASTLE_TICK) {
         s_last_tick = now;
         s_frame = ob_anim_tick(s_frame);

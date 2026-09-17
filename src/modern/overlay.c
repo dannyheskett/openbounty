@@ -61,7 +61,9 @@ static int message_pages(void) {
 }
 
 int modern_overlay_dialog_page_count(void) {
-    if (dialog_face(NULL)) return 1;   // the in-lay shows its words on one page
+    // A note with a picture, or one drawn as a scene, shows its words at once.
+    ReqKind k = dialog_kind();
+    if (k == PIO_NOTE_FACE || k == PIO_NOTE_SCENE) return 1;
     return message_pages();
 }
 
@@ -72,15 +74,17 @@ void modern_overlay_set_sprites(const Sprites *s) { s_dialog_sprites = s; }
 const Sprites *modern_overlay_sprites(void) { return s_dialog_sprites; }
 
 static void draw_dialog_ex(DialogMode mode);
-static void draw_face_dialog(void);
+static void draw_note_face(void);
+static void draw_note_scene(void);
 
-void modern_overlay_draw_dialog(void) {
-    if (dialog_face(NULL)) { draw_face_dialog(); return; }
-    draw_dialog_ex(DLG_MODE_BOTTOM);
-}
-void modern_overlay_draw_dialog_centered(void) {
-    if (dialog_face(NULL)) { draw_face_dialog(); return; }
-    draw_dialog_ex(DLG_MODE_CENTERED_MODAL);
+// One drawing function per kind of note; nothing is inferred here.
+void modern_overlay_draw_note(void) {
+    switch (dialog_kind()) {
+        case PIO_NOTE_FACE:       draw_note_face();  break;
+        case PIO_NOTE_SCENE:      draw_note_scene(); break;
+        case PIO_NOTE_OVER_FIELD: draw_dialog_ex(DLG_MODE_CENTERED_MODAL); break;
+        default:                  draw_dialog_ex(DLG_MODE_BOTTOM); break;
+    }
 }
 
 static void draw_dialog_ex(DialogMode mode) {
@@ -140,13 +144,13 @@ static void draw_dialog_ex(DialogMode mode) {
 // A portrait's current frame (animated), or nothing.
 static Texture2D portrait_frame(const Sprites *s, int idx, double fps) {
     if (!s || idx < 0 || idx >= s->portrait_count || s->portrait_frames[idx] <= 0) return (Texture2D){ 0 };
-    return sprites_strip(s->portrait_anim[idx], s->portrait_frames[idx], (int)(GetTime() * fps));
+    return sprites_strip(s->portrait_anim[idx], s->portrait_frames[idx], (int)(ui_anim_time() * fps));
 }
 
 static Texture2D villain_face(const Sprites *s, int idx) {
     if (!s || idx < 0 || idx >= s->villain_count) return (Texture2D){ 0 };
     Texture2D face = s->villain_anim_frames[idx] > 0
-        ? sprites_strip(s->villain_anim[idx], s->villain_anim_frames[idx], (int)(GetTime() * 2.0))
+        ? sprites_strip(s->villain_anim[idx], s->villain_anim_frames[idx], (int)(ui_anim_time() * 2.0))
         : s->villain_portrait[idx];
     return face.id ? face : s->villain_portrait[idx];
 }
@@ -159,41 +163,51 @@ static Texture2D troop_face(const Sprites *s, int idx) {
 static Texture2D troop_standing(const Sprites *s, int idx) {
     if (!s || idx < 0 || idx >= s->troop_count) return (Texture2D){ 0 };
     Texture2D t = sprites_strip(s->troop_anim[idx], s->troop_anim_frames[idx],
-                                sprites_stand((int)(GetTime() * 6.66)));
+                                sprites_stand((int)(ui_anim_time() * 6.66)));
     return t.id ? t : s->troop_sprite[idx];
 }
 
-// A message with a picture hint (REQ-430t): the in-lay -- the header as its
-// title, the picture at 2x, the words flowing beside and beneath it, Continue.
-static void draw_face_dialog(void) {
+// PIO_NOTE_FACE: the in-lay -- the header as its title, the picture at 2x, the
+// words flowing beside and beneath it, Continue.
+static void draw_note_face(void) {
     const Resources *res = resources_current();
     if (!res) return;
     int idx = 0;
-    int kind = dialog_face(&idx);
+    int face_kind = dialog_face(&idx);
     const Sprites *s = s_dialog_sprites;
     Texture2D face = { 0 };
-    if (kind == REQ_FACE_VILLAIN)                                 face = villain_face(s, idx);
-    else if (kind == REQ_FACE_TROOP)                              face = troop_face(s, idx);
-    else if (kind == REQ_FACE_ARTIFACT && s && idx >= 0 && idx < s->view_icon_extra_base) face = s->view_icon[idx];
-    else if (kind == REQ_FACE_PORTRAIT)                           face = portrait_frame(s, idx, 2.0);
-    if (kind == REQ_FACE_SCENE && s && idx >= 0 && idx < s->class_count && s->class_disgraced[idx].id) {
-        // A scene, framed like a place: the title strip, the backdrop at 3x
-        // with the lattice either side, a divider, the words, Continue.
-        const char *hdr = dialog_header_text();
-        const char *title = (hdr && hdr[0]) ? hdr : "";
-        for (int i = 0; !title[0] && i < res->castle_count; i++)
-            if (resources_castle_is_home(&res->castles[i])) title = res->castles[i].name;
-        const char *body = dialog_body_text();
-        int lines = wrapped_lines(body, ml_full().w - 2 * ML_PAD);
-        UkScene L = uk_scene_ex(title, NULL, s->class_disgraced[idx], 1, lines * uk_line_h() + 3 * ML_PAD);
-        uk_flow(L.full.x + ML_PAD, L.intro_y + ML_PAD, L.full.w - 2 * ML_PAD, L.full.x, 0, L.rows_y - ML_ROW_RULE,
-                body, PAL_CLR(WHITE));
-        UkRows rows = { { res->banners.castle_continue }, { true } };
-        uk_scene_rows(&L, 1, 0, uk_rows_fn, &rows, TOUCH_LIST_PROMPT);
-        return;
-    }
+    if (face_kind == REQ_FACE_VILLAIN)                            face = villain_face(s, idx);
+    else if (face_kind == REQ_FACE_TROOP)                         face = troop_face(s, idx);
+    else if (face_kind == REQ_FACE_ARTIFACT && s && idx >= 0 && idx < s->view_icon_extra_base) face = s->view_icon[idx];
+    else if (face_kind == REQ_FACE_PORTRAIT)                      face = portrait_frame(s, idx, 2.0);
     uk_result_inlay(dialog_header_text(), face, dialog_body_text(), res->banners.castle_continue,
                     TOUCH_LIST_PROMPT);
+}
+
+// PIO_NOTE_SCENE: framed like a place -- the title strip, the backdrop at 3x
+// with the lattice either side, a divider, the words, Continue. A pack without
+// the scene art falls back to the in-lay.
+static void draw_note_scene(void) {
+    const Resources *res = resources_current();
+    if (!res) return;
+    int idx = 0;
+    dialog_face(&idx);
+    const Sprites *s = s_dialog_sprites;
+    if (!s || idx < 0 || idx >= s->class_count || !s->class_disgraced[idx].id) {
+        draw_note_face();
+        return;
+    }
+    const char *hdr = dialog_header_text();
+    const char *title = (hdr && hdr[0]) ? hdr : "";
+    for (int i = 0; !title[0] && i < res->castle_count; i++)
+        if (resources_castle_is_home(&res->castles[i])) title = res->castles[i].name;
+    const char *body = dialog_body_text();
+    int lines = wrapped_lines(body, ml_full().w - 2 * ML_PAD);
+    UkScene L = uk_scene_ex(title, NULL, s->class_disgraced[idx], 1, lines * uk_line_h() + 3 * ML_PAD);
+    uk_flow(L.full.x + ML_PAD, L.intro_y + ML_PAD, L.full.w - 2 * ML_PAD, L.full.x, 0, L.rows_y - ML_ROW_RULE,
+            body, PAL_CLR(WHITE));
+    UkRows rows = { { res->banners.castle_continue }, { true } };
+    uk_scene_rows(&L, 1, 0, uk_rows_fn, &rows, TOUCH_LIST_PROMPT);
 }
 
 // =============================================================================
@@ -1321,7 +1335,7 @@ void modern_overlay_draw_temple(const Game *g, const Sprites *s) {
     char gold[48], buf[RES_BANNER_LEN], cost[16];
     uk_gold_text(g, gold, sizeof gold);
     const PromptView *pv = prompt_view();
-    bool asking = prompt_is_active() && pending_flow == FLOW_ALCOVE;
+    bool asking = prompt_is_active() && prompt_req_kind() == PIO_ASK_IN_PLACE;
     bool offering = !asking && loc_deal_pending() && !loc_deal_revealed();
     bool result = !asking && !offering;
 
@@ -1340,7 +1354,7 @@ void modern_overlay_draw_temple(const Game *g, const Sprites *s) {
     UkScene L = uk_scene_for_doc(bn->temple_title, gold, loc_texture(s, LOC_ALCOVE), result ? 1 : 2, &d, 0);
     if (s && s->alcove_figure.id && res->sprites.alcove_figure_w > 0) {
         int ms = res->sprites.alcove_figure_frame_ms > 0 ? res->sprites.alcove_figure_frame_ms : 180;
-        Texture2D fig = sprites_strip(s->alcove_figure_anim, s->alcove_figure_frames, (int)(GetTime() * 1000.0 / ms));
+        Texture2D fig = sprites_strip(s->alcove_figure_anim, s->alcove_figure_frames, (int)(ui_anim_time() * 1000.0 / ms));
         if (!fig.id) fig = s->alcove_figure;
         uk_scene_blit(&L, fig, res->sprites.alcove_figure_x, res->sprites.alcove_figure_y,
                       res->sprites.alcove_figure_w, res->sprites.alcove_figure_h);
@@ -1375,7 +1389,7 @@ void modern_overlay_draw_dwelling(const Game *g, const Sprites *s) {
     snprintf(pb, sizeof pb, "%d", pop);
     snprintf(cb, sizeof cb, "%d", cost);
     const PromptView *pv = prompt_view();
-    bool offer = prompt_is_active() && pending_flow == FLOW_RECRUIT;
+    bool offer = prompt_is_active() && prompt_req_kind() == PIO_ASK_NUMBER_IN_PLACE;
     bool counting = offer && pv->step_open;
     bool dealing = !offer && loc_deal_pending() && !loc_deal_revealed();
     bool result = !offer && !dealing;

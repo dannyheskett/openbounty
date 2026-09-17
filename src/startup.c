@@ -7,6 +7,7 @@
 #include "modern/mlist.h"
 #include "modern/uikit.h"
 #include "modern/saveslots.h"
+#include "modern/gamemenu.h"
 #include "lattice.h"
 #include "present.h"
 #include "palette.h"
@@ -248,11 +249,73 @@ static bool difficulty_row(void *ctx, int i, char *label, char *right, int cap) 
     return true;          // readable before a name; chosen only after one
 }
 
+// Modern: the slot rows, then Back.
+typedef struct { const GmPage *page; const SlotSet *slots; } TitleSlotsCtx;
+
+static bool title_slot_row(void *ctx, int i, char *label, char *right, int cap) {
+    const TitleSlotsCtx *c = (const TitleSlotsCtx *)ctx;
+    const GmPage *p = c->page;
+    if (i < MODERN_SAVE_SLOTS) {
+        saveslots_row((void *)c->slots, i, label, right, cap);
+    } else {
+        snprintf(label, (size_t)cap, "%s", p->item[i].label ? p->item[i].label : "");
+        right[0] = '\0';
+    }
+    return p->item[i].enabled;
+}
+
+// Modern: the title's Load Saved Game is the in-game Load page -- the same
+// panel, width and rows (gm_draw_page), with "Load Saved Game" for its path.
+static bool run_save_picker_modern(RenderTexture2D *rt, const Sprites *sprites,
+                                   StartupChoice *out, const SlotSet *slots) {
+    const Resources *r = resources_current();
+    if (!r) { out->action = STARTUP_BACK; return true; }
+    const ResUI *ui = &r->ui;
+    const ResBanners *bn = &r->banners;
+    GmPage p;
+    memset(&p, 0, sizeof p);
+    p.title = ui->title_load_adventure;
+    for (int i = 0; i < MODERN_SAVE_SLOTS; i++)
+        p.item[p.n++] = (GmItem){ "", bn->gmd_load, "", GM_ACT_USER + i,
+                                  slots->hdrs[i].exists };
+    p.item[p.n++] = (GmItem){ ui->gm_back, bn->gmd_back_up, "", GM_ACT_BACK, true };
+
+    TitleSlotsCtx ctx = { &p, slots };
+    int cursor = MODERN_SAVE_SLOTS;   // Back, unless a save exists
+    for (int i = 0; i < MODERN_SAVE_SLOTS; i++)
+        if (slots->hdrs[i].exists) { cursor = i; break; }
+
+    while (!frame_host_should_close()) {
+        GmEvent ev = gm_page_input(&p, &cursor, TOUCH_LIST_STARTUP);
+        if (ev == GM_EV_BACK || (ev == GM_EV_ACT && p.item[cursor].key == GM_ACT_BACK)) {
+            out->action = STARTUP_BACK;
+            advance_input_frame();
+            return true;
+        }
+        if (ev == GM_EV_ACT) {
+            out->action = STARTUP_LOAD;
+            out->slot   = cursor;
+            return true;
+        }
+        frame_begin(rt);
+        draw_title_backdrop(sprites);
+        DrawRectangle(0, 0, CL_SCREEN_W, CL_SCREEN_H, (Color){ 0, 0, 0, 110 });
+        // The title screen has no chrome around the pane, so the page centres
+        // on the screen; its width and rows are the menu's (gm_draw_page).
+        ml_set_area(ML_AREA_SCREEN);
+        gm_draw_page(&p, p.title, NULL, cursor, TOUCH_LIST_STARTUP, title_slot_row, &ctx);
+        frame_end(rt);
+    }
+    out->action = STARTUP_QUIT;
+    return false;
+}
+
 static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
                             StartupChoice *out) {
     SlotSet slots;
     saveslots_scan(&slots);
     screen_open();
+    if (CL_IS_MODERN) return run_save_picker_modern(rt, sprites, out, &slots);
 
     int cursor = 0;
     // Row index = 0..SAVE_SLOT_COUNT-1 for slots, SAVE_SLOT_COUNT for "New".
@@ -317,30 +380,6 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
 
         // ---- Render --------------------------------------------------
         frame_begin(rt);
-        if (CL_IS_MODERN) {
-            // Modern: a panel sized to its text over the title art: the
-            // title, then one row per slot -- name, rank and days left for a
-            // save, "(empty)" in grey for none.
-            draw_title_backdrop(sprites);
-            const Resources *mr = resources_current();
-            const ResUI *mui = mr ? &mr->ui : NULL;
-            // An in-lay as tall as its slots: the title with Back at the
-            // right (startup has no top bar), then a row per slot.
-            int fit_rows = ml_list_fit(CL_SCREEN_H - 40 - uk_title_h() - UK_BAND);
-            if (fit_rows > nslots) fit_rows = nslots;
-            int mw = 656, mh = uk_title_h() + UK_BAND + ml_list_height(fit_rows);
-            int mx = (CL_SCREEN_W - mw) / 2, my = (CL_SCREEN_H - mh) / 2;
-            DrawRectangle(0, 0, CL_SCREEN_W, CL_SCREEN_H, (Color){ 0, 0, 0, 110 });
-            panel(mx, my, mw, mh);
-            int mty = uk_title(mx, my, mw, mui ? mui->title_load_adventure : "", NULL, PAL_CLR(YELLOW));
-            if (mui)
-                ml_hint_button(mx + mw - ML_PAD - ml_hint_width(mui->hint_back, mui->key_esc, mui->pad_back),
-                               my + 3, mui->hint_back, mui->key_esc, mui->pad_back, KEY_ESCAPE);
-            ml_list_draw(mx, mty, mw, my + mh - mty, nslots, cursor,
-                         saveslots_row, &slots, TOUCH_LIST_STARTUP, uk_ink());
-            frame_end(rt);
-            continue;
-        }
         draw_class_picker_backdrop(sprites);
         draw_class_picker_status_hint(resources_current());
 

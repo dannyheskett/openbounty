@@ -245,7 +245,7 @@ static void draw_army(const Game *g, const Sprites *s) {
 
     // view_army tick-animates each troop's idle strip over however many
     // frames the troop declares. ~8 Hz matches the HUD villain anim cadence.
-    int anim_tick = (int)(GetTime() * 8.0);
+    int anim_tick = (int)(ui_anim_time() * 8.0);
 
     for (int i = 0; i < 5; i++) {
         int ry = VIEW_Y + pad + i * row_h;
@@ -407,7 +407,7 @@ static void draw_contract(const Game *g, const Sprites *s) {
     // Villain portrait on left (animated when strip is available).
     Texture2D face = sprites_strip(s->villain_anim[v->index],
                                    s->villain_anim_frames[v->index],
-                                   (int)(GetTime() * 2.0));
+                                   (int)(ui_anim_time() * 2.0));
     if (!face.id) face = s->villain_portrait[v->index];
     int face_w = CL_TILE_W;
     int face_h = CL_TILE_H;
@@ -573,14 +573,14 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
     static double s_open_time = 0.0;
     static bool   s_prev_active = false;
     bool active = (views_active() == VIEW_PUZZLE);
-    if (active && !s_prev_active) s_open_time = GetTime();
+    if (active && !s_prev_active) s_open_time = ui_anim_time();
     s_prev_active = active;
-    double elapsed = GetTime() - s_open_time;
+    double elapsed = ui_anim_time() - s_open_time;
     int reveal_step = (int)(elapsed / 0.150);   // 150ms / cell
 
     // Tick villain faces at ~2 Hz on the puzzle page, same as
     // the HUD contract panel (hud.c:51).
-    int anim_tick = (int)(GetTime() * 2.0);
+    int anim_tick = (int)(ui_anim_time() * 2.0);
 
     // Two-pass cell ordering: pass 0 = artifacts (id<0), pass 1 = villains.
     // Within each pass, row-major (j, then i). cell_seq counts only
@@ -792,7 +792,7 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
     }
 
     // Hero position as a blinking yellow/red pixel.
-    unsigned k = (unsigned)(GetTime() * 3.0);
+    unsigned k = (unsigned)(ui_anim_time() * 3.0);
     Color blink = (k & 1) ? PAL_CLR(YELLOW) : PAL_CLR(RED);
     DrawRectangle(gx + g->position.x * pix,
                   gy + g->position.y * pix,

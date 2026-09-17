@@ -9,6 +9,7 @@
 //
 // Called only through the dispatcher in src/prompt.c, which owns the state.
 
+#include "prompt.h"
 #include "prompt_impl.h"
 #include "modern/mlayout.h"
 #include "modern/mlist.h"
@@ -80,20 +81,22 @@ static void draw_yes_no_card(const PromptView *p, Texture2D face) {
     uk_card(&c, NULL);
 }
 
-// Troops wishing to join: their portrait at 2x beside the words.
-static Texture2D join_face(const PromptView *p) {
-    if (p->kind != PK_YES_NO || pending_flow != FLOW_ACCEPT_FRIENDLY) return (Texture2D){ 0 };
+// An ask that named a face (PIO_ASK_FACE): the picture at 2x beside the words.
+static Texture2D ask_face(const PromptView *p) {
+    (void)p;
+    if (prompt_req_kind() != PIO_ASK_FACE) return (Texture2D){ 0 };
+    int idx = 0;
+    int face = prompt_req_face(&idx);
     const Sprites *s = modern_overlay_sprites();
-    const TroopDef *t = pending_dwelling_troop[0] ? troop_by_id(pending_dwelling_troop) : NULL;
-    if (!s || !t) return (Texture2D){ 0 };
-    return s->troop_portrait[t->index].id ? s->troop_portrait[t->index] : s->troop_sprite[t->index];
+    if (!s || face != REQ_FACE_TROOP || idx < 0 || idx >= s->troop_count) return (Texture2D){ 0 };
+    return s->troop_portrait[idx].id ? s->troop_portrait[idx] : s->troop_sprite[idx];
 }
 
 void modern_prompt_draw(const PromptView *p) {
     if (!p || p->kind == PK_NONE) return;
     // A Yes/No question is a card: its words, then Yes and No as buttons.
-    if (p->kind == PK_YES_NO && join_face(p).id) {
-        draw_yes_no_card(p, join_face(p));
+    if (p->kind == PK_YES_NO && ask_face(p).id) {
+        draw_yes_no_card(p, ask_face(p));
         return;
     }
 

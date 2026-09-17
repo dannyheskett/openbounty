@@ -185,7 +185,7 @@ static int poll_idle_input(void) {
         if (input_key_pressed(KEY_A + i)) return i + 1;
     }
     // SYN tick at 90ms cadence drives the twirl animation.
-    double now = GetTime();
+    double now = ui_anim_time();
     if (now - s_last_tick >= 0.090) {
         s_last_tick = now;
         return 6;

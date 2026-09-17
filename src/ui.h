@@ -41,6 +41,7 @@ void ui_blit_mirrored(Texture2D t, int x, int y, int w, int h);
 
 // Forward decl: the engine Game (carries the player-IO request queue).
 #include "game_fwd.h"
+#include "player_io.h"   // ReqKind: what a note was called
 
 // UI layer: dialog (press-any-key message), toast (transient banner), and
 // the any-key helper. The pause menu itself lives in src/views.c. Nothing
@@ -69,6 +70,10 @@ void open_dialog(const char *header, const char *body);
 #define MSG_FLAG_PADDED  0x04   //  MSG_PADDED bit value
 
 void open_dialog_flags(const char *header, const char *body, int flags);
+// Open a note of a named kind (player_io.h): what it is decides how it draws.
+void open_dialog_kind(const char *header, const char *body, ReqKind kind);
+// The kind of the open note.
+ReqKind dialog_kind(void);
 
 bool dialog_is_active(void);
 void dialog_dismiss(void);
@@ -78,7 +83,7 @@ void dialog_dismiss(void);
 // that message into the dialog renderer and acks the queue entry (so the engine's
 // uniform messages render through the existing dialog UI). Call once per frame
 // before the dialog input gate. Returns true if it surfaced a new message.
-bool shell_pump_player_io_message(Game *g);
+bool shell_pump_note(Game *g);
 
 // Read-only accessors for renderers.
 const char *dialog_header_text(void);
@@ -93,6 +98,12 @@ bool dialog_advance(void);  // Advance to next page if available; returns true i
 
 // Toast accessors too.
 const char *toast_text_current(void);   // NULL if no active toast
+
+// The clock the DRAWING code animates from: the wall clock in play, a frozen
+// value while the gallery captures, so a screenshot of an animated portrait is
+// the same image every run and two builds can be compared byte for byte.
+double ui_anim_time(void);
+void   ui_anim_freeze(bool frozen);
 
 // ---- Toast ---------------------------------------------------------------
 // Transient banner near the top of the playfield. Lasts a few seconds.

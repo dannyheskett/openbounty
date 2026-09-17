@@ -82,8 +82,17 @@ static bool literal_allowlisted(const char *lit) {
 // strings too, wherever they sit in the argument list. A Roman artifact that
 // talks about a "scepter" is what this catches.
 static const char *const RAISE_CALLS[] = {
-    "player_io_message(",
-    "player_io_raise_decision(",
+    "player_io_note(",
+    "player_io_note_in_place(",
+    "player_io_note_face(",
+    "player_io_note_scene(",
+    "player_io_ask(",
+    "player_io_ask_in_place(",
+    "player_io_ask_face(",
+    "player_io_ask_scene(",
+    "player_io_ask_number(",
+    "player_io_ask_number_in_place(",
+    "player_io_ask_choice(",
 };
 
 // Wording, as opposed to an id, a format spec or an escape: four or more

@@ -15,20 +15,20 @@ void perform_temp_death(Game *g, Map *map, Fog *fog, const Resources *res) {
     char body[RES_BANNER_LEN];
     resources_format_template(body, sizeof body, res->banners.temp_death,
                               NULL, 0);
-    PlayerRequest *msg = player_io_message(g, NULL, body);
     // Modern: the hero's disgraced scene when the pack has one, else the
-    // Emperor who summoned you, in the in-lay.
+    // Emperor who summoned you, in the in-lay. Legacy: plain words.
     const ClassDef *cls = class_by_id(g->character.cls.id);
-    if (msg && CL_IS_MODERN && cls && cls->index >= 0 && cls->index < res->classes_count &&
+    if (CL_IS_MODERN && cls && cls->index >= 0 && cls->index < res->classes_count &&
         res->class_hero[cls->index].disgraced[0]) {
-        msg->face = REQ_FACE_SCENE;
-        msg->face_index = cls->index;
+        player_io_note_scene(g, NULL, body, cls->index);
         return;
     }
-    for (int i = 0; msg && CL_IS_MODERN && i < res->castle_count; i++) {
+    int portrait = -1;
+    for (int i = 0; CL_IS_MODERN && i < res->castle_count; i++) {
         if (!resources_castle_is_home(&res->castles[i])) continue;
-        int idx = resources_portrait_index(res, res->castles[i].special.portrait);
-        if (idx >= 0) { msg->face = REQ_FACE_PORTRAIT; msg->face_index = idx; }
+        portrait = resources_portrait_index(res, res->castles[i].special.portrait);
         break;
     }
+    if (portrait >= 0) player_io_note_face(g, NULL, body, REQ_FACE_PORTRAIT, portrait);
+    else               player_io_note(g, NULL, body);
 }

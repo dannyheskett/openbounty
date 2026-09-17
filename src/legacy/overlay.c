@@ -431,7 +431,7 @@ void legacy_overlay_draw_town(const Game *g, const Sprites *s) {
     // free-running tick from real time at the SYN cadence (~150ms per
     // frame -> 6.7fps).
     int troop_idx = town_backdrop_troop(g, name);
-    int town_frame = (int)(GetTime() * 6.66);
+    int town_frame = (int)(ui_anim_time() * 6.66);
 
     // Menu panel. Header is 2 rows (Town of NAME + GP=NK) plus the A..E rows.
     int row_h = GH + CL_UI;

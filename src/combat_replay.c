@@ -31,7 +31,7 @@
 #include "shell_autoplay.h"  // the visible-autoplay pacing source
 #include "ui.h"              // open_dialog / dialog_is_active / dialog_dismiss
 #include "prompt.h"          // prompt_is_active / prompt_dismiss (clear pre-fight)
-#include "overlay.h"         // overlay_draw_dialog_centered (victory banner)
+#include "overlay.h"         // overlay_draw_note (victory banner)
 
 #include <string.h>
 #include <stdio.h>
@@ -196,11 +196,11 @@ CombatReplayStatus RenderCombatRecord(void *shell_ctx, CombatMode mode,
             resources_format_template(body, sizeof body,
                                       bn->combat_victory_unnamed, vars, 2);
         }
-        open_dialog(g->res->ui.dt_combat_victory, body);
+        open_dialog_kind(g->res->ui.dt_combat_victory, body, PIO_NOTE_OVER_FIELD);
         double dwell = shell_demo_active() ? shell_demo_read_dwell()
                                            : shell_autoplay_read_dwell();
         if (dwell > 0.0) {
-            // Hold the banner; combat_present draws it (overlay_draw_dialog_
+            // Hold the banner; combat_present draws it (overlay_draw_note
             // centered) while dialog_is_active(). replay_beat pumps audio +
             // screenshots + movie frames + window-close each frame.
             if (!replay_beat(&c, g, sprites, render_target, dwell))

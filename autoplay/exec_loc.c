@@ -296,8 +296,7 @@ bool exec_discard_spell(ExecCtx *ctx, int spell_idx) {
     if (g->spells.counts[spell_idx] <= 0) return false;
     pending_discard_spell_idx = spell_idx;
     pending_flow = FLOW_DISCARD_SPELL;
-    player_io_raise_decision(g, FLOW_DISCARD_SPELL, REQ_PROMPT_YES_NO,
-                             NULL, NULL);
+    player_io_ask_self(g, FLOW_DISCARD_SPELL, REQ_PROMPT_YES_NO);
     rec_push_action(g, RA_DISCARD_SPELL, NULL, spell_idx, 0);
     FlowAnswer yes = { FLOW_ANS_YES, 0 };
     PlayerIoPresentation pres;
@@ -376,8 +375,7 @@ bool exec_dismiss_slot(ExecCtx *ctx, int slot) {
         if (g->army[i].id[0] && g->army[i].count > 0) occupied++;
     if (occupied <= 1) return false;
     pending_flow = FLOW_DISMISS_ARMY;
-    player_io_raise_decision(g, FLOW_DISMISS_ARMY, REQ_PROMPT_NUMERIC,
-                             NULL, NULL);
+    player_io_ask_self(g, FLOW_DISMISS_ARMY, REQ_PROMPT_NUMERIC);
     rec_push_action(g, RA_DISMISS, NULL, slot, 0);
     FlowAnswer ans = { (PromptAnswer)(FLOW_ANS_1 + slot), 0 };
     PlayerIoPresentation pres;
@@ -419,8 +417,7 @@ bool exec_dismiss_last_escape(ExecCtx *ctx) {
     // temp death (player_io FLOW_DISMISS_ARMY -> chain_dismiss_last ->
     // FLOW_DISMISS_LAST, the exact shell path).
     pending_flow = FLOW_DISMISS_ARMY;
-    player_io_raise_decision(g, FLOW_DISMISS_ARMY, REQ_PROMPT_NUMERIC,
-                             NULL, NULL);
+    player_io_ask_self(g, FLOW_DISMISS_ARMY, REQ_PROMPT_NUMERIC);
     int dismiss_mark = recsink_mark();
     rec_push_action(g, RA_DISMISS_LAST, NULL, last, 0);
     FlowAnswer pick = { (PromptAnswer)(FLOW_ANS_1 + last), 0 };
@@ -432,8 +429,7 @@ bool exec_dismiss_last_escape(ExecCtx *ctx) {
         return false;
     }
     pending_flow = FLOW_DISMISS_LAST;
-    player_io_raise_decision(g, FLOW_DISMISS_LAST, REQ_PROMPT_YES_NO,
-                             NULL, NULL);
+    player_io_ask_self(g, FLOW_DISMISS_LAST, REQ_PROMPT_YES_NO);
     FlowAnswer yes = { FLOW_ANS_YES, 0 };
     PlayerIoPresentation pres2;
     player_io_answer(g, ctx->map, ctx->fog, ctx->res, yes,

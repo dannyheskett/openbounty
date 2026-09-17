@@ -309,7 +309,7 @@ static void draw_contract(const Game *g, const Sprites *s) {
     Texture2D face = { 0 };
     if (v->index >= 0 && v->index < s->villain_count) {
         face = sprites_strip(s->villain_anim[v->index], s->villain_anim_frames[v->index],
-                             (int)(GetTime() * 2.0));
+                             (int)(ui_anim_time() * 2.0));
         if (!face.id) face = s->villain_portrait[v->index];
     }
     ML_Rect a = { r.x + UK_INSET, top + UK_INSET, r.w - 2 * UK_INSET, r.y + r.h - UK_INSET - (top + UK_INSET) };
@@ -440,14 +440,14 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
     static double s_open_time = 0.0;
     static bool   s_prev_active = false;
     bool active = (views_active() == VIEW_PUZZLE);
-    if (active && !s_prev_active) s_open_time = GetTime();
+    if (active && !s_prev_active) s_open_time = ui_anim_time();
     s_prev_active = active;
-    double elapsed = GetTime() - s_open_time;
+    double elapsed = ui_anim_time() - s_open_time;
     int reveal_step = (int)(elapsed / 0.150);   // 150ms / cell
 
     // Tick villain faces at ~2 Hz on the puzzle page, same as
     // the HUD contract panel (hud.c:51).
-    int anim_tick = (int)(GetTime() * 2.0);
+    int anim_tick = (int)(ui_anim_time() * 2.0);
 
     // Two-pass cell ordering: pass 0 = artifacts (id<0), pass 1 = villains.
     // Within each pass, row-major (j, then i). cell_seq counts only
@@ -739,7 +739,7 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
         if (!reveal_all && !FogSeen(f, c->x, c->y)) continue;
         MARK(c->x, c->y, PAL_CLR(RED));
     }
-    unsigned k = (unsigned)(GetTime() * 3.0);
+    unsigned k = (unsigned)(ui_anim_time() * 3.0);
     // The chosen place: a ring around it.
     if (sel) {
         int rx = gx + (sel->x - cam_x) * pix, ry = gy + (sel->y - cam_y) * pix;

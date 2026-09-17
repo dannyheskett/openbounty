@@ -118,6 +118,6 @@ CheatResult cheat_apply(CheatAction a, Game *game, Map *map, Fog *fog,
     default:
         break;
     }
-    if (body[0]) player_io_message(game, "Debug", body);
+    if (body[0]) player_io_note(game, "Debug", body);
     return CHEAT_DISPATCHED;
 }

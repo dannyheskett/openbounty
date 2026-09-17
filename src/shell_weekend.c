@@ -45,8 +45,8 @@ bool pump_week_end_dialog(const Game *g) {
         ResTemplateVar bvars[] = { { "TROOP", creature } };
         resources_format_template(body, sizeof body,
                                   bn->astrology_body, bvars, 1);
-        PlayerRequest *msg = player_io_message((Game *)g, header, body);
-        if (msg && CL_IS_MODERN) { msg->face = REQ_FACE_TROOP; msg->face_index = t->index; }
+        if (CL_IS_MODERN) player_io_note_face((Game *)g, header, body, REQ_FACE_TROOP, t->index);
+        else              player_io_note((Game *)g, header, body);
         pending_week_phase = WK_PHASE_BUDGET;
         return true;
     }
@@ -131,7 +131,7 @@ bool pump_week_end_dialog(const Game *g) {
                                    lw, left_labels[i], vw, left_values[i]);
                 if (bo >= (int)sizeof(body)) { bo = (int)sizeof(body) - 1; break; }
             }
-            player_io_message((Game *)g, header, body);
+            player_io_note((Game *)g, header, body);
             pending_week_phase = WK_PHASE_NONE;
             pending_week_paid  = 0;
             return true;
@@ -153,7 +153,7 @@ bool pump_week_end_dialog(const Game *g) {
             bo += snprintf(body + bo, sizeof(body) - bo,
                            "%-13s %s\n", left, right);
         }
-        player_io_message((Game *)g, header, body);
+        player_io_note((Game *)g, header, body);
         pending_week_phase = WK_PHASE_NONE;
         pending_week_paid  = 0;
         return true;

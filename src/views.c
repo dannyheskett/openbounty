@@ -546,7 +546,7 @@ void views_open_town(const char *display_name, const char *record_key,
                      int boat_x, int boat_y) {
     // Set the town context statics only. The VIEW_TOWN presentation is
     // raised through the player-IO queue by the engine caller (step.c, which has
-    // a Game*) via player_io_raise_view(..., replace=true); the shell's per-frame
+    // a Game*) via player_io_screen(..., replace=true); the shell's per-frame
     // sync does the views_set, and autoplay acks it. This keeps views_open_town
     // (a ui_host callback with no Game*) free of the queue while still routing the
     // view uniformly.

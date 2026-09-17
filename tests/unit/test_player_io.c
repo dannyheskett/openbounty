@@ -38,7 +38,7 @@ TEST empty_queue_is_idle(void) {
 TEST enqueue_message_then_ack(void) {
     Game *g = fresh_game(); ASSERT(g);
 
-    PlayerRequest *r = player_io_enqueue_message(g, "Found", "100 gold");
+    PlayerRequest *r = player_io_note(g, "Found", "100 gold");
     ASSERT(r);
     ASSERT(!player_io_idle(g));
 
@@ -57,7 +57,7 @@ TEST enqueue_message_then_ack(void) {
 TEST enqueue_view_then_ack(void) {
     Game *g = fresh_game(); ASSERT(g);
 
-    PlayerRequest *r = player_io_enqueue_view(g, VIEW_DWELLING, "Plains", "");
+    PlayerRequest *r = player_io_screen(g, VIEW_DWELLING, false, "Plains", "");
     ASSERT(r);
     const PlayerRequest *f = player_io_front(g);
     ASSERT_EQ(REQ_VIEW, f->role);
@@ -79,7 +79,7 @@ TEST ack_does_not_pop_a_decision(void) {
     // Game/Resources state -- safe on a bare calloc'd Game. This test is about
     // role discipline (ack vs answer), not flow routing (covered e2e).
     pending_flow = FLOW_DISMISS_LAST;
-    player_io_enqueue_decision(g, FLOW_DISMISS_LAST, REQ_PROMPT_YES_NO,
+    player_io_ask(g, FLOW_DISMISS_LAST, REQ_PROMPT_YES_NO,
                                "Decide", "?");
     ASSERT(!player_io_idle(g));
     player_io_ack(g);                       // wrong tool for a decision
@@ -93,6 +93,7 @@ TEST ack_does_not_pop_a_decision(void) {
     player_io_answer(g, NULL, NULL, NULL, ans, PLAYER_IO_COMBAT_NOT_RUN, NULL);
     ASSERT(player_io_idle(g));
     pending_flow = FLOW_NONE;               // tidy the global for later tests
+    prompt_dismiss();                       // the ask opened the host prompt
     GameFree(g); free(g);
     PASS();
 }
@@ -102,7 +103,7 @@ TEST ack_does_not_pop_a_decision(void) {
 // role is REQ_DECISION and whose flow matches).
 TEST answer_does_not_pop_a_message(void) {
     Game *g = fresh_game(); ASSERT(g);
-    player_io_enqueue_message(g, "Note", "hi");
+    player_io_note(g, "Note", "hi");
     pending_flow = FLOW_DISMISS_LAST;       // a live decision, but no queued one
     FlowAnswer ans = { .kind = FLOW_ANS_CANCEL, .number = 0 };
     player_io_answer(g, NULL, NULL, NULL, ans,
@@ -118,9 +119,9 @@ TEST answer_does_not_pop_a_message(void) {
 // Requests drain in FIFO order regardless of role.
 TEST fifo_ordering(void) {
     Game *g = fresh_game(); ASSERT(g);
-    player_io_enqueue_message(g, "A", "");
-    player_io_enqueue_view(g, VIEW_TOWN, "B", "");
-    player_io_enqueue_message(g, "C", "");
+    player_io_note(g, "A", "");
+    player_io_screen(g, VIEW_TOWN, false, "B", "");
+    player_io_note(g, "C", "");
 
     ASSERT_STR_EQ("A", player_io_front(g)->header);
     player_io_ack(g);
@@ -140,7 +141,7 @@ TEST ring_wraps_cleanly(void) {
     char buf[16];
     for (int round = 0; round < 50; round++) {
         snprintf(buf, sizeof buf, "m%d", round);
-        ASSERT(player_io_enqueue_message(g, buf, ""));
+        ASSERT(player_io_note(g, buf, ""));
         ASSERT_STR_EQ(buf, player_io_front(g)->header);
         player_io_ack(g);
         ASSERT(player_io_idle(g));
@@ -154,11 +155,11 @@ TEST ring_wraps_cleanly(void) {
 TEST queue_has_no_capacity_limit(void) {
     Game *g = fresh_game(); ASSERT(g);
     char buf[16];
-    ASSERT(player_io_enqueue_message(g, "first", ""));
+    ASSERT(player_io_note(g, "first", ""));
     player_io_ack(g);                                  // move head off slot 0
     for (int i = 0; i < 100; i++) {
         snprintf(buf, sizeof buf, "m%d", i);
-        ASSERT(player_io_enqueue_message(g, buf, ""));
+        ASSERT(player_io_note(g, buf, ""));
     }
     Game *c = calloc(1, sizeof *c); ASSERT(c);
     ASSERT(GameCopy(c, g));
@@ -180,8 +181,8 @@ TEST queue_has_no_capacity_limit(void) {
 // reset clears a non-empty queue back to idle.
 TEST reset_clears_queue(void) {
     Game *g = fresh_game(); ASSERT(g);
-    player_io_enqueue_message(g, "a", "");
-    player_io_enqueue_view(g, VIEW_TOWN, "b", "");
+    player_io_note(g, "a", "");
+    player_io_screen(g, VIEW_TOWN, false, "b", "");
     ASSERT(!player_io_idle(g));
     player_io_reset(g);
     ASSERT(player_io_idle(g));
@@ -197,7 +198,7 @@ TEST long_text_is_truncated_safely(void) {
     char big[PLAYER_IO_BODY_CAP + 200];
     memset(big, 'Z', sizeof big);
     big[sizeof big - 1] = '\0';
-    PlayerRequest *r = player_io_enqueue_message(g, big, big);
+    PlayerRequest *r = player_io_note(g, big, big);
     ASSERT(r);
     ASSERT(strlen(r->header) < (size_t)PLAYER_IO_HEADER_CAP);
     ASSERT(strlen(r->body)   < (size_t)PLAYER_IO_BODY_CAP);
@@ -209,10 +210,10 @@ TEST long_text_is_truncated_safely(void) {
 // messages but stops at a decision.
 TEST drain_messages_stops_at_decision(void) {
     Game *g = fresh_game(); ASSERT(g);
-    player_io_message(g, "A", "");
-    player_io_message(g, "B", "");
-    player_io_enqueue_decision(g, FLOW_ALCOVE, REQ_PROMPT_YES_NO, "C", "");
-    player_io_message(g, "D", "");   // after the decision -- must NOT be drained
+    player_io_note(g, "A", "");
+    player_io_note(g, "B", "");
+    player_io_ask_self(g, FLOW_ALCOVE, REQ_PROMPT_YES_NO);
+    player_io_note(g, "D", "");   // after the decision -- must NOT be drained
 
     int n = player_io_drain_messages(g);
     ASSERT_EQ(2, n);                 // A, B drained; stopped at the decision
@@ -228,11 +229,11 @@ TEST drain_messages_stops_at_decision(void) {
 // across worldsnap restores in plan simulation.
 TEST raise_decision_evicts_stale_decision_keeps_messages(void) {
     Game *g = fresh_game(); ASSERT(g);
-    player_io_message(g, "msg1", "");
-    player_io_raise_decision(g, FLOW_SIEGE_MONSTER, REQ_PROMPT_YES_NO, "old", "");
-    player_io_message(g, "msg2", "");
+    player_io_note(g, "msg1", "");
+    player_io_ask_self(g, FLOW_SIEGE_MONSTER, REQ_PROMPT_YES_NO);
+    player_io_note(g, "msg2", "");
     // Raise a new decision: the OLD decision is evicted, both messages kept.
-    player_io_raise_decision(g, FLOW_ATTACK_FOE, REQ_PROMPT_YES_NO, "new", "");
+    player_io_ask_self(g, FLOW_ATTACK_FOE, REQ_PROMPT_YES_NO);
 
     // Expect queue: [msg1, msg2, new-decision] -- exactly one decision, FIFO msgs.
     const PlayerRequest *f = player_io_front(g);
@@ -251,7 +252,7 @@ TEST raise_decision_evicts_stale_decision_keeps_messages(void) {
 // drain_messages (passive drain) acks views as well as messages.
 TEST raise_view_and_passive_drain(void) {
     Game *g = fresh_game(); ASSERT(g);
-    PlayerRequest *r = player_io_raise_view(g, VIEW_TOWN, /*replace=*/true,
+    PlayerRequest *r = player_io_screen(g, VIEW_TOWN, /*replace=*/true,
                                             NULL, NULL);
     ASSERT(r);
     const PlayerRequest *f = player_io_front(g);
@@ -259,7 +260,7 @@ TEST raise_view_and_passive_drain(void) {
     ASSERT_EQ(VIEW_TOWN, f->view);
     ASSERT(f->view_replace);
     // Passive drain acks views (and messages), so autoplay never accumulates one.
-    player_io_message(g, "m", "");                  // a trailing message too
+    player_io_note(g, "m", "");                  // a trailing message too
     int n = player_io_drain_messages(g);
     ASSERT_EQ(2, n);                                // the view + the message
     ASSERT(player_io_idle(g));
@@ -271,9 +272,9 @@ TEST raise_view_and_passive_drain(void) {
 // messages/decisions -- the fix for stale view mirrors across worldsnap restores.
 TEST raise_view_evicts_stale_view_keeps_others(void) {
     Game *g = fresh_game(); ASSERT(g);
-    player_io_message(g, "msg", "");
-    player_io_raise_view(g, VIEW_DWELLING, false, NULL, NULL);   // stale view
-    player_io_raise_view(g, VIEW_ALCOVE, false, NULL, NULL);     // new view
+    player_io_note(g, "msg", "");
+    player_io_screen(g, VIEW_DWELLING, false, NULL, NULL);   // stale view
+    player_io_screen(g, VIEW_ALCOVE, false, NULL, NULL);     // new view
 
     // Queue: [msg, alcove-view] -- the dwelling view was evicted, message kept.
     ASSERT_STR_EQ("msg", player_io_front(g)->header);

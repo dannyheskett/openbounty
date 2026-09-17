@@ -2,6 +2,7 @@
 #define OB_PROMPT_H
 
 #include <stdbool.h>
+#include "player_io.h"   // ReqKind
 #include "game.h"
 
 // Bottom-frame modal prompts used by flows (ask_quit,
@@ -65,6 +66,10 @@ void prompt_dismiss(void);
 // returned as a stable string ("yes_no" | "numeric" | "ab" | "text") or
 // "none" when no prompt is up.
 const char *prompt_kind_str(void);
+// What the raiser called this question (player_io.h).
+ReqKind prompt_req_kind(void);
+// The picture an ask_face named: the ReqFace kind, and the index through *index.
+int prompt_req_face(int *index);
 const char *prompt_header_text(void);
 const char *prompt_body_text(void);
 

@@ -82,7 +82,7 @@ void screen_home_castle_open(Game *g) {
     // Enqueue the view; the shell's per-frame sync pushes it (human play) or
     // autoplay acks it (no UI, never accumulates a stack). Context statics above
     // stay as-is.
-    player_io_raise_view(g, VIEW_HOME_CASTLE, /*replace=*/false, NULL, NULL);
+    player_io_screen(g, VIEW_HOME_CASTLE, /*replace=*/false, NULL, NULL);
 }
 
 void screen_home_castle_draw(const Game *g, const Sprites *s) {
@@ -90,7 +90,7 @@ void screen_home_castle_draw(const Game *g, const Sprites *s) {
     // Source 2285-2286: frame++ on each SYN tick (throne_room_or_barracks
     // SOFT_WAIT cadence, 150ms). We drive it from real time at the same
     // cadence so the backdrop animates regardless of render fps.
-    double now = GetTime();
+    double now = ui_anim_time();
     if (now - s_last_tick >= HOME_CASTLE_TICK) {
         s_last_tick = now;
         s_frame++;

@@ -84,8 +84,31 @@ typedef enum {
     REQ_FACE_SCENE,       // face_index = class index: the hero's temporary-death scene
 } ReqFace;
 
+// WHAT KIND OF MOMENT this is, chosen by the engine at the call site and never
+// inferred by a renderer. Each kind has exactly one drawing function in the
+// modern shell; the legacy shell ignores the kind and draws as it always has.
+typedef enum {
+    PIO_NONE = 0,
+    PIO_NOTE,             // title + words + Continue, on the foot of the screen
+    PIO_NOTE_IN_PLACE,    // the open screen shows the words in its own rows
+    PIO_NOTE_FACE,        // the same, with a portrait beside the words
+    PIO_NOTE_SCENE,       // a full-width scene: backdrop, words, Continue
+    PIO_NOTE_OVER_FIELD,  // a note centred over a full-screen field (combat)
+    PIO_ASK,              // a question on the foot (yes/no, A/B)
+    PIO_ASK_FACE,         // a question with a portrait
+    PIO_ASK_IN_PLACE,     // the open screen shows the question in its own rows
+    PIO_ASK_SCENE,        // a question drawn as a full scene of its own (a foe)
+    PIO_ASK_OVER_FIELD,   // a question centred over a full-screen field (combat)
+    PIO_ASK_NUMBER,       // "how many?" on the foot
+    PIO_ASK_NUMBER_IN_PLACE,  // "how many?" inside the open screen
+    PIO_ASK_CHOICE,       // pick one of N (the host opens its own picker)
+    PIO_ASK_SELF,         // queued and answered by the caller; nothing is drawn
+    PIO_SCREEN,           // present a full screen
+} ReqKind;
+
 typedef struct {
     ReqRole role;
+    ReqKind kind;         // what the engine called this moment
     char    header[PLAYER_IO_HEADER_CAP];
     char    body[PLAYER_IO_BODY_CAP];
     ReqFace face;             // role == REQ_MESSAGE: the picture hint
@@ -135,52 +158,45 @@ typedef struct {
 // Reset the queue to empty. Called by GameInit; safe to call anytime.
 void player_io_reset(Game *g);
 
-// ---- Producer (engine-internal; called where flows/messages/views are raised)
-// Each returns a pointer to the newly enqueued request for the caller to fill
-// remaining role-specific fields, or NULL if the queue is full (a programming
-// error -- log + drop, never overflow silently). header/body are copied.
+// ---- Producer: one helper per kind ----------------------------------------
+//
+// The engine names the moment; nothing downstream guesses. Each returns the
+// enqueued request so the caller can fill the payload its flow needs (the
+// dwelling numbers, the foe id, ...), or NULL when out of memory.
+//
+// The ask helpers ALSO open the host prompt (ui_host.h) that the shell renders,
+// so a site cannot raise one without the other. player_io_ask_choice leaves the
+// picker to the host (the shell opens its own numeric list), and
+// player_io_ask_self opens nothing -- it is for a caller that answers its own
+// decision at once (the autoplay replay), which no player ever sees.
 
-PlayerRequest *player_io_enqueue_decision(Game *g, PendingFlow flow,
-                                          ReqPromptKind kind,
-                                          const char *header, const char *body);
-PlayerRequest *player_io_enqueue_message(Game *g,
-                                         const char *header, const char *body);
-PlayerRequest *player_io_enqueue_view(Game *g, ViewKind view,
-                                      const char *header, const char *body);
+PlayerRequest *player_io_note      (Game *g, const char *title, const char *body);
+PlayerRequest *player_io_note_face (Game *g, const char *title, const char *body,
+                                    ReqFace face, int face_index);
+PlayerRequest *player_io_note_in_place(Game *g, const char *title, const char *body);
+PlayerRequest *player_io_note_scene(Game *g, const char *title, const char *body,
+                                    int scene_index);
 
-// Convenience used at the engine emit sites (step.c / flows.c) when a decision
-// is raised: enqueues a REQ_DECISION carrying `flow` + `kind` + header/body so
-// the queue mirrors the pending_flow the site also sets (the pending_* scratch
-// stays the payload source of truth). A NULL return (queue full) is a no-op the
-// caller can ignore -- the pending_flow path still drives behavior.
-PlayerRequest *player_io_raise_decision(Game *g, PendingFlow flow,
-                                        ReqPromptKind kind,
-                                        const char *header, const char *body);
-
-// Raise an informational MESSAGE through the queue. The engine's uniform
-// "show the player some text" entry point -- it REPLACES the engine's direct
-// open_dialog() host-callback calls, so messages flow through the one queue both
-// the shell and autoplay consume. The shell drains the front REQ_MESSAGE into its
-// dialog renderer; autoplay acks it. Unlike open_dialog this takes a Game* so the
-// message lands in that game's queue (no hidden global) and is captured by
-// worldsnap/save/serialize. NULL return (queue full) is an ignorable no-op;
-// header may be NULL (untitled banner).
-PlayerRequest *player_io_message(Game *g, const char *header, const char *body);
-
-// Raise a full-screen VIEW through the queue. The engine's uniform "present
-// screen X" entry point -- it REPLACES the direct shell view push the screen
-// openers (views_open_town / screen_*_open / screen_end_game_open) otherwise
-// perform directly.
-// The shell's per-frame view sync (human play) pushes the matching screen onto
-// its local view stack and acks the request when the player dismisses it;
-// autoplay, which has no UI, acks it immediately and so NEVER accumulates an
-// engine view, so a driver without a UI cannot overflow the view stack.
-// `replace` true means the view resets the shell stack to a single entry
-// (VIEW_TOWN semantics); false means push atop it.
-// The caller fills any role==REQ_VIEW context fields on the returned request
-// (dwelling numbers, town key, won flag). NULL return (queue full) is ignorable.
-PlayerRequest *player_io_raise_view(Game *g, ViewKind view, bool replace,
-                                    const char *header, const char *body);
+PlayerRequest *player_io_ask       (Game *g, PendingFlow flow, ReqPromptKind prompt,
+                                    const char *title, const char *body);
+PlayerRequest *player_io_ask_face  (Game *g, PendingFlow flow, ReqPromptKind prompt,
+                                    const char *title, const char *body,
+                                    ReqFace face, int face_index);
+PlayerRequest *player_io_ask_in_place(Game *g, PendingFlow flow, ReqPromptKind prompt,
+                                    const char *title, const char *body);
+PlayerRequest *player_io_ask_scene (Game *g, PendingFlow flow, ReqPromptKind prompt,
+                                    const char *title, const char *body);
+PlayerRequest *player_io_ask_number(Game *g, PendingFlow flow,
+                                    const char *title, const char *body,
+                                    int digits, int max_value);
+PlayerRequest *player_io_ask_number_in_place(Game *g, PendingFlow flow,
+                                    const char *title, const char *body,
+                                    int digits, int max_value);
+PlayerRequest *player_io_ask_choice(Game *g, PendingFlow flow,
+                                    const char *title, const char *body, int count);
+PlayerRequest *player_io_ask_self  (Game *g, PendingFlow flow, ReqPromptKind prompt);
+PlayerRequest *player_io_screen    (Game *g, ViewKind view, bool replace,
+                                    const char *title, const char *body);
 
 // ---- Consumer (both the shell UI and the autoplay responder) ---------------
 

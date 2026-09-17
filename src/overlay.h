@@ -18,8 +18,8 @@ void overlay_draw(const Game *g, const Map *m, const Fog *f,
 // battlefield. Caller is responsible for the active drawing surface.
 // The _centered variant : a 36-col x 16-row
 // modal centered on screen rather than the bottom-frame KB_BottomBox.
-void overlay_draw_dialog(void);
-void overlay_draw_dialog_centered(void);
+// Draw the open note as the kind it was raised as (player_io.h).
+void overlay_draw_note(void);
 
 // Number of pages the current dialog body wraps to in the bottom panel.
 // The pager uses this so its page count matches what the renderer displays.

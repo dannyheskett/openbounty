@@ -191,9 +191,8 @@ bool prompt_dispatch_tick(ShellCtx *ctx) {
         char body[RES_BANNER_LEN];
         resources_format_template(body, sizeof body,
                                   g->res->banners.body_dismiss_last, NULL, 0);
-        prompt_yes_no_open(g->res->ui.dt_dismiss_last, body);
-        player_io_raise_decision(g, FLOW_DISMISS_LAST, REQ_PROMPT_YES_NO,
-                                 g->res->ui.dt_dismiss_last, body);
+        player_io_ask(g, FLOW_DISMISS_LAST, REQ_PROMPT_YES_NO,
+                      g->res->ui.dt_dismiss_last, body);
         return true;   // chained-prompt: skip the FLOW_NONE reset
     }
     if (flow == FLOW_DISMISS_LAST) pending_castle_id[0] = '\0';
