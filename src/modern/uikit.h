@@ -56,9 +56,7 @@ ML_Rect uk_inlay(int w, int h, const char *title, const char *right);
 ML_Rect uk_frame(const char *title, const char *right);
 // The in-lay sizes: standard, tall, wide.
 #define UK_INLAY_W   576
-#define UK_INLAY_H   384
 #define UK_TALL_H    444
-#define UK_WIDE_W    720
 
 // A picture in a black square with a thin gold edge.
 void uk_picture(Texture2D t, int x, int y, int w, int h);
@@ -166,11 +164,6 @@ UkScene uk_scene_for_doc(const char *title, const char *right, Texture2D backdro
                          const UkDoc *doc, int extra_h);
 // Draw `doc` in the scene's words band.
 void    uk_scene_doc(const UkScene *L, const UkDoc *doc);
-
-// The same card from words already laid out (the Emperor's answers, whose
-// gains are yellow lines).
-void uk_result_doc(const char *title, Texture2D face, const UkDoc *doc, const char *row_label,
-                   int touch_list);
 
 // ---- the card: the one panel model -------------------------------------------------
 //

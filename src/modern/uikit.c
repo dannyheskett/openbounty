@@ -411,6 +411,9 @@ void uk_ask_over(const char *title, const char *const lines[], int n_lines,
 
 // ---- in-lays -----------------------------------------------------------------------
 
+static void uk_result_doc(const char *title, Texture2D face, const UkDoc *doc, const char *row_label,
+                          int touch_list);
+
 void uk_result_inlay(const char *title, Texture2D face, const char *text, const char *row_label,
                      int touch_list) {
     UkDoc d = { 0 };
@@ -418,7 +421,7 @@ void uk_result_inlay(const char *title, Texture2D face, const char *text, const 
     uk_result_doc(title, face, &d, row_label, touch_list);
 }
 
-void uk_result_doc(const char *title, Texture2D face, const UkDoc *doc, const char *row_label,
+static void uk_result_doc(const char *title, Texture2D face, const UkDoc *doc, const char *row_label,
                    int touch_list) {
     // Every result is the same size: the title strip, the picture at 2x with
     // the words in one column beside it, and Continue along the foot.

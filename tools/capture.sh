@@ -6,6 +6,7 @@
 #   tools/capture.sh shot  <label>               capture to <out>/<label>.png
 #   tools/capture.sh type  <text>                type a string
 #   tools/capture.sh key   <keys...>             send keys, one xdotool key per arg
+#   tools/capture.sh tap   <x> <y>                 a tap at window pixel (x, y)
 #   tools/capture.sh stop
 #
 # Three things must be right or the captures lie:
@@ -43,6 +44,14 @@ start)
   xdotool windowmove "$wid" 0 0; sleep 1
   xdotool windowsize "$wid" "$w" "$h"; sleep 2
   echo "$wid"
+  ;;
+tap)
+  # raylib's desktop build reports a held left button as touch point 0, so a
+  # press held across a few frames and released is a tap to the game.
+  wid=$(WIN)
+  xdotool mousemove --window "$wid" "$2" "$3"; sleep 0.3
+  xdotool mousedown --window "$wid" 1; sleep 0.25
+  xdotool mouseup --window "$wid" 1; sleep 0.8
   ;;
 key)
   shift

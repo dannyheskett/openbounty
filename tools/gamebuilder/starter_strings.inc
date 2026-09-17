@@ -361,7 +361,6 @@ static cJSON *gb_placeholder_strings(void) {
     cJSON_AddStringToObject(o, "pad_confirm", "pad_confirm");
     cJSON_AddStringToObject(o, "give_up_header_modern", "give_up_header_modern");
     cJSON_AddStringToObject(o, "save_confirm_modern", "save_confirm_modern");
-    cJSON_AddStringToObject(o, "combat_spells_prompt_modern", "combat_spells_prompt_modern");
     cJSON_AddStringToObject(o, "quit_to_dos_prompt", "quit_to_dos_prompt");
     cJSON_AddStringToObject(o, "out_of_control", "out_of_control");
     cJSON_AddStringToObject(o, "worldmap_hint_your_map", "worldmap_hint_your_map");

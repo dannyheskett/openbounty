@@ -3,8 +3,9 @@
 // The overlay for a pack that declared render.mode "modern": square tiles, a
 // TrueType face, the inverted cursor row (REQ-430e) and the dimmed scene
 // beneath (REQ-430g). Every panel here is built from the shared kit
-// (src/modern/uikit.h): place screens are a scene with rows, and what a place
-// offers opens as an in-lay over it.
+// (src/modern/uikit.h): place screens are a scene with rows, and each step a
+// place offers -- a section, a question, How many, an outcome -- stands in
+// place of the step before it, never over it.
 //
 // The DOS original's overlay is in src/legacy/overlay.c and is frozen: it must
 // not be edited to serve anything in this file.
@@ -599,7 +600,7 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
 
 // =============================================================================
 //  Castles -- the scene (Recruit / Audience / Leave, or Garrison / Withdraw /
-//  Leave), each page an in-lay over it
+//  Leave), then each page, question and answer in place of the one before
 // =============================================================================
 
 

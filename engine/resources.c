@@ -1677,7 +1677,6 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(pad_confirm, "pad_confirm");
         UI_SET(give_up_header_modern, "give_up_header_modern");
         UI_SET(save_confirm_modern, "save_confirm_modern");
-        UI_SET(combat_spells_prompt_modern, "combat_spells_prompt_modern");
         UI_SET(quit_to_dos_prompt, "quit_to_dos_prompt");
         UI_SET(out_of_control,    "out_of_control");
         UI_SET(worldmap_hint_your_map,  "worldmap_hint_your_map");

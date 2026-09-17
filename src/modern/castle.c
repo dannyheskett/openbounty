@@ -347,8 +347,8 @@ static bool pressed_confirm(void) {
 
 bool modern_castle_update(Game *g) {
     touch_request(TOUCH_CHROME_BACK);
-    // A message or the Emperor's answer shows in its own in-lay: any key or a
-    // tap on Continue puts it away, and does nothing else.
+    // A message or the Emperor's answer takes the page's place until any key
+    // or a tap on Continue puts it away, and does nothing else.
     if (mc.message[0] || (mc.page == MC_AUDIENCE && (mc.aud_result || mc.audience))) {
         if (ui_any_key_pressed() || touch_tapped_row(TOUCH_LIST_PROMPT) == 0) {
             mc.message[0] = '\0';

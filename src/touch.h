@@ -96,4 +96,13 @@ void touch_draw_chrome(void);
 // Per-frame tick, called from frame_host_end_frame after the yield.
 void touch_frame(void);
 
+// What the last frame offered a finger, after touch_frame has cleared the
+// registry. For checks (the --gallery's tap check); play never reads these.
+// A tap at design pixel (sx, sy): a row gives *list_id and *row, a button
+// *key. False when nothing is there.
+bool touch_last_hit(int sx, int sy, int *list_id, int *row, int *key);
+// The rect of row `row` of `list_id`, or of the button for `key`.
+bool touch_last_row_rect(int list_id, int row, int *x, int *y, int *w, int *h);
+bool touch_last_key_rect(int key, int *x, int *y, int *w, int *h);
+
 #endif

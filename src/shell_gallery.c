@@ -30,6 +30,7 @@
 #include "screens/end_game.h"
 #include "tile_cache.h"
 #include "shell_weekend.h"
+#include "touch.h"
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -80,6 +81,78 @@ static void reset(Gal *G) {
     views_set(VIEW_NONE);
     G->g->player_io.count = 0;
     G->g->player_io.head = 0;
+}
+
+// ---- the tap check -------------------------------------------------------------------
+//
+// Each step that stands in place of another must offer a finger the rows its
+// input reads -- the same list and row numbers -- where it drew them, with
+// nothing of the step before it still registered. Checked on the regions the
+// last captured frame registered (touch_last_*). A failure is printed and makes
+// the gallery exit non-zero.
+
+static int s_tap_checks, s_tap_fails;
+
+static void tap_fail(const char *shot_name, const char *what) {
+    s_tap_fails++;
+    fprintf(stderr, "[tapcheck] FAIL %s: %s\n", shot_name, what);
+}
+
+// Row `row` of `list` is registered, and a tap at its centre reaches it.
+static void tap_row(const char *shot_name, int list, int row) {
+    char what[128];
+    int x, y, w, h, hl, hr, hk;
+    s_tap_checks++;
+    if (!touch_last_row_rect(list, row, &x, &y, &w, &h)) {
+        snprintf(what, sizeof what, "list %d row %d is not tappable", list, row);
+        tap_fail(shot_name, what);
+        return;
+    }
+    if (!touch_last_hit(x + w / 2, y + h / 2, &hl, &hr, &hk) || hl != list || hr != row) {
+        snprintf(what, sizeof what, "a tap on list %d row %d reaches list %d row %d key %d",
+                 list, row, hl, hr, hk);
+        tap_fail(shot_name, what);
+    }
+}
+
+// The button for `key` is registered, and a tap at its centre presses it.
+static void tap_key(const char *shot_name, int key) {
+    char what[128];
+    int x, y, w, h, hl, hr, hk;
+    s_tap_checks++;
+    if (!touch_last_key_rect(key, &x, &y, &w, &h)) {
+        snprintf(what, sizeof what, "no button for key %d", key);
+        tap_fail(shot_name, what);
+        return;
+    }
+    if (!touch_last_hit(x + w / 2, y + h / 2, &hl, &hr, &hk) || hk != key) {
+        snprintf(what, sizeof what, "a tap on the key %d button reaches list %d row %d key %d", key, hl, hr, hk);
+        tap_fail(shot_name, what);
+    }
+}
+
+// Row `row` of `list` is not registered: that step's rows are gone.
+static void tap_gone(const char *shot_name, int list, int row) {
+    char what[96];
+    s_tap_checks++;
+    if (touch_last_row_rect(list, row, NULL, NULL, NULL, NULL)) {
+        snprintf(what, sizeof what, "list %d row %d is still tappable", list, row);
+        tap_fail(shot_name, what);
+    }
+}
+
+// A Yes/No step in place of `parent`'s rows.
+static void tap_yes_no(const char *shot_name, int parent) {
+    tap_row(shot_name, TOUCH_LIST_PROMPT, 0);
+    tap_row(shot_name, TOUCH_LIST_PROMPT, 1);
+    if (parent) tap_gone(shot_name, parent, 0);
+}
+
+// A result with one Continue in place of `parent`'s rows.
+static void tap_continue(const char *shot_name, int parent) {
+    tap_row(shot_name, TOUCH_LIST_PROMPT, 0);
+    tap_gone(shot_name, TOUCH_LIST_PROMPT, 1);
+    if (parent) tap_gone(shot_name, parent, 0);
 }
 
 static const ResTown *first_town_in(const Resources *r, const char *zone) {
@@ -281,20 +354,20 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(2, p4, 0); shot(&G, "13_menu_game");
         reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(3, p5, 0); shot(&G, "14_menu_save_slots");
         reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(2, p4, 0);
-        prompt_yes_no_open(NULL, bn->gmc_exit); shot(&G, "15_menu_exit_question");
+        prompt_yes_no_open(NULL, bn->gmc_exit); shot(&G, "15_menu_exit_question"); tap_yes_no("15_menu_exit_question", TOUCH_LIST_MENU);
         // The menu's other confirmations, each over the page that asks it.
         {
             ResTemplateVar sv[] = { { "SLOT", "2" } };
             char ask[RES_BANNER_LEN];
             reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(3, p5, 1);
             resources_format_template(ask, sizeof ask, bn->gmc_overwrite, sv, 1);
-            prompt_yes_no_open(NULL, ask); shot(&G, "15b_menu_overwrite_question");
+            prompt_yes_no_open(NULL, ask); shot(&G, "15b_menu_overwrite_question"); tap_yes_no("15b_menu_overwrite_question", TOUCH_LIST_MENU);
             GmPageId p6[3] = { GM_PAGE_ROOT, GM_PAGE_GAME, GM_PAGE_LOAD };
             reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(3, p6, 1);
             resources_format_template(ask, sizeof ask, bn->gmc_load, sv, 1);
-            prompt_yes_no_open(NULL, ask); shot(&G, "15c_menu_load_question");
+            prompt_yes_no_open(NULL, ask); shot(&G, "15c_menu_load_question"); tap_yes_no("15c_menu_load_question", TOUCH_LIST_MENU);
             reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(2, p4, 3);
-            prompt_yes_no_open(NULL, ui->new_game_confirm); shot(&G, "15d_menu_new_game_question");
+            prompt_yes_no_open(NULL, ui->new_game_confirm); shot(&G, "15d_menu_new_game_question"); tap_yes_no("15d_menu_new_game_question", TOUCH_LIST_MENU);
         }
         reset(&G); views_set(VIEW_MENU); views_push(VIEW_CONTROLS); shot(&G, "16_controls");
     }
@@ -364,22 +437,27 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         for (size_t i = 0; i < sizeof T / sizeof T[0]; i++) {
             reset(&G); views_set(VIEW_TOWN); views_gallery_town(g, T[i].row, 0, NULL, false);
             shot(&G, T[i].name);
+            if (strcmp(T[i].name, "30b_town_services") == 0 || strcmp(T[i].name, "35_town_siege") == 0) {
+                tap_row(T[i].name, TOUCH_LIST_TOWN, 0);
+                tap_row(T[i].name, TOUCH_LIST_TOWN, 1);
+                tap_gone(T[i].name, TOUCH_LIST_PROMPT, 0);
+            }
         }
         reset(&G); views_set(VIEW_TOWN); views_gallery_town_scene(1);
         shot(&G, "36_town_leave_row");
         reset(&G); views_set(VIEW_TOWN); views_gallery_town(g, TOWN_ROW_SIEGE, 0, NULL, false);
         prompt_yes_no_open(NULL, "Buy siege weapons for 3000 gold?");
-        shot(&G, "37_town_question");
+        shot(&G, "37_town_question"); tap_yes_no("37_town_question", TOUCH_LIST_TOWN);
         reset(&G); views_set(VIEW_TOWN);
         views_gallery_town(g, TOWN_ROW_SIEGE, 0, "Your engineers load the siege weapons onto carts. You can now lay siege to castles.", true);
-        shot(&G, "38_town_result_inlay");
+        shot(&G, "38_town_result"); tap_continue("38_town_result", TOUCH_LIST_TOWN);
         reset(&G); views_set(VIEW_TOWN);
         views_gallery_town(g, TOWN_ROW_CONTRACT, 0,
                            "New contract: Catiline. Reward: 5000 gold. Last seen on Italia.", true);
-        shot(&G, "38b_town_result_contract");
+        shot(&G, "38b_town_result_contract"); tap_continue("38b_town_result_contract", TOUCH_LIST_TOWN);
         reset(&G); views_set(VIEW_TOWN);
         views_gallery_town(g, TOWN_ROW_BOAT, 0, "The boat is yours for the week. It waits at the quay.", true);
-        shot(&G, "38c_town_result_boat");
+        shot(&G, "38c_town_result_boat"); tap_continue("38c_town_result_boat", TOUCH_LIST_TOWN);
         g->position.in_town[0] = '\0';
     }
 
@@ -410,7 +488,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_MENU, 0, 0, 0); shot(&G, "40_home_castle");
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_RECRUIT, 1, 0, 0); shot(&G, "41_castle_recruit");
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_RECRUIT, 4, 0, 0); shot(&G, "42_castle_recruit_greyed");
-        reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_RECRUIT, 1, 18, 30); shot(&G, "43_castle_how_many");
+        reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_RECRUIT, 1, 18, 30); shot(&G, "43_castle_how_many"); tap_row("43_castle_how_many", TOUCH_LIST_CASTLE, 0); tap_row("43_castle_how_many", TOUCH_LIST_CASTLE, 1); tap_gone("43_castle_how_many", TOUCH_LIST_CASTLE, 2); tap_key("43_castle_how_many", KEY_UP); tap_key("43_castle_how_many", KEY_DOWN);
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_AUDIENCE, 0, 0, 0); shot(&G, "44_castle_audience");
         // Tribute asks first: the question over the Audience scene.
         {
@@ -419,16 +497,16 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
             ResTemplateVar tv[] = { { "GOLD", gold } };
             resources_format_template(ask, sizeof ask, bn->castle_tribute_confirm, tv, 1);
             reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_AUDIENCE, 2, 0, 0);
-            prompt_yes_no_open(NULL, ask); shot(&G, "44a_castle_tribute_question");
+            prompt_yes_no_open(NULL, ask); shot(&G, "44a_castle_tribute_question"); tap_yes_no("44a_castle_tribute_question", TOUCH_LIST_CASTLE);
         }
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_AUDIENCE, 0, 0, 0);
-        modern_castle_gallery_audience(GAME_AUDIENCE_MORE_NEEDED + 1, 0); shot(&G, "44b_castle_audience_answer");
+        modern_castle_gallery_audience(GAME_AUDIENCE_MORE_NEEDED + 1, 0); shot(&G, "44b_castle_audience_answer"); tap_continue("44b_castle_audience_answer", TOUCH_LIST_CASTLE);
         modern_castle_gallery_audience(0, 0);
         {
             GameAudienceGain gain = { 0 };
             gain.leadership = 25; gain.spell_power = 1; gain.max_spells = 1;
             reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_AUDIENCE, 2, 0, 0);
-            modern_castle_gallery_answer(MC_AUD_TRIBUTE, 1, gain); shot(&G, "44c_castle_tribute_answer");
+            modern_castle_gallery_answer(MC_AUD_TRIBUTE, 1, gain); shot(&G, "44c_castle_tribute_answer"); tap_continue("44c_castle_tribute_answer", TOUCH_LIST_CASTLE);
             GameAudienceGain none = { 0 };
             modern_castle_gallery_answer(MC_AUD_PROMOTION, 0, none);
         }
@@ -437,7 +515,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
             g->character.cls.rank_index = 1;
             reset(&G); views_set(VIEW_HOME_CASTLE);
             modern_castle_gallery_audience(GAME_AUDIENCE_PROMOTED + 1, 1);
-            modern_castle_gallery(MC_PROMOTION, 0, 0, 0); shot(&G, "45_castle_promotion");
+            modern_castle_gallery(MC_PROMOTION, 0, 0, 0); shot(&G, "45_castle_promotion"); tap_row("45_castle_promotion", TOUCH_LIST_CASTLE, 0);
             g->character.cls.rank_index = keep;
         }
         g->position.home_castle[0] = '\0';
@@ -455,7 +533,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         reset(&G); views_set(VIEW_OWN_CASTLE); modern_castle_gallery(MC_MENU, 0, 0, 0); shot(&G, "46_own_castle");
         reset(&G); views_set(VIEW_OWN_CASTLE); modern_castle_gallery(MC_GARRISON, 0, 0, 0); shot(&G, "47_own_castle_garrison");
         reset(&G); views_set(VIEW_OWN_CASTLE); modern_castle_gallery(MC_WITHDRAW, 0, 0, 0); shot(&G, "48_own_castle_withdraw");
-        reset(&G); views_set(VIEW_OWN_CASTLE); modern_castle_gallery(MC_WITHDRAW, 0, 30, 30); shot(&G, "49_own_castle_how_many");
+        reset(&G); views_set(VIEW_OWN_CASTLE); modern_castle_gallery(MC_WITHDRAW, 0, 30, 30); shot(&G, "49_own_castle_how_many"); tap_row("49_own_castle_how_many", TOUCH_LIST_CASTLE, 0); tap_row("49_own_castle_how_many", TOUCH_LIST_CASTLE, 1); tap_gone("49_own_castle_how_many", TOUCH_LIST_CASTLE, 2); tap_key("49_own_castle_how_many", KEY_UP); tap_key("49_own_castle_how_many", KEY_DOWN);
         g->position.own_castle[0] = '\0';
     }
 
@@ -482,12 +560,12 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     // ---- temple and dwelling ----------------------------------------------------------
     reset(&G); views_set(VIEW_ALCOVE); pending_flow = FLOW_ALCOVE;
     prompt_yes_no_open(ui->dt_alcove_offer, bn->alcove_offer_modern);
-    shot(&G, "60_temple");
+    shot(&G, "60_temple"); tap_yes_no("60_temple", 0);
     reset(&G); views_set(VIEW_ALCOVE);
     loc_deal_begin(g); g->stats.gold -= 5000; loc_deal_done(g, 0, NULL); g->stats.gold += 5000;
     resources_format_template(tb, sizeof tb, bn->alcove_taught, vars, 6);
     loc_deal_absorb(tb);
-    shot(&G, "61_temple_result_inlay");
+    shot(&G, "61_temple_result"); tap_continue("61_temple_result", 0);
     {
         const TroopDef *t = troop_by_index(6);
         reset(&G);
@@ -496,12 +574,12 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         g->player_io.count = 0;
         pending_flow = FLOW_RECRUIT;
         prompt_text_input_open(t->name, "", 4, 24);
-        shot(&G, "62_dwelling");
+        shot(&G, "62_dwelling"); tap_yes_no("62_dwelling", 0);
         prompt_gallery_step_open(true);
-        shot(&G, "63_dwelling_how_many");
+        shot(&G, "63_dwelling_how_many"); tap_yes_no("63_dwelling_how_many", 0); tap_key("63_dwelling_how_many", KEY_UP); tap_key("63_dwelling_how_many", KEY_DOWN);
         reset(&G); views_set(VIEW_DWELLING);
         loc_deal_begin(g); g->stats.gold -= 600; loc_deal_done(g, 20, t->id); g->stats.gold += 600;
-        shot(&G, "64_dwelling_result_inlay");
+        shot(&G, "64_dwelling_result"); tap_continue("64_dwelling_result", 0);
     }
 
     // ---- combat ---------------------------------------------------------------------
@@ -576,5 +654,6 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
 
     reset(&G);
     if (G.manifest) fclose(G.manifest);
-    return 0;
+    fprintf(stdout, "[tapcheck] %d checks, %d failed\n", s_tap_checks, s_tap_fails);
+    return s_tap_fails ? 1 : 0;
 }

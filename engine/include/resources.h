@@ -882,7 +882,6 @@ typedef struct {
     char pad_confirm[RES_UI_LABEL_LEN];
     char give_up_header_modern[RES_UI_LABEL_LEN];
     char save_confirm_modern[RES_UI_LABEL_LEN];
-    char combat_spells_prompt_modern[RES_UI_LABEL_LEN];
     // Status-bar fast-quit prompt (). Rendered into the
     // top status bar via KB_TopBox, not a bottom dialog.
     char quit_to_dos_prompt[RES_UI_LABEL_LEN * 2];

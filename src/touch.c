@@ -40,6 +40,12 @@ static int s_tapped_cx, s_tapped_cy;
 
 static Region   s_regions[REGION_MAX];
 static int      s_region_count;
+
+// The regions the last frame registered, kept when touch_frame clears the
+// registry so a check (the --gallery's tap check) can ask what a drawn screen
+// offered a finger. Nothing in play reads them.
+static Region   s_last[REGION_MAX];
+static int      s_last_count;
 static int      s_any_key;        // touch_region_any, 0 = none
 static unsigned s_chrome;         // requested this frame
 
@@ -264,10 +270,60 @@ void touch_frame(void) {
         s_press_on_map = false;
     }
 
+    for (int i = 0; i < s_region_count; i++) s_last[i] = s_regions[i];
+    s_last_count = s_region_count;
     s_region_count = 0;
     s_any_key = 0;
     s_chrome = 0;
     s_prompt_bar = 0;
+}
+
+// ---- the last frame's regions ------------------------------------------------
+
+bool touch_last_hit(int sx, int sy, int *list_id, int *row, int *key) {
+    // The design-space half of resolve_tap, over the last frame's regions: what
+    // a finger at (sx, sy) would reach, the first region registered winning.
+    if (list_id) *list_id = 0;
+    if (row) *row = -1;
+    if (key) *key = 0;
+    for (int i = 0; i < s_last_count; i++) {
+        const Region *r = &s_last[i];
+        if (r->kind == REGION_WINDOW || r->kind == REGION_SCROLL || !rect_has(r, sx, sy)) continue;
+        if (r->kind == REGION_ROW) {
+            if (list_id) *list_id = r->list_id;
+            if (row) *row = r->row;
+        } else if (r->kind == REGION_GRID) {
+            if (list_id) *list_id = r->list_id;
+        } else if (r->kind == REGION_MAP) {
+            if (key) *key = map_region_key(r, sx, sy);
+        } else if (key) {
+            *key = r->key;
+        }
+        return true;
+    }
+    return false;
+}
+
+static bool last_rect(const Region *r, int *x, int *y, int *w, int *h) {
+    if (x) *x = r->x;
+    if (y) *y = r->y;
+    if (w) *w = r->w;
+    if (h) *h = r->h;
+    return true;
+}
+
+bool touch_last_row_rect(int list_id, int row, int *x, int *y, int *w, int *h) {
+    for (int i = 0; i < s_last_count; i++)
+        if (s_last[i].kind == REGION_ROW && s_last[i].list_id == list_id && s_last[i].row == row)
+            return last_rect(&s_last[i], x, y, w, h);
+    return false;
+}
+
+bool touch_last_key_rect(int key, int *x, int *y, int *w, int *h) {
+    for (int i = 0; i < s_last_count; i++)
+        if (s_last[i].kind == REGION_SCREEN && s_last[i].key == key)
+            return last_rect(&s_last[i], x, y, w, h);
+    return false;
 }
 
 // ---- chrome ----------------------------------------------------------------
