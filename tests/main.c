@@ -48,8 +48,6 @@ SUITE_EXTERN(unit_strings_agnostic_suite);
 SUITE_EXTERN(unit_no_state_copy_suite);
 SUITE_EXTERN(unit_pack_suite);
 SUITE_EXTERN(unit_pack_select_suite);
-SUITE_EXTERN(unit_gamebuilder_suite);
-SUITE_EXTERN(unit_gamebuilder_ops_suite);
 SUITE_EXTERN(unit_combat_rng_suite);
 SUITE_EXTERN(unit_combat_unit_suite);
 SUITE_EXTERN(unit_combat_geom_suite);
@@ -71,7 +69,6 @@ SUITE_EXTERN(e2e_score_suite);
 SUITE_EXTERN(e2e_combat_input_suite);
 SUITE_EXTERN(e2e_save_suite);
 SUITE_EXTERN(e2e_save_more_suite);
-SUITE_EXTERN(e2e_gamebuilder_suite);
 SUITE_EXTERN(e2e_no_limits_suite);
 
 // ---- autoplay ----------------------------------------------------------------
@@ -114,8 +111,6 @@ int main(int argc, char **argv) {
     RUN_SUITE(unit_no_state_copy_suite);
     RUN_SUITE(unit_pack_suite);
     RUN_SUITE(unit_pack_select_suite);
-    RUN_SUITE(unit_gamebuilder_suite);
-    RUN_SUITE(unit_gamebuilder_ops_suite);
     RUN_SUITE(unit_combat_rng_suite);
     RUN_SUITE(unit_combat_unit_suite);
     RUN_SUITE(unit_combat_geom_suite);
@@ -137,7 +132,6 @@ int main(int argc, char **argv) {
     RUN_SUITE(e2e_combat_input_suite);
     RUN_SUITE(e2e_save_suite);
     RUN_SUITE(e2e_save_more_suite);
-    RUN_SUITE(e2e_gamebuilder_suite);
     RUN_SUITE(e2e_no_limits_suite);
 
     // autoplay

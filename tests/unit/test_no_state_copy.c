@@ -1,7 +1,7 @@
 // Game, Map and Fog own heap tables, so a copy by `=` shares them: the copy's
 // writes land in the original and both free the same memory. GameCopy, FogCopy
 // and MapAlloc are the only way to duplicate one. This scan fails the build on
-// a by-value copy anywhere in the engine, shell, autoplay, demo or GameBuilder.
+// a by-value copy anywhere in the engine, shell, autoplay or demo.
 
 #include "greatest.h"
 
@@ -76,7 +76,7 @@ TEST no_game_map_or_fog_is_copied_by_value(void) {
         ASSERT_EQ(0, regcomp(&re[i], COPY_PATTERNS[i], REG_EXTENDED | REG_NOSUB));
     char first[1024] = { 0 };
     int hits = 0;
-    static const char *const roots[] = { "engine", "src", "autoplay", "demo", "tools/gamebuilder" };
+    static const char *const roots[] = { "engine", "src", "autoplay", "demo" };
     for (size_t r = 0; r < sizeof roots / sizeof *roots; r++)
         hits += scan_tree(roots[r], re, first, sizeof first);
     for (size_t i = 0; i < NPAT; i++) regfree(&re[i]);

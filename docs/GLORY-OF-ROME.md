@@ -465,11 +465,11 @@ UI those two will look odd.
    the troop and villain lists determine the file list.
 5. **Re-tune afterward, one axis at a time**, re-validating each time.
 
-**DECIDED: Glory of Rome ships with the editor**, in the release archives, as
+**DECIDED: Glory of Rome ships** in the release archives as
 the playable pack. It is the first pack that legally can — it is entirely
 original, where `kings-bounty` is DOS-extracted and copyright-restricted.
 
-Three consequences follow, recorded in `GAMEBUILDER-SPEC.md` GB-014:
+Two consequences follow:
 
 - The release workflow's pack-leak assertion becomes an **allowlist by pack
   id** rather than a blanket deny, in four places, so `glory-of-rome` ships and
@@ -477,10 +477,6 @@ Three consequences follow, recorded in `GAMEBUILDER-SPEC.md` GB-014:
 - The **art commission is on the critical path** to shipping, not just to
   looking finished. Rome borrows `kings-bounty` art through a base pack for
   development and none of it may survive into the released artifact.
-- Rome is **built in the editor**, and doing so is the editor's acceptance
-  test. That settles the sequencing: the editor's first phases come before the
-  remaining three zones, because hand-placing objects is precisely the work the
-  editor exists to delete.
 
 ---
 
@@ -571,8 +567,8 @@ chest, but it should be deliberate rather than accidental.
 
 **DECIDED.** The `.dat` file contains the **fully rendered map**, edge variants
 and all (REQ-229). Nothing about a map's appearance is computed at game time,
-and `furnish_map` in the engine stays a no-op forever. The editor bakes the
-variants when it saves.
+and `furnish_map` in the engine stays a no-op forever. The variants are baked
+into the `.dat` when the map is authored.
 
 ### 10.6.2 The checker
 

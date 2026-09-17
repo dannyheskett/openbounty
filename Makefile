@@ -88,7 +88,6 @@ PACK_DIR   := build/$(BUILD)/assets
 PACKS := $(addprefix $(PACK_DIR)/,$(addsuffix .openbounty,$(PACK_NAMES)))
 
 OUT_TEST      := build/openbounty-test
-OUT_GB        := build/openbounty-gamebuilder
 OUT_ENGLIB    := build/libobengine.a
 LIBTEST_STAMP := build/libtest-pass.stamp
 
@@ -329,10 +328,9 @@ STAGING := build/staging
 # The release workflow invokes it from its own job.
 dist: dist-linux dist-windows dist-mac
 
-dist-linux: release gamebuilder
+dist-linux: release
 	@rm -rf $(STAGING)/linux && mkdir -p $(STAGING)/linux/openbounty-$(OPENBOUNTY_VERSION_SLUG)
 	cp build/release/openbounty $(STAGING)/linux/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty
-	cp $(OUT_GB) $(STAGING)/linux/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty-gamebuilder
 	sed "s/<version>/$(OPENBOUNTY_VERSION_DISPLAY)/g" $(DIST)/README.txt.in > $(STAGING)/linux/openbounty-$(OPENBOUNTY_VERSION_SLUG)/README.txt
 	cp LICENSE NOTICES.md $(STAGING)/linux/openbounty-$(OPENBOUNTY_VERSION_SLUG)/
 	@mkdir -p $(DIST)
@@ -344,16 +342,14 @@ dist-linux: release gamebuilder
 # saw the exit status of its last one -- the zip. A failing `cp LICENSE
 # NOTICES.md` left make reporting success and shipped archives with no licence
 # text. The other five games are written this way; this one was the exception.
-dist-windows: $(OUT_WIN64) $(OUT_WIN32) $(OUT_GB_WIN64) $(OUT_GB_WIN32)
+dist-windows: $(OUT_WIN64) $(OUT_WIN32)
 	@rm -rf $(STAGING)/win-x86_64 $(STAGING)/win-i686 && mkdir -p $(DIST) \
 	    $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG) \
 	    $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)
 	cp $(OUT_WIN64) $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty.exe
-	cp $(OUT_GB_WIN64) $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty-gamebuilder.exe
 	sed "s/<version>/$(OPENBOUNTY_VERSION_DISPLAY)/g" $(DIST)/README.txt.in > $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG)/README.txt
 	cp LICENSE NOTICES.md $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG)/
 	cp $(OUT_WIN32) $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty.exe
-	cp $(OUT_GB_WIN32) $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty-gamebuilder.exe
 	sed "s/<version>/$(OPENBOUNTY_VERSION_DISPLAY)/g" $(DIST)/README.txt.in > $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)/README.txt
 	cp LICENSE NOTICES.md $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)/
 	(cd $(STAGING)/win-x86_64 && zip -qr ../../../$(DIST)/openbounty-$(OPENBOUNTY_VERSION_SLUG)-windows-x86_64.zip openbounty-$(OPENBOUNTY_VERSION_SLUG))
@@ -395,59 +391,11 @@ TEST_ONLY_SRC := $(TEST_SHARED) $(TEST_UNIT) $(TEST_REGR) $(TEST_E2E) $(TEST_AUT
 # Unit-test binary: shell sources (minus main.c, which defines main())
 # + test sources + libobengine.a.
 TEST_SRC := $(filter-out src/main.c,$(SHELL_SRC)) $(TOOL_SRC) \
-            tools/gamebuilder/gb_workspace.c \
-            tools/gamebuilder/gb_undo.c tools/gamebuilder/gb_objects.c \
-            tools/gamebuilder/gb_validate.c tools/gamebuilder/gb_package.c \
-            tools/gamebuilder/gb_archive.c tools/gamebuilder/gb_checklist.c \
-            tools/gamebuilder/gb_map_io.c tools/gamebuilder/gb_map_furnish.c \
             $(DEMO_SRC) $(AUTOPLAY_SRC) \
             $(TEST_ONLY_SRC)
 
 $(OUT_TEST): $(TEST_SRC) $(OUT_ENGLIB) build/version.h Makefile | build
-	gcc $(CFLAGS) -Ithird_party/greatest -Itests -Itools/gamebuilder $(TEST_SRC) $(OUT_ENGLIB) -o $(OUT_TEST) $(LDFLAGS)
-
-# ---------------------------------------------------------------------------
-# openbounty-gamebuilder: the game-pack editor (docs/GAMEBUILDER-SPEC.md).
-# Takes no arguments -- everything is point-and-click (GB-015). Built with
-# `make gamebuilder`; it will be packaged into the release archives once it
-# is worth shipping (GB-010).
-# The map layer (furnish/despeckle/IO) and the shell's tile cache, assets and
-# palette are shared with the game, not reimplemented, so the editor's canvas
-# cannot drift from what the game draws.
-GB_SRC := $(wildcard tools/gamebuilder/*.c) \
-          src/tile_cache.c src/assets.c src/palette.c
-GB_CFLAGS := $(CFLAGS) -Ithird_party/raygui -Itools/gamebuilder
-
-.PHONY: gamebuilder
-gamebuilder: $(OUT_GB)
-
-$(OUT_GB): $(GB_SRC) $(OUT_ENGLIB) build/version.h Makefile | build
-	gcc $(GB_CFLAGS) $(GB_SRC) $(OUT_ENGLIB) -o $(OUT_GB) $(LDFLAGS)
-
-# GameBuilder ships to end users (GB-010/GB-011), so it cross-compiles for the
-# same desktop targets the game does. The engine archive is rebuilt per target
-# because it is compiled into each binary, not linked from a shared lib.
-OUT_GB_WIN64 := build/openbounty-gamebuilder-x64.exe
-OUT_GB_WIN32 := build/openbounty-gamebuilder-x86.exe
-OUT_GB_MAC   := build/openbounty-gamebuilder-mac
-GB_ENGINE_SRC := $(ENGINE_SRC) $(VENDOR_SRC) engine/host_noop.c
-
-.PHONY: gamebuilder-windows gamebuilder-mac
-gamebuilder-windows: $(OUT_GB_WIN64) $(OUT_GB_WIN32)
-
-$(OUT_GB_WIN64): $(GB_SRC) $(GB_ENGINE_SRC) build/version.h Makefile | build
-	$(WIN64_CC) $(WIN64_CFLAGS) -Ithird_party/raygui -Itools/gamebuilder \
-	    $(GB_SRC) $(GB_ENGINE_SRC) -o $(OUT_GB_WIN64) $(WIN64_LDFLAGS)
-
-$(OUT_GB_WIN32): $(GB_SRC) $(GB_ENGINE_SRC) build/version.h Makefile | build
-	$(WIN32_CC) $(WIN32_CFLAGS) -Ithird_party/raygui -Itools/gamebuilder \
-	    $(GB_SRC) $(GB_ENGINE_SRC) -o $(OUT_GB_WIN32) $(WIN32_LDFLAGS)
-
-gamebuilder-mac: $(OUT_GB_MAC)
-
-$(OUT_GB_MAC): $(GB_SRC) $(GB_ENGINE_SRC) build/version.h Makefile | build
-	$(MAC_CC) $(MAC_CFLAGS) -Ithird_party/raygui -Itools/gamebuilder \
-	    $(GB_SRC) $(GB_ENGINE_SRC) -o $(OUT_GB_MAC) $(MAC_LDFLAGS)
+	gcc $(CFLAGS) -Ithird_party/greatest -Itests $(TEST_SRC) $(OUT_ENGLIB) -o $(OUT_TEST) $(LDFLAGS)
 
 # ---------------------------------------------------------------------------
 # libobengine.a, engine compiled as a static archive. Consumers link
