@@ -14,12 +14,10 @@
 #define CAT_PATH_LEN 128
 
 // Animation cycle length. A pack declares however many frames it ships and
-// the parsed array length IS the cycle -- OB_ANIM_FRAMES_MAX is only the
-// storage ceiling. OB_ANIM_FRAMES_DEFAULT is what a consumer assumes when
+// the parsed array length IS the cycle; there is no ceiling. OB_ANIM_FRAMES_DEFAULT is what a consumer assumes when
 // nothing is declared, and matches the four-frame cycle every animation was
 // fixed at before counts were tracked. Defined here, the lower header, so
 // both the catalogs and the sprite manifest in resources.h share one value.
-#define OB_ANIM_FRAMES_MAX          16
 #define OB_ANIM_FRAMES_DEFAULT       4
 // The four facings an animation may be authored for. The order is the row
 // order of a four-direction sprite sheet, and it is the order the manifest
@@ -32,19 +30,14 @@ typedef enum {
     OB_FACE_COUNT = 4,
 } OBFacing;
 
-// Wrap point for the free-running counters that drive animation. Every cycle
-// length from 1 to OB_ANIM_FRAMES_MAX divides it exactly (it is their LCM),
-// so a counter rolling over never short-changes a frame mid-cycle.
-#define OB_ANIM_TICK_WRAP       720720
+// Advance a free-running animation counter. It runs to INT_MAX before it
+// wraps -- years of ticks -- so no frame count has to divide a wrap point.
+static inline int ob_anim_tick(int counter) {
+    return (counter < 0 || counter >= 0x7fffffff) ? 0 : counter + 1;
+}
 
-// Caps enforce fixed-size storage so the catalogs stay POD.
-#define CAT_TROOPS_MAX              32
-#define CAT_SPELLS_MAX              32
-#define CAT_CLASSES_MAX              8
-#define CAT_VILLAINS_MAX            32
-#define CAT_ARTIFACTS_MAX           16
+// A game rule, not a storage cap: every class has four ranks.
 #define CLASS_MAX_RANKS              4
-#define CLASS_MAX_STARTING_TROOPS    2
 
 // ----- Troops ---------------------------------------------------------------
 typedef enum {
@@ -69,7 +62,7 @@ typedef struct {
     // declared cycle length; 0 means the troop ships no animation and
     // consumers fall back to the still `sprite`.
     int  anim_count;
-    char anim[OB_ANIM_FRAMES_MAX][CAT_PATH_LEN];
+    char (*anim)[CAT_PATH_LEN];     // heap, anim_count frames
     int  skill_level;
     int  hit_points;
     int  move_rate;
@@ -165,8 +158,11 @@ typedef struct {
     char name[CAT_NAME_LEN];
     char portrait[CAT_PATH_LEN];
     int  starting_gold;
-    char starting_troops[CLASS_MAX_STARTING_TROOPS][CAT_ID_LEN];
-    int  starting_counts[CLASS_MAX_STARTING_TROOPS];
+    // The army a new hero of this class starts with: heap, starting_troop_count
+    // entries (the first GAME_ARMY_SLOTS are used).
+    int   starting_troop_count;
+    char (*starting_troops)[CAT_ID_LEN];
+    int  *starting_counts;
     int  rank_count;
     RankDef ranks[CLASS_MAX_RANKS];
 } ClassDef;
@@ -191,7 +187,7 @@ typedef struct {
     // siblings, which is how packs addressed these frames before the array
     // existed -- kings-bounty still relies on that path.
     int  anim_count;
-    char anim[OB_ANIM_FRAMES_MAX][CAT_PATH_LEN];
+    char (*anim)[CAT_PATH_LEN];     // heap, anim_count frames
     char zone[CAT_ID_LEN];          // home zone id
     int  reward;
     int  puzzle_cell;

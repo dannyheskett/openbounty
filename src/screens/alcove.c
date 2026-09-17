@@ -44,7 +44,7 @@ void screen_alcove_draw(const Game *g, const Sprites *s) {
     double now = GetTime();
     if (now - s_last_tick >= ALCOVE_TICK) {
         s_last_tick = now;
-        s_frame = (s_frame + 1) % OB_ANIM_TICK_WRAP;
+        s_frame = ob_anim_tick(s_frame);
     }
     // A declared figure may set its own pace. The screen's tick is 50 ms --
     // right for the original's jittering gnome, far too fast for a figure

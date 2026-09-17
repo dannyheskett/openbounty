@@ -19,7 +19,10 @@
 // is large.
 static Game *fresh_game(void) {
     Game *g = calloc(1, sizeof *g);
-    if (g) player_io_reset(g);
+    if (!g) return NULL;
+    player_io_reset(g);
+    g->spells.count = 14;                     // a spellbook for the discard tests
+    g->spells.counts = calloc(14, sizeof *g->spells.counts);
     return g;
 }
 
@@ -28,7 +31,7 @@ TEST empty_queue_is_idle(void) {
     ASSERT(g);
     ASSERT(player_io_idle(g));
     ASSERT_EQ(NULL, player_io_front(g));
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 
@@ -47,7 +50,7 @@ TEST enqueue_message_then_ack(void) {
 
     player_io_ack(g);
     ASSERT(player_io_idle(g));
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 
@@ -62,7 +65,7 @@ TEST enqueue_view_then_ack(void) {
 
     player_io_ack(g);
     ASSERT(player_io_idle(g));
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 
@@ -90,7 +93,7 @@ TEST ack_does_not_pop_a_decision(void) {
     player_io_answer(g, NULL, NULL, NULL, ans, PLAYER_IO_COMBAT_NOT_RUN, NULL);
     ASSERT(player_io_idle(g));
     pending_flow = FLOW_NONE;               // tidy the global for later tests
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 
@@ -108,7 +111,7 @@ TEST answer_does_not_pop_a_message(void) {
     pending_flow = FLOW_NONE;
     player_io_ack(g);
     ASSERT(player_io_idle(g));
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 
@@ -126,7 +129,7 @@ TEST fifo_ordering(void) {
     ASSERT_STR_EQ("C", player_io_front(g)->header);
     player_io_ack(g);
     ASSERT(player_io_idle(g));
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 
@@ -142,26 +145,35 @@ TEST ring_wraps_cleanly(void) {
         player_io_ack(g);
         ASSERT(player_io_idle(g));
     }
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 
-// Filling to capacity succeeds; a further enqueue silently drops the OLDEST entry
-// to make room (returns the new slot, not NULL) and never overflows. The queue
-// stays at CAP, and the newest request is retained at the tail.
-TEST capacity_bound_drops_overflow(void) {
+// No capacity limit: every request is kept and drains in order, including
+// across the ring's wrap and growth, and a GameCopy carries them all.
+TEST queue_has_no_capacity_limit(void) {
     Game *g = fresh_game(); ASSERT(g);
-    for (int i = 0; i < PLAYER_IO_QUEUE_CAP; i++)
-        ASSERT(player_io_enqueue_message(g, "x", ""));
-    // Queue is full; one more evicts the oldest and is accepted (non-NULL).
-    ASSERT(player_io_enqueue_message(g, "overflow", ""));
-    // Still exactly CAP requests, and the last one drained is the newcomer.
+    char buf[16];
+    ASSERT(player_io_enqueue_message(g, "first", ""));
+    player_io_ack(g);                                  // move head off slot 0
+    for (int i = 0; i < 100; i++) {
+        snprintf(buf, sizeof buf, "m%d", i);
+        ASSERT(player_io_enqueue_message(g, buf, ""));
+    }
+    Game *c = calloc(1, sizeof *c); ASSERT(c);
+    ASSERT(GameCopy(c, g));
     int drained = 0;
-    const char *last = "";
-    while (!player_io_idle(g)) { last = player_io_front(g)->header; player_io_ack(g); drained++; }
-    ASSERT_EQ(PLAYER_IO_QUEUE_CAP, drained);
-    ASSERT_STR_EQ("overflow", last);
-    free(g);
+    while (!player_io_idle(g)) {
+        snprintf(buf, sizeof buf, "m%d", drained);
+        ASSERT_STR_EQ(buf, player_io_front(g)->header);
+        ASSERT_STR_EQ(buf, player_io_front(c)->header);
+        player_io_ack(g); player_io_ack(c);
+        drained++;
+    }
+    ASSERT_EQ(100, drained);
+    ASSERT(player_io_idle(c));
+    GameFree(c); free(c);
+    GameFree(g); free(g);
     PASS();
 }
 
@@ -174,7 +186,7 @@ TEST reset_clears_queue(void) {
     player_io_reset(g);
     ASSERT(player_io_idle(g));
     ASSERT_EQ(NULL, player_io_front(g));
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 
@@ -189,7 +201,7 @@ TEST long_text_is_truncated_safely(void) {
     ASSERT(r);
     ASSERT(strlen(r->header) < (size_t)PLAYER_IO_HEADER_CAP);
     ASSERT(strlen(r->body)   < (size_t)PLAYER_IO_BODY_CAP);
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 
@@ -207,7 +219,7 @@ TEST drain_messages_stops_at_decision(void) {
     const PlayerRequest *f = player_io_front(g);
     ASSERT_EQ(REQ_DECISION, f->role);
     ASSERT_EQ(FLOW_ALCOVE, f->flow);
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 
@@ -231,7 +243,7 @@ TEST raise_decision_evicts_stale_decision_keeps_messages(void) {
     const PlayerRequest *d = player_io_front(g);
     ASSERT_EQ(REQ_DECISION, d->role);
     ASSERT_EQ(FLOW_ATTACK_FOE, d->flow);   // the NEW decision, not the stale one
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 
@@ -251,7 +263,7 @@ TEST raise_view_and_passive_drain(void) {
     int n = player_io_drain_messages(g);
     ASSERT_EQ(2, n);                                // the view + the message
     ASSERT(player_io_idle(g));
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 
@@ -269,7 +281,7 @@ TEST raise_view_evicts_stale_view_keeps_others(void) {
     const PlayerRequest *v = player_io_front(g);
     ASSERT_EQ(REQ_VIEW, v->role);
     ASSERT_EQ(VIEW_ALCOVE, v->view);   // the NEW view, not the stale dwelling
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 
@@ -286,7 +298,7 @@ TEST discard_spell_yes_frees_one_charge(void) {
     ASSERT_EQ(2, g->spells.counts[2]);       // one freed
     flow_apply_discard_spell(g, 2, yes);
     ASSERT_EQ(1, g->spells.counts[2]);       // a second press frees another
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 
@@ -300,7 +312,7 @@ TEST discard_spell_no_is_noop(void) {
     FlowAnswer cancel = { .kind = FLOW_ANS_CANCEL };
     flow_apply_discard_spell(g, 2, cancel);
     ASSERT_EQ(3, g->spells.counts[2]);
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 
@@ -314,7 +326,7 @@ TEST discard_spell_guards_empty_and_invalid(void) {
     flow_apply_discard_spell(g, -1, yes);    // invalid index -> safe no-op
     flow_apply_discard_spell(g, 99, yes);    // out of range -> safe no-op
     flow_apply_discard_spell(NULL, 0, yes);  // NULL game -> safe no-op
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 
@@ -333,7 +345,7 @@ SUITE(unit_player_io_suite) {
     RUN_TEST(answer_does_not_pop_a_message);
     RUN_TEST(fifo_ordering);
     RUN_TEST(ring_wraps_cleanly);
-    RUN_TEST(capacity_bound_drops_overflow);
+    RUN_TEST(queue_has_no_capacity_limit);
     RUN_TEST(reset_clears_queue);
     RUN_TEST(long_text_is_truncated_safely);
 }

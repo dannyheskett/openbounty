@@ -42,8 +42,8 @@ TEST load_continentia_succeeds(void) {
 
     resources_free(res);
     free(res);
-    free(g);
-    free(m);
+    GameFree(g); free(g);
+    MapFree(m); free(m);
     PASS();
 }
 
@@ -70,8 +70,8 @@ TEST get_tile_at_known_chest_position(void) {
 
     resources_free(res);
     free(res);
-    free(g);
-    free(m);
+    GameFree(g); free(g);
+    MapFree(m); free(m);
     PASS();
 }
 
@@ -94,7 +94,7 @@ TEST terrain_art_is_bare_without_a_tile_set(void) {
     ASSERT(saw_plain);
     char buf[TILE_ART_NAME_LEN];
     ASSERT_STR_EQ("water", MapTerrainArt(m, "water", buf, sizeof buf));
-    resources_free(res); free(res); free(m);
+    resources_free(res); free(res); MapFree(m); free(m);
     PASS();
 }
 
@@ -136,7 +136,7 @@ TEST terrain_art_lives_under_the_zone_tile_set(void) {
     ASSERT(ox >= 0);
     MapClearInteractive(m, ox, oy);
     ASSERT_STR_EQ("continentia/grass", TileArt(m, MapGetTile(m, ox, oy)));
-    resources_free(res); free(res); free(m);
+    resources_free(res); free(res); MapFree(m); free(m);
     PASS();
 }
 
@@ -157,7 +157,7 @@ TEST town_stamps_its_own_art_or_the_shared_tile(void) {
         if (strcmp(res->towns[i].id, id) == 0) strcpy(res->towns[i].art, "town_x");
     ASSERT(MapLoadZone(m, res, "continentia"));
     ASSERT_STR_EQ("town_x", TileArt(m, MapGetTile(m, tx, ty)));
-    resources_free(res); free(res); free(m);
+    resources_free(res); free(res); MapFree(m); free(m);
     PASS();
 }
 
@@ -175,7 +175,7 @@ TEST foes_stamp_the_zone_army_art(void) {
     ASSERT(MapLoadZone(m, res, "continentia"));
     MapStampFoe(m, 5, 5, "foe_test");
     ASSERT_STR_EQ("army_x", TileArt(m, MapGetTile(m, 5, 5)));
-    resources_free(res); free(res); free(m);
+    resources_free(res); free(res); MapFree(m); free(m);
     PASS();
 }
 
@@ -212,7 +212,7 @@ TEST clearing_an_overlay_restores_the_cells_own_art(void) {
     MapClearInteractive(m, mx, my);
     ASSERT_EQ(TERRAIN_GRASS, mt->terrain);
     ASSERT(strstr(TileArt(m, mt), "grass") != NULL);
-    resources_free(res); free(res); free(m);
+    resources_free(res); free(res); MapFree(m); free(m);
     PASS();
 }
 

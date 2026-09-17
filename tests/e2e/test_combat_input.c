@@ -133,6 +133,7 @@ TEST controls_advance_cycles_within_range(void) {
 
     resources_free(res);
     free(res);
+    GameFree(&g);
     PASS();
 }
 
@@ -154,6 +155,7 @@ TEST controls_advance_rejects_out_of_range_row(void) {
 
     resources_free(res);
     free(res);
+    GameFree(&g);
     PASS();
 }
 

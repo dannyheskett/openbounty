@@ -14,7 +14,7 @@
 #define SAVE_PATH "/tmp/openbounty_fog.dat"
 
 TEST init_starts_with_no_tiles_seen(void) {
-    Fog f; FogInit(&f);
+    Fog f = { 0 };
     ASSERT_FALSE(FogSeen(&f, 0, 0));
     ASSERT_FALSE(FogSeen(&f, 50, 50));
     PASS();
@@ -114,11 +114,31 @@ TEST reveal_for_is_authentic_in_legacy_and_honours_fog_sight_in_modern(void) {
 }
 
 TEST seen_out_of_bounds_returns_false(void) {
-    Fog f; FogInit(&f);
+    Fog f = { 0 };
+    ASSERT(FogSize(&f, 20, 10));
+    FogSet(&f, 19, 9, true);
+    ASSERT(FogSeen(&f, 19, 9));
     ASSERT_FALSE(FogSeen(&f, -1, 0));
     ASSERT_FALSE(FogSeen(&f, 0, -1));
-    ASSERT_FALSE(FogSeen(&f, MAP_MAX_W, 0));
-    ASSERT_FALSE(FogSeen(&f, 0, MAP_MAX_H));
+    ASSERT_FALSE(FogSeen(&f, 20, 0));
+    ASSERT_FALSE(FogSeen(&f, 0, 10));
+    FogFree(&f);
+    PASS();
+}
+
+// No fixed fog size: a 300x300 map's fog holds its far corner, and a copy
+// carries it.
+TEST fog_has_no_size_limit(void) {
+    Map m = { 0 };
+    ASSERT(MapAlloc(&m, 300, 300));
+    Fog f = { 0 }, c = { 0 };
+    FogReveal(&f, &m, 299, 299, 2);
+    ASSERT(FogSeen(&f, 299, 299));
+    ASSERT(FogSeen(&f, 297, 297));
+    ASSERT_FALSE(FogSeen(&f, 296, 296));
+    ASSERT(FogCopy(&c, &f));
+    ASSERT(FogSeen(&c, 299, 299));
+    FogFree(&f); FogFree(&c); MapFree(&m);
     PASS();
 }
 
@@ -160,5 +180,6 @@ SUITE(unit_fog_suite) {
     RUN_TEST(reveal_radius_honours_the_radius);
     RUN_TEST(reveal_for_is_authentic_in_legacy_and_honours_fog_sight_in_modern);
     RUN_TEST(seen_out_of_bounds_returns_false);
+    RUN_TEST(fog_has_no_size_limit);
     RUN_TEST(fog_survives_save_load_round_trip);
 }

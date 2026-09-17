@@ -145,7 +145,11 @@ def main():
         return codes[c].get("terrain")
 
     def blocks(c):
-        return bool(codes[c].get("blocks_foot")) and not codes[c].get("is_bridge")
+        # A river blocks the foot as a wall does (the engine's TerrainWalkable);
+        # a bridge over either is walkable.
+        if codes[c].get("is_bridge"):
+            return False
+        return bool(codes[c].get("blocks_foot")) or terr(c) == "river"
 
     def walkable(c):
         return not blocks(c)

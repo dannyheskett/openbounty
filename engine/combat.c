@@ -29,7 +29,7 @@ const ResCombatLog *combat_log_strings(const Combat *c) {
 // they apply at pickup or on the adventure screen.
 unsigned char combat_player_powers(const Game *g) {
     unsigned char p = 0;
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < g->artifacts.count; i++) {
         if (!g->artifacts.found[i]) continue;
         const ArtifactDef *a = artifact_by_index(i);
         if (!a) continue;
@@ -1398,7 +1398,7 @@ CombatResult combat_run_headless_rec(Game *g, CombatMode mode,
                     fp = fp * 31 + u2->shots;
                 }
             if (c.heroes[COMBAT_SIDE_PLAYER])
-                for (int i2 = 0; i2 < GAME_SPELLBOOK_SLOTS; i2++)
+                for (int i2 = 0; i2 < c.heroes[COMBAT_SIDE_PLAYER]->spells.count; i2++)
                     fp = fp * 31 + c.heroes[COMBAT_SIDE_PLAYER]->spells.counts[i2];
             if (fp != stall_fp) { stall_fp = fp; stall_n = 0; }
             else if (++stall_n >= stall_cap) break;

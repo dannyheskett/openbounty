@@ -19,6 +19,16 @@ static MlArea s_area = ML_AREA_MAP;
 
 void ml_set_area(MlArea a) { s_area = a; }
 
+static bool    s_has_field;
+static ML_Rect s_field;
+
+void ml_set_field(ML_Rect r) { s_field = r; s_has_field = true; }
+void ml_clear_field(void)    { s_has_field = false; }
+bool ml_field(ML_Rect *out) {
+    if (s_has_field && out) *out = s_field;
+    return s_has_field;
+}
+
 ML_Rect ml_area(void) {
     if (s_area == ML_AREA_FULL) return ml_full();
     if (s_area == ML_AREA_SCREEN) return (ML_Rect){ 0, 0, CL_SCREEN_W, CL_SCREEN_H };

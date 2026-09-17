@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """Author assets/glory-of-rome/maps/italia.dat -- 40 x 64, the home zone.
 
+DO NOT RUN THIS ON THE SHIPPED MAP. It takes no arguments and overwrites italia.dat
+on any invocation (even --help). The shipped map has hand edits this script does not
+produce -- among them the northern passes and the Tiber (2026-09-16) -- so a run
+destroys them. Edit italia.dat directly.
+
 Hand-tuned: every coastline row below is an explicit choice, not a formula.
 The tables ARE the map. Edit a span, re-run, re-check with tools/mapcheck.py.
 

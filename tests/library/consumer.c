@@ -86,9 +86,9 @@ int main(int argc, char **argv) {
     free(json);
     cJSON_Delete(snap);
 
-    free(fog);
-    free(map);
-    free(game);
+    FogFree(fog); free(fog);
+    MapFree(map); free(map);
+    GameFree(game); free(game);
     resources_free(res);
     free(res);
     pack_stack_clear();

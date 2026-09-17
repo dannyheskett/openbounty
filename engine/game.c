@@ -62,6 +62,265 @@ static int game_rng_next(int min, int max) {
 uint64_t GameRngSnapshot(void) { return game_rng_state; }
 void     GameRngRestore(uint64_t s) { game_rng_state = s; }
 
+// ----- Storage --------------------------------------------------------------
+
+// A zeroed heap table of n entries, or NULL for none. *ok goes false when an
+// allocation fails.
+static void *table_alloc(int n, size_t elem, bool *ok) {
+    if (n <= 0) return NULL;
+    void *p = calloc((size_t)n, elem);
+    if (!p) *ok = false;
+    return p;
+}
+
+static void game_free_tables(Game *g) {
+    free(g->towns);
+    free(g->castles);
+    free(g->spells.counts);
+    free(g->artifacts.found);
+    free(g->contract.cycle);
+    free(g->contract.villains_caught);
+    free(g->contract.villains_prefought);
+    free(g->world.zones_discovered);
+    free(g->world.zone_rites);
+    free(g->world.orbs_found);
+    for (int i = 0; g->world.continent_fog && i < g->world.zone_count; i++)
+        FogFree(&g->world.continent_fog[i]);
+    free(g->world.continent_fog);
+    free(g->consumed);
+    free(g->dwellings);
+    free(g->placements);
+    free(g->foes);
+    free(g->player_io.slot);
+}
+
+void GameFree(Game *g) {
+    if (!g) return;
+    const Resources *res = g->res;
+    game_free_tables(g);
+    memset(g, 0, sizeof *g);
+    g->res = res;
+}
+
+bool GameAlloc(Game *g) {
+    if (!g) return false;
+    GameFree(g);
+    const Resources *r = g->res;
+    int nz = r ? r->zone_count : 0;
+    int cyc = r ? r->contract.cycle_length : 5;
+    if (cyc < 1) cyc = 1;
+    bool ok = true;
+    g->town_count   = r ? r->town_count : 0;
+    g->castle_count = r ? r->castle_count : 0;
+    g->towns   = table_alloc(g->town_count, sizeof *g->towns, &ok);
+    g->castles = table_alloc(g->castle_count, sizeof *g->castles, &ok);
+    g->spells.count   = spells_count();
+    g->spells.counts  = table_alloc(g->spells.count, sizeof *g->spells.counts, &ok);
+    g->artifacts.count = artifacts_count();
+    g->artifacts.found = table_alloc(g->artifacts.count, sizeof *g->artifacts.found, &ok);
+    g->contract.cycle_count = cyc;
+    g->contract.cycle = table_alloc(cyc, sizeof *g->contract.cycle, &ok);
+    g->contract.villain_count = villains_count();
+    g->contract.villains_caught =
+        table_alloc(g->contract.villain_count, sizeof *g->contract.villains_caught, &ok);
+    g->contract.villains_prefought =
+        table_alloc(g->contract.villain_count, sizeof *g->contract.villains_prefought, &ok);
+    g->world.zone_count       = nz;
+    g->world.zones_discovered = table_alloc(nz, sizeof *g->world.zones_discovered, &ok);
+    g->world.zone_rites       = table_alloc(nz, sizeof *g->world.zone_rites, &ok);
+    g->world.orbs_found       = table_alloc(nz, sizeof *g->world.orbs_found, &ok);
+    g->world.continent_fog    = table_alloc(nz, sizeof *g->world.continent_fog, &ok);
+    if (!ok) GameFree(g);
+    return ok;
+}
+
+// Grow `*arr` (entries of `elem` bytes, `*cap` allocated) to hold `need`,
+// doubling. New entries are zeroed.
+static bool list_reserve(void **arr, int *cap, int need, size_t elem) {
+    if (need <= *cap) return true;
+    int ncap = *cap > 0 ? *cap : 16;
+    while (ncap < need) ncap *= 2;
+    void *p = realloc(*arr, (size_t)ncap * elem);
+    if (!p) return false;
+    memset((char *)p + (size_t)*cap * elem, 0, (size_t)(ncap - *cap) * elem);
+    *arr = p;
+    *cap = ncap;
+    return true;
+}
+
+#define GAME_LIST_RESERVE(g, list, cap, need) \
+    list_reserve((void **)&(g)->list, &(g)->cap, (need), sizeof *(g)->list)
+
+bool GameReserveFoes(Game *g, int need)       { return g && GAME_LIST_RESERVE(g, foes, foe_cap, need); }
+bool GameReservePlacements(Game *g, int need) { return g && GAME_LIST_RESERVE(g, placements, placement_cap, need); }
+bool GameReserveConsumed(Game *g, int need)   { return g && GAME_LIST_RESERVE(g, consumed, consumed_cap, need); }
+bool GameReserveDwellings(Game *g, int need)  { return g && GAME_LIST_RESERVE(g, dwellings, dwelling_cap, need); }
+
+// Copy a table of n entries into a fresh allocation (NULL for none).
+static void *table_dup(const void *src, int n, size_t elem, bool *ok) {
+    if (!src || n <= 0) return NULL;
+    void *p = malloc((size_t)n * elem);
+    if (!p) { *ok = false; return NULL; }
+    memcpy(p, src, (size_t)n * elem);
+    return p;
+}
+
+// Copy `n` entries into dst's table, reusing it when it already holds n.
+#define COPY_TABLE(dfield, sfield, dn, sn) do {                                 \
+        if ((dn) != (sn) || !(dfield)) {                                          \
+            free(dfield);                                                         \
+            (dfield) = table_dup((sfield), (sn), sizeof *(sfield), &ok);          \
+        } else if ((sn) > 0) {                                                    \
+            memcpy((dfield), (sfield), (size_t)(sn) * sizeof *(sfield));          \
+        }                                                                         \
+    } while (0)
+
+// Copy a growable list's live entries, growing dst's allocation as needed.
+#define COPY_LIST(list, count, cap) do {                                          \
+        if (src->count > 0) {                                                     \
+            if (!GAME_LIST_RESERVE(dst, list, cap, src->count)) ok = false;       \
+            else memcpy(dst->list, src->list, (size_t)src->count * sizeof *src->list); \
+        }                                                                         \
+    } while (0)
+
+bool GameCopy(Game *dst, const Game *src) {
+    if (!dst || !src || dst == src) return dst != NULL;
+    bool ok = true;
+    // Keep dst's tables, then take every value field from src. The only
+    // whole-Game byte copy: every table pointer is put back right below.
+    Game keep;
+    memcpy(&keep, dst, sizeof keep);
+    memcpy(dst, src, sizeof *dst);
+    dst->towns = keep.towns;               dst->castles = keep.castles;
+    dst->spells.counts = keep.spells.counts;
+    dst->artifacts.found = keep.artifacts.found;
+    dst->contract.cycle = keep.contract.cycle;
+    dst->contract.villains_caught = keep.contract.villains_caught;
+    dst->contract.villains_prefought = keep.contract.villains_prefought;
+    dst->world.zones_discovered = keep.world.zones_discovered;
+    dst->world.zone_rites = keep.world.zone_rites;
+    dst->world.orbs_found = keep.world.orbs_found;
+    dst->world.continent_fog = keep.world.continent_fog;
+    dst->consumed = keep.consumed;         dst->consumed_cap = keep.consumed_cap;
+    dst->dwellings = keep.dwellings;       dst->dwelling_cap = keep.dwelling_cap;
+    dst->placements = keep.placements;     dst->placement_cap = keep.placement_cap;
+    dst->foes = keep.foes;                 dst->foe_cap = keep.foe_cap;
+    dst->player_io = keep.player_io;
+
+    COPY_TABLE(dst->towns, src->towns, keep.town_count, src->town_count);
+    COPY_TABLE(dst->castles, src->castles, keep.castle_count, src->castle_count);
+    COPY_TABLE(dst->spells.counts, src->spells.counts, keep.spells.count, src->spells.count);
+    COPY_TABLE(dst->artifacts.found, src->artifacts.found, keep.artifacts.count, src->artifacts.count);
+    COPY_TABLE(dst->contract.cycle, src->contract.cycle, keep.contract.cycle_count, src->contract.cycle_count);
+    COPY_TABLE(dst->contract.villains_caught, src->contract.villains_caught,
+               keep.contract.villain_count, src->contract.villain_count);
+    COPY_TABLE(dst->contract.villains_prefought, src->contract.villains_prefought,
+               keep.contract.villain_count, src->contract.villain_count);
+    COPY_TABLE(dst->world.zones_discovered, src->world.zones_discovered,
+               keep.world.zone_count, src->world.zone_count);
+    COPY_TABLE(dst->world.zone_rites, src->world.zone_rites,
+               keep.world.zone_count, src->world.zone_count);
+    COPY_TABLE(dst->world.orbs_found, src->world.orbs_found,
+               keep.world.zone_count, src->world.zone_count);
+    // The continent fogs: a table of Fog, each with its own grid.
+    if (keep.world.zone_count != src->world.zone_count || !dst->world.continent_fog) {
+        for (int i = 0; dst->world.continent_fog && i < keep.world.zone_count; i++)
+            FogFree(&dst->world.continent_fog[i]);
+        free(dst->world.continent_fog);
+        dst->world.continent_fog = table_alloc(src->world.zone_count,
+                                               sizeof *dst->world.continent_fog, &ok);
+        if (!dst->world.continent_fog) dst->world.zone_count = 0;
+    }
+    for (int i = 0; ok && dst->world.continent_fog && src->world.continent_fog &&
+                    i < src->world.zone_count; i++)
+        if (!FogCopy(&dst->world.continent_fog[i], &src->world.continent_fog[i])) ok = false;
+    COPY_LIST(consumed, consumed_count, consumed_cap);
+    COPY_LIST(dwellings, dwelling_count, dwelling_cap);
+    COPY_LIST(placements, placement_count, placement_cap);
+    COPY_LIST(foes, foe_count, foe_cap);
+    // The request queue, oldest first from slot 0.
+    {
+        PlayerIoQueue *dq = &dst->player_io;
+        const PlayerIoQueue *sq = &src->player_io;
+        dq->head = 0;
+        dq->count = 0;
+        if (sq->count > 0) {
+            if (dq->cap < sq->count) {
+                PlayerRequest *ns = realloc(dq->slot, (size_t)sq->cap * sizeof *ns);
+                if (!ns) ok = false;
+                else { dq->slot = ns; dq->cap = sq->cap; }
+            }
+            if (ok) {
+                for (int i = 0; i < sq->count; i++)
+                    dq->slot[i] = sq->slot[(sq->head + i) % sq->cap];
+                dq->count = sq->count;
+            }
+        }
+    }
+    if (!ok) GameFree(dst);
+    return ok;
+}
+
+static uint32_t fnv_bytes(uint32_t h, const void *data, size_t n) {
+    const unsigned char *p = (const unsigned char *)data;
+    for (size_t i = 0; i < n; i++) { h ^= p[i]; h *= 16777619u; }
+    return h;
+}
+
+#define FNV_TABLE(h, ptr, n) \
+    ((ptr) && (n) > 0 ? fnv_bytes((h), (ptr), (size_t)(n) * sizeof *(ptr)) : (h))
+
+uint32_t GameFingerprint(const Game *g, uint32_t h) {
+    if (!g) return h;
+    // The value fields: a zeroed image with the scalars copied in, so padding
+    // and the table pointers never reach the hash.
+    Game flat;
+    memset(&flat, 0, sizeof flat);
+    flat.version = g->version;           flat.seed = g->seed;
+    flat.seed_from_catalog = g->seed_from_catalog;
+    flat.seed_index = g->seed_index;     flat.oracle_mode = g->oracle_mode;
+    flat.character = g->character;       flat.stats = g->stats;
+    flat.position = g->position;         flat.travel_mode = g->travel_mode;
+    flat.anim_frame = g->anim_frame;     flat.anim_moving = g->anim_moving;
+    flat.hud_visible = g->hud_visible;
+    memcpy(flat.army, g->army, sizeof flat.army);
+    flat.contract.cycle_count = g->contract.cycle_count;
+    memcpy(flat.contract.active_id, g->contract.active_id, sizeof flat.contract.active_id);
+    flat.contract.last_contract = g->contract.last_contract;
+    flat.contract.max_contract = g->contract.max_contract;
+    flat.boat = g->boat;                 flat.scepter = g->scepter;
+    flat.consumed_count = g->consumed_count;
+    flat.dwelling_count = g->dwelling_count;
+    flat.placement_count = g->placement_count;
+    flat.foe_count = g->foe_count;
+    flat.player_io.count = g->player_io.count;
+    h = fnv_bytes(h, &flat, sizeof flat);
+    for (int i = 0; i < g->player_io.count; i++)
+        h = fnv_bytes(h, &g->player_io.slot[(g->player_io.head + i) % g->player_io.cap],
+                      sizeof *g->player_io.slot);
+    h = FNV_TABLE(h, g->towns, g->town_count);
+    h = FNV_TABLE(h, g->castles, g->castle_count);
+    h = FNV_TABLE(h, g->spells.counts, g->spells.count);
+    h = FNV_TABLE(h, g->artifacts.found, g->artifacts.count);
+    h = FNV_TABLE(h, g->contract.cycle, g->contract.cycle_count);
+    h = FNV_TABLE(h, g->contract.villains_caught, g->contract.villain_count);
+    h = FNV_TABLE(h, g->contract.villains_prefought, g->contract.villain_count);
+    h = FNV_TABLE(h, g->world.zones_discovered, g->world.zone_count);
+    h = FNV_TABLE(h, g->world.zone_rites, g->world.zone_count);
+    h = FNV_TABLE(h, g->world.orbs_found, g->world.zone_count);
+    for (int i = 0; g->world.continent_fog && i < g->world.zone_count; i++) {
+        const Fog *f = &g->world.continent_fog[i];
+        h = fnv_bytes(h, &f->width, sizeof f->width);
+        h = fnv_bytes(h, &f->height, sizeof f->height);
+        h = FNV_TABLE(h, f->seen, f->width * f->height);
+    }
+    h = FNV_TABLE(h, g->consumed, g->consumed_count);
+    h = FNV_TABLE(h, g->dwellings, g->dwelling_count);
+    h = FNV_TABLE(h, g->placements, g->placement_count);
+    h = FNV_TABLE(h, g->foes, g->foe_count);
+    return h;
+}
+
 static void copy_id(char *dst, size_t dst_sz, const char *src) {
     if (!src) { dst[0] = '\0'; return; }
     size_t i = 0;
@@ -71,7 +330,7 @@ static void copy_id(char *dst, size_t dst_sz, const char *src) {
 
 void GameAddPlacement(Game *g, const char *zone, int x, int y, int kind, const char *id) {
     if (!g || !zone) return;
-    if (g->placement_count >= GAME_MAX_PLACEMENTS) return;
+    if (!GameReservePlacements(g, g->placement_count + 1)) return;
     SaltedPlacement *p = &g->placements[g->placement_count++];
     copy_id(p->zone, sizeof(p->zone), zone);
     p->x = x;
@@ -92,20 +351,16 @@ void GameInitSeeded(Game *g, const char *name, int pclass, int difficulty,
     // the caller (main.c / menu_new) before GameInit and is used by init
     // steps like salt_spells/salt_continent/salt_villains.
     const Resources *res_saved = g->res;
-    // Capacity contract: Game's per-zone state arrays (zones_discovered,
-    // orbs_found, continent fog) are sized GAME_CONTINENTS; a pack declaring
-    // more zones cannot be represented and must fail loudly, never be
-    // silently truncated into a world that misrepresents the pack.
-    if (res_saved && res_saved->zone_count > GAME_CONTINENTS) {
-        fatal_user_error("OpenBounty",
-                         "Pack declares more zones than the engine supports.");
-        exit(2);
-    }
     // Preserve any caller-supplied raw seed so tests can force determinism.
     // Only consulted when seed_index < 0; see the seed resolution below.
     uint64_t seed_saved = g->seed;
-    memset(g, 0, sizeof(*g));
+    // Every table sized from the pack, zeroed (the Game must be zeroed or
+    // previously sized).
     g->res = res_saved;
+    if (!GameAlloc(g)) {
+        fatal_user_error("OpenBounty", "Out of memory starting a game.");
+        exit(2);
+    }
     player_io_reset(g);   // empty the uniform player-IO request queue (the
                           // memset already zeroed it; this centralizes the
                           // invariant -- see engine/include/player_io.h)
@@ -167,7 +422,7 @@ void GameInitSeeded(Game *g, const char *name, int pclass, int difficulty,
 
     g->character.difficulty = difficulty;
 
-    const ClassDef *cls = (pclass >= 0 && pclass < 4) ? class_by_index(pclass) : class_by_index(0);
+    const ClassDef *cls = (pclass >= 0 && pclass < classes_count()) ? class_by_index(pclass) : class_by_index(0);
     if (!cls) cls = class_by_index(0);
     copy_id(g->character.cls.id, sizeof(g->character.cls.id), cls->id);
     g->character.cls.rank_index = 0;
@@ -244,9 +499,7 @@ void GameInitSeeded(Game *g, const char *name, int pclass, int difficulty,
     // Step 7: Contract cycle. Seed with the first cycle_length villain
     // ids from the catalog.
     g->contract.active_id[0] = '\0';
-    int cycle_len = g->res ? g->res->contract.cycle_length : 5;
-    if (cycle_len < 1) cycle_len = 1;
-    if (cycle_len > CONTRACT_CYCLE_MAX) cycle_len = CONTRACT_CYCLE_MAX;
+    int cycle_len = g->contract.cycle_count;
     g->contract.last_contract = g->res ? g->res->contract.initial_last_contract
                                        : cycle_len - 1;
     g->contract.max_contract  = cycle_len;
@@ -258,10 +511,10 @@ void GameInitSeeded(Game *g, const char *name, int pclass, int difficulty,
     }
 
     // Step 8 (play.c:426-433): Starting army (2 slots + empty rest).
-    for (i = 0; i < 2; i++) {
+    for (i = 0; i < cls->starting_troop_count && i < GAME_ARMY_SLOTS; i++) {
         const char *troop = cls->starting_troops[i];
         int count = cls->starting_counts[i];
-        if (!troop || count <= 0) continue;
+        if (!troop[0] || count <= 0) continue;
         copy_id(g->army[i].id, sizeof(g->army[i].id), troop);
         g->army[i].count = count;
     }
@@ -285,7 +538,7 @@ void GameInitSeeded(Game *g, const char *name, int pclass, int difficulty,
         for (int zi = 0; zi < g->res->zone_count; zi++) {
             const ResZone *z = &g->res->zones[zi];
             if (per_zone && strcmp(z->id, g->res->world.starting_zone) != 0) continue;
-            if (per_zone && zi < GAME_CONTINENTS) g->world.zone_rites[zi] = true;
+            if (per_zone && zi < g->world.zone_count) g->world.zone_rites[zi] = true;
             if (z->magic_alcove_x < 0 || z->magic_alcove_y < 0) continue;
             GameAddConsumed(g, z->id, z->magic_alcove_x, z->magic_alcove_y);
         }
@@ -314,8 +567,7 @@ void GameInitSeeded(Game *g, const char *name, int pclass, int difficulty,
     // spawn_game:461-464 (castle_owner[i] = 0x7F). Villain assignment
     // (salt_villains) runs later and overwrites owner_kind where applicable.
     {
-        int ncastles = g->res ? g->res->castle_count : 0;
-        if (ncastles > GAME_CASTLES) ncastles = GAME_CASTLES;
+        int ncastles = g->castle_count;
         for (i = 0; i < ncastles; i++) {
             const ResCastle *rc = &g->res->castles[i];
             CastleRecord *cr = &g->castles[i];
@@ -337,7 +589,7 @@ void GameInitSeeded(Game *g, const char *name, int pclass, int difficulty,
 
     // Repopulate every remaining monster-owned castle with a troop stack
     // ().
-    for (i = 0; i < GAME_CASTLES; i++) {
+    for (i = 0; i < g->castle_count; i++) {
         if (!g->castles[i].id[0]) continue;
         // Castles flagged special.excluded_from_contract never hold a
         // monster garrison; mark them CASTLE_OWNER_SPECIAL so downstream
@@ -435,7 +687,7 @@ void GameCastFindVillain(Game *g) {
     if (idx < 0 || g->spells.counts[idx] <= 0) return;
     if (!g->contract.active_id[0]) return;
     g->spells.counts[idx]--;
-    for (int i = 0; i < GAME_CASTLES; i++) {
+    for (int i = 0; i < g->castle_count; i++) {
         if (!g->castles[i].id[0]) continue;
         if (g->castles[i].owner_kind != CASTLE_OWNER_VILLAIN) continue;
         if (strcmp(g->castles[i].villain_id, g->contract.active_id) != 0)
@@ -458,8 +710,7 @@ void salt_spells(Game *g) {
 
     const Resources *res = g->res;
     int nspells = spells_count();
-    int ntowns  = res->town_count;
-    if (ntowns > GAME_TOWNS) ntowns = GAME_TOWNS;
+    int ntowns  = g->town_count;
     if (nspells <= 0 || ntowns <= 0) return;
 
     // Eagerly create a TownRecord for every town in resources, so salt
@@ -475,7 +726,9 @@ void salt_spells(Game *g) {
 
     // Step 1: apply every town's pinned_spell, if any. Track which spell
     // ids are already claimed so step 2 can skip them.
-    bool spell_claimed[CAT_SPELLS_MAX] = {0};
+    // One flag per spell of the pack (a spell's index beyond the count is never
+    // walked by step 2, so it needs no flag).
+    bool *spell_claimed = nspells > 0 ? calloc((size_t)nspells, sizeof *spell_claimed) : NULL;
     for (int i = 0; i < ntowns; i++) {
         const char *pin = res->towns[i].pinned_spell;
         if (!pin[0]) continue;
@@ -483,7 +736,7 @@ void salt_spells(Game *g) {
         if (!sp) continue;
         copy_id(g->towns[i].spell_for_sale,
                 sizeof(g->towns[i].spell_for_sale), sp->id);
-        if (sp->index >= 0 && sp->index < CAT_SPELLS_MAX)
+        if (spell_claimed && sp->index >= 0 && sp->index < nspells)
             spell_claimed[sp->index] = true;
     }
 
@@ -498,7 +751,7 @@ void salt_spells(Game *g) {
     for (int i = 0; i < ntowns; i++)
         if (g->towns[i].spell_for_sale[0] == '\0') empty_towns++;
     for (int s = 0; s < nspells && empty_towns > 0; ) {
-        if (s < CAT_SPELLS_MAX && spell_claimed[s]) { s++; continue; }
+        if (spell_claimed && spell_claimed[s]) { s++; continue; }
         int t = game_rng_next(0, ntowns - 1);
         if (g->towns[t].spell_for_sale[0] == '\0') {
             const SpellDef *sp = spell_by_index(s);
@@ -508,6 +761,7 @@ void salt_spells(Game *g) {
             empty_towns--;
         }
     }
+    free(spell_claimed);
 
     // Step 3: any still-empty town gets a random spell.
     for (int i = 0; i < ntowns; i++) {
@@ -597,12 +851,7 @@ static void roll_hostile_garrison(const Game *g, int continent, Unit *out) {
     for (int s = 0; s < stacks; s++) {
         int kind = game_rng_next(0, 3);     // dwelling = rand(0,3)
         int chance = game_rng_next(1, 100);
-        int pool_slot = 0;
-        while (pool_slot < RES_SPAWN_POOL_N - 1 &&
-               chance > g->res->spawn.chance_curve[continent_tier][pool_slot]) {
-            pool_slot++;
-        }
-        const char *tid = g->res->spawn.troop_pool[kind][pool_slot];
+        const char *tid = resources_spawn_troop(&g->res->spawn, kind, continent_tier, chance);
         if (!tid || !tid[0]) continue;
         const TroopDef *td = troop_by_id(tid);
         if (!td) continue;
@@ -617,7 +866,7 @@ static void roll_hostile_garrison(const Game *g, int continent, Unit *out) {
 static void add_foe(Game *g, int continent, const char *zone, int x, int y,
                     const char *placement_id, bool friendly,
                     bool is_static, const ResZoneArmy *explicit_army) {
-    if (!g || g->foe_count >= GAME_MAX_FOES) return;
+    if (!g || !GameReserveFoes(g, g->foe_count + 1)) return;
     FoeState *f = &g->foes[g->foe_count++];
     copy_id(f->zone, sizeof(f->zone), zone);
     f->x = x;
@@ -659,11 +908,10 @@ void salt_continent(Game *g, int continent, int min_artifacts, int min_navmaps,
     // friendly
     // foes appear after them in g->foes[] -- but classification is by
     // the per-foe `friendly` flag, not by index ordering.
-    // Cap hostiles at the per-continent budget (OpenKB's 35 = MAX_FOES 40 less
-    // the 5 friendly slots). With GAME_MAX_FOES sized for 4 * 40, this keeps
-    // each continent inside its own allocation so no zone starves another.
-    int army_cap = z->army_count < GAME_MAX_HOSTILE_PER_ZONE
-                       ? z->army_count : GAME_MAX_HOSTILE_PER_ZONE;
+    // Cap hostiles at the pack's per-zone budget (world.hostile_armies_per_zone;
+    // OpenKB's 35 = MAX_FOES 40 less the 5 friendly slots).
+    int hostile_cap = g->res->world.hostile_armies_per_zone;
+    int army_cap = z->army_count < hostile_cap ? z->army_count : hostile_cap;
     for (int i = 0; i < army_cap; i++) {
         const ResZoneArmy *a = &z->armies[i];
         const char *aid = (a->id[0]) ? a->id : NULL;
@@ -846,14 +1094,14 @@ void bury_scepter(Game *g, int continent) {
     Map *m = (Map *)calloc(1, sizeof(Map));
     if (!m) return;
     if (!MapLoadZone(m, g->res, z->id)) {
-        free(m);
+        MapFree(m); free(m);
         return;
     }
     // First pass: count grass tiles.
     int total = 0;
     for (int y = 0; y < m->height; y++) {
         for (int x = 0; x < m->width; x++) {
-            const Tile *t = &m->tiles[y][x];
+            const Tile *t = &MAP_TILE(m, x, y);
             if (t->terrain == TERRAIN_GRASS &&
                 t->interactive == INTERACT_NONE &&
                 !t->blocks_foot) {
@@ -861,25 +1109,25 @@ void bury_scepter(Game *g, int continent) {
             }
         }
     }
-    if (total <= 0) { free(m); return; }
+    if (total <= 0) { MapFree(m); free(m); return; }
     int target = game_rng_next(0, total - 1);
     int count = 0;
     for (int y = 0; y < m->height; y++) {
         for (int x = 0; x < m->width; x++) {
-            const Tile *t = &m->tiles[y][x];
+            const Tile *t = &MAP_TILE(m, x, y);
             if (t->terrain != TERRAIN_GRASS) continue;
             if (t->interactive != INTERACT_NONE) continue;
             if (t->blocks_foot) continue;
             if (count == target) {
                 g->scepter.x = x;
                 g->scepter.y = y;
-                free(m);
+                MapFree(m); free(m);
                 return;
             }
             count++;
         }
     }
-    free(m);
+    MapFree(m); free(m);
 }
 
 // player_accept_rank bumps leadership / spells / commission
@@ -901,8 +1149,14 @@ void salt_villains(Game *g) {
 
     int nvillains = g->res->villains_count;
     int ncastles  = g->res->castle_count;
+    if (ncastles > g->castle_count) ncastles = g->castle_count;
+    // The draw covers the castles up to the last one a contract may use:
+    // no-contract castles at the end of the list (King's Bounty's King
+    // Maximus) stay out of it, so every world keeps its villain placements.
+    while (ncastles > 0 &&
+           g->res->castles[ncastles - 1].special.excluded_from_contract)
+        ncastles--;
     if (nvillains <= 0 || ncastles <= 0) return;
-    if (ncastles > GAME_CASTLES) ncastles = GAME_CASTLES;
 
     for (int vi = 0; vi < nvillains; vi++) {
         const VillainDef *v = &g->res->villains[vi];
@@ -955,12 +1209,7 @@ static void roll_creature(Game *g, int tier,
 
     int kind = game_rng_next(0, 3);
     int chance = game_rng_next(1, 100);
-    int slot = 0;
-    while (slot < RES_SPAWN_POOL_N - 1 &&
-           chance > sp->chance_curve[tier][slot]) {
-        slot++;
-    }
-    const char *troop_id = sp->troop_pool[kind][slot];
+    const char *troop_id = resources_spawn_troop(sp, kind, tier, chance);
     if (!troop_id[0]) return;
 
     const TroopDef *t = troop_by_id(troop_id);
@@ -976,7 +1225,7 @@ static void roll_creature(Game *g, int tier,
 // garrison with 5 rolled troop stacks using the castle's difficulty_tier.
 void repopulate_castle(Game *g, int castle_id) {
     if (!g || !g->res) return;
-    if (castle_id < 0 || castle_id >= GAME_CASTLES) return;
+    if (castle_id < 0 || castle_id >= g->castle_count) return;
     if (castle_id >= g->res->castle_count) return;
 
     int tier = g->res->castles[castle_id].difficulty_tier;
@@ -1114,7 +1363,7 @@ static void end_day(Game *g, bool *week_ended, int *commission_paid) {
         // foes on the overworld grow by the same rule (play.c:1028-1031).
         const TroopDef *astro = troop_by_index(astrology);
         if (astro && astro->id[0] && astro->growth_per_week > 0) {
-            for (int i = 0; i < GAME_CASTLES; i++) {
+            for (int i = 0; i < g->castle_count; i++) {
                 if (!g->castles[i].id[0]) continue;
                 if (g->castles[i].owner_kind == CASTLE_OWNER_PLAYER ||
                     g->castles[i].owner_kind == CASTLE_OWNER_SPECIAL) continue;
@@ -1219,7 +1468,7 @@ int GameSpendWeek(Game *g, int *total_commission) {
 }
 
 bool GameClaimArtifact(Game *g, int idx) {
-    if (idx < 0 || idx >= artifacts_count()) return false;
+    if (idx < 0 || idx >= g->artifacts.count) return false;
     if (g->artifacts.found[idx]) return false;
     g->artifacts.found[idx] = true;
 
@@ -1252,7 +1501,7 @@ bool GameClaimArtifact(Game *g, int idx) {
 }
 
 bool GameHasPower(const Game *g, ArtifactPower power) {
-    for (int i = 0; i < artifacts_count(); i++) {
+    for (int i = 0; i < g->artifacts.count; i++) {
         const ArtifactDef *a = artifact_by_index(i);
         if (g->artifacts.found[i] && a && a->power == power) return true;
     }
@@ -1265,7 +1514,7 @@ void GameAddConsumed(Game *g, const char *zone, int x, int y) {
         if (g->consumed[i].x == x && g->consumed[i].y == y &&
             strcmp(g->consumed[i].zone, zone) == 0) return;
     }
-    if (g->consumed_count >= GAME_MAX_MUTATIONS) return;
+    if (!GameReserveConsumed(g, g->consumed_count + 1)) return;
     TileMutation *m = &g->consumed[g->consumed_count++];
     copy_id(m->zone, sizeof(m->zone), zone);
     m->x = x;
@@ -1283,7 +1532,7 @@ void GameApplyTileMutations(const Game *g, Map *map, const char *zone) {
 
 int GameKnownSpells(const Game *g) {
     int total = 0;
-    for (int i = 0; i < 14; i++) total += g->spells.counts[i];
+    for (int i = 0; i < g->spells.count; i++) total += g->spells.counts[i];
     return total;
 }
 
@@ -1383,7 +1632,7 @@ bool GameHasRites(const Game *g, const char *zone_id) {
     if (!g) return false;
     if (!g->res || !g->res->economy.rites_per_zone) return g->stats.knows_magic;
     int zi = zone_id ? resources_zone_index(g->res, zone_id) : -1;
-    return zi >= 0 && zi < GAME_CONTINENTS && g->world.zone_rites[zi];
+    return zi >= 0 && zi < g->world.zone_count && g->world.zone_rites[zi];
 }
 
 bool GameTownHasRites(const Game *g, const char *town_id) {
@@ -1400,7 +1649,7 @@ SpellBuyResult GameBuySpell(Game *g, const char *town_id) {
     // naming a town the hero is not in.
     if (strcmp(g->position.in_town, town_id) != 0) return SPELL_BUY_NO_SPELL;
     const TownRecord *t = NULL;
-    for (int i = 0; i < GAME_TOWNS; i++)
+    for (int i = 0; i < g->town_count; i++)
         if (strcmp(g->towns[i].id, town_id) == 0) { t = &g->towns[i]; break; }
     const SpellDef *sp =
         (t && t->spell_for_sale[0]) ? spell_by_id(t->spell_for_sale) : NULL;
@@ -1419,14 +1668,14 @@ TownRecord *GameTouchTown(Game *g, const char *town_id) {
     // Existing slot? Touching a known town marks it visited (the Town
     // Gate spell filters on this flag); first-visit also gets it set
     // below via the fresh-slot path.
-    for (int i = 0; i < GAME_TOWNS; i++) {
+    for (int i = 0; i < g->town_count; i++) {
         if (strcmp(g->towns[i].id, town_id) == 0) {
             g->towns[i].visited = true;
             return &g->towns[i];
         }
     }
     // Allocate a fresh slot.
-    for (int i = 0; i < GAME_TOWNS; i++) {
+    for (int i = 0; i < g->town_count; i++) {
         if (g->towns[i].id[0]) continue;
         TownRecord *t = &g->towns[i];
         copy_id(t->id, sizeof(t->id), town_id);
@@ -1457,7 +1706,7 @@ bool GameVillainContractObtainable(const Game *g, const char *villain_id) {
     if (g->contract.active_id[0] &&
         strcmp(g->contract.active_id, villain_id) == 0) return true;
     int n = g->res ? g->res->contract.cycle_length : 0;
-    if (n > CONTRACT_CYCLE_MAX) n = CONTRACT_CYCLE_MAX;
+    if (n > g->contract.cycle_count) n = g->contract.cycle_count;
     for (int i = 0; i < n; i++)
         if (strcmp(g->contract.cycle[i], villain_id) == 0) return true;
     return false;
@@ -1468,8 +1717,8 @@ const char *GameTakeNextContract(Game *g) {
     // menu's "Get New Contract" row). The engine enforces it so no caller --
     // autoplay included -- can take a contract from the open map.
     if (!g || !g->position.in_town[0]) return NULL;
-    int n = g->res->contract.cycle_length;
-    if (n < 1) n = 1;
+    int n = g->contract.cycle_count;
+    if (n < 1) return NULL;
     g->contract.last_contract++;
     if (g->contract.last_contract > n - 1) g->contract.last_contract = 0;
     const char *vid = g->contract.cycle[g->contract.last_contract];
@@ -1485,9 +1734,8 @@ const char *GameTakeNextContract(Game *g) {
 
 const char *GameTakeContractAt(Game *g, int slot) {
     if (!g || !g->position.in_town[0]) return NULL;
-    int n = g->res->contract.cycle_length;
-    if (n < 1) n = 1;
-    if (slot < 0 || slot >= n || slot >= CONTRACT_CYCLE_MAX) return NULL;
+    int n = g->contract.cycle_count;
+    if (slot < 0 || slot >= n) return NULL;
     const char *vid = g->contract.cycle[slot];
     if (!vid[0]) return NULL;
     g->contract.last_contract = slot;
@@ -1506,13 +1754,11 @@ bool GameFulfillContract(Game *g, const char *villain_id) {
     if (!v) return false;
 
     g->stats.gold += v->reward;
-    if (v->index >= 0 && v->index < CAT_VILLAINS_MAX) {
+    if (v->index >= 0 && v->index < g->contract.villain_count) {
         g->contract.villains_caught[v->index] = true;
     }
 
-    int cycle_len = g->res->contract.cycle_length;
-    if (cycle_len > CONTRACT_CYCLE_MAX) cycle_len = CONTRACT_CYCLE_MAX;
-    if (cycle_len < 1) cycle_len = 1;
+    int cycle_len = g->contract.cycle_count;
 
     int slot = -1;
     for (int i = 0; i < cycle_len; i++) {
@@ -1532,7 +1778,7 @@ bool GameFulfillContract(Game *g, const char *villain_id) {
     for (int i = g->contract.max_contract; i < total; i++) {
         const VillainDef *cand = villain_by_index(i);
         if (!cand) continue;
-        if (cand->index >= 0 && cand->index < CAT_VILLAINS_MAX &&
+        if (cand->index >= 0 && cand->index < g->contract.villain_count &&
             g->contract.villains_caught[cand->index]) continue;
         copy_id(g->contract.cycle[slot],
                 sizeof(g->contract.cycle[slot]), cand->id);
@@ -1614,7 +1860,7 @@ GameBlessingOutcome GameSeekBlessing(Game *g, int *out_needed, GameAudienceGain 
     if (out_needed) *out_needed = 0;
     if (gain) memset(gain, 0, sizeof *gain);
     if (g->stats.blessed) return GAME_BLESSING_ALREADY;
-    int total = artifacts_count() < 8 ? artifacts_count() : 8;   // artifacts.found[8]
+    int total = g->artifacts.count;
     int missing = total - GameArtifactsFound(g);
     if (missing > 0) {
         if (out_needed) *out_needed = missing;
@@ -1685,18 +1931,17 @@ int GameComputeScore(const Game *g) {
 }
 
 int GameVillainsCaught(const Game *g) {
-    // The array extent, not the catalog count: villains_caught[] is keyed
-    // by pack-authored VillainDef.index, which load validation constrains
-    // to [0, CAT_VILLAINS_MAX) and uniqueness -- not to catalog density.
+    // villains_caught[] is keyed by VillainDef.index, which load validation
+    // constrains to [0, villains_count) and uniqueness.
     int n = 0;
-    for (int i = 0; i < CAT_VILLAINS_MAX; i++)
+    for (int i = 0; i < g->contract.villain_count; i++)
         if (g->contract.villains_caught[i]) n++;
     return n;
 }
 
 int GameArtifactsFound(const Game *g) {
     int n = 0;
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < g->artifacts.count; i++)
         if (g->artifacts.found[i]) n++;
     return n;
 }
@@ -1713,24 +1958,28 @@ bool GameTownArtifactIntel(const Game *g, const char *town_id,
     const Resources *r = g->res;
 
     // Gather the unfound ones, in a fixed order (placements, then catalog).
-    struct { const char *zone; int x, y; } cand[GAME_MAX_PLACEMENTS + 32];
+    int cand_cap = g->placement_count;
+    for (int z = 0; z < r->zone_count; z++) cand_cap += r->zones[z].artifact_count;
+    if (cand_cap <= 0) return false;
+    struct IntelCand { const char *zone; int x, y; } *cand = malloc((size_t)cand_cap * sizeof *cand);
+    if (!cand) return false;
     int n = 0;
-    for (int i = 0; i < g->placement_count && n < (int)(sizeof cand / sizeof cand[0]); i++) {
+    for (int i = 0; i < g->placement_count && n < cand_cap; i++) {
         const SaltedPlacement *p = &g->placements[i];
         if (p->kind != INTERACT_ARTIFACT) continue;
         const ArtifactDef *a = artifact_by_id(p->id);
         if (!a || g->artifacts.found[a->index]) continue;
         cand[n].zone = p->zone; cand[n].x = p->x; cand[n].y = p->y; n++;
     }
-    for (int z = 0; z < r->zone_count && n < (int)(sizeof cand / sizeof cand[0]); z++) {
+    for (int z = 0; z < r->zone_count && n < cand_cap; z++) {
         const ResZone *rz = &r->zones[z];
-        for (int i = 0; i < rz->artifact_count && n < (int)(sizeof cand / sizeof cand[0]); i++) {
+        for (int i = 0; i < rz->artifact_count && n < cand_cap; i++) {
             const ArtifactDef *a = artifact_by_id(rz->artifacts[i].id);
             if (!a || g->artifacts.found[a->index]) continue;
             cand[n].zone = rz->id; cand[n].x = rz->artifacts[i].x; cand[n].y = rz->artifacts[i].y; n++;
         }
     }
-    if (n == 0) return false;
+    if (n == 0) { free(cand); return false; }
 
     // A pure hash of the seed and the town's id: stable, and different towns
     // name different chests.
@@ -1742,12 +1991,13 @@ bool GameTownArtifactIntel(const Game *g, const char *town_id,
     if (out_zone && zone_cap > 0) snprintf(out_zone, (size_t)zone_cap, "%s", cand[pick].zone);
     if (out_x) *out_x = cand[pick].x;
     if (out_y) *out_y = cand[pick].y;
+    free(cand);
     return true;
 }
 
 int GameCastlesOwned(const Game *g) {
     int n = 0;
-    for (int i = 0; i < GAME_CASTLES; i++) {
+    for (int i = 0; i < g->castle_count; i++) {
         if (!g->castles[i].id[0]) continue;
         if (g->castles[i].owner_kind == CASTLE_OWNER_PLAYER) n++;
     }
@@ -1926,25 +2176,26 @@ const TroopDef *GameDwellingTroopAt(const Game *g, const char *dwelling_kind,
                                     int x, int y) {
     if (!g || !dwelling_kind || !dwelling_kind[0]) return NULL;
     // Collect all troops whose `dwelling` field matches.
-    int cand[CAT_TROOPS_MAX];
-    int n = 0;
     int total = troops_count();
+    if (total <= 0) return NULL;
+    int *cand = malloc((size_t)total * sizeof *cand);
+    if (!cand) return NULL;
+    int n = 0;
     for (int i = 0; i < total; i++) {
         const TroopDef *t = troop_by_index(i);
         if (!t) continue;
-        if (strcmp(t->dwelling, dwelling_kind) == 0) {
-            cand[n++] = i;
-            if (n >= (int)(sizeof(cand)/sizeof(cand[0]))) break;
-        }
+        if (strcmp(t->dwelling, dwelling_kind) == 0) cand[n++] = i;
     }
-    if (n == 0) return NULL;
+    if (n == 0) { free(cand); return NULL; }
     // Deterministic pick: (seed, x, y) -> index into cand[].
     unsigned h = (unsigned)g->seed;
     h ^= (unsigned)(x * 131u);
     h ^= (unsigned)(y * 97u);
     h = h * 1664525u + 1013904223u;
     int pick = (int)(h % (unsigned)n);
-    return troop_by_index(cand[pick]);
+    const TroopDef *out = troop_by_index(cand[pick]);
+    free(cand);
+    return out;
 }
 
 //  verbatim:
@@ -2002,7 +2253,7 @@ static DwellingState *enforce_dwelling(Game *g, const char *zone, int x, int y,
         }
     }
     // Create new.
-    if (g->dwelling_count >= GAME_MAX_DWELLINGS) return NULL;
+    if (!GameReserveDwellings(g, g->dwelling_count + 1)) return NULL;
     DwellingState *d = &g->dwellings[g->dwelling_count++];
     memset(d, 0, sizeof(*d));
     copy_id(d->zone, sizeof(d->zone), zone);
@@ -2032,8 +2283,8 @@ static DwellingState *enforce_dwelling_pinned(Game *g, const char *zone,
             return &g->dwellings[i];
         }
     }
-    if (g->dwelling_count >= GAME_MAX_DWELLINGS) return NULL;
     const TroopDef *t = troop_by_id(troop_id);
+    if (t && !GameReserveDwellings(g, g->dwelling_count + 1)) return NULL;
     if (!t) return NULL;
     DwellingState *d = &g->dwellings[g->dwelling_count++];
     memset(d, 0, sizeof(*d));
@@ -2107,8 +2358,8 @@ bool GameSwitchZone(Game *g, Map *map, Fog *fog, const char *zone_id) {
             ? resources_zone_by_id(g->res, g->position.zone) : NULL;
         if (old_z) {
             int old_zi = (int)(old_z - g->res->zones);
-            if (old_zi >= 0 && old_zi < GAME_CONTINENTS) {
-                g->world.continent_fog[old_zi] = *fog;
+            if (old_zi >= 0 && old_zi < g->world.zone_count) {
+                FogCopy(&g->world.continent_fog[old_zi], fog);
             }
         }
     }
@@ -2156,14 +2407,14 @@ bool GameSwitchZone(Game *g, Map *map, Fog *fog, const char *zone_id) {
     // teleport keep whatever the player had previously revealed; first
     // visits start blank and reveal around spawn.
     int zi = (int)(z - g->res->zones);
-    if (zi >= 0 && zi < GAME_CONTINENTS && g->world.zones_discovered[zi]) {
-        *fog = g->world.continent_fog[zi];
+    if (zi >= 0 && zi < g->world.zone_count && g->world.zones_discovered[zi]) {
+        FogCopy(fog, &g->world.continent_fog[zi]);
     } else {
         FogInit(fog);
     }
     FogRevealFor(g->res, fog, map, g->position.x, g->position.y);
     // Mark discovered.
-    if (zi >= 0 && zi < GAME_CONTINENTS) g->world.zones_discovered[zi] = true;
+    if (zi >= 0 && zi < g->world.zone_count) g->world.zones_discovered[zi] = true;
     {
         char tag[64];
         snprintf(tag, sizeof tag, "zone:%s", zone_id);
@@ -2198,8 +2449,7 @@ int GameGateDestinations(const Game *g, GateDestKind kind,
     if (!g || !out || cap <= 0) return 0;
     int n = 0;
     if (kind == GATE_DEST_CASTLE) {
-        int cn = g->res->castle_count < GAME_CASTLES ? g->res->castle_count
-                                                     : GAME_CASTLES;
+        int cn = g->castle_count;
         for (int i = 0; i < cn && n < cap; i++) {
             if (!g->castles[i].visited) continue;
             const ResCastle *rc = &g->res->castles[i];
@@ -2213,8 +2463,7 @@ int GameGateDestinations(const Game *g, GateDestKind kind,
             n++;
         }
     } else {
-        int tn = g->res->town_count < GAME_TOWNS ? g->res->town_count
-                                                 : GAME_TOWNS;
+        int tn = g->town_count;
         for (int i = 0; i < tn && n < cap; i++) {
             if (!g->towns[i].visited) continue;
             const ResTown *rt = &g->res->towns[i];
@@ -2640,7 +2889,7 @@ const char *GameNumberName(const Game *g, int count) {
 
 CastleRecord *GameFindCastle(Game *g, const char *castle_id) {
     if (!g || !castle_id || !castle_id[0]) return NULL;
-    for (int i = 0; i < GAME_CASTLES; i++) {
+    for (int i = 0; i < g->castle_count; i++) {
         if (strcmp(g->castles[i].id, castle_id) == 0) return &g->castles[i];
     }
     return NULL;
@@ -2890,7 +3139,7 @@ int GameFoesFollow(Game *g, Map *map) {
         }
 
         // Otherwise stamp the new tile with the foe.
-        Tile *dst = &map->tiles[best_y][best_x];
+        Tile *dst = &MAP_TILE(map, best_x, best_y);
         dst->interactive = INTERACT_FOE;
         TileSetId(map, dst, f->placement_id);
         TileSetArt(map, dst, map->army_art[0] ? map->army_art : "wandering_army");

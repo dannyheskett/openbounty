@@ -46,12 +46,10 @@ static int s_cursor = 1;
 
 static int pick_castle_troop(const Game *g) {
     int total = troops_count();
-    int pool[8];
     int npool = 0;
-    for (int i = 0; i < total && npool < 8; i++) {
+    for (int i = 0; i < total; i++) {
         const TroopDef *t = troop_by_index(i);
-        if (!t) continue;
-        if (strcmp(t->dwelling, "castle") == 0) pool[npool++] = i;
+        if (t && strcmp(t->dwelling, "castle") == 0) npool++;
     }
     if (npool < 1) return -1;
     unsigned long h = g ? (g->seed ^ 0x0CA571E5u) : 0;
@@ -60,7 +58,13 @@ static int pick_castle_troop(const Game *g) {
             h = h * 131u + (unsigned char)*p;
         }
     }
-    return pool[h % (unsigned long)npool];
+    // The pick-th castle troop in catalog order.
+    int pick = (int)(h % (unsigned long)npool);
+    for (int i = 0; i < total; i++) {
+        const TroopDef *t = troop_by_index(i);
+        if (t && strcmp(t->dwelling, "castle") == 0 && pick-- == 0) return i;
+    }
+    return -1;
 }
 
 void screen_own_castle_open(Game *g, const char *castle_id) {
@@ -104,7 +108,7 @@ void screen_own_castle_draw(const Game *g, const Sprites *s) {
     double now = GetTime();
     if (now - s_last_tick >= OWN_CASTLE_TICK) {
         s_last_tick = now;
-        s_frame = (s_frame + 1) % OB_ANIM_TICK_WRAP;
+        s_frame = ob_anim_tick(s_frame);
     }
     screens_draw_location_backdrop(g, s, SCREEN_LOC_CASTLE,
                                    s_anim_troop_idx, s_frame);

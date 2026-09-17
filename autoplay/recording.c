@@ -80,7 +80,7 @@ uint32_t rec_world_fp(const Game *g) {
         h = fnv1a(h, g->army[i].id, strlen(g->army[i].id));
         h = fnv1a(h, &g->army[i].count, sizeof g->army[i].count);
     }
-    h = fnv1a(h, g->spells.counts, sizeof g->spells.counts);
+    h = fnv1a(h, g->spells.counts, sizeof(int) * (size_t)g->spells.count);
     return h;
 }
 

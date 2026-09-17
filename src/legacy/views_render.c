@@ -82,7 +82,7 @@ static void draw_character(const Game *g, const Sprites *s) {
     // rest of the furniture rather than staying at the texture's own size.
     int portrait_w = 96 * CL_UI;
     int portrait_h = 102 * CL_UI;
-    if (cls) {
+    if (cls && cls->index >= 0 && cls->index < s->class_count) {
         ui_blit(s->class_portrait[cls->index], vx, VIEW_Y,
                 portrait_w, portrait_h);
     }
@@ -170,7 +170,7 @@ static void draw_character(const Game *g, const Sprites *s) {
 
     // Artifact grid: 4 cols x 2 rows. Only stamp icon when found.
     for (int i = 0; i < 8; i++) {
-        if (!g->artifacts.found[i]) continue;
+        if (!g->artifacts.found[i] || i >= s->view_icon_count) continue;
         Texture2D tex = s->view_icon[i];
         if (!tex.id) continue;
         int col = i % 4;
@@ -184,8 +184,9 @@ static void draw_character(const Game *g, const Sprites *s) {
     // zone discovered.
     int map_x = inv_x + 4 * item_w;
     for (int i = 0; i < 4; i++) {
-        if (!g->world.zones_discovered[i]) continue;
-        Texture2D tex = s->view_icon[8 + i];
+        if (!g->world.zones_discovered[i] ||
+            s->view_icon_extra_base + i >= s->view_icon_count) continue;
+        Texture2D tex = s->view_icon[s->view_icon_extra_base + i];
         if (!tex.id) continue;
         int col = i % 2;
         int row = i / 2;
@@ -256,11 +257,10 @@ static void draw_army(const Game *g, const Sprites *s) {
 
         if (!filled) continue;
         const TroopDef *t = troop_by_id(g->army[i].id);
-        if (!t) continue;
+        if (!t || t->index < 0 || t->index >= s->troop_count) continue;
 
-        Texture2D tex =
-            s->troop_anim[t->index][sprites_frame(anim_tick,
-                                                 s->troop_anim_frames[t->index])];
+        Texture2D tex = sprites_strip(s->troop_anim[t->index],
+                                      s->troop_anim_frames[t->index], anim_tick);
         if (!tex.id) tex = s->troop_sprite[t->index];
         ui_blit(tex, vx + pad, ry, sprite_w, sprite_h);
 
@@ -402,12 +402,12 @@ static void draw_contract(const Game *g, const Sprites *s) {
     ty = panel_y + pad;
 
     const VillainDef *v = villain_by_id(g->contract.active_id);
-    if (!v) return;
+    if (!v || v->index < 0 || v->index >= s->villain_count) return;
 
     // Villain portrait on left (animated when strip is available).
-    int frame = sprites_frame((int)(GetTime() * 2.0),
-                              s->villain_anim_frames[v->index]);
-    Texture2D face = s->villain_anim[v->index][frame];
+    Texture2D face = sprites_strip(s->villain_anim[v->index],
+                                   s->villain_anim_frames[v->index],
+                                   (int)(GetTime() * 2.0));
     if (!face.id) face = s->villain_portrait[v->index];
     int face_w = CL_TILE_W;
     int face_h = CL_TILE_H;
@@ -456,7 +456,7 @@ static void draw_contract(const Game *g, const Sprites *s) {
     // Castle -- populated from castle catalog when contract.active has a
     // known castle (owner_kind == CASTLE_OWNER_VILLAIN, villain_id ==).
     const char *castle_name = ui->cv_castle_unknown;
-    for (int i = 0; i < GAME_CASTLES; i++) {
+    for (int i = 0; i < g->castle_count; i++) {
         if (!g->castles[i].id[0]) continue;
         if (g->castles[i].owner_kind != CASTLE_OWNER_VILLAIN) continue;
         if (strcmp(g->castles[i].villain_id, v->id) != 0) continue;
@@ -611,12 +611,13 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
             if (id < 0) {
                 int artifact_id = -id - 1;
                 caught = g->artifacts.found[artifact_id];
-                face = s->view_icon[artifact_id];
+                if (artifact_id < s->view_icon_count) face = s->view_icon[artifact_id];
             } else {
                 caught = g->contract.villains_caught[id];
-                face = s->villain_anim[id]
-                        [sprites_frame(anim_tick, s->villain_anim_frames[id])];
-                if (!face.id) face = s->villain_portrait[id];
+                if (id < s->villain_count) {
+                    face = sprites_strip(s->villain_anim[id], s->villain_anim_frames[id], anim_tick);
+                    if (!face.id) face = s->villain_portrait[id];
+                }
             }
             // Animation gate.
             if (reveal_step < seq[j][i]) caught = false;
@@ -712,7 +713,7 @@ static int worldmap_current_zone_index(const Game *g) {
 
 static bool worldmap_has_orb(const Game *g) {
     int zi = worldmap_current_zone_index(g);
-    if (zi < 0 || zi >= GAME_CONTINENTS) return false;
+    if (zi < 0 || zi >= g->world.zone_count) return false;
     return g->world.orbs_found[zi];
 }
 

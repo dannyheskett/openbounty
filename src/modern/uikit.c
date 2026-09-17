@@ -336,14 +336,16 @@ static ML_Rect message_rect(void) {
 
 int uk_message_text_w(void) { return message_rect().w - 2 * UK_INSET; }
 
-// The centred card is UK_INLAY_W wide, never the whole screen, so its words
-// wrap narrower than a map message's.
-int uk_ask_over_text_w(void) {
-    ML_Rect full = ml_area();
-    int w = UK_INLAY_W;
-    if (w > full.w - 2 * ml_space()) w = full.w - 2 * ml_space();
-    return w - 2 * UK_INSET;
+// The span uk_ask_over draws across: the battlefield in combat, else the area,
+// less the same margin a map message keeps from the map pane's edges.
+static ML_Rect ask_over_rect(void) {
+    ML_Rect a;
+    if (!ml_field(&a)) a = ml_area();
+    int sp = ml_space();
+    return (ML_Rect){ a.x + sp, a.y, a.w - 2 * sp, a.h - sp };
 }
+
+int uk_ask_over_text_w(void) { return ask_over_rect().w - 2 * UK_INSET; }
 
 // The title, wrapped to `w` and cut to UK_ASK_TITLE_LINES: how many lines it
 // takes, written into `out` when it is given. A title may arrive with its own
@@ -399,14 +401,13 @@ void uk_ask(const char *title, const char *const lines[], int n_lines,
 
 void uk_ask_over(const char *title, const char *const lines[], int n_lines,
                  int n_rows, int cursor, MlRowFn fn, void *ctx, int touch_list) {
-    ML_Rect full = ml_area();
+    // The map message's shape on the foot of the battlefield, at its width.
+    ML_Rect a = ask_over_rect();
     if (n_rows > UK_ASK_ROWS) n_rows = UK_ASK_ROWS;
-    ML_Rect a = { full.x + (full.w - UK_INLAY_W) / 2, full.y, UK_INLAY_W, full.h };
-    if (a.w > full.w - 2 * ml_space()) { a.w = full.w - 2 * ml_space(); a.x = full.x + ml_space(); }
     int h = ask_height(a, title, n_lines, n_rows);
-    if (h > full.h) h = full.h;
+    if (h > a.h) h = a.h;
     uk_dim();
-    ask_draw(a, full.y + (full.h - h) / 2, h, title, lines, n_lines, n_rows, cursor, fn, ctx, touch_list);
+    ask_draw(a, a.y + a.h - h, h, title, lines, n_lines, n_rows, cursor, fn, ctx, touch_list);
 }
 
 // ---- in-lays -----------------------------------------------------------------------

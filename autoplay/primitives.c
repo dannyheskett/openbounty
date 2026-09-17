@@ -272,7 +272,7 @@ static bool exec_ensure_contract(ExecCtx *ctx, const char *villain_id,
     Game *g = ctx->g;
     const VillainDef *v = villain_by_id(villain_id);
     if (!v) return false;
-    if (v->index >= 0 && v->index < CAT_VILLAINS_MAX &&
+    if (v->index >= 0 && v->index < ctx->g->contract.villain_count &&
         g->contract.villains_caught[v->index])
         return true;
     if (g->contract.active_id[0] &&
@@ -284,9 +284,9 @@ static bool exec_ensure_contract(ExecCtx *ctx, const char *villain_id,
         return false;
     }
     // Take contracts at the nearest town until the cycle lands on the villain.
-    NavPoint towns[GAME_TOWNS];
+    NavPoint towns[AP_TOWNS_MAX];
     int n = 0;
-    for (int i = 0; i < ctx->res->town_count && n < GAME_TOWNS; i++) {
+    for (int i = 0; i < ctx->res->town_count && n < AP_TOWNS_MAX; i++) {
         const ResTown *t = &ctx->res->towns[i];
         int zi = zone_index_of(ctx->res, t->zone);
         if (zi < 0) continue;
@@ -511,9 +511,9 @@ static bool exec_town_buy_siege(ExecCtx *ctx, ExecCause *out_cause,
             return false;
         }
     }
-    NavPoint towns[GAME_TOWNS];
+    NavPoint towns[AP_TOWNS_MAX];
     int n = 0;
-    for (int i = 0; i < ctx->res->town_count && n < GAME_TOWNS; i++) {
+    for (int i = 0; i < ctx->res->town_count && n < AP_TOWNS_MAX; i++) {
         const ResTown *t = &ctx->res->towns[i];
         int zi = zone_index_of(ctx->res, t->zone);
         if (zi < 0) continue;
@@ -566,7 +566,7 @@ static bool siege_or_slay(ExecCtx *ctx, const PlanStep *step,
     } else {
         // A villain step's handle is the villain id; find its castle.
         if (step->kind == STEP_VILLAIN) {
-            for (int i = 0; i < GAME_CASTLES; i++) {
+            for (int i = 0; i < g->castle_count; i++) {
                 if (g->castles[i].id[0] &&
                     g->castles[i].owner_kind == CASTLE_OWNER_VILLAIN &&
                     strcmp(g->castles[i].villain_id, step->handle) == 0) {
@@ -661,11 +661,11 @@ static bool siege_or_slay(ExecCtx *ctx, const PlanStep *step,
             if (!gsd2 || g->stats.gold < 2 * gsd2->cost ||
                 spell_charges(g, cg2) >= GATE_LAW_MIN_CHARGES)
                 continue;
-            GateDestination gd[GAME_GATE_DESTS_MAX];
+            GateDestination gd[AP_GATE_DESTS_MAX];
             int gn = GameGateDestinations(g,
                                           town3 ? GATE_DEST_TOWN
                                                 : GATE_DEST_CASTLE,
-                                          gd, GAME_GATE_DESTS_MAX);
+                                          gd, AP_GATE_DESTS_MAX);
             bool in_zone = false;
             for (int gi4 = 0; gi4 < gn && !in_zone; gi4++)
                 if (zone_index_of(ctx->res, gd[gi4].zone) ==

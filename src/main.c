@@ -529,8 +529,8 @@ int shell_run_game(int argc, char **argv) {
             return 1;
         }
     } else {
-        PackEntry entries[PACK_DISCOVER_MAX];
-        int n = pack_discover(entries, PACK_DISCOVER_MAX);
+        PackEntry *entries = NULL;
+        int n = pack_discover(&entries);
         if (n == 0) {
             // Final fallback: a fresh first-run KB.EXE extract from cwd.
             // Output goes to <user-data>/openbounty/<id>.openbounty so
@@ -643,10 +643,12 @@ int shell_run_game(int argc, char **argv) {
             int chosen = 0;
             if (!pack_select_flow(entries, n, &chosen)) {
                 // User pressed ESC.
+                free(entries);
                 return 0;
             }
             snprintf(pack_path, sizeof pack_path, "%s", entries[chosen].path);
         }
+        free(entries);
     }
 
     Pack *pack = pack_open(pack_path);
@@ -797,11 +799,10 @@ title:;
 
     back_to_title = false;
 
-    Map map;
-    Fog fog;
-    FogInit(&fog);
+    Map map = { 0 };
+    Fog fog = { 0 };
 
-    Game game;
+    Game game = { 0 };
     game.res = &res;
     if (choice.action == STARTUP_NEW) {
         // Class id -> pclass index comes straight from the ClassDef catalog.
@@ -1501,7 +1502,7 @@ title:;
                         zi = i; break;
                     }
                 }
-                has_orb = (zi >= 0 && zi < GAME_CONTINENTS && game.world.orbs_found[zi]);
+                has_orb = (zi >= 0 && zi < game.world.zone_count && game.world.orbs_found[zi]);
                 if (has_orb && CL_IS_MODERN) {
                     SelList l = { 1, 0 };
                     worldmap_row = sel_input(&l, TOUCH_LIST_PROMPT, 0, NULL) == SEL_CONFIRM;
@@ -1635,7 +1636,7 @@ title:;
                 // Free-running tick: each sprite strip folds this onto its
                 // own declared cycle length at draw time, so the counter
                 // must not assume any particular frame count here.
-                game.anim_frame = (game.anim_frame + 1) % OB_ANIM_TICK_WRAP;
+                game.anim_frame = ob_anim_tick(game.anim_frame);
             } else {
                 game.anim_frame = 0;   // idle pose
             }
@@ -1678,6 +1679,9 @@ title:;
         dialog_dismiss();
         prompt_dismiss();
         pending_reset();
+        MapFree(&map);
+        FogFree(&fog);
+        GameFree(&game);
         goto title;
     }
 
@@ -1696,6 +1700,9 @@ title:;
     bfont_shutdown();
     sprites_unload(&sprites);
     lattice_shutdown();
+    MapFree(&map);
+    FogFree(&fog);
+    GameFree(&game);
     CloseWindow();
     resources_free(&res);
     pack_stack_clear();

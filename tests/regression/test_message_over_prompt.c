@@ -68,7 +68,7 @@ TEST step_can_leave_a_message_queued_under_a_live_prompt(void) {
     ASSERTm("the emit site opened the attack prompt", prompt_is_active());
 
     clear_shell_state(g);
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 
@@ -100,7 +100,7 @@ TEST prompt_dispatch_defers_while_a_message_dialog_is_up(void) {
             dialog_is_active());
 
     clear_shell_state(g);
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 
@@ -124,7 +124,7 @@ TEST prompt_dispatch_resumes_after_the_dialog_is_dismissed(void) {
     ASSERT(prompt_is_active());
 
     clear_shell_state(g);
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 

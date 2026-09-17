@@ -139,27 +139,27 @@ static void draw_dialog_ex(DialogMode mode) {
 
 // A portrait's current frame (animated), or nothing.
 static Texture2D portrait_frame(const Sprites *s, int idx, double fps) {
-    if (!s || idx < 0 || s->portrait_frames[idx] <= 0) return (Texture2D){ 0 };
-    return s->portrait_anim[idx][sprites_frame((int)(GetTime() * fps), s->portrait_frames[idx])];
+    if (!s || idx < 0 || idx >= s->portrait_count || s->portrait_frames[idx] <= 0) return (Texture2D){ 0 };
+    return sprites_strip(s->portrait_anim[idx], s->portrait_frames[idx], (int)(GetTime() * fps));
 }
 
 static Texture2D villain_face(const Sprites *s, int idx) {
-    if (!s || idx < 0 || idx >= 17) return (Texture2D){ 0 };
+    if (!s || idx < 0 || idx >= s->villain_count) return (Texture2D){ 0 };
     Texture2D face = s->villain_anim_frames[idx] > 0
-        ? s->villain_anim[idx][sprites_frame((int)(GetTime() * 2.0), s->villain_anim_frames[idx])]
+        ? sprites_strip(s->villain_anim[idx], s->villain_anim_frames[idx], (int)(GetTime() * 2.0))
         : s->villain_portrait[idx];
     return face.id ? face : s->villain_portrait[idx];
 }
 
 static Texture2D troop_face(const Sprites *s, int idx) {
-    if (!s || idx < 0 || idx >= 25) return (Texture2D){ 0 };
+    if (!s || idx < 0 || idx >= s->troop_count) return (Texture2D){ 0 };
     return s->troop_portrait[idx].id ? s->troop_portrait[idx] : s->troop_sprite[idx];
 }
 
 static Texture2D troop_standing(const Sprites *s, int idx) {
-    if (!s || idx < 0 || idx >= 25) return (Texture2D){ 0 };
-    Texture2D t = s->troop_anim[idx][sprites_frame(sprites_stand((int)(GetTime() * 6.66)),
-                                                   s->troop_anim_frames[idx])];
+    if (!s || idx < 0 || idx >= s->troop_count) return (Texture2D){ 0 };
+    Texture2D t = sprites_strip(s->troop_anim[idx], s->troop_anim_frames[idx],
+                                sprites_stand((int)(GetTime() * 6.66)));
     return t.id ? t : s->troop_sprite[idx];
 }
 
@@ -174,9 +174,9 @@ static void draw_face_dialog(void) {
     Texture2D face = { 0 };
     if (kind == REQ_FACE_VILLAIN)                                 face = villain_face(s, idx);
     else if (kind == REQ_FACE_TROOP)                              face = troop_face(s, idx);
-    else if (kind == REQ_FACE_ARTIFACT && s && idx >= 0 && idx < 8) face = s->view_icon[idx];
+    else if (kind == REQ_FACE_ARTIFACT && s && idx >= 0 && idx < s->view_icon_extra_base) face = s->view_icon[idx];
     else if (kind == REQ_FACE_PORTRAIT)                           face = portrait_frame(s, idx, 2.0);
-    if (kind == REQ_FACE_SCENE && s && idx >= 0 && idx < 4 && s->class_disgraced[idx].id) {
+    if (kind == REQ_FACE_SCENE && s && idx >= 0 && idx < s->class_count && s->class_disgraced[idx].id) {
         // A scene, framed like a place: the title strip, the backdrop at 3x
         // with the lattice either side, a divider, the words, Continue.
         const char *hdr = dialog_header_text();
@@ -244,7 +244,7 @@ static void draw_location_backdrop(const Game *g, const Sprites *s,
     }
     Texture2D fig = { 0 };
     if (kind == LOC_ALCOVE && s && s->alcove_figure.id) {
-        fig = s->alcove_figure_anim[sprites_frame(troop_frame, s->alcove_figure_frames)];
+        fig = sprites_strip(s->alcove_figure_anim, s->alcove_figure_frames, troop_frame);
         if (!fig.id) fig = s->alcove_figure;
     }
     const Resources *r = (g && g->res) ? g->res : NULL;
@@ -256,9 +256,9 @@ static void draw_location_backdrop(const Game *g, const Sprites *s,
         return;
     }
     Texture2D ts = fig;
-    if (!ts.id && s && troop_idx >= 0 && troop_idx < 25) {
-        int frame = sprites_frame(sprites_stand(troop_frame), s->troop_anim_frames[troop_idx]);
-        ts = s->troop_anim[troop_idx][frame];
+    if (!ts.id && s && troop_idx >= 0 && troop_idx < s->troop_count) {
+        ts = sprites_strip(s->troop_anim[troop_idx], s->troop_anim_frames[troop_idx],
+                           sprites_stand(troop_frame));
         if (!ts.id) ts = s->troop_sprite[troop_idx];
     }
     if (ts.id && ts.width > 0)
@@ -279,16 +279,21 @@ void modern_overlay_draw_location_backdrop(const Game *g, const Sprites *s,
 
 static int town_backdrop_troop(const Game *g, const char *key) {
     int nt = troops_count();
-    int pool[32];
     int npool = 0;
-    for (int i = 0; i < nt && npool < 32; i++) {
+    for (int i = 0; i < nt; i++) {
         const TroopDef *t = troop_by_index(i);
-        if (t && strcmp(t->dwelling, "castle") == 0) pool[npool++] = i;
+        if (t && strcmp(t->dwelling, "castle") == 0) npool++;
     }
     unsigned long h = g ? g->seed ^ 0xA1B2C3u : 0;
     for (const char *p = key; p && *p; p++) h = h * 131u + (unsigned char)*p;
     if (npool < 1) return nt > 0 ? (int)(h % (unsigned long)nt) : 0;
-    return pool[h % (unsigned long)npool];
+    // The pick-th castle troop in catalog order.
+    int pick = (int)(h % (unsigned long)npool);
+    for (int i = 0; i < nt; i++) {
+        const TroopDef *t = troop_by_index(i);
+        if (t && strcmp(t->dwelling, "castle") == 0 && pick-- == 0) return i;
+    }
+    return 0;
 }
 
 // The contract to describe: the Contracts list row under the cursor, else the
@@ -315,7 +320,7 @@ static void compose_contract(const Game *g, const VillainDef *v, UkDoc *d) {
     const ResZone *z = resources_zone_by_id(res, v->zone);
     uk_doc_labeled(d, ui->cv_label_last_seen, (z && z->name[0]) ? z->name : v->zone);
     snprintf(val, sizeof val, "%s", ui->cv_castle_unknown);
-    for (int i = 0; i < GAME_CASTLES; i++) {
+    for (int i = 0; i < g->castle_count; i++) {
         const CastleRecord *c = &g->castles[i];
         if (!c->known || strcmp(c->villain_id, v->id) != 0) continue;
         const ResCastle *rc = resources_castle_by_id(res, c->id);
@@ -611,12 +616,11 @@ static void castle_fmt(char *out, int cap, const char *tmpl, const char *count, 
 }
 
 static int castle_pick_troop(const Game *g, const char *key) {
-    int pool[8];
-    int n = modern_castle_pool(pool, 8);
+    int n = modern_castle_pool_count();
     if (n < 1) return -1;
     unsigned long h = g ? (g->seed ^ 0x0CA571E5u) : 0;
     for (const char *p = key; p && *p; p++) h = h * 131u + (unsigned char)*p;
-    return pool[h % (unsigned long)n];
+    return modern_castle_pool_troop((int)(h % (unsigned long)n));
 }
 
 static void castle_gains(const Game *g, int rank, UkDoc *d) {
@@ -940,7 +944,7 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
         const ResEconomy *ec = &res->economy;
         if (ec->audiences && cursor == 1) {
             snprintf(nb, sizeof nb, "%d", GameArtifactsFound(g));
-            snprintf(mb, sizeof mb, "%d", artifacts_count() < 8 ? artifacts_count() : 8);
+            snprintf(mb, sizeof mb, "%d", artifacts_count());
             castle_fmt(buf, sizeof buf, bn->castle_artifacts, nb, mb);
             uk_doc_add(&d, buf, PAL_CLR(WHITE));
         } else if (ec->audiences && cursor == 2) {
@@ -1336,7 +1340,7 @@ void modern_overlay_draw_temple(const Game *g, const Sprites *s) {
     UkScene L = uk_scene_for_doc(bn->temple_title, gold, loc_texture(s, LOC_ALCOVE), result ? 1 : 2, &d, 0);
     if (s && s->alcove_figure.id && res->sprites.alcove_figure_w > 0) {
         int ms = res->sprites.alcove_figure_frame_ms > 0 ? res->sprites.alcove_figure_frame_ms : 180;
-        Texture2D fig = s->alcove_figure_anim[sprites_frame((int)(GetTime() * 1000.0 / ms), s->alcove_figure_frames)];
+        Texture2D fig = sprites_strip(s->alcove_figure_anim, s->alcove_figure_frames, (int)(GetTime() * 1000.0 / ms));
         if (!fig.id) fig = s->alcove_figure;
         uk_scene_blit(&L, fig, res->sprites.alcove_figure_x, res->sprites.alcove_figure_y,
                       res->sprites.alcove_figure_w, res->sprites.alcove_figure_h);

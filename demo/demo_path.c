@@ -15,8 +15,8 @@
 #include "adventure.h"
 #include "tile.h"
 
-#define DP_W MAP_MAX_W
-#define DP_H MAP_MAX_H
+#define DP_W DEMO_MAP_W
+#define DP_H DEMO_MAP_H
 #define DP_CELLS (DP_W * DP_H)
 #define DP_FOOT 0
 #define DP_BOAT 1
@@ -96,6 +96,7 @@ static bool dp_bfs(const Game *g, const Map *map, const Fog *fog,
     dp_build_avoid(g, fog);
 
     int hx = g->position.x, hy = g->position.y;
+    if (hx < 0 || hx >= DP_W || hy < 0 || hy >= DP_H) return false;
     int hlayer = (g->travel_mode == TRAVEL_BOAT) ? DP_BOAT : DP_FOOT;
     int hc = hy * DP_W + hx;
     if (goal == hc) { if (out_dx) *out_dx = 0; if (out_dy) *out_dy = 0; return true; }
@@ -199,7 +200,7 @@ int demo_field_dist(const DemoField *pf, const Map *map, int x, int y) {
 
 bool demo_path_step(const Game *g, const Map *map, const Fog *fog,
                     int gx, int gy, int *dx, int *dy) {
-    if (!MapInBounds(map, gx, gy)) return false;
+    if (!MapInBounds(map, gx, gy) || gx >= DP_W || gy >= DP_H) return false;
     return dp_bfs(g, map, fog, gy * DP_W + gx, NULL, dx, dy);
 }
 

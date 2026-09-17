@@ -22,7 +22,7 @@
 #define GB_RECENT_MAX     8
 #define GB_STATUS_MAX   256
 #define GB_UNDO_MAX     256
-#define GB_MAX_ZONES    RES_MAX_ZONES
+#define GB_MAX_ZONES    8        // GameBuilder's own editing grids; revisited in the limits audit
 
 // --- workspace ---------------------------------------------------------------
 

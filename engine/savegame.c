@@ -68,7 +68,7 @@ static bool decode_fog_row(Fog *fog, int row, int width, const char *s) {
         for (int b = 0; b < 4; b++) {
             int x = n * 4 + b;
             if (x >= width) break;
-            fog->seen[row][x] = (v >> (3 - b)) & 1;
+            FogSet(fog, x, row, (v >> (3 - b)) & 1);
         }
     }
     return true;
@@ -154,9 +154,9 @@ SaveResult SaveGameRead(const char *path,
         cJSON_Delete(root); return SAVE_ERR_PACK;
     }
 
-    const Resources *keep_res = g->res;
-    memset(g, 0, sizeof(*g));
-    g->res = keep_res;
+    // Every table sized from the pack, zeroed (the Game must be zeroed or
+    // previously sized).
+    if (!GameAlloc(g)) { cJSON_Delete(root); return SAVE_ERR_PARSE; }
     g->version = SAVE_VERSION;
 
     // Catalog games re-derive the seed from the stored index, so the world is
@@ -292,7 +292,7 @@ SaveResult SaveGameRead(const char *path,
     // Spells.
     cJSON *jsp = cJSON_GetObjectItem(root, "spells");
     if (cJSON_IsObject(jsp)) {
-        for (int i = 0; i < spells_count() && i < 14; i++) {
+        for (int i = 0; i < g->spells.count; i++) {
             const SpellDef *sd = spell_by_index(i);
             if (!sd) continue;
             cJSON *c = cJSON_GetObjectItem(jsp, sd->id);
@@ -310,7 +310,7 @@ SaveResult SaveGameRead(const char *path,
             int i = 0;
             cJSON *it;
             cJSON_ArrayForEach(it, jcycle) {
-                if (i >= 5) break;
+                if (i >= g->contract.cycle_count) break;
                 copy_json_string(g->contract.cycle[i], sizeof(g->contract.cycle[i]), it);
                 i++;
             }
@@ -325,7 +325,7 @@ SaveResult SaveGameRead(const char *path,
             cJSON_ArrayForEach(it, jcaught) {
                 if (!cJSON_IsString(it)) continue;
                 const VillainDef *v = villain_by_id(it->valuestring);
-                if (v) g->contract.villains_caught[v->index] = true;
+                if (v && v->index < g->contract.villain_count) g->contract.villains_caught[v->index] = true;
             }
         }
         cJSON *jpre = cJSON_GetObjectItem(jct, "villains_prefought");
@@ -334,7 +334,7 @@ SaveResult SaveGameRead(const char *path,
             cJSON_ArrayForEach(it, jpre) {
                 if (!cJSON_IsString(it)) continue;
                 const VillainDef *v = villain_by_id(it->valuestring);
-                if (v) g->contract.villains_prefought[v->index] = true;
+                if (v && v->index < g->contract.villain_count) g->contract.villains_prefought[v->index] = true;
             }
         }
     }
@@ -348,7 +348,7 @@ SaveResult SaveGameRead(const char *path,
             cJSON_ArrayForEach(it, jfound) {
                 if (!cJSON_IsString(it)) continue;
                 const ArtifactDef *a = artifact_by_id(it->valuestring);
-                if (a) g->artifacts.found[a->index] = true;
+                if (a && a->index < g->artifacts.count) g->artifacts.found[a->index] = true;
             }
         }
     }
@@ -364,7 +364,7 @@ SaveResult SaveGameRead(const char *path,
                 const ResZone *z = resources_zone_by_id(g->res, it->valuestring);
                 if (z && g->res) {
                     int i = (int)(z - g->res->zones);
-                    if (i >= 0 && i < GAME_CONTINENTS)
+                    if (i >= 0 && i < g->world.zone_count)
                         g->world.zones_discovered[i] = true;
                 }
             }
@@ -375,7 +375,7 @@ SaveResult SaveGameRead(const char *path,
             cJSON_ArrayForEach(it, jrites) {
                 if (!cJSON_IsString(it) || !g->res) continue;
                 int i = resources_zone_index(g->res, it->valuestring);
-                if (i >= 0 && i < GAME_CONTINENTS) g->world.zone_rites[i] = true;
+                if (i >= 0 && i < g->world.zone_count) g->world.zone_rites[i] = true;
             }
         }
         cJSON *jorbs = cJSON_GetObjectItem(jw, "orbs_found");
@@ -386,7 +386,7 @@ SaveResult SaveGameRead(const char *path,
                 const ResZone *z = resources_zone_by_id(g->res, it->valuestring);
                 if (z && g->res) {
                     int i = (int)(z - g->res->zones);
-                    if (i >= 0 && i < GAME_CONTINENTS)
+                    if (i >= 0 && i < g->world.zone_count)
                         g->world.orbs_found[i] = true;
                 }
             }
@@ -417,7 +417,7 @@ SaveResult SaveGameRead(const char *path,
         int i = 0;
         cJSON *it;
         cJSON_ArrayForEach(it, jtowns) {
-            if (i >= GAME_TOWNS) break;
+            if (i >= g->town_count) break;
             copy_json_string(g->towns[i].id, sizeof(g->towns[i].id),
                              cJSON_GetObjectItem(it, "id"));
             cJSON *jv = cJSON_GetObjectItem(it, "visited");
@@ -434,7 +434,7 @@ SaveResult SaveGameRead(const char *path,
         int i = 0;
         cJSON *it;
         cJSON_ArrayForEach(it, jcastles) {
-            if (i >= GAME_CASTLES) break;
+            if (i >= g->castle_count) break;
             copy_json_string(g->castles[i].id, sizeof(g->castles[i].id),
                              cJSON_GetObjectItem(it, "id"));
             cJSON *jv = cJSON_GetObjectItem(it, "visited");
@@ -476,7 +476,7 @@ SaveResult SaveGameRead(const char *path,
     if (cJSON_IsArray(jconsumed)) {
         cJSON *m;
         cJSON_ArrayForEach(m, jconsumed) {
-            if (g->consumed_count >= GAME_MAX_MUTATIONS) break;
+            if (!GameReserveConsumed(g, g->consumed_count + 1)) break;
             cJSON *jz = cJSON_GetObjectItem(m, "zone");
             if (!cJSON_IsString(jz)) jz = cJSON_GetObjectItem(m, "continent");
             cJSON *jx = cJSON_GetObjectItem(m, "x");
@@ -501,7 +501,7 @@ SaveResult SaveGameRead(const char *path,
     if (cJSON_IsArray(jplacements)) {
         cJSON *m;
         cJSON_ArrayForEach(m, jplacements) {
-            if (g->placement_count >= GAME_MAX_PLACEMENTS) break;
+            if (!GameReservePlacements(g, g->placement_count + 1)) break;
             cJSON *jz = cJSON_GetObjectItem(m, "zone");
             cJSON *jx = cJSON_GetObjectItem(m, "x");
             cJSON *jy = cJSON_GetObjectItem(m, "y");
@@ -526,7 +526,7 @@ SaveResult SaveGameRead(const char *path,
     if (cJSON_IsArray(jfoes)) {
         cJSON *m;
         cJSON_ArrayForEach(m, jfoes) {
-            if (g->foe_count >= GAME_MAX_FOES) break;
+            if (!GameReserveFoes(g, g->foe_count + 1)) break;
             cJSON *jz = cJSON_GetObjectItem(m, "zone");
             cJSON *jx = cJSON_GetObjectItem(m, "x");
             cJSON *jy = cJSON_GetObjectItem(m, "y");
@@ -587,7 +587,7 @@ SaveResult SaveGameRead(const char *path,
     if (cJSON_IsArray(jdwell)) {
         cJSON *m;
         cJSON_ArrayForEach(m, jdwell) {
-            if (g->dwelling_count >= GAME_MAX_DWELLINGS) break;
+            if (!GameReserveDwellings(g, g->dwelling_count + 1)) break;
             cJSON *jz = cJSON_GetObjectItem(m, "zone");
             cJSON *jx = cJSON_GetObjectItem(m, "x");
             cJSON *jy = cJSON_GetObjectItem(m, "y");
@@ -613,7 +613,7 @@ SaveResult SaveGameRead(const char *path,
     // older saves only have the active zone's entry -- the rest stay
     // zero-initialized, which is correct for "not yet visited".
     FogInit(fog);
-    for (int zi = 0; zi < GAME_CONTINENTS; zi++) {
+    for (int zi = 0; zi < g->world.zone_count; zi++) {
         FogInit(&g->world.continent_fog[zi]);
     }
     cJSON *jmstate = cJSON_GetObjectItem(root, "map_state");
@@ -626,12 +626,14 @@ SaveResult SaveGameRead(const char *path,
             const ResZone *rz = resources_zone_by_id(g->res, child->string);
             if (!rz) continue;
             int zi = (int)(rz - g->res->zones);
-            if (zi < 0 || zi >= GAME_CONTINENTS) continue;
+            if (zi < 0 || zi >= g->world.zone_count) continue;
             int fog_w = rz->width;
             int fog_h = rz->height;
             cJSON *rows = cJSON_GetObjectItem(child, "fog");
             if (!cJSON_IsArray(rows)) continue;
             Fog *dst = &g->world.continent_fog[zi];
+            if (!FogSize(dst, fog_w, fog_h)) { cJSON_Delete(root); return SAVE_ERR_PARSE; }
+            FogInit(dst);
             int y = 0;
             cJSON *row;
             cJSON_ArrayForEach(row, rows) {
@@ -644,7 +646,7 @@ SaveResult SaveGameRead(const char *path,
             }
             // The active zone's snapshot is also the live fog.
             if (strcmp(child->string, active) == 0) {
-                *fog = *dst;
+                FogCopy(fog, dst);
             }
         }
     }

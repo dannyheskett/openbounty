@@ -203,11 +203,11 @@ void uk_card(const UkCard *c, UkCardOut *out);
 #define UK_ASK_ROWS      6
 #define UK_MESSAGE_LINES 6          // a message's body lines per page
 int  uk_message_text_w(void);       // the width its words wrap to
-int  uk_ask_over_text_w(void);      // the same, for uk_ask_over's card
+int  uk_ask_over_text_w(void);      // the same, for uk_ask_over
 void uk_ask(const char *title, const char *const lines[], int n_lines,
             int n_rows, int cursor, MlRowFn fn, void *ctx, int touch_list);
-// The same shape over a screen or the battlefield: a card centred on the dimmed
-// area instead of a band on the map pane's foot. The combat helper.
+// The same shape on the foot of the battlefield, at its width (the area's,
+// outside combat), over the dimmed field. The combat helper.
 void uk_ask_over(const char *title, const char *const lines[], int n_lines,
                  int n_rows, int cursor, MlRowFn fn, void *ctx, int touch_list);
 

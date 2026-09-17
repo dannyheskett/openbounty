@@ -18,8 +18,8 @@
 
 #include <stdbool.h>
 
-#define MAPEDIT_MAX_W MAP_MAX_W
-#define MAPEDIT_MAX_H MAP_MAX_H
+#define MAPEDIT_MAX_W 64    // GameBuilder's own editing grid; revisited in the limits audit
+#define MAPEDIT_MAX_H 128
 
 // One authored tile. `terrain` is what the author paints; `variant` is
 // derived by the furnish pass and is never edited directly.

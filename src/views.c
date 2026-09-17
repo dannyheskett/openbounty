@@ -98,9 +98,8 @@ bool views_spells_update(void) {
 // snapshotted on open so the renderer/input never touch game state. Navigation:
 // Up/Down moves within a column, Left/Right jumps columns, Enter confirms the
 // cursor, a letter jumps straight to that row, Esc cancels.
-#define GATE_VIEW_MAX 26
 static struct {
-    GateDestination list[GATE_VIEW_MAX];
+    GateDestination *list;   // heap, count entries
     int  count;
     bool is_town;
     int  cursor;       // 0..count-1
@@ -108,8 +107,10 @@ static struct {
 } gate_view = { 0 };
 
 void views_gate_open(const GateDestination *dests, int count, bool is_town) {
-    if (count > GATE_VIEW_MAX) count = GATE_VIEW_MAX;
     if (count < 0) count = 0;
+    free(gate_view.list);
+    gate_view.list = count > 0 ? malloc((size_t)count * sizeof *gate_view.list) : NULL;
+    if (!gate_view.list) count = 0;
     for (int i = 0; i < count; i++) gate_view.list[i] = dests[i];
     gate_view.count = count;
     gate_view.is_town = is_town;
@@ -591,7 +592,7 @@ static void town_format_row(const Game *g, TownRow r, char *out, size_t n) {
             break;
         case TOWN_ROW_SPELL: {
             const TownRecord *t = NULL;
-            for (int i = 0; i < GAME_TOWNS; i++) {
+            for (int i = 0; i < g->town_count; i++) {
                 if (strcmp(g->towns[i].id, town.record_key) == 0) {
                     t = &g->towns[i];
                     break;
@@ -932,9 +933,7 @@ static void town_do_row(Game *g, TownRow r) {
 // the keys: a result message shows in the detail panel until the next key.
 
 static int town_cycle_len(const Game *g) {
-    int n = g->res->contract.cycle_length;
-    if (n < 1) n = 1;
-    return n > CONTRACT_CYCLE_MAX ? CONTRACT_CYCLE_MAX : n;
+    return g->contract.cycle_count;
 }
 
 int views_town_contract_slot(const Game *g, int row) {
@@ -947,7 +946,7 @@ int views_town_contract_slot(const Game *g, int row) {
 }
 
 static const TownRecord *town_record(const Game *g) {
-    for (int i = 0; i < GAME_TOWNS; i++)
+    for (int i = 0; i < g->town_count; i++)
         if (strcmp(g->towns[i].id, town.record_key) == 0) return &g->towns[i];
     return NULL;
 }
@@ -1366,7 +1365,7 @@ TownConfirm views_town_take_confirm(const Game *g, char *body, int cap) {
             break;
         case TOWN_CONFIRM_SPELL: {
             const SpellDef *sp = NULL;
-            for (int i = 0; i < GAME_TOWNS; i++)
+            for (int i = 0; i < g->town_count; i++)
                 if (strcmp(g->towns[i].id, town.record_key) == 0)
                     sp = spell_by_id(g->towns[i].spell_for_sale);
             snprintf(b, sizeof b, "%d", sp ? sp->cost : 0);

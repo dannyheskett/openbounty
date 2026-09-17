@@ -318,8 +318,7 @@ static void draw_location_backdrop(const Game *g, const Sprites *s,
     // one rule for both.
     Texture2D fig = { 0 };
     if (kind == LOC_ALCOVE && s && s->alcove_figure.id) {
-        fig = s->alcove_figure_anim[sprites_frame(troop_frame,
-                                                  s->alcove_figure_frames)];
+        fig = sprites_strip(s->alcove_figure_anim, s->alcove_figure_frames, troop_frame);
         if (!fig.id) fig = s->alcove_figure;
     }
     if (fig.id) {
@@ -336,11 +335,11 @@ static void draw_location_backdrop(const Game *g, const Sprites *s,
             int tw = CL_TILE_W, th = CL_TILE_H;
             ui_blit(fig, bd_x + tw, bd_y + bd_h - th - troop_lift, tw, th);
         }
-    } else if (s && troop_idx >= 0 && troop_idx < 25) {
+    } else if (s && troop_idx >= 0 && troop_idx < s->troop_count) {
         // troop_frame arrives as a free-running tick; the troop's own
         // declared cycle length decides where in the strip that lands.
-        int frame = sprites_frame(troop_frame, s->troop_anim_frames[troop_idx]);
-        Texture2D ts = s->troop_anim[troop_idx][frame];
+        Texture2D ts = sprites_strip(s->troop_anim[troop_idx],
+                                     s->troop_anim_frames[troop_idx], troop_frame);
         if (!ts.id) ts = s->troop_sprite[troop_idx];
         if (ts.id && ts.width > 0) {
             // Tile-shaped: this is the same troop sprite the combat field and

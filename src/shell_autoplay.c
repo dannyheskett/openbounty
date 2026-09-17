@@ -159,7 +159,7 @@ static void animate_pending_combat(ShellCtx *ctx) {
         return;
     static Game tmp;
     static CombatTurnEntry entries[COMBAT_MAX_ROUNDS * 8];
-    tmp = *g;
+    if (!GameCopy(&tmp, g)) return;
     CombatMode mode = (pending_flow == FLOW_ATTACK_FOE) ? COMBAT_MODE_FOE
                                                         : COMBAT_MODE_CASTLE;
     // Re-resolve on the copy with recording (pure fn of seed+identity+mode).

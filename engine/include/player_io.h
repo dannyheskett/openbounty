@@ -13,10 +13,9 @@
 // both consumers is what keeps headless and visible play from diverging.
 //
 // STORAGE: the queue lives INSIDE the Game struct (PlayerIoQueue field), so
-// autoplay's full-world snapshot/restore and save/load capture it
-// automatically and state_serialize reads it from g -- no hidden mutable global.
-// Game stays flat and value-copyable (the queue is a fixed-size array, no owned
-// pointers), so `Game tmp = *g;` remains a sound deep copy.
+// autoplay's full-world snapshot/restore captures it through GameCopy -- no
+// hidden mutable global. Its slots are heap, grown as requests arrive, and
+// released by GameFree.
 //
 // Engine-pure: this header pulls only engine types and is callable from a
 // consumer that links libobengine.a with -lm -lpthread (no shell deps).
@@ -122,15 +121,13 @@ typedef struct {
     bool view_won;                // VIEW_WIN/VIEW_LOSE outcome
 } PlayerRequest;
 
-// Fixed-capacity FIFO held inside Game. Capacity is generous: at most a few
-// requests are ever outstanding (a decision, an info message, a view), but a
-// week-end can chain a couple, so 8 leaves ample headroom while staying small.
-#define PLAYER_IO_QUEUE_CAP 8
-
+// FIFO held inside Game: a ring over heap slots that doubles when full, so no
+// request is ever dropped.
 typedef struct {
-    PlayerRequest slot[PLAYER_IO_QUEUE_CAP];
-    int           head;   // index of the front (oldest) request
-    int           count;  // number of outstanding requests
+    PlayerRequest *slot;   // heap, cap entries
+    int            cap;
+    int            head;   // index of the front (oldest) request
+    int            count;  // number of outstanding requests
 } PlayerIoQueue;
 
 // ---- Lifecycle -------------------------------------------------------------

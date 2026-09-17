@@ -14,10 +14,11 @@
 //     artifact): walkable -- stepping on them fires the handler.
 //   - Bridges: walkable.
 //   - Water: blocked (unless boarding the boat -- caller handles that).
+//   - River: blocked (TerrainWalkable is false for it); a bridge crosses it.
 //   - Castle walls, forest, mountain: blocked (blocks_foot).
 //
 // Boat mode:
-//   - Water / bridge: walkable.
+//   - Water / bridge: walkable. A river is not water: boats stay on the sea.
 //   - Land: walkable (counts as disembark -- caller detects the terrain
 //     change and leaves the boat on the previous water tile).
 bool adventure_walkable_on_foot(const Tile *t) {

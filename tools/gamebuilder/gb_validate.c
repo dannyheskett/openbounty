@@ -62,27 +62,6 @@ static void check_structural(GbFindings *F, GbWorkspace *ws) {
         add(F, GB_TIER_STRUCTURAL, "game.json",
             "The engine could not parse this pack. Fix the errors above, then "
             "reopen.");
-
-    // Catalog caps are compile-time in the engine; exceeding one means the
-    // engine silently drops entries, so name the constant (GB-223).
-    struct { const char *key; int cap; const char *konst; } caps[] = {
-        { "troops",    32, "CAT_TROOPS_MAX"    },
-        { "spells",    32, "CAT_SPELLS_MAX"    },
-        { "artifacts", 16, "CAT_ARTIFACTS_MAX" },
-        { "villains",  32, "CAT_VILLAINS_MAX"  },
-        { "classes",    8, "CAT_CLASSES_MAX"   },
-        { "castles",   32, "RES_MAX_CASTLES"   },
-        { "towns",     32, "RES_MAX_TOWNS"     },
-        { "zones",      8, "RES_MAX_ZONES"     },
-    };
-    for (unsigned i = 0; i < sizeof caps / sizeof *caps; i++) {
-        cJSON *a = cJSON_GetObjectItem(doc, caps[i].key);
-        if (cJSON_IsArray(a) && cJSON_GetArraySize(a) > caps[i].cap)
-            add(F, GB_TIER_STRUCTURAL, caps[i].key,
-                "%d entries exceeds the engine's cap of %d (%s). The extras "
-                "will be dropped at load.",
-                cJSON_GetArraySize(a), caps[i].cap, caps[i].konst);
-    }
 }
 
 // --- referential (GB-302) -----------------------------------------------------

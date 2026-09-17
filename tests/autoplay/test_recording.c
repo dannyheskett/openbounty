@@ -25,7 +25,7 @@ TEST recording_mark_rollback_truncates(void) {
     ASSERT_EQ_FMT(2, recsink()->count, "%d");
     ASSERT_EQ_FMT((int)REC_MOVE, (int)recsink()->prims[1].kind, "%d");
     recsink_free();
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 
@@ -43,7 +43,7 @@ TEST recording_fp_tracks_replay_state(void) {
     // Non-replay state (animation frame) must NOT change it.
     g->anim_frame = 3;
     ASSERT_EQ_FMT(a, rec_world_fp(g), "%u");
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 
@@ -57,7 +57,7 @@ TEST recording_prims_stamp_pre_state(void) {
     ASSERT_EQ_FMT((int)RA_SPEND_WEEK, (int)recsink()->prims[0].action, "%d");
     ASSERT_EQ_FMT(5, recsink()->prims[0].a, "%d");
     recsink_free();
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 

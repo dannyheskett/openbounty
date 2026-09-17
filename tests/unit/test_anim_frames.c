@@ -1,7 +1,7 @@
 // Animation cycle lengths come from the pack, not from a compiled-in 4.
 //
 // Two things are guarded here. First, that a pack CAN declare any cycle
-// length up to OB_ANIM_FRAMES_MAX and the parsed count reflects it. Second,
+// length at all and the parsed count reflects it. Second,
 // and more important, that kings-bounty is completely unaffected: every one
 // of its animations declares exactly four frames, so it keeps the four-frame
 // cycle it has always had.
@@ -204,14 +204,14 @@ TEST kings_bounty_declares_no_idle_and_no_facings(void) {
     PASS();
 }
 
-// ---- The storage ceiling holds ---------------------------------------------
+// ---- No ceiling on a cycle ----------------------------------------------------
 
-TEST tick_wrap_divides_every_supported_cycle(void) {
-    // Counters wrap at OB_ANIM_TICK_WRAP. If any cycle length from 1 to
-    // OB_ANIM_FRAMES_MAX failed to divide it, that cycle would skip frames at
-    // the rollover -- a glitch appearing once every few hours of play.
-    for (int n = 1; n <= OB_ANIM_FRAMES_MAX; n++)
-        ASSERT_EQ_FMT(0, OB_ANIM_TICK_WRAP % n, "%d");
+TEST anim_tick_runs_on_and_wraps_to_zero(void) {
+    // The counter never wraps early, so a cycle of any length plays every frame.
+    ASSERT_EQ(1, ob_anim_tick(0));
+    ASSERT_EQ(720721, ob_anim_tick(720720));
+    ASSERT_EQ(0, ob_anim_tick(0x7fffffff));
+    ASSERT_EQ(0, ob_anim_tick(-5));
     PASS();
 }
 
@@ -227,5 +227,5 @@ SUITE(unit_anim_frames_suite) {
     RUN_TEST(directional_set_tolerates_an_omitted_facing);
     RUN_TEST(flat_and_directional_forms_coexist);
     RUN_TEST(kings_bounty_declares_no_idle_and_no_facings);
-    RUN_TEST(tick_wrap_divides_every_supported_cycle);
+    RUN_TEST(anim_tick_runs_on_and_wraps_to_zero);
 }

@@ -55,6 +55,7 @@ TEST under_control_when_leadership_sufficient(void) {
     ASSERT(unit_under_control(&g, peasants->index, 100));
 
     resources_free(res); free(res);
+    GameFree(&g);
     PASS();
 }
 
@@ -70,6 +71,7 @@ TEST under_control_when_leadership_insufficient(void) {
     ASSERT_FALSE(unit_under_control(&g, peasants->index, 100));
 
     resources_free(res); free(res);
+    GameFree(&g);
     PASS();
 }
 
@@ -80,6 +82,7 @@ TEST under_control_invalid_troop_returns_false(void) {
     ASSERT_FALSE(unit_under_control(&g, /*troop_idx=*/-1, 5));
     ASSERT_FALSE(unit_under_control(&g, 9999, 5));
     resources_free(res); free(res);
+    GameFree(&g);
     PASS();
 }
 

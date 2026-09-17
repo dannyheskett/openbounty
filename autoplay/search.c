@@ -152,9 +152,12 @@ static uint64_t fnv64(uint64_t h, const void *p, size_t n) {
 // Signature of the LIVE world (Game+Map+Fog+rng): the ancestry cycle check.
 static uint64_t sig_live(const ExecCtx *ctx) {
     uint64_t h = 1469598103934665603ULL;
-    h = fnv64(h, ctx->g,   sizeof *ctx->g);
-    h = fnv64(h, ctx->map, sizeof *ctx->map);
-    h = fnv64(h, ctx->fog, sizeof *ctx->fog);
+    // The world's contents through fingerprints: the whole world, and the
+    // Game again under a second seed, for 64 bits.
+    uint32_t w1 = worldsnap_fingerprint(ctx->g, ctx->map, ctx->fog);
+    uint32_t w2 = GameFingerprint(ctx->g, 0x9747b28cu);
+    h = fnv64(h, &w1, sizeof w1);
+    h = fnv64(h, &w2, sizeof w2);
     uint64_t rng = GameRngSnapshot();
     h = fnv64(h, &rng, sizeof rng);
     return h ? h : 1;

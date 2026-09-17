@@ -152,11 +152,10 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
         for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
             if (!g->army[i].id[0] || g->army[i].count <= 0) continue;
             const TroopDef *t = troop_by_id(g->army[i].id);
-            if (t && t->index >= 0 && t->index < 25) {
+            if (t && t->index >= 0 && t->index < s->troop_count) {
                 Texture2D a =
-                    s->troop_anim[t->index]
-                                 [sprites_frame(tick,
-                                                s->troop_anim_frames[t->index])];
+                    sprites_strip(s->troop_anim[t->index],
+                                  s->troop_anim_frames[t->index], tick);
                 if (!a.id) a = s->troop_sprite[t->index];
                 // Troop sprites are single-strip, so flight goes back to the
                 // mirror regardless of what the hero's own art declares.

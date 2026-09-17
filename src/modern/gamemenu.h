@@ -19,6 +19,9 @@
 // Options a page shows at once; a longer page scrolls. Every menu page is
 // this tall, so the panel never changes size from page to page.
 #define GM_PAGE_ROWS 7
+// And this wide, game menu and combat menu alike: the save slots' rows (slot,
+// name, rank, days) are the widest thing a page holds.
+#define GM_PAGE_W 656
 #define GM_DEPTH_MAX 4
 
 typedef struct {
@@ -32,6 +35,7 @@ typedef struct {
 typedef struct {
     const char *title;
     int         n;
+    int         foot;      // the last `foot` items stand on the list's foot, a gap above them
     GmItem      item[GM_ROWS_MAX];
 } GmPage;
 
@@ -48,13 +52,11 @@ typedef enum { GM_EV_NONE = 0, GM_EV_ACT, GM_EV_BACK } GmEvent;
 // enabled row acts, Escape goes back. The cursor may rest on a greyed row.
 GmEvent gm_page_input(const GmPage *p, int *cursor, int touch_list);
 
-// Draw a page in (x, y, w, h): the path in a title strip, the rows in a column
-// `list_w` wide (scrolling to the cursor), the description beside them.
+// Draw a page: GM_PAGE_W wide and GM_PAGE_ROWS tall, centred on the area. The
+// path in the title strip, `right_title` at its right, the row under the
+// cursor described under it, then the rows (scrolling to the cursor).
 // `row_fn` / `row_ctx` may give the rows their own labels (NULL: the items').
-// The width a page's rows need (at least 400).
-int  gm_page_width(const GmPage *p, const char *path);
-void gm_draw_page(const GmPage *p, const char *path, const char *right_title,
-                  int x, int y, int w, int h, int list_w, int cursor, int touch_list,
+void gm_draw_page(const GmPage *p, const char *path, const char *right_title, int cursor, int touch_list,
                   MlRowFn row_fn, void *row_ctx);
 
 // ---- the game menu ----------------------------------------------------------------

@@ -115,14 +115,13 @@ static void draw_tile(const Sprites *s, int idx, int px, int py) {
 
 static void draw_unit(const CombatUnit *u, int side,
                       const Sprites *sprites) {
-    if (u->troop_idx < 0 || u->count == 0) return;
+    if (u->troop_idx < 0 || u->troop_idx >= sprites->troop_count || u->count == 0) return;
     int px, py;
     cell_origin(u->x, u->y, &px, &py);
     Texture2D tex =
-        sprites->troop_anim[u->troop_idx]
-                           [sprites_frame(CL_IS_MODERN ? sprites_stand(u->frame)
-                                                       : u->frame,
-                                          sprites->troop_anim_frames[u->troop_idx])];
+        sprites_strip(sprites->troop_anim[u->troop_idx],
+                      sprites->troop_anim_frames[u->troop_idx],
+                      CL_IS_MODERN ? sprites_stand(u->frame) : u->frame);
     if (tex.id == 0) tex = sprites->troop_sprite[u->troop_idx];
     // Sprites face right by default; the AI side is mirrored rather than
     // shipping a second strip. The slot is the cell, not the sprite's own

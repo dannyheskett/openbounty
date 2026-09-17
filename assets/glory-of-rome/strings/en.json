@@ -480,6 +480,7 @@
 			"gm_new_game":	"New Game",
 			"gm_exit":	"Exit",
 			"gm_back":	"\u001b Back",
+			"gm_close":	"Close",
 			"gm_debug":	"Debug",
 			"gm_actions":	"Actions",
 			"gm_unit":	"Unit",
@@ -739,6 +740,22 @@
 			"alias":	"The Scourge of God",
 			"crimes":	"King of the Huns, he has burned the cities of the Balkans and extracted tribute in gold from Constantinople. He crossed the Rhine into Gaul, and now his horsemen ride over the Alps into Italy itself."
 		}
+	},
+	"spell_brief":	{
+		"clone":	"Adds soldiers to one of your troops; more with more spell power.",
+		"teleport":	"Moves any one troop on the field to open ground you choose.",
+		"fireball":	"Burns one enemy troop for 25 damage per point of spell power.",
+		"lightning":	"Strikes one enemy troop for 10 damage per point of spell power.",
+		"freeze":	"Freezes one enemy troop in place; it cannot act.",
+		"resurrect":	"Returns fallen soldiers to one of your troops; more with more spell power.",
+		"turn_undead":	"Deals 50 damage per point of spell power to one undead troop.",
+		"bridge":	"Builds a bridge across the water in the direction you choose.",
+		"time_stop":	"Your army moves 10 steps per point of spell power without days passing.",
+		"find_villain":	"Shows the castle where the enemy you hold a contract for is hiding.",
+		"castle_gate":	"Takes you at once to any castle you have visited.",
+		"town_gate":	"Takes you at once to any town you have visited.",
+		"instant_army":	"Fresh troops join your army; more with more spell power and rank.",
+		"raise_control":	"Raises your leadership, so you can lead more soldiers."
 	},
 	"spell_lore":	{
 		"clone":	"The priests of Roma have always shaped images of the gods. The Simulacrum shapes an image of your own soldiers, drawn out of the altar smoke, and it fights as truly as the men it copies.\n\nCast over one of your own troops in battle, it adds more of those soldiers to the line. The greater your spell power, the more answer the call. It works only on your own army.",

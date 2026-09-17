@@ -9,6 +9,7 @@
 #include "font_sans.inc"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 void pack_select_step(PackSelectState *st, const PackSelectInput *in, int n) {
@@ -45,8 +46,8 @@ bool pack_select_flow(const PackEntry *list, int n, int *chosen) {
 
     // The packs' own titles from their manifests ("The Glory of Rome"), the
     // file name when a pack has none. Rows are touch-sized.
-    char titles[16][96];
-    for (int i = 0; i < n && i < 16; i++) {
+    char (*titles)[96] = n > 0 ? calloc((size_t)n, sizeof *titles) : NULL;
+    for (int i = 0; titles && i < n; i++) {
         Pack *pk = pack_open(list[i].path);
         const char *t = pk ? pack_name(pk) : "";
         snprintf(titles[i], sizeof titles[i], "%s", (t && t[0]) ? t : list[i].name);
@@ -116,7 +117,7 @@ bool pack_select_flow(const PackEntry *list, int n, int *chosen) {
                                               (float)(n * ROW_H + 12) }, 3, (Color){ 200, 160, 60, 255 });
         }
         for (int i = 0; i < n; i++) {
-            const char *line = i < 16 ? titles[i] : list[i].name;
+            const char *line = titles ? titles[i] : list[i].name;
             Color fg = (i == cursor) ? (Color){ 16, 18, 36, 255 } : RAYWHITE;
             int x = (W - ROW_W) / 2;
             int y = top + i * ROW_H;
@@ -142,6 +143,7 @@ bool pack_select_flow(const PackEntry *list, int n, int *chosen) {
     UnloadFont(face);
     UnloadFont(small);
     CloseWindow();
+    free(titles);
     if (st.quit) return false;
     *chosen = st.cursor;
     return true;

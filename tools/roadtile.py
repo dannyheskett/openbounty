@@ -3,6 +3,9 @@
 
     python3 tools/roadtile.py <set-dir> <out-dir> [--seed N]
     python3 tools/roadtile.py <set-dir> <out-dir> --sweep [--rim N --rim-shade F]
+    python3 tools/roadtile.py <set-dir> <out-dir> --sweep --prefix river   (river_*.png)
+    python3 tools/roadtile.py <set-dir> <out-dir> --sweep --fill PAVING.png --grass RIVER.png
+        (a bridge deck: the band filled with a 96 px tile over another piece)
 
 A road piece is a 96 px tile built the way tools/stitch96.py builds a
 terrain tile: a 7x7 grid of vertices, each grass (l) or dirt (u), and the
@@ -248,6 +251,13 @@ def check_contract(made_v):
 # piece meets any other. Curves are true quarter circles and diagonals
 # true 45 degree bands, not 16 px steps.
 SWEEP = "--sweep" in sys.argv
+# --prefix NAME: write NAME_ns.png etc. instead of road_ns.png -- the same 24
+# shapes filled with another set's plain tile (a river is a road of water).
+PREFIX = sys.argv[sys.argv.index("--prefix") + 1] if "--prefix" in sys.argv else "road"
+
+
+def out_name(name):
+    return PREFIX + name[len("road"):] if name.startswith("road") else name
 RAG = float(sys.argv[sys.argv.index("--rag") + 1]) if "--rag" in sys.argv else 3.0
 RIM = float(sys.argv[sys.argv.index("--rim") + 1]) if "--rim" in sys.argv else 0.0   # px of rim just inside the edge
 # --rim-shade F: the rim is the road's own colour at that pixel times F, so the
@@ -435,13 +445,17 @@ if SWEEP:
     # (--grass PATH to build against a staged grass instead)
     GRASS_PATH = sys.argv[sys.argv.index("--grass") + 1] if "--grass" in sys.argv else "assets/glory-of-rome/art/tiles/grass.png"
     g96 = Image.open(GRASS_PATH).convert("RGBA")
+    # --fill PATH: fill the band with this 96 px tile instead of the set's plain
+    # upper tile (a bridge's paving across a river piece).
+    if "--fill" in sys.argv:
+        d96 = Image.open(sys.argv[sys.argv.index("--fill") + 1]).convert("RGBA").resize((96, 96))
 g96.save(os.path.join(out, "grass.png"))
 for name in SHAPES:
     if SWEEP:
         made[name] = sweep(name, d96, g96); made_v[name] = vertices(SHAPES[name], random.Random(0))
     else:
         made[name], made_v[name] = build(name, rng)
-    made[name].save(os.path.join(out, name + ".png"))
+    made[name].save(os.path.join(out, out_name(name) + ".png"))
 
 names = list(SHAPES)
 sheet = Image.new("RGBA", (5 * 100, ((len(names) + 4) // 5) * 100), (40, 40, 40, 255))

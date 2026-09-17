@@ -11,6 +11,7 @@
 		"language":	"en",
 		"max_army_slots":	5,
 		"fog_sight":	3,
+		"hostile_armies_per_zone":	35,
 		"starting_zone":	"continentia",
 		"zone_noun":	"continent",
 		"zone_noun_plural":	"continents",

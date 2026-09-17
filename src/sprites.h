@@ -3,24 +3,27 @@
 
 #include "raylib.h"
 #include "resources.h"
-#include "combat.h"   // OB_ANIM_FRAMES_MAX (via tables.h)
+#include "combat.h"   // COMBAT_W / COMBAT_H
 
 // Bundle of all non-tile textures used across the game. One instance is
 // loaded at startup and passed (const) to drawing modules. Arrays are
 // keyed by the same numeric indices as the tables module:
-//   - class_portrait[4]        matches CLASSES[]
-//   - villain_portrait[17]     matches VILLAINS[]
-//   - troop_sprite[25]         matches TROOPS[]
-//   - view_icon[14]            0-7 artifacts, 8-11 maps, 12 empty, 13 empty-map
+//   - class_*[class_count]     matches the pack's classes[]
+//   - villain_*[villain_count] matches the pack's villains[]
+//   - troop_*[troop_count]     matches the pack's troops[]
+//   - view_icon[view_icon_count]: the artifact icons from 0, the pack's extra
+//     icons (continent maps, empty slots) from view_icon_extra_base -- 8 when a
+//     pack has eight artifacts or fewer, so the legacy layout is unchanged.
+// Every table is heap, sized to what the pack declares.
 // Every *_frames field is the animation's cycle length as the pack declared
 // it. Index an animation with sprites_frame(counter, count) rather than a
 // hardcoded mask -- the cycle is pack data now, not a fixed four.
 // One loaded animation: either a single strip the renderer mirrors, or four
 // authored facings it selects between. Mirrors ResAnimSet in the manifest.
 typedef struct {
-    bool      directional;
-    int       frames[OB_FACE_COUNT];
-    Texture2D tex[OB_FACE_COUNT][OB_ANIM_FRAMES_MAX];
+    bool       directional;
+    int        frames[OB_FACE_COUNT];
+    Texture2D *tex[OB_FACE_COUNT];      // heap, frames[f] per facing
 } SpriteAnim;
 
 typedef struct {
@@ -30,28 +33,33 @@ typedef struct {
     // Per-class hero art, parallel to the class catalog; empty sets and a zero
     // texture where a class declared none. Read through sprites_hero_anim /
     // sprites_end_hero, which fall back to the pack-wide sets above.
-    SpriteAnim class_hero_walk[4];
-    SpriteAnim class_hero_idle[4];
-    SpriteAnim class_hero_boat[4];
-    Texture2D  class_end_hero[4];
+    int         class_count;
+    SpriteAnim *class_hero_walk;
+    SpriteAnim *class_hero_idle;
+    SpriteAnim *class_hero_boat;
+    Texture2D  *class_end_hero;
 
-    Texture2D class_portrait[4];
-    Texture2D class_disgraced[4];   // modern: the temporary-death scene, when the pack has one
+    Texture2D  *class_portrait;
+    Texture2D  *class_disgraced;   // modern: the temporary-death scene, when the pack has one
     // villain_portrait[i] = frame 0 (still image, kept for compatibility).
     // villain_anim[i][0..villain_anim_frames[i]-1] = the animation strip.
-    Texture2D villain_portrait[17];
-    int       villain_anim_frames[17];
-    Texture2D villain_anim[17][OB_ANIM_FRAMES_MAX];
+    int         villain_count;
+    Texture2D  *villain_portrait;
+    int        *villain_anim_frames;
+    Texture2D **villain_anim;
     // portraits[] (town informants, priests), parallel to res->portraits.
-    // Heap, portrait_count entries (as many as the pack declares).
-    int        portrait_count;
-    int       *portrait_frames;
-    Texture2D (*portrait_anim)[OB_ANIM_FRAMES_MAX];
-    Texture2D view_icon[14];
-    Texture2D troop_sprite[25];
-    Texture2D troop_portrait[25];         // modern: still portrait, id 0 = none
-    int       troop_anim_frames[25];    // 0 = no animation, use troop_sprite
-    Texture2D troop_anim[25][OB_ANIM_FRAMES_MAX];   // idle animation (troop.anim[])
+    int         portrait_count;
+    int        *portrait_frames;
+    Texture2D **portrait_anim;
+    int         view_icon_count;
+    int         view_icon_extra_base;
+    Texture2D  *view_icon;
+    // Heap, troop_count entries: one per troop the pack declares.
+    int        troop_count;
+    Texture2D *troop_sprite;
+    Texture2D *troop_portrait;                         // modern: still portrait, id 0 = none
+    int       *troop_anim_frames;                      // 0 = no animation, use troop_sprite
+    Texture2D **troop_anim;                            // idle animation (troop.anim[])
     Texture2D puzzle_cover;
     // Location backdrops (240x102), used by location-screen views
     // (VIEW_TOWN, VIEW_HOME_CASTLE, VIEW_DWELLING, VIEW_ALCOVE, ...).
@@ -72,10 +80,10 @@ typedef struct {
     Texture2D hud_magic_silhouette;
     Texture2D hud_puzzle_grid;
     Texture2D hud_gold_purse;
-    int       hud_siege_anim_frames;
-    Texture2D hud_siege_anim[OB_ANIM_FRAMES_MAX];
-    int       hud_magic_anim_frames;
-    Texture2D hud_magic_anim[OB_ANIM_FRAMES_MAX];
+    int        hud_siege_anim_frames;
+    Texture2D *hud_siege_anim;
+    int        hud_magic_anim_frames;
+    Texture2D *hud_magic_anim;
     // The magic alcove's own backdrop and the figure who keeps it. Both are
     // optional; id 0 means the pack declared none and the alcove falls back to
     // the hill cave's backdrop and to animating a troop.
@@ -83,8 +91,8 @@ typedef struct {
     Texture2D scene_column[3];   // modern: capital, shaft, base (id 0: the lattice)
     Texture2D palace[3];         // the Emperor's castle: welcome, barracks, throne
     Texture2D alcove_figure;
-    int       alcove_figure_frames;
-    Texture2D alcove_figure_anim[OB_ANIM_FRAMES_MAX];
+    int        alcove_figure_frames;
+    Texture2D *alcove_figure_anim;
     Texture2D hud_bar_strip;             // 320x5 horizontal middle bar
     Texture2D chrome_overworld;          // 320x200 chrome frame (transparent interior)
     Texture2D splash_logo;                // 320x84 publisher logo
@@ -93,7 +101,8 @@ typedef struct {
     Texture2D alcove_portrait;            // modern temple: the keeper's portrait
     Texture2D class_picker;               // 288x184 class portraits (A-D)
     Texture2D class_highlight;            // 42x44 cursor glow over current pick
-    Texture2D class_picker_selected[4];   // modern: the picker with one figure picked out
+    int        class_picker_selected_count;
+    Texture2D *class_picker_selected;      // modern: the picker with one figure picked out
     Texture2D orb;                        // orb of power tile overlay
 
     // Victory cartoon .
@@ -129,6 +138,13 @@ static inline int sprites_frame(int counter, int count) {
     return counter % count;
 }
 
+// The frame of a heap strip at `counter`, or a zero texture when the strip
+// has no frames.
+static inline Texture2D sprites_strip(const Texture2D *strip, int count, int counter) {
+    if (!strip || count <= 0) return (Texture2D){ 0 };
+    return strip[sprites_frame(counter, count)];
+}
+
 // Modern: a standing figure rocks between frames 0 and 1 instead of playing its
 // whole strip, which reads as an attack. Pass the result as the counter.
 static inline int sprites_stand(int counter) {
@@ -151,10 +167,12 @@ static inline Texture2D sprites_anim_tex(const SpriteAnim *a, int facing,
     if (facing < 0 || facing >= OB_FACE_COUNT) facing = OB_FACE_SOUTH;
     if (!a->directional) {
         if (out_mirror) *out_mirror = (facing == OB_FACE_WEST);
+        if (a->frames[OB_FACE_SOUTH] <= 0 || !a->tex[OB_FACE_SOUTH]) return none;
         return a->tex[OB_FACE_SOUTH][sprites_frame(counter,
                                                    a->frames[OB_FACE_SOUTH])];
     }
     if (a->frames[facing] <= 0) facing = OB_FACE_SOUTH;
+    if (a->frames[facing] <= 0 || !a->tex[facing]) return none;
     return a->tex[facing][sprites_frame(counter, a->frames[facing])];
 }
 

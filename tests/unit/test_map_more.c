@@ -5,6 +5,7 @@
 #include "tile.h"
 #include "fixtures.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -42,10 +43,10 @@ TEST load_all_four_zones_succeeds(void) {
         ASSERT(MapLoadZoneWithPlacements(m, res, zones[i], g));
         ASSERT_EQ(64, m->width);
         ASSERT_EQ(64, m->height);
-        free(m);
+        MapFree(m); free(m);
     }
 
-    free(g);
+    GameFree(g); free(g);
     resources_free(res); free(res);
     PASS();
 }
@@ -92,7 +93,28 @@ TEST map_walkable_matches_adventure_predicate(void) {
     PASS();
 }
 
+// No fixed map size or string pool: a 300x300 map holds every cell, and its
+// pool takes 5000 names and well over 16 KB of text.
+TEST map_has_no_size_or_pool_limit(void) {
+    Map m = { 0 };
+    ASSERT(MapAlloc(&m, 300, 300));
+    MAP_TILE(&m, 299, 299).terrain = TERRAIN_FOREST;
+    ASSERT_EQ(TERRAIN_FOREST, MapGetTile(&m, 299, 299)->terrain);
+    ASSERT(MapGetTile(&m, 300, 0) == NULL);
+    char name[64];
+    for (int i = 1; i <= 5000; i++) {
+        snprintf(name, sizeof name, "art/tiles/a_long_tile_name_%05d", i);
+        ASSERT_EQ(i, (int)MapStrIntern(&m, name));
+    }
+    ASSERT(m.pool_used > 16384);
+    ASSERT_STR_EQ("art/tiles/a_long_tile_name_04321", MapStrGet(&m, 4321));
+    MapFree(&m);
+    ASSERT(m.tiles == NULL && m.width == 0);
+    PASS();
+}
+
 SUITE(unit_map_more_suite) {
+    RUN_TEST(map_has_no_size_or_pool_limit);
     RUN_TEST(clear_interactive_removes_overlay);
     RUN_TEST(load_all_four_zones_succeeds);
     RUN_TEST(get_tile_out_of_bounds_returns_null);

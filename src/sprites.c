@@ -32,10 +32,38 @@ static void load_anim_set(SpriteAnim *dst, const ResAnimSet *src) {
     if (!dst || !src) return;
     dst->directional = src->directional;
     for (int f = 0; f < OB_FACE_COUNT; f++) {
-        dst->frames[f] = src->count[f];
-        for (int i = 0; i < src->count[f]; i++)
+        int n = src->count[f];
+        dst->tex[f] = n > 0 ? calloc((size_t)n, sizeof *dst->tex[f]) : NULL;
+        dst->frames[f] = dst->tex[f] ? n : 0;
+        for (int i = 0; i < dst->frames[f]; i++)
             dst->tex[f][i] = load_rel(src->frames[f][i]);
     }
+}
+
+static void unload_anim_set(SpriteAnim *a) {
+    if (!a) return;
+    for (int f = 0; f < OB_FACE_COUNT; f++) {
+        for (int i = 0; i < a->frames[f]; i++) UnloadTexture(a->tex[f][i]);
+        free(a->tex[f]);
+        a->tex[f] = NULL;
+        a->frames[f] = 0;
+    }
+}
+
+// A frame strip of `n` textures from `paths`, or NULL for none.
+static Texture2D *load_strip(const char (*paths)[RES_PATH_LEN], int n) {
+    if (n <= 0 || !paths) return NULL;
+    Texture2D *t = calloc((size_t)n, sizeof *t);
+    if (!t) return NULL;
+    for (int i = 0; i < n; i++) t[i] = load_rel(paths[i]);
+    return t;
+}
+
+static void unload_strip(Texture2D **t, int *n) {
+    for (int i = 0; *t && i < *n; i++) UnloadTexture((*t)[i]);
+    free(*t);
+    *t = NULL;
+    *n = 0;
 }
 
 void sprites_load(Sprites *s, const Resources *res) {
@@ -54,7 +82,16 @@ void sprites_load(Sprites *s, const Resources *res) {
 
     // Class portraits from the class catalog.
     int nc = classes_count();
-    if (nc > 4) nc = 4;
+    s->class_count     = nc;
+    s->class_hero_walk = nc ? calloc((size_t)nc, sizeof *s->class_hero_walk) : NULL;
+    s->class_hero_idle = nc ? calloc((size_t)nc, sizeof *s->class_hero_idle) : NULL;
+    s->class_hero_boat = nc ? calloc((size_t)nc, sizeof *s->class_hero_boat) : NULL;
+    s->class_end_hero  = nc ? calloc((size_t)nc, sizeof *s->class_end_hero) : NULL;
+    s->class_portrait  = nc ? calloc((size_t)nc, sizeof *s->class_portrait) : NULL;
+    s->class_disgraced = nc ? calloc((size_t)nc, sizeof *s->class_disgraced) : NULL;
+    if (nc && (!s->class_hero_walk || !s->class_hero_idle || !s->class_hero_boat ||
+               !s->class_end_hero || !s->class_portrait || !s->class_disgraced))
+        s->class_count = nc = 0;
     for (int i = 0; i < nc; i++) {
         const ResClassHero *h = &res->class_hero[i];
         load_anim_set(&s->class_hero_walk[i], &h->walk);
@@ -75,15 +112,19 @@ void sprites_load(Sprites *s, const Resources *res) {
     // siblings, which is how kings-bounty addresses them. Animation is
     // driven by a global tick in the sidebar renderer.
     int nv = villains_count();
-    if (nv > 17) nv = 17;
+    s->villain_count       = nv;
+    s->villain_portrait    = nv ? calloc((size_t)nv, sizeof *s->villain_portrait) : NULL;
+    s->villain_anim_frames = nv ? calloc((size_t)nv, sizeof *s->villain_anim_frames) : NULL;
+    s->villain_anim        = nv ? calloc((size_t)nv, sizeof *s->villain_anim) : NULL;
+    if (nv && (!s->villain_portrait || !s->villain_anim_frames || !s->villain_anim))
+        s->villain_count = nv = 0;
     for (int i = 0; i < nv; i++) {
         const VillainDef *v = villain_by_index(i);
         s->villain_portrait[i] = v ? load_rel(v->portrait) : (Texture2D){ 0 };
         if (!v) continue;
         if (v->anim_count > 0) {
-            s->villain_anim_frames[i] = v->anim_count;
-            for (int f = 0; f < v->anim_count; f++)
-                s->villain_anim[i][f] = load_rel(v->anim[f]);
+            s->villain_anim[i] = load_strip((const char (*)[RES_PATH_LEN])v->anim, v->anim_count);
+            s->villain_anim_frames[i] = s->villain_anim[i] ? v->anim_count : 0;
             continue;
         }
         // Strip the ".png" suffix from the portrait path to build the
@@ -103,8 +144,9 @@ void sprites_load(Sprites *s, const Resources *res) {
         } else if (slen >= 4 && stem[slen - 4] == '.') {
             stem[slen - 4] = '\0';
         }
-        s->villain_anim_frames[i] = OB_ANIM_FRAMES_DEFAULT;
-        for (int f = 0; f < OB_ANIM_FRAMES_DEFAULT; f++) {
+        s->villain_anim[i] = calloc(OB_ANIM_FRAMES_DEFAULT, sizeof *s->villain_anim[i]);
+        s->villain_anim_frames[i] = s->villain_anim[i] ? OB_ANIM_FRAMES_DEFAULT : 0;
+        for (int f = 0; f < s->villain_anim_frames[i]; f++) {
             char framepath[160];
             snprintf(framepath, sizeof(framepath), "%s_%02d.png", stem, f);
             s->villain_anim[i][f] = load_rel(framepath);
@@ -116,34 +158,42 @@ void sprites_load(Sprites *s, const Resources *res) {
     s->portrait_anim   = s->portrait_count ? calloc((size_t)s->portrait_count, sizeof *s->portrait_anim) : NULL;
     if (!s->portrait_frames || !s->portrait_anim) s->portrait_count = 0;
     for (int i = 0; i < s->portrait_count; i++) {
-        s->portrait_frames[i] = res->portraits[i].anim_count;
-        for (int f = 0; f < res->portraits[i].anim_count; f++)
-            s->portrait_anim[i][f] = load_rel(res->portraits[i].anim[f]);
+        s->portrait_anim[i] = load_strip((const char (*)[RES_PATH_LEN])res->portraits[i].anim,
+                                         res->portraits[i].anim_count);
+        s->portrait_frames[i] = s->portrait_anim[i] ? res->portraits[i].anim_count : 0;
     }
 
     // View icons 0..7 from artifact catalog, 8..13 from sprites.view_icons_extra.
     int na = artifacts_count();
-    if (na > 8) na = 8;
-    for (int i = 0; i < na; i++) {
+    s->view_icon_extra_base = na > 8 ? na : 8;
+    s->view_icon_count = s->view_icon_extra_base + res->sprites.view_icons_extra_count;
+    s->view_icon = calloc((size_t)s->view_icon_count, sizeof *s->view_icon);
+    if (!s->view_icon) s->view_icon_count = 0;
+    for (int i = 0; s->view_icon && i < na; i++) {
         const ArtifactDef *a = artifact_by_index(i);
         s->view_icon[i] = a ? load_rel(a->icon) : (Texture2D){ 0 };
     }
-    for (int i = 0; i < res->sprites.view_icons_extra_count && i < 14 - 8; i++) {
-        s->view_icon[8 + i] = load_rel(res->sprites.view_icons_extra[i]);
+    for (int i = 0; s->view_icon && i < res->sprites.view_icons_extra_count; i++) {
+        s->view_icon[s->view_icon_extra_base + i] = load_rel(res->sprites.view_icons_extra[i]);
     }
 
     // Troop sprites from the troop catalog.
     int nt = troops_count();
-    if (nt > 25) nt = 25;
+    s->troop_count       = nt;
+    s->troop_sprite      = nt ? calloc((size_t)nt, sizeof *s->troop_sprite) : NULL;
+    s->troop_portrait    = nt ? calloc((size_t)nt, sizeof *s->troop_portrait) : NULL;
+    s->troop_anim_frames = nt ? calloc((size_t)nt, sizeof *s->troop_anim_frames) : NULL;
+    s->troop_anim        = nt ? calloc((size_t)nt, sizeof *s->troop_anim) : NULL;
+    if (nt && (!s->troop_sprite || !s->troop_portrait || !s->troop_anim_frames || !s->troop_anim)) {
+        fprintf(stderr, "sprites: out of memory for %d troops\n", nt);
+        s->troop_count = nt = 0;
+    }
     for (int i = 0; i < nt; i++) {
         const TroopDef *t = troop_by_index(i);
         s->troop_sprite[i] = t ? load_rel(t->sprite) : (Texture2D){ 0 };
         s->troop_portrait[i] = t ? load_rel(t->portrait) : (Texture2D){ 0 };
-        s->troop_anim_frames[i] = t ? t->anim_count : 0;
-        for (int f = 0; f < s->troop_anim_frames[i]; f++) {
-            s->troop_anim[i][f] =
-                t->anim[f][0] ? load_rel(t->anim[f]) : (Texture2D){ 0 };
-        }
+        s->troop_anim[i] = t ? load_strip((const char (*)[RES_PATH_LEN])t->anim, t->anim_count) : NULL;
+        s->troop_anim_frames[i] = s->troop_anim[i] ? t->anim_count : 0;
     }
 
     // UI backdrops.
@@ -162,11 +212,9 @@ void sprites_load(Sprites *s, const Resources *res) {
     s->scene_column[1]  = load_rel(res->sprites.scene_column_shaft);
     s->scene_column[2]  = load_rel(res->sprites.scene_column_base);
     s->alcove_figure    = load_rel(res->sprites.alcove_figure);
-    s->alcove_figure_frames = res->sprites.alcove_figure_animation_count;
-    if (s->alcove_figure_frames > OB_ANIM_FRAMES_MAX)
-        s->alcove_figure_frames = OB_ANIM_FRAMES_MAX;
-    for (int i = 0; i < s->alcove_figure_frames; i++)
-        s->alcove_figure_anim[i] = load_rel(res->sprites.alcove_figure_animation[i]);
+    s->alcove_figure_anim = load_strip((const char (*)[RES_PATH_LEN])res->sprites.alcove_figure_animation,
+                                       res->sprites.alcove_figure_animation_count);
+    s->alcove_figure_frames = s->alcove_figure_anim ? res->sprites.alcove_figure_animation_count : 0;
     s->ending_win       = load_rel(res->sprites.ending_win);
     s->ending_lose      = load_rel(res->sprites.ending_lose);
 
@@ -178,12 +226,12 @@ void sprites_load(Sprites *s, const Resources *res) {
     s->hud_magic_silhouette    = load_rel(res->sprites.hud_magic_silhouette);
     s->hud_puzzle_grid         = load_rel(res->sprites.hud_puzzle_grid);
     s->hud_gold_purse          = load_rel(res->sprites.hud_gold_purse);
-    s->hud_siege_anim_frames = res->sprites.hud_siege_animation_count;
-    s->hud_magic_anim_frames = res->sprites.hud_magic_animation_count;
-    for (int i = 0; i < s->hud_siege_anim_frames; i++)
-        s->hud_siege_anim[i] = load_rel(res->sprites.hud_siege_animation[i]);
-    for (int i = 0; i < s->hud_magic_anim_frames; i++)
-        s->hud_magic_anim[i] = load_rel(res->sprites.hud_magic_animation[i]);
+    s->hud_siege_anim = load_strip((const char (*)[RES_PATH_LEN])res->sprites.hud_siege_animation,
+                                   res->sprites.hud_siege_animation_count);
+    s->hud_siege_anim_frames = s->hud_siege_anim ? res->sprites.hud_siege_animation_count : 0;
+    s->hud_magic_anim = load_strip((const char (*)[RES_PATH_LEN])res->sprites.hud_magic_animation,
+                                   res->sprites.hud_magic_animation_count);
+    s->hud_magic_anim_frames = s->hud_magic_anim ? res->sprites.hud_magic_animation_count : 0;
     s->hud_bar_strip = load_rel(res->sprites.hud_bar_strip);
     s->chrome_overworld = load_rel(res->sprites.chrome_overworld);
     s->splash_logo      = load_rel(res->sprites.splash_logo);
@@ -194,8 +242,9 @@ void sprites_load(Sprites *s, const Resources *res) {
     s->title_words      = load_rel(res->sprites.title_words);
     s->class_picker     = load_rel(res->sprites.class_picker);
     s->class_highlight  = load_rel(res->sprites.class_highlight);
-    for (int i = 0; i < res->sprites.class_picker_selected_count; i++)
-        s->class_picker_selected[i] = load_rel(res->sprites.class_picker_selected[i]);
+    s->class_picker_selected = load_strip((const char (*)[RES_PATH_LEN])res->sprites.class_picker_selected,
+                                          res->sprites.class_picker_selected_count);
+    s->class_picker_selected_count = s->class_picker_selected ? res->sprites.class_picker_selected_count : 0;
     s->orb              = load_rel(res->sprites.orb);
 
     // Victory cartoon tiles.
@@ -233,30 +282,53 @@ void sprites_load(Sprites *s, const Resources *res) {
 }
 
 void sprites_unload(Sprites *s) {
-    SpriteAnim *hero_anims[3] = { &s->hero_walk, &s->hero_idle, &s->hero_boat };
-    for (int a = 0; a < 3; a++)
-        for (int f = 0; f < OB_FACE_COUNT; f++)
-            for (int i = 0; i < OB_ANIM_FRAMES_MAX; i++)
-                UnloadTexture(hero_anims[a]->tex[f][i]);
-    for (int i = 0; i < 4;  i++) UnloadTexture(s->class_portrait[i]);
-    for (int i = 0; i < 4;  i++) UnloadTexture(s->class_disgraced[i]);
-    for (int i = 0; i < 17; i++) {
-        UnloadTexture(s->villain_portrait[i]);
-        for (int f = 0; f < OB_ANIM_FRAMES_MAX; f++) UnloadTexture(s->villain_anim[i][f]);
+    unload_anim_set(&s->hero_walk);
+    unload_anim_set(&s->hero_idle);
+    unload_anim_set(&s->hero_boat);
+    for (int i = 0; i < s->class_count; i++) {
+        UnloadTexture(s->class_portrait[i]);
+        UnloadTexture(s->class_disgraced[i]);
+        UnloadTexture(s->class_end_hero[i]);
+        unload_anim_set(&s->class_hero_walk[i]);
+        unload_anim_set(&s->class_hero_idle[i]);
+        unload_anim_set(&s->class_hero_boat[i]);
     }
+    free(s->class_portrait);  s->class_portrait = NULL;
+    free(s->class_disgraced); s->class_disgraced = NULL;
+    free(s->class_end_hero);  s->class_end_hero = NULL;
+    free(s->class_hero_walk); s->class_hero_walk = NULL;
+    free(s->class_hero_idle); s->class_hero_idle = NULL;
+    free(s->class_hero_boat); s->class_hero_boat = NULL;
+    s->class_count = 0;
+    for (int i = 0; i < s->villain_count; i++) {
+        UnloadTexture(s->villain_portrait[i]);
+        unload_strip(&s->villain_anim[i], &s->villain_anim_frames[i]);
+    }
+    free(s->villain_portrait);    s->villain_portrait = NULL;
+    free(s->villain_anim_frames); s->villain_anim_frames = NULL;
+    free(s->villain_anim);        s->villain_anim = NULL;
+    s->villain_count = 0;
     for (int i = 0; i < s->portrait_count; i++)
-        for (int f = 0; f < s->portrait_frames[i]; f++) UnloadTexture(s->portrait_anim[i][f]);
+        unload_strip(&s->portrait_anim[i], &s->portrait_frames[i]);
     free(s->portrait_frames);
     free(s->portrait_anim);
     s->portrait_frames = NULL;
     s->portrait_anim = NULL;
     s->portrait_count = 0;
-    for (int i = 0; i < 14; i++) UnloadTexture(s->view_icon[i]);
-    for (int i = 0; i < 25; i++) {
+    for (int i = 0; i < s->view_icon_count; i++) UnloadTexture(s->view_icon[i]);
+    free(s->view_icon);
+    s->view_icon = NULL;
+    s->view_icon_count = 0;
+    for (int i = 0; i < s->troop_count; i++) {
         UnloadTexture(s->troop_sprite[i]);
         UnloadTexture(s->troop_portrait[i]);
-        for (int f = 0; f < OB_ANIM_FRAMES_MAX; f++) UnloadTexture(s->troop_anim[i][f]);
+        unload_strip(&s->troop_anim[i], &s->troop_anim_frames[i]);
     }
+    free(s->troop_sprite);      s->troop_sprite = NULL;
+    free(s->troop_portrait);    s->troop_portrait = NULL;
+    free(s->troop_anim_frames); s->troop_anim_frames = NULL;
+    free(s->troop_anim);        s->troop_anim = NULL;
+    s->troop_count = 0;
     for (int i = 0; i < 15; i++) UnloadTexture(s->combat_tile[i]);
     UnloadTexture(s->puzzle_cover);
     UnloadTexture(s->town_backdrop);
@@ -269,8 +341,7 @@ void sprites_unload(Sprites *s) {
     for (int i = 0; i < 3; i++) UnloadTexture(s->scene_column[i]);
     for (int i = 0; i < 3; i++) UnloadTexture(s->palace[i]);
     UnloadTexture(s->alcove_figure);
-    for (int i = 0; i < s->alcove_figure_frames; i++)
-        UnloadTexture(s->alcove_figure_anim[i]);
+    unload_strip(&s->alcove_figure_anim, &s->alcove_figure_frames);
     UnloadTexture(s->ending_win);
     UnloadTexture(s->ending_lose);
     UnloadTexture(s->hud_contract_silhouette);
@@ -279,8 +350,8 @@ void sprites_unload(Sprites *s) {
     UnloadTexture(s->hud_magic_silhouette);
     UnloadTexture(s->hud_puzzle_grid);
     UnloadTexture(s->hud_gold_purse);
-    for (int i = 0; i < OB_ANIM_FRAMES_MAX; i++) UnloadTexture(s->hud_siege_anim[i]);
-    for (int i = 0; i < OB_ANIM_FRAMES_MAX; i++) UnloadTexture(s->hud_magic_anim[i]);
+    unload_strip(&s->hud_siege_anim, &s->hud_siege_anim_frames);
+    unload_strip(&s->hud_magic_anim, &s->hud_magic_anim_frames);
     UnloadTexture(s->hud_bar_strip);
     UnloadTexture(s->chrome_overworld);
     UnloadTexture(s->splash_logo);
@@ -291,7 +362,7 @@ void sprites_unload(Sprites *s) {
     UnloadTexture(s->title_words);
     UnloadTexture(s->class_picker);
     UnloadTexture(s->class_highlight);
-    for (int i = 0; i < 4; i++) UnloadTexture(s->class_picker_selected[i]);
+    unload_strip(&s->class_picker_selected, &s->class_picker_selected_count);
     UnloadTexture(s->orb);
     UnloadTexture(s->end_grass);
     UnloadTexture(s->end_carpet);
@@ -301,28 +372,19 @@ void sprites_unload(Sprites *s) {
     UnloadTexture(s->siege_back_wall_end[1]);
     for (int y = 0; y <= COMBAT_H; y++)
         for (int x = 0; x < COMBAT_W; x++) UnloadTexture(s->siege_grid[y][x]);
-    for (int i = 0; i < 4; i++) {
-        SpriteAnim *ca[3] = { &s->class_hero_walk[i], &s->class_hero_idle[i],
-                              &s->class_hero_boat[i] };
-        for (int k = 0; k < 3; k++)
-            for (int f = 0; f < OB_FACE_COUNT; f++)
-                for (int j = 0; j < ca[k]->frames[f]; j++)
-                    UnloadTexture(ca[k]->tex[f][j]);
-        UnloadTexture(s->class_end_hero[i]);
-    }
     UnloadTexture(s->end_throne);
 }
 
-static int class_slot(const char *class_id) {
+static int class_slot(const Sprites *s, const char *class_id) {
     if (!class_id || !class_id[0]) return -1;
     const ClassDef *c = class_by_id(class_id);
-    return (c && c->index >= 0 && c->index < 4) ? c->index : -1;
+    return (c && c->index >= 0 && c->index < s->class_count) ? c->index : -1;
 }
 
 const SpriteAnim *sprites_hero_anim(const Sprites *s, const char *class_id, int kind) {
     const SpriteAnim *global = kind == 1 ? &s->hero_idle
                              : kind == 2 ? &s->hero_boat : &s->hero_walk;
-    int i = class_slot(class_id);
+    int i = class_slot(s, class_id);
     if (i < 0) return global;
     const SpriteAnim *own = kind == 1 ? &s->class_hero_idle[i]
                           : kind == 2 ? &s->class_hero_boat[i] : &s->class_hero_walk[i];
@@ -330,7 +392,7 @@ const SpriteAnim *sprites_hero_anim(const Sprites *s, const char *class_id, int 
 }
 
 Texture2D sprites_end_hero(const Sprites *s, const char *class_id) {
-    int i = class_slot(class_id);
+    int i = class_slot(s, class_id);
     if (i >= 0 && s->class_end_hero[i].id) return s->class_end_hero[i];
     return s->end_hero;
 }

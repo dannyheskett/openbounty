@@ -19,19 +19,19 @@ static EvFx ev_make(bool rule) {
     fx.m = calloc(1, sizeof *fx.m);
     fx.res->economy.evade_needs_free_square = rule;
     fx.g->res = fx.res;
-    fx.m->width = 16; fx.m->height = 16;
+    MapAlloc(fx.m, 16, 16);
     strcpy(fx.g->position.zone, "z");
     fx.g->position.x = 8; fx.g->position.y = 8;
     return fx;
 }
 
-static void ev_free(EvFx *fx) { free(fx->m); free(fx->g); free(fx->res); }
+static void ev_free(EvFx *fx) { MapFree(fx->m); free(fx->m); GameFree(fx->g); free(fx->g); free(fx->res); }
 
 static void block_all_but(EvFx *fx, int keep_dx, int keep_dy) {
     for (int dy = -1; dy <= 1; dy++)
         for (int dx = -1; dx <= 1; dx++) {
             if ((!dx && !dy) || (dx == keep_dx && dy == keep_dy)) continue;
-            fx->m->tiles[8 + dy][8 + dx].blocks_foot = true;
+            MAP_TILE(fx->m, 8 + dx, 8 + dy).blocks_foot = true;
         }
 }
 
@@ -61,9 +61,10 @@ TEST one_free_diagonal_is_enough(void) {
 TEST an_object_or_a_foe_is_not_free(void) {
     EvFx fx = ev_make(true);
     block_all_but(&fx, 1, 0);
-    fx.m->tiles[8][9].interactive = INTERACT_TREASURE_CHEST;
+    MAP_TILE(fx.m, 9, 8).interactive = INTERACT_TREASURE_CHEST;
     ASSERT_FALSE(GameFoeCanEvade(fx.g, fx.m));
-    fx.m->tiles[8][9].interactive = INTERACT_NONE;
+    MAP_TILE(fx.m, 9, 8).interactive = INTERACT_NONE;
+    GameReserveFoes(fx.g, 1);
     FoeState *f = &fx.g->foes[0];
     strcpy(f->zone, "z"); f->x = 9; f->y = 8; f->alive = true;
     fx.g->foe_count = 1;

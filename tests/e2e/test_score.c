@@ -19,6 +19,7 @@ TEST compute_score_starts_at_zero_villains(void) {
     ASSERT(GameComputeScore(&g) >= 0);
 
     resources_free(res); free(res);
+    GameFree(&g);
     PASS();
 }
 
@@ -36,6 +37,7 @@ TEST villains_caught_reflects_state(void) {
     ASSERT_EQ(2, GameVillainsCaught(&g));
 
     resources_free(res); free(res);
+    GameFree(&g);
     PASS();
 }
 
@@ -51,6 +53,7 @@ TEST artifacts_found_reflects_state(void) {
     ASSERT_EQ(initial + 2, GameArtifactsFound(&g));
 
     resources_free(res); free(res);
+    GameFree(&g);
     PASS();
 }
 

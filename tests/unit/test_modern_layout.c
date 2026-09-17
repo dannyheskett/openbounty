@@ -170,13 +170,15 @@ TEST capacity_follows_the_glyph(void) {
 
 
 // The modern game menu (src/modern/gamemenu.c): drill-down pages. The top
-// level is Hero, World, Game and Back; Debug is first on the Game page and only
-// with --debug; Exit is always last; a row that does not apply is greyed with
-// its reason as the description.
+// level is Hero, World, Game, Close and -- on its foot, and nowhere else --
+// Exit; every other page ends with Back; Debug is first on the Game page and
+// only with --debug; a row that does not apply is greyed with its reason as
+// the description.
 static void menu_page(bool debug, bool troops, GmPageId id, GmPage *p) {
     rome();
     strcpy(s_res.ui.gm_debug, "Debug");
     strcpy(s_res.ui.gm_exit, "Exit");
+    strcpy(s_res.ui.gm_close, "Close");
     strcpy(s_res.ui.gm_army, "Army");
     strcpy(s_res.banners.gmr_no_troops, "No troops.");
     resources_republish(&s_res);
@@ -195,16 +197,20 @@ TEST debug_row_only_with_debug_flag(void) {
     for (int i = 0; i < p.n; i++) ASSERT(strcmp(p.item[i].label, "Debug") != 0);
     menu_page(true, true, GM_PAGE_GAME, &p);
     ASSERT_STR_EQ("Debug", p.item[0].label);             // first
-    ASSERT_STR_EQ("Exit", p.item[p.n - 1].label);        // Exit last
+    ASSERT_EQ(GM_ACT_BACK, p.item[p.n - 1].key);          // Back last
+    for (int i = 0; i < p.n; i++) ASSERT(strcmp(p.item[i].label, "Exit") != 0);   // Exit is not here
     PASS();
 }
 
 TEST menu_pages_drill_down(void) {
     GmPage p;
     menu_page(false, true, GM_PAGE_ROOT, &p);
-    ASSERT_EQ(4, p.n);                                   // Hero, World, Game, Back
+    ASSERT_EQ(5, p.n);                                   // Hero, World, Game, Close, Exit
     ASSERT_EQ(GM_ACT_PAGE + GM_PAGE_HERO, p.item[0].key);
-    ASSERT_EQ(GM_ACT_BACK, p.item[3].key);
+    ASSERT_STR_EQ("Close", p.item[3].label);
+    ASSERT_EQ(GM_ACT_BACK, p.item[3].key);               // Close closes the menu
+    ASSERT_STR_EQ("Exit", p.item[4].label);              // Exit last ...
+    ASSERT_EQ(1, p.foot);                                // ... on the page's foot
     menu_page(false, true, GM_PAGE_HERO, &p);
     ASSERT_STR_EQ("Army", p.item[0].label);
     ASSERT_EQ(GM_ACT_BACK, p.item[p.n - 1].key);          // Back last

@@ -47,34 +47,15 @@ static bool page_row(void *ctx, int i, char *label, char *right, int cap) {
     return it->enabled;
 }
 
-int gm_page_width(const GmPage *p, const char *path) {
-    // The widest row (its label, the submenu mark and its key) and the path.
-    int w = bfont_text_width(path ? path : "") + 2 * ML_PAD + 12 * BFONT_GLYPH_W;
-    for (int i = 0; i < p->n; i++) {
-        char label[96], right[48];
-        page_row((void *)p, i, label, right, (int)sizeof label);
-        int need = bfont_text_width(label) + (right[0] ? bfont_text_width(right) + 4 * BFONT_GLYPH_W : 0) + 4 * ML_PAD;
-        if (need > w) w = need;
-    }
-    // And room for every description in two lines.
-    for (int i = 0; i < p->n; i++) {
-        int need = (p->item[i].desc ? bfont_text_width(p->item[i].desc) : 0) / 2 + 4 * BFONT_GLYPH_W + 2 * UK_INSET;
-        if (need > w) w = need;
-    }
-    return w < 400 ? 400 : w;
-}
-
-void gm_draw_page(const GmPage *p, const char *path, const char *right_title,
-                  int x, int y, int w, int h, int list_w, int cursor, int touch_list,
+void gm_draw_page(const GmPage *p, const char *path, const char *right_title, int cursor, int touch_list,
                   MlRowFn row_fn, void *row_ctx) {
-    // Every menu page is the same panel: `w` wide, one fixed height, centred.
-    // The path is its title; under it a fixed two-line block says what the row
-    // under the cursor does (yellow when it says why the row is greyed); then
-    // the options. A page with more rows than fit scrolls.
-    (void)x; (void)y; (void)h; (void)list_w;
+    // Every menu page is the same panel: GM_PAGE_W wide, one fixed height,
+    // centred. The path is its title; under it a fixed two-line block says what
+    // the row under the cursor does, or why it is greyed; then the options. A
+    // page with more rows than fit scrolls; its last `foot` rows stand on the
+    // foot of the list with a gap above them.
     const int lh = uk_line_h();
-    // uk_inlay clamps a panel to the area; the words must wrap to the width it
-    // actually gets, or a long description runs off the panel's right edge.
+    int w = GM_PAGE_W;
     int max_w = ml_area().w - 2 * ml_space();
     if (w > max_w) w = max_w;
     int text_w = w - 2 * UK_INSET;
@@ -87,20 +68,31 @@ void gm_draw_page(const GmPage *p, const char *path, const char *right_title,
     if (fit_rows > GM_PAGE_ROWS) fit_rows = GM_PAGE_ROWS;
     ML_Rect b = uk_inlay(w, head + desc_h + ml_list_height(fit_rows), path, right_title);
 
-    // The description, then its band.
+    // The description, always white, then its band.
     const char *d = (cursor >= 0 && cursor < p->n) ? p->item[cursor].desc : NULL;
-    Color fg = (cursor >= 0 && cursor < p->n && !p->item[cursor].enabled) ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
     char line[160];
     int ty = b.y + ML_PAD;
     for (int i = 0; d && *d && i < desc_lines; i++) {
         if (bfont_take_line(&d, text_w, line, (int)sizeof line) <= 0) break;
-        bfont_draw(line, b.x + UK_INSET, ty, fg);
+        bfont_draw(line, b.x + UK_INSET, ty, PAL_CLR(WHITE));
         ty += lh;
     }
     int ry = b.y + desc_h;
     lattice_band_h(b.x, ry - UK_BAND, b.w, UK_BAND);
-    ml_list_draw(b.x, ry, b.w, b.y + b.h - ry, p->n, cursor,
-                 row_fn ? row_fn : page_row, row_fn ? row_ctx : (void *)p, touch_list, uk_ink());
+    MlRowFn fn = row_fn ? row_fn : page_row;
+    void *ctx = row_fn ? row_ctx : (void *)p;
+    int list_h = b.y + b.h - ry;
+    int foot = (p->foot > 0 && p->foot < p->n && p->n <= fit_rows) ? p->foot : 0;
+    if (!foot) {
+        ml_list_draw(b.x, ry, b.w, list_h, p->n, cursor, fn, ctx, touch_list, uk_ink());
+        return;
+    }
+    int top_n = p->n - foot;
+    ml_list_draw_ex(b.x, ry, b.w, ml_list_height(top_n), top_n, cursor < top_n ? cursor : -1,
+                    fn, ctx, touch_list, uk_ink(), 0);
+    int fy = b.y + b.h - ml_list_height(foot);
+    ml_list_draw_ex(b.x, fy, b.w, ml_list_height(foot), foot, cursor >= top_n ? cursor - top_n : -1,
+                    fn, ctx, touch_list, uk_ink(), top_n);
 }
 
 // ---- the game menu ------------------------------------------------------------------
@@ -157,7 +149,10 @@ void modern_gamemenu_page(const Game *g, GmPageId id, GmPage *p) {
         add(p, ui->gm_hero,  bn->gmd_hero,  NULL, "", GM_ACT_PAGE + GM_PAGE_HERO, true);
         add(p, ui->gm_world, bn->gmd_world, NULL, "", GM_ACT_PAGE + GM_PAGE_WORLD, true);
         add(p, ui->gm_game,  bn->gmd_game,  NULL, "", GM_ACT_PAGE + GM_PAGE_GAME, true);
-        add(p, ui->gm_back,  bn->gmd_back,  NULL, "", GM_ACT_BACK, true);
+        add(p, ui->gm_close, bn->gmd_back,  NULL, "", GM_ACT_BACK, true);
+        // Exit only here, on the foot of the page.
+        add(p, ui->gm_exit,  bn->gmd_exit,  NULL, "", ACT_EXIT, true);
+        p->foot = 1;
         break;
     case GM_PAGE_HERO: {
         bool troops = false;
@@ -196,7 +191,6 @@ void modern_gamemenu_page(const Game *g, GmPageId id, GmPage *p) {
         add(p, ui->gm_controls, bn->gmd_controls, NULL, "C", ACT_CONTROLS, true);
         add(p, ui->gm_new_game, bn->gmd_new_game, NULL, "", ACT_NEW, true);
         add(p, ui->gm_back,     bn->gmd_back_up,  NULL, "", GM_ACT_BACK, true);
-        add(p, ui->gm_exit,     bn->gmd_exit,     NULL, "", ACT_EXIT, true);   // always last
         break;
     case GM_PAGE_SAVE:
     case GM_PAGE_LOAD:
@@ -321,20 +315,9 @@ void modern_gamemenu_draw(const Game *g) {
         size_t n = strlen(path);
         snprintf(path + n, sizeof path - n, "%s%s", i ? " > " : "", pi.title ? pi.title : "");
     }
-    const ResZone *z = resources_zone_by_id(g->res, g->position.zone);
     bool slots = gm.page[d] == GM_PAGE_SAVE || gm.page[d] == GM_PAGE_LOAD;
     int cursor = gm.cursor[d] < p.n ? gm.cursor[d] : p.n - 1;
-    ML_Rect r = ml_full();
-    // One width for the whole menu (every page but the save slots, which are
-    // wider rows), so it keeps its size as you go in and out of its pages.
-    int menu_w = 400;
-    for (int id = GM_PAGE_ROOT; id <= GM_PAGE_DEBUG; id++) {
-        if (id == GM_PAGE_SAVE || id == GM_PAGE_LOAD || (id == GM_PAGE_DEBUG && !gm.debug)) continue;
-        GmPage pi;
-        modern_gamemenu_page(g, (GmPageId)id, &pi);
-        int pw = gm_page_width(&pi, path);
-        if (pw > menu_w) menu_w = pw;
-    }
+    const char *hero = g->character.name;
     // A question asked from a page (save over a slot, load, new game, leave)
     // takes that page's place: the same frame, the question where the
     // description was, Yes and No where the rows were. The shared prompt reads
@@ -347,10 +330,8 @@ void modern_gamemenu_draw(const Game *g) {
         q.n = 2;
         q.item[0] = (GmItem){ g->res->ui.prompt_yes, pv->body, "", GM_ACT_BACK, true };
         q.item[1] = (GmItem){ g->res->ui.prompt_no, pv->body, "", GM_ACT_BACK, true };
-        gm_draw_page(&q, path, z ? z->name : "", r.x, r.y, slots ? 656 : menu_w, r.h, 0, pv->yn_cursor,
-                     TOUCH_LIST_PROMPT, NULL, NULL);
+        gm_draw_page(&q, path, hero, pv->yn_cursor, TOUCH_LIST_PROMPT, NULL, NULL);
         return;
     }
-    gm_draw_page(&p, path, z ? z->name : "", r.x, r.y, slots ? 656 : menu_w, r.h, 0, cursor, TOUCH_LIST_MENU,
-                 slots ? slot_row : NULL, &p);
+    gm_draw_page(&p, path, hero, cursor, TOUCH_LIST_MENU, slots ? slot_row : NULL, &p);
 }

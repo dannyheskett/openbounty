@@ -43,9 +43,8 @@ static void blit_panel(Texture2D t, int x, int y) {
 void hud_draw_siege_tile(const Game *g, const Sprites *s, int x, int y) {
     if (!s) return;
     if (g && g->stats.siege_weapons) {
-        int frame = sprites_frame((int)(GetTime() * 2.0),
-                                  s->hud_siege_anim_frames);
-        blit_panel(s->hud_siege_anim[frame], x, y);
+        blit_panel(sprites_strip(s->hud_siege_anim, s->hud_siege_anim_frames,
+                                 (int)(GetTime() * 2.0)), x, y);
     } else {
         blit_panel(s->hud_siege_silhouette, x, y);
     }
@@ -74,12 +73,12 @@ void hud_draw(const Game *g, const Sprites *s) {
     blit_panel(s->hud_contract_silhouette, x, y);
     if (g && g->contract.active_id[0]) {
         const VillainDef *v = villain_by_id(g->contract.active_id);
-        if (v && v->index >= 0 && v->index < 17) {
+        if (v && v->index >= 0 && v->index < s->villain_count) {
             // ticks the sidebar at frame speed (~2/sec). Use the
             // animation strip if loaded; fall back to the static portrait.
-            int frame = sprites_frame((int)(GetTime() * 2.0),
-                                      s->villain_anim_frames[v->index]);
-            Texture2D face = s->villain_anim[v->index][frame];
+            Texture2D face = sprites_strip(s->villain_anim[v->index],
+                                           s->villain_anim_frames[v->index],
+                                           (int)(GetTime() * 2.0));
             if (!face.id) face = s->villain_portrait[v->index];
             blit_panel(face, x, y);
         }
@@ -93,9 +92,8 @@ void hud_draw(const Game *g, const Sprites *s) {
     // 3. Magic star: silhouette until knows_magic, then animated star.
     // Lit for the rites of the zone the hero stands in (one magic: knowing it).
     if (g && GameHasRites(g, g->position.zone)) {
-        int frame = sprites_frame((int)(GetTime() * 2.0),
-                                  s->hud_magic_anim_frames);
-        blit_panel(s->hud_magic_anim[frame], x, y);
+        blit_panel(sprites_strip(s->hud_magic_anim, s->hud_magic_anim_frames,
+                                 (int)(GetTime() * 2.0)), x, y);
     } else {
         blit_panel(s->hud_magic_silhouette, x, y);
     }

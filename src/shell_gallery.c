@@ -181,7 +181,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     // A hero with something to show: gold, an army of four troops, magic.
     g->stats.gold = 12000;
     g->stats.knows_magic = true;
-    for (int i = 0; i < 14; i++) g->spells.counts[i] = (i % 3) + 1;
+    for (int i = 0; i < g->spells.count; i++) g->spells.counts[i] = (i % 3) + 1;
     {
         const TroopDef *t0 = troop_by_index(0), *t1 = troop_by_index(1),
                        *t2 = troop_by_index(2), *t4 = troop_by_index(4);
@@ -264,7 +264,8 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     shot(&G, "09b_week_end_budget");
     {
         // The same report late in a campaign: six-figure gold and a big army.
-        Game keep = *g;
+        Game keep = { 0 };
+        GameCopy(&keep, g);
         g->stats.gold = 279635;
         pending_week_paid = 1000;
         for (int i = 0; i < GAME_ARMY_SLOTS; i++)
@@ -273,7 +274,8 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         pending_week_phase = WK_PHASE_BUDGET;
         pump_week_end_dialog(g); shell_pump_player_io_message(g);
         shot(&G, "09b2_week_end_budget_large");
-        *g = keep;
+        GameCopy(g, &keep);
+        GameFree(&keep);
     }
     pending_week_phase = WK_PHASE_NONE;
 
@@ -389,7 +391,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         int marked = 0;
         for (int i = 0; i < res->town_count && marked < 3; i++) {
             if (strcmp(res->towns[i].zone, g->position.zone) != 0) continue;
-            for (int k = 0; k < GAME_TOWNS; k++)
+            for (int k = 0; k < g->town_count; k++)
                 if (strcmp(g->towns[k].id, res->towns[i].id) == 0) { g->towns[k].visited = true; marked++; }
         }
         for (int i = 0; i < res->castle_count; i++) {

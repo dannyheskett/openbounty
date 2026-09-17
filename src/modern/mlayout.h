@@ -22,6 +22,8 @@
 #ifndef OB_MODERN_MLAYOUT_H
 #define OB_MODERN_MLAYOUT_H
 
+#include <stdbool.h>
+
 typedef struct { int x, y, w, h; } ML_Rect;
 
 // What a panel (small, large, a question, a toast) is centred on: the area
@@ -31,6 +33,12 @@ typedef struct { int x, y, w, h; } ML_Rect;
 typedef enum { ML_AREA_MAP = 0, ML_AREA_FULL, ML_AREA_SCREEN } MlArea;
 void    ml_set_area(MlArea a);
 ML_Rect ml_area(void);
+// The battlefield, while a combat frame draws: a question or message over the
+// field stands on its foot at its width (uk_ask_over). Cleared at the frame's
+// end; false outside combat.
+void    ml_set_field(ML_Rect r);
+void    ml_clear_field(void);
+bool    ml_field(ML_Rect *out);
 
 // Horizontal and vertical padding inside every modern panel, in pixels.
 #define ML_PAD 8

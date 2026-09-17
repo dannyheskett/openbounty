@@ -73,6 +73,7 @@ TEST combat_seed_rng_same_inputs_same_state(void) {
     ASSERT(a.rng_state != b.rng_state);
 
     resources_free(res); free(res);
+    GameFree(&g);
     PASS();
 }
 

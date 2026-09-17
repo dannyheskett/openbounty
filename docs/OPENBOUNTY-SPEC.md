@@ -326,43 +326,33 @@ except where a deviation is explicitly flagged (§34).
 
 ## 3. Global constants and limits
 
-### 3.1 Storage caps (`engine/include/game.h`)
+### 3.1 No limit on content
 
-- **REQ-110.** Compile-time storage caps:
-
-  | Constant | Value | Meaning |
-  |---|---|---|
-  | `GAME_NAME_LEN` | 16 | Hero name buffer |
-  | `GAME_ARMY_SLOTS` | 5 | Player army stack slots |
-  | `GAME_CONTINENTS` | 4 | Zones in the base pack |
-  | `GAME_TOWNS` | 26 | Town record rows |
-  | `GAME_CASTLES` | 26 | Castle record rows (player-trackable castles; the King's castle is the special 27th catalog entry, §17.1). A ceiling, not a required count: every consumer loops to `min(res->castle_count, GAME_CASTLES)`, so a pack may declare fewer. |
-  | `GAME_MAX_MUTATIONS` | 1024 | Consumed-tile records (artifact pickups, opened chests). Raised from 64, a four-continent playthrough collects 50+ chests per continent; overflow silently dropped consumed entries and chests respawned on re-entry. |
-  | `GAME_MAX_DWELLINGS` | 64 | Per-game dwelling state rows |
-  | `GAME_MAX_PLACEMENTS` | 128 | Salt-time randomized placements |
-  | `GAME_MAX_FOES` | 160 | Foe state rows (hostile + friendly share the flat table). Sized for all four continents at once: OpenKB's `foe_coords[4][40]` gave each continent its own 40 slots (35 hostile + 5 friendly); the flat shared table must therefore hold 4 × 40 = 160, or the first-salted continents exhaust it and later ones (Archipelia, Saharia) get no foes. `salt_continent` caps each continent to `GAME_MAX_HOSTILE_PER_ZONE` (35) hostiles + 5 friendlies. |
-  | `CONTRACT_CYCLE_MAX` | 8 | Contract cycle buffer (real length from `res->contract.cycle_length`) |
-
+- **REQ-110.** Nothing a pack lists has a compile-time cap. Catalogs (troops,
+  spells, classes, villains, artifacts, towns, castles, zones and every
+  per-zone object list), maps and their string pools, fog, and game state
+  (towns, castles, spellbook, artifacts, villains, zones, contract cycle,
+  consumed tiles, dwellings, placements, foes, the player-IO queue) are heap,
+  sized from the pack or grown in play. `Game`, `Map` and `Fog` are copied
+  only with `GameCopy` / `FogCopy` / `MapAlloc` and released with `GameFree` /
+  `FogFree` / `MapFree`; a test fails the build on a by-value copy.
 - **REQ-111.** Tunable constants that *define gameplay* (day/week lengths,
-  costs, contract cycle length, difficulty table) have **not** been compile-time, they live in `game.json` and are read through `g->res`. Only storage caps
-  (bounded by struct sizes) have been compile-time.
+  costs, contract cycle length, difficulty table, hostile armies per zone) live
+  in `game.json` and are read through `g->res`.
 
-### 3.2 Resource caps (`engine/include/resources.h`)
+### 3.2 What stays fixed
 
-- **REQ-112.** The parsed `Resources` has bounded every array at compile time:
-  `RES_MAX_TOWNS=32`, `RES_MAX_CASTLES=32`, `RES_MAX_ZONES=8`,
-  `RES_MAX_NEIGHBORS=8`, `RES_MAX_ZONE_OBJECTS=256` (per kind, per zone),
-  `RES_ID_LEN=32`, `RES_NAME_LEN=48`, `RES_PATH_LEN=128`,
-  `RES_TILE_CODE_COUNT=128`, `RES_BANNER_LEN=320`, `RES_MAX_KEYBINDS=24`,
-  `RES_MAX_COUNT_BUCKETS=8`, among others.
-
-### 3.3 Catalog caps (`engine/include/tables.h`)
-
-- **REQ-113.** Catalog sizes: `CAT_TROOPS_MAX=32`, `CAT_SPELLS_MAX=32`,
-  `CAT_CLASSES_MAX=8`, `CAT_VILLAINS_MAX=32`, `CAT_ARTIFACTS_MAX=16`,
-  `CLASS_MAX_RANKS=4`, `CLASS_MAX_STARTING_TROOPS=2`. The shipped
-  `kings-bounty` pack has filled these to 25 troops, 14 spells, 4 classes,
-  17 villains, 8 artifacts (§Appendix A).
+- **REQ-112.** Text field lengths (`RES_ID_LEN=32`, `RES_NAME_LEN=48`,
+  `RES_PATH_LEN=128`, `RES_BANNER_LEN=320`, `GAME_NAME_LEN=16`, ...); an
+  over-long string is a load error. `RES_TILE_CODE_COUNT=256` (a map cell is
+  one byte); a map holds at most 65,535 distinct strings (a tile field is 16
+  bits).
+- **REQ-113.** Game rules: `GAME_ARMY_SLOTS=5`, the 6×5 combat field,
+  `CLASS_MAX_RANKS=4`, four difficulties, four continent tiers
+  (`RES_SPAWN_TIERS`, chest odds), the 5×5 puzzle grid, seven options.
+  Autoplay and the demo player keep their own table sizes and ignore content
+  beyond them. The shipped `kings-bounty` pack has 25 troops, 14 spells,
+  4 classes, 17 villains, 8 artifacts (§Appendix A).
 
 ### 3.4 Enums
 
@@ -416,17 +406,10 @@ except where a deviation is explicitly flagged (§34).
   the shipped pack: `economy.boat_cost_normal=500`, `boat_cost_cheap=100`,
   `siege_cost=3000`, `alcove_cost=5000` (§23, §Appendix A). Time:
   `time.day_steps=40`, `week_days=5`, `days_per_difficulty=[900,600,400,200]`.
-  Map dimensions: `MAP_MAX_W=64`, `MAP_MAX_H=128` (`engine/include/map.h`).
-  These are the compile-time bounds of the `Map.tiles` array and are enforced
-  at load: `MapLoadZone` prints `too large` and fails a zone declaring more.
-  A zone may declare any smaller `width`/`height`. Raising them is a
-  behaviour-neutral recompile, not a format change: the save encodes fog from
-  each zone's own `width`/`height` (REQ-413), not from these bounds, and the
-  height was raised from 64 to 128 with the full suite and the reference
-  pack's validation sweep byte-identical either way. The cost is memory:
-  `sizeof(Map)` is 212 bytes per tile, so 64x64 is 848 KB and 64x128 is
-  1,696 KB, and every autoplay search node snapshots a whole `Map` (AP-204),
-  so the frontier beam pays proportionally.
+  Map dimensions have no ceiling: `Map.tiles` is heap, sized to each zone's
+  own `width`/`height`, and the save encodes fog from those (REQ-413). The
+  cost is memory: every autoplay search node copies the used map area
+  (AP-204), so the frontier beam pays proportionally.
 
 ---
 
@@ -1292,15 +1275,11 @@ except where a deviation is explicitly flagged (§34).
 ### 15.1 Foe state and sources
 
 - **REQ-280.** A `FoeState` (§4.3) holds zone, `(x,y)`, `placement_id`,
-  `alive`, `friendly`, and a 5-stack garrison. Up to 160 foes are tracked
-  (`GAME_MAX_FOES` = 4 continents × 40), and static zone armies and salt-placed
-  friendly foes share the one flat array. Because the array is shared and salted
-  in zone order, the cap must cover every continent's allocation at once — a
-  smaller cap let the early continents exhaust the table and left later ones
-  (Archipelia, Saharia) with no foes. To keep OpenKB's per-continent 40-slot
-  split (`foe_coords[4][40]`), `salt_continent` bounds each continent to
-  `GAME_MAX_HOSTILE_PER_ZONE` (35) hostiles plus its `friendly_foes` (5)
-  friendlies. Static hostile foes come from `zones[].armies[]` with garrisons
+  `alive`, `friendly`, and a 5-troop garrison. The foe list grows as foes are
+  salted, and static zone armies and salt-placed friendly foes share it. To
+  keep OpenKB's per-continent split (`foe_coords[4][40]`), `salt_continent`
+  bounds each continent to `world.hostile_armies_per_zone` (35) hostiles plus
+  its `friendly_foes` (5) friendlies. Static hostile foes come from `zones[].armies[]` with garrisons
   pre-rolled at salt time (`roll_hostile_garrison`); friendly foes are
   salt-placed with placeholder garrisons re-rolled on join (§15.5).
 
@@ -1360,9 +1339,8 @@ except where a deviation is explicitly flagged (§34).
 
 - **REQ-290.** The town catalog has held 26 towns (`game.json:towns[]`) in the
   shipped pack, which names one per letter A..Z. That naming is a convention of
-  that pack, not an engine requirement: `GAME_TOWNS` (26) is a storage ceiling
-  and consumers loop to `min(res->town_count, GAME_TOWNS)`, so a pack may
-  declare fewer and may name them freely (REQ-322 selects gate destinations
+  that pack, not an engine requirement: the engine sizes its town table from
+  the pack, so a pack may declare any number and may name them freely (REQ-322 selects gate destinations
   from a list, not by first letter). Each town carries id, name, zone, `(x,y)`, gate coords, boat
   coords, an intel castle, and an optional pinned spell (full table in
   §Appendix A). Each `TownRecord` tracks `visited` and `spell_for_sale`.
@@ -1390,8 +1368,8 @@ except where a deviation is explicitly flagged (§34).
 
 - **REQ-300.** The castle catalog has held **27** castles in the shipped pack:
   26 villain/monster castles (named A..Z by that pack's convention) plus King
-  Maximus's castle (full table + difficulty tiers in §Appendix A). The 26 is a
-  storage ceiling (`GAME_CASTLES`, §3.1), not a required count. A pack must
+  Maximus's castle (full table + difficulty tiers in §Appendix A). The 26 is
+  that pack's choice, not a required count (§3.1). A pack must
   still declare, per zone, more contract-eligible castles than that zone's
   villain count, or `salt_villains`' retry loop (REQ-233) exhausts its guard
   and villains silently fail to place. Each `CastleRecord` tracks `visited`,
@@ -1444,7 +1422,7 @@ except where a deviation is explicitly flagged (§34).
   cavalry) have `max_population = 0` and are recruitable only at the home
   castle's recruit screen.
 - **REQ-311.** Each `DwellingState` tracks `(zone,x,y)`, `troop_id`,
-  `max_population`, `count` (cap 64, `GAME_MAX_DWELLINGS`). A dwelling is
+  `max_population`, `count`; the list grows as dwellings are created. A dwelling is
   created lazily on first visit if not salt-placed; the troop is picked
   deterministically by `(seed, x, y)` (`GameDwellingTroopAt`); initial `count`
   is the troop's `max_population`. Salt-placed dwellings are pinned to their

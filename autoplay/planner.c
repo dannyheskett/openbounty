@@ -119,7 +119,7 @@ static void planner_logistics(ExecCtx *ctx) {
                ctx->g->stats.max_spells - GameKnownSpells(ctx->g) < 4) {
             if (!exec_cast_raise(ctx)) break;
         }
-        int guard2 = GAME_SPELLBOOK_SLOTS * 4;
+        int guard2 = AP_SPELLS_MAX * 4;
         while (ctx->g->stats.max_spells - GameKnownSpells(ctx->g) < 4 &&
                guard2-- > 0) {
             // cheapest combat spell first; kits re-buy on demand
@@ -189,7 +189,7 @@ static void planner_logistics(ExecCtx *ctx) {
         // steps -- so the forcing is as deep as the book allows.
         int want_room = ctx->g->stats.max_spells - budget.floor_all;
         if (want_room > budget.stop_clamp) want_room = budget.stop_clamp;
-        int guard3 = GAME_SPELLBOOK_SLOTS * 4;
+        int guard3 = AP_SPELLS_MAX * 4;
         while (ctx->g->stats.max_spells - GameKnownSpells(ctx->g) < want_room &&
                guard3-- > 0) {
             if (exec_cast_raise(ctx)) continue;
@@ -291,9 +291,9 @@ static bool planner_attempt(ExecCtx *ctx, const PlanStep *step, ObjState *st) {
         // The stranded rule (AP-051): an attempt that accomplished its goal
         // admits UNLESS the hero ended marooned -- a success that seals the
         // hero in rolls back like a failure.
-        int ax[GAME_MAX_FOES], ay[GAME_MAX_FOES], an = 0;
-        char an_id[GAME_MAX_FOES][32];
-        for (int i = 0; i < ctx->g->foe_count && an < GAME_MAX_FOES; i++) {
+        int ax[AP_FOES_MAX], ay[AP_FOES_MAX], an = 0;
+        char an_id[AP_FOES_MAX][32];
+        for (int i = 0; i < ctx->g->foe_count && an < AP_FOES_MAX; i++) {
             const FoeState *f = &ctx->g->foes[i];
             if (!f->alive || f->friendly) continue;
             if (strcmp(f->zone, ctx->g->position.zone) != 0) continue;
@@ -423,7 +423,7 @@ static int scarce_winner_swap(ExecCtx *ctx, const PlanStepSet *set,
     // Held-win best needs no shopping -- no conflict possible.
     const CastleRecord *cr = NULL;
     if (best->kind == STEP_VILLAIN) {
-        for (int i = 0; i < GAME_CASTLES; i++)
+        for (int i = 0; i < ctx->g->castle_count; i++)
             if (ctx->g->castles[i].owner_kind == CASTLE_OWNER_VILLAIN &&
                 strcmp(ctx->g->castles[i].villain_id, best->handle) == 0)
                 cr = &ctx->g->castles[i];
@@ -438,7 +438,7 @@ static int scarce_winner_swap(ExecCtx *ctx, const PlanStepSet *set,
 
     RecruitRequest best_req = { RECRUIT_FOR_WIN, COMBAT_MODE_CASTLE, cr->id,
                                 best->label, cr->garrison, 0 };
-    static int best_draw[CAT_TROOPS_MAX];
+    static int best_draw[AP_TROOPS_MAX];
     if (!recruit_winner_finite_draw(ctx, &best_req, best_draw)) return -1;
 
     for (int oi = 1; oi < order_n; oi++) {
@@ -449,7 +449,7 @@ static int scarce_winner_swap(ExecCtx *ctx, const PlanStepSet *set,
         if (st[order[oi]].done) continue;
         const CastleRecord *ocr = NULL;
         if (other->kind == STEP_VILLAIN) {
-            for (int i = 0; i < GAME_CASTLES; i++)
+            for (int i = 0; i < ctx->g->castle_count; i++)
                 if (ctx->g->castles[i].owner_kind == CASTLE_OWNER_VILLAIN &&
                     strcmp(ctx->g->castles[i].villain_id, other->handle) == 0)
                     ocr = &ctx->g->castles[i];
@@ -459,7 +459,7 @@ static int scarce_winner_swap(ExecCtx *ctx, const PlanStepSet *set,
         if (!ocr) continue;
         RecruitRequest other_req = { RECRUIT_FOR_WIN, COMBAT_MODE_CASTLE,
                                      ocr->id, other->label, ocr->garrison, 0 };
-        static int other_draw[CAT_TROOPS_MAX];
+        static int other_draw[AP_TROOPS_MAX];
         if (!recruit_winner_finite_draw(ctx, &other_req, other_draw))
             continue;   // no live winner -- nothing to protect
         // The other's winner dies under the best's draw...

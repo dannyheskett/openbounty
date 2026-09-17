@@ -52,7 +52,6 @@ const Pack *pack_stack_top(void);
 
 #define PACK_ENTRY_PATH_MAX 512
 #define PACK_ENTRY_NAME_MAX 64
-#define PACK_DISCOVER_MAX   16
 
 typedef struct {
     char path[PACK_ENTRY_PATH_MAX];   // absolute path to the .openbounty
@@ -63,9 +62,9 @@ typedef struct {
 //   1. cwd/*.openbounty
 //   2. <user-data>/openbounty/*.openbounty
 //   3. <exe-dir>/assets/*.openbounty       (bundled with the binary)
-// Earlier source wins on duplicate names. Fills `out` up to `cap` entries.
-// Returns the count discovered.
-int pack_discover(PackEntry *out, int cap);
+// Earlier source wins on duplicate names. *out takes a heap list of every
+// pack found (NULL when none); the caller frees it. Returns the count.
+int pack_discover(PackEntry **out);
 
 // Resolve a `--pack <arg>` CLI value to an absolute path.
 // - If `arg` contains '/' or '\' or ends in ".openbounty" -> treat as

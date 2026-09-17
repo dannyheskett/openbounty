@@ -11,9 +11,9 @@
 #include "shell_audience.h"
 #include "raylib.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-#define POOL_MAX 8
 
 static struct {
     bool   home;
@@ -36,6 +36,28 @@ static struct {
     GameAudienceGain gain;
     bool   ask_tribute;       // a Yes/No waits to be opened
 } mc;
+
+// The pool, rebuilt on every call: heap, sized to the troop catalog.
+static int *s_pool;
+static int  s_pool_cap;
+
+static int castle_pool(void) {
+    int total = troops_count();
+    if (total > s_pool_cap) {
+        int *np = realloc(s_pool, (size_t)total * sizeof *np);
+        if (!np) return 0;
+        s_pool = np;
+        s_pool_cap = total;
+    }
+    return modern_castle_pool(s_pool, s_pool_cap);
+}
+
+int modern_castle_pool_count(void) { return castle_pool(); }
+
+int modern_castle_pool_troop(int i) {
+    int n = castle_pool();
+    return (i >= 0 && i < n) ? s_pool[i] : -1;
+}
 
 int modern_castle_pool(int *out, int cap) {
     int n = 0, total = troops_count();
@@ -142,10 +164,10 @@ static int stacks(const Game *g, bool garrison, int *out) {
 }
 
 int modern_castle_rows(const Game *g) {
-    int tmp[GAME_ARMY_SLOTS], pool[POOL_MAX];
+    int tmp[GAME_ARMY_SLOTS];
     switch (mc.page) {
         case MC_MENU:     return 3;   // two sections, Leave
-        case MC_RECRUIT:  return modern_castle_pool(pool, POOL_MAX) + 1;
+        case MC_RECRUIT:  return modern_castle_pool_count() + 1;
         case MC_AUDIENCE: return audiences(g) ? 4 : 2;
         case MC_GARRISON: return stacks(g, false, tmp) + 1;
         case MC_WITHDRAW: return stacks(g, true, tmp) + 1;
@@ -174,13 +196,12 @@ void modern_castle_row(const Game *g, int i, char *out, int cap,
         snprintf(out, (size_t)cap, "%s", bn->town_back);
         return;
     }
-    int slots[GAME_ARMY_SLOTS], pool[POOL_MAX];
+    int slots[GAME_ARMY_SLOTS];
     const CastleRecord *cr = GameFindCastleConst(g, mc.castle_id);
     const char *id = NULL;
     switch (mc.page) {
         case MC_RECRUIT: {
-            modern_castle_pool(pool, POOL_MAX);
-            const TroopDef *t = troop_by_index(pool[i]);
+            const TroopDef *t = troop_by_index(modern_castle_pool_troop(i));
             id = t ? t->id : NULL;
             break;
         }
@@ -251,11 +272,10 @@ static void act(Game *g, int i) {
         mc.page = MC_MENU;
         return;
     }
-    int slots[GAME_ARMY_SLOTS], pool[POOL_MAX];
+    int slots[GAME_ARMY_SLOTS];
     switch (mc.page) {
         case MC_RECRUIT: {
-            modern_castle_pool(pool, POOL_MAX);
-            const TroopDef *t = troop_by_index(pool[i]);
+            const TroopDef *t = troop_by_index(modern_castle_pool_troop(i));
             if (!t) return;
             if (!modern_castle_troop_offered(g, t)) return;     // greyed: not yet offered
             int max = recruit_max(g, t);
@@ -308,13 +328,12 @@ static void act(Game *g, int i) {
 
 static void commit(Game *g) {
     const ResBanners *bn = &g->res->banners;
-    int slots[GAME_ARMY_SLOTS], pool[POOL_MAX];
+    int slots[GAME_ARMY_SLOTS];
     int n = mc.step_value, i = mc.step_row, rc;
     mc.step_on = false;
     switch (mc.page) {
         case MC_RECRUIT: {
-            modern_castle_pool(pool, POOL_MAX);
-            const TroopDef *t = troop_by_index(pool[i]);
+            const TroopDef *t = troop_by_index(modern_castle_pool_troop(i));
             if (!t) return;
             rc = GameBuyTroop(g, t->id, n);
             if (rc == 1)      set_message(bn->town_no_gold);

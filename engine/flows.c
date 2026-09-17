@@ -142,12 +142,7 @@ void start_foe_friendly_flow(Game *game, Map *map, const Resources *res,
     int kind = (int)((unsigned)(nx * 131 + ny * 17 + game->seed) & 3);
     int chance = (int)((unsigned)(nx * 17 + ny * 131 +
                        (game->seed >> 8)) % 100) + 1;
-    int pool_slot = 0;
-    while (pool_slot < RES_SPAWN_POOL_N - 1 &&
-           chance > res->spawn.chance_curve[continent & 3][pool_slot]) {
-        pool_slot++;
-    }
-    const char *troop_id = res->spawn.troop_pool[kind][pool_slot];
+    const char *troop_id = resources_spawn_troop(&res->spawn, kind, continent & 3, chance);
     const TroopDef *td = troop_id[0] ? troop_by_id(troop_id) : NULL;
     int tcount = td ? td->tier_counts[continent & 3] : 0;
     if (tcount < 2) tcount = 2;

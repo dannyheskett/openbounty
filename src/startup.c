@@ -512,7 +512,7 @@ static bool run_title_menu(const Resources *res, const Sprites *sprites,
 }
 
 // ---------------------------------------------------------------------------
-// Class selection. Up to 4 classes from the catalog.
+// Class selection: every class in the catalog (legacy: the first four).
 // ---------------------------------------------------------------------------
 
 static bool run_class_select(const Resources *res,
@@ -521,7 +521,7 @@ static bool run_class_select(const Resources *res,
                              StartupChoice   *out) {
     int n = res->classes_count;
     if (n < 1) n = 1;
-    if (n > 4) n = 4;
+    if (!CL_IS_MODERN && n > 4) n = 4;   // legacy: the painting's four figures, keys A-D
     screen_open();
     // Modern: the carousel starts on the whole painting with no one picked;
     // Left/Right step through the figures, Enter picks.
@@ -607,7 +607,7 @@ static bool run_class_select(const Resources *res,
             // (tools/classpicker.py); the whole painting before anyone is
             // picked.
             bool picked = CL_IS_MODERN && class_cursor >= 0;
-            bool carousel = picked && class_cursor < 4 &&
+            bool carousel = picked && class_cursor < sprites->class_picker_selected_count &&
                             sprites->class_picker_selected[class_cursor].id;
             ui_blit(carousel ? sprites->class_picker_selected[class_cursor]
                              : sprites->class_picker, px, py, pw, ph);
@@ -814,7 +814,7 @@ static bool run_create_game(const Resources *res,
             // (the default name in grey until something is typed), then the
             // difficulty rows.
             Texture2D bg = sprites ? sprites->class_picker : (Texture2D){ 0 };
-            if (sprites && cls && cls->index >= 0 && cls->index < 4 &&
+            if (sprites && cls && cls->index >= 0 && cls->index < sprites->class_picker_selected_count &&
                 sprites->class_picker_selected[cls->index].id)
                 bg = sprites->class_picker_selected[cls->index];
             if (bg.id) {

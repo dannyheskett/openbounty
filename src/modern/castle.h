@@ -60,7 +60,12 @@ void        modern_castle_confirm_yes(Game *g);
 // Whether the castle will offer this troop at all: the original rule, a
 // leadership of at least six of them (src/screens/recruit_soldiers.c).
 bool        modern_castle_troop_offered(const Game *g, const TroopDef *t);
-// The five castle troops in recruit order (by cost); returns the count.
+// The castle troops in recruit order (by cost), up to `cap` into out;
+// returns the count written.
 int         modern_castle_pool(int *out, int cap);
+// Every castle troop: how many, and the catalog index of the i-th (-1 past
+// the end).
+int         modern_castle_pool_count(void);
+int         modern_castle_pool_troop(int i);
 
 #endif

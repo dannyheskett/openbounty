@@ -12,6 +12,7 @@ Terrain TerrainFromArt(const char *art) {
     if (strcmp(art, "forest") == 0 || starts_with(art, "forest_"))    return TERRAIN_FOREST;
     if (strcmp(art, "mountain") == 0 || starts_with(art, "mountain_"))return TERRAIN_MOUNTAIN;
     if (strcmp(art, "desert") == 0 || starts_with(art, "desert_"))    return TERRAIN_DESERT;
+    if (starts_with(art, "river_"))                                    return TERRAIN_RIVER;
     // Castle parts, towns, dwellings, signs, chests, boat, artifacts, bridges: all on grass.
     return TERRAIN_GRASS;
 }
@@ -86,6 +87,7 @@ const char *TerrainName(Terrain t) {
         case TERRAIN_MOUNTAIN: return "mountain";
         case TERRAIN_WATER:    return "water";
         case TERRAIN_DESERT:   return "desert";
+        case TERRAIN_RIVER:    return "river";
         default:               return "?";
     }
 }

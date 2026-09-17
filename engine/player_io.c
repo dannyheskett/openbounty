@@ -10,6 +10,7 @@
 #include "player_io.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "game.h"          // full Game definition (PlayerIoQueue field)
@@ -29,9 +30,22 @@ static void copy_str(char *dst, int cap, const char *src) {
 
 void player_io_reset(Game *g) {
     if (!g) return;
-    memset(&g->player_io, 0, sizeof g->player_io);
     g->player_io.head = 0;
     g->player_io.count = 0;
+}
+
+// Make room for one more request: double the ring, oldest entry first at 0.
+static bool queue_grow(PlayerIoQueue *q) {
+    if (q->count < q->cap) return true;
+    int ncap = q->cap > 0 ? q->cap * 2 : 8;
+    PlayerRequest *ns = malloc((size_t)ncap * sizeof *ns);
+    if (!ns) return false;
+    for (int i = 0; i < q->count; i++) ns[i] = q->slot[(q->head + i) % q->cap];
+    free(q->slot);
+    q->slot = ns;
+    q->cap = ncap;
+    q->head = 0;
+    return true;
 }
 
 // Reserve the next free slot at the tail, zero it, set role + text. Returns the
@@ -40,12 +54,8 @@ static PlayerRequest *enqueue(Game *g, ReqRole role,
                               const char *header, const char *body) {
     if (!g) return NULL;
     PlayerIoQueue *q = &g->player_io;
-    if (q->count >= PLAYER_IO_QUEUE_CAP) {
-        // Full queue: silently drop the OLDEST entry to make room for the new one.
-        q->head = (q->head + 1) % PLAYER_IO_QUEUE_CAP;
-        q->count--;
-    }
-    int idx = (q->head + q->count) % PLAYER_IO_QUEUE_CAP;
+    if (!queue_grow(q)) return NULL;
+    int idx = (q->head + q->count) % q->cap;
     PlayerRequest *r = &q->slot[idx];
     memset(r, 0, sizeof *r);
     r->role = role;
@@ -93,10 +103,10 @@ PlayerRequest *player_io_raise_decision(Game *g, PendingFlow flow,
         PlayerIoQueue *q = &g->player_io;
         int kept = 0;
         for (int i = 0; i < q->count; i++) {
-            int idx = (q->head + i) % PLAYER_IO_QUEUE_CAP;
+            int idx = (q->head + i) % q->cap;
             if (q->slot[idx].role == REQ_DECISION) continue;   // drop stale decision
             // Compact kept (message) entries toward the head.
-            int dst = (q->head + kept) % PLAYER_IO_QUEUE_CAP;
+            int dst = (q->head + kept) % q->cap;
             if (dst != idx) q->slot[dst] = q->slot[idx];
             kept++;
         }
@@ -120,9 +130,9 @@ PlayerRequest *player_io_raise_view(Game *g, ViewKind view, bool replace,
         PlayerIoQueue *q = &g->player_io;
         int kept = 0;
         for (int i = 0; i < q->count; i++) {
-            int idx = (q->head + i) % PLAYER_IO_QUEUE_CAP;
+            int idx = (q->head + i) % q->cap;
             if (q->slot[idx].role == REQ_VIEW) continue;   // drop stale view
-            int dst = (q->head + kept) % PLAYER_IO_QUEUE_CAP;
+            int dst = (q->head + kept) % q->cap;
             if (dst != idx) q->slot[dst] = q->slot[idx];
             kept++;
         }
@@ -149,7 +159,7 @@ bool player_io_idle(const Game *g) {
 static void pop_front(Game *g) {
     PlayerIoQueue *q = &g->player_io;
     if (q->count <= 0) return;
-    q->head = (q->head + 1) % PLAYER_IO_QUEUE_CAP;
+    q->head = (q->head + 1) % q->cap;
     q->count--;
     if (q->count == 0) q->head = 0;   // normalize when empty (tidy snapshots)
 }

@@ -19,7 +19,7 @@ void perform_temp_death(Game *g, Map *map, Fog *fog, const Resources *res) {
     // Modern: the hero's disgraced scene when the pack has one, else the
     // Emperor who summoned you, in the in-lay.
     const ClassDef *cls = class_by_id(g->character.cls.id);
-    if (msg && CL_IS_MODERN && cls && cls->index >= 0 && cls->index < 4 &&
+    if (msg && CL_IS_MODERN && cls && cls->index >= 0 && cls->index < res->classes_count &&
         res->class_hero[cls->index].disgraced[0]) {
         msg->face = REQ_FACE_SCENE;
         msg->face_index = cls->index;

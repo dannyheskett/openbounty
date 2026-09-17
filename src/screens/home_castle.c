@@ -54,18 +54,22 @@ void screen_home_castle_set_cursor(int r) { s_cursor = (r < 0) ? 0 : (r > 1 ? 1 
 
 static int pick_castle_troop(const Game *g) {
     int total = troops_count();
-    int pool[8];
     int npool = 0;
-    for (int i = 0; i < total && npool < 8; i++) {
+    for (int i = 0; i < total; i++) {
         const TroopDef *t = troop_by_index(i);
-        if (!t) continue;
-        if (strcmp(t->dwelling, "castle") == 0) pool[npool++] = i;
+        if (t && strcmp(t->dwelling, "castle") == 0) npool++;
     }
     if (npool < 1) return -1;
     unsigned long h = g ? (g->seed ^ 0xC451E11Au) : 0;
     h ^= (unsigned long)g->stats.days_left;
     h = h * 2654435761u + 0x9E3779B9u;
-    return pool[h % (unsigned long)npool];
+    // The pick-th castle troop in catalog order.
+    int pick = (int)(h % (unsigned long)npool);
+    for (int i = 0; i < total; i++) {
+        const TroopDef *t = troop_by_index(i);
+        if (t && strcmp(t->dwelling, "castle") == 0 && pick-- == 0) return i;
+    }
+    return -1;
 }
 
 void screen_home_castle_open(Game *g) {

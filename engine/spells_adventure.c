@@ -46,7 +46,7 @@ static void cast_find_villain(Game *g) {
     }
     GameCastFindVillain(g);
     const char *villain_id = g->contract.active_id;
-    for (int i = 0; i < GAME_CASTLES; i++) {
+    for (int i = 0; i < g->castle_count; i++) {
         if (g->castles[i].known &&
             strcmp(g->castles[i].villain_id, villain_id) == 0) {
             // Look up the castle's display name; fall back to id if
@@ -70,6 +70,10 @@ static void cast_find_villain(Game *g) {
 int try_build_bridge(Game *g, Map *map, int dx, int dy) {
     // Build bridge in direction (dx, dy). Returns number of tiles placed.
     const char *bridge_art = (dy != 0) ? "bridge_v" : "bridge_h";
+    // Over a river the deck is the river bridge: paving across the river's own
+    // piece, crossing north-south over a river running east-west, or the other
+    // way round.
+    const char *river_art = (dy != 0) ? "bridge_river_ns" : "bridge_river_ew";
 
     int built = 0;
     for (int i = 1; i <= 5; i++) {
@@ -79,15 +83,18 @@ int try_build_bridge(Game *g, Map *map, int dx, int dy) {
         if (!MapInBounds(map, nx, ny)) break;
 
         const Tile *t = MapGetTile(map, nx, ny);
-        if (t->terrain != TERRAIN_WATER) break;
+        // The sea or a river: a bridge crosses either.
+        if (t->terrain != TERRAIN_WATER && t->terrain != TERRAIN_RIVER) break;
 
-        map->tiles[ny][nx].terrain = TERRAIN_GRASS;
-        map->tiles[ny][nx].interactive = INTERACT_NONE;
-        map->tiles[ny][nx].blocks_foot = false;
-        map->tiles[ny][nx].is_bridge = true;
+        bool over_river = t->terrain == TERRAIN_RIVER;
+        MAP_TILE(map, nx, ny).terrain = TERRAIN_GRASS;
+        MAP_TILE(map, nx, ny).interactive = INTERACT_NONE;
+        MAP_TILE(map, nx, ny).blocks_foot = false;
+        MAP_TILE(map, nx, ny).is_bridge = true;
         {
             char art[TILE_ART_NAME_LEN];
-            TileSetArt(map, &map->tiles[ny][nx], MapTerrainArt(map, bridge_art, art, sizeof art));
+            TileSetArt(map, &MAP_TILE(map, nx, ny),
+                       MapTerrainArt(map, over_river ? river_art : bridge_art, art, sizeof art));
         }
 
         built++;
@@ -117,7 +124,7 @@ static void cast_castle_gate(Game *g) {
     // picker (shell_gate.c). The charge is consumed only on a chosen teleport,
     // never on cast or cancel.
     int visited_count = 0;
-    for (int i = 0; i < GAME_CASTLES && i < g->res->castle_count; i++) {
+    for (int i = 0; i < g->castle_count && i < g->res->castle_count; i++) {
         if (!g->castles[i].visited) continue;
         if (resources_castle_is_home(&g->res->castles[i])) continue;
         if (!g->res->castles[i].zone[0]) continue;
@@ -139,7 +146,7 @@ static void cast_town_gate(Game *g) {
     const ResBanners *bn = &g->res->banners;
     char msg[RES_BANNER_LEN];
     int visited_count = 0;
-    int tn = g->res->town_count < GAME_TOWNS ? g->res->town_count : GAME_TOWNS;
+    int tn = g->town_count;
     for (int i = 0; i < tn; i++) {
         if (g->towns[i].visited && g->res->towns[i].zone[0]) visited_count++;
     }

@@ -447,6 +447,7 @@ static cJSON *gb_placeholder_strings(void) {
     cJSON_AddStringToObject(o2, "gm_new_game", "gm_new_game");
     cJSON_AddStringToObject(o2, "gm_exit", "gm_exit");
     cJSON_AddStringToObject(o2, "gm_back", "gm_back");
+    cJSON_AddStringToObject(o2, "gm_close", "gm_close");
     cJSON_AddStringToObject(o2, "gm_debug", "gm_debug");
     cJSON_AddStringToObject(o2, "gm_actions", "gm_actions");
     cJSON_AddStringToObject(o2, "gm_unit", "gm_unit");

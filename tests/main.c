@@ -45,6 +45,7 @@ SUITE_EXTERN(unit_tilevar_suite);
 SUITE_EXTERN(unit_overlay_dim_suite);
 SUITE_EXTERN(unit_art_manifest_suite);
 SUITE_EXTERN(unit_strings_agnostic_suite);
+SUITE_EXTERN(unit_no_state_copy_suite);
 SUITE_EXTERN(unit_pack_suite);
 SUITE_EXTERN(unit_pack_select_suite);
 SUITE_EXTERN(unit_gamebuilder_suite);
@@ -71,6 +72,7 @@ SUITE_EXTERN(e2e_combat_input_suite);
 SUITE_EXTERN(e2e_save_suite);
 SUITE_EXTERN(e2e_save_more_suite);
 SUITE_EXTERN(e2e_gamebuilder_suite);
+SUITE_EXTERN(e2e_no_limits_suite);
 
 // ---- autoplay ----------------------------------------------------------------
 SUITE_EXTERN(autoplay_worldsnap_suite);
@@ -109,6 +111,7 @@ int main(int argc, char **argv) {
     RUN_SUITE(unit_overlay_dim_suite);
     RUN_SUITE(unit_art_manifest_suite);
     RUN_SUITE(unit_strings_agnostic_suite);
+    RUN_SUITE(unit_no_state_copy_suite);
     RUN_SUITE(unit_pack_suite);
     RUN_SUITE(unit_pack_select_suite);
     RUN_SUITE(unit_gamebuilder_suite);
@@ -135,6 +138,7 @@ int main(int argc, char **argv) {
     RUN_SUITE(e2e_save_suite);
     RUN_SUITE(e2e_save_more_suite);
     RUN_SUITE(e2e_gamebuilder_suite);
+    RUN_SUITE(e2e_no_limits_suite);
 
     // autoplay
     RUN_SUITE(autoplay_worldsnap_suite);

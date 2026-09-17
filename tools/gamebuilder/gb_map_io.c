@@ -75,7 +75,7 @@ bool gb_map_load(MapGrid *m, const Resources *res, const char *zone_id) {
     }
     if (z->width > MAPEDIT_MAX_W || z->height > MAPEDIT_MAX_H) {
         fprintf(stderr, "gamebuilder: zone '%s' is %dx%d, over the %dx%d ceiling "
-                        "(MAP_MAX_W/H in engine/include/map.h)\n",
+                        "(MAPEDIT_MAX_W/H in tools/gamebuilder/gb_map.h)\n",
                 zone_id, z->width, z->height, MAPEDIT_MAX_W, MAPEDIT_MAX_H);
         return false;
     }

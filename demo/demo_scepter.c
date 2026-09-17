@@ -37,12 +37,11 @@ static void puzzle_cam(const Map *m, int cx, int cy, int *out_x, int *out_y) {
 static bool cell_revealed(const Game *g, int row, int col) {
     int e = puzzle_grid_entity(row, col);
     if (e >= 0) {
-        int cap = (int)(sizeof g->contract.villains_caught /
-                        sizeof g->contract.villains_caught[0]);
+        int cap = g->contract.villain_count;
         return e < cap && g->contract.villains_caught[e];
     }
     int ai = -e - 1;
-    int acap = (int)(sizeof g->artifacts.found / sizeof g->artifacts.found[0]);
+    int acap = g->artifacts.count;
     return ai >= 0 && ai < acap && g->artifacts.found[ai];
 }
 
@@ -89,7 +88,7 @@ void demo_scepter_update(const Game *g, const Fog *live_fog) {
     // Match the fragment against every DISCOVERED zone, over tiles the player
     // has actually explored (the per-zone fog). Burial-rule prefilter is the
     // game's own public rule: grass, no interactive, not foot-blocking.
-    for (int zi = 0; zi < g->res->zone_count && zi < GAME_CONTINENTS; zi++) {
+    for (int zi = 0; zi < g->res->zone_count && zi < g->world.zone_count; zi++) {
         if (!g->world.zones_discovered[zi]) continue;
         const char *zid = g->res->zones[zi].id;
         const Fog *zfog = (strcmp(zid, g->position.zone) == 0)
@@ -101,7 +100,7 @@ void demo_scepter_update(const Game *g, const Fog *live_fog) {
         const Map *m = &s_scan_map;
         for (int y = 0; y < m->height; y++) {
             for (int x = 0; x < m->width; x++) {
-                const Tile *t = &m->tiles[y][x];
+                const Tile *t = &MAP_TILE(m, x, y);
                 if (t->terrain != TERRAIN_GRASS ||
                     t->interactive != INTERACT_NONE || t->blocks_foot)
                     continue;

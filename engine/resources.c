@@ -50,6 +50,7 @@ static const char *json_str(const cJSON *obj, const char *key,
 // because the catalog parsers (troops, villains) reach it first.
 static void parse_path_array(cJSON *arr, char *dst, size_t stride,
                              int cap, int *out_count);
+static void parse_path_list(cJSON *arr, char (**dst)[RES_PATH_LEN], int *out_count);
 
 // Read a fixed-length int array under `key`. Missing keys / wrong types leave
 // `out[]` untouched, so callers prime it with defaults before calling.
@@ -126,17 +127,28 @@ static char *slurp(const char *path) {
     return buf;
 }
 
+// Size a heap catalog table for `n` entries, releasing what it held and
+// resetting its count. False when there is nothing to hold or no memory.
+#define RES_TABLE_ALLOC(field, count, n)                                   \
+    (free(field), (field) = NULL, (count) = 0,                             \
+     ((n) > 0 && ((field) = calloc((size_t)(n), sizeof *(field))) != NULL))
+
+// A JSON array's or object's entry count (0 when it is neither).
+static int json_len(const cJSON *j) {
+    return (cJSON_IsArray(j) || cJSON_IsObject(j)) ? cJSON_GetArraySize(j) : 0;
+}
+
 // ---- In-place section parsers ---------------------------------------------
 // Each parses a JSON array nested inside the single game.json root object.
 
 static void parse_anim_set(cJSON *obj, ResAnimSet *out);
 
 static void parse_towns(Resources *res, cJSON *arr) {
-    res->town_count = 0;
-    if (!cJSON_IsArray(arr)) return;
+    int cap = json_len(arr);
+    if (!RES_TABLE_ALLOC(res->towns, res->town_count, cap)) return;
     cJSON *it;
     cJSON_ArrayForEach(it, arr) {
-        if (res->town_count >= RES_MAX_TOWNS) break;
+        if (res->town_count >= cap) break;
         ResTown *t = &res->towns[res->town_count++];
         t->index = json_int(it, "index", -1);
         copy_str(t->id,   sizeof(t->id),   json_str(it, "id", ""));
@@ -170,11 +182,11 @@ static void parse_towns(Resources *res, cJSON *arr) {
 }
 
 static void parse_castles(Resources *res, cJSON *arr) {
-    res->castle_count = 0;
-    if (!cJSON_IsArray(arr)) return;
+    int cap = json_len(arr);
+    if (!RES_TABLE_ALLOC(res->castles, res->castle_count, cap)) return;
     cJSON *it;
     cJSON_ArrayForEach(it, arr) {
-        if (res->castle_count >= RES_MAX_CASTLES) break;
+        if (res->castle_count >= cap) break;
         ResCastle *c = &res->castles[res->castle_count++];
         c->index = json_int(it, "index", -1);
         copy_str(c->id,   sizeof(c->id),   json_str(it, "id", ""));
@@ -278,6 +290,7 @@ static Terrain terrain_from_name(const char *s) {
     if (strcmp(s, "mountain") == 0) return TERRAIN_MOUNTAIN;
     if (strcmp(s, "water")    == 0) return TERRAIN_WATER;
     if (strcmp(s, "desert")   == 0) return TERRAIN_DESERT;
+    if (strcmp(s, "river")    == 0) return TERRAIN_RIVER;
     return TERRAIN_GRASS;
 }
 
@@ -326,13 +339,13 @@ static void parse_tile_codes(Resources *res, cJSON *obj) {
         cJSON *jib = cJSON_GetObjectItem(entry, "is_bridge");
         tc->blocks_foot = cJSON_IsBool(jbf) && cJSON_IsTrue(jbf);
         tc->is_bridge   = cJSON_IsBool(jib) && cJSON_IsTrue(jib);
-        tc->variant_count = 0;
         cJSON *jv = cJSON_GetObjectItem(entry, "variants");
-        if (cJSON_IsArray(jv)) {
+        int v_cap = json_len(jv);
+        if (cJSON_IsArray(jv) && RES_TABLE_ALLOC(tc->variants, tc->variant_count, v_cap)) {
             cJSON *v;
             cJSON_ArrayForEach(v, jv) {
                 if (!cJSON_IsString(v) || !v->valuestring[0]) continue;
-                if (tc->variant_count >= RES_TILE_VARIANTS) break;
+                if (tc->variant_count >= v_cap) break;
                 copy_str(tc->variants[tc->variant_count], RES_TILE_ART_LEN, v->valuestring);
                 tc->variant_count++;
             }
@@ -340,15 +353,21 @@ static void parse_tile_codes(Resources *res, cJSON *obj) {
     }
 }
 
-static void parse_zone_objects_array(cJSON *arr, int cap, int *count,
-                                     void *dst, size_t stride,
+// Fill a heap list with one entry per element of `arr`; *dst is allocated here
+// (NULL when the array is empty or absent).
+static void parse_zone_objects_array(cJSON *arr, int *count,
+                                     void **dst, size_t stride,
                                      void (*fill)(cJSON *, void *)) {
     *count = 0;
-    if (!cJSON_IsArray(arr)) return;
+    *dst = NULL;
+    int cap = cJSON_IsArray(arr) ? cJSON_GetArraySize(arr) : 0;
+    if (cap <= 0) return;
+    *dst = calloc((size_t)cap, stride);
+    if (!*dst) return;
     cJSON *it;
     cJSON_ArrayForEach(it, arr) {
         if (*count >= cap) break;
-        void *slot = (char *)dst + (*count) * stride;
+        void *slot = (char *)*dst + (*count) * stride;
         fill(it, slot);
         (*count)++;
     }
@@ -369,12 +388,14 @@ static void fill_zone_castle(cJSON *j, void *dst) {
     copy_str(c->id, sizeof(c->id), json_str(j, "id", ""));
     // Optional `decorations` array -- extra wall pieces around the gate.
     // Each entry: { "dx": int, "dy": int, "art": string }.
-    c->decor_count = 0;
     cJSON *decor = cJSON_GetObjectItem(j, "decorations");
-    if (cJSON_IsArray(decor)) {
+    int dcap = json_len(decor);
+    c->decorations = NULL;
+    c->decor_count = 0;
+    if (cJSON_IsArray(decor) && RES_TABLE_ALLOC(c->decorations, c->decor_count, dcap)) {
         cJSON *it;
         cJSON_ArrayForEach(it, decor) {
-            if (c->decor_count >= RES_MAX_CASTLE_DECOR) break;
+            if (c->decor_count >= dcap) break;
             ResCastleDecor *d = &c->decorations[c->decor_count++];
             d->dx = json_int(it, "dx", 0);
             d->dy = json_int(it, "dy", 0);
@@ -420,11 +441,11 @@ static void fill_zone_army(cJSON *j, void *dst) {
 }
 
 static void parse_zones(Resources *res, cJSON *arr) {
-    res->zone_count = 0;
-    if (!cJSON_IsArray(arr)) return;
+    int cap = json_len(arr);
+    if (!RES_TABLE_ALLOC(res->zones, res->zone_count, cap)) return;
     cJSON *it;
     cJSON_ArrayForEach(it, arr) {
-        if (res->zone_count >= RES_MAX_ZONES) break;
+        if (res->zone_count >= cap) break;
         ResZone *z = &res->zones[res->zone_count++];
         memset(z, 0, sizeof(*z));
         copy_str(z->id,       sizeof(z->id),       json_str(it, "id", ""));
@@ -453,10 +474,11 @@ static void parse_zones(Resources *res, cJSON *arr) {
         z->hero_spawn_y = json_int(hs, "y", 0);
 
         cJSON *nbr = cJSON_GetObjectItem(it, "neighbors");
-        if (cJSON_IsArray(nbr)) {
+        int ncap = json_len(nbr);
+        if (cJSON_IsArray(nbr) && RES_TABLE_ALLOC(z->neighbors, z->neighbor_count, ncap)) {
             cJSON *n;
             cJSON_ArrayForEach(n, nbr) {
-                if (z->neighbor_count >= RES_MAX_NEIGHBORS) break;
+                if (z->neighbor_count >= ncap) break;
                 if (cJSON_IsString(n)) {
                     copy_str(z->neighbors[z->neighbor_count],
                              sizeof(z->neighbors[0]), n->valuestring);
@@ -466,19 +488,19 @@ static void parse_zones(Resources *res, cJSON *arr) {
         }
 
         parse_zone_objects_array(cJSON_GetObjectItem(it, "signs"),
-                                 RES_MAX_ZONE_OBJECTS, &z->sign_count,
-                                 z->signs, sizeof(ResSign), fill_sign);
+                                 &z->sign_count,
+                                 (void **)&z->signs, sizeof(ResSign), fill_sign);
         // Towns: resolve each zone town's id to an INDEX into the authoritative
         // res->towns[] catalog (already parsed -- parse_towns runs before
         // parse_zones). Preserves the zone JSON town ORDER (required for planner
         // determinism). A zone town id missing from the catalog is skipped + logged.
         {
             cJSON *jtowns = cJSON_GetObjectItem(it, "towns");
-            z->town_count = 0;
-            if (cJSON_IsArray(jtowns)) {
+            int tcap = json_len(jtowns);
+            if (cJSON_IsArray(jtowns) && RES_TABLE_ALLOC(z->town_idx, z->town_count, tcap)) {
                 cJSON *jt;
                 cJSON_ArrayForEach(jt, jtowns) {
-                    if (z->town_count >= RES_MAX_TOWNS) break;
+                    if (z->town_count >= tcap) break;
                     const char *tid = json_str(jt, "id", "");
                     int idx = -1;
                     for (int i = 0; i < res->town_count; i++)
@@ -493,20 +515,20 @@ static void parse_zones(Resources *res, cJSON *arr) {
             }
         }
         parse_zone_objects_array(cJSON_GetObjectItem(it, "castles"),
-                                 RES_MAX_ZONE_OBJECTS, &z->castle_count,
-                                 z->castles, sizeof(ResZoneCastle), fill_zone_castle);
+                                 &z->castle_count,
+                                 (void **)&z->castles, sizeof(ResZoneCastle), fill_zone_castle);
         parse_zone_objects_array(cJSON_GetObjectItem(it, "chests"),
-                                 RES_MAX_ZONE_OBJECTS, &z->chest_count,
-                                 z->chests, sizeof(ResZoneChest), fill_zone_chest);
+                                 &z->chest_count,
+                                 (void **)&z->chests, sizeof(ResZoneChest), fill_zone_chest);
         parse_zone_objects_array(cJSON_GetObjectItem(it, "artifacts"),
-                                 RES_MAX_ZONE_OBJECTS, &z->artifact_count,
-                                 z->artifacts, sizeof(ResZoneArtifact), fill_zone_artifact);
+                                 &z->artifact_count,
+                                 (void **)&z->artifacts, sizeof(ResZoneArtifact), fill_zone_artifact);
         parse_zone_objects_array(cJSON_GetObjectItem(it, "dwellings"),
-                                 RES_MAX_ZONE_OBJECTS, &z->dwelling_count,
-                                 z->dwellings, sizeof(ResZoneDwelling), fill_zone_dwelling);
+                                 &z->dwelling_count,
+                                 (void **)&z->dwellings, sizeof(ResZoneDwelling), fill_zone_dwelling);
         parse_zone_objects_array(cJSON_GetObjectItem(it, "wandering_armies"),
-                                 RES_MAX_ZONE_OBJECTS, &z->army_count,
-                                 z->armies, sizeof(ResZoneArmy), fill_zone_army);
+                                 &z->army_count,
+                                 (void **)&z->armies, sizeof(ResZoneArmy), fill_zone_army);
 
         cJSON *salt = cJSON_GetObjectItem(it, "salt");
         z->salt.artifacts     = json_int(salt, "artifacts",     0);
@@ -520,9 +542,9 @@ static void parse_zones(Resources *res, cJSON *arr) {
         z->salt.dwelling_range_max = -1;
         if (cJSON_IsObject(salt)) {
             cJSON *pref = cJSON_GetObjectItem(salt, "preferred_troops");
-            if (cJSON_IsArray(pref)) {
-                int n = cJSON_GetArraySize(pref);
-                if (n > 16) n = 16;
+            int n = json_len(pref);
+            if (cJSON_IsArray(pref) &&
+                RES_TABLE_ALLOC(z->salt.preferred_troops, z->salt.preferred_troop_count, n)) {
                 for (int i = 0; i < n; i++) {
                     cJSON *e = cJSON_GetArrayItem(pref, i);
                     if (cJSON_IsString(e)) {
@@ -579,10 +601,15 @@ static int parse_troop_abilities(const char *s) {
 
 static void parse_troops(Resources *res, cJSON *arr) {
     res->troops_count = 0;
-    if (!cJSON_IsArray(arr)) return;
+    free(res->troops);
+    res->troops = NULL;
+    int n = cJSON_IsArray(arr) ? cJSON_GetArraySize(arr) : 0;
+    if (n <= 0) return;
+    res->troops = calloc((size_t)n, sizeof *res->troops);
+    if (!res->troops) { fprintf(stderr, "resources: out of memory for %d troops\n", n); return; }
     cJSON *it;
     cJSON_ArrayForEach(it, arr) {
-        if (res->troops_count >= CAT_TROOPS_MAX) break;
+        if (res->troops_count >= n) break;
         TroopDef *t = &res->troops[res->troops_count++];
         memset(t, 0, sizeof(*t));
         t->index = json_int(it, "index", -1);
@@ -593,8 +620,7 @@ static void parse_troops(Resources *res, cJSON *arr) {
         // Via parse_string_array so a non-string entry is skipped rather than
         // burning a slot: the hand-rolled loop this replaces advanced its
         // index outside the type check, leaving an empty frame mid-cycle.
-        parse_path_array(cJSON_GetObjectItem(it, "anim"), t->anim[0],
-                         CAT_PATH_LEN, OB_ANIM_FRAMES_MAX, &t->anim_count);
+        parse_path_list(cJSON_GetObjectItem(it, "anim"), &t->anim, &t->anim_count);
         copy_str(t->dwelling, sizeof(t->dwelling), json_str(it, "dwelling", ""));
         t->skill_level     = json_int(it, "skill_level", 0);
         t->hit_points      = json_int(it, "hit_points", 0);
@@ -642,11 +668,11 @@ static SpellKind spell_kind_from_name(const char *s) {
 }
 
 static void parse_spells(Resources *res, cJSON *arr) {
-    res->spells_count = 0;
-    if (!cJSON_IsArray(arr)) return;
+    int cap = json_len(arr);
+    if (!RES_TABLE_ALLOC(res->spells, res->spells_count, cap)) return;
     cJSON *it;
     cJSON_ArrayForEach(it, arr) {
-        if (res->spells_count >= CAT_SPELLS_MAX) break;
+        if (res->spells_count >= cap) break;
         SpellDef *s = &res->spells[res->spells_count++];
         memset(s, 0, sizeof(*s));
         s->index = json_int(it, "index", -1);
@@ -659,11 +685,14 @@ static void parse_spells(Resources *res, cJSON *arr) {
 }
 
 static void parse_classes(Resources *res, cJSON *arr) {
-    res->classes_count = 0;
-    if (!cJSON_IsArray(arr)) return;
+    int cap = json_len(arr);
+    if (!RES_TABLE_ALLOC(res->classes, res->classes_count, cap)) return;
+    free(res->class_hero);
+    res->class_hero = calloc((size_t)cap, sizeof *res->class_hero);
+    if (!res->class_hero) { free(res->classes); res->classes = NULL; return; }
     cJSON *it;
     cJSON_ArrayForEach(it, arr) {
-        if (res->classes_count >= CAT_CLASSES_MAX) break;
+        if (res->classes_count >= cap) break;
         ClassDef *c = &res->classes[res->classes_count++];
         memset(c, 0, sizeof(*c));
         c->index = json_int(it, "index", -1);
@@ -687,16 +716,19 @@ static void parse_classes(Resources *res, cJSON *arr) {
         }
 
         cJSON *st = cJSON_GetObjectItem(it, "starting_troops");
-        int si = 0;
-        if (cJSON_IsArray(st)) {
+        int si = 0, st_cap = json_len(st), st_n = 0;
+        if (cJSON_IsArray(st) && RES_TABLE_ALLOC(c->starting_troops, c->starting_troop_count, st_cap) &&
+            RES_TABLE_ALLOC(c->starting_counts, st_n, st_cap)) {
+            (void)st_n;
             cJSON *e;
             cJSON_ArrayForEach(e, st) {
-                if (si >= CLASS_MAX_STARTING_TROOPS) break;
+                if (si >= st_cap) break;
                 copy_str(c->starting_troops[si], sizeof(c->starting_troops[si]),
                          json_str(e, "id", ""));
                 c->starting_counts[si] = json_int(e, "count", 0);
                 si++;
             }
+            c->starting_troop_count = si;
         }
 
         cJSON *rk = cJSON_GetObjectItem(it, "ranks");
@@ -735,17 +767,16 @@ static void parse_portraits(Resources *res, cJSON *arr) {
         if (res->portrait_count >= n) break;
         ResPortrait *p = &res->portraits[res->portrait_count++];
         copy_str(p->id, sizeof(p->id), json_str(it, "id", ""));
-        parse_path_array(cJSON_GetObjectItem(it, "anim"), p->anim[0],
-                         CAT_PATH_LEN, OB_ANIM_FRAMES_MAX, &p->anim_count);
+        parse_path_list(cJSON_GetObjectItem(it, "anim"), &p->anim, &p->anim_count);
     }
 }
 
 static void parse_villains(Resources *res, cJSON *arr) {
-    res->villains_count = 0;
-    if (!cJSON_IsArray(arr)) return;
+    int cap = json_len(arr);
+    if (!RES_TABLE_ALLOC(res->villains, res->villains_count, cap)) return;
     cJSON *it;
     cJSON_ArrayForEach(it, arr) {
-        if (res->villains_count >= CAT_VILLAINS_MAX) break;
+        if (res->villains_count >= cap) break;
         VillainDef *v = &res->villains[res->villains_count++];
         memset(v, 0, sizeof(*v));
         v->index = json_int(it, "index", -1);
@@ -754,8 +785,7 @@ static void parse_villains(Resources *res, cJSON *arr) {
         copy_str(v->portrait, sizeof(v->portrait), json_str(it, "portrait", ""));
         // Optional, and declared exactly like a troop's. Absent (count 0)
         // means the shell derives `<portrait-stem>_NN` siblings instead.
-        parse_path_array(cJSON_GetObjectItem(it, "anim"), v->anim[0],
-                         CAT_PATH_LEN, OB_ANIM_FRAMES_MAX, &v->anim_count);
+        parse_path_list(cJSON_GetObjectItem(it, "anim"), &v->anim, &v->anim_count);
         copy_str(v->zone,     sizeof(v->zone),     json_str(it, "zone", ""));
         v->reward      = json_int(it, "reward", 0);
         v->puzzle_cell = json_int(it, "puzzle_cell", -1);
@@ -791,11 +821,11 @@ static ArtifactPower artifact_power_from_name(const char *s) {
 }
 
 static void parse_artifacts(Resources *res, cJSON *arr) {
-    res->artifacts_count = 0;
-    if (!cJSON_IsArray(arr)) return;
+    int cap = json_len(arr);
+    if (!RES_TABLE_ALLOC(res->artifacts, res->artifacts_count, cap)) return;
     cJSON *it;
     cJSON_ArrayForEach(it, arr) {
-        if (res->artifacts_count >= CAT_ARTIFACTS_MAX) break;
+        if (res->artifacts_count >= cap) break;
         ArtifactDef *a = &res->artifacts[res->artifacts_count++];
         memset(a, 0, sizeof(*a));
         a->index = json_int(it, "index", -1);
@@ -832,6 +862,17 @@ static void parse_path_array(cJSON *arr, char *dst, size_t stride,
     if (out_count) *out_count = n;
 }
 
+// A heap list of paths, one per string element (non-strings are skipped, so
+// no hole is left): *dst holds exactly *out_count, NULL when there are none.
+static void parse_path_list(cJSON *arr, char (**dst)[RES_PATH_LEN], int *out_count) {
+    int cap = cJSON_IsArray(arr) ? cJSON_GetArraySize(arr) : 0;
+    int held = 0;
+    if (!RES_TABLE_ALLOC(*dst, held, cap)) { *out_count = 0; return; }
+    (void)held;
+    parse_path_array(arr, (*dst)[0], RES_PATH_LEN, cap, out_count);
+    if (*out_count == 0) { free(*dst); *dst = NULL; }
+}
+
 static void parse_string_array(cJSON *arr, char dst[][RES_PATH_LEN],
                                int cap, int *out_count) {
     parse_path_array(arr, dst ? dst[0] : NULL, RES_PATH_LEN, cap, out_count);
@@ -853,16 +894,13 @@ static void parse_anim_set(cJSON *obj, ResAnimSet *out) {
     if (!obj) return;
 
     if (cJSON_IsArray(obj)) {
-        parse_path_array(obj, out->frames[OB_FACE_SOUTH][0], RES_PATH_LEN,
-                         OB_ANIM_FRAMES_MAX, &out->count[OB_FACE_SOUTH]);
+        parse_path_list(obj, &out->frames[OB_FACE_SOUTH], &out->count[OB_FACE_SOUTH]);
         return;
     }
     if (!cJSON_IsObject(obj)) return;
     out->directional = true;
     for (int f = 0; f < OB_FACE_COUNT; f++) {
-        parse_path_array(cJSON_GetObjectItem(obj, KEYS[f]),
-                         out->frames[f][0], RES_PATH_LEN,
-                         OB_ANIM_FRAMES_MAX, &out->count[f]);
+        parse_path_list(cJSON_GetObjectItem(obj, KEYS[f]), &out->frames[f], &out->count[f]);
     }
 }
 
@@ -952,10 +990,8 @@ static void parse_sprites(Resources *res, cJSON *obj) {
                  json_str(ui, "scene_column_base", ""));
         copy_str(res->sprites.alcove_figure, sizeof(res->sprites.alcove_figure),
                  json_str(ui, "alcove_figure", ""));
-        parse_string_array(cJSON_GetObjectItem(ui, "alcove_figure_animation"),
-                           res->sprites.alcove_figure_animation,
-                           OB_ANIM_FRAMES_MAX,
-                           &res->sprites.alcove_figure_animation_count);
+        parse_path_list(cJSON_GetObjectItem(ui, "alcove_figure_animation"),
+                        &res->sprites.alcove_figure_animation, &res->sprites.alcove_figure_animation_count);
         {
             cJSON *pl = cJSON_GetObjectItem(ui, "alcove_figure_place");
             res->sprites.alcove_figure_x = json_int(pl, "x", 0);
@@ -990,10 +1026,8 @@ static void parse_sprites(Resources *res, cJSON *obj) {
                  json_str(ui, "ending_lose", ""));
         copy_str(res->sprites.orb, sizeof(res->sprites.orb),
                  json_str(ui, "orb", ""));
-        parse_string_array(cJSON_GetObjectItem(ui, "view_icons_extra"),
-                           res->sprites.view_icons_extra,
-                           RES_EXTRA_ICONS,
-                           &res->sprites.view_icons_extra_count);
+        parse_path_list(cJSON_GetObjectItem(ui, "view_icons_extra"),
+                        &res->sprites.view_icons_extra, &res->sprites.view_icons_extra_count);
         copy_str(res->sprites.chrome_overworld,
                  sizeof(res->sprites.chrome_overworld),
                  json_str(ui, "chrome_overworld", ""));
@@ -1017,9 +1051,8 @@ static void parse_sprites(Resources *res, cJSON *obj) {
         copy_str(res->sprites.class_highlight,
                  sizeof(res->sprites.class_highlight),
                  json_str(ui, "class_highlight", ""));
-        parse_string_array(cJSON_GetObjectItem(ui, "class_picker_selected"),
-                           res->sprites.class_picker_selected, 4,
-                           &res->sprites.class_picker_selected_count);
+        parse_path_list(cJSON_GetObjectItem(ui, "class_picker_selected"),
+                        &res->sprites.class_picker_selected, &res->sprites.class_picker_selected_count);
     }
 
     cJSON *hud = cJSON_GetObjectItem(obj, "hud");
@@ -1033,17 +1066,13 @@ static void parse_sprites(Resources *res, cJSON *obj) {
         copy_str(res->sprites.hud_siege_silhouette,
                  sizeof(res->sprites.hud_siege_silhouette),
                  json_str(hud, "siege_silhouette", ""));
-        parse_string_array(cJSON_GetObjectItem(hud, "siege_animation"),
-                           res->sprites.hud_siege_animation,
-                           OB_ANIM_FRAMES_MAX,
-                           &res->sprites.hud_siege_animation_count);
+        parse_path_list(cJSON_GetObjectItem(hud, "siege_animation"),
+                        &res->sprites.hud_siege_animation, &res->sprites.hud_siege_animation_count);
         copy_str(res->sprites.hud_magic_silhouette,
                  sizeof(res->sprites.hud_magic_silhouette),
                  json_str(hud, "magic_silhouette", ""));
-        parse_string_array(cJSON_GetObjectItem(hud, "magic_animation"),
-                           res->sprites.hud_magic_animation,
-                           OB_ANIM_FRAMES_MAX,
-                           &res->sprites.hud_magic_animation_count);
+        parse_path_list(cJSON_GetObjectItem(hud, "magic_animation"),
+                        &res->sprites.hud_magic_animation, &res->sprites.hud_magic_animation_count);
         copy_str(res->sprites.hud_puzzle_grid,
                  sizeof(res->sprites.hud_puzzle_grid),
                  json_str(hud, "puzzle_grid", ""));
@@ -1122,11 +1151,15 @@ static void parse_combat(Resources *res, cJSON *obj) {
     // (controls parsed separately at root; see parse_controls)
     // number_names: array of {"min": N, "label": "..."}, ordered high-to-low.
     cJSON *nn = cJSON_GetObjectItem(obj, "number_names");
-    if (cJSON_IsArray(nn)) {
+    int nn_cap = json_len(nn);
+    int nn_labels = 0;   // the labels' own count mirrors number_name_count
+    if (cJSON_IsArray(nn) && RES_TABLE_ALLOC(res->number_name_thresholds, res->number_name_count, nn_cap) &&
+        RES_TABLE_ALLOC(res->number_name_labels, nn_labels, nn_cap)) {
+        (void)nn_labels;
         int i = 0;
         cJSON *it;
         cJSON_ArrayForEach(it, nn) {
-            if (i >= 8) break;
+            if (i >= nn_cap) break;
             if (!cJSON_IsObject(it)) continue;
             res->number_name_thresholds[i] = json_int(it, "min", 1);
             copy_str(res->number_name_labels[i],
@@ -1176,22 +1209,24 @@ static void parse_credits(Resources *res, cJSON *obj) {
              json_str(obj, "image", ""));
 
     cJSON *groups = cJSON_GetObjectItem(obj, "groups");
-    if (cJSON_IsArray(groups)) {
+    int g_cap = json_len(groups);
+    if (cJSON_IsArray(groups) && RES_TABLE_ALLOC(res->credits.groups, res->credits.group_count, g_cap)) {
         cJSON *g;
         cJSON_ArrayForEach(g, groups) {
-            if (res->credits.group_count >= 6) break;
+            if (res->credits.group_count >= g_cap) break;
             if (!cJSON_IsObject(g)) continue;
             int gi = res->credits.group_count;
             copy_str(res->credits.groups[gi].label,
                      sizeof(res->credits.groups[gi].label),
                      json_str(g, "label", ""));
-            res->credits.groups[gi].name_count = 0;
             cJSON *names = cJSON_GetObjectItem(g, "names");
-            if (cJSON_IsArray(names)) {
+            int nm_cap = json_len(names);
+            if (cJSON_IsArray(names) &&
+                RES_TABLE_ALLOC(res->credits.groups[gi].names, res->credits.groups[gi].name_count, nm_cap)) {
                 cJSON *nm;
                 cJSON_ArrayForEach(nm, names) {
                     int ni = res->credits.groups[gi].name_count;
-                    if (ni >= 4) break;
+                    if (ni >= nm_cap) break;
                     if (!cJSON_IsString(nm)) continue;
                     copy_str(res->credits.groups[gi].names[ni],
                              sizeof(res->credits.groups[gi].names[ni]),
@@ -1204,10 +1239,11 @@ static void parse_credits(Resources *res, cJSON *obj) {
     }
 
     cJSON *copyr = cJSON_GetObjectItem(obj, "copyright");
-    if (cJSON_IsArray(copyr)) {
+    int cr_cap = json_len(copyr);
+    if (cJSON_IsArray(copyr) && RES_TABLE_ALLOC(res->credits.copyright, res->credits.copyright_count, cr_cap)) {
         cJSON *c;
         cJSON_ArrayForEach(c, copyr) {
-            if (res->credits.copyright_count >= 4) break;
+            if (res->credits.copyright_count >= cr_cap) break;
             if (!cJSON_IsString(c)) continue;
             copy_str(res->credits.copyright[res->credits.copyright_count],
                      sizeof(res->credits.copyright[res->credits.copyright_count]),
@@ -1614,13 +1650,14 @@ static void parse_combat_log(ResCombatLog *cl, cJSON *obj, Resources *res) {
            res->strings_missing++; } \
 } while (0)
 
-static void parse_count_buckets(ResCountBucket *out, int *out_n, int max,
-                                cJSON *arr) {
-    if (!cJSON_IsArray(arr)) return;
+static void parse_count_buckets(ResCountBucket **outp, int *out_n, cJSON *arr) {
+    int cap = cJSON_IsArray(arr) ? cJSON_GetArraySize(arr) : 0;
+    if (!RES_TABLE_ALLOC(*outp, *out_n, cap)) return;
+    ResCountBucket *out = *outp;
     int n = 0;
     cJSON *it;
     cJSON_ArrayForEach(it, arr) {
-        if (n >= max) break;
+        if (n >= cap) break;
         if (!cJSON_IsObject(it)) continue;
         out[n].threshold = json_int(it, "max", 0x7FFFFFFF);
         copy_str(out[n].label, sizeof(out[n].label),
@@ -1730,6 +1767,7 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
             UI_SET(gm_new_game, "gm_new_game");
             UI_SET(gm_exit, "gm_exit");
             UI_SET(gm_back, "gm_back");
+            UI_SET(gm_close, "gm_close");
             UI_SET(gm_debug, "gm_debug");
             UI_SET(gm_actions, "gm_actions");
             UI_SET(gm_unit, "gm_unit");
@@ -1775,13 +1813,11 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
 
     cJSON *jcb = cJSON_GetObjectItem(root_strings, "count_buckets");
     if (cJSON_IsObject(jcb)) {
-        parse_count_buckets(ui->count_buckets_army_view,
+        parse_count_buckets(&ui->count_buckets_army_view,
                             &ui->count_buckets_army_view_n,
-                            RES_MAX_COUNT_BUCKETS,
                             cJSON_GetObjectItem(jcb, "army_view"));
-        parse_count_buckets(ui->count_buckets_instant_army,
+        parse_count_buckets(&ui->count_buckets_instant_army,
                             &ui->count_buckets_instant_army_n,
-                            RES_MAX_COUNT_BUCKETS,
                             cJSON_GetObjectItem(jcb, "instant_army"));
     }
 
@@ -1801,11 +1837,14 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
     }
 
     cJSON *jkb = cJSON_GetObjectItem(root_strings, "keybinds");
-    if (cJSON_IsArray(jkb)) {
+    int kb_cap = json_len(jkb);
+    int kb_n = 0;
+    if (cJSON_IsArray(jkb) && RES_TABLE_ALLOC(ui->keybinds, kb_n, kb_cap)) {
+        (void)kb_n;
         int n = 0;
         cJSON *e;
         cJSON_ArrayForEach(e, jkb) {
-            if (n >= RES_MAX_KEYBINDS) break;
+            if (n >= kb_cap) break;
             if (!cJSON_IsObject(e)) continue;
             copy_str(ui->keybinds[n].key, sizeof(ui->keybinds[n].key),
                      json_str(e, "key", ""));
@@ -1966,12 +2005,12 @@ static void parse_strings(Resources *res, cJSON *obj) {
     parse_end_text(&res->win_text,  cJSON_GetObjectItem(obj, "win"));
     parse_end_text(&res->lose_text, cJSON_GetObjectItem(obj, "lose"));
 
-    res->villain_desc_count = 0;
     cJSON *vd = cJSON_GetObjectItem(obj, "villain_descriptions");
-    if (cJSON_IsObject(vd)) {
+    int vd_cap = json_len(vd);
+    if (cJSON_IsObject(vd) && RES_TABLE_ALLOC(res->villain_descs, res->villain_desc_count, vd_cap)) {
         cJSON *entry;
         cJSON_ArrayForEach(entry, vd) {
-            if (res->villain_desc_count >= CAT_VILLAINS_MAX) break;
+            if (res->villain_desc_count >= vd_cap) break;
             const char *id = entry->string;
             if (!id || !id[0]) continue;
             ResVillainDesc *d = &res->villain_descs[res->villain_desc_count++];
@@ -1983,12 +2022,12 @@ static void parse_strings(Resources *res, cJSON *obj) {
         }
     }
 
-    res->town_invite_count = 0;
     cJSON *ti = cJSON_GetObjectItem(obj, "town_invitations");
-    if (cJSON_IsObject(ti)) {
+    int ti_cap = json_len(ti);
+    if (cJSON_IsObject(ti) && RES_TABLE_ALLOC(res->town_invites, res->town_invite_count, ti_cap)) {
         cJSON *entry;
         cJSON_ArrayForEach(entry, ti) {
-            if (res->town_invite_count >= RES_MAX_TOWNS) break;
+            if (res->town_invite_count >= ti_cap) break;
             if (!entry->string || !entry->string[0] || !cJSON_IsObject(entry)) continue;
             ResTownInvite *v = &res->town_invites[res->town_invite_count++];
             copy_str(v->id,          sizeof(v->id),          entry->string);
@@ -2000,12 +2039,12 @@ static void parse_strings(Resources *res, cJSON *obj) {
         }
     }
 
-    res->town_dock_count = 0;
     cJSON *td = cJSON_GetObjectItem(obj, "town_docks");
-    if (cJSON_IsObject(td)) {
+    int td_cap = json_len(td);
+    if (cJSON_IsObject(td) && RES_TABLE_ALLOC(res->town_docks, res->town_dock_count, td_cap)) {
         cJSON *entry;
         cJSON_ArrayForEach(entry, td) {
-            if (res->town_dock_count >= RES_MAX_TOWNS) break;
+            if (res->town_dock_count >= td_cap) break;
             if (!entry->string || !entry->string[0] || !cJSON_IsString(entry)) continue;
             ResTownDock *d = &res->town_docks[res->town_dock_count++];
             copy_str(d->id,   sizeof(d->id),   entry->string);
@@ -2013,14 +2052,27 @@ static void parse_strings(Resources *res, cJSON *obj) {
         }
     }
 
-    res->spell_lore_count = 0;
     cJSON *sl = cJSON_GetObjectItem(obj, "spell_lore");
-    if (cJSON_IsObject(sl)) {
+    int sl_cap = json_len(sl);
+    if (cJSON_IsObject(sl) && RES_TABLE_ALLOC(res->spell_lore, res->spell_lore_count, sl_cap)) {
         cJSON *entry;
         cJSON_ArrayForEach(entry, sl) {
-            if (res->spell_lore_count >= CAT_SPELLS_MAX) break;
+            if (res->spell_lore_count >= sl_cap) break;
             if (!entry->string || !entry->string[0] || !cJSON_IsString(entry)) continue;
             ResSpellLore *l = &res->spell_lore[res->spell_lore_count++];
+            copy_str(l->id,   sizeof(l->id),   entry->string);
+            copy_str(l->text, sizeof(l->text), entry->valuestring);
+        }
+    }
+
+    cJSON *sb = cJSON_GetObjectItem(obj, "spell_brief");
+    int sb_cap = json_len(sb);
+    if (cJSON_IsObject(sb) && RES_TABLE_ALLOC(res->spell_brief, res->spell_brief_count, sb_cap)) {
+        cJSON *entry;
+        cJSON_ArrayForEach(entry, sb) {
+            if (res->spell_brief_count >= sb_cap) break;
+            if (!entry->string || !entry->string[0] || !cJSON_IsString(entry)) continue;
+            ResSpellLore *l = &res->spell_brief[res->spell_brief_count++];
             copy_str(l->id,   sizeof(l->id),   entry->string);
             copy_str(l->text, sizeof(l->text), entry->valuestring);
         }
@@ -2394,20 +2446,19 @@ bool resources_load(Resources *res, const char *manifest_path) {
     memset(&res->spawn, 0, sizeof(res->spawn));
     cJSON *jsp = cJSON_GetObjectItem(root, "spawn");
     if (cJSON_IsObject(jsp)) {
+        ResSpawn *sp = &res->spawn;
         cJSON *jcc = cJSON_GetObjectItem(jsp, "tier_chance_curve");
         if (cJSON_IsArray(jcc)) {
             int ti = 0;
             cJSON *row;
             cJSON_ArrayForEach(row, jcc) {
                 if (ti >= RES_SPAWN_TIERS) break;
-                if (cJSON_IsArray(row)) {
-                    int ci = 0;
+                int cap = json_len(row);
+                if (cJSON_IsArray(row) && RES_TABLE_ALLOC(sp->chance_curve[ti], sp->chance_curve_len[ti], cap)) {
                     cJSON *v;
                     cJSON_ArrayForEach(v, row) {
-                        if (ci >= RES_SPAWN_POOL_N - 1) break;
-                        if (cJSON_IsNumber(v))
-                            res->spawn.chance_curve[ti][ci] = v->valueint;
-                        ci++;
+                        if (sp->chance_curve_len[ti] >= cap) break;
+                        sp->chance_curve[ti][sp->chance_curve_len[ti]++] = cJSON_IsNumber(v) ? v->valueint : 0;
                     }
                 }
                 ti++;
@@ -2419,19 +2470,45 @@ bool resources_load(Resources *res, const char *manifest_path) {
             cJSON *row;
             cJSON_ArrayForEach(row, jtp) {
                 if (ti >= RES_SPAWN_TIERS) break;
-                if (cJSON_IsArray(row)) {
-                    int si = 0;
+                int cap = json_len(row);
+                if (cJSON_IsArray(row) && RES_TABLE_ALLOC(sp->troop_pool[ti], sp->pool_count[ti], cap)) {
                     cJSON *v;
                     cJSON_ArrayForEach(v, row) {
-                        if (si >= RES_SPAWN_POOL_N) break;
+                        if (sp->pool_count[ti] >= cap) break;
                         if (cJSON_IsString(v))
-                            copy_str(res->spawn.troop_pool[ti][si],
-                                     sizeof(res->spawn.troop_pool[ti][si]),
-                                     v->valuestring);
-                        si++;
+                            copy_str(sp->troop_pool[ti][sp->pool_count[ti]], RES_ID_LEN, v->valuestring);
+                        sp->pool_count[ti]++;
                     }
                 }
                 ti++;
+            }
+        }
+        // A pool longer than five carries its own curve per difficulty tier.
+        cJSON *jkc = cJSON_GetObjectItem(jsp, "kind_chance_curve");
+        if (cJSON_IsArray(jkc)) {
+            int ki = 0;
+            cJSON *kind;
+            cJSON_ArrayForEach(kind, jkc) {
+                if (ki >= RES_SPAWN_TIERS) break;
+                if (cJSON_IsArray(kind)) {
+                    sp->kind_curve_set[ki] = true;
+                    int ti = 0;
+                    cJSON *row;
+                    cJSON_ArrayForEach(row, kind) {
+                        if (ti >= RES_SPAWN_TIERS) break;
+                        int cap = json_len(row);
+                        if (RES_TABLE_ALLOC(sp->kind_curve[ki][ti], sp->kind_curve_len[ki][ti], cap)) {
+                            cJSON *v;
+                            cJSON_ArrayForEach(v, row) {
+                                if (sp->kind_curve_len[ki][ti] >= cap) break;
+                                sp->kind_curve[ki][ti][sp->kind_curve_len[ki][ti]++] =
+                                    cJSON_IsNumber(v) ? v->valueint : 0;
+                            }
+                        }
+                        ti++;
+                    }
+                }
+                ki++;
             }
         }
     }
@@ -2545,6 +2622,7 @@ bool resources_load(Resources *res, const char *manifest_path) {
              json_str(jw, "language", "en"));
     res->world.max_army_slots = json_int(jw, "max_army_slots", 5);
     res->world.fog_sight      = json_int(jw, "fog_sight",      3);
+    res->world.hostile_armies_per_zone = json_int(jw, "hostile_armies_per_zone", 35);
     cJSON *jdo = cJSON_GetObjectItem(jw, "default_options");
     // Fallback defaults: delay, sounds, walk_beep, anim, cga, music, volume.
     static const int default_options_fallback[7] = { 4, 1, 1, 1, 1, 0, 5 };
@@ -2576,30 +2654,25 @@ bool resources_load(Resources *res, const char *manifest_path) {
     // must fail loudly at load, never be silently clamped into a world that
     // misrepresents it.
     {
-        cJSON *jv = cJSON_GetObjectItem(root, "villains");
-        if (cJSON_IsArray(jv) &&
-            cJSON_GetArraySize(jv) > CAT_VILLAINS_MAX) {
-            fprintf(stdout, "resources: pack declares %d villains; engine "
-                    "capacity is %d\n", cJSON_GetArraySize(jv),
-                    CAT_VILLAINS_MAX);
-            cJSON_Delete(root);
-            return false;
-        }
         // The caught/prefought arrays are keyed by VillainDef.index: every
         // index must be in range and unique, else catches would be silently
-        // unrecordable (or, via savegame load, write out of bounds).
-        bool seen_idx[CAT_VILLAINS_MAX] = { false };
-        for (int i = 0; i < res->villains_count; i++) {
+        // unrecordable (or, via savegame load, write out of bounds). The range
+        // is the pack's own villain count -- there is no engine capacity.
+        int nv = res->villains_count;
+        bool *seen_idx = nv ? calloc((size_t)nv, sizeof *seen_idx) : NULL;
+        for (int i = 0; i < nv; i++) {
             int vi = res->villains[i].index;
-            if (vi < 0 || vi >= CAT_VILLAINS_MAX || seen_idx[vi]) {
+            if (!seen_idx || vi < 0 || vi >= nv || seen_idx[vi]) {
                 fprintf(stdout, "resources: villain '%s' has invalid or "
                         "duplicate index %d (must be unique, 0..%d)\n",
-                        res->villains[i].id, vi, CAT_VILLAINS_MAX - 1);
+                        res->villains[i].id, vi, nv - 1);
+                free(seen_idx);
                 cJSON_Delete(root);
                 return false;
             }
             seen_idx[vi] = true;
         }
+        free(seen_idx);
     }
 
     // Temp-death knob validation (fail-loud like the other pack contracts):
@@ -2669,12 +2742,78 @@ bool resources_load(Resources *res, const char *manifest_path) {
 
 void resources_free(Resources *res) {
     if (g_resources == res) g_resources = NULL;
-    // The portraits are the one heap-owned table (sized from the pack); every
-    // other catalog and per-zone object is inline.
+    // Heap-owned tables, each sized from the pack.
     if (res) {
+        for (int i = 0; res->portraits && i < res->portrait_count; i++) free(res->portraits[i].anim);
         free(res->portraits);
         res->portraits = NULL;
         res->portrait_count = 0;
+        for (int i = 0; res->troops && i < res->troops_count; i++) free(res->troops[i].anim);
+        free(res->troops);        res->troops = NULL;        res->troops_count = 0;
+        free(res->spells);        res->spells = NULL;        res->spells_count = 0;
+        for (int i = 0; res->classes && i < res->classes_count; i++) {
+            free(res->classes[i].starting_troops);
+            free(res->classes[i].starting_counts);
+        }
+        for (int i = 0; res->class_hero && i < res->classes_count; i++)
+            for (int f = 0; f < OB_FACE_COUNT; f++) {
+                free(res->class_hero[i].walk.frames[f]);
+                free(res->class_hero[i].idle.frames[f]);
+                free(res->class_hero[i].boat.frames[f]);
+            }
+        free(res->class_hero);    res->class_hero = NULL;
+        free(res->classes);       res->classes = NULL;       res->classes_count = 0;
+        for (int i = 0; res->villains && i < res->villains_count; i++) free(res->villains[i].anim);
+        free(res->villains);      res->villains = NULL;      res->villains_count = 0;
+        free(res->artifacts);     res->artifacts = NULL;     res->artifacts_count = 0;
+        free(res->villain_descs); res->villain_descs = NULL; res->villain_desc_count = 0;
+        free(res->spell_lore);    res->spell_lore = NULL;    res->spell_lore_count = 0;
+        free(res->spell_brief);   res->spell_brief = NULL;   res->spell_brief_count = 0;
+        free(res->town_docks);    res->town_docks = NULL;    res->town_dock_count = 0;
+        free(res->town_invites);  res->town_invites = NULL;  res->town_invite_count = 0;
+        free(res->towns);         res->towns = NULL;         res->town_count = 0;
+        free(res->castles);       res->castles = NULL;       res->castle_count = 0;
+        for (int i = 0; res->zones && i < res->zone_count; i++) {
+            ResZone *z = &res->zones[i];
+            for (int c = 0; z->castles && c < z->castle_count; c++) free(z->castles[c].decorations);
+            free(z->neighbors);
+            free(z->signs);
+            free(z->town_idx);
+            free(z->castles);
+            free(z->chests);
+            free(z->artifacts);
+            free(z->dwellings);
+            free(z->armies);
+            free(z->salt.preferred_troops);
+        }
+        free(res->zones);         res->zones = NULL;         res->zone_count = 0;
+        free(res->ui.count_buckets_army_view);    res->ui.count_buckets_army_view = NULL;
+        free(res->ui.count_buckets_instant_army); res->ui.count_buckets_instant_army = NULL;
+        free(res->ui.keybinds);                   res->ui.keybinds = NULL;
+        for (int i = 0; i < RES_TILE_CODE_COUNT; i++) { free(res->tile_codes[i].variants); res->tile_codes[i].variants = NULL; }
+        free(res->number_name_thresholds);        res->number_name_thresholds = NULL;
+        free(res->number_name_labels);            res->number_name_labels = NULL;
+        for (int i = 0; res->credits.groups && i < res->credits.group_count; i++)
+            free(res->credits.groups[i].names);
+        free(res->credits.groups);                res->credits.groups = NULL;
+        free(res->credits.copyright);             res->credits.copyright = NULL;
+        for (int f = 0; f < OB_FACE_COUNT; f++) {
+            free(res->sprites.hero_walk.frames[f]); res->sprites.hero_walk.frames[f] = NULL;
+            free(res->sprites.hero_idle.frames[f]); res->sprites.hero_idle.frames[f] = NULL;
+            free(res->sprites.hero_boat.frames[f]); res->sprites.hero_boat.frames[f] = NULL;
+        }
+        free(res->sprites.hud_siege_animation);     res->sprites.hud_siege_animation = NULL;
+        free(res->sprites.hud_magic_animation);     res->sprites.hud_magic_animation = NULL;
+        free(res->sprites.alcove_figure_animation); res->sprites.alcove_figure_animation = NULL;
+        free(res->sprites.view_icons_extra);        res->sprites.view_icons_extra = NULL;
+        free(res->sprites.class_picker_selected);   res->sprites.class_picker_selected = NULL;
+        for (int k = 0; k < RES_SPAWN_TIERS; k++) {
+            free(res->spawn.chance_curve[k]); res->spawn.chance_curve[k] = NULL;
+            free(res->spawn.troop_pool[k]);   res->spawn.troop_pool[k] = NULL;
+            for (int t = 0; t < RES_SPAWN_TIERS; t++) {
+                free(res->spawn.kind_curve[k][t]); res->spawn.kind_curve[k][t] = NULL;
+            }
+        }
     }
 }
 
@@ -2806,10 +2945,38 @@ int resources_portrait_index(const Resources *r, const char *id) {
     return -1;
 }
 
+int resources_spawn_slot(const ResSpawn *sp, int kind, int tier, int chance) {
+    if (!sp) return 0;
+    kind &= 3;
+    tier &= 3;
+    // The walk's last slot: a pool of five or fewer ends where it always did
+    // (slot 4, even when fewer were declared); a longer one at its own last.
+    int n = sp->pool_count[kind] > 5 ? sp->pool_count[kind] : 5;
+    const int *curve = sp->kind_curve_set[kind] ? sp->kind_curve[kind][tier] : sp->chance_curve[tier];
+    int len = sp->kind_curve_set[kind] ? sp->kind_curve_len[kind][tier] : sp->chance_curve_len[tier];
+    int slot = 0;
+    while (slot < n - 1 && chance > (slot < len && curve ? curve[slot] : 0)) slot++;
+    return slot;
+}
+
+const char *resources_spawn_troop(const ResSpawn *sp, int kind, int tier, int chance) {
+    if (!sp) return "";
+    int slot = resources_spawn_slot(sp, kind, tier, chance);
+    kind &= 3;
+    return (slot < sp->pool_count[kind] && sp->troop_pool[kind]) ? sp->troop_pool[kind][slot] : "";
+}
+
 const char *resources_spell_lore(const Resources *r, const char *spell_id) {
     if (!r || !spell_id) return NULL;
     for (int i = 0; i < r->spell_lore_count; i++)
         if (strcmp(r->spell_lore[i].id, spell_id) == 0) return r->spell_lore[i].text;
+    return NULL;
+}
+
+const char *resources_spell_brief(const Resources *r, const char *spell_id) {
+    if (!r || !spell_id) return NULL;
+    for (int i = 0; i < r->spell_brief_count; i++)
+        if (strcmp(r->spell_brief[i].id, spell_id) == 0) return r->spell_brief[i].text;
     return NULL;
 }
 
@@ -2864,15 +3031,31 @@ void resources_format_template(char *out, int out_sz, const char *src,
 
 // ---- Art manifest ----------------------------------------------------------
 
-static void art_add(char out[][RES_PATH_LEN], int cap, int *n, const char *p) {
-    if (!p || !p[0] || !out || *n >= cap) return;
-    for (int i = 0; i < *n; i++)
-        if (strcmp(out[i], p) == 0) return;    // already listed
-    copy_str(out[*n], RES_PATH_LEN, p);
-    (*n)++;
+static void art_add(ResArtList *out, int cap, int *n, const char *p) {
+    (void)cap;
+    if (!p || !p[0] || !out) return;
+    for (int i = 0; i < out->n; i++)
+        if (strcmp(out->path[i], p) == 0) return;    // already listed
+    if (out->n >= out->cap) {
+        int ncap = out->cap ? out->cap * 2 : 256;
+        char (*grown)[RES_PATH_LEN] = realloc(out->path, (size_t)ncap * sizeof *grown);
+        if (!grown) return;
+        out->path = grown;
+        out->cap = ncap;
+    }
+    copy_str(out->path[out->n], RES_PATH_LEN, p);
+    out->n++;
+    *n = out->n;
 }
 
-static void art_add_anim(char out[][RES_PATH_LEN], int cap, int *n,
+void resources_art_list_free(ResArtList *list) {
+    if (!list) return;
+    free(list->path);
+    list->path = NULL;
+    list->n = list->cap = 0;
+}
+
+static void art_add_anim(ResArtList *out, int cap, int *n,
                          const ResAnimSet *a) {
     if (!a) return;
     for (int f = 0; f < OB_FACE_COUNT; f++)
@@ -2880,9 +3063,11 @@ static void art_add_anim(char out[][RES_PATH_LEN], int cap, int *n,
             art_add(out, cap, n, a->frames[f][i]);
 }
 
-int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
-                           int cap) {
+int resources_art_manifest(const Resources *res, ResArtList *out) {
     int n = 0;
+    const int cap = 0;   // unused: the list grows
+    if (!out) return 0;
+    out->n = 0;
     if (!res) return 0;
 
     art_add_anim(out, cap, &n, &res->sprites.hero_walk);

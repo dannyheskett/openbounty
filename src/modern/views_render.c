@@ -102,7 +102,7 @@ static void draw_character(const Game *g, const Sprites *s) {
 
     // Portrait at its authored size.
     int pw = 192, ph = 204;
-    if (cls && s->class_portrait[cls->index].id) ui_blit(s->class_portrait[cls->index], r.x, top, pw, ph);
+    if (cls && cls->index >= 0 && cls->index < s->class_count && s->class_portrait[cls->index].id) ui_blit(s->class_portrait[cls->index], r.x, top, pw, ph);
     else DrawRectangle(r.x, top, pw, ph, PAL_CLR(BLACK));
     lattice_band_v(r.x + pw, top, BAND, ph);
 
@@ -121,7 +121,7 @@ static void draw_character(const Game *g, const Sprites *s) {
     snprintf(nb, sizeof nb, "%d", g->stats.max_spells);          cv_row(ui->cv_spell_capacity, nb, lx, lw, y);
 
     int total_v = 0;
-    for (int i = 0; i < g->res->villains_count && i < CAT_VILLAINS_MAX; i++) total_v++;
+    for (int i = 0; i < g->res->villains_count; i++) total_v++;
     int total_a = artifacts_count() < 8 ? artifacts_count() : 8;
     y = top + 6;
     bfont_draw(ui->cv_campaign, rx, y, PAL_CLR(YELLOW));                  y += head;
@@ -140,7 +140,7 @@ static void draw_character(const Game *g, const Sprites *s) {
     bfont_draw(ui->cv_sacred, ax, y + 3, PAL_CLR(YELLOW));
     y += head;
     for (int i = 0; i < 8; i++)
-        cv_icon(s->view_icon[i], i < total_a && g->artifacts.found[i], ax + i * tile, y, tile);
+        cv_icon(i < s->view_icon_count ? s->view_icon[i] : (Texture2D){ 0 }, i < total_a && g->artifacts.found[i], ax + i * tile, y, tile);
     y += tile;
 
     // The continents, and beside them the pack's honours.
@@ -154,7 +154,8 @@ static void draw_character(const Game *g, const Sprites *s) {
     if (honours) bfont_draw(ui->cv_honours, hx, y + 3, PAL_CLR(YELLOW));
     y += head;
     for (int i = 0; i < 4; i++)
-        cv_icon(i < nz ? s->view_icon[8 + i] : (Texture2D){ 0 }, i < nz && g->world.zones_discovered[i],
+        cv_icon(i < nz && s->view_icon_extra_base + i < s->view_icon_count
+                    ? s->view_icon[s->view_icon_extra_base + i] : (Texture2D){ 0 }, i < nz && g->world.zones_discovered[i],
                 ax + i * tile, y, tile);
     if (honours) {
         lattice_band_v(ax + 4 * tile, y - head, BAND, head + tile);
@@ -171,7 +172,7 @@ static void draw_character(const Game *g, const Sprites *s) {
             char rites[160];
             size_t off = (size_t)snprintf(rites, sizeof rites, "%s:", ui->cv_rites);
             int shown = 0;
-            for (int i = 0; i < g->res->zone_count && i < GAME_CONTINENTS; i++) {
+            for (int i = 0; i < g->res->zone_count && i < g->world.zone_count; i++) {
                 if (!g->world.zone_rites[i]) continue;
                 const char *zn = g->res->zones[i].name[0] ? g->res->zones[i].name : g->res->zones[i].id;
                 off += (size_t)snprintf(rites + off, sizeof rites - off, "%s %s", shown ? "," : "", zn);
@@ -305,9 +306,12 @@ static void draw_contract(const Game *g, const Sprites *s) {
     resources_format_template(reward, sizeof reward, ui->cv_label_reward, rv, 1);
     int top = uk_title(r.x, r.y, r.w, title, reward, PAL_CLR(YELLOW));
 
-    int frame = sprites_frame((int)(GetTime() * 2.0), s->villain_anim_frames[v->index]);
-    Texture2D face = s->villain_anim[v->index][frame];
-    if (!face.id) face = s->villain_portrait[v->index];
+    Texture2D face = { 0 };
+    if (v->index >= 0 && v->index < s->villain_count) {
+        face = sprites_strip(s->villain_anim[v->index], s->villain_anim_frames[v->index],
+                             (int)(GetTime() * 2.0));
+        if (!face.id) face = s->villain_portrait[v->index];
+    }
     ML_Rect a = { r.x + UK_INSET, top + UK_INSET, r.w - 2 * UK_INSET, r.y + r.h - UK_INSET - (top + UK_INSET) };
     uk_picture(face, a.x, a.y, size, size);
 
@@ -317,7 +321,7 @@ static void draw_contract(const Game *g, const Sprites *s) {
     const ResZone *vz = resources_zone_by_id(g->res, v->zone);
     uk_doc_labeled(&d, ui->cv_label_last_seen, (vz && vz->name[0]) ? vz->name : v->zone);
     const char *castle_name = ui->cv_castle_unknown;
-    for (int i = 0; i < GAME_CASTLES; i++) {
+    for (int i = 0; i < g->castle_count; i++) {
         if (!g->castles[i].id[0] || g->castles[i].owner_kind != CASTLE_OWNER_VILLAIN) continue;
         if (strcmp(g->castles[i].villain_id, v->id) != 0) continue;
         if (g->castles[i].known) {
@@ -392,7 +396,7 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
         int x = px + UK_INSET, w = r.x + r.w - UK_INSET - x;
         int y = uk_flow(x, top + UK_INSET, w, x, 0, r.y + r.h, g->res->banners.puzzle_legend, PAL_CLR(WHITE));
         char nb[32];
-        int total_v = g->res->villains_count < CAT_VILLAINS_MAX ? g->res->villains_count : CAT_VILLAINS_MAX;
+        int total_v = g->res->villains_count;
         int total_a = artifacts_count() < 8 ? artifacts_count() : 8;
         y += uk_line_h();
         snprintf(nb, sizeof nb, "%d/%d", GameVillainsCaught(g), total_v);
@@ -474,12 +478,13 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
             if (id < 0) {
                 int artifact_id = -id - 1;
                 caught = g->artifacts.found[artifact_id];
-                face = s->view_icon[artifact_id];
+                if (artifact_id < s->view_icon_extra_base) face = s->view_icon[artifact_id];
             } else {
                 caught = g->contract.villains_caught[id];
-                face = s->villain_anim[id]
-                        [sprites_frame(anim_tick, s->villain_anim_frames[id])];
-                if (!face.id) face = s->villain_portrait[id];
+                if (id < s->villain_count) {
+                    face = sprites_strip(s->villain_anim[id], s->villain_anim_frames[id], anim_tick);
+                    if (!face.id) face = s->villain_portrait[id];
+                }
             }
             // Animation gate.
             if (reveal_step < seq[j][i]) caught = false;
@@ -546,6 +551,7 @@ static Color terrain_minimap_color(const ResColors *col, Terrain t) {
             case TERRAIN_FOREST:   return PAL_CLR(DGREEN);
             case TERRAIN_MOUNTAIN: return PAL_CLR(BROWN);
             case TERRAIN_WATER:    return PAL_CLR(BLUE);
+            case TERRAIN_RIVER:    return PAL_CLR(BLUE);
             case TERRAIN_DESERT:   return PAL_CLR(YELLOW);
             default:               return PAL_CLR(BLACK);
         }
@@ -555,6 +561,7 @@ static Color terrain_minimap_color(const ResColors *col, Terrain t) {
         case TERRAIN_FOREST:   return color_from_packed(col->minimap_forest);
         case TERRAIN_MOUNTAIN: return color_from_packed(col->minimap_mountain);
         case TERRAIN_WATER:    return color_from_packed(col->minimap_water);
+        case TERRAIN_RIVER:    return color_from_packed(col->minimap_water);
         case TERRAIN_DESERT:   return color_from_packed(col->minimap_desert);
         default:               return color_from_packed(col->minimap_fog);
     }
@@ -575,7 +582,7 @@ static int worldmap_current_zone_index(const Game *g) {
 
 static bool worldmap_has_orb(const Game *g) {
     int zi = worldmap_current_zone_index(g);
-    if (zi < 0 || zi >= GAME_CONTINENTS) return false;
+    if (zi < 0 || zi >= g->world.zone_count) return false;
     return g->world.orbs_found[zi];
 }
 
@@ -607,7 +614,7 @@ static int worldmap_places(const Game *g, WmPlace *out, int cap) {
         const ResTown *tw = &r->towns[i];
         if (strcmp(tw->zone, g->position.zone) != 0 || tw->x < 0) continue;
         bool visited = false;
-        for (int k = 0; k < GAME_TOWNS; k++)
+        for (int k = 0; k < g->town_count; k++)
             if (strcmp(g->towns[k].id, tw->id) == 0) { visited = g->towns[k].visited; break; }
         if (!visited) continue;
         snprintf(out[n].name, sizeof out[n].name, "%s", tw->name[0] ? tw->name : tw->id);
@@ -829,8 +836,11 @@ static void draw_spells(const Game *g) {
                     spell_row, &c, TOUCH_LIST_SPELLS, uk_ink(), 7);
     int fy = row_y + rows_h;
     lattice_band_h(r.x, fy, r.w, UK_BAND);
+    // What the spell under the cursor does: the pack's one-line brief, else the
+    // spell's own description, else (a pack with only lore) its lore.
     const SpellDef *sp = (cur >= 0) ? spell_by_index(cur) : NULL;
-    const char *desc = sp ? sp->description : NULL;
+    const char *desc = sp ? resources_spell_brief(g->res, sp->id) : NULL;
+    if ((!desc || !desc[0]) && sp) desc = sp->description;
     if ((!desc || !desc[0]) && sp) desc = resources_spell_lore(g->res, sp->id);
     if (desc) {
         // As many whole sentences as the foot holds. A sentence ends after its
@@ -882,7 +892,7 @@ static bool gate_row(void *ctx, int i, char *label, char *right, int cap) {
 // The destination's surroundings, drawn from its continent's map (loaded once
 // per continent, like the puzzle's).
 static Map  s_gate_map;
-static char s_gate_zone[24];
+static char s_gate_zone[RES_ID_LEN];
 
 static void draw_gate_map(const Resources *res, const GateDestination *d, ML_Rect a) {
     DrawRectangle(a.x, a.y, a.w, a.h, PAL_CLR(BLACK));

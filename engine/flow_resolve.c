@@ -175,7 +175,7 @@ bool flow_apply_siege_villain(Game *g, const Resources *res,
                          "%s", captured->army_troops[s]);
                 cr->garrison[s].count = captured->army_counts[s];
             }
-            if (captured->index >= 0 && captured->index < 17)
+            if (captured->index >= 0 && captured->index < g->contract.villain_count)
                 g->contract.villains_prefought[captured->index] = true;
         }
     }
@@ -253,7 +253,7 @@ void flow_apply_discard_spell(Game *g, int spell_idx, FlowAnswer ans) {
     // against the max_spells cap (GameKnownSpells). NO/cancel: no change. Guarded
     // so a stale/invalid index or an already-empty spell is a safe no-op.
     if (!g || ans.kind != FLOW_ANS_YES) return;
-    if (spell_idx < 0 || spell_idx >= 14) return;
+    if (spell_idx < 0 || spell_idx >= g->spells.count) return;
     if (g->spells.counts[spell_idx] <= 0) return;
     g->spells.counts[spell_idx]--;
 }
@@ -277,7 +277,7 @@ void flow_apply_alcove(Game *g, Map *map, const Resources *res,
         g->stats.knows_magic = true;
         if (res->economy.rites_per_zone) {
             int zi = resources_zone_index(res, g->position.zone);
-            if (zi >= 0 && zi < GAME_CONTINENTS) g->world.zone_rites[zi] = true;
+            if (zi >= 0 && zi < g->world.zone_count) g->world.zone_rites[zi] = true;
         }
         MapClearInteractive(map, g->position.x, g->position.y);
         GameAddConsumed(g, g->position.zone, g->position.x, g->position.y);

@@ -12,6 +12,7 @@
 
 #include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "adventure.h"
@@ -28,8 +29,9 @@
 // Modes: 0 = on foot, 1 = in boat, 2 = flying. Flight is legal only when the
 // whole army flies (GamePlayerCanFly); interactive tiles do not fire in it.
 #define NAV_MODES 3
-#define NAV_W MAP_MAX_W
-#define NAV_H MAP_MAX_H
+#define NAV_W AP_MAP_W
+#define NAV_H AP_MAP_H
+#define NAV_IN(x, y) ((x) >= 0 && (y) >= 0 && (x) < NAV_W && (y) < NAV_H)
 #define NAV_NODES (NAV_MODES * NAV_W * NAV_H)
 #define NAV_INF   0x3FFFFFFF
 
@@ -44,6 +46,10 @@ static int step_cost(const ExecCtx *ctx, const Tile *t) {
 }
 
 static int nid(int m, int x, int y) { return (m * NAV_H + y) * NAV_W + x; }
+// A map cell inside the navigation grid, else NULL: autoplay ignores the rest.
+static const Tile *nav_tile(const Map *map, int x, int y) {
+    return NAV_IN(x, y) ? MapGetTile(map, x, y) : NULL;
+}
 
 static int  s_dist[NAV_NODES];
 static int  s_from[NAV_NODES];
@@ -196,9 +202,9 @@ static bool telecave_pair(const ExecCtx *ctx, int x, int y, int *px, int *py) {
 #define NAV_LANDING_COST 2
 
 static int  s_rent_n;
-static int  s_rent_x[GAME_TOWNS], s_rent_y[GAME_TOWNS];
-static int  s_rent_town[GAME_TOWNS];           // res->towns index per dock
-static bool s_rent_disabled[GAME_TOWNS];        // per-move_to-call failures
+static int  s_rent_x[AP_TOWNS_MAX], s_rent_y[AP_TOWNS_MAX];
+static int  s_rent_town[AP_TOWNS_MAX];           // res->towns index per dock
+static bool s_rent_disabled[AP_TOWNS_MAX];        // per-move_to-call failures
 static int  s_pending_rent = -1;                // dock hit by the drive
 
 static void collect_rent_docks(const ExecCtx *ctx) {
@@ -206,7 +212,7 @@ static void collect_rent_docks(const ExecCtx *ctx) {
     s_rent_n = 0;
     if (g->stats.gold <= GameBoatCost(g)) return;
     int zi = hero_zone_index(ctx);
-    for (int i = 0; i < ctx->res->town_count && s_rent_n < GAME_TOWNS; i++) {
+    for (int i = 0; i < ctx->res->town_count && i < AP_TOWNS_MAX && s_rent_n < AP_TOWNS_MAX; i++) {
         const ResTown *t = &ctx->res->towns[i];
         if (zone_index_of(ctx->res, t->zone) != zi) continue;
         if (t->boat_x < 0 || t->boat_y < 0) continue;
@@ -283,6 +289,7 @@ static void nav5_run(const ExecCtx *ctx, int bridges_avail, bool can_fly,
 
     int m0 = (g->travel_mode == TRAVEL_BOAT) ? 1 : 0;
     if (g->character.mount == MOUNT_FLY) m0 = 2;
+    if (!NAV_IN(g->position.x, g->position.y)) return;
     int start = nid(m0, g->position.x, g->position.y);
     s_dist[start] = 0;
     heap_push(0, start);
@@ -301,10 +308,10 @@ static void nav5_run(const ExecCtx *ctx, int bridges_avail, bool can_fly,
                 if (!dx && !dy) continue;
                 int nx = x + dx, ny = y + dy;
                 if (nx < 0 || ny < 0 || nx >= ctx->map->width ||
-                    ny >= ctx->map->height) continue;
+                    ny >= ctx->map->height || !NAV_IN(nx, ny)) continue;
                 // Bounds already checked above, so index the tile grid
                 // directly -- MapGetTile's redundant bounds check was hot.
-                const Tile *nt = &ctx->map->tiles[ny][nx];
+                const Tile *nt = &MAP_TILE(ctx->map, nx, ny);
 
                 // Board the parked boat: a foot step onto the boat tile.
                 if (m == 0 && have_boat && nx == bx && ny == by) {
@@ -348,7 +355,7 @@ static void nav5_run(const ExecCtx *ctx, int bridges_avail, bool can_fly,
                     // (AP-182) -- priced as the one step.
                     if (nt->interactive == INTERACT_TELECAVE) {
                         int px, py;
-                        if (telecave_pair(ctx, nx, ny, &px, &py)) {
+                        if (telecave_pair(ctx, nx, ny, &px, &py) && NAV_IN(px, py)) {
                             int tp = nid(0, px, py);
                             if (c2 < s_dist[tp]) {
                                 s_dist[tp] = c2;
@@ -365,12 +372,12 @@ static void nav5_run(const ExecCtx *ctx, int bridges_avail, bool can_fly,
                     // land for one charge. Enumerate the run from here.
                     for (int run = 1; run <= 2; run++) {
                         int wx = x + dx * run, wy = y + dy * run;
-                        const Tile *wt = MapGetTile(ctx->map, wx, wy);
+                        const Tile *wt = nav_tile(ctx->map, wx, wy);
                         if (!wt) break;
                         if (wt->terrain != TERRAIN_WATER || wt->is_bridge)
                             break;
                         int lx = x + dx * (run + 1), ly = y + dy * (run + 1);
-                        const Tile *lt = MapGetTile(ctx->map, lx, ly);
+                        const Tile *lt = nav_tile(ctx->map, lx, ly);
                         if (!lt) break;
                         if (!foot_enterable(lt, lx, ly)) continue;
                         int to = nid(0, lx, ly);
@@ -449,6 +456,7 @@ static void nav5_run(const ExecCtx *ctx, int bridges_avail, bool can_fly,
 // an interactive, so bouncer/consumable goals only count grounded arrivals).
 static int goal_cost(int x, int y, int *out_mode) {
     int best = NAV_INF, bm = -1;
+    if (!NAV_IN(x, y)) { if (out_mode) *out_mode = -1; return best; }
     for (int m = 0; m < 2; m++) {
         int d = s_dist[nid(m, x, y)];
         if (d < best) { best = d; bm = m; }
@@ -461,22 +469,28 @@ static int goal_cost(int x, int y, int *out_mode) {
 
 static int zone_hops(const Resources *res, int from, int to) {
     if (from == to) return 0;
-    int dist[RES_MAX_ZONES];
-    for (int i = 0; i < res->zone_count; i++) dist[i] = -1;
-    int q[RES_MAX_ZONES], qh = 0, qt = 0;
+    int nz = res->zone_count;
+    int *dist = malloc((size_t)(nz > 0 ? nz : 1) * sizeof *dist);
+    int *q    = malloc((size_t)(nz > 0 ? nz : 1) * sizeof *q);
+    if (!dist || !q) { free(dist); free(q); return -1; }
+    for (int i = 0; i < nz; i++) dist[i] = -1;
+    int qh = 0, qt = 0, found = -1;
     dist[from] = 0;
     q[qt++] = from;
-    while (qh < qt) {
+    while (qh < qt && found < 0) {
         int z = q[qh++];
         for (int n = 0; n < res->zones[z].neighbor_count; n++) {
             int zn = zone_index_of(res, res->zones[z].neighbors[n]);
             if (zn < 0 || dist[zn] >= 0) continue;
             dist[zn] = dist[z] + 1;
-            if (zn == to) return dist[zn];
+            if (zn == to) { found = dist[zn]; break; }
             q[qt++] = zn;
         }
     }
-    return dist[to];
+    int out = found >= 0 ? found : dist[to];
+    free(dist);
+    free(q);
+    return out;
 }
 
 static int zone_next_hop(const Resources *res, int from, int to) {
@@ -643,7 +657,7 @@ static int drive_leg_ex(ExecCtx *ctx, const NavPoint *t, bool allow_rent) {
     int bridges = (bridge_idx >= 0) ? g->spells.counts[bridge_idx] : 0;
 
     memset(s_goal, 0, sizeof s_goal);
-    s_goal[t->y][t->x] = true;
+    if (NAV_IN(t->x, t->y)) s_goal[t->y][t->x] = true;
     nav5_run(ctx, bridges, can_fly, allow_rent);
     int gm = -1;
     int cost = goal_cost(t->x, t->y, &gm);
@@ -696,7 +710,7 @@ static int drive_leg_ex(ExecCtx *ctx, const NavPoint *t, bool allow_rent) {
             // Non-adjacent jump in the plan: a telecave/bridge edge whose
             // entry tile is the PREVIOUS node. Handle bridge runs explicitly.
             int sdx = (dx > 0) - (dx < 0), sdy = (dy > 0) - (dy < 0);
-            const Tile *ahead = MapGetTile(ctx->map,
+            const Tile *ahead = nav_tile(ctx->map,
                                            g->position.x + sdx,
                                            g->position.y + sdy);
             if (ahead && ahead->terrain == TERRAIN_WATER && !ahead->is_bridge) {
@@ -711,7 +725,7 @@ static int drive_leg_ex(ExecCtx *ctx, const NavPoint *t, bool allow_rent) {
         }
 
         // Bridge edge directly ahead?
-        const Tile *nt = MapGetTile(ctx->map, nx, ny);
+        const Tile *nt = nav_tile(ctx->map, nx, ny);
         if (pm == 0 && m == 0 && nt && nt->terrain == TERRAIN_WATER &&
             !nt->is_bridge) {
             if (!drive_bridge(ctx, dx, dy)) return 0;
@@ -789,7 +803,7 @@ static bool nav_rent_boat(ExecCtx *ctx, ExecCause *out_cause) {
         const ResTown *t = &res->towns[i];
         if (zone_index_of(res, t->zone) != zi) continue;
         if (t->boat_x < 0 || t->boat_y < 0) continue;
-        s_goal[t->y][t->x] = true;
+        if (NAV_IN(t->x, t->y)) s_goal[t->y][t->x] = true;
     }
     nav5_run(ctx, 0, false, false);
     for (int i = 0; i < res->town_count; i++) {
@@ -982,7 +996,7 @@ static int gate_dest_foot_nodes(const ExecCtx *ctx, const GateDestination *d,
     static int qx[NAV_NODES], qy[NAV_NODES];
     int qh = 0, qt = 0, count = 0;
     if (d->x < 0 || d->y < 0 || d->x >= s_probe_map.width ||
-        d->y >= s_probe_map.height)
+        d->y >= s_probe_map.height || !NAV_IN(d->x, d->y))
         return 1 << 20;
     qx[qt] = d->x; qy[qt] = d->y; qt++;
     seen[d->y][d->x] = 1;
@@ -997,9 +1011,9 @@ static int gate_dest_foot_nodes(const ExecCtx *ctx, const GateDestination *d,
                 if (!dx && !dy) continue;
                 int nx = x + dx, ny = y + dy;
                 if (nx < 0 || ny < 0 || nx >= s_probe_map.width ||
-                    ny >= s_probe_map.height) continue;
+                    ny >= s_probe_map.height || !NAV_IN(nx, ny)) continue;
                 if (seen[ny][nx]) continue;
-                const Tile *t = MapGetTile(&s_probe_map, nx, ny);
+                const Tile *t = nav_tile(&s_probe_map, nx, ny);
                 if (!t) continue;
                 // Foe/consumable overlays are doors in practice; count any
                 // foot-walkable tile.
@@ -1019,7 +1033,7 @@ static bool do_crossing_once(ExecCtx *ctx, int dest_zi, bool *rerented,
     const Resources *res = ctx->res;
 
     // Gate leg: any visited destination in the target zone, castable under R-C.
-    GateDestination dests[GAME_GATE_DESTS_MAX];
+    GateDestination dests[AP_GATE_DESTS_MAX];
     for (int town = 0; town < 2; town++) {
         int idx = gate_spell_index(town == 1);
         if (idx < 0) continue;
@@ -1031,7 +1045,7 @@ static bool do_crossing_once(ExecCtx *ctx, int dest_zi, bool *rerented,
         bool last_pair =
             spell_charges(g, idx) - 1 < GATE_LAW_MIN_CHARGES;
         int n = GameGateDestinations(g, town ? GATE_DEST_TOWN : GATE_DEST_CASTLE,
-                                     dests, GAME_GATE_DESTS_MAX);
+                                     dests, AP_GATE_DESTS_MAX);
         int in_dest = 0;
         for (int i = 0; i < n; i++) {
             if (zone_index_of(res, dests[i].zone) != dest_zi) continue;
@@ -1068,7 +1082,7 @@ static bool do_crossing_once(ExecCtx *ctx, int dest_zi, bool *rerented,
     }
 
     // Sail. Multi-hop across the neighbor graph.
-    for (int hop = 0; hop < RES_MAX_ZONES + 1; hop++) {
+    for (int hop = 0; hop < AP_ZONES_MAX + 1; hop++) {
         int cur = hero_zone_index(ctx);
         if (cur == dest_zi) return true;
         int next = zone_next_hop(res, cur, dest_zi);
@@ -1135,13 +1149,15 @@ static int mv_gate_leg_score(ExecCtx *ctx, const NavPoint *t, int direct_cost,
     const Resources *res = ctx->res;
     // Distances FROM the target over the current map (reverse approximation).
     memset(s_goal, 0, sizeof s_goal);
-    Game save_pos = *ctx->g;
+    Position save_pos = ctx->g->position;
+    TravelMode save_mode = ctx->g->travel_mode;
     // Reuse nav5 by relaxing from the target on foot: temporarily reposition.
     ctx->g->position.x = t->x;
     ctx->g->position.y = t->y;
     ctx->g->travel_mode = TRAVEL_WALK;
     nav5_run(ctx, 0, false, false);
-    *ctx->g = save_pos;
+    ctx->g->position = save_pos;
+    ctx->g->travel_mode = save_mode;
 
     int best = direct_cost;
     bool improved = false;
@@ -1159,13 +1175,13 @@ static int mv_gate_leg_score(ExecCtx *ctx, const NavPoint *t, int direct_cost,
             else
                 continue;
         }
-        GateDestination dests[GAME_GATE_DESTS_MAX];
+        GateDestination dests[AP_GATE_DESTS_MAX];
         int n = GameGateDestinations(ctx->g,
                                      town ? GATE_DEST_TOWN : GATE_DEST_CASTLE,
-                                     dests, GAME_GATE_DESTS_MAX);
+                                     dests, AP_GATE_DESTS_MAX);
         for (int i = 0; i < n; i++) {
             if (zone_index_of(res, dests[i].zone) != t->zone_index) continue;
-            if (dests[i].x < 0 || dests[i].y < 0) continue;
+            if (!NAV_IN(dests[i].x, dests[i].y)) continue;
             if (seller_only &&
                 !exec_gate_dest_is_seller(ctx, true, dests[i].zone,
                                           dests[i].x, dests[i].y))
@@ -1199,7 +1215,7 @@ int move_reachable_nodes_avoid(ExecCtx *ctx, const int *ax, const int *ay,
         int x = ax[i], y = ay[i];
         if (x < 0 || y < 0 || x >= NAV_W || y >= NAV_H) continue;
         if (x == ctx->g->position.x && y == ctx->g->position.y) continue;
-        s_avoid[y][x] = true;
+        if (NAV_IN(x, y)) s_avoid[y][x] = true;
     }
     nav5_run(ctx, 0, false, true);
     memset(s_avoid, 0, sizeof s_avoid);
@@ -1277,7 +1293,7 @@ void move_price_all(ExecCtx *ctx, const NavPoint *targets, int n,
     memset(s_avoid, 0, sizeof s_avoid);
     memset(s_goal, 0, sizeof s_goal);
     for (int i = 0; i < n; i++) {
-        if (targets[i].zone_index == cur_zi)
+        if (targets[i].zone_index == cur_zi && NAV_IN(targets[i].x, targets[i].y))
             s_goal[targets[i].y][targets[i].x] = true;
     }
     nav5_run(ctx, bridges, can_fly, true);
@@ -1302,7 +1318,7 @@ static const TownRecord *town_record_at(const ExecCtx *ctx,
               (t->boat_x == x && t->boat_y == y) ||
               (t->x == x && t->y == y)))
             continue;
-        for (int k = 0; k < GAME_TOWNS; k++)
+        for (int k = 0; k < ctx->g->town_count; k++)
             if (strcmp(ctx->g->towns[k].id, t->id) == 0)
                 return &ctx->g->towns[k];
         return NULL;
@@ -1344,8 +1360,8 @@ static void maybe_gate_restock_stops(ExecCtx *ctx) {
     const SpellDef *tg_sd = spell_by_index(tg);
     if (!ts_sd || !tg_sd) return;
 
-    GateDestination dests[GAME_GATE_DESTS_MAX];
-    int n = GameGateDestinations(g, GATE_DEST_TOWN, dests, GAME_GATE_DESTS_MAX);
+    GateDestination dests[AP_GATE_DESTS_MAX];
+    int n = GameGateDestinations(g, GATE_DEST_TOWN, dests, AP_GATE_DESTS_MAX);
     int out = -1, back = -1;
     char out_tid[24] = {0};
     char back_tid[24] = {0};
@@ -1482,7 +1498,7 @@ static int move_to_once(ExecCtx *ctx, const NavPoint *targets, int n,
     int bridges = (bridge_idx >= 0) ? g->spells.counts[bridge_idx] : 0;
     memset(s_goal, 0, sizeof s_goal);
     for (int i = 0; i < n; i++) {
-        if (targets[i].zone_index == cur_zi)
+        if (targets[i].zone_index == cur_zi && NAV_IN(targets[i].x, targets[i].y))
             s_goal[targets[i].y][targets[i].x] = true;
     }
     nav5_run(ctx, bridges, can_fly, true);
@@ -1512,7 +1528,7 @@ static int move_to_once(ExecCtx *ctx, const NavPoint *targets, int n,
                    targets[0].zone_index);
             for (int dy = -1; dy <= 1; dy++)
                 for (int dx = -1; dx <= 1; dx++) {
-                    const Tile *nt = MapGetTile(ctx->map, g->position.x + dx,
+                    const Tile *nt = nav_tile(ctx->map, g->position.x + dx,
                                                 g->position.y + dy);
                     if (!nt) { printf("[NAV]  n(%+d,%+d)=NULL\n", dx, dy);
                                continue; }
@@ -1553,7 +1569,7 @@ static int move_to_once(ExecCtx *ctx, const NavPoint *targets, int n,
         // Same-zone: gate leg when strictly cheaper (AP-092).
         {
             memset(s_goal, 0, sizeof s_goal);
-            s_goal[t->y][t->x] = true;
+            if (NAV_IN(t->x, t->y)) s_goal[t->y][t->x] = true;
             nav5_run(ctx, bridges, can_fly, true);
             int direct = goal_cost(t->x, t->y, NULL);
             bool town = false;
@@ -1593,7 +1609,7 @@ static int move_to_once(ExecCtx *ctx, const NavPoint *targets, int n,
                         g->foes[fi].y == fy &&
                         strcmp(g->foes[fi].zone, g->position.zone) == 0)
                         pf2 = &g->foes[fi];
-                if (pf2) s_avoid[fy][fx] = true;   // declined: route around
+                if (pf2 && NAV_IN(fx, fy)) s_avoid[fy][fx] = true;   // declined: route around
             }
             continue;
         }
@@ -1606,11 +1622,11 @@ static int move_to_once(ExecCtx *ctx, const NavPoint *targets, int n,
             // Recovery levers, once per call (AP-103): gate out of a pocket.
             if (!gated_out) {
                 gated_out = true;
-                GateDestination dests[GAME_GATE_DESTS_MAX];
+                GateDestination dests[AP_GATE_DESTS_MAX];
                 for (int town = 0; town < 2; town++) {
                     if (!mv_gate_castable(ctx, town == 1)) continue;
                     int dn = GameGateDestinations(
-                        g, town ? GATE_DEST_TOWN : GATE_DEST_CASTLE, dests, GAME_GATE_DESTS_MAX);
+                        g, town ? GATE_DEST_TOWN : GATE_DEST_CASTLE, dests, AP_GATE_DESTS_MAX);
                     if (dn > 0 && exec_gate_to(ctx, town == 1, dests[0].zone,
                                                dests[0].x, dests[0].y))
                         break;

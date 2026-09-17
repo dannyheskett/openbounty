@@ -7,13 +7,28 @@
 #include <string.h>
 
 const char *MapStrGet(const Map *map, MapStr s) {
-    if (!map || s == 0 || s >= map->str_count) return "";
+    if (!map || s == 0 || s >= map->str_count || !map->pool) return "";
     return map->pool + map->str_off[s];
+}
+
+static void map_oom(const char *what) {
+    fprintf(stdout, "map: out of memory growing the %s\n", what);
+    abort();
 }
 
 MapStr MapStrIntern(Map *map, const char *s) {
     if (!map || !s || !s[0]) return 0;
     if (map->str_count == 0) {                 // index 0 is ""
+        if (map->str_cap < 1 || map->pool_cap < 1) {
+            int sc = map->str_cap > 64 ? map->str_cap : 64;
+            int pc = map->pool_cap > 1024 ? map->pool_cap : 1024;
+            uint32_t *so = realloc(map->str_off, (size_t)sc * sizeof *so);
+            if (!so) map_oom("string table");
+            map->str_off = so; map->str_cap = sc;
+            char *pl = realloc(map->pool, (size_t)pc);
+            if (!pl) map_oom("string pool");
+            map->pool = pl; map->pool_cap = pc;
+        }
         map->str_off[0] = 0;
         map->pool[0] = '\0';
         map->pool_used = 1;
@@ -22,15 +37,47 @@ MapStr MapStrIntern(Map *map, const char *s) {
     for (int i = 1; i < map->str_count; i++)
         if (strcmp(map->pool + map->str_off[i], s) == 0) return (MapStr)i;
     size_t n = strlen(s) + 1;
-    if (map->str_count >= MAP_MAX_STRINGS || map->pool_used + n > MAP_POOL_BYTES) {
-        fprintf(stdout, "map: string pool full (%d strings, %d bytes) adding '%s'\n",
-                map->str_count, map->pool_used, s);
+    if (map->str_count > 0xFFFF - 1) {
+        // A tile field is 16 bits (MapStr); past that no index can name the string.
+        fprintf(stdout, "map: more than 65535 distinct strings adding '%s'\n", s);
         abort();
     }
-    map->str_off[map->str_count] = (uint16_t)map->pool_used;
+    if (map->str_count >= map->str_cap) {
+        int sc = map->str_cap * 2;
+        uint32_t *so = realloc(map->str_off, (size_t)sc * sizeof *so);
+        if (!so) map_oom("string table");
+        map->str_off = so; map->str_cap = sc;
+    }
+    while ((size_t)map->pool_used + n > (size_t)map->pool_cap) {
+        int pc = map->pool_cap * 2;
+        char *pl = realloc(map->pool, (size_t)pc);
+        if (!pl) map_oom("string pool");
+        map->pool = pl; map->pool_cap = pc;
+    }
+    map->str_off[map->str_count] = (uint32_t)map->pool_used;
     memcpy(map->pool + map->pool_used, s, n);
     map->pool_used += (int)n;
     return (MapStr)map->str_count++;
+}
+
+void MapFree(Map *map) {
+    if (!map) return;
+    free(map->tiles);
+    free(map->str_off);
+    free(map->pool);
+    memset(map, 0, sizeof *map);
+}
+
+bool MapAlloc(Map *map, int width, int height) {
+    if (!map) return false;
+    MapFree(map);
+    if (width < 0 || height < 0) return false;
+    map->width = width;
+    map->height = height;
+    if ((size_t)width * (size_t)height == 0) return true;
+    map->tiles = calloc((size_t)width * (size_t)height, sizeof *map->tiles);
+    if (!map->tiles) { map->width = map->height = 0; return false; }
+    return true;
 }
 
 static void copy_string(char *dst, size_t dst_size, const char *src) {
@@ -116,11 +163,9 @@ static bool load_dat(Map *map, const Resources *res, const ResZone *zone) {
         return false;
     }
 
-    map->width  = zone->width;
-    map->height = zone->height;
-    if (map->width > MAP_MAX_W || map->height > MAP_MAX_H) {
-        fprintf(stdout, "MapLoadZone: %s too large: %dx%d\n",
-                zone->id, map->width, map->height);
+    if (!MapAlloc(map, zone->width, zone->height)) {
+        fprintf(stdout, "MapLoadZone: %s: cannot allocate %dx%d\n",
+                zone->id, zone->width, zone->height);
         UnloadAssetBytes(bytes);
         return false;
     }
@@ -135,7 +180,7 @@ static bool load_dat(Map *map, const Resources *res, const ResZone *zone) {
 
     for (int y = 0; y < map->height; y++)
         for (int x = 0; x < map->width; x++)
-            default_tile(map, &map->tiles[y][x]);
+            default_tile(map, &MAP_TILE(map, x, y));
 
     const char *p   = (const char *)bytes;
     const char *end = (const char *)bytes + sz;
@@ -145,7 +190,7 @@ static bool load_dat(Map *map, const Resources *res, const ResZone *zone) {
         int x = 0;
         while (p < end && *p != '\n' && *p != '\r' && x < map->width) {
             unsigned char c = (unsigned char)*p++;
-            if (!fill_tile_from_code(map, &map->tiles[y][x], res, c)) {
+            if (!fill_tile_from_code(map, &MAP_TILE(map, x, y), res, c)) {
                 fprintf(stdout,
                         "MapLoadZone: %s:%d:%d unknown tile code 0x%02x '%c'\n",
                         zone->map_path, y + 1, x + 1, c,
@@ -169,7 +214,7 @@ static bool load_dat(Map *map, const Resources *res, const ResZone *zone) {
 // of bounds (per-zone object lists may outlive edits to the .dat).
 static Tile *tile_at(Map *map, int x, int y) {
     if (!MapInBounds(map, x, y)) return NULL;
-    return &map->tiles[y][x];
+    return &MAP_TILE(map, x, y);
 }
 
 // The castle stamps (REQ-228), one table per footprint. stamp_objects paints
@@ -424,7 +469,7 @@ bool MapClearFoeStamp(Map *map, int x, int y) {
     // there destroys the pickup with no consumed-ledger entry (an objective
     // that can never complete).
     if (!MapInBounds(map, x, y)) return false;
-    Tile *t = &map->tiles[y][x];
+    Tile *t = &MAP_TILE(map, x, y);
     if (t->interactive != INTERACT_FOE) return false;
     MapClearInteractive(map, x, y);
     return true;
@@ -442,7 +487,7 @@ bool MapLoadZoneWithPlacements(Map *map, const Resources *res,
         fprintf(stdout, "MapLoadZone: unknown zone id '%s'\n", zone_id);
         return false;
     }
-    memset(map, 0, sizeof(*map));
+    MapFree(map);
     if (!load_dat(map, res, zone)) return false;
     stamp_objects(map, res, zone, game);
     stamp_placements(map, game, zone_id);
@@ -451,7 +496,7 @@ bool MapLoadZoneWithPlacements(Map *map, const Resources *res,
 
 const Tile *MapGetTile(const Map *map, int x, int y) {
     if (!MapInBounds(map, x, y)) return NULL;
-    return &map->tiles[y][x];
+    return &MAP_TILE(map, x, y);
 }
 
 bool MapInBounds(const Map *map, int x, int y) {
@@ -466,7 +511,7 @@ bool MapWalkable(const Map *map, int x, int y) {
 
 void MapClearInteractive(Map *map, int x, int y) {
     if (!MapInBounds(map, x, y)) return;
-    Tile *t = &map->tiles[y][x];
+    Tile *t = &MAP_TILE(map, x, y);
     t->interactive = INTERACT_NONE;
     t->id = 0;
     // Revert to the cell's own terrain art (REQ-229f): a road, a grass

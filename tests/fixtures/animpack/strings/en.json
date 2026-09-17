@@ -480,6 +480,7 @@
 			"gm_new_game":	"New Game",
 			"gm_exit":	"Exit",
 			"gm_back":	"\u001b Back",
+			"gm_close":	"Close",
 			"gm_debug":	"Debug",
 			"gm_actions":	"Actions",
 			"gm_unit":	"Unit",

@@ -363,7 +363,8 @@ static void draw_art(GbWorkspace *ws, int top) {
         // Terrain is listed once per tile set: the shared art/tiles/ while
         // some zone uses it, then each zone's declared tile_set folder
         // (PACK-FORMAT section 6), the way the engine's manifest lists it.
-        const char *sets[RES_MAX_ZONES + 1];
+        const char **sets = calloc((size_t)ws->res.zone_count + 1, sizeof *sets);
+        if (!sets) return;
         int set_count = 0;
         bool shared = (ws->res.zone_count == 0);
         for (int zi = 0; zi < ws->res.zone_count; zi++) {
@@ -410,6 +411,7 @@ static void draw_art(GbWorkspace *ws, int top) {
             }
             shown++;
         }
+        free(sets);
     } else {
         DrawText("Art in this category is referenced from the catalogs.",
                  16, y, 12, GRAY);

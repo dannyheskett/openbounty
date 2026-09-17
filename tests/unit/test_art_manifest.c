@@ -19,12 +19,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-static char s_paths[RES_ART_MANIFEST_MAX][RES_PATH_LEN];
+// The manifest list, grown by resources_art_manifest and reused by every test.
+static ResArtList s_list;
+#define s_paths (s_list.path)
 
 TEST every_manifest_path_exists_in_the_pack(void) {
     Resources *r = fx_load_resources();
     ASSERT(r);
-    int n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    int n = resources_art_manifest(r, &s_list);
     ASSERT(n > 0);
     for (int i = 0; i < n; i++) {
         size_t sz = 0;
@@ -39,7 +41,7 @@ TEST every_manifest_path_exists_in_the_pack(void) {
 TEST manifest_covers_every_category(void) {
     Resources *r = fx_load_resources();
     ASSERT(r);
-    int n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    int n = resources_art_manifest(r, &s_list);
     // One probe per discovery mechanism, so a category going dark fails here
     // rather than silently shrinking the count.
     bool hero = false, combat = false, font = false, tile = false,
@@ -96,19 +98,19 @@ TEST castle_art_follows_the_footprint(void) {
     Resources *r = fx_load_resources();
     ASSERT(r);
     ASSERT(r->castle_count > 1);
-    int n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    int n = resources_art_manifest(r, &s_list);
     ASSERT(manifest_has(n, "art/tiles/castle_gate.png"));
     ASSERT_FALSE(manifest_has(n, "art/tiles/castle.png"));
 
     for (int i = 0; i < r->castle_count; i++)
         r->castles[i].footprint = RES_CASTLE_FOOTPRINT_1X1;
-    n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    n = resources_art_manifest(r, &s_list);
     ASSERT(manifest_has(n, "art/tiles/castle.png"));
     ASSERT_FALSE(manifest_has(n, "art/tiles/castle_gate.png"));
     ASSERT_FALSE(manifest_has(n, "art/tiles/castle_tl.png"));
 
     r->castles[0].footprint = RES_CASTLE_FOOTPRINT_3X2;
-    n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    n = resources_art_manifest(r, &s_list);
     ASSERT(manifest_has(n, "art/tiles/castle.png"));
     ASSERT(manifest_has(n, "art/tiles/castle_gate.png"));
     resources_free(r); free(r);
@@ -123,18 +125,18 @@ TEST terrain_art_is_listed_per_tile_set(void) {
     Resources *r = fx_load_resources();
     ASSERT(r);
     ASSERT(r->zone_count >= 2);
-    int n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    int n = resources_art_manifest(r, &s_list);
     ASSERT(manifest_has(n, "art/tiles/grass.png"));
     ASSERT_FALSE(manifest_has(n, "art/tiles/alpha/grass.png"));
 
     strcpy(r->zones[0].tile_set, "alpha");
-    n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    n = resources_art_manifest(r, &s_list);
     ASSERT(manifest_has(n, "art/tiles/grass.png"));
     ASSERT(manifest_has(n, "art/tiles/alpha/grass.png"));
     ASSERT(manifest_has(n, "art/tiles/alpha/water_edge_01.png"));
 
     for (int i = 0; i < r->zone_count; i++) strcpy(r->zones[i].tile_set, "alpha");
-    n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    n = resources_art_manifest(r, &s_list);
     ASSERT_FALSE(manifest_has(n, "art/tiles/grass.png"));
     int alpha = 0;
     for (int i = 0; i < n; i++)
@@ -151,15 +153,15 @@ TEST town_art_is_listed_per_catalog_entry(void) {
     Resources *r = fx_load_resources();
     ASSERT(r);
     ASSERT(r->town_count >= 2);
-    int n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    int n = resources_art_manifest(r, &s_list);
     ASSERT(manifest_has(n, "art/tiles/town.png"));
     ASSERT_FALSE(manifest_has(n, "art/tiles/town_x.png"));
     strcpy(r->towns[0].art, "town_x");
-    n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    n = resources_art_manifest(r, &s_list);
     ASSERT(manifest_has(n, "art/tiles/town.png"));
     ASSERT(manifest_has(n, "art/tiles/town_x.png"));
     for (int i = 0; i < r->town_count; i++) strcpy(r->towns[i].art, "town_x");
-    n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    n = resources_art_manifest(r, &s_list);
     ASSERT_FALSE(manifest_has(n, "art/tiles/town.png"));
     int c = 0;
     for (int i = 0; i < n; i++) if (strcmp(s_paths[i], "art/tiles/town_x.png") == 0) c++;
@@ -172,14 +174,14 @@ TEST army_art_is_listed_per_zone(void) {
     Resources *r = fx_load_resources();
     ASSERT(r);
     ASSERT(r->zone_count >= 2);
-    int n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    int n = resources_art_manifest(r, &s_list);
     ASSERT(manifest_has(n, "art/tiles/wandering_army.png"));
     strcpy(r->zones[0].army_art, "army_x");
-    n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    n = resources_art_manifest(r, &s_list);
     ASSERT(manifest_has(n, "art/tiles/wandering_army.png"));
     ASSERT(manifest_has(n, "art/tiles/army_x.png"));
     for (int i = 0; i < r->zone_count; i++) strcpy(r->zones[i].army_art, "army_x");
-    n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    n = resources_art_manifest(r, &s_list);
     ASSERT_FALSE(manifest_has(n, "art/tiles/wandering_army.png"));
     resources_free(r); free(r);
     PASS();
@@ -190,13 +192,16 @@ TEST class_hero_art_is_listed_when_declared(void) {
     ASSERT(r);
     ASSERT(r->classes_count >= 1);
     ASSERT(resources_class_hero(r, r->classes[0].id) == NULL);
-    int n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    int n = resources_art_manifest(r, &s_list);
     ASSERT_FALSE(manifest_has(n, "art/classes/x_hero.png"));
     strcpy(r->class_hero[0].tile, "art/classes/x_hero.png");
+    free(r->class_hero[0].walk.frames[0]);   // resources_free frees this strip
+    r->class_hero[0].walk.frames[0] = calloc(1, RES_PATH_LEN);
+    ASSERT(r->class_hero[0].walk.frames[0]);
     r->class_hero[0].walk.count[0] = 1;
     strcpy(r->class_hero[0].walk.frames[0][0], "art/classes/x_walk_00.png");
     ASSERT(resources_class_hero(r, r->classes[0].id) != NULL);
-    n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    n = resources_art_manifest(r, &s_list);
     ASSERT(manifest_has(n, "art/classes/x_hero.png"));
     ASSERT(manifest_has(n, "art/classes/x_walk_00.png"));
     resources_free(r); free(r);
@@ -207,16 +212,15 @@ TEST a_ttf_font_and_its_licence_are_in_the_manifest(void) {
     Resources *r = fx_load_resources();
     ASSERT(r != NULL);
     ASSERT_EQ(0, r->font.file[0]);                  // kings-bounty declares no TTF
-    char (*paths)[RES_PATH_LEN] = s_paths;
-    int before = resources_art_manifest(r, paths, RES_ART_MANIFEST_MAX);
+    int before = resources_art_manifest(r, &s_list);
     snprintf(r->font.file, sizeof r->font.file, "art/font/Face.ttf");
     snprintf(r->font.license, sizeof r->font.license, "art/font/OFL.txt");
-    int after = resources_art_manifest(r, paths, RES_ART_MANIFEST_MAX);
+    int after = resources_art_manifest(r, &s_list);
     ASSERT_EQ(before + 2, after);
     bool ttf = false, lic = false;
     for (int i = 0; i < after; i++) {
-        if (strcmp(paths[i], "art/font/Face.ttf") == 0) ttf = true;
-        if (strcmp(paths[i], "art/font/OFL.txt") == 0) lic = true;
+        if (strcmp(s_paths[i], "art/font/Face.ttf") == 0) ttf = true;
+        if (strcmp(s_paths[i], "art/font/OFL.txt") == 0) lic = true;
     }
     ASSERT(ttf); ASSERT(lic);
     resources_free(r); free(r);
@@ -239,7 +243,7 @@ TEST siege_grid_is_listed_only_when_declared(void) {
     // path per cell of the band plus board (REQ-165c). Absent, nothing.
     Resources *r = fx_load_resources();
     ASSERT(r);
-    int n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    int n = resources_art_manifest(r, &s_list);
     for (int i = 0; i < n; i++)
         ASSERT_FALSE(strstr(s_paths[i], "art/combat/siege/"));
     char p[RES_PATH_LEN];
@@ -247,7 +251,7 @@ TEST siege_grid_is_listed_only_when_declared(void) {
     ASSERT_EQ(0, (int)p[0]);
 
     strcpy(r->sprites.siege_grid, "art/combat/siege/cell");
-    int m = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    int m = resources_art_manifest(r, &s_list);
     ASSERT_EQ(n + COMBAT_W * (COMBAT_H + 1) - 6, m);
     ASSERT(manifest_has(m, "art/combat/siege/cell_0_0.png"));
     ASSERT(manifest_has(m, "art/combat/siege/cell_5_5.png"));
@@ -268,11 +272,11 @@ TEST combat_field_tile_is_dropped_when_ground_is_terrain(void) {
     Resources *r = fx_load_resources();
     ASSERT(r);
     ASSERT_FALSE(resources_combat_ground_is_terrain(r));
-    int n = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    int n = resources_art_manifest(r, &s_list);
     ASSERT(manifest_has(n, r->sprites.combat[0]));
     strcpy(r->sprites.combat_ground, "terrain");
     ASSERT(resources_combat_ground_is_terrain(r));
-    int m = resources_art_manifest(r, s_paths, RES_ART_MANIFEST_MAX);
+    int m = resources_art_manifest(r, &s_list);
     ASSERT_EQ(n - 1, m);
     ASSERT_FALSE(manifest_has(m, r->sprites.combat[0]));
     ASSERT(manifest_has(m, r->sprites.combat[1]));

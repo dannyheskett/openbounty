@@ -190,7 +190,7 @@ void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
             const ResZone *nz = resources_zone_by_id(r_, cur->neighbors[ni]);
             if (!nz) continue;
             int nz_idx = (int)(nz - r_->zones);
-            if (nz_idx < 0 || nz_idx >= GAME_CONTINENTS ||
+            if (nz_idx < 0 || nz_idx >= g->world.zone_count ||
                 !g->world.zones_discovered[nz_idx]) continue;
             size_t k = 0;
             while (k + 1 < sizeof(pending_nav_zones[0]) && nz->id[k]) {

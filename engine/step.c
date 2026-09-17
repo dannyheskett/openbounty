@@ -539,7 +539,7 @@ bool GameStep(Game *game, Map *map, Fog *fog,
                 }
             }
             char body[128];
-            if (target_zone >= 0 && target_zone < GAME_CONTINENTS) {
+            if (target_zone >= 0 && target_zone < game->world.zone_count) {
                 game->world.zones_discovered[target_zone] = true;
                 MapClearInteractive(map, nx, ny);
                 GameAddConsumed(game, game->position.zone, nx, ny);
@@ -566,7 +566,7 @@ bool GameStep(Game *game, Map *map, Fog *fog,
                     break;
                 }
             }
-            if (zone_index >= 0 && zone_index < GAME_CONTINENTS) {
+            if (zone_index >= 0 && zone_index < game->world.zone_count) {
                 game->world.orbs_found[zone_index] = true;
             }
             MapClearInteractive(map, nx, ny);

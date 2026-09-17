@@ -61,7 +61,7 @@ static void probe_attack(const Combat *c, int side, int slot,
     s_probe_combat = *c;
     Game *hero = c->heroes[COMBAT_SIDE_PLAYER];
     if (hero && hero != &s_probe_hero && hero != &s_cand_hero) {
-        s_probe_hero = *hero;
+        GameCopy(&s_probe_hero, hero);
         s_probe_combat.heroes[COMBAT_SIDE_PLAYER] = &s_probe_hero;
     }
     long pre_them = probe_side_hp(&s_probe_combat, t_side);
@@ -124,7 +124,7 @@ static Combat s_cand_combat;
 
 static void cand_begin(const Combat *c) {
     if (c->heroes[COMBAT_SIDE_PLAYER])
-        s_cand_hero = *c->heroes[COMBAT_SIDE_PLAYER];
+        GameCopy(&s_cand_hero, c->heroes[COMBAT_SIDE_PLAYER]);
 }
 
 static void cand_setup(const Combat *c) {
@@ -162,7 +162,7 @@ static bool probe_cast(const Combat *c, int side, int spell_idx,
                        long *their_hp_lost, long *our_hp_gained) {
     s_probe_combat = *c;
     if (c->heroes[COMBAT_SIDE_PLAYER]) {
-        s_probe_hero = *c->heroes[COMBAT_SIDE_PLAYER];
+        GameCopy(&s_probe_hero, c->heroes[COMBAT_SIDE_PLAYER]);
         s_probe_combat.heroes[COMBAT_SIDE_PLAYER] = &s_probe_hero;
     }
     int e_side = 1 - side;
@@ -212,7 +212,7 @@ static bool try_cast_round(Combat *c, int side) {
         const SpellDef *sd = spell_by_index(si);
         if (!sd || sd->kind != SPELL_KIND_COMBAT) continue;
         int idx = sd->index;
-        if (idx < 0 || idx >= GAME_SPELLBOOK_SLOTS || cnt[idx] <= 0) continue;   // counts[] is sized GAME_SPELLBOOK_SLOTS (game.h)
+        if (idx < 0 || idx >= g->spells.count || cnt[idx] <= 0) continue;
         int filter = combat_spell_target_filter(idx);
 
         if (filter == PICK_FILTER_ENEMY || filter == PICK_FILTER_UNDEAD) {

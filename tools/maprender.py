@@ -30,6 +30,7 @@ TERRAIN_RGB = {
     "forest":   (28, 78, 32),
     "mountain": (120, 108, 96),
     "water":    (36, 68, 140),
+    "river":    (58, 118, 196),
     "desert":   (198, 176, 104),
 }
 OBJECT_RGB = {

@@ -91,14 +91,13 @@ static void draw_cartoon_frame(const Resources *res, const Sprites *sprites,
     // flipped . Troop frame index
     // is `tick` folded onto whatever cycle length the troop declares.
     if (res->ending.troop_border) {
-        int nt = troops_count();
-        if (nt > 25) nt = 25;
+        // Every troop the pack declares, until the grid runs out of rows.
+        int nt = sprites->troop_count;
         int x = 0, y = 0;
         for (int i = 0; i < nt && y < gh; i++) {
             bool flip = (x == gw - 1);
-            int frame_idx = sprites_frame(CL_IS_MODERN ? sprites_stand(tick) : tick,
-                                          sprites->troop_anim_frames[i]);
-            Texture2D tex = sprites->troop_anim[i][frame_idx];
+            Texture2D tex = sprites_strip(sprites->troop_anim[i], sprites->troop_anim_frames[i],
+                                          CL_IS_MODERN ? sprites_stand(tick) : tick);
             if (!tex.id) tex = sprites->troop_sprite[i];
             draw_tile(tex, x, y, origin_x, origin_y, flip);
             x++;

@@ -4,9 +4,9 @@
 #include <string.h>
 
 typedef struct {
-    char stem[RES_TILE_ART_LEN];
-    int  count;
-    char names[RES_TILE_VARIANTS][RES_TILE_ART_LEN];
+    char        stem[RES_TILE_ART_LEN];
+    int         count;
+    const char (*names)[RES_TILE_ART_LEN];   // the tile code's own variant list
 } Entry;
 
 static Entry    s_ent[RES_TILE_CODE_COUNT];
@@ -28,8 +28,7 @@ void tilevar_init(const struct Resources *res, unsigned seed) {
         Entry *e = &s_ent[s_n++];
         snprintf(e->stem, sizeof e->stem, "%s", tc->art);
         e->count = tc->variant_count;
-        for (int v = 0; v < tc->variant_count; v++)
-            snprintf(e->names[v], sizeof e->names[v], "%s", tc->variants[v]);
+        e->names = (const char (*)[RES_TILE_ART_LEN])tc->variants;
     }
 }
 

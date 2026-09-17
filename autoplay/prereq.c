@@ -42,7 +42,7 @@ unsigned prereq_gated(const ExecCtx *ctx, const PlanStep *step,
     // Zone reach: the objective's continent must be discovered. Home starts
     // discovered; every other continent chains off the prior one's navmap
     // (engine/step.c) and no money buys the trip until the map is found.
-    if (step->zone_index >= 0 && step->zone_index < GAME_CONTINENTS &&
+    if (step->zone_index >= 0 && step->zone_index < g->world.zone_count &&
         !g->world.zones_discovered[step->zone_index])
         m |= PREREQ_ZONE;
 

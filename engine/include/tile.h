@@ -9,6 +9,7 @@ typedef enum {
     TERRAIN_MOUNTAIN,
     TERRAIN_WATER,
     TERRAIN_DESERT,
+    TERRAIN_RIVER,       // inland water: blocks walking and boats, takes a bridge, flown over
     TERRAIN_COUNT
 } Terrain;
 

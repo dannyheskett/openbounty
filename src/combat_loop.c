@@ -290,27 +290,12 @@ static void combat_menu_open(void) {
     s_act_depth = 2;
 }
 
-// What a spell does, for the menu's description block: the last paragraph of
-// its lore (the lore opens with the myth and closes with the effect), cut to
-// its first sentence so it reads whole in two lines.
-static const char *spell_brief(const Resources *res, const SpellDef *sd, int slot) {
-    static char briefs[7][200];
-    if (slot < 0 || slot >= 7) return "";
-    char *brief = briefs[slot];
-    const size_t brief_cap = sizeof briefs[0];
-    const char *t = (sd && sd->description[0]) ? sd->description
-                  : (sd ? resources_spell_lore(res, sd->id) : "");
-    if (!t || !t[0]) return "";
-    const char *last = t;
-    for (const char *q = t; q[0] && q[1]; q++)
-        if (q[0] == '\n' && q[1] == '\n') last = q + 2;
-    snprintf(brief, brief_cap, "%s", last);
-    for (char *q = brief; *q; q++) {
-        if (*q != '.' && *q != '!' && *q != '?') continue;
-        if (q[1] == '"' || q[1] == '\'') q++;
-        if (q[1] == '\0' || q[1] == ' ' || q[1] == '\n') { q[1] = '\0'; break; }
-    }
-    return brief;
+// What a spell does, for the Cast page's description: the pack's one-line
+// brief (strings.spell_brief), else the spell's own description. Never lore.
+static const char *spell_brief(const Resources *res, const SpellDef *sd) {
+    if (!sd) return "";
+    const char *b = resources_spell_brief(res, sd->id);
+    return (b && b[0]) ? b : sd->description;
 }
 
 static void combat_menu_page(const Combat *c, const Game *g, int id, GmPage *p) {
@@ -324,7 +309,7 @@ static void combat_menu_page(const Combat *c, const Game *g, int id, GmPage *p) 
         ROW(ui->gm_unit, bn->gmd_unit, "", GM_ACT_PAGE + CM_UNIT, true);
         ROW(ui->gm_hero, bn->gmd_combat_army, "", GM_ACT_PAGE + CM_HERO, true);
         ROW(ui->gm_game, bn->gmd_controls, "", GM_ACT_PAGE + CM_GAME, true);
-        ROW(ui->gm_back, bn->gmd_back, "", GM_ACT_BACK, true);
+        ROW(ui->gm_close, bn->gmd_back, "", GM_ACT_BACK, true);
         break;
     case CM_UNIT: {
         const CombatUnit *u = (c->unit_id >= 0) ? &c->units[c->side][c->unit_id] : NULL;
@@ -359,7 +344,7 @@ static void combat_menu_page(const Combat *c, const Game *g, int id, GmPage *p) 
         for (int i = 0; i < 7; i++) {
             const SpellDef *sd = spell_by_index(i);
             int held = hero ? hero->spells.counts[i] : 0;
-            ROW(sd ? sd->name : "", held > 0 ? spell_brief(g->res, sd, i) : bn->gmr_no_spell_held, "",
+            ROW(sd ? sd->name : "", held > 0 ? spell_brief(g->res, sd) : bn->gmr_no_spell_held, "",
                 GM_ACT_USER + i, held > 0);
         }
         ROW(ui->gm_back, bn->gmd_back_up, "", GM_ACT_BACK, true);
@@ -401,20 +386,11 @@ static void combat_action_menu_draw(const Combat *c, const Game *g) {
         size_t n = strlen(path);
         snprintf(path + n, sizeof path - n, "%s%s", i ? " > " : "", pi.title ? pi.title : "");
     }
-    ML_Rect r = ml_large();
     int cursor = s_act_cursor[d] < p.n ? s_act_cursor[d] : p.n - 1;
-    int menu_w = 400;
-    for (int id = CM_ROOT; id <= CM_CAST; id++) {
-        GmPage pi;
-        combat_menu_page(c, g, id, &pi);
-        int pw = gm_page_width(&pi, path);
-        if (pw > menu_w) menu_w = pw;
-    }
     // The Cast page shows each spell's charges at the row's right.
     bool cast = s_act_page[d] == CM_CAST;
     SpellRowCtx sc = { c->heroes[c->side], &p };
-    gm_draw_page(&p, path, "", r.x, r.y, menu_w, r.h, 0, cursor,
-                 TOUCH_LIST_COMBAT_ACTIONS, cast ? combat_spell_row : NULL, cast ? &sc : NULL);
+    gm_draw_page(&p, path, "", cursor, TOUCH_LIST_COMBAT_ACTIONS, cast ? combat_spell_row : NULL, cast ? &sc : NULL);
 }
 
 
@@ -563,6 +539,7 @@ static void combat_present(const Combat *c, const Game *g,
     present_refit(target);
     present_begin(target);
     ml_set_area(ML_AREA_FULL);     // the field is full width: panels centre on it
+    ml_set_field((ML_Rect){ CL_COMBAT_X, CL_COMBAT_Y, CL_COMBAT_W, CL_COMBAT_H });
     if (CL_IS_MODERN) modern_overlay_set_sprites(sprites);
     combat_render_frame(c, g, sprites);
     // Open view (Options / Controls / Army / Character) draws over the
@@ -615,6 +592,7 @@ static void combat_present(const Combat *c, const Game *g,
     // Give-up confirm and any other y/n / numeric prompt draws on top
     // of everything else as a bottom-frame modal.
     if (prompt_is_active()) prompt_draw();
+    ml_clear_field();
     present_end();
 
     present_scaled(*target);

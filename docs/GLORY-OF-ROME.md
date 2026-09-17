@@ -431,9 +431,8 @@ UI those two will look odd.
 
 - **Tile and sprite geometry is 48 × 34**, compiled into the renderer, not a
   pack setting. See `ART-SPEC.md`.
-- **Castle and town counts are ceilings, not requirements.** `GAME_CASTLES`
-  and `GAME_TOWNS` are 26; every consumer loops to `min(res->count, cap)`, so
-  a pack may declare fewer. Names are free — gate destinations are chosen from
+- **Castle and town counts are free.** The engine sizes every table from the
+  pack, so a pack may declare as many or as few as it likes. Names are free — gate destinations are chosen from
   a cursored list, not addressed by first letter (REQ-322).
 - **Each zone needs more contract-eligible castles than it has villains**, with
   margin, or `salt_villains`' retry loop exhausts its guard and villains
@@ -490,28 +489,15 @@ Three consequences follow, recorded in `GAMEBUILDER-SPEC.md` GB-014:
 **DECIDED.** Four hand-authored zone maps, each an ASCII `.dat` under
 `maps/`, one byte per tile, resolved through `tile_codes` in `game.json`.
 
-### 10.1 Dimensions are per-zone, and bounded by a raisable constant
+### 10.1 Dimensions are per-zone, with no ceiling
 
 Zone `width`/`height` are parsed per-zone and default to 64; short rows pad
-with grass. The ceiling is `MAP_MAX_W` / `MAP_MAX_H` in
-`engine/include/map.h`, enforced at load — `MapLoadZone` prints `too large`
-and fails the zone. That was verified empirically: a 96×96 zone is rejected
-and aborts the run.
-
-The ceiling is a **constant, not a structural limit**, and this pack raises
-`MAP_MAX_H` from 64 to **128** so Italia can be a proper boot. Measured
-consequences of that change:
-
-- **Behaviour-neutral.** 211/211 tests pass and the reference pack's
-  validation sweep is identical either way (seeds 0–2: PASS 3/3, 299 days,
-  6072 score at both settings).
-- **Not a save-format change.** Fog is encoded from each zone's own
-  `width`/`height`, never from these bounds.
-- **The cost is memory.** `sizeof(Map)` is 212 bytes per tile: 848 KB at
-  64×64, 1,696 KB at 64×128. Every autoplay search node snapshots a whole
-  `Map` (AP-204), so the frontier beam pays proportionally. Raising the
-  *width* too would have cost 4× rather than 2×, which is why only the height
-  moved.
+with grass. The map's tiles, its string pool and its fog are heap, sized to
+the zone, so any size loads (a test loads a 300×300 zone). Fog is encoded from
+each zone's own `width`/`height`, so size is not a save-format concern. The
+cost is memory: every autoplay search node copies the used map area (AP-204),
+so large maps make the frontier beam proportionally heavier, and autoplay
+navigates only its own 64×128 grid.
 
 ### 10.2 Scale, in play terms
 

@@ -10,13 +10,27 @@
 // FogReveal stamps a 5x5 square around (cx, cy), clamped to map bounds;
 // the radius arg is preserved for API compatibility but ignored.
 
+// Storage: a heap grid sized to its map (FogReveal* size it to the map they
+// are given). A Fog starts zeroed (calloc or `= { 0 }`), is copied only with
+// FogCopy and released with FogFree.
 typedef struct {
-    bool seen[MAP_MAX_H][MAP_MAX_W];
+    int   width, height;
+    bool *seen;            // width x height, row by row
 } Fog;
 
+// Every cell unseen; the size is kept.
 void FogInit(Fog *fog);
+// Size the fog to width x height, every cell unseen, when its size differs.
+// False when out of memory.
+bool FogSize(Fog *fog, int width, int height);
+// Release the grid and zero the fog. Safe on a zeroed fog.
+void FogFree(Fog *fog);
+// Make dst a copy of src. False when out of memory (dst then freed).
+bool FogCopy(Fog *dst, const Fog *src);
 void FogReveal(Fog *fog, const Map *map, int cx, int cy, int radius);
 bool FogSeen(const Fog *fog, int x, int y);
+// Mark (x, y) seen or unseen. No-op outside the fog.
+void FogSet(Fog *fog, int x, int y, bool seen);
 
 // A square of (2 * radius + 1) tiles around (cx, cy), clamped to the map,
 // honouring the radius. FogReveal above is the original's fixed 5x5.

@@ -370,15 +370,21 @@ const char *pack_hash(const Pack *p) { return p ? p->hash : ""; }
 // Global pack stack
 // ---------------------------------------------------------------------------
 
-#define PACK_STACK_MAX 8
-static Pack *g_stack[PACK_STACK_MAX];
-static int   g_stack_n = 0;
+static Pack **g_stack;        // heap, g_stack_cap entries
+static int    g_stack_n = 0;
+static int    g_stack_cap = 0;
 
 void pack_stack_push(Pack *p) {
     if (!p) return;
-    if (g_stack_n >= PACK_STACK_MAX) {
-        fprintf(stdout, "pack: stack full\n");
-        return;
+    if (g_stack_n >= g_stack_cap) {
+        int ncap = g_stack_cap > 0 ? g_stack_cap * 2 : 4;
+        Pack **ns = realloc(g_stack, (size_t)ncap * sizeof *ns);
+        if (!ns) {
+            fprintf(stdout, "pack: out of memory stacking a pack\n");
+            return;
+        }
+        g_stack = ns;
+        g_stack_cap = ncap;
     }
     g_stack[g_stack_n++] = p;
 }
@@ -392,6 +398,9 @@ void pack_stack_pop(void) {
 
 void pack_stack_clear(void) {
     while (g_stack_n > 0) pack_stack_pop();
+    free(g_stack);
+    g_stack = NULL;
+    g_stack_cap = 0;
 }
 
 const unsigned char *pack_stack_read(const char *rel, size_t *out_size) {
@@ -427,44 +436,55 @@ static bool already_listed(const PackEntry *list, int n, const char *name) {
     return false;
 }
 
-static int scan_one_dir(const char *dir, PackEntry *out, int filled, int cap) {
+// A growable list of discovered packs.
+typedef struct { PackEntry *e; int n, cap; } PackList;
+
+static PackEntry *list_push(PackList *l) {
+    if (l->n >= l->cap) {
+        int ncap = l->cap > 0 ? l->cap * 2 : 8;
+        PackEntry *ne = realloc(l->e, (size_t)ncap * sizeof *ne);
+        if (!ne) return NULL;
+        l->e = ne;
+        l->cap = ncap;
+    }
+    return &l->e[l->n++];
+}
+
+static void scan_one_dir(const char *dir, PackList *l) {
 #ifdef _WIN32
     char pattern[PACK_ENTRY_PATH_MAX];
     snprintf(pattern, sizeof pattern, "%s\\*.openbounty", dir);
     WIN32_FIND_DATAA fd;
     HANDLE h = FindFirstFileA(pattern, &fd);
-    if (h == INVALID_HANDLE_VALUE) return filled;
+    if (h == INVALID_HANDLE_VALUE) return;
     do {
-        if (filled >= cap) break;
         char stem[PACK_ENTRY_NAME_MAX];
         snprintf(stem, sizeof stem, "%s", fd.cFileName);
         strip_extension(stem);
-        if (already_listed(out, filled, stem)) continue;
-        snprintf(out[filled].path, sizeof out[filled].path,
-                 "%s%c%s", dir, PATHSEP, fd.cFileName);
-        snprintf(out[filled].name, sizeof out[filled].name, "%s", stem);
-        filled++;
+        if (already_listed(l->e, l->n, stem)) continue;
+        PackEntry *pe = list_push(l);
+        if (!pe) break;
+        snprintf(pe->path, sizeof pe->path, "%s%c%s", dir, PATHSEP, fd.cFileName);
+        snprintf(pe->name, sizeof pe->name, "%s", stem);
     } while (FindNextFileA(h, &fd));
     FindClose(h);
 #else
     DIR *d = opendir(dir);
-    if (!d) return filled;
+    if (!d) return;
     struct dirent *de;
     while ((de = readdir(d)) != NULL) {
-        if (filled >= cap) break;
         if (!ends_with(de->d_name, ".openbounty")) continue;
         char stem[PACK_ENTRY_NAME_MAX];
         snprintf(stem, sizeof stem, "%s", de->d_name);
         strip_extension(stem);
-        if (already_listed(out, filled, stem)) continue;
-        snprintf(out[filled].path, sizeof out[filled].path,
-                 "%s/%s", dir, de->d_name);
-        snprintf(out[filled].name, sizeof out[filled].name, "%s", stem);
-        filled++;
+        if (already_listed(l->e, l->n, stem)) continue;
+        PackEntry *pe = list_push(l);
+        if (!pe) break;
+        snprintf(pe->path, sizeof pe->path, "%s/%s", dir, de->d_name);
+        snprintf(pe->name, sizeof pe->name, "%s", stem);
     }
     closedir(d);
 #endif
-    return filled;
 }
 
 // Discovery order (earlier source wins on duplicate names):
@@ -472,17 +492,17 @@ static int scan_one_dir(const char *dir, PackEntry *out, int filled, int cap) {
 //   2. <user-data>/openbounty/*.openbounty   (flat, no subdir)
 //   3. <exe-dir>/assets/*.openbounty         (bundled-with-binary)
 // `--pack <arg>` short-circuits this entirely (handled by caller).
-int pack_discover(PackEntry *out, int cap) {
-    if (!out || cap <= 0) return 0;
-    int n = 0;
+int pack_discover(PackEntry **out) {
+    if (!out) return 0;
+    PackList l = { NULL, 0, 0 };
 
     // 1. cwd zips
-    n = scan_one_dir(".", out, n, cap);
+    scan_one_dir(".", &l);
 
     // 2. user-data root zips (flat at <user-data>/openbounty/)
     char user_dir[PACK_ENTRY_PATH_MAX];
     if (SavePathGetDir(user_dir, sizeof user_dir)) {
-        n = scan_one_dir(user_dir, out, n, cap);
+        scan_one_dir(user_dir, &l);
     }
 
     // 3. <exe-dir>/assets/*.openbounty
@@ -492,11 +512,12 @@ int pack_discover(PackEntry *out, int cap) {
         snprintf(assets, sizeof assets, "%s%cassets", exe_dir, PATHSEP);
         struct stat ast;
         if (stat(assets, &ast) == 0 && S_ISDIR(ast.st_mode)) {
-            n = scan_one_dir(assets, out, n, cap);
+            scan_one_dir(assets, &l);
         }
     }
 
-    return n;
+    *out = l.e;
+    return l.n;
 }
 
 // ---------------------------------------------------------------------------

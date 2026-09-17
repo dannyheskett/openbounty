@@ -66,7 +66,7 @@ CheatResult cheat_apply(CheatAction a, Game *game, Map *map, Fog *fog,
         break;
     case CHEAT_SPELLS: {
         int n = spells_count();
-        for (int si = 0; si < n && si < 14; si++) {
+        for (int si = 0; si < n && si < game->spells.count; si++) {
             game->spells.counts[si] += 1;
         }
         snprintf(body, sizeof body, "+1 of every spell");
@@ -99,8 +99,8 @@ CheatResult cheat_apply(CheatAction a, Game *game, Map *map, Fog *fog,
         int revealed = 0;
         for (int y = 0; y < map->height; y++) {
             for (int x = 0; x < map->width; x++) {
-                if (!fog->seen[y][x]) {
-                    fog->seen[y][x] = true;
+                if (!FogSeen(fog, x, y)) {
+                    FogSet(fog, x, y, true);
                     revealed++;
                 }
             }

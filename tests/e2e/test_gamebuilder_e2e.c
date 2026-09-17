@@ -142,7 +142,7 @@ TEST from_nothing_to_a_packaged_pack(void) {
     // and the painted terrain is in the packaged map
     static Map m;
     ASSERT(MapLoadZone(&m, &res, "starter"));
-    ASSERT_EQ(TERRAIN_FOREST, m.tiles[11][11].terrain);
+    ASSERT_EQ(TERRAIN_FOREST, MAP_TILE(&m, 11, 11).terrain);
     pack_stack_clear();
     PASS();
 }

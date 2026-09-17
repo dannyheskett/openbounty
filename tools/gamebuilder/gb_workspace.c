@@ -156,6 +156,7 @@ void gb_workspace_close(GbWorkspace *ws) {
     ws->doc = NULL;
     ws->open = false;
     ws->res_valid = false;
+    resources_free(&ws->res);
 }
 
 bool gb_workspace_reproject(GbWorkspace *ws) {
@@ -165,6 +166,7 @@ bool gb_workspace_reproject(GbWorkspace *ws) {
     Pack *p = pack_open(ws->root);
     if (!p) { ws->res_valid = false; return false; }
     pack_stack_push(p);
+    resources_free(&ws->res);   // a reload replaces the last preview
     ws->res_valid = resources_load(&ws->res, "game.json");
     return ws->res_valid;
 }

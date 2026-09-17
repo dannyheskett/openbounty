@@ -87,6 +87,7 @@ static const char *terrain_short(Terrain t) {
         case TERRAIN_MOUNTAIN: return "mountain";
         case TERRAIN_WATER:    return "water";
         case TERRAIN_DESERT:   return "desert";
+        case TERRAIN_RIVER:    return "river";
         default:               return "?";
     }
 }
@@ -351,7 +352,7 @@ cJSON *state_build_snapshot(const Game *g,
     // ---- spells ----
     {
         cJSON *sp = cJSON_CreateObject();
-        for (int i = 0; i < spells_count() && i < 14; i++) {
+        for (int i = 0; i < g->spells.count; i++) {
             const SpellDef *sd = spell_by_index(i);
             if (!sd) continue;
             cJSON_AddNumberToObject(sp, sd->id, g->spells.counts[i]);
@@ -364,14 +365,14 @@ cJSON *state_build_snapshot(const Game *g,
         cJSON *c = cJSON_CreateObject();
         cJSON_AddStringToObject(c, "active", g->contract.active_id);
         cJSON *cycle = cJSON_CreateArray();
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < g->contract.cycle_count; i++) {
             cJSON_AddItemToArray(cycle, cJSON_CreateString(g->contract.cycle[i]));
         }
         cJSON_AddItemToObject(c, "cycle", cycle);
         cJSON_AddNumberToObject(c, "last_contract", g->contract.last_contract);
         cJSON_AddNumberToObject(c, "max_contract",  g->contract.max_contract);
         cJSON *caught = cJSON_CreateArray();
-        for (int i = 0; i < CAT_VILLAINS_MAX; i++) {
+        for (int i = 0; i < g->contract.villain_count; i++) {
             if (g->contract.villains_caught[i]) {
                 const VillainDef *v = villain_by_index(i);
                 if (v) cJSON_AddItemToArray(caught, cJSON_CreateString(v->id));
@@ -379,7 +380,7 @@ cJSON *state_build_snapshot(const Game *g,
         }
         cJSON_AddItemToObject(c, "villains_caught", caught);
         cJSON *prefought = cJSON_CreateArray();
-        for (int i = 0; i < CAT_VILLAINS_MAX; i++) {
+        for (int i = 0; i < g->contract.villain_count; i++) {
             if (g->contract.villains_prefought[i]) {
                 const VillainDef *v = villain_by_index(i);
                 if (v) cJSON_AddItemToArray(prefought, cJSON_CreateString(v->id));
@@ -392,7 +393,7 @@ cJSON *state_build_snapshot(const Game *g,
     // ---- artifacts ----
     {
         cJSON *arr = cJSON_CreateArray();
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < g->artifacts.count; i++) {
             if (g->artifacts.found[i]) {
                 const ArtifactDef *a = artifact_by_index(i);
                 if (a) cJSON_AddItemToArray(arr, cJSON_CreateString(a->id));
@@ -408,8 +409,7 @@ cJSON *state_build_snapshot(const Game *g,
         cJSON *w = cJSON_CreateObject();
         cJSON *disc = cJSON_CreateArray();
         cJSON *orbs = cJSON_CreateArray();
-        int nz = (g->res ? g->res->zone_count : 0);
-        if (nz > GAME_CONTINENTS) nz = GAME_CONTINENTS;
+        int nz = g->world.zone_count;
         for (int i = 0; i < nz; i++) {
             const ResZone *z = &g->res->zones[i];
             if (g->world.zones_discovered[i])
@@ -446,7 +446,7 @@ cJSON *state_build_snapshot(const Game *g,
     // ---- towns ----
     {
         cJSON *arr = cJSON_CreateArray();
-        for (int i = 0; i < GAME_TOWNS; i++) {
+        for (int i = 0; i < g->town_count; i++) {
             if (!g->towns[i].id[0]) continue;
             cJSON *t = cJSON_CreateObject();
             cJSON_AddStringToObject(t, "id", g->towns[i].id);
@@ -470,7 +470,7 @@ cJSON *state_build_snapshot(const Game *g,
     // ---- castles ----
     {
         cJSON *arr = cJSON_CreateArray();
-        for (int i = 0; i < GAME_CASTLES; i++) {
+        for (int i = 0; i < g->castle_count; i++) {
             if (!g->castles[i].id[0]) continue;
             cJSON *c = cJSON_CreateObject();
             cJSON_AddStringToObject(c, "id", g->castles[i].id);
@@ -592,7 +592,7 @@ cJSON *state_build_snapshot(const Game *g,
     // its snapshot (which may be stale from before recent moves).
     if (map && fog && g && g->res) {
         cJSON *mstate = cJSON_CreateObject();
-        for (int zi = 0; zi < g->res->zone_count && zi < GAME_CONTINENTS; zi++) {
+        for (int zi = 0; zi < g->res->zone_count && zi < g->world.zone_count; zi++) {
             if (!g->world.zones_discovered[zi]) continue;
             const ResZone *rz = &g->res->zones[zi];
             const Fog *src = &g->world.continent_fog[zi];

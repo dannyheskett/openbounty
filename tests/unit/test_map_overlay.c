@@ -134,7 +134,7 @@ TEST castle_default_footprint_stamps_gate_and_five_walls(void) {
         ASSERT_EQ(INTERACT_NONE, t->interactive);
         ASSERT_FALSE(adventure_walkable_on_foot(t));
     }
-    free(m); resources_free(res); free(res);
+    MapFree(m); free(m); resources_free(res); free(res);
     PASS();
 }
 
@@ -163,7 +163,7 @@ TEST castle_1x1_footprint_stamps_only_the_gate_tile(void) {
         ASSERT_EQ(INTERACT_NONE, t->interactive);
         ASSERT(adventure_walkable_on_foot(t));
     }
-    free(m); resources_free(res); free(res);
+    MapFree(m); free(m); resources_free(res); free(res);
     PASS();
 }
 

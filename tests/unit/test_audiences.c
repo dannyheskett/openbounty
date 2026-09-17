@@ -22,7 +22,7 @@ TEST blessing_needs_every_artifact_and_is_once(void) {
     set_rules(res);
     int total = artifacts_count() < 8 ? artifacts_count() : 8;
     ASSERT(total > 1);
-    memset(g->artifacts.found, 0, sizeof g->artifacts.found);
+    memset(g->artifacts.found, 0, (size_t)g->artifacts.count * sizeof *g->artifacts.found);
     for (int i = 0; i < total - 1; i++) g->artifacts.found[i] = true;
     g->stats.leadership_base = g->stats.leadership_current = 1000;
     int needed = 0;

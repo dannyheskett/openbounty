@@ -70,7 +70,7 @@ void layout_min_window(int *out_w, int *out_h);
 // FogReveal): a wider viewport would show tiles the game never uncovers from
 // where the hero stands. The ceiling just stops absurd windows.
 #define CL_TILES_MIN 5
-#define CL_TILES_MAX 63   // one under MAP_MAX_W, so the camera clamp holds
+#define CL_TILES_MAX 63   // one under the smallest shipped map width, so the camera clamp holds
 
 #define CL_SCREEN_W  (g_layout.screen_w)
 #define CL_SCREEN_H  (g_layout.screen_h)

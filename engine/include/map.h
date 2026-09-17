@@ -6,8 +6,6 @@
 #include "tile.h"
 #include <stddef.h>
 
-#define MAP_MAX_W 64
-#define MAP_MAX_H 128
 #define TILE_ART_NAME_LEN  48   // "<tile_set>/<terrain art>" must fit
 #define TILE_ID_LEN        24
 
@@ -17,11 +15,10 @@
 // A tile's text (art names, ids, signpost text) lives once in its Map's string
 // pool; the tile holds small indices into it (0 = the empty string). A tile is
 // then a few bytes, so the grid, and every autoplay snapshot of it, costs what
-// the loaded map needs rather than the text copied into every cell. Busiest
-// shipped map (kings-bounty continentia): 252 strings, 3.8 KB of text.
-#define MAP_MAX_STRINGS    1024
-#define MAP_POOL_BYTES     16384
-typedef uint16_t MapStr;
+// the loaded map needs rather than the text copied into every cell. The pool
+// grows as strings are added. Busiest shipped map (kings-bounty continentia):
+// 252 strings, 3.8 KB of text.
+typedef uint16_t MapStr;   // a tile field is 16 bits: up to 65535 distinct strings per map
 
 typedef struct {
     MapStr   art;                      // sprite filename base (e.g. "water", "castle_roof")
@@ -63,10 +60,25 @@ typedef struct {
     // The string pool the tiles index (see Tile). Rebuilt by every load.
     int      str_count;                // strings in use, index 0 = ""
     int      pool_used;                // bytes of `pool` in use
-    uint16_t str_off[MAP_MAX_STRINGS];
-    char     pool[MAP_POOL_BYTES];
-    Tile tiles[MAP_MAX_H][MAP_MAX_W];
+    // Heap from here on; MAP_HEAD_BYTES is everything above. A Map starts
+    // zeroed (calloc or `= { 0 }`) and is released with MapFree.
+    int       str_cap;                 // entries allocated at str_off
+    int       pool_cap;                // bytes allocated at pool
+    uint32_t *str_off;
+    char     *pool;
+    Tile     *tiles;                   // width x height, row by row: tiles[y * width + x]
 } Map;
+
+#define MAP_HEAD_BYTES offsetof(Map, str_cap)
+
+// The cell at (x, y), unchecked: callers have bounds-checked already.
+#define MAP_TILE(m, x, y) ((m)->tiles[(y) * (m)->width + (x)])
+
+// Size the map to width x height, every cell zero, with an empty string
+// pool; anything it held before is released. False when out of memory.
+bool MapAlloc(Map *map, int width, int height);
+// Release the map's heap and zero it. Safe on a zeroed map.
+void MapFree(Map *map);
 
 // The string a tile field holds ("" for 0 or out of range).
 const char *MapStrGet(const Map *map, MapStr s);

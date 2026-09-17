@@ -181,8 +181,8 @@ this describes work not yet done.
 ## 7. Maps
 
 - **GB-200.** The map editor shall edit **any zone** in the pack, with zone
-  create, delete, rename, and resize (bounded by `MAP_MAX_W` / `MAP_MAX_H`,
-  `REQ-133`).
+  create, delete, rename, and resize (bounded by the editor's own grid,
+  `MAPEDIT_MAX_W` / `MAPEDIT_MAX_H`; the engine has no ceiling, `REQ-110`).
 - **GB-201.** The author paints **base terrain only**. Edge variants are
   derived by the furnish pass and baked on save; they shall never be placed by
   hand (`REQ-229`, and §10.6.1 of `GLORY-OF-ROME.md`).
@@ -232,8 +232,8 @@ this describes work not yet done.
   Renaming an id shall offer to update every reference to it, and deleting an
   entry that is still referenced shall list the referrers and refuse or cascade
   explicitly.
-- **GB-223.** Each catalog shall show its compile-time cap (`CAT_TROOPS_MAX`
-  and siblings, `REQ-113`) and refuse to exceed it, naming the constant.
+- **GB-223.** Catalogs have no cap (`REQ-110`); the editor shall not impose
+  one.
 - **GB-224.** Cross-catalog edits shall keep derived views correct: the puzzle
   grid is 5×5 and requires villains + artifacts to total exactly 25
   (`REQ-431`), so changing either count shall warn immediately, not at load.
@@ -319,8 +319,7 @@ this describes work not yet done.
   coordinate, and what to do about it.
 - **GB-301.** **Structural**: `game.json` parses; required fields present;
   every referenced art file exists at correct dimensions; every tile code in a
-  `.dat` is declared; map dimensions within `MAP_MAX_*`; catalog caps
-  respected; palette exactly 768 bytes.
+  `.dat` is declared; palette exactly 768 bytes.
 - **GB-302.** **Referential**: every id referenced by another catalog exists;
   no orphaned entries; puzzle grid totals 25; each zone's `neighbors[]` name
   real zones; exactly one zone `is_home`; every villain's zone has more

@@ -7,6 +7,7 @@
 
 #include "tables.h"
 #include "tile.h"
+#include "exec.h"
 
 static void set_label(PlanStep *s, const char *prefix, const char *what) {
     snprintf(s->label, sizeof s->label, "%s:%s", prefix, what);
@@ -51,14 +52,14 @@ static void enumerate_noncombat(const Game *g, const Map *map, int zi,
             // The format bounds its own worst case so -Wformat-truncation
             // is provably clean at every -O level: %.31s caps the zone id
             // (RES_ID_LEN-1; ids are NUL-terminated below that), and the
-            // & (MAP_MAX_W-1) masks are identities (loop bounds are the map
-            // dims, capped at 64) that hand the compiler the 0..63 range.
+            // & (AP_MAP_W-1) masks are identities inside autoplay's grid
+            // that hand the compiler the 0..63 range.
             // Worst case 31+1+2+1+2+NUL = 38 fits coord; 39 (not 40) keeps
             // set_label's longest "%s:%s" region ("artifact:" into label[48])
             // provably un-truncated from coord's array size alone.
             char coord[39];
             snprintf(coord, sizeof coord, "%.31s:%d,%d", g->res->zones[zi].id,
-                     x & (MAP_MAX_W - 1), y & (MAP_MAX_H - 1));
+                     x & (AP_MAP_W - 1), y & (AP_MAP_H - 1));
             switch (t->interactive) {
             case INTERACT_TREASURE_CHEST:
                 s = add_step(out, STEP_CHEST, zi, x, y, TileId(map, t));
@@ -90,7 +91,7 @@ static void enumerate_noncombat(const Game *g, const Map *map, int zi,
 // Monster + villain castles (AP-040). The gate tile is the target; the King's
 // (special) castle is never an objective.
 static void enumerate_combat(const Game *g, PlanStepSet *out) {
-    for (int i = 0; i < GAME_CASTLES; i++) {
+    for (int i = 0; i < g->castle_count; i++) {
         const CastleRecord *cr = &g->castles[i];
         if (!cr->id[0]) continue;
         if (cr->owner_kind == CASTLE_OWNER_SPECIAL) continue;
@@ -153,8 +154,7 @@ bool plansteps_enumerate(const Game *g, Map *scratch, PlanStepSet *out) {
     if (!g || !scratch || !out) return false;
     out->count = 0;
     s_step_overflow = false;
-    // Every zone in the pack: zone_count <= GAME_CONTINENTS is an engine
-    // load contract (GameInit fails loudly past capacity).
+    // Every zone in the pack.
     for (int zi = 0; zi < g->res->zone_count; zi++) {
         if (!MapLoadZoneWithPlacements(scratch, g->res,
                                        g->res->zones[zi].id, g))
@@ -217,7 +217,7 @@ bool planstep_is_done(const Game *g, const PlanStep *step) {
     }
     case STEP_VILLAIN: {
         const VillainDef *v = villain_by_id(step->handle);
-        return v && v->index >= 0 && v->index < CAT_VILLAINS_MAX &&
+        return v && v->index >= 0 && v->index < g->contract.villain_count &&
                g->contract.villains_caught[v->index];
     }
     case STEP_FOE: {
