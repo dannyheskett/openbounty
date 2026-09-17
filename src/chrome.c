@@ -158,6 +158,16 @@ static Color status_bg_for_difficulty(Difficulty d) {
 // title bar reads "Options / <Actor> M<n>" or "<Player> vs <Foe>
 // killing <N>" without going through the adventure-mode time-stop /
 // days-left paths. Pass status_text=NULL to skip status text.
+void chrome_draw_with_status_lr(const Game *g, const Sprites *s,
+                                const char *left, const char *right) {
+    chrome_draw_with_status(g, s, left);
+    if (right && right[0]) {
+        bfont_draw_right(right, CL_STATUS_X + CL_STATUS_W - ML_PAD,
+                         CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0),
+                         PAL_CLR(WHITE));
+    }
+}
+
 void chrome_draw_with_status(const Game *g, const Sprites *s,
                                      const char *status_text) {
     // Caller has already painted the inner area (combat field, modal
@@ -220,6 +230,10 @@ void chrome_draw(const Game *g, const Sprites *s) {
                                 CL_STATUS_X + CL_STATUS_W / 2,
                                 CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0),
                                 PAL_CLR(WHITE));
+        } else if (CL_IS_MODERN &&
+                   (views_active() == VIEW_WIN || views_active() == VIEW_LOSE)) {
+            // The game is over: there is nothing to go back to, and the screen's
+            // own Continue ends it.
         } else if (CL_IS_MODERN && (views_active() != VIEW_NONE || dialog_is_active() || prompt_is_active())) {
             // Modern: "< Back" with the key for the device; the bar is the button.
             char hb[96];

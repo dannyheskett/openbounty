@@ -153,6 +153,10 @@ bool views_gate_update(void) {
         gate_view.cursor = tapped;
         return true;
     }
+    if (CL_IS_MODERN && touch_tapped_row(TOUCH_LIST_PROMPT) == 1) {   // Back
+        views_dismiss();
+        return true;
+    }
     if (CL_IS_MODERN && touch_tapped_row(TOUCH_LIST_PROMPT) == 0) tapped = gate_view.cursor;
     if (tapped >= 0 && tapped < n) {
         gate_view.chosen = tapped;

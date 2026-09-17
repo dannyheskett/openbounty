@@ -16,6 +16,7 @@
 #include "overlay_impl.h"
 #include "modern/mlayout.h"
 #include "modern/uikit.h"
+#include "modern/gamemenu.h"   // GM_PAGE_W: a page is one width
 #include "touch.h"
 #include "select.h"
 #include "layout.h"
@@ -570,7 +571,9 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
         compose_service(g, list, &d);
     }
 
-    ML_Rect b = uk_frame(t2, town_zone_name(g));
+    char t2gold[48];
+    uk_gold_text(g, t2gold, sizeof t2gold);
+    ML_Rect b = uk_frame(t2, t2gold);
     int lw = 14 * GW + 2 * ML_PAD;
     if (asking || result) {
         // The question's answers, or Continue, take the rows' place.
@@ -665,7 +668,9 @@ static void castle_draw_promotion(const Game *g, const Sprites *s, const ResCast
     const Resources *res = g->res;
     int needed = 0, rank = 0;
     modern_castle_audience(&needed, &rank);
-    ML_Rect b = uk_frame(res->banners.castle_action_promotion, g->character.cls.rank_title);
+    char pgold[48];
+    uk_gold_text(g, pgold, sizeof pgold);
+    ML_Rect b = uk_frame(res->banners.castle_action_promotion, pgold);
     char label[64];
     modern_castle_row(g, 0, label, sizeof label, NULL);
     UkRows rows = { { label }, { true } };
@@ -891,12 +896,14 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
         Texture2D emp_fig = rc ? portrait_frame(s, resources_portrait_index(res, rc->special.figure),
                                                 1000.0 / 180.0) : (Texture2D){ 0 };
         const char *rank_title = g->character.cls.rank_title;
+        char agold[48];                   // every title bar's right is the gold
+        uk_gold_text(g, agold, sizeof agold);
 
         const PromptView *pv = prompt_view();
         if (prompt_is_active() && pv && pv->kind == PK_YES_NO) {
             UkDoc qd = { 0 };
             uk_doc_add(&qd, pv->body, PAL_CLR(WHITE));
-            UkScene A = uk_scene_for_doc(title, rank_title, throne, 2, &qd, 0);
+            UkScene A = uk_scene_for_doc(title, agold, throne, 2, &qd, 0);
             uk_scene_figure(&A, emp_fig, (A.scene.w - 2 * CL_TILE_W) / 2);
             uk_scene_doc(&A, &qd);
             UkRows yn = { { res->ui.prompt_yes, res->ui.prompt_no }, { true, true } };
@@ -944,7 +951,7 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
             uk_doc_add(&rd, msg, PAL_CLR(WHITE));
         }
         if (rd.n > 0) {
-            UkScene A = uk_scene_for_doc(title, rank_title, throne, 1, &rd, 0);
+            UkScene A = uk_scene_for_doc(title, agold, throne, 1, &rd, 0);
             uk_scene_figure(&A, emp_fig, (A.scene.w - 2 * CL_TILE_W) / 2);
             uk_scene_doc(&A, &rd);
             uk_scene_rows(&A, 1, 0, uk_rows_fn, &cont, TOUCH_LIST_PROMPT);
@@ -982,7 +989,7 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
             size_t n = strlen(where);
             snprintf(where + n, sizeof where - n, "%s%s", n ? "  " : "", d.pool + d.off[i]);
         }
-        UkScene A = uk_scene_for(title, rank_title, throne, rows, where);
+        UkScene A = uk_scene_for(title, agold, throne, rows, where);
         uk_scene_figure(&A, emp_fig, (A.scene.w - 2 * CL_TILE_W) / 2);
         uk_scene_intro(&A, where);
         uk_scene_rows(&A, rows, cursor, castle_row_fn, &cc, TOUCH_LIST_CASTLE);
@@ -1265,6 +1272,11 @@ static bool controls_row(void *ctx, int k, char *label, char *right, int cap) {
     const ControlsCtx *c = (const ControlsCtx *)ctx;
     const Game *g = c->g;
     const ResUI *ui = &g->res->ui;
+    if (k == c->vis + 1) {   // Back, as on every menu page
+        snprintf(label, (size_t)cap, "%s", ui->gm_back);
+        right[0] = '\0';
+        return true;
+    }
     if (k == c->vis) {   // the shell's Scale row
         snprintf(label, (size_t)cap, "Scale");
         snprintf(right, 48, "%dx", views_controls_scale_value());
@@ -1291,24 +1303,20 @@ void modern_overlay_draw_controls(const Game *g) {
     if (c.vis == 0) return;
     int cur_k = views_controls_cursor();
     if (cur_k < 0) cur_k = 0;
-    if (cur_k > c.vis) cur_k = c.vis;
-    int rows = c.vis + 1;
+    if (cur_k > c.vis + 1) cur_k = c.vis + 1;
+    int rows = c.vis + 2;        // the settings, Scale, and Back
     int h = uk_title_h() + UK_BAND + ml_list_height(rows);
-    // As wide as its longest setting and value.
-    int w = 400;
-    for (int k = 0; k < rows; k++) {
-        char label[96], right[48] = "";
-        controls_row(&c, k, label, right, (int)sizeof label);
-        int need = bfont_text_width(label) + bfont_text_width(right) + 6 * GW + 2 * ML_PAD;
-        if (need > w) w = need;
-    }
-    ML_Rect b = uk_inlay(w, h, g->res->ui.controls_title, NULL);
+    // A menu page's width, like every other page of rows.
+    char gold[48];
+    uk_gold_text(g, gold, sizeof gold);
+    ML_Rect b = uk_inlay(GM_PAGE_W, h, g->res->ui.controls_title, gold);
     ml_list_draw(b.x, b.y, b.w, b.h, rows, cur_k, controls_row, &c, 0, uk_ink());
-    // Taps answer to each row's digit (select and advance in one).
+    // Taps answer to each row's digit (select and advance in one); Back closes.
     int vis_rows = ml_list_fit(b.h);
     int first = ml_list_first(rows, cur_k, vis_rows);
     for (int k = first; k < rows && k < first + vis_rows; k++)
-        touch_region(b.x, b.y + (k - first) * (ml_row_h() + ML_ROW_RULE), b.w, ml_row_h(), KEY_ONE + k);
+        touch_region(b.x, b.y + (k - first) * (ml_row_h() + ML_ROW_RULE), b.w, ml_row_h(),
+                     k == c.vis + 1 ? KEY_ESCAPE : KEY_ONE + k);
 }
 
 // ---------------------------------------------------------------------------
@@ -1400,13 +1408,9 @@ void modern_overlay_draw_dwelling(const Game *g, const Sprites *s) {
     UkDoc d = { 0 };
     static char act_label[RES_BANNER_LEN];
     if (counting) {
-        char heading[RES_BANNER_LEN], avail[RES_BANNER_LEN], each[RES_BANNER_LEN], lead[RES_BANNER_LEN],
-             total[RES_BANNER_LEN], vb[16];
+        char heading[RES_BANNER_LEN], lead[RES_BANNER_LEN], total[RES_BANNER_LEN], vb[16];
         ResTemplateVar hv[] = { { "TROOP", tr ? tr->name : "" } };
         resources_format_template(heading, sizeof heading, bn->count_heading, hv, 1);
-        ResTemplateVar av2[] = { { "COUNT", pb }, { "TROOP", tr ? tr->name : "" } };
-        resources_format_template(avail, sizeof avail, ui->dwelling_info_available, av2, 2);
-        castle_fmt(each, sizeof each, bn->castle_cost, cb, NULL);
         snprintf(vb, sizeof vb, "%d", pv->step_max);
         ResTemplateVar sv[] = { { "MAX", vb } };
         resources_format_template(lead, sizeof lead, bn->count_of_lead, sv, 1);
@@ -1416,10 +1420,9 @@ void modern_overlay_draw_dwelling(const Game *g, const Sprites *s) {
         snprintf(vb, sizeof vb, "%d", pv->step_value);
         ResTemplateVar av[] = { { "COUNT", vb } };
         resources_format_template(act_label, sizeof act_label, bn->count_recruit, av, 1);
-        char line[2 * RES_BANNER_LEN + 4];
+        // The offer above already said how many dwell here and what each
+        // costs: How many asks one thing, like the castle's.
         uk_doc_add(&d, heading, PAL_CLR(YELLOW));
-        snprintf(line, sizeof line, "%s  %s", avail, each);
-        uk_doc_add(&d, line, PAL_CLR(WHITE));
         uk_doc_add(&d, lead, PAL_CLR(WHITE));
         uk_doc_add(&d, total, PAL_CLR(YELLOW));
     } else if (result) {

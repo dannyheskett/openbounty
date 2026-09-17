@@ -5,6 +5,7 @@
 #include "layout.h"
 #include "ui.h"
 #include "chrome.h"
+#include "modern/mlist.h"   // ml_hint_text
 #include "lattice.h"
 #include "raylib.h"
 #include <stdio.h>
@@ -54,9 +55,8 @@ void combat_format_title(const Combat *c, const Game *g, char *buf, int cap) {
         }
         // Append ",Sn" only when the active unit has remaining shots;
         // melee-only stacks show "Mn" alone.
-        // Modern: the bar opens the action menu, so it reads "Menu".
-        const char *pre = (CL_IS_MODERN && g && g->res && g->res->banners.status_menu_prefix[0])
-                              ? g->res->banners.status_menu_prefix : " Options / ";
+        // Modern draws the menu button itself, at the left of the bar.
+        const char *pre = CL_IS_MODERN ? "" : " Options / ";
         if (shots > 0) {
             snprintf(buf, cap, "%s%s M%d,S%d", pre, name, moves, shots);
         } else {
@@ -280,7 +280,16 @@ void combat_render_frame(const Combat *c, const Game *g,
     // frame.
     char title[COMBAT_BANNER_LEN];
     combat_format_title(c, g, title, sizeof title);
-    chrome_draw_with_status(g, sprites, title);
+    if (CL_IS_MODERN && g && g->res) {
+        // The map's bar: the Game Menu button at the left, this turn's words
+        // at the right.
+        char left[96];
+        ml_hint_text(left, sizeof left, g->res->banners.status_game_menu,
+                     g->res->ui.key_esc, g->res->ui.pad_back);
+        chrome_draw_with_status_lr(g, sprites, left, title);
+    } else {
+        chrome_draw_with_status(g, sprites, title);
+    }
 
     // No bottom-of-field banner -- action banners are routed through the
     // title bar (combat_format_title above).

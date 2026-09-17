@@ -601,6 +601,9 @@ typedef struct {
     // Substitutions: %LABEL%, %COUNT%, %TROOP%, %COST%.
     char encounter_join_named[RES_BANNER_LEN];     // friendly w/ word count
     char encounter_join_numeric[RES_BANNER_LEN];   // friendly w/ numeric
+    // The title over that offer ("%TROOP%"); a pack that wants none leaves it
+    // empty, and the offer shows its words alone, as King's Bounty always has.
+    char encounter_join_title[RES_BANNER_LEN];
     char encounter_wanderers[RES_BANNER_LEN];      // friendly refused
     char encounter_hostile_header[RES_BANNER_LEN]; // composite prefix
     char encounter_hostile_unknown[RES_BANNER_LEN];// fallback line

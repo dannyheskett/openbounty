@@ -148,6 +148,7 @@
 		"spell_gate_invalid":	"Invalid selection.",
 		"encounter_join_named":	"%LABEL% %TROOP%,\nwith desires of greater\nglory, wish to join you.",
 		"encounter_join_numeric":	"%COUNT% %TROOP%,\nwith desires of greater\nglory, wish to join you.",
+		"encounter_join_title":	"",
 		"encounter_wanderers":	"They flee in terror at the\nsight of your vast army.",
 		"encounter_hostile_header":	"You encounter:\n",
 		"encounter_hostile_unknown":	"  a hostile band\n",

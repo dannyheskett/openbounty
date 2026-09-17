@@ -1322,6 +1322,9 @@ title:;
             // so a legacy pack's panel is unchanged.
             int scale_row = CL_IS_MODERN ? count : -1;
             if (CL_IS_MODERN) count += 1;
+            // Modern: a Back row after it, as on every menu page.
+            int back_row = CL_IS_MODERN ? count : -1;
+            if (CL_IS_MODERN) count += 1;
             int cur = views_controls_cursor();
             if (count > 0) {
                 if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_KP_8)) {
@@ -1334,8 +1337,9 @@ title:;
                            input_key_pressed(KEY_KP_ENTER) ||
                            input_key_pressed(KEY_SPACE)) {
                     // Advance the value of the selected setting.
-                    if (cur == scale_row) views_controls_advance_scale();
-                    else                  views_controls_advance(&game, vis_map[cur]);
+                    if (cur == back_row)       views_dismiss();
+                    else if (cur == scale_row) views_controls_advance_scale();
+                    else                       views_controls_advance(&game, vis_map[cur]);
                 } else if (input_key_pressed(KEY_ESCAPE) ||
                            input_key_pressed(KEY_C) ||
                            gamepad_pressed_cancel()) {
@@ -1345,8 +1349,9 @@ title:;
                     for (int k = 0; k < count && k < 9; k++) {
                         if (input_key_pressed(KEY_ONE + k)) {
                             views_controls_set_cursor(k);
-                            if (k == scale_row) views_controls_advance_scale();
-                            else                views_controls_advance(&game, vis_map[k]);
+                            if (k == back_row)       views_dismiss();
+                            else if (k == scale_row) views_controls_advance_scale();
+                            else                     views_controls_advance(&game, vis_map[k]);
                             break;
                         }
                     }

@@ -298,8 +298,13 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         resources_format_template(tb, sizeof tb, bn->encounter_join_numeric, jv, 2);
         pending_flow = FLOW_ACCEPT_FRIENDLY;
         cpy(pending_dwelling_troop, sizeof pending_dwelling_troop, t->id);
-        prompt_yes_no_open("", tb);
-        prompt_set_req_kind(PIO_ASK_FACE);          // as engine/flows.c raises it
+        {   // as engine/flows.c raises it: the pack's title over the offer
+            char jt[RES_BANNER_LEN];
+            ResTemplateVar jtv[] = { { "TROOP", t->name } };
+            resources_format_template(jt, sizeof jt, bn->encounter_join_title, jtv, 1);
+            prompt_yes_no_open(jt, tb);
+        }
+        prompt_set_req_kind(PIO_ASK_FACE);
         prompt_set_req_face(REQ_FACE_TROOP, t->index);
     }
     shot(&G, "09d_troops_join");

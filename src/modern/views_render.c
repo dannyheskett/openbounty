@@ -14,6 +14,7 @@
 #include "lattice.h"
 #include "modern/mlist.h"
 #include "modern/uikit.h"
+#include "modern/gamemenu.h"   // GM_PAGE_W: a page is one width
 #include "touch.h"
 #include "select.h"
 #include "layout.h"
@@ -215,13 +216,18 @@ static const char *army_slot_morale(const Game *g, int slot) {
 }
 
 static void draw_army(const Game *g, const Sprites *s) {
-    // Five rows of a full tile, exactly the 480: each troop's portrait, then
+    // The title strip every view has, then five rows: each troop's portrait,
     // its name and how many, its morale at the right, and its numbers in
-    // aligned columns under them.
-    const ML_Rect r = ml_full();
+    // aligned columns under them. An empty slot is an empty row.
+    ML_Rect r = ml_full();
     const ResUI *ui = &g->res->ui;
-    const int tile = CL_TILE_W, lh = GH + 4;
     uk_sheet();
+    char gold[48];
+    uk_gold_text(g, gold, sizeof gold);
+    int top = uk_title(r.x, r.y, r.w, ui->menu_army, gold, PAL_CLR(YELLOW));
+    r.h -= top - r.y;
+    r.y = top;
+    const int tile = r.h / 5, lh = GH + 4;
     int col[3] = { 0, 0, 0 };
     int tx0 = r.x + tile + UK_INSET;
     int cw = (r.x + r.w - UK_INSET - tx0) / 3;
@@ -231,11 +237,7 @@ static void draw_army(const Game *g, const Sprites *s) {
         if (i > 0) lattice_band_h(r.x, ry - 1, r.w, 2);
         bool filled = g->army[i].id[0] && g->army[i].count != 0;
         const TroopDef *t = filled ? troop_by_id(g->army[i].id) : NULL;
-        if (!t) {
-            DrawRectangle(r.x + 2, ry + 2, tile - 4, tile - 4, PAL_CLR(BLACK));
-            DrawRectangleLines(r.x + 2, ry + 2, tile - 4, tile - 4, (Color){ 60, 52, 34, 255 });
-            continue;
-        }
+        if (!t) continue;   // an empty slot: nothing to draw
         Texture2D face = s->troop_portrait[t->index].id ? s->troop_portrait[t->index] : s->troop_sprite[t->index];
         uk_picture(face, r.x + 1, ry + 1, tile - 2, tile - 2);
         int ty = ry + (tile - 3 * lh) / 2 + 2;
@@ -932,16 +934,17 @@ static void draw_gate_map(const Resources *res, const GateDestination *d, ML_Rec
         DrawRectangleLines(rx - t, ry - t, cell + 2 * t, cell + 2 * t, t == 1 ? PAL_CLR(YELLOW) : PAL_CLR(BLACK));
 }
 
-static void draw_gate(void) {
-    // An in-lay over the dimmed map: the destinations as one list at the left,
-    // the chosen one's surroundings at the right, and Travel along the foot.
-    // Back is the top bar.
+static void draw_gate(const Game *g) {
+    // A menu page's panel: the destinations as one list at the left, the chosen
+    // one's surroundings at the right, then Travel and Back along the foot.
     const Resources *res = resources_current();
     const ResUI *ui = &res->ui;
     const char *title = views_gate_is_town() ? ui->gate_title_town : ui->gate_title_castle;
     int n = views_gate_count();
     int cursor = views_gate_cursor();
-    ML_Rect b = uk_inlay(ml_full().w, UK_TALL_H, title, NULL);
+    char gold[48];
+    uk_gold_text(g, gold, sizeof gold);
+    ML_Rect b = uk_inlay(GM_PAGE_W, UK_TALL_H, title, gold);
     const GateDestination *d = views_gate_dest(cursor);
     char travel[RES_BANNER_LEN] = "";
     if (d) {
@@ -949,8 +952,8 @@ static void draw_gate(void) {
         ResTemplateVar v[] = { { "TOWN", d->name }, { "ZONE", (z && z->name[0]) ? z->name : d->zone } };
         resources_format_template(travel, sizeof travel, res->banners.gate_travel, v, 2);
     }
-    UkRows foot_rows = { { travel }, { d != NULL } };
-    int foot = uk_foot_rows(b, 1, 0, uk_rows_fn, &foot_rows, TOUCH_LIST_PROMPT);
+    UkRows foot_rows = { { travel, ui->gm_back }, { d != NULL, true } };
+    int foot = uk_foot_rows(b, 2, 0, uk_rows_fn, &foot_rows, TOUCH_LIST_PROMPT);
     int lw = 14 * GW + 2 * ML_PAD;
     ml_list_draw(b.x, b.y, lw, foot - b.y, n, cursor, gate_row, NULL, TOUCH_LIST_GATE, uk_ink());
     lattice_band_v(b.x + lw, b.y, UK_BAND, foot - b.y);
@@ -972,7 +975,7 @@ void modern_views_render_draw(const Game *g, const Map *m, const Fog *f,
         case VIEW_PUZZLE:    draw_puzzle(g, s);       break;
         case VIEW_WORLDMAP:  draw_worldmap(g, m, f);  break;
         case VIEW_SPELLS:    draw_spells(g);          break;
-        case VIEW_GATE:      draw_gate();             break;
+        case VIEW_GATE:      draw_gate(g);            break;
         default: break;
     }
 }

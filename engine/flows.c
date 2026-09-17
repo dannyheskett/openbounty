@@ -208,10 +208,13 @@ void start_foe_friendly_flow(Game *game, Map *map, const Resources *res,
     }
     pending_dwelling_zone[k] = '\0';
     pending_flow = FLOW_ACCEPT_FRIENDLY;
-    // No header: the body already names the troop ("20 Sprites ... wish to join
-    // you."), so a bare creature-name title ("Sprites") just reads as a stray
-    // label out of context. Blank it, matching the chest A/B prompt.
-    player_io_ask_face(game, FLOW_ACCEPT_FRIENDLY, REQ_PROMPT_YES_NO, "", body,
+    // The title is the pack's: Rome names the troop, as the captured villain
+    // names the villain; a pack that wants none leaves the string empty.
+    char join_title[RES_BANNER_LEN];
+    ResTemplateVar tv[] = { { "TROOP", td->name } };
+    resources_format_template(join_title, sizeof join_title,
+                              game->res->banners.encounter_join_title, tv, 1);
+    player_io_ask_face(game, FLOW_ACCEPT_FRIENDLY, REQ_PROMPT_YES_NO, join_title, body,
                        REQ_FACE_TROOP, td->index);
     (void)map;
 }

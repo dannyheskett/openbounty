@@ -66,19 +66,13 @@ static bool prompt_row(void *ctx, int i, char *label, char *right, int cap) {
     return true;
 }
 
-// Troops wishing to join: an in-lay with their portrait at 2x, the words
-// beside it, Yes / No along the foot.
+// A question raised with a face: the result note's panel -- the same size, the
+// portrait at 2x, the words beside it -- with Yes and No along its foot.
 static void draw_yes_no_card(const PromptView *p, Texture2D face) {
     const Resources *res = resources_current();
-    UkDoc d = { 0 };
-    uk_doc_add(&d, p->body, PAL_CLR(WHITE));
-    ML_Rect area = ml_area();
-    bool over_screen = area.w == ml_full().w && area.h == ml_full().h;
-    UkCard c = { .title = p->header, .face = face, .doc = &d,
-                 .answers = { res ? res->ui.prompt_yes : "Yes", res ? res->ui.prompt_no : "No" },
-                 .n_answers = 2, .cursor = p->yn_cursor, .touch_list = TOUCH_LIST_PROMPT,
-                 .at_foot = !over_screen && !face.id, .no_dim = !over_screen };
-    uk_card(&c, NULL);
+    const char *labels[2] = { res ? res->ui.prompt_yes : "Yes",
+                              res ? res->ui.prompt_no  : "No" };
+    uk_result_ask(p->header, face, p->body, labels, 2, p->yn_cursor, TOUCH_LIST_PROMPT);
 }
 
 // An ask that named a face (PIO_ASK_FACE): the picture at 2x beside the words.

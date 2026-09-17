@@ -125,6 +125,10 @@ bool uk_rows_fn(void *ctx, int i, char *label, char *right, int cap);
 
 // A confirmation in-lay: title, picture at 2x (none: the words take the width),
 // the words, and one row (Continue).
+// A question in the same panel a result note uses: the picture, the words, and
+// the answers along the foot. One shape for everything raised with a face.
+void uk_result_ask(const char *title, Texture2D face, const char *text,
+                   const char *const *labels, int n_rows, int cursor, int touch_list);
 void uk_result_inlay(const char *title, Texture2D face, const char *text, const char *row_label,
                      int touch_list);
 

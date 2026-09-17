@@ -336,13 +336,14 @@ static ML_Rect message_rect(void) {
 
 int uk_message_text_w(void) { return message_rect().w - 2 * UK_INSET; }
 
-// The span uk_ask_over draws across: the battlefield in combat, else the area,
-// less the same margin a map message keeps from the map pane's edges.
+// The span uk_ask_over draws across: a map message's width and place, so a
+// note or a question over a battlefield is the same box the map uses. Its foot
+// is the current area's (the field in combat).
 static ML_Rect ask_over_rect(void) {
     ML_Rect a;
     if (!ml_field(&a)) a = ml_area();
     int sp = ml_space();
-    return (ML_Rect){ a.x + sp, a.y, a.w - 2 * sp, a.h - sp };
+    return (ML_Rect){ CL_MAP_X + sp, a.y, CL_MAP_W - 2 * sp, a.h - sp };
 }
 
 int uk_ask_over_text_w(void) { return ask_over_rect().w - 2 * UK_INSET; }
@@ -412,27 +413,37 @@ void uk_ask_over(const char *title, const char *const lines[], int n_lines,
 
 // ---- in-lays -----------------------------------------------------------------------
 
-static void uk_result_doc(const char *title, Texture2D face, const UkDoc *doc, const char *row_label,
-                          int touch_list);
+static void uk_result_doc(const char *title, Texture2D face, const UkDoc *doc,
+                          const char *const *labels, int n_rows, int cursor, int touch_list);
 
 void uk_result_inlay(const char *title, Texture2D face, const char *text, const char *row_label,
                      int touch_list) {
     UkDoc d = { 0 };
     uk_doc_add(&d, text, PAL_CLR(WHITE));
-    uk_result_doc(title, face, &d, row_label, touch_list);
+    uk_result_doc(title, face, &d, &row_label, 1, 0, touch_list);
 }
 
-static void uk_result_doc(const char *title, Texture2D face, const UkDoc *doc, const char *row_label,
-                   int touch_list) {
+void uk_result_ask(const char *title, Texture2D face, const char *text,
+                   const char *const *labels, int n_rows, int cursor, int touch_list) {
+    UkDoc d = { 0 };
+    uk_doc_add(&d, text, PAL_CLR(WHITE));
+    uk_result_doc(title, face, &d, labels, n_rows, cursor, touch_list);
+}
+
+static void uk_result_doc(const char *title, Texture2D face, const UkDoc *doc,
+                          const char *const *labels, int n_rows, int cursor,
+                          int touch_list) {
     // Every result is the same size: the title strip, the picture at 2x with
-    // the words in one column beside it, and Continue along the foot.
+    // the words in one column beside it, and the answers along the foot --
+    // Continue for a note, Yes and No for a question.
     const int size = 2 * CL_TILE_W;
     const int w = UK_INLAY_W;
     // The body holds the longest words any result has (the Emperor's answer
     // with its gains), so every result is the same size.
     int body_h = 12 * uk_line_h();
     if (body_h < size) body_h = size;
-    const int h = uk_title_h() + UK_BAND + 2 * UK_INSET + body_h + UK_BAND + ml_list_height(1);
+    if (n_rows < 1) n_rows = 1;
+    const int h = uk_title_h() + UK_BAND + 2 * UK_INSET + body_h + UK_BAND + ml_list_height(n_rows);
     ML_Rect a = ml_area();
     int sp = ml_space();
     int cw = w > a.w - 2 * sp ? a.w - 2 * sp : w;
@@ -441,9 +452,10 @@ static void uk_result_doc(const char *title, Texture2D face, const UkDoc *doc, c
     uk_dim();
     uk_panel(x, y, cw, ch);
     int top = uk_title(x, y, cw, title, NULL, PAL_CLR(YELLOW));
-    UkRows rows = { { row_label }, { true } };
+    UkRows rows = { { 0 }, { false } };
+    for (int i = 0; i < n_rows && i < 8; i++) { rows.label[i] = labels[i]; rows.enabled[i] = true; }
     ML_Rect body = { x, top, cw, y + ch - top };
-    int foot = uk_foot_rows(body, 1, 0, uk_rows_fn, &rows, touch_list);
+    int foot = uk_foot_rows(body, n_rows, cursor, uk_rows_fn, &rows, touch_list);
     int px = x + UK_INSET, py = top + UK_INSET;
     int pic = size;
     if (face.id) uk_picture(face, px, py, pic, pic);

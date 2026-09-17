@@ -1444,6 +1444,7 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(spell_gate_invalid,             "spell_gate_invalid");
     SET_BANNER(encounter_join_named,           "encounter_join_named");
     SET_BANNER(encounter_join_numeric,         "encounter_join_numeric");
+    SET_BANNER(encounter_join_title,           "encounter_join_title");
     SET_BANNER(encounter_wanderers,            "encounter_wanderers");
     SET_BANNER(encounter_hostile_header,       "encounter_hostile_header");
     SET_BANNER(encounter_hostile_unknown,      "encounter_hostile_unknown");
