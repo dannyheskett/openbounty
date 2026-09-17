@@ -11,6 +11,7 @@
 #include "resources.h"
 #include "touch.h"
 #include "views.h"
+#include "prompt_impl.h"
 #include "bfont.h"
 #include <stdio.h>
 #include <string.h>
@@ -333,6 +334,22 @@ void modern_gamemenu_draw(const Game *g) {
         modern_gamemenu_page(g, (GmPageId)id, &pi);
         int pw = gm_page_width(&pi, path);
         if (pw > menu_w) menu_w = pw;
+    }
+    // A question asked from a page (save over a slot, load, new game, leave)
+    // takes that page's place: the same frame, the question where the
+    // description was, Yes and No where the rows were. The shared prompt reads
+    // the answer; overlay.c does not draw it over the menu.
+    const PromptView *pv = prompt_view();
+    if (prompt_is_active() && pv && pv->kind == PK_YES_NO) {
+        GmPage q;
+        memset(&q, 0, sizeof q);
+        q.title = p.title;
+        q.n = 2;
+        q.item[0] = (GmItem){ g->res->ui.prompt_yes, pv->body, "", GM_ACT_BACK, true };
+        q.item[1] = (GmItem){ g->res->ui.prompt_no, pv->body, "", GM_ACT_BACK, true };
+        gm_draw_page(&q, path, z ? z->name : "", r.x, r.y, slots ? 656 : menu_w, r.h, 0, pv->yn_cursor,
+                     TOUCH_LIST_PROMPT, NULL, NULL);
+        return;
     }
     gm_draw_page(&p, path, z ? z->name : "", r.x, r.y, slots ? 656 : menu_w, r.h, 0, cursor, TOUCH_LIST_MENU,
                  slots ? slot_row : NULL, &p);

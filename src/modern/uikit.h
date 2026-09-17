@@ -51,6 +51,9 @@ void uk_dim(void);
 // An in-lay w x h centred on ml_area(): dims, draws the panel and its title,
 // and returns the body under the title band.
 ML_Rect uk_inlay(int w, int h, const char *title, const char *right);
+// A step that stands in place of the one before it: the whole screen, the fill
+// and the title strip, nothing behind. Returns the body under the title band.
+ML_Rect uk_frame(const char *title, const char *right);
 // The in-lay sizes: standard, tall, wide.
 #define UK_INLAY_W   576
 #define UK_INLAY_H   384
@@ -79,6 +82,7 @@ typedef struct {
     int     scale;
     int     trim;       // screen pixels cut off the backdrop's top
     int     intro_y, intro_h;
+    int     extra_y, extra_h;   // a block between the words and the rows (0: none)
     int     rows_y;
     int     rows;
 } UkScene;
@@ -96,6 +100,10 @@ void    uk_scene_blit(const UkScene *L, Texture2D t, int bx, int by, int bw, int
 void    uk_scene_figure(const UkScene *L, Texture2D t, int x);
 void    uk_scene_intro(const UkScene *L, const char *text);
 void    uk_scene_rows(const UkScene *L, int n, int cursor, MlRowFn fn, void *ctx, int touch_list);
+// As uk_scene_ex, with a block `extra_h` tall between the words and the rows
+// (the count buttons); its top is L.extra_y.
+UkScene uk_scene_extra(const char *title, const char *right, Texture2D backdrop, int rows, int intro_min,
+                       int extra_h);
 
 // ---- the muster: a scene over two columns --------------------------------------------
 //
@@ -116,12 +124,6 @@ UkMuster uk_muster(const char *title, const char *right, Texture2D backdrop,
 // A row source over a fixed list of labels.
 typedef struct { const char *label[8]; bool enabled[8]; } UkRows;
 bool uk_rows_fn(void *ctx, int i, char *label, char *right, int cap);
-
-// The How-many in-lay: the troop's picture at 2x, `lines` beside it, the count
-// buttons, and "Recruit 20" / Cancel as rows (tapped as rows 0 and 1 of
-// touch_list).
-void uk_count_inlay(const char *title, Texture2D face, const char *lines[], Color colors[], int nlines,
-                    int value, int max, const char *act_label, const char *cancel_label, int touch_list);
 
 // A confirmation in-lay: title, picture at 2x (none: the words take the width),
 // the words, and one row (Continue).
@@ -157,6 +159,13 @@ void uk_doc_labeled(UkDoc *d, const char *tmpl, const char *value);
 int  uk_doc_draw(const UkDoc *d, ML_Rect area, int pic_w, int pic_h, int page, bool draw);
 // The height the words take in one page at area's width (beside the picture).
 int  uk_doc_height(const UkDoc *d, ML_Rect area, int pic_w, int pic_h);
+
+// A scene whose words band is as tall as `doc` needs -- a result, the Emperor's
+// answer with its gains -- the backdrop's top trimmed to make room.
+UkScene uk_scene_for_doc(const char *title, const char *right, Texture2D backdrop, int rows,
+                         const UkDoc *doc, int extra_h);
+// Draw `doc` in the scene's words band.
+void    uk_scene_doc(const UkScene *L, const UkDoc *doc);
 
 // The same card from words already laid out (the Emperor's answers, whose
 // gains are yellow lines).

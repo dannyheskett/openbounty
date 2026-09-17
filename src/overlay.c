@@ -174,10 +174,13 @@ void overlay_draw(const Game *g, const Map *m, const Fog *f,
     }
 
     bool loc_screen = CL_IS_MODERN && (v == VIEW_DWELLING || v == VIEW_ALCOVE);
-    // Modern: a town draws its own questions inside its panel.
+    // Modern: a town draws its own questions inside its panel, and the home
+    // castle asks in its own scene -- never a panel over the step that asked.
     bool town_asks = CL_IS_MODERN && v == VIEW_TOWN && views_town_visiting() && prompt_is_active();
+    bool castle_asks = CL_IS_MODERN && v == VIEW_HOME_CASTLE && prompt_is_active();
+    bool menu_asks = CL_IS_MODERN && v == VIEW_MENU && prompt_is_active();
     // Modal prompt (yes/no, numeric picker): replaces the bottom frame.
-    if (prompt_is_active() && !loc_screen && !town_asks) {
+    if (prompt_is_active() && !loc_screen && !town_asks && !castle_asks && !menu_asks) {
         // Modern: a hostile foe gets its own full-screen view (Fight / Evade).
         if (CL_IS_MODERN && pending_flow == FLOW_ATTACK_FOE) modern_overlay_draw_foe(g, s);
         else                                                prompt_draw();

@@ -470,25 +470,27 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
     uk_gold_text(g, gold, sizeof gold);
 
     // The scene: the square at 3x, the head townsperson standing in it at 2x.
-    ResTemplateVar iv[] = { { "HERO", g->character.name }, { "TOWN", (name && name[0]) ? name : "" },
-                            { "ZONE", town_zone_name(g) } };
-    // A town with no dock does not boast a harbour.
-    const char *intro = (tw && tw->boat_x < 0 && bn->town_intro_inland[0])
-                      ? bn->town_intro_inland : bn->town_intro;
-    resources_format_template(buf, sizeof buf, intro, iv, 3);
-    UkScene L = uk_scene_for(title, gold, loc_texture(s, LOC_TOWN), 2, buf);
-    int head = tw ? resources_portrait_index(res, tw->headman) : -1;
-    Texture2D fig = portrait_frame(s, head, 1000.0 / 180.0);
-    if (!fig.id) fig = troop_standing(s, town_backdrop_troop(g, name));
-    uk_scene_figure(&L, fig, CL_TILE_W);
-    uk_scene_intro(&L, buf);
+    // Visiting the town replaces it -- the scene is not drawn behind a section.
     bool visiting = views_town_visiting();
-    char visit[RES_BANNER_LEN + 4];
-    snprintf(visit, sizeof visit, "%s >", bn->town_visit);
-    UkRows scene_rows = { { visit, bn->location_leave }, { true, true } };
-    uk_scene_rows(&L, 2, visiting ? -1 : views_town_scene_cursor(), uk_rows_fn, &scene_rows,
-                  visiting ? 0 : TOUCH_LIST_TOWN);
-    if (!visiting) return;
+    if (!visiting) {
+        ResTemplateVar iv[] = { { "HERO", g->character.name }, { "TOWN", (name && name[0]) ? name : "" },
+                                { "ZONE", town_zone_name(g) } };
+        // A town with no dock does not boast a harbour.
+        const char *intro = (tw && tw->boat_x < 0 && bn->town_intro_inland[0])
+                          ? bn->town_intro_inland : bn->town_intro;
+        resources_format_template(buf, sizeof buf, intro, iv, 3);
+        UkScene L = uk_scene_for(title, gold, loc_texture(s, LOC_TOWN), 2, buf);
+        int head = tw ? resources_portrait_index(res, tw->headman) : -1;
+        Texture2D fig = portrait_frame(s, head, 1000.0 / 180.0);
+        if (!fig.id) fig = troop_standing(s, town_backdrop_troop(g, name));
+        uk_scene_figure(&L, fig, CL_TILE_W);
+        uk_scene_intro(&L, buf);
+        char visit[RES_BANNER_LEN + 4];
+        snprintf(visit, sizeof visit, "%s >", bn->town_visit);
+        UkRows scene_rows = { { visit, bn->location_leave }, { true, true } };
+        uk_scene_rows(&L, 2, views_town_scene_cursor(), uk_rows_fn, &scene_rows, TOUCH_LIST_TOWN);
+        return;
+    }
 
     TownList list = views_town_list();
     bool menu = list == TOWN_LIST_MENU;
@@ -514,17 +516,12 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
         face = portrait_frame(s, town_person(g, shown), 2.0);
     }
 
-    // The outcome of a service: the same card as the temple's and the
-    // dwelling's -- the person at 2x, their words, Continue.
-    if (views_town_result_dialog() && info) {
-        uk_result_inlay(t2, face, info, bn->castle_continue, TOUCH_LIST_PROMPT);
-        views_town_set_detail_pages(1);
-        return;
-    }
+    // The outcome of a service takes the section's place in the same frame:
+    // the person, their words, and Continue where the rows were.
+    bool result = views_town_result_dialog() && info;
     UkDoc d = { 0 };
     const PromptView *pv = prompt_view();
     bool asking = prompt_is_active() && pv && pv->kind == PK_YES_NO;
-    bool result = false;
     if (asking) {
         uk_doc_add(&d, pv->body, PAL_CLR(WHITE));
     } else if (info && info[0]) {
@@ -553,7 +550,7 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
         compose_service(g, list, &d);
     }
 
-    ML_Rect b = uk_inlay(ml_full().w, UK_TALL_H, t2, town_zone_name(g));
+    ML_Rect b = uk_frame(t2, town_zone_name(g));
     int lw = 14 * GW + 2 * ML_PAD;
     if (asking || result) {
         // The question's answers, or Continue, take the rows' place.
@@ -649,7 +646,7 @@ static void castle_draw_promotion(const Game *g, const Sprites *s, const ResCast
     const Resources *res = g->res;
     int needed = 0, rank = 0;
     modern_castle_audience(&needed, &rank);
-    ML_Rect b = uk_inlay(UK_WIDE_W, UK_TALL_H, res->banners.castle_action_promotion, g->character.cls.rank_title);
+    ML_Rect b = uk_frame(res->banners.castle_action_promotion, g->character.cls.rank_title);
     char label[64];
     modern_castle_row(g, 0, label, sizeof label, NULL);
     UkRows rows = { { label }, { true } };
@@ -773,41 +770,25 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
     const char *cname = (rc && rc->name[0]) ? rc->name : cid;
     char gold[48], buf[RES_BANNER_LEN];
     uk_gold_text(g, gold, sizeof gold);
+    const char *msg = modern_castle_message();
 
-    // The scene: the barracks at 3x, their keeper (or the Emperor on Audience)
-    // standing in it at 2x; a castle of your own shows the troop it holds most.
-    int mcur = modern_castle_menu_cursor();
-    const char *inv = mcur == 2 ? bn->gmd_leave
-                    : home ? (mcur == 0 ? bn->castle_invite_recruit : bn->castle_invite_audience)
-                           : (mcur == 0 ? bn->castle_invite_garrison : bn->castle_invite_withdraw);
-    ResTemplateVar v[] = { { "HERO", g->character.name }, { "CASTLE", cname } };
-    resources_format_template(buf, sizeof buf, inv, v, 2);
-    // The backdrop, the words under it, the three answers as rows. The words'
-    // band is as tall as the longest of the three invitations, so nothing
-    // moves as the cursor does.
-    char longest[RES_BANNER_LEN] = "";
-    {
-        const char *invs[3] = { home ? bn->castle_invite_recruit : bn->castle_invite_garrison,
-                                home ? bn->castle_invite_audience : bn->castle_invite_withdraw, bn->gmd_leave };
-        int most = -1;
-        for (int k = 0; k < 3; k++) {
-            char tb[RES_BANNER_LEN];
-            resources_format_template(tb, sizeof tb, invs[k], v, 2);
-            int n = uk_lines(tb, ml_full().w - 2 * ML_PAD);
-            if (n > most) { most = n; snprintf(longest, sizeof longest, "%s", tb); }
-        }
-    }
+    // Every castle step stands in place of the one before it: the front page,
+    // a page, its question, How many and each outcome draw only themselves.
+    // The promotion is a ceremony of its own, in place of the castle.
+    if (page == MC_PROMOTION) { castle_draw_promotion(g, s, rc); return; }
+
     // The Emperor's palace has a scene of its own for each page: the atrium
     // where his usher greets you, the armoury where the master of arms
     // musters recruits, and the throne room where the Emperor receives you.
     // Every other castle keeps the shared hall.
-    bool audience = page == MC_AUDIENCE || page == MC_PROMOTION;
+    bool audience = page == MC_AUDIENCE;
     Texture2D bd = loc_texture(s, LOC_CASTLE);
     if (home && s) {
         Texture2D own = audience ? s->palace[2] : (page == MC_MENU ? s->palace[0] : s->palace[1]);
         if (own.id) bd = own;
     }
-    UkScene L = uk_scene_for(cname, gold, bd, 3, longest);
+    // Who stands in the scene: the keeper of this page, or on a castle of
+    // your own the troop it holds most.
     const char *fig_id = !rc ? ""
                        : audience ? rc->special.figure
                        : (page == MC_MENU && rc->special.greeter_figure[0]) ? rc->special.greeter_figure
@@ -827,25 +808,49 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
         }
         fig = troop_standing(s, ti);
     }
-    uk_scene_figure(&L, fig, audience ? (L.scene.w - 2 * CL_TILE_W) / 2 : CL_TILE_W);
-    uk_scene_intro(&L, buf);
-    char r0[RES_BANNER_LEN + 4], r1[RES_BANNER_LEN + 4];
-    snprintf(r0, sizeof r0, "%s >", home ? bn->castle_menu_recruit : bn->castle_menu_garrison);
-    snprintf(r1, sizeof r1, "%s >", home ? bn->castle_menu_audience : bn->castle_menu_withdraw);
-    UkRows menu_rows = { { r0, r1, bn->location_leave }, { true, true, true } };
-    bool on_menu = page == MC_MENU;
-    uk_scene_rows(&L, 3, on_menu ? mcur : -1, uk_rows_fn, &menu_rows, on_menu ? TOUCH_LIST_CASTLE : 0);
+    UkRows cont = { { bn->castle_continue }, { true } };
 
-    const char *msg = modern_castle_message();
-    Texture2D keeper = (home && rc) ? portrait_frame(s, resources_portrait_index(res,
-                           (!audience && rc->special.barracks_portrait[0]) ? rc->special.barracks_portrait
-                                                                          : rc->special.portrait), 2.0)
-                                    : (Texture2D){ 0 };
-    if (on_menu) {
-        if (msg) uk_result_inlay(cname, keeper, msg, bn->castle_continue, TOUCH_LIST_PROMPT);
+    if (page == MC_MENU) {
+        // The front page's message takes the words band, Continue the rows.
+        if (msg) {
+            UkDoc md = { 0 };
+            uk_doc_add(&md, msg, PAL_CLR(WHITE));
+            UkScene L = uk_scene_for_doc(cname, gold, bd, 1, &md, 0);
+            uk_scene_figure(&L, fig, CL_TILE_W);
+            uk_scene_doc(&L, &md);
+            uk_scene_rows(&L, 1, 0, uk_rows_fn, &cont, TOUCH_LIST_PROMPT);
+            return;
+        }
+        int mcur = modern_castle_menu_cursor();
+        const char *inv = mcur == 2 ? bn->gmd_leave
+                        : home ? (mcur == 0 ? bn->castle_invite_recruit : bn->castle_invite_audience)
+                               : (mcur == 0 ? bn->castle_invite_garrison : bn->castle_invite_withdraw);
+        ResTemplateVar v[] = { { "HERO", g->character.name }, { "CASTLE", cname } };
+        resources_format_template(buf, sizeof buf, inv, v, 2);
+        // The words' band is as tall as the longest of the three invitations,
+        // so nothing moves as the cursor does.
+        char longest[RES_BANNER_LEN] = "";
+        {
+            const char *invs[3] = { home ? bn->castle_invite_recruit : bn->castle_invite_garrison,
+                                    home ? bn->castle_invite_audience : bn->castle_invite_withdraw, bn->gmd_leave };
+            int most = -1;
+            for (int k = 0; k < 3; k++) {
+                char tb[RES_BANNER_LEN];
+                resources_format_template(tb, sizeof tb, invs[k], v, 2);
+                int n = uk_lines(tb, ml_full().w - 2 * ML_PAD);
+                if (n > most) { most = n; snprintf(longest, sizeof longest, "%s", tb); }
+            }
+        }
+        UkScene L = uk_scene_for(cname, gold, bd, 3, longest);
+        uk_scene_figure(&L, fig, CL_TILE_W);
+        uk_scene_intro(&L, buf);
+        char r0[RES_BANNER_LEN + 4], r1[RES_BANNER_LEN + 4];
+        snprintf(r0, sizeof r0, "%s >", home ? bn->castle_menu_recruit : bn->castle_menu_garrison);
+        snprintf(r1, sizeof r1, "%s >", home ? bn->castle_menu_audience : bn->castle_menu_withdraw);
+        UkRows menu_rows = { { r0, r1, bn->location_leave }, { true, true, true } };
+        uk_scene_rows(&L, 3, mcur, uk_rows_fn, &menu_rows, TOUCH_LIST_CASTLE);
         return;
     }
-    if (page == MC_PROMOTION) { castle_draw_promotion(g, s, rc); return; }
 
     const char *titles[] = { "", bn->castle_menu_recruit, bn->castle_menu_audience,
                              bn->castle_menu_garrison, bn->castle_menu_withdraw, "" };
@@ -853,60 +858,34 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
     snprintf(title, sizeof title, "%s > %s", cname, titles[page]);
     int rows = modern_castle_rows(g);
     CastleRowsCtx cc = { g };
-
-    // The second step, "How many?": its own in-lay.
-    int cv = 0, cmax = 0;
     const char *row_troop = NULL;
     char label[64];
-    if (page != MC_AUDIENCE) modern_castle_row(g, cursor, label, sizeof label, &row_troop);
+    if (!audience) modern_castle_row(g, cursor, label, sizeof label, &row_troop);
     const TroopDef *pt = row_troop ? troop_by_id(row_troop) : NULL;
-    if (page == MC_AUDIENCE) {
-        // The throne room: the Emperor standing before his throne, where the
-        // hero stands under it, and the audiences as rows.
-        Texture2D emperor = rc ? portrait_frame(s, resources_portrait_index(res, rc->special.portrait), 2.0)
-                               : (Texture2D){ 0 };
-        UkDoc d = { 0 };
-        const ClassDef *cls = class_by_id(g->character.cls.id);
-        int rank = g->character.cls.rank_index;
-        const ResEconomy *ec = &res->economy;
+
+    if (audience) {
+        // The throne room throughout: the Emperor standing before his throne.
+        // The audiences, the tribute's question and each of his answers take
+        // the words band and the rows in turn.
         char nb[16], mb[16];
-        if (ec->audiences && cursor == 1) {
-            snprintf(nb, sizeof nb, "%d", GameArtifactsFound(g));
-            snprintf(mb, sizeof mb, "%d", artifacts_count() < 8 ? artifacts_count() : 8);
-            castle_fmt(buf, sizeof buf, bn->castle_artifacts, nb, mb);
-            uk_doc_add(&d, buf, PAL_CLR(WHITE));
-        } else if (ec->audiences && cursor == 2) {
-            snprintf(nb, sizeof nb, "%d", ec->tribute_cost);
-            castle_fmt(buf, sizeof buf, bn->castle_cost, nb, NULL);
-            uk_doc_add(&d, buf, PAL_CLR(WHITE));
-        } else {
-            castle_fmt(buf, sizeof buf, bn->castle_rank, g->character.cls.rank_title, NULL);
-            uk_doc_add(&d, buf, PAL_CLR(WHITE));
-            if (cls && rank + 1 < cls->rank_count) {
-                castle_fmt(buf, sizeof buf, bn->castle_next_rank, cls->ranks[rank + 1].name, NULL);
-                uk_doc_add(&d, buf, PAL_CLR(WHITE));
-                int need = cls->ranks[rank + 1].villains_needed - GameVillainsCaught(g);
-                snprintf(nb, sizeof nb, "%d", need > 0 ? need : 0);
-                castle_fmt(buf, sizeof buf, bn->castle_needed, nb, NULL);
-                uk_doc_add(&d, buf, PAL_CLR(WHITE));
-            }
-        }
-        // The scene: the throne room with its four audiences as rows, and
-        // where the hero stands written under it.
-        char where[3 * RES_BANNER_LEN] = "";
-        for (int i = 0; i < d.n; i++) {
-            size_t n = strlen(where);
-            snprintf(where + n, sizeof where - n, "%s%s", n ? "  " : "", d.pool + d.off[i]);
-        }
         Texture2D throne = (s && s->palace[2].id) ? s->palace[2] : loc_texture(s, LOC_CASTLE);
-        UkScene A = uk_scene_for(title, g->character.cls.rank_title, throne, rows, where);
         Texture2D emp_fig = rc ? portrait_frame(s, resources_portrait_index(res, rc->special.figure),
                                                 1000.0 / 180.0) : (Texture2D){ 0 };
-        uk_scene_figure(&A, emp_fig, (A.scene.w - 2 * CL_TILE_W) / 2);
-        uk_scene_intro(&A, where);
-        uk_scene_rows(&A, rows, cursor, castle_row_fn, &cc, TOUCH_LIST_CASTLE);
+        const char *rank_title = g->character.cls.rank_title;
 
-        // The Emperor's answer, in its own in-lay until Continue.
+        const PromptView *pv = prompt_view();
+        if (prompt_is_active() && pv && pv->kind == PK_YES_NO) {
+            UkDoc qd = { 0 };
+            uk_doc_add(&qd, pv->body, PAL_CLR(WHITE));
+            UkScene A = uk_scene_for_doc(title, rank_title, throne, 2, &qd, 0);
+            uk_scene_figure(&A, emp_fig, (A.scene.w - 2 * CL_TILE_W) / 2);
+            uk_scene_doc(&A, &qd);
+            UkRows yn = { { res->ui.prompt_yes, res->ui.prompt_no }, { true, true } };
+            uk_scene_rows(&A, 2, pv->yn_cursor, uk_rows_fn, &yn, TOUCH_LIST_PROMPT);
+            return;
+        }
+
+        // His answer, until Continue.
         int ares = 0, aneed = 0, aud_needed = 0, aud_rank = 0;
         GameAudienceGain gain;
         McAudience akind = modern_castle_audience_result(&ares, &aneed, &gain);
@@ -946,38 +925,60 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
             uk_doc_add(&rd, msg, PAL_CLR(WHITE));
         }
         if (rd.n > 0) {
-            const char *rt = akind == MC_AUD_BLESSING && ares ? bn->castle_action_blessing
-                           : akind == MC_AUD_TRIBUTE && ares ? bn->castle_action_tribute
-                           : bn->castle_action_promotion;
-            uk_result_doc(rt, emperor, &rd, bn->castle_continue, TOUCH_LIST_PROMPT);
+            UkScene A = uk_scene_for_doc(title, rank_title, throne, 1, &rd, 0);
+            uk_scene_figure(&A, emp_fig, (A.scene.w - 2 * CL_TILE_W) / 2);
+            uk_scene_doc(&A, &rd);
+            uk_scene_rows(&A, 1, 0, uk_rows_fn, &cont, TOUCH_LIST_PROMPT);
+            return;
         }
+
+        // The audiences, and where the hero stands written under them.
+        UkDoc d = { 0 };
+        const ClassDef *cls = class_by_id(g->character.cls.id);
+        int rank = g->character.cls.rank_index;
+        const ResEconomy *ec = &res->economy;
+        if (ec->audiences && cursor == 1) {
+            snprintf(nb, sizeof nb, "%d", GameArtifactsFound(g));
+            snprintf(mb, sizeof mb, "%d", artifacts_count() < 8 ? artifacts_count() : 8);
+            castle_fmt(buf, sizeof buf, bn->castle_artifacts, nb, mb);
+            uk_doc_add(&d, buf, PAL_CLR(WHITE));
+        } else if (ec->audiences && cursor == 2) {
+            snprintf(nb, sizeof nb, "%d", ec->tribute_cost);
+            castle_fmt(buf, sizeof buf, bn->castle_cost, nb, NULL);
+            uk_doc_add(&d, buf, PAL_CLR(WHITE));
+        } else {
+            castle_fmt(buf, sizeof buf, bn->castle_rank, rank_title, NULL);
+            uk_doc_add(&d, buf, PAL_CLR(WHITE));
+            if (cls && rank + 1 < cls->rank_count) {
+                castle_fmt(buf, sizeof buf, bn->castle_next_rank, cls->ranks[rank + 1].name, NULL);
+                uk_doc_add(&d, buf, PAL_CLR(WHITE));
+                int need = cls->ranks[rank + 1].villains_needed - GameVillainsCaught(g);
+                snprintf(nb, sizeof nb, "%d", need > 0 ? need : 0);
+                castle_fmt(buf, sizeof buf, bn->castle_needed, nb, NULL);
+                uk_doc_add(&d, buf, PAL_CLR(WHITE));
+            }
+        }
+        char where[3 * RES_BANNER_LEN] = "";
+        for (int i = 0; i < d.n; i++) {
+            size_t n = strlen(where);
+            snprintf(where + n, sizeof where - n, "%s%s", n ? "  " : "", d.pool + d.off[i]);
+        }
+        UkScene A = uk_scene_for(title, rank_title, throne, rows, where);
+        uk_scene_figure(&A, emp_fig, (A.scene.w - 2 * CL_TILE_W) / 2);
+        uk_scene_intro(&A, where);
+        uk_scene_rows(&A, rows, cursor, castle_row_fn, &cc, TOUCH_LIST_CASTLE);
         return;
     }
 
     // Recruit, Garrison, Withdraw: the room itself, with its keeper standing in
     // it across the top, the roll of troops at the left, and the one under the
     // cursor beside it. The band is sized so the keeper stands whole at 2x;
-    // five rows show and the last scrolls.
+    // five rows show and the last scrolls. How many and the outcome take the
+    // roll's rows and the card's words in turn.
     UkMuster M = uk_muster(title, gold, bd, 5, 13 * GW + 2 * ML_PAD);
     uk_scene_figure(&M.top, fig, CL_TILE_W);
-    ml_list_draw(M.list.x, M.list.y, M.list.w, M.list.h, rows, cursor, castle_row_fn, &cc,
-                 TOUCH_LIST_CASTLE, uk_ink());
     ML_Rect a = M.detail;
-    if (pt) {
-        castle_troop_detail(g, s, pt, page, cr, a);
-    } else if (rows == 1 && (page == MC_GARRISON || page == MC_WITHDRAW)) {
-        UkDoc d = { 0 };
-        uk_doc_add(&d, bn->castle_no_troops, PAL_CLR(WHITE));
-        uk_doc_draw(&d, a, 0, 0, -1, true);
-    } else {
-        UkDoc d = { 0 };
-        ResTemplateVar v2[] = { { "HERO", g->character.name }, { "CASTLE", cname } };
-        resources_format_template(buf, sizeof buf, page == MC_RECRUIT ? bn->castle_invite_recruit
-                                  : page == MC_GARRISON ? bn->castle_invite_garrison : bn->castle_invite_withdraw, v2, 2);
-        uk_doc_add(&d, buf, PAL_CLR(WHITE));
-        uk_doc_draw(&d, a, 0, 0, -1, true);
-    }
-    // "How many?" and the result stand over the page, as a moment does.
+    int cv = 0, cmax = 0;
     if (modern_castle_stepper(&cv, &cmax) && pt) {
         char heading[RES_BANNER_LEN], sub[RES_BANNER_LEN], cost[RES_BANNER_LEN] = "", mx[16], vb[16];
         static char act_label[RES_BANNER_LEN];
@@ -996,14 +997,49 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
         ResTemplateVar av[] = { { "COUNT", vb } };
         resources_format_template(act_label, sizeof act_label, page == MC_RECRUIT ? bn->count_recruit
                                   : page == MC_GARRISON ? bn->count_garrison : bn->count_withdraw, av, 1);
-        const char *lines[] = { sub, cost };
-        Color colors[] = { PAL_CLR(WHITE), PAL_CLR(YELLOW) };
-        uk_count_inlay(heading, troop_face(s, pt->index), lines, colors, 2, cv, cmax, act_label, bn->count_cancel,
-                       TOUCH_LIST_CASTLE);
+        UkRows sr = { { act_label, bn->count_cancel }, { true, true } };
+        ml_list_draw(M.list.x, M.list.y, M.list.w, M.list.h, 2, 0, uk_rows_fn, &sr, TOUCH_LIST_CASTLE, uk_ink());
+        // The count buttons need the card's whole width, so the words run above
+        // them rather than beside a portrait: a portrait at 2x and the buttons
+        // under it are taller than the card.
+        UkDoc sd = { 0 };
+        uk_doc_add(&sd, heading, PAL_CLR(YELLOW));
+        uk_doc_add(&sd, sub, PAL_CLR(WHITE));
+        if (cost[0]) uk_doc_add(&sd, cost, PAL_CLR(YELLOW));
+        int wh = uk_doc_height(&sd, a, 0, 0);
+        uk_doc_draw(&sd, a, 0, 0, -1, true);
+        ml_count_buttons(a.x, a.y + wh + ML_PAD, a.w, cv, cmax);
         return;
     }
-
-    if (msg) uk_result_inlay(title, keeper, msg, bn->castle_continue, TOUCH_LIST_PROMPT);
+    if (msg) {
+        Texture2D keeper = (home && rc) ? portrait_frame(s, resources_portrait_index(res,
+                               rc->special.barracks_portrait[0] ? rc->special.barracks_portrait
+                                                                : rc->special.portrait), 2.0)
+                                        : (Texture2D){ 0 };
+        ml_list_draw(M.list.x, M.list.y, M.list.w, M.list.h, 1, 0, uk_rows_fn, &cont, TOUCH_LIST_PROMPT, uk_ink());
+        const int size = 2 * CL_TILE_W;
+        if (keeper.id) uk_picture(keeper, a.x, a.y, size, size);
+        UkDoc md = { 0 };
+        uk_doc_add(&md, msg, PAL_CLR(WHITE));
+        uk_doc_draw(&md, a, keeper.id ? size : 0, size, -1, true);
+        return;
+    }
+    ml_list_draw(M.list.x, M.list.y, M.list.w, M.list.h, rows, cursor, castle_row_fn, &cc,
+                 TOUCH_LIST_CASTLE, uk_ink());
+    if (pt) {
+        castle_troop_detail(g, s, pt, page, cr, a);
+    } else if (rows == 1 && (page == MC_GARRISON || page == MC_WITHDRAW)) {
+        UkDoc d = { 0 };
+        uk_doc_add(&d, bn->castle_no_troops, PAL_CLR(WHITE));
+        uk_doc_draw(&d, a, 0, 0, -1, true);
+    } else {
+        UkDoc d = { 0 };
+        ResTemplateVar v2[] = { { "HERO", g->character.name }, { "CASTLE", cname } };
+        resources_format_template(buf, sizeof buf, page == MC_RECRUIT ? bn->castle_invite_recruit
+                                  : page == MC_GARRISON ? bn->castle_invite_garrison : bn->castle_invite_withdraw, v2, 2);
+        uk_doc_add(&d, buf, PAL_CLR(WHITE));
+        uk_doc_draw(&d, a, 0, 0, -1, true);
+    }
 }
 
 // =============================================================================
@@ -1279,7 +1315,24 @@ void modern_overlay_draw_temple(const Game *g, const Sprites *s) {
     const ResBanners *bn = &res->banners;
     char gold[48], buf[RES_BANNER_LEN], cost[16];
     uk_gold_text(g, gold, sizeof gold);
-    UkScene L = uk_scene(bn->temple_title, gold, loc_texture(s, LOC_ALCOVE), 2);
+    const PromptView *pv = prompt_view();
+    bool asking = prompt_is_active() && pending_flow == FLOW_ALCOVE;
+    bool offering = !asking && loc_deal_pending() && !loc_deal_revealed();
+    bool result = !asking && !offering;
+
+    // One scene throughout: the offer, then its outcome in the same place --
+    // the words band carries the result and Continue stands where the rows were.
+    UkDoc d = { 0 };
+    if (result) {
+        loc_deal_text(g, buf, sizeof buf);
+    } else {
+        const ResZone *z = resources_zone_by_id(res, g->position.zone);
+        snprintf(cost, sizeof cost, "%d", GameAlcoveCost(g, g->position.zone));
+        ResTemplateVar iv[] = { { "ZONE", (z && z->name[0]) ? z->name : g->position.zone }, { "COST", cost } };
+        resources_format_template(buf, sizeof buf, bn->temple_intro, iv, 2);
+    }
+    uk_doc_add(&d, buf, PAL_CLR(WHITE));
+    UkScene L = uk_scene_for_doc(bn->temple_title, gold, loc_texture(s, LOC_ALCOVE), result ? 1 : 2, &d, 0);
     if (s && s->alcove_figure.id && res->sprites.alcove_figure_w > 0) {
         int ms = res->sprites.alcove_figure_frame_ms > 0 ? res->sprites.alcove_figure_frame_ms : 180;
         Texture2D fig = s->alcove_figure_anim[sprites_frame((int)(GetTime() * 1000.0 / ms), s->alcove_figure_frames)];
@@ -1287,22 +1340,13 @@ void modern_overlay_draw_temple(const Game *g, const Sprites *s) {
         uk_scene_blit(&L, fig, res->sprites.alcove_figure_x, res->sprites.alcove_figure_y,
                       res->sprites.alcove_figure_w, res->sprites.alcove_figure_h);
     }
-    const ResZone *z = resources_zone_by_id(res, g->position.zone);
-    snprintf(cost, sizeof cost, "%d", GameAlcoveCost(g, g->position.zone));
-    ResTemplateVar iv[] = { { "ZONE", (z && z->name[0]) ? z->name : g->position.zone }, { "COST", cost } };
-    resources_format_template(buf, sizeof buf, bn->temple_intro, iv, 2);
-    uk_scene_intro(&L, buf);
-    UkRows rows = { { bn->temple_learn, bn->location_leave }, { true, true } };
-    const PromptView *pv = prompt_view();
-    if (prompt_is_active() && pending_flow == FLOW_ALCOVE) {
-        uk_scene_rows(&L, 2, pv->yn_cursor, uk_rows_fn, &rows, TOUCH_LIST_PROMPT);
-    } else if (loc_deal_pending() && !loc_deal_revealed()) {
-        uk_scene_rows(&L, 2, *loc_deal_cursor(), uk_rows_fn, &rows, TOUCH_LIST_PROMPT);
+    uk_scene_doc(&L, &d);
+    if (result) {
+        UkRows cont = { { bn->castle_continue }, { true } };
+        uk_scene_rows(&L, 1, 0, uk_rows_fn, &cont, TOUCH_LIST_PROMPT);
     } else {
-        uk_scene_rows(&L, 2, -1, uk_rows_fn, &rows, 0);
-        loc_deal_text(g, buf, sizeof buf);
-        uk_result_inlay(loc_deal_title(g, true), s ? s->alcove_portrait : (Texture2D){ 0 }, buf,
-                        bn->castle_continue, TOUCH_LIST_PROMPT);
+        UkRows rows = { { bn->temple_learn, bn->location_leave }, { true, true } };
+        uk_scene_rows(&L, 2, asking ? pv->yn_cursor : *loc_deal_cursor(), uk_rows_fn, &rows, TOUCH_LIST_PROMPT);
     }
 }
 
@@ -1321,28 +1365,24 @@ void modern_overlay_draw_dwelling(const Game *g, const Sprites *s) {
     if (kind && strcmp(kind, ui->dwelling_kind_forest) == 0)  lk = LOC_FOREST;
     if (kind && strcmp(kind, ui->dwelling_kind_hill) == 0)    lk = LOC_HILLCAVE;
     if (kind && strcmp(kind, ui->dwelling_kind_dungeon) == 0) lk = LOC_DUNGEON;
-    UkScene L = uk_scene(title, gold, loc_texture(s, lk), 2);
-    uk_scene_figure(&L, troop_standing(s, ti), CL_TILE_W);
-    Texture2D face = troop_face(s, ti);
 
     char cb[16], pb[16];
     snprintf(pb, sizeof pb, "%d", pop);
     snprintf(cb, sizeof cb, "%d", cost);
-    ResTemplateVar iv[] = { { "COUNT", pb }, { "TROOP", tr ? tr->name : "" }, { "COST", cb } };
-    char intro[2 * RES_BANNER_LEN + 2];
-    resources_format_template(buf, sizeof buf, bn->dwelling_intro, iv, 3);
-    snprintf(intro, sizeof intro, "%s%s%s", buf, cap <= 0 ? " " : "",
-             cap > 0 ? "" : (tr && g->stats.gold < tr->recruit_cost) ? bn->town_no_gold : bn->army_cannot_handle);
-    uk_scene_intro(&L, intro);
-
     const PromptView *pv = prompt_view();
     bool offer = prompt_is_active() && pending_flow == FLOW_RECRUIT;
-    UkRows rows = { { bn->dwelling_recruit_row, bn->location_leave }, { cap > 0, true } };
-    if (offer && pv->step_open) {
-        uk_scene_rows(&L, 2, -1, uk_rows_fn, &rows, 0);
+    bool counting = offer && pv->step_open;
+    bool dealing = !offer && loc_deal_pending() && !loc_deal_revealed();
+    bool result = !offer && !dealing;
+
+    // One scene throughout. The offer, How many and the outcome each take the
+    // words band and the rows in turn; How many adds the count buttons above
+    // its rows. Nothing is drawn over the scene.
+    UkDoc d = { 0 };
+    static char act_label[RES_BANNER_LEN];
+    if (counting) {
         char heading[RES_BANNER_LEN], avail[RES_BANNER_LEN], each[RES_BANNER_LEN], lead[RES_BANNER_LEN],
              total[RES_BANNER_LEN], vb[16];
-        static char act_label[RES_BANNER_LEN];
         ResTemplateVar hv[] = { { "TROOP", tr ? tr->name : "" } };
         resources_format_template(heading, sizeof heading, bn->count_heading, hv, 1);
         ResTemplateVar av2[] = { { "COUNT", pb }, { "TROOP", tr ? tr->name : "" } };
@@ -1357,18 +1397,39 @@ void modern_overlay_draw_dwelling(const Game *g, const Sprites *s) {
         snprintf(vb, sizeof vb, "%d", pv->step_value);
         ResTemplateVar av[] = { { "COUNT", vb } };
         resources_format_template(act_label, sizeof act_label, bn->count_recruit, av, 1);
-        const char *lines[] = { avail, each, "", lead, total };
-        Color colors[] = { PAL_CLR(WHITE), PAL_CLR(WHITE), PAL_CLR(WHITE), PAL_CLR(WHITE), PAL_CLR(YELLOW) };
-        uk_count_inlay(heading, face, lines, colors, 5, pv->step_value, pv->step_max, act_label, bn->count_cancel,
-                       TOUCH_LIST_PROMPT);
-    } else if (offer) {
-        uk_scene_rows(&L, 2, pv->yn_cursor, uk_rows_fn, &rows, TOUCH_LIST_PROMPT);
-    } else if (loc_deal_pending() && !loc_deal_revealed()) {
-        rows.enabled[0] = true;
-        uk_scene_rows(&L, 2, *loc_deal_cursor(), uk_rows_fn, &rows, TOUCH_LIST_PROMPT);
-    } else {
-        uk_scene_rows(&L, 2, -1, uk_rows_fn, &rows, 0);
+        char line[2 * RES_BANNER_LEN + 4];
+        uk_doc_add(&d, heading, PAL_CLR(YELLOW));
+        snprintf(line, sizeof line, "%s  %s", avail, each);
+        uk_doc_add(&d, line, PAL_CLR(WHITE));
+        uk_doc_add(&d, lead, PAL_CLR(WHITE));
+        uk_doc_add(&d, total, PAL_CLR(YELLOW));
+    } else if (result) {
         loc_deal_text(g, buf, sizeof buf);
-        uk_result_inlay(loc_deal_title(g, false), face, buf, bn->castle_continue, TOUCH_LIST_PROMPT);
+        uk_doc_add(&d, buf, PAL_CLR(WHITE));
+    } else {
+        ResTemplateVar iv[] = { { "COUNT", pb }, { "TROOP", tr ? tr->name : "" }, { "COST", cb } };
+        char intro[2 * RES_BANNER_LEN + 2];
+        resources_format_template(buf, sizeof buf, bn->dwelling_intro, iv, 3);
+        snprintf(intro, sizeof intro, "%s%s%s", buf, cap <= 0 ? " " : "",
+                 cap > 0 ? "" : (tr && g->stats.gold < tr->recruit_cost) ? bn->town_no_gold : bn->army_cannot_handle);
+        uk_doc_add(&d, intro, PAL_CLR(WHITE));
+    }
+
+    int n_rows = result ? 1 : 2;
+    int extra = counting ? ml_count_buttons_height() : 0;
+    UkScene L = uk_scene_for_doc(title, gold, loc_texture(s, lk), n_rows, &d, extra);
+    uk_scene_figure(&L, troop_standing(s, ti), CL_TILE_W);
+    uk_scene_doc(&L, &d);
+
+    if (counting) {
+        ml_count_buttons(L.full.x + UK_INSET, L.extra_y, L.full.w - 2 * UK_INSET, pv->step_value, pv->step_max);
+        UkRows rows = { { act_label, bn->count_cancel }, { true, true } };
+        uk_scene_rows(&L, 2, 0, uk_rows_fn, &rows, TOUCH_LIST_PROMPT);
+    } else if (result) {
+        UkRows cont = { { bn->castle_continue }, { true } };
+        uk_scene_rows(&L, 1, 0, uk_rows_fn, &cont, TOUCH_LIST_PROMPT);
+    } else {
+        UkRows rows = { { bn->dwelling_recruit_row, bn->location_leave }, { cap > 0 || dealing, true } };
+        uk_scene_rows(&L, 2, offer ? pv->yn_cursor : *loc_deal_cursor(), uk_rows_fn, &rows, TOUCH_LIST_PROMPT);
     }
 }

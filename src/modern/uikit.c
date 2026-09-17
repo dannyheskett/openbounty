@@ -213,20 +213,58 @@ static UkScene scene_band(ML_Rect r, int top, Texture2D bd, int band_h) {
 }
 
 UkScene uk_scene_ex(const char *title, const char *right, Texture2D bd, int rows, int intro_min) {
+    return uk_scene_extra(title, right, bd, rows, intro_min, 0);
+}
+
+UkScene uk_scene_extra(const char *title, const char *right, Texture2D bd, int rows, int intro_min,
+                       int extra_h) {
     ML_Rect r = ml_full();
     DrawRectangle(r.x, r.y, r.w, r.h, uk_fill());
     int top = uk_title(r.x, r.y, r.w, title, right, PAL_CLR(YELLOW));
     int n = rows < 1 ? 1 : rows;
     int rows_h = ml_list_height(n);
     int rows_y = r.y + r.h - rows_h;
-    // Whatever the rows and the introduction need comes off the backdrop's top.
-    UkScene L = scene_band(r, top, bd, rows_y - ML_ROW_RULE - intro_min - UK_BAND - top);
+    if (extra_h < 0) extra_h = 0;
+    // Whatever the rows, the words and the block above the rows need comes off
+    // the backdrop's top.
+    UkScene L = scene_band(r, top, bd, rows_y - ML_ROW_RULE - extra_h - intro_min - UK_BAND - top);
     L.rows = n;
     L.rows_y = rows_y;
     L.intro_y = L.scene.y + L.scene.h + UK_BAND;
-    L.intro_h = rows_y - ML_ROW_RULE - L.intro_y;
+    L.extra_h = extra_h;
+    L.extra_y = rows_y - ML_ROW_RULE - extra_h;
+    L.intro_h = L.extra_y - L.intro_y;
     lattice_band_h(r.x, rows_y - ML_ROW_RULE, r.w, ML_ROW_RULE);
     return L;
+}
+
+// The words band's width: the scene's full width less its margins.
+static int scene_words_w(void) { return ml_full().w - 2 * ML_PAD; }
+
+UkScene uk_scene_for_doc(const char *title, const char *right, Texture2D bd, int rows, const UkDoc *doc,
+                         int extra_h) {
+    ML_Rect probe = { 0, 0, scene_words_w(), 0 };
+    int words = doc ? uk_doc_height(doc, probe, 0, 0) : 0;
+    if (words < 2 * uk_line_h()) words = 2 * uk_line_h();
+    return uk_scene_extra(title, right, bd, rows, words + 2 * ML_PAD, extra_h);
+}
+
+void uk_scene_doc(const UkScene *L, const UkDoc *doc) {
+    if (!doc) return;
+    ML_Rect probe = { 0, 0, scene_words_w(), 0 };
+    int words = uk_doc_height(doc, probe, 0, 0);
+    int y = L->intro_y + (L->intro_h - words) / 2;
+    if (y < L->intro_y + ML_PAD) y = L->intro_y + ML_PAD;
+    ML_Rect a = { L->full.x + ML_PAD, y, scene_words_w(), L->intro_y + L->intro_h - y };
+    uk_doc_draw(doc, a, 0, 0, -1, true);
+}
+
+ML_Rect uk_frame(const char *title, const char *right) {
+    // A step of its own over the whole screen: nothing behind it shows.
+    ML_Rect r = ml_full();
+    DrawRectangle(r.x, r.y, r.w, r.h, uk_fill());
+    int top = uk_title(r.x, r.y, r.w, title, right, PAL_CLR(YELLOW));
+    return (ML_Rect){ r.x, top, r.w, r.y + r.h - top };
 }
 
 UkMuster uk_muster(const char *title, const char *right, Texture2D bd, int list_rows, int list_w) {
@@ -372,24 +410,6 @@ void uk_ask_over(const char *title, const char *const lines[], int n_lines,
 }
 
 // ---- in-lays -----------------------------------------------------------------------
-
-void uk_count_inlay(const char *title, Texture2D face, const char *lines[], Color colors[], int nlines,
-                    int value, int max, const char *act_label, const char *cancel_label, int touch_list) {
-    // A card: the troop at 2x and what is on offer beside it, the count row
-    // across the card, then Recruit and Cancel.
-    UkDoc d = { 0 };
-    for (int i = 0; i < nlines; i++) {
-        if (!lines[i]) continue;
-        if (!lines[i][0]) { uk_doc_gap(&d); continue; }
-        uk_doc_add(&d, lines[i], colors ? colors[i] : PAL_CLR(WHITE));
-    }
-    UkCard c = { .title = title, .face = face, .doc = &d, .answers = { act_label, cancel_label },
-                 .n_answers = 2, .cursor = 0, .touch_list = touch_list,
-                 .extra_h = ml_count_buttons_height(), .min_w = UK_INLAY_W };
-    UkCardOut o;
-    uk_card(&c, &o);
-    ml_count_buttons(o.extra.x, o.extra.y, o.extra.w, value, max);
-}
 
 void uk_result_inlay(const char *title, Texture2D face, const char *text, const char *row_label,
                      int touch_list) {
