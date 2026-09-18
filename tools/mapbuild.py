@@ -495,8 +495,9 @@ def place(pack, zid, path, regions_path):
     """regions.json: {"seed": N, "spacing": r, "fixed": {"<army id>": [x, y]},
     "regions": [{"name", "box": [x0,y0,x1,y1], "chests": n, "armies": n}, ...]}
 
-    A static army (a guardian holding a pass) keeps its troops and goes where
-    "fixed" puts it; every other chest and army is re-scattered."""
+    A static army (a guardian holding a pass) and a "fixed" chest (a prize the
+    salt never turns into something else) keep what they are and go where
+    "fixed" puts them; every other chest and army is re-scattered."""
     g, z, W, H, ter, art = terrain_grid(pack, zid, path)
     with open(regions_path) as f:
         spec = json.load(f)
@@ -517,6 +518,15 @@ def place(pack, zid, path, regions_path):
         mark(c["x"], c["y"], 1); mark(c["x"], c["y"] + 1, 1)
     for s in z.get("signs", []):
         mark(s["x"], s["y"], 1)
+    fixed_chests = []
+    for c in z.get("chests", []):
+        if c.get("fixed"):
+            if c["id"] not in spec.get("fixed", {}):
+                die(f"fixed chest {c['id']} needs a place in \"fixed\"")
+            c = dict(c)
+            c["x"], c["y"] = spec["fixed"][c["id"]]
+            fixed_chests.append(c)
+            mark(c["x"], c["y"], 1)
     fixed = []
     for a in z.get("wandering_armies", []):
         if a.get("static"):
@@ -551,9 +561,15 @@ def place(pack, zid, path, regions_path):
             if got < n:
                 die(f"region {reg['name']}: room for {got} of {n} {kind}")
     z["chests"] = [{"id": f"chest_{i + 1}", "x": x, "y": y}
-                   for i, (x, y) in enumerate(chests)]
-    z["wandering_armies"] = [{"x": x, "y": y, "id": f"wandering_army_{i:03d}"}
-                             for i, (x, y) in enumerate(armies)] + fixed
+                   for i, (x, y) in enumerate(chests)] + fixed_chests
+    # The guardians go first: the engine adds at most
+    # world.hostile_armies_per_zone armies and drops the rest of the list.
+    cap = g.get("world", {}).get("hostile_armies_per_zone", 35)
+    if len(fixed) + len(armies) > cap:
+        die(f"{len(fixed)} guardians + {len(armies)} armies is over the zone's "
+            f"cap of {cap}; the engine would drop the rest")
+    z["wandering_armies"] = fixed + [{"x": x, "y": y, "id": f"wandering_army_{i:03d}"}
+                                     for i, (x, y) in enumerate(armies)]
     return g, z, chests, armies
 
 

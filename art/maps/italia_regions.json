@@ -1,18 +1,139 @@
 {
- "_note": "Where tools/mapbuild.py place scatters Italia's chests and wandering armies. Boxes are inclusive tile ranges; only walkable plain grass inside them is used.",
+ "_note": "Where tools/mapbuild.py place scatters Italia's chests and wandering armies. Boxes are inclusive tile ranges; only walkable plain grass inside them is used. Armies total 31 so the four static guardians fit under world.hostile_armies_per_zone (35).",
  "seed": 2026,
  "spacing": 2,
- "fixed": {"guardian_calabria": [53, 85]},
+ "fixed": {
+  "guardian_calabria": [
+   53,
+   85
+  ],
+  "guardian_sardinia_1": [
+   12,
+   85
+  ],
+  "guardian_sardinia_2": [
+   12,
+   90
+  ],
+  "guardian_sardinia_3": [
+   12,
+   94
+  ],
+  "chest_sardinia_trail": [
+   12,
+   95
+  ]
+ },
  "regions": [
-  {"name": "Transpadana, north of the Po", "box": [3, 3, 30, 15], "chests": 5, "armies": 4},
-  {"name": "Cispadana, the Aemilia",       "box": [3, 17, 30, 27], "chests": 5, "armies": 4},
-  {"name": "Liguria",                      "box": [3, 26, 17, 38], "chests": 2, "armies": 2},
-  {"name": "Etruria, west of the Tiber",   "box": [18, 29, 27, 56], "chests": 5, "armies": 5},
-  {"name": "Umbria and Picenum",           "box": [29, 31, 40, 55], "chests": 4, "armies": 4},
-  {"name": "Latium and Campania",          "box": [29, 57, 45, 75], "chests": 5, "armies": 4},
-  {"name": "Apulia, Lucania, Calabria",    "box": [44, 55, 63, 105], "chests": 7, "armies": 6},
-  {"name": "Sardinia",                     "box": [6, 66, 18, 98], "chests": 3, "armies": 2},
-  {"name": "Corsica",                      "box": [9, 44, 17, 65], "chests": 2, "armies": 2},
-  {"name": "Sicilia",                      "box": [29, 106, 50, 126], "chests": 2, "armies": 2}
+  {
+   "name": "Transpadana, north of the Po",
+   "box": [
+    3,
+    3,
+    30,
+    15
+   ],
+   "chests": 5,
+   "armies": 3
+  },
+  {
+   "name": "Cispadana, the Aemilia",
+   "box": [
+    3,
+    17,
+    30,
+    27
+   ],
+   "chests": 5,
+   "armies": 4
+  },
+  {
+   "name": "Liguria",
+   "box": [
+    3,
+    26,
+    17,
+    38
+   ],
+   "chests": 2,
+   "armies": 2
+  },
+  {
+   "name": "Etruria, west of the Tiber",
+   "box": [
+    18,
+    29,
+    27,
+    56
+   ],
+   "chests": 5,
+   "armies": 4
+  },
+  {
+   "name": "Umbria and Picenum",
+   "box": [
+    29,
+    31,
+    40,
+    55
+   ],
+   "chests": 4,
+   "armies": 4
+  },
+  {
+   "name": "Latium and Campania",
+   "box": [
+    29,
+    57,
+    45,
+    75
+   ],
+   "chests": 5,
+   "armies": 3
+  },
+  {
+   "name": "Apulia, Lucania, Calabria",
+   "box": [
+    44,
+    55,
+    63,
+    105
+   ],
+   "chests": 7,
+   "armies": 5
+  },
+  {
+   "name": "Sardinia",
+   "box": [
+    6,
+    66,
+    18,
+    82
+   ],
+   "chests": 2,
+   "armies": 2
+  },
+  {
+   "name": "Corsica",
+   "box": [
+    9,
+    44,
+    17,
+    65
+   ],
+   "chests": 2,
+   "armies": 2
+  },
+  {
+   "name": "Sicilia",
+   "box": [
+    29,
+    106,
+    50,
+    126
+   ],
+   "chests": 2,
+   "armies": 2
+  }
  ]
 }

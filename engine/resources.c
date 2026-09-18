@@ -407,6 +407,8 @@ static void fill_zone_chest(cJSON *j, void *dst) {
     ResZoneChest *c = (ResZoneChest *)dst;
     c->x = json_int(j, "x", 0); c->y = json_int(j, "y", 0);
     copy_str(c->id, sizeof(c->id), json_str(j, "id", ""));
+    cJSON *fx = cJSON_GetObjectItem(j, "fixed");
+    c->fixed = cJSON_IsBool(fx) && cJSON_IsTrue(fx);
 }
 static void fill_zone_artifact(cJSON *j, void *dst) {
     ResZoneArtifact *a = (ResZoneArtifact *)dst;

@@ -924,22 +924,29 @@ void salt_continent(Game *g, int continent, int min_artifacts, int min_navmaps,
                 a->is_static, a);
     }
 
-    int barrel_len = z->chest_count;
+    // The barrel is every chest the salt may use: a "fixed" chest stays a
+    // chest (a prize at the end of a path), so it is left out.
+    int *slots = (int *)calloc((size_t)(z->chest_count > 0 ? z->chest_count : 1), sizeof(int));
+    if (!slots) return;
+    int barrel_len = 0;
+    for (int i = 0; i < z->chest_count; i++)
+        if (!z->chests[i].fixed) slots[barrel_len++] = i;
     int min_len = min_artifacts + min_navmaps + min_orbs +
                   min_telecaves + min_dwellings + min_friendly;
 
-    if (min_len == 0) return;   // nothing to place beyond static foes
+    if (min_len == 0) { free(slots); return; }   // nothing to place beyond static foes
     if (barrel_len < min_len) {
         fprintf(stdout,
                 "salt_continent: zone '%s' has %d chests, need %d. "
                 "Skipping.\n",
                 z->id, barrel_len, min_len);
+        free(slots);
         return;
     }
 
     // Allocate tag barrel.
     SaltKind *barrel = (SaltKind *)calloc((size_t)barrel_len, sizeof(SaltKind));
-    if (!barrel) return;
+    if (!barrel) { free(slots); return; }
 
     // Tag the required number of each kind at random unclaimed positions.
     // This retries until unclaimed (OpenKB's play.c:222-234).
@@ -975,7 +982,7 @@ void salt_continent(Game *g, int continent, int min_artifacts, int min_navmaps,
     int navmap_counter   = 0;
 
     for (int i = 0; i < barrel_len; i++) {
-        const ResZoneChest *slot = &z->chests[i];
+        const ResZoneChest *slot = &z->chests[slots[i]];
         char id[32];
         switch (barrel[i]) {
             case SALT_ARTIFACT: {
@@ -1058,6 +1065,7 @@ void salt_continent(Game *g, int continent, int min_artifacts, int min_navmaps,
     }
 
     free(barrel);
+    free(slots);
 }
 
 void furnish_map(Game *g) {

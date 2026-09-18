@@ -625,6 +625,25 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
     }
 }
 
+// A visit's outcome in the town's result frame: the path and the gold in the
+// title strip, Continue in the rows' column, and the one who answers at 2x
+// beside their words. The Emperor's answers, the Augur's and a dwelling's end
+// this way; the scene gives way to the person.
+static void result_view(const char *title, const char *right, Texture2D face,
+                        const UkDoc *d, const char *cont_label) {
+    ML_Rect b = uk_frame(title, right);
+    int lw = 14 * GW + 2 * ML_PAD;
+    UkRows cont = { { cont_label }, { true } };
+    ml_list_draw(b.x, b.y, lw, b.h, 1, 0, uk_rows_fn, &cont, TOUCH_LIST_PROMPT, uk_ink());
+    lattice_band_v(b.x + lw, b.y, UK_BAND, b.h);
+    ML_Rect a = { b.x + lw + UK_BAND + UK_INSET, b.y + UK_INSET, 0, 0 };
+    a.w = b.x + b.w - UK_INSET - a.x;
+    a.h = b.y + b.h - UK_INSET - a.y;
+    const int size = 2 * CL_TILE_W;
+    if (face.id) uk_picture(face, a.x, a.y, size, size);
+    uk_doc_draw(d, a, face.id ? size : 0, size, -1, true);
+}
+
 // =============================================================================
 //  Castles -- the scene (Recruit / Audience / Leave, or Garrison / Withdraw /
 //  Leave), then each page, question and answer in place of the one before
@@ -962,10 +981,10 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
             uk_doc_add(&rd, msg, PAL_CLR(WHITE));
         }
         if (rd.n > 0) {
-            UkScene A = uk_scene_for_doc(title, agold, throne, 1, &rd, 0);
-            uk_scene_figure(&A, emp_fig, (A.scene.w - 2 * CL_TILE_W) / 2);
-            uk_scene_doc(&A, &rd);
-            uk_scene_rows(&A, 1, 0, uk_rows_fn, &cont, TOUCH_LIST_PROMPT);
+            // His answer: the Emperor's own face beside his words.
+            Texture2D emp_face = rc ? portrait_frame(s, resources_portrait_index(res, rc->special.portrait), 2.0)
+                                    : (Texture2D){ 0 };
+            result_view(title, agold, emp_face, &rd, bn->castle_continue);
             return;
         }
 
@@ -1371,7 +1390,12 @@ void modern_overlay_draw_temple(const Game *g, const Sprites *s) {
         resources_format_template(buf, sizeof buf, bn->temple_intro, iv, 2);
     }
     uk_doc_add(&d, buf, PAL_CLR(WHITE));
-    UkScene L = uk_scene_for_doc(bn->temple_title, gold, loc_texture(s, LOC_ALCOVE), result ? 1 : 2, &d, 0);
+    if (result) {
+        // The Augur's answer: his face beside his words.
+        result_view(bn->temple_title, gold, s ? s->alcove_portrait : (Texture2D){ 0 }, &d, bn->castle_continue);
+        return;
+    }
+    UkScene L = uk_scene_for_doc(bn->temple_title, gold, loc_texture(s, LOC_ALCOVE), 2, &d, 0);
     if (s && s->alcove_figure.id && res->sprites.alcove_figure_w > 0) {
         int ms = res->sprites.alcove_figure_frame_ms > 0 ? res->sprites.alcove_figure_frame_ms : 180;
         Texture2D fig = sprites_strip(s->alcove_figure_anim, s->alcove_figure_frames, (int)(ui_anim_time() * 1000.0 / ms));
@@ -1380,13 +1404,8 @@ void modern_overlay_draw_temple(const Game *g, const Sprites *s) {
                       res->sprites.alcove_figure_w, res->sprites.alcove_figure_h);
     }
     uk_scene_doc(&L, &d);
-    if (result) {
-        UkRows cont = { { bn->castle_continue }, { true } };
-        uk_scene_rows(&L, 1, 0, uk_rows_fn, &cont, TOUCH_LIST_PROMPT);
-    } else {
-        UkRows rows = { { bn->temple_learn, bn->location_leave }, { true, true } };
-        uk_scene_rows(&L, 2, asking ? pv->yn_cursor : *loc_deal_cursor(), uk_rows_fn, &rows, TOUCH_LIST_PROMPT);
-    }
+    UkRows rows = { { bn->temple_learn, bn->location_leave }, { true, true } };
+    uk_scene_rows(&L, 2, asking ? pv->yn_cursor : *loc_deal_cursor(), uk_rows_fn, &rows, TOUCH_LIST_PROMPT);
 }
 
 void modern_overlay_draw_dwelling(const Game *g, const Sprites *s) {
@@ -1449,7 +1468,12 @@ void modern_overlay_draw_dwelling(const Game *g, const Sprites *s) {
         uk_doc_add(&d, intro, PAL_CLR(WHITE));
     }
 
-    int n_rows = result ? 1 : 2;
+    if (result) {
+        // The outcome: the troop's own face beside the words.
+        result_view(title, gold, troop_face(s, ti), &d, bn->castle_continue);
+        return;
+    }
+    int n_rows = 2;
     int extra = counting ? ml_count_buttons_height() : 0;
     UkScene L = uk_scene_for_doc(title, gold, loc_texture(s, lk), n_rows, &d, extra);
     uk_scene_figure(&L, troop_standing(s, ti), CL_TILE_W);
@@ -1459,9 +1483,6 @@ void modern_overlay_draw_dwelling(const Game *g, const Sprites *s) {
         ml_count_buttons(L.full.x + UK_INSET, L.extra_y, L.full.w - 2 * UK_INSET, pv->step_value, pv->step_max);
         UkRows rows = { { act_label, bn->count_cancel }, { true, true } };
         uk_scene_rows(&L, 2, 0, uk_rows_fn, &rows, TOUCH_LIST_PROMPT);
-    } else if (result) {
-        UkRows cont = { { bn->castle_continue }, { true } };
-        uk_scene_rows(&L, 1, 0, uk_rows_fn, &cont, TOUCH_LIST_PROMPT);
     } else {
         UkRows rows = { { bn->dwelling_recruit_row, bn->location_leave }, { cap > 0 || dealing, true } };
         uk_scene_rows(&L, 2, offer ? pv->yn_cursor : *loc_deal_cursor(), uk_rows_fn, &rows, TOUCH_LIST_PROMPT);

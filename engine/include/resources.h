@@ -362,6 +362,7 @@ typedef struct {
 typedef struct {
     int  x, y;
     char id[RES_ID_LEN];
+    bool fixed;          // "fixed": true -- always a chest, never salted
 } ResZoneChest;
 
 typedef struct {

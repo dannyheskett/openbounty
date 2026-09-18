@@ -336,13 +336,15 @@ static ML_Rect message_rect(void) {
 
 int uk_message_text_w(void) { return message_rect().w - 2 * UK_INSET; }
 
-// The span uk_ask_over draws across: a map message's width and place, so a
-// note or a question over a battlefield is the same box the map uses. Its foot
-// is the current area's (the field in combat).
+// The span uk_ask_over draws across: over a battlefield, the field itself, so
+// a note or a question in combat sits centred on the fight; elsewhere a map
+// message's width and place.
 static ML_Rect ask_over_rect(void) {
     ML_Rect a;
-    if (!ml_field(&a)) a = ml_area();
     int sp = ml_space();
+    if (ml_field(&a))
+        return (ML_Rect){ a.x + sp, a.y, a.w - 2 * sp, a.h - sp };
+    a = ml_area();
     return (ML_Rect){ CL_MAP_X + sp, a.y, CL_MAP_W - 2 * sp, a.h - sp };
 }
 

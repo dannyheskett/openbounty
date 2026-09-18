@@ -363,12 +363,12 @@
 					"y":	64
 				}, {
 					"id":	"chest_25",
-					"x":	31,
-					"y":	63
+					"x":	45,
+					"y":	74
 				}, {
 					"id":	"chest_26",
 					"x":	45,
-					"y":	74
+					"y":	59
 				}, {
 					"id":	"chest_27",
 					"x":	53,
@@ -400,175 +400,36 @@
 				}, {
 					"id":	"chest_34",
 					"x":	10,
-					"y":	76
+					"y":	82
 				}, {
 					"id":	"chest_35",
-					"x":	12,
-					"y":	97
+					"x":	16,
+					"y":	73
 				}, {
 					"id":	"chest_36",
-					"x":	15,
-					"y":	75
-				}, {
-					"id":	"chest_37",
 					"x":	16,
 					"y":	55
 				}, {
+					"id":	"chest_37",
+					"x":	14,
+					"y":	60
+				}, {
 					"id":	"chest_38",
-					"x":	13,
-					"y":	55
+					"x":	37,
+					"y":	117
 				}, {
 					"id":	"chest_39",
-					"x":	32,
-					"y":	110
+					"x":	46,
+					"y":	111
 				}, {
-					"id":	"chest_40",
-					"x":	44,
-					"y":	113
+					"id":	"chest_sardinia_trail",
+					"x":	12,
+					"y":	95,
+					"fixed":	true
 				}],
 			"artifacts":	[],
 			"dwellings":	[],
 			"wandering_armies":	[{
-					"x":	9,
-					"y":	10,
-					"id":	"wandering_army_000"
-				}, {
-					"x":	10,
-					"y":	3,
-					"id":	"wandering_army_001"
-				}, {
-					"x":	30,
-					"y":	9,
-					"id":	"wandering_army_002"
-				}, {
-					"x":	17,
-					"y":	6,
-					"id":	"wandering_army_003"
-				}, {
-					"x":	27,
-					"y":	17,
-					"id":	"wandering_army_004"
-				}, {
-					"x":	18,
-					"y":	22,
-					"id":	"wandering_army_005"
-				}, {
-					"x":	25,
-					"y":	27,
-					"id":	"wandering_army_006"
-				}, {
-					"x":	15,
-					"y":	27,
-					"id":	"wandering_army_007"
-				}, {
-					"x":	17,
-					"y":	32,
-					"id":	"wandering_army_008"
-				}, {
-					"x":	11,
-					"y":	26,
-					"id":	"wandering_army_009"
-				}, {
-					"x":	27,
-					"y":	36,
-					"id":	"wandering_army_010"
-				}, {
-					"x":	26,
-					"y":	44,
-					"id":	"wandering_army_011"
-				}, {
-					"x":	20,
-					"y":	38,
-					"id":	"wandering_army_012"
-				}, {
-					"x":	26,
-					"y":	55,
-					"id":	"wandering_army_013"
-				}, {
-					"x":	27,
-					"y":	39,
-					"id":	"wandering_army_014"
-				}, {
-					"x":	29,
-					"y":	45,
-					"id":	"wandering_army_015"
-				}, {
-					"x":	33,
-					"y":	40,
-					"id":	"wandering_army_016"
-				}, {
-					"x":	34,
-					"y":	32,
-					"id":	"wandering_army_017"
-				}, {
-					"x":	32,
-					"y":	51,
-					"id":	"wandering_army_018"
-				}, {
-					"x":	45,
-					"y":	59,
-					"id":	"wandering_army_019"
-				}, {
-					"x":	42,
-					"y":	59,
-					"id":	"wandering_army_020"
-				}, {
-					"x":	36,
-					"y":	59,
-					"id":	"wandering_army_021"
-				}, {
-					"x":	37,
-					"y":	67,
-					"id":	"wandering_army_022"
-				}, {
-					"x":	50,
-					"y":	97,
-					"id":	"wandering_army_023"
-				}, {
-					"x":	47,
-					"y":	63,
-					"id":	"wandering_army_024"
-				}, {
-					"x":	60,
-					"y":	84,
-					"id":	"wandering_army_025"
-				}, {
-					"x":	47,
-					"y":	82,
-					"id":	"wandering_army_026"
-				}, {
-					"x":	49,
-					"y":	60,
-					"id":	"wandering_army_027"
-				}, {
-					"x":	54,
-					"y":	71,
-					"id":	"wandering_army_028"
-				}, {
-					"x":	8,
-					"y":	72,
-					"id":	"wandering_army_029"
-				}, {
-					"x":	10,
-					"y":	87,
-					"id":	"wandering_army_030"
-				}, {
-					"x":	11,
-					"y":	59,
-					"id":	"wandering_army_031"
-				}, {
-					"x":	13,
-					"y":	47,
-					"id":	"wandering_army_032"
-				}, {
-					"x":	42,
-					"y":	123,
-					"id":	"wandering_army_033"
-				}, {
-					"x":	40,
-					"y":	108,
-					"id":	"wandering_army_034"
-				}, {
 					"x":	53,
 					"y":	85,
 					"id":	"guardian_calabria",
@@ -589,6 +450,178 @@
 						"troop":	"dragons",
 						"count":	2
 					}]
+				}, {
+					"x":	12,
+					"y":	85,
+					"id":	"guardian_sardinia_1",
+					"static":	true,
+					"army":	[{
+						"troop":	"militia",
+						"count":	12
+					}, {
+						"troop":	"orcs",
+						"count":	8
+					}, {
+						"troop":	"archers",
+						"count":	4
+					}]
+				}, {
+					"x":	12,
+					"y":	90,
+					"id":	"guardian_sardinia_2",
+					"static":	true,
+					"army":	[{
+						"troop":	"pikemen",
+						"count":	12
+					}, {
+						"troop":	"nomads",
+						"count":	8
+					}, {
+						"troop":	"ghosts",
+						"count":	6
+					}]
+				}, {
+					"x":	12,
+					"y":	94,
+					"id":	"guardian_sardinia_3",
+					"static":	true,
+					"army":	[{
+						"troop":	"ogres",
+						"count":	8
+					}, {
+						"troop":	"trolls",
+						"count":	6
+					}, {
+						"troop":	"vampires",
+						"count":	5
+					}, {
+						"troop":	"knights",
+						"count":	4
+					}]
+				}, {
+					"x":	9,
+					"y":	10,
+					"id":	"wandering_army_000"
+				}, {
+					"x":	10,
+					"y":	3,
+					"id":	"wandering_army_001"
+				}, {
+					"x":	30,
+					"y":	9,
+					"id":	"wandering_army_002"
+				}, {
+					"x":	27,
+					"y":	17,
+					"id":	"wandering_army_003"
+				}, {
+					"x":	18,
+					"y":	22,
+					"id":	"wandering_army_004"
+				}, {
+					"x":	25,
+					"y":	27,
+					"id":	"wandering_army_005"
+				}, {
+					"x":	15,
+					"y":	27,
+					"id":	"wandering_army_006"
+				}, {
+					"x":	17,
+					"y":	32,
+					"id":	"wandering_army_007"
+				}, {
+					"x":	11,
+					"y":	26,
+					"id":	"wandering_army_008"
+				}, {
+					"x":	27,
+					"y":	36,
+					"id":	"wandering_army_009"
+				}, {
+					"x":	26,
+					"y":	44,
+					"id":	"wandering_army_010"
+				}, {
+					"x":	20,
+					"y":	38,
+					"id":	"wandering_army_011"
+				}, {
+					"x":	26,
+					"y":	55,
+					"id":	"wandering_army_012"
+				}, {
+					"x":	29,
+					"y":	45,
+					"id":	"wandering_army_013"
+				}, {
+					"x":	33,
+					"y":	40,
+					"id":	"wandering_army_014"
+				}, {
+					"x":	34,
+					"y":	32,
+					"id":	"wandering_army_015"
+				}, {
+					"x":	32,
+					"y":	51,
+					"id":	"wandering_army_016"
+				}, {
+					"x":	42,
+					"y":	59,
+					"id":	"wandering_army_017"
+				}, {
+					"x":	36,
+					"y":	59,
+					"id":	"wandering_army_018"
+				}, {
+					"x":	37,
+					"y":	67,
+					"id":	"wandering_army_019"
+				}, {
+					"x":	50,
+					"y":	97,
+					"id":	"wandering_army_020"
+				}, {
+					"x":	47,
+					"y":	63,
+					"id":	"wandering_army_021"
+				}, {
+					"x":	60,
+					"y":	84,
+					"id":	"wandering_army_022"
+				}, {
+					"x":	47,
+					"y":	82,
+					"id":	"wandering_army_023"
+				}, {
+					"x":	49,
+					"y":	60,
+					"id":	"wandering_army_024"
+				}, {
+					"x":	13,
+					"y":	68,
+					"id":	"wandering_army_025"
+				}, {
+					"x":	8,
+					"y":	71,
+					"id":	"wandering_army_026"
+				}, {
+					"x":	15,
+					"y":	47,
+					"id":	"wandering_army_027"
+				}, {
+					"x":	12,
+					"y":	64,
+					"id":	"wandering_army_028"
+				}, {
+					"x":	45,
+					"y":	107,
+					"id":	"wandering_army_029"
+				}, {
+					"x":	45,
+					"y":	122,
+					"id":	"wandering_army_030"
 				}],
 			"armies":	[]
 		}, {
