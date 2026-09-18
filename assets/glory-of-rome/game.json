@@ -113,13 +113,13 @@
 			"height":	128,
 			"neighbors":	["galliae", "africa", "oriens"],
 			"hero_spawn":	{
-				"x":	37,
-				"y":	46
+				"x":	31,
+				"y":	58
 			},
 			"is_home":	true,
 			"home_spawn":	{
-				"x":	37,
-				"y":	46
+				"x":	31,
+				"y":	58
 			},
 			"alcove_art":	"alcove",
 			"pontifex":	"pontifex_italia",
@@ -127,8 +127,8 @@
 			"boatmaster":	"boatmaster_italia",
 			"siegemaster":	"siege_italia",
 			"magic_alcove":	{
-				"x":	8,
-				"y":	16
+				"x":	13,
+				"y":	80
 			},
 			"salt":	{
 				"artifacts":	2,
@@ -141,442 +141,454 @@
 				"dwelling_range":	[0, 14]
 			},
 			"signs":	[{
-					"x":	25,
-					"y":	18,
+					"x":	30,
+					"y":	31,
 					"id":	"sign_italia_1",
 					"title":	"The Rubicon",
-					"body":	"Beyond this stream lies Italia herself. Cross under arms and there is no return."
+					"body":	"The old bridge is down. No army crosses without the gods' leave; only a pontifex may bridge it."
 				}, {
-					"x":	42,
-					"y":	56,
+					"x":	32,
+					"y":	61,
 					"id":	"sign_italia_2",
 					"title":	"The Via Appia",
 					"body":	"The Appian Way runs south to Brundisium and the sea."
 				}, {
-					"x":	36,
-					"y":	46,
+					"x":	33,
+					"y":	58,
 					"id":	"sign_italia_3",
 					"title":	"Roma",
 					"body":	"All roads lead here. Emperor Traianus holds court within."
 				}, {
-					"x":	30,
-					"y":	50,
+					"x":	34,
+					"y":	43,
 					"id":	"sign_italia_4",
 					"title":	"The Apennines",
 					"body":	"This stony spine divides the peninsula, coast from coast."
 				}, {
-					"x":	37,
-					"y":	100,
+					"x":	50,
+					"y":	106,
 					"id":	"sign_italia_5",
 					"title":	"The Strait",
 					"body":	"Across the water lies Sicilia, granary of the Republic."
+				}, {
+					"x":	29,
+					"y":	56,
+					"id":	"sign_italia_6",
+					"title":	"The Tiber",
+					"body":	"Father Tiber, who carries the grain up from Ostia to Rome."
+				}, {
+					"x":	15,
+					"y":	15,
+					"id":	"sign_italia_7",
+					"title":	"The Padus",
+					"body":	"The Padus, king of Italia's rivers, runs from the Alps to the Adriatic."
 				}],
 			"towns":	[{
-					"x":	42,
-					"y":	43,
+					"x":	30,
+					"y":	61,
 					"id":	"ostia"
 				}, {
-					"x":	37,
-					"y":	62,
+					"x":	38,
+					"y":	71,
 					"id":	"puteoli"
 				}, {
-					"x":	45,
-					"y":	72,
+					"x":	37,
+					"y":	69,
 					"id":	"cumae"
 				}, {
-					"x":	45,
-					"y":	84,
+					"x":	35,
+					"y":	65,
 					"id":	"tarracina"
 				}, {
-					"x":	33,
-					"y":	99,
+					"x":	18,
+					"y":	35,
 					"id":	"pisae"
 				}, {
-					"x":	42,
-					"y":	20,
+					"x":	37,
+					"y":	36,
 					"id":	"ancona"
 				}, {
-					"x":	18,
-					"y":	10,
+					"x":	28,
+					"y":	24,
 					"id":	"ravenna"
 				}, {
-					"x":	7,
+					"x":	14,
 					"y":	12,
 					"id":	"mediolanum"
 				}, {
-					"x":	47,
-					"y":	78,
+					"x":	56,
+					"y":	95,
 					"id":	"croton"
 				}, {
-					"x":	37,
-					"y":	45,
+					"x":	31,
+					"y":	57,
 					"id":	"roma"
 				}],
 			"castles":	[{
-					"x":	38,
-					"y":	45,
+					"x":	32,
+					"y":	56,
 					"id":	"castle_italia_1"
 				}, {
-					"x":	41,
-					"y":	53,
+					"x":	40,
+					"y":	67,
 					"id":	"castle_italia_2"
 				}, {
-					"x":	39,
-					"y":	62,
+					"x":	40,
+					"y":	71,
 					"id":	"castle_italia_3"
 				}, {
-					"x":	46,
-					"y":	74,
+					"x":	43,
+					"y":	69,
 					"id":	"castle_italia_4"
 				}, {
-					"x":	46,
-					"y":	86,
+					"x":	56,
+					"y":	77,
 					"id":	"castle_italia_5"
 				}, {
-					"x":	35,
-					"y":	101,
+					"x":	48,
+					"y":	105,
 					"id":	"castle_italia_6"
 				}, {
-					"x":	44,
-					"y":	21,
+					"x":	32,
+					"y":	32,
 					"id":	"castle_italia_7"
 				}, {
-					"x":	20,
-					"y":	10,
+					"x":	23,
+					"y":	12,
 					"id":	"castle_italia_8"
 				}, {
-					"x":	9,
-					"y":	14,
+					"x":	13,
+					"y":	26,
 					"id":	"castle_italia_9"
 				}, {
-					"x":	48,
-					"y":	80,
+					"x":	60,
+					"y":	74,
 					"id":	"castle_italia_10"
 				}],
 			"chests":	[{
 					"id":	"chest_1",
-					"x":	6,
-					"y":	9
+					"x":	9,
+					"y":	13
 				}, {
 					"id":	"chest_2",
-					"x":	9,
-					"y":	9
+					"x":	27,
+					"y":	13
 				}, {
 					"id":	"chest_3",
-					"x":	12,
-					"y":	9
+					"x":	27,
+					"y":	8
 				}, {
 					"id":	"chest_4",
-					"x":	15,
+					"x":	16,
 					"y":	9
 				}, {
 					"id":	"chest_5",
-					"x":	18,
-					"y":	9
+					"x":	5,
+					"y":	3
 				}, {
 					"id":	"chest_6",
-					"x":	22,
-					"y":	9
+					"x":	21,
+					"y":	18
 				}, {
 					"id":	"chest_7",
-					"x":	24,
-					"y":	9
+					"x":	13,
+					"y":	22
 				}, {
 					"id":	"chest_8",
-					"x":	27,
-					"y":	9
+					"x":	5,
+					"y":	18
 				}, {
 					"id":	"chest_9",
-					"x":	30,
-					"y":	9
+					"x":	5,
+					"y":	21
 				}, {
 					"id":	"chest_10",
-					"x":	33,
-					"y":	9
+					"x":	25,
+					"y":	20
 				}, {
 					"id":	"chest_11",
-					"x":	36,
-					"y":	9
+					"x":	9,
+					"y":	29
 				}, {
 					"id":	"chest_12",
-					"x":	39,
-					"y":	9
+					"x":	3,
+					"y":	31
 				}, {
 					"id":	"chest_13",
-					"x":	42,
-					"y":	9
+					"x":	21,
+					"y":	46
 				}, {
 					"id":	"chest_14",
-					"x":	45,
-					"y":	9
+					"x":	24,
+					"y":	41
 				}, {
 					"id":	"chest_15",
-					"x":	48,
-					"y":	9
+					"x":	25,
+					"y":	51
 				}, {
 					"id":	"chest_16",
-					"x":	51,
-					"y":	9
+					"x":	24,
+					"y":	33
 				}, {
 					"id":	"chest_17",
-					"x":	54,
-					"y":	9
+					"x":	21,
+					"y":	34
 				}, {
 					"id":	"chest_18",
-					"x":	57,
-					"y":	9
+					"x":	36,
+					"y":	55
 				}, {
 					"id":	"chest_19",
-					"x":	6,
-					"y":	12
+					"x":	30,
+					"y":	54
 				}, {
 					"id":	"chest_20",
-					"x":	9,
-					"y":	12
+					"x":	30,
+					"y":	42
 				}, {
 					"id":	"chest_21",
-					"x":	12,
-					"y":	12
+					"x":	36,
+					"y":	44
 				}, {
 					"id":	"chest_22",
-					"x":	24,
-					"y":	12
+					"x":	42,
+					"y":	75
 				}, {
 					"id":	"chest_23",
-					"x":	27,
-					"y":	12
+					"x":	39,
+					"y":	60
 				}, {
 					"id":	"chest_24",
-					"x":	30,
-					"y":	12
+					"x":	40,
+					"y":	64
 				}, {
 					"id":	"chest_25",
-					"x":	42,
-					"y":	12
+					"x":	31,
+					"y":	63
 				}, {
 					"id":	"chest_26",
 					"x":	45,
-					"y":	12
+					"y":	74
 				}, {
 					"id":	"chest_27",
-					"x":	48,
-					"y":	12
+					"x":	53,
+					"y":	102
 				}, {
 					"id":	"chest_28",
-					"x":	51,
-					"y":	12
+					"x":	50,
+					"y":	93
 				}, {
 					"id":	"chest_29",
-					"x":	54,
-					"y":	12
+					"x":	49,
+					"y":	102
 				}, {
 					"id":	"chest_30",
-					"x":	57,
-					"y":	11
+					"x":	51,
+					"y":	64
 				}, {
 					"id":	"chest_31",
-					"x":	6,
-					"y":	14
+					"x":	54,
+					"y":	68
 				}, {
 					"id":	"chest_32",
-					"x":	9,
-					"y":	15
+					"x":	60,
+					"y":	80
 				}, {
 					"id":	"chest_33",
-					"x":	12,
-					"y":	16
+					"x":	51,
+					"y":	78
 				}, {
 					"id":	"chest_34",
-					"x":	24,
-					"y":	15
+					"x":	10,
+					"y":	76
 				}, {
 					"id":	"chest_35",
-					"x":	28,
-					"y":	15
+					"x":	12,
+					"y":	97
 				}, {
 					"id":	"chest_36",
-					"x":	30,
-					"y":	15
+					"x":	15,
+					"y":	75
 				}, {
 					"id":	"chest_37",
-					"x":	39,
-					"y":	15
+					"x":	16,
+					"y":	55
 				}, {
 					"id":	"chest_38",
-					"x":	42,
-					"y":	15
+					"x":	13,
+					"y":	55
 				}, {
 					"id":	"chest_39",
-					"x":	45,
-					"y":	16
+					"x":	32,
+					"y":	110
 				}, {
 					"id":	"chest_40",
-					"x":	48,
-					"y":	15
+					"x":	44,
+					"y":	113
 				}],
 			"artifacts":	[],
 			"dwellings":	[],
 			"wandering_armies":	[{
-					"x":	26,
-					"y":	57,
+					"x":	9,
+					"y":	10,
 					"id":	"wandering_army_000"
 				}, {
-					"x":	36,
-					"y":	56,
+					"x":	10,
+					"y":	3,
 					"id":	"wandering_army_001"
 				}, {
-					"x":	47,
-					"y":	58,
+					"x":	30,
+					"y":	9,
 					"id":	"wandering_army_002"
 				}, {
-					"x":	23,
-					"y":	10,
+					"x":	17,
+					"y":	6,
 					"id":	"wandering_army_003"
 				}, {
-					"x":	24,
-					"y":	52,
+					"x":	27,
+					"y":	17,
 					"id":	"wandering_army_004"
 				}, {
-					"x":	20,
-					"y":	48,
+					"x":	18,
+					"y":	22,
 					"id":	"wandering_army_005"
 				}, {
-					"x":	43,
-					"y":	51,
+					"x":	25,
+					"y":	27,
 					"id":	"wandering_army_006"
 				}, {
-					"x":	45,
-					"y":	52,
+					"x":	15,
+					"y":	27,
 					"id":	"wandering_army_007"
 				}, {
-					"x":	18,
-					"y":	41,
+					"x":	17,
+					"y":	32,
 					"id":	"wandering_army_008"
 				}, {
-					"x":	16,
-					"y":	37,
+					"x":	11,
+					"y":	26,
 					"id":	"wandering_army_009"
 				}, {
-					"x":	32,
-					"y":	46,
+					"x":	27,
+					"y":	36,
 					"id":	"wandering_army_010"
 				}, {
-					"x":	44,
-					"y":	46,
+					"x":	26,
+					"y":	44,
 					"id":	"wandering_army_011"
 				}, {
-					"x":	47,
-					"y":	12,
+					"x":	20,
+					"y":	38,
 					"id":	"wandering_army_012"
 				}, {
-					"x":	14,
-					"y":	35,
+					"x":	26,
+					"y":	55,
 					"id":	"wandering_army_013"
 				}, {
-					"x":	16,
+					"x":	27,
 					"y":	39,
 					"id":	"wandering_army_014"
 				}, {
-					"x":	15,
-					"y":	35,
+					"x":	29,
+					"y":	45,
 					"id":	"wandering_army_015"
 				}, {
-					"x":	18,
-					"y":	37,
+					"x":	33,
+					"y":	40,
 					"id":	"wandering_army_016"
 				}, {
-					"x":	14,
-					"y":	34,
+					"x":	34,
+					"y":	32,
 					"id":	"wandering_army_017"
 				}, {
-					"x":	46,
-					"y":	23,
+					"x":	32,
+					"y":	51,
 					"id":	"wandering_army_018"
 				}, {
-					"x":	11,
-					"y":	24,
+					"x":	45,
+					"y":	59,
 					"id":	"wandering_army_019"
 				}, {
-					"x":	48,
-					"y":	20,
+					"x":	42,
+					"y":	59,
 					"id":	"wandering_army_020"
 				}, {
-					"x":	31,
-					"y":	24,
+					"x":	36,
+					"y":	59,
 					"id":	"wandering_army_021"
 				}, {
-					"x":	11,
-					"y":	22,
+					"x":	37,
+					"y":	67,
 					"id":	"wandering_army_022"
 				}, {
-					"x":	21,
-					"y":	22,
+					"x":	50,
+					"y":	97,
 					"id":	"wandering_army_023"
 				}, {
-					"x":	54,
-					"y":	16,
+					"x":	47,
+					"y":	63,
 					"id":	"wandering_army_024"
 				}, {
-					"x":	13,
-					"y":	18,
+					"x":	60,
+					"y":	84,
 					"id":	"wandering_army_025"
 				}, {
-					"x":	41,
-					"y":	18,
+					"x":	47,
+					"y":	82,
 					"id":	"wandering_army_026"
 				}, {
-					"x":	23,
-					"y":	15,
+					"x":	49,
+					"y":	60,
 					"id":	"wandering_army_027"
 				}, {
-					"x":	32,
-					"y":	16,
+					"x":	54,
+					"y":	71,
 					"id":	"wandering_army_028"
 				}, {
-					"x":	5,
-					"y":	10,
+					"x":	8,
+					"y":	72,
 					"id":	"wandering_army_029"
 				}, {
-					"x":	42,
-					"y":	10,
+					"x":	10,
+					"y":	87,
 					"id":	"wandering_army_030"
 				}, {
-					"x":	13,
-					"y":	9,
+					"x":	11,
+					"y":	59,
 					"id":	"wandering_army_031"
 				}, {
-					"x":	23,
-					"y":	9,
+					"x":	13,
+					"y":	47,
 					"id":	"wandering_army_032"
 				}, {
-					"x":	49,
-					"y":	9,
+					"x":	42,
+					"y":	123,
 					"id":	"wandering_army_033"
 				}, {
-					"x":	31,
-					"y":	9,
+					"x":	40,
+					"y":	108,
 					"id":	"wandering_army_034"
 				}, {
-					"x":	32,
-					"y":	95,
+					"x":	53,
+					"y":	85,
 					"id":	"guardian_calabria",
 					"static":	true,
 					"army":	[{
-							"troop":	"barbarians",
-							"count":	30
-						}, {
-							"troop":	"trolls",
-							"count":	20
-						}, {
-							"troop":	"ogres",
-							"count":	12
-						}, {
-							"troop":	"knights",
-							"count":	8
-						}, {
-							"troop":	"dragons",
-							"count":	2
-						}]
+						"troop":	"barbarians",
+						"count":	30
+					}, {
+						"troop":	"trolls",
+						"count":	20
+					}, {
+						"troop":	"ogres",
+						"count":	12
+					}, {
+						"troop":	"knights",
+						"count":	8
+					}, {
+						"troop":	"dragons",
+						"count":	2
+					}]
 				}],
 			"armies":	[]
 		}, {
@@ -1348,15 +1360,15 @@
 			"informant":	"informant_market",
 			"name":	"Ostia",
 			"art":	"town_italia",
-			"x":	42,
-			"y":	43,
+			"x":	30,
+			"y":	61,
 			"boat":	{
-				"x":	43,
-				"y":	42
+				"x":	29,
+				"y":	61
 			},
 			"gate":	{
-				"x":	42,
-				"y":	44
+				"x":	30,
+				"y":	62
 			},
 			"zone":	"italia",
 			"intel_castle":	"castle_italia_2",
@@ -1370,15 +1382,15 @@
 			"informant":	"informant_taverner",
 			"name":	"Puteoli",
 			"art":	"town_italia",
-			"x":	37,
-			"y":	62,
+			"x":	38,
+			"y":	71,
 			"boat":	{
-				"x":	-1,
-				"y":	-1
+				"x":	37,
+				"y":	71
 			},
 			"gate":	{
-				"x":	37,
-				"y":	63
+				"x":	38,
+				"y":	72
 			},
 			"zone":	"italia",
 			"intel_castle":	"castle_italia_3"
@@ -1391,15 +1403,15 @@
 			"informant":	"informant_urchin",
 			"name":	"Cumae",
 			"art":	"town_italia",
-			"x":	45,
-			"y":	72,
+			"x":	37,
+			"y":	69,
 			"boat":	{
 				"x":	-1,
 				"y":	-1
 			},
 			"gate":	{
-				"x":	45,
-				"y":	73
+				"x":	37,
+				"y":	70
 			},
 			"zone":	"italia",
 			"intel_castle":	"castle_italia_4"
@@ -1412,15 +1424,15 @@
 			"informant":	"informant_veteran",
 			"name":	"Tarracina",
 			"art":	"town_italia",
-			"x":	45,
-			"y":	84,
+			"x":	35,
+			"y":	65,
 			"boat":	{
 				"x":	-1,
 				"y":	-1
 			},
 			"gate":	{
-				"x":	45,
-				"y":	85
+				"x":	34,
+				"y":	65
 			},
 			"zone":	"italia",
 			"intel_castle":	"castle_italia_5"
@@ -1433,15 +1445,15 @@
 			"informant":	"informant_market",
 			"name":	"Pisae",
 			"art":	"town_italia",
-			"x":	33,
-			"y":	99,
+			"x":	18,
+			"y":	35,
 			"boat":	{
-				"x":	29,
-				"y":	98
+				"x":	17,
+				"y":	35
 			},
 			"gate":	{
-				"x":	33,
-				"y":	100
+				"x":	18,
+				"y":	36
 			},
 			"zone":	"italia",
 			"intel_castle":	"castle_italia_6"
@@ -1454,15 +1466,15 @@
 			"informant":	"informant_taverner",
 			"name":	"Ancona",
 			"art":	"town_italia",
-			"x":	42,
-			"y":	20,
+			"x":	37,
+			"y":	36,
 			"boat":	{
-				"x":	46,
-				"y":	24
+				"x":	38,
+				"y":	36
 			},
 			"gate":	{
-				"x":	42,
-				"y":	21
+				"x":	37,
+				"y":	37
 			},
 			"zone":	"italia",
 			"intel_castle":	"castle_italia_7"
@@ -1475,15 +1487,15 @@
 			"informant":	"informant_veteran",
 			"name":	"Ravenna",
 			"art":	"town_italia",
-			"x":	18,
-			"y":	10,
+			"x":	28,
+			"y":	24,
 			"boat":	{
 				"x":	-1,
 				"y":	-1
 			},
 			"gate":	{
-				"x":	18,
-				"y":	11
+				"x":	28,
+				"y":	25
 			},
 			"zone":	"italia",
 			"intel_castle":	"castle_italia_8"
@@ -1496,14 +1508,14 @@
 			"informant":	"informant_urchin",
 			"name":	"Mediolanum",
 			"art":	"town_italia",
-			"x":	7,
+			"x":	14,
 			"y":	12,
 			"boat":	{
-				"x":	5,
-				"y":	14
+				"x":	-1,
+				"y":	-1
 			},
 			"gate":	{
-				"x":	7,
+				"x":	14,
 				"y":	13
 			},
 			"zone":	"italia",
@@ -1517,15 +1529,15 @@
 			"informant":	"informant_market",
 			"name":	"Croton",
 			"art":	"town_italia",
-			"x":	47,
-			"y":	78,
+			"x":	56,
+			"y":	95,
 			"boat":	{
-				"x":	-1,
-				"y":	-1
+				"x":	57,
+				"y":	95
 			},
 			"gate":	{
-				"x":	47,
-				"y":	79
+				"x":	55,
+				"y":	95
 			},
 			"zone":	"italia",
 			"intel_castle":	"castle_italia_10"
@@ -1874,15 +1886,15 @@
 			"informant":	"informant_urchin",
 				"name":	"Roma",
 				"art":	"town_rome",
-				"x":	37,
-				"y":	45,
+				"x":	31,
+				"y":	57,
 				"boat":	{
 					"x":	-1,
 					"y":	-1
 				},
 				"gate":	{
-					"x":	37,
-					"y":	46
+					"x":	31,
+					"y":	58
 				},
 				"zone":	"italia",
 				"intel_castle":	"",
@@ -1893,8 +1905,8 @@
 			"index":	0,
 			"id":	"castle_italia_1",
 			"name":	"Roma",
-			"x":	38,
-			"y":	45,
+			"x":	32,
+			"y":	56,
 			"zone":	"italia",
 			"difficulty_tier":	0,
 			"art":	"castle_palatium",
@@ -1931,8 +1943,8 @@
 			"index":	0,
 			"id":	"castle_italia_2",
 			"name":	"Capua",
-			"x":	41,
-			"y":	53,
+			"x":	40,
+			"y":	67,
 			"zone":	"italia",
 			"difficulty_tier":	0,
 			"footprint":	"1x1"
@@ -1940,8 +1952,8 @@
 			"index":	0,
 			"id":	"castle_italia_3",
 			"name":	"Neapolis",
-			"x":	39,
-			"y":	62,
+			"x":	40,
+			"y":	71,
 			"zone":	"italia",
 			"difficulty_tier":	0,
 			"footprint":	"1x1"
@@ -1949,8 +1961,8 @@
 			"index":	0,
 			"id":	"castle_italia_4",
 			"name":	"Beneventum",
-			"x":	46,
-			"y":	74,
+			"x":	43,
+			"y":	69,
 			"zone":	"italia",
 			"difficulty_tier":	1,
 			"footprint":	"1x1"
@@ -1958,8 +1970,8 @@
 			"index":	0,
 			"id":	"castle_italia_5",
 			"name":	"Tarentum",
-			"x":	46,
-			"y":	86,
+			"x":	56,
+			"y":	77,
 			"zone":	"italia",
 			"difficulty_tier":	1,
 			"footprint":	"1x1"
@@ -1967,8 +1979,8 @@
 			"index":	0,
 			"id":	"castle_italia_6",
 			"name":	"Rhegium",
-			"x":	35,
-			"y":	101,
+			"x":	48,
+			"y":	105,
 			"zone":	"italia",
 			"difficulty_tier":	1,
 			"footprint":	"1x1"
@@ -1976,8 +1988,8 @@
 			"index":	0,
 			"id":	"castle_italia_7",
 			"name":	"Ariminum",
-			"x":	44,
-			"y":	21,
+			"x":	32,
+			"y":	32,
 			"zone":	"italia",
 			"difficulty_tier":	0,
 			"footprint":	"1x1"
@@ -1985,8 +1997,8 @@
 			"index":	0,
 			"id":	"castle_italia_8",
 			"name":	"Verona",
-			"x":	20,
-			"y":	10,
+			"x":	23,
+			"y":	12,
 			"zone":	"italia",
 			"difficulty_tier":	0,
 			"footprint":	"1x1"
@@ -1994,8 +2006,8 @@
 			"index":	0,
 			"id":	"castle_italia_9",
 			"name":	"Genua",
-			"x":	9,
-			"y":	14,
+			"x":	13,
+			"y":	26,
 			"zone":	"italia",
 			"difficulty_tier":	0,
 			"footprint":	"1x1"
@@ -2003,8 +2015,8 @@
 			"index":	0,
 			"id":	"castle_italia_10",
 			"name":	"Brundisium",
-			"x":	48,
-			"y":	80,
+			"x":	60,
+			"y":	74,
 			"zone":	"italia",
 			"difficulty_tier":	1,
 			"footprint":	"1x1"
@@ -2671,7 +2683,7 @@
 			"max_population":	0,
 			"growth_per_week":	5,
 			"morale_group":	"B",
-			"anim":	["art/troops/sagittarii_00.png", "art/troops/sagittarii_01.png", "art/troops/sagittarii_02.png", "art/troops/sagittarii_03.png"],
+			"anim":	["art/troops/sagittarii_00.png", "art/troops/sagittarii_01.png", "art/troops/sagittarii_02.png", "art/troops/sagittarii_03.png", "art/troops/sagittarii_04.png", "art/troops/sagittarii_05.png"],
 			"tier_counts":	[0, 5, 10, 15]
 		}],
 	"spells":	[{
@@ -3472,7 +3484,7 @@
 			"id":	"book",
 			"name":	"The Sibylline Fragment",
 			"zone":	"italia",
-			"effect":	"Unknown power.",
+			"effect":	"Its power is not yet revealed.",
 			"power":	"unknown_xxx1",
 			"icon":	"art/ui/inventory_artifact_book.png",
 			"puzzle_cell":	23,
@@ -3984,7 +3996,8 @@
 		"\\xcb":	{"art":	"river_mountain_w", "terrain":	"river"},
 		"\\xcc":	{"art":	"bridge_river_ns", "terrain":	"grass", "is_bridge":	true},
 		"\\xcd":	{"art":	"bridge_river_ew", "terrain":	"grass", "is_bridge":	true},
-		"\\xce":	{"art":	"river_mouth_e", "terrain":	"river"}
+		"\\xce":	{"art":	"river_mouth_e", "terrain":	"river"},
+		"\\xcf":	{"art":	"river_mouth_w", "terrain":	"river"}
 	},
 	"spawn":	{
 		"kind_chance_curve":	[[[60, 90, 94, 98, 101], [20, 70, 82, 95, 99], [10, 20, 35, 50, 90], [3, 6, 8, 10, 40]], null, null, null],

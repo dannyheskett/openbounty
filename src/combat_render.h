@@ -15,6 +15,10 @@
 // pack's field tile, sprites.combat[0]. Set by the shell before RunCombat.
 void combat_render_set_ground(Texture2D ground);
 
+// Modern: the troop on `side` standing at (x, y) is drawn at `frame` of its
+// strip -- an attack playing out. frame < 0 clears it. Legacy never sets it.
+void combat_render_set_attack(int side, int x, int y, int frame);
+
 void combat_render_frame(const Combat *c, const Game *g,
                          const Sprites *sprites);
 

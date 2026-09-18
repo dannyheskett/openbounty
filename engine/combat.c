@@ -528,6 +528,10 @@ int combat_hit_unit(Combat *c, int a_side, int a_id,
     a->turn_count = a->count;
     t->turn_count = t->count;
     int t_count_before = t->count;
+    c->attack_seq++;
+    c->attack_side = a_side;
+    c->attack_x = a->x;
+    c->attack_y = a->y;
     int kills = combat_deal_damage(c, a_side, a_id, t_side, t_id,
                                    is_ranged, false, 0, false);
     // Damage burst over the target cell. Persists ~3 anim ticks

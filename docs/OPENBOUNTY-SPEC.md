@@ -960,8 +960,8 @@ except where a deviation is explicitly flagged (§34).
   W+N+E (spits, attached on the remaining side), `19` all four (an island).
   Water is 0-based as before (`12`..`18`). `glory-of-rome` ships all seven
   for forest and mountain and the two strips and the island for water; the
-  four shipped zones contain no other shape. `tools/gen_italia.py furnish`
-  and `tools/spitfix.py` assign them; the art comes from the same lattice
+  four shipped zones contain no other shape. `tools/mapbuild.py build`
+  assigns them when it bakes a map from its source; the art comes from the same lattice
   and stitching tools as the twelve, so every side that is open is a
   terminal edge and every closed side the standard interface.
 

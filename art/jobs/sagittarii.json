@@ -1,7 +1,7 @@
 {
  "id": "sagittarii",
- "_note": "Sagittarii (2026-09-16), the Roman bowman replacing the Velites in the home castle. The Silvani route whole (the approved archer): troop style at 96, magenta removed, bow at rest so the draw and loose are the animation's travel. Only the prompt and seed differ.",
- "prompt": "a Roman auxiliary archer of the sagittarii in a bronze Roman helmet with cheek guards, a mail shirt over a red tunic, a quiver of arrows on his back, a curved composite bow held relaxed and upright at his side in his left hand with no arrow on it, his right hand empty at his side, standing square with both feet planted",
+ "_note": "2026-09-17 run05: run04's prompt with 'standing square with both feet planted' removed, so it ends as Silvani's does and the body turns to the right. Seed 7901, colours named, no reference image.",
+ "prompt": "a Roman auxiliary archer of the sagittarii in a bronze Roman helmet with cheek guards and a red crest, a gold-bronze scale shirt over a red tunic, red leather boots, a quiver of arrows on his back, a curved composite bow held relaxed and upright at his side in his left hand with the string slack and no arrow on it, his right hand empty at his side",
  "style": "user__glory_of_rome_troops_bac676cd",
  "width": 96,
  "height": 96,

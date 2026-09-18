@@ -29,7 +29,7 @@ bool modern_castle_update(Game *g);
 bool        modern_castle_is_home(void);
 // --gallery: show a page, the cursor on a row, the count step up when step_max > 0.
 void        modern_castle_gallery(McPage page, int cursor, int step_value, int step_max);
-void        modern_castle_gallery_audience(int audience, int rank);
+void        modern_castle_gallery_audience(int audience, int needed, int rank);
 const char *modern_castle_id(void);
 McPage      modern_castle_page(void);
 int         modern_castle_cursor(void);      // on the page shown

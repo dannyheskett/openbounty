@@ -570,6 +570,36 @@ and all (REQ-229). Nothing about a map's appearance is computed at game time,
 and `furnish_map` in the engine stays a no-op forever. The variants are baked
 into the `.dat` when the map is authored.
 
+### 10.6.1a Authoring: a source and a builder
+
+Italia is drawn by hand as a source grid, `art/maps/italia.txt` -- one
+character per tile: `~` sea, `.` grass, `,` grass variant, `f` forest, `^`
+mountain, `d` desert; overlays `r` / `R` / `M` river on grass / in forest / in
+mountains, `=` road, `H` bridge. `tools/mapbuild.py build` bakes it into
+`maps/italia.dat`: the edge variants (REQ-229a/e), the river and road pieces
+by their links, the mouths, the bridges. The `.dat` is never edited by hand;
+the source is. Rivers link only orthogonally, because the hero moves 8-way
+with no corner rule and would step across a diagonal river.
+
+`tools/mapbuild.py place` scatters the zone's chests and wandering armies from
+a fixed seed inside the region boxes in `art/maps/italia_regions.json`, and
+keeps a static guardian where it says (`guardian_calabria` holds the one pass
+into the toe). `tools/mapbuild.py check` proves every object stands on
+walkable ground, every dock is on the open sea, and prints what the hero
+reaches from the spawn on foot and by boat -- a boat sails only the water it
+was rented on -- first with every river shut, then with them bridged.
+
+**The Rubicon gate.** The Po plain (Mediolanum, Verona, Ravenna) is closed by
+the Alps, the Maritime Alps, the Ligurian and Tusco-Emilian Apennines, the
+Rubicon, and a marsh-wood Adriatic coast no boat can land on. The Rubicon has
+no bridge: the Pontifex spell (the bridge spell, sold at Ostia) crosses it,
+and the rites for it are learned from the Augur on Sardinia, reached by boat
+from Ostia. `check` must show the three northern places unreachable with the
+rivers shut and reachable with them bridged.
+
+The old generator (`tools/gen_italia.py`) and `tools/spitfix.py` are gone; the
+builder carries their edge rules.
+
 ### 10.6.2 The checker
 
 `tools/mapcheck.py` enforces all of the above:
@@ -579,7 +609,8 @@ tools/mapcheck.py <pack-dir> <map.dat> [WxH] [zone-id]
 ```
 
 It verifies dimensions and tile codes, flags a dock on landlocked water,
-reports objectives stranded in inland pockets, and prints the terrain
+reports objectives stranded in inland pockets (a pocket walled by a river is a
+gate the bridge spell opens, reported as a note), and prints the terrain
 breakdown. It is **calibrated against the shipped pack** — three of the four
 `kings-bounty` maps pass clean, and the fourth reports only that one real
 `saharia` chest. A checker that failed known-good maps would be worthless,

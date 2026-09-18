@@ -1,21 +1,20 @@
 {
  "id": "sagittarii_attack",
- "_note": "2026-09-16: silvani_attack whole (the approved archer loop); only the still, seed and motion sentence's helmet/quiver clause differ. Still is sagittarii run01, bow at rest.",
- "prompt": "he raises the bow, nocks an arrow, draws the string back to his cheek and looses the arrow straight ahead to the right, then the bow arm lowers back to his side, both feet stay planted, the helmet stays on his head and the quiver stays on his back",
+ "_note": "2026-09-17 run05: sarmatae_attack copied whole (six frames, expansion on, tag prompt); only the still (sagittarii run05), seed and tag differ.",
+ "prompt": "draws the bow and shoots an arrow to the right, feet planted, smooth loop",
  "style": "rd_advanced_animation__custom_action",
  "width": 96,
  "height": 96,
- "seed": 7902,
- "frames_duration": 4,
+ "seed": 7908,
+ "frames_duration": 6,
  "return_spritesheet": true,
- "input_image_path": "build/art/sagittarii/run01/01_raw.png",
+ "input_image_path": "build/art/sagittarii/run05/01_raw.png",
  "input_image_keep_alpha": true,
- "bypass_prompt_expansion": true,
+ "bypass_prompt_expansion": false,
  "raw_only": true,
  "figure": false,
  "target": [
   96,
   96
- ],
- "_pack_path": "art/troops/sagittarii_00..03.png"
+ ]
 }

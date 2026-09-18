@@ -161,11 +161,16 @@ static Texture2D troop_face(const Sprites *s, int idx) {
     return s->troop_portrait[idx].id ? s->troop_portrait[idx] : s->troop_sprite[idx];
 }
 
-static Texture2D troop_standing(const Sprites *s, int idx) {
+// A troop standing: frames 0 and 1 in turn, `rate` swaps a second.
+static Texture2D troop_standing_at(const Sprites *s, int idx, double rate) {
     if (!s || idx < 0 || idx >= s->troop_count) return (Texture2D){ 0 };
     Texture2D t = sprites_strip(s->troop_anim[idx], s->troop_anim_frames[idx],
-                                sprites_stand((int)(ui_anim_time() * 6.66)));
+                                sprites_stand((int)(ui_anim_time() * rate)));
     return t.id ? t : s->troop_sprite[idx];
+}
+
+static Texture2D troop_standing(const Sprites *s, int idx) {
+    return troop_standing_at(s, idx, 6.66);
 }
 
 // PIO_NOTE_FACE: the in-lay -- the header as its title, the picture at 2x, the
@@ -714,23 +719,29 @@ static void castle_troop_detail(const Game *g, const Sprites *s, const TroopDef 
     int lh = uk_line_h();
     bfont_draw(pt->name, x, y, PAL_CLR(YELLOW));
     y += lh + 4;
+    int in_army = 0, in_garrison = 0;
+    for (int k = 0; k < GAME_ARMY_SLOTS; k++) {
+        if (strcmp(g->army[k].id, pt->id) == 0) in_army += g->army[k].count;
+        if (cr && strcmp(cr->garrison[k].id, pt->id) == 0) in_garrison += cr->garrison[k].count;
+    }
+    // The numbers are the whole troop's, as the Army view shows them: what
+    // you have on this page. The recruit list is a price list, so it keeps one
+    // soldier's. Skill and Move belong to one soldier either way.
+    int many = page == MC_RECRUIT ? 1
+             : page == MC_WITHDRAW ? in_garrison : in_army;
     struct { const char *label; char value[32]; } rows[5];
     snprintf(rows[0].value, 32, "%d", pt->skill_level);                      rows[0].label = ui->army_skill;
     snprintf(rows[1].value, 32, "%d", pt->move_rate);                        rows[1].label = ui->army_move;
-    snprintf(rows[2].value, 32, "%d", pt->hit_points);                       rows[2].label = ui->army_hit_points;
-    snprintf(rows[3].value, 32, "%d-%d", pt->melee_min, pt->melee_max);      rows[3].label = ui->army_damage;
-    snprintf(rows[4].value, 32, "%d", pt->recruit_cost);                     rows[4].label = ui->army_g_cost;
+    snprintf(rows[2].value, 32, "%d", pt->hit_points * many);                rows[2].label = ui->army_hit_points;
+    snprintf(rows[3].value, 32, "%d-%d", pt->melee_min * many, pt->melee_max * many);
+                                                                             rows[3].label = ui->army_damage;
+    snprintf(rows[4].value, 32, "%d", pt->recruit_cost * many);              rows[4].label = ui->army_g_cost;
     int tw = a.x + a.w - x;
     if (tw > 20 * GW) tw = 20 * GW;
     int vx = x + tw;
     for (int i = 0; i < 5; i++, y += lh) {
         bfont_draw(rows[i].label, x, y, PAL_CLR(WHITE));
         bfont_draw_right(rows[i].value, vx, y, PAL_CLR(WHITE));
-    }
-    int in_army = 0, in_garrison = 0;
-    for (int k = 0; k < GAME_ARMY_SLOTS; k++) {
-        if (strcmp(g->army[k].id, pt->id) == 0) in_army += g->army[k].count;
-        if (cr && strcmp(cr->garrison[k].id, pt->id) == 0) in_garrison += cr->garrison[k].count;
     }
     // What you have and can move goes under the numbers, still beside the
     // picture, so no line wraps back under it; a caution -- too few men to
@@ -1154,7 +1165,8 @@ void modern_overlay_draw_foe(const Game *g, const Sprites *s) {
     {
         int sw0 = (L.full.w - 4 * UK_BAND) / 5;
         for (int k = 0; k < shown; k++) {
-            Texture2D fig = troop_standing(s, troops[k]->index);
+            // The foe preview: an unhurried pace, half the scenes' rate.
+            Texture2D fig = troop_standing_at(s, troops[k]->index, 3.33);
             int cx = L.full.x + k * (sw0 + UK_BAND) + sw0 / 2;
             int fh = tile < L.scene.h ? tile : L.scene.h;
             if (fig.id) ui_blit_mirrored(fig, cx - tile / 2, L.scene.y + L.scene.h - fh, tile, fh);

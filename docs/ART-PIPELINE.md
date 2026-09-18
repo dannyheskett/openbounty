@@ -291,6 +291,7 @@ and record both prompts in `ART-WORKLIST.md`.
   composition is `tools/splashlogo.py`. The emblem is a Mediterranean globe in
   a laurel wreath; an earlier eagle emblem was dropped because it read as a
   Reich eagle.
+- **An archer** (Sagittarii, 2026-09-17, after nine failed runs) — the still must name the string: Silvani's "with the string slack and no arrow on it", or the bow comes back a bare arc and no animation can draw a string that was never there. Leave out "standing square": it turns the chest to the viewer, and a front-on figure cannot bring the drawing hand to the cheek. Name the kit's colours, or a new seed invents new ones (two seeds turned gold scale into grey mail). No reference images: on a still they copy the reference's pose, and `custom_action` does not take them. Then the Sarmatae job copied whole -- six frames, expansion on, a tag prompt -- with only the still, seed and tag changed. Its frame 1 is the idle move; a separate idle call barely moves.
 - **Making room for a motion** — when a still already holds its weapon out
   (the Coloni fork ended 6 px from the edge), or a finished set is too big for
   its cell (the Lupi), scale it to 80% through the k-centroid tool (black

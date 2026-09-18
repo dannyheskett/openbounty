@@ -54,9 +54,18 @@ void hud_draw_gold_tile(const Game *g, const Sprites *s, int x, int y) {
     if (!s) return;
     blit_panel(s->hud_gold_purse, x, y);
     if (g) {
-        char gold_str[12];
+        char gold_str[16];
         snprintf(gold_str, sizeof(gold_str), "%d", g->stats.gold);
         Vector2 gsz = bfont_measure(gold_str);
+        // A purse too small for the number: modern shows it short rather than
+        // letting it run off the tile. Legacy's purse is the DOS one.
+        int room = CL_SIDEBAR_W - 4 * CL_UI;
+        if (CL_IS_MODERN && (int)gsz.x > room) {
+            long v = g->stats.gold;
+            if (v >= 1000000) snprintf(gold_str, sizeof gold_str, "%ldm", v / 1000000);
+            else              snprintf(gold_str, sizeof gold_str, "%ldk", v / 1000);
+            gsz = bfont_measure(gold_str);
+        }
         int gx = x + CL_SIDEBAR_W - (int)gsz.x - 2 * CL_UI;
         int gy = y + CL_TILE_H - BFONT_GLYPH_H - 2 * CL_UI;
         bfont_draw(gold_str, gx, gy, PAL_CLR(YELLOW));

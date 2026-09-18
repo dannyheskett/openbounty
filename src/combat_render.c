@@ -95,6 +95,15 @@ static Texture2D s_ground;   // see combat_render_set_ground
 
 void combat_render_set_ground(Texture2D ground) { s_ground = ground; }
 
+static int s_atk_side = -1, s_atk_x, s_atk_y, s_atk_frame = -1;
+
+void combat_render_set_attack(int side, int x, int y, int frame) {
+    s_atk_side = frame < 0 ? -1 : side;
+    s_atk_x = x;
+    s_atk_y = y;
+    s_atk_frame = frame;
+}
+
 static void cell_origin(int gx, int gy, int *px, int *py) {
     *px = CL_COMBAT_X + gx * CL_COMBAT_CELL_W;
     *py = CL_COMBAT_Y + gy * CL_COMBAT_CELL_H;
@@ -118,10 +127,14 @@ static void draw_unit(const CombatUnit *u, int side,
     if (u->troop_idx < 0 || u->troop_idx >= sprites->troop_count || u->count == 0) return;
     int px, py;
     cell_origin(u->x, u->y, &px, &py);
+    // Modern: the troop whose turn it is swaps between frames 0 and 1 (the
+    // others hold frame 0); a troop attacking plays its whole strip from 0.
+    int frame = CL_IS_MODERN ? sprites_stand(u->frame) : u->frame;
+    if (CL_IS_MODERN && side == s_atk_side && u->x == s_atk_x && u->y == s_atk_y)
+        frame = s_atk_frame;
     Texture2D tex =
         sprites_strip(sprites->troop_anim[u->troop_idx],
-                      sprites->troop_anim_frames[u->troop_idx],
-                      CL_IS_MODERN ? sprites_stand(u->frame) : u->frame);
+                      sprites->troop_anim_frames[u->troop_idx], frame);
     if (tex.id == 0) tex = sprites->troop_sprite[u->troop_idx];
     // Sprites face right by default; the AI side is mirrored rather than
     // shipping a second strip. The slot is the cell, not the sprite's own

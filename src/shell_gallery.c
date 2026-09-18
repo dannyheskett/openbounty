@@ -193,6 +193,13 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
 
     // ---- the map and its panels ----------------------------------------------
     reset(&G); shot(&G, "01_map");
+    {
+        // A purse the tile cannot hold: the gold is shown short.
+        int keep = g->stats.gold;
+        g->stats.gold = 280000;
+        reset(&G); shot(&G, "01b_map_big_purse");
+        g->stats.gold = keep;
+    }
     reset(&G);
     {
         // A save: the message src/main.c sends after the slot is written.
@@ -223,9 +230,16 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     reset(&G);
     {
         char hb[192], bb[512];
-        ResTemplateVar av[] = { { "ARTIFACT", "The Sibylline Fragment" } };
+        // The pack's own artifact with the longest name, and its own effect
+        // line: the screen has to show what the game would show.
+        const ArtifactDef *ad = NULL;
+        for (int i = 0; i < g->res->artifacts_count; i++)
+            if (!ad || strlen(g->res->artifacts[i].name) > strlen(ad->name))
+                ad = &g->res->artifacts[i];
+        ResTemplateVar av[] = { { "ARTIFACT", ad ? ad->name : "" } };
         resources_format_template(hb, sizeof hb, bn->artifact_found, av, 1);
-        snprintf(bb, sizeof bb, "Unknown power.\n\n%s", bn->artifact_map_piece);
+        snprintf(bb, sizeof bb, "%s\n\n%s", ad ? ad->effect : "",
+                 bn->artifact_map_piece);
         open_dialog(hb, bb);
     }
     shot(&G, "04b_message_artifact");
@@ -362,7 +376,8 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(2, p3, 6); shot(&G, "12_menu_world_greyed");
         reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(2, p4, 0); shot(&G, "13_menu_game");
         reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(3, p5, 0); shot(&G, "14_menu_save_slots");
-        reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(2, p4, 0);
+        // Exit is a root row, so its question is asked on the root page.
+        reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(1, p1, 5);
         prompt_yes_no_open(NULL, bn->gmc_exit); prompt_set_req_kind(PIO_ASK_IN_PLACE); shot(&G, "15_menu_exit_question"); tap_yes_no("15_menu_exit_question", TOUCH_LIST_MENU);
         // The menu's other confirmations, each over the page that asks it.
         {
@@ -509,8 +524,15 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
             prompt_yes_no_open(NULL, ask); prompt_set_req_kind(PIO_ASK_IN_PLACE); shot(&G, "44a_castle_tribute_question"); tap_yes_no("44a_castle_tribute_question", TOUCH_LIST_CASTLE);
         }
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_AUDIENCE, 0, 0, 0);
-        modern_castle_gallery_audience(GAME_AUDIENCE_MORE_NEEDED + 1, 0); shot(&G, "44b_castle_audience_answer"); tap_continue("44b_castle_audience_answer", TOUCH_LIST_CASTLE);
-        modern_castle_gallery_audience(0, 0);
+        {
+            // The engine's own answer for this game, so the screen quotes the
+            // count the Emperor would really name.
+            int needed = 0;
+            GameAudienceOutcome o = GameAudienceWithKing(g, &needed);
+            modern_castle_gallery_audience((int)o + 1, needed, 0);
+        }
+        shot(&G, "44b_castle_audience_answer"); tap_continue("44b_castle_audience_answer", TOUCH_LIST_CASTLE);
+        modern_castle_gallery_audience(0, 0, 0);
         {
             GameAudienceGain gain = { 0 };
             gain.leadership = 25; gain.spell_power = 1; gain.max_spells = 1;
@@ -523,7 +545,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
             int keep = g->character.cls.rank_index;
             g->character.cls.rank_index = 1;
             reset(&G); views_set(VIEW_HOME_CASTLE);
-            modern_castle_gallery_audience(GAME_AUDIENCE_PROMOTED + 1, 1);
+            modern_castle_gallery_audience(GAME_AUDIENCE_PROMOTED + 1, 0, 1);
             modern_castle_gallery(MC_PROMOTION, 0, 0, 0); shot(&G, "45_castle_promotion"); tap_row("45_castle_promotion", TOUCH_LIST_CASTLE, 0);
             g->character.cls.rank_index = keep;
         }
@@ -617,6 +639,15 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         c.unit_id = combat_next_unit(&c);
         for (int i = 0; i < 3; i++) combat_present_public(&c, g, s, rt);
         save_target(&G, "70_combat");
+        {
+            // A troop attacking plays its whole strip: the unit whose turn it
+            // is, two frames into its attack.
+            const CombatUnit *act = &c.units[c.side][c.unit_id];
+            combat_render_set_attack(c.side, act->x, act->y, 2);
+            for (int i = 0; i < 3; i++) combat_present_public(&c, g, s, rt);
+            save_target(&G, "70b_combat_attack_frame");
+            combat_render_set_attack(-1, 0, 0, -1);
+        }
         combat_gallery_menu(true);
         for (int i = 0; i < 3; i++) combat_present_public(&c, g, s, rt);
         save_target(&G, "71_combat_menu");

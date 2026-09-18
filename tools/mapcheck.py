@@ -15,7 +15,8 @@ Checks, in order of how badly each one breaks the game:
      cancellation is refused mid-sail, so a boat launched into an enclosed
      body IS unrecoverable -- but only a dock can put one there (section 10.5).
   3. No OCCUPIED walkable pocket. Land not foot-reachable from the mainland
-     is fine while it is empty; it becomes a maroon hazard the autoplay
+     is fine while it is empty, or when a river walls it (the bridge spell
+     crosses a river: Italia's Rubicon); otherwise it becomes a maroon hazard the autoplay
      stranding rules (AP-051 / AP-190) report as unreachable only once an
      objective sits on it (section 10.6).
   4. Enough open walkable area to host the per-zone budget (section 10.7).
@@ -65,8 +66,9 @@ def zone_objects(pack_dir, zone_id):
         return [], []
     with open(os.path.join(pack_dir, "game.json")) as f:
         g = json.load(f)
-    docks = [(t["boat_x"], t["boat_y"]) for t in g.get("towns", [])
-             if t.get("zone") == zone_id and "boat_x" in t]
+    # A town's dock is its "boat" object; x -1 means the town has none.
+    docks = [(t["boat"]["x"], t["boat"]["y"]) for t in g.get("towns", [])
+             if t.get("zone") == zone_id and t.get("boat", {}).get("x", -1) >= 0]
     objs = [(t["x"], t["y"], "town " + t["id"]) for t in g.get("towns", [])
             if t.get("zone") == zone_id]
     objs += [(c.get("gate_x", c.get("x")), c.get("gate_y", c.get("y")),
@@ -221,7 +223,18 @@ def main():
                     (x + dx, y + dy) in sea
                     for (x, y) in r
                     for dx in (-1, 0, 1) for dy in (-1, 0, 1))
-                if not coastal:
+                # A pocket walled by a river is a gate, not a trap: the bridge
+                # spell crosses a river (the Rubicon in Italia).
+                by_river = any(
+                    0 <= x + dx < w and 0 <= y + dy < h
+                    and terr(rows[y + dy][x + dx]) == "river"
+                    for (x, y) in r
+                    for dx in (-1, 0, 1) for dy in (-1, 0, 1))
+                if not coastal and by_river:
+                    print(f"  note: a {len(r)}-tile pocket with {len(on_it)} "
+                          f"objective(s) is walled by a river -- reached with "
+                          f"the bridge spell or by flight")
+                elif not coastal:
                     landlocked.append((len(r), on_it))
             for size, what in landlocked:
                 fails.append(

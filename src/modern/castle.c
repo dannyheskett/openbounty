@@ -84,8 +84,9 @@ void modern_castle_open(const Game *g, bool home, const char *castle_id) {
     snprintf(mc.castle_id, sizeof mc.castle_id, "%s", castle_id ? castle_id : "");
 }
 
-void modern_castle_gallery_audience(int audience, int rank) {
+void modern_castle_gallery_audience(int audience, int needed, int rank) {
     mc.audience = audience;
+    mc.audience_needed = needed;
     mc.audience_rank = rank;
 }
 

@@ -1,0 +1,16 @@
+{
+ "id": "sagittarii_slung",
+ "_note": "2026-09-17: the idle key pose for frames 0-1 of an eight-frame strip. Same man as art/troops/sagittarii_00.png, which goes in as a reference image; the seed is the still's own 7901. The bow rides on his shoulder here so the draw in sagittarii_draw is a real change of pose.",
+ "prompt": "a Roman auxiliary archer of the sagittarii in a bronze Roman helmet with cheek guards, a mail shirt over a red tunic, a quiver of arrows on his back, his curved composite bow slung over his right shoulder on its dark bowstring with both hands resting empty at his sides, standing square with both feet planted",
+ "style": "user__glory_of_rome_troops_bac676cd",
+ "width": 96,
+ "height": 96,
+ "seed": 7901,
+ "remove_bg": true,
+ "return_non_bg_removed": true,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": true,
+ "reference_image_paths": ["assets/glory-of-rome/art/troops/sagittarii_00.png"],
+ "target": [96, 96]
+}

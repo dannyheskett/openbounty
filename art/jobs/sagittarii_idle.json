@@ -1,0 +1,20 @@
+{
+ "id": "sagittarii_idle",
+ "_note": "2026-09-17: the idle pair's second frame -- strip frame 0 is the still itself, strip frame 1 is one frame of this loop, the figure moved a little. Same still and settings as sagittarii_attack; four frames, only one is used.",
+ "prompt": "he stands at ease and breathes slowly, his chest and shoulders rising a little and his head turning slightly, the bow stays upright at his side in his left hand with its string, both feet stay planted, the helmet stays on his head and the quiver stays on his back",
+ "style": "rd_advanced_animation__custom_action",
+ "width": 96,
+ "height": 96,
+ "seed": 7907,
+ "frames_duration": 4,
+ "return_spritesheet": true,
+ "input_image_path": "build/art/sagittarii/run04/01_raw.png",
+ "input_image_keep_alpha": true,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  96,
+  96
+ ]
+}

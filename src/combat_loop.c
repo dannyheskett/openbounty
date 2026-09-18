@@ -612,12 +612,12 @@ void combat_present_public(const Combat *c, const Game *g,
 // animation frame, signals AI/rollover. The original DOS KB 150ms SYN
 // tick gates animation/AI so the human can see units walk between tiles;
 // without the gate combat would look like instant teleportation.
-static void combat_tick_anim(Combat *c, double *next_tick,
+static bool combat_tick_anim(Combat *c, double *next_tick,
                              bool *rolled_over) {
     *rolled_over = false;
     {
         double now = frame_host_time();
-        if (now < *next_tick) return;
+        if (now < *next_tick) return false;
         *next_tick = now + 0.15;
     }
     // Decay damage-burst on every stack (including dead ones, so the
@@ -641,6 +641,40 @@ static void combat_tick_anim(Combat *c, double *next_tick,
             }
         }
     }
+    return true;
+}
+
+// Modern: an attack plays the attacker's whole strip from frame 0, one frame
+// per beat, and the fight waits until it has played. The attacker is found by
+// side and cell, which survive the slot renumbering a death causes.
+typedef struct { int side, x, y, frame, frames, seq; } AttackAnim;
+
+static void attack_anim_start(AttackAnim *a, const Combat *c, const Sprites *sprites) {
+    a->seq = c->attack_seq;
+    a->frame = -1;
+    if (!CL_IS_MODERN) return;
+    for (int i = 0; i < COMBAT_SLOTS; i++) {
+        const CombatUnit *u = &c->units[c->attack_side][i];
+        if (u->troop_idx < 0 || u->count <= 0 || u->x != c->attack_x || u->y != c->attack_y)
+            continue;
+        if (u->troop_idx >= sprites->troop_count) break;
+        a->frames = sprites->troop_anim_frames[u->troop_idx];
+        if (a->frames <= 1) break;
+        a->side = c->attack_side;
+        a->x = c->attack_x;
+        a->y = c->attack_y;
+        a->frame = 0;
+        break;
+    }
+    combat_render_set_attack(a->side, a->x, a->y, a->frame);
+}
+
+// One beat of a playing attack. True while it still plays.
+static bool attack_anim_step(AttackAnim *a, bool ticked) {
+    if (a->frame < 0) return false;
+    if (ticked && ++a->frame >= a->frames) a->frame = -1;
+    combat_render_set_attack(a->side, a->x, a->y, a->frame);
+    return a->frame >= 0;
 }
 
 // Block until the player acknowledges the open end-of-combat dialog,
@@ -698,6 +732,8 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
 
     RenderTexture2D *rt = (RenderTexture2D *)render_target;
     double next_tick = frame_host_time() + 0.15;
+    AttackAnim atk = { -1, 0, 0, -1, 0, c.attack_seq };
+    combat_render_set_attack(-1, 0, 0, -1);
 
     while (c.result == 0 && !frame_host_should_close()) {
         // Keep audio and presentation ticking every frame while the battle
@@ -770,7 +806,9 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         }
 
         bool frame_rollover;
-        combat_tick_anim(&c, &next_tick, &frame_rollover);
+        bool ticked = combat_tick_anim(&c, &next_tick, &frame_rollover);
+        // An attack is playing: nothing else happens until it has.
+        if (attack_anim_step(&atk, ticked)) continue;
 
         if (c.unit_id >= 0 && !c.picker_active &&
             c.cast_phase == COMBAT_CAST_NONE) {
@@ -869,6 +907,9 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
             acted = combat_ai_action(&c);
         }
 
+        // A troop attacked this frame: play its strip before the fight goes on.
+        if (c.attack_seq != atk.seq) attack_anim_start(&atk, &c, sprites);
+
         if (acted) {
             combat_compact(&c);
             if (combat_test_dead(&c, COMBAT_SIDE_AI))     { c.result = 1; break; }
@@ -898,6 +939,15 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
             }
         }
     }
+
+    // The blow that ended the fight plays out before the ending shows.
+    while (atk.frame >= 0 && !frame_host_should_close()) {
+        audio_tick();
+        combat_present(&c, g, sprites, rt);
+        bool rolled;
+        attack_anim_step(&atk, combat_tick_anim(&c, &next_tick, &rolled));
+    }
+    combat_render_set_attack(-1, 0, 0, -1);
 
     // ----- End-of-combat ----------------------------------------------------
 
