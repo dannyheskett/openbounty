@@ -105,6 +105,13 @@ void sprites_load(Sprites *s, const Resources *res) {
         s->class_disgraced[i] = load_rel(res->class_hero[i].disgraced);
     }
 
+    // One-time vista scenes, in the pack's own order.
+    int ne = res->event_scene_count;
+    s->event_scene = ne ? calloc((size_t)ne, sizeof *s->event_scene) : NULL;
+    s->event_scene_count = s->event_scene ? ne : 0;
+    for (int i = 0; i < s->event_scene_count; i++)
+        s->event_scene[i] = load_rel(res->event_scenes[i]);
+
     // Villain portraits from the villain catalog. Load the static portrait
     // (frame 0) plus the animation strip. A pack may declare the frames
     // explicitly as villains[].anim, exactly like a troop does; when it
@@ -295,6 +302,8 @@ void sprites_unload(Sprites *s) {
     }
     free(s->class_portrait);  s->class_portrait = NULL;
     free(s->class_disgraced); s->class_disgraced = NULL;
+    for (int i = 0; i < s->event_scene_count; i++) UnloadTexture(s->event_scene[i]);
+    free(s->event_scene); s->event_scene = NULL; s->event_scene_count = 0;
     free(s->class_end_hero);  s->class_end_hero = NULL;
     free(s->class_hero_walk); s->class_hero_walk = NULL;
     free(s->class_hero_idle); s->class_hero_idle = NULL;

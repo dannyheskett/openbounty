@@ -125,6 +125,15 @@ static bool fill_tile_from_code(Map *map, Tile *t, const Resources *res,
     return true;
 }
 
+// A declared tile code written onto a live map (game.json `events` effects:
+// a bridge over a river, a cleared pass). The tile is built exactly as the
+// loader builds it, so it is a tile the .dat could have held.
+bool MapSetTileFromCode(Map *map, const Resources *res, int x, int y,
+                        unsigned char code) {
+    if (!map || !res || !MapInBounds(map, x, y)) return false;
+    return fill_tile_from_code(map, &MAP_TILE(map, x, y), res, code);
+}
+
 static void default_tile(Map *map, Tile *t) {
     char art[TILE_ART_NAME_LEN];
     MapTerrainArt(map, "grass", art, sizeof art);

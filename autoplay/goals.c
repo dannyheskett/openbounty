@@ -88,6 +88,17 @@ static void enumerate_noncombat(const Game *g, const Map *map, int zi,
     }
 }
 
+// One-time vistas (REQ-221b): the trigger tile is the target, and the engine
+// fires the scene on arrival once the hero holds what it asks for.
+static void enumerate_vistas(const Game *g, int zi, PlanStepSet *out) {
+    const ResZone *z = &g->res->zones[zi];
+    for (int k = 0; k < z->event_count; k++) {
+        PlanStep *s = add_step(out, STEP_VISTA, zi, z->events[k].x, z->events[k].y,
+                               z->events[k].id);
+        if (s) set_label(s, "vista", z->events[k].id);
+    }
+}
+
 // Monster + villain castles (AP-040). The gate tile is the target; the King's
 // (special) castle is never an objective.
 static void enumerate_combat(const Game *g, PlanStepSet *out) {
@@ -161,6 +172,7 @@ bool plansteps_enumerate(const Game *g, Map *scratch, PlanStepSet *out) {
             return false;
         GameApplyTileMutations(g, scratch, g->res->zones[zi].id);
         enumerate_noncombat(g, scratch, zi, out);
+        enumerate_vistas(g, zi, out);
     }
     enumerate_combat(g, out);
     enumerate_foes(g, out);
@@ -228,6 +240,10 @@ bool planstep_is_done(const Game *g, const PlanStep *step) {
     }
     case STEP_SCEPTER:
         return g->stats.won;
+    case STEP_VISTA:
+        return (g->res && step->zone_index >= 0 && step->zone_index < g->res->zone_count)
+             ? GameEventFired(g, g->res->zones[step->zone_index].id, step->handle)
+             : false;
     }
     return false;
 }
@@ -239,6 +255,7 @@ const char *plan_kind_name(PlanKind k) {
     case STEP_NAVMAP:         return "navmap";
     case STEP_ORB:            return "orb";
     case STEP_ALCOVE:         return "alcove";
+    case STEP_VISTA:          return "vista";
     case STEP_SIEGE_WEAPONS:  return "siege-weapons";
     case STEP_MONSTER_CASTLE: return "castle";
     case STEP_VILLAIN:        return "villain";

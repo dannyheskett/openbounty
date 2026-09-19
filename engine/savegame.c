@@ -489,6 +489,23 @@ SaveResult SaveGameRead(const char *path,
             tm->y = jy->valueint;
         }
     }
+    // One-time vistas already played (absent in a save written before they
+    // existed, which then loads as none).
+    g->events_done_count = 0;
+    cJSON *jevents = cJSON_GetObjectItem(root, "events_done");
+    if (cJSON_IsArray(jevents)) {
+        cJSON *m;
+        cJSON_ArrayForEach(m, jevents) {
+            if (!GameReserveEventsDone(g, g->events_done_count + 1)) break;
+            cJSON *jz = cJSON_GetObjectItem(m, "zone");
+            cJSON *ji = cJSON_GetObjectItem(m, "id");
+            if (!cJSON_IsString(jz) || !cJSON_IsString(ji)) continue;
+            EventFired *ef = &g->events_done[g->events_done_count++];
+            copy_json_string(ef->zone, sizeof(ef->zone), jz);
+            copy_json_string(ef->id, sizeof(ef->id), ji);
+        }
+    }
+
     // Tile mutations are applied later by main.c after MapLoadZone runs
     // (this SaveGameRead runs before the map is populated, so there's
     // nothing to apply to here).

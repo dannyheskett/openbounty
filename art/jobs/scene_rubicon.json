@@ -1,0 +1,17 @@
+{
+ "id": "scene_rubicon",
+ "prompt": "a Roman legion far in the distance marching in a long column over a low wooden bridge across a small river, standards raised, green hills and poplars of northern Italy, late afternoon light, seen from a hillside above, the river and the bridge small in a wide landscape",
+ "style": "rd_pro__default",
+ "width": 240,
+ "height": 102,
+ "seed": 6501,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  240,
+  102
+ ],
+ "_pack_path": "art/scenes/rubicon.png",
+ "_note": "The Rubicon vista (game.json zones[italia].events, 2026-09-19). Same engine and size as every location backdrop (rd_pro__default, 240x102, opaque, no reference image): the shell draws it full width in the scene frame."
+}

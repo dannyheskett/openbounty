@@ -96,6 +96,13 @@ PlayerRequest *player_io_note_scene(Game *g, const char *title, const char *body
     return r;
 }
 
+PlayerRequest *player_io_note_scene_event(Game *g, const char *title,
+                                          const char *body, int scene_index) {
+    PlayerRequest *r = note_of(g, PIO_NOTE_SCENE, title, body);
+    if (r) { r->face = REQ_FACE_EVENT; r->face_index = scene_index; }
+    return r;
+}
+
 // Evict every queued request of `role`, keeping the rest in order. The queue
 // mirrors the authoritative pending_flow / view stack, and only ONE decision and
 // ONE view are ever live: a worldsnap restore (plan simulation) can leave a

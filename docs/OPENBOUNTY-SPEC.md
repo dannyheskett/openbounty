@@ -779,6 +779,23 @@ except where a deviation is explicitly flagged (§34).
   `magic_alcove_x/y`, `neighbors[]` (zone ids reachable by sailing), a `salt`
   config (§10), and per-feature lists (towns, castles, signs, chests,
   dwellings, armies). Exactly one zone has `is_home: true` (Continentia).
+- **REQ-221b.** **One-time vistas (`events`).** A zone may declare `events`, a
+  list of one-time moments. Each has an `id`, a trigger tile `(x, y)`, a
+  `scene` image, a `title` and `body`, a `requires` list and an `effects` list.
+  Stepping onto the tile with every precondition held (`GameTryFireEvent`,
+  `engine/game.c`) spends what the preconditions mark `consume`, writes each
+  effect's `tile` (a `tile_codes` key) onto the map, records the id in
+  `events_done`, and queues the scene as a `PIO_NOTE_SCENE` with
+  `REQ_FACE_EVENT`, drawn full width with the pack's art and a single
+  Continue. It never fires again, and a vista never bounces the hero back.
+  Preconditions are `spell` (charges), `troop` (in the army), `gold` (held) and
+  `artifact` (found), each with a `count` and an optional `consume`; troops and
+  artifacts are held, never spent. `events_done` is saved, and
+  `GameApplyTileMutations` re-applies every played vista's tiles whenever the
+  zone loads, so the change outlives a zone switch and a reload. Lists are
+  heap, sized by the pack; a pack that declares none behaves exactly as before
+  (`kings-bounty` declares none). `glory-of-rome` declares the Rubicon: the
+  Pontifex rite (one charge, consumed) opens the bridge the Po plain is behind.
 - **REQ-221a.** **Arrival by origin.** A zone may declare `arrivals`, an
   object keyed by the zone sailed from, each `{x, y}`. `GameSwitchZone`
   lands the hero at the entry for the zone being left, else at `hero_spawn`

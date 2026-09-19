@@ -25,6 +25,7 @@ typedef enum {
     STEP_VILLAIN,
     STEP_FOE,
     STEP_SCEPTER,
+    STEP_VISTA,            // a one-time vista (game.json `events`, REQ-221b)
 } PlanKind;
 
 typedef struct {

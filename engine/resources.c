@@ -501,6 +501,59 @@ static void parse_zones(Resources *res, cJSON *arr) {
             }
         }
 
+        {
+            // Optional one-time vistas. Absent means none, so a pack that
+            // predates them loads unchanged.
+            cJSON *jev = cJSON_GetObjectItem(it, "events");
+            int nev = cJSON_IsArray(jev) ? cJSON_GetArraySize(jev) : 0;
+            z->event_count = 0;
+            z->events = nev > 0 ? calloc((size_t)nev, sizeof *z->events) : NULL;
+            for (int k = 0; z->events && k < nev; k++) {
+                const cJSON *e = cJSON_GetArrayItem(jev, k);
+                if (!cJSON_IsObject(e)) continue;
+                ResZoneEvent *ev = &z->events[z->event_count++];
+                copy_str(ev->id, sizeof ev->id, json_str(e, "id", ""));
+                ev->x = json_int(e, "x", -1);
+                ev->y = json_int(e, "y", -1);
+                copy_str(ev->scene, sizeof ev->scene, json_str(e, "scene", ""));
+                copy_str(ev->title, sizeof ev->title, json_str(e, "title", ""));
+                copy_str(ev->body, sizeof ev->body, json_str(e, "body", ""));
+                cJSON *jrq = cJSON_GetObjectItem(e, "requires");
+                int nrq = cJSON_IsArray(jrq) ? cJSON_GetArraySize(jrq) : 0;
+                ev->reqs = nrq > 0 ? calloc((size_t)nrq, sizeof *ev->reqs) : NULL;
+                for (int q = 0; ev->reqs && q < nrq; q++) {
+                    const cJSON *r = cJSON_GetArrayItem(jrq, q);
+                    if (!cJSON_IsObject(r)) continue;
+                    ResEventReq *rq = &ev->reqs[ev->req_count++];
+                    const char *what = json_str(r, "spell", NULL);
+                    if (what) rq->kind = RES_EVENT_REQ_SPELL;
+                    else if ((what = json_str(r, "troop", NULL))) rq->kind = RES_EVENT_REQ_TROOP;
+                    else if ((what = json_str(r, "artifact", NULL))) rq->kind = RES_EVENT_REQ_ARTIFACT;
+                    else rq->kind = RES_EVENT_REQ_GOLD;
+                    if (what) copy_str(rq->id, sizeof rq->id, what);
+                    rq->count = json_int(r, "count",
+                                         rq->kind == RES_EVENT_REQ_GOLD
+                                             ? json_int(r, "gold", 0) : 1);
+                    rq->consume = cJSON_IsTrue(cJSON_GetObjectItem(r, "consume"));
+                }
+                cJSON *jef = cJSON_GetObjectItem(e, "effects");
+                int nef = cJSON_IsArray(jef) ? cJSON_GetArraySize(jef) : 0;
+                ev->effects = nef > 0 ? calloc((size_t)nef, sizeof *ev->effects) : NULL;
+                for (int q = 0; ev->effects && q < nef; q++) {
+                    const cJSON *f = cJSON_GetArrayItem(jef, q);
+                    if (!cJSON_IsObject(f)) continue;
+                    // The tile is named the way tile_codes names it, escapes
+                    // and all ("\\xcc").
+                    int code = resources_tile_code_from_key(json_str(f, "tile", ""));
+                    if (code < 0 || code >= RES_TILE_CODE_COUNT) continue;
+                    ResEventEffect *fx = &ev->effects[ev->effect_count++];
+                    fx->x = json_int(f, "x", -1);
+                    fx->y = json_int(f, "y", -1);
+                    fx->code = (unsigned char)code;
+                }
+            }
+        }
+
         cJSON *nbr = cJSON_GetObjectItem(it, "neighbors");
         int ncap = json_len(nbr);
         if (cJSON_IsArray(nbr) && RES_TABLE_ALLOC(z->neighbors, z->neighbor_count, ncap)) {
@@ -688,6 +741,30 @@ static void parse_troops(Resources *res, cJSON *arr) {
             }
         }
     }
+    // One list of every distinct vista scene the pack declares: a fired vista
+    // names its art by index, so the shell loads the set once.
+    int scenes = 0;
+    for (int zi = 0; zi < res->zone_count; zi++)
+        scenes += res->zones[zi].event_count;
+    if (scenes > 0) {
+        res->event_scenes = calloc((size_t)scenes, sizeof *res->event_scenes);
+        res->event_scene_count = 0;
+        for (int zi = 0; res->event_scenes && zi < res->zone_count; zi++) {
+            for (int k = 0; k < res->zones[zi].event_count; k++) {
+                ResZoneEvent *ev = &res->zones[zi].events[k];
+                ev->scene_index = -1;
+                if (!ev->scene[0]) continue;
+                for (int e = 0; e < res->event_scene_count; e++)
+                    if (strcmp(res->event_scenes[e], ev->scene) == 0) ev->scene_index = e;
+                if (ev->scene_index < 0) {
+                    ev->scene_index = res->event_scene_count;
+                    copy_str(res->event_scenes[res->event_scene_count++],
+                             RES_PATH_LEN, ev->scene);
+                }
+            }
+        }
+    }
+
 }
 
 static SpellKind spell_kind_from_name(const char *s) {
@@ -2813,9 +2890,15 @@ void resources_free(Resources *res) {
             free(z->armies);
             free(z->tile_set_arts);
             free(z->arrivals);
+            for (int k = 0; k < z->event_count; k++) {
+                free(z->events[k].reqs);
+                free(z->events[k].effects);
+            }
+            free(z->events);
             free(z->salt.preferred_troops);
         }
         free(res->zones);         res->zones = NULL;         res->zone_count = 0;
+        free(res->event_scenes);  res->event_scenes = NULL;  res->event_scene_count = 0;
         free(res->ui.count_buckets_army_view);    res->ui.count_buckets_army_view = NULL;
         free(res->ui.count_buckets_instant_army); res->ui.count_buckets_instant_army = NULL;
         free(res->ui.keybinds);                   res->ui.keybinds = NULL;
@@ -3203,6 +3286,10 @@ int resources_art_manifest(const Resources *res, ResArtList *out) {
         art_add(out, cap, &n, res->class_hero[i].tile);
         art_add(out, cap, &n, res->class_hero[i].disgraced);
     }
+
+    // One-time vista scenes (game.json `events[].scene`).
+    for (int i = 0; i < res->event_scene_count; i++)
+        art_add(out, cap, &n, res->event_scenes[i]);
 
     for (int i = 0; i < res->troops_count; i++) {
         art_add(out, cap, &n, res->troops[i].sprite);

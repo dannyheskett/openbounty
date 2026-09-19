@@ -128,6 +128,24 @@
 					"y":	74
 				}
 			},
+			"events":	[{
+					"id":	"rubicon",
+					"x":	31,
+					"y":	31,
+					"scene":	"art/scenes/rubicon.png",
+					"title":	"The Rubicon",
+					"body":	"Your pontifex speaks the rite at the water's edge, the birds are read, and the gods give their leave. Far off, a column of legionaries is already crossing a bridge that was not there before.",
+					"requires":	[{
+							"spell":	"bridge",
+							"count":	1,
+							"consume":	true
+						}],
+					"effects":	[{
+							"x":	30,
+							"y":	30,
+							"tile":	"\\xcc"
+						}]
+				}],
 			"is_home":	true,
 			"home_spawn":	{
 				"x":	31,
@@ -157,7 +175,7 @@
 					"y":	31,
 					"id":	"sign_italia_1",
 					"title":	"The Rubicon",
-					"body":	"The old bridge is down. No army crosses without the gods' leave; only a pontifex may bridge it."
+					"body":	"A sacred boundary. No army crosses the Rubicon without the gods' leave; only a pontifex may bridge it."
 				}, {
 					"x":	32,
 					"y":	61,

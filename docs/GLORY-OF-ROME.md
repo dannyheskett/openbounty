@@ -597,6 +597,13 @@ and the rites for it are learned from the Augur on Sardinia, reached by boat
 from Ostia. `check` must show the three northern places unreachable with the
 rivers shut and reachable with them bridged.
 
+**The Rubicon** is crossed by a one-time vista (REQ-221b), not by casting the
+bridge by hand: holding the Pontifex rite and stepping onto the crossing at
+(31,31) spends one charge, plays the scene (`art/scenes/rubicon.png`: a legion
+crossing far off) and leaves a bridge at (30,30) for good. The sign reads it as
+a sacred boundary no army crosses without the gods' leave, in either direction.
+`mapbuild.py check` carries a "vistas played" column for it.
+
 **Galliae** is built the same way, from `art/maps/galliae.txt` and
 `art/maps/galliae_regions.json` (64 x 64): Britannia, Hibernia, Gaul,
 Hispania, and Germania east of the Rhine. Two guardians hold its gates:

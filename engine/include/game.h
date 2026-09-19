@@ -108,6 +108,13 @@ typedef struct {
     int  x, y;
 } TileMutation;
 
+// A one-time vista the hero has already played (game.json `events`). Its tile
+// effects are re-applied whenever the zone loads, and it never fires again.
+typedef struct {
+    char zone[24];
+    char id[24];
+} EventFired;
+
 // Per-dwelling state: how many troops remain available. Indexed by
 // (zone, x, y). Created lazily on first visit and persisted.
 typedef struct {
@@ -330,6 +337,10 @@ struct Game {
     TileMutation    *consumed;
     int              consumed_count, consumed_cap;
 
+    // One-time vistas already played.
+    EventFired      *events_done;
+    int              events_done_count, events_done_cap;
+
     // Per-dwelling state (troop count available + troop kind + max).
     DwellingState   *dwellings;
     int              dwelling_count, dwelling_cap;
@@ -366,6 +377,7 @@ uint32_t GameFingerprint(const Game *g, uint32_t h);
 bool GameReserveFoes(Game *g, int need);
 bool GameReservePlacements(Game *g, int need);
 bool GameReserveConsumed(Game *g, int need);
+bool GameReserveEventsDone(Game *g, int need);
 bool GameReserveDwellings(Game *g, int need);
 
 // ----- Lifecycle ------------------------------------------------------------
@@ -697,6 +709,13 @@ void GameAddConsumed(Game *g, const char *zone, int x, int y);
 // the map for the hero's current zone (on new game, save load, or zone
 // switch).
 void GameApplyTileMutations(const Game *g, Map *map, const char *zone);
+
+// True when the zone's event `id` has already played.
+bool GameEventFired(const Game *g, const char *zone, const char *id);
+// Fire the zone event at (x, y) if one is declared there, has not played, and
+// every precondition holds: spends what the preconditions consume, applies the
+// tile effects, records it, and queues its scene. Returns true iff it fired.
+bool GameTryFireEvent(Game *g, Map *map, int x, int y);
 
 // Total number of spell charges the hero is carrying (sum of counts[]).
 int  GameKnownSpells(const Game *g);

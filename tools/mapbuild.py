@@ -480,9 +480,22 @@ def check(pack, zid, path):
         held[gy][gx] = "forest"
     # Sailing in from another zone lands in a boat at that zone's arrival.
     arrivals = [(a["x"], a["y"]) for a in z.get("arrivals", {}).values()]
+    # A one-time vista ("events") changes tiles for good once it has played: the
+    # Rubicon's bridge is a tile the map never holds until then.
+    fired = [r[:] for r in ter]
+    codes = {c: v for c, v in g["tile_codes"].items()}
+    for ev in z.get("events", []):
+        for fx in ev.get("effects", []):
+            code = codes.get(fx["tile"])
+            if code:
+                fired[fx["y"]][fx["x"]] = ("river" if code.get("terrain") == "river"
+                                           else code.get("terrain", "grass"))
+                if code.get("is_bridge"):
+                    fired[fx["y"]][fx["x"]] = "grass"
     guarded, _ = reach(W, H, held, start, docks, False, arrivals)
     shut, sea = reach(W, H, ter, start, docks, False, arrivals)
     open_, _ = reach(W, H, ter, start, docks, True, arrivals)
+    played, _ = reach(W, H, fired, start, docks, False, arrivals)
     for t, d in docks:
         if d not in sea:
             bad.append(f"dock {d} is not on the open sea")
@@ -498,12 +511,13 @@ def check(pack, zid, path):
         bad.append(f"no arrival from {', '.join(missing)}")
 
     print(f"{zid}: {W}x{H}")
-    print(f"  {'':44s} guardians    guardians    rivers")
-    print(f"  {'':44s} standing     beaten       bridged")
+    print(f"  {'':44s} guardians    guardians    rivers        vistas")
+    print(f"  {'':44s} standing     beaten       bridged       played")
     for name, p in sorted(points.items(), key=lambda kv: (kv[1][1], kv[1][0])):
         print(f"  {name:44s} {'yes' if reached(guarded, p) else 'NO ':12s} "
               f"{'yes' if reached(shut, p) else 'NO ':12s} "
-              f"{'yes' if reached(open_, p) else 'NO'}")
+              f"{'yes' if reached(open_, p) else 'NO ':13s} "
+              f"{'yes' if reached(played, p) else 'NO'}")
     counts = {}
     for y in range(H):
         for x in range(W):

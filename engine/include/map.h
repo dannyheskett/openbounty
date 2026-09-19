@@ -130,6 +130,12 @@ bool MapWalkable(const Map *map, int x, int y);
 // No-op if the coord is out of bounds.
 void MapClearInteractive(Map *map, int x, int y);
 
+// Write the tile that `code` names in the pack's tile_codes at (x, y), the way
+// the map loader builds it. False when the code is not declared or (x, y) is
+// off the map.
+bool MapSetTileFromCode(Map *map, const Resources *res, int x, int y,
+                        unsigned char code);
+
 // Stamp a live foe's tile with the INTERACT_FOE overlay (id = placement_id, art
 // "wandering_army"). The single definition of "a foe occupies this tile" used by
 // zone-load stamping and by foes-follow re-sync. No-op if out of bounds or if the

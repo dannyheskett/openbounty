@@ -593,6 +593,11 @@ bool GameStep(Game *game, Map *map, Fog *fog,
         }
     }
 
+    // A one-time vista fires on arrival, before the day is spent: the hero is
+    // standing on its tile, holds what it asks for, and has not played it
+    // (REQ-246 does not apply -- a vista never bounces).
+    if (!bounced) GameTryFireEvent(game, map, game->position.x, game->position.y);
+
     if (!bounced) {
         bool day_end = false, week_end = false;
         int  paid = 0;

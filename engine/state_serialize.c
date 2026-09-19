@@ -521,6 +521,18 @@ cJSON *state_build_snapshot(const Game *g,
         cJSON_AddItemToObject(root, "consumed", arr);
     }
 
+    // ---- one-time vistas already played ----
+    {
+        cJSON *arr = cJSON_CreateArray();
+        for (int i = 0; i < g->events_done_count; i++) {
+            cJSON *m = cJSON_CreateObject();
+            cJSON_AddStringToObject(m, "zone", g->events_done[i].zone);
+            cJSON_AddStringToObject(m, "id", g->events_done[i].id);
+            cJSON_AddItemToArray(arr, m);
+        }
+        cJSON_AddItemToObject(root, "events_done", arr);
+    }
+
     // ---- placements (salted) ----
     {
         cJSON *arr = cJSON_CreateArray();

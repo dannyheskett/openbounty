@@ -197,9 +197,18 @@ static void draw_note_scene(void) {
     const Resources *res = resources_current();
     if (!res) return;
     int idx = 0;
-    dialog_face(&idx);
+    int kind = dialog_face(&idx);
     const Sprites *s = s_dialog_sprites;
-    if (!s || idx < 0 || idx >= s->class_count || !s->class_disgraced[idx].id) {
+    // A one-time vista draws the pack's own scene art; the temporary-death
+    // scene draws the class's. Either falls back to the in-lay when the pack
+    // shipped no picture.
+    Texture2D scene = { 0 };
+    if (kind == REQ_FACE_EVENT) {
+        if (s && idx >= 0 && idx < s->event_scene_count) scene = s->event_scene[idx];
+    } else if (s && idx >= 0 && idx < s->class_count) {
+        scene = s->class_disgraced[idx];
+    }
+    if (!scene.id) {
         draw_note_face();
         return;
     }
@@ -209,7 +218,7 @@ static void draw_note_scene(void) {
         if (resources_castle_is_home(&res->castles[i])) title = res->castles[i].name;
     const char *body = dialog_body_text();
     int lines = wrapped_lines(body, ml_full().w - 2 * ML_PAD);
-    UkScene L = uk_scene_ex(title, NULL, s->class_disgraced[idx], 1, lines * uk_line_h() + 3 * ML_PAD);
+    UkScene L = uk_scene_ex(title, NULL, scene, 1, lines * uk_line_h() + 3 * ML_PAD);
     uk_flow(L.full.x + ML_PAD, L.intro_y + ML_PAD, L.full.w - 2 * ML_PAD, L.full.x, 0, L.rows_y - ML_ROW_RULE,
             body, PAL_CLR(WHITE));
     UkRows rows = { { res->banners.castle_continue }, { true } };

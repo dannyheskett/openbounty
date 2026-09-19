@@ -528,6 +528,18 @@ their measurement layer.
   (`recruit_cache_enable`) around its own expansions; the memo key is complete,
   so an enabled cache returns the same winner the search would have computed.
 
+- **AP-046.** **Vistas are objectives.** Every `events` entry a zone declares
+  (REQ-221b) is enumerated as a `STEP_VISTA` whose target is the trigger tile
+  and whose handle is the event id (`autoplay/goals.c`); it is done when
+  `GameEventFired` says so. The executor (`exec_vista`,
+  `autoplay/primitives.c`) buys any rite the vista requires at a town that
+  sells it, then stands on the tile, where the engine plays the scene and
+  applies its effects; the prerequisite gate marks it `PREREQ_MAGIC` while the
+  hero cannot hold that rite. This is how a pack gates ground behind something
+  other than a fight: before it, Rome's Po plain was unreachable and seed 0
+  stalled at 162 of 175 with `reach` on all twelve objectives behind the
+  Rubicon (2026-09-19).
+
 ## 7. Prerequisites
 
 - **AP-060.** `autoplay/prereq.c` has encoded only the engine-enforced hard

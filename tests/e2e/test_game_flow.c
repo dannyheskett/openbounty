@@ -241,6 +241,90 @@ TEST evading_a_foe_that_walked_onto_the_hero_bounces_back(void) {
     PASS();
 }
 
+TEST a_vista_fires_once_and_changes_the_map(void) {
+    // A one-time vista (game.json `events`): stepping onto its tile with every
+    // precondition held plays the scene, spends what it consumes, changes the
+    // declared tiles for good, and never fires again.
+    extern bool adventure_walkable_on_foot(const Tile *t);
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, "continentia", FIXTURE_SEED));
+    ResZone *z = &res->zones[0];
+    int dirs[4][2] = { { 1, 0 }, { 0, 1 }, { -1, 0 }, { 0, -1 } };
+    int tx = -1, ty = -1, sdx = 0, sdy = 0;
+    for (int i = 0; i < 4 && tx < 0; i++) {
+        const Tile *t = MapGetTile(m, g->position.x + dirs[i][0], g->position.y + dirs[i][1]);
+        if (t && adventure_walkable_on_foot(t) && t->interactive == INTERACT_NONE && !t->is_bridge) {
+            sdx = dirs[i][0]; sdy = dirs[i][1];
+            tx = g->position.x + sdx; ty = g->position.y + sdy;
+        }
+    }
+    ASSERT(tx >= 0);
+
+    z->events = calloc(1, sizeof *z->events);
+    ASSERT(z->events);
+    z->event_count = 1;
+    ResZoneEvent *ev = &z->events[0];
+    strcpy(ev->id, "ford");
+    ev->x = tx; ev->y = ty;
+    ev->scene_index = -1;
+    strcpy(ev->title, "The Ford");
+    strcpy(ev->body, "The rite is spoken.");
+    ev->reqs = calloc(1, sizeof *ev->reqs);
+    ASSERT(ev->reqs);
+    ev->req_count = 1;
+    ev->reqs[0].kind = RES_EVENT_REQ_SPELL;
+    strcpy(ev->reqs[0].id, "bridge");
+    ev->reqs[0].count = 1;
+    ev->reqs[0].consume = true;
+    ev->effects = calloc(1, sizeof *ev->effects);
+    ASSERT(ev->effects);
+    ev->effect_count = 1;
+    ev->effects[0].x = tx; ev->effects[0].y = ty;
+    ev->effects[0].code = ',';                    // grass_variant: a declared code
+
+    int sp = spell_index_by_id("bridge");
+    ASSERT(sp >= 0);
+    int hx = g->position.x, hy = g->position.y;
+
+    // No charge: nothing happens.
+    g->spells.counts[sp] = 0;
+    GameStep(g, m, f, res, sdx, sdy);
+    ASSERT_EQ(0, g->events_done_count);
+    ASSERT(player_io_idle(g));
+
+    // With the charge: the scene, the spend, the tile.
+    g->position.x = hx; g->position.y = hy;
+    g->spells.counts[sp] = 2;
+    GameStep(g, m, f, res, sdx, sdy);
+    ASSERT_EQ(1, g->events_done_count);
+    ASSERT_EQ(1, g->spells.counts[sp]);
+    ASSERT(GameEventFired(g, "continentia", "ford"));
+    const PlayerRequest *r = player_io_front(g);
+    ASSERT(r);
+    ASSERT_EQ(PIO_NOTE_SCENE, r->kind);
+    ASSERT_EQ(REQ_FACE_EVENT, r->face);
+    ASSERT_STR_EQ("The Ford", r->header);
+    ASSERT_STR_EQ("grass_variant", TileArt(m, MapGetTile(m, tx, ty)));
+    player_io_drain_messages(g);
+
+    // Again: no second firing, no second charge spent.
+    g->position.x = hx; g->position.y = hy;
+    GameStep(g, m, f, res, sdx, sdy);
+    ASSERT_EQ(1, g->events_done_count);
+    ASSERT_EQ(1, g->spells.counts[sp]);
+    ASSERT(player_io_idle(g));
+
+    // The change outlives a zone switch: the map reloads and it is re-applied.
+    ASSERT(GameSwitchZone(g, m, f, "forestria"));
+    ASSERT(GameSwitchZone(g, m, f, "continentia"));
+    ASSERT_STR_EQ("grass_variant", TileArt(m, MapGetTile(m, tx, ty)));
+
+    free(ev->reqs); free(ev->effects); free(z->events);
+    z->events = NULL; z->event_count = 0;
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
 // Find a foot-walkable land tile orthogonally adjacent to the hero, returning
 // its delta in *dx,*dy. Used to set up a boarding step onto a known tile.
 static bool find_adjacent_walkable(Game *g, Map *m, int *dx, int *dy) {
@@ -418,6 +502,7 @@ SUITE(e2e_game_flow_suite) {
     RUN_TEST(switch_zone_preserves_fog_on_return);
     RUN_TEST(switch_zone_lands_at_the_arrival_for_its_origin);
     RUN_TEST(evading_a_foe_that_walked_onto_the_hero_bounces_back);
+    RUN_TEST(a_vista_fires_once_and_changes_the_map);
     RUN_TEST(boat_in_other_zone_is_not_boarded);
     RUN_TEST(boat_in_current_zone_is_boarded);
     RUN_TEST(gate_teleport_leaves_boat_behind);

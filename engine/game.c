@@ -88,6 +88,7 @@ static void game_free_tables(Game *g) {
         FogFree(&g->world.continent_fog[i]);
     free(g->world.continent_fog);
     free(g->consumed);
+    free(g->events_done);
     free(g->dwellings);
     free(g->placements);
     free(g->foes);
@@ -154,6 +155,7 @@ static bool list_reserve(void **arr, int *cap, int need, size_t elem) {
 bool GameReserveFoes(Game *g, int need)       { return g && GAME_LIST_RESERVE(g, foes, foe_cap, need); }
 bool GameReservePlacements(Game *g, int need) { return g && GAME_LIST_RESERVE(g, placements, placement_cap, need); }
 bool GameReserveConsumed(Game *g, int need)   { return g && GAME_LIST_RESERVE(g, consumed, consumed_cap, need); }
+bool GameReserveEventsDone(Game *g, int need) { return g && GAME_LIST_RESERVE(g, events_done, events_done_cap, need); }
 bool GameReserveDwellings(Game *g, int need)  { return g && GAME_LIST_RESERVE(g, dwellings, dwelling_cap, need); }
 
 // Copy a table of n entries into a fresh allocation (NULL for none).
@@ -202,6 +204,7 @@ bool GameCopy(Game *dst, const Game *src) {
     dst->world.orbs_found = keep.world.orbs_found;
     dst->world.continent_fog = keep.world.continent_fog;
     dst->consumed = keep.consumed;         dst->consumed_cap = keep.consumed_cap;
+    dst->events_done = keep.events_done;   dst->events_done_cap = keep.events_done_cap;
     dst->dwellings = keep.dwellings;       dst->dwelling_cap = keep.dwelling_cap;
     dst->placements = keep.placements;     dst->placement_cap = keep.placement_cap;
     dst->foes = keep.foes;                 dst->foe_cap = keep.foe_cap;
@@ -235,6 +238,7 @@ bool GameCopy(Game *dst, const Game *src) {
                     i < src->world.zone_count; i++)
         if (!FogCopy(&dst->world.continent_fog[i], &src->world.continent_fog[i])) ok = false;
     COPY_LIST(consumed, consumed_count, consumed_cap);
+    COPY_LIST(events_done, events_done_count, events_done_cap);
     COPY_LIST(dwellings, dwelling_count, dwelling_cap);
     COPY_LIST(placements, placement_count, placement_cap);
     COPY_LIST(foes, foe_count, foe_cap);
@@ -1532,6 +1536,98 @@ void GameApplyTileMutations(const Game *g, Map *map, const char *zone) {
         if (strcmp(m->zone, zone) != 0) continue;
         MapClearInteractive(map, m->x, m->y);
     }
+    // A vista that has played changed the map for good (its bridge, its cleared
+    // pass): re-apply those tiles every time the zone loads.
+    const ResZone *z = g->res ? resources_zone_by_id(g->res, zone) : NULL;
+    for (int i = 0; z && i < g->events_done_count; i++) {
+        if (strcmp(g->events_done[i].zone, zone) != 0) continue;
+        for (int k = 0; k < z->event_count; k++) {
+            const ResZoneEvent *ev = &z->events[k];
+            if (strcmp(ev->id, g->events_done[i].id) != 0) continue;
+            for (int e = 0; e < ev->effect_count; e++)
+                MapSetTileFromCode(map, g->res, ev->effects[e].x,
+                                   ev->effects[e].y, ev->effects[e].code);
+        }
+    }
+}
+
+bool GameEventFired(const Game *g, const char *zone, const char *id) {
+    if (!g || !zone || !id) return false;
+    for (int i = 0; i < g->events_done_count; i++)
+        if (strcmp(g->events_done[i].zone, zone) == 0 &&
+            strcmp(g->events_done[i].id, id) == 0) return true;
+    return false;
+}
+
+// How much of one precondition the hero holds right now.
+static int event_req_held(const Game *g, const ResEventReq *rq) {
+    switch (rq->kind) {
+    case RES_EVENT_REQ_SPELL: {
+        int idx = spell_index_by_id(rq->id);
+        return (idx >= 0 && idx < g->spells.count) ? g->spells.counts[idx] : 0;
+    }
+    case RES_EVENT_REQ_TROOP: {
+        int n = 0;
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++)
+            if (strcmp(g->army[i].id, rq->id) == 0) n += g->army[i].count;
+        return n;
+    }
+    case RES_EVENT_REQ_GOLD:
+        return g->stats.gold;
+    case RES_EVENT_REQ_ARTIFACT: {
+        const ArtifactDef *a = artifact_by_id(rq->id);
+        return (a && a->index >= 0 && a->index < g->artifacts.count &&
+                g->artifacts.found[a->index]) ? 1 : 0;
+    }
+    }
+    return 0;
+}
+
+// Spend what a precondition says it consumes (troops and artifacts are held,
+// never spent: a vista asks the hero to bring them, not to give them up).
+static void event_req_spend(Game *g, const ResEventReq *rq) {
+    if (!rq->consume) return;
+    switch (rq->kind) {
+    case RES_EVENT_REQ_SPELL: {
+        int idx = spell_index_by_id(rq->id);
+        if (idx >= 0 && idx < g->spells.count) {
+            g->spells.counts[idx] -= rq->count;
+            if (g->spells.counts[idx] < 0) g->spells.counts[idx] = 0;
+        }
+        break;
+    }
+    case RES_EVENT_REQ_GOLD:
+        g->stats.gold -= rq->count;
+        if (g->stats.gold < 0) g->stats.gold = 0;
+        break;
+    case RES_EVENT_REQ_TROOP:
+    case RES_EVENT_REQ_ARTIFACT:
+        break;
+    }
+}
+
+bool GameTryFireEvent(Game *g, Map *map, int x, int y) {
+    if (!g || !map || !g->res || !g->position.zone[0]) return false;
+    const ResZone *z = resources_zone_by_id(g->res, g->position.zone);
+    if (!z) return false;
+    for (int k = 0; k < z->event_count; k++) {
+        const ResZoneEvent *ev = &z->events[k];
+        if (ev->x != x || ev->y != y) continue;
+        if (GameEventFired(g, g->position.zone, ev->id)) return false;
+        for (int q = 0; q < ev->req_count; q++)
+            if (event_req_held(g, &ev->reqs[q]) < ev->reqs[q].count) return false;
+        if (!GameReserveEventsDone(g, g->events_done_count + 1)) return false;
+        for (int q = 0; q < ev->req_count; q++) event_req_spend(g, &ev->reqs[q]);
+        for (int e = 0; e < ev->effect_count; e++)
+            MapSetTileFromCode(map, g->res, ev->effects[e].x, ev->effects[e].y,
+                               ev->effects[e].code);
+        EventFired *done = &g->events_done[g->events_done_count++];
+        copy_id(done->zone, sizeof done->zone, g->position.zone);
+        copy_id(done->id, sizeof done->id, ev->id);
+        player_io_note_scene_event(g, ev->title, ev->body, ev->scene_index);
+        return true;
+    }
+    return false;
 }
 
 int GameKnownSpells(const Game *g) {

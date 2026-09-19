@@ -69,6 +69,23 @@ unsigned prereq_gated(const ExecCtx *ctx, const PlanStep *step,
                 m |= PREREQ_MAGIC;
         }
         break;
+    case STEP_VISTA:
+        // A vista asking for a rite is dead until the hero can hold one: magic
+        // first (bought at an alcove), then the rite itself at a town.
+        if (step->zone_index >= 0 && step->zone_index < ctx->res->zone_count) {
+            const ResZone *z = &ctx->res->zones[step->zone_index];
+            for (int k = 0; k < z->event_count; k++) {
+                if (strcmp(z->events[k].id, step->handle) != 0) continue;
+                for (int q = 0; q < z->events[k].req_count; q++) {
+                    const ResEventReq *rq = &z->events[k].reqs[q];
+                    if (rq->kind != RES_EVENT_REQ_SPELL) continue;
+                    int si = spell_index_by_id(rq->id);
+                    if (si >= 0 && g->spells.counts[si] >= rq->count) continue;
+                    if (!g->stats.knows_magic) m |= PREREQ_MAGIC;
+                }
+            }
+        }
+        break;
     case STEP_SCEPTER:
         // Finale (AP-052, re-homed from the planner's select loop): the dig
         // ends the game, so it waits until every other objective is done -- the

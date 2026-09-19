@@ -547,6 +547,90 @@ static bool exec_town_buy_siege(ExecCtx *ctx, ExecCause *out_cause,
     return true;
 }
 
+// A one-time vista (REQ-221b): hold what it asks for, then stand on its tile --
+// the engine plays the scene and applies its effects on arrival. Only the
+// spell precondition can be acquired here (a town sells the rite); a vista
+// asking for troops, gold or an artifact is attempted with what the hero has.
+static bool exec_vista(ExecCtx *ctx, const PlanStep *step,
+                       ExecCause *out_cause, char *why, int why_sz) {
+    Game *g = ctx->g;
+    const ResZone *z = &ctx->res->zones[step->zone_index];
+    const ResZoneEvent *ev = NULL;
+    for (int k = 0; k < z->event_count; k++)
+        if (strcmp(z->events[k].id, step->handle) == 0) ev = &z->events[k];
+    if (!ev) return false;
+
+    for (int q = 0; q < ev->req_count; q++) {
+        const ResEventReq *rq = &ev->reqs[q];
+        if (rq->kind != RES_EVENT_REQ_SPELL) continue;
+        int idx = spell_index_by_id(rq->id);
+        if (idx < 0) return false;
+        if (g->spells.counts[idx] >= rq->count) continue;
+        if (!g->stats.knows_magic) {              // play-legality (REQ-323)
+            if (out_cause) *out_cause = EXEC_CAUSE_OTHER;
+            snprintf(why, (size_t)why_sz, "vista:%s:magic", ev->id);
+            return false;
+        }
+        // The rite is sold by whichever town stocks it: go there and buy until
+        // the vista's count is met.
+        while (g->spells.counts[idx] < rq->count) {
+            NavPoint towns[AP_TOWNS_MAX];
+            int n = 0;
+            for (int i = 0; i < g->town_count && i < ctx->res->town_count && n < AP_TOWNS_MAX; i++) {
+                if (strcmp(g->towns[i].spell_for_sale, rq->id) != 0) continue;
+                int zi = zone_index_of(ctx->res, ctx->res->towns[i].zone);
+                if (zi < 0) continue;
+                towns[n].zone_index = zi;
+                towns[n].x = ctx->res->towns[i].x;
+                towns[n].y = ctx->res->towns[i].y;
+                n++;
+            }
+            if (n == 0) {
+                if (out_cause) *out_cause = EXEC_CAUSE_STOCK;
+                snprintf(why, (size_t)why_sz, "vista:%s:no-seller", ev->id);
+                return false;
+            }
+            ExecCause cc = EXEC_CAUSE_NONE;
+            int before = g->stats.days_left;
+            long cross_before = ledger_committed(DAY_ACCT_CROSSING);
+            if (move_to(ctx, towns, n, true, NULL, &cc) < 0) {
+                if (out_cause) *out_cause = cc;
+                snprintf(why, (size_t)why_sz, "vista:%s:seller-unreachable", ev->id);
+                return false;
+            }
+            acct_move(DAY_ACCT_APPROACH, before, cross_before, g);
+            exec_answer_pending(ctx, true);
+            if (!g->position.in_town[0] ||
+                !exec_buy_spell_at(ctx, g->position.in_town)) {
+                if (out_cause) *out_cause = EXEC_CAUSE_GOLD;
+                snprintf(why, (size_t)why_sz, "vista:%s:rite", ev->id);
+                return false;
+            }
+        }
+    }
+
+    // Stand on the tile, as a fetch does: the engine plays the scene there.
+    NavPoint at = { step->zone_index, step->x, step->y };
+    for (int round = 0; round < EXEC_MAX_ROUNDS; round++) {
+        if (planstep_is_done(g, step)) return true;
+        ExecCause cc = EXEC_CAUSE_NONE;
+        int before = g->stats.days_left;
+        long cross_before = ledger_committed(DAY_ACCT_CROSSING);
+        int r = move_to(ctx, &at, 1, true, NULL, &cc);
+        acct_move(DAY_ACCT_APPROACH, before, cross_before, g);
+        exec_answer_pending(ctx, true);     // the scene is a view: ack it
+        if (planstep_is_done(g, step)) return true;
+        if (r < 0) {
+            if (out_cause) *out_cause = cc;
+            snprintf(why, (size_t)why_sz, "vista:%s:reach", ev->id);
+            return false;
+        }
+    }
+    if (out_cause) *out_cause = EXEC_CAUSE_REACH;
+    snprintf(why, (size_t)why_sz, "vista:%s:unmet", ev->id);
+    return false;
+}
+
 // Move to the fight, lift at the gate, verify live, step on, fight (AP-082).
 static bool siege_or_slay(ExecCtx *ctx, const PlanStep *step,
                           ExecCause *out_cause, char *why, int why_sz) {
@@ -920,6 +1004,9 @@ bool execute_why(ExecCtx *ctx, const PlanStep *step,
         break;
     case STEP_SCEPTER:
         ok = exec_dig(ctx, step, &cause, scratch, sizeof scratch);
+        break;
+    case STEP_VISTA:
+        ok = exec_vista(ctx, step, &cause, scratch, sizeof scratch);
         break;
     }
     if (ctx->g->stats.game_over && !ctx->g->stats.won) {

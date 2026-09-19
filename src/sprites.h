@@ -41,6 +41,9 @@ typedef struct {
 
     Texture2D  *class_portrait;
     Texture2D  *class_disgraced;   // modern: the temporary-death scene, when the pack has one
+    // One-time vista scenes, parallel to res->event_scenes.
+    int         event_scene_count;
+    Texture2D  *event_scene;
     // villain_portrait[i] = frame 0 (still image, kept for compatibility).
     // villain_anim[i][0..villain_anim_frames[i]-1] = the animation strip.
     int         villain_count;

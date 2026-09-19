@@ -82,6 +82,7 @@ typedef enum {
     REQ_FACE_ARTIFACT,    // face_index = artifact index
     REQ_FACE_PORTRAIT,    // face_index = the pack's portrait index (a person)
     REQ_FACE_SCENE,       // face_index = class index: the hero's temporary-death scene
+    REQ_FACE_EVENT,       // face_index = Resources.event_scenes index: a vista
 } ReqFace;
 
 // WHAT KIND OF MOMENT this is, chosen by the engine at the call site and never
@@ -176,6 +177,11 @@ PlayerRequest *player_io_note_face (Game *g, const char *title, const char *body
 PlayerRequest *player_io_note_in_place(Game *g, const char *title, const char *body);
 PlayerRequest *player_io_note_scene(Game *g, const char *title, const char *body,
                                     int scene_index);
+
+// A one-time vista (game.json `events`): the same full-width scene, drawn with
+// the pack's own scene art (`Resources.event_scenes[scene_index]`).
+PlayerRequest *player_io_note_scene_event(Game *g, const char *title,
+                                          const char *body, int scene_index);
 
 PlayerRequest *player_io_ask       (Game *g, PendingFlow flow, ReqPromptKind prompt,
                                     const char *title, const char *body);

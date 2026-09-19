@@ -360,6 +360,21 @@ set for everything else.
   "tile_set_arts": ["grass", "grass_variant", "grass_01", "forest", "forest_edge_01"] }
 ```
 
+**One-time vistas.** A zone may declare `events`: moments that play once, when
+the hero steps onto their tile holding what they ask for. The scene is drawn
+full width (the image is 240x102, like every backdrop) with a single Continue,
+and the effects change the map for good -- they survive a zone switch and a
+save. `requires` takes `spell`, `troop`, `gold` or `artifact`, each with an
+optional `count` and `consume`; `effects` name a tile by its `tile_codes` key.
+
+```json
+{ "id": "rubicon", "x": 31, "y": 31,
+  "scene": "art/scenes/rubicon.png",
+  "title": "The Rubicon", "body": "Your pontifex speaks the rite ...",
+  "requires": [ { "spell": "bridge", "count": 1, "consume": true } ],
+  "effects":  [ { "x": 30, "y": 30, "tile": "\\xcc" } ] }
+```
+
 **Arrivals.** A zone may declare where a hero sailing in lands, by the zone
 sailed from. A zone left out, or no `arrivals` at all, lands at
 `hero_spawn`. A water tile arrives in the boat.

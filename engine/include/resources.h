@@ -1159,11 +1159,49 @@ typedef struct {
     int  dwelling_range_min;   // troop catalog index (inclusive)
     int  dwelling_range_max;   // troop catalog index (inclusive)
 } ResZoneSalt;
-
 typedef struct {
     char from[RES_ID_LEN];   // the zone sailed from
     int  x, y;
 } ResZoneArrival;
+
+
+// One precondition of a zone event: what the hero must hold for it to fire.
+// `count` is how much (charges, troops, gold, 1 for an artifact); `consume`
+// spends it when the event fires.
+typedef enum {
+    RES_EVENT_REQ_SPELL = 0,
+    RES_EVENT_REQ_TROOP,
+    RES_EVENT_REQ_GOLD,
+    RES_EVENT_REQ_ARTIFACT,
+} ResEventReqKind;
+
+typedef struct {
+    ResEventReqKind kind;
+    char id[RES_ID_LEN];     // spell / troop / artifact id; empty for gold
+    int  count;
+    bool consume;
+} ResEventReq;
+
+// What a fired event changes: a map tile becomes the tile that `code` names in
+// tile_codes (a bridge over a river, a cleared pass, a new road piece).
+typedef struct {
+    int  x, y;
+    unsigned char code;       // a tile_codes key, resolved at parse
+} ResEventEffect;
+
+// A one-time vista: stepping onto (x, y) with every precondition held plays a
+// full-width scene (art `scene`, `title` / `body`, Continue), applies the
+// effects for good, and never fires again. Heap lists, sized by the pack.
+typedef struct {
+    char id[RES_ID_LEN];
+    int  x, y;
+    char scene[RES_PATH_LEN];
+    int  scene_index;        // into Resources.event_scenes (-1 when none)
+    char title[RES_NAME_LEN];
+    char body[RES_BANNER_LEN];
+    int  req_count;       ResEventReq    *reqs;
+    int  effect_count;    ResEventEffect *effects;
+} ResZoneEvent;
 
 typedef struct {
     char id[RES_ID_LEN];
@@ -1197,6 +1235,9 @@ typedef struct {
     // by the pack; empty means every arrival uses hero_spawn.
     int  arrival_count;
     ResZoneArrival *arrivals;
+    // Optional one-time vistas ("events"), in the order the pack declares them.
+    int  event_count;
+    ResZoneEvent *events;
     int  neighbor_count;
     char (*neighbors)[RES_ID_LEN];           // heap, neighbor_count
 
@@ -1259,6 +1300,11 @@ typedef struct {
 
     int         zone_count;
     ResZone    *zones;                // heap, zone_count entries
+    // Every distinct `events[].scene` the pack declares, in first-seen order.
+    // A fired vista names its art by this index, so the shell loads the set
+    // once and draws by index. Heap, sized by the pack.
+    int         event_scene_count;
+    char      (*event_scenes)[RES_PATH_LEN];
     // Parallel to classes[]: per-class hero art, all-zero when undeclared.
     ResClassHero *class_hero;          // heap, classes_count entries
 
