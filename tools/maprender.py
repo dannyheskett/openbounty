@@ -110,7 +110,7 @@ def render_flat(rows, w, h, codes, scale):
     return img
 
 
-def render_tiles(rows, w, h, codes, pack_dir, tile_set="", cell=(48, 34)):
+def render_tiles(rows, w, h, codes, pack_dir, tile_set="", cell=(48, 34), set_arts=None):
     TW, TH = cell
     img = Image.new("RGB", (w * TW, h * TH), (0, 0, 0))
     cache = {}
@@ -123,8 +123,10 @@ def render_tiles(rows, w, h, codes, pack_dir, tile_set="", cell=(48, 34)):
             if art not in cache:
                 # Same fixed layout the engine uses: src/tile_cache.c resolves
                 # a tile_codes `art` stem as art/tiles/<stem>.png, or under
-                # art/tiles/<tile_set>/ when the zone declares a tile_set.
-                p = os.path.join(pack_dir, "art", "tiles", tile_set, art + ".png")
+                # art/tiles/<tile_set>/ when the zone declares a tile_set
+                # (only the names in its tile_set_arts, when it lists any).
+                own = tile_set and (not set_arts or art in set_arts)
+                p = os.path.join(pack_dir, "art", "tiles", tile_set if own else "", art + ".png")
                 cache[art] = (Image.open(p).convert("RGBA")
                               if os.path.exists(p) else None)
                 if cache[art] is None:
@@ -163,13 +165,14 @@ def main():
     rows, w, h = read_map(map_path)
 
     if "--tiles" in flags:
-        tile_set = ""
+        tile_set, set_arts = "", None
         for z in pack.get("zones", []):
             if zone_id and z.get("id") == zone_id:
                 tile_set = z.get("tile_set", "")
+                set_arts = set(z.get("tile_set_arts", [])) or None
         r = pack.get("render", {})
         cell = (int(r.get("tile_w", 48)), int(r.get("tile_h", 34)))
-        img = render_tiles(rows, w, h, codes, pack_dir, tile_set, cell)
+        img = render_tiles(rows, w, h, codes, pack_dir, tile_set, cell, set_arts)
     else:
         img = render_flat(rows, w, h, codes, scale)
         cell = (scale, scale)

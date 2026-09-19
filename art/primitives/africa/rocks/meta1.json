@@ -1,0 +1,50 @@
+{
+ "id": "395005c8-69d7-4977-91e9-ea4f21186f88",
+ "name": "warm ochre sandstone rock, the",
+ "state_name": "base",
+ "prompt": "warm ochre sandstone rock, the whole rock inside the frame, seen from above at a slight angle, lit from the north-west with a shaded front face on the south side, small shadow to the south-east, pixel art, transparent background",
+ "size": {
+  "width": 96,
+  "height": 96
+ },
+ "directions": 1,
+ "created_at": "2026-09-19T17:21:46.733191+00:00",
+ "view": null,
+ "rotation_urls": {
+  "south": null,
+  "west": null,
+  "east": null,
+  "north": null,
+  "south-east": null,
+  "south-west": null,
+  "north-east": null,
+  "north-west": null
+ },
+ "storage_urls": {
+  "frame_0": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/395005c8-69d7-4977-91e9-ea4f21186f88/rotations/frame_0.png",
+  "frame_1": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/395005c8-69d7-4977-91e9-ea4f21186f88/rotations/frame_1.png",
+  "frame_2": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/395005c8-69d7-4977-91e9-ea4f21186f88/rotations/frame_2.png",
+  "frame_3": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/395005c8-69d7-4977-91e9-ea4f21186f88/rotations/frame_3.png"
+ },
+ "frame_urls": [
+  "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/395005c8-69d7-4977-91e9-ea4f21186f88/rotations/frame_0.png",
+  "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/395005c8-69d7-4977-91e9-ea4f21186f88/rotations/frame_1.png",
+  "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/395005c8-69d7-4977-91e9-ea4f21186f88/rotations/frame_2.png",
+  "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/395005c8-69d7-4977-91e9-ea4f21186f88/rotations/frame_3.png"
+ ],
+ "style_settings": {
+  "no_background": true,
+  "item_descriptions": [
+   "broad rocky massif with a flat top, cliff face at the front",
+   "pile of broken sandstone and scree",
+   "low weathered boulder with sand drifted against it",
+   "split rock with a deep crevice, cliff face at the front"
+  ]
+ },
+ "tags": [],
+ "status": "review",
+ "group_id": "7b7b4c83-2726-4aff-a2eb-e910ef20448b",
+ "progress_percent": 17,
+ "eta_seconds": 395,
+ "animations": []
+}

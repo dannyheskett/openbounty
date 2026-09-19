@@ -1343,6 +1343,13 @@ except where a deviation is explicitly flagged (§34).
   `GameFoesFollow` returns the foe index so the caller fires the
   attack/recruit flow. Foe motion does not consume the hero's day budget and
   stops at impassable terrain.
+  A hostile foe that lands on the hero opens the same Fight/Evade decision as
+  stepping onto it, and declining bounces back the same way (REQ-246): the hero
+  returns to the tile, travel mode and boat of before that step, and the foe,
+  unstamped while it shared the hero's tile, is stamped where it stands so it is
+  drawn (`flow_apply_evade_bounce`; openKB `game.c`: `walk = !attack_foe(game)`
+  swaps the hero back to `last_x, last_y`). Before 2026-09-19 the hero stayed on
+  the foe and the foe was not drawn until the hero's next step.
 
 ---
 

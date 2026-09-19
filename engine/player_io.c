@@ -292,6 +292,11 @@ void player_io_answer(Game *g, Map *map, Fog *fog, const Resources *res,
                                       pending_foe_x, pending_foe_y,
                                       to_combat_result(outcome)))
                 pres.temp_death = true;
+        } else if (pending_foe_bounce) {
+            flow_apply_evade_bounce(g, map, pending_foe_id,
+                                    pending_foe_back_x, pending_foe_back_y,
+                                    pending_foe_back_travel,
+                                    pending_foe_back_boat_x, pending_foe_back_boat_y);
         }
         break;
     case FLOW_CHEST_CHOICE:
@@ -362,7 +367,8 @@ void player_io_answer(Game *g, Map *map, Fog *fog, const Resources *res,
     case FLOW_SIEGE_VILLAIN:
         pending_castle_id[0] = '\0'; break;
     case FLOW_ATTACK_FOE:
-        pending_foe_id[0] = '\0'; pending_foe_x = pending_foe_y = -1; break;
+        pending_foe_id[0] = '\0'; pending_foe_x = pending_foe_y = -1;
+        pending_foe_bounce = false; break;
     case FLOW_RECRUIT:
         pending_dwelling_troop[0] = '\0'; pending_dwelling_zone[0] = '\0';
         pending_dwelling_x = pending_dwelling_y = -1; break;

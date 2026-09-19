@@ -22,6 +22,10 @@ char pending_foe_id[24] = { 0 };
 bool pending_foe_forced = false;
 bool pending_foe_evade_blocked = false;
 int  pending_foe_x = -1, pending_foe_y = -1;
+bool pending_foe_bounce = false;
+int  pending_foe_back_x = -1, pending_foe_back_y = -1;
+int  pending_foe_back_travel = 0;
+int  pending_foe_back_boat_x = -1, pending_foe_back_boat_y = -1;
 
 int  pending_chest_gold       = 0;
 int  pending_chest_leadership = 0;
@@ -48,6 +52,10 @@ void pending_reset(void) {
     pending_foe_forced = false;
     pending_foe_evade_blocked = false;
     pending_foe_x = pending_foe_y = -1;
+    pending_foe_bounce = false;
+    pending_foe_back_x = pending_foe_back_y = -1;
+    pending_foe_back_travel = 0;
+    pending_foe_back_boat_x = pending_foe_back_boat_y = -1;
     pending_chest_gold = 0;
     pending_chest_leadership = 0;
     pending_discard_spell_idx = -1;

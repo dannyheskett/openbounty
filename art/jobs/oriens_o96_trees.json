@@ -1,0 +1,18 @@
+{
+ "description": "Levantine tree, round crown of dark green leaves with a visible trunk below it, the whole tree inside the frame, seen from above at a slight angle, small shadow to the south-east, pixel art, transparent background",
+ "batches": [
+  [
+   "cedar of Lebanon, broad layered round crown, trunk",
+   "oriental plane tree, wide round crown, pale trunk",
+   "walnut tree, dark round crown, trunk",
+   "pistachio tree, small round crown, short trunk"
+  ],
+  [
+   "old oak, wide round crown, thick trunk",
+   "fig tree, broad round crown, trunk",
+   "young plane tree, lighter round crown",
+   "dark round crown, thick trunk"
+  ]
+ ],
+ "_note": "Oriens trees (2026-09-19). Output in art/primitives/oriens/trees."
+}

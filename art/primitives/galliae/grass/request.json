@@ -1,0 +1,19 @@
+{
+ "lower_description": "open prairie grass, long and windswept, soft sage and olive green with pale straw-coloured tips",
+ "upper_description": "the same prairie grass with a few small tufts of wildflowers",
+ "transition_description": "",
+ "tile_size": {
+  "width": 32,
+  "height": 32
+ },
+ "mode": "standard",
+ "shape_style": "round",
+ "enhance": true,
+ "view": "high top-down",
+ "outline": "lineless",
+ "shading": "medium shading",
+ "detail": "medium detail",
+ "text_guidance_scale": 8.0,
+ "transition_size": 0.0,
+ "seed": 2121
+}

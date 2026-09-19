@@ -64,6 +64,14 @@ extern bool pending_foe_forced;   // static-foe fight: no decline, auto-confirm
 // hostile foe cannot be evaded -- the fight is the only answer (GameFoeCanEvade).
 extern bool pending_foe_evade_blocked;
 extern int  pending_foe_x, pending_foe_y;
+// A hostile foe that walked onto the hero (GameFoesFollow) opens the same
+// prompt as the hero stepping onto it, so declining must bounce back the same
+// way (REQ-246, REQ-284; openKB game.c: walk = !attack_foe -> swap to last):
+// the hero's tile, travel mode and boat from before that step.
+extern bool pending_foe_bounce;
+extern int  pending_foe_back_x, pending_foe_back_y;
+extern int  pending_foe_back_travel;
+extern int  pending_foe_back_boat_x, pending_foe_back_boat_y;
 
 // Gold-chest choice prompt state .
 extern int pending_chest_gold;

@@ -216,6 +216,22 @@ bool flow_apply_siege_villain(Game *g, const Resources *res,
     return false;
 }
 
+void flow_apply_evade_bounce(Game *g, Map *map, const char *foe_id,
+                             int back_x, int back_y, int back_travel,
+                             int back_boat_x, int back_boat_y) {
+    if (!g || !map || back_x < 0 || back_y < 0) return;
+    g->position.x = back_x;
+    g->position.y = back_y;
+    g->position.last_x = back_x;
+    g->position.last_y = back_y;
+    g->travel_mode = (TravelMode)back_travel;
+    g->boat.x = back_boat_x;
+    g->boat.y = back_boat_y;
+    const FoeState *f = (foe_id && foe_id[0]) ? GameFindFoe(g, foe_id) : NULL;
+    if (f && f->alive && strcmp(f->zone, g->position.zone) == 0)
+        MapStampFoe(map, f->x, f->y, f->placement_id);
+}
+
 bool flow_apply_attack_foe(Game *g, Map *map, const char *foe_id,
                            int foe_x, int foe_y, CombatResult outcome) {
     if (outcome == COMBAT_RESULT_WIN) {

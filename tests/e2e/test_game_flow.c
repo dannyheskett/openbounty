@@ -10,6 +10,8 @@
 #include "tile.h"
 #include "map.h"
 #include "step.h"
+#include "player_io.h"
+#include "pending.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -200,6 +202,45 @@ TEST switch_zone_lands_at_the_arrival_for_its_origin(void) {
     PASS();
 }
 
+TEST evading_a_foe_that_walked_onto_the_hero_bounces_back(void) {
+    // A hostile foe that steps onto the hero opens the same Fight/Evade
+    // prompt as the hero stepping onto it, and Evade must bounce back the same
+    // way (REQ-246, REQ-284): the hero returns to the tile the step began on and
+    // the foe is stamped, so drawn, on its own tile.
+    extern bool adventure_walkable_on_foot(const Tile *t);
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, "continentia", FIXTURE_SEED));
+    FoeState *fo = NULL;
+    for (int i = 0; i < g->foe_count && !fo; i++) {
+        FoeState *c = &g->foes[i];
+        if (!c->alive || c->friendly || c->is_static || strcmp(c->zone, g->position.zone)) continue;
+        bool open = true;
+        for (int k = 1; k <= 2; k++) {
+            const Tile *t = MapGetTile(m, c->x + k, c->y);
+            if (!t || !adventure_walkable_on_foot(t) || t->interactive != INTERACT_NONE) open = false;
+        }
+        if (open) fo = c;
+    }
+    ASSERT(fo);
+    int fx = fo->x, fy = fo->y;
+    g->position.x = g->position.last_x = fx + 2;
+    g->position.y = g->position.last_y = fy;
+    GameStep(g, m, f, res, -1, 0);
+    ASSERT_EQ(fx + 1, fo->x);                       // the foe walked onto the hero
+    ASSERT_EQ(fx + 1, g->position.x);
+    ASSERT_EQ(FLOW_ATTACK_FOE, pending_flow);
+    player_io_drain_messages(g);
+    player_io_answer(g, m, f, res, (FlowAnswer){ FLOW_ANS_NO, 0 },
+                     PLAYER_IO_COMBAT_NOT_RUN, NULL);
+    ASSERT_EQ(fx + 2, g->position.x);               // back where the step began
+    ASSERT_EQ(fy, g->position.y);
+    ASSERT_EQ(fx + 1, fo->x);                       // the foe stays, and is drawn
+    ASSERT_EQ(INTERACT_FOE, MapGetTile(m, fo->x, fo->y)->interactive);
+    ASSERT(fo->alive);
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
 // Find a foot-walkable land tile orthogonally adjacent to the hero, returning
 // its delta in *dx,*dy. Used to set up a boarding step onto a known tile.
 static bool find_adjacent_walkable(Game *g, Map *m, int *dx, int *dy) {
@@ -376,6 +417,7 @@ SUITE(e2e_game_flow_suite) {
     RUN_TEST(switch_zone_updates_position_zone);
     RUN_TEST(switch_zone_preserves_fog_on_return);
     RUN_TEST(switch_zone_lands_at_the_arrival_for_its_origin);
+    RUN_TEST(evading_a_foe_that_walked_onto_the_hero_bounces_back);
     RUN_TEST(boat_in_other_zone_is_not_boarded);
     RUN_TEST(boat_in_current_zone_is_boarded);
     RUN_TEST(gate_teleport_leaves_boat_behind);

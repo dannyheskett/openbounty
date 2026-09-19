@@ -1,0 +1,24 @@
+{
+ "lower_description": "open prairie grass, long and windswept, soft sage and olive green with pale straw-coloured tips",
+ "tile_size": {
+  "width": 32,
+  "height": 32
+ },
+ "mode": "standard",
+ "shape_style": "round",
+ "enhance": false,
+ "view": "high top-down",
+ "outline": "lineless",
+ "shading": "medium shading",
+ "detail": "medium detail",
+ "text_guidance_scale": 8.0,
+ "seed": 2123,
+ "lower_base_tile_id": "83f91c7d-6ce0-46cf-8c4f-937131c464ca",
+ "lower_reference_image": {
+  "type": "base64",
+  "base64": "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"
+ },
+ "upper_description": "cobblestone road paved with small close-set rounded grey stones, dark joints between them, even and flat",
+ "transition_description": "a single edging course of darker set stones where the paving meets the grass",
+ "transition_size": 0.0
+}

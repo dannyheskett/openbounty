@@ -104,6 +104,14 @@ bool flow_apply_siege_villain(Game *g, const Resources *res,
 bool flow_apply_attack_foe(Game *g, Map *map, const char *foe_id,
                            int foe_x, int foe_y, CombatResult outcome);
 
+// FLOW_ATTACK_FOE declined after the foe walked onto the hero: the hero goes
+// back to the tile, travel mode and boat of before that step, as a decline
+// after stepping onto the foe does (REQ-246), and the foe, left unstamped while
+// it shared the hero's tile, is stamped where it stands so it is drawn.
+void flow_apply_evade_bounce(Game *g, Map *map, const char *foe_id,
+                             int back_x, int back_y, int back_travel,
+                             int back_boat_x, int back_boat_y);
+
 // FLOW_CHEST_CHOICE (answer 1 = gold (A), 2 = leadership (B)).
 void flow_apply_chest_choice(Game *g, int chest_gold, int chest_leadership,
                              FlowAnswer ans);

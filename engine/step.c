@@ -620,6 +620,14 @@ bool GameStep(Game *game, Map *map, Fog *fog,
             } else {
                 start_foe_hostile_flow(game, fid,
                                        game->position.x, game->position.y);
+                // Declining sends the hero back where this step began, as
+                // stepping onto the foe does (REQ-246).
+                pending_foe_bounce = true;
+                pending_foe_back_x = prev_x;
+                pending_foe_back_y = prev_y;
+                pending_foe_back_travel = (int)prev_travel_mode;
+                pending_foe_back_boat_x = prev_boat_x;
+                pending_foe_back_boat_y = prev_boat_y;
             }
         }
         if (week_end) {

@@ -1,0 +1,19 @@
+{
+ "lower_description": "tall grass like a rice paddy, long upright blades standing in dense even rows, fresh yellow-green, no water",
+ "upper_description": "the same tall grass with a few small darker clumps",
+ "transition_description": "",
+ "tile_size": {
+  "width": 32,
+  "height": 32
+ },
+ "mode": "standard",
+ "shape_style": "round",
+ "enhance": true,
+ "view": "high top-down",
+ "outline": "lineless",
+ "shading": "medium shading",
+ "detail": "medium detail",
+ "text_guidance_scale": 8.0,
+ "transition_size": 0.0,
+ "seed": 4111
+}

@@ -1,0 +1,18 @@
+{
+ "description": "pale grey limestone rock, the whole rock inside the frame, seen from above at a slight angle, lit from the north-west with a shaded front face on the south side, small shadow to the south-east, pixel art, transparent background",
+ "batches": [
+  [
+   "rounded limestone boulder, cracked, shaded south face",
+   "jagged crag with a sheer cliff face at the front",
+   "rock ledge, flat top with a dark cliff face below it",
+   "tall rock tooth with snow on its tip"
+  ],
+  [
+   "broad rocky massif with a snow cap, cliff face at the front",
+   "pile of broken limestone rocks and scree",
+   "low weathered boulder, dry scrub on the top",
+   "split rock with a deep crevice, cliff face at the front"
+  ]
+ ],
+ "_note": "Oriens rocks (2026-09-19). Output in art/primitives/oriens/rocks."
+}

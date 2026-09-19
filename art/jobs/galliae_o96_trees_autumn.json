@@ -1,0 +1,18 @@
+{
+ "description": "Northern broadleaf tree in autumn, round leafy crown of orange, russet and gold leaves with a visible trunk below it, seen from above at a slight angle, small shadow to the south-east, pixel art, transparent background",
+ "batches": [
+  [
+   "copper beech, round crown, short trunk",
+   "English oak, russet round crown, trunk",
+   "ash tree, yellow airy crown, trunk",
+   "hornbeam, orange dense round crown, trunk"
+  ],
+  [
+   "old oak, wide russet crown, thick trunk",
+   "young beech, golden round crown",
+   "lime tree, gold full round crown, trunk",
+   "dark red round crown, thick trunk"
+  ]
+ ],
+ "_note": "Galliae autumn trees (2026-09-19), replacing the green run (kept in art/primitives/galliae/trees_green; job galliae_o96_trees.json). Output in art/primitives/galliae/trees."
+}

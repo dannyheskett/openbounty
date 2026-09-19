@@ -76,6 +76,14 @@ else:
     EDGE_W = [(7, 4, "top"), (3, 12, "mid"), (5, 0, "bottom")]
     EDGE_E = [(3, 0, "top"), (6, 14, "mid"), (0, 6, "bottom")]
     LEDGE = None                  # no cliff slab: its straight bottom and ends squared the outer corners (2026-09-10)
+    # --slots FILE: another rock set's own slots, {"upper", "lower", "edge_w",
+    # "edge_e"} in the shapes above, since which rock fits a slot depends on
+    # its ink box (Galliae's rocks, 2026-09-19).
+    if "--slots" in sys.argv:
+        _s = json.load(open(sys.argv[sys.argv.index("--slots") + 1]))
+        UPPER, LOWER = _s["upper"], _s["lower"]
+        EDGE_W = [tuple(e) for e in _s["edge_w"]]
+        EDGE_E = [tuple(e) for e in _s["edge_e"]]
 
 OPEN = {11: "N", 12: "S", 9: "E", 10: "W", 1: "NW", 3: "NE", 2: "SW", 4: "SE",
         5: "", 6: "", 7: "", 8: "", 0: "",
