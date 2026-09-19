@@ -562,12 +562,7 @@ def place(pack, zid, path, regions_path):
                 die(f"region {reg['name']}: room for {got} of {n} {kind}")
     z["chests"] = [{"id": f"chest_{i + 1}", "x": x, "y": y}
                    for i, (x, y) in enumerate(chests)] + fixed_chests
-    # The guardians go first: the engine adds at most
-    # world.hostile_armies_per_zone armies and drops the rest of the list.
-    cap = g.get("world", {}).get("hostile_armies_per_zone", 35)
-    if len(fixed) + len(armies) > cap:
-        die(f"{len(fixed)} guardians + {len(armies)} armies is over the zone's "
-            f"cap of {cap}; the engine would drop the rest")
+    # The guardians first, then the scattered armies.
     z["wandering_armies"] = fixed + [{"x": x, "y": y, "id": f"wandering_army_{i:03d}"}
                                      for i, (x, y) in enumerate(armies)]
     return g, z, chests, armies

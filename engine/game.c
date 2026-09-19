@@ -903,16 +903,12 @@ void salt_continent(Game *g, int continent, int min_artifacts, int min_navmaps,
 
     const ResZone *z = &g->res->zones[continent];
 
-    // Hostile foes: static `armies[]` placements in the zone definition
-    // become hostile foes with rolled garrisons. Registered first so
-    // friendly
-    // foes appear after them in g->foes[] -- but classification is by
-    // the per-foe `friendly` flag, not by index ordering.
-    // Cap hostiles at the pack's per-zone budget (world.hostile_armies_per_zone;
-    // OpenKB's 35 = MAX_FOES 40 less the 5 friendly slots).
-    int hostile_cap = g->res->world.hostile_armies_per_zone;
-    int army_cap = z->army_count < hostile_cap ? z->army_count : hostile_cap;
-    for (int i = 0; i < army_cap; i++) {
+    // Hostile foes: every army the zone declares (zones[].wandering_armies)
+    // becomes a hostile foe, its garrison rolled or, for a guardian, its own.
+    // Registered first so friendly foes appear after them in g->foes[] -- but
+    // classification is by the per-foe `friendly` flag, not by index ordering.
+    // The list is sized by the pack: no count is dropped.
+    for (int i = 0; i < z->army_count; i++) {
         const ResZoneArmy *a = &z->armies[i];
         const char *aid = (a->id[0]) ? a->id : NULL;
         char fallback[32];

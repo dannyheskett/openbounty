@@ -2625,7 +2625,6 @@ bool resources_load(Resources *res, const char *manifest_path) {
              json_str(jw, "language", "en"));
     res->world.max_army_slots = json_int(jw, "max_army_slots", 5);
     res->world.fog_sight      = json_int(jw, "fog_sight",      3);
-    res->world.hostile_armies_per_zone = json_int(jw, "hostile_armies_per_zone", 35);
     cJSON *jdo = cJSON_GetObjectItem(jw, "default_options");
     // Fallback defaults: delay, sounds, walk_beep, anim, cga, music, volume.
     static const int default_options_fallback[7] = { 4, 1, 1, 1, 1, 0, 5 };

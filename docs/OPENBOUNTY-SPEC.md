@@ -1277,9 +1277,10 @@ except where a deviation is explicitly flagged (§34).
 - **REQ-280.** A `FoeState` (§4.3) holds zone, `(x,y)`, `placement_id`,
   `alive`, `friendly`, and a 5-troop garrison. The foe list grows as foes are
   salted, and static zone armies and salt-placed friendly foes share it. To
-  keep OpenKB's per-continent split (`foe_coords[4][40]`), `salt_continent`
-  bounds each continent to `world.hostile_armies_per_zone` (35) hostiles plus
-  its `friendly_foes` (5) friendlies. Static hostile foes come from `zones[].armies[]` with garrisons
+  keep OpenKB's per-continent split, `salt_continent` raises every army a
+  zone declares in `wandering_armies` (no cap: the list is sized by the pack;
+  King's Bounty declares at most 35 a zone, OpenKB's `foe_coords[4][40]` less
+  5 friendly) plus its `friendly_foes` friendlies. Static hostile foes come from `zones[].armies[]` with garrisons
   pre-rolled at salt time (`roll_hostile_garrison`); friendly foes are
   salt-placed with placeholder garrisons re-rolled on join (§15.5).
 

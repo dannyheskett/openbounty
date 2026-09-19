@@ -224,7 +224,6 @@ typedef struct {
     char language[RES_ID_LEN];    // base locale code; strings load from strings/<language>.json
     int  max_army_slots;
     int  fog_sight;
-    int  hostile_armies_per_zone;   // most wandering armies a zone's armies[] raises (35)
     // Initial player state defaults, used by GameInit when no override exists.
     char default_name[RES_NAME_LEN];   // fallback when player enters no name
     int  default_options[7];           // delay, sounds, walk_beep, anim, cga, music, volume

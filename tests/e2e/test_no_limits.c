@@ -25,6 +25,7 @@
 #define BIG_SAVE  "/tmp/ob_nolimits_save.json"
 #define BIG_W     300
 #define BIG_H     300
+#define BIG_ARMIES 120   // hostile armies in one zone
 
 // Set obj[key] = item, adding the key when absent.
 static void set_item(cJSON *obj, const char *key, cJSON *item) {
@@ -115,6 +116,10 @@ static bool write_big_pack(void) {
             cJSON *chests = cJSON_GetObjectItem(z, "chests");
             for (int i = 0; i < 600; i++)
                 cJSON_AddItemToArray(chests, xy(10 + i % 280, 10 + (i / 280) * 3));
+            // Far past the 35 armies a zone once held: every one is raised.
+            cJSON *armies = cJSON_GetObjectItem(z, "wandering_armies");
+            for (int i = 0; i < BIG_ARMIES; i++)
+                cJSON_AddItemToArray(armies, xy(10 + i % 280, 100 + (i / 280) * 3));
         }
         cJSON_AddItemToArray(zones, z);
     }
@@ -182,6 +187,13 @@ TEST pack_past_every_old_cap_plays_saves_and_loads(void) {
         ok = g->castle_count == 40 && g->town_count == 40 && g->spells.count == 40 &&
              g->contract.villain_count == 40 && g->artifacts.count == 30 &&
              g->world.zone_count == 12 && strcmp(g->character.cls.id, "class_11") == 0;
+    }
+    if (ok) {
+        stage = "armies";
+        int hostile = 0;
+        for (int i = 0; i < g->foe_count; i++)
+            if (strcmp(g->foes[i].zone, "big0") == 0 && !g->foes[i].friendly) hostile++;
+        ok = hostile == BIG_ARMIES;
     }
     // The 300x300 zone with its 600 chests.
     if (ok) {

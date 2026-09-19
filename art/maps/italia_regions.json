@@ -1,5 +1,5 @@
 {
- "_note": "Where tools/mapbuild.py place scatters Italia's chests and wandering armies. Boxes are inclusive tile ranges; only walkable plain grass inside them is used. Armies total 31 so the four static guardians fit under world.hostile_armies_per_zone (35).",
+ "_note": "Where tools/mapbuild.py place scatters Italia's chests and wandering armies. Boxes are inclusive tile ranges; only walkable plain grass inside them is used. The four static guardians are placed by "fixed", on top of the scattered armies.",
  "seed": 2026,
  "spacing": 2,
  "fixed": {
