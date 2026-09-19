@@ -51,13 +51,14 @@ void FogReveal(Fog *fog, const Map *map, int cx, int cy, int radius) {
     }
 }
 
-void FogRevealRadius(Fog *fog, const Map *map, int cx, int cy, int radius) {
+void FogRevealRect(Fog *fog, const Map *map, int cx, int cy, int rx, int ry) {
     if (!fog || !map || !FogSize(fog, map->width, map->height)) return;
-    if (radius < 0) radius = 0;
-    int lim = map->width > map->height ? map->width : map->height;
-    if (radius > lim) radius = lim;
-    for (int dy = -radius; dy <= radius; dy++) {
-        for (int dx = -radius; dx <= radius; dx++) {
+    if (rx < 0) rx = 0;
+    if (ry < 0) ry = 0;
+    if (rx > map->width)  rx = map->width;
+    if (ry > map->height) ry = map->height;
+    for (int dy = -ry; dy <= ry; dy++) {
+        for (int dx = -rx; dx <= rx; dx++) {
             int x = cx + dx;
             int y = cy + dy;
             if (x < 0 || y < 0 || x >= map->width || y >= map->height) continue;
@@ -68,11 +69,10 @@ void FogRevealRadius(Fog *fog, const Map *map, int cx, int cy, int radius) {
 
 void FogRevealFor(const Resources *res, Fog *fog, const Map *map,
                   int cx, int cy) {
-    const Resources *r = res;
-    if (r && r->render.mode == RENDER_MODE_MODERN)
-        FogRevealRadius(fog, map, cx, cy, r->world.fog_sight);
+    if (res && res->render.tiles_w > 0 && res->render.tiles_h > 0)
+        FogRevealRect(fog, map, cx, cy, res->render.tiles_w / 2, res->render.tiles_h / 2);
     else
-        FogReveal(fog, map, cx, cy, r ? r->world.fog_sight : 2);
+        FogReveal(fog, map, cx, cy, 2);
 }
 
 void FogSet(Fog *fog, int x, int y, bool seen) {

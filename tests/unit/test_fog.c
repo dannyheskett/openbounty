@@ -75,40 +75,43 @@ TEST reveal_radius_arg_is_ignored(void) {
     PASS();
 }
 
-// FogRevealRadius honours its radius: radius 3 is a 7x7 square.
-TEST reveal_radius_honours_the_radius(void) {
+// FogRevealRect honours its half extents: 3 x 2 is a 7x5 rectangle.
+TEST reveal_rect_honours_its_half_extents(void) {
     Resources *res; Game *g; Map *m; Fog *f;
     ASSERT(fx_init_game_full(&res, &g, &m, &f, "continentia", FIXTURE_SEED));
     int cx = 20, cy = 20;
-    FogRevealRadius(f, m, cx, cy, 3);
-    for (int dy = -3; dy <= 3; dy++)
+    FogRevealRect(f, m, cx, cy, 3, 2);
+    for (int dy = -2; dy <= 2; dy++)
         for (int dx = -3; dx <= 3; dx++)
             ASSERT(FogSeen(f, cx + dx, cy + dy));
     ASSERT_FALSE(FogSeen(f, cx + 4, cy));
-    ASSERT_FALSE(FogSeen(f, cx, cy - 4));
+    ASSERT_FALSE(FogSeen(f, cx, cy - 3));
+    ASSERT_FALSE(FogSeen(f, cx, cy + 3));
     fx_free_game_full(res, g, m, f);
     PASS();
 }
 
-// The pack's reveal: legacy is the original's 5x5 whatever fog_sight says;
-// modern honours fog_sight, so a 7-wide viewport has no unexplored columns.
-TEST reveal_for_is_authentic_in_legacy_and_honours_fog_sight_in_modern(void) {
+// The reveal is the pack's viewport in both modes: a 5x5 viewport gets the
+// original's 5x5, a 7x5 one gets 7x5, so the tile past each edge of the view
+// stays unexplored and shows the fog fade.
+TEST reveal_for_is_the_packs_viewport_in_both_modes(void) {
     Resources *res; Game *g; Map *m; Fog *f;
     ASSERT(fx_init_game_full(&res, &g, &m, &f, "continentia", FIXTURE_SEED));
-    ASSERT_EQ(3, res->world.fog_sight);          // what both shipped packs declare
-
-    res->render.mode = RENDER_MODE_LEGACY;
+    ASSERT_EQ(5, res->render.tiles_w);           // the legacy pack's 5x5
+    ASSERT_EQ(5, res->render.tiles_h);
     FogRevealFor(res, f, m, 20, 20);
     ASSERT(FogSeen(f, 22, 22));
-    ASSERT_FALSE(FogSeen(f, 23, 20));            // still the authentic 5x5
+    ASSERT_FALSE(FogSeen(f, 23, 20));
+    ASSERT_FALSE(FogSeen(f, 20, 23));
 
     FogInit(f);
-    res->render.mode = RENDER_MODE_MODERN;
+    int tw = res->render.tiles_w, th = res->render.tiles_h;
+    res->render.tiles_w = 7; res->render.tiles_h = 5;
     FogRevealFor(res, f, m, 20, 20);
-    ASSERT(FogSeen(f, 23, 23));                  // 7x7
+    ASSERT(FogSeen(f, 23, 22));                  // 7x5
     ASSERT_FALSE(FogSeen(f, 24, 20));
-
-    res->render.mode = RENDER_MODE_LEGACY;       // leave the shared fixture as found
+    ASSERT_FALSE(FogSeen(f, 20, 23));
+    res->render.tiles_w = tw; res->render.tiles_h = th;   // leave the shared fixture as found
     fx_free_game_full(res, g, m, f);
     PASS();
 }
@@ -177,8 +180,8 @@ SUITE(unit_fog_suite) {
     RUN_TEST(reveal_marks_5x5_square);
     RUN_TEST(reveal_clamps_at_map_edges);
     RUN_TEST(reveal_radius_arg_is_ignored);
-    RUN_TEST(reveal_radius_honours_the_radius);
-    RUN_TEST(reveal_for_is_authentic_in_legacy_and_honours_fog_sight_in_modern);
+    RUN_TEST(reveal_rect_honours_its_half_extents);
+    RUN_TEST(reveal_for_is_the_packs_viewport_in_both_modes);
     RUN_TEST(seen_out_of_bounds_returns_false);
     RUN_TEST(fog_has_no_size_limit);
     RUN_TEST(fog_survives_save_load_round_trip);

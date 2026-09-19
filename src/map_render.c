@@ -178,7 +178,12 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
     }
 
     // Fog-edge darkening gradient. For each seen tile, check cardinal neighbors
-    // and draw fading black strips on edges facing unseen neighbors.
+    // and draw fading black strips on edges facing unseen neighbors. Three
+    // strips, each the same share of the tile in every pack: 2 px of the
+    // original's 48x34 tile (1/24 of its width, 1/17 of its height), so Rome's
+    // 96 px tile fades as far in as King's Bounty's does.
+    const int bw = CL_TILE_W / 24 > 0 ? CL_TILE_W / 24 : 1;
+    const int bh = CL_TILE_H / 17 > 0 ? CL_TILE_H / 17 : 1;
     for (int ty = 0; ty < CL_MAP_TILES_H; ty++) {
         for (int tx = 0; tx < CL_MAP_TILES_W; tx++) {
             int mx = cam_x + tx;
@@ -198,13 +203,13 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
                     Color fog_strip = { 0, 0, 0, alpha };
                     int sx, sy, sw, sh;
                     if (NDY[d] == -1) {
-                        sx = px; sy = py + k * 2; sw = CL_TILE_W; sh = 2;
+                        sx = px; sy = py + k * bh; sw = CL_TILE_W; sh = bh;
                     } else if (NDY[d] == 1) {
-                        sx = px; sy = py + CL_TILE_H - k * 2 - 2; sw = CL_TILE_W; sh = 2;
+                        sx = px; sy = py + CL_TILE_H - k * bh - bh; sw = CL_TILE_W; sh = bh;
                     } else if (NDX[d] == -1) {
-                        sx = px + k * 2; sy = py; sw = 2; sh = CL_TILE_H;
+                        sx = px + k * bw; sy = py; sw = bw; sh = CL_TILE_H;
                     } else {
-                        sx = px + CL_TILE_W - k * 2 - 2; sy = py; sw = 2; sh = CL_TILE_H;
+                        sx = px + CL_TILE_W - k * bw - bw; sy = py; sw = bw; sh = CL_TILE_H;
                     }
                     DrawRectangle(sx, sy, sw, sh, fog_strip);
                 }

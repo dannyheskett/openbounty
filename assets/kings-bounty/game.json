@@ -10,7 +10,6 @@
 	"world":	{
 		"language":	"en",
 		"max_army_slots":	5,
-		"fog_sight":	3,
 		"starting_zone":	"continentia",
 		"zone_noun":	"continent",
 		"zone_noun_plural":	"continents",

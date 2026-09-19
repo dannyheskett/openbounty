@@ -32,15 +32,17 @@ bool FogSeen(const Fog *fog, int x, int y);
 // Mark (x, y) seen or unseen. No-op outside the fog.
 void FogSet(Fog *fog, int x, int y, bool seen);
 
-// A square of (2 * radius + 1) tiles around (cx, cy), clamped to the map,
-// honouring the radius. FogReveal above is the original's fixed 5x5.
-void FogRevealRadius(Fog *fog, const Map *map, int cx, int cy, int radius);
+// A rectangle of (2 * rx + 1) x (2 * ry + 1) tiles around (cx, cy), clamped
+// to the map. FogReveal above is the original's fixed 5x5.
+void FogRevealRect(Fog *fog, const Map *map, int cx, int cy, int rx, int ry);
 
-// The reveal the pack asks for, from where the hero stands. Legacy keeps the
-// original's authentic 5x5, whatever the pack declares. Modern honours
-// world.fog_sight: its viewport is wider than five tiles (Rome's is 7), and a
-// 5x5 reveal left the outer viewport columns black wherever the hero had not
-// already walked -- a band of unexplored map down each side of the pane.
+// The reveal from where the hero stands: exactly the pack's viewport
+// (render.tiles_w x tiles_h) around the hero, in both modes. The original's
+// clear_fog reveals its 5x5 viewport, so the tile just past each edge of the
+// view is unexplored until walked towards and the edge tiles show the fog
+// fade; a 5x5 viewport gets exactly the original's 5x5, and Rome's 7x5 gets
+// 7x5 (a 7x7 reveal left the rows past the top and bottom edges always
+// explored, so they never showed fog -- 2026-09-19).
 void FogRevealFor(const Resources *res, Fog *fog, const Map *map,
                   int cx, int cy);
 

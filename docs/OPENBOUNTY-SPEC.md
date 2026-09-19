@@ -1131,8 +1131,12 @@ except where a deviation is explicitly flagged (§34).
   (`engine/step.c`); walkability is decided by `engine/adventure.c`.
 - **REQ-241.** A blocked move has played the bump sound and left position,
   facing, and travel mode unchanged. A successful move has updated
-  `position.x/y`, set `facing_left = (dx < 0)`, fired `FogReveal` at the new
-  position with radius `world.fog_sight` (3), and called `GameOnStep`.
+  `position.x/y`, set `facing_left = (dx < 0)`, revealed the fog at the new
+  position (`FogRevealFor`: exactly the pack's viewport, `render.tiles_w` x
+  `tiles_h`, around the hero -- the original's 5x5 for a 5x5 viewport, 7x5 for
+  Rome -- so the tile past each edge of the view stays unexplored until walked
+  towards and shows the fog fade, the same in both modes), and called
+  `GameOnStep`.
 
 ### 11.2 Walking, sailing, flying
 

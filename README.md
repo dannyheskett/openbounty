@@ -435,7 +435,7 @@ All gameplay data is JSON-driven. Top-level keys:
 | `title` | "King's Bounty" |
 | `version` | 1 (pack schema version) |
 | `pack_id` / `pack_kind` / `pack_name` | Pack identity (e.g. `"kings-bounty"`, `"base"`), see `docs/PACK-FORMAT.md` |
-| `world` | global flags: `max_army_slots=5`, `fog_sight=3`, `starting_zone="continentia"`, `default_name="Hero"`, `default_options=[4,1,1,1,1,1]` |
+| `world` | global flags: `max_army_slots=5`, `starting_zone="continentia"`, `default_name="Hero"`, `default_options=[4,1,1,1,1,1]` |
 | `time` | `day_steps=40`, `week_days=5`, `days_per_difficulty={easy:900, normal:600, hard:400, impossible:200}` |
 | `economy` | `boat_cost_normal=500`, `boat_cost_cheap=100` (with anchor artifact), `siege_cost=3000`, `alcove_cost=5000` |
 | `contract` | `cycle_length=5`, `initial_last_contract=4` |
