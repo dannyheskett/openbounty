@@ -779,6 +779,16 @@ except where a deviation is explicitly flagged (§34).
   `magic_alcove_x/y`, `neighbors[]` (zone ids reachable by sailing), a `salt`
   config (§10), and per-feature lists (towns, castles, signs, chests,
   dwellings, armies). Exactly one zone has `is_home: true` (Continentia).
+- **REQ-221a.** **Arrival by origin.** A zone may declare `arrivals`, an
+  object keyed by the zone sailed from, each `{x, y}`. `GameSwitchZone`
+  lands the hero at the entry for the zone being left, else at `hero_spawn`
+  (`resources_zone_arrival`). A landing on water arrives in the boat, as
+  any water spawn does. Gate spells and defeat still override the landing
+  afterwards. `glory-of-rome` declares an arrival for every neighbour, each a
+  sea tile touching the coast beside the port a ship from there would make
+  for; `tools/mapbuild.py check` requires each to be on the open sea and
+  touching land, and counts its sea as sailed when proving the gates.
+  `kings-bounty` declares none and behaves exactly as before.
 
 ### 9.2 Coordinates
 

@@ -360,6 +360,15 @@ set for everything else.
   "tile_set_arts": ["grass", "grass_variant", "grass_01", "forest", "forest_edge_01"] }
 ```
 
+**Arrivals.** A zone may declare where a hero sailing in lands, by the zone
+sailed from. A zone left out, or no `arrivals` at all, lands at
+`hero_spawn`. A water tile arrives in the boat.
+
+```json
+{ "id": "africa", "hero_spawn": {"x": 24, "y": 2},
+  "arrivals": { "italia": {"x": 26, "y": 3}, "oriens": {"x": 57, "y": 21} } }
+```
+
 ---
 
 ## 7. Palettes

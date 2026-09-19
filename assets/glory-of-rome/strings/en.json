@@ -779,16 +779,15 @@
 		"pisae":	"Your boat will wait in the harbour a short walk west of the city.",
 		"ancona":	"Your boat will wait in the harbour a short walk east of the city.",
 		"massilia":	"Your boat will be tied up at the quay just south of the city walls.",
-		"burdigala":	"Your boat will lie at the river quay right beside the north-west gate.",
-		"utica":	"Your boat will wait in the harbour just north of the city.",
-		"hadrumetum":	"Your boat will be moored at the quay just north-west of the city.",
-		"ptolemais":	"Your boat will wait at the harbour mole just north of the city.",
-		"tarsus":	"Your boat will lie at the river landing beside the north-west gate.",
-		"nicomedia":	"Your boat will be moored at the quay beside the north-east gate.",
+		"utica":	"Your boat will wait in the harbour just east of the city.",
+		"hadrumetum":	"Your boat will be moored at the quay just east of the city.",
+		"ptolemais":	"Your boat will wait at the harbour mole just east of the city.",
+		"nicomedia":	"Your boat will be moored at the quay just west of the city.",
 		"puteoli":	"Your boat will wait in the harbour just west of the city.",
 		"croton":	"Your boat will be moored at the quay just east of the city.",
 		"londinium":	"Your boat will lie at the quay on the Tamesis just east of the city.",
-		"tarraco":	"Your boat will wait in the harbour just east of the city."
+		"tarraco":	"Your boat will wait in the harbour just east of the city.",
+		"ephesus":	"Your boat will wait in the harbour just west of the city."
 	},
 	"town_invitations":	{
 		"ostia":	{
@@ -869,18 +868,6 @@
 			"temple":	"Cato died here rather than yield, %HERO%, and the gods remember such men. Enter the temple, and I will teach you a rite.",
 			"siege":	"Scipio besieged Utica from the sea and the land, %HERO%. We keep his engines in working order. Come and see."
 		},
-		"thapsus":	{
-			"contracts":	"Welcome to Thapsus, %HERO%, where Caesar broke the last of his rivals. Roma's enemies still gather in Africa. Come this way, and let us discuss your contract.",
-			"information":	"The oil merchants of Thapsus hear everything along the coast, %HERO%. Sit, and I'll tell you what is said of the castles.",
-			"temple":	"Caelestis, the heavenly goddess, keeps her temple in Thapsus, %HERO%. Enter, and I will teach you a rite.",
-			"siege":	"The elephants of Thapsus were no match for Caesar's engines, %HERO%. Come to the workshop and see them."
-		},
-		"sabratha":	{
-			"contracts":	"Welcome to Sabratha, %HERO%. The caravan routes bring us gold, ivory and Roma's enemies. Come this way, and let us discuss your contract.",
-			"information":	"The caravan masters of Sabratha know every oasis and every rumour, %HERO%. Sit, and I'll tell you what is said of the castles.",
-			"temple":	"Liber Pater, the vine god, is honoured in Sabratha, %HERO%. Enter his temple, and I will teach you a rite.",
-			"siege":	"Our theatre was built with the same cranes that build siege engines, %HERO%. Come to the workshop and see."
-		},
 		"hadrumetum":	{
 			"contracts":	"Welcome to Hadrumetum, %HERO%. The Phoenicians founded us, and Roma keeps us. Come this way, and let us discuss your contract.",
 			"boat":	"Greetings, %HERO%! Hadrumetum's ships sail wherever the oil trade goes. Come and see mine.",
@@ -907,12 +894,6 @@
 			"information":	"Tarsus guards the Cilician Gates, %HERO%, and every army that passes is noted. Sit, and I'll tell you what is said of the castles.",
 			"temple":	"Sandan, the hero-god of Tarsus, is honoured here with fire, %HERO%. Enter, and I will teach you a rite.",
 			"siege":	"The Cilician pirates' fortresses fell to engines built in Tarsus, %HERO%. Come to the workshop and see them."
-		},
-		"smyrna":	{
-			"contracts":	"Welcome to Smyrna, %HERO%, crown of Ionia. Roma's enemies envy our wealth. Come this way, and let us discuss your contract.",
-			"information":	"Smyrna claims to be Homer's birthplace, %HERO%, and we still love a good story. Sit, and I'll tell you what is said of the castles.",
-			"temple":	"Smyrna built the first temple to the goddess Roma, %HERO%. Enter, and I will teach you a rite.",
-			"siege":	"The Lydian kings once besieged Smyrna, %HERO%, and we learned from them. Come to the workshop."
 		},
 		"nicomedia":	{
 			"contracts":	"Welcome to Nicomedia, %HERO%, the old royal city of Bithynia. The East has kings who would be free of Roma. Come this way, and let us discuss your contract.",
@@ -958,6 +939,24 @@
 			"information":	"The veterans of Emerita still hear from their old legions, %HERO%. Sit, and I'll tell you what is said of the castles.",
 			"temple":	"Our temple to Diana looks over the great bridge on the Anas, %HERO%. Enter, and I will teach you a rite.",
 			"siege":	"The men who built our great bridge build engines too, %HERO%. Come to the workshop."
+		},
+		"cirta":	{
+			"contracts":	"Welcome to Cirta, %HERO%, the rock where the Numidian kings kept their court. Jugurtha's people still remember him. Come this way, and let us discuss your contract.",
+			"information":	"Every road in Numidia climbs to Cirta, %HERO%, and every traveller talks on the way up. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"The Numidian kings built their altars on this rock, %HERO%, and Roma kept them. Enter, and I will teach you a rite.",
+			"siege":	"No army ever took Cirta by force, %HERO%, and we study why. Come to the workshop and see our engines."
+		},
+		"memphis":	{
+			"contracts":	"Welcome to Memphis, %HERO%, oldest of the cities of the Nile. The pharaohs' tombs are full of thieves, and so is the delta. Come this way, and let us discuss your contract.",
+			"information":	"The priests of Ptah hear everything that moves on the Nile, %HERO%. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"The temple of Ptah is older than Roma itself, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"The men who raised the pyramids knew stone, %HERO%, and so do we. Come to the workshop."
+		},
+		"ephesus":	{
+			"contracts":	"Welcome to Ephesus, %HERO%, first city of Asia. The proconsul sits here, and so do his enemies. Come this way, and let us discuss your contract.",
+			"information":	"Every road in Asia ends at our harbour, %HERO%, and every rumour with it. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"The Temple of Artemis is one of the wonders of the world, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"Ephesus has changed masters a dozen times, %HERO%, and every one of them brought engineers. Come to the workshop."
 		}
 	}
 }

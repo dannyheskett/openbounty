@@ -37,7 +37,8 @@ boat: with the static guardians holding their tiles, with them beaten, and
 then with every river bridged too.
 
 `place` scatters a zone's chests and wandering armies inside hand-drawn
-region boxes from a fixed seed, and writes them into game.json.
+region boxes from a fixed seed, on open grass or sand, and writes them into
+game.json.
 """
 import json
 import os
@@ -365,11 +366,13 @@ def walkable(t):
     return t in ("grass", "desert")
 
 
-def reach(W, H, ter, start, docks, open_rivers):
+def reach(W, H, ter, start, docks, open_rivers, arrivals=()):
     """Tiles the hero can stand on: foot from the spawn, then every landing on
     the water body of a dock the hero has reached (a boat sails only the water
-    it was rented on), repeated until nothing new is reached. Also returns the
-    set of water tiles connected to the map edge (the open sea)."""
+    it was rented on), repeated until nothing new is reached. A hero who sails
+    in lands in a boat at an arrival, so its water body is sailed from the
+    start. Also returns the set of water tiles connected to the map edge (the
+    open sea)."""
     def ok(x, y):
         t = ter[y][x]
         return walkable(t) or (open_rivers and t == "river")
@@ -396,6 +399,10 @@ def reach(W, H, ter, start, docks, open_rivers):
     seen = {start}
     q = deque([start])
     sailed = set()
+    first = set()
+    for a in arrivals:
+        if ter[a[1]][a[0]] == "water" and a not in first:
+            first |= body(a)
     while True:
         while q:
             x, y = q.popleft()
@@ -403,7 +410,8 @@ def reach(W, H, ter, start, docks, open_rivers):
                 n = (x + dx, y + dy)
                 if 0 <= n[0] < W and 0 <= n[1] < H and n not in seen and ok(*n):
                     seen.add(n); q.append(n)
-        waters = set()
+        waters, first = first, set()
+        sailed |= waters
         for t, d in docks:
             if d in sea and d not in sailed and any(
                     (t[0] + dx, t[1] + dy) in seen or t in seen
@@ -470,12 +478,24 @@ def check(pack, zid, path):
     held = [r[:] for r in ter]
     for gx, gy in guards:
         held[gy][gx] = "forest"
-    guarded, _ = reach(W, H, held, start, [(t, d) for t, d in docks], False)
-    shut, sea = reach(W, H, ter, start, [(t, d) for t, d in docks], False)
-    open_, _ = reach(W, H, ter, start, [(t, d) for t, d in docks], True)
+    # Sailing in from another zone lands in a boat at that zone's arrival.
+    arrivals = [(a["x"], a["y"]) for a in z.get("arrivals", {}).values()]
+    guarded, _ = reach(W, H, held, start, docks, False, arrivals)
+    shut, sea = reach(W, H, ter, start, docks, False, arrivals)
+    open_, _ = reach(W, H, ter, start, docks, True, arrivals)
     for t, d in docks:
         if d not in sea:
             bad.append(f"dock {d} is not on the open sea")
+    for frm, a in z.get("arrivals", {}).items():
+        x, y = a["x"], a["y"]
+        if (x, y) not in sea:
+            bad.append(f"arrival from {frm} ({x},{y}) is not on the open sea")
+        elif not any(0 <= x + dx < W and 0 <= y + dy < H and walkable(ter[y + dy][x + dx])
+                     for dx, dy in DIRS8.values()):
+            bad.append(f"arrival from {frm} ({x},{y}) touches no land")
+    missing = [n for n in z.get("neighbors", []) if n not in z.get("arrivals", {})]
+    if z.get("arrivals") and missing:
+        bad.append(f"no arrival from {', '.join(missing)}")
 
     print(f"{zid}: {W}x{H}")
     print(f"  {'':44s} guardians    guardians    rivers")
@@ -550,7 +570,7 @@ def place(pack, zid, path, regions_path):
 
     def free(x, y):
         return (0 <= x < W and 0 <= y < H and (x, y) not in taken
-                and ter[y][x] == "grass" and art[y][x] in ("grass", "grass_variant"))
+                and art[y][x] in ("grass", "grass_variant", "desert"))
 
     chests, armies = [], []
     for reg in spec["regions"]:

@@ -2368,13 +2368,19 @@ bool GameSwitchZone(Game *g, Map *map, Fog *fog, const char *zone_id) {
         }
     }
 
+    // The zone sailed from picks the landing ("arrivals"), else the spawn.
+    char from[sizeof g->position.zone];
+    copy_id(from, sizeof from, g->position.zone);
+
     if (!MapLoadZoneWithPlacements(map, g->res, zone_id, g)) return false;
     // Re-apply consumed tiles so picked-up artifacts / chests stay gone.
     GameApplyTileMutations(g, map, zone_id);
-    // Move hero to the zone's spawn.
+    // Move hero to the arrival point.
     copy_id(g->position.zone, sizeof(g->position.zone), zone_id);
     g->position.x = map->hero_spawn_x;
     g->position.y = map->hero_spawn_y;
+    if (strcmp(from, zone_id) != 0)
+        resources_zone_arrival(z, from, &g->position.x, &g->position.y);
     g->position.last_x = g->position.x;
     g->position.last_y = g->position.y;
 

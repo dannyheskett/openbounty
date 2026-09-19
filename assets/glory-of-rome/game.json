@@ -115,6 +115,20 @@
 				"x":	31,
 				"y":	58
 			},
+			"arrivals":	{
+				"galliae":	{
+					"x":	28,
+					"y":	61
+				},
+				"africa":	{
+					"x":	36,
+					"y":	71
+				},
+				"oriens":	{
+					"x":	61,
+					"y":	74
+				}
+			},
 			"is_home":	true,
 			"home_spawn":	{
 				"x":	31,
@@ -793,6 +807,16 @@
 				"x":	47,
 				"y":	41
 			},
+			"arrivals":	{
+				"italia":	{
+					"x":	46,
+					"y":	43
+				},
+				"africa":	{
+					"x":	38,
+					"y":	48
+				}
+			},
 			"alcove_art":	"alcove",
 			"pontifex":	"pontifex_galliae",
 			"alcove_cost":	5000,
@@ -965,149 +989,175 @@
 			},
 			"chests":	[{
 					"id":	"chest_1",
-					"x":	6,
-					"y":	6
+					"x":	0,
+					"y":	11
 				}, {
 					"id":	"chest_2",
-					"x":	9,
-					"y":	6
+					"x":	4,
+					"y":	12
 				}, {
 					"id":	"chest_3",
-					"x":	12,
-					"y":	6
+					"x":	14,
+					"y":	3
 				}, {
 					"id":	"chest_4",
-					"x":	15,
-					"y":	6
+					"x":	12,
+					"y":	8
 				}, {
 					"id":	"chest_5",
-					"x":	18,
-					"y":	6
+					"x":	17,
+					"y":	10
 				}, {
 					"id":	"chest_6",
-					"x":	22,
-					"y":	6
+					"x":	12,
+					"y":	12
 				}, {
 					"id":	"chest_7",
-					"x":	24,
-					"y":	6
+					"x":	19,
+					"y":	10
 				}, {
 					"id":	"chest_8",
-					"x":	27,
-					"y":	6
+					"x":	23,
+					"y":	12
 				}, {
 					"id":	"chest_9",
-					"x":	30,
-					"y":	6
+					"x":	14,
+					"y":	11
 				}, {
 					"id":	"chest_10",
-					"x":	33,
-					"y":	6
+					"x":	8,
+					"y":	7
 				}, {
 					"id":	"chest_11",
-					"x":	36,
-					"y":	6
+					"x":	26,
+					"y":	17
 				}, {
 					"id":	"chest_12",
-					"x":	38,
-					"y":	6
+					"x":	28,
+					"y":	16
 				}, {
 					"id":	"chest_13",
-					"x":	42,
-					"y":	6
+					"x":	45,
+					"y":	18
 				}, {
 					"id":	"chest_14",
-					"x":	45,
-					"y":	6
+					"x":	42,
+					"y":	18
 				}, {
 					"id":	"chest_15",
-					"x":	47,
-					"y":	6
+					"x":	48,
+					"y":	19
 				}, {
 					"id":	"chest_16",
-					"x":	51,
-					"y":	6
+					"x":	53,
+					"y":	20
 				}, {
 					"id":	"chest_17",
-					"x":	54,
-					"y":	6
+					"x":	49,
+					"y":	21
 				}, {
 					"id":	"chest_18",
-					"x":	57,
-					"y":	6
+					"x":	49,
+					"y":	23
 				}, {
 					"id":	"chest_19",
-					"x":	60,
-					"y":	6
+					"x":	49,
+					"y":	25
 				}, {
 					"id":	"chest_20",
-					"x":	3,
-					"y":	9
+					"x":	63,
+					"y":	23
 				}, {
 					"id":	"chest_21",
-					"x":	6,
-					"y":	9
+					"x":	63,
+					"y":	27
 				}, {
 					"id":	"chest_22",
-					"x":	9,
-					"y":	9
+					"x":	57,
+					"y":	27
 				}, {
 					"id":	"chest_23",
-					"x":	12,
-					"y":	9
+					"x":	62,
+					"y":	25
 				}, {
 					"id":	"chest_24",
-					"x":	15,
-					"y":	9
+					"x":	60,
+					"y":	27
 				}, {
 					"id":	"chest_25",
-					"x":	18,
-					"y":	9
+					"x":	43,
+					"y":	27
 				}, {
 					"id":	"chest_26",
-					"x":	21,
-					"y":	9
+					"x":	9,
+					"y":	19
 				}, {
 					"id":	"chest_27",
-					"x":	24,
-					"y":	9
+					"x":	21,
+					"y":	21
 				}, {
 					"id":	"chest_28",
-					"x":	27,
-					"y":	9
+					"x":	6,
+					"y":	27
 				}, {
 					"id":	"chest_29",
-					"x":	30,
-					"y":	9
+					"x":	0,
+					"y":	18
 				}, {
 					"id":	"chest_30",
-					"x":	33,
-					"y":	9
+					"x":	24,
+					"y":	21
 				}],
 			"signs":	[{
-					"x":	18,
-					"y":	8,
+					"x":	23,
+					"y":	5,
 					"id":	"sign_africa_1",
 					"title":	"Carthago",
 					"body":	"Thrice Roma fought her; thrice she fell. Carthago delenda est."
 				}, {
-					"x":	25,
-					"y":	16,
+					"x":	21,
+					"y":	13,
 					"id":	"sign_africa_2",
 					"title":	"The Sahara",
 					"body":	"South lies the sand. A day of marching buys a single tile."
 				}, {
-					"x":	36,
-					"y":	8,
+					"x":	25,
+					"y":	10,
 					"id":	"sign_africa_3",
 					"title":	"The Grain Fleet",
 					"body":	"From these ports the corn ships sail to feed a million in Roma."
+				}, {
+					"x":	6,
+					"y":	11,
+					"id":	"sign_africa_4",
+					"title":	"The Mulucha",
+					"body":	"Beyond the river lies Mauretania, and the Moors keep its only bridge."
+				}, {
+					"x":	51,
+					"y":	21,
+					"id":	"sign_africa_5",
+					"title":	"The Oracle of Amun",
+					"body":	"Alexander came this way to ask the god who his father was. The god's guardians still keep the pass."
 				}],
 			"dwellings":	[],
 			"armies":	[],
 			"hero_spawn":	{
-				"x":	7,
-				"y":	7
+				"x":	24,
+				"y":	2
+			},
+			"arrivals":	{
+				"italia":	{
+					"x":	26,
+					"y":	3
+				},
+				"galliae":	{
+					"x":	21,
+					"y":	1
+				},
+				"oriens":	{
+					"x":	57,
+					"y":	21
+				}
 			},
 			"alcove_art":	"alcove",
 			"pontifex":	"pontifex_africa",
@@ -1115,58 +1165,151 @@
 			"boatmaster":	"boatmaster_africa",
 			"siegemaster":	"siege_africa",
 			"magic_alcove":	{
-				"x":	24,
-				"y":	8
+				"x":	16,
+				"y":	4
 			},
 			"towns":	[{
-					"x":	18,
-					"y":	7,
+					"x":	25,
+					"y":	2,
 					"id":	"utica"
 				}, {
-					"x":	8,
-					"y":	14,
-					"id":	"thapsus"
+					"x":	20,
+					"y":	4,
+					"id":	"cirta"
 				}, {
-					"x":	26,
-					"y":	14,
-					"id":	"sabratha"
+					"x":	60,
+					"y":	25,
+					"id":	"memphis"
 				}, {
-					"x":	38,
-					"y":	7,
+					"x":	25,
+					"y":	8,
 					"id":	"hadrumetum"
 				}, {
-					"x":	42,
-					"y":	13,
+					"x":	31,
+					"y":	16,
 					"id":	"oea"
 				}, {
 					"x":	47,
-					"y":	7,
+					"y":	16,
 					"id":	"ptolemais"
 				}],
 			"castles":	[{
-					"x":	20,
-					"y":	7,
+					"x":	24,
+					"y":	4,
 					"id":	"castle_africa_1"
 				}, {
-					"x":	10,
-					"y":	15,
+					"x":	21,
+					"y":	2,
 					"id":	"castle_africa_2"
 				}, {
-					"x":	28,
-					"y":	15,
+					"x":	2,
+					"y":	10,
 					"id":	"castle_africa_3"
 				}, {
-					"x":	40,
-					"y":	7,
+					"x":	33,
+					"y":	17,
 					"id":	"castle_africa_4"
 				}, {
-					"x":	44,
-					"y":	15,
+					"x":	51,
+					"y":	25,
 					"id":	"castle_africa_5"
 				}, {
-					"x":	49,
-					"y":	7,
+					"x":	56,
+					"y":	21,
 					"id":	"castle_africa_6"
+				}],
+			"wandering_armies":	[{
+					"x":	5,
+					"y":	10,
+					"id":	"guardian_mulucha",
+					"static":	true,
+					"army":	[{
+							"troop":	"nomads",
+							"count":	15
+						}, {
+							"troop":	"orcs",
+							"count":	12
+						}, {
+							"troop":	"archers",
+							"count":	10
+						}, {
+							"troop":	"cavalry",
+							"count":	6
+						}]
+				}, {
+					"x":	51,
+					"y":	22,
+					"id":	"guardian_amun",
+					"static":	true,
+					"army":	[{
+							"troop":	"ghosts",
+							"count":	12
+						}, {
+							"troop":	"skeletons",
+							"count":	15
+						}, {
+							"troop":	"zombies",
+							"count":	12
+						}, {
+							"troop":	"vampires",
+							"count":	5
+						}]
+				}, {
+					"x":	0,
+					"y":	8,
+					"id":	"wandering_army_000"
+				}, {
+					"x":	25,
+					"y":	12,
+					"id":	"wandering_army_001"
+				}, {
+					"x":	7,
+					"y":	9,
+					"id":	"wandering_army_002"
+				}, {
+					"x":	12,
+					"y":	4,
+					"id":	"wandering_army_003"
+				}, {
+					"x":	29,
+					"y":	18,
+					"id":	"wandering_army_004"
+				}, {
+					"x":	44,
+					"y":	20,
+					"id":	"wandering_army_005"
+				}, {
+					"x":	46,
+					"y":	21,
+					"id":	"wandering_army_006"
+				}, {
+					"x":	58,
+					"y":	23,
+					"id":	"wandering_army_007"
+				}, {
+					"x":	63,
+					"y":	21,
+					"id":	"wandering_army_008"
+				}, {
+					"x":	60,
+					"y":	22,
+					"id":	"wandering_army_009"
+				}, {
+					"x":	33,
+					"y":	23,
+					"id":	"wandering_army_010"
+				}, {
+					"x":	28,
+					"y":	20,
+					"id":	"wandering_army_011"
+				}, {
+					"x":	7,
+					"y":	25,
+					"id":	"wandering_army_012"
+				}, {
+					"x":	16,
+					"y":	22,
+					"id":	"wandering_army_013"
 				}]
 		}, {
 			"id":	"oriens",
@@ -1188,149 +1331,171 @@
 			},
 			"chests":	[{
 					"id":	"chest_1",
-					"x":	6,
+					"x":	9,
 					"y":	6
 				}, {
 					"id":	"chest_2",
-					"x":	11,
-					"y":	6
+					"x":	9,
+					"y":	10
 				}, {
 					"id":	"chest_3",
-					"x":	15,
-					"y":	6
+					"x":	11,
+					"y":	8
 				}, {
 					"id":	"chest_4",
-					"x":	18,
-					"y":	6
+					"x":	27,
+					"y":	12
 				}, {
 					"id":	"chest_5",
 					"x":	21,
-					"y":	6
+					"y":	8
 				}, {
 					"id":	"chest_6",
-					"x":	27,
-					"y":	6
+					"x":	24,
+					"y":	8
 				}, {
 					"id":	"chest_7",
-					"x":	30,
-					"y":	6
+					"x":	24,
+					"y":	1
 				}, {
 					"id":	"chest_8",
-					"x":	33,
-					"y":	6
+					"x":	37,
+					"y":	7
 				}, {
 					"id":	"chest_9",
-					"x":	36,
+					"x":	32,
 					"y":	6
 				}, {
 					"id":	"chest_10",
-					"x":	38,
-					"y":	6
+					"x":	39,
+					"y":	4
 				}, {
 					"id":	"chest_11",
-					"x":	42,
-					"y":	6
+					"x":	32,
+					"y":	13
 				}, {
 					"id":	"chest_12",
-					"x":	45,
-					"y":	6
+					"x":	22,
+					"y":	18
 				}, {
 					"id":	"chest_13",
-					"x":	6,
-					"y":	9
+					"x":	34,
+					"y":	30
 				}, {
 					"id":	"chest_14",
-					"x":	15,
-					"y":	9
+					"x":	21,
+					"y":	25
 				}, {
 					"id":	"chest_15",
-					"x":	18,
-					"y":	9
+					"x":	20,
+					"y":	19
 				}, {
 					"id":	"chest_16",
-					"x":	21,
-					"y":	9
+					"x":	24,
+					"y":	25
 				}, {
 					"id":	"chest_17",
-					"x":	24,
-					"y":	9
+					"x":	25,
+					"y":	23
 				}, {
 					"id":	"chest_18",
-					"x":	27,
-					"y":	9
+					"x":	36,
+					"y":	43
 				}, {
 					"id":	"chest_19",
-					"x":	30,
-					"y":	9
+					"x":	34,
+					"y":	43
 				}, {
 					"id":	"chest_20",
-					"x":	33,
-					"y":	9
+					"x":	35,
+					"y":	35
 				}, {
 					"id":	"chest_21",
-					"x":	36,
-					"y":	9
+					"x":	58,
+					"y":	20
 				}, {
 					"id":	"chest_22",
-					"x":	39,
-					"y":	9
+					"x":	52,
+					"y":	23
 				}, {
 					"id":	"chest_23",
-					"x":	42,
-					"y":	9
+					"x":	56,
+					"y":	24
 				}, {
 					"id":	"chest_24",
-					"x":	45,
-					"y":	9
+					"x":	43,
+					"y":	17
 				}, {
 					"id":	"chest_25",
-					"x":	6,
-					"y":	12
+					"x":	44,
+					"y":	20
 				}, {
 					"id":	"chest_26",
-					"x":	9,
-					"y":	12
+					"x":	57,
+					"y":	1
 				}, {
 					"id":	"chest_27",
-					"x":	36,
-					"y":	12
+					"x":	59,
+					"y":	3
 				}, {
 					"id":	"chest_28",
-					"x":	39,
-					"y":	12
+					"x":	62,
+					"y":	5
 				}, {
 					"id":	"chest_29",
-					"x":	42,
-					"y":	12
+					"x":	45,
+					"y":	11
 				}, {
 					"id":	"chest_30",
-					"x":	45,
-					"y":	12
+					"x":	60,
+					"y":	11
 				}],
 			"signs":	[{
-					"x":	46,
-					"y":	37,
+					"x":	40,
+					"y":	27,
 					"id":	"sign_oriens_1",
 					"title":	"Palmyra",
 					"body":	"Oasis of the caravans, where Zenobia named herself Augusta."
 				}, {
-					"x":	44,
-					"y":	20,
+					"x":	40,
+					"y":	19,
 					"id":	"sign_oriens_2",
-					"title":	"The Frontier",
-					"body":	"East lies Parthia, the border Roma never truly held."
+					"title":	"The Euphrates",
+					"body":	"The bridge at Zeugma. East lies Parthia, the border Roma never truly held."
 				}, {
-					"x":	38,
-					"y":	8,
+					"x":	35,
+					"y":	19,
 					"id":	"sign_oriens_3",
 					"title":	"The Silk Road",
 					"body":	"The road from the East ends here. Its wealth passes through Antiochia."
+				}, {
+					"x":	27,
+					"y":	14,
+					"id":	"sign_oriens_4",
+					"title":	"The Cilician Gates",
+					"body":	"One road through the Taurus, cut so narrow that a loaded camel scrapes both walls."
+				}, {
+					"x":	42,
+					"y":	9,
+					"id":	"sign_oriens_5",
+					"title":	"Armenia",
+					"body":	"Kings of Armenia take their crowns from Roma or from Parthia, whichever army is nearer."
 				}],
 			"dwellings":	[],
 			"armies":	[],
 			"hero_spawn":	{
-				"x":	9,
-				"y":	6
+				"x":	5,
+				"y":	15
+			},
+			"arrivals":	{
+				"italia":	{
+					"x":	3,
+					"y":	15
+				},
+				"africa":	{
+					"x":	32,
+					"y":	21
+				}
 			},
 			"alcove_art":	"alcove",
 			"pontifex":	"pontifex_oriens",
@@ -1338,42 +1503,135 @@
 			"boatmaster":	"boatmaster_oriens",
 			"siegemaster":	"siege_oriens",
 			"magic_alcove":	{
-				"x":	41,
-				"y":	7
+				"x":	5,
+				"y":	17
 			},
 			"towns":	[{
-					"x":	38,
-					"y":	5,
+					"x":	27,
+					"y":	18,
 					"id":	"tarsus"
 				}, {
-					"x":	8,
-					"y":	15,
-					"id":	"smyrna"
+					"x":	4,
+					"y":	14,
+					"id":	"ephesus"
 				}, {
-					"x":	46,
-					"y":	21,
+					"x":	12,
+					"y":	5,
 					"id":	"nicomedia"
 				}, {
-					"x":	46,
-					"y":	36,
+					"x":	36,
+					"y":	30,
 					"id":	"damascus"
 				}],
 			"castles":	[{
-					"x":	40,
-					"y":	7,
+					"x":	34,
+					"y":	21,
 					"id":	"castle_oriens_1"
 				}, {
-					"x":	10,
-					"y":	17,
+					"x":	61,
+					"y":	8,
 					"id":	"castle_oriens_2"
 				}, {
-					"x":	48,
-					"y":	23,
+					"x":	62,
+					"y":	31,
 					"id":	"castle_oriens_3"
 				}, {
-					"x":	48,
-					"y":	38,
+					"x":	41,
+					"y":	26,
 					"id":	"castle_oriens_4"
+				}],
+			"wandering_armies":	[{
+					"x":	41,
+					"y":	18,
+					"id":	"guardian_euphrates",
+					"static":	true,
+					"army":	[{
+							"troop":	"nomads",
+							"count":	15
+						}, {
+							"troop":	"sagittarii",
+							"count":	10
+						}, {
+							"troop":	"barbarians",
+							"count":	10
+						}, {
+							"troop":	"cavalry",
+							"count":	8
+						}]
+				}, {
+					"x":	43,
+					"y":	8,
+					"id":	"guardian_armenia",
+					"static":	true,
+					"army":	[{
+							"troop":	"dwarves",
+							"count":	14
+						}, {
+							"troop":	"barbarians",
+							"count":	10
+						}, {
+							"troop":	"trolls",
+							"count":	8
+						}, {
+							"troop":	"ogres",
+							"count":	6
+						}]
+				}, {
+					"x":	4,
+					"y":	12,
+					"id":	"wandering_army_000"
+				}, {
+					"x":	22,
+					"y":	14,
+					"id":	"wandering_army_001"
+				}, {
+					"x":	20,
+					"y":	11,
+					"id":	"wandering_army_002"
+				}, {
+					"x":	40,
+					"y":	9,
+					"id":	"wandering_army_003"
+				}, {
+					"x":	30,
+					"y":	8,
+					"id":	"wandering_army_004"
+				}, {
+					"x":	33,
+					"y":	17,
+					"id":	"wandering_army_005"
+				}, {
+					"x":	23,
+					"y":	23,
+					"id":	"wandering_army_006"
+				}, {
+					"x":	48,
+					"y":	39,
+					"id":	"wandering_army_007"
+				}, {
+					"x":	55,
+					"y":	38,
+					"id":	"wandering_army_008"
+				}, {
+					"x":	50,
+					"y":	19,
+					"id":	"wandering_army_009"
+				}, {
+					"x":	51,
+					"y":	14,
+					"id":	"wandering_army_010"
+				}, {
+					"x":	43,
+					"y":	15,
+					"id":	"wandering_army_011"
+				}, {
+					"x":	55,
+					"y":	2,
+					"id":	"wandering_army_012"
+				}, {
+					"x":	54,
+					"y":	0,
+					"id":	"wandering_army_013"
 				}]
 		}],
 	"portraits":	[{
@@ -1807,57 +2065,57 @@
 			"informant":	"informant_market",
 			"name":	"Utica",
 			"art":	"town_africa",
-			"x":	18,
-			"y":	7,
+			"x":	25,
+			"y":	2,
 			"boat":	{
-				"x":	17,
-				"y":	5
+				"x":	26,
+				"y":	2
 			},
 			"gate":	{
-				"x":	18,
-				"y":	8
+				"x":	25,
+				"y":	3
 			},
 			"zone":	"africa",
 			"intel_castle":	"castle_africa_1"
 		}, {
 			"index":	16,
-			"id":	"thapsus",
+			"id":	"cirta",
 			"headman":	"headman_africa",
 			"townhead":	"townhead_africa",
-			"invitations":	"thapsus",
+			"invitations":	"cirta",
 			"informant":	"informant_veteran",
-			"name":	"Thapsus",
+			"name":	"Cirta",
 			"art":	"town_africa",
-			"x":	8,
-			"y":	14,
+			"x":	20,
+			"y":	4,
 			"boat":	{
 				"x":	-1,
 				"y":	-1
 			},
 			"gate":	{
-				"x":	8,
-				"y":	15
+				"x":	20,
+				"y":	5
 			},
 			"zone":	"africa",
 			"intel_castle":	"castle_africa_2"
 		}, {
 			"index":	17,
-			"id":	"sabratha",
+			"id":	"memphis",
 			"headman":	"headman_africa",
 			"townhead":	"townhead_africa",
-			"invitations":	"sabratha",
+			"invitations":	"memphis",
 			"informant":	"informant_urchin",
-			"name":	"Sabratha",
+			"name":	"Memphis",
 			"art":	"town_africa",
-			"x":	26,
-			"y":	14,
+			"x":	60,
+			"y":	25,
 			"boat":	{
 				"x":	-1,
 				"y":	-1
 			},
 			"gate":	{
-				"x":	26,
-				"y":	15
+				"x":	59,
+				"y":	25
 			},
 			"zone":	"africa",
 			"intel_castle":	"castle_africa_3"
@@ -1870,15 +2128,15 @@
 			"informant":	"informant_taverner",
 			"name":	"Hadrumetum",
 			"art":	"town_africa",
-			"x":	38,
-			"y":	7,
+			"x":	25,
+			"y":	8,
 			"boat":	{
-				"x":	36,
-				"y":	5
+				"x":	26,
+				"y":	8
 			},
 			"gate":	{
-				"x":	38,
-				"y":	8
+				"x":	25,
+				"y":	9
 			},
 			"zone":	"africa",
 			"intel_castle":	"castle_africa_4"
@@ -1891,15 +2149,15 @@
 			"informant":	"informant_veteran",
 			"name":	"Oea",
 			"art":	"town_africa",
-			"x":	42,
-			"y":	13,
+			"x":	31,
+			"y":	16,
 			"boat":	{
 				"x":	-1,
 				"y":	-1
 			},
 			"gate":	{
-				"x":	42,
-				"y":	14
+				"x":	31,
+				"y":	17
 			},
 			"zone":	"africa",
 			"intel_castle":	"castle_africa_5"
@@ -1913,14 +2171,14 @@
 			"name":	"Ptolemais",
 			"art":	"town_africa",
 			"x":	47,
-			"y":	7,
+			"y":	16,
 			"boat":	{
-				"x":	47,
-				"y":	5
+				"x":	48,
+				"y":	16
 			},
 			"gate":	{
 				"x":	47,
-				"y":	8
+				"y":	17
 			},
 			"zone":	"africa",
 			"intel_castle":	"castle_africa_6"
@@ -1933,36 +2191,36 @@
 			"informant":	"informant_taverner",
 			"name":	"Tarsus",
 			"art":	"town_oriens",
-			"x":	38,
-			"y":	5,
-			"boat":	{
-				"x":	37,
-				"y":	4
-			},
-			"gate":	{
-				"x":	38,
-				"y":	6
-			},
-			"zone":	"oriens",
-			"intel_castle":	"castle_oriens_1"
-		}, {
-			"index":	22,
-			"id":	"smyrna",
-			"headman":	"headman_oriens",
-			"townhead":	"townhead_oriens",
-			"invitations":	"smyrna",
-			"informant":	"informant_market",
-			"name":	"Smyrna",
-			"art":	"town_oriens",
-			"x":	8,
-			"y":	15,
+			"x":	27,
+			"y":	18,
 			"boat":	{
 				"x":	-1,
 				"y":	-1
 			},
 			"gate":	{
-				"x":	8,
-				"y":	16
+				"x":	27,
+				"y":	19
+			},
+			"zone":	"oriens",
+			"intel_castle":	"castle_oriens_1"
+		}, {
+			"index":	22,
+			"id":	"ephesus",
+			"headman":	"headman_oriens",
+			"townhead":	"townhead_oriens",
+			"invitations":	"ephesus",
+			"informant":	"informant_market",
+			"name":	"Ephesus",
+			"art":	"town_oriens",
+			"x":	4,
+			"y":	14,
+			"boat":	{
+				"x":	3,
+				"y":	14
+			},
+			"gate":	{
+				"x":	4,
+				"y":	15
 			},
 			"zone":	"oriens",
 			"intel_castle":	"castle_oriens_2"
@@ -1975,15 +2233,15 @@
 			"informant":	"informant_veteran",
 			"name":	"Nicomedia",
 			"art":	"town_oriens",
-			"x":	46,
-			"y":	21,
+			"x":	12,
+			"y":	5,
 			"boat":	{
-				"x":	47,
-				"y":	20
+				"x":	11,
+				"y":	5
 			},
 			"gate":	{
-				"x":	46,
-				"y":	22
+				"x":	12,
+				"y":	6
 			},
 			"zone":	"oriens",
 			"intel_castle":	"castle_oriens_3"
@@ -1996,15 +2254,15 @@
 			"informant":	"informant_urchin",
 			"name":	"Damascus",
 			"art":	"town_oriens",
-			"x":	46,
-			"y":	36,
+			"x":	36,
+			"y":	30,
 			"boat":	{
 				"x":	-1,
 				"y":	-1
 			},
 			"gate":	{
-				"x":	46,
-				"y":	37
+				"x":	36,
+				"y":	31
 			},
 			"zone":	"oriens",
 			"intel_castle":	"castle_oriens_4"
@@ -2209,8 +2467,8 @@
 			"index":	0,
 			"id":	"castle_africa_1",
 			"name":	"Carthago",
-			"x":	20,
-			"y":	7,
+			"x":	24,
+			"y":	4,
 			"zone":	"africa",
 			"difficulty_tier":	1,
 			"footprint":	"1x1"
@@ -2218,17 +2476,17 @@
 			"index":	0,
 			"id":	"castle_africa_2",
 			"name":	"Hippo Regius",
-			"x":	10,
-			"y":	15,
+			"x":	21,
+			"y":	2,
 			"zone":	"africa",
 			"difficulty_tier":	1,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_africa_3",
-			"name":	"Lambaesis",
-			"x":	28,
-			"y":	15,
+			"name":	"Volubilis",
+			"x":	2,
+			"y":	10,
 			"zone":	"africa",
 			"difficulty_tier":	1,
 			"footprint":	"1x1"
@@ -2236,17 +2494,17 @@
 			"index":	0,
 			"id":	"castle_africa_4",
 			"name":	"Leptis Magna",
-			"x":	40,
-			"y":	7,
+			"x":	33,
+			"y":	17,
 			"zone":	"africa",
 			"difficulty_tier":	1,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_africa_5",
-			"name":	"Cyrene",
-			"x":	44,
-			"y":	15,
+			"name":	"Ammonium",
+			"x":	51,
+			"y":	25,
 			"zone":	"africa",
 			"difficulty_tier":	1,
 			"footprint":	"1x1"
@@ -2254,8 +2512,8 @@
 			"index":	0,
 			"id":	"castle_africa_6",
 			"name":	"Alexandria",
-			"x":	49,
-			"y":	7,
+			"x":	56,
+			"y":	21,
 			"zone":	"africa",
 			"difficulty_tier":	1,
 			"footprint":	"1x1"
@@ -2263,26 +2521,26 @@
 			"index":	0,
 			"id":	"castle_oriens_1",
 			"name":	"Antiochia",
-			"x":	40,
-			"y":	7,
+			"x":	34,
+			"y":	21,
 			"zone":	"oriens",
 			"difficulty_tier":	2,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_oriens_2",
-			"name":	"Ephesus",
-			"x":	10,
-			"y":	17,
+			"name":	"Artaxata",
+			"x":	61,
+			"y":	8,
 			"zone":	"oriens",
 			"difficulty_tier":	2,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_oriens_3",
-			"name":	"Caesarea",
-			"x":	48,
-			"y":	23,
+			"name":	"Ctesiphon",
+			"x":	62,
+			"y":	31,
 			"zone":	"oriens",
 			"difficulty_tier":	2,
 			"footprint":	"1x1"
@@ -2290,8 +2548,8 @@
 			"index":	0,
 			"id":	"castle_oriens_4",
 			"name":	"Palmyra",
-			"x":	48,
-			"y":	38,
+			"x":	41,
+			"y":	26,
 			"zone":	"oriens",
 			"difficulty_tier":	2,
 			"footprint":	"1x1"

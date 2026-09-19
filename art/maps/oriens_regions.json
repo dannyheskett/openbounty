@@ -1,0 +1,105 @@
+{
+ "_note": "Where tools/mapbuild.py place scatters Oriens' chests and wandering armies. Boxes are inclusive tile ranges; only open grass and sand inside them is used. The two static guardians are placed by \"fixed\".",
+ "seed": 2029,
+ "spacing": 1,
+ "fixed": {
+  "guardian_euphrates": [
+   41,
+   18
+  ],
+  "guardian_armenia": [
+   43,
+   8
+  ]
+ },
+ "regions": [
+  {
+   "name": "Asia, the Aegean coast",
+   "box": [
+    2,
+    6,
+    12,
+    18
+   ],
+   "chests": 3,
+   "armies": 1
+  },
+  {
+   "name": "Bithynia and Galatia",
+   "box": [
+    12,
+    0,
+    27,
+    15
+   ],
+   "chests": 4,
+   "armies": 2
+  },
+  {
+   "name": "Pontus and Cappadocia",
+   "box": [
+    28,
+    0,
+    42,
+    15
+   ],
+   "chests": 4,
+   "armies": 2
+  },
+  {
+   "name": "Cilicia and Syria",
+   "box": [
+    20,
+    17,
+    40,
+    31
+   ],
+   "chests": 4,
+   "armies": 2
+  },
+  {
+   "name": "Cyprus",
+   "box": [
+    20,
+    22,
+    27,
+    26
+   ],
+   "chests": 2,
+   "armies": 0
+  },
+  {
+   "name": "Judaea, Sinai and Arabia",
+   "box": [
+    26,
+    31,
+    63,
+    43
+   ],
+   "chests": 3,
+   "armies": 2
+  },
+  {
+   "name": "Mesopotamia, beyond the Euphrates",
+   "box": [
+    42,
+    14,
+    63,
+    35
+   ],
+   "chests": 5,
+   "armies": 3
+  },
+  {
+   "name": "Armenia, beyond the pass",
+   "box": [
+    44,
+    0,
+    63,
+    11
+   ],
+   "chests": 5,
+   "armies": 2
+  }
+ ]
+}

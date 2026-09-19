@@ -1162,6 +1162,11 @@ typedef struct {
 } ResZoneSalt;
 
 typedef struct {
+    char from[RES_ID_LEN];   // the zone sailed from
+    int  x, y;
+} ResZoneArrival;
+
+typedef struct {
     char id[RES_ID_LEN];
     char name[RES_NAME_LEN];
     char map_path[RES_PATH_LEN];
@@ -1188,6 +1193,11 @@ typedef struct {
     char siegemaster[RES_ID_LEN]; // portraits[] id of the zone's siege engineer
     int  width, height;
     int  hero_spawn_x, hero_spawn_y;
+    // Optional per-origin arrivals ("arrivals": {"<zone id>": {"x":..,"y":..}}):
+    // sailing in from that zone lands here instead of hero_spawn. Heap, sized
+    // by the pack; empty means every arrival uses hero_spawn.
+    int  arrival_count;
+    ResZoneArrival *arrivals;
     int  neighbor_count;
     char (*neighbors)[RES_ID_LEN];           // heap, neighbor_count
 
@@ -1530,6 +1540,10 @@ int  resources_art_manifest(const Resources *res, ResArtList *out);
 // (the set is whole, or lists `stem` in "tile_set_arts") rather than from the
 // master art/tiles/ set.
 bool resources_tile_from_set(const Resources *res, const char *set, const char *stem);
+
+// Where a hero sailing in from zone `from` lands on zone `z`: the zone's
+// "arrivals" entry for that origin, else its hero_spawn.
+void resources_zone_arrival(const ResZone *z, const char *from, int *x, int *y);
 void resources_art_list_free(ResArtList *list);
 // Override the locale used for the next resources_load. Strings load from
 // strings/<lang>.json in the pack; a locale file that is absent falls back to

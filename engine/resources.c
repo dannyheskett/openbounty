@@ -486,6 +486,20 @@ static void parse_zones(Resources *res, cJSON *arr) {
         cJSON *hs = cJSON_GetObjectItem(it, "hero_spawn");
         z->hero_spawn_x = json_int(hs, "x", 0);
         z->hero_spawn_y = json_int(hs, "y", 0);
+        {
+            cJSON *av = cJSON_GetObjectItem(it, "arrivals");
+            int nav = cJSON_IsObject(av) ? cJSON_GetArraySize(av) : 0;
+            z->arrival_count = 0;
+            z->arrivals = nav > 0 ? calloc((size_t)nav, sizeof *z->arrivals) : NULL;
+            const cJSON *e = NULL;
+            if (z->arrivals) cJSON_ArrayForEach(e, av) {
+                if (!e->string || !cJSON_IsObject(e)) continue;
+                ResZoneArrival *a = &z->arrivals[z->arrival_count++];
+                copy_str(a->from, sizeof a->from, e->string);
+                a->x = json_int(e, "x", z->hero_spawn_x);
+                a->y = json_int(e, "y", z->hero_spawn_y);
+            }
+        }
 
         cJSON *nbr = cJSON_GetObjectItem(it, "neighbors");
         int ncap = json_len(nbr);
@@ -2799,6 +2813,7 @@ void resources_free(Resources *res) {
             free(z->dwellings);
             free(z->armies);
             free(z->tile_set_arts);
+            free(z->arrivals);
             free(z->salt.preferred_troops);
         }
         free(res->zones);         res->zones = NULL;         res->zone_count = 0;
@@ -3076,6 +3091,18 @@ static void art_add_anim(ResArtList *out, int cap, int *n,
     for (int f = 0; f < OB_FACE_COUNT; f++)
         for (int i = 0; i < a->count[f]; i++)
             art_add(out, cap, n, a->frames[f][i]);
+}
+
+void resources_zone_arrival(const ResZone *z, const char *from, int *x, int *y) {
+    *x = z->hero_spawn_x;
+    *y = z->hero_spawn_y;
+    if (!from || !from[0]) return;
+    for (int i = 0; i < z->arrival_count; i++)
+        if (strcmp(z->arrivals[i].from, from) == 0) {
+            *x = z->arrivals[i].x;
+            *y = z->arrivals[i].y;
+            return;
+        }
 }
 
 bool resources_tile_from_set(const Resources *res, const char *set, const char *stem) {

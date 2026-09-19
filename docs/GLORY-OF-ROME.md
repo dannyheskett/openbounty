@@ -607,6 +607,18 @@ and Teutoburgium beyond it, behind a marsh-wood coast). `check` reports each
 place with the guardians standing, beaten, and with the rivers bridged; the
 Pontifex spell and flight also cross the Rhine.
 
+**Africa** (`art/maps/africa.txt`, `africa_regions.json`, 64 x 28) runs from
+Mauretania to the Nile: `guardian_mulucha` holds the one crossing of the
+Mulucha (Volubilis beyond it), and `guardian_amun` the one pass through the
+escarpment round the Oasis of Amun (Ammonium inside it).
+
+**Oriens** (`art/maps/oriens.txt`, `oriens_regions.json`, 64 x 44) covers
+Anatolia, Syria, Judaea, Mesopotamia and Armenia: `guardian_euphrates` holds
+the bridge at Zeugma (Mesopotamia and Ctesiphon beyond the Euphrates), and
+`guardian_armenia` the one pass in the mountain ring round Armenia (Artaxata
+inside it, behind a Pontic coast of mountain). Neither region has a coast a
+boat can land on.
+
 The old generator (`tools/gen_italia.py`) and `tools/spitfix.py` are gone; the
 builder carries their edge rules.
 

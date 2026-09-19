@@ -1,0 +1,48 @@
+# Oriens -- 64x44. The source of maps/oriens.dat.
+# Build: tools/mapbuild.py build assets/glory-of-rome oriens art/maps/oriens.txt assets/glory-of-rome/maps/oriens.dat
+# ~ sea  . grass  , grass variant  f forest  ^ mountain  d desert
+# r river  R river in forest  M river in mountains  = road  H bridge
+......~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^...........
+.......~~~~~~~~~~~~~~~..........~~~~~~~~~~~~~~~~~~~~^...........
+........~~~~~~~~~~~~..............~~~~~~~~~~~~~~~~~^^...........
+........~~~~.....................rrrr~~~~~~~~~~~~^^^............
+~~~~~~~~~~~~...fff..............fRfff......^^^^^^^..............
+~~~~~~~~~~~~.==========.....rrrrrr.........^.......fffff........
+~~~~~..........fff....=.....r..............^.......fffff........
+~~....................=.....r..............^.......fffff........
+~~....................=.....r...................................
+~~....................=.....r..............^....................
+~~....................=ff...rrrrrrrrr......^....................
+~~....................=ff..................^....................
+~~....................=ff..................^^^^^^^^^^^^^^^^^^^^^
+~~....................=======..............^^^^^^^^^^^^^^^^^^^^^
+~~~~.......fff..............=........^^^^^^^....................
+~~~~........................=..^^^^^^^^^^^^.......===========..^
+~~~~.........^^^^^^^^^^^^^^^=^^^^^^^^^^..r........=.....r...=..^
+~~~~......^^^^^^^^^^^^^^^^^^=^^^^........r........=.....r...=..^
+~~~~......^^^^^........^^...=======.....=H=========.....r...=..^
+~~~~~~~~~~.....~~~~~........~~~~~.=.....=r..............r...=..^
+~~~~~~~~~~~....~~~~~~~....~~~~~~~.=======r..............r...=..^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~........r..............r...=..^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.===....rrrrrrr........r...===^
+~~~~~~~~~~~~~~~~~~~~~~~....~~~~~~.f.=..........r........rrrrrr=.
+~~~~~~~~~~~~~~~~~~~~~.....~~~~~~~.f.=..........r.............r=.
+~~~~~~~~~~~~~~~~~~~~~....~~~~~~~~^^rHrr....ddddr......ddddd..r=.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^..=.r....ddddrrrrrrrddddd..r=.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^..=.r....ddddddddddrddddd..r=.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~....=.r.dddddddddddddrddddd..r=.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.....=.r.dddddddddddddrddddd..r=.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.........dddddddddddddrrrrrr..r=.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~..r......dddddddddddddddddddr..r..
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~..r......dddddddddddddddddddr..r..
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~..r......dddddddddddddddddddrddrrr
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...r.....ddddddddddddddddddddrddddd
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...r.....ddddddddddddddddddddrddddd
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~....r.....ddddddddddddddddddddrrrrrr
+~~~~~~~dddddddddddd~~~~~~~~~..........dddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd

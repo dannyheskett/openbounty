@@ -1,0 +1,94 @@
+{
+ "_note": "Where tools/mapbuild.py place scatters Africa's chests and wandering armies. Boxes are inclusive tile ranges; only open grass and sand inside them is used. The two static guardians are placed by \"fixed\".",
+ "seed": 2028,
+ "spacing": 1,
+ "fixed": {
+  "guardian_mulucha": [
+   5,
+   10
+  ],
+  "guardian_amun": [
+   51,
+   22
+  ]
+ },
+ "regions": [
+  {
+   "name": "Mauretania, beyond the Mulucha",
+   "box": [
+    0,
+    8,
+    4,
+    12
+   ],
+   "chests": 2,
+   "armies": 1
+  },
+  {
+   "name": "Numidia and Africa",
+   "box": [
+    6,
+    2,
+    25,
+    12
+   ],
+   "chests": 8,
+   "armies": 3
+  },
+  {
+   "name": "Tripolitania",
+   "box": [
+    26,
+    15,
+    35,
+    19
+   ],
+   "chests": 2,
+   "armies": 1
+  },
+  {
+   "name": "Cyrenaica and Marmarica",
+   "box": [
+    36,
+    15,
+    56,
+    21
+   ],
+   "chests": 5,
+   "armies": 2
+  },
+  {
+   "name": "The Oasis of Amun",
+   "box": [
+    49,
+    23,
+    53,
+    26
+   ],
+   "chests": 2,
+   "armies": 0
+  },
+  {
+   "name": "Aegyptus",
+   "box": [
+    57,
+    20,
+    63,
+    27
+   ],
+   "chests": 5,
+   "armies": 3
+  },
+  {
+   "name": "The Sahara",
+   "box": [
+    0,
+    13,
+    47,
+    27
+   ],
+   "chests": 6,
+   "armies": 4
+  }
+ ]
+}

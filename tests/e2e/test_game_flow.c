@@ -148,6 +148,58 @@ TEST switch_zone_preserves_fog_on_return(void) {
     PASS();
 }
 
+TEST switch_zone_lands_at_the_arrival_for_its_origin(void) {
+    // A zone's "arrivals" pick the landing by the zone sailed from; any other
+    // origin lands at hero_spawn. A landing on water arrives in the boat.
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, "continentia", FIXTURE_SEED));
+    ASSERT(GameSwitchZone(g, m, f, "forestria"));
+    int sx = g->position.x, sy = g->position.y;
+
+    // A sea tile on forestria that touches land.
+    int wx = -1, wy = -1;
+    for (int y = 1; y < m->height - 1 && wx < 0; y++)
+        for (int x = 1; x < m->width - 1 && wx < 0; x++) {
+            const Tile *t = MapGetTile(m, x, y);
+            if (!t || t->terrain != TERRAIN_WATER || t->is_bridge) continue;
+            if ((x == sx && y == sy)) continue;
+            for (int d = 0; d < 4; d++) {
+                const Tile *n = MapGetTile(m, x + (d == 0) - (d == 1), y + (d == 2) - (d == 3));
+                if (n && n->terrain != TERRAIN_WATER) { wx = x; wy = y; break; }
+            }
+        }
+    ASSERT(wx >= 0);
+
+    ResZone *fz = NULL;
+    for (int i = 0; i < res->zone_count; i++)
+        if (strcmp(res->zones[i].id, "forestria") == 0) fz = &res->zones[i];
+    ASSERT(fz);
+    fz->arrivals = calloc(1, sizeof *fz->arrivals);
+    ASSERT(fz->arrivals);
+    strcpy(fz->arrivals[0].from, "continentia");
+    fz->arrivals[0].x = wx;
+    fz->arrivals[0].y = wy;
+    fz->arrival_count = 1;
+
+    ASSERT(GameSwitchZone(g, m, f, "continentia"));
+    ASSERT(GameSwitchZone(g, m, f, "forestria"));
+    ASSERT_EQ(wx, g->position.x);
+    ASSERT_EQ(wy, g->position.y);
+    ASSERT_EQ(TRAVEL_BOAT, g->travel_mode);
+    ASSERT(g->boat.has_boat);
+    ASSERT_EQ(wx, g->boat.x);
+    ASSERT_EQ(wy, g->boat.y);
+
+    // From anywhere else: the spawn.
+    ASSERT(GameSwitchZone(g, m, f, "archipelia"));
+    ASSERT(GameSwitchZone(g, m, f, "forestria"));
+    ASSERT_EQ(sx, g->position.x);
+    ASSERT_EQ(sy, g->position.y);
+
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
 // Find a foot-walkable land tile orthogonally adjacent to the hero, returning
 // its delta in *dx,*dy. Used to set up a boarding step onto a known tile.
 static bool find_adjacent_walkable(Game *g, Map *m, int *dx, int *dy) {
@@ -323,6 +375,7 @@ SUITE(e2e_game_flow_suite) {
     RUN_TEST(chest_consumed_persists_across_save);
     RUN_TEST(switch_zone_updates_position_zone);
     RUN_TEST(switch_zone_preserves_fog_on_return);
+    RUN_TEST(switch_zone_lands_at_the_arrival_for_its_origin);
     RUN_TEST(boat_in_other_zone_is_not_boarded);
     RUN_TEST(boat_in_current_zone_is_boarded);
     RUN_TEST(gate_teleport_leaves_boat_behind);
