@@ -146,6 +146,32 @@ TEST terrain_art_is_listed_per_tile_set(void) {
     PASS();
 }
 
+TEST a_tile_set_may_override_single_arts(void) {
+    // A zone's "tile_set_arts" forks only the names it lists: those come from
+    // art/tiles/<set>/, every other name from the master art/tiles/ set, and
+    // the manifest asks the set folder for exactly the forked files.
+    Resources *r = fx_load_resources();
+    ASSERT(r);
+    strcpy(r->zones[0].tile_set, "alpha");
+    r->zones[0].tile_set_arts = calloc(2, sizeof *r->zones[0].tile_set_arts);
+    ASSERT(r->zones[0].tile_set_arts);
+    strcpy(r->zones[0].tile_set_arts[0], "grass");
+    strcpy(r->zones[0].tile_set_arts[1], "forest");
+    r->zones[0].tile_set_art_count = 2;
+    ASSERT(resources_tile_from_set(r, "alpha", "grass"));
+    ASSERT(resources_tile_from_set(r, "alpha", "forest"));
+    ASSERT_FALSE(resources_tile_from_set(r, "alpha", "water"));
+    ASSERT_FALSE(resources_tile_from_set(r, "beta", "grass"));
+    int n = resources_art_manifest(r, &s_list);
+    ASSERT(manifest_has(n, "art/tiles/alpha/grass.png"));
+    ASSERT(manifest_has(n, "art/tiles/alpha/forest.png"));
+    ASSERT_FALSE(manifest_has(n, "art/tiles/alpha/water.png"));
+    ASSERT(manifest_has(n, "art/tiles/water.png"));        // the master set is still asked for
+    ASSERT(manifest_has(n, "art/tiles/grass.png"));
+    resources_free(r); free(r);
+    PASS();
+}
+
 TEST town_art_is_listed_per_catalog_entry(void) {
     // The shared town tile is listed while some town lacks `art`; a town
     // that declares one adds its stem; when every town declares, the shared
@@ -292,6 +318,7 @@ SUITE(unit_art_manifest_suite) {
     RUN_TEST(placed_object_names_are_asked_for_not_copied);
     RUN_TEST(castle_art_follows_the_footprint);
     RUN_TEST(terrain_art_is_listed_per_tile_set);
+    RUN_TEST(a_tile_set_may_override_single_arts);
     RUN_TEST(town_art_is_listed_per_catalog_entry);
     RUN_TEST(army_art_is_listed_per_zone);
     RUN_TEST(class_hero_art_is_listed_when_declared);

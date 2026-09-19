@@ -463,6 +463,18 @@ static void parse_zones(Resources *res, cJSON *arr) {
             resources_resolve_path(res, p, z->map_path, sizeof z->map_path);
         }
         copy_str(z->tile_set, sizeof(z->tile_set), json_str(it, "tile_set", ""));
+        {
+            cJSON *ov = cJSON_GetObjectItem(it, "tile_set_arts");
+            int nov = cJSON_IsArray(ov) ? cJSON_GetArraySize(ov) : 0;
+            z->tile_set_art_count = 0;
+            z->tile_set_arts = nov > 0 ? calloc((size_t)nov, sizeof *z->tile_set_arts) : NULL;
+            for (int k = 0; z->tile_set_arts && k < nov; k++) {
+                const cJSON *e = cJSON_GetArrayItem(ov, k);
+                if (cJSON_IsString(e) && e->valuestring)
+                    copy_str(z->tile_set_arts[z->tile_set_art_count++], sizeof z->tile_set_arts[0],
+                             e->valuestring);
+            }
+        }
         copy_str(z->army_art, sizeof(z->army_art), json_str(it, "army_art", ""));
         copy_str(z->alcove_art, sizeof(z->alcove_art), json_str(it, "alcove_art", ""));
         copy_str(z->pontifex, sizeof(z->pontifex), json_str(it, "pontifex", ""));
@@ -2786,6 +2798,7 @@ void resources_free(Resources *res) {
             free(z->artifacts);
             free(z->dwellings);
             free(z->armies);
+            free(z->tile_set_arts);
             free(z->salt.preferred_troops);
         }
         free(res->zones);         res->zones = NULL;         res->zone_count = 0;
@@ -3065,6 +3078,18 @@ static void art_add_anim(ResArtList *out, int cap, int *n,
             art_add(out, cap, n, a->frames[f][i]);
 }
 
+bool resources_tile_from_set(const Resources *res, const char *set, const char *stem) {
+    if (!res || !set || !set[0] || !stem) return false;
+    for (int zi = 0; zi < res->zone_count; zi++) {
+        const ResZone *z = &res->zones[zi];
+        if (strcmp(z->tile_set, set) != 0) continue;
+        if (z->tile_set_art_count == 0) return true;          // the whole folder
+        for (int k = 0; k < z->tile_set_art_count; k++)
+            if (strcmp(z->tile_set_arts[k], stem) == 0) return true;
+    }
+    return false;
+}
+
 int resources_art_manifest(const Resources *res, ResArtList *out) {
     int n = 0;
     const int cap = 0;   // unused: the list grows
@@ -3263,11 +3288,13 @@ int resources_art_manifest(const Resources *res, ResArtList *out) {
 
     // Tile art: tile_codes carry a bare name that tile_cache resolves under
     // art/tiles/, or under art/tiles/<tile_set>/ for a zone that declares a
-    // set. List the shared set only while some zone uses it, and each
-    // declared set once, so a pack ships exactly the terrain it draws.
+    // set -- only the names the set overrides, when it lists them
+    // ("tile_set_arts"), the rest from the master set. List the master set
+    // while some zone draws from it, and each declared set once, so a pack
+    // ships exactly the terrain it draws.
     bool shared = (res->zone_count == 0);
     for (int zi = 0; zi < res->zone_count; zi++)
-        if (!res->zones[zi].tile_set[0]) shared = true;
+        if (!res->zones[zi].tile_set[0] || res->zones[zi].tile_set_art_count > 0) shared = true;
     for (int zi = -1; zi < res->zone_count; zi++) {
         const char *set = NULL;
         if (zi < 0) {
@@ -3283,16 +3310,22 @@ int resources_art_manifest(const Resources *res, ResArtList *out) {
         for (int i = 0; i < RES_TILE_CODE_COUNT; i++) {
             if (!res->tile_codes[i].present || !res->tile_codes[i].art[0]) continue;
             char p[RES_PATH_LEN];
-            if (set)
-                snprintf(p, sizeof p, "art/tiles/%s/%s.png", set, res->tile_codes[i].art);
-            else
+            if (set) {
+                if (resources_tile_from_set(res, set, res->tile_codes[i].art)) {
+                    snprintf(p, sizeof p, "art/tiles/%s/%s.png", set, res->tile_codes[i].art);
+                    art_add(out, cap, &n, p);
+                }
+            } else {
                 snprintf(p, sizeof p, "art/tiles/%s.png", res->tile_codes[i].art);
-            art_add(out, cap, &n, p);
+                art_add(out, cap, &n, p);
+            }
             for (int v = 0; v < res->tile_codes[i].variant_count; v++) {
-                if (set)
+                if (set) {
+                    if (!resources_tile_from_set(res, set, res->tile_codes[i].variants[v])) continue;
                     snprintf(p, sizeof p, "art/tiles/%s/%s.png", set, res->tile_codes[i].variants[v]);
-                else
+                } else {
                     snprintf(p, sizeof p, "art/tiles/%s.png", res->tile_codes[i].variants[v]);
+                }
                 art_add(out, cap, &n, p);
             }
         }

@@ -347,6 +347,19 @@ the shared set is only required while some zone still uses it.
   "tile_set": "galliae", ... }
 ```
 
+**Overriding single tiles.** A zone may instead fork only some of the
+master set: `"tile_set_arts"` lists the art names its folder overrides, one
+by one. Those names draw from `art/tiles/<folder>/`; every other name draws
+from the master `art/tiles/` set, so the folder holds only what differs. A
+cosmetic variant is a name of its own and is forked by listing it. The art
+manifest asks the folder for exactly the listed files, and keeps the master
+set for everything else.
+
+```json
+{ "id": "galliae", "tile_set": "galliae",
+  "tile_set_arts": ["grass", "grass_variant", "grass_01", "forest", "forest_edge_01"] }
+```
+
 ---
 
 ## 7. Palettes

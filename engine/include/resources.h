@@ -1170,6 +1170,11 @@ typedef struct {
     // Empty means the shared set. Object tiles (towns, castles, chests...)
     // are never affected.
     char tile_set[RES_ID_LEN];
+    // Optional overrides ("tile_set_arts"): when listed, only these art names
+    // come from the zone's folder and every other name from the master
+    // art/tiles/ set. Empty means the whole folder. Heap, sized by the pack.
+    int  tile_set_art_count;
+    char (*tile_set_arts)[RES_TILE_ART_LEN];
     // Optional wandering-army tile art for this zone (a stem under
     // art/tiles/). Empty means the shared "wandering_army".
     char army_art[RES_TILE_ART_LEN];
@@ -1521,6 +1526,10 @@ typedef struct {
     int    n, cap;
 } ResArtList;
 int  resources_art_manifest(const Resources *res, ResArtList *out);
+// Whether terrain art `stem` for tile set `set` comes from art/tiles/<set>/
+// (the set is whole, or lists `stem` in "tile_set_arts") rather than from the
+// master art/tiles/ set.
+bool resources_tile_from_set(const Resources *res, const char *set, const char *stem);
 void resources_art_list_free(ResArtList *list);
 // Override the locale used for the next resources_load. Strings load from
 // strings/<lang>.json in the pack; a locale file that is absent falls back to

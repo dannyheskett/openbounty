@@ -3,11 +3,11 @@
 
 #include "raylib.h"
 
-// Lazy, fixed-size texture cache keyed by tile-art name. Each unique
-// art string (e.g. "grass", "water", "castle_wall") is loaded from
-// `art/tiles/<art>.png` (pack-relative) on first request, via the
-// global pack stack. When the cache is full, later
-// misses fall back to the "grass" slot.
+// Lazy texture cache keyed by tile-art name. Each unique art string (e.g.
+// "grass", "water", "castle_wall") is loaded from `art/tiles/<art>.png`
+// (pack-relative) on first request, via the global pack stack. The cache is
+// heap, sized at attach from every tile image the pack's game.json names, and
+// grows past that if asked: every image the game requests is kept.
 
 #include "resources.h"
 

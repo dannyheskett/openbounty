@@ -3,61 +3,85 @@
 #include "map.h"   // TILE_ART_NAME_LEN
 #include "resources.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-
-#define MAX_TILE_TEXTURES 96
 
 typedef struct {
     char      name[TILE_ART_NAME_LEN];
     Texture2D tex;
-    bool      loaded;
 } TileTex;
 
-static TileTex cache[MAX_TILE_TEXTURES];
+// Heap, sized by the pack: every tile image game.json can name (each
+// tile_codes art and its variants, once for the shared set and once for each
+// zone's own set), and grown if anything asks for more. Nothing is dropped.
+static TileTex *cache;
+static int      cache_n, cache_cap;
 
 // Stamped by tile_cache_attach; nul until set. Loaders fall back to
 // the legacy hardcoded layout when unset (tests that drive tile_cache
 // without resources still work).
 static const Resources *s_res = NULL;
-void tile_cache_attach(const Resources *res) { s_res = res; }
+
+static bool cache_reserve(int want) {
+    if (want <= cache_cap) return true;
+    int cap = cache_cap > 0 ? cache_cap : 64;
+    while (cap < want) cap *= 2;
+    TileTex *grown = (TileTex *)realloc(cache, (size_t)cap * sizeof *grown);
+    if (!grown) return false;
+    cache = grown;
+    cache_cap = cap;
+    return true;
+}
+
+void tile_cache_attach(const Resources *res) {
+    s_res = res;
+    if (!res) return;
+    int arts = 0;
+    for (int i = 0; i < RES_TILE_CODE_COUNT; i++)
+        if (res->tile_codes[i].present && res->tile_codes[i].art[0])
+            arts += 1 + res->tile_codes[i].variant_count;
+    int sets = 1;                                   // the shared art/tiles/
+    for (int zi = 0; zi < res->zone_count; zi++) {
+        if (!res->zones[zi].tile_set[0]) continue;
+        bool dup = false;
+        for (int k = 0; k < zi; k++)
+            if (strcmp(res->zones[k].tile_set, res->zones[zi].tile_set) == 0) dup = true;
+        if (!dup) sets++;
+    }
+    cache_reserve(arts * sets);
+}
 
 Texture2D tile_cache_get(const char *art) {
     if (!art || !art[0]) art = "grass";
-    for (int i = 0; i < MAX_TILE_TEXTURES; i++) {
-        if (cache[i].loaded && strcmp(cache[i].name, art) == 0) return cache[i].tex;
+    for (int i = 0; i < cache_n; i++)
+        if (strcmp(cache[i].name, art) == 0) return cache[i].tex;
+    if (!cache_reserve(cache_n + 1)) return (Texture2D){ 0 };
+    TileTex *t = &cache[cache_n++];
+    snprintf(t->name, sizeof t->name, "%s", art);   // the key is the name asked for
+    char rel[160], path[256];
+    // Tile art lives in art/tiles/*.png. A zone's own set ("<set>/<art>") draws its own file only for the arts it
+    // overrides; every other name comes from the master art/tiles/ set.
+    const char *slash = strchr(art, '/');
+    if (slash && s_res) {
+        char set[TILE_ART_NAME_LEN];
+        snprintf(set, sizeof set, "%.*s", (int)(slash - art), art);
+        if (!resources_tile_from_set(s_res, set, slash + 1)) art = slash + 1;
     }
-    for (int i = 0; i < MAX_TILE_TEXTURES; i++) {
-        if (!cache[i].loaded) {
-            char rel[160], path[256];
-            // Fixed pack layout: tile art lives in art/tiles/*.png. The
-            // extractor produces this layout; engine has no reason to
-            // make it configurable.
-            snprintf(rel, sizeof rel, "art/tiles/%s.png", art);
-            resources_resolve_path(s_res, rel, path, sizeof path);
-            cache[i].tex = LoadAssetTexture(path);
-            // POINT filter keeps pixel art crisp; CLAMP prevents color
-            // bleed from the adjacent edge when the destination rect
-            // lands at a sub-pixel position during animated camera scroll.
-            SetTextureFilter(cache[i].tex, TEXTURE_FILTER_POINT);
-            SetTextureWrap(cache[i].tex, TEXTURE_WRAP_CLAMP);
-            size_t n = 0;
-            while (n + 1 < sizeof(cache[i].name) && art[n]) {
-                cache[i].name[n] = art[n]; n++;
-            }
-            cache[i].name[n] = '\0';
-            cache[i].loaded = true;
-            return cache[i].tex;
-        }
-    }
-    return tile_cache_get("grass");
+    snprintf(rel, sizeof rel, "art/tiles/%s.png", art);
+    resources_resolve_path(s_res, rel, path, sizeof path);
+    t->tex = LoadAssetTexture(path);
+    // POINT filter keeps pixel art crisp; CLAMP prevents color
+    // bleed from the adjacent edge when the destination rect
+    // lands at a sub-pixel position during animated camera scroll.
+    SetTextureFilter(t->tex, TEXTURE_FILTER_POINT);
+    SetTextureWrap(t->tex, TEXTURE_WRAP_CLAMP);
+    return t->tex;
 }
 
 void tile_cache_shutdown(void) {
-    for (int i = 0; i < MAX_TILE_TEXTURES; i++) {
-        if (cache[i].loaded) {
-            UnloadTexture(cache[i].tex);
-            cache[i].loaded = false;
-        }
-    }
+    for (int i = 0; i < cache_n; i++) UnloadTexture(cache[i].tex);
+    free(cache);
+    cache = NULL;
+    cache_n = cache_cap = 0;
 }
