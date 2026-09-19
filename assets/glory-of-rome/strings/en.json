@@ -775,17 +775,20 @@
 		"raise_control":	"Imperium is the right to command, given by the gods and the people of Roma.\n\nWith this rite your authority grows: your leadership rises, and a higher leadership lets you lead more soldiers without losing control of them."
 	},
 	"town_docks":	{
-		"ostia":	"Your boat will be tied up at the river quay just north-east of the city gate.",
-		"mediolanum":	"Your boat will be moored at the landing just south-west of the city.",
+		"ostia":	"Your boat will be tied up at the river quay just west of the city gate.",
 		"pisae":	"Your boat will wait in the harbour a short walk west of the city.",
-		"ancona":	"Your boat will wait in the harbour a short walk south-east of the city.",
-		"massilia":	"Your boat will be tied up at the quay just north-east of the city walls.",
+		"ancona":	"Your boat will wait in the harbour a short walk east of the city.",
+		"massilia":	"Your boat will be tied up at the quay just south of the city walls.",
 		"burdigala":	"Your boat will lie at the river quay right beside the north-west gate.",
 		"utica":	"Your boat will wait in the harbour just north of the city.",
 		"hadrumetum":	"Your boat will be moored at the quay just north-west of the city.",
 		"ptolemais":	"Your boat will wait at the harbour mole just north of the city.",
 		"tarsus":	"Your boat will lie at the river landing beside the north-west gate.",
-		"nicomedia":	"Your boat will be moored at the quay beside the north-east gate."
+		"nicomedia":	"Your boat will be moored at the quay beside the north-east gate.",
+		"puteoli":	"Your boat will wait in the harbour just west of the city.",
+		"croton":	"Your boat will be moored at the quay just east of the city.",
+		"londinium":	"Your boat will lie at the quay on the Tamesis just east of the city.",
+		"tarraco":	"Your boat will wait in the harbour just east of the city."
 	},
 	"town_invitations":	{
 		"ostia":	{
@@ -859,37 +862,6 @@
 			"temple":	"Artemis of Ephesus has watched over Massilia since the Greeks founded it, %HERO%. Enter, and I will teach you a rite.",
 			"siege":	"Massilia once held off Caesar's siege for months, %HERO%. We learned a great deal. Come to the workshop."
 		},
-		"narbo":	{
-			"contracts":	"Welcome to Narbo, %HERO%, first colony of Roma in Gaul. The province still has its rebels. Come this way, and let us discuss your contract.",
-			"information":	"The Via Domitia runs through Narbo to Hispania, %HERO%, and every courier talks. Sit, and I'll tell you what is said of the castles.",
-			"temple":	"The veterans of Narbo built a temple to Augustus, %HERO%. Enter, and I will teach you a rite.",
-			"siege":	"The Tenth Legion's veterans settled here, %HERO%, and they still build engines. Come to the workshop."
-		},
-		"tolosa":	{
-			"contracts":	"Welcome to Tolosa, %HERO%. Our famous gold was cursed, and so are Roma's enemies. Come this way, and let us discuss your contract.",
-			"information":	"The tribes of the southwest trade in Tolosa, %HERO%, and I hear what they say. Sit, and I'll tell you what is said of the castles.",
-			"temple":	"The sacred lake of Tolosa once held a treasure of gold, %HERO%. Enter the temple, and I will teach you a rite.",
-			"siege":	"Tolosa's walls are brick, and our engineers know brick, %HERO%. Come to the workshop and see our engines."
-		},
-		"burdigala":	{
-			"contracts":	"Welcome to Burdigala, %HERO%, on the great river. Roma's enemies trade in our markets under false names. Come this way, and let us discuss your contract.",
-			"boat":	"Well met, %HERO%! Burdigala's wine goes out on the tide, and so could you. Come and see my boats.",
-			"information":	"Wine merchants from all Gaul meet in Burdigala, %HERO%, and wine loosens tongues. Sit, and I'll tell you what is said of the castles.",
-			"temple":	"The tutelary goddess of Burdigala keeps her shrine by the river, %HERO%. Enter, and I will teach you a rite.",
-			"siege":	"The river brings oak from the forests to Burdigala, %HERO%. Come to the workshop and see what we build from it."
-		},
-		"vienna":	{
-			"contracts":	"Welcome to Vienna, %HERO%, jewel of the Rhodanus. Even rich cities have enemies. Come this way, and let us discuss your contract.",
-			"information":	"Boats on the Rhodanus carry news from Lugdunum to the sea, %HERO%, and all of it stops here. Sit, and I'll tell you what is said of the castles.",
-			"temple":	"Augustus and Livia share a temple in our forum, %HERO%. Enter, and I will teach you a rite.",
-			"siege":	"The Allobroges fought Roma from these hills, %HERO%, and taught our engineers much. Come to the workshop."
-		},
-		"aquae_sextiae":	{
-			"contracts":	"Welcome to Aquae Sextiae, %HERO%, where Marius destroyed the Teutones. Roma still needs such victories. Come this way, and let us discuss your contract.",
-			"information":	"Travellers come to Aquae Sextiae for the hot springs, %HERO%, and talk in the baths. Sit, and I'll tell you what is said of the castles.",
-			"temple":	"The spirit of the springs is holy here, %HERO%. Enter the temple, and I will teach you a rite.",
-			"siege":	"Marius's engineers left their workshops here, %HERO%, and we have kept them working. Come and see."
-		},
 		"utica":	{
 			"contracts":	"Welcome to Utica, %HERO%, capital of the province. The governor keeps a list of Roma's enemies. Come this way, and let us discuss your contract.",
 			"boat":	"Greetings, %HERO%! Utica is older than Carthago, and so is her harbour. Come and see my ships.",
@@ -954,6 +926,38 @@
 			"information":	"Every caravan from Arabia and Persia stops in Damascus, %HERO%, and their news with it. Sit, and I'll tell you what is said of the castles.",
 			"temple":	"Jupiter Damascenus has a vast temple in our city, %HERO%. Enter, and I will teach you a rite.",
 			"siege":	"Damascus steel makes the finest fittings for siege engines, %HERO%. Come to the workshop and see."
+		},
+		"lugdunum":	{
+			"contracts":	"Welcome to Lugdunum, %HERO%, capital of the Three Gauls. Every road in the province starts here, and so does every plot. Come this way, and let us discuss your contract.",
+			"information":	"The Council of the Gauls meets at Lugdunum each summer, %HERO%, and the chiefs talk freely over wine. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"The altar of Roma and Augustus stands where the two rivers meet, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"The mint of Lugdunum needs strong walls, %HERO%, and our engineers build the engines to take any other. Come to the workshop."
+		},
+		"lutetia":	{
+			"contracts":	"Welcome to Lutetia, %HERO%, on the island of the Parisii. The river brings us trade and trouble alike. Come this way, and let us discuss your contract.",
+			"information":	"The boatmen of the Sequana pass on everything they hear, %HERO%, and all of it reaches Lutetia. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"The boatmen raised a pillar to Jupiter on our island, %HERO%. Enter the temple, and I will teach you a rite.",
+			"siege":	"Labienus took Lutetia by the river, %HERO%, and we have studied his engines since. Come to the workshop."
+		},
+		"londinium":	{
+			"contracts":	"Welcome to Londinium, %HERO%, at the edge of the world. Boudica burned this city once, and Roma's enemies here are not tame. Come this way, and let us discuss your contract.",
+			"boat":	"Well met, %HERO%! Every ship for Gaul sails from our quays on the Tamesis. Come and see mine.",
+			"information":	"Merchants from every corner of Britannia meet on our quays, %HERO%, and they talk of the north. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Mithras has his temple by the Walbrook, %HERO%, among the soldiers who hold this province. Enter, and I will teach you a rite.",
+			"siege":	"The legions building the Wall draw their engines from Londinium, %HERO%. Come to the workshop and see them."
+		},
+		"tarraco":	{
+			"contracts":	"Welcome to Tarraco, %HERO%, capital of Hispania Citerior. The Scipios landed here to fight Carthago, and Roma still has enemies in these hills. Come this way, and let us discuss your contract.",
+			"boat":	"Greetings, %HERO%! Tarraco sends wine and oil to every port on the sea. Come and see my ships.",
+			"information":	"Augustus himself wintered in Tarraco, %HERO%, and the city has kept his habit of listening. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"The first temple to the divine Augustus in all the West stands here, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"The Scipios' engineers built Tarraco's walls, %HERO%, and we still keep their craft. Come to the workshop."
+		},
+		"emerita_augusta":	{
+			"contracts":	"Welcome to Emerita Augusta, %HERO%, city of the veterans of the Cantabrian wars. Old soldiers know Roma's enemies well. Come this way, and let us discuss your contract.",
+			"information":	"The veterans of Emerita still hear from their old legions, %HERO%. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Our temple to Diana looks over the great bridge on the Anas, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"The men who built our great bridge build engines too, %HERO%. Come to the workshop."
 		}
 	}
 }

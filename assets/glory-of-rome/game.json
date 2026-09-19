@@ -643,149 +643,155 @@
 			},
 			"chests":	[{
 					"id":	"chest_1",
-					"x":	46,
-					"y":	20
+					"x":	17,
+					"y":	9
 				}, {
 					"id":	"chest_2",
-					"x":	9,
-					"y":	25
+					"x":	14,
+					"y":	4
 				}, {
 					"id":	"chest_3",
-					"x":	33,
-					"y":	27
+					"x":	20,
+					"y":	7
 				}, {
 					"id":	"chest_4",
-					"x":	45,
-					"y":	28
+					"x":	21,
+					"y":	17
 				}, {
 					"id":	"chest_5",
-					"x":	20,
-					"y":	34
+					"x":	23,
+					"y":	22
 				}, {
 					"id":	"chest_6",
-					"x":	32,
-					"y":	35
+					"x":	33,
+					"y":	20
 				}, {
 					"id":	"chest_7",
-					"x":	43,
-					"y":	44
+					"x":	25,
+					"y":	11
 				}, {
 					"id":	"chest_8",
-					"x":	18,
-					"y":	50
+					"x":	0,
+					"y":	15
 				}, {
 					"id":	"chest_9",
-					"x":	42,
-					"y":	52
+					"x":	8,
+					"y":	17
 				}, {
 					"id":	"chest_10",
-					"x":	17,
-					"y":	58
-				}, {
-					"id":	"chest_11",
-					"x":	29,
-					"y":	59
-				}, {
-					"id":	"chest_12",
-					"x":	11,
-					"y":	24
-				}, {
-					"id":	"chest_13",
-					"x":	23,
-					"y":	25
-				}, {
-					"id":	"chest_14",
-					"x":	35,
+					"x":	45,
 					"y":	26
 				}, {
-					"id":	"chest_15",
-					"x":	47,
+					"id":	"chest_11",
+					"x":	25,
+					"y":	30
+				}, {
+					"id":	"chest_12",
+					"x":	42,
+					"y":	20
+				}, {
+					"id":	"chest_13",
+					"x":	25,
 					"y":	27
 				}, {
+					"id":	"chest_14",
+					"x":	27,
+					"y":	20
+				}, {
+					"id":	"chest_15",
+					"x":	35,
+					"y":	32
+				}, {
 					"id":	"chest_16",
-					"x":	10,
+					"x":	43,
 					"y":	32
 				}, {
 					"id":	"chest_17",
 					"x":	20,
-					"y":	20
+					"y":	43
 				}, {
 					"id":	"chest_18",
-					"x":	22,
-					"y":	20
+					"x":	46,
+					"y":	39
 				}, {
 					"id":	"chest_19",
-					"x":	24,
-					"y":	20
+					"x":	33,
+					"y":	42
 				}, {
 					"id":	"chest_20",
-					"x":	26,
-					"y":	20
+					"x":	63,
+					"y":	25
 				}, {
 					"id":	"chest_21",
-					"x":	8,
-					"y":	23
+					"x":	60,
+					"y":	27
 				}, {
 					"id":	"chest_22",
-					"x":	13,
-					"y":	23
+					"x":	60,
+					"y":	21
 				}, {
 					"id":	"chest_23",
-					"x":	15,
-					"y":	23
+					"x":	50,
+					"y":	17
 				}, {
 					"id":	"chest_24",
-					"x":	20,
-					"y":	22
+					"x":	4,
+					"y":	52
 				}, {
 					"id":	"chest_25",
-					"x":	22,
-					"y":	22
+					"x":	23,
+					"y":	46
 				}, {
 					"id":	"chest_26",
-					"x":	24,
-					"y":	22
+					"x":	9,
+					"y":	43
 				}, {
 					"id":	"chest_27",
-					"x":	9,
-					"y":	21
+					"x":	25,
+					"y":	49
 				}, {
 					"id":	"chest_28",
-					"x":	12,
-					"y":	21
+					"x":	28,
+					"y":	53
 				}, {
 					"id":	"chest_29",
-					"x":	15,
-					"y":	21
+					"x":	29,
+					"y":	56
 				}, {
 					"id":	"chest_30",
-					"x":	18,
-					"y":	21
+					"x":	16,
+					"y":	60
 				}],
 			"signs":	[{
-					"x":	38,
-					"y":	29,
-					"id":	"sign_galliae_1",
-					"title":	"Alesia",
-					"body":	"Here Vercingetorix laid down his arms before Caesar."
-				}, {
-					"x":	46,
-					"y":	30,
-					"id":	"sign_galliae_2",
-					"title":	"The Rhine",
-					"body":	"This river marks the edge of the world. Beyond it, Germania."
-				}, {
-					"x":	22,
-					"y":	21,
-					"id":	"sign_galliae_3",
-					"title":	"Britannia",
-					"body":	"Across the northern sea lies Britannia, and Londinium upon it."
-				}],
+				"x":	46,
+				"y":	32,
+				"id":	"sign_galliae_1",
+				"title":	"Alesia",
+				"body":	"Here Vercingetorix laid down his arms before Caesar."
+			}, {
+				"x":	52,
+				"y":	23,
+				"id":	"sign_galliae_2",
+				"title":	"The Rhine",
+				"body":	"This river marks the edge of the world. Beyond it, Germania."
+			}, {
+				"x":	31,
+				"y":	17,
+				"id":	"sign_galliae_3",
+				"title":	"Britannia",
+				"body":	"Across the northern sea lies Britannia, and Londinium upon it."
+			}, {
+				"x":	21,
+				"y":	11,
+				"id":	"sign_galliae_4",
+				"title":	"Hadrian's Wall",
+				"body":	"The Emperor's wall runs from sea to sea. Beyond it, Caledonia answers to no one."
+			}],
 			"dwellings":	[],
 			"armies":	[],
 			"hero_spawn":	{
-				"x":	9,
-				"y":	20
+				"x":	47,
+				"y":	41
 			},
 			"alcove_art":	"alcove",
 			"pontifex":	"pontifex_galliae",
@@ -793,58 +799,151 @@
 			"boatmaster":	"boatmaster_galliae",
 			"siegemaster":	"siege_galliae",
 			"magic_alcove":	{
-				"x":	24,
-				"y":	24
+				"x":	33,
+				"y":	29
 			},
 			"towns":	[{
-					"x":	28,
-					"y":	21,
-					"id":	"massilia"
+				"x":	47,
+				"y":	42,
+				"id":	"massilia"
+			}, {
+				"x":	44,
+				"y":	34,
+				"id":	"lugdunum"
+			}, {
+				"x":	35,
+				"y":	27,
+				"id":	"lutetia"
+			}, {
+				"x":	32,
+				"y":	18,
+				"id":	"londinium"
+			}, {
+				"x":	36,
+				"y":	48,
+				"id":	"tarraco"
+			}, {
+				"x":	10,
+				"y":	56,
+				"id":	"emerita_augusta"
+			}],
+			"castles":	[{
+				"x":	45,
+				"y":	31,
+				"id":	"castle_galliae_1"
+			}, {
+				"x":	50,
+				"y":	23,
+				"id":	"castle_galliae_2"
+			}, {
+				"x":	25,
+				"y":	13,
+				"id":	"castle_galliae_3"
+			}, {
+				"x":	14,
+				"y":	57,
+				"id":	"castle_galliae_4"
+			}, {
+				"x":	17,
+				"y":	6,
+				"id":	"castle_galliae_5"
+			}, {
+				"x":	57,
+				"y":	18,
+				"id":	"castle_galliae_6"
+			}],
+			"wandering_armies":	[{
+					"x":	20,
+					"y":	10,
+					"id":	"guardian_hadrian",
+					"static":	true,
+					"army":	[{
+						"troop":	"dwarves",
+						"count":	12
+					}, {
+						"troop":	"barbarians",
+						"count":	10
+					}, {
+						"troop":	"elves",
+						"count":	8
+					}, {
+						"troop":	"druids",
+						"count":	6
+					}]
+				}, {
+					"x":	51,
+					"y":	22,
+					"id":	"guardian_rhenus",
+					"static":	true,
+					"army":	[{
+						"troop":	"barbarians",
+						"count":	15
+					}, {
+						"troop":	"trolls",
+						"count":	8
+					}, {
+						"troop":	"ogres",
+						"count":	6
+					}, {
+						"troop":	"cavalry",
+						"count":	6
+					}]
+				}, {
+					"x":	16,
+					"y":	0,
+					"id":	"wandering_army_000"
+				}, {
+					"x":	18,
+					"y":	22,
+					"id":	"wandering_army_001"
+				}, {
+					"x":	33,
+					"y":	16,
+					"id":	"wandering_army_002"
+				}, {
+					"x":	1,
+					"y":	18,
+					"id":	"wandering_army_003"
 				}, {
 					"x":	38,
-					"y":	26,
-					"id":	"narbo"
+					"y":	25,
+					"id":	"wandering_army_004"
 				}, {
-					"x":	28,
-					"y":	42,
-					"id":	"tolosa"
+					"x":	21,
+					"y":	29,
+					"id":	"wandering_army_005"
 				}, {
-					"x":	45,
-					"y":	20,
-					"id":	"burdigala"
+					"x":	38,
+					"y":	43,
+					"id":	"wandering_army_006"
 				}, {
-					"x":	28,
-					"y":	50,
-					"id":	"vienna"
-				}, {
-					"x":	20,
+					"x":	37,
 					"y":	35,
-					"id":	"aquae_sextiae"
-				}],
-			"castles":	[{
-					"x":	30,
-					"y":	23,
-					"id":	"castle_galliae_1"
+					"id":	"wandering_army_007"
 				}, {
-					"x":	40,
-					"y":	28,
-					"id":	"castle_galliae_2"
+					"x":	32,
+					"y":	39,
+					"id":	"wandering_army_008"
 				}, {
-					"x":	30,
-					"y":	44,
-					"id":	"castle_galliae_3"
+					"x":	59,
+					"y":	16,
+					"id":	"wandering_army_009"
 				}, {
-					"x":	47,
-					"y":	22,
-					"id":	"castle_galliae_4"
+					"x":	62,
+					"y":	17,
+					"id":	"wandering_army_010"
 				}, {
-					"x":	30,
-					"y":	52,
-					"id":	"castle_galliae_5"
+					"x":	14,
+					"y":	47,
+					"id":	"wandering_army_011"
 				}, {
-					"x":	22,
-					"y":	35,
-					"id":	"castle_galliae_6"
+					"x":	8,
+					"y":	57,
+					"id":	"wandering_army_012"
+				}, {
+					"x":	17,
+					"y":	48,
+					"id":	"wandering_army_013"
 				}]
 		}, {
 			"id":	"africa",
@@ -1582,120 +1681,120 @@
 			"informant":	"informant_market",
 			"name":	"Massilia",
 			"art":	"town_galliae",
-			"x":	28,
-			"y":	21,
+			"x":	47,
+			"y":	42,
 			"boat":	{
-				"x":	30,
-				"y":	19
+				"x":	47,
+				"y":	43
 			},
 			"gate":	{
-				"x":	28,
-				"y":	22
+				"x":	47,
+				"y":	41
 			},
 			"zone":	"galliae",
 			"intel_castle":	"castle_galliae_1"
 		}, {
 			"index":	10,
-			"id":	"narbo",
+			"id":	"lugdunum",
 			"headman":	"headman_galliae",
 			"townhead":	"townhead_galliae",
-			"invitations":	"narbo",
+			"invitations":	"lugdunum",
 			"informant":	"informant_taverner",
-			"name":	"Narbo",
+			"name":	"Lugdunum",
 			"art":	"town_galliae",
-			"x":	38,
-			"y":	26,
+			"x":	44,
+			"y":	34,
 			"boat":	{
 				"x":	-1,
 				"y":	-1
 			},
 			"gate":	{
-				"x":	38,
-				"y":	27
+				"x":	44,
+				"y":	35
 			},
 			"zone":	"galliae",
 			"intel_castle":	"castle_galliae_2"
 		}, {
 			"index":	11,
-			"id":	"tolosa",
+			"id":	"lutetia",
 			"headman":	"headman_galliae",
 			"townhead":	"townhead_galliae",
-			"invitations":	"tolosa",
+			"invitations":	"lutetia",
 			"informant":	"informant_veteran",
-			"name":	"Tolosa",
+			"name":	"Lutetia",
 			"art":	"town_galliae",
-			"x":	28,
-			"y":	42,
+			"x":	35,
+			"y":	27,
 			"boat":	{
 				"x":	-1,
 				"y":	-1
 			},
 			"gate":	{
-				"x":	28,
-				"y":	43
+				"x":	34,
+				"y":	27
 			},
 			"zone":	"galliae",
 			"intel_castle":	"castle_galliae_3"
 		}, {
 			"index":	12,
-			"id":	"burdigala",
+			"id":	"londinium",
 			"headman":	"headman_galliae",
 			"townhead":	"townhead_galliae",
-			"invitations":	"burdigala",
+			"invitations":	"londinium",
 			"informant":	"informant_market",
-			"name":	"Burdigala",
+			"name":	"Londinium",
 			"art":	"town_galliae",
-			"x":	45,
-			"y":	20,
+			"x":	32,
+			"y":	18,
 			"boat":	{
-				"x":	44,
-				"y":	19
+				"x":	33,
+				"y":	18
 			},
 			"gate":	{
-				"x":	45,
-				"y":	21
+				"x":	31,
+				"y":	18
 			},
 			"zone":	"galliae",
 			"intel_castle":	"castle_galliae_4"
 		}, {
 			"index":	13,
-			"id":	"vienna",
+			"id":	"tarraco",
 			"headman":	"headman_galliae",
 			"townhead":	"townhead_galliae",
-			"invitations":	"vienna",
+			"invitations":	"tarraco",
 			"informant":	"informant_urchin",
-			"name":	"Vienna",
+			"name":	"Tarraco",
 			"art":	"town_galliae",
-			"x":	28,
-			"y":	50,
+			"x":	36,
+			"y":	48,
 			"boat":	{
-				"x":	-1,
-				"y":	-1
+				"x":	37,
+				"y":	48
 			},
 			"gate":	{
-				"x":	28,
-				"y":	51
+				"x":	35,
+				"y":	47
 			},
 			"zone":	"galliae",
 			"intel_castle":	"castle_galliae_5"
 		}, {
 			"index":	14,
-			"id":	"aquae_sextiae",
+			"id":	"emerita_augusta",
 			"headman":	"headman_galliae",
 			"townhead":	"townhead_galliae",
-			"invitations":	"aquae_sextiae",
+			"invitations":	"emerita_augusta",
 			"informant":	"informant_taverner",
-			"name":	"Aquae Sextiae",
+			"name":	"Emerita Augusta",
 			"art":	"town_galliae",
-			"x":	20,
-			"y":	35,
+			"x":	10,
+			"y":	56,
 			"boat":	{
 				"x":	-1,
 				"y":	-1
 			},
 			"gate":	{
-				"x":	20,
-				"y":	36
+				"x":	10,
+				"y":	57
 			},
 			"zone":	"galliae",
 			"intel_castle":	"castle_galliae_6"
@@ -2055,54 +2154,54 @@
 		}, {
 			"index":	0,
 			"id":	"castle_galliae_1",
-			"name":	"Lugdunum",
-			"x":	30,
-			"y":	23,
+			"name":	"Alesia",
+			"x":	45,
+			"y":	31,
 			"zone":	"galliae",
 			"difficulty_tier":	1,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_galliae_2",
-			"name":	"Alesia",
-			"x":	40,
-			"y":	28,
+			"name":	"Colonia Agrippina",
+			"x":	50,
+			"y":	23,
 			"zone":	"galliae",
 			"difficulty_tier":	1,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_galliae_3",
-			"name":	"Gergovia",
-			"x":	30,
-			"y":	44,
+			"name":	"Eboracum",
+			"x":	25,
+			"y":	13,
 			"zone":	"galliae",
 			"difficulty_tier":	1,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_galliae_4",
-			"name":	"Colonia Agrippina",
-			"x":	47,
-			"y":	22,
+			"name":	"Corduba",
+			"x":	14,
+			"y":	57,
 			"zone":	"galliae",
 			"difficulty_tier":	1,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_galliae_5",
-			"name":	"Corduba",
-			"x":	30,
-			"y":	52,
+			"name":	"Mons Graupius",
+			"x":	17,
+			"y":	6,
 			"zone":	"galliae",
 			"difficulty_tier":	1,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
 			"id":	"castle_galliae_6",
-			"name":	"Bibracte",
-			"x":	22,
-			"y":	35,
+			"name":	"Teutoburgium",
+			"x":	57,
+			"y":	18,
 			"zone":	"galliae",
 			"difficulty_tier":	1,
 			"footprint":	"1x1"

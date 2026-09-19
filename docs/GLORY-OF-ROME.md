@@ -597,6 +597,16 @@ and the rites for it are learned from the Augur on Sardinia, reached by boat
 from Ostia. `check` must show the three northern places unreachable with the
 rivers shut and reachable with them bridged.
 
+**Galliae** is built the same way, from `art/maps/galliae.txt` and
+`art/maps/galliae_regions.json` (64 x 64): Britannia, Hibernia, Gaul,
+Hispania, and Germania east of the Rhine. Two guardians hold its gates:
+`guardian_hadrian` at the one gate in Hadrian's Wall (Caledonia and Mons
+Graupius beyond it, behind a Highland coast of mountain), and
+`guardian_rhenus` on the Rhine's one bridge at Colonia Agrippina (Germania
+and Teutoburgium beyond it, behind a marsh-wood coast). `check` reports each
+place with the guardians standing, beaten, and with the rivers bridged; the
+Pontifex spell and flight also cross the Rhine.
+
 The old generator (`tools/gen_italia.py`) and `tools/spitfix.py` are gone; the
 builder carries their edge rules.
 

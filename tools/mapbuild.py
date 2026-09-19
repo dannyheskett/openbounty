@@ -33,7 +33,8 @@ The SOURCE is the map. One character per tile, `#` lines are comments:
 
 `check` asserts every object stands on walkable ground, every dock is on the
 open sea, and reports what the hero can reach from the spawn on foot and by
-boat without crossing a river, then with every river opened.
+boat: with the static guardians holding their tiles, with them beaten, and
+then with every river bridged too.
 
 `place` scatters a zone's chests and wandering armies inside hand-drawn
 region boxes from a fixed seed, and writes them into game.json.
@@ -464,6 +465,12 @@ def check(pack, zid, path):
         x, y = p
         return p in seen or any((x + dx, y + dy) in seen for dx, dy in DIRS8.values())
 
+    # A static army (a guardian) holds its tile until it is beaten.
+    guards = [(a["x"], a["y"]) for a in z.get("wandering_armies", []) if a.get("static")]
+    held = [r[:] for r in ter]
+    for gx, gy in guards:
+        held[gy][gx] = "forest"
+    guarded, _ = reach(W, H, held, start, [(t, d) for t, d in docks], False)
     shut, sea = reach(W, H, ter, start, [(t, d) for t, d in docks], False)
     open_, _ = reach(W, H, ter, start, [(t, d) for t, d in docks], True)
     for t, d in docks:
@@ -471,9 +478,11 @@ def check(pack, zid, path):
             bad.append(f"dock {d} is not on the open sea")
 
     print(f"{zid}: {W}x{H}")
-    print(f"  {'':44s} rivers shut  rivers bridged")
+    print(f"  {'':44s} guardians    guardians    rivers")
+    print(f"  {'':44s} standing     beaten       bridged")
     for name, p in sorted(points.items(), key=lambda kv: (kv[1][1], kv[1][0])):
-        print(f"  {name:44s} {'yes' if reached(shut, p) else 'NO ':12s} "
+        print(f"  {name:44s} {'yes' if reached(guarded, p) else 'NO ':12s} "
+              f"{'yes' if reached(shut, p) else 'NO ':12s} "
               f"{'yes' if reached(open_, p) else 'NO'}")
     counts = {}
     for y in range(H):
