@@ -337,8 +337,27 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         }
         pending_flow = FLOW_NAVIGATE;
         prompt_numeric_open(ui->dt_navigate, body, 3);
+        if (CL_IS_MODERN && res->sprites.sail_backdrop[0] &&
+            bn->body_navigate_confirm[0])
+            prompt_set_req_kind(PIO_ASK_SCENE);
     }
     shot(&G, "09e_navigate");
+
+    // ... and its confirmation, over the same ship.
+    if (CL_IS_MODERN && res->sprites.sail_backdrop[0] &&
+        bn->body_navigate_confirm[0]) {
+        reset(&G);
+        pending_flow = FLOW_NAVIGATE;
+        {
+            const ResZone *z = (res->zone_count > 1) ? &res->zones[1] : &res->zones[0];
+            ResTemplateVar v[] = { { "ZONE", z->name[0] ? z->name : z->id } };
+            char q[RES_BANNER_LEN];
+            resources_format_template(q, sizeof q, bn->body_navigate_confirm, v, 1);
+            prompt_yes_no_open(ui->dt_navigate, q);
+            prompt_set_req_kind(PIO_ASK_SCENE);
+        }
+        shot(&G, "09e2_navigate_confirm");
+    }
 
     // Temporary death: sent back to the Emperor in disgrace.
     reset(&G);

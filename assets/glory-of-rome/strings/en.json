@@ -282,6 +282,7 @@
 		"body_garrison_row_named":	"%INDEX%. %TROOP% (%COUNT%)\n",
 		"body_garrison_row_empty":	"%INDEX%. Empty\n",
 		"body_navigate_row":	"%INDEX%. %ZONE%\n",
+		"body_navigate_confirm":	"Sail for %ZONE%?",
 		"body_no_continents":	"No known provinces from this zone.",
 		"body_must_be_sailing":	"You must be sailing to navigate to another province.",
 		"cannot_garrison_last":	"You cannot garrison your last army!",

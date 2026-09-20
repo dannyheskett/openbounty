@@ -13,6 +13,12 @@
 // run combat or touch render/view state.
 
 #include "shell_promptdispatch.h"
+#include "prompt_impl.h"      // prompt_view: the province rows, to put the picker back
+// Sailing with the picture is a two-step in the SHELL: the province picked
+// (1..5), then confirmed. -1 = no pick outstanding.
+static int s_sail_pick = -1;
+// The province rows, kept so "No" can put the picker back up.
+static char s_sail_body[256];
 #include "modern/location.h"
 
 #include <stdio.h>
@@ -116,6 +122,43 @@ bool prompt_dispatch_tick(ShellCtx *ctx) {
     // result, dispatch based on pending_flow.
     PromptResult r = prompt_update();
     if (r == PROMPT_RESULT_NONE) return true;
+
+    // Sailing, with the picture: pick a province, then confirm it. The engine
+    // still sees ONE answer (the pick), so autoplay, replays and a pack
+    // without the picture are unchanged (REQ-221c).
+    if (pending_flow == FLOW_NAVIGATE && CL_IS_MODERN &&
+        r_->sprites.sail_backdrop[0] && r_->banners.body_navigate_confirm[0]) {
+        if (s_sail_pick < 0) {
+            // Anything but a province (Cancel, Esc) falls through to the
+            // ordinary answer below, which ends the sail as it always did.
+            if (r >= PROMPT_RESULT_1 && r <= PROMPT_RESULT_5) {
+            s_sail_pick = (int)r;
+            snprintf(s_sail_body, sizeof s_sail_body, "%s",
+                     prompt_view() ? prompt_view()->body : "");
+            int zi = (int)r - (int)PROMPT_RESULT_1;
+            const char *zone = (zi >= 0 && zi < pending_nav_count)
+                             ? pending_nav_zones[zi] : "";
+            const ResZone *z = resources_zone_by_id(r_, zone);
+            ResTemplateVar v[] = { { "ZONE", (z && z->name[0]) ? z->name : zone } };
+            char q[RES_BANNER_LEN];
+            resources_format_template(q, sizeof q, r_->banners.body_navigate_confirm, v, 1);
+            prompt_yes_no_open(r_->ui.dt_navigate, q);
+            prompt_set_req_kind(PIO_ASK_SCENE);
+            return true;
+            }
+        } else {
+            int pick = s_sail_pick;
+            s_sail_pick = -1;
+            if (r != PROMPT_RESULT_YES) {
+                // No, or Esc: back to the provinces, the sail still open.
+                prompt_numeric_open(r_->ui.dt_navigate, s_sail_body,
+                                    pending_nav_count);
+                prompt_set_req_kind(PIO_ASK_SCENE);
+                return true;
+            }
+            r = (PromptResult)pick;
+        }
+    }
 
     // Capture the flow being answered BEFORE the router pops the queue + clears
     // pending_flow, so the combat resolution + recruit-count read below key off

@@ -360,6 +360,11 @@ set for everything else.
   "tile_set_arts": ["grass", "grass_variant", "grass_01", "forest", "forest_edge_01"] }
 ```
 
+**The sailing scene.** A pack may ship `sprites.ui.sail_backdrop` (240x102, as
+every backdrop) and the string `body_navigate_confirm` ("Sail for %ZONE%?").
+With both, sailing to another zone is drawn over that picture: the provinces,
+then a confirmation. With neither, the plain list is used.
+
 **One-time vistas.** A zone may declare `events`: moments that play once, when
 the hero steps onto their tile holding what they ask for. The scene is drawn
 full width (the image is 240x102, like every backdrop) with a single Continue,

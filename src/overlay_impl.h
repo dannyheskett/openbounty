@@ -42,6 +42,8 @@ int  modern_overlay_dialog_page_count(void);
 void modern_overlay_draw_town(const Game *g, const Sprites *s);
 void modern_overlay_draw_castle(const Game *g, const Sprites *s);
 void modern_overlay_draw_foe(const Game *g, const Sprites *s);
+// The sail-to scene: the ship at sea with the provinces, then the confirmation.
+void modern_overlay_draw_sail(const Game *g, const Sprites *s);
 // The temple and dwelling screens: their prompt, or the answer after it.
 void modern_overlay_draw_temple(const Game *g, const Sprites *s);
 void modern_overlay_draw_dwelling(const Game *g, const Sprites *s);

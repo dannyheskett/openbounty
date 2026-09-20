@@ -1231,6 +1231,48 @@ void modern_overlay_draw_foe(const Game *g, const Sprites *s) {
     uk_scene_rows(&L, 2, pv ? pv->yn_cursor : 0, foe_row, (void *)g, TOUCH_LIST_PROMPT);
 }
 
+// =============================================================================
+//  Sailing -- the ship at sea, the provinces to sail for, then the confirmation
+// =============================================================================
+
+typedef struct { const PromptView *pv; const Resources *res; } SailRows;
+
+static bool sail_row(void *ctx, int i, char *label, char *right, int cap) {
+    const SailRows *sr = (const SailRows *)ctx;
+    const PromptView *pv = sr->pv;
+    right[0] = '\0';
+    if (!pv) return false;
+    if (pv->kind == PK_NUMERIC) {                 // the province picker
+        if (i < pv->choice_n) snprintf(label, (size_t)cap, "%s", pv->choices[i]);
+        else                  snprintf(label, (size_t)cap, "%s", sr->res->banners.count_cancel);
+        return true;
+    }
+    snprintf(label, (size_t)cap, "%s",
+             i == 0 ? sr->res->ui.prompt_yes : sr->res->ui.prompt_no);
+    return true;
+}
+
+void modern_overlay_draw_sail(const Game *g, const Sprites *s) {
+    if (!g || !g->res) return;
+    const PromptView *pv = prompt_view();
+    int rows = (pv && pv->kind == PK_NUMERIC) ? pv->choice_n + 1 : 2;   // + Cancel
+    const char *title = pv && pv->header && pv->header[0] ? pv->header
+                                                          : g->res->ui.dt_navigate;
+    const char *lead = (pv && pv->kind == PK_NUMERIC) ? NULL
+                     : ((pv && pv->body) ? pv->body : NULL);
+    int band = lead ? (wrapped_lines(lead, ml_full().w - 2 * ML_PAD) * uk_line_h()
+                       + 3 * ML_PAD) : ML_PAD;
+    UkScene L = uk_scene_ex(title, NULL, s ? s->sail_backdrop : (Texture2D){ 0 },
+                            rows, band);
+    if (lead)
+        uk_flow(L.full.x + ML_PAD, L.intro_y + ML_PAD, L.full.w - 2 * ML_PAD,
+                L.full.x, 0, L.rows_y - ML_ROW_RULE, lead, PAL_CLR(WHITE));
+    SailRows sr = { pv, g->res };
+    int cursor = (pv && pv->kind == PK_NUMERIC) ? pv->choice_cursor
+                                                : (pv ? pv->yn_cursor : 0);
+    uk_scene_rows(&L, rows, cursor, sail_row, &sr, TOUCH_LIST_PROMPT);
+}
+
 // ---------------------------------------------------------------------------
 // Options screen (O key): the movement keys and the keybinds.
 // ---------------------------------------------------------------------------

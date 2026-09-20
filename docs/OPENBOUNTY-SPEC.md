@@ -796,6 +796,16 @@ except where a deviation is explicitly flagged (§34).
   heap, sized by the pack; a pack that declares none behaves exactly as before
   (`kings-bounty` declares none). `glory-of-rome` declares the Rubicon: the
   Pontifex rite (one charge, consumed) opens the bridge the Po plain is behind.
+- **REQ-221c.** **Sailing is a scene, with a confirmation.** When a pack ships
+  `sprites.ui.sail_backdrop` and the string `body_navigate_confirm`, the modern
+  shell draws the sail-to decision as a scene over that picture: one row per
+  province plus Cancel, then a yes/no confirmation ("Sail for %ZONE%?") over
+  the same picture, drawn by `modern_overlay_draw_sail` (`src/modern/overlay.c`)
+  through the scene shape the foe view uses. The two steps live in the SHELL
+  (`src/shell_promptdispatch.c`): the engine still receives exactly one answer,
+  the province, so autoplay, recordings and replays are unchanged, and a pack
+  with neither key keeps the bottom-frame list (`kings-bounty`). Declining the
+  confirmation puts the province list back up; cancelling it ends the sail.
 - **REQ-221a.** **Arrival by origin.** A zone may declare `arrivals`, an
   object keyed by the zone sailed from, each `{x, y}`. `GameSwitchZone`
   lands the hero at the entry for the zone being left, else at `hero_spawn`

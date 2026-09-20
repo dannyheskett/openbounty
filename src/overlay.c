@@ -186,7 +186,9 @@ void overlay_draw(const Game *g, const Map *m, const Fog *f,
         if (in_place) {
             /* the open screen drew it */
         } else if (CL_IS_MODERN && ak == PIO_ASK_SCENE) {
-            modern_overlay_draw_foe(g, s);
+            // Two scenes share the shape: the foe on the plains, and sailing.
+            if (pending_flow == FLOW_NAVIGATE) modern_overlay_draw_sail(g, s);
+            else                               modern_overlay_draw_foe(g, s);
         } else {
             prompt_draw();
         }

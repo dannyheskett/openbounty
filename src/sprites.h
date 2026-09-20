@@ -91,6 +91,7 @@ typedef struct {
     // optional; id 0 means the pack declared none and the alcove falls back to
     // the hill cave's backdrop and to animating a troop.
     Texture2D alcove_backdrop;
+    Texture2D sail_backdrop;       // the sail-to scene, when the pack ships one
     Texture2D scene_column[3];   // modern: capital, shaft, base (id 0: the lattice)
     Texture2D palace[3];         // the Emperor's castle: welcome, barracks, throne
     Texture2D alcove_figure;

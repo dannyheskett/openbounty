@@ -768,6 +768,7 @@ typedef struct {
     char body_garrison_row_named[RES_BANNER_LEN];   // %INDEX% %TROOP% %COUNT%
     char body_garrison_row_empty[RES_BANNER_LEN];   // %INDEX%
     char body_navigate_row[RES_BANNER_LEN];         // %INDEX% %ZONE%
+    char body_navigate_confirm[RES_BANNER_LEN];     // %ZONE%: the sail-to confirmation
     char body_no_continents[RES_BANNER_LEN];
     char body_must_be_sailing[RES_BANNER_LEN];
 
@@ -1463,6 +1464,7 @@ typedef struct {
         // and without the figure it animates whatever troop the screen names,
         // which is what it did before a pack could declare either.
         char alcove_backdrop[RES_PATH_LEN];
+        char sail_backdrop[RES_PATH_LEN];   // the sail-to scene (REQ-221c)
         // Modern: the column in the bars beside a place backdrop -- its capital,
         // a shaft piece repeated between, and its base ("" = the lattice).
         // The Emperor's own castle: its three scenes (welcome, recruit,

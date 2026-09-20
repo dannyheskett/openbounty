@@ -1081,6 +1081,8 @@ static void parse_sprites(Resources *res, cJSON *obj) {
                  json_str(ui, "hillcave_backdrop", ""));
         copy_str(res->sprites.alcove_backdrop, sizeof(res->sprites.alcove_backdrop),
                  json_str(ui, "alcove_backdrop", ""));
+        copy_str(res->sprites.sail_backdrop, sizeof(res->sprites.sail_backdrop),
+                 json_str(ui, "sail_backdrop", ""));
         copy_str(res->sprites.palace_welcome, sizeof(res->sprites.palace_welcome),
                  json_str(ui, "palace_welcome", ""));
         copy_str(res->sprites.palace_barracks, sizeof(res->sprites.palace_barracks),
@@ -1683,6 +1685,12 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(body_garrison_row_named,        "body_garrison_row_named");
     SET_BANNER(body_garrison_row_empty,        "body_garrison_row_empty");
     SET_BANNER(body_navigate_row,              "body_navigate_row");
+    // Optional: only a pack that ships the sailing picture asks the question,
+    // so a pack without the scene is not required to word it (REQ-221c).
+    {
+        const char *s = cJSON_IsObject(obj) ? json_str(obj, "body_navigate_confirm", NULL) : NULL;
+        if (s) copy_str(b->body_navigate_confirm, sizeof b->body_navigate_confirm, s);
+    }
     SET_BANNER(body_no_continents,             "body_no_continents");
     SET_BANNER(body_must_be_sailing,           "body_must_be_sailing");
     SET_BANNER(cannot_garrison_last,           "cannot_garrison_last");
@@ -3227,6 +3235,7 @@ int resources_art_manifest(const Resources *res, ResArtList *out) {
     art_add(out, cap, &n, res->sprites.hillcave_backdrop);
     art_add(out, cap, &n, res->sprites.dungeon_backdrop);
     art_add(out, cap, &n, res->sprites.alcove_backdrop);
+    art_add(out, cap, &n, res->sprites.sail_backdrop);
     art_add(out, cap, &n, res->sprites.palace_welcome);
     art_add(out, cap, &n, res->sprites.palace_barracks);
     art_add(out, cap, &n, res->sprites.palace_throne);

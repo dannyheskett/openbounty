@@ -214,6 +214,12 @@ void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
         }
         pending_flow = FLOW_NAVIGATE;
         prompt_numeric_open(r_->ui.dt_navigate, body, pending_nav_count);
+        // A pack that ships the sailing picture gets the scene: the provinces
+        // over the ship, then a confirmation. Without it, the bottom-frame
+        // list as before (REQ-221c).
+        if (CL_IS_MODERN && r_->sprites.sail_backdrop[0] &&
+            r_->banners.body_navigate_confirm[0])
+            prompt_set_req_kind(PIO_ASK_SCENE);
         player_io_ask_choice(g, FLOW_NAVIGATE, r_->ui.dt_navigate, body,
                              pending_nav_count);
         break;
