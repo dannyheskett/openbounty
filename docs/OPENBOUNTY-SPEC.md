@@ -1945,6 +1945,33 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   `Combat` so gameplay-test scenarios can introspect state via the frame-host
   callback.
 
+- **REQ-398.** **Beat order of a blow (modern only).** `combat_hit_unit`
+  (`engine/combat.c`) deals the damage, sets the target's `hit_flash = 3` and
+  bumps `attack_seq` in one call; the shell only sees the bump on the next
+  frame. So the shell holds the blow's effect back until the attacker's strip
+  has played (`src/combat_loop.c`, `src/combat_render.c`):
+
+  1. The strip plays from frame 0, one frame per 150 ms anim tick, and nothing
+     else happens while it does.
+  2. While it plays, the damage burst is **not drawn** and `hit_flash` is
+     **not decayed**, and the blow's settlement -- `combat_compact`, the
+     dead-side tests, the advance to the next unit -- is deferred.
+  3. When the strip ends, the blow settles: the killed stacks leave the field
+     and the burst is drawn for its three ticks (~450 ms).
+  4. After the fight's last swing the field is held ~0.75 s before the victory
+     or defeat presentation, so the ending does not cut in over the killing
+     blow.
+
+  Measured on video at 30 fps (2026-09-20, Rome, a tirones blow): strip frames
+  at t = 3.83 / 4.00 / 4.17 s confined to the attacker's cell, the burst from
+  t = 4.33 s to 4.77 s, the field settling at 4.80 s.
+
+  Legacy is unaffected and keeps King's Bounty's timing: `attack_anim_start`
+  returns early when not modern, so no strip ever plays, the burst is drawn on
+  the frame of the hit and decays from there. Measured the same way (King's
+  Bounty, a militia blow): the log line and the burst both appear on frame 288
+  and the burst runs to frame 301.
+
 ---
 
 ## 26. Scoring, victory, and defeat

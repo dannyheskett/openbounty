@@ -265,14 +265,20 @@ void combat_render_frame(const Combat *c, const Game *g,
     }
 
     // Damage burst (comtile frame 4) over any unit with hit_flash > 0.
-    // Painted after units so the splat sits on top.
-    for (int s = 0; s < COMBAT_SIDES; s++) {
-        for (int i = 0; i < COMBAT_SLOTS; i++) {
-            const CombatUnit *u = &c->units[s][i];
-            if (u->troop_idx < 0 || u->hit_flash <= 0) continue;
-            int px, py;
-            cell_origin(u->x, u->y, &px, &py);
-            draw_tile(sprites, 4, px, py);
+    // Painted after units so the splat sits on top. Held back while an
+    // attacker's strip is playing: the engine deals the damage in the same
+    // call that starts the swing, so without this the blow lands before the
+    // weapon does. combat_loop freezes hit_flash for the same span, so the
+    // splat still gets its full run once the strip ends.
+    if (s_atk_frame < 0) {
+        for (int s = 0; s < COMBAT_SIDES; s++) {
+            for (int i = 0; i < COMBAT_SLOTS; i++) {
+                const CombatUnit *u = &c->units[s][i];
+                if (u->troop_idx < 0 || u->hit_flash <= 0) continue;
+                int px, py;
+                cell_origin(u->x, u->y, &px, &py);
+                draw_tile(sprites, 4, px, py);
+            }
         }
     }
 

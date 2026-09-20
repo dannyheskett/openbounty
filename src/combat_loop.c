@@ -613,7 +613,7 @@ void combat_present_public(const Combat *c, const Game *g,
 // tick gates animation/AI so the human can see units walk between tiles;
 // without the gate combat would look like instant teleportation.
 static bool combat_tick_anim(Combat *c, double *next_tick,
-                             bool *rolled_over) {
+                             bool *rolled_over, bool attack_playing) {
     *rolled_over = false;
     {
         double now = frame_host_time();
@@ -621,12 +621,16 @@ static bool combat_tick_anim(Combat *c, double *next_tick,
         *next_tick = now + 0.15;
     }
     // Decay damage-burst on every stack (including dead ones, so the
-    // splat plays out over a now-empty cell).
-    for (int s = 0; s < COMBAT_SIDES; s++) {
-        for (int i = 0; i < COMBAT_SLOTS; i++) {
-            CombatUnit *u = &c->units[s][i];
-            if (u->troop_idx < 0) continue;
-            if (u->hit_flash > 0) u->hit_flash--;
+    // splat plays out over a now-empty cell). Frozen while an attacker's
+    // strip is playing: the splat is not drawn during the swing, so
+    // counting it down there would spend it unseen.
+    if (!attack_playing) {
+        for (int s = 0; s < COMBAT_SIDES; s++) {
+            for (int i = 0; i < COMBAT_SLOTS; i++) {
+                CombatUnit *u = &c->units[s][i];
+                if (u->troop_idx < 0) continue;
+                if (u->hit_flash > 0) u->hit_flash--;
+            }
         }
     }
     // Advance only the active unit's animation frame (visual cue for
@@ -733,6 +737,7 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
     RenderTexture2D *rt = (RenderTexture2D *)render_target;
     double next_tick = frame_host_time() + 0.15;
     AttackAnim atk = { -1, 0, 0, -1, 0, c.attack_seq };
+    int deferred_acted = 0;   // modern: a struck blow waiting for its swing
     combat_render_set_attack(-1, 0, 0, -1);
 
     while (c.result == 0 && !frame_host_should_close()) {
@@ -806,9 +811,21 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         }
 
         bool frame_rollover;
-        bool ticked = combat_tick_anim(&c, &next_tick, &frame_rollover);
+        bool ticked = combat_tick_anim(&c, &next_tick, &frame_rollover,
+                                       atk.frame >= 0);
         // An attack is playing: nothing else happens until it has.
         if (attack_anim_step(&atk, ticked)) continue;
+
+        int acted = 0;
+        // Modern: the strip that just finished was struck a frame ago, and
+        // its effect was held back so the swing reads first. Settle it now
+        // -- the splat starts its ticks, the dead leave the field -- before
+        // anyone acts again.
+        if (deferred_acted) {
+            acted = deferred_acted;
+            deferred_acted = 0;
+            goto settle;
+        }
 
         if (c.unit_id >= 0 && !c.picker_active &&
             c.cast_phase == COMBAT_CAST_NONE) {
@@ -823,7 +840,6 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
             }
         }
 
-        int acted = 0;
         bool player_turn = (c.side == COMBAT_SIDE_PLAYER &&
                             c.unit_id >= 0 &&
                             !c.units[c.side][c.unit_id].out_of_control);
@@ -910,6 +926,16 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         // A troop attacked this frame: play its strip before the fight goes on.
         if (c.attack_seq != atk.seq) attack_anim_start(&atk, &c, sprites);
 
+        // Modern: hold the blow's effect until the swing has played. The
+        // engine deals damage in the same call that starts the strip, so
+        // settling here would clear the dead and spend the splat under the
+        // weapon. Legacy never starts a strip, so it settles as it always did.
+        if (acted && atk.frame >= 0) {
+            deferred_acted = acted;
+            continue;
+        }
+
+settle:
         if (acted) {
             combat_compact(&c);
             if (combat_test_dead(&c, COMBAT_SIDE_AI))     { c.result = 1; break; }
@@ -945,9 +971,25 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         audio_tick();
         combat_present(&c, g, sprites, rt);
         bool rolled;
-        attack_anim_step(&atk, combat_tick_anim(&c, &next_tick, &rolled));
+        attack_anim_step(&atk, combat_tick_anim(&c, &next_tick, &rolled, true));
     }
     combat_render_set_attack(-1, 0, 0, -1);
+
+    // Modern: hold the field a moment on the last blow. The killing swing
+    // has played and its splat only starts now (the strip froze it), so
+    // without this beat victory or defeat cuts in over the field before the
+    // player has seen what ended the fight. ~0.75s, five anim ticks: the
+    // splat's three and a breath after. Legacy ends as abruptly as it always
+    // did.
+    if (CL_IS_MODERN) {
+        double until = frame_host_time() + 0.75;
+        while (frame_host_time() < until && !frame_host_should_close()) {
+            audio_tick();
+            combat_present(&c, g, sprites, rt);
+            bool rolled;
+            combat_tick_anim(&c, &next_tick, &rolled, false);
+        }
+    }
 
     // ----- End-of-combat ----------------------------------------------------
 
