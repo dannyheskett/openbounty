@@ -796,8 +796,14 @@ except where a deviation is explicitly flagged (§34).
   `GameApplyTileMutations` re-applies every played vista's tiles whenever the
   zone loads, so the change outlives a zone switch and a reload. Lists are
   heap, sized by the pack; a pack that declares none behaves exactly as before
-  (`kings-bounty` declares none). `glory-of-rome` declares the Rubicon: the
-  Pontifex rite (one charge, consumed) opens the bridge the Po plain is behind.
+  (`kings-bounty` declares none). `glory-of-rome` declares the Rubicon (the
+  Pontifex rite, one charge, consumed, opens the bridge the Po plain is behind)
+  and the Pharos of Alexandria (3,000 gold, paid, reveals the whole of Africa).
+- **REQ-229h.** **A tile code may name its `ground`.** A landmark tile (the
+  Pharos) is transparent around its art, so its code names the art drawn under
+  it; `fill_tile_from_code` (`engine/map.c`) sets the tile's ground from it and
+  the renderer lays that down first, exactly as it does under an object tile.
+  Absent, a tile is its own ground, as terrain has always been.
 - **REQ-221d.** **Town backdrops per continent.** The town screen's picture is
   the town's own `backdrop` when it names one, else its zone's `town_backdrop`,
   else the pack's shared `sprites.ui.town_backdrop`

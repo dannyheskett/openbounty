@@ -562,6 +562,16 @@ static bool exec_vista(ExecCtx *ctx, const PlanStep *step,
 
     for (int q = 0; q < ev->req_count; q++) {
         const ResEventReq *rq = &ev->reqs[q];
+        if (rq->kind == RES_EVENT_REQ_GOLD) {          // the keeper's fee
+            if (g->stats.gold > rq->count) continue;
+            ExecCause gc = EXEC_CAUSE_NONE;
+            if (!exec_ensure_gold(ctx, rq->count + 1, &gc)) {
+                if (out_cause) *out_cause = gc;
+                snprintf(why, (size_t)why_sz, "vista:%s:gold", ev->id);
+                return false;
+            }
+            continue;
+        }
         if (rq->kind != RES_EVENT_REQ_SPELL) continue;
         int idx = spell_index_by_id(rq->id);
         if (idx < 0) return false;
