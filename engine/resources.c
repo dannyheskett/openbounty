@@ -430,6 +430,7 @@ static void fill_zone_army(cJSON *j, void *dst) {
     copy_str(a->requires_troop, sizeof(a->requires_troop),
              json_str(j, "requires_troop", ""));
     copy_str(a->scene, sizeof(a->scene), json_str(j, "scene", ""));
+    copy_str(a->title, sizeof(a->title), json_str(j, "title", ""));
     a->scene_index = -1;
     a->x = json_int(j, "x", 0); a->y = json_int(j, "y", 0);
     copy_str(a->id, sizeof(a->id), json_str(j, "id", ""));

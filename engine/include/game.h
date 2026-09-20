@@ -154,6 +154,7 @@ typedef struct {
     // Empty = anyone may attack.
     char requires_troop[32];
     int  scene_index;       // the picture shown when it turns the hero back (-1 none)
+    char scene_title[48];   // its heading; empty = the encounter heading
 } FoeState;
 
 // Randomized object placements produced by salt_continent / salt_spells /

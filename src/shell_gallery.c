@@ -404,7 +404,8 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
             ResTemplateVar v[] = { { "TROOP", need ? need->name : ar->requires_troop } };
             resources_format_template(msg, sizeof msg, bn->foe_requires_troop, v, 1);
             reset(&G);
-            player_io_note_scene_event(g, ui->dt_foes, msg, ar->scene_index);
+            player_io_note_scene_event(g, ar->title[0] ? ar->title : ui->dt_foes,
+                                       msg, ar->scene_index);
             shell_pump_note(g);
             shot(&G, "09i_gate_refused");
             shot_one = true;

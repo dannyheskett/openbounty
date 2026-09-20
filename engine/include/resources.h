@@ -399,9 +399,11 @@ typedef struct {
     // the hero's army (Oriens' elephant gate). Empty = anyone may attack.
     char requires_troop[RES_ID_LEN];
     // "scene": the picture shown when it turns the hero back. Indexed into
-    // Resources.event_scenes with the vistas' art (REQ-221b).
+    // Resources.event_scenes with the vistas' art (REQ-221b). "title" heads
+    // that scene; empty falls back to the encounter heading.
     char scene[RES_PATH_LEN];
     int  scene_index;
+    char title[RES_NAME_LEN];
 } ResZoneArmy;
 
 // ---- Strings  -----

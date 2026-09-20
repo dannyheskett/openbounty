@@ -587,8 +587,10 @@ bool GameStep(Game *game, Map *map, Fog *fog,
                                           res->banners.foe_requires_troop, v, 1);
                 // With a picture the pack gave it, the refusal is a scene.
                 if (f->scene_index >= 0)
-                    player_io_note_scene_event(game, res->ui.dt_foes, msg,
-                                               f->scene_index);
+                    player_io_note_scene_event(game,
+                                               f->scene_title[0] ? f->scene_title
+                                                                 : res->ui.dt_foes,
+                                               msg, f->scene_index);
                 else
                     player_io_note(game, NULL, msg);
                 ir.bounce_back = true;

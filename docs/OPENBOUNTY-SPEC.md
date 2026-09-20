@@ -806,7 +806,8 @@ except where a deviation is explicitly flagged (§34).
   `"requires_troop": "<troop id>"` refuses the fight unless that troop stands
   in the hero's army (`GameFoeBarsHero`, `engine/game.c`): stepping onto it
   bounces the hero back with the `foe_requires_troop` banner, drawn as a scene
-  when the army also names one (`"scene"`, sharing the vistas' art list). A
+  when the army also names one (`"scene"`, headed by its own `"title"` and
+  sharing the vistas' art list). A
   dwelling may be pinned to a breed with `"troop"` instead of rolling from the
   zone's pool. Autoplay treats the demand as a prerequisite candidate
   (`exec_muster`, `autoplay/primitives.c`): it marches to the dwelling that

@@ -889,6 +889,7 @@ static void add_foe(Game *g, int continent, const char *zone, int x, int y,
         copy_id(f->requires_troop, sizeof(f->requires_troop),
                 explicit_army->requires_troop);
         f->scene_index = explicit_army->scene_index;
+        copy_id(f->scene_title, sizeof(f->scene_title), explicit_army->title);
     }
     // Explicit garrison (a hand-tuned guardian) if one was declared; otherwise
     // roll by zone tier. For friendlies the garrison is unused (recruit dialog

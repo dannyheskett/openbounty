@@ -365,8 +365,9 @@ set for everything else.
 pack's `sprites.ui.town_backdrop`.
 
 **A gate that demands one arm.** A static `wandering_armies` entry may carry
-`"requires_troop"` (a troop id) and `"scene"` (240x102): the fight is refused
-until that troop is in the army, and the refusal is drawn over the picture. A
+`"requires_troop"` (a troop id), `"scene"` (240x102) and `"title"`: the fight is
+refused until that troop is in the army, and the refusal is drawn over the
+picture under that heading. A
 `dwellings` entry may carry `"troop"`, pinning what it breeds.
 
 **A pinned purse.** A zone chest may carry `"gold": N`: it then always holds

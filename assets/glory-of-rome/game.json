@@ -1645,6 +1645,7 @@
 					"static":	true,
 					"requires_troop":	"elephants",
 					"scene":	"art/scenes/pass.png",
+					"title":	"The Armenian Pass",
 					"army":	[{
 							"troop":	"dwarves",
 							"count":	14
