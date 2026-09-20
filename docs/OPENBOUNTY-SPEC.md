@@ -1067,7 +1067,7 @@ except where a deviation is explicitly flagged (§34).
   neighbours share, so the author places the companions on those two cells
   (a `road_nwse` at (x, y) takes `road_c_sw` at (x+1, y) and `road_c_ne` at
   (x, y+1); a `road_nesw` takes `road_c_se` at (x-1, y)... see
-  `tools/roadtile.py`). Last, the four **ends** `road_n`, `road_e`, `road_s`,
+  `tools/romeart.py sweep`). Last, the four **ends** `road_n`, `road_e`, `road_s`,
   `road_w`, named by their one exit: the road enters through that side at the
   full band width and stops inside the tile, so a run can finish in open
   grass rather than only where an object replaces its code (an object on a
@@ -1076,7 +1076,7 @@ except where a deviation is explicitly flagged (§34).
 
   Every straight exit is a 32 px band centred on the side and every diagonal
   exit the same corner triangle, so any piece joins any other, ends included;
-  `tools/roadtile.py` checks that contract on every run. The pieces are not
+  `tools/romeart.py sweep` checks that contract on every run. The pieces are not
   drawn: the tool sweeps them out of a PixelLab terrain set, filling each
   piece's signed-distance shape with the set's road tile and leaving the
   pack's own grass outside (see docs/ART-PIPELINE.md). Rome's surface is
@@ -1101,7 +1101,7 @@ except where a deviation is explicitly flagged (§34).
   pick. Every variant must join every other and the base at any edge, which
   the pack guarantees by keeping variant edges identical to the base
   (`glory-of-rome`: `grass_01..06`, the grass with a patch of dry grass
-  inside, from `tools/grassvar.py`). Packs that declare no variants draw
+  inside, from `tools/romeart.py grass`). Packs that declare no variants draw
   exactly as before; the legacy pack declares none.
 
 ## 10. Salt: per-zone object placement

@@ -1,8 +1,8 @@
 # Glory of Rome — art pipeline
 
 Every prompt ever sent, with its engine, settings and the note saying what the
-run produced, is collected in **`docs/ART-PROMPTS.md`**, generated from
-`art/jobs/*.json` by `tools/artprompts.py`. This file is the *routes* (which
+run produced, is collected in **`docs/ROME-ART.md`**, generated from
+`art/jobs/*.json` by `tools/romeart.py prompts`. This file is the *routes* (which
 engine, which settings, and why); that file is the *record*.
 
 The route that works. Two calls per troop.
@@ -145,7 +145,7 @@ and record both prompts in `ART-WORKLIST.md`.
 - **Base terrain** (grass, grass_variant, forest, mountain, desert) —
   `rd_tile__single_tile`, the API's purpose-built seamless tile style (cap 64;
   its craft guide sizes single tiles at 16 to 32), at **48x48**, laid 2x2 by
-  `tools/tile2x2.py` into the 96x96 pack tile at native pixel density, so the
+  `tools/romeart.py tile2x2` into the 96x96 pack tile at native pixel density, so the
   repeat period is 48. The terrain is described plainly, "seen from directly
   above ... the same everywhere". Settled 2026-09-05 after nine runs on the
   earlier route (`rd_plus__low_res` with `tile_x`/`tile_y` and a prompt
@@ -191,7 +191,7 @@ and record both prompts in `ART-WORKLIST.md`.
   (`rd_pro__topdown`), no background removal, no water in the picture.
   (2026-09-06: five runs were wasted describing a transparent deck over
   water; the original tile never had water in it.)
-- **Terrain edges** (48 files) — not generated. `tools/tileedges.py`
+- **Terrain edges** (48 files) — not generated. `tools/romeart.py edges`
   composites each from the installed base and grass tiles: the original
   48x34 edge tile under `art/reference/edges/` is read as a shape (each pixel
   is terrain or grass by which original base's colours it is nearest), the
@@ -220,7 +220,7 @@ and record both prompts in `ART-WORKLIST.md`.
   frame (9700) with expansion on or off, because it is built for a standing
   figure. Judge a loop by that measurement and the 3x gif, not a single
   frame. The only processing is the last step: each returned 128 frame is
-  centre-cropped to 96 with `tools/cropcentre.py` (Dan's order, 2026-09-07,
+  centre-cropped to 96 with `tools/romeart.py crop` (Dan's order, 2026-09-07,
   villain portraits only). Crop after the loop, never before, so the motion
   is made on the same picture the crop is taken from.
 - **Prompt expansion** — every job before 2026-09-05 set
@@ -391,11 +391,11 @@ python3 tools/pltilespro.py ...                                 # Tiles Pro sets
 
 ### Roads
 
-Roads are not a terrain set the game loads. `tools/roadtile.py` **sweeps** the
+Roads are not a terrain set the game loads. `tools/romeart.py sweep` **sweeps** the
 set into the 24 road pieces the pack ships:
 
 ```
-python3 tools/roadtile.py <set-dir> <out-dir> --sweep [--rim N] [--rim-shade F]
+python3 tools/romeart.py sweep <set-dir> <out-dir> --sweep [--rim N] [--rim-shade F]
 ```
 
 Every piece is a signed-distance shape -- a straight band, a true quarter
@@ -408,6 +408,6 @@ across a tile line. Two consequences worth knowing before writing a prompt:
   any kerb or edging the prompt asked for, are discarded. A border along the
   road has to come from `--rim` / `--rim-shade`, which paint it after the fact.
 - Every straight exit is the same 32 px band and every diagonal the same corner
-  triangle, so any piece joins any other. `roadtile.py` checks that contract on
+  triangle, so any piece joins any other. The sweep checks that contract on
   every run and prints how many sides carry an unexpected pattern; it must
   print `0`.

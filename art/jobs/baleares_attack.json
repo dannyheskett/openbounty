@@ -1,14 +1,14 @@
 {
   "id": "baleares_attack",
-  "_note": "Batch of 2026-09-05. Still scaled to 80% through the API's k-centroid tool (black flatten, alpha from coverage), feet on row 88, for motion room. Animated at 96 with no padding. Motion line: path, two endpoints, then what stays still.",
-  "prompt": "he whirls the sling once in a circle above his head and releases the stone forward to the right, his arm following through in front of him, then the arm drops back to his side, both feet stay planted",
+  "_note": "Re-run 2026-09-20 on the reworked still (baleares.json seed 6154). The 2026-09-05 loop animated a still scaled to 80% for motion room; the new still is 77px tall with its feet on row 88, the same rows velites and sagittarii sit on, so it is animated at full size with no padding like them. Motion line unchanged: path, two endpoints, then what stays still. run02: run01 lost the sling entirely on the follow-through frame, so the release read as a punch; the motion line now says the empty sling stays in his right hand, seed incremented. run03: run02 kept the sling but drew it as a violet motion blur -- 95 blue-violet pixels in frame 3 against 12 in the whole of run01, a colour in no other troop -- and whirled backwards over the left shoulder; the line now names the release direction, asks for the cord drawn slack and clear, and forbids blur and streaks.",
+  "prompt": "he whirls the sling once above his head and releases the stone forward to the right, the way he faces, ending with his right arm straight out in front of him and the empty sling cord hanging slack and clearly drawn from his hand, both feet stay planted, no motion blur and no streaks",
   "style": "rd_advanced_animation__custom_action",
   "width": 96,
   "height": 96,
-  "seed": 6154,
+  "seed": 6158,
   "frames_duration": 4,
   "return_spritesheet": true,
-  "input_image_path": "build/art/baleares/run02/01_scaled80.png",
+  "input_image_path": "build/art/baleares/run01/01_raw.png",
   "input_image_keep_alpha": true,
   "bypass_prompt_expansion": true,
   "raw_only": true,
@@ -16,5 +16,6 @@
   "target": [
     96,
     96
-  ]
+  ],
+  "_pack_path": "art/troops/baleares_00..03.png"
 }

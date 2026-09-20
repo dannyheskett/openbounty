@@ -198,7 +198,7 @@ and `openbounty-test` for tests) both link the same engine archive.
 └── docs/                     # OPENBOUNTY-SPEC.md (reproduction-grade spec),
                               #   PACK-FORMAT.md, RELEASE-PROCESS.md, OPENKB-SPEC.md,
                               #   ART-PIPELINE.md (how art is made) and
-                              #   ART-PROMPTS.md (every prompt ever sent, generated)
+                              #   ROME-ART.md (every prompt ever sent, generated)
 ```
 
 ---
