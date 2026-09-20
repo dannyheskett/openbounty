@@ -196,7 +196,9 @@ and `openbounty-test` for tests) both link the same engine archive.
 ├── legacy/bin/               # Default extractor input dir (DOS distribution)
 ├── screenshots/              # Manual backtick captures
 └── docs/                     # OPENBOUNTY-SPEC.md (reproduction-grade spec),
-                              #   PACK-FORMAT.md, RELEASE-PROCESS.md, OPENKB-SPEC.md
+                              #   PACK-FORMAT.md, RELEASE-PROCESS.md, OPENKB-SPEC.md,
+                              #   ART-PIPELINE.md (how art is made) and
+                              #   ART-PROMPTS.md (every prompt ever sent, generated)
 ```
 
 ---

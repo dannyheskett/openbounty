@@ -1,5 +1,10 @@
 # Glory of Rome — art pipeline
 
+Every prompt ever sent, with its engine, settings and the note saying what the
+run produced, is collected in **`docs/ART-PROMPTS.md`**, generated from
+`art/jobs/*.json` by `tools/artprompts.py`. This file is the *routes* (which
+engine, which settings, and why); that file is the *record*.
+
 The route that works. Two calls per troop.
 
 `ART-WORKLIST.md` holds the prompt for each of the 116 artworks. This file is
