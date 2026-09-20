@@ -715,7 +715,7 @@ bool GameEventFired(const Game *g, const char *zone, const char *id);
 // Fire the zone event at (x, y) if one is declared there, has not played, and
 // every precondition holds: spends what the preconditions consume, applies the
 // tile effects, records it, and queues its scene. Returns true iff it fired.
-bool GameTryFireEvent(Game *g, Map *map, int x, int y);
+bool GameTryFireEvent(Game *g, Map *map, Fog *fog, int x, int y);
 
 // Total number of spell charges the hero is carrying (sum of counts[]).
 int  GameKnownSpells(const Game *g);

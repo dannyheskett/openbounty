@@ -112,7 +112,13 @@ static bool fill_tile_from_code(Map *map, Tile *t, const Resources *res,
     char art[TILE_ART_NAME_LEN];
     MapTerrainArt(map, tc->art, art, sizeof art);
     t->art         = MapStrIntern(map, art);
-    t->ground      = t->art;
+    if (tc->ground[0]) {
+        char gart[TILE_ART_NAME_LEN];
+        MapTerrainArt(map, tc->ground, gart, sizeof gart);
+        t->ground  = MapStrIntern(map, gart);
+    } else {
+        t->ground  = t->art;
+    }
     t->terrain     = (uint8_t)tc->terrain;
     t->blocks_foot = tc->blocks_foot;
     t->is_bridge   = tc->is_bridge;

@@ -1,0 +1,17 @@
+{
+ "id": "scene_pharos",
+ "_note": "The Pharos vista scene (Africa): the location-backdrop route, rd_pro__default 240x102, opaque.",
+ "prompt": "the Pharos lighthouse of Alexandria at dawn seen from the harbour below, a tall three-stage tower of pale stone with a fire burning at its top, the great harbour and the city's roofs spread out beyond it, calm water, gulls, the first light on the sea, no people",
+ "style": "rd_pro__default",
+ "width": 240,
+ "height": 102,
+ "seed": 7402,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  240,
+  102
+ ],
+ "_pack_path": "art/scenes/pharos.png"
+}

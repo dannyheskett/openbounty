@@ -52,9 +52,11 @@ OPP = {'n': 's', 's': 'n', 'e': 'w', 'w': 'e',
        'ne': 'sw', 'sw': 'ne', 'nw': 'se', 'se': 'nw'}
 
 BASE = {'~': 'water', '.': 'grass', ',': 'grass', 'f': 'forest',
-        '^': 'mountain', 'd': 'desert'}
+        '^': 'mountain', 'd': 'desert', 'P': 'grass'}
+# 'P': a landmark standing on grass -- the neighbours see grass, so no edge
+# art changes, and the tile draws the landmark (Africa's Pharos).
 PLAIN_ART = {'~': 'water', '.': 'grass', ',': 'grass_variant', 'f': 'forest',
-             '^': 'mountain', 'd': 'desert'}
+             '^': 'mountain', 'd': 'desert', 'P': 'pharos'}
 RIVER = {'r': 'grass', 'R': 'forest', 'M': 'mountain', 'H': 'grass'}
 ROAD = {'=', 'H'}
 RIVER_PREFIX = {'grass': 'river_', 'forest': 'river_forest_',

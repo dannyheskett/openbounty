@@ -120,6 +120,14 @@ def render_tiles(rows, w, h, codes, pack_dir, tile_set="", cell=(48, 34), set_ar
             art = codes.get(code, {}).get("art")
             if not art:
                 continue
+            ground = codes.get(code, {}).get("ground")
+            if ground:                      # a landmark over its own ground
+                gp = os.path.join(pack_dir, "art", "tiles",
+                                  tile_set if (tile_set and (not set_arts or ground in set_arts)) else "",
+                                  ground + ".png")
+                if os.path.exists(gp):
+                    gt = Image.open(gp).convert("RGBA")
+                    img.paste(gt, (x * TW, y * TH), gt)
             if art not in cache:
                 # Same fixed layout the engine uses: src/tile_cache.c resolves
                 # a tile_codes `art` stem as art/tiles/<stem>.png, or under

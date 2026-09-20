@@ -790,7 +790,9 @@ except where a deviation is explicitly flagged (§34).
   Continue. It never fires again, and a vista never bounces the hero back.
   Preconditions are `spell` (charges), `troop` (in the army), `gold` (held) and
   `artifact` (found), each with a `count` and an optional `consume`; troops and
-  artifacts are held, never spent. `events_done` is saved, and
+  artifacts are held, never spent. An effect is either a `tile` (a tile_codes
+  key written onto the map) or `"reveal": true`, which lifts the fog over the
+  whole zone -- the fog is saved, so only tile effects are re-applied on load. `events_done` is saved, and
   `GameApplyTileMutations` re-applies every played vista's tiles whenever the
   zone loads, so the change outlives a zone switch and a reload. Lists are
   heap, sized by the pack; a pack that declares none behaves exactly as before

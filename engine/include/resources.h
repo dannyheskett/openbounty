@@ -327,6 +327,10 @@ typedef struct {
     // the .dat and saves never see them (OPENBOUNTY-SPEC REQ-229d).
     int  variant_count;          // cosmetic art variants (a name may repeat to weight it)
     char (*variants)[RES_TILE_ART_LEN];   // heap, variant_count
+    // A landmark tile (the Pharos) is drawn over its own ground: the art named
+    // here is laid down first, so the tile's transparent parts show terrain
+    // rather than black. Empty = the tile is its own ground, as terrain is.
+    char ground[RES_TILE_ART_LEN];
 } ResTileCode;
 
 // ---- Per-zone object placements -------------------------------------------
@@ -1186,9 +1190,16 @@ typedef struct {
     bool consume;
 } ResEventReq;
 
-// What a fired event changes: a map tile becomes the tile that `code` names in
-// tile_codes (a bridge over a river, a cleared pass, a new road piece).
+// What a fired event changes. A tile effect turns (x, y) into the tile that
+// `code` names in tile_codes (a bridge over a river). A reveal effect lifts the
+// fog over the whole zone (climbing the Pharos).
+typedef enum {
+    RES_EVENT_FX_TILE = 0,
+    RES_EVENT_FX_REVEAL,
+} ResEventFxKind;
+
 typedef struct {
+    ResEventFxKind kind;
     int  x, y;
     unsigned char code;       // a tile_codes key, resolved at parse
 } ResEventEffect;

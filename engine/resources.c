@@ -335,6 +335,7 @@ static void parse_tile_codes(Resources *res, cJSON *obj) {
         ResTileCode *tc = &res->tile_codes[idx];
         tc->present = true;
         copy_str(tc->art, sizeof(tc->art), json_str(entry, "art", ""));
+        copy_str(tc->ground, sizeof(tc->ground), json_str(entry, "ground", ""));
         tc->terrain = (int)terrain_from_name(json_str(entry, "terrain", "grass"));
         cJSON *jbf = cJSON_GetObjectItem(entry, "blocks_foot");
         cJSON *jib = cJSON_GetObjectItem(entry, "is_bridge");
@@ -545,6 +546,12 @@ static void parse_zones(Resources *res, cJSON *arr) {
                 for (int q = 0; ev->effects && q < nef; q++) {
                     const cJSON *f = cJSON_GetArrayItem(jef, q);
                     if (!cJSON_IsObject(f)) continue;
+                    if (cJSON_IsTrue(cJSON_GetObjectItem(f, "reveal"))) {
+                        ResEventEffect *rv = &ev->effects[ev->effect_count++];
+                        rv->kind = RES_EVENT_FX_REVEAL;
+                        rv->x = rv->y = -1;
+                        continue;
+                    }
                     // The tile is named the way tile_codes names it, escapes
                     // and all ("\\xcc").
                     int code = resources_tile_code_from_key(json_str(f, "tile", ""));

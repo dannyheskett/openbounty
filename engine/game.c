@@ -1544,9 +1544,11 @@ void GameApplyTileMutations(const Game *g, Map *map, const char *zone) {
         for (int k = 0; k < z->event_count; k++) {
             const ResZoneEvent *ev = &z->events[k];
             if (strcmp(ev->id, g->events_done[i].id) != 0) continue;
-            for (int e = 0; e < ev->effect_count; e++)
+            for (int e = 0; e < ev->effect_count; e++) {
+                if (ev->effects[e].kind != RES_EVENT_FX_TILE) continue;   // the fog is saved
                 MapSetTileFromCode(map, g->res, ev->effects[e].x,
                                    ev->effects[e].y, ev->effects[e].code);
+            }
         }
     }
 }
@@ -1606,7 +1608,7 @@ static void event_req_spend(Game *g, const ResEventReq *rq) {
     }
 }
 
-bool GameTryFireEvent(Game *g, Map *map, int x, int y) {
+bool GameTryFireEvent(Game *g, Map *map, Fog *fog, int x, int y) {
     if (!g || !map || !g->res || !g->position.zone[0]) return false;
     const ResZone *z = resources_zone_by_id(g->res, g->position.zone);
     if (!z) return false;
@@ -1618,9 +1620,16 @@ bool GameTryFireEvent(Game *g, Map *map, int x, int y) {
             if (event_req_held(g, &ev->reqs[q]) < ev->reqs[q].count) return false;
         if (!GameReserveEventsDone(g, g->events_done_count + 1)) return false;
         for (int q = 0; q < ev->req_count; q++) event_req_spend(g, &ev->reqs[q]);
-        for (int e = 0; e < ev->effect_count; e++)
+        for (int e = 0; e < ev->effect_count; e++) {
+            if (ev->effects[e].kind == RES_EVENT_FX_REVEAL) {
+                // The whole zone, seen from the lighthouse.
+                if (fog) FogRevealRect(fog, map, map->width / 2, map->height / 2,
+                                       map->width, map->height);
+                continue;
+            }
             MapSetTileFromCode(map, g->res, ev->effects[e].x, ev->effects[e].y,
                                ev->effects[e].code);
+        }
         EventFired *done = &g->events_done[g->events_done_count++];
         copy_id(done->zone, sizeof done->zone, g->position.zone);
         copy_id(done->id, sizeof done->id, ev->id);

@@ -76,7 +76,9 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
             // cell for the session (src/tilevar.c); the ground under an
             // object goes through the same pick so it matches its neighbours.
             char va[TILE_ART_NAME_LEN];
-            if (t->interactive != INTERACT_NONE) {
+            // An object tile, or a landmark whose code names its own ground,
+            // is drawn over that ground (ART-SPEC section 4).
+            if (t->interactive != INTERACT_NONE || t->ground != t->art) {
                 char ga[TILE_ART_NAME_LEN];
                 const char *gart = t->ground ? TileGround(m, t)
                                    : MapTerrainArt(m, TerrainName(t->terrain), ga, sizeof ga);

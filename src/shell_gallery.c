@@ -382,13 +382,15 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     // A one-time vista (game.json `events`): the pack's scene, its words, and
     // Continue. The first zone that declares one supplies the capture.
     for (int zi = 0; zi < res->zone_count; zi++) {
-        if (res->zones[zi].event_count <= 0) continue;
-        const ResZoneEvent *ev = &res->zones[zi].events[0];
-        reset(&G);
-        player_io_note_scene_event(g, ev->title, ev->body, ev->scene_index);
-        shell_pump_note(g);
-        shot(&G, "09h_vista");
-        break;
+        for (int k = 0; k < res->zones[zi].event_count; k++) {
+            const ResZoneEvent *ev = &res->zones[zi].events[k];
+            reset(&G);
+            player_io_note_scene_event(g, ev->title, ev->body, ev->scene_index);
+            shell_pump_note(g);
+            char nm[64];
+            snprintf(nm, sizeof nm, "09h_vista_%s", ev->id);
+            shot(&G, nm);
+        }
     }
 
     // The bridge spell asks for a direction.
