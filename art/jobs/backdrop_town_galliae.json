@@ -1,0 +1,17 @@
+{
+ "id": "backdrop_town_galliae",
+ "_note": "The town screen backdrop for galliae (REQ-221d: a zone names its own). Same route as every location backdrop: rd_pro__default at 240x102, opaque, no reference image. The original backdrop_town.png stays as Rome's own, named by the town.",
+ "prompt": "an empty street in a Gallo-Roman town in the north, half-timbered houses over stone footings, steep slate roofs, a muddy lane, smoke from a chimney, a grey overcast sky and dark woods beyond the roofs, the street deserted, no people anywhere",
+ "style": "rd_pro__default",
+ "width": 240,
+ "height": 102,
+ "seed": 6702,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  240,
+  102
+ ],
+ "_pack_path": "art/ui/backdrop_town_galliae.png"
+}

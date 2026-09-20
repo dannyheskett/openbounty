@@ -360,6 +360,10 @@ set for everything else.
   "tile_set_arts": ["grass", "grass_variant", "grass_01", "forest", "forest_edge_01"] }
 ```
 
+**Town backdrops.** A zone may declare `"town_backdrop"`, and a town its own
+`"backdrop"`, both 240x102. A town's own wins, then its zone's, then the
+pack's `sprites.ui.town_backdrop`.
+
 **The sailing scene.** A pack may ship `sprites.ui.sail_backdrop` (240x102, as
 every backdrop) and the string `body_navigate_confirm` ("Sail for %ZONE%?").
 With both, sailing to another zone is drawn over that picture: the provinces,

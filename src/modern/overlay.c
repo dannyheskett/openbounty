@@ -306,6 +306,22 @@ void modern_overlay_draw_location_backdrop(const Game *g, const Sprites *s,
 //  in-lay per service with its person at 2x
 // =============================================================================
 
+// The town screen's picture: the town's own if it names one, else its zone's,
+// else the pack's shared one (REQ-221d).
+static Texture2D town_backdrop_for(const Game *g, const Sprites *s, const ResTown *tw) {
+    if (!s) return (Texture2D){ 0 };
+    const Resources *res = g ? g->res : NULL;
+    if (res && tw) {
+        int ti = (int)(tw - res->towns);
+        if (ti >= 0 && ti < s->town_backdrop_count && s->town_backdrop_own[ti].id)
+            return s->town_backdrop_own[ti];
+        for (int zi = 0; zi < res->zone_count && zi < s->zone_town_backdrop_count; zi++)
+            if (strcmp(res->zones[zi].id, tw->zone) == 0 && s->zone_town_backdrop[zi].id)
+                return s->zone_town_backdrop[zi];
+    }
+    return s->town_backdrop;
+}
+
 static int town_backdrop_troop(const Game *g, const char *key) {
     int nt = troops_count();
     int npool = 0;
@@ -514,7 +530,7 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
         const char *intro = (tw && tw->boat_x < 0 && bn->town_intro_inland[0])
                           ? bn->town_intro_inland : bn->town_intro;
         resources_format_template(buf, sizeof buf, intro, iv, 3);
-        UkScene L = uk_scene_for(title, gold, loc_texture(s, LOC_TOWN), 2, buf);
+        UkScene L = uk_scene_for(title, gold, town_backdrop_for(g, s, tw), 2, buf);
         int head = tw ? resources_portrait_index(res, tw->headman) : -1;
         Texture2D fig = portrait_frame(s, head, 1000.0 / 180.0);
         if (!fig.id) fig = troop_standing(s, town_backdrop_troop(g, name));

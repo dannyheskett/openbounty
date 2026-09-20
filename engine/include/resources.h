@@ -247,6 +247,9 @@ typedef struct {
     char invitations[RES_ID_LEN]; // strings.town_invitations block spoken on the main page
     bool intel_artifact;          // informant names an artifact's whereabouts,
                                   // not a castle's garrison (intel_castle unused)
+    // This town's own screen backdrop, overriding its zone's and the pack's
+    // (REQ-221d). Empty = the zone's, else sprites.ui.town_backdrop.
+    char backdrop[RES_PATH_LEN];
 } ResTown;
 
 // Special-castle behavior (King Maximus and other quest castles).
@@ -1212,6 +1215,9 @@ typedef struct {
     // this zone resolves under art/tiles/<tile_set>/ instead of art/tiles/.
     // Empty means the shared set. Object tiles (towns, castles, chests...)
     // are never affected.
+    // This zone's town-screen backdrop; empty falls back to the pack's
+    // sprites.ui.town_backdrop (REQ-221d).
+    char town_backdrop[RES_PATH_LEN];
     char tile_set[RES_ID_LEN];
     // Optional overrides ("tile_set_arts"): when listed, only these art names
     // come from the zone's folder and every other name from the master

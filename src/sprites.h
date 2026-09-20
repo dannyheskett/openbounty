@@ -92,6 +92,12 @@ typedef struct {
     // the hill cave's backdrop and to animating a troop.
     Texture2D alcove_backdrop;
     Texture2D sail_backdrop;       // the sail-to scene, when the pack ships one
+    // Town screen backdrops a pack declares per zone and per town (REQ-221d);
+    // an empty texture means "fall back".
+    int        zone_town_backdrop_count;
+    Texture2D *zone_town_backdrop;
+    int        town_backdrop_count;
+    Texture2D *town_backdrop_own;
     Texture2D scene_column[3];   // modern: capital, shaft, base (id 0: the lattice)
     Texture2D palace[3];         // the Emperor's castle: welcome, barracks, throne
     Texture2D alcove_figure;

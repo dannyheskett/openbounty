@@ -213,6 +213,18 @@ void sprites_load(Sprites *s, const Resources *res) {
     s->dungeon_backdrop = load_rel(res->sprites.dungeon_backdrop);
     s->alcove_backdrop  = load_rel(res->sprites.alcove_backdrop);
     s->sail_backdrop    = load_rel(res->sprites.sail_backdrop);
+    {
+        int nz = res->zone_count;
+        s->zone_town_backdrop = nz ? calloc((size_t)nz, sizeof *s->zone_town_backdrop) : NULL;
+        s->zone_town_backdrop_count = s->zone_town_backdrop ? nz : 0;
+        for (int i = 0; i < s->zone_town_backdrop_count; i++)
+            s->zone_town_backdrop[i] = load_rel(res->zones[i].town_backdrop);
+        int nt = res->town_count;
+        s->town_backdrop_own = nt ? calloc((size_t)nt, sizeof *s->town_backdrop_own) : NULL;
+        s->town_backdrop_count = s->town_backdrop_own ? nt : 0;
+        for (int i = 0; i < s->town_backdrop_count; i++)
+            s->town_backdrop_own[i] = load_rel(res->towns[i].backdrop);
+    }
     s->palace[0]        = load_rel(res->sprites.palace_welcome);
     s->palace[1]        = load_rel(res->sprites.palace_barracks);
     s->palace[2]        = load_rel(res->sprites.palace_throne);
@@ -349,6 +361,10 @@ void sprites_unload(Sprites *s) {
     UnloadTexture(s->dungeon_backdrop);
     UnloadTexture(s->alcove_backdrop);
     UnloadTexture(s->sail_backdrop);
+    for (int i = 0; i < s->zone_town_backdrop_count; i++) UnloadTexture(s->zone_town_backdrop[i]);
+    free(s->zone_town_backdrop); s->zone_town_backdrop = NULL; s->zone_town_backdrop_count = 0;
+    for (int i = 0; i < s->town_backdrop_count; i++) UnloadTexture(s->town_backdrop_own[i]);
+    free(s->town_backdrop_own); s->town_backdrop_own = NULL; s->town_backdrop_count = 0;
     for (int i = 0; i < 3; i++) UnloadTexture(s->scene_column[i]);
     for (int i = 0; i < 3; i++) UnloadTexture(s->palace[i]);
     UnloadTexture(s->alcove_figure);

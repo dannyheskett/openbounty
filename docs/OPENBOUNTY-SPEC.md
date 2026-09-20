@@ -796,6 +796,13 @@ except where a deviation is explicitly flagged (§34).
   heap, sized by the pack; a pack that declares none behaves exactly as before
   (`kings-bounty` declares none). `glory-of-rome` declares the Rubicon: the
   Pontifex rite (one charge, consumed) opens the bridge the Po plain is behind.
+- **REQ-221d.** **Town backdrops per continent.** The town screen's picture is
+  the town's own `backdrop` when it names one, else its zone's `town_backdrop`,
+  else the pack's shared `sprites.ui.town_backdrop`
+  (`town_backdrop_for`, `src/modern/overlay.c`). All three are listed in the
+  art manifest, so the pack zip carries what it declares. `glory-of-rome` gives
+  each continent its own town street and keeps the original picture for Roma
+  alone; `kings-bounty` declares neither and draws the shared one as before.
 - **REQ-221c.** **Sailing is a scene, with a confirmation.** When a pack ships
   `sprites.ui.sail_backdrop` and the string `body_navigate_confirm`, the modern
   shell draws the sail-to decision as a scene over that picture: one row per

@@ -178,6 +178,7 @@ static void parse_towns(Resources *res, cJSON *arr) {
         copy_str(t->invitations, sizeof(t->invitations), json_str(it, "invitations", ""));
         // A town whose informant reports on the sacred artifacts, not a castle.
         t->intel_artifact = cJSON_IsTrue(cJSON_GetObjectItem(it, "intel_artifact"));
+        copy_str(t->backdrop, sizeof(t->backdrop), json_str(it, "backdrop", ""));
     }
 }
 
@@ -462,6 +463,8 @@ static void parse_zones(Resources *res, cJSON *arr) {
             const char *p = (strncmp(rel, legacy, llen) == 0) ? rel + llen : rel;
             resources_resolve_path(res, p, z->map_path, sizeof z->map_path);
         }
+        copy_str(z->town_backdrop, sizeof(z->town_backdrop),
+                 json_str(it, "town_backdrop", ""));
         copy_str(z->tile_set, sizeof(z->tile_set), json_str(it, "tile_set", ""));
         {
             cJSON *ov = cJSON_GetObjectItem(it, "tile_set_arts");
@@ -3236,6 +3239,11 @@ int resources_art_manifest(const Resources *res, ResArtList *out) {
     art_add(out, cap, &n, res->sprites.dungeon_backdrop);
     art_add(out, cap, &n, res->sprites.alcove_backdrop);
     art_add(out, cap, &n, res->sprites.sail_backdrop);
+    // A zone's own town backdrop, and a town's own (REQ-221d).
+    for (int i = 0; i < res->zone_count; i++)
+        art_add(out, cap, &n, res->zones[i].town_backdrop);
+    for (int i = 0; i < res->town_count; i++)
+        art_add(out, cap, &n, res->towns[i].backdrop);
     art_add(out, cap, &n, res->sprites.palace_welcome);
     art_add(out, cap, &n, res->sprites.palace_barracks);
     art_add(out, cap, &n, res->sprites.palace_throne);
