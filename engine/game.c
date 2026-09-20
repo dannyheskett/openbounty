@@ -2172,6 +2172,31 @@ ChestOutcome GameRollChest(Game *g, int zone_index, int x, int y,
     const ResBanners *bn = &g->res->banners;
     int chance = (int)(chest_rand(g, x, y, 1) % 100u) + 1;   // 1..100
 
+    // A chest the pack pinned a purse to ("gold": N) always holds exactly that,
+    // rolling nothing: the reward a vista or a guarded place is worth is the
+    // pack's to decide (REQ-230d).
+    int pinned = 0;
+    if (zone_index >= 0 && zone_index < g->res->zone_count) {
+        const ResZone *z = &g->res->zones[zone_index];
+        for (int i = 0; i < z->chest_count; i++)
+            if (z->chests[i].x == x && z->chests[i].y == y && z->chests[i].gold > 0)
+                pinned = z->chests[i].gold;
+    }
+    if (pinned > 0) {
+        int leadership = pinned / 50;
+        if (GameHasPower(g, ARTIFACT_POWER_DOUBLE_LEADERSHIP)) leadership *= 2;
+        if (out_pending) {
+            out_pending->pending_gold = pinned;
+            out_pending->pending_leadership = leadership;
+        }
+        char gbuf[16], lbuf[16];
+        snprintf(gbuf, sizeof gbuf, "%d", pinned);
+        snprintf(lbuf, sizeof lbuf, "%d", leadership);
+        ResTemplateVar vars[] = { { "GOLD", gbuf }, { "LEADERSHIP", lbuf } };
+        resources_format_template(out_body, out_sz, bn->chest_gold, vars, 2);
+        return CHEST_OUTCOME_GOLD;
+    }
+
     if (chance < ch->chance_gold[zi]) {
         int points = (int)(chest_rand(g, x, y, 2) %
                            (unsigned)(ch->gold_max[zi] > 0 ? ch->gold_max[zi] : 1)) + 1;

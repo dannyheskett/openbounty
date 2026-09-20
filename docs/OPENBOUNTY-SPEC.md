@@ -798,7 +798,14 @@ except where a deviation is explicitly flagged (§34).
   heap, sized by the pack; a pack that declares none behaves exactly as before
   (`kings-bounty` declares none). `glory-of-rome` declares the Rubicon (the
   Pontifex rite, one charge, consumed, opens the bridge the Po plain is behind)
-  and the Pharos of Alexandria (3,000 gold, paid, reveals the whole of Africa).
+  the Pharos of Alexandria (3,000 gold, paid, reveals the whole of Africa) and
+  the Temple of Ocean in Galliae (both of that zone's relics, held not spent:
+  the crag on the islet's near side becomes grass and two bridge tiles lay a
+  causeway to it).
+- **REQ-230d.** **A chest may carry a declared purse.** A zone chest with
+  `"gold": N` always holds exactly N and rolls nothing (`GameRollChest`,
+  `engine/game.c`); the leadership offer stays N/50, doubled by the artifact
+  power as usual. Galliae's island chest holds 5,000.
 - **REQ-229h.** **A tile code may name its `ground`.** A landmark tile (the
   Pharos) is transparent around its art, so its code names the art drawn under
   it; `fill_tile_from_code` (`engine/map.c`) sets the tile's ground from it and

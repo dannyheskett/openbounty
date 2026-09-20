@@ -83,6 +83,16 @@ unsigned prereq_gated(const ExecCtx *ctx, const PlanStep *step,
                     if (si >= 0 && g->spells.counts[si] >= rq->count) continue;
                     if (!g->stats.knows_magic) m |= PREREQ_MAGIC;
                 }
+                // A relic the vista asks for is another objective's business:
+                // the vista is dead until that artifact has been found.
+                for (int q = 0; q < z->events[k].req_count; q++) {
+                    const ResEventReq *rq = &z->events[k].reqs[q];
+                    if (rq->kind != RES_EVENT_REQ_ARTIFACT) continue;
+                    const ArtifactDef *a = artifact_by_id(rq->id);
+                    if (!a || a->index < 0 || a->index >= g->artifacts.count ||
+                        !g->artifacts.found[a->index])
+                        m |= PREREQ_RELIC;
+                }
             }
         }
         break;

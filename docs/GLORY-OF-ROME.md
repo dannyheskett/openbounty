@@ -614,6 +614,13 @@ and Teutoburgium beyond it, behind a marsh-wood coast). `check` reports each
 place with the guardians standing, beaten, and with the rivers bridged; the
 Pontifex spell and flight also cross the Rhine.
 
+Galliae's **Temple of Ocean** (REQ-221b) stands on the Atlantic shore at
+(17,29), facing a three-tile islet ringed with wood and crag so nothing can
+land on it. Carrying both Galliae relics and praying there turns the islet's
+near crag to grass and lays a two-tile causeway, opening the chest at its
+centre, which is pinned to 5,000 gold. Africa's **Pharos** (55,21) beside
+Alexandria takes 3,000 gold and reveals the whole province.
+
 **Africa** (`art/maps/africa.txt`, `africa_regions.json`, 64 x 28) runs from
 Mauretania to the Nile: `guardian_mulucha` holds the one crossing of the
 Mulucha (Volubilis beyond it), and `guardian_amun` the one pass through the

@@ -364,6 +364,9 @@ set for everything else.
 `"backdrop"`, both 240x102. A town's own wins, then its zone's, then the
 pack's `sprites.ui.town_backdrop`.
 
+**A pinned purse.** A zone chest may carry `"gold": N`: it then always holds
+exactly that, instead of rolling.
+
 **The sailing scene.** A pack may ship `sprites.ui.sail_backdrop` (240x102, as
 every backdrop) and the string `body_navigate_confirm` ("Sail for %ZONE%?").
 With both, sailing to another zone is drawn over that picture: the provinces,

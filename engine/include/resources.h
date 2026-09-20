@@ -368,6 +368,7 @@ typedef struct {
     int  x, y;
     char id[RES_ID_LEN];
     bool fixed;          // "fixed": true -- always a chest, never salted
+    int  gold;           // "gold": N -- this chest always holds N, never rolled
 } ResZoneChest;
 
 typedef struct {

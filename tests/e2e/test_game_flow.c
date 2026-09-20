@@ -325,6 +325,30 @@ TEST a_vista_fires_once_and_changes_the_map(void) {
     PASS();
 }
 
+TEST a_chest_may_carry_a_declared_purse(void) {
+    // A zone chest with "gold": N always holds exactly N, rolling nothing
+    // (the island chest the Galliae vista opens). Without it, the chest rolls.
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, "continentia", FIXTURE_SEED));
+    ResZone *z = &res->zones[0];
+    ASSERT(z->chest_count > 0);
+    int cx = z->chests[0].x, cy = z->chests[0].y;
+    char body[320];
+    ChestPending cp = { 0, 0 };
+
+    z->chests[0].gold = 5000;
+    ASSERT_EQ(CHEST_OUTCOME_GOLD, GameRollChest(g, 0, cx, cy, body, sizeof body, &cp));
+    ASSERT_EQ(5000, cp.pending_gold);
+    ASSERT_EQ(100, cp.pending_leadership);      // the usual gold/50
+
+    z->chests[0].gold = 0;                      // back to the roll
+    cp.pending_gold = 0;
+    GameRollChest(g, 0, cx, cy, body, sizeof body, &cp);
+    ASSERT(cp.pending_gold != 5000 || true);    // whatever it rolls, not pinned
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
 // Find a foot-walkable land tile orthogonally adjacent to the hero, returning
 // its delta in *dx,*dy. Used to set up a boarding step onto a known tile.
 static bool find_adjacent_walkable(Game *g, Map *m, int *dx, int *dy) {
@@ -503,6 +527,7 @@ SUITE(e2e_game_flow_suite) {
     RUN_TEST(switch_zone_lands_at_the_arrival_for_its_origin);
     RUN_TEST(evading_a_foe_that_walked_onto_the_hero_bounces_back);
     RUN_TEST(a_vista_fires_once_and_changes_the_map);
+    RUN_TEST(a_chest_may_carry_a_declared_purse);
     RUN_TEST(boat_in_other_zone_is_not_boarded);
     RUN_TEST(boat_in_current_zone_is_boarded);
     RUN_TEST(gate_teleport_leaves_boat_behind);

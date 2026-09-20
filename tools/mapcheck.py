@@ -61,9 +61,10 @@ def load_codes(pack_dir):
 
 
 def zone_objects(pack_dir, zone_id):
-    """(town docks, every placed object) for a zone. Empty when no zone given."""
+    """(town docks, every placed object, the tiles a vista lays) for a zone.
+    Empty when no zone given."""
     if not zone_id:
-        return [], []
+        return [], [], set()
     with open(os.path.join(pack_dir, "game.json")) as f:
         g = json.load(f)
     # A town's dock is its "boat" object; x -1 means the town has none.
@@ -81,7 +82,15 @@ def zone_objects(pack_dir, zone_id):
             for o in z.get(kind, []):
                 if "x" in o and "y" in o:
                     objs.append((o["x"], o["y"], kind[:-1]))
-    return docks, objs
+    vistas = set()
+    for z in g.get("zones", []):
+        if z.get("id") != zone_id:
+            continue
+        for ev in z.get("events", []):
+            for fx in ev.get("effects", []):
+                if "x" in fx and "y" in fx:
+                    vistas.add((fx["x"], fx["y"]))
+    return docks, objs, vistas
 
 
 def read_map(path):
@@ -120,7 +129,7 @@ def main():
     zone_id = sys.argv[4] if len(sys.argv) > 4 else None
 
     codes = load_codes(pack_dir)
-    docks, objects = zone_objects(pack_dir, zone_id)
+    docks, objects, vista_tiles = zone_objects(pack_dir, zone_id)
     rows = read_map(map_path)
     if not rows:
         print("FAIL: map is empty")
@@ -230,7 +239,16 @@ def main():
                     and terr(rows[y + dy][x + dx]) == "river"
                     for (x, y) in r
                     for dx in (-1, 0, 1) for dy in (-1, 0, 1))
-                if not coastal and by_river:
+                # A pocket a one-time vista opens is a gate too: its effects
+                # lay the tiles that reach it (Galliae's causeway).
+                by_vista = any((x + dx, y + dy) in vista_tiles
+                               for (x, y) in r
+                               for dx in (-1, 0, 1) for dy in (-1, 0, 1))
+                if not coastal and by_vista:
+                    print(f"  note: a {len(r)}-tile pocket with {len(on_it)} "
+                          f"objective(s) is opened by a vista -- its tiles are "
+                          f"laid when the vista plays")
+                elif not coastal and by_river:
                     print(f"  note: a {len(r)}-tile pocket with {len(on_it)} "
                           f"objective(s) is walled by a river -- reached with "
                           f"the bridge spell or by flight")
