@@ -380,6 +380,9 @@ typedef struct {
     int  x, y;
     char id[RES_ID_LEN];
     char kind[RES_ID_LEN];        // "plains" / "forest" / "hills" / "dungeon"
+    // "troop": this dwelling always breeds that troop, instead of the roll
+    // from the zone's pool (the elephant park at Apamea). Empty = rolled.
+    char troop[RES_ID_LEN];
 } ResZoneDwelling;
 
 typedef struct {
@@ -392,6 +395,13 @@ typedef struct {
     char army_id[5][RES_ID_LEN];       // 5 == GAME_ARMY_SLOTS
     int  army_count[5];
     int  army_stacks;
+    // "requires_troop": this foe cannot be fought unless that troop stands in
+    // the hero's army (Oriens' elephant gate). Empty = anyone may attack.
+    char requires_troop[RES_ID_LEN];
+    // "scene": the picture shown when it turns the hero back. Indexed into
+    // Resources.event_scenes with the vistas' art (REQ-221b).
+    char scene[RES_PATH_LEN];
+    int  scene_index;
 } ResZoneArmy;
 
 // ---- Strings  -----
@@ -538,6 +548,7 @@ typedef struct {
     char foe_fight[RES_BANNER_LEN];
     char foe_evade[RES_BANNER_LEN];
     char foe_evade_blocked[RES_BANNER_LEN];
+    char foe_requires_troop[RES_BANNER_LEN];   // %TROOP%: the arm a gate demands
     // Modern castle screens (home castle recruit/audience, own castle garrison).
     char castle_menu_recruit[RES_BANNER_LEN];
     char castle_continue[RES_BANNER_LEN];

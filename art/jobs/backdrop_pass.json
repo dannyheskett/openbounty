@@ -1,0 +1,17 @@
+{
+ "id": "backdrop_pass",
+ "_note": "The Armenian pass gate (Oriens' elephant gate). Location-backdrop route: rd_pro__default 240x102, opaque, no reference image.",
+ "prompt": "a huge iron-bound gate of dark timber and stone closing a narrow mountain pass, twin square towers either side of it and a wall running up into the crags, snow on the high rock above, a stony road leading up to the shut gate, cold blue mountain light, no people anywhere",
+ "style": "rd_pro__default",
+ "width": 240,
+ "height": 102,
+ "seed": 8103,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  240,
+  102
+ ],
+ "_pack_path": "art/scenes/pass.png"
+}

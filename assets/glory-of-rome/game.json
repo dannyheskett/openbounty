@@ -1555,7 +1555,13 @@
 					"title":	"Armenia",
 					"body":	"Kings of Armenia take their crowns from Roma or from Parthia, whichever army is nearer."
 				}],
-			"dwellings":	[],
+			"dwellings":	[{
+					"id":	"apamea",
+					"x":	37,
+					"y":	26,
+					"kind":	"plains",
+					"troop":	"elephants"
+				}],
 			"armies":	[],
 			"hero_spawn":	{
 				"x":	5,
@@ -1637,6 +1643,8 @@
 					"y":	8,
 					"id":	"guardian_armenia",
 					"static":	true,
+					"requires_troop":	"elephants",
+					"scene":	"art/scenes/pass.png",
 					"army":	[{
 							"troop":	"dwarves",
 							"count":	14
@@ -3149,6 +3157,26 @@
 			"morale_group":	"B",
 			"anim":	["art/troops/sagittarii_00.png", "art/troops/sagittarii_01.png", "art/troops/sagittarii_02.png", "art/troops/sagittarii_03.png", "art/troops/sagittarii_04.png", "art/troops/sagittarii_05.png"],
 			"tier_counts":	[0, 5, 10, 15]
+		}, {
+			"index":	26,
+			"id":	"elephants",
+			"name":	"Elephanti",
+			"sprite":	"art/troops/elephanti_00.png",
+			"portrait":	"art/portraits/troop_elephanti.png",
+			"skill_level":	5,
+			"hit_points":	80,
+			"move_rate":	2,
+			"melee":	[12, 24],
+			"ranged":	[0, 0, 0],
+			"recruit_cost":	2500,
+			"spoils_factor":	250,
+			"abilities":	"",
+			"dwelling":	"plains",
+			"max_population":	30,
+			"growth_per_week":	1,
+			"morale_group":	"C",
+			"tier_counts":	[0, 1, 2, 3],
+			"anim":	["art/troops/elephanti_00.png", "art/troops/elephanti_01.png", "art/troops/elephanti_02.png", "art/troops/elephanti_03.png", "art/troops/elephanti_04.png", "art/troops/elephanti_05.png"]
 		}],
 	"spells":	[{
 			"index":	0,

@@ -244,6 +244,13 @@ bool planstep_is_done(const Game *g, const PlanStep *step) {
         return (g->res && step->zone_index >= 0 && step->zone_index < g->res->zone_count)
              ? GameEventFired(g, g->res->zones[step->zone_index].id, step->handle)
              : false;
+    case STEP_MUSTER: {
+        // Done once the demanded arm stands in the army.
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++)
+            if (g->army[i].count > 0 && strcmp(g->army[i].id, step->handle) == 0)
+                return true;
+        return false;
+    }
     }
     return false;
 }
@@ -256,6 +263,7 @@ const char *plan_kind_name(PlanKind k) {
     case STEP_ORB:            return "orb";
     case STEP_ALCOVE:         return "alcove";
     case STEP_VISTA:          return "vista";
+    case STEP_MUSTER:         return "muster";
     case STEP_SIEGE_WEAPONS:  return "siege-weapons";
     case STEP_MONSTER_CASTLE: return "castle";
     case STEP_VILLAIN:        return "villain";

@@ -29,6 +29,7 @@ typedef enum {
     PREREQ_SIEGE    = 1u << 3,  // castle/villain, no siege weapons yet      -- SOFT
     PREREQ_MAGIC    = 1u << 4,  // alcove, wallet below the alcove cost      -- SOFT
     PREREQ_RELIC    = 1u << 5,  // vista, a required artifact not found yet -- HARD
+    PREREQ_MUSTER   = 1u << 6,  // gate foe, the arm it demands not in the army -- SOFT
 } PrereqBit;
 
 #define PREREQ_HARD (PREREQ_ZONE | PREREQ_CONTRACT | PREREQ_FINALE | PREREQ_RELIC)

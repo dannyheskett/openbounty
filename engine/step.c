@@ -577,6 +577,21 @@ bool GameStep(Game *game, Map *map, Fog *fog,
             bool friendly = (f && f->friendly);
             if (friendly) {
                 start_foe_friendly_flow(game, map, res, ir.foe_id, nx, ny);
+            } else if (GameFoeBarsHero(game, f)) {
+                // The gate holds: without the arm it demands, there is no
+                // fight to offer, only the way back.
+                const TroopDef *need = troop_by_id(f->requires_troop);
+                char msg[RES_BANNER_LEN];
+                ResTemplateVar v[] = { { "TROOP", need ? need->name : f->requires_troop } };
+                resources_format_template(msg, sizeof msg,
+                                          res->banners.foe_requires_troop, v, 1);
+                // With a picture the pack gave it, the refusal is a scene.
+                if (f->scene_index >= 0)
+                    player_io_note_scene_event(game, res->ui.dt_foes, msg,
+                                               f->scene_index);
+                else
+                    player_io_note(game, NULL, msg);
+                ir.bounce_back = true;
             } else {
                 start_foe_hostile_flow(game, ir.foe_id, nx, ny);
                 ir.bounce_back = true;

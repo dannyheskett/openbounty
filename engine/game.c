@@ -619,7 +619,10 @@ void GameInitSeeded(Game *g, const char *name, int pclass, int difficulty,
             const ResZone *z = &g->res->zones[zi];
             for (int di = 0; di < z->dwelling_count; di++) {
                 const ResZoneDwelling *rd = &z->dwellings[di];
-                enforce_dwelling(g, z->id, rd->x, rd->y, rd->kind);
+                if (rd->troop[0])   // a pack-pinned breed (the elephant park)
+                    enforce_dwelling_pinned(g, z->id, rd->x, rd->y, rd->troop);
+                else
+                    enforce_dwelling(g, z->id, rd->x, rd->y, rd->kind);
             }
         }
     }
@@ -881,6 +884,12 @@ static void add_foe(Game *g, int continent, const char *zone, int x, int y,
     f->alive = true;
     f->friendly = friendly;
     f->is_static = is_static;
+    f->scene_index = -1;
+    if (explicit_army) {
+        copy_id(f->requires_troop, sizeof(f->requires_troop),
+                explicit_army->requires_troop);
+        f->scene_index = explicit_army->scene_index;
+    }
     // Explicit garrison (a hand-tuned guardian) if one was declared; otherwise
     // roll by zone tier. For friendlies the garrison is unused (recruit dialog
     // rolls a fresh creature), but populating it keeps save/load + tests uniform.
@@ -1551,6 +1560,14 @@ void GameApplyTileMutations(const Game *g, Map *map, const char *zone) {
             }
         }
     }
+}
+
+bool GameFoeBarsHero(const Game *g, const FoeState *f) {
+    if (!g || !f || !f->requires_troop[0]) return false;
+    for (int i = 0; i < GAME_ARMY_SLOTS; i++)
+        if (g->army[i].count > 0 && strcmp(g->army[i].id, f->requires_troop) == 0)
+            return false;
+    return true;
 }
 
 bool GameEventFired(const Game *g, const char *zone, const char *id) {

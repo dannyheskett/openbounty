@@ -349,6 +349,31 @@ TEST a_chest_may_carry_a_declared_purse(void) {
     PASS();
 }
 
+TEST a_gate_army_demands_its_arm(void) {
+    // A static army with "requires_troop" refuses the fight until that troop
+    // stands in the hero's army; the hero is turned back with the reason.
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, "continentia", FIXTURE_SEED));
+    FoeState *fo = NULL;
+    for (int i = 0; i < g->foe_count && !fo; i++)
+        if (g->foes[i].alive && !g->foes[i].friendly &&
+            strcmp(g->foes[i].zone, g->position.zone) == 0) fo = &g->foes[i];
+    ASSERT(fo);
+    strcpy(fo->requires_troop, "dragons");
+    ASSERT(GameFoeBarsHero(g, fo));
+
+    strcpy(g->army[4].id, "dragons");
+    g->army[4].count = 3;
+    ASSERT_FALSE(GameFoeBarsHero(g, fo));       // the arm it demands is here
+
+    g->army[4].id[0] = '\0';
+    g->army[4].count = 0;
+    fo->requires_troop[0] = '\0';               // an ordinary foe bars nobody
+    ASSERT_FALSE(GameFoeBarsHero(g, fo));
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
 // Find a foot-walkable land tile orthogonally adjacent to the hero, returning
 // its delta in *dx,*dy. Used to set up a boarding step onto a known tile.
 static bool find_adjacent_walkable(Game *g, Map *m, int *dx, int *dy) {
@@ -528,6 +553,7 @@ SUITE(e2e_game_flow_suite) {
     RUN_TEST(evading_a_foe_that_walked_onto_the_hero_bounces_back);
     RUN_TEST(a_vista_fires_once_and_changes_the_map);
     RUN_TEST(a_chest_may_carry_a_declared_purse);
+    RUN_TEST(a_gate_army_demands_its_arm);
     RUN_TEST(boat_in_other_zone_is_not_boarded);
     RUN_TEST(boat_in_current_zone_is_boarded);
     RUN_TEST(gate_teleport_leaves_boat_behind);

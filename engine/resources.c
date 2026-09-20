@@ -421,11 +421,16 @@ static void fill_zone_artifact(cJSON *j, void *dst) {
 static void fill_zone_dwelling(cJSON *j, void *dst) {
     ResZoneDwelling *d = (ResZoneDwelling *)dst;
     d->x = json_int(j, "x", 0); d->y = json_int(j, "y", 0);
-    copy_str(d->id,   sizeof(d->id),   json_str(j, "id", ""));
-    copy_str(d->kind, sizeof(d->kind), json_str(j, "kind", ""));
+    copy_str(d->id,    sizeof(d->id),    json_str(j, "id", ""));
+    copy_str(d->kind,  sizeof(d->kind),  json_str(j, "kind", ""));
+    copy_str(d->troop, sizeof(d->troop), json_str(j, "troop", ""));
 }
 static void fill_zone_army(cJSON *j, void *dst) {
     ResZoneArmy *a = (ResZoneArmy *)dst;
+    copy_str(a->requires_troop, sizeof(a->requires_troop),
+             json_str(j, "requires_troop", ""));
+    copy_str(a->scene, sizeof(a->scene), json_str(j, "scene", ""));
+    a->scene_index = -1;
     a->x = json_int(j, "x", 0); a->y = json_int(j, "y", 0);
     copy_str(a->id, sizeof(a->id), json_str(j, "id", ""));
     cJSON *st = cJSON_GetObjectItem(j, "static");
@@ -756,7 +761,7 @@ static void parse_troops(Resources *res, cJSON *arr) {
     // names its art by index, so the shell loads the set once.
     int scenes = 0;
     for (int zi = 0; zi < res->zone_count; zi++)
-        scenes += res->zones[zi].event_count;
+        scenes += res->zones[zi].event_count + res->zones[zi].army_count;
     if (scenes > 0) {
         res->event_scenes = calloc((size_t)scenes, sizeof *res->event_scenes);
         res->event_scene_count = 0;
@@ -771,6 +776,19 @@ static void parse_troops(Resources *res, cJSON *arr) {
                     ev->scene_index = res->event_scene_count;
                     copy_str(res->event_scenes[res->event_scene_count++],
                              RES_PATH_LEN, ev->scene);
+                }
+            }
+            // A gate army's refusal scene shares the same list.
+            for (int k = 0; k < res->zones[zi].army_count; k++) {
+                ResZoneArmy *ar = &res->zones[zi].armies[k];
+                ar->scene_index = -1;
+                if (!ar->scene[0]) continue;
+                for (int e = 0; e < res->event_scene_count; e++)
+                    if (strcmp(res->event_scenes[e], ar->scene) == 0) ar->scene_index = e;
+                if (ar->scene_index < 0) {
+                    ar->scene_index = res->event_scene_count;
+                    copy_str(res->event_scenes[res->event_scene_count++],
+                             RES_PATH_LEN, ar->scene);
                 }
             }
         }
@@ -1499,6 +1517,11 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(foe_fight, "foe_fight");
     SET_BANNER(foe_evade, "foe_evade");
     SET_BANNER(foe_evade_blocked, "foe_evade_blocked");
+    // Optional: only a pack that gates a foe on one troop needs the words.
+    {
+        const char *s = cJSON_IsObject(obj) ? json_str(obj, "foe_requires_troop", NULL) : NULL;
+        if (s) copy_str(b->foe_requires_troop, sizeof b->foe_requires_troop, s);
+    }
     SET_BANNER(castle_menu_recruit, "castle_menu_recruit");
     SET_BANNER(castle_continue, "castle_continue");
     SET_BANNER(castle_menu_audience, "castle_menu_audience");

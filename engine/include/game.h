@@ -149,6 +149,11 @@ typedef struct {
     bool friendly;          // true -> recruit dialog; false -> attack prompt
     bool is_static;         // never moves (skipped by foes_follow); the fight
                             // is forced on contact -- no decline (REQ-gate).
+    // A gate this army holds against everything but one arm: the fight is
+    // refused unless that troop stands in the hero's army (Oriens' elephants).
+    // Empty = anyone may attack.
+    char requires_troop[32];
+    int  scene_index;       // the picture shown when it turns the hero back (-1 none)
 } FoeState;
 
 // Randomized object placements produced by salt_continent / salt_spells /
@@ -712,6 +717,10 @@ void GameApplyTileMutations(const Game *g, Map *map, const char *zone);
 
 // True when the zone's event `id` has already played.
 bool GameEventFired(const Game *g, const char *zone, const char *id);
+
+// A gate army that demands one arm: true when `f` names a troop the hero's
+// army does not hold, so the fight cannot be offered.
+bool GameFoeBarsHero(const Game *g, const FoeState *f);
 // Fire the zone event at (x, y) if one is declared there, has not played, and
 // every precondition holds: spends what the preconditions consume, applies the
 // tile effects, records it, and queues its scene. Returns true iff it fired.

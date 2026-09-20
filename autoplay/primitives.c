@@ -641,6 +641,99 @@ static bool exec_vista(ExecCtx *ctx, const PlanStep *step,
     return false;
 }
 
+// Muster the arm a gate demands (REQ-296a): march to the dwelling that breeds
+// it and recruit what the purse and the leadership allow, at least one stack.
+#define MUSTER_FAIL(cause_, fmt_, ...)                                        \
+    do {                                                                      \
+        if (out_cause) *out_cause = (cause_);                                 \
+        snprintf(why, (size_t)why_sz, fmt_, __VA_ARGS__);                     \
+        if (ob_diag_verbose()) printf("[MUSTER] %s\n", why);                  \
+        return false;                                                         \
+    } while (0)
+
+static bool exec_muster(ExecCtx *ctx, const PlanStep *step,
+                        ExecCause *out_cause, char *why, int why_sz) {
+    Game *g = ctx->g;
+    if (planstep_is_done(g, step)) return true;
+    const TroopDef *t = troop_by_id(step->handle);
+    if (!t) return false;
+
+    // Every dwelling breeding that troop, this zone's first.
+    NavPoint at[AP_TOWNS_MAX];
+    int n = 0;
+    for (int pass = 0; pass < 2 && n == 0; pass++) {
+        for (int i = 0; i < g->dwelling_count && n < AP_TOWNS_MAX; i++) {
+            const DwellingState *d = &g->dwellings[i];
+            if (strcmp(d->troop_id, step->handle) != 0 || d->count <= 0) continue;
+            int zi = zone_index_of(ctx->res, d->zone);
+            if (zi < 0) continue;
+            if (pass == 0 && zi != step->zone_index) continue;
+            at[n].zone_index = zi; at[n].x = d->x; at[n].y = d->y; n++;
+        }
+    }
+    if (n == 0) MUSTER_FAIL(EXEC_CAUSE_STOCK, "muster:%s:no-dwelling", step->handle);
+
+    // Afford at least one: the recruit flow clamps to the live caps anyway.
+    int cost = t->recruit_cost > 0 ? t->recruit_cost : 1;
+    if (g->stats.gold <= cost) {
+        ExecCause gc = EXEC_CAUSE_NONE;
+        if (!exec_ensure_gold(ctx, cost + 1, &gc))
+            MUSTER_FAIL(gc, "muster:%s:gold", step->handle);
+    }
+    int want = g->stats.gold / cost;
+    int room = t->hit_points > 0 ? g->stats.leadership_current / t->hit_points : want;
+    if (want > room) want = room;
+    // Never ask for more than the park holds (the flow refuses an over-ask).
+    int stock = 0;
+    for (int i = 0; i < g->dwelling_count; i++)
+        if (strcmp(g->dwellings[i].troop_id, step->handle) == 0 &&
+            g->dwellings[i].count > stock) stock = g->dwellings[i].count;
+    if (stock > 0 && want > stock) want = stock;
+    if (want < 1) want = 1;
+
+    // A full army has no slot for a new arm: give up the weakest stack for it.
+    {
+        int occupied = 0, weakest = -1; long weakest_worth = 0;
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+            if (!g->army[i].id[0] || g->army[i].count <= 0) continue;
+            occupied++;
+            const TroopDef *at = troop_by_id(g->army[i].id);
+            long worth = (long)g->army[i].count * (at ? at->hit_points : 1);
+            if (weakest < 0 || worth < weakest_worth) { weakest = i; weakest_worth = worth; }
+        }
+        if (occupied >= GAME_ARMY_SLOTS && weakest >= 0 &&
+            !exec_dismiss_slot(ctx, weakest))
+            MUSTER_FAIL(EXEC_CAUSE_OTHER, "muster:%s:no-slot", step->handle);
+    }
+
+    ExecCause cc = EXEC_CAUSE_NONE;
+    int before = g->stats.days_left;
+    long cross_before = ledger_committed(DAY_ACCT_CROSSING);
+    if (move_to(ctx, at, n, true, NULL, &cc) < 0)
+        MUSTER_FAIL(cc, "muster:%s:unreachable", step->handle);
+    acct_move(DAY_ACCT_RECRUITMOVE, before, cross_before, g);
+    if (ob_diag_verbose())
+        printf("[MUSTER] at (%d,%d) zone=%s want=%d gold=%d lead=%d flow=%d dwell='%s'\n",
+               g->position.x, g->position.y, g->position.zone, want, g->stats.gold,
+               g->stats.leadership_current, (int)pending_flow, g->position.dwelling_troop);
+    if (pending_flow == FLOW_RECRUIT) {
+        FlowAnswer ans = { FLOW_ANS_YES, want };
+        rec_push_answer(g, FLOW_RECRUIT, ans, PLAYER_IO_COMBAT_NOT_RUN);
+        PlayerIoPresentation pres;
+        player_io_answer(g, ctx->map, ctx->fog, ctx->res, ans,
+                         PLAYER_IO_COMBAT_NOT_RUN, &pres);
+        exec_pump_passive(ctx);
+    } else {
+        exec_answer_pending(ctx, true);
+    }
+    if (!planstep_is_done(g, step))
+        MUSTER_FAIL(EXEC_CAUSE_STOCK, "muster:%s:refused-flow=%d", step->handle,
+                    (int)pending_flow);
+    if (ob_diag_verbose())
+        printf("[MUSTER] %s: got %d, gold=%d\n", step->handle, want, g->stats.gold);
+    return true;
+}
+
 // Move to the fight, lift at the gate, verify live, step on, fight (AP-082).
 static bool siege_or_slay(ExecCtx *ctx, const PlanStep *step,
                           ExecCause *out_cause, char *why, int why_sz) {
@@ -1017,6 +1110,9 @@ bool execute_why(ExecCtx *ctx, const PlanStep *step,
         break;
     case STEP_VISTA:
         ok = exec_vista(ctx, step, &cause, scratch, sizeof scratch);
+        break;
+    case STEP_MUSTER:
+        ok = exec_muster(ctx, step, &cause, scratch, sizeof scratch);
         break;
     }
     if (ctx->g->stats.game_over && !ctx->g->stats.won) {

@@ -9,6 +9,24 @@
 
 // The BUY-SIEGE candidate (prereq_make_buy_siege): resolved to the nearest
 // town at execution (the executor walks the whole town set).
+// The MUSTER candidate: recruit the arm a gate foe demands, at the dwelling
+// that breeds it (resolved at execution, like BUY-SIEGE's town).
+static void prereq_make_muster(PlanStep *out, int zone_index, const char *troop) {
+    memset(out, 0, sizeof *out);
+    out->kind = STEP_MUSTER;
+    out->zone_index = zone_index;
+    out->x = out->y = -1;
+    snprintf(out->handle, sizeof out->handle, "%s", troop);
+    snprintf(out->label, sizeof out->label, "muster:%s", troop);
+}
+
+// The foe a step names, when it is a gate that demands one arm.
+static const FoeState *prereq_gate_foe(const ExecCtx *ctx, const PlanStep *step) {
+    if (step->kind != STEP_FOE) return NULL;
+    const FoeState *f = plan_find_foe(ctx->g, step->handle, step->zone_index);
+    return (f && f->alive && f->requires_troop[0]) ? f : NULL;
+}
+
 static void prereq_make_buy_siege(PlanStep *out) {
     memset(out, 0, sizeof *out);
     out->kind = STEP_SIEGE_WEAPONS;
@@ -24,6 +42,11 @@ int prereq_unmet(const ExecCtx *ctx, const PlanStep *step,
     if ((step->kind == STEP_MONSTER_CASTLE || step->kind == STEP_VILLAIN) &&
         !ctx->g->stats.siege_weapons && n < cap) {
         prereq_make_buy_siege(&out[n++]);
+    }
+    {
+        const FoeState *f = prereq_gate_foe(ctx, step);
+        if (f && GameFoeBarsHero(ctx->g, f) && n < cap)
+            prereq_make_muster(&out[n++], step->zone_index, f->requires_troop);
     }
     return n;
 }
@@ -96,6 +119,11 @@ unsigned prereq_gated(const ExecCtx *ctx, const PlanStep *step,
             }
         }
         break;
+    // A gate foe that demands one arm is NOT gated here: the MUSTER candidate
+    // (prereq_unmet) runs under the attempt's own snapshot and fetches the
+    // arm. Gating it instead demoted the gate in the candidate ordering, and
+    // the search then thrashed on the objectives behind it (measured on seeds
+    // 1 and 2, 2026-09-20).
     case STEP_SCEPTER:
         // Finale (AP-052, re-homed from the planner's select loop): the dig
         // ends the game, so it waits until every other objective is done -- the

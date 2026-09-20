@@ -614,6 +614,11 @@ and Teutoburgium beyond it, behind a marsh-wood coast). `check` reports each
 place with the guardians standing, beaten, and with the rivers bridged; the
 Pontifex spell and flight also cross the Rhine.
 
+Oriens' **Armenian pass** is held against every arm but the **Elephanti**
+(REQ-296a): the war elephants are bred at the park at **Apamea** (37,26) in the
+Orontes valley, and without a stack of them the gate turns the hero back at the
+shut gate. **Artaxata** and the rest of Armenia lie behind it.
+
 Galliae's **Temple of Ocean** (REQ-221b) stands on the Atlantic shore at
 (17,29), facing a three-tile islet ringed with wood and crag so nothing can
 land on it. Carrying both Galliae relics and praying there turns the islet's

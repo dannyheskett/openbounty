@@ -393,6 +393,25 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         }
     }
 
+    // A gate army that demands one arm: the refusal, with its picture.
+    for (int zi = 0; zi < res->zone_count; zi++) {
+        bool shot_one = false;
+        for (int k = 0; k < res->zones[zi].army_count && !shot_one; k++) {
+            const ResZoneArmy *ar = &res->zones[zi].armies[k];
+            if (!ar->requires_troop[0] || ar->scene_index < 0) continue;
+            const TroopDef *need = troop_by_id(ar->requires_troop);
+            char msg[RES_BANNER_LEN];
+            ResTemplateVar v[] = { { "TROOP", need ? need->name : ar->requires_troop } };
+            resources_format_template(msg, sizeof msg, bn->foe_requires_troop, v, 1);
+            reset(&G);
+            player_io_note_scene_event(g, ui->dt_foes, msg, ar->scene_index);
+            shell_pump_note(g);
+            shot(&G, "09i_gate_refused");
+            shot_one = true;
+        }
+        if (shot_one) break;
+    }
+
     // The bridge spell asks for a direction.
     reset(&G); bridge_state = BRIDGE_STATE_DIRECTION; open_dialog(NULL, bn->spell_bridge_prompt);
     shot(&G, "09g_bridge_direction"); bridge_state = BRIDGE_STATE_NONE;

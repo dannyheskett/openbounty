@@ -1,0 +1,18 @@
+{
+ "id": "elephanti",
+ "_note": "The Elephanti still (2026-09-20). The settled troop route whole: the pack's own troop style at 96x96, background removed, colours named, no reference image -- the same shape as sagittarii.json.",
+ "prompt": "a war elephant of the Seleucid kings seen from the side facing right, a big grey-brown elephant with long white tusks and a red and gold caparison over its back, a small wooden fighting tower strapped on its back with two spearmen in bronze helmets and red tunics inside it, an Indian driver in a white tunic sitting on its neck with a goad, standing square with all four feet planted",
+ "style": "user__glory_of_rome_troops_bac676cd",
+ "width": 96,
+ "height": 96,
+ "seed": 8101,
+ "remove_bg": true,
+ "return_non_bg_removed": true,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": true,
+ "target": [
+  96,
+  96
+ ]
+}

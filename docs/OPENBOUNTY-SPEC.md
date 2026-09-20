@@ -802,6 +802,18 @@ except where a deviation is explicitly flagged (§34).
   the Temple of Ocean in Galliae (both of that zone's relics, held not spent:
   the crag on the islet's near side becomes grass and two bridge tiles lay a
   causeway to it).
+- **REQ-296a.** **A gate army may demand one arm.** A static army with
+  `"requires_troop": "<troop id>"` refuses the fight unless that troop stands
+  in the hero's army (`GameFoeBarsHero`, `engine/game.c`): stepping onto it
+  bounces the hero back with the `foe_requires_troop` banner, drawn as a scene
+  when the army also names one (`"scene"`, sharing the vistas' art list). A
+  dwelling may be pinned to a breed with `"troop"` instead of rolling from the
+  zone's pool. Autoplay treats the demand as a prerequisite candidate
+  (`exec_muster`, `autoplay/primitives.c`): it marches to the dwelling that
+  breeds the arm, gives up its weakest stack for a slot if the army is full,
+  and recruits what the purse and leadership allow. `glory-of-rome` holds the
+  Armenian pass against everything but the Elephanti, bred at Apamea, with
+  Artaxata behind it.
 - **REQ-230d.** **A chest may carry a declared purse.** A zone chest with
   `"gold": N` always holds exactly N and rolls nothing (`GameRollChest`,
   `engine/game.c`); the leadership offer stays N/50, doubled by the artifact
