@@ -17,6 +17,9 @@
 
 #import <UIKit/UIKit.h>
 
+#include <stdlib.h>   // calloc, strdup for the launch arguments
+#include <string.h>
+
 extern "C" {
 #include "gfx.h"
 #include "plat_ios.h"
@@ -64,14 +67,34 @@ extern "C" void plat_ios_log_stdout(void);
 // A generous stack: main.c holds several large locals (Resources is ~3.9 MB,
 // Map ~848 KB), the same reason the Windows and web builds raise theirs.
 - (void)startGameThread {
+    // The app's own launch arguments are handed to the game, so a Simulator
+    // launched with `simctl launch <udid> <bundle> --demo` plays itself --
+    // which is how the store screenshots are captured, there being no way to
+    // send a tap to a Simulator from a script. A device launch has none, so
+    // this is argv[0] alone in every other case.
+    NSArray<NSString *> *args = [[NSProcessInfo processInfo] arguments];
+    NSMutableArray<NSString *> *keep = [NSMutableArray array];
+    for (NSUInteger i = 1; i < args.count; i++) {
+        NSString *a = args[i];
+        // Xcode and simctl inject their own -NS/-com.apple flags; the game
+        // would reject the lot as unknown options.
+        if ([a hasPrefix:@"-NS"] || [a hasPrefix:@"-com.apple"] ||
+            [a hasPrefix:@"-Apple"] || [a hasPrefix:@"/"]) continue;
+        [keep addObject:a];
+    }
+
     NSThread *t = [[NSThread alloc] initWithBlock:^{
         static char arg0[] = "gloryofrome";
-        char *argv[] = { arg0, NULL };
+        int argc = 1 + (int)keep.count;
+        char **argv = (char **)calloc((size_t)argc + 1, sizeof *argv);
+        argv[0] = arg0;
+        for (int i = 0; i < (int)keep.count; i++)
+            argv[i + 1] = strdup(keep[(NSUInteger)i].UTF8String);
         // The game's own stdout is piped into the unified log
         // (plat_ios_log_stdout), which is the only way to see anything from a
         // device; these two lines bracket it.
-        NSLog(@"openbounty: game thread starting");
-        int rc = shell_run_game(1, argv);
+        NSLog(@"openbounty: game thread starting (%d arg(s))", argc - 1);
+        int rc = shell_run_game(argc, argv);
         NSLog(@"openbounty: game thread returned %d", rc);
     }];
     t.stackSize = 16 * 1024 * 1024;
