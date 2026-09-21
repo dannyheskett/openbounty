@@ -758,6 +758,12 @@ int shell_run_game(int argc, char **argv) {
     BOOT_TRACE("[boot] resources loaded, opening the window\n");
     frame_host_window_open(base_w, base_h,
                            res.title[0] ? res.title : "OpenBounty");
+    {
+        int dw = 0, dh = 0;
+        frame_host_display_size(&dw, &dh);
+        BOOT_TRACE("[boot] window %dx%d display %dx%d\n",
+                   frame_host_window_width(), frame_host_window_height(), dw, dh);
+    }
     int min_w, min_h;
     layout_min_window(&min_w, &min_h);
     frame_host_window_min_size(min_w, min_h);

@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "present.h"
 #include "frame_host.h"
 #include "gfx.h"
@@ -220,6 +221,22 @@ void present_scaled(RenderTexture2D rt) {
     gfx_texture_draw(rt.texture, src, dst, WHITE);
 
     present_store_dst((int)dst.x, (int)dst.y, dst_w, dst_h, scale);
+
+#if defined(PLATFORM_IOS) || defined(PLATFORM_ANDROID)
+    // The first frame's arithmetic, once, into the platform log: a frame in the
+    // wrong place on a phone cannot be read off a screenshot alone.
+    {
+        static bool said = false;
+        if (!said) {
+            said = true;
+            printf("[present] window %dx%d safe %d,%d %dx%d buffer %dx%d -> dst %d,%d %dx%d scale %d\n",
+                   win_w, win_h, safe_x, safe_y, safe_w, safe_h,
+                   rt.texture.width, rt.texture.height,
+                   (int)dst.x, (int)dst.y, dst_w, dst_h, scale);
+            fflush(stdout);
+        }
+    }
+#endif
 
     // Touch chrome draws over the letterbox, in window pixels, after the
     // game's frame. It renders nothing unless a screen requested chrome
