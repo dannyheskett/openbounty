@@ -1,0 +1,19 @@
+{
+  "id": "furiae",
+  "style": "user__glory_of_rome_troops_bac676cd",
+  "prompt": "a winged Fury, a gaunt woman with ash-grey skin and hollow red eyes, a ragged black robe torn off at the knee with a pale grey underlayer showing at the hem and sleeves, dark feathered wings spread wide behind her, live snakes writhing in her hair, a burning torch with an orange flame held upright at rest in her right hand, hovering a little above the ground with her bare feet pointed down",
+  "width": 96,
+  "height": 96,
+  "target": [
+    96,
+    96
+  ],
+  "figure": true,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "raw_only": true,
+  "bypass_prompt_expansion": true,
+  "seed": 6210,
+  "_note": "First job file this troop has ever had: the shipped furiae sprite predates the job record, so its prompt was never written down. Made 2026-09-20 in the adversarial troop review, where the sprite read as a black blob at map size -- the dark wings, dark robe and unlit face merged into one silhouette. The rewrite gives her ash-grey skin, a pale underlayer at hem and sleeves and an orange torch flame, so the figure separates from its own wings. Troop route, the settings the good troops use (sagittarii, sarmatae): 96 px, figure, background removed, expansion off.",
+  "_pack_path": "art/troops/furiae_00.png"
+}

@@ -1,0 +1,21 @@
+{
+  "id": "furiae_attack",
+  "style": "rd_advanced_animation__custom_action",
+  "prompt": "a wide overhead swing, the burning torch carried from upright behind her head in a long arc down and out to full reach in front of her to the right, the way she faces, then back to upright, the wings thrown back and spread as she lunges, hovering with the feet off the ground, smooth loop, no motion blur and no streaks",
+  "input_image_path": "build/art/furiae/run01/01_raw.png",
+  "input_image_keep_alpha": true,
+  "width": 96,
+  "height": 96,
+  "target": [
+    96,
+    96
+  ],
+  "figure": false,
+  "raw_only": true,
+  "return_spritesheet": true,
+  "bypass_prompt_expansion": false,
+  "frames_duration": 4,
+  "seed": 6211,
+  "_note": "First job file for this loop: the shipped furiae frames predate the job record. Made 2026-09-20 on the reworked still (furiae.json seed 6210), the four-frame custom action the other troops use, expansion on. The motion line names the swing's direction and forbids blur -- the lesson from the baleares loop, which drew the released sling as a violet smear -- and says the feet stay off the ground, because she flies (abilities FLY|MAGIC).",
+  "_pack_path": "art/troops/furiae_00..03.png"
+}

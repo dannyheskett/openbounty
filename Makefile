@@ -63,7 +63,7 @@ DEMO_OBJ     := $(patsubst %.c,$(DEMO_OBJ_DIR)/%.o,$(DEMO_SRC))
 AUTOPLAY_SRC := autoplay/autoplay.c autoplay/planner.c autoplay/goals.c autoplay/prereq.c autoplay/baltree.c autoplay/search.c autoplay/primitives.c autoplay/exec_move.c autoplay/exec_fight.c autoplay/exec_recruit.c autoplay/exec_loc.c autoplay/recording.c autoplay/worldsnap.c autoplay/plan.c autoplay/exec_replay.c autoplay/exec_ledger.c autoplay/diag.c
 AUTOPLAY_OBJ_DIR := build/$(BUILD)/objs/autoplay
 AUTOPLAY_OBJ     := $(patsubst %.c,$(AUTOPLAY_OBJ_DIR)/%.o,$(AUTOPLAY_SRC))
-SHELL_SRC  := src/main.c src/layout.c src/present.c src/shell_menu.c src/shell_tempdeath.c src/shell_weekend.c src/shell_audience.c src/shell_cheats.c src/shell_gate.c src/shell_fastquit.c src/shell_frame.c src/shell_promptdispatch.c src/shell_actions.c src/shell_demo.c src/shell_autoplay.c src/shell_earlyexit.c src/shell_gallery.c src/assets.c src/pack_select.c src/recorder.c src/audio.c src/encode_mp4.c src/encode_mp4_h264.c src/encode_mp4_mux.c src/encode_dialog.c src/bfont.c src/text.c src/select.c src/textsel.c src/tilevar.c src/tile_cache.c src/sprites.c src/views.c src/ui.c src/screenshot.c src/combat_loop.c src/combat_render.c src/combat_replay.c src/palette.c src/chrome.c src/lattice.c src/hud.c src/map_render.c src/overlay.c src/legacy/overlay.c src/modern/overlay.c src/views_render.c src/legacy/views_render.c src/modern/views_render.c src/legacy/prompt.c src/modern/prompt.c src/modern/mlayout.c src/modern/castle.c src/modern/mlist.c src/modern/saveslots.c src/modern/gamemenu.c src/modern/location.c src/modern/uikit.c src/input.c src/input_host.c src/touch.c src/frame_host.c src/prompt.c src/startup.c src/end_cartoon.c src/screens/home_castle.c src/screens/recruit_soldiers.c src/screens/own_castle.c src/screens/dwelling.c src/screens/alcove.c src/screens/end_game.c
+SHELL_SRC  := src/main.c src/plat_android.c src/safe_area.c src/layout.c src/present.c src/shell_menu.c src/shell_tempdeath.c src/shell_weekend.c src/shell_audience.c src/shell_cheats.c src/shell_gate.c src/shell_fastquit.c src/shell_frame.c src/shell_promptdispatch.c src/shell_actions.c src/shell_demo.c src/shell_autoplay.c src/shell_earlyexit.c src/shell_gallery.c src/assets.c src/pack_select.c src/recorder.c src/audio.c src/encode_mp4.c src/encode_mp4_h264.c src/encode_mp4_mux.c src/encode_dialog.c src/bfont.c src/text.c src/select.c src/textsel.c src/tilevar.c src/tile_cache.c src/sprites.c src/views.c src/ui.c src/screenshot.c src/combat_loop.c src/combat_render.c src/combat_replay.c src/palette.c src/chrome.c src/lattice.c src/hud.c src/map_render.c src/overlay.c src/legacy/overlay.c src/modern/overlay.c src/views_render.c src/legacy/views_render.c src/modern/views_render.c src/legacy/prompt.c src/modern/prompt.c src/modern/mlayout.c src/modern/castle.c src/modern/mlist.c src/modern/saveslots.c src/modern/gamemenu.c src/modern/location.c src/modern/uikit.c src/input.c src/input_host.c src/touch.c src/frame_host.c src/prompt.c src/startup.c src/end_cartoon.c src/screens/home_castle.c src/screens/recruit_soldiers.c src/screens/own_castle.c src/screens/dwelling.c src/screens/alcove.c src/screens/end_game.c
 TOOL_SRC   := tools/extract.c tools/extract_io.c tools/extract_unpack.c tools/extract_lzw.c tools/extract_vga.c tools/extract_png.c tools/extract_chrome.c tools/extract_gamejson.c
 VENDOR_SRC := third_party/cjson/cJSON.c third_party/miniz/miniz.c
 
@@ -276,37 +276,199 @@ WEB_CFLAGS := -std=c99 -Wall -Wextra -O2 -DPLATFORM_WEB \
 #   growth never fired -- so 64 MiB is 2x headroom.
 # -lidbfs.js provides the IDBFS the shell mounts at /saves so saves survive
 #   a page reload (engine/savepath.c's __EMSCRIPTEN__ branch).
-# --preload-file bakes the pack into openbounty.data at the fixed path the
-#   shell passes via --pack. The pack is embedded, never redistributed as a
-#   loose .openbounty file, so the release workflow's asset guard is
-#   unaffected -- and `web` is deliberately NOT part of `dist`.
-WEB_PACK    := $(PACK_DIR)/kings-bounty.openbounty
+# A wasm module embeds its pack, so there is one build PER PACK, each in its
+#   own build/web/<pack>/ directory: --preload-file bakes that pack into
+#   openbounty.data and the shell passes the matching path via --pack. The pack
+#   is embedded, never redistributed as a loose .openbounty file, so the release
+#   workflow's asset guard is unaffected -- and `web` is deliberately NOT part
+#   of `dist`.
 WEB_LDFLAGS := -L$(RAYLIB_WEB)/lib -lraylib -lidbfs.js \
                -sUSE_GLFW=3 -sASYNCIFY -sINITIAL_MEMORY=67108864 \
                -sSTACK_SIZE=8388608 -sFORCE_FILESYSTEM \
-               -sEXPORTED_RUNTIME_METHODS=FS,IDBFS,addRunDependency,removeRunDependency \
-               --preload-file $(WEB_PACK)@/assets/kings-bounty.openbounty \
-               --shell-file web/shell.html
+               -sEXPORTED_RUNTIME_METHODS=FS,IDBFS,addRunDependency,removeRunDependency
 
-OUT_WEB := build/web/openbounty.html
+# The packs that get a web build. King's Bounty is local-only: its pack is
+# DOS-extracted and copyright-restricted, so only Glory of Rome is packaged by
+# dist-web. Both are built by `make web` so CI exercises each.
+WEB_PACK_NAMES := kings-bounty glory-of-rome
+WEB_OUTS       := $(foreach p,$(WEB_PACK_NAMES),build/web/$(p)/openbounty.html)
+OUT_WEB_ROME   := build/web/glory-of-rome/openbounty.html
 
-web: $(OUT_WEB)
+web: $(WEB_OUTS)
+web-kings-bounty: build/web/kings-bounty/openbounty.html
+web-glory-of-rome: $(OUT_WEB_ROME)
 
-$(OUT_WEB): $(SRC) web/shell.html $(WEB_PACK) build/version.h Makefile
-	@command -v $(EMCC) >/dev/null 2>&1 || { \
+# $(call WEB_RULE,<pack-name>) -- one emcc link per pack. The shell is copied
+# per pack with @@PACK@@ replaced by the path --preload-file maps it to, so the
+# two builds never share a file and cannot pick up each other's pack.
+define WEB_RULE
+build/web/$(1)/openbounty.html: $$(SRC) web/shell.html $$(PACK_DIR)/$(1).openbounty build/version.h Makefile
+	@command -v $$(EMCC) >/dev/null 2>&1 || { \
 	  echo "make web: emcc not on PATH."; \
 	  echo "  source third_party/emsdk/emsdk_env.sh"; exit 1; }
-	@test -f $(RAYLIB_WEB)/lib/libraylib.a || { \
-	  echo "make web: missing $(RAYLIB_WEB)/lib/libraylib.a."; \
+	@test -f $$(RAYLIB_WEB)/lib/libraylib.a || { \
+	  echo "make web: missing $$(RAYLIB_WEB)/lib/libraylib.a."; \
 	  echo "  ./scripts/build_raylib_web.sh"; exit 1; }
-	@mkdir -p build/web
-	$(EMCC) $(WEB_CFLAGS) $(SRC) -o $(OUT_WEB) $(WEB_LDFLAGS)
+	@mkdir -p build/web/$(1)
+	sed 's|@@PACK@@|/assets/$(1).openbounty|g' web/shell.html > build/web/$(1)/shell.html
+	$$(EMCC) $$(WEB_CFLAGS) $$(SRC) -o $$@ $$(WEB_LDFLAGS) \
+	    --preload-file $$(PACK_DIR)/$(1).openbounty@/assets/$(1).openbounty \
+	    --shell-file build/web/$(1)/shell.html
+endef
+$(foreach p,$(WEB_PACK_NAMES),$(eval $(call WEB_RULE,$(p))))
 
-# Serve the built game locally. Browsers refuse to fetch the .wasm/.data
-# over file://, so a real HTTP server is required to run it at all.
-web-serve: $(OUT_WEB)
-	@echo "OpenBounty: http://localhost:8080/openbounty.html"
+# Serve the built games locally. Browsers refuse to fetch the .wasm/.data
+# over file://, so a real HTTP server is required to run them at all.
+web-serve: $(WEB_OUTS)
+	@for p in $(WEB_PACK_NAMES); do \
+	  echo "$$p: http://localhost:8080/$$p/openbounty.html"; \
+	done
 	@cd build/web && python3 -m http.server 8080
+
+# ---------------------------------------------------------------------------
+# Android build (NativeActivity APK, no Gradle). CI-only: needs the NDK + SDK
+# build-tools, both provided by the setup-android action. Mirrors raylib's
+# upstream Makefile.Android flow: cross-compile the game + the NDK's
+# native_app_glue into libgloryofrome.so, then package + sign an APK with
+# aapt / zipalign / apksigner.
+#
+# MOBILE SHIPS GLORY OF ROME ONLY. The pack goes into the APK's assets/ and
+# src/plat_android.c opens it from there; there is no pack discovery, no
+# picker, and King's Bounty (DOS-extracted, copyright-restricted) is never
+# packaged.
+#
+# Requires env: ANDROID_NDK, ANDROID_SDK_ROOT.
+# ---------------------------------------------------------------------------
+ANDROID_API          ?= 24
+ANDROID_ABI          := arm64-v8a
+ANDROID_BUILD_TOOLS  ?= 36.0.0
+ANDROID_PLATFORM_VER ?= 36
+
+ANDROID_APP_NAME := gloryofrome
+ANDROID_PACK     := glory-of-rome
+
+# versionCode must be a monotonically increasing integer for Play uploads; drive
+# it off the release number (unique + monotonic). Clamp to >=1 for local builds
+# where OPENBOUNTY_VERSION is 0 (no release tags yet). versionName is the
+# human-facing string. Both are injected at package time (aapt/aapt2 flags), so
+# the manifest values are just fallbacks.
+ANDROID_VERSION_CODE ?= $(OPENBOUNTY_VERSION)
+ifeq ($(ANDROID_VERSION_CODE),0)
+ANDROID_VERSION_CODE := 1
+endif
+ANDROID_VERSION_NAME ?= 1.0.$(ANDROID_VERSION_CODE)
+
+RAYLIB_ANDROID := third_party/raylib-install-android/$(ANDROID_ABI)
+
+ANDROID_TOOLCHAIN := $(ANDROID_NDK)/toolchains/llvm/prebuilt/linux-x86_64
+ANDROID_CC        := $(ANDROID_TOOLCHAIN)/bin/aarch64-linux-android$(ANDROID_API)-clang
+NATIVE_APP_GLUE   := $(ANDROID_NDK)/sources/android/native_app_glue
+
+ANDROID_SDK_BT := $(ANDROID_SDK_ROOT)/build-tools/$(ANDROID_BUILD_TOOLS)
+ANDROID_JAR    := $(ANDROID_SDK_ROOT)/platforms/android-$(ANDROID_PLATFORM_VER)/android.jar
+
+# The whole game, unchanged: every translation unit the desktop build has.
+# Trimming the desktop-only subsystems (recorder, gallery, demo, autoplay,
+# extractor) needs stubs for what main.c calls, which is a separate change --
+# correctness first, size later.
+ANDROID_SRC     := $(SRC)
+ANDROID_CFLAGS  := -std=c99 -Wall -Wextra -O2 -DPLATFORM_ANDROID -fPIC \
+                   -I$(RAYLIB_ANDROID)/include -I$(NATIVE_APP_GLUE) \
+                   -I$(MINIH264_INC) -I$(MINIMP4_INC) \
+                   -Isrc -Iengine/include -Idemo -Iautoplay -Itools -Ibuild \
+                   -Ithird_party/cjson -Ithird_party/miniz
+# raylib wraps fopen at link time (-Wl,--wrap=fopen) so file access routes
+# through the Android asset manager; libraylib.a references __real_fopen, which
+# only exists when this flag is present. Without it, dlopen of the .so fails at
+# launch with "cannot locate symbol __real_fopen". (The pack itself does not
+# rely on the wrap -- see src/plat_android.c.)
+#
+# -z max-page-size=16384 gives the .so 16 KB-aligned LOAD segments. Google Play
+# requires 16 KB page-size support for apps targeting Android 15+; NDK r26's
+# linker still defaults to 4 KB, so we set it explicitly.
+ANDROID_LDFLAGS := -shared -L$(RAYLIB_ANDROID)/lib -lraylib \
+                   -Wl,--wrap=fopen \
+                   -Wl,-z,max-page-size=16384,-z,common-page-size=16384 \
+                   -llog -landroid -lEGL -lGLESv2 -lOpenSLES -lm -lc -ldl
+
+ANDROID_OBJ_DIR := build/obj-android
+# Object paths mirror the source tree: src/overlay.c, src/legacy/overlay.c and
+# src/modern/overlay.c are three different files with one basename.
+ANDROID_OBJ     := $(patsubst %.c,$(ANDROID_OBJ_DIR)/%.o,$(ANDROID_SRC)) \
+                   $(ANDROID_OBJ_DIR)/native_app_glue.o
+
+ANDROID_APK_DIR  := build/android
+ANDROID_LIB      := $(ANDROID_APK_DIR)/lib/$(ANDROID_ABI)/lib$(ANDROID_APP_NAME).so
+ANDROID_ASSETS   := build/android-assets
+ANDROID_APK      := build/$(ANDROID_APP_NAME).apk
+ANDROID_KEYSTORE ?= build/debug.keystore
+
+ANDROID_JAVA_SRC := android/java/com/danheskett/gloryofrome/GloryOfRomeActivity.java
+ANDROID_DEX      := build/dex/classes.dex
+JAVAC            ?= javac
+
+android: $(ANDROID_APK)
+
+# native_app_glue is vendored NDK source (not ours); it trips -Wextra's
+# unused-parameter, so build this one object without it to keep the log clean.
+$(ANDROID_OBJ_DIR)/native_app_glue.o: $(NATIVE_APP_GLUE)/android_native_app_glue.c
+	@mkdir -p $(dir $@)
+	$(ANDROID_CC) $(ANDROID_CFLAGS) -Wno-unused-parameter -c $< -o $@
+
+$(ANDROID_OBJ_DIR)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(ANDROID_CC) $(ANDROID_CFLAGS) -MMD -MP -c $< -o $@
+
+$(ANDROID_LIB): $(ANDROID_OBJ)
+	@mkdir -p $(dir $@)
+	$(ANDROID_CC) $(ANDROID_OBJ) -o $@ $(ANDROID_LDFLAGS)
+
+# The pack, staged where aapt's -A expects it. Built by the normal pack rule.
+$(ANDROID_ASSETS)/$(ANDROID_PACK).openbounty: $(PACK_DIR)/$(ANDROID_PACK).openbounty
+	@mkdir -p $(ANDROID_ASSETS)
+	cp $< $@
+
+# Compile GloryOfRomeActivity.java against the platform jar, then dex it.
+# -source/-target 8 keeps the bytecode dex-friendly; android.jar on the
+# classpath resolves the framework APIs.
+$(ANDROID_DEX): $(ANDROID_JAVA_SRC)
+	@rm -rf build/java-classes && mkdir -p build/java-classes $(dir $@)
+	$(JAVAC) -source 1.8 -target 1.8 -Xlint:-options \
+	    -classpath $(ANDROID_JAR) -d build/java-classes $(ANDROID_JAVA_SRC)
+	$(ANDROID_SDK_BT)/d8 --min-api $(ANDROID_API) --lib $(ANDROID_JAR) \
+	    --output build/dex build/java-classes/com/danheskett/gloryofrome/*.class
+
+# Throwaway debug keystore for signing. Real distributable builds sign with a
+# keystore supplied from a CI secret instead.
+$(ANDROID_KEYSTORE):
+	@mkdir -p $(dir $@)
+	keytool -genkeypair -keystore $@ -storepass android -keypass android \
+	    -alias $(ANDROID_APP_NAME) -keyalg RSA -keysize 2048 -validity 10000 \
+	    -dname "CN=Glory of Rome, O=OpenBounty, C=US"
+
+$(ANDROID_APK): $(ANDROID_LIB) $(ANDROID_DEX) $(ANDROID_KEYSTORE) \
+                $(ANDROID_ASSETS)/$(ANDROID_PACK).openbounty \
+                android/AndroidManifest.xml android/res/values/styles.xml
+	# -S compiles android/res (the fullscreen/cutout theme); -A adds the pack.
+	$(ANDROID_SDK_BT)/aapt package -f -M android/AndroidManifest.xml \
+	    -S android/res -A $(ANDROID_ASSETS) -I $(ANDROID_JAR) \
+	    --version-code $(ANDROID_VERSION_CODE) --version-name $(ANDROID_VERSION_NAME) \
+	    -F build/$(ANDROID_APP_NAME).unaligned.apk
+	# Store the native lib at lib/<abi>/ inside the APK (path relative to cwd).
+	(cd $(ANDROID_APK_DIR) && $(ANDROID_SDK_BT)/aapt add \
+	    ../../build/$(ANDROID_APP_NAME).unaligned.apk lib/$(ANDROID_ABI)/lib$(ANDROID_APP_NAME).so)
+	# Store classes.dex at the APK root (path relative to cwd = build/dex).
+	(cd build/dex && $(ANDROID_SDK_BT)/aapt add \
+	    ../$(ANDROID_APP_NAME).unaligned.apk classes.dex)
+	$(ANDROID_SDK_BT)/zipalign -f 4 \
+	    build/$(ANDROID_APP_NAME).unaligned.apk build/$(ANDROID_APP_NAME).aligned.apk
+	$(ANDROID_SDK_BT)/apksigner sign --ks $(ANDROID_KEYSTORE) \
+	    --ks-pass pass:android --key-pass pass:android \
+	    --out $@ build/$(ANDROID_APP_NAME).aligned.apk
+	@rm -f build/$(ANDROID_APP_NAME).unaligned.apk build/$(ANDROID_APP_NAME).aligned.apk
+	@echo "[android] built $@"
+
+-include $(ANDROID_OBJ:.o=.d)
 
 # ---------------------------------------------------------------------------
 # Distribution archives (consumed by GitHub Actions release workflow).
@@ -367,10 +529,12 @@ dist-mac: $(OUT_MAC)
 # All four emitted files are required to run it: the .js loader, the .wasm
 # module, the .data pack image, and the .html shell. Serve them over HTTP --
 # browsers refuse to fetch .wasm/.data over file://.
-dist-web: $(OUT_WEB)
+# Glory of Rome only: King's Bounty's pack is DOS-extracted and
+# copyright-restricted, so its web build never leaves this machine.
+dist-web: $(OUT_WEB_ROME)
 	@rm -rf $(STAGING)/web && mkdir -p $(STAGING)/web/openbounty-$(OPENBOUNTY_VERSION_SLUG)-web
-	cp build/web/openbounty.html build/web/openbounty.js \
-	   build/web/openbounty.wasm build/web/openbounty.data \
+	cp build/web/glory-of-rome/openbounty.html build/web/glory-of-rome/openbounty.js \
+	   build/web/glory-of-rome/openbounty.wasm build/web/glory-of-rome/openbounty.data \
 	   $(STAGING)/web/openbounty-$(OPENBOUNTY_VERSION_SLUG)-web/
 	sed "s/<version>/$(OPENBOUNTY_VERSION_DISPLAY)/g" $(DIST)/README.txt.in > $(STAGING)/web/openbounty-$(OPENBOUNTY_VERSION_SLUG)-web/README.txt
 	cp LICENSE NOTICES.md $(STAGING)/web/openbounty-$(OPENBOUNTY_VERSION_SLUG)-web/
@@ -531,4 +695,4 @@ clean:
 	rm -rf build
 	rm -f dist/*.tar.gz dist/*.zip
 
-.PHONY: all run release run-release windows windows-debug mac web web-serve clean test extract extract-pack dist dist-linux dist-windows dist-mac dist-web
+.PHONY: all run release run-release windows windows-debug mac web web-kings-bounty web-glory-of-rome web-serve android clean test extract extract-pack dist dist-linux dist-windows dist-mac dist-web

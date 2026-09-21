@@ -3,7 +3,7 @@
 **Generated** by `tools/romeart.py prompts` from `art/jobs/*.json`. Do not
 edit by hand: change the job file and run the tool again.
 
-357 jobs in all. **INSTALLED** marks a job whose output is in the pack;
+361 jobs in all. **INSTALLED** marks a job whose output is in the pack;
 everything else is the record of what was tried, which is why the notes matter —
 they say what a run produced and what it superseded. The routes themselves (which
 engine, which settings, and why) are in `docs/ART-PIPELINE.md`.
@@ -23,6 +23,13 @@ sweep --sweep`, `cropcentre.py` as `romeart.py crop`.
 - **prompt:** the oars sweep together from angled forward to angled back, hull, mast and sail still, smooth loop
 - **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=4`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=build/art/boat/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=7832`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
 - **Note:** Boat loop, reset 2026-09-07: custom action on the still, four frames, expansion on, one stroke named, hull and sail told to stay still.
+
+### charontes_attack
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (96x96, seed 6224)
+- **prompt:** he takes the rhomphaia in both hands and chops the long blade down and forward in a wide arc to the right, the way he faces, from upright beside his shoulder until the blade is out in front of him at knee height, then lifts it back to upright, the same weapon the whole time, both feet stay planted and the wings stay spread, smooth loop, no motion blur and no streaks
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=4`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=build/art/charontes/run02/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=6224`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
+- **Note:** Attack loop for the new vampires-slot troop (charontes.json seed 6220), 2026-09-20. Four frames, expansion on, the motion line naming the path, both endpoints, the direction and what stays still; the blur clause is the lesson from the baleares loop. run02: run01 never swung -- he only tilted the staff, and the hook head changed shape and colour from frame to frame. Replaced the wide arc with the straight thrust that worked on the lares and sarmatae loops, and named the hook as the same one throughout. run03: on the rhomphaia still (charontes.json run02, seed 6223), and two-handed -- the two-handed chop is what moved the ligures and cyclopes, who are the same heavy build.
 
 ## Hero classes
 
@@ -850,6 +857,13 @@ sweep --sweep`, `cropcentre.py` as `romeart.py crop`.
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=32`, `raw_only=true`, `seed=9001`, `style=rd_tile__single_tile`, `target=[32, 32]`, `width=32`
 - **Note:** 2026-09-07: seamless 32 canopy tile, the upper-terrain reference for the PixelLab forest set so every tile shares one tree grid.
 
+### charontes
+
+- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (96x96, seed 6223)
+- **prompt:** an Etruscan death demon, a heavy broad-shouldered man-shaped creature with blue-grey rotting flesh, a great hooked nose, pointed ears and two tusks in a snarling mouth, matted black hair, a short dark tunic belted at the waist, huge dark ragged wings spread behind his shoulders, a long rhomphaia held upright at rest in his right hand -- a tall spear shaft with a long straight sword blade for its head -- standing squarely facing right
+- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=6223`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
+- **Note:** New troop for the vampires slot (FLY|LEECH|UNDEAD), 2026-09-20, replacing the Striges. The owl the strix demands can only lunge with its feet, so every loop came out either bobbing 20px or twitching a talon; and recasting the strix as a winged woman would have made three near-identical silhouettes among the five fliers (lares, furiae, empusae). Charun's demons are Roman-Etruscan, undead, winged and heavy -- a bulk and a colour nothing else in the army has. Troop route, the settings the good troops use. run02: Dan's call, the bronze flesh-hook is replaced by a rhomphaia, a long spear shaft with a sword blade for a head. A bladed pole also gives the attack loop something to travel: run01 and run02 of the loop both refused to move the hook, the figure only brandishing it.
+
 ### forest_native_block
 
 - **Engine:** Retro Diffusion rd_plus__topdown_map (192x136, seed 8971)
@@ -1405,11 +1419,11 @@ sweep --sweep`, `cropcentre.py` as `romeart.py crop`.
 
 ### troop_portrait_furiae  — INSTALLED
 
-- **Engine:** Retro Diffusion rd_pro__default (128x128, seed 9996)
+- **Engine:** Retro Diffusion rd_pro__default (128x128, seed 9997)
 - **Pack path:** `art/portraits/troop_furiae.png`
-- **prompt:** a head-and-shoulders portrait, the face filling the frame, of a Fury, a dark winged woman with living snakes for hair and black feathered wings, burning eyes, holding a flaming red torch, a dark stormy underworld behind her
-- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `height=128`, `raw_only=true`, `reference_image_paths=["assets/glory-of-rome/art/troops/furiae_00.png"]`, `seed=9996`, `style=rd_pro__default`, `target=[128, 128]`, `width=128`
-- **Note:** Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation.
+- **prompt:** a head-and-shoulders portrait, the face filling the frame, of a Fury, a gaunt woman with ash-grey skin and hollow red eyes, live snakes writhing in her hair, black feathered wings rising behind her shoulders, a ragged black robe, a flaming orange torch raised beside her, a dark stormy underworld behind her
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `height=128`, `raw_only=true`, `reference_image_paths=["assets/glory-of-rome/art/troops/furiae_00.png"]`, `seed=9997`, `style=rd_pro__default`, `target=[128, 128]`, `width=128`
+- **Note:** Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation. Re-run 2026-09-20 to match the reworked sprite (furiae.json seed 6210): ash-grey skin and red eyes rather than a dark unlit face, and the torch flame orange, the accent that separates her from her own wings.
 
 ### troop_portrait_gigantes  — INSTALLED
 
@@ -1429,11 +1443,11 @@ sweep --sweep`, `cropcentre.py` as `romeart.py crop`.
 
 ### troop_portrait_lares  — INSTALLED
 
-- **Engine:** Retro Diffusion rd_pro__default (128x128, seed 9982)
+- **Engine:** Retro Diffusion rd_pro__default (128x128, seed 9983)
 - **Pack path:** `art/portraits/troop_lares.png`
-- **prompt:** a head-and-shoulders portrait, the face filling the frame, of a Lar, a small youthful Roman household spirit with a green laurel wreath in his hair, a bronze chest plate over a white tunic, a round bronze shield and a short bronze sword, glowing faintly, the hearth shrine of a Roman house behind him
-- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `height=128`, `raw_only=true`, `reference_image_paths=["assets/glory-of-rome/art/troops/lares_00.png"]`, `seed=9982`, `style=rd_pro__default`, `target=[128, 128]`, `width=128`
-- **Note:** Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation.
+- **prompt:** a head-and-shoulders portrait, the face filling the frame, of a Lar, a youthful winged Roman household spirit with a green laurel wreath in his hair and pale feathered wings rising behind his shoulders, a bronze chest plate over a white tunic, glowing faintly, the hearth shrine of a Roman house behind him
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `height=128`, `raw_only=true`, `reference_image_paths=["assets/glory-of-rome/art/troops/lares_00.png"]`, `seed=9983`, `style=rd_pro__default`, `target=[128, 128]`, `width=128`
+- **Note:** Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation. Re-run 2026-09-20 to match the reworked sprite: the troop is the FLY slot and now has wings, so the portrait shows them rising behind his shoulders; the shield and sword are dropped from the wording because the frame is head-and-shoulders and they never fitted.
 
 ### troop_portrait_larvae  — INSTALLED
 
@@ -2340,6 +2354,22 @@ sweep --sweep`, `cropcentre.py` as `romeart.py crop`.
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `frames_duration=4`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=build/art/fauni/run03/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=6146`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
 - **Note:** Batch of 2026-09-05. Animated at 96 with no padding from the 96 still (the 64 route doubled the branch twice); the frames are then scaled to 66% together and set with the feet on row 88. run03's branch shortened mid-swing; run04 names the full-length branch, new seed.
 
+### furiae  — INSTALLED
+
+- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (96x96, seed 6210)
+- **Pack path:** `art/troops/furiae_00.png`
+- **prompt:** a winged Fury, a gaunt woman with ash-grey skin and hollow red eyes, a ragged black robe torn off at the knee with a pale grey underlayer showing at the hem and sleeves, dark feathered wings spread wide behind her, live snakes writhing in her hair, a burning torch with an orange flame held upright at rest in her right hand, hovering a little above the ground with her bare feet pointed down
+- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=6210`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
+- **Note:** First job file this troop has ever had: the shipped furiae sprite predates the job record, so its prompt was never written down. Made 2026-09-20 in the adversarial troop review, where the sprite read as a black blob at map size -- the dark wings, dark robe and unlit face merged into one silhouette. The rewrite gives her ash-grey skin, a pale underlayer at hem and sleeves and an orange torch flame, so the figure separates from its own wings. Troop route, the settings the good troops use (sagittarii, sarmatae): 96 px, figure, background removed, expansion off.
+
+### furiae_attack
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (96x96, seed 6211)
+- **Pack path:** `art/troops/furiae_00..03.png`
+- **prompt:** a wide overhead swing, the burning torch carried from upright behind her head in a long arc down and out to full reach in front of her to the right, the way she faces, then back to upright, the wings thrown back and spread as she lunges, hovering with the feet off the ground, smooth loop, no motion blur and no streaks
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=4`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=build/art/furiae/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=6211`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
+- **Note:** First job file for this loop: the shipped furiae frames predate the job record. Made 2026-09-20 on the reworked still (furiae.json seed 6210), the four-frame custom action the other troops use, expansion on. The motion line names the swing's direction and forbids blur -- the lesson from the baleares loop, which drew the released sling as a violet smear -- and says the feet stay off the ground, because she flies (abilities FLY|MAGIC).
+
 ### gigantes
 
 - **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (96x96, seed 6232)
@@ -2355,20 +2385,21 @@ sweep --sweep`, `cropcentre.py` as `romeart.py crop`.
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `frames_duration=4`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=build/art/gigantes/run03/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=6232`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
 - **Note:** 2026-09-07: job copied whole from silvani_attack (the approved release loop); sideways hurl so the giant keeps the frame (Dan). Still is gigantes run03.
 
-### lares
+### lares  — INSTALLED
 
-- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (96x96, seed 6177)
-- **prompt:** a Roman household guardian spirit as a small armed protector, a youthful figure in a short white tunic and a bronze breastplate, a small round bronze shield on his left arm and a short sword held upright in his right hand, standing squarely on the ground facing right
-- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=6177`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
-- **Note:** Lares reworked 2026-09-06 from the Roman household shrine figure: the dancing Lar with rhyton and patera, glowing, full 96 troop route (no longer the 64 small-unit route). Earlier: a translucent ghost (run01, read badly on the map), then a child (run02). run04: the API's remove_bg left the whole magenta field on run03, seed incremented. run05: reworked as an armed guardian with a short sword (Dan): the dancing Lar of run04 read as a party boy, not a troop. run06: halo removed (Dan), seed incremented.
+- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (96x96, seed 6178)
+- **Pack path:** `art/troops/lares_00.png`
+- **prompt:** a Roman household guardian spirit, a small winged genius hovering a little above the ground with his feet together and pointed down, two pale feathered wings spread wide behind him, a short white tunic with a gold border, a small bronze breastplate, a round bronze shield on his left arm and a short sword held upright in his right hand, faintly glowing
+- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=6178`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
+- **Note:** Lares reworked 2026-09-06 from the Roman household shrine figure: the dancing Lar with rhyton and patera, glowing, full 96 troop route (no longer the 64 small-unit route). Earlier: a translucent ghost (run01, read badly on the map), then a child (run02). run04: the API's remove_bg left the whole magenta field on run03, seed incremented. run05: reworked as an armed guardian with a short sword (Dan): the dancing Lar of run04 read as a party boy, not a troop. run06: halo removed (Dan), seed incremented. Reworked 2026-09-20 in the adversarial troop review: the unit is the FLY slot (sprites, abilities FLY in game.json) and the sprite was a boy standing squarely on the ground -- the old prompt said so in as many words. The history reads ghost -> child -> dancing Lar -> armed guardian, each fix moving further from flight. Now a winged genius hovering, feet together and pointed down, wings spread wide, keeping the bronze armour and short sword that made him read as a troop.
 
 ### lares_attack
 
-- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (96x96, seed 6178)
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (96x96, seed 6179)
 - **Pack path:** `art/troops/lares_00..05.png`
-- **prompt:** short sword thrust forward to the right, feet planted, smooth loop
-- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=6`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=build/art/lares/run06/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=6178`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
-- **Note:** Lares loop (2026-09-06), the Sarmatae settings: custom action, six frames, prompt expansion on, tag prompt, the still untouched at 96.
+- **prompt:** short sword thrust forward to the right, the way he faces, hovering in place with the feet together and off the ground, the wings beating once and spreading wide again, smooth loop, no motion blur and no streaks
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=6`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=build/art/lares/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=6179`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
+- **Note:** Lares loop (2026-09-06), the Sarmatae settings: custom action, six frames, prompt expansion on, tag prompt, the still untouched at 96. Re-run 2026-09-20 on the winged still (lares.json seed 6178). 'Feet planted' is gone -- the unit flies -- and the wings are given the beat; the blur clause is the lesson from the baleares loop, which drew the released sling as a violet smear.
 
 ### larvae
 
@@ -2504,17 +2535,17 @@ sweep --sweep`, `cropcentre.py` as `romeart.py crop`.
 
 ### striges
 
-- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (96x96, seed 5601)
-- **prompt:** a screech-owl vampire, a hunched winged creature with owl features and a human face, bloodied talons, membranous wings spread
-- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=5601`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
-- **Note:** Prompt as written in ART-WORKLIST. Neutral stance so the attack is the travel the animation spends. The troop style appends the full-length profile, game-sprite and magenta-background clauses. Animate at 96 without padding.
+- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (96x96, seed 5604)
+- **prompt:** a strix, a vampire woman in the shape of an owl: the hunched body and barred brown feathers of a great owl with a ruff of pale feathers at the neck, but a gaunt pale human woman's face where the owl's face would be, black eyes and a lipless mouth, dark hair among the head feathers, feathered wings half folded at her sides rather than spread, long hooked talons wet with blood, hunched and facing right, nothing under her feet
+- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=5604`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
+- **Note:** Prompt as written in ART-WORKLIST. Neutral stance so the attack is the travel the animation spends. The troop style appends the full-length profile, game-sprite and magenta-background clauses. Animate at 96 without padding. Reworked 2026-09-20 in the adversarial troop review: the 2026-09-05 sprite had pink-mauve bat wings on a 56px body and read as an imp, not the screech-owl the name and the lore promise. 'Membranous wings' was the fault -- replaced by broad feathered owl wings and barred brown plumage, and the body told to be the size of a man so it fills the tile like the recent troops. run02: run01 dropped the human face entirely and drew a plain great horned owl, wings spread the full 96 px -- wildlife, not a vampire, and too wide for its neighbours on the grid. The face is now named first and the wings told to stay half folded. run03: run02 got the face and the folded wings right but baked a brown ellipse of bare ground under the talons -- 'standing on bare ground' in the prompt. That clause is gone and the ground is forbidden outright; everything else is run02 unchanged.
 
 ### striges_attack
 
-- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (96x96, seed 5602)
-- **prompt:** it lunges forward and down to the right with both taloned feet thrust out in front of it, raking downward, the wings beating back behind it, then it springs back up to where it started with the wings spread, the human face keeps facing forward
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `frames_duration=4`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=build/art/striges/run01/01_scaled66.png`, `raw_only=true`, `return_spritesheet=true`, `seed=5602`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
-- **Note:** Animated at 96 with no padding from the run01 still scaled to 66% through the API's k-centroid tool (black flatten, alpha from coverage) and re-centred with the feet on row 88, because the still spans 94 of 96 columns. Motion line: path, two endpoints, then what stays still.
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (96x96, seed 5606)
+- **prompt:** it lunges forward to the right, the way it faces, with both taloned feet thrust out in front of it, raking downward, the wings beating back behind it, then it draws back to where it started, the head stays at the same height above the ground the whole time and the pale human face keeps facing right, smooth loop, no motion blur and no streaks
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `frames_duration=4`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=build/art/striges/run03/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=5606`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
+- **Note:** Re-run 2026-09-20 on the reworked still (striges.json seed 5604, run03). The 2026-09-05 loop animated a still scaled to 66% because that one spanned 94 of 96 columns; the new still is 77x64 with its wings folded, so it is animated at full size with no padding like the recent troops. The blur clause is the lesson from the baleares loop. run02: run01 pounced well but dropped the whole body nearly 20px on the last frame (top edge rows 10, 11, 10, 28), so the creature bobs against its cell; the line now holds the head at one height and says draw back rather than spring.
 
 ### tirones
 

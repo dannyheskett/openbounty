@@ -2,6 +2,9 @@
 <!--
   Emscripten shell for the `web` target (see the Makefile's web: rule).
 
+  A template: the Makefile copies it per pack into build/web/<pack>/shell.html
+  with @@PACK@@ replaced by that build's preloaded pack path.
+
   Three jobs beyond hosting the canvas:
     1. Mount IDBFS at /saves and pull existing saves in BEFORE main() runs,
        so the save-slot picker sees them. engine/savepath.c's __EMSCRIPTEN__
@@ -85,9 +88,10 @@
     canvasEl.addEventListener('click', function () { canvasEl.focus(); });
 
     var Module = {
-      // Reuses main.c's existing --pack short-circuit; the path matches the
-      // --preload-file mapping in the Makefile's web: rule.
-      arguments: ['--pack', '/assets/kings-bounty.openbounty'],
+      // Reuses main.c's existing --pack short-circuit. @@PACK@@ is substituted
+      // by the Makefile's WEB_RULE with the path --preload-file maps this
+      // build's pack to, so each build/web/<pack>/ shell names its own pack.
+      arguments: ['--pack', '@@PACK@@'],
       canvas: canvasEl,
       print: function (text) { console.log(text); },
       printErr: function (text) { console.error(text); },

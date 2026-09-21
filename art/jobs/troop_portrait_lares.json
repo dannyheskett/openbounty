@@ -1,10 +1,10 @@
 {
   "id": "troop_portrait_lares",
-  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Lar, a small youthful Roman household spirit with a green laurel wreath in his hair, a bronze chest plate over a white tunic, a round bronze shield and a short bronze sword, glowing faintly, the hearth shrine of a Roman house behind him",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Lar, a youthful winged Roman household spirit with a green laurel wreath in his hair and pale feathered wings rising behind his shoulders, a bronze chest plate over a white tunic, glowing faintly, the hearth shrine of a Roman house behind him",
   "style": "rd_pro__default",
   "width": 128,
   "height": 128,
-  "seed": 9982,
+  "seed": 9983,
   "bypass_prompt_expansion": false,
   "raw_only": true,
   "figure": false,
@@ -16,5 +16,5 @@
     "assets/glory-of-rome/art/troops/lares_00.png"
   ],
   "_pack_path": "art/portraits/troop_lares.png",
-  "_note": "Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation."
+  "_note": "Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation. Re-run 2026-09-20 to match the reworked sprite: the troop is the FLY slot and now has wings, so the portrait shows them rising behind his shoulders; the shield and sword are dropped from the wording because the frame is head-and-shoulders and they never fitted."
 }

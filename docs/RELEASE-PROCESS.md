@@ -166,8 +166,8 @@ make test           # build + run the full test suite
 make release        # Linux release binary (build/release/openbounty, static libgcc)
 make windows        # Win64 + Win32 cross-compile (needs mingw-w64)
 make mac            # macOS universal (only on macOS)
-make web            # WebAssembly bundle (needs emsdk on PATH)
-make web-serve      # build + serve the web build on localhost:8080
+make web            # WebAssembly bundles, one per pack (needs emsdk on PATH)
+make web-serve      # build + serve them on localhost:8080/<pack>/openbounty.html
 make dist-linux     # Linux release archive in dist/
 make dist-windows   # Windows zips in dist/
 make dist-mac       # macOS zip in dist/ (only on macOS)

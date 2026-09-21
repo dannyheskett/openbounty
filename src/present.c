@@ -1,4 +1,5 @@
 #include "present.h"
+#include "safe_area.h"
 #include "layout.h"
 #include "touch.h"
 #include "bfont.h"
@@ -160,7 +161,20 @@ void present_scaled(RenderTexture2D rt) {
 
     int win_w = GetScreenWidth();
     int win_h = GetScreenHeight();
-    int scale = present_scale(win_w, win_h);
+
+    // The window minus any display cutout / gesture-bar insets (safe_area.c).
+    // Every inset is zero on desktop, web and iOS, so this is the whole window
+    // there; on Android it is what the camera notch and the navigation bar
+    // leave, and the game is fitted and centred inside it rather than under
+    // them. A degenerate inset (wider than the window) is ignored.
+    SafeArea sa = safe_area_get();
+    int safe_x = sa.left, safe_y = sa.top;
+    int safe_w = win_w - sa.left - sa.right;
+    int safe_h = win_h - sa.top  - sa.bottom;
+    if (safe_w <= 0) { safe_x = 0; safe_w = win_w; }
+    if (safe_h <= 0) { safe_y = 0; safe_h = win_h; }
+
+    int scale = present_scale(safe_w, safe_h);
 
     int dst_w = CL_SCREEN_W * scale;
     int dst_h = CL_SCREEN_H * scale;
@@ -171,8 +185,8 @@ void present_scaled(RenderTexture2D rt) {
     Rectangle src = { 0, 0,
                       (float)rt.texture.width,
                       -(float)rt.texture.height };
-    Rectangle dst = { (float)((win_w - dst_w) / 2),
-                      (float)((win_h - dst_h) / 2),
+    Rectangle dst = { (float)(safe_x + (safe_w - dst_w) / 2),
+                      (float)(safe_y + (safe_h - dst_h) / 2),
                       (float)dst_w, (float)dst_h };
     DrawTexturePro(rt.texture, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
 

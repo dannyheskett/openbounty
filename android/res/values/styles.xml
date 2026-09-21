@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fullscreen, no title bar, and (API 28+) allow the app to draw into the
+         display cutout area on the short edges so there is no black letterbox
+         band beside the game. Ignored on older devices. The insets themselves
+         are forwarded to native (src/safe_area.c) so the frame stays clear of
+         the camera and the gesture bar. -->
+    <style name="GloryOfRomeTheme" parent="@android:style/Theme.NoTitleBar.Fullscreen">
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+    </style>
+</resources>

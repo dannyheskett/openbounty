@@ -18,6 +18,15 @@ typedef struct Pack Pack;
 // Open a pack from `path`. Auto-detects: directory -> loose-tree mode,
 // regular file -> ZIP mode. Returns NULL on failure (logs to stderr).
 Pack *pack_open(const char *path);
+
+// Open a ZIP pack already in memory. For platforms whose packs do not live on
+// a filesystem the C library can open: Android ships the pack inside the APK,
+// where only the asset manager can read it, so the shell hands the bytes over
+// instead. `name` is the pack's display path (used for id/name fallback and
+// diagnostics); the bytes are copied out as usual and the caller keeps
+// ownership of `data`.
+Pack *pack_open_mem(const void *data, size_t size, const char *name);
+
 void  pack_close(Pack *p);
 
 // Borrow bytes for pack-relative entry `rel` (e.g. "art/font/kb-font.png").

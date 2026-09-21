@@ -244,21 +244,18 @@ static bool walk_dir(Pack *p, const char *root, const char *prefix) {
 // ZIP loader
 // ---------------------------------------------------------------------------
 
-static bool load_zip(Pack *p, const char *path) {
-    mz_zip_archive zip = {0};
-    if (!mz_zip_reader_init_file(&zip, path, 0)) {
-        fprintf(stdout, "pack: not a valid zip: %s\n", path);
-        return false;
-    }
-    mz_uint n = mz_zip_reader_get_num_files(&zip);
+// Shared by the file and memory loaders: everything once the reader is open.
+// Ends the reader before returning, whatever the outcome.
+static bool load_zip_entries(Pack *p, mz_zip_archive *zip) {
+    mz_uint n = mz_zip_reader_get_num_files(zip);
     bool ok = true;
     for (mz_uint i = 0; i < n; i++) {
         mz_zip_archive_file_stat st;
-        if (!mz_zip_reader_file_stat(&zip, i, &st)) { ok = false; continue; }
+        if (!mz_zip_reader_file_stat(zip, i, &st)) { ok = false; continue; }
         // Skip directory entries.
         if (st.m_is_directory) continue;
         size_t sz = 0;
-        void *blob = mz_zip_reader_extract_to_heap(&zip, i, &sz, 0);
+        void *blob = mz_zip_reader_extract_to_heap(zip, i, &sz, 0);
         if (!blob) { ok = false; continue; }
         // miniz uses default malloc; we own the buffer now and will free
         // it via standard free() in pack_close. miniz's MZ_MALLOC is
@@ -267,8 +264,26 @@ static bool load_zip(Pack *p, const char *path) {
             ok = false;
         }
     }
-    mz_zip_reader_end(&zip);
+    mz_zip_reader_end(zip);
     return ok;
+}
+
+static bool load_zip(Pack *p, const char *path) {
+    mz_zip_archive zip = {0};
+    if (!mz_zip_reader_init_file(&zip, path, 0)) {
+        fprintf(stdout, "pack: not a valid zip: %s\n", path);
+        return false;
+    }
+    return load_zip_entries(p, &zip);
+}
+
+static bool load_zip_mem(Pack *p, const void *data, size_t size) {
+    mz_zip_archive zip = {0};
+    if (!mz_zip_reader_init_mem(&zip, data, size, 0)) {
+        fprintf(stdout, "pack: not a valid zip in memory (%zu bytes)\n", size);
+        return false;
+    }
+    return load_zip_entries(p, &zip);
 }
 
 // ---------------------------------------------------------------------------
@@ -277,11 +292,13 @@ static bool load_zip(Pack *p, const char *path) {
 // out_hex receives a 16-char lowercase hex string + NUL.
 // ---------------------------------------------------------------------------
 
+#define FNV64_OFFSET 0xcbf29ce484222325ull
+#define FNV64_PRIME  0x100000001b3ull
+
 static bool hash_zip_file(const char *path, char *out_hex /*[17]*/) {
     FILE *f = fopen(path, "rb");
     if (!f) return false;
-    unsigned long long h = 0xcbf29ce484222325ull;
-    const unsigned long long FNV64_PRIME = 0x100000001b3ull;
+    unsigned long long h = FNV64_OFFSET;
     unsigned char buf[64 * 1024];
     size_t n;
     while ((n = fread(buf, 1, sizeof buf, f)) > 0) {
@@ -295,9 +312,46 @@ static bool hash_zip_file(const char *path, char *out_hex /*[17]*/) {
     return true;
 }
 
+// The same hash over bytes already in memory, so a pack opened from the APK
+// gets the identical identity string it would have had from disk.
+static void hash_zip_mem(const void *data, size_t size, char *out_hex /*[17]*/) {
+    const unsigned char *b = (const unsigned char *)data;
+    unsigned long long h = FNV64_OFFSET;
+    for (size_t i = 0; i < size; i++) {
+        h ^= b[i];
+        h *= FNV64_PRIME;
+    }
+    snprintf(out_hex, 17, "%016llx", h);
+}
+
 // ---------------------------------------------------------------------------
 // Public open/close
 // ---------------------------------------------------------------------------
+
+// Identity for a pack whose entries are loaded: game.json first, then the
+// filename. Frees and returns NULL if the load produced nothing.
+static Pack *finish_open(Pack *p, bool ok, const char *name) {
+    if (!ok || p->n_entries == 0) {
+        fprintf(stdout, "pack: failed to load %s (entries=%d)\n",
+                name, p->n_entries);
+        pack_close(p);
+        return NULL;
+    }
+    parse_identity(p);
+    // Fall back to filename-derived id/name if game.json lacked them.
+    if (!p->id[0] || !p->name[0]) {
+        const char *base = strrchr(name, PATHSEP);
+        base = base ? base + 1 : name;
+        char stem[64];
+        snprintf(stem, sizeof stem, "%s", base);
+        char *dot = strrchr(stem, '.');
+        if (dot && strcmp(dot, ".openbounty") == 0) *dot = '\0';
+        if (!p->id[0])   snprintf(p->id,   sizeof p->id,   "%s", stem);
+        if (!p->name[0]) snprintf(p->name, sizeof p->name, "%s", stem);
+    }
+    if (!p->kind[0]) snprintf(p->kind, sizeof p->kind, "base");
+    return p;
+}
 
 Pack *pack_open(const char *path) {
     if (!path || !path[0]) return NULL;
@@ -314,26 +368,19 @@ Pack *pack_open(const char *path) {
         ok = load_zip(p, path);
         if (ok) hash_zip_file(path, p->hash);
     }
-    if (!ok || p->n_entries == 0) {
-        fprintf(stdout, "pack: failed to load %s (entries=%d)\n",
-                path, p->n_entries);
-        pack_close(p);
-        return NULL;
-    }
-    parse_identity(p);
-    // Fall back to filename-derived id/name if game.json lacked them.
-    if (!p->id[0] || !p->name[0]) {
-        const char *base = strrchr(path, PATHSEP);
-        base = base ? base + 1 : path;
-        char stem[64];
-        snprintf(stem, sizeof stem, "%s", base);
-        char *dot = strrchr(stem, '.');
-        if (dot && strcmp(dot, ".openbounty") == 0) *dot = '\0';
-        if (!p->id[0])   snprintf(p->id,   sizeof p->id,   "%s", stem);
-        if (!p->name[0]) snprintf(p->name, sizeof p->name, "%s", stem);
-    }
-    if (!p->kind[0]) snprintf(p->kind, sizeof p->kind, "base");
-    return p;
+    return finish_open(p, ok, path);
+}
+
+Pack *pack_open_mem(const void *data, size_t size, const char *name) {
+    if (!data || size == 0) return NULL;
+    if (!name || !name[0]) name = "pack";
+    Pack *p = (Pack *)calloc(1, sizeof *p);
+    if (!p) return NULL;
+    snprintf(p->path, sizeof p->path, "%s", name);
+
+    bool ok = load_zip_mem(p, data, size);
+    if (ok) hash_zip_mem(data, size, p->hash);
+    return finish_open(p, ok, name);
 }
 
 void pack_close(Pack *p) {

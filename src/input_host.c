@@ -70,6 +70,15 @@ void input_host_note_gamepad(void) { s_pad_seen = true; }
 
 bool input_key_pressed(int key) {
     if (guarded()) return false;
+#if defined(PLATFORM_ANDROID)
+    // The system Back gesture is Android's universal "go back", so it answers
+    // wherever the shell asks about Escape -- every menu, view and prompt
+    // dismiss path gets it without a platform branch of its own. Deliberately
+    // NOT through note_key: Back is not a keyboard, and latching one would
+    // switch text entry from the letter selector to typing on a device with
+    // no keys.
+    if (key == KEY_ESCAPE && IsKeyPressed(KEY_BACK)) return true;
+#endif
     return note_key(IsKeyPressed(key)) || injected_has(key);
 }
 

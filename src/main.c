@@ -30,6 +30,7 @@
 #include "screenshot.h"
 #include "pack.h"
 #include "pack_select.h"
+#include "plat_android.h"
 #include "extract.h"
 #include "version.h"
 #include "fatal.h"
@@ -251,6 +252,11 @@ int shell_run_game(int argc, char **argv) {
     // keeps stderr's old promptness -- every line flushes immediately, and an abort/crash
     // path (e.g. nav_fail) cannot lose its dump to an unflushed block buffer.
     setvbuf(stdout, NULL, _IOLBF, 0);
+
+    // Android has no command line and no writable working directory: the save
+    // root is resolved from the activity before anything can read a slot.
+    // A no-op everywhere else.
+    plat_android_boot();
 
     // Minimal CLI parsing.
     bool want_fullscreen = false;
@@ -511,12 +517,18 @@ int shell_run_game(int argc, char **argv) {
         return dr.won ? 0 : 1;
     }
 
+    // Android ships exactly one pack, inside the APK: no discovery, no picker,
+    // no CLI. Opened here so the resolve-and-open block below is skipped whole.
+    char pack_path[PACK_ENTRY_PATH_MAX];
+    Pack *pack = plat_android_open_pack();
+    if (pack) snprintf(pack_path, sizeof pack_path, "%s", ANDROID_PACK_ASSET);
+
     // Resolve --pack <name|path>, or auto-discover. Discovery walks (in
     // order): cwd zips, <user-data>/openbounty zips, <exe>/assets zips,
     // <exe>/assets/<sub>/game.json loose trees. If nothing is found we
     // try a first-run KB.EXE extraction in cwd; failing that, error out
     // with a platform-specific dialog explaining the install steps.
-    char pack_path[PACK_ENTRY_PATH_MAX];
+    if (!pack) {
     if (pack_arg && pack_arg[0]) {
         if (!pack_resolve_arg(pack_arg, pack_path, sizeof pack_path)) {
             char body[1024];
@@ -651,7 +663,8 @@ int shell_run_game(int argc, char **argv) {
         free(entries);
     }
 
-    Pack *pack = pack_open(pack_path);
+    pack = pack_open(pack_path);
+    }   // !pack (non-Android)
     if (!pack) {
         char body[1024];
         snprintf(body, sizeof body,

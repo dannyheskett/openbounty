@@ -1,0 +1,20 @@
+{
+  "id": "charontes_attack",
+  "style": "rd_advanced_animation__custom_action",
+  "prompt": "he takes the rhomphaia in both hands and chops the long blade down and forward in a wide arc to the right, the way he faces, from upright beside his shoulder until the blade is out in front of him at knee height, then lifts it back to upright, the same weapon the whole time, both feet stay planted and the wings stay spread, smooth loop, no motion blur and no streaks",
+  "input_image_path": "build/art/charontes/run02/01_raw.png",
+  "input_image_keep_alpha": true,
+  "width": 96,
+  "height": 96,
+  "target": [
+    96,
+    96
+  ],
+  "figure": false,
+  "raw_only": true,
+  "return_spritesheet": true,
+  "bypass_prompt_expansion": false,
+  "frames_duration": 4,
+  "seed": 6224,
+  "_note": "Attack loop for the new vampires-slot troop (charontes.json seed 6220), 2026-09-20. Four frames, expansion on, the motion line naming the path, both endpoints, the direction and what stays still; the blur clause is the lesson from the baleares loop. run02: run01 never swung -- he only tilted the staff, and the hook head changed shape and colour from frame to frame. Replaced the wide arc with the straight thrust that worked on the lares and sarmatae loops, and named the hook as the same one throughout. run03: on the rhomphaia still (charontes.json run02, seed 6223), and two-handed -- the two-handed chop is what moved the ligures and cyclopes, who are the same heavy build."
+}
