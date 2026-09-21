@@ -20,6 +20,9 @@ sleep 20
 
 adb exec-out screencap -p > android-shot.png || true
 
+echo "--- the game's own stdout, piped into logcat ---"
+adb logcat -d -s openbounty:* || true
+
 echo "--- logcat (everything since launch) ---"
 adb logcat -d > android-logcat.txt || true
 tail -300 android-logcat.txt
