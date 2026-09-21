@@ -56,10 +56,15 @@ int present_get_scale(void) {
 
 int present_max_scale(int win_w, int win_h) {
     if (!CL_IS_MODERN) return CL_SCALE_MAX;
-    // A fixed buffer is shown at 1x, 2x or 3x: the largest that fits.
+    // A declared buffer is shown at the largest whole scale that fits. The
+    // measure is the DECLARED size, not the current buffer: the map pane grows
+    // to fill what is left, and measuring against the grown buffer would feed
+    // back on itself (bigger pane -> smaller fit -> smaller pane).
     if (CL_IS_NATIVE) {
-        int fx = win_w / CL_SCREEN_W;
-        int fy = win_h / CL_SCREEN_H;
+        int floor_w = g_layout.native_w > 0 ? g_layout.native_w : CL_SCREEN_W;
+        int floor_h = g_layout.native_h > 0 ? g_layout.native_h : CL_SCREEN_H;
+        int fx = win_w / floor_w;
+        int fy = win_h / floor_h;
         int fit = (fx < fy) ? fx : fy;
         if (fit < 1) fit = 1;
         if (fit > CL_SCALE_MAX_NATIVE) fit = CL_SCALE_MAX_NATIVE;
@@ -87,8 +92,10 @@ int present_max_scale(int win_w, int win_h) {
 }
 
 int present_scale(int win_w, int win_h) {
-    int sx = win_w / CL_SCREEN_W;
-    int sy = win_h / CL_SCREEN_H;
+    int floor_w = (CL_IS_NATIVE && g_layout.native_w > 0) ? g_layout.native_w : CL_SCREEN_W;
+    int floor_h = (CL_IS_NATIVE && g_layout.native_h > 0) ? g_layout.native_h : CL_SCREEN_H;
+    int sx = win_w / floor_w;
+    int sy = win_h / floor_h;
     int scale = (sx < sy) ? sx : sy;
 
     // Legacy is left exactly as it was before render modes existed: auto-fit
@@ -110,15 +117,13 @@ int present_scale(int win_w, int win_h) {
     // furniture through tile_w/tile_h and ui_scale, so scaling the buffer on
     // top of that would enlarge everything twice.
     //
-    // The setting is whatever the player chose, clamped to what the window can
-    // actually show so the menu's label never disagrees with the picture.
-    //
-    // A fixed buffer (render.native_w/native_h) is the other way about: the
-    // buffer never changes, so the window is what the zoom sizes. The blit is
-    // still the chosen scale clamped to the window, which is what keeps a
-    // fullscreen or hand-resized window letterboxed rather than cropped.
-    int fit = present_max_scale(win_w, win_h);
-    return (s_scale < fit) ? s_scale : fit;
+    // There is no zoom setting. The scale is the largest whole number the
+    // surface can show, everywhere: the desktop window opens at the declared
+    // buffer times that scale, and mobile and the web canvas take whatever
+    // surface they are given. What the scale leaves over goes to the map pane
+    // (layout_grow_native), so a bigger screen buys more world rather than
+    // bigger pixels or wider black bars.
+    return present_max_scale(win_w, win_h);
 }
 
 void present_zoom_window(int scale) {
@@ -129,17 +134,28 @@ void present_zoom_window(int scale) {
     frame_host_window_size_set(CL_SCREEN_W * scale, CL_SCREEN_H * scale);
 }
 
+static bool s_grow_world;   // see present_allow_growth (present.h)
+
+void present_allow_growth(bool on) { s_grow_world = on; }
+
 bool present_refit(RenderTexture2D *rt) {
     if (!rt) return false;
     int win_w = frame_host_window_width();
     int win_h = frame_host_window_height();
     if (CL_IS_NATIVE) {
-        // The buffer never follows the window, but the zoom does: the target
-        // is the buffer times the zoom, reallocated when the zoom changes.
+        // The buffer follows the window in ONE dimension: the map pane grows
+        // in whole tiles to fill what the whole-number scale leaves over
+        // (layout_grow_native). Everything else the pack sized keeps its size
+        // and re-centres. The target is then the buffer times the zoom.
         int z = present_scale(win_w, win_h);
+        // Off the world map the buffer goes back to exactly what the pack
+        // declared: passing the declared size shrinks the pane to its floor.
+        bool grown = s_grow_world
+            ? layout_grow_native(win_w, win_h, z)
+            : layout_grow_native(0, 0, 1);
         int w, h;
         present_target_size(win_w, win_h, &w, &h);
-        bool changed = (rt->texture.width != w || rt->texture.height != h);
+        bool changed = grown || (rt->texture.width != w || rt->texture.height != h);
         if (changed) {
             gfx_target_free(*rt);
             *rt = gfx_target_create(w, h);

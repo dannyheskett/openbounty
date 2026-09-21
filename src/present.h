@@ -26,6 +26,16 @@
 //
 // Legacy geometry is fixed, so layout_fit_window is a no-op and this always
 // returns false.
+// Whether the NEXT refit may grow the map pane past the declared buffer
+// (layout_grow_native). Only world exploration may: a town, a castle, the
+// battlefield, the title and every dialog keep the size the pack declared and
+// are letterboxed, because their layouts are drawn for that size and a wider
+// buffer would leave them adrift in it.
+//
+// Default off, and every screen that is not the world leaves it off, so a new
+// screen cannot grow by accident.
+void present_allow_growth(bool on);
+
 bool present_refit(RenderTexture2D *rt);
 
 // The size the render target should be for this window: the screen size, or

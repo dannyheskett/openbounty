@@ -73,27 +73,58 @@ TEST native_scale_is_one_two_or_three(void) {
     ASSERT_EQ(2, present_max_scale(1664, 1080));
     ASSERT_EQ(3, present_max_scale(2496, 1620));
     ASSERT_EQ(3, present_max_scale(7680, 4320));   // capped, never 4x
-    present_set_scale(3);
-    ASSERT_EQ(2, present_scale(1920, 1080));        // clamped to the window
+    // There is no zoom setting any more: the scale is the largest whole
+    // number the surface can show, and nothing else.
+    ASSERT_EQ(2, present_scale(1920, 1080));
     ASSERT_EQ(3, present_scale(2496, 1620));
-    present_set_scale(1);
-    ASSERT_EQ(1, present_scale(2496, 1620));        // the choice, not the fit
+    ASSERT_EQ(1, present_scale(1000, 600));
+    PASS();
+}
+
+TEST native_pane_grows_and_nothing_else_does(void) {
+    rome_like();
+    int base_w = CL_SCREEN_W, base_h = CL_SCREEN_H;
+    int frame_l = CL_FRAME_LEFT_W, sidebar = CL_SIDEBAR_W, bar = CL_BAR_H;
+
+    // A surface exactly the declared buffer changes nothing.
+    ASSERT_FALSE(layout_grow_native(base_w, base_h, 1));
+    ASSERT_EQ(base_w, CL_SCREEN_W);
+
+    // A phone-shaped surface at 2x: the buffer widens, in whole tiles.
+    ASSERT(layout_grow_native(2400, 1080, 2));
+    ASSERT(CL_SCREEN_W > base_w);
+    ASSERT_EQ(0, (CL_SCREEN_W - base_w) % CL_TILE_W);   // whole tiles only
+    ASSERT_EQ(1, CL_MAP_TILES_W % 2);                   // odd: the hero centres
+    ASSERT(CL_SCREEN_W <= 2400 / 2);                    // never wider than the surface
+
+    // The furniture the pack sized is untouched -- this is what keeps every
+    // dialog, town and combat screen exactly as it was.
+    ASSERT_EQ(frame_l, CL_FRAME_LEFT_W);
+    ASSERT_EQ(sidebar, CL_SIDEBAR_W);
+    ASSERT_EQ(bar, CL_BAR_H);
+
+    // Idempotent: the answer depends on the surface, not on the current pane.
+    ASSERT_FALSE(layout_grow_native(2400, 1080, 2));
+
+    // And it shrinks back to the floor, never below it.
+    ASSERT(layout_grow_native(832, 540, 1));
+    ASSERT_EQ(base_w, CL_SCREEN_W);
+    ASSERT_EQ(base_h, CL_SCREEN_H);
     PASS();
 }
 
 TEST native_target_is_the_buffer_times_the_zoom(void) {
     rome_like();
     int w, h;
-    present_set_scale(3);
-    present_target_size(1920, 1080, &w, &h);     // 3x does not fit, 2x does
+    // The target is the buffer times the scale the surface allows.
+    present_target_size(1920, 1080, &w, &h);
     ASSERT_EQ(832 * 2, w);
     ASSERT_EQ(540 * 2, h);
     present_target_size(832, 540, &w, &h);
     ASSERT_EQ(832, w);
     ASSERT_EQ(540, h);
-    present_set_scale(1);
-    present_target_size(2496, 1620, &w, &h);     // the choice, not the fit
-    ASSERT_EQ(832, w);
+    present_target_size(2496, 1620, &w, &h);
+    ASSERT_EQ(832 * 3, w);
     legacy();
     present_target_size(1920, 1080, &w, &h);     // legacy: the screen, never zoomed
     ASSERT_EQ(320, w);
@@ -140,6 +171,7 @@ SUITE(unit_layout_suite) {
     RUN_TEST(native_buffer_fixes_the_screen_and_widens_the_bands);
     RUN_TEST(native_buffer_ignores_the_window);
     RUN_TEST(native_scale_is_one_two_or_three);
+    RUN_TEST(native_pane_grows_and_nothing_else_does);
     RUN_TEST(native_target_is_the_buffer_times_the_zoom);
     RUN_TEST(legacy_geometry_is_unchanged);
     RUN_TEST(modern_without_native_still_follows_the_window);

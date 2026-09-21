@@ -2411,6 +2411,35 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   (`<name>_00..03.png`). Tiles are cached as textures by `src/tile_cache.c`;
   sprite sheets load via `src/sprites.c`. The end cartoon is `src/end_cartoon.c`.
 
+- **REQ-528.** **The scale is the surface's, and the world map spends what it
+  leaves.** Modern mode has no zoom setting: `present_scale` returns the
+  largest whole number the surface can show, measured against the buffer the
+  pack declared (`render.native_w/native_h`), which is a **floor and not a
+  fixed size**. What that scale leaves over goes to the map viewport, in whole
+  tiles, an odd count so the hero keeps the centre cell
+  (`layout_grow_native`, `src/layout.c`).
+
+  Only world exploration grows. `present_allow_growth` is off by default and
+  set for one frame by the world frame alone (`shell_present_frame`,
+  `src/shell_frame.c`, and the main loop's draw), so a town, a castle, the
+  battlefield, the title and every dialog refit to the declared buffer and are
+  letterboxed: their layouts are drawn for that size and a wider buffer would
+  leave them adrift in it. Nothing the pack sized ever changes -- the chrome
+  bands, the sidebar and its gap, the status and bar heights, every panel --
+  they re-centre, and that is all.
+
+  The desktop window opens at the declared buffer times the largest whole
+  scale the monitor can show, so it is always an exact multiple and never an
+  arbitrary size (`src/main.c`). Mobile and the web canvas take whatever
+  surface they are given. Legacy mode is untouched: fixed 320x200, auto-fit
+  with the 2x floor, and King's Bounty's gallery stays byte-identical.
+
+- **REQ-529.** **No Exit on a phone.** The title menu's Exit row and the game
+  menu's Exit footer are compiled out under `PLATFORM_IOS` and
+  `PLATFORM_ANDROID` (`src/startup.c`, `src/modern/gamemenu.c`). iOS has no
+  notion of an app quitting itself and Apple refuses a control that says
+  otherwise; Android's system handles it. Desktop and web keep both rows.
+
 ---
 
 ## 34. CLI, packs, and platform

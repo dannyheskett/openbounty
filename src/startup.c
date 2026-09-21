@@ -480,11 +480,22 @@ static void draw_title_menu(const Sprites *sprites, const char **labels, int cou
 
 static bool run_title_menu(const Resources *res, const Sprites *sprites,
                            RenderTexture2D *rt, StartupChoice *out) {
+    // No Exit on a phone: iOS has no notion of quitting an app and Apple
+    // rejects a control that claims otherwise, and on Android the system
+    // handles it. Everywhere else the row stays exactly where it was.
+#if defined(PLATFORM_IOS) || defined(PLATFORM_ANDROID)
+    enum { ROW_NEW, ROW_LOAD, ROW_CREDITS, ROW_COUNT };
+    const ResUI *ui = &res->ui;
+    const char *labels[ROW_COUNT] = {
+        ui->title_new_adventure, ui->title_load_adventure, ui->title_credits,
+    };
+#else
     enum { ROW_NEW, ROW_LOAD, ROW_CREDITS, ROW_EXIT, ROW_COUNT };
     const ResUI *ui = &res->ui;
     const char *labels[ROW_COUNT] = {
         ui->title_new_adventure, ui->title_load_adventure, ui->title_credits, ui->menu_exit,
     };
+#endif
 
     screen_open();
     SelList l = { ROW_COUNT, 0 };

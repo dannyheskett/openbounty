@@ -1502,43 +1502,6 @@ bool views_controls_row_disabled(const struct Game *g, int row) {
     return controls_row_is_audio(g, row) && audio_status() == AUDIO_UNAVAILABLE;
 }
 
-// The Scale row is not one of the pack's controls: it is appended by the shell
-// and backed by present.c, not by stats.options[]. Display scale belongs to the
-// machine looking at the game, and stats.options[] is serialized into saves.
-// Cycles 1x -> 2x -> ... -> the largest scale this window can show -> 1x.
-// There is no Auto: 1x is one buffer pixel to one screen pixel, which is what a
-// modern pack is authored for, and a bigger window shows more tiles rather than
-// bigger ones. Wrapping at the measured maximum rather than a constant is what
-// keeps the label honest -- an entry that the window cannot show would render
-// clamped and say something else.
-//
-// A fixed buffer (CL_IS_NATIVE) cycles 1x -> 2x -> 3x -> 1x and resizes the
-// window to the buffer times the scale, wrapping at the largest one the monitor
-// can hold whole.
-void views_controls_advance_scale(void) {
-    int s = present_get_scale() + 1;
-    if (CL_IS_NATIVE) {
-        // A movie needs one frame size, and a fixed buffer renders at the
-        // zoom, so the zoom is locked while the recorder runs.
-        if (recorder_active()) return;
-        int disp_w, disp_h;
-        frame_host_display_size(&disp_w, &disp_h);
-        int fit = present_max_scale(disp_w, disp_h);
-        if (frame_host_window_fullscreen())
-            fit = present_max_scale(frame_host_window_width(),
-                                    frame_host_window_height());
-        if (s > fit) s = 1;
-        present_set_scale(s);
-        present_zoom_window(s);
-        return;
-    }
-    if (s > present_max_scale(frame_host_window_width(),
-                              frame_host_window_height())) s = 1;
-    present_set_scale(s);
-}
-
-int views_controls_scale_value(void) { return present_get_scale(); }
-
 void views_controls_advance(struct Game *g, int row) {
     if (!g || !g->res) return;
     if (row < 0 || row >= g->res->controls.count) return;

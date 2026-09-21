@@ -36,6 +36,11 @@ typedef struct {
     int sidebar_gap;           // modern fixed buffer: the band between the map
                                // pane and the HUD, as wide as the side bands so
                                // left edge, middle and right edge match. 0 else.
+    int native_w, native_h;    // the buffer the pack declared: a FLOOR, not a
+                               // fixed size. The map pane may grow past it to
+                               // fill a bigger surface; nothing else does, and
+                               // the scale is always measured against this so
+                               // growing the pane cannot feed back on itself.
     int is_native;             // 1 when the pack fixed the buffer size: the
                                // screen never follows the window; present.c
                                // shows it at 1x, 2x or 3x and letterboxes
@@ -58,6 +63,13 @@ void layout_init(const struct Resources *res);
 // fixed. Returns true when the screen size changed, so the caller knows to
 // recreate the render target. The remainder is letterboxed by present_scaled.
 bool layout_fit_window(int win_w, int win_h, int scale);
+
+// Grow a DECLARED buffer's map pane to fill the surface, in whole tiles, and
+// nothing else: the chrome bands, the sidebar, the status and the dialog
+// geometry all keep the sizes the pack declared and simply re-centre. The
+// declared size is the floor, so a surface smaller than it changes nothing.
+// Returns true when the buffer size changed.
+bool layout_grow_native(int surface_w, int surface_h, int scale);
 
 // The smallest window this pack can be played in, derived from its tile size.
 // Set as the window's minimum so the player cannot drag below it. The binding
