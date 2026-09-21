@@ -90,11 +90,13 @@ PACKS := $(addprefix $(PACK_DIR)/,$(addsuffix .openbounty,$(PACK_NAMES)))
 OUT_TEST      := build/openbounty-test
 OUT_ENGLIB    := build/libobengine.a
 LIBTEST_STAMP := build/libtest-pass.stamp
+# The iOS purity check (rule further down, next to the library-boundary one).
+IOS_CHECK_STAMP := build/ios-purity.stamp
 
 # Default build: compile + link the game and its asset packs, plus the
 # library-boundary check (engine + demo + autoplay must link with only
 # -lm -lpthread). No test binary, no test run, use `make test` for those.
-all: $(OUT) $(PACKS) $(LIBTEST_STAMP)
+all: $(OUT) $(PACKS) $(LIBTEST_STAMP) $(IOS_CHECK_STAMP)
 
 # Generate build/version.h from $(OPENBOUNTY_VERSION). Marked .PHONY-style
 # (FORCE prereq) so it always runs, the cmp/mv inside only rewrites the
@@ -731,6 +733,31 @@ $(LIBTEST_STAMP): tests/library/consumer.c engine/host_noop.c $(DEMO_OBJ) $(AUTO
 	    -Wl,--whole-archive $(OUT_ENGLIB) -Wl,--no-whole-archive \
 	    -o $@.tmp $(LIBTEST_LDFLAGS)
 	@rm -f $@.tmp
+	@touch $@
+
+# ---------------------------------------------------------------------------
+# iOS purity check: every shell file the iOS build will compile must type-check
+# with -DPLATFORM_IOS and NO raylib include path at all. iOS links no raylib
+# (docs/IOS-BACKEND-SPIKE.md); this is what keeps the seams honest on a machine
+# with no Apple toolchain, long before a macOS runner ever sees the code.
+#
+# The excluded list is the desktop-only subsystems -- recorder, mp4 encoder,
+# screenshot, gallery, pack picker, demo and autoplay drivers, combat replay --
+# plus the six backends that ARE raylib by definition.
+IOS_SKIP := src/gfx_raylib.c src/frame_host.c src/input_host.c \
+            src/plat_android.c src/audio_raylib.c src/font_raylib.c \
+            src/recorder.c src/encode_mp4.c src/encode_mp4_h264.c \
+            src/encode_mp4_mux.c src/encode_dialog.c src/screenshot.c \
+            src/shell_gallery.c src/pack_select.c src/shell_demo.c \
+            src/shell_autoplay.c src/combat_replay.c
+IOS_CHECK_SRC := $(filter-out $(IOS_SKIP),$(SHELL_SRC))
+
+$(IOS_CHECK_STAMP): $(IOS_CHECK_SRC) $(wildcard src/*.h src/*/*.h) build/version.h | build
+	@for f in $(IOS_CHECK_SRC); do \
+	  gcc -fsyntax-only -std=c99 -Wall -Wextra -DPLATFORM_IOS \
+	      -Isrc -Iengine/include -Idemo -Iautoplay -Itools -Ibuild \
+	      -Ithird_party/cjson -Ithird_party/miniz $$f || exit 1; \
+	done
 	@touch $@
 
 # ---------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 #ifndef OB_END_CARTOON_H
 #define OB_END_CARTOON_H
 
-#include "raylib.h"
+#include "ob_types.h"
 #include "resources.h"
 #include "sprites.h"
 

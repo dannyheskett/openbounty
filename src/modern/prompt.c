@@ -23,7 +23,7 @@
 #include "palette.h"
 #include "bfont.h"
 #include "resources.h"
-#include "raylib.h"
+#include "ob_types.h"
 #include "pending.h"
 #include "overlay_impl.h"
 #include "tables.h"

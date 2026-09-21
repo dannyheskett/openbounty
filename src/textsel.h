@@ -15,7 +15,7 @@
 #ifndef OB_TEXTSEL_H
 #define OB_TEXTSEL_H
 
-#include "raylib.h"
+#include "ob_types.h"
 #include <stdbool.h>
 
 typedef struct { int cursor; bool numeric; } TextSel;

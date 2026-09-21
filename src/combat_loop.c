@@ -16,7 +16,7 @@
 #include "resources.h"
 #include "ui.h"
 #include "select.h"
-#include "raylib.h"
+#include "ob_types.h"
 #include "recorder.h"
 #include "audio.h"
 #include "bfont.h"

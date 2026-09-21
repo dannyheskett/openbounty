@@ -1,7 +1,7 @@
 #ifndef OB_UI_H
 #define OB_UI_H
 
-#include "raylib.h"
+#include "ob_types.h"
 #include <stdbool.h>
 
 // ---- Texture blit --------------------------------------------------------

@@ -6,7 +6,7 @@
 #include "present.h"
 #include "layout.h"
 #include "player_io.h"   // engine views arrive via the player-IO queue
-#include "raylib.h"
+#include "ob_types.h"
 #include "audio.h"
 #include "tables.h"
 #include "recorder.h"

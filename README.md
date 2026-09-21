@@ -397,7 +397,7 @@ depending on shell headers or shell symbols, this build step fails and
 
 | Target | What it does |
 |---|---|
-| `make` / `make all` | Builds the two binaries (`openbounty`, `openbounty-test`) + `libobengine.a` + library boundary check + pack zips. |
+| `make` / `make all` | Builds the two binaries (`openbounty`, `openbounty-test`) + `libobengine.a` + library boundary check + **iOS purity check** + pack zips. |
 | `make test` | Runs `build/openbounty-test`: 202 tests via greatest (unit, regression, e2e, autoplay), including the combat-formula golden digests. |
 | `make release` | `build/release/openbounty`, `-O2` stripped. |
 | `make windows` | Cross-compile `openbounty-x64.exe` and `openbounty-x86.exe`. |

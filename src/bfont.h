@@ -1,7 +1,7 @@
 #ifndef OB_BFONT_H
 #define OB_BFONT_H
 
-#include "raylib.h"
+#include "ob_types.h"
 
 // bitmap font. A horizontal strip of BFONT_GLYPHS glyphs, ASCII 0..127,
 // white on transparent; draw tints them with the given colour.

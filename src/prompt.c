@@ -13,7 +13,7 @@
 #include "bfont.h"
 #include "resources.h"
 #include "recorder.h"
-#include "raylib.h"
+#include "ob_types.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

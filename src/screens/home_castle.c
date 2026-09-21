@@ -26,7 +26,7 @@
 #include "player_io.h"   // engine views route through the player-IO queue
 #include "tables.h"
 #include "resources.h"
-#include "raylib.h"
+#include "ob_types.h"
 #include "modern/castle.h"
 #include "overlay_impl.h"
 #include "pending.h"

@@ -3,7 +3,7 @@
 #include "shell_frame.h"
 #include "gfx.h"
 
-#include "raylib.h"
+#include "ob_types.h"
 #include "frame_host.h"
 #include "layout.h"
 #include "present.h"     // CL_SCREEN_W/H (present-frame blit scaling)

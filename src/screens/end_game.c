@@ -9,7 +9,7 @@
 #include "palette.h"
 #include "bfont.h"
 #include "views.h"
-#include "raylib.h"
+#include "ob_types.h"
 #include "lattice.h"
 #include <string.h>
 #include <stdio.h>

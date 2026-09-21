@@ -248,6 +248,32 @@ Each step is a checkpoint; **stop and reassess after 2**.
 6. **Package.** Unsigned `.ipa` for a device farm, signed for TestFlight, both
    from the Makefile, plus the CI jobs alongside the Android ones.
 
+## Progress
+
+The C side is done and is checked on every build.
+
+- `src/gfx.h` + `src/gfx_raylib.c` -- all drawing. `src/ob_types.h` carries the
+  types, the colours, and the KEY_* / GAMEPAD_* ids for a build with no raylib.
+- `src/frame_host.h` -- the window, the display, timing, event polling.
+- `src/input_host.h` -- keys, characters, touch, the pad.
+- `src/audio_backend.h` + `src/audio_raylib.c` -- device, one-shots, streams.
+  `src/audio.c` keeps every decision (ducking, master volume, mute toggles).
+- `src/font_backend.h` + `src/font_raylib.c` -- baking the pack's own face.
+  `src/text.c` keeps the metrics policy.
+- Desktop-only headers (`screenshot.h`, `encode_dialog.h`, `shell_gallery.h`)
+  compile to inline no-ops under `PLATFORM_IOS`, so their call sites stay put.
+
+**`make` runs the iOS purity check** (`build/ios-purity.stamp`): all 59 shell
+files the iOS build will compile are type-checked with `-DPLATFORM_IOS` and no
+raylib include path at all. It fails the build if a raylib call comes back.
+
+Throughout: King's Bounty's gallery stayed 86/86 byte-identical, Rome's 93/93,
+`detcheck.sh` clean, 366 tests green.
+
+Still to write, and all of it needs a macOS runner to compile: the four `.mm`
+files, `src/plat_ios.c`, the stb vendoring, and the `ios-sim` / `ios` Makefile
+rules.
+
 ## What must not change
 
 - `engine/`, `demo/`, `autoplay/` compile untouched — they have no raylib.

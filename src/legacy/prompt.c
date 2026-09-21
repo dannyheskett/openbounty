@@ -15,7 +15,7 @@
 #include "palette.h"
 #include "bfont.h"
 #include "resources.h"
-#include "raylib.h"
+#include "ob_types.h"
 #include <stdio.h>
 
 void legacy_prompt_draw(const PromptView *p) {

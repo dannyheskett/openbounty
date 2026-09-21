@@ -7,7 +7,7 @@
 #include "prompt.h"
 #include "resources.h"
 
-#include "raylib.h"
+#include "ob_types.h"
 #include "input.h"
 
 static bool s_active = false;

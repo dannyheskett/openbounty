@@ -12,7 +12,7 @@
 
 #include "game.h"
 #include "modern/mlist.h"
-#include "raylib.h"
+#include "ob_types.h"
 #include <stdbool.h>
 
 #define GM_ROWS_MAX 16

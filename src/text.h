@@ -12,7 +12,7 @@
 #ifndef OB_TEXT_H
 #define OB_TEXT_H
 
-#include "raylib.h"
+#include "ob_types.h"
 #include <stdbool.h>
 
 struct Resources;

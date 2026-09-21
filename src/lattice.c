@@ -1,7 +1,7 @@
 #include "lattice.h"
 #include "gfx.h"
 #include "layout.h"
-#include "raylib.h"
+#include "ob_types.h"
 
 // Colours are the lattice's own, not the pack palette: a modern pack's
 // palette is whatever its font strip needs, and the chrome has to read as one

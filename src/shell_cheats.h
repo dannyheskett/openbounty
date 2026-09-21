@@ -12,7 +12,7 @@
 #ifndef OB_SHELL_CHEATS_H
 #define OB_SHELL_CHEATS_H
 
-#include "raylib.h"
+#include "ob_types.h"
 
 #include "game.h"
 #include "map.h"

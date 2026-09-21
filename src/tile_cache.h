@@ -1,7 +1,7 @@
 #ifndef OB_TILE_CACHE_H
 #define OB_TILE_CACHE_H
 
-#include "raylib.h"
+#include "ob_types.h"
 
 // Lazy texture cache keyed by tile-art name. Each unique art string (e.g.
 // "grass", "water", "castle_wall") is loaded from `art/tiles/<art>.png`

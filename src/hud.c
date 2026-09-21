@@ -4,7 +4,7 @@
 #include "palette.h"
 #include "bfont.h"
 #include "ui.h"
-#include "raylib.h"
+#include "ob_types.h"
 #include <stdio.h>
 
 // Same puzzle layout used by the full-screen view (views.c). Each cell

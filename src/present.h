@@ -10,7 +10,7 @@
 #ifndef OB_PRESENT_H
 #define OB_PRESENT_H
 
-#include "raylib.h"
+#include "ob_types.h"
 #include "gfx.h"
 #include <stdbool.h>
 

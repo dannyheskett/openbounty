@@ -9,7 +9,7 @@
 #include "touch.h"
 #include "overlay.h"     // overlay_dialog_page_count (renderer owns the wrap)
 #include "player_io.h"   // engine player-IO message queue
-#include "raylib.h"
+#include "ob_types.h"
 #include "recorder.h"
 #include <string.h>
 #include <stdio.h>

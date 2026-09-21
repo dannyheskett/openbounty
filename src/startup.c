@@ -21,7 +21,7 @@
 #include "textsel.h"
 #include "tables.h"
 #include "resources.h"
-#include "raylib.h"
+#include "ob_types.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

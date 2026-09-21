@@ -23,7 +23,7 @@
 
 #include "modern/mlayout.h"
 #include "modern/mlist.h"
-#include "raylib.h"
+#include "ob_types.h"
 #include <stdbool.h>
 
 struct Game;

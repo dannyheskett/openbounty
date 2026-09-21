@@ -29,7 +29,7 @@
 #include "ui.h"
 #include "select.h"
 #include "textsel.h"
-#include "raylib.h"
+#include "ob_types.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -12,7 +12,7 @@
 #ifndef OB_SELECT_H
 #define OB_SELECT_H
 
-#include "raylib.h"
+#include "ob_types.h"
 #include <stdbool.h>
 
 typedef struct { int count; int cursor; } SelList;

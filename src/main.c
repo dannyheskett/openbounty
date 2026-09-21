@@ -10,7 +10,7 @@
 #include "autoplay.h"
 #include "diag.h"
 #include "shell_run.h"
-#include "raylib.h"
+#include "ob_types.h"
 #include "recorder.h"
 #include "audio.h"
 #include "encode_dialog.h"

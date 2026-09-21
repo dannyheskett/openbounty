@@ -1,7 +1,7 @@
 #ifndef OB_LAYOUT_H
 #define OB_LAYOUT_H
 
-#include "raylib.h"
+#include "ob_types.h"
 #include <stdbool.h>
 
 // Design-space coordinates for the internal render target. All values are in

@@ -1,7 +1,7 @@
 #ifndef OB_SPRITES_H
 #define OB_SPRITES_H
 
-#include "raylib.h"
+#include "ob_types.h"
 #include "resources.h"
 #include "combat.h"   // COMBAT_W / COMBAT_H
 
