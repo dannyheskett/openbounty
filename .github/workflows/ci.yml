@@ -363,8 +363,21 @@ jobs:
       - name: Capture App Store screenshots (iPhone 6.7in, demo mode)
         run: |
           set -eux
-          UDID=$(xcrun simctl list devices available -j \
-            | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for r in d.values() for x in r if x.get('name')=='iPhone 16 Plus'))")
+          # Apple's largest iPhone screenshot slot is APP_IPHONE_67: 1290x2796,
+          # which is a Plus/Pro Max of the 15/16 generation. The runner image
+          # carries whatever Xcode ships, so take the first of these that
+          # exists rather than naming one device and breaking on the next
+          # image bump. The capture size is checked below either way.
+          xcrun simctl list devices available | sed -n 's/^ *\(iPhone[^(]*\).*/\1/p' | sort -u
+          UDID=$(xcrun simctl list devices available -j | python3 -c "
+import json,sys
+want=['iPhone 16 Plus','iPhone 15 Plus','iPhone 14 Plus','iPhone 16 Pro Max','iPhone 17 Pro Max','iPhone 17 Plus']
+d=json.load(sys.stdin)['devices']
+have={x['name']: x['udid'] for r in d.values() for x in r}
+for n in want:
+    if n in have: print(have[n]); break
+else: print(next(iter(have.values())))
+")
           xcrun simctl boot "$UDID"
           xcrun simctl bootstatus "$UDID" -b
           app=build/ios-sim/GloryOfRome.app
@@ -381,7 +394,16 @@ jobs:
           # simctl captures the DEVICE, which stays portrait while the app is
           # landscape-locked, so each shot is rotated a quarter turn.
           for f in shots/raw-*.png; do sips -r 270 "$f" >/dev/null; done
+          # Apple's APP_IPHONE_67 slot is exactly 2796x1290 in landscape.
+          # Anything else is reported here rather than rejected by the API
+          # twenty minutes later.
           sips -g pixelWidth -g pixelHeight shots/raw-1.png
+          w=$(sips -g pixelWidth  shots/raw-1.png | awk '/pixelWidth/{print $2}')
+          h=$(sips -g pixelHeight shots/raw-1.png | awk '/pixelHeight/{print $2}')
+          echo "captured ${w}x${h}"
+          if [ "$w" != "2796" ] || [ "$h" != "1290" ]; then
+            echo "::warning::captured ${w}x${h}, not Apple's 2796x1290 APP_IPHONE_67 size"
+          fi
       - name: Upload the App Store screenshots
         if: always()
         uses: actions/upload-artifact@v7
