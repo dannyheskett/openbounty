@@ -592,6 +592,12 @@ IOS_VERSION_NAME ?= 1.0.$(IOS_BUILD_NUMBER)
 # submittable .ipa. Unset, the build stays unsigned.
 IOS_SIGN_IDENTITY ?=
 IOS_PROFILE       ?=
+IOS_TEAM_ID       ?=
+# The App Store icon. One 1024x1024 PNG: actool derives every other size, so
+# there is no icon art to resize by hand. Absent, an unsigned build still runs
+# (the Simulator does not care); a signed build stops, because Apple rejects an
+# iconless upload outright.
+IOS_ICON := ios/Assets.xcassets/AppIcon.appiconset/icon-1024.png
 
 IOS_MM_SRC  := ios/ios_main.mm ios/gfx_metal.mm ios/plat_ios.mm \
                ios/audio_ios.mm
@@ -638,17 +644,91 @@ $(IOS_SIM_APP): $(IOS_DEPS)
 IOS_APP_DIR := build/ios-device/Payload/$(IOS_APP_NAME).app
 IOS_IPA     := build/$(IOS_APP_NAME).ipa
 ios: $(IOS_IPA)
+# A .ipa is only a zip of Payload/<App>.app, but an App Store upload wants a
+# bundle shaped the way Xcode shapes one. Everything below is a key Xcode would
+# have injected and a hand-assembled bundle lacks; each one has rejected a real
+# upload somewhere, so none of it is decoration.
 $(IOS_IPA): $(IOS_DEPS)
 	$(call ios_build,iphoneos,arm64-apple-ios$(IOS_MIN),$(IOS_APP_DIR),build/ios-device/obj)
-	@if [ -n "$(IOS_SIGN_IDENTITY)" ]; then \
-	  cp "$(IOS_PROFILE)" "$(IOS_APP_DIR)/embedded.mobileprovision"; \
-	  codesign --force --sign "$(IOS_SIGN_IDENTITY)" --timestamp=none \
-	      "$(IOS_APP_DIR)"; \
+	@# Device-platform keys. Device farms read CFBundleSupportedPlatforms on
+	@# upload and refuse a bundle without it.
+	plist=$(IOS_APP_DIR)/Info.plist; \
+	/usr/libexec/PlistBuddy \
+	    -c "Add :CFBundleSupportedPlatforms array" \
+	    -c "Add :CFBundleSupportedPlatforms:0 string iPhoneOS" \
+	    -c "Add :DTPlatformName string iphoneos" \
+	    -c "Add :UIRequiredDeviceCapabilities array" \
+	    -c "Add :UIRequiredDeviceCapabilities:0 string arm64" \
+	    -c "Set :CFBundleVersion $(IOS_BUILD_NUMBER)" \
+	    -c "Set :CFBundleShortVersionString $(IOS_VERSION_NAME)" \
+	    "$$plist"
+	@# App icon. actool compiles the catalog to Assets.car and writes the
+	@# CFBundleIcons keys into a partial plist, which is merged in. A signed
+	@# build with no icon art is a wasted upload, so it stops here instead.
+	@if [ -f "$(IOS_ICON)" ]; then \
+	    xcrun actool ios/Assets.xcassets --compile $(IOS_APP_DIR) \
+	        --platform iphoneos --minimum-deployment-target $(IOS_MIN) \
+	        --target-device iphone --target-device ipad --app-icon AppIcon \
+	        --output-partial-info-plist build/ios-device/assetcatalog.plist >/dev/null; \
+	    /usr/libexec/PlistBuddy -c "Merge build/ios-device/assetcatalog.plist" \
+	        $(IOS_APP_DIR)/Info.plist; \
+	    plutil -replace CFBundleIconName -string AppIcon $(IOS_APP_DIR)/Info.plist; \
+	elif [ -n "$(IOS_SIGN_IDENTITY)" ]; then \
+	    echo "error: $(IOS_ICON) is missing; the App Store rejects an iconless upload" >&2; exit 1; \
 	else \
-	  echo "[ios] unsigned (no IOS_SIGN_IDENTITY): a device farm re-signs it"; \
+	    echo "[ios] no app icon yet ($(IOS_ICON)); fine for a test build, not for the store"; \
+	fi
+	@# Toolchain provenance. App Store review reads DTXcodeBuild to identify
+	@# the toolchain and refuses a build that appears to come from none.
+	@# DTPlatformVersion is the SDK version, NOT the deployment target.
+	plist=$(IOS_APP_DIR)/Info.plist; \
+	xcode_ver=$$(xcodebuild -version | sed -n '1s/^Xcode //p'); \
+	xcode_build=$$(xcodebuild -version | sed -n '2s/^Build version //p'); \
+	sdk_ver=$$(xcrun --sdk iphoneos --show-sdk-version); \
+	sdk_build=$$(xcrun --sdk iphoneos --show-sdk-build-version); \
+	plat_ver=$$(xcrun --sdk iphoneos --show-sdk-platform-version); \
+	dtxcode=$$(echo $$xcode_ver | awk -F. '{printf "%02d%d%d", $$1, $$2+0, $$3+0}'); \
+	plutil -replace DTXcode             -string "$$dtxcode"         $$plist; \
+	plutil -replace DTXcodeBuild        -string "$$xcode_build"     $$plist; \
+	plutil -replace DTSDKName           -string "iphoneos$$sdk_ver" $$plist; \
+	plutil -replace DTSDKBuild          -string "$$sdk_build"       $$plist; \
+	plutil -replace DTPlatformVersion   -string "$$plat_ver"        $$plist; \
+	plutil -replace DTPlatformBuild     -string "$$sdk_build"       $$plist; \
+	plutil -replace DTCompiler          -string "com.apple.compilers.llvm.clang.1_0" $$plist; \
+	plutil -replace BuildMachineOSBuild -string "$$(sw_vers -buildVersion)" $$plist; \
+	echo "[ios] toolchain: Xcode $$xcode_ver ($$xcode_build), iphoneos SDK $$sdk_ver ($$sdk_build)"
+	@# Sign, when an identity is supplied. The entitlements must be a subset
+	@# of the provisioning profile's, so they stay minimal.
+	@if [ -n "$(IOS_SIGN_IDENTITY)" ]; then \
+	    if [ -z "$(IOS_PROFILE)" ]; then echo "error: IOS_SIGN_IDENTITY set but IOS_PROFILE is empty" >&2; exit 1; fi; \
+	    if [ -z "$(IOS_TEAM_ID)" ]; then echo "error: IOS_SIGN_IDENTITY set but IOS_TEAM_ID is empty" >&2; exit 1; fi; \
+	    cp "$(IOS_PROFILE)" $(IOS_APP_DIR)/embedded.mobileprovision; \
+	    ents=build/ios-device/entitlements.plist; \
+	    printf '%s\n' \
+	      '<?xml version="1.0" encoding="UTF-8"?>' \
+	      '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
+	      '<plist version="1.0"><dict>' \
+	      '  <key>application-identifier</key><string>$(IOS_TEAM_ID).$(IOS_BUNDLE_ID)</string>' \
+	      '  <key>com.apple.developer.team-identifier</key><string>$(IOS_TEAM_ID)</string>' \
+	      '  <key>get-task-allow</key><false/>' \
+	      '</dict></plist>' > $$ents; \
+	    codesign --force --timestamp=none \
+	        --sign "$(IOS_SIGN_IDENTITY)" --entitlements $$ents $(IOS_APP_DIR); \
+	    codesign --verify --strict --verbose=2 $(IOS_APP_DIR); \
 	fi
 	cd build/ios-device && rm -f ../$(IOS_APP_NAME).ipa && zip -qr ../$(IOS_APP_NAME).ipa Payload
-	@echo "[ios] built $@"
+	@if [ -n "$(IOS_SIGN_IDENTITY)" ]; then \
+	    echo "[ios] built $@ (signed: $(IOS_SIGN_IDENTITY), build $(IOS_BUILD_NUMBER))"; \
+	else \
+	    echo "[ios] built $@ (unsigned)"; \
+	fi
+
+# The .ipa under its release name, next to the desktop archives. The pack rule
+# that keeps .openbounty out of every archive does not apply here: Rome's pack
+# is ours and has to be inside the app.
+dist-ios: $(IOS_IPA)
+	@mkdir -p $(DIST)
+	cp $(IOS_IPA) $(DIST)/gloryofrome-$(OPENBOUNTY_VERSION_SLUG)-ios-arm64.ipa
 
 # ---------------------------------------------------------------------------
 # Distribution archives (consumed by GitHub Actions release workflow).
@@ -905,4 +985,4 @@ clean:
 	rm -rf build
 	rm -f dist/*.tar.gz dist/*.zip
 
-.PHONY: all run release run-release windows windows-debug mac web web-kings-bounty web-glory-of-rome web-serve android android-play dist-android dist-android-play ios ios-sim clean test extract extract-pack dist dist-linux dist-windows dist-mac dist-web
+.PHONY: all run release run-release windows windows-debug mac web web-kings-bounty web-glory-of-rome web-serve android android-play dist-android dist-android-play ios ios-sim dist-ios clean test extract extract-pack dist dist-linux dist-windows dist-mac dist-web

@@ -78,6 +78,13 @@ by `workflow_dispatch`. It runs eight jobs:
   `PLAY_*` signing secrets are present -- an upload-signed **AAB**. Mobile is
   Glory of Rome only; the job asserts no King's Bounty pack is inside either
   artifact.
+- **iOS build** (macOS 15): builds raylib for macOS and `make mac` first --
+  the .app embeds the Glory of Rome pack and the native binary is what zips
+  that pack -- then packages the device `.ipa`. Unsigned when the Apple
+  secrets are absent; App Store-signed when they are present, in a throwaway
+  keychain, with the entitlements the Makefile writes and the icon compiled
+  into `Assets.car`. The signed path then verifies the bundle is
+  App Store-shaped before it is uploaded anywhere.
 - **publish** (Ubuntu): downloads all build artifacts, creates the
   `release-N` **tag at the triggering SHA**, and publishes the GitHub
   Release with auto-generated notes and the archives attached.
@@ -107,11 +114,26 @@ and the AAB carry `assets/glory-of-rome.openbounty` inside them, which is
 ours to distribute. Their own guard checks the opposite thing -- that the
 King's Bounty pack is *not* in there.
 
+- **publish-testflight** (macOS 15): validates the `.ipa` with
+  `altool --validate-app` and then uploads it to App Store Connect, where it
+  appears in TestFlight after Apple's 5-15 minute processing. Gated the same
+  way as `publish-play`: on `publish` having succeeded, on `dry_run` being
+  false, and skipped when the `ASC_*` secrets are missing or the `.ipa` is
+  unsigned. Validation runs first because it names the rejection reason
+  without consuming the build number.
+
 **Secrets the Android path needs**: `PLAY_UPLOAD_KEYSTORE` (base64 of the
 upload keystore), `PLAY_KEY_ALIAS`, `PLAY_KEYSTORE_PASSWORD`,
 `PLAY_KEY_PASSWORD` for signing the AAB, and `PLAY_SERVICE_ACCOUNT_JSON` for
 the Play push. With none of them set, the release still produces the sideload
 APK and simply skips the bundle and the upload.
+
+**Secrets the iOS path needs**: `IOS_CERT_P12` (base64 of the Apple
+Distribution certificate and key), `IOS_CERT_PASSWORD`,
+`IOS_PROVISIONING_PROFILE` (base64 of the App Store `.mobileprovision`) and
+`IOS_TEAM_ID` to sign; `ASC_KEY_P8`, `ASC_KEY_ID` and `ASC_ISSUER_ID` (an App
+Store Connect API key) to upload. With none of them set, the release still
+produces the unsigned `.ipa` and skips the upload.
 
 ---
 

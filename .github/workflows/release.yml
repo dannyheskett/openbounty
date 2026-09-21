@@ -215,6 +215,112 @@ jobs:
           name: web
           path: dist/*.zip
 
+  build-ios:
+    name: iOS device .ipa build
+    needs: prepare
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      # Apple refuses an upload built against an old SDK, and the message only
+      # arrives after the whole build and a validation round trip. Fail here.
+      - name: Check the iOS SDK is new enough for the App Store
+        run: |
+          set -eux
+          xcodebuild -version
+          sdk=$(xcrun --sdk iphoneos --show-sdk-version)
+          echo "iphoneos SDK: $sdk"
+          if [ "${sdk%%.*}" -lt 18 ]; then
+            echo "::error::iOS SDK $sdk is too old for App Store uploads. Update the runner image or select a newer Xcode."
+            exit 1
+          fi
+      # The .app embeds the Glory of Rome pack, and the pack is zipped by a
+      # native binary, so a macOS build of the game itself comes first. The
+      # default target links X11 and is not buildable here.
+      - name: Build raylib (macOS)
+        run: ./scripts/build_raylib_mac.sh
+      - name: Build the pack tool
+        run: make mac
+      # Signing is opt-in. Without the Apple secrets this still produces the
+      # unsigned .ipa, which is useful for a device farm and proves the build.
+      - name: Detect iOS signing secrets
+        id: iossecret
+        env:
+          C: ${{ secrets.IOS_CERT_P12 }}
+          P: ${{ secrets.IOS_CERT_PASSWORD }}
+          M: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+          T: ${{ secrets.IOS_TEAM_ID }}
+        run: |
+          if [ -n "$C" ] && [ -n "$P" ] && [ -n "$M" ] && [ -n "$T" ]; then
+            echo "present=true"  >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Package iOS .ipa (unsigned)
+        if: steps.iossecret.outputs.present == 'false'
+        run: make dist-ios PACK_TOOL=build/openbounty-mac RELEASE_VERSION=${{ needs.prepare.outputs.version }}
+      # App Store-submittable .ipa: the distribution certificate goes into a
+      # throwaway keychain that dies with the runner, the profile is embedded,
+      # and the Makefile writes the entitlements.
+      - name: Package iOS .ipa (App Store signed)
+        if: steps.iossecret.outputs.present == 'true'
+        env:
+          IOS_CERT_P12:             ${{ secrets.IOS_CERT_P12 }}
+          IOS_CERT_PASSWORD:        ${{ secrets.IOS_CERT_PASSWORD }}
+          IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+          IOS_TEAM_ID:              ${{ secrets.IOS_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN="$RUNNER_TEMP/gloryofrome-signing.keychain-db"
+          KEYCHAIN_PASS="$(uuidgen)"
+          echo "$IOS_CERT_P12"             | base64 -d > "$RUNNER_TEMP/dist.p12"
+          echo "$IOS_PROVISIONING_PROFILE" | base64 -d > "$RUNNER_TEMP/profile.mobileprovision"
+
+          security create-keychain -p "$KEYCHAIN_PASS" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASS" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/dist.p12" -k "$KEYCHAIN" \
+            -P "$IOS_CERT_PASSWORD" -T /usr/bin/codesign -f pkcs12
+          # Without this, codesign blocks on an interactive keychain prompt.
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASS" "$KEYCHAIN" >/dev/null
+          security list-keychains -d user -s "$KEYCHAIN" login.keychain-db
+
+          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" \
+            | awk -F'"' '/Apple Distribution/ {print $2; exit}')
+          if [ -z "$IDENTITY" ]; then
+            echo "no Apple Distribution identity found in the keychain" >&2
+            security find-identity -v -p codesigning "$KEYCHAIN" >&2
+            exit 1
+          fi
+          echo "signing as: $IDENTITY"
+
+          make dist-ios \
+            PACK_TOOL=build/openbounty-mac \
+            RELEASE_VERSION=${{ needs.prepare.outputs.version }} \
+            IOS_SIGN_IDENTITY="$IDENTITY" \
+            IOS_PROFILE="$RUNNER_TEMP/profile.mobileprovision" \
+            IOS_TEAM_ID="$IOS_TEAM_ID"
+      - name: Verify the .ipa is signed and App Store-shaped
+        if: steps.iossecret.outputs.present == 'true'
+        run: |
+          set -euo pipefail
+          app="build/ios-device/Payload/GloryOfRome.app"
+          codesign --verify --strict --verbose=2 "$app"
+          echo "--- entitlements ---"
+          codesign -d --entitlements :- "$app"
+          test -f "$app/embedded.mobileprovision" || { echo "no embedded profile" >&2; exit 1; }
+          test -f "$app/Assets.car"               || { echo "no compiled app icon" >&2; exit 1; }
+          # Top-level CFBundleIconName, not just the nested one actool writes:
+          # missing it fails the upload with ITMS-90713.
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIconName' "$app/Info.plist"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleVersion'  "$app/Info.plist"
+          /usr/libexec/PlistBuddy -c 'Print :ITSAppUsesNonExemptEncryption' "$app/Info.plist"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ios
+          path: dist/*.ipa
+
   build-android:
     name: android APK (sideload) + AAB (Play) build
     needs: prepare
@@ -321,7 +427,7 @@ jobs:
 
   publish:
     name: tag + publish GitHub Release
-    needs: [prepare, build-linux-windows, build-mac, build-web, build-android]
+    needs: [prepare, build-linux-windows, build-mac, build-web, build-android, build-ios]
     if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && needs.prepare.result == 'success' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 5
@@ -408,3 +514,69 @@ jobs:
           track: internal
           status: completed
           releaseName: release-${{ needs.prepare.outputs.version }}
+
+  publish-testflight:
+    # Same gating as publish-play, and for the same reason: an .ipa labelled
+    # release-N must not reach TestFlight for a release that does not exist.
+    if: ${{ !inputs.dry_run && needs.publish.result == 'success' }}
+    name: upload .ipa to App Store Connect
+    needs: [prepare, publish]
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - name: Download the ios artifact (contains the .ipa)
+        uses: actions/download-artifact@v8
+        with:
+          name: ios
+          path: dist
+      - name: Gate on the API-key secrets + a signed .ipa
+        id: gate
+        env:
+          K: ${{ secrets.ASC_KEY_P8 }}
+          I: ${{ secrets.ASC_KEY_ID }}
+          S: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          ipa=$(find dist -maxdepth 1 -name '*.ipa' | head -1)
+          signed=false
+          if [ -n "$ipa" ] && unzip -l "$ipa" | grep -q '_CodeSignature'; then signed=true; fi
+          if [ -n "$K" ] && [ -n "$I" ] && [ -n "$S" ] && [ "$signed" = true ]; then
+            echo "go=true"  >> "$GITHUB_OUTPUT"
+            echo "ipa=$ipa" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping App Store upload (key: $([ -n "$K" ] && echo yes || echo no); signed .ipa: $signed)."
+          fi
+      # altool finds the key by convention: AuthKey_<KeyID>.p8 under
+      # ~/.appstoreconnect/private_keys.
+      - name: Install the App Store Connect API key
+        if: steps.gate.outputs.go == 'true'
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          printf '%s' "$ASC_KEY_P8" > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+          chmod 600 ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+      # Validate before uploading: it catches the ITMS-* rejections (icon,
+      # duplicate build number, missing plist keys) without burning the build
+      # number, and says far more clearly what is wrong.
+      - name: Validate the .ipa against App Store rules
+        if: steps.gate.outputs.go == 'true'
+        env:
+          ASC_KEY_ID:    ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          xcrun altool --validate-app -f "${{ steps.gate.outputs.ipa }}" -t ios \
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+      - name: Upload the .ipa to App Store Connect
+        if: steps.gate.outputs.go == 'true'
+        env:
+          ASC_KEY_ID:    ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          xcrun altool --upload-app -f "${{ steps.gate.outputs.ipa }}" -t ios \
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+          echo "Uploaded build ${{ needs.prepare.outputs.version }}. Apple takes ~5-15 min to process it before it appears in TestFlight."
+      - name: Remove the API key
+        if: always()
+        run: rm -rf ~/.appstoreconnect/private_keys
