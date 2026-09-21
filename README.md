@@ -197,8 +197,9 @@ and `openbounty-test` for tests) both link the same engine archive.
 ├── screenshots/              # Manual backtick captures
 └── docs/                     # OPENBOUNTY-SPEC.md (reproduction-grade spec),
                               #   PACK-FORMAT.md, RELEASE-PROCESS.md, OPENKB-SPEC.md,
-                              #   ART-PIPELINE.md (how art is made) and
+                              #   ART-PIPELINE.md (how art is made),
                               #   ROME-ART.md (every prompt ever sent, generated)
+                              #   and IOS-BACKEND-SPIKE.md (the raylib-free iOS plan)
 ```
 
 ---
