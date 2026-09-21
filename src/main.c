@@ -305,6 +305,7 @@ int shell_run_game(int argc, char **argv) {
     //                        watchable pace, hands off on completion.
     //   --demo --headless -> HEADLESS: no window; plays to an ending, prints
     //                        the [DEMO OVER] report, exits.
+    int start_scale = 0;   // --scale=N, 0 = leave the setting alone
     bool demo_mode = false;
     // --autoplay: the headless automated player / pack-winnability oracle
     // (autoplay/, docs/AUTOPLAY-SPECS.md).
@@ -391,6 +392,18 @@ int shell_run_game(int argc, char **argv) {
                 return 2;
             }
             seed_index = (int)n;
+        } else if (strncmp(a, "--scale=", 8) == 0) {
+            // The window/buffer zoom, as the Controls screen sets it. A flag
+            // as well because store screenshots have to be captured at the
+            // scale a phone shows (2x), and nothing else can reach that
+            // setting from outside the game.
+            char *end = NULL;
+            long n = strtol(a + 8, &end, 10);
+            if (end == a + 8 || *end != '\0' || n < 1 || n > 8) {
+                fprintf(stderr, "openbounty: --scale '%s' is not 1-8\n", a + 8);
+                return 2;
+            }
+            start_scale = (int)n;
         } else if (strcmp(a, "--demo") == 0) {
             demo_mode = true;
         } else if (strcmp(a, "--autoplay") == 0) {
@@ -785,6 +798,11 @@ int shell_run_game(int argc, char **argv) {
     tile_cache_attach(&res);
     // Cosmetic tile variants: a fresh shuffle every launch (draw-time only).
     tilevar_init((const struct Resources *)&res, (unsigned)time(NULL));
+
+    // --scale=N, before the layout is fitted: the zoom decides the buffer
+    // size, so setting it afterwards would size everything at 1x and then
+    // disagree with itself.
+    if (start_scale > 0) present_set_scale(start_scale);
 
     // Fit the layout to the window before anything allocates a target. In
     // modern the buffer is the window divided by the scale; without this the
