@@ -193,28 +193,15 @@ jobs:
           target: default
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: |
-            set -eux
-            adb install -r build/gloryofrome-x86_64.apk
-            adb logcat -c
-            adb shell am start -n com.danheskett.gloryofrome/com.danheskett.gloryofrome.GloryOfRomeActivity
-            sleep 20
-            # Alive, not merely launched: a native crash shows up as no pid.
-            pid=$(adb shell pidof com.danheskett.gloryofrome || true)
-            echo "pid: ${pid:-none}"
-            adb exec-out screencap -p > android-shot.png
-            echo "--- the app's own log ---"
-            adb logcat -d -t 200 | grep -iE "gloryofrome|openbounty|raylib|DEBUG|FATAL" || true
-            if [ -z "$pid" ]; then
-              echo "::error::the app is not running 20s after launch"
-              exit 1
-            fi
+          script: ./scripts/android_smoke.sh build/gloryofrome-x86_64.apk
       - name: Upload the emulator screenshot
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: android-emulator-screenshot
-          path: android-shot.png
+          path: |
+            android-shot.png
+            android-logcat.txt
           if-no-files-found: warn
 
   ios:
