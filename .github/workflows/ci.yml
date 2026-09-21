@@ -176,8 +176,10 @@ jobs:
       # the Linux one.
       - name: Build raylib (macOS, for the pack-building binary)
         run: ./scripts/build_raylib_mac.sh
+      - name: Build the macOS binary that zips the pack
+        run: make mac
       - name: Build the Simulator app (native Metal, no raylib)
-        run: make ios-sim
+        run: make ios-sim PACK_TOOL=build/openbounty-mac
       - name: Boot a Simulator, install, launch, screenshot
         run: |
           set -eux
@@ -203,7 +205,7 @@ jobs:
           name: ios-sim-screenshot
           path: ios-shot.png
       - name: Build the device .ipa (unsigned)
-        run: make ios
+        run: make ios PACK_TOOL=build/openbounty-mac
       - name: Upload the device .ipa
         uses: actions/upload-artifact@v7
         with:

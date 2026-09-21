@@ -144,9 +144,15 @@ $(OUT): $(SHELL_OBJ) $(TOOL_OBJ) $(DEMO_OBJ) $(AUTOPLAY_OBJ) $(OUT_ENGLIB) build
 $(PACK_DIR):
 	mkdir -p $(PACK_DIR)
 
+# The binary that zips a pack. Normally the native dev build, but a target
+# whose host cannot build that one overrides it: the iOS job runs on macOS,
+# where the default build's Linux link flags (-lX11, -lrt) do not apply, so it
+# passes PACK_TOOL=build/openbounty-mac after `make mac`.
+PACK_TOOL ?= $(OUT)
+
 define PACK_RULE
-$(PACK_DIR)/$(1).openbounty: $$(shell find assets/$(1) -type f \! -name '*.xcf' \! -name '*.psd' \! -name '*:Zone.Identifier' 2>/dev/null) $(OUT) | $(PACK_DIR)
-	./$(OUT) --pack-dir assets/$(1) $(PACK_DIR)/$(1).openbounty
+$(PACK_DIR)/$(1).openbounty: $$(shell find assets/$(1) -type f \! -name '*.xcf' \! -name '*.psd' \! -name '*:Zone.Identifier' 2>/dev/null) $(PACK_TOOL) | $(PACK_DIR)
+	./$(PACK_TOOL) --pack-dir assets/$(1) $(PACK_DIR)/$(1).openbounty
 endef
 $(foreach pn,$(PACK_NAMES),$(eval $(call PACK_RULE,$(pn))))
 
