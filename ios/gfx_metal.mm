@@ -102,7 +102,13 @@ typedef struct {
 
 #define VERTS_MAX   (64 * 1024)
 #define BATCH_MAX   1024
-#define TEX_MAX     512
+// Every tile, sprite, portrait, backdrop and font atlas is a texture, and the
+// pack's map tiles alone are 181 per zone across four zones. 512 was not
+// enough: the table filled during sprites_load and the FRAME BUFFER itself
+// then failed to allocate, so the game drew a whole frame into nothing and the
+// screen stayed black. 4096 is ~32 KB of pointers and several times the most
+// any pack has asked for.
+#define TEX_MAX     4096
 
 static id<MTLDevice>              s_device;
 static id<MTLCommandQueue>        s_queue;
@@ -512,6 +518,10 @@ void gfx_clip_end(void) { s_clip_on = false; }
 
 static int tex_alloc(void) {
     for (int i = 0; i < TEX_MAX; i++) if (!s_tex_used[i]) return i;
+    // Loud, because the failure mode is silent: a texture id of 0 draws
+    // nothing at all, and a frame buffer that fails to allocate takes the
+    // whole screen with it.
+    NSLog(@"openbounty: OUT OF TEXTURE SLOTS (%d) -- raise TEX_MAX", TEX_MAX);
     return -1;
 }
 
