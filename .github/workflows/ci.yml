@@ -204,7 +204,8 @@ jobs:
           xcrun simctl spawn "$UDID" launchctl list | grep -i gloryofrome || echo "not running"
           echo "--- system log for the app ---"
           xcrun simctl spawn "$UDID" log show --style compact --last 3m \
-            --predicate 'processImagePath CONTAINS "GloryOfRome"' 2>/dev/null | tail -40 || true
+            --predicate 'processImagePath CONTAINS "GloryOfRome"' 2>/dev/null \
+            | grep -i "openbounty\|error\|exception\|fatal" | head -40 || true
           echo "--- crash reports ---"
           ls -t ~/Library/Logs/DiagnosticReports/ 2>/dev/null | head -5
           for f in ~/Library/Logs/DiagnosticReports/GloryOfRome*; do

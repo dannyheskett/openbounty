@@ -177,6 +177,7 @@ void gfx_metal_attach(CAMetalLayer *layer) {
 
     s_pipeline = [s_device newRenderPipelineStateWithDescriptor:pd error:&err];
     if (!s_pipeline) NSLog(@"openbounty: Metal pipeline failed: %@", err);
+    else NSLog(@"openbounty: Metal pipeline ready");
 
     MTLSamplerDescriptor *sd = [[MTLSamplerDescriptor alloc] init];
     sd.minFilter = MTLSamplerMinMagFilterNearest;
@@ -348,6 +349,10 @@ static void pass_flush(id<MTLTexture> tex, id<CAMetalDrawable> drawable) {
 }
 
 void gfx_frame_end(void) {
+    static int s_frames;
+    if (s_frames < 3) NSLog(@"openbounty: frame_end #%d, %d verts, %d batches",
+                            s_frames, s_vert_count, s_batch_count);
+    s_frames++;
     if (!s_pipeline || !s_layer) return;
     @autoreleasepool {
         id<CAMetalDrawable> drawable = [s_layer nextDrawable];

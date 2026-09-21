@@ -45,6 +45,12 @@ extern "C" int shell_run_game(int argc, char **argv);
     self.multipleTouchEnabled = NO;   // the game reads one contact
     gfx_metal_attach((CAMetalLayer *)self.layer);
     [self updateDrawableSize];
+    {
+        int w = 0, h = 0;
+        plat_ios_screen(&w, &h);
+        NSLog(@"openbounty: view ready, metal=%d, game area %dx%d",
+              gfx_metal_ready() ? 1 : 0, w, h);
+    }
 
     CADisplayLink *link =
         [CADisplayLink displayLinkWithTarget:self selector:@selector(onFrame:)];
@@ -65,7 +71,12 @@ extern "C" int shell_run_game(int argc, char **argv);
     NSThread *t = [[NSThread alloc] initWithBlock:^{
         static char arg0[] = "gloryofrome";
         char *argv[] = { arg0, NULL };
-        shell_run_game(1, argv);
+        // Markers, not decoration: an iOS app's stdout goes nowhere a CI job
+        // can read, so the only way to see how far the game got is os_log.
+        NSLog(@"openbounty: game thread starting (metal ready=%d)",
+              gfx_metal_ready() ? 1 : 0);
+        int rc = shell_run_game(1, argv);
+        NSLog(@"openbounty: game thread returned %d", rc);
     }];
     t.stackSize = 16 * 1024 * 1024;
     t.name = @"openbounty.game";
