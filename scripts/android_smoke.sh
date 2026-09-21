@@ -21,9 +21,26 @@ PKG=com.danheskett.gloryofrome
 ACT="$PKG/$PKG.GloryOfRomeActivity"
 
 adb install -r "$APK"
-adb logcat -c
-adb shell am start -n "$ACT"
-sleep 20
+
+pid=""
+for attempt in 1 2 3; do
+    adb logcat -c
+    adb shell am start -n "$ACT"
+    sleep 20
+    pid="$(adb shell pidof "$PKG" | tr -d '\r' || true)"
+    [ -n "$pid" ] && break
+
+    # The runner is a shared, memory-tight machine and the emulator is the
+    # heaviest thing on it. When it is out of room, the app never starts at
+    # all: "ZygoteStartFailedEx: fork() failed", which says nothing about the
+    # app. Retry that; treat anything else as a real failure straight away.
+    adb logcat -d > android-logcat.txt || true
+    if grep -q "Starting VM process through Zygote failed" android-logcat.txt; then
+        echo "attempt $attempt: the emulator could not fork a process; retrying"
+        continue
+    fi
+    break
+done
 
 adb exec-out screencap -p > android-shot.png || true
 
@@ -34,8 +51,6 @@ echo "--- logcat (everything since launch) ---"
 adb logcat -d > android-logcat.txt || true
 tail -300 android-logcat.txt
 
-# Alive, not merely launched: a native crash shows up as no pid at all.
-pid="$(adb shell pidof "$PKG" | tr -d '\r' || true)"
 echo "pid: ${pid:-none}"
 if [ -z "$pid" ]; then
     echo "::error::$PKG is not running 20s after launch"
@@ -46,7 +61,7 @@ echo "[android] the app is alive 20s after launch (pid $pid)"
 # Alive is not the same as drawing. A failed EGL context leaves every GL call
 # with nowhere to go and the screen black, while the process sits there
 # perfectly happily -- which is what the emulator did the first time.
-if grep -qE "EGL_BAD_CONFIG|Failed to create EGL|no current context" android-logcat.txt; then
+if grep -qE "EGL_BAD_CONFIG|Failed to create EGL|Failed to choose an EGL|no current context" android-logcat.txt; then
     echo "::warning::the app started but EGL reported an error; the frame is probably black"
     grep -E "EGL|raylib" android-logcat.txt | tail -20
 fi
