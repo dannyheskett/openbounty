@@ -218,7 +218,10 @@ jobs:
   build-ios:
     name: iOS device .ipa build
     needs: prepare
-    runs-on: macos-15
+    # macos-26 carries Xcode 26 and the iOS 26 SDK. Apple refuses an upload
+    # built against anything older ("This app was built with the iOS 18.5
+    # SDK"), which is what macos-15 produced and what failed release-23.
+    runs-on: macos-26
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -230,8 +233,8 @@ jobs:
           xcodebuild -version
           sdk=$(xcrun --sdk iphoneos --show-sdk-version)
           echo "iphoneos SDK: $sdk"
-          if [ "${sdk%%.*}" -lt 18 ]; then
-            echo "::error::iOS SDK $sdk is too old for App Store uploads. Update the runner image or select a newer Xcode."
+          if [ "${sdk%%.*}" -lt 26 ]; then
+            echo "::error::iOS SDK $sdk is too old; App Store uploads require 26+. Update the runner image or select a newer Xcode."
             exit 1
           fi
       # The .app embeds the Glory of Rome pack, and the pack is zipped by a
@@ -521,7 +524,7 @@ jobs:
     if: ${{ !inputs.dry_run && needs.publish.result == 'success' }}
     name: upload .ipa to App Store Connect
     needs: [prepare, publish]
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 30
     steps:
       - name: Download the ios artifact (contains the .ipa)
