@@ -195,29 +195,29 @@ jobs:
           # pack, resources, fatals) lands in an artifact. It blocks until the
           # app exits, so it runs in the background.
           xcrun simctl launch --console-pty "$UDID" "$bundle" > ios-console.txt 2>&1 &
-          sleep 30
-          echo "--- app console ---"
-          cat ios-console.txt || true
-          echo "--- what is in the .app ---"
-          ls -la "$app"
-          echo "--- is it still running? ---"
-          xcrun simctl spawn "$UDID" launchctl list | grep -i gloryofrome || echo "not running"
-          echo "--- system log for the app ---"
-          xcrun simctl spawn "$UDID" log show --style compact --last 3m \
-            --predicate 'processImagePath CONTAINS "GloryOfRome"' 2>/dev/null \
-            | grep -i "openbounty\|error\|exception\|fatal" | head -40 || true
-          echo "--- crash reports ---"
-          ls -t ~/Library/Logs/DiagnosticReports/ 2>/dev/null | head -5
-          for f in ~/Library/Logs/DiagnosticReports/GloryOfRome*; do
-            [ -e "$f" ] || continue
-            echo "== $f"; head -60 "$f"
-          done
+          sleep 25
+          # The screenshot FIRST, while the app is certainly alive: the
+          # diagnostics below take a few seconds each, and a run that spent
+          # them first caught the home screen after the app had gone.
           xcrun simctl io "$UDID" screenshot ios-shot.png
           # simctl captures the DEVICE, which stays portrait, while the app is
           # landscape-locked -- so the raw PNG reads sideways. Rotate it a
           # quarter turn anticlockwise (sips counts clockwise) so the artifact
           # is the screen as a player sees it.
           sips -r 270 ios-shot.png >/dev/null
+          echo "--- app console ---"
+          cat ios-console.txt || true
+          echo "--- is it still running? ---"
+          xcrun simctl spawn "$UDID" launchctl list | grep -i gloryofrome || echo "not running"
+          echo "--- the game's own log ---"
+          xcrun simctl spawn "$UDID" log show --style compact --last 5m \
+            --predicate 'processImagePath CONTAINS "GloryOfRome"' 2>/dev/null \
+            | grep -i "openbounty\|fatal\|exception" | head -60 || true
+          echo "--- crash reports ---"
+          for f in ~/Library/Logs/DiagnosticReports/GloryOfRome*; do
+            [ -e "$f" ] || continue
+            echo "== $f"; head -60 "$f"
+          done
       - name: Upload the Simulator screenshot and console
         uses: actions/upload-artifact@v7
         with:
