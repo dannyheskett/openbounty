@@ -92,6 +92,7 @@ double plat_ios_delta(void) { return atomic_load(&s_delta); }
 #import <Foundation/Foundation.h>
 
 #include <unistd.h>
+#include <os/log.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -107,8 +108,11 @@ extern "C" void plat_ios_log_stdout(void) {
 
     int fds[2];
     if (pipe(fds) != 0) return;
+    // STDOUT ONLY. Redirecting stderr as well feeds this thread's own output
+    // back into the pipe -- NSLog writes to stderr -- and the line count
+    // doubles every pass until the log is useless. Which is exactly what it
+    // did the first time.
     dup2(fds[1], STDOUT_FILENO);
-    dup2(fds[1], STDERR_FILENO);
     setvbuf(stdout, NULL, _IOLBF, 0);
 
     int rd = fds[0];
@@ -123,13 +127,16 @@ extern "C" void plat_ios_log_stdout(void) {
             char *line = buf, *nl;
             while ((nl = strchr(line, '\n')) != NULL) {
                 *nl = '\0';
-                NSLog(@"openbounty: %s", line);
+                // os_log, not NSLog: os_log writes to the unified log alone,
+                // where NSLog also writes to stderr -- which is how the loop
+                // above would come back.
+                os_log(OS_LOG_DEFAULT, "openbounty: %{public}s", line);
                 line = nl + 1;
             }
             used = strlen(line);
             memmove(buf, line, used + 1);
             if (used >= sizeof buf - 2) {   // a line longer than the buffer
-                NSLog(@"openbounty: %s", buf);
+                os_log(OS_LOG_DEFAULT, "openbounty: %{public}s", buf);
                 used = 0;
             }
         }
