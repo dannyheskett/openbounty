@@ -244,9 +244,14 @@ static int validate_pack_run(const char *pack_dir, int lo, int hi,
 // main
 // ===========================================================================
 
+// iOS has its own entry point: UIApplicationMain in ios/ios_main.mm, which
+// starts the UI and then runs shell_run_game on the game thread. Defining
+// main() here as well would be a duplicate symbol.
+#if !defined(PLATFORM_IOS)
 int main(int argc, char **argv) {
     return shell_run_game(argc, argv);
 }
+#endif
 
 int shell_run_game(int argc, char **argv) {
     // SINGLE UNIFIED OUTPUT: the whole game/autoplay log goes to stdout (nothing to
