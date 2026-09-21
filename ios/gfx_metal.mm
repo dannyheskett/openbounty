@@ -374,6 +374,20 @@ static void pass_flush(id<MTLTexture> tex, id<CAMetalDrawable> drawable) {
     [enc endEncoding];
     if (drawable) [cb presentDrawable:drawable];
     [cb commit];
+
+    // Read one pixel back out of the offscreen buffer for the first few
+    // frames. A black screen with correct-looking geometry has exactly two
+    // explanations -- the target pass is not drawing, or the drawable pass is
+    // not sampling what it drew -- and this tells them apart.
+    if (tex && s_passes <= 8) {
+        [cb waitUntilCompleted];
+        unsigned char px[4] = { 0, 0, 0, 0 };
+        MTLRegion r = MTLRegionMake2D((NSUInteger)(dst.width / 2),
+                                      (NSUInteger)(dst.height / 2), 1, 1);
+        [tex getBytes:px bytesPerRow:4 fromRegion:r mipmapLevel:0];
+        NSLog(@"openbounty: target centre pixel = %d,%d,%d,%d",
+              px[0], px[1], px[2], px[3]);
+    }
     pass_reset();
 }
 
