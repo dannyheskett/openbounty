@@ -296,6 +296,64 @@ jobs:
 
       - name: Build the device .ipa (unsigned)
         run: make ios PACK_TOOL=build/openbounty-mac
+      # Prove the signing chain on every PR, not for the first time in a
+      # release: the certificate, the profile and the app icon all have to
+      # agree with the bundle id, and each of them has failed an upload for
+      # somebody at some point. Produces nothing that ships -- the artifact
+      # above is still the unsigned build.
+      - name: Detect iOS signing secrets
+        id: iossecret
+        env:
+          C: ${{ secrets.IOS_CERT_P12 }}
+          P: ${{ secrets.IOS_CERT_PASSWORD }}
+          M: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+          T: ${{ secrets.IOS_TEAM_ID }}
+        run: |
+          if [ -n "$C" ] && [ -n "$P" ] && [ -n "$M" ] && [ -n "$T" ]; then
+            echo "present=true"  >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No iOS signing secrets; the signed build is skipped."
+          fi
+      - name: Sign the .ipa and check it is App Store-shaped
+        if: steps.iossecret.outputs.present == 'true'
+        env:
+          IOS_CERT_P12:             ${{ secrets.IOS_CERT_P12 }}
+          IOS_CERT_PASSWORD:        ${{ secrets.IOS_CERT_PASSWORD }}
+          IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+          IOS_TEAM_ID:              ${{ secrets.IOS_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN="$RUNNER_TEMP/gor-ci.keychain-db"
+          KEYCHAIN_PASS="$(uuidgen)"
+          echo "$IOS_CERT_P12"             | base64 -d > "$RUNNER_TEMP/dist.p12"
+          echo "$IOS_PROVISIONING_PROFILE" | base64 -d > "$RUNNER_TEMP/profile.mobileprovision"
+          security create-keychain -p "$KEYCHAIN_PASS" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASS" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/dist.p12" -k "$KEYCHAIN" \
+            -P "$IOS_CERT_PASSWORD" -T /usr/bin/codesign -f pkcs12
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASS" "$KEYCHAIN" >/dev/null
+          security list-keychains -d user -s "$KEYCHAIN" login.keychain-db
+          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" \
+            | awk -F'"' '/Apple Distribution/ {print $2; exit}')
+          test -n "$IDENTITY" || { echo "::error::no Apple Distribution identity"; exit 1; }
+          echo "signing as: $IDENTITY"
+          rm -rf build/ios-device build/GloryOfRome.ipa
+          make ios PACK_TOOL=build/openbounty-mac \
+            IOS_SIGN_IDENTITY="$IDENTITY" \
+            IOS_PROFILE="$RUNNER_TEMP/profile.mobileprovision" \
+            IOS_TEAM_ID="$IOS_TEAM_ID"
+          app="build/ios-device/Payload/GloryOfRome.app"
+          codesign --verify --strict --verbose=2 "$app"
+          test -f "$app/embedded.mobileprovision" || { echo "::error::no embedded profile"; exit 1; }
+          test -f "$app/Assets.car"               || { echo "::error::no compiled app icon"; exit 1; }
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIconName' "$app/Info.plist"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist"
+          # The profile has to be for THIS bundle id, or the upload is refused.
+          security cms -D -i "$app/embedded.mobileprovision" > "$RUNNER_TEMP/p.plist"
+          /usr/libexec/PlistBuddy -c 'Print :Entitlements:application-identifier' "$RUNNER_TEMP/p.plist"
       - name: Upload the device .ipa
         uses: actions/upload-artifact@v7
         with:
