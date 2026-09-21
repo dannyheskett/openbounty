@@ -150,12 +150,11 @@ The two groups gate independently:
 All seven are needed end to end. Set only the first four and you get a signed
 `.ipa` attached to the GitHub Release that you can upload by hand.
 
-## 6a. Draw the app icon
+## 6a. The app icon
 
-There is no icon in the repo yet, and without one nothing can be submitted:
-a signed `make ios` stops rather than building a bundle Apple would reject.
-One file is needed, `ios/Assets.xcassets/AppIcon.appiconset/icon-1024.png`,
-1024x1024 and opaque. `actool` derives every other size from it.
+One file, `ios/Assets.xcassets/AppIcon.appiconset/icon-1024.png`, 1024x1024
+and opaque; `actool` derives every other size from it. A signed `make ios`
+stops without it rather than building a bundle Apple would reject.
 
 ## 7. Cut a release
 

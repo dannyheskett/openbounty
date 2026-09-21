@@ -7,7 +7,6 @@ iOS masks it.
 `actool` derives every size iOS shows from this single image, so there is no
 set of icon files to keep in step and nothing to resize by hand.
 
-It is not in the repository yet. Until it is, `make ios` builds an iconless
-app, which runs anywhere but cannot be uploaded: `make ios` with a signing
-identity set stops with an error rather than producing a bundle the App Store
-would reject.
+Without it `make ios` builds an iconless app, which runs anywhere but cannot be
+uploaded; `make ios` with a signing identity set stops with an error rather
+than producing a bundle the App Store would reject.
