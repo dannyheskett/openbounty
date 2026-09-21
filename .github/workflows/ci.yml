@@ -360,50 +360,12 @@ jobs:
       # and plays itself while screencaps are taken. The iPhone 16 Plus is
       # 1290x2796, which landscape makes 2796x1290 -- exactly Apple's
       # APP_IPHONE_67 slot, so nothing is ever scaled or padded to fit.
-      - name: Capture App Store screenshots (iPhone 6.7in, demo mode)
-        run: |
-          set -eux
-          # Apple's largest iPhone screenshot slot is APP_IPHONE_67: 1290x2796,
-          # which is a Plus/Pro Max of the 15/16 generation. The runner image
-          # carries whatever Xcode ships, so take the first of these that
-          # exists rather than naming one device and breaking on the next
-          # image bump. The capture size is checked below either way.
-          xcrun simctl list devices available | sed -n 's/^ *\(iPhone[^(]*\).*/\1/p' | sort -u
-          UDID=$(xcrun simctl list devices available -j | python3 -c "
-import json,sys
-want=['iPhone 16 Plus','iPhone 15 Plus','iPhone 14 Plus','iPhone 16 Pro Max','iPhone 17 Pro Max','iPhone 17 Plus']
-d=json.load(sys.stdin)['devices']
-have={x['name']: x['udid'] for r in d.values() for x in r}
-for n in want:
-    if n in have: print(have[n]); break
-else: print(next(iter(have.values())))
-")
-          xcrun simctl boot "$UDID"
-          xcrun simctl bootstatus "$UDID" -b
-          app=build/ios-sim/GloryOfRome.app
-          xcrun simctl install "$UDID" "$app"
-          bundle=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist")
-          xcrun simctl launch "$UDID" "$bundle" --demo
-          mkdir -p shots
-          # The intro runs for ~5s; then the demo plays. Spread the captures
-          # so the set covers the map, a fight and the town screens.
-          for i in 1 2 3 4 5 6 7 8 9 10; do
-            sleep 12
-            xcrun simctl io "$UDID" screenshot "shots/raw-$i.png"
-          done
-          # simctl captures the DEVICE, which stays portrait while the app is
-          # landscape-locked, so each shot is rotated a quarter turn.
-          for f in shots/raw-*.png; do sips -r 270 "$f" >/dev/null; done
-          # Apple's APP_IPHONE_67 slot is exactly 2796x1290 in landscape.
-          # Anything else is reported here rather than rejected by the API
-          # twenty minutes later.
-          sips -g pixelWidth -g pixelHeight shots/raw-1.png
-          w=$(sips -g pixelWidth  shots/raw-1.png | awk '/pixelWidth/{print $2}')
-          h=$(sips -g pixelHeight shots/raw-1.png | awk '/pixelHeight/{print $2}')
-          echo "captured ${w}x${h}"
-          if [ "$w" != "2796" ] || [ "$h" != "1290" ]; then
-            echo "::warning::captured ${w}x${h}, not Apple's 2796x1290 APP_IPHONE_67 size"
-          fi
+      # Store screenshots, captured from the app itself: there is no
+      # supported way to tap a Simulator, so it is launched with --demo and
+      # plays itself while screencaps are taken. See the script for why the
+      # device matters.
+      - name: Capture App Store screenshots (demo mode)
+        run: ./scripts/ios_store_shots.sh build/ios-sim/GloryOfRome.app shots
       - name: Upload the App Store screenshots
         if: always()
         uses: actions/upload-artifact@v7
