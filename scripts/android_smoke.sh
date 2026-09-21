@@ -20,6 +20,12 @@ APK="${1:?usage: android_smoke.sh <apk>}"
 PKG=com.danheskett.gloryofrome
 ACT="$PKG/$PKG.GloryOfRomeActivity"
 
+# Android shows a "Viewing full screen / swipe down to exit" dialog the first
+# time an app goes immersive, and that dialog TAKES FOCUS: raylib stops
+# rendering when the window is not focused, so the game freezes on whatever
+# frame it had reached and every screenshot after it is that same frame.
+adb shell settings put secure immersive_mode_confirmations confirmed || true
+
 adb install -r "$APK"
 
 pid=""
