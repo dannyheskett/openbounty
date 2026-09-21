@@ -2850,3 +2850,14 @@ sweep --sweep`, `cropcentre.py` as `romeart.py crop`.
 - **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=96`, `input_image_keep_alpha=false`, `input_image_path=build/art/zenobia/run04/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=8462`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
 - **Note:** Villain face loop (2026-09-05), the route proven on Hannibal: custom action on the untouched approved still, eight frames, prompt expansion on, the worklist row's tag prompt. Judged by pixels changed outside the face and the 3x gif. Re-run from the bar-free still run04.
 
+## The launcher icon
+
+`python3 tools/romeart.py icon build/art/icon` composes it from the title
+screen's own pieces -- `art/ui/title_battle.png` and `art/ui/title_eagle.png`
+-- squared at 128x128 without the menu or the wordmarks, then doubled with
+nearest-neighbour to 512 (Play) and 1024 (App Store). Opaque, because Apple
+rejects an icon with an alpha channel.
+
+The installed copies are `ios/Assets.xcassets/AppIcon.appiconset/icon-1024.png`,
+`android/res/mipmap-xxxhdpi/ic_launcher.png` and
+`android/play-assets/icon-512.png`.

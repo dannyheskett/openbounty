@@ -6,6 +6,7 @@
     zone <zone>            build a continent's whole tile set from its primitives
     install <zone>         copy a built set into the pack and list it in game.json
     sheet <zone>           a review page of every tile in a set, at 1:1
+    icon [outdir]          the launcher icon, from the title art (128/512/1024)
     prompts                rebuild docs/ROME-ART.md from art/jobs/*.json
 
     grass <set> <out> ...  the base grass and its variants
@@ -2175,8 +2176,51 @@ def cmd_sheet(argv):
     print(f"wrote {out_dir}/tiles.png: {len(names)} tiles")
 
 
+
+# ==========================================================================
+# icon -- the launcher icon, composed from the pack's own title pieces
+# ==========================================================================
+
+def cmd_icon(argv):
+    """Build the launcher icon from the title art. No generation, no filtering.
+
+    python3 tools/romeart.py icon build/art/icon
+
+    The title screen composes art/ui/title_battle.png (the legion on the ridge)
+    and art/ui/title_eagle.png (the aquila standard) at runtime; the icon is the
+    same two files, squared at 128x128 with the menu and the wordmarks left out,
+    and then doubled to 512 and 1024 with nearest-neighbour -- each pixel
+    becomes a 4x4 or 8x8 block, so the result is the game's own art at icon
+    size rather than an upscale of anything.
+
+    Opaque on purpose: Apple rejects an icon with an alpha channel.
+
+    Writes icon_128.png, icon_512.png (Play) and icon_1024.png (App Store).
+    """
+    out = argv[1] if len(argv) > 1 else "build/art/icon"
+    os.makedirs(out, exist_ok=True)
+
+    battle = Image.open(f"{PACK}/art/ui/title_battle.png").convert("RGBA")
+    eagle = Image.open(f"{PACK}/art/ui/title_eagle.png").convert("RGBA")
+
+    # The square is the middle of the ridge -- ranks in front, the enemy line
+    # behind -- with the standard stood in it, cropped where the pole leaves
+    # the frame so the SPQR plaque is the lowest thing in the icon.
+    icon = Image.new("RGBA", (128, 128))
+    icon.paste(battle.crop((64, 36, 192, 164)), (0, 0))
+    standard = eagle.crop((0, 0, 96, 128))
+    icon.paste(standard, (16, 0), standard)
+
+    icon = icon.convert("RGB")
+    icon.save(f"{out}/icon_128.png")
+    for n in (4, 8):
+        icon.resize((128 * n, 128 * n), Image.NEAREST).save(f"{out}/icon_{128 * n}.png")
+    print(f"icon: {out}/icon_128.png, icon_512.png, icon_1024.png")
+
+
 COMMANDS = {
     "zone": cmd_zone, "install": cmd_install, "sheet": cmd_sheet,
+    "icon": cmd_icon,
     "prompts": lambda a: _artprompts(["romeart"] + a),
     "grass": lambda a: _grassvar(["romeart"] + a),
     "stitch": lambda a: _stitch96(["romeart"] + a),
