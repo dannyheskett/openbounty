@@ -220,9 +220,10 @@ jobs:
     # Simulator exist on macOS alone, and there is no Mac to hand. Every iOS
     # file's first build is therefore this job (docs/IOS-BACKEND-SPIKE.md).
     #
-    # Checkpoint 2 of the spike: the app shell + the Metal renderer, drawing
-    # the renderer self-test. The game's C is not linked yet.
-    runs-on: macos-15
+    # macos-26: the same toolchain the release uses, so the signed build
+    # checked below is the one Apple would actually receive. Apple refuses an
+    # upload built against an SDK older than iOS 26.
+    runs-on: macos-26
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
