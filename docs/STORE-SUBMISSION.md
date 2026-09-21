@@ -40,7 +40,12 @@ track, and uploads the `.ipa` to App Store Connect (see
 
 Blocking, in rough order of effort:
 
-1. **The app icon.** Nothing is drawn yet.
+1. **The app icon.** Drawn but not installed: a gilded aquila on a crimson
+   banner, generated at 512 (`art/jobs/appicon.json`,
+   `build/art/appicon/run02/01_raw.png`) and awaiting a yes. 512 is the
+   largest any Retro Diffusion style produces, so the iOS file is that image
+   doubled to 1024 with nearest-neighbour — Dan's call, made on 2026-09-21,
+   for this asset only.
    - iOS needs exactly one file: `ios/Assets.xcassets/AppIcon.appiconset/icon-1024.png`,
      1024×1024, opaque. `actool` derives every other size. `make ios` with a
      signing identity set **fails** rather than building an iconless bundle.
@@ -75,21 +80,28 @@ Blocking, in rough order of effort:
 
 Stated plainly, because "it compiles" is not "it works":
 
-- **The Android app has never drawn a frame.** CI now installs the APK on an
-  emulator, launches it and checks it is still alive 20 s later, and it is:
-  the activity starts, the pack is read out of the APK, the process is
-  healthy. But the emulator's software GL does not reliably give raylib an
-  EGL configuration -- `eglChooseConfig` matches nothing, even with the depth
-  buffer dropped to zero -- so `eglCreateContext` fails and every frame goes
-  nowhere. The screenshot artifact is black.
+- **Android now draws, on an emulator only.** CI builds a throwaway x86_64
+  APK, installs it on a phone-sized emulator (Pixel 6 profile), launches it
+  and keeps the screenshot and the whole logcat. The app boots end to end --
+  pack opened, font baked, sprites loaded, frame buffer created -- and the
+  intro draws.
 
-  Whether this is emulator-only is **unknown**. The same raylib configuration
-  ships in the other `open*` games, which are tested on real hardware through
-  a device farm rather than an emulator. Two ways to settle it: sideload the
-  arm64 APK from the CI artifact onto a phone, or run the **devicefarm**
-  workflow, which is ported here and fuzz-tests both apps on real hardware --
-  it needs `AWS_ROLE_ARN` and `DEVICEFARM_PROJECT_ARN`, the same secrets the
-  other repositories use.
+  Getting there needed a raylib fix that is worth knowing about: raylib's
+  Android backend ignores what `eglChooseConfig` returns, and that emulator's
+  EGL matches `EGL_RENDERABLE_TYPE` for equality rather than as a bitmask, so
+  a request for ES2 matched none of its ES1|ES2|ES3 configurations. raylib
+  then created a context against an unset configuration, got EGL_BAD_CONFIG,
+  and carried on drawing into nothing. `scripts/raylib-android-eglconfig.patch`
+  walks colour and depth down and, failing that, picks a window-capable ES2
+  configuration by hand. Whether any real device needs it is unknown; it costs
+  nothing where the driver behaves.
+
+- **No Android run on real hardware.** An emulator is not a phone. The
+  `devicefarm` workflow fuzz-tests the real arm64 APK and the unsigned `.ipa`
+  on real devices; it needs `AWS_ROLE_ARN` and `DEVICEFARM_PROJECT_ARN` (the
+  other `open*` repositories already have both, and the AWS role's trust
+  policy has to name this repository as well).
+
 - **iOS touch input is unverified.** The renderer is confirmed from CI
   screenshots — the title screen draws correctly, the app is alive 30 s in —
   but no tap has been delivered to the app. The touch *mapping* is shared
@@ -100,9 +112,10 @@ Stated plainly, because "it compiles" is not "it works":
   has heard it.
 - **Nothing has been run on an iPad**, though `UIDeviceFamily` claims one.
 
-None of this is hard to close — it is a device, an hour, and a walk through
-title → class → map → a fight → save → load on each platform. It just has not
-happened, and no store submission should go out before it does.
+None of this is hard to close — it is the Device Farm secrets, or a phone and
+an hour, and a walk through title → class → map → a fight → save → load on
+each platform. It just has not happened, and no store submission should go out
+before it does.
 
 ---
 
