@@ -766,12 +766,16 @@ int shell_run_game(int argc, char **argv) {
     // Font strip and palette come from the manifest. They were compiled in
     // here, which meant every pack had to ship a file named for the game the
     // extractor was written against.
+    BOOT_TRACE("[boot] baking the font\n");
     bfont_init((const struct Resources *)&res);
+    BOOT_TRACE("[boot] font ready\n");
     palette_init(res.sprites.palette);
     ui_set_panel_frame(res.sprites.panel_frame);
 
+    BOOT_TRACE("[boot] loading sprites\n");
     Sprites sprites;
     sprites_load(&sprites, &res);
+    BOOT_TRACE("[boot] sprites loaded\n");
     tile_cache_attach(&res);
     // Cosmetic tile variants: a fresh shuffle every launch (draw-time only).
     tilevar_init((const struct Resources *)&res, (unsigned)time(NULL));
@@ -786,8 +790,10 @@ int shell_run_game(int argc, char **argv) {
 
     // Allocate the render target early so startup screens can
     // draw into it.
+    BOOT_TRACE("[boot] creating the frame buffer\n");
     RenderTexture2D render_target_startup =
         gfx_target_create(CL_SCREEN_W, CL_SCREEN_H);
+    BOOT_TRACE("[boot] frame buffer id=%u\n", render_target_startup.id);
     gfx_texture_point(render_target_startup.texture);
 
     // Pre-game flow: pick slot + new-game wizard. --demo / --autoplay bypass
