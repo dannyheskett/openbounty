@@ -356,7 +356,7 @@ static void chrome_button(int x, int y, int w, int h,
 // the letterbox margin below the game; if there is none, overlays the
 // bottom edge of the game area instead.
 static void chrome_bar(const Button *btns, int count) {
-    int win_w = GetScreenWidth(), win_h = GetScreenHeight();
+    int win_w = frame_host_window_width(), win_h = frame_host_window_height();
     int gx, gy, gw, gh;
     present_last_dst(&gx, &gy, &gw, &gh);
 
@@ -383,7 +383,7 @@ static void chrome_bar(const Button *btns, int count) {
 }
 
 static void chrome_corner(void) {
-    int win_w = GetScreenWidth();
+    int win_w = frame_host_window_width();
     int x = win_w - 56 - 6, y = 6;
     if (s_chrome & TOUCH_CHROME_BACK) {
         chrome_button(x, y, 56, 42, "ESC", KEY_ESCAPE, false);
@@ -399,7 +399,7 @@ static void chrome_digits(void) {
         { "1", "2", "3" }, { "<", "0", "OK" },
     };
     int bw = 48, gap = 5;
-    int win_w = GetScreenWidth(), win_h = GetScreenHeight();
+    int win_w = frame_host_window_width(), win_h = frame_host_window_height();
     int x0 = win_w - 3 * (bw + gap) - 6;
     int y0 = win_h - 4 * (bw + gap) - 6;
     for (int r = 0; r < 4; r++) {
@@ -417,7 +417,7 @@ static void chrome_digits(void) {
 
 static void chrome_keyboard(void) {
     static const char *rows[3] = { "QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM" };
-    int win_w = GetScreenWidth(), win_h = GetScreenHeight();
+    int win_w = frame_host_window_width(), win_h = frame_host_window_height();
     int gap = 4;
     int bw = (win_w - 11 * gap) / 10;
     if (bw > 46) bw = 46;

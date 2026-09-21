@@ -49,3 +49,43 @@ void frame_host_end_frame(void) {
     // for the read at the top of the next loop iteration.
     touch_frame();
 }
+
+// ---- the window -----------------------------------------------------------
+//
+// Thin forwards, same as the time calls above. The flags are set here rather
+// than by the caller so every platform's window is opened the same way:
+// resizable with MSAA hinted, no cursor (this game has no mouse support at
+// all -- a tap is a touch contact), no exit key (Escape is the game's own
+// back, and raylib would otherwise close the window on it), and a 60fps cap.
+
+void frame_host_window_open(int w, int h, const char *title) {
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
+    InitWindow(w, h, title);
+    HideCursor();
+    SetTargetFPS(60);
+    SetExitKey(KEY_NULL);
+}
+
+void frame_host_window_close(void) { CloseWindow(); }
+
+void frame_host_window_min_size(int w, int h) { SetWindowMinSize(w, h); }
+void frame_host_window_size_set(int w, int h) { SetWindowSize(w, h); }
+
+int  frame_host_window_width(void)  { return GetScreenWidth(); }
+int  frame_host_window_height(void) { return GetScreenHeight(); }
+
+bool frame_host_window_fullscreen(void) { return IsWindowFullscreen(); }
+bool frame_host_window_maximized(void)  { return IsWindowMaximized(); }
+void frame_host_window_fullscreen_toggle(void) { ToggleFullscreen(); }
+
+void frame_host_display_size(int *w, int *h) {
+    int mon = GetCurrentMonitor();
+    if (w) *w = GetMonitorWidth(mon);
+    if (h) *h = GetMonitorHeight(mon);
+}
+
+void frame_host_poll_events(void) { PollInputEvents(); }
+
+double frame_host_delta(void) { return (double)GetFrameTime(); }
+
+void frame_host_quiet_log(void) { SetTraceLogLevel(LOG_ERROR); }

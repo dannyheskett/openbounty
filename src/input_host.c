@@ -68,6 +68,25 @@ static bool note_key(bool real) {
 
 void input_host_note_gamepad(void) { s_pad_seen = true; }
 
+// ---- gamepad ----------------------------------------------------------------
+//
+// Pad 0 only. Deliberately NOT routed through note_key: a pad is not a
+// keyboard, and text entry must stay on the letter selector for a player
+// holding one.
+#define PAD_ID 0
+
+bool input_pad_available(void) { return IsGamepadAvailable(PAD_ID); }
+
+bool input_pad_pressed(int button) {
+    return IsGamepadButtonPressed(PAD_ID, button);
+}
+
+int input_pad_any_pressed(void) { return GetGamepadButtonPressed(); }
+
+float input_pad_axis(int axis) {
+    return GetGamepadAxisMovement(PAD_ID, axis);
+}
+
 bool input_key_pressed(int key) {
     if (guarded()) return false;
 #if defined(PLATFORM_ANDROID)

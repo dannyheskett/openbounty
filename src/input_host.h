@@ -11,6 +11,18 @@ bool input_key_down(int key);        // IsKeyDown
 int  input_get_key_pressed(void);    // GetKeyPressed
 int  input_get_char_pressed(void);   // GetCharPressed
 
+// ---- gamepad --------------------------------------------------------------
+//
+// One pad, id 0. Button and axis ids are raylib's enum values, so call sites
+// keep naming GAMEPAD_BUTTON_* / GAMEPAD_AXIS_* (ob_types.h defines those for
+// a build with no raylib). Every call answers false/0 when no pad is present,
+// which is the whole story on a phone.
+
+bool  input_pad_available(void);
+bool  input_pad_pressed(int button);
+int   input_pad_any_pressed(void);     // 0 when nothing was pressed this frame
+float input_pad_axis(int axis);
+
 // ---- synthetic input ------------------------------------------------------
 //
 // The touch layer (src/touch.c) translates taps into key events injected

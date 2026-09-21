@@ -8,7 +8,41 @@
 // calls used by game logic, so callers don't include raylib directly.
 
 double frame_host_time(void);          // GetTime equivalent
+double frame_host_delta(void);         // GetFrameTime equivalent
 bool   frame_host_should_close(void);  // WindowShouldClose equivalent
+
+// ---- the window -----------------------------------------------------------
+//
+// Opening and sizing the one window. On a platform that has no window to open
+// -- iOS, where the OS hands the app a full-screen view, and Android, where
+// raylib's NativeActivity owns it -- the open/size/fullscreen calls are
+// accepted and ignored, and the size queries report the view.
+//
+// Sizes are in WINDOW pixels, which on a high-DPI display are device pixels:
+// the game is presented at an integer scale of its buffer, so it needs the
+// real count, not a logical one.
+void frame_host_window_open(int w, int h, const char *title);
+void frame_host_window_close(void);
+void frame_host_window_min_size(int w, int h);
+void frame_host_window_size_set(int w, int h);
+int  frame_host_window_width(void);    // GetScreenWidth equivalent
+int  frame_host_window_height(void);   // GetScreenHeight equivalent
+bool frame_host_window_fullscreen(void);
+bool frame_host_window_maximized(void);
+void frame_host_window_fullscreen_toggle(void);
+// The display the window is on, for deciding how large a buffer could be
+// shown. On a phone this is the screen itself.
+void frame_host_display_size(int *w, int *h);
+
+// Poll the platform's event queue. Normally implicit in frame_host_end_frame;
+// a loop that reads input WITHOUT drawing a frame has to call it explicitly
+// (see src/startup.c).
+void frame_host_poll_events(void);
+
+// Quieten the platform's own logging: the shell reports its own conditions,
+// and raylib's per-asset chatter is noise at the prompt. Warnings and errors
+// still come through.
+void frame_host_quiet_log(void);
 
 // ---------------------------------------------------------------------------
 // Web input ordering rule -- READ THIS BEFORE ADDING A gfx_frame_end() CALL.

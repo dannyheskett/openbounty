@@ -1,5 +1,6 @@
 #include "input_host.h"
 #include "views.h"
+#include "frame_host.h"
 #include "touch.h"
 #include "select.h"
 #include "present.h"
@@ -1520,16 +1521,19 @@ void views_controls_advance_scale(void) {
         // A movie needs one frame size, and a fixed buffer renders at the
         // zoom, so the zoom is locked while the recorder runs.
         if (recorder_active()) return;
-        int mon = GetCurrentMonitor();
-        int fit = present_max_scale(GetMonitorWidth(mon), GetMonitorHeight(mon));
-        if (IsWindowFullscreen())
-            fit = present_max_scale(GetScreenWidth(), GetScreenHeight());
+        int disp_w, disp_h;
+        frame_host_display_size(&disp_w, &disp_h);
+        int fit = present_max_scale(disp_w, disp_h);
+        if (frame_host_window_fullscreen())
+            fit = present_max_scale(frame_host_window_width(),
+                                    frame_host_window_height());
         if (s > fit) s = 1;
         present_set_scale(s);
         present_zoom_window(s);
         return;
     }
-    if (s > present_max_scale(GetScreenWidth(), GetScreenHeight())) s = 1;
+    if (s > present_max_scale(frame_host_window_width(),
+                              frame_host_window_height())) s = 1;
     present_set_scale(s);
 }
 

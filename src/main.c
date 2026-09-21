@@ -680,7 +680,7 @@ int shell_run_game(int argc, char **argv) {
     pack_stack_push(pack);
 
     // Silence raylib's per-asset INFO chatter; keep warnings + errors.
-    SetTraceLogLevel(LOG_ERROR);   // the shell reports its own conditions; raylib's warnings are noise at the prompt
+    frame_host_quiet_log();   // the shell reports its own conditions
 
     Resources res;
     if (!resources_load(&res, "game.json")) {
@@ -722,21 +722,19 @@ int shell_run_game(int argc, char **argv) {
     int base_w = CL_WINDOW_W;
     int base_h = CL_WINDOW_H;
 
-    unsigned int window_flags = FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT;
-    SetConfigFlags(window_flags);
-    InitWindow(base_w, base_h, res.title[0] ? res.title : "OpenBounty");
-    int min_w, min_h;
-    layout_min_window(&min_w, &min_h);
-    SetWindowMinSize(min_w, min_h);
-    if (want_fullscreen) ToggleFullscreen();
-    HideCursor();   // no mouse support, ever: taps are touch, and no cursor is drawn
+    // The window: resizable, no cursor, no exit key, 60fps -- all of that is
+    // frame_host_window_open's, so every platform opens it the same way.
     // Modern starts at 1x -- one buffer pixel to one screen pixel, the
     // resolution the pack was authored for. Maximising shows more tiles rather
     // than bigger ones; higher scales are an explicit choice for a 4K panel.
     // Demo mode paces itself via per-beat holds in shell_demo.c; the frame rate
     // stays at the human 60fps cap. Human play is 60fps too.
-    SetTargetFPS(60);
-    SetExitKey(KEY_NULL);
+    frame_host_window_open(base_w, base_h,
+                           res.title[0] ? res.title : "OpenBounty");
+    int min_w, min_h;
+    layout_min_window(&min_w, &min_h);
+    frame_host_window_min_size(min_w, min_h);
+    if (want_fullscreen) frame_host_window_fullscreen_toggle();
 
     // Font strip and palette come from the manifest. They were compiled in
     // here, which meant every pack had to ship a file named for the game the
@@ -755,8 +753,9 @@ int shell_run_game(int argc, char **argv) {
     // modern the buffer is the window divided by the scale; without this the
     // startup screens get a target sized from the pack's declared viewport
     // rather than the actual window, and clip.
-    layout_fit_window(GetScreenWidth(), GetScreenHeight(),
-                      present_scale(GetScreenWidth(), GetScreenHeight()));
+    layout_fit_window(frame_host_window_width(), frame_host_window_height(),
+                      present_scale(frame_host_window_width(),
+                                    frame_host_window_height()));
 
     // Allocate the render target early so startup screens can
     // draw into it.
@@ -806,7 +805,7 @@ title:;
         bfont_shutdown();
         lattice_shutdown();
         tile_cache_shutdown();
-        CloseWindow();
+        frame_host_window_close();
         resources_free(&res);
         pack_stack_clear();
         return 0;
@@ -885,7 +884,7 @@ title:;
         bfont_shutdown();
         lattice_shutdown();
         tile_cache_shutdown();
-        CloseWindow();
+        frame_host_window_close();
         resources_free(&res);
         pack_stack_clear();
         return 1;
@@ -941,7 +940,7 @@ title:;
         int rc = gallery_run(&game, &map, &fog, &res, &sprites, &render_target, gallery_dir);
         gfx_target_free(render_target);
         sprites_unload(&sprites);
-        CloseWindow();
+        frame_host_window_close();
         resources_free(&res);
         return rc;
     }
@@ -1070,7 +1069,7 @@ title:;
         }
         if ((input_key_down(KEY_LEFT_ALT) || input_key_down(KEY_RIGHT_ALT)) &&
             input_key_pressed(KEY_ENTER)) {
-            ToggleFullscreen();
+            frame_host_window_fullscreen_toggle();
         }
 
 
@@ -1729,7 +1728,7 @@ title:;
     MapFree(&map);
     FogFree(&fog);
     GameFree(&game);
-    CloseWindow();
+    frame_host_window_close();
     resources_free(&res);
     pack_stack_clear();
     return 0;

@@ -1,4 +1,5 @@
 #include "present.h"
+#include "frame_host.h"
 #include "gfx.h"
 #include "safe_area.h"
 #include "layout.h"
@@ -123,14 +124,14 @@ void present_zoom_window(int scale) {
     if (!CL_IS_NATIVE) return;
     if (scale < 1) scale = 1;
     if (scale > CL_SCALE_MAX_NATIVE) scale = CL_SCALE_MAX_NATIVE;
-    if (IsWindowFullscreen() || IsWindowMaximized()) return;
-    SetWindowSize(CL_SCREEN_W * scale, CL_SCREEN_H * scale);
+    if (frame_host_window_fullscreen() || frame_host_window_maximized()) return;
+    frame_host_window_size_set(CL_SCREEN_W * scale, CL_SCREEN_H * scale);
 }
 
 bool present_refit(RenderTexture2D *rt) {
     if (!rt) return false;
-    int win_w = GetScreenWidth();
-    int win_h = GetScreenHeight();
+    int win_w = frame_host_window_width();
+    int win_h = frame_host_window_height();
     if (CL_IS_NATIVE) {
         // The buffer never follows the window, but the zoom does: the target
         // is the buffer times the zoom, reallocated when the zoom changes.
@@ -158,8 +159,8 @@ void present_scaled(RenderTexture2D rt) {
     gfx_frame_begin();
     gfx_clear(BLACK);
 
-    int win_w = GetScreenWidth();
-    int win_h = GetScreenHeight();
+    int win_w = frame_host_window_width();
+    int win_h = frame_host_window_height();
 
     // The window minus any display cutout / gesture-bar insets (safe_area.c).
     // Every inset is zero on desktop, web and iOS, so this is the whole window

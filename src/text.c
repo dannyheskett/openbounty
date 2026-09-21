@@ -1,5 +1,6 @@
 #include "text.h"
 #include "gfx.h"
+#include "font_backend.h"
 #include "assets_bytes.h"
 #include "resources.h"
 #include "layout.h"
@@ -32,7 +33,7 @@ static int    s_ink_x[T_COUNT];          // its left bearing
 static int    s_line_h = 0;
 static int    s_digit_w = 0;
 
-static Font   s_font;                    // atlas at s_zoom
+static FontAtlas s_font;                 // atlas at s_zoom
 static bool   s_ready = false;
 static int    s_zoom = 1;
 static int    s_want_zoom = 1;
@@ -51,14 +52,17 @@ static int codepoint(unsigned char ch) {
     return ch;
 }
 
-static GlyphInfo *load_glyphs(int px, int *count) {
-    int cps[T_COUNT];
+// The codepoint set, in the order the glyph tables are indexed: printable
+// ASCII from T_FIRST, then the four arrow slots.
+static void codepoint_set(int *cps) {
     for (int i = 0; i < T_ASCII; i++) cps[i] = T_FIRST + i;
     for (int i = 0; i < 4; i++) cps[T_ASCII + i] = T_ARROWS[i];
-    *count = 0;
-    GlyphInfo *g = LoadFontData(s_bytes, (int)s_size, px, cps, T_COUNT, FONT_DEFAULT, count);
-    if (g && *count != T_COUNT) { UnloadFontData(g, *count); g = NULL; }
-    return g;
+}
+
+static bool load_metrics(int px, FontGlyph *out) {
+    int cps[T_COUNT];
+    codepoint_set(cps);
+    return font_backend_measure(s_bytes, (int)s_size, px, cps, T_COUNT, out);
 }
 
 static unsigned char *s_owned = NULL;    // bytes read from a file (tests, tools)
@@ -67,9 +71,9 @@ static bool preload_metrics(const char *name, int size, int caps) {
     s_px = (size > 0) ? size : 16;
     s_caps = caps;
     snprintf(s_name, sizeof s_name, "%s", name);
-    int count = 0;
-    GlyphInfo *g = load_glyphs(s_px, &count);
-    if (!g) { s_bytes = NULL; return false; }
+    FontGlyph g[T_COUNT];
+    int count = T_COUNT;
+    if (!load_metrics(s_px, g)) { s_bytes = NULL; return false; }
     // Line height: the deepest ink bottom over the printable set is the
     // descent the face actually uses at this size; the line is that plus a
     // little lead. offsetY is measured from the line top, so the tallest
@@ -78,18 +82,17 @@ static bool preload_metrics(const char *name, int size, int caps) {
     for (int i = 0; i < count; i++) {
         // the cell is the widest ADVANCE; a glyph whose ink overhangs its
         // advance by a pixel or two (a wide W in some monos) simply overhangs
-        int a = g[i].advanceX > 0 ? g[i].advanceX : g[i].image.width;
+        int a = g[i].advance > 0 ? g[i].advance : g[i].ink_w;
         if (a > widest) widest = a;
-        s_ink_w[i] = g[i].image.width;
-        s_ink_x[i] = g[i].offsetX;
-        int b = g[i].offsetY + g[i].image.height;
+        s_ink_w[i] = g[i].ink_w;
+        s_ink_x[i] = g[i].off_x;
+        int b = g[i].off_y + g[i].ink_h;
         if (b > deepest) deepest = b;
     }
     for (int i = 0; i < count; i++) s_adv[i] = widest;
     s_line_h = (deepest > s_px) ? deepest : s_px;
     s_line_h += (s_px + 7) / 8;          // lead: an eighth of the size
     s_digit_w = widest;
-    UnloadFontData(g, count);
     (void)name;
     return true;
 }
@@ -121,20 +124,12 @@ bool text_preload_file(const char *path, int size, int caps) {
 
 static bool build(int zoom) {
     if (!s_bytes) return false;
-    int count = 0;
-    GlyphInfo *gl = load_glyphs(s_px * zoom, &count);
-    if (!gl) return false;
-    Font f = { 0 };
-    f.baseSize = s_px * zoom;
-    f.glyphCount = count;
-    f.glyphPadding = 2;
-    f.glyphs = gl;
-    Image atlas = GenImageFontAtlas(gl, &f.recs, count, f.baseSize, f.glyphPadding, 0);
-    f.texture = gfx_texture_from_image(atlas);
-    gfx_image_free(atlas);
-    if (f.texture.id == 0) { UnloadFontData(gl, count); return false; }
-    gfx_texture_point(f.texture);
-    if (s_ready) UnloadFont(s_font);
+    int cps[T_COUNT];
+    codepoint_set(cps);
+    FontAtlas f = { 0 };
+    if (!font_backend_bake(s_bytes, (int)s_size, s_px * zoom,
+                           cps, T_COUNT, &f)) return false;
+    if (s_ready) font_backend_free(&s_font);
     s_font = f;
     s_ready = true;
     s_zoom = zoom;
@@ -147,7 +142,7 @@ bool text_init(void) {
 }
 
 void text_shutdown(void) {
-    if (s_ready) UnloadFont(s_font);
+    if (s_ready) font_backend_free(&s_font);
     s_ready = false;
     free(s_owned); s_owned = NULL;
 }
@@ -178,13 +173,13 @@ void text_draw(const char *s, int x, int y, Color c) {
     for (const unsigned char *p = (const unsigned char *)s; *p; p++) {
         if (*p == '\n') { cx = x; cy += text_line_h(); continue; }
         int gi = codepoint(*p) - T_FIRST;
-        const GlyphInfo *g = &s_font.glyphs[gi];
-        if (g->image.width > 0 && g->image.height > 0) {
-            Rectangle src = s_font.recs[gi];
+        const FontGlyph *g = &s_font.glyphs[gi];
+        if (g->ink_w > 0 && g->ink_h > 0) {
+            Rectangle src = g->src;
             // centred in the fixed cell: a narrow glyph sits in the middle
             float w = src.width / z;
             float dx = (float)cx + ((float)s_adv[gi] - w) / 2.0f;
-            Rectangle dst = { dx, (float)cy + (float)g->offsetY / z, w, src.height / z };
+            Rectangle dst = { dx, (float)cy + (float)g->off_y / z, w, src.height / z };
             gfx_texture_draw(s_font.texture, src, dst, c);
         }
         cx += s_adv[gi];

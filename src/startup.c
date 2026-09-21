@@ -103,7 +103,7 @@ static void drain_char_queue(void) {
 // -- e.g. ESC on the name screen would immediately re-fire on the class
 // select screen and exit the program.
 static void advance_input_frame(void) {
-    PollInputEvents();
+    frame_host_poll_events();
     // Injected (touch) keys have the same one-frame-edge hazard: an ESC
     // injected for this screen must not re-fire in the next screen's loop.
     input_host_clear_injected();
@@ -843,7 +843,7 @@ static bool run_create_game(const Resources *res,
             }
         }
 
-        cursor_blink += GetFrameTime();
+        cursor_blink += (float)frame_host_delta();
         bool show_caret = (int)(cursor_blink * 2.0) & 1;
 
         // ---- Render  ----

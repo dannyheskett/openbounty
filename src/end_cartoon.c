@@ -1,5 +1,6 @@
 #include "end_cartoon.h"
 #include "gfx.h"
+#include "input_host.h"
 #include "game.h"
 #include "frame_host.h"
 #include "layout.h"
@@ -24,12 +25,12 @@
 // ticks; any keypress short-circuits the animation.
 
 static bool any_key_pressed(void) {
-    int k = GetKeyPressed();
+    int k = input_get_key_pressed();
     while (k != 0) {
         if (k != KEY_LEFT_SHIFT && k != KEY_RIGHT_SHIFT &&
             k != KEY_LEFT_CONTROL && k != KEY_RIGHT_CONTROL &&
             k != KEY_LEFT_ALT && k != KEY_RIGHT_ALT) return true;
-        k = GetKeyPressed();
+        k = input_get_key_pressed();
     }
     return false;
 }

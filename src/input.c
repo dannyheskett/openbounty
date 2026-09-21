@@ -36,15 +36,15 @@ static void poll_direction(InputState *in) {
 // Pressed-edge d-pad or stick direction, for menus and the letter
 // selector. The stick counts once per engagement, not every frame.
 bool input_gamepad_dir(int *dx, int *dy) {
-    if (!IsGamepadAvailable(GAMEPAD_ID)) return false;
+    if (!input_pad_available()) return false;
     int x = 0, y = 0;
-    if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_LEFT_FACE_LEFT))  x = -1;
-    if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) x =  1;
-    if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_LEFT_FACE_UP))    y = -1;
-    if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_LEFT_FACE_DOWN))  y =  1;
+    if (input_pad_pressed(GAMEPAD_BUTTON_LEFT_FACE_LEFT))  x = -1;
+    if (input_pad_pressed(GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) x =  1;
+    if (input_pad_pressed(GAMEPAD_BUTTON_LEFT_FACE_UP))    y = -1;
+    if (input_pad_pressed(GAMEPAD_BUTTON_LEFT_FACE_DOWN))  y =  1;
     static bool stick_was = false;
-    float ax = GetGamepadAxisMovement(GAMEPAD_ID, GAMEPAD_AXIS_LEFT_X);
-    float ay = GetGamepadAxisMovement(GAMEPAD_ID, GAMEPAD_AXIS_LEFT_Y);
+    float ax = input_pad_axis(GAMEPAD_AXIS_LEFT_X);
+    float ay = input_pad_axis(GAMEPAD_AXIS_LEFT_Y);
     bool engaged = (ax >  GAMEPAD_AXIS_DEADZONE || ax < -GAMEPAD_AXIS_DEADZONE ||
                     ay >  GAMEPAD_AXIS_DEADZONE || ay < -GAMEPAD_AXIS_DEADZONE);
     if (engaged && !stick_was) {
@@ -61,28 +61,28 @@ bool input_gamepad_dir(int *dx, int *dy) {
 }
 
 bool input_gamepad_confirm(void) {
-    if (!IsGamepadAvailable(GAMEPAD_ID)) return false;
-    bool p = IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_RIGHT_FACE_DOWN);
+    if (!input_pad_available()) return false;
+    bool p = input_pad_pressed(GAMEPAD_BUTTON_RIGHT_FACE_DOWN);
     if (p) input_host_note_gamepad();
     return p;
 }
 
 static void poll_gamepad(InputState *in) {
-    if (!IsGamepadAvailable(GAMEPAD_ID)) return;
-    if (GetGamepadButtonPressed() != 0) input_host_note_gamepad();
+    if (!input_pad_available()) return;
+    if (input_pad_any_pressed() != 0) input_host_note_gamepad();
 
     // Movement: d-pad first, fall back to left stick.
     int dx = 0, dy = 0;
-    if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_LEFT_FACE_LEFT))  dx = -1;
-    if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) dx =  1;
-    if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_LEFT_FACE_UP))    dy = -1;
-    if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_LEFT_FACE_DOWN))  dy =  1;
+    if (input_pad_pressed(GAMEPAD_BUTTON_LEFT_FACE_LEFT))  dx = -1;
+    if (input_pad_pressed(GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) dx =  1;
+    if (input_pad_pressed(GAMEPAD_BUTTON_LEFT_FACE_UP))    dy = -1;
+    if (input_pad_pressed(GAMEPAD_BUTTON_LEFT_FACE_DOWN))  dy =  1;
 
     if (dx == 0 && dy == 0) {
         // Stick: edge-trigger so one push = one step (matches keyboard).
         static bool stick_held = false;
-        float ax = GetGamepadAxisMovement(GAMEPAD_ID, GAMEPAD_AXIS_LEFT_X);
-        float ay = GetGamepadAxisMovement(GAMEPAD_ID, GAMEPAD_AXIS_LEFT_Y);
+        float ax = input_pad_axis(GAMEPAD_AXIS_LEFT_X);
+        float ay = input_pad_axis(GAMEPAD_AXIS_LEFT_Y);
         bool engaged = (ax >  GAMEPAD_AXIS_DEADZONE || ax < -GAMEPAD_AXIS_DEADZONE ||
                         ay >  GAMEPAD_AXIS_DEADZONE || ay < -GAMEPAD_AXIS_DEADZONE);
         if (engaged && !stick_held) {
@@ -101,20 +101,20 @@ static void poll_gamepad(InputState *in) {
     // frame so keyboard takes precedence on keyboard+pad systems.
     if (in->action != INPUT_ACTION_NONE) return;
 
-    if      (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_RIGHT_FACE_DOWN))   in->action = INPUT_ACTION_SEARCH;
-    else if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_RIGHT_FACE_LEFT))   in->action = INPUT_ACTION_CAST_SPELL;
-    else if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_RIGHT_FACE_UP))     in->action = INPUT_ACTION_END_WEEK;
-    else if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_LEFT_TRIGGER_1))    in->action = INPUT_ACTION_VIEW_ARMY;
-    else if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_RIGHT_TRIGGER_1))   in->action = INPUT_ACTION_VIEW_CHARACTER;
-    else if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_LEFT_TRIGGER_2))    in->action = INPUT_ACTION_FLY;
-    else if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_RIGHT_TRIGGER_2))   in->action = INPUT_ACTION_LAND;
-    else if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_MIDDLE_RIGHT))      in->action = INPUT_ACTION_VIEW_MAP;
-    else if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_MIDDLE_LEFT))       in->action = INPUT_ACTION_OPTIONS_MENU;
+    if      (input_pad_pressed(GAMEPAD_BUTTON_RIGHT_FACE_DOWN))   in->action = INPUT_ACTION_SEARCH;
+    else if (input_pad_pressed(GAMEPAD_BUTTON_RIGHT_FACE_LEFT))   in->action = INPUT_ACTION_CAST_SPELL;
+    else if (input_pad_pressed(GAMEPAD_BUTTON_RIGHT_FACE_UP))     in->action = INPUT_ACTION_END_WEEK;
+    else if (input_pad_pressed(GAMEPAD_BUTTON_LEFT_TRIGGER_1))    in->action = INPUT_ACTION_VIEW_ARMY;
+    else if (input_pad_pressed(GAMEPAD_BUTTON_RIGHT_TRIGGER_1))   in->action = INPUT_ACTION_VIEW_CHARACTER;
+    else if (input_pad_pressed(GAMEPAD_BUTTON_LEFT_TRIGGER_2))    in->action = INPUT_ACTION_FLY;
+    else if (input_pad_pressed(GAMEPAD_BUTTON_RIGHT_TRIGGER_2))   in->action = INPUT_ACTION_LAND;
+    else if (input_pad_pressed(GAMEPAD_BUTTON_MIDDLE_RIGHT))      in->action = INPUT_ACTION_VIEW_MAP;
+    else if (input_pad_pressed(GAMEPAD_BUTTON_MIDDLE_LEFT))       in->action = INPUT_ACTION_OPTIONS_MENU;
 }
 
 bool gamepad_pressed_cancel(void) {
-    if (!IsGamepadAvailable(GAMEPAD_ID)) return false;
-    bool p = IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_RIGHT_FACE_RIGHT);
+    if (!input_pad_available()) return false;
+    bool p = input_pad_pressed(GAMEPAD_BUTTON_RIGHT_FACE_RIGHT);
     if (p) input_host_note_gamepad();
     return p;
 }
