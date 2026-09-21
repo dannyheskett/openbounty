@@ -1,0 +1,150 @@
+name: testflight
+
+# Put the CURRENT BRANCH on TestFlight, without merging anything.
+#
+# release.yml only runs on main, and a merge there cuts a release number and a
+# GitHub Release. This is the other thing you want while working: build what is
+# on a branch, sign it, and send it to TestFlight so the fix can be checked on
+# a real phone. Nothing is tagged and nothing is published.
+#
+# Pick the branch in the "Run workflow" dropdown. The build number is whatever
+# App Store Connect has not seen yet (scripts/asc_next_build.py), so branch
+# builds and release builds never collide.
+
+on:
+  workflow_dispatch:
+    inputs:
+      notes:
+        description: 'What to Test (shown to testers; blank = branch and commit)'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+# One upload at a time: two builds racing for the same build number would have
+# the loser rejected by Apple.
+concurrency:
+  group: testflight
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: build, sign and upload to TestFlight
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check the iOS SDK is new enough for App Store Connect
+        run: |
+          set -eux
+          sdk=$(xcrun --sdk iphoneos --show-sdk-version)
+          echo "iphoneos SDK: $sdk"
+          if [ "${sdk%%.*}" -lt 26 ]; then
+            echo "::error::iOS SDK $sdk is too old; uploads require 26+."
+            exit 1
+          fi
+      - name: Gate on the signing and API secrets
+        id: gate
+        env:
+          C: ${{ secrets.IOS_CERT_P12 }}
+          P: ${{ secrets.IOS_CERT_PASSWORD }}
+          M: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+          T: ${{ secrets.IOS_TEAM_ID }}
+          K: ${{ secrets.ASC_KEY_P8 }}
+          I: ${{ secrets.ASC_KEY_ID }}
+          S: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          for v in "$C" "$P" "$M" "$T" "$K" "$I" "$S"; do
+            if [ -z "$v" ]; then
+              echo "::error::a signing or App Store Connect secret is missing; see ios/app-store-assets/TESTFLIGHT.md"
+              exit 1
+            fi
+          done
+      # The .app embeds the pack, and the pack is zipped by a native binary.
+      - name: Build raylib (macOS)
+        run: ./scripts/build_raylib_mac.sh
+      - name: Build the pack tool
+        run: make mac
+      - name: Work out the next free build number
+        id: num
+        env:
+          ASC_KEY_P8:    ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID:    ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          python3 -m pip install --quiet --break-system-packages cryptography
+          n=$(python3 scripts/asc_next_build.py)
+          echo "build=$n" >> "$GITHUB_OUTPUT"
+          echo "next build number: $n"
+      - name: Package the signed .ipa
+        env:
+          IOS_CERT_P12:             ${{ secrets.IOS_CERT_P12 }}
+          IOS_CERT_PASSWORD:        ${{ secrets.IOS_CERT_PASSWORD }}
+          IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+          IOS_TEAM_ID:              ${{ secrets.IOS_TEAM_ID }}
+          BUILD:                    ${{ steps.num.outputs.build }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN="$RUNNER_TEMP/gor-testflight.keychain-db"
+          KEYCHAIN_PASS="$(uuidgen)"
+          echo "$IOS_CERT_P12"             | base64 -d > "$RUNNER_TEMP/dist.p12"
+          echo "$IOS_PROVISIONING_PROFILE" | base64 -d > "$RUNNER_TEMP/profile.mobileprovision"
+          security create-keychain -p "$KEYCHAIN_PASS" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASS" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/dist.p12" -k "$KEYCHAIN" \
+            -P "$IOS_CERT_PASSWORD" -T /usr/bin/codesign -f pkcs12
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASS" "$KEYCHAIN" >/dev/null
+          security list-keychains -d user -s "$KEYCHAIN" login.keychain-db
+          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" \
+            | awk -F'"' '/Apple Distribution/ {print $2; exit}')
+          test -n "$IDENTITY" || { echo "::error::no Apple Distribution identity"; exit 1; }
+          make dist-ios \
+            PACK_TOOL=build/openbounty-mac \
+            IOS_BUILD_NUMBER="$BUILD" \
+            IOS_VERSION_NAME="1.0.$BUILD" \
+            IOS_SIGN_IDENTITY="$IDENTITY" \
+            IOS_PROFILE="$RUNNER_TEMP/profile.mobileprovision" \
+            IOS_TEAM_ID="$IOS_TEAM_ID"
+      - name: Install the App Store Connect API key
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          printf '%s' "$ASC_KEY_P8" > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+          chmod 600 ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+      # Validate first: its errors name the problem, the upload path's do not.
+      - name: Validate and upload
+        env:
+          ASC_KEY_ID:    ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          ipa=$(find dist -maxdepth 1 -name '*.ipa' | head -1)
+          xcrun altool --validate-app -f "$ipa" -t ios \
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+          xcrun altool --upload-app -f "$ipa" -t ios \
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+          echo "Uploaded build ${{ steps.num.outputs.build }} from ${{ github.ref_name }}. Apple takes ~5-15 min to process it."
+      - name: Remove the API key
+        if: always()
+        run: rm -rf ~/.appstoreconnect/private_keys
+      # Waits out Apple's processing, then writes "What to Test" onto the
+      # build so a tester knows which branch and which fix they are looking at.
+      - name: Attach the What to Test note
+        env:
+          ASC_KEY_P8:    ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID:    ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          BUNDLE_ID:     com.danheskett.gloryofrome
+          BUILD_VERSION: ${{ steps.num.outputs.build }}
+          NOTES: |
+            ${{ inputs.notes || format('{0} @ {1}', github.ref_name, github.sha) }}
+        run: python3 scripts/testflight_notes.py
+      - uses: actions/upload-artifact@v7
+        with:
+          name: testflight-ipa
+          path: dist/*.ipa
