@@ -392,16 +392,6 @@ static void pass_flush(id<MTLTexture> tex, id<CAMetalDrawable> drawable) {
 }
 
 void gfx_frame_end(void) {
-    // PROBE: an untextured bar in the drawable pass. The offscreen buffer is
-    // known good (its pixels read back correct), so if this bar appears the
-    // fault is in sampling that buffer; if nothing appears at all, the fault
-    // is in presenting from the game thread.
-    {
-        unsigned save = s_cur_tex;
-        s_cur_tex = 0;
-        quad(0, 0, 400, 80, 0, 0, 0, 0, (Color){ 255, 0, 0, 255 });
-        s_cur_tex = save;
-    }
     static int s_frames;
     if (s_frames < 3) NSLog(@"openbounty: frame_end #%d, %d verts, %d batches",
                             s_frames, s_vert_count, s_batch_count);
@@ -617,14 +607,20 @@ void gfx_texture_point_clamp(Texture2D t) { (void)t; }
 void gfx_texture_draw(Texture2D t, Rectangle src, Rectangle dst, Color tint) {
     if (t.id == 0 || t.width <= 0 || t.height <= 0) return;
     s_cur_tex = t.id;
+    // raylib's convention: a NEGATIVE source width or height means "the same
+    // rectangle, sampled mirrored" -- it is how a render target, which is
+    // stored bottom-up, is blitted the right way up. So take the magnitude
+    // first and swap the two edges; using the signed value directly gives a
+    // v range of -1..0, which clamps to the texture's top row and drew the
+    // whole frame as one flat band of whatever colour that row was. Black.
+    float w = src.width  < 0 ? -src.width  : src.width;
+    float h = src.height < 0 ? -src.height : src.height;
     float u0 = src.x / (float)t.width;
     float v0 = src.y / (float)t.height;
-    float u1 = (src.x + src.width)  / (float)t.width;
-    float v1 = (src.y + src.height) / (float)t.height;
-    // A negative source height means the source is stored bottom-up (what a
-    // render target is), matching raylib's convention: flip the v range.
-    if (src.height < 0) { float tmp = v0; v0 = v1; v1 = tmp; }
+    float u1 = (src.x + w) / (float)t.width;
+    float v1 = (src.y + h) / (float)t.height;
     if (src.width  < 0) { float tmp = u0; u0 = u1; u1 = tmp; }
+    if (src.height < 0) { float tmp = v0; v0 = v1; v1 = tmp; }
     quad(dst.x, dst.y, dst.x + dst.width, dst.y + dst.height,
          u0, v0, u1, v1, tint);
     s_cur_tex = 0;
