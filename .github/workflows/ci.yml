@@ -198,6 +198,19 @@ jobs:
           sleep 12
           echo "--- app console ---"
           cat ios-console.txt || true
+          echo "--- what is in the .app ---"
+          ls -la "$app"
+          echo "--- is it still running? ---"
+          xcrun simctl spawn "$UDID" launchctl list | grep -i gloryofrome || echo "not running"
+          echo "--- system log for the app ---"
+          xcrun simctl spawn "$UDID" log show --style compact --last 3m \
+            --predicate 'processImagePath CONTAINS "GloryOfRome"' 2>/dev/null | tail -40 || true
+          echo "--- crash reports ---"
+          ls -t ~/Library/Logs/DiagnosticReports/ 2>/dev/null | head -5
+          for f in ~/Library/Logs/DiagnosticReports/GloryOfRome*; do
+            [ -e "$f" ] || continue
+            echo "== $f"; head -60 "$f"
+          done
           xcrun simctl io "$UDID" screenshot ios-shot.png
           # simctl captures the DEVICE, which stays portrait, while the app is
           # landscape-locked -- so the raw PNG reads sideways. Rotate it a
