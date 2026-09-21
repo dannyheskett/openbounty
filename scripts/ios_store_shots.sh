@@ -24,21 +24,50 @@ GAP="${4:-12}"
 echo "--- iPhone simulators on this image ---"
 xcrun simctl list devices available | sed -n 's/^ *\(iPhone[^(]*\).*/\1/p' | sort -u
 
+# The runner image ships whatever devices Xcode created, and that set moves
+# with every image: the 26 image had no 1290x2796 phone at all, only a
+# 1320x2868 Pro Max. So rather than hope, CREATE the device from its type --
+# simctl carries every device type its Xcode knows, whether or not an
+# instance exists.
+#
 # `python3 - <<EOF` reads the SCRIPT from stdin, which leaves nothing for the
-# device list to arrive on -- it died on an empty JSON parse the first time.
-# So the list goes to a file and the chooser reads that.
-xcrun simctl list devices available -j > "${TMPDIR:-/tmp}/simdevices.json"
-UDID=$(python3 -c "
+# device list to arrive on; it died on an empty JSON parse the first time.
+# Hence the file.
+xcrun simctl list devicetypes -j > "${TMPDIR:-/tmp}/simtypes.json"
+xcrun simctl list runtimes -j    > "${TMPDIR:-/tmp}/simruntimes.json"
+DEVTYPE=$(python3 -c "
 import json, sys
-want = ['iPhone 16 Plus', 'iPhone 15 Plus', 'iPhone 14 Plus',
-        'iPhone 17 Plus', 'iPhone 16 Pro Max', 'iPhone 17 Pro Max']
-have = {x['name']: x['udid'] for r in json.load(open(sys.argv[1]))['devices'].values() for x in r}
+want = ['iPhone 16 Plus', 'iPhone 15 Plus', 'iPhone 14 Plus']
+types = {t['name']: t['identifier'] for t in json.load(open(sys.argv[1]))['devicetypes']}
 for n in want:
+    if n in types:
+        print(types[n]); break
+else:
+    print('')
+" "${TMPDIR:-/tmp}/simtypes.json")
+RUNTIME=$(python3 -c "
+import json, sys
+rs = [r for r in json.load(open(sys.argv[1]))['runtimes'] if r.get('isAvailable') and 'iOS' in r['name']]
+print(rs[-1]['identifier'] if rs else '')
+" "${TMPDIR:-/tmp}/simruntimes.json")
+echo "device type: ${DEVTYPE:-none} | runtime: ${RUNTIME:-none}"
+
+if [ -n "$DEVTYPE" ] && [ -n "$RUNTIME" ]; then
+    UDID=$(xcrun simctl create "store-shots" "$DEVTYPE" "$RUNTIME")
+else
+    # No 1290x2796 device type on this image: fall back to the biggest
+    # iPhone there is and let the size check below say what came out.
+    xcrun simctl list devices available -j > "${TMPDIR:-/tmp}/simdevices.json"
+    UDID=$(python3 -c "
+import json, sys
+have = {x['name']: x['udid'] for r in json.load(open(sys.argv[1]))['devices'].values() for x in r}
+for n in ('iPhone 17 Pro Max', 'iPhone 16 Pro Max'):
     if n in have:
         print(have[n]); break
 else:
     print(next(iter(have.values())))
 " "${TMPDIR:-/tmp}/simdevices.json")
+fi
 echo "device: $UDID"
 
 xcrun simctl boot "$UDID"
