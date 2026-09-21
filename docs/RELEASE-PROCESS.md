@@ -128,6 +128,18 @@ upload keystore), `PLAY_KEY_ALIAS`, `PLAY_KEYSTORE_PASSWORD`,
 the Play push. With none of them set, the release still produces the sideload
 APK and simply skips the bundle and the upload.
 
+### Putting a branch on TestFlight
+
+`.github/workflows/testflight.yml`, run by hand from the branch you are on:
+it builds and signs that branch, asks App Store Connect for the next free
+build number (`scripts/asc_next_build.py`, so branch builds never collide with
+release builds), uploads, and writes a "What to Test" note naming the branch
+and commit. Nothing is tagged and no GitHub Release is made.
+
+App Review submission is **opt-in**: a merge to `main` refreshes TestFlight and
+stops there. To submit, run `release` by hand with `submit_for_review` ticked,
+or use `store-release.yml`.
+
 **Secrets the iOS path needs**: `IOS_CERT_P12` (base64 of the Apple
 Distribution certificate and key), `IOS_CERT_PASSWORD`,
 `IOS_PROVISIONING_PROFILE` (base64 of the App Store `.mobileprovision`) and

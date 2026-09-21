@@ -25,6 +25,10 @@ on:
         description: 'Build and verify everything; tag nothing, publish nothing'
         type: boolean
         default: true
+      submit_for_review:
+        description: 'Also send the build to App Review (off by default: a merge must never submit)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -641,7 +645,12 @@ jobs:
     # appStoreVersionLocalizations for the public listing. Apple's API also
     # returns the occasional spurious 401, and a flaky note is no reason to hold
     # a release back.
-    if: ${{ !inputs.dry_run && !cancelled() && needs.publish-testflight.result == 'success' }}
+    # Opt-in, and deliberately so. A merge to main should refresh TestFlight,
+    # never put the app in front of App Review: that is a decision, it takes a
+    # review cycle to undo, and Apple allows only one submission in flight.
+    # Run this workflow by hand with submit_for_review ticked, or use
+    # store-release.yml, which exists for exactly this.
+    if: ${{ inputs.submit_for_review && !inputs.dry_run && !cancelled() && needs.publish-testflight.result == 'success' }}
     name: submit the build to App Review
     needs: [prepare, publish-testflight, testflight-notes]
     runs-on: ubuntu-22.04
