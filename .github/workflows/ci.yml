@@ -197,6 +197,10 @@ jobs:
           api-level: 34
           arch: x86_64
           target: google_apis
+          # A real phone's screen. The default AVD is 640x320, which is
+          # smaller than the game's own 800x532 buffer -- a size no Android
+          # device has had for a decade, and one that tests nothing useful.
+          profile: pixel_6
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: ./scripts/android_smoke.sh build/gloryofrome-x86_64.apk
