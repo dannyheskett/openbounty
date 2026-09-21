@@ -191,10 +191,10 @@ jobs:
           app=$(find build/ios-sim -maxdepth 1 -name '*.app' | head -1)
           bundle=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist")
           xcrun simctl install "$UDID" "$app"
-          # --console-pty so the game's stdout (it logs its own conditions --
-          # pack, resources, fatals) lands in an artifact. It blocks until the
-          # app exits, so it runs in the background.
-          xcrun simctl launch --console-pty "$UDID" "$bundle" > ios-console.txt 2>&1 &
+          # A plain launch: the app pipes its own stdout into os_log
+          # (ios/plat_ios.mm), so nothing is lost, and --console-pty ties the
+          # app's lifetime to a background process this step then abandons.
+          xcrun simctl launch "$UDID" "$bundle"
           sleep 10
           # The screenshot FIRST, while the app is certainly alive: the
           # diagnostics below take a few seconds each, and a run that spent
@@ -205,14 +205,14 @@ jobs:
           # quarter turn anticlockwise (sips counts clockwise) so the artifact
           # is the screen as a player sees it.
           sips -r 270 ios-shot.png >/dev/null
-          echo "--- app console ---"
-          cat ios-console.txt || true
           echo "--- is it still running? ---"
           xcrun simctl spawn "$UDID" launchctl list | grep -i gloryofrome || echo "not running"
           echo "--- the game's own log ---"
+          # By MESSAGE, not by process: a process predicate matches nothing
+          # once the app has exited, which is exactly when the log matters.
           xcrun simctl spawn "$UDID" log show --style compact --last 5m \
-            --predicate 'processImagePath CONTAINS "GloryOfRome"' 2>/dev/null \
-            | grep -i "openbounty\|fatal\|exception" | head -60 || true
+            --predicate 'eventMessage CONTAINS "openbounty"' 2>/dev/null \
+            | head -60 || true
           echo "--- a second screenshot, 20s later ---"
           sleep 20
           xcrun simctl io "$UDID" screenshot ios-shot-late.png
@@ -236,7 +236,7 @@ jobs:
           path: |
             ios-shot.png
             ios-shot-late.png
-            ios-console.txt
+
       - name: Build the device .ipa (unsigned)
         run: make ios PACK_TOOL=build/openbounty-mac
       - name: Upload the device .ipa
