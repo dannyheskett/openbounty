@@ -169,6 +169,13 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+      # The .app embeds the Glory of Rome pack, and the pack is zipped by the
+      # NATIVE binary (./build/debug/openbounty --pack-dir), which links
+      # raylib. So the macOS toolchain is needed even though the app itself
+      # links no raylib at all -- the same shape as the Android job needing
+      # the Linux one.
+      - name: Build raylib (macOS, for the pack-building binary)
+        run: ./scripts/build_raylib_mac.sh
       - name: Build the Simulator app (native Metal, no raylib)
         run: make ios-sim
       - name: Boot a Simulator, install, launch, screenshot
