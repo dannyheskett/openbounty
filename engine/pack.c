@@ -244,21 +244,18 @@ static bool walk_dir(Pack *p, const char *root, const char *prefix) {
 // ZIP loader
 // ---------------------------------------------------------------------------
 
-static bool load_zip(Pack *p, const char *path) {
-    mz_zip_archive zip = {0};
-    if (!mz_zip_reader_init_file(&zip, path, 0)) {
-        fprintf(stdout, "pack: not a valid zip: %s\n", path);
-        return false;
-    }
-    mz_uint n = mz_zip_reader_get_num_files(&zip);
+// Shared by the file and memory loaders: everything once the reader is open.
+// Ends the reader before returning, whatever the outcome.
+static bool load_zip_entries(Pack *p, mz_zip_archive *zip) {
+    mz_uint n = mz_zip_reader_get_num_files(zip);
     bool ok = true;
     for (mz_uint i = 0; i < n; i++) {
         mz_zip_archive_file_stat st;
-        if (!mz_zip_reader_file_stat(&zip, i, &st)) { ok = false; continue; }
+        if (!mz_zip_reader_file_stat(zip, i, &st)) { ok = false; continue; }
         // Skip directory entries.
         if (st.m_is_directory) continue;
         size_t sz = 0;
-        void *blob = mz_zip_reader_extract_to_heap(&zip, i, &sz, 0);
+        void *blob = mz_zip_reader_extract_to_heap(zip, i, &sz, 0);
         if (!blob) { ok = false; continue; }
         // miniz uses default malloc; we own the buffer now and will free
         // it via standard free() in pack_close. miniz's MZ_MALLOC is
@@ -267,8 +264,26 @@ static bool load_zip(Pack *p, const char *path) {
             ok = false;
         }
     }
-    mz_zip_reader_end(&zip);
+    mz_zip_reader_end(zip);
     return ok;
+}
+
+static bool load_zip(Pack *p, const char *path) {
+    mz_zip_archive zip = {0};
+    if (!mz_zip_reader_init_file(&zip, path, 0)) {
+        fprintf(stdout, "pack: not a valid zip: %s\n", path);
+        return false;
+    }
+    return load_zip_entries(p, &zip);
+}
+
+static bool load_zip_mem(Pack *p, const void *data, size_t size) {
+    mz_zip_archive zip = {0};
+    if (!mz_zip_reader_init_mem(&zip, data, size, 0)) {
+        fprintf(stdout, "pack: not a valid zip in memory (%zu bytes)\n", size);
+        return false;
+    }
+    return load_zip_entries(p, &zip);
 }
 
 // ---------------------------------------------------------------------------
@@ -277,11 +292,13 @@ static bool load_zip(Pack *p, const char *path) {
 // out_hex receives a 16-char lowercase hex string + NUL.
 // ---------------------------------------------------------------------------
 
+#define FNV64_OFFSET 0xcbf29ce484222325ull
+#define FNV64_PRIME  0x100000001b3ull
+
 static bool hash_zip_file(const char *path, char *out_hex /*[17]*/) {
     FILE *f = fopen(path, "rb");
     if (!f) return false;
-    unsigned long long h = 0xcbf29ce484222325ull;
-    const unsigned long long FNV64_PRIME = 0x100000001b3ull;
+    unsigned long long h = FNV64_OFFSET;
     unsigned char buf[64 * 1024];
     size_t n;
     while ((n = fread(buf, 1, sizeof buf, f)) > 0) {
@@ -295,9 +312,46 @@ static bool hash_zip_file(const char *path, char *out_hex /*[17]*/) {
     return true;
 }
 
+// The same hash over bytes already in memory, so a pack opened from the APK
+// gets the identical identity string it would have had from disk.
+static void hash_zip_mem(const void *data, size_t size, char *out_hex /*[17]*/) {
+    const unsigned char *b = (const unsigned char *)data;
+    unsigned long long h = FNV64_OFFSET;
+    for (size_t i = 0; i < size; i++) {
+        h ^= b[i];
+        h *= FNV64_PRIME;
+    }
+    snprintf(out_hex, 17, "%016llx", h);
+}
+
 // ---------------------------------------------------------------------------
 // Public open/close
 // ---------------------------------------------------------------------------
+
+// Identity for a pack whose entries are loaded: game.json first, then the
+// filename. Frees and returns NULL if the load produced nothing.
+static Pack *finish_open(Pack *p, bool ok, const char *name) {
+    if (!ok || p->n_entries == 0) {
+        fprintf(stdout, "pack: failed to load %s (entries=%d)\n",
+                name, p->n_entries);
+        pack_close(p);
+        return NULL;
+    }
+    parse_identity(p);
+    // Fall back to filename-derived id/name if game.json lacked them.
+    if (!p->id[0] || !p->name[0]) {
+        const char *base = strrchr(name, PATHSEP);
+        base = base ? base + 1 : name;
+        char stem[64];
+        snprintf(stem, sizeof stem, "%s", base);
+        char *dot = strrchr(stem, '.');
+        if (dot && strcmp(dot, ".openbounty") == 0) *dot = '\0';
+        if (!p->id[0])   snprintf(p->id,   sizeof p->id,   "%s", stem);
+        if (!p->name[0]) snprintf(p->name, sizeof p->name, "%s", stem);
+    }
+    if (!p->kind[0]) snprintf(p->kind, sizeof p->kind, "base");
+    return p;
+}
 
 Pack *pack_open(const char *path) {
     if (!path || !path[0]) return NULL;
@@ -314,26 +368,19 @@ Pack *pack_open(const char *path) {
         ok = load_zip(p, path);
         if (ok) hash_zip_file(path, p->hash);
     }
-    if (!ok || p->n_entries == 0) {
-        fprintf(stdout, "pack: failed to load %s (entries=%d)\n",
-                path, p->n_entries);
-        pack_close(p);
-        return NULL;
-    }
-    parse_identity(p);
-    // Fall back to filename-derived id/name if game.json lacked them.
-    if (!p->id[0] || !p->name[0]) {
-        const char *base = strrchr(path, PATHSEP);
-        base = base ? base + 1 : path;
-        char stem[64];
-        snprintf(stem, sizeof stem, "%s", base);
-        char *dot = strrchr(stem, '.');
-        if (dot && strcmp(dot, ".openbounty") == 0) *dot = '\0';
-        if (!p->id[0])   snprintf(p->id,   sizeof p->id,   "%s", stem);
-        if (!p->name[0]) snprintf(p->name, sizeof p->name, "%s", stem);
-    }
-    if (!p->kind[0]) snprintf(p->kind, sizeof p->kind, "base");
-    return p;
+    return finish_open(p, ok, path);
+}
+
+Pack *pack_open_mem(const void *data, size_t size, const char *name) {
+    if (!data || size == 0) return NULL;
+    if (!name || !name[0]) name = "pack";
+    Pack *p = (Pack *)calloc(1, sizeof *p);
+    if (!p) return NULL;
+    snprintf(p->path, sizeof p->path, "%s", name);
+
+    bool ok = load_zip_mem(p, data, size);
+    if (ok) hash_zip_mem(data, size, p->hash);
+    return finish_open(p, ok, name);
 }
 
 void pack_close(Pack *p) {
@@ -370,15 +417,21 @@ const char *pack_hash(const Pack *p) { return p ? p->hash : ""; }
 // Global pack stack
 // ---------------------------------------------------------------------------
 
-#define PACK_STACK_MAX 8
-static Pack *g_stack[PACK_STACK_MAX];
-static int   g_stack_n = 0;
+static Pack **g_stack;        // heap, g_stack_cap entries
+static int    g_stack_n = 0;
+static int    g_stack_cap = 0;
 
 void pack_stack_push(Pack *p) {
     if (!p) return;
-    if (g_stack_n >= PACK_STACK_MAX) {
-        fprintf(stdout, "pack: stack full\n");
-        return;
+    if (g_stack_n >= g_stack_cap) {
+        int ncap = g_stack_cap > 0 ? g_stack_cap * 2 : 4;
+        Pack **ns = realloc(g_stack, (size_t)ncap * sizeof *ns);
+        if (!ns) {
+            fprintf(stdout, "pack: out of memory stacking a pack\n");
+            return;
+        }
+        g_stack = ns;
+        g_stack_cap = ncap;
     }
     g_stack[g_stack_n++] = p;
 }
@@ -392,6 +445,9 @@ void pack_stack_pop(void) {
 
 void pack_stack_clear(void) {
     while (g_stack_n > 0) pack_stack_pop();
+    free(g_stack);
+    g_stack = NULL;
+    g_stack_cap = 0;
 }
 
 const unsigned char *pack_stack_read(const char *rel, size_t *out_size) {
@@ -427,44 +483,55 @@ static bool already_listed(const PackEntry *list, int n, const char *name) {
     return false;
 }
 
-static int scan_one_dir(const char *dir, PackEntry *out, int filled, int cap) {
+// A growable list of discovered packs.
+typedef struct { PackEntry *e; int n, cap; } PackList;
+
+static PackEntry *list_push(PackList *l) {
+    if (l->n >= l->cap) {
+        int ncap = l->cap > 0 ? l->cap * 2 : 8;
+        PackEntry *ne = realloc(l->e, (size_t)ncap * sizeof *ne);
+        if (!ne) return NULL;
+        l->e = ne;
+        l->cap = ncap;
+    }
+    return &l->e[l->n++];
+}
+
+static void scan_one_dir(const char *dir, PackList *l) {
 #ifdef _WIN32
     char pattern[PACK_ENTRY_PATH_MAX];
     snprintf(pattern, sizeof pattern, "%s\\*.openbounty", dir);
     WIN32_FIND_DATAA fd;
     HANDLE h = FindFirstFileA(pattern, &fd);
-    if (h == INVALID_HANDLE_VALUE) return filled;
+    if (h == INVALID_HANDLE_VALUE) return;
     do {
-        if (filled >= cap) break;
         char stem[PACK_ENTRY_NAME_MAX];
         snprintf(stem, sizeof stem, "%s", fd.cFileName);
         strip_extension(stem);
-        if (already_listed(out, filled, stem)) continue;
-        snprintf(out[filled].path, sizeof out[filled].path,
-                 "%s%c%s", dir, PATHSEP, fd.cFileName);
-        snprintf(out[filled].name, sizeof out[filled].name, "%s", stem);
-        filled++;
+        if (already_listed(l->e, l->n, stem)) continue;
+        PackEntry *pe = list_push(l);
+        if (!pe) break;
+        snprintf(pe->path, sizeof pe->path, "%s%c%s", dir, PATHSEP, fd.cFileName);
+        snprintf(pe->name, sizeof pe->name, "%s", stem);
     } while (FindNextFileA(h, &fd));
     FindClose(h);
 #else
     DIR *d = opendir(dir);
-    if (!d) return filled;
+    if (!d) return;
     struct dirent *de;
     while ((de = readdir(d)) != NULL) {
-        if (filled >= cap) break;
         if (!ends_with(de->d_name, ".openbounty")) continue;
         char stem[PACK_ENTRY_NAME_MAX];
         snprintf(stem, sizeof stem, "%s", de->d_name);
         strip_extension(stem);
-        if (already_listed(out, filled, stem)) continue;
-        snprintf(out[filled].path, sizeof out[filled].path,
-                 "%s/%s", dir, de->d_name);
-        snprintf(out[filled].name, sizeof out[filled].name, "%s", stem);
-        filled++;
+        if (already_listed(l->e, l->n, stem)) continue;
+        PackEntry *pe = list_push(l);
+        if (!pe) break;
+        snprintf(pe->path, sizeof pe->path, "%s/%s", dir, de->d_name);
+        snprintf(pe->name, sizeof pe->name, "%s", stem);
     }
     closedir(d);
 #endif
-    return filled;
 }
 
 // Discovery order (earlier source wins on duplicate names):
@@ -472,17 +539,17 @@ static int scan_one_dir(const char *dir, PackEntry *out, int filled, int cap) {
 //   2. <user-data>/openbounty/*.openbounty   (flat, no subdir)
 //   3. <exe-dir>/assets/*.openbounty         (bundled-with-binary)
 // `--pack <arg>` short-circuits this entirely (handled by caller).
-int pack_discover(PackEntry *out, int cap) {
-    if (!out || cap <= 0) return 0;
-    int n = 0;
+int pack_discover(PackEntry **out) {
+    if (!out) return 0;
+    PackList l = { NULL, 0, 0 };
 
     // 1. cwd zips
-    n = scan_one_dir(".", out, n, cap);
+    scan_one_dir(".", &l);
 
     // 2. user-data root zips (flat at <user-data>/openbounty/)
     char user_dir[PACK_ENTRY_PATH_MAX];
     if (SavePathGetDir(user_dir, sizeof user_dir)) {
-        n = scan_one_dir(user_dir, out, n, cap);
+        scan_one_dir(user_dir, &l);
     }
 
     // 3. <exe-dir>/assets/*.openbounty
@@ -492,11 +559,12 @@ int pack_discover(PackEntry *out, int cap) {
         snprintf(assets, sizeof assets, "%s%cassets", exe_dir, PATHSEP);
         struct stat ast;
         if (stat(assets, &ast) == 0 && S_ISDIR(ast.st_mode)) {
-            n = scan_one_dir(assets, out, n, cap);
+            scan_one_dir(assets, &l);
         }
     }
 
-    return n;
+    *out = l.e;
+    return l.n;
 }
 
 // ---------------------------------------------------------------------------

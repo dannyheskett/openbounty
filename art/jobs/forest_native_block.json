@@ -1,0 +1,19 @@
+{
+  "id": "forest_native_block",
+  "prompt": "dense dark green forest with a hard tree line on plain grass, seen from directly above",
+  "style": "rd_plus__topdown_map",
+  "width": 192,
+  "height": 136,
+  "seed": 8971,
+  "input_image_path": "build/art/forest_native_mock/block.png",
+  "input_image_keep_alpha": false,
+  "strength": 0.4,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    192,
+    136
+  ],
+  "_note": "2026-09-07: the legacy forest tiles stitched at their native 48x34, no scaling, as the img2img source (Dan's order); one-line prompt."
+}

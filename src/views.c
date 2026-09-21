@@ -1,13 +1,19 @@
 #include "input_host.h"
 #include "views.h"
+#include "frame_host.h"
+#include "touch.h"
+#include "select.h"
 #include "present.h"
 #include "layout.h"
 #include "player_io.h"   // engine views arrive via the player-IO queue
-#include "raylib.h"
+#include "ob_types.h"
 #include "audio.h"
 #include "tables.h"
 #include "recorder.h"
+#include "modern/gamemenu.h"
+#include "ui.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
@@ -28,12 +34,17 @@ static struct {
     bool active;       // in cast mode (not just viewing)
     int  column;       // 0=combat, 1=adventure
     int  chosen;       // spell index after A-G press, -1=none
+    int  cursor;       // modern: the selected row, 0..13 (column * 7 + slot)
 } spell_state = { 0 };
+
+int views_spells_cursor(void) { return CL_IS_MODERN ? spell_state.cursor : -1; }
+bool views_spells_casting(void) { return spell_state.active; }
 
 void views_spells_set_mode(bool cast_mode) {
     spell_state.active = cast_mode;
     spell_state.column = 1;  // default to adventure column for overworld
     spell_state.chosen = -1;
+    spell_state.cursor = 7;
 }
 
 int views_spells_chosen(void) {
@@ -44,12 +55,34 @@ int views_spells_chosen(void) {
 
 bool views_spells_update(void) {
     if (!spell_state.active) return false;
-    if (input_key_pressed(KEY_LEFT))  spell_state.column = 0;
-    if (input_key_pressed(KEY_RIGHT)) spell_state.column = 1;
+    touch_request(TOUCH_CHROME_BACK);
+    // Touch: a tapped cell carries its column, so one tap casts.
+    int tapped = touch_tapped_row(TOUCH_LIST_SPELLS);
+    if (tapped >= 0) {
+        spell_state.column = tapped / 7;
+        spell_state.chosen = tapped;
+        views_dismiss();
+        return true;
+    }
+    if (input_key_pressed(KEY_LEFT))  { spell_state.column = 0; spell_state.cursor %= 7; }
+    if (input_key_pressed(KEY_RIGHT)) { spell_state.column = 1; spell_state.cursor = 7 + spell_state.cursor % 7; }
     if (input_key_pressed(KEY_ESCAPE)) {
         spell_state.active = false;
         views_dismiss();
         return false;
+    }
+    // Modern: up/down move within the column, Enter casts the cursor row;
+    // the letters still cast directly in either mode.
+    {
+        SelList l = { 7, spell_state.cursor % 7 };
+        int row = -1;
+        SelEvent ev = sel_input(&l, 0, 0, &row);
+        spell_state.cursor = spell_state.column * 7 + l.cursor;
+        if (ev == SEL_CONFIRM) {
+            spell_state.chosen = spell_state.cursor;
+            views_dismiss();
+            return true;
+        }
     }
     for (int i = 0; i < 7; i++) {
         if (input_key_pressed(KEY_A + i)) {
@@ -66,9 +99,8 @@ bool views_spells_update(void) {
 // snapshotted on open so the renderer/input never touch game state. Navigation:
 // Up/Down moves within a column, Left/Right jumps columns, Enter confirms the
 // cursor, a letter jumps straight to that row, Esc cancels.
-#define GATE_VIEW_MAX 26
 static struct {
-    GateDestination list[GATE_VIEW_MAX];
+    GateDestination *list;   // heap, count entries
     int  count;
     bool is_town;
     int  cursor;       // 0..count-1
@@ -76,8 +108,10 @@ static struct {
 } gate_view = { 0 };
 
 void views_gate_open(const GateDestination *dests, int count, bool is_town) {
-    if (count > GATE_VIEW_MAX) count = GATE_VIEW_MAX;
     if (count < 0) count = 0;
+    free(gate_view.list);
+    gate_view.list = count > 0 ? malloc((size_t)count * sizeof *gate_view.list) : NULL;
+    if (!gate_view.list) count = 0;
     for (int i = 0; i < count; i++) gate_view.list[i] = dests[i];
     gate_view.count = count;
     gate_view.is_town = is_town;
@@ -87,6 +121,10 @@ void views_gate_open(const GateDestination *dests, int count, bool is_town) {
 }
 
 int  views_gate_count(void)   { return gate_view.count; }
+int  views_gate_rows_per_column(void) {
+    int n = (gate_view.count + VIEWS_GATE_COLUMNS - 1) / VIEWS_GATE_COLUMNS;
+    return n < 1 ? 1 : n;
+}
 bool views_gate_is_town(void) { return gate_view.is_town; }
 int  views_gate_cursor(void)  { return gate_view.cursor; }
 
@@ -105,7 +143,27 @@ bool views_gate_update(void) {
     int n = gate_view.count;
     if (n <= 0) return false;
     int left = (n + 1) / 2;   // rows in the left column (matches the renderer)
+    // Modern: one list, so Left/Right do nothing.
+    if (CL_IS_MODERN) left = n;
 
+    touch_request(TOUCH_CHROME_BACK);
+    int tapped = touch_tapped_row(TOUCH_LIST_GATE);
+    if (CL_IS_MODERN && tapped >= 0 && tapped < n && tapped != gate_view.cursor) {
+        // Modern: a tap picks the place and shows its map; the Travel row (or
+        // a second tap) goes there.
+        gate_view.cursor = tapped;
+        return true;
+    }
+    if (CL_IS_MODERN && touch_tapped_row(TOUCH_LIST_PROMPT) == 1) {   // Back
+        views_dismiss();
+        return true;
+    }
+    if (CL_IS_MODERN && touch_tapped_row(TOUCH_LIST_PROMPT) == 0) tapped = gate_view.cursor;
+    if (tapped >= 0 && tapped < n) {
+        gate_view.chosen = tapped;
+        views_dismiss();
+        return true;
+    }
     if (input_key_pressed(KEY_ESCAPE)) {
         views_dismiss();
         return false;
@@ -132,7 +190,7 @@ bool views_gate_update(void) {
         if (gate_view.cursor < 0) gate_view.cursor = n - 1;
     }
     // Left/Right jump between the two columns, preserving the row offset.
-    if (input_key_pressed(KEY_RIGHT) && gate_view.cursor < left) {
+    if (input_key_pressed(KEY_RIGHT) && (CL_IS_MODERN || gate_view.cursor < left)) {
         int target = gate_view.cursor + left;
         if (target < n) gate_view.cursor = target;
     }
@@ -172,6 +230,7 @@ typedef struct {
     const struct MenuPage *page;   // MENU_KIND_SUBMENU
     ViewKind               view;   // MENU_KIND_VIEW
     MenuAction             action; // MENU_KIND_ACTION
+    int                    key;    // unused
 } MenuEntry;
 
 typedef struct MenuPage {
@@ -186,33 +245,33 @@ typedef struct MenuPage {
 // Resources singleton. Static struct fields are initialized to safe defaults
 // so a missing Resources still yields a usable menu.
 static MenuEntry VIEWS_ENTRIES[] = {
-    { "Army",      MENU_KIND_VIEW,   NULL, VIEW_ARMY,      MENU_ACT_NONE },
-    { "Spells",    MENU_KIND_VIEW,   NULL, VIEW_SPELLS,    MENU_ACT_NONE },
-    { "Character", MENU_KIND_VIEW,   NULL, VIEW_CHARACTER, MENU_ACT_NONE },
-    { "Contract",  MENU_KIND_VIEW,   NULL, VIEW_CONTRACT,  MENU_ACT_NONE },
-    { "Puzzle",    MENU_KIND_VIEW,   NULL, VIEW_PUZZLE,    MENU_ACT_NONE },
-    { "View Map",  MENU_KIND_VIEW,   NULL, VIEW_WORLDMAP,  MENU_ACT_NONE },
-    { "Back",      MENU_KIND_BACK,   NULL, VIEW_NONE,      MENU_ACT_NONE },
+    { "Army",      MENU_KIND_VIEW,   NULL, VIEW_ARMY,      MENU_ACT_NONE, 0 },
+    { "Spells",    MENU_KIND_VIEW,   NULL, VIEW_SPELLS,    MENU_ACT_NONE, 0 },
+    { "Character", MENU_KIND_VIEW,   NULL, VIEW_CHARACTER, MENU_ACT_NONE, 0 },
+    { "Contract",  MENU_KIND_VIEW,   NULL, VIEW_CONTRACT,  MENU_ACT_NONE, 0 },
+    { "Puzzle",    MENU_KIND_VIEW,   NULL, VIEW_PUZZLE,    MENU_ACT_NONE, 0 },
+    { "View Map",  MENU_KIND_VIEW,   NULL, VIEW_WORLDMAP,  MENU_ACT_NONE, 0 },
+    { "Back",      MENU_KIND_BACK,   NULL, VIEW_NONE,      MENU_ACT_NONE, 0 },
 };
 static MenuPage VIEWS_PAGE = {
     "Views", VIEWS_ENTRIES, (int)(sizeof(VIEWS_ENTRIES) / sizeof(VIEWS_ENTRIES[0]))
 };
 
 static MenuEntry SYSTEM_ENTRIES[] = {
-    { "Save",      MENU_KIND_ACTION, NULL, VIEW_NONE, MENU_ACT_SAVE },
-    { "Load",      MENU_KIND_ACTION, NULL, VIEW_NONE, MENU_ACT_LOAD },
-    { "New Game",  MENU_KIND_ACTION, NULL, VIEW_NONE, MENU_ACT_NEW  },
-    { "Back",      MENU_KIND_BACK,   NULL, VIEW_NONE, MENU_ACT_NONE },
+    { "Save",      MENU_KIND_ACTION, NULL, VIEW_NONE, MENU_ACT_SAVE, 0 },
+    { "Load",      MENU_KIND_ACTION, NULL, VIEW_NONE, MENU_ACT_LOAD, 0 },
+    { "New Game",  MENU_KIND_ACTION, NULL, VIEW_NONE, MENU_ACT_NEW, 0 },
+    { "Back",      MENU_KIND_BACK,   NULL, VIEW_NONE, MENU_ACT_NONE, 0 },
 };
 static MenuPage SYSTEM_PAGE = {
     "Options", SYSTEM_ENTRIES, (int)(sizeof(SYSTEM_ENTRIES) / sizeof(SYSTEM_ENTRIES[0]))
 };
 
 static MenuEntry ROOT_ENTRIES[] = {
-    { "Views",   MENU_KIND_SUBMENU, &VIEWS_PAGE,  VIEW_NONE, MENU_ACT_NONE },
-    { "Options", MENU_KIND_SUBMENU, &SYSTEM_PAGE, VIEW_NONE, MENU_ACT_NONE },
-    { "Back",    MENU_KIND_BACK,    NULL,         VIEW_NONE, MENU_ACT_NONE },
-    { "Exit",    MENU_KIND_ACTION,  NULL,         VIEW_NONE, MENU_ACT_QUIT },
+    { "Views",   MENU_KIND_SUBMENU, &VIEWS_PAGE,  VIEW_NONE, MENU_ACT_NONE, 0 },
+    { "Options", MENU_KIND_SUBMENU, &SYSTEM_PAGE, VIEW_NONE, MENU_ACT_NONE, 0 },
+    { "Back",    MENU_KIND_BACK,    NULL,         VIEW_NONE, MENU_ACT_NONE, 0 },
+    { "Exit",    MENU_KIND_ACTION,  NULL,         VIEW_NONE, MENU_ACT_QUIT, 0 },
 };
 static MenuPage ROOT_PAGE = {
     "Game Menu", ROOT_ENTRIES, (int)(sizeof(ROOT_ENTRIES) / sizeof(ROOT_ENTRIES[0]))
@@ -260,9 +319,18 @@ typedef struct {
 static MenuFrame menu_stack[MENU_STACK_MAX];
 static int       menu_depth = 0;   // 0 = closed; 1 = root; >1 = nested
 
+// ----- Modern: one menu --------------------------------------------------------
+// Modern's game menu is its own full screen (src/modern/gamemenu.c, REQ-430s);
+// the pages below are legacy's.
+static bool s_debug = false;
+void views_menu_bind(const MenuCallbacks *cbs, void *userdata) { (void)cbs; (void)userdata; }
+void views_menu_set_debug(bool on) { s_debug = on; }
+int  views_menu_take_cheat(void) { return CL_IS_MODERN ? modern_gamemenu_take_cheat() : -1; }
+
 static void menu_open_root(void) {
     menus_bind_labels();
     menu_depth = 1;
+    if (CL_IS_MODERN) modern_gamemenu_open(s_debug);
     menu_stack[0] = (MenuFrame){ &ROOT_PAGE, 0 };
 }
 
@@ -285,6 +353,7 @@ static const MenuFrame *menu_top(void) {
 }
 
 ViewKind views_active(void)    { return view_stack_top(); }
+int      views_depth(void)     { return view_stack_depth; }
 
 void     views_set(ViewKind v) {
     // Replace the stack with a single entry (or clear if VIEW_NONE).
@@ -396,6 +465,11 @@ bool views_menu_update(const MenuCallbacks *cbs, void *userdata) {
     MenuFrame *f = &menu_stack[menu_depth - 1];
     int n = f->page->count;
 
+    touch_request(TOUCH_CHROME_BACK);
+    // Touch: a tapped row selects and confirms in one go.
+    int tapped = touch_tapped_row(TOUCH_LIST_MENU);
+    if (tapped >= 0 && tapped < n) f->cursor = tapped;
+
     if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_W) || input_key_pressed(KEY_KP_8)) {
         f->cursor = (f->cursor - 1 + n) % n;
         return true;
@@ -404,7 +478,8 @@ bool views_menu_update(const MenuCallbacks *cbs, void *userdata) {
         f->cursor = (f->cursor + 1) % n;
         return true;
     }
-    if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
+    if (tapped >= 0 ||
+        input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
         input_key_pressed(KEY_SPACE)) {
         const MenuEntry *e = &f->page->entries[f->cursor];
         switch (e->kind) {
@@ -446,6 +521,22 @@ typedef struct {
     // first and returns to the action list on dismiss.
     char info_body[512];
     bool info_active;
+    // Modern: the detail panel's page, and how many pages the renderer last
+    // laid its text out into (Left/Right page within that).
+    int  detail_page;
+    int  detail_pages;
+    // Modern: which list the left column shows, the cursor in the Contracts
+    // list, and the action waiting on a Yes/No (the main loop owns the prompt).
+    TownList    list;
+    int         lcursor;     // cursor in a detail list
+    TownConfirm confirm;
+    TownConfirm asked;       // the one the open prompt is answering
+    bool        result_dialog;   // modern: the outcome shows as a dialog until Continue
+    int         confirm_slot;
+    // Modern: the town's scene comes first (Visit the town, Leave); the
+    // services list is an in-lay over it once visiting.
+    bool        visit;
+    int         scene_cursor;
 } TownState;
 static TownState town;
 
@@ -460,7 +551,7 @@ void views_open_town(const char *display_name, const char *record_key,
                      int boat_x, int boat_y) {
     // Set the town context statics only. The VIEW_TOWN presentation is
     // raised through the player-IO queue by the engine caller (step.c, which has
-    // a Game*) via player_io_raise_view(..., replace=true); the shell's per-frame
+    // a Game*) via player_io_screen(..., replace=true); the shell's per-frame
     // sync does the views_set, and autoplay acks it. This keeps views_open_town
     // (a ui_host callback with no Game*) free of the queue while still routing the
     // view uniformly.
@@ -480,6 +571,7 @@ static void town_show_info(const char *body) {
     }
     town.info_body[n] = '\0';
     town.info_active = true;
+    town.detail_page = 0;
 }
 
 static void town_format_row(const Game *g, TownRow r, char *out, size_t n) {
@@ -505,7 +597,7 @@ static void town_format_row(const Game *g, TownRow r, char *out, size_t n) {
             break;
         case TOWN_ROW_SPELL: {
             const TownRecord *t = NULL;
-            for (int i = 0; i < GAME_TOWNS; i++) {
+            for (int i = 0; i < g->town_count; i++) {
                 if (strcmp(g->towns[i].id, town.record_key) == 0) {
                     t = &g->towns[i];
                     break;
@@ -582,7 +674,11 @@ static void town_do_boat(Game *g) {
                                       bn->town_boat_vacate_first, NULL, 0);
             town_show_info(buf);
         }
-        // BOAT_CANCEL_OK: silent (menu redraw shows the rent row again).
+        if (r == BOAT_CANCEL_OK && CL_IS_MODERN) {
+            resources_format_template(buf, sizeof buf, bn->town_boat_returned, NULL, 0);
+            town_show_info(buf);
+        }
+        // Legacy: silent (the menu redraw shows the rent row again).
         return;
     }
     BoatActionResult r = GameRentBoat(g, town.boat_x, town.boat_y,
@@ -590,6 +686,10 @@ static void town_do_boat(Game *g) {
     if (r == BOAT_RENT_NO_GOLD) {
         // KB: `if (gold <= boat_cost)` -- exact-match also fails.
         resources_format_template(buf, sizeof buf, bn->town_no_gold, NULL, 0);
+        town_show_info(buf);
+    } else if (r == BOAT_RENT_OK && CL_IS_MODERN) {
+        // Modern: the boat master says it is done, like every other service.
+        resources_format_template(buf, sizeof buf, bn->town_boat_rented, NULL, 0);
         town_show_info(buf);
     }
     // BOAT_RENT_OK: no success popup -- menu redraw shows "Cancel boat rental"
@@ -608,7 +708,15 @@ static void append_fragment(char *buf, size_t cap, size_t *off,
     *off += (size_t)n;
 }
 
+static void town_format_intel(const Game *g, char *buf, size_t cap);
+
 static void town_do_info(const Game *g) {
+    char buf[512];
+    town_format_intel(g, buf, sizeof buf);
+    town_show_info(buf);
+}
+
+static void town_format_intel(const Game *g, char *out, size_t cap) {
     // : this town reports intel
     // on the castle named in its intel_castle field. Display:
     //   "Castle <name> is under
@@ -618,13 +726,33 @@ static void town_do_info(const Game *g) {
     //      ..."
     const ResBanners *bn = &g->res->banners;
     char buf[512];
+    buf[0] = '\0';
 
     const ResTown *rt = g->res
         ? resources_town_by_id(g->res, town.record_key) : NULL;
+    // A town whose informant deals in the sacred artifacts rather than in
+    // garrisons (Roma): where one of them still lies.
+    if (rt && rt->intel_artifact) {
+        char zone_id[32] = "";
+        int ax = 0, ay = 0;
+        if (!GameTownArtifactIntel(g, rt->id, zone_id, sizeof zone_id, &ax, &ay)) {
+            snprintf(out, cap, "%s", bn->town_intel_artifact_none);
+            return;
+        }
+        const ResZone *az = resources_zone_by_id(g->res, zone_id);
+        char xs[16], ys[16];
+        snprintf(xs, sizeof xs, "%d", ax);
+        snprintf(ys, sizeof ys, "%d", ay);
+        ResTemplateVar av[] = { { "ZONE", (az && az->name[0]) ? az->name : zone_id },
+                                { "X", xs }, { "Y", ys } };
+        resources_format_template(buf, sizeof buf, bn->town_intel_artifact, av, 3);
+        snprintf(out, cap, "%s", buf);
+        return;
+    }
     if (!rt || !rt->intel_castle[0]) {
         resources_format_template(buf, sizeof buf, bn->town_intel_unavailable,
                                   NULL, 0);
-        town_show_info(buf);
+        snprintf(out, cap, "%s", buf);
         return;
     }
     const ResCastle *rc = g->res
@@ -633,7 +761,7 @@ static void town_do_info(const Game *g) {
     if (!rc || !cr || rc->special.excluded_from_intel) {
         resources_format_template(buf, sizeof buf, bn->town_intel_unavailable,
                                   NULL, 0);
-        town_show_info(buf);
+        snprintf(out, cap, "%s", buf);
         return;
     }
 
@@ -706,7 +834,7 @@ static void town_do_info(const Game *g) {
         resources_format_template(tmp, sizeof tmp, src, NULL, 0);
         append_fragment(buf, sizeof buf, &off, tmp);
     }
-    town_show_info(buf);
+    snprintf(out, cap, "%s", buf);
 }
 
 static void town_do_spell(Game *g) {
@@ -726,6 +854,9 @@ static void town_do_spell(Game *g) {
         break;
     case SPELL_BUY_NO_GOLD:
         resources_format_template(buf, sizeof buf, bn->town_no_gold, NULL, 0);
+        break;
+    case SPELL_BUY_NO_RITES:
+        views_town_rites_text(g, buf, sizeof buf);
         break;
     case SPELL_BUY_OK: {
         // Spells remaining after this buy = max_spells - known(now). Equals the
@@ -761,7 +892,30 @@ static void town_do_siege(Game *g) {
     town_show_info(buf);
 }
 
+// Modern: a boat is rented only near the sea -- the town's dock must be set and
+// no more than this many tiles from the town in either direction.
+#define TOWN_BOAT_RANGE 4
+
+bool views_town_boat_available(const Game *g) {
+    const ResTown *t = (g && g->res) ? resources_town_by_id(g->res, town.record_key)
+                                     : NULL;
+    if (!t || t->boat_x < 0 || t->boat_y < 0) return false;
+    int dx = abs(t->boat_x - t->x), dy = abs(t->boat_y - t->y);
+    return dx <= TOWN_BOAT_RANGE && dy <= TOWN_BOAT_RANGE;
+}
+
+// Modern: every section opens except Boat at a town with no boat master, which
+// shows the empty boat and cannot be entered; legacy offers every row.
+bool views_town_row_enabled(const Game *g, int row) {
+    if (row < 0 || row >= TOWN_ROW_COUNT) return false;
+    if (row == TOWN_ROW_BOAT && CL_IS_MODERN) return views_town_boat_available(g);
+    if (row == TOWN_ROW_SPELL && CL_IS_MODERN && g && g->res && g->res->economy.rites_per_zone)
+        return GameTownHasRites(g, town.record_key);
+    return true;
+}
+
 static void town_do_row(Game *g, TownRow r) {
+    if (!views_town_row_enabled(g, r)) return;
     switch (r) {
         case TOWN_ROW_CONTRACT: town_do_contract(g); break;
         case TOWN_ROW_BOAT:     town_do_boat(g);     break;
@@ -772,11 +926,311 @@ static void town_do_row(Game *g, TownRow r) {
     }
 }
 
+// =============================================================================
+//  Modern town input
+// =============================================================================
+// Two levels, one rule set:
+//   the menu     Up/Down move, Enter opens the row's detail, Esc leaves town
+//   a detail     Up/Down read the text a page at a time and then move to the
+//                next row; Enter carries out the row (Back returns);
+//                Esc returns to the menu
+// Anything that changes the game asks Yes/No first. Nothing else ever holds
+// the keys: a result message shows in the detail panel until the next key.
+
+static int town_cycle_len(const Game *g) {
+    return g->contract.cycle_count;
+}
+
+int views_town_contract_slot(const Game *g, int row) {
+    int k = 0, n = town_cycle_len(g);
+    for (int i = 0; i < n; i++) {
+        if (!g->contract.cycle[i][0]) continue;
+        if (k++ == row) return i;
+    }
+    return -1;      // the Back row
+}
+
+static const TownRecord *town_record(const Game *g) {
+    for (int i = 0; i < g->town_count; i++)
+        if (strcmp(g->towns[i].id, town.record_key) == 0) return &g->towns[i];
+    return NULL;
+}
+
+const SpellDef *views_town_spell(const Game *g) {
+    const TownRecord *t = g ? town_record(g) : NULL;
+    return (t && t->spell_for_sale[0]) ? spell_by_id(t->spell_for_sale) : NULL;
+}
+
+static TownList town_list_for_row(TownRow r) {
+    switch (r) {
+        case TOWN_ROW_CONTRACT: return TOWN_LIST_CONTRACTS;
+        case TOWN_ROW_INFO:     return TOWN_LIST_INFO;
+        case TOWN_ROW_BOAT:     return TOWN_LIST_BOAT;
+        case TOWN_ROW_SPELL:    return TOWN_LIST_TEMPLE;
+        case TOWN_ROW_SIEGE:    return TOWN_LIST_SIEGE;
+        default:                return TOWN_LIST_MENU;
+    }
+}
+
+int views_town_list_rows(const Game *g) {
+    if (!g) return 1;
+    if (town.list == TOWN_LIST_MENU) return TOWN_ROW_COUNT + (CL_IS_MODERN ? 1 : 0);   // + Leave
+    if (town.list == TOWN_LIST_CONTRACTS) {
+        int k = 0, n = town_cycle_len(g);
+        for (int i = 0; i < n; i++) if (g->contract.cycle[i][0]) k++;
+        return k + 1;
+    }
+    return 2;   // the screen's one action, then Back
+}
+
+int views_town_list_cursor(void) {
+    return town.list == TOWN_LIST_MENU ? town.cursor : town.lcursor;
+}
+
+bool views_town_list_row(const Game *g, int i, char *out, int cap,
+                         bool *enabled, bool *held) {
+    if (enabled) *enabled = true;
+    if (held) *held = false;
+    out[0] = '\0';
+    if (!g || !g->res || i < 0 || i >= views_town_list_rows(g)) return false;
+    const ResBanners *bn = &g->res->banners;
+    if (town.list == TOWN_LIST_MENU) {
+        if (i == TOWN_ROW_LEAVE) {      // modern: back to the town's scene
+            resources_format_template(out, cap, bn->town_back, NULL, 0);
+            return true;
+        }
+        if (enabled) *enabled = views_town_row_enabled(g, i);
+        return views_town_menu_label(g, i, out, cap);
+    }
+    if (i == views_town_list_rows(g) - 1) {
+        resources_format_template(out, cap, bn->town_back, NULL, 0);
+        return true;
+    }
+    switch (town.list) {
+        case TOWN_LIST_CONTRACTS: {
+            int slot = views_town_contract_slot(g, i);
+            const VillainDef *v = villain_by_id(g->contract.cycle[slot]);
+            snprintf(out, (size_t)cap, "%s", v ? v->name : g->contract.cycle[slot]);
+            if (held) *held = strcmp(g->contract.cycle[slot], g->contract.active_id) == 0;
+            break;
+        }
+        case TOWN_LIST_INFO: {
+            const ResTown *rt = resources_town_by_id(g->res, town.record_key);
+            const ResCastle *rc = (rt && rt->intel_castle[0])
+                                ? resources_castle_by_id(g->res, rt->intel_castle) : NULL;
+            snprintf(out, (size_t)cap, "%s", rc ? rc->name : "");
+            if (enabled) *enabled = false;   // the report is on show; nothing to do
+            break;
+        }
+        case TOWN_LIST_BOAT:
+            resources_format_template(out, cap, g->boat.has_boat ? bn->town_menu_boat_cancel
+                                                                 : bn->town_menu_boat_rent, NULL, 0);
+            if (enabled) *enabled = views_town_boat_available(g);
+            break;
+        case TOWN_LIST_TEMPLE: {
+            const SpellDef *sp = views_town_spell(g);
+            ResTemplateVar v[] = { { "SPELL", sp ? sp->name : "" } };
+            resources_format_template(out, cap, bn->town_action_spell, v, 1);
+            if (enabled) *enabled = sp != NULL;
+            break;
+        }
+        case TOWN_LIST_SIEGE:
+            resources_format_template(out, cap, g->stats.siege_weapons ? bn->town_action_owned
+                                                                       : bn->town_action_siege, NULL, 0);
+            if (enabled) *enabled = !g->stats.siege_weapons;
+            break;
+        default: break;
+    }
+    return true;
+}
+
+static bool town_row_live(const Game *g, int i) {
+    bool en = true;
+    char tmp[64];
+    views_town_list_row(g, i, tmp, sizeof tmp, &en, NULL);
+    return en;
+}
+
+// The next enabled row from `from` in the current list, wrapping.
+static int town_list_step(const Game *g, int from, int dir) {
+    int n = views_town_list_rows(g), r = from;
+    for (int k = 0; k < n; k++) {
+        r = (r + dir + n) % n;
+        if (town_row_live(g, r)) return r;
+    }
+    return from;
+}
+
+static void town_ask(TownConfirm c) {
+    town.confirm = c;
+}
+
+static void town_open(const Game *g, TownRow r) {
+    if (!views_town_row_enabled(g, r)) return;
+    town.list = town_list_for_row(r);
+    town.detail_page = 0;
+    int n = views_town_list_rows(g);
+    town.lcursor = town_row_live(g, 0) ? 0 : n - 1;   // the action, else Back
+    if (town.list == TOWN_LIST_CONTRACTS)
+        for (int i = 0; i + 1 < n; i++) {             // start on the one held
+            int slot = views_town_contract_slot(g, i);
+            if (strcmp(g->contract.cycle[slot], g->contract.active_id) == 0) town.lcursor = i;
+        }
+}
+
+// Enter (or a tap) on a detail list row.
+static void town_list_do_row(Game *g, int i) {
+    const ResBanners *bn = &g->res->banners;
+    char buf[RES_BANNER_LEN];
+    if (i == views_town_list_rows(g) - 1) {                 // Back
+        town.list = TOWN_LIST_MENU;
+        town.detail_page = 0;
+        return;
+    }
+    if (!town_row_live(g, i)) return;
+    switch (town.list) {
+        case TOWN_LIST_CONTRACTS: {
+            int slot = views_town_contract_slot(g, i);
+            if (strcmp(g->contract.cycle[slot], g->contract.active_id) == 0) return;
+            town.confirm_slot = slot;
+            town_ask(TOWN_CONFIRM_CONTRACT);
+            break;
+        }
+        case TOWN_LIST_BOAT:
+            if (g->boat.has_boat && g->travel_mode == TRAVEL_BOAT) {
+                resources_format_template(buf, sizeof buf, bn->town_boat_vacate_first, NULL, 0);
+                town_show_info(buf);
+            } else {
+                town_ask(g->boat.has_boat ? TOWN_CONFIRM_BOAT_CANCEL : TOWN_CONFIRM_BOAT_RENT);
+            }
+            break;
+        case TOWN_LIST_TEMPLE: town_ask(TOWN_CONFIRM_SPELL); break;
+        case TOWN_LIST_SIEGE:  town_ask(TOWN_CONFIRM_SIEGE); break;
+        default: break;
+    }
+}
+
+void views_gallery_town(const Game *g, int row, int lcursor, const char *info, bool dialog) {
+    town.list = (row < 0) ? TOWN_LIST_MENU : town_list_for_row((TownRow)row);
+    if (row >= 0) town.cursor = row;
+    else          town.cursor = lcursor;
+    town.lcursor = lcursor;
+    town.detail_page = 0;
+    town.info_active = false;
+    if (info && info[0]) town_show_info(info);
+    town.result_dialog = dialog;
+    town.visit = true;
+    (void)g;
+}
+
+void views_gallery_town_scene(int cursor) {
+    town.list = TOWN_LIST_MENU;
+    town.visit = false;
+    town.scene_cursor = cursor;
+    town.info_active = false;
+    town.result_dialog = false;
+}
+
+bool views_town_visiting(void) { return town.visit; }
+int  views_town_scene_cursor(void) { return town.scene_cursor; }
+
+bool views_town_result_dialog(void) {
+    return view_stack_top() == VIEW_TOWN && town.result_dialog;
+}
+
+static bool town_modern_update(Game *g) {
+    if (!town.visit) {
+        // The scene: Visit the town, or Leave.
+        int tapped = touch_tapped_row(TOUCH_LIST_TOWN);
+        if (tapped == 0 || tapped == 1) town.scene_cursor = tapped;
+        bool go = tapped >= 0 || input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
+                  input_key_pressed(KEY_SPACE);
+        if (input_key_pressed(KEY_ESCAPE)) { views_dismiss(); return true; }
+        if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_W) ||
+            input_key_pressed(KEY_S) || input_key_pressed(KEY_KP_8) || input_key_pressed(KEY_KP_2)) {
+            town.scene_cursor = 1 - town.scene_cursor;
+            return true;
+        }
+        if (go) {
+            if (town.scene_cursor == 0) { town.visit = true; town.cursor = TOWN_ROW_CONTRACT; }
+            else                        views_dismiss();
+        }
+        return true;
+    }
+    if (town.result_dialog) {
+        // Continue: any key or a tap closes it, back to the services.
+        if (ui_any_key_pressed() || touch_tapped_row(TOUCH_LIST_PROMPT) == 0) {
+            town.result_dialog = false;
+            town.info_active = false;
+            town.list = TOWN_LIST_MENU;
+            town.detail_page = 0;
+        }
+        return true;
+    }
+    bool menu = (town.list == TOWN_LIST_MENU);
+    int rows = views_town_list_rows(g);
+
+    // A message stays only until the next key; the key still does its job.
+    if (town.info_active && ui_any_key_pressed()) town.info_active = false;
+
+    if (input_key_pressed(KEY_ESCAPE)) {
+        if (menu) town.visit = false;
+        else      { town.list = TOWN_LIST_MENU; town.detail_page = 0; }
+        return true;
+    }
+    int tapped = touch_tapped_row(TOUCH_LIST_TOWN);
+    if (tapped >= 0 && tapped < rows) {
+        if (menu && tapped == TOWN_ROW_LEAVE) { town.visit = false; return true; }
+        if (menu) { town.cursor = tapped; town_open(g, (TownRow)tapped); }
+        else      { town.lcursor = tapped; town.detail_page = 0; town_list_do_row(g, tapped); }
+        return true;
+    }
+    int dir = (input_key_pressed(KEY_UP) || input_key_pressed(KEY_W) ||
+               input_key_pressed(KEY_KP_8)) ? -1
+            : (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_S) ||
+               input_key_pressed(KEY_KP_2)) ? +1 : 0;
+    if (dir && menu) {
+        town.cursor = (town.cursor + dir + rows) % rows;
+        town.detail_page = 0;
+        return true;
+    }
+    if (dir) {
+        // Up/Down read straight through: down turns the page, and past the
+        // last page moves to the next row's first; up turns back, and before
+        // the first page moves to the previous row's last (the renderer
+        // clamps the page to the pages it lays out).
+        if (dir > 0 && town.detail_page + 1 < town.detail_pages) {
+            town.detail_page++;
+        } else if (dir < 0 && town.detail_page > 0) {
+            town.detail_page--;
+        } else {
+            int next = town_list_step(g, town.lcursor, dir);
+            if (next != town.lcursor) {
+                town.lcursor = next;
+                town.detail_page = (dir > 0) ? 0 : 1000;
+            }
+        }
+        return true;
+    }
+    if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
+        input_key_pressed(KEY_SPACE)) {
+        if (menu && town.cursor == TOWN_ROW_LEAVE) town.visit = false;
+        else if (menu) town_open(g, (TownRow)town.cursor);
+        else           town_list_do_row(g, town.lcursor);
+        return true;
+    }
+    return false;
+}
+
 bool views_town_update(Game *g) {
     if (view_stack_top() != VIEW_TOWN) return false;
 
+    touch_request(TOUCH_CHROME_BACK);
+    if (CL_IS_MODERN) return town_modern_update(g);
+
     if (town.info_active) {
         // Any key dismisses the info panel and returns to the menu.
+        touch_region_any(KEY_ENTER);
         if (input_key_pressed(KEY_ESCAPE) || input_key_pressed(KEY_ENTER) ||
             input_key_pressed(KEY_KP_ENTER) || input_key_pressed(KEY_SPACE)) {
             town.info_active = false;
@@ -869,6 +1323,22 @@ bool views_town_row_text(const Game *g, int row, char *out, int out_sz) {
     return true;
 }
 
+bool views_town_menu_label(const Game *g, int row, char *out, int out_sz) {
+    if (!g || !g->res || row < 0 || row >= TOWN_ROW_COUNT) return false;
+    const ResBanners *bn = &g->res->banners;
+    const char *s = "";
+    switch ((TownRow)row) {
+        case TOWN_ROW_CONTRACT: s = bn->town_menu_contract; break;
+        case TOWN_ROW_BOAT:     s = bn->town_menu_boat; break;
+        case TOWN_ROW_INFO:     s = bn->town_menu_info;  break;
+        case TOWN_ROW_SPELL:    s = bn->town_menu_spell; break;
+        case TOWN_ROW_SIEGE:    s = bn->town_menu_siege; break;
+        default: break;
+    }
+    resources_format_template(out, out_sz, s, NULL, 0);
+    return true;
+}
+
 int views_town_row_count(void) {
     return TOWN_ROW_COUNT;
 }
@@ -876,6 +1346,108 @@ int views_town_row_count(void) {
 const char *views_town_info_text(void) {
     if (view_stack_top() != VIEW_TOWN || !town.info_active) return NULL;
     return town.info_body;
+}
+
+TownConfirm views_town_take_confirm(const Game *g, char *body, int cap) {
+    TownConfirm c = town.confirm;
+    town.confirm = TOWN_CONFIRM_NONE;
+    town.asked = c;
+    if (c == TOWN_CONFIRM_NONE || !g) return c;
+    const ResBanners *bn = &g->res->banners;
+    char a[16], b[16];
+    switch (c) {
+        case TOWN_CONFIRM_CONTRACT:
+            resources_format_template(body, cap, bn->town_contract_confirm, NULL, 0);
+            break;
+        case TOWN_CONFIRM_BOAT_RENT: {
+            snprintf(a, sizeof a, "%d", GameBoatCost(g));
+            ResTemplateVar v[] = { { "COST", a } };
+            resources_format_template(body, cap, bn->town_confirm_boat_rent, v, 1);
+            break;
+        }
+        case TOWN_CONFIRM_BOAT_CANCEL:
+            resources_format_template(body, cap, bn->town_confirm_boat_cancel, NULL, 0);
+            break;
+        case TOWN_CONFIRM_SPELL: {
+            const SpellDef *sp = NULL;
+            for (int i = 0; i < g->town_count; i++)
+                if (strcmp(g->towns[i].id, town.record_key) == 0)
+                    sp = spell_by_id(g->towns[i].spell_for_sale);
+            snprintf(b, sizeof b, "%d", sp ? sp->cost : 0);
+            ResTemplateVar v[] = { { "SPELL", sp ? sp->name : "" }, { "SPELL_COST", b } };
+            resources_format_template(body, cap, bn->town_confirm_spell, v, 2);
+            break;
+        }
+        case TOWN_CONFIRM_SIEGE: {
+            snprintf(a, sizeof a, "%d", g->res->economy.siege_cost);
+            ResTemplateVar v[] = { { "SIEGE_COST", a } };
+            resources_format_template(body, cap, bn->town_confirm_siege, v, 1);
+            break;
+        }
+        default: break;
+    }
+    return c;
+}
+
+void views_town_confirm_yes(Game *g) {
+    if (view_stack_top() != VIEW_TOWN || !g) return;
+    switch (town.asked) {
+        case TOWN_CONFIRM_CONTRACT: {
+            GameTakeContractAt(g, town.confirm_slot);
+            // Modern: the clerk names the contract you took, like every other
+            // service's outcome.
+            const VillainDef *v = villain_by_id(g->contract.cycle[town.confirm_slot]);
+            if (CL_IS_MODERN && v) {
+                const ResBanners *bn = &g->res->banners;
+                char body[RES_BANNER_LEN], rb[16];
+                snprintf(rb, sizeof rb, "%d", v->reward);
+                const ResZone *vz = resources_zone_by_id(g->res, v->zone);
+                ResTemplateVar vars[] = { { "VILLAIN", v->name }, { "REWARD", rb },
+                                          { "ZONE", (vz && vz->name[0]) ? vz->name : v->zone } };
+                resources_format_template(body, sizeof body, bn->town_contract_new, vars, 3);
+                town_show_info(body);
+            }
+            break;
+        }
+        case TOWN_CONFIRM_BOAT_RENT:
+        case TOWN_CONFIRM_BOAT_CANCEL: town_do_boat(g);  break;
+        case TOWN_CONFIRM_SPELL:       town_do_spell(g); break;
+        case TOWN_CONFIRM_SIEGE:       town_do_siege(g); break;
+        default: break;
+    }
+    // Modern: the boat, spell and siege outcomes are said in a dialog with the
+    // section's person, and Continue returns to the town's main page.
+    if (CL_IS_MODERN && town.info_active) town.result_dialog = true;
+    town.asked = TOWN_CONFIRM_NONE;
+    town.detail_page = 0;
+}
+
+TownList views_town_list(void) { return town.list; }
+
+void views_town_rites_text(const Game *g, char *out, int cap) {
+    const Resources *res = g ? g->res : NULL;
+    const ResTown *t = res ? resources_town_by_id(res, town.record_key) : NULL;
+    const ResZone *z = t ? resources_zone_by_id(res, t->zone) : NULL;
+    char xb[12], yb[12];
+    snprintf(xb, sizeof xb, "%d", z ? z->magic_alcove_x : 0);
+    snprintf(yb, sizeof yb, "%d", z ? z->magic_alcove_y : 0);
+    ResTemplateVar vars[] = {
+        { "HERO", g ? g->character.name : "" },
+        { "ZONE", (z && z->name[0]) ? z->name : "" },
+        { "X", xb }, { "Y", yb },
+    };
+    resources_format_template(out, cap, res ? res->banners.town_temple_needs_rites : "", vars, 4);
+}
+
+void views_town_intel_text(const Game *g, char *out, int cap) {
+    town_format_intel(g, out, (size_t)cap);
+}
+
+int views_town_detail_page(void) { return town.detail_page; }
+
+void views_town_set_detail_pages(int pages) {
+    town.detail_pages = pages < 1 ? 1 : pages;
+    if (town.detail_page >= town.detail_pages) town.detail_page = town.detail_pages - 1;
 }
 
 int views_town_cursor(void) {
@@ -896,6 +1468,7 @@ int views_town_cursor(void) {
 bool views_town_demo_step_cursor(int target_row) {
     if (view_stack_top() != VIEW_TOWN) return true;
     if (target_row < 0 || target_row >= TOWN_ROW_COUNT) return true;
+    town.visit = true;
     if (town.cursor == target_row) return true;
     if (town.cursor < target_row) town.cursor++;
     else                          town.cursor--;
@@ -924,21 +1497,47 @@ static bool controls_row_is_audio(const struct Game *g, int row) {
 }
 
 bool views_controls_row_disabled(const struct Game *g, int row) {
-    return controls_row_is_audio(g, row) && !audio_is_available();
+    // Only once the device has definitely failed: while it is still opening
+    // in the background the rows stay live.
+    return controls_row_is_audio(g, row) && audio_status() == AUDIO_UNAVAILABLE;
 }
 
 // The Scale row is not one of the pack's controls: it is appended by the shell
 // and backed by present.c, not by stats.options[]. Display scale belongs to the
 // machine looking at the game, and stats.options[] is serialized into saves.
-// Cycles Auto -> 1x -> 2x -> 3x -> 4x -> 5x -> Auto; present_scale() clamps the
-// choice to what the window can actually show.
+// Cycles 1x -> 2x -> ... -> the largest scale this window can show -> 1x.
+// There is no Auto: 1x is one buffer pixel to one screen pixel, which is what a
+// modern pack is authored for, and a bigger window shows more tiles rather than
+// bigger ones. Wrapping at the measured maximum rather than a constant is what
+// keeps the label honest -- an entry that the window cannot show would render
+// clamped and say something else.
+//
+// A fixed buffer (CL_IS_NATIVE) cycles 1x -> 2x -> 3x -> 1x and resizes the
+// window to the buffer times the scale, wrapping at the largest one the monitor
+// can hold whole.
 void views_controls_advance_scale(void) {
-    int s = present_get_scale_override();
-    s = (s + 1) % (CL_SCALE_MAX + 1);
+    int s = present_get_scale() + 1;
+    if (CL_IS_NATIVE) {
+        // A movie needs one frame size, and a fixed buffer renders at the
+        // zoom, so the zoom is locked while the recorder runs.
+        if (recorder_active()) return;
+        int disp_w, disp_h;
+        frame_host_display_size(&disp_w, &disp_h);
+        int fit = present_max_scale(disp_w, disp_h);
+        if (frame_host_window_fullscreen())
+            fit = present_max_scale(frame_host_window_width(),
+                                    frame_host_window_height());
+        if (s > fit) s = 1;
+        present_set_scale(s);
+        present_zoom_window(s);
+        return;
+    }
+    if (s > present_max_scale(frame_host_window_width(),
+                              frame_host_window_height())) s = 1;
     present_set_scale(s);
 }
 
-int views_controls_scale_value(void) { return present_get_scale_override(); }
+int views_controls_scale_value(void) { return present_get_scale(); }
 
 void views_controls_advance(struct Game *g, int row) {
     if (!g || !g->res) return;

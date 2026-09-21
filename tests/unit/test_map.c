@@ -42,8 +42,8 @@ TEST load_continentia_succeeds(void) {
 
     resources_free(res);
     free(res);
-    free(g);
-    free(m);
+    GameFree(g); free(g);
+    MapFree(m); free(m);
     PASS();
 }
 
@@ -70,12 +70,158 @@ TEST get_tile_at_known_chest_position(void) {
 
     resources_free(res);
     free(res);
-    free(g);
-    free(m);
+    GameFree(g); free(g);
+    MapFree(m); free(m);
+    PASS();
+}
+
+TEST terrain_art_is_bare_without_a_tile_set(void) {
+    // A zone with no tile_set draws the shared art/tiles/ names, so a pack
+    // that predates the key loads byte for byte as before.
+    Resources *res = calloc(1, sizeof *res);
+    Map       *m   = calloc(1, sizeof *m);
+    ASSERT(res && m);
+    ASSERT(resources_load(res, ASSET_PATH));
+    ASSERT(MapLoadZone(m, res, "continentia"));
+    ASSERT_STR_EQ("", m->tile_set);
+    bool saw_plain = false;
+    for (int y = 0; y < m->height; y++)
+        for (int x = 0; x < m->width; x++) {
+            const Tile *t = MapGetTile(m, x, y);
+            ASSERT(strchr(TileArt(m, t), '/') == NULL);
+            if (strcmp(TileArt(m, t), "grass") == 0) saw_plain = true;
+        }
+    ASSERT(saw_plain);
+    char buf[TILE_ART_NAME_LEN];
+    ASSERT_STR_EQ("water", MapTerrainArt(m, "water", buf, sizeof buf));
+    resources_free(res); free(res); MapFree(m); free(m);
+    PASS();
+}
+
+TEST terrain_art_lives_under_the_zone_tile_set(void) {
+    // With "tile_set": "x" every terrain code resolves as x/<art>; object
+    // tiles stamped from the zone lists keep their bare names; and the
+    // tiles the engine writes later (cleared objects, bridges) follow suit.
+    Resources *res = calloc(1, sizeof *res);
+    Map       *m   = calloc(1, sizeof *m);
+    ASSERT(res && m);
+    ASSERT(resources_load(res, ASSET_PATH));
+    ResZone *z = (ResZone *)resources_zone_by_id(res, "continentia");
+    ASSERT(z);
+    strcpy(z->tile_set, "continentia");
+    ASSERT(MapLoadZone(m, res, "continentia"));
+    ASSERT_STR_EQ("continentia", m->tile_set);
+    int prefixed = 0, objects = 0;
+    for (int y = 0; y < m->height; y++)
+        for (int x = 0; x < m->width; x++) {
+            const Tile *t = MapGetTile(m, x, y);
+            if (t->interactive == INTERACT_NONE && !t->blocks_foot) {
+                ASSERT(strncmp(TileArt(m, t), "continentia/", 12) == 0);
+                prefixed++;
+            } else if (t->interactive != INTERACT_NONE) {
+                ASSERT(strchr(TileArt(m, t), '/') == NULL);
+                objects++;
+            }
+        }
+    ASSERT(prefixed > 1000);
+    ASSERT(objects > 10);
+    char buf[TILE_ART_NAME_LEN];
+    ASSERT_STR_EQ("continentia/water", MapTerrainArt(m, "water", buf, sizeof buf));
+    // Clearing an object reverts to the set's grass, not the shared one.
+    int ox = -1, oy = -1;
+    for (int y = 0; y < m->height && ox < 0; y++)
+        for (int x = 0; x < m->width; x++)
+            if (MapGetTile(m, x, y)->interactive != INTERACT_NONE &&
+                MapGetTile(m, x, y)->terrain != TERRAIN_WATER) { ox = x; oy = y; break; }
+    ASSERT(ox >= 0);
+    MapClearInteractive(m, ox, oy);
+    ASSERT_STR_EQ("continentia/grass", TileArt(m, MapGetTile(m, ox, oy)));
+    resources_free(res); free(res); MapFree(m); free(m);
+    PASS();
+}
+
+TEST town_stamps_its_own_art_or_the_shared_tile(void) {
+    Resources *res = calloc(1, sizeof *res);
+    Map       *m   = calloc(1, sizeof *m);
+    ASSERT(res && m);
+    ASSERT(resources_load(res, ASSET_PATH));
+    ASSERT(MapLoadZone(m, res, "continentia"));
+    int tx = -1, ty = -1;
+    for (int y = 0; y < m->height && tx < 0; y++)
+        for (int x = 0; x < m->width; x++)
+            if (MapGetTile(m, x, y)->interactive == INTERACT_TOWN) { tx = x; ty = y; break; }
+    ASSERT(tx >= 0);
+    ASSERT_STR_EQ("town", TileArt(m, MapGetTile(m, tx, ty)));
+    const char *id = TileId(m, MapGetTile(m, tx, ty));
+    for (int i = 0; i < res->town_count; i++)
+        if (strcmp(res->towns[i].id, id) == 0) strcpy(res->towns[i].art, "town_x");
+    ASSERT(MapLoadZone(m, res, "continentia"));
+    ASSERT_STR_EQ("town_x", TileArt(m, MapGetTile(m, tx, ty)));
+    resources_free(res); free(res); MapFree(m); free(m);
+    PASS();
+}
+
+TEST foes_stamp_the_zone_army_art(void) {
+    Resources *res = calloc(1, sizeof *res);
+    Map       *m   = calloc(1, sizeof *m);
+    ASSERT(res && m);
+    ASSERT(resources_load(res, ASSET_PATH));
+    ASSERT(MapLoadZone(m, res, "continentia"));
+    ASSERT_STR_EQ("wandering_army", m->army_art);
+    MapStampFoe(m, 5, 5, "foe_test");
+    ASSERT_STR_EQ("wandering_army", TileArt(m, MapGetTile(m, 5, 5)));
+    ResZone *z = (ResZone *)resources_zone_by_id(res, "continentia");
+    strcpy(z->army_art, "army_x");
+    ASSERT(MapLoadZone(m, res, "continentia"));
+    MapStampFoe(m, 5, 5, "foe_test");
+    ASSERT_STR_EQ("army_x", TileArt(m, MapGetTile(m, 5, 5)));
+    resources_free(res); free(res); MapFree(m); free(m);
+    PASS();
+}
+
+// A foe crossing a cell leaves the cell's own art behind (REQ-229f): the
+// road or grass variant it stood on is drawn under it and comes back when it
+// moves on. Consumed objects on any other ground still turn into grass.
+TEST clearing_an_overlay_restores_the_cells_own_art(void) {
+    Resources *res = calloc(1, sizeof *res);
+    Map       *m   = calloc(1, sizeof *m);
+    ASSERT(res && m);
+    ASSERT(resources_load(res, ASSET_PATH));
+    ASSERT(MapLoadZone(m, res, "continentia"));
+    int dx = -1, dy = -1, mx = -1, my = -1;
+    for (int y = 0; y < m->height && (dx < 0 || mx < 0); y++)
+        for (int x = 0; x < m->width; x++) {
+            const Tile *t = MapGetTile(m, x, y);
+            if (t->interactive != INTERACT_NONE) continue;
+            if (dx < 0 && strcmp(TileArt(m, t), "grass_variant") == 0) { dx = x; dy = y; }
+            if (mx < 0 && t->terrain == TERRAIN_MOUNTAIN) { mx = x; my = y; }
+        }
+    ASSERT(dx >= 0 && mx >= 0);
+    char before[TILE_ART_NAME_LEN];
+    strcpy(before, TileArt(m, MapGetTile(m, dx, dy)));
+    ASSERT_STR_EQ(before, TileGround(m, MapGetTile(m, dx, dy)));
+    MapStampFoe(m, dx, dy, "foe_test");
+    ASSERT_STR_EQ("wandering_army", TileArt(m, MapGetTile(m, dx, dy)));
+    ASSERT_STR_EQ(before, TileGround(m, MapGetTile(m, dx, dy)));     // the ground is kept under it
+    ASSERT(MapClearFoeStamp(m, dx, dy));
+    ASSERT_STR_EQ(before, TileArt(m, MapGetTile(m, dx, dy)));        // and comes back
+    ASSERT_EQ(TERRAIN_GRASS, MapGetTile(m, dx, dy)->terrain);
+    // impassable ground: the old rule, a cleared object leaves grass
+    Tile *mt = (Tile *)MapGetTile(m, mx, my);
+    mt->interactive = INTERACT_DWELLING_HILLS;
+    MapClearInteractive(m, mx, my);
+    ASSERT_EQ(TERRAIN_GRASS, mt->terrain);
+    ASSERT(strstr(TileArt(m, mt), "grass") != NULL);
+    resources_free(res); free(res); MapFree(m); free(m);
     PASS();
 }
 
 SUITE(unit_map_suite) {
+    RUN_TEST(clearing_an_overlay_restores_the_cells_own_art);
+    RUN_TEST(terrain_art_is_bare_without_a_tile_set);
+    RUN_TEST(terrain_art_lives_under_the_zone_tile_set);
+    RUN_TEST(town_stamps_its_own_art_or_the_shared_tile);
+    RUN_TEST(foes_stamp_the_zone_army_art);
     RUN_TEST(in_bounds_corners_and_outside);
     RUN_TEST(load_continentia_succeeds);
     RUN_TEST(get_tile_at_known_chest_position);

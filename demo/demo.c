@@ -67,7 +67,7 @@ void demo_result(const Game *g, DemoResult *out) {
     // Per-kind pickup tallies, classified exactly: each consumed tile is
     // looked up in its zone's salted map (chests/navmaps/orbs share the
     // consumed[] record with artifacts and the alcove).
-    Map *m = malloc(sizeof *m);
+    Map *m = calloc(1, sizeof *m);
     if (m) {
         for (int zi = 0; zi < g->res->zone_count; zi++) {
             const char *zid = g->res->zones[zi].id;
@@ -89,9 +89,9 @@ void demo_result(const Game *g, DemoResult *out) {
                 }
             }
         }
-        free(m);
+        MapFree(m); free(m);
     }
-    for (int i = 0; i < GAME_TOWNS; i++)
+    for (int i = 0; i < g->town_count; i++)
         if (g->towns[i].id[0] && g->towns[i].visited) out->towns++;
 }
 
@@ -120,7 +120,7 @@ bool demo_run(const DemoConfig *cfg, DemoResult *out) {
     Map *map = calloc(1, sizeof *map);
     Fog *fog = calloc(1, sizeof *fog);
     if (!game || !map || !fog) {
-        free(fog); free(map); free(game);
+        FogFree(fog); free(fog); MapFree(map); free(map); GameFree(game); free(game);
         resources_free(res); free(res);
         pack_stack_pop();
         return false;
@@ -133,8 +133,7 @@ bool demo_run(const DemoConfig *cfg, DemoResult *out) {
     bool ok = MapLoadZoneWithPlacements(map, res, res->world.starting_zone, game);
     if (ok) {
         GameApplyTileMutations(game, map, game->position.zone);
-        FogReveal(fog, map, game->position.x, game->position.y,
-                  res->world.fog_sight);
+        FogRevealFor(res, fog, map, game->position.x, game->position.y);
         demo_begin(game, map, fog, res);
         int t = 0;
         while (demo_tick(game, map, fog, res) && ++t < DEMO_MAX_TICKS) {}
@@ -151,9 +150,9 @@ bool demo_run(const DemoConfig *cfg, DemoResult *out) {
     }
 
     pending_reset();
-    free(fog);
-    free(map);
-    free(game);
+    FogFree(fog); free(fog);
+    MapFree(map); free(map);
+    GameFree(game); free(game);
     resources_free(res);
     free(res);
     pack_stack_pop();

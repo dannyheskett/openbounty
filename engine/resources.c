@@ -4,6 +4,7 @@
 #include "assets_bytes.h"   // LoadAssetBytes / UnloadAssetBytes
 #include "pack.h"
 #include "tile.h"
+#include "combat.h"     // COMBAT_W / COMBAT_H for the siege grid
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -49,6 +50,7 @@ static const char *json_str(const cJSON *obj, const char *key,
 // because the catalog parsers (troops, villains) reach it first.
 static void parse_path_array(cJSON *arr, char *dst, size_t stride,
                              int cap, int *out_count);
+static void parse_path_list(cJSON *arr, char (**dst)[RES_PATH_LEN], int *out_count);
 
 // Read a fixed-length int array under `key`. Missing keys / wrong types leave
 // `out[]` untouched, so callers prime it with defaults before calling.
@@ -103,6 +105,14 @@ static const Resources *g_resources = NULL;
 
 const Resources *resources_current(void) { return g_resources; }
 
+// Locale override for the next load (set from the --lang CLI flag). Empty
+// means "use the pack's base locale (world.language)".
+static char g_locale_override[RES_ID_LEN];
+void resources_set_locale(const char *lang) {
+    if (lang && lang[0]) snprintf(g_locale_override, sizeof g_locale_override, "%s", lang);
+    else g_locale_override[0] = '\0';
+}
+
 // Read a whole file from `path` (via assets.c so packaged builds work too).
 // Returns a heap-owned NUL-terminated buffer; caller frees.
 static char *slurp(const char *path) {
@@ -117,15 +127,28 @@ static char *slurp(const char *path) {
     return buf;
 }
 
+// Size a heap catalog table for `n` entries, releasing what it held and
+// resetting its count. False when there is nothing to hold or no memory.
+#define RES_TABLE_ALLOC(field, count, n)                                   \
+    (free(field), (field) = NULL, (count) = 0,                             \
+     ((n) > 0 && ((field) = calloc((size_t)(n), sizeof *(field))) != NULL))
+
+// A JSON array's or object's entry count (0 when it is neither).
+static int json_len(const cJSON *j) {
+    return (cJSON_IsArray(j) || cJSON_IsObject(j)) ? cJSON_GetArraySize(j) : 0;
+}
+
 // ---- In-place section parsers ---------------------------------------------
 // Each parses a JSON array nested inside the single game.json root object.
 
+static void parse_anim_set(cJSON *obj, ResAnimSet *out);
+
 static void parse_towns(Resources *res, cJSON *arr) {
-    res->town_count = 0;
-    if (!cJSON_IsArray(arr)) return;
+    int cap = json_len(arr);
+    if (!RES_TABLE_ALLOC(res->towns, res->town_count, cap)) return;
     cJSON *it;
     cJSON_ArrayForEach(it, arr) {
-        if (res->town_count >= RES_MAX_TOWNS) break;
+        if (res->town_count >= cap) break;
         ResTown *t = &res->towns[res->town_count++];
         t->index = json_int(it, "index", -1);
         copy_str(t->id,   sizeof(t->id),   json_str(it, "id", ""));
@@ -146,15 +169,25 @@ static void parse_towns(Resources *res, cJSON *arr) {
                  json_str(it, "intel_castle", ""));
         copy_str(t->pinned_spell, sizeof(t->pinned_spell),
                  json_str(it, "pinned_spell", ""));
+        // Optional per-town tile art (a bare stem under art/tiles/). Absent
+        // means the shared "town" tile, so older packs stamp as before.
+        copy_str(t->art, sizeof(t->art), json_str(it, "art", ""));
+        copy_str(t->informant, sizeof(t->informant), json_str(it, "informant", ""));
+        copy_str(t->headman, sizeof(t->headman), json_str(it, "headman", ""));
+        copy_str(t->townhead, sizeof(t->townhead), json_str(it, "townhead", ""));
+        copy_str(t->invitations, sizeof(t->invitations), json_str(it, "invitations", ""));
+        // A town whose informant reports on the sacred artifacts, not a castle.
+        t->intel_artifact = cJSON_IsTrue(cJSON_GetObjectItem(it, "intel_artifact"));
+        copy_str(t->backdrop, sizeof(t->backdrop), json_str(it, "backdrop", ""));
     }
 }
 
 static void parse_castles(Resources *res, cJSON *arr) {
-    res->castle_count = 0;
-    if (!cJSON_IsArray(arr)) return;
+    int cap = json_len(arr);
+    if (!RES_TABLE_ALLOC(res->castles, res->castle_count, cap)) return;
     cJSON *it;
     cJSON_ArrayForEach(it, arr) {
-        if (res->castle_count >= RES_MAX_CASTLES) break;
+        if (res->castle_count >= cap) break;
         ResCastle *c = &res->castles[res->castle_count++];
         c->index = json_int(it, "index", -1);
         copy_str(c->id,   sizeof(c->id),   json_str(it, "id", ""));
@@ -172,6 +205,14 @@ static void parse_castles(Resources *res, cJSON *arr) {
             c->gate_y = json_int(gate, "y", c->gate_y);
         }
         c->difficulty_tier = json_int(it, "difficulty_tier", 0);
+        copy_str(c->art, sizeof(c->art), json_str(it, "art", ""));
+        // Map footprint (REQ-228): absent means the classic 3x2 stamp.
+        {
+            const char *fp = json_str(it, "footprint", "");
+            if (!resources_parse_castle_footprint(fp, &c->footprint) && fp[0])
+                fprintf(stdout, "resources: castle '%s' footprint '%s' unknown, "
+                        "using 3x2\n", c->id, fp);
+        }
 
         memset(&c->special, 0, sizeof(c->special));
         cJSON *sp = cJSON_GetObjectItem(it, "special");
@@ -196,6 +237,24 @@ static void parse_castles(Resources *res, cJSON *arr) {
                          sizeof(c->special.dialog_body),
                          json_str(dlg, "body", ""));
             }
+            copy_str(c->special.portrait, sizeof(c->special.portrait),
+                     json_str(sp, "portrait", ""));
+            copy_str(c->special.figure, sizeof(c->special.figure),
+                     json_str(sp, "figure", ""));
+            copy_str(c->special.barracks_portrait, sizeof(c->special.barracks_portrait),
+                     json_str(sp, "barracks_portrait", ""));
+            copy_str(c->special.barracks_figure, sizeof(c->special.barracks_figure),
+                     json_str(sp, "barracks_figure", ""));
+            copy_str(c->special.greeter_figure, sizeof(c->special.greeter_figure),
+                     json_str(sp, "greeter_figure", ""));
+            {
+                cJSON *pr = cJSON_GetObjectItem(sp, "promotion");
+                for (int r = 0; r < 4; r++) {
+                    cJSON *e = cJSON_IsArray(pr) ? cJSON_GetArrayItem(pr, r) : NULL;
+                    copy_str(c->special.promotion[r], sizeof(c->special.promotion[r]),
+                             cJSON_IsString(e) ? e->valuestring : "");
+                }
+            }
             cJSON *au = cJSON_GetObjectItem(sp, "audience");
             if (cJSON_IsObject(au)) {
                 copy_str(c->special.audience_intro,
@@ -210,6 +269,16 @@ static void parse_castles(Resources *res, cJSON *arr) {
                 copy_str(c->special.audience_final_rank,
                          sizeof(c->special.audience_final_rank),
                          json_str(au, "final_rank", ""));
+                copy_str(c->special.audience_blessing_granted, sizeof(c->special.audience_blessing_granted),
+                         json_str(au, "blessing_granted", ""));
+                copy_str(c->special.audience_blessing_needed, sizeof(c->special.audience_blessing_needed),
+                         json_str(au, "blessing_needed", ""));
+                copy_str(c->special.audience_blessing_already, sizeof(c->special.audience_blessing_already),
+                         json_str(au, "blessing_already", ""));
+                copy_str(c->special.audience_tribute_paid, sizeof(c->special.audience_tribute_paid),
+                         json_str(au, "tribute_paid", ""));
+                copy_str(c->special.audience_tribute_needed, sizeof(c->special.audience_tribute_needed),
+                         json_str(au, "tribute_needed", ""));
             }
         }
     }
@@ -222,7 +291,38 @@ static Terrain terrain_from_name(const char *s) {
     if (strcmp(s, "mountain") == 0) return TERRAIN_MOUNTAIN;
     if (strcmp(s, "water")    == 0) return TERRAIN_WATER;
     if (strcmp(s, "desert")   == 0) return TERRAIN_DESERT;
+    if (strcmp(s, "river")    == 0) return TERRAIN_RIVER;
     return TERRAIN_GRASS;
+}
+
+// A tile code is one raw byte of a map file. The key that names it is that
+// byte itself for the 94 printable ASCII ones, and a two-digit hex escape
+// "\xNN" for the rest -- 91 of the printable codes are already spoken for, and
+// a raw byte above 127 cannot be written as a JSON key: cJSON turns a \u
+// escape into UTF-8, so only a codepoint under 0x80 survives as a single byte
+// (see utf16_literal_to_utf8). The escape keeps game.json plain ASCII and
+// valid UTF-8 while still naming any of the 256 codes. A map file that uses
+// one is no longer ASCII -- the reader is byte-wise, so such a file is latin-1
+// (tools/mapcheck.py and its neighbours read them that way).
+//
+// Returns the code, or -1 if the key names none.
+int resources_tile_code_from_key(const char *key) {
+    if (!key || !key[0]) return -1;
+    if (key[0] == '\\' && (key[1] == 'x' || key[1] == 'X') &&
+        key[2] && key[3] && !key[4]) {
+        int v = 0;
+        for (int i = 2; i < 4; i++) {
+            int c = (unsigned char)key[i], d;
+            if      (c >= '0' && c <= '9') d = c - '0';
+            else if (c >= 'a' && c <= 'f') d = c - 'a' + 10;
+            else if (c >= 'A' && c <= 'F') d = c - 'A' + 10;
+            else return -1;
+            v = v * 16 + d;
+        }
+        return v;
+    }
+    if (key[1]) return -1;               // more than one character, not an escape
+    return (unsigned char)key[0];
 }
 
 static void parse_tile_codes(Resources *res, cJSON *obj) {
@@ -230,29 +330,46 @@ static void parse_tile_codes(Resources *res, cJSON *obj) {
     if (!cJSON_IsObject(obj)) return;
     cJSON *entry;
     cJSON_ArrayForEach(entry, obj) {
-        const char *key = entry->string;
-        if (!key || !key[0] || (unsigned char)key[0] >= RES_TILE_CODE_COUNT) continue;
-        int idx = (unsigned char)key[0];
+        int idx = resources_tile_code_from_key(entry->string);
+        if (idx < 0 || idx >= RES_TILE_CODE_COUNT) continue;
         ResTileCode *tc = &res->tile_codes[idx];
         tc->present = true;
         copy_str(tc->art, sizeof(tc->art), json_str(entry, "art", ""));
+        copy_str(tc->ground, sizeof(tc->ground), json_str(entry, "ground", ""));
         tc->terrain = (int)terrain_from_name(json_str(entry, "terrain", "grass"));
         cJSON *jbf = cJSON_GetObjectItem(entry, "blocks_foot");
         cJSON *jib = cJSON_GetObjectItem(entry, "is_bridge");
         tc->blocks_foot = cJSON_IsBool(jbf) && cJSON_IsTrue(jbf);
         tc->is_bridge   = cJSON_IsBool(jib) && cJSON_IsTrue(jib);
+        cJSON *jv = cJSON_GetObjectItem(entry, "variants");
+        int v_cap = json_len(jv);
+        if (cJSON_IsArray(jv) && RES_TABLE_ALLOC(tc->variants, tc->variant_count, v_cap)) {
+            cJSON *v;
+            cJSON_ArrayForEach(v, jv) {
+                if (!cJSON_IsString(v) || !v->valuestring[0]) continue;
+                if (tc->variant_count >= v_cap) break;
+                copy_str(tc->variants[tc->variant_count], RES_TILE_ART_LEN, v->valuestring);
+                tc->variant_count++;
+            }
+        }
     }
 }
 
-static void parse_zone_objects_array(cJSON *arr, int cap, int *count,
-                                     void *dst, size_t stride,
+// Fill a heap list with one entry per element of `arr`; *dst is allocated here
+// (NULL when the array is empty or absent).
+static void parse_zone_objects_array(cJSON *arr, int *count,
+                                     void **dst, size_t stride,
                                      void (*fill)(cJSON *, void *)) {
     *count = 0;
-    if (!cJSON_IsArray(arr)) return;
+    *dst = NULL;
+    int cap = cJSON_IsArray(arr) ? cJSON_GetArraySize(arr) : 0;
+    if (cap <= 0) return;
+    *dst = calloc((size_t)cap, stride);
+    if (!*dst) return;
     cJSON *it;
     cJSON_ArrayForEach(it, arr) {
         if (*count >= cap) break;
-        void *slot = (char *)dst + (*count) * stride;
+        void *slot = (char *)*dst + (*count) * stride;
         fill(it, slot);
         (*count)++;
     }
@@ -273,12 +390,14 @@ static void fill_zone_castle(cJSON *j, void *dst) {
     copy_str(c->id, sizeof(c->id), json_str(j, "id", ""));
     // Optional `decorations` array -- extra wall pieces around the gate.
     // Each entry: { "dx": int, "dy": int, "art": string }.
-    c->decor_count = 0;
     cJSON *decor = cJSON_GetObjectItem(j, "decorations");
-    if (cJSON_IsArray(decor)) {
+    int dcap = json_len(decor);
+    c->decorations = NULL;
+    c->decor_count = 0;
+    if (cJSON_IsArray(decor) && RES_TABLE_ALLOC(c->decorations, c->decor_count, dcap)) {
         cJSON *it;
         cJSON_ArrayForEach(it, decor) {
-            if (c->decor_count >= RES_MAX_CASTLE_DECOR) break;
+            if (c->decor_count >= dcap) break;
             ResCastleDecor *d = &c->decorations[c->decor_count++];
             d->dx = json_int(it, "dx", 0);
             d->dy = json_int(it, "dy", 0);
@@ -290,6 +409,9 @@ static void fill_zone_chest(cJSON *j, void *dst) {
     ResZoneChest *c = (ResZoneChest *)dst;
     c->x = json_int(j, "x", 0); c->y = json_int(j, "y", 0);
     copy_str(c->id, sizeof(c->id), json_str(j, "id", ""));
+    c->gold = json_int(j, "gold", 0);
+    cJSON *fx = cJSON_GetObjectItem(j, "fixed");
+    c->fixed = cJSON_IsBool(fx) && cJSON_IsTrue(fx);
 }
 static void fill_zone_artifact(cJSON *j, void *dst) {
     ResZoneArtifact *a = (ResZoneArtifact *)dst;
@@ -299,21 +421,42 @@ static void fill_zone_artifact(cJSON *j, void *dst) {
 static void fill_zone_dwelling(cJSON *j, void *dst) {
     ResZoneDwelling *d = (ResZoneDwelling *)dst;
     d->x = json_int(j, "x", 0); d->y = json_int(j, "y", 0);
-    copy_str(d->id,   sizeof(d->id),   json_str(j, "id", ""));
-    copy_str(d->kind, sizeof(d->kind), json_str(j, "kind", ""));
+    copy_str(d->id,    sizeof(d->id),    json_str(j, "id", ""));
+    copy_str(d->kind,  sizeof(d->kind),  json_str(j, "kind", ""));
+    copy_str(d->troop, sizeof(d->troop), json_str(j, "troop", ""));
 }
 static void fill_zone_army(cJSON *j, void *dst) {
     ResZoneArmy *a = (ResZoneArmy *)dst;
+    copy_str(a->requires_troop, sizeof(a->requires_troop),
+             json_str(j, "requires_troop", ""));
+    copy_str(a->scene, sizeof(a->scene), json_str(j, "scene", ""));
+    copy_str(a->title, sizeof(a->title), json_str(j, "title", ""));
+    a->scene_index = -1;
     a->x = json_int(j, "x", 0); a->y = json_int(j, "y", 0);
     copy_str(a->id, sizeof(a->id), json_str(j, "id", ""));
+    cJSON *st = cJSON_GetObjectItem(j, "static");
+    a->is_static = cJSON_IsBool(st) && cJSON_IsTrue(st);
+    // Optional explicit garrison: "army":[{"troop":id,"count":n}, ...].
+    a->army_stacks = 0;
+    cJSON *army = cJSON_GetObjectItem(j, "army");
+    if (cJSON_IsArray(army)) {
+        cJSON *it;
+        cJSON_ArrayForEach(it, army) {
+            if (a->army_stacks >= 5) break;
+            copy_str(a->army_id[a->army_stacks], sizeof(a->army_id[0]),
+                     json_str(it, "troop", ""));
+            a->army_count[a->army_stacks] = json_int(it, "count", 0);
+            a->army_stacks++;
+        }
+    }
 }
 
 static void parse_zones(Resources *res, cJSON *arr) {
-    res->zone_count = 0;
-    if (!cJSON_IsArray(arr)) return;
+    int cap = json_len(arr);
+    if (!RES_TABLE_ALLOC(res->zones, res->zone_count, cap)) return;
     cJSON *it;
     cJSON_ArrayForEach(it, arr) {
-        if (res->zone_count >= RES_MAX_ZONES) break;
+        if (res->zone_count >= cap) break;
         ResZone *z = &res->zones[res->zone_count++];
         memset(z, 0, sizeof(*z));
         copy_str(z->id,       sizeof(z->id),       json_str(it, "id", ""));
@@ -328,17 +471,112 @@ static void parse_zones(Resources *res, cJSON *arr) {
             const char *p = (strncmp(rel, legacy, llen) == 0) ? rel + llen : rel;
             resources_resolve_path(res, p, z->map_path, sizeof z->map_path);
         }
+        copy_str(z->town_backdrop, sizeof(z->town_backdrop),
+                 json_str(it, "town_backdrop", ""));
+        copy_str(z->tile_set, sizeof(z->tile_set), json_str(it, "tile_set", ""));
+        {
+            cJSON *ov = cJSON_GetObjectItem(it, "tile_set_arts");
+            int nov = cJSON_IsArray(ov) ? cJSON_GetArraySize(ov) : 0;
+            z->tile_set_art_count = 0;
+            z->tile_set_arts = nov > 0 ? calloc((size_t)nov, sizeof *z->tile_set_arts) : NULL;
+            for (int k = 0; z->tile_set_arts && k < nov; k++) {
+                const cJSON *e = cJSON_GetArrayItem(ov, k);
+                if (cJSON_IsString(e) && e->valuestring)
+                    copy_str(z->tile_set_arts[z->tile_set_art_count++], sizeof z->tile_set_arts[0],
+                             e->valuestring);
+            }
+        }
+        copy_str(z->army_art, sizeof(z->army_art), json_str(it, "army_art", ""));
+        copy_str(z->alcove_art, sizeof(z->alcove_art), json_str(it, "alcove_art", ""));
+        copy_str(z->pontifex, sizeof(z->pontifex), json_str(it, "pontifex", ""));
+        z->alcove_cost = json_int(it, "alcove_cost", -1);
+        copy_str(z->boatmaster, sizeof(z->boatmaster), json_str(it, "boatmaster", ""));
+        copy_str(z->siegemaster, sizeof(z->siegemaster), json_str(it, "siegemaster", ""));
         z->width  = json_int(it, "width",  64);
         z->height = json_int(it, "height", 64);
         cJSON *hs = cJSON_GetObjectItem(it, "hero_spawn");
         z->hero_spawn_x = json_int(hs, "x", 0);
         z->hero_spawn_y = json_int(hs, "y", 0);
+        {
+            cJSON *av = cJSON_GetObjectItem(it, "arrivals");
+            int nav = cJSON_IsObject(av) ? cJSON_GetArraySize(av) : 0;
+            z->arrival_count = 0;
+            z->arrivals = nav > 0 ? calloc((size_t)nav, sizeof *z->arrivals) : NULL;
+            const cJSON *e = NULL;
+            if (z->arrivals) cJSON_ArrayForEach(e, av) {
+                if (!e->string || !cJSON_IsObject(e)) continue;
+                ResZoneArrival *a = &z->arrivals[z->arrival_count++];
+                copy_str(a->from, sizeof a->from, e->string);
+                a->x = json_int(e, "x", z->hero_spawn_x);
+                a->y = json_int(e, "y", z->hero_spawn_y);
+            }
+        }
+
+        {
+            // Optional one-time vistas. Absent means none, so a pack that
+            // predates them loads unchanged.
+            cJSON *jev = cJSON_GetObjectItem(it, "events");
+            int nev = cJSON_IsArray(jev) ? cJSON_GetArraySize(jev) : 0;
+            z->event_count = 0;
+            z->events = nev > 0 ? calloc((size_t)nev, sizeof *z->events) : NULL;
+            for (int k = 0; z->events && k < nev; k++) {
+                const cJSON *e = cJSON_GetArrayItem(jev, k);
+                if (!cJSON_IsObject(e)) continue;
+                ResZoneEvent *ev = &z->events[z->event_count++];
+                copy_str(ev->id, sizeof ev->id, json_str(e, "id", ""));
+                ev->x = json_int(e, "x", -1);
+                ev->y = json_int(e, "y", -1);
+                copy_str(ev->scene, sizeof ev->scene, json_str(e, "scene", ""));
+                copy_str(ev->title, sizeof ev->title, json_str(e, "title", ""));
+                copy_str(ev->body, sizeof ev->body, json_str(e, "body", ""));
+                cJSON *jrq = cJSON_GetObjectItem(e, "requires");
+                int nrq = cJSON_IsArray(jrq) ? cJSON_GetArraySize(jrq) : 0;
+                ev->reqs = nrq > 0 ? calloc((size_t)nrq, sizeof *ev->reqs) : NULL;
+                for (int q = 0; ev->reqs && q < nrq; q++) {
+                    const cJSON *r = cJSON_GetArrayItem(jrq, q);
+                    if (!cJSON_IsObject(r)) continue;
+                    ResEventReq *rq = &ev->reqs[ev->req_count++];
+                    const char *what = json_str(r, "spell", NULL);
+                    if (what) rq->kind = RES_EVENT_REQ_SPELL;
+                    else if ((what = json_str(r, "troop", NULL))) rq->kind = RES_EVENT_REQ_TROOP;
+                    else if ((what = json_str(r, "artifact", NULL))) rq->kind = RES_EVENT_REQ_ARTIFACT;
+                    else rq->kind = RES_EVENT_REQ_GOLD;
+                    if (what) copy_str(rq->id, sizeof rq->id, what);
+                    rq->count = json_int(r, "count",
+                                         rq->kind == RES_EVENT_REQ_GOLD
+                                             ? json_int(r, "gold", 0) : 1);
+                    rq->consume = cJSON_IsTrue(cJSON_GetObjectItem(r, "consume"));
+                }
+                cJSON *jef = cJSON_GetObjectItem(e, "effects");
+                int nef = cJSON_IsArray(jef) ? cJSON_GetArraySize(jef) : 0;
+                ev->effects = nef > 0 ? calloc((size_t)nef, sizeof *ev->effects) : NULL;
+                for (int q = 0; ev->effects && q < nef; q++) {
+                    const cJSON *f = cJSON_GetArrayItem(jef, q);
+                    if (!cJSON_IsObject(f)) continue;
+                    if (cJSON_IsTrue(cJSON_GetObjectItem(f, "reveal"))) {
+                        ResEventEffect *rv = &ev->effects[ev->effect_count++];
+                        rv->kind = RES_EVENT_FX_REVEAL;
+                        rv->x = rv->y = -1;
+                        continue;
+                    }
+                    // The tile is named the way tile_codes names it, escapes
+                    // and all ("\\xcc").
+                    int code = resources_tile_code_from_key(json_str(f, "tile", ""));
+                    if (code < 0 || code >= RES_TILE_CODE_COUNT) continue;
+                    ResEventEffect *fx = &ev->effects[ev->effect_count++];
+                    fx->x = json_int(f, "x", -1);
+                    fx->y = json_int(f, "y", -1);
+                    fx->code = (unsigned char)code;
+                }
+            }
+        }
 
         cJSON *nbr = cJSON_GetObjectItem(it, "neighbors");
-        if (cJSON_IsArray(nbr)) {
+        int ncap = json_len(nbr);
+        if (cJSON_IsArray(nbr) && RES_TABLE_ALLOC(z->neighbors, z->neighbor_count, ncap)) {
             cJSON *n;
             cJSON_ArrayForEach(n, nbr) {
-                if (z->neighbor_count >= RES_MAX_NEIGHBORS) break;
+                if (z->neighbor_count >= ncap) break;
                 if (cJSON_IsString(n)) {
                     copy_str(z->neighbors[z->neighbor_count],
                              sizeof(z->neighbors[0]), n->valuestring);
@@ -348,19 +586,19 @@ static void parse_zones(Resources *res, cJSON *arr) {
         }
 
         parse_zone_objects_array(cJSON_GetObjectItem(it, "signs"),
-                                 RES_MAX_ZONE_OBJECTS, &z->sign_count,
-                                 z->signs, sizeof(ResSign), fill_sign);
+                                 &z->sign_count,
+                                 (void **)&z->signs, sizeof(ResSign), fill_sign);
         // Towns: resolve each zone town's id to an INDEX into the authoritative
         // res->towns[] catalog (already parsed -- parse_towns runs before
         // parse_zones). Preserves the zone JSON town ORDER (required for planner
         // determinism). A zone town id missing from the catalog is skipped + logged.
         {
             cJSON *jtowns = cJSON_GetObjectItem(it, "towns");
-            z->town_count = 0;
-            if (cJSON_IsArray(jtowns)) {
+            int tcap = json_len(jtowns);
+            if (cJSON_IsArray(jtowns) && RES_TABLE_ALLOC(z->town_idx, z->town_count, tcap)) {
                 cJSON *jt;
                 cJSON_ArrayForEach(jt, jtowns) {
-                    if (z->town_count >= RES_MAX_TOWNS) break;
+                    if (z->town_count >= tcap) break;
                     const char *tid = json_str(jt, "id", "");
                     int idx = -1;
                     for (int i = 0; i < res->town_count; i++)
@@ -375,20 +613,20 @@ static void parse_zones(Resources *res, cJSON *arr) {
             }
         }
         parse_zone_objects_array(cJSON_GetObjectItem(it, "castles"),
-                                 RES_MAX_ZONE_OBJECTS, &z->castle_count,
-                                 z->castles, sizeof(ResZoneCastle), fill_zone_castle);
+                                 &z->castle_count,
+                                 (void **)&z->castles, sizeof(ResZoneCastle), fill_zone_castle);
         parse_zone_objects_array(cJSON_GetObjectItem(it, "chests"),
-                                 RES_MAX_ZONE_OBJECTS, &z->chest_count,
-                                 z->chests, sizeof(ResZoneChest), fill_zone_chest);
+                                 &z->chest_count,
+                                 (void **)&z->chests, sizeof(ResZoneChest), fill_zone_chest);
         parse_zone_objects_array(cJSON_GetObjectItem(it, "artifacts"),
-                                 RES_MAX_ZONE_OBJECTS, &z->artifact_count,
-                                 z->artifacts, sizeof(ResZoneArtifact), fill_zone_artifact);
+                                 &z->artifact_count,
+                                 (void **)&z->artifacts, sizeof(ResZoneArtifact), fill_zone_artifact);
         parse_zone_objects_array(cJSON_GetObjectItem(it, "dwellings"),
-                                 RES_MAX_ZONE_OBJECTS, &z->dwelling_count,
-                                 z->dwellings, sizeof(ResZoneDwelling), fill_zone_dwelling);
+                                 &z->dwelling_count,
+                                 (void **)&z->dwellings, sizeof(ResZoneDwelling), fill_zone_dwelling);
         parse_zone_objects_array(cJSON_GetObjectItem(it, "wandering_armies"),
-                                 RES_MAX_ZONE_OBJECTS, &z->army_count,
-                                 z->armies, sizeof(ResZoneArmy), fill_zone_army);
+                                 &z->army_count,
+                                 (void **)&z->armies, sizeof(ResZoneArmy), fill_zone_army);
 
         cJSON *salt = cJSON_GetObjectItem(it, "salt");
         z->salt.artifacts     = json_int(salt, "artifacts",     0);
@@ -402,9 +640,9 @@ static void parse_zones(Resources *res, cJSON *arr) {
         z->salt.dwelling_range_max = -1;
         if (cJSON_IsObject(salt)) {
             cJSON *pref = cJSON_GetObjectItem(salt, "preferred_troops");
-            if (cJSON_IsArray(pref)) {
-                int n = cJSON_GetArraySize(pref);
-                if (n > 16) n = 16;
+            int n = json_len(pref);
+            if (cJSON_IsArray(pref) &&
+                RES_TABLE_ALLOC(z->salt.preferred_troops, z->salt.preferred_troop_count, n)) {
                 for (int i = 0; i < n; i++) {
                     cJSON *e = cJSON_GetArrayItem(pref, i);
                     if (cJSON_IsString(e)) {
@@ -461,21 +699,26 @@ static int parse_troop_abilities(const char *s) {
 
 static void parse_troops(Resources *res, cJSON *arr) {
     res->troops_count = 0;
-    if (!cJSON_IsArray(arr)) return;
+    free(res->troops);
+    res->troops = NULL;
+    int n = cJSON_IsArray(arr) ? cJSON_GetArraySize(arr) : 0;
+    if (n <= 0) return;
+    res->troops = calloc((size_t)n, sizeof *res->troops);
+    if (!res->troops) { fprintf(stderr, "resources: out of memory for %d troops\n", n); return; }
     cJSON *it;
     cJSON_ArrayForEach(it, arr) {
-        if (res->troops_count >= CAT_TROOPS_MAX) break;
+        if (res->troops_count >= n) break;
         TroopDef *t = &res->troops[res->troops_count++];
         memset(t, 0, sizeof(*t));
         t->index = json_int(it, "index", -1);
         copy_str(t->id,       sizeof(t->id),       json_str(it, "id", ""));
         copy_str(t->name,     sizeof(t->name),     json_str(it, "name", ""));
         copy_str(t->sprite,   sizeof(t->sprite),   json_str(it, "sprite", ""));
+        copy_str(t->portrait, sizeof(t->portrait), json_str(it, "portrait", ""));
         // Via parse_string_array so a non-string entry is skipped rather than
         // burning a slot: the hand-rolled loop this replaces advanced its
         // index outside the type check, leaving an empty frame mid-cycle.
-        parse_path_array(cJSON_GetObjectItem(it, "anim"), t->anim[0],
-                         CAT_PATH_LEN, OB_ANIM_FRAMES_MAX, &t->anim_count);
+        parse_path_list(cJSON_GetObjectItem(it, "anim"), &t->anim, &t->anim_count);
         copy_str(t->dwelling, sizeof(t->dwelling), json_str(it, "dwelling", ""));
         t->skill_level     = json_int(it, "skill_level", 0);
         t->hit_points      = json_int(it, "hit_points", 0);
@@ -515,6 +758,43 @@ static void parse_troops(Resources *res, cJSON *arr) {
             }
         }
     }
+    // One list of every distinct vista scene the pack declares: a fired vista
+    // names its art by index, so the shell loads the set once.
+    int scenes = 0;
+    for (int zi = 0; zi < res->zone_count; zi++)
+        scenes += res->zones[zi].event_count + res->zones[zi].army_count;
+    if (scenes > 0) {
+        res->event_scenes = calloc((size_t)scenes, sizeof *res->event_scenes);
+        res->event_scene_count = 0;
+        for (int zi = 0; res->event_scenes && zi < res->zone_count; zi++) {
+            for (int k = 0; k < res->zones[zi].event_count; k++) {
+                ResZoneEvent *ev = &res->zones[zi].events[k];
+                ev->scene_index = -1;
+                if (!ev->scene[0]) continue;
+                for (int e = 0; e < res->event_scene_count; e++)
+                    if (strcmp(res->event_scenes[e], ev->scene) == 0) ev->scene_index = e;
+                if (ev->scene_index < 0) {
+                    ev->scene_index = res->event_scene_count;
+                    copy_str(res->event_scenes[res->event_scene_count++],
+                             RES_PATH_LEN, ev->scene);
+                }
+            }
+            // A gate army's refusal scene shares the same list.
+            for (int k = 0; k < res->zones[zi].army_count; k++) {
+                ResZoneArmy *ar = &res->zones[zi].armies[k];
+                ar->scene_index = -1;
+                if (!ar->scene[0]) continue;
+                for (int e = 0; e < res->event_scene_count; e++)
+                    if (strcmp(res->event_scenes[e], ar->scene) == 0) ar->scene_index = e;
+                if (ar->scene_index < 0) {
+                    ar->scene_index = res->event_scene_count;
+                    copy_str(res->event_scenes[res->event_scene_count++],
+                             RES_PATH_LEN, ar->scene);
+                }
+            }
+        }
+    }
+
 }
 
 static SpellKind spell_kind_from_name(const char *s) {
@@ -523,11 +803,11 @@ static SpellKind spell_kind_from_name(const char *s) {
 }
 
 static void parse_spells(Resources *res, cJSON *arr) {
-    res->spells_count = 0;
-    if (!cJSON_IsArray(arr)) return;
+    int cap = json_len(arr);
+    if (!RES_TABLE_ALLOC(res->spells, res->spells_count, cap)) return;
     cJSON *it;
     cJSON_ArrayForEach(it, arr) {
-        if (res->spells_count >= CAT_SPELLS_MAX) break;
+        if (res->spells_count >= cap) break;
         SpellDef *s = &res->spells[res->spells_count++];
         memset(s, 0, sizeof(*s));
         s->index = json_int(it, "index", -1);
@@ -540,11 +820,14 @@ static void parse_spells(Resources *res, cJSON *arr) {
 }
 
 static void parse_classes(Resources *res, cJSON *arr) {
-    res->classes_count = 0;
-    if (!cJSON_IsArray(arr)) return;
+    int cap = json_len(arr);
+    if (!RES_TABLE_ALLOC(res->classes, res->classes_count, cap)) return;
+    free(res->class_hero);
+    res->class_hero = calloc((size_t)cap, sizeof *res->class_hero);
+    if (!res->class_hero) { free(res->classes); res->classes = NULL; return; }
     cJSON *it;
     cJSON_ArrayForEach(it, arr) {
-        if (res->classes_count >= CAT_CLASSES_MAX) break;
+        if (res->classes_count >= cap) break;
         ClassDef *c = &res->classes[res->classes_count++];
         memset(c, 0, sizeof(*c));
         c->index = json_int(it, "index", -1);
@@ -552,18 +835,35 @@ static void parse_classes(Resources *res, cJSON *arr) {
         copy_str(c->name,     sizeof(c->name),     json_str(it, "name", ""));
         copy_str(c->portrait, sizeof(c->portrait), json_str(it, "portrait", ""));
         c->starting_gold = json_int(it, "starting_gold", 0);
+        {
+            // Optional per-class hero art, declared like sprites.hero plus a
+            // win-cartoon tile. Parallel slot in res->class_hero.
+            ResClassHero *h = &res->class_hero[res->classes_count - 1];
+            memset(h, 0, sizeof *h);
+            cJSON *hero = cJSON_GetObjectItem(it, "hero");
+            if (cJSON_IsObject(hero)) {
+                parse_anim_set(cJSON_GetObjectItem(hero, "walk"), &h->walk);
+                parse_anim_set(cJSON_GetObjectItem(hero, "idle"), &h->idle);
+                parse_anim_set(cJSON_GetObjectItem(hero, "boat"), &h->boat);
+                copy_str(h->tile, sizeof h->tile, json_str(hero, "tile", ""));
+                copy_str(h->disgraced, sizeof h->disgraced, json_str(hero, "disgraced", ""));
+            }
+        }
 
         cJSON *st = cJSON_GetObjectItem(it, "starting_troops");
-        int si = 0;
-        if (cJSON_IsArray(st)) {
+        int si = 0, st_cap = json_len(st), st_n = 0;
+        if (cJSON_IsArray(st) && RES_TABLE_ALLOC(c->starting_troops, c->starting_troop_count, st_cap) &&
+            RES_TABLE_ALLOC(c->starting_counts, st_n, st_cap)) {
+            (void)st_n;
             cJSON *e;
             cJSON_ArrayForEach(e, st) {
-                if (si >= CLASS_MAX_STARTING_TROOPS) break;
+                if (si >= st_cap) break;
                 copy_str(c->starting_troops[si], sizeof(c->starting_troops[si]),
                          json_str(e, "id", ""));
                 c->starting_counts[si] = json_int(e, "count", 0);
                 si++;
             }
+            c->starting_troop_count = si;
         }
 
         cJSON *rk = cJSON_GetObjectItem(it, "ranks");
@@ -589,12 +889,29 @@ static void parse_classes(Resources *res, cJSON *arr) {
     }
 }
 
-static void parse_villains(Resources *res, cJSON *arr) {
-    res->villains_count = 0;
-    if (!cJSON_IsArray(arr)) return;
+static void parse_portraits(Resources *res, cJSON *arr) {
+    res->portrait_count = 0;
+    free(res->portraits);
+    res->portraits = NULL;
+    int n = cJSON_IsArray(arr) ? cJSON_GetArraySize(arr) : 0;
+    if (n <= 0) return;
+    res->portraits = calloc((size_t)n, sizeof *res->portraits);
+    if (!res->portraits) { fprintf(stderr, "resources: out of memory for %d portraits\n", n); return; }
     cJSON *it;
     cJSON_ArrayForEach(it, arr) {
-        if (res->villains_count >= CAT_VILLAINS_MAX) break;
+        if (res->portrait_count >= n) break;
+        ResPortrait *p = &res->portraits[res->portrait_count++];
+        copy_str(p->id, sizeof(p->id), json_str(it, "id", ""));
+        parse_path_list(cJSON_GetObjectItem(it, "anim"), &p->anim, &p->anim_count);
+    }
+}
+
+static void parse_villains(Resources *res, cJSON *arr) {
+    int cap = json_len(arr);
+    if (!RES_TABLE_ALLOC(res->villains, res->villains_count, cap)) return;
+    cJSON *it;
+    cJSON_ArrayForEach(it, arr) {
+        if (res->villains_count >= cap) break;
         VillainDef *v = &res->villains[res->villains_count++];
         memset(v, 0, sizeof(*v));
         v->index = json_int(it, "index", -1);
@@ -603,8 +920,7 @@ static void parse_villains(Resources *res, cJSON *arr) {
         copy_str(v->portrait, sizeof(v->portrait), json_str(it, "portrait", ""));
         // Optional, and declared exactly like a troop's. Absent (count 0)
         // means the shell derives `<portrait-stem>_NN` siblings instead.
-        parse_path_array(cJSON_GetObjectItem(it, "anim"), v->anim[0],
-                         CAT_PATH_LEN, OB_ANIM_FRAMES_MAX, &v->anim_count);
+        parse_path_list(cJSON_GetObjectItem(it, "anim"), &v->anim, &v->anim_count);
         copy_str(v->zone,     sizeof(v->zone),     json_str(it, "zone", ""));
         v->reward      = json_int(it, "reward", 0);
         v->puzzle_cell = json_int(it, "puzzle_cell", -1);
@@ -640,11 +956,11 @@ static ArtifactPower artifact_power_from_name(const char *s) {
 }
 
 static void parse_artifacts(Resources *res, cJSON *arr) {
-    res->artifacts_count = 0;
-    if (!cJSON_IsArray(arr)) return;
+    int cap = json_len(arr);
+    if (!RES_TABLE_ALLOC(res->artifacts, res->artifacts_count, cap)) return;
     cJSON *it;
     cJSON_ArrayForEach(it, arr) {
-        if (res->artifacts_count >= CAT_ARTIFACTS_MAX) break;
+        if (res->artifacts_count >= cap) break;
         ArtifactDef *a = &res->artifacts[res->artifacts_count++];
         memset(a, 0, sizeof(*a));
         a->index = json_int(it, "index", -1);
@@ -681,6 +997,17 @@ static void parse_path_array(cJSON *arr, char *dst, size_t stride,
     if (out_count) *out_count = n;
 }
 
+// A heap list of paths, one per string element (non-strings are skipped, so
+// no hole is left): *dst holds exactly *out_count, NULL when there are none.
+static void parse_path_list(cJSON *arr, char (**dst)[RES_PATH_LEN], int *out_count) {
+    int cap = cJSON_IsArray(arr) ? cJSON_GetArraySize(arr) : 0;
+    int held = 0;
+    if (!RES_TABLE_ALLOC(*dst, held, cap)) { *out_count = 0; return; }
+    (void)held;
+    parse_path_array(arr, (*dst)[0], RES_PATH_LEN, cap, out_count);
+    if (*out_count == 0) { free(*dst); *dst = NULL; }
+}
+
 static void parse_string_array(cJSON *arr, char dst[][RES_PATH_LEN],
                                int cap, int *out_count) {
     parse_path_array(arr, dst ? dst[0] : NULL, RES_PATH_LEN, cap, out_count);
@@ -702,16 +1029,13 @@ static void parse_anim_set(cJSON *obj, ResAnimSet *out) {
     if (!obj) return;
 
     if (cJSON_IsArray(obj)) {
-        parse_path_array(obj, out->frames[OB_FACE_SOUTH][0], RES_PATH_LEN,
-                         OB_ANIM_FRAMES_MAX, &out->count[OB_FACE_SOUTH]);
+        parse_path_list(obj, &out->frames[OB_FACE_SOUTH], &out->count[OB_FACE_SOUTH]);
         return;
     }
     if (!cJSON_IsObject(obj)) return;
     out->directional = true;
     for (int f = 0; f < OB_FACE_COUNT; f++) {
-        parse_path_array(cJSON_GetObjectItem(obj, KEYS[f]),
-                         out->frames[f][0], RES_PATH_LEN,
-                         OB_ANIM_FRAMES_MAX, &out->count[f]);
+        parse_path_list(cJSON_GetObjectItem(obj, KEYS[f]), &out->frames[f], &out->count[f]);
     }
 }
 
@@ -740,6 +1064,7 @@ static void parse_sprites(Resources *res, cJSON *obj) {
             copy_str(res->sprites.combat[i], RES_PATH_LEN, COMBAT_DEFAULT[i]);
         res->sprites.combat_count = RES_COMBAT_TILES;
     }
+    copy_str(res->sprites.combat_ground, sizeof res->sprites.combat_ground, "field");
     copy_str(res->sprites.font, sizeof res->sprites.font,
              "art/font/kb-font.png");
     copy_str(res->sprites.palette, sizeof res->sprites.palette,
@@ -784,18 +1109,62 @@ static void parse_sprites(Resources *res, cJSON *obj) {
                  json_str(ui, "forest_backdrop", ""));
         copy_str(res->sprites.hillcave_backdrop, sizeof(res->sprites.hillcave_backdrop),
                  json_str(ui, "hillcave_backdrop", ""));
+        copy_str(res->sprites.alcove_backdrop, sizeof(res->sprites.alcove_backdrop),
+                 json_str(ui, "alcove_backdrop", ""));
+        copy_str(res->sprites.sail_backdrop, sizeof(res->sprites.sail_backdrop),
+                 json_str(ui, "sail_backdrop", ""));
+        copy_str(res->sprites.palace_welcome, sizeof(res->sprites.palace_welcome),
+                 json_str(ui, "palace_welcome", ""));
+        copy_str(res->sprites.palace_barracks, sizeof(res->sprites.palace_barracks),
+                 json_str(ui, "palace_barracks", ""));
+        copy_str(res->sprites.palace_throne, sizeof(res->sprites.palace_throne),
+                 json_str(ui, "palace_throne", ""));
+        copy_str(res->sprites.scene_column_capital, sizeof(res->sprites.scene_column_capital),
+                 json_str(ui, "scene_column_capital", ""));
+        copy_str(res->sprites.scene_column_shaft, sizeof(res->sprites.scene_column_shaft),
+                 json_str(ui, "scene_column_shaft", ""));
+        copy_str(res->sprites.scene_column_base, sizeof(res->sprites.scene_column_base),
+                 json_str(ui, "scene_column_base", ""));
+        copy_str(res->sprites.alcove_figure, sizeof(res->sprites.alcove_figure),
+                 json_str(ui, "alcove_figure", ""));
+        parse_path_list(cJSON_GetObjectItem(ui, "alcove_figure_animation"),
+                        &res->sprites.alcove_figure_animation, &res->sprites.alcove_figure_animation_count);
+        {
+            cJSON *pl = cJSON_GetObjectItem(ui, "alcove_figure_place");
+            res->sprites.alcove_figure_x = json_int(pl, "x", 0);
+            res->sprites.alcove_figure_y = json_int(pl, "y", 0);
+            res->sprites.alcove_figure_w = json_int(pl, "w", 0);
+            res->sprites.alcove_figure_h = json_int(pl, "h", 0);
+            if (res->sprites.alcove_figure_w < 0) res->sprites.alcove_figure_w = 0;
+            if (res->sprites.alcove_figure_h <= 0)
+                res->sprites.alcove_figure_h = res->sprites.alcove_figure_w;
+            res->sprites.alcove_figure_frame_ms =
+                json_int(ui, "alcove_figure_frame_ms", 0);
+            if (res->sprites.alcove_figure_frame_ms < 0)
+                res->sprites.alcove_figure_frame_ms = 0;
+        }
         copy_str(res->sprites.dungeon_backdrop, sizeof(res->sprites.dungeon_backdrop),
                  json_str(ui, "dungeon_backdrop", ""));
         copy_str(res->sprites.ending_win, sizeof(res->sprites.ending_win),
                  json_str(ui, "ending_win", ""));
+        copy_str(res->sprites.panel_frame, sizeof(res->sprites.panel_frame),
+                 json_str(ui, "panel_frame", ""));
+        copy_str(res->sprites.siege_back_wall, sizeof(res->sprites.siege_back_wall),
+                 json_str(ui, "siege_back_wall", ""));
+        copy_str(res->sprites.siege_back_wall_left, sizeof(res->sprites.siege_back_wall_left),
+                 json_str(ui, "siege_back_wall_left", ""));
+        copy_str(res->sprites.siege_back_wall_right, sizeof(res->sprites.siege_back_wall_right),
+                 json_str(ui, "siege_back_wall_right", ""));
+        copy_str(res->sprites.siege_grid, sizeof(res->sprites.siege_grid),
+                 json_str(ui, "siege_grid", ""));
+        copy_str(res->sprites.combat_ground, sizeof(res->sprites.combat_ground),
+                 json_str(ui, "combat_ground", "field"));
         copy_str(res->sprites.ending_lose, sizeof(res->sprites.ending_lose),
                  json_str(ui, "ending_lose", ""));
         copy_str(res->sprites.orb, sizeof(res->sprites.orb),
                  json_str(ui, "orb", ""));
-        parse_string_array(cJSON_GetObjectItem(ui, "view_icons_extra"),
-                           res->sprites.view_icons_extra,
-                           RES_EXTRA_ICONS,
-                           &res->sprites.view_icons_extra_count);
+        parse_path_list(cJSON_GetObjectItem(ui, "view_icons_extra"),
+                        &res->sprites.view_icons_extra, &res->sprites.view_icons_extra_count);
         copy_str(res->sprites.chrome_overworld,
                  sizeof(res->sprites.chrome_overworld),
                  json_str(ui, "chrome_overworld", ""));
@@ -805,12 +1174,22 @@ static void parse_sprites(Resources *res, cJSON *obj) {
         copy_str(res->sprites.splash_title,
                  sizeof(res->sprites.splash_title),
                  json_str(ui, "splash_title", ""));
+        copy_str(res->sprites.alcove_portrait, sizeof(res->sprites.alcove_portrait),
+                 json_str(ui, "alcove_portrait", ""));
+        copy_str(res->sprites.title_battle, sizeof(res->sprites.title_battle),
+                 json_str(ui, "title_battle", ""));
+        copy_str(res->sprites.title_eagle, sizeof(res->sprites.title_eagle),
+                 json_str(ui, "title_eagle", ""));
+        copy_str(res->sprites.title_words, sizeof(res->sprites.title_words),
+                 json_str(ui, "title_words", ""));
         copy_str(res->sprites.class_picker,
                  sizeof(res->sprites.class_picker),
                  json_str(ui, "class_picker", ""));
         copy_str(res->sprites.class_highlight,
                  sizeof(res->sprites.class_highlight),
                  json_str(ui, "class_highlight", ""));
+        parse_path_list(cJSON_GetObjectItem(ui, "class_picker_selected"),
+                        &res->sprites.class_picker_selected, &res->sprites.class_picker_selected_count);
     }
 
     cJSON *hud = cJSON_GetObjectItem(obj, "hud");
@@ -818,20 +1197,19 @@ static void parse_sprites(Resources *res, cJSON *obj) {
         copy_str(res->sprites.hud_contract_silhouette,
                  sizeof(res->sprites.hud_contract_silhouette),
                  json_str(hud, "contract_silhouette", ""));
+        copy_str(res->sprites.hud_boat_silhouette,
+                 sizeof(res->sprites.hud_boat_silhouette),
+                 json_str(hud, "boat_silhouette", ""));
         copy_str(res->sprites.hud_siege_silhouette,
                  sizeof(res->sprites.hud_siege_silhouette),
                  json_str(hud, "siege_silhouette", ""));
-        parse_string_array(cJSON_GetObjectItem(hud, "siege_animation"),
-                           res->sprites.hud_siege_animation,
-                           OB_ANIM_FRAMES_MAX,
-                           &res->sprites.hud_siege_animation_count);
+        parse_path_list(cJSON_GetObjectItem(hud, "siege_animation"),
+                        &res->sprites.hud_siege_animation, &res->sprites.hud_siege_animation_count);
         copy_str(res->sprites.hud_magic_silhouette,
                  sizeof(res->sprites.hud_magic_silhouette),
                  json_str(hud, "magic_silhouette", ""));
-        parse_string_array(cJSON_GetObjectItem(hud, "magic_animation"),
-                           res->sprites.hud_magic_animation,
-                           OB_ANIM_FRAMES_MAX,
-                           &res->sprites.hud_magic_animation_count);
+        parse_path_list(cJSON_GetObjectItem(hud, "magic_animation"),
+                        &res->sprites.hud_magic_animation, &res->sprites.hud_magic_animation_count);
         copy_str(res->sprites.hud_puzzle_grid,
                  sizeof(res->sprites.hud_puzzle_grid),
                  json_str(hud, "puzzle_grid", ""));
@@ -910,11 +1288,15 @@ static void parse_combat(Resources *res, cJSON *obj) {
     // (controls parsed separately at root; see parse_controls)
     // number_names: array of {"min": N, "label": "..."}, ordered high-to-low.
     cJSON *nn = cJSON_GetObjectItem(obj, "number_names");
-    if (cJSON_IsArray(nn)) {
+    int nn_cap = json_len(nn);
+    int nn_labels = 0;   // the labels' own count mirrors number_name_count
+    if (cJSON_IsArray(nn) && RES_TABLE_ALLOC(res->number_name_thresholds, res->number_name_count, nn_cap) &&
+        RES_TABLE_ALLOC(res->number_name_labels, nn_labels, nn_cap)) {
+        (void)nn_labels;
         int i = 0;
         cJSON *it;
         cJSON_ArrayForEach(it, nn) {
-            if (i >= 8) break;
+            if (i >= nn_cap) break;
             if (!cJSON_IsObject(it)) continue;
             res->number_name_thresholds[i] = json_int(it, "min", 1);
             copy_str(res->number_name_labels[i],
@@ -964,22 +1346,24 @@ static void parse_credits(Resources *res, cJSON *obj) {
              json_str(obj, "image", ""));
 
     cJSON *groups = cJSON_GetObjectItem(obj, "groups");
-    if (cJSON_IsArray(groups)) {
+    int g_cap = json_len(groups);
+    if (cJSON_IsArray(groups) && RES_TABLE_ALLOC(res->credits.groups, res->credits.group_count, g_cap)) {
         cJSON *g;
         cJSON_ArrayForEach(g, groups) {
-            if (res->credits.group_count >= 6) break;
+            if (res->credits.group_count >= g_cap) break;
             if (!cJSON_IsObject(g)) continue;
             int gi = res->credits.group_count;
             copy_str(res->credits.groups[gi].label,
                      sizeof(res->credits.groups[gi].label),
                      json_str(g, "label", ""));
-            res->credits.groups[gi].name_count = 0;
             cJSON *names = cJSON_GetObjectItem(g, "names");
-            if (cJSON_IsArray(names)) {
+            int nm_cap = json_len(names);
+            if (cJSON_IsArray(names) &&
+                RES_TABLE_ALLOC(res->credits.groups[gi].names, res->credits.groups[gi].name_count, nm_cap)) {
                 cJSON *nm;
                 cJSON_ArrayForEach(nm, names) {
                     int ni = res->credits.groups[gi].name_count;
-                    if (ni >= 4) break;
+                    if (ni >= nm_cap) break;
                     if (!cJSON_IsString(nm)) continue;
                     copy_str(res->credits.groups[gi].names[ni],
                              sizeof(res->credits.groups[gi].names[ni]),
@@ -992,10 +1376,11 @@ static void parse_credits(Resources *res, cJSON *obj) {
     }
 
     cJSON *copyr = cJSON_GetObjectItem(obj, "copyright");
-    if (cJSON_IsArray(copyr)) {
+    int cr_cap = json_len(copyr);
+    if (cJSON_IsArray(copyr) && RES_TABLE_ALLOC(res->credits.copyright, res->credits.copyright_count, cr_cap)) {
         cJSON *c;
         cJSON_ArrayForEach(c, copyr) {
-            if (res->credits.copyright_count >= 4) break;
+            if (res->credits.copyright_count >= cr_cap) break;
             if (!cJSON_IsString(c)) continue;
             copy_str(res->credits.copyright[res->credits.copyright_count],
                      sizeof(res->credits.copyright[res->credits.copyright_count]),
@@ -1046,333 +1431,17 @@ static void parse_ending(Resources *res, cJSON *obj) {
 // Banner defaults preserve  text, so a
 // game.json missing strings.banners still produces parity-correct prompts.
 // %TOKEN% placeholders are resolved at render time by resources_format_template.
-static void load_banner_defaults(ResBanners *b) {
-    copy_str(b->chest_gold, sizeof(b->chest_gold),
-        "After scouring the area,\n"
-        "you fall upon a hidden\n"
-        "treasure cache. You may:\n\n"
-        "A) Take the %GOLD% gold.\n"
-        "B) Distribute the gold to\n"
-        "   the peasants, increasing\n"
-        "   your leadership by %LEADERSHIP%.");
-    copy_str(b->chest_commission, sizeof(b->chest_commission),
-        "After surveying the area,\n"
-        "you discover that it is\n"
-        "rich in mineral deposits.\n\n"
-        "The King rewards you for\n"
-        "your find by increasing\n"
-        "your weekly income by %POINTS%");
-    copy_str(b->chest_spell_power, sizeof(b->chest_spell_power),
-        "Traversing the area, you\n"
-        "stumble upon a time worn\n"
-        "cannister. Curious, you un-\n"
-        "stop the bottle, releasing\n"
-        "a powerful genie who raises\n"
-        "your Spell Power by %POINTS% and\n"
-        "vanishes.");
-    copy_str(b->chest_max_spells, sizeof(b->chest_max_spells),
-        "A tribe of nomads greet you\n"
-        "and your army warmly. Their\n"
-        "shaman, in awe of your\n"
-        "prowess, teaches you the\n"
-        "secret of his tribe's magic.\n"
-        "Your maximum spell capacity\n"
-        "is increased by %POINTS%");
-    copy_str(b->chest_new_spell, sizeof(b->chest_new_spell),
-        "You have captured a\n"
-        "mischevious imp which has\n"
-        "been terrorizing the\n"
-        "region. In exchange for\n"
-        "its release, you receive:\n\n"
-        "   %COUNT% %SPELL% spell.");
-    copy_str(b->chest_empty, sizeof(b->chest_empty),
-        "The chest was empty!");
 
-    // Town overlay .
-    copy_str(b->town_header,        sizeof(b->town_header),        "Town of %NAME%");
-    copy_str(b->town_gold_label,    sizeof(b->town_gold_label),    "GP=%GOLD%K");
-    copy_str(b->town_row_contract,  sizeof(b->town_row_contract),  "A) Get New Contract");
-    copy_str(b->town_row_boat_rent, sizeof(b->town_row_boat_rent), "B) Rent boat (%COST% week)");
-    copy_str(b->town_row_boat_cancel, sizeof(b->town_row_boat_cancel),
-                                                                  "B) Cancel boat rental");
-    copy_str(b->town_row_info,      sizeof(b->town_row_info),      "C) Gather information");
-    copy_str(b->town_row_spell,     sizeof(b->town_row_spell),     "D) %SPELL% spell (%SPELL_COST%)");
-    copy_str(b->town_row_spell_none, sizeof(b->town_row_spell_none), "D) (no spell available)");
-    copy_str(b->town_row_siege_buy,  sizeof(b->town_row_siege_buy), "E) Buy seige weapons (%SIEGE_COST%)");
-    copy_str(b->town_row_siege_owned, sizeof(b->town_row_siege_owned), "E) Siege weapons (owned)");
 
-    // Town action toasts.
-    copy_str(b->town_contract_new,  sizeof(b->town_contract_new),
-        "New contract: %VILLAIN%.\nReward: %REWARD% gold.\nLast seen on %ZONE%.");
-    copy_str(b->town_contract_none, sizeof(b->town_contract_none),
-        "No contracts are available right now.");
-    copy_str(b->town_boat_vacate_first, sizeof(b->town_boat_vacate_first),
-        "\n\nPlease vacate the boat first");
-    copy_str(b->town_no_gold, sizeof(b->town_no_gold),
-        "\n\n\nYou don't have enough gold!");
-    copy_str(b->town_intel_unavailable, sizeof(b->town_intel_unavailable),
-        "No intelligence is available here.");
-    copy_str(b->town_intel_castle_under, sizeof(b->town_intel_castle_under),
-        "Castle %NAME% is under\n");
-    copy_str(b->town_intel_owner_rule, sizeof(b->town_intel_owner_rule),
-        "%OWNER%'s rule.\n\n");
-    copy_str(b->town_intel_owner_none, sizeof(b->town_intel_owner_none),
-        "no one");
-    copy_str(b->town_intel_owner_player, sizeof(b->town_intel_owner_player),
-        "your");
-    copy_str(b->town_intel_owner_king, sizeof(b->town_intel_owner_king),
-        "the King");
-    copy_str(b->town_intel_count_named, sizeof(b->town_intel_count_named),
-        "  %LABEL% %TROOP%\n");
-    copy_str(b->town_intel_count_numeric, sizeof(b->town_intel_count_numeric),
-        "  %COUNT% %TROOP%\n");
-    copy_str(b->town_intel_monsters_generic, sizeof(b->town_intel_monsters_generic),
-        "  Various groups of monsters\n  occupy the castle.");
-    copy_str(b->town_intel_no_garrison, sizeof(b->town_intel_no_garrison),
-        "  (no garrison)");
-    copy_str(b->town_spell_unavailable, sizeof(b->town_spell_unavailable),
-        "No spell is available here.");
-    copy_str(b->town_spell_at_cap, sizeof(b->town_spell_at_cap),
-        "You have learned your maximum number of spells.");
-    copy_str(b->town_spell_can_learn, sizeof(b->town_spell_can_learn),
-        "You can learn %LEFT% more spell%S%.");
-    copy_str(b->town_siege_already, sizeof(b->town_siege_already),
-        "You have siege weapons!");
-    copy_str(b->town_siege_purchased, sizeof(b->town_siege_purchased),
-        "Siege weapons purchased.");
-
-    // Spell effects .
-    copy_str(b->spell_time_stop, sizeof(b->spell_time_stop),
-        "Time has stopped for %STEPS% steps.");
-    copy_str(b->spell_find_villain_no_contract,
-             sizeof(b->spell_find_villain_no_contract),
-        "You have no contract.");
-    copy_str(b->spell_find_villain_success,
-             sizeof(b->spell_find_villain_success),
-        "You have found %CASTLE%!");
-    copy_str(b->spell_find_villain_none,
-             sizeof(b->spell_find_villain_none),
-        "Your search reveals nothing.");
-    copy_str(b->spell_bridge_prompt, sizeof(b->spell_bridge_prompt),
-        "Build bridge in which\ndirection? Use arrows.");
-    copy_str(b->spell_bridge_built, sizeof(b->spell_bridge_built),
-        "Bridge constructed with\n%COUNT% tiles.");
-    copy_str(b->spell_bridge_invalid, sizeof(b->spell_bridge_invalid),
-        "Not a suitable location\nfor a bridge.");
-    copy_str(b->spell_castle_gate_none, sizeof(b->spell_castle_gate_none),
-        "You have not visited\nany castles yet.");
-    copy_str(b->spell_castle_gate_choose, sizeof(b->spell_castle_gate_choose),
-        "Which castle? Press A-K.");
-    copy_str(b->spell_town_gate_none, sizeof(b->spell_town_gate_none),
-        "You have not visited\nany towns yet.");
-    copy_str(b->spell_town_gate_choose, sizeof(b->spell_town_gate_choose),
-        "Which town? Press A-K.");
-    copy_str(b->spell_instant_army_fizzle,
-             sizeof(b->spell_instant_army_fizzle),
-        "Spell fizzles.");
-    copy_str(b->spell_instant_army_no_room,
-             sizeof(b->spell_instant_army_no_room),
-        "Your army has no room!");
-    copy_str(b->spell_instant_army_success,
-             sizeof(b->spell_instant_army_success),
-        "%QTY% %TROOP%\nhave joined your army.");
-    copy_str(b->spell_raise_control_success,
-             sizeof(b->spell_raise_control_success),
-        "Your leadership has\nincreased by %AMOUNT%.");
-    copy_str(b->spell_gate_teleported, sizeof(b->spell_gate_teleported),
-        "Teleported!");
-    copy_str(b->spell_gate_invalid, sizeof(b->spell_gate_invalid),
-        "Invalid selection.");
-
-    // Foe encounters.
-    copy_str(b->encounter_join_named, sizeof(b->encounter_join_named),
-        "You encounter:\n  %LABEL% %TROOP%\n\n"
-        "They offer to join your\narmy for %COST% gold.\n\n"
-        "Press Enter to accept, Esc\nto refuse.");
-    copy_str(b->encounter_join_numeric, sizeof(b->encounter_join_numeric),
-        "You encounter:\n  %COUNT% %TROOP%\n\n"
-        "They offer to join your\narmy for %COST% gold.\n\n"
-        "Press Enter to accept, Esc\nto refuse.");
-    copy_str(b->encounter_wanderers, sizeof(b->encounter_wanderers),
-        "A band of wanderers passes\nby, looking grim.");
-    copy_str(b->encounter_hostile_header,
-             sizeof(b->encounter_hostile_header),
-        "You encounter:\n");
-    copy_str(b->encounter_hostile_unknown,
-             sizeof(b->encounter_hostile_unknown),
-        "  a hostile band\n");
-    copy_str(b->encounter_hostile_count_named,
-             sizeof(b->encounter_hostile_count_named),
-        "  %LABEL% %TROOP%\n");
-    copy_str(b->encounter_hostile_count_numeric,
-             sizeof(b->encounter_hostile_count_numeric),
-        "  %COUNT% %TROOP%\n");
-
-    // Archmage Aurange alcove.
-    copy_str(b->alcove_offer, sizeof(b->alcove_offer),
-        "The venerable Archmage,\n"
-        "Aurange, will teach you the\n"
-        "secrets of spell casting for\n"
-        "%COST% gold.\n\nAccept?");
-    copy_str(b->alcove_already, sizeof(b->alcove_already),
-        "The archmage nods.\nYou already know magic.");
-    copy_str(b->alcove_taught, sizeof(b->alcove_taught),
-        "Aurange teaches you the\n"
-        "arcane arts. You now know\n"
-        "the ways of magic.");
-    copy_str(b->alcove_no_gold, sizeof(b->alcove_no_gold),
-        "You have not enough gold!\n%COST% is required.\nBegone until you do!");
-    copy_str(b->no_spell_banner, sizeof(b->no_spell_banner),
-        "You have not been trained in\n"
-        "the art of spellcasting yet.\n"
-        "Visit the Archmage Aurange\n"
-        "in Continentia at 11,19 for\n"
-        "this ability.");
-    copy_str(b->new_game_intro, sizeof(b->new_game_intro),
-        "%NAME% the %CLASS%,\n"
-        "A new game is being created.\n"
-        "Please wait while I perform\n"
-        "godlike actions to make this\n"
-        "game playable.");
-
-    // Dwelling recruitment.
-    copy_str(b->dwelling_recruit_prompt,
-             sizeof(b->dwelling_recruit_prompt),
-        "%COUNT% %TROOP% are available\n"
-        "Cost=%COST% each.  GP=%GOLD%\n"
-        "You may recruit up to %CAP%.");
-    copy_str(b->dwelling_none_this_week,
-             sizeof(b->dwelling_none_this_week),
-        "No troops are available here\nthis week.");
-    copy_str(b->dwelling_empty, sizeof(b->dwelling_empty),
-        "This dwelling is empty.");
-
-    // Adventure-tile pickups.
-    copy_str(b->telecave_teleport, sizeof(b->telecave_teleport),
-        "You step into the cave and\n"
-        "emerge elsewhere on this\ncontinent.");
-    copy_str(b->telecave_inert, sizeof(b->telecave_inert),
-        "This cave hums with magic,\nbut nothing happens.");
-    copy_str(b->navmap_pickup, sizeof(b->navmap_pickup),
-        "A navigation map of %ZONE%!");
-    copy_str(b->crystal_ball_pickup, sizeof(b->crystal_ball_pickup),
-        "You gaze into a crystal ball\nand see all of %ZONE%!");
-
-    // End-of-week / defeat fallback.
-    copy_str(b->astrology_header, sizeof(b->astrology_header),
-        "Week #%WEEK%");
-    copy_str(b->astrology_body, sizeof(b->astrology_body),
-        "Astrologers proclaim:\n"
-        "Week of the %TROOP%\n\n"
-        "All %TROOP% dwellings are\n"
-        "repopulated.         (space)");
-    copy_str(b->temp_death, sizeof(b->temp_death),
-        "After being disgraced on the\n"
-        "field of battle, King\n"
-        "Maximus summons you to his\n"
-        "castle. After a lesson in\n"
-        "tactics, he reluctantly re-\n"
-        "issues your commission and\n"
-        "sends you on your way.");
-
-    // Mid-combat give-up confirm. Body text is verbatim from the DOS
-    // game; the header doubles as the "Press ESC to exit" hint shown
-    // at the top of the prompt frame.
-    copy_str(b->combat_give_up_header, sizeof(b->combat_give_up_header),
-        "Press ESC to exit");
-    copy_str(b->combat_give_up_body, sizeof(b->combat_give_up_body),
-        "Giving up will forfeit your\n"
-        "armies and send you back to\n"
-        "the King. Give up");
-
-    // Pre-combat scout report.
-    copy_str(b->combat_scouts_header, sizeof(b->combat_scouts_header),
-        "Your scouts have sighted:\n");
-    copy_str(b->combat_scouts_count, sizeof(b->combat_scouts_count),
-        "  %COUNT% %TROOP%\n");
-    copy_str(b->combat_scouts_small_band, sizeof(b->combat_scouts_small_band),
-        "  (a small band)\n");
-    copy_str(b->combat_header_siege, sizeof(b->combat_header_siege),
-        "Siege");
-    copy_str(b->combat_header_default, sizeof(b->combat_header_default),
-        "Combat");
-
-    // Signposts.
-    copy_str(b->signpost_with_body, sizeof(b->signpost_with_body),
-        "A sign reads:\n\n\"%TITLE%\n%BODY%\"");
-    copy_str(b->signpost_title_only, sizeof(b->signpost_title_only),
-        "A sign reads:\n\n\"%TITLE%\"");
-
-    // End-of-week budget panel.
-    copy_str(b->budget_header, sizeof(b->budget_header),
-        "Week #%WEEK%             Budget");
-    copy_str(b->budget_on_hand, sizeof(b->budget_on_hand), "On Hand");
-    copy_str(b->budget_payment, sizeof(b->budget_payment), "Payment");
-    copy_str(b->budget_boat,    sizeof(b->budget_boat),    "Boat   ");
-    copy_str(b->budget_army,    sizeof(b->budget_army),    "Army   ");
-    copy_str(b->budget_balance, sizeof(b->budget_balance), "Balance");
-
-    // Status bar.
-    copy_str(b->status_days_left, sizeof(b->status_days_left),
-        " Options / Controls / Days Left:%DAYS% ");
-    copy_str(b->status_time_stop, sizeof(b->status_time_stop),
-        " Options / Controls / Time Stop:%STEPS% ");
-
-    // Composite prompt bodies.
-    copy_str(b->body_save_confirm, sizeof(b->body_save_confirm),
-        "Press Control-Q to Quit or\nany other key to continue.");
-    copy_str(b->body_search, sizeof(b->body_search),
-        "It will take %DAYS% days to\nsearch this area.\nSearch?");
-    copy_str(b->body_dismiss_pick, sizeof(b->body_dismiss_pick),
-        "Dismiss which troop?");
-    copy_str(b->body_dismiss_last, sizeof(b->body_dismiss_last),
-        "If you dismiss your last\n"
-        "army, you will be sent back\n"
-        "to the King in disgrace.\n"
-        "Dismiss last army?");
-    copy_str(b->body_home_castle, sizeof(b->body_home_castle),
-        "1. Recruit Soldiers\n2. Audience with the King");
-    copy_str(b->body_own_castle, sizeof(b->body_own_castle),
-        "Castle %NAME%:\n1. Garrison troops\n2. Remove troops");
-    copy_str(b->body_garrison_row_named,
-             sizeof(b->body_garrison_row_named),
-        "%INDEX%. %TROOP% (%COUNT%)\n");
-    copy_str(b->body_garrison_row_empty,
-             sizeof(b->body_garrison_row_empty),
-        "%INDEX%. Empty\n");
-    copy_str(b->body_navigate_row, sizeof(b->body_navigate_row),
-        "%INDEX%. %ZONE%\n");
-    copy_str(b->body_no_continents, sizeof(b->body_no_continents),
-        "No known continents from\nthis zone.");
-    copy_str(b->body_must_be_sailing, sizeof(b->body_must_be_sailing),
-        "You must be sailing to\nnavigate to another\ncontinent.");
-
-    // Short banners reused by multiple flows.
-    copy_str(b->cannot_garrison_last, sizeof(b->cannot_garrison_last),
-        "You cannot garrison your\nlast army!");
-    copy_str(b->no_troop_slots, sizeof(b->no_troop_slots),
-        "No troop slots left!");
-    copy_str(b->army_cannot_handle, sizeof(b->army_cannot_handle),
-        "Your army cannot handle\nthat many troops.");
-    copy_str(b->no_troops_to_garrison, sizeof(b->no_troops_to_garrison),
-        "No troops to garrison.");
-    copy_str(b->castle_garrison_empty, sizeof(b->castle_garrison_empty),
-        "Castle garrison is empty.");
-    copy_str(b->spell_unavailable, sizeof(b->spell_unavailable),
-        "That spell is not available.");
-    copy_str(b->spell_not_known, sizeof(b->spell_not_known),
-        "You don't have that spell.");
-    copy_str(b->spell_unknown, sizeof(b->spell_unknown),
-        "Unknown spell.");
-}
-
-static void parse_banners(ResBanners *b, cJSON *obj) {
-    load_banner_defaults(b);
-    if (!cJSON_IsObject(obj)) return;
-    // Each key overrides the matching default if present.
+static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
+    // No defaults: every key MUST come from the pack. A missing key is
+    // recorded (and printed) and hard-fails the load -- never a silent English
+    // fallback. (obj may be NULL if the pack omits the whole section.)
     #define SET_BANNER(field, key) do { \
-        const char *s = json_str(obj, key, NULL); \
+        const char *s = cJSON_IsObject(obj) ? json_str(obj, key, NULL) : NULL; \
         if (s) copy_str(b->field, sizeof(b->field), s); \
+        else { fprintf(stdout, "resources: pack missing string key '%s'\n", key); \
+               res->strings_missing++; } \
     } while (0)
     SET_BANNER(chest_gold,        "chest_gold");
     SET_BANNER(chest_commission,  "chest_commission");
@@ -1381,6 +1450,25 @@ static void parse_banners(ResBanners *b, cJSON *obj) {
     SET_BANNER(chest_new_spell,   "chest_new_spell");
     SET_BANNER(chest_empty,       "chest_empty");
     SET_BANNER(town_header,             "town_header");
+    SET_BANNER(town_intro, "town_intro");
+    SET_BANNER(town_intro_inland, "town_intro_inland");
+    SET_BANNER(town_visit, "town_visit");
+    SET_BANNER(cv_wanted, "cv_wanted");
+    SET_BANNER(cv_no_contract_hint, "cv_no_contract_hint");
+    SET_BANNER(puzzle_legend, "puzzle_legend");
+    SET_BANNER(gate_travel, "gate_travel");
+    SET_BANNER(worldmap_all, "worldmap_all");
+    SET_BANNER(worldmap_you, "worldmap_you");
+    SET_BANNER(worldmap_boat, "worldmap_boat");
+    SET_BANNER(worldmap_boat_elsewhere, "worldmap_boat_elsewhere");
+    SET_BANNER(worldmap_no_boat, "worldmap_no_boat");
+    SET_BANNER(class_desc_knight, "class_desc_knight");
+    SET_BANNER(class_desc_paladin, "class_desc_paladin");
+    SET_BANNER(class_desc_sorceress, "class_desc_sorceress");
+    SET_BANNER(class_desc_barbarian, "class_desc_barbarian");
+    SET_BANNER(spell_bridge_prompt_modern, "spell_bridge_prompt_modern");
+    SET_BANNER(save_done_title, "save_done_title");
+    SET_BANNER(save_done, "save_done");
     SET_BANNER(town_gold_label,         "town_gold_label");
     SET_BANNER(town_row_contract,       "town_row_contract");
     SET_BANNER(town_row_boat_rent,      "town_row_boat_rent");
@@ -1404,11 +1492,81 @@ static void parse_banners(ResBanners *b, cJSON *obj) {
     SET_BANNER(town_intel_count_numeric,"town_intel_count_numeric");
     SET_BANNER(town_intel_monsters_generic, "town_intel_monsters_generic");
     SET_BANNER(town_intel_no_garrison,  "town_intel_no_garrison");
+    SET_BANNER(town_intel_artifact,      "town_intel_artifact");
+    SET_BANNER(town_intel_artifact_none, "town_intel_artifact_none");
+    SET_BANNER(artifact_found,           "artifact_found");
+    SET_BANNER(artifact_map_piece,       "artifact_map_piece");
+    SET_BANNER(castle_header,            "castle_header");
+    SET_BANNER(castle_siege_monsters,    "castle_siege_monsters");
+    SET_BANNER(castle_uncharted,         "castle_uncharted");
+    SET_BANNER(search_nothing,           "search_nothing");
+    SET_BANNER(zone_unreachable,         "zone_unreachable");
     SET_BANNER(town_spell_unavailable,  "town_spell_unavailable");
     SET_BANNER(town_spell_at_cap,       "town_spell_at_cap");
     SET_BANNER(town_spell_can_learn,    "town_spell_can_learn");
     SET_BANNER(town_siege_already,      "town_siege_already");
     SET_BANNER(town_siege_purchased,    "town_siege_purchased");
+    SET_BANNER(town_menu_contract,      "town_menu_contract");
+    SET_BANNER(town_menu_boat_rent,     "town_menu_boat_rent");
+    SET_BANNER(town_menu_boat_cancel,   "town_menu_boat_cancel");
+    SET_BANNER(town_menu_info,          "town_menu_info");
+    SET_BANNER(town_menu_spell,         "town_menu_spell");
+    SET_BANNER(town_menu_siege,         "town_menu_siege");
+    SET_BANNER(town_detail_boat_dock,   "town_detail_boat_dock");
+    SET_BANNER(town_detail_intel,       "town_detail_intel");
+    SET_BANNER(town_contract_confirm,   "town_contract_confirm");
+    SET_BANNER(foe_fight, "foe_fight");
+    SET_BANNER(foe_evade, "foe_evade");
+    SET_BANNER(foe_evade_blocked, "foe_evade_blocked");
+    // Optional: only a pack that gates a foe on one troop needs the words.
+    {
+        const char *s = cJSON_IsObject(obj) ? json_str(obj, "foe_requires_troop", NULL) : NULL;
+        if (s) copy_str(b->foe_requires_troop, sizeof b->foe_requires_troop, s);
+    }
+    SET_BANNER(castle_menu_recruit, "castle_menu_recruit");
+    SET_BANNER(castle_continue, "castle_continue");
+    SET_BANNER(castle_menu_audience, "castle_menu_audience");
+    SET_BANNER(castle_menu_garrison, "castle_menu_garrison");
+    SET_BANNER(castle_menu_withdraw, "castle_menu_withdraw");
+    SET_BANNER(castle_action_audience, "castle_action_audience");
+    SET_BANNER(castle_invite_recruit, "castle_invite_recruit");
+    SET_BANNER(castle_invite_audience, "castle_invite_audience");
+    SET_BANNER(castle_invite_garrison, "castle_invite_garrison");
+    SET_BANNER(castle_invite_withdraw, "castle_invite_withdraw");
+    SET_BANNER(castle_have, "castle_have");
+    SET_BANNER(castle_in_garrison, "castle_in_garrison");
+    SET_BANNER(castle_needs_leadership, "castle_needs_leadership");
+    SET_BANNER(castle_can_recruit, "castle_can_recruit");
+    SET_BANNER(castle_rank, "castle_rank");
+    SET_BANNER(castle_next_rank, "castle_next_rank");
+    SET_BANNER(castle_needed, "castle_needed");
+    SET_BANNER(castle_gain_leadership, "castle_gain_leadership");
+    SET_BANNER(castle_gain_commission, "castle_gain_commission");
+    SET_BANNER(castle_gain_spells, "castle_gain_spells");
+    SET_BANNER(castle_gain_spell_power, "castle_gain_spell_power");
+    SET_BANNER(castle_action_promotion, "castle_action_promotion");
+    SET_BANNER(castle_action_blessing, "castle_action_blessing");
+    SET_BANNER(castle_action_tribute, "castle_action_tribute");
+    SET_BANNER(castle_tribute_confirm, "castle_tribute_confirm");
+    SET_BANNER(castle_artifacts, "castle_artifacts");
+    SET_BANNER(castle_over_leadership, "castle_over_leadership");
+    SET_BANNER(castle_count_of, "castle_count_of");
+    SET_BANNER(castle_cost, "castle_cost");
+    SET_BANNER(castle_no_troops, "castle_no_troops");
+    SET_BANNER(town_temple_needs_rites, "town_temple_needs_rites");
+    SET_BANNER(town_back, "town_back");
+    SET_BANNER(town_menu_boat, "town_menu_boat");
+    SET_BANNER(town_action_spell, "town_action_spell");
+    SET_BANNER(town_action_siege, "town_action_siege");
+    SET_BANNER(town_action_owned, "town_action_owned");
+    SET_BANNER(town_boat_no_master, "town_boat_no_master");
+    SET_BANNER(town_boat_rented, "town_boat_rented");
+    SET_BANNER(town_boat_returned, "town_boat_returned");
+    SET_BANNER(town_siege_lore, "town_siege_lore");
+    SET_BANNER(town_confirm_boat_rent, "town_confirm_boat_rent");
+    SET_BANNER(town_confirm_boat_cancel, "town_confirm_boat_cancel");
+    SET_BANNER(town_confirm_spell, "town_confirm_spell");
+    SET_BANNER(town_confirm_siege, "town_confirm_siege");
     SET_BANNER(spell_time_stop,                "spell_time_stop");
     SET_BANNER(spell_find_villain_no_contract, "spell_find_villain_no_contract");
     SET_BANNER(spell_find_villain_success,     "spell_find_villain_success");
@@ -1428,6 +1586,7 @@ static void parse_banners(ResBanners *b, cJSON *obj) {
     SET_BANNER(spell_gate_invalid,             "spell_gate_invalid");
     SET_BANNER(encounter_join_named,           "encounter_join_named");
     SET_BANNER(encounter_join_numeric,         "encounter_join_numeric");
+    SET_BANNER(encounter_join_title,           "encounter_join_title");
     SET_BANNER(encounter_wanderers,            "encounter_wanderers");
     SET_BANNER(encounter_hostile_header,       "encounter_hostile_header");
     SET_BANNER(encounter_hostile_unknown,      "encounter_hostile_unknown");
@@ -1435,10 +1594,90 @@ static void parse_banners(ResBanners *b, cJSON *obj) {
     SET_BANNER(encounter_hostile_count_numeric,"encounter_hostile_count_numeric");
     SET_BANNER(alcove_offer,                   "alcove_offer");
     SET_BANNER(alcove_already,                 "alcove_already");
+    SET_BANNER(temple_title, "temple_title");
+    SET_BANNER(temple_learn, "temple_learn");
+    SET_BANNER(location_leave, "location_leave");
+    SET_BANNER(alcove_offer_modern, "alcove_offer_modern");
+    SET_BANNER(gmd_hero, "gmd_hero");
+    SET_BANNER(gmd_world, "gmd_world");
+    SET_BANNER(gmd_game, "gmd_game");
+    SET_BANNER(gmd_back_up, "gmd_back_up");
+    SET_BANNER(gmd_unit, "gmd_unit");
+    SET_BANNER(fv_your_army, "fv_your_army");
+    SET_BANNER(loc_joined, "loc_joined");
+    SET_BANNER(loc_gold_change, "loc_gold_change");
+    SET_BANNER(count_heading, "count_heading");
+    SET_BANNER(count_of_lead, "count_of_lead");
+    SET_BANNER(count_of_army, "count_of_army");
+    SET_BANNER(count_of_garrison, "count_of_garrison");
+    SET_BANNER(count_cost, "count_cost");
+    SET_BANNER(count_gold_left, "count_gold_left");
+    SET_BANNER(count_recruit, "count_recruit");
+    SET_BANNER(count_garrison, "count_garrison");
+    SET_BANNER(count_withdraw, "count_withdraw");
+    SET_BANNER(count_cancel, "count_cancel");
+    SET_BANNER(count_min, "count_min");
+    SET_BANNER(count_max, "count_max");
+    SET_BANNER(capture_title, "capture_title");
+    SET_BANNER(capture_contract, "capture_contract");
+    SET_BANNER(capture_free, "capture_free");
+    SET_BANNER(capture_promoted, "capture_promoted");
+    SET_BANNER(temple_intro, "temple_intro");
+    SET_BANNER(dwelling_intro, "dwelling_intro");
+    SET_BANNER(loc_title_taught, "loc_title_taught");
+    SET_BANNER(loc_title_refused, "loc_title_refused");
+    SET_BANNER(loc_title_known, "loc_title_known");
+    SET_BANNER(loc_title_joined, "loc_title_joined");
+    SET_BANNER(loc_title_none, "loc_title_none");
+    SET_BANNER(gmd_leave, "gmd_leave");
+    SET_BANNER(gmd_army, "gmd_army");
+    SET_BANNER(gmd_character, "gmd_character");
+    SET_BANNER(gmd_contract, "gmd_contract");
+    SET_BANNER(gmd_puzzle, "gmd_puzzle");
+    SET_BANNER(gmd_dismiss, "gmd_dismiss");
+    SET_BANNER(gmd_map, "gmd_map");
+    SET_BANNER(gmd_cast, "gmd_cast");
+    SET_BANNER(gmd_search, "gmd_search");
+    SET_BANNER(gmd_fly, "gmd_fly");
+    SET_BANNER(gmd_land, "gmd_land");
+    SET_BANNER(gmd_end_week, "gmd_end_week");
+    SET_BANNER(gmd_rest, "gmd_rest");
+    SET_BANNER(gmd_sail, "gmd_sail");
+    SET_BANNER(gmd_controls, "gmd_controls");
+    SET_BANNER(gmd_save, "gmd_save");
+    SET_BANNER(gmd_load, "gmd_load");
+    SET_BANNER(gmd_new_game, "gmd_new_game");
+    SET_BANNER(gmd_exit, "gmd_exit");
+    SET_BANNER(gmd_back, "gmd_back");
+    SET_BANNER(gmd_debug, "gmd_debug");
+    SET_BANNER(gmd_wait, "gmd_wait");
+    SET_BANNER(gmd_shoot, "gmd_shoot");
+    SET_BANNER(gmd_unit_fly, "gmd_unit_fly");
+    SET_BANNER(gmd_combat_cast, "gmd_combat_cast");
+    SET_BANNER(gmd_combat_army, "gmd_combat_army");
+    SET_BANNER(gmd_combat_character, "gmd_combat_character");
+    SET_BANNER(gmd_give_up, "gmd_give_up");
+    SET_BANNER(gmd_slot, "gmd_slot");
+    SET_BANNER(gmr_no_troops, "gmr_no_troops");
+    SET_BANNER(gmr_not_sailing, "gmr_not_sailing");
+    SET_BANNER(gmr_no_saves, "gmr_no_saves");
+    SET_BANNER(gmr_no_shots, "gmr_no_shots");
+    SET_BANNER(gmr_adjacent, "gmr_adjacent");
+    SET_BANNER(gmr_cannot_fly, "gmr_cannot_fly");
+    SET_BANNER(gmr_one_spell, "gmr_one_spell");
+    SET_BANNER(gmr_no_magic, "gmr_no_magic");
+    SET_BANNER(gmr_no_spell_held, "gmr_no_spell_held");
+    SET_BANNER(gmr_empty_slot, "gmr_empty_slot");
+    SET_BANNER(gmc_overwrite, "gmc_overwrite");
+    SET_BANNER(gmc_load, "gmc_load");
+    SET_BANNER(gmc_exit, "gmc_exit");
+    SET_BANNER(dwelling_recruit_row, "dwelling_recruit_row");
     SET_BANNER(alcove_taught,                  "alcove_taught");
     SET_BANNER(alcove_no_gold,                 "alcove_no_gold");
     SET_BANNER(no_spell_banner,                "no_spell_banner");
     SET_BANNER(new_game_intro,                 "new_game_intro");
+    SET_BANNER(combat_victory_named,           "combat_victory_named");
+    SET_BANNER(combat_victory_unnamed,         "combat_victory_unnamed");
     SET_BANNER(dwelling_recruit_prompt,        "dwelling_recruit_prompt");
     SET_BANNER(dwelling_none_this_week,        "dwelling_none_this_week");
     SET_BANNER(dwelling_empty,                 "dwelling_empty");
@@ -1466,6 +1705,12 @@ static void parse_banners(ResBanners *b, cJSON *obj) {
     SET_BANNER(budget_balance,                 "budget_balance");
     SET_BANNER(status_days_left,               "status_days_left");
     SET_BANNER(status_time_stop,               "status_time_stop");
+    SET_BANNER(status_days_left_modern,        "status_days_left_modern");
+    SET_BANNER(status_time_stop_modern,        "status_time_stop_modern");
+    SET_BANNER(status_menu_prefix,             "status_menu_prefix");
+    SET_BANNER(status_game_menu, "status_game_menu");
+    SET_BANNER(status_days_remaining, "status_days_remaining");
+    SET_BANNER(status_time_stop_remaining, "status_time_stop_remaining");
     SET_BANNER(body_save_confirm,              "body_save_confirm");
     SET_BANNER(body_search,                    "body_search");
     SET_BANNER(body_dismiss_pick,              "body_dismiss_pick");
@@ -1475,6 +1720,12 @@ static void parse_banners(ResBanners *b, cJSON *obj) {
     SET_BANNER(body_garrison_row_named,        "body_garrison_row_named");
     SET_BANNER(body_garrison_row_empty,        "body_garrison_row_empty");
     SET_BANNER(body_navigate_row,              "body_navigate_row");
+    // Optional: only a pack that ships the sailing picture asks the question,
+    // so a pack without the scene is not required to word it (REQ-221c).
+    {
+        const char *s = cJSON_IsObject(obj) ? json_str(obj, "body_navigate_confirm", NULL) : NULL;
+        if (s) copy_str(b->body_navigate_confirm, sizeof b->body_navigate_confirm, s);
+    }
     SET_BANNER(body_no_continents,             "body_no_continents");
     SET_BANNER(body_must_be_sailing,           "body_must_be_sailing");
     SET_BANNER(cannot_garrison_last,           "cannot_garrison_last");
@@ -1490,69 +1741,14 @@ static void parse_banners(ResBanners *b, cJSON *obj) {
 
 // ---- Combat log strings (game.json strings.combat_log) ------------
 // Defaults follow docs/OPENBOUNTY-SPEC.md section 25.11 verbatim.
-static void load_combat_log_defaults(ResCombatLog *cl) {
-    memset(cl, 0, sizeof(*cl));
-    copy_str(cl->melee_hit,        sizeof(cl->melee_hit),
-             "%ATK% vs %TGT%, %COUNT% die");
-    copy_str(cl->retaliate,        sizeof(cl->retaliate),
-             "%TGT% retaliate, killing %COUNT%");
-    copy_str(cl->ranged_hit,       sizeof(cl->ranged_hit),
-             "%ATK% shoot %TGT% killing %COUNT%");
-    copy_str(cl->ranged_no_effect, sizeof(cl->ranged_no_effect),
-             "%ATK% shoot %TGT%");
-    copy_str(cl->no_effect_msg,    sizeof(cl->no_effect_msg),
-             "The spell seems to have no effect!");
-    copy_str(cl->fly,              sizeof(cl->fly),    "%TROOP% fly");
-    copy_str(cl->move,             sizeof(cl->move),   "%TROOP% move");
-    copy_str(cl->wait,             sizeof(cl->wait),   "%TROOP% wait");
-    copy_str(cl->pass,             sizeof(cl->pass),   "%TROOP% pass");
-    copy_str(cl->frozen,           sizeof(cl->frozen), "%TROOP% are frozen");
-    copy_str(cl->ooc,              sizeof(cl->ooc),
-             "%TROOP% are out of control!");
-    copy_str(cl->immune,           sizeof(cl->immune), "%TROOP% are immune");
-    copy_str(cl->cloned,           sizeof(cl->cloned),
-             "%COUNT% %TROOP% cloned");
-    copy_str(cl->resurrected,      sizeof(cl->resurrected),
-             "%COUNT% %TROOP% resurrected");
-    copy_str(cl->teleported,       sizeof(cl->teleported), "Teleported");
-    copy_str(cl->only_one_spell,   sizeof(cl->only_one_spell),
-             "Only 1 spell per round!");
-    copy_str(cl->no_spell_type,    sizeof(cl->no_spell_type),
-             "No spells of that type");
-    copy_str(cl->cannot_cast,      sizeof(cl->cannot_cast),
-             "You cannot cast magic");
-    copy_str(cl->cast_fireball,    sizeof(cl->cast_fireball), "Fireball!");
-    copy_str(cl->cast_lightning,   sizeof(cl->cast_lightning), "Lightning!");
-    copy_str(cl->cast_turn_undead, sizeof(cl->cast_turn_undead),
-             "Turn Undead!");
-    copy_str(cl->select_clone,     sizeof(cl->select_clone),
-             "Select your army to Clone");
-    copy_str(cl->select_freeze,    sizeof(cl->select_freeze),
-             "Select enemy army to Freeze");
-    copy_str(cl->select_resurrect, sizeof(cl->select_resurrect),
-             "Select army to Resurrect");
-    copy_str(cl->select_damage,    sizeof(cl->select_damage),
-             "Select enemy army to %SPELL%");
-    copy_str(cl->select_teleport,  sizeof(cl->select_teleport),
-             "Select army to Teleport");
-    copy_str(cl->select_dest,      sizeof(cl->select_dest),
-             "Select new location");
-    copy_str(cl->cant_shoot,       sizeof(cl->cant_shoot), "Can't Shoot");
-    copy_str(cl->no_ammo,          sizeof(cl->no_ammo),    "No ammo");
-    copy_str(cl->cant_fly,         sizeof(cl->cant_fly),   "Can't Fly");
-    copy_str(cl->give_up_prompt,   sizeof(cl->give_up_prompt),
-             "Giving up will forfeit your\n"
-             "armies and send you back to\n"
-             "the King. Give up (y/n)?");
-    copy_str(cl->exit_hint,        sizeof(cl->exit_hint), "Press 'ESC' to exit");
-}
 
-static void parse_combat_log(ResCombatLog *cl, cJSON *obj) {
-    load_combat_log_defaults(cl);
-    if (!cJSON_IsObject(obj)) return;
+
+static void parse_combat_log(ResCombatLog *cl, cJSON *obj, Resources *res) {
     #define SET_CL(field, key) do { \
-        const char *s = json_str(obj, key, NULL); \
+        const char *s = cJSON_IsObject(obj) ? json_str(obj, key, NULL) : NULL; \
         if (s) copy_str(cl->field, sizeof(cl->field), s); \
+        else { fprintf(stdout, "resources: pack missing string key '%s'\n", key); \
+               res->strings_missing++; } \
     } while (0)
     SET_CL(melee_hit,        "melee_hit");
     SET_CL(retaliate,        "retaliate");
@@ -1593,244 +1789,24 @@ static void parse_combat_log(ResCombatLog *cl, cJSON *obj) {
 //                 .morale / .count_buckets / .difficulty / .keybinds /
 //                 .startup) ----------------------------------------------
 
-static void load_ui_defaults(ResUI *ui) {
-    memset(ui, 0, sizeof(*ui));
-    copy_str(ui->press_esc_to_exit, sizeof(ui->press_esc_to_exit),
-             "Press 'ESC' to exit");
-    copy_str(ui->quit_to_dos_prompt, sizeof(ui->quit_to_dos_prompt),
-             " Quit without saving (y/n) ");
-    copy_str(ui->out_of_control, sizeof(ui->out_of_control),
-             "OUT OF CONTROL");
-    copy_str(ui->worldmap_hint_your_map, sizeof(ui->worldmap_hint_your_map),
-             "'ESC' to exit / 'SPC' your map");
-    copy_str(ui->worldmap_hint_whole_map, sizeof(ui->worldmap_hint_whole_map),
-             "'ESC' to exit / 'SPC' whole map");
 
-    copy_str(ui->menu_root_title,    sizeof(ui->menu_root_title),    "Game Menu");
-    copy_str(ui->menu_views_title,   sizeof(ui->menu_views_title),   "Views");
-    copy_str(ui->menu_options_title, sizeof(ui->menu_options_title), "Options");
-    copy_str(ui->menu_back,      sizeof(ui->menu_back),      "Back");
-    copy_str(ui->menu_exit,      sizeof(ui->menu_exit),      "Exit");
-    copy_str(ui->menu_save,      sizeof(ui->menu_save),      "Save");
-    copy_str(ui->menu_load,      sizeof(ui->menu_load),      "Load");
-    copy_str(ui->menu_new_game,  sizeof(ui->menu_new_game),  "New Game");
-    copy_str(ui->menu_views,     sizeof(ui->menu_views),     "Views");
-    copy_str(ui->menu_options,   sizeof(ui->menu_options),   "Options");
-    copy_str(ui->menu_army,      sizeof(ui->menu_army),      "Army");
-    copy_str(ui->menu_spells,    sizeof(ui->menu_spells),    "Spells");
-    copy_str(ui->menu_character, sizeof(ui->menu_character), "Character");
-    copy_str(ui->menu_contract,  sizeof(ui->menu_contract),  "Contract");
-    copy_str(ui->menu_puzzle,    sizeof(ui->menu_puzzle),    "Puzzle");
-    copy_str(ui->menu_view_map,  sizeof(ui->menu_view_map),  "View Map");
-
-    copy_str(ui->stat_leadership,         sizeof(ui->stat_leadership),         "Leadership");
-    copy_str(ui->stat_commission,         sizeof(ui->stat_commission),         "Commission/Week");
-    copy_str(ui->stat_gold,               sizeof(ui->stat_gold),               "Gold");
-    copy_str(ui->stat_spell_power,        sizeof(ui->stat_spell_power),        "Spell power");
-    copy_str(ui->stat_max_spells,         sizeof(ui->stat_max_spells),         "Max # of spells");
-    copy_str(ui->stat_villains_caught,    sizeof(ui->stat_villains_caught),    "Villains caught");
-    copy_str(ui->stat_artifacts_found,    sizeof(ui->stat_artifacts_found),    "Artifacts found");
-    copy_str(ui->stat_castles_garrisoned, sizeof(ui->stat_castles_garrisoned), "Castles garrisoned");
-    copy_str(ui->stat_followers_killed,   sizeof(ui->stat_followers_killed),   "Followers killed");
-    copy_str(ui->stat_current_score,      sizeof(ui->stat_current_score),      "Current score");
-
-    copy_str(ui->army_skill,      sizeof(ui->army_skill),      "SL:");
-    copy_str(ui->army_move,       sizeof(ui->army_move),       "MV:");
-    copy_str(ui->army_morale,     sizeof(ui->army_morale),     "Morale:");
-    copy_str(ui->army_hit_points, sizeof(ui->army_hit_points), "HitPts:");
-    copy_str(ui->army_damage,     sizeof(ui->army_damage),     "Damage:");
-    copy_str(ui->army_g_cost,     sizeof(ui->army_g_cost),     "G-Cost:");
-
-    copy_str(ui->morale_normal, sizeof(ui->morale_normal), "Normal");
-    copy_str(ui->morale_low,    sizeof(ui->morale_low),    "Low");
-    copy_str(ui->morale_high,   sizeof(ui->morale_high),   "High");
-
-    // Count buckets -- defaults match the historical openbounty inline ladders.
-    ui->count_buckets_army_view_n = 3;
-    ui->count_buckets_army_view[0].threshold = 5;
-    copy_str(ui->count_buckets_army_view[0].label,
-             sizeof(ui->count_buckets_army_view[0].label), "Few");
-    ui->count_buckets_army_view[1].threshold = 20;
-    copy_str(ui->count_buckets_army_view[1].label,
-             sizeof(ui->count_buckets_army_view[1].label), "Some");
-    ui->count_buckets_army_view[2].threshold = 0x7FFFFFFF;
-    copy_str(ui->count_buckets_army_view[2].label,
-             sizeof(ui->count_buckets_army_view[2].label), "Lots");
-
-    ui->count_buckets_instant_army_n = 4;
-    ui->count_buckets_instant_army[0].threshold = 1;
-    copy_str(ui->count_buckets_instant_army[0].label,
-             sizeof(ui->count_buckets_instant_army[0].label), "One");
-    ui->count_buckets_instant_army[1].threshold = 2;
-    copy_str(ui->count_buckets_instant_army[1].label,
-             sizeof(ui->count_buckets_instant_army[1].label), "A few");
-    ui->count_buckets_instant_army[2].threshold = 9;
-    copy_str(ui->count_buckets_instant_army[2].label,
-             sizeof(ui->count_buckets_instant_army[2].label), "Several");
-    ui->count_buckets_instant_army[3].threshold = 0x7FFFFFFF;
-    copy_str(ui->count_buckets_instant_army[3].label,
-             sizeof(ui->count_buckets_instant_army[3].label), "Many");
-
-    // Difficulty labels (indexed by Difficulty 0..3).
-    static const struct { const char *l; const char *m; } diff_def[4] = {
-        { "Easy",        "x.5" },
-        { "Normal",      " x1" },
-        { "Hard",        " x2" },
-        { "Impossible?", " x4" },
-    };
-    for (int i = 0; i < 4; i++) {
-        copy_str(ui->difficulty[i].label, sizeof(ui->difficulty[i].label),
-                 diff_def[i].l);
-        copy_str(ui->difficulty[i].score_mult,
-                 sizeof(ui->difficulty[i].score_mult), diff_def[i].m);
-    }
-
-    // Default keybinds -- overlay.c options panel order.
-    static const struct { const char *k; const char *l; } keybind_defaults[] = {
-        { "Dn",   "Move Down"      }, { "Lf",   "Move Left"      },
-        { "Rt",   "Move Right"     }, { "Up",   "Move Up"        },
-        { "End",  "Down Left"      }, { "PgDn", "Down Right"     },
-        { "Hm",   "Up Left"        }, { "PgUp", "Up Right"       },
-        { "A",    "View Army"      }, { "C",    "Controls"       },
-        { "F",    "Fly"            }, { "L",    "Land"           },
-        { "I",    "Contract Info"  }, { "M",    "Auto-mapping"   },
-        { "P",    "Puzzle Solve"   }, { "S",    "Search Area"    },
-        { "U",    "Use Magic"      }, { "V",    "View Character" },
-        { "W",    "Wait End Week"  }, { "Q",    "Quit and Save"  },
-    };
-    int n = (int)(sizeof(keybind_defaults) / sizeof(keybind_defaults[0]));
-    if (n > RES_MAX_KEYBINDS) n = RES_MAX_KEYBINDS;
-    ui->keybind_count = n;
-    for (int i = 0; i < n; i++) {
-        copy_str(ui->keybinds[i].key,   sizeof(ui->keybinds[i].key),   keybind_defaults[i].k);
-        copy_str(ui->keybinds[i].label, sizeof(ui->keybinds[i].label), keybind_defaults[i].l);
-    }
-
-    copy_str(ui->startup_controls_hint, sizeof(ui->startup_controls_hint),
-             "UP/DN move  ENTER pick  ESC quit");
-    copy_str(ui->startup_class_select_hint,
-             sizeof(ui->startup_class_select_hint),
-             "Select Char A-D or L-Load saved game");
-    copy_str(ui->startup_class_picker_missing,
-             sizeof(ui->startup_class_picker_missing),
-             "class picker asset missing");
-    copy_str(ui->startup_save_picker_title,
-             sizeof(ui->startup_save_picker_title),
-             " Select game:");
-    copy_str(ui->startup_save_picker_empty,
-             sizeof(ui->startup_save_picker_empty),
-             "(empty)");
-    copy_str(ui->startup_save_picker_new_game,
-             sizeof(ui->startup_save_picker_new_game),
-             "New game");
-    copy_str(ui->startup_new_game_table_header,
-             sizeof(ui->startup_new_game_table_header),
-             "   Difficulty   Days  Score");
-    copy_str(ui->startup_new_game_select_hint,
-             sizeof(ui->startup_new_game_select_hint),
-             "^v to select   Ent to Accept");
-
-    copy_str(ui->controls_title, sizeof(ui->controls_title), " Controls ");
-    copy_str(ui->controls_on,    sizeof(ui->controls_on),    "On");
-    copy_str(ui->controls_off,   sizeof(ui->controls_off),   "Off");
-
-    copy_str(ui->prompt_text_hint, sizeof(ui->prompt_text_hint),
-             "(Enter to confirm / ESC cancel)");
-    copy_str(ui->prompt_numeric_range_hint,
-             sizeof(ui->prompt_numeric_range_hint),
-             "(1-%COUNT% or ESC)");
-    copy_str(ui->prompt_yes_no_hint,    sizeof(ui->prompt_yes_no_hint),    "(y/n)?");
-    copy_str(ui->prompt_numeric_5_hint, sizeof(ui->prompt_numeric_5_hint), "(1-5 or ESC)");
-
-    // Dialog / prompt titles.
-    copy_str(ui->dt_treasure,        sizeof(ui->dt_treasure),        "Treasure");
-    copy_str(ui->dt_teleport_cave,   sizeof(ui->dt_teleport_cave),   "Teleport Cave");
-    copy_str(ui->dt_crystal_ball,    sizeof(ui->dt_crystal_ball),    "Crystal Ball");
-    copy_str(ui->dt_foes,            sizeof(ui->dt_foes),            "Foes!");
-    copy_str(ui->dt_alcove_offer,    sizeof(ui->dt_alcove_offer),    "Archmage Aurange");
-    copy_str(ui->dt_alcove_result,   sizeof(ui->dt_alcove_result),   "Aurange");
-    copy_str(ui->dt_castle_default,  sizeof(ui->dt_castle_default),  "Castle");
-    copy_str(ui->dt_own_castle,      sizeof(ui->dt_own_castle),      "Your castle");
-    copy_str(ui->dt_search,          sizeof(ui->dt_search),          "Search...");
-    copy_str(ui->dt_dismiss_army,    sizeof(ui->dt_dismiss_army),    "Dismiss Army");
-    copy_str(ui->dt_dismiss_last,    sizeof(ui->dt_dismiss_last),    "Dismiss last army");
-    copy_str(ui->dt_navigate,        sizeof(ui->dt_navigate),        "Go to which continent?");
-    copy_str(ui->dt_garrison_pick,   sizeof(ui->dt_garrison_pick),   "Garrison which troop?");
-    copy_str(ui->dt_remove_pick,     sizeof(ui->dt_remove_pick),     "Remove which troop?");
-    copy_str(ui->dt_save_confirm,    sizeof(ui->dt_save_confirm),    "Your game has been saved.");
-    copy_str(ui->dt_lose_fallback,   sizeof(ui->dt_lose_fallback),   "Sorry.");
-    copy_str(ui->dt_win_fallback,    sizeof(ui->dt_win_fallback),    "Congratulations!");
-
-    copy_str(ui->empty_slot, sizeof(ui->empty_slot), "Empty");
-
-    copy_str(ui->combat_spells_title,      sizeof(ui->combat_spells_title),      "Spells");
-    copy_str(ui->combat_spells_col_combat, sizeof(ui->combat_spells_col_combat), "Combat");
-    copy_str(ui->combat_spells_prompt,     sizeof(ui->combat_spells_prompt),     "Cast which (A-G)?");
-
-    copy_str(ui->dwelling_kind_plains,       sizeof(ui->dwelling_kind_plains),       "Plains");
-    copy_str(ui->dwelling_kind_forest,       sizeof(ui->dwelling_kind_forest),       "Forest");
-    copy_str(ui->dwelling_kind_hill,         sizeof(ui->dwelling_kind_hill),         "Hill");
-    copy_str(ui->dwelling_kind_dungeon,      sizeof(ui->dwelling_kind_dungeon),      "Dungeon");
-    copy_str(ui->dwelling_recruit_how_many,  sizeof(ui->dwelling_recruit_how_many),  "Recruit how many");
-
-    copy_str(ui->recruit_soldiers_title,    sizeof(ui->recruit_soldiers_title),    "Recruit Soldiers");
-    copy_str(ui->recruit_soldiers_how_many, sizeof(ui->recruit_soldiers_how_many), "How Many");
-
-    copy_str(ui->own_castle_mode_garrison, sizeof(ui->own_castle_mode_garrison), "Garrison troops (Space=Remove)");
-    copy_str(ui->own_castle_mode_remove,   sizeof(ui->own_castle_mode_remove),   "Remove troops (Space=Garrison)");
-
-    // Save/load + game-state toasts.
-    copy_str(ui->toast_save_cancelled, sizeof(ui->toast_save_cancelled),
-             "Save cancelled.");
-    copy_str(ui->toast_save_ok,        sizeof(ui->toast_save_ok),        "Saved.");
-    copy_str(ui->toast_save_failed,    sizeof(ui->toast_save_failed),
-             "Save failed: %REASON%");
-    copy_str(ui->toast_load_cancelled, sizeof(ui->toast_load_cancelled),
-             "Load cancelled.");
-    copy_str(ui->toast_load_ok,        sizeof(ui->toast_load_ok),        "Loaded.");
-    copy_str(ui->toast_load_failed,    sizeof(ui->toast_load_failed),
-             "Load failed: %REASON%");
-    copy_str(ui->toast_new_game,       sizeof(ui->toast_new_game),
-             "New game started.");
-
-    // Contract view labels.
-    copy_str(ui->cv_title_no_contract, sizeof(ui->cv_title_no_contract),
-             "You have no Contract!");
-    copy_str(ui->cv_label_name,        sizeof(ui->cv_label_name),
-             "Name: %VALUE%");
-    copy_str(ui->cv_label_alias,       sizeof(ui->cv_label_alias),
-             "Alias: %VALUE%");
-    copy_str(ui->cv_label_reward,      sizeof(ui->cv_label_reward),
-             "Reward: %VALUE% gold");
-    copy_str(ui->cv_label_last_seen,   sizeof(ui->cv_label_last_seen),
-             "Last Seen: %VALUE%");
-    copy_str(ui->cv_label_castle,      sizeof(ui->cv_label_castle),
-             "Castle: %VALUE%");
-    copy_str(ui->cv_alias_none,        sizeof(ui->cv_alias_none),     "None");
-    copy_str(ui->cv_castle_unknown,    sizeof(ui->cv_castle_unknown), "Unknown");
-    copy_str(ui->cv_features_header,   sizeof(ui->cv_features_header),
-             "Distinguishing Features:");
-    copy_str(ui->cv_crimes_header,     sizeof(ui->cv_crimes_header),  "Crimes:");
-
-    // Spells view labels.
-    copy_str(ui->sv_title,         sizeof(ui->sv_title),         "Spells");
-    copy_str(ui->sv_combat_col,    sizeof(ui->sv_combat_col),    "Combat");
-    copy_str(ui->sv_adventure_col, sizeof(ui->sv_adventure_col), "Adventuring");
-}
 
 // Override one buffer field if the JSON object has a string at `key`.
 #define UI_SET(field, key) do { \
-    const char *s = json_str(obj, key, NULL); \
+    const char *s = cJSON_IsObject(obj) ? json_str(obj, key, NULL) : NULL; \
     if (s) copy_str(ui->field, sizeof(ui->field), s); \
+    else { fprintf(stdout, "resources: pack missing string key '%s'\n", key); \
+           res->strings_missing++; } \
 } while (0)
 
-static void parse_count_buckets(ResCountBucket *out, int *out_n, int max,
-                                cJSON *arr) {
-    if (!cJSON_IsArray(arr)) return;
+static void parse_count_buckets(ResCountBucket **outp, int *out_n, cJSON *arr) {
+    int cap = cJSON_IsArray(arr) ? cJSON_GetArraySize(arr) : 0;
+    if (!RES_TABLE_ALLOC(*outp, *out_n, cap)) return;
+    ResCountBucket *out = *outp;
     int n = 0;
     cJSON *it;
     cJSON_ArrayForEach(it, arr) {
-        if (n >= max) break;
+        if (n >= cap) break;
         if (!cJSON_IsObject(it)) continue;
         out[n].threshold = json_int(it, "max", 0x7FFFFFFF);
         copy_str(out[n].label, sizeof(out[n].label),
@@ -1842,13 +1818,51 @@ static void parse_count_buckets(ResCountBucket *out, int *out_n, int max,
 
 static void parse_ui(Resources *res, cJSON *root_strings) {
     ResUI *ui = &res->ui;
-    load_ui_defaults(ui);
-    if (!cJSON_IsObject(root_strings)) return;
+    // No defaults: keys come only from the pack (missing -> recorded, hard-fail).
 
     cJSON *jui = cJSON_GetObjectItem(root_strings, "ui");
     if (cJSON_IsObject(jui)) {
         cJSON *obj = jui;
         UI_SET(press_esc_to_exit, "press_esc_to_exit");
+        UI_SET(fv_hp, "fv_hp");
+        UI_SET(fv_skill, "fv_skill");
+        UI_SET(fv_dmg, "fv_dmg");
+        UI_SET(fv_move, "fv_move");
+        UI_SET(fv_range, "fv_range");
+        UI_SET(fv_flies, "fv_flies");
+        UI_SET(cv_army, "cv_army");
+        UI_SET(cv_magic, "cv_magic");
+        UI_SET(cv_campaign, "cv_campaign");
+        UI_SET(cv_leadership, "cv_leadership");
+        UI_SET(cv_commission, "cv_commission");
+        UI_SET(cv_gold, "cv_gold");
+        UI_SET(cv_spell_power, "cv_spell_power");
+        UI_SET(cv_spell_capacity, "cv_spell_capacity");
+        UI_SET(cv_captured, "cv_captured");
+        UI_SET(cv_artifacts, "cv_artifacts");
+        UI_SET(cv_castles, "cv_castles");
+        UI_SET(cv_followers, "cv_followers");
+        UI_SET(cv_score, "cv_score");
+        UI_SET(cv_days, "cv_days");
+        UI_SET(cv_sacred, "cv_sacred");
+        UI_SET(cv_continents, "cv_continents");
+        UI_SET(cv_honours, "cv_honours");
+        UI_SET(cv_blessed, "cv_blessed");
+        UI_SET(cv_tributes, "cv_tributes");
+        UI_SET(cv_rites, "cv_rites");
+        UI_SET(cv_yes, "cv_yes");
+        UI_SET(cv_no, "cv_no");
+        UI_SET(cv_next, "cv_next");
+        UI_SET(cv_top_rank, "cv_top_rank");
+        UI_SET(hint_back, "hint_back");
+        UI_SET(hint_quit, "hint_quit");
+        UI_SET(hint_continue, "hint_continue");
+        UI_SET(key_esc, "key_esc");
+        UI_SET(key_ctrl_q, "key_ctrl_q");
+        UI_SET(pad_back, "pad_back");
+        UI_SET(pad_confirm, "pad_confirm");
+        UI_SET(give_up_header_modern, "give_up_header_modern");
+        UI_SET(save_confirm_modern, "save_confirm_modern");
         UI_SET(quit_to_dos_prompt, "quit_to_dos_prompt");
         UI_SET(out_of_control,    "out_of_control");
         UI_SET(worldmap_hint_your_map,  "worldmap_hint_your_map");
@@ -1877,6 +1891,38 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
             UI_SET(menu_contract,  "contract");
             UI_SET(menu_puzzle,    "puzzle");
             UI_SET(menu_view_map,  "view_map");
+            UI_SET(menu_screens,   "screens");
+            UI_SET(menu_actions,   "actions");
+            UI_SET(gm_title, "gm_title");
+            UI_SET(gm_hero, "gm_hero");
+            UI_SET(gm_world, "gm_world");
+            UI_SET(gm_game, "gm_game");
+            UI_SET(gm_army, "gm_army");
+            UI_SET(gm_character, "gm_character");
+            UI_SET(gm_contract, "gm_contract");
+            UI_SET(gm_puzzle, "gm_puzzle");
+            UI_SET(gm_dismiss, "gm_dismiss");
+            UI_SET(gm_map, "gm_map");
+            UI_SET(gm_cast, "gm_cast");
+            UI_SET(gm_search, "gm_search");
+            UI_SET(gm_fly, "gm_fly");
+            UI_SET(gm_land, "gm_land");
+            UI_SET(gm_end_week, "gm_end_week");
+            UI_SET(gm_rest, "gm_rest");
+            UI_SET(gm_sail, "gm_sail");
+            UI_SET(gm_controls, "gm_controls");
+            UI_SET(gm_save, "gm_save");
+            UI_SET(gm_load, "gm_load");
+            UI_SET(gm_new_game, "gm_new_game");
+            UI_SET(gm_exit, "gm_exit");
+            UI_SET(gm_back, "gm_back");
+            UI_SET(gm_close, "gm_close");
+            UI_SET(gm_debug, "gm_debug");
+            UI_SET(gm_actions, "gm_actions");
+            UI_SET(gm_unit, "gm_unit");
+            UI_SET(gm_wait, "gm_wait");
+            UI_SET(gm_shoot, "gm_shoot");
+            UI_SET(gm_give_up, "gm_give_up");
         }
     }
 
@@ -1916,13 +1962,11 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
 
     cJSON *jcb = cJSON_GetObjectItem(root_strings, "count_buckets");
     if (cJSON_IsObject(jcb)) {
-        parse_count_buckets(ui->count_buckets_army_view,
+        parse_count_buckets(&ui->count_buckets_army_view,
                             &ui->count_buckets_army_view_n,
-                            RES_MAX_COUNT_BUCKETS,
                             cJSON_GetObjectItem(jcb, "army_view"));
-        parse_count_buckets(ui->count_buckets_instant_army,
+        parse_count_buckets(&ui->count_buckets_instant_army,
                             &ui->count_buckets_instant_army_n,
-                            RES_MAX_COUNT_BUCKETS,
                             cJSON_GetObjectItem(jcb, "instant_army"));
     }
 
@@ -1942,11 +1986,14 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
     }
 
     cJSON *jkb = cJSON_GetObjectItem(root_strings, "keybinds");
-    if (cJSON_IsArray(jkb)) {
+    int kb_cap = json_len(jkb);
+    int kb_n = 0;
+    if (cJSON_IsArray(jkb) && RES_TABLE_ALLOC(ui->keybinds, kb_n, kb_cap)) {
+        (void)kb_n;
         int n = 0;
         cJSON *e;
         cJSON_ArrayForEach(e, jkb) {
-            if (n >= RES_MAX_KEYBINDS) break;
+            if (n >= kb_cap) break;
             if (!cJSON_IsObject(e)) continue;
             copy_str(ui->keybinds[n].key, sizeof(ui->keybinds[n].key),
                      json_str(e, "key", ""));
@@ -1984,6 +2031,8 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(prompt_text_hint,          "text_hint");
         UI_SET(prompt_numeric_range_hint, "numeric_range_hint");
         UI_SET(prompt_yes_no_hint,        "yes_no_hint");
+        UI_SET(prompt_yes,                "yes");
+        UI_SET(prompt_no,                 "no");
         UI_SET(prompt_numeric_5_hint,     "numeric_5_hint");
     }
 
@@ -1999,10 +2048,37 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(dwelling_kind_hill,         "dwelling_kind_hill");
         UI_SET(dwelling_kind_dungeon,      "dwelling_kind_dungeon");
         UI_SET(dwelling_recruit_how_many,  "dwelling_recruit_how_many");
+        UI_SET(dwelling_info_available,    "dwelling_info_available");
+        UI_SET(dwelling_info_cost,         "dwelling_info_cost");
+        UI_SET(dwelling_info_gold,         "dwelling_info_gold");
+        UI_SET(dwelling_info_recruit_cap,  "dwelling_info_recruit_cap");
         UI_SET(recruit_soldiers_title,    "recruit_soldiers_title");
         UI_SET(recruit_soldiers_how_many, "recruit_soldiers_how_many");
         UI_SET(own_castle_mode_garrison, "own_castle_mode_garrison");
         UI_SET(own_castle_mode_remove,   "own_castle_mode_remove");
+        UI_SET(home_castle_recruit, "home_castle_recruit");
+        UI_SET(home_castle_audience, "home_castle_audience");
+        UI_SET(own_castle_row_garrison, "own_castle_row_garrison");
+        UI_SET(own_castle_row_remove, "own_castle_row_remove");
+        UI_SET(worldmap_row_your_map, "worldmap_row_your_map");
+        UI_SET(worldmap_row_whole_map, "worldmap_row_whole_map");
+        UI_SET(class_select_load, "class_select_load");
+        UI_SET(class_select_arrows, "class_select_arrows");
+        UI_SET(title_new_adventure, "title_new_adventure");
+        UI_SET(title_load_adventure, "title_load_adventure");
+        UI_SET(title_credits, "title_credits");
+        UI_SET(new_game_confirm, "new_game_confirm");
+        UI_SET(hero_name_label, "hero_name_label");
+        UI_SET(combat_act_wait, "combat_act_wait");
+        UI_SET(combat_act_shoot, "combat_act_shoot");
+        UI_SET(combat_act_fly, "combat_act_fly");
+        UI_SET(combat_act_cast, "combat_act_cast");
+        UI_SET(combat_act_controls, "combat_act_controls");
+        UI_SET(combat_act_give_up, "combat_act_give_up");
+        UI_SET(gate_title_town,          "gate_title_town");
+        UI_SET(gate_title_castle,        "gate_title_castle");
+        UI_SET(gate_footer_hint,         "gate_footer_hint");
+        UI_SET(recruit_col_hint,         "recruit_col_hint");
     }
 
     cJSON *jtoasts = cJSON_GetObjectItem(root_strings, "toasts");
@@ -2060,6 +2136,7 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(dt_save_confirm,   "save_confirm");
         UI_SET(dt_lose_fallback,  "lose_fallback");
         UI_SET(dt_win_fallback,   "win_fallback");
+        UI_SET(dt_combat_victory, "combat_victory");
     }
 }
 
@@ -2069,20 +2146,20 @@ static void parse_strings(Resources *res, cJSON *obj) {
     // Banners + UI labels load defaults even when strings/* is missing, so
     // every dialog and HUD draw call has a body to render.
     parse_banners(&res->banners,
-                  cJSON_IsObject(obj) ? cJSON_GetObjectItem(obj, "banners") : NULL);
+                  cJSON_IsObject(obj) ? cJSON_GetObjectItem(obj, "banners") : NULL, res);
     parse_combat_log(&res->combat_log,
-                     cJSON_IsObject(obj) ? cJSON_GetObjectItem(obj, "combat_log") : NULL);
+                     cJSON_IsObject(obj) ? cJSON_GetObjectItem(obj, "combat_log") : NULL, res);
     parse_ui(res, obj);
     if (!cJSON_IsObject(obj)) return;
     parse_end_text(&res->win_text,  cJSON_GetObjectItem(obj, "win"));
     parse_end_text(&res->lose_text, cJSON_GetObjectItem(obj, "lose"));
 
-    res->villain_desc_count = 0;
     cJSON *vd = cJSON_GetObjectItem(obj, "villain_descriptions");
-    if (cJSON_IsObject(vd)) {
+    int vd_cap = json_len(vd);
+    if (cJSON_IsObject(vd) && RES_TABLE_ALLOC(res->villain_descs, res->villain_desc_count, vd_cap)) {
         cJSON *entry;
         cJSON_ArrayForEach(entry, vd) {
-            if (res->villain_desc_count >= CAT_VILLAINS_MAX) break;
+            if (res->villain_desc_count >= vd_cap) break;
             const char *id = entry->string;
             if (!id || !id[0]) continue;
             ResVillainDesc *d = &res->villain_descs[res->villain_desc_count++];
@@ -2091,6 +2168,62 @@ static void parse_strings(Resources *res, cJSON *obj) {
             copy_str(d->alias,    sizeof(d->alias),    json_str(entry, "alias", ""));
             copy_str(d->features, sizeof(d->features), json_str(entry, "features", ""));
             copy_str(d->crimes,   sizeof(d->crimes),   json_str(entry, "crimes", ""));
+        }
+    }
+
+    cJSON *ti = cJSON_GetObjectItem(obj, "town_invitations");
+    int ti_cap = json_len(ti);
+    if (cJSON_IsObject(ti) && RES_TABLE_ALLOC(res->town_invites, res->town_invite_count, ti_cap)) {
+        cJSON *entry;
+        cJSON_ArrayForEach(entry, ti) {
+            if (res->town_invite_count >= ti_cap) break;
+            if (!entry->string || !entry->string[0] || !cJSON_IsObject(entry)) continue;
+            ResTownInvite *v = &res->town_invites[res->town_invite_count++];
+            copy_str(v->id,          sizeof(v->id),          entry->string);
+            copy_str(v->contracts,   sizeof(v->contracts),   json_str(entry, "contracts", ""));
+            copy_str(v->boat,        sizeof(v->boat),        json_str(entry, "boat", ""));
+            copy_str(v->information, sizeof(v->information), json_str(entry, "information", ""));
+            copy_str(v->temple,      sizeof(v->temple),      json_str(entry, "temple", ""));
+            copy_str(v->siege,       sizeof(v->siege),       json_str(entry, "siege", ""));
+        }
+    }
+
+    cJSON *td = cJSON_GetObjectItem(obj, "town_docks");
+    int td_cap = json_len(td);
+    if (cJSON_IsObject(td) && RES_TABLE_ALLOC(res->town_docks, res->town_dock_count, td_cap)) {
+        cJSON *entry;
+        cJSON_ArrayForEach(entry, td) {
+            if (res->town_dock_count >= td_cap) break;
+            if (!entry->string || !entry->string[0] || !cJSON_IsString(entry)) continue;
+            ResTownDock *d = &res->town_docks[res->town_dock_count++];
+            copy_str(d->id,   sizeof(d->id),   entry->string);
+            copy_str(d->text, sizeof(d->text), entry->valuestring);
+        }
+    }
+
+    cJSON *sl = cJSON_GetObjectItem(obj, "spell_lore");
+    int sl_cap = json_len(sl);
+    if (cJSON_IsObject(sl) && RES_TABLE_ALLOC(res->spell_lore, res->spell_lore_count, sl_cap)) {
+        cJSON *entry;
+        cJSON_ArrayForEach(entry, sl) {
+            if (res->spell_lore_count >= sl_cap) break;
+            if (!entry->string || !entry->string[0] || !cJSON_IsString(entry)) continue;
+            ResSpellLore *l = &res->spell_lore[res->spell_lore_count++];
+            copy_str(l->id,   sizeof(l->id),   entry->string);
+            copy_str(l->text, sizeof(l->text), entry->valuestring);
+        }
+    }
+
+    cJSON *sb = cJSON_GetObjectItem(obj, "spell_brief");
+    int sb_cap = json_len(sb);
+    if (cJSON_IsObject(sb) && RES_TABLE_ALLOC(res->spell_brief, res->spell_brief_count, sb_cap)) {
+        cJSON *entry;
+        cJSON_ArrayForEach(entry, sb) {
+            if (res->spell_brief_count >= sb_cap) break;
+            if (!entry->string || !entry->string[0] || !cJSON_IsString(entry)) continue;
+            ResSpellLore *l = &res->spell_brief[res->spell_brief_count++];
+            copy_str(l->id,   sizeof(l->id),   entry->string);
+            copy_str(l->text, sizeof(l->text), entry->valuestring);
         }
     }
 }
@@ -2207,6 +2340,30 @@ int artifact_index_for_tile(const char *zone, int local_idx) {
 
 // ---- Top-level -------------------------------------------------------------
 
+// Load the pack's string catalog for `lang` from strings/<lang>.json, falling
+// back to the base locale <base> when the requested locale file is absent. The
+// engine carries no text of its own, so a missing/unparseable base locale is a
+// hard load failure. Returns a cJSON the caller must cJSON_Delete, or NULL.
+static cJSON *load_locale_strings(const char *lang, const char *base) {
+    char path[128];
+    snprintf(path, sizeof path, "strings/%s.json", lang);
+    char *txt = slurp(path);
+    if (!txt && base && base[0] && strcmp(lang, base) != 0) {
+        fprintf(stdout, "resources: locale '%s' not found, using base locale '%s'\n",
+                lang, base);
+        snprintf(path, sizeof path, "strings/%s.json", base);
+        txt = slurp(path);
+    }
+    if (!txt) {
+        fprintf(stdout, "resources: could not read strings locale file '%s'\n", path);
+        return NULL;
+    }
+    cJSON *j = cJSON_Parse(txt);
+    free(txt);
+    if (!j) fprintf(stdout, "resources: could not parse %s\n", path);
+    return j;
+}
+
 bool resources_load(Resources *res, const char *manifest_path) {
     memset(res, 0, sizeof(*res));
 
@@ -2266,6 +2423,20 @@ bool resources_load(Resources *res, const char *manifest_path) {
 
     cJSON *jec = cJSON_GetObjectItem(root, "economy");
     res->economy.alcove_cost      = json_int(jec, "alcove_cost",     5000);
+    {
+        cJSON *jmg = cJSON_GetObjectItem(root, "magic");
+        cJSON *jrp = cJSON_IsObject(jmg) ? cJSON_GetObjectItem(jmg, "rites_per_zone") : NULL;
+        res->economy.rites_per_zone = cJSON_IsTrue(jrp);
+        cJSON *jfo = cJSON_GetObjectItem(root, "foes");
+        cJSON *jev = cJSON_IsObject(jfo) ? cJSON_GetObjectItem(jfo, "evade_needs_free_square") : NULL;
+        res->economy.evade_needs_free_square = cJSON_IsTrue(jev);
+        cJSON *jau = cJSON_GetObjectItem(root, "audiences");
+        res->economy.audiences = cJSON_IsObject(jau);
+        res->economy.blessing_leadership_pct = json_int(jau, "blessing_leadership_pct", 50);
+        res->economy.tribute_cost            = json_int(jau, "tribute_cost", 50000);
+        res->economy.tribute_leadership_pct  = json_int(jau, "tribute_leadership_pct", 25);
+        res->economy.tribute_magic_pct       = json_int(jau, "tribute_magic_pct", 25);
+    }
     res->economy.boat_cost_normal = json_int(jec, "boat_cost_normal", 500);
     res->economy.boat_cost_cheap  = json_int(jec, "boat_cost_cheap",  100);
     res->economy.siege_cost       = json_int(jec, "siege_cost",      3000);
@@ -2424,20 +2595,19 @@ bool resources_load(Resources *res, const char *manifest_path) {
     memset(&res->spawn, 0, sizeof(res->spawn));
     cJSON *jsp = cJSON_GetObjectItem(root, "spawn");
     if (cJSON_IsObject(jsp)) {
+        ResSpawn *sp = &res->spawn;
         cJSON *jcc = cJSON_GetObjectItem(jsp, "tier_chance_curve");
         if (cJSON_IsArray(jcc)) {
             int ti = 0;
             cJSON *row;
             cJSON_ArrayForEach(row, jcc) {
                 if (ti >= RES_SPAWN_TIERS) break;
-                if (cJSON_IsArray(row)) {
-                    int ci = 0;
+                int cap = json_len(row);
+                if (cJSON_IsArray(row) && RES_TABLE_ALLOC(sp->chance_curve[ti], sp->chance_curve_len[ti], cap)) {
                     cJSON *v;
                     cJSON_ArrayForEach(v, row) {
-                        if (ci >= RES_SPAWN_POOL_N - 1) break;
-                        if (cJSON_IsNumber(v))
-                            res->spawn.chance_curve[ti][ci] = v->valueint;
-                        ci++;
+                        if (sp->chance_curve_len[ti] >= cap) break;
+                        sp->chance_curve[ti][sp->chance_curve_len[ti]++] = cJSON_IsNumber(v) ? v->valueint : 0;
                     }
                 }
                 ti++;
@@ -2449,19 +2619,67 @@ bool resources_load(Resources *res, const char *manifest_path) {
             cJSON *row;
             cJSON_ArrayForEach(row, jtp) {
                 if (ti >= RES_SPAWN_TIERS) break;
-                if (cJSON_IsArray(row)) {
-                    int si = 0;
+                int cap = json_len(row);
+                if (cJSON_IsArray(row) && RES_TABLE_ALLOC(sp->troop_pool[ti], sp->pool_count[ti], cap)) {
                     cJSON *v;
                     cJSON_ArrayForEach(v, row) {
-                        if (si >= RES_SPAWN_POOL_N) break;
+                        if (sp->pool_count[ti] >= cap) break;
                         if (cJSON_IsString(v))
-                            copy_str(res->spawn.troop_pool[ti][si],
-                                     sizeof(res->spawn.troop_pool[ti][si]),
-                                     v->valuestring);
-                        si++;
+                            copy_str(sp->troop_pool[ti][sp->pool_count[ti]], RES_ID_LEN, v->valuestring);
+                        sp->pool_count[ti]++;
                     }
                 }
                 ti++;
+            }
+        }
+        // A pool longer than five carries its own curve per difficulty tier.
+        cJSON *jkc = cJSON_GetObjectItem(jsp, "kind_chance_curve");
+        if (cJSON_IsArray(jkc)) {
+            int ki = 0;
+            cJSON *kind;
+            cJSON_ArrayForEach(kind, jkc) {
+                if (ki >= RES_SPAWN_TIERS) break;
+                if (cJSON_IsArray(kind)) {
+                    sp->kind_curve_set[ki] = true;
+                    int ti = 0;
+                    cJSON *row;
+                    cJSON_ArrayForEach(row, kind) {
+                        if (ti >= RES_SPAWN_TIERS) break;
+                        int cap = json_len(row);
+                        if (RES_TABLE_ALLOC(sp->kind_curve[ki][ti], sp->kind_curve_len[ki][ti], cap)) {
+                            cJSON *v;
+                            cJSON_ArrayForEach(v, row) {
+                                if (sp->kind_curve_len[ki][ti] >= cap) break;
+                                sp->kind_curve[ki][ti][sp->kind_curve_len[ki][ti]++] =
+                                    cJSON_IsNumber(v) ? v->valueint : 0;
+                            }
+                        }
+                        ti++;
+                    }
+                }
+                ki++;
+            }
+        }
+    }
+
+    // Optional TrueType font (modern packs). The strip in sprites.font stays
+    // the fallback; the shell prefers this when it loads.
+    {
+        cJSON *jf = cJSON_GetObjectItem(root, "font");
+        memset(&res->font, 0, sizeof res->font);
+        if (jf && cJSON_IsObject(jf)) {
+            copy_str(res->font.file, sizeof res->font.file, json_str(jf, "file", ""));
+            copy_str(res->font.license, sizeof res->font.license, json_str(jf, "license", ""));
+            res->font.size = json_int(jf, "size", 0);
+            cJSON *jc = cJSON_GetObjectItem(jf, "caps");
+            res->font.caps = (jc && cJSON_IsTrue(jc)) ? 1 : 0;
+            if (!res->font.file[0] || res->font.size < 0 ||
+                (res->font.size && (res->font.size < 6 || res->font.size > 64))) {
+                fprintf(stdout,
+                        "resources: font block needs a file and a size of 6..64 "
+                        "(or none) (got \"%s\", %d)\n",
+                        res->font.file, res->font.size);
+                return false;
             }
         }
     }
@@ -2478,14 +2696,23 @@ bool resources_load(Resources *res, const char *manifest_path) {
             res->render.tile_h  = 34;
             res->render.tiles_w = 5;
             res->render.tiles_h = 5;
+            res->render.ui_scale = 1;
+            res->render.dim = 0;
         } else if (strcmp(mode, "modern") == 0) {
             res->render.mode    = RENDER_MODE_MODERN;
             res->render.tile_w  = json_int(jr, "tile_w",  96);
             res->render.tile_h  = json_int(jr, "tile_h",  96);
             res->render.tiles_w = json_int(jr, "tiles_w",  7);
             res->render.tiles_h = json_int(jr, "tiles_h",  7);
+            res->render.ui_scale = json_int(jr, "ui_scale", 1);
+            res->render.native_w = json_int(jr, "native_w", 0);
+            res->render.native_h = json_int(jr, "native_h", 0);
+            res->render.dim = json_int(jr, "dim", 55);
+            if (res->render.dim < 0) res->render.dim = 0;
+            if (res->render.dim > 100) res->render.dim = 100;
         } else {
             res->render.mode = RENDER_MODE_NONE;
+            res->render.ui_scale = 1;
             fprintf(stdout,
                     "resources: pack declares no render.mode "
                     "(expected \"legacy\" or \"modern\")\n");
@@ -2495,27 +2722,54 @@ bool resources_load(Resources *res, const char *manifest_path) {
         // with RADIUS = tiles/2, and an even count leaves him half a tile off.
         if ((res->render.tiles_w % 2) == 0 || (res->render.tiles_h % 2) == 0 ||
             res->render.tiles_w < 3 || res->render.tiles_h < 3 ||
-            res->render.tile_w  < 8 || res->render.tile_h  < 8) {
+            res->render.tile_w  < 8 || res->render.tile_h  < 8 ||
+            res->render.ui_scale < 1 || res->render.ui_scale > 8) {
             fprintf(stdout,
                     "resources: render viewport must be odd and at least 3x3 "
-                    "with tiles at least 8px (got %dx%d tiles of %dx%d)\n",
+                    "with tiles at least 8px and ui_scale 1..8 "
+                    "(got %dx%d tiles of %dx%d, ui_scale %d)\n",
                     res->render.tiles_w, res->render.tiles_h,
-                    res->render.tile_w, res->render.tile_h);
+                    res->render.tile_w, res->render.tile_h,
+                    res->render.ui_scale);
             return false;
+        }
+        // A fixed buffer must hold the viewport, the one-tile sidebar and the
+        // thinnest chrome bands (16 and 8 pixels a side, status 9, bar 5, all
+        // times ui_scale); the shell puts whatever is left into the bands.
+        {
+            const ResRender *r = &res->render;
+            int need_w = r->tiles_w * r->tile_w + r->tile_w + 32 * r->ui_scale;
+            int need_h = r->tiles_h * r->tile_h + 30 * r->ui_scale;
+            bool none = (r->native_w == 0 && r->native_h == 0);
+            if (!none && (r->native_w < need_w || r->native_h < need_h)) {
+                fprintf(stdout,
+                        "resources: render.native_w/native_h %dx%d cannot hold "
+                        "the %dx%d viewport (needs at least %dx%d)\n",
+                        r->native_w, r->native_h, r->tiles_w, r->tiles_h,
+                        need_w, need_h);
+                return false;
+            }
         }
     }
 
     cJSON *jw = cJSON_GetObjectItem(root, "world");
-    copy_str(res->world.starting_zone, sizeof(res->world.starting_zone),
-             json_str(jw, "starting_zone", "continentia"));
-    copy_str(res->world.zone_noun, sizeof(res->world.zone_noun),
-             json_str(jw, "zone_noun", "zone"));
-    copy_str(res->world.zone_noun_plural, sizeof(res->world.zone_noun_plural),
-             json_str(jw, "zone_noun_plural", "zones"));
+    // world.* user-facing strings are required from the pack too (no defaults).
+    #define REQ_WORLD(field, key) do { \
+        const char *s = json_str(jw, key, NULL); \
+        if (s) copy_str(res->world.field, sizeof(res->world.field), s); \
+        else { fprintf(stdout, "resources: pack missing string key 'world.%s'\n", key); \
+               res->strings_missing++; } \
+    } while (0)
+    REQ_WORLD(starting_zone,    "starting_zone");
+    REQ_WORLD(zone_noun,        "zone_noun");
+    REQ_WORLD(zone_noun_plural, "zone_noun_plural");
+    REQ_WORLD(default_name,     "default_name");
+    #undef REQ_WORLD
+    // Base locale code (names the strings/<language>.json file). Optional;
+    // defaults to English so a pack that omits it still resolves a locale.
+    copy_str(res->world.language, sizeof res->world.language,
+             json_str(jw, "language", "en"));
     res->world.max_army_slots = json_int(jw, "max_army_slots", 5);
-    res->world.fog_sight      = json_int(jw, "fog_sight",      3);
-    copy_str(res->world.default_name, sizeof(res->world.default_name),
-             json_str(jw, "default_name", "Hero"));
     cJSON *jdo = cJSON_GetObjectItem(jw, "default_options");
     // Fallback defaults: delay, sounds, walk_beep, anim, cga, music, volume.
     static const int default_options_fallback[7] = { 4, 1, 1, 1, 1, 0, 5 };
@@ -2540,36 +2794,32 @@ bool resources_load(Resources *res, const char *manifest_path) {
     parse_spells(res,      cJSON_GetObjectItem(root, "spells"));
     parse_classes(res,     cJSON_GetObjectItem(root, "classes"));
     parse_villains(res,    cJSON_GetObjectItem(root, "villains"));
+    parse_portraits(res,   cJSON_GetObjectItem(root, "portraits"));
     parse_artifacts(res,   cJSON_GetObjectItem(root, "artifacts"));
 
     // Catalog-capacity contracts: a pack that exceeds a fixed engine array
     // must fail loudly at load, never be silently clamped into a world that
     // misrepresents it.
     {
-        cJSON *jv = cJSON_GetObjectItem(root, "villains");
-        if (cJSON_IsArray(jv) &&
-            cJSON_GetArraySize(jv) > CAT_VILLAINS_MAX) {
-            fprintf(stdout, "resources: pack declares %d villains; engine "
-                    "capacity is %d\n", cJSON_GetArraySize(jv),
-                    CAT_VILLAINS_MAX);
-            cJSON_Delete(root);
-            return false;
-        }
         // The caught/prefought arrays are keyed by VillainDef.index: every
         // index must be in range and unique, else catches would be silently
-        // unrecordable (or, via savegame load, write out of bounds).
-        bool seen_idx[CAT_VILLAINS_MAX] = { false };
-        for (int i = 0; i < res->villains_count; i++) {
+        // unrecordable (or, via savegame load, write out of bounds). The range
+        // is the pack's own villain count -- there is no engine capacity.
+        int nv = res->villains_count;
+        bool *seen_idx = nv ? calloc((size_t)nv, sizeof *seen_idx) : NULL;
+        for (int i = 0; i < nv; i++) {
             int vi = res->villains[i].index;
-            if (vi < 0 || vi >= CAT_VILLAINS_MAX || seen_idx[vi]) {
+            if (!seen_idx || vi < 0 || vi >= nv || seen_idx[vi]) {
                 fprintf(stdout, "resources: villain '%s' has invalid or "
                         "duplicate index %d (must be unique, 0..%d)\n",
-                        res->villains[i].id, vi, CAT_VILLAINS_MAX - 1);
+                        res->villains[i].id, vi, nv - 1);
+                free(seen_idx);
                 cJSON_Delete(root);
                 return false;
             }
             seen_idx[vi] = true;
         }
+        free(seen_idx);
     }
 
     // Temp-death knob validation (fail-loud like the other pack contracts):
@@ -2606,11 +2856,32 @@ bool resources_load(Resources *res, const char *manifest_path) {
     parse_audio(res,       cJSON_GetObjectItem(root, "audio"));
     parse_combat(res,      cJSON_GetObjectItem(root, "combat"));
     parse_controls(res,    cJSON_GetObjectItem(root, "controls"));
-    parse_strings(res,     cJSON_GetObjectItem(root, "strings"));
+    // Strings live in their own per-locale file (strings/<lang>.json), not in
+    // game.json -- so a pack can ship multiple languages and the engine stays
+    // string-free. Pick the requested locale (CLI --lang) or the pack's base.
+    {
+        const char *base = res->world.language[0] ? res->world.language : "en";
+        const char *lang = g_locale_override[0] ? g_locale_override : base;
+        cJSON *strings_root = load_locale_strings(lang, base);
+        if (!strings_root) res->strings_missing++;   // forces the hard-fail below
+        parse_strings(res, strings_root);            // NULL-safe: records misses
+        cJSON_Delete(strings_root);
+    }
     parse_ending(res,      cJSON_GetObjectItem(root, "ending"));
     parse_credits(res,     cJSON_GetObjectItem(root, "credits"));
 
     cJSON_Delete(root);
+
+    // Strict strings: the engine carries no fallback text. If the pack omitted
+    // any required string key, refuse to load -- the missing keys were printed
+    // above -- rather than render blank/garbage.
+    if (res->strings_missing > 0) {
+        fprintf(stdout,
+                "resources: pack is missing %d required string key(s); "
+                "refusing to load. Every UI/message string must be supplied by "
+                "the pack.\n", res->strings_missing);
+        return false;
+    }
 
     g_resources = res;    // publish to table lookups
     return true;
@@ -2618,7 +2889,87 @@ bool resources_load(Resources *res, const char *manifest_path) {
 
 void resources_free(Resources *res) {
     if (g_resources == res) g_resources = NULL;
-    // Nothing heap-owned; catalogs and per-zone objects are inline.
+    // Heap-owned tables, each sized from the pack.
+    if (res) {
+        for (int i = 0; res->portraits && i < res->portrait_count; i++) free(res->portraits[i].anim);
+        free(res->portraits);
+        res->portraits = NULL;
+        res->portrait_count = 0;
+        for (int i = 0; res->troops && i < res->troops_count; i++) free(res->troops[i].anim);
+        free(res->troops);        res->troops = NULL;        res->troops_count = 0;
+        free(res->spells);        res->spells = NULL;        res->spells_count = 0;
+        for (int i = 0; res->classes && i < res->classes_count; i++) {
+            free(res->classes[i].starting_troops);
+            free(res->classes[i].starting_counts);
+        }
+        for (int i = 0; res->class_hero && i < res->classes_count; i++)
+            for (int f = 0; f < OB_FACE_COUNT; f++) {
+                free(res->class_hero[i].walk.frames[f]);
+                free(res->class_hero[i].idle.frames[f]);
+                free(res->class_hero[i].boat.frames[f]);
+            }
+        free(res->class_hero);    res->class_hero = NULL;
+        free(res->classes);       res->classes = NULL;       res->classes_count = 0;
+        for (int i = 0; res->villains && i < res->villains_count; i++) free(res->villains[i].anim);
+        free(res->villains);      res->villains = NULL;      res->villains_count = 0;
+        free(res->artifacts);     res->artifacts = NULL;     res->artifacts_count = 0;
+        free(res->villain_descs); res->villain_descs = NULL; res->villain_desc_count = 0;
+        free(res->spell_lore);    res->spell_lore = NULL;    res->spell_lore_count = 0;
+        free(res->spell_brief);   res->spell_brief = NULL;   res->spell_brief_count = 0;
+        free(res->town_docks);    res->town_docks = NULL;    res->town_dock_count = 0;
+        free(res->town_invites);  res->town_invites = NULL;  res->town_invite_count = 0;
+        free(res->towns);         res->towns = NULL;         res->town_count = 0;
+        free(res->castles);       res->castles = NULL;       res->castle_count = 0;
+        for (int i = 0; res->zones && i < res->zone_count; i++) {
+            ResZone *z = &res->zones[i];
+            for (int c = 0; z->castles && c < z->castle_count; c++) free(z->castles[c].decorations);
+            free(z->neighbors);
+            free(z->signs);
+            free(z->town_idx);
+            free(z->castles);
+            free(z->chests);
+            free(z->artifacts);
+            free(z->dwellings);
+            free(z->armies);
+            free(z->tile_set_arts);
+            free(z->arrivals);
+            for (int k = 0; k < z->event_count; k++) {
+                free(z->events[k].reqs);
+                free(z->events[k].effects);
+            }
+            free(z->events);
+            free(z->salt.preferred_troops);
+        }
+        free(res->zones);         res->zones = NULL;         res->zone_count = 0;
+        free(res->event_scenes);  res->event_scenes = NULL;  res->event_scene_count = 0;
+        free(res->ui.count_buckets_army_view);    res->ui.count_buckets_army_view = NULL;
+        free(res->ui.count_buckets_instant_army); res->ui.count_buckets_instant_army = NULL;
+        free(res->ui.keybinds);                   res->ui.keybinds = NULL;
+        for (int i = 0; i < RES_TILE_CODE_COUNT; i++) { free(res->tile_codes[i].variants); res->tile_codes[i].variants = NULL; }
+        free(res->number_name_thresholds);        res->number_name_thresholds = NULL;
+        free(res->number_name_labels);            res->number_name_labels = NULL;
+        for (int i = 0; res->credits.groups && i < res->credits.group_count; i++)
+            free(res->credits.groups[i].names);
+        free(res->credits.groups);                res->credits.groups = NULL;
+        free(res->credits.copyright);             res->credits.copyright = NULL;
+        for (int f = 0; f < OB_FACE_COUNT; f++) {
+            free(res->sprites.hero_walk.frames[f]); res->sprites.hero_walk.frames[f] = NULL;
+            free(res->sprites.hero_idle.frames[f]); res->sprites.hero_idle.frames[f] = NULL;
+            free(res->sprites.hero_boat.frames[f]); res->sprites.hero_boat.frames[f] = NULL;
+        }
+        free(res->sprites.hud_siege_animation);     res->sprites.hud_siege_animation = NULL;
+        free(res->sprites.hud_magic_animation);     res->sprites.hud_magic_animation = NULL;
+        free(res->sprites.alcove_figure_animation); res->sprites.alcove_figure_animation = NULL;
+        free(res->sprites.view_icons_extra);        res->sprites.view_icons_extra = NULL;
+        free(res->sprites.class_picker_selected);   res->sprites.class_picker_selected = NULL;
+        for (int k = 0; k < RES_SPAWN_TIERS; k++) {
+            free(res->spawn.chance_curve[k]); res->spawn.chance_curve[k] = NULL;
+            free(res->spawn.troop_pool[k]);   res->spawn.troop_pool[k] = NULL;
+            for (int t = 0; t < RES_SPAWN_TIERS; t++) {
+                free(res->spawn.kind_curve[k][t]); res->spawn.kind_curve[k][t] = NULL;
+            }
+        }
+    }
 }
 
 void resources_republish(const Resources *res) {
@@ -2682,6 +3033,16 @@ const ResCastle *resources_castle_by_id(const Resources *r, const char *id) {
     return NULL;
 }
 
+bool resources_parse_castle_footprint(const char *s, ResCastleFootprint *out) {
+    if (out) *out = RES_CASTLE_FOOTPRINT_3X2;
+    if (!s || !s[0] || strcmp(s, "3x2") == 0) return true;
+    if (strcmp(s, "1x1") == 0) {
+        if (out) *out = RES_CASTLE_FOOTPRINT_1X1;
+        return true;
+    }
+    return false;
+}
+
 bool resources_castle_is_home(const ResCastle *rc) {
     return rc && strcmp(rc->special.flow, "audience") == 0;
 }
@@ -2715,6 +3076,62 @@ const ResVillainDesc *resources_villain_desc(const Resources *r,
         if (strcmp(r->villain_descs[i].id, villain_id) == 0)
             return &r->villain_descs[i];
     }
+    return NULL;
+}
+
+const ResTownInvite *resources_town_invite(const Resources *r, const char *id) {
+    if (!r || !id || !id[0]) return NULL;
+    for (int i = 0; i < r->town_invite_count; i++)
+        if (strcmp(r->town_invites[i].id, id) == 0) return &r->town_invites[i];
+    return NULL;
+}
+
+const char *resources_town_dock(const Resources *r, const char *town_id) {
+    if (!r || !town_id) return NULL;
+    for (int i = 0; i < r->town_dock_count; i++)
+        if (strcmp(r->town_docks[i].id, town_id) == 0) return r->town_docks[i].text;
+    return NULL;
+}
+
+int resources_portrait_index(const Resources *r, const char *id) {
+    if (!r || !id || !id[0]) return -1;
+    for (int i = 0; i < r->portrait_count; i++)
+        if (strcmp(r->portraits[i].id, id) == 0) return i;
+    return -1;
+}
+
+int resources_spawn_slot(const ResSpawn *sp, int kind, int tier, int chance) {
+    if (!sp) return 0;
+    kind &= 3;
+    tier &= 3;
+    // The walk's last slot: a pool of five or fewer ends where it always did
+    // (slot 4, even when fewer were declared); a longer one at its own last.
+    int n = sp->pool_count[kind] > 5 ? sp->pool_count[kind] : 5;
+    const int *curve = sp->kind_curve_set[kind] ? sp->kind_curve[kind][tier] : sp->chance_curve[tier];
+    int len = sp->kind_curve_set[kind] ? sp->kind_curve_len[kind][tier] : sp->chance_curve_len[tier];
+    int slot = 0;
+    while (slot < n - 1 && chance > (slot < len && curve ? curve[slot] : 0)) slot++;
+    return slot;
+}
+
+const char *resources_spawn_troop(const ResSpawn *sp, int kind, int tier, int chance) {
+    if (!sp) return "";
+    int slot = resources_spawn_slot(sp, kind, tier, chance);
+    kind &= 3;
+    return (slot < sp->pool_count[kind] && sp->troop_pool[kind]) ? sp->troop_pool[kind][slot] : "";
+}
+
+const char *resources_spell_lore(const Resources *r, const char *spell_id) {
+    if (!r || !spell_id) return NULL;
+    for (int i = 0; i < r->spell_lore_count; i++)
+        if (strcmp(r->spell_lore[i].id, spell_id) == 0) return r->spell_lore[i].text;
+    return NULL;
+}
+
+const char *resources_spell_brief(const Resources *r, const char *spell_id) {
+    if (!r || !spell_id) return NULL;
+    for (int i = 0; i < r->spell_brief_count; i++)
+        if (strcmp(r->spell_brief[i].id, spell_id) == 0) return r->spell_brief[i].text;
     return NULL;
 }
 
@@ -2769,15 +3186,31 @@ void resources_format_template(char *out, int out_sz, const char *src,
 
 // ---- Art manifest ----------------------------------------------------------
 
-static void art_add(char out[][RES_PATH_LEN], int cap, int *n, const char *p) {
-    if (!p || !p[0] || !out || *n >= cap) return;
-    for (int i = 0; i < *n; i++)
-        if (strcmp(out[i], p) == 0) return;    // already listed
-    copy_str(out[*n], RES_PATH_LEN, p);
-    (*n)++;
+static void art_add(ResArtList *out, int cap, int *n, const char *p) {
+    (void)cap;
+    if (!p || !p[0] || !out) return;
+    for (int i = 0; i < out->n; i++)
+        if (strcmp(out->path[i], p) == 0) return;    // already listed
+    if (out->n >= out->cap) {
+        int ncap = out->cap ? out->cap * 2 : 256;
+        char (*grown)[RES_PATH_LEN] = realloc(out->path, (size_t)ncap * sizeof *grown);
+        if (!grown) return;
+        out->path = grown;
+        out->cap = ncap;
+    }
+    copy_str(out->path[out->n], RES_PATH_LEN, p);
+    out->n++;
+    *n = out->n;
 }
 
-static void art_add_anim(char out[][RES_PATH_LEN], int cap, int *n,
+void resources_art_list_free(ResArtList *list) {
+    if (!list) return;
+    free(list->path);
+    list->path = NULL;
+    list->n = list->cap = 0;
+}
+
+static void art_add_anim(ResArtList *out, int cap, int *n,
                          const ResAnimSet *a) {
     if (!a) return;
     for (int f = 0; f < OB_FACE_COUNT; f++)
@@ -2785,19 +3218,50 @@ static void art_add_anim(char out[][RES_PATH_LEN], int cap, int *n,
             art_add(out, cap, n, a->frames[f][i]);
 }
 
-int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
-                           int cap) {
+void resources_zone_arrival(const ResZone *z, const char *from, int *x, int *y) {
+    *x = z->hero_spawn_x;
+    *y = z->hero_spawn_y;
+    if (!from || !from[0]) return;
+    for (int i = 0; i < z->arrival_count; i++)
+        if (strcmp(z->arrivals[i].from, from) == 0) {
+            *x = z->arrivals[i].x;
+            *y = z->arrivals[i].y;
+            return;
+        }
+}
+
+bool resources_tile_from_set(const Resources *res, const char *set, const char *stem) {
+    if (!res || !set || !set[0] || !stem) return false;
+    for (int zi = 0; zi < res->zone_count; zi++) {
+        const ResZone *z = &res->zones[zi];
+        if (strcmp(z->tile_set, set) != 0) continue;
+        if (z->tile_set_art_count == 0) return true;          // the whole folder
+        for (int k = 0; k < z->tile_set_art_count; k++)
+            if (strcmp(z->tile_set_arts[k], stem) == 0) return true;
+    }
+    return false;
+}
+
+int resources_art_manifest(const Resources *res, ResArtList *out) {
     int n = 0;
+    const int cap = 0;   // unused: the list grows
+    if (!out) return 0;
+    out->n = 0;
     if (!res) return 0;
 
     art_add_anim(out, cap, &n, &res->sprites.hero_walk);
     art_add_anim(out, cap, &n, &res->sprites.hero_idle);
     art_add_anim(out, cap, &n, &res->sprites.hero_boat);
 
-    for (int i = 0; i < res->sprites.combat_count; i++)
+    for (int i = 0; i < res->sprites.combat_count; i++) {
+        if (i == 0 && resources_combat_ground_is_terrain(res)) continue;  // no field tile shipped
+        if (i >= 5 && i <= 10 && res->sprites.siege_grid[0]) continue;    // walls are in the siege grid
         art_add(out, cap, &n, res->sprites.combat[i]);
+    }
 
     art_add(out, cap, &n, res->sprites.font);
+    art_add(out, cap, &n, res->font.file);       // no-ops when the pack has no TTF
+    art_add(out, cap, &n, res->font.license);
     art_add(out, cap, &n, res->sprites.puzzle_cover);
     art_add(out, cap, &n, res->sprites.town_backdrop);
     art_add(out, cap, &n, res->sprites.castle_backdrop);
@@ -2805,11 +3269,37 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
     art_add(out, cap, &n, res->sprites.forest_backdrop);
     art_add(out, cap, &n, res->sprites.hillcave_backdrop);
     art_add(out, cap, &n, res->sprites.dungeon_backdrop);
+    art_add(out, cap, &n, res->sprites.alcove_backdrop);
+    art_add(out, cap, &n, res->sprites.sail_backdrop);
+    // A zone's own town backdrop, and a town's own (REQ-221d).
+    for (int i = 0; i < res->zone_count; i++)
+        art_add(out, cap, &n, res->zones[i].town_backdrop);
+    for (int i = 0; i < res->town_count; i++)
+        art_add(out, cap, &n, res->towns[i].backdrop);
+    art_add(out, cap, &n, res->sprites.palace_welcome);
+    art_add(out, cap, &n, res->sprites.palace_barracks);
+    art_add(out, cap, &n, res->sprites.palace_throne);
+    art_add(out, cap, &n, res->sprites.scene_column_capital);
+    art_add(out, cap, &n, res->sprites.scene_column_shaft);
+    art_add(out, cap, &n, res->sprites.scene_column_base);
+    art_add(out, cap, &n, res->sprites.alcove_figure);
+    for (int i = 0; i < res->sprites.alcove_figure_animation_count; i++)
+        art_add(out, cap, &n, res->sprites.alcove_figure_animation[i]);
     art_add(out, cap, &n, res->sprites.ending_win);
     art_add(out, cap, &n, res->sprites.ending_lose);
+    art_add(out, cap, &n, res->sprites.siege_back_wall);
+    art_add(out, cap, &n, res->sprites.siege_back_wall_left);
+    art_add(out, cap, &n, res->sprites.siege_back_wall_right);
+    for (int y = 0; y <= COMBAT_H; y++)
+        for (int x = 0; x < COMBAT_W; x++) {
+            char p[RES_PATH_LEN];
+            if (resources_siege_grid_path(res, x, y, p, sizeof p))
+                art_add(out, cap, &n, p);
+        }
     for (int i = 0; i < res->sprites.view_icons_extra_count; i++)
         art_add(out, cap, &n, res->sprites.view_icons_extra[i]);
     art_add(out, cap, &n, res->sprites.hud_contract_silhouette);
+    art_add(out, cap, &n, res->sprites.hud_boat_silhouette);
     art_add(out, cap, &n, res->sprites.hud_siege_silhouette);
     for (int i = 0; i < res->sprites.hud_siege_animation_count; i++)
         art_add(out, cap, &n, res->sprites.hud_siege_animation[i]);
@@ -2822,8 +3312,14 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
     art_add(out, cap, &n, res->sprites.chrome_overworld);
     art_add(out, cap, &n, res->sprites.splash_logo);
     art_add(out, cap, &n, res->sprites.splash_title);
+    art_add(out, cap, &n, res->sprites.alcove_portrait);
+    art_add(out, cap, &n, res->sprites.title_battle);
+    art_add(out, cap, &n, res->sprites.title_eagle);
+    art_add(out, cap, &n, res->sprites.title_words);
     art_add(out, cap, &n, res->sprites.class_picker);
     art_add(out, cap, &n, res->sprites.class_highlight);
+    for (int i = 0; i < res->sprites.class_picker_selected_count; i++)
+        art_add(out, cap, &n, res->sprites.class_picker_selected[i]);
     art_add(out, cap, &n, res->sprites.orb);
 
     art_add(out, cap, &n, res->ending.grass_tile);
@@ -2831,14 +3327,29 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
     art_add(out, cap, &n, res->ending.hero_tile);
     art_add(out, cap, &n, res->ending.throne_backdrop);
 
-    for (int i = 0; i < res->classes_count; i++)
+    for (int i = 0; i < res->classes_count; i++) {
         art_add(out, cap, &n, res->classes[i].portrait);
+        art_add_anim(out, cap, &n, &res->class_hero[i].walk);
+        art_add_anim(out, cap, &n, &res->class_hero[i].idle);
+        art_add_anim(out, cap, &n, &res->class_hero[i].boat);
+        art_add(out, cap, &n, res->class_hero[i].tile);
+        art_add(out, cap, &n, res->class_hero[i].disgraced);
+    }
+
+    // One-time vista scenes (game.json `events[].scene`).
+    for (int i = 0; i < res->event_scene_count; i++)
+        art_add(out, cap, &n, res->event_scenes[i]);
 
     for (int i = 0; i < res->troops_count; i++) {
         art_add(out, cap, &n, res->troops[i].sprite);
+        art_add(out, cap, &n, res->troops[i].portrait);
         for (int f = 0; f < res->troops[i].anim_count; f++)
             art_add(out, cap, &n, res->troops[i].anim[f]);
     }
+
+    for (int i = 0; i < res->portrait_count; i++)
+        for (int f = 0; f < res->portraits[i].anim_count; f++)
+            art_add(out, cap, &n, res->portraits[i].anim[f]);
 
     for (int i = 0; i < res->villains_count; i++) {
         const VillainDef *v = &res->villains[i];
@@ -2875,16 +3386,138 @@ int resources_art_manifest(const Resources *res, char out[][RES_PATH_LEN],
             snprintf(p, sizeof p, "art/tiles/%s.png", obj[i]);
             art_add(out, cap, &n, p);
         }
+        // Town art is per catalog entry: the shared "town" tile only while
+        // some town has no `art` of its own, plus each declared stem once.
+        {
+            bool shared = (res->town_count == 0);
+            for (int i = 0; i < res->town_count; i++) {
+                const char *a = res->towns[i].art;
+                if (!a[0]) { shared = true; continue; }
+                char p[RES_PATH_LEN];
+                snprintf(p, sizeof p, "art/tiles/%s.png", a);
+                art_add(out, cap, &n, p);
+            }
+            if (shared) art_add(out, cap, &n, "art/tiles/town.png");
+        }
+        // Wandering-army art is per zone: the shared tile only while some
+        // zone has no `army_art`, plus each declared stem once.
+        {
+            bool shared = (res->zone_count == 0);
+            for (int i = 0; i < res->zone_count; i++) {
+                const char *a = res->zones[i].army_art;
+                if (!a[0]) { shared = true; continue; }
+                char p[RES_PATH_LEN];
+                snprintf(p, sizeof p, "art/tiles/%s.png", a);
+                art_add(out, cap, &n, p);
+            }
+            if (shared) art_add(out, cap, &n, "art/tiles/wandering_army.png");
+        }
+        // The alcove tile is per zone the same way: the hills-dwelling sprite
+        // it borrows only while some zone leaves `alcove_art` unset, plus each
+        // declared stem once. map_object_art_names already lists the borrowed
+        // one, so nothing is added for the fallback here.
+        for (int i = 0; i < res->zone_count; i++) {
+            const char *a = res->zones[i].alcove_art;
+            if (!a[0]) continue;
+            char p[RES_PATH_LEN];
+            snprintf(p, sizeof p, "art/tiles/%s.png", a);
+            art_add(out, cap, &n, p);
+        }
+        for (int i = 0; i < res->castle_count; i++) {
+            if (!res->castles[i].art[0]) continue;
+            char p[RES_PATH_LEN];
+            snprintf(p, sizeof p, "art/tiles/%s.png", res->castles[i].art);
+            art_add(out, cap, &n, p);
+        }
+        // Castle art follows the footprint (REQ-228): a pack ships the six
+        // 3x2 pieces only if some castle stamps 3x2, and the single `castle`
+        // tile only if some castle stamps 1x1.
+        bool used[2] = { false, false };
+        for (int i = 0; i < res->castle_count; i++)
+            used[res->castles[i].footprint == RES_CASTLE_FOOTPRINT_1X1] = true;
+        for (int fp = 0; fp < 2; fp++) {
+            if (!used[fp]) continue;
+            int nc = 0;
+            const char *const *cn =
+                map_castle_art_names((ResCastleFootprint)fp, &nc);
+            for (int i = 0; i < nc; i++) {
+                char p[RES_PATH_LEN];
+                snprintf(p, sizeof p, "art/tiles/%s.png", cn[i]);
+                art_add(out, cap, &n, p);
+            }
+        }
     }
 
     // Tile art: tile_codes carry a bare name that tile_cache resolves under
-    // art/tiles/. Expand it here so callers see real paths.
-    for (int i = 0; i < RES_TILE_CODE_COUNT; i++) {
-        if (!res->tile_codes[i].present || !res->tile_codes[i].art[0]) continue;
-        char p[RES_PATH_LEN];
-        snprintf(p, sizeof p, "art/tiles/%s.png", res->tile_codes[i].art);
-        art_add(out, cap, &n, p);
+    // art/tiles/, or under art/tiles/<tile_set>/ for a zone that declares a
+    // set -- only the names the set overrides, when it lists them
+    // ("tile_set_arts"), the rest from the master set. List the master set
+    // while some zone draws from it, and each declared set once, so a pack
+    // ships exactly the terrain it draws.
+    bool shared = (res->zone_count == 0);
+    for (int zi = 0; zi < res->zone_count; zi++)
+        if (!res->zones[zi].tile_set[0] || res->zones[zi].tile_set_art_count > 0) shared = true;
+    for (int zi = -1; zi < res->zone_count; zi++) {
+        const char *set = NULL;
+        if (zi < 0) {
+            if (!shared) continue;
+        } else {
+            set = res->zones[zi].tile_set;
+            if (!set[0]) continue;
+            bool dup = false;
+            for (int k = 0; k < zi; k++)
+                if (strcmp(res->zones[k].tile_set, set) == 0) dup = true;
+            if (dup) continue;
+        }
+        for (int i = 0; i < RES_TILE_CODE_COUNT; i++) {
+            if (!res->tile_codes[i].present || !res->tile_codes[i].art[0]) continue;
+            char p[RES_PATH_LEN];
+            if (set) {
+                if (resources_tile_from_set(res, set, res->tile_codes[i].art)) {
+                    snprintf(p, sizeof p, "art/tiles/%s/%s.png", set, res->tile_codes[i].art);
+                    art_add(out, cap, &n, p);
+                }
+            } else {
+                snprintf(p, sizeof p, "art/tiles/%s.png", res->tile_codes[i].art);
+                art_add(out, cap, &n, p);
+            }
+            for (int v = 0; v < res->tile_codes[i].variant_count; v++) {
+                if (set) {
+                    if (!resources_tile_from_set(res, set, res->tile_codes[i].variants[v])) continue;
+                    snprintf(p, sizeof p, "art/tiles/%s/%s.png", set, res->tile_codes[i].variants[v]);
+                } else {
+                    snprintf(p, sizeof p, "art/tiles/%s.png", res->tile_codes[i].variants[v]);
+                }
+                art_add(out, cap, &n, p);
+            }
+        }
     }
 
     return n;
+}
+
+const ResClassHero *resources_class_hero(const Resources *r, const char *class_id) {
+    if (!r || !class_id) return NULL;
+    for (int i = 0; i < r->classes_count; i++) {
+        if (strcmp(r->classes[i].id, class_id) != 0) continue;
+        const ResClassHero *h = &r->class_hero[i];
+        bool any = h->tile[0] != '\0';
+        for (int f = 0; f < OB_FACE_COUNT && !any; f++)
+            any = h->walk.count[f] || h->idle.count[f] || h->boat.count[f];
+        return any ? h : NULL;
+    }
+    return NULL;
+}
+
+bool resources_siege_grid_path(const Resources *res, int x, int y,
+                               char *out, int cap) {
+    if (out && cap > 0) out[0] = '\0';
+    if (!res || !out || cap <= 0 || !res->sprites.siege_grid[0]) return false;
+    if (x < 0 || x >= COMBAT_W || y < 0 || y > COMBAT_H) return false;
+    snprintf(out, (size_t)cap, "%s_%d_%d.png", res->sprites.siege_grid, x, y);
+    return true;
+}
+
+bool resources_combat_ground_is_terrain(const Resources *res) {
+    return res && strcmp(res->sprites.combat_ground, "terrain") == 0;
 }

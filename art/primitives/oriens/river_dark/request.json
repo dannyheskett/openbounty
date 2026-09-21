@@ -1,0 +1,24 @@
+{
+ "lower_description": "tall grass like a rice paddy, long upright blades standing in dense even rows, fresh yellow-green, no water",
+ "tile_size": {
+  "width": 32,
+  "height": 32
+ },
+ "mode": "standard",
+ "shape_style": "round",
+ "enhance": false,
+ "view": "high top-down",
+ "outline": "lineless",
+ "shading": "medium shading",
+ "detail": "medium detail",
+ "text_guidance_scale": 8.0,
+ "seed": 4115,
+ "lower_base_tile_id": "d584193b-ab45-4afb-8667-377f4df2da68",
+ "lower_reference_image": {
+  "type": "base64",
+  "base64": "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAFtklEQVR4nI2XW28bRxKFv6puUpRIWXQkOVooC9jIzQlswMhm//7+h30LkpfElm3FlK0bKQ413V156JnmDClntwBCYk+zq7pO1akz8p///tvOzirAA+A0IWrcXBvqhIMpxECxw8dDAP6crZhOfVlfVhHo73318gSA399ccHFRc3Q0KH9nHyK7ey57darERM8eHQiWBDA2TdzWEqvK8F7Kdye6vQmwpM2zHLCenkz5+acnWEqEEHubf/7pCd8+O+itfby8x4nQZiwHCa9eHrIz7ETmEs4ZzhkhGN57bq8TMRlv398DEELIp8QoPSfOw7On+6xWNePxCCe3REscPh7ivRDNes7bv6L9bC0WFSGsUxuiYQlEQTQxmXg0hMD57LJs6h4SrY9LtMT+ZNg4TcTOx4lSd5wRldD7/Tq7lsB7Ybzr2QKqxS6EhEVbp1MUazJlEaZTx+2NUYeEJUGc5+UPJz0IiIBrnQoxJRaLSF0bR0dDjo/GqMgAa4JzKkQTYnDU9+vovTqqVT+9MeXngiekfu08ZKLG1WXi6Njx6GDdPVsZsLSR9ijEJJvb1vjHBPHhis8H5Ba9uTamj7Usth2jAG/fV4hq+TjJt/XeYVbj1BBtoGlwDbUx2tkOrOWJLh8ADHek16ataXaQD3eatjbEaIga471cxd2q3jSzmq9O93G+vx4DjEb5fyeK8xSfXmTQcz6fZzyPv0ycz+Z4nyNfVhFJ+Ufzxd9g3kBTirl0gsvwuhyQKIQQMwS5lZSY1lje3kQuLu5xqkwmucItCe154vq4m9W0l+mm328w4uVVJARrzhB0vlz0IBjvCeM9KVWe1zUzWopc39yXdXFaAvnj7BqLARoeKRyyQdv7+4pTJYTE7XyFH/h2R2jmgQcC83nmbcjp+ltzCdDi/CHb7K7W1Joia7Ow/sHnvc5mgRCMTx9rzt+vGPjP790s2hbmqpmeXpwUlmoHDICoFrp1DV3EACEYx8d53/395zsCHFUdmst0pmRT7CEYo4Fno2H6zSsPtGX3sNPTYZkdXz89BODj1bzZk/A+Yy1qvYFlSYp+0HaxNe+Ff706AgJOlctPAdHtidkN6Jtn0/Lce+2dV7qmIbnJxPHjjwelUwp4TnVNDj4nJiZlcRfwXjGrHwwg72/YrxOkqLFcBELdZjHfeDLxONHcig58mXjAyZdDdseeX3792KysIWmD+l9WVX0YW+3Q2miUzwlB8KL4zFQOSIxGnhASi7t2FgjOw9XVihDSFsVu2sXlNYePxpyxfPC5pcTuaMDvb67LmgI4ya14/meFpSyVWnvx/JDbeeC3X5e8eH7I8++m5Zmo8c/TvfI9hES0rA9e/PAF0YyqikwmLn9PWWMsq4j3RrDUFKHLQnFx14+4vXHL3TFaGU6tjXd3cM44e/+JyW5TC58hnZ2RECwRw3oYlSKMJrSYZxLyjIYe733h7la0ei+IGl/9Y5zX7yOzDzV+g5BCSJwc7/H9N0ecz+acPNnlzes7Tk52qKp8prZMlbPeVr9hKffvYlHlbKggTnBO+PrplKpKPYftrdsgozXPXe6Oqorsj4eEFLEIg6Hj7GyRM2BxLcljSjjdUMmqiCbevV2Ucfv/2MnxhPEow7L54uI91KsGghANp7I1MCxlzEQ1QxGNaAmRQYGlG2Rr3guvX8/zl07Abba7rdnoAS2SyzpaI6ZU1LSlxPVNTQgRs5oQhPPZord3WQWWDQ8s7kIRJV0SsyJYmlZvo2pv342uDqlRNDETR4P5fecN6o93V0wmjRDpqJ/uewCsU1/UtMts2OQtlAzAmre7ymYwXL8vtJaHjTGf180lirvGie8FnN8hGlk3D4QAvvvyIqrMPtRAuyjlcIiIOi4ul3ivOBWWd6mIlYcUb2uzizssSY+mc6GH7jgOgG8EQ/eWwqau6mbBkpSCfPtum4LFZXoPjZboXtZ75S8nQU0OcgVRAQAAAABJRU5ErkJggg=="
+ },
+ "upper_description": "calm deep blue river water, a little silty, with a gentle current and soft ripples, seen from above",
+ "transition_description": "a narrow muddy bank where the river meets the meadow grass",
+ "transition_size": 0.0
+}

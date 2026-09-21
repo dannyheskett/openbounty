@@ -1,0 +1,20 @@
+{
+ "id": "troop_portrait_sagittarii",
+ "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Roman auxiliary archer of the sagittarii, a weathered soldier in a bronze Roman helmet with cheek guards and a small red crest, a mail shirt over a red tunic, the curved tip of a composite bow and the feathered arrows of a quiver over his shoulder, a legion camp with tents behind him",
+ "style": "rd_pro__default",
+ "width": 128,
+ "height": 128,
+ "seed": 7903,
+ "bypass_prompt_expansion": false,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  128,
+  128
+ ],
+ "reference_image_paths": [
+  "build/art/sagittarii/run01/01_raw.png"
+ ],
+ "_pack_path": "art/portraits/troop_sagittarii.png",
+ "_note": "Static troop portrait (2026-09-16), the Hastati portrait route whole: 128 still with the troop's own sprite as reference, resized whole to 96 (Lanczos) keeping the background, as Dan asked for every troop portrait."
+}

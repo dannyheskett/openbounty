@@ -1,0 +1,18 @@
+{
+  "id": "silvani",
+  "_note": "Prompt as written in ART-WORKLIST drew the bow already at full draw (run01), so the still now asks for the bow relaxed, upright at his side, unstrung, nothing drawn: the draw and the loose are the animation's travel. The troop style appends the full-length profile, game-sprite and magenta-background clauses. Animate at 96 without padding.",
+  "prompt": "a forest spirit archer in bark-toned robes with a leaf-patterned cloak and an antlered circlet, a longbow held relaxed and upright at his side in his left hand with the string slack and no arrow on it, his right hand empty at his side",
+  "style": "user__glory_of_rome_troops_bac676cd",
+  "width": 96,
+  "height": 96,
+  "seed": 5702,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": true,
+  "target": [
+    96,
+    96
+  ]
+}

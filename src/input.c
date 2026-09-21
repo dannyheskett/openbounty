@@ -1,6 +1,7 @@
 #include "input_host.h"
 #include "input.h"
-#include "raylib.h"
+#include "layout.h"
+#include "ob_types.h"
 
 #define GAMEPAD_ID 0
 #define GAMEPAD_AXIS_DEADZONE 0.5f
@@ -32,21 +33,56 @@ static void poll_direction(InputState *in) {
 // Gamepad input is additive to keyboard input; the pad doesn't disable
 // keys. If the pad isn't connected, IsGamepadAvailable returns false
 // and every check no-ops.
+// Pressed-edge d-pad or stick direction, for menus and the letter
+// selector. The stick counts once per engagement, not every frame.
+bool input_gamepad_dir(int *dx, int *dy) {
+    if (!input_pad_available()) return false;
+    int x = 0, y = 0;
+    if (input_pad_pressed(GAMEPAD_BUTTON_LEFT_FACE_LEFT))  x = -1;
+    if (input_pad_pressed(GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) x =  1;
+    if (input_pad_pressed(GAMEPAD_BUTTON_LEFT_FACE_UP))    y = -1;
+    if (input_pad_pressed(GAMEPAD_BUTTON_LEFT_FACE_DOWN))  y =  1;
+    static bool stick_was = false;
+    float ax = input_pad_axis(GAMEPAD_AXIS_LEFT_X);
+    float ay = input_pad_axis(GAMEPAD_AXIS_LEFT_Y);
+    bool engaged = (ax >  GAMEPAD_AXIS_DEADZONE || ax < -GAMEPAD_AXIS_DEADZONE ||
+                    ay >  GAMEPAD_AXIS_DEADZONE || ay < -GAMEPAD_AXIS_DEADZONE);
+    if (engaged && !stick_was) {
+        if (ax >  GAMEPAD_AXIS_DEADZONE) x =  1;
+        if (ax < -GAMEPAD_AXIS_DEADZONE) x = -1;
+        if (ay >  GAMEPAD_AXIS_DEADZONE) y =  1;
+        if (ay < -GAMEPAD_AXIS_DEADZONE) y = -1;
+    }
+    stick_was = engaged;
+    if (x || y) input_host_note_gamepad();
+    if (dx) *dx = x;
+    if (dy) *dy = y;
+    return x || y;
+}
+
+bool input_gamepad_confirm(void) {
+    if (!input_pad_available()) return false;
+    bool p = input_pad_pressed(GAMEPAD_BUTTON_RIGHT_FACE_DOWN);
+    if (p) input_host_note_gamepad();
+    return p;
+}
+
 static void poll_gamepad(InputState *in) {
-    if (!IsGamepadAvailable(GAMEPAD_ID)) return;
+    if (!input_pad_available()) return;
+    if (input_pad_any_pressed() != 0) input_host_note_gamepad();
 
     // Movement: d-pad first, fall back to left stick.
     int dx = 0, dy = 0;
-    if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_LEFT_FACE_LEFT))  dx = -1;
-    if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) dx =  1;
-    if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_LEFT_FACE_UP))    dy = -1;
-    if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_LEFT_FACE_DOWN))  dy =  1;
+    if (input_pad_pressed(GAMEPAD_BUTTON_LEFT_FACE_LEFT))  dx = -1;
+    if (input_pad_pressed(GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) dx =  1;
+    if (input_pad_pressed(GAMEPAD_BUTTON_LEFT_FACE_UP))    dy = -1;
+    if (input_pad_pressed(GAMEPAD_BUTTON_LEFT_FACE_DOWN))  dy =  1;
 
     if (dx == 0 && dy == 0) {
         // Stick: edge-trigger so one push = one step (matches keyboard).
         static bool stick_held = false;
-        float ax = GetGamepadAxisMovement(GAMEPAD_ID, GAMEPAD_AXIS_LEFT_X);
-        float ay = GetGamepadAxisMovement(GAMEPAD_ID, GAMEPAD_AXIS_LEFT_Y);
+        float ax = input_pad_axis(GAMEPAD_AXIS_LEFT_X);
+        float ay = input_pad_axis(GAMEPAD_AXIS_LEFT_Y);
         bool engaged = (ax >  GAMEPAD_AXIS_DEADZONE || ax < -GAMEPAD_AXIS_DEADZONE ||
                         ay >  GAMEPAD_AXIS_DEADZONE || ay < -GAMEPAD_AXIS_DEADZONE);
         if (engaged && !stick_held) {
@@ -65,20 +101,22 @@ static void poll_gamepad(InputState *in) {
     // frame so keyboard takes precedence on keyboard+pad systems.
     if (in->action != INPUT_ACTION_NONE) return;
 
-    if      (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_RIGHT_FACE_DOWN))   in->action = INPUT_ACTION_SEARCH;
-    else if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_RIGHT_FACE_LEFT))   in->action = INPUT_ACTION_CAST_SPELL;
-    else if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_RIGHT_FACE_UP))     in->action = INPUT_ACTION_END_WEEK;
-    else if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_LEFT_TRIGGER_1))    in->action = INPUT_ACTION_VIEW_ARMY;
-    else if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_RIGHT_TRIGGER_1))   in->action = INPUT_ACTION_VIEW_CHARACTER;
-    else if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_LEFT_TRIGGER_2))    in->action = INPUT_ACTION_FLY;
-    else if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_RIGHT_TRIGGER_2))   in->action = INPUT_ACTION_LAND;
-    else if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_MIDDLE_RIGHT))      in->action = INPUT_ACTION_VIEW_MAP;
-    else if (IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_MIDDLE_LEFT))       in->action = INPUT_ACTION_OPTIONS_MENU;
+    if      (input_pad_pressed(GAMEPAD_BUTTON_RIGHT_FACE_DOWN))   in->action = INPUT_ACTION_SEARCH;
+    else if (input_pad_pressed(GAMEPAD_BUTTON_RIGHT_FACE_LEFT))   in->action = INPUT_ACTION_CAST_SPELL;
+    else if (input_pad_pressed(GAMEPAD_BUTTON_RIGHT_FACE_UP))     in->action = INPUT_ACTION_END_WEEK;
+    else if (input_pad_pressed(GAMEPAD_BUTTON_LEFT_TRIGGER_1))    in->action = INPUT_ACTION_VIEW_ARMY;
+    else if (input_pad_pressed(GAMEPAD_BUTTON_RIGHT_TRIGGER_1))   in->action = INPUT_ACTION_VIEW_CHARACTER;
+    else if (input_pad_pressed(GAMEPAD_BUTTON_LEFT_TRIGGER_2))    in->action = INPUT_ACTION_FLY;
+    else if (input_pad_pressed(GAMEPAD_BUTTON_RIGHT_TRIGGER_2))   in->action = INPUT_ACTION_LAND;
+    else if (input_pad_pressed(GAMEPAD_BUTTON_MIDDLE_RIGHT))      in->action = INPUT_ACTION_VIEW_MAP;
+    else if (input_pad_pressed(GAMEPAD_BUTTON_MIDDLE_LEFT))       in->action = INPUT_ACTION_OPTIONS_MENU;
 }
 
 bool gamepad_pressed_cancel(void) {
-    if (!IsGamepadAvailable(GAMEPAD_ID)) return false;
-    return IsGamepadButtonPressed(GAMEPAD_ID, GAMEPAD_BUTTON_RIGHT_FACE_RIGHT);
+    if (!input_pad_available()) return false;
+    bool p = input_pad_pressed(GAMEPAD_BUTTON_RIGHT_FACE_RIGHT);
+    if (p) input_host_note_gamepad();
+    return p;
 }
 
 InputState input_poll(void) {
@@ -102,6 +140,7 @@ InputState input_poll(void) {
     else if (input_key_pressed(KEY_W))                 in.action = INPUT_ACTION_END_WEEK;
     else if (input_key_pressed(KEY_D))                 in.action = INPUT_ACTION_DISMISS_ARMY;
     else if (input_key_pressed(KEY_O))                 in.action = INPUT_ACTION_OPTIONS_MENU;
+    else if (CL_IS_MODERN && input_key_pressed(KEY_ESCAPE)) in.action = INPUT_ACTION_GAME_MENU;
     else if (input_key_pressed(KEY_N))                 in.action = INPUT_ACTION_NEW_CONTINENT;
     else if (input_key_pressed(KEY_KP_5))              in.action = INPUT_ACTION_REST;
     else if (ctrl && input_key_pressed(KEY_Q))         in.action = INPUT_ACTION_FAST_QUIT;

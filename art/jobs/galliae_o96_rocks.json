@@ -1,0 +1,18 @@
+{
+ "description": "dark grey granite rock, seen from above at a slight angle, lit from the north-west with a shaded front face on the south side, small shadow to the south-east, pixel art, transparent background",
+ "batches": [
+  [
+   "rounded granite boulder, cracked, shaded south face",
+   "jagged crag with a sheer cliff face at the front",
+   "rock ledge, flat top with a dark cliff face below it",
+   "tall rock tooth with heather at its foot"
+  ],
+  [
+   "broad rocky massif with moss and heather on top, cliff face at the front",
+   "pile of broken granite rocks and scree",
+   "low weathered boulder, moss on the top",
+   "split rock with a deep crevice, cliff face at the front"
+  ]
+ ],
+ "_note": "Galliae rocks (2026-09-19): the Italia o96_rocks call with the review-table wording. Output kept in art/primitives/galliae/rocks."
+}

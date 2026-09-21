@@ -14,7 +14,7 @@
 #include "views.h"            // views_gate_open / views_active
 #include "spells_adventure.h" // gate_state / gate_mode
 
-#define GATE_MAX 26          // A..Z
+#include <stdlib.h>
 
 GateMenuResult gate_menu_tick(Game *game, Map *map, Fog *fog) {
     (void)map;
@@ -27,12 +27,14 @@ GateMenuResult gate_menu_tick(Game *game, Map *map, Fog *fog) {
     if (gate_state != GATE_STATE_SELECT) return GATE_MENU_IDLE;
     gate_state = GATE_STATE_NONE;   // consumed: the view now drives the flow
 
-    GateDestination dests[GATE_MAX];
+    int cap = GameGateDestsMax(game);
+    GateDestination *dests = cap > 0 ? malloc((size_t)cap * sizeof *dests) : NULL;
+    if (!dests) return GATE_MENU_IDLE;
     int n = GameGateDestinations(game,
                                  gate_mode == 1 ? GATE_DEST_TOWN
                                                 : GATE_DEST_CASTLE,
-                                 dests, GATE_MAX);
-    if (n <= 0) return GATE_MENU_IDLE;   // cast fn already guards the none case
-    views_gate_open(dests, n, gate_mode == 1);
-    return GATE_MENU_ACTIVE;
+                                 dests, cap);
+    if (n > 0) views_gate_open(dests, n, gate_mode == 1);
+    free(dests);
+    return n > 0 ? GATE_MENU_ACTIVE : GATE_MENU_IDLE;   // cast fn already guards the none case
 }

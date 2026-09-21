@@ -1,0 +1,21 @@
+{
+  "id": "hero_sibylla_walk",
+  "prompt": "horse walking to the right, steady steps, rider still, smooth loop",
+  "style": "rd_advanced_animation__custom_action",
+  "width": 96,
+  "height": 96,
+  "seed": 7471,
+  "frames_duration": 4,
+  "return_spritesheet": true,
+  "input_image_path": "assets/glory-of-rome/art/classes/sibylla_hero.png",
+  "input_image_keep_alpha": true,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/classes/sibylla_walk_00..03.png",
+  "_note": "Class hero walk (2026-09-06): custom action on the class's mounted still, four frames, prompt expansion on, tag prompt. Chosen over the named walking action on a Legatus test: the legs step more clearly. Declared in the class's hero.walk; the flat array mirrors when facing west."
+}

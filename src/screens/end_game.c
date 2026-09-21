@@ -1,9 +1,16 @@
 #include "end_game.h"
+#include "gfx.h"
 #include "layout.h"
+#include "modern/mlayout.h"
+#include "modern/uikit.h"
+#include "resources.h"
+#include "touch.h"
+#include "ui.h"
 #include "palette.h"
 #include "bfont.h"
 #include "views.h"
-#include "raylib.h"
+#include "ob_types.h"
+#include "lattice.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -27,8 +34,29 @@ void screen_end_game_open(bool won, const char *body) {
     // renderer; the shell's per-frame sync pushes the view.
 }
 
+// Modern: a ceremony -- the ending picture at 2x at the left, the words
+// beside it, Continue along the foot.
+static void draw_modern(const Game *g, const Sprites *s) {
+    const ML_Rect r = ml_full();
+    uk_sheet();
+    UkRows rows = { { (g && g->res) ? g->res->banners.castle_continue : "" }, { true } };
+    int foot = uk_foot_rows(r, 1, 0, uk_rows_fn, &rows, TOUCH_LIST_PROMPT);
+    Texture2D img = s_won ? s->ending_win : s->ending_lose;
+    int iw = 0;
+    if (img.id && img.width > 0 && img.height > 0) {
+        int sc = 3;
+        while (sc > 1 && img.height * sc > foot - r.y) sc--;
+        iw = img.width * sc;
+        int ih = img.height * sc;
+        ui_blit(img, r.x, r.y, iw, ih);                     // flush with the top
+        lattice_band_v(r.x + iw, r.y, UK_BAND, foot - r.y);
+    }
+    int tx = r.x + iw + UK_BAND + UK_INSET;
+    uk_flow(tx, r.y + UK_INSET, r.x + r.w - UK_INSET - tx, tx, 0, foot - ML_PAD, s_body, PAL_CLR(WHITE));
+}
+
 void screen_end_game_draw(const Game *g, const Sprites *s) {
-    (void)g;
+    if (CL_IS_MODERN) { draw_modern(g, s); return; }
 
     // Layout matches OpenKB's win_game / lose_game (its game.c:4431):
     //   full = the map+sidebar area minus right chrome
@@ -42,13 +70,28 @@ void screen_end_game_draw(const Game *g, const Sprites *s) {
     //   body strings in game.json are authored pre-wrapped to 18
     //   chars per line, matching the original DOS layout (see
     //   OpenKB's data/free/endwin.txt for the canonical formatting).
-    int total_left  = CL_MAP_X;
+    // Fixed-size content: 18 columns of pre-wrapped text beside a fixed
+    // portrait. Sized from the content rect plus a sidebar, centred in the
+    // chrome interior -- the same rect the wide views use. Taking it from the
+    // pane would push the text to one edge and the portrait to the other with
+    // a field of blue between them. In legacy this is 288 wide at x=16, which
+    // is what it has always been.
+    int total_w     = CL_CONTENT_W + CL_SIDEBAR_W;
+    int total_left  = CL_FRAME_LEFT_W
+                    + ((CL_SCREEN_W - CL_FRAME_LEFT_W - CL_FRAME_RIGHT_W)
+                       - total_w) / 2;
     int total_top   = CL_MAP_Y;
-    int total_w     = CL_SCREEN_W - CL_MAP_X - CL_FRAME_RIGHT_W;
     int total_h     = CL_SCREEN_H - CL_MAP_Y - CL_FRAME_BOTTOM_H;
+    if (CL_IS_MODERN) {
+        // The full-screen layout, like every other detail view (REQ-430j).
+        ML_Rect fr = ml_full();
+        total_w = fr.w; total_left = fr.x; total_top = fr.y; total_h = fr.h;
+    }
 
-    // Paint full area DBLUE first (CS_ENDING background).
-    DrawRectangle(total_left, total_top, total_w, total_h, PAL_CLR(DBLUE));
+    // Black around it, then the panel itself (CS_ENDING background).
+    gfx_rect(CL_MAP_X, CL_MAP_Y, CL_SIDEBAR_X + CL_SIDEBAR_W - CL_MAP_X, CL_MAP_H,
+                  PAL_CLR(BLACK));
+    gfx_rect(total_left, total_top, total_w, total_h, PAL_CLR(DBLUE));
 
     // Text gets a small inset from the frame's top-left so the copy isn't
     // glued into the corner. The body is pre-wrapped to exactly 18 cols x
@@ -56,24 +99,27 @@ void screen_end_game_draw(const Game *g, const Sprites *s) {
     // the TEXT rectangle (it would wrap/clip). Instead we take it out of the
     // ending image: shrink the image by the margin so the text keeps its
     // full 18-col width AND the right edge stops short of the portrait.
-    const int MARGIN_L = 6;   // left inset (and image shrink)
-    const int MARGIN_T = 2;   // top inset (fits: 21 rows x 8 = 168 <= 170 - 2)
+    const int MARGIN_L = 6 * CL_UI;   // left inset (and image shrink)
+    const int MARGIN_T = 2 * CL_UI;   // top inset (21 rows of glyphs still fit)
 
-    // Right side: the ending image at native size, right-aligned, but pulled
-    // MARGIN_L to the right and narrowed by MARGIN_L so it clears the text.
+    // Right side: the ending image, right-aligned, but pulled MARGIN_L to the
+    // right and narrowed by MARGIN_L so it clears the text. Authored in the
+    // 320x200 design space, so its slot is its own size times CL_UI.
     Texture2D img = s_won ? s->ending_win : s->ending_lose;
-    int img_w = (img.id && img.width  > 0) ? img.width  : 0;
-    int img_h = (img.id && img.height > 0) ? img.height : 0;
+    int img_w = (img.id && img.width  > 0) ? img.width  * CL_UI : 0;
+    int img_h = (img.id && img.height > 0) ? img.height * CL_UI : 0;
     if (img_w > 0 && img_h > 0) {
         int draw_w = img_w - MARGIN_L;
         if (draw_w < 1) draw_w = img_w;
-        Rectangle src = { (float)(img_w - draw_w), 0,
-                          (float)draw_w, (float)img_h };
+        // Source is in texture space; the crop is the same fraction of it.
+        float src_x = (float)(img.width) * (float)(img_w - draw_w) / img_w;
+        Rectangle src = { src_x, 0,
+                          (float)img.width - src_x, (float)img.height };
         Rectangle dst = { (float)(total_left + total_w - draw_w),
                           (float)total_top,
                           (float)draw_w,
                           (float)img_h };
-        DrawTexturePro(img, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+        gfx_texture_draw(img, src, dst, WHITE);
     }
 
     // Text rectangle: full 18-col width, inset left by MARGIN_L (into the
@@ -89,6 +135,15 @@ void screen_end_game_draw(const Game *g, const Sprites *s) {
 
     const char *p = s_body;
     char line[160];
+    if (CL_IS_MODERN) {
+        // Modern: wrap by pixel width, keeping the authored line breaks.
+        while (*p && ty + line_h <= floor_y) {
+            if (bfont_take_line(&p, text_w, line, (int)sizeof line) <= 0) break;
+            bfont_draw(line, tx, ty, PAL_CLR(WHITE));
+            ty += line_h;
+        }
+        return;
+    }
     while (*p && ty + line_h <= floor_y) {
         int n = 0;
         // Read one logical line (up to '\n' or NUL).

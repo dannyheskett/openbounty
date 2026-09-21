@@ -10,8 +10,8 @@
 #include "ui.h"
 
 // %NAME%/%RANK%/%NEEDED%/%S% substitution for audience text.
-static void audience_substitute(const Game *game, int needed,
-                                const char *src, char *out, size_t out_sz) {
+void audience_substitute(const Game *game, int needed,
+                         const char *src, char *out, size_t out_sz) {
     if (out_sz == 0) return;
     char *dst = out;
     char *end = out + out_sz - 1;
@@ -73,20 +73,13 @@ void run_audience_dialog(Game *game, const ResCastle *rc) {
     }
 
     // Build the king's message (page 2) with substitutions applied.
-    audience_substitute(game, needed, branch ? branch : "",
+    audience_substitute(game, needed, branch,
                         pending_audience_message,
                         sizeof(pending_audience_message));
 
     // Open the fanfare dialog first (page 1).
     char fanfare[400];
-    audience_substitute(game, needed,
-                        rc->special.audience_intro[0]
-                            ? rc->special.audience_intro
-                            : "Trumpets announce your\n"
-                              "arrival with regal fanfare.\n\n"
-                              "King Maximus rises from his\n"
-                              "throne to greet you and\n"
-                              "proclaims:           (space)",
+    audience_substitute(game, needed, rc->special.audience_intro,
                         fanfare, sizeof(fanfare));
-    player_io_message(game, NULL, fanfare);
+    player_io_note_in_place(game, NULL, fanfare);
 }

@@ -10,6 +10,7 @@
 #include "map.h"
 #include "fog.h"
 #include "savegame.h"
+#include "step.h"      // GameStep
 #include "fixtures.h"
 #include "sprites.h"
 
@@ -35,14 +36,14 @@ static bool field_open(Field *fd) {
     // calloc'd Game has zero steps left, so the first step would roll the day
     // over and end_day would walk state this stripped-down world lacks.
     fx_init_game(fd->g, fd->res, FIXTURE_SEED);
-    fd->m->width = 64; fd->m->height = 64;
+    if (!MapAlloc(fd->m, 64, 64)) return false;
     strcpy(fd->g->position.zone, "continentia");
     fd->g->position.x = 32; fd->g->position.y = 32;
     return true;
 }
 
 static void field_close(Field *fd) {
-    free(fd->f); free(fd->m); free(fd->g);
+    FogFree(fd->f); free(fd->f); MapFree(fd->m); free(fd->m); GameFree(fd->g); free(fd->g);
     if (fd->res) { resources_free(fd->res); free(fd->res); }
 }
 
@@ -162,11 +163,14 @@ TEST old_saves_derive_facing_from_the_mirror_flag(void) {
 // sprites_anim_tex is a pure function over SpriteAnim, so it can be driven
 // with synthetic texture ids and no GPU. id is encoded facing*100 + frame.
 
+static Texture2D s_strips[OB_FACE_COUNT][16];   // each test holds one set at a time
+
 static void fill_anim(SpriteAnim *a, bool directional, const int *counts) {
     memset(a, 0, sizeof *a);
     a->directional = directional;
     for (int f = 0; f < OB_FACE_COUNT; f++) {
         a->frames[f] = counts[f];
+        a->tex[f] = counts[f] > 0 ? s_strips[f] : NULL;
         for (int i = 0; i < counts[f]; i++)
             a->tex[f][i].id = (unsigned)(f * 100 + i + 1);
     }

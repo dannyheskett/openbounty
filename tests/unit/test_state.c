@@ -53,8 +53,8 @@ TEST snapshot_is_deterministic_for_same_seed(void) {
     ASSERT_STR_EQ(s1, s2);
 
     free(s1); free(s2);
-    resources_free(r1); free(r1); free(g1); free(m1); free(f1);
-    resources_free(r2); free(r2); free(g2); free(m2); free(f2);
+    resources_free(r1); free(r1); GameFree(g1); free(g1); MapFree(m1); free(m1); FogFree(f1); free(f1);
+    resources_free(r2); free(r2); GameFree(g2); free(g2); MapFree(m2); free(m2); FogFree(f2); free(f2);
     PASS();
 }
 
@@ -78,8 +78,8 @@ TEST snapshot_differs_for_different_seed(void) {
     ASSERT(strcmp(s1, s2) != 0);
 
     free(s1); free(s2);
-    resources_free(r1); free(r1); free(g1); free(m1); free(f1);
-    resources_free(r2); free(r2); free(g2); free(m2); free(f2);
+    resources_free(r1); free(r1); GameFree(g1); free(g1); MapFree(m1); free(m1); FogFree(f1); free(f1);
+    resources_free(r2); free(r2); GameFree(g2); free(g2); MapFree(m2); free(m2); FogFree(f2); free(f2);
     PASS();
 }
 
@@ -99,7 +99,7 @@ TEST snapshot_includes_character_block(void) {
     ASSERT_STR_EQ("Test", nm->valuestring);
     cJSON_Delete(snap);
 
-    resources_free(r); free(r); free(g); free(m); free(f);
+    resources_free(r); free(r); GameFree(g); free(g); MapFree(m); free(m); FogFree(f); free(f);
     PASS();
 }
 

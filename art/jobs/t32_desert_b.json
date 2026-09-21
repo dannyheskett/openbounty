@@ -1,0 +1,25 @@
+{
+ "lower_description": "mossy meadow grass",
+ "tile_size": {
+  "width": 32,
+  "height": 32
+ },
+ "mode": "standard",
+ "shape_style": "round",
+ "enhance": false,
+ "view": "high top-down",
+ "outline": "lineless",
+ "shading": "medium shading",
+ "detail": "medium detail",
+ "text_guidance_scale": 8.0,
+ "seed": 152,
+ "lower_base_tile_id": "7be429ba-e876-432a-abb1-5c8bba59a877",
+ "lower_reference_image": {
+  "type": "base64",
+  "base64": "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABoUlEQVR4nO2Wz07jMBCHv7GTOKz5J6StVO19n2afhefjPfaIkBASIEAVW9qQhCb1HqK0lDht0h64ZCRLseVvPM7Y459cXv1xADihNmsCrDEkeY41hknyzjzNiaMAkfW8DduTVz5f969zsvKDrCgBmPzLEP9Ur/XhvaNlDm/JgjjQ/L15Ae2q6FEbO22zPvw6AHGrdnYW8vCYkuQFAOfW4FhuX3VPPvANaiWMxxU0+hlX/kUAt3P3ffmtiRWRxqF5ek7Rqtt56MI3/oBzbuO7dlBDxirKZXs6+vLeFHx1KCIr6NyaXUgvvhGAoDi1IQBl4dCBkGTF1l0fwnuTefcyI9bRqj99zzotvg/vDSBPltw+TcmKkuvbKbqt+rVYH74RQH11ZvMPknSBiTVHJuy8eF/eewY+318TdS/B+/A7vbc+Pl0D2sGrRm2X6tpMZ4vtsJN1O4BXjiWjk2NsVOXJRiGnP6J28KufA3klIjzP5tXD4YQkLygLx+9fF9goZHRyjFaKNF9sVLn64TmUH/TAoAcGPTDogUEPDHpg0APfrgf+AyR4zf6RvUm2AAAAAElFTkSuQmCC",
+  "format": "png"
+ },
+ "upper_description": "pale golden desert sand with soft low dunes",
+ "transition_description": "dry sandy earth with sparse tufts of grass",
+ "transition_size": 0.0
+}

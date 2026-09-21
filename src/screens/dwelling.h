@@ -35,6 +35,10 @@ void screen_dwelling_open(Game *g,
 
 void screen_dwelling_draw(const Game *g, const Sprites *s);
 
+// Modern dwelling screen: what the open dwelling offers. *troop_idx -1 = none;
+// returns the dwelling kind's name ("Lucus").
+const char *screen_dwelling_info(const Game *g, int *troop_idx, int *pop, int *cost, int *cap);
+
 // Refresh the cached pop/cost/gold/cap for the panel (called after a
 // successful purchase so the panel updates).
 void screen_dwelling_refresh(int dwelling_pop, int gold, int cap);

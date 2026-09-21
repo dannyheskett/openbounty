@@ -1,0 +1,25 @@
+{
+ "lower_description": "dry savanna grass, short and sun-scorched, dusty olive and khaki green with patches of pale straw",
+ "tile_size": {
+  "width": 32,
+  "height": 32
+ },
+ "mode": "standard",
+ "shape_style": "round",
+ "enhance": false,
+ "view": "high top-down",
+ "outline": "lineless",
+ "shading": "medium shading",
+ "detail": "medium detail",
+ "text_guidance_scale": 8.0,
+ "seed": 3153,
+ "lower_base_tile_id": "3309ecf2-1b0c-4379-85c8-1600cb48a6b8",
+ "lower_reference_image": {
+  "type": "base64",
+  "base64": "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAEAklEQVR4nJ1X23LiOBA9lmQuwcTB4OAkZDJTO1v7Yft1+xn7HzuVYQcSiAPE4MTYRvY++ILkG2RPFUXRkrpPX9QtlL//+jPudLroX41gL34BigIAQBwn34oCYzjG+nUBCdm+OmTnT4AAQBgG4IcwP2gMx/kGTbssGz5l/ARB07pHp9MFpRQEigIeRfhwHZjWvbSRUoq+biDwvfOMnonFfIoLTQePIhBjOMa7GySCNAqB74HzCPrAxOZ1AXfnHEMax+WPAJW1pAhWEaeMIvA9mOMJiLOx0dNacDZ2vqHbuwSlBECSnpNISWjaJcLQx3q1TGSZ8QKJTrsDf78HADAAoITki5xHx3oAwDk/TQCAOZ4AgBytAsEM+32S0rX9lBAoIqv49esiYX9GRXvvW1lQdy6TxzEM8xbk+uYLCGHoXmhwNnYe+gxSPhtwKKZKTIEA8VbNpo8gz/OfCA8Bur3L0mYA5ftfg72/h+tuoaptmUQBrruFMbJgjCwcDjFItult9YIgCEsHPoU4Rl8fnNwDAJSpYExJayCO0e50EIZ+uRN+wjgUBevVEpRS6APzeBsKyKLabjPkCXfdrZQzY2Q1G6xqTKkxHkVnO3GsuEJjWa+WzcbrlKc67OVTc9tO10j16gkIg6oOxdtUp4OUlIi//+/EyzyvIpqtpevk08V2DsQZUdEVs64JiBGoq/5zp6CQb84jcB7JhATYy5mQgiojDdMuw83km/z77isQx5JcIiHaybqkVISfTMXL878wrXtQSnMZpRSz6Q+pALNomNa9bCN1jtR62VSMioLrmy9gjIEQBs4jzKY/0L3QoF8NoPX1fOvk4Te0Wqo0YUXU3hWxUKpIPM8ewVSGq+F1nQoAgL/3oA9MuS8IdUckoWAkZ1xVnGkOf/38p9E4kPR8Z2Oj1VJBCQEl5Dhh47giAimR/IVUlyJBZt09AEgeI+7OwSEMQCmBdfeA2fQRPIrAOYc+MGGYt1KXrUyBylrQB+ZJ75KWO4P3vsXX738kHgtFKepT1TYC38Pb6kUiT4peGsMxwkOQsBRTUrxSAgl35+TGuxcamNqC1tfhvW/BGEEY+ggPAdydg74+kAYdKSqzl0+lLmaMLJjjW1BKQSk9KhCKae/tm6OW9ghnY0spYMV+TSkpTbvn+QwAoGm9Wv1r+wkAMJ+/4fvvk9K61texc9bHUV0VAbE6cygKGCOYPHxDXx8cn90Fkpli0Xj2TuQ8Qqvdhffhloix3Ps4lt9/Qv4pJVjMp6CMStfSGFnSmaJ3nEd5Vyy9L/JpWPQ4Q0FWnO+lYZPud90tvA8X3d4lwkNQcqZIovJ/wTmgjJa9qnmKN01YAkUpTbbSwbqnVY1iHkXSyG3Cf46vE+VXOsxhAAAAAElFTkSuQmCC"
+ },
+ "upper_description": "pale cream-white sand dunes with soft rippled crests, no grass",
+ "transition_description": "dry sandy earth with sparse tufts of grass",
+ "transition_size": 0.0,
+ "_note": "Africa desert (2026-09-19): t32_desert_203 chained to the Africa grass (3309ecf2), descriptions as in the review table. Second run: the first ('warm orange-gold Saharan sand with soft rippled dunes', seed 3103) missed; kept in art/primitives/africa/desert_miss. Next run: the previous ('deep orange Saharan sand dunes with rippled crests, no grass', seed 3113: flat saturated orange) is kept in art/primitives/africa/desert_orange. Only the desert wording and seed changed. Output kept in art/primitives/africa/desert."
+}

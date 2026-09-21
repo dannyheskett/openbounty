@@ -1,0 +1,20 @@
+{
+  "id": "striges_attack",
+  "_note": "Re-run 2026-09-20 on the reworked still (striges.json seed 5604, run03). The 2026-09-05 loop animated a still scaled to 66% because that one spanned 94 of 96 columns; the new still is 77x64 with its wings folded, so it is animated at full size with no padding like the recent troops. The blur clause is the lesson from the baleares loop. run02: run01 pounced well but dropped the whole body nearly 20px on the last frame (top edge rows 10, 11, 10, 28), so the creature bobs against its cell; the line now holds the head at one height and says draw back rather than spring.",
+  "prompt": "it lunges forward to the right, the way it faces, with both taloned feet thrust out in front of it, raking downward, the wings beating back behind it, then it draws back to where it started, the head stays at the same height above the ground the whole time and the pale human face keeps facing right, smooth loop, no motion blur and no streaks",
+  "style": "rd_advanced_animation__custom_action",
+  "width": 96,
+  "height": 96,
+  "seed": 5606,
+  "frames_duration": 4,
+  "return_spritesheet": true,
+  "input_image_path": "build/art/striges/run03/01_raw.png",
+  "input_image_keep_alpha": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ]
+}

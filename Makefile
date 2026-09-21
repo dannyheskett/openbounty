@@ -63,7 +63,19 @@ DEMO_OBJ     := $(patsubst %.c,$(DEMO_OBJ_DIR)/%.o,$(DEMO_SRC))
 AUTOPLAY_SRC := autoplay/autoplay.c autoplay/planner.c autoplay/goals.c autoplay/prereq.c autoplay/baltree.c autoplay/search.c autoplay/primitives.c autoplay/exec_move.c autoplay/exec_fight.c autoplay/exec_recruit.c autoplay/exec_loc.c autoplay/recording.c autoplay/worldsnap.c autoplay/plan.c autoplay/exec_replay.c autoplay/exec_ledger.c autoplay/diag.c
 AUTOPLAY_OBJ_DIR := build/$(BUILD)/objs/autoplay
 AUTOPLAY_OBJ     := $(patsubst %.c,$(AUTOPLAY_OBJ_DIR)/%.o,$(AUTOPLAY_SRC))
-SHELL_SRC  := src/main.c src/layout.c src/present.c src/shell_menu.c src/shell_tempdeath.c src/shell_weekend.c src/shell_audience.c src/shell_cheats.c src/shell_gate.c src/shell_fastquit.c src/shell_frame.c src/shell_promptdispatch.c src/shell_actions.c src/shell_demo.c src/shell_autoplay.c src/shell_earlyexit.c src/assets.c src/pack_select.c src/recorder.c src/audio.c src/encode_mp4.c src/encode_mp4_h264.c src/encode_mp4_mux.c src/encode_dialog.c src/bfont.c src/tile_cache.c src/sprites.c src/views.c src/ui.c src/screenshot.c src/combat_loop.c src/combat_render.c src/combat_replay.c src/palette.c src/chrome.c src/hud.c src/map_render.c src/overlay.c src/views_render.c src/input.c src/input_host.c src/frame_host.c src/prompt.c src/startup.c src/end_cartoon.c src/screens/home_castle.c src/screens/recruit_soldiers.c src/screens/own_castle.c src/screens/dwelling.c src/screens/alcove.c src/screens/end_game.c
+SHELL_SRC  := src/main.c src/plat_android.c src/plat_ios.c src/safe_area.c src/gfx_raylib.c src/layout.c src/present.c src/shell_menu.c src/shell_tempdeath.c src/shell_weekend.c src/shell_audience.c src/shell_cheats.c src/shell_gate.c src/shell_fastquit.c src/shell_frame.c src/shell_promptdispatch.c src/shell_actions.c src/shell_demo.c src/shell_autoplay.c src/shell_earlyexit.c src/shell_gallery.c src/assets.c src/pack_select.c src/recorder.c src/audio.c src/audio_raylib.c src/encode_mp4.c src/encode_mp4_h264.c src/encode_mp4_mux.c src/encode_dialog.c src/bfont.c src/text.c src/font_raylib.c src/select.c src/textsel.c src/tilevar.c src/tile_cache.c src/sprites.c src/views.c src/ui.c src/screenshot.c src/combat_loop.c src/combat_render.c src/combat_replay.c src/palette.c src/chrome.c src/lattice.c src/hud.c src/map_render.c src/overlay.c src/legacy/overlay.c src/modern/overlay.c src/views_render.c src/legacy/views_render.c src/modern/views_render.c src/legacy/prompt.c src/modern/prompt.c src/modern/mlayout.c src/modern/castle.c src/modern/mlist.c src/modern/saveslots.c src/modern/gamemenu.c src/modern/location.c src/modern/uikit.c src/input.c src/input_host.c src/touch.c src/frame_host.c src/prompt.c src/startup.c src/end_cartoon.c src/screens/home_castle.c src/screens/recruit_soldiers.c src/screens/own_castle.c src/screens/dwelling.c src/screens/alcove.c src/screens/end_game.c
+# plat_android.c is NOT here: its non-Android branch is two no-ops, and
+# main.c calls them on every platform.
+IOS_SKIP := src/gfx_raylib.c src/frame_host.c src/input_host.c \
+            src/audio_raylib.c src/font_raylib.c \
+            src/recorder.c src/encode_mp4.c src/encode_mp4_h264.c \
+            src/encode_mp4_mux.c src/encode_dialog.c src/screenshot.c \
+            src/shell_gallery.c src/pack_select.c
+IOS_CHECK_SRC := $(filter-out $(IOS_SKIP),$(SHELL_SRC))
+# The iOS backends' plain-C half. Checked with the shell files below, so a
+# break in them is caught here rather than on a macOS runner ten minutes later.
+IOS_OWN_C     := ios/host_ios.c ios/image_ios.c ios/font_ios.c ios/vorbis_impl.c
+
 TOOL_SRC   := tools/extract.c tools/extract_io.c tools/extract_unpack.c tools/extract_lzw.c tools/extract_vga.c tools/extract_png.c tools/extract_chrome.c tools/extract_gamejson.c
 VENDOR_SRC := third_party/cjson/cJSON.c third_party/miniz/miniz.c
 
@@ -90,11 +102,13 @@ PACKS := $(addprefix $(PACK_DIR)/,$(addsuffix .openbounty,$(PACK_NAMES)))
 OUT_TEST      := build/openbounty-test
 OUT_ENGLIB    := build/libobengine.a
 LIBTEST_STAMP := build/libtest-pass.stamp
+# The iOS purity check (rule further down, next to the library-boundary one).
+IOS_CHECK_STAMP := build/ios-purity.stamp
 
 # Default build: compile + link the game and its asset packs, plus the
 # library-boundary check (engine + demo + autoplay must link with only
 # -lm -lpthread). No test binary, no test run, use `make test` for those.
-all: $(OUT) $(PACKS) $(LIBTEST_STAMP)
+all: $(OUT) $(PACKS) $(LIBTEST_STAMP) $(IOS_CHECK_STAMP)
 
 # Generate build/version.h from $(OPENBOUNTY_VERSION). Marked .PHONY-style
 # (FORCE prereq) so it always runs, the cmp/mv inside only rewrites the
@@ -131,9 +145,15 @@ $(OUT): $(SHELL_OBJ) $(TOOL_OBJ) $(DEMO_OBJ) $(AUTOPLAY_OBJ) $(OUT_ENGLIB) build
 $(PACK_DIR):
 	mkdir -p $(PACK_DIR)
 
+# The binary that zips a pack. Normally the native dev build, but a target
+# whose host cannot build that one overrides it: the iOS job runs on macOS,
+# where the default build's Linux link flags (-lX11, -lrt) do not apply, so it
+# passes PACK_TOOL=build/openbounty-mac after `make mac`.
+PACK_TOOL ?= $(OUT)
+
 define PACK_RULE
-$(PACK_DIR)/$(1).openbounty: $$(shell find assets/$(1) -type f \! -name '*.xcf' \! -name '*.psd' \! -name '*:Zone.Identifier' 2>/dev/null) $(OUT) | $(PACK_DIR)
-	./$(OUT) --pack-dir assets/$(1) $(PACK_DIR)/$(1).openbounty
+$(PACK_DIR)/$(1).openbounty: $$(shell find assets/$(1) -type f \! -name '*.xcf' \! -name '*.psd' \! -name '*:Zone.Identifier' 2>/dev/null) $(PACK_TOOL) | $(PACK_DIR)
+	./$(PACK_TOOL) --pack-dir assets/$(1) $(PACK_DIR)/$(1).openbounty
 endef
 $(foreach pn,$(PACK_NAMES),$(eval $(call PACK_RULE,$(pn))))
 
@@ -276,37 +296,453 @@ WEB_CFLAGS := -std=c99 -Wall -Wextra -O2 -DPLATFORM_WEB \
 #   growth never fired -- so 64 MiB is 2x headroom.
 # -lidbfs.js provides the IDBFS the shell mounts at /saves so saves survive
 #   a page reload (engine/savepath.c's __EMSCRIPTEN__ branch).
-# --preload-file bakes the pack into openbounty.data at the fixed path the
-#   shell passes via --pack. The pack is embedded, never redistributed as a
-#   loose .openbounty file, so the release workflow's asset guard is
-#   unaffected -- and `web` is deliberately NOT part of `dist`.
-WEB_PACK    := $(PACK_DIR)/kings-bounty.openbounty
+# A wasm module embeds its pack, so there is one build PER PACK, each in its
+#   own build/web/<pack>/ directory: --preload-file bakes that pack into
+#   openbounty.data and the shell passes the matching path via --pack. The pack
+#   is embedded, never redistributed as a loose .openbounty file, so the release
+#   workflow's asset guard is unaffected -- and `web` is deliberately NOT part
+#   of `dist`.
 WEB_LDFLAGS := -L$(RAYLIB_WEB)/lib -lraylib -lidbfs.js \
                -sUSE_GLFW=3 -sASYNCIFY -sINITIAL_MEMORY=67108864 \
                -sSTACK_SIZE=8388608 -sFORCE_FILESYSTEM \
-               -sEXPORTED_RUNTIME_METHODS=FS,IDBFS,addRunDependency,removeRunDependency \
-               --preload-file $(WEB_PACK)@/assets/kings-bounty.openbounty \
-               --shell-file web/shell.html
+               -sEXPORTED_RUNTIME_METHODS=FS,IDBFS,addRunDependency,removeRunDependency
 
-OUT_WEB := build/web/openbounty.html
+# The packs that get a web build. King's Bounty is local-only: its pack is
+# DOS-extracted and copyright-restricted, so only Glory of Rome is packaged by
+# dist-web. Both are built by `make web` so CI exercises each.
+WEB_PACK_NAMES := kings-bounty glory-of-rome
+WEB_OUTS       := $(foreach p,$(WEB_PACK_NAMES),build/web/$(p)/openbounty.html)
+OUT_WEB_ROME   := build/web/glory-of-rome/openbounty.html
 
-web: $(OUT_WEB)
+web: $(WEB_OUTS)
+web-kings-bounty: build/web/kings-bounty/openbounty.html
+web-glory-of-rome: $(OUT_WEB_ROME)
 
-$(OUT_WEB): $(SRC) web/shell.html $(WEB_PACK) build/version.h Makefile
-	@command -v $(EMCC) >/dev/null 2>&1 || { \
+# $(call WEB_RULE,<pack-name>) -- one emcc link per pack. The shell is copied
+# per pack with @@PACK@@ replaced by the path --preload-file maps it to, so the
+# two builds never share a file and cannot pick up each other's pack.
+define WEB_RULE
+build/web/$(1)/openbounty.html: $$(SRC) web/shell.html $$(PACK_DIR)/$(1).openbounty build/version.h Makefile
+	@command -v $$(EMCC) >/dev/null 2>&1 || { \
 	  echo "make web: emcc not on PATH."; \
 	  echo "  source third_party/emsdk/emsdk_env.sh"; exit 1; }
-	@test -f $(RAYLIB_WEB)/lib/libraylib.a || { \
-	  echo "make web: missing $(RAYLIB_WEB)/lib/libraylib.a."; \
+	@test -f $$(RAYLIB_WEB)/lib/libraylib.a || { \
+	  echo "make web: missing $$(RAYLIB_WEB)/lib/libraylib.a."; \
 	  echo "  ./scripts/build_raylib_web.sh"; exit 1; }
-	@mkdir -p build/web
-	$(EMCC) $(WEB_CFLAGS) $(SRC) -o $(OUT_WEB) $(WEB_LDFLAGS)
+	@mkdir -p build/web/$(1)
+	sed 's|@@PACK@@|/assets/$(1).openbounty|g' web/shell.html > build/web/$(1)/shell.html
+	$$(EMCC) $$(WEB_CFLAGS) $$(SRC) -o $$@ $$(WEB_LDFLAGS) \
+	    --preload-file $$(PACK_DIR)/$(1).openbounty@/assets/$(1).openbounty \
+	    --shell-file build/web/$(1)/shell.html
+endef
+$(foreach p,$(WEB_PACK_NAMES),$(eval $(call WEB_RULE,$(p))))
 
-# Serve the built game locally. Browsers refuse to fetch the .wasm/.data
-# over file://, so a real HTTP server is required to run it at all.
-web-serve: $(OUT_WEB)
-	@echo "OpenBounty: http://localhost:8080/openbounty.html"
+# Serve the built games locally. Browsers refuse to fetch the .wasm/.data
+# over file://, so a real HTTP server is required to run them at all.
+web-serve: $(WEB_OUTS)
+	@for p in $(WEB_PACK_NAMES); do \
+	  echo "$$p: http://localhost:8080/$$p/openbounty.html"; \
+	done
 	@cd build/web && python3 -m http.server 8080
+
+# ---------------------------------------------------------------------------
+# Android build (NativeActivity APK, no Gradle). CI-only: needs the NDK + SDK
+# build-tools, both provided by the setup-android action. Mirrors raylib's
+# upstream Makefile.Android flow: cross-compile the game + the NDK's
+# native_app_glue into libgloryofrome.so, then package + sign an APK with
+# aapt / zipalign / apksigner.
+#
+# MOBILE SHIPS GLORY OF ROME ONLY. The pack goes into the APK's assets/ and
+# src/plat_android.c opens it from there; there is no pack discovery, no
+# picker, and King's Bounty (DOS-extracted, copyright-restricted) is never
+# packaged.
+#
+# Requires env: ANDROID_NDK, ANDROID_SDK_ROOT.
+# ---------------------------------------------------------------------------
+ANDROID_API          ?= 24
+# The shipped ABI. arm64-v8a is every Android phone Play still serves, and is
+# what the APK and the AAB carry. It is overridable for one reason: the CI
+# emulator smoke test runs on x86_64 runners and needs an x86_64 APK, which is
+# built separately and never shipped.
+ANDROID_ABI          ?= arm64-v8a
+ANDROID_BUILD_TOOLS  ?= 36.0.0
+ANDROID_PLATFORM_VER ?= 36
+
+ANDROID_APP_NAME := gloryofrome
+ANDROID_PACK     := glory-of-rome
+
+# versionCode must be a monotonically increasing integer for Play uploads; drive
+# it off the release number (unique + monotonic). Clamp to >=1 for local builds
+# where OPENBOUNTY_VERSION is 0 (no release tags yet). versionName is the
+# human-facing string. Both are injected at package time (aapt/aapt2 flags), so
+# the manifest values are just fallbacks.
+ANDROID_VERSION_CODE ?= $(OPENBOUNTY_VERSION)
+ifeq ($(ANDROID_VERSION_CODE),0)
+ANDROID_VERSION_CODE := 1
+endif
+ANDROID_VERSION_NAME ?= 1.0.$(ANDROID_VERSION_CODE)
+
+RAYLIB_ANDROID := third_party/raylib-install-android/$(ANDROID_ABI)
+
+ANDROID_TOOLCHAIN := $(ANDROID_NDK)/toolchains/llvm/prebuilt/linux-x86_64
+# The NDK names its compiler after the target triple, which is not the ABI
+# name, so the two have to be mapped.
+ANDROID_TRIPLE_arm64-v8a   := aarch64-linux-android
+ANDROID_TRIPLE_x86_64      := x86_64-linux-android
+ANDROID_TRIPLE_armeabi-v7a := armv7a-linux-androideabi
+ANDROID_TRIPLE_x86         := i686-linux-android
+ANDROID_TRIPLE    := $(ANDROID_TRIPLE_$(ANDROID_ABI))
+ifeq ($(ANDROID_TRIPLE),)
+$(error unknown ANDROID_ABI "$(ANDROID_ABI)")
+endif
+ANDROID_CC        := $(ANDROID_TOOLCHAIN)/bin/$(ANDROID_TRIPLE)$(ANDROID_API)-clang
+NATIVE_APP_GLUE   := $(ANDROID_NDK)/sources/android/native_app_glue
+
+ANDROID_SDK_BT := $(ANDROID_SDK_ROOT)/build-tools/$(ANDROID_BUILD_TOOLS)
+ANDROID_JAR    := $(ANDROID_SDK_ROOT)/platforms/android-$(ANDROID_PLATFORM_VER)/android.jar
+
+# The whole game, unchanged: every translation unit the desktop build has.
+# Trimming the desktop-only subsystems (recorder, gallery, demo, autoplay,
+# extractor) needs stubs for what main.c calls, which is a separate change --
+# correctness first, size later.
+ANDROID_SRC     := $(SRC)
+ANDROID_CFLAGS  := -std=c99 -Wall -Wextra -O2 -DPLATFORM_ANDROID -fPIC \
+                   -I$(RAYLIB_ANDROID)/include -I$(NATIVE_APP_GLUE) \
+                   -I$(MINIH264_INC) -I$(MINIMP4_INC) \
+                   -Isrc -Iengine/include -Idemo -Iautoplay -Itools -Ibuild \
+                   -Ithird_party/cjson -Ithird_party/miniz
+# raylib wraps fopen at link time (-Wl,--wrap=fopen) so file access routes
+# through the Android asset manager; libraylib.a references __real_fopen, which
+# only exists when this flag is present. Without it, dlopen of the .so fails at
+# launch with "cannot locate symbol __real_fopen". (The pack itself does not
+# rely on the wrap -- see src/plat_android.c.)
+#
+# -z max-page-size=16384 gives the .so 16 KB-aligned LOAD segments. Google Play
+# requires 16 KB page-size support for apps targeting Android 15+; NDK r26's
+# linker still defaults to 4 KB, so we set it explicitly.
+ANDROID_LDFLAGS := -shared -L$(RAYLIB_ANDROID)/lib -lraylib \
+                   -Wl,--wrap=fopen \
+                   -Wl,-z,max-page-size=16384,-z,common-page-size=16384 \
+                   -llog -landroid -lEGL -lGLESv2 -lOpenSLES -lm -lc -ldl
+
+ANDROID_OBJ_DIR := build/obj-android
+# Object paths mirror the source tree: src/overlay.c, src/legacy/overlay.c and
+# src/modern/overlay.c are three different files with one basename.
+ANDROID_OBJ     := $(patsubst %.c,$(ANDROID_OBJ_DIR)/%.o,$(ANDROID_SRC)) \
+                   $(ANDROID_OBJ_DIR)/native_app_glue.o
+
+ANDROID_APK_DIR  := build/android
+ANDROID_LIB      := $(ANDROID_APK_DIR)/lib/$(ANDROID_ABI)/lib$(ANDROID_APP_NAME).so
+ANDROID_ASSETS   := build/android-assets
+ANDROID_APK      := build/$(ANDROID_APP_NAME).apk
+ANDROID_KEYSTORE ?= build/debug.keystore
+
+ANDROID_JAVA_SRC := android/java/com/danheskett/gloryofrome/GloryOfRomeActivity.java
+ANDROID_DEX      := build/dex/classes.dex
+JAVAC            ?= javac
+
+android: $(ANDROID_APK)
+
+# native_app_glue is vendored NDK source (not ours); it trips -Wextra's
+# unused-parameter, so build this one object without it to keep the log clean.
+$(ANDROID_OBJ_DIR)/native_app_glue.o: $(NATIVE_APP_GLUE)/android_native_app_glue.c
+	@mkdir -p $(dir $@)
+	$(ANDROID_CC) $(ANDROID_CFLAGS) -Wno-unused-parameter -c $< -o $@
+
+# build/version.h is generated (main.c's --version includes it), so every
+# Android object waits on it exactly as the native objects do.
+$(ANDROID_OBJ_DIR)/%.o: %.c build/version.h
+	@mkdir -p $(dir $@)
+	$(ANDROID_CC) $(ANDROID_CFLAGS) -MMD -MP -c $< -o $@
+
+$(ANDROID_LIB): $(ANDROID_OBJ)
+	@mkdir -p $(dir $@)
+	$(ANDROID_CC) $(ANDROID_OBJ) -o $@ $(ANDROID_LDFLAGS)
+
+# The pack, staged where aapt's -A expects it. Built by the normal pack rule.
+$(ANDROID_ASSETS)/$(ANDROID_PACK).openbounty: $(PACK_DIR)/$(ANDROID_PACK).openbounty
+	@mkdir -p $(ANDROID_ASSETS)
+	cp $< $@
+
+# Compile GloryOfRomeActivity.java against the platform jar, then dex it.
+# -source/-target 8 keeps the bytecode dex-friendly; android.jar on the
+# classpath resolves the framework APIs.
+$(ANDROID_DEX): $(ANDROID_JAVA_SRC)
+	@rm -rf build/java-classes && mkdir -p build/java-classes $(dir $@)
+	$(JAVAC) -source 1.8 -target 1.8 -Xlint:-options \
+	    -classpath $(ANDROID_JAR) -d build/java-classes $(ANDROID_JAVA_SRC)
+	$(ANDROID_SDK_BT)/d8 --min-api $(ANDROID_API) --lib $(ANDROID_JAR) \
+	    --output build/dex build/java-classes/com/danheskett/gloryofrome/*.class
+
+# Throwaway debug keystore for signing. Real distributable builds sign with a
+# keystore supplied from a CI secret instead.
+$(ANDROID_KEYSTORE):
+	@mkdir -p $(dir $@)
+	keytool -genkeypair -keystore $@ -storepass android -keypass android \
+	    -alias $(ANDROID_APP_NAME) -keyalg RSA -keysize 2048 -validity 10000 \
+	    -dname "CN=Glory of Rome, O=OpenBounty, C=US"
+
+$(ANDROID_APK): $(ANDROID_LIB) $(ANDROID_DEX) $(ANDROID_KEYSTORE) \
+                $(ANDROID_ASSETS)/$(ANDROID_PACK).openbounty \
+                android/AndroidManifest.xml android/res/values/styles.xml
+	# -S compiles android/res (the fullscreen/cutout theme); -A adds the pack.
+	$(ANDROID_SDK_BT)/aapt package -f -M android/AndroidManifest.xml \
+	    -S android/res -A $(ANDROID_ASSETS) -I $(ANDROID_JAR) \
+	    --version-code $(ANDROID_VERSION_CODE) --version-name $(ANDROID_VERSION_NAME) \
+	    -F build/$(ANDROID_APP_NAME).unaligned.apk
+	# Store the native lib at lib/<abi>/ inside the APK (path relative to cwd).
+	(cd $(ANDROID_APK_DIR) && $(ANDROID_SDK_BT)/aapt add \
+	    ../../build/$(ANDROID_APP_NAME).unaligned.apk lib/$(ANDROID_ABI)/lib$(ANDROID_APP_NAME).so)
+	# Store classes.dex at the APK root (path relative to cwd = build/dex).
+	(cd build/dex && $(ANDROID_SDK_BT)/aapt add \
+	    ../$(ANDROID_APP_NAME).unaligned.apk classes.dex)
+	$(ANDROID_SDK_BT)/zipalign -f 4 \
+	    build/$(ANDROID_APP_NAME).unaligned.apk build/$(ANDROID_APP_NAME).aligned.apk
+	$(ANDROID_SDK_BT)/apksigner sign --ks $(ANDROID_KEYSTORE) \
+	    --ks-pass pass:android --key-pass pass:android \
+	    --out $@ build/$(ANDROID_APP_NAME).aligned.apk
+	@rm -f build/$(ANDROID_APP_NAME).unaligned.apk build/$(ANDROID_APP_NAME).aligned.apk
+	@echo "[android] built $@"
+
+-include $(ANDROID_OBJ:.o=.d)
+
+# ---------------------------------------------------------------------------
+# Android App Bundle (.aab) for Google Play. Play only accepts AABs for new
+# apps, and the legacy `aapt` (v1) above cannot emit one, so this path uses
+# `aapt2` (proto resources) + `bundletool`. Kept fully separate from the
+# sideload APK target: same libgloryofrome.so and the same pack, different
+# packaging + a real upload key. Signed with the upload key; Google's Play App
+# Signing re-signs the delivered APKs, so this signature only has to satisfy
+# the Play upload check.
+#
+# Signing defaults to the throwaway debug keystore so `make android-play`
+# works locally to exercise the pipeline; CI overrides PLAY_* with the real
+# upload keystore (from a secret) to produce an uploadable bundle.
+# ---------------------------------------------------------------------------
+ANDROID_AAB        := build/$(ANDROID_APP_NAME).aab
+BUNDLETOOL_VERSION ?= 1.17.2
+BUNDLETOOL         ?= build/bundletool.jar
+# Checksum of bundletool-all-$(BUNDLETOOL_VERSION).jar. Bump both together.
+BUNDLETOOL_SHA256  ?= 2d4ad908faea64047c1cc9cb747e6aa667c6ab192e09607bd16b67246a8cd6ae
+
+PLAY_KEYSTORE   ?= $(ANDROID_KEYSTORE)
+PLAY_KEY_ALIAS  ?= $(ANDROID_APP_NAME)
+PLAY_STORE_PASS ?= android
+PLAY_KEY_PASS   ?= android
+
+android-play: $(ANDROID_AAB)
+
+# Downloaded to .tmp and renamed only after the checksum matches. The rename
+# matters as much as the check: this jar is run with `java -jar` in the same job
+# that has just decoded the Play upload keystore to disk, and leaving a rejected
+# download at $@ would let the next run's existence test accept it unverified.
+$(BUNDLETOOL):
+	@mkdir -p $(dir $@)
+	curl -fsSL -o $@.tmp \
+	    https://github.com/google/bundletool/releases/download/$(BUNDLETOOL_VERSION)/bundletool-all-$(BUNDLETOOL_VERSION).jar
+	echo "$(BUNDLETOOL_SHA256)  $@.tmp" | sha256sum -c - || { rm -f $@.tmp; exit 1; }
+	mv $@.tmp $@
+
+# Exported rather than passed on the command line, so the passwords reach
+# jarsigner through the environment and appear in neither the build log nor the
+# process table.
+$(ANDROID_AAB): export PLAY_STORE_PASS_ENV = $(PLAY_STORE_PASS)
+$(ANDROID_AAB): export PLAY_KEY_PASS_ENV   = $(PLAY_KEY_PASS)
+$(ANDROID_AAB): $(ANDROID_LIB) $(ANDROID_DEX) $(BUNDLETOOL) $(PLAY_KEYSTORE) \
+                $(ANDROID_ASSETS)/$(ANDROID_PACK).openbounty \
+                android/AndroidManifest.xml android/res/values/styles.xml
+	@rm -rf build/aab && mkdir -p build/aab/module/manifest \
+	    build/aab/module/lib/$(ANDROID_ABI) build/aab/module/dex \
+	    build/aab/module/assets
+	# Compile android/res, then link into a *protobuf* APK (bundletool's input).
+	$(ANDROID_SDK_BT)/aapt2 compile --dir android/res -o build/aab/res.zip
+	$(ANDROID_SDK_BT)/aapt2 link --proto-format -o build/aab/proto.apk \
+	    -I $(ANDROID_JAR) --manifest android/AndroidManifest.xml \
+	    -R build/aab/res.zip --auto-add-overlay \
+	    --version-code $(ANDROID_VERSION_CODE) --version-name $(ANDROID_VERSION_NAME)
+	# Re-lay the proto APK into bundletool's base-module layout, add the .so,
+	# the dex and the pack.
+	cd build/aab && unzip -qo proto.apk -d proto
+	mv build/aab/proto/AndroidManifest.xml build/aab/module/manifest/AndroidManifest.xml
+	mv build/aab/proto/resources.pb        build/aab/module/resources.pb
+	mv build/aab/proto/res                 build/aab/module/res
+	cp $(ANDROID_LIB) build/aab/module/lib/$(ANDROID_ABI)/lib$(ANDROID_APP_NAME).so
+	cp $(ANDROID_DEX) build/aab/module/dex/classes.dex
+	cp $(ANDROID_ASSETS)/$(ANDROID_PACK).openbounty build/aab/module/assets/
+	cd build/aab/module && zip -qr ../module.zip manifest resources.pb res lib dex assets
+	java -jar $(BUNDLETOOL) build-bundle --modules=build/aab/module.zip --output=$@
+	# Sign the bundle (JAR signature) with the upload key.
+	@jarsigner -keystore $(PLAY_KEYSTORE) -storepass:env PLAY_STORE_PASS_ENV \
+	    -keypass:env PLAY_KEY_PASS_ENV -sigalg SHA256withRSA -digestalg SHA-256 \
+	    $@ $(PLAY_KEY_ALIAS)
+	@echo "[android] built $@ (versionCode $(ANDROID_VERSION_CODE), versionName $(ANDROID_VERSION_NAME))"
+
+# ---------------------------------------------------------------------------
+# iOS (native Metal, no raylib). CI-only: needs Xcode's toolchain, which exists
+# on macOS alone -- there is no Mac here, so the FIRST build of every one of
+# these files is the macOS runner (docs/IOS-BACKEND-SPIKE.md).
+#
+#   ios-sim  -- Simulator .app (arm64 simulator, unsigned) for CI screenshots.
+#   ios      -- device .ipa (arm64, unsigned unless a signing identity is set).
+#
+# Assembled by hand (clang + Info.plist + zip), no Xcode project, mirroring the
+# no-Gradle Android target. The Metal shader is compiled at RUNTIME from source
+# (ios/gfx_metal.mm), so no offline Metal compiler is needed either.
+#
+# CHECKPOINT 2 of the spike: this builds the app shell and the renderer only --
+# the game's C is not linked yet, and the app draws the renderer self-test.
+# ---------------------------------------------------------------------------
+IOS_MIN        ?= 15.0
+IOS_APP_NAME   := GloryOfRome
+IOS_BUNDLE_ID  := com.danheskett.gloryofrome
+# CFBundleVersion must increase with every App Store upload, so it tracks the
+# release number exactly like ANDROID_VERSION_CODE.
+IOS_BUILD_NUMBER ?= $(OPENBOUNTY_VERSION)
+ifeq ($(IOS_BUILD_NUMBER),0)
+IOS_BUILD_NUMBER := 1
+endif
+IOS_VERSION_NAME ?= 1.0.$(IOS_BUILD_NUMBER)
+# Signing is opt-in: set IOS_SIGN_IDENTITY (and IOS_PROFILE) to produce a
+# submittable .ipa. Unset, the build stays unsigned.
+IOS_SIGN_IDENTITY ?=
+IOS_PROFILE       ?=
+IOS_TEAM_ID       ?=
+# The App Store icon. One 1024x1024 PNG: actool derives every other size, so
+# there is no icon art to resize by hand. Absent, an unsigned build still runs
+# (the Simulator does not care); a signed build stops, because Apple rejects an
+# iconless upload outright.
+IOS_ICON := ios/Assets.xcassets/AppIcon.appiconset/icon-1024.png
+
+IOS_MM_SRC  := ios/ios_main.mm ios/gfx_metal.mm ios/plat_ios.mm \
+               ios/audio_ios.mm
+# The game itself: the shell minus the desktop-only subsystems (the same list
+# the iOS purity check uses), the engine, and the iOS backends. No raylib, no
+# demo/autoplay drivers, no extractor.
+IOS_C_SRC   := $(IOS_CHECK_SRC) $(ENGINE_SRC) $(DEMO_SRC) $(AUTOPLAY_SRC) \
+               $(TOOL_SRC) \
+               ios/host_ios.c ios/image_ios.c ios/font_ios.c ios/vorbis_impl.c \
+               third_party/cjson/cJSON.c third_party/miniz/miniz.c
+IOS_CFLAGS  := -std=c99   -Wall -Wextra -O2 -DPLATFORM_IOS -Isrc -Iios \
+               -Iengine/include -Idemo -Iautoplay -Itools -Ibuild \
+               -Ithird_party/cjson -Ithird_party/miniz -Ithird_party/stb
+IOS_MMFLAGS := -std=c++17 -fobjc-arc -Wall -Wextra -O2 -DPLATFORM_IOS \
+               -Isrc -Iios -Iengine/include -Idemo -Iautoplay -Itools -Ibuild \
+               -Ithird_party/cjson -Ithird_party/miniz -Ithird_party/stb
+IOS_FRAMEWORKS := -framework UIKit -framework Metal -framework QuartzCore \
+                  -framework CoreGraphics -framework AVFoundation \
+                  -framework Foundation
+
+IOS_DEPS := $(IOS_MM_SRC) $(IOS_C_SRC) $(wildcard ios/*.h src/*.h src/*/*.h) \
+            ios/Info.plist build/version.h $(PACK_DIR)/$(ANDROID_PACK).openbounty
+
+# $(call ios_build,<sdk>,<target-triple>,<app-dir>,<obj-dir>) -- compile + link
+# the app binary into <app-dir>/$(IOS_APP_NAME) and copy the Info.plist.
+define ios_build
+	@rm -rf $(4) && mkdir -p $(3) $(4)
+	for f in $(IOS_C_SRC);  do o=$(4)/$$(echo $$f | tr / _ | sed 's/\.c$$/.o/');  xcrun -sdk $(1) clang   -target $(2) $(IOS_CFLAGS)  -c $$f -o $$o || exit 1; done
+	for f in $(IOS_MM_SRC); do o=$(4)/$$(echo $$f | tr / _ | sed 's/\.mm$$/.o/'); xcrun -sdk $(1) clang++ -target $(2) $(IOS_MMFLAGS) -c $$f -o $$o || exit 1; done
+	xcrun -sdk $(1) clang++ -target $(2) $(4)/*.o $(IOS_FRAMEWORKS) -o $(3)/$(IOS_APP_NAME)
+	sed -e "s|<string>1</string>|<string>$(IOS_BUILD_NUMBER)</string>|" \
+	    -e "s|<string>1.0</string>|<string>$(IOS_VERSION_NAME)</string>|" \
+	    ios/Info.plist > $(3)/Info.plist
+	# Glory of Rome only: the one pack, as a bundle resource.
+	cp $(PACK_DIR)/$(ANDROID_PACK).openbounty $(3)/
+endef
+
+IOS_SIM_APP := build/ios-sim/$(IOS_APP_NAME).app
+ios-sim: $(IOS_SIM_APP)
+$(IOS_SIM_APP): $(IOS_DEPS)
+	$(call ios_build,iphonesimulator,arm64-apple-ios$(IOS_MIN)-simulator,build/ios-sim/$(IOS_APP_NAME).app,build/ios-sim/obj)
+	@echo "[ios] built $@"
+
+IOS_APP_DIR := build/ios-device/Payload/$(IOS_APP_NAME).app
+IOS_IPA     := build/$(IOS_APP_NAME).ipa
+ios: $(IOS_IPA)
+# A .ipa is only a zip of Payload/<App>.app, but an App Store upload wants a
+# bundle shaped the way Xcode shapes one. Everything below is a key Xcode would
+# have injected and a hand-assembled bundle lacks; each one has rejected a real
+# upload somewhere, so none of it is decoration.
+$(IOS_IPA): $(IOS_DEPS)
+	$(call ios_build,iphoneos,arm64-apple-ios$(IOS_MIN),$(IOS_APP_DIR),build/ios-device/obj)
+	@# Device-platform keys. Device farms read CFBundleSupportedPlatforms on
+	@# upload and refuse a bundle without it.
+	plist=$(IOS_APP_DIR)/Info.plist; \
+	/usr/libexec/PlistBuddy \
+	    -c "Add :CFBundleSupportedPlatforms array" \
+	    -c "Add :CFBundleSupportedPlatforms:0 string iPhoneOS" \
+	    -c "Add :DTPlatformName string iphoneos" \
+	    -c "Add :UIRequiredDeviceCapabilities array" \
+	    -c "Add :UIRequiredDeviceCapabilities:0 string arm64" \
+	    -c "Set :CFBundleVersion $(IOS_BUILD_NUMBER)" \
+	    -c "Set :CFBundleShortVersionString $(IOS_VERSION_NAME)" \
+	    "$$plist"
+	@# App icon. actool compiles the catalog to Assets.car and writes the
+	@# CFBundleIcons keys into a partial plist, which is merged in. A signed
+	@# build with no icon art is a wasted upload, so it stops here instead.
+	@if [ -f "$(IOS_ICON)" ]; then \
+	    xcrun actool ios/Assets.xcassets --compile $(IOS_APP_DIR) \
+	        --platform iphoneos --minimum-deployment-target $(IOS_MIN) \
+	        --target-device iphone --target-device ipad --app-icon AppIcon \
+	        --output-partial-info-plist build/ios-device/assetcatalog.plist >/dev/null; \
+	    /usr/libexec/PlistBuddy -c "Merge build/ios-device/assetcatalog.plist" \
+	        $(IOS_APP_DIR)/Info.plist; \
+	    plutil -replace CFBundleIconName -string AppIcon $(IOS_APP_DIR)/Info.plist; \
+	elif [ -n "$(IOS_SIGN_IDENTITY)" ]; then \
+	    echo "error: $(IOS_ICON) is missing; the App Store rejects an iconless upload" >&2; exit 1; \
+	else \
+	    echo "[ios] no app icon yet ($(IOS_ICON)); fine for a test build, not for the store"; \
+	fi
+	@# Toolchain provenance. App Store review reads DTXcodeBuild to identify
+	@# the toolchain and refuses a build that appears to come from none.
+	@# DTPlatformVersion is the SDK version, NOT the deployment target.
+	plist=$(IOS_APP_DIR)/Info.plist; \
+	xcode_ver=$$(xcodebuild -version | sed -n '1s/^Xcode //p'); \
+	xcode_build=$$(xcodebuild -version | sed -n '2s/^Build version //p'); \
+	sdk_ver=$$(xcrun --sdk iphoneos --show-sdk-version); \
+	sdk_build=$$(xcrun --sdk iphoneos --show-sdk-build-version); \
+	plat_ver=$$(xcrun --sdk iphoneos --show-sdk-platform-version); \
+	dtxcode=$$(echo $$xcode_ver | awk -F. '{printf "%02d%d%d", $$1, $$2+0, $$3+0}'); \
+	plutil -replace DTXcode             -string "$$dtxcode"         $$plist; \
+	plutil -replace DTXcodeBuild        -string "$$xcode_build"     $$plist; \
+	plutil -replace DTSDKName           -string "iphoneos$$sdk_ver" $$plist; \
+	plutil -replace DTSDKBuild          -string "$$sdk_build"       $$plist; \
+	plutil -replace DTPlatformVersion   -string "$$plat_ver"        $$plist; \
+	plutil -replace DTPlatformBuild     -string "$$sdk_build"       $$plist; \
+	plutil -replace DTCompiler          -string "com.apple.compilers.llvm.clang.1_0" $$plist; \
+	plutil -replace BuildMachineOSBuild -string "$$(sw_vers -buildVersion)" $$plist; \
+	echo "[ios] toolchain: Xcode $$xcode_ver ($$xcode_build), iphoneos SDK $$sdk_ver ($$sdk_build)"
+	@# Sign, when an identity is supplied. The entitlements must be a subset
+	@# of the provisioning profile's, so they stay minimal.
+	@if [ -n "$(IOS_SIGN_IDENTITY)" ]; then \
+	    if [ -z "$(IOS_PROFILE)" ]; then echo "error: IOS_SIGN_IDENTITY set but IOS_PROFILE is empty" >&2; exit 1; fi; \
+	    if [ -z "$(IOS_TEAM_ID)" ]; then echo "error: IOS_SIGN_IDENTITY set but IOS_TEAM_ID is empty" >&2; exit 1; fi; \
+	    cp "$(IOS_PROFILE)" $(IOS_APP_DIR)/embedded.mobileprovision; \
+	    ents=build/ios-device/entitlements.plist; \
+	    printf '%s\n' \
+	      '<?xml version="1.0" encoding="UTF-8"?>' \
+	      '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
+	      '<plist version="1.0"><dict>' \
+	      '  <key>application-identifier</key><string>$(IOS_TEAM_ID).$(IOS_BUNDLE_ID)</string>' \
+	      '  <key>com.apple.developer.team-identifier</key><string>$(IOS_TEAM_ID)</string>' \
+	      '  <key>get-task-allow</key><false/>' \
+	      '</dict></plist>' > $$ents; \
+	    codesign --force --timestamp=none \
+	        --sign "$(IOS_SIGN_IDENTITY)" --entitlements $$ents $(IOS_APP_DIR); \
+	    codesign --verify --strict --verbose=2 $(IOS_APP_DIR); \
+	fi
+	cd build/ios-device && rm -f ../$(IOS_APP_NAME).ipa && zip -qr ../$(IOS_APP_NAME).ipa Payload
+	@if [ -n "$(IOS_SIGN_IDENTITY)" ]; then \
+	    echo "[ios] built $@ (signed: $(IOS_SIGN_IDENTITY), build $(IOS_BUILD_NUMBER))"; \
+	else \
+	    echo "[ios] built $@ (unsigned)"; \
+	fi
+
+# The .ipa under its release name, next to the desktop archives. The pack rule
+# that keeps .openbounty out of every archive does not apply here: Rome's pack
+# is ours and has to be inside the app.
+dist-ios: $(IOS_IPA)
+	@mkdir -p $(DIST)
+	cp $(IOS_IPA) $(DIST)/gloryofrome-$(OPENBOUNTY_VERSION_SLUG)-ios-arm64.ipa
 
 # ---------------------------------------------------------------------------
 # Distribution archives (consumed by GitHub Actions release workflow).
@@ -367,15 +803,29 @@ dist-mac: $(OUT_MAC)
 # All four emitted files are required to run it: the .js loader, the .wasm
 # module, the .data pack image, and the .html shell. Serve them over HTTP --
 # browsers refuse to fetch .wasm/.data over file://.
-dist-web: $(OUT_WEB)
+# Glory of Rome only: King's Bounty's pack is DOS-extracted and
+# copyright-restricted, so its web build never leaves this machine.
+dist-web: $(OUT_WEB_ROME)
 	@rm -rf $(STAGING)/web && mkdir -p $(STAGING)/web/openbounty-$(OPENBOUNTY_VERSION_SLUG)-web
-	cp build/web/openbounty.html build/web/openbounty.js \
-	   build/web/openbounty.wasm build/web/openbounty.data \
+	cp build/web/glory-of-rome/openbounty.html build/web/glory-of-rome/openbounty.js \
+	   build/web/glory-of-rome/openbounty.wasm build/web/glory-of-rome/openbounty.data \
 	   $(STAGING)/web/openbounty-$(OPENBOUNTY_VERSION_SLUG)-web/
 	sed "s/<version>/$(OPENBOUNTY_VERSION_DISPLAY)/g" $(DIST)/README.txt.in > $(STAGING)/web/openbounty-$(OPENBOUNTY_VERSION_SLUG)-web/README.txt
 	cp LICENSE NOTICES.md $(STAGING)/web/openbounty-$(OPENBOUNTY_VERSION_SLUG)-web/
 	@mkdir -p $(DIST)
 	(cd $(STAGING)/web && zip -qr ../../../$(DIST)/openbounty-$(OPENBOUNTY_VERSION_SLUG)-web-wasm.zip openbounty-$(OPENBOUNTY_VERSION_SLUG)-web)
+
+# Android ships as the APK and the AAB themselves -- no archive, no README
+# alongside: a store artifact is a single signed file. Both carry the Glory of
+# Rome pack inside them, which is ours to distribute (the release workflow's
+# guard is about King's Bounty's DOS-extracted pack, which never reaches here).
+dist-android: $(ANDROID_APK)
+	@mkdir -p $(DIST)
+	cp $(ANDROID_APK) $(DIST)/gloryofrome-$(OPENBOUNTY_VERSION_SLUG)-android-arm64.apk
+
+dist-android-play: $(ANDROID_AAB)
+	@mkdir -p $(DIST)
+	cp $(ANDROID_AAB) $(DIST)/gloryofrome-$(OPENBOUNTY_VERSION_SLUG)-android.aab
 
 # ---------------------------------------------------------------------------
 # Unit tests (second binary, links the same SRC minus main.c plus
@@ -487,6 +937,24 @@ $(LIBTEST_STAMP): tests/library/consumer.c engine/host_noop.c $(DEMO_OBJ) $(AUTO
 	@touch $@
 
 # ---------------------------------------------------------------------------
+# iOS purity check: every shell file the iOS build will compile must type-check
+# with -DPLATFORM_IOS and NO raylib include path at all. iOS links no raylib
+# (docs/IOS-BACKEND-SPIKE.md); this is what keeps the seams honest on a machine
+# with no Apple toolchain, long before a macOS runner ever sees the code.
+#
+# The excluded list is the desktop-only subsystems -- recorder, mp4 encoder,
+# screenshot, gallery, pack picker, demo and autoplay drivers, combat replay --
+# plus the six backends that ARE raylib by definition.
+
+$(IOS_CHECK_STAMP): $(IOS_CHECK_SRC) $(IOS_OWN_C) $(wildcard src/*.h src/*/*.h ios/*.h) build/version.h | build
+	@for f in $(IOS_CHECK_SRC) $(IOS_OWN_C); do \
+	  gcc -fsyntax-only -std=c99 -Wall -Wextra -DPLATFORM_IOS \
+	      -Isrc -Iios -Iengine/include -Idemo -Iautoplay -Itools -Ibuild \
+	      -Ithird_party/cjson -Ithird_party/miniz -Ithird_party/stb $$f || exit 1; \
+	done
+	@touch $@
+
+# ---------------------------------------------------------------------------
 # demo + autoplay objects, each compiled ENGINE-ONLY (no -Isrc, no raylib) and
 # WITHOUT the other agent's include dir, so engine-purity AND the demo/autoplay
 # independence are all build-enforced: an include across any fence fails to
@@ -531,4 +999,4 @@ clean:
 	rm -rf build
 	rm -f dist/*.tar.gz dist/*.zip
 
-.PHONY: all run release run-release windows windows-debug mac web web-serve clean test extract extract-pack dist dist-linux dist-windows dist-mac dist-web
+.PHONY: all run release run-release windows windows-debug mac web web-kings-bounty web-glory-of-rome web-serve android android-play dist-android dist-android-play ios ios-sim dist-ios clean test extract extract-pack dist dist-linux dist-windows dist-mac dist-web

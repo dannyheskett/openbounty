@@ -1,0 +1,413 @@
+# Glory of Rome — art pipeline
+
+Every prompt ever sent, with its engine, settings and the note saying what the
+run produced, is collected in **`docs/ROME-ART.md`**, generated from
+`art/jobs/*.json` by `tools/romeart.py prompts`. This file is the *routes* (which
+engine, which settings, and why); that file is the *record*.
+
+The route that works. Two calls per troop.
+
+`ART-WORKLIST.md` holds the prompt for each of the 116 artworks. This file is
+how to run them.
+
+---
+
+## The style
+
+Every figure goes through one custom style so the roster reads as one set:
+`user__glory_of_rome_troops_bac676cd`. It appends to every prompt
+
+```
+, full length, standing in profile facing right, game sprite, solid magenta background
+```
+
+and removes the background itself. Magenta, because the remover takes any part
+of the figure that matches the background's tone, and nothing in Roman kit is
+magenta.
+
+The prompt is the subject only.
+
+---
+
+## 1. The still
+
+```json
+{
+  "id": "velites",
+  "prompt": "a lean Roman velite skirmisher in a wolfskin headdress over a helmet, a small round parma shield on his left arm, a javelin held upright in his right hand",
+  "style": "user__glory_of_rome_troops_bac676cd",
+  "width": 96, "height": 96,
+  "remove_bg": true, "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true, "figure": true, "target": [96, 96]
+}
+```
+
+```
+python3 tools/rdgen.py run art/jobs/velites.json
+```
+
+Describe a neutral stance with the weapon at rest, not the action: "a javelin
+held upright in his right hand", not "throwing a javelin". The upright weapon is
+the travel the animation spends.
+
+---
+
+## 2. Look at it
+
+Open the contact sheet. Accept it if it is the character you asked for and it
+reads at 1:1 over grass.
+
+---
+
+## 3. The animation
+
+```json
+{
+  "id": "velites_attack",
+  "prompt": "the javelin travels from upright beside his head forward and down until his arm is straight out in front at shoulder height, both feet stay planted, the shield stays where it is",
+  "style": "rd_advanced_animation__custom_action",
+  "width": 96, "height": 96,
+  "frames_duration": 4,
+  "return_spritesheet": true,
+  "input_image_path": "build/art/velites/run01/01_raw.png",
+  "input_image_keep_alpha": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true, "figure": false, "target": [96, 96]
+}
+```
+
+- `rd_advanced_animation__custom_action`
+- 96x96 — the size the frames come back at, and the size a troop file is
+- `frames_duration` — the frame count is per troop, not fixed: the pack's
+  `anim` list for the troop is the cycle (1 to 16 frames, `OB_ANIM_FRAMES_MAX`),
+  so install however many frames the run returns and declare them. Four was
+  the count for every set through 2026-09-05; the API guide gives **six for a
+  single action** and eight for a breathing loop, and the Sarmatae swing at
+  four ended with an empty hand where six had room for the return. Use six
+  for attacks from now on.
+- `bypass_prompt_expansion` — **leave expansion on** (`false`) for
+  animations; see "Prompt expansion" below. The example above is the
+  pre-2026-09-05 form.
+- `input_image_keep_alpha: true` — what makes the frames transparent
+
+The motion line names the path and its two endpoints, then what stays still:
+"from upright beside his head forward and down until his arm is straight out in
+front at shoulder height", then "both feet stay planted, the shield stays where
+it is".
+
+---
+
+## 4. The frames
+
+The response is a sheet of frame cells, 2x2 for four frames; `rdgen` derives
+the grid from the image and writes `frame_00..03.png`. When the job was padded
+to 128 for motion room (`pad_to`), the frames come back 128x128 and go down to
+96x96 through the API's k-centroid tool, `/edit/tools/k_centroid_downscale`
+(`rdgen.k_centroid`, free, area-weighted), not a local resample and not a
+crop. The tool flattens the frame onto white, so the alpha is put back from
+the 128 frame's own mask, area-averaged to 96 and thresholded at half. Watch
+the animation, then:
+
+```
+cp build/art/<id>/run01/frame_0N.png assets/glory-of-rome/art/troops/<name>_0N.png
+```
+
+and record both prompts in `ART-WORKLIST.md`.
+
+---
+
+## Other kinds of art
+
+- **A small unit** — generate *and* animate at 64x64, then composite each frame
+  into a 96x96 transparent canvas at offset (16, 32). Two thirds height, by
+  construction. The Lares went this way. If the 64 animation mangles the
+  weapon (the Fauni's branch doubled twice), generate and animate at 96 like
+  the men and scale the four frames to 66% together through the k-centroid
+  tool, one shared offset, feet on row 88.
+- **Screen-shaped art** — the class portraits, the class-select picker, the
+  title and the six location backdrops all come from one engine,
+  `rd_pro__default`: opaque, no `remove_bg`, `bypass_prompt_expansion`,
+  `raw_only`, the prompt from the worklist row and nothing appended. They are
+  authored at the design size and the shell scales them by `ui_scale`, an exact
+  2x, so they all scale alike. RD Pro caps a side at 256 (see the caps below),
+  which is why design x2 is not the rule here: it fits only the portraits
+  (96x102 -> 192x204, how they were made); the backdrops are 240x102; the title
+  and picker, whose design sizes are wider than 256, were made at 256x164 and
+  are stretched to their rectangle.
+- **The class-select picker** — additionally passes all four approved portraits
+  as `reference_images`, the prompt written as "the same general in the bronze
+  cuirass…". The four figures sit one per column, left to right, in manifest
+  order.
+- **Location backdrops** — `figure: false`, `target [240, 102]`; the job is
+  `art/jobs/backdrop_castle.json`, the other five differ only in id, prompt and
+  seed.
+- **Base terrain** (grass, grass_variant, forest, mountain, desert) —
+  `rd_tile__single_tile`, the API's purpose-built seamless tile style (cap 64;
+  its craft guide sizes single tiles at 16 to 32), at **48x48**, laid 2x2 by
+  `tools/romeart.py tile2x2` into the 96x96 pack tile at native pixel density, so the
+  repeat period is 48. The terrain is described plainly, "seen from directly
+  above ... the same everywhere". Settled 2026-09-05 after nine runs on the
+  earlier route (`rd_plus__low_res` with `tile_x`/`tile_y` and a prompt
+  describing a crop of printed wrapping paper): that route holds the wrap but
+  the model shades each tile's interior, which repeats as a lattice across a
+  field (a rim on grass, a diamond on forest), and no wording, seed or
+  prompt-expansion setting removed it. The tile style does not shade the
+  interior. Judge every terrain as a 4x4 field at 1:1
+  (`build/art/terrain_review.py`), never a single tile zoomed. No
+  post-processing of terrain (Dan, 2026-09-05).
+  - **Water is the exception**: the installed tile is the earlier low_res
+    route (seed 3107), kept because the tile style drew water as a bevelled
+    block face with a lit rim on two runs with different wording. It is flat,
+    seamless and approved, so it stays.
+- **Object tiles** (the per-zone towns, the castle, the four dwellings) — `rd_pro__topdown`,
+  96x96, `figure: false`, `remove_bg: true` with the magenta background named in
+  the prompt, **no reference image**. Settled on 2026-09-05 after an engine test
+  on one prompt across `rd_plus__low_res`, `rd_tile__tile_object`,
+  `rd_plus__topdown_asset` and `rd_pro__topdown`; only the last read as a town
+  with a facing and no slab. What the runs taught, in order of weight:
+  - A facing cue is required. "Seen from a high angle" alone gives an
+    isometric diorama on a plinth, every time. "The buildings seen from the
+    front and above with their doors facing the viewer" gives the game's view.
+  - A reference image (the castle tile) made the model fill the frame edge to
+    edge, three runs out of three; dropping it fixed the framing in one. The
+    docs say references "re-imagine" the source, so use them for a character
+    that must recur, not for palette.
+  - Generating smaller (RD Pro goes down to 12px) does not make a margin; the
+    model fills whatever canvas it gets. Margin wording is ignored too. The
+    seed is the lever for framing.
+  - Freestanding is wording: "no wall, fence or gate, only the flat magenta
+    background between and below the buildings". A road drawn "from the bottom
+    edge" makes the model fill and crop the frame; "a short stub of paved road
+    between the middle buildings, the road the only ground drawn" keeps the
+    framing about half the time, so budget two seeds per tile with a road.
+  - Prompt expansion has no effect on `rd_plus__low_res` (byte-identical
+    output either way).
+  The ground is not in the art: the renderer draws the terrain tile beneath
+  every object tile.
+- **Bridges** (`bridge_h`, `bridge_v`) — a road, as in the original pack: an
+  opaque square of grey stone paving with a lighter kerb along the two edges
+  the road does not cross, so tiles stack end to end. Object engine
+  (`rd_pro__topdown`), no background removal, no water in the picture.
+  (2026-09-06: five runs were wasted describing a transparent deck over
+  water; the original tile never had water in it.)
+- **Terrain edges** (48 files) — not generated. `tools/romeart.py edges`
+  composites each from the installed base and grass tiles: the original
+  48x34 edge tile under `art/reference/edges/` is read as a shape (each pixel
+  is terrain or grass by which original base's colours it is nearest), the
+  mask is resized to the pack tile and filled with the new bases, so every
+  edge seams with its neighbours by construction. Re-run it whenever a base
+  changes; with a tile-set argument it writes a zone's folder.
+- **Villain portraits** (`art/villains/<name>_00..07.png`) — villains are not
+  sprites: they are opaque head-and-shoulders portraits drawn as faces in the
+  contract view, the HUD contract chip and the puzzle grid. Still:
+  `rd_pro__default` at **128x128**, opaque, no reference images, the prompt
+  "a head-and-shoulders portrait, the face filling the frame, of ..." with a
+  setting behind the head. At 96 and at 104 the engine paints a frame round
+  the picture on most seeds regardless of the prompt (2026-09-07: Attila
+  framed on four of four runs at 96 and 104, with and without references and
+  with "no frame, no border" in the prompt; at 128 all four villains tried
+  came back frame-free). Measure with a 1 to 8 pixel edge-ring check, not a
+  6 pixel strip, or thin frames pass. Loop:
+  `rd_advanced_animation__custom_action` on the untouched 128 still at 128,
+  **eight frames**, **prompt expansion left on** (`bypass_prompt_expansion: false`),
+  a short tag-form prompt in the engine maker's shape: "snarling face, static
+  background, smooth loop". Settled 2026-09-05 on Hannibal, measured as
+  pixels changed against frame 0 outside the face: custom action with
+  expansion on, 1217 over seven frames and all of it on the helmet brow and
+  chin strap; the same engine with expansion off at four frames redrew the
+  whole figure (1600 on one frame); the idle style moved the body on every
+  frame (9700) with expansion on or off, because it is built for a standing
+  figure. Judge a loop by that measurement and the 3x gif, not a single
+  frame. The only processing is the last step: each returned 128 frame is
+  centre-cropped to 96 with `tools/romeart.py crop` (Dan's order, 2026-09-07,
+  villain portraits only). Crop after the loop, never before, so the motion
+  is made on the same picture the crop is taken from.
+- **Prompt expansion** — every job before 2026-09-05 set
+  `bypass_prompt_expansion: true`, on the strength of one measurement on a
+  low_res still where it changed nothing (and the town test on the same
+  style was byte-identical). On the animation engine it is the difference
+  between a held background and a redrawn one. Leave it on for animations.
+  The installed troop loops were made with it off and stay as approved; any
+  re-run or new troop tests expansion on first.
+- **Inventory icons** (`art/ui/inventory_artifact_*`, `inventory_zone_*`) —
+  opaque cards **with no frame in the art** (the shell draws one, see
+  "Frames" below), drawn in the inventory belt
+  and the puzzle grid at the tile size: `rd_pro__default`, 96x96, no
+  references, the object "painted as a small game inventory icon ... inside a
+  thin gold frame", and **no writing, lettering, banner or ribbon** named in
+  the prompt, because the model otherwise invents captions ("COASTAL PALMS")
+  and rune-like inscriptions. The four zone icons are declared in
+  `sprites.ui.view_icons_extra` in zone order; without that key the map
+  grid of the inventory draws nothing.
+- **HUD panels** (`art/ui/hud_*`) — the inventory icon route for the seven
+  stills (opaque cards, no frame in the art, `rd_pro__default`, no lettering); the siege
+  and magic cycles are the villain loop route on the framed still (custom
+  action, four frames, expansion on, "static background, smooth loop"). The
+  sidebar cycles a loop at two frames a second, so the magic loop is a colour
+  change (gold to violet), not a flicker, or the change is invisible at that
+  rate. `hud_bar_strip` is the 320x5 divider and stays hand-drawn.
+- **Frames** — no generated piece carries a painted frame or border. The
+  model draws a different frame every run (gold, thin, missing), so the
+  frame is the shell's: `sprites.ui.panel_frame` names the colour and
+  `ui_panel_frame` draws it round HUD panels, inventory cells and the
+  contract face. Prompts for those pieces say "filling the whole picture edge
+  to edge, no frame, no border". The one allowed edge treatment is a villain
+  portrait's flat colour bar, and only when it is identical on all eight
+  frames of that villain. (Ruled 2026-09-06; twenty pieces regenerated.)
+- **Combat set** (`art/combat/*`) — not generated. `tools/siegewalls.py`
+  remakes the original 48x34 pieces at 96: each original pixel is classified
+  into a material, the map is scaled to the cell, and every material is
+  re-rendered at pixel scale (three-tone brick courses over a grout, two-tone
+  merlons over the black shadow band, a lighter top face, the moat as a
+  smooth shape with a clean dark bank, rubble scattered at the breach), so
+  layout and features match the original exactly. It also draws the
+  top-down back wall band the shell places above the siege board
+  (`sprites.ui.siege_back_wall`, `_left`, `_right`), with the moat turning
+  the corners on a curve and the wall bands mitred. Generated wall pieces
+  were tried on 2026-09-07 and rejected: the API cannot make six cells that
+  join, and a whole-board picture is too coarse under the 256 cap. Those
+  pieces remain the fallback (the default `sprites.combat` list) but Rome
+  no longer draws them in a siege, see the next entry.
+- **Siege grid** (`art/combat/siege/cell_<x>_<y>.png`, 36 cells at 64) —
+  the whole siege board plus its back band as one picture, sliced into
+  cells (`sprites.ui.siege_grid`, REQ-165c), settled 2026-09-07. Route:
+  `rd_plus__topdown_map` (the only style that draws a true overhead plan;
+  `rd_plus__environment` composes a perspective scene every time) at 384,
+  first from a prompt to get the castle, then **img2img** on the 6x6 board
+  composed from the sliced pieces (`tools/siegeslice.py` recipe mode, the
+  band included, k-centroid to 384x384, `strength` 0.55) so the layout is
+  fixed by the source and the engine repaints one continuous field over it.
+  Then `tools/siegeslice.py --grid` writes the 36 cells untouched at 64; the
+  shell scales each to the 96 cell. Why not pieces: a per-code piece repeats
+  in every cell of its code, so a gatehouse, two different broken ends and a
+  moat under the bottom wall only cannot be drawn that way.
+- **The title screen** (`art/ui/splash_title.png`, 256x164) — the eagle is
+  generated (screen route, no border); the words are drawn by
+  `tools/splashtitle.py` from C059 Bold, gold with dark shading, title above
+  the eagle and subtitle across the pole, for the same reason as the
+  publisher splash: generated lettering garbles.
+- **The publisher splash** (`art/ui/splash_logo.png`, 320x84, transparent) —
+  composed, not generated whole, because generated lettering garbles. The
+  words are rendered locally from C059 Bold at 1-bit, white with the old
+  logo's red shading offset below and right; only the 44x44 emblem is
+  generated (`rd_pro__default`, `remove_bg`, magenta named in the prompt) and
+  pasted where the old globe sat; coins and sparkles are drawn. The
+  composition is `tools/splashlogo.py`. The emblem is a Mediterranean globe in
+  a laurel wreath; an earlier eagle emblem was dropped because it read as a
+  Reich eagle.
+- **An archer** (Sagittarii, 2026-09-17, after nine failed runs) — the still must name the string: Silvani's "with the string slack and no arrow on it", or the bow comes back a bare arc and no animation can draw a string that was never there. Leave out "standing square": it turns the chest to the viewer, and a front-on figure cannot bring the drawing hand to the cheek. Name the kit's colours, or a new seed invents new ones (two seeds turned gold scale into grey mail). No reference images: on a still they copy the reference's pose, and `custom_action` does not take them. Then the Sarmatae job copied whole -- six frames, expansion on, a tag prompt -- with only the still, seed and tag changed. Its frame 1 is the idle move; a separate idle call barely moves.
+- **Making room for a motion** — when a still already holds its weapon out
+  (the Coloni fork ended 6 px from the edge), or a finished set is too big for
+  its cell (the Lupi), scale it to 80% through the k-centroid tool (black
+  flatten, alpha from coverage), then place it with the feet on row 88, the
+  ground line the men stand on, using one offset for every frame of a set so
+  the loop does not jitter. Animate the scaled still at 96 with no padding;
+  the padded 128 route shrinks a figure to three quarters (Manes, Dracones).
+- **Recolouring** — when a set reads fine but its colours vanish against the
+  grass (the Antaei's moss and soil), recolour the approved frames locally in
+  HSV rather than regenerating: every opaque pixel except the pale highlights
+  takes the new hue, and the pose and motion stay exactly as approved.
+
+---
+
+## Engines and their size caps
+
+One engine per kind of art, so each kind reads as one set. The caps are per
+side, per style, and they come from the API's own catalogue:
+
+```
+curl -H "X-RD-Token: $(cat ~/.config/retrodiffusion/token)" \
+  "https://api.retrodiffusion.ai/v2/styles/selector?model=rd_pro"
+```
+
+| kind | engine | authored at | cap (2026-09-04) |
+|---|---|---|---|
+| troop stills | `user__glory_of_rome_troops_bac676cd` | 96x96 | RD Pro template; not listed by the selector |
+| troop animation | `rd_advanced_animation__custom_action`, six frames, expansion on | 96 or 128 | 32 to 256 |
+| villain still | `rd_pro__default`, class portraits as references | 96x96 opaque | 12 to 256 |
+| villain loop | `rd_advanced_animation__custom_action`, eight frames, expansion on | 96x96 | 32 to 256 |
+| terrain tiles | `rd_tile__single_tile` (water: `rd_plus__low_res`) | 48x48 laid 2x2 | 16 to 64 |
+| object tiles (towns) | `rd_pro__topdown` | 96x96 | 12 to 256 |
+| screen-shaped art | `rd_pro__default` | design size (portraits x2) | 12 to 256 |
+
+Check the selector before promising a size. The cost check does not validate
+size: `rdgen cost` (and the `check_cost` call inside `run`) accepts and prices
+an oversize request, and the task then fails at inference with
+`inference_failed`, "Unable to run inference.", and no charge. That is what
+480x204 and 480x208 on `rd_pro__default` did on 2026-09-04. Only two styles
+reach 512 (`rd_plus__environment` and the internal `rd_plus__no_style`); they
+are a different engine and are not used for anything, so no piece changes look
+against its neighbours.
+
+---
+
+## Running rdgen
+
+```
+python3 tools/rdgen.py run       art/jobs/<id>.json
+python3 tools/rdgen.py reprocess art/jobs/<id>.json     # re-cut and re-check, no new call
+```
+
+- Every call goes through rdgen, so the request is saved beside the result.
+- Output lands in `build/art/<id>/runNN/`, a new directory per run; nothing is
+  overwritten.
+- The task id is written to disk before polling.
+- `raw_only: true` delivers the image exactly as returned.
+- Token from `~/.config/retrodiffusion/token`. No environment variables.
+- Nothing writes into `assets/`; approved finals are copied by hand.
+- Review on a page: `art.html` at the repo root shows the whole pack and
+  refreshes from disk.
+
+---
+
+## Terrain sets: the other API
+
+Retro Diffusion makes every figure, object and screen in the pack. It does not
+make the **terrain** that one surface fades into another over. That comes from
+PixelLab, and the two are separate routes with separate tokens and separate
+drivers. One engine per kind of art still holds: RD owns sprites and screens,
+PixelLab owns terrain sets.
+
+```
+python3 tools/pltileset.py  build/art/<id> art/jobs/<id>.json   # create-tileset
+python3 tools/pltilespro.py ...                                 # Tiles Pro sets
+```
+
+- Token from `~/.config/pixellab/token`. No environment variables.
+- A `create-tileset` job names a **lower** terrain and an **upper** one and the
+  transition between them, and returns 16 tiles: the two plain surfaces and
+  every corner combination. `tile_size` is 16 or 32.
+- `lower_base_tile_id` chains the set to a terrain some earlier set already
+  produced, so two sets share one grass instead of each inventing its own.
+  The terrain ids are printed on every run; `art/jobs/t32_dirt_203.json` and
+  its successor both chain to `d1de924b`.
+- **The seed does not reproduce a set.** Re-running a job unchanged returns
+  different pixels: `t16_dirt.json` was re-run on 2026-09-12 and came back a
+  different brown with no colour in common with the first run. So a set that
+  has shipped cannot be rebuilt from its job file -- which is why every job
+  file carries a `_note` saying what it produced, and why the `_note` is the
+  only record there is.
+
+### Roads
+
+Roads are not a terrain set the game loads. `tools/romeart.py sweep` **sweeps** the
+set into the 24 road pieces the pack ships:
+
+```
+python3 tools/romeart.py sweep <set-dir> <out-dir> --sweep [--rim N] [--rim-shade F]
+```
+
+Every piece is a signed-distance shape -- a straight band, a true quarter
+circle, a 45 degree diagonal, or an end that tapers away -- filled with the
+set's plain **upper** tile and left as the pack's own `grass.png` outside, with
+a periodic value noise on the boundary so the edge is ragged but continuous
+across a tile line. Two consequences worth knowing before writing a prompt:
+
+- Only the plain upper tile reaches the game. The set's transition tiles, and
+  any kerb or edging the prompt asked for, are discarded. A border along the
+  road has to come from `--rim` / `--rim-shade`, which paint it after the fact.
+- Every straight exit is the same 32 px band and every diagonal the same corner
+  triangle, so any piece joins any other. The sweep checks that contract on
+  every run and prints how many sides carry an unexpected pattern; it must
+  print `0`.

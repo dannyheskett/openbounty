@@ -1,0 +1,20 @@
+{
+  "id": "troop_portrait_gigantes",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Gigas, a colossal wild-haired bearded giant with a bare muscular chest, green serpent scales on his lower body, lifting a huge boulder, the sky and mountain peaks behind him",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 9998,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "reference_image_paths": [
+    "assets/glory-of-rome/art/troops/gigantes_00.png"
+  ],
+  "_pack_path": "art/portraits/troop_gigantes.png",
+  "_note": "Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation."
+}

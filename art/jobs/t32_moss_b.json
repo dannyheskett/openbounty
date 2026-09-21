@@ -1,0 +1,24 @@
+{
+ "lower_description": "mossy meadow grass",
+ "upper_description": "grass with a few short tufts",
+ "transition_description": "",
+ "tile_size": {
+  "width": 32,
+  "height": 32
+ },
+ "mode": "standard",
+ "shape_style": "round",
+ "enhance": true,
+ "view": "high top-down",
+ "outline": "lineless",
+ "shading": "medium shading",
+ "detail": "medium detail",
+ "text_guidance_scale": 8.0,
+ "transition_size": 0.0,
+ "color_image": {
+  "type": "base64",
+  "base64": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAN0lEQVR4nGP0qjJhYGDgE+JgYGBgYGDgE+CCMIT4+BgYGE7suwPhegQYQBhMDCSCUQ2jGoaOBgDoLwTACdHojAAAAABJRU5ErkJggg==",
+  "format": "png"
+ },
+ "seed": 204
+}

@@ -1,5 +1,7 @@
 #include "layout.h"
+#include "bfont.h"
 #include "resources.h"
+#include "combat.h"   // COMBAT_W / COMBAT_H -- the battlefield does not resize
 
 // Screen geometry is derived from the tile size, not declared alongside it.
 // The original 320x200 is exactly what this arithmetic produces for a 48x34
@@ -24,7 +26,21 @@ ClLayout g_layout = {
     .screen_w = 320, .screen_h = 200,
     .default_scale = 2,
     .is_modern = 0,
+    .pack_tiles_w = 5, .pack_tiles_h = 5,
+    .ui_scale = 1,
+    .frame_l = 16, .frame_r = 16, .frame_t = 8, .frame_b = 8,
+    .sidebar_gap = 0,
+    .is_native = 0,
 };
+
+// The chrome bands at their thinnest: the DOS_frame_ui[] strips times the
+// pack's ui_scale. Every mode starts from these; a fixed buffer widens them.
+static void set_base_frame(void) {
+    g_layout.frame_l = 16 * g_layout.ui_scale;
+    g_layout.frame_r = 16 * g_layout.ui_scale;
+    g_layout.frame_t =  8 * g_layout.ui_scale;
+    g_layout.frame_b =  8 * g_layout.ui_scale;
+}
 
 void layout_init(const struct Resources *res) {
     if (!res) return;
@@ -34,6 +50,13 @@ void layout_init(const struct Resources *res) {
     g_layout.tile_h    = r->tile_h;
     g_layout.tiles_w   = r->tiles_w;
     g_layout.tiles_h   = r->tiles_h;
+    g_layout.pack_tiles_w = r->tiles_w;
+    g_layout.pack_tiles_h = r->tiles_h;
+    g_layout.ui_scale     = (r->ui_scale > 0) ? r->ui_scale : 1;
+    g_layout.sidebar_gap  = 0;
+    g_layout.status_h     = 0;
+    g_layout.bar_h        = 0;
+    set_base_frame();
 
     g_layout.map_w     = g_layout.tile_w * g_layout.tiles_w;
     g_layout.map_h     = g_layout.tile_h * g_layout.tiles_h;
@@ -44,9 +67,166 @@ void layout_init(const struct Resources *res) {
     g_layout.screen_h  = CL_FRAME_TOP_H + CL_STATUS_H + CL_BAR_H
                        + g_layout.map_h + CL_FRAME_BOTTOM_H;
 
+    // A fixed buffer: the pack said how big the screen is, and the viewport
+    // is exactly the declared tile count. Whatever the viewport, sidebar and
+    // thin bands do not cover is split between the two side bands and between
+    // the top and bottom bands, so the map keeps its centre. Rome's 800x510
+    // with 7x5 tiles of 96 gives 16-pixel sides; the top and bottom bands
+    // shrink below their own 8px base to fit the declared height (see the
+    // shrink step just below).
+    // resources_load has already rejected a buffer too small to hold it.
+    g_layout.is_native = 0;
+    // A modern font makes the status band taller than the 9 units the base
+    // bands were summed with; the top and bottom bands give that back, down
+    // to a floor of two units (the lattice rail), before the buffer is
+    // judged too small.
+    if (r->mode == RENDER_MODE_MODERN && r->native_h > 0 && r->native_h < g_layout.screen_h) {
+        int short_by = g_layout.screen_h - r->native_h;
+        int floor_b = 2 * g_layout.ui_scale;
+        int give = (g_layout.frame_t - floor_b) + (g_layout.frame_b - floor_b);
+        if (give >= short_by) {
+            int t = short_by / 2, b = short_by - short_by / 2;
+            if (g_layout.frame_t - t < floor_b) { b += floor_b - (g_layout.frame_t - t); t = g_layout.frame_t - floor_b; }
+            if (g_layout.frame_b - b < floor_b) { t += floor_b - (g_layout.frame_b - b); b = g_layout.frame_b - floor_b; }
+            g_layout.frame_t -= t;
+            g_layout.frame_b -= b;
+            g_layout.screen_h = r->native_h;
+        }
+    }
+    if (r->mode == RENDER_MODE_MODERN && r->native_w > 0 && r->native_h > 0 &&
+        r->native_w >= g_layout.screen_w && r->native_h >= g_layout.screen_h) {
+        int slack_w = r->native_w - g_layout.screen_w;
+        int slack_h = r->native_h - g_layout.screen_h;
+        g_layout.frame_l += slack_w / 2;
+        g_layout.frame_r += slack_w - slack_w / 2;
+        g_layout.frame_t += slack_h / 2;
+        g_layout.frame_b += slack_h - slack_h / 2;
+        g_layout.screen_w  = r->native_w;
+        g_layout.screen_h  = r->native_h;
+        g_layout.is_native = 1;
+
+        // Spacing across the screen: the horizontal space the map pane and the
+        // HUD do not use is split three ways -- left edge, a band between the
+        // pane and the HUD, right edge -- in the proportion 3 : 2 : 3, so the
+        // middle band is two thirds of an edge instead of the HUD sitting
+        // flush against the map. What the proportion leaves goes to the two
+        // edges. Rome's 800 = 12 + 672 + 8 + 96 + 12.
+        int spare = r->native_w - g_layout.map_w - g_layout.sidebar_w;
+        int gap  = spare * 2 / 8;
+        int side = spare - gap;
+        g_layout.sidebar_gap = gap;
+        g_layout.frame_l = side / 2;
+        g_layout.frame_r = side - side / 2;
+
+        // The vertical stack mirrors the horizontal one: top edge, status
+        // band, band, map pane, bottom edge -- the status band standing in
+        // for the HUD, the band under it the same width as the one beside the
+        // HUD, and both outer edges as thick as the side edges. The status
+        // band takes what is left, provided that still holds a text line;
+        // otherwise the buffer is too short to mirror and keeps the frames
+        // computed above. Rome's 532 = 12 + 20 + 8 + 480 + 12.
+        int edge = g_layout.frame_l;
+        int status = r->native_h - g_layout.map_h - 2 * edge - gap;
+        if (status >= bfont_glyph_h()) {
+            g_layout.frame_t  = edge;
+            g_layout.frame_b  = edge;
+            g_layout.bar_h    = gap;
+            g_layout.status_h = status;
+        }
+    }
+
     // Legacy opens at 2x because 320x200 is tiny on a modern display. A modern
     // pack is already large -- 800x702 at 2x would be 1600x1404 and taller than
     // a 1080p screen -- so it opens 1:1 and the user scales up if they want to.
     g_layout.default_scale = (r->mode == RENDER_MODE_MODERN) ? 1 : 2;
     g_layout.is_modern     = (r->mode == RENDER_MODE_MODERN);
+}
+
+// The buffer IS the window, divided by the scale. The chrome frame therefore
+// stretches to the window edge rather than a small buffer being centred in a
+// field of black, and the sub-tile remainder lives INSIDE the frame as black
+// map pane. The map pane draws whole tiles only: it is cleared to black and
+// tiles are laid over it, so leftover space is simply never drawn into.
+static int odd_clamp(int n) {
+    if (n % 2 == 0) n -= 1;              // odd keeps the hero centred
+    if (n < CL_TILES_MIN) n = CL_TILES_MIN;
+    if (n > CL_TILES_MAX) n = CL_TILES_MAX;
+    return n;
+}
+
+void layout_min_window(int *out_w, int *out_h) {
+    // A fixed buffer is the floor: it is shown whole at 1x or not at all.
+    if (g_layout.is_native) {
+        if (out_w) *out_w = g_layout.screen_w;
+        if (out_h) *out_h = g_layout.screen_h;
+        return;
+    }
+    // Two things set the floor, and the pack's tile size moves both, so this
+    // cannot be a constant:
+    //
+    //   The battlefield is a fixed COMBAT_W x COMBAT_H grid of one-tile cells.
+    //   Unlike the map viewport it cannot shed cells to fit a smaller window --
+    //   making it fit would mean scaling the combat screen separately, which is
+    //   a whole rendering path that does not exist.
+    //
+    //   The map viewport will not shrink below CL_TILES_MIN tiles plus the
+    //   one-tile sidebar.
+    //
+    // For the 48x34 pack these come out equal and give exactly 320x200 -- the
+    // value that used to be hardcoded -- because the sidebar is one tile wide,
+    // so CL_TILES_MIN + 1 == COMBAT_W. A pack that changes either number gets a
+    // floor that still holds.
+    int need_w = COMBAT_W * g_layout.tile_w;
+    int alt_w  = CL_TILES_MIN * g_layout.tile_w + g_layout.sidebar_w;
+    if (alt_w > need_w) need_w = alt_w;
+
+    int need_h = COMBAT_H * g_layout.tile_h;
+    int alt_h  = CL_TILES_MIN * g_layout.tile_h;
+    if (alt_h > need_h) need_h = alt_h;
+
+    if (out_w) *out_w = need_w + CL_FRAME_LEFT_W + CL_FRAME_RIGHT_W;
+    if (out_h) *out_h = need_h + CL_FRAME_TOP_H + CL_STATUS_H
+                      + CL_BAR_H + CL_FRAME_BOTTOM_H;
+}
+
+bool layout_fit_window(int win_w, int win_h, int scale) {
+    if (!g_layout.is_modern) return false;   // legacy geometry is fixed
+    if (g_layout.is_native) return false;    // so is a declared buffer
+    if (scale < 1) scale = 1;
+
+    // Chrome bands are fixed pixel furniture and do not scale with the tile,
+    // so the pane is the buffer minus them.
+    int pane_w = win_w / scale - CL_FRAME_LEFT_W - g_layout.sidebar_w
+               - CL_FRAME_RIGHT_W;
+    int pane_h = win_h / scale - CL_FRAME_TOP_H - CL_STATUS_H - CL_BAR_H
+               - CL_FRAME_BOTTOM_H;
+
+    // Floor the pane at the smallest viewport, so a window too small to hold
+    // the minimum falls back to the old behaviour: a buffer larger than the
+    // window, which present_scaled centres.
+    int min_w = g_layout.tile_w * CL_TILES_MIN;
+    int min_h = g_layout.tile_h * CL_TILES_MIN;
+    if (pane_w < min_w) pane_w = min_w;
+    if (pane_h < min_h) pane_h = min_h;
+
+    int tw = odd_clamp(pane_w / g_layout.tile_w);
+    int th = odd_clamp(pane_h / g_layout.tile_h);
+    // At the tile ceiling the pane would be mostly black, so give back the
+    // space the viewport cannot use.
+    if (tw == CL_TILES_MAX) pane_w = g_layout.tile_w * tw;
+    if (th == CL_TILES_MAX) pane_h = g_layout.tile_h * th;
+
+    int sw = CL_FRAME_LEFT_W + pane_w + g_layout.sidebar_w + CL_FRAME_RIGHT_W;
+    int sh = CL_FRAME_TOP_H + CL_STATUS_H + CL_BAR_H + pane_h
+           + CL_FRAME_BOTTOM_H;
+    if (sw == g_layout.screen_w && sh == g_layout.screen_h &&
+        tw == g_layout.tiles_w && th == g_layout.tiles_h) return false;
+
+    g_layout.tiles_w  = tw;
+    g_layout.tiles_h  = th;
+    g_layout.map_w    = pane_w;   // full interior; the slack stays black
+    g_layout.map_h    = pane_h;
+    g_layout.screen_w = sw;
+    g_layout.screen_h = sh;
+    return true;
 }

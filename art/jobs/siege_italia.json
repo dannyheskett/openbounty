@@ -1,0 +1,18 @@
+{
+  "id": "siege_italia",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Roman military engineer in a leather cuirass holding a measuring rod, a half-built ballista and timber scaffolding behind him",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 9605,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "_pack_path": "art/portraits/siege_italia_00..07.png",
+  "_animation": "glancing down at his rod and back up, a firm nod, static background, smooth loop",
+  "_note": "Town detail portrait (2026-09-13): boat master (Boat detail) or siege engineer (Siege works detail), one per continent. Same route as the informants and priests: still at 128, eight-frame loop at 128, each frame centre-cropped to 96 (Dan-approved for town portraits)."
+}

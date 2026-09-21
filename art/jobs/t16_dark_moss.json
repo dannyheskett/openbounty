@@ -1,0 +1,25 @@
+{
+ "lower_description": "dark mossy meadow grass",
+ "upper_description": "the same grass with a few small patches of slightly darker moss",
+ "transition_description": "",
+ "tile_size": {
+  "width": 16,
+  "height": 16
+ },
+ "mode": "standard",
+ "shape_style": "round",
+ "enhance": false,
+ "view": "high top-down",
+ "outline": "lineless",
+ "shading": "detailed shading",
+ "detail": "medium detail",
+ "text_guidance_scale": 8.0,
+ "transition_size": 0.0,
+ "seed": 131,
+ "lower_reference_image": {
+  "type": "base64",
+  "base64": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACi0lEQVR4nD2S23LiRhgGew6SRkiAOHjx7mInVUnlIfL+L5ICDMTmFA9ohOaQC1x799dXf/VNt/jr7z/Tz+WAt7eWHz9KjifHoNR4n7i1HoA8E9iz53lZsVtfefljyPqfK7N5iZ7Nc3a7Finh3ifaNtC2gdl0gIie5WtN8IGQ7gAUpeJ06JgvCnYbizyfOprGoLXicnSkmGgmBcejI8RI1wW2by0pwH7XEhKEBJ+XHq0VspkU7HeWus6494nhuKAe5MQYaCYFHx+O7z9rOud5WpTECClEtJb07o601jNflByPjuVLjRKwWv2HMRqAq+1xzqNU4uPdEWNgMiuw9k4zN8i6fjwCKCWo64z53PzaykqTFZKui0ynBiEFWkuM0VjrkWWVcT7cqYaaW+sJKXE89r8ATWMgCpQWWNuRZZL2GhmNC4JPyO3mhqk0VanZbix9FxiNNM56nIvcrh3rlUVKhVQwKDVaw7/7K1mukTGCEpHTwfHb70Oc85SVRuYKAO+hqiWmFEwnhvbqEQqM0aSYkIvvhuG4oA/gfaLvEudzz3Sa4X0EwLmE0gqtIMSHgTyH4Ug+LHgfyXPB6eDoA1RlhrWepil4ehog1QO+299ZvozYbm7EKIkRZJEJPi+BmBJJwutrzefF0TQFzj1SXnyr6NrA83PJdmOZzw3eQ98lZNcn6lpiCkH08csEnA6Ous5IKdLdAykmzudHnQD265bng6OsMqph8WjhK4vpN0NIifXaIgUURtM0Bqklx5OjbnKUlMhxU7BZ3QB4eh7weenICoXWkve9Q0iBtY8uthuLiCCFQCjJcGyQi0VJpqDvAu+7B6jvAuuVhRSpBgqI1HVGSDCZGZqmoGsD3nv+B8MyY6+J+iOkAAAAAElFTkSuQmCC",
+  "format": "png"
+ },
+ "lower_base_tile_id": "490576ec-9573-449f-b580-673e4e1c2505"
+}

@@ -1,0 +1,17 @@
+{
+ "id": "backdrop_alcove",
+ "prompt": "a small open-air stone precinct on a high bare hilltop at first light, a low square parapet of pale weathered ashlar around a plain stone altar, a bronze tripod beside it with thin smoke rising, the ground trodden bare earth and cropped grass, a very wide pale dawn sky filling most of the picture with a scatter of dark birds circling high up, distant hills and a far-off city below the summit, still and solemn, no people anywhere",
+ "style": "rd_pro__default",
+ "width": 240,
+ "height": 102,
+ "seed": 6402,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  240,
+  102
+ ],
+ "_pack_path": "art/ui/backdrop_alcove.png",
+ "_note": "The magic alcove's location backdrop (2026-09-12), replacing the hill cave's, which it shared with the hills dwelling. Same route as the other six: rd_pro__default at the 240x102 design size, opaque, no background removal, scaled by the shell. Composed as the OPPOSITE of backdrop_hillcave: that one is a dark cave mouth under an overcast sky, this one is open, high and bright, with the sky taking most of the frame -- an augur's templum is a region of sky, so the sky is the subject."
+}

@@ -60,7 +60,7 @@ bool fx_init_game_full(Resources **out_res, Game **out_game,
     Map  *map  = calloc(1, sizeof *map);
     Fog  *fog  = calloc(1, sizeof *fog);
     if (!game || !map || !fog) {
-        free(game); free(map); free(fog);
+        GameFree(game); free(game); MapFree(map); free(map); FogFree(fog); free(fog);
         resources_free(res); free(res);
         return false;
     }
@@ -68,7 +68,7 @@ bool fx_init_game_full(Resources **out_res, Game **out_game,
     FogInit(fog);
     const char *zid = (zone && zone[0]) ? zone : res->world.starting_zone;
     if (!MapLoadZoneWithPlacements(map, res, zid, game)) {
-        free(game); free(map); free(fog);
+        GameFree(game); free(game); MapFree(map); free(map); FogFree(fog); free(fog);
         resources_free(res); free(res);
         return false;
     }
@@ -80,9 +80,9 @@ bool fx_init_game_full(Resources **out_res, Game **out_game,
 }
 
 void fx_free_game_full(Resources *res, Game *game, Map *map, Fog *fog) {
-    free(fog);
-    free(map);
-    free(game);
+    FogFree(fog); free(fog);
+    MapFree(map); free(map);
+    GameFree(game); free(game);
     if (res) {
         resources_free(res);
         free(res);

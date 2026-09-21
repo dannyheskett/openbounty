@@ -326,43 +326,33 @@ except where a deviation is explicitly flagged (§34).
 
 ## 3. Global constants and limits
 
-### 3.1 Storage caps (`engine/include/game.h`)
+### 3.1 No limit on content
 
-- **REQ-110.** Compile-time storage caps:
-
-  | Constant | Value | Meaning |
-  |---|---|---|
-  | `GAME_NAME_LEN` | 16 | Hero name buffer |
-  | `GAME_ARMY_SLOTS` | 5 | Player army stack slots |
-  | `GAME_CONTINENTS` | 4 | Zones in the base pack |
-  | `GAME_TOWNS` | 26 | Town record rows |
-  | `GAME_CASTLES` | 26 | Castle record rows (player-trackable castles; the King's castle is the special 27th catalog entry, §17.1). A ceiling, not a required count: every consumer loops to `min(res->castle_count, GAME_CASTLES)`, so a pack may declare fewer. |
-  | `GAME_MAX_MUTATIONS` | 1024 | Consumed-tile records (artifact pickups, opened chests). Raised from 64, a four-continent playthrough collects 50+ chests per continent; overflow silently dropped consumed entries and chests respawned on re-entry. |
-  | `GAME_MAX_DWELLINGS` | 64 | Per-game dwelling state rows |
-  | `GAME_MAX_PLACEMENTS` | 128 | Salt-time randomized placements |
-  | `GAME_MAX_FOES` | 160 | Foe state rows (hostile + friendly share the flat table). Sized for all four continents at once: OpenKB's `foe_coords[4][40]` gave each continent its own 40 slots (35 hostile + 5 friendly); the flat shared table must therefore hold 4 × 40 = 160, or the first-salted continents exhaust it and later ones (Archipelia, Saharia) get no foes. `salt_continent` caps each continent to `GAME_MAX_HOSTILE_PER_ZONE` (35) hostiles + 5 friendlies. |
-  | `CONTRACT_CYCLE_MAX` | 8 | Contract cycle buffer (real length from `res->contract.cycle_length`) |
-
+- **REQ-110.** Nothing a pack lists has a compile-time cap. Catalogs (troops,
+  spells, classes, villains, artifacts, towns, castles, zones and every
+  per-zone object list), maps and their string pools, fog, and game state
+  (towns, castles, spellbook, artifacts, villains, zones, contract cycle,
+  consumed tiles, dwellings, placements, foes, the player-IO queue) are heap,
+  sized from the pack or grown in play. `Game`, `Map` and `Fog` are copied
+  only with `GameCopy` / `FogCopy` / `MapAlloc` and released with `GameFree` /
+  `FogFree` / `MapFree`; a test fails the build on a by-value copy.
 - **REQ-111.** Tunable constants that *define gameplay* (day/week lengths,
-  costs, contract cycle length, difficulty table) have **not** been compile-time, they live in `game.json` and are read through `g->res`. Only storage caps
-  (bounded by struct sizes) have been compile-time.
+  costs, contract cycle length, difficulty table, hostile armies per zone) live
+  in `game.json` and are read through `g->res`.
 
-### 3.2 Resource caps (`engine/include/resources.h`)
+### 3.2 What stays fixed
 
-- **REQ-112.** The parsed `Resources` has bounded every array at compile time:
-  `RES_MAX_TOWNS=32`, `RES_MAX_CASTLES=32`, `RES_MAX_ZONES=8`,
-  `RES_MAX_NEIGHBORS=8`, `RES_MAX_ZONE_OBJECTS=256` (per kind, per zone),
-  `RES_ID_LEN=32`, `RES_NAME_LEN=48`, `RES_PATH_LEN=128`,
-  `RES_TILE_CODE_COUNT=128`, `RES_BANNER_LEN=320`, `RES_MAX_KEYBINDS=24`,
-  `RES_MAX_COUNT_BUCKETS=8`, among others.
-
-### 3.3 Catalog caps (`engine/include/tables.h`)
-
-- **REQ-113.** Catalog sizes: `CAT_TROOPS_MAX=32`, `CAT_SPELLS_MAX=32`,
-  `CAT_CLASSES_MAX=8`, `CAT_VILLAINS_MAX=32`, `CAT_ARTIFACTS_MAX=16`,
-  `CLASS_MAX_RANKS=4`, `CLASS_MAX_STARTING_TROOPS=2`. The shipped
-  `kings-bounty` pack has filled these to 25 troops, 14 spells, 4 classes,
-  17 villains, 8 artifacts (§Appendix A).
+- **REQ-112.** Text field lengths (`RES_ID_LEN=32`, `RES_NAME_LEN=48`,
+  `RES_PATH_LEN=128`, `RES_BANNER_LEN=320`, `GAME_NAME_LEN=16`, ...); an
+  over-long string is a load error. `RES_TILE_CODE_COUNT=256` (a map cell is
+  one byte); a map holds at most 65,535 distinct strings (a tile field is 16
+  bits).
+- **REQ-113.** Game rules: `GAME_ARMY_SLOTS=5`, the 6×5 combat field,
+  `CLASS_MAX_RANKS=4`, four difficulties, four continent tiers
+  (`RES_SPAWN_TIERS`, chest odds), the 5×5 puzzle grid, seven options.
+  Autoplay and the demo player keep their own table sizes and ignore content
+  beyond them. The shipped `kings-bounty` pack has 25 troops, 14 spells,
+  4 classes, 17 villains, 8 artifacts (§Appendix A).
 
 ### 3.4 Enums
 
@@ -416,7 +406,10 @@ except where a deviation is explicitly flagged (§34).
   the shipped pack: `economy.boat_cost_normal=500`, `boat_cost_cheap=100`,
   `siege_cost=3000`, `alcove_cost=5000` (§23, §Appendix A). Time:
   `time.day_steps=40`, `week_days=5`, `days_per_difficulty=[900,600,400,200]`.
-  Map dimensions: `MAP_MAX_W=64`, `MAP_MAX_H=64` (`engine/include/map.h`).
+  Map dimensions have no ceiling: `Map.tiles` is heap, sized to each zone's
+  own `width`/`height`, and the save encodes fog from those (REQ-413). The
+  cost is memory: every autoplay search node copies the used map area
+  (AP-204), so the frontier beam pays proportionally.
 
 ---
 
@@ -786,6 +779,78 @@ except where a deviation is explicitly flagged (§34).
   `magic_alcove_x/y`, `neighbors[]` (zone ids reachable by sailing), a `salt`
   config (§10), and per-feature lists (towns, castles, signs, chests,
   dwellings, armies). Exactly one zone has `is_home: true` (Continentia).
+- **REQ-221b.** **One-time vistas (`events`).** A zone may declare `events`, a
+  list of one-time moments. Each has an `id`, a trigger tile `(x, y)`, a
+  `scene` image, a `title` and `body`, a `requires` list and an `effects` list.
+  Stepping onto the tile with every precondition held (`GameTryFireEvent`,
+  `engine/game.c`) spends what the preconditions mark `consume`, writes each
+  effect's `tile` (a `tile_codes` key) onto the map, records the id in
+  `events_done`, and queues the scene as a `PIO_NOTE_SCENE` with
+  `REQ_FACE_EVENT`, drawn full width with the pack's art and a single
+  Continue. It never fires again, and a vista never bounces the hero back.
+  Preconditions are `spell` (charges), `troop` (in the army), `gold` (held) and
+  `artifact` (found), each with a `count` and an optional `consume`; troops and
+  artifacts are held, never spent. An effect is either a `tile` (a tile_codes
+  key written onto the map) or `"reveal": true`, which lifts the fog over the
+  whole zone -- the fog is saved, so only tile effects are re-applied on load. `events_done` is saved, and
+  `GameApplyTileMutations` re-applies every played vista's tiles whenever the
+  zone loads, so the change outlives a zone switch and a reload. Lists are
+  heap, sized by the pack; a pack that declares none behaves exactly as before
+  (`kings-bounty` declares none). `glory-of-rome` declares the Rubicon (the
+  Pontifex rite, one charge, consumed, opens the bridge the Po plain is behind)
+  the Pharos of Alexandria (3,000 gold, paid, reveals the whole of Africa) and
+  the Temple of Ocean in Galliae (both of that zone's relics, held not spent:
+  the crag on the islet's near side becomes grass and two bridge tiles lay a
+  causeway to it).
+- **REQ-296a.** **A gate army may demand one arm.** A static army with
+  `"requires_troop": "<troop id>"` refuses the fight unless that troop stands
+  in the hero's army (`GameFoeBarsHero`, `engine/game.c`): stepping onto it
+  bounces the hero back with the `foe_requires_troop` banner, drawn as a scene
+  when the army also names one (`"scene"`, headed by its own `"title"` and
+  sharing the vistas' art list). A
+  dwelling may be pinned to a breed with `"troop"` instead of rolling from the
+  zone's pool. Autoplay treats the demand as a prerequisite candidate
+  (`exec_muster`, `autoplay/primitives.c`): it marches to the dwelling that
+  breeds the arm, gives up its weakest stack for a slot if the army is full,
+  and recruits what the purse and leadership allow. `glory-of-rome` holds the
+  Armenian pass against everything but the Elephanti, bred at Apamea, with
+  Artaxata behind it.
+- **REQ-230d.** **A chest may carry a declared purse.** A zone chest with
+  `"gold": N` always holds exactly N and rolls nothing (`GameRollChest`,
+  `engine/game.c`); the leadership offer stays N/50, doubled by the artifact
+  power as usual. Galliae's island chest holds 5,000.
+- **REQ-229h.** **A tile code may name its `ground`.** A landmark tile (the
+  Pharos) is transparent around its art, so its code names the art drawn under
+  it; `fill_tile_from_code` (`engine/map.c`) sets the tile's ground from it and
+  the renderer lays that down first, exactly as it does under an object tile.
+  Absent, a tile is its own ground, as terrain has always been.
+- **REQ-221d.** **Town backdrops per continent.** The town screen's picture is
+  the town's own `backdrop` when it names one, else its zone's `town_backdrop`,
+  else the pack's shared `sprites.ui.town_backdrop`
+  (`town_backdrop_for`, `src/modern/overlay.c`). All three are listed in the
+  art manifest, so the pack zip carries what it declares. `glory-of-rome` gives
+  each continent its own town street and keeps the original picture for Roma
+  alone; `kings-bounty` declares neither and draws the shared one as before.
+- **REQ-221c.** **Sailing is a scene, with a confirmation.** When a pack ships
+  `sprites.ui.sail_backdrop` and the string `body_navigate_confirm`, the modern
+  shell draws the sail-to decision as a scene over that picture: one row per
+  province plus Cancel, then a yes/no confirmation ("Sail for %ZONE%?") over
+  the same picture, drawn by `modern_overlay_draw_sail` (`src/modern/overlay.c`)
+  through the scene shape the foe view uses. The two steps live in the SHELL
+  (`src/shell_promptdispatch.c`): the engine still receives exactly one answer,
+  the province, so autoplay, recordings and replays are unchanged, and a pack
+  with neither key keeps the bottom-frame list (`kings-bounty`). Declining the
+  confirmation puts the province list back up; cancelling it ends the sail.
+- **REQ-221a.** **Arrival by origin.** A zone may declare `arrivals`, an
+  object keyed by the zone sailed from, each `{x, y}`. `GameSwitchZone`
+  lands the hero at the entry for the zone being left, else at `hero_spawn`
+  (`resources_zone_arrival`). A landing on water arrives in the boat, as
+  any water spawn does. Gate spells and defeat still override the landing
+  afterwards. `glory-of-rome` declares an arrival for every neighbour, each a
+  sea tile touching the coast beside the port a ship from there would make
+  for; `tools/mapbuild.py check` requires each to be on the open sea and
+  touching land, and counts its sea as sailed when proving the gates.
+  `kings-bounty` declares none and behaves exactly as before.
 
 ### 9.2 Coordinates
 
@@ -823,23 +888,243 @@ except where a deviation is explicitly flagged (§34).
   are ignored. Each byte is looked up in `Resources.tile_codes[128]` to produce
   an art name plus terrain/blocking flags; short rows are padded with grass.
   The shipped pack uses 54 distinct tile codes (§Appendix A).
+- **REQ-228a.** A town has been stamped with its catalog entry's `art` stem
+  when one is declared (`engine/map.c stamp_objects`), else `town`. The art
+  manifest lists each declared stem once and the shared `town` tile only
+  while some town lacks an `art` of its own, so `kings-bounty`, which
+  declares none, is unchanged.
+- **REQ-165b.** In a siege the shell has drawn a decorative band above row 0
+  from `sprites.ui.siege_back_wall` (end cells from `_left` / `_right`) over
+  field tiles, when the pack names them; outside the grid, so nothing in
+  play changes and packs without the keys draw nothing.
+- **REQ-165c.** When `sprites.ui.siege_grid` names a prefix, the engine has
+  expanded it to one path per cell of the band plus board
+  (`resources_siege_grid_path`, `COMBAT_W x (COMBAT_H + 1)` entries in the
+  manifest) and the shell, in a siege only and only when every cell loaded,
+  has drawn each cell's own tile as the ground, row 0 in the band above the
+  board, and skipped the wall codes 5..10 at the obstacle stamp; the
+  `siege_back_wall*` band is not drawn then, and `sprites.combat[5..10]`
+  leave the manifest (Rome ships no wall pieces, 2026-09-08). `castle_omap`
+  and movement are untouched. Absent, REQ-165b and the per-code pieces apply, so
+  `kings-bounty` is unchanged (2026-09-07).
+- **REQ-165d.** With `sprites.ui.combat_ground` `"terrain"`
+  (`resources_combat_ground_is_terrain`), the shell has set the combat ground
+  before every fight (`combat_render_set_ground`, from
+  `shell_promptdispatch.c`) to the hero's map tile, water falling back to
+  grass, and drawn it under every cell and the siege band in place of
+  `sprites.combat[0]`, which the manifest then omits. Absent or `"field"`,
+  the field tile draws as before, so `kings-bounty` is unchanged (2026-09-08).
+- **REQ-165a.** When `sprites.ui.panel_frame` names a palette colour the
+  shell has drawn a frame round every panel slot (`ui_panel_frame`: HUD
+  panels, inventory cells, contract face) so the art carries none; absent,
+  nothing is drawn and packs with painted frames are unchanged.
+- **REQ-163a.** A class entry has optionally carried a `hero` block (walk,
+  idle, boat, tile) parsed into `Resources.class_hero[]`
+  (`resources_class_hero`); the shell draws the chosen class's sets for the
+  map hero and the win-cartoon tile (`sprites_hero_anim`, `sprites_end_hero`)
+  and falls back to the pack-wide `sprites.hero` and `ending.hero_tile` for
+  anything undeclared, so `kings-bounty`, which declares none, is unchanged.
+  The cartoon's grass backdrop is `ending.grass_tile` when declared, else the
+  map's `grass` tile from the tile cache (2026-09-07), so `glory-of-rome`
+  declares neither `grass_tile` nor `hero_tile` and ships neither file.
+- **REQ-228b.** A wandering foe has been stamped with its zone's `army_art`
+  stem when the zone declares one (`Map.army_art`, read by both foe stamp
+  sites), else `wandering_army`; the map draws that tile for every foe (the
+  lead-troop sprite of issue #9 was reverted 2026-09-06). The manifest lists
+  each declared stem once and the shared tile only while some zone lacks one.
+- **REQ-227a.** A zone that declares `tile_set` has had every terrain art
+  name it stamps prefixed with `<tile_set>/` (`engine/map.c MapTerrainArt`),
+  including the grass padding, the grass or water a cleared object reverts
+  to, and bridge tiles built by the Bridge spell, so the shell's tile cache
+  loads `art/tiles/<tile_set>/<art>.png`. Object art stamped from the zone
+  lists is never prefixed. A zone without the key is unchanged. The art
+  manifest lists the shared terrain only while some zone draws it, and each
+  declared set once.
 
 ### 9.7 Castle and town tile placement
 
-- **REQ-228.** A castle has been stamped as a 3×2 footprint centred on its
-  `gate_x/gate_y`: the gate tile (interactive `CASTLE_GATE`, walkable) sits at
-  `(x, y)`; the five surrounding tiles are wall pieces (non-interactive,
-  `blocks_foot = true`). Castles may declare extra decorative wall pieces (the
-  King's castle has 24). A town has been a single `INTERACT_TOWN` tile with a
+- **REQ-228.** A castle has been stamped as one of two footprints, chosen per
+  catalog entry by `castles[].footprint` (`engine/resources.c parse_castles`,
+  `engine/map.c stamp_objects`):
+  - **`3x2`**, the default when the key is absent: a block centred on the
+    gate. The gate tile (interactive `CASTLE_GATE`, walkable) sits at `(x, y)`;
+    the five surrounding tiles are wall pieces (`castle_tl/br/tr/ml/mr`,
+    non-interactive, `blocks_foot = true`).
+  - **`1x1`**: the gate tile alone, drawn with the single `castle` art, so the
+    castle sits on the map the way a town does. No wall tiles; the eight
+    neighbours keep their `.dat` terrain. The `castle` art is transparent: the
+    renderer (`src/map_render.c map_render_draw`) draws a tile's plain terrain
+    beneath every object tile before the object's own art, so the castle
+    stands on the ground it occupies (ART-SPEC §4). An opaque object covers
+    that ground and draws exactly as before.
+  An unrecognised value has printed a notice and stamped `3x2`. Castles may
+  declare extra decorative wall pieces (the King's castle has 24), honoured
+  for either footprint. A town has been a single `INTERACT_TOWN` tile with a
   `boat_spawn_x/y` used when a boat is rented. When a castle's `gate` object is
-  absent, the gate landing tile is computed as `(x, y+1)`.
+  absent, the gate landing tile is computed as `(x, y+1)`. The art manifest
+  (`resources_art_manifest`) has listed a footprint's castle art only when some
+  castle in the pack uses it (`map_castle_art_names`), so a pack ships only the
+  pieces it stamps. Everything else about a castle, the visit flow, sieges,
+  garrisons, contracts, the Castle Gate landing, the foe doorstep rule, keys off
+  the gate tile and is the same for both footprints.
+
+### 9.8 Terrain edge variants (baked, not generated)
+
+- **REQ-229.** Every terrain except grass has shipped **twelve edge variants**
+  alongside its plain tile (`water_edge_00..11`, `forest_edge_01..12`,
+  `mountain_edge_01..12`, `desert_edge_01..12`; 48 of the pack's 54 tile
+  codes). They are the transition pieces that blend a terrain into its
+  neighbour, and they are **baked into the `.dat` files by the map author**,
+  not generated at runtime. **A `.dat` holds the fully rendered map; nothing
+  about its appearance is computed at game time.** This is a ratified
+  decision, not an accident of implementation: `furnish_map` (`engine/game.c`)
+  is retained as a permanent **no-op** mirroring OpenKB's `spawn_game` call
+  sequence, where a real furnishing pass (`rogue.c`, `OPENKB-SPEC.md` §12.5)
+  rewrote base terrain bytes into edge bytes at load. OpenBounty will not do
+  that. The consequences are intended: a `.dat` is self-contained and renders
+  identically in the game, in an editor, and in any third-party tool, with no
+  shared algorithm to keep in agreement; load does no per-tile work; and a
+  pack author's saved file is exactly what a player sees. A `.dat` written with only the plain terrain codes therefore renders
+  with hard stair-stepped coastlines; the shipped `continentia` uses all 54
+  codes, and its edge tiles outnumber its plain ones.
+
+- **REQ-229a.** The variant is selected by which of the tile's eight
+  neighbours carry a **different terrain**, cardinals taking precedence over
+  diagonals. Two families exist, differing in both base and permutation
+  (matching OpenKB's `tile_offset` table, which gives water its own row):
+
+  | Differing neighbours | water | forest / mountain / desert |
+  |---|---|---|
+  | N | `10` | `11` |
+  | S | `11` | `12` |
+  | E | `08` | `09` |
+  | W | `09` | `10` |
+  | N and E | `00` | `03` |
+  | N and W | `01` | `01` |
+  | S and W | `02` | `02` |
+  | S and E | `03` | `04` |
+  | NE only (no cardinal) | `05` | `06` |
+  | SE only | `04` | `05` |
+  | SW only | `06` | `07` |
+  | NW only | `07` | `08` |
+
+  Water is 0-based (`00`–`11`); the other three are 1-based (`01`–`12`) and
+  have no `00`. A tile with no differing neighbour uses the plain terrain
+  code. Three or more differing cardinals (a one-tile spit) has no dedicated
+  variant and is the author's choice; the shipped maps avoid the shape.
+
+- **REQ-229b.** This table was **derived from the shipped maps**, by
+  classifying every edge tile in all four zones by its neighbour pattern, then
+  re-applied as a rule and measured against what the authors actually placed.
+  Of the **7,870** edge tiles in the four shipped zones it reproduces **7,590
+  (96.4%)** exactly; **169 (2.1%)** sit on patterns the table leaves undefined
+  (three or more differing cardinals, or more than one differing diagonal with
+  no cardinal), and **111 (1.4%)** disagree, which is the expected residue of
+  a hand-drawn map. The convention is therefore exact enough to author
+  against, and a generator applying it will produce coastlines
+  indistinguishable from the shipped ones.
 
 ---
+
+- **REQ-229e.** Seven more variants close the shapes REQ-229a leaves
+  undefined, keyed by the tile's OPEN (differing) cardinals: `13` N+S,
+  `14` E+W (one-wide strips), `15` N+E+S, `16` E+S+W, `17` S+W+N, `18`
+  W+N+E (spits, attached on the remaining side), `19` all four (an island).
+  Water is 0-based as before (`12`..`18`). `glory-of-rome` ships all seven
+  for forest and mountain and the two strips and the island for water; the
+  four shipped zones contain no other shape. `tools/mapbuild.py build`
+  assigns them when it bakes a map from its source; the art comes from the same lattice
+  and stitching tools as the twelve, so every side that is open is a
+  terminal edge and every closed side the standard interface.
+
+- **REQ-229f.** A tile keeps its own terrain art (`Tile.ground`) beside
+  the art it draws. An object stamped on a cell (a foe, a chest, a town)
+  replaces only the drawn art; the renderer draws `ground` beneath the
+  object, and `MapClearInteractive` restores `ground` when the object goes.
+  So a road or a grass variant survives a foe walking over it. Only
+  grass-terrain ground is restored: on any other ground (desert, a dwelling
+  on a mountain edge) the original rule still applies and the cleared cell
+  becomes plain grass, so the legacy pack plays exactly as before; water
+  stays water. Fixed 2026-09-10: the clear wrote the literal "grass" into
+  every vacated cell, which erased roads for the rest of the game.
+
+### 9.9 Roads (grass-terrain tile codes)
+
+- **REQ-229c.** A road is a **tile, not an object**: a `tile_codes` entry
+  with `terrain: grass` and its own art, exactly like `grass_variant`. The
+  engine needs no road concept: walkability and move cost come from the
+  terrain (grass, cost 1, unchanged), salt and foe logic see grass, and the
+  renderer draws the entry's art. The map author bakes the road pieces into
+  the `.dat` like the edge variants (REQ-229). `glory-of-rome` ships
+  twenty-four pieces, codes `f`..`y` and `\x80`..`\x83`: straights
+  `road_ns`/`road_ew`; the four
+  curves `road_ne`, `road_es`, `road_sw`, `road_wn` (named by their two
+  exits); the diagonals `road_nesw`/`road_nwse`; eight joins from a straight
+  exit to a diagonal corner (`road_n_sw`, `road_n_se`, `road_s_nw`,
+  `road_s_ne`, `road_e_nw`, `road_e_sw`, `road_w_ne`, `road_w_se`); and the
+  four **companions** `road_c_nw/ne/sw/se`, grass with the road's triangle in
+  one corner. A diagonal passes through a tile corner that two side
+  neighbours share, so the author places the companions on those two cells
+  (a `road_nwse` at (x, y) takes `road_c_sw` at (x+1, y) and `road_c_ne` at
+  (x, y+1); a `road_nesw` takes `road_c_se` at (x-1, y)... see
+  `tools/romeart.py sweep`). Last, the four **ends** `road_n`, `road_e`, `road_s`,
+  `road_w`, named by their one exit: the road enters through that side at the
+  full band width and stops inside the tile, so a run can finish in open
+  grass rather than only where an object replaces its code (an object on a
+  road cell still does that, which is why a road needs no end piece beside a
+  gate or town).
+
+  Every straight exit is a 32 px band centred on the side and every diagonal
+  exit the same corner triangle, so any piece joins any other, ends included;
+  `tools/romeart.py sweep` checks that contract on every run. The pieces are not
+  drawn: the tool sweeps them out of a PixelLab terrain set, filling each
+  piece's signed-distance shape with the set's road tile and leaving the
+  pack's own grass outside (see docs/ART-PIPELINE.md). Rome's surface is
+  cobblestone as of 2026-09-12, from `art/jobs/t32_cobble_203.json`, with a
+  two-pixel edging course a shade darker than the paving painted by the
+  sweep's `--rim` / `--rim-shade` -- the set's own transition tiles are
+  discarded, so an edging described in a prompt would never reach the game.
+  An end's last stretch is cut off at a slanted front and frayed by the
+  boundary noise, so the paving breaks up into loose stones instead of
+  tapering to a point; the fray is scaled to zero at the exit side, where the
+  contract has to hold exactly.
+
+- **REQ-229d.** A tile code may declare cosmetic **`variants`**, up to eight
+  art names with the same terrain and flags (a name may repeat to weight
+  it; the base art counts once more). The shell (`src/tilevar.c`) picks one
+  per cell when it draws, from the cell's x, y and a seed drawn once per
+  launch, so a field of one code is not a single stamp and shuffles between
+  launches. This is the one stated exception to "nothing about appearance
+  is computed at game time" (REQ-229): the choice is draw-time only and
+  cosmetic. The `.dat`, the engine, saves, replays and byte determinism
+  never see it. The ground drawn under an object goes through the same
+  pick. Every variant must join every other and the base at any edge, which
+  the pack guarantees by keeping variant edges identical to the base
+  (`glory-of-rome`: `grass_01..06`, the grass with a patch of dry grass
+  inside, from `tools/romeart.py grass`). Packs that declare no variants draw
+  exactly as before; the legacy pack declares none.
 
 ## 10. Salt: per-zone object placement
 
 ### 10.1 Salt budget
 
+- **REQ-229g.** **The magic alcove names its own art.** The alcove borrowed
+  three other assets, each chosen in C rather than declared: the
+  hills-dwelling tile for its map icon (`engine/map.c`), the hill cave's
+  backdrop, and a troop sprite for the figure on it -- `src/screens/alcove.c`
+  hard-coded the troop id `gnomes`, which in `glory-of-rome` draws Fauni, and
+  the comment admitted it was a leftover from the original, where the alcove
+  was the archmage's home. A pack may now declare all three: a zone's
+  `alcove_art` names the map tile (per zone, exactly as `army_art` does), and
+  `sprites.ui.alcove_backdrop`, `sprites.ui.alcove_figure` and
+  `sprites.ui.alcove_figure_animation` name the location backdrop and the
+  figure's frames. Each is optional and each falls back to what the alcove
+  borrowed before, so a pack that declares none behaves exactly as it did:
+  `kings-bounty` still shows a hill cave with its gnomes. The figure cycles on
+  the same tick and fills the same tile-shaped slot the troop strip did, so the
+  backdrop geometry is one rule for both. The location kind `LOC_ALCOVE` (7)
+  exists so the screen can ask for its own backdrop instead of the hill
+  cave's.
 - **REQ-230.** Each zone has declared a `salt` block: `artifacts`, `navmaps`,
   `orbs`, `telecaves`, `dwellings`, `friendly_foes` (counts), plus
   `preferred_troops[]` and `dwelling_range[lo, hi]` for dwelling troop
@@ -908,8 +1193,12 @@ except where a deviation is explicitly flagged (§34).
   (`engine/step.c`); walkability is decided by `engine/adventure.c`.
 - **REQ-241.** A blocked move has played the bump sound and left position,
   facing, and travel mode unchanged. A successful move has updated
-  `position.x/y`, set `facing_left = (dx < 0)`, fired `FogReveal` at the new
-  position with radius `world.fog_sight` (3), and called `GameOnStep`.
+  `position.x/y`, set `facing_left = (dx < 0)`, revealed the fog at the new
+  position (`FogRevealFor`: exactly the pack's viewport, `render.tiles_w` x
+  `tiles_h`, around the hero -- the original's 5x5 for a 5x5 viewport, 7x5 for
+  Rome -- so the tile past each edge of the view stays unexplored until walked
+  towards and shows the fog fade, the same in both modes), and called
+  `GameOnStep`.
 
 ### 11.2 Walking, sailing, flying
 
@@ -1062,15 +1351,12 @@ except where a deviation is explicitly flagged (§34).
 ### 15.1 Foe state and sources
 
 - **REQ-280.** A `FoeState` (§4.3) holds zone, `(x,y)`, `placement_id`,
-  `alive`, `friendly`, and a 5-stack garrison. Up to 160 foes are tracked
-  (`GAME_MAX_FOES` = 4 continents × 40), and static zone armies and salt-placed
-  friendly foes share the one flat array. Because the array is shared and salted
-  in zone order, the cap must cover every continent's allocation at once — a
-  smaller cap let the early continents exhaust the table and left later ones
-  (Archipelia, Saharia) with no foes. To keep OpenKB's per-continent 40-slot
-  split (`foe_coords[4][40]`), `salt_continent` bounds each continent to
-  `GAME_MAX_HOSTILE_PER_ZONE` (35) hostiles plus its `friendly_foes` (5)
-  friendlies. Static hostile foes come from `zones[].armies[]` with garrisons
+  `alive`, `friendly`, and a 5-troop garrison. The foe list grows as foes are
+  salted, and static zone armies and salt-placed friendly foes share it. To
+  keep OpenKB's per-continent split, `salt_continent` raises every army a
+  zone declares in `wandering_armies` (no cap: the list is sized by the pack;
+  King's Bounty declares at most 35 a zone, OpenKB's `foe_coords[4][40]` less
+  5 friendly) plus its `friendly_foes` friendlies. Static hostile foes come from `zones[].armies[]` with garrisons
   pre-rolled at salt time (`roll_hostile_garrison`); friendly foes are
   salt-placed with placeholder garrisons re-rolled on join (§15.5).
 
@@ -1123,6 +1409,13 @@ except where a deviation is explicitly flagged (§34).
   `GameFoesFollow` returns the foe index so the caller fires the
   attack/recruit flow. Foe motion does not consume the hero's day budget and
   stops at impassable terrain.
+  A hostile foe that lands on the hero opens the same Fight/Evade decision as
+  stepping onto it, and declining bounces back the same way (REQ-246): the hero
+  returns to the tile, travel mode and boat of before that step, and the foe,
+  unstamped while it shared the hero's tile, is stamped where it stands so it is
+  drawn (`flow_apply_evade_bounce`; openKB `game.c`: `walk = !attack_foe(game)`
+  swaps the hero back to `last_x, last_y`). Before 2026-09-19 the hero stayed on
+  the foe and the foe was not drawn until the hero's next step.
 
 ---
 
@@ -1130,9 +1423,8 @@ except where a deviation is explicitly flagged (§34).
 
 - **REQ-290.** The town catalog has held 26 towns (`game.json:towns[]`) in the
   shipped pack, which names one per letter A..Z. That naming is a convention of
-  that pack, not an engine requirement: `GAME_TOWNS` (26) is a storage ceiling
-  and consumers loop to `min(res->town_count, GAME_TOWNS)`, so a pack may
-  declare fewer and may name them freely (REQ-322 selects gate destinations
+  that pack, not an engine requirement: the engine sizes its town table from
+  the pack, so a pack may declare any number and may name them freely (REQ-322 selects gate destinations
   from a list, not by first letter). Each town carries id, name, zone, `(x,y)`, gate coords, boat
   coords, an intel castle, and an optional pinned spell (full table in
   §Appendix A). Each `TownRecord` tracks `visited` and `spell_for_sale`.
@@ -1160,8 +1452,8 @@ except where a deviation is explicitly flagged (§34).
 
 - **REQ-300.** The castle catalog has held **27** castles in the shipped pack:
   26 villain/monster castles (named A..Z by that pack's convention) plus King
-  Maximus's castle (full table + difficulty tiers in §Appendix A). The 26 is a
-  storage ceiling (`GAME_CASTLES`, §3.1), not a required count. A pack must
+  Maximus's castle (full table + difficulty tiers in §Appendix A). The 26 is
+  that pack's choice, not a required count (§3.1). A pack must
   still declare, per zone, more contract-eligible castles than that zone's
   villain count, or `salt_villains`' retry loop (REQ-233) exhausts its guard
   and villains silently fail to place. Each `CastleRecord` tracks `visited`,
@@ -1214,7 +1506,7 @@ except where a deviation is explicitly flagged (§34).
   cavalry) have `max_population = 0` and are recruitable only at the home
   castle's recruit screen.
 - **REQ-311.** Each `DwellingState` tracks `(zone,x,y)`, `troop_id`,
-  `max_population`, `count` (cap 64, `GAME_MAX_DWELLINGS`). A dwelling is
+  `max_population`, `count`; the list grows as dwellings are created. A dwelling is
   created lazily on first visit if not salt-placed; the troop is picked
   deterministically by `(seed, x, y)` (`GameDwellingTroopAt`); initial `count`
   is the troop's `max_population`. Salt-placed dwellings are pinned to their
@@ -1653,6 +1945,33 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   `Combat` so gameplay-test scenarios can introspect state via the frame-host
   callback.
 
+- **REQ-398.** **Beat order of a blow (modern only).** `combat_hit_unit`
+  (`engine/combat.c`) deals the damage, sets the target's `hit_flash = 3` and
+  bumps `attack_seq` in one call; the shell only sees the bump on the next
+  frame. So the shell holds the blow's effect back until the attacker's strip
+  has played (`src/combat_loop.c`, `src/combat_render.c`):
+
+  1. The strip plays from frame 0, one frame per 150 ms anim tick, and nothing
+     else happens while it does.
+  2. While it plays, the damage burst is **not drawn** and `hit_flash` is
+     **not decayed**, and the blow's settlement -- `combat_compact`, the
+     dead-side tests, the advance to the next unit -- is deferred.
+  3. When the strip ends, the blow settles: the killed stacks leave the field
+     and the burst is drawn for its three ticks (~450 ms).
+  4. After the fight's last swing the field is held ~0.75 s before the victory
+     or defeat presentation, so the ending does not cut in over the killing
+     blow.
+
+  Measured on video at 30 fps (2026-09-20, Rome, a tirones blow): strip frames
+  at t = 3.83 / 4.00 / 4.17 s confined to the attacker's cell, the burst from
+  t = 4.33 s to 4.77 s, the field settling at 4.80 s.
+
+  Legacy is unaffected and keeps King's Bounty's timing: `attack_anim_start`
+  returns early when not modern, so no strip ever plays, the burst is drawn on
+  the frame of the hit and decays from there. Measured the same way (King's
+  Bounty, a militia blow): the log line and the burst both appear on frame 288
+  and the burst runs to frame 301.
+
 ---
 
 ## 26. Scoring, victory, and defeat
@@ -1761,6 +2080,250 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   240×170, hero centred, camera clamped at zone edges); a **right sidebar**
   (48px: portrait, contract/siege/magic/puzzle icons, gold); and a **bottom**
   region that drops out for dialogs and prompts.
+- **REQ-430a.** A modern pack may fix its buffer with `render.native_w` /
+  `native_h` (`CL_IS_NATIVE`, `src/layout.c`): the screen is that size, the
+  viewport is exactly the declared tile count, and the leftover space widens
+  the chrome bands (`g_layout.frame_l/r/t/b`, read by the `CL_FRAME_*`
+  macros) so the map stays centred. `layout_fit_window` is then a no-op, the
+  minimum window is the buffer, and `present_scale` shows the buffer at the
+  largest of 1x, 2x, 3x that fits (`CL_SCALE_MAX_NATIVE`), letterboxed. The
+  Scale control cycles 1x → 2x → 3x → 1x, wrapping at what the monitor can
+  hold, and resizes the window to the buffer times the scale
+  (`present_zoom_window`; not in fullscreen). The camera centres the hero
+  with a radius per axis (`RADIUS_X`, `RADIUS_Y` in `src/map_render.c`), so a
+  7 x 5 viewport centres on both. Legacy and a modern pack without a native
+  size behave as before (2026-09-08).
+- **REQ-430b.** **Code-drawn chrome.** A modern pack without
+  `sprites.ui.chrome_overworld` gets the gold lattice (`src/lattice.c`): a
+  cross-hatch pattern built once as a texture at `ui_scale` and tiled from the
+  screen origin. `chrome_draw` and `chrome_draw_with_status` fill the four
+  frame bands and the bar band with it; `ui_panel_frame` draws it as a
+  two-unit ring inside each HUD panel; `ui_window_frame` draws a four-unit
+  ring just outside every window rect, replacing the one-pixel line at the
+  prompt, location-menu, credits, encode-dialog, view (character, army, gate,
+  puzzle, map, spells), contract-panel, dialog-box and combat spell-menu
+  sites, which in legacy still draw the line in their historic colour.
+  Splash, title and class-picker art draws at the largest whole scale that
+  fits the buffer (`ui_fit_scale`; legacy stays at 1x). Rome ships no chrome
+  bitmap or bar strip (2026-09-08).
+- **REQ-430c.** **Pack-declared TrueType font, proportional.** A modern
+  pack may declare a `font` block (`file`, `size`, `caps`, `license`;
+  `ResFont`, `engine/resources.c`, both paths in the manifest). The shell
+  has two text backends behind the `bfont_*` names: the bitmap strip in its
+  `8 * ui_scale` cell (legacy, and any pack without the block, unchanged),
+  and `src/text.c`, which rasterises the face at `size` through raylib's
+  `LoadFontData`, draws every glyph centred in one fixed cell (the face's
+  widest advance) on its baseline, and uppercases when `caps` is set. `bfont_preload_metrics` runs before
+  `layout_init` (CPU only) so `BFONT_GLYPH_H` is the face's line height and
+  `BFONT_GLYPH_W` the advance of `0`; `CL_STATUS_H` and `CL_PANEL_H`
+  (`src/layout.h`) are expressed in those and evaluate to 9 and 68 in
+  legacy. `bfont_take_line` wraps to a pixel width: legacy by
+  `max_w / 8` characters keeping every newline (the wrap the dialog and
+  prompt carried as private copies); modern by the face's cell, every
+  newline kept as authored. `layout_init` lets a
+  fixed buffer's top and bottom bands shrink to a two-unit floor to hold a
+  taller status band. Rome ships Press Start 2P (SIL OFL) at 16, a 16 px cell (2026-09-09).
+  Modern panels wrap to their own inner width rather than the legacy
+  30-column budget. Views take the map pane's full height (`VIEW_H`),
+  which in legacy is the content rect it always was.
+- **REQ-430d.** **Rendered at zoom.** For a fixed buffer (`CL_IS_NATIVE`)
+  the render target is the buffer times the presentation scale
+  (`present_target_size`, `present_refit`), every frame site draws through
+  `present_begin`/`present_end`, a camera at that zoom, so all draw calls
+  keep design coordinates and art is pixel-identical to the integer blit it
+  replaces; `present_scaled` blits the target 1:1 and stores the zoom so
+  `present_window_to_screen` still yields design pixels. The map scissor
+  multiplies by `present_get_zoom`. `bfont_set_zoom` rebuilds the TrueType
+  atlas at size times zoom; design metrics never change, only sharpness. The zoom is locked while the recorder runs
+  (one frame size per movie). Legacy: plain `BeginTextureMode`, 320x200
+  target, unchanged (2026-09-08).
+- **REQ-430e.** **Cursor selection on every menu (modern).** One helper,
+  `src/select.c`: `sel_input` moves a list cursor with Up/Down (W/S,
+  KP8/KP2), confirms with Enter/KP Enter/Space, and treats a tapped row
+  (`touch_tapped_row`) or the screen's hotkey as select-and-confirm;
+  `sel_row` draws the cursor row inverted, a bar in the row colour with
+  the text in the panel colour, and registers the row's tap region. Wired
+  into the town menu, game menu, controls, gate picker, spell panel
+  (Left/Right switch column), combat spell menu, recruit soldiers, own
+  castle slots, the save picker and difficulty rows, the class picker (a
+  lattice ring on the selected column, Left/Right, Enter), and the yes/no
+  prompt (Yes and No rows; Enter confirms the cursor row rather than
+  answering yes). The old letters and digits still answer everywhere. In
+  legacy `sel_input` returns nothing and `sel_row` draws plain text, so
+  every legacy screen keeps its own handling and pixels; numeric and A/B
+  prompts and the debug menu keep their key form (2026-09-09).
+- **REQ-430g.** **Dimmed scene under detail views (modern).** Whenever a
+  view, a prompt or a dialog is open, `overlay_draw` first darkens the
+  chrome interior (map pane and sidebar, not the status band or frame) with
+  black at the pack's `render.dim` percent (default 55, 0 disables), then
+  draws the panel, so the panel is what the eye lands on and the live map
+  stays readable behind it. Location screens (town, castles, dwelling,
+  alcove, recruit) no longer black out the pane around their backdrop card
+  in modern; the card floats on the dimmed map. Combat dims the field under
+  its spell picker, the victory dialog, prompts and any opened view. Toasts
+  do not dim. `overlay_dim_scene` / `overlay_dim_alpha` (`src/overlay.c`);
+  legacy never dims and draws exactly as before.
+- **REQ-430h.** **One panel rect (modern).** (Every panel's size and position by circumstance is tabulated in `docs/UI-PANELS.md`.) Every bottom text panel, the
+  message dialog, the prompts, the town, castle, dwelling, alcove and recruit
+  menus, is exactly the content rect in width and left edge (`CL_PANEL_X`,
+  `CL_PANEL_W`), eight text lines tall, bottom-aligned in the content rect,
+  and the location backdrop card sits directly above it at the same edge and
+  width. Legacy keeps its one-sided 5 px margin. Also settled with the
+  2026-09-11 overlay audit: dialog headers wrap like body text (the audience
+  passes the Emperor's words as the header); the four legacy arrow control
+  codes render as the font's arrow glyphs; the Options panel sizes itself to
+  its list and splits the keybinds into two columns when they do not fit;
+  recruit rows pad the name to the longest in the pool; empty army slots stay
+  panel-coloured; the character card prints zeros; Escape on the map opens
+  the Game Menu (`INPUT_ACTION_GAME_MENU`). Legacy is unchanged in all of these.
+- **REQ-430i.** **The draw layer is forked; legacy is frozen.** The overlay,
+  the detail views and the prompt panel each exist twice: `src/legacy/` holds
+  the DOS original's drawing and `src/modern/` holds the modern UI's, with
+  `src/overlay.c`, `src/views_render.c` and `src/prompt.c` reduced to
+  dispatchers that keep the public entry points, the layer order and any state
+  (the dialog's text and page, the world map's reveal flag, the prompt's state
+  machine) and send only the drawing to one side or the other, through
+  `*_impl.h`. Legacy's copies are frozen: their behaviour is the specification,
+  so they are not edited to serve anything modern needs, and new UI work lands
+  in `src/modern/` alone. `tests/unit/test_legacy_freeze.c` holds legacy's
+  geometry and pure logic to fixed values -- chrome bands, map, sidebar,
+  content and panel rects, window scale, the 30-column wrap, dialog paging,
+  prompt state, and the two modern-only selectors staying inert -- so a modern
+  change that would move a legacy pixel fails the build instead of shipping.
+  `src/layout.h` is deliberately NOT forked: both paths draw into one
+  coordinate system (2026-09-12).
+
+- **REQ-430j.** **Five named layouts and one menu (modern).** Every modern
+  panel draws into one of five rects, computed from the map pane, the sidebar
+  and the tile and never from `ui_scale` (`src/modern/mlayout.c`): **small**,
+  the full pane width one tile tall along its bottom, for prompts and any
+  message that fits; **large**, six by four tiles centred in the pane, for
+  longer messages, the game menu and its Controls page, and combat's spell
+  picker and victory dialog; **location**, the backdrop across the top of the
+  pane at the smallest whole-number scale that covers its width (cropped
+  evenly at the sides) with the text area directly under it reaching the HUD,
+  shared by the town, both castles, the dwelling, the alcove and recruiting;
+  **full screen**, the pane plus the HUD with the status band left visible,
+  for every detail view; and the toast, unchanged. A message or prompt takes
+  the small band when its header, whole body and answer rows fit, and the
+  large rect otherwise; the pager asks the same function that places the
+  panel, so the page count and the panel cannot disagree. Modern has one game
+  menu: Screens and Actions pages built from the pack's `keybinds` (a single
+  letter, or `5` for rest), filtered to what applies to the hero (Fly only
+  when not flying), then Controls, Save, Load, New Game and Exit; no row shows
+  a key. Choosing a Screens or Actions row closes the menu and presses its key
+  on the next frame, so every action runs the path its keypress does. `O` opens the menu and the Options panel is retired in
+  modern. Legacy keeps `CL_CONTENT_*` / `CL_PANEL_*`, its own menu and the
+  Options panel; the location screens reach their text rect through
+  `screens_text_rect`, which the freeze tests pin to the legacy panel
+  (2026-09-12).
+- **REQ-430k.** **Menu driven (modern) and `--debug`.** In modern every
+  action is a row reached by the arrows and Enter or a tap; keys remain as
+  shortcuts and nothing is reachable only by a key. Rows carry no key letters.
+  The home castle has Recruit and Audience rows; the own castle's first row
+  flips Garrison / Remove; the world map, with the orb, has a row that swaps
+  your map and the whole map; class select dims the unselected figures, frames
+  and names the selected one, and has a Load saved game row; numeric and A/B
+  prompts answer by rows taken from the body's own choice lines (`1. Italia`,
+  `A) Take the gold`) or set by the opener (dismiss lists the troops), and the
+  touch answer bar is not shown; Ctrl+Q asks with the yes/no prompt; a tap
+  skips the end cartoon. In combat, Enter or a tap on the active unit opens an
+  Actions menu in the large rect -- Wait, Shoot, Fly, Cast a spell, Army,
+  Character, Controls, Give up, less the rows that cannot apply -- whose rows
+  press their key next frame; the Options panel and the touch verb bar are not
+  used. The debug cheats are reachable only when the game is started with
+  `--debug`, as a Debug page at the end of the modern game menu; without the
+  flag no key or row reaches them in either mode (F10 is gone). Legacy is
+  otherwise unchanged (2026-09-12).
+- **REQ-430l.** **Standard select rows (modern).** A list of choices is drawn
+  as rows half a tile tall (never shorter than a text line plus padding),
+  stacked from the top of their column with a 2 px rail under each, and never
+  stretched to fill the column; the height below them stays empty, and a list
+  longer than its column scrolls to keep the cursor in view. Defined
+  once as `ml_row_h` / `ML_ROW_RULE` in `src/modern/mlayout.h` and documented
+  in `docs/UI-PANELS.md`; the town screen uses it first (2026-09-13).
+- **REQ-430m.** **Modern castles and the count stepper.** The home castle and
+  owned castles use the town screen's layout (sections, pages of rows and Back,
+  Esc back a level). Recruit lists the castle troops with their statistics;
+  Audience is always available and promotes when a promotion is due, showing
+  the castle's `special.promotion[rank]` image and the rank's gains; the ruler's
+  portrait and standing figure come from `special.portrait` / `special.figure`.
+  Garrison and Withdraw move any part of a stack (`GameGarrisonTroopCount`,
+  `GameUngarrisonTroopCount`; a whole stack is exactly the original move, and
+  only a whole last stack is refused). Counts are chosen with the count
+  stepper documented in `docs/UI-PANELS.md`. Legacy unchanged (2026-09-13).
+- **REQ-430n.** **Question dialogs and lists on standard rows (modern).** Every
+  modern question draws its text, a lattice band, then standard select rows
+  (Yes/No from `strings.prompts.yes` / `no`, one row per numbered or A/B
+  choice) or the count stepper for a count, in a panel on the map pane's
+  bottom edge sized to its content, its rows scrolling past the pane's top.
+  The game menu, Controls, title menu, load picker, difficulty rows, world map
+  orb row, spells view and gate picker use the same rows (`src/modern/mlist.c`).
+  Combat's Actions menu and spell picker are unchanged for now; legacy is
+  unchanged (2026-09-13).
+- **REQ-430o.** **Foe view and the evade rule.** A hostile foe on the map opens
+  the modern foe view (docs/UI-PANELS.md) with Fight and Evade. With
+  `game.json` `foes.evade_needs_free_square` set, `GameFoeCanEvade` allows
+  Evade only while one of the 8 squares around the hero is walkable for how
+  they travel and has no object or foe on it; the engine records the result
+  for the pending decision (`pending_foe_evade_blocked`, judged after any bounce
+  back), and autoplay and the demo must fight when it is set. Packs without the
+  setting keep the free decline (2026-09-13).
+- **REQ-430p.** **Title sequence (modern).** With `sprites.ui.title_battle`,
+  `title_eagle` and `title_words` all declared, the title menu opens on the
+  words and eagle standard over purple; the battle fades in from 1.0 s to
+  2.5 s, the eagle slides left from 2.5 s to 3.5 s, and the menu then appears.
+  Any key or tap skips to the end; the sequence plays once per run, and the
+  credits, the load picker and a return to the title show the finished
+  screen. Without all three the title is `splash_title`, still (2026-09-13).
+- **REQ-430q.** **Blessing and Tribute (modern home castle).** With
+  `game.json` `audiences`, `GameSeekBlessing` grants once, when every artifact
+  is found (enemies left or not), leadership + `blessing_leadership_pct` (50)
+  of the base; `GamePayTribute` takes `tribute_cost` (50000) gold, any number of
+  times, for leadership + `tribute_leadership_pct` (25) and spell power and
+  spell capacity each + `tribute_magic_pct` (25) of what the hero has then
+  (at least 1 of a stat above 0). A short purse pays nothing. `stats.blessed`
+  and `stats.tributes` are saved only for such a pack; autoplay uses neither
+  (2026-09-13).
+- **REQ-430r.** **Temple and dwelling screens (modern).** VIEW_ALCOVE and
+  VIEW_DWELLING draw their own full screens over the unchanged FLOW_ALCOVE
+  yes/no and FLOW_RECRUIT count prompts (docs/UI-PANELS.md). The shell keeps
+  the view open through the answer's message and closes it when no prompt,
+  dialog or queued request remains. With `economy.rites_per_zone` a known
+  zone's temple raises the alcove view behind its message (2026-09-13).
+- **REQ-430s.** **Game and combat menus (modern).** Traditional drill-down
+  menus (`src/modern/gamemenu.c`, docs/UI-PANELS.md): one column of rows per
+  page ending in Back, the path in the title strip, a description beside the
+  rows. Game menu: Hero, World, Game; Debug first and Exit last on Game. The
+  combat menu opens on its Unit page. Rows that do not apply are greyed with
+  the reason rather than removed. In-game Save and Load pick one of the ten
+  slots; overwriting, loading and Exit ask Yes/No. Legacy menus are unchanged
+  (2026-09-13).
+- **REQ-430t.** **In-lay dialog (modern).** A queued message may carry a
+  picture hint (`PlayerRequest.face` / `face_index`: enemy, troop, artifact);
+  the modern shell shows such a message as an in-lay dialog with the picture at
+  2x (docs/UI-PANELS.md), legacy ignores it. The capture message is composed
+  from `banners.capture_*` (King's Bounty keeps its original wording) and
+  carries the captured enemy's face (2026-09-14).
+- **REQ-430f.** **Keyboard detection and the letter selector (modern).**
+  `input_host` latches which physical devices have been used: a real key
+  event (not an injected one), a touch contact, a gamepad button or stick
+  (`input_host_note_gamepad`, called from `src/input.c`).
+  `input_has_keyboard` is true once a key has been seen, and before that
+  true unless touch or a gamepad was seen first; `input_text_mode` maps it
+  to typed entry or the selector. `src/textsel.c` is the selector: an
+  in-game grid drawn in the buffer, A..Z SPC DEL OK in 6 x 5 or 7 8 9 DEL /
+  4 5 6 OK / 1 2 3 0 for numbers, moved by arrows, keypad or the gamepad
+  d-pad and stick (`input_gamepad_dir`), picked by Enter or the A button
+  (`input_gamepad_confirm`), deleted by Backspace or B, or tapped
+  (`TOUCH_LIST_TEXTSEL`); the cursor cell is inverted. It writes the field's
+  buffer directly, through the same bounds the typed path applies. Wired
+  into the hero name (`startup.c`), the recruit count
+  (`recruit_soldiers.c`) and the numeric prompt (`prompt.c`), shown when
+  text mode is the selector or when a pad or touch has been used, with
+  typing still accepted alongside. Keyboard-only sessions see no change.
+  Legacy keeps typed entry and its window-chrome keyboard and digit pad
+  (2026-09-10).
 
 ### 29.2 Views
 
@@ -1793,8 +2356,29 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   persisted in `Game.stats.options[7]` (parallel to `res->controls.items[]`):
   animation delay, sounds, walk-beep, animation toggle, CGA, music, volume.
   Meta keys: Alt+Enter fullscreen, backtick screenshot
-  (`screenshots/shot_NNNN.png`, `src/screenshot.c`), `Q` save-and-quit,
+  (`screenshots/shot_NNNN.png`, `src/screenshot.c`, the folder created on
+  first use; the automatic `char_NNNN` save on entering the Character view
+  was removed 2026-09-07), `Q` save-and-quit,
   `Ctrl+Q` fast quit (`src/shell_fastquit.c`).
+- **REQ-442.** **Touch/pointer input** (`src/touch.c`) translates taps into
+  synthetic key events injected at the `input_host` shim
+  (`input_host_inject_key/_char`), so every screen keeps its keyboard
+  handling and the recorder/replay see a keyboard-shaped input stream.
+  Screens register per-frame tap regions while they run: plain rects mapped
+  to a key, cursor-list rows (`touch_region_row`/`touch_tapped_row`), the
+  adventure/combat tile viewport (tap → direction key relative to the centre
+  tile / active unit; hold repeats one discrete keypress per beat), and the
+  combat picker grid (tap → cursor jump + confirm). Injected keys are
+  one-frame edges cleared by `touch_frame()`, which runs from
+  `frame_host_end_frame()` after the poll/yield.
+- **REQ-443.** **Touch chrome**: on-screen buttons (adventure/combat action
+  bars, ESC, Yes/No / 1-N / A-B prompt bars, digit pad, A-Z keyboard for
+  name entry) are drawn by `touch_draw_chrome()` from `present_scaled`, in
+  window pixels over the letterbox margins, outside the design-space render
+  target. Chrome renders only after a real touch contact has been seen
+  (`input_touch_active`); keyboard/mouse desktop sessions are pixel-identical
+  to the pre-touch build. Tap positions map back to design space via
+  `present_window_to_screen` (inverse of the letterboxed integer-scale blit).
 
 ---
 

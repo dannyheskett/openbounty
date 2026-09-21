@@ -1,0 +1,50 @@
+{
+ "id": "dcd8c5e9-0169-4edd-babd-5f0fdff95af9",
+ "name": "pale grey limestone rock, the ",
+ "state_name": "base",
+ "prompt": "pale grey limestone rock, the whole rock inside the frame, seen from above at a slight angle, lit from the north-west with a shaded front face on the south side, small shadow to the south-east, pixel art, transparent background",
+ "size": {
+  "width": 96,
+  "height": 96
+ },
+ "directions": 1,
+ "created_at": "2026-09-19T18:37:26.013767+00:00",
+ "view": null,
+ "rotation_urls": {
+  "south": null,
+  "west": null,
+  "east": null,
+  "north": null,
+  "south-east": null,
+  "south-west": null,
+  "north-east": null,
+  "north-west": null
+ },
+ "storage_urls": {
+  "frame_0": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/dcd8c5e9-0169-4edd-babd-5f0fdff95af9/rotations/frame_0.png",
+  "frame_1": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/dcd8c5e9-0169-4edd-babd-5f0fdff95af9/rotations/frame_1.png",
+  "frame_2": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/dcd8c5e9-0169-4edd-babd-5f0fdff95af9/rotations/frame_2.png",
+  "frame_3": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/dcd8c5e9-0169-4edd-babd-5f0fdff95af9/rotations/frame_3.png"
+ },
+ "frame_urls": [
+  "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/dcd8c5e9-0169-4edd-babd-5f0fdff95af9/rotations/frame_0.png",
+  "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/dcd8c5e9-0169-4edd-babd-5f0fdff95af9/rotations/frame_1.png",
+  "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/dcd8c5e9-0169-4edd-babd-5f0fdff95af9/rotations/frame_2.png",
+  "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/dcd8c5e9-0169-4edd-babd-5f0fdff95af9/rotations/frame_3.png"
+ ],
+ "style_settings": {
+  "no_background": true,
+  "item_descriptions": [
+   "rounded limestone boulder, cracked, shaded south face",
+   "jagged crag with a sheer cliff face at the front",
+   "rock ledge, flat top with a dark cliff face below it",
+   "tall rock tooth with snow on its tip"
+  ]
+ },
+ "tags": [],
+ "status": "review",
+ "group_id": "3719cd0c-31b7-4e16-87ce-4afc1fe23dae",
+ "progress_percent": 15,
+ "eta_seconds": 406,
+ "animations": []
+}

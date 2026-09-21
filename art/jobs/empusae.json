@@ -1,0 +1,18 @@
+{
+  "id": "empusae",
+  "_note": "Batch of 2026-09-05, prompt rewritten from the worklist row into a neutral stance with the weapon at rest, so the attack is the animation's travel. Animate at 96 without padding.",
+  "prompt": "a lean winged demon of Hecate with one bronze leg and one pale leg, bat wings folded close against its back, a long scythe held upright at rest in both hands, pale grey skin",
+  "style": "user__glory_of_rome_troops_bac676cd",
+  "width": 96,
+  "height": 96,
+  "seed": 6111,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": true,
+  "target": [
+    96,
+    96
+  ]
+}

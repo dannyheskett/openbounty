@@ -1,0 +1,16 @@
+{
+  "id": "backdrop_castle",
+  "_note": "Location backdrop for the castle screens. Same engine as every other screen-shaped piece (rd_pro__default, opaque, no remove_bg). Authored at the 240x102 design size: RD Pro caps generation at 256x256, so design x2 (480x204) is not possible on this engine; the shell scales it by ui_scale, an exact 2x. run05 (seed 6101) put guards in the hall; run06 prompts the people away (empty, deserted, no people anywhere) with the seed incremented. The location screen draws a troop sprite in front, so the hall needs nobody.",
+  "prompt": "an empty fortress hall interior with hanging legionary standards, a brazier and stone arches, the hall deserted, no people anywhere",
+  "style": "rd_pro__default",
+  "width": 240,
+  "height": 102,
+  "seed": 6102,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    240,
+    102
+  ]
+}

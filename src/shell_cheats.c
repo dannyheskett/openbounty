@@ -9,78 +9,78 @@
 #include "end_cartoon.h"
 #include "flows.h"
 
-static bool s_cheat_menu_active = false;
+static const char *const CHEAT_LABELS[CHEAT_COUNT] = {
+    [CHEAT_GOLD]       = "Gold +50000",
+    [CHEAT_LEADERSHIP] = "Leadership +100",
+    [CHEAT_MAGIC]      = "Magic boost",
+    [CHEAT_SPELLS]     = "+1 of every spell",
+    [CHEAT_SIEGE]      = "Siege weapons",
+    [CHEAT_FLIGHT]     = "Flight",
+    [CHEAT_ZONE]       = "Reveal a zone",
+    [CHEAT_FOG]        = "Clear map fog",
+    [CHEAT_WIN]        = "Win",
+    [CHEAT_LOSE]       = "Lose",
+};
 
-bool cheat_menu_is_active(void) {
-    return s_cheat_menu_active;
+// What each cheat does, for the Debug page's description panel.
+static const char *const CHEAT_DESCS[CHEAT_COUNT] = {
+    [CHEAT_GOLD]       = "Adds 50,000 gold to your purse.",
+    [CHEAT_LEADERSHIP] = "Adds 100 to your leadership.",
+    [CHEAT_MAGIC]      = "Adds 1 to spell power and 1 to spell capacity.",
+    [CHEAT_SPELLS]     = "Adds one charge of every spell to your book.",
+    [CHEAT_SIEGE]      = "Gives you siege weapons.",
+    [CHEAT_FLIGHT]     = "Lets your army fly.",
+    [CHEAT_ZONE]       = "Reveals the next undiscovered continent.",
+    [CHEAT_FOG]        = "Clears the fog from this continent's map.",
+    [CHEAT_WIN]        = "Ends the game as a victory.",
+    [CHEAT_LOSE]       = "Ends the game as a defeat.",
+};
+
+const char *cheat_desc(CheatAction a) {
+    return (a >= 0 && a < CHEAT_COUNT) ? CHEAT_DESCS[a] : "";
 }
 
-static const char *const CHEAT_MENU_BODY =
-    "G  Gold        N  Zone\n"
-    "V  Leadership  O  Fog\n"
-    "M  Magic       W  Win\n"
-    "U  Spells      L  Lose\n"
-    "S  Siege\n"
-    "F  Flight\n"
-    "F10/ESC  close";
+const char *cheat_label(CheatAction a) {
+    return (a >= 0 && a < CHEAT_COUNT) ? CHEAT_LABELS[a] : "";
+}
 
-CheatResult cheat_menu_tick(Game *game, Map *map, Fog *fog,
-                            const Resources *res,
-                            const Sprites *sprites,
-                            RenderTexture2D *render_target) {
-    if (IsKeyPressed(KEY_F10) && !s_cheat_menu_active) {
-        s_cheat_menu_active = true;
-        player_io_message(game, "Debug menu", CHEAT_MENU_BODY);
-        // Drain the keypress queue so the same-frame F10 doesn't
-        // immediately close the menu we just opened.
-        while (GetKeyPressed() != 0) { }
-        return CHEAT_OPENED;
-    }
-    if (!s_cheat_menu_active) return CHEAT_IDLE;
-
-    int ck = GetKeyPressed();
-    if (ck == KEY_ESCAPE || ck == KEY_F10) {
-        s_cheat_menu_active = false;
-        dialog_dismiss();
-        return CHEAT_DISMISSED;
-    }
-    if (ck < KEY_A || ck > KEY_Z) return CHEAT_IDLE;
-
-    char letter = (char)('A' + (ck - KEY_A));
+CheatResult cheat_apply(CheatAction a, Game *game, Map *map, Fog *fog,
+                        const Resources *res, const Sprites *sprites,
+                        RenderTexture2D *render_target) {
     char body[160];
     body[0] = '\0';
-    switch (letter) {
-    case 'G':
+    switch (a) {
+    case CHEAT_GOLD:
         game->stats.gold += 50000;
         snprintf(body, sizeof body, "Gold +50000");
         break;
-    case 'V':
+    case CHEAT_LEADERSHIP:
         game->stats.leadership_current += 100;
         game->stats.leadership_base += 100;
         snprintf(body, sizeof body, "Leadership +100");
         break;
-    case 'M':
+    case CHEAT_MAGIC:
         game->stats.spell_power += 1;
         game->stats.max_spells += 1;
         snprintf(body, sizeof body, "Magic boosted");
         break;
-    case 'U': {
+    case CHEAT_SPELLS: {
         int n = spells_count();
-        for (int si = 0; si < n && si < 14; si++) {
+        for (int si = 0; si < n && si < game->spells.count; si++) {
             game->spells.counts[si] += 1;
         }
         snprintf(body, sizeof body, "+1 of every spell");
         break;
     }
-    case 'S':
+    case CHEAT_SIEGE:
         game->stats.siege_weapons = 1;
         snprintf(body, sizeof body, "Siege weapons granted");
         break;
-    case 'F':
+    case CHEAT_FLIGHT:
         game->character.mount = MOUNT_FLY;
         snprintf(body, sizeof body, "Flight granted");
         break;
-    case 'N': {
+    case CHEAT_ZONE: {
         int found = -1;
         for (int zi = 0; zi < res->zone_count; zi++) {
             if (!game->world.zones_discovered[zi]) {
@@ -90,18 +90,17 @@ CheatResult cheat_menu_tick(Game *game, Map *map, Fog *fog,
             }
         }
         if (found >= 0)
-            snprintf(body, sizeof body, "Revealed: %s",
-                     res->zones[found].id);
+            snprintf(body, sizeof body, "Revealed: %s", res->zones[found].id);
         else
             snprintf(body, sizeof body, "All zones already known");
         break;
     }
-    case 'O': {
+    case CHEAT_FOG: {
         int revealed = 0;
         for (int y = 0; y < map->height; y++) {
             for (int x = 0; x < map->width; x++) {
-                if (!fog->seen[y][x]) {
-                    fog->seen[y][x] = true;
+                if (!FogSeen(fog, x, y)) {
+                    FogSet(fog, x, y, true);
                     revealed++;
                 }
             }
@@ -109,23 +108,16 @@ CheatResult cheat_menu_tick(Game *game, Map *map, Fog *fog,
         snprintf(body, sizeof body, "Map fog cleared (%d tiles)", revealed);
         break;
     }
-    case 'W':
-        s_cheat_menu_active = false;
-        dialog_dismiss();
-        run_end_cartoon(render_target, res, sprites);
+    case CHEAT_WIN:
+        run_end_cartoon(render_target, res, sprites, game);
         show_win_game(game, res);
         return CHEAT_DISPATCHED_TERMINAL;
-    case 'L':
-        s_cheat_menu_active = false;
-        dialog_dismiss();
+    case CHEAT_LOSE:
         show_lose_game(game, res);
         return CHEAT_DISPATCHED_TERMINAL;
     default:
-        snprintf(body, sizeof body, "Unknown cheat: %c", letter);
         break;
     }
-    s_cheat_menu_active = false;
-    dialog_dismiss();
-    if (body[0]) player_io_message(game, "Debug", body);
+    if (body[0]) player_io_note(game, "Debug", body);
     return CHEAT_DISPATCHED;
 }

@@ -21,6 +21,22 @@ typedef struct {
     bool (*on_quit)(void *userdata);
 } MenuCallbacks;
 
+// The callbacks the menu uses when it opens, so the modern root page can be
+// built with the rows that apply at that moment. Call once at startup.
+void views_menu_bind(const MenuCallbacks *cbs, void *userdata);
+
+// --debug: the modern game menu carries a Debug page of cheat rows. Off by
+// default, and then no cheat is reachable at all.
+void views_menu_set_debug(bool on);
+
+// The cheat a Debug row asked for this frame, as a CheatAction, or -1. The menu
+// closes itself; the caller applies the cheat (it needs the map, fog, sprites
+// and render target the menu does not have). Reading clears it.
+int  views_menu_take_cheat(void);
+
+// How many views are stacked (0 = none).
+int views_depth(void);
+
 // views_active() is declared in engine/include/ui_host.h since engine
 // code (state_serialize, flows) also calls it.
 void     views_set(ViewKind v);   // Replace stack with [v] (or empty if VIEW_NONE).
@@ -86,9 +102,21 @@ bool views_menu_entry_is_submenu(int i);
 // Returns the cursor position in the active menu (0..count-1), or -1 if
 // not in menu.
 int  views_menu_cursor(void);
+int  views_spells_cursor(void);      // modern: 0..13, legacy: -1
+bool views_spells_casting(void);     // the Spells view was opened to cast
 
 // Town display name (from views_open_town), or NULL if not in VIEW_TOWN.
 const char *views_town_display_name(void);
+// Modern: a boat / spell / siege outcome is showing as a dialog (until Continue).
+bool views_town_result_dialog(void);
+// --gallery: put the town screen in a state to capture (row < 0: the main page
+// with the cursor on lcursor; else that section's page), with an optional
+// result message, shown as its dialog when `dialog`.
+void views_gallery_town(const struct Game *g, int row, int lcursor, const char *info, bool dialog);
+void views_gallery_town_scene(int cursor);
+// Modern: the services in-lay is open over the scene (else the scene's rows).
+bool views_town_visiting(void);
+int  views_town_scene_cursor(void);
 
 // Town record id (canonical id for g->towns[] lookup), or NULL if not
 // in VIEW_TOWN.
@@ -102,9 +130,65 @@ bool views_town_row_text(const struct Game *g, int row,
 // Number of town rows (always 5 in KB: A-E).
 int  views_town_row_count(void);
 
+// False for a row that is shown greyed out and cannot be chosen. Modern enables
+// the boat row only at a town whose dock lies within TOWN_BOAT_RANGE tiles;
+// legacy enables every row.
+bool views_town_row_enabled(const struct Game *g, int row);
+
+// Modern: the short menu label for a town row (the pack's town_menu_* strings).
+bool views_town_menu_label(const struct Game *g, int row, char *out, int out_sz);
+
 // Town info panel (the "You don't have enough gold!" popup that overlays
 // the action list). Returns NULL if no info is active.
 const char *views_town_info_text(void);
+
+// Modern: the detail panel's current page; the renderer reports how many pages
+// its text needs so Left/Right stay in range.
+int  views_town_detail_page(void);
+void views_town_set_detail_pages(int pages);
+
+// ---- Modern town ------------------------------------------------------------
+// The menu opens a detail screen per row; the left column then shows that
+// screen's rows (the contracts on offer, or the screen's one action) and Back.
+typedef enum {
+    TOWN_LIST_MENU = 0,
+    TOWN_LIST_CONTRACTS,
+    TOWN_LIST_INFO,
+    TOWN_LIST_BOAT,
+    TOWN_LIST_TEMPLE,
+    TOWN_LIST_SIEGE,
+} TownList;
+TownList views_town_list(void);
+int  views_town_list_rows(const struct Game *g);
+int  views_town_list_cursor(void);
+// Row i of the current list: its label, whether it can be chosen, and (in
+// Contracts) whether it is the contract held.
+bool views_town_list_row(const struct Game *g, int i, char *out, int cap,
+                         bool *enabled, bool *held);
+int  views_town_contract_slot(const struct Game *g, int row);  // rotation slot; -1 = Back
+// This town's dock is set and within reach; the spell this town sells.
+bool views_town_boat_available(const struct Game *g);
+const SpellDef *views_town_spell(const struct Game *g);
+
+// Anything that changes the game asks Yes/No. The main loop takes the request
+// once (writing the question into body), opens the prompt, and on Yes calls
+// views_town_confirm_yes, which carries the action out.
+typedef enum {
+    TOWN_CONFIRM_NONE = 0,
+    TOWN_CONFIRM_CONTRACT,
+    TOWN_CONFIRM_BOAT_RENT,
+    TOWN_CONFIRM_BOAT_CANCEL,
+    TOWN_CONFIRM_SPELL,
+    TOWN_CONFIRM_SIEGE,
+} TownConfirm;
+TownConfirm views_town_take_confirm(const struct Game *g, char *body, int cap);
+void views_town_confirm_yes(Game *g);
+
+// The priest's refusal before the town's zone rites are learned.
+void views_town_rites_text(const struct Game *g, char *out, int cap);
+
+// The Information row's report, formatted for this town.
+void views_town_intel_text(const struct Game *g, char *out, int cap);
 
 // Town action row the cursor is on (0..4).
 int  views_town_cursor(void);
@@ -131,7 +215,7 @@ bool views_controls_row_disabled(const struct Game *g, int row);
 // The shell-appended Scale row. Not pack data and not game state: it is a
 // runtime display preference held in present.c.
 void views_controls_advance_scale(void);
-int  views_controls_scale_value(void);   // 0 = Auto
+int  views_controls_scale_value(void);   // whole pixels; 1 = 1:1
 
 // ---- Spell casting (VIEW_SPELLS) -------------------------------------------
 // Enter interactive cast mode for the spell view.
@@ -151,6 +235,9 @@ void views_gate_open(const GateDestination *dests, int count,
                      bool is_town);
 // Read accessors for the renderer.
 int  views_gate_count(void);
+// Modern: the gate picker's columns of standard rows, and rows in each.
+#define VIEWS_GATE_COLUMNS 3
+int  views_gate_rows_per_column(void);
 bool views_gate_is_town(void);
 int  views_gate_cursor(void);
 const GateDestination *views_gate_dest(int idx);
@@ -170,6 +257,7 @@ typedef enum {
     TOWN_ROW_SPELL,
     TOWN_ROW_SIEGE,
     TOWN_ROW_COUNT,
+    TOWN_ROW_LEAVE = TOWN_ROW_COUNT,   // modern: the main page's last row, Leave
 } TownRow;
 
 #endif

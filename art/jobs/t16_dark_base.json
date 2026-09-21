@@ -1,0 +1,24 @@
+{
+ "lower_description": "dark mossy meadow grass",
+ "upper_description": "the same grass with a few small patches of darker moss",
+ "transition_description": "",
+ "tile_size": {
+  "width": 16,
+  "height": 16
+ },
+ "mode": "standard",
+ "shape_style": "round",
+ "enhance": true,
+ "view": "high top-down",
+ "outline": "lineless",
+ "shading": "detailed shading",
+ "detail": "medium detail",
+ "text_guidance_scale": 8.0,
+ "transition_size": 0.0,
+ "color_image": {
+  "type": "base64",
+  "base64": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAANElEQVR4nGNUC1FiYGDg4GNjYGBgYGDggjN42BgYGD48+AHhSmjwQRhMDCSCUQ2jGoaOBgAg6AQoJJeGnwAAAABJRU5ErkJggg==",
+  "format": "png"
+ },
+ "seed": 121
+}

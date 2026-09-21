@@ -6,6 +6,80 @@
 #include <stdlib.h>
 #include <string.h>
 
+const char *MapStrGet(const Map *map, MapStr s) {
+    if (!map || s == 0 || s >= map->str_count || !map->pool) return "";
+    return map->pool + map->str_off[s];
+}
+
+static void map_oom(const char *what) {
+    fprintf(stdout, "map: out of memory growing the %s\n", what);
+    abort();
+}
+
+MapStr MapStrIntern(Map *map, const char *s) {
+    if (!map || !s || !s[0]) return 0;
+    if (map->str_count == 0) {                 // index 0 is ""
+        if (map->str_cap < 1 || map->pool_cap < 1) {
+            int sc = map->str_cap > 64 ? map->str_cap : 64;
+            int pc = map->pool_cap > 1024 ? map->pool_cap : 1024;
+            uint32_t *so = realloc(map->str_off, (size_t)sc * sizeof *so);
+            if (!so) map_oom("string table");
+            map->str_off = so; map->str_cap = sc;
+            char *pl = realloc(map->pool, (size_t)pc);
+            if (!pl) map_oom("string pool");
+            map->pool = pl; map->pool_cap = pc;
+        }
+        map->str_off[0] = 0;
+        map->pool[0] = '\0';
+        map->pool_used = 1;
+        map->str_count = 1;
+    }
+    for (int i = 1; i < map->str_count; i++)
+        if (strcmp(map->pool + map->str_off[i], s) == 0) return (MapStr)i;
+    size_t n = strlen(s) + 1;
+    if (map->str_count > 0xFFFF - 1) {
+        // A tile field is 16 bits (MapStr); past that no index can name the string.
+        fprintf(stdout, "map: more than 65535 distinct strings adding '%s'\n", s);
+        abort();
+    }
+    if (map->str_count >= map->str_cap) {
+        int sc = map->str_cap * 2;
+        uint32_t *so = realloc(map->str_off, (size_t)sc * sizeof *so);
+        if (!so) map_oom("string table");
+        map->str_off = so; map->str_cap = sc;
+    }
+    while ((size_t)map->pool_used + n > (size_t)map->pool_cap) {
+        int pc = map->pool_cap * 2;
+        char *pl = realloc(map->pool, (size_t)pc);
+        if (!pl) map_oom("string pool");
+        map->pool = pl; map->pool_cap = pc;
+    }
+    map->str_off[map->str_count] = (uint32_t)map->pool_used;
+    memcpy(map->pool + map->pool_used, s, n);
+    map->pool_used += (int)n;
+    return (MapStr)map->str_count++;
+}
+
+void MapFree(Map *map) {
+    if (!map) return;
+    free(map->tiles);
+    free(map->str_off);
+    free(map->pool);
+    memset(map, 0, sizeof *map);
+}
+
+bool MapAlloc(Map *map, int width, int height) {
+    if (!map) return false;
+    MapFree(map);
+    if (width < 0 || height < 0) return false;
+    map->width = width;
+    map->height = height;
+    if ((size_t)width * (size_t)height == 0) return true;
+    map->tiles = calloc((size_t)width * (size_t)height, sizeof *map->tiles);
+    if (!map->tiles) { map->width = map->height = 0; return false; }
+    return true;
+}
+
 static void copy_string(char *dst, size_t dst_size, const char *src) {
     if (!src) { dst[0] = '\0'; return; }
     size_t i = 0;
@@ -15,32 +89,69 @@ static void copy_string(char *dst, size_t dst_size, const char *src) {
 
 // Translate one character from the .dat into a Tile, using the tile_codes
 // lookup in Resources. Returns false if the byte has no mapping.
-static bool fill_tile_from_code(Tile *t, const Resources *res, unsigned char c) {
-    if (c >= RES_TILE_CODE_COUNT) return false;
+const char *MapTerrainArt(const Map *map, const char *stem, char *out, size_t cap) {
+    if (!out || cap == 0) return "";
+    if (map && map->tile_set[0])
+        snprintf(out, cap, "%s/%s", map->tile_set, stem ? stem : "");
+    else
+        snprintf(out, cap, "%s", stem ? stem : "");
+    return out;
+}
+
+// The bare stem of a tile art name ("set/road_ew" -> "road_ew").
+static const char *art_stem(const char *art) {
+    const char *slash = strrchr(art, '/');
+    return slash ? slash + 1 : art;
+}
+
+static bool fill_tile_from_code(Map *map, Tile *t, const Resources *res,
+                                unsigned char c) {
+    // Every byte indexes the table (RES_TILE_CODE_COUNT spans the range).
     const ResTileCode *tc = &res->tile_codes[c];
     if (!tc->present) return false;
-    copy_string(t->art, sizeof(t->art), tc->art);
-    t->terrain     = (Terrain)tc->terrain;
+    char art[TILE_ART_NAME_LEN];
+    MapTerrainArt(map, tc->art, art, sizeof art);
+    t->art         = MapStrIntern(map, art);
+    if (tc->ground[0]) {
+        char gart[TILE_ART_NAME_LEN];
+        MapTerrainArt(map, tc->ground, gart, sizeof gart);
+        t->ground  = MapStrIntern(map, gart);
+    } else {
+        t->ground  = t->art;
+    }
+    t->terrain     = (uint8_t)tc->terrain;
     t->blocks_foot = tc->blocks_foot;
     t->is_bridge   = tc->is_bridge;
     t->interactive = INTERACT_NONE;
-    t->id[0]       = '\0';
-    t->sign_title[0] = '\0';
-    t->sign_body[0]  = '\0';
+    t->id          = 0;
+    t->sign_title  = 0;
+    t->sign_body   = 0;
     t->boat_spawn_x  = -1;
     t->boat_spawn_y  = -1;
     return true;
 }
 
-static void default_tile(Tile *t) {
-    copy_string(t->art, sizeof(t->art), "grass");
+// A declared tile code written onto a live map (game.json `events` effects:
+// a bridge over a river, a cleared pass). The tile is built exactly as the
+// loader builds it, so it is a tile the .dat could have held.
+bool MapSetTileFromCode(Map *map, const Resources *res, int x, int y,
+                        unsigned char code) {
+    if (!map || !res || !MapInBounds(map, x, y)) return false;
+    return fill_tile_from_code(map, &MAP_TILE(map, x, y), res, code);
+}
+
+static void default_tile(Map *map, Tile *t) {
+    char art[TILE_ART_NAME_LEN];
+    MapTerrainArt(map, "grass", art, sizeof art);
+    t->art         = MapStrIntern(map, art);
+    t->ground      = t->art;
     t->terrain     = TERRAIN_GRASS;
     t->blocks_foot = false;
     t->is_bridge   = false;
     t->interactive = INTERACT_NONE;
-    t->id[0]       = '\0';
-    t->sign_title[0] = '\0';
-    t->sign_body[0]  = '\0';
+    t->id          = 0;
+    t->sign_title  = 0;
+    t->sign_body   = 0;
     t->boat_spawn_x  = -1;
     t->boat_spawn_y  = -1;
 }
@@ -67,15 +178,16 @@ static bool load_dat(Map *map, const Resources *res, const ResZone *zone) {
         return false;
     }
 
-    map->width  = zone->width;
-    map->height = zone->height;
-    if (map->width > MAP_MAX_W || map->height > MAP_MAX_H) {
-        fprintf(stdout, "MapLoadZone: %s too large: %dx%d\n",
-                zone->id, map->width, map->height);
+    if (!MapAlloc(map, zone->width, zone->height)) {
+        fprintf(stdout, "MapLoadZone: %s: cannot allocate %dx%d\n",
+                zone->id, zone->width, zone->height);
         UnloadAssetBytes(bytes);
         return false;
     }
     copy_string(map->name, sizeof(map->name), zone->id);
+    copy_string(map->tile_set, sizeof(map->tile_set), zone->tile_set);
+    copy_string(map->army_art, sizeof(map->army_art),
+                zone->army_art[0] ? zone->army_art : "wandering_army");
     map->hero_spawn_x = zone->hero_spawn_x;
     map->hero_spawn_y = zone->hero_spawn_y;
     map->navmap_x = map->navmap_y = -1;
@@ -83,7 +195,7 @@ static bool load_dat(Map *map, const Resources *res, const ResZone *zone) {
 
     for (int y = 0; y < map->height; y++)
         for (int x = 0; x < map->width; x++)
-            default_tile(&map->tiles[y][x]);
+            default_tile(map, &MAP_TILE(map, x, y));
 
     const char *p   = (const char *)bytes;
     const char *end = (const char *)bytes + sz;
@@ -93,7 +205,7 @@ static bool load_dat(Map *map, const Resources *res, const ResZone *zone) {
         int x = 0;
         while (p < end && *p != '\n' && *p != '\r' && x < map->width) {
             unsigned char c = (unsigned char)*p++;
-            if (!fill_tile_from_code(&map->tiles[y][x], res, c)) {
+            if (!fill_tile_from_code(map, &MAP_TILE(map, x, y), res, c)) {
                 fprintf(stdout,
                         "MapLoadZone: %s:%d:%d unknown tile code 0x%02x '%c'\n",
                         zone->map_path, y + 1, x + 1, c,
@@ -117,7 +229,47 @@ static bool load_dat(Map *map, const Resources *res, const ResZone *zone) {
 // of bounds (per-zone object lists may outlive edits to the .dat).
 static Tile *tile_at(Map *map, int x, int y) {
     if (!MapInBounds(map, x, y)) return NULL;
-    return &map->tiles[y][x];
+    return &MAP_TILE(map, x, y);
+}
+
+// The castle stamps (REQ-228), one table per footprint. stamp_objects paints
+// from these and map_castle_art_names reads the art names off them, so the
+// art manifest cannot drift from what the map draws.
+//
+// 3x2: a 3-wide x 2-tall block centred on the gate. The JSON-authored (x, y)
+// is the gate at bottom-centre:
+//
+//   (x-1, y-1)=tl   (x, y-1)=br_top   (x+1, y-1)=tr
+//   (x-1, y  )=ml   (x, y  )=GATE     (x+1, y  )=mr
+//
+// (The 'br' suffix is misleading -- it sits at the top-middle in the source
+// art. We preserve the asset names.) The five wall tiles are decorative-only
+// (no interactive flag) and block player movement; the gate carries the
+// interactive flag.
+//
+// 1x1: the gate tile alone, drawn with the single `castle` art, so the castle
+// sits on the map the way a town does.
+typedef struct { int dx, dy; const char *art; bool gate; } CastlePart;
+
+static const CastlePart CASTLE_3X2_PARTS[] = {
+    { -1, -1, "castle_tl",   false },
+    {  0, -1, "castle_br",   false },
+    { +1, -1, "castle_tr",   false },
+    { -1,  0, "castle_ml",   false },
+    {  0,  0, "castle_gate", true  },
+    { +1,  0, "castle_mr",   false },
+};
+static const CastlePart CASTLE_1X1_PARTS[] = {
+    {  0,  0, "castle", true },
+};
+
+static const CastlePart *castle_parts(ResCastleFootprint fp, int *out_count) {
+    if (fp == RES_CASTLE_FOOTPRINT_1X1) {
+        *out_count = (int)(sizeof CASTLE_1X1_PARTS / sizeof CASTLE_1X1_PARTS[0]);
+        return CASTLE_1X1_PARTS;
+    }
+    *out_count = (int)(sizeof CASTLE_3X2_PARTS / sizeof CASTLE_3X2_PARTS[0]);
+    return CASTLE_3X2_PARTS;
 }
 
 // stamp_objects: paint all JSON-authored objects onto the map. This is
@@ -132,10 +284,10 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
         Tile *t = tile_at(map, z->signs[i].x, z->signs[i].y);
         if (!t) continue;
         t->interactive = INTERACT_SIGN;
-        copy_string(t->id,         sizeof(t->id),         z->signs[i].id);
-        copy_string(t->sign_title, sizeof(t->sign_title), z->signs[i].title);
-        copy_string(t->sign_body,  sizeof(t->sign_body),  z->signs[i].body);
-        copy_string(t->art,        sizeof(t->art),        "sign");
+        TileSetId(map, t, z->signs[i].id);
+        t->sign_title = MapStrIntern(map, z->signs[i].title);
+        t->sign_body = MapStrIntern(map, z->signs[i].body);
+        TileSetArt(map, t, "sign");
     }
     for (int i = 0; i < z->town_count; i++) {
         const ResTown *zt = resources_zone_town(res, z, i);
@@ -143,40 +295,32 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
         Tile *t = tile_at(map, zt->x, zt->y);
         if (!t) continue;
         t->interactive = INTERACT_TOWN;
-        copy_string(t->id, sizeof(t->id), zt->id);
+        TileSetId(map, t, zt->id);
         t->boat_spawn_x = zt->boat_x;
         t->boat_spawn_y = zt->boat_y;
-        copy_string(t->art, sizeof(t->art), "town");
+        // A town draws its own tile when the catalog entry names one
+        // (`art`, a stem under art/tiles/), else the shared "town" tile.
+        TileSetArt(map, t, zt->art[0] ? zt->art : "town");
     }
     for (int i = 0; i < z->castle_count; i++) {
-        // Castle is a 3-wide x 2-tall block centered on the gate. The
-        // JSON-authored (x, y) is the gate at bottom-center:
-        //
-        //   (x-1, y-1)=tl   (x, y-1)=br_top   (x+1, y-1)=tr
-        //   (x-1, y  )=ml   (x, y  )=GATE     (x+1, y  )=mr
-        //
-        // (The 'br' suffix is misleading -- it sits at the top-middle in
-        // the source art. We preserve the asset names.)
-        // The 5 wall tiles are decorative-only (no interactive flag) and
-        // block player movement; the gate carries the interactive flag.
+        // The footprint is the catalog entry's choice (REQ-228); a zone castle
+        // with no catalog entry stamps the classic 3x2.
         int cx = z->castles[i].x;
         int cy = z->castles[i].y;
-        struct { int dx, dy; const char *art; } parts[6] = {
-            { -1, -1, "castle_tl" },
-            {  0, -1, "castle_br" },
-            { +1, -1, "castle_tr" },
-            { -1,  0, "castle_ml" },
-            {  0,  0, "castle_gate" },
-            { +1,  0, "castle_mr" },
-        };
-        for (int p = 0; p < 6; p++) {
+        const ResCastle *rc = resources_castle_by_id(res, z->castles[i].id);
+        ResCastleFootprint fp = rc ? rc->footprint : RES_CASTLE_FOOTPRINT_3X2;
+        int nparts = 0;
+        const CastlePart *parts = castle_parts(fp, &nparts);
+        for (int p = 0; p < nparts; p++) {
             Tile *t = tile_at(map, cx + parts[p].dx, cy + parts[p].dy);
             if (!t) continue;
-            copy_string(t->art, sizeof(t->art), parts[p].art);
-            if (p == 4) {
+            // A 1x1 castle draws its own tile when the catalog names one.
+            const char *art = (nparts == 1 && rc && rc->art[0]) ? rc->art : parts[p].art;
+            TileSetArt(map, t, art);
+            if (parts[p].gate) {
                 // Gate: interactive entry point.
                 t->interactive = INTERACT_CASTLE_GATE;
-                copy_string(t->id, sizeof(t->id), z->castles[i].id);
+                TileSetId(map, t, z->castles[i].id);
                 t->blocks_foot = false;
             } else {
                 // Wall: decorative scenery, blocks the player.
@@ -191,7 +335,7 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
             const ResCastleDecor *d = &z->castles[i].decorations[p];
             Tile *t = tile_at(map, cx + d->dx, cy + d->dy);
             if (!t || !d->art[0]) continue;
-            copy_string(t->art, sizeof(t->art), d->art);
+            TileSetArt(map, t, d->art);
             t->blocks_foot = true;
         }
     }
@@ -205,18 +349,18 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
         Tile *t = tile_at(map, z->chests[i].x, z->chests[i].y);
         if (!t) continue;
         t->interactive = INTERACT_TREASURE_CHEST;
-        copy_string(t->id, sizeof(t->id), z->chests[i].id);
-        copy_string(t->art, sizeof(t->art), "chest");
+        TileSetId(map, t, z->chests[i].id);
+        TileSetArt(map, t, "chest");
     }
     for (int i = 0; i < z->artifact_count; i++) {
         Tile *t = tile_at(map, z->artifacts[i].x, z->artifacts[i].y);
         if (!t) continue;
         t->interactive = INTERACT_ARTIFACT;
-        copy_string(t->id, sizeof(t->id), z->artifacts[i].id);
+        TileSetId(map, t, z->artifacts[i].id);
         // Both artifact tile bytes (0x92/0x93) display the same
         // chest-style art; the artifact identity is reveal-on-pickup,
         // not from the world tile.
-        copy_string(t->art, sizeof(t->art), "artifact_chest");
+        TileSetArt(map, t, "artifact_chest");
     }
     for (int i = 0; i < z->dwelling_count; i++) {
         Tile *t = tile_at(map, z->dwellings[i].x, z->dwellings[i].y);
@@ -224,21 +368,22 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
         const char *k = z->dwellings[i].kind;
         if      (strcmp(k, "plains")  == 0) {
             t->interactive = INTERACT_DWELLING_PLAINS;
-            copy_string(t->art, sizeof(t->art), "dwelling_plains");
+            TileSetArt(map, t, "dwelling_plains");
         } else if (strcmp(k, "forest")  == 0) {
             t->interactive = INTERACT_DWELLING_FOREST;
-            copy_string(t->art, sizeof(t->art), "dwelling_forest");
+            TileSetArt(map, t, "dwelling_forest");
         } else if (strcmp(k, "hills")   == 0) {
             t->interactive = INTERACT_DWELLING_HILLS;
-            copy_string(t->art, sizeof(t->art), "dwelling_hills");
+            TileSetArt(map, t, "dwelling_hills");
         } else if (strcmp(k, "dungeon") == 0) {
             t->interactive = INTERACT_DWELLING_DUNGEON;
-            copy_string(t->art, sizeof(t->art), "dwelling_dungeon");
+            TileSetArt(map, t, "dwelling_dungeon");
         }
-        copy_string(t->id, sizeof(t->id), z->dwellings[i].id);
+        TileSetId(map, t, z->dwellings[i].id);
     }
-    // Archmage Aurange's alcove. Rendered with the hills-dwelling sprite
-    // (the alcove reuses the hill-cave art). Walking here triggers the
+    // The magic alcove. Drawn with the zone's own `alcove_art` when it
+    // declares one, otherwise the hills-dwelling sprite it borrowed before a
+    // pack could name its own. Walking here triggers the
     // spell-teaching flow in step.c. The interactive flag also lets
     // render code distinguish alcove tiles from regular hills dwellings
     // if it ever wants to differentiate.
@@ -246,8 +391,8 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
         Tile *t = tile_at(map, z->magic_alcove_x, z->magic_alcove_y);
         if (t) {
             t->interactive = INTERACT_ALCOVE;
-            copy_string(t->art, sizeof(t->art), "dwelling_hills");
-            copy_string(t->id,  sizeof(t->id),  "alcove");
+            TileSetArt(map, t, z->alcove_art[0] ? z->alcove_art : "dwelling_hills");
+            TileSetId(map, t, "alcove");
             // The alcove sits on a mountain-edge tile; force it walkable
             // so the player can step on it (the sprite implies a passable
             // cave entrance regardless of the underlying terrain).
@@ -295,9 +440,9 @@ static void stamp_placements(Map *map, const Game *game, const char *zone_id) {
         Tile *t = tile_at(map, p->x, p->y);
         if (!t) continue;
         t->interactive = (Interact)p->kind;
-        copy_string(t->id, sizeof(t->id), p->id);
+        TileSetId(map, t, p->id);
         const char *art = placement_art(p->kind);
-        if (art) copy_string(t->art, sizeof(t->art), art);
+        if (art) TileSetArt(map, t, art);
     }
     // All foes -- friendly and hostile -- stamped from the live FoeState
     // table. This is one-tile-type model (0x91); friendly vs
@@ -327,8 +472,8 @@ void MapStampFoe(Map *map, int x, int y, const char *placement_id) {
         !spurious_chest)
         return;
     t->interactive = INTERACT_FOE;
-    copy_string(t->id, sizeof(t->id), placement_id);
-    copy_string(t->art, sizeof(t->art), "wandering_army");
+    TileSetId(map, t, placement_id);
+    TileSetArt(map, t, map->army_art[0] ? map->army_art : "wandering_army");
 }
 
 bool MapClearFoeStamp(Map *map, int x, int y) {
@@ -339,7 +484,7 @@ bool MapClearFoeStamp(Map *map, int x, int y) {
     // there destroys the pickup with no consumed-ledger entry (an objective
     // that can never complete).
     if (!MapInBounds(map, x, y)) return false;
-    Tile *t = &map->tiles[y][x];
+    Tile *t = &MAP_TILE(map, x, y);
     if (t->interactive != INTERACT_FOE) return false;
     MapClearInteractive(map, x, y);
     return true;
@@ -357,7 +502,7 @@ bool MapLoadZoneWithPlacements(Map *map, const Resources *res,
         fprintf(stdout, "MapLoadZone: unknown zone id '%s'\n", zone_id);
         return false;
     }
-    memset(map, 0, sizeof(*map));
+    MapFree(map);
     if (!load_dat(map, res, zone)) return false;
     stamp_objects(map, res, zone, game);
     stamp_placements(map, game, zone_id);
@@ -366,7 +511,7 @@ bool MapLoadZoneWithPlacements(Map *map, const Resources *res,
 
 const Tile *MapGetTile(const Map *map, int x, int y) {
     if (!MapInBounds(map, x, y)) return NULL;
-    return &map->tiles[y][x];
+    return &MAP_TILE(map, x, y);
 }
 
 bool MapInBounds(const Map *map, int x, int y) {
@@ -381,36 +526,64 @@ bool MapWalkable(const Map *map, int x, int y) {
 
 void MapClearInteractive(Map *map, int x, int y) {
     if (!MapInBounds(map, x, y)) return;
-    Tile *t = &map->tiles[y][x];
+    Tile *t = &MAP_TILE(map, x, y);
     t->interactive = INTERACT_NONE;
-    t->id[0] = '\0';
-    // Revert to plain walkable terrain. sets consumed tiles to
-    // byte 0x00 (grass), so the tile becomes passable regardless of
-    // what it used to be underneath (dwellings often sit on mountain
-    // edges, alcoves on mountain-variant tiles, etc.). Water stays
-    // water so picked-up floating interactives don't become walkable.
+    t->id = 0;
+    // Revert to the cell's own terrain art (REQ-229f): a road, a grass
+    // variant or a desert piece comes back as the map drew it. The original
+    // game set consumed tiles to byte 0x00 (grass) so they became passable
+    // regardless of what was underneath (dwellings often sit on mountain
+    // edges, alcoves on mountain-variant tiles); that still holds where the
+    // ground is not walkable. Water stays water so picked-up floating
+    // interactives don't become walkable.
+    char art[TILE_ART_NAME_LEN];
     if (t->terrain == TERRAIN_WATER) {
-        copy_string(t->art, sizeof(t->art), "water");
-    } else {
-        copy_string(t->art, sizeof(t->art), "grass");
-        t->terrain     = TERRAIN_GRASS;
-        t->blocks_foot = false;
-        t->is_bridge   = false;
+        TileSetArt(map, t, MapTerrainArt(map, "water", art, sizeof art));
+        return;
     }
+    // Only grass-terrain ground comes back (roads, grass variants): a
+    // consumed object on desert or a mountain edge still leaves plain grass,
+    // exactly as the original game did, so the legacy pack plays unchanged.
+    const char *gname = TileGround(map, t);
+    Terrain ground = gname[0] ? TerrainFromArt(art_stem(gname)) : TERRAIN_GRASS;
+    if (gname[0] && ground == TERRAIN_GRASS) {
+        t->art = t->ground;
+        t->terrain = TERRAIN_GRASS;
+    } else {
+        t->art = MapStrIntern(map, MapTerrainArt(map, "grass", art, sizeof art));
+        t->ground = t->art;
+        t->terrain = TERRAIN_GRASS;
+    }
+    t->blocks_foot = false;
+    t->is_bridge   = false;
 }
 
-// Art names this module stamps onto tiles for placed objects (castles, towns,
+// Art names this module stamps onto tiles for placed objects (towns,
 // dwellings, chests, signs, bridges, foes). They are NOT in game.json -- the
 // engine chooses them by interact kind -- so resources_art_manifest() has to
-// ask for them rather than duplicate the list and drift from it.
+// ask for them rather than duplicate the list and drift from it. Castle art
+// depends on the footprint and is served by map_castle_art_names.
 const char *const *map_object_art_names(int *out_count) {
+    // "town" and "wandering_army" are not here: town art is per catalog entry
+    // (ResTown.art) and army art per zone (ResZone.army_art); the manifest
+    // lists both from the declarations.
     static const char *const NAMES[] = {
-        "castle_tl", "castle_tr", "castle_br", "castle_ml", "castle_mr",
-        "castle_gate", "town", "chest", "artifact_chest", "artifact_ring",
-        "sign", "bridge_h", "bridge_v", "wandering_army",
+        "chest", "artifact_chest", "artifact_ring",
+        "sign", "bridge_h", "bridge_v",
         "dwelling_plains", "dwelling_forest", "dwelling_hills",
         "dwelling_dungeon",
     };
     if (out_count) *out_count = (int)(sizeof NAMES / sizeof NAMES[0]);
     return NAMES;
+}
+
+const char *const *map_castle_art_names(ResCastleFootprint fp, int *out_count) {
+    // Filled from the stamp tables, so the names live in one place.
+    static const char *names[2][8];
+    int which = (fp == RES_CASTLE_FOOTPRINT_1X1) ? 1 : 0;
+    int n = 0;
+    const CastlePart *parts = castle_parts(fp, &n);
+    for (int i = 0; i < n && i < 8; i++) names[which][i] = parts[i].art;
+    if (out_count) *out_count = n;
+    return names[which];
 }

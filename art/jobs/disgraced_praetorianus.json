@@ -1,0 +1,20 @@
+{
+ "id": "disgraced_praetorianus",
+ "prompt": "a wide view of a ruined roadside shrine in the rain, a defeated Roman warrior-priest with his white veil torn and soiled and his gilded cuirass scratched and dented kneels beside a cold, overturned altar, his sacrificial bowl dropped on the ground, a burned field behind him, dark clouds, alive but beaten, the figure small in a wide landscape view",
+ "seed": 7411,
+ "style": "rd_pro__default",
+ "width": 240,
+ "height": 102,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  240,
+  102
+ ],
+ "_pack_path": "art/ui/disgraced_praetorianus.png",
+ "_note": "Temporary-death scene for the praetorianus (2026-09-14): backdrop route (rd_pro__default at 240x102, opaque, shown at 3x), the class's hero seed, the class portrait's description made beaten and tattered but alive. Run 2 sends the class portrait as a reference image so the figure matches the character.",
+ "reference_image_paths": [
+  "assets/glory-of-rome/art/classes/praetorianus.png"
+ ]
+}

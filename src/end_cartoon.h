@@ -1,7 +1,7 @@
 #ifndef OB_END_CARTOON_H
 #define OB_END_CARTOON_H
 
-#include "raylib.h"
+#include "ob_types.h"
 #include "resources.h"
 #include "sprites.h"
 
@@ -18,8 +18,10 @@
 //
 // No-op (returns immediately) if any of the required tile paths are
 // missing from res->ending.
+struct Game;
 void run_end_cartoon(RenderTexture2D *rt,
                              const Resources *res,
-                             const Sprites *sprites);
+                             const Sprites *sprites,
+                             const struct Game *game);
 
 #endif

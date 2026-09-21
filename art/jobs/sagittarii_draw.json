@@ -1,0 +1,16 @@
+{
+ "id": "sagittarii_draw",
+ "_note": "2026-09-17: the key pose the shooting animation starts from -- bow at full draw, which is what three animation runs from the at-rest still could never invent. Same man and seed as sagittarii.json, with the pack sprite as a reference image.",
+ "prompt": "a Roman auxiliary archer of the sagittarii in a bronze Roman helmet with cheek guards, a mail shirt over a red tunic, a quiver of arrows on his back, seen from the side facing right, his left arm holding the curved composite bow out straight ahead and his right hand pulling the dark bowstring all the way back to his cheek so the bow is bent deeply and the string makes a sharp V at the nocked arrow, the arrow level and pointing right, both feet planted",
+ "style": "user__glory_of_rome_troops_bac676cd",
+ "width": 96,
+ "height": 96,
+ "seed": 7901,
+ "remove_bg": true,
+ "return_non_bg_removed": true,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": true,
+ "reference_image_paths": ["assets/glory-of-rome/art/troops/sagittarii_00.png"],
+ "target": [96, 96]
+}

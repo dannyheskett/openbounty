@@ -1,0 +1,19 @@
+{
+  "id": "castle_palatium",
+  "prompt": "an isolated cut-out game sprite of the imperial palace on the Palatine hill of Rome, a grand white marble palace with a long facade of tall Corinthian columns, a great central audience hall under a gilded bronze dome, purple imperial banners hanging between the columns, a golden eagle standard above the entrance, red terracotta roofs on the wings, the palace seen from the front and above with its great doors facing the viewer, a short stretch of paved road in front of the doors that starts and ends at the palace, the road the only ground drawn, no wall, fence or gate, only the flat magenta background around and below the palace, the whole palace complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background",
+  "style": "rd_pro__topdown",
+  "width": 96,
+  "height": 96,
+  "seed": 7161,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/tiles/castle_palatium.png",
+  "_note": "The Emperor's palace map tile for Roma's castle (2026-09-13), drawn beside the town_rome tile. The per-zone town tile route exactly (rd_pro__topdown, 96x96, magenta removed, no reference, a facing cue, freestanding with a short road as the only ground), in the same white marble, terracotta and gilded palette as town_rome so the two read as one city."
+}

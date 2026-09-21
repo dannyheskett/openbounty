@@ -1,0 +1,20 @@
+{
+  "id": "augur_portrait",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of an elderly Roman augur with a full white beard, bare-headed, in a heavy toga with a broad scarlet stripe over a white tunic, holding a short pale wooden staff that curls over into a single hook at the top, a black raven perched on his shoulder, an open hilltop sky with distant birds behind him",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 9931,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "_pack_path": "art/portraits/augur_portrait.png",
+  "_note": "The Augur's portrait (2026-09-14) for the modern temple screen's portrait in-lay: the same man as the alcove_augur figure (white beard, scarlet-striped toga, lituus, raven), the figure as reference. Static: 128 still resized whole to 96, like the troop portraits. run01 (2026-09-13) was interrupted and produced no image.",
+  "reference_image_paths": [
+    "assets/glory-of-rome/art/ui/alcove_augur_00.png"
+  ]
+}

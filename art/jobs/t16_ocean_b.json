@@ -1,0 +1,25 @@
+{
+ "lower_description": "short green meadow grass, even medium green, seen from above",
+ "tile_size": {
+  "width": 16,
+  "height": 16
+ },
+ "mode": "standard",
+ "shape_style": "round",
+ "enhance": false,
+ "view": "high top-down",
+ "outline": "lineless",
+ "shading": "medium shading",
+ "detail": "medium detail",
+ "text_guidance_scale": 8.0,
+ "seed": 12,
+ "lower_base_tile_id": "8de72f5c-9d4d-432a-9058-39d365aede04",
+ "lower_reference_image": {
+  "type": "base64",
+  "base64": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABzElEQVR4nFWTWW4bMQyGPy4z8jQOkJysp+uJeiEDHmdsDyX2gbaTEhAEQQv/TfLn7+/kUe8OOwLA5St5+yVc9oGJ4Ja4wDWEd6/zpy9QUeVVmkw6iIS2CDBw479yqsmO0Gbwpp0QZTLhfB+4CT0Fk17d5gSSNWAxCBNuQzBJMEEnhcUG233wPhfMo3duAW5FZx/QFLbOaz96sthA1/iGtw+AwdahOURPzndhUrjshQCAId+UmsIaIJpEKvQkoKBbsg/YgWMz1ujA4AYcHLauaKTStMbrVRMYwnavTrcw9t5f+yaFCEAXG6V8JPRkmZNFkvMPakevyzmEhyx8NKAneroVxACWOam10DNxT0SNwIgufB6E6PXC1sE98bcJGMX5fBfepspCEwGSawB0Pg/6TY/KCFAaoLCG4SYsrmy9DkcqOQYmcB3CFmV5T8FFidSHBs8oT3C+Znk8vxKOG6zRmciHiJ3LPnCpZLIDJsnpLrR54JS1TQfLXPn4cFgjsdKa5rA4FaTo0LPEiV7DBC5FE1FjH8rRf/yJhxt+9Ge35DYEUGCwGCzAKcApG2/jaWvNp7ug+8PfSLAxHlooa1TSmvDyHoymEBhbVw4O/wBlPfPsh6eL2wAAAABJRU5ErkJggg==",
+  "format": "png"
+ },
+ "upper_description": "deep dark navy blue ocean water, calm, seen from above, tiny pale ripples",
+ "transition_description": "gentle sandy beach: pale turquoise shallow water, then a band of light wet sand, then dry pale sand meeting the grass",
+ "transition_size": 0.5
+}

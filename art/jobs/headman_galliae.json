@@ -1,0 +1,20 @@
+{
+  "id": "headman_galliae",
+  "prompt": "a Gallic town chief standing at rest in a checked cloak over a tunic and trousers, a gold torc at his neck and a long fair moustache, holding a wooden staff upright",
+  "style": "user__glory_of_rome_troops_bac676cd",
+  "width": 96,
+  "height": 96,
+  "seed": 9702,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": true,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/ui/headman_galliae_00..07.png",
+  "_animation": "breathes slowly and strokes his moustache once, his body, staff, cloak and feet all completely still, smooth loop",
+  "_note": "The town's head townsperson (2026-09-13), one per continent, standing on the town backdrop in the tile-sized slot the troop used to fill. The alcove figure's route: the pack's trained troop style at 96x96, magenta removed, no crop."
+}

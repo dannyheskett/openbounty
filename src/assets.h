@@ -1,7 +1,7 @@
 #ifndef OB_ASSETS_H
 #define OB_ASSETS_H
 
-#include "raylib.h"
+#include "ob_types.h"
 #include "assets_bytes.h"  // engine-side byte access
 
 // Shell-side asset access: texture loading (raylib-typed). The engine

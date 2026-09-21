@@ -1,0 +1,17 @@
+{
+  "id": "hud_boat_silhouette",
+  "prompt": "a black silhouette of a small Roman sailing boat with a single square sail against a deep blue background, painted as a small game sidebar panel, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering",
+  "style": "rd_pro__default",
+  "width": 96,
+  "height": 96,
+  "seed": 7710,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/ui/hud_boat_silhouette.png",
+  "_note": "The 'no boat' panel (2026-09-13), shown in the modern town Boat screen's portrait slot where the town has no boat master. The no-contract silhouette's route exactly: rd_pro__default, 96x96, opaque, no references, no lettering, no crop."
+}

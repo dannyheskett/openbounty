@@ -1,0 +1,24 @@
+{
+ "lower_description": "lush cool blue-green meadow grass, damp and dense",
+ "tile_size": {
+  "width": 32,
+  "height": 32
+ },
+ "mode": "standard",
+ "shape_style": "round",
+ "enhance": false,
+ "view": "high top-down",
+ "outline": "lineless",
+ "shading": "medium shading",
+ "detail": "medium detail",
+ "text_guidance_scale": 8.0,
+ "seed": 2103,
+ "lower_base_tile_id": "011fafa4-f9ff-4859-85fd-5c8d0f72377b",
+ "lower_reference_image": {
+  "type": "base64",
+  "base64": "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAADlElEQVR4nK2XTXPbNhCGHxKgREnUp2lbrpNp3Dr3dDr5Y730Z/bQHtpJOknacaVxZNOSaJMSv3KQyZDgh6S2ywu5i128i8W+ALVXP/2ccIQkHDV8r+j/1+QaWuk7r1O/U5H/ZtJ8oLw91Vf5JCSZPT9OqsaqgE2g6sDUgVAT0f9LTbvfnmIMOyTPjxpcBVglel3t1AD5cb7j0rocASBHvdrgdSCS3CPrUKYZpTbPWZOEEcPrC9p2HyENAESY0L+02bhPBEuvEUw+Zvp+0CbU0Bi+viAJIh5v7uhdnmT27WbD09wh9gNaVrcxltoVBQD5jVgFAiD0A1rDHqEf4P05Q8idu2y38Nb+3jhVcTMAVV3gfV4yvL4g9AOEFLTsId7SxZs7IHTiICJ0fTQpMMdW5lsHItXnSyHVWmeOQuPszfe483u2rsfmwQVgcn3JdukhWoL1x1t0KYp+NLegapP5zAtBopj1zYLudIQ1nXD/x98YVocoCjEnPeIoRlom5tgqTVaVfZq5utJ63ZJpaGgix9SiyNqrdzPMsZW1bF3Wql7VldowX6fV+xmGZcJo13KBt+Hu109oUtC7mBTG12Wdz7ZKSm2YDzS4mrJ8P9sFCWMAdNOgM+4Xxu/roDoghS6oApKQoEmBMAQtq1s5kaqLomegorwpq0q19zg2x1aBYJoOnPR7u3rEd1y60xHd6YjArWfIRgBVta37TifvnA8A6E7H0DbQLRP7x2viqLwh4QAqbppctWUg7MFXvReyXtzx9M8dmqbTezE5DsChrJYu8+rDnNO3r1m+m7F5cOmcDgEQpoHstEpxGgEccgVLQVivznYGobNZrLNxkbel8+IEo28W9BmAphY69FABEFLgO48Mr84RQhK4Hvab73YgoojbXz6g5/gjA1CVaRUxNYnvuDzNHOwfrtAtE10IEDre3CH0A9yPt3S/OSn5JSRfz4Iqo/reBCQOI0JvS8syWT2TV0pi5tmo1k+v4ut9k6nSGfexXtrc//YX288rOqcDIj/I2FMIHSF0dFEmosoLSd3m21cO66XNw+83xGFE2+4XKFtNqnQlq6LJPM/vuz2nwdNNllKyOqEqBSZUb8NVPxP5gE2ghGhm+exO2LZ3y7RduCVjnVNTiep86nxl93wMwGaxbqzvIZ2g3vf2iYaGXH+6RZjG7mdj0CssnYr6kP+HYwADSG/uEAVRacfmA6SZHbsKTZLury/XFriK95fMrwAAAABJRU5ErkJggg=="
+ },
+ "upper_description": "cobblestone road paved with small close-set rounded grey stones, dark joints between them, even and flat",
+ "transition_description": "a single edging course of darker set stones where the paving meets the grass",
+ "transition_size": 0.0
+}

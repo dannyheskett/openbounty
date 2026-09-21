@@ -1,0 +1,15 @@
+{
+ "id": "scene_column",
+ "prompt": "a narrow pale weathered marble Roman column shaft with vertical fluting, dark green ivy climbing and winding around it, seen straight on, the column filling the whole width, seamless vertical tile",
+ "style": "rd_pro__default",
+ "width": 28,
+ "height": 102,
+ "seed": 6501,
+ "tile_y": true,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [28, 102],
+ "_pack_path": "art/ui/scene_column.png",
+ "_note": "The side bars beside a place backdrop (2026-09-15): one 28x102 strip repeated top to bottom at 1x, mirrored for the right bar. rd_pro__default like the backdrops, tile_y for a seamless repeat (support on this style unverified; first use)."
+}

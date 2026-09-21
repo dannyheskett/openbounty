@@ -1,0 +1,105 @@
+{
+ "_note": "Where tools/mapbuild.py place scatters Galliae's chests and wandering armies. Boxes are inclusive tile ranges; only walkable plain grass inside them is used. The two static guardians are placed by \"fixed\".",
+ "seed": 2027,
+ "spacing": 2,
+ "fixed": {
+  "guardian_hadrian": [
+   20,
+   10
+  ],
+  "guardian_rhenus": [
+   51,
+   22
+  ]
+ },
+ "regions": [
+  {
+   "name": "Caledonia, beyond the Wall",
+   "box": [
+    11,
+    0,
+    25,
+    9
+   ],
+   "chests": 3,
+   "armies": 1
+  },
+  {
+   "name": "Britannia",
+   "box": [
+    12,
+    11,
+    35,
+    22
+   ],
+   "chests": 4,
+   "armies": 2
+  },
+  {
+   "name": "Hibernia",
+   "box": [
+    0,
+    9,
+    12,
+    19
+   ],
+   "chests": 2,
+   "armies": 1
+  },
+  {
+   "name": "Gaul north of the Loire",
+   "box": [
+    17,
+    20,
+    49,
+    31
+   ],
+   "chests": 5,
+   "armies": 2
+  },
+  {
+   "name": "Gaul south of the Loire",
+   "box": [
+    17,
+    32,
+    50,
+    43
+   ],
+   "chests": 5,
+   "armies": 3
+  },
+  {
+   "name": "Germania, east of the Rhine",
+   "box": [
+    55,
+    12,
+    63,
+    29
+   ],
+   "chests": 3,
+   "armies": 2
+  },
+  {
+   "name": "Germania, north of the Rhine",
+   "box": [
+    44,
+    12,
+    54,
+    18
+   ],
+   "chests": 1,
+   "armies": 0
+  },
+  {
+   "name": "Hispania",
+   "box": [
+    1,
+    43,
+    40,
+    62
+   ],
+   "chests": 7,
+   "armies": 3
+  }
+ ]
+}

@@ -711,7 +711,6 @@ static cJSON *emit_world(void) {
     // Nominal sight radius. The engine's FogReveal ignores this argument
     // and always stamps the DOS-authentic 5x5 box, but the pack still
     // declares the value the original used.
-    cJSON_AddNumberToObject(o, "fog_sight", 3);
     // OpenKB's HOME_CONTINENT 0 -> continent_names[0] is the
     // starting zone. We slugify the continent name to the zone id.
     cJSON_AddStringToObject(o, "starting_zone",    "continentia");

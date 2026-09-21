@@ -22,6 +22,8 @@ typedef struct {
     int              spawn_x, spawn_y;
     bool            *quit_flag;
     bool             hud_pref;
+    bool            *new_game_flag;   // modern: New Game asks, then returns to the title menu
+    int              slot;            // modern: the save slot the menu picked (0-based)
 } MenuCtx;
 
 bool menu_save(void *ud);

@@ -1,0 +1,18 @@
+{
+  "id": "striges",
+  "_note": "Prompt as written in ART-WORKLIST. Neutral stance so the attack is the travel the animation spends. The troop style appends the full-length profile, game-sprite and magenta-background clauses. Animate at 96 without padding. Reworked 2026-09-20 in the adversarial troop review: the 2026-09-05 sprite had pink-mauve bat wings on a 56px body and read as an imp, not the screech-owl the name and the lore promise. 'Membranous wings' was the fault -- replaced by broad feathered owl wings and barred brown plumage, and the body told to be the size of a man so it fills the tile like the recent troops. run02: run01 dropped the human face entirely and drew a plain great horned owl, wings spread the full 96 px -- wildlife, not a vampire, and too wide for its neighbours on the grid. The face is now named first and the wings told to stay half folded. run03: run02 got the face and the folded wings right but baked a brown ellipse of bare ground under the talons -- 'standing on bare ground' in the prompt. That clause is gone and the ground is forbidden outright; everything else is run02 unchanged.",
+  "prompt": "a strix, a vampire woman in the shape of an owl: the hunched body and barred brown feathers of a great owl with a ruff of pale feathers at the neck, but a gaunt pale human woman's face where the owl's face would be, black eyes and a lipless mouth, dark hair among the head feathers, feathered wings half folded at her sides rather than spread, long hooked talons wet with blood, hunched and facing right, nothing under her feet",
+  "style": "user__glory_of_rome_troops_bac676cd",
+  "width": 96,
+  "height": 96,
+  "seed": 5604,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": true,
+  "target": [
+    96,
+    96
+  ]
+}

@@ -1,0 +1,19 @@
+{
+ "lower_description": "Anatolian steppe grass, short and dry, silvery grey-green with small patches of ochre earth",
+ "upper_description": "the same steppe grass with a few small clumps of grey thyme bushes",
+ "transition_description": "",
+ "tile_size": {
+  "width": 32,
+  "height": 32
+ },
+ "mode": "standard",
+ "shape_style": "round",
+ "enhance": true,
+ "view": "high top-down",
+ "outline": "lineless",
+ "shading": "medium shading",
+ "detail": "medium detail",
+ "text_guidance_scale": 8.0,
+ "transition_size": 0.0,
+ "seed": 4101
+}

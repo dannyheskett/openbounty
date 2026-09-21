@@ -1,0 +1,11 @@
+{
+ "description": "Northern broadleaf tree, round leafy crown with a visible trunk below it, seen from above at a slight angle, small shadow to the south-east, pixel art, transparent background",
+ "size": 96,
+ "view": "top-down",
+ "item_descriptions": [
+  "old oak, wide crown, thick trunk",
+  "young beech, lighter round crown",
+  "lime tree, full round crown, trunk",
+  "dark round crown, thick trunk"
+ ]
+}

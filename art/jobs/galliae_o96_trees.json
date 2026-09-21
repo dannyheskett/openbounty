@@ -1,0 +1,18 @@
+{
+ "description": "Northern broadleaf tree, round leafy crown with a visible trunk below it, seen from above at a slight angle, small shadow to the south-east, pixel art, transparent background",
+ "batches": [
+  [
+   "broad beech, round crown, short trunk",
+   "English oak, dark round crown, trunk",
+   "ash tree, lighter airy crown, trunk",
+   "hornbeam, dense round crown, trunk"
+  ],
+  [
+   "old oak, wide crown, thick trunk",
+   "young beech, lighter round crown",
+   "lime tree, full round crown, trunk",
+   "dark round crown, thick trunk"
+  ]
+ ],
+ "_note": "Galliae trees (2026-09-19): the Italia o96_trees call with the review-table wording. Output kept in art/primitives/galliae/trees."
+}

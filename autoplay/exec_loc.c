@@ -103,7 +103,7 @@ void exec_book_budget(const Game *g, BookBudget *out) {
 }
 
 int spell_charges(const Game *g, int spell_idx) {
-    if (!g || spell_idx < 0 || spell_idx >= GAME_SPELLBOOK_SLOTS) return 0;
+    if (!g || spell_idx < 0 || spell_idx >= g->spells.count) return 0;
     return g->spells.counts[spell_idx];
 }
 
@@ -111,8 +111,9 @@ int spell_charges(const Game *g, int spell_idx) {
 static const char *town_selling(const Game *g, int spell_idx) {
     const SpellDef *sd = spell_by_index(spell_idx);
     if (!sd) return NULL;
-    for (int i = 0; i < GAME_TOWNS; i++) {
+    for (int i = 0; i < g->town_count; i++) {
         if (!g->towns[i].id[0]) continue;
+        if (!GameTownHasRites(g, g->towns[i].id)) continue;   // it will not sell yet
         if (strcmp(g->towns[i].spell_for_sale, sd->id) == 0)
             return g->towns[i].id;
     }
@@ -136,13 +137,14 @@ static bool dest_is_seller(const ExecCtx *ctx, bool town_gate,
               (t->x == x && t->y == y)))
             continue;
         const TownRecord *tr = NULL;
-        for (int k = 0; k < GAME_TOWNS; k++) {
+        for (int k = 0; k < ctx->g->town_count; k++) {
             if (strcmp(ctx->g->towns[k].id, t->id) == 0) {
                 tr = &ctx->g->towns[k];
                 break;
             }
         }
-        return tr && strcmp(tr->spell_for_sale, sd->id) == 0;
+        return tr && strcmp(tr->spell_for_sale, sd->id) == 0 &&
+               GameTownHasRites(ctx->g, tr->id);
     }
     return false;
 }
@@ -290,12 +292,11 @@ bool exec_topup_gate_kit(ExecCtx *ctx) {
 // (FLOW_DISCARD_SPELL) to free a slot against the max_spells cap.
 bool exec_discard_spell(ExecCtx *ctx, int spell_idx) {
     Game *g = ctx->g;
-    if (spell_idx < 0 || spell_idx >= GAME_SPELLBOOK_SLOTS) return false;
+    if (spell_idx < 0 || spell_idx >= g->spells.count) return false;
     if (g->spells.counts[spell_idx] <= 0) return false;
     pending_discard_spell_idx = spell_idx;
     pending_flow = FLOW_DISCARD_SPELL;
-    player_io_raise_decision(g, FLOW_DISCARD_SPELL, REQ_PROMPT_YES_NO,
-                             NULL, NULL);
+    player_io_ask_self(g, FLOW_DISCARD_SPELL, REQ_PROMPT_YES_NO);
     rec_push_action(g, RA_DISCARD_SPELL, NULL, spell_idx, 0);
     FlowAnswer yes = { FLOW_ANS_YES, 0 };
     PlayerIoPresentation pres;
@@ -374,8 +375,7 @@ bool exec_dismiss_slot(ExecCtx *ctx, int slot) {
         if (g->army[i].id[0] && g->army[i].count > 0) occupied++;
     if (occupied <= 1) return false;
     pending_flow = FLOW_DISMISS_ARMY;
-    player_io_raise_decision(g, FLOW_DISMISS_ARMY, REQ_PROMPT_NUMERIC,
-                             NULL, NULL);
+    player_io_ask_self(g, FLOW_DISMISS_ARMY, REQ_PROMPT_NUMERIC);
     rec_push_action(g, RA_DISMISS, NULL, slot, 0);
     FlowAnswer ans = { (PromptAnswer)(FLOW_ANS_1 + slot), 0 };
     PlayerIoPresentation pres;
@@ -417,8 +417,7 @@ bool exec_dismiss_last_escape(ExecCtx *ctx) {
     // temp death (player_io FLOW_DISMISS_ARMY -> chain_dismiss_last ->
     // FLOW_DISMISS_LAST, the exact shell path).
     pending_flow = FLOW_DISMISS_ARMY;
-    player_io_raise_decision(g, FLOW_DISMISS_ARMY, REQ_PROMPT_NUMERIC,
-                             NULL, NULL);
+    player_io_ask_self(g, FLOW_DISMISS_ARMY, REQ_PROMPT_NUMERIC);
     int dismiss_mark = recsink_mark();
     rec_push_action(g, RA_DISMISS_LAST, NULL, last, 0);
     FlowAnswer pick = { (PromptAnswer)(FLOW_ANS_1 + last), 0 };
@@ -430,8 +429,7 @@ bool exec_dismiss_last_escape(ExecCtx *ctx) {
         return false;
     }
     pending_flow = FLOW_DISMISS_LAST;
-    player_io_raise_decision(g, FLOW_DISMISS_LAST, REQ_PROMPT_YES_NO,
-                             NULL, NULL);
+    player_io_ask_self(g, FLOW_DISMISS_LAST, REQ_PROMPT_YES_NO);
     FlowAnswer yes = { FLOW_ANS_YES, 0 };
     PlayerIoPresentation pres2;
     player_io_answer(g, ctx->map, ctx->fog, ctx->res, yes,

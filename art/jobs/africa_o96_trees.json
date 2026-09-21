@@ -1,0 +1,18 @@
+{
+ "description": "North African tree, round crown of dusty grey-green leaves with a visible trunk below it, the whole tree inside the frame, seen from above at a slight angle, small shadow to the south-east, pixel art, transparent background",
+ "batches": [
+  [
+   "olive tree, silvery round crown, twisted trunk",
+   "carob tree, dark round crown, trunk",
+   "argan tree, thorny round crown, short trunk",
+   "cork oak, round crown, thick trunk"
+  ],
+  [
+   "young olive, lighter round crown",
+   "fig tree, broad round crown, trunk",
+   "tamarisk, feathery round crown, trunk",
+   "dark round crown, thick trunk"
+  ]
+ ],
+ "_note": "Africa trees (2026-09-19). Output in art/primitives/africa/trees."
+}

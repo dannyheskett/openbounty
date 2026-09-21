@@ -1,0 +1,18 @@
+{
+  "id": "druidae",
+  "_note": "Batch of 2026-09-05, prompt rewritten from the worklist row into a neutral stance with the weapon at rest, so the attack is the animation's travel. Animate at 96 without padding.",
+  "prompt": "a Celtic druid in a long white robe with an oak-leaf wreath, a gnarled oak staff held upright at rest in his right hand, a golden sickle hanging from his belt",
+  "style": "user__glory_of_rome_troops_bac676cd",
+  "width": 96,
+  "height": 96,
+  "seed": 6121,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": true,
+  "target": [
+    96,
+    96
+  ]
+}

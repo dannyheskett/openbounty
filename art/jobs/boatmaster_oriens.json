@@ -1,0 +1,18 @@
+{
+  "id": "boatmaster_oriens",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Phoenician sea captain with a curled black beard in a purple robe and a felt cap, a harbour of merchant ships under a bright eastern sky behind him",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 9604,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "_pack_path": "art/portraits/boatmaster_oriens_00..07.png",
+  "_animation": "eyes narrowing shrewdly, a small smile, static background, smooth loop",
+  "_note": "Town detail portrait (2026-09-13): boat master (Boat detail) or siege engineer (Siege works detail), one per continent. Same route as the informants and priests: still at 128, eight-frame loop at 128, each frame centre-cropped to 96 (Dan-approved for town portraits)."
+}

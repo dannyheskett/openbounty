@@ -5,10 +5,10 @@
 
 #include "tables.h"
 #include "tile.h"
-#include "ui_host.h"     // prompt_yes_no_open
+#include "ui_host.h"     // audio + recorder hooks
 #include "resources.h"
 #include "pending.h"     // FLOW_DISCARD_SPELL + pending_discard_spell_idx
-#include "player_io.h"   // player_io_raise_decision / REQ_PROMPT_YES_NO
+#include "player_io.h"   // player_io_note / player_io_ask
 
 BridgeState bridge_state = BRIDGE_STATE_NONE;
 GateState   gate_state   = GATE_STATE_NONE;
@@ -32,7 +32,7 @@ static void cast_time_stop(Game *g) {
     ResTemplateVar vars[] = { { "STEPS", sbuf } };
     resources_format_template(msg, sizeof msg,
                               g->res->banners.spell_time_stop, vars, 1);
-    player_io_message(g, spell_header("time_stop", "Time Stop"), msg);
+    player_io_note(g, spell_header("time_stop", "Time Stop"), msg);
 }
 
 static void cast_find_villain(Game *g) {
@@ -41,12 +41,12 @@ static void cast_find_villain(Game *g) {
     if (!g->contract.active_id[0]) {
         resources_format_template(msg, sizeof msg,
                                   bn->spell_find_villain_no_contract, NULL, 0);
-        player_io_message(g, spell_header("find_villain", "Find Villain"), msg);
+        player_io_note(g, spell_header("find_villain", "Find Villain"), msg);
         return;
     }
     GameCastFindVillain(g);
     const char *villain_id = g->contract.active_id;
-    for (int i = 0; i < GAME_CASTLES; i++) {
+    for (int i = 0; i < g->castle_count; i++) {
         if (g->castles[i].known &&
             strcmp(g->castles[i].villain_id, villain_id) == 0) {
             // Look up the castle's display name; fall back to id if
@@ -58,18 +58,22 @@ static void cast_find_villain(Game *g) {
             ResTemplateVar vars[] = { { "CASTLE", castle_label } };
             resources_format_template(msg, sizeof msg,
                                       bn->spell_find_villain_success, vars, 1);
-            player_io_message(g, spell_header("find_villain", "Find Villain"), msg);
+            player_io_note(g, spell_header("find_villain", "Find Villain"), msg);
             return;
         }
     }
     resources_format_template(msg, sizeof msg,
                               bn->spell_find_villain_none, NULL, 0);
-    player_io_message(g, spell_header("find_villain", "Find Villain"), msg);
+    player_io_note(g, spell_header("find_villain", "Find Villain"), msg);
 }
 
 int try_build_bridge(Game *g, Map *map, int dx, int dy) {
     // Build bridge in direction (dx, dy). Returns number of tiles placed.
     const char *bridge_art = (dy != 0) ? "bridge_v" : "bridge_h";
+    // Over a river the deck is the river bridge: paving across the river's own
+    // piece, crossing north-south over a river running east-west, or the other
+    // way round.
+    const char *river_art = (dy != 0) ? "bridge_river_ns" : "bridge_river_ew";
 
     int built = 0;
     for (int i = 1; i <= 5; i++) {
@@ -79,14 +83,19 @@ int try_build_bridge(Game *g, Map *map, int dx, int dy) {
         if (!MapInBounds(map, nx, ny)) break;
 
         const Tile *t = MapGetTile(map, nx, ny);
-        if (t->terrain != TERRAIN_WATER) break;
+        // The sea or a river: a bridge crosses either.
+        if (t->terrain != TERRAIN_WATER && t->terrain != TERRAIN_RIVER) break;
 
-        map->tiles[ny][nx].art[0] = '\0';
-        map->tiles[ny][nx].terrain = TERRAIN_GRASS;
-        map->tiles[ny][nx].interactive = INTERACT_NONE;
-        map->tiles[ny][nx].blocks_foot = false;
-        map->tiles[ny][nx].is_bridge = true;
-        strncpy(map->tiles[ny][nx].art, bridge_art, TILE_ART_NAME_LEN - 1);
+        bool over_river = t->terrain == TERRAIN_RIVER;
+        MAP_TILE(map, nx, ny).terrain = TERRAIN_GRASS;
+        MAP_TILE(map, nx, ny).interactive = INTERACT_NONE;
+        MAP_TILE(map, nx, ny).blocks_foot = false;
+        MAP_TILE(map, nx, ny).is_bridge = true;
+        {
+            char art[TILE_ART_NAME_LEN];
+            TileSetArt(map, &MAP_TILE(map, nx, ny),
+                       MapTerrainArt(map, over_river ? river_art : bridge_art, art, sizeof art));
+        }
 
         built++;
         if (built >= 2) break;  // builds max 2 tiles (or up to 5 water tiles)
@@ -100,7 +109,7 @@ static void cast_bridge(Game *g) {
     char msg[RES_BANNER_LEN];
     resources_format_template(msg, sizeof msg,
                               g->res->banners.spell_bridge_prompt, NULL, 0);
-    player_io_message(g, spell_header("bridge", "Bridge"), msg);
+    player_io_note(g, spell_header("bridge", "Bridge"), msg);
     bridge_state = BRIDGE_STATE_DIRECTION;
 }
 
@@ -115,7 +124,7 @@ static void cast_castle_gate(Game *g) {
     // picker (shell_gate.c). The charge is consumed only on a chosen teleport,
     // never on cast or cancel.
     int visited_count = 0;
-    for (int i = 0; i < GAME_CASTLES && i < g->res->castle_count; i++) {
+    for (int i = 0; i < g->castle_count && i < g->res->castle_count; i++) {
         if (!g->castles[i].visited) continue;
         if (resources_castle_is_home(&g->res->castles[i])) continue;
         if (!g->res->castles[i].zone[0]) continue;
@@ -124,7 +133,7 @@ static void cast_castle_gate(Game *g) {
     if (visited_count == 0) {
         resources_format_template(msg, sizeof msg,
                                   bn->spell_castle_gate_none, NULL, 0);
-        player_io_message(g, spell_header("castle_gate", "Castle Gate"), msg);
+        player_io_note(g, spell_header("castle_gate", "Castle Gate"), msg);
         return;
     }
     gate_state = GATE_STATE_SELECT;
@@ -137,14 +146,14 @@ static void cast_town_gate(Game *g) {
     const ResBanners *bn = &g->res->banners;
     char msg[RES_BANNER_LEN];
     int visited_count = 0;
-    int tn = g->res->town_count < GAME_TOWNS ? g->res->town_count : GAME_TOWNS;
+    int tn = g->town_count;
     for (int i = 0; i < tn; i++) {
         if (g->towns[i].visited && g->res->towns[i].zone[0]) visited_count++;
     }
     if (visited_count == 0) {
         resources_format_template(msg, sizeof msg,
                                   bn->spell_town_gate_none, NULL, 0);
-        player_io_message(g, spell_header("town_gate", "Town Gate"), msg);
+        player_io_note(g, spell_header("town_gate", "Town Gate"), msg);
         return;
     }
     gate_state = GATE_STATE_SELECT;
@@ -187,7 +196,7 @@ static void cast_instant_army(Game *g) {
     if (!troop || !troop->id[0]) {
         resources_format_template(msg, sizeof msg,
                                   bn->spell_instant_army_fizzle, NULL, 0);
-        player_io_message(g, spell_header("instant_army", "Instant Army"), msg);
+        player_io_note(g, spell_header("instant_army", "Instant Army"), msg);
         return;
     }
     int count = GameInstantArmyPerCast(g);
@@ -196,7 +205,7 @@ static void cast_instant_army(Game *g) {
     if (rc != 0) {
         resources_format_template(msg, sizeof msg,
                                   bn->spell_instant_army_no_room, NULL, 0);
-        player_io_message(g, spell_header("instant_army", "Instant Army"), msg);
+        player_io_note(g, spell_header("instant_army", "Instant Army"), msg);
         return;
     }
 
@@ -212,7 +221,7 @@ static void cast_instant_army(Game *g) {
     };
     resources_format_template(msg, sizeof msg,
                               bn->spell_instant_army_success, vars, 2);
-    player_io_message(g, spell_header("instant_army", "Instant Army"), msg);
+    player_io_note(g, spell_header("instant_army", "Instant Army"), msg);
 }
 
 static void cast_raise_control(Game *g) {
@@ -230,7 +239,7 @@ static void cast_raise_control(Game *g) {
     resources_format_template(msg, sizeof msg,
                               g->res->banners.spell_raise_control_success,
                               vars, 1);
-    player_io_message(g, spell_header("raise_control", "Raise Control"), msg);
+    player_io_note(g, spell_header("raise_control", "Raise Control"), msg);
 }
 
 void dispatch_adventure_spell(Game *g, int spell_idx) {
@@ -241,32 +250,30 @@ void dispatch_adventure_spell(Game *g, int spell_idx) {
         // slot (the book is capped by max_spells; combat spells you can't use in
         // the field otherwise occupy that cap). Only offer if a charge exists.
         if (g->spells.counts[spell_idx] <= 0) {
-            player_io_message(g, NULL, g->res->banners.spell_not_known);
+            player_io_note(g, NULL, g->res->banners.spell_not_known);
             return;
         }
         char body[256];
         snprintf(body, sizeof body,
                  "%s cannot be cast in the field.\n\n"
                  "Discard it to free a spell slot?",
-                 sp->name[0] ? sp->name : "This spell");
-        const char *header = sp->name[0] ? sp->name : "Spell";
+                 sp->name);
+        const char *header = sp->name;
         pending_discard_spell_idx = spell_idx;
         pending_flow = FLOW_DISCARD_SPELL;
-        prompt_yes_no_open(header, body);
-        player_io_raise_decision(g, FLOW_DISCARD_SPELL, REQ_PROMPT_YES_NO,
-                                 header, body);
+        player_io_ask(g, FLOW_DISCARD_SPELL, REQ_PROMPT_YES_NO, header, body);
         return;
     }
     if (!sp || sp->kind != SPELL_KIND_ADVENTURE) {
-        player_io_message(g, NULL, g->res->banners.spell_unavailable);
+        player_io_note(g, NULL, g->res->banners.spell_unavailable);
         return;
     }
     if (g->spells.counts[spell_idx] <= 0) {
-        player_io_message(g, NULL, g->res->banners.spell_not_known);
+        player_io_note(g, NULL, g->res->banners.spell_not_known);
         return;
     }
     if (!GameApplyAdventureSpellEffect(g, spell_idx))
-        player_io_message(g, NULL, g->res->banners.spell_unknown);
+        player_io_note(g, NULL, g->res->banners.spell_unknown);
 }
 
 // Apply the EFFECT of adventure spell `spell_idx`. The id->effect mapping lives

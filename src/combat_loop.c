@@ -6,18 +6,27 @@
 // engine/combat.c.
 
 #include "frame_host.h"
+#include "gfx.h"
 #include "input_host.h"
+#include "touch.h"
 #include "combat.h"
 #include "combat_loop.h"
 #include "combat_render.h"
 #include "tables.h"
 #include "resources.h"
 #include "ui.h"
-#include "raylib.h"
+#include "select.h"
+#include "ob_types.h"
 #include "recorder.h"
 #include "audio.h"
 #include "bfont.h"
 #include "layout.h"
+#include "modern/mlayout.h"
+#include "overlay_impl.h"
+#include "modern/mlist.h"
+#include "modern/uikit.h"
+#include "modern/gamemenu.h"
+#include "lattice.h"
 #include "present.h"
 #include "chrome.h"
 #include "palette.h"
@@ -41,6 +50,25 @@ bool combat_pick_step(Combat *c, const Game *g, const Sprites *sprites,
                       int *out_x, int *out_y, bool *out_cancelled) {
     (void)g; (void)sprites; (void)render_target;
     if (out_cancelled) *out_cancelled = false;
+
+    // Touch: tap a cell to jump the cursor there; if the cell passes the
+    // pick filter it confirms in the same tap. ESC chrome cancels.
+    touch_request(TOUCH_CHROME_BACK);
+    touch_region_grid(CL_COMBAT_X, CL_COMBAT_Y,
+                      COMBAT_W * CL_COMBAT_CELL_W, COMBAT_H * CL_COMBAT_CELL_H,
+                      CL_COMBAT_CELL_W, CL_COMBAT_CELL_H, TOUCH_GRID_COMBAT);
+    int tcx, tcy;
+    if (touch_tapped_cell(TOUCH_GRID_COMBAT, &tcx, &tcy) &&
+        combat_in_bounds(tcx, tcy)) {
+        c->cursor_x = tcx;
+        c->cursor_y = tcy;
+        if (combat_cell_passes_filter(c, tcx, tcy, c->side, c->pick_filter)) {
+            if (out_x) *out_x = tcx;
+            if (out_y) *out_y = tcy;
+            return true;
+        }
+        return false;
+    }
 
     int dx = 0, dy = 0;
     if      (input_key_pressed(KEY_UP)    || input_key_pressed(KEY_KP_8)) dy = -1;
@@ -107,10 +135,35 @@ static bool combat_read_dir(int *dx, int *dy) {
 // Returns 1 when the casting unit's turn is consumed (effect applied
 // successfully). 0 when still mid-cast or cancelled/no-effect.
 // Resets c->cast_phase = NONE on success, cancel, and no-effect.
+// Modern: the spell menu's cursor row. Shell state, not combat state.
+static int s_cast_cursor = 0;
+
+// Spell `idx` chosen: check the charge, then set the picker up for that
+// spell's target filter -- shared with the engine dispatcher and the autoplay
+// policy so shell and autoplay agree on legal targets. Entered from the combat
+// menu's Cast page (modern) or the lettered picker (legacy).
+void combat_begin_cast(Combat *c, Game *gw, int idx) {
+    const ResCombatLog *cl_pre = combat_log_strings(c);
+    if (!gw || idx < 0 || idx >= 7) { c->cast_phase = COMBAT_CAST_NONE; return; }
+    if (gw->spells.counts[idx] <= 0) {
+        combat_log_template(c, cl_pre->no_spell_type, NULL, 0);
+        c->cast_phase = COMBAT_CAST_NONE;
+        return;
+    }
+    c->cast_spell_idx = idx;
+    c->pick_filter   = combat_spell_target_filter(idx);
+    c->pick_reason   = COMBAT_PICK_REASON_SPELL_TARGET;
+    c->picker_active = true;
+    if (c->unit_id >= 0) {
+        c->cursor_x = c->units[c->side][c->unit_id].x;
+        c->cursor_y = c->units[c->side][c->unit_id].y;
+    }
+    c->cast_phase = COMBAT_CAST_PICK_TARGET;
+}
+
 int combat_cast_step(Combat *c, Game *g, const Sprites *sprites,
                      void *render_target) {
     (void)sprites; (void)render_target;
-    const ResCombatLog *cl_pre = combat_log_strings(c);
     Game *gw = c->heroes[c->side];
     if (!gw) {
         c->cast_phase = COMBAT_CAST_NONE;
@@ -118,36 +171,24 @@ int combat_cast_step(Combat *c, Game *g, const Sprites *sprites,
         return 0;
     }
     if (c->cast_phase == COMBAT_CAST_PICK_SPELL) {
+        touch_request(TOUCH_CHROME_BACK);
         if (input_key_pressed(KEY_ESCAPE)) {
             c->cast_phase = COMBAT_CAST_NONE;
             return 0;
         }
         int picked = -1;
-        for (int i = 0; i < 7; i++) {
+        {   // Modern: cursor rows, Enter or a tap picks; letters in both modes.
+            SelList l = { 7, s_cast_cursor };
+            int row = -1;
+            SelEvent ev = sel_input(&l, TOUCH_LIST_COMBAT_SPELLS, 0, &row);
+            s_cast_cursor = l.cursor;
+            if (ev == SEL_CONFIRM) picked = row;
+        }
+        for (int i = 0; i < 7 && picked < 0; i++) {
             if (input_key_pressed(KEY_A + i)) { picked = i; break; }
         }
         if (picked < 0) return 0;
-        if (gw->spells.counts[picked] <= 0) {
-            combat_log_template(c,
-                cl_pre ? cl_pre->no_spell_type : "No spells of that type",
-                NULL, 0);
-            c->cast_phase = COMBAT_CAST_NONE;
-            return 0;
-        }
-        c->cast_spell_idx = picked;
-        // Set up the picker for this spell's target filter -- shared with the
-        // engine cast dispatcher / autoplay policy so shell + autoplay
-        // agree on legal targets from one source.
-        int filter = combat_spell_target_filter(picked);
-        CombatPickReason reason = COMBAT_PICK_REASON_SPELL_TARGET;
-        c->pick_filter   = filter;
-        c->pick_reason   = reason;
-        c->picker_active = true;
-        if (c->unit_id >= 0) {
-            c->cursor_x = c->units[c->side][c->unit_id].x;
-            c->cursor_y = c->units[c->side][c->unit_id].y;
-        }
-        c->cast_phase = COMBAT_CAST_PICK_TARGET;
+        combat_begin_cast(c, gw, picked);
         return 0;
     }
     if (c->cast_phase == COMBAT_CAST_PICK_TARGET) {
@@ -217,10 +258,189 @@ int combat_cast_step(Combat *c, Game *g, const Sprites *sprites,
     return 0;
 }
 
+// ----- Modern: the action menu --------------------------------------------------
+// Modern combat is menu driven: Enter, or a tap on the active unit, opens a
+// menu of what the unit and the hero can do now. A row closes the menu and
+// presses its key on the next frame, so it runs the exact path the key runs;
+// the keys stay as shortcuts. Rows that cannot apply are left out.
+static bool s_act_open = false;
+
+// The menu's pages (REQ-430s): the top level and its three pages. It opens on
+// the Unit page; Back from there goes to the top level, Back again closes.
+enum { CM_ROOT = 0, CM_UNIT, CM_HERO, CM_GAME, CM_CAST };
+static int s_act_page[3], s_act_cursor[3], s_act_depth = 0;
+
+void combat_gallery_menu(bool open) {
+    s_act_open = open;
+    s_act_page[0] = CM_ROOT; s_act_cursor[0] = 0;
+    s_act_page[1] = CM_UNIT; s_act_cursor[1] = 0;
+    s_act_depth = open ? 2 : 0;
+}
+
+// --gallery: the menu opened on its Cast page (Actions > Unit > Spells).
+void combat_gallery_cast_page(void) {
+    combat_gallery_menu(true);
+    s_act_page[2] = CM_CAST; s_act_cursor[2] = 0;
+    s_act_depth = 3;
+}
+
+static void combat_menu_open(void) {
+    s_act_open = true;
+    s_act_page[0] = CM_ROOT; s_act_cursor[0] = 0;
+    s_act_page[1] = CM_UNIT; s_act_cursor[1] = 0;
+    s_act_depth = 2;
+}
+
+// What a spell does, for the Cast page's description: the pack's one-line
+// brief (strings.spell_brief), else the spell's own description. Never lore.
+static const char *spell_brief(const Resources *res, const SpellDef *sd) {
+    if (!sd) return "";
+    const char *b = resources_spell_brief(res, sd->id);
+    return (b && b[0]) ? b : sd->description;
+}
+
+static void combat_menu_page(const Combat *c, const Game *g, int id, GmPage *p) {
+    const ResUI *ui = &g->res->ui;
+    const ResBanners *bn = &g->res->banners;
+    memset(p, 0, sizeof *p);
+    #define ROW(l, d, sc, k, en) do { if (p->n < GM_ROWS_MAX) p->item[p->n++] = (GmItem){ l, d, sc, k, en }; } while (0)
+    switch (id) {
+    case CM_ROOT:
+        p->title = ui->gm_actions;
+        ROW(ui->gm_unit, bn->gmd_unit, "", GM_ACT_PAGE + CM_UNIT, true);
+        ROW(ui->gm_hero, bn->gmd_combat_army, "", GM_ACT_PAGE + CM_HERO, true);
+        ROW(ui->gm_game, bn->gmd_controls, "", GM_ACT_PAGE + CM_GAME, true);
+        ROW(ui->gm_close, bn->gmd_back, "", GM_ACT_BACK, true);
+        break;
+    case CM_UNIT: {
+        const CombatUnit *u = (c->unit_id >= 0) ? &c->units[c->side][c->unit_id] : NULL;
+        const TroopDef *t = u ? troop_by_index(u->troop_idx) : NULL;
+        const Game *hero = c->heroes[c->side];
+        bool shots = u && u->shots > 0;
+        bool close = u && combat_unit_surrounded(c, c->side, c->unit_id);
+        bool fly = t && (t->abilities & TROOP_ABIL_FLY) && u->flights > 0;
+        bool magic = hero && hero->stats.knows_magic;
+        bool spell_left = c->spells_this_round < 1;
+        p->title = ui->gm_unit;
+        ROW(ui->gm_wait, bn->gmd_wait, "", KEY_SPACE, true);
+        ROW(ui->gm_shoot, !shots ? bn->gmr_no_shots : close ? bn->gmr_adjacent : bn->gmd_shoot,
+            "S", KEY_S, shots && !close);
+        ROW(ui->gm_fly, fly ? bn->gmd_unit_fly : bn->gmr_cannot_fly, "F", KEY_F, fly);
+        ROW(ui->gm_cast, !magic ? bn->gmr_no_magic : !spell_left ? bn->gmr_one_spell : bn->gmd_combat_cast,
+            "U", GM_ACT_PAGE + CM_CAST, magic && spell_left);
+        ROW(ui->gm_back, bn->gmd_back_up, "", GM_ACT_BACK, true);
+        break;
+    }
+    case CM_HERO:
+        p->title = ui->gm_hero;
+        ROW(ui->gm_army, bn->gmd_combat_army, "A", KEY_A, true);
+        ROW(ui->gm_character, bn->gmd_combat_character, "V", KEY_V, true);
+        ROW(ui->gm_back, bn->gmd_back_up, "", GM_ACT_BACK, true);
+        break;
+    case CM_CAST: {
+        // The spells as a page of this menu: no letters, no in-panel Back, the
+        // spell's lore as the description beside them.
+        const Game *hero = c->heroes[c->side];
+        p->title = ui->combat_spells_title;
+        for (int i = 0; i < 7; i++) {
+            const SpellDef *sd = spell_by_index(i);
+            int held = hero ? hero->spells.counts[i] : 0;
+            ROW(sd ? sd->name : "", held > 0 ? spell_brief(g->res, sd) : bn->gmr_no_spell_held, "",
+                GM_ACT_USER + i, held > 0);
+        }
+        ROW(ui->gm_back, bn->gmd_back_up, "", GM_ACT_BACK, true);
+        break;
+    }
+    case CM_GAME:
+        p->title = ui->gm_game;
+        ROW(ui->gm_controls, bn->gmd_controls, "C", KEY_C, true);
+        ROW(ui->gm_back, bn->gmd_back_up, "", GM_ACT_BACK, true);
+        ROW(ui->gm_give_up, bn->gmd_give_up, "G", KEY_G, true);   // last, like Exit
+        break;
+    }
+    #undef ROW
+}
+
+typedef struct { const Game *hero; const GmPage *page; } SpellRowCtx;
+
+// A row of the menu's Cast page: the spell's name, the charges held at the
+// right. No letter -- the menu is cursored and tapped, like every other list.
+static bool combat_spell_row(void *ctx, int i, char *label, char *right, int cap) {
+    const SpellRowCtx *sc = (const SpellRowCtx *)ctx;
+    const GmItem *it = &sc->page->item[i];
+    snprintf(label, (size_t)cap, "%s", it->label ? it->label : "");
+    if (i < 7 && sc->hero) snprintf(right, 48, "%d", sc->hero->spells.counts[i]);
+    else right[0] = '\0';
+    return it->enabled;
+}
+
+// The large panel: the path, the page's rows, the description beside them.
+static void combat_action_menu_draw(const Combat *c, const Game *g) {
+    if (s_act_depth < 1) return;
+    int d = s_act_depth - 1;
+    GmPage p;
+    combat_menu_page(c, g, s_act_page[d], &p);
+    char path[96] = "";
+    for (int i = 0; i < s_act_depth; i++) {
+        GmPage pi;
+        combat_menu_page(c, g, s_act_page[i], &pi);
+        size_t n = strlen(path);
+        snprintf(path + n, sizeof path - n, "%s%s", i ? " > " : "", pi.title ? pi.title : "");
+    }
+    int cursor = s_act_cursor[d] < p.n ? s_act_cursor[d] : p.n - 1;
+    // The Cast page shows each spell's charges at the row's right.
+    bool cast = s_act_page[d] == CM_CAST;
+    SpellRowCtx sc = { c->heroes[c->side], &p };
+    gm_draw_page(&p, path, "", cursor, TOUCH_LIST_COMBAT_ACTIONS, cast ? combat_spell_row : NULL, cast ? &sc : NULL);
+}
+
+
+
 static int combat_player_action_full(Combat *c, const Game *g,
                                      const Sprites *sprites,
                                      RenderTexture2D *target) {
     (void)sprites; (void)target;
+    // Touch: tap a battlefield cell to step the active unit toward it (one
+    // tap, one step, like the adventure map). Legacy: the bar carries the
+    // verbs. Modern: a tap on the active unit opens the action menu.
+    if (!CL_IS_MODERN) touch_request(TOUCH_CHROME_COMBAT);
+    if (CL_IS_MODERN && s_act_open) {
+        int d = s_act_depth - 1;
+        GmPage p;
+        combat_menu_page(c, g, s_act_page[d], &p);
+        GmEvent ev = gm_page_input(&p, &s_act_cursor[d], TOUCH_LIST_COMBAT_ACTIONS);
+        int key = (ev == GM_EV_ACT) ? p.item[s_act_cursor[d]].key : 0;
+        if (ev == GM_EV_BACK || key == GM_ACT_BACK) {
+            if (--s_act_depth < 1) s_act_open = false;
+        } else if (key >= GM_ACT_PAGE && key < GM_ACT_USER) {
+            if (s_act_depth < 3) {
+                s_act_page[s_act_depth] = key - GM_ACT_PAGE;
+                s_act_cursor[s_act_depth] = 0;
+                s_act_depth++;
+            }
+        } else if (key >= GM_ACT_USER) {
+            // A spell on the Cast page: close the menu and pick its target.
+            s_act_open = false;
+            combat_begin_cast(c, c->heroes[c->side], key - GM_ACT_USER);
+        } else if (key) {
+            s_act_open = false;
+            input_host_inject_key_next_frame(key);
+        }
+        return 0;
+    }
+    if (c->unit_id >= 0) {
+        const CombatUnit *au = &c->units[c->side][c->unit_id];
+        touch_region_map(CL_COMBAT_X, CL_COMBAT_Y,
+                         COMBAT_W * CL_COMBAT_CELL_W,
+                         COMBAT_H * CL_COMBAT_CELL_H,
+                         CL_COMBAT_CELL_W, CL_COMBAT_CELL_H,
+                         au->x, au->y, CL_IS_MODERN ? KEY_ENTER : 0);
+    }
+    if (CL_IS_MODERN &&
+        (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER))) {
+        combat_menu_open();
+        return 0;
+    }
     int dx, dy;
     if (combat_read_dir(&dx, &dy)) {
         if (c->unit_id < 0) return 0;
@@ -234,8 +454,10 @@ static int combat_player_action_full(Combat *c, const Game *g,
         // Open a y/n give-up confirm; the outer combat loop polls
         // prompt_update() and writes c->result to 2 on YES.
         if (g && g->res) {
-            prompt_yes_no_open(g->res->banners.combat_give_up_header,
+            prompt_yes_no_open(CL_IS_MODERN ? g->res->ui.give_up_header_modern
+                                            : g->res->banners.combat_give_up_header,
                                g->res->banners.combat_give_up_body);
+            prompt_set_req_kind(PIO_ASK_OVER_FIELD);
         }
         return 0;
     }
@@ -246,13 +468,11 @@ static int combat_player_action_full(Combat *c, const Game *g,
         CombatUnit *u = &c->units[c->side][c->unit_id];
         const ResCombatLog *cl_sh = combat_log_strings(c);
         if (u->shots <= 0) {
-            combat_log_template(c,
-                cl_sh ? cl_sh->no_ammo : "No ammo", NULL, 0);
+            combat_log_template(c, cl_sh->no_ammo, NULL, 0);
             return 0;
         }
         if (combat_unit_surrounded(c, c->side, c->unit_id)) {
-            combat_log_template(c,
-                cl_sh ? cl_sh->cant_shoot : "Can't Shoot", NULL, 0);
+            combat_log_template(c, cl_sh->cant_shoot, NULL, 0);
             return 0;
         }
         c->cursor_x = u->x;
@@ -270,8 +490,7 @@ static int combat_player_action_full(Combat *c, const Game *g,
         const TroopDef *t = troop_by_index(u->troop_idx);
         const ResCombatLog *cl_fl = combat_log_strings(c);
         if (!t || !(t->abilities & TROOP_ABIL_FLY) || u->flights <= 0) {
-            combat_log_template(c,
-                cl_fl ? cl_fl->cant_fly : "Can't Fly", NULL, 0);
+            combat_log_template(c, cl_fl->cant_fly, NULL, 0);
             return 0;
         }
         c->cursor_x = u->x;
@@ -289,18 +508,21 @@ static int combat_player_action_full(Combat *c, const Game *g,
         Game *gw = c->heroes[c->side];
         if (!gw) return 0;
         if (c->spells_this_round >= 1) {
-            combat_log_template(c,
-                cl_pre ? cl_pre->only_one_spell
-                       : "Only 1 spell per round!", NULL, 0);
+            combat_log_template(c, cl_pre->only_one_spell, NULL, 0);
             return 0;
         }
         if (!gw->stats.knows_magic) {
-            combat_log_template(c,
-                cl_pre ? cl_pre->cannot_cast : "You cannot cast magic",
-                NULL, 0);
+            combat_log_template(c, cl_pre->cannot_cast, NULL, 0);
             return 0;
         }
-        c->cast_phase = COMBAT_CAST_PICK_SPELL;
+        if (CL_IS_MODERN) {
+            combat_menu_open();
+            s_act_page[s_act_depth] = CM_CAST;
+            s_act_cursor[s_act_depth] = 0;
+            s_act_depth++;
+        } else {
+            c->cast_phase = COMBAT_CAST_PICK_SPELL;
+        }
         return 0;
     }
     if (input_key_pressed(KEY_C)) {
@@ -316,47 +538,64 @@ static int combat_player_action_full(Combat *c, const Game *g,
 static void combat_present(const Combat *c, const Game *g,
                            const Sprites *sprites,
                            RenderTexture2D *target) {
-    BeginTextureMode(*target);
+    present_refit(target);
+    present_begin(target);
+    ml_set_area(ML_AREA_FULL);     // the field is full width: panels centre on it
+    ml_set_field((ML_Rect){ CL_COMBAT_X, CL_COMBAT_Y, CL_COMBAT_W, CL_COMBAT_H });
+    if (CL_IS_MODERN) modern_overlay_set_sprites(sprites);
     combat_render_frame(c, g, sprites);
     // Open view (Options / Controls / Army / Character) draws over the
     // battlefield, on top of the still-visible field. map/fog are NULL
     // because the views combat can open never read them (WORLDMAP isn't
     // reachable from combat).
     if (views_active() != VIEW_NONE) {
-        overlay_draw(g, NULL, NULL, sprites);
+        overlay_draw(g, NULL, NULL, sprites);      // dims the field itself
     }
+    // Every modern panel dims the field behind it (uk_inlay / uk_ask_over), so
+    // the field is never dimmed twice.
+    if (s_act_open && views_active() == VIEW_NONE && CL_IS_MODERN)
+        combat_action_menu_draw(c, g);
+    // Modern: the top bar is touchable and acts as Escape (the action menu).
+    if (CL_IS_MODERN && !s_act_open && views_active() == VIEW_NONE && !prompt_is_active() &&
+        !dialog_is_active() && !c->picker_active && c->cast_phase == COMBAT_CAST_NONE)
+        touch_region(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H, KEY_ESCAPE);
     // Spell-pick menu overlay. Drawn while the cast state machine is
     // in PICK_SPELL phase; the outer loop drives combat_cast_step one
     // input per frame.
-    if (c->cast_phase == COMBAT_CAST_PICK_SPELL) {
-        DrawRectangle(40, 30, 240, 130, PAL_CLR(DBLUE));
-        DrawRectangleLines(40, 30, 240, 130, PAL_CLR(YELLOW));
+    if (c->cast_phase == COMBAT_CAST_PICK_SPELL && !CL_IS_MODERN) {
+        // Legacy: the historic 320x200 positions, untouched.
+        gfx_rect(40, 30, 240, 130, PAL_CLR(DBLUE));
+        ui_window_frame(40, 30, 240, 130, PAL_CLR(YELLOW));
         const Game *gw = c->heroes[c->side];
-        const ResUI *ui = (gw && gw->res) ? &gw->res->ui : NULL;
-        bfont_draw(ui ? ui->combat_spells_title      : "Spells", 140, 36, PAL_CLR(YELLOW));
-        bfont_draw(ui ? ui->combat_spells_col_combat : "Combat", 60, 50, PAL_CLR(YELLOW));
-        char line[40];
-        const char *names[] = {
-            "Clone", "Teleport", "Fireball", "Lightning",
-            "Freeze", "Resurrect", "Turn Undead",
-        };
+        const ResUI *ui = &gw->res->ui;
+        bfont_draw(ui->combat_spells_title,      140, 36, PAL_CLR(YELLOW));
+        bfont_draw(ui->combat_spells_col_combat, 60, 50, PAL_CLR(YELLOW));
+        char line[64];   // room for long pack spell names (e.g. Rome's Latin)
+        // The seven combat spells are catalog indices 0..6 (COMBAT_SPELL_*),
+        // so their display names come straight from the pack -- no hardcoded
+        // list, and Rome shows its Latin names.
         for (int i = 0; i < 7; i++) {
-            int count = (gw ? gw->spells.counts[i] : 0);
-            snprintf(line, sizeof line, "%d %-12s %c", count, names[i], 'A' + i);
+            int count = gw->spells.counts[i];
+            const SpellDef *sd = spell_by_index(i);
+            snprintf(line, sizeof line, "%d %-12s %c",
+                     count, sd->name, 'A' + i);
             bfont_draw(line, 56, 64 + i * 10, PAL_CLR(WHITE));
+            touch_region(56, 64 + i * 10, 224, 10, KEY_A + i);
         }
-        bfont_draw(ui ? ui->combat_spells_prompt : "Cast which (A-G)?",
-                   70, 144, PAL_CLR(WHITE));
+        bfont_draw(ui->combat_spells_prompt, 70, 144, PAL_CLR(WHITE));
     }
+    // Modern has no picker of its own: the spells are a page of the combat
+    // menu (CM_CAST), drawn by combat_action_menu_draw like every other page.
     // Victory dialog : centered modal
     // floating over the still-rendered battlefield. Defeat does not
     // draw here -- combat exits silently and perform_temp_death shows
     // the disgrace message at the home castle ().
-    if (dialog_is_active()) overlay_draw_dialog_centered();
+    if (dialog_is_active()) overlay_draw_note();
     // Give-up confirm and any other y/n / numeric prompt draws on top
     // of everything else as a bottom-frame modal.
     if (prompt_is_active()) prompt_draw();
-    EndTextureMode();
+    ml_clear_field();
+    present_end();
 
     present_scaled(*target);
     frame_host_end_frame();
@@ -374,21 +613,25 @@ void combat_present_public(const Combat *c, const Game *g,
 // animation frame, signals AI/rollover. The original DOS KB 150ms SYN
 // tick gates animation/AI so the human can see units walk between tiles;
 // without the gate combat would look like instant teleportation.
-static void combat_tick_anim(Combat *c, double *next_tick,
-                             bool *rolled_over) {
+static bool combat_tick_anim(Combat *c, double *next_tick,
+                             bool *rolled_over, bool attack_playing) {
     *rolled_over = false;
     {
         double now = frame_host_time();
-        if (now < *next_tick) return;
+        if (now < *next_tick) return false;
         *next_tick = now + 0.15;
     }
     // Decay damage-burst on every stack (including dead ones, so the
-    // splat plays out over a now-empty cell).
-    for (int s = 0; s < COMBAT_SIDES; s++) {
-        for (int i = 0; i < COMBAT_SLOTS; i++) {
-            CombatUnit *u = &c->units[s][i];
-            if (u->troop_idx < 0) continue;
-            if (u->hit_flash > 0) u->hit_flash--;
+    // splat plays out over a now-empty cell). Frozen while an attacker's
+    // strip is playing: the splat is not drawn during the swing, so
+    // counting it down there would spend it unseen.
+    if (!attack_playing) {
+        for (int s = 0; s < COMBAT_SIDES; s++) {
+            for (int i = 0; i < COMBAT_SLOTS; i++) {
+                CombatUnit *u = &c->units[s][i];
+                if (u->troop_idx < 0) continue;
+                if (u->hit_flash > 0) u->hit_flash--;
+            }
         }
     }
     // Advance only the active unit's animation frame (visual cue for
@@ -403,6 +646,40 @@ static void combat_tick_anim(Combat *c, double *next_tick,
             }
         }
     }
+    return true;
+}
+
+// Modern: an attack plays the attacker's whole strip from frame 0, one frame
+// per beat, and the fight waits until it has played. The attacker is found by
+// side and cell, which survive the slot renumbering a death causes.
+typedef struct { int side, x, y, frame, frames, seq; } AttackAnim;
+
+static void attack_anim_start(AttackAnim *a, const Combat *c, const Sprites *sprites) {
+    a->seq = c->attack_seq;
+    a->frame = -1;
+    if (!CL_IS_MODERN) return;
+    for (int i = 0; i < COMBAT_SLOTS; i++) {
+        const CombatUnit *u = &c->units[c->attack_side][i];
+        if (u->troop_idx < 0 || u->count <= 0 || u->x != c->attack_x || u->y != c->attack_y)
+            continue;
+        if (u->troop_idx >= sprites->troop_count) break;
+        a->frames = sprites->troop_anim_frames[u->troop_idx];
+        if (a->frames <= 1) break;
+        a->side = c->attack_side;
+        a->x = c->attack_x;
+        a->y = c->attack_y;
+        a->frame = 0;
+        break;
+    }
+    combat_render_set_attack(a->side, a->x, a->y, a->frame);
+}
+
+// One beat of a playing attack. True while it still plays.
+static bool attack_anim_step(AttackAnim *a, bool ticked) {
+    if (a->frame < 0) return false;
+    if (ticked && ++a->frame >= a->frames) a->frame = -1;
+    combat_render_set_attack(a->side, a->x, a->y, a->frame);
+    return a->frame >= 0;
 }
 
 // Block until the player acknowledges the open end-of-combat dialog,
@@ -443,6 +720,7 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         recorder_capture(tag);
     }
     audio_set_track(AUDIO_TRACK_COMBAT);
+    s_act_open = false;
 
     // Prime the turn machinery: pretend AI just finished, refresh
     // counters, find first actable player unit.
@@ -459,6 +737,9 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
 
     RenderTexture2D *rt = (RenderTexture2D *)render_target;
     double next_tick = frame_host_time() + 0.15;
+    AttackAnim atk = { -1, 0, 0, -1, 0, c.attack_seq };
+    int deferred_acted = 0;   // modern: a struck blow waiting for its swing
+    combat_render_set_attack(-1, 0, 0, -1);
 
     while (c.result == 0 && !frame_host_should_close()) {
         // Keep audio and presentation ticking every frame while the battle
@@ -491,8 +772,19 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
                 views_dismiss();
                 continue;
             }
-            if (!c.picker_active && c.cast_phase == COMBAT_CAST_NONE)
-                continue;   // nothing armed: ESC is a no-op
+            if (s_act_open) {           // modern action menu: ESC goes back a page
+                if (--s_act_depth < 1) s_act_open = false;
+                continue;
+            }
+            if (!c.picker_active && c.cast_phase == COMBAT_CAST_NONE) {
+                // Nothing armed. Modern: ESC (or a tap on the top bar) opens the
+                // action menu on the player's turn; legacy: a no-op.
+                if (CL_IS_MODERN && c.side == COMBAT_SIDE_PLAYER && c.unit_id >= 0 &&
+                    !c.units[c.side][c.unit_id].out_of_control) {
+                    combat_menu_open();
+                }
+                continue;
+            }
             // else: let the cast / shoot-fly picker branch handle the cancel.
         }
 
@@ -500,10 +792,11 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         // no animation frame ticks driving acts. The view handles its
         // own input (and number-key cycling for Controls -- see below).
         if (views_active() != VIEW_NONE) {
+            touch_request(TOUCH_CHROME_BACK);   // ESC dismisses the view
             // Swap between Options and Controls without leaving the menu.
             if (views_active() == VIEW_OPTIONS && input_key_pressed(KEY_C)) {
                 views_set(VIEW_CONTROLS);
-            } else if (views_active() == VIEW_CONTROLS &&
+            } else if (views_active() == VIEW_CONTROLS && !CL_IS_MODERN &&
                        input_key_pressed(KEY_O)) {
                 views_set(VIEW_OPTIONS);
             } else if (views_active() == VIEW_CONTROLS) {
@@ -519,7 +812,21 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         }
 
         bool frame_rollover;
-        combat_tick_anim(&c, &next_tick, &frame_rollover);
+        bool ticked = combat_tick_anim(&c, &next_tick, &frame_rollover,
+                                       atk.frame >= 0);
+        // An attack is playing: nothing else happens until it has.
+        if (attack_anim_step(&atk, ticked)) continue;
+
+        int acted = 0;
+        // Modern: the strip that just finished was struck a frame ago, and
+        // its effect was held back so the swing reads first. Settle it now
+        // -- the splat starts its ticks, the dead leave the field -- before
+        // anyone acts again.
+        if (deferred_acted) {
+            acted = deferred_acted;
+            deferred_acted = 0;
+            goto settle;
+        }
 
         if (c.unit_id >= 0 && !c.picker_active &&
             c.cast_phase == COMBAT_CAST_NONE) {
@@ -534,7 +841,6 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
             }
         }
 
-        int acted = 0;
         bool player_turn = (c.side == COMBAT_SIDE_PLAYER &&
                             c.unit_id >= 0 &&
                             !c.units[c.side][c.unit_id].out_of_control);
@@ -546,8 +852,9 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         // Gate KEY_A on no-active-picker: A is also "confirm" for the
         // picker, and we don't want a picker confirm to accidentally
         // open the Army view.
-        if (c.cast_phase == COMBAT_CAST_NONE && !c.picker_active) {
-            if (input_key_pressed(KEY_O)) {
+        if (c.cast_phase == COMBAT_CAST_NONE && !c.picker_active && !s_act_open) {
+            // Modern retires the Options panel; the action menu has the rest.
+            if (!CL_IS_MODERN && input_key_pressed(KEY_O)) {
                 views_set(VIEW_OPTIONS);
                 continue;
             }
@@ -617,6 +924,19 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
             acted = combat_ai_action(&c);
         }
 
+        // A troop attacked this frame: play its strip before the fight goes on.
+        if (c.attack_seq != atk.seq) attack_anim_start(&atk, &c, sprites);
+
+        // Modern: hold the blow's effect until the swing has played. The
+        // engine deals damage in the same call that starts the strip, so
+        // settling here would clear the dead and spend the splat under the
+        // weapon. Legacy never starts a strip, so it settles as it always did.
+        if (acted && atk.frame >= 0) {
+            deferred_acted = acted;
+            continue;
+        }
+
+settle:
         if (acted) {
             combat_compact(&c);
             if (combat_test_dead(&c, COMBAT_SIDE_AI))     { c.result = 1; break; }
@@ -647,6 +967,31 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         }
     }
 
+    // The blow that ended the fight plays out before the ending shows.
+    while (atk.frame >= 0 && !frame_host_should_close()) {
+        audio_tick();
+        combat_present(&c, g, sprites, rt);
+        bool rolled;
+        attack_anim_step(&atk, combat_tick_anim(&c, &next_tick, &rolled, true));
+    }
+    combat_render_set_attack(-1, 0, 0, -1);
+
+    // Modern: hold the field a moment on the last blow. The killing swing
+    // has played and its splat only starts now (the strip froze it), so
+    // without this beat victory or defeat cuts in over the field before the
+    // player has seen what ended the fight. ~0.75s, five anim ticks: the
+    // splat's three and a breath after. Legacy ends as abruptly as it always
+    // did.
+    if (CL_IS_MODERN) {
+        double until = frame_host_time() + 0.75;
+        while (frame_host_time() < until && !frame_host_should_close()) {
+            audio_tick();
+            combat_present(&c, g, sprites, rt);
+            bool rolled;
+            combat_tick_anim(&c, &next_tick, &rolled, false);
+        }
+    }
+
     // ----- End-of-combat ----------------------------------------------------
 
     // Victory: gold += AI-side spoils, show victory banner.
@@ -654,26 +999,26 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
     // flow lives in main.c's caller and stays there).
     if (c.result == 1) {
         g->stats.gold += c.spoils[COMBAT_SIDE_AI];
-        char body[400];
+        char body[400], gbuf[16];
+        snprintf(gbuf, sizeof gbuf, "%d", c.spoils[COMBAT_SIDE_AI]);
+        const ResBanners *bn = &g->res->banners;
         if (c.target_name[0]) {
-            snprintf(body, sizeof body,
-                     "Well done %s, you have\n"
-                     "successfully vanquished\n"
-                     "%s.\n\n"
-                     "Spoils of War: %d gold",
-                     g->character.name[0] ? g->character.name : "warrior",
-                     c.target_name,
-                     c.spoils[COMBAT_SIDE_AI]);
+            ResTemplateVar vars[] = {
+                { "NAME",   g->character.name },
+                { "TARGET", c.target_name },
+                { "GOLD",   gbuf },
+            };
+            resources_format_template(body, sizeof body,
+                                      bn->combat_victory_named, vars, 3);
         } else {
-            snprintf(body, sizeof body,
-                     "Well done %s, you have\n"
-                     "successfully vanquished\n"
-                     "yet another foe.\n\n"
-                     "Spoils of War: %d gold",
-                     g->character.name[0] ? g->character.name : "warrior",
-                     c.spoils[COMBAT_SIDE_AI]);
+            ResTemplateVar vars[] = {
+                { "NAME", g->character.name },
+                { "GOLD", gbuf },
+            };
+            resources_format_template(body, sizeof body,
+                                      bn->combat_victory_unnamed, vars, 2);
         }
-        open_dialog("Victory!", body);
+        open_dialog_kind(g->res->ui.dt_combat_victory, body, PIO_NOTE_OVER_FIELD);
         combat_wait_for_dialog_ack(&c, g, sprites, rt);
         // Write surviving troops back to g->army so the player keeps
         // their losses. Vacated slots get compacted afterwards so the

@@ -1,0 +1,19 @@
+{
+  "id": "town_italia",
+  "prompt": "an isolated cut-out game sprite of a rustic Italian village, timber-framed farmhouses with rough plank walls and red terracotta roofs, a small villa with a tiled porch on wooden posts, a stone well, a cypress tree, a wooden cart, the buildings seen from the front and above with their doors facing the viewer, a short stretch of paved road in the middle of the cluster that starts and ends among the buildings, the road the only ground drawn, no wall, fence or gate, only the flat magenta background between and below the buildings, the whole town complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background",
+  "style": "rd_pro__topdown",
+  "width": 96,
+  "height": 96,
+  "seed": 7119,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/tiles/town_italia.png",
+  "_note": "Per-zone town tile. Route settled 2026-09-05 after engine and framing tests: rd_pro__topdown, 96x96, remove_bg with magenta named, NO reference image (a reference made the model fill the frame edge to edge), buildings seen from the front and above with doors facing the viewer (without a facing cue the model draws an isometric diorama on a slab), freestanding with no wall or ground so the tile sits over the terrain, a short road among the buildings named as the only ground (a road 'from the bottom edge' made the model fill and crop the frame)."
+}

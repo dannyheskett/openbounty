@@ -1,0 +1,110 @@
+diff --git a/src/platforms/rcore_android.c b/src/platforms/rcore_android.c
+index f501fba..590702e 100644
+--- a/src/platforms/rcore_android.c
++++ b/src/platforms/rcore_android.c
+@@ -970,7 +970,104 @@ static int InitGraphicsDevice(void)
+     }
+ 
+     // Get an appropriate EGL framebuffer configuration
+-    eglChooseConfig(platform.device, framebufferAttribs, &platform.config, 1, &numConfigs);
++    //
++    // NOTE(openbounty): the return of eglChooseConfig() and numConfigs were
++    // both ignored here. When NO configuration matches the request,
++    // platform.config keeps whatever it held and eglCreateContext() fails with
++    // EGL_BAD_CONFIG, saying nothing about which attribute was impossible.
++    //
++    // Two attributes are worth giving up rather than failing over: the 24-bit
++    // depth buffer (this game is 2D, and plenty of GL implementations offer
++    // only 16, or none) and 8-bit colour (some offer 5/6/5 only -- the Android
++    // emulator's software EGL advertises seven configurations, none of them
++    // RGB888). Ask for the best first and walk down, then say what was taken.
++    {
++        static const EGLint colorDepth[][4] = {
++            // R, G, B, depth
++            { 8, 8, 8, 24 }, { 8, 8, 8, 16 }, { 8, 8, 8, 0 },
++            { 5, 6, 5, 24 }, { 5, 6, 5, 16 }, { 5, 6, 5, 0 },
++        };
++        EGLint attribs[sizeof(framebufferAttribs)/sizeof(EGLint)];
++
++        for (unsigned int c = 0; c < sizeof(colorDepth)/sizeof(colorDepth[0]); c++)
++        {
++            for (unsigned int i = 0; i < sizeof(attribs)/sizeof(attribs[0]); i++) attribs[i] = framebufferAttribs[i];
++            for (unsigned int i = 0; attribs[i] != EGL_NONE; i += 2)
++            {
++                if (attribs[i] == EGL_RED_SIZE) attribs[i + 1] = colorDepth[c][0];
++                else if (attribs[i] == EGL_GREEN_SIZE) attribs[i + 1] = colorDepth[c][1];
++                else if (attribs[i] == EGL_BLUE_SIZE) attribs[i + 1] = colorDepth[c][2];
++                else if (attribs[i] == EGL_DEPTH_SIZE) attribs[i + 1] = colorDepth[c][3];
++            }
++
++            numConfigs = 0;
++            if (!eglChooseConfig(platform.device, attribs, &platform.config, 1, &numConfigs))
++            {
++                TRACELOG(LOG_WARNING, "DISPLAY: eglChooseConfig failed: 0x%x", eglGetError());
++            }
++
++            if (numConfigs > 0)
++            {
++                TRACELOG(LOG_INFO, "DISPLAY: EGL configuration chosen: RGB %i%i%i, %i-bit depth",
++                         colorDepth[c][0], colorDepth[c][1], colorDepth[c][2], colorDepth[c][3]);
++                break;
++            }
++        }
++
++        if (numConfigs == 0)
++        {
++            // Nothing matched, which on the Android emulator happens even
++            // though it offers configurations that plainly satisfy the
++            // request: its EGL 1.4 META-EGL compares EGL_RENDERABLE_TYPE for
++            // equality rather than as a bitmask, so asking for ES2 alone
++            // matches no configuration whose mask is ES1|ES2|ES3.
++            //
++            // So do the choosing by hand: walk what the driver offers and take
++            // the first window-capable configuration that can run ES2,
++            // preferring more colour and a real depth buffer. This is the same
++            // decision eglChooseConfig would make, without depending on it.
++            EGLConfig all[64];
++            EGLint total = 0;
++            eglGetConfigs(platform.device, all, 64, &total);
++            TRACELOG(LOG_WARNING, "DISPLAY: eglChooseConfig matched nothing; choosing by hand from %i configurations (vendor '%s', version '%s')",
++                     total,
++                     eglQueryString(platform.device, EGL_VENDOR),
++                     eglQueryString(platform.device, EGL_VERSION));
++
++            int bestScore = -1;
++            for (EGLint i = 0; (i < total) && (i < 64); i++)
++            {
++                EGLint r = 0, g = 0, b = 0, a = 0, d = 0, rt = 0, st = 0;
++                eglGetConfigAttrib(platform.device, all[i], EGL_RED_SIZE, &r);
++                eglGetConfigAttrib(platform.device, all[i], EGL_GREEN_SIZE, &g);
++                eglGetConfigAttrib(platform.device, all[i], EGL_BLUE_SIZE, &b);
++                eglGetConfigAttrib(platform.device, all[i], EGL_ALPHA_SIZE, &a);
++                eglGetConfigAttrib(platform.device, all[i], EGL_DEPTH_SIZE, &d);
++                eglGetConfigAttrib(platform.device, all[i], EGL_RENDERABLE_TYPE, &rt);
++                eglGetConfigAttrib(platform.device, all[i], EGL_SURFACE_TYPE, &st);
++                TRACELOG(LOG_INFO, "DISPLAY:   config %i: RGBA %i%i%i%i depth %i renderable 0x%x surface 0x%x",
++                         i, r, g, b, a, d, rt, st);
++
++                if (!(st & EGL_WINDOW_BIT)) continue;
++                if (!(rt & EGL_OPENGL_ES2_BIT)) continue;
++
++                int score = (r + g + b)*4 + ((d >= 16)? 8 : 0) - a;   // colour first, then a depth buffer, and no alpha in the window
++                if (score > bestScore)
++                {
++                    bestScore = score;
++                    platform.config = all[i];
++                    numConfigs = 1;
++                }
++            }
++
++            if (numConfigs == 0)
++            {
++                TRACELOG(LOG_WARNING, "DISPLAY: No EGL configuration can run ES2 in a window");
++                return -1;
++            }
++            TRACELOG(LOG_INFO, "DISPLAY: EGL configuration chosen by hand");
++        }
++    }
+ 
+     // Set rendering API
+     eglBindAPI(EGL_OPENGL_ES_API);

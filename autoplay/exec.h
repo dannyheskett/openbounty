@@ -15,6 +15,24 @@
 #include "map.h"
 #include "fog.h"
 #include "resources.h"
+
+// Autoplay's recruit arenas are fixed-size and behaviour-locked (see
+// exec_recruit.c MAX_CANDS), so autoplay plans with at most this many troops
+// of the catalog; the engine itself loads as many as the pack declares.
+#define AP_TROOPS_MAX 32
+// The sailing loop's hop budget, as it was: at most this many zones + 1 hops.
+#define AP_ZONES_MAX 8
+// Autoplay's own tables, at the sizes it was tuned with; content beyond them
+// is ignored.
+#define AP_TOWNS_MAX 26
+#define AP_CASTLES_MAX 26
+#define AP_SPELLS_MAX 14
+#define AP_FOES_MAX 160
+#define AP_DWELLINGS_MAX 64
+#define AP_GATE_DESTS_MAX 26
+// Autoplay's navigation grids; map cells beyond them are treated as off the map.
+#define AP_MAP_W 64
+#define AP_MAP_H 128
 #include "combat.h"
 #include "goals.h"
 
@@ -234,7 +252,7 @@ void recruit_cache_stats(long *hits, long *misses);
 bool recruit_winner_finite_draw(ExecCtx *ctx, const RecruitRequest *req,
                                 int *out_draw /* per-troop units drawn, by
                                                  catalog index, caller-sized
-                                                 CAT_TROOPS_MAX */);
+                                                 AP_TROOPS_MAX */);
 bool recruit_winner_survives_less(ExecCtx *ctx, const RecruitRequest *req,
                                   const int *deduct, bool restock_ceiling);
 

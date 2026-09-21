@@ -1,0 +1,18 @@
+{
+  "id": "informant_taverner",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a heavy bald Roman tavern keeper in a leather apron, polishing a clay cup, racks of amphorae and a lamplit tavern behind him",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 9502,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "_pack_path": "art/portraits/informant_taverner_00..07.png",
+  "_animation": "slow conspiratorial wink, cloth still in hand, static background, smooth loop",
+  "_note": "Town portrait still (2026-09-13): informant (Information row) or continent Pontifex (Buy spell row) for the modern town face slot. The enemy-portrait route: rd_pro__default at 128, no references, expansion on; the loop runs at 128 on this still and each frame is centre-cropped to 96 (Dan-approved for these 8, 2026-09-13). Stills only for now."
+}

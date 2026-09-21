@@ -62,7 +62,7 @@
 // cheapest-first cycle head does -- so the cap is the enumeration bound,
 // not a model choice.
 #define SEARCH_MAX_CAND       STEP_MAX
-#define SEARCH_MAX_LIVE_NODES 256   // node beam: ~1 MB per live node
+#define SEARCH_MAX_LIVE_NODES 256   // node beam (a node: Game, Fog, the used map area, PlannerRun)
 
 // Resolve-progress hook (autoplay.h). NULL in every headless run; the visible
 // shell registers one to draw a progress frame and to allow cancellation.
@@ -152,9 +152,12 @@ static uint64_t fnv64(uint64_t h, const void *p, size_t n) {
 // Signature of the LIVE world (Game+Map+Fog+rng): the ancestry cycle check.
 static uint64_t sig_live(const ExecCtx *ctx) {
     uint64_t h = 1469598103934665603ULL;
-    h = fnv64(h, ctx->g,   sizeof *ctx->g);
-    h = fnv64(h, ctx->map, sizeof *ctx->map);
-    h = fnv64(h, ctx->fog, sizeof *ctx->fog);
+    // The world's contents through fingerprints: the whole world, and the
+    // Game again under a second seed, for 64 bits.
+    uint32_t w1 = worldsnap_fingerprint(ctx->g, ctx->map, ctx->fog);
+    uint32_t w2 = GameFingerprint(ctx->g, 0x9747b28cu);
+    h = fnv64(h, &w1, sizeof w1);
+    h = fnv64(h, &w2, sizeof w2);
     uint64_t rng = GameRngSnapshot();
     h = fnv64(h, &rng, sizeof rng);
     return h ? h : 1;
@@ -185,7 +188,7 @@ typedef WorldSnapshot NodeSnap;
 typedef struct SearchNode {
     struct SearchNode *parent;      // lineage (recording rebuild); ref held
     int            refcount;        // frontier + children references
-    NodeSnap      *snap;            // ~100 KB; freed with the node
+    NodeSnap      *snap;            // Game+Fog inline, the used map area on the heap
     RecPrim       *delta;           // prims THIS edge appended
     int            delta_n;
     PlannerRun    *prun;            // planner memory at this state (heap:
@@ -241,6 +244,7 @@ static int node_key(const SearchNode *d) {
 static void node_unref(SearchNode *d) {
     while (d && --d->refcount <= 0) {
         SearchNode *p = d->parent;
+        worldsnap_release(d->snap);
         free(d->snap);
         free(d->delta);
         free(d->prun);
@@ -310,7 +314,7 @@ static SearchNode *node_capture(ExecCtx *ctx, SearchNode *parent,
                                 int start_days_left, int obj_total) {
     SearchNode *d = (SearchNode *)calloc(1, sizeof *d);
     if (!d) return NULL;
-    d->snap = (NodeSnap *)malloc(sizeof *d->snap);
+    d->snap = (NodeSnap *)calloc(1, sizeof *d->snap);   // map copy starts empty
     d->prun = (PlannerRun *)malloc(sizeof *d->prun);
     if (!d->snap || !d->prun) {
         free(d->snap);
@@ -417,7 +421,7 @@ bool search_run(ExecCtx *ctx, int *out_best_done, int *out_total) {
     int obj_total = 0;
     SearchNode *best = NULL;            // most-done state seen (MISS report)
     bool hit = false;
-    long expansions = 0, evicted = 0, childless = 0, looped = 0;
+    long expansions = 0, evicted = 0, looped = 0;
     long stat_ok = 0, stat_kept = 0, stat_fail = 0, stat_term = 0;
     long last_best_x = 0, restarts = 0;
 
@@ -581,7 +585,8 @@ bool search_run(ExecCtx *ctx, int *out_best_done, int *out_total) {
         // reference to d first.
         SearchNode *child = NULL;
         if (r == PLANNER_STEP_FAIL || r == PLANNER_STEP_TERMINAL) {
-            childless++;
+            // A childless expansion is exactly stat_fail + stat_term, both of
+            // which the progress line already prints.
             if (r == PLANNER_STEP_FAIL) stat_fail++; else stat_term++;
             // Persist the failure memory into the node so its remaining
             // branches see it (ordering tiers key off stuck/ever_failed).

@@ -16,7 +16,7 @@
 
 #include "combat_replay.h"
 
-#include "raylib.h"
+#include "gfx.h"
 #include "combat.h"
 #include "combat_loop.h"     // (shares combat_present indirectly via this TU)
 #include "combat_render.h"
@@ -31,7 +31,7 @@
 #include "shell_autoplay.h"  // the visible-autoplay pacing source
 #include "ui.h"              // open_dialog / dialog_is_active / dialog_dismiss
 #include "prompt.h"          // prompt_is_active / prompt_dismiss (clear pre-fight)
-#include "overlay.h"         // overlay_draw_dialog_centered (victory banner)
+#include "overlay.h"         // overlay_draw_note (victory banner)
 
 #include <string.h>
 #include <stdio.h>
@@ -177,28 +177,30 @@ CombatReplayStatus RenderCombatRecord(void *shell_ctx, CombatMode mode,
     // zero dwell, so this is a no-op there. Loss draws nothing (RunCombat is
     // silent on defeat too -- the disgrace flow is the caller's).
     if (rv == COMBAT_REPLAY_OK && rec->result == 1) {
-        char body[400];
-        const char *who = (g->character.name[0]) ? g->character.name : "warrior";
+        char body[400], gbuf[16];
+        snprintf(gbuf, sizeof gbuf, "%d", c.spoils[COMBAT_SIDE_AI]);
+        const ResBanners *bn = &g->res->banners;
         if (c.target_name[0]) {
-            snprintf(body, sizeof body,
-                     "Well done %s, you have\n"
-                     "successfully vanquished\n"
-                     "%s.\n\n"
-                     "Spoils of War: %d gold",
-                     who, c.target_name, c.spoils[COMBAT_SIDE_AI]);
+            ResTemplateVar vars[] = {
+                { "NAME",   g->character.name },
+                { "TARGET", c.target_name },
+                { "GOLD",   gbuf },
+            };
+            resources_format_template(body, sizeof body,
+                                      bn->combat_victory_named, vars, 3);
         } else {
-            snprintf(body, sizeof body,
-                     "Well done %s, you have\n"
-                     "successfully vanquished\n"
-                     "yet another foe.\n\n"
-                     "Spoils of War: %d gold",
-                     who, c.spoils[COMBAT_SIDE_AI]);
+            ResTemplateVar vars[] = {
+                { "NAME", g->character.name },
+                { "GOLD", gbuf },
+            };
+            resources_format_template(body, sizeof body,
+                                      bn->combat_victory_unnamed, vars, 2);
         }
-        open_dialog("Victory!", body);
+        open_dialog_kind(g->res->ui.dt_combat_victory, body, PIO_NOTE_OVER_FIELD);
         double dwell = shell_demo_active() ? shell_demo_read_dwell()
                                            : shell_autoplay_read_dwell();
         if (dwell > 0.0) {
-            // Hold the banner; combat_present draws it (overlay_draw_dialog_
+            // Hold the banner; combat_present draws it (overlay_draw_note
             // centered) while dialog_is_active(). replay_beat pumps audio +
             // screenshots + movie frames + window-close each frame.
             if (!replay_beat(&c, g, sprites, render_target, dwell))

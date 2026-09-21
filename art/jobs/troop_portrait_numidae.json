@@ -1,0 +1,20 @@
+{
+  "id": "troop_portrait_numidae",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Numidian horseman, a lean dark-haired North African rider with a short beard in a blue tunic, holding a curved blade, the head of his brown horse beside him, a desert plain behind him",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 9989,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "reference_image_paths": [
+    "assets/glory-of-rome/art/troops/numidae_00.png"
+  ],
+  "_pack_path": "art/portraits/troop_numidae.png",
+  "_note": "Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation."
+}

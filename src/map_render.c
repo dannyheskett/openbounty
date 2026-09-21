@@ -1,56 +1,60 @@
 #include "map_render.h"
+#include "gfx.h"
 #include "layout.h"
+#include "present.h"
 #include "palette.h"
 #include "tables.h"     // troop_by_id (flying hero shows the lead troop)
 #include "tile_cache.h"
+#include "tilevar.h"
 #include <stdio.h>
 #include <string.h>
 
 // Viewport centering (OpenKB's game.c:1157): the hero is held centered in the
-// 5x5 viewport except when the camera is clamped at a map edge. 2 tiles
-// on each side of the hero are visible, plus the hero tile.
-#define RADIUS  (CL_MAP_TILES_W / 2)   // 2
+// viewport except when the camera is clamped at a map edge. Half the tile
+// count (2 in the 5x5 original) on each side of the hero is visible, plus the
+// hero tile. Each axis has its own radius: a 7x5 viewport centred with the
+// width's radius put the hero a row low.
+#define RADIUS_X  (CL_MAP_TILES_W / 2)
+#define RADIUS_Y  (CL_MAP_TILES_H / 2)
 
-// The world-map sprite for a wandering foe: its lead troop (first non-empty
-// garrison stack), animated, so a stack of ogres/skeletons/archers shows that
-// creature instead of a single generic footman (issue #9). Returns {0} when
-// the foe or its troop can't be resolved, so the caller falls back to the
-// generic wandering-army art.
-static Texture2D foe_map_sprite(const Game *g, const Sprites *s,
-                                const char *foe_id, int frame) {
-    if (!g || !foe_id || !foe_id[0]) return (Texture2D){ 0 };
-    const FoeState *f = GameFindFoeConst(g, foe_id);
-    if (!f) return (Texture2D){ 0 };
-    for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
-        if (!f->garrison[i].id[0] || f->garrison[i].count <= 0) continue;
-        const TroopDef *t = troop_by_id(f->garrison[i].id);
-        if (!t || t->index < 0 || t->index >= 25) return (Texture2D){ 0 };
-        Texture2D a =
-            s->troop_anim[t->index][sprites_frame(frame,
-                                                 s->troop_anim_frames[t->index])];
-        if (!a.id) a = s->troop_sprite[t->index];
-        return a;
-    }
-    return (Texture2D){ 0 };
-}
-
+// A wandering foe draws the generic wandering-army tile, the same as every
+// other placed object. An earlier change (issue #9) drew the foe's lead troop
+// sprite instead; reverted 2026-09-06 so the map reads as the original did,
+// in every pack.
 void map_render_draw(const Game *g, const Map *m, const Fog *f,
                       const Sprites *s) {
     if (!g || !m) return;
 
     // Compute the top-left visible tile (camera anchor). Clamp at map edges.
-    int cam_x = g->position.x - RADIUS;
-    int cam_y = g->position.y - RADIUS;
+    int cam_x = g->position.x - RADIUS_X;
+    int cam_y = g->position.y - RADIUS_Y;
     if (cam_x < 0) cam_x = 0;
     if (cam_y < 0) cam_y = 0;
     if (cam_x > m->width  - CL_MAP_TILES_W) cam_x = m->width  - CL_MAP_TILES_W;
     if (cam_y > m->height - CL_MAP_TILES_H) cam_y = m->height - CL_MAP_TILES_H;
+    // A modern viewport grows with the window and can end up wider than the
+    // map itself, which makes the clamp above negative. Pin it back to the
+    // origin: the surplus tiles fall outside the map and are simply not drawn.
+    if (cam_x < 0) cam_x = 0;
+    if (cam_y < 0) cam_y = 0;
 
     // Scissor so partial tiles at the map boundary don't spill.
-    BeginScissorMode(CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H);
+    // The scissor is in framebuffer pixels, not design pixels: a fixed
+    // buffer renders at zoom, so scale the rect (present_get_zoom is 1 else).
+    {
+        int z = present_get_zoom();
+        gfx_clip_begin(CL_MAP_X * z, CL_MAP_Y * z, CL_MAP_W * z, CL_MAP_H * z);
+    }
 
-    // Fill unseen tiles as black.
-    DrawRectangle(CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H, PAL_CLR(BLACK));
+    // Fill unseen tiles as black. This also blacks out the sub-tile slack: in
+    // modern mode the pane is the whole interior of the frame, which is rarely
+    // an exact multiple of the tile, and a partial tile is never drawn.
+    gfx_rect(CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H, PAL_CLR(BLACK));
+
+    // Centre the whole-tile grid in the pane, so the leftover splits evenly
+    // either side and the hero still sits at the middle of the window.
+    const int ox = CL_MAP_X + (CL_MAP_W - CL_MAP_TILES_W * CL_TILE_W) / 2;
+    const int oy = CL_MAP_Y + (CL_MAP_H - CL_MAP_TILES_H * CL_TILE_H) / 2;
 
     for (int ty = 0; ty < CL_MAP_TILES_H; ty++) {
         for (int tx = 0; tx < CL_MAP_TILES_W; tx++) {
@@ -60,31 +64,36 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
             if (!FogSeen(f, mx, my)) continue;
             const Tile *t = MapGetTile(m, mx, my);
             if (!t) continue;
-            int px = CL_MAP_X + tx * CL_TILE_W;
-            int py = CL_MAP_Y + ty * CL_TILE_H;
+            int px = ox + tx * CL_TILE_W;
+            int py = oy + ty * CL_TILE_H;
             Rectangle dst = { (float)px, (float)py,
                               (float)CL_TILE_W, (float)CL_TILE_H };
-            Texture2D tex = (Texture2D){ 0 };
-            if (t->interactive == INTERACT_FOE) {
-                tex = foe_map_sprite(g, s, t->id, g->anim_frame);
-                // A troop-override sprite (issue #9) is transparent, unlike the
-                // opaque generic wandering_army tile. Draw the preserved base
-                // terrain under it first, or its background is the black map
-                // fill instead of the ground the foe stands on.
-                if (tex.id) {
-                    Texture2D ground = tile_cache_get(TerrainName(t->terrain));
-                    if (ground.id) {
-                        Rectangle gsrc = { 0, 0, (float)ground.width,
-                                           (float)ground.height };
-                        DrawTexturePro(ground, gsrc, dst, (Vector2){ 0, 0 },
-                                       0.0f, WHITE);
-                    }
+            // An object tile is drawn over its ground (ART-SPEC section 4):
+            // the plain terrain tile first, then the object's art. A
+            // transparent object -- the 1x1 castle, a town -- then stands on the ground it occupies instead
+            // of the black map fill; an opaque object covers the ground
+            // completely, so nothing that drew before this draws differently.
+            // A code with cosmetic variants draws one of them, chosen per
+            // cell for the session (src/tilevar.c); the ground under an
+            // object goes through the same pick so it matches its neighbours.
+            char va[TILE_ART_NAME_LEN];
+            // An object tile, or a landmark whose code names its own ground,
+            // is drawn over that ground (ART-SPEC section 4).
+            if (t->interactive != INTERACT_NONE || t->ground != t->art) {
+                char ga[TILE_ART_NAME_LEN];
+                const char *gart = t->ground ? TileGround(m, t)
+                                   : MapTerrainArt(m, TerrainName(t->terrain), ga, sizeof ga);
+                Texture2D ground = tile_cache_get(tilevar_art(gart, mx, my, va, sizeof va));
+                if (ground.id) {
+                    Rectangle gsrc = { 0, 0, (float)ground.width,
+                                       (float)ground.height };
+                    gfx_texture_draw(ground, gsrc, dst, WHITE);
                 }
             }
-            if (tex.id == 0) tex = tile_cache_get(t->art);
+            Texture2D tex = tile_cache_get(tilevar_art(TileArt(m, t), mx, my, va, sizeof va));
             if (tex.id == 0) continue;
             Rectangle src = { 0, 0, (float)tex.width, (float)tex.height };
-            DrawTexturePro(tex, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+            gfx_texture_draw(tex, src, dst, WHITE);
         }
     }
 
@@ -108,10 +117,10 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
             if (bt.id) {
                 Rectangle bsrc = { 0, 0, (float)bt.width, (float)bt.height };
                 Rectangle bdst = {
-                    (float)(CL_MAP_X + bvx * CL_TILE_W),
-                    (float)(CL_MAP_Y + bvy * CL_TILE_H),
+                    (float)(ox + bvx * CL_TILE_W),
+                    (float)(oy + bvy * CL_TILE_H),
                     (float)CL_TILE_W, (float)CL_TILE_H };
-                DrawTexturePro(bt, bsrc, bdst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+                gfx_texture_draw(bt, bsrc, bdst, WHITE);
             }
         }
     }
@@ -129,23 +138,26 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
     // The hero holds still between steps, so pick the idle set when the pack
     // shipped one and the walk cycle isn't running.
     bool mirror = false;
-    const SpriteAnim *set = &s->hero_walk;
+    const char *cid = g->character.cls.id;
+    const SpriteAnim *set = sprites_hero_anim(s, cid, 0);
     if (g->travel_mode != TRAVEL_BOAT && !g->anim_moving &&
-        sprites_anim_present(&s->hero_idle)) {
-        set = &s->hero_idle;
+        sprites_anim_present(sprites_hero_anim(s, cid, 1))) {
+        set = sprites_hero_anim(s, cid, 1);
     }
-    if (g->travel_mode == TRAVEL_BOAT) set = &s->hero_boat;
+    if (g->travel_mode == TRAVEL_BOAT) set = sprites_hero_anim(s, cid, 2);
+    int tick = g->anim_frame;
+    if (CL_IS_MODERN && g->travel_mode != TRAVEL_BOAT && !g->anim_moving)
+        tick = sprites_stand(tick);
     Texture2D hsprite = sprites_anim_tex(set, g->position.facing,
-                                         g->anim_frame, &mirror);
+                                         tick, &mirror);
     if (g->travel_mode != TRAVEL_BOAT && g->character.mount == MOUNT_FLY) {
         for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
             if (!g->army[i].id[0] || g->army[i].count <= 0) continue;
             const TroopDef *t = troop_by_id(g->army[i].id);
-            if (t && t->index >= 0 && t->index < 25) {
+            if (t && t->index >= 0 && t->index < s->troop_count) {
                 Texture2D a =
-                    s->troop_anim[t->index]
-                                 [sprites_frame(g->anim_frame,
-                                                s->troop_anim_frames[t->index])];
+                    sprites_strip(s->troop_anim[t->index],
+                                  s->troop_anim_frames[t->index], tick);
                 if (!a.id) a = s->troop_sprite[t->index];
                 // Troop sprites are single-strip, so flight goes back to the
                 // mirror regardless of what the hero's own art declares.
@@ -161,22 +173,27 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
             (float)hsprite.height
         };
         Rectangle hdst = {
-            (float)(CL_MAP_X + hero_vx * CL_TILE_W),
-            (float)(CL_MAP_Y + hero_vy * CL_TILE_H),
+            (float)(ox + hero_vx * CL_TILE_W),
+            (float)(oy + hero_vy * CL_TILE_H),
             (float)CL_TILE_W, (float)CL_TILE_H };
-        DrawTexturePro(hsprite, hsrc, hdst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+        gfx_texture_draw(hsprite, hsrc, hdst, WHITE);
     }
 
     // Fog-edge darkening gradient. For each seen tile, check cardinal neighbors
-    // and draw fading black strips on edges facing unseen neighbors.
+    // and draw fading black strips on edges facing unseen neighbors. Three
+    // strips, each the same share of the tile in every pack: 2 px of the
+    // original's 48x34 tile (1/24 of its width, 1/17 of its height), so Rome's
+    // 96 px tile fades as far in as King's Bounty's does.
+    const int bw = CL_TILE_W / 24 > 0 ? CL_TILE_W / 24 : 1;
+    const int bh = CL_TILE_H / 17 > 0 ? CL_TILE_H / 17 : 1;
     for (int ty = 0; ty < CL_MAP_TILES_H; ty++) {
         for (int tx = 0; tx < CL_MAP_TILES_W; tx++) {
             int mx = cam_x + tx;
             int my = cam_y + ty;
             if (mx < 0 || my < 0 || mx >= m->width || my >= m->height) continue;
             if (!FogSeen(f, mx, my)) continue;
-            int px = CL_MAP_X + tx * CL_TILE_W;
-            int py = CL_MAP_Y + ty * CL_TILE_H;
+            int px = ox + tx * CL_TILE_W;
+            int py = oy + ty * CL_TILE_H;
             static const int NDX[4] = { 0, 0,-1, 1 };
             static const int NDY[4] = {-1, 1, 0, 0 };
             for (int d = 0; d < 4; d++) {
@@ -188,19 +205,19 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
                     Color fog_strip = { 0, 0, 0, alpha };
                     int sx, sy, sw, sh;
                     if (NDY[d] == -1) {
-                        sx = px; sy = py + k * 2; sw = CL_TILE_W; sh = 2;
+                        sx = px; sy = py + k * bh; sw = CL_TILE_W; sh = bh;
                     } else if (NDY[d] == 1) {
-                        sx = px; sy = py + CL_TILE_H - k * 2 - 2; sw = CL_TILE_W; sh = 2;
+                        sx = px; sy = py + CL_TILE_H - k * bh - bh; sw = CL_TILE_W; sh = bh;
                     } else if (NDX[d] == -1) {
-                        sx = px + k * 2; sy = py; sw = 2; sh = CL_TILE_H;
+                        sx = px + k * bw; sy = py; sw = bw; sh = CL_TILE_H;
                     } else {
-                        sx = px + CL_TILE_W - k * 2 - 2; sy = py; sw = 2; sh = CL_TILE_H;
+                        sx = px + CL_TILE_W - k * bw - bw; sy = py; sw = bw; sh = CL_TILE_H;
                     }
-                    DrawRectangle(sx, sy, sw, sh, fog_strip);
+                    gfx_rect(sx, sy, sw, sh, fog_strip);
                 }
             }
         }
     }
 
-    EndScissorMode();
+    gfx_clip_end();
 }

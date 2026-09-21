@@ -57,9 +57,9 @@ bool autoplay_run(const AutoplayConfig *cfg, AutoplayResult *out) {
     Map *map = calloc(1, sizeof *map);
     Fog *fog = calloc(1, sizeof *fog);
     if (!game || !map || !fog || !recsink_init(AUTOPLAY_REC_CAP)) {
-        free(fog);
-        free(map);
-        free(game);
+        FogFree(fog); free(fog);
+        MapFree(map); free(map);
+        GameFree(game); free(game);
         resources_free(res);
         free(res);
         pack_stack_pop();
@@ -88,9 +88,9 @@ bool autoplay_run(const AutoplayConfig *cfg, AutoplayResult *out) {
         fprintf(stderr, "openbounty: unknown --autoplay-hero '%s'\n", hero_id);
         resources_free(res);
         free(res);
-        free(game);
-        free(map);
-        free(fog);
+        GameFree(game); free(game);
+        MapFree(map); free(map);
+        FogFree(fog); free(fog);
         pack_stack_pop();
         resources_republish(host_res);
         return false;
@@ -106,8 +106,7 @@ bool autoplay_run(const AutoplayConfig *cfg, AutoplayResult *out) {
                                         game);
     if (ok) {
         GameApplyTileMutations(game, map, game->position.zone);
-        FogReveal(fog, map, game->position.x, game->position.y,
-                  res->world.fog_sight);
+        FogRevealFor(res, fog, map, game->position.x, game->position.y);
         // GameInit read days_left from the difficulty's pack knob.
         int start_days =
             res->time.days_per_difficulty[(int)game->character.difficulty];
@@ -169,9 +168,9 @@ bool autoplay_run(const AutoplayConfig *cfg, AutoplayResult *out) {
     // The recording sink is deliberately left alive: the visible mode replays
     // it (AP-024) and --validate-pack re-inits it per run. Callers that
     // are done with it call recsink_free().
-    free(fog);
-    free(map);
-    free(game);
+    FogFree(fog); free(fog);
+    MapFree(map); free(map);
+    GameFree(game); free(game);
     resources_free(res);
     free(res);
     pack_stack_pop();

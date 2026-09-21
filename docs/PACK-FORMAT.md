@@ -49,6 +49,8 @@ All paths are relative to the pack root. Required fields are marked.
 | `controls`    | object   | Settings-menu rows. |
 | `colors`      | object   | Difficulty-bar colors, minimap palette. |
 | `audio`       | object   | Music track list, SFX paths. |
+| `render`      | object ✱ | Screen geometry: `mode`, tile size, viewport, `ui_scale`, optional fixed buffer (see §2.1). |
+| `font`        | object   | A TrueType/OpenType font rasterised at load into the glyph cell (see §2.2). Absent: the bitmap strip in `sprites.font`. |
 | `sprites`     | object ✱ | Texture-atlas paths (see §4). |
 | `tile_codes`  | object ✱ | Map-character → terrain mapping. |
 | `troops`      | array  ✱ | Troop catalog. |
@@ -64,6 +66,70 @@ All paths are relative to the pack root. Required fields are marked.
 | `strings`     | object   | All user-visible text (see §5). |
 | `credits`     | object   | Credits-screen lines. |
 | `ending`      | object   | Victory cartoon parameters. |
+
+### 2.1 `render`
+
+```json
+"render": { "mode": "modern", "tile_w": 96, "tile_h": 96, "tiles_w": 7, "tiles_h": 5,
+            "ui_scale": 2, "native_w": 832, "native_h": 540 }
+```
+
+`mode` is required: `"legacy"` is the 320 x 200 layout (48 x 34 tiles, 5 x 5
+viewport, `ui_scale` 1, the other keys ignored); `"modern"` takes the tile
+size, the viewport in tiles (odd on both axes) and `ui_scale`, which
+multiplies the font and the chrome bands.
+
+`dim` (modern only, optional, default 55) is the percent of black laid over the map and sidebar under any detail view, prompt or dialog (OPENBOUNTY-SPEC REQ-430g); 0 turns it off.
+
+`native_w` / `native_h` (modern only, optional) fix the buffer size. Without
+them the buffer follows the window and the viewport grows to fill it. With
+them the screen is exactly that size, the viewport is exactly `tiles_w` x
+`tiles_h`, and the space the viewport, the one-tile sidebar and the thinnest
+chrome bands do not use is split between the left and right bands and between
+the top and bottom bands, so the map stays centred. The window opens at 1x and
+the Scale control cycles 1x, 2x, 3x, resizing the window to the buffer times
+the scale; a window of any other size shows the buffer at the largest of those
+that fits, letterboxed. The buffer must hold the viewport (the loader rejects
+one that cannot). Rome: 832 x 540 with 7 x 5 tiles of 96 gives 32-pixel side
+bands and 16-pixel top and bottom bands, the minimum for that viewport.
+
+A modern pack that ships no `sprites.ui.chrome_overworld` gets its chrome
+drawn in code: the gold lattice (`src/lattice.c`) fills the frame bands and
+the bar under the status line, borders every HUD panel
+(`sprites.ui.panel_frame` still has to name a colour to turn panel borders
+on) and rings every window (prompts, dialogs, views, location menus).
+`sprites.hud.bar_strip` is then unused too. A legacy pack, or one that ships
+the bitmap, draws it as before.
+
+### 2.2 `font`
+
+```json
+"font": { "file": "art/font/PressStart2P-Regular.ttf", "size": 16, "caps": false,
+          "license": "art/font/OFL-PressStart2P.txt" }
+```
+
+Modern packs only. `file` is a `.ttf` or `.otf` inside the pack; `size` is
+the height of the line box in pixels, ascent plus descent, the meaning
+raylib gives a font size (6..64, default 16; a pixel face such as Press Start 2P is crisp at
+whole multiples of its 8 px grid, 16 or 24); `caps` true draws every
+string in capitals; `license` is the licence text shipped beside the font.
+The file and the licence are both in the art manifest, so the archive
+carries them.
+
+With this block the shell draws text from the face at `size`, anti-aliased,
+in a FIXED cell: every glyph advances by the face's widest advance and is
+centred in it, so the screens' column layouts hold. Declare a monospaced
+face; a proportional one gets letter-spaced to its widest glyph. Lines are
+the face's line height. The layout follows the font rather than
+the other way round: the status band is one line plus padding, the message
+panel is eight lines plus padding, list rows are a line high, and a fixed
+buffer gives the extra height back from its top and bottom bands. Word wrap
+is by pixel width and every authored newline is kept, so menus and tables
+in the strings hold their shape. At 2x and 3x the atlas is rebuilt at that zoom, so text is sharp
+while art stays pixel-identical. The start-up log reports the size, line
+height and digit width. If the file fails to load the strip in
+`sprites.font` is used instead, in its 8 x 8 cell. Legacy packs never read
+this block: they keep the strip, the cell and their character wrap exactly.
 
 ---
 
@@ -130,6 +196,22 @@ four-frame walk north is legal.
 it, he holds frame 0 between steps, which is what every pack did before `idle`
 existed.
 
+**Per-class hero art.** A class entry may carry its own `hero` block with the
+same `walk` / `idle` / `boat` keys, plus `tile`, the win-cartoon hero tile:
+
+```json
+{ "id": "knight", "name": "Legatus", "portrait": "art/classes/legatus.png",
+  "hero": { "tile": "art/classes/legatus_hero.png",
+            "walk": ["art/classes/legatus_walk_00.png", "..."] }, ... }
+```
+
+The map and the win cartoon draw the chosen class's art when it is declared
+and fall back to `sprites.hero` and `ending.hero_tile` for anything the class
+leaves out, so packs that declare nothing are unchanged. A pack whose classes
+all declare a hero tile may leave `ending.hero_tile` out, and a pack may leave
+`ending.grass_tile` out: the cartoon then draws the map's `grass` tile
+(`glory-of-rome` does both; `kings-bounty` declares both tiles).
+
 Tile images live under `art/tiles/` by convention. Each `tile_codes`
 entry maps an ASCII character (used in `.dat` map files) to a tile
 record:
@@ -142,7 +224,7 @@ record:
 ```
 
 `terrain` must be one of: `grass`, `forest`, `mountain`, `water`,
-`desert`. `blocks_foot` and `is_bridge` are booleans that interact with
+`desert`. Several codes may share a terrain with different art: `glory-of-rome` has a grass variant and twenty road pieces (`road_*`) that are plain grass to the engine (OPENBOUNTY-SPEC REQ-229c). An optional `variants` list (up to eight art names, repeats allowed to weight them) gives a code cosmetic alternates the shell picks per cell at draw time (OPENBOUNTY-SPEC REQ-229d). `blocks_foot` and `is_bridge` are booleans that interact with
 walkability (a non-blocking terrain or `is_bridge` lets the hero walk).
 
 ---
@@ -187,6 +269,138 @@ Interactive objects (towns, castles, chests, signs, dwellings,
 artifacts, foes, telecaves, navmaps, orbs) are **not** placed via map
 characters. They live in the zone's JSON arrays and are stamped onto
 the map at load time.
+
+A castle is stamped as a 3×2 block by default: its gate tile at `x, y`
+plus five blocking wall tiles above and beside it, drawn with the
+`castle_tl/br/tr/ml/mr` and `castle_gate` tile art. A catalog entry that
+declares `"footprint": "1x1"` is stamped as the gate tile alone, drawn
+with `art/tiles/castle.png`, the way a town is:
+
+```json
+{ "id": "capua", "name": "Capua", "x": 41, "y": 53, "zone": "italia",
+  "difficulty_tier": 0, "footprint": "1x1" }
+```
+
+A pack only needs the castle art for the footprints it uses.
+
+**Panel frame.** `sprites.ui.panel_frame` names a palette colour
+(`YELLOW`, `GREY`, ... or a raw index) and the shell then draws a
+one-design-pixel frame in that colour, with a darker inner line, round every
+panel slot: the HUD panels, the inventory belt cells and the contract face.
+Art for those slots is authored edge to edge with no frame of its own.
+Absent, the shell draws nothing and the art carries its own frame, which is
+how `kings-bounty` ships.
+
+**Siege back wall.** `sprites.ui.siege_back_wall` names a cell-sized tile the
+shell repeats across the band above the siege board, with
+`siege_back_wall_left` / `_right` for the band's end cells; field tiles are
+drawn beneath. Decorative, outside the grid, siege only; absent, nothing is
+drawn.
+
+**Combat ground.** `sprites.ui.combat_ground` is `"field"` (default) or
+`"terrain"`. With `"terrain"` the shell draws the map tile the hero stands on
+under every combat cell (grass, desert, ...; water falls back to grass) and the
+pack ships no field tile: `sprites.combat[0]` is left out of the manifest.
+`kings-bounty` declares nothing and draws its field tile as before.
+
+**Siege grid.** `sprites.ui.siege_grid` names a path prefix for a full grid of
+siege tiles, one file per cell: `<prefix>_<x>_<y>.png` for `x` in `0..5` and
+`y` in `0..5`, row 0 the band above the board and rows 1..5 the board's rows
+0..4 (36 files). In a siege the shell draws each cell's own tile as the ground
+and nothing for the wall codes, since the walls are painted in the tiles; the
+tiles may be any size and are scaled to the cell. When it is set the
+`siege_back_wall*` keys are ignored and the per-code wall pieces,
+`sprites.combat[5..10]`, leave the manifest, so the pack need not ship them. Draw-only: the castle layout still
+blocks the wall cells. Absent, the per-code wall pieces draw as above
+(`kings-bounty` declares none; `glory-of-rome` ships 36 cells at 64).
+
+**Per-town art.** A town catalog entry may declare `"art": "<stem>"`, a
+tile under `art/tiles/`, and the engine stamps that tile at the town's
+position instead of the shared `art/tiles/town.png`. Absent means `town`, so
+older packs are unchanged; the shared tile is only required while some town
+still uses it, and the art manifest lists each declared stem once.
+
+```json
+{ "id": "massilia", "name": "Massilia", "art": "town_galliae", "x": 28, "y": 21,
+  "zone": "galliae", ... }
+```
+
+**Per-zone wandering-army art.** A zone may declare
+`"army_art": "<stem>"`, a tile under `art/tiles/`; every wandering foe in
+that zone, declared or salted, then draws that tile instead of the shared
+`art/tiles/wandering_army.png`. Absent means the shared tile, which is only
+required while some zone still uses it.
+
+**Per-zone terrain art.** A zone may declare `"tile_set": "<folder>"`. Every
+`tile_codes` art name for that zone then resolves under
+`art/tiles/<folder>/` instead of `art/tiles/`, so one `.dat` and one
+`tile_codes` table serve every continent while each draws its own grass,
+forest, water, edges and bridges. The folder must hold a file for every
+`tile_codes` art the pack declares; the art manifest lists them, so
+validation catches a missing one. Object tiles (towns, castles, chests,
+signs, dwellings) are never affected. A zone without the key draws the
+shared `art/tiles/` set, so packs that predate the key load unchanged, and
+the shared set is only required while some zone still uses it.
+
+```json
+{ "id": "galliae", "name": "Galliae", "map": "maps/galliae.dat",
+  "tile_set": "galliae", ... }
+```
+
+**Overriding single tiles.** A zone may instead fork only some of the
+master set: `"tile_set_arts"` lists the art names its folder overrides, one
+by one. Those names draw from `art/tiles/<folder>/`; every other name draws
+from the master `art/tiles/` set, so the folder holds only what differs. A
+cosmetic variant is a name of its own and is forked by listing it. The art
+manifest asks the folder for exactly the listed files, and keeps the master
+set for everything else.
+
+```json
+{ "id": "galliae", "tile_set": "galliae",
+  "tile_set_arts": ["grass", "grass_variant", "grass_01", "forest", "forest_edge_01"] }
+```
+
+**Town backdrops.** A zone may declare `"town_backdrop"`, and a town its own
+`"backdrop"`, both 240x102. A town's own wins, then its zone's, then the
+pack's `sprites.ui.town_backdrop`.
+
+**A gate that demands one arm.** A static `wandering_armies` entry may carry
+`"requires_troop"` (a troop id), `"scene"` (240x102) and `"title"`: the fight is
+refused until that troop is in the army, and the refusal is drawn over the
+picture under that heading. A
+`dwellings` entry may carry `"troop"`, pinning what it breeds.
+
+**A pinned purse.** A zone chest may carry `"gold": N`: it then always holds
+exactly that, instead of rolling.
+
+**The sailing scene.** A pack may ship `sprites.ui.sail_backdrop` (240x102, as
+every backdrop) and the string `body_navigate_confirm` ("Sail for %ZONE%?").
+With both, sailing to another zone is drawn over that picture: the provinces,
+then a confirmation. With neither, the plain list is used.
+
+**One-time vistas.** A zone may declare `events`: moments that play once, when
+the hero steps onto their tile holding what they ask for. The scene is drawn
+full width (the image is 240x102, like every backdrop) with a single Continue,
+and the effects change the map for good -- they survive a zone switch and a
+save. `requires` takes `spell`, `troop`, `gold` or `artifact`, each with an
+optional `count` and `consume`; `effects` name a tile by its `tile_codes` key.
+
+```json
+{ "id": "rubicon", "x": 31, "y": 31,
+  "scene": "art/scenes/rubicon.png",
+  "title": "The Rubicon", "body": "Your pontifex speaks the rite ...",
+  "requires": [ { "spell": "bridge", "count": 1, "consume": true } ],
+  "effects":  [ { "x": 30, "y": 30, "tile": "\\xcc" } ] }
+```
+
+**Arrivals.** A zone may declare where a hero sailing in lands, by the zone
+sailed from. A zone left out, or no `arrivals` at all, lands at
+`hero_spawn`. A water tile arrives in the boat.
+
+```json
+{ "id": "africa", "hero_spawn": {"x": 24, "y": 2},
+  "arrivals": { "italia": {"x": 26, "y": 3}, "oriens": {"x": 57, "y": 21} } }
+```
 
 ---
 

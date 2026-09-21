@@ -45,6 +45,7 @@ typedef enum {
     INPUT_ACTION_NEW_CONTINENT,
     // Meta
     INPUT_ACTION_OPTIONS_MENU,
+    INPUT_ACTION_GAME_MENU,        // modern: Escape on the map
     INPUT_ACTION_SAVE_QUIT,
     INPUT_ACTION_FAST_QUIT,
     INPUT_ACTION_REST,          // numpad 5: rest one day in place
@@ -62,5 +63,10 @@ InputState input_poll(void);
 // for view-dismiss / prompt-cancel callers that already key off Esc.
 // Returns false when no gamepad is connected.
 bool gamepad_pressed_cancel(void);
+
+// Pressed-edge d-pad / left-stick direction (-1, 0, 1 per axis), and the
+// confirm button (A / Cross). Both false without a gamepad.
+bool input_gamepad_dir(int *dx, int *dy);
+bool input_gamepad_confirm(void);
 
 #endif

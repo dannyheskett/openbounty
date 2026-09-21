@@ -1,8 +1,10 @@
 #include "hud.h"
+#include "gfx.h"
 #include "layout.h"
 #include "palette.h"
 #include "bfont.h"
-#include "raylib.h"
+#include "ui.h"
+#include "ob_types.h"
 #include <stdio.h>
 
 // Same puzzle layout used by the full-screen view (views.c). Each cell
@@ -32,7 +34,43 @@ static void blit_panel(Texture2D t, int x, int y) {
     Rectangle src = { 0, 0, (float)t.width, (float)t.height };
     Rectangle dst = { (float)x, (float)y,
                       (float)CL_SIDEBAR_W, (float)CL_TILE_H };
-    DrawTexturePro(t, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+    gfx_texture_draw(t, src, dst, WHITE);
+    ui_panel_frame(x, y, CL_SIDEBAR_W, CL_TILE_H);
+}
+
+// One HUD tile each, at (x, y): the siege weapons (silhouette until owned) and
+// the gold purse with the gold on it. Shared with the modern town screen so
+// its tiles are the HUD's.
+void hud_draw_siege_tile(const Game *g, const Sprites *s, int x, int y) {
+    if (!s) return;
+    if (g && g->stats.siege_weapons) {
+        blit_panel(sprites_strip(s->hud_siege_anim, s->hud_siege_anim_frames,
+                                 (int)(ui_anim_time() * 2.0)), x, y);
+    } else {
+        blit_panel(s->hud_siege_silhouette, x, y);
+    }
+}
+
+void hud_draw_gold_tile(const Game *g, const Sprites *s, int x, int y) {
+    if (!s) return;
+    blit_panel(s->hud_gold_purse, x, y);
+    if (g) {
+        char gold_str[16];
+        snprintf(gold_str, sizeof(gold_str), "%d", g->stats.gold);
+        Vector2 gsz = bfont_measure(gold_str);
+        // A purse too small for the number: modern shows it short rather than
+        // letting it run off the tile. Legacy's purse is the DOS one.
+        int room = CL_SIDEBAR_W - 4 * CL_UI;
+        if (CL_IS_MODERN && (int)gsz.x > room) {
+            long v = g->stats.gold;
+            if (v >= 1000000) snprintf(gold_str, sizeof gold_str, "%ldm", v / 1000000);
+            else              snprintf(gold_str, sizeof gold_str, "%ldk", v / 1000);
+            gsz = bfont_measure(gold_str);
+        }
+        int gx = x + CL_SIDEBAR_W - (int)gsz.x - 2 * CL_UI;
+        int gy = y + CL_TILE_H - BFONT_GLYPH_H - 2 * CL_UI;
+        bfont_draw(gold_str, gx, gy, PAL_CLR(YELLOW));
+    }
 }
 
 void hud_draw(const Game *g, const Sprites *s) {
@@ -45,12 +83,12 @@ void hud_draw(const Game *g, const Sprites *s) {
     blit_panel(s->hud_contract_silhouette, x, y);
     if (g && g->contract.active_id[0]) {
         const VillainDef *v = villain_by_id(g->contract.active_id);
-        if (v && v->index >= 0 && v->index < 17) {
+        if (v && v->index >= 0 && v->index < s->villain_count) {
             // ticks the sidebar at frame speed (~2/sec). Use the
             // animation strip if loaded; fall back to the static portrait.
-            int frame = sprites_frame((int)(GetTime() * 2.0),
-                                      s->villain_anim_frames[v->index]);
-            Texture2D face = s->villain_anim[v->index][frame];
+            Texture2D face = sprites_strip(s->villain_anim[v->index],
+                                           s->villain_anim_frames[v->index],
+                                           (int)(ui_anim_time() * 2.0));
             if (!face.id) face = s->villain_portrait[v->index];
             blit_panel(face, x, y);
         }
@@ -58,20 +96,14 @@ void hud_draw(const Game *g, const Sprites *s) {
     y += CL_TILE_H;
 
     // 2. Siege weapons: silhouette when not owned, animated cart when owned.
-    if (g && g->stats.siege_weapons) {
-        int frame = sprites_frame((int)(GetTime() * 2.0),
-                                  s->hud_siege_anim_frames);
-        blit_panel(s->hud_siege_anim[frame], x, y);
-    } else {
-        blit_panel(s->hud_siege_silhouette, x, y);
-    }
+    hud_draw_siege_tile(g, s, x, y);
     y += CL_TILE_H;
 
     // 3. Magic star: silhouette until knows_magic, then animated star.
-    if (g && g->stats.knows_magic) {
-        int frame = sprites_frame((int)(GetTime() * 2.0),
-                                  s->hud_magic_anim_frames);
-        blit_panel(s->hud_magic_anim[frame], x, y);
+    // Lit for the rites of the zone the hero stands in (one magic: knowing it).
+    if (g && GameHasRites(g, g->position.zone)) {
+        blit_panel(sprites_strip(s->hud_magic_anim, s->hud_magic_anim_frames,
+                                 (int)(ui_anim_time() * 2.0)), x, y);
     } else {
         blit_panel(s->hud_magic_silhouette, x, y);
     }
@@ -87,9 +119,14 @@ void hud_draw(const Game *g, const Sprites *s) {
         // uncaught/unfound cell with a 2px inset within the panel,
         // leaving the underlying map-fragment art visible only on
         // caught/found cells.
-        int cw = s->puzzle_cover.width;   // 9
-        int ch = s->puzzle_cover.height;  // 6
-        int inset = 2;
+        // The chip and its inset are authored against the legacy 48x34 panel,
+        // so they scale by this pack's panel over that one -- per axis, since a
+        // square tile stretches the panel differently in x and y. Legacy is
+        // 48/48 and 34/34, so the numbers come out as the originals exactly.
+        int cw    = 9 * CL_SIDEBAR_W / 48;
+        int ch    = 6 * CL_TILE_H    / 34;
+        int ins_x = 2 * CL_SIDEBAR_W / 48;
+        int ins_y = 2 * CL_TILE_H    / 34;
         for (int j = 0; j < 5; j++) {
             for (int i = 0; i < 5; i++) {
                 signed char id = PUZZLE_MAP[j][i];
@@ -97,26 +134,15 @@ void hud_draw(const Game *g, const Sprites *s) {
                 if (id < 0) caught = g->artifacts.found[-id - 1];
                 else        caught = g->contract.villains_caught[id];
                 if (caught) continue;
-                int cx = x + inset + i * cw;
-                int cy = y + inset + j * ch;
-                Rectangle src = { 0, 0, (float)cw, (float)ch };
-                Rectangle dst = { (float)cx, (float)cy,
-                                  (float)cw, (float)ch };
-                DrawTexturePro(s->puzzle_cover, src, dst,
-                               (Vector2){ 0, 0 }, 0.0f, WHITE);
+                int cx = x + ins_x + i * cw;
+                int cy = y + ins_y + j * ch;
+                ui_blit(s->puzzle_cover, cx, cy, cw, ch);
             }
         }
+        ui_panel_frame(x, y, CL_SIDEBAR_W, CL_TILE_H);
     }
     y += CL_TILE_H;
 
     // 5. Gold purse + numeric label.
-    blit_panel(s->hud_gold_purse, x, y);
-    if (g) {
-        char gold_str[12];
-        snprintf(gold_str, sizeof(gold_str), "%d", g->stats.gold);
-        Vector2 gsz = bfont_measure(gold_str);
-        int gx = x + CL_SIDEBAR_W - (int)gsz.x - 2;
-        int gy = y + CL_TILE_H - BFONT_GLYPH_H - 2;
-        bfont_draw(gold_str, gx, gy, PAL_CLR(YELLOW));
-    }
+    hud_draw_gold_tile(g, s, x, y);
 }

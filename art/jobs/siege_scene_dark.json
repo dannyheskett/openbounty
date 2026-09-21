@@ -1,0 +1,20 @@
+{
+  "id": "siege_scene_dark",
+  "prompt": "an orthographic strategy game battlefield map seen from directly overhead, a castle courtyard of flat plain dark mossy green grass with nothing on it, thick grey stone battlement walls along the top edge, down the left and right edges and along the bottom, the bottom wall broken open in the middle where the gate was, a straight path of grey paving stones lined with stone kerbs running up from the breach into the courtyard, a moat of blue water below the bottom wall, everything square and aligned to the picture edges, no trees, no bushes, no rocks, no people, no text",
+  "style": "rd_plus__topdown_map",
+  "width": 384,
+  "height": 384,
+  "seed": 8833,
+  "input_image_path": "build/art/siege_src_dark_384.png",
+  "input_image_keep_alpha": false,
+  "strength": 0.55,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    384,
+    384
+  ],
+  "_note": "2026-09-10: the run02 scene with grass pixels swapped for the dark 16 px grass, img2img 0.55; k-centroid to 192 afterwards for the 32 px cells.",
+  "_pack_path": "art/combat/siege/cell_<x>_<y>.png (36 cells at 64, tools/siegeslice.py --grid)"
+}

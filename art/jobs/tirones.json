@@ -1,0 +1,18 @@
+{
+  "id": "tirones",
+  "_note": "The militia slot: a raw recruit, started over 2026-09-04. Runs 01-02 ('raw recruit', 'simple' kit) drew a boyish waif; run03 ('farm hand's build, stocky and broad shouldered') overshot into a bruiser. run04 asks for an ordinary young man of average build with adult proportions. Neutral stance, the gladius upright at rest. Animate at 96 without padding, the Hastati and Velites route, so the frames keep the still's size.",
+  "prompt": "a young Roman recruit, an ordinary young man of average build with adult proportions, neither slight nor burly, in a plain undyed wool tunic belted at the waist, a simple leather cap, a small round wooden shield with an iron boss on his left arm, a gladius short sword held upright in his right hand, standing stiffly at attention",
+  "style": "user__glory_of_rome_troops_bac676cd",
+  "width": 96,
+  "height": 96,
+  "seed": 5312,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": true,
+  "target": [
+    96,
+    96
+  ]
+}

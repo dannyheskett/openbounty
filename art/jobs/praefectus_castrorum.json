@@ -1,0 +1,18 @@
+{
+  "id": "praefectus_castrorum",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Roman praefectus castrorum, a tough grey-bearded veteran camp prefect in his fifties with a scarred weathered face and close-cropped grey hair, a battered steel lorica segmentata over a red tunic, a vine-staff over his shoulder, the barracks of the legion with racks of shields and spears behind him",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 9951,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "_pack_path": "art/portraits/praefectus_castrorum_00..07.png",
+  "_animation": "a slow stern nod, eyes steady, static background, smooth loop",
+  "_note": "Camp prefect (2026-09-13): runs the barracks; the modern home castle's portrait on the main and Recruit pages (the Emperor only on Audience). Town-portrait route: still at 128, loop at 128, frames cropped to 96."
+}

@@ -1,0 +1,20 @@
+{
+  "id": "troop_portrait_cyclopes",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a cyclops, a huge green-skinned brute with a single large eye, a heavy brow and tusked jaw, a leather apron, a giant smith's hammer over his shoulder, a volcanic forge cave behind him",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 9992,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "reference_image_paths": [
+    "assets/glory-of-rome/art/troops/cyclopes_00.png"
+  ],
+  "_pack_path": "art/portraits/troop_cyclopes.png",
+  "_note": "Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation."
+}

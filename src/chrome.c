@@ -1,10 +1,16 @@
 #include "chrome.h"
+#include "gfx.h"
 #include "layout.h"
 #include "palette.h"
 #include "bfont.h"
 #include "resources.h"
 #include "views.h"
 #include "ui.h"
+#include "lattice.h"
+#include "prompt.h"
+#include "touch.h"
+#include "modern/mlist.h"
+#include "modern/mlayout.h"
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -12,11 +18,12 @@
 // reads it to know whether to render the fast-quit prompt in the status bar.
 extern bool main_fast_quit_active(void);
 
-// Outerworld chrome: a pixel-exact 320x200 bitmap. The bitmap carries
-// the outer frame (left/right 16px, top 8px, bottom 8px) with transparent
-// interior. Status bar background, bar strip, and status text are painted
-// procedurally on top because they're dynamic (difficulty color, text
-// contents, mode).
+// Outerworld chrome. Legacy: a pixel-exact 320x200 bitmap carrying the outer
+// frame (left/right 16px, top 8px, bottom 8px) with transparent interior, and
+// a bar strip bitmap under the status line. Modern without a bitmap: the gold
+// lattice (src/lattice.c), drawn to the layout's band sizes. Status bar
+// background and text are painted procedurally in both because they're
+// dynamic (difficulty color, text contents, mode).
 
 // Status bar background color, sourced from res->colors.difficulty_*
 // (game.json colors.difficulty_bar). Defaults match the canonical
@@ -28,6 +35,103 @@ static Color color_from_packed(unsigned int v) {
         (unsigned char)( v        & 0xFF),
         (unsigned char)((v >> 24) & 0xFF),
     };
+}
+
+
+// The bar strip under the status line. Repeated along its length rather than
+// stretched, for the same reason the frame's edge bands are: it is a pattern
+// with a pitch, and a screen-wide stretch smears it by however much wider the
+// window is than the source. Its height is the band's, CL_BAR_H, not the
+// texture's -- drawing at the texture height left a 5px strip in a 10px band
+// at ui_scale 2.
+static void draw_bar_strip(Texture2D tex) {
+    if (tex.id == 0 || tex.width <= 0) return;
+    const int h = CL_BAR_H;
+    for (int x = 0; x < CL_SCREEN_W; x += tex.width) {
+        int run = (x + tex.width > CL_SCREEN_W) ? (CL_SCREEN_W - x) : tex.width;
+        Rectangle src = { 0, 0, (float)run, (float)tex.height };
+        Rectangle dst = { (float)x, (float)CL_BAR_Y, (float)run, (float)h };
+        gfx_texture_draw(tex, src, dst, WHITE);
+    }
+}
+
+static void draw_chrome_frame(Texture2D tex) {
+    const int W = CL_SCREEN_W, H = CL_SCREEN_H;
+    const int tw = tex.width, th = tex.height;
+
+    if (tw == W && th == H) {
+        Rectangle src = { 0, 0, (float)tw, (float)th };
+        Rectangle dst = { 0, 0, (float)W, (float)H };
+        gfx_texture_draw(tex, src, dst, WHITE);
+        return;
+    }
+
+    const int cw = CL_FRAME_LEFT_W;   // corner / side-band width
+    const int ch = CL_FRAME_TOP_H;    // corner / top-band height
+    if (tw <= 2 * cw || th <= 2 * ch) return;
+
+    // Corners, 1:1.
+    struct { int sx, sy, dx, dy; } corner[4] = {
+        { 0,          0,          0,      0      },
+        { tw - cw,    0,          W - cw, 0      },
+        { 0,          th - ch,    0,      H - ch },
+        { tw - cw,    th - ch,    W - cw, H - ch },
+    };
+    for (int i = 0; i < 4; i++) {
+        Rectangle src = { (float)corner[i].sx, (float)corner[i].sy,
+                          (float)cw, (float)ch };
+        Rectangle dst = { (float)corner[i].dx, (float)corner[i].dy,
+                          (float)cw, (float)ch };
+        gfx_texture_draw(tex, src, dst, WHITE);
+    }
+
+    // Top and bottom bands: repeat the source's middle span horizontally.
+    int span_w = tw - 2 * cw;
+    for (int x = cw; x < W - cw; x += span_w) {
+        int run = (x + span_w > W - cw) ? (W - cw - x) : span_w;
+        Rectangle stop = { (float)cw, 0.0f, (float)run, (float)ch };
+        Rectangle dtop = { (float)x,  0.0f, (float)run, (float)ch };
+        gfx_texture_draw(tex, stop, dtop, WHITE);
+        Rectangle sbot = { (float)cw, (float)(th - ch), (float)run, (float)ch };
+        Rectangle dbot = { (float)x,  (float)(H  - ch), (float)run, (float)ch };
+        gfx_texture_draw(tex, sbot, dbot, WHITE);
+    }
+
+    // Left and right bands: repeat the source's middle span vertically.
+    int span_h = th - 2 * ch;
+    for (int y = ch; y < H - ch; y += span_h) {
+        int run = (y + span_h > H - ch) ? (H - ch - y) : span_h;
+        Rectangle sl = { 0.0f,             (float)ch, (float)cw, (float)run };
+        Rectangle dl = { 0.0f,             (float)y,  (float)cw, (float)run };
+        gfx_texture_draw(tex, sl, dl, WHITE);
+        Rectangle sr = { (float)(tw - cw), (float)ch, (float)cw, (float)run };
+        Rectangle dr = { (float)(W  - cw), (float)y,  (float)cw, (float)run };
+        gfx_texture_draw(tex, sr, dr, WHITE);
+    }
+}
+
+// The code-drawn chrome. A modern pack that ships no chrome bitmap gets the
+// gold lattice: the four frame bands at the layout's thickness (which absorb
+// the buffer's spare space when the pack fixed its size) and the bar band
+// between the status line and the map. Legacy packs, and any pack that still
+// ships a bitmap, are untouched.
+static bool use_lattice(const Sprites *s) {
+    return CL_IS_MODERN && !(s && s->chrome_overworld.id);
+}
+
+static void draw_lattice_chrome_ex(bool map_rail);
+static void draw_lattice_chrome(void) { draw_lattice_chrome_ex(true); }
+
+static void draw_lattice_chrome_ex(bool map_rail) {
+    lattice_ring(0, 0, CL_SCREEN_W, CL_SCREEN_H,
+                 CL_FRAME_LEFT_W, CL_FRAME_RIGHT_W,
+                 CL_FRAME_TOP_H, CL_FRAME_BOTTOM_H);
+    if (CL_SIDEBAR_GAP > 0)
+        lattice_band_h(CL_STATUS_X, CL_BAR_Y, CL_STATUS_W, CL_BAR_H);
+    else
+        lattice_fill(CL_STATUS_X, CL_BAR_Y, CL_STATUS_W, CL_BAR_H);
+    if (map_rail && CL_SIDEBAR_GAP > 0)   // the rail between map and HUD; not over combat
+        lattice_band_v(CL_MAP_X + CL_MAP_W, CL_MAP_Y, CL_SIDEBAR_GAP, CL_MAP_H);
 }
 
 static Color status_bg_for_difficulty(Difficulty d) {
@@ -55,6 +159,16 @@ static Color status_bg_for_difficulty(Difficulty d) {
 // title bar reads "Options / <Actor> M<n>" or "<Player> vs <Foe>
 // killing <N>" without going through the adventure-mode time-stop /
 // days-left paths. Pass status_text=NULL to skip status text.
+void chrome_draw_with_status_lr(const Game *g, const Sprites *s,
+                                const char *left, const char *right) {
+    chrome_draw_with_status(g, s, left);
+    if (right && right[0]) {
+        bfont_draw_right(right, CL_STATUS_X + CL_STATUS_W - ML_PAD,
+                         CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0),
+                         PAL_CLR(WHITE));
+    }
+}
+
 void chrome_draw_with_status(const Game *g, const Sprites *s,
                                      const char *status_text) {
     // Caller has already painted the inner area (combat field, modal
@@ -63,29 +177,16 @@ void chrome_draw_with_status(const Game *g, const Sprites *s,
     // interior, so the field shows through.
     Color status_bg = status_bg_for_difficulty(
         g ? g->character.difficulty : DIFFICULTY_NORMAL);
-    DrawRectangle(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H,
+    gfx_rect(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H,
                   status_bg);
-    if (s && s->hud_bar_strip.id) {
-        Rectangle src = { 0, 0,
-                          (float)s->hud_bar_strip.width,
-                          (float)s->hud_bar_strip.height };
-        Rectangle dst = { 0, (float)CL_BAR_Y,
-                          (float)CL_SCREEN_W,
-                          (float)s->hud_bar_strip.height };
-        DrawTexturePro(s->hud_bar_strip, src, dst,
-                       (Vector2){ 0, 0 }, 0.0f, WHITE);
-    }
-    if (s && s->chrome_overworld.id) {
-        Rectangle src = { 0, 0,
-                          (float)s->chrome_overworld.width,
-                          (float)s->chrome_overworld.height };
-        Rectangle dst = { 0, 0,
-                          (float)CL_SCREEN_W, (float)CL_SCREEN_H };
-        DrawTexturePro(s->chrome_overworld, src, dst,
-                       (Vector2){ 0, 0 }, 0.0f, WHITE);
+    if (use_lattice(s)) {
+        draw_lattice_chrome_ex(false);
+    } else {
+        if (s) draw_bar_strip(s->hud_bar_strip);
+        if (s && s->chrome_overworld.id) draw_chrome_frame(s->chrome_overworld);
     }
     if (status_text && status_text[0]) {
-        bfont_draw(status_text, CL_STATUS_X + 1, CL_STATUS_Y + 1,
+        bfont_draw(status_text, CL_STATUS_X + 1, CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0),
                    PAL_CLR(WHITE));
     }
 }
@@ -93,37 +194,24 @@ void chrome_draw_with_status(const Game *g, const Sprites *s,
 void chrome_draw(const Game *g, const Sprites *s) {
     // Fill the whole screen black. The chrome bitmap paints the frame on
     // top; map / sidebar / views paint the interior on top.
-    DrawRectangle(0, 0, CL_SCREEN_W, CL_SCREEN_H, PAL_CLR(BLACK));
+    gfx_rect(0, 0, CL_SCREEN_W, CL_SCREEN_H, PAL_CLR(BLACK));
 
     // Status bar fill (y=8..16, x=16..303) with difficulty color.
     Color status_bg = status_bg_for_difficulty(
         g ? g->character.difficulty : DIFFICULTY_NORMAL);
-    DrawRectangle(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H,
+    gfx_rect(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H,
                   status_bg);
 
-    // Middle bar (bar_strip.png) at y=17, 5px tall. 320 wide; the chrome
-    // bitmap's side columns will paint over the outer 16px after this.
-    if (s && s->hud_bar_strip.id) {
-        Rectangle src = { 0, 0,
-                          (float)s->hud_bar_strip.width,
-                          (float)s->hud_bar_strip.height };
-        Rectangle dst = { 0, (float)CL_BAR_Y,
-                          (float)CL_SCREEN_W,
-                          (float)s->hud_bar_strip.height };
-        DrawTexturePro(s->hud_bar_strip, src, dst,
-                       (Vector2){ 0, 0 }, 0.0f, WHITE);
-    }
+    if (use_lattice(s)) {
+        draw_lattice_chrome();
+    } else {
+        // Middle bar (bar_strip.png) at y=17, 5px tall. 320 wide; the chrome
+        // bitmap's side columns will paint over the outer 16px after this.
+        if (s) draw_bar_strip(s->hud_bar_strip);
 
-    // Blit the chrome bitmap over everything. Its interior is transparent
-    // so the status bar + bar strip drawn above remain visible.
-    if (s && s->chrome_overworld.id) {
-        Rectangle src = { 0, 0,
-                          (float)s->chrome_overworld.width,
-                          (float)s->chrome_overworld.height };
-        Rectangle dst = { 0, 0,
-                          (float)CL_SCREEN_W, (float)CL_SCREEN_H };
-        DrawTexturePro(s->chrome_overworld, src, dst,
-                       (Vector2){ 0, 0 }, 0.0f, WHITE);
+        // Blit the chrome bitmap over everything. Its interior is transparent
+        // so the status bar + bar strip drawn above remain visible.
+        if (s && s->chrome_overworld.id) draw_chrome_frame(s->chrome_overworld);
     }
 
     // Status text (white, on top of the fill). Three modes:
@@ -141,25 +229,54 @@ void chrome_draw(const Game *g, const Sprites *s) {
                               : " Quit without saving (y/n) ";
             bfont_draw_centered(txt,
                                 CL_STATUS_X + CL_STATUS_W / 2,
-                                CL_STATUS_Y + 1,
+                                CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0),
                                 PAL_CLR(WHITE));
+        } else if (CL_IS_MODERN &&
+                   (views_active() == VIEW_WIN || views_active() == VIEW_LOSE)) {
+            // The game is over: there is nothing to go back to, and the screen's
+            // own Continue ends it.
+        } else if (CL_IS_MODERN && (views_active() != VIEW_NONE || dialog_is_active() || prompt_is_active())) {
+            // Modern: "< Back" with the key for the device; the bar is the button.
+            char hb[96];
+            ml_hint_text(hb, sizeof hb, ui->hint_back, ui->key_esc, ui->pad_back);
+            bfont_draw_centered(hb, CL_STATUS_X + CL_STATUS_W / 2,
+                                CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0),
+                                PAL_CLR(WHITE));
+            touch_region(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H, KEY_ESCAPE);
         } else if (views_wants_exit_hint() || dialog_is_active()) {
-            const char *txt = (ui && ui->press_esc_to_exit[0])
-                              ? ui->press_esc_to_exit
-                              : "Press 'ESC' to exit";
-            bfont_draw_centered(txt,
+            bfont_draw_centered(ui->press_esc_to_exit,
                                 CL_STATUS_X + CL_STATUS_W / 2,
-                                CL_STATUS_Y + 1,
+                                CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0),
                                 PAL_CLR(WHITE));
         } else {
             char buf[64], nbuf[16];
             const ResBanners *bn = (g->res) ? &g->res->banners : NULL;
+            if (CL_IS_MODERN && bn && ui) {
+                // Modern: the bar is the Game Menu button -- its name at the
+                // left (with Esc on a keyboard), the days remaining at the
+                // right; a tap anywhere on it opens the menu.
+                int ty = CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0);
+                char left[96], right[96];
+                ml_hint_text(left, sizeof left, bn->status_game_menu, ui->key_esc, ui->pad_back);
+                bool stop = g->stats.time_stop > 0;
+                snprintf(nbuf, sizeof nbuf, "%d", stop ? g->stats.time_stop : g->stats.days_left);
+                ResTemplateVar rv[] = { { "DAYS", nbuf }, { "STEPS", nbuf } };
+                resources_format_template(right, sizeof right,
+                                          stop ? bn->status_time_stop_remaining : bn->status_days_remaining, rv, 2);
+                bfont_draw(left, CL_STATUS_X + ML_PAD, ty, PAL_CLR(WHITE));
+                bfont_draw_right(right, CL_STATUS_X + CL_STATUS_W - ML_PAD, ty, PAL_CLR(WHITE));
+                if (views_active() == VIEW_NONE && !prompt_is_active())
+                    touch_region(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H, KEY_ESCAPE);
+                return;
+            }
             if (g->stats.time_stop > 0) {
                 snprintf(nbuf, sizeof nbuf, "%d", g->stats.time_stop);
                 ResTemplateVar vars[] = { { "STEPS", nbuf } };
                 if (bn) {
                     resources_format_template(buf, sizeof buf,
-                                              bn->status_time_stop, vars, 1);
+                                              (CL_IS_MODERN && bn->status_time_stop_modern[0])
+                                                  ? bn->status_time_stop_modern : bn->status_time_stop,
+                                              vars, 1);
                 } else {
                     snprintf(buf, sizeof buf,
                              " Options / Controls / Time Stop:%d ",
@@ -170,14 +287,19 @@ void chrome_draw(const Game *g, const Sprites *s) {
                 ResTemplateVar vars[] = { { "DAYS", nbuf } };
                 if (bn) {
                     resources_format_template(buf, sizeof buf,
-                                              bn->status_days_left, vars, 1);
+                                              (CL_IS_MODERN && bn->status_days_left_modern[0])
+                                                  ? bn->status_days_left_modern : bn->status_days_left,
+                                              vars, 1);
                 } else {
                     snprintf(buf, sizeof buf,
                              " Options / Controls / Days Left:%d ",
                              g->stats.days_left);
                 }
             }
-            bfont_draw(buf, CL_STATUS_X + 1, CL_STATUS_Y + 1, PAL_CLR(WHITE));
+            bfont_draw(buf, CL_STATUS_X + 1, CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0), PAL_CLR(WHITE));
+            // Modern: a tap on the bar is Escape, which opens the game menu.
+            if (CL_IS_MODERN && views_active() == VIEW_NONE && !prompt_is_active())
+                touch_region(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H, KEY_ESCAPE);
         }
     }
 }

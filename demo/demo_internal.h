@@ -19,6 +19,10 @@
 #define DEMO_DECLINED_MAX  96   // fights declined, keyed by target id
 #define DEMO_INTEL_MAX     32   // castles whose owner the prompts revealed
 
+// The demo player's own tables; content beyond them is ignored.
+#define DEMO_ZONES_MAX 4
+#define DEMO_FOES_MAX 160
+
 typedef struct { char zone[32]; int x, y; } DemoSpot;
 
 typedef struct {
@@ -53,7 +57,7 @@ typedef struct {
     int          intel_count;
 
     // Zone campaign state.
-    bool zone_done[GAME_CONTINENTS];   // explored dry + no targets; sail away
+    bool zone_done[DEMO_ZONES_MAX];   // explored dry + no targets; sail away
     bool want_boat;                    // set when a goal needs the water
     bool cornered;                     // walled in with a foe on the only exit:
                                        // take the fight at any odds (defeat =
@@ -106,8 +110,12 @@ DemoHooks *demo_hooks(void);
 // and interactive tiles are walls except as the goal; tiles within reach of a
 // foe this run has already fought and LOST to are avoided.
 
+// The demo player's own path grids; map cells beyond them are off its map.
+#define DEMO_MAP_W 64
+#define DEMO_MAP_H 128
+
 typedef struct {
-    short dist[2][MAP_MAX_H][MAP_MAX_W];   // [layer][y][x]; -1 unreachable
+    short dist[2][DEMO_MAP_H][DEMO_MAP_W];   // [layer][y][x]; -1 unreachable
 } DemoField;
 
 void demo_field_build(const Game *g, const Map *map, const Fog *fog,

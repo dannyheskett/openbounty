@@ -1,0 +1,20 @@
+{
+  "id": "troop_portrait_equites",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Roman cavalryman, a bearded rider in a bronze helmet with a red crest and a bronze muscled cuirass over a red cloak, holding a spear, the head of his brown horse with a red saddle cloth beside him, an open plain behind him",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 9975,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "reference_image_paths": [
+    "assets/glory-of-rome/art/troops/equites_00.png"
+  ],
+  "_pack_path": "art/portraits/troop_equites.png",
+  "_note": "Static troop portrait (2026-09-13): shown in the home castle's Recruit portrait slot. 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos) at Dan's request, keeping the background rather than cropping. No animation."
+}

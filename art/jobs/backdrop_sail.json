@@ -1,0 +1,17 @@
+{
+ "id": "backdrop_sail",
+ "prompt": "a Greek penteconter galley under way on the open sea at sunset, seen from behind and to one side, long low black hull, a single bank of oars out, one square sail set, a painted eye at the bow, the low sun on the horizon behind it laying a gold track on calm water, no people visible",
+ "style": "rd_pro__default",
+ "width": 240,
+ "height": 102,
+ "seed": 6601,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  240,
+  102
+ ],
+ "_pack_path": "art/ui/backdrop_sail.png",
+ "_note": "The sail-to scene (REQ-221c): the province picker and its confirmation are drawn over this, the same 240x102 backdrop shape as every location screen (rd_pro__default, opaque, no reference image)."
+}

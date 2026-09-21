@@ -50,8 +50,8 @@ TEST roundtrip_preserves_position(void) {
     ASSERT_EQ(50, g2->position.y);
 
     unlink(SAVE_PATH);
-    resources_free(res1); free(res1); free(g1); free(m1); free(f1);
-    resources_free(res2); free(res2); free(g2); free(m2); free(f2);
+    resources_free(res1); free(res1); GameFree(g1); free(g1); MapFree(m1); free(m1); FogFree(f1); free(f1);
+    resources_free(res2); free(res2); GameFree(g2); free(g2); MapFree(m2); free(m2); FogFree(f2); free(f2);
     PASS();
 }
 
@@ -78,8 +78,8 @@ TEST roundtrip_preserves_seed(void) {
     ASSERT_EQ(expected_seed, g2->seed);
 
     unlink(SAVE_PATH);
-    resources_free(res1); free(res1); free(g1); free(m1); free(f1);
-    resources_free(res2); free(res2); free(g2); free(m2); free(f2);
+    resources_free(res1); free(res1); GameFree(g1); free(g1); MapFree(m1); free(m1); FogFree(f1); free(f1);
+    resources_free(res2); free(res2); GameFree(g2); free(g2); MapFree(m2); free(m2); FogFree(f2); free(f2);
     PASS();
 }
 

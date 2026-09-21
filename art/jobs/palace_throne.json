@@ -1,0 +1,17 @@
+{
+ "id": "palace_throne",
+ "prompt": "the throne room of an imperial Roman palace, a raised marble dais under a coffered gilded ceiling, an ivory and gold curule throne on the dais, a great purple canopy behind it, tall porphyry columns either side, gilded eagles and laurel wreaths on the walls, lamps burning on bronze stands, solemn and magnificent, no people anywhere",
+ "seed": 6621,
+ "style": "rd_pro__default",
+ "width": 240,
+ "height": 102,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  240,
+  102
+ ],
+ "_pack_path": "art/ui/backdrop_palace_throne.png",
+ "_note": "Roma's own scenes (2026-09-15): the Audience page. Backdrop route -- rd_pro__default at 240x102, drawn whole at 3x. Imperial, not the shared fortress hall the other castles use."
+}

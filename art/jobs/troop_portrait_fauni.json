@@ -1,0 +1,20 @@
+{
+  "id": "troop_portrait_fauni",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a faun, a small mischievous goat-horned woodland creature with pointed ears, a brown furry face and a sly grin, holding a wooden club, a green sunlit forest glade behind him",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 9986,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "reference_image_paths": [
+    "assets/glory-of-rome/art/troops/fauni_00.png"
+  ],
+  "_pack_path": "art/portraits/troop_fauni.png",
+  "_note": "Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation."
+}

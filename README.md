@@ -196,7 +196,10 @@ and `openbounty-test` for tests) both link the same engine archive.
 ├── legacy/bin/               # Default extractor input dir (DOS distribution)
 ├── screenshots/              # Manual backtick captures
 └── docs/                     # OPENBOUNTY-SPEC.md (reproduction-grade spec),
-                              #   PACK-FORMAT.md, RELEASE-PROCESS.md, OPENKB-SPEC.md
+                              #   PACK-FORMAT.md, RELEASE-PROCESS.md, OPENKB-SPEC.md,
+                              #   ART-PIPELINE.md (how art is made),
+                              #   ROME-ART.md (every prompt ever sent, generated)
+                              #   and IOS-BACKEND-SPIKE.md (the raylib-free iOS plan)
 ```
 
 ---
@@ -252,18 +255,45 @@ Requirements:
 - raylib built once: `./scripts/build_raylib_web.sh`
 
 ```
-make web        # -> build/web/openbounty.{html,js,wasm,data}
-make web-serve  # build + serve on http://localhost:8080
+make web               # both packs -> build/web/<pack>/openbounty.{html,js,wasm,data}
+make web-glory-of-rome # one pack only
+make web-kings-bounty
+make web-serve         # build both + serve on http://localhost:8080
 ```
 
-The pack is embedded in `openbounty.data` via `--preload-file`, so the build
-is self-contained. All four files are needed, and they must be served over
-HTTP, browsers refuse to fetch `.wasm`/`.data` over `file://`. Saves persist
-in IndexedDB. `make web` is not part of `make dist`; the release workflow
-packages it separately via `make dist-web`.
+A wasm module embeds its pack, so there is one build per pack, each in its own
+`build/web/<pack>/`. The pack goes into `openbounty.data` via `--preload-file`,
+so each build is self-contained. All four files are needed, and they must be
+served over HTTP, browsers refuse to fetch `.wasm`/`.data` over `file://`.
+Saves persist in IndexedDB. `make web` is not part of `make dist`; the release
+workflow packages **Glory of Rome only** via `make dist-web` -- King's Bounty's
+pack is DOS-extracted and copyright-restricted, so its web build stays local.
 
 Windows builds always have `EMBED_ASSETS` defined, so the resulting
 single `.exe` is self-contained (no external asset directory needed).
+
+### Android
+
+```
+./scripts/build_raylib_android.sh   # raylib 6.0, arm64-v8a static (needs ANDROID_NDK)
+make android                        # -> build/gloryofrome.apk
+```
+
+**Mobile ships Glory of Rome only** -- one pack, bundled in the APK's
+`assets/`, opened by `src/plat_android.c` (`pack_open_mem`, so it does not
+depend on raylib's `fopen` wrap, which miniz can bypass via `fopen64`). There
+is no pack discovery and no picker. Saves go to the app's private directory.
+
+The app is a `NativeActivity` (no Gradle): `javac` -> `d8` -> `aapt` ->
+`zipalign` -> `apksigner`, all from the Makefile, the same shape as the sibling
+openblocks repo. It is **landscape-locked** -- the pack declares a fixed
+800x532 buffer, which has no portrait form -- and the display-cutout insets are
+pushed from the Activity into `src/safe_area.c`, which `present_scaled` uses to
+fit and centre the game clear of the camera and the gesture bar. The system
+Back gesture answers wherever the shell reads Escape (`src/input_host.c`).
+
+A launcher icon is still outstanding: the manifest deliberately declares no
+`android:icon` yet, so the system default stands in.
 They link statically (`-static -static-libgcc -mwindows`), no DLLs.
 
 ### Embedded-asset mode
@@ -367,14 +397,15 @@ depending on shell headers or shell symbols, this build step fails and
 
 | Target | What it does |
 |---|---|
-| `make` / `make all` | Builds the two binaries (`openbounty`, `openbounty-test`) + `libobengine.a` + library boundary check + pack zips. |
+| `make` / `make all` | Builds the two binaries (`openbounty`, `openbounty-test`) + `libobengine.a` + library boundary check + **iOS purity check** + pack zips. |
 | `make test` | Runs `build/openbounty-test`: 202 tests via greatest (unit, regression, e2e, autoplay), including the combat-formula golden digests. |
 | `make release` | `build/release/openbounty`, `-O2` stripped. |
 | `make windows` | Cross-compile `openbounty-x64.exe` and `openbounty-x86.exe`. |
 | `make windows-debug` | Same with console attached for stderr. |
 | `make mac` | Cross-compile `openbounty-mac` (universal binary). |
-| `make web` | WebAssembly build -> `build/web/openbounty.{html,js,wasm,data}` (needs emsdk). |
-| `make web-serve` | Build + serve the web build on `http://localhost:8080`. |
+| `make web` | WebAssembly build, one per pack -> `build/web/<pack>/openbounty.{html,js,wasm,data}` (needs emsdk). |
+| `make web-serve` | Build both web builds + serve them on `http://localhost:8080/<pack>/openbounty.html`. |
+| `make android` | Glory of Rome APK (`build/gloryofrome.apk`, needs the Android NDK + SDK build-tools). |
 | `make extract` | Wrapper for `./build/debug/openbounty --extract`. |
 | `make extract-pack` | Regenerates `assets/kings-bounty/` from a user's DOS files. |
 | `make dist-{linux,windows,mac}` | Build distribution archives. |
@@ -435,7 +466,7 @@ All gameplay data is JSON-driven. Top-level keys:
 | `title` | "King's Bounty" |
 | `version` | 1 (pack schema version) |
 | `pack_id` / `pack_kind` / `pack_name` | Pack identity (e.g. `"kings-bounty"`, `"base"`), see `docs/PACK-FORMAT.md` |
-| `world` | global flags: `max_army_slots=5`, `fog_sight=3`, `starting_zone="continentia"`, `default_name="Hero"`, `default_options=[4,1,1,1,1,1]` |
+| `world` | global flags: `max_army_slots=5`, `starting_zone="continentia"`, `default_name="Hero"`, `default_options=[4,1,1,1,1,1]` |
 | `time` | `day_steps=40`, `week_days=5`, `days_per_difficulty={easy:900, normal:600, hard:400, impossible:200}` |
 | `economy` | `boat_cost_normal=500`, `boat_cost_cheap=100` (with anchor artifact), `siege_cost=3000`, `alcove_cost=5000` |
 | `contract` | `cycle_length=5`, `initial_last_contract=4` |

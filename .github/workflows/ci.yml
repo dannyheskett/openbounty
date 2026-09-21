@@ -33,6 +33,12 @@ jobs:
         run: make test
       - name: Build dev + release
         run: make all release
+      # The store listings are parsed out of the LISTING.md files by
+      # scripts/store_listing.py. A renamed heading or a field over a store's
+      # length limit fails here rather than half way through an edit against a
+      # live store.
+      - name: Validate the store listings
+        run: python3 scripts/store_listing.py --check
 
   windows:
     runs-on: ubuntu-22.04
@@ -94,3 +100,262 @@ jobs:
         with:
           name: web-build
           path: build/web
+
+  android:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    env:
+      NDK_VERSION: "26.3.11579264"
+      ANDROID_BUILD_TOOLS: "36.0.0"
+      ANDROID_PLATFORM_VER: "36"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        # The action's default package list includes the legacy `tools`
+        # package, which current cmdline-tools no longer carry ("Failed to
+        # find package 'tools'"), failing SDK setup. The NDK, build-tools and
+        # platform are installed explicitly below.
+        with:
+          packages: platform-tools
+      - name: Install NDK + build-tools + platform
+        run: |
+          sdkmanager --install "ndk;${NDK_VERSION}" \
+            "build-tools;${ANDROID_BUILD_TOOLS}" \
+            "platforms;android-${ANDROID_PLATFORM_VER}"
+          echo "ANDROID_NDK=${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
+      # The APK embeds the Glory of Rome pack, and the pack is zipped by the
+      # NATIVE binary (./build/debug/openbounty --pack-dir), so the Linux
+      # toolchain is required even though nothing native ships from this job.
+      - name: Install Linux build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
+            libxcursor-dev libxi-dev libasound2-dev
+      - name: Build raylib (Linux)
+        run: ./scripts/build_raylib_linux.sh
+      - name: Build raylib (Android, arm64-v8a static)
+        run: ./scripts/build_raylib_android.sh
+      - name: Build APK (sideload)
+        run: |
+          make android \
+            ANDROID_BUILD_TOOLS="${ANDROID_BUILD_TOOLS}" \
+            ANDROID_PLATFORM_VER="${ANDROID_PLATFORM_VER}"
+      - name: Verify the APK carries the pack and the lib
+        run: |
+          set -e
+          unzip -l build/gloryofrome.apk > /tmp/apk-listing.txt
+          grep -q "assets/glory-of-rome.openbounty" /tmp/apk-listing.txt
+          grep -q "lib/arm64-v8a/libgloryofrome.so" /tmp/apk-listing.txt
+          grep -q "classes.dex" /tmp/apk-listing.txt
+          # King's Bounty's pack is DOS-extracted and copyright-restricted: it
+          # must never reach a distributable artifact.
+          if grep -q "kings-bounty" /tmp/apk-listing.txt; then
+            echo "APK contains the King's Bounty pack"; exit 1
+          fi
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-apk
+          path: build/gloryofrome.apk
+
+      # ---------------------------------------------------------------------
+      # Emulator smoke test. The shipped APK is arm64-only and the runners are
+      # x86_64, so this builds a SECOND, x86_64 APK purely to be run here. It
+      # is never uploaded as an artifact and never shipped; the only claim it
+      # supports is "the app starts and draws", which is the one thing the
+      # assembled arm64 APK could not tell us.
+      # ---------------------------------------------------------------------
+      - name: Build raylib (Android, x86_64 static, for the emulator)
+        run: ANDROID_ARCHES=x86_64 ./scripts/build_raylib_android.sh
+      - name: Build APK (x86_64, emulator only)
+        run: |
+          make android \
+            ANDROID_ABI=x86_64 \
+            ANDROID_APK=build/gloryofrome-x86_64.apk \
+            ANDROID_APK_DIR=build/android-x86_64 \
+            ANDROID_OBJ_DIR=build/obj-android-x86_64 \
+            ANDROID_BUILD_TOOLS="${ANDROID_BUILD_TOOLS}" \
+            ANDROID_PLATFORM_VER="${ANDROID_PLATFORM_VER}"
+      # The emulator needs KVM, which is present on the Ubuntu runners but not
+      # readable by the runner user by default.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install, launch and screenshot on an emulator
+        # Pinned to the v2.38.0 commit SHA, not the mutable tag.
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          # A real phone's screen. The default AVD is 640x320, which is
+          # smaller than the game's own 800x532 buffer -- a size no Android
+          # device has had for a decade, and one that tests nothing useful.
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: ./scripts/android_smoke.sh build/gloryofrome-x86_64.apk
+      - name: Upload the emulator screenshot
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-emulator-screenshot
+          path: |
+            android-shot.png
+            android-shot-late.png
+            android-logcat.txt
+          if-no-files-found: warn
+
+  ios:
+    # The ONLY machine that can compile this: Xcode's SDK, xcrun and the
+    # Simulator exist on macOS alone, and there is no Mac to hand. Every iOS
+    # file's first build is therefore this job (docs/IOS-BACKEND-SPIKE.md).
+    #
+    # Checkpoint 2 of the spike: the app shell + the Metal renderer, drawing
+    # the renderer self-test. The game's C is not linked yet.
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      # The .app embeds the Glory of Rome pack, and the pack is zipped by the
+      # NATIVE binary (./build/debug/openbounty --pack-dir), which links
+      # raylib. So the macOS toolchain is needed even though the app itself
+      # links no raylib at all -- the same shape as the Android job needing
+      # the Linux one.
+      - name: Build raylib (macOS, for the pack-building binary)
+        run: ./scripts/build_raylib_mac.sh
+      - name: Build the macOS binary that zips the pack
+        run: make mac
+      - name: Build the Simulator app (native Metal, no raylib)
+        run: make ios-sim PACK_TOOL=build/openbounty-mac
+      - name: Boot a Simulator, install, launch, screenshot
+        run: |
+          set -eux
+          # Any available iPhone on the runner image.
+          UDID=$(xcrun simctl list devices available -j \
+            | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for r in d.values() for x in r if 'iPhone' in x.get('name','')))")
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          app=$(find build/ios-sim -maxdepth 1 -name '*.app' | head -1)
+          bundle=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist")
+          xcrun simctl install "$UDID" "$app"
+          # A plain launch: the app pipes its own stdout into os_log
+          # (ios/plat_ios.mm), so nothing is lost, and --console-pty ties the
+          # app's lifetime to a background process this step then abandons.
+          xcrun simctl launch "$UDID" "$bundle"
+          sleep 10
+          # The screenshot FIRST, while the app is certainly alive: the
+          # diagnostics below take a few seconds each, and a run that spent
+          # them first caught the home screen after the app had gone.
+          xcrun simctl io "$UDID" screenshot ios-shot.png
+          # simctl captures the DEVICE, which stays portrait, while the app is
+          # landscape-locked -- so the raw PNG reads sideways. Rotate it a
+          # quarter turn anticlockwise (sips counts clockwise) so the artifact
+          # is the screen as a player sees it.
+          sips -r 270 ios-shot.png >/dev/null
+          echo "--- is it still running? ---"
+          xcrun simctl spawn "$UDID" launchctl list | grep -i gloryofrome || echo "not running"
+          echo "--- the game's own log ---"
+          # By MESSAGE, not by process: a process predicate matches nothing
+          # once the app has exited, which is exactly when the log matters.
+          xcrun simctl spawn "$UDID" log show --style compact --last 5m \
+            --predicate 'eventMessage CONTAINS "openbounty"' 2>/dev/null \
+            | head -60 || true
+          echo "--- a second screenshot, 20s later ---"
+          sleep 20
+          xcrun simctl io "$UDID" screenshot ios-shot-late.png
+          sips -r 270 ios-shot-late.png >/dev/null
+          xcrun simctl spawn "$UDID" launchctl list | grep -i gloryofrome || echo "gone by now"
+          echo "--- crash reports (host + simulator) ---"
+          find ~/Library/Logs/DiagnosticReports ~/Library/Logs/CoreSimulator \
+               -name '*GloryOfRome*' -newermt '-10 minutes' 2>/dev/null | head -5
+          for f in $(find ~/Library/Logs/DiagnosticReports ~/Library/Logs/CoreSimulator \
+                          -name '*GloryOfRome*' -newermt '-10 minutes' 2>/dev/null | head -2); do
+            echo "== $f"; head -80 "$f"
+          done
+          echo "--- why it went away ---"
+          xcrun simctl spawn "$UDID" log show --style compact --last 5m \
+            --predicate 'eventMessage CONTAINS "gloryofrome" OR eventMessage CONTAINS "GloryOfRome"' \
+            2>/dev/null | grep -iE "exit|terminat|crash|kill|jetsam|watchdog" | head -20 || true
+      - name: Upload the Simulator screenshot and console
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-sim-screenshot
+          path: |
+            ios-shot.png
+            ios-shot-late.png
+
+      - name: Build the device .ipa (unsigned)
+        run: make ios PACK_TOOL=build/openbounty-mac
+      # Prove the signing chain on every PR, not for the first time in a
+      # release: the certificate, the profile and the app icon all have to
+      # agree with the bundle id, and each of them has failed an upload for
+      # somebody at some point. Produces nothing that ships -- the artifact
+      # above is still the unsigned build.
+      - name: Detect iOS signing secrets
+        id: iossecret
+        env:
+          C: ${{ secrets.IOS_CERT_P12 }}
+          P: ${{ secrets.IOS_CERT_PASSWORD }}
+          M: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+          T: ${{ secrets.IOS_TEAM_ID }}
+        run: |
+          if [ -n "$C" ] && [ -n "$P" ] && [ -n "$M" ] && [ -n "$T" ]; then
+            echo "present=true"  >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No iOS signing secrets; the signed build is skipped."
+          fi
+      - name: Sign the .ipa and check it is App Store-shaped
+        if: steps.iossecret.outputs.present == 'true'
+        env:
+          IOS_CERT_P12:             ${{ secrets.IOS_CERT_P12 }}
+          IOS_CERT_PASSWORD:        ${{ secrets.IOS_CERT_PASSWORD }}
+          IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+          IOS_TEAM_ID:              ${{ secrets.IOS_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN="$RUNNER_TEMP/gor-ci.keychain-db"
+          KEYCHAIN_PASS="$(uuidgen)"
+          echo "$IOS_CERT_P12"             | base64 -d > "$RUNNER_TEMP/dist.p12"
+          echo "$IOS_PROVISIONING_PROFILE" | base64 -d > "$RUNNER_TEMP/profile.mobileprovision"
+          security create-keychain -p "$KEYCHAIN_PASS" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASS" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/dist.p12" -k "$KEYCHAIN" \
+            -P "$IOS_CERT_PASSWORD" -T /usr/bin/codesign -f pkcs12
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASS" "$KEYCHAIN" >/dev/null
+          security list-keychains -d user -s "$KEYCHAIN" login.keychain-db
+          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" \
+            | awk -F'"' '/Apple Distribution/ {print $2; exit}')
+          test -n "$IDENTITY" || { echo "::error::no Apple Distribution identity"; exit 1; }
+          echo "signing as: $IDENTITY"
+          rm -rf build/ios-device build/GloryOfRome.ipa
+          make ios PACK_TOOL=build/openbounty-mac \
+            IOS_SIGN_IDENTITY="$IDENTITY" \
+            IOS_PROFILE="$RUNNER_TEMP/profile.mobileprovision" \
+            IOS_TEAM_ID="$IOS_TEAM_ID"
+          app="build/ios-device/Payload/GloryOfRome.app"
+          codesign --verify --strict --verbose=2 "$app"
+          test -f "$app/embedded.mobileprovision" || { echo "::error::no embedded profile"; exit 1; }
+          test -f "$app/Assets.car"               || { echo "::error::no compiled app icon"; exit 1; }
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIconName' "$app/Info.plist"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist"
+          # The profile has to be for THIS bundle id, or the upload is refused.
+          security cms -D -i "$app/embedded.mobileprovision" > "$RUNNER_TEMP/p.plist"
+          /usr/libexec/PlistBuddy -c 'Print :Entitlements:application-identifier' "$RUNNER_TEMP/p.plist"
+      - name: Upload the device .ipa
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-ipa
+          path: build/*.ipa

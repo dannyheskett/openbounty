@@ -1,12 +1,15 @@
 // OpenBounty audio module: PC-speaker tunes + OGG music.
 //
 // Tunes are pre-rendered WAV files extracted from KB.EXE by tools/extract.
-// raylib's LoadSound/PlaySound handles the playback. The pack ships four
-// tunes: walk, bump, chest, defeat. Their paths come from game.json's
-// audio.tunes block.
+// The pack ships four: walk, bump, chest, defeat. Their paths come from
+// game.json's audio.tunes block.
 //
-// Music is two pre-loaded raylib Music streams (openworld + combat).
-// audio_set_track stops the current and plays the new -- hard cut.
+// Music is two pre-loaded streams (openworld + combat). audio_set_track stops
+// the current and plays the new -- hard cut.
+//
+// Playback itself is the platform's: this file holds the policy and calls
+// src/audio_backend.h, which raylib implements on desktop, web and Android
+// and AVAudioEngine implements on iOS.
 //
 // Mixing model:
 //   - SFX are the pack's tune WAVs, handed to raylib as-is; the mixer
@@ -21,7 +24,7 @@
 
 #include "audio.h"
 #include "assets.h"
-#include "raylib.h"
+#include "audio_backend.h"
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -31,6 +34,8 @@
 
 #if defined(__EMSCRIPTEN__)
 #include <emscripten.h>
+#else
+#include <pthread.h>
 #endif
 
 // Volume tuning constants. Both kept under 1.0 so master=9 + tune-on-music
@@ -49,27 +54,29 @@ static float       s_master        = 0.5f;   // 0..1, mapped from 0..9 slider
 static float       s_duck_level    = 1.0f;
 
 // Tune sounds, indexed by AudioTuneId.
-static Sound       s_tunes[AUDIO_TUNE_COUNT];
+static AudioSoundId  s_tunes[AUDIO_TUNE_COUNT];
 static bool        s_have_tune[AUDIO_TUNE_COUNT];
 
-static Music       s_music_openworld;
-static Music       s_music_combat;
+static AudioStreamId s_music_openworld = AUDIO_NONE;
+static AudioStreamId s_music_combat    = AUDIO_NONE;
 static bool        s_have_openworld = false;
 static bool        s_have_combat    = false;
-// Backing bytes for each Music stream. raylib's stb_vorbis context
-// keeps a pointer into these for the life of the stream. The bytes are
-// owned by the active pack (src/pack.c) and stay valid until pack
-// close, so we don't free them here.
+// Backing bytes for each stream. The decoder keeps a pointer into these for
+// the life of the stream. The bytes are owned by the active pack
+// (src/pack.c) and stay valid until pack close, so we don't free them here.
 static const unsigned char *s_openworld_bytes = NULL;
 static const unsigned char *s_combat_bytes    = NULL;
 static AudioTrack  s_active_track   = AUDIO_TRACK_NONE;
+// A track asked for before the device was ready; started when it is.
+static AudioTrack  s_wanted_track   = AUDIO_TRACK_NONE;
+static AudioStatus s_status         = AUDIO_PENDING;
 
 // ---------- helpers ---------------------------------------------------------
 
-static Music *track_music(AudioTrack t) {
-    if (t == AUDIO_TRACK_OPENWORLD && s_have_openworld) return &s_music_openworld;
-    if (t == AUDIO_TRACK_COMBAT    && s_have_combat)    return &s_music_combat;
-    return NULL;
+static AudioStreamId track_music(AudioTrack t) {
+    if (t == AUDIO_TRACK_OPENWORLD && s_have_openworld) return s_music_openworld;
+    if (t == AUDIO_TRACK_COMBAT    && s_have_combat)    return s_music_combat;
+    return AUDIO_NONE;
 }
 
 static float effective_music_volume(void) {
@@ -78,8 +85,8 @@ static float effective_music_volume(void) {
 }
 
 static void apply_music_volume(void) {
-    Music *m = track_music(s_active_track);
-    if (m) SetMusicVolume(*m, effective_music_volume());
+    AudioStreamId m = track_music(s_active_track);
+    if (m != AUDIO_NONE) audio_backend_stream_volume(m, effective_music_volume());
 }
 
 // ---------- public API ------------------------------------------------------
@@ -87,20 +94,20 @@ static void apply_music_volume(void) {
 // Open the device and load every tune/stream out of the pack. Called
 // directly on desktop; deferred until the first user gesture on web (see
 // the audio_init wrapper below).
-static void audio_init_device(const Resources *res) {
-    if (s_inited) return;
-
+// Open the playback device. The one call that can block for a long time, and
+// the only part of audio that may run off the main thread.
+static bool open_device(void) {
     // ALSA dumps a wall of "function snd_func_concat returned error"
     // noise to stderr when no device is available (common in WSL,
-    // headless CI). Redirect stderr to /dev/null around InitAudioDevice
-    // and IsAudioDeviceReady so a missing device degrades silently.
+    // headless CI). Redirect stderr to /dev/null around the device open so a
+    // missing device degrades silently.
     fflush(stderr);
     int saved_stderr = dup(STDERR_FILENO);
     int devnull = open("/dev/null", O_WRONLY);
     if (devnull >= 0) { dup2(devnull, STDERR_FILENO); close(devnull); }
 
-    InitAudioDevice();
-    bool ready = IsAudioDeviceReady();
+    audio_backend_open();
+    bool ready = audio_backend_ready();
 
     if (saved_stderr >= 0) {
         fflush(stderr);
@@ -108,11 +115,11 @@ static void audio_init_device(const Resources *res) {
         close(saved_stderr);
     }
 
-    if (!ready) {
-        fprintf(stdout, "[audio] no audio device available; controls disabled\n");
-        return;
-    }
+    return ready;
+}
 
+// Load every tune and music stream out of the pack. Main thread only.
+static void load_assets(const Resources *res) {
     // Tune sounds: load each WAV out of the active pack. Missing
     // entries leave their slot empty; audio_play_tune skips silently.
     if (res) {
@@ -127,44 +134,59 @@ static void audio_init_device(const Resources *res) {
             size_t sz = 0;
             const unsigned char *bytes = LoadAssetBytes(paths[i], &sz);
             if (!bytes || sz == 0) continue;
-            Wave w = LoadWaveFromMemory(".wav", bytes, (int)sz);
-            if (!w.data) continue;
-            s_tunes[i] = LoadSoundFromWave(w);
-            UnloadWave(w);
-            s_have_tune[i] = (s_tunes[i].stream.buffer != NULL);
+            s_tunes[i] = audio_backend_sound_load(".wav", bytes, (int)sz);
+            s_have_tune[i] = (s_tunes[i] != AUDIO_NONE);
         }
     }
 
-    // Music streams. raylib's LoadMusicStreamFromMemory keeps a pointer
-    // into the bytes for the lifetime of the stream -- those bytes are
-    // owned by the active pack and stay valid until pack close.
+    // Music streams. The decoder keeps a pointer into the bytes for the
+    // lifetime of the stream -- those bytes are owned by the active pack and
+    // stay valid until pack close.
     if (res) {
         size_t sz = 0;
         if (res->audio.openworld_path[0]) {
             s_openworld_bytes = LoadAssetBytes(res->audio.openworld_path, &sz);
             if (s_openworld_bytes && sz > 0) {
-                s_music_openworld = LoadMusicStreamFromMemory(".ogg",
-                                        s_openworld_bytes, (int)sz);
-                if (s_music_openworld.stream.buffer) {
-                    s_music_openworld.looping = true;
-                    s_have_openworld = true;
-                }
+                s_music_openworld = audio_backend_stream_load(
+                    ".ogg", s_openworld_bytes, (int)sz, /*loop=*/true);
+                s_have_openworld = (s_music_openworld != AUDIO_NONE);
             }
         }
         if (res->audio.combat_path[0]) {
             s_combat_bytes = LoadAssetBytes(res->audio.combat_path, &sz);
             if (s_combat_bytes && sz > 0) {
-                s_music_combat = LoadMusicStreamFromMemory(".ogg",
-                                     s_combat_bytes, (int)sz);
-                if (s_music_combat.stream.buffer) {
-                    s_music_combat.looping = true;
-                    s_have_combat = true;
-                }
+                s_music_combat = audio_backend_stream_load(
+                    ".ogg", s_combat_bytes, (int)sz, /*loop=*/true);
+                s_have_combat = (s_music_combat != AUDIO_NONE);
             }
         }
     }
 
     s_inited = true;
+}
+
+// Finish once the device has answered: load, then start whatever track the
+// game has already asked for. Main thread only.
+static void finish_open(const Resources *res, bool ready) {
+    if (!ready) {
+        s_status = AUDIO_UNAVAILABLE;
+#ifndef NDEBUG
+        fprintf(stdout, "[audio] no audio device available; controls disabled\n");
+#endif
+        return;
+    }
+    load_assets(res);
+    s_status = AUDIO_READY;
+    if (s_wanted_track != AUDIO_TRACK_NONE) audio_set_track(s_wanted_track);
+}
+
+void audio_init_blocking(const Resources *res) {
+    if (s_inited || s_status != AUDIO_PENDING) return;
+    finish_open(res, open_device());
+}
+
+AudioStatus audio_status(void) {
+    return s_status;
 }
 
 #if defined(__EMSCRIPTEN__)
@@ -191,27 +213,56 @@ static bool web_gesture_seen(void) {
     return emscripten_run_script_int("window.__ob_gesture | 0") != 0;
 }
 #else
+// Desktop: the device opens on a detached thread. The worker writes only
+// s_worker_ready and then s_worker_done; the main thread reads s_worker_done
+// once a frame in audio_tick and never touches audio until it is set.
+static const Resources *s_pending_res = NULL;
+static volatile int     s_worker_done  = 0;
+static volatile int     s_worker_ready = 0;
+static bool             s_worker_started = false;
+
+static void *open_device_worker(void *arg) {
+    (void)arg;
+    s_worker_ready = open_device() ? 1 : 0;
+    s_worker_done  = 1;
+    return NULL;
+}
+
 void audio_init(const Resources *res) {
-    audio_init_device(res);
+    if (s_inited || s_worker_started) return;
+    s_pending_res = res;
+    pthread_t t;
+    if (pthread_create(&t, NULL, open_device_worker, NULL) == 0) {
+        pthread_detach(t);
+        s_worker_started = true;
+    } else {
+        // No thread: open it here, as it always was.
+        finish_open(res, open_device());
+    }
 }
 #endif
 
 void audio_shutdown(void) {
+#if !defined(__EMSCRIPTEN__)
+    // The device is still being opened on the worker: leave it alone rather
+    // than close a device mid-open. Process exit reclaims it.
+    if (s_worker_started && !s_worker_done) return;
+#endif
     if (!s_inited) return;
 
-    if (s_have_openworld) UnloadMusicStream(s_music_openworld);
-    if (s_have_combat)    UnloadMusicStream(s_music_combat);
+    if (s_have_openworld) audio_backend_stream_free(s_music_openworld);
+    if (s_have_combat)    audio_backend_stream_free(s_music_combat);
     s_openworld_bytes = NULL;
     s_combat_bytes    = NULL;
     s_have_openworld = s_have_combat = false;
     s_active_track = AUDIO_TRACK_NONE;
 
     for (int i = 0; i < AUDIO_TUNE_COUNT; i++) {
-        if (s_have_tune[i]) UnloadSound(s_tunes[i]);
+        if (s_have_tune[i]) audio_backend_sound_free(s_tunes[i]);
         s_have_tune[i] = false;
     }
 
-    CloseAudioDevice();
+    audio_backend_close();
     s_inited = false;
 }
 
@@ -222,15 +273,18 @@ void audio_tick(void) {
     // every frame.
     if (!s_inited && s_init_deferred && web_gesture_seen()) {
         s_init_deferred = false;
-        audio_init_device(s_pending_res);
+        finish_open(s_pending_res, open_device());
     }
+#else
+    if (s_worker_started && s_status == AUDIO_PENDING && s_worker_done)
+        finish_open(s_pending_res, s_worker_ready != 0);
 #endif
     if (!s_inited) return;
 
     // Ducking: target = DUCK_FACTOR while any tune is playing, else 1.0.
     bool any_tune = false;
     for (int i = 0; i < AUDIO_TUNE_COUNT && !any_tune; i++) {
-        if (s_have_tune[i] && IsSoundPlaying(s_tunes[i])) any_tune = true;
+        if (s_have_tune[i] && audio_backend_sound_playing(s_tunes[i])) any_tune = true;
     }
     float target = any_tune ? DUCK_FACTOR : 1.0f;
     float rate = (target < s_duck_level) ? DUCK_ATTACK : DUCK_RELEASE;
@@ -238,8 +292,8 @@ void audio_tick(void) {
 
     apply_music_volume();
 
-    Music *m = track_music(s_active_track);
-    if (m) UpdateMusicStream(*m);
+    AudioStreamId m = track_music(s_active_track);
+    if (m != AUDIO_NONE) audio_backend_stream_update(m);
 }
 
 bool audio_is_available(void) {
@@ -253,16 +307,16 @@ void audio_set_sounds_enabled(bool on) {
 void audio_set_music_enabled(bool on) {
     if (s_music_enabled == on) return;
     s_music_enabled = on;
-    Music *m = track_music(s_active_track);
-    if (!m) return;
+    AudioStreamId m = track_music(s_active_track);
+    if (m == AUDIO_NONE) return;
     if (on) {
         // Music stream may have never been started (init had toggle off,
         // or audio_set_track was called while disabled). PlayMusicStream
         // is idempotent -- safe to call even if it's already going, and
         // it correctly starts a never-played stream.
-        if (!IsMusicStreamPlaying(*m)) PlayMusicStream(*m);
+        if (!audio_backend_stream_playing(m)) audio_backend_stream_play(m);
     } else {
-        StopMusicStream(*m);
+        audio_backend_stream_stop(m);
     }
 }
 
@@ -276,22 +330,23 @@ void audio_play_tune(AudioTuneId t) {
     if (!s_inited || !s_sfx_enabled) return;
     if (t < 0 || t >= AUDIO_TUNE_COUNT) return;
     if (!s_have_tune[t]) return;
-    SetSoundVolume(s_tunes[t], s_master * SFX_HEADROOM);
-    PlaySound(s_tunes[t]);
+    audio_backend_sound_volume(s_tunes[t], s_master * SFX_HEADROOM);
+    audio_backend_sound_play(s_tunes[t]);
 }
 
 void audio_set_track(AudioTrack t) {
-    if (!s_inited) return;
+    if (!s_inited) { s_wanted_track = t; return; }   // started once ready
     if (t == s_active_track) return;
 
     // Stop the old.
-    Music *old = track_music(s_active_track);
-    if (old && IsMusicStreamPlaying(*old)) StopMusicStream(*old);
+    AudioStreamId old = track_music(s_active_track);
+    if (old != AUDIO_NONE && audio_backend_stream_playing(old))
+        audio_backend_stream_stop(old);
 
     s_active_track = t;
 
     // Start the new (only if music toggle is on).
     if (!s_music_enabled) return;
-    Music *m = track_music(t);
-    if (m) PlayMusicStream(*m);
+    AudioStreamId m = track_music(t);
+    if (m != AUDIO_NONE) audio_backend_stream_play(m);
 }

@@ -1,0 +1,20 @@
+{
+ "lower_description": "dry savanna grass, short and sun-scorched, dusty olive and khaki green with patches of pale straw",
+ "upper_description": "the same dry grass with a few small clumps of thorny scrub",
+ "transition_description": "",
+ "tile_size": {
+  "width": 32,
+  "height": 32
+ },
+ "mode": "standard",
+ "shape_style": "round",
+ "enhance": true,
+ "view": "high top-down",
+ "outline": "lineless",
+ "shading": "medium shading",
+ "detail": "medium detail",
+ "text_guidance_scale": 8.0,
+ "transition_size": 0.0,
+ "seed": 3101,
+ "_note": "Africa grass (2026-09-19): t32_moss_a (the Italia grass) with the two descriptions and seed changed and no colour swatch. Output kept in art/primitives/africa/grass."
+}

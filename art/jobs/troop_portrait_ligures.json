@@ -1,0 +1,20 @@
+{
+  "id": "troop_portrait_ligures",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Ligurian hillman, a huge bearded warrior with long brown hair and a fur cloak over his shoulders, a long-handled axe, grey mountain crags behind him",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 9990,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "reference_image_paths": [
+    "assets/glory-of-rome/art/troops/ligures_00.png"
+  ],
+  "_pack_path": "art/portraits/troop_ligures.png",
+  "_note": "Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation."
+}

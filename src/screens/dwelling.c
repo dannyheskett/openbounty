@@ -1,11 +1,15 @@
 #include "dwelling.h"
+#include "gfx.h"
 #include "layout.h"
+#include "overlay.h"
+#include "ui.h"
 #include "palette.h"
 #include "bfont.h"
 #include "views.h"
+#include "modern/location.h"
 #include "player_io.h"   // engine views route through the player-IO queue
 #include "tables.h"
-#include "raylib.h"
+#include "ob_types.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -39,6 +43,7 @@ void screen_dwelling_open(Game *g,
                           int gold,
                           int cap) {
     if (!g) return;
+    loc_deal_clear();   // modern: a fresh visit shows no old deal
     s_kind = kind;
     const TroopDef *t = (troop_id && troop_id[0]) ? troop_by_id(troop_id) : NULL;
     s_troop_idx = t ? t->index : -1;
@@ -57,7 +62,7 @@ void screen_dwelling_open(Game *g,
     s_cap  = cap;
     // Enqueue the view (carry recruit numbers in the payload); shell sync
     // pushes / autoplay acks. Context statics above stay as-is.
-    PlayerRequest *r = player_io_raise_view(g, VIEW_DWELLING, /*replace=*/false,
+    PlayerRequest *r = player_io_screen(g, VIEW_DWELLING, /*replace=*/false,
                                             NULL, NULL);
     if (r) { r->dwelling_kind = kind; r->view_pop = dwelling_pop;
              r->view_cost = recruit_cost; r->view_gold = gold; r->view_cap = cap; }
@@ -80,14 +85,22 @@ static int loc_kind_for(DwellingKind k) {
 }
 
 static const char *dwelling_kind_name(const Game *g, DwellingKind k) {
-    const ResUI *ui = (g && g->res) ? &g->res->ui : NULL;
+    const ResUI *ui = &g->res->ui;
     switch (k) {
-        case DWELLING_KIND_PLAINS:  return ui ? ui->dwelling_kind_plains  : "Plains";
-        case DWELLING_KIND_FOREST:  return ui ? ui->dwelling_kind_forest  : "Forest";
-        case DWELLING_KIND_HILL:    return ui ? ui->dwelling_kind_hill    : "Hill";
-        case DWELLING_KIND_DUNGEON: return ui ? ui->dwelling_kind_dungeon : "Dungeon";
+        case DWELLING_KIND_FOREST:  return ui->dwelling_kind_forest;
+        case DWELLING_KIND_HILL:    return ui->dwelling_kind_hill;
+        case DWELLING_KIND_DUNGEON: return ui->dwelling_kind_dungeon;
+        case DWELLING_KIND_PLAINS:
+        default:                    return ui->dwelling_kind_plains;
     }
-    return "Dwelling";
+}
+
+const char *screen_dwelling_info(const Game *g, int *troop_idx, int *pop, int *cost, int *cap) {
+    if (troop_idx) *troop_idx = s_troop_idx;
+    if (pop) *pop = s_pop;
+    if (cost) *cost = s_cost;
+    if (cap) *cap = s_cap;
+    return dwelling_kind_name(g, s_kind);
 }
 
 void screen_dwelling_draw(const Game *g, const Sprites *s) {
@@ -97,15 +110,13 @@ void screen_dwelling_draw(const Game *g, const Sprites *s) {
                                    s_troop_idx, DWELLING_FRAME);
 
     // Bottom panel -- verbatim  banner.
-    int x = CL_PANEL_X;
-    int y = CL_PANEL_Y;
-    int w = CL_PANEL_W;
-    int h = CL_PANEL_H;
-    DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
-    DrawRectangleLines(x, y, w, h, PAL_CLR(YELLOW));
+    int x, y, w, h;
+    screens_text_rect(&x, &y, &w, &h);
+    gfx_rect(x, y, w, h, PAL_CLR(DBLUE));
+    ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
 
-    int pad = CL_PANEL_PAD_X;   // 1px: the panel holds exactly CL_PANEL_COLS glyphs
-    int row_h = BFONT_GLYPH_H + 1;
+    int pad = screens_text_pad();   // legacy 4: the panel holds exactly CL_PANEL_COLS glyphs
+    int row_h = BFONT_GLYPH_H + CL_UI;
     int tx = x + pad;
     int ty = y + pad;
 
@@ -125,38 +136,57 @@ void screen_dwelling_draw(const Game *g, const Sprites *s) {
     }
     ty += row_h;
 
+    const ResUI *ui = &g->res->ui;
+
     // "<pop> <Troops> are available"
-    char line[96];
-    snprintf(line, sizeof(line), "%d %s are available",
-             s_pop, s_troop_name[0] ? s_troop_name : "Troops");
+    char line[96], numbuf[16];
+    snprintf(numbuf, sizeof numbuf, "%d", s_pop);
+    ResTemplateVar avail_vars[] = {
+        { "COUNT", numbuf },
+        { "TROOP", s_troop_name },
+    };
+    resources_format_template(line, sizeof(line),
+                              ui->dwelling_info_available, avail_vars, 2);
     bfont_draw(line, tx, ty, PAL_CLR(WHITE));
     ty += row_h;
 
     // "Cost=<N> each.      GP=<gold>K"
     char cost_part[32];
     char gold_part[24];
-    snprintf(cost_part, sizeof(cost_part), "Cost=%d each.", s_cost);
-    snprintf(gold_part, sizeof(gold_part), "GP=%dK", s_gold / 1000);
+    snprintf(numbuf, sizeof numbuf, "%d", s_cost);
+    ResTemplateVar cost_vars[] = { { "COST", numbuf } };
+    resources_format_template(cost_part, sizeof(cost_part),
+                              ui->dwelling_info_cost, cost_vars, 1);
+    {
+        char kbuf[16];
+        snprintf(kbuf, sizeof kbuf, "%d", s_gold / 1000);
+        ResTemplateVar gold_vars[] = { { "GOLD", kbuf } };
+        resources_format_template(gold_part, sizeof(gold_part),
+                                  ui->dwelling_info_gold, gold_vars, 1);
+    }
     bfont_draw(cost_part, tx, ty, PAL_CLR(WHITE));
     {
         // Right-align the gold part to column 20 (spec aligns the GP=
         // text to the right side of the inner rect).
-        int gp_x = tx + 20 * BFONT_GLYPH_W;
-        bfont_draw(gold_part, gp_x, ty, PAL_CLR(WHITE));
+        if (CL_IS_MODERN) {
+            bfont_draw_right(gold_part, x + w - pad, ty, PAL_CLR(WHITE));
+        } else {
+            int gp_x = tx + 20 * BFONT_GLYPH_W;
+            bfont_draw(gold_part, gp_x, ty, PAL_CLR(WHITE));
+        }
     }
     ty += row_h;
 
     // "You may recruit up to <max>"
-    snprintf(line, sizeof(line), "You may recruit up to %d", s_cap);
+    snprintf(numbuf, sizeof numbuf, "%d", s_cap);
+    ResTemplateVar cap_vars[] = { { "CAP", numbuf } };
+    resources_format_template(line, sizeof(line),
+                              ui->dwelling_info_recruit_cap, cap_vars, 1);
     bfont_draw(line, tx, ty, PAL_CLR(WHITE));
     ty += row_h;
 
     // The "Recruit how many" prompt and numeric input are owned by
     // engine/step.c (prompt_text_input_open over this panel). The cursor /
     // typed digits render via prompt_draw on top of this rect.
-    {
-        const ResUI *ui = (g && g->res) ? &g->res->ui : NULL;
-        bfont_draw(ui ? ui->dwelling_recruit_how_many : "Recruit how many",
-                   tx, ty, PAL_CLR(WHITE));
-    }
+    bfont_draw(ui->dwelling_recruit_how_many, tx, ty, PAL_CLR(WHITE));
 }

@@ -59,7 +59,7 @@ static void probe_attack(const Combat *c, int side, int slot,
     s_probe_combat = *c;
     Game *hero = c->heroes[COMBAT_SIDE_PLAYER];
     if (hero && hero != &s_probe_hero && hero != &s_cand_hero) {
-        s_probe_hero = *hero;
+        GameCopy(&s_probe_hero, hero);
         s_probe_combat.heroes[COMBAT_SIDE_PLAYER] = &s_probe_hero;
     }
     long pre_them = side_hp(&s_probe_combat, t_side);
@@ -106,7 +106,7 @@ static long probe_enemy_output(const Combat *c, int side, int e_slot) {
 
 static void cand_begin(const Combat *c) {
     if (c->heroes[COMBAT_SIDE_PLAYER])
-        s_cand_hero = *c->heroes[COMBAT_SIDE_PLAYER];
+        GameCopy(&s_cand_hero, c->heroes[COMBAT_SIDE_PLAYER]);
 }
 
 static void cand_setup(const Combat *c) {
@@ -136,7 +136,7 @@ static bool probe_cast(const Combat *c, int side, int spell_idx,
                        long *their_hp_lost, long *our_hp_gained) {
     s_probe_combat = *c;
     if (c->heroes[COMBAT_SIDE_PLAYER]) {
-        s_probe_hero = *c->heroes[COMBAT_SIDE_PLAYER];
+        GameCopy(&s_probe_hero, c->heroes[COMBAT_SIDE_PLAYER]);
         s_probe_combat.heroes[COMBAT_SIDE_PLAYER] = &s_probe_hero;
     }
     int e_side = 1 - side;
@@ -171,7 +171,7 @@ static bool try_cast_round(Combat *c, int side) {
         const SpellDef *sd = spell_by_index(si);
         if (!sd || sd->kind != SPELL_KIND_COMBAT) continue;
         int idx = sd->index;
-        if (idx < 0 || idx >= GAME_SPELLBOOK_SLOTS || cnt[idx] <= 0) continue;
+        if (idx < 0 || idx >= AP_SPELLS_MAX || cnt[idx] <= 0) continue;
         int filter = combat_spell_target_filter(idx);
 
         if (filter == PICK_FILTER_ENEMY || filter == PICK_FILTER_UNDEAD) {
@@ -579,7 +579,10 @@ bool predict_combat_cached(const ExecCtx *ctx, CombatMode mode,
                                        : g->stats.leadership_current;
     key = mix(key, &lead, sizeof lead);
     const int *book = book_what_if ? book_what_if : g->spells.counts;
-    key = mix(key, book, sizeof(int) * GAME_SPELLBOOK_SLOTS);
+    // A what-if book is autoplay's own AP_SPELLS_MAX table.
+    int nbook = g->spells.count;
+    if (book_what_if && nbook > AP_SPELLS_MAX) nbook = AP_SPELLS_MAX;
+    key = mix(key, book, sizeof(int) * (size_t)nbook);
     key = mix(key, &grow_weeks, sizeof grow_weeks);
     uint32_t seed_mix = (uint32_t)(g->seed & 0xFFFFFFFFu);
     key = mix(key, &seed_mix, sizeof seed_mix);
@@ -595,7 +598,10 @@ bool predict_combat_cached(const ExecCtx *ctx, CombatMode mode,
     // Build the throwaway world (AP-133): live copy + what-ifs, fought under
     // RNG snapshot/restore so plan-time replays never perturb the live RNG.
     uint64_t rng = GameRngSnapshot();
-    s_sim_game = *g;
+    if (!GameCopy(&s_sim_game, g)) {
+        GameRngRestore(rng);
+        return false;
+    }
     if (army_override)
         memcpy(s_sim_game.army, army_override,
                sizeof(ArmyStack) * GAME_ARMY_SLOTS);
@@ -603,7 +609,7 @@ bool predict_combat_cached(const ExecCtx *ctx, CombatMode mode,
         s_sim_game.stats.leadership_current = leadership_what_if;
     if (book_what_if)
         memcpy(s_sim_game.spells.counts, book_what_if,
-               sizeof(int) * GAME_SPELLBOOK_SLOTS);
+               sizeof(int) * (size_t)nbook);
 
     Unit gar[GAME_ARMY_SLOTS];
     memcpy(gar, garrison, sizeof gar);

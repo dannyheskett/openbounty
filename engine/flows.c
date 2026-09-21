@@ -67,7 +67,7 @@ void show_lose_game(const Game *g, const Resources *res) {
     // Raise the LOSE view through the queue (the shell sync pushes it). The
     // const is conceptual -- presenting the end screen is a UI mutation; the
     // queue lives in Game.
-    player_io_raise_view((Game *)g, VIEW_LOSE, /*replace=*/false, NULL, NULL);
+    player_io_screen((Game *)g, VIEW_LOSE, /*replace=*/false, NULL, NULL);
 }
 
 void show_win_game(Game *g, const Resources *res) {
@@ -99,7 +99,7 @@ void show_win_game(Game *g, const Resources *res) {
     }
     screen_end_game_open(true, composed);
     // Raise the WIN view through the queue (the shell sync pushes it).
-    player_io_raise_view(g, VIEW_WIN, /*replace=*/false, NULL, NULL);
+    player_io_screen(g, VIEW_WIN, /*replace=*/false, NULL, NULL);
     g->stats.game_over = true;   // ends input after view dismiss
 }
 
@@ -142,12 +142,7 @@ void start_foe_friendly_flow(Game *game, Map *map, const Resources *res,
     int kind = (int)((unsigned)(nx * 131 + ny * 17 + game->seed) & 3);
     int chance = (int)((unsigned)(nx * 17 + ny * 131 +
                        (game->seed >> 8)) % 100) + 1;
-    int pool_slot = 0;
-    while (pool_slot < RES_SPAWN_POOL_N - 1 &&
-           chance > res->spawn.chance_curve[continent & 3][pool_slot]) {
-        pool_slot++;
-    }
-    const char *troop_id = res->spawn.troop_pool[kind][pool_slot];
+    const char *troop_id = resources_spawn_troop(&res->spawn, kind, continent & 3, chance);
     const TroopDef *td = troop_id[0] ? troop_by_id(troop_id) : NULL;
     int tcount = td ? td->tier_counts[continent & 3] : 0;
     if (tcount < 2) tcount = 2;
@@ -167,7 +162,7 @@ void start_foe_friendly_flow(Game *game, Map *map, const Resources *res,
         resources_format_template(body, sizeof body,
                                   game->res->banners.encounter_wanderers,
                                   NULL, 0);
-        player_io_message(game, NULL, body);
+        player_io_note(game, NULL, body);
         if (MapClearFoeStamp(map, nx, ny))
             GameAddConsumed(game, game->position.zone, nx, ny);
         FoeState *f = GameFindFoe(game, foe_id);
@@ -213,12 +208,14 @@ void start_foe_friendly_flow(Game *game, Map *map, const Resources *res,
     }
     pending_dwelling_zone[k] = '\0';
     pending_flow = FLOW_ACCEPT_FRIENDLY;
-    // No header: the body already names the troop ("20 Sprites ... wish to join
-    // you."), so a bare creature-name title ("Sprites") just reads as a stray
-    // label out of context. Blank it, matching the chest A/B prompt.
-    prompt_yes_no_open("", body);
-    player_io_raise_decision(game, FLOW_ACCEPT_FRIENDLY, REQ_PROMPT_YES_NO,
-                             "", body);
+    // The title is the pack's: Rome names the troop, as the captured villain
+    // names the villain; a pack that wants none leaves the string empty.
+    char join_title[RES_BANNER_LEN];
+    ResTemplateVar tv[] = { { "TROOP", td->name } };
+    resources_format_template(join_title, sizeof join_title,
+                              game->res->banners.encounter_join_title, tv, 1);
+    player_io_ask_face(game, FLOW_ACCEPT_FRIENDLY, REQ_PROMPT_YES_NO, join_title, body,
+                       REQ_FACE_TROOP, td->index);
     (void)map;
 }
 
@@ -228,6 +225,9 @@ void start_foe_friendly_flow(Game *game, Map *map, const Resources *res,
 void start_foe_hostile_flow(Game *game, const char *foe_id,
                             int nx, int ny) {
     const FoeState *f = GameFindFoeConst(game, foe_id);
+    // A static guardian's fight cannot be declined: mark it so the host
+    // auto-confirms the prompt (no y/n) and goes straight to combat.
+    pending_foe_forced = (f && f->is_static);
     const ResBanners *bn = &game->res->banners;
     char prompt_body[320], frag[128];
     size_t off = 0;
@@ -286,7 +286,7 @@ void start_foe_hostile_flow(Game *game, const char *foe_id,
     pending_foe_x = nx;
     pending_foe_y = ny;
     pending_flow = FLOW_ATTACK_FOE;
-    prompt_yes_no_open(game->res->ui.dt_foes, prompt_body);
-    player_io_raise_decision(game, FLOW_ATTACK_FOE, REQ_PROMPT_YES_NO,
-                             game->res->ui.dt_foes, prompt_body);
+    // The foe gets a scene of its own: its troops, then Fight or Evade.
+    player_io_ask_scene(game, FLOW_ATTACK_FOE, REQ_PROMPT_YES_NO,
+                        game->res->ui.dt_foes, prompt_body);
 }

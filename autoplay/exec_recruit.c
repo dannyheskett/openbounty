@@ -35,8 +35,8 @@
 // Upper bound on enumerable sources, derived from engine maxima: every
 // garrison stack + every dwelling row + the home-castle pool (at most one
 // per troop) + the instant army.
-#define MAX_SOURCES (GAME_CASTLES * GAME_ARMY_SLOTS + GAME_MAX_DWELLINGS + \
-                     CAT_TROOPS_MAX + 1)
+#define MAX_SOURCES (AP_CASTLES_MAX * GAME_ARMY_SLOTS + AP_DWELLINGS_MAX + \
+                     AP_TROOPS_MAX + 1)
 // Candidate arena. Endgame enumerations saturate it (the "cand-arena"
 // watchdog counter measures how often), so the arena's edge participates
 // in which winner the funnel picks -- raising it to 65536 changed choices
@@ -156,7 +156,7 @@ static void recruit_sources_enumerate(const ExecCtx *ctx) {
     int hz = hero_zone_index(ctx);
 
     // 1. Garrisons (already paid).
-    for (int i = 0; i < GAME_CASTLES; i++) {
+    for (int i = 0; i < g->castle_count && i < AP_CASTLES_MAX; i++) {
         const CastleRecord *cr = &g->castles[i];
         if (!cr->id[0] || cr->owner_kind != CASTLE_OWNER_PLAYER) continue;
         const ResCastle *rc = resources_castle_by_id(ctx->res, cr->id);
@@ -238,12 +238,12 @@ typedef struct {
     int stock[MAX_SOURCES];    // possibly relaxed (probe mode)
 } TroopQuote;
 
-static TroopQuote s_quotes[CAT_TROOPS_MAX];
+static TroopQuote s_quotes[AP_TROOPS_MAX];
 
 static void quotes_build(const ExecCtx *ctx, bool relax_stock) {
     const Game *g = ctx->g;
     memset(s_quotes, 0, sizeof s_quotes);
-    for (int ti = 0; ti < troops_count() && ti < CAT_TROOPS_MAX; ti++) {
+    for (int ti = 0; ti < troops_count() && ti < AP_TROOPS_MAX; ti++) {
         const TroopDef *t = troop_by_index(ti);
         TroopQuote *q = &s_quotes[ti];
         for (int s = 0; s < GAME_ARMY_SLOTS; s++) {
@@ -329,15 +329,15 @@ static bool troop_available(int ti) {
 
 static void plan_build(void) {
     s_group_n = 0;
-    int all[CAT_TROOPS_MAX], all_n = 0;
-    for (int ti = 0; ti < troops_count() && ti < CAT_TROOPS_MAX; ti++)
+    int all[AP_TROOPS_MAX], all_n = 0;
+    for (int ti = 0; ti < troops_count() && ti < AP_TROOPS_MAX; ti++)
         if (troop_available(ti)) all[all_n++] = ti;
     qsort(all, (size_t)all_n, sizeof all[0], troop_strength_cmp);
 
     // Pure morale groups (a high-morale army is reachable only as one
     // group). The group set comes from the catalog, ascending -- the same
     // deterministic enumeration order on any pack.
-    char groups[CAT_TROOPS_MAX];
+    char groups[AP_TROOPS_MAX];
     int group_letters = troop_morale_groups(groups, (int)sizeof groups);
     for (int gl = 0; gl < group_letters; gl++) {
         char grp = groups[gl];
@@ -437,9 +437,9 @@ static bool fight_zone_gate_ready(const ExecCtx *ctx, const char *fight_zone) {
                      g->stats.gold >= 2 * sd->cost;
     }
     if (!charges_ok) return false;
-    GateDestination dests[GAME_GATE_DESTS_MAX];
+    GateDestination dests[AP_GATE_DESTS_MAX];
     int n = GameGateDestinations((Game *)g, GATE_DEST_CASTLE, dests,
-                                 GAME_GATE_DESTS_MAX);
+                                 AP_GATE_DESTS_MAX);
     for (int i = 0; i < n; i++)
         if (strcmp(dests[i].zone, fight_zone) == 0) return true;
     return false;
@@ -586,9 +586,10 @@ static bool cand_sim(const SearchArgs *a, const Candidate *c) {
     ArmyStack army[GAME_ARMY_SLOTS];
     cand_fielded_army(g, c, army);
     int lead = g->stats.leadership_base + c->k * GameRaiseControlAmount(g);
-    int book[GAME_SPELLBOOK_SLOTS];
-    memcpy(book, g->spells.counts, sizeof book);
-    if (c->kit_spell >= 0 && c->kit_spell < GAME_SPELLBOOK_SLOTS &&
+    int book[AP_SPELLS_MAX] = { 0 };
+    int nbook = g->spells.count < AP_SPELLS_MAX ? g->spells.count : AP_SPELLS_MAX;
+    memcpy(book, g->spells.counts, sizeof(int) * (size_t)nbook);
+    if (c->kit_spell >= 0 && c->kit_spell < nbook &&
         book[c->kit_spell] < c->kit_charges)
         book[c->kit_spell] = c->kit_charges;
     int grow_weeks = a->req->grow_weeks + c->days /
@@ -647,14 +648,14 @@ static uint64_t recruit_fp(const SearchArgs *a) {
     h = rfnv(h, &g->stats.max_spells, sizeof g->stats.max_spells);
     h = rfnv(h, &g->stats.knows_magic, sizeof g->stats.knows_magic);
     h = rfnv(h, &g->stats.siege_weapons, sizeof g->stats.siege_weapons);
-    h = rfnv(h, g->spells.counts, sizeof g->spells.counts);
+    h = rfnv(h, g->spells.counts, sizeof(int) * (size_t)g->spells.count);
     h = rfnv(h, &g->dwelling_count, sizeof g->dwelling_count);
     for (int i = 0; i < g->dwelling_count; i++) {
         h = rfnv(h, g->dwellings[i].troop_id, sizeof g->dwellings[i].troop_id);
         h = rfnv(h, &g->dwellings[i].count, sizeof g->dwellings[i].count);
         h = rfnv(h, g->dwellings[i].zone, sizeof g->dwellings[i].zone);
     }
-    for (int i = 0; i < GAME_CASTLES; i++) {
+    for (int i = 0; i < g->castle_count; i++) {
         h = rfnv(h, &g->castles[i].owner_kind, sizeof g->castles[i].owner_kind);
         h = rfnv(h, g->castles[i].villain_id, sizeof g->castles[i].villain_id);
         for (int s = 0; s < GAME_ARMY_SLOTS; s++) {
@@ -665,7 +666,7 @@ static uint64_t recruit_fp(const SearchArgs *a) {
         }
     }
     h = rfnv(h, g->position.zone, sizeof g->position.zone);
-    h = rfnv(h, g->world.zones_discovered, sizeof g->world.zones_discovered);
+    h = rfnv(h, g->world.zones_discovered, (size_t)g->world.zone_count);
     h = rfnv(h, &g->character, sizeof g->character);
     h = rfnv(h, &g->seed, sizeof g->seed);
     h = rfnv(h, &a->wallet, sizeof a->wallet);
@@ -718,7 +719,7 @@ static int search_all_inner(const SearchArgs *a) {
     plan_build();
     s_cand_n = 0;
 
-    int kit_list[GAME_SPELLBOOK_SLOTS + 1];   // every combat spell + spell-less
+    int kit_list[AP_SPELLS_MAX + 1];   // every combat spell + spell-less
     int kit_n = 0;
     kit_list[kit_n++] = -1;   // spell-less
     if (g->stats.knows_magic) {
@@ -973,8 +974,9 @@ static ExecCause rfw_probe_cause(ExecCtx *ctx, const RecruitRequest *req) {
 static const char *town_selling_spell(const Game *g, int spell_idx) {
     const SpellDef *sd = spell_by_index(spell_idx);
     if (!sd) return NULL;
-    for (int i = 0; i < GAME_TOWNS; i++) {
+    for (int i = 0; i < g->town_count; i++) {
         if (!g->towns[i].id[0]) continue;
+        if (!GameTownHasRites(g, g->towns[i].id)) continue;   // it will not sell yet
         if (strcmp(g->towns[i].spell_for_sale, sd->id) == 0)
             return g->towns[i].id;
     }
@@ -1951,7 +1953,7 @@ bool exec_recruit(ExecCtx *ctx, const RecruitRequest *req,
 
 bool recruit_winner_finite_draw(ExecCtx *ctx, const RecruitRequest *req,
                                 int *out_draw) {
-    memset(out_draw, 0, sizeof(int) * CAT_TROOPS_MAX);
+    memset(out_draw, 0, sizeof(int) * AP_TROOPS_MAX);
     SearchArgs a = { ctx, req, ctx->g->stats.gold, 0, false };
     int win = search_all(&a);
     if (win < 0) return false;

@@ -1,0 +1,18 @@
+{
+  "id": "grass",
+  "prompt": "muted moss green grass seen from directly above, dull and slightly grey with only a few short specks of paler olive and dark bottle green, low contrast, the same everywhere",
+  "style": "rd_tile__single_tile",
+  "width": 48,
+  "height": 48,
+  "seed": 3411,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    48,
+    48
+  ],
+  "bypass_prompt_expansion": true,
+  "_pack_path": "art/tiles/grass.png",
+  "_note": "Base terrain, route settled 2026-09-05: rd_tile__single_tile (the API's purpose-built seamless tile style, cap 64, its craft guide sizes single tiles at 16-32) at 48x48, laid 2x2 by tools/tile2x2.py into the 96x96 pack tile at native pixel density (repeat period 48). Replaces rd_plus__low_res with tile_x/tile_y and the wrapping-paper prompt: that route held the wrap but the model shaded each tile's interior, which repeated as a lattice across a field (grass rim, forest diamond) and no prompt wording, seed or expansion setting removed it; the tile style does not shade the interior at all. The terrain is described plainly, seen from directly above, 'the same everywhere'. No post-processing.",
+  "_review_rule": "Judge as a 4x4 field of the 96 tile at 1:1 beside the current tile (build/art/terrain_review.py). A single tile at 8x says nothing about how it repeats."
+}

@@ -1,0 +1,20 @@
+{
+  "id": "headman_africa",
+  "prompt": "a Punic town elder standing at rest in a long striped robe and a tall cylindrical cap, dark-bearded, holding a rolled scroll at his side",
+  "style": "user__glory_of_rome_troops_bac676cd",
+  "width": 96,
+  "height": 96,
+  "seed": 9703,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": true,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/ui/headman_africa_00..07.png",
+  "_animation": "breathes slowly and taps the scroll against his palm once, his body, robe and feet all completely still, smooth loop",
+  "_note": "The town's head townsperson (2026-09-13), one per continent, standing on the town backdrop in the tile-sized slot the troop used to fill. The alcove figure's route: the pack's trained troop style at 96x96, magenta removed, no crop."
+}

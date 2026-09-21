@@ -28,7 +28,7 @@
 static void open_dialog_padded(Game *g, const char *header, const char *body) {
     char padded[700];
     snprintf(padded, sizeof padded, "\n\n\n%s", body ? body : "");
-    player_io_message(g, header, padded);
+    player_io_note_in_place(g, header, padded);   // the dwelling screen is up
 }
 
 bool flow_apply_search(Game *g, const Resources *res, FlowAnswer ans,
@@ -64,9 +64,7 @@ bool flow_apply_search(Game *g, const Resources *res, FlowAnswer ans,
         if (out_game_over) *out_game_over = true;
     } else {
         if (weeks > 0 && out_week_commission) *out_week_commission = paid;
-        player_io_message(g, NULL,
-            "Your search of this area has\n"
-            "revealed nothing.");
+        player_io_note(g, NULL, res->banners.search_nothing);
     }
     return false;
 }
@@ -177,7 +175,7 @@ bool flow_apply_siege_villain(Game *g, const Resources *res,
                          "%s", captured->army_troops[s]);
                 cr->garrison[s].count = captured->army_counts[s];
             }
-            if (captured->index >= 0 && captured->index < 17)
+            if (captured->index >= 0 && captured->index < g->contract.villain_count)
                 g->contract.villains_prefought[captured->index] = true;
         }
     }
@@ -200,32 +198,38 @@ bool flow_apply_siege_villain(Game *g, const Resources *res,
     }
 
     if (caught_vid[0]) {
-        char body[640];
-        if (contract_match) {
-            int n = snprintf(body, sizeof body,
-                "...and the capture of %s.\n\n"
-                "For fulfilling your contract\n"
-                "you receive an additional\n"
-                "%d gold as bounty...\n"
-                "and a piece of the map to\n"
-                "the stolen scepter.",
-                vname, reward_gold);
-            if (ranked_up && n > 0 && n < (int)sizeof body) {
-                snprintf(body + n, sizeof body - (size_t)n,
-                         "\n\nYou are promoted to %s!",
-                         g->character.cls.rank_title);
-            }
-        } else {
-            snprintf(body, sizeof body,
-                "...and the capture of %s.\n\n"
-                "Since you did not have the\n"
-                "proper contract, the Lord\n"
-                "has been set free.",
-                vname);
+        const ResBanners *bn = &g->res->banners;
+        char body[640], title[128], gb[16];
+        snprintf(gb, sizeof gb, "%d", reward_gold);
+        ResTemplateVar v[] = { { "NAME", vname }, { "GOLD", gb },
+                               { "RANK", g->character.cls.rank_title } };
+        resources_format_template(body, sizeof body,
+                                  contract_match ? bn->capture_contract : bn->capture_free, v, 3);
+        if (contract_match && ranked_up) {
+            size_t n = strlen(body);
+            resources_format_template(body + n, (int)(sizeof body - n), bn->capture_promoted, v, 3);
         }
-        player_io_message(g, "Capture", body);
+        resources_format_template(title, sizeof title, bn->capture_title, v, 3);
+        if (captured) player_io_note_face(g, title, body, REQ_FACE_VILLAIN, captured->index);
+        else          player_io_note(g, title, body);
     }
     return false;
+}
+
+void flow_apply_evade_bounce(Game *g, Map *map, const char *foe_id,
+                             int back_x, int back_y, int back_travel,
+                             int back_boat_x, int back_boat_y) {
+    if (!g || !map || back_x < 0 || back_y < 0) return;
+    g->position.x = back_x;
+    g->position.y = back_y;
+    g->position.last_x = back_x;
+    g->position.last_y = back_y;
+    g->travel_mode = (TravelMode)back_travel;
+    g->boat.x = back_boat_x;
+    g->boat.y = back_boat_y;
+    const FoeState *f = (foe_id && foe_id[0]) ? GameFindFoe(g, foe_id) : NULL;
+    if (f && f->alive && strcmp(f->zone, g->position.zone) == 0)
+        MapStampFoe(map, f->x, f->y, f->placement_id);
 }
 
 bool flow_apply_attack_foe(Game *g, Map *map, const char *foe_id,
@@ -265,7 +269,7 @@ void flow_apply_discard_spell(Game *g, int spell_idx, FlowAnswer ans) {
     // against the max_spells cap (GameKnownSpells). NO/cancel: no change. Guarded
     // so a stale/invalid index or an already-empty spell is a safe no-op.
     if (!g || ans.kind != FLOW_ANS_YES) return;
-    if (spell_idx < 0 || spell_idx >= 14) return;
+    if (spell_idx < 0 || spell_idx >= g->spells.count) return;
     if (g->spells.counts[spell_idx] <= 0) return;
     g->spells.counts[spell_idx]--;
 }
@@ -275,19 +279,27 @@ void flow_apply_alcove(Game *g, Map *map, const Resources *res,
     if (ans.kind != FLOW_ANS_YES) return;
     const ResBanners *bn = &res->banners;
     char msg[RES_BANNER_LEN];
-    if (g->stats.gold < res->economy.alcove_cost) {
+    int cost = GameAlcoveCost(g, g->position.zone);
+    const ResZone *z = resources_zone_by_id(res, g->position.zone);
+    const char *zname = (z && z->name[0]) ? z->name : g->position.zone;
+    if (g->stats.gold < cost) {
         char cbuf[16];
-        snprintf(cbuf, sizeof cbuf, "%d", res->economy.alcove_cost);
-        ResTemplateVar vars[] = { { "COST", cbuf } };
-        resources_format_template(msg, sizeof msg, bn->alcove_no_gold, vars, 1);
-        player_io_message(g, res->ui.dt_alcove_result, msg);
+        snprintf(cbuf, sizeof cbuf, "%d", cost);
+        ResTemplateVar vars[] = { { "COST", cbuf }, { "ZONE", zname } };
+        resources_format_template(msg, sizeof msg, bn->alcove_no_gold, vars, 2);
+        player_io_note_in_place(g, res->ui.dt_alcove_result, msg);
     } else {
-        g->stats.gold -= res->economy.alcove_cost;
+        g->stats.gold -= cost;
         g->stats.knows_magic = true;
+        if (res->economy.rites_per_zone) {
+            int zi = resources_zone_index(res, g->position.zone);
+            if (zi >= 0 && zi < g->world.zone_count) g->world.zone_rites[zi] = true;
+        }
         MapClearInteractive(map, g->position.x, g->position.y);
         GameAddConsumed(g, g->position.zone, g->position.x, g->position.y);
-        resources_format_template(msg, sizeof msg, bn->alcove_taught, NULL, 0);
-        player_io_message(g, res->ui.dt_alcove_result, msg);
+        ResTemplateVar vars[] = { { "ZONE", zname } };
+        resources_format_template(msg, sizeof msg, bn->alcove_taught, vars, 1);
+        player_io_note_in_place(g, res->ui.dt_alcove_result, msg);
     }
 }
 
@@ -306,7 +318,7 @@ void flow_apply_recruit(Game *g, const RecruitParams *params, FlowAnswer ans) {
     if (rc == 1) {
         open_dialog_padded(g, NULL, g->res->banners.town_no_gold);
     } else if (rc == 2) {
-        player_io_message(g, NULL, g->res->banners.no_troop_slots);
+        player_io_note_in_place(g, NULL, g->res->banners.no_troop_slots);
     } else if (rc == 0) {
         // Success ONLY: reduce dwelling population. rc=3 (over leadership) and
         // rc=4 (location refusal) must NOT decrement -- the player received no
@@ -361,7 +373,7 @@ bool flow_apply_navigate(Game *g, Map *map, Fog *fog,
 
     const char *target = zones[idx];
     if (!GameSwitchZone(g, map, fog, target)) {
-        player_io_message(g, NULL, "Cannot reach that continent.");
+        player_io_note(g, NULL, g->res->banners.zone_unreachable);
         return false;
     }
     int paid = 0;

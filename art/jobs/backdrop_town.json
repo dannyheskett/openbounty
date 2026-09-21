@@ -1,0 +1,16 @@
+{
+  "id": "backdrop_town",
+  "_note": "Location backdrop, same route as art/jobs/backdrop_castle.json: rd_pro__default at the 240x102 design size, opaque, scaled 2x by the shell. Earlier runs with 'townspeople' (and with the portraits as references) all put figures in the street and were purged; this prompt names the street as empty, deserted, unattended, no people anywhere, with no reference images and a new seed. The location screen draws a troop sprite in front, so the street needs nobody.",
+  "prompt": "an empty Roman forum street with a colonnade and market awnings, wide view, weathered travertine and brick, terracotta roofs, sun-faded awnings, dusty paving, a muted earthy palette, the stalls unattended and the street deserted, no people anywhere",
+  "style": "rd_pro__default",
+  "width": 240,
+  "height": 102,
+  "seed": 6124,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    240,
+    102
+  ]
+}

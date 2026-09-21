@@ -1,6 +1,7 @@
 // src/shell_menu.c
 
 #include "shell_menu.h"
+#include "layout.h"
 
 #include "savegame.h"
 #include "savepath.h"
@@ -18,13 +19,16 @@ bool menu_save(void *ud) {
     MenuCtx *c = (MenuCtx *)ud;
     char path[1024];
     const char *pid = c->res->pack_id[0] ? c->res->pack_id : NULL;
-    if (!SavePathGetSlot(pid, 0, path, sizeof(path))) {
+    if (!SavePathGetSlot(pid, c->slot, path, sizeof(path))) {
         toast_show(c->res->ui.toast_save_cancelled);
         return true;
     }
     SaveResult r = SaveGameWrite(path, c->game, c->map, c->fog);
     SavePathFlush();
-    if (r == SAVE_OK) toast_show(c->res->ui.toast_save_ok);
+    if (r == SAVE_OK) {
+        // Modern says it in a message (src/main.c); legacy keeps the toast.
+        if (!CL_IS_MODERN) toast_show(c->res->ui.toast_save_ok);
+    }
     else toast_with_reason(c->res->ui.toast_save_failed, SaveResultText(r));
     return true;
 }
@@ -33,7 +37,7 @@ bool menu_load(void *ud) {
     MenuCtx *c = (MenuCtx *)ud;
     char path[1024];
     const char *pid = c->res->pack_id[0] ? c->res->pack_id : NULL;
-    if (!SavePathGetSlot(pid, 0, path, sizeof(path))) {
+    if (!SavePathGetSlot(pid, c->slot, path, sizeof(path))) {
         toast_show(c->res->ui.toast_load_cancelled);
         return false;
     }
@@ -45,6 +49,11 @@ bool menu_load(void *ud) {
 
 bool menu_new(void *ud) {
     MenuCtx *c = (MenuCtx *)ud;
+    // Modern: a real new game, through the title menu. main.c asks first.
+    if (CL_IS_MODERN && c->new_game_flag) {
+        *c->new_game_flag = true;
+        return true;
+    }
     c->game->position.x = c->spawn_x;
     c->game->position.y = c->spawn_y;
     c->game->travel_mode = TRAVEL_WALK;
@@ -52,8 +61,7 @@ bool menu_new(void *ud) {
     c->game->boat.x = -1;
     c->game->boat.y = -1;
     FogInit(c->fog);
-    FogReveal(c->fog, c->map, c->game->position.x, c->game->position.y,
-              c->res->world.fog_sight);
+    FogRevealFor(c->res, c->fog, c->map, c->game->position.x, c->game->position.y);
     toast_show(c->res->ui.toast_new_game);
     return true;
 }

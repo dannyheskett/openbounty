@@ -1,0 +1,25 @@
+{
+ "lower_description": "lush green meadow grass",
+ "tile_size": {
+  "width": 32,
+  "height": 32
+ },
+ "mode": "standard",
+ "shape_style": "round",
+ "enhance": false,
+ "view": "high top-down",
+ "outline": "lineless",
+ "shading": "medium shading",
+ "detail": "medium detail",
+ "text_guidance_scale": 8.0,
+ "seed": 82,
+ "lower_base_tile_id": "87e76087-8d8e-4179-90bd-0b6cb06cbb15",
+ "lower_reference_image": {
+  "type": "base64",
+  "base64": "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAC2UlEQVR4nL1Xu66cMBSci1Y8hJCQdkVFijSpttr8wX50yv0EKvoUoUIgrYTQAk1SOOMcGxt2773KNLzs4/F5jA9v3358/42/OJ9C1N2C8ylEMy64HDNU/YDLMcOtGeBCngBlquZdSzWO74o4QtUP+jvBcQAQuIxycQC4P5zralyOGZpRkW6n2Xjnmy83YxAgy8sxQzvNeqBv9xJFHGkigPIACdnIE+WFFQF+3IKcbJOTu23GRXtBup/jvCHgR3uS/G7v7P4Aqn4wFrs/9sMHAG8yCf8nmOjOJHThWma74XnWxrXMUHcLyjR0E+BAGW/G7D0kZM4AKly04yQgy+nWDNpAmYa6PJ+FTbhMQ9wfynbdLQiuZaZLJ09UbIo4cpYRhWXLC3K3vK96tQkmqleIqFjtNBtl1E4z8kRdyX5v13kCrYKshvtjXZIBF8sTtUNeWUbXMjOUkYS2IEnSJuecT6H2BAAEdbfoCfxAl/GeuVDE0ebCLiLtNOt4czOGB3jDxW3xkM+Mm3Qj88ceQ7hUUNo8uBay1U66zIZPMV1zXGeKV4ik4S1JtWvcNWfrMAtsF76KWzPgfAq9RPYQAPiQAUBlejvNq3x4ikDdLTq730uCLm7GxWvD9z6ggaofdOJREfdwPoWGKv76aSYkF7WV02hIpM7LjqaIIz3Ix77uTIH68lWJjE2+TEMjEeWzrgKqnxQb2xjvJSHG3iYjx2wJWMAulnp/a8wuuBkXrYyMsdQI5hAlVjaktO3yHHEA4G27y3TtSh4wNqTEyp5P3js9AKxVi89FHOkd8ixwnWi3ZtAS+0wHvSLA2DFufKYx6fKPtmUEu64Dz23+WPjKj/nxEbDZqfpBhzK4HDOt2834z92SCI/sVyGbUMCsBpZ9wN2zS5WLfgZs4qwy3RXzgYt+hpslGGL540rU3YLDXnv1KlQLpjbk6yNWLdkeXsn8qh90i8crdYa/7RJ/AHBBAyd3KsKyAAAAAElFTkSuQmCC",
+  "format": "png"
+ },
+ "upper_description": "dry pale yellow-green meadow grass, sparse and sun-bleached",
+ "transition_description": "soft uneven blend where the lush grass thins into the dry grass",
+ "transition_size": 0.0
+}

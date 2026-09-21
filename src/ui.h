@@ -1,10 +1,47 @@
 #ifndef OB_UI_H
 #define OB_UI_H
 
+#include "ob_types.h"
 #include <stdbool.h>
 
+// ---- Texture blit --------------------------------------------------------
+// Draw `t` stretched to exactly (x, y, w, h). No-op when the texture is
+// missing (id 0), so callers don't each need a guard.
+//
+// Use this for every piece of art instead of blitting at tex.width/tex.height.
+// Both packs author their art in the legacy 320x200 design space -- 48x34
+// tiles and troops, 240x102 backdrops, 96x102 portraits -- so drawing at the
+// native size means drawing at 1x inside a buffer that is scaled up. The size
+// that is correct is always the slot the art goes in: a map or combat cell is
+// CL_TILE_W/H, anything else is its design size times CL_UI.
+void ui_blit(Texture2D t, int x, int y, int w, int h);
+
+// The frame the shell draws round a panel slot when the pack names a
+// palette colour in sprites.ui.panel_frame (see ui_set_panel_frame): a
+// one-design-pixel outer line in that colour and a darker inner line, so the
+// art itself carries no frame. No-op when the pack names none.
+void ui_set_panel_frame(const char *palette_name);
+void ui_panel_frame(int x, int y, int w, int h);
+
+// Border of a window: a prompt, a view, a location menu, a modal. Legacy draws
+// the one-pixel line in `legacy` it always has. Modern draws the gold lattice
+// ring (src/lattice.c), four units thick just OUTSIDE the rect, so every
+// window on screen carries the same chrome as the frame and the HUD panels
+// and its content is untouched.
+void ui_window_frame(int x, int y, int w, int h, Color legacy);
+
+// Largest whole multiple of a picture that fits the space, floored at 1. In
+// legacy this is ui_scale (1) as it always was; in modern a title, splash or
+// picker fills as much of the fixed buffer as a whole scale allows.
+int ui_fit_scale(int tex_w, int tex_h, int avail_w, int avail_h);
+
+// As ui_blit, but flipped horizontally. Sprites are authored facing right;
+// combat mirrors the AI side rather than shipping a second strip.
+void ui_blit_mirrored(Texture2D t, int x, int y, int w, int h);
+
 // Forward decl: the engine Game (carries the player-IO request queue).
-typedef struct Game Game;
+#include "game_fwd.h"
+#include "player_io.h"   // ReqKind: what a note was called
 
 // UI layer: dialog (press-any-key message), toast (transient banner), and
 // the any-key helper. The pause menu itself lives in src/views.c. Nothing
@@ -33,6 +70,10 @@ void open_dialog(const char *header, const char *body);
 #define MSG_FLAG_PADDED  0x04   //  MSG_PADDED bit value
 
 void open_dialog_flags(const char *header, const char *body, int flags);
+// Open a note of a named kind (player_io.h): what it is decides how it draws.
+void open_dialog_kind(const char *header, const char *body, ReqKind kind);
+// The kind of the open note.
+ReqKind dialog_kind(void);
 
 bool dialog_is_active(void);
 void dialog_dismiss(void);
@@ -42,11 +83,13 @@ void dialog_dismiss(void);
 // that message into the dialog renderer and acks the queue entry (so the engine's
 // uniform messages render through the existing dialog UI). Call once per frame
 // before the dialog input gate. Returns true if it surfaced a new message.
-bool shell_pump_player_io_message(Game *g);
+bool shell_pump_note(Game *g);
 
 // Read-only accessors for renderers.
 const char *dialog_header_text(void);
 const char *dialog_body_text(void);
+// The open message's picture hint (a ReqFace; 0 = none), *index its subject.
+int dialog_face(int *index);
 
 // Dialog pagination (for multi-page text like at King's castle).
 int  dialog_page_current(void);
@@ -55,6 +98,12 @@ bool dialog_advance(void);  // Advance to next page if available; returns true i
 
 // Toast accessors too.
 const char *toast_text_current(void);   // NULL if no active toast
+
+// The clock the DRAWING code animates from: the wall clock in play, a frozen
+// value while the gallery captures, so a screenshot of an animated portrait is
+// the same image every run and two builds can be compared byte for byte.
+double ui_anim_time(void);
+void   ui_anim_freeze(bool frozen);
 
 // ---- Toast ---------------------------------------------------------------
 // Transient banner near the top of the playfield. Lasts a few seconds.

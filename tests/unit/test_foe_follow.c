@@ -19,6 +19,7 @@
 // Place a live hostile foe at (x,y) in zone "z". Does NOT stamp the map tile --
 // the caller decides whether this foe starts stamped or as a phantom.
 static void put_foe(Game *g, int idx, const char *id, int x, int y) {
+    GameReserveFoes(g, idx + 1);
     FoeState *f = &g->foes[idx];
     strcpy(f->zone, "z");
     f->x = x; f->y = y;
@@ -33,7 +34,7 @@ TEST foes_never_stack(void) {
     Game *g = calloc(1, sizeof *g);
     Map  *m = calloc(1, sizeof *m);
     ASSERT(g && m);
-    m->width = 64; m->height = 64;
+    ASSERT(MapAlloc(m, 64, 64));
 
     strcpy(g->position.zone, "z");
     g->position.x = 8;  g->position.y = 42;   // hero (not adjacent to the foes)
@@ -49,7 +50,7 @@ TEST foes_never_stack(void) {
 
     ASSERT_FALSE(g->foes[0].x == g->foes[1].x &&
                  g->foes[0].y == g->foes[1].y);
-    free(g); free(m);
+    GameFree(g); free(g); MapFree(m); free(m);
     PASS();
 }
 
@@ -59,7 +60,7 @@ TEST live_foe_stays_stamped(void) {
     Game *g = calloc(1, sizeof *g);
     Map  *m = calloc(1, sizeof *m);
     ASSERT(g && m);
-    m->width = 64; m->height = 64;
+    ASSERT(MapAlloc(m, 64, 64));
 
     strcpy(g->position.zone, "z");
     g->position.x = 5;  g->position.y = 7;
@@ -74,8 +75,8 @@ TEST live_foe_stays_stamped(void) {
     const Tile *t = MapGetTile(m, 5, 5);
     ASSERT(t != NULL);
     ASSERT_EQ(INTERACT_FOE, t->interactive);
-    ASSERT_EQ(0, strcmp(t->id, "foe0"));
-    free(g); free(m);
+    ASSERT_EQ(0, strcmp(TileId(m, t), "foe0"));
+    GameFree(g); free(g); MapFree(m); free(m);
     PASS();
 }
 
@@ -95,7 +96,7 @@ TEST live_foe_stays_stamped(void) {
 static void homing_fixture(Game **pg, Map **pm) {
     Game *g = calloc(1, sizeof *g);
     Map  *m = calloc(1, sizeof *m);
-    m->width = 64; m->height = 64;
+    MapAlloc(m, 64, 64);
     strcpy(g->position.zone, "z");
     g->position.x = 8;  g->position.y = 40;
     g->position.last_x = 8; g->position.last_y = 44;
@@ -111,7 +112,7 @@ TEST homing_control(void) {
     GameFoesFollow(g, m);
     ASSERT_EQ(8, g->foes[0].x);
     ASSERT_EQ(44, g->foes[0].y);
-    free(g); free(m);
+    GameFree(g); free(g); MapFree(m); free(m);
     PASS();
 }
 
@@ -121,11 +122,11 @@ TEST foe_refuses_desert(void) {
     Game *g; Map *m; homing_fixture(&g, &m);
     for (int dy = -1; dy <= 1; dy++)
         for (int dx = -1; dx <= 1; dx++)
-            if (dx || dy) m->tiles[44 + dy][9 + dx].terrain = TERRAIN_DESERT;
+            if (dx || dy) MAP_TILE(m, 9 + dx, 44 + dy).terrain = TERRAIN_DESERT;
     GameFoesFollow(g, m);
     ASSERT_EQ(9, g->foes[0].x);
     ASSERT_EQ(44, g->foes[0].y);
-    free(g); free(m);
+    GameFree(g); free(g); MapFree(m); free(m);
     PASS();
 }
 
@@ -136,11 +137,11 @@ TEST foe_refuses_bridge(void) {
     Game *g; Map *m; homing_fixture(&g, &m);
     for (int dy = -1; dy <= 1; dy++)
         for (int dx = -1; dx <= 1; dx++)
-            if (dx || dy) m->tiles[44 + dy][9 + dx].is_bridge = true;
+            if (dx || dy) MAP_TILE(m, 9 + dx, 44 + dy).is_bridge = true;
     GameFoesFollow(g, m);
     ASSERT_EQ(9, g->foes[0].x);
     ASSERT_EQ(44, g->foes[0].y);
-    free(g); free(m);
+    GameFree(g); free(g); MapFree(m); free(m);
     PASS();
 }
 
@@ -149,12 +150,12 @@ TEST foe_refuses_bridge(void) {
 // step toward the target is legal.
 TEST foe_refuses_castle_gate_approach(void) {
     Game *g; Map *m; homing_fixture(&g, &m);
-    m->tiles[44][7].interactive = INTERACT_CASTLE_GATE;
+    MAP_TILE(m, 7, 44).interactive = INTERACT_CASTLE_GATE;
     GameFoesFollow(g, m);
     ASSERT_FALSE(g->foes[0].x == 8 && g->foes[0].y == 44);
     ASSERT_EQ(9, g->foes[0].x);
     ASSERT_EQ(44, g->foes[0].y);
-    free(g); free(m);
+    GameFree(g); free(g); MapFree(m); free(m);
     PASS();
 }
 
@@ -162,10 +163,10 @@ TEST foe_refuses_castle_gate_approach(void) {
 // nailed down so the new adjacency rule can't be mistaken for the only guard.
 TEST foe_refuses_castle_gate_tile(void) {
     Game *g; Map *m; homing_fixture(&g, &m);
-    m->tiles[44][8].interactive = INTERACT_CASTLE_GATE;
+    MAP_TILE(m, 8, 44).interactive = INTERACT_CASTLE_GATE;
     GameFoesFollow(g, m);
     ASSERT_FALSE(g->foes[0].x == 8 && g->foes[0].y == 44);
-    free(g); free(m);
+    GameFree(g); free(g); MapFree(m); free(m);
     PASS();
 }
 
@@ -175,10 +176,10 @@ static void assert_terrain_blocks(Terrain terr, int *ox, int *oy) {
     Game *g; Map *m; homing_fixture(&g, &m);
     for (int dy = -1; dy <= 1; dy++)
         for (int dx = -1; dx <= 1; dx++)
-            if (dx || dy) m->tiles[44 + dy][9 + dx].terrain = terr;
+            if (dx || dy) MAP_TILE(m, 9 + dx, 44 + dy).terrain = terr;
     GameFoesFollow(g, m);
     *ox = g->foes[0].x; *oy = g->foes[0].y;
-    free(g); free(m);
+    GameFree(g); free(g); MapFree(m); free(m);
 }
 
 TEST foe_refuses_water_forest_mountain(void) {
@@ -197,11 +198,11 @@ TEST foe_refuses_water_forest_mountain(void) {
 // original and GameFoesFollow, so the foe can always step back onto grass.
 TEST foe_on_desert_can_leave(void) {
     Game *g; Map *m; homing_fixture(&g, &m);
-    m->tiles[44][9].terrain = TERRAIN_DESERT;   // the foe's OWN tile
+    MAP_TILE(m, 9, 44).terrain = TERRAIN_DESERT;   // the foe's OWN tile
     GameFoesFollow(g, m);
     ASSERT_EQ(8, g->foes[0].x);
     ASSERT_EQ(44, g->foes[0].y);
-    free(g); free(m);
+    GameFree(g); free(g); MapFree(m); free(m);
     PASS();
 }
 
@@ -217,11 +218,11 @@ static int hero_contact(Terrain terr, bool bridge, bool boat) {
     Game *g; Map *m; homing_fixture(&g, &m);
     g->position.x = 8; g->position.y = 44;
     g->position.last_x = 8; g->position.last_y = 44;
-    m->tiles[44][8].terrain = terr;
-    m->tiles[44][8].is_bridge = bridge;
+    MAP_TILE(m, 8, 44).terrain = terr;
+    MAP_TILE(m, 8, 44).is_bridge = bridge;
     if (boat) g->travel_mode = TRAVEL_BOAT;
     int r = GameFoesFollow(g, m);
-    free(g); free(m);
+    GameFree(g); free(g); MapFree(m); free(m);
     return r;
 }
 
@@ -253,9 +254,9 @@ TEST hero_on_gate_approach_is_unreachable(void) {
     Game *g; Map *m; homing_fixture(&g, &m);
     g->position.x = 8; g->position.y = 44;
     g->position.last_x = 8; g->position.last_y = 44;
-    m->tiles[44][7].interactive = INTERACT_CASTLE_GATE;
+    MAP_TILE(m, 7, 44).interactive = INTERACT_CASTLE_GATE;
     ASSERT_EQ(-1, GameFoesFollow(g, m));
-    free(g); free(m);
+    GameFree(g); free(g); MapFree(m); free(m);
     PASS();
 }
 

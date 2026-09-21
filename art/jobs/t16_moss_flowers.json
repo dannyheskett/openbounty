@@ -1,0 +1,25 @@
+{
+ "lower_description": "mossy meadow grass",
+ "upper_description": "small white and yellow wildflowers and tall grass tufts in the grass",
+ "transition_description": "",
+ "tile_size": {
+  "width": 16,
+  "height": 16
+ },
+ "mode": "standard",
+ "shape_style": "round",
+ "enhance": false,
+ "view": "high top-down",
+ "outline": "lineless",
+ "shading": "medium shading",
+ "detail": "medium detail",
+ "text_guidance_scale": 8.0,
+ "transition_size": 0.0,
+ "seed": 112,
+ "lower_reference_image": {
+  "type": "base64",
+  "base64": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABMUlEQVR4nI2S7U6DMBSGn0OBotVtf1yye/JavD7vw5/GZDFRM5dFcWPABtQfBDagIzsJSWn7Pn3Phzw9P1oArNCE0T5Ga5I8x2jNJtmzS3Oi0EfkdA/AwxEfPzuy8kBWlABsfjPEfdW9W+bwlxyJfMXL2xqUrV/H6zjtAsS233Qa8PmVkuQFADOjsVROB75rU3nCYlGL5g9RzRcB7HUptKZEBkVbfaco7yQbOLDWdtYNoBFp41FWp3ScKfSBItKKZkZ3zgcAwWNiAgDKwqJ8IcmKzqvn4azB+3pLpML2P95nFx06AXlSsVzFZEXJ6zJG9Qo5Cmhat90dSNIjOlLc6OAiwFmD8/7rcLTT43MADOZgCOjNNlK3Ld4ex8VWwAqepWJ+f4cJ6zxNGDC5DS8Le/EPgK1v0iWPJ98AAAAASUVORK5CYII=",
+  "format": "png"
+ },
+ "lower_base_tile_id": "7be429ba-e876-432a-abb1-5c8bba59a877"
+}

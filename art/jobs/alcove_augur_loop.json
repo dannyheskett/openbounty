@@ -1,0 +1,21 @@
+{
+ "id": "alcove_augur_loop",
+ "prompt": "the raven on his left forearm slowly spreads both wings wide, beats them once, then folds them back against its body, while the augur turns his head toward the raven to watch it, his body, arms, staff, toga and feet all completely still, smooth loop",
+ "style": "rd_advanced_animation__custom_action",
+ "width": 96,
+ "height": 96,
+ "seed": 8403,
+ "frames_duration": 8,
+ "return_spritesheet": true,
+ "input_image_path": "build/art/alcove_augur/run01/01_raw.png",
+ "input_image_keep_alpha": true,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  96,
+  96
+ ],
+ "_pack_path": "art/ui/alcove_augur_00..13.png",
+ "_note": "The alcove figure's idle loop (2026-09-12), eight frames at 96 from the approved still. run01 (seed 8402) asked him to raise the lituus overhead and quarter the sky: the hand never left waist height, the staff wobbled across his body, and one frame's crook detached from the shaft -- not installed. run02 moves the meaning onto the bird instead: an augur's rite is reading a bird's sign, and a small region moving against a still figure is what this engine does well (the villain face loops). The screen holds each frame for sprites.ui.alcove_figure_frame_ms. Installed as run02: the eight frames played forward then back, written to disk as a plain numbered run 00..13 (08..13 are byte copies of 06 down to 01) so the files are the sequence. The ping-pong is because frame 07 does not return to rest -- the head has not turned back -- and wrapping 07 to 00 snapped it."
+}

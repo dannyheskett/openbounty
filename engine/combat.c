@@ -17,7 +17,10 @@ const ResCombatLog *combat_log_strings(const Combat *c) {
     if (c && c->heroes[0] && c->heroes[0]->res) {
         return &c->heroes[0]->res->combat_log;
     }
-    return NULL;
+    // A combat without a res-backed hero (unit-test scaffolds) still draws its
+    // log text from the loaded pack -- the engine ships no fallback strings.
+    const Resources *r = resources_current();
+    return r ? &r->combat_log : NULL;
 }
 
 // Translate the hero's found-artifact set into the COMBAT_POWER_* bit
@@ -26,7 +29,7 @@ const ResCombatLog *combat_log_strings(const Combat *c) {
 // they apply at pickup or on the adventure screen.
 unsigned char combat_player_powers(const Game *g) {
     unsigned char p = 0;
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < g->artifacts.count; i++) {
         if (!g->artifacts.found[i]) continue;
         const ArtifactDef *a = artifact_by_index(i);
         if (!a) continue;
@@ -525,6 +528,10 @@ int combat_hit_unit(Combat *c, int a_side, int a_id,
     a->turn_count = a->count;
     t->turn_count = t->count;
     int t_count_before = t->count;
+    c->attack_seq++;
+    c->attack_side = a_side;
+    c->attack_x = a->x;
+    c->attack_y = a->y;
     int kills = combat_deal_damage(c, a_side, a_id, t_side, t_id,
                                    is_ranged, false, 0, false);
     // Damage burst over the target cell. Persists ~3 anim ticks
@@ -537,8 +544,8 @@ int combat_hit_unit(Combat *c, int a_side, int a_id,
     if (kills > 0) {
         const TroopDef *at = troop_by_index(a->troop_idx);
         const TroopDef *tt = troop_by_index(t->troop_idx);
-        const char *aname = at ? at->name : "Attackers";
-        const char *tname = tt ? tt->name : "Defenders";
+        const char *aname = at->name;
+        const char *tname = tt->name;
         char cbuf[16];
         snprintf(cbuf, sizeof cbuf, "%d", kills);
         ResTemplateVar vars[] = {
@@ -548,15 +555,11 @@ int combat_hit_unit(Combat *c, int a_side, int a_id,
         };
         const ResCombatLog *cl = combat_log_strings(c);
         combat_log_template(c,
-            cl ? (is_ranged ? cl->ranged_hit : cl->melee_hit)
-               : (is_ranged ? "%ATK% shoot %TGT% killing %COUNT%"
-                            : "%ATK% vs %TGT%, %COUNT% die"),
+            is_ranged ? cl->ranged_hit : cl->melee_hit,
             vars, 3);
     } else if (kills == -1) {
         const ResCombatLog *cl = combat_log_strings(c);
-        combat_log_template(c,
-            cl ? cl->no_effect_msg : "The spell seems to have no effect!",
-            NULL, 0);
+        combat_log_template(c, cl->no_effect_msg, NULL, 0);
     }
     {
         char tag[64];
@@ -830,7 +833,7 @@ int combat_fly_unit(Combat *c, int side, int id, int nx, int ny) {
         { "TROOP", t->name },
     };
     const ResCombatLog *cl = combat_log_strings(c);
-    combat_log_template(c, cl ? cl->cloned : "%COUNT% %TROOP% cloned",
+    combat_log_template(c, cl->cloned,
                         vars, 2);
 }
 
@@ -842,7 +845,7 @@ int combat_fly_unit(Combat *c, int side, int id, int nx, int ny) {
     u->y = to_y;
     c->umap[to_y][to_x] = pack_uid(from_side, from_slot);
     const ResCombatLog *cl = combat_log_strings(c);
-    combat_log_template(c, cl ? cl->teleported : "Teleported", NULL, 0);
+    combat_log_template(c, cl->teleported, NULL, 0);
 }
 
 /* exposed for tests */ int spell_freeze(Combat *c, int t_side, int t_slot) {
@@ -851,13 +854,13 @@ int combat_fly_unit(Combat *c, int side, int id, int nx, int ny) {
     const ResCombatLog *cl = combat_log_strings(c);
     if (t && (t->abilities & TROOP_ABIL_IMMUNE)) {
         ResTemplateVar vars[] = { { "TROOP", t->name } };
-        combat_log_template(c, cl ? cl->immune : "%TROOP% are immune",
+        combat_log_template(c, cl->immune,
                             vars, 1);
         return -1;
     }
     u->frozen = true;
-    ResTemplateVar vars[] = { { "TROOP", t ? t->name : "Foe" } };
-    combat_log_template(c, cl ? cl->frozen : "%TROOP% are frozen",
+    ResTemplateVar vars[] = { { "TROOP", t->name } };
+    combat_log_template(c, cl->frozen,
                         vars, 1);
     return 1;
 }
@@ -878,10 +881,10 @@ int combat_fly_unit(Combat *c, int side, int id, int nx, int ny) {
     snprintf(cbuf, sizeof cbuf, "%d", revived);
     ResTemplateVar vars[] = {
         { "COUNT", cbuf },
-        { "TROOP", t ? t->name : "creatures" },
+        { "TROOP", t->name },
     };
     const ResCombatLog *cl = combat_log_strings(c);
-    combat_log_template(c, cl ? cl->resurrected : "%COUNT% %TROOP% resurrected",
+    combat_log_template(c, cl->resurrected,
                         vars, 2);
     return 1;
 }
@@ -968,14 +971,13 @@ int combat_cast_spell(Combat *c, int side, int spell_idx,
                 c->units[t_side][t_slot].troop_idx);
             if (tt && (tt->abilities & TROOP_ABIL_IMMUNE)) {
                 combat_log_template(c,
-                    cl_pre ? cl_pre->no_effect_msg
-                           : "The spell seems to have no effect!",
+                    cl_pre->no_effect_msg,
                     NULL, 0);
                 break;
             }
             spell_damage(c, t_side, t_slot, spell_damage_value(combat_spell_damage_base(COMBAT_SPELL_FIREBALL), sp));
             combat_log_template(c,
-                cl_pre ? cl_pre->cast_fireball : "Fireball!", NULL, 0);
+                cl_pre->cast_fireball, NULL, 0);
             casted = 1;
             break;
         }
@@ -984,14 +986,13 @@ int combat_cast_spell(Combat *c, int side, int spell_idx,
                 c->units[t_side][t_slot].troop_idx);
             if (tt && (tt->abilities & TROOP_ABIL_IMMUNE)) {
                 combat_log_template(c,
-                    cl_pre ? cl_pre->no_effect_msg
-                           : "The spell seems to have no effect!",
+                    cl_pre->no_effect_msg,
                     NULL, 0);
                 break;
             }
             spell_damage(c, t_side, t_slot, spell_damage_value(combat_spell_damage_base(COMBAT_SPELL_LIGHTNING), sp));
             combat_log_template(c,
-                cl_pre ? cl_pre->cast_lightning : "Lightning!", NULL, 0);
+                cl_pre->cast_lightning, NULL, 0);
             casted = 1;
             break;
         }
@@ -1008,14 +1009,12 @@ int combat_cast_spell(Combat *c, int side, int spell_idx,
                 c->units[t_side][t_slot].troop_idx);
             if (tt && (tt->abilities & TROOP_ABIL_IMMUNE)) {
                 combat_log_template(c,
-                    cl_pre ? cl_pre->no_effect_msg
-                           : "The spell seems to have no effect!",
+                    cl_pre->no_effect_msg,
                     NULL, 0);
                 break;
             }
             spell_damage(c, t_side, t_slot, spell_damage_value(combat_spell_damage_base(COMBAT_SPELL_TURN_UNDEAD), sp));
-            combat_log_template(c,
-                cl_pre ? cl_pre->cast_turn_undead : "Turn Undead!", NULL, 0);
+            combat_log_template(c, cl_pre->cast_turn_undead, NULL, 0);
             casted = 1;
             break;
         }
@@ -1403,7 +1402,7 @@ CombatResult combat_run_headless_rec(Game *g, CombatMode mode,
                     fp = fp * 31 + u2->shots;
                 }
             if (c.heroes[COMBAT_SIDE_PLAYER])
-                for (int i2 = 0; i2 < GAME_SPELLBOOK_SLOTS; i2++)
+                for (int i2 = 0; i2 < c.heroes[COMBAT_SIDE_PLAYER]->spells.count; i2++)
                     fp = fp * 31 + c.heroes[COMBAT_SIDE_PLAYER]->spells.counts[i2];
             if (fp != stall_fp) { stall_fp = fp; stall_n = 0; }
             else if (++stall_n >= stall_cap) break;

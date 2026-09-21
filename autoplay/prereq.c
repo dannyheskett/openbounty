@@ -9,6 +9,24 @@
 
 // The BUY-SIEGE candidate (prereq_make_buy_siege): resolved to the nearest
 // town at execution (the executor walks the whole town set).
+// The MUSTER candidate: recruit the arm a gate foe demands, at the dwelling
+// that breeds it (resolved at execution, like BUY-SIEGE's town).
+static void prereq_make_muster(PlanStep *out, int zone_index, const char *troop) {
+    memset(out, 0, sizeof *out);
+    out->kind = STEP_MUSTER;
+    out->zone_index = zone_index;
+    out->x = out->y = -1;
+    snprintf(out->handle, sizeof out->handle, "%s", troop);
+    snprintf(out->label, sizeof out->label, "muster:%s", troop);
+}
+
+// The foe a step names, when it is a gate that demands one arm.
+static const FoeState *prereq_gate_foe(const ExecCtx *ctx, const PlanStep *step) {
+    if (step->kind != STEP_FOE) return NULL;
+    const FoeState *f = plan_find_foe(ctx->g, step->handle, step->zone_index);
+    return (f && f->alive && f->requires_troop[0]) ? f : NULL;
+}
+
 static void prereq_make_buy_siege(PlanStep *out) {
     memset(out, 0, sizeof *out);
     out->kind = STEP_SIEGE_WEAPONS;
@@ -24,6 +42,11 @@ int prereq_unmet(const ExecCtx *ctx, const PlanStep *step,
     if ((step->kind == STEP_MONSTER_CASTLE || step->kind == STEP_VILLAIN) &&
         !ctx->g->stats.siege_weapons && n < cap) {
         prereq_make_buy_siege(&out[n++]);
+    }
+    {
+        const FoeState *f = prereq_gate_foe(ctx, step);
+        if (f && GameFoeBarsHero(ctx->g, f) && n < cap)
+            prereq_make_muster(&out[n++], step->zone_index, f->requires_troop);
     }
     return n;
 }
@@ -42,7 +65,7 @@ unsigned prereq_gated(const ExecCtx *ctx, const PlanStep *step,
     // Zone reach: the objective's continent must be discovered. Home starts
     // discovered; every other continent chains off the prior one's navmap
     // (engine/step.c) and no money buys the trip until the map is found.
-    if (step->zone_index >= 0 && step->zone_index < GAME_CONTINENTS &&
+    if (step->zone_index >= 0 && step->zone_index < g->world.zone_count &&
         !g->world.zones_discovered[step->zone_index])
         m |= PREREQ_ZONE;
 
@@ -62,10 +85,45 @@ unsigned prereq_gated(const ExecCtx *ctx, const PlanStep *step,
     case STEP_ALCOVE:
         // The one permitted resource gate: magic is bought here for the alcove
         // price, so the step is dead until the wallet clears it.
-        if (!g->stats.knows_magic &&
-            g->stats.gold < ctx->res->economy.alcove_cost)
-            m |= PREREQ_MAGIC;
+        {
+            const char *zid = (step->zone_index >= 0 && step->zone_index < ctx->res->zone_count)
+                            ? ctx->res->zones[step->zone_index].id : g->position.zone;
+            if (!GameHasRites(g, zid) && g->stats.gold < GameAlcoveCost(g, zid))
+                m |= PREREQ_MAGIC;
+        }
         break;
+    case STEP_VISTA:
+        // A vista asking for a rite is dead until the hero can hold one: magic
+        // first (bought at an alcove), then the rite itself at a town.
+        if (step->zone_index >= 0 && step->zone_index < ctx->res->zone_count) {
+            const ResZone *z = &ctx->res->zones[step->zone_index];
+            for (int k = 0; k < z->event_count; k++) {
+                if (strcmp(z->events[k].id, step->handle) != 0) continue;
+                for (int q = 0; q < z->events[k].req_count; q++) {
+                    const ResEventReq *rq = &z->events[k].reqs[q];
+                    if (rq->kind != RES_EVENT_REQ_SPELL) continue;
+                    int si = spell_index_by_id(rq->id);
+                    if (si >= 0 && g->spells.counts[si] >= rq->count) continue;
+                    if (!g->stats.knows_magic) m |= PREREQ_MAGIC;
+                }
+                // A relic the vista asks for is another objective's business:
+                // the vista is dead until that artifact has been found.
+                for (int q = 0; q < z->events[k].req_count; q++) {
+                    const ResEventReq *rq = &z->events[k].reqs[q];
+                    if (rq->kind != RES_EVENT_REQ_ARTIFACT) continue;
+                    const ArtifactDef *a = artifact_by_id(rq->id);
+                    if (!a || a->index < 0 || a->index >= g->artifacts.count ||
+                        !g->artifacts.found[a->index])
+                        m |= PREREQ_RELIC;
+                }
+            }
+        }
+        break;
+    // A gate foe that demands one arm is NOT gated here: the MUSTER candidate
+    // (prereq_unmet) runs under the attempt's own snapshot and fetches the
+    // arm. Gating it instead demoted the gate in the candidate ordering, and
+    // the search then thrashed on the objectives behind it (measured on seeds
+    // 1 and 2, 2026-09-20).
     case STEP_SCEPTER:
         // Finale (AP-052, re-homed from the planner's select loop): the dig
         // ends the game, so it waits until every other objective is done -- the

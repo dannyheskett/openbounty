@@ -1,0 +1,16 @@
+{
+  "id": "backdrop_hillcave",
+  "_note": "Location backdrop, same route as art/jobs/backdrop_castle.json: rd_pro__default at the 240x102 design size, opaque, scaled 2x by the shell. run01 (seed 6105, 'oracle smoke drifting from the opening') read as a soft cave with smoke; run02 drops the smoke and describes a much rockier, darker, less accessible cave mouth, seed incremented.",
+  "prompt": "a narrow black cave mouth high in steep, jagged, barren rocky hills, reached only over a scramble of broken boulders and loose scree, sheer grey crags on both sides, deep shadow inside the opening, an overcast sky, forbidding and hard to reach, no people anywhere",
+  "style": "rd_pro__default",
+  "width": 240,
+  "height": 102,
+  "seed": 6106,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    240,
+    102
+  ]
+}

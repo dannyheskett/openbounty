@@ -9,4 +9,8 @@
 // map viewport.
 void hud_draw(const Game *g, const Sprites *s);
 
+// Single HUD tiles (CL_SIDEBAR_W x CL_TILE_H, framed) at (x, y).
+void hud_draw_siege_tile(const Game *g, const Sprites *s, int x, int y);
+void hud_draw_gold_tile(const Game *g, const Sprites *s, int x, int y);
+
 #endif

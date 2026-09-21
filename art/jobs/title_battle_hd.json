@@ -1,0 +1,17 @@
+{
+  "id": "title_battle_hd",
+  "prompt": "a battlefield where two opposing armies crash together, on the left Roman legionaries with red rectangular shields, bronze helmets and short swords charging right, on the right wild barbarian warriors with long hair, beards, round wooden shields, axes and spears charging left, the two sides meeting in a violent clash in the middle, golden eagle standard raised above the Romans, open grassy field with dust in the air, a pale sky across the top third of the picture, the scene filling the whole picture edge to edge, no city, no buildings, no text, no frame, no border",
+  "style": "rd_plus__environment",
+  "width": 400,
+  "height": 266,
+  "seed": 8123,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    400,
+    266
+  ],
+  "_pack_path": "art/ui/title_battle_hd.png",
+  "_note": "Title battle test at 400x266 (2x fills the 800x532 screen); rd_plus__environment allows up to 512x512. Same prompt and seed as title_battle run02. run02: new seed, prompt reworked to show two opposing sides (run01 showed two Roman lines)."
+}

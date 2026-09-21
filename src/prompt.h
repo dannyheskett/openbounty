@@ -2,6 +2,7 @@
 #define OB_PROMPT_H
 
 #include <stdbool.h>
+#include "player_io.h"   // ReqKind
 #include "game.h"
 
 // Bottom-frame modal prompts used by flows (ask_quit,
@@ -41,6 +42,11 @@ void prompt_numeric_open(const char *header, const char *body, int max_choice);
 //  two_choices), where the body labels its options A) and B).
 void prompt_ab_open(const char *header, const char *body);
 
+// Modern: the rows of the numeric or A/B prompt just opened, when its body
+// does not name the choices itself (dismiss: the troops). values[i] is the
+// answer row i gives, 1 = PROMPT_RESULT_1.
+void prompt_set_choices(const char *const *labels, const int *values, int n);
+
 // Open a multi-digit numeric entry prompt (0-9, Backspace, Enter, Esc).
 // Accepts numbers up to `max_digits`. Max accepted value is `max_value`;
 // typing beyond it is rejected.
@@ -52,12 +58,18 @@ void prompt_text_input_open(const char *header, const char *body,
 int  prompt_text_input_value(void);
 
 bool prompt_is_active(void);
+// --gallery: the dwelling's count step up (true) or its Recruit/Leave rows.
+void prompt_gallery_step_open(bool open);
 void prompt_dismiss(void);
 
 // Read-only accessors for the harness / state serializer. The kind is
 // returned as a stable string ("yes_no" | "numeric" | "ab" | "text") or
 // "none" when no prompt is up.
 const char *prompt_kind_str(void);
+// What the raiser called this question (player_io.h).
+ReqKind prompt_req_kind(void);
+// The picture an ask_face named: the ReqFace kind, and the index through *index.
+int prompt_req_face(int *index);
 const char *prompt_header_text(void);
 const char *prompt_body_text(void);
 

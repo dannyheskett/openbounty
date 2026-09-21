@@ -54,3 +54,7 @@ save.dat
 __pycache__/
 *.pyc
 *:Zone.Identifier
+
+# Local Claude Code harness state (session locks, scheduled tasks).
+.claude/
+screenshots/

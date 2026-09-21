@@ -16,16 +16,32 @@ typedef enum {
     AUDIO_TRACK_COMBAT,
 } AudioTrack;
 
-// Lifecycle. audio_init opens the raylib audio device, loads the
-// music streams (if paths in `res` resolve), and loads the
-// PC-speaker tune WAVs from the pack. audio_shutdown closes everything;
-// safe to call even if init partially failed.
+// Lifecycle. Opening the playback device can block for a long time -- tens
+// of seconds under WSL, where the sound server may be slow to answer -- so
+// audio_init does NOT wait for it: it starts the open on a background thread
+// and returns at once. audio_tick, on the main thread, finishes the job when
+// the device answers (loads the tunes and music streams and starts any track
+// already asked for). Only InitAudioDevice / IsAudioDeviceReady run off the
+// main thread; every other raylib audio call stays on it.
+//
+// audio_init_blocking opens the device and loads everything before returning,
+// for --autoplay and --demo: their game state is byte-exact, and a
+// no-device fallback landing mid-run would change it.
+//
+// audio_shutdown closes everything; safe to call while the open is still
+// pending or after it failed.
 void audio_init(const Resources *res);
+void audio_init_blocking(const Resources *res);
 void audio_shutdown(void);
 
-// True iff audio_init successfully opened a playback device. UI code
-// uses this to gray out the music/sounds/volume controls when no
-// device is available.
+typedef enum {
+    AUDIO_PENDING,       // the device is still being opened
+    AUDIO_READY,         // playing
+    AUDIO_UNAVAILABLE,   // no device: the audio controls are disabled
+} AudioStatus;
+AudioStatus audio_status(void);
+
+// True iff a playback device is open and loaded.
 bool audio_is_available(void);
 
 // Per-frame tick. Drives raylib's UpdateMusicStream for whichever

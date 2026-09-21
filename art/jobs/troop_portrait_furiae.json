@@ -1,0 +1,20 @@
+{
+  "id": "troop_portrait_furiae",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Fury, a gaunt woman with ash-grey skin and hollow red eyes, live snakes writhing in her hair, black feathered wings rising behind her shoulders, a ragged black robe, a flaming orange torch raised beside her, a dark stormy underworld behind her",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 9997,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "reference_image_paths": [
+    "assets/glory-of-rome/art/troops/furiae_00.png"
+  ],
+  "_pack_path": "art/portraits/troop_furiae.png",
+  "_note": "Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation. Re-run 2026-09-20 to match the reworked sprite (furiae.json seed 6210): ash-grey skin and red eyes rather than a dark unlit face, and the torch flame orange, the accent that separates her from her own wings."
+}

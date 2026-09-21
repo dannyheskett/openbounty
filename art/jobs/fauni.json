@@ -1,0 +1,18 @@
+{
+  "id": "fauni",
+  "_note": "Batch of 2026-09-05. The 64 route (run01) animated with a doubled branch twice, so run02 generates and animates at 96 like the men and is then scaled to 66% through the API's k-centroid tool with one shared offset for the four frames, feet on row 88, which gives the small unit its two-thirds height another way. run03: the thin crooked branch was lost or doubled in every animation, so the still now gives him a short thick gnarled club, which survives animation the way the Ligures' axe and the Cyclopes' hammer did.",
+  "prompt": "a small woodland faun with goat legs and curling horns, shaggy brown pelt, a short thick gnarled wooden club held upright at rest in his right hand, a mischievous grin",
+  "style": "user__glory_of_rome_troops_bac676cd",
+  "width": 96,
+  "height": 96,
+  "seed": 6145,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": true,
+  "target": [
+    96,
+    96
+  ]
+}

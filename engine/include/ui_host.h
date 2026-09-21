@@ -47,6 +47,14 @@
 // `prompt_body_text` are also read by `state_serialize` so JSON
 // snapshots include current prompt state.
 
+// What kind of question this is (player_io.h). Set right after opening, by
+// whoever raised it: the ask helpers do it for engine asks, and the shell's own
+// raisers (the menu, the combat give-up) do it for theirs. The renderer reads
+// it instead of guessing from the flow.
+void prompt_set_req_kind(ReqKind kind);
+// The picture an ask_face named, for a shell that can show it.
+void prompt_set_req_face(int face, int face_index);
+
 void prompt_yes_no_open(const char *header, const char *body);
 void prompt_ab_open(const char *header, const char *body);
 void prompt_text_input_open(const char *header, const char *body,

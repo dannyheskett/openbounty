@@ -1,7 +1,7 @@
 #ifndef OB_PALETTE_H
 #define OB_PALETTE_H
 
-#include "raylib.h"
+#include "ob_types.h"
 
 // 256-color VGA palette loaded from the asset pack at startup. Initialized
 // by palette_init() before any rendering. Index 0..15 are the canonical

@@ -1,10 +1,14 @@
 #include "combat_render.h"
+#include "gfx.h"
 #include "tables.h"
 #include "bfont.h"
 #include "palette.h"
 #include "layout.h"
+#include "ui.h"
 #include "chrome.h"
-#include "raylib.h"
+#include "modern/mlist.h"   // ml_hint_text
+#include "lattice.h"
+#include "ob_types.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -52,10 +56,12 @@ void combat_format_title(const Combat *c, const Game *g, char *buf, int cap) {
         }
         // Append ",Sn" only when the active unit has remaining shots;
         // melee-only stacks show "Mn" alone.
+        // Modern draws the menu button itself, at the left of the bar.
+        const char *pre = CL_IS_MODERN ? "" : " Options / ";
         if (shots > 0) {
-            snprintf(buf, cap, " Options / %s M%d,S%d", name, moves, shots);
+            snprintf(buf, cap, "%s%s M%d,S%d", pre, name, moves, shots);
         } else {
-            snprintf(buf, cap, " Options / %s M%d", name, moves);
+            snprintf(buf, cap, "%s%s M%d", pre, name, moves);
         }
     } else {
         const char *p_name = "Army";
@@ -86,6 +92,19 @@ void combat_format_title(const Combat *c, const Game *g, char *buf, int cap) {
 
 // ----- Cell math -------------------------------------------------------------
 
+static Texture2D s_ground;   // see combat_render_set_ground
+
+void combat_render_set_ground(Texture2D ground) { s_ground = ground; }
+
+static int s_atk_side = -1, s_atk_x, s_atk_y, s_atk_frame = -1;
+
+void combat_render_set_attack(int side, int x, int y, int frame) {
+    s_atk_side = frame < 0 ? -1 : side;
+    s_atk_x = x;
+    s_atk_y = y;
+    s_atk_frame = frame;
+}
+
 static void cell_origin(int gx, int gy, int *px, int *py) {
     *px = CL_COMBAT_X + gx * CL_COMBAT_CELL_W;
     *py = CL_COMBAT_Y + gy * CL_COMBAT_CELL_H;
@@ -95,43 +114,45 @@ static void cell_origin(int gx, int gy, int *px, int *py) {
 
 static void draw_tile(const Sprites *s, int idx, int px, int py) {
     if (idx < 0 || idx >= 15) return;
-    Texture2D t = s->combat_tile[idx];
-    if (t.id == 0) return;
-    Rectangle src = { 0, 0, (float)t.width, (float)t.height };
-    Rectangle dst = { (float)px, (float)py, (float)t.width, (float)t.height };
-    DrawTexturePro(t, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+    // Fill the cell. The art is authored at the legacy 48x34 tile, so blitting
+    // at its native size leaves black gutters between cells on any pack whose
+    // tile is bigger.
+    ui_blit(s->combat_tile[idx], px, py,
+            CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
 }
 
 // ----- Unit + count badge ----------------------------------------------------
 
 static void draw_unit(const CombatUnit *u, int side,
                       const Sprites *sprites) {
-    if (u->troop_idx < 0 || u->count == 0) return;
+    if (u->troop_idx < 0 || u->troop_idx >= sprites->troop_count || u->count == 0) return;
     int px, py;
     cell_origin(u->x, u->y, &px, &py);
+    // Modern: the troop whose turn it is swaps between frames 0 and 1 (the
+    // others hold frame 0); a troop attacking plays its whole strip from 0.
+    int frame = CL_IS_MODERN ? sprites_stand(u->frame) : u->frame;
+    if (CL_IS_MODERN && side == s_atk_side && u->x == s_atk_x && u->y == s_atk_y)
+        frame = s_atk_frame;
     Texture2D tex =
-        sprites->troop_anim[u->troop_idx]
-                           [sprites_frame(u->frame,
-                                          sprites->troop_anim_frames[u->troop_idx])];
+        sprites_strip(sprites->troop_anim[u->troop_idx],
+                      sprites->troop_anim_frames[u->troop_idx], frame);
     if (tex.id == 0) tex = sprites->troop_sprite[u->troop_idx];
-    if (tex.id != 0) {
-        // Sprites face right by default. AI side faces left -- mirror via
-        // negative source width. Sprite cell pitch is 48x34, matching
-        // unit-sprite native size, so they fill the cell exactly.
-        Rectangle src = { 0, 0, (float)tex.width, (float)tex.height };
-        if (side == COMBAT_SIDE_AI) src.width = -src.width;
-        Rectangle dst = { (float)px, (float)py,
-                          (float)tex.width, (float)tex.height };
-        DrawTexturePro(tex, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
-    }
+    // Sprites face right by default; the AI side is mirrored rather than
+    // shipping a second strip. The slot is the cell, not the sprite's own
+    // size -- they coincide only in legacy, where the cell is 48x34.
+    if (side == COMBAT_SIDE_AI)
+        ui_blit_mirrored(tex, px, py, CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
+    else
+        ui_blit(tex, px, py, CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
     // Count badge: white digits on black band, centered horizontally,
     // anchored at the bottom of the cell.
     char buf[16];
     snprintf(buf, sizeof buf, "%d", u->count);
     Vector2 m = bfont_measure(buf);
     int bx = px + (CL_COMBAT_CELL_W - (int)m.x) / 2;
-    int by = py + CL_COMBAT_CELL_H - BFONT_GLYPH_H - 1;
-    DrawRectangle(bx - 1, by - 1, (int)m.x + 2, BFONT_GLYPH_H + 2,
+    int by = py + CL_COMBAT_CELL_H - BFONT_GLYPH_H - CL_UI;
+    gfx_rect(bx - CL_UI, by - CL_UI,
+                  (int)m.x + 2 * CL_UI, BFONT_GLYPH_H + 2 * CL_UI,
                   PAL_CLR(BLACK));
     bfont_draw(buf, bx, by, PAL_CLR(WHITE));
 }
@@ -143,7 +164,13 @@ void combat_render_frame(const Combat *c, const Game *g,
     // Full-screen black so any letterbox area outside the chrome stays
     // dark; the chrome bitmap composites the frame on top, and the
     // combat field sits inside the inner area.
-    DrawRectangle(0, 0, CL_SCREEN_W, CL_SCREEN_H, PAL_CLR(BLACK));
+    gfx_rect(0, 0, CL_SCREEN_W, CL_SCREEN_H, PAL_CLR(BLACK));
+
+    // A siege on a pack that ships a full siege grid (sprites.ui.siege_grid)
+    // draws each cell's own tile as the ground, with the walls painted in the
+    // tiles; the per-code wall pieces are then not drawn. Draw-only: the
+    // omap still blocks the wall cells exactly as before.
+    const bool grid = c->castle && sprites->siege_grid_ok;
 
     // Tile the field with frame_00 (grass background). One tile per
     // cell; doubles as the open-field backdrop.
@@ -151,7 +178,68 @@ void combat_render_frame(const Combat *c, const Game *g,
         for (int x = 0; x < COMBAT_W; x++) {
             int px, py;
             cell_origin(x, y, &px, &py);
-            draw_tile(sprites, 0, px, py);
+            if (grid)
+                ui_blit(sprites->siege_grid[y + 1][x], px, py,
+                        CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
+            else if (s_ground.id)
+                ui_blit(s_ground, px, py, CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
+            else
+                draw_tile(sprites, 0, px, py);
+        }
+    }
+
+    // Modern: the bars either side of the field are the same ground, darkened,
+    // with a lattice rail where the field ends.
+    if (CL_IS_MODERN) {
+        int fx = CL_COMBAT_X, fw = COMBAT_W * CL_COMBAT_CELL_W;
+        int top = CL_COMBAT_Y - (c->castle ? CL_COMBAT_CELL_H : 0);
+        int fh = COMBAT_H * CL_COMBAT_CELL_H + (CL_COMBAT_Y - top);
+        for (int side = 0; side < 2; side++) {
+            for (int k = 1; ; k++) {
+                int px = side ? fx + fw + (k - 1) * CL_COMBAT_CELL_W : fx - k * CL_COMBAT_CELL_W;
+                if (side ? px >= CL_SCREEN_W : px + CL_COMBAT_CELL_W <= 0) break;
+                for (int y = 0; y < COMBAT_H; y++) {
+                    int py = CL_COMBAT_Y + y * CL_COMBAT_CELL_H;
+                    if (s_ground.id) ui_blit(s_ground, px, py, CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
+                    else draw_tile(sprites, 0, px, py);
+                }
+            }
+        }
+        Color shade = { 0, 0, 0, 150 };
+        gfx_rect(0, top, fx, fh, shade);
+        gfx_rect(fx + fw, top, CL_SCREEN_W - fx - fw, fh, shade);
+        lattice_band_v(fx - 4, top, 4, fh);
+        lattice_band_v(fx + fw, top, 4, fh);
+    }
+
+    // Siege grid band: row 0 of the grid across the band above the board.
+    if (grid) {
+        for (int x = 0; x < COMBAT_W; x++) {
+            int px, py;
+            cell_origin(x, 0, &px, &py);
+            py -= CL_COMBAT_CELL_H;
+            ui_blit(sprites->siege_grid[0][x], px, py,
+                    CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
+        }
+    }
+
+    // Siege back wall: a decorative run across the band above row 0, field
+    // tiles beneath it, only when the pack names one (sprites.ui.siege_back_wall)
+    // and only for a siege. Outside the grid, so nothing in play changes.
+    if (!grid && c->castle && sprites->siege_back_wall.id) {
+        for (int x = 0; x < COMBAT_W; x++) {
+            int px, py;
+            cell_origin(x, 0, &px, &py);
+            py -= CL_COMBAT_CELL_H;
+            if (s_ground.id) ui_blit(s_ground, px, py, CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
+            else draw_tile(sprites, 0, px, py);
+            Texture2D t = sprites->siege_back_wall;
+            if (x == 0 && sprites->siege_back_wall_end[0].id) t = sprites->siege_back_wall_end[0];
+            if (x == COMBAT_W - 1 && sprites->siege_back_wall_end[1].id) t = sprites->siege_back_wall_end[1];
+            Rectangle src = { 0, 0, (float)t.width, (float)t.height };
+            Rectangle dst = { (float)px, (float)py,
+                              (float)CL_COMBAT_CELL_W, (float)CL_COMBAT_CELL_H };
+            gfx_texture_draw(t, src, dst, WHITE);
         }
     }
 
@@ -162,6 +250,7 @@ void combat_render_frame(const Combat *c, const Game *g,
         for (int x = 0; x < COMBAT_W; x++) {
             unsigned char code = c->omap[y][x];
             if (!code) continue;
+            if (grid && code >= 5 && code <= 10) continue;   // walls are in the tiles
             int px, py;
             cell_origin(x, y, &px, &py);
             draw_tile(sprites, code, px, py);
@@ -177,14 +266,20 @@ void combat_render_frame(const Combat *c, const Game *g,
     }
 
     // Damage burst (comtile frame 4) over any unit with hit_flash > 0.
-    // Painted after units so the splat sits on top.
-    for (int s = 0; s < COMBAT_SIDES; s++) {
-        for (int i = 0; i < COMBAT_SLOTS; i++) {
-            const CombatUnit *u = &c->units[s][i];
-            if (u->troop_idx < 0 || u->hit_flash <= 0) continue;
-            int px, py;
-            cell_origin(u->x, u->y, &px, &py);
-            draw_tile(sprites, 4, px, py);
+    // Painted after units so the splat sits on top. Held back while an
+    // attacker's strip is playing: the engine deals the damage in the same
+    // call that starts the swing, so without this the blow lands before the
+    // weapon does. combat_loop freezes hit_flash for the same span, so the
+    // splat still gets its full run once the strip ends.
+    if (s_atk_frame < 0) {
+        for (int s = 0; s < COMBAT_SIDES; s++) {
+            for (int i = 0; i < COMBAT_SLOTS; i++) {
+                const CombatUnit *u = &c->units[s][i];
+                if (u->troop_idx < 0 || u->hit_flash <= 0) continue;
+                int px, py;
+                cell_origin(u->x, u->y, &px, &py);
+                draw_tile(sprites, 4, px, py);
+            }
         }
     }
 
@@ -205,7 +300,16 @@ void combat_render_frame(const Combat *c, const Game *g,
     // frame.
     char title[COMBAT_BANNER_LEN];
     combat_format_title(c, g, title, sizeof title);
-    chrome_draw_with_status(g, sprites, title);
+    if (CL_IS_MODERN && g && g->res) {
+        // The map's bar: the Game Menu button at the left, this turn's words
+        // at the right.
+        char left[96];
+        ml_hint_text(left, sizeof left, g->res->banners.status_game_menu,
+                     g->res->ui.key_esc, g->res->ui.pad_back);
+        chrome_draw_with_status_lr(g, sprites, left, title);
+    } else {
+        chrome_draw_with_status(g, sprites, title);
+    }
 
     // No bottom-of-field banner -- action banners are routed through the
     // title bar (combat_format_title above).

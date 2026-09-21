@@ -1,0 +1,16 @@
+{
+  "id": "appicon",
+  "_note": "The Glory of Rome launcher icon, for both stores. 512 is the largest any Retro Diffusion style will produce; Apple needs exactly 1024, so the 512 is doubled to 1024 with nearest-neighbour (each pixel becomes a 2x2 block) -- Dan approved that doubling on 2026-09-21, for this asset only. No crop, no filtering, no compositing. The icon must be OPAQUE: Apple rejects an icon with an alpha channel, so the background is generated as a solid field rather than removed. run01 used rd_plus__no_style, which the API marks internal-use-only and refused (inference_failed, no charge); rd_plus__environment is the only other style that reaches 512.",
+  "prompt": "a Roman legionary eagle standard seen head-on, a gilded bronze aquila with its wings spread wide and its head turned to one side, perched on a crossbar above a short pole, centred as a bold emblem filling the frame on a plain deep crimson red background, thick clean outlines, strong readable shapes",
+  "style": "rd_plus__environment",
+  "width": 512,
+  "height": 512,
+  "seed": 1753,
+  "remove_bg": false,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "target": [
+    512,
+    512
+  ]
+}

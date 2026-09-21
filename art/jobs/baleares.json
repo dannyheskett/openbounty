@@ -1,0 +1,19 @@
+{
+  "id": "baleares",
+  "_note": "Reworked 2026-09-20 in the adversarial troop review: the 2026-09-05 sprite read as a naked child -- 62px tall and 908 opaque pixels against the velites' 80px and 1959, the smallest human in the game, and installed scaled to 80% on top of that. The old 28-word prompt was the cause: 'a Balearic slinger, bare-chested and wiry, a leather sling hanging loose from his right hand at his side, a pouch of stones at his hip, a cloth headband' -- 'bare-chested and wiry' drew the boy and 'hanging loose at his side' drew a sling of three pixels. Rewritten to the length the good troops use (sagittarii 68 words, numidae 75): clothed, adult, the sling loaded and held out so it has a shape. Install at 100%, not 80%.",
+  "prompt": "a Balearic slinger, a wiry grown man with a short black beard, a short coarse brown tunic over one shoulder leaving the right arm bare, a wide leather belt, a bulging hide pouch of sling stones at his left hip, rope sandals, a braided leather sling held out from his right hand with a stone in its cradle and the long cord hanging in a loop below it, a red cloth headband, standing squarely facing right",
+  "style": "user__glory_of_rome_troops_bac676cd",
+  "width": 96,
+  "height": 96,
+  "seed": 6154,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": true,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/troops/baleares_00.png"
+}

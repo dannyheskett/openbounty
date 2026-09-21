@@ -14,6 +14,10 @@ void chrome_draw(const Game *g, const Sprites *s);
 // frame bitmap) but the status-bar text is supplied by the caller.
 // Used by combat to put the active-troop name + move counter in the
 // title bar without polluting the adventure-mode status path.
+// The same bar with words at both ends: the menu button at the left, the
+// screen's own status at the right -- the map's shape, used by combat too.
+void chrome_draw_with_status_lr(const Game *g, const Sprites *s,
+                                const char *left, const char *right);
 void chrome_draw_with_status(const Game *g, const Sprites *s,
                                      const char *status_text);
 

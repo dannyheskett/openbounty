@@ -29,7 +29,12 @@ void fatal_user_error(const char *title, const char *body) {
     // Always log to stderr first.
     fprintf(stdout, "%s\n\n%s\n", title, body);
 
-#ifdef _WIN32
+#if defined(PLATFORM_IOS)
+    // iOS: stdout above is the whole story. There is no system() on iOS (the
+    // SDK marks it unavailable), no console for the player to read, and a
+    // fatal here means the bundled pack is broken -- which ships with the app,
+    // so it cannot happen to a player without the build being wrong.
+#elif defined(_WIN32)
     MessageBoxA(NULL, body, title, MB_OK | MB_ICONERROR);
 #elif defined(__APPLE__)
     // osascript ships with every macOS install. Escape double-quotes

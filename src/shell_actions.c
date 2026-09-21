@@ -1,6 +1,7 @@
 // src/shell_actions.c
 
 #include "shell_actions.h"
+#include "layout.h"
 
 #include <stdio.h>
 
@@ -13,6 +14,7 @@
 #include "tile.h"
 #include "ui.h"
 #include "views.h"
+#include "modern/gamemenu.h"
 
 void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
     Game            *g  = ctx->game;
@@ -50,14 +52,22 @@ void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
             };
             resources_format_template(body, sizeof body,
                                       r_->banners.no_spell_banner, vars, 3);
-            player_io_message(g, NULL, body);
+            player_io_note(g, NULL, body);
         } else {
             views_set(VIEW_SPELLS);
             views_spells_set_mode(true);
         }
         break;
-    case INPUT_ACTION_OPTIONS_MENU:    views_set(VIEW_OPTIONS);   break;
+    // Modern retires the Options panel: the one menu has a row for every action.
+    case INPUT_ACTION_OPTIONS_MENU:    views_set(CL_IS_MODERN ? VIEW_MENU : VIEW_OPTIONS); break;
+    case INPUT_ACTION_GAME_MENU:       views_set(VIEW_MENU);      break;
     case INPUT_ACTION_SAVE_QUIT: {
+        if (CL_IS_MODERN) {
+            // Modern: every save goes through the slots.
+            views_set(VIEW_MENU);
+            modern_gamemenu_open_save();
+            break;
+        }
         // Q saves unconditionally, then displays a "Press Ctrl-Q to
         // Quit / any other key to continue" dialog. The dialog handler
         // at the bottom of the main loop watches Ctrl-Q to exit.
@@ -72,7 +82,7 @@ void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
             resources_format_template(body, sizeof body,
                                       r_->banners.body_save_confirm,
                                       NULL, 0);
-            player_io_message(g, NULL, body);
+            player_io_note(g, NULL, body);
         }
         break;
     }
@@ -101,9 +111,7 @@ void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
             ResTemplateVar v[] = { { "DAYS", dbuf } };
             resources_format_template(body, sizeof body,
                                       r_->banners.body_search, v, 1);
-            prompt_yes_no_open(r_->ui.dt_search, body);
-            player_io_raise_decision(g, FLOW_SEARCH, REQ_PROMPT_YES_NO,
-                                     r_->ui.dt_search, body);
+            player_io_ask(g, FLOW_SEARCH, REQ_PROMPT_YES_NO, r_->ui.dt_search, body);
         }
         break;
     }
@@ -122,10 +130,22 @@ void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
                                       NULL, 0);
             prompt_numeric_open(r_->ui.dt_dismiss_army, body,
                                 GAME_ARMY_SLOTS);
-            PlayerRequest *pr = player_io_raise_decision(
-                g, FLOW_DISMISS_ARMY, REQ_PROMPT_NUMERIC,
-                r_->ui.dt_dismiss_army, body);
-            if (pr) pr->prompt_max = GAME_ARMY_SLOTS;
+            // The rows are the troops, each answering its slot's number.
+            char names[GAME_ARMY_SLOTS][48];
+            const char *labels[GAME_ARMY_SLOTS];
+            int values[GAME_ARMY_SLOTS], n = 0;
+            for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+                if (!g->army[i].id[0] || g->army[i].count <= 0) continue;
+                const TroopDef *t = troop_by_id(g->army[i].id);
+                snprintf(names[n], sizeof names[0], "%.30s (%d)",
+                         (t && t->name[0]) ? t->name : g->army[i].id, g->army[i].count);
+                labels[n] = names[n];
+                values[n] = i + 1;
+                n++;
+            }
+            prompt_set_choices(labels, values, n);
+            player_io_ask_choice(g, FLOW_DISMISS_ARMY, r_->ui.dt_dismiss_army,
+                                 body, GAME_ARMY_SLOTS);
         }
         break;
     }
@@ -144,12 +164,12 @@ void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
         // runs after the switch.
         const ResBanners *bn = &r_->banners;
         if (g->travel_mode != TRAVEL_BOAT) {
-            player_io_message(g, NULL, bn->body_must_be_sailing);
+            player_io_note(g, NULL, bn->body_must_be_sailing);
             break;
         }
         const ResZone *cur = resources_zone_by_id(r_, g->position.zone);
         if (!cur || cur->neighbor_count == 0) {
-            player_io_message(g, NULL, bn->body_no_continents);
+            player_io_note(g, NULL, bn->body_no_continents);
             break;
         }
         // Only offer neighbors whose navmap has been picked up.
@@ -166,7 +186,7 @@ void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
             const ResZone *nz = resources_zone_by_id(r_, cur->neighbors[ni]);
             if (!nz) continue;
             int nz_idx = (int)(nz - r_->zones);
-            if (nz_idx < 0 || nz_idx >= GAME_CONTINENTS ||
+            if (nz_idx < 0 || nz_idx >= g->world.zone_count ||
                 !g->world.zones_discovered[nz_idx]) continue;
             size_t k = 0;
             while (k + 1 < sizeof(pending_nav_zones[0]) && nz->id[k]) {
@@ -189,16 +209,19 @@ void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
             pending_nav_count++;
         }
         if (pending_nav_count == 0) {
-            player_io_message(g, NULL, bn->body_no_continents);
+            player_io_note(g, NULL, bn->body_no_continents);
             break;
         }
         pending_flow = FLOW_NAVIGATE;
         prompt_numeric_open(r_->ui.dt_navigate, body, pending_nav_count);
-        {
-            PlayerRequest *pr = player_io_raise_decision(
-                g, FLOW_NAVIGATE, REQ_PROMPT_NUMERIC, r_->ui.dt_navigate, body);
-            if (pr) pr->prompt_max = pending_nav_count;
-        }
+        // A pack that ships the sailing picture gets the scene: the provinces
+        // over the ship, then a confirmation. Without it, the bottom-frame
+        // list as before (REQ-221c).
+        if (CL_IS_MODERN && r_->sprites.sail_backdrop[0] &&
+            r_->banners.body_navigate_confirm[0])
+            prompt_set_req_kind(PIO_ASK_SCENE);
+        player_io_ask_choice(g, FLOW_NAVIGATE, r_->ui.dt_navigate, body,
+                             pending_nav_count);
         break;
     }
     case INPUT_ACTION_VIEW_CONTROLS:

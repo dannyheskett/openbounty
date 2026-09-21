@@ -1,0 +1,20 @@
+{
+  "id": "druidae_attack",
+  "_note": "Batch of 2026-09-05. Still scaled to 80% through the API's k-centroid tool (black flatten, alpha from coverage), feet on row 88, for motion room. Animated at 96 with no padding. Motion line: path, two endpoints, then what stays still. run01 kept the staff vertical; run02 names the tip pointing straight ahead to the right, new seed.",
+  "prompt": "he swings the staff forward and up in his right hand until it points straight ahead to the right at shoulder height, its tip out in front of him, and a burst of pale golden light flares from the tip, then he swings it back down to upright at his side, both feet stay planted, the robe stays still",
+  "style": "rd_advanced_animation__custom_action",
+  "width": 96,
+  "height": 96,
+  "seed": 6132,
+  "frames_duration": 4,
+  "return_spritesheet": true,
+  "input_image_path": "build/art/druidae/run01/01_scaled80.png",
+  "input_image_keep_alpha": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ]
+}

@@ -48,7 +48,7 @@ by `--version`.
 ## 2. What the workflow does
 
 `.github/workflows/release.yml` is triggered by any push to `main` and
-by `workflow_dispatch`. It runs six jobs:
+by `workflow_dispatch`. It runs eight jobs:
 
 - **guard**: the attribution guard (`attribution-guard.yml`, reused via
   `workflow_call`) gates everything, so a violating commit can never
@@ -71,9 +71,27 @@ by `workflow_dispatch`. It runs six jobs:
   `dist-web`. It needs the *Linux* toolchain as well as emsdk because
   the wasm target depends on the asset pack, and the native binary is
   what zips that pack.
+- **android build** (Ubuntu): installs the NDK, build-tools and platform,
+  builds raylib for `arm64-v8a` and the Linux toolchain (the APK embeds the
+  Glory of Rome pack, and the native binary is what zips that pack), then
+  packages a debug-signed sideload **APK** and -- only when all four
+  `PLAY_*` signing secrets are present -- an upload-signed **AAB**. Mobile is
+  Glory of Rome only; the job asserts no King's Bounty pack is inside either
+  artifact.
+- **iOS build** (macOS 15): builds raylib for macOS and `make mac` first --
+  the .app embeds the Glory of Rome pack and the native binary is what zips
+  that pack -- then packages the device `.ipa`. Unsigned when the Apple
+  secrets are absent; App Store-signed when they are present, in a throwaway
+  keychain, with the entitlements the Makefile writes and the icon compiled
+  into `Assets.car`. The signed path then verifies the bundle is
+  App Store-shaped before it is uploaded anywhere.
 - **publish** (Ubuntu): downloads all build artifacts, creates the
   `release-N` **tag at the triggering SHA**, and publishes the GitHub
-  Release with auto-generated notes and the five archives attached.
+  Release with auto-generated notes and the archives attached.
+- **publish-play** (Ubuntu): pushes the AAB to Play's **internal** track,
+  gated on `publish` having succeeded and on `dry_run` being false, and
+  skipped entirely when `PLAY_SERVICE_ACCOUNT_JSON` is absent. The package
+  name is `com.danheskett.gloryofrome` -- the app, not the repository.
 
 Tagging happens in the publish job, after every build job succeeds. If
 any build fails, no tag is created and `N` is reused next time.
@@ -88,7 +106,34 @@ check is enforced in every build job.
 The web archive is the exception: it must embed the pack to run at all,
 so the pack rides inside `openbounty.data`. That is the intended
 embedding, and the leak check still passes because no file named
-`*.openbounty` is present.
+`*.openbounty` is present. The web bundle that ships is **Glory of Rome**;
+King's Bounty's web build stays local.
+
+The Android artifacts are the other exception, and deliberately so: the APK
+and the AAB carry `assets/glory-of-rome.openbounty` inside them, which is
+ours to distribute. Their own guard checks the opposite thing -- that the
+King's Bounty pack is *not* in there.
+
+- **publish-testflight** (macOS 15): validates the `.ipa` with
+  `altool --validate-app` and then uploads it to App Store Connect, where it
+  appears in TestFlight after Apple's 5-15 minute processing. Gated the same
+  way as `publish-play`: on `publish` having succeeded, on `dry_run` being
+  false, and skipped when the `ASC_*` secrets are missing or the `.ipa` is
+  unsigned. Validation runs first because it names the rejection reason
+  without consuming the build number.
+
+**Secrets the Android path needs**: `PLAY_UPLOAD_KEYSTORE` (base64 of the
+upload keystore), `PLAY_KEY_ALIAS`, `PLAY_KEYSTORE_PASSWORD`,
+`PLAY_KEY_PASSWORD` for signing the AAB, and `PLAY_SERVICE_ACCOUNT_JSON` for
+the Play push. With none of them set, the release still produces the sideload
+APK and simply skips the bundle and the upload.
+
+**Secrets the iOS path needs**: `IOS_CERT_P12` (base64 of the Apple
+Distribution certificate and key), `IOS_CERT_PASSWORD`,
+`IOS_PROVISIONING_PROFILE` (base64 of the App Store `.mobileprovision`) and
+`IOS_TEAM_ID` to sign; `ASC_KEY_P8`, `ASC_KEY_ID` and `ASC_ISSUER_ID` (an App
+Store Connect API key) to upload. With none of them set, the release still
+produces the unsigned `.ipa` and skips the upload.
 
 ---
 
@@ -96,9 +141,11 @@ embedding, and the leak check still passes because no file named
 
 `.github/workflows/ci.yml` runs on every pull request. The Linux job
 builds the dev binary (`make`) and runs the full test suite
-(`make test`). Windows, macOS, and web jobs run a cross-compile /
-universal / wasm smoke build as cheap insurance that the other targets
-still build before a release is cut.
+(`make test`). Windows, macOS, web and Android jobs run a cross-compile /
+universal / wasm / APK smoke build as cheap insurance that the other targets
+still build before a release is cut. The Android job also unzips the APK it
+built and asserts it carries the pack, the `.so` and `classes.dex`, and no
+King's Bounty pack.
 
 Doc-only changes (`**.md`, `docs/**`) skip CI.
 
@@ -166,8 +213,8 @@ make test           # build + run the full test suite
 make release        # Linux release binary (build/release/openbounty, static libgcc)
 make windows        # Win64 + Win32 cross-compile (needs mingw-w64)
 make mac            # macOS universal (only on macOS)
-make web            # WebAssembly bundle (needs emsdk on PATH)
-make web-serve      # build + serve the web build on localhost:8080
+make web            # WebAssembly bundles, one per pack (needs emsdk on PATH)
+make web-serve      # build + serve them on localhost:8080/<pack>/openbounty.html
 make dist-linux     # Linux release archive in dist/
 make dist-windows   # Windows zips in dist/
 make dist-mac       # macOS zip in dist/ (only on macOS)

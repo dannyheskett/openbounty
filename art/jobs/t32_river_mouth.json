@@ -1,0 +1,26 @@
+{
+ "lower_description": "clear shallow river water, blue, with a gentle current and soft ripples, seen from above",
+ "tile_size": {
+  "width": 32,
+  "height": 32
+ },
+ "mode": "standard",
+ "shape_style": "round",
+ "enhance": false,
+ "view": "high top-down",
+ "outline": "lineless",
+ "shading": "medium shading",
+ "detail": "medium detail",
+ "text_guidance_scale": 8.0,
+ "seed": 1319,
+ "lower_base_tile_id": "0e608842-1ca9-4d0c-ae6a-70dc08eace09",
+ "upper_description": "deep blue sea water with small short horizontal dashes of pale cyan, seen from above",
+ "transition_description": "open water only: the pale blue river water shading gradually into the deep blue sea, no shore, no sand, no mud, no bank, no border line between them",
+ "transition_size": 0.25,
+ "_note": "River mouth, second try (2026-09-16). The first (seed 1311, transition 'river water mixing into the sea, the blue deepening gradually') drew a reddish-brown shoreline between the two waters, unusable. Only the transition description and seed changed. Last generation attempt for the mouth.",
+ "upper_reference_image": {
+  "type": "base64",
+  "base64": "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",
+  "format": "png"
+ }
+}

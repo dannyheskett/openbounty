@@ -1,0 +1,20 @@
+{
+  "id": "larvae_attack",
+  "_note": "Batch of 2026-09-05. Animated at 96 with no padding. Motion line: path, two endpoints, then what stays still. run01 sent the blade behind the head in frame 2 and turned it purple in frame 3; run02 names the single rusted brown sword and takes a new seed.",
+  "prompt": "the rusted brown short sword swings from upright down and forward to full reach in front of it at chest height, then back up to upright, the same single rusted brown sword the whole time held in the right hand, both feet stay planted, the skull keeps facing right",
+  "style": "rd_advanced_animation__custom_action",
+  "width": 96,
+  "height": 96,
+  "seed": 6172,
+  "frames_duration": 4,
+  "return_spritesheet": true,
+  "input_image_path": "build/art/larvae/run01/01_raw.png",
+  "input_image_keep_alpha": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ]
+}

@@ -1,7 +1,8 @@
 #ifndef OB_LAYOUT_H
 #define OB_LAYOUT_H
 
-#include "raylib.h"
+#include "ob_types.h"
+#include <stdbool.h>
 
 // Design-space coordinates for the internal render target. All values are in
 // internal pixels; present.c blits that target to the window at an integer
@@ -24,6 +25,20 @@ typedef struct {
     int screen_w, screen_h;    // derived from the map plus the chrome bands
     int default_scale;         // window scale at startup; modern is already large
     int is_modern;             // 1 in modern mode; legacy must behave as it always did
+    int pack_tiles_w, pack_tiles_h;  // the viewport the pack declared: a
+                                     // guaranteed minimum, not a fixed size
+    int ui_scale;              // multiplies the font and the chrome bands
+    int frame_l, frame_r;      // chrome side bands, in pixels
+    int frame_t, frame_b;      // chrome top and bottom bands
+    int status_h, bar_h;       // modern fixed buffer: the status band and the
+                               // band under it, set so the vertical stack
+                               // mirrors the horizontal one. 0: the formulas.
+    int sidebar_gap;           // modern fixed buffer: the band between the map
+                               // pane and the HUD, as wide as the side bands so
+                               // left edge, middle and right edge match. 0 else.
+    int is_native;             // 1 when the pack fixed the buffer size: the
+                               // screen never follows the window; present.c
+                               // shows it at 1x, 2x or 3x and letterboxes
 } ClLayout;
 
 extern ClLayout g_layout;
@@ -37,6 +52,25 @@ extern ClLayout g_layout;
 // resources_load and before the render target and window are created.
 struct Resources;
 void layout_init(const struct Resources *res);
+
+// Modern only: grow the viewport to as many whole tiles as fit the window at
+// `scale`, and re-derive the screen size. Legacy is a no-op -- its geometry is
+// fixed. Returns true when the screen size changed, so the caller knows to
+// recreate the render target. The remainder is letterboxed by present_scaled.
+bool layout_fit_window(int win_w, int win_h, int scale);
+
+// The smallest window this pack can be played in, derived from its tile size.
+// Set as the window's minimum so the player cannot drag below it. The binding
+// constraint is the battlefield: it is a fixed grid of one-tile cells and has
+// no path that scales it, so the window must be able to hold it.
+void layout_min_window(int *out_w, int *out_h);
+
+
+// Viewport bounds. The floor matches what fog reveals (a 5x5 square, see
+// FogReveal): a wider viewport would show tiles the game never uncovers from
+// where the hero stands. The ceiling just stops absurd windows.
+#define CL_TILES_MIN 5
+#define CL_TILES_MAX 63   // one under the smallest shipped map width, so the camera clamp holds
 
 #define CL_SCREEN_W  (g_layout.screen_w)
 #define CL_SCREEN_H  (g_layout.screen_h)
@@ -58,6 +92,11 @@ void layout_init(const struct Resources *res);
 #define CL_SCALE_MIN      2   // 640x400
 #define CL_SCALE_MAX      5   // desktop -> 1600x1000
 #define CL_SCALE_MAX_WEB  3   // browser -> 960x600
+// A fixed buffer (CL_IS_NATIVE) is shown at 1x, 2x or 3x only.
+#define CL_SCALE_MAX_NATIVE 3
+
+// True when the pack fixed its buffer size (render.native_w/native_h).
+#define CL_IS_NATIVE (g_layout.is_native)
 
 // Tile dimensions. Pack-declared; 48x34 in legacy mode.
 #define CL_TILE_W (g_layout.tile_w)
@@ -69,12 +108,25 @@ void layout_init(const struct Resources *res);
 //   [2] Right  { 300, 0, 16, 200 }
 //   [3] Bottom { 0, 0, 320,   8 }  (positioned at y=192)
 //   [4] Bar    { 0, 17, 280,  5 }  (positioned at y=17 absolute)
-#define CL_FRAME_TOP_H    8
-#define CL_FRAME_BOTTOM_H 8
-#define CL_FRAME_LEFT_W  16
-#define CL_FRAME_RIGHT_W 16
-#define CL_BAR_H          5
-#define CL_BAR_Y         17
+// Multiplied by the pack's ui_scale: a pack that doubles its tile doubles its
+// furniture too, or it gets a 16px frame and an 8px font around 192px tiles.
+// At ui_scale 1 each of these is the literal it replaced.
+//
+// A pack with a fixed buffer (render.native_w/native_h) gets wider bands: the
+// space the viewport does not use is split between the two sides, so the map
+// stays centred. layout_init sets the four; nothing else writes them.
+#define CL_UI             (g_layout.ui_scale)
+#define CL_FRAME_TOP_H    (g_layout.frame_t)
+#define CL_FRAME_BOTTOM_H (g_layout.frame_b)
+#define CL_FRAME_LEFT_W   (g_layout.frame_l)
+#define CL_FRAME_RIGHT_W  (g_layout.frame_r)
+#define CL_BAR_H          (g_layout.bar_h ? g_layout.bar_h : 5 * CL_UI)
+// The bar sits directly under the status band. Legacy's status line is a
+// fixed 9 units (frame_t 8 + status 9 = 17 = 17*ui_scale), so the old literal
+// happened to match; a modern pack's TrueType status line is not 9 units, so
+// the literal must give way to the real computed offset -- CL_STATUS_H is
+// declared below, but macros resolve at use, not at this line.
+#define CL_BAR_Y          (CL_FRAME_TOP_H + CL_STATUS_H)
 
 // Status strip between top frame and bar.
 // From OpenKB's game.c:111-114:
@@ -82,10 +134,14 @@ void layout_init(const struct Resources *res);
 //   status.y = top_frame->h;                     (= 8)
 //   status.w = screen->w - left - right;          (= 288)
 //   status.h = font.h + zoom;                     (zoom=1, font.h=8 => 9)
+// The band is one text line plus a unit of padding. The line is 8 * ui_scale
+// on the bitmap strip (legacy: 9, as always) and the face's own line height
+// when a modern pack declares a TrueType font (see bfont.h).
+int bfont_glyph_h(void);
 #define CL_STATUS_X       CL_FRAME_LEFT_W
 #define CL_STATUS_Y       CL_FRAME_TOP_H
 #define CL_STATUS_W       (CL_SCREEN_W - CL_FRAME_LEFT_W - CL_FRAME_RIGHT_W)
-#define CL_STATUS_H       9
+#define CL_STATUS_H       (g_layout.status_h ? g_layout.status_h : bfont_glyph_h() + CL_UI)
 
 // Map viewport rect.
 // From OpenKB's game.c:116-119:
@@ -96,13 +152,15 @@ void layout_init(const struct Resources *res);
 //   map.h = screen->h - top - bar - status - bot; (= 200 - 8 - 5 - 9 - 8 = 170)
 #define CL_MAP_X          CL_FRAME_LEFT_W
 #define CL_MAP_Y          (CL_FRAME_TOP_H + CL_STATUS_H + CL_BAR_H)  // 22
-#define CL_MAP_W          (g_layout.map_w)     // tile_w * tiles_w
+#define CL_MAP_W          (g_layout.map_w)     // legacy: tile_w * tiles_w;
+                                               // modern: the whole interior
 #define CL_MAP_H          (g_layout.map_h)     // tile_h * tiles_h
 #define CL_MAP_TILES_W    (g_layout.tiles_w)
 #define CL_MAP_TILES_H    (g_layout.tiles_h)
 
 // Sidebar column (between map.w end and right frame start).
-#define CL_SIDEBAR_X      (CL_MAP_X + CL_MAP_W)                       // 256
+#define CL_SIDEBAR_GAP    (g_layout.sidebar_gap)                      // legacy 0
+#define CL_SIDEBAR_X      (CL_MAP_X + CL_MAP_W + CL_SIDEBAR_GAP)      // 256
 #define CL_SIDEBAR_Y      CL_MAP_Y
 #define CL_SIDEBAR_W      (g_layout.sidebar_w)                        // one tile
 #define CL_SIDEBAR_H      CL_MAP_H
@@ -142,11 +200,43 @@ void layout_init(const struct Resources *res);
 // That is why the column budget is the CL_PANEL_COLS constant below and NOT
 // the symmetric (w - 2*pad)/GW -- that formula assumes equal margins and
 // would hand back the 30th column.
-#define CL_PANEL_X        (CL_MAP_X - 5)
-#define CL_PANEL_W        (CL_MAP_W + 5)
-#define CL_PANEL_H        68
-#define CL_PANEL_Y        (CL_MAP_Y + CL_MAP_H - CL_PANEL_H)
-#define CL_PANEL_PAD_X    4
+// Content rect -- where fixed-size screens draw. Sized from its content (30
+// columns of 8px glyphs, and the 170px the original gave them) times ui_scale,
+// then CENTRED in the map pane. It must not be the pane itself: the pane grows
+// with the window, and a 30-column screen stretched across it puts the labels
+// at one edge and their values at the other.
+//
+// In legacy the pane is exactly 240x170 and the content rect is exactly 240x170,
+// so both offsets are zero and this lands on the historic 16,22 unchanged.
+#define CL_CONTENT_W      (240 * CL_UI)
+#define CL_CONTENT_H      (170 * CL_UI)
+#define CL_CONTENT_X      (CL_MAP_X + (CL_MAP_W - CL_CONTENT_W) / 2)
+#define CL_CONTENT_Y      (CL_MAP_Y + (CL_MAP_H - CL_CONTENT_H) / 2)
+
+// Modern: the panel is exactly the content rect, so the backdrop card, every
+// dialog, prompt and location menu share one left edge and one width
+// (REQ-430h). Legacy keeps its one-sided 5px margin.
+#define CL_PANEL_X        (CL_IS_MODERN ? CL_CONTENT_X : (CL_CONTENT_X - 5 * CL_UI))
+#define CL_PANEL_W        (CL_IS_MODERN ? CL_CONTENT_W : (CL_CONTENT_W + 5 * CL_UI))
+#define CL_PANEL_H        (8 * bfont_glyph_h() + 4 * CL_UI)   // eight text lines and padding: legacy 68
+#define CL_PANEL_Y        (CL_CONTENT_Y + CL_CONTENT_H - CL_PANEL_H)
+#define CL_PANEL_PAD_X    (4 * CL_UI)
 #define CL_PANEL_COLS     30
+
+// Modern: every floating panel (Game Menu, Options, Controls, the combat
+// spell picker) picks one of exactly two widths instead of computing its
+// own -- STD matches the content rect, WIDE adds the sidebar's width for
+// panels that need the extra room. Legacy is untouched and keeps its own
+// per-panel column counts.
+#define CL_PANEL_STD_W    CL_CONTENT_W
+#define CL_PANEL_WIDE_W   (CL_CONTENT_W + CL_SIDEBAR_W)
+
+// Modern: the recurring "centred in the map pane" / "centred on the whole
+// screen" position formulas, named so every floating panel computes its
+// spot the same way instead of re-deriving it.
+#define CL_CENTER_IN_PANE_X(w)    (CL_MAP_X + (CL_MAP_W - (w)) / 2)
+#define CL_CENTER_IN_PANE_Y(h)    (CL_MAP_Y + (CL_MAP_H - (h)) / 2)
+#define CL_CENTER_ON_SCREEN_X(w)  ((CL_SCREEN_W - (w)) / 2)
+#define CL_CENTER_ON_SCREEN_Y(h)  ((CL_SCREEN_H - (h)) / 2)
 
 #endif

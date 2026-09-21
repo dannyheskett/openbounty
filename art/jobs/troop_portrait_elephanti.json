@@ -1,0 +1,20 @@
+{
+ "id": "troop_portrait_elephanti",
+ "prompt": "a head-and-shoulders portrait, the face filling the frame, of a war elephant of the Seleucid kings, its grey head with long white tusks and a red and gold headplate, its driver in a white tunic on its neck and the corner of the wooden fighting tower behind, dry hills and a marching column behind them",
+ "style": "rd_pro__default",
+ "width": 128,
+ "height": 128,
+ "seed": 8112,
+ "bypass_prompt_expansion": false,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  128,
+  128
+ ],
+ "reference_image_paths": [
+  "build/art/elephanti/run03/01_raw.png"
+ ],
+ "_pack_path": "art/portraits/troop_elephanti.png",
+ "_note": "Static troop portrait (2026-09-20), the settled portrait route: 128 still with the troop's own sprite as reference, resized whole to 96."
+}

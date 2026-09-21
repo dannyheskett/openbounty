@@ -71,6 +71,8 @@ bool exec_answer_pending(ExecCtx *ctx, bool fight_ok) {
                                                 f->garrison, 0, &ai_hp);
                 }
             }
+            // No free square to evade to: the fight cannot be declined.
+            if (pending_foe_evade_blocked) fight = true;
             CombatResult r;
             if (!exec_fight(ctx, fight, &r)) return false;
             break;
@@ -181,7 +183,7 @@ bool exec_step_strands(ExecCtx *ctx, const PlanStep *step) {
                                                     step->y + ndy);
                         if (!nt) continue;
                         printf("[STRAND]  n(%+d,%+d) art=%s terr=%d int=%d "
-                               "foot=%d\n", ndx, ndy, nt->art,
+                               "foot=%d\n", ndx, ndy, TileArt(ctx->map, nt),
                                (int)nt->terrain, (int)nt->interactive,
                                (int)adventure_walkable_on_foot(nt));
                     }
@@ -270,7 +272,7 @@ static bool exec_ensure_contract(ExecCtx *ctx, const char *villain_id,
     Game *g = ctx->g;
     const VillainDef *v = villain_by_id(villain_id);
     if (!v) return false;
-    if (v->index >= 0 && v->index < CAT_VILLAINS_MAX &&
+    if (v->index >= 0 && v->index < ctx->g->contract.villain_count &&
         g->contract.villains_caught[v->index])
         return true;
     if (g->contract.active_id[0] &&
@@ -282,9 +284,9 @@ static bool exec_ensure_contract(ExecCtx *ctx, const char *villain_id,
         return false;
     }
     // Take contracts at the nearest town until the cycle lands on the villain.
-    NavPoint towns[GAME_TOWNS];
+    NavPoint towns[AP_TOWNS_MAX];
     int n = 0;
-    for (int i = 0; i < ctx->res->town_count && n < GAME_TOWNS; i++) {
+    for (int i = 0; i < ctx->res->town_count && n < AP_TOWNS_MAX; i++) {
         const ResTown *t = &ctx->res->towns[i];
         int zi = zone_index_of(ctx->res, t->zone);
         if (zi < 0) continue;
@@ -451,7 +453,9 @@ static bool exec_fetch(ExecCtx *ctx, const PlanStep *step, ExecCause *out_cause)
 static bool exec_learn(ExecCtx *ctx, const PlanStep *step, ExecCause *out_cause,
                        char *why, int why_sz) {
     Game *g = ctx->g;
-    int cost = ctx->res->economy.alcove_cost;
+    const char *zid = (step->zone_index >= 0 && step->zone_index < ctx->res->zone_count)
+                    ? ctx->res->zones[step->zone_index].id : g->position.zone;
+    int cost = GameAlcoveCost(g, zid);
     if (g->stats.gold < cost) {
         // A broke arrival is a typed GOLD defer before stepping onto the tile
         // (AP-081); the funded wait covers the fee at fixpoint time.
@@ -507,9 +511,9 @@ static bool exec_town_buy_siege(ExecCtx *ctx, ExecCause *out_cause,
             return false;
         }
     }
-    NavPoint towns[GAME_TOWNS];
+    NavPoint towns[AP_TOWNS_MAX];
     int n = 0;
-    for (int i = 0; i < ctx->res->town_count && n < GAME_TOWNS; i++) {
+    for (int i = 0; i < ctx->res->town_count && n < AP_TOWNS_MAX; i++) {
         const ResTown *t = &ctx->res->towns[i];
         int zi = zone_index_of(ctx->res, t->zone);
         if (zi < 0) continue;
@@ -543,6 +547,193 @@ static bool exec_town_buy_siege(ExecCtx *ctx, ExecCause *out_cause,
     return true;
 }
 
+// A one-time vista (REQ-221b): hold what it asks for, then stand on its tile --
+// the engine plays the scene and applies its effects on arrival. Only the
+// spell precondition can be acquired here (a town sells the rite); a vista
+// asking for troops, gold or an artifact is attempted with what the hero has.
+static bool exec_vista(ExecCtx *ctx, const PlanStep *step,
+                       ExecCause *out_cause, char *why, int why_sz) {
+    Game *g = ctx->g;
+    const ResZone *z = &ctx->res->zones[step->zone_index];
+    const ResZoneEvent *ev = NULL;
+    for (int k = 0; k < z->event_count; k++)
+        if (strcmp(z->events[k].id, step->handle) == 0) ev = &z->events[k];
+    if (!ev) return false;
+
+    for (int q = 0; q < ev->req_count; q++) {
+        const ResEventReq *rq = &ev->reqs[q];
+        if (rq->kind == RES_EVENT_REQ_GOLD) {          // the keeper's fee
+            if (g->stats.gold > rq->count) continue;
+            ExecCause gc = EXEC_CAUSE_NONE;
+            if (!exec_ensure_gold(ctx, rq->count + 1, &gc)) {
+                if (out_cause) *out_cause = gc;
+                snprintf(why, (size_t)why_sz, "vista:%s:gold", ev->id);
+                return false;
+            }
+            continue;
+        }
+        if (rq->kind != RES_EVENT_REQ_SPELL) continue;
+        int idx = spell_index_by_id(rq->id);
+        if (idx < 0) return false;
+        if (g->spells.counts[idx] >= rq->count) continue;
+        if (!g->stats.knows_magic) {              // play-legality (REQ-323)
+            if (out_cause) *out_cause = EXEC_CAUSE_OTHER;
+            snprintf(why, (size_t)why_sz, "vista:%s:magic", ev->id);
+            return false;
+        }
+        // The rite is sold by whichever town stocks it: go there and buy until
+        // the vista's count is met.
+        while (g->spells.counts[idx] < rq->count) {
+            NavPoint towns[AP_TOWNS_MAX];
+            int n = 0;
+            for (int i = 0; i < g->town_count && i < ctx->res->town_count && n < AP_TOWNS_MAX; i++) {
+                if (strcmp(g->towns[i].spell_for_sale, rq->id) != 0) continue;
+                int zi = zone_index_of(ctx->res, ctx->res->towns[i].zone);
+                if (zi < 0) continue;
+                towns[n].zone_index = zi;
+                towns[n].x = ctx->res->towns[i].x;
+                towns[n].y = ctx->res->towns[i].y;
+                n++;
+            }
+            if (n == 0) {
+                if (out_cause) *out_cause = EXEC_CAUSE_STOCK;
+                snprintf(why, (size_t)why_sz, "vista:%s:no-seller", ev->id);
+                return false;
+            }
+            ExecCause cc = EXEC_CAUSE_NONE;
+            int before = g->stats.days_left;
+            long cross_before = ledger_committed(DAY_ACCT_CROSSING);
+            if (move_to(ctx, towns, n, true, NULL, &cc) < 0) {
+                if (out_cause) *out_cause = cc;
+                snprintf(why, (size_t)why_sz, "vista:%s:seller-unreachable", ev->id);
+                return false;
+            }
+            acct_move(DAY_ACCT_APPROACH, before, cross_before, g);
+            exec_answer_pending(ctx, true);
+            if (!g->position.in_town[0] ||
+                !exec_buy_spell_at(ctx, g->position.in_town)) {
+                if (out_cause) *out_cause = EXEC_CAUSE_GOLD;
+                snprintf(why, (size_t)why_sz, "vista:%s:rite", ev->id);
+                return false;
+            }
+        }
+    }
+
+    // Stand on the tile, as a fetch does: the engine plays the scene there.
+    NavPoint at = { step->zone_index, step->x, step->y };
+    for (int round = 0; round < EXEC_MAX_ROUNDS; round++) {
+        if (planstep_is_done(g, step)) return true;
+        ExecCause cc = EXEC_CAUSE_NONE;
+        int before = g->stats.days_left;
+        long cross_before = ledger_committed(DAY_ACCT_CROSSING);
+        int r = move_to(ctx, &at, 1, true, NULL, &cc);
+        acct_move(DAY_ACCT_APPROACH, before, cross_before, g);
+        exec_answer_pending(ctx, true);     // the scene is a view: ack it
+        if (planstep_is_done(g, step)) return true;
+        if (r < 0) {
+            if (out_cause) *out_cause = cc;
+            snprintf(why, (size_t)why_sz, "vista:%s:reach", ev->id);
+            return false;
+        }
+    }
+    if (out_cause) *out_cause = EXEC_CAUSE_REACH;
+    snprintf(why, (size_t)why_sz, "vista:%s:unmet", ev->id);
+    return false;
+}
+
+// Muster the arm a gate demands (REQ-296a): march to the dwelling that breeds
+// it and recruit what the purse and the leadership allow, at least one stack.
+#define MUSTER_FAIL(cause_, fmt_, ...)                                        \
+    do {                                                                      \
+        if (out_cause) *out_cause = (cause_);                                 \
+        snprintf(why, (size_t)why_sz, fmt_, __VA_ARGS__);                     \
+        if (ob_diag_verbose()) printf("[MUSTER] %s\n", why);                  \
+        return false;                                                         \
+    } while (0)
+
+static bool exec_muster(ExecCtx *ctx, const PlanStep *step,
+                        ExecCause *out_cause, char *why, int why_sz) {
+    Game *g = ctx->g;
+    if (planstep_is_done(g, step)) return true;
+    const TroopDef *t = troop_by_id(step->handle);
+    if (!t) return false;
+
+    // Every dwelling breeding that troop, this zone's first.
+    NavPoint at[AP_TOWNS_MAX];
+    int n = 0;
+    for (int pass = 0; pass < 2 && n == 0; pass++) {
+        for (int i = 0; i < g->dwelling_count && n < AP_TOWNS_MAX; i++) {
+            const DwellingState *d = &g->dwellings[i];
+            if (strcmp(d->troop_id, step->handle) != 0 || d->count <= 0) continue;
+            int zi = zone_index_of(ctx->res, d->zone);
+            if (zi < 0) continue;
+            if (pass == 0 && zi != step->zone_index) continue;
+            at[n].zone_index = zi; at[n].x = d->x; at[n].y = d->y; n++;
+        }
+    }
+    if (n == 0) MUSTER_FAIL(EXEC_CAUSE_STOCK, "muster:%s:no-dwelling", step->handle);
+
+    // Afford at least one: the recruit flow clamps to the live caps anyway.
+    int cost = t->recruit_cost > 0 ? t->recruit_cost : 1;
+    if (g->stats.gold <= cost) {
+        ExecCause gc = EXEC_CAUSE_NONE;
+        if (!exec_ensure_gold(ctx, cost + 1, &gc))
+            MUSTER_FAIL(gc, "muster:%s:gold", step->handle);
+    }
+    int want = g->stats.gold / cost;
+    int room = t->hit_points > 0 ? g->stats.leadership_current / t->hit_points : want;
+    if (want > room) want = room;
+    // Never ask for more than the park holds (the flow refuses an over-ask).
+    int stock = 0;
+    for (int i = 0; i < g->dwelling_count; i++)
+        if (strcmp(g->dwellings[i].troop_id, step->handle) == 0 &&
+            g->dwellings[i].count > stock) stock = g->dwellings[i].count;
+    if (stock > 0 && want > stock) want = stock;
+    if (want < 1) want = 1;
+
+    // A full army has no slot for a new arm: give up the weakest stack for it.
+    {
+        int occupied = 0, weakest = -1; long weakest_worth = 0;
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+            if (!g->army[i].id[0] || g->army[i].count <= 0) continue;
+            occupied++;
+            const TroopDef *at = troop_by_id(g->army[i].id);
+            long worth = (long)g->army[i].count * (at ? at->hit_points : 1);
+            if (weakest < 0 || worth < weakest_worth) { weakest = i; weakest_worth = worth; }
+        }
+        if (occupied >= GAME_ARMY_SLOTS && weakest >= 0 &&
+            !exec_dismiss_slot(ctx, weakest))
+            MUSTER_FAIL(EXEC_CAUSE_OTHER, "muster:%s:no-slot", step->handle);
+    }
+
+    ExecCause cc = EXEC_CAUSE_NONE;
+    int before = g->stats.days_left;
+    long cross_before = ledger_committed(DAY_ACCT_CROSSING);
+    if (move_to(ctx, at, n, true, NULL, &cc) < 0)
+        MUSTER_FAIL(cc, "muster:%s:unreachable", step->handle);
+    acct_move(DAY_ACCT_RECRUITMOVE, before, cross_before, g);
+    if (ob_diag_verbose())
+        printf("[MUSTER] at (%d,%d) zone=%s want=%d gold=%d lead=%d flow=%d dwell='%s'\n",
+               g->position.x, g->position.y, g->position.zone, want, g->stats.gold,
+               g->stats.leadership_current, (int)pending_flow, g->position.dwelling_troop);
+    if (pending_flow == FLOW_RECRUIT) {
+        FlowAnswer ans = { FLOW_ANS_YES, want };
+        rec_push_answer(g, FLOW_RECRUIT, ans, PLAYER_IO_COMBAT_NOT_RUN);
+        PlayerIoPresentation pres;
+        player_io_answer(g, ctx->map, ctx->fog, ctx->res, ans,
+                         PLAYER_IO_COMBAT_NOT_RUN, &pres);
+        exec_pump_passive(ctx);
+    } else {
+        exec_answer_pending(ctx, true);
+    }
+    if (!planstep_is_done(g, step))
+        MUSTER_FAIL(EXEC_CAUSE_STOCK, "muster:%s:refused-flow=%d", step->handle,
+                    (int)pending_flow);
+    if (ob_diag_verbose())
+        printf("[MUSTER] %s: got %d, gold=%d\n", step->handle, want, g->stats.gold);
+    return true;
+}
+
 // Move to the fight, lift at the gate, verify live, step on, fight (AP-082).
 static bool siege_or_slay(ExecCtx *ctx, const PlanStep *step,
                           ExecCause *out_cause, char *why, int why_sz) {
@@ -562,7 +753,7 @@ static bool siege_or_slay(ExecCtx *ctx, const PlanStep *step,
     } else {
         // A villain step's handle is the villain id; find its castle.
         if (step->kind == STEP_VILLAIN) {
-            for (int i = 0; i < GAME_CASTLES; i++) {
+            for (int i = 0; i < g->castle_count; i++) {
                 if (g->castles[i].id[0] &&
                     g->castles[i].owner_kind == CASTLE_OWNER_VILLAIN &&
                     strcmp(g->castles[i].villain_id, step->handle) == 0) {
@@ -657,11 +848,11 @@ static bool siege_or_slay(ExecCtx *ctx, const PlanStep *step,
             if (!gsd2 || g->stats.gold < 2 * gsd2->cost ||
                 spell_charges(g, cg2) >= GATE_LAW_MIN_CHARGES)
                 continue;
-            GateDestination gd[GAME_GATE_DESTS_MAX];
+            GateDestination gd[AP_GATE_DESTS_MAX];
             int gn = GameGateDestinations(g,
                                           town3 ? GATE_DEST_TOWN
                                                 : GATE_DEST_CASTLE,
-                                          gd, GAME_GATE_DESTS_MAX);
+                                          gd, AP_GATE_DESTS_MAX);
             bool in_zone = false;
             for (int gi4 = 0; gi4 < gn && !in_zone; gi4++)
                 if (zone_index_of(ctx->res, gd[gi4].zone) ==
@@ -855,8 +1046,7 @@ static bool exec_dig(ExecCtx *ctx, const PlanStep *step, ExecCause *out_cause,
         if (g->position.x == step->x && g->position.y == step->y &&
             hero_zone_index(ctx) == step->zone_index) {
             pending_flow = FLOW_SEARCH;
-            player_io_raise_decision(g, FLOW_SEARCH, REQ_PROMPT_YES_NO,
-                                     NULL, NULL);
+            player_io_ask_self(g, FLOW_SEARCH, REQ_PROMPT_YES_NO);
             rec_push_action(g, RA_SEARCH, NULL, 0, 0);
             FlowAnswer yes = { FLOW_ANS_YES, 0 };
             PlayerIoPresentation pres;
@@ -917,6 +1107,12 @@ bool execute_why(ExecCtx *ctx, const PlanStep *step,
         break;
     case STEP_SCEPTER:
         ok = exec_dig(ctx, step, &cause, scratch, sizeof scratch);
+        break;
+    case STEP_VISTA:
+        ok = exec_vista(ctx, step, &cause, scratch, sizeof scratch);
+        break;
+    case STEP_MUSTER:
+        ok = exec_muster(ctx, step, &cause, scratch, sizeof scratch);
         break;
     }
     if (ctx->g->stats.game_over && !ctx->g->stats.won) {

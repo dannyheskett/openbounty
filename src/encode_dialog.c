@@ -8,6 +8,7 @@
 #include "bfont.h"
 #include "palette.h"
 #include "layout.h"
+#include "ui.h"
 #include "present.h"
 #include "raylib.h"
 #include "frame_host.h"
@@ -20,11 +21,12 @@
 // We do NOT clear the render target. Whatever the previous frame left
 // is the backdrop the modal panel sits on top of.
 static void frame_begin(RenderTexture2D *rt) {
-    BeginTextureMode(*rt);
+    present_refit(rt);
+    present_begin(rt);
 }
 
 static void frame_end(RenderTexture2D *rt) {
-    EndTextureMode();
+    present_end();
     present_scaled(*rt);
     frame_host_end_frame();
 }
@@ -49,7 +51,7 @@ static void draw_panel(const EncodeProgress *p, const char *footer) {
     // 36-char inner width, 8-px padding all round. The 320x200 screen
     // can fit 36 cols comfortably (288 px + 16 px padding = 304 px).
     int cols = 36, rows = 11;
-    int pad  = 8;
+    int pad  = 8 * CL_UI;
     int w = cols * GW + pad * 2;
     int h = rows * GH + pad * 2;
     int x = (CL_SCREEN_W - w) / 2;
@@ -57,7 +59,7 @@ static void draw_panel(const EncodeProgress *p, const char *footer) {
 
     // Solid panel background covers anything from the previous frame.
     DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
-    DrawRectangleLines(x, y, w, h, PAL_CLR(YELLOW));
+    ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
 
     int tx = x + pad;
     int ty = y + pad;

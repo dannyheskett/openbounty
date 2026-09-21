@@ -1,0 +1,14 @@
+{
+ "lower_description": "plains",
+ "upper_description": "dirt",
+ "tile_size": {
+  "width": 16,
+  "height": 16
+ },
+ "mode": "standard",
+ "shape_style": "round",
+ "enhance": true,
+ "view": "high top-down",
+ "seed": 9104,
+ "_note": "Tried and NOT shipped. 16 px, terse two-word descriptions with enhance on, which leaves the look to the model. t32_dirt_203.json is what shipped."
+}

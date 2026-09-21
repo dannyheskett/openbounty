@@ -1,0 +1,10 @@
+{
+ "description": "packed dirt road through short green meadow grass, even medium green, seen from above",
+ "tile_type": "square_topdown",
+ "tile_size": 32,
+ "tile_feature": "roads",
+ "tile_view": "top-down",
+ "seed": 5,
+ "outline_mode": "segmentation",
+ "_note": "Tried and NOT shipped: roads32.json with outline_mode segmentation. Same Tiles Pro route, same reason it was not used -- see roads32.json."
+}

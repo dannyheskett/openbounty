@@ -1,10 +1,14 @@
 #include "end_cartoon.h"
+#include "gfx.h"
+#include "input_host.h"
+#include "game.h"
 #include "frame_host.h"
 #include "layout.h"
 #include "present.h"
 #include "screenshot.h"
 #include "ui.h"
 #include "tables.h"
+#include "tile_cache.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -21,12 +25,12 @@
 // ticks; any keypress short-circuits the animation.
 
 static bool any_key_pressed(void) {
-    int k = GetKeyPressed();
+    int k = input_get_key_pressed();
     while (k != 0) {
         if (k != KEY_LEFT_SHIFT && k != KEY_RIGHT_SHIFT &&
             k != KEY_LEFT_CONTROL && k != KEY_RIGHT_CONTROL &&
             k != KEY_LEFT_ALT && k != KEY_RIGHT_ALT) return true;
-        k = GetKeyPressed();
+        k = input_get_key_pressed();
     }
     return false;
 }
@@ -45,10 +49,11 @@ static void draw_tile(Texture2D tex, int gx, int gy, int origin_x, int origin_y,
         (float)dx, (float)dy,
         (float)CL_TILE_W, (float)CL_TILE_H
     };
-    DrawTexturePro(tex, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+    gfx_texture_draw(tex, src, dst, WHITE);
 }
 
 static void draw_cartoon_frame(const Resources *res, const Sprites *sprites,
+                               Texture2D grass, Texture2D hero,
                                int origin_x, int origin_y,
                                int tick, int frame) {
     int gw = res->ending.grid_width;
@@ -66,7 +71,7 @@ static void draw_cartoon_frame(const Resources *res, const Sprites *sprites,
     // Grass across the whole grid.
     for (int y = 0; y < gh; y++) {
         for (int x = 0; x < gw; x++) {
-            draw_tile(sprites->end_grass, x, y, origin_x, origin_y, false);
+            draw_tile(grass, x, y, origin_x, origin_y, false);
         }
     }
 
@@ -80,8 +85,7 @@ static void draw_cartoon_frame(const Resources *res, const Sprites *sprites,
     // Hero. Draws once hero_prog >= 0 (i.e. from frame 5 onward).
     if (hero_prog >= 0) {
         int y = (gh - 1) - hero_prog;
-        draw_tile(sprites->end_hero, carpet_col, y,
-                  origin_x, origin_y, false);
+        draw_tile(hero, carpet_col, y, origin_x, origin_y, false);
     }
 
     // Troop border. layout: iterate troops, fill x=0..3 then x=5,
@@ -89,13 +93,13 @@ static void draw_cartoon_frame(const Resources *res, const Sprites *sprites,
     // flipped . Troop frame index
     // is `tick` folded onto whatever cycle length the troop declares.
     if (res->ending.troop_border) {
-        int nt = troops_count();
-        if (nt > 25) nt = 25;
+        // Every troop the pack declares, until the grid runs out of rows.
+        int nt = sprites->troop_count;
         int x = 0, y = 0;
         for (int i = 0; i < nt && y < gh; i++) {
             bool flip = (x == gw - 1);
-            int frame_idx = sprites_frame(tick, sprites->troop_anim_frames[i]);
-            Texture2D tex = sprites->troop_anim[i][frame_idx];
+            Texture2D tex = sprites_strip(sprites->troop_anim[i], sprites->troop_anim_frames[i],
+                                          CL_IS_MODERN ? sprites_stand(tick) : tick);
             if (!tex.id) tex = sprites->troop_sprite[i];
             draw_tile(tex, x, y, origin_x, origin_y, flip);
             x++;
@@ -105,41 +109,61 @@ static void draw_cartoon_frame(const Resources *res, const Sprites *sprites,
     }
 }
 
+// --gallery: draw one frame of the cartoon (frame 0..frame_count) into rt.
+void end_cartoon_gallery_draw(RenderTexture2D *rt, const Resources *res,
+                              const Sprites *sprites, const struct Game *game, int frame) {
+    Texture2D hero = sprites_end_hero(sprites, game ? game->character.cls.id : NULL);
+    Texture2D grass = sprites->end_grass;
+    if (!grass.id) grass = tile_cache_get("grass");
+    int gw = res->ending.grid_width  > 0 ? res->ending.grid_width  : 6;
+    int gh = res->ending.grid_height > 0 ? res->ending.grid_height : 5;
+    present_refit(rt);
+    int origin_x = CL_MAP_X + (CL_MAP_W - gw * CL_TILE_W) / 2;
+    int origin_y = CL_MAP_Y + (CL_MAP_H - gh * CL_TILE_H) / 2;
+    if (origin_x < CL_MAP_X) origin_x = CL_MAP_X;
+    if (origin_y < CL_MAP_Y) origin_y = CL_MAP_Y;
+    if (CL_IS_MODERN) {   // the cartoon has the whole screen: centre it there
+        origin_x = (CL_SCREEN_W - gw * CL_TILE_W) / 2;
+        origin_y = (CL_SCREEN_H - gh * CL_TILE_H) / 2;
+    }
+    present_begin(rt);
+    gfx_clear(BLACK);
+    draw_cartoon_frame(res, sprites, grass, hero, origin_x, origin_y, 0, frame);
+    present_end();
+}
+
 void run_end_cartoon(RenderTexture2D *rt,
                              const Resources *res,
-                             const Sprites *sprites) {
+                             const Sprites *sprites,
+                             const struct Game *game) {
     if (!rt || !res || !sprites) return;
+    // The hero tile is the player's class's own when the pack declares one.
+    Texture2D hero = sprites_end_hero(sprites, game ? game->character.cls.id : NULL);
+    // The grass backdrop is the pack's ending.grass_tile when declared, else
+    // the map's own grass tile, so a pack need not ship the tile twice.
+    Texture2D grass = sprites->end_grass;
+    if (!grass.id) grass = tile_cache_get("grass");
     // Skip silently if the tile art isn't configured.
-    if (!sprites->end_grass.id || !sprites->end_carpet.id ||
-        !sprites->end_hero.id) return;
+    if (!grass.id || !sprites->end_carpet.id || !hero.id) return;
 
     int gw = res->ending.grid_width  > 0 ? res->ending.grid_width  : 6;
     int gh = res->ending.grid_height > 0 ? res->ending.grid_height : 5;
     int tps = res->ending.ticks_per_step > 0 ? res->ending.ticks_per_step : 2;
     int max_frames = res->ending.frame_count > 0 ? res->ending.frame_count : 10;
 
-    // Center the grid horizontally; anchor at the map viewport's Y.
-    int total_w = gw * CL_TILE_W;
-    int origin_x = (CL_SCREEN_W - total_w) / 2;
-    if (origin_x < 0) origin_x = 0;
-    int origin_y = CL_MAP_Y;
-    // If the grid overflows the map viewport vertically, still anchor at
-    // the top -- renders within the map area but openbounty' map is
-    // 170 tall vs a native 5x34 = 170 grid that fits exactly at default.
-    (void)gh;
-
     int tick = 0;
     int frame = 0;
     bool done = false;
-    double last_advance = GetTime();
+    double last_advance = ui_anim_time();
     double tick_interval = 0.08;   // ~12 ticks per second -- 
                                    // ~60Hz timer advancing through tick 0..3.
 
     while (!frame_host_should_close() && !done) {
-        if (any_key_pressed()) { done = true; break; }
+        // Modern: a tap counts too, as on every other any-key screen.
+        if (CL_IS_MODERN ? ui_any_key_pressed() : any_key_pressed()) { done = true; break; }
 
-        if (GetTime() - last_advance >= tick_interval) {
-            last_advance = GetTime();
+        if (ui_anim_time() - last_advance >= tick_interval) {
+            last_advance = ui_anim_time();
             tick++;
             // advances the animation frame every 2nd and 4th tick
             // of a 4-tick cycle (draw_cartoon_frame:4384). Emulate by
@@ -151,10 +175,23 @@ void run_end_cartoon(RenderTexture2D *rt,
             if (tick > 3) tick = 0;
         }
 
-        BeginTextureMode(*rt);
-        ClearBackground(BLACK);
-        draw_cartoon_frame(res, sprites, origin_x, origin_y, tick, frame);
-        EndTextureMode();
+        // Derived per frame, not once: present_refit can resize the screen
+        // under us when the window changes, which would leave the origin
+        // pointing at the old geometry.
+        present_refit(rt);
+        int origin_x = CL_MAP_X + (CL_MAP_W - gw * CL_TILE_W) / 2;
+        int origin_y = CL_MAP_Y + (CL_MAP_H - gh * CL_TILE_H) / 2;
+        if (origin_x < CL_MAP_X) origin_x = CL_MAP_X;
+        if (origin_y < CL_MAP_Y) origin_y = CL_MAP_Y;
+        if (CL_IS_MODERN) {   // the cartoon has the whole screen: centre it there
+            origin_x = (CL_SCREEN_W - gw * CL_TILE_W) / 2;
+            origin_y = (CL_SCREEN_H - gh * CL_TILE_H) / 2;
+        }
+
+        present_begin(rt);
+        gfx_clear(BLACK);
+        draw_cartoon_frame(res, sprites, grass, hero, origin_x, origin_y, tick, frame);
+        present_end();
 
         present_scaled(*rt);
         frame_host_end_frame();

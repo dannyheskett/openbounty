@@ -2,6 +2,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "frame_host.h"
+#include "gfx.h"
 #include "input_host.h"
 #include "shell_demo.h"
 #include "demo.h"
@@ -9,7 +10,7 @@
 #include "autoplay.h"
 #include "diag.h"
 #include "shell_run.h"
-#include "raylib.h"
+#include "ob_types.h"
 #include "recorder.h"
 #include "audio.h"
 #include "encode_dialog.h"
@@ -19,8 +20,10 @@
 #include "savepath.h"
 #include "game.h"
 #include "bfont.h"
+#include "select.h"
 #include "sprites.h"
 #include "tile_cache.h"
+#include "tilevar.h"
 #include "adventure.h"
 #include "views.h"
 #include "ui.h"
@@ -28,12 +31,25 @@
 #include "screenshot.h"
 #include "pack.h"
 #include "pack_select.h"
+#include "plat_android.h"
+#include "plat_ios.h"
+
+// Boot tracing, iOS only. An iOS app has no console: its stdout is piped into
+// the unified log by ios/plat_ios.mm, and these are the only markers between
+// launch and the game's first report of its own (the seed, at the title
+// screen). Everywhere else this compiles to nothing.
+#if defined(PLATFORM_IOS) || defined(PLATFORM_ANDROID)
+#define BOOT_TRACE(...) do { fprintf(stdout, __VA_ARGS__); fflush(stdout); } while (0)
+#else
+#define BOOT_TRACE(...) do { } while (0)
+#endif
 #include "extract.h"
 #include "version.h"
 #include "fatal.h"
 
 #include <sys/stat.h>
 #include "layout.h"
+#include "lattice.h"
 #include "present.h"
 #include "palette.h"
 #include "chrome.h"
@@ -41,6 +57,7 @@
 #include "map_render.h"
 #include "overlay.h"
 #include "input.h"
+#include "touch.h"
 #include "prompt.h"
 #include "startup.h"
 #include "end_cartoon.h"
@@ -54,6 +71,7 @@
 #include "combat_loop.h"
 #include <time.h>
 #include "views_render.h"
+#include "views_render_impl.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -97,6 +115,10 @@
 // run_audience_dialog() (King Maximus audience flow) moved to
 // src/shell_audience.{c,h}.
 #include "shell_audience.h"
+#include "modern/castle.h"
+#include "modern/gamemenu.h"
+#include "modern/location.h"
+#include "shell_gallery.h"
 
 // Per-frame draw_frame() dispatcher moved to src/shell_frame.{c,h}.
 #include "shell_frame.h"
@@ -232,9 +254,14 @@ static int validate_pack_run(const char *pack_dir, int lo, int hi,
 // main
 // ===========================================================================
 
+// iOS has its own entry point: UIApplicationMain in ios/ios_main.mm, which
+// starts the UI and then runs shell_run_game on the game thread. Defining
+// main() here as well would be a duplicate symbol.
+#if !defined(PLATFORM_IOS)
 int main(int argc, char **argv) {
     return shell_run_game(argc, argv);
 }
+#endif
 
 int shell_run_game(int argc, char **argv) {
     // SINGLE UNIFIED OUTPUT: the whole game/autoplay log goes to stdout (nothing to
@@ -243,17 +270,28 @@ int shell_run_game(int argc, char **argv) {
     // path (e.g. nav_fail) cannot lose its dump to an unflushed block buffer.
     setvbuf(stdout, NULL, _IOLBF, 0);
 
+    // Android has no command line and no writable working directory: the save
+    // root is resolved from the activity before anything can read a slot.
+    // A no-op everywhere else.
+    BOOT_TRACE("[boot] entered\n");
+    plat_android_boot();
+    plat_ios_boot();
+    BOOT_TRACE("[boot] save path resolved\n");
+
     // Minimal CLI parsing.
     bool want_fullscreen = false;
     const char *pack_arg = NULL;     // --pack <name|path>
+    const char *lang_arg = NULL;     // --lang <code>: locale (strings/<code>.json)
     bool extract_mode = false;        // --extract: build pack from KB.EXE then exit
     const char *extract_out_dir = NULL; // --out-dir <dir>: extract to loose tree
     const char *pack_dir_src = NULL;  // --pack-dir <src> <dst>: zip a loose asset tree
     const char *pack_dir_dst = NULL;
     // --movie [path]: record gameplay to an MP4. With no arg, defaults
     // to <user-data>/openbounty/movie-<timestamp>.mp4.
+    bool        debug_flag      = false;   // --debug: the Debug page of cheats
     bool        movie_requested = false;
     const char *movie_path_arg  = NULL;
+    const char *gallery_dir     = NULL;   // --gallery <dir>: capture every modern screen
     // --seed N: pick catalog world N (0..255) for a reproducible run. -1 means
     // "not asked for" -- the world is derived from time + name + class instead.
     int seed_index = -1;
@@ -298,7 +336,7 @@ int shell_run_game(int argc, char **argv) {
             return 0;
         } else if (strcmp(a, "--help") == 0 || strcmp(a, "-h") == 0) {
             printf("openbounty build %s\n"
-                   "Usage: %s [--fullscreen] [--pack <name|path>] [--save-dir <dir>]\n"
+                   "Usage: %s [--fullscreen] [--pack <name|path>] [--save-dir <dir>] [--debug]\n"
                    "       %*s [--movie [<path>]] [--seed 0-255] [--version]\n"
                    "       %s --demo [--headless] [--seed 0-255] [--verbose] [--movie [<path>]]\n"
                    "       %s --autoplay [--headless] [--seed 0-255] [--verbose]\n"
@@ -323,11 +361,18 @@ int shell_run_game(int argc, char **argv) {
         } else if (strcmp(a, "--pack") == 0) {
             if (i + 1 >= argc) { fprintf(stderr, "openbounty: --pack requires <name|path>\n"); return 2; }
             pack_arg = argv[++i];
+        } else if (strcmp(a, "--lang") == 0) {
+            if (i + 1 >= argc) { fprintf(stderr, "openbounty: --lang requires <code>\n"); return 2; }
+            lang_arg = argv[++i];
         } else if (strcmp(a, "--extract") == 0) {
             extract_mode = true;
         } else if (strcmp(a, "--out-dir") == 0) {
             if (i + 1 >= argc) { fprintf(stderr, "openbounty: --out-dir requires <dir>\n"); return 2; }
             extract_out_dir = argv[++i];
+        } else if (strcmp(a, "--debug") == 0) {
+            // The Debug page of cheats in the modern game menu. Without this
+            // flag no cheat is reachable.
+            debug_flag = true;
         } else if (strcmp(a, "--movie") == 0) {
             movie_requested = true;
             // Optional next-arg path: only consumed if it doesn't look
@@ -383,6 +428,8 @@ int shell_run_game(int argc, char **argv) {
                 vp_lo = (int)lo;
                 vp_hi = (int)hi;
             }
+        } else if (strcmp(a, "--gallery") == 0 && i + 1 < argc) {
+            gallery_dir = argv[++i];
         } else if (strcmp(a, "--headless") == 0) {
             headless_mode = true;
         } else if (strcmp(a, "--verbose") == 0) {
@@ -405,6 +452,10 @@ int shell_run_game(int argc, char **argv) {
     // agent path runs. Other modes never touch a gated hook, so this is inert.
     demo_set_verbose(verbose_mode);
     ob_diag_set_verbose(verbose_mode);
+
+    // Apply the --lang locale override once, before any mode loads resources
+    // (validate-pack, autoplay, demo, and the normal game all share it).
+    resources_set_locale(lang_arg);
 
     // Early-exit CLI modes (--pack-dir and --extract). Both run to
     // completion and return; no window opens. Implementations live in
@@ -486,12 +537,24 @@ int shell_run_game(int argc, char **argv) {
         return dr.won ? 0 : 1;
     }
 
+    // Android ships exactly one pack, inside the APK: no discovery, no picker,
+    // no CLI. Opened here so the resolve-and-open block below is skipped whole.
+    char pack_path[PACK_ENTRY_PATH_MAX];
+    Pack *pack = plat_android_open_pack();
+    if (pack) snprintf(pack_path, sizeof pack_path, "%s", ANDROID_PACK_ASSET);
+    if (!pack) {
+        BOOT_TRACE("[boot] opening the bundled pack\n");
+        pack = plat_ios_open_pack();
+        BOOT_TRACE("[boot] pack %s\n", pack ? "opened" : "FAILED");
+        if (pack) snprintf(pack_path, sizeof pack_path, "%s", IOS_PACK_RESOURCE);
+    }
+
     // Resolve --pack <name|path>, or auto-discover. Discovery walks (in
     // order): cwd zips, <user-data>/openbounty zips, <exe>/assets zips,
     // <exe>/assets/<sub>/game.json loose trees. If nothing is found we
     // try a first-run KB.EXE extraction in cwd; failing that, error out
     // with a platform-specific dialog explaining the install steps.
-    char pack_path[PACK_ENTRY_PATH_MAX];
+    if (!pack) {
     if (pack_arg && pack_arg[0]) {
         if (!pack_resolve_arg(pack_arg, pack_path, sizeof pack_path)) {
             char body[1024];
@@ -504,8 +567,8 @@ int shell_run_game(int argc, char **argv) {
             return 1;
         }
     } else {
-        PackEntry entries[PACK_DISCOVER_MAX];
-        int n = pack_discover(entries, PACK_DISCOVER_MAX);
+        PackEntry *entries = NULL;
+        int n = pack_discover(&entries);
         if (n == 0) {
             // Final fallback: a fresh first-run KB.EXE extract from cwd.
             // Output goes to <user-data>/openbounty/<id>.openbounty so
@@ -618,13 +681,16 @@ int shell_run_game(int argc, char **argv) {
             int chosen = 0;
             if (!pack_select_flow(entries, n, &chosen)) {
                 // User pressed ESC.
+                free(entries);
                 return 0;
             }
             snprintf(pack_path, sizeof pack_path, "%s", entries[chosen].path);
         }
+        free(entries);
     }
 
-    Pack *pack = pack_open(pack_path);
+    pack = pack_open(pack_path);
+    }   // !pack (non-Android)
     if (!pack) {
         char body[1024];
         snprintf(body, sizeof body,
@@ -639,8 +705,9 @@ int shell_run_game(int argc, char **argv) {
     pack_stack_push(pack);
 
     // Silence raylib's per-asset INFO chatter; keep warnings + errors.
-    SetTraceLogLevel(LOG_WARNING);
+    frame_host_quiet_log();   // the shell reports its own conditions
 
+    BOOT_TRACE("[boot] loading resources\n");
     Resources res;
     if (!resources_load(&res, "game.json")) {
         // Reported through fatal_user_error, not a bare printf: on Windows the
@@ -668,6 +735,11 @@ int shell_run_game(int argc, char **argv) {
         return 2;
     }
 
+    // A modern pack's TrueType font decides the line height the layout reads
+    // (status band, dialog panel), so its metrics are computed first, CPU
+    // only; the texture comes after the window.
+    bfont_preload_metrics((const struct Resources *)&res);
+
     // Geometry comes from the pack, so it must be resolved before the window
     // and the render target are sized. resources_load already rejected a pack
     // that declared no render.mode.
@@ -676,41 +748,70 @@ int shell_run_game(int argc, char **argv) {
     int base_w = CL_WINDOW_W;
     int base_h = CL_WINDOW_H;
 
-    unsigned int window_flags = FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT;
-    SetConfigFlags(window_flags);
-    InitWindow(base_w, base_h, res.title[0] ? res.title : "OpenBounty");
-    SetWindowMinSize(320, 200);
-    if (want_fullscreen) ToggleFullscreen();
-    // Modern packs start at 1:1 rather than Auto, so the Scale row reads "1x"
-    // and the player is scaling up from the pack's native size. Legacy never
-    // touches the override at all.
-    if (CL_IS_MODERN) present_set_scale(1);
+    // The window: resizable, no cursor, no exit key, 60fps -- all of that is
+    // frame_host_window_open's, so every platform opens it the same way.
+    // Modern starts at 1x -- one buffer pixel to one screen pixel, the
+    // resolution the pack was authored for. Maximising shows more tiles rather
+    // than bigger ones; higher scales are an explicit choice for a 4K panel.
     // Demo mode paces itself via per-beat holds in shell_demo.c; the frame rate
     // stays at the human 60fps cap. Human play is 60fps too.
-    SetTargetFPS(60);
-    SetExitKey(KEY_NULL);
+    BOOT_TRACE("[boot] resources loaded, opening the window\n");
+    frame_host_window_open(base_w, base_h,
+                           res.title[0] ? res.title : "OpenBounty");
+    {
+        int dw = 0, dh = 0;
+        frame_host_display_size(&dw, &dh);
+        BOOT_TRACE("[boot] window %dx%d display %dx%d\n",
+                   frame_host_window_width(), frame_host_window_height(), dw, dh);
+    }
+    int min_w, min_h;
+    layout_min_window(&min_w, &min_h);
+    frame_host_window_min_size(min_w, min_h);
+    if (want_fullscreen) frame_host_window_fullscreen_toggle();
 
     // Font strip and palette come from the manifest. They were compiled in
     // here, which meant every pack had to ship a file named for the game the
     // extractor was written against.
-    bfont_init(res.sprites.font);
+    BOOT_TRACE("[boot] baking the font\n");
+    bfont_init((const struct Resources *)&res);
+    BOOT_TRACE("[boot] font ready\n");
     palette_init(res.sprites.palette);
+    ui_set_panel_frame(res.sprites.panel_frame);
 
+    BOOT_TRACE("[boot] loading sprites\n");
     Sprites sprites;
     sprites_load(&sprites, &res);
+    BOOT_TRACE("[boot] sprites loaded\n");
     tile_cache_attach(&res);
+    // Cosmetic tile variants: a fresh shuffle every launch (draw-time only).
+    tilevar_init((const struct Resources *)&res, (unsigned)time(NULL));
+
+    // Fit the layout to the window before anything allocates a target. In
+    // modern the buffer is the window divided by the scale; without this the
+    // startup screens get a target sized from the pack's declared viewport
+    // rather than the actual window, and clip.
+    layout_fit_window(frame_host_window_width(), frame_host_window_height(),
+                      present_scale(frame_host_window_width(),
+                                    frame_host_window_height()));
 
     // Allocate the render target early so startup screens can
     // draw into it.
+    BOOT_TRACE("[boot] creating the frame buffer\n");
     RenderTexture2D render_target_startup =
-        LoadRenderTexture(CL_SCREEN_W, CL_SCREEN_H);
-    SetTextureFilter(render_target_startup.texture, TEXTURE_FILTER_POINT);
+        gfx_target_create(CL_SCREEN_W, CL_SCREEN_H);
+    BOOT_TRACE("[boot] frame buffer id=%u\n", render_target_startup.id);
+    gfx_texture_point(render_target_startup.texture);
 
     // Pre-game flow: pick slot + new-game wizard. --demo / --autoplay bypass
     // the wizard and synthesize a deterministic new game: the agent plays it,
     // so there's no human to run the menus. Seed defaults to the mode default.
+    // Modern's in-game New Game comes back here, past the splashes, to the
+    // title menu (back_to_title).
+    bool back_to_title = false;
+    bool audio_started = false;
+title:;
     StartupChoice choice = { 0 };
-    if (demo_mode || autoplay_mode) {
+    if (demo_mode || autoplay_mode || gallery_dir) {
         if (seed_index < 0)
             seed_index = autoplay_mode ? AUTOPLAY_DEFAULT_SEED_INDEX
                                        : DEMO_DEFAULT_SEED_INDEX;
@@ -734,22 +835,27 @@ int shell_run_game(int argc, char **argv) {
         choice.difficulty = autoplay_mode ? autoplay_level
                                           : DEMO_HERO_DIFFICULTY;
     } else if (!startup_flow(&res, &sprites,
-                             &render_target_startup, &choice)) {
+                             &render_target_startup, &choice, back_to_title)) {
         // User quit before choosing.
-        UnloadRenderTexture(render_target_startup);
+        audio_shutdown();
+        recorder_shutdown();
+        gfx_target_free(render_target_startup);
         sprites_unload(&sprites);
         bfont_shutdown();
-        CloseWindow();
+        lattice_shutdown();
+        tile_cache_shutdown();
+        frame_host_window_close();
         resources_free(&res);
         pack_stack_clear();
         return 0;
     }
 
-    Map map;
-    Fog fog;
-    FogInit(&fog);
+    back_to_title = false;
 
-    Game game;
+    Map map = { 0 };
+    Fog fog = { 0 };
+
+    Game game = { 0 };
     game.res = &res;
     if (choice.action == STARTUP_NEW) {
         // Class id -> pclass index comes straight from the ClassDef catalog.
@@ -762,8 +868,10 @@ int shell_run_game(int argc, char **argv) {
         // GameInitSeeded derives one from time + name + class instead.
         GameInitSeeded(&game, choice.name, pclass, choice.difficulty, NULL,
                        seed_index);
+#ifndef NDEBUG
         fprintf(stdout, "[main] seed: %d%s\n", game.seed_index,
                 seed_index >= 0 ? "" : " (derived)");
+#endif
 
         //  -- post-create_game informational modal.
         char body[256];
@@ -775,7 +883,8 @@ int shell_run_game(int argc, char **argv) {
                  "game playable.",
                  game.character.name,
                  game.character.cls.rank_title);
-        player_io_message(&game, NULL, body);
+        // Modern goes straight into the game.
+        if (!CL_IS_MODERN) player_io_note(&game, NULL, body);
     } else {
         // LOAD: hydrate Game from the chosen slot. GameInit first with
         // defaults so all fields have sane values the loader can overwrite.
@@ -799,7 +908,7 @@ int shell_run_game(int argc, char **argv) {
                  "your bountying enjoyment!",
                  game.character.name,
                  game.character.cls.rank_title);
-        player_io_message(&game, NULL, body);
+        player_io_note(&game, NULL, body);
     }
 
     // Load the starting zone now that placements are populated. For NEW
@@ -809,10 +918,12 @@ int shell_run_game(int argc, char **argv) {
     const char *load_zone = game.position.zone;
     if (!load_zone[0]) load_zone = res.world.starting_zone;
     if (!MapLoadZoneWithPlacements(&map, &res, load_zone, &game)) {
-        UnloadRenderTexture(render_target_startup);
+        gfx_target_free(render_target_startup);
         sprites_unload(&sprites);
         bfont_shutdown();
-        CloseWindow();
+        lattice_shutdown();
+        tile_cache_shutdown();
+        frame_host_window_close();
         resources_free(&res);
         pack_stack_clear();
         return 1;
@@ -829,11 +940,15 @@ int shell_run_game(int argc, char **argv) {
     // trusts the fog bytes stored in the save. Match that behavior -- for
     // LOAD, the Fog struct was populated by SaveGameRead above.
     if (choice.action == STARTUP_NEW) {
-        FogReveal(&fog, &map, game.position.x, game.position.y,
-                  res.world.fog_sight);
+        FogRevealFor(&res, &fog, &map, game.position.x, game.position.y);
     }
 
     bool quit_requested = false;
+    bool new_game_requested = false;   // modern New Game row chosen: ask
+    bool new_game_asking = false;      // its yes/no prompt is up
+    bool menu_asking = false;          // modern game menu: Yes/No before exit, load or overwrite
+    bool castle_asking = false;        // modern home castle: Yes/No before a tribute
+    bool town_asking = false;          // modern town: a Yes/No before an action is up
     // Set when a demo run WON (scepter recovered): the win cartoon + win
     // screen play as the ending, then control is handed to the human on the
     // cleared world. The engine's show_win_game sets game_over (the real
@@ -847,21 +962,33 @@ int shell_run_game(int argc, char **argv) {
         .spawn_x = spawn_x, .spawn_y = spawn_y,
         .quit_flag = &quit_requested,
         .hud_pref = game.hud_visible,
+        .new_game_flag = &new_game_requested,
     };
     MenuCallbacks menu_cbs = {
         .on_save = menu_save, .on_load = menu_load,
         .on_new  = menu_new,  .on_quit = menu_quit,
     };
+    views_menu_bind(&menu_cbs, &menu_ctx);
+    views_menu_set_debug(debug_flag);
 
     // Render target was allocated above (render_target_startup)
     // so the pre-game flow can draw into it; reuse here.
     RenderTexture2D render_target = render_target_startup;
+    if (gallery_dir) {
+        // Layout audit: capture every modern screen, then quit.
+        int rc = gallery_run(&game, &map, &fog, &res, &sprites, &render_target, gallery_dir);
+        gfx_target_free(render_target);
+        sprites_unload(&sprites);
+        frame_host_window_close();
+        resources_free(&res);
+        return rc;
+    }
 
     // Recorder: when --movie was passed, capture state + framebuffer
     // PNGs on logical-tick mutations into a hidden temp dir, then mux
     // to one .mp4 at shutdown. Off when --movie wasn't passed, in
     // which case every recorder_capture() call is a free no-op.
-    if (movie_requested) {
+    if (movie_requested && !recorder_active()) {
         char movie_path[1024];
         if (movie_path_arg) {
             snprintf(movie_path, sizeof movie_path, "%s", movie_path_arg);
@@ -890,16 +1017,28 @@ int shell_run_game(int argc, char **argv) {
         }
     }
 
-    // Audio: open device, load music streams, start the openworld
-    // track. Honors the user's saved Sounds + Music toggles.
-    audio_init(&res);
-    if (!audio_is_available()) {
-        // No playback device: pin Sounds/Music/Volume to 0 so the
-        // controls panel and the live audio push agree. The rows are
-        // also rendered grayed-out and ignore input.
+    // Audio: open the device, load the music streams, start the openworld
+    // track, honouring the saved Sounds + Music toggles. Opening the device
+    // can block for tens of seconds (a slow sound server under WSL); done here
+    // on the main thread it froze the window on the last startup frame between
+    // choosing a character and the game appearing. Interactive play opens it
+    // in the background and the game starts at once; --autoplay and --demo
+    // keep the synchronous open, because game options are part of their
+    // byte-exact state and a no-device fallback landing mid-run would change
+    // it.
+    if (audio_started)              { /* back from the title menu: already open */ }
+    else if (demo_mode || autoplay_mode) audio_init_blocking(&res);
+    else                            audio_init(&res);
+    audio_started = true;
+    // No playback device: pin Sounds/Music/Volume to 0 so the controls panel
+    // and the live audio push agree (the rows are also greyed out and ignore
+    // input). Checked again each frame below until the open resolves.
+    bool audio_pinned = false;
+    if (audio_status() == AUDIO_UNAVAILABLE) {
         game.stats.options[1] = 0;  // Sounds
         game.stats.options[5] = 0;  // Music
         game.stats.options[6] = 0;  // Volume
+        audio_pinned = true;
     }
     audio_set_sounds_enabled(game.stats.options[1] != 0);
     audio_set_music_enabled (game.stats.options[5] != 0);
@@ -950,23 +1089,28 @@ int shell_run_game(int argc, char **argv) {
         }
     }
 
+    // The load is over: keys pressed while it ran must not answer the first
+    // dialog or step the hero.
+    input_host_flush(0.3);
+
     while (!frame_host_should_close() && !quit_requested) {
         // Audio: drive music streaming + react to live toggle changes.
         audio_set_sounds_enabled(game.stats.options[1] != 0);
         audio_set_music_enabled (game.stats.options[5] != 0);
         audio_set_master_volume (game.stats.options[6]);
         audio_tick();
+        if (!audio_pinned && audio_status() == AUDIO_UNAVAILABLE) {
+            // The background open finished without a device.
+            game.stats.options[1] = 0;
+            game.stats.options[5] = 0;
+            game.stats.options[6] = 0;
+            audio_pinned = true;
+        }
         if ((input_key_down(KEY_LEFT_ALT) || input_key_down(KEY_RIGHT_ALT)) &&
             input_key_pressed(KEY_ENTER)) {
-            ToggleFullscreen();
+            frame_host_window_fullscreen_toggle();
         }
 
-        // F10 -> debug cheat menu (implementation in shell_cheats.{c,h}).
-        // W/L cheats short-circuit normal per-frame logic.
-        if (cheat_menu_tick(&game, &map, &fog, &res, &sprites,
-                            &render_target) == CHEAT_DISPATCHED_TERMINAL) {
-            continue;
-        }
 
         bool overlay = (views_active() != VIEW_NONE) || dialog_is_active() ||
                        prompt_is_active();
@@ -985,7 +1129,7 @@ int shell_run_game(int argc, char **argv) {
         // captures, etc.) into the shell dialog so the engine's uniform
         // messages render through the existing dialog UI. One per frame when the
         // dialog slot is free; the human dismisses with any key as before.
-        shell_pump_player_io_message(&game);
+        shell_pump_note(&game);
 
         // Sync engine VIEWS (town / home-castle / own-castle / alcove / dwelling /
         // win / lose) from the queue onto the shell view stack. The human
@@ -995,6 +1139,34 @@ int shell_run_game(int argc, char **argv) {
         shell_pump_player_io_view(&game);
 
         // ==== Input ====
+
+        // Modern New Game: confirm, then leave the loop for the title menu.
+        if (new_game_asking) {
+            PromptResult r = prompt_update();
+            if (r != PROMPT_RESULT_NONE) new_game_asking = false;
+            if (r == PROMPT_RESULT_YES) { back_to_title = true; quit_requested = true; }
+            goto end_input;
+        }
+        // Modern town: an action waits on its Yes/No.
+        if (town_asking) {
+            PromptResult r = prompt_update();
+            if (r != PROMPT_RESULT_NONE) town_asking = false;
+            if (r == PROMPT_RESULT_YES) views_town_confirm_yes(&game);
+            goto end_input;
+        }
+
+        if (menu_asking) {
+            PromptResult r = prompt_update();
+            if (r != PROMPT_RESULT_NONE) menu_asking = false;
+            if (r == PROMPT_RESULT_YES) modern_gamemenu_confirm_yes();
+            goto end_input;
+        }
+        if (castle_asking) {
+            PromptResult r = prompt_update();
+            if (r != PROMPT_RESULT_NONE) castle_asking = false;
+            if (r == PROMPT_RESULT_YES) modern_castle_confirm_yes(&game);
+            goto end_input;
+        }
 
         // Fast-quit (Ctrl+Q) status-bar prompt.
         if (fast_quit_is_active()) {
@@ -1025,7 +1197,7 @@ int shell_run_game(int argc, char **argv) {
                 if (game.stats.won) {
                     // The agent found the scepter: play the ending a human
                     // victory gets, then hand off the cleared board.
-                    run_end_cartoon(&render_target, &res, &sprites);
+                    run_end_cartoon(&render_target, &res, &sprites, &game);
                     show_win_game(&game, &res);
                     won_handoff = true;
                 } else {
@@ -1065,7 +1237,7 @@ int shell_run_game(int argc, char **argv) {
                 shell_autoplay_end();
                 autoplay_mode = false;
                 if (game.stats.won) {
-                    run_end_cartoon(&render_target, &res, &sprites);
+                    run_end_cartoon(&render_target, &res, &sprites, &game);
                     show_win_game(&game, &res);
                     won_handoff = true;
                 } else {
@@ -1089,18 +1261,107 @@ int shell_run_game(int argc, char **argv) {
             goto end_input;
         }
 
+        // Modern temple and dwelling screens stay up through their answer; once
+        // no prompt, dialog or queued request is left, they close.
+        if (CL_IS_MODERN && (views_active() == VIEW_ALCOVE || views_active() == VIEW_DWELLING)) {
+            // A message raised over the screen (the Augur's reply, a refusal)
+            // becomes the in-lay's text rather than a dialog box over the scene.
+            if (dialog_is_active()) {
+                loc_deal_absorb(dialog_body_text());
+                dialog_dismiss();
+            }
+            if (loc_deal_pending() && !prompt_is_active() && !loc_deal_revealed()) {
+                // The panorama first: its action row brings up the in-lay, Leave exits.
+                touch_request(TOUCH_CHROME_BACK);
+                int *cur = loc_deal_cursor();
+                int tapped = touch_tapped_row(TOUCH_LIST_PROMPT);
+                if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_DOWN)) *cur = 1 - *cur;
+                if (tapped >= 0) *cur = tapped;
+                bool go = tapped >= 0 || input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
+                          input_key_pressed(KEY_SPACE);
+                if (input_key_pressed(KEY_ESCAPE) || (go && *cur == 1)) { loc_deal_clear(); views_dismiss(); }
+                else if (go) loc_deal_reveal();
+                goto end_input;
+            }
+            if (loc_deal_pending() && !prompt_is_active()) {
+                // The deal is on show: Continue (Enter, Escape or a tap) closes it.
+                touch_request(TOUCH_CHROME_BACK);
+                int tapped = touch_tapped_row(TOUCH_LIST_PROMPT);
+                if (tapped == 0 || input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
+                    input_key_pressed(KEY_SPACE) || input_key_pressed(KEY_ESCAPE)) {
+                    loc_deal_clear();
+                    views_dismiss();
+                }
+                goto end_input;
+            }
+            if (!prompt_is_active() && !dialog_is_active() && !player_io_front(&game)) {
+                loc_deal_clear();
+                views_dismiss();
+            }
+        }
+
         // prompt_dispatch_tick returns false while a message dialog is up, so
         // the chain falls through to the dialog branch below and the message is
         // dismissed before the prompt is answered (issue #19).
         if (prompt_dispatch_tick(&sctx)) {
             // prompt is up (or just resolved); skip the rest of input
         } else if (views_active() == VIEW_MENU) {
-            views_menu_update(&menu_cbs, &menu_ctx);
+            if (CL_IS_MODERN) {
+                modern_gamemenu_update(&game);
+                char ask[RES_BANNER_LEN];
+                if (modern_gamemenu_take_confirm(&game, ask, sizeof ask)) {
+                    prompt_yes_no_open(NULL, ask);
+                    prompt_set_req_kind(PIO_ASK_IN_PLACE);   // the menu asks in its own page
+                    menu_asking = true;
+                }
+                int slot = 0;
+                switch (modern_gamemenu_take_action(&slot)) {
+                    case GM_DO_SAVE: {
+                        menu_ctx.slot = slot;
+                        menu_save(&menu_ctx);
+                        views_dismiss();
+                        char body[RES_BANNER_LEN], sb[12], db[12];
+                        snprintf(sb, sizeof sb, "%d", slot + 1);
+                        snprintf(db, sizeof db, "%d", game.stats.days_left);
+                        ResTemplateVar sv[] = { { "SLOT", sb }, { "NAME", game.character.name },
+                                                { "RANK", game.character.cls.rank_title }, { "DAYS", db } };
+                        resources_format_template(body, sizeof body, res.banners.save_done, sv, 4);
+                        player_io_note(&game, res.banners.save_done_title, body);
+                        break;
+                    }
+                    case GM_DO_LOAD: menu_ctx.slot = slot; if (menu_load(&menu_ctx)) views_dismiss(); break;
+                    case GM_DO_NEW:  menu_new(&menu_ctx); views_dismiss(); break;
+                    case GM_DO_EXIT: menu_quit(&menu_ctx); break;
+                    case GM_DO_NONE: break;
+                }
+            } else {
+                views_menu_update(&menu_cbs, &menu_ctx);
+            }
+            if (new_game_requested) {
+                new_game_requested = false;
+                prompt_yes_no_open(NULL, res.ui.new_game_confirm);
+                prompt_set_req_kind(PIO_ASK_IN_PLACE);
+                new_game_asking = true;
+            }
+            // A Debug row (--debug only) closes the menu and names a cheat.
+            int cheat = views_menu_take_cheat();
+            if (cheat >= 0 &&
+                cheat_apply((CheatAction)cheat, &game, &map, &fog, &res, &sprites,
+                            &render_target) == CHEAT_DISPATCHED_TERMINAL) {
+                continue;
+            }
         } else if (views_active() == VIEW_TOWN) {
             views_town_update(&game);
+            char ask[RES_BANNER_LEN];
+            if (views_town_take_confirm(&game, ask, sizeof ask) != TOWN_CONFIRM_NONE) {
+                prompt_yes_no_open(NULL, ask);
+                prompt_set_req_kind(PIO_ASK_IN_PLACE);   // the town asks in its own panel
+                town_asking = true;
+            }
         } else if (views_active() == VIEW_CONTROLS) {
             // Navigate rows with Up/Down; digit keys 1..N jump to and
             // advance the matching row; ESC / any unhandled key closes.
+            touch_request(TOUCH_CHROME_BACK);
             int count = 0;
             int vis_map[8] = { 0 };
             int vis = 0;
@@ -1115,6 +1376,9 @@ int shell_run_game(int argc, char **argv) {
             // so a legacy pack's panel is unchanged.
             int scale_row = CL_IS_MODERN ? count : -1;
             if (CL_IS_MODERN) count += 1;
+            // Modern: a Back row after it, as on every menu page.
+            int back_row = CL_IS_MODERN ? count : -1;
+            if (CL_IS_MODERN) count += 1;
             int cur = views_controls_cursor();
             if (count > 0) {
                 if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_KP_8)) {
@@ -1127,8 +1391,9 @@ int shell_run_game(int argc, char **argv) {
                            input_key_pressed(KEY_KP_ENTER) ||
                            input_key_pressed(KEY_SPACE)) {
                     // Advance the value of the selected setting.
-                    if (cur == scale_row) views_controls_advance_scale();
-                    else                  views_controls_advance(&game, vis_map[cur]);
+                    if (cur == back_row)       views_dismiss();
+                    else if (cur == scale_row) views_controls_advance_scale();
+                    else                       views_controls_advance(&game, vis_map[cur]);
                 } else if (input_key_pressed(KEY_ESCAPE) ||
                            input_key_pressed(KEY_C) ||
                            gamepad_pressed_cancel()) {
@@ -1138,8 +1403,9 @@ int shell_run_game(int argc, char **argv) {
                     for (int k = 0; k < count && k < 9; k++) {
                         if (input_key_pressed(KEY_ONE + k)) {
                             views_controls_set_cursor(k);
-                            if (k == scale_row) views_controls_advance_scale();
-                            else                views_controls_advance(&game, vis_map[k]);
+                            if (k == back_row)       views_dismiss();
+                            else if (k == scale_row) views_controls_advance_scale();
+                            else                     views_controls_advance(&game, vis_map[k]);
                             break;
                         }
                     }
@@ -1154,7 +1420,10 @@ int shell_run_game(int argc, char **argv) {
                 if (spell_idx >= 0) {
                     dispatch_adventure_spell(&game, spell_idx);
                 }
-            } else if (ui_any_key_pressed()) {
+            } else if ((!CL_IS_MODERN || !views_spells_casting()) && ui_any_key_pressed()) {
+                // Legacy, or only looking: any other key closes. Modern casting
+                // keeps its keys -- the arrows move the cursor and Escape closes
+                // (views_spells_update); an arrow here used to close the list.
                 views_dismiss();
             }
         } else if (views_active() == VIEW_GATE) {
@@ -1170,6 +1439,19 @@ int shell_run_game(int argc, char **argv) {
                                                           : "castle_gate");
                 }
             }
+        } else if ((views_active() == VIEW_HOME_CASTLE || views_active() == VIEW_OWN_CASTLE) &&
+                   !dialog_is_active() && CL_IS_MODERN) {
+            // Modern castles: the town-style screen owns its input.
+            if (modern_castle_update(&game)) {
+                views_dismiss();
+                pending_castle_id[0] = '\0';
+            }
+            char ask[RES_BANNER_LEN];
+            if (views_active() == VIEW_HOME_CASTLE && modern_castle_take_confirm(&game, ask, sizeof ask)) {
+                prompt_yes_no_open(NULL, ask);
+                prompt_set_req_kind(PIO_ASK_IN_PLACE);   // the castle asks in its own scene
+                castle_asking = true;
+            }
         } else if (views_active() == VIEW_HOME_CASTLE && !dialog_is_active()) {
             //  /  +
             // : throne_room_or_barracks gamestate accepts A and B
@@ -1179,14 +1461,23 @@ int shell_run_game(int argc, char **argv) {
             // (run_audience_dialog -> open_dialog) is handled by the
             // downstream dialog branch instead -- dialog has its own
             // SPACE-to-advance flow over the persistent backdrop.
+            // Modern: up/down and Enter or a tap pick a row; A and B act
+            // directly in both modes.
+            int pick = -1;
+            {
+                SelList l = { 2, screen_home_castle_cursor() };
+                int row = -1;
+                if (sel_input(&l, TOUCH_LIST_CASTLE, 0, &row) == SEL_CONFIRM) pick = row;
+                screen_home_castle_set_cursor(l.cursor);
+            }
             if (input_key_pressed(KEY_ESCAPE) || gamepad_pressed_cancel()) {
                 views_dismiss();
                 pending_castle_id[0] = '\0';
-            } else if (input_key_pressed(KEY_A)) {
+            } else if (pick == 0 || input_key_pressed(KEY_A)) {
                 // A) Recruit Soldiers -- push the dedicated recruit
                 // sub-screen (5 troops + gold + key hint).
                 screen_recruit_soldiers_open(&game);
-            } else if (input_key_pressed(KEY_B)) {
+            } else if (pick == 1 || input_key_pressed(KEY_B)) {
                 // B) Audience with the King -- modal popup over the
                 // castle backdrop. Run after panel render so it overlays.
                 const ResCastle *rc2 =
@@ -1212,23 +1503,37 @@ int shell_run_game(int argc, char **argv) {
             } else if (input_key_pressed(KEY_SPACE)) {
                 screen_own_castle_toggle_mode();
             } else {
+                // Modern: up/down move the slot cursor and Enter or a tap
+                // acts on it; the letters act directly in both modes.
+                // Row 0 is the Garrison / Remove mode, rows 1-5 the slots.
+                int chosen = -1;
+                {
+                    SelList l = { 6, screen_own_castle_cursor() };
+                    int row = -1;
+                    SelEvent ev = sel_input(&l, TOUCH_LIST_CASTLE, 0, &row);
+                    screen_own_castle_set_cursor(l.cursor);
+                    if (ev == SEL_CONFIRM) {
+                        if (row == 0) screen_own_castle_toggle_mode();
+                        else          chosen = row - 1;
+                    }
+                }
                 for (int k = 0; k < 5; k++) {
-                    if (!input_key_pressed(KEY_A + k)) continue;
+                    if (k != chosen && !input_key_pressed(KEY_A + k)) continue;
                     const char *cid = screen_own_castle_castle_id();
                     int rc;
                     if (screen_own_castle_is_garrison_mode()) {
                         rc = GameGarrisonTroop(&game, cid, k);
                         if (rc == 2) {
-                            player_io_message(&game, NULL,
+                            player_io_note(&game, NULL,
                                 game.res->banners.cannot_garrison_last);
                         } else if (rc == 1) {
-                            player_io_message(&game, NULL,
+                            player_io_note(&game, NULL,
                                 game.res->banners.no_troop_slots);
                         }
                     } else {
                         rc = GameUngarrisonTroop(&game, cid, k);
                         if (rc == 1) {
-                            player_io_message(&game, NULL,
+                            player_io_note(&game, NULL,
                                 game.res->banners.no_troop_slots);
                         }
                     }
@@ -1245,15 +1550,32 @@ int shell_run_game(int argc, char **argv) {
             // a persistent view (e.g. audience-with-king over
             // VIEW_HOME_CASTLE) doesn't have its dismiss key also tear
             // down the underlying view.
-            if (views_active() == VIEW_WORLDMAP && input_key_pressed(KEY_SPACE)) {
+            //
+            // Modern draws the toggle as a row under the map (with the orb):
+            // Enter, Space or a tap on it swaps the map.
+            bool worldmap_row = false;
+            bool has_orb = false;
+            bool wm_modern = CL_IS_MODERN && views_active() == VIEW_WORLDMAP && modern_worldmap_input(&game);
+            if (wm_modern) {
+                // Modern: the places list owns the keys (src/modern/views_render.c).
+            } else if (views_active() == VIEW_WORLDMAP) {
                 int zi = -1;
                 for (int i = 0; i < res.zone_count; i++) {
                     if (strcmp(res.zones[i].id, game.position.zone) == 0) {
                         zi = i; break;
                     }
                 }
-                bool has_orb = (zi >= 0 && zi < GAME_CONTINENTS &&
-                                game.world.orbs_found[zi]);
+                has_orb = (zi >= 0 && zi < game.world.zone_count && game.world.orbs_found[zi]);
+                if (has_orb && CL_IS_MODERN) {
+                    SelList l = { 1, 0 };
+                    worldmap_row = sel_input(&l, TOUCH_LIST_PROMPT, 0, NULL) == SEL_CONFIRM;
+                }
+            }
+            if (wm_modern) {
+                // handled above
+            } else if (worldmap_row) {
+                views_render_worldmap_toggle_hero_only();
+            } else if (views_active() == VIEW_WORLDMAP && input_key_pressed(KEY_SPACE)) {
                 if (has_orb) {
                     views_render_worldmap_toggle_hero_only();
                 } else {
@@ -1275,6 +1597,11 @@ int shell_run_game(int argc, char **argv) {
         } else if (dialog_is_active()) {
             // Handle bridge direction input if waiting for it
             if (bridge_state == BRIDGE_STATE_DIRECTION) {
+                // Touch: tap the target tile; ESC chrome cancels.
+                touch_region_map(CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H,
+                                 CL_TILE_W, CL_TILE_H,
+                                 CL_MAP_TILES_W / 2, CL_MAP_TILES_H / 2, 0);
+                touch_request(TOUCH_CHROME_BACK);
                 InputState in = input_poll();
                 if (in.dx != 0 || in.dy != 0) {
                     int built = try_build_bridge(&game, &map, in.dx, in.dy);
@@ -1291,13 +1618,13 @@ int shell_run_game(int argc, char **argv) {
                                                   bn->spell_bridge_built,
                                                   vars, 1);
                         dialog_dismiss();
-                        player_io_message(&game, spell_header("bridge", "Bridge"), msg);
+                        player_io_note(&game, spell_header("bridge", "Bridge"), msg);
                     } else {
                         resources_format_template(msg, sizeof msg,
                                                   bn->spell_bridge_invalid,
                                                   NULL, 0);
                         dialog_dismiss();
-                        player_io_message(&game, spell_header("bridge", "Bridge"), msg);
+                        player_io_note(&game, spell_header("bridge", "Bridge"), msg);
                     }
                 } else if (input_key_pressed(KEY_ESCAPE) || gamepad_pressed_cancel()) {
                     bridge_state = BRIDGE_STATE_NONE;
@@ -1328,7 +1655,7 @@ int shell_run_game(int argc, char **argv) {
                             snprintf(body, sizeof(body), "%s",
                                      pending_audience_message);
                             pending_audience_message[0] = '\0';
-                            player_io_message(&game, body, "");
+                            player_io_note(&game, body, "");
                         }
                     }
                 }
@@ -1339,6 +1666,15 @@ int shell_run_game(int argc, char **argv) {
         } else {
             // Standard adventure-mode bindings. No ESC->menu,
             // no TAB, no Space->HUD.
+            //
+            // Touch: the hero is always the centre tile of the viewport, so
+            // a tap picks its direction relative to centre -- one tap, one
+            // injected direction key, one step. The action bar carries the
+            // letter-key verbs.
+            touch_region_map(CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H,
+                             CL_TILE_W, CL_TILE_H,
+                             CL_MAP_TILES_W / 2, CL_MAP_TILES_H / 2, 0);
+            touch_request(TOUCH_CHROME_ADVENTURE);
             InputState in = input_poll();
             shell_dispatch_action(&sctx, &in);
             if (in.action == INPUT_ACTION_NONE && (in.dx || in.dy)) {
@@ -1363,7 +1699,7 @@ int shell_run_game(int argc, char **argv) {
                 // Free-running tick: each sprite strip folds this onto its
                 // own declared cycle length at draw time, so the counter
                 // must not assume any particular frame count here.
-                game.anim_frame = (game.anim_frame + 1) % OB_ANIM_TICK_WRAP;
+                game.anim_frame = ob_anim_tick(game.anim_frame);
             } else {
                 game.anim_frame = 0;   // idle pose
             }
@@ -1375,29 +1711,41 @@ int shell_run_game(int argc, char **argv) {
         end_input:;
 
         // ==== Draw ====
-        // Render into the 320x200 offscreen target.
-        BeginTextureMode(render_target);
+        // Modern grows the viewport to whatever whole tiles the window can
+        // show, so the render target changes size when the window or the scale
+        // does. Legacy is fixed and this is a no-op for it.
+        present_refit(&render_target);
+
+        // Render into the offscreen target.
+        present_begin(&render_target);
         draw_frame(&game, &map, &fog, &sprites);
-        EndTextureMode();
+        present_end();
 
         // Blit centered + letterboxed at the largest integer scale that fits,
         // within the bounds in layout.h (see present.c).
         present_scaled(render_target);
         frame_host_end_frame();
 
-        // Screenshots (dev builds only; see screenshot.c):
-        //   - backtick (`) -> "shot" prefix, on demand
-        //   - VIEW_CHARACTER rising edge -> "char" prefix (auto, for layout diffs)
+        // Screenshot on demand: backtick (`) -> screenshots/shot_NNNN.png.
+        // An automatic save on entering the Character view (a layout-diff
+        // hook from the first commit) used to sit here; it wrote into a
+        // folder that a fresh checkout does not have and warned on every
+        // start-up. Removed 2026-09-07.
         screenshot_tick(render_target, "shot");
-        {
-            static bool prev_char_view = false;
-            bool cur_char_view = (views_active() == VIEW_CHARACTER);
-            if (cur_char_view && !prev_char_view) {
-                screenshot_save(render_target, "char");
-            }
-            prev_char_view = cur_char_view;
-        }
 
+    }
+
+    // New Game from the in-game menu: clear what the session left on screen
+    // and go back to the title menu. The window, audio and render target stay.
+    if (back_to_title && !frame_host_should_close()) {
+        views_set(VIEW_NONE);
+        dialog_dismiss();
+        prompt_dismiss();
+        pending_reset();
+        MapFree(&map);
+        FogFree(&fog);
+        GameFree(&game);
+        goto title;
     }
 
     // Encode --movie session to its MP4. Runs AFTER the main loop exits,
@@ -1411,10 +1759,15 @@ int shell_run_game(int argc, char **argv) {
 
     audio_shutdown();
     recorder_shutdown();
-    UnloadRenderTexture(render_target);
+    gfx_target_free(render_target);
     bfont_shutdown();
     sprites_unload(&sprites);
-    CloseWindow();
+    lattice_shutdown();
+    tile_cache_shutdown();
+    MapFree(&map);
+    FogFree(&fog);
+    GameFree(&game);
+    frame_host_window_close();
     resources_free(&res);
     pack_stack_clear();
     return 0;

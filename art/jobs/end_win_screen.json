@@ -1,0 +1,24 @@
+{
+  "id": "end_win_screen",
+  "prompt": "the recovered golden legionary eagle standard in strict side profile, the same eagle as the reference, mounted on top of a tall standard pole and carried upright at the head of a procession of Roman legionaries in crested helmets and red cloaks marching in a line up broad marble steps toward Imperator Trajan, who stands at the top in a laurel crown and a purple toga over a gilded cuirass with his arms open to receive it, the eagle the brightest thing in the scene; behind and far below, a vast crowd fills the Roman Forum to the horizon, rendered tiny and indistinct, a dense sea of small heads with no faces, in muted tones, temples and columns beyond, a clear sky",
+  "style": "rd_pro__default",
+  "width": 144,
+  "height": 170,
+  "seed": 6205,
+  "reference_image_paths": [
+    "assets/glory-of-rome/art/classes/legatus.png",
+    "assets/glory-of-rome/art/classes/praetorianus.png",
+    "assets/glory-of-rome/art/classes/sibylla.png",
+    "assets/glory-of-rome/art/classes/dux.png",
+    "assets/glory-of-rome/art/ui/end_lose_screen.png"
+  ],
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    144,
+    170
+  ],
+  "_pack_path": "art/ui/end_win_screen.png",
+  "_note": "Ending win screen, screen-shaped route: rd_pro__default at the 144x170 design size (RD Pro caps a side at 256, so x2 = 288x340 does not fit), opaque, scaled 2x by the shell. The four approved class portraits are passed as reference_images so the emperor is drawn in their rendering, the picker's route. The brief (GLORY-OF-ROME 1.2) makes the Emperor Trajan and the quest the recovered Aquila; the crowd is described tiny, faceless and muted so it stays a background mass. run02: back turned to the crowd, the eagle mounted on a pole, the installed lose screen added as a fifth reference so the eagle and rendering match it, seed incremented. run03: run02 came out as a view from behind, so the emperor and the eagle are both described as seen from the front facing the viewer with the crowd entirely behind them, seed incremented. run04: the view from behind is the wanted one (run02), with the eagle now also seen from behind, facing the crowd with the emperor, seed incremented. run05: the eagle was never close enough to the lose screen's, so it is now in strict profile on its pole, carried up the steps to the waiting emperor by a procession of legionaries, seed incremented."
+}

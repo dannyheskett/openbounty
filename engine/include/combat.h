@@ -117,6 +117,11 @@ typedef struct Combat {
     Game         *heroes[COMBAT_SIDES];                 // [PLAYER] = g, [AI] = NULL
     int           turn;
     int           phase;                                // 0 or 1 (next_unit wrap counter)
+    // The last troop attack (combat_hit_unit): a count that rises by one per
+    // attack, and the attacker's side and cell. Write-only for the engine; the
+    // modern renderer plays the attacker's strip from it.
+    int           attack_seq;
+    int           attack_side, attack_x, attack_y;
     int           spells_this_round;                    // <= 1
     int           side;                                 // currently acting side
     int           unit_id;                              // currently acting unit slot

@@ -15,8 +15,11 @@
 // SCREEN_RESULT_DISMISS when ESC is pressed at idle.
 
 #include "input_host.h"
+#include "gfx.h"
 #include "recruit_soldiers.h"
+#include "touch.h"
 #include "layout.h"
+#include "overlay.h"
 #include "palette.h"
 #include "bfont.h"
 #include "views.h"
@@ -24,7 +27,9 @@
 #include "resources.h"
 #include "game.h"
 #include "ui.h"
-#include "raylib.h"
+#include "select.h"
+#include "textsel.h"
+#include "ob_types.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -165,13 +170,23 @@ static int recompute_max(const Game *g, int slot) {
 //   6    SYN tick (animation only)
 //   -1   ESC
 //   0    nothing
+static int s_cursor = 0;   // modern: the selected troop row
+
 static int poll_idle_input(void) {
+    touch_request(TOUCH_CHROME_BACK);
     if (input_key_pressed(KEY_ESCAPE)) return -1;
+    {   // Modern: up/down and Enter, or a tapped row; letters in both modes.
+        SelList l = { 5, s_cursor };
+        int row = -1;
+        SelEvent ev = sel_input(&l, TOUCH_LIST_RECRUIT, 0, &row);
+        s_cursor = l.cursor;
+        if (ev == SEL_CONFIRM) return row + 1;
+    }
     for (int i = 0; i < 5; i++) {
         if (input_key_pressed(KEY_A + i)) return i + 1;
     }
     // SYN tick at 90ms cadence drives the twirl animation.
-    double now = GetTime();
+    double now = ui_anim_time();
     if (now - s_last_tick >= 0.090) {
         s_last_tick = now;
         return 6;
@@ -185,8 +200,25 @@ static int poll_idle_input(void) {
 //   1  ENTER pressed: digits in s_input_buf are the value
 //   2  ESC pressed: cancel (whom -> 0)
 //   0  still entering / nothing this frame
+static TextSel s_ts = { 0, true };   // modern: the digit selector
+static bool s_selector = false;
+
+static bool digit_allowed(const char *buf, int len, int ch) {
+    (void)buf;
+    return len < INPUT_MAX_LEN && ch >= '0' && ch <= '9';
+}
+
 static int poll_count_input(void) {
+    touch_request(TOUCH_CHROME_BACK);
+    s_selector = CL_IS_MODERN &&
+                 (input_text_mode() == TEXT_MODE_SELECTOR || input_pad_or_touch_seen());
+    if (!s_selector) touch_request(TOUCH_CHROME_DIGITS);
     if (input_key_pressed(KEY_ESCAPE)) return 2;
+    if (s_selector) {
+        if (textsel_input(&s_ts, s_input_buf, &s_input_len, INPUT_MAX_LEN + 1,
+                          TOUCH_LIST_TEXTSEL, digit_allowed)) return 1;
+        return 0;
+    }
     if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER)) return 1;
     if (input_key_pressed(KEY_BACKSPACE) && s_input_len > 0) {
         s_input_len--;
@@ -230,6 +262,7 @@ bool screen_recruit_soldiers_update(Game *g) {
     // the player presses any key. Don't consume the key on the same
     // frame the popup opened.
     if (s_error_msg[0]) {
+        touch_region_any(KEY_ENTER);   // tap dismisses the error popup
         if (s_error_just_set) {
             s_error_just_set = false;
         } else if (input_get_key_pressed() != 0) {
@@ -308,15 +341,13 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
                                    s_anim_troop_idx, s_troop_frame);
 
     // Bottom panel -- same fixed rect every dialog/screen uses.
-    int x = CL_PANEL_X;
-    int y = CL_PANEL_Y;
-    int w = CL_PANEL_W;
-    int h = CL_PANEL_H;
-    DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
-    DrawRectangleLines(x, y, w, h, PAL_CLR(YELLOW));
+    int x, y, w, h;
+    screens_text_rect(&x, &y, &w, &h);
+    gfx_rect(x, y, w, h, PAL_CLR(DBLUE));
+    ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
 
-    int pad = CL_PANEL_PAD_X;   // 1px: the panel holds exactly CL_PANEL_COLS glyphs
-    int row_h = BFONT_GLYPH_H + 1;
+    int pad = screens_text_pad();   // legacy 4: the panel holds exactly CL_PANEL_COLS glyphs
+    int row_h = BFONT_GLYPH_H + CL_UI;
     int tx = x + pad;
     int ty = y + pad;
 
@@ -334,9 +365,8 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
     }
 
     // ---- LEFT SIDE ----------------------------------------------------
-    const ResUI *ui = (g && g->res) ? &g->res->ui : NULL;
-    bfont_draw(ui ? ui->recruit_soldiers_title : "Recruit Soldiers",
-               tx, ty, PAL_CLR(WHITE));
+    const ResUI *ui = &g->res->ui;
+    bfont_draw(ui->recruit_soldiers_title, tx, ty, PAL_CLR(WHITE));
 
     // 5 troop rows starting at text->y + fs->h/4
     // (one row gap after the title), formatted "%c) %-11s%d".
@@ -351,6 +381,16 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
     // their cost.
     int troop_ty = ty + row_h + 1;
     int total_lead = g->stats.leadership_current;
+    // Name column: legacy pads to 11 as the original did; modern pads to the
+    // longest name in the pool plus one, so "Praetoriani" keeps its gap.
+    int name_w = 11;
+    if (CL_IS_MODERN) {
+        for (int i = 0; i < 5; i++) {
+            if (i >= s_pool_count || s_pool[i] < 0) continue;
+            const TroopDef *t = troop_by_index(s_pool[i]);
+            if (t && (int)strlen(t->name) + 1 > name_w) name_w = (int)strlen(t->name) + 1;
+        }
+    }
     for (int i = 0; i < 5; i++) {
         if (i >= s_pool_count || s_pool[i] < 0) continue;
         const TroopDef *t = troop_by_index(s_pool[i]);
@@ -358,14 +398,29 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
         bool unreachable = (t->hit_points <= 0) ||
                            (total_lead < t->hit_points * 6);
         char line[64];
-        if (unreachable) {
-            snprintf(line, sizeof(line), "%c) %-11sn/a",
-                     'A' + i, t->name);
+        if (CL_IS_MODERN) {
+            // No key letters: the rows are the choice.
+            if (unreachable) snprintf(line, sizeof(line), "%-*sn/a", name_w + 3, t->name);
+            else             snprintf(line, sizeof(line), "%-*s%d", name_w + 3, t->name, t->recruit_cost);
+        } else if (unreachable) {
+            snprintf(line, sizeof(line), "%c) %-*sn/a",
+                     'A' + i, name_w, t->name);
         } else {
-            snprintf(line, sizeof(line), "%c) %-11s%d",
-                     'A' + i, t->name, t->recruit_cost);
+            snprintf(line, sizeof(line), "%c) %-*s%d",
+                     'A' + i, name_w, t->name, t->recruit_cost);
         }
-        bfont_draw(line, tx, troop_ty + i * row_h, PAL_CLR(WHITE));
+        if (CL_IS_MODERN) {
+            sel_row(tx, troop_ty + i * row_h, 20 * BFONT_GLYPH_W, row_h, tx, line,
+                    s_whom == 0 && s_cursor == i, PAL_CLR(WHITE), PAL_CLR(DBLUE),
+                    (s_whom == 0 && !unreachable) ? TOUCH_LIST_RECRUIT : 0, i);
+        } else {
+            bfont_draw(line, tx, troop_ty + i * row_h, PAL_CLR(WHITE));
+            // Touch: rows answer to their letters (only while idle -- during
+            // count entry the digit pad owns input).
+            if (s_whom == 0 && !unreachable)
+                touch_region(tx, troop_ty + i * row_h,
+                             20 * BFONT_GLYPH_W, row_h, KEY_A + i);
+        }
     }
 
     // ---- RIGHT SIDE ---------------------------------------------------
@@ -381,9 +436,11 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
     // "\n\n" -> the (A-C) row is 2 rows below the GP=NK header.
     int rby = ty + row_h + 1 + row_h;   // GP row + 1 gap + 1 blank line
 
-    // Literal "(A-C) " hint string, rendered verbatim.
-    bfont_draw("(A-C) ", rx, rby, PAL_CLR(WHITE));
-    int after_hint_x = rx + 6 * BFONT_GLYPH_W;   // after "(A-C) "
+    // "(A-C) " column hint from the pack (kept 6 glyphs so the column math
+    // below lines up).
+    // Modern drops the letter hint and names the chosen troop instead.
+    if (!CL_IS_MODERN) bfont_draw(ui->recruit_col_hint, rx, rby, PAL_CLR(WHITE));
+    int after_hint_x = CL_IS_MODERN ? rx : rx + 6 * BFONT_GLYPH_W;   // after "(A-C) "
 
     if (s_whom == 0) {
         // twirl[] = "\x1D\x05\x1F\x1C" -- bitmap-font codepoints for
@@ -396,13 +453,15 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
     } else {
         // letter, Max=N, How Many, blank.
         char letter[2] = { (char)('A' + s_whom - 1), '\0' };
-        bfont_draw(letter, after_hint_x, rby, PAL_CLR(WHITE));
+        const TroopDef *wt = (CL_IS_MODERN && s_whom - 1 < s_pool_count && s_pool[s_whom - 1] >= 0)
+                             ? troop_by_index(s_pool[s_whom - 1]) : NULL;
+        bfont_draw(wt ? wt->name : letter, after_hint_x, rby, PAL_CLR(WHITE));
 
         char maxbuf[24];
         snprintf(maxbuf, sizeof(maxbuf), "Max=%d", s_max);
         bfont_draw(maxbuf, rx, rby + row_h, PAL_CLR(WHITE));
 
-        bfont_draw(ui ? ui->recruit_soldiers_how_many : "How Many",
+        bfont_draw(ui->recruit_soldiers_how_many,
                    rx, rby + 2 * row_h, PAL_CLR(WHITE));
 
         // text_input cursor inline at right column,
@@ -412,6 +471,11 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
         snprintf(buf_with_cursor, sizeof(buf_with_cursor), "%s_",
                  s_input_buf);
         bfont_draw(buf_with_cursor, rx, rby + 3 * row_h, PAL_CLR(WHITE));
+        if (s_selector) {
+            int cw = 2 * BFONT_GLYPH_W, chh = BFONT_GLYPH_H + 2 * CL_UI;
+            textsel_draw(&s_ts, rx, rby + 4 * row_h + CL_UI, cw, chh,
+                         PAL_CLR(YELLOW), PAL_CLR(DBLUE), TOUCH_LIST_TEXTSEL);
+        }
     }
 }
 
@@ -425,13 +489,9 @@ static int recruit_commit(Game *g, int pool_slot, int count, bool set_err) {
     int rc = GameBuyTroop(g, t->id, count);  // the REAL transaction
     if (set_err) {
         if (rc == 1) {
-            const char *m = (g->res && g->res->banners.town_no_gold[0])
-                ? g->res->banners.town_no_gold : "You don't have enough gold!";
-            set_error(m);
+            set_error(g->res->banners.town_no_gold);
         } else if (rc == 2) {
-            const char *m = (g->res && g->res->banners.no_troop_slots[0])
-                ? g->res->banners.no_troop_slots : "No troop slots left!";
-            set_error(m);
+            set_error(g->res->banners.no_troop_slots);
         }
     }
     return rc;

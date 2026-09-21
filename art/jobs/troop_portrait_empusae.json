@@ -1,0 +1,20 @@
+{
+  "id": "troop_portrait_empusae",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of an Empusa, a pale ghostly winged demon woman with grey-white skin, black bat wings and a gaunt face with glowing eyes, holding a scythe, a dark crossroads at night behind her",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 9999,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "reference_image_paths": [
+    "assets/glory-of-rome/art/troops/empusae_00.png"
+  ],
+  "_pack_path": "art/portraits/troop_empusae.png",
+  "_note": "Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation. The engine painted a white frame: cropped to the inner 108x108 (10..118) before the resize, at Dan's request."
+}

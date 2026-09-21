@@ -7,6 +7,7 @@
 
 #include "tables.h"
 #include "tile.h"
+#include "exec.h"
 
 static void set_label(PlanStep *s, const char *prefix, const char *what) {
     snprintf(s->label, sizeof s->label, "%s:%s", prefix, what);
@@ -51,33 +52,33 @@ static void enumerate_noncombat(const Game *g, const Map *map, int zi,
             // The format bounds its own worst case so -Wformat-truncation
             // is provably clean at every -O level: %.31s caps the zone id
             // (RES_ID_LEN-1; ids are NUL-terminated below that), and the
-            // & (MAP_MAX_W-1) masks are identities (loop bounds are the map
-            // dims, capped at 64) that hand the compiler the 0..63 range.
+            // & (AP_MAP_W-1) masks are identities inside autoplay's grid
+            // that hand the compiler the 0..63 range.
             // Worst case 31+1+2+1+2+NUL = 38 fits coord; 39 (not 40) keeps
             // set_label's longest "%s:%s" region ("artifact:" into label[48])
             // provably un-truncated from coord's array size alone.
             char coord[39];
             snprintf(coord, sizeof coord, "%.31s:%d,%d", g->res->zones[zi].id,
-                     x & (MAP_MAX_W - 1), y & (MAP_MAX_H - 1));
+                     x & (AP_MAP_W - 1), y & (AP_MAP_H - 1));
             switch (t->interactive) {
             case INTERACT_TREASURE_CHEST:
-                s = add_step(out, STEP_CHEST, zi, x, y, t->id);
+                s = add_step(out, STEP_CHEST, zi, x, y, TileId(map, t));
                 if (s) set_label(s, "chest", coord);
                 break;
             case INTERACT_ARTIFACT:
-                s = add_step(out, STEP_ARTIFACT, zi, x, y, t->id);
+                s = add_step(out, STEP_ARTIFACT, zi, x, y, TileId(map, t));
                 if (s) set_label(s, "artifact", coord);
                 break;
             case INTERACT_NAVMAP:
-                s = add_step(out, STEP_NAVMAP, zi, x, y, t->id);
+                s = add_step(out, STEP_NAVMAP, zi, x, y, TileId(map, t));
                 if (s) set_label(s, "navmap", coord);
                 break;
             case INTERACT_ORB:
-                s = add_step(out, STEP_ORB, zi, x, y, t->id);
+                s = add_step(out, STEP_ORB, zi, x, y, TileId(map, t));
                 if (s) set_label(s, "orb", coord);
                 break;
             case INTERACT_ALCOVE:
-                s = add_step(out, STEP_ALCOVE, zi, x, y, t->id);
+                s = add_step(out, STEP_ALCOVE, zi, x, y, TileId(map, t));
                 if (s) set_label(s, "alcove", coord);
                 break;
             default:
@@ -87,10 +88,21 @@ static void enumerate_noncombat(const Game *g, const Map *map, int zi,
     }
 }
 
+// One-time vistas (REQ-221b): the trigger tile is the target, and the engine
+// fires the scene on arrival once the hero holds what it asks for.
+static void enumerate_vistas(const Game *g, int zi, PlanStepSet *out) {
+    const ResZone *z = &g->res->zones[zi];
+    for (int k = 0; k < z->event_count; k++) {
+        PlanStep *s = add_step(out, STEP_VISTA, zi, z->events[k].x, z->events[k].y,
+                               z->events[k].id);
+        if (s) set_label(s, "vista", z->events[k].id);
+    }
+}
+
 // Monster + villain castles (AP-040). The gate tile is the target; the King's
 // (special) castle is never an objective.
 static void enumerate_combat(const Game *g, PlanStepSet *out) {
-    for (int i = 0; i < GAME_CASTLES; i++) {
+    for (int i = 0; i < g->castle_count; i++) {
         const CastleRecord *cr = &g->castles[i];
         if (!cr->id[0]) continue;
         if (cr->owner_kind == CASTLE_OWNER_SPECIAL) continue;
@@ -153,14 +165,14 @@ bool plansteps_enumerate(const Game *g, Map *scratch, PlanStepSet *out) {
     if (!g || !scratch || !out) return false;
     out->count = 0;
     s_step_overflow = false;
-    // Every zone in the pack: zone_count <= GAME_CONTINENTS is an engine
-    // load contract (GameInit fails loudly past capacity).
+    // Every zone in the pack.
     for (int zi = 0; zi < g->res->zone_count; zi++) {
         if (!MapLoadZoneWithPlacements(scratch, g->res,
                                        g->res->zones[zi].id, g))
             return false;
         GameApplyTileMutations(g, scratch, g->res->zones[zi].id);
         enumerate_noncombat(g, scratch, zi, out);
+        enumerate_vistas(g, zi, out);
     }
     enumerate_combat(g, out);
     enumerate_foes(g, out);
@@ -205,7 +217,10 @@ bool planstep_is_done(const Game *g, const PlanStep *step) {
     case STEP_ORB:
         return tile_consumed(g, step->zone_index, step->x, step->y);
     case STEP_ALCOVE:
-        return g->stats.knows_magic;
+        // One magic, or with rites per zone this alcove's zone's rites.
+        return (g->res && step->zone_index >= 0 && step->zone_index < g->res->zone_count)
+             ? GameHasRites(g, g->res->zones[step->zone_index].id)
+             : g->stats.knows_magic;
     case STEP_SIEGE_WEAPONS:
         return g->stats.siege_weapons != 0;
     case STEP_MONSTER_CASTLE: {
@@ -214,7 +229,7 @@ bool planstep_is_done(const Game *g, const PlanStep *step) {
     }
     case STEP_VILLAIN: {
         const VillainDef *v = villain_by_id(step->handle);
-        return v && v->index >= 0 && v->index < CAT_VILLAINS_MAX &&
+        return v && v->index >= 0 && v->index < g->contract.villain_count &&
                g->contract.villains_caught[v->index];
     }
     case STEP_FOE: {
@@ -225,6 +240,17 @@ bool planstep_is_done(const Game *g, const PlanStep *step) {
     }
     case STEP_SCEPTER:
         return g->stats.won;
+    case STEP_VISTA:
+        return (g->res && step->zone_index >= 0 && step->zone_index < g->res->zone_count)
+             ? GameEventFired(g, g->res->zones[step->zone_index].id, step->handle)
+             : false;
+    case STEP_MUSTER: {
+        // Done once the demanded arm stands in the army.
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++)
+            if (g->army[i].count > 0 && strcmp(g->army[i].id, step->handle) == 0)
+                return true;
+        return false;
+    }
     }
     return false;
 }
@@ -236,6 +262,8 @@ const char *plan_kind_name(PlanKind k) {
     case STEP_NAVMAP:         return "navmap";
     case STEP_ORB:            return "orb";
     case STEP_ALCOVE:         return "alcove";
+    case STEP_VISTA:          return "vista";
+    case STEP_MUSTER:         return "muster";
     case STEP_SIEGE_WEAPONS:  return "siege-weapons";
     case STEP_MONSTER_CASTLE: return "castle";
     case STEP_VILLAIN:        return "villain";

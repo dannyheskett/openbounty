@@ -1,0 +1,15 @@
+{
+  "id": "manes",
+  "_note": "Ancestral shade, the ghosts slot. Pose copied from the old ghost's first frame: hunched, both arms out in front at chest height, long clawed hands, so the attack animation has arms to sweep up and slash down with. New seed. The troop style appends the full-length profile, game-sprite and magenta-background clauses.",
+  "prompt": "a translucent ancestral shade, a hollow hooded robed figure with no legs, its robe trailing into vapour, faintly glowing, hunched forward with both arms reaching out in front at chest height, long bony fingers ending in glowing claws",
+  "style": "user__glory_of_rome_troops_bac676cd",
+  "width": 96,
+  "height": 96,
+  "seed": 4471,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": true,
+  "target": [96, 96]
+}

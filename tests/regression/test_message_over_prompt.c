@@ -39,12 +39,11 @@ static Game *fresh_game(void) {
 // Reproduce what the step leaves behind: the chest message queued first, then
 // the attack decision raised with its prompt already open at the emit site.
 static void raise_chest_message_then_foe_attack(Game *g) {
-    player_io_message(g, NULL, "You found 500 gold!");
+    player_io_note(g, NULL, "You found 500 gold!");
     pending_flow = FLOW_ATTACK_FOE;
     memcpy(pending_foe_id, "foe-1", 6);
-    prompt_yes_no_open("Foes", "You encounter:\n  20 Orcs\n\nAttack");
-    player_io_raise_decision(g, FLOW_ATTACK_FOE, REQ_PROMPT_YES_NO,
-                             "Foes", "You encounter:\n  20 Orcs\n\nAttack");
+    player_io_ask_scene(g, FLOW_ATTACK_FOE, REQ_PROMPT_YES_NO,
+                        "Foes", "You encounter:\n  20 Orcs\n\nAttack");
 }
 
 static void clear_shell_state(Game *g) {
@@ -68,7 +67,7 @@ TEST step_can_leave_a_message_queued_under_a_live_prompt(void) {
     ASSERTm("the emit site opened the attack prompt", prompt_is_active());
 
     clear_shell_state(g);
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 
@@ -82,7 +81,7 @@ TEST prompt_dispatch_defers_while_a_message_dialog_is_up(void) {
 
     // The shell's per-frame pump moves the queued message into the dialog.
     ASSERTm("pump did not surface the queued message",
-            shell_pump_player_io_message(g));
+            shell_pump_note(g));
     ASSERT(dialog_is_active());
     ASSERTm("the attack prompt is still up underneath", prompt_is_active());
 
@@ -100,7 +99,7 @@ TEST prompt_dispatch_defers_while_a_message_dialog_is_up(void) {
             dialog_is_active());
 
     clear_shell_state(g);
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 
@@ -110,7 +109,7 @@ TEST prompt_dispatch_resumes_after_the_dialog_is_dismissed(void) {
     clear_shell_state(g);
 
     raise_chest_message_then_foe_attack(g);
-    shell_pump_player_io_message(g);
+    shell_pump_note(g);
     dialog_dismiss();
 
     ShellCtx ctx;
@@ -124,7 +123,7 @@ TEST prompt_dispatch_resumes_after_the_dialog_is_dismissed(void) {
     ASSERT(prompt_is_active());
 
     clear_shell_state(g);
-    free(g);
+    GameFree(g); free(g);
     PASS();
 }
 

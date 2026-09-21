@@ -11,6 +11,7 @@ TEST accept_gold_increments_stat(void) {
     g.stats.gold = 100;
     GameAcceptChestGold(&g, 50);
     ASSERT_EQ(150, g.stats.gold);
+    GameFree(&g);
     PASS();
 }
 
@@ -20,6 +21,7 @@ TEST accept_gold_zero_is_noop(void) {
     g.stats.gold = 200;
     GameAcceptChestGold(&g, 0);
     ASSERT_EQ(200, g.stats.gold);
+    GameFree(&g);
     PASS();
 }
 
@@ -31,6 +33,7 @@ TEST accept_leadership_increments_both_stats(void) {
     GameAcceptChestLeadership(&g, 25);
     ASSERT_EQ(125, g.stats.leadership_base);
     ASSERT_EQ(125, g.stats.leadership_current);
+    GameFree(&g);
     PASS();
 }
 
@@ -43,6 +46,7 @@ TEST add_consumed_dedupes(void) {
     ASSERT_EQ(1, g.consumed_count);
     GameAddConsumed(&g, "continentia", 6, 10);  // distinct, should grow
     ASSERT_EQ(2, g.consumed_count);
+    GameFree(&g);
     PASS();
 }
 

@@ -1,0 +1,50 @@
+{
+ "id": "a940046b-8632-406c-851a-c40121ff9064",
+ "name": "Levantine tree, round crown of",
+ "state_name": "base",
+ "prompt": "Levantine tree, round crown of dark green leaves with a visible trunk below it, the whole tree inside the frame, seen from above at a slight angle, small shadow to the south-east, pixel art, transparent background",
+ "size": {
+  "width": 96,
+  "height": 96
+ },
+ "directions": 1,
+ "created_at": "2026-09-19T18:34:32.263111+00:00",
+ "view": null,
+ "rotation_urls": {
+  "south": null,
+  "west": null,
+  "east": null,
+  "north": null,
+  "south-east": null,
+  "south-west": null,
+  "north-east": null,
+  "north-west": null
+ },
+ "storage_urls": {
+  "frame_0": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/a940046b-8632-406c-851a-c40121ff9064/rotations/frame_0.png",
+  "frame_1": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/a940046b-8632-406c-851a-c40121ff9064/rotations/frame_1.png",
+  "frame_2": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/a940046b-8632-406c-851a-c40121ff9064/rotations/frame_2.png",
+  "frame_3": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/a940046b-8632-406c-851a-c40121ff9064/rotations/frame_3.png"
+ },
+ "frame_urls": [
+  "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/a940046b-8632-406c-851a-c40121ff9064/rotations/frame_0.png",
+  "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/a940046b-8632-406c-851a-c40121ff9064/rotations/frame_1.png",
+  "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/a940046b-8632-406c-851a-c40121ff9064/rotations/frame_2.png",
+  "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/a940046b-8632-406c-851a-c40121ff9064/rotations/frame_3.png"
+ ],
+ "style_settings": {
+  "no_background": true,
+  "item_descriptions": [
+   "cedar of Lebanon, broad layered round crown, trunk",
+   "oriental plane tree, wide round crown, pale trunk",
+   "walnut tree, dark round crown, trunk",
+   "pistachio tree, small round crown, short trunk"
+  ]
+ },
+ "tags": [],
+ "status": "review",
+ "group_id": "7986ca87-d6d0-4bdc-9db0-c314b57dcd9b",
+ "progress_percent": 15,
+ "eta_seconds": 405,
+ "animations": []
+}

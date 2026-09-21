@@ -1,0 +1,964 @@
+{
+	"lose":	{
+		"header":	"",
+		"body":	"%NAME% they call the %RANK%, you have doomed us all. Roma is leaderless without the Aquila. All hope is lost. The rebels go unpunished and the legions scatter. The people are terrified and your army has abandoned your cause. All because you wasted your time so carelessly.\n\nFinal Score: %SCORE%",
+		"footer":	""
+	},
+	"win":	{
+		"header":	"",
+		"body":	"Roma is saved, %NAME%! You have crushed the rebels and recovered the Aquila of the Legions. Order is restored across the provinces.\n\nHistory will remember the name of %NAME%, the %RANK%-who-saved us all.\n\nYou keep all the castles and your commission is tripled.\n\nFinal Score: %SCORE%",
+		"footer":	""
+	},
+	"banners":	{
+		"chest_gold":	"After scouring the area, you fall upon a hidden treasure cache. You may:\nA) Take the %GOLD% gold.\nB) Distribute the gold to the plebeians, increasing your leadership by %LEADERSHIP%.",
+		"chest_commission":	"After surveying the area, you discover that it is rich in mineral deposits.\n\nThe Emperor rewards you for your find by increasing your weekly income by %POINTS%",
+		"chest_spell_power":	"Traversing the area, you stumble upon a time worn cannister. Curious, you unstop the bottle, releasing a powerful genie who raises your Spell Power by %POINTS% and vanishes.",
+		"chest_max_spells":	"A tribe of nomads greet you and your army warmly. Their shaman, in awe of your prowess, teaches you the secret of his tribe's magic. Your maximum spell capacity is increased by %POINTS%",
+		"chest_new_spell":	"You have captured a mischevious imp which has been terrorizing the region. In exchange for its release, you receive:\n\n%COUNT% %SPELL% spell.",
+		"chest_empty":	"The chest was empty!",
+		"town_header":	"Town of %NAME%",
+		"town_intro":	"Welcome to %TOWN%, %HERO%. Its ledger, harbour, temple and siege works are open.",
+		"town_intro_inland":	"Welcome to %TOWN%, %HERO%. Its ledger, temple and siege works are open.",
+		"town_intel_artifact":	"A sealed chest of the old rites lies in %ZONE%, near %X%, %Y%. Older men than me have looked for it.",
+		"town_intel_artifact_none":	"Every sacred artifact of Roma is already in your hands.",
+		"artifact_found":	"You have found %ARTIFACT%!",
+		"artifact_map_piece":	"...and a piece of the map to the lost Aquila.",
+		"castle_header":	"Castle %NAME%",
+		"castle_siege_monsters":	"Various groups of monsters occupy this castle. Lay siege?",
+		"castle_uncharted":	"An uncharted castle.",
+		"search_nothing":	"Your search of this area has revealed nothing.",
+		"zone_unreachable":	"You cannot reach that province.",
+		"town_visit":	"Visit the town",
+		"cv_wanted":	"Wanted: %NAME%",
+		"cv_no_contract_hint":	"Take a contract at any town's office to hunt one of the Emperor's enemies.",
+		"puzzle_legend":	"Each enemy captured and each sacred artifact found uncovers a piece of the map to the lost Aquila.",
+		"gate_travel":	"Travel to %TOWN%, %ZONE%",
+		"worldmap_all":	"All of %ZONE%",
+		"worldmap_you":	"You: %X%, %Y%",
+		"worldmap_boat":	"Boat: %X%, %Y%",
+		"worldmap_boat_elsewhere":	"Boat: in %ZONE%",
+		"worldmap_no_boat":	"Boat: none",
+		"class_desc_knight":	"A commander of the legions. Strong leadership from the start, and the steadiest rise in rank; no magic yet.",
+		"class_desc_paladin":	"A guard of the Emperor's own. Balanced leadership and spell capacity, and more gold to begin.",
+		"class_desc_sorceress":	"A prophetess of Apollo. Knows the rites already, casts the strongest spells; the smallest army.",
+		"class_desc_barbarian":	"A war-leader of the frontier. Strong leadership and a high commission; no talent for magic.",
+		"spell_bridge_prompt_modern":	"Tap the square beside you to bridge, or use the arrows.",
+		"save_done_title":	"Game saved",
+		"save_done":	"Your game is saved in slot %SLOT%: %NAME% the %RANK%, %DAYS% days left.",
+		"town_gold_label":	"GP=%GOLD%",
+		"town_row_contract":	"A) Get New Contract",
+		"town_row_boat_rent":	"B) Rent boat (%COST% week)",
+		"town_row_boat_cancel":	"B) Cancel boat rental",
+		"town_row_info":	"C) Gather information",
+		"town_row_spell":	"D) %SPELL% spell (%SPELL_COST%)",
+		"town_row_spell_none":	"D) (no spell available)",
+		"town_row_siege_buy":	"E) Buy siege weapons (%SIEGE_COST%)",
+		"town_row_siege_owned":	"E) Siege weapons (owned)",
+		"town_contract_new":	"New contract: %VILLAIN%. Reward: %REWARD% gold. Last seen on %ZONE%.",
+		"town_contract_none":	"No contracts are available right now.",
+		"town_boat_vacate_first":	"Please vacate the boat first",
+		"town_no_gold":	"You don't have enough gold!",
+		"town_intel_unavailable":	"No intelligence is available here.",
+		"town_intel_castle_under":	"Castle %NAME% is under\n",
+		"town_intel_owner_rule":	"%OWNER%'s rule.\n\n",
+		"town_intel_owner_none":	"no one",
+		"town_intel_owner_player":	"your",
+		"town_intel_owner_king":	"the Emperor",
+		"town_intel_count_named":	"%LABEL% %TROOP%\n",
+		"town_intel_count_numeric":	"%COUNT% %TROOP%\n",
+		"town_intel_monsters_generic":	"Various groups of monsters occupy the castle.",
+		"town_intel_no_garrison":	"(no garrison)",
+		"town_spell_unavailable":	"No spell is available here.",
+		"town_spell_at_cap":	"You have learned your maximum number of spells.",
+		"town_spell_can_learn":	"You can learn %LEFT% more spell%S%.",
+		"town_siege_already":	"You have siege weapons!",
+		"town_siege_purchased":	"Siege weapons purchased.",
+		"town_menu_contract":	"Contracts",
+		"town_menu_boat_rent":	"Rent",
+		"town_menu_boat_cancel":	"Cancel",
+		"town_menu_info":	"Information",
+		"town_menu_spell":	"Temple",
+		"town_menu_siege":	"Siege works",
+		"town_detail_boat_dock":	"Boat dock: %X%, %Y%",
+		"town_detail_intel":	"Reports on castle %CASTLE%.",
+		"town_contract_confirm":	"Take this contract?",
+		"foe_fight":	"Fight",
+		"foe_evade":	"Evade",
+		"foe_evade_blocked":	"There is nowhere to run: you must fight.",
+		"foe_requires_troop":	"The pass is held against you. Only %TROOP% can force it.",
+		"castle_menu_recruit":	"Recruit",
+		"castle_continue":	"Continue",
+		"castle_menu_audience":	"Audience",
+		"castle_menu_garrison":	"Garrison",
+		"castle_menu_withdraw":	"Withdraw",
+		"castle_action_audience":	"Request audience",
+		"castle_invite_recruit":	"The legions of %CASTLE% are ready for new recruits, %HERO%. Come to the barracks and choose your soldiers.",
+		"castle_invite_audience":	"The Emperor will receive you, %HERO%. Come before the throne and ask what you will.",
+		"castle_invite_garrison":	"Leave soldiers to hold %CASTLE%, %HERO%. Choose who stays behind the walls.",
+		"castle_invite_withdraw":	"The garrison of %CASTLE% stands ready, %HERO%. Choose who marches out with you.",
+		"castle_have":	"In your army: %COUNT%",
+		"castle_in_garrison":	"In the garrison: %COUNT%",
+		"castle_can_recruit":	"You can recruit: %COUNT%",
+		"castle_needs_leadership":	"Needs %COUNT% leadership to recruit.",
+		"castle_rank":	"Rank: %RANK%",
+		"castle_next_rank":	"Next rank: %RANK%",
+		"castle_needed":	"Enemies still to capture: %COUNT%",
+		"castle_gain_leadership":	"Leadership +%COUNT%",
+		"castle_gain_commission":	"Commission +%COUNT% a week",
+		"castle_gain_spells":	"Spell capacity +%COUNT%",
+		"castle_gain_spell_power":	"Spell power +%COUNT%",
+		"castle_action_promotion":	"Promotion",
+		"castle_action_blessing":	"Blessing",
+		"castle_action_tribute":	"Tribute",
+		"castle_tribute_confirm":	"Pay the Emperor a tribute of %GOLD% gold?",
+		"castle_artifacts":	"Sacred artifacts found: %COUNT% of %MAX%",
+		"castle_over_leadership":	"Your army would be larger than your leadership can control.",
+		"castle_count_of":	"%COUNT% of %MAX%",
+		"castle_cost":	"Cost: %GOLD% gold",
+		"castle_no_troops":	"No troops.",
+		"town_temple_needs_rites":	"The gods of %ZONE% do not know you, %HERO%. Seek the Augur of %ZONE% at %X%, %Y% and learn the sacred rites before I teach you any spell here.",
+		"town_back":	"\u001b Back",
+		"town_menu_boat":	"Boat",
+		"town_action_spell":	"Buy",
+		"town_action_siege":	"Buy",
+		"town_action_owned":	"Owned",
+		"town_boat_no_master":	"There is no boat master in this town.",
+		"town_boat_rented":	"The boat is yours for the week. It waits at the quay.",
+		"town_boat_returned":	"You hand back the boat. The rental is ended.",
+		"town_siege_lore":	"Roma's engineers build the machines that break a city's walls: ballistae that throw iron bolts, and onagers that hurl stone.\n\nNo army can lay siege to a castle without them. Once bought, the siege train follows your army wherever it marches.",
+		"town_confirm_boat_rent":	"Rent a boat for %COST% gold a week?",
+		"town_confirm_boat_cancel":	"Cancel your boat rental?",
+		"town_confirm_spell":	"Buy the %SPELL% spell for %SPELL_COST% gold?",
+		"town_confirm_siege":	"Buy siege weapons for %SIEGE_COST% gold?",
+		"spell_time_stop":	"Time has stopped for %STEPS% steps.",
+		"spell_find_villain_no_contract":	"You have no contract.",
+		"spell_find_villain_success":	"You have found %CASTLE%!",
+		"spell_find_villain_none":	"Your search reveals nothing.",
+		"spell_bridge_prompt":	"Build bridge in which direction? Use arrows.",
+		"spell_bridge_built":	"Bridge constructed with\n%COUNT% tiles.",
+		"spell_bridge_invalid":	"Not a suitable location for a bridge.",
+		"spell_castle_gate_none":	"You have not visited any castles yet.",
+		"spell_castle_gate_choose":	"Which castle? Press A-Z.",
+		"spell_town_gate_none":	"You have not visited any towns yet.",
+		"spell_town_gate_choose":	"Which town? Press A-Z.",
+		"spell_instant_army_fizzle":	"Spell fizzles.",
+		"spell_instant_army_no_room":	"Your army has no room!",
+		"spell_instant_army_success":	"%QTY% %TROOP% have joined your army.",
+		"spell_raise_control_success":	"Your leadership has increased by %AMOUNT%.",
+		"spell_gate_teleported":	"Teleported!",
+		"spell_gate_invalid":	"Invalid selection.",
+		"encounter_join_named":	"%LABEL% %TROOP%, with desires of greater glory, wish to join you.",
+		"encounter_join_numeric":	"%COUNT% %TROOP%, with desires of greater glory, wish to join you.",
+		"encounter_join_title":	"%TROOP%",
+		"encounter_wanderers":	"They flee in terror at the sight of your vast army.",
+		"encounter_hostile_header":	"You encounter:\n",
+		"encounter_hostile_unknown":	"a hostile band\n",
+		"encounter_hostile_count_named":	"%LABEL% %TROOP%\n",
+		"encounter_hostile_count_numeric":	"%COUNT% %TROOP%\n",
+		"alcove_offer":	"The venerable Augur will teach you the sacred rites of %ZONE% for %COST% gold. With them you may cast spells, and learn new ones in the temples of %ZONE%.\n\nAccept?",
+		"alcove_already":	"The Augur nods. You already know the sacred rites of %ZONE%.",
+		"temple_title":	"The Augur",
+		"temple_learn":	"Learn the rites",
+		"location_leave":	"Leave",
+		"alcove_offer_modern":	"The venerable Augur will teach you the sacred rites of %ZONE%. With them you may cast spells, and learn new ones in the temples of %ZONE%.",
+		"gmd_hero":	"Your army, your character, your contract and the puzzle.",
+		"gmd_world":	"The map, spells, searching, travel and the passing of time.",
+		"gmd_game":	"Save, load, controls, a new game, or leave.",
+		"gmd_back_up":	"Back to the page before.",
+		"gmd_unit":	"What the troop whose turn it is can do.",
+		"gmd_leave":	"Return to the map.",
+		"fv_your_army":	"Your army: %COUNT% troops, leadership %LEAD%.",
+		"loc_joined":	"%COUNT% %TROOP% join your army.",
+		"loc_gold_change":	"Gold: %FROM% -> %TO%",
+		"count_heading":	"How many %TROOP%?",
+		"count_of_lead":	"of %MAX% you can lead",
+		"count_of_army":	"of %MAX% in your army",
+		"count_of_garrison":	"of %MAX% in the garrison",
+		"count_cost":	"Cost %GOLD% gold",
+		"count_gold_left":	"Gold left %GOLD%",
+		"count_recruit":	"Recruit %COUNT%",
+		"count_garrison":	"Garrison %COUNT%",
+		"count_withdraw":	"Withdraw %COUNT%",
+		"count_cancel":	"Cancel",
+		"count_min":	"1",
+		"count_max":	"Max",
+		"capture_title":	"Captured: %NAME%",
+		"capture_contract":	"...and the capture of %NAME%.\n\nFor fulfilling your contract you receive a bounty of %GOLD% gold, and a piece of the map to the stolen Aquila.",
+		"capture_free":	"...and the capture of %NAME%.\n\nYou held no contract for %NAME%, so the prisoner has been set free, and will rebuild at the castle.",
+		"capture_promoted":	"\n\nYou are promoted to %RANK%!",
+		"temple_intro":	"The Augur teaches the sacred rites of %ZONE% for %COST% gold, so you may cast its spells.",
+		"dwelling_intro":	"%COUNT% %TROOP% dwell here, at %COST% gold each.",
+		"loc_title_taught":	"Rites learned",
+		"loc_title_refused":	"The Augur refuses",
+		"loc_title_known":	"Rites already known",
+		"loc_title_joined":	"Recruits join you",
+		"loc_title_none":	"No recruits",
+		"gmd_army":	"Your troops, how many, and their morale.",
+		"gmd_character":	"Your rank, leadership, gold, spells and artifacts.",
+		"gmd_contract":	"The enemy you are hunting, and the reward.",
+		"gmd_puzzle":	"The map to the stolen Aquila, piece by piece.",
+		"gmd_dismiss":	"Send one of your troops home.",
+		"gmd_map":	"The map of this province.",
+		"gmd_cast":	"Cast one of your adventure spells.",
+		"gmd_search":	"Search the ground where you stand. It takes days.",
+		"gmd_fly":	"Take to the air with your flying troops.",
+		"gmd_land":	"Come down to the ground here.",
+		"gmd_end_week":	"Wait out the week: your commission is paid and dwellings regrow.",
+		"gmd_rest":	"Wait here a moment while time passes.",
+		"gmd_sail":	"Sail to another province.",
+		"gmd_controls":	"Game speed and sound.",
+		"gmd_save":	"Save your game to a slot.",
+		"gmd_load":	"Load a saved game.",
+		"gmd_new_game":	"Start again from the title screen.",
+		"gmd_exit":	"Leave the game.",
+		"gmd_back":	"Close the menu.",
+		"gmd_debug":	"Cheats for testing.",
+		"gmd_wait":	"This troop waits its turn.",
+		"gmd_shoot":	"Fire at an enemy troop.",
+		"gmd_unit_fly":	"Fly this troop to an empty square.",
+		"gmd_combat_cast":	"Cast a combat spell.",
+		"gmd_combat_army":	"Look at your army.",
+		"gmd_combat_character":	"Look at your character.",
+		"gmd_give_up":	"Give up the battle.",
+		"gmd_slot":	"Slot %SLOT%",
+		"gmr_no_troops":	"You have no troops to dismiss.",
+		"gmr_not_sailing":	"Only while you are sailing.",
+		"gmr_no_saves":	"There are no saved games.",
+		"gmr_no_shots":	"This troop has no shots left.",
+		"gmr_adjacent":	"Enemies are too close to shoot.",
+		"gmr_cannot_fly":	"This troop cannot fly now.",
+		"gmr_one_spell":	"Only one spell each round.",
+		"gmr_no_magic":	"You know no magic.",
+		"gmr_no_spell_held":	"You hold none of this spell.",
+		"gmr_empty_slot":	"This slot is empty.",
+		"gmc_overwrite":	"Save over slot %SLOT%?",
+		"gmc_load":	"Load slot %SLOT%? Unsaved progress will be lost.",
+		"gmc_exit":	"Leave the game? Unsaved progress will be lost.",
+		"dwelling_recruit_row":	"Recruit",
+		"alcove_taught":	"The Augur teaches you the sacred rites of %ZONE%. The temples of %ZONE% will now teach you their spells.",
+		"alcove_no_gold":	"You have not enough gold! %COST% is required. Begone until you do!",
+		"no_spell_banner":	"You have not been trained in the art of spellcasting yet. Visit the Augur in %ZONE% at %X%, %Y% for this ability.",
+		"new_game_intro":	"%NAME% the %CLASS%, A new game is being created. Please wait while I perform godlike actions to make this game playable.",
+		"combat_victory_named":	"Well done %NAME%, you have successfully vanquished %TARGET%.\n\nSpoils of War: %GOLD% gold",
+		"combat_victory_unnamed":	"Well done %NAME%, you have successfully vanquished yet another foe.\n\nSpoils of War: %GOLD% gold",
+		"dwelling_recruit_prompt":	"%COUNT% %TROOP% are available Cost=%COST% each. GP=%GOLD% You may recruit up to %CAP%.",
+		"dwelling_none_this_week":	"No troops are available here this week.",
+		"dwelling_empty":	"This dwelling is empty.",
+		"telecave_teleport":	"You step into the cave and emerge elsewhere in this province.",
+		"telecave_inert":	"This cave hums with magic, but nothing happens.",
+		"navmap_pickup":	"A navigation map of %ZONE%!",
+		"crystal_ball_pickup":	"You gaze into a crystal ball and see all of %ZONE%!",
+		"astrology_header":	"Week #%WEEK%",
+		"astrology_body":	"Astrologers proclaim: Week of the %TROOP%\n\nAll %TROOP% dwellings are repopulated.",
+		"temp_death":	"After being disgraced on the field of battle, Emperor Traianus summons you to his castle. After a lesson in tactics, he reluctantly re-issues your commission and sends you on your way.",
+		"combat_give_up_header":	"Press ESC to exit",
+		"combat_give_up_body":	"Giving up will forfeit your armies and send you back to the Emperor.",
+		"combat_scouts_header":	"Your scouts have sighted:\n",
+		"combat_scouts_count":	"%COUNT% %TROOP%\n",
+		"combat_scouts_small_band":	"(a small band)\n",
+		"combat_header_siege":	"Siege",
+		"combat_header_default":	"Combat",
+		"signpost_with_body":	"A sign reads:\n\n\"%TITLE%\n%BODY%\"",
+		"signpost_title_only":	"A sign reads:\n\n\"%TITLE%\"",
+		"budget_header":	"Week #%WEEK% Budget",
+		"budget_on_hand":	"On Hand",
+		"budget_payment":	"Payment",
+		"budget_boat":	"Boat   ",
+		"budget_army":	"Army   ",
+		"budget_balance":	"Balance",
+		"status_days_left":	" Options / Controls / Days Left:%DAYS% ",
+		"status_time_stop":	" Options / Controls / Time Stop:%STEPS% ",
+		"status_days_left_modern":	" Menu / Days Left:%DAYS% ",
+		"status_time_stop_modern":	" Menu / Time Stop:%STEPS% ",
+		"status_menu_prefix":	" Menu / ",
+		"status_game_menu":	"Game Menu",
+		"status_days_remaining":	"Days Remaining: %DAYS%",
+		"status_time_stop_remaining":	"Time Stop: %STEPS%",
+		"body_save_confirm":	"Your game has been saved. Press Control-Q to Quit or any other key to continue.",
+		"body_search":	"It will take %DAYS% days to search this area. Search?",
+		"body_dismiss_pick":	"Dismiss which troop?",
+		"body_dismiss_last":	"If you dismiss your last army, you will be sent back to the Emperor in disgrace. Dismiss last army?",
+		"body_home_castle":	"Castle of Emperor Traianus\n\nA) Recruit Soldiers\nB) Audience with the Emperor",
+		"body_own_castle":	"Castle %NAME%: 1. Garrison troops 2. Remove troops",
+		"body_garrison_row_named":	"%INDEX%. %TROOP% (%COUNT%)\n",
+		"body_garrison_row_empty":	"%INDEX%. Empty\n",
+		"body_navigate_row":	"%INDEX%. %ZONE%\n",
+		"body_navigate_confirm":	"Sail for %ZONE%?",
+		"body_no_continents":	"No known provinces from this zone.",
+		"body_must_be_sailing":	"You must be sailing to navigate to another province.",
+		"cannot_garrison_last":	"You cannot garrison your last army!",
+		"no_troop_slots":	"No troop slots left!",
+		"army_cannot_handle":	"Your army cannot handle that many troops.",
+		"no_troops_to_garrison":	"No troops to garrison.",
+		"castle_garrison_empty":	"Castle garrison is empty.",
+		"spell_unavailable":	"That spell is not available.",
+		"spell_not_known":	"You don't have that spell.",
+		"spell_unknown":	"Unknown spell."
+	},
+	"combat_log":	{
+		"melee_hit":	"%ATK% vs %TGT%, %COUNT% die",
+		"retaliate":	"%TGT% retaliate, killing %COUNT%",
+		"ranged_hit":	"%ATK% shoot %TGT% killing %COUNT%",
+		"ranged_no_effect":	"%ATK% shoot %TGT%",
+		"no_effect_msg":	"The spell seems to have no effect!",
+		"fly":	"%TROOP% fly",
+		"move":	"%TROOP% move",
+		"wait":	"%TROOP% wait",
+		"pass":	"%TROOP% pass",
+		"frozen":	"%TROOP% are frozen",
+		"ooc":	"%TROOP% are out of control!",
+		"immune":	"%TROOP% are immune",
+		"cloned":	"%COUNT% %TROOP% cloned",
+		"resurrected":	"%COUNT% %TROOP% resurrected",
+		"teleported":	"Teleported",
+		"only_one_spell":	"Only 1 spell per round!",
+		"no_spell_type":	"No spells of that type",
+		"cannot_cast":	"You cannot cast magic",
+		"cast_fireball":	"Fireball!",
+		"cast_lightning":	"Lightning!",
+		"cast_turn_undead":	"Turn Undead!",
+		"select_clone":	"Select your army to Clone",
+		"select_freeze":	"Select enemy army to Freeze",
+		"select_resurrect":	"Select army to Resurrect",
+		"select_damage":	"Select enemy army to %SPELL%",
+		"select_teleport":	"Select army to Teleport",
+		"select_dest":	"Select new location",
+		"cant_shoot":	"Can't Shoot",
+		"no_ammo":	"No ammo",
+		"cant_fly":	"Can't Fly",
+		"give_up_prompt":	"Giving up will forfeit your armies and send you back to the Emperor. Give up (y/n)?",
+		"exit_hint":	"Press 'ESC' to exit"
+	},
+	"ui":	{
+		"press_esc_to_exit":	"Press 'ESC' to exit",
+		"fv_hp":	"HP",
+		"fv_skill":	"SL",
+		"fv_dmg":	"Dmg",
+		"fv_move":	"Mv",
+		"fv_range":	"Rng",
+		"fv_flies":	"Fly",
+		"cv_army":	"Army",
+		"cv_magic":	"Magic",
+		"cv_campaign":	"Campaign",
+		"cv_leadership":	"Leadership",
+		"cv_commission":	"Commission",
+		"cv_gold":	"Gold",
+		"cv_spell_power":	"Spell power",
+		"cv_spell_capacity":	"Spell capacity",
+		"cv_captured":	"Captured",
+		"cv_artifacts":	"Artifacts",
+		"cv_castles":	"Castles",
+		"cv_followers":	"Followers lost",
+		"cv_score":	"Score",
+		"cv_days":	"Days left",
+		"cv_sacred":	"Sacred artifacts",
+		"cv_continents":	"Provinces",
+		"cv_honours":	"Roma",
+		"cv_blessed":	"Blessed",
+		"cv_tributes":	"Tributes",
+		"cv_rites":	"Rites",
+		"cv_yes":	"Yes",
+		"cv_no":	"No",
+		"cv_next":	"Next: %RANK% (%COUNT% more)",
+		"cv_top_rank":	"Highest rank",
+		"hint_back":	"< Back",
+		"hint_quit":	"Quit",
+		"hint_continue":	"Continue",
+		"key_esc":	"Esc",
+		"key_ctrl_q":	"Ctrl-Q",
+		"pad_back":	"B",
+		"pad_confirm":	"A",
+		"give_up_header_modern":	"Give up the battle?",
+		"save_confirm_modern":	"Your game has been saved.",
+		"quit_to_dos_prompt":	"Quit without saving?",
+		"out_of_control":	"OUT OF CONTROL",
+		"worldmap_hint_your_map":	"'ESC' to exit / 'SPC' your map",
+		"worldmap_hint_whole_map":	"'ESC' to exit / 'SPC' whole map",
+		"empty_slot":	"Empty",
+		"combat_spells_title":	"Spells",
+		"combat_spells_col_combat":	"Combat",
+		"combat_spells_prompt":	"Cast which (A-G)?",
+		"dwelling_kind_plains":	"Vicus",
+		"dwelling_kind_forest":	"Lucus",
+		"dwelling_kind_hill":	"Specus",
+		"dwelling_kind_dungeon":	"Hypogeum",
+		"dwelling_recruit_how_many":	"Recruit how many",
+		"recruit_soldiers_title":	"Recruit Soldiers",
+		"recruit_soldiers_how_many":	"How Many",
+		"own_castle_mode_garrison":	"Garrison troops (Space=Remove)",
+		"own_castle_mode_remove":	"Remove troops (Space=Garrison)",
+		"home_castle_recruit":	"Recruit Soldiers",
+		"home_castle_audience":	"Audience with the Emperor",
+		"own_castle_row_garrison":	"Mode: Garrison troops",
+		"own_castle_row_remove":	"Mode: Remove troops",
+		"worldmap_row_your_map":	"Show your map",
+		"worldmap_row_whole_map":	"Show whole map",
+		"class_select_load":	"Load saved game",
+		"class_select_arrows":	"Use the arrow keys to choose a character",
+		"title_new_adventure":	"New Game",
+		"title_load_adventure":	"Load Saved Game",
+		"title_credits":	"Credits",
+		"new_game_confirm":	"Start a new game? Unsaved progress will be lost.",
+		"hero_name_label":	"Hero Name:",
+		"combat_act_wait":	"Wait",
+		"combat_act_shoot":	"Shoot",
+		"combat_act_fly":	"Fly",
+		"combat_act_cast":	"Cast a spell",
+		"combat_act_controls":	"Controls",
+		"combat_act_give_up":	"Give up",
+		"gate_title_town":	"Town Gate",
+		"gate_title_castle":	"Castle Gate",
+		"gate_footer_hint":	"Arrows/letter select Enter go ESC cancel",
+		"recruit_col_hint":	"(A-C) ",
+		"dwelling_info_available":	"%COUNT% %TROOP% are available",
+		"dwelling_info_cost":	"Cost=%COST% each.",
+		"dwelling_info_gold":	"GP=%GOLD%K",
+		"dwelling_info_recruit_cap":	"You may recruit up to %CAP%"
+	},
+	"toasts":	{
+		"save_cancelled":	"Save cancelled.",
+		"save_ok":	"Saved.",
+		"save_failed":	"Save failed: %REASON%",
+		"load_cancelled":	"Load cancelled.",
+		"load_ok":	"Loaded.",
+		"load_failed":	"Load failed: %REASON%",
+		"new_game":	"New game started."
+	},
+	"contract_view":	{
+		"title_no_contract":	"You have no Contract!",
+		"label_name":	"Name: %VALUE%",
+		"label_alias":	"Alias: %VALUE%",
+		"label_reward":	"Reward: %VALUE% gold",
+		"label_last_seen":	"Last Seen: %VALUE%",
+		"label_castle":	"Castle: %VALUE%",
+		"alias_none":	"None",
+		"castle_unknown":	"Unknown",
+		"features_header":	"Distinguishing Features:",
+		"crimes_header":	"Crimes:"
+	},
+	"spells_view":	{
+		"title":	"Spells",
+		"combat_col":	"Combat",
+		"adventure_col":	"Adventuring"
+	},
+	"menu":	{
+		"root_title":	"Game Menu",
+		"views_title":	"Views",
+		"options_title":	"Options",
+		"items":	{
+			"back":	"Back",
+			"exit":	"Exit",
+			"save":	"Save",
+			"load":	"Load",
+			"new_game":	"New Game",
+			"views":	"Views",
+			"options":	"Options",
+			"army":	"Army",
+			"spells":	"Spells",
+			"character":	"Character",
+			"contract":	"Contract",
+			"puzzle":	"Puzzle",
+			"view_map":	"View Map",
+			"screens":	"Screens",
+			"gm_title":	"Menu",
+			"gm_hero":	"Hero",
+			"gm_world":	"World",
+			"gm_game":	"Game",
+			"gm_army":	"Army",
+			"gm_character":	"Character",
+			"gm_contract":	"Contract",
+			"gm_puzzle":	"Puzzle",
+			"gm_dismiss":	"Dismiss",
+			"gm_map":	"Map",
+			"gm_cast":	"Cast a spell",
+			"gm_search":	"Search",
+			"gm_fly":	"Fly",
+			"gm_land":	"Land",
+			"gm_end_week":	"End the week",
+			"gm_rest":	"Rest",
+			"gm_sail":	"Set sail",
+			"gm_controls":	"Controls",
+			"gm_save":	"Save",
+			"gm_load":	"Load",
+			"gm_new_game":	"New Game",
+			"gm_exit":	"Exit",
+			"gm_back":	"\u001b Back",
+			"gm_close":	"Close",
+			"gm_debug":	"Debug",
+			"gm_actions":	"Actions",
+			"gm_unit":	"Unit",
+			"gm_wait":	"Wait",
+			"gm_shoot":	"Shoot",
+			"gm_give_up":	"Give up",
+			"actions":	"Actions"
+		}
+	},
+	"stats":	{
+		"leadership":	"Leadership",
+		"commission":	"Commission/Week",
+		"gold":	"Gold",
+		"spell_power":	"Spell power",
+		"max_spells":	"Max # of spells",
+		"villains_caught":	"Enemies caught",
+		"artifacts_found":	"Artifacts found",
+		"castles_garrisoned":	"Castles garrisoned",
+		"followers_killed":	"Followers killed",
+		"current_score":	"Current score"
+	},
+	"army_view":	{
+		"skill":	"SL:",
+		"move":	"MV:",
+		"morale":	"Morale:",
+		"hit_points":	"HitPts:",
+		"damage":	"Damage:",
+		"g_cost":	"G-Cost:"
+	},
+	"morale":	{
+		"normal":	"Normal",
+		"low":	"Low",
+		"high":	"High"
+	},
+	"count_buckets":	{
+		"army_view":	[{
+				"max":	5,
+				"label":	"Few"
+			}, {
+				"max":	20,
+				"label":	"Some"
+			}, {
+				"max":	2147483647,
+				"label":	"Lots"
+			}],
+		"instant_army":	[{
+				"max":	1,
+				"label":	"One"
+			}, {
+				"max":	2,
+				"label":	"A few"
+			}, {
+				"max":	9,
+				"label":	"Several"
+			}, {
+				"max":	2147483647,
+				"label":	"Many"
+			}]
+	},
+	"difficulty":	{
+		"easy":	{
+			"label":	"Easy",
+			"score_mult":	"x.5"
+		},
+		"normal":	{
+			"label":	"Normal",
+			"score_mult":	" x1"
+		},
+		"hard":	{
+			"label":	"Hard",
+			"score_mult":	" x2"
+		},
+		"impossible":	{
+			"label":	"Impossible?",
+			"score_mult":	" x4"
+		}
+	},
+	"keybinds":	[{
+			"key":	"Dn",
+			"label":	"Move Down"
+		}, {
+			"key":	"Lf",
+			"label":	"Move Left"
+		}, {
+			"key":	"Rt",
+			"label":	"Move Right"
+		}, {
+			"key":	"Up",
+			"label":	"Move Up"
+		}, {
+			"key":	"End",
+			"label":	"Down Left"
+		}, {
+			"key":	"PgDn",
+			"label":	"Down Right"
+		}, {
+			"key":	"Hm",
+			"label":	"Up Left"
+		}, {
+			"key":	"PgUp",
+			"label":	"Up Right"
+		}, {
+			"key":	"A",
+			"label":	"View Army"
+		}, {
+			"key":	"C",
+			"label":	"Controls"
+		}, {
+			"key":	"F",
+			"label":	"Fly"
+		}, {
+			"key":	"L",
+			"label":	"Land"
+		}, {
+			"key":	"I",
+			"label":	"Contract Info"
+		}, {
+			"key":	"M",
+			"label":	"Auto-mapping"
+		}, {
+			"key":	"P",
+			"label":	"Puzzle Solve"
+		}, {
+			"key":	"S",
+			"label":	"Search Area"
+		}, {
+			"key":	"U",
+			"label":	"Use Magic"
+		}, {
+			"key":	"V",
+			"label":	"View Character"
+		}, {
+			"key":	"W",
+			"label":	"Wait End Week"
+		}, {
+			"key":	"D",
+			"label":	"Dismiss Army"
+		}, {
+			"key":	"N",
+			"label":	"New Continent"
+		}, {
+			"key":	"5",
+			"label":	"Rest"
+		}, {
+			"key":	"Q",
+			"label":	"Quit and Save"
+		}],
+	"startup":	{
+		"controls_hint":	"UP/DN move ENTER pick ESC quit",
+		"class_select_hint":	"Choose your class",
+		"class_picker_missing":	"class picker asset missing",
+		"save_picker_title":	" Select game:",
+		"save_picker_empty":	"(empty)",
+		"save_picker_new_game":	"New game",
+		"new_game_table_header":	"Difficulty Days Score",
+		"new_game_select_hint":	"^v to select Ent to Accept"
+	},
+	"controls":	{
+		"title":	" Controls ",
+		"on":	"On",
+		"off":	"Off"
+	},
+	"prompts":	{
+		"text_hint":	"(Enter to confirm / ESC cancel)",
+		"numeric_range_hint":	"(1-%COUNT% or ESC)",
+		"yes_no_hint":	"(y/n)?",
+		"yes":	"Yes",
+		"no":	"No",
+		"numeric_5_hint":	"(1-5 or ESC)"
+	},
+	"dialog_titles":	{
+		"treasure":	"Treasure",
+		"teleport_cave":	"Teleport Cave",
+		"crystal_ball":	"Crystal Ball",
+		"foes":	"Foes!",
+		"alcove_offer":	"The Augur",
+		"alcove_result":	"The Augur",
+		"castle_default":	"Castle",
+		"own_castle":	"Your castle",
+		"search":	"Search...",
+		"dismiss_army":	"Dismiss Army",
+		"dismiss_last":	"Dismiss last army",
+		"navigate":	"Go to which province?",
+		"garrison_pick":	"Garrison which troop?",
+		"remove_pick":	"Remove which troop?",
+		"save_confirm":	"Your game has been saved.",
+		"lose_fallback":	"Sorry.",
+		"win_fallback":	"Congratulations!",
+		"combat_victory":	"Victory!"
+	},
+	"villain_descriptions":	{
+		"catiline":	{
+			"alias":	"The Conspirator",
+			"crimes":	"Twice defeated for the consulship, he turned to murder. He plotted to kill the consuls and set fires across Roma, and when the plot was exposed he fled to Etruria to raise an army of debtors, ruined nobles and bitter veterans against the Republic."
+		},
+		"spartacus":	{
+			"alias":	"The Thracian",
+			"crimes":	"He broke out of the gladiator school at Capua with seventy men armed with kitchen knives. Runaway slaves flocked to him in their tens of thousands, and he has beaten every praetor and consul sent against him from one end of Italy to the other."
+		},
+		"tacfarinas":	{
+			"alias":	"The Deserter",
+			"crimes":	"Trained in Roma's own auxiliaries, he deserted and turned the Musulamii into raiders. For seven years he has struck the farms and forts of Africa and melted into the desert before any legion could bring him to battle."
+		},
+		"jugurtha":	{
+			"alias":	"King of Numidia",
+			"crimes":	"He murdered both his royal cousins to take all of Numidia, and put every Italian merchant in Cirta to the sword. When the Senate summoned him, he bought its members and left Roma sneering that it was a city for sale."
+		},
+		"boudica":	{
+			"alias":	"Queen of the Iceni",
+			"crimes":	"Flogged by Roma's agents, her daughters shamed and her lands seized, she raised the tribes in fury. Her host burned Camulodunum, Londinium and Verulamium to the ground and put their people to death by the tens of thousands."
+		},
+		"civilis":	{
+			"alias":	"The One-Eyed",
+			"crimes":	"A Batavian prince who served Roma for twenty-five years, he turned its own auxiliary cohorts against the Rhine legions. He besieged Vetera until its garrison starved, and fights Roma with the very drill Roma taught him."
+		},
+		"brennus":	{
+			"alias":	"Woe to the Vanquished",
+			"crimes":	"His Gallic host shattered the legions at the Allia and poured into an undefended Roma. He burned the city and besieged the Capitol, and when the gold of the ransom was weighed, he threw his sword onto the scales and laughed."
+		},
+		"vercingetorix":	{
+			"alias":	"King of Warriors",
+			"crimes":	"He united the quarrelling tribes of Gaul under one command for the first time. He burned his own towns and fields to starve the legions, and threw Caesar back from the walls of Gergovia."
+		},
+		"arminius":	{
+			"alias":	"The Betrayer",
+			"crimes":	"A prince of the Cherusci raised as a Roman officer, he won Varus's trust and then led him into the Teutoburg Forest. There, in rain and mud, he destroyed three legions to the last man and nailed their skulls to the trees."
+		},
+		"gildo":	{
+			"alias":	"The Moorish Count",
+			"crimes":	"Made Count of Africa to guard the province, he kept it as his own kingdom. He has held back the grain fleet on which the city depends, and left the people of Roma to face famine while he declares for a rival emperor."
+		},
+		"pyrrhus":	{
+			"alias":	"King of Epirus",
+			"crimes":	"Cousin of Alexander, he landed in Italy with a professional phalanx and twenty war elephants. He broke the legions at Heraclea and again at Asculum, winning both battles at a cost that would have ruined any lesser king."
+		},
+		"mithridates":	{
+			"alias":	"The Poison King",
+			"crimes":	"Immune to every poison from years of small doses, he overran Roma's province of Asia. In a single day he had every Roman and Italian there put to death, eighty thousand men, women and children, and he has fought Roma for forty years since."
+		},
+		"hannibal":	{
+			"alias":	"Son of Hamilcar",
+			"crimes":	"Sworn as a boy to eternal hatred of Roma, he crossed the Alps in winter with an army and its elephants. He destroyed Roman armies at Trebia and Lake Trasimene, and at Cannae slaughtered more Romans in one afternoon than any enemy before him."
+		},
+		"zenobia":	{
+			"alias":	"Queen of Palmyra",
+			"crimes":	"Ruling in her son's name, she has torn the East away from Roma. Her cataphracts have taken Egypt, Syria and much of Anatolia, and something far worse than armoured horsemen is said to ride out of the desert at her call."
+		},
+		"shapur":	{
+			"alias":	"King of Kings",
+			"crimes":	"The Sassanid shah defeated a Roman army at Edessa and took the Emperor Valerian captive, the first emperor ever taken alive. He has carved the scene into the cliffs of Persia, and holds the Emperor as a slave to this day."
+		},
+		"alaric":	{
+			"alias":	"King of the Visigoths",
+			"crimes":	"Once a commander in Roma's own service, he turned on the Empire when it broke faith with his people. He besieged Roma three times, and on the third sacked the city, the first enemy to take it in eight hundred years, leaving its dead restless behind him."
+		},
+		"attila":	{
+			"alias":	"The Scourge of God",
+			"crimes":	"King of the Huns, he has burned the cities of the Balkans and extracted tribute in gold from Constantinople. He crossed the Rhine into Gaul, and now his horsemen ride over the Alps into Italy itself."
+		}
+	},
+	"spell_brief":	{
+		"clone":	"Adds soldiers to one of your troops; more with more spell power.",
+		"teleport":	"Moves any one troop on the field to open ground you choose.",
+		"fireball":	"Burns one enemy troop for 25 damage per point of spell power.",
+		"lightning":	"Strikes one enemy troop for 10 damage per point of spell power.",
+		"freeze":	"Freezes one enemy troop in place; it cannot act.",
+		"resurrect":	"Returns fallen soldiers to one of your troops; more with more spell power.",
+		"turn_undead":	"Deals 50 damage per point of spell power to one undead troop.",
+		"bridge":	"Builds a bridge across the water in the direction you choose.",
+		"time_stop":	"Your army moves 10 steps per point of spell power without days passing.",
+		"find_villain":	"Shows the castle where the enemy you hold a contract for is hiding.",
+		"castle_gate":	"Takes you at once to any castle you have visited.",
+		"town_gate":	"Takes you at once to any town you have visited.",
+		"instant_army":	"Fresh troops join your army; more with more spell power and rank.",
+		"raise_control":	"Raises your leadership, so you can lead more soldiers."
+	},
+	"spell_lore":	{
+		"clone":	"The priests of Roma have always shaped images of the gods. The Simulacrum shapes an image of your own soldiers, drawn out of the altar smoke, and it fights as truly as the men it copies.\n\nCast over one of your own troops in battle, it adds more of those soldiers to the line. The greater your spell power, the more answer the call. It works only on your own army.",
+		"teleport":	"Mercury carries the words of the gods faster than any horse, and he will carry an army too.\n\nWith this rite you lift any one troop on the field, yours or the enemy's, and set it down on open ground of your choosing.",
+		"fireball":	"The smith of the gods keeps his forge beneath the mountains of Sicily, and this rite borrows a coal from it.\n\nA ball of fire falls on one enemy troop and burns for 25 damage for each point of your spell power. It strikes where you choose, at any range.",
+		"lightning":	"The thunderbolt is Jupiter's own weapon, and every augur knows the sky's warning.\n\nFulmen calls a bolt down on one enemy troop for 10 damage for each point of your spell power. It is weaker than Vulcan's Fire, and far cheaper.",
+		"freeze":	"Perseus carried the Gorgon's head on his shield, and any who looked on it turned to stone. This rite lends that gaze for a moment.\n\nOne enemy troop meets it and stands frozen in place, unable to act. It is the cheapest of the battle rites the temples sell.",
+		"resurrect":	"Aesculapius, the god of healing, once raised the dead, and Jupiter struck him down for it. His priests still keep the rite, and they sell it dearly.\n\nCast over one of your own troops, it calls back soldiers who have fallen from its ranks. The greater your spell power, the more return. It is the costliest rite in any temple.",
+		"turn_undead":	"At the Lemuria, Roma drives out the restless spirits of the dead. On the battlefield the same rite tears at anything that walks without a soul.\n\nIt deals 50 damage for each point of your spell power, but only to the undead. Against the living it does nothing at all.",
+		"bridge":	"Pontifex means \"bridge-builder.\" The oldest priesthood of Roma began with the sacred bridge over the Tiber, and the title and the rite are the same word.\n\nCast it at the water's edge and choose a direction, and a bridge rises across the water before you, so your army can march where only a boat could go.",
+		"time_stop":	"The great march: legions that covered in one day what other armies covered in three. This rite stretches the day itself.\n\nFor 10 steps for each point of your spell power, time holds still, and your army moves without the calendar turning.",
+		"find_villain":	"Before any great undertaking, Roma asks the birds. The augur marks out a quarter of the sky and reads the flight of what crosses it.\n\nCast this rite while you hold a contract and the signs show the castle where your quarry is hiding. Without a contract the birds have nothing to say.",
+		"castle_gate":	"The imperial post keeps fresh horses at every station on every road, so the Emperor's messengers never stop. This rite puts your army on that road.\n\nCast it and choose any castle you have already visited, and you arrive there at once. It cannot take you somewhere you have never been.",
+		"town_gate":	"All roads lead to Roma, and every Roman town stands on one.\n\nCast this rite and choose any town you have already visited, and the road carries you straight there. It costs half as much as the Cursus Publicus.",
+		"instant_army":	"The dilectus is the levy: the day the consul calls the citizens and chooses who will march. This rite calls that levy wherever you stand.\n\nFresh troops come to join your army. The greater your spell power and the higher your rank, the more of them answer. They need room in your army to join.",
+		"raise_control":	"Imperium is the right to command, given by the gods and the people of Roma.\n\nWith this rite your authority grows: your leadership rises, and a higher leadership lets you lead more soldiers without losing control of them."
+	},
+	"town_docks":	{
+		"ostia":	"Your boat will be tied up at the river quay just west of the city gate.",
+		"pisae":	"Your boat will wait in the harbour a short walk west of the city.",
+		"ancona":	"Your boat will wait in the harbour a short walk east of the city.",
+		"massilia":	"Your boat will be tied up at the quay just south of the city walls.",
+		"utica":	"Your boat will wait in the harbour just east of the city.",
+		"hadrumetum":	"Your boat will be moored at the quay just east of the city.",
+		"ptolemais":	"Your boat will wait at the harbour mole just east of the city.",
+		"nicomedia":	"Your boat will be moored at the quay just west of the city.",
+		"puteoli":	"Your boat will wait in the harbour just west of the city.",
+		"croton":	"Your boat will be moored at the quay just east of the city.",
+		"londinium":	"Your boat will lie at the quay on the Tamesis just east of the city.",
+		"tarraco":	"Your boat will wait in the harbour just east of the city.",
+		"ephesus":	"Your boat will wait in the harbour just west of the city."
+	},
+	"town_invitations":	{
+		"ostia":	{
+			"contracts":	"Welcome to Ostia, %HERO%, the harbour of Roma herself. The Emperor's enemies are named in my ledger. Come this way, and let us discuss your contract.",
+			"boat":	"Hail, %HERO%! Every grain ship bound for Roma passes Ostia, and mine are the fastest on the Tiber. Come and see my boats.",
+			"information":	"Every ship into Ostia brings a rumour, %HERO%, and the dockhands bring them all to me. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Castor and Pollux guard the sailors of Ostia, %HERO%. Enter their temple, and I will teach you a rite.",
+			"siege":	"The grain barges carry timber as well as corn, %HERO%. Come to our workshop and see the engines built from it."
+		},
+		"puteoli":	{
+			"contracts":	"Welcome to Puteoli, %HERO%. The sulphur smoke hides many a traitor. Come this way, and let us discuss your contract.",
+			"information":	"The merchants of Alexandria gossip on our quays, %HERO%, and I listen. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Serapis has a house in Puteoli, %HERO%, brought here by the grain fleet. Enter, and I will teach you a rite.",
+			"siege":	"Our concrete sets even under the sea, %HERO%, and our engines are as strong. Come to the workshop and see them."
+		},
+		"cumae":	{
+			"contracts":	"Welcome to Cumae, %HERO%, where the Sibyl once spoke. Her prophecies named enemies of Roma. Come this way, and let us discuss your contract.",
+			"information":	"The caves of Cumae echo with whispers, %HERO%, and I hear most of them. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Apollo's temple stands above the Sibyl's cave, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"Cumae is the oldest Greek city in Italia, %HERO%, and its walls taught us how walls fall. Come to the workshop."
+		},
+		"tarracina":	{
+			"contracts":	"Welcome to Tarracina, %HERO%, where the Via Appia meets the sea. Roma's enemies travel that road too. Come this way, and let us discuss your contract.",
+			"information":	"Every traveller on the Via Appia stops in Tarracina, %HERO%, and talks. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Jupiter Anxur watches from the cliff above Tarracina, %HERO%. Enter his temple, and I will teach you a rite.",
+			"siege":	"We cut the Via Appia through solid rock here, %HERO%. Come to the workshop and see what else our tools can break."
+		},
+		"pisae":	{
+			"contracts":	"Welcome to Pisae, %HERO%. Our marble goes to Roma, and so do our reports of her enemies. Come this way, and let us discuss your contract.",
+			"boat":	"Hail, %HERO%! Pisae has sent ships down the Arnus since before Roma was built. Come and see my boats.",
+			"information":	"The marble quarrymen of Pisae see who comes over the hills, %HERO%. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"The gods of the Etruscans still linger in Pisae, %HERO%. Enter the temple, and I will teach you a rite.",
+			"siege":	"Our shipwrights build siege towers when they aren't building hulls, %HERO%. Come to the workshop and see them."
+		},
+		"ancona":	{
+			"contracts":	"Welcome to Ancona, %HERO%, the elbow of the Adriatic. Roma's enemies watch this coast. Come this way, and let us discuss your contract.",
+			"boat":	"Greetings, %HERO%! From Ancona the ships cross to Dalmatia and back. Come and see my boats.",
+			"information":	"Sailors from across the Adriatic drink in Ancona, %HERO%, and they talk. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Venus keeps her temple on the headland of Ancona, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"Ancona's harbour walls were built by legion engineers, %HERO%. Their workshop still stands. Come and see."
+		},
+		"ravenna":	{
+			"contracts":	"Welcome to Ravenna, %HERO%, home of the Adriatic fleet. The admirals keep a list of Roma's enemies. Come this way, and let us discuss your contract.",
+			"information":	"Ravenna stands among marshes, %HERO%, and news crosses them slowly but surely to me. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Neptune is honoured above all in Ravenna, %HERO%. Enter his temple, and I will teach you a rite.",
+			"siege":	"The fleet's engineers winter in Ravenna, %HERO%. Come to their workshop and see the engines they build."
+		},
+		"mediolanum":	{
+			"contracts":	"Welcome to Mediolanum, %HERO%, gateway to the Alps. Enemies of Roma come down through the passes. Come this way, and let us discuss your contract.",
+			"boat":	"Hail, %HERO%! The lakes and rivers of the north carry more than you would think. Come and see my boats.",
+			"information":	"Traders from beyond the Alps pass through Mediolanum, %HERO%, and I buy their news. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Minerva watches over Mediolanum, %HERO%. Enter her temple, and I will teach you a rite.",
+			"siege":	"Mediolanum's smiths forge iron from the Alpine mines, %HERO%. Come to the workshop and see our engines."
+		},
+		"croton":	{
+			"contracts":	"Welcome to Croton, %HERO%, city of Milo the wrestler. We still admire strength against Roma's enemies. Come this way, and let us discuss your contract.",
+			"information":	"Croton faces the sea to the east, %HERO%, and every Greek ship brings news. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Hera Lacinia's temple stands on the cape of Croton, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"Pythagoras taught mathematics here, %HERO%, and our engineers still use it to aim. Come to the workshop."
+		},
+		"roma":	{
+			"contracts":	"Welcome to Roma, %HERO%, the city of the Emperor. The Senate itself names the enemies it wants taken. Come this way, and let us discuss your contract.",
+			"information":	"Nothing happens in the Empire that isn't whispered in the Forum first, %HERO%. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Jupiter Best and Greatest rules from the Capitol, %HERO%. Enter his temple, and I will teach you a rite.",
+			"siege":	"The legions' own engineers work in Roma, %HERO%. Come to the arsenal and see the engines of the Empire."
+		},
+		"massilia":	{
+			"contracts":	"Welcome to Massilia, %HERO%, Roma's oldest friend in Gaul. The Gauls beyond our walls are not so friendly. Come this way, and let us discuss your contract.",
+			"boat":	"Well met, %HERO%! Massilian ships have sailed to the tin islands and back. Come and see mine.",
+			"information":	"Greek merchants in Massilia trade with every tribe in Gaul, %HERO%, and trade in news too. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Artemis of Ephesus has watched over Massilia since the Greeks founded it, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"Massilia once held off Caesar's siege for months, %HERO%. We learned a great deal. Come to the workshop."
+		},
+		"utica":	{
+			"contracts":	"Welcome to Utica, %HERO%, capital of the province. The governor keeps a list of Roma's enemies. Come this way, and let us discuss your contract.",
+			"boat":	"Greetings, %HERO%! Utica is older than Carthago, and so is her harbour. Come and see my ships.",
+			"information":	"The governor's clerks in Utica gossip freely, %HERO%, if you know where to drink. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Cato died here rather than yield, %HERO%, and the gods remember such men. Enter the temple, and I will teach you a rite.",
+			"siege":	"Scipio besieged Utica from the sea and the land, %HERO%. We keep his engines in working order. Come and see."
+		},
+		"hadrumetum":	{
+			"contracts":	"Welcome to Hadrumetum, %HERO%. The Phoenicians founded us, and Roma keeps us. Come this way, and let us discuss your contract.",
+			"boat":	"Greetings, %HERO%! Hadrumetum's ships sail wherever the oil trade goes. Come and see mine.",
+			"information":	"Hannibal landed at Hadrumetum once, %HERO%, and we still watch the sea for news. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Baal Hammon is honoured here under the name of Saturn, %HERO%. Enter his temple, and I will teach you a rite.",
+			"siege":	"Hadrumetum's catacombs were cut by engineers, %HERO%, and so are our engines. Come to the workshop."
+		},
+		"oea":	{
+			"contracts":	"Welcome to Oea, %HERO%, at the edge of the great desert. Roma's enemies hide in the sand. Come this way, and let us discuss your contract.",
+			"information":	"The Garamantes trade with Oea across the desert, %HERO%, and bring stories with their salt. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Apollo shines hard on Oea, %HERO%. Enter his temple, and I will teach you a rite.",
+			"siege":	"Desert raiders have tested Oea's walls for centuries, %HERO%. Come to the workshop and see how we answer them."
+		},
+		"ptolemais":	{
+			"contracts":	"Welcome to Ptolemais, %HERO%, city of the Ptolemies. Their old enemies became Roma's. Come this way, and let us discuss your contract.",
+			"boat":	"Greetings, %HERO%! Ptolemais sends ships to Alexandria every week. Come and see my fleet.",
+			"information":	"Greek, Egyptian and Roman traders all pass through Ptolemais, %HERO%, and I speak all their tongues. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Isis and Serapis are honoured together in Ptolemais, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"Alexandrian engineers designed our engines, %HERO%, the finest in the world. Come to the workshop."
+		},
+		"tarsus":	{
+			"contracts":	"Welcome to Tarsus, %HERO%, where Antony first met Cleopatra. The East remains full of intrigue. Come this way, and let us discuss your contract.",
+			"boat":	"Greetings, %HERO%! Ships sail up the Cydnus right to our gates. Come and see mine.",
+			"information":	"Tarsus guards the Cilician Gates, %HERO%, and every army that passes is noted. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Sandan, the hero-god of Tarsus, is honoured here with fire, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"The Cilician pirates' fortresses fell to engines built in Tarsus, %HERO%. Come to the workshop and see them."
+		},
+		"nicomedia":	{
+			"contracts":	"Welcome to Nicomedia, %HERO%, the old royal city of Bithynia. The East has kings who would be free of Roma. Come this way, and let us discuss your contract.",
+			"boat":	"Greetings, %HERO%! Nicomedia's gulf opens to the Propontis and the whole world beyond. Come and see my ships.",
+			"information":	"The Bithynian court left many secrets behind in Nicomedia, %HERO%, and I have collected them. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Demeter's temple in Nicomedia is older than Roma's rule, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"The shipwrights of Nicomedia build engines as well as galleys, %HERO%. Come to the workshop and see."
+		},
+		"damascus":	{
+			"contracts":	"Welcome to Damascus, %HERO%, oldest of cities. The desert kings watch Roma from beyond our walls. Come this way, and let us discuss your contract.",
+			"information":	"Every caravan from Arabia and Persia stops in Damascus, %HERO%, and their news with it. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Jupiter Damascenus has a vast temple in our city, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"Damascus steel makes the finest fittings for siege engines, %HERO%. Come to the workshop and see."
+		},
+		"lugdunum":	{
+			"contracts":	"Welcome to Lugdunum, %HERO%, capital of the Three Gauls. Every road in the province starts here, and so does every plot. Come this way, and let us discuss your contract.",
+			"information":	"The Council of the Gauls meets at Lugdunum each summer, %HERO%, and the chiefs talk freely over wine. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"The altar of Roma and Augustus stands where the two rivers meet, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"The mint of Lugdunum needs strong walls, %HERO%, and our engineers build the engines to take any other. Come to the workshop."
+		},
+		"lutetia":	{
+			"contracts":	"Welcome to Lutetia, %HERO%, on the island of the Parisii. The river brings us trade and trouble alike. Come this way, and let us discuss your contract.",
+			"information":	"The boatmen of the Sequana pass on everything they hear, %HERO%, and all of it reaches Lutetia. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"The boatmen raised a pillar to Jupiter on our island, %HERO%. Enter the temple, and I will teach you a rite.",
+			"siege":	"Labienus took Lutetia by the river, %HERO%, and we have studied his engines since. Come to the workshop."
+		},
+		"londinium":	{
+			"contracts":	"Welcome to Londinium, %HERO%, at the edge of the world. Boudica burned this city once, and Roma's enemies here are not tame. Come this way, and let us discuss your contract.",
+			"boat":	"Well met, %HERO%! Every ship for Gaul sails from our quays on the Tamesis. Come and see mine.",
+			"information":	"Merchants from every corner of Britannia meet on our quays, %HERO%, and they talk of the north. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Mithras has his temple by the Walbrook, %HERO%, among the soldiers who hold this province. Enter, and I will teach you a rite.",
+			"siege":	"The legions building the Wall draw their engines from Londinium, %HERO%. Come to the workshop and see them."
+		},
+		"tarraco":	{
+			"contracts":	"Welcome to Tarraco, %HERO%, capital of Hispania Citerior. The Scipios landed here to fight Carthago, and Roma still has enemies in these hills. Come this way, and let us discuss your contract.",
+			"boat":	"Greetings, %HERO%! Tarraco sends wine and oil to every port on the sea. Come and see my ships.",
+			"information":	"Augustus himself wintered in Tarraco, %HERO%, and the city has kept his habit of listening. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"The first temple to the divine Augustus in all the West stands here, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"The Scipios' engineers built Tarraco's walls, %HERO%, and we still keep their craft. Come to the workshop."
+		},
+		"emerita_augusta":	{
+			"contracts":	"Welcome to Emerita Augusta, %HERO%, city of the veterans of the Cantabrian wars. Old soldiers know Roma's enemies well. Come this way, and let us discuss your contract.",
+			"information":	"The veterans of Emerita still hear from their old legions, %HERO%. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Our temple to Diana looks over the great bridge on the Anas, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"The men who built our great bridge build engines too, %HERO%. Come to the workshop."
+		},
+		"cirta":	{
+			"contracts":	"Welcome to Cirta, %HERO%, the rock where the Numidian kings kept their court. Jugurtha's people still remember him. Come this way, and let us discuss your contract.",
+			"information":	"Every road in Numidia climbs to Cirta, %HERO%, and every traveller talks on the way up. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"The Numidian kings built their altars on this rock, %HERO%, and Roma kept them. Enter, and I will teach you a rite.",
+			"siege":	"No army ever took Cirta by force, %HERO%, and we study why. Come to the workshop and see our engines."
+		},
+		"memphis":	{
+			"contracts":	"Welcome to Memphis, %HERO%, oldest of the cities of the Nile. The pharaohs' tombs are full of thieves, and so is the delta. Come this way, and let us discuss your contract.",
+			"information":	"The priests of Ptah hear everything that moves on the Nile, %HERO%. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"The temple of Ptah is older than Roma itself, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"The men who raised the pyramids knew stone, %HERO%, and so do we. Come to the workshop."
+		},
+		"ephesus":	{
+			"contracts":	"Welcome to Ephesus, %HERO%, first city of Asia. The proconsul sits here, and so do his enemies. Come this way, and let us discuss your contract.",
+			"information":	"Every road in Asia ends at our harbour, %HERO%, and every rumour with it. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"The Temple of Artemis is one of the wonders of the world, %HERO%. Enter, and I will teach you a rite.",
+			"siege":	"Ephesus has changed masters a dozen times, %HERO%, and every one of them brought engineers. Come to the workshop."
+		}
+	}
+}

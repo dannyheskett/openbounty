@@ -1,0 +1,19 @@
+{
+  "id": "bridge_river_v",
+  "prompt": "an isolated cut-out game sprite of a small Roman stone bridge seen from directly above, a narrow straight deck of grey paving stones with a low parapet wall of lighter stone along each long side, the deck running straight from the very top edge of the picture to the very bottom edge, about a third of the picture wide and centred left to right, flat magenta background filling the picture on both sides of the bridge, solid magenta background",
+  "style": "rd_pro__topdown",
+  "width": 96,
+  "height": 96,
+  "seed": 7801,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/tiles/bridge_river_v.png",
+  "_note": "River bridge, crossing north-south (2026-09-16). Object route as chest.json: rd_pro__topdown 96x96, magenta removed by the service. Drawn over a river piece at runtime (the tile's ground), so the river shows either side."
+}

@@ -1,0 +1,20 @@
+{
+  "id": "troop_portrait_tirones",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a young Roman recruit, a beardless youth with short brown hair and a plain leather cap, a simple off-white wool tunic with a leather belt, a small round wooden shield and a short sword, a legion training ground with wooden posts behind him",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 9971,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "reference_image_paths": [
+    "assets/glory-of-rome/art/troops/tirones_00.png"
+  ],
+  "_pack_path": "art/portraits/troop_tirones.png",
+  "_note": "Static troop portrait (2026-09-13): shown in the home castle's Recruit portrait slot. 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos) at Dan's request, keeping the background rather than cropping. No animation."
+}

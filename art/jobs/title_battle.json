@@ -1,0 +1,20 @@
+{
+  "id": "title_battle",
+  "prompt": "Roman legionaries with red shields and an eagle standard clash with barbarian warriors with round wooden shields and axes on a grass field under a pale sky.",
+  "style": "rd_pro__default",
+  "width": 256,
+  "height": 177,
+  "seed": 6611,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    256,
+    177
+  ],
+  "_pack_path": "art/ui/title_battle.png",
+  "_note": "Title screen battle (2026-09-13): fades in behind the title words, replacing the purple field, on the modern title screen. Screen route, rd_pro__default at the title's 256x164 so the pixels match; the top third kept calm for the words. run02: closer to the action at Dan's request (run01 was a distant hillside view). run03: 256x177 (3x = 768x531 on the 800x532 screen), short prompt, the run02 left half (title_battle_left) as reference. INSTALLED: run01 (seed 6601, the hillside prompt; its settings are in build/art/title_battle/run01/job.json and in this file at commit 87e8b59). run02 and run03 were not used.",
+  "reference_image_paths": [
+    "build/art/title_battle_left/run02/01_raw.png"
+  ]
+}

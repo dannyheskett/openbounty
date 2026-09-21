@@ -1,0 +1,19 @@
+{
+  "id": "end_carpet",
+  "prompt": "an isolated cut-out game sprite of a straight red carpet runner with a woven gold border along both long sides, seen from directly above, running straight from the top edge of the picture to the bottom edge and cut off flat by both, narrower than the picture with only the flat magenta background showing to its left and right, solid magenta background",
+  "style": "rd_pro__topdown",
+  "width": 96,
+  "height": 96,
+  "seed": 7301,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/ui/end_carpet.png",
+  "_note": "Win-cartoon carpet tile (2026-09-06): drawn as a column of stacked tiles over the grass tile, so it is a transparent strip that runs top to bottom on purpose; object route otherwise."
+}

@@ -1,0 +1,19 @@
+{
+ "id": "alcove_precinct",
+ "prompt": "an isolated cut-out game sprite of a small open-air Roman augural precinct on a low rocky outcrop, a square stone platform reached by three steps with a low parapet of pale ashlar blocks around it and a plain square stone altar at its centre, no roof of any kind so the whole platform is open to the sky, a tall bronze-topped post at one corner with a black raven perched on it, seen from the front and above with the steps facing the viewer, a freestanding structure with no ground under it: the lowest row of stones is the bottom of the sprite and only the flat magenta background shows below and around it, the whole structure complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background",
+ "style": "rd_pro__topdown",
+ "width": 96,
+ "height": 96,
+ "seed": 7402,
+ "remove_bg": true,
+ "return_non_bg_removed": true,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  96,
+  96
+ ],
+ "_pack_path": "art/tiles/alcove.png",
+ "_note": "The magic alcove's map tile (2026-09-12), replacing the hills-dwelling sprite it borrowed. Map-object route, the same as the towns and dwellings: rd_pro__topdown, 96x96, magenta named and removed, no reference image, a facing cue, freestanding with no ground under it, expansion bypassed. The subject is an AUGURACULUM, the augur's marked precinct -- deliberately roofless, because an augur reads a quartered region of sky and a roof would close the one thing the place is for. Distinct at a glance from dwelling_hills, which is a cave mouth in a mound."
+}

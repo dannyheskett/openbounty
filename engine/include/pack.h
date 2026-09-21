@@ -18,6 +18,15 @@ typedef struct Pack Pack;
 // Open a pack from `path`. Auto-detects: directory -> loose-tree mode,
 // regular file -> ZIP mode. Returns NULL on failure (logs to stderr).
 Pack *pack_open(const char *path);
+
+// Open a ZIP pack already in memory. For platforms whose packs do not live on
+// a filesystem the C library can open: Android ships the pack inside the APK,
+// where only the asset manager can read it, so the shell hands the bytes over
+// instead. `name` is the pack's display path (used for id/name fallback and
+// diagnostics); the bytes are copied out as usual and the caller keeps
+// ownership of `data`.
+Pack *pack_open_mem(const void *data, size_t size, const char *name);
+
 void  pack_close(Pack *p);
 
 // Borrow bytes for pack-relative entry `rel` (e.g. "art/font/kb-font.png").
@@ -52,7 +61,6 @@ const Pack *pack_stack_top(void);
 
 #define PACK_ENTRY_PATH_MAX 512
 #define PACK_ENTRY_NAME_MAX 64
-#define PACK_DISCOVER_MAX   16
 
 typedef struct {
     char path[PACK_ENTRY_PATH_MAX];   // absolute path to the .openbounty
@@ -63,9 +71,9 @@ typedef struct {
 //   1. cwd/*.openbounty
 //   2. <user-data>/openbounty/*.openbounty
 //   3. <exe-dir>/assets/*.openbounty       (bundled with the binary)
-// Earlier source wins on duplicate names. Fills `out` up to `cap` entries.
-// Returns the count discovered.
-int pack_discover(PackEntry *out, int cap);
+// Earlier source wins on duplicate names. *out takes a heap list of every
+// pack found (NULL when none); the caller frees it. Returns the count.
+int pack_discover(PackEntry **out);
 
 // Resolve a `--pack <arg>` CLI value to an absolute path.
 // - If `arg` contains '/' or '\' or ends in ".openbounty" -> treat as

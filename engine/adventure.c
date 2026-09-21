@@ -14,10 +14,11 @@
 //     artifact): walkable -- stepping on them fires the handler.
 //   - Bridges: walkable.
 //   - Water: blocked (unless boarding the boat -- caller handles that).
+//   - River: blocked (TerrainWalkable is false for it); a bridge crosses it.
 //   - Castle walls, forest, mountain: blocked (blocks_foot).
 //
 // Boat mode:
-//   - Water / bridge: walkable.
+//   - Water / bridge: walkable. A river is not water: boats stay on the sea.
 //   - Land: walkable (counts as disembark -- caller detects the terrain
 //     change and leaves the boat on the previous water tile).
 bool adventure_walkable_on_foot(const Tile *t) {
@@ -65,7 +66,7 @@ static int artifact_local_from_id(const char *id) {
     return (int)n;
 }
 
-InteractResult adventure_handle_interact(const Tile *t, const char *zone) {
+InteractResult adventure_handle_interact(const Map *map, const Tile *t, const char *zone) {
     InteractResult r = { 0 };
     r.artifact_idx = -1;
     r.town_boat_x = -1;
@@ -81,27 +82,27 @@ InteractResult adventure_handle_interact(const Tile *t, const char *zone) {
         //    body line"
         const Resources *res = resources_current();
         char body[TILE_SIGN_TITLE_LEN + TILE_SIGN_BODY_LEN + 32];
-        if (res && t->sign_body[0]) {
+        if (res && TileSignBody(map, t)[0]) {
             ResTemplateVar vars[] = {
-                { "TITLE", t->sign_title },
-                { "BODY",  t->sign_body },
+                { "TITLE", TileSignTitle(map, t) },
+                { "BODY",  TileSignBody(map, t) },
             };
             resources_format_template(body, sizeof body,
                                       res->banners.signpost_with_body,
                                       vars, 2);
         } else if (res) {
-            ResTemplateVar vars[] = { { "TITLE", t->sign_title } };
+            ResTemplateVar vars[] = { { "TITLE", TileSignTitle(map, t) } };
             resources_format_template(body, sizeof body,
                                       res->banners.signpost_title_only,
                                       vars, 1);
-        } else if (t->sign_body[0]) {
+        } else if (TileSignBody(map, t)[0]) {
             snprintf(body, sizeof(body),
                      "A sign reads:\n\n\"%s\n%s\"",
-                     t->sign_title, t->sign_body);
+                     TileSignTitle(map, t), TileSignBody(map, t));
         } else {
             snprintf(body, sizeof(body),
                      "A sign reads:\n\n\"%s\"",
-                     t->sign_title);
+                     TileSignTitle(map, t));
         }
         // Carry the sign text out in the result; the caller (step.c, which has a
         // Game*) raises it via player_io_message so it flows through the uniform
@@ -117,12 +118,7 @@ InteractResult adventure_handle_interact(const Tile *t, const char *zone) {
         // the hero ends up on the tile they entered from (on town exit
         // the hero's current position swaps with last_x/last_y).
         r.entered_town = true;
-        int n = 0;
-        while (n + 1 < (int)sizeof(r.town_id) && t->id[n]) {
-            r.town_id[n] = t->id[n];
-            n++;
-        }
-        r.town_id[n] = '\0';
+        snprintf(r.town_id, sizeof r.town_id, "%s", TileId(map, t));
         r.town_boat_x = t->boat_spawn_x;
         r.town_boat_y = t->boat_spawn_y;
         r.bounce_back = true;
@@ -132,18 +128,13 @@ InteractResult adventure_handle_interact(const Tile *t, const char *zone) {
     if (t->interactive == INTERACT_CASTLE_GATE) {
         // Surface the castle id to step.c so it can run the castle visit flow.
         r.opened_castle = true;
-        int n = 0;
-        while (n + 1 < (int)sizeof(r.castle_id) && t->id[n]) {
-            r.castle_id[n] = t->id[n];
-            n++;
-        }
-        r.castle_id[n] = '\0';
+        snprintf(r.castle_id, sizeof r.castle_id, "%s", TileId(map, t));
         r.bounce_back = true;
         return r;
     }
 
     if (t->interactive == INTERACT_ARTIFACT) {
-        int local = artifact_local_from_id(t->id);
+        int local = artifact_local_from_id(TileId(map, t));
         int idx   = artifact_index_for_tile(zone, local);
         const ArtifactDef *a = artifact_by_index(idx);
         if (a) {
@@ -197,11 +188,7 @@ InteractResult adventure_handle_interact(const Tile *t, const char *zone) {
         // : teleport to the paired cave.
         // We carry the placement id so step.c can resolve the pairing.
         r.opened_telecave = true;
-        int n = 0;
-        while (n + 1 < (int)sizeof(r.telecave_id) && t->id[n]) {
-            r.telecave_id[n] = t->id[n]; n++;
-        }
-        r.telecave_id[n] = '\0';
+        snprintf(r.telecave_id, sizeof r.telecave_id, "%s", TileId(map, t));
         return r;
     }
 
@@ -210,11 +197,7 @@ InteractResult adventure_handle_interact(const Tile *t, const char *zone) {
         // continent. We surface the tile so step.c can set the flag,
         // consume the tile, and show a "Map of X" dialog.
         r.opened_navmap = true;
-        int n = 0;
-        while (n + 1 < (int)sizeof(r.navmap_id) && t->id[n]) {
-            r.navmap_id[n] = t->id[n]; n++;
-        }
-        r.navmap_id[n] = '\0';
+        snprintf(r.navmap_id, sizeof r.navmap_id, "%s", TileId(map, t));
         return r;
     }
 
@@ -224,11 +207,7 @@ InteractResult adventure_handle_interact(const Tile *t, const char *zone) {
         // friendly (recruit) vs hostile (combat) by the foe's `friendly`
         // flag, then sets bounce_back appropriately.
         r.opened_foe = true;
-        int n = 0;
-        while (n + 1 < (int)sizeof(r.foe_id) && t->id[n]) {
-            r.foe_id[n] = t->id[n]; n++;
-        }
-        r.foe_id[n] = '\0';
+        snprintf(r.foe_id, sizeof r.foe_id, "%s", TileId(map, t));
         return r;
     }
 

@@ -1,0 +1,21 @@
+{
+  "id": "title_battle_right",
+  "prompt": "right half of a battle: barbarian warriors with round wooden shields and axes charge left. Grass field, pale sky.",
+  "style": "rd_pro__default",
+  "width": 200,
+  "height": 256,
+  "seed": 6611,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    200,
+    256
+  ],
+  "_pack_path": "art/ui/title_battle_right.png",
+  "_note": "Title battle right half (2026-09-13): two 200x256 halves on rd_pro__default seed 6611, joined side by side to 400x256 and drawn 2x on the 800x532 title screen; Dan's plan. run02: simpler prompt, both run01 halves as reference images so the sky and grass match.",
+  "reference_image_paths": [
+    "build/art/title_battle_left/run01/01_raw.png",
+    "build/art/title_battle_right/run01/01_raw.png"
+  ]
+}

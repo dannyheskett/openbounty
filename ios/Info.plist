@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>Glory of Rome</string>
+    <key>CFBundleDisplayName</key>
+    <string>Glory of Rome</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.danheskett.gloryofrome</string>
+    <key>CFBundleExecutable</key>
+    <string>GloryOfRome</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <!-- Placeholders. The device build overwrites both from the release number
+         (see IOS_BUILD_NUMBER in the Makefile); App Store Connect rejects an
+         upload whose CFBundleVersion is not greater than the previous one. -->
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+    <!-- 15.0: the UILaunchScreen dict below needs iOS 14+, and Apple requires
+         15.0+ for new uploads. iOS 15 runs on the iPhone 6s and later. -->
+    <key>MinimumOSVersion</key>
+    <string>15.0</string>
+    <!-- No encryption of any kind, so App Store Connect stops asking the
+         export-compliance question on every upload. -->
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
+    <key>UILaunchScreen</key>
+    <dict/>
+    <!-- Landscape only: the pack declares a fixed 800x532 buffer, which has no
+         portrait form. The OS enforces this, so there is no rotate-to-play
+         overlay to write. -->
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>UIRequiresFullScreen</key>
+    <true/>
+    <key>UIStatusBarHidden</key>
+    <true/>
+    <key>UIDeviceFamily</key>
+    <array>
+        <integer>1</integer>
+        <integer>2</integer>
+    </array>
+</dict>
+</plist>

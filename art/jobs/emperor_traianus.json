@@ -1,0 +1,18 @@
+{
+  "id": "emperor_traianus",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of Emperor Traianus, a regal clean-shaven Roman emperor in his sixties with short grey hair combed forward, a golden laurel wreath, a deep imperial purple toga with gold embroidery over a gilded cuirass, a throne room of marble columns and purple hangings behind him",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 9901,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "_pack_path": "art/portraits/emperor_traianus_00..07.png",
+  "_animation": "a slow dignified nod, eyes steady, static background, smooth loop",
+  "_note": "Emperor Traianus (2026-09-13): the modern home castle's portrait slot. Town-portrait route: still at 128, loop at 128, frames cropped to 96."
+}

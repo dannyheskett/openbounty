@@ -14,38 +14,19 @@
 // serialization is 1:1. All enumerations are keyed by string IDs from
 // tables.h -- that keeps save files readable and avoids magic numbers.
 //
-// This struct does NOT own the map tiles or fog (those live in Map/Fog in
+// This struct does NOT own the live map tiles or fog (those live in Map/Fog in
 // map.h/fog.h). It references them by zone id; the caller loads the
 // matching map when `position.zone` changes.
+//
+// STORAGE: every table sized by the pack (towns, castles, spells, artifacts,
+// villains, zones, the contract cycle) and every list that grows in play
+// (consumed tiles, dwellings, placements, foes) is heap, owned by the Game.
+// A Game starts zeroed, is sized by GameInit / SaveGameRead, is copied only
+// with GameCopy and released with GameFree. Never copy one with `=`: the copy
+// would share the other's tables.
 
 #define GAME_NAME_LEN        16
 #define GAME_ARMY_SLOTS       5
-#define GAME_CONTINENTS       4
-#define GAME_TOWNS           26
-#define GAME_CASTLES         26
-#define GAME_SPELLBOOK_SLOTS 14    // per-spell count slots (parallel to the SPELLS[] catalog)
-#define GAME_MAX_MUTATIONS 1024    // claimed artifacts, opened chests, etc.
-                                   // Was 64, but a 4-continent playthrough
-                                   // collects 50+ chests per continent;
-                                   // hitting the cap silently drops new
-                                   // consumed entries and chests respawn
-                                   // on zone re-entry.
-#define GAME_MAX_DWELLINGS   64    // per-zone dwelling state rows
-#define GAME_MAX_PLACEMENTS 128    // randomized objects stamped per-zone at init
-// OpenKB stored foes as foe_coords[MAX_CONTINENTS][MAX_FOES] = [4][40]: every
-// continent gets its own 40 slots (5 friendly + 35 hostile). OpenBounty keeps a
-// single FLAT foes[] shared across all zones, so the cap must cover all four
-// continents' allocations at once (4 * 40 = 160). A smaller shared cap let the
-// early zones (salted first) exhaust the table and starved the later ones of any
-// foes at all. salt_continent bounds each continent to GAME_MAX_HOSTILE_PER_ZONE
-// hostiles + friendly_foes friendlies so the per-continent 35/5 split holds.
-#define GAME_MAX_HOSTILE_PER_ZONE 35   // hostile wandering armies per continent
-#define GAME_MAX_FOES           160    // flat foe table (4 continents * 40 each)
-
-// Storage caps are compile-time (bound by struct sizes). Tunable constants
-// that define gameplay (day/week, costs, contract cycle length, difficulty
-// table) live in assets/game.json and are read via g->res.
-#define CONTRACT_CYCLE_MAX    8
 
 typedef enum {
     DIFFICULTY_EASY = 0,
@@ -110,7 +91,7 @@ typedef struct {
 // reach into g->towns / g->castles / g->res directly.
 typedef struct {
     char name[64];   // display name (list row text)
-    char zone[24];   // destination zone id (cross-zone allowed)
+    char zone[RES_ID_LEN];   // destination zone id (cross-zone allowed)
     int  x, y;       // landing tile (gate coords, x/y fallback)
 } GateDestination;
 
@@ -126,6 +107,13 @@ typedef struct {
     char zone[24];
     int  x, y;
 } TileMutation;
+
+// A one-time vista the hero has already played (game.json `events`). Its tile
+// effects are re-applied whenever the zone loads, and it never fires again.
+typedef struct {
+    char zone[24];
+    char id[24];
+} EventFired;
 
 // Per-dwelling state: how many troops remain available. Indexed by
 // (zone, x, y). Created lazily on first visit and persisted.
@@ -159,6 +147,14 @@ typedef struct {
     Unit garrison[GAME_ARMY_SLOTS];
     bool alive;
     bool friendly;          // true -> recruit dialog; false -> attack prompt
+    bool is_static;         // never moves (skipped by foes_follow); the fight
+                            // is forced on contact -- no decline (REQ-gate).
+    // A gate this army holds against everything but one arm: the fight is
+    // refused unless that troop stands in the hero's army (Oriens' elephants).
+    // Empty = anyone may attack.
+    char requires_troop[32];
+    int  scene_index;       // the picture shown when it turns the hero back (-1 none)
+    char scene_title[48];   // its heading; empty = the encounter heading
 } FoeState;
 
 // Randomized object placements produced by salt_continent / salt_spells /
@@ -230,6 +226,9 @@ typedef struct {
     bool             won;                 // set when the scepter is recovered (search on its tile)
     int              last_commission;     // amount paid at the most recent week-end (for UI)
     int              last_astrology_troop; // troop idx broadcast at last week-end (for UI)
+    // economy.audiences: the Emperor's blessing received (once), tributes paid.
+    bool             blessed;
+    int              tributes;
     // Controls-menu settings . Parallel to
     // res->controls.items[]. Stored per-game so preferences persist in
     // the save file.
@@ -252,28 +251,36 @@ typedef struct {
 
 typedef struct {
     char             active_id[24];   // villain id, empty = no contract
-    char             cycle[CONTRACT_CYCLE_MAX][24];  // size-bounded; real length in res->contract.cycle_length
+    int              cycle_count;     // res->contract.cycle_length (at least 1)
+    char           (*cycle)[24];      // heap, cycle_count entries
     int              last_contract;   // last slot issued ; initialized from res
     int              max_contract;    // next new villain to rotate in
-    bool             villains_caught[CAT_VILLAINS_MAX];   // indexed by VillainDef.index
+    int              villain_count;   // villains_count(): the length of both below
+    bool            *villains_caught;   // heap, indexed by VillainDef.index
     // A lord defeated WITHOUT his contract is not caught -- he re-establishes at his
     // castle and rebuilds from his starting army -- but the defeat is remembered:
     // pre-weakening a late lord before his contract window is a legitimate play.
-    bool             villains_prefought[CAT_VILLAINS_MAX];
+    bool            *villains_prefought;
 } Contract;
 
 typedef struct {
-    bool             found[8];        // parallel to ARTIFACTS[]
+    int              count;           // artifacts_count()
+    bool            *found;           // heap, parallel to ARTIFACTS[]
 } Artifacts;
 
 typedef struct {
-    // Per-spell counts, parallel to SPELLS[] (GAME_SPELLBOOK_SLOTS entries).
-    int              counts[GAME_SPELLBOOK_SLOTS];
+    int              count;           // spells_count()
+    int             *counts;          // heap, per-spell counts parallel to SPELLS[]
 } Spellbook;
 
 typedef struct {
-    bool             zones_discovered[GAME_CONTINENTS];
-    bool             orbs_found[GAME_CONTINENTS];
+    int              zone_count;      // res->zone_count: the length of every table below
+    bool            *zones_discovered;
+    // economy.rites_per_zone: the zones whose sacred rites the hero has learned
+    // (at that zone's alcove, or the home zone for a class that starts knowing
+    // magic). Unused when the pack keeps one magic.
+    bool            *zone_rites;
+    bool            *orbs_found;
     // Per-continent fog snapshots. Active continent's fog lives in main.c's
     // standalone Fog. On zone switch the outgoing fog is copied into this
     // array and the incoming continent's snapshot is loaded back.
@@ -282,7 +289,7 @@ typedef struct {
     // src/views_render.c reads g->contract.villains_caught[] and
     // g->artifacts.found[] directly, so those flag arrays ARE the
     // puzzle reveal state. No bookkeeping needed.
-    Fog              continent_fog[GAME_CONTINENTS];
+    Fog             *continent_fog;
 } WorldProgress;
 
 typedef struct {
@@ -291,7 +298,7 @@ typedef struct {
     unsigned         key;             // XOR key used; kept for save-load parity
 } ScepterLocation;
 
-typedef struct Game {
+struct Game {
     const Resources *res;             // loaded at startup; never owned by Game
     int              version;         // always SAVE_VERSION at runtime
     uint64_t         seed;            // RNG seed for this game
@@ -325,32 +332,59 @@ typedef struct Game {
     Artifacts        artifacts;
     WorldProgress    world;
     BoatState        boat;
-    TownRecord       towns[GAME_TOWNS];
-    CastleRecord     castles[GAME_CASTLES];
+    int              town_count;      // res->town_count
+    TownRecord      *towns;           // heap, parallel to res->towns
+    int              castle_count;    // res->castle_count
+    CastleRecord    *castles;         // heap, parallel to res->castles
     ScepterLocation  scepter;
 
+    // The lists below grow in play: `*_count` in use, `*_cap` allocated.
     // Tiles that have been permanently consumed (artifact pickups, etc.).
-    TileMutation     consumed[GAME_MAX_MUTATIONS];
-    int              consumed_count;
+    TileMutation    *consumed;
+    int              consumed_count, consumed_cap;
+
+    // One-time vistas already played.
+    EventFired      *events_done;
+    int              events_done_count, events_done_cap;
 
     // Per-dwelling state (troop count available + troop kind + max).
-    DwellingState    dwellings[GAME_MAX_DWELLINGS];
-    int              dwelling_count;
+    DwellingState   *dwellings;
+    int              dwelling_count, dwelling_cap;
 
     // Randomized objects placed at GameInit and replayed by MapLoadZone.
-    SaltedPlacement  placements[GAME_MAX_PLACEMENTS];
-    int              placement_count;
+    SaltedPlacement *placements;
+    int              placement_count, placement_cap;
 
     // Hostile foe state (rolled garrisons + mutable coords for foes_follow).
-    FoeState         foes[GAME_MAX_FOES];
-    int              foe_count;
+    FoeState        *foes;
+    int              foe_count, foe_cap;
 
     // Uniform player-IO request queue (see engine/include/player_io.h). Holds the
-    // outstanding player-facing requests (decisions / messages / views). Flat
-    // and value-copyable, so Game stays a sound deep copy via `Game tmp = *g;`
-    // (autoplay combat prediction + worldsnap rely on this). Reset by GameInit.
+    // outstanding player-facing requests (decisions / messages / views).
+    // Copied by GameCopy, reset by GameInit.
     PlayerIoQueue    player_io;
-} Game;
+};
+
+// ----- Storage --------------------------------------------------------------
+
+// Size every pack-sized table from g->res, each zeroed, releasing what the
+// Game held before (the Game must be zeroed or previously sized). The growable
+// lists start empty. False when out of memory.
+bool GameAlloc(Game *g);
+// Release every table and list and zero the Game, keeping g->res.
+void GameFree(Game *g);
+// Make dst a deep copy of src (dst must be zeroed or a sized Game; its old
+// tables are reused or released). False when out of memory, dst then freed.
+bool GameCopy(Game *dst, const Game *src);
+// FNV-1a of the Game's whole value state, continuing from `h`: every field,
+// every table and the live entries of every list; not the res pointer.
+uint32_t GameFingerprint(const Game *g, uint32_t h);
+// Grow a list to hold at least `need` entries. False when out of memory.
+bool GameReserveFoes(Game *g, int need);
+bool GameReservePlacements(Game *g, int need);
+bool GameReserveConsumed(Game *g, int need);
+bool GameReserveEventsDone(Game *g, int need);
+bool GameReserveDwellings(Game *g, int need);
 
 // ----- Lifecycle ------------------------------------------------------------
 
@@ -555,6 +589,13 @@ int GameGarrisonTroop(Game *g, const char *castle_id, int slot);
 // Returns 0 on success, 1 if no army slot available.
 int GameUngarrisonTroop(Game *g, const char *castle_id, int slot);
 
+// The same moves for `count` troops of the stack (1..its size). The whole stack
+// behaves exactly as above; part of one leaves the rest where it was, so moving
+// part of the hero's last stack is allowed. Returns as above, and 1 for a count
+// out of range.
+int GameGarrisonTroopCount(Game *g, const char *castle_id, int slot, int count);
+int GameUngarrisonTroopCount(Game *g, const char *castle_id, int slot, int count);
+
 // Slide non-empty army stacks down so the filled slots run 0..N-1 with
 // no gaps. Called after any operation that vacates a slot (garrison,
 // dismiss, post-combat losses). Order is preserved.
@@ -608,7 +649,9 @@ bool GameSwitchZone(Game *g, Map *map, Fog *fog, const char *zone_id);
 void GameTempDeath(Game *g, Map *map, Fog *fog, const Resources *res);
 
 // Upper bound on gate destinations of either kind (all towns or all castles).
-#define GAME_GATE_DESTS_MAX (GAME_TOWNS > GAME_CASTLES ? GAME_TOWNS : GAME_CASTLES)
+static inline int GameGateDestsMax(const Game *g) {
+    return g->town_count > g->castle_count ? g->town_count : g->castle_count;
+}
 
 // Fill out[] (cap entries) with visited, gate-eligible destinations of `kind`,
 // sorted by display name. Returns the count written. Castle mode excludes the
@@ -673,6 +716,17 @@ void GameAddConsumed(Game *g, const char *zone, int x, int y);
 // switch).
 void GameApplyTileMutations(const Game *g, Map *map, const char *zone);
 
+// True when the zone's event `id` has already played.
+bool GameEventFired(const Game *g, const char *zone, const char *id);
+
+// A gate army that demands one arm: true when `f` names a troop the hero's
+// army does not hold, so the fight cannot be offered.
+bool GameFoeBarsHero(const Game *g, const FoeState *f);
+// Fire the zone event at (x, y) if one is declared there, has not played, and
+// every precondition holds: spends what the preconditions consume, applies the
+// tile effects, records it, and queues its scene. Returns true iff it fired.
+bool GameTryFireEvent(Game *g, Map *map, Fog *fog, int x, int y);
+
 // Total number of spell charges the hero is carrying (sum of counts[]).
 int  GameKnownSpells(const Game *g);
 
@@ -718,7 +772,24 @@ typedef enum {
     SPELL_BUY_NO_SPELL,     // no spell for sale at this town (or unknown town)
     SPELL_BUY_AT_CAP,       // already know max_spells distinct spells
     SPELL_BUY_NO_GOLD,      // gold <= cost
+    SPELL_BUY_NO_RITES,     // economy.rites_per_zone: the town's zone rites not learned
 } SpellBuyResult;
+
+// Whether the hero can evade a hostile foe from where they stand: always,
+// unless the pack sets economy.evade_needs_free_square, and then only while
+// one of the 8 squares around the hero is one they could move onto (walkable
+// for how they travel, inside the map) with nothing on it.
+bool GameFoeCanEvade(const Game *g, const Map *map);
+
+// The price of the alcove in `zone_id`: the zone's own, else economy.alcove_cost.
+int  GameAlcoveCost(const Game *g, const char *zone_id);
+// Whether the hero may learn spells in `zone_id`: that zone's rites when the
+// pack gates magic per zone, else simply knowing magic.
+bool GameHasRites(const Game *g, const char *zone_id);
+// Whether the town `town_id` will sell the hero spells: its zone's rites when the
+// pack gates magic per zone; always, when it does not (the original sold spells
+// to a hero who did not yet know magic).
+bool GameTownHasRites(const Game *g, const char *town_id);
 
 // Buy the spell for sale at town `town_id` (the town's spell_for_sale). Mutation
 // only -- gold/cap/availability gates and spells.counts[idx]++ -- lifted from the
@@ -737,6 +808,10 @@ TownRecord *GameTouchTown(Game *g, const char *town_id);
 // villain id (pointer into the cycle buffer), or NULL if the cycle is
 // empty.
 const char *GameTakeNextContract(Game *g);
+// Take the contract in rotation slot `slot` (0..cycle_length-1) instead of the
+// next one: the modern town lets the player browse the rotation and pick.
+// Town-only, like GameTakeNextContract. Returns the villain id, or NULL.
+const char *GameTakeContractAt(Game *g, int slot);
 
 // True iff `villain_id`'s contract can be taken right now -- its id is in an active
 // contract-cycle slot (or is already the active contract). A villain not yet in
@@ -762,6 +837,28 @@ typedef enum {
 // are still needed, meaningful only for GAME_AUDIENCE_MORE_NEEDED.
 GameAudienceOutcome GameAudienceWithKing(Game *g, int *out_needed);
 
+// economy.audiences (the modern home castle). Gains applied to a stat, for the
+// screen to report.
+typedef struct {
+    int leadership, spell_power, max_spells;
+} GameAudienceGain;
+
+typedef enum {
+    GAME_BLESSING_GRANTED = 0,
+    GAME_BLESSING_NEED_ARTIFACTS,   // *out_needed = artifacts still missing
+    GAME_BLESSING_ALREADY,          // one time only
+} GameBlessingOutcome;
+
+// Seek the Emperor's blessing: once every artifact is found (enemies left or
+// not), leadership grows by blessing_leadership_pct, one time only.
+GameBlessingOutcome GameSeekBlessing(Game *g, int *out_needed, GameAudienceGain *gain);
+
+// Pay a tribute of tribute_cost gold: leadership grows by tribute_leadership_pct
+// and spell power and spell capacity each by tribute_magic_pct, of what the
+// hero has now (at least 1 of a stat above 0). Any number of times. Returns
+// false, paying nothing, when the purse is short (*out_needed = the gold short).
+bool GamePayTribute(Game *g, int *out_needed, GameAudienceGain *gain);
+
 // Army helpers.
 int  GameArmyTotalLeadership(const Game *g);     // sum of troop->hp * count for all stacks
 int  GameArmyStackCount(const Game *g);          // number of non-empty stacks
@@ -769,6 +866,11 @@ int  GameArmyStackCount(const Game *g);          // number of non-empty stacks
 // Count helpers used by view_character.
 int  GameVillainsCaught(const Game *g);
 int  GameArtifactsFound(const Game *g);
+// Where a town's informant says a sacred artifact lies: its zone id and square,
+// chosen from the seed and the town id among the artifacts not yet found.
+// False when every artifact is already in hand.
+bool GameTownArtifactIntel(const Game *g, const char *town_id,
+                           char *out_zone, int zone_cap, int *out_x, int *out_y);
 int  GameCastlesOwned(const Game *g);
 
 // . Base formula:

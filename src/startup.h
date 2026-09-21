@@ -24,10 +24,12 @@ typedef struct {
     Difficulty    difficulty;    // new-game only
 } StartupChoice;
 
-// Runs the pre-game flow:
-//   1. Class select. Pressing L here opens the 10-slot save picker;
-//      ESC from the picker returns to class select.
-//   2. Otherwise the new-game wizard continues: name entry -> difficulty.
+// Runs the pre-game flow after the splash screens:
+//   Modern: the title menu (New Game / Load Saved Game / Credits /
+//   Exit); New Game goes to class select, then name entry -> difficulty;
+//   Load opens the save picker. ESC steps back toward the title menu.
+//   Legacy: class select. Pressing L opens the 10-slot save picker; ESC from
+//   the picker returns to class select; otherwise name entry -> difficulty.
 // Returns true on success; `out` describes what the caller should do.
 // Returns false if the player quit before a decision (also sets
 // out->action = STARTUP_QUIT).
@@ -38,6 +40,7 @@ typedef struct {
 bool startup_flow(const Resources *res,
                           const Sprites   *sprites,
                           void            *chrome_target,   // RenderTexture2D *
-                          StartupChoice   *out);
+                          StartupChoice   *out,
+                          bool             skip_intro);     // no splashes or credits (back to the title)
 
 #endif

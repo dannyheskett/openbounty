@@ -1,0 +1,50 @@
+{
+ "id": "ddf70337-c17f-46fe-8c40-48d749e00643",
+ "name": "Northern broadleaf tree in aut",
+ "state_name": "base",
+ "prompt": "Northern broadleaf tree in autumn, round leafy crown of orange, russet and gold leaves with a visible trunk below it, seen from above at a slight angle, small shadow to the south-east, pixel art, transparent background",
+ "size": {
+  "width": 96,
+  "height": 96
+ },
+ "directions": 1,
+ "created_at": "2026-09-19T16:43:24.906994+00:00",
+ "view": null,
+ "rotation_urls": {
+  "south": null,
+  "west": null,
+  "east": null,
+  "north": null,
+  "south-east": null,
+  "south-west": null,
+  "north-east": null,
+  "north-west": null
+ },
+ "storage_urls": {
+  "frame_0": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/ddf70337-c17f-46fe-8c40-48d749e00643/rotations/frame_0.png",
+  "frame_1": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/ddf70337-c17f-46fe-8c40-48d749e00643/rotations/frame_1.png",
+  "frame_2": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/ddf70337-c17f-46fe-8c40-48d749e00643/rotations/frame_2.png",
+  "frame_3": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/ddf70337-c17f-46fe-8c40-48d749e00643/rotations/frame_3.png"
+ },
+ "frame_urls": [
+  "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/ddf70337-c17f-46fe-8c40-48d749e00643/rotations/frame_0.png",
+  "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/ddf70337-c17f-46fe-8c40-48d749e00643/rotations/frame_1.png",
+  "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/ddf70337-c17f-46fe-8c40-48d749e00643/rotations/frame_2.png",
+  "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/ddf70337-c17f-46fe-8c40-48d749e00643/rotations/frame_3.png"
+ ],
+ "style_settings": {
+  "no_background": true,
+  "item_descriptions": [
+   "copper beech, round crown, short trunk",
+   "English oak, russet round crown, trunk",
+   "ash tree, yellow airy crown, trunk",
+   "hornbeam, orange dense round crown, trunk"
+  ]
+ },
+ "tags": [],
+ "status": "review",
+ "group_id": "eaa3bf97-66be-49cf-b143-eac05ddb8625",
+ "progress_percent": 17,
+ "eta_seconds": 395,
+ "animations": []
+}

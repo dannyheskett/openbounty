@@ -1,0 +1,19 @@
+{
+  "id": "wandering_army_italia",
+  "prompt": "an isolated cut-out game sprite of a ragged Italian brigand standing and holding up a crooked standard hung with a skull and rags in one hand, a short sword in the other, seen from the front and above, a freestanding object with no ground under it: its lowest edge is the bottom of the sprite and only the flat magenta background shows below and around it, the whole object complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background",
+  "style": "rd_pro__topdown",
+  "width": 96,
+  "height": 96,
+  "seed": 7262,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/tiles/wandering_army_italia.png",
+  "_note": "Per-zone wandering army (2026-09-06), object route: rd_pro__topdown, 96x96, magenta removed, no reference, one warrior beside a standard in the zone's own style. The Galliae one is the shared run02 (horned helmet, round shield, skull standard) renamed. next run: the planted standard floated with no ground under it; now held in the warrior's hand, seed incremented."
+}

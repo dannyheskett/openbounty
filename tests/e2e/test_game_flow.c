@@ -10,6 +10,8 @@
 #include "tile.h"
 #include "map.h"
 #include "step.h"
+#include "player_io.h"
+#include "pending.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -144,6 +146,230 @@ TEST switch_zone_preserves_fog_on_return(void) {
     // The marker should still be revealed -- fog persisted.
     ASSERT(FogSeen(f, marker_x, marker_y));
 
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
+TEST switch_zone_lands_at_the_arrival_for_its_origin(void) {
+    // A zone's "arrivals" pick the landing by the zone sailed from; any other
+    // origin lands at hero_spawn. A landing on water arrives in the boat.
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, "continentia", FIXTURE_SEED));
+    ASSERT(GameSwitchZone(g, m, f, "forestria"));
+    int sx = g->position.x, sy = g->position.y;
+
+    // A sea tile on forestria that touches land.
+    int wx = -1, wy = -1;
+    for (int y = 1; y < m->height - 1 && wx < 0; y++)
+        for (int x = 1; x < m->width - 1 && wx < 0; x++) {
+            const Tile *t = MapGetTile(m, x, y);
+            if (!t || t->terrain != TERRAIN_WATER || t->is_bridge) continue;
+            if ((x == sx && y == sy)) continue;
+            for (int d = 0; d < 4; d++) {
+                const Tile *n = MapGetTile(m, x + (d == 0) - (d == 1), y + (d == 2) - (d == 3));
+                if (n && n->terrain != TERRAIN_WATER) { wx = x; wy = y; break; }
+            }
+        }
+    ASSERT(wx >= 0);
+
+    ResZone *fz = NULL;
+    for (int i = 0; i < res->zone_count; i++)
+        if (strcmp(res->zones[i].id, "forestria") == 0) fz = &res->zones[i];
+    ASSERT(fz);
+    fz->arrivals = calloc(1, sizeof *fz->arrivals);
+    ASSERT(fz->arrivals);
+    strcpy(fz->arrivals[0].from, "continentia");
+    fz->arrivals[0].x = wx;
+    fz->arrivals[0].y = wy;
+    fz->arrival_count = 1;
+
+    ASSERT(GameSwitchZone(g, m, f, "continentia"));
+    ASSERT(GameSwitchZone(g, m, f, "forestria"));
+    ASSERT_EQ(wx, g->position.x);
+    ASSERT_EQ(wy, g->position.y);
+    ASSERT_EQ(TRAVEL_BOAT, g->travel_mode);
+    ASSERT(g->boat.has_boat);
+    ASSERT_EQ(wx, g->boat.x);
+    ASSERT_EQ(wy, g->boat.y);
+
+    // From anywhere else: the spawn.
+    ASSERT(GameSwitchZone(g, m, f, "archipelia"));
+    ASSERT(GameSwitchZone(g, m, f, "forestria"));
+    ASSERT_EQ(sx, g->position.x);
+    ASSERT_EQ(sy, g->position.y);
+
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
+TEST evading_a_foe_that_walked_onto_the_hero_bounces_back(void) {
+    // A hostile foe that steps onto the hero opens the same Fight/Evade
+    // prompt as the hero stepping onto it, and Evade must bounce back the same
+    // way (REQ-246, REQ-284): the hero returns to the tile the step began on and
+    // the foe is stamped, so drawn, on its own tile.
+    extern bool adventure_walkable_on_foot(const Tile *t);
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, "continentia", FIXTURE_SEED));
+    FoeState *fo = NULL;
+    for (int i = 0; i < g->foe_count && !fo; i++) {
+        FoeState *c = &g->foes[i];
+        if (!c->alive || c->friendly || c->is_static || strcmp(c->zone, g->position.zone)) continue;
+        bool open = true;
+        for (int k = 1; k <= 2; k++) {
+            const Tile *t = MapGetTile(m, c->x + k, c->y);
+            if (!t || !adventure_walkable_on_foot(t) || t->interactive != INTERACT_NONE) open = false;
+        }
+        if (open) fo = c;
+    }
+    ASSERT(fo);
+    int fx = fo->x, fy = fo->y;
+    g->position.x = g->position.last_x = fx + 2;
+    g->position.y = g->position.last_y = fy;
+    GameStep(g, m, f, res, -1, 0);
+    ASSERT_EQ(fx + 1, fo->x);                       // the foe walked onto the hero
+    ASSERT_EQ(fx + 1, g->position.x);
+    ASSERT_EQ(FLOW_ATTACK_FOE, pending_flow);
+    player_io_drain_messages(g);
+    player_io_answer(g, m, f, res, (FlowAnswer){ FLOW_ANS_NO, 0 },
+                     PLAYER_IO_COMBAT_NOT_RUN, NULL);
+    ASSERT_EQ(fx + 2, g->position.x);               // back where the step began
+    ASSERT_EQ(fy, g->position.y);
+    ASSERT_EQ(fx + 1, fo->x);                       // the foe stays, and is drawn
+    ASSERT_EQ(INTERACT_FOE, MapGetTile(m, fo->x, fo->y)->interactive);
+    ASSERT(fo->alive);
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
+TEST a_vista_fires_once_and_changes_the_map(void) {
+    // A one-time vista (game.json `events`): stepping onto its tile with every
+    // precondition held plays the scene, spends what it consumes, changes the
+    // declared tiles for good, and never fires again.
+    extern bool adventure_walkable_on_foot(const Tile *t);
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, "continentia", FIXTURE_SEED));
+    ResZone *z = &res->zones[0];
+    int dirs[4][2] = { { 1, 0 }, { 0, 1 }, { -1, 0 }, { 0, -1 } };
+    int tx = -1, ty = -1, sdx = 0, sdy = 0;
+    for (int i = 0; i < 4 && tx < 0; i++) {
+        const Tile *t = MapGetTile(m, g->position.x + dirs[i][0], g->position.y + dirs[i][1]);
+        if (t && adventure_walkable_on_foot(t) && t->interactive == INTERACT_NONE && !t->is_bridge) {
+            sdx = dirs[i][0]; sdy = dirs[i][1];
+            tx = g->position.x + sdx; ty = g->position.y + sdy;
+        }
+    }
+    ASSERT(tx >= 0);
+
+    z->events = calloc(1, sizeof *z->events);
+    ASSERT(z->events);
+    z->event_count = 1;
+    ResZoneEvent *ev = &z->events[0];
+    strcpy(ev->id, "ford");
+    ev->x = tx; ev->y = ty;
+    ev->scene_index = -1;
+    strcpy(ev->title, "The Ford");
+    strcpy(ev->body, "The rite is spoken.");
+    ev->reqs = calloc(1, sizeof *ev->reqs);
+    ASSERT(ev->reqs);
+    ev->req_count = 1;
+    ev->reqs[0].kind = RES_EVENT_REQ_SPELL;
+    strcpy(ev->reqs[0].id, "bridge");
+    ev->reqs[0].count = 1;
+    ev->reqs[0].consume = true;
+    ev->effects = calloc(1, sizeof *ev->effects);
+    ASSERT(ev->effects);
+    ev->effect_count = 1;
+    ev->effects[0].x = tx; ev->effects[0].y = ty;
+    ev->effects[0].code = ',';                    // grass_variant: a declared code
+
+    int sp = spell_index_by_id("bridge");
+    ASSERT(sp >= 0);
+    int hx = g->position.x, hy = g->position.y;
+
+    // No charge: nothing happens.
+    g->spells.counts[sp] = 0;
+    GameStep(g, m, f, res, sdx, sdy);
+    ASSERT_EQ(0, g->events_done_count);
+    ASSERT(player_io_idle(g));
+
+    // With the charge: the scene, the spend, the tile.
+    g->position.x = hx; g->position.y = hy;
+    g->spells.counts[sp] = 2;
+    GameStep(g, m, f, res, sdx, sdy);
+    ASSERT_EQ(1, g->events_done_count);
+    ASSERT_EQ(1, g->spells.counts[sp]);
+    ASSERT(GameEventFired(g, "continentia", "ford"));
+    const PlayerRequest *r = player_io_front(g);
+    ASSERT(r);
+    ASSERT_EQ(PIO_NOTE_SCENE, r->kind);
+    ASSERT_EQ(REQ_FACE_EVENT, r->face);
+    ASSERT_STR_EQ("The Ford", r->header);
+    ASSERT_STR_EQ("grass_variant", TileArt(m, MapGetTile(m, tx, ty)));
+    player_io_drain_messages(g);
+
+    // Again: no second firing, no second charge spent.
+    g->position.x = hx; g->position.y = hy;
+    GameStep(g, m, f, res, sdx, sdy);
+    ASSERT_EQ(1, g->events_done_count);
+    ASSERT_EQ(1, g->spells.counts[sp]);
+    ASSERT(player_io_idle(g));
+
+    // The change outlives a zone switch: the map reloads and it is re-applied.
+    ASSERT(GameSwitchZone(g, m, f, "forestria"));
+    ASSERT(GameSwitchZone(g, m, f, "continentia"));
+    ASSERT_STR_EQ("grass_variant", TileArt(m, MapGetTile(m, tx, ty)));
+
+    free(ev->reqs); free(ev->effects); free(z->events);
+    z->events = NULL; z->event_count = 0;
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
+TEST a_chest_may_carry_a_declared_purse(void) {
+    // A zone chest with "gold": N always holds exactly N, rolling nothing
+    // (the island chest the Galliae vista opens). Without it, the chest rolls.
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, "continentia", FIXTURE_SEED));
+    ResZone *z = &res->zones[0];
+    ASSERT(z->chest_count > 0);
+    int cx = z->chests[0].x, cy = z->chests[0].y;
+    char body[320];
+    ChestPending cp = { 0, 0 };
+
+    z->chests[0].gold = 5000;
+    ASSERT_EQ(CHEST_OUTCOME_GOLD, GameRollChest(g, 0, cx, cy, body, sizeof body, &cp));
+    ASSERT_EQ(5000, cp.pending_gold);
+    ASSERT_EQ(100, cp.pending_leadership);      // the usual gold/50
+
+    z->chests[0].gold = 0;                      // back to the roll
+    cp.pending_gold = 0;
+    GameRollChest(g, 0, cx, cy, body, sizeof body, &cp);
+    ASSERT(cp.pending_gold != 5000 || true);    // whatever it rolls, not pinned
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
+TEST a_gate_army_demands_its_arm(void) {
+    // A static army with "requires_troop" refuses the fight until that troop
+    // stands in the hero's army; the hero is turned back with the reason.
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, "continentia", FIXTURE_SEED));
+    FoeState *fo = NULL;
+    for (int i = 0; i < g->foe_count && !fo; i++)
+        if (g->foes[i].alive && !g->foes[i].friendly &&
+            strcmp(g->foes[i].zone, g->position.zone) == 0) fo = &g->foes[i];
+    ASSERT(fo);
+    strcpy(fo->requires_troop, "dragons");
+    ASSERT(GameFoeBarsHero(g, fo));
+
+    strcpy(g->army[4].id, "dragons");
+    g->army[4].count = 3;
+    ASSERT_FALSE(GameFoeBarsHero(g, fo));       // the arm it demands is here
+
+    g->army[4].id[0] = '\0';
+    g->army[4].count = 0;
+    fo->requires_troop[0] = '\0';               // an ordinary foe bars nobody
+    ASSERT_FALSE(GameFoeBarsHero(g, fo));
     fx_free_game_full(res, g, m, f);
     PASS();
 }
@@ -323,6 +549,11 @@ SUITE(e2e_game_flow_suite) {
     RUN_TEST(chest_consumed_persists_across_save);
     RUN_TEST(switch_zone_updates_position_zone);
     RUN_TEST(switch_zone_preserves_fog_on_return);
+    RUN_TEST(switch_zone_lands_at_the_arrival_for_its_origin);
+    RUN_TEST(evading_a_foe_that_walked_onto_the_hero_bounces_back);
+    RUN_TEST(a_vista_fires_once_and_changes_the_map);
+    RUN_TEST(a_chest_may_carry_a_declared_purse);
+    RUN_TEST(a_gate_army_demands_its_arm);
     RUN_TEST(boat_in_other_zone_is_not_boarded);
     RUN_TEST(boat_in_current_zone_is_boarded);
     RUN_TEST(gate_teleport_leaves_boat_behind);

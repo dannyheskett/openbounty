@@ -1,0 +1,50 @@
+{
+ "id": "da52a69a-a0ee-4c8e-ad22-05b1d4591512",
+ "name": "pale grey limestone rock, the ",
+ "state_name": "base",
+ "prompt": "pale grey limestone rock, the whole rock inside the frame, seen from above at a slight angle, lit from the north-west with a shaded front face on the south side, small shadow to the south-east, pixel art, transparent background",
+ "size": {
+  "width": 96,
+  "height": 96
+ },
+ "directions": 1,
+ "created_at": "2026-09-19T18:38:42.026822+00:00",
+ "view": null,
+ "rotation_urls": {
+  "south": null,
+  "west": null,
+  "east": null,
+  "north": null,
+  "south-east": null,
+  "south-west": null,
+  "north-east": null,
+  "north-west": null
+ },
+ "storage_urls": {
+  "frame_0": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/da52a69a-a0ee-4c8e-ad22-05b1d4591512/rotations/frame_0.png",
+  "frame_1": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/da52a69a-a0ee-4c8e-ad22-05b1d4591512/rotations/frame_1.png",
+  "frame_2": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/da52a69a-a0ee-4c8e-ad22-05b1d4591512/rotations/frame_2.png",
+  "frame_3": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/da52a69a-a0ee-4c8e-ad22-05b1d4591512/rotations/frame_3.png"
+ },
+ "frame_urls": [
+  "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/da52a69a-a0ee-4c8e-ad22-05b1d4591512/rotations/frame_0.png",
+  "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/da52a69a-a0ee-4c8e-ad22-05b1d4591512/rotations/frame_1.png",
+  "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/da52a69a-a0ee-4c8e-ad22-05b1d4591512/rotations/frame_2.png",
+  "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/da52a69a-a0ee-4c8e-ad22-05b1d4591512/rotations/frame_3.png"
+ ],
+ "style_settings": {
+  "no_background": true,
+  "item_descriptions": [
+   "broad rocky massif with a snow cap, cliff face at the front",
+   "pile of broken limestone rocks and scree",
+   "low weathered boulder, dry scrub on the top",
+   "split rock with a deep crevice, cliff face at the front"
+  ]
+ },
+ "tags": [],
+ "status": "review",
+ "group_id": "be02ad4e-b395-41b0-8512-21181b1f019c",
+ "progress_percent": 15,
+ "eta_seconds": 406,
+ "animations": []
+}

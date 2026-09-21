@@ -3,12 +3,15 @@
 #include "shell_weekend.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #include "pending.h"
 #include "prompt.h"
 #include "tables.h"
 #include "ui.h"
 #include "views.h"
+#include "layout.h"
+#include "player_io.h"
 
 // End-of-week budget screen displays per-troop cost
 // as count * full recruit_cost and sums those for the "Army" total --
@@ -32,7 +35,7 @@ bool pump_week_end_dialog(const Game *g) {
 
     if (pending_week_phase == WK_PHASE_ASTROLOGY) {
         const TroopDef *t = troop_by_index(pending_astrology_troop_idx);
-        const char *creature = (t && t->name[0]) ? t->name : "Peasants";
+        const char *creature = t->name;
         const ResBanners *bn = &g->res->banners;
         char header[64], body[320], wbuf[16];
         snprintf(wbuf, sizeof wbuf, "%d", pending_week_id);
@@ -42,7 +45,8 @@ bool pump_week_end_dialog(const Game *g) {
         ResTemplateVar bvars[] = { { "TROOP", creature } };
         resources_format_template(body, sizeof body,
                                   bn->astrology_body, bvars, 1);
-        player_io_message((Game *)g, header, body);
+        if (CL_IS_MODERN) player_io_note_face((Game *)g, header, body, REQ_FACE_TROOP, t->index);
+        else              player_io_note((Game *)g, header, body);
         pending_week_phase = WK_PHASE_BUDGET;
         return true;
     }
@@ -104,6 +108,34 @@ bool pump_week_end_dialog(const Game *g) {
         // Build 5 body rows, left + gap + right.
         char body[320];
         int bo = 0;
+        if (CL_IS_MODERN) {
+            // Modern: columns as wide as their widest entry, so any number
+            // lines up: labels left, amounts right-aligned, troop names left,
+            // costs right-aligned. The font is fixed-pitch.
+            int lw = 0, vw = 0, tw = 0, cw = 0;
+            char nb[16];
+            for (int i = 0; i < 5; i++) {
+                int n = (int)strlen(left_labels[i]); if (n > lw) lw = n;
+                n = snprintf(nb, sizeof nb, "%d", left_values[i]); if (n > vw) vw = n;
+                if (i < rn) {
+                    n = (int)strlen(rtroop[i]); if (n > tw) tw = n;
+                    n = snprintf(nb, sizeof nb, "%d", rcost[i]); if (n > cw) cw = n;
+                }
+            }
+            for (int i = 0; i < 5; i++) {
+                if (i < rn)
+                    bo += snprintf(body + bo, sizeof(body) - (size_t)bo, "%-*s %*d  %-*s %*d\n",
+                                   lw, left_labels[i], vw, left_values[i], tw, rtroop[i], cw, rcost[i]);
+                else
+                    bo += snprintf(body + bo, sizeof(body) - (size_t)bo, "%-*s %*d\n",
+                                   lw, left_labels[i], vw, left_values[i]);
+                if (bo >= (int)sizeof(body)) { bo = (int)sizeof(body) - 1; break; }
+            }
+            player_io_note((Game *)g, header, body);
+            pending_week_phase = WK_PHASE_NONE;
+            pending_week_paid  = 0;
+            return true;
+        }
         for (int i = 0; i < 5; i++) {
             // Left: "<label7>% 6d" = 13 chars.
             char left[16];
@@ -121,7 +153,7 @@ bool pump_week_end_dialog(const Game *g) {
             bo += snprintf(body + bo, sizeof(body) - bo,
                            "%-13s %s\n", left, right);
         }
-        player_io_message((Game *)g, header, body);
+        player_io_note((Game *)g, header, body);
         pending_week_phase = WK_PHASE_NONE;
         pending_week_paid  = 0;
         return true;

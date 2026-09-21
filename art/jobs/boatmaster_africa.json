@@ -1,0 +1,18 @@
+{
+  "id": "boatmaster_africa",
+  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Punic shipwright with a close black beard and a linen headcloth, an adze tucked in his belt, a round harbour crowded with galleys behind him",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 9603,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "_pack_path": "art/portraits/boatmaster_africa_00..07.png",
+  "_animation": "raising an eyebrow, lips pursing, static background, smooth loop",
+  "_note": "Town detail portrait (2026-09-13): boat master (Boat detail) or siege engineer (Siege works detail), one per continent. Same route as the informants and priests: still at 128, eight-frame loop at 128, each frame centre-cropped to 96 (Dan-approved for town portraits)."
+}

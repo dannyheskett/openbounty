@@ -1,0 +1,25 @@
+{
+ "lower_description": "dark mossy meadow grass",
+ "tile_size": {
+  "width": 32,
+  "height": 32
+ },
+ "mode": "standard",
+ "shape_style": "round",
+ "enhance": false,
+ "view": "high top-down",
+ "outline": "lineless",
+ "shading": "medium shading",
+ "detail": "medium detail",
+ "text_guidance_scale": 8.0,
+ "seed": 142,
+ "lower_base_tile_id": "490576ec-9573-449f-b580-673e4e1c2505",
+ "lower_reference_image": {
+  "type": "base64",
+  "base64": "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAADBElEQVR4nO3WTW7jRhCG4ZfdTbIpUjIl0yN7xnYCJBhkm20OkPtfIAECS5acsX4ct8Sm2D+zkDEX4CIb7QqNfmpVVfiSr3/8Gr/cj3h+bvn8uWC7s4wKhXORY+sAyNIEs3fc3pesFwcefhmz+OfAdVOweW0Z4tV1k7FetwgBpz7Stp629VzPRiTBcf9Y4Z3HxxMAeSHZbTqaec56aZjfFoO82O866lqjlORta4khUk9ztluLD4Gu86yeW6KHl3WLj+AjvL/1KCUZ6kU9zXlZG6oq5dRHxlc51SgjBE89zXl9tdx9qeis42ZeEAJEH1BK0NsTQ70wxtHMC7Zby/1DhUzg6ek/tFYAHEyPtQ4pI6/fLCF4ptc5xpyoG81QL6rq/BFAyoSqSmka/eOtKBVpLui6wGymSUSCUgKtFcY4hnpRlCn7zYlyrDi2Dh8j223/o0FdawgJUiUY05GmgvYQmFzleBcZ6sVqeUSXirJQrJaGvvNMJgprHNYGjoeOxZNBCImQMCoUSsG/LwfSTDHUixBAJoHdxvLTz2OsdRSlQmQSAOegrAS6SJhNNe3BkUjQWhFDZKgX8zvN+Cqn9+BcpO8i+33PbJbiXADA2ohUEiXBh/MEZxmMJ4KhXhjjcC6QZQm7jaX3UBYpxjjqOufmZoSQ5+brlxP3DxNWyyMhCEKAoV7kacL7myfESBTw+Fjx/map6xxrz6d0/qmkaz23twWrpaFpNM5B30WGetH1kaoS6DwhuPAxybDbWKoqJcZAd/LEENnvz9cNwHzUQ73YbyxFmVKO8/Muf6z17JPGx8hiYRAJ5FpR1xqhBNudpaozpBAM9cnvf/4Wj0fP/O58PN7fOnwUNE3OannEh0A5SnEOovcAJDIhkYKySLG2Z4gX83lBKqHvPN/WR+BcL54MxEA5kkCgqlJ8hOm1pq5zutbjnGOoF3//9c7NvGC77bm9KwkR6jrlapIhlODURwBe1weaRrNeHEhzQQwRpRRD/SUPXPLAJQ9c8sAlD1zywCUP/O954Dv5FqEyjPNl1wAAAABJRU5ErkJggg==",
+  "format": "png"
+ },
+ "upper_description": "pale golden desert sand with soft low dunes",
+ "transition_description": "dry sandy earth with sparse tufts of grass",
+ "transition_size": 0.0
+}

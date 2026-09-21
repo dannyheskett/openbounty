@@ -238,8 +238,6 @@ static inline bool IsKeyPressed(int k)                       { (void)k; return f
 static inline bool IsKeyDown(int k)                          { (void)k; return false; }
 static inline int  GetKeyPressed(void)                       { return 0; }
 static inline int  GetCharPressed(void)                      { return 0; }
-static inline Vector2 GetMousePosition(void)                 { Vector2 v = {0,0}; return v; }
-static inline bool IsMouseButtonPressed(int b)               { (void)b; return false; }
 
 // Gamepad
 static inline bool  IsGamepadAvailable(int gp)                       { (void)gp; return false; }

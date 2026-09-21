@@ -17,4 +17,7 @@
 // prompt case is handled inside.
 bool prompt_dispatch_tick(ShellCtx *ctx);
 
+// Set the combat ground for the pack (REQ-165d) before a fight is rendered.
+void shell_set_combat_ground(ShellCtx *ctx);
+
 #endif

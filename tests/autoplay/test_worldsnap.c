@@ -25,8 +25,7 @@ static WsFixture ws_make(void) {
     fx.m = calloc(1, sizeof *fx.m);
     fx.f = calloc(1, sizeof *fx.f);
     fx.snap = calloc(1, sizeof *fx.snap);
-    fx.m->width = MAP_MAX_W;
-    fx.m->height = MAP_MAX_H;
+    MapAlloc(fx.m, 64, 128);
     snprintf(fx.g->position.zone, sizeof fx.g->position.zone, "testzone");
     fx.g->position.x = 7;
     fx.g->position.y = 9;
@@ -39,8 +38,10 @@ static WsFixture ws_make(void) {
 }
 
 static void ws_free(WsFixture *fx) {
+    worldsnap_release(fx->snap);
     free(fx->snap);
-    free(fx->f);
+    FogFree(fx->f); free(fx->f);
+    MapFree(fx->m);
     free(fx->m);
     free(fx->g);
 }
@@ -54,8 +55,9 @@ TEST worldsnap_restores_bit_identically(void) {
     fx.g->stats.gold = 99999;
     fx.g->position.x = 1;
     fx.g->army[0].count = 3;
-    fx.m->tiles[5][5].terrain = TERRAIN_WATER;
-    fx.f->seen[3][3] = true;
+    MAP_TILE(fx.m, 5, 5).terrain = TERRAIN_WATER;
+    FogSize(fx.f, 64, 128);
+    FogSet(fx.f, 3, 3, true);
     uint32_t mutated = worldsnap_fingerprint(fx.g, fx.m, fx.f);
     ASSERT(mutated != before);
 
@@ -80,7 +82,31 @@ TEST worldsnap_restores_world_rng(void) {
     PASS();
 }
 
+// A snapshot of a small map restored over a larger live map (a zone change
+// between capture and restore) comes back bit-identical: the map takes the
+// small map's size again.
+TEST worldsnap_small_map_over_large_live_map(void) {
+    WsFixture fx = ws_make();
+    ASSERT(MapAlloc(fx.m, 20, 10));
+    MAP_TILE(fx.m, 3, 2).art = 7;
+    uint32_t before = worldsnap_fingerprint(fx.g, fx.m, fx.f);
+    worldsnap_capture(fx.snap, fx.g, fx.m, fx.f);
+    // The live map becomes a larger one with cells set everywhere.
+    ASSERT(MapAlloc(fx.m, 300, 300));
+    for (int y = 0; y < 300; y++)
+        for (int x = 0; x < 300; x++) MAP_TILE(fx.m, x, y).terrain = TERRAIN_FOREST;
+    worldsnap_restore(fx.snap, fx.g, fx.m, fx.f);
+    ASSERT_EQ(20, fx.m->width);
+    ASSERT_EQ(10, fx.m->height);
+    ASSERT_EQ(0, MAP_TILE(fx.m, 19, 9).terrain);
+    ASSERT_EQ(7, MAP_TILE(fx.m, 3, 2).art);
+    ASSERT_EQ_FMT(before, worldsnap_fingerprint(fx.g, fx.m, fx.f), "%u");
+    ws_free(&fx);
+    PASS();
+}
+
 SUITE(autoplay_worldsnap_suite) {
     RUN_TEST(worldsnap_restores_bit_identically);
+    RUN_TEST(worldsnap_small_map_over_large_live_map);
     RUN_TEST(worldsnap_restores_world_rng);
 }

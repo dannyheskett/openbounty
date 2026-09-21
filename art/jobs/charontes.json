@@ -1,0 +1,18 @@
+{
+  "id": "charontes",
+  "style": "user__glory_of_rome_troops_bac676cd",
+  "prompt": "an Etruscan death demon, a heavy broad-shouldered man-shaped creature with blue-grey rotting flesh, a great hooked nose, pointed ears and two tusks in a snarling mouth, matted black hair, a short dark tunic belted at the waist, huge dark ragged wings spread behind his shoulders, a long rhomphaia held upright at rest in his right hand -- a tall spear shaft with a long straight sword blade for its head -- standing squarely facing right",
+  "width": 96,
+  "height": 96,
+  "target": [
+    96,
+    96
+  ],
+  "figure": true,
+  "remove_bg": true,
+  "return_non_bg_removed": true,
+  "raw_only": true,
+  "bypass_prompt_expansion": true,
+  "seed": 6223,
+  "_note": "New troop for the vampires slot (FLY|LEECH|UNDEAD), 2026-09-20, replacing the Striges. The owl the strix demands can only lunge with its feet, so every loop came out either bobbing 20px or twitching a talon; and recasting the strix as a winged woman would have made three near-identical silhouettes among the five fliers (lares, furiae, empusae). Charun's demons are Roman-Etruscan, undead, winged and heavy -- a bulk and a colour nothing else in the army has. Troop route, the settings the good troops use. run02: Dan's call, the bronze flesh-hook is replaced by a rhomphaia, a long spear shaft with a sword blade for a head. A bladed pole also gives the attack loop something to travel: run01 and run02 of the loop both refused to move the hook, the figure only brandishing it."
+}

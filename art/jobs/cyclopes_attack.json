@@ -1,0 +1,20 @@
+{
+  "id": "cyclopes_attack",
+  "_note": "Animated at 96 with no padding from the shouldered still (cyclopes/run01, seed 5804) scaled to 90% through the API's k-centroid tool (black flatten, alpha from coverage) and re-centred with the feet on row 88, because the still filled the cell top to bottom. Two hands named so the swing is the whole body; 'one hammer head only' after the first animation doubled it. cyclopes_attack/run03 was run by mistake on the ground-rest still.",
+  "prompt": "he takes the shaft in both hands, swings the hammer up off his shoulder, over his head in a wide arc, and strikes it down to the ground out in front of him to the right, then lifts it back onto his shoulder, one hammer head only, both feet stay planted, the apron stays on",
+  "style": "rd_advanced_animation__custom_action",
+  "width": 96,
+  "height": 96,
+  "seed": 5805,
+  "frames_duration": 4,
+  "return_spritesheet": true,
+  "input_image_path": "build/art/cyclopes/run01/01_scaled90.png",
+  "input_image_keep_alpha": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ]
+}

@@ -87,6 +87,7 @@ static const char *terrain_short(Terrain t) {
         case TERRAIN_MOUNTAIN: return "mountain";
         case TERRAIN_WATER:    return "water";
         case TERRAIN_DESERT:   return "desert";
+        case TERRAIN_RIVER:    return "river";
         default:               return "?";
     }
 }
@@ -131,8 +132,8 @@ static cJSON *build_tile_window(const Game *g, const Map *map, const Fog *fog) {
                                         InteractToString(t->interactive));
             }
             if (t->blocks_foot) cJSON_AddNumberToObject(cell, "b", 1);
-            if (t->id[0]) cJSON_AddStringToObject(cell, "id", t->id);
-            if (t->art[0]) cJSON_AddStringToObject(cell, "art", t->art);
+            if (t->id) cJSON_AddStringToObject(cell, "id", TileId(map, t));
+            if (t->art) cJSON_AddStringToObject(cell, "art", TileArt(map, t));
             if (t->is_bridge) cJSON_AddNumberToObject(cell, "br", 1);
 
             // Resolved "would the hero step here right now?" predicate.
@@ -306,6 +307,10 @@ cJSON *state_build_snapshot(const Game *g,
         cJSON_AddBoolToObject  (s, "game_over", g->stats.game_over);
         cJSON_AddBoolToObject  (s, "won", g->stats.won);
         cJSON_AddNumberToObject(s, "last_commission", g->stats.last_commission);
+        if (g->res && g->res->economy.audiences) {
+            cJSON_AddBoolToObject  (s, "blessed", g->stats.blessed);
+            cJSON_AddNumberToObject(s, "tributes", g->stats.tributes);
+        }
         cJSON *opts = cJSON_CreateArray();
         for (int i = 0; i < 7; i++) {
             cJSON_AddItemToArray(opts, cJSON_CreateNumber(g->stats.options[i]));
@@ -347,7 +352,7 @@ cJSON *state_build_snapshot(const Game *g,
     // ---- spells ----
     {
         cJSON *sp = cJSON_CreateObject();
-        for (int i = 0; i < spells_count() && i < 14; i++) {
+        for (int i = 0; i < g->spells.count; i++) {
             const SpellDef *sd = spell_by_index(i);
             if (!sd) continue;
             cJSON_AddNumberToObject(sp, sd->id, g->spells.counts[i]);
@@ -360,14 +365,14 @@ cJSON *state_build_snapshot(const Game *g,
         cJSON *c = cJSON_CreateObject();
         cJSON_AddStringToObject(c, "active", g->contract.active_id);
         cJSON *cycle = cJSON_CreateArray();
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < g->contract.cycle_count; i++) {
             cJSON_AddItemToArray(cycle, cJSON_CreateString(g->contract.cycle[i]));
         }
         cJSON_AddItemToObject(c, "cycle", cycle);
         cJSON_AddNumberToObject(c, "last_contract", g->contract.last_contract);
         cJSON_AddNumberToObject(c, "max_contract",  g->contract.max_contract);
         cJSON *caught = cJSON_CreateArray();
-        for (int i = 0; i < CAT_VILLAINS_MAX; i++) {
+        for (int i = 0; i < g->contract.villain_count; i++) {
             if (g->contract.villains_caught[i]) {
                 const VillainDef *v = villain_by_index(i);
                 if (v) cJSON_AddItemToArray(caught, cJSON_CreateString(v->id));
@@ -375,7 +380,7 @@ cJSON *state_build_snapshot(const Game *g,
         }
         cJSON_AddItemToObject(c, "villains_caught", caught);
         cJSON *prefought = cJSON_CreateArray();
-        for (int i = 0; i < CAT_VILLAINS_MAX; i++) {
+        for (int i = 0; i < g->contract.villain_count; i++) {
             if (g->contract.villains_prefought[i]) {
                 const VillainDef *v = villain_by_index(i);
                 if (v) cJSON_AddItemToArray(prefought, cJSON_CreateString(v->id));
@@ -388,7 +393,7 @@ cJSON *state_build_snapshot(const Game *g,
     // ---- artifacts ----
     {
         cJSON *arr = cJSON_CreateArray();
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < g->artifacts.count; i++) {
             if (g->artifacts.found[i]) {
                 const ArtifactDef *a = artifact_by_index(i);
                 if (a) cJSON_AddItemToArray(arr, cJSON_CreateString(a->id));
@@ -404,8 +409,7 @@ cJSON *state_build_snapshot(const Game *g,
         cJSON *w = cJSON_CreateObject();
         cJSON *disc = cJSON_CreateArray();
         cJSON *orbs = cJSON_CreateArray();
-        int nz = (g->res ? g->res->zone_count : 0);
-        if (nz > GAME_CONTINENTS) nz = GAME_CONTINENTS;
+        int nz = g->world.zone_count;
         for (int i = 0; i < nz; i++) {
             const ResZone *z = &g->res->zones[i];
             if (g->world.zones_discovered[i])
@@ -414,6 +418,13 @@ cJSON *state_build_snapshot(const Game *g,
                 cJSON_AddItemToArray(orbs, cJSON_CreateString(z->id));
         }
         cJSON_AddItemToObject(w, "zones_discovered", disc);
+        if (g->res && g->res->economy.rites_per_zone) {
+            cJSON *rites = cJSON_CreateArray();
+            for (int i = 0; i < nz; i++)
+                if (g->world.zone_rites[i])
+                    cJSON_AddItemToArray(rites, cJSON_CreateString(g->res->zones[i].id));
+            cJSON_AddItemToObject(w, "zone_rites", rites);
+        }
         cJSON_AddItemToObject(w, "orbs_found", orbs);
         // Puzzle reveal state is derived from g->contract.villains_caught[]
         // and g->artifacts.found[], not stored separately. Older save
@@ -435,7 +446,7 @@ cJSON *state_build_snapshot(const Game *g,
     // ---- towns ----
     {
         cJSON *arr = cJSON_CreateArray();
-        for (int i = 0; i < GAME_TOWNS; i++) {
+        for (int i = 0; i < g->town_count; i++) {
             if (!g->towns[i].id[0]) continue;
             cJSON *t = cJSON_CreateObject();
             cJSON_AddStringToObject(t, "id", g->towns[i].id);
@@ -459,7 +470,7 @@ cJSON *state_build_snapshot(const Game *g,
     // ---- castles ----
     {
         cJSON *arr = cJSON_CreateArray();
-        for (int i = 0; i < GAME_CASTLES; i++) {
+        for (int i = 0; i < g->castle_count; i++) {
             if (!g->castles[i].id[0]) continue;
             cJSON *c = cJSON_CreateObject();
             cJSON_AddStringToObject(c, "id", g->castles[i].id);
@@ -508,6 +519,18 @@ cJSON *state_build_snapshot(const Game *g,
             cJSON_AddItemToArray(arr, m);
         }
         cJSON_AddItemToObject(root, "consumed", arr);
+    }
+
+    // ---- one-time vistas already played ----
+    {
+        cJSON *arr = cJSON_CreateArray();
+        for (int i = 0; i < g->events_done_count; i++) {
+            cJSON *m = cJSON_CreateObject();
+            cJSON_AddStringToObject(m, "zone", g->events_done[i].zone);
+            cJSON_AddStringToObject(m, "id", g->events_done[i].id);
+            cJSON_AddItemToArray(arr, m);
+        }
+        cJSON_AddItemToObject(root, "events_done", arr);
     }
 
     // ---- placements (salted) ----
@@ -581,7 +604,7 @@ cJSON *state_build_snapshot(const Game *g,
     // its snapshot (which may be stale from before recent moves).
     if (map && fog && g && g->res) {
         cJSON *mstate = cJSON_CreateObject();
-        for (int zi = 0; zi < g->res->zone_count && zi < GAME_CONTINENTS; zi++) {
+        for (int zi = 0; zi < g->res->zone_count && zi < g->world.zone_count; zi++) {
             if (!g->world.zones_discovered[zi]) continue;
             const ResZone *rz = &g->res->zones[zi];
             const Fog *src = &g->world.continent_fog[zi];

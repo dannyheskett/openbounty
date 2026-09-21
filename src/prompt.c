@@ -1,32 +1,127 @@
 #include "input_host.h"
 #include "ui_host.h"
 #include "prompt.h"
+#include "prompt_impl.h"
+#include "pending.h"
+#include "modern/mlist.h"
+#include "touch.h"
 #include "layout.h"
+#include "ui.h"
+#include "select.h"
+#include "textsel.h"
 #include "palette.h"
 #include "bfont.h"
 #include "resources.h"
 #include "recorder.h"
-#include "raylib.h"
+#include "ob_types.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-typedef enum {
-    PK_NONE = 0,
-    PK_YES_NO,
-    PK_NUMERIC,
-    PK_AB_CHOICE,
-    PK_TEXT_INPUT,
-} PromptKind;
-
 static PromptKind g_kind = PK_NONE;
 static char g_header[64];
 static char g_body[256];
+static int  g_yn_cursor = 0;   // modern yes/no rows: 0 = Yes, 1 = No
+static TextSel g_ts = { 0, true };   // modern numeric selector
+static bool g_selector = false;
+
+// The same bound the typed path applies: room for the digit, and the
+// number it makes must not pass max_value.
+static bool prompt_digit_allowed(const char *buf, int len, int ch);
 static int  g_max_choice = 5;
 static int  g_text_max_digits = 4;
 static int  g_text_max_value  = 9999;
+static bool g_step_open       = false; // modern dwelling: Recruit opened the stepper
+static int  g_step_value      = 0;     // modern count entry: the stepper
 static char g_text_buf[8];
 static int  g_text_len = 0;
+
+// Modern numeric and A/B prompts answer by rows. The rows come from the body's
+// own choice lines ("1. Italia", "A) Take the gold"), or from
+// prompt_set_choices when the body names none.
+#define PROMPT_CHOICES_MAX 5
+static char g_lead[256];
+static char g_choice[PROMPT_CHOICES_MAX][96];
+static int  g_choice_value[PROMPT_CHOICES_MAX];
+static int  g_choice_n = 0;
+static int  g_choice_cursor = 0;
+
+// A choice line: optional spaces, then a digit 1-5 (numeric) or A/B (A/B),
+// then '.' or ')'. Returns the answer (1-based) and sets *label, or 0.
+static int choice_prefix(const char *s, bool ab, const char **label) {
+    while (*s == ' ') s++;
+    int v = 0;
+    if (ab && (s[0] == 'A' || s[0] == 'B')) v = s[0] - 'A' + 1;
+    else if (!ab && s[0] >= '1' && s[0] <= '5') v = s[0] - '0';
+    if (!v || (s[1] != '.' && s[1] != ')')) return 0;
+    s += 2;
+    while (*s == ' ') s++;
+    *label = s;
+    return v;
+}
+
+static void append(char *dst, int cap, const char *src, int n) {
+    int len = (int)strlen(dst);
+    while (n-- > 0 && *src && len + 1 < cap) dst[len++] = *src++;
+    dst[len] = '\0';
+}
+
+// Splits g_body into the lead text and the choice rows. A line that follows a
+// choice without a prefix of its own continues it.
+static void parse_choices(bool ab, int max_choice) {
+    g_lead[0] = '\0';
+    g_choice_n = 0;
+    g_choice_cursor = 0;
+    const char *p = g_body;
+    while (*p) {
+        const char *e = strchr(p, '\n');
+        int n = e ? (int)(e - p) : (int)strlen(p);
+        char line[256];
+        snprintf(line, sizeof line, "%.*s", n, p);
+        const char *label = NULL;
+        int v = choice_prefix(line, ab, &label);
+        if (v && g_choice_n < PROMPT_CHOICES_MAX) {
+            snprintf(g_choice[g_choice_n], sizeof g_choice[0], "%s", label);
+            g_choice_value[g_choice_n++] = v;
+        } else if (g_choice_n > 0 && line[0]) {
+            append(g_choice[g_choice_n - 1], sizeof g_choice[0], " ", 1);
+            append(g_choice[g_choice_n - 1], sizeof g_choice[0], line, n);
+        } else if (g_choice_n == 0) {
+            append(g_lead, sizeof g_lead, p, n);
+            if (e) append(g_lead, sizeof g_lead, "\n", 1);
+        }
+        p = e ? e + 1 : p + n;
+    }
+    if (g_choice_n == 0) {
+        // Nothing named: the answers themselves are the rows.
+        int count = ab ? 2 : max_choice;
+        for (int i = 0; i < count && i < PROMPT_CHOICES_MAX; i++) {
+            if (ab) snprintf(g_choice[i], sizeof g_choice[0], "%c", 'A' + i);
+            else    snprintf(g_choice[i], sizeof g_choice[0], "%d", i + 1);
+            g_choice_value[i] = i + 1;
+        }
+        g_choice_n = count;
+    }
+}
+
+// The kind of the open question (ui_host.h). Every open resets it to the plain
+// foot question; the raiser names the real one right after.
+static ReqKind g_req_kind = PIO_ASK;
+static int g_req_face, g_req_face_idx;
+void prompt_set_req_kind(ReqKind kind) { g_req_kind = kind; }
+ReqKind prompt_req_kind(void) { return g_req_kind; }
+void prompt_set_req_face(int face, int face_index) { g_req_face = face; g_req_face_idx = face_index; }
+int prompt_req_face(int *index) { if (index) *index = g_req_face_idx; return g_req_face; }
+
+void prompt_set_choices(const char *const *labels, const int *values, int n) {
+    if (n > PROMPT_CHOICES_MAX) n = PROMPT_CHOICES_MAX;
+    for (int i = 0; i < n; i++) {
+        snprintf(g_choice[i], sizeof g_choice[0], "%s", labels[i]);
+        g_choice_value[i] = values[i];
+    }
+    g_choice_n = n;
+    g_choice_cursor = 0;
+}
 
 static void copy_to(char *dst, int dst_sz, const char *src) {
     int n = 0;
@@ -43,7 +138,10 @@ static void emit_open_trace(const char *kind) {
 }
 
 void prompt_yes_no_open(const char *header, const char *body) {
+    g_yn_cursor = 0;
     g_kind = PK_YES_NO;
+    g_req_kind = PIO_ASK;
+    g_req_face = 0;
     copy_to(g_header, sizeof(g_header), header);
     copy_to(g_body,   sizeof(g_body),   body);
     emit_open_trace("yes_no");
@@ -51,30 +149,51 @@ void prompt_yes_no_open(const char *header, const char *body) {
 
 void prompt_numeric_open(const char *header, const char *body, int max_choice) {
     g_kind = PK_NUMERIC;
+    g_req_kind = PIO_ASK;
+    g_req_face = 0;
     if (max_choice < 1) max_choice = 1;
     if (max_choice > 5) max_choice = 5;
     g_max_choice = max_choice;
     copy_to(g_header, sizeof(g_header), header);
     copy_to(g_body,   sizeof(g_body),   body);
+    parse_choices(false, max_choice);
     emit_open_trace("numeric");
 }
 
 void prompt_ab_open(const char *header, const char *body) {
     g_kind = PK_AB_CHOICE;
+    g_req_kind = PIO_ASK;
+    g_req_face = 0;
     copy_to(g_header, sizeof(g_header), header);
     copy_to(g_body,   sizeof(g_body),   body);
+    parse_choices(true, 2);
     emit_open_trace("ab");
+}
+
+static bool prompt_digit_allowed(const char *buf, int len, int ch) {
+    if (ch < '0' || ch > '9' || len >= g_text_max_digits) return false;
+    char cand[8];
+    int n = (len < 6) ? len : 6;
+    for (int i = 0; i < n; i++) cand[i] = buf[i];
+    cand[n] = (char)ch; cand[n + 1] = '\0';
+    return atoi(cand) <= g_text_max_value;
 }
 
 void prompt_text_input_open(const char *header, const char *body,
                             int max_digits, int max_value) {
+    g_ts.cursor = 0;
     g_kind = PK_TEXT_INPUT;
+    g_req_kind = PIO_ASK;
+    g_req_face = 0;
     if (max_digits < 1) max_digits = 1;
     if (max_digits > 6) max_digits = 6;
     g_text_max_digits = max_digits;
     g_text_max_value = max_value;
     g_text_len = 0;
     g_text_buf[0] = '\0';
+    g_step_value = max_value > 0 ? max_value : 0;   // modern: the stepper starts at the most
+    g_step_open = false;
+    g_yn_cursor = 0;
     copy_to(g_header, sizeof(g_header), header);
     copy_to(g_body,   sizeof(g_body),   body);
     emit_open_trace("text");
@@ -86,6 +205,7 @@ int prompt_text_input_value(void) {
 }
 
 bool prompt_is_active(void) { return g_kind != PK_NONE; }
+void prompt_gallery_step_open(bool open) { g_step_open = open; }
 
 const char *prompt_kind_str(void) {
     switch (g_kind) {
@@ -109,15 +229,87 @@ void prompt_dismiss(void) {
     if (was_active) recorder_capture("prompt:close");
 }
 
+// Modern: up/down and Enter or a tap answer a numeric or A/B prompt by row.
+// The digit and letter keys are read first, so keypad 2 and 8 still answer.
+static PromptResult choice_rows_update(void) {
+    if (!CL_IS_MODERN || g_choice_n <= 0) return PROMPT_RESULT_NONE;
+    // A numbered choice ends with a Cancel row.
+    bool cancel_row = g_kind == PK_NUMERIC;
+    SelList l = { g_choice_n + (cancel_row ? 1 : 0), g_choice_cursor };
+    int row = -1;
+    SelEvent ev = sel_input(&l, TOUCH_LIST_PROMPT, 0, &row);
+    g_choice_cursor = l.cursor;
+    if (cancel_row && ev == SEL_CONFIRM && row == g_choice_n) {
+        prompt_dismiss();
+        return PROMPT_RESULT_CANCEL;
+    }
+    if (ev != SEL_CONFIRM || row < 0 || row >= g_choice_n) return PROMPT_RESULT_NONE;
+    int v = g_choice_value[row];
+    prompt_dismiss();
+    return (PromptResult)(PROMPT_RESULT_1 + v - 1);
+}
+
 PromptResult prompt_update(void) {
     if (g_kind == PK_NONE) return PROMPT_RESULT_NONE;
 
+    // Touch: on-screen answer buttons for the keys read below, plus ESC.
+    touch_request(TOUCH_CHROME_BACK);
+    if      (g_kind == PK_YES_NO)     touch_request_prompt_yesno();
+    else if (g_kind == PK_NUMERIC)    { if (!CL_IS_MODERN) touch_request_prompt_numeric(g_max_choice); }
+    else if (g_kind == PK_AB_CHOICE)  { if (!CL_IS_MODERN) touch_request_prompt_ab(); }
+    else if (g_kind == PK_TEXT_INPUT) {
+        // Modern counts use the stepper (REQ-430n): no digit grid, no digit chrome.
+        g_selector = false;
+        if (!CL_IS_MODERN) touch_request(TOUCH_CHROME_DIGITS);
+    }
+
+    // Modern foe view: Fight / Evade. With nowhere to run, Evade (No, Esc) is
+    // not an answer -- only Fight is.
+    bool foe_view = CL_IS_MODERN && g_req_kind == PIO_ASK_SCENE;
+    bool no_evade = foe_view && pending_foe_evade_blocked;
+    // Modern dwelling: Recruit / Leave rows first; Recruit opens the stepper,
+    // and Esc puts the stepper away before it leaves.
+    bool dwelling = CL_IS_MODERN && g_req_kind == PIO_ASK_NUMBER_IN_PLACE;
+    if (dwelling && g_step_open) {
+        int tapped = touch_tapped_row(TOUCH_LIST_PROMPT);    // "Recruit 20" / Cancel
+        if (input_key_pressed(KEY_ESCAPE) || tapped == 1) {
+            g_step_open = false;
+            return PROMPT_RESULT_NONE;
+        }
+        if (tapped == 0) {
+            snprintf(g_text_buf, sizeof g_text_buf, "%d", g_step_value);
+            g_text_len = (int)strlen(g_text_buf);
+            g_kind = PK_NONE;
+            return PROMPT_RESULT_YES;
+        }
+    }
     if (input_key_pressed(KEY_ESCAPE)) {
+        if (no_evade) return PROMPT_RESULT_NONE;
         prompt_dismiss();
         return PROMPT_RESULT_CANCEL;
     }
 
     if (g_kind == PK_YES_NO) {
+        // A forced (static-guardian) foe fight cannot be declined: confirm it
+        // immediately, without waiting for a keypress -- no decline offered.
+        if (pending_foe_forced) { prompt_dismiss(); return PROMPT_RESULT_YES; }
+        // Modern: two rows, Yes and No, with the cursor; Enter confirms the
+        // cursor row (so Enter is no longer a blind yes), Y and N still answer.
+        if (CL_IS_MODERN) {
+            SelList l = { 2, g_yn_cursor };
+            int row = -1;
+            SelEvent ev = sel_input(&l, TOUCH_LIST_PROMPT, 0, &row);
+            if (no_evade) l.cursor = 0;          // Evade is not a row to rest on
+            g_yn_cursor = l.cursor;
+            if (ev == SEL_CONFIRM) {
+                if (no_evade && row != 0) return PROMPT_RESULT_NONE;
+                prompt_dismiss();
+                return row == 0 ? PROMPT_RESULT_YES : PROMPT_RESULT_NO;
+            }
+            if (input_key_pressed(KEY_Y)) { prompt_dismiss(); return PROMPT_RESULT_YES; }
+            if (input_key_pressed(KEY_N) && !no_evade) { prompt_dismiss(); return PROMPT_RESULT_NO; }
+            return PROMPT_RESULT_NONE;
+        }
         if (input_key_pressed(KEY_Y)) { prompt_dismiss(); return PROMPT_RESULT_YES; }
         if (input_key_pressed(KEY_N)) { prompt_dismiss(); return PROMPT_RESULT_NO;  }
         // also accepts Enter as "yes" in some prompts.
@@ -140,15 +332,48 @@ PromptResult prompt_update(void) {
                 return (PromptResult)(PROMPT_RESULT_1 + i);
             }
         }
-        return PROMPT_RESULT_NONE;
+        return choice_rows_update();
     }
 
     if (g_kind == PK_AB_CHOICE) {
         if (input_key_pressed(KEY_A)) { prompt_dismiss(); return PROMPT_RESULT_1; }
         if (input_key_pressed(KEY_B)) { prompt_dismiss(); return PROMPT_RESULT_2; }
-        return PROMPT_RESULT_NONE;
+        return choice_rows_update();
     }
 
+    if (dwelling && !g_step_open) {
+        SelList l = { 2, g_yn_cursor };
+        int row = -1;
+        SelEvent ev = sel_input(&l, TOUCH_LIST_PROMPT, 0, &row);
+        g_yn_cursor = l.cursor;
+        if (ev == SEL_CONFIRM && row == 0 && g_text_max_value > 0) g_step_open = true;
+        if (ev == SEL_CONFIRM && row == 1) { prompt_dismiss(); return PROMPT_RESULT_CANCEL; }
+        return PROMPT_RESULT_NONE;
+    }
+    if (g_kind == PK_TEXT_INPUT && CL_IS_MODERN) {
+        // The count stepper: Left/Right one, Down/Up ten, Enter commits the
+        // value into the text buffer the flow reads (prompt_text_input_value).
+        int lo = g_text_max_value > 0 ? 1 : 0;
+        ml_stepper_keys(&g_step_value, lo, g_text_max_value > 0 ? g_text_max_value : 0);
+        if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
+            input_key_pressed(KEY_SPACE)) {
+            snprintf(g_text_buf, sizeof g_text_buf, "%d", g_step_value);
+            g_text_len = (int)strlen(g_text_buf);
+            g_kind = PK_NONE;
+            return PROMPT_RESULT_YES;
+        }
+        return PROMPT_RESULT_NONE;
+    }
+    if (g_kind == PK_TEXT_INPUT && g_selector) {
+        if (textsel_input(&g_ts, g_text_buf, &g_text_len, (int)sizeof g_text_buf,
+                          TOUCH_LIST_TEXTSEL, prompt_digit_allowed)) {
+            // Committed, the same way Enter commits the typed value: close
+            // by kind only so prompt_text_input_value() still reads the buffer.
+            g_kind = PK_NONE;
+            return PROMPT_RESULT_YES;
+        }
+        return PROMPT_RESULT_NONE;
+    }
     if (g_kind == PK_TEXT_INPUT) {
         // Digit keys -- append if room and the candidate number wouldn't
         // exceed max_value.
@@ -185,125 +410,32 @@ PromptResult prompt_update(void) {
     return PROMPT_RESULT_NONE;
 }
 
-// Word-wrap helper: fills `out` with as much of `*p` as fits in
-// `max_chars` characters at the 8-pixel glyph width, stopping at word
-// boundaries. Advances *p.
-static int take_line(const char **p, int max_chars,
-                     char *out, int out_sz) {
-    int n = 0;
-    while (**p == ' ' || **p == '\t') (*p)++;
-    while (**p && **p != '\n' && n + 1 < out_sz && n < max_chars) {
-        out[n++] = **p; (*p)++;
-    }
-    if (**p && **p != '\n' && n >= max_chars) {
-        int back = n;
-        while (back > 0 && out[back - 1] != ' ') back--;
-        if (back > 0) {
-            int over = n - back;
-            *p -= over;
-            n = back;
-        }
-    }
-    out[n] = '\0';
-    if (**p == '\n') (*p)++;
-    return n;
+// A read-only window onto the state above, so the two draw paths can render
+// the prompt without owning any of it.
+const PromptView *prompt_view(void) {
+    static PromptView v;
+    v.kind       = g_kind;
+    v.header     = g_header;
+    v.body       = g_body;
+    v.max_choice = g_max_choice;
+    v.yn_cursor  = g_yn_cursor;
+    v.selector   = g_selector;
+    v.text_buf   = g_text_buf;
+    v.text_len   = g_text_len;
+    v.ts         = &g_ts;
+    v.lead          = g_lead;
+    v.choice_n      = g_choice_n;
+    v.choices       = (const char (*)[96])g_choice;
+    v.choice_cursor = g_choice_cursor;
+    v.step_value = g_step_value;
+    v.step_max   = g_text_max_value;
+    v.step_open  = g_step_open;
+    return &v;
 }
 
 void prompt_draw(void) {
     if (g_kind == PK_NONE) return;
-
-    int row_h = BFONT_GLYPH_H + 1;
-    int pad = CL_PANEL_PAD_X;   // 1px: the panel holds exactly CL_PANEL_COLS glyphs
-    //  draws KB_BottomFrame at a FIXED size: 30 chars
-    // wide x 8 chars tall + a few extra pixels. Width matches the map
-    // area; sidebar stays visible to the right. Body text starts at the
-    // top of the inner area; short content leaves blank rows below.
-    int x = CL_PANEL_X;
-    int y = CL_PANEL_Y;
-    int w = CL_PANEL_W;
-    int h = CL_PANEL_H;
-    // Fixed by layout, not (w - 2*pad): the panel's margin is one-sided.
-    // See CL_PANEL_COLS in layout.h.
-    int max_chars = CL_PANEL_COLS;
-
-    // Reserve rows at the bottom for hint chrome (rendered after the body).
-    //   text-input      -> 2 (typed value + hint)
-    //   yes/no, numeric -> 1 (hint only)
-    //   A/B choice      -> 0 (body names the keys; chrome-less)
-    int bottom_rows;
-    if (g_kind == PK_TEXT_INPUT)      bottom_rows = 2;
-    else if (g_kind == PK_AB_CHOICE)  bottom_rows = 0;
-    else                              bottom_rows = 1;
-
-    DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
-    DrawRectangleLines(x, y, w, h, PAL_CLR(YELLOW));
-
-    int tx = x + pad;
-    int ty = y + pad;
-
-    if (g_header[0]) {
-        bfont_draw(g_header, tx, ty, PAL_CLR(YELLOW));
-        ty += row_h + 2;
-    }
-
-    // Body: render every line that fits inside the inner rect, leaving
-    // bottom_rows free for the hint chrome at the very bottom.
-    //
-    // Body lines advance by BFONT_GLYPH_H (8px), NOT row_h (9px). The panel's
-    // 60px content area (68 - 2*pad) holds exactly 7 glyph rows at 8px but only 6
-    // at 9px -- the 1px-per-line leading of row_h clipped the 7th line of the
-    // 7-line chest "gold / distribute to peasants" choice. The message-dialog
-    // path (overlay.c) already steps body text by GH=8; match it so equal-length
-    // bodies render identically in both. row_h still spaces the header + hint.
-    {
-        const char *p = g_body;
-        char line[160];
-        int body_step  = BFONT_GLYPH_H;                 // 8px (no leading)
-        int body_floor = y + h - pad - bottom_rows * row_h;
-        while (*p && ty + body_step <= body_floor) {
-            take_line(&p, max_chars, line, (int)sizeof(line));
-            bfont_draw(line, tx, ty, PAL_CLR(WHITE));
-            ty += body_step;
-        }
-    }
-
-    // Hint line at the bottom of the panel.
-    const Resources *res = resources_current();
-    const ResUI *ui = res ? &res->ui : NULL;
-    if (g_kind == PK_TEXT_INPUT) {
-        // Show current input value, a caret, and Enter/Esc hint.
-        char typed[16];
-        snprintf(typed, sizeof(typed), "%s_",
-                 g_text_len > 0 ? g_text_buf : "");
-        bfont_draw_centered(typed,
-                            x + w / 2, y + h - row_h * 2 - 2, PAL_CLR(WHITE));
-        bfont_draw_centered(ui ? ui->prompt_text_hint
-                               : "(Enter to confirm / ESC cancel)",
-                            x + w / 2, y + h - row_h - 2, PAL_CLR(YELLOW));
-    } else if (g_kind == PK_NUMERIC && g_max_choice != 5) {
-        char buf[32];
-        if (ui) {
-            char cbuf[12];
-            snprintf(cbuf, sizeof cbuf, "%d", g_max_choice);
-            ResTemplateVar v[] = { { "COUNT", cbuf } };
-            resources_format_template(buf, sizeof buf,
-                                      ui->prompt_numeric_range_hint, v, 1);
-        } else {
-            snprintf(buf, sizeof(buf), "(1-%d or ESC)", g_max_choice);
-        }
-        bfont_draw_centered(buf,
-                            x + w / 2, y + h - row_h - 2, PAL_CLR(YELLOW));
-    } else if (g_kind == PK_AB_CHOICE) {
-        // Chrome-less  -- body already names A) / B).
-    } else {
-        const char *hint;
-        if (ui) {
-            hint = (g_kind == PK_YES_NO) ? ui->prompt_yes_no_hint
-                                         : ui->prompt_numeric_5_hint;
-        } else {
-            hint = (g_kind == PK_YES_NO) ? "(y/n)?" : "(1-5 or ESC)";
-        }
-        bfont_draw_centered(hint,
-                            x + w / 2, y + h - row_h - 2, PAL_CLR(YELLOW));
-    }
+    const PromptView *v = prompt_view();
+    if (CL_IS_MODERN) modern_prompt_draw(v);
+    else              legacy_prompt_draw(v);
 }

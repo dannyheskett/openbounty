@@ -1,16 +1,43 @@
 #include "frame_host.h"
+#include "gfx.h"
 #include "input_host.h"
 #include "ui_host.h"
 #include "ui.h"
+#include "layout.h"
+#include "lattice.h"
+#include "palette.h"
+#include "touch.h"
 #include "overlay.h"     // overlay_dialog_page_count (renderer owns the wrap)
 #include "player_io.h"   // engine player-IO message queue
-#include "raylib.h"
+#include "ob_types.h"
 #include "recorder.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>   // atoi, for a raw palette index in ui_set_panel_frame
+
+// ---- texture blit ----------------------------------------------------------
+static void blit(Texture2D t, int x, int y, int w, int h, bool mirror) {
+    if (t.id == 0 || w <= 0 || h <= 0) return;
+    Rectangle src = { 0, 0,
+                      mirror ? -(float)t.width : (float)t.width,
+                      (float)t.height };
+    Rectangle dst = { (float)x, (float)y, (float)w, (float)h };
+    gfx_texture_draw(t, src, dst, WHITE);
+}
+
+void ui_blit(Texture2D t, int x, int y, int w, int h) {
+    blit(t, x, y, w, h, false);
+}
+
+void ui_blit_mirrored(Texture2D t, int x, int y, int w, int h) {
+    blit(t, x, y, w, h, true);
+}
 
 // ---- any-key helper --------------------------------------------------------
 bool ui_any_key_pressed(void) {
+    // Every caller means "any key advances/dismisses", so a tap anywhere
+    // counts as one. Explicit touch regions still win over this.
+    touch_region_any(KEY_ENTER);
     int k = input_get_key_pressed();
     while (k != 0) {
         if (k != KEY_LEFT_SHIFT && k != KEY_RIGHT_SHIFT &&
@@ -30,6 +57,8 @@ static bool dialog_active = false;
 static char dialog_header[256];
 static char dialog_body[512];
 static int  dialog_page = 0;    // current page offset for pagination
+static int  dialog_face_kind = 0, dialog_face_idx = 0;   // the message's picture hint
+static ReqKind dialog_req_kind = PIO_NOTE;               // what the raiser called it
 
 static void copy_to(char *dst, size_t dst_sz, const char *src) {
     size_t n = 0;
@@ -43,11 +72,22 @@ void open_dialog(const char *header, const char *body) {
     open_dialog_flags(header, body, MSG_FLAG_NONE);
 }
 
+// A note the host raises itself, saying what kind it is (combat's victory
+// banner sits over the field, not on the map's foot).
+void open_dialog_kind(const char *header, const char *body, ReqKind kind) {
+    open_dialog_flags(header, body, MSG_FLAG_NONE);
+    dialog_req_kind = kind;
+}
+
+ReqKind dialog_kind(void) { return dialog_req_kind; }
+
 // MSG_PADDED handling lives here so callers don't have to know about
 // layout. PADDED prepends "\n\n\n" to push the body down toward the
 // vertical center of the fixed-size bottom panel. Data strings stay
 // clean; layout decisions stay in the renderer.
 void open_dialog_flags(const char *header, const char *body, int flags) {
+    dialog_face_kind = 0;
+    dialog_req_kind = PIO_NOTE;
     copy_to(dialog_header, sizeof(dialog_header), header);
     if ((flags & MSG_FLAG_PADDED) && body) {
         char padded[sizeof(dialog_body)];
@@ -83,9 +123,10 @@ void dialog_dismiss(void)     {
 }
 
 const char *dialog_header_text(void) { return dialog_header; }
+int dialog_face(int *index) { if (index) *index = dialog_face_idx; return dialog_active ? dialog_face_kind : 0; }
 const char *dialog_body_text(void)   { return dialog_body;   }
 
-bool shell_pump_player_io_message(Game *g) {
+bool shell_pump_note(Game *g) {
     // One message at a time: only surface a queued REQ_MESSAGE when the dialog
     // slot is free, so each message gets its own press-any-key dismissal (the
     // engine raises them one per interaction; FIFO order is preserved). A queued
@@ -95,6 +136,9 @@ bool shell_pump_player_io_message(Game *g) {
     const PlayerRequest *r = player_io_front(g);
     if (!r || r->role != REQ_MESSAGE) return false;
     open_dialog(r->header[0] ? r->header : NULL, r->body);
+    dialog_req_kind = r->kind;
+    dialog_face_kind = (int)r->face;
+    dialog_face_idx = r->face_index;
     player_io_ack(g);   // consumed: it now lives in the shell dialog
     return true;
 }
@@ -122,6 +166,11 @@ bool dialog_advance(void) {
 static char   toast_text[128];
 static double toast_until;
 
+// The drawing clock (ui.h): frozen while the gallery captures.
+static bool s_anim_frozen;
+void   ui_anim_freeze(bool frozen) { s_anim_frozen = frozen; }
+double ui_anim_time(void) { return s_anim_frozen ? 0.0 : frame_host_time(); }
+
 void toast_show(const char *msg) {
     copy_to(toast_text, sizeof(toast_text), msg);
     toast_until = frame_host_time() + 2.0;
@@ -132,3 +181,60 @@ const char *toast_text_current(void) {
     return toast_text;
 }
 
+// ---- Panel frame ------------------------------------------------------------
+
+static int s_panel_frame = -1;   // palette index, -1 = off
+
+void ui_set_panel_frame(const char *palette_name) {
+    static const struct { const char *name; int idx; } NAMES[] = {
+        { "DGREEN", PAL_IDX_DGREEN }, { "DCYAN", PAL_IDX_DCYAN },
+        { "DRED", PAL_IDX_DRED },     { "MAGENTA", PAL_IDX_MAGENTA },
+        { "BROWN", PAL_IDX_BROWN },   { "GREY", PAL_IDX_GREY },
+        { "DGREY", PAL_IDX_DGREY },   { "BLUE", PAL_IDX_BLUE },
+        { "GREEN", PAL_IDX_GREEN },   { "CYAN", PAL_IDX_CYAN },
+        { "RED", PAL_IDX_RED },       { "VIOLET", PAL_IDX_VIOLET },
+        { "YELLOW", PAL_IDX_YELLOW }, { "WHITE", PAL_IDX_WHITE },
+    };
+    s_panel_frame = -1;
+    if (!palette_name || !palette_name[0]) return;
+    for (size_t i = 0; i < sizeof NAMES / sizeof NAMES[0]; i++)
+        if (strcmp(NAMES[i].name, palette_name) == 0) { s_panel_frame = NAMES[i].idx; return; }
+    // A raw palette index is accepted too ("200").
+    int idx = atoi(palette_name);
+    if (idx > 0 && idx < PAL_SIZE) s_panel_frame = idx;
+}
+
+void ui_panel_frame(int x, int y, int w, int h) {
+    if (s_panel_frame < 0) return;
+    int t = CL_UI;
+    if (CL_IS_MODERN) {
+        lattice_ring(x, y, w, h, 2 * t, 2 * t, 2 * t, 2 * t);
+        return;
+    }
+    Color outer = PAL[s_panel_frame];
+    Color inner = PAL[PAL_IDX_DGREY];
+    gfx_rect(x, y, w, t, outer);
+    gfx_rect(x, y + h - t, w, t, outer);
+    gfx_rect(x, y, t, h, outer);
+    gfx_rect(x + w - t, y, t, h, outer);
+    gfx_rect(x + t, y + t, w - 2 * t, t, inner);
+    gfx_rect(x + t, y + h - 2 * t, w - 2 * t, t, inner);
+    gfx_rect(x + t, y + t, t, h - 2 * t, inner);
+    gfx_rect(x + w - 2 * t, y + t, t, h - 2 * t, inner);
+}
+
+void ui_window_frame(int x, int y, int w, int h, Color legacy) {
+    if (!CL_IS_MODERN) { gfx_rect_lines(x, y, w, h, legacy); return; }
+    // Outside the rect: the window's content keeps every pixel it had, and
+    // nothing drawn after this can paint over the ring.
+    int t = 4 * CL_UI;
+    lattice_ring(x - t, y - t, w + 2 * t, h + 2 * t, t, t, t, t);
+}
+
+int ui_fit_scale(int tex_w, int tex_h, int avail_w, int avail_h) {
+    if (!CL_IS_MODERN) return CL_UI;
+    if (tex_w <= 0 || tex_h <= 0) return 1;
+    int sx = avail_w / tex_w, sy = avail_h / tex_h;
+    int s = (sx < sy) ? sx : sy;
+    return (s < 1) ? 1 : s;
+}

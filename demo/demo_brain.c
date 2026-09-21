@@ -329,9 +329,9 @@ static int demo_predict_boost(const Game *g, CombatMode mode,
     int ridx = spell_index_by_adventure_effect(ADV_EFFECT_RAISE_CONTROL);
     int held = (g->stats.knows_magic && ridx >= 0) ? g->spells.counts[ridx] : 0;
     for (int k = 0; k <= held; k++) {
-        Game *tmp = malloc(sizeof *tmp);
+        Game *tmp = calloc(1, sizeof *tmp);
         if (!tmp) return -1;
-        *tmp = *g;
+        if (!GameCopy(tmp, g)) { GameFree(tmp); free(tmp); return -1; }
         tmp->stats.leadership_current += k * GameRaiseControlAmount(g);
         if (rec) rec->count = 0;
         CombatResult r = combat_run_headless_rec(tmp, mode, tgt, 256,
@@ -339,7 +339,7 @@ static int demo_predict_boost(const Game *g, CombatMode mode,
         int surv = 0;
         for (int i = 0; i < GAME_ARMY_SLOTS; i++)
             if (tmp->army[i].id[0] && tmp->army[i].count > 0) surv++;
-        free(tmp);
+        GameFree(tmp); free(tmp);
         if (r == COMBAT_RESULT_WIN && surv >= min_survivors) {
             if (out_surv) *out_surv = surv;
             return k;
@@ -388,7 +388,7 @@ static bool resolve_combat_flow(Game *g, Map *map, Fog *fog,
                 g->contract.active_id) == 0);
     // Cornered: no other move exists -- take the fight at any odds (losing
     // runs the game's own temp death, the escape from a sealed pocket).
-    bool desperate = s_st.cornered && !siege;
+    bool desperate = (s_st.cornered || pending_foe_evade_blocked) && !siege;
     if (desperate) s_st.cornered = false;
 
     DemoHooks *hk = demo_hooks();
@@ -573,13 +573,14 @@ static bool town_business(Game *g, const Resources *res) {
         int ridx = spell_index_by_adventure_effect(ADV_EFFECT_RAISE_CONTROL);
         const SpellDef *rsp = spell_by_index(ridx);
         const TownRecord *tr = NULL;
-        for (int i = 0; i < GAME_TOWNS; i++)
+        for (int i = 0; i < g->town_count; i++)
             if (g->towns[i].id[0] &&
                 strcmp(g->towns[i].id, g->position.in_town) == 0) {
                 tr = &g->towns[i];
                 break;
             }
         if (rsp && tr && tr->spell_for_sale[0] &&
+            GameTownHasRites(g, tr->id) &&
             spell_index_by_id(tr->spell_for_sale) == ridx &&
             GameKnownSpells(g) < g->stats.max_spells &&
             g->stats.gold > rsp->cost + 600) {
@@ -701,9 +702,9 @@ static void scan_zone(const Game *g, const Map *map, const Fog *fog,
                     sc->anytown_x = x; sc->anytown_y = y; sc->anytown_d = d;
                 }
                 const TownRecord *tr = NULL;
-                for (int i = 0; i < GAME_TOWNS; i++)
+                for (int i = 0; i < g->town_count; i++)
                     if (g->towns[i].id[0] &&
-                        strcmp(g->towns[i].id, t->id) == 0) {
+                        strcmp(g->towns[i].id, TileId(map, t)) == 0) {
                         tr = &g->towns[i];
                         break;
                     }
@@ -713,23 +714,24 @@ static void scan_zone(const Game *g, const Map *map, const Fog *fog,
                 break;
             }
             case INTERACT_CASTLE_GATE: {
-                if (!t->id[0]) break;
+                const char *tid = TileId(map, t);
+                if (!tid[0]) break;
                 if (!g->stats.siege_weapons) break;   // gates bounce without them
-                const ResCastle *rc = resources_castle_by_id(res, t->id);
+                const ResCastle *rc = resources_castle_by_id(res, tid);
                 if (!rc || resources_castle_is_home(rc)) break;
-                const CastleRecord *cr = GameFindCastleConst(g, t->id);
+                const CastleRecord *cr = GameFindCastleConst(g, tid);
                 if (cr && cr->visited && cr->owner_kind == CASTLE_OWNER_PLAYER)
                     break;                        // ours already
                 // What the prompts taught us: a villain castle is a target
                 // only while its lord is under contract; monster castles are
                 // gated by the declined-power memory; unknown owners are
                 // always worth a look (the peek is free).
-                const DemoIntel *in = intel_find(t->id);
+                const DemoIntel *in = intel_find(tid);
                 if (in && in->villain &&
                     (!g->contract.active_id[0] ||
                      strcmp(in->villain_id, g->contract.active_id) != 0))
                     break;
-                if (in && !retry_worthy(t->id, ours)) break;
+                if (in && !retry_worthy(tid, ours)) break;
                 if (sc->castle_d < 0 || d < sc->castle_d) {
                     sc->castle_x = x; sc->castle_y = y; sc->castle_d = d;
                 }
@@ -823,9 +825,10 @@ static void scan_zone(const Game *g, const Map *map, const Fog *fog,
         const SpellDef *rsp = spell_by_index(ridx);
         if (rsp && GameKnownSpells(g) < g->stats.max_spells &&
             g->stats.gold > rsp->cost + 600) {
-            for (int i = 0; i < GAME_TOWNS; i++) {
+            for (int i = 0; i < g->town_count; i++) {
                 const TownRecord *tr = &g->towns[i];
                 if (!tr->id[0] || !tr->visited || !tr->spell_for_sale[0]) continue;
+                if (!GameTownHasRites(g, tr->id)) continue;
                 if (spell_index_by_id(tr->spell_for_sale) != ridx) continue;
                 const ResTown *rt = resources_town_by_id(res, tr->id);
                 if (!rt || strcmp(rt->zone, g->position.zone) != 0) continue;
@@ -860,12 +863,12 @@ static int pick_sail_zone(const Game *g, const Resources *res) {
         const VillainDef *v = villain_by_id(g->contract.active_id);
         if (v) {
             int zi = resources_zone_index(res, v->zone);
-            if (zi >= 0 && zi < GAME_CONTINENTS && zi != cur &&
+            if (zi >= 0 && zi < DEMO_ZONES_MAX && zi != cur &&
                 g->world.zones_discovered[zi])
                 return zi;
         }
     }
-    for (int zi = 0; zi < res->zone_count && zi < GAME_CONTINENTS; zi++) {
+    for (int zi = 0; zi < res->zone_count && zi < DEMO_ZONES_MAX; zi++) {
         if (zi == cur || !g->world.zones_discovered[zi]) continue;
         if (!s_st.zone_done[zi]) return zi;
     }
@@ -1115,14 +1118,13 @@ replan:
         int dest = pick_sail_zone(g, res);
         if (g->travel_mode == TRAVEL_BOAT) {
             int zi2 = resources_zone_index(res, g->position.zone);
-            if (zi2 >= 0 && zi2 < GAME_CONTINENTS) st->zone_done[zi2] = true;
+            if (zi2 >= 0 && zi2 < DEMO_ZONES_MAX) st->zone_done[zi2] = true;
             int comm = 0;
             printf("[DEMO] sailing to %s (day %d)\n",
                    res->zones[dest].id, g->stats.days_left);
             if (GameSwitchZone(g, map, fog, res->zones[dest].id)) {
                 GameSpendWeek(g, &comm);
-                FogReveal(fog, map, g->position.x, g->position.y,
-                          res->world.fog_sight);
+                FogRevealFor(res, fog, map, g->position.x, g->position.y);
                 st->waits = 0;
                 return true;
             }
@@ -1167,14 +1169,13 @@ replan:
         int zi = resources_zone_index(res, g->position.zone);
         int dest = pick_sail_zone(g, res);
         if (dest >= 0 && g->travel_mode == TRAVEL_BOAT) {
-            if (zi >= 0 && zi < GAME_CONTINENTS) st->zone_done[zi] = true;
+            if (zi >= 0 && zi < DEMO_ZONES_MAX) st->zone_done[zi] = true;
             int comm = 0;
             printf("[DEMO] sailing to %s (day %d)\n",
                    res->zones[dest].id, g->stats.days_left);
             if (GameSwitchZone(g, map, fog, res->zones[dest].id)) {
                 GameSpendWeek(g, &comm);
-                FogReveal(fog, map, g->position.x, g->position.y,
-                          res->world.fog_sight);
+                FogRevealFor(res, fog, map, g->position.x, g->position.y);
                 st->waits = 0;
                 return true;
             }
@@ -1185,8 +1186,8 @@ replan:
             bool boat_usable = false;
             if (g->boat.has_boat &&
                 strcmp(g->boat.zone, g->position.zone) == 0)
-                for (int y = 0; y < MAP_MAX_H && !boat_usable; y++)
-                    for (int x = 0; x < MAP_MAX_W; x++)
+                for (int y = 0; y < DEMO_MAP_H && !boat_usable; y++)
+                    for (int x = 0; x < DEMO_MAP_W; x++)
                         if (pf.dist[1][y][x] >= 0) { boat_usable = true; break; }
             if (!boat_usable && sc.anytown_d >= 0 &&
                 g->stats.gold > GameBoatCost(g) + 100) {
@@ -1287,10 +1288,10 @@ replan:
     // prediction beats. Only when none is winnable does patience -- and
     // finally the any-odds last resort -- take over.
     {
-        const FoeState *foes_r[GAME_MAX_FOES];
-        long power_r[GAME_MAX_FOES];
+        const FoeState *foes_r[DEMO_FOES_MAX];
+        long power_r[DEMO_FOES_MAX];
         int nr = 0;
-        for (int i = 0; i < g->foe_count; i++) {
+        for (int i = 0; i < g->foe_count && nr < DEMO_FOES_MAX; i++) {
             const FoeState *f = &g->foes[i];
             if (!f->alive || f->friendly) continue;
             if (strcmp(f->zone, g->position.zone) != 0) continue;
@@ -1326,8 +1327,8 @@ replan:
         bool pocket_dead = false;
         if (!target && nr > 0) {
             int reach = 0;
-            for (int y = 0; y < MAP_MAX_H && reach <= 12; y++)
-                for (int x = 0; x < MAP_MAX_W; x++)
+            for (int y = 0; y < DEMO_MAP_H && reach <= 12; y++)
+                for (int x = 0; x < DEMO_MAP_W; x++)
                     if (pf.dist[0][y][x] >= 0 || pf.dist[1][y][x] >= 0) reach++;
             pocket_dead = reach <= 12;
         }

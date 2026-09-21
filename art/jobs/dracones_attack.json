@@ -1,0 +1,21 @@
+{
+  "id": "dracones_attack",
+  "prompt": "the head and neck drive forward from drawn back to full reach out in front of the body, the jaws opening wide as they go, then the neck draws back to where it began and the jaws close, the wings stay spread and the clawed feet stay planted",
+  "style": "rd_advanced_animation__custom_action",
+  "width": 96,
+  "height": 96,
+  "seed": 5282,
+  "frames_duration": 4,
+  "return_spritesheet": true,
+  "input_image_path": "build/art/dracones/run02/01_raw.png",
+  "input_image_keep_alpha": true,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/troops/dracones_00..03.png",
+  "_note": "2026-09-07: job copied whole from silvani_attack (96, no padding, four frames, expansion off); the old padded 128 route dropped. Still is dracones run02."
+}

@@ -1,9 +1,9 @@
 // src/shell_fastquit.h
 //
-// Ctrl+Q "Quit without saving (y/n)" status-bar prompt. The string is
-// rendered into the top status bar by chrome.c (which calls
-// main_fast_quit_active() to gate the substitution), NOT a bottom
-// dialog. While active, all other input is swallowed.
+// Ctrl+Q "Quit without saving (y/n)". Legacy: a status-bar prompt rendered
+// by chrome.c (which calls main_fast_quit_active() to gate the substitution).
+// Modern: the ordinary yes/no prompt. While active, all other input is
+// swallowed.
 //
 // Y -> set quit; N / ESC / cancel -> dismiss.
 
