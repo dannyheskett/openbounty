@@ -417,7 +417,9 @@ $(ANDROID_OBJ_DIR)/native_app_glue.o: $(NATIVE_APP_GLUE)/android_native_app_glue
 	@mkdir -p $(dir $@)
 	$(ANDROID_CC) $(ANDROID_CFLAGS) -Wno-unused-parameter -c $< -o $@
 
-$(ANDROID_OBJ_DIR)/%.o: %.c
+# build/version.h is generated (main.c's --version includes it), so every
+# Android object waits on it exactly as the native objects do.
+$(ANDROID_OBJ_DIR)/%.o: %.c build/version.h
 	@mkdir -p $(dir $@)
 	$(ANDROID_CC) $(ANDROID_CFLAGS) -MMD -MP -c $< -o $@
 

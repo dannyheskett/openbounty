@@ -34,6 +34,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+// mingw's mkdir takes one argument, as src/screenshot.c and src/recorder.c
+// already know. The gallery is a desktop tool and does build for Windows.
+#ifdef _WIN32
+#include <direct.h>
+#define MKDIR(p) _mkdir(p)
+#else
+#define MKDIR(p) mkdir((p), 0755)
+#endif
 
 void combat_present_public(const Combat *c, const Game *g, const Sprites *sprites, void *render_target);
 void combat_gallery_menu(bool open);
@@ -171,7 +179,7 @@ static void set_army(Game *g, const char *ids[], int counts[], int n) {
 
 int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
                 RenderTexture2D *rt, const char *dir) {
-    mkdir(dir, 0755);
+    MKDIR(dir);
     char mpath[1024];
     snprintf(mpath, sizeof mpath, "%s/manifest.txt", dir);
     Gal G = { g, m, f, res, s, rt, dir, fopen(mpath, "w") };
