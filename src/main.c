@@ -33,6 +33,16 @@
 #include "pack_select.h"
 #include "plat_android.h"
 #include "plat_ios.h"
+
+// Boot tracing, iOS only. An iOS app has no console: its stdout is piped into
+// the unified log by ios/plat_ios.mm, and these are the only markers between
+// launch and the game's first report of its own (the seed, at the title
+// screen). Everywhere else this compiles to nothing.
+#if defined(PLATFORM_IOS)
+#define BOOT_TRACE(...) do { fprintf(stdout, __VA_ARGS__); fflush(stdout); } while (0)
+#else
+#define BOOT_TRACE(...) do { } while (0)
+#endif
 #include "extract.h"
 #include "version.h"
 #include "fatal.h"
@@ -263,8 +273,10 @@ int shell_run_game(int argc, char **argv) {
     // Android has no command line and no writable working directory: the save
     // root is resolved from the activity before anything can read a slot.
     // A no-op everywhere else.
+    BOOT_TRACE("[boot] entered\n");
     plat_android_boot();
     plat_ios_boot();
+    BOOT_TRACE("[boot] save path resolved\n");
 
     // Minimal CLI parsing.
     bool want_fullscreen = false;
@@ -531,7 +543,9 @@ int shell_run_game(int argc, char **argv) {
     Pack *pack = plat_android_open_pack();
     if (pack) snprintf(pack_path, sizeof pack_path, "%s", ANDROID_PACK_ASSET);
     if (!pack) {
+        BOOT_TRACE("[boot] opening the bundled pack\n");
         pack = plat_ios_open_pack();
+        BOOT_TRACE("[boot] pack %s\n", pack ? "opened" : "FAILED");
         if (pack) snprintf(pack_path, sizeof pack_path, "%s", IOS_PACK_RESOURCE);
     }
 
@@ -693,6 +707,7 @@ int shell_run_game(int argc, char **argv) {
     // Silence raylib's per-asset INFO chatter; keep warnings + errors.
     frame_host_quiet_log();   // the shell reports its own conditions
 
+    BOOT_TRACE("[boot] loading resources\n");
     Resources res;
     if (!resources_load(&res, "game.json")) {
         // Reported through fatal_user_error, not a bare printf: on Windows the
@@ -740,6 +755,7 @@ int shell_run_game(int argc, char **argv) {
     // than bigger ones; higher scales are an explicit choice for a 4K panel.
     // Demo mode paces itself via per-beat holds in shell_demo.c; the frame rate
     // stays at the human 60fps cap. Human play is 60fps too.
+    BOOT_TRACE("[boot] resources loaded, opening the window\n");
     frame_host_window_open(base_w, base_h,
                            res.title[0] ? res.title : "OpenBounty");
     int min_w, min_h;
