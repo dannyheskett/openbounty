@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 # Install the emulator APK, launch it, and prove it is still running.
 #
+# What this proves and what it does not: the APK installs, the activity starts,
+# the pack is read out of the APK, and the process is alive 20s later. It does
+# NOT prove the game draws -- the CI emulator's software GL does not always
+# give raylib an EGL configuration it can use, and a failed context leaves the
+# screen black with the process perfectly healthy. The screenshot and the full
+# logcat are kept as artifacts so that case is visible rather than silent.
+#
 # This is a file rather than inline YAML because android-emulator-runner runs
 # each LINE of its `script:` as its own `sh -c`: shell variables do not carry
 # from one line to the next and a multi-line `if` is a syntax error.

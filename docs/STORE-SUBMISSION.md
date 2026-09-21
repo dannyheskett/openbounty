@@ -75,9 +75,18 @@ Blocking, in rough order of effort:
 
 Stated plainly, because "it compiles" is not "it works":
 
-- **The Android APK has never been run**, on a device or an emulator. It is
-  assembled and its contents are asserted in CI, and it is the same raylib
-  build as the desktop game, but nobody has watched it start.
+- **The Android app has never drawn a frame.** CI now installs the APK on an
+  emulator, launches it and checks it is still alive 20 s later, and it is:
+  the activity starts, the pack is read out of the APK, the process is
+  healthy. But the emulator's software GL does not reliably give raylib an
+  EGL configuration -- `eglChooseConfig` matches nothing, even with the depth
+  buffer dropped to zero -- so `eglCreateContext` fails and every frame goes
+  nowhere. The screenshot artifact is black.
+
+  Whether this is emulator-only is **unknown**. The same raylib configuration
+  ships in the other `open*` games, which are tested on real hardware through
+  a device farm rather than an emulator. The cheap way to settle it is to
+  sideload the arm64 APK from the CI artifact onto a phone.
 - **iOS touch input is unverified.** The renderer is confirmed from CI
   screenshots — the title screen draws correctly, the app is alive 30 s in —
   but no tap has been delivered to the app. The touch *mapping* is shared
