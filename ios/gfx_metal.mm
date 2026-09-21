@@ -39,10 +39,13 @@ static const char *kShaderSrc = R"METAL(
 #include <metal_stdlib>
 using namespace metal;
 
+// Laid out to match the C Vertex exactly: two float2s then a float4, which
+// MSL aligns at 0, 8 and 16 for a 32-byte stride. No [[attribute]] qualifiers:
+// this is read as a plain buffer, not through a vertex descriptor.
 struct VIn {
-    float2 pos   [[attribute(0)]];
-    float2 uv    [[attribute(1)]];
-    float4 color [[attribute(2)]];
+    float2 pos;
+    float2 uv;
+    float4 color;
 };
 
 struct VOut {
@@ -56,7 +59,7 @@ struct Uniforms {
 };
 
 vertex VOut ob_vertex(uint vid [[vertex_id]],
-                      constant VIn *verts [[buffer(0)]],
+                      const device VIn *verts [[buffer(0)]],
                       constant Uniforms &u [[buffer(1)]]) {
     VOut o;
     float2 p = verts[vid].pos;
@@ -106,6 +109,10 @@ static id<MTLCommandQueue>        s_queue;
 static id<MTLRenderPipelineState> s_pipeline;
 static id<MTLSamplerState>        s_sampler;
 static CAMetalLayer              *s_layer;
+// The frame's vertices. NOT setVertexBytes: that is capped at 4 KB and a
+// frame of this game is tens of thousands of bytes, which is exactly the kind
+// of overflow that draws garbage rather than failing.
+static id<MTLBuffer>              s_vbuf;
 
 static Vertex  s_verts[VERTS_MAX];
 static int     s_vert_count;
@@ -177,6 +184,9 @@ void gfx_metal_attach(CAMetalLayer *layer) {
     sd.sAddressMode = MTLSamplerAddressModeClampToEdge;
     sd.tAddressMode = MTLSamplerAddressModeClampToEdge;
     s_sampler = [s_device newSamplerStateWithDescriptor:sd];
+
+    s_vbuf = [s_device newBufferWithLength:sizeof(Vertex) * VERTS_MAX
+                                   options:MTLResourceStorageModeShared];
 }
 
 void gfx_metal_set_viewport(int width, int height, int origin_x, int origin_y) {
@@ -218,6 +228,9 @@ static Batch *batch_current(void) {
 static float s_zoom = 1.0f;
 
 static void push(float x, float y, float u, float v, Color c) {
+    // Decide the batch BEFORE appending: batch_current() may start a new one
+    // at s_vert_count, and a new batch must begin AT this vertex, not after it.
+    Batch *b = batch_current();
     if (s_vert_count >= VERTS_MAX) return;   // a dropped vertex, not a crash
     Vertex *o = &s_verts[s_vert_count++];
     // The safe-area offset belongs to the DRAWABLE only: inside the offscreen
@@ -229,7 +242,7 @@ static void push(float x, float y, float u, float v, Color c) {
     o->u = u; o->v = v;
     o->r = c.r / 255.0f; o->g = c.g / 255.0f;
     o->b = c.b / 255.0f; o->a = c.a / 255.0f;
-    batch_current()->count++;
+    b->count++;
 }
 
 // A quad as two triangles, with uv corners for the textured case.
@@ -271,6 +284,10 @@ static void encode_batches(id<MTLRenderCommandEncoder> enc, int vp_w, int vp_h) 
     [enc setVertexBytes:&uniforms length:sizeof uniforms atIndex:1];
     [enc setFragmentSamplerState:s_sampler atIndex:0];
 
+    // One upload for the whole pass; each batch draws its own slice of it.
+    if (s_vert_count > 0)
+        memcpy([s_vbuf contents], s_verts, sizeof(Vertex) * (size_t)s_vert_count);
+
     for (int i = 0; i < s_batch_count; i++) {
         Batch *b = &s_batches[i];
         if (b->count <= 0) continue;
@@ -296,9 +313,9 @@ static void encode_batches(id<MTLRenderCommandEncoder> enc, int vp_w, int vp_h) 
         [enc setFragmentBytes:&textured length:sizeof textured atIndex:0];
         if (b->texture && b->texture <= TEX_MAX && s_tex_used[b->texture - 1])
             [enc setFragmentTexture:s_textures[b->texture - 1] atIndex:0];
-        [enc setVertexBytes:&s_verts[b->first]
-                     length:sizeof(Vertex) * (NSUInteger)b->count
-                    atIndex:0];
+        [enc setVertexBuffer:s_vbuf
+                      offset:sizeof(Vertex) * (NSUInteger)b->first
+                     atIndex:0];
         [enc drawPrimitives:MTLPrimitiveTypeTriangle
                 vertexStart:0
                 vertexCount:(NSUInteger)b->count];

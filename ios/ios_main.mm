@@ -143,18 +143,39 @@ extern "C" void ob_ios_selftest_frame(void) {
     gfx_frame_end();
 }
 
+// The plist declares landscape-only, but a window with no scene manifest can
+// still come up portrait on a Simulator booted that way, so the view
+// controller states it too -- belt and braces, and it costs two methods.
+@interface OBViewController : UIViewController
+@end
+
+@implementation OBViewController
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations {
+    return UIInterfaceOrientationMaskLandscape;
+}
+- (BOOL)shouldAutorotate { return YES; }
+- (BOOL)prefersStatusBarHidden { return YES; }
+- (BOOL)prefersHomeIndicatorAutoHidden { return YES; }
+@end
+
 @interface OBAppDelegate : UIResponder <UIApplicationDelegate>
 @property (strong, nonatomic) UIWindow *window;
 @end
 
 @implementation OBAppDelegate
 
+- (UIInterfaceOrientationMask)application:(UIApplication *)application
+  supportedInterfaceOrientationsForWindow:(UIWindow *)window {
+    (void)application; (void)window;
+    return UIInterfaceOrientationMaskLandscape;
+}
+
 - (BOOL)application:(UIApplication *)application
         didFinishLaunchingWithOptions:(NSDictionary *)options {
     (void)application; (void)options;
     CGRect bounds = [UIScreen mainScreen].bounds;
     self.window = [[UIWindow alloc] initWithFrame:bounds];
-    UIViewController *vc = [[UIViewController alloc] init];
+    OBViewController *vc = [[OBViewController alloc] init];
     vc.view = [[OBMetalView alloc] initWithFrame:bounds];
     self.window.rootViewController = vc;
     [self.window makeKeyAndVisible];
