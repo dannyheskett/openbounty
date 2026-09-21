@@ -48,7 +48,7 @@ by `--version`.
 ## 2. What the workflow does
 
 `.github/workflows/release.yml` is triggered by any push to `main` and
-by `workflow_dispatch`. It runs six jobs:
+by `workflow_dispatch`. It runs eight jobs:
 
 - **guard**: the attribution guard (`attribution-guard.yml`, reused via
   `workflow_call`) gates everything, so a violating commit can never
@@ -71,9 +71,20 @@ by `workflow_dispatch`. It runs six jobs:
   `dist-web`. It needs the *Linux* toolchain as well as emsdk because
   the wasm target depends on the asset pack, and the native binary is
   what zips that pack.
+- **android build** (Ubuntu): installs the NDK, build-tools and platform,
+  builds raylib for `arm64-v8a` and the Linux toolchain (the APK embeds the
+  Glory of Rome pack, and the native binary is what zips that pack), then
+  packages a debug-signed sideload **APK** and -- only when all four
+  `PLAY_*` signing secrets are present -- an upload-signed **AAB**. Mobile is
+  Glory of Rome only; the job asserts no King's Bounty pack is inside either
+  artifact.
 - **publish** (Ubuntu): downloads all build artifacts, creates the
   `release-N` **tag at the triggering SHA**, and publishes the GitHub
-  Release with auto-generated notes and the five archives attached.
+  Release with auto-generated notes and the archives attached.
+- **publish-play** (Ubuntu): pushes the AAB to Play's **internal** track,
+  gated on `publish` having succeeded and on `dry_run` being false, and
+  skipped entirely when `PLAY_SERVICE_ACCOUNT_JSON` is absent. The package
+  name is `com.danheskett.gloryofrome` -- the app, not the repository.
 
 Tagging happens in the publish job, after every build job succeeds. If
 any build fails, no tag is created and `N` is reused next time.
@@ -88,7 +99,19 @@ check is enforced in every build job.
 The web archive is the exception: it must embed the pack to run at all,
 so the pack rides inside `openbounty.data`. That is the intended
 embedding, and the leak check still passes because no file named
-`*.openbounty` is present.
+`*.openbounty` is present. The web bundle that ships is **Glory of Rome**;
+King's Bounty's web build stays local.
+
+The Android artifacts are the other exception, and deliberately so: the APK
+and the AAB carry `assets/glory-of-rome.openbounty` inside them, which is
+ours to distribute. Their own guard checks the opposite thing -- that the
+King's Bounty pack is *not* in there.
+
+**Secrets the Android path needs**: `PLAY_UPLOAD_KEYSTORE` (base64 of the
+upload keystore), `PLAY_KEY_ALIAS`, `PLAY_KEYSTORE_PASSWORD`,
+`PLAY_KEY_PASSWORD` for signing the AAB, and `PLAY_SERVICE_ACCOUNT_JSON` for
+the Play push. With none of them set, the release still produces the sideload
+APK and simply skips the bundle and the upload.
 
 ---
 
@@ -96,9 +119,11 @@ embedding, and the leak check still passes because no file named
 
 `.github/workflows/ci.yml` runs on every pull request. The Linux job
 builds the dev binary (`make`) and runs the full test suite
-(`make test`). Windows, macOS, and web jobs run a cross-compile /
-universal / wasm smoke build as cheap insurance that the other targets
-still build before a release is cut.
+(`make test`). Windows, macOS, web and Android jobs run a cross-compile /
+universal / wasm / APK smoke build as cheap insurance that the other targets
+still build before a release is cut. The Android job also unzips the APK it
+built and asserts it carries the pack, the `.so` and `classes.dex`, and no
+King's Bounty pack.
 
 Doc-only changes (`**.md`, `docs/**`) skip CI.
 

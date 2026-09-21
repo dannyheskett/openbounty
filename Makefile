@@ -471,6 +471,77 @@ $(ANDROID_APK): $(ANDROID_LIB) $(ANDROID_DEX) $(ANDROID_KEYSTORE) \
 -include $(ANDROID_OBJ:.o=.d)
 
 # ---------------------------------------------------------------------------
+# Android App Bundle (.aab) for Google Play. Play only accepts AABs for new
+# apps, and the legacy `aapt` (v1) above cannot emit one, so this path uses
+# `aapt2` (proto resources) + `bundletool`. Kept fully separate from the
+# sideload APK target: same libgloryofrome.so and the same pack, different
+# packaging + a real upload key. Signed with the upload key; Google's Play App
+# Signing re-signs the delivered APKs, so this signature only has to satisfy
+# the Play upload check.
+#
+# Signing defaults to the throwaway debug keystore so `make android-play`
+# works locally to exercise the pipeline; CI overrides PLAY_* with the real
+# upload keystore (from a secret) to produce an uploadable bundle.
+# ---------------------------------------------------------------------------
+ANDROID_AAB        := build/$(ANDROID_APP_NAME).aab
+BUNDLETOOL_VERSION ?= 1.17.2
+BUNDLETOOL         ?= build/bundletool.jar
+# Checksum of bundletool-all-$(BUNDLETOOL_VERSION).jar. Bump both together.
+BUNDLETOOL_SHA256  ?= 2d4ad908faea64047c1cc9cb747e6aa667c6ab192e09607bd16b67246a8cd6ae
+
+PLAY_KEYSTORE   ?= $(ANDROID_KEYSTORE)
+PLAY_KEY_ALIAS  ?= $(ANDROID_APP_NAME)
+PLAY_STORE_PASS ?= android
+PLAY_KEY_PASS   ?= android
+
+android-play: $(ANDROID_AAB)
+
+# Downloaded to .tmp and renamed only after the checksum matches. The rename
+# matters as much as the check: this jar is run with `java -jar` in the same job
+# that has just decoded the Play upload keystore to disk, and leaving a rejected
+# download at $@ would let the next run's existence test accept it unverified.
+$(BUNDLETOOL):
+	@mkdir -p $(dir $@)
+	curl -fsSL -o $@.tmp \
+	    https://github.com/google/bundletool/releases/download/$(BUNDLETOOL_VERSION)/bundletool-all-$(BUNDLETOOL_VERSION).jar
+	echo "$(BUNDLETOOL_SHA256)  $@.tmp" | sha256sum -c - || { rm -f $@.tmp; exit 1; }
+	mv $@.tmp $@
+
+# Exported rather than passed on the command line, so the passwords reach
+# jarsigner through the environment and appear in neither the build log nor the
+# process table.
+$(ANDROID_AAB): export PLAY_STORE_PASS_ENV = $(PLAY_STORE_PASS)
+$(ANDROID_AAB): export PLAY_KEY_PASS_ENV   = $(PLAY_KEY_PASS)
+$(ANDROID_AAB): $(ANDROID_LIB) $(ANDROID_DEX) $(BUNDLETOOL) $(PLAY_KEYSTORE) \
+                $(ANDROID_ASSETS)/$(ANDROID_PACK).openbounty \
+                android/AndroidManifest.xml android/res/values/styles.xml
+	@rm -rf build/aab && mkdir -p build/aab/module/manifest \
+	    build/aab/module/lib/$(ANDROID_ABI) build/aab/module/dex \
+	    build/aab/module/assets
+	# Compile android/res, then link into a *protobuf* APK (bundletool's input).
+	$(ANDROID_SDK_BT)/aapt2 compile --dir android/res -o build/aab/res.zip
+	$(ANDROID_SDK_BT)/aapt2 link --proto-format -o build/aab/proto.apk \
+	    -I $(ANDROID_JAR) --manifest android/AndroidManifest.xml \
+	    -R build/aab/res.zip --auto-add-overlay \
+	    --version-code $(ANDROID_VERSION_CODE) --version-name $(ANDROID_VERSION_NAME)
+	# Re-lay the proto APK into bundletool's base-module layout, add the .so,
+	# the dex and the pack.
+	cd build/aab && unzip -qo proto.apk -d proto
+	mv build/aab/proto/AndroidManifest.xml build/aab/module/manifest/AndroidManifest.xml
+	mv build/aab/proto/resources.pb        build/aab/module/resources.pb
+	mv build/aab/proto/res                 build/aab/module/res
+	cp $(ANDROID_LIB) build/aab/module/lib/$(ANDROID_ABI)/lib$(ANDROID_APP_NAME).so
+	cp $(ANDROID_DEX) build/aab/module/dex/classes.dex
+	cp $(ANDROID_ASSETS)/$(ANDROID_PACK).openbounty build/aab/module/assets/
+	cd build/aab/module && zip -qr ../module.zip manifest resources.pb res lib dex assets
+	java -jar $(BUNDLETOOL) build-bundle --modules=build/aab/module.zip --output=$@
+	# Sign the bundle (JAR signature) with the upload key.
+	@jarsigner -keystore $(PLAY_KEYSTORE) -storepass:env PLAY_STORE_PASS_ENV \
+	    -keypass:env PLAY_KEY_PASS_ENV -sigalg SHA256withRSA -digestalg SHA-256 \
+	    $@ $(PLAY_KEY_ALIAS)
+	@echo "[android] built $@ (versionCode $(ANDROID_VERSION_CODE), versionName $(ANDROID_VERSION_NAME))"
+
+# ---------------------------------------------------------------------------
 # Distribution archives (consumed by GitHub Actions release workflow).
 # Each `dist-<platform>` target stages the platform-specific binary plus
 # README.txt (rendered from dist/README.txt.in with $(OPENBOUNTY_VERSION)
@@ -540,6 +611,18 @@ dist-web: $(OUT_WEB_ROME)
 	cp LICENSE NOTICES.md $(STAGING)/web/openbounty-$(OPENBOUNTY_VERSION_SLUG)-web/
 	@mkdir -p $(DIST)
 	(cd $(STAGING)/web && zip -qr ../../../$(DIST)/openbounty-$(OPENBOUNTY_VERSION_SLUG)-web-wasm.zip openbounty-$(OPENBOUNTY_VERSION_SLUG)-web)
+
+# Android ships as the APK and the AAB themselves -- no archive, no README
+# alongside: a store artifact is a single signed file. Both carry the Glory of
+# Rome pack inside them, which is ours to distribute (the release workflow's
+# guard is about King's Bounty's DOS-extracted pack, which never reaches here).
+dist-android: $(ANDROID_APK)
+	@mkdir -p $(DIST)
+	cp $(ANDROID_APK) $(DIST)/gloryofrome-$(OPENBOUNTY_VERSION_SLUG)-android-arm64.apk
+
+dist-android-play: $(ANDROID_AAB)
+	@mkdir -p $(DIST)
+	cp $(ANDROID_AAB) $(DIST)/gloryofrome-$(OPENBOUNTY_VERSION_SLUG)-android.aab
 
 # ---------------------------------------------------------------------------
 # Unit tests (second binary, links the same SRC minus main.c plus
@@ -695,4 +778,4 @@ clean:
 	rm -rf build
 	rm -f dist/*.tar.gz dist/*.zip
 
-.PHONY: all run release run-release windows windows-debug mac web web-kings-bounty web-glory-of-rome web-serve android clean test extract extract-pack dist dist-linux dist-windows dist-mac dist-web
+.PHONY: all run release run-release windows windows-debug mac web web-kings-bounty web-glory-of-rome web-serve android android-play dist-android dist-android-play clean test extract extract-pack dist dist-linux dist-windows dist-mac dist-web

@@ -215,9 +215,113 @@ jobs:
           name: web
           path: dist/*.zip
 
+  build-android:
+    name: android APK (sideload) + AAB (Play) build
+    needs: prepare
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    env:
+      NDK_VERSION: "26.3.11579264"
+      ANDROID_BUILD_TOOLS: "36.0.0"
+      ANDROID_PLATFORM_VER: "36"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        # The action's default package list includes the legacy `tools`
+        # package, which current cmdline-tools no longer carry ("Failed to
+        # find package 'tools'"), failing SDK setup. The NDK, build-tools and
+        # platform are installed explicitly below.
+        with:
+          packages: platform-tools
+      - name: Install NDK + build-tools + platform
+        run: |
+          sdkmanager --install "ndk;${NDK_VERSION}" \
+            "build-tools;${ANDROID_BUILD_TOOLS}" \
+            "platforms;android-${ANDROID_PLATFORM_VER}"
+          echo "ANDROID_NDK=${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
+      # The APK embeds the Glory of Rome pack, and the pack is zipped by the
+      # NATIVE binary (./build/debug/openbounty --pack-dir), so the Linux
+      # toolchain is required even though nothing native ships from this job.
+      - name: Install Linux build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
+            libxcursor-dev libxi-dev libasound2-dev
+      - name: Build raylib (Linux)
+        run: ./scripts/build_raylib_linux.sh
+      - name: Build raylib (Android, arm64-v8a)
+        run: ./scripts/build_raylib_android.sh
+      - name: Package sideload APK (debug-signed)
+        run: |
+          make dist-android \
+            ANDROID_BUILD_TOOLS="${ANDROID_BUILD_TOOLS}" \
+            ANDROID_PLATFORM_VER="${ANDROID_PLATFORM_VER}" \
+            RELEASE_VERSION=${{ needs.prepare.outputs.version }}
+      # secrets can't be referenced in `if:`, so probe once into an output. All FOUR signing
+      # secrets must be present -- the alias and both passwords, not just the keystore. If
+      # any is missing the AAB is skipped and the sideload APK still ships, so an incomplete
+      # Play config never fails the release.
+      - name: Detect Play signing secrets
+        id: playsecret
+        env:
+          K:  ${{ secrets.PLAY_UPLOAD_KEYSTORE }}
+          A:  ${{ secrets.PLAY_KEY_ALIAS }}
+          SP: ${{ secrets.PLAY_KEYSTORE_PASSWORD }}
+          KP: ${{ secrets.PLAY_KEY_PASSWORD }}
+        run: |
+          if [ -n "$K" ] && [ -n "$A" ] && [ -n "$SP" ] && [ -n "$KP" ]; then
+            echo "present=true"  >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Package Play bundle (AAB, upload-signed)
+        if: steps.playsecret.outputs.present == 'true'
+        env:
+          PLAY_UPLOAD_KEYSTORE:    ${{ secrets.PLAY_UPLOAD_KEYSTORE }}
+          PLAY_KEY_ALIAS:          ${{ secrets.PLAY_KEY_ALIAS }}
+          PLAY_KEYSTORE_PASSWORD:  ${{ secrets.PLAY_KEYSTORE_PASSWORD }}
+          PLAY_KEY_PASSWORD:       ${{ secrets.PLAY_KEY_PASSWORD }}
+        run: |
+          echo "$PLAY_UPLOAD_KEYSTORE" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          make dist-android-play \
+            ANDROID_BUILD_TOOLS="${ANDROID_BUILD_TOOLS}" \
+            ANDROID_PLATFORM_VER="${ANDROID_PLATFORM_VER}" \
+            RELEASE_VERSION=${{ needs.prepare.outputs.version }} \
+            PLAY_KEYSTORE="$RUNNER_TEMP/upload.jks" \
+            PLAY_KEY_ALIAS="$PLAY_KEY_ALIAS" \
+            PLAY_STORE_PASS="$PLAY_KEYSTORE_PASSWORD" \
+            PLAY_KEY_PASS="$PLAY_KEY_PASSWORD"
+      # The pack inside these artifacts is Glory of Rome, which is ours. The guard the
+      # other platforms run is about King's Bounty's DOS-extracted pack: check it is not
+      # in here rather than checking for any pack at all.
+      - name: Verify no King's Bounty pack in the Android artifacts
+        run: |
+          set -e
+          for f in dist/*.apk dist/*.aab; do
+            [ -e "$f" ] || continue
+            if unzip -l "$f" | grep -q "kings-bounty"; then
+              echo "$f contains the King's Bounty pack"; exit 1
+            fi
+          done
+      # The AAB is only built and uploaded as an artifact here. The push to Play happens in
+      # publish-play, which waits for the GitHub Release first: a build failing in parallel
+      # with this one could otherwise land on Play after the release had broken.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: android
+          path: |
+            dist/*.apk
+            dist/*.aab
+
   publish:
     name: tag + publish GitHub Release
-    needs: [prepare, build-linux-windows, build-mac, build-web]
+    needs: [prepare, build-linux-windows, build-mac, build-web, build-android]
     if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && needs.prepare.result == 'success' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 5
@@ -257,3 +361,50 @@ jobs:
           generate_release_notes: true
           fail_on_unmatched_files: true
           draft: false
+
+  publish-play:
+    # Gated on `publish`, not merely on the builds: the GitHub Release is not a platform
+    # build, and shipping an AAB labelled release-N for a release that does not exist is
+    # exactly what waiting on it prevents.
+    #
+    # `!inputs.dry_run` is load-bearing, not decorative: without it a dry run would still
+    # ship a build to the internal track, the outcome dry_run exists to prevent. On a
+    # push, `inputs` is empty and the expression is falsey, which is why it is safe at
+    # job level.
+    if: ${{ !inputs.dry_run && needs.publish.result == 'success' }}
+    name: publish AAB to the Play internal track
+    needs: [prepare, publish]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - name: Download the android artifact (contains the AAB)
+        uses: actions/download-artifact@v8
+        with:
+          name: android
+          path: dist
+      - name: Gate on the publish secret + a built AAB
+        id: gate
+        env:
+          SA: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          aab=$(find dist -maxdepth 1 -name '*.aab' | head -1)
+          if [ -n "$SA" ] && [ -n "$aab" ]; then
+            echo "go=true"   >> "$GITHUB_OUTPUT"
+            echo "aab=$aab"  >> "$GITHUB_OUTPUT"
+          else
+            echo "go=false"  >> "$GITHUB_OUTPUT"
+            echo "Skipping Play publish (secret: $([ -n "$SA" ] && echo yes || echo no); AAB: $([ -n "$aab" ] && echo yes || echo no))."
+          fi
+      # Pinned to the v1.1.5 commit SHA (not the mutable tag) so a retagged upstream release
+      # cannot silently change what runs against the signing key.
+      - name: Publish AAB to the Play internal track
+        if: steps.gate.outputs.go == 'true'
+        uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5  # v1.1.5
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          # The mobile app is Glory of Rome, not the repository name.
+          packageName: com.danheskett.gloryofrome
+          releaseFiles: ${{ steps.gate.outputs.aab }}
+          track: internal
+          status: completed
+          releaseName: release-${{ needs.prepare.outputs.version }}

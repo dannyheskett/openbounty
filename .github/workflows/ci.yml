@@ -94,3 +94,66 @@ jobs:
         with:
           name: web-build
           path: build/web
+
+  android:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    env:
+      NDK_VERSION: "26.3.11579264"
+      ANDROID_BUILD_TOOLS: "36.0.0"
+      ANDROID_PLATFORM_VER: "36"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        # The action's default package list includes the legacy `tools`
+        # package, which current cmdline-tools no longer carry ("Failed to
+        # find package 'tools'"), failing SDK setup. The NDK, build-tools and
+        # platform are installed explicitly below.
+        with:
+          packages: platform-tools
+      - name: Install NDK + build-tools + platform
+        run: |
+          sdkmanager --install "ndk;${NDK_VERSION}" \
+            "build-tools;${ANDROID_BUILD_TOOLS}" \
+            "platforms;android-${ANDROID_PLATFORM_VER}"
+          echo "ANDROID_NDK=${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
+      # The APK embeds the Glory of Rome pack, and the pack is zipped by the
+      # NATIVE binary (./build/debug/openbounty --pack-dir), so the Linux
+      # toolchain is required even though nothing native ships from this job.
+      - name: Install Linux build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
+            libxcursor-dev libxi-dev libasound2-dev
+      - name: Build raylib (Linux)
+        run: ./scripts/build_raylib_linux.sh
+      - name: Build raylib (Android, arm64-v8a static)
+        run: ./scripts/build_raylib_android.sh
+      - name: Build APK (sideload)
+        run: |
+          make android \
+            ANDROID_BUILD_TOOLS="${ANDROID_BUILD_TOOLS}" \
+            ANDROID_PLATFORM_VER="${ANDROID_PLATFORM_VER}"
+      - name: Verify the APK carries the pack and the lib
+        run: |
+          set -e
+          unzip -l build/gloryofrome.apk > /tmp/apk-listing.txt
+          grep -q "assets/glory-of-rome.openbounty" /tmp/apk-listing.txt
+          grep -q "lib/arm64-v8a/libgloryofrome.so" /tmp/apk-listing.txt
+          grep -q "classes.dex" /tmp/apk-listing.txt
+          # King's Bounty's pack is DOS-extracted and copyright-restricted: it
+          # must never reach a distributable artifact.
+          if grep -q "kings-bounty" /tmp/apk-listing.txt; then
+            echo "APK contains the King's Bounty pack"; exit 1
+          fi
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-apk
+          path: build/*.apk
