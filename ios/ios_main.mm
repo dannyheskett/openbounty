@@ -28,6 +28,7 @@ extern "C" void ob_ios_selftest_frame(void);
 // name: there is no command line, and the pack and save directory are resolved
 // by src/plat_ios.c.
 extern "C" int shell_run_game(int argc, char **argv);
+extern "C" void plat_ios_log_stdout(void);
 
 @interface OBMetalView : UIView
 @property (nonatomic) BOOL started;
@@ -42,6 +43,7 @@ extern "C" int shell_run_game(int argc, char **argv);
     if (!self.window || self.started) return;
     self.started = YES;
 
+    plat_ios_log_stdout();            // the game's own reporting, into os_log
     self.multipleTouchEnabled = NO;   // the game reads one contact
     gfx_metal_attach((CAMetalLayer *)self.layer);
     [self updateDrawableSize];

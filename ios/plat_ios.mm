@@ -91,8 +91,50 @@ double plat_ios_delta(void) { return atomic_load(&s_delta); }
 
 #import <Foundation/Foundation.h>
 
+#include <unistd.h>
+
 #include <stdlib.h>
 #include <string.h>
+
+// The game reports everything it does on stdout -- the pack it opened, the
+// seed, every fatal. On iOS that goes nowhere a developer or a CI job can
+// read, so stdout and stderr are piped into os_log, one line at a time. This
+// is the ONLY way the app is observable on a device.
+extern "C" void plat_ios_log_stdout(void) {
+    static bool started = false;
+    if (started) return;
+    started = true;
+
+    int fds[2];
+    if (pipe(fds) != 0) return;
+    dup2(fds[1], STDOUT_FILENO);
+    dup2(fds[1], STDERR_FILENO);
+    setvbuf(stdout, NULL, _IOLBF, 0);
+
+    int rd = fds[0];
+    [NSThread detachNewThreadWithBlock:^{
+        char buf[1024];
+        size_t used = 0;
+        for (;;) {
+            ssize_t n = read(rd, buf + used, sizeof buf - used - 1);
+            if (n <= 0) break;
+            used += (size_t)n;
+            buf[used] = '\0';
+            char *line = buf, *nl;
+            while ((nl = strchr(line, '\n')) != NULL) {
+                *nl = '\0';
+                NSLog(@"openbounty: %s", line);
+                line = nl + 1;
+            }
+            used = strlen(line);
+            memmove(buf, line, used + 1);
+            if (used >= sizeof buf - 2) {   // a line longer than the buffer
+                NSLog(@"openbounty: %s", buf);
+                used = 0;
+            }
+        }
+    }];
+}
 
 extern "C" char *plat_ios_documents_dir(void) {
     @autoreleasepool {
