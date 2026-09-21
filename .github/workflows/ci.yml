@@ -224,7 +224,7 @@ jobs:
     # checked below is the one Apple would actually receive. Apple refuses an
     # upload built against an SDK older than iOS 26.
     runs-on: macos-26
-    timeout-minutes: 15
+    timeout-minutes: 45   # two full compiles (unsigned + signed) and the screenshot capture
     steps:
       - uses: actions/checkout@v7
       # The .app embeds the Glory of Rome pack, and the pack is zipped by the
