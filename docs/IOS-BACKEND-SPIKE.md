@@ -270,7 +270,21 @@ raylib include path at all. It fails the build if a raylib call comes back.
 Throughout: King's Bounty's gallery stayed 86/86 byte-identical, Rome's 93/93,
 `detcheck.sh` clean, 366 tests green.
 
-Written, and awaiting its first compile on a macOS runner (checkpoints 1-2):
+**Checkpoints 1 and 2 are done** (PR #38, `macos-15` runner): the app builds
+with no Xcode project, installs, launches on a Simulator, and draws. The
+runtime-compiled Metal shader works, and the self-test's fills, outlines,
+rounded panels with borders, triangle and circle all render correctly with the
+safe-area inset respected. Three real bugs came out of that first run, each of
+which would have been invisible without it:
+
+- `setVertexBytes` is capped at 4 KB; a frame is far more, and it drew garbage
+  rather than failing. Vertices now go through an `MTLBuffer`.
+- A vertex has to join the batch decided *before* it is appended: deciding
+  after left every batch starting one vertex late.
+- The Simulator boots portrait and a plist-only orientation did not hold, so
+  the view controller states landscape as well.
+
+The pieces, all first compiled on that runner:
 
 - `ios/gfx_metal.mm` -- the whole of `src/gfx.h` in one pipeline and one
   shader, compiled from source at runtime so the build needs no offline Metal
