@@ -195,7 +195,7 @@ jobs:
           # pack, resources, fatals) lands in an artifact. It blocks until the
           # app exits, so it runs in the background.
           xcrun simctl launch --console-pty "$UDID" "$bundle" > ios-console.txt 2>&1 &
-          sleep 25
+          sleep 10
           # The screenshot FIRST, while the app is certainly alive: the
           # diagnostics below take a few seconds each, and a run that spent
           # them first caught the home screen after the app had gone.
@@ -213,17 +213,29 @@ jobs:
           xcrun simctl spawn "$UDID" log show --style compact --last 5m \
             --predicate 'processImagePath CONTAINS "GloryOfRome"' 2>/dev/null \
             | grep -i "openbounty\|fatal\|exception" | head -60 || true
-          echo "--- crash reports ---"
-          for f in ~/Library/Logs/DiagnosticReports/GloryOfRome*; do
-            [ -e "$f" ] || continue
-            echo "== $f"; head -60 "$f"
+          echo "--- a second screenshot, 20s later ---"
+          sleep 20
+          xcrun simctl io "$UDID" screenshot ios-shot-late.png
+          sips -r 270 ios-shot-late.png >/dev/null
+          xcrun simctl spawn "$UDID" launchctl list | grep -i gloryofrome || echo "gone by now"
+          echo "--- crash reports (host + simulator) ---"
+          find ~/Library/Logs/DiagnosticReports ~/Library/Logs/CoreSimulator \
+               -name '*GloryOfRome*' -newermt '-10 minutes' 2>/dev/null | head -5
+          for f in $(find ~/Library/Logs/DiagnosticReports ~/Library/Logs/CoreSimulator \
+                          -name '*GloryOfRome*' -newermt '-10 minutes' 2>/dev/null | head -2); do
+            echo "== $f"; head -80 "$f"
           done
+          echo "--- why it went away ---"
+          xcrun simctl spawn "$UDID" log show --style compact --last 5m \
+            --predicate 'eventMessage CONTAINS "gloryofrome" OR eventMessage CONTAINS "GloryOfRome"' \
+            2>/dev/null | grep -iE "exit|terminat|crash|kill|jetsam|watchdog" | head -20 || true
       - name: Upload the Simulator screenshot and console
         uses: actions/upload-artifact@v7
         with:
           name: ios-sim-screenshot
           path: |
             ios-shot.png
+            ios-shot-late.png
             ios-console.txt
       - name: Build the device .ipa (unsigned)
         run: make ios PACK_TOOL=build/openbounty-mac
