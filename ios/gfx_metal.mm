@@ -644,6 +644,12 @@ RenderTexture2D gfx_target_create(int w, int h) {
 
 void gfx_target_free(RenderTexture2D rt) { gfx_texture_free(rt.texture); }
 
+// TEMPORARY (checkpoint 3): paint a band into the offscreen buffer at the
+// start of every target pass. If the screen shows the band, the target ->
+// drawable path works and the game's own textures are the problem; if it
+// stays black, the path itself is broken. Removed once the screen is right.
+#define OB_TARGET_PROBE 1
+
 void gfx_target_begin(RenderTexture2D rt) {
     if (rt.id == 0 || rt.id > TEX_MAX) return;
     // A pass never nests: the shell draws the whole frame into the target,
@@ -651,6 +657,13 @@ void gfx_target_begin(RenderTexture2D rt) {
     // this call would belong to no pass, so start clean.
     pass_reset();
     s_target = s_textures[rt.id - 1];
+#if OB_TARGET_PROBE
+    s_cur_tex = 0;
+    quad(0, 0, (float)rt.texture.width, 60.0f, 0, 0, 0, 0,
+         (Color){ 255, 0, 255, 255 });
+    quad(0, 60.0f, 60.0f, (float)rt.texture.height, 0, 0, 0, 0,
+         (Color){ 0, 255, 255, 255 });
+#endif
 }
 
 void gfx_target_end(void) {
