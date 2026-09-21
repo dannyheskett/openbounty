@@ -138,7 +138,7 @@ extern "C" void ob_ios_selftest_frame(void) {
     gfx_rect_rounded_lines(32, 80, 240, 120, 0.15f, 6,
                            (Color){ 250, 220, 60, 255 });
     gfx_triangle((Vector2){ 320, 200 }, (Vector2){ 400, 90 },
-                 (Vector2){ 480, 200 }, (Vector2){ 60, 160, 60, 255 });
+                 (Vector2){ 480, 200 }, (Color){ 60, 160, 60, 255 });
     gfx_circle(560, 150, 45.0f, (Color){ 200, 120, 40, 255 });
     gfx_frame_end();
 }
