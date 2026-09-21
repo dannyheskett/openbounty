@@ -115,10 +115,6 @@ static id<MTLCommandQueue>        s_queue;
 static id<MTLRenderPipelineState> s_pipeline;
 static id<MTLSamplerState>        s_sampler;
 static CAMetalLayer              *s_layer;
-// The frame's vertices. NOT setVertexBytes: that is capped at 4 KB and a
-// frame of this game is tens of thousands of bytes, which is exactly the kind
-// of overflow that draws garbage rather than failing.
-static id<MTLBuffer>              s_vbuf;
 
 static Vertex  s_verts[VERTS_MAX];
 static int     s_vert_count;
@@ -191,9 +187,6 @@ void gfx_metal_attach(CAMetalLayer *layer) {
     sd.sAddressMode = MTLSamplerAddressModeClampToEdge;
     sd.tAddressMode = MTLSamplerAddressModeClampToEdge;
     s_sampler = [s_device newSamplerStateWithDescriptor:sd];
-
-    s_vbuf = [s_device newBufferWithLength:sizeof(Vertex) * VERTS_MAX
-                                   options:MTLResourceStorageModeShared];
 }
 
 void gfx_metal_set_viewport(int width, int height, int origin_x, int origin_y) {
@@ -300,9 +293,22 @@ static void encode_batches(id<MTLRenderCommandEncoder> enc, int vp_w, int vp_h) 
     [enc setVertexBytes:&uniforms length:sizeof uniforms atIndex:1];
     [enc setFragmentSamplerState:s_sampler atIndex:0];
 
-    // One upload for the whole pass; each batch draws its own slice of it.
-    if (s_vert_count > 0)
-        memcpy([s_vbuf contents], s_verts, sizeof(Vertex) * (size_t)s_vert_count);
+    // A FRESH buffer per pass, not one shared buffer refilled.
+    //
+    // A frame is two passes -- the offscreen buffer, then the drawable -- and
+    // the CPU runs far ahead of the GPU: refilling one buffer meant the second
+    // pass's vertices overwrote the first's before the GPU had drawn it, so
+    // the game's whole frame was rendered with the blit's six vertices and the
+    // screen came out black. Metal keeps a buffer alive until the command
+    // buffer that references it completes, so handing each pass its own is
+    // both correct and self-managing. Two small allocations a frame.
+    id<MTLBuffer> vbuf = nil;
+    if (s_vert_count > 0) {
+        vbuf = [s_device newBufferWithBytes:s_verts
+                                     length:sizeof(Vertex) * (NSUInteger)s_vert_count
+                                    options:MTLResourceStorageModeShared];
+    }
+    if (!vbuf) return;
 
     for (int i = 0; i < s_batch_count; i++) {
         Batch *b = &s_batches[i];
@@ -329,7 +335,7 @@ static void encode_batches(id<MTLRenderCommandEncoder> enc, int vp_w, int vp_h) 
         [enc setFragmentBytes:&textured length:sizeof textured atIndex:0];
         if (b->texture && b->texture <= TEX_MAX && s_tex_used[b->texture - 1])
             [enc setFragmentTexture:s_textures[b->texture - 1] atIndex:0];
-        [enc setVertexBuffer:s_vbuf
+        [enc setVertexBuffer:vbuf
                       offset:sizeof(Vertex) * (NSUInteger)b->first
                      atIndex:0];
         [enc drawPrimitives:MTLPrimitiveTypeTriangle
@@ -644,12 +650,6 @@ RenderTexture2D gfx_target_create(int w, int h) {
 
 void gfx_target_free(RenderTexture2D rt) { gfx_texture_free(rt.texture); }
 
-// TEMPORARY (checkpoint 3): paint a band into the offscreen buffer at the
-// start of every target pass. If the screen shows the band, the target ->
-// drawable path works and the game's own textures are the problem; if it
-// stays black, the path itself is broken. Removed once the screen is right.
-#define OB_TARGET_PROBE 1
-
 void gfx_target_begin(RenderTexture2D rt) {
     if (rt.id == 0 || rt.id > TEX_MAX) return;
     // A pass never nests: the shell draws the whole frame into the target,
@@ -657,13 +657,6 @@ void gfx_target_begin(RenderTexture2D rt) {
     // this call would belong to no pass, so start clean.
     pass_reset();
     s_target = s_textures[rt.id - 1];
-#if OB_TARGET_PROBE
-    s_cur_tex = 0;
-    quad(0, 0, (float)rt.texture.width, 60.0f, 0, 0, 0, 0,
-         (Color){ 255, 0, 255, 255 });
-    quad(0, 60.0f, 60.0f, (float)rt.texture.height, 0, 0, 0, 0,
-         (Color){ 0, 255, 255, 255 });
-#endif
 }
 
 void gfx_target_end(void) {
