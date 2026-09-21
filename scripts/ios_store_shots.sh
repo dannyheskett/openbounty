@@ -24,18 +24,21 @@ GAP="${4:-12}"
 echo "--- iPhone simulators on this image ---"
 xcrun simctl list devices available | sed -n 's/^ *\(iPhone[^(]*\).*/\1/p' | sort -u
 
-UDID=$(xcrun simctl list devices available -j | python3 - <<'PY'
+# `python3 - <<EOF` reads the SCRIPT from stdin, which leaves nothing for the
+# device list to arrive on -- it died on an empty JSON parse the first time.
+# So the list goes to a file and the chooser reads that.
+xcrun simctl list devices available -j > "${TMPDIR:-/tmp}/simdevices.json"
+UDID=$(python3 -c "
 import json, sys
-want = ["iPhone 16 Plus", "iPhone 15 Plus", "iPhone 14 Plus",
-        "iPhone 17 Plus", "iPhone 16 Pro Max", "iPhone 17 Pro Max"]
-have = {x["name"]: x["udid"] for r in json.load(sys.stdin)["devices"].values() for x in r}
+want = ['iPhone 16 Plus', 'iPhone 15 Plus', 'iPhone 14 Plus',
+        'iPhone 17 Plus', 'iPhone 16 Pro Max', 'iPhone 17 Pro Max']
+have = {x['name']: x['udid'] for r in json.load(open(sys.argv[1]))['devices'].values() for x in r}
 for n in want:
     if n in have:
         print(have[n]); break
 else:
     print(next(iter(have.values())))
-PY
-)
+" "${TMPDIR:-/tmp}/simdevices.json")
 echo "device: $UDID"
 
 xcrun simctl boot "$UDID"
