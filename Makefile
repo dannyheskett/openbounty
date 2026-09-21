@@ -544,6 +544,82 @@ $(ANDROID_AAB): $(ANDROID_LIB) $(ANDROID_DEX) $(BUNDLETOOL) $(PLAY_KEYSTORE) \
 	@echo "[android] built $@ (versionCode $(ANDROID_VERSION_CODE), versionName $(ANDROID_VERSION_NAME))"
 
 # ---------------------------------------------------------------------------
+# iOS (native Metal, no raylib). CI-only: needs Xcode's toolchain, which exists
+# on macOS alone -- there is no Mac here, so the FIRST build of every one of
+# these files is the macOS runner (docs/IOS-BACKEND-SPIKE.md).
+#
+#   ios-sim  -- Simulator .app (arm64 simulator, unsigned) for CI screenshots.
+#   ios      -- device .ipa (arm64, unsigned unless a signing identity is set).
+#
+# Assembled by hand (clang + Info.plist + zip), no Xcode project, mirroring the
+# no-Gradle Android target. The Metal shader is compiled at RUNTIME from source
+# (ios/gfx_metal.mm), so no offline Metal compiler is needed either.
+#
+# CHECKPOINT 2 of the spike: this builds the app shell and the renderer only --
+# the game's C is not linked yet, and the app draws the renderer self-test.
+# ---------------------------------------------------------------------------
+IOS_MIN        ?= 15.0
+IOS_APP_NAME   := GloryOfRome
+IOS_BUNDLE_ID  := com.danheskett.gloryofrome
+# CFBundleVersion must increase with every App Store upload, so it tracks the
+# release number exactly like ANDROID_VERSION_CODE.
+IOS_BUILD_NUMBER ?= $(OPENBOUNTY_VERSION)
+ifeq ($(IOS_BUILD_NUMBER),0)
+IOS_BUILD_NUMBER := 1
+endif
+IOS_VERSION_NAME ?= 1.0.$(IOS_BUILD_NUMBER)
+# Signing is opt-in: set IOS_SIGN_IDENTITY (and IOS_PROFILE) to produce a
+# submittable .ipa. Unset, the build stays unsigned.
+IOS_SIGN_IDENTITY ?=
+IOS_PROFILE       ?=
+
+IOS_MM_SRC  := ios/ios_main.mm ios/gfx_metal.mm ios/plat_ios.mm
+IOS_C_SRC   :=
+IOS_CFLAGS  := -std=c99   -Wall -Wextra -O2 -DPLATFORM_IOS -Isrc -Iios \
+               -Iengine/include -Ibuild
+IOS_MMFLAGS := -std=c++17 -fobjc-arc -Wall -Wextra -O2 -DPLATFORM_IOS \
+               -Isrc -Iios -Iengine/include -Ibuild
+IOS_FRAMEWORKS := -framework UIKit -framework Metal -framework QuartzCore \
+                  -framework CoreGraphics -framework AVFoundation \
+                  -framework Foundation
+
+IOS_DEPS := $(IOS_MM_SRC) $(IOS_C_SRC) $(wildcard ios/*.h src/gfx.h src/ob_types.h) \
+            ios/Info.plist build/version.h
+
+# $(call ios_build,<sdk>,<target-triple>,<app-dir>,<obj-dir>) -- compile + link
+# the app binary into <app-dir>/$(IOS_APP_NAME) and copy the Info.plist.
+define ios_build
+	@rm -rf $(4) && mkdir -p $(3) $(4)
+	for f in $(IOS_C_SRC);  do xcrun -sdk $(1) clang   -target $(2) $(IOS_CFLAGS)  -c $$f -o $(4)/$$(basename $$f .c).o  || exit 1; done
+	for f in $(IOS_MM_SRC); do xcrun -sdk $(1) clang++ -target $(2) $(IOS_MMFLAGS) -c $$f -o $(4)/$$(basename $$f .mm).o || exit 1; done
+	xcrun -sdk $(1) clang++ -target $(2) $(4)/*.o $(IOS_FRAMEWORKS) -o $(3)/$(IOS_APP_NAME)
+	sed -e "s|<string>1</string>|<string>$(IOS_BUILD_NUMBER)</string>|" \
+	    -e "s|<string>1.0</string>|<string>$(IOS_VERSION_NAME)</string>|" \
+	    ios/Info.plist > $(3)/Info.plist
+endef
+
+IOS_SIM_APP := build/ios-sim/$(IOS_APP_NAME).app
+ios-sim: $(IOS_SIM_APP)
+$(IOS_SIM_APP): $(IOS_DEPS)
+	$(call ios_build,iphonesimulator,arm64-apple-ios$(IOS_MIN)-simulator,build/ios-sim/$(IOS_APP_NAME).app,build/ios-sim/obj)
+	@echo "[ios] built $@"
+
+IOS_APP_DIR := build/ios-device/Payload/$(IOS_APP_NAME).app
+IOS_IPA     := build/$(IOS_APP_NAME).ipa
+ios: $(IOS_IPA)
+$(IOS_IPA): $(IOS_DEPS)
+	$(call ios_build,iphoneos,arm64-apple-ios$(IOS_MIN),$(IOS_APP_DIR),build/ios-device/obj)
+	@if [ -n "$(IOS_SIGN_IDENTITY)" ]; then \
+	  cp "$(IOS_PROFILE)" "$(IOS_APP_DIR)/embedded.mobileprovision"; \
+	  codesign --force --sign "$(IOS_SIGN_IDENTITY)" --timestamp=none \
+	      "$(IOS_APP_DIR)"; \
+	else \
+	  echo "[ios] unsigned (no IOS_SIGN_IDENTITY): a device farm re-signs it"; \
+	fi
+	cd build/ios-device && rm -f ../$(IOS_APP_NAME).ipa && zip -qr ../$(IOS_APP_NAME).ipa Payload
+	@echo "[ios] built $@"
+
+# ---------------------------------------------------------------------------
 # Distribution archives (consumed by GitHub Actions release workflow).
 # Each `dist-<platform>` target stages the platform-specific binary plus
 # README.txt (rendered from dist/README.txt.in with $(OPENBOUNTY_VERSION)
@@ -805,4 +881,4 @@ clean:
 	rm -rf build
 	rm -f dist/*.tar.gz dist/*.zip
 
-.PHONY: all run release run-release windows windows-debug mac web web-kings-bounty web-glory-of-rome web-serve android android-play dist-android dist-android-play clean test extract extract-pack dist dist-linux dist-windows dist-mac dist-web
+.PHONY: all run release run-release windows windows-debug mac web web-kings-bounty web-glory-of-rome web-serve android android-play dist-android dist-android-play ios ios-sim clean test extract extract-pack dist dist-linux dist-windows dist-mac dist-web

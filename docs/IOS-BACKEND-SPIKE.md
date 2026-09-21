@@ -270,9 +270,25 @@ raylib include path at all. It fails the build if a raylib call comes back.
 Throughout: King's Bounty's gallery stayed 86/86 byte-identical, Rome's 93/93,
 `detcheck.sh` clean, 366 tests green.
 
-Still to write, and all of it needs a macOS runner to compile: the four `.mm`
-files, `src/plat_ios.c`, the stb vendoring, and the `ios-sim` / `ios` Makefile
-rules.
+Written, and awaiting its first compile on a macOS runner (checkpoints 1-2):
+
+- `ios/gfx_metal.mm` -- the whole of `src/gfx.h` in one pipeline and one
+  shader, compiled from source at runtime so the build needs no offline Metal
+  compiler. Two passes per frame, never nested: the game's offscreen buffer,
+  then the drawable. The safe-area origin applies to the drawable only.
+- `ios/ios_main.mm` -- `UIApplication` + `CAMetalLayer` + `CADisplayLink`,
+  landscape, one touch contact published in device pixels, and the renderer
+  self-test the CI screenshot captures.
+- `ios/plat_ios.{h,mm}` -- what UIKit publishes and the game reads: safe-area
+  size, touch, foreground state, the frame clock.
+- `ios/Info.plist` -- landscape-only, iOS 15, `com.danheskett.gloryofrome`.
+- `make ios-sim` / `make ios`, and the `ios` CI job that boots a Simulator,
+  installs, launches and uploads a screenshot.
+
+Still to write: `src/plat_ios.c` (bundle pack + save dir), `ios/image_ios.c`
+(stb_image behind `gfx_image_*`), `ios/font_ios.c` (stb_truetype behind
+`font_backend.h`), `ios/audio_ios.mm`, the game thread, and `gfx_label`'s
+atlas.
 
 ## What must not change
 
