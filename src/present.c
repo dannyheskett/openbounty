@@ -182,21 +182,26 @@ void present_scaled(RenderTexture2D rt) {
     if (CL_IS_NATIVE) { dst_w = rt.texture.width; dst_h = rt.texture.height; scale = s_zoom; }
 
 #if defined(PLATFORM_IOS) || defined(PLATFORM_ANDROID)
-    // Mobile shows a fixed buffer at the largest WHOLE-NUMBER scale that fits
-    // the safe area. A phone has no window to resize and no scale control, so
-    // 1x would leave an 800x532 pack as a small panel in the middle of a
-    // 2250x1143 screen. A whole number keeps every pack pixel square and the
-    // art hard-edged; `scale` is what present_window_to_screen maps a tap
-    // back through, so it must be the scale actually used. Desktop and web are
-    // untouched: they keep 1x and their own scale control.
-    if (CL_IS_NATIVE && rt.texture.width > 0 && rt.texture.height > 0) {
-        int fit_x = safe_w / rt.texture.width;
-        int fit_y = safe_h / rt.texture.height;
+    // Mobile shows the frame at the largest WHOLE-NUMBER multiple that still
+    // fits the safe area. A phone has no window to resize and no scale
+    // control, so the desktop's 1x would leave an 800x532 buffer as a small
+    // panel in the middle of a 2250x1143 screen. A whole number keeps every
+    // pack pixel square and the art hard-edged.
+    //
+    // This multiplies whatever the paragraphs above decided rather than
+    // replacing it: a fixed-buffer pack has already been RENDERED at s_zoom,
+    // so the pixels-per-pack-pixel is that zoom times this multiple -- and
+    // `scale` is what present_window_to_screen divides a tap by, so it has to
+    // be the product, not the multiple. Desktop and web never compile this.
+    if (dst_w > 0 && dst_h > 0) {
+        int fit_x = safe_w / dst_w;
+        int fit_y = safe_h / dst_h;
         int fit = (fit_x < fit_y) ? fit_x : fit_y;
-        if (fit < 1) fit = 1;
-        dst_w = rt.texture.width * fit;
-        dst_h = rt.texture.height * fit;
-        scale = fit;
+        if (fit > 1) {
+            dst_w *= fit;
+            dst_h *= fit;
+            scale *= fit;
+        }
     }
 #endif
 
