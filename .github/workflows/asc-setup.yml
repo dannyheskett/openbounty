@@ -1,0 +1,104 @@
+name: asc-setup
+
+# The one-time App Store Connect setup, run from CI so it needs no Mac and no
+# local credentials. Every verb is idempotent and dry_run defaults to on.
+#
+#   bundle-id  register the explicit App ID com.danheskett.gloryofrome
+#   profile    create (or reuse) the App Store provisioning profile for it,
+#              bound to the team's Apple Distribution certificate, and print
+#              the base64 to store as IOS_PROVISIONING_PROFILE
+#   app-info   once the app record exists: category, content rights, age
+#              rating, privacy policy URL, support and marketing URLs, a free
+#              price, and availability in every territory except mainland China
+#
+# What Apple exposes no API for, and so stays console work: creating the app
+# record itself, and the App Privacy nutrition label.
+# ios/app-store-assets/TESTFLIGHT.md is the full walk-through.
+
+on:
+  workflow_dispatch:
+    inputs:
+      step:
+        description: 'Which setup step to run'
+        type: choice
+        options: [bundle-id, profile, app-info]
+        default: bundle-id
+      dry_run:
+        description: 'Print every API call and change nothing'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: asc-setup
+  cancel-in-progress: false
+
+jobs:
+  setup:
+    name: App Store Connect setup
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install the JWT dependency
+        run: python3 -m pip install --quiet cryptography
+      - name: Gate on the API-key secrets
+        id: gate
+        env:
+          K: ${{ secrets.ASC_KEY_P8 }}
+          I: ${{ secrets.ASC_KEY_ID }}
+          S: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          if [ -n "$K" ] && [ -n "$I" ] && [ -n "$S" ]; then echo "go=true" >> "$GITHUB_OUTPUT";
+          else echo "go=false" >> "$GITHUB_OUTPUT"; echo "No ASC_* secrets; skipping."; fi
+      - name: Run the setup step
+        if: steps.gate.outputs.go == 'true'
+        env:
+          ASC_KEY_P8:    ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID:    ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          IOS_CERT_P12:      ${{ secrets.IOS_CERT_P12 }}
+          IOS_CERT_PASSWORD: ${{ secrets.IOS_CERT_PASSWORD }}
+          STEP: ${{ inputs.step }}
+          DRY:  ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          args=("$STEP")
+          if [ "$STEP" = "profile" ]; then
+            # The profile must be bound to the SAME certificate the release
+            # signs with, so its fingerprint is read out of the .p12 secret
+            # rather than typed in and hoped for.
+            if [ -z "$IOS_CERT_P12" ]; then
+              echo "::error::profile needs IOS_CERT_P12 to know which certificate to bind"
+              exit 1
+            fi
+            echo "$IOS_CERT_P12" | base64 -d > cert.p12
+            openssl pkcs12 -in cert.p12 -clcerts -nokeys \
+              -passin "pass:$IOS_CERT_PASSWORD" -legacy -out cert.pem 2>/dev/null \
+              || openssl pkcs12 -in cert.p12 -clcerts -nokeys \
+                   -passin "pass:$IOS_CERT_PASSWORD" -out cert.pem
+            sha1=$(openssl x509 -in cert.pem -noout -fingerprint -sha1 \
+                     | sed 's/.*=//; s/://g')
+            echo "certificate SHA-1: $sha1"
+            args+=(--cert-sha1 "$sha1" --out profile.mobileprovision)
+          fi
+          if [ "$DRY" = "true" ]; then args+=(--dry-run); fi
+          python3 scripts/asc_setup.py "${args[@]}"
+          rm -f cert.p12 cert.pem
+      # Uploaded, not echoed into the log. A .mobileprovision carries the
+      # team's public certificate and the app's entitlements, never a private
+      # key, so it signs nothing on its own -- but this repo is public and its
+      # logs are permanent, and an artifact can at least be deleted.
+      # Download it, then: base64 -w0 profile.mobileprovision | gh secret set IOS_PROVISIONING_PROFILE
+      - name: Upload the provisioning profile
+        if: steps.gate.outputs.go == 'true' && inputs.step == 'profile' && !inputs.dry_run
+        uses: actions/upload-artifact@v7
+        with:
+          name: provisioning-profile
+          path: profile.mobileprovision
+          if-no-files-found: warn
+      - name: Remove the profile from the runner
+        if: always()
+        run: rm -f profile.mobileprovision cert.p12 cert.pem

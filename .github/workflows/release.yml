@@ -580,3 +580,120 @@ jobs:
       - name: Remove the API key
         if: always()
         run: rm -rf ~/.appstoreconnect/private_keys
+
+  testflight-notes:
+    if: ${{ !inputs.dry_run && needs.publish-testflight.result == 'success' }}
+    name: attach TestFlight release notes
+    needs: [prepare, publish-testflight]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - name: Gate on the API-key secrets
+        id: gate
+        env:
+          K: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          if [ -n "$K" ]; then echo "go=true" >> "$GITHUB_OUTPUT"; else echo "go=false" >> "$GITHUB_OUTPUT"; fi
+      - name: Attach notes and report tester distribution
+        if: steps.gate.outputs.go == 'true'
+        env:
+          ASC_KEY_P8:    ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID:    ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          BUNDLE_ID:     com.danheskett.gloryofrome
+          BUILD_VERSION: ${{ needs.prepare.outputs.version }}
+          NOTES: |
+            release-${{ needs.prepare.outputs.version }}
+
+            ${{ github.event.head_commit.message }}
+        run: |
+          python3 -m pip install --quiet cryptography
+          python3 scripts/testflight_notes.py
+
+  # ---------------------------------------------------------------------------
+  # Submit the release to App Review, so a merge to main reaches the App Store
+  # without a second, manual action.
+  #
+  # This runs AFTER testflight-notes, not in parallel with it: both PATCH the
+  # same version's localization, and testflight-notes also waits out Apple's
+  # 5-15 minute processing window, which this job needs to have finished anyway
+  # (there is no build to attach until it has).
+  #
+  # Apple allows exactly ONE submission in flight per app. --skip-if-busy makes
+  # that a no-op with an explanatory line rather than a failure: the release
+  # itself succeeded, and the next one carries the change. Without it, merging
+  # twice inside a review cycle would red a release for nothing being wrong.
+  #
+  # `store-release.yml` remains the way to submit a SPECIFIC build on demand.
+  # Play's public tracks are not automated at all: release.yml pushes to the
+  # internal track and the rest of Play is console work.
+  # ---------------------------------------------------------------------------
+  submit-appstore:
+    # Gated on the UPLOAD succeeding, not on testflight-notes. It is sequenced
+    # after testflight-notes (that job waits out Apple's processing window, and
+    # ordering keeps two jobs off the same app at once), but a failure there must
+    # not veto the submission: the two touch different resources entirely --
+    # betaBuildLocalizations for TestFlight's "What to Test", against
+    # appStoreVersionLocalizations for the public listing. Apple's API also
+    # returns the occasional spurious 401, and a flaky note is no reason to hold
+    # a release back.
+    if: ${{ !inputs.dry_run && !cancelled() && needs.publish-testflight.result == 'success' }}
+    name: submit the build to App Review
+    needs: [prepare, publish-testflight, testflight-notes]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install the JWT dependency
+        run: python3 -m pip install --quiet cryptography
+      - name: Gate on the API-key secrets
+        id: gate
+        env:
+          K: ${{ secrets.ASC_KEY_P8 }}
+          I: ${{ secrets.ASC_KEY_ID }}
+          S: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          if [ -n "$K" ] && [ -n "$I" ] && [ -n "$S" ]; then echo "go=true" >> "$GITHUB_OUTPUT";
+          else echo "go=false" >> "$GITHUB_OUTPUT"; echo "No ASC_* secrets; skipping."; fi
+      # Order matters and is the reverse of Play's, the same way store-release.yml
+      # does it: Apple hangs the listing off a VERSION record, so the version has
+      # to exist before there is anything to write a description or screenshots
+      # onto. Pushing the listing first fails with "no editable version".
+      - name: Create the version and attach the build
+        if: steps.gate.outputs.go == 'true'
+        env:
+          ASC_KEY_P8:    ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID:    ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          BUILD: ${{ needs.prepare.outputs.version }}
+        run: |
+          # "What's New" defaults to a standard line inside asc_release.py. It is
+          # deliberately not the commit subject: that is written for developers,
+          # not for customers, and it would put text like
+          # "ios: submit each release to App Review automatically (#89)" on the
+          # public App Store page.
+          python3 scripts/asc_release.py release --build "$BUILD" --skip-if-busy
+      # Pushed from the repo, so the description and screenshots Apple reviews are
+      # the ones committed here rather than whatever was last typed into the
+      # console.
+      - name: Push the store listing
+        if: steps.gate.outputs.go == 'true'
+        env:
+          ASC_KEY_P8:    ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID:    ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        # --skip-if-busy for the same reason the steps either side of it carry
+        # it: when a version is already in review there is no editable version to
+        # write a listing onto, and the whole job has to no-op together.
+        run: python3 scripts/asc_release.py listing --skip-if-busy
+      - name: Submit for review
+        if: steps.gate.outputs.go == 'true'
+        env:
+          ASC_KEY_P8:    ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID:    ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          BUILD: ${{ needs.prepare.outputs.version }}
+        run: |
+          python3 scripts/asc_release.py release \
+            --build "$BUILD" --submit --skip-if-busy

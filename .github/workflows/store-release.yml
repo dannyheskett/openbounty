@@ -1,0 +1,157 @@
+name: store-release
+
+# Push the App Store listing, and put a chosen build in front of App Review,
+# from one dispatch.
+#
+# This is deliberately NOT part of release.yml. That workflow runs on every
+# merge to main and ends at the GitHub Release plus an upload to the Play
+# internal track and to TestFlight -- both places where only the maintainer
+# looks. Putting a build in front of the public is a decision, not a
+# consequence of merging, so it is a manual dispatch with dry_run defaulted on.
+#
+# The build must already be uploaded: release.yml sends the .ipa to App Store
+# Connect on every merge. This workflow promotes what is there; it builds and
+# uploads nothing.
+#
+# Apple exposes no API for the App Privacy nutrition label, and none for
+# creating the app record. Both are one-time console work (see
+# ios/app-store-assets/TESTFLIGHT.md). Google Play's public tracks are not
+# handled here at all: release.yml pushes to the internal track and the rest of
+# Play is console work.
+
+on:
+  workflow_dispatch:
+    inputs:
+      build:
+        description: 'Release number to ship (blank = the newest release-N tag)'
+        type: string
+        default: ''
+      push_listing:
+        description: 'Push listing text + screenshots from the repo'
+        type: boolean
+        default: true
+      submit_for_review:
+        description: 'Send the version to App Review'
+        type: boolean
+        default: false
+      dry_run:
+        description: 'Print every API call and change nothing'
+        type: boolean
+        default: true
+
+# No write access to the repo is needed: this only talks to Apple.
+permissions:
+  contents: read
+
+# Serialised against itself: Apple rejects a second review submission while one
+# is open, and two concurrent listing edits would clobber each other.
+concurrency:
+  group: store-release
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    name: resolve the build number
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    outputs:
+      build: ${{ steps.pick.outputs.build }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: pick
+        env:
+          REQUESTED: ${{ inputs.build }}
+        run: |
+          set -euo pipefail
+          if [ -n "$REQUESTED" ]; then
+            build="$REQUESTED"
+          else
+            build=$(git tag --list 'release-*' \
+                      | sed -n 's/^release-\([1-9][0-9]*\)$/\1/p' \
+                      | sort -n | tail -1)
+          fi
+          case "$build" in
+            ''|*[!0-9]*) echo "::error::'$build' is not a release number"; exit 1 ;;
+          esac
+          # A tag must exist for it: the number is also Apple's CFBundleVersion,
+          # so a typo here would target a build that was never produced.
+          git rev-parse -q --verify "refs/tags/release-$build" >/dev/null \
+            || { echo "::error::no release-$build tag"; exit 1; }
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+          echo "Shipping release-$build"
+
+  asc:
+    name: App Store
+    needs: resolve
+    # Linux, not macOS: the metadata and review-submission APIs are pure REST.
+    # Only the .ipa upload itself needs Xcode, and release.yml already did that.
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install the JWT dependency
+        run: python3 -m pip install --quiet cryptography
+      # Secrets cannot be used in `if:`, so probe once into an output.
+      - name: Gate on the API-key secrets
+        id: gate
+        env:
+          K: ${{ secrets.ASC_KEY_P8 }}
+          I: ${{ secrets.ASC_KEY_ID }}
+          S: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          if [ -n "$K" ] && [ -n "$I" ] && [ -n "$S" ]; then echo "go=true" >> "$GITHUB_OUTPUT";
+          else echo "go=false" >> "$GITHUB_OUTPUT"; echo "No ASC_* secrets; skipping."; fi
+      - name: Validate the listing files
+        if: steps.gate.outputs.go == 'true'
+        run: python3 scripts/store_listing.py --check
+      # Order matters: Apple hangs the listing off a VERSION record, so the
+      # version has to exist before there is anything to write a description or
+      # screenshots onto. Hence release first (without --submit), then the
+      # listing, then the submit pass.
+      - name: Create the version and attach the build
+        if: steps.gate.outputs.go == 'true'
+        env:
+          ASC_KEY_P8:    ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID:    ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          BUILD: ${{ needs.resolve.outputs.build }}
+          DRY: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          args=(release --build "$BUILD")
+          if [ "$DRY" = "true" ]; then args+=(--dry-run); fi
+          python3 scripts/asc_release.py "${args[@]}"
+      - name: Push the store listing
+        if: steps.gate.outputs.go == 'true' && inputs.push_listing
+        env:
+          ASC_KEY_P8:    ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID:    ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          DRY: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          args=(listing)
+          if [ "$DRY" = "true" ]; then args+=(--dry-run); fi
+          python3 scripts/asc_release.py "${args[@]}"
+      - name: Submit for review
+        if: steps.gate.outputs.go == 'true' && inputs.submit_for_review
+        env:
+          ASC_KEY_P8:    ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID:    ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          BUILD: ${{ needs.resolve.outputs.build }}
+          DRY: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          args=(release --build "$BUILD" --submit)
+          if [ "$DRY" = "true" ]; then args+=(--dry-run); fi
+          python3 scripts/asc_release.py "${args[@]}"
+      - name: Show the current version state
+        if: steps.gate.outputs.go == 'true'
+        env:
+          ASC_KEY_P8:    ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID:    ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: python3 scripts/asc_release.py status

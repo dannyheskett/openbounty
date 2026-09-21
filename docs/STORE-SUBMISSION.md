@@ -57,10 +57,11 @@ Blocking, in rough order of effort:
    image is ever scaled or composited to hit a store's size.
 3. **A Play feature graphic**, 1024×500.
 4. **Store records.** Neither app exists in App Store Connect or the Play
-   Console yet. Both have to be created by hand once: bundle id, SKU, name,
-   category, the content-rating questionnaire and the data-safety form (all
-   answers are "none"; the copy to paste is in `android/play-assets/LISTING.md`
-   and `ios/app-store-assets/LISTING.md`).
+   Console yet. Apple's app record and its App Privacy label have no API and
+   have to be created by hand; everything else on the Apple side is scripted
+   (below). Play is all console work: bundle id, the content-rating
+   questionnaire and the data-safety form (all answers are "none"; the copy to
+   paste is in `android/play-assets/LISTING.md`).
 5. **A published privacy policy URL.** The text is written
    (`android/play-assets/PRIVACY.md`); both stores want it at a public URL.
 6. **The signing secrets**, which do not exist yet: an Apple Distribution
@@ -90,3 +91,30 @@ Stated plainly, because "it compiles" is not "it works":
 None of this is hard to close — it is a device, an hour, and a walk through
 title → class → map → a fight → save → load on each platform. It just has not
 happened, and no store submission should go out before it does.
+
+---
+
+## 4. What is scripted on the Apple side
+
+Ported from the other `open*` games, so both stores are driven the same way:
+
+| Script | What it does |
+|---|---|
+| `scripts/store_listing.py` | parses both LISTING.md files, enforces each store's length limits, and bans a listing that names another store or the original game. CI runs `--check` on every PR. |
+| `scripts/asc_setup.py` | one-time setup: register the App ID, create the App Store provisioning profile bound to the team certificate, then set category, content rights, age rating, privacy-policy URL, support/marketing URLs, a free price, and availability in every territory except mainland China. |
+| `scripts/asc_release.py` | `status`, `listing` (text + screenshots), `release --build N [--submit]` — creates the version, attaches an uploaded build, pushes the listing, and submits to App Review. |
+| `scripts/testflight_notes.py` | waits out Apple's processing window and writes "What to Test" onto the build TestFlight just received. |
+
+| Workflow | Trigger |
+|---|---|
+| `.github/workflows/asc-setup.yml` | manual; one verb per run, `dry_run` on by default |
+| `.github/workflows/store-release.yml` | manual; push the listing and submit a chosen build, `dry_run` on by default |
+| `release.yml` `publish-testflight` / `testflight-notes` / `submit-appstore` | every merge to `main`, all gated on the `ASC_*` secrets |
+
+`ios/app-store-assets/TESTFLIGHT.md` is the step-by-step for the parts only a
+human can do: the certificate, the app record, the API key, and the seven
+repository secrets.
+
+Nothing equivalent exists for Play beyond the internal-track upload: the Data
+safety form, the IARC rating and the closed-testing gate are console work that
+Google exposes no API for.
