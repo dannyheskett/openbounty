@@ -59,8 +59,30 @@ void frame_host_end_frame(void) {
 // back, and raylib would otherwise close the window on it), and a 60fps cap.
 
 void frame_host_window_open(int w, int h, const char *title) {
+#if defined(PLATFORM_ANDROID)
+    // Two things differ on a phone, and both of them showed up as a smeared,
+    // off-centre frame.
+    //
+    // No MSAA. The game is pixel art blitted at a whole-number scale, so
+    // multisampling has nothing to smooth but the edges we want hard -- and
+    // asking for it costs the whole app: raylib turns the hint into an EGL
+    // request for four samples, and a device (the Android emulator, for one)
+    // that offers no such configuration matches nothing at all, so the GL
+    // context is never created and every frame goes nowhere.
+    //
+    // 0 x 0 means "the display". Give raylib a size of our own and it treats
+    // it as a virtual screen: it keeps drawing at 800x532 and stretches the
+    // result to the display through a non-integer matrix with a bilinear
+    // filter, while GetScreenWidth() keeps reporting 800 -- so present.c
+    // cannot see the real screen either, and its own whole-number scale is
+    // computed against a fiction. At 0x0 raylib's screen IS the display,
+    // there is no matrix, and the scaling is ours alone.
+    (void)w; (void)h;
+    InitWindow(0, 0, title);
+#else
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
     InitWindow(w, h, title);
+#endif
     HideCursor();
     SetTargetFPS(60);
     SetExitKey(KEY_NULL);
