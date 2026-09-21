@@ -88,4 +88,15 @@ void frame_host_poll_events(void) { PollInputEvents(); }
 
 double frame_host_delta(void) { return (double)GetFrameTime(); }
 
-void frame_host_quiet_log(void) { SetTraceLogLevel(LOG_ERROR); }
+// The shell reports its own conditions, so raylib's running commentary is
+// turned down to errors -- except on Android, where logcat is the ONLY channel
+// out of the app (stdout goes nowhere) and raylib reports things like a failed
+// EGL context at WARNING. Losing those leaves a black screen with no
+// explanation, which is exactly what it did.
+void frame_host_quiet_log(void) {
+#if defined(PLATFORM_ANDROID)
+    SetTraceLogLevel(LOG_WARNING);
+#else
+    SetTraceLogLevel(LOG_ERROR);
+#endif
+}

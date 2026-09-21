@@ -32,3 +32,11 @@ if [ -z "$pid" ]; then
     exit 1
 fi
 echo "[android] the app is alive 20s after launch (pid $pid)"
+
+# Alive is not the same as drawing. A failed EGL context leaves every GL call
+# with nowhere to go and the screen black, while the process sits there
+# perfectly happily -- which is what the emulator did the first time.
+if grep -qE "EGL_BAD_CONFIG|Failed to create EGL|no current context" android-logcat.txt; then
+    echo "::warning::the app started but EGL reported an error; the frame is probably black"
+    grep -E "EGL|raylib" android-logcat.txt | tail -20
+fi
