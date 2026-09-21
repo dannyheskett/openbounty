@@ -1,0 +1,50 @@
+diff --git a/src/platforms/rcore_android.c b/src/platforms/rcore_android.c
+index f501fba..24805a2 100644
+--- a/src/platforms/rcore_android.c
++++ b/src/platforms/rcore_android.c
+@@ -970,7 +970,44 @@ static int InitGraphicsDevice(void)
+     }
+ 
+     // Get an appropriate EGL framebuffer configuration
+-    eglChooseConfig(platform.device, framebufferAttribs, &platform.config, 1, &numConfigs);
++    //
++    // NOTE(openbounty): the return of eglChooseConfig() and numConfigs were
++    // both ignored here. When NO config matches the requested attributes,
++    // platform.config keeps whatever it held and eglCreateContext() fails with
++    // EGL_BAD_CONFIG, which is reported as "Failed to create EGL context" with
++    // nothing to say which attribute was impossible. The Android emulator's
++    // software GL has no ES2 config with a 24-bit depth buffer, so raylib could
++    // not start there at all. Ask for the depth sizes in descending order and
++    // report which one was granted.
++    {
++        static const EGLint depthSizes[] = { 24, 16, 0 };
++        EGLint attribs[sizeof(framebufferAttribs)/sizeof(EGLint)];
++
++        for (unsigned int d = 0; d < sizeof(depthSizes)/sizeof(depthSizes[0]); d++)
++        {
++            for (unsigned int i = 0; i < sizeof(attribs)/sizeof(attribs[0]); i++) attribs[i] = framebufferAttribs[i];
++            for (unsigned int i = 0; attribs[i] != EGL_NONE; i += 2)
++            {
++                if (attribs[i] == EGL_DEPTH_SIZE) attribs[i + 1] = depthSizes[d];
++            }
++
++            numConfigs = 0;
++            eglChooseConfig(platform.device, attribs, &platform.config, 1, &numConfigs);
++            if (numConfigs > 0)
++            {
++                TRACELOG(LOG_INFO, "DISPLAY: EGL configuration chosen with a %i-bit depth buffer", depthSizes[d]);
++                break;
++            }
++
++            TRACELOG(LOG_WARNING, "DISPLAY: No EGL configuration with a %i-bit depth buffer", depthSizes[d]);
++        }
++
++        if (numConfigs == 0)
++        {
++            TRACELOG(LOG_WARNING, "DISPLAY: Failed to choose an EGL framebuffer configuration");
++            return -1;
++        }
++    }
+ 
+     // Set rendering API
+     eglBindAPI(EGL_OPENGL_ES_API);

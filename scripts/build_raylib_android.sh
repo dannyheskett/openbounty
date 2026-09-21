@@ -43,6 +43,21 @@ abi_for_arch() {
     esac
 }
 
+# raylib's Android backend ignores eglChooseConfig's result, so when no
+# framebuffer configuration matches its request -- 24-bit depth, which the
+# Android emulator's software GL does not offer for an ES2 context -- it
+# carries on with an unset config and dies at eglCreateContext with
+# EGL_BAD_CONFIG and no diagnosis. The patch asks for 24, then 16, then no
+# depth buffer, and says which it got. Idempotent: the raylib tree is shared
+# with the other build scripts and survives between runs.
+PATCH="$(cd "$(dirname "$0")" && pwd)/raylib-android-eglconfig.patch"
+if git -C "$RAYLIB_SRC_DIR" apply --reverse --check "$PATCH" 2>/dev/null; then
+    echo "[build_raylib_android] EGL config patch already applied"
+else
+    git -C "$RAYLIB_SRC_DIR" apply "$PATCH"
+    echo "[build_raylib_android] applied EGL config patch"
+fi
+
 for arch in $ANDROID_ARCHES; do
     abi="$(abi_for_arch "$arch")"
     echo "[build_raylib_android] building raylib $RAYLIB_TAG for $arch ($abi), API $ANDROID_API"
