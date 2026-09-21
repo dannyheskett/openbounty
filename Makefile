@@ -63,7 +63,18 @@ DEMO_OBJ     := $(patsubst %.c,$(DEMO_OBJ_DIR)/%.o,$(DEMO_SRC))
 AUTOPLAY_SRC := autoplay/autoplay.c autoplay/planner.c autoplay/goals.c autoplay/prereq.c autoplay/baltree.c autoplay/search.c autoplay/primitives.c autoplay/exec_move.c autoplay/exec_fight.c autoplay/exec_recruit.c autoplay/exec_loc.c autoplay/recording.c autoplay/worldsnap.c autoplay/plan.c autoplay/exec_replay.c autoplay/exec_ledger.c autoplay/diag.c
 AUTOPLAY_OBJ_DIR := build/$(BUILD)/objs/autoplay
 AUTOPLAY_OBJ     := $(patsubst %.c,$(AUTOPLAY_OBJ_DIR)/%.o,$(AUTOPLAY_SRC))
-SHELL_SRC  := src/main.c src/plat_android.c src/safe_area.c src/gfx_raylib.c src/layout.c src/present.c src/shell_menu.c src/shell_tempdeath.c src/shell_weekend.c src/shell_audience.c src/shell_cheats.c src/shell_gate.c src/shell_fastquit.c src/shell_frame.c src/shell_promptdispatch.c src/shell_actions.c src/shell_demo.c src/shell_autoplay.c src/shell_earlyexit.c src/shell_gallery.c src/assets.c src/pack_select.c src/recorder.c src/audio.c src/audio_raylib.c src/encode_mp4.c src/encode_mp4_h264.c src/encode_mp4_mux.c src/encode_dialog.c src/bfont.c src/text.c src/font_raylib.c src/select.c src/textsel.c src/tilevar.c src/tile_cache.c src/sprites.c src/views.c src/ui.c src/screenshot.c src/combat_loop.c src/combat_render.c src/combat_replay.c src/palette.c src/chrome.c src/lattice.c src/hud.c src/map_render.c src/overlay.c src/legacy/overlay.c src/modern/overlay.c src/views_render.c src/legacy/views_render.c src/modern/views_render.c src/legacy/prompt.c src/modern/prompt.c src/modern/mlayout.c src/modern/castle.c src/modern/mlist.c src/modern/saveslots.c src/modern/gamemenu.c src/modern/location.c src/modern/uikit.c src/input.c src/input_host.c src/touch.c src/frame_host.c src/prompt.c src/startup.c src/end_cartoon.c src/screens/home_castle.c src/screens/recruit_soldiers.c src/screens/own_castle.c src/screens/dwelling.c src/screens/alcove.c src/screens/end_game.c
+SHELL_SRC  := src/main.c src/plat_android.c src/plat_ios.c src/safe_area.c src/gfx_raylib.c src/layout.c src/present.c src/shell_menu.c src/shell_tempdeath.c src/shell_weekend.c src/shell_audience.c src/shell_cheats.c src/shell_gate.c src/shell_fastquit.c src/shell_frame.c src/shell_promptdispatch.c src/shell_actions.c src/shell_demo.c src/shell_autoplay.c src/shell_earlyexit.c src/shell_gallery.c src/assets.c src/pack_select.c src/recorder.c src/audio.c src/audio_raylib.c src/encode_mp4.c src/encode_mp4_h264.c src/encode_mp4_mux.c src/encode_dialog.c src/bfont.c src/text.c src/font_raylib.c src/select.c src/textsel.c src/tilevar.c src/tile_cache.c src/sprites.c src/views.c src/ui.c src/screenshot.c src/combat_loop.c src/combat_render.c src/combat_replay.c src/palette.c src/chrome.c src/lattice.c src/hud.c src/map_render.c src/overlay.c src/legacy/overlay.c src/modern/overlay.c src/views_render.c src/legacy/views_render.c src/modern/views_render.c src/legacy/prompt.c src/modern/prompt.c src/modern/mlayout.c src/modern/castle.c src/modern/mlist.c src/modern/saveslots.c src/modern/gamemenu.c src/modern/location.c src/modern/uikit.c src/input.c src/input_host.c src/touch.c src/frame_host.c src/prompt.c src/startup.c src/end_cartoon.c src/screens/home_castle.c src/screens/recruit_soldiers.c src/screens/own_castle.c src/screens/dwelling.c src/screens/alcove.c src/screens/end_game.c
+IOS_SKIP := src/gfx_raylib.c src/frame_host.c src/input_host.c \
+            src/plat_android.c src/audio_raylib.c src/font_raylib.c \
+            src/recorder.c src/encode_mp4.c src/encode_mp4_h264.c \
+            src/encode_mp4_mux.c src/encode_dialog.c src/screenshot.c \
+            src/shell_gallery.c src/pack_select.c src/shell_demo.c \
+            src/shell_autoplay.c src/combat_replay.c
+IOS_CHECK_SRC := $(filter-out $(IOS_SKIP),$(SHELL_SRC))
+# The iOS backends' plain-C half. Checked with the shell files below, so a
+# break in them is caught here rather than on a macOS runner ten minutes later.
+IOS_OWN_C     := ios/host_ios.c ios/image_ios.c ios/font_ios.c ios/vorbis_impl.c
+
 TOOL_SRC   := tools/extract.c tools/extract_io.c tools/extract_unpack.c tools/extract_lzw.c tools/extract_vga.c tools/extract_png.c tools/extract_chrome.c tools/extract_gamejson.c
 VENDOR_SRC := third_party/cjson/cJSON.c third_party/miniz/miniz.c
 
@@ -575,29 +586,39 @@ IOS_VERSION_NAME ?= 1.0.$(IOS_BUILD_NUMBER)
 IOS_SIGN_IDENTITY ?=
 IOS_PROFILE       ?=
 
-IOS_MM_SRC  := ios/ios_main.mm ios/gfx_metal.mm ios/plat_ios.mm
-IOS_C_SRC   :=
+IOS_MM_SRC  := ios/ios_main.mm ios/gfx_metal.mm ios/plat_ios.mm \
+               ios/audio_ios.mm
+# The game itself: the shell minus the desktop-only subsystems (the same list
+# the iOS purity check uses), the engine, and the iOS backends. No raylib, no
+# demo/autoplay drivers, no extractor.
+IOS_C_SRC   := $(IOS_CHECK_SRC) $(ENGINE_SRC) \
+               ios/host_ios.c ios/image_ios.c ios/font_ios.c ios/vorbis_impl.c \
+               third_party/cjson/cJSON.c third_party/miniz/miniz.c
 IOS_CFLAGS  := -std=c99   -Wall -Wextra -O2 -DPLATFORM_IOS -Isrc -Iios \
-               -Iengine/include -Ibuild
+               -Iengine/include -Ibuild -Ithird_party/cjson \
+               -Ithird_party/miniz -Ithird_party/stb
 IOS_MMFLAGS := -std=c++17 -fobjc-arc -Wall -Wextra -O2 -DPLATFORM_IOS \
-               -Isrc -Iios -Iengine/include -Ibuild
+               -Isrc -Iios -Iengine/include -Ibuild -Ithird_party/cjson \
+               -Ithird_party/miniz -Ithird_party/stb
 IOS_FRAMEWORKS := -framework UIKit -framework Metal -framework QuartzCore \
                   -framework CoreGraphics -framework AVFoundation \
                   -framework Foundation
 
-IOS_DEPS := $(IOS_MM_SRC) $(IOS_C_SRC) $(wildcard ios/*.h src/gfx.h src/ob_types.h) \
-            ios/Info.plist build/version.h
+IOS_DEPS := $(IOS_MM_SRC) $(IOS_C_SRC) $(wildcard ios/*.h src/*.h src/*/*.h) \
+            ios/Info.plist build/version.h $(PACK_DIR)/$(ANDROID_PACK).openbounty
 
 # $(call ios_build,<sdk>,<target-triple>,<app-dir>,<obj-dir>) -- compile + link
 # the app binary into <app-dir>/$(IOS_APP_NAME) and copy the Info.plist.
 define ios_build
 	@rm -rf $(4) && mkdir -p $(3) $(4)
-	for f in $(IOS_C_SRC);  do xcrun -sdk $(1) clang   -target $(2) $(IOS_CFLAGS)  -c $$f -o $(4)/$$(basename $$f .c).o  || exit 1; done
-	for f in $(IOS_MM_SRC); do xcrun -sdk $(1) clang++ -target $(2) $(IOS_MMFLAGS) -c $$f -o $(4)/$$(basename $$f .mm).o || exit 1; done
+	for f in $(IOS_C_SRC);  do o=$(4)/$$(echo $$f | tr / _ | sed 's/\.c$$/.o/');  xcrun -sdk $(1) clang   -target $(2) $(IOS_CFLAGS)  -c $$f -o $$o || exit 1; done
+	for f in $(IOS_MM_SRC); do o=$(4)/$$(echo $$f | tr / _ | sed 's/\.mm$$/.o/'); xcrun -sdk $(1) clang++ -target $(2) $(IOS_MMFLAGS) -c $$f -o $$o || exit 1; done
 	xcrun -sdk $(1) clang++ -target $(2) $(4)/*.o $(IOS_FRAMEWORKS) -o $(3)/$(IOS_APP_NAME)
 	sed -e "s|<string>1</string>|<string>$(IOS_BUILD_NUMBER)</string>|" \
 	    -e "s|<string>1.0</string>|<string>$(IOS_VERSION_NAME)</string>|" \
 	    ios/Info.plist > $(3)/Info.plist
+	# Glory of Rome only: the one pack, as a bundle resource.
+	cp $(PACK_DIR)/$(ANDROID_PACK).openbounty $(3)/
 endef
 
 IOS_SIM_APP := build/ios-sim/$(IOS_APP_NAME).app
@@ -822,19 +843,12 @@ $(LIBTEST_STAMP): tests/library/consumer.c engine/host_noop.c $(DEMO_OBJ) $(AUTO
 # The excluded list is the desktop-only subsystems -- recorder, mp4 encoder,
 # screenshot, gallery, pack picker, demo and autoplay drivers, combat replay --
 # plus the six backends that ARE raylib by definition.
-IOS_SKIP := src/gfx_raylib.c src/frame_host.c src/input_host.c \
-            src/plat_android.c src/audio_raylib.c src/font_raylib.c \
-            src/recorder.c src/encode_mp4.c src/encode_mp4_h264.c \
-            src/encode_mp4_mux.c src/encode_dialog.c src/screenshot.c \
-            src/shell_gallery.c src/pack_select.c src/shell_demo.c \
-            src/shell_autoplay.c src/combat_replay.c
-IOS_CHECK_SRC := $(filter-out $(IOS_SKIP),$(SHELL_SRC))
 
-$(IOS_CHECK_STAMP): $(IOS_CHECK_SRC) $(wildcard src/*.h src/*/*.h) build/version.h | build
-	@for f in $(IOS_CHECK_SRC); do \
+$(IOS_CHECK_STAMP): $(IOS_CHECK_SRC) $(IOS_OWN_C) $(wildcard src/*.h src/*/*.h ios/*.h) build/version.h | build
+	@for f in $(IOS_CHECK_SRC) $(IOS_OWN_C); do \
 	  gcc -fsyntax-only -std=c99 -Wall -Wextra -DPLATFORM_IOS \
-	      -Isrc -Iengine/include -Idemo -Iautoplay -Itools -Ibuild \
-	      -Ithird_party/cjson -Ithird_party/miniz $$f || exit 1; \
+	      -Isrc -Iios -Iengine/include -Idemo -Iautoplay -Itools -Ibuild \
+	      -Ithird_party/cjson -Ithird_party/miniz -Ithird_party/stb $$f || exit 1; \
 	done
 	@touch $@
 

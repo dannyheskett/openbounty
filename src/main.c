@@ -32,6 +32,7 @@
 #include "pack.h"
 #include "pack_select.h"
 #include "plat_android.h"
+#include "plat_ios.h"
 #include "extract.h"
 #include "version.h"
 #include "fatal.h"
@@ -258,6 +259,7 @@ int shell_run_game(int argc, char **argv) {
     // root is resolved from the activity before anything can read a slot.
     // A no-op everywhere else.
     plat_android_boot();
+    plat_ios_boot();
 
     // Minimal CLI parsing.
     bool want_fullscreen = false;
@@ -523,6 +525,10 @@ int shell_run_game(int argc, char **argv) {
     char pack_path[PACK_ENTRY_PATH_MAX];
     Pack *pack = plat_android_open_pack();
     if (pack) snprintf(pack_path, sizeof pack_path, "%s", ANDROID_PACK_ASSET);
+    if (!pack) {
+        pack = plat_ios_open_pack();
+        if (pack) snprintf(pack_path, sizeof pack_path, "%s", IOS_PACK_RESOURCE);
+    }
 
     // Resolve --pack <name|path>, or auto-discover. Discovery walks (in
     // order): cwd zips, <user-data>/openbounty zips, <exe>/assets zips,

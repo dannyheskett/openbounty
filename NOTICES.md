@@ -234,6 +234,19 @@ THE SOFTWARE.
 
 ---
 
+## stb (stb_image, stb_truetype, stb_vorbis) *(iOS build only)*
+
+Single-file public-domain libraries by Sean Barrett, vendored under
+`third_party/stb/`. The iOS build links no raylib, so it decodes PNGs,
+rasterises the pack's TrueType face and decodes OGG music with these -- the
+same three libraries raylib itself uses internally, at the same versions
+(`third_party/raylib/src/external/`).
+
+- License: public domain (or MIT, dual-licensed at the user's choice)
+- Project: https://github.com/nothings/stb
+
+---
+
 ## minih264
 
 Minimalistic H.264 encoder, single header.

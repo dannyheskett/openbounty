@@ -24,6 +24,10 @@ extern "C" {
 #include "gfx_metal.h"
 
 extern "C" void ob_ios_selftest_frame(void);
+// The game's entry point (src/main.c). On iOS it takes no arguments worth the
+// name: there is no command line, and the pack and save directory are resolved
+// by src/plat_ios.c.
+extern "C" int shell_run_game(int argc, char **argv);
 
 @interface OBMetalView : UIView
 @property (nonatomic) BOOL started;
@@ -46,6 +50,26 @@ extern "C" void ob_ios_selftest_frame(void);
         [CADisplayLink displayLinkWithTarget:self selector:@selector(onFrame:)];
     link.preferredFramesPerSecond = 60;
     [link addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
+
+    [self startGameThread];
+}
+
+// The game runs on its own thread with its blocking loops intact -- the one
+// architectural decision of this port (docs/IOS-BACKEND-SPIKE.md). It is also
+// the only thread that encodes Metal work, which is legal because the main
+// thread never does.
+//
+// A generous stack: main.c holds several large locals (Resources is ~3.9 MB,
+// Map ~848 KB), the same reason the Windows and web builds raise theirs.
+- (void)startGameThread {
+    NSThread *t = [[NSThread alloc] initWithBlock:^{
+        static char arg0[] = "gloryofrome";
+        char *argv[] = { arg0, NULL };
+        shell_run_game(1, argv);
+    }];
+    t.stackSize = 16 * 1024 * 1024;
+    t.name = @"openbounty.game";
+    [t start];
 }
 
 - (void)layoutSubviews { [super layoutSubviews]; [self updateDrawableSize]; }
@@ -83,12 +107,11 @@ extern "C" void ob_ios_selftest_frame(void);
     plat_ios_set_screen(sw, sh, ox, oy, (float)scale);
 }
 
+// The display link's whole job: advance the clock the game thread reads. It
+// does NOT draw -- the game thread does, at its own pace, inside the loops it
+// already had.
 - (void)onFrame:(CADisplayLink *)link {
     plat_ios_tick(link.targetTimestamp - link.timestamp);
-    // Checkpoint 2: the renderer draws itself, on the main thread. Checkpoint
-    // 3 moves drawing to the game thread and leaves this tick doing only the
-    // clock, which is the whole point of the split.
-    ob_ios_selftest_frame();
 }
 
 // --- touches: one contact, in the game's coordinate space -------------------

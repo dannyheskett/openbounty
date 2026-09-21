@@ -83,3 +83,41 @@ double plat_ios_time(void) {
 }
 
 double plat_ios_delta(void) { return atomic_load(&s_delta); }
+
+// ---------------------------------------------------------------------------
+// Bundle and Documents access, for src/plat_ios.c. Foundation lives here, so
+// the shell's half stays plain C like its Android counterpart.
+// ---------------------------------------------------------------------------
+
+#import <Foundation/Foundation.h>
+
+#include <stdlib.h>
+#include <string.h>
+
+extern "C" char *plat_ios_documents_dir(void) {
+    @autoreleasepool {
+        NSArray *dirs = NSSearchPathForDirectoriesInDomains(
+            NSDocumentDirectory, NSUserDomainMask, YES);
+        if (dirs.count == 0) return NULL;
+        const char *utf8 = [dirs[0] UTF8String];
+        if (!utf8) return NULL;
+        return strdup(utf8);
+    }
+}
+
+extern "C" unsigned char *plat_ios_bundle_file(const char *name, int *out_size) {
+    if (out_size) *out_size = 0;
+    if (!name) return NULL;
+    @autoreleasepool {
+        NSString *res = [NSString stringWithUTF8String:name];
+        NSString *path = [[NSBundle mainBundle] pathForResource:res ofType:nil];
+        if (!path) return NULL;
+        NSData *data = [NSData dataWithContentsOfFile:path];
+        if (!data || data.length == 0) return NULL;
+        unsigned char *buf = (unsigned char *)malloc(data.length);
+        if (!buf) return NULL;
+        memcpy(buf, data.bytes, data.length);
+        if (out_size) *out_size = (int)data.length;
+        return buf;
+    }
+}
