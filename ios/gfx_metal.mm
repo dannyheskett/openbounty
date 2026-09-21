@@ -125,6 +125,9 @@ static int     s_batch_count;
 // convention raylib's GL names follow, and what src/ob_types.h documents.
 static id<MTLTexture> s_textures[TEX_MAX];
 static bool           s_tex_used[TEX_MAX];
+// Which slots are offscreen render targets. It matters when they are drawn:
+// see the vertical-flip rule in gfx_texture_draw.
+static bool           s_tex_is_target[TEX_MAX];
 
 static int  s_vp_w = 1, s_vp_h = 1;    // drawable size, device pixels
 static int  s_origin_x, s_origin_y;    // safe-area offset
@@ -597,6 +600,7 @@ void gfx_texture_free(Texture2D t) {
     if (t.id == 0 || t.id > TEX_MAX) return;
     s_textures[t.id - 1] = nil;
     s_tex_used[t.id - 1] = false;
+    s_tex_is_target[t.id - 1] = false;
 }
 
 // Nearest + clamp is the sampler's only mode, so both of these are already
@@ -619,8 +623,19 @@ void gfx_texture_draw(Texture2D t, Rectangle src, Rectangle dst, Color tint) {
     float v0 = src.y / (float)t.height;
     float u1 = (src.x + w) / (float)t.width;
     float v1 = (src.y + h) / (float)t.height;
-    if (src.width  < 0) { float tmp = u0; u0 = u1; u1 = tmp; }
-    if (src.height < 0) { float tmp = v0; v0 = v1; v1 = tmp; }
+    if (src.width < 0) { float tmp = u0; u0 = u1; u1 = tmp; }
+
+    // The vertical flip, and why a render target is exempt.
+    //
+    // raylib stores a render texture bottom-up, as OpenGL does, so every
+    // caller that blits one passes a negative height to mirror it back the
+    // right way up (src/present.c does exactly this). A Metal texture that
+    // has been rendered into is stored TOP-DOWN, the same way up as any other
+    // texture here, so obeying that negative sign mirrors a frame that was
+    // already correct -- which drew the whole game upside down.
+    bool flip_v = (src.height < 0);
+    if (t.id && t.id <= TEX_MAX && s_tex_is_target[t.id - 1]) flip_v = false;
+    if (flip_v) { float tmp = v0; v0 = v1; v1 = tmp; }
     quad(dst.x, dst.y, dst.x + dst.width, dst.y + dst.height,
          u0, v0, u1, v1, tint);
     s_cur_tex = 0;
@@ -661,6 +676,7 @@ RenderTexture2D gfx_target_create(int w, int h) {
 
     s_textures[slot] = t;
     s_tex_used[slot] = true;
+    s_tex_is_target[slot] = true;
     rt.id = (unsigned)(slot + 1);
     rt.texture.id = rt.id;
     rt.texture.width = w;
