@@ -102,4 +102,9 @@ void present_last_dst(int *x, int *y, int *w, int *h);
 // present_window_to_screen without a window.
 void present_store_dst(int x, int y, int w, int h, int scale);
 
+// The largest whole number of times a dst_w x dst_h frame fits inside a
+// safe_w x safe_h area, at least 1. The mobile presentation multiple; see
+// present.c.
+int present_fit_multiple(int dst_w, int dst_h, int safe_w, int safe_h);
+
 #endif

@@ -155,6 +155,23 @@ bool present_refit(RenderTexture2D *rt) {
     return true;
 }
 
+// The largest whole number of times a dst_w x dst_h frame fits inside the
+// safe area, never less than 1.
+//
+// Only the mobile paths multiply by this: a phone has no window to resize and
+// no scale control, so the desktop's 1x would leave an 800x532 buffer as a
+// small panel in the middle of a 2400x1080 screen. A whole number keeps every
+// pack pixel square and the art hard-edged. Compiled everywhere so it can be
+// tested anywhere; on a screen smaller than the frame it answers 1 and the
+// frame is centred and clipped rather than shrunk.
+int present_fit_multiple(int dst_w, int dst_h, int safe_w, int safe_h) {
+    if (dst_w <= 0 || dst_h <= 0) return 1;
+    int fit_x = safe_w / dst_w;
+    int fit_y = safe_h / dst_h;
+    int fit = (fit_x < fit_y) ? fit_x : fit_y;
+    return (fit < 1) ? 1 : fit;
+}
+
 void present_scaled(RenderTexture2D rt) {
     gfx_frame_begin();
     gfx_clear(BLACK);
@@ -182,26 +199,14 @@ void present_scaled(RenderTexture2D rt) {
     if (CL_IS_NATIVE) { dst_w = rt.texture.width; dst_h = rt.texture.height; scale = s_zoom; }
 
 #if defined(PLATFORM_IOS) || defined(PLATFORM_ANDROID)
-    // Mobile shows the frame at the largest WHOLE-NUMBER multiple that still
-    // fits the safe area. A phone has no window to resize and no scale
-    // control, so the desktop's 1x would leave an 800x532 buffer as a small
-    // panel in the middle of a 2250x1143 screen. A whole number keeps every
-    // pack pixel square and the art hard-edged.
-    //
-    // This multiplies whatever the paragraphs above decided rather than
-    // replacing it: a fixed-buffer pack has already been RENDERED at s_zoom,
-    // so the pixels-per-pack-pixel is that zoom times this multiple -- and
-    // `scale` is what present_window_to_screen divides a tap by, so it has to
-    // be the product, not the multiple. Desktop and web never compile this.
-    if (dst_w > 0 && dst_h > 0) {
-        int fit_x = safe_w / dst_w;
-        int fit_y = safe_h / dst_h;
-        int fit = (fit_x < fit_y) ? fit_x : fit_y;
-        if (fit > 1) {
-            dst_w *= fit;
-            dst_h *= fit;
-            scale *= fit;
-        }
+    // Mobile shows the frame at the largest whole-number multiple of whatever
+    // the paragraphs above decided. See present_fit_multiple: `scale` is what
+    // present_window_to_screen divides a tap by, so it takes the multiple too.
+    {
+        int fit = present_fit_multiple(dst_w, dst_h, safe_w, safe_h);
+        dst_w *= fit;
+        dst_h *= fit;
+        scale *= fit;
     }
 #endif
 

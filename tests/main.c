@@ -38,6 +38,7 @@ SUITE_EXTERN(unit_touch_map_suite);
 SUITE_EXTERN(unit_layout_suite);
 SUITE_EXTERN(unit_legacy_freeze_suite);
 SUITE_EXTERN(unit_modern_layout_suite);
+SUITE_EXTERN(unit_present_mobile_suite);
 SUITE_EXTERN(unit_bfont_suite);
 SUITE_EXTERN(unit_select_suite);
 SUITE_EXTERN(unit_textsel_suite);
@@ -102,6 +103,7 @@ int main(int argc, char **argv) {
     RUN_SUITE(unit_layout_suite);
     RUN_SUITE(unit_legacy_freeze_suite);
     RUN_SUITE(unit_modern_layout_suite);
+    RUN_SUITE(unit_present_mobile_suite);
     RUN_SUITE(unit_bfont_suite);
     RUN_SUITE(unit_select_suite);
     RUN_SUITE(unit_textsel_suite);
