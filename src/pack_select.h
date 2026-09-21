@@ -11,7 +11,21 @@
 // This runs BEFORE the main game pack is opened -- so it cannot use
 // bfont (which needs a pack), the chrome, or any sprites. It
 // uses raylib's built-in DrawText.
+#if !defined(PLATFORM_IOS)
+
 bool pack_select_flow(const PackEntry *list, int n, int *chosen);
+
+#else
+
+// iOS ships exactly one pack, inside the bundle (src/plat_ios.c), so discovery
+// never runs and the picker is unreachable. Answering "cancelled" is the safe
+// shape: if it were ever called, the game exits rather than opening nothing.
+static inline bool pack_select_flow(const PackEntry *list, int n, int *chosen) {
+    (void)list; (void)n; (void)chosen;
+    return false;
+}
+
+#endif
 
 // ---------------------------------------------------------------------------
 // The selector's decision logic, factored out of the raylib loop so it can be
