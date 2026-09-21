@@ -255,6 +255,15 @@ static void push(float x, float y, float u, float v, Color c) {
 // A quad as two triangles, with uv corners for the textured case.
 static void quad(float x0, float y0, float x1, float y1,
                  float u0, float v0, float u1, float v1, Color c) {
+    // The first few quads of the first few frames, so a black screen can be
+    // read: what was drawn, where, with which texture and colour.
+    static int s_logged;
+    if (s_logged < 24) {
+        NSLog(@"openbounty: quad %d %s tex=%u (%.0f,%.0f)-(%.0f,%.0f) rgba=%d,%d,%d,%d",
+              s_logged, s_target ? "target" : "drawable", s_cur_tex,
+              x0, y0, x1, y1, c.r, c.g, c.b, c.a);
+        s_logged++;
+    }
     push(x0, y0, u0, v0, c); push(x1, y0, u1, v0, c); push(x1, y1, u1, v1, c);
     push(x0, y0, u0, v0, c); push(x1, y1, u1, v1, c); push(x0, y1, u0, v1, c);
 }
