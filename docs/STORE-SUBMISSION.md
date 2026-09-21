@@ -85,8 +85,11 @@ Stated plainly, because "it compiles" is not "it works":
 
   Whether this is emulator-only is **unknown**. The same raylib configuration
   ships in the other `open*` games, which are tested on real hardware through
-  a device farm rather than an emulator. The cheap way to settle it is to
-  sideload the arm64 APK from the CI artifact onto a phone.
+  a device farm rather than an emulator. Two ways to settle it: sideload the
+  arm64 APK from the CI artifact onto a phone, or run the **devicefarm**
+  workflow, which is ported here and fuzz-tests both apps on real hardware --
+  it needs `AWS_ROLE_ARN` and `DEVICEFARM_PROJECT_ARN`, the same secrets the
+  other repositories use.
 - **iOS touch input is unverified.** The renderer is confirmed from CI
   screenshots — the title screen draws correctly, the app is alive 30 s in —
   but no tap has been delivered to the app. The touch *mapping* is shared
@@ -117,6 +120,7 @@ Ported from the other `open*` games, so both stores are driven the same way:
 | Workflow | Trigger |
 |---|---|
 | `.github/workflows/asc-setup.yml` | manual; one verb per run, `dry_run` on by default |
+| `.github/workflows/devicefarm.yml` | manual; fuzz-tests the real APK and .ipa on real phones (AWS OIDC, no stored keys) |
 | `.github/workflows/store-release.yml` | manual; push the listing and submit a chosen build, `dry_run` on by default |
 | `release.yml` `publish-testflight` / `testflight-notes` / `submit-appstore` | every merge to `main`, all gated on the `ASC_*` secrets |
 

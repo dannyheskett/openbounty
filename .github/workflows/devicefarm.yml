@@ -1,0 +1,146 @@
+name: devicefarm
+
+# Manually-triggered real-device smoke test. Builds the app and runs an AWS
+# Device Farm Fuzz test on real hardware to confirm the game launches, draws
+# and survives random taps. Manual-only, so device minutes are spent
+# deliberately. Auth is GitHub OIDC; no AWS keys are stored.
+#
+# This exists because nothing else in this repository can answer the question.
+# The CI emulator's software GL gives raylib no usable EGL configuration, so an
+# emulator run cannot separate a broken app from a broken emulator, and the
+# iOS Simulator is not a phone either.
+#
+# Needs two secrets: AWS_ROLE_ARN (the role to assume) and
+# DEVICEFARM_PROJECT_ARN. Without them the jobs fail at the AWS step rather
+# than silently pretending; this is a deliberate, manual run.
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Which platform(s) to device-test"
+        type: choice
+        options: [both, android, ios]
+        default: both
+      max_devices:
+        description: "Number of real devices to fuzz-test on (per platform)"
+        default: "1"
+      device_model:
+        description: "Device MODEL filter, e.g. 'Galaxy S23'"
+        default: ""
+
+permissions:
+  id-token: write   # mint the OIDC token to assume the AWS role
+  contents: read
+
+jobs:
+  android:
+    name: build APK + Device Farm fuzz (Android)
+    if: inputs.platform == 'android' || inputs.platform == 'both'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    env:
+      NDK_VERSION: "26.3.11579264"
+      ANDROID_BUILD_TOOLS: "36.0.0"
+      ANDROID_PLATFORM_VER: "36"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
+      - name: Install NDK + build-tools + platform
+        run: |
+          sdkmanager --install "ndk;${NDK_VERSION}" \
+            "build-tools;${ANDROID_BUILD_TOOLS}" \
+            "platforms;android-${ANDROID_PLATFORM_VER}"
+          echo "ANDROID_NDK=${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
+      # The APK embeds the pack, and the pack is zipped by the native binary,
+      # so the Linux toolchain is needed even though nothing native ships here.
+      - name: Install Linux build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
+            libxcursor-dev libxi-dev libasound2-dev
+      - name: Build raylib (Linux)
+        run: ./scripts/build_raylib_linux.sh
+      - name: Build raylib (Android, arm64-v8a static)
+        run: ./scripts/build_raylib_android.sh
+      - name: Build APK
+        run: |
+          make android \
+            ANDROID_BUILD_TOOLS="${ANDROID_BUILD_TOOLS}" \
+            ANDROID_PLATFORM_VER="${ANDROID_PLATFORM_VER}"
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-west-2
+      - name: Device Farm fuzz test
+        env:
+          DEVICEFARM_PROJECT_ARN: ${{ secrets.DEVICEFARM_PROJECT_ARN }}
+          APP_PATH: build/gloryofrome.apk
+          DEVICEFARM_MAX_DEVICES: ${{ inputs.max_devices }}
+          DEVICEFARM_ARTIFACT_DIR: devicefarm-artifacts
+          DEVICEFARM_DEVICE_MODEL: ${{ inputs.device_model }}
+        run: |
+          python3 -m venv "$RUNNER_TEMP/df-venv"
+          # Pinned in scripts/requirements.txt rather than installed floating,
+          # so the version that talks to AWS under an assumed role is a
+          # decision rather than whatever PyPI served that morning.
+          "$RUNNER_TEMP/df-venv/bin/pip" install --quiet --disable-pip-version-check \
+            -r scripts/requirements.txt
+          "$RUNNER_TEMP/df-venv/bin/python" scripts/devicefarm_run.py
+      - name: Upload Device Farm screenshots/video
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: devicefarm-media-android
+          path: devicefarm-artifacts
+          if-no-files-found: ignore
+
+  ios:
+    name: build .ipa + Device Farm fuzz (iOS)
+    if: inputs.platform == 'ios' || inputs.platform == 'both'
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      # The .app embeds the pack, and the pack is zipped by a native binary;
+      # the default target links X11 and cannot build here.
+      - name: Build raylib (macOS)
+        run: ./scripts/build_raylib_mac.sh
+      - name: Build the pack tool
+        run: make mac
+      - name: Build device .ipa (unsigned — Device Farm re-signs on upload)
+        run: make ios PACK_TOOL=build/openbounty-mac
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-west-2
+      - name: Device Farm fuzz test
+        env:
+          DEVICEFARM_PROJECT_ARN: ${{ secrets.DEVICEFARM_PROJECT_ARN }}
+          APP_PATH: build/GloryOfRome.ipa
+          DEVICEFARM_MAX_DEVICES: ${{ inputs.max_devices }}
+          DEVICEFARM_ARTIFACT_DIR: devicefarm-artifacts
+          DEVICEFARM_DEVICE_MODEL: ${{ inputs.device_model }}
+        run: |
+          # venv: the macOS runners' Homebrew python rejects bare pip installs.
+          python3 -m venv "$RUNNER_TEMP/df-venv"
+          "$RUNNER_TEMP/df-venv/bin/pip" install --quiet --disable-pip-version-check \
+            -r scripts/requirements.txt
+          "$RUNNER_TEMP/df-venv/bin/python" scripts/devicefarm_run.py
+      - name: Upload Device Farm screenshots/video
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: devicefarm-media-ios
+          path: devicefarm-artifacts
+          if-no-files-found: ignore
