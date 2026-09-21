@@ -29,7 +29,8 @@ index f501fba..24805a2 100644
 +            }
 +
 +            numConfigs = 0;
-+            eglChooseConfig(platform.device, attribs, &platform.config, 1, &numConfigs);
++            EGLBoolean ok = eglChooseConfig(platform.device, attribs, &platform.config, 1, &numConfigs);
++            if (!ok) TRACELOG(LOG_WARNING, "DISPLAY: eglChooseConfig failed: 0x%x", eglGetError());
 +            if (numConfigs > 0)
 +            {
 +                TRACELOG(LOG_INFO, "DISPLAY: EGL configuration chosen with a %i-bit depth buffer", depthSizes[d]);
@@ -41,7 +42,13 @@ index f501fba..24805a2 100644
 +
 +        if (numConfigs == 0)
 +        {
-+            TRACELOG(LOG_WARNING, "DISPLAY: Failed to choose an EGL framebuffer configuration");
++            EGLint total = 0;
++            eglGetConfigs(platform.device, NULL, 0, &total);
++            TRACELOG(LOG_WARNING, "DISPLAY: Failed to choose an EGL framebuffer configuration (%i exist; vendor '%s', version '%s', apis '%s')",
++                     total,
++                     eglQueryString(platform.device, EGL_VENDOR),
++                     eglQueryString(platform.device, EGL_VERSION),
++                     eglQueryString(platform.device, EGL_CLIENT_APIS));
 +            return -1;
 +        }
 +    }
