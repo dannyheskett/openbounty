@@ -9,6 +9,7 @@
 // Called only through the dispatcher in src/views_render.c.
 
 #include "views.h"
+#include "gfx.h"
 #include "views_render_impl.h"
 #include "modern/mlayout.h"
 #include "lattice.h"
@@ -68,13 +69,13 @@ static void cv_row(const char *label, const char *value, int x, int w, int y) {
 // An icon slot: the icon when held; else its ghost, dark, so the set reads
 // as a collection with pieces still to find.
 static void cv_icon(Texture2D tex, bool have, int x, int y, int size) {
-    DrawRectangle(x, y, size, size, PAL_CLR(BLACK));
+    gfx_rect(x, y, size, size, PAL_CLR(BLACK));
     if (tex.id) {
         Rectangle src = { 0, 0, (float)tex.width, (float)tex.height };
         Rectangle dst = { (float)x, (float)y, (float)size, (float)size };
-        DrawTexturePro(tex, src, dst, (Vector2){ 0, 0 }, 0.0f, have ? WHITE : (Color){ 60, 60, 70, 255 });
+        gfx_texture_draw(tex, src, dst, have ? WHITE : (Color){ 60, 60, 70, 255 });
     }
-    DrawRectangleLines(x, y, size, size, have ? (Color){ 150, 118, 48, 255 } : (Color){ 60, 52, 34, 255 });
+    gfx_rect_lines(x, y, size, size, have ? (Color){ 150, 118, 48, 255 } : (Color){ 60, 52, 34, 255 });
 }
 
 static void draw_character(const Game *g, const Sprites *s) {
@@ -104,7 +105,7 @@ static void draw_character(const Game *g, const Sprites *s) {
     // Portrait at its authored size.
     int pw = 192, ph = 204;
     if (cls && cls->index >= 0 && cls->index < s->class_count && s->class_portrait[cls->index].id) ui_blit(s->class_portrait[cls->index], r.x, top, pw, ph);
-    else DrawRectangle(r.x, top, pw, ph, PAL_CLR(BLACK));
+    else gfx_rect(r.x, top, pw, ph, PAL_CLR(BLACK));
     lattice_band_v(r.x + pw, top, BAND, ph);
 
     // Two columns of numbers under their headings.
@@ -508,14 +509,13 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
                                               (float)tex.height };
                             Rectangle dst = { (float)x, (float)y,
                                               (float)cell_w, (float)cell_h };
-                            DrawTexturePro(tex, src, dst,
-                                           (Vector2){ 0, 0 }, 0.0f, WHITE);
+                            gfx_texture_draw(tex, src, dst, WHITE);
                             drew = true;
                         }
                     }
                 }
                 if (!drew) {
-                    DrawRectangle(x, y, cell_w, cell_h, PAL_CLR(BLACK));
+                    gfx_rect(x, y, cell_w, cell_h, PAL_CLR(BLACK));
                 }
             } else if (face.id) {
                 // Cover: show the entity face (villain portrait or
@@ -523,9 +523,9 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
                 Rectangle src = { 0, 0, (float)face.width, (float)face.height };
                 Rectangle dst = { (float)x, (float)y,
                                   (float)cell_w, (float)cell_h };
-                DrawTexturePro(face, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+                gfx_texture_draw(face, src, dst, WHITE);
             } else {
-                DrawRectangle(x, y, cell_w, cell_h, PAL_CLR(DGREY));
+                gfx_rect(x, y, cell_w, cell_h, PAL_CLR(DGREY));
             }
         }
     }
@@ -590,7 +590,7 @@ static bool worldmap_has_orb(const Game *g) {
 
 static void draw_worldmap_exit_hint(const Game *g) {
     // KB_TopBox strings.
-    DrawRectangle(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H,
+    gfx_rect(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H,
                   PAL_CLR(DRED));
     // The reveal is a row under the map, so the band only says how to leave.
     const ResUI *ui = &g->res->ui;
@@ -712,7 +712,7 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
     int grid_w = pix * cols, grid_h = pix * rows;
     int gx = VIEW_X + (map_w - grid_w) / 2;
     int gy = VIEW_Y + (VIEW_H - grid_h) / 2;
-    DrawRectangle(gx, gy, grid_w, grid_h, PAL_CLR(BLACK));
+    gfx_rect(gx, gy, grid_w, grid_h, PAL_CLR(BLACK));
     const ResColors *mm_col = &g->res->colors;
     for (int y = 0; y < rows; y++) {
         for (int x = 0; x < cols; x++) {
@@ -720,14 +720,14 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
             if (!reveal_all && !FogSeen(f, mx, my)) continue;
             const Tile *t = MapGetTile(m, mx, my);
             if (!t) continue;
-            DrawRectangle(gx + x * pix, gy + y * pix, pix, pix, terrain_minimap_color(mm_col, t->terrain));
+            gfx_rect(gx + x * pix, gy + y * pix, pix, pix, terrain_minimap_color(mm_col, t->terrain));
         }
     }
     const Resources *r = g->res;
     // A marker: a filled cell with a dark edge, so it reads on any terrain.
     #define MARK(mx, my, col) do { int _x = gx + ((mx) - cam_x) * pix, _y = gy + ((my) - cam_y) * pix; \
-        DrawRectangle(_x, _y, pix, pix, col); \
-        if (pix >= 4) DrawRectangleLines(_x, _y, pix, pix, PAL_CLR(BLACK)); } while (0)
+        gfx_rect(_x, _y, pix, pix, col); \
+        if (pix >= 4) gfx_rect_lines(_x, _y, pix, pix, PAL_CLR(BLACK)); } while (0)
     #define IN_VIEW(px, py) ((px) >= cam_x && (px) < cam_x + cols && (py) >= cam_y && (py) < cam_y + rows)
     for (int i = 0; i < r->town_count; i++) {
         const ResTown *tw = &r->towns[i];
@@ -746,7 +746,7 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
     if (sel) {
         int rx = gx + (sel->x - cam_x) * pix, ry = gy + (sel->y - cam_y) * pix;
         for (int t = 0; t < 3; t++)
-            DrawRectangleLines(rx - pix - t, ry - pix - t, 3 * pix + 2 * t, 3 * pix + 2 * t,
+            gfx_rect_lines(rx - pix - t, ry - pix - t, 3 * pix + 2 * t, 3 * pix + 2 * t,
                                t == 1 ? PAL_CLR(YELLOW) : PAL_CLR(BLACK));
     }
     // The boat (white) and the hero (blinking), always.
@@ -897,7 +897,7 @@ static Map  s_gate_map;
 static char s_gate_zone[RES_ID_LEN];
 
 static void draw_gate_map(const Resources *res, const GateDestination *d, ML_Rect a) {
-    DrawRectangle(a.x, a.y, a.w, a.h, PAL_CLR(BLACK));
+    gfx_rect(a.x, a.y, a.w, a.h, PAL_CLR(BLACK));
     if (!d) return;
     if (strcmp(s_gate_zone, d->zone) != 0) {
         if (!MapLoadZone(&s_gate_map, res, d->zone)) { s_gate_zone[0] = '\0'; return; }
@@ -920,18 +920,18 @@ static void draw_gate_map(const Resources *res, const GateDestination *d, ML_Rec
                 char ga[TILE_ART_NAME_LEN];
                 const char *gart = t->ground ? TileGround(m, t) : MapTerrainArt(m, TerrainName(t->terrain), ga, sizeof ga);
                 Texture2D ground = tile_cache_get(tilevar_art(gart, mx, my, va, sizeof va));
-                if (ground.id) DrawTexturePro(ground, (Rectangle){ 0, 0, (float)ground.width, (float)ground.height },
-                                              dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+                if (ground.id) gfx_texture_draw(ground, (Rectangle){ 0, 0, (float)ground.width, (float)ground.height },
+                                              dst, WHITE);
             }
             Texture2D tex = tile_cache_get(tilevar_art(TileArt(m, t), mx, my, va, sizeof va));
-            if (tex.id) DrawTexturePro(tex, (Rectangle){ 0, 0, (float)tex.width, (float)tex.height },
-                                       dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+            if (tex.id) gfx_texture_draw(tex, (Rectangle){ 0, 0, (float)tex.width, (float)tex.height },
+                                       dst, WHITE);
         }
     }
     // The landing square ringed.
     int rx = ox + (d->x - cam_x) * cell, ry = oy + (d->y - cam_y) * cell;
     for (int t = 0; t < 3; t++)
-        DrawRectangleLines(rx - t, ry - t, cell + 2 * t, cell + 2 * t, t == 1 ? PAL_CLR(YELLOW) : PAL_CLR(BLACK));
+        gfx_rect_lines(rx - t, ry - t, cell + 2 * t, cell + 2 * t, t == 1 ? PAL_CLR(YELLOW) : PAL_CLR(BLACK));
 }
 
 static void draw_gate(const Game *g) {

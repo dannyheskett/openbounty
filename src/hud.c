@@ -1,4 +1,5 @@
 #include "hud.h"
+#include "gfx.h"
 #include "layout.h"
 #include "palette.h"
 #include "bfont.h"
@@ -33,7 +34,7 @@ static void blit_panel(Texture2D t, int x, int y) {
     Rectangle src = { 0, 0, (float)t.width, (float)t.height };
     Rectangle dst = { (float)x, (float)y,
                       (float)CL_SIDEBAR_W, (float)CL_TILE_H };
-    DrawTexturePro(t, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+    gfx_texture_draw(t, src, dst, WHITE);
     ui_panel_frame(x, y, CL_SIDEBAR_W, CL_TILE_H);
 }
 

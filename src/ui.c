@@ -1,4 +1,5 @@
 #include "frame_host.h"
+#include "gfx.h"
 #include "input_host.h"
 #include "ui_host.h"
 #include "ui.h"
@@ -21,7 +22,7 @@ static void blit(Texture2D t, int x, int y, int w, int h, bool mirror) {
                       mirror ? -(float)t.width : (float)t.width,
                       (float)t.height };
     Rectangle dst = { (float)x, (float)y, (float)w, (float)h };
-    DrawTexturePro(t, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+    gfx_texture_draw(t, src, dst, WHITE);
 }
 
 void ui_blit(Texture2D t, int x, int y, int w, int h) {
@@ -212,18 +213,18 @@ void ui_panel_frame(int x, int y, int w, int h) {
     }
     Color outer = PAL[s_panel_frame];
     Color inner = PAL[PAL_IDX_DGREY];
-    DrawRectangle(x, y, w, t, outer);
-    DrawRectangle(x, y + h - t, w, t, outer);
-    DrawRectangle(x, y, t, h, outer);
-    DrawRectangle(x + w - t, y, t, h, outer);
-    DrawRectangle(x + t, y + t, w - 2 * t, t, inner);
-    DrawRectangle(x + t, y + h - 2 * t, w - 2 * t, t, inner);
-    DrawRectangle(x + t, y + t, t, h - 2 * t, inner);
-    DrawRectangle(x + w - 2 * t, y + t, t, h - 2 * t, inner);
+    gfx_rect(x, y, w, t, outer);
+    gfx_rect(x, y + h - t, w, t, outer);
+    gfx_rect(x, y, t, h, outer);
+    gfx_rect(x + w - t, y, t, h, outer);
+    gfx_rect(x + t, y + t, w - 2 * t, t, inner);
+    gfx_rect(x + t, y + h - 2 * t, w - 2 * t, t, inner);
+    gfx_rect(x + t, y + t, t, h - 2 * t, inner);
+    gfx_rect(x + w - 2 * t, y + t, t, h - 2 * t, inner);
 }
 
 void ui_window_frame(int x, int y, int w, int h, Color legacy) {
-    if (!CL_IS_MODERN) { DrawRectangleLines(x, y, w, h, legacy); return; }
+    if (!CL_IS_MODERN) { gfx_rect_lines(x, y, w, h, legacy); return; }
     // Outside the rect: the window's content keeps every pixel it had, and
     // nothing drawn after this can paint over the ring.
     int t = 4 * CL_UI;

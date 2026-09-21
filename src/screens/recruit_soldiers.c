@@ -15,6 +15,7 @@
 // SCREEN_RESULT_DISMISS when ESC is pressed at idle.
 
 #include "input_host.h"
+#include "gfx.h"
 #include "recruit_soldiers.h"
 #include "touch.h"
 #include "layout.h"
@@ -342,7 +343,7 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
     // Bottom panel -- same fixed rect every dialog/screen uses.
     int x, y, w, h;
     screens_text_rect(&x, &y, &w, &h);
-    DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
+    gfx_rect(x, y, w, h, PAL_CLR(DBLUE));
     ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
 
     int pad = screens_text_pad();   // legacy 4: the panel holds exactly CL_PANEL_COLS glyphs

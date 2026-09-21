@@ -1,6 +1,7 @@
 // src/modern/uikit.c -- the modern screens' shared kit (see uikit.h).
 
 #include "modern/uikit.h"
+#include "gfx.h"
 #include "game.h"
 #include "lattice.h"
 #include "layout.h"
@@ -23,13 +24,13 @@ int   uk_title_h(void) { return GH + 14; }
 int   uk_line_h(void)  { return GH + 2; }
 
 void uk_panel(int x, int y, int w, int h) {
-    DrawRectangle(x, y, w, h, uk_fill());
+    gfx_rect(x, y, w, h, uk_fill());
     ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
 }
 
 void uk_sheet(void) {
     ML_Rect r = ml_full();
-    DrawRectangle(r.x, r.y, r.w, r.h, uk_fill());
+    gfx_rect(r.x, r.y, r.w, r.h, uk_fill());
 }
 
 int uk_title(int x, int y, int w, const char *left, const char *right, Color right_c) {
@@ -70,7 +71,7 @@ void uk_dim(void) {
     const Resources *res = resources_current();
     int pct = (res && res->render.dim > 0) ? res->render.dim : 45;
     ML_Rect r = ml_full();
-    DrawRectangle(r.x, r.y, r.w, r.h, (Color){ 0, 0, 0, (unsigned char)overlay_dim_alpha(pct) });
+    gfx_rect(r.x, r.y, r.w, r.h, (Color){ 0, 0, 0, (unsigned char)overlay_dim_alpha(pct) });
 }
 
 ML_Rect uk_inlay(int w, int h, const char *title, const char *right) {
@@ -89,9 +90,9 @@ ML_Rect uk_inlay(int w, int h, const char *title, const char *right) {
 }
 
 void uk_picture(Texture2D t, int x, int y, int w, int h) {
-    DrawRectangle(x, y, w, h, PAL_CLR(BLACK));
+    gfx_rect(x, y, w, h, PAL_CLR(BLACK));
     if (t.id) ui_blit(t, x, y, w, h);
-    DrawRectangleLines(x - 1, y - 1, w + 2, h + 2, (Color){ 150, 118, 48, 255 });
+    gfx_rect_lines(x - 1, y - 1, w + 2, h + 2, (Color){ 150, 118, 48, 255 });
 }
 
 int uk_lines(const char *text, int w) {
@@ -141,7 +142,7 @@ static void column_piece(Texture2D t, int x, int y, int w, int h, bool mirror) {
     if (h > t.height) h = t.height;
     Rectangle src = { 0, 0, (float)(mirror ? -t.width : t.width), (float)h };
     Rectangle dst = { (float)x, (float)y, (float)w, (float)h };
-    DrawTexturePro(t, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+    gfx_texture_draw(t, src, dst, WHITE);
 }
 
 // A column exactly `h` tall: the capital at the top, the base at the bottom,
@@ -184,12 +185,12 @@ static UkScene scene_band(ML_Rect r, int top, Texture2D bd, int band_h) {
         L.trim = src_cut * L.scale;
     }
     L.scene = (ML_Rect){ r.x + (r.w - bw) / 2, top, bw, bh - L.trim };
-    DrawRectangle(L.scene.x, L.scene.y, L.scene.w, L.scene.h, PAL_CLR(BLACK));
+    gfx_rect(L.scene.x, L.scene.y, L.scene.w, L.scene.h, PAL_CLR(BLACK));
     if (bd.id && bd.height > 0) {
         float per = (float)bd.height / (float)bh;            // source px per screen px
         Rectangle src = { 0, L.trim * per, (float)bd.width, (bh - L.trim) * per };
         Rectangle dst = { (float)L.scene.x, (float)L.scene.y, (float)L.scene.w, (float)L.scene.h };
-        DrawTexturePro(bd, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+        gfx_texture_draw(bd, src, dst, WHITE);
     }
     // The picture frame: a column in each bar beside the backdrop when the
     // pack has one (capital, shaft repeated, base; mirrored on the right),
@@ -199,8 +200,8 @@ static UkScene scene_band(ML_Rect r, int top, Texture2D bd, int band_h) {
         const Sprites *sp = modern_overlay_sprites();
         int rx = L.scene.x + L.scene.w, rw = r.x + r.w - rx;
         if (sp && sp->scene_column[0].id && sp->scene_column[1].id && sp->scene_column[2].id) {
-            DrawRectangle(r.x, top, side, L.scene.h, uk_fill());
-            DrawRectangle(rx, top, rw, L.scene.h, uk_fill());
+            gfx_rect(r.x, top, side, L.scene.h, uk_fill());
+            gfx_rect(rx, top, rw, L.scene.h, uk_fill());
             draw_column(sp, r.x, top, side, L.scene.h, false);
             draw_column(sp, rx, top, rw, L.scene.h, true);
         } else {
@@ -219,7 +220,7 @@ UkScene uk_scene_ex(const char *title, const char *right, Texture2D bd, int rows
 UkScene uk_scene_extra(const char *title, const char *right, Texture2D bd, int rows, int intro_min,
                        int extra_h) {
     ML_Rect r = ml_full();
-    DrawRectangle(r.x, r.y, r.w, r.h, uk_fill());
+    gfx_rect(r.x, r.y, r.w, r.h, uk_fill());
     int top = uk_title(r.x, r.y, r.w, title, right, PAL_CLR(YELLOW));
     int n = rows < 1 ? 1 : rows;
     int rows_h = ml_list_height(n);
@@ -262,7 +263,7 @@ void uk_scene_doc(const UkScene *L, const UkDoc *doc) {
 ML_Rect uk_frame(const char *title, const char *right) {
     // A step of its own over the whole screen: nothing behind it shows.
     ML_Rect r = ml_full();
-    DrawRectangle(r.x, r.y, r.w, r.h, uk_fill());
+    gfx_rect(r.x, r.y, r.w, r.h, uk_fill());
     int top = uk_title(r.x, r.y, r.w, title, right, PAL_CLR(YELLOW));
     return (ML_Rect){ r.x, top, r.w, r.y + r.h - top };
 }
@@ -270,7 +271,7 @@ ML_Rect uk_frame(const char *title, const char *right) {
 UkMuster uk_muster(const char *title, const char *right, Texture2D bd, int list_rows, int list_w) {
     UkMuster M;
     ML_Rect r = ml_full();
-    DrawRectangle(r.x, r.y, r.w, r.h, uk_fill());
+    gfx_rect(r.x, r.y, r.w, r.h, uk_fill());
     int top = uk_title(r.x, r.y, r.w, title, right, PAL_CLR(YELLOW));
     int n = list_rows < 1 ? 1 : list_rows;
     // The band is what is left over the two columns -- sized so a figure at 2x
@@ -298,7 +299,7 @@ void uk_scene_blit(const UkScene *L, Texture2D t, int bx, int by, int bw, int bh
     float per = (float)t.height / (float)h;
     Rectangle src = { 0, cut * per, (float)t.width, (h - cut) * per };
     Rectangle dst = { (float)x, (float)L->scene.y, (float)w, (float)(h - cut) };
-    DrawTexturePro(t, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+    gfx_texture_draw(t, src, dst, WHITE);
 }
 
 void uk_scene_figure(const UkScene *L, Texture2D t, int x) {
@@ -565,9 +566,9 @@ int uk_doc_draw(const UkDoc *d, ML_Rect a, int pic_w, int pic_h, int page, bool 
         int px = tx - ML_PAD - aw;
         bfont_draw(pg, tx, py, PAL_CLR(YELLOW));
         Color dim = (Color){ 90, 90, 90, 255 };
-        DrawTriangle((Vector2){ (float)(px + aw / 2), (float)py }, (Vector2){ (float)px, (float)(py + GH) },
+        gfx_triangle((Vector2){ (float)(px + aw / 2), (float)py }, (Vector2){ (float)px, (float)(py + GH) },
                      (Vector2){ (float)(px + aw), (float)(py + GH) }, page > 0 ? PAL_CLR(YELLOW) : dim);
-        DrawTriangle((Vector2){ (float)nx, (float)py }, (Vector2){ (float)(nx + aw / 2), (float)(py + GH) },
+        gfx_triangle((Vector2){ (float)nx, (float)py }, (Vector2){ (float)(nx + aw / 2), (float)(py + GH) },
                      (Vector2){ (float)(nx + aw), (float)py }, page + 1 < pages ? PAL_CLR(YELLOW) : dim);
         if (page > 0) touch_region(px - 8, py - 8, aw + 16, GH + 16, KEY_UP);
         if (page + 1 < pages) touch_region(nx - 8, py - 8, aw + 16, GH + 16, KEY_DOWN);

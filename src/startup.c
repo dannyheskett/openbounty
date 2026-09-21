@@ -1,4 +1,5 @@
 #include "frame_host.h"
+#include "gfx.h"
 #include "input_host.h"
 #include "startup.h"
 #include "touch.h"
@@ -49,7 +50,7 @@ static void frame_begin(RenderTexture2D *rt) {
     // select leaves the buffer at its launch size and present_scaled crops it.
     present_refit(rt);
     present_begin(rt);
-    ClearBackground(PAL_CLR(BLACK));
+    gfx_clear(PAL_CLR(BLACK));
     ml_set_area(ML_AREA_SCREEN);   // startup panels centre on the whole screen
 }
 
@@ -66,7 +67,7 @@ static void draw_class_picker_backdrop(const Sprites *sprites) {
 }
 
 static void draw_class_picker_status_hint(const Resources *res) {
-    DrawRectangle(0, 0, CL_SCREEN_W, GH + 2, PAL_CLR(DRED));
+    gfx_rect(0, 0, CL_SCREEN_W, GH + 2, PAL_CLR(DRED));
     bfont_draw_centered(res->ui.startup_class_select_hint,
                         CL_SCREEN_W / 2, 1, PAL_CLR(WHITE));
 }
@@ -83,7 +84,7 @@ static void frame_end(RenderTexture2D *rt) {
 
 static void panel(int x, int y, int w, int h) {
     if (CL_IS_MODERN) { uk_panel(x, y, w, h); return; }
-    DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
+    gfx_rect(x, y, w, h, PAL_CLR(DBLUE));
     ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
 }
 
@@ -140,19 +141,18 @@ static void draw_title_sequence(const Sprites *s, double t) {
     int fs = ui_fit_scale(b.width, b.height, CL_SCREEN_W, CL_SCREEN_H);
     int pw = b.width * fs, ph = b.height * fs;
     int ox = (CL_SCREEN_W - pw) / 2, oy = (CL_SCREEN_H - ph) / 2;
-    DrawRectangle(ox, oy, pw, ph, (Color){ 65, 9, 104, 255 });
+    gfx_rect(ox, oy, pw, ph, (Color){ 65, 9, 104, 255 });
     unsigned char a = (unsigned char)(255 * title_phase(t, TITLE_HOLD, TITLE_FADED));
-    DrawTexturePro(b, (Rectangle){ 0, 0, (float)b.width, (float)b.height },
-                   (Rectangle){ (float)ox, (float)oy, (float)pw, (float)ph },
-                   (Vector2){ 0, 0 }, 0.0f, (Color){ 255, 255, 255, a });
+    gfx_texture_draw(b, (Rectangle){ 0, 0, (float)b.width, (float)b.height },
+                   (Rectangle){ (float)ox, (float)oy, (float)pw, (float)ph }, (Color){ 255, 255, 255, a });
     // Eased slide, whole art pixels so the eagle stays on the art's grid.
     float k = title_phase(t, TITLE_FADED, TITLE_END);
     k = k * k * (3 - 2 * k);
     int ex = TITLE_EAGLE_X0 + (int)((TITLE_EAGLE_X1 - TITLE_EAGLE_X0) * k - 0.5f);
     int z = present_get_zoom();
-    BeginScissorMode(ox * z, oy * z, pw * z, ph * z);   // the eagle leaves the art's edge
+    gfx_clip_begin(ox * z, oy * z, pw * z, ph * z);   // the eagle leaves the art's edge
     ui_blit(e, ox + ex * fs, oy + TITLE_EAGLE_Y * fs, e.width * fs, e.height * fs);
-    EndScissorMode();
+    gfx_clip_end();
     ui_blit(s->title_words, ox, oy, pw, ph);
 }
 
@@ -198,7 +198,7 @@ static bool run_splash(RenderTexture2D *rt,
         if (frame_host_time() - start_time >= timeout || any_key_pressed()) return true;
 
         frame_begin(rt);
-        ClearBackground(bg_color);
+        gfx_clear(bg_color);
         // Splash art is authored in the 320x200 design space; legacy draws
         // it at 1x, modern at the largest whole scale the buffer holds.
         int fs = ui_fit_scale(tex.width, tex.height, CL_SCREEN_W, CL_SCREEN_H);
@@ -299,7 +299,7 @@ static bool run_save_picker_modern(RenderTexture2D *rt, const Sprites *sprites,
         }
         frame_begin(rt);
         draw_title_backdrop(sprites);
-        DrawRectangle(0, 0, CL_SCREEN_W, CL_SCREEN_H, (Color){ 0, 0, 0, 110 });
+        gfx_rect(0, 0, CL_SCREEN_W, CL_SCREEN_H, (Color){ 0, 0, 0, 110 });
         // The title screen has no chrome around the pane, so the page centres
         // on the screen; its width and rows are the menu's (gm_draw_page).
         ml_set_area(ML_AREA_SCREEN);
@@ -507,23 +507,24 @@ static bool run_title_menu(const Resources *res, const Sprites *sprites,
             // The fading menu is drawn once into its own texture, then onto
             // the scene at the fade's alpha; it takes no taps until it is up.
             float a = title_phase(t, TITLE_MENU_IN, TITLE_END);
-            if (a > 0 && !menu_rt.id) menu_rt = LoadRenderTexture(CL_SCREEN_W, CL_SCREEN_H);
+            if (a > 0 && !menu_rt.id) menu_rt = gfx_target_create(CL_SCREEN_W, CL_SCREEN_H);
             if (a > 0 && menu_rt.id) {
-                BeginTextureMode(menu_rt);
-                ClearBackground(BLANK);
+                gfx_target_begin(menu_rt);
+                gfx_clear(BLANK);
                 draw_title_menu(sprites, labels, ROW_COUNT, l.cursor, 0);
-                EndTextureMode();
+                gfx_target_end();
             }
             frame_begin(rt);
             draw_title_sequence(sprites, t);
             if (a > 0 && menu_rt.id)
-                DrawTextureRec(menu_rt.texture,
-                               (Rectangle){ 0, 0, (float)CL_SCREEN_W, -(float)CL_SCREEN_H },
-                               (Vector2){ 0, 0 }, (Color){ 255, 255, 255, (unsigned char)(255 * a) });
+                gfx_texture_draw(menu_rt.texture,
+                                 (Rectangle){ 0, 0, (float)CL_SCREEN_W, -(float)CL_SCREEN_H },
+                                 (Rectangle){ 0, 0, (float)CL_SCREEN_W, (float)CL_SCREEN_H },
+                                 (Color){ 255, 255, 255, (unsigned char)(255 * a) });
             frame_end(rt);
             continue;
         }
-        if (menu_rt.id) { UnloadRenderTexture(menu_rt); menu_rt = (RenderTexture2D){ 0 }; }
+        if (menu_rt.id) { gfx_target_free(menu_rt); menu_rt = (RenderTexture2D){ 0 }; }
         if (input_key_pressed(KEY_ESCAPE)) break;
         int row = -1;
         if (sel_input(&l, TOUCH_LIST_STARTUP, 0, &row) == SEL_CONFIRM && row >= 0) {
@@ -628,7 +629,7 @@ static bool run_class_select(const Resources *res,
 
         frame_begin(rt);
         // Background: solid black.
-        DrawRectangle(0, 0, CL_SCREEN_W, CL_SCREEN_H, PAL_CLR(BLACK));
+        gfx_rect(0, 0, CL_SCREEN_W, CL_SCREEN_H, PAL_CLR(BLACK));
 
         // Picker bitmap, centered. Sized per frame: present_refit can change
         // the screen out from under us when the window is resized.
@@ -663,10 +664,10 @@ static bool run_class_select(const Resources *res,
                     int cw = pw / n;
                     for (int k = 0; k < n; k++)
                         if (k != class_cursor)
-                            DrawRectangle(px + k * cw, py, cw, ph, (Color){ 0, 0, 0, 150 });
+                            gfx_rect(px + k * cw, py, cw, ph, (Color){ 0, 0, 0, 150 });
                     int cx = px + class_cursor * cw;
                     for (int t = 0; t < 3; t++)
-                        DrawRectangleLines(cx + t, py + t, cw - 2 * t, ph - 2 * t, PAL_CLR(YELLOW));
+                        gfx_rect_lines(cx + t, py + t, cw - 2 * t, ph - 2 * t, PAL_CLR(YELLOW));
                 }
             }
         } else {
@@ -694,7 +695,7 @@ static bool run_class_select(const Resources *res,
         }
 
         // Status-bar hint at top (). Modern: the picked figure's class.
-        DrawRectangle(0, 0, CL_SCREEN_W, GH + 2, PAL_CLR(DRED));
+        gfx_rect(0, 0, CL_SCREEN_W, GH + 2, PAL_CLR(DRED));
         const char *hint = res->ui.startup_class_select_hint;
         if (CL_IS_MODERN && class_cursor >= 0) {
             const ClassDef *pc = class_by_index(class_cursor);
@@ -861,7 +862,7 @@ static bool run_create_game(const Resources *res,
                 ui_blit(bg, (CL_SCREEN_W - bg.width * fs) / 2,
                         (CL_SCREEN_H - bg.height * fs) / 2, bg.width * fs, bg.height * fs);
             }
-            DrawRectangle(0, 0, CL_SCREEN_W, GH + 2, PAL_CLR(DRED));
+            gfx_rect(0, 0, CL_SCREEN_W, GH + 2, PAL_CLR(DRED));
             bfont_draw_centered(class_title, CL_SCREEN_W / 2, 1, PAL_CLR(WHITE));
 
             // An in-lay as tall as what it holds: the name, the difficulty
@@ -872,7 +873,7 @@ static bool run_create_game(const Resources *res,
             int mh = UK_INSET + 3 * mrow + UK_BAND + ml_list_height(n) + sel_h;
             int mx = (CL_SCREEN_W - mw) / 2, my = (CL_SCREEN_H - mh) / 2;
             if (my < GH + 8) my = GH + 8;
-            DrawRectangle(0, GH + 2, CL_SCREEN_W, CL_SCREEN_H, (Color){ 0, 0, 0, 110 });
+            gfx_rect(0, GH + 2, CL_SCREEN_W, CL_SCREEN_H, (Color){ 0, 0, 0, 110 });
             panel(mx, my, mw, mh);
             int cx0 = mx + UK_INSET;
             int ty = my + UK_INSET;
@@ -889,7 +890,7 @@ static bool run_create_game(const Resources *res,
             }
             if (!has_name && show_caret && name_len < 10) {
                 int cx = fx + bfont_text_width(name_buf);
-                DrawRectangle(cx, ty + GH - 2, GW, 2, PAL_CLR(YELLOW));
+                gfx_rect(cx, ty + GH - 2, GW, 2, PAL_CLR(YELLOW));
             }
             ty += 2 * mrow;
 
@@ -961,7 +962,7 @@ static bool run_create_game(const Resources *res,
         if (!has_name && show_caret && name_len < 10) {
             // Blinking caret after the last typed char.
             int cx = name_x + bfont_text_width(name_buf);
-            DrawRectangle(cx, name_y, 1, GH, PAL_CLR(YELLOW));
+            gfx_rect(cx, name_y, 1, GH, PAL_CLR(YELLOW));
         }
 
         // Row 3: difficulty table header.
@@ -1007,7 +1008,7 @@ static bool run_create_game(const Resources *res,
             int cw = 2 * GW, chh = GH + 4 * CL_UI;
             int gx = x + (w - textsel_w(false, cw)) / 2;
             int gy = y + h + 4 * CL_UI;
-            DrawRectangle(gx - 2 * CL_UI, gy - 2 * CL_UI,
+            gfx_rect(gx - 2 * CL_UI, gy - 2 * CL_UI,
                           textsel_w(false, cw) + 4 * CL_UI, textsel_h(false, chh) + 4 * CL_UI,
                           PAL_CLR(DBLUE));
             textsel_draw(&ts, gx, gy, cw, chh, PAL_CLR(YELLOW), PAL_CLR(DBLUE), TOUCH_LIST_TEXTSEL);
@@ -1102,7 +1103,7 @@ static bool run_new_game_intro(RenderTexture2D *rt,
         draw_class_picker_backdrop(sprites);
 
         // Status hint at top.
-        DrawRectangle(0, 0, CL_SCREEN_W, GH + 2, PAL_CLR(DRED));
+        gfx_rect(0, 0, CL_SCREEN_W, GH + 2, PAL_CLR(DRED));
         bfont_draw_centered(res->ui.startup_class_select_hint,
                             CL_SCREEN_W / 2, 1, PAL_CLR(WHITE));
 
@@ -1263,7 +1264,7 @@ static bool run_credits(RenderTexture2D *rt, const Resources *res,
                 iy = py + panel_h - pad - image_h;
             }
             ui_blit(inset, ix, iy, image_w, image_h);
-            DrawRectangleLines(ix - CL_UI, iy - CL_UI,
+            gfx_rect_lines(ix - CL_UI, iy - CL_UI,
                                image_w + 2 * CL_UI, image_h + 2 * CL_UI,
                                PAL_CLR(DGREEN));
         }

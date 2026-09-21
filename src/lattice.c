@@ -1,4 +1,5 @@
 #include "lattice.h"
+#include "gfx.h"
 #include "layout.h"
 #include "raylib.h"
 
@@ -33,15 +34,15 @@ static void build(void) {
     int u = CL_UI;
     if (u < 1) u = 1;
     if (s_tex.id && s_unit == u) return;
-    if (s_tex.id) UnloadTexture(s_tex);
+    if (s_tex.id) gfx_texture_free(s_tex);
     const int P = LATTICE_PITCH;
-    Image img = GenImageColor(P * u, P * u, C_WOOD);
+    Image img = gfx_image_solid(P * u, P * u, C_WOOD);
     for (int uy = 0; uy < P; uy++)
         for (int ux = 0; ux < P; ux++)
-            ImageDrawRectangle(&img, ux * u, uy * u, u, u, cell_colour(ux, uy));
-    s_tex = LoadTextureFromImage(img);
-    SetTextureFilter(s_tex, TEXTURE_FILTER_POINT);
-    UnloadImage(img);
+            gfx_image_fill_rect(&img, ux * u, uy * u, u, u, cell_colour(ux, uy));
+    s_tex = gfx_texture_from_image(img);
+    gfx_texture_point(s_tex);
+    gfx_image_free(img);
     s_unit = u;
 }
 
@@ -61,7 +62,7 @@ static void tile(int x, int y, int w, int h) {
             if (ex <= sx || ey <= sy) continue;
             Rectangle src = { (float)sx, (float)sy, (float)(ex - sx), (float)(ey - sy) };
             Rectangle dst = { (float)(tx + sx), (float)(ty + sy), src.width, src.height };
-            DrawTexturePro(s_tex, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+            gfx_texture_draw(s_tex, src, dst, WHITE);
         }
     }
 }
@@ -70,16 +71,16 @@ static void tile(int x, int y, int w, int h) {
 // of ink inside it.
 static void rail(int x, int y, int w, int h) {
     int u = CL_UI;
-    if (w < 2 * u || h < 2 * u) { DrawRectangle(x, y, w, h, C_RAIL); return; }
-    DrawRectangle(x, y, w, u, C_RAIL);
-    DrawRectangle(x, y + h - u, w, u, C_RAIL);
-    DrawRectangle(x, y, u, h, C_RAIL);
-    DrawRectangle(x + w - u, y, u, h, C_RAIL);
+    if (w < 2 * u || h < 2 * u) { gfx_rect(x, y, w, h, C_RAIL); return; }
+    gfx_rect(x, y, w, u, C_RAIL);
+    gfx_rect(x, y + h - u, w, u, C_RAIL);
+    gfx_rect(x, y, u, h, C_RAIL);
+    gfx_rect(x + w - u, y, u, h, C_RAIL);
     if (w < 4 * u || h < 4 * u) return;
-    DrawRectangle(x + u, y + u, w - 2 * u, u, C_INK);
-    DrawRectangle(x + u, y + h - 2 * u, w - 2 * u, u, C_INK);
-    DrawRectangle(x + u, y + u, u, h - 2 * u, C_INK);
-    DrawRectangle(x + w - 2 * u, y + u, u, h - 2 * u, C_INK);
+    gfx_rect(x + u, y + u, w - 2 * u, u, C_INK);
+    gfx_rect(x + u, y + h - 2 * u, w - 2 * u, u, C_INK);
+    gfx_rect(x + u, y + u, u, h - 2 * u, C_INK);
+    gfx_rect(x + w - 2 * u, y + u, u, h - 2 * u, C_INK);
 }
 
 void lattice_fill(int x, int y, int w, int h) {
@@ -95,11 +96,11 @@ void lattice_band_v(int x, int y, int w, int h) {
     if (w <= 0 || h <= 0) return;
     tile(x, y, w, h);
     int u = CL_UI;
-    DrawRectangle(x, y, u, h, C_RAIL);
-    DrawRectangle(x + w - u, y, u, h, C_RAIL);
+    gfx_rect(x, y, u, h, C_RAIL);
+    gfx_rect(x + w - u, y, u, h, C_RAIL);
     if (w >= 6 * u) {
-        DrawRectangle(x + u, y, u, h, C_INK);
-        DrawRectangle(x + w - 2 * u, y, u, h, C_INK);
+        gfx_rect(x + u, y, u, h, C_INK);
+        gfx_rect(x + w - 2 * u, y, u, h, C_INK);
     }
 }
 
@@ -107,11 +108,11 @@ void lattice_band_h(int x, int y, int w, int h) {
     if (w <= 0 || h <= 0) return;
     tile(x, y, w, h);
     int u = CL_UI;
-    DrawRectangle(x, y, w, u, C_RAIL);
-    DrawRectangle(x, y + h - u, w, u, C_RAIL);
+    gfx_rect(x, y, w, u, C_RAIL);
+    gfx_rect(x, y + h - u, w, u, C_RAIL);
     if (h >= 6 * u) {
-        DrawRectangle(x, y + u, w, u, C_INK);
-        DrawRectangle(x, y + h - 2 * u, w, u, C_INK);
+        gfx_rect(x, y + u, w, u, C_INK);
+        gfx_rect(x, y + h - 2 * u, w, u, C_INK);
     }
 }
 
@@ -125,32 +126,32 @@ void lattice_ring(int x, int y, int w, int h, int l, int r, int t, int b) {
     int u = CL_UI;
     int thin = (l < 6 * u || r < 6 * u || t < 6 * u || b < 6 * u);
     // Outer rail: gold at the edge, and ink inside it when the band has room.
-    DrawRectangle(x, y, w, u, C_RAIL);
-    DrawRectangle(x, y + h - u, w, u, C_RAIL);
-    DrawRectangle(x, y, u, h, C_RAIL);
-    DrawRectangle(x + w - u, y, u, h, C_RAIL);
+    gfx_rect(x, y, w, u, C_RAIL);
+    gfx_rect(x, y + h - u, w, u, C_RAIL);
+    gfx_rect(x, y, u, h, C_RAIL);
+    gfx_rect(x + w - u, y, u, h, C_RAIL);
     if (!thin) {
-        DrawRectangle(x + u, y + u, w - 2 * u, u, C_INK);
-        DrawRectangle(x + u, y + h - 2 * u, w - 2 * u, u, C_INK);
-        DrawRectangle(x + u, y + u, u, h - 2 * u, C_INK);
-        DrawRectangle(x + w - 2 * u, y + u, u, h - 2 * u, C_INK);
+        gfx_rect(x + u, y + u, w - 2 * u, u, C_INK);
+        gfx_rect(x + u, y + h - 2 * u, w - 2 * u, u, C_INK);
+        gfx_rect(x + u, y + u, u, h - 2 * u, C_INK);
+        gfx_rect(x + w - 2 * u, y + u, u, h - 2 * u, C_INK);
     }
     // Inner rail: gold against the content, ink against the pattern.
     int ix = x + l, iy = y + t, iw = w - l - r, ih = h - t - b;
     if (!thin) {
-        DrawRectangle(ix - 2 * u, iy - 2 * u, iw + 4 * u, u, C_INK);
-        DrawRectangle(ix - 2 * u, iy + ih + u, iw + 4 * u, u, C_INK);
-        DrawRectangle(ix - 2 * u, iy - 2 * u, u, ih + 4 * u, C_INK);
-        DrawRectangle(ix + iw + u, iy - 2 * u, u, ih + 4 * u, C_INK);
+        gfx_rect(ix - 2 * u, iy - 2 * u, iw + 4 * u, u, C_INK);
+        gfx_rect(ix - 2 * u, iy + ih + u, iw + 4 * u, u, C_INK);
+        gfx_rect(ix - 2 * u, iy - 2 * u, u, ih + 4 * u, C_INK);
+        gfx_rect(ix + iw + u, iy - 2 * u, u, ih + 4 * u, C_INK);
     }
-    DrawRectangle(ix - u, iy - u, iw + 2 * u, u, C_RAIL);
-    DrawRectangle(ix - u, iy + ih, iw + 2 * u, u, C_RAIL);
-    DrawRectangle(ix - u, iy - u, u, ih + 2 * u, C_RAIL);
-    DrawRectangle(ix + iw, iy - u, u, ih + 2 * u, C_RAIL);
+    gfx_rect(ix - u, iy - u, iw + 2 * u, u, C_RAIL);
+    gfx_rect(ix - u, iy + ih, iw + 2 * u, u, C_RAIL);
+    gfx_rect(ix - u, iy - u, u, ih + 2 * u, C_RAIL);
+    gfx_rect(ix + iw, iy - u, u, ih + 2 * u, C_RAIL);
 }
 
 void lattice_shutdown(void) {
-    if (s_tex.id) UnloadTexture(s_tex);
+    if (s_tex.id) gfx_texture_free(s_tex);
     s_tex = (Texture2D){ 0 };
     s_unit = 0;
 }

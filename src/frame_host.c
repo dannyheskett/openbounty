@@ -1,4 +1,5 @@
 #include "frame_host.h"
+#include "gfx.h"
 #include "touch.h"
 #include "raylib.h"
 
@@ -40,7 +41,7 @@ void frame_host_yield(void) {
 }
 
 void frame_host_end_frame(void) {
-    EndDrawing();
+    gfx_frame_end();
     frame_host_yield();
     // Touch runs here so it exists in every loop that reads input: the
     // pointer state is fresh (post-poll, post-yield), the frame just drawn

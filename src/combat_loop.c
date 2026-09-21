@@ -6,6 +6,7 @@
 // engine/combat.c.
 
 #include "frame_host.h"
+#include "gfx.h"
 #include "input_host.h"
 #include "touch.h"
 #include "combat.h"
@@ -563,7 +564,7 @@ static void combat_present(const Combat *c, const Game *g,
     // input per frame.
     if (c->cast_phase == COMBAT_CAST_PICK_SPELL && !CL_IS_MODERN) {
         // Legacy: the historic 320x200 positions, untouched.
-        DrawRectangle(40, 30, 240, 130, PAL_CLR(DBLUE));
+        gfx_rect(40, 30, 240, 130, PAL_CLR(DBLUE));
         ui_window_frame(40, 30, 240, 130, PAL_CLR(YELLOW));
         const Game *gw = c->heroes[c->side];
         const ResUI *ui = &gw->res->ui;

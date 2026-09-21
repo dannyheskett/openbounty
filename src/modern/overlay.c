@@ -13,6 +13,7 @@
 // Called only through the dispatcher in src/overlay.c.
 
 #include "overlay.h"
+#include "gfx.h"
 #include "overlay_impl.h"
 #include "modern/mlayout.h"
 #include "modern/uikit.h"
@@ -100,7 +101,7 @@ static void draw_dialog_ex(DialogMode mode) {
         static const int d[4][2] = { { 0, -1 }, { 1, 0 }, { 0, 1 }, { -1, 0 } };
         for (int k = 0; k < 4; k++)
             for (int t = 0; t < 3; t++)
-                DrawRectangleLines(hx + d[k][0] * CL_TILE_W + t, hy + d[k][1] * CL_TILE_H + t,
+                gfx_rect_lines(hx + d[k][0] * CL_TILE_W + t, hy + d[k][1] * CL_TILE_H + t,
                                    CL_TILE_W - 2 * t, CL_TILE_H - 2 * t, PAL_CLR(YELLOW));
     }
     int max_w;
@@ -267,9 +268,9 @@ static void draw_location_backdrop(const Game *g, const Sprites *s,
         float px_per_src = (float)(ML_BACKDROP_W * S) / (float)bd.width;
         Rectangle src = { crop / px_per_src, 0, b.w / px_per_src, b.h / px_per_src };
         Rectangle dst = { (float)b.x, (float)b.y, (float)b.w, (float)b.h };
-        DrawTexturePro(bd, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+        gfx_texture_draw(bd, src, dst, WHITE);
     } else {
-        DrawRectangle(b.x, b.y, b.w, b.h, PAL_CLR(BLACK));
+        gfx_rect(b.x, b.y, b.w, b.h, PAL_CLR(BLACK));
     }
     Texture2D fig = { 0 };
     if (kind == LOC_ALCOVE && s && s->alcove_figure.id) {
@@ -621,7 +622,7 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
                 int slot = views_town_contract_slot(g, i);
                 if (slot < 0 || strcmp(g->contract.cycle[slot], g->contract.active_id) != 0) continue;
                 int ry = b.y + (i - first) * (ml_row_h() + ML_ROW_RULE);
-                DrawCircle(b.x + ML_PAD + GW / 2 - 2, ry + ml_row_h() / 2, 3,
+                gfx_circle(b.x + ML_PAD + GW / 2 - 2, ry + ml_row_h() / 2, 3,
                            i == cursor ? uk_ink() : PAL_CLR(YELLOW));
             }
         }
@@ -1426,7 +1427,7 @@ void modern_overlay_dim_scene(void) {
     int a = overlay_dim_alpha(r ? r->render.dim : 0);
     if (a == 0) return;
     Color shade = { 0, 0, 0, (unsigned char)a };
-    DrawRectangle(CL_MAP_X, CL_MAP_Y, CL_SIDEBAR_X + CL_SIDEBAR_W - CL_MAP_X, CL_MAP_H, shade);
+    gfx_rect(CL_MAP_X, CL_MAP_Y, CL_SIDEBAR_X + CL_SIDEBAR_W - CL_MAP_X, CL_MAP_H, shade);
 }
 
 // =============================================================================

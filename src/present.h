@@ -11,6 +11,7 @@
 #define OB_PRESENT_H
 
 #include "raylib.h"
+#include "gfx.h"
 #include <stdbool.h>
 
 // Re-fit the layout to the window and, if the design-space screen size changed,
@@ -80,7 +81,7 @@ void present_zoom_window(int scale);
 // with black letterbox around it. Takes the render texture BY VALUE; most
 // callers hold a RenderTexture2D* and pass *ptr.
 //
-// This includes BeginDrawing() + ClearBackground(BLACK), because every call
+// This includes gfx_frame_begin() + gfx_clear(BLACK), because every call
 // site did exactly those two calls immediately before its blit. Callers still
 // own what happens AFTER -- frame_host_end_frame(), screenshot_tick(), and so
 // on differ between them.

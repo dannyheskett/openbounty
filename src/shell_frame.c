@@ -1,6 +1,7 @@
 // src/shell_frame.c
 
 #include "shell_frame.h"
+#include "gfx.h"
 
 #include "raylib.h"
 #include "frame_host.h"
@@ -13,7 +14,7 @@
 
 void draw_frame(const Game *game, const Map *map, const Fog *fog,
                 const Sprites *sprites) {
-    ClearBackground(BLACK);
+    gfx_clear(BLACK);
     chrome_draw(game, sprites);
     map_render_draw(game, map, fog, sprites);
     hud_draw(game, sprites);

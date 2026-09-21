@@ -1,4 +1,5 @@
 #include "combat_render.h"
+#include "gfx.h"
 #include "tables.h"
 #include "bfont.h"
 #include "palette.h"
@@ -150,7 +151,7 @@ static void draw_unit(const CombatUnit *u, int side,
     Vector2 m = bfont_measure(buf);
     int bx = px + (CL_COMBAT_CELL_W - (int)m.x) / 2;
     int by = py + CL_COMBAT_CELL_H - BFONT_GLYPH_H - CL_UI;
-    DrawRectangle(bx - CL_UI, by - CL_UI,
+    gfx_rect(bx - CL_UI, by - CL_UI,
                   (int)m.x + 2 * CL_UI, BFONT_GLYPH_H + 2 * CL_UI,
                   PAL_CLR(BLACK));
     bfont_draw(buf, bx, by, PAL_CLR(WHITE));
@@ -163,7 +164,7 @@ void combat_render_frame(const Combat *c, const Game *g,
     // Full-screen black so any letterbox area outside the chrome stays
     // dark; the chrome bitmap composites the frame on top, and the
     // combat field sits inside the inner area.
-    DrawRectangle(0, 0, CL_SCREEN_W, CL_SCREEN_H, PAL_CLR(BLACK));
+    gfx_rect(0, 0, CL_SCREEN_W, CL_SCREEN_H, PAL_CLR(BLACK));
 
     // A siege on a pack that ships a full siege grid (sprites.ui.siege_grid)
     // draws each cell's own tile as the ground, with the walls painted in the
@@ -205,8 +206,8 @@ void combat_render_frame(const Combat *c, const Game *g,
             }
         }
         Color shade = { 0, 0, 0, 150 };
-        DrawRectangle(0, top, fx, fh, shade);
-        DrawRectangle(fx + fw, top, CL_SCREEN_W - fx - fw, fh, shade);
+        gfx_rect(0, top, fx, fh, shade);
+        gfx_rect(fx + fw, top, CL_SCREEN_W - fx - fw, fh, shade);
         lattice_band_v(fx - 4, top, 4, fh);
         lattice_band_v(fx + fw, top, 4, fh);
     }
@@ -238,7 +239,7 @@ void combat_render_frame(const Combat *c, const Game *g,
             Rectangle src = { 0, 0, (float)t.width, (float)t.height };
             Rectangle dst = { (float)px, (float)py,
                               (float)CL_COMBAT_CELL_W, (float)CL_COMBAT_CELL_H };
-            DrawTexturePro(t, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+            gfx_texture_draw(t, src, dst, WHITE);
         }
     }
 

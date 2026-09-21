@@ -1,4 +1,5 @@
 #include "tile_cache.h"
+#include "gfx.h"
 #include "assets.h"
 #include "map.h"   // TILE_ART_NAME_LEN
 #include "resources.h"
@@ -74,13 +75,12 @@ Texture2D tile_cache_get(const char *art) {
     // POINT filter keeps pixel art crisp; CLAMP prevents color
     // bleed from the adjacent edge when the destination rect
     // lands at a sub-pixel position during animated camera scroll.
-    SetTextureFilter(t->tex, TEXTURE_FILTER_POINT);
-    SetTextureWrap(t->tex, TEXTURE_WRAP_CLAMP);
+    gfx_texture_point_clamp(t->tex);
     return t->tex;
 }
 
 void tile_cache_shutdown(void) {
-    for (int i = 0; i < cache_n; i++) UnloadTexture(cache[i].tex);
+    for (int i = 0; i < cache_n; i++) gfx_texture_free(cache[i].tex);
     free(cache);
     cache = NULL;
     cache_n = cache_cap = 0;

@@ -1,4 +1,5 @@
 #include "touch.h"
+#include "gfx.h"
 #include "input_host.h"
 #include "present.h"
 #include "frame_host.h"
@@ -336,13 +337,13 @@ typedef struct { const char *label; int key; } Button;
 
 static void chrome_button(int x, int y, int w, int h,
                           const char *label, int key, bool is_char) {
-    DrawRectangle(x, y, w, h, (Color){ 36, 36, 44, 230 });
-    DrawRectangleLines(x, y, w, h, (Color){ 130, 130, 150, 255 });
+    gfx_rect(x, y, w, h, (Color){ 36, 36, 44, 230 });
+    gfx_rect_lines(x, y, w, h, (Color){ 130, 130, 150, 255 });
     int fs = h / 2 < 10 ? 10 : h / 2;
-    int tw = MeasureText(label, fs);
-    while (tw > w - 6 && fs > 8) { fs -= 2; tw = MeasureText(label, fs); }
-    DrawText(label, x + (w - tw) / 2, y + (h - fs) / 2, fs,
-             (Color){ 230, 230, 230, 255 });
+    int tw = gfx_label_width(label, fs);
+    while (tw > w - 6 && fs > 8) { fs -= 2; tw = gfx_label_width(label, fs); }
+    gfx_label(label, x + (w - tw) / 2, y + (h - fs) / 2, fs,
+              (Color){ 230, 230, 230, 255 });
 
     Region r = { 0 };
     r.kind = REGION_WINDOW;

@@ -14,6 +14,7 @@
 // audience modal popup runs on top of it.
 
 #include "home_castle.h"
+#include "gfx.h"
 #include "layout.h"
 #include "overlay.h"
 #include "ui.h"
@@ -111,7 +112,7 @@ void screen_home_castle_draw(const Game *g, const Sprites *s) {
     // possible; default fallback matches the verbatim source layout.
     int x, y, w, h;
     screens_text_rect(&x, &y, &w, &h);
-    DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
+    gfx_rect(x, y, w, h, PAL_CLR(DBLUE));
     ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
 
     int pad = screens_text_pad();   // legacy 4: the panel holds exactly CL_PANEL_COLS glyphs

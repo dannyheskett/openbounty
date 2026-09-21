@@ -1,4 +1,5 @@
 #include "chrome.h"
+#include "gfx.h"
 #include "layout.h"
 #include "palette.h"
 #include "bfont.h"
@@ -50,7 +51,7 @@ static void draw_bar_strip(Texture2D tex) {
         int run = (x + tex.width > CL_SCREEN_W) ? (CL_SCREEN_W - x) : tex.width;
         Rectangle src = { 0, 0, (float)run, (float)tex.height };
         Rectangle dst = { (float)x, (float)CL_BAR_Y, (float)run, (float)h };
-        DrawTexturePro(tex, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+        gfx_texture_draw(tex, src, dst, WHITE);
     }
 }
 
@@ -61,7 +62,7 @@ static void draw_chrome_frame(Texture2D tex) {
     if (tw == W && th == H) {
         Rectangle src = { 0, 0, (float)tw, (float)th };
         Rectangle dst = { 0, 0, (float)W, (float)H };
-        DrawTexturePro(tex, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+        gfx_texture_draw(tex, src, dst, WHITE);
         return;
     }
 
@@ -81,7 +82,7 @@ static void draw_chrome_frame(Texture2D tex) {
                           (float)cw, (float)ch };
         Rectangle dst = { (float)corner[i].dx, (float)corner[i].dy,
                           (float)cw, (float)ch };
-        DrawTexturePro(tex, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+        gfx_texture_draw(tex, src, dst, WHITE);
     }
 
     // Top and bottom bands: repeat the source's middle span horizontally.
@@ -90,10 +91,10 @@ static void draw_chrome_frame(Texture2D tex) {
         int run = (x + span_w > W - cw) ? (W - cw - x) : span_w;
         Rectangle stop = { (float)cw, 0.0f, (float)run, (float)ch };
         Rectangle dtop = { (float)x,  0.0f, (float)run, (float)ch };
-        DrawTexturePro(tex, stop, dtop, (Vector2){ 0, 0 }, 0.0f, WHITE);
+        gfx_texture_draw(tex, stop, dtop, WHITE);
         Rectangle sbot = { (float)cw, (float)(th - ch), (float)run, (float)ch };
         Rectangle dbot = { (float)x,  (float)(H  - ch), (float)run, (float)ch };
-        DrawTexturePro(tex, sbot, dbot, (Vector2){ 0, 0 }, 0.0f, WHITE);
+        gfx_texture_draw(tex, sbot, dbot, WHITE);
     }
 
     // Left and right bands: repeat the source's middle span vertically.
@@ -102,10 +103,10 @@ static void draw_chrome_frame(Texture2D tex) {
         int run = (y + span_h > H - ch) ? (H - ch - y) : span_h;
         Rectangle sl = { 0.0f,             (float)ch, (float)cw, (float)run };
         Rectangle dl = { 0.0f,             (float)y,  (float)cw, (float)run };
-        DrawTexturePro(tex, sl, dl, (Vector2){ 0, 0 }, 0.0f, WHITE);
+        gfx_texture_draw(tex, sl, dl, WHITE);
         Rectangle sr = { (float)(tw - cw), (float)ch, (float)cw, (float)run };
         Rectangle dr = { (float)(W  - cw), (float)y,  (float)cw, (float)run };
-        DrawTexturePro(tex, sr, dr, (Vector2){ 0, 0 }, 0.0f, WHITE);
+        gfx_texture_draw(tex, sr, dr, WHITE);
     }
 }
 
@@ -176,7 +177,7 @@ void chrome_draw_with_status(const Game *g, const Sprites *s,
     // interior, so the field shows through.
     Color status_bg = status_bg_for_difficulty(
         g ? g->character.difficulty : DIFFICULTY_NORMAL);
-    DrawRectangle(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H,
+    gfx_rect(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H,
                   status_bg);
     if (use_lattice(s)) {
         draw_lattice_chrome_ex(false);
@@ -193,12 +194,12 @@ void chrome_draw_with_status(const Game *g, const Sprites *s,
 void chrome_draw(const Game *g, const Sprites *s) {
     // Fill the whole screen black. The chrome bitmap paints the frame on
     // top; map / sidebar / views paint the interior on top.
-    DrawRectangle(0, 0, CL_SCREEN_W, CL_SCREEN_H, PAL_CLR(BLACK));
+    gfx_rect(0, 0, CL_SCREEN_W, CL_SCREEN_H, PAL_CLR(BLACK));
 
     // Status bar fill (y=8..16, x=16..303) with difficulty color.
     Color status_bg = status_bg_for_difficulty(
         g ? g->character.difficulty : DIFFICULTY_NORMAL);
-    DrawRectangle(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H,
+    gfx_rect(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H,
                   status_bg);
 
     if (use_lattice(s)) {

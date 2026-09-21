@@ -9,6 +9,7 @@
 // Called only through the dispatcher in src/overlay.c.
 
 #include "overlay.h"
+#include "gfx.h"
 #include "overlay_impl.h"
 #include "touch.h"
 #include "layout.h"
@@ -41,11 +42,10 @@
 
 static void draw_panel(int x, int y, int w, int h, Color bg) {
     // Rounded blue panel with yellow border .
-    Rectangle r = { (float)x, (float)y, (float)w, (float)h };
     float roundness = 0.05f;
     int segments = 6;
-    DrawRectangleRounded(r, roundness, segments, bg);
-    DrawRectangleRoundedLines(r, roundness, segments, PAL_CLR(YELLOW));
+    gfx_rect_rounded(x, y, w, h, roundness, segments, bg);
+    gfx_rect_rounded_lines(x, y, w, h, roundness, segments, PAL_CLR(YELLOW));
 }
 
 // Pages the current dialog body wraps to in the bottom panel. Counts WRAPPED
@@ -304,7 +304,7 @@ static void draw_location_backdrop(const Game *g, const Sprites *s,
     if (bd.id && bd.width > 0) {
         ui_blit(bd, bd_x, bd_y, bd_w, bd_h);
     } else {
-        DrawRectangle(bd_x, bd_y, bd_w, bd_h, PAL_CLR(BLACK));
+        gfx_rect(bd_x, bd_y, bd_w, bd_h, PAL_CLR(BLACK));
     }
 
     // Animated troop sprite: 4-frame strip pinned to bottom-left, inset
@@ -355,16 +355,16 @@ static void draw_location_backdrop(const Game *g, const Sprites *s,
     // starts at the pane's corner, so this has to cover the whole pane rather
     // than just the strip underneath it.
     if (bd_y > CL_MAP_Y)
-        DrawRectangle(CL_MAP_X, CL_MAP_Y, CL_MAP_W, bd_y - CL_MAP_Y,
+        gfx_rect(CL_MAP_X, CL_MAP_Y, CL_MAP_W, bd_y - CL_MAP_Y,
                       PAL_CLR(BLACK));
     if (bd_x > CL_MAP_X)
-        DrawRectangle(CL_MAP_X, bd_y, bd_x - CL_MAP_X, bd_h, PAL_CLR(BLACK));
+        gfx_rect(CL_MAP_X, bd_y, bd_x - CL_MAP_X, bd_h, PAL_CLR(BLACK));
     if (bd_x + bd_w < CL_MAP_X + CL_MAP_W)
-        DrawRectangle(bd_x + bd_w, bd_y,
+        gfx_rect(bd_x + bd_w, bd_y,
                       CL_MAP_X + CL_MAP_W - (bd_x + bd_w), bd_h,
                       PAL_CLR(BLACK));
     if (bd_y + bd_h < CL_MAP_Y + CL_MAP_H)
-        DrawRectangle(CL_MAP_X, bd_y + bd_h, CL_MAP_W,
+        gfx_rect(CL_MAP_X, bd_y + bd_h, CL_MAP_W,
                       CL_MAP_Y + CL_MAP_H - (bd_y + bd_h), PAL_CLR(BLACK));
 }
 

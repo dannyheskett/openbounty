@@ -1,4 +1,5 @@
 #include "textsel.h"
+#include "gfx.h"
 #include "bfont.h"
 #include "input.h"
 #include "input_host.h"
@@ -106,7 +107,7 @@ void textsel_draw(const TextSel *t, int x, int y, int cell_w, int cell_h,
         else if (ch == ' ') label = "SPC";
         else label = one;
         bool sel = (i == t->cursor);
-        if (sel) DrawRectangle(cx, cy, cell_w, cell_h, fg);
+        if (sel) gfx_rect(cx, cy, cell_w, cell_h, fg);
         int tw = bfont_text_width(label);
         bfont_draw(label, cx + (cell_w - tw) / 2, cy + (cell_h - bfont_line_height()) / 2, sel ? bg : fg);
         if (touch_list) touch_region_row(cx, cy, cell_w, cell_h, touch_list, i);

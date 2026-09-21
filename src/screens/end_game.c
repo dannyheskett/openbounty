@@ -1,4 +1,5 @@
 #include "end_game.h"
+#include "gfx.h"
 #include "layout.h"
 #include "modern/mlayout.h"
 #include "modern/uikit.h"
@@ -88,9 +89,9 @@ void screen_end_game_draw(const Game *g, const Sprites *s) {
     }
 
     // Black around it, then the panel itself (CS_ENDING background).
-    DrawRectangle(CL_MAP_X, CL_MAP_Y, CL_SIDEBAR_X + CL_SIDEBAR_W - CL_MAP_X, CL_MAP_H,
+    gfx_rect(CL_MAP_X, CL_MAP_Y, CL_SIDEBAR_X + CL_SIDEBAR_W - CL_MAP_X, CL_MAP_H,
                   PAL_CLR(BLACK));
-    DrawRectangle(total_left, total_top, total_w, total_h, PAL_CLR(DBLUE));
+    gfx_rect(total_left, total_top, total_w, total_h, PAL_CLR(DBLUE));
 
     // Text gets a small inset from the frame's top-left so the copy isn't
     // glued into the corner. The body is pre-wrapped to exactly 18 cols x
@@ -118,7 +119,7 @@ void screen_end_game_draw(const Game *g, const Sprites *s) {
                           (float)total_top,
                           (float)draw_w,
                           (float)img_h };
-        DrawTexturePro(img, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+        gfx_texture_draw(img, src, dst, WHITE);
     }
 
     // Text rectangle: full 18-col width, inset left by MARGIN_L (into the

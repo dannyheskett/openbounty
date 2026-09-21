@@ -1,4 +1,5 @@
 #include "map_render.h"
+#include "gfx.h"
 #include "layout.h"
 #include "present.h"
 #include "palette.h"
@@ -42,13 +43,13 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
     // buffer renders at zoom, so scale the rect (present_get_zoom is 1 else).
     {
         int z = present_get_zoom();
-        BeginScissorMode(CL_MAP_X * z, CL_MAP_Y * z, CL_MAP_W * z, CL_MAP_H * z);
+        gfx_clip_begin(CL_MAP_X * z, CL_MAP_Y * z, CL_MAP_W * z, CL_MAP_H * z);
     }
 
     // Fill unseen tiles as black. This also blacks out the sub-tile slack: in
     // modern mode the pane is the whole interior of the frame, which is rarely
     // an exact multiple of the tile, and a partial tile is never drawn.
-    DrawRectangle(CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H, PAL_CLR(BLACK));
+    gfx_rect(CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H, PAL_CLR(BLACK));
 
     // Centre the whole-tile grid in the pane, so the leftover splits evenly
     // either side and the hero still sits at the middle of the window.
@@ -86,14 +87,13 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
                 if (ground.id) {
                     Rectangle gsrc = { 0, 0, (float)ground.width,
                                        (float)ground.height };
-                    DrawTexturePro(ground, gsrc, dst, (Vector2){ 0, 0 },
-                                   0.0f, WHITE);
+                    gfx_texture_draw(ground, gsrc, dst, WHITE);
                 }
             }
             Texture2D tex = tile_cache_get(tilevar_art(TileArt(m, t), mx, my, va, sizeof va));
             if (tex.id == 0) continue;
             Rectangle src = { 0, 0, (float)tex.width, (float)tex.height };
-            DrawTexturePro(tex, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+            gfx_texture_draw(tex, src, dst, WHITE);
         }
     }
 
@@ -120,7 +120,7 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
                     (float)(ox + bvx * CL_TILE_W),
                     (float)(oy + bvy * CL_TILE_H),
                     (float)CL_TILE_W, (float)CL_TILE_H };
-                DrawTexturePro(bt, bsrc, bdst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+                gfx_texture_draw(bt, bsrc, bdst, WHITE);
             }
         }
     }
@@ -176,7 +176,7 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
             (float)(ox + hero_vx * CL_TILE_W),
             (float)(oy + hero_vy * CL_TILE_H),
             (float)CL_TILE_W, (float)CL_TILE_H };
-        DrawTexturePro(hsprite, hsrc, hdst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+        gfx_texture_draw(hsprite, hsrc, hdst, WHITE);
     }
 
     // Fog-edge darkening gradient. For each seen tile, check cardinal neighbors
@@ -213,11 +213,11 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
                     } else {
                         sx = px + CL_TILE_W - k * bw - bw; sy = py; sw = bw; sh = CL_TILE_H;
                     }
-                    DrawRectangle(sx, sy, sw, sh, fog_strip);
+                    gfx_rect(sx, sy, sw, sh, fog_strip);
                 }
             }
         }
     }
 
-    EndScissorMode();
+    gfx_clip_end();
 }

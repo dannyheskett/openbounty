@@ -1,4 +1,5 @@
 #include "dwelling.h"
+#include "gfx.h"
 #include "layout.h"
 #include "overlay.h"
 #include "ui.h"
@@ -111,7 +112,7 @@ void screen_dwelling_draw(const Game *g, const Sprites *s) {
     // Bottom panel -- verbatim  banner.
     int x, y, w, h;
     screens_text_rect(&x, &y, &w, &h);
-    DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
+    gfx_rect(x, y, w, h, PAL_CLR(DBLUE));
     ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
 
     int pad = screens_text_pad();   // legacy 4: the panel holds exactly CL_PANEL_COLS glyphs

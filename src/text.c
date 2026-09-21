@@ -1,4 +1,5 @@
 #include "text.h"
+#include "gfx.h"
 #include "assets_bytes.h"
 #include "resources.h"
 #include "layout.h"
@@ -129,10 +130,10 @@ static bool build(int zoom) {
     f.glyphPadding = 2;
     f.glyphs = gl;
     Image atlas = GenImageFontAtlas(gl, &f.recs, count, f.baseSize, f.glyphPadding, 0);
-    f.texture = LoadTextureFromImage(atlas);
-    UnloadImage(atlas);
+    f.texture = gfx_texture_from_image(atlas);
+    gfx_image_free(atlas);
     if (f.texture.id == 0) { UnloadFontData(gl, count); return false; }
-    SetTextureFilter(f.texture, TEXTURE_FILTER_POINT);
+    gfx_texture_point(f.texture);
     if (s_ready) UnloadFont(s_font);
     s_font = f;
     s_ready = true;
@@ -184,7 +185,7 @@ void text_draw(const char *s, int x, int y, Color c) {
             float w = src.width / z;
             float dx = (float)cx + ((float)s_adv[gi] - w) / 2.0f;
             Rectangle dst = { dx, (float)cy + (float)g->offsetY / z, w, src.height / z };
-            DrawTexturePro(s_font.texture, src, dst, (Vector2){ 0, 0 }, 0.0f, c);
+            gfx_texture_draw(s_font.texture, src, dst, c);
         }
         cx += s_adv[gi];
     }

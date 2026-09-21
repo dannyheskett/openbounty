@@ -2,6 +2,7 @@
 #define OB_FRAME_HOST_H
 
 #include <stdbool.h>
+#include "gfx.h"
 
 // Frame / time host shim. Thin wrappers around the raylib time/window
 // calls used by game logic, so callers don't include raylib directly.
@@ -10,7 +11,7 @@ double frame_host_time(void);          // GetTime equivalent
 bool   frame_host_should_close(void);  // WindowShouldClose equivalent
 
 // ---------------------------------------------------------------------------
-// Web input ordering rule -- READ THIS BEFORE ADDING AN EndDrawing() CALL.
+// Web input ordering rule -- READ THIS BEFORE ADDING A gfx_frame_end() CALL.
 //
 // On web, raylib's PollInputEvents() (called from EndDrawing) only copies
 // currentKeyState into previousKeyState; there is no glfwPollEvents() to
@@ -26,7 +27,7 @@ bool   frame_host_should_close(void);  // WindowShouldClose equivalent
 //
 // The rule: there is exactly ONE yield per frame and it comes immediately
 // after the poll. That is why frame_host_should_close() must not yield on
-// web, and why every EndDrawing() call site goes through
+// web, and why every gfx_frame_end() call site goes through
 // frame_host_end_frame() below. Getting this wrong does not fail loudly --
 // it drops keypresses, in proportion to how much of the frame is spent in
 // the wrong yield.
@@ -36,9 +37,9 @@ bool   frame_host_should_close(void);  // WindowShouldClose equivalent
 // never before an input read.
 void frame_host_yield(void);
 
-// EndDrawing() + frame_host_yield(). Use this INSTEAD of a bare EndDrawing()
-// in any loop that reads input, so the yield lands on the correct side of
-// the poll that EndDrawing performs.
+// gfx_frame_end() + frame_host_yield(). Use this INSTEAD of a bare
+// gfx_frame_end() in any loop that reads input, so the yield lands on the
+// correct side of the poll raylib's EndDrawing performs underneath it.
 void frame_host_end_frame(void);
 
 #endif

@@ -1,4 +1,5 @@
 #include "end_cartoon.h"
+#include "gfx.h"
 #include "game.h"
 #include "frame_host.h"
 #include "layout.h"
@@ -47,7 +48,7 @@ static void draw_tile(Texture2D tex, int gx, int gy, int origin_x, int origin_y,
         (float)dx, (float)dy,
         (float)CL_TILE_W, (float)CL_TILE_H
     };
-    DrawTexturePro(tex, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+    gfx_texture_draw(tex, src, dst, WHITE);
 }
 
 static void draw_cartoon_frame(const Resources *res, const Sprites *sprites,
@@ -125,7 +126,7 @@ void end_cartoon_gallery_draw(RenderTexture2D *rt, const Resources *res,
         origin_y = (CL_SCREEN_H - gh * CL_TILE_H) / 2;
     }
     present_begin(rt);
-    ClearBackground(BLACK);
+    gfx_clear(BLACK);
     draw_cartoon_frame(res, sprites, grass, hero, origin_x, origin_y, 0, frame);
     present_end();
 }
@@ -187,7 +188,7 @@ void run_end_cartoon(RenderTexture2D *rt,
         }
 
         present_begin(rt);
-        ClearBackground(BLACK);
+        gfx_clear(BLACK);
         draw_cartoon_frame(res, sprites, grass, hero, origin_x, origin_y, tick, frame);
         present_end();
 

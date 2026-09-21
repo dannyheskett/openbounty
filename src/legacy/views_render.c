@@ -8,6 +8,7 @@
 // Called only through the dispatcher in src/views_render.c.
 
 #include "views.h"
+#include "gfx.h"
 #include "views_render_impl.h"
 #include "touch.h"
 #include "select.h"
@@ -53,13 +54,13 @@
 
 // Solid-fill background + 1px yellow border for a view panel.
 static void draw_view_panel(void) {
-    DrawRectangle(VIEW_X, VIEW_Y, VIEW_W, VIEW_H, PAL_CLR(DGREY));
+    gfx_rect(VIEW_X, VIEW_Y, VIEW_W, VIEW_H, PAL_CLR(DGREY));
     ui_window_frame(VIEW_X, VIEW_Y, VIEW_W, VIEW_H, PAL_CLR(DRED));
 }
 
 // Thin horizontal rule between rows.
 static void draw_rule(int x, int y, int w) {
-    DrawRectangle(x, y, w, CL_UI, PAL_CLR(DRED));
+    gfx_rect(x, y, w, CL_UI, PAL_CLR(DRED));
 }
 
 // ---------------------------------------------------------------------------
@@ -75,7 +76,7 @@ static void draw_character(const Game *g, const Sprites *s) {
     // Full content width (covers HUD); solid black background per ref.
     int vx = FULL_VIEW_X;
     int vw = FULL_VIEW_W;
-    DrawRectangle(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DGREY));
+    gfx_rect(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DGREY));
 
     const ClassDef *cls = class_by_id(g->character.cls.id);
     // Authored 96x102 in the 320x200 design space; the slot scales with the
@@ -160,13 +161,13 @@ static void draw_character(const Game *g, const Sprites *s) {
     inv_x += (vw - belt_w) / 2;
 
     // Inner fill: dark red (empty-slot color).
-    DrawRectangle(inv_x, inv_y, belt_w, belt_h, PAL_CLR(DRED));
+    gfx_rect(inv_x, inv_y, belt_w, belt_h, PAL_CLR(DRED));
     // Light-grey outline + grid lines.
-    DrawRectangleLines(inv_x, inv_y, belt_w, belt_h, PAL_CLR(GREY));
+    gfx_rect_lines(inv_x, inv_y, belt_w, belt_h, PAL_CLR(GREY));
     for (int c = 1; c < 6; c++) {
-        DrawRectangle(inv_x + c * item_w, inv_y, CL_UI, belt_h, PAL_CLR(GREY));
+        gfx_rect(inv_x + c * item_w, inv_y, CL_UI, belt_h, PAL_CLR(GREY));
     }
-    DrawRectangle(inv_x, inv_y + item_h, belt_w, CL_UI, PAL_CLR(GREY));
+    gfx_rect(inv_x, inv_y + item_h, belt_w, CL_UI, PAL_CLR(GREY));
 
     // Artifact grid: 4 cols x 2 rows. Only stamp icon when found.
     for (int i = 0; i < 8; i++) {
@@ -231,7 +232,7 @@ static void draw_army(const Game *g, const Sprites *s) {
     // -- the right-column stats need the extra width to lay out cleanly.
     int vx = FULL_VIEW_X;
     int vw = FULL_VIEW_W;
-    DrawRectangle(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DGREY));
+    gfx_rect(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DGREY));
     ui_window_frame(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DRED));
 
     // The row holds a troop sprite, so its height is a tile. It also carries
@@ -253,7 +254,7 @@ static void draw_army(const Game *g, const Sprites *s) {
         int sprite_h = CL_TILE_H;
 
         bool filled = g->army[i].id[0] && g->army[i].count != 0;
-        DrawRectangle(vx + pad, ry, sprite_w, sprite_h, PAL_CLR(DGREEN));
+        gfx_rect(vx + pad, ry, sprite_w, sprite_h, PAL_CLR(DGREEN));
 
         if (!filled) continue;
         const TroopDef *t = troop_by_id(g->army[i].id);
@@ -355,12 +356,12 @@ static void draw_contract(const Game *g, const Sprites *s) {
 
     // Rounded-corner blue panel with yellow border .
     {
-        Rectangle r = { (float)panel_x, (float)panel_y,
-                        (float)panel_w, (float)panel_h };
         float roundness = 0.05f;
         int segments = 6;
-        DrawRectangleRounded(r, roundness, segments, PAL_CLR(DBLUE));
-        DrawRectangleRoundedLines(r, roundness, segments, PAL_CLR(YELLOW));
+        gfx_rect_rounded(panel_x, panel_y, panel_w, panel_h,
+                         roundness, segments, PAL_CLR(DBLUE));
+        gfx_rect_rounded_lines(panel_x, panel_y, panel_w, panel_h,
+                               roundness, segments, PAL_CLR(YELLOW));
     }
 
     int pad = VIEW_PAD;
@@ -374,7 +375,7 @@ static void draw_contract(const Game *g, const Sprites *s) {
         // Tile-shaped: the silhouette is the same art the HUD panel shows.
         int box_w = CL_TILE_W;
         int box_h = CL_TILE_H;
-        DrawRectangleLines(tx - CL_UI, ty - CL_UI,
+        gfx_rect_lines(tx - CL_UI, ty - CL_UI,
                            box_w + 2 * CL_UI, box_h + 2 * CL_UI,
                            PAL_CLR(YELLOW));
         ui_blit(s ? s->hud_contract_silhouette : (Texture2D){ 0 },
@@ -391,12 +392,12 @@ static void draw_contract(const Game *g, const Sprites *s) {
     // shows the villain face; gold purse at bottom-right of HUD.
     panel_h = CL_TILE_H * 4;
     {
-        Rectangle r = { (float)panel_x, (float)panel_y,
-                        (float)panel_w, (float)panel_h };
         float roundness = 0.05f;
         int segments = 6;
-        DrawRectangleRounded(r, roundness, segments, PAL_CLR(DBLUE));
-        DrawRectangleRoundedLines(r, roundness, segments, PAL_CLR(YELLOW));
+        gfx_rect_rounded(panel_x, panel_y, panel_w, panel_h,
+                         roundness, segments, PAL_CLR(DBLUE));
+        gfx_rect_rounded_lines(panel_x, panel_y, panel_w, panel_h,
+                               roundness, segments, PAL_CLR(YELLOW));
     }
     tx = panel_x + pad;
     ty = panel_y + pad;
@@ -413,7 +414,7 @@ static void draw_contract(const Game *g, const Sprites *s) {
     int face_h = CL_TILE_H;
     ui_blit(face, tx, ty, face_w, face_h);
     ui_panel_frame(tx, ty, face_w, face_h);
-    DrawRectangleLines(tx - CL_UI, ty - CL_UI,
+    gfx_rect_lines(tx - CL_UI, ty - CL_UI,
                        face_w + 2 * CL_UI, face_h + 2 * CL_UI,
                        PAL_CLR(YELLOW));
 
@@ -535,7 +536,7 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
         int pw = CL_TILE_W * 5, ph = CL_TILE_H * 5;
         int px = CL_CENTER_IN_PANE_X(pw);
         int py = CL_CENTER_IN_PANE_Y(ph);
-        DrawRectangle(px, py, pw, ph, PAL_CLR(DGREY));
+        gfx_rect(px, py, pw, ph, PAL_CLR(DGREY));
         ui_window_frame(px, py, pw, ph, PAL_CLR(DRED));
     }
 
@@ -639,14 +640,13 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
                                               (float)tex.height };
                             Rectangle dst = { (float)x, (float)y,
                                               (float)cell_w, (float)cell_h };
-                            DrawTexturePro(tex, src, dst,
-                                           (Vector2){ 0, 0 }, 0.0f, WHITE);
+                            gfx_texture_draw(tex, src, dst, WHITE);
                             drew = true;
                         }
                     }
                 }
                 if (!drew) {
-                    DrawRectangle(x, y, cell_w, cell_h, PAL_CLR(BLACK));
+                    gfx_rect(x, y, cell_w, cell_h, PAL_CLR(BLACK));
                 }
             } else if (face.id) {
                 // Cover: show the entity face (villain portrait or
@@ -654,9 +654,9 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
                 Rectangle src = { 0, 0, (float)face.width, (float)face.height };
                 Rectangle dst = { (float)x, (float)y,
                                   (float)cell_w, (float)cell_h };
-                DrawTexturePro(face, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+                gfx_texture_draw(face, src, dst, WHITE);
             } else {
-                DrawRectangle(x, y, cell_w, cell_h, PAL_CLR(DGREY));
+                gfx_rect(x, y, cell_w, cell_h, PAL_CLR(DGREY));
             }
         }
     }
@@ -719,7 +719,7 @@ static bool worldmap_has_orb(const Game *g) {
 
 static void draw_worldmap_exit_hint(const Game *g) {
     // KB_TopBox strings.
-    DrawRectangle(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H,
+    gfx_rect(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H,
                   PAL_CLR(DRED));
     const ResUI *ui = &g->res->ui;
     const char *txt;
@@ -755,7 +755,7 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
     int gx = VIEW_X + (VIEW_W - grid_w) / 2;
     int gy = VIEW_Y + (VIEW_H - grid_h) / 2;
 
-    DrawRectangle(gx, gy, grid_w, grid_h, PAL_CLR(BLACK));
+    gfx_rect(gx, gy, grid_w, grid_h, PAL_CLR(BLACK));
 
     const ResColors *mm_col = (g && g->res) ? &g->res->colors : NULL;
     for (int y = 0; y < m->height; y++) {
@@ -763,7 +763,7 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
             if (!reveal_all && !FogSeen(f, x, y)) continue;
             const Tile *t = MapGetTile(m, x, y);
             if (!t) continue;
-            DrawRectangle(gx + x * pix, gy + y * pix, pix, pix,
+            gfx_rect(gx + x * pix, gy + y * pix, pix, pix,
                           terrain_minimap_color(mm_col, t->terrain));
         }
     }
@@ -778,7 +778,7 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
             if (strcmp(tw->zone, g->position.zone) != 0) continue;
             if (tw->x < 0 || tw->y < 0) continue;
             if (!reveal_all && !FogSeen(f, tw->x, tw->y)) continue;
-            DrawRectangle(gx + tw->x * pix, gy + tw->y * pix,
+            gfx_rect(gx + tw->x * pix, gy + tw->y * pix,
                           pix, pix, PAL_CLR(GREEN));
         }
         for (int i = 0; i < r->castle_count; i++) {
@@ -786,7 +786,7 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
             if (strcmp(c->zone, g->position.zone) != 0) continue;
             if (c->x < 0 || c->y < 0) continue;
             if (!reveal_all && !FogSeen(f, c->x, c->y)) continue;
-            DrawRectangle(gx + c->x * pix, gy + c->y * pix,
+            gfx_rect(gx + c->x * pix, gy + c->y * pix,
                           pix, pix, PAL_CLR(RED));
         }
     }
@@ -794,7 +794,7 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
     // Hero position as a blinking yellow/red pixel.
     unsigned k = (unsigned)(ui_anim_time() * 3.0);
     Color blink = (k & 1) ? PAL_CLR(YELLOW) : PAL_CLR(RED);
-    DrawRectangle(gx + g->position.x * pix,
+    gfx_rect(gx + g->position.x * pix,
                   gy + g->position.y * pix,
                   pix, pix, blink);
 
@@ -868,7 +868,7 @@ static void draw_gate(void) {
     // Full content width (map + sidebar): town names can be long.
     int vx = FULL_VIEW_X;
     int vw = FULL_VIEW_W;
-    DrawRectangle(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DGREY));
+    gfx_rect(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DGREY));
     ui_window_frame(vx, VIEW_Y, vw, VIEW_H, PAL_CLR(DRED));
 
     const ResUI *ui = &resources_current()->ui;

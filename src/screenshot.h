@@ -2,8 +2,9 @@
 #define OB_SCREENSHOT_H
 
 #include "raylib.h"
+#include "gfx.h"
 
-// Call once per frame, AFTER EndDrawing(). If the user has pressed ` (backtick)
+// Call once per frame, AFTER gfx_frame_end(). If the user has pressed ` (backtick)
 // this frame, exports `rt`'s texture to screenshots/<prefix>_NNNN.png using the
 // next free sequence number. Native 320x200, vertically flipped so the PNG
 // matches what was on screen.

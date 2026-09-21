@@ -1,4 +1,5 @@
 #include "bfont.h"
+#include "gfx.h"
 #include "assets.h"
 #include "layout.h"
 #include "resources.h"
@@ -41,7 +42,7 @@ static void bfont_patch_twirl_glyphs(Image *img) {
                           (float)BFONT_SRC_GLYPH_W, (float)BFONT_SRC_GLYPH_H };
         Rectangle dst = { (float)(pairs[i].dst_code * BFONT_SRC_GLYPH_W), 0.0f,
                           (float)BFONT_SRC_GLYPH_W, (float)BFONT_SRC_GLYPH_H };
-        ImageDraw(img, *img, src, dst, WHITE);
+        gfx_image_blit(img, *img, src, dst, WHITE);
     }
 }
 
@@ -55,7 +56,7 @@ static bool bfont_init_strip(const char *png_path) {
         g_ready = false;
         return false;
     }
-    Image img = LoadImageFromMemory(".png", data, (int)sz);
+    Image img = gfx_image_from_memory(".png", data, (int)sz);
     if (img.data == NULL) {
         fprintf(stdout, "bfont: failed to decode %s\n", png_path);
         g_ready = false;
@@ -66,14 +67,14 @@ static bool bfont_init_strip(const char *png_path) {
     g_src_w = (img.width > 0) ? img.width / BFONT_GLYPHS : 0;
     g_src_h = img.height;
     bfont_patch_twirl_glyphs(&img);
-    g_font_tex = LoadTextureFromImage(img);
-    UnloadImage(img);
+    g_font_tex = gfx_texture_from_image(img);
+    gfx_image_free(img);
     if (g_font_tex.id == 0) {
         fprintf(stdout, "bfont: failed to upload %s\n", png_path);
         g_ready = false;
         return false;
     }
-    SetTextureFilter(g_font_tex, TEXTURE_FILTER_POINT);
+    gfx_texture_point(g_font_tex);
     g_ready = true;
     return true;
 }
@@ -108,7 +109,7 @@ void bfont_set_zoom(int zoom) { text_set_zoom(zoom); }
 
 void bfont_shutdown(void) {
     if (g_modern) text_shutdown();
-    else if (g_ready) UnloadTexture(g_font_tex);
+    else if (g_ready) gfx_texture_free(g_font_tex);
     g_ready = false;
 }
 
@@ -140,7 +141,7 @@ void bfont_draw(const char *text, int x, int y, Color c) {
                           (float)BFONT_SRC_GLYPH_W, (float)BFONT_SRC_GLYPH_H };
         Rectangle dst = { (float)cx, (float)cy,
                           (float)BFONT_GLYPH_W, (float)BFONT_GLYPH_H };
-        DrawTexturePro(g_font_tex, src, dst, (Vector2){ 0, 0 }, 0.0f, c);
+        gfx_texture_draw(g_font_tex, src, dst, c);
         cx += BFONT_GLYPH_W;
     }
 }

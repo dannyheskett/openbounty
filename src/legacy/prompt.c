@@ -9,6 +9,7 @@
 // Called only through the dispatcher in src/prompt.c, which owns the state.
 
 #include "prompt_impl.h"
+#include "gfx.h"
 #include "layout.h"
 #include "ui.h"
 #include "palette.h"
@@ -43,7 +44,7 @@ void legacy_prompt_draw(const PromptView *p) {
     else if (p->kind == PK_AB_CHOICE)  bottom_rows = 0;
     else                               bottom_rows = 1;
 
-    DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
+    gfx_rect(x, y, w, h, PAL_CLR(DBLUE));
     ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
 
     int tx = x + pad;

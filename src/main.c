@@ -2,6 +2,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "frame_host.h"
+#include "gfx.h"
 #include "input_host.h"
 #include "shell_demo.h"
 #include "demo.h"
@@ -760,8 +761,8 @@ int shell_run_game(int argc, char **argv) {
     // Allocate the render target early so startup screens can
     // draw into it.
     RenderTexture2D render_target_startup =
-        LoadRenderTexture(CL_SCREEN_W, CL_SCREEN_H);
-    SetTextureFilter(render_target_startup.texture, TEXTURE_FILTER_POINT);
+        gfx_target_create(CL_SCREEN_W, CL_SCREEN_H);
+    gfx_texture_point(render_target_startup.texture);
 
     // Pre-game flow: pick slot + new-game wizard. --demo / --autoplay bypass
     // the wizard and synthesize a deterministic new game: the agent plays it,
@@ -800,7 +801,7 @@ title:;
         // User quit before choosing.
         audio_shutdown();
         recorder_shutdown();
-        UnloadRenderTexture(render_target_startup);
+        gfx_target_free(render_target_startup);
         sprites_unload(&sprites);
         bfont_shutdown();
         lattice_shutdown();
@@ -879,7 +880,7 @@ title:;
     const char *load_zone = game.position.zone;
     if (!load_zone[0]) load_zone = res.world.starting_zone;
     if (!MapLoadZoneWithPlacements(&map, &res, load_zone, &game)) {
-        UnloadRenderTexture(render_target_startup);
+        gfx_target_free(render_target_startup);
         sprites_unload(&sprites);
         bfont_shutdown();
         lattice_shutdown();
@@ -938,7 +939,7 @@ title:;
     if (gallery_dir) {
         // Layout audit: capture every modern screen, then quit.
         int rc = gallery_run(&game, &map, &fog, &res, &sprites, &render_target, gallery_dir);
-        UnloadRenderTexture(render_target);
+        gfx_target_free(render_target);
         sprites_unload(&sprites);
         CloseWindow();
         resources_free(&res);
@@ -1720,7 +1721,7 @@ title:;
 
     audio_shutdown();
     recorder_shutdown();
-    UnloadRenderTexture(render_target);
+    gfx_target_free(render_target);
     bfont_shutdown();
     sprites_unload(&sprites);
     lattice_shutdown();

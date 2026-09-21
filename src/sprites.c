@@ -1,4 +1,5 @@
 #include "sprites.h"
+#include "gfx.h"
 #include "assets.h"
 #include "tables.h"
 #include "resources.h"
@@ -11,7 +12,7 @@
 
 static Texture2D load_filtered(const char *path) {
     Texture2D t = LoadAssetTexture(path);
-    SetTextureFilter(t, TEXTURE_FILTER_POINT);
+    gfx_texture_point(t);
     return t;
 }
 
@@ -43,7 +44,7 @@ static void load_anim_set(SpriteAnim *dst, const ResAnimSet *src) {
 static void unload_anim_set(SpriteAnim *a) {
     if (!a) return;
     for (int f = 0; f < OB_FACE_COUNT; f++) {
-        for (int i = 0; i < a->frames[f]; i++) UnloadTexture(a->tex[f][i]);
+        for (int i = 0; i < a->frames[f]; i++) gfx_texture_free(a->tex[f][i]);
         free(a->tex[f]);
         a->tex[f] = NULL;
         a->frames[f] = 0;
@@ -60,7 +61,7 @@ static Texture2D *load_strip(const char (*paths)[RES_PATH_LEN], int n) {
 }
 
 static void unload_strip(Texture2D **t, int *n) {
-    for (int i = 0; *t && i < *n; i++) UnloadTexture((*t)[i]);
+    for (int i = 0; *t && i < *n; i++) gfx_texture_free((*t)[i]);
     free(*t);
     *t = NULL;
     *n = 0;
@@ -306,16 +307,16 @@ void sprites_unload(Sprites *s) {
     unload_anim_set(&s->hero_idle);
     unload_anim_set(&s->hero_boat);
     for (int i = 0; i < s->class_count; i++) {
-        UnloadTexture(s->class_portrait[i]);
-        UnloadTexture(s->class_disgraced[i]);
-        UnloadTexture(s->class_end_hero[i]);
+        gfx_texture_free(s->class_portrait[i]);
+        gfx_texture_free(s->class_disgraced[i]);
+        gfx_texture_free(s->class_end_hero[i]);
         unload_anim_set(&s->class_hero_walk[i]);
         unload_anim_set(&s->class_hero_idle[i]);
         unload_anim_set(&s->class_hero_boat[i]);
     }
     free(s->class_portrait);  s->class_portrait = NULL;
     free(s->class_disgraced); s->class_disgraced = NULL;
-    for (int i = 0; i < s->event_scene_count; i++) UnloadTexture(s->event_scene[i]);
+    for (int i = 0; i < s->event_scene_count; i++) gfx_texture_free(s->event_scene[i]);
     free(s->event_scene); s->event_scene = NULL; s->event_scene_count = 0;
     free(s->class_end_hero);  s->class_end_hero = NULL;
     free(s->class_hero_walk); s->class_hero_walk = NULL;
@@ -323,7 +324,7 @@ void sprites_unload(Sprites *s) {
     free(s->class_hero_boat); s->class_hero_boat = NULL;
     s->class_count = 0;
     for (int i = 0; i < s->villain_count; i++) {
-        UnloadTexture(s->villain_portrait[i]);
+        gfx_texture_free(s->villain_portrait[i]);
         unload_strip(&s->villain_anim[i], &s->villain_anim_frames[i]);
     }
     free(s->villain_portrait);    s->villain_portrait = NULL;
@@ -337,13 +338,13 @@ void sprites_unload(Sprites *s) {
     s->portrait_frames = NULL;
     s->portrait_anim = NULL;
     s->portrait_count = 0;
-    for (int i = 0; i < s->view_icon_count; i++) UnloadTexture(s->view_icon[i]);
+    for (int i = 0; i < s->view_icon_count; i++) gfx_texture_free(s->view_icon[i]);
     free(s->view_icon);
     s->view_icon = NULL;
     s->view_icon_count = 0;
     for (int i = 0; i < s->troop_count; i++) {
-        UnloadTexture(s->troop_sprite[i]);
-        UnloadTexture(s->troop_portrait[i]);
+        gfx_texture_free(s->troop_sprite[i]);
+        gfx_texture_free(s->troop_portrait[i]);
         unload_strip(&s->troop_anim[i], &s->troop_anim_frames[i]);
     }
     free(s->troop_sprite);      s->troop_sprite = NULL;
@@ -351,55 +352,55 @@ void sprites_unload(Sprites *s) {
     free(s->troop_anim_frames); s->troop_anim_frames = NULL;
     free(s->troop_anim);        s->troop_anim = NULL;
     s->troop_count = 0;
-    for (int i = 0; i < 15; i++) UnloadTexture(s->combat_tile[i]);
-    UnloadTexture(s->puzzle_cover);
-    UnloadTexture(s->town_backdrop);
-    UnloadTexture(s->castle_backdrop);
-    UnloadTexture(s->plains_backdrop);
-    UnloadTexture(s->forest_backdrop);
-    UnloadTexture(s->hillcave_backdrop);
-    UnloadTexture(s->dungeon_backdrop);
-    UnloadTexture(s->alcove_backdrop);
-    UnloadTexture(s->sail_backdrop);
-    for (int i = 0; i < s->zone_town_backdrop_count; i++) UnloadTexture(s->zone_town_backdrop[i]);
+    for (int i = 0; i < 15; i++) gfx_texture_free(s->combat_tile[i]);
+    gfx_texture_free(s->puzzle_cover);
+    gfx_texture_free(s->town_backdrop);
+    gfx_texture_free(s->castle_backdrop);
+    gfx_texture_free(s->plains_backdrop);
+    gfx_texture_free(s->forest_backdrop);
+    gfx_texture_free(s->hillcave_backdrop);
+    gfx_texture_free(s->dungeon_backdrop);
+    gfx_texture_free(s->alcove_backdrop);
+    gfx_texture_free(s->sail_backdrop);
+    for (int i = 0; i < s->zone_town_backdrop_count; i++) gfx_texture_free(s->zone_town_backdrop[i]);
     free(s->zone_town_backdrop); s->zone_town_backdrop = NULL; s->zone_town_backdrop_count = 0;
-    for (int i = 0; i < s->town_backdrop_count; i++) UnloadTexture(s->town_backdrop_own[i]);
+    for (int i = 0; i < s->town_backdrop_count; i++) gfx_texture_free(s->town_backdrop_own[i]);
     free(s->town_backdrop_own); s->town_backdrop_own = NULL; s->town_backdrop_count = 0;
-    for (int i = 0; i < 3; i++) UnloadTexture(s->scene_column[i]);
-    for (int i = 0; i < 3; i++) UnloadTexture(s->palace[i]);
-    UnloadTexture(s->alcove_figure);
+    for (int i = 0; i < 3; i++) gfx_texture_free(s->scene_column[i]);
+    for (int i = 0; i < 3; i++) gfx_texture_free(s->palace[i]);
+    gfx_texture_free(s->alcove_figure);
     unload_strip(&s->alcove_figure_anim, &s->alcove_figure_frames);
-    UnloadTexture(s->ending_win);
-    UnloadTexture(s->ending_lose);
-    UnloadTexture(s->hud_contract_silhouette);
-    UnloadTexture(s->hud_boat_silhouette);
-    UnloadTexture(s->hud_siege_silhouette);
-    UnloadTexture(s->hud_magic_silhouette);
-    UnloadTexture(s->hud_puzzle_grid);
-    UnloadTexture(s->hud_gold_purse);
+    gfx_texture_free(s->ending_win);
+    gfx_texture_free(s->ending_lose);
+    gfx_texture_free(s->hud_contract_silhouette);
+    gfx_texture_free(s->hud_boat_silhouette);
+    gfx_texture_free(s->hud_siege_silhouette);
+    gfx_texture_free(s->hud_magic_silhouette);
+    gfx_texture_free(s->hud_puzzle_grid);
+    gfx_texture_free(s->hud_gold_purse);
     unload_strip(&s->hud_siege_anim, &s->hud_siege_anim_frames);
     unload_strip(&s->hud_magic_anim, &s->hud_magic_anim_frames);
-    UnloadTexture(s->hud_bar_strip);
-    UnloadTexture(s->chrome_overworld);
-    UnloadTexture(s->splash_logo);
-    UnloadTexture(s->splash_title);
-    UnloadTexture(s->title_battle);
-    UnloadTexture(s->alcove_portrait);
-    UnloadTexture(s->title_eagle);
-    UnloadTexture(s->title_words);
-    UnloadTexture(s->class_picker);
-    UnloadTexture(s->class_highlight);
+    gfx_texture_free(s->hud_bar_strip);
+    gfx_texture_free(s->chrome_overworld);
+    gfx_texture_free(s->splash_logo);
+    gfx_texture_free(s->splash_title);
+    gfx_texture_free(s->title_battle);
+    gfx_texture_free(s->alcove_portrait);
+    gfx_texture_free(s->title_eagle);
+    gfx_texture_free(s->title_words);
+    gfx_texture_free(s->class_picker);
+    gfx_texture_free(s->class_highlight);
     unload_strip(&s->class_picker_selected, &s->class_picker_selected_count);
-    UnloadTexture(s->orb);
-    UnloadTexture(s->end_grass);
-    UnloadTexture(s->end_carpet);
-    UnloadTexture(s->end_hero);
-    UnloadTexture(s->siege_back_wall);
-    UnloadTexture(s->siege_back_wall_end[0]);
-    UnloadTexture(s->siege_back_wall_end[1]);
+    gfx_texture_free(s->orb);
+    gfx_texture_free(s->end_grass);
+    gfx_texture_free(s->end_carpet);
+    gfx_texture_free(s->end_hero);
+    gfx_texture_free(s->siege_back_wall);
+    gfx_texture_free(s->siege_back_wall_end[0]);
+    gfx_texture_free(s->siege_back_wall_end[1]);
     for (int y = 0; y <= COMBAT_H; y++)
-        for (int x = 0; x < COMBAT_W; x++) UnloadTexture(s->siege_grid[y][x]);
-    UnloadTexture(s->end_throne);
+        for (int x = 0; x < COMBAT_W; x++) gfx_texture_free(s->siege_grid[y][x]);
+    gfx_texture_free(s->end_throne);
 }
 
 static int class_slot(const Sprites *s, const char *class_id) {

@@ -2,6 +2,7 @@
 // (see mlist.h).
 
 #include "modern/mlist.h"
+#include "gfx.h"
 #include "modern/mlayout.h"
 #include "input_host.h"
 #include "lattice.h"
@@ -84,10 +85,10 @@ int ml_list_draw_ex(int x, int y, int w, int h, int count, int cursor,
         int ax = x + w - ML_PAD / 2 - 6;
         Color arrow = (sel && enabled) ? bg : PAL_CLR(YELLOW);
         if (shown == 0 && first > 0)
-            DrawTriangle((Vector2){ (float)ax, (float)ry + 4 }, (Vector2){ (float)ax - 5, (float)ry + 12 },
+            gfx_triangle((Vector2){ (float)ax, (float)ry + 4 }, (Vector2){ (float)ax - 5, (float)ry + 12 },
                          (Vector2){ (float)ax + 5, (float)ry + 12 }, arrow);
         if (shown == vis - 1 && i + 1 < count)
-            DrawTriangle((Vector2){ (float)ax - 5, (float)(ry + rh - 12) }, (Vector2){ (float)ax, (float)(ry + rh - 4) },
+            gfx_triangle((Vector2){ (float)ax - 5, (float)(ry + rh - 12) }, (Vector2){ (float)ax, (float)(ry + rh - 4) },
                          (Vector2){ (float)ax + 5, (float)(ry + rh - 12) }, arrow);
         lattice_band_h(x, ry + rh, w, ML_ROW_RULE);
     }
@@ -103,17 +104,17 @@ void ml_stepper_draw(int x, int y, int w, const char *text) {
     int keys[4] = { KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_UP };
     for (int k = 0; k < 4; k++) {
         int bx = xs[k];
-        DrawRectangleLines(bx, y, bw, bh, PAL_CLR(YELLOW));
+        gfx_rect_lines(bx, y, bw, bh, PAL_CLR(YELLOW));
         int cy = y + bh / 2;
         bool leftward = (k < 2);
         int arrows = (k == 0 || k == 3) ? 2 : 1;
         for (int a = 0; a < arrows; a++) {
             float ax = (float)(bx + bw / 2 + (arrows == 2 ? (a == 0 ? -6 : 6) : 0));
             if (leftward)
-                DrawTriangle((Vector2){ ax + 5, (float)cy - 7 }, (Vector2){ ax - 5, (float)cy },
+                gfx_triangle((Vector2){ ax + 5, (float)cy - 7 }, (Vector2){ ax - 5, (float)cy },
                              (Vector2){ ax + 5, (float)cy + 7 }, PAL_CLR(YELLOW));
             else
-                DrawTriangle((Vector2){ ax - 5, (float)cy - 7 }, (Vector2){ ax - 5, (float)cy + 7 },
+                gfx_triangle((Vector2){ ax - 5, (float)cy - 7 }, (Vector2){ ax - 5, (float)cy + 7 },
                              (Vector2){ ax + 5, (float)cy }, PAL_CLR(YELLOW));
         }
         touch_region(bx, y, bw, bh, keys[k]);
@@ -143,7 +144,7 @@ int ml_hint_button(int x, int y, const char *label, const char *kb_key, const ch
     char t[96];
     ml_hint_text(t, sizeof t, label, kb_key, pad_key);
     int w = (int)bfont_measure(t).x + 2 * ML_PAD, h = BFONT_GLYPH_H + 8;
-    DrawRectangleLines(x, y, w, h, PAL_CLR(YELLOW));
+    gfx_rect_lines(x, y, w, h, PAL_CLR(YELLOW));
     bfont_draw(t, x + ML_PAD, y + 4, PAL_CLR(YELLOW));
     touch_region(x, y, w, h, key);
     return w;
@@ -167,25 +168,25 @@ int ml_count_buttons(int x, int y, int w, int value, int max) {
             // The count, white on black.
             char nb[16];
             snprintf(nb, sizeof nb, "%d", value);
-            DrawRectangle(cx, y, value_w, bh, PAL_CLR(BLACK));
-            DrawRectangleLines(cx, y, value_w, bh, PAL_CLR(WHITE));
+            gfx_rect(cx, y, value_w, bh, PAL_CLR(BLACK));
+            gfx_rect_lines(cx, y, value_w, bh, PAL_CLR(WHITE));
             bfont_draw(nb, cx + (value_w - (int)bfont_measure(nb).x) / 2, y + (bh - gh) / 2, PAL_CLR(WHITE));
             cx += value_w + pad;
             continue;
         }
         int b = k < 3 ? k : k - 1;
         if (!labels[b][0]) { cx += bw + pad; continue; }
-        DrawRectangleLines(cx, y, bw, bh, edge);
-        DrawRectangleLines(cx + 1, y + 1, bw - 2, bh - 2, edge);
+        gfx_rect_lines(cx, y, bw, bh, edge);
+        gfx_rect_lines(cx + 1, y + 1, bw - 2, bh - 2, edge);
         int lw = (int)bfont_measure(labels[b]).x;
         bfont_draw(labels[b], cx + (bw - lw) / 2, y + (bh - gh) / 2, PAL_CLR(YELLOW));
         touch_region(cx, y, bw, bh, KEYS[b]);
         cx += bw + pad;
     }
     int bar_y = y + bh + pad, bar_h = 8;
-    DrawRectangle(x, bar_y, w, bar_h, PAL_CLR(BLACK));
-    if (max > 0) DrawRectangle(x, bar_y, (int)((long)w * value / max), bar_h, edge);
-    DrawRectangleLines(x, bar_y, w, bar_h, (Color){ 90, 72, 30, 255 });
+    gfx_rect(x, bar_y, w, bar_h, PAL_CLR(BLACK));
+    if (max > 0) gfx_rect(x, bar_y, (int)((long)w * value / max), bar_h, edge);
+    gfx_rect_lines(x, bar_y, w, bar_h, (Color){ 90, 72, 30, 255 });
     return bh + pad + bar_h;
 }
 

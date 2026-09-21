@@ -1,4 +1,5 @@
 #include "present.h"
+#include "gfx.h"
 #include "safe_area.h"
 #include "layout.h"
 #include "touch.h"
@@ -28,17 +29,15 @@ void present_target_size(int win_w, int win_h, int *w, int *h) {
 }
 
 void present_begin(RenderTexture2D *rt) {
-    BeginTextureMode(*rt);
+    gfx_target_begin(*rt);
     if (CL_IS_NATIVE && s_zoom > 1) {
-        Camera2D cam = { 0 };
-        cam.zoom = (float)s_zoom;
-        BeginMode2D(cam);
+        gfx_zoom_begin((float)s_zoom);
     }
 }
 
 void present_end(void) {
-    if (CL_IS_NATIVE && s_zoom > 1) EndMode2D();
-    EndTextureMode();
+    if (CL_IS_NATIVE && s_zoom > 1) gfx_zoom_end();
+    gfx_target_end();
 }
 
 void present_set_scale(int scale) {
@@ -140,24 +139,24 @@ bool present_refit(RenderTexture2D *rt) {
         present_target_size(win_w, win_h, &w, &h);
         bool changed = (rt->texture.width != w || rt->texture.height != h);
         if (changed) {
-            UnloadRenderTexture(*rt);
-            *rt = LoadRenderTexture(w, h);
-            SetTextureFilter(rt->texture, TEXTURE_FILTER_POINT);
+            gfx_target_free(*rt);
+            *rt = gfx_target_create(w, h);
+            gfx_texture_point(rt->texture);
         }
         if (z != s_zoom) { s_zoom = z; bfont_set_zoom(z); }
         return changed;
     }
     if (!layout_fit_window(win_w, win_h, present_scale(win_w, win_h)))
         return false;
-    UnloadRenderTexture(*rt);
-    *rt = LoadRenderTexture(CL_SCREEN_W, CL_SCREEN_H);
-    SetTextureFilter(rt->texture, TEXTURE_FILTER_POINT);
+    gfx_target_free(*rt);
+    *rt = gfx_target_create(CL_SCREEN_W, CL_SCREEN_H);
+    gfx_texture_point(rt->texture);
     return true;
 }
 
 void present_scaled(RenderTexture2D rt) {
-    BeginDrawing();
-    ClearBackground(BLACK);
+    gfx_frame_begin();
+    gfx_clear(BLACK);
 
     int win_w = GetScreenWidth();
     int win_h = GetScreenHeight();
@@ -188,7 +187,7 @@ void present_scaled(RenderTexture2D rt) {
     Rectangle dst = { (float)(safe_x + (safe_w - dst_w) / 2),
                       (float)(safe_y + (safe_h - dst_h) / 2),
                       (float)dst_w, (float)dst_h };
-    DrawTexturePro(rt.texture, src, dst, (Vector2){ 0, 0 }, 0.0f, WHITE);
+    gfx_texture_draw(rt.texture, src, dst, WHITE);
 
     present_store_dst((int)dst.x, (int)dst.y, dst_w, dst_h, scale);
 
