@@ -138,7 +138,8 @@ def profile(asc, sha1, out):
     print(f"wrote {out}")
 
 
-def app_info(asc):
+def app_info(asc, privacy_url=None):
+    privacy = privacy_url or PRIVACY_URL
     r = asc.call("GET", f"/v1/apps?filter[bundleId]={BUNDLE_ID}")
     if not r.get("data"):
         sys.exit(f"no app record for {BUNDLE_ID}; create it in App Store Connect first")
@@ -167,8 +168,8 @@ def app_info(asc):
     for loc in asc.call("GET", f"/v1/appInfos/{iid}/appInfoLocalizations").get("data", []):
         asc.call("PATCH", f"/v1/appInfoLocalizations/{loc['id']}", {"data": {
             "type": "appInfoLocalizations", "id": loc["id"],
-            "attributes": {"privacyPolicyUrl": PRIVACY_URL}}})
-        print(f"privacy policy URL ({loc['attributes']['locale']}): {PRIVACY_URL}")
+            "attributes": {"privacyPolicyUrl": privacy}}})
+        print(f"privacy policy URL ({loc['attributes']['locale']}): {privacy}")
 
     # Support URL is required before review; it lives on the version's
     # localization, not on appInfo.
@@ -260,6 +261,7 @@ def main():
     p.add_argument("--out", required=True, help="where to write the .mobileprovision")
     p.add_argument("--dry-run", action="store_true")
     p = sub.add_parser("app-info", help="category, rights, age rating, privacy URL, price")
+    p.add_argument("--privacy-url", help="override the privacy policy URL")
     p.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -269,7 +271,7 @@ def main():
     elif args.cmd == "profile":
         profile(asc, args.cert_sha1, args.out)
     else:
-        app_info(asc)
+        app_info(asc, args.privacy_url)
 
 
 if __name__ == "__main__":
