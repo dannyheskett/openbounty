@@ -392,6 +392,16 @@ static void pass_flush(id<MTLTexture> tex, id<CAMetalDrawable> drawable) {
 }
 
 void gfx_frame_end(void) {
+    // PROBE: an untextured bar in the drawable pass. The offscreen buffer is
+    // known good (its pixels read back correct), so if this bar appears the
+    // fault is in sampling that buffer; if nothing appears at all, the fault
+    // is in presenting from the game thread.
+    {
+        unsigned save = s_cur_tex;
+        s_cur_tex = 0;
+        quad(0, 0, 400, 80, 0, 0, 0, 0, (Color){ 255, 0, 0, 255 });
+        s_cur_tex = save;
+    }
     static int s_frames;
     if (s_frames < 3) NSLog(@"openbounty: frame_end #%d, %d verts, %d batches",
                             s_frames, s_vert_count, s_batch_count);
