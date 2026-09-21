@@ -44,6 +44,12 @@ done
 
 adb exec-out screencap -p > android-shot.png || true
 
+# The first 20s is the intro sequence: a small logo magnified to fill the
+# frame, which says nothing about how the game proper looks. Take a second
+# shot once it has reached the title menu.
+sleep 20
+adb exec-out screencap -p > android-shot-late.png || true
+
 echo "--- the game's own stdout, piped into logcat ---"
 adb logcat -d -s openbounty:* || true
 

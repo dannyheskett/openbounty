@@ -211,6 +211,7 @@ jobs:
           name: android-emulator-screenshot
           path: |
             android-shot.png
+            android-shot-late.png
             android-logcat.txt
           if-no-files-found: warn
 
