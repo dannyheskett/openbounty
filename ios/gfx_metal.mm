@@ -336,6 +336,14 @@ static void pass_flush(id<MTLTexture> tex, id<CAMetalDrawable> drawable) {
     if (!s_pipeline) return;
     id<MTLTexture> dst = tex ? tex : (drawable ? drawable.texture : nil);
     if (!dst) return;
+    static int s_passes;
+    if (s_passes < 8) {
+        NSLog(@"openbounty: pass %d -> %s %lux%lu, %d verts, %d batches, clear=%d",
+              s_passes, tex ? "TARGET" : "drawable",
+              (unsigned long)dst.width, (unsigned long)dst.height,
+              s_vert_count, s_batch_count, s_clear_pending ? 1 : 0);
+    }
+    s_passes++;
 
     MTLRenderPassDescriptor *rp = [MTLRenderPassDescriptor renderPassDescriptor];
     rp.colorAttachments[0].texture = dst;
