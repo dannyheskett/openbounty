@@ -99,7 +99,7 @@ double plat_ios_delta(void) { return atomic_load(&s_delta); }
 
 // The game reports everything it does on stdout -- the pack it opened, the
 // seed, every fatal. On iOS that goes nowhere a developer or a CI job can
-// read, so stdout and stderr are piped into os_log, one line at a time. This
+// read, so stdout is piped into os_log, one line at a time. This
 // is the ONLY way the app is observable on a device.
 extern "C" void plat_ios_log_stdout(void) {
     static bool started = false;
