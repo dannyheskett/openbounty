@@ -360,7 +360,11 @@ web-serve: $(WEB_OUTS)
 # Requires env: ANDROID_NDK, ANDROID_SDK_ROOT.
 # ---------------------------------------------------------------------------
 ANDROID_API          ?= 24
-ANDROID_ABI          := arm64-v8a
+# The shipped ABI. arm64-v8a is every Android phone Play still serves, and is
+# what the APK and the AAB carry. It is overridable for one reason: the CI
+# emulator smoke test runs on x86_64 runners and needs an x86_64 APK, which is
+# built separately and never shipped.
+ANDROID_ABI          ?= arm64-v8a
 ANDROID_BUILD_TOOLS  ?= 36.0.0
 ANDROID_PLATFORM_VER ?= 36
 
@@ -381,7 +385,17 @@ ANDROID_VERSION_NAME ?= 1.0.$(ANDROID_VERSION_CODE)
 RAYLIB_ANDROID := third_party/raylib-install-android/$(ANDROID_ABI)
 
 ANDROID_TOOLCHAIN := $(ANDROID_NDK)/toolchains/llvm/prebuilt/linux-x86_64
-ANDROID_CC        := $(ANDROID_TOOLCHAIN)/bin/aarch64-linux-android$(ANDROID_API)-clang
+# The NDK names its compiler after the target triple, which is not the ABI
+# name, so the two have to be mapped.
+ANDROID_TRIPLE_arm64-v8a   := aarch64-linux-android
+ANDROID_TRIPLE_x86_64      := x86_64-linux-android
+ANDROID_TRIPLE_armeabi-v7a := armv7a-linux-androideabi
+ANDROID_TRIPLE_x86         := i686-linux-android
+ANDROID_TRIPLE    := $(ANDROID_TRIPLE_$(ANDROID_ABI))
+ifeq ($(ANDROID_TRIPLE),)
+$(error unknown ANDROID_ABI "$(ANDROID_ABI)")
+endif
+ANDROID_CC        := $(ANDROID_TOOLCHAIN)/bin/$(ANDROID_TRIPLE)$(ANDROID_API)-clang
 NATIVE_APP_GLUE   := $(ANDROID_NDK)/sources/android/native_app_glue
 
 ANDROID_SDK_BT := $(ANDROID_SDK_ROOT)/build-tools/$(ANDROID_BUILD_TOOLS)

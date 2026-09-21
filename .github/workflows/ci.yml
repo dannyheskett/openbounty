@@ -97,7 +97,7 @@ jobs:
 
   android:
     runs-on: ubuntu-22.04
-    timeout-minutes: 15
+    timeout-minutes: 40
     env:
       NDK_VERSION: "26.3.11579264"
       ANDROID_BUILD_TOOLS: "36.0.0"
@@ -156,7 +156,66 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: android-apk
-          path: build/*.apk
+          path: build/gloryofrome.apk
+
+      # ---------------------------------------------------------------------
+      # Emulator smoke test. The shipped APK is arm64-only and the runners are
+      # x86_64, so this builds a SECOND, x86_64 APK purely to be run here. It
+      # is never uploaded as an artifact and never shipped; the only claim it
+      # supports is "the app starts and draws", which is the one thing the
+      # assembled arm64 APK could not tell us.
+      # ---------------------------------------------------------------------
+      - name: Build raylib (Android, x86_64 static, for the emulator)
+        run: ANDROID_ARCHES=x86_64 ./scripts/build_raylib_android.sh
+      - name: Build APK (x86_64, emulator only)
+        run: |
+          make android \
+            ANDROID_ABI=x86_64 \
+            ANDROID_APK=build/gloryofrome-x86_64.apk \
+            ANDROID_APK_DIR=build/android-x86_64 \
+            ANDROID_OBJ_DIR=build/obj-android-x86_64 \
+            ANDROID_BUILD_TOOLS="${ANDROID_BUILD_TOOLS}" \
+            ANDROID_PLATFORM_VER="${ANDROID_PLATFORM_VER}"
+      # The emulator needs KVM, which is present on the Ubuntu runners but not
+      # readable by the runner user by default.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install, launch and screenshot on an emulator
+        # Pinned to the v2.38.0 commit SHA, not the mutable tag.
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 30
+          arch: x86_64
+          target: default
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            set -eux
+            adb install -r build/gloryofrome-x86_64.apk
+            adb logcat -c
+            adb shell am start -n com.danheskett.gloryofrome/com.danheskett.gloryofrome.GloryOfRomeActivity
+            sleep 20
+            # Alive, not merely launched: a native crash shows up as no pid.
+            pid=$(adb shell pidof com.danheskett.gloryofrome || true)
+            echo "pid: ${pid:-none}"
+            adb exec-out screencap -p > android-shot.png
+            echo "--- the app's own log ---"
+            adb logcat -d -t 200 | grep -iE "gloryofrome|openbounty|raylib|DEBUG|FATAL" || true
+            if [ -z "$pid" ]; then
+              echo "::error::the app is not running 20s after launch"
+              exit 1
+            fi
+      - name: Upload the emulator screenshot
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-emulator-screenshot
+          path: android-shot.png
+          if-no-files-found: warn
 
   ios:
     # The ONLY machine that can compile this: Xcode's SDK, xcrun and the
