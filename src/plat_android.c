@@ -59,6 +59,7 @@ static void log_stdout(void) {
 
 void plat_android_boot(void) {
     log_stdout();
+    fprintf(stdout, "[boot] android log pipe open\n");
     struct android_app *app = GetAndroidApp();
     if (!app || !app->activity || !app->activity->internalDataPath) return;
     // The app's private directory: the only place the process may write, and

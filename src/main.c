@@ -38,7 +38,7 @@
 // the unified log by ios/plat_ios.mm, and these are the only markers between
 // launch and the game's first report of its own (the seed, at the title
 // screen). Everywhere else this compiles to nothing.
-#if defined(PLATFORM_IOS)
+#if defined(PLATFORM_IOS) || defined(PLATFORM_ANDROID)
 #define BOOT_TRACE(...) do { fprintf(stdout, __VA_ARGS__); fflush(stdout); } while (0)
 #else
 #define BOOT_TRACE(...) do { } while (0)
