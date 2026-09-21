@@ -68,8 +68,7 @@ IOS_SKIP := src/gfx_raylib.c src/frame_host.c src/input_host.c \
             src/plat_android.c src/audio_raylib.c src/font_raylib.c \
             src/recorder.c src/encode_mp4.c src/encode_mp4_h264.c \
             src/encode_mp4_mux.c src/encode_dialog.c src/screenshot.c \
-            src/shell_gallery.c src/pack_select.c src/shell_demo.c \
-            src/shell_autoplay.c src/combat_replay.c
+            src/shell_gallery.c src/pack_select.c
 IOS_CHECK_SRC := $(filter-out $(IOS_SKIP),$(SHELL_SRC))
 # The iOS backends' plain-C half. Checked with the shell files below, so a
 # break in them is caught here rather than on a macOS runner ten minutes later.
@@ -597,15 +596,16 @@ IOS_MM_SRC  := ios/ios_main.mm ios/gfx_metal.mm ios/plat_ios.mm \
 # The game itself: the shell minus the desktop-only subsystems (the same list
 # the iOS purity check uses), the engine, and the iOS backends. No raylib, no
 # demo/autoplay drivers, no extractor.
-IOS_C_SRC   := $(IOS_CHECK_SRC) $(ENGINE_SRC) \
+IOS_C_SRC   := $(IOS_CHECK_SRC) $(ENGINE_SRC) $(DEMO_SRC) $(AUTOPLAY_SRC) \
+               $(TOOL_SRC) \
                ios/host_ios.c ios/image_ios.c ios/font_ios.c ios/vorbis_impl.c \
                third_party/cjson/cJSON.c third_party/miniz/miniz.c
 IOS_CFLAGS  := -std=c99   -Wall -Wextra -O2 -DPLATFORM_IOS -Isrc -Iios \
-               -Iengine/include -Ibuild -Ithird_party/cjson \
-               -Ithird_party/miniz -Ithird_party/stb
+               -Iengine/include -Idemo -Iautoplay -Itools -Ibuild \
+               -Ithird_party/cjson -Ithird_party/miniz -Ithird_party/stb
 IOS_MMFLAGS := -std=c++17 -fobjc-arc -Wall -Wextra -O2 -DPLATFORM_IOS \
-               -Isrc -Iios -Iengine/include -Ibuild -Ithird_party/cjson \
-               -Ithird_party/miniz -Ithird_party/stb
+               -Isrc -Iios -Iengine/include -Idemo -Iautoplay -Itools -Ibuild \
+               -Ithird_party/cjson -Ithird_party/miniz -Ithird_party/stb
 IOS_FRAMEWORKS := -framework UIKit -framework Metal -framework QuartzCore \
                   -framework CoreGraphics -framework AVFoundation \
                   -framework Foundation

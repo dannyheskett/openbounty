@@ -16,7 +16,7 @@
 
 #include "combat_replay.h"
 
-#include "raylib.h"
+#include "gfx.h"
 #include "combat.h"
 #include "combat_loop.h"     // (shares combat_present indirectly via this TU)
 #include "combat_render.h"

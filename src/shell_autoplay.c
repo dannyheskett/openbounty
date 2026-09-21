@@ -9,7 +9,8 @@
 #include "exec.h"           // ExecCtx (autoplay's execution context)
 #include "recording.h"
 
-#include "raylib.h"
+#include "gfx.h"
+#include "input_host.h"
 #include "audio.h"
 #include "bfont.h"
 #include "combat_replay.h"
@@ -52,13 +53,13 @@ static void draw_processing(ShellCtx *ctx, int done, int total) {
     present_refit(target);
     const int W = CL_SCREEN_W, H = CL_SCREEN_H;
     present_begin(target);
-    ClearBackground(BLACK);
+    gfx_clear(BLACK);
     // A centered KB-style panel: blue field, yellow border.
     int pw = 240 * CL_UI, ph = 90 * CL_UI;
     int px = (W - pw) / 2, py = (H - ph) / 2;
-    DrawRectangle(px - 2 * CL_UI, py - 2 * CL_UI,
+    gfx_rect(px - 2 * CL_UI, py - 2 * CL_UI,
                   pw + 4 * CL_UI, ph + 4 * CL_UI, PAL[14]);   // yellow border
-    DrawRectangle(px, py, pw, ph, PAL[1]);                    // blue field
+    gfx_rect(px, py, pw, ph, PAL[1]);                    // blue field
     bfont_draw_centered("AUTOPLAY PROCESSING", W / 2, py + 12 * CL_UI, PAL[15]);
     // Progress bar.
     int bw = pw - 40 * CL_UI, bh = 12 * CL_UI;
@@ -66,10 +67,10 @@ static void draw_processing(ShellCtx *ctx, int done, int total) {
     int fw = (total > 0) ? (bw * done) / total : 0;
     if (fw < 0) fw = 0;
     if (fw > bw) fw = bw;
-    DrawRectangle(bx - CL_UI, by - CL_UI,
+    gfx_rect(bx - CL_UI, by - CL_UI,
                   bw + 2 * CL_UI, bh + 2 * CL_UI, PAL[15]);   // white frame
-    DrawRectangle(bx, by, bw, bh, PAL[8]);                    // dark track
-    DrawRectangle(bx, by, fw, bh, PAL[10]);                   // green fill
+    gfx_rect(bx, by, bw, bh, PAL[8]);                    // dark track
+    gfx_rect(bx, by, fw, bh, PAL[10]);                   // green fill
     char buf[64];
     snprintf(buf, sizeof buf, "%d / %d objectives", done, total);
     bfont_draw_centered(buf, W / 2, by + bh + 8 * CL_UI, PAL[15]);
@@ -85,7 +86,7 @@ static void draw_processing(ShellCtx *ctx, int done, int total) {
 static bool ap_progress_cb(int done, int total, void *ud) {
     ShellCtx *ctx = (ShellCtx *)ud;
     if (ctx) draw_processing(ctx, done, total);
-    if (frame_host_should_close() || IsKeyPressed(KEY_ESCAPE)) return false;
+    if (frame_host_should_close() || input_key_pressed(KEY_ESCAPE)) return false;
     return true;
 }
 

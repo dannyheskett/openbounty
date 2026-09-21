@@ -89,6 +89,11 @@ void frame_host_poll_events(void) {}
 
 void frame_host_quiet_log(void) {}
 
+// The engine's recorder callback (engine/include/ui_host.h). The movie
+// recorder is a desktop subsystem, but the engine calls this at every step,
+// hit and flow trigger, so the symbol has to exist.
+void recorder_capture(const char *trigger) { (void)trigger; }
+
 // ---------------------------------------------------------------------------
 // input_host
 // ---------------------------------------------------------------------------

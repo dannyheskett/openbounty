@@ -20,6 +20,28 @@
 // at shutdown. The recorder picks its own temp directory for the
 // intermediate per-tick files (deleted after the encode). Idempotent:
 // a second call is a no-op.
+#if defined(PLATFORM_IOS)
+
+// The movie recorder is a desktop subsystem: it writes a PNG per tick and
+// muxes an .mp4 with minih264/minimp4, none of which is in the iOS build. The
+// call sites are scattered through the engine and the shell and stay exactly
+// where they are -- here they compile to nothing, which is the same "free
+// no-op" the uninitialised recorder already is everywhere else.
+static inline void recorder_init(const char *p) { (void)p; }
+static inline bool recorder_shutdown(void) { return false; }
+static inline bool recorder_active(void) { return false; }
+static inline void recorder_attach_state(Game *g, const Map *m, const Fog *f) {
+    (void)g; (void)m; (void)f;
+}
+static inline void recorder_attach_render_target(void *rt) { (void)rt; }
+// recorder_capture is NOT inlined away: the engine declares it as a host
+// callback (engine/include/ui_host.h) and calls it at every mutation site, so
+// the shell must define a real symbol. ios/host_ios.c provides the empty one.
+static inline const char *recorder_temp_dir(void) { return 0; }
+static inline const char *recorder_output_path(void) { return 0; }
+
+#else
+
 void recorder_init(const char *out_mp4_path);
 
 // Stop recording and delete the temp directory; the shell runs the
@@ -53,5 +75,7 @@ const char *recorder_temp_dir(void);
 
 // Path of the final .mp4 output (NULL when not recording).
 const char *recorder_output_path(void);
+
+#endif // PLATFORM_IOS
 
 #endif
