@@ -181,6 +181,25 @@ void present_scaled(RenderTexture2D rt) {
     // A fixed buffer was rendered at the zoom already: blit it 1:1.
     if (CL_IS_NATIVE) { dst_w = rt.texture.width; dst_h = rt.texture.height; scale = s_zoom; }
 
+#if defined(PLATFORM_IOS) || defined(PLATFORM_ANDROID)
+    // Mobile shows a fixed buffer at the largest WHOLE-NUMBER scale that fits
+    // the safe area. A phone has no window to resize and no scale control, so
+    // 1x would leave an 800x532 pack as a small panel in the middle of a
+    // 2250x1143 screen. A whole number keeps every pack pixel square and the
+    // art hard-edged; `scale` is what present_window_to_screen maps a tap
+    // back through, so it must be the scale actually used. Desktop and web are
+    // untouched: they keep 1x and their own scale control.
+    if (CL_IS_NATIVE && rt.texture.width > 0 && rt.texture.height > 0) {
+        int fit_x = safe_w / rt.texture.width;
+        int fit_y = safe_h / rt.texture.height;
+        int fit = (fit_x < fit_y) ? fit_x : fit_y;
+        if (fit < 1) fit = 1;
+        dst_w = rt.texture.width * fit;
+        dst_h = rt.texture.height * fit;
+        scale = fit;
+    }
+#endif
+
     // A RenderTexture2D is stored y-flipped, hence the negative src height.
     Rectangle src = { 0, 0,
                       (float)rt.texture.width,

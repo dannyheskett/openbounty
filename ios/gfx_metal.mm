@@ -182,7 +182,6 @@ void gfx_metal_attach(CAMetalLayer *layer) {
 
     s_pipeline = [s_device newRenderPipelineStateWithDescriptor:pd error:&err];
     if (!s_pipeline) NSLog(@"openbounty: Metal pipeline failed: %@", err);
-    else NSLog(@"openbounty: Metal pipeline ready");
 
     MTLSamplerDescriptor *sd = [[MTLSamplerDescriptor alloc] init];
     sd.minFilter = MTLSamplerMinMagFilterNearest;
@@ -251,15 +250,6 @@ static void push(float x, float y, float u, float v, Color c) {
 // A quad as two triangles, with uv corners for the textured case.
 static void quad(float x0, float y0, float x1, float y1,
                  float u0, float v0, float u1, float v1, Color c) {
-    // The first few quads of the first few frames, so a black screen can be
-    // read: what was drawn, where, with which texture and colour.
-    static int s_logged;
-    if (s_logged < 24) {
-        NSLog(@"openbounty: quad %d %s tex=%u (%.0f,%.0f)-(%.0f,%.0f) rgba=%d,%d,%d,%d",
-              s_logged, s_target ? "target" : "drawable", s_cur_tex,
-              x0, y0, x1, y1, c.r, c.g, c.b, c.a);
-        s_logged++;
-    }
     push(x0, y0, u0, v0, c); push(x1, y0, u1, v0, c); push(x1, y1, u1, v1, c);
     push(x0, y0, u0, v0, c); push(x1, y1, u1, v1, c); push(x0, y1, u0, v1, c);
 }
@@ -354,14 +344,6 @@ static void pass_flush(id<MTLTexture> tex, id<CAMetalDrawable> drawable) {
     if (!s_pipeline) return;
     id<MTLTexture> dst = tex ? tex : (drawable ? drawable.texture : nil);
     if (!dst) return;
-    static int s_passes;
-    if (s_passes < 8) {
-        NSLog(@"openbounty: pass %d -> %s %lux%lu, %d verts, %d batches, clear=%d",
-              s_passes, tex ? "TARGET" : "drawable",
-              (unsigned long)dst.width, (unsigned long)dst.height,
-              s_vert_count, s_batch_count, s_clear_pending ? 1 : 0);
-    }
-    s_passes++;
 
     MTLRenderPassDescriptor *rp = [MTLRenderPassDescriptor renderPassDescriptor];
     rp.colorAttachments[0].texture = dst;
@@ -378,27 +360,10 @@ static void pass_flush(id<MTLTexture> tex, id<CAMetalDrawable> drawable) {
     if (drawable) [cb presentDrawable:drawable];
     [cb commit];
 
-    // Read one pixel back out of the offscreen buffer for the first few
-    // frames. A black screen with correct-looking geometry has exactly two
-    // explanations -- the target pass is not drawing, or the drawable pass is
-    // not sampling what it drew -- and this tells them apart.
-    if (tex && s_passes <= 8) {
-        [cb waitUntilCompleted];
-        unsigned char px[4] = { 0, 0, 0, 0 };
-        MTLRegion r = MTLRegionMake2D((NSUInteger)(dst.width / 2),
-                                      (NSUInteger)(dst.height / 2), 1, 1);
-        [tex getBytes:px bytesPerRow:4 fromRegion:r mipmapLevel:0];
-        NSLog(@"openbounty: target centre pixel = %d,%d,%d,%d",
-              px[0], px[1], px[2], px[3]);
-    }
     pass_reset();
 }
 
 void gfx_frame_end(void) {
-    static int s_frames;
-    if (s_frames < 3) NSLog(@"openbounty: frame_end #%d, %d verts, %d batches",
-                            s_frames, s_vert_count, s_batch_count);
-    s_frames++;
     if (!s_pipeline || !s_layer) return;
     @autoreleasepool {
         id<CAMetalDrawable> drawable = [s_layer nextDrawable];
