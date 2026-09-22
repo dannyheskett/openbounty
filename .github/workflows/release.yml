@@ -89,38 +89,12 @@ jobs:
         run: make test RELEASE_VERSION=${{ needs.prepare.outputs.version }}
       - name: Build raylib (mingw win64 + win32)
         run: ./scripts/build_raylib_windows.sh
-      - name: Package Linux + Windows archives
-        run: make dist-linux dist-windows RELEASE_VERSION=${{ needs.prepare.outputs.version }}
-      - name: Verify no loose pack file in the archives
+      - name: Package Linux + Windows archives (OpenBounty and Glory of Rome)
         run: |
-          set -e
-          # Escaped dot: an unescaped "." matches any character, so ".openbounty$"
-          # also matched "openbounty-build-13/openbounty" -- the binary itself.
-          pat="\\.${{ github.event.repository.name }}$"
-          fail=0
-          # tar/unzip's status must be tested on its own. Inside an `if` condition the
-          # pipeline's status is consumed as the condition's truth value, so a corrupt or
-          # truncated archive made the lister fail, grep report "no match", and the guard
-          # pass clean. `set -o pipefail` does not help here for the same reason.
-          for f in dist/*.tar.gz; do
-            [ -e "$f" ] || continue
-            if ! listing=$(tar -tzf "$f" 2>/dev/null); then
-              echo "FAIL: cannot read $f"; fail=1; continue
-            fi
-            if printf '%s\n' "$listing" | grep -qE "$pat"; then
-              echo "FAIL: $f contains a pack file matching $pat"; fail=1
-            fi
-          done
-          for f in dist/*.zip; do
-            [ -e "$f" ] || continue
-            if ! listing=$(unzip -l "$f" 2>/dev/null); then
-              echo "FAIL: cannot read $f"; fail=1; continue
-            fi
-            if printf '%s\n' "$listing" | grep -qE "$pat"; then
-              echo "FAIL: $f contains a pack file matching $pat"; fail=1
-            fi
-          done
-          [ "$fail" -eq 0 ]
+          make dist-linux dist-windows dist-rome-linux dist-rome-windows \
+            RELEASE_VERSION=${{ needs.prepare.outputs.version }}
+      - name: Verify the pack rule (no pack in OpenBounty, Rome's in Glory of Rome)
+        run: ./scripts/verify_release_packs.sh dist
       - uses: actions/upload-artifact@v7
         with:
           name: linux-windows
@@ -137,29 +111,14 @@ jobs:
       - uses: actions/checkout@v7
       - name: Build raylib (universal arm64 + x86_64)
         run: ./scripts/build_raylib_mac.sh
-      - name: Package macOS archive
-        run: make dist-mac RELEASE_VERSION=${{ needs.prepare.outputs.version }}
-      - name: Verify no loose pack file in the archive
+      # The Rome pack is zipped by a native binary, and the default one links
+      # X11 -- so on macOS the mac build zips it (PACK_TOOL).
+      - name: Package macOS archives (OpenBounty and Glory of Rome)
         run: |
-          set -e
-          # Escaped dot: an unescaped "." matches any character, so ".openbounty$"
-          # also matched "openbounty-build-13/openbounty" -- the binary itself.
-          pat="\\.${{ github.event.repository.name }}$"
-          fail=0
-          # tar/unzip's status must be tested on its own. Inside an `if` condition the
-          # pipeline's status is consumed as the condition's truth value, so a corrupt or
-          # truncated archive made the lister fail, grep report "no match", and the guard
-          # pass clean. `set -o pipefail` does not help here for the same reason.
-          for f in dist/*.zip; do
-            [ -e "$f" ] || continue
-            if ! listing=$(unzip -l "$f" 2>/dev/null); then
-              echo "FAIL: cannot read $f"; fail=1; continue
-            fi
-            if printf '%s\n' "$listing" | grep -qE "$pat"; then
-              echo "FAIL: $f contains a pack file matching $pat"; fail=1
-            fi
-          done
-          [ "$fail" -eq 0 ]
+          make dist-mac dist-rome-mac PACK_TOOL=build/openbounty-mac \
+            RELEASE_VERSION=${{ needs.prepare.outputs.version }}
+      - name: Verify the pack rule (no pack in OpenBounty, Rome's in Glory of Rome)
+        run: ./scripts/verify_release_packs.sh dist
       - uses: actions/upload-artifact@v7
         with:
           name: mac
@@ -193,27 +152,8 @@ jobs:
         run: make web RELEASE_VERSION=${{ needs.prepare.outputs.version }}
       - name: Package WASM bundle
         run: make dist-web RELEASE_VERSION=${{ needs.prepare.outputs.version }}
-      - name: Verify no loose pack file in the archive
-        run: |
-          set -e
-          # Escaped dot: an unescaped "." matches any character, so ".openbounty$"
-          # also matched "openbounty-build-13/openbounty" -- the binary itself.
-          pat="\\.${{ github.event.repository.name }}$"
-          fail=0
-          # tar/unzip's status must be tested on its own. Inside an `if` condition the
-          # pipeline's status is consumed as the condition's truth value, so a corrupt or
-          # truncated archive made the lister fail, grep report "no match", and the guard
-          # pass clean. `set -o pipefail` does not help here for the same reason.
-          for f in dist/*.zip; do
-            [ -e "$f" ] || continue
-            if ! listing=$(unzip -l "$f" 2>/dev/null); then
-              echo "FAIL: cannot read $f"; fail=1; continue
-            fi
-            if printf '%s\n' "$listing" | grep -qE "$pat"; then
-              echo "FAIL: $f contains a pack file matching $pat"; fail=1
-            fi
-          done
-          [ "$fail" -eq 0 ]
+      - name: Verify the pack rule (no pack in OpenBounty, Rome's in Glory of Rome)
+        run: ./scripts/verify_release_packs.sh dist
       - uses: actions/upload-artifact@v7
         with:
           name: web

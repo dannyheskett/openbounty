@@ -37,6 +37,13 @@ jobs:
         run: make test
       - name: Build dev + release
         run: make all release
+      # A release packages Glory of Rome with its pack; build that package and
+      # run the release's pack rule on it here, so the release is never the
+      # first time either has run.
+      - name: Package Glory of Rome (Linux) and check the pack rule
+        run: |
+          make dist-rome-linux
+          ./scripts/verify_release_packs.sh dist
       # The store listings are parsed out of the LISTING.md files by
       # scripts/store_listing.py. A renamed heading or a field over a store's
       # length limit fails here rather than half way through an edit against a

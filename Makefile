@@ -800,6 +800,41 @@ dist-mac: $(OUT_MAC)
 	@mkdir -p $(DIST)
 	(cd $(STAGING)/mac && zip -qr ../../../$(DIST)/openbounty-$(OPENBOUNTY_VERSION_SLUG)-macos-universal.zip openbounty-$(OPENBOUNTY_VERSION_SLUG))
 
+# ---------------------------------------------------------------------------
+# Glory of Rome desktop packages: the same binary as the OpenBounty archives
+# above, plus the Rome pack in assets/ beside it -- the directory pack
+# discovery already searches (src/main.c), so the game starts with no flags.
+# Rome's pack is ours to ship; King's Bounty's never is, and the release
+# workflow checks both halves of that rule.
+# ---------------------------------------------------------------------------
+ROME_PACK_FILE := $(PACK_DIR)/glory-of-rome.openbounty
+ROME_SLUG      := gloryofrome-$(OPENBOUNTY_VERSION_SLUG)
+
+# $(call rome_stage,<staging-dir>,<binary>,<binary-name>)
+define rome_stage
+	@rm -rf $(1) && mkdir -p $(1)/$(ROME_SLUG)/assets
+	cp $(2) $(1)/$(ROME_SLUG)/$(3)
+	cp $(ROME_PACK_FILE) $(1)/$(ROME_SLUG)/assets/glory-of-rome.openbounty
+	sed "s/<version>/$(OPENBOUNTY_VERSION_DISPLAY)/g" $(DIST)/README-rome.txt.in > $(1)/$(ROME_SLUG)/README.txt
+	cp LICENSE NOTICES.md $(1)/$(ROME_SLUG)/
+	@mkdir -p $(DIST)
+endef
+
+dist-rome-linux: release $(ROME_PACK_FILE)
+	$(call rome_stage,$(STAGING)/rome-linux,build/release/openbounty,openbounty)
+	tar -czf $(DIST)/$(ROME_SLUG)-linux-x86_64.tar.gz -C $(STAGING)/rome-linux $(ROME_SLUG)
+
+dist-rome-windows: $(OUT_WIN64) $(OUT_WIN32) $(ROME_PACK_FILE)
+	$(call rome_stage,$(STAGING)/rome-win64,$(OUT_WIN64),openbounty.exe)
+	(cd $(STAGING)/rome-win64 && zip -qr ../../../$(DIST)/$(ROME_SLUG)-windows-x86_64.zip $(ROME_SLUG))
+	$(call rome_stage,$(STAGING)/rome-win32,$(OUT_WIN32),openbounty.exe)
+	(cd $(STAGING)/rome-win32 && zip -qr ../../../$(DIST)/$(ROME_SLUG)-windows-i686.zip $(ROME_SLUG))
+
+dist-rome-mac: $(OUT_MAC) $(ROME_PACK_FILE)
+	$(call rome_stage,$(STAGING)/rome-mac,$(OUT_MAC),openbounty)
+	codesign --force --sign - --options runtime $(STAGING)/rome-mac/$(ROME_SLUG)/openbounty
+	(cd $(STAGING)/rome-mac && zip -qr ../../../$(DIST)/$(ROME_SLUG)-macos-universal.zip $(ROME_SLUG))
+
 # All four emitted files are required to run it: the .js loader, the .wasm
 # module, the .data pack image, and the .html shell. Serve them over HTTP --
 # browsers refuse to fetch .wasm/.data over file://.
@@ -999,4 +1034,4 @@ clean:
 	rm -rf build
 	rm -f dist/*.tar.gz dist/*.zip
 
-.PHONY: all run release run-release windows windows-debug mac web web-kings-bounty web-glory-of-rome web-serve android android-play dist-android dist-android-play ios ios-sim dist-ios clean test extract extract-pack dist dist-linux dist-windows dist-mac dist-web
+.PHONY: all run release run-release windows windows-debug mac web web-kings-bounty web-glory-of-rome web-serve android android-play dist-android dist-android-play ios ios-sim dist-ios dist-rome-linux dist-rome-windows dist-rome-mac clean test extract extract-pack dist dist-linux dist-windows dist-mac dist-web
