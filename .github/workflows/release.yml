@@ -70,7 +70,10 @@ jobs:
     name: linux + windows builds
     needs: prepare
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    # The full test suite, two raylib builds and both package sets (OpenBounty
+    # and Glory of Rome) take ~10m; 10 was the old limit and cut the first
+    # full release off at 10m16s.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
       - name: Install Linux + mingw deps
