@@ -681,14 +681,17 @@ static bool run_class_select(const Resources *res,
         // Picker bitmap, centered. Sized per frame: present_refit can change
         // the screen out from under us when the window is resized.
         int pw = 288 * CL_UI, ph = 184 * CL_UI;
+        int px = 0, py = 0;
+        bool picker_shown = false;
         if (sprites && sprites->class_picker.id) {
             int fs = ui_fit_scale(sprites->class_picker.width,
                                   sprites->class_picker.height,
                                   CL_SCREEN_W, CL_SCREEN_H);
             pw = sprites->class_picker.width  * fs;
             ph = sprites->class_picker.height * fs;
-            int px = (CL_SCREEN_W - pw) / 2;
-            int py = (CL_SCREEN_H - ph) / 2;
+            px = (CL_SCREEN_W - pw) / 2;
+            py = (CL_SCREEN_H - ph) / 2;
+            picker_shown = true;
             // Modern: the carousel frame for the picked figure, pre-rendered
             // with the others dimmed and the figure ringed in gold
             // (tools/classpicker.py); the whole painting before anyone is
@@ -698,12 +701,6 @@ static bool run_class_select(const Resources *res,
                             sprites->class_picker_selected[class_cursor].id;
             ui_blit(carousel ? sprites->class_picker_selected[class_cursor]
                              : sprites->class_picker, px, py, pw, ph);
-            // Touch: the picker art shows the classes side by side, one
-            // column each; tapping a column picks that class (A-D).
-            for (int k = 0; k < n; k++) {
-                if (CL_IS_MODERN) touch_region_row(px + k * (pw / n), py, pw / n, ph, TOUCH_LIST_CLASS, k);
-                else              touch_region(px + k * (pw / n), py, pw / n, ph, KEY_A + k);
-            }
             // Modern: the red header names the picked figure. A pack without
             // carousel frames dims by column instead.
             if (CL_IS_MODERN) {
@@ -751,6 +748,19 @@ static bool run_class_select(const Resources *res,
             ml_list_draw(cx, ry, cw, ml_list_height(2), 2, confirm_row,
                          class_confirm_row, NULL, TOUCH_LIST_CLASS_CONFIRM,
                          uk_ink());   // cursor: 0 Continue, 1 Cancel
+        }
+
+        // Touch: the picker art shows the classes side by side, one column
+        // each; tapping a column picks that class (A-D). Registered AFTER the
+        // description panel, because the panel sits INSIDE the painting and a
+        // tap takes the first region that contains it (`resolve_tap`,
+        // src/touch.c): registered first, the columns swallowed every tap on
+        // Continue and Cancel, and touch had no way off this screen (REQ-532).
+        if (picker_shown) {
+            for (int k = 0; k < n; k++) {
+                if (CL_IS_MODERN) touch_region_row(px + k * (pw / n), py, pw / n, ph, TOUCH_LIST_CLASS, k);
+                else              touch_region(px + k * (pw / n), py, pw / n, ph, KEY_A + k);
+            }
         }
 
         // Status-bar hint at top (). Modern: the picked figure's class.
