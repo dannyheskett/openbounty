@@ -31,8 +31,13 @@ bool ml_field(ML_Rect *out) {
 
 ML_Rect ml_area(void) {
     if (s_area == ML_AREA_FULL) return ml_full();
-    if (s_area == ML_AREA_SCREEN) return (ML_Rect){ 0, 0, CL_SCREEN_W, CL_SCREEN_H };
-    return (ML_Rect){ CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H };
+    // The DECLARED pane and screen, never the grown ones: a panel keeps the
+    // size it was drawn for and centres (layout.h, REQ-528).
+    if (s_area == ML_AREA_SCREEN)
+        return (ML_Rect){ CL_SCREEN_BASE_X, CL_SCREEN_BASE_Y,
+                          CL_SCREEN_BASE_W, CL_SCREEN_BASE_H };
+    return (ML_Rect){ CL_PANE_BASE_X, CL_PANE_BASE_Y,
+                      CL_PANE_BASE_W, CL_PANE_BASE_H };
 }
 
 ML_Rect ml_small(void) {
@@ -58,7 +63,12 @@ ML_Rect ml_large(void) {
 // screen, not a panel on the map, and its views are laid out in whole tiles
 // (Army is five rows of 96 filling the 480 exactly), which a margin would cut.
 ML_Rect ml_full(void) {
-    ML_Rect r = { CL_MAP_X, CL_MAP_Y, CL_SIDEBAR_X + CL_SIDEBAR_W - CL_MAP_X, CL_MAP_H };
+    // Pane plus the band and the HUD, all at the sizes the pack declared:
+    // 672 + 8 + 96 for Rome. The gap is whatever sits between the live pane
+    // and the sidebar, which growth does not change.
+    int gap = CL_SIDEBAR_X - (CL_MAP_X + CL_MAP_W);
+    int w = CL_PANE_BASE_W + gap + CL_SIDEBAR_W;
+    ML_Rect r = { CL_PANE_BASE_X, CL_PANE_BASE_Y, w, CL_PANE_BASE_H };
     return r;
 }
 
@@ -66,7 +76,7 @@ ML_Rect ml_full(void) {
 // panel's width. At 652 wide that is 3 (720): a whole-number scale keeps the
 // pixel art square, and the overshoot is cropped evenly off the two sides.
 int ml_loc_scale(void) {
-    int w = CL_MAP_W - 2 * ml_space();
+    int w = CL_PANE_BASE_W - 2 * ml_space();
     int s = (w + ML_BACKDROP_W - 1) / ML_BACKDROP_W;
     return s < 1 ? 1 : s;
 }
@@ -74,8 +84,8 @@ int ml_loc_scale(void) {
 ML_Rect ml_loc_backdrop(void) {
     int S = ml_space();
     int h = ML_BACKDROP_H * ml_loc_scale();
-    if (h > CL_MAP_H - 2 * S) h = CL_MAP_H - 2 * S;
-    ML_Rect r = { CL_MAP_X + S, CL_MAP_Y + S, CL_MAP_W - 2 * S, h };
+    if (h > CL_PANE_BASE_H - 2 * S) h = CL_PANE_BASE_H - 2 * S;
+    ML_Rect r = { CL_PANE_BASE_X + S, CL_PANE_BASE_Y + S, CL_PANE_BASE_W - 2 * S, h };
     return r;
 }
 
@@ -84,7 +94,7 @@ ML_Rect ml_loc_backdrop(void) {
 ML_Rect ml_loc_text(void) {
     int S = ml_space();
     ML_Rect b = ml_loc_backdrop();
-    ML_Rect r = { b.x, b.y + b.h, b.w, CL_MAP_Y + CL_MAP_H - S - (b.y + b.h) };
+    ML_Rect r = { b.x, b.y + b.h, b.w, CL_PANE_BASE_Y + CL_PANE_BASE_H - S - (b.y + b.h) };
     return r;
 }
 

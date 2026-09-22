@@ -243,6 +243,27 @@ int bfont_glyph_h(void);
 #define CL_PANEL_STD_W    CL_CONTENT_W
 #define CL_PANEL_WIDE_W   (CL_CONTENT_W + CL_SIDEBAR_W)
 
+// The map pane AS THE PACK DECLARED IT. The live pane (CL_MAP_*) grows on a
+// bigger surface to show more world; every panel, dialog, location screen and
+// full-page view is laid out against this instead, so it keeps the exact size
+// it was drawn for and is centred in whatever pane it finds itself in. Only
+// the map itself spends the extra room (REQ-528).
+// A CLAMP, not a replacement: when the pane is its declared size -- and on
+// the battlefield, where it is a different size again -- this is the live
+// pane and nothing moves. Only a pane that has GROWN is pinned back.
+#define CL_PANE_DECL_W    (g_layout.tile_w * g_layout.pack_tiles_w)
+#define CL_PANE_DECL_H    (g_layout.tile_h * g_layout.pack_tiles_h)
+#define CL_PANE_BASE_W    (CL_MAP_W < CL_PANE_DECL_W ? CL_MAP_W : CL_PANE_DECL_W)
+#define CL_PANE_BASE_H    (CL_MAP_H < CL_PANE_DECL_H ? CL_MAP_H : CL_PANE_DECL_H)
+#define CL_PANE_BASE_X    (CL_MAP_X + (CL_MAP_W - CL_PANE_BASE_W) / 2)
+#define CL_PANE_BASE_Y    (CL_MAP_Y + (CL_MAP_H - CL_PANE_BASE_H) / 2)
+
+// The whole buffer as the pack declared it, for the screen-wide layer.
+#define CL_SCREEN_BASE_W  (g_layout.native_w > 0 ? g_layout.native_w : CL_SCREEN_W)
+#define CL_SCREEN_BASE_H  (g_layout.native_h > 0 ? g_layout.native_h : CL_SCREEN_H)
+#define CL_SCREEN_BASE_X  ((CL_SCREEN_W - CL_SCREEN_BASE_W) / 2)
+#define CL_SCREEN_BASE_Y  ((CL_SCREEN_H - CL_SCREEN_BASE_H) / 2)
+
 // Modern: the recurring "centred in the map pane" / "centred on the whole
 // screen" position formulas, named so every floating panel computes its
 // spot the same way instead of re-deriving it.
