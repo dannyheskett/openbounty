@@ -1,5 +1,9 @@
 name: ci
 
+# Every artifact here is a throwaway kept for 5 days, not GitHub's default
+# 90: a full run uploads ~45 MB, and it was the account's artifact storage
+# quota -- not the build -- that failed release-25 with a 403.
+
 # Inlined, not called. The shared copy in dannyheskett/.github is being retired, so this
 # repository carries its own. The body below is that workflow verbatim, with two edits:
 # the workflow_call trigger becomes this repo's real pull_request trigger, and the
@@ -100,6 +104,7 @@ jobs:
         with:
           name: web-build
           path: build/web
+          retention-days: 5
 
   android:
     runs-on: ubuntu-22.04
@@ -163,6 +168,7 @@ jobs:
         with:
           name: android-apk
           path: build/gloryofrome.apk
+          retention-days: 5
 
       # ---------------------------------------------------------------------
       # Emulator smoke test. The shipped APK is arm64-only and the runners are
@@ -213,6 +219,7 @@ jobs:
             android-shot.png
             android-shot-late.png
             android-logcat.txt
+          retention-days: 5
           if-no-files-found: warn
 
   ios:
@@ -294,6 +301,7 @@ jobs:
           path: |
             ios-shot.png
             ios-shot-late.png
+          retention-days: 5
 
       - name: Build the device .ipa (unsigned)
         run: make ios PACK_TOOL=build/openbounty-mac
@@ -360,3 +368,4 @@ jobs:
         with:
           name: ios-ipa
           path: build/*.ipa
+          retention-days: 5
