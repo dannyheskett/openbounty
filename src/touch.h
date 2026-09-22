@@ -57,6 +57,7 @@ enum {
     TOUCH_LIST_CLASS,        // class picker columns
     TOUCH_LIST_TEXTSEL,      // letter selector cells
     TOUCH_LIST_COMBAT_ACTIONS, // modern combat action menu rows
+    TOUCH_LIST_CLASS_CONFIRM,  // the class picker's Continue / Cancel rows
 };
 void touch_region_row(int x, int y, int w, int h, int list_id, int row);
 // A list taller than its space: a vertical drag over it moves it a row per
@@ -91,6 +92,11 @@ void touch_request_prompt_ab(void);           // "A"/"B" -> KEY_A/KEY_B
 
 // Called from present_scaled, inside the frame's draw. Renders requested
 // chrome in window pixels and registers its window-space regions.
+// A touch control's size in window pixels -- Apple's 44pt / Android's 48dp,
+// tracked as 11% of the window's short side with a 44px floor. Exposed so the
+// layout can make the menu band a comfortable target too.
+int  touch_unit(void);
+
 void touch_draw_chrome(void);
 
 // Per-frame tick, called from frame_host_end_frame after the yield.

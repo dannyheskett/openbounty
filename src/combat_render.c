@@ -97,6 +97,9 @@ static Texture2D s_ground;   // see combat_render_set_ground
 void combat_render_set_ground(Texture2D ground) { s_ground = ground; }
 
 static int s_atk_side = -1, s_atk_x, s_atk_y, s_atk_frame = -1;
+static bool s_impact = true;   // no blow in flight: everything is as it is
+
+void combat_render_set_impact(bool landed) { s_impact = landed; }
 
 void combat_render_set_attack(int side, int x, int y, int frame) {
     s_atk_side = frame < 0 ? -1 : side;
@@ -125,7 +128,16 @@ static void draw_tile(const Sprites *s, int idx, int px, int py) {
 
 static void draw_unit(const CombatUnit *u, int side,
                       const Sprites *sprites) {
-    if (u->troop_idx < 0 || u->troop_idx >= sprites->troop_count || u->count == 0) return;
+    if (u->troop_idx < 0 || u->troop_idx >= sprites->troop_count) return;
+    // The count that is ON SCREEN. While a blow is in flight the engine has
+    // already dealt its damage; until the swing lands the target shows the
+    // count it had before (turn_count). After it lands a stack the blow
+    // killed stays on the field under its splat, without a badge, and goes
+    // when the splat does -- you see what killed it, then it leaves.
+    bool pending = CL_IS_MODERN && !s_impact && u->hit_flash > 0;
+    int shown = pending ? u->turn_count : u->count;
+    bool dying = CL_IS_MODERN && u->count == 0 && u->hit_flash > 0;
+    if (shown == 0 && !dying) return;
     int px, py;
     cell_origin(u->x, u->y, &px, &py);
     // Modern: the troop whose turn it is swaps between frames 0 and 1 (the
@@ -146,8 +158,9 @@ static void draw_unit(const CombatUnit *u, int side,
         ui_blit(tex, px, py, CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
     // Count badge: white digits on black band, centered horizontally,
     // anchored at the bottom of the cell.
+    if (shown == 0) return;          // dying under its splat: no badge
     char buf[16];
-    snprintf(buf, sizeof buf, "%d", u->count);
+    snprintf(buf, sizeof buf, "%d", shown);
     Vector2 m = bfont_measure(buf);
     int bx = px + (CL_COMBAT_CELL_W - (int)m.x) / 2;
     int by = py + CL_COMBAT_CELL_H - BFONT_GLYPH_H - CL_UI;
@@ -271,7 +284,7 @@ void combat_render_frame(const Combat *c, const Game *g,
     // call that starts the swing, so without this the blow lands before the
     // weapon does. combat_loop freezes hit_flash for the same span, so the
     // splat still gets its full run once the strip ends.
-    if (s_atk_frame < 0) {
+    if (s_atk_frame < 0 || s_impact) {
         for (int s = 0; s < COMBAT_SIDES; s++) {
             for (int i = 0; i < COMBAT_SLOTS; i++) {
                 const CombatUnit *u = &c->units[s][i];

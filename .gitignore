@@ -38,8 +38,11 @@ Thumbs.db
 #   third_party/emsdk/emsdk install latest && third_party/emsdk/emsdk activate latest
 third_party/emsdk/
 
-# Dev screenshot captures (V-view auto-save + backtick-key shots)
+# Dev screenshot captures (V-view auto-save + backtick-key shots). The store
+# listings' screenshots are deliberate artefacts and are kept.
 screenshots/
+!ios/app-store-assets/screenshots/
+!android/play-assets/screenshots/
 tmp/
 
 # Save data, if ever created in-tree
@@ -57,4 +60,3 @@ __pycache__/
 
 # Local Claude Code harness state (session locks, scheduled tasks).
 .claude/
-screenshots/

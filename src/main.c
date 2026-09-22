@@ -745,8 +745,23 @@ int shell_run_game(int argc, char **argv) {
     // that declared no render.mode.
     layout_init((const struct Resources *)&res);
 
+    // The window opens at the declared buffer times the largest whole scale
+    // the monitor can show -- an exact multiple, never an odd size, and never
+    // a window smaller than the screen allows. A declared buffer is the case
+    // this matters for; everything else keeps the size the layout derived.
     int base_w = CL_WINDOW_W;
     int base_h = CL_WINDOW_H;
+#if !defined(PLATFORM_IOS) && !defined(PLATFORM_ANDROID) && !defined(__EMSCRIPTEN__)
+    if (CL_IS_MODERN && CL_IS_NATIVE) {
+        int disp_w = 0, disp_h = 0;
+        frame_host_display_size(&disp_w, &disp_h);
+        if (disp_w > 0 && disp_h > 0) {
+            int z = present_max_scale(disp_w, disp_h);
+            base_w = CL_SCREEN_W * z;
+            base_h = CL_SCREEN_H * z;
+        }
+    }
+#endif
 
     // The window: resizable, no cursor, no exit key, 60fps -- all of that is
     // frame_host_window_open's, so every platform opens it the same way.
@@ -1372,11 +1387,8 @@ title:;
                 }
                 count = vis;
             }
-            // The shell appends one row after the pack's: Scale. Modern only,
-            // so a legacy pack's panel is unchanged.
-            int scale_row = CL_IS_MODERN ? count : -1;
-            if (CL_IS_MODERN) count += 1;
-            // Modern: a Back row after it, as on every menu page.
+            // Modern: a Back row after the pack's settings, as on every menu
+            // page. There is no Scale row: the scale follows the surface.
             int back_row = CL_IS_MODERN ? count : -1;
             if (CL_IS_MODERN) count += 1;
             int cur = views_controls_cursor();
@@ -1391,9 +1403,8 @@ title:;
                            input_key_pressed(KEY_KP_ENTER) ||
                            input_key_pressed(KEY_SPACE)) {
                     // Advance the value of the selected setting.
-                    if (cur == back_row)       views_dismiss();
-                    else if (cur == scale_row) views_controls_advance_scale();
-                    else                       views_controls_advance(&game, vis_map[cur]);
+                    if (cur == back_row) views_dismiss();
+                    else                 views_controls_advance(&game, vis_map[cur]);
                 } else if (input_key_pressed(KEY_ESCAPE) ||
                            input_key_pressed(KEY_C) ||
                            gamepad_pressed_cancel()) {
@@ -1403,9 +1414,8 @@ title:;
                     for (int k = 0; k < count && k < 9; k++) {
                         if (input_key_pressed(KEY_ONE + k)) {
                             views_controls_set_cursor(k);
-                            if (k == back_row)       views_dismiss();
-                            else if (k == scale_row) views_controls_advance_scale();
-                            else                     views_controls_advance(&game, vis_map[k]);
+                            if (k == back_row) views_dismiss();
+                            else               views_controls_advance(&game, vis_map[k]);
                             break;
                         }
                     }
@@ -1712,9 +1722,13 @@ title:;
 
         // ==== Draw ====
         // Modern grows the viewport to whatever whole tiles the window can
-        // show, so the render target changes size when the window or the scale
-        // does. Legacy is fixed and this is a no-op for it.
+        // show, so the render target changes size when the window does. This
+        // is the world frame, the one screen allowed to use the whole surface;
+        // every other screen refits back to the declared buffer. Legacy is
+        // fixed and this is a no-op for it.
+        present_allow_growth(true);
         present_refit(&render_target);
+        present_allow_growth(false);
 
         // Render into the offscreen target.
         present_begin(&render_target);

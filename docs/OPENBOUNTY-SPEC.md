@@ -1947,24 +1947,27 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
 
 - **REQ-398.** **Beat order of a blow (modern only).** `combat_hit_unit`
   (`engine/combat.c`) deals the damage, sets the target's `hit_flash = 3` and
-  bumps `attack_seq` in one call; the shell only sees the bump on the next
-  frame. So the shell holds the blow's effect back until the attacker's strip
-  has played (`src/combat_loop.c`, `src/combat_render.c`):
+  bumps `attack_seq` in one call, so the engine's numbers change before the
+  swing has been drawn. The shell stages what the player SEES
+  (`src/combat_loop.c`, `src/combat_render.c`); every step is a length of
+  time, not a count of ticks, so every troop swings in the same time:
 
-  1. The strip plays from frame 0, one frame per 150 ms anim tick, and nothing
-     else happens while it does.
-  2. While it plays, the damage burst is **not drawn** and `hit_flash` is
-     **not decayed**, and the blow's settlement -- `combat_compact`, the
-     dead-side tests, the advance to the next unit -- is deferred.
-  3. When the strip ends, the blow settles: the killed stacks leave the field
-     and the burst is drawn for its three ticks (~450 ms).
-  4. After the fight's last swing the field is held ~0.75 s before the victory
-     or defeat presentation, so the ending does not cut in over the killing
-     blow.
+  1. **0 ms** -- the attacker's strip starts. The target still shows its
+     pre-blow count (`turn_count`) and no splat.
+  2. **The strip's last frame** -- the blow lands: the count drops and the
+     splat appears. The whole swing is 360 ms whatever its frame count
+     (`ATTACK_STRIP_S`: 90 ms a frame at four frames, 60 ms at six).
+  3. **+300 ms** -- the splat is done (`SPLAT_TICK_S` x 3, its own clock, so
+     idle troops keep their 150 ms cycle). A stack the blow killed stays on
+     the field under its splat, without a badge, until now; then it leaves
+     and the fight moves on.
+  4. **End of a fight** -- after the killing blow's splat, the field is held
+     0.5 s (`FIGHT_END_HOLD`) before victory or defeat, so the last blow and
+     the emptied field are seen.
 
-  Measured on video at 30 fps (2026-09-20, Rome, a tirones blow): strip frames
-  at t = 3.83 / 4.00 / 4.17 s confined to the attacker's cell, the burst from
-  t = 4.33 s to 4.77 s, the field settling at 4.80 s.
+  About 0.6 s a blow and 1.1 s from the last swing to the ending, where the
+  previous staging took 1.05 s a blow (1.35 s for a six-frame troop) and
+  1.8 s, and dropped the count before the swing.
 
   Legacy is unaffected and keeps King's Bounty's timing: `attack_anim_start`
   returns early when not modern, so no strip ever plays, the burst is drawn on
@@ -2410,6 +2413,76 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   Map tiles are 48×34; sprites are 48×34 except hero/troop frame cycles
   (`<name>_00..03.png`). Tiles are cached as textures by `src/tile_cache.c`;
   sprite sheets load via `src/sprites.c`. The end cartoon is `src/end_cartoon.c`.
+
+- **REQ-528.** **The scale is the surface's, and the world map spends what it
+  leaves.** Modern mode has no zoom setting: `present_scale` returns the
+  largest whole number the surface can show, measured against the buffer the
+  pack declared (`render.native_w/native_h`), which is a **floor and not a
+  fixed size**. What that scale leaves over goes to the map viewport, in whole
+  tiles, an odd count so the hero keeps the centre cell
+  (`layout_grow_native`, `src/layout.c`).
+
+  Only world exploration grows. `present_allow_growth` is off by default and
+  set for one frame by the world frame alone (`shell_present_frame`,
+  `src/shell_frame.c`, and the main loop's draw), so a town, a castle, the
+  battlefield, the title and every dialog refit to the declared buffer and are
+  letterboxed: their layouts are drawn for that size and a wider buffer would
+  leave them adrift in it. Nothing the pack sized ever changes -- the chrome
+  bands, the sidebar and its gap, the status and bar heights, every panel --
+  they re-centre, and that is all.
+
+  The desktop window opens at the declared buffer times the largest whole
+  scale the monitor can show, so it is always an exact multiple and never an
+  arbitrary size (`src/main.c`). Mobile and the web canvas take whatever
+  surface they are given. Legacy mode is untouched: fixed 320x200, auto-fit
+  with the 2x floor, and King's Bounty's gallery stays byte-identical.
+
+- **REQ-530.** **Touch controls are sized in physical units.** Every on-screen
+  control sizes itself from `touch_unit()` (`src/touch.c`): 11% of the
+  window's short side, floored at 44px, which is Apple's 44pt and Android's
+  48dp on the phones this ships to. Fixed pixel counts meant something
+  different on every screen -- the on-screen keyboard's keys were 15pt on an
+  iPhone 12. The action bars, the keyboard, the digit pad and the corner
+  buttons all derive from it.
+
+  Small **design-space** regions are answered by a forgiving second pass in
+  `resolve_tap`: a tap that hits nothing exactly takes the nearest region
+  within half a touch unit, nearest first, so an exact hit is never stolen
+  from a neighbour. That is what makes a 20px menu band answerable on a phone
+  without changing what is drawn.
+
+  On a touch session the menu band itself also grows to a touch unit, but
+  **only out of the slack the whole tiles leave** (`layout_grow_native`'s
+  `want_status_h`): the viewport count is odd, so taking a row costs two rows
+  of world, and the band never does that.
+
+- **REQ-531.** **Naming the hero on a phone uses the on-screen keyboard**, not
+  the in-buffer letter grid (`src/startup.c`): the grid is laid out in the
+  pack's design pixels, which is a 21x13pt key on an iPhone 12, while the
+  chrome keyboard is drawn in window pixels at a touch unit. The grid remains
+  for a gamepad and for a desktop with no keyboard, and its cells are now at
+  least `textsel_min_cell_w()` wide -- four glyphs, so `DEL` and `SPC` stop
+  overlapping their neighbours.
+
+- **REQ-532.** **Choosing a class is two steps, the same two for every
+  input.** Picking a figure -- an arrow key, a pad or a tap -- gives it the
+  gold outline and brings up its description; the panel then carries
+  **Continue** and **Cancel** rows, and only those finish the choice
+  (`src/startup.c`). Before this a tap both selected and confirmed, so the
+  outline and the description were never on screen, and the keyboard
+  confirmed on Enter with no way back.
+
+- **REQ-533.** **A shooter's combat menu opens on Shoot.** The unit page lists
+  Shoot first when the troop has ranged ammo, Wait first otherwise
+  (`src/combat_loop.c`). The order follows the troop's declared ammo rather
+  than the shots left this fight, so it does not rearrange itself mid battle
+  as the quiver empties.
+
+- **REQ-529.** **No Exit on a phone.** The title menu's Exit row and the game
+  menu's Exit footer are compiled out under `PLATFORM_IOS` and
+  `PLATFORM_ANDROID` (`src/startup.c`, `src/modern/gamemenu.c`). iOS has no
+  notion of an app quitting itself and Apple refuses a control that says
+  otherwise; Android's system handles it. Desktop and web keep both rows.
 
 ---
 

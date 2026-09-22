@@ -103,6 +103,8 @@ void layout_init(const struct Resources *res) {
         g_layout.frame_b += slack_h - slack_h / 2;
         g_layout.screen_w  = r->native_w;
         g_layout.screen_h  = r->native_h;
+        g_layout.native_w  = r->native_w;
+        g_layout.native_h  = r->native_h;
         g_layout.is_native = 1;
 
         // Spacing across the screen: the horizontal space the map pane and the
@@ -132,6 +134,7 @@ void layout_init(const struct Resources *res) {
             g_layout.frame_b  = edge;
             g_layout.bar_h    = gap;
             g_layout.status_h = status;
+            g_layout.native_status_h = status;
         }
     }
 
@@ -187,6 +190,73 @@ void layout_min_window(int *out_w, int *out_h) {
     if (out_w) *out_w = need_w + CL_FRAME_LEFT_W + CL_FRAME_RIGHT_W;
     if (out_h) *out_h = need_h + CL_FRAME_TOP_H + CL_STATUS_H
                       + CL_BAR_H + CL_FRAME_BOTTOM_H;
+}
+
+// Grow a declared buffer's MAP PANE only (layout.h).
+//
+// Everything the pack sized stays the size it declared: the chrome bands, the
+// sidebar and its gap, the status and bar heights, every dialog and panel --
+// they are built from the content rect, so they simply re-centre in a wider
+// buffer. Only the viewport gains tiles, which is the one thing a bigger
+// screen should buy: more world, not bigger pixels.
+//
+// The surface is measured at the scale, and the DECLARED size is the floor, so
+// this can only ever add. Growth is in whole tiles and the count stays odd so
+// the hero keeps the centre cell.
+bool layout_grow_native(int surface_w, int surface_h, int scale,
+                        int want_status_h) {
+    if (!g_layout.is_modern || !g_layout.is_native) return false;
+    if (scale < 1) scale = 1;
+    if (g_layout.native_w <= 0 || g_layout.native_h <= 0) return false;
+
+    // What the buffer would be at this scale, never below the declared floor.
+    int avail_w = surface_w / scale;
+    int avail_h = surface_h / scale;
+    if (avail_w < g_layout.native_w) avail_w = g_layout.native_w;
+    if (avail_h < g_layout.native_h) avail_h = g_layout.native_h;
+
+    // The furniture around the pane, at the declared size. Taking it from the
+    // declared buffer rather than the current one keeps this idempotent: the
+    // answer depends on the surface alone, not on what the pane already is.
+    int chrome_w = g_layout.native_w - g_layout.tile_w * g_layout.pack_tiles_w;
+    int chrome_h = g_layout.native_h - g_layout.tile_h * g_layout.pack_tiles_h;
+
+    int tiles_w = odd_clamp((avail_w - chrome_w) / g_layout.tile_w);
+    int tiles_h = odd_clamp((avail_h - chrome_h) / g_layout.tile_h);
+    if (tiles_w < g_layout.pack_tiles_w) tiles_w = g_layout.pack_tiles_w;
+    if (tiles_h < g_layout.pack_tiles_h) tiles_h = g_layout.pack_tiles_h;
+
+    // The menu band may take what the whole tiles leave over, up to the
+    // height asked for (a touch unit) -- and not one pixel more, because the
+    // tile count is odd and losing a row costs two rows of world, not one.
+    // The DECLARED band, not the live one: chrome_h below is derived from the
+    // declared buffer, so measuring from a band this function already grew
+    // would count the growth twice.
+    int base_status = g_layout.native_status_h > 0 ? g_layout.native_status_h
+                                                   : g_layout.status_h;
+    int status_h = base_status;
+    if (want_status_h > base_status) {
+        int spare = avail_h - (chrome_h + g_layout.tile_h * tiles_h);
+        int give = want_status_h - base_status;
+        if (give > spare) give = spare;
+        if (give > 0) status_h = base_status + give;
+    }
+    chrome_h += status_h - base_status;
+
+    int screen_w = chrome_w + g_layout.tile_w * tiles_w;
+    int screen_h = chrome_h + g_layout.tile_h * tiles_h;
+    if (screen_w == g_layout.screen_w && screen_h == g_layout.screen_h &&
+        tiles_w == g_layout.tiles_w && tiles_h == g_layout.tiles_h &&
+        status_h == g_layout.status_h) return false;
+
+    g_layout.status_h = status_h;
+    g_layout.tiles_w  = tiles_w;
+    g_layout.tiles_h  = tiles_h;
+    g_layout.map_w    = g_layout.tile_w * tiles_w;
+    g_layout.map_h    = g_layout.tile_h * tiles_h;
+    g_layout.screen_w = screen_w;
+    g_layout.screen_h = screen_h;
+    return true;
 }
 
 bool layout_fit_window(int win_w, int win_h, int scale) {

@@ -150,9 +150,12 @@ void modern_gamemenu_page(const Game *g, GmPageId id, GmPage *p) {
         add(p, ui->gm_world, bn->gmd_world, NULL, "", GM_ACT_PAGE + GM_PAGE_WORLD, true);
         add(p, ui->gm_game,  bn->gmd_game,  NULL, "", GM_ACT_PAGE + GM_PAGE_GAME, true);
         add(p, ui->gm_close, bn->gmd_back,  NULL, "", GM_ACT_BACK, true);
-        // Exit only here, on the foot of the page.
+        // Exit only here, on the foot of the page -- and not at all on a
+        // phone, where quitting an app is not the player's job.
+#if !defined(PLATFORM_IOS) && !defined(PLATFORM_ANDROID)
         add(p, ui->gm_exit,  bn->gmd_exit,  NULL, "", ACT_EXIT, true);
         p->foot = 1;
+#endif
         break;
     case GM_PAGE_HERO: {
         bool troops = false;

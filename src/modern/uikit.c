@@ -332,7 +332,9 @@ void uk_scene_rows(const UkScene *L, int n, int cursor, MlRowFn fn, void *ctx, i
 static ML_Rect message_rect(void) {
     ML_Rect a = ml_area();
     int sp = ml_space();
-    return (ML_Rect){ a.x + sp, a.y, a.w - 2 * sp, a.h - sp };
+    // The PANE's width, at the size the pack declared -- not the area's,
+    // which on a full-screen view also covers the HUD.
+    return (ML_Rect){ CL_PANE_BASE_X + sp, a.y, CL_PANE_BASE_W - 2 * sp, a.h - sp };
 }
 
 int uk_message_text_w(void) { return message_rect().w - 2 * UK_INSET; }
@@ -343,10 +345,13 @@ int uk_message_text_w(void) { return message_rect().w - 2 * UK_INSET; }
 static ML_Rect ask_over_rect(void) {
     ML_Rect a;
     int sp = ml_space();
+    // Over a battlefield: the field itself, exactly as before.
     if (ml_field(&a))
         return (ML_Rect){ a.x + sp, a.y, a.w - 2 * sp, a.h - sp };
+    // Elsewhere: the pane's width, pinned to the declared size so a grown
+    // pane does not stretch the panel across it.
     a = ml_area();
-    return (ML_Rect){ CL_MAP_X + sp, a.y, CL_MAP_W - 2 * sp, a.h - sp };
+    return (ML_Rect){ CL_PANE_BASE_X + sp, a.y, CL_PANE_BASE_W - 2 * sp, a.h - sp };
 }
 
 int uk_ask_over_text_w(void) { return ask_over_rect().w - 2 * UK_INSET; }

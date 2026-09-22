@@ -36,6 +36,13 @@ typedef struct {
     int sidebar_gap;           // modern fixed buffer: the band between the map
                                // pane and the HUD, as wide as the side bands so
                                // left edge, middle and right edge match. 0 else.
+    int native_status_h;       // the status band as declared, before a touch
+                               // session grew it into the tiles' slack
+    int native_w, native_h;    // the buffer the pack declared: a FLOOR, not a
+                               // fixed size. The map pane may grow past it to
+                               // fill a bigger surface; nothing else does, and
+                               // the scale is always measured against this so
+                               // growing the pane cannot feed back on itself.
     int is_native;             // 1 when the pack fixed the buffer size: the
                                // screen never follows the window; present.c
                                // shows it at 1x, 2x or 3x and letterboxes
@@ -58,6 +65,14 @@ void layout_init(const struct Resources *res);
 // fixed. Returns true when the screen size changed, so the caller knows to
 // recreate the render target. The remainder is letterboxed by present_scaled.
 bool layout_fit_window(int win_w, int win_h, int scale);
+
+// Grow a DECLARED buffer's map pane to fill the surface, in whole tiles, and
+// nothing else: the chrome bands, the sidebar, the status and the dialog
+// geometry all keep the sizes the pack declared and simply re-centre. The
+// declared size is the floor, so a surface smaller than it changes nothing.
+// Returns true when the buffer size changed.
+bool layout_grow_native(int surface_w, int surface_h, int scale,
+                        int want_status_h);
 
 // The smallest window this pack can be played in, derived from its tile size.
 // Set as the window's minimum so the player cannot drag below it. The binding
@@ -230,6 +245,27 @@ int bfont_glyph_h(void);
 // per-panel column counts.
 #define CL_PANEL_STD_W    CL_CONTENT_W
 #define CL_PANEL_WIDE_W   (CL_CONTENT_W + CL_SIDEBAR_W)
+
+// The map pane AS THE PACK DECLARED IT. The live pane (CL_MAP_*) grows on a
+// bigger surface to show more world; every panel, dialog, location screen and
+// full-page view is laid out against this instead, so it keeps the exact size
+// it was drawn for and is centred in whatever pane it finds itself in. Only
+// the map itself spends the extra room (REQ-528).
+// A CLAMP, not a replacement: when the pane is its declared size -- and on
+// the battlefield, where it is a different size again -- this is the live
+// pane and nothing moves. Only a pane that has GROWN is pinned back.
+#define CL_PANE_DECL_W    (g_layout.tile_w * g_layout.pack_tiles_w)
+#define CL_PANE_DECL_H    (g_layout.tile_h * g_layout.pack_tiles_h)
+#define CL_PANE_BASE_W    (CL_MAP_W < CL_PANE_DECL_W ? CL_MAP_W : CL_PANE_DECL_W)
+#define CL_PANE_BASE_H    (CL_MAP_H < CL_PANE_DECL_H ? CL_MAP_H : CL_PANE_DECL_H)
+#define CL_PANE_BASE_X    (CL_MAP_X + (CL_MAP_W - CL_PANE_BASE_W) / 2)
+#define CL_PANE_BASE_Y    (CL_MAP_Y + (CL_MAP_H - CL_PANE_BASE_H) / 2)
+
+// The whole buffer as the pack declared it, for the screen-wide layer.
+#define CL_SCREEN_BASE_W  (g_layout.native_w > 0 ? g_layout.native_w : CL_SCREEN_W)
+#define CL_SCREEN_BASE_H  (g_layout.native_h > 0 ? g_layout.native_h : CL_SCREEN_H)
+#define CL_SCREEN_BASE_X  ((CL_SCREEN_W - CL_SCREEN_BASE_W) / 2)
+#define CL_SCREEN_BASE_Y  ((CL_SCREEN_H - CL_SCREEN_BASE_H) / 2)
 
 // Modern: the recurring "centred in the map pane" / "centred on the whole
 // screen" position formulas, named so every floating panel computes its

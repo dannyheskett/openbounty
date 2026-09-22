@@ -1371,14 +1371,11 @@ static bool controls_row(void *ctx, int k, char *label, char *right, int cap) {
     const ControlsCtx *c = (const ControlsCtx *)ctx;
     const Game *g = c->g;
     const ResUI *ui = &g->res->ui;
-    if (k == c->vis + 1) {   // Back, as on every menu page
+    // No Scale row: the scale is chosen from the surface, not by the player
+    // (present.c). Back sits directly after the pack's own settings.
+    if (k == c->vis) {   // Back, as on every menu page
         snprintf(label, (size_t)cap, "%s", ui->gm_back);
         right[0] = '\0';
-        return true;
-    }
-    if (k == c->vis) {   // the shell's Scale row
-        snprintf(label, (size_t)cap, "Scale");
-        snprintf(right, 48, "%dx", views_controls_scale_value());
         return true;
     }
     int i = c->vis_idx[k];
@@ -1402,8 +1399,8 @@ void modern_overlay_draw_controls(const Game *g) {
     if (c.vis == 0) return;
     int cur_k = views_controls_cursor();
     if (cur_k < 0) cur_k = 0;
-    if (cur_k > c.vis + 1) cur_k = c.vis + 1;
-    int rows = c.vis + 2;        // the settings, Scale, and Back
+    if (cur_k > c.vis) cur_k = c.vis;
+    int rows = c.vis + 1;        // the pack's settings, then Back
     int h = uk_title_h() + UK_BAND + ml_list_height(rows);
     // A menu page's width, like every other page of rows.
     char gold[48];
@@ -1415,7 +1412,7 @@ void modern_overlay_draw_controls(const Game *g) {
     int first = ml_list_first(rows, cur_k, vis_rows);
     for (int k = first; k < rows && k < first + vis_rows; k++)
         touch_region(b.x, b.y + (k - first) * (ml_row_h() + ML_ROW_RULE), b.w, ml_row_h(),
-                     k == c.vis + 1 ? KEY_ESCAPE : KEY_ONE + k);
+                     k == c.vis ? KEY_ESCAPE : KEY_ONE + k);
 }
 
 // ---------------------------------------------------------------------------

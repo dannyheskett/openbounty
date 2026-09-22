@@ -93,10 +93,16 @@ bool textsel_input(TextSel *t, char *buf, int *len, int cap, int touch_list,
     return false;
 }
 
+// The widest label the grid holds, in glyphs: "DEL" and "SPC" are three, and
+// a cell sized for one letter drew them over their neighbours -- which is
+// what the last row's "ZSPDELOK" mush was.
+int textsel_min_cell_w(void) { return 4 * bfont_glyph_w(); }
+
 void textsel_draw(const TextSel *t, int x, int y, int cell_w, int cell_h,
                   Color fg, Color bg, int touch_list) {
     if (!CL_IS_MODERN || !t) return;
     int cols = textsel_cols(t->numeric), n = textsel_count(t->numeric);
+    if (cell_w < textsel_min_cell_w()) cell_w = textsel_min_cell_w();
     for (int i = 0; i < n; i++) {
         int cx = x + (i % cols) * cell_w, cy = y + (i / cols) * cell_h;
         int ch = textsel_char(i, t->numeric);

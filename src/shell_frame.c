@@ -24,7 +24,10 @@ void draw_frame(const Game *game, const Map *map, const Fog *fog,
 void shell_present_frame(const Game *game, const Map *map, const Fog *fog,
                          const Sprites *sprites, void *render_target) {
     RenderTexture2D *target = (RenderTexture2D *)render_target;
+    // The world map is the one screen that may use the whole surface.
+    present_allow_growth(true);
     present_refit(target);
+    present_allow_growth(false);
     present_begin(target);
     draw_frame(game, map, fog, sprites);
     present_end();

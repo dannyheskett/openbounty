@@ -26,6 +26,16 @@
 //
 // Legacy geometry is fixed, so layout_fit_window is a no-op and this always
 // returns false.
+// Whether the NEXT refit may grow the map pane past the declared buffer
+// (layout_grow_native). Only world exploration may: a town, a castle, the
+// battlefield, the title and every dialog keep the size the pack declared and
+// are letterboxed, because their layouts are drawn for that size and a wider
+// buffer would leave them adrift in it.
+//
+// Default off, and every screen that is not the world leaves it off, so a new
+// screen cannot grow by accident.
+void present_allow_growth(bool on);
+
 bool present_refit(RenderTexture2D *rt);
 
 // The size the render target should be for this window: the screen size, or
@@ -96,6 +106,10 @@ bool present_window_to_screen(int wx, int wy, int *sx, int *sy);
 // The letterboxed blit rect from the last present_scaled call, in window
 // pixels. The touch layer lays its chrome out around this.
 void present_last_dst(int *x, int *y, int *w, int *h);
+
+// The scale the last frame was blitted at: window pixels per design pixel.
+// touch.c converts its physical sizes back into design pixels with it.
+int present_get_dst_scale(void);
 
 // Record the blit rect + scale the mapping above reads. Called by
 // present_scaled with what it actually drew; public so tests can exercise
