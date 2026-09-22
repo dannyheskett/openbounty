@@ -1,14 +1,8 @@
 name: release
 
-# Inlined, not called. The shared copy in dannyheskett/.github is being retired, so this
-# repository carries its own. The body below is that workflow verbatim, with the edits the
-# shared form existed to avoid needing:
-#   - workflow_call becomes this repo's real push + workflow_dispatch triggers
-#   - the `platforms` input and its per-job gates are gone; a platform this repo does not
-#     build is simply not a job
-#   - `play_publish` and the publish-play job are gone; this repo ships no Android bundle
-#   - the pack guard steps are unconditional, the `verify_no_pack` input having no other
-#     caller to be false for
+# This repository's own release workflow, not a call to a shared one: every job runs on
+# every release, a platform this repo does not build is simply not a job, and the pack
+# guard steps are unconditional. docs/RELEASE-PROCESS.md describes each job.
 #
 on:
   push:

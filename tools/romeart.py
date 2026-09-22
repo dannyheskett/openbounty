@@ -23,12 +23,11 @@
 
 NOTHING HERE MAKES A PAID CALL. Generation lives in tools/rdgen.py (Retro
 Diffusion) and tools/pltileset.py / pltilespro.py (PixelLab); every prompt and
-setting they were given is recorded in docs/ROME-ART.md. This tool only
+setting they are given is recorded in docs/ROME-ART.md. This tool only
 composites what those calls returned: it may be re-run at any time, and the
 same inputs give the same tiles.
 
-Each section below is one of the tools this replaced, absorbed whole: the
-algorithms are unchanged, because each encodes a contract earned by
+Each section below is one compositing step. Each encodes a contract set by
 measurement (the lattice border rule, the road sweep's joining pattern, the
 edge masks, the grass variants' shared border).
 """
@@ -1811,10 +1810,12 @@ def _artprompts(argv):
     python3 tools/artprompts.py [out.md]
 
 One page, generated from art/jobs/*.json, so it cannot drift from the jobs
-themselves. Each row carries the engine and its settings, the prompt exactly as
-it was sent, and the job's own note, which is where the history lives (what a
-run produced, what it superseded, what was wasted). A job whose `_pack_path`
-is in the pack is marked INSTALLED; the rest are the record of what was tried.
+themselves. Each entry carries the engine and its settings and the prompt
+exactly as it is sent. A job whose output is in the pack is marked INSTALLED;
+a job with no pack path is a step towards one (the still an animation starts
+from). A job whose pack path is NOT in the pack produces nothing the game
+uses and is left out. The jobs' `_note` fields -- the history of each run --
+stay in the job files and are not repeated here.
 
 Two engines make everything (docs/ART-PIPELINE.md): Retro Diffusion draws
 figures, screens and objects; PixelLab makes the terrain sets and sprite
@@ -1921,6 +1922,18 @@ batches. The reference groups by what the art IS, not by engine.
                 continue
             jobs.append((f[:-5], d))
 
+        # A job whose pack path is not in the pack makes nothing the game uses.
+        def live(d):
+            pp = d.get("_pack_path", "").split(" ")[0].replace("<x>_<y>", "0_0")
+            if not pp:
+                return True
+            import re as _re
+            rng = _re.match(r"^(.*_)(\d+)\.\.(\d+)(\.\w+)$", pp)
+            probe = (rng.group(1) + rng.group(2) + rng.group(4)) if rng else pp
+            return os.path.exists(os.path.join(PACK, probe))
+        jobs = [(n, d) for n, d in jobs if live(d)]
+        kept = len(jobs)
+
         groups = {}
         for name, d in jobs:
             groups.setdefault(group_of(name, d), []).append((name, d))
@@ -1931,16 +1944,11 @@ batches. The reference groups by what the art IS, not by engine.
             "**Generated** by `tools/romeart.py prompts` from `art/jobs/*.json`. Do not",
             "edit by hand: change the job file and run the tool again.",
             "",
-            f"{len(jobs)} jobs in all. **INSTALLED** marks a job whose output is in the pack;",
-            "everything else is the record of what was tried, which is why the notes matter —",
-            "they say what a run produced and what it superseded. The routes themselves (which",
-            "engine, which settings, and why) are in `docs/ART-PIPELINE.md`.",
-            "",
-            "Notes written before 2026-09-20 name the separate compositing tools of the",
-            "time (`tile2x2.py`, `roadtile.py`, `cropcentre.py` and the rest). Every one of",
-            "them is now a subcommand of `tools/romeart.py`, with the same algorithm: read",
-            "`tile2x2.py` as `romeart.py tile2x2`, `roadtile.py --sweep` as `romeart.py",
-            "sweep --sweep`, `cropcentre.py` as `romeart.py crop`.",
+            f"{kept} jobs. A job with a **Pack path** has produced that file in the pack; a",
+            "job without one has produced a step towards it (the still an animation starts",
+            "from). The routes themselves -- which engine, which settings, and why -- have",
+            "been in `docs/ART-PIPELINE.md`; each job's run history has been in its own",
+            "`_note` field.",
             "",
         ]
         for g in sorted(groups):
@@ -1948,8 +1956,7 @@ batches. The reference groups by what the art IS, not by engine.
             for name, d in sorted(groups[g]):
                 eng, settings = engine_of(d)
                 pack = d.get("_pack_path", "")
-                installed = pack and os.path.exists(os.path.join(PACK, pack))
-                head = f"### {name}" + ("  — INSTALLED" if installed else "")
+                head = f"### {name}"
                 lines += [head, "", f"- **Engine:** {eng} ({settings})"]
                 if pack:
                     lines.append(f"- **Pack path:** `{pack}`")
@@ -1958,8 +1965,6 @@ batches. The reference groups by what the art IS, not by engine.
                 st = settings_of(d)
                 if st:
                     lines.append("- **Settings:** " + ", ".join(f"`{x}`" for x in st))
-                if d.get("_note"):
-                    lines.append(f"- **Note:** {d['_note']}")
                 lines.append("")
         open(OUT, "w").write("\n".join(lines) + "\n")
         print(f"wrote {OUT}: {len(jobs)} jobs in {len(groups)} groups")

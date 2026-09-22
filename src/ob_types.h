@@ -9,7 +9,7 @@
 // the same job for the engine: there, the stub is enough because the engine
 // never draws. Here the declarations are real and ios/ implements them.
 //
-// See docs/IOS-BACKEND-SPIKE.md for the full surface and why it is split this
+// See docs/IOS-BACKEND.md for the full surface and why it is split this
 // way.
 
 #ifndef OB_TYPES_H

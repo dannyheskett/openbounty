@@ -1,10 +1,11 @@
 # Glory of Rome — App Store listing
 
-Copy these into App Store Connect. It mirrors `android/play-assets/LISTING.md`
-with the fields Apple has and Play does not, and one rule that differs:
+Copy these into App Store Connect. It has mirrored
+`android/play-assets/LISTING.md` with the fields Apple has and Play does not,
+and one rule that differs:
 
 - **Never mention Android, Google Play, or any other store** in the
-  description. Apple rejects listings that point at a competing store.
+  description. Apple has rejected listings that point at a competing store.
 
 ## New App form (Apps → + → New App)
 
@@ -17,8 +18,8 @@ with the fields Apple has and Play does not, and one rule that differs:
 | SKU | `gloryofrome` |
 | User Access | Full Access |
 
-The name is public, capped at 30 characters, and can change with any later
-version. The SKU and the bundle ID cannot.
+The name has been public, capped at 30 characters, and changeable with any
+later version. The SKU and the bundle ID have not been changeable.
 
 ## Subtitle (≤30 chars)
 
@@ -28,7 +29,7 @@ Turn-based fantasy strategy
 
 ## Promotional text (≤170 chars)
 
-Editable without submitting a build.
+It has been editable without submitting a build.
 
 ```
 Raise an army, hunt the villains holding Italia, and get them to the Senate before your commission runs out.
@@ -37,7 +38,7 @@ Raise an army, hunt the villains holding Italia, and get them to the Senate befo
 ## Description
 
 Apple's copy, kept separate from Play's because a listing that names another
-store is rejected. `scripts/store_listing.py` reads this block.
+store has been rejected. `scripts/store_listing.py` has read this block.
 
 ```
 Rome needs a champion. Raise an army, sweep the roads of Italia, hunt down the villains who have carved the peninsula up between them, and deliver them to the Senate before your commission runs out.
@@ -53,7 +54,7 @@ WHAT YOU DO
 
 BUILT RIGHT
 • Completely offline. No ads, no tracking, no accounts, no in-app purchases.
-• Designed for touch: everything is a tap, with an on-screen letter picker instead of the keyboard
+• Designed for touch: everything is a tap, with an on-screen keyboard to name your hero
 • Landscape, full screen, and clear of the notch and the home indicator
 
 FREE AND OPEN SOURCE
@@ -76,20 +77,21 @@ strategy,turnbased,fantasy,tactics,rome,roman,army,rpg,offline,retro
 
 ## App Privacy
 
-"Data Not Collected" for every category. The app has no network code at all.
+"Data Not Collected" for every category. The app has had no network code at all.
 
 ## Age rating
 
-Fantasy violence, infrequent/mild. Everything else: none. That lands at 9+.
+Fantasy violence, infrequent/mild. Everything else: none. That has landed at 9+.
 
 ## Screenshots
 
-Required: 6.9" iPhone (2868×1320 or 1320×2868) landscape, up to 10. iPad is
-only required if the app is offered on iPad — `UIDeviceFamily` currently
-includes iPad, so either supply 13" iPad captures or drop the 2 from
-`UIDeviceFamily` in `ios/Info.plist` before submitting.
+Required: the 6.9" iPhone slot, up to 10, landscape; it has accepted
+2868×1320 and 2796×1290, and `screenshots/iphone-6.9/` has held five at
+2796×1290. iPad captures have been required because `UIDeviceFamily` in
+`ios/Info.plist` has included iPad (the 2); `screenshots/ipad-13/` has held
+five at 2732×2048.
 
 ## Export compliance
 
-`ITSAppUsesNonExemptEncryption` is already `false` in `ios/Info.plist`, so App
-Store Connect stops asking.
+`ITSAppUsesNonExemptEncryption` has been `false` in `ios/Info.plist`, so App
+Store Connect has stopped asking.

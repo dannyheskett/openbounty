@@ -1,14 +1,11 @@
 name: ci
 
 # Every artifact here is a throwaway kept for 5 days, not GitHub's default
-# 90: a full run uploads ~45 MB, and it was the account's artifact storage
-# quota -- not the build -- that failed release-25 with a 403.
+# 90: a full run uploads ~45 MB, and the account's artifact storage quota,
+# not the build, is what a 403 on upload means.
 
-# Inlined, not called. The shared copy in dannyheskett/.github is being retired, so this
-# repository carries its own. The body below is that workflow verbatim, with two edits:
-# the workflow_call trigger becomes this repo's real pull_request trigger, and the
-# `platforms` input and its per-job gates are gone -- a platform this repo does not build
-# is simply not a job here, rather than a job that reports skipped.
+# This repository's own CI workflow, not a call to a shared one: a platform this repo does
+# not build is simply not a job here, rather than a job that reports skipped.
 #
 # Check names are therefore the bare job ids ("linux"), not "ci / linux".
 on:
@@ -232,7 +229,7 @@ jobs:
   ios:
     # The ONLY machine that can compile this: Xcode's SDK, xcrun and the
     # Simulator exist on macOS alone, and there is no Mac to hand. Every iOS
-    # file's first build is therefore this job (docs/IOS-BACKEND-SPIKE.md).
+    # file's first build is therefore this job (docs/IOS-BACKEND.md).
     #
     # macos-26: the same toolchain the release uses, so the signed build
     # checked below is the one Apple would actually receive. Apple refuses an

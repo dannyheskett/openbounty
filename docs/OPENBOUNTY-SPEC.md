@@ -1,37 +1,39 @@
 # OpenBounty, Specification
 
-**Status:** living document. Reproduction-grade record of the implementation
-as built. This is the single authoritative specification for the game rules
-and the implementation together.
+Reproduction-grade record of the implementation as built. This has been the
+single authoritative specification for the game rules and the implementation
+together.
 
 A complete reimplementation of OpenBounty has been possible from this document
 alone, paired with the asset pack at `assets/kings-bounty/` (sprites, palette,
 maps, audio).
 
-OpenBounty is a faithful raylib reimplementation of King's Bounty (1990, New
-World Computing). It descends from **OpenKB** (an earlier SDL 1.2
-reimplementation) and deliberately diverges from it in several architectural
-respects (§1.10); gameplay-significant constants and formulas match OpenKB
-except where a deviation is explicitly flagged (§34).
+OpenBounty has been a faithful raylib reimplementation of King's Bounty (1990,
+New World Computing), and the engine behind Glory of Rome, an original modern
+pack (`assets/glory-of-rome/`, `GLORY-OF-ROME.md`). It has descended from
+**OpenKB** (an earlier SDL 1.2 reimplementation) and deliberately diverged from
+it in several architectural respects (§1.10); gameplay-significant constants
+and formulas have matched OpenKB except where a deviation is explicitly
+flagged (§38).
 
 **Conventions.**
-- Each requirement carries a stable identifier of the form `REQ-NNN`. Where a
-  numeric value or table appears in the asset pack, the requirement names the
-  JSON path (e.g. `game.json:economy.chest.chance_gold`) rather than copying
-  the value, so the data and the spec stay synchronised.
-- Requirements are written in the present perfect tense ("the game has done
-  X"), as a factual reproduction-grade record.
-- Code citations name a **file and function** (e.g. `engine/game.c
-  GameOnStep`) rather than a line number, so they survive edits. The code lives
-  under `engine/` (the raylib-free engine library) and `src/` (the raylib
+- Each requirement has carried a stable identifier of the form `REQ-NNN`.
+  Where a numeric value or table appears in the asset pack, the requirement
+  has named the JSON path (e.g. `game.json:economy.chest.chance_gold`) rather
+  than copying the value, so the data and the spec stay synchronised.
+- Requirements have been written in the present perfect tense ("the game has
+  done X"), as a factual reproduction-grade record.
+- Code citations have named a **file and function** (e.g. `engine/game.c
+  GameOnStep`) rather than a line number, so they survive edits. The code has
+  lived under `engine/` (the raylib-free engine library) and `src/` (the
   shell); see §1.
-- **Provenance citations are a separate thing.** Comments in the source
+- **Provenance citations have been a separate thing.** Comments in the source
   occasionally cite `play.c`, `bounty.c`, or a bare `game.c` with a line
-  number. Those name files in the **OpenKB source and the DOS
-  decompilation this port was derived from**, they are not files in this
-  repository, and they are recorded so a reader can trace where a formula or
-  table came from. `OPENKB-SPEC.md` documents that predecessor. Any citation
-  naming a path under `engine/` or `src/` refers to this repository.
+  number. Those have named files in the **OpenKB source and the DOS
+  decompilation this port has been derived from**, not files in this repository,
+  and they have been recorded so a reader can trace where a formula or table
+  came from. `OPENKB-SPEC.md` has documented that predecessor. Any citation
+  naming a path under `engine/` or `src/` has referred to this repository.
 - "The game" has referred to the running OpenBounty binary. "The player" has
   referred to the human user. "The hero" has referred to the in-world avatar.
 - Coordinates have been written `(x, y)` with `x` increasing east and `y`
@@ -91,7 +93,7 @@ except where a deviation is explicitly flagged (§34).
 37. [Tools, asset extraction](#37-tools--asset-extraction)
 
 **Part IV: Deviations & data**
-38. [Known deviations from OpenKB and incomplete features](#38-known-deviations-from-openkb-and-incomplete-features)
+38. [Known deviations from OpenKB](#38-known-deviations-from-openkb)
 - [Appendix A, Complete data tables (from `game.json`)](#appendix-a--complete-data-tables-from-gamejson)
 
 ---
@@ -105,14 +107,14 @@ except where a deviation is explicitly flagged (§34).
 - **REQ-001.** The codebase has split into two halves with a hard boundary:
   - **engine** (`engine/`): pure game logic, mechanics, and state. It has
     built as the static archive `libobengine.a` and has been **free of raylib,
-    audio, window, and GPU dependencies**. It vendors cJSON and miniz inside
-    the archive. It has emitted abstract events to its host through the
+    audio, window, and GPU dependencies**. It has vendored cJSON and miniz
+    inside the archive. It has emitted abstract events to its host through the
     callbacks declared in `engine/include/ui_host.h`.
   - **shell** (`src/`): renderer, audio, input, and screen flows. It has
     linked `libobengine.a` and implemented the host callbacks for real
     (rendering prompts, dialogs, views, playing audio, capturing frames).
 - **REQ-002.** The engine has exposed its public API through headers in
-  `engine/include/`; consumers add `-Iengine/include`. The shell's own headers
+  `engine/include/`; consumers have added `-Iengine/include`. The shell's own headers
   have lived in `src/`. No engine `.c` file has included a `src/` header, and
   no engine `.c` file has included `raylib.h` outside `engine/headless/`.
 - **REQ-003.** The boundary has been **verified at build time**, not merely by
@@ -121,8 +123,8 @@ except where a deviation is explicitly flagged (§34).
   -Iengine/include` and only `-lm -lpthread` (no raylib, no X11), with
   `--whole-archive` so every engine object is pulled in. If any engine object
   has come to depend on a shell header or symbol, this link has failed and
-  `make all` has failed. The output binary is discarded; a stamp file
-  (`build/libtest-pass.stamp`) records success.
+  `make all` has failed. The output binary has been discarded; a stamp file
+  (`build/libtest-pass.stamp`) has recorded success.
 - **REQ-004.** Two real binaries have been produced from the same engine
   archive: `build/openbounty` (the game) and `build/openbounty-test` (the
   greatest test runner).
@@ -147,29 +149,43 @@ except where a deviation is explicitly flagged (§34).
   archive has additionally been compiled `-fPIC -DOB_HEADLESS` with
   `-Iengine/headless -Iengine/include`.
 - **REQ-021.** Principal targets:
-  - `make` / `make all`, the two binaries + `libobengine.a` + the library
-    boundary check + the shipped pack zips.
-  - `make test` runs `build/openbounty-test`: the **entire** greatest suite
-    (unit + regression + e2e, including the combat-formula golden digests).
-    There is no separate playtest or scenario runner.
-  - `make release`: `build/openbounty-release`, `-O2`, assets embedded.
-  - `make windows` / `make windows-debug`, Win64 + Win32 cross-compile
-    (mingw-w64), assets always embedded, static link, no DLLs.
+  - `make` / `make all`: the two binaries + `libobengine.a` + the library
+    boundary check + the iOS purity check + the pack zips.
+  - `make test` has run `build/openbounty-test`: the **entire** greatest suite
+    (unit + regression + e2e + autoplay, including the combat-formula golden
+    digests). There has been no separate playtest or scenario runner.
+  - `make release`: `build/release/openbounty`, `-O2`, static libgcc.
+  - `make windows` / `make windows-debug`: Win64 + Win32 cross-compile
+    (mingw-w64), static link, no DLLs.
   - `make mac`: macOS universal (arm64 + x86_64).
-  - `make extract` / `make extract-pack`, wrappers around `./build/openbounty
-    --extract`.
-  - `make dist-{linux,windows,mac}` / `make dist`, distribution archives.
+  - `make web`: one WebAssembly bundle per pack.
+  - `make android` / `make android-play`: the Glory of Rome APK / AAB.
+  - `make ios-sim` / `make ios`: the Glory of Rome Simulator app / device
+    `.ipa`.
+  - `make extract` / `make extract-pack`: wrappers around
+    `./build/debug/openbounty --extract`.
+  - `make dist-{linux,windows,mac}` / `make dist`: OpenBounty archives;
+    `make dist-rome-{linux,windows,mac}`: Glory of Rome archives;
+    `make dist-web`, `dist-android`, `dist-android-play`, `dist-ios`.
   - `make clean`: removes `build/` and `dist/` archives.
-- **REQ-022.** There is **no Python** in the project. Asset extraction and pack
-  building are pure C, compiled into the `openbounty` binary (§37).
+- **REQ-022.** The game and its build have used **no Python**. Asset
+  extraction and pack building have been pure C, compiled into the
+  `openbounty` binary (§37). Python has appeared only in tools the build never
+  runs: the Rome art and map authoring scripts in `tools/` and the
+  store-upload scripts in `scripts/`.
 
 ### 1.4 Vendor code
 
 - **REQ-030.** `third_party/` has vendored: cJSON (`cjson/`, JSON parse),
   miniz (`miniz/`, ZIP read/write for `.openbounty` packs), greatest
   (`greatest/`, single-header test framework), minih264 + minimp4
-  (`--movie` MP4 encoder/muxer), and raylib (source for reference plus
-  prebuilt static archives for linux / win64 / win32 / mac).
+  (`--movie` MP4 encoder/muxer), stb (`stb/`: `stb_image`, `stb_truetype` and
+  `stb_vorbis`, the iOS backend's image, font and music decoders), Liberation
+  Sans (`fonts/`, the pack picker's face, compiled in as `src/font_sans.inc`)
+  and `emsdk/`, the place for a local Emscripten checkout (CI installs its
+  own). raylib has not been vendored:
+  `scripts/build_raylib_{linux,windows,mac,web,android}.sh` have built it into
+  `third_party/raylib-install*`.
 - **REQ-031.** cJSON and miniz have been compiled **into** `libobengine.a` so
   consumers of the engine library have not needed their own copies.
 
@@ -179,32 +195,36 @@ except where a deviation is explicitly flagged (§34).
   (`engine/include/game.h`); no persistent gameplay state has existed outside
   that struct, the loaded `Resources` (read-only), and platform handles
   (window, audio device, render target).
-- **REQ-041.** The `Game` struct has been a flat value type with fixed-size
-  inline arrays (no per-game heap allocation for the core state). All array
-  caps have been compile-time constants (§3). Variable-length collections
-  (consumed tiles, dwellings, placements, foes) have been bounded arrays with a
-  parallel `*_count` field.
+- **REQ-041.** The `Game` struct has owned its tables on the heap: every table
+  sized by the pack (towns, castles, spells, artifacts, villains, zones, the
+  contract cycle) and every list that grows in play (consumed tiles,
+  dwellings, placements, foes), each with a parallel `*_count` field
+  (`engine/include/game.h`). A `Game` has started zeroed, been sized by
+  `GameInit` / `SaveGameRead`, been copied only with `GameCopy` and released
+  with `GameFree`; a plain `=` copy would share the other's tables. The only
+  compile-time caps have been `GAME_NAME_LEN` and `GAME_ARMY_SLOTS` (§3).
 - **REQ-042.** The `Game` has held a `const Resources *res` pointer to the
   loaded asset pack; the engine has never mutated `*res` after startup.
 
 ### 1.6 Coordinate system
 
 - **REQ-050.** All gameplay coordinates have been integer tile indices in
-  zone-local space; `(0, 0)` is the top-left of each zone. `x` increases east,
-  `y` increases south. There has been no sub-tile position.
+  zone-local space; `(0, 0)` has been the top-left of each zone, `x`
+  increasing east and `y` increasing south. There has been no sub-tile
+  position.
 
 ### 1.7 Naming conventions
 
 - **REQ-060.** Public engine functions acting on the whole game have used the
   `Game*` prefix (`GameInit`, `GameOnStep`, `GameBuyTroop`, …). Combat engine
   functions have used the `combat_*` prefix. Shell screen flows have used
-  `screen_*` / view-specific names. Host callbacks the shell must provide have
-  been declared in `engine/include/ui_host.h`.
+  `screen_*` / view-specific names. Host callbacks the shell has to provide
+  have been declared in `engine/include/ui_host.h`.
 
 ### 1.8 Source layout
 
 - **REQ-070.** Engine sources (`engine/*.c`), each with a header in
-  `engine/include/`:
+  `engine/include/`, have been:
 
   | Source | Responsibility |
   |---|---|
@@ -212,10 +232,12 @@ except where a deviation is explicitly flagged (§34).
   | `map.c` | Tile grid, `.dat` parsing, placement stamping |
   | `fog.c` | Per-tile fog of war |
   | `adventure.c` | Walkability + tile-step interact dispatch |
-  | `step.c` | `step_try`, one-tile movement + bookkeeping |
+  | `step.c` | `GameStep`, one-tile movement + bookkeeping |
   | `combat.c` | Combat state, AI, headless turn loop, damage, combat spells |
   | `combat_log.c` | Combat log line append (pure data) |
   | `flows.c` | Encounter / week-end / endgame flows |
+  | `flow_resolve.c` | Apply-cores: the state half of each prompt flow |
+  | `player_io.c` | The player-IO request queue every consumer drains |
   | `spells_adventure.c` | Adventure-mode spell effects |
   | `savegame.c` | JSON save read/write |
   | `savepath.c` | OS-aware save dir resolution |
@@ -229,25 +251,32 @@ except where a deviation is explicitly flagged (§34).
   | `fatal.c` | Fatal-error helper |
   | `host_noop.c` | Default no-op host callbacks (headless consumers) |
 
-- **REQ-071.** Engine public headers (`engine/include/`): `game.h`, `map.h`,
-  `fog.h`, `adventure.h`, `step.h`, `combat.h`, `flows.h`, `savegame.h`,
-  `savepath.h`, `state_serialize.h`, `tables.h`, `resources.h`, `tile.h`,
-  `pending.h`, `pack.h`, `spells_adventure.h`, `assets_bytes.h`,
+- **REQ-071.** Engine public headers (`engine/include/`) have been:
+  `game.h`, `game_fwd.h`, `map.h`, `fog.h`, `adventure.h`, `step.h`,
+  `combat.h`, `flows.h`, `flow_answer.h`, `flow_resolve.h`, `player_io.h`,
+  `savegame.h`, `savepath.h`, `state_serialize.h`, `tables.h`, `resources.h`,
+  `tile.h`, `pending.h`, `pack.h`, `spells_adventure.h`, `assets_bytes.h`,
   `end_screen.h`, `ui_host.h`, `view_kind.h`, `dwelling_kind.h`, `fatal.h`.
   Plus `engine/headless/` (raylib stub headers `raylib.h`, `raylib_stub.h`,
   `input_keys.h`) for headless builds.
 
-- **REQ-072.** Shell sources (`src/*.c`): `main.c` (CLI + init + main loop);
-  the `shell_*` flow modules (`shell_menu`, `shell_tempdeath`, `shell_weekend`,
-  `shell_audience`, `shell_cheats`, `shell_fastquit`, `shell_frame`,
-  `shell_promptdispatch`, `shell_actions`, `shell_earlyexit`); `combat_loop` +
-  `combat_render`; `views` + `views_render`; `overlay`, `hud`, `chrome`,
-  `map_render`, `ui`, `prompt`, `input`, `startup`, `end_cartoon`,
-  `pack_select`, `assets`, `audio`, `screenshot`, `sprites`, `tile_cache`,
-  `palette`, `bfont`, `recorder`, `frame_host`, `input_host`, `encode_dialog`,
-  `encode_mp4*`. The `src/screens/` subdirectory holds location/dialog screen
-  modules (`home_castle`, `own_castle`, `recruit_soldiers`, `dwelling`,
-  `alcove`, `end_game`).
+- **REQ-072.** Shell sources (`src/*.c`) have been: `main.c` (CLI + init +
+  main loop); the `shell_*` flow modules (`shell_menu`, `shell_tempdeath`,
+  `shell_weekend`, `shell_audience`, `shell_cheats`, `shell_gate`,
+  `shell_fastquit`, `shell_frame`, `shell_promptdispatch`, `shell_actions`,
+  `shell_earlyexit`, `shell_gallery`, and the agent adapters `shell_demo` and
+  `shell_autoplay`); `combat_loop`, `combat_render`, `combat_replay`; `views`
+  + `views_render`; `overlay`, `hud`, `chrome`, `lattice`, `map_render`, `ui`,
+  `prompt`, `select`, `textsel`, `text`, `input`, `touch`, `startup`,
+  `end_cartoon`, `pack_select`, `assets`, `audio`, `screenshot`, `sprites`,
+  `tile_cache`, `tilevar`, `palette`, `bfont`, `layout`, `present`,
+  `safe_area`, `recorder`, `encode_dialog`, `encode_mp4*`; the raylib side of
+  the platform seams (`gfx_raylib`, `frame_host`, `input_host`,
+  `audio_raylib`, `font_raylib`); and `plat_android` / `plat_ios`. The
+  subdirectories have held the modern draw layer and screens (`src/modern/`),
+  the frozen legacy draw layer (`src/legacy/`), and the shared location and
+  dialog screen modules (`src/screens/`: `home_castle`, `own_castle`,
+  `recruit_soldiers`, `dwelling`, `alcove`, `end_game`).
 
 ### 1.9 Important global state
 
@@ -260,18 +289,18 @@ except where a deviation is explicitly flagged (§34).
 
 ### 1.10 Engine choices vs OpenKB
 
-- **REQ-090.** OpenBounty descends from OpenKB but diverges deliberately. These
-  are intended architectural choices, not bugs:
+- **REQ-090.** OpenBounty has descended from OpenKB but diverged
+  deliberately. These have been intended architectural choices, not bugs:
 
   | Concern | OpenKB | OpenBounty |
   |---|---|---|
-  | Window / render | SDL 1.2 | raylib 6 |
-  | Audio | SDL_mixer | raylib audio |
+  | Window / render | SDL 1.2 | raylib 6; native Metal on iOS |
+  | Audio | SDL_mixer | raylib audio; AVAudioEngine on iOS |
   | Net | SDL_net (combat) | none |
-  | Saves | 20,421-byte binary | JSON (version 8) |
+  | Saves | 20,421-byte binary | JSON (version 11) |
   | Asset bundling | DOS `.CC` packs / module dirs | single `assets/kings-bounty/` tree + `.openbounty` packs |
   | Module system | discovery + chain-of-responsibility loader | N/A, one active pack |
-  | Render target | 320×200, scaled | 320×200, integer-scaled to a 640×400 base window |
+  | Render target | 320×200, scaled | legacy: 320×200, integer-scaled to a 640×400 base window; modern: the pack's declared buffer at the largest whole scale (REQ-528) |
   | Palette | EGA / CGA / Hercules build-time | VGA only at runtime |
   | RNG | libc `rand()` | Java-style LCG seeded from `g->seed` |
   | Tile data | 128-byte tile-id space | per-tile struct (terrain + interact + flags) |
@@ -293,27 +322,28 @@ except where a deviation is explicitly flagged (§34).
 
 ### 2.2 Endian
 
-- **REQ-101.** Gameplay state has been endian-independent: saves are JSON text,
-  not raw memory dumps, so no byte-order handling has been required at the
-  gameplay layer. The vendored miniz handles ZIP byte order internally.
+- **REQ-101.** Gameplay state has been endian-independent: saves have been
+  JSON text, not raw memory dumps, so no byte-order handling has been required
+  at the gameplay layer. The vendored miniz has handled ZIP byte order
+  internally.
 
 ### 2.3 String identifiers
 
 - **REQ-102.** Catalog entries (troops, spells, castles, towns, villains,
   artifacts, classes, zones) have been referenced by **string id**
-  (lowercase snake_case), not array index. Ids are stable across pack versions
-  and are what appear in save files (`troop_id: "knights"`). This keeps saves
-  readable and pack-portable.
+  (lowercase snake_case), not array index. Ids have been stable across pack
+  versions and have been what appears in save files (`troop_id: "knights"`).
+  This has kept saves readable and pack-portable.
 - **REQ-103.** String ids have been stored in fixed-size char arrays
   (commonly `[24]` or `[32]`; see the per-struct field widths in §4). An empty
   id (`id[0] == '\0'`) has meant "no entry / empty slot".
 
 ### 2.4 Memory ownership
 
-- **REQ-104.** `Game` has owned its inline state by value. `Game.res` has been
-  a borrowed pointer into the process-lifetime `Resources` (never freed by the
+- **REQ-104.** `Game` has owned its tables (REQ-041). `Game.res` has been a
+  borrowed pointer into the process-lifetime `Resources` (never freed by the
   game, never mutated). `Map` and `Fog` have been owned by the shell's main
-  loop, not by `Game`. The engine has allocated no per-game heap.
+  loop, not by `Game`.
 
 ### 2.5 Numeric ranges
 
@@ -328,39 +358,42 @@ except where a deviation is explicitly flagged (§34).
 
 ### 3.1 No limit on content
 
-- **REQ-110.** Nothing a pack lists has a compile-time cap. Catalogs (troops,
-  spells, classes, villains, artifacts, towns, castles, zones and every
-  per-zone object list), maps and their string pools, fog, and game state
-  (towns, castles, spellbook, artifacts, villains, zones, contract cycle,
-  consumed tiles, dwellings, placements, foes, the player-IO queue) are heap,
-  sized from the pack or grown in play. `Game`, `Map` and `Fog` are copied
-  only with `GameCopy` / `FogCopy` / `MapAlloc` and released with `GameFree` /
-  `FogFree` / `MapFree`; a test fails the build on a by-value copy.
+- **REQ-110.** Nothing a pack lists has had a compile-time cap. Catalogs
+  (troops, spells, classes, villains, artifacts, towns, castles, zones and
+  every per-zone object list), maps and their string pools, fog, and game
+  state (towns, castles, spellbook, artifacts, villains, zones, contract
+  cycle, consumed tiles, dwellings, placements, foes, the player-IO queue)
+  have been heap, sized from the pack or grown in play. `Game`, `Map` and
+  `Fog` have been copied only with `GameCopy` / `FogCopy` / `MapAlloc` and
+  released with `GameFree` / `FogFree` / `MapFree`; a test has failed the
+  build on a by-value copy.
 - **REQ-111.** Tunable constants that *define gameplay* (day/week lengths,
-  costs, contract cycle length, difficulty table, hostile armies per zone) live
-  in `game.json` and are read through `g->res`.
+  costs, contract cycle length, difficulty table, hostile armies per zone)
+  have lived in `game.json` and been read through `g->res`.
 
-### 3.2 What stays fixed
+### 3.2 What has stayed fixed
 
 - **REQ-112.** Text field lengths (`RES_ID_LEN=32`, `RES_NAME_LEN=48`,
   `RES_PATH_LEN=128`, `RES_BANNER_LEN=320`, `GAME_NAME_LEN=16`, ...); an
-  over-long string is a load error. `RES_TILE_CODE_COUNT=256` (a map cell is
-  one byte); a map holds at most 65,535 distinct strings (a tile field is 16
-  bits).
+  over-long string has been a load error. `RES_TILE_CODE_COUNT=256` (a map
+  cell is one byte); a map has held at most 65,535 distinct strings (a tile
+  field is 16 bits).
 - **REQ-113.** Game rules: `GAME_ARMY_SLOTS=5`, the 6×5 combat field,
   `CLASS_MAX_RANKS=4`, four difficulties, four continent tiers
   (`RES_SPAWN_TIERS`, chest odds), the 5×5 puzzle grid, seven options.
-  Autoplay and the demo player keep their own table sizes and ignore content
-  beyond them. The shipped `kings-bounty` pack has 25 troops, 14 spells,
-  4 classes, 17 villains, 8 artifacts (§Appendix A).
+  Autoplay and the demo player have kept their own table sizes and ignored
+  content beyond them. The `kings-bounty` pack has had 25 troops, 14 spells,
+  4 classes, 17 villains, 8 artifacts (§Appendix A); `glory-of-rome` has had
+  27 troops and the same 14 / 4 / 17 / 8.
 
 ### 3.4 Enums
 
 - **REQ-120.** `Difficulty` (`engine/include/game.h`): `DIFFICULTY_EASY=0`,
   `_NORMAL=1`, `_HARD=2`, `_IMPOSSIBLE=3`.
-- **REQ-121.** `Mount` (`engine/include/game.h`): `MOUNT_RIDE=0`, `MOUNT_SAIL`,
-  `MOUNT_FLY`. `TravelMode`: `TRAVEL_WALK=0`, `TRAVEL_BOAT`. `Mount` is the
-  long-term possession; `TravelMode` is the current movement state.
+- **REQ-121.** `Mount` (`engine/include/game.h`): `MOUNT_RIDE=0`,
+  `MOUNT_SAIL`, `MOUNT_FLY`. `TravelMode`: `TRAVEL_WALK=0`, `TRAVEL_BOAT`.
+  `Mount` has been the long-term possession; `TravelMode` the current
+  movement state.
 - **REQ-122.** `CastleOwnerKind` (`engine/include/game.h`):
   `CASTLE_OWNER_PLAYER=0`, `_MONSTERS`, `_VILLAIN`, `_SPECIAL`.
 - **REQ-123.** `Terrain` (`engine/include/tile.h`): `TERRAIN_GRASS=0`,
@@ -402,14 +435,15 @@ except where a deviation is explicitly flagged (§34).
 
 ### 3.8 Cost / time constants
 
-- **REQ-133.** Costs and time constants are data, not code. Cost defaults in
-  the shipped pack: `economy.boat_cost_normal=500`, `boat_cost_cheap=100`,
-  `siege_cost=3000`, `alcove_cost=5000` (§23, §Appendix A). Time:
-  `time.day_steps=40`, `week_days=5`, `days_per_difficulty=[900,600,400,200]`.
-  Map dimensions have no ceiling: `Map.tiles` is heap, sized to each zone's
-  own `width`/`height`, and the save encodes fog from those (REQ-413). The
-  cost is memory: every autoplay search node copies the used map area
-  (AP-204), so the frontier beam pays proportionally.
+- **REQ-133.** Costs and time constants have been data, not code. Cost
+  defaults in `kings-bounty`: `economy.boat_cost_normal=500`,
+  `boat_cost_cheap=100`, `siege_cost=3000`, `alcove_cost=5000` (§23,
+  §Appendix A). Time: `time.day_steps=40`, `week_days=5`,
+  `days_per_difficulty=[900,600,400,200]`. Map dimensions have had no
+  ceiling: `Map.tiles` has been heap, sized to each zone's own
+  `width`/`height`, and the save has encoded fog from those (REQ-413). The
+  cost has been memory: every autoplay search node has copied the used map
+  area (AP-204), so the frontier beam has paid proportionally.
 
 ---
 
@@ -418,12 +452,13 @@ except where a deviation is explicitly flagged (§34).
 ### 4.1 Overview
 
 - **REQ-140.** `struct Game` (`engine/include/game.h`) has held the full
-  adventure-screen state. Its fields mirror the JSON save schema so
+  adventure-screen state. Its fields have mirrored the JSON save schema so
   serialization is 1:1 (§27). All enumerations have been keyed by string ids
   from `tables.h`, keeping save files readable and avoiding magic numbers.
-- **REQ-141.** The struct has **not** owned the map tiles or fog; those live in
-  `Map`/`Fog` (`engine/include/map.h`, `fog.h`). The game references them by
-  zone id; the caller loads the matching map when `position.zone` changes.
+- **REQ-141.** The struct has **not** owned the map tiles or fog; those have
+  lived in `Map`/`Fog` (`engine/include/map.h`, `fog.h`). The game has
+  referenced them by zone id; the caller has loaded the matching map when
+  `position.zone` changes.
 
 ### 4.2 Top-level fields
 
@@ -432,29 +467,35 @@ except where a deviation is explicitly flagged (§34).
   | Field | Type | Meaning |
   |---|---|---|
   | `res` | `const Resources *` | Loaded pack; never owned, never mutated |
-  | `version` | `int` | Always `SAVE_VERSION` (8) at runtime |
+  | `version` | `int` | Always `SAVE_VERSION` (11) at runtime |
   | `seed` | `uint64_t` | Expanded RNG seed for this game (derived from `seed_index`) |
   | `seed_from_catalog` | `bool` | False only on the raw-seed path (a caller pinned `seed` directly) |
   | `seed_index` | `int` | `0`–`255` catalog world when `seed_from_catalog` |
+  | `oracle_mode` | `bool` | Autoplay/demo session flag, never serialized: rank promotion fires on capture rather than only at an audience |
   | `character` | `Character` | Name, class+rank, difficulty, mount |
   | `stats` | `Stats` | Gold, leadership, spell power, day/step counters, options |
-  | `position` | `Position` | Zone id, `(x,y)`, `(last_x,last_y)`, facing |
+  | `position` | `Position` | Zone id, `(x,y)`, `(last_x,last_y)`, facing, the location screen the hero is in |
   | `travel_mode` | `TravelMode` | Walking vs in boat |
-  | `anim_frame` | `int` | 0..3, shared by hero + boat sprites |
+  | `anim_frame` / `anim_moving` | `int` / `bool` | Free-running animation tick shared by hero, boat and foes |
   | `hud_visible` | `bool` | Floating HUD bar toggle (persisted) |
-  | `army[5]` | `ArmyStack` | Player army stacks |
-  | `spells` | `Spellbook` | Per-spell charge counts (14) |
-  | `contract` | `Contract` | Active contract + rotation cycle |
-  | `artifacts` | `Artifacts` | Found flags (8) |
-  | `world` | `WorldProgress` | Zones discovered, orbs found, per-continent fog |
+  | `army[5]` | `ArmyStack` | The player's army |
+  | `spells` | `Spellbook` | Per-spell charge counts |
+  | `contract` | `Contract` | Active contract, rotation cycle, villains caught |
+  | `artifacts` | `Artifacts` | Found flags |
+  | `world` | `WorldProgress` | Zones discovered, rites known, orbs found, per-continent fog |
   | `boat` | `BoatState` | Rental flag + parked coords |
-  | `towns[26]` | `TownRecord` | Per-town visited + spell-for-sale |
-  | `castles[26]` | `CastleRecord` | Per-castle owner + garrison |
+  | `towns` + `town_count` | `TownRecord *` | Per-town visited + spell-for-sale, parallel to `res->towns` |
+  | `castles` + `castle_count` | `CastleRecord *` | Per-castle owner + garrison, parallel to `res->castles` |
   | `scepter` | `ScepterLocation` | Buried scepter zone + `(x,y)` |
-  | `consumed[1024]` + `consumed_count` | `TileMutation` | Permanently consumed tiles |
-  | `dwellings[64]` + `dwelling_count` | `DwellingState` | Per-dwelling recruit pools |
-  | `placements[128]` + `placement_count` | `SaltedPlacement` | Salt-time placements |
-  | `foes[160]` + `foe_count` | `FoeState` | Hostile + friendly foe rows (all four continents share the flat table) |
+  | `consumed` + `consumed_count` | `TileMutation *` | Permanently consumed tiles |
+  | `events_done` + `events_done_count` | `EventFired *` | One-time vistas already played (zone + event id) |
+  | `dwellings` + `dwelling_count` | `DwellingState *` | Per-dwelling recruit pools |
+  | `placements` + `placement_count` | `SaltedPlacement *` | Salt-time placements |
+  | `foes` + `foe_count` | `FoeState *` | Hostile + friendly foe rows (all continents share the one table) |
+  | `player_io` | `PlayerIoQueue` | The player-IO request queue (engine/include/player_io.h) |
+
+  Every pointer field has been heap with a `*_count` beside it (and a `*_cap`
+  for the lists that grow in play, REQ-041).
 
 ### 4.3 Sub-struct field semantics
 
@@ -463,61 +504,70 @@ except where a deviation is explicitly flagged (§34).
   `spell_power`, `max_spells`, `knows_magic` (bool), `siege_weapons` (flag),
   `time_stop` (overworld steps where the day does not advance),
   `steps_left_today`, `days_left`, `game_over` (set when `days_left` hits 0),
-  `last_commission` and `last_astrology_troop` (UI carry from the most recent
-  week-end), and `options[7]` (the controls-menu settings, persisted per game,
-  parallel to `res->controls.items[]`).
+  `won` (set when the scepter is recovered), `last_commission` and
+  `last_astrology_troop` (UI carry from the most recent week-end), `blessed`
+  and `tributes` (the modern audience's Blessing and Tribute), and
+  `options[7]` (the controls-menu settings, persisted per game, parallel to
+  `res->controls.items[]`).
 - **REQ-144.** `Character` has held: `name[16]`, `cls` (a `ClassState`:
   class id, `rank_index` 0..3, denormalized `rank_id` + `rank_title`),
   `difficulty`, and `mount`.
 - **REQ-145.** `Position` has held `zone[24]`, `x`, `y`, `last_x`, `last_y`
-  (previous tile, for bump-back), and `facing_left`.
-- **REQ-146.** `ArmyStack` has held `id[32]` (troop id; empty = empty slot) and
-  `count`. `Unit` (used inside garrisons and foe rows) has held `id[24]` and
-  `count`.
-- **REQ-147.** `Spellbook` has held `counts[14]`, parallel to the 14-spell
-  catalog. `GameKnownSpells` sums them.
+  (previous tile, for bump-back), `facing_left` and `facing`, and the
+  location the hero is standing in: `in_town`, `home_castle`, `own_castle`,
+  and `dwelling_troop` with `dwelling_x`, `dwelling_y`.
+- **REQ-146.** `ArmyStack` has held `id[32]` (troop id; empty = empty slot)
+  and `count`. `Unit` (used inside garrisons and foe rows) has held `id[24]`
+  and `count`.
+- **REQ-147.** `Spellbook` has held `count` and `counts` (heap), parallel to
+  the spell catalog. `GameKnownSpells` has summed them.
 - **REQ-148.** `Contract` has held `active_id[24]` (current contract, empty =
-  none), `cycle[CONTRACT_CYCLE_MAX][24]` (rotation buffer; real length from
+  none), `cycle` (heap, `cycle_count` entries; length from
   `res->contract.cycle_length`), `last_contract` (last slot issued),
-  `max_contract` (next villain to rotate in), and `villains_caught[17]`.
-- **REQ-149.** `Artifacts` has held `found[8]`, parallel to the artifact
-  catalog. `WorldProgress` has held `zones_discovered[4]`, `orbs_found[4]`, and
-  `continent_fog[4]` (per-continent fog snapshots; the active continent's fog
-  lives in the shell's standalone `Fog` and is swapped in/out on zone change).
-  The puzzle view derives its reveal state directly from
-  `contract.villains_caught[]` + `artifacts.found[]`, there is no separate
+  `max_contract` (next villain to rotate in), and `villains_caught` and
+  `villains_prefought` (heap, `villain_count` entries, indexed by
+  `VillainDef.index`).
+- **REQ-149.** `Artifacts` has held `count` and `found` (heap), parallel to
+  the artifact catalog. `WorldProgress` has held `zone_count` and, per zone,
+  `zones_discovered`, `zone_rites` (the Augur's rites, modern), `orbs_found`,
+  and `continent_fog` (per-continent fog snapshots; the active continent's
+  fog has lived in the shell's standalone `Fog` and been swapped in/out on
+  zone change). The puzzle view has derived its reveal state directly from
+  `contract.villains_caught` + `artifacts.found`; there has been no separate
   puzzle-reveal bookkeeping.
 - **REQ-150.** `BoatState`: `has_boat`, `x`, `y`, `zone[24]`.
   `ScepterLocation`: `zone[24]`, `x`, `y`, and `key` (XOR key kept for
   save-load parity).
 - **REQ-151.** `TownRecord`: `id[24]`, `visited`, `spell_for_sale[24]`.
-  `CastleRecord`: `id[24]`, `visited`, `known` (revealed by Find Villain etc.),
-  `owner_kind`, `villain_id[24]` (when owner is a villain), `garrison[5]`.
+  `CastleRecord`: `id[24]`, `visited`, `known` (revealed by Find Villain
+  etc.), `owner_kind`, `villain_id[24]` (when owner is a villain),
+  `garrison[5]`.
 - **REQ-152.** `TileMutation`: `zone[24]`, `x`, `y`, a tile permanently
-  consumed (artifact picked up, chest opened). On load the caller re-applies
-  these so the tile renders and behaves as plain terrain.
+  consumed (artifact picked up, chest opened). On load the caller has
+  re-applied these so the tile renders and behaves as plain terrain.
 - **REQ-153.** `DwellingState`: `zone[24]`, `x`, `y`, `troop_id[32]`
   (deterministic, set on first visit), `count` (current available recruits),
   `max_population`.
 - **REQ-154.** `SaltedPlacement`: `zone[24]`, `x`, `y`, `kind` (an `Interact`
-  enum value stored as `int` for save stability), `id[32]` (payload, troop id
-  for a dwelling, artifact id, etc.; may be empty).
+  enum value stored as `int` for save stability), `id[32]` (payload, troop
+  id for a dwelling, artifact id, etc.; may be empty).
 - **REQ-155.** `FoeState`: `zone[24]`, `x`, `y`, `placement_id[32]`,
   `garrison[5]`, `alive`, `friendly` (true → recruit dialog; false → attack
-  prompt). Friendly and hostile foes share the one `foes[]` table;
-  classification is by the `friendly` flag.
+  prompt). Friendly and hostile foes have shared the one `foes` table;
+  classification has been by the `friendly` flag.
 
 ### 4.4 Invariants
 
 - **REQ-156.** `version` has always equalled `SAVE_VERSION` at runtime.
 - **REQ-157.** An empty army/garrison slot has been encoded by `id[0]=='\0'`
-  and/or `count==0`. `GameCompactArmy` keeps non-empty stacks contiguous at the
-  front, preserving order.
-- **REQ-158.** The player army has never been allowed to become entirely empty
-  through garrisoning (`GameGarrisonTroop` refuses the last stack); it can
-  become empty only through defeat / dismiss-last, which triggers temp death.
-- **REQ-159.** Save schema parity: every persisted field above has a 1:1 JSON
-  representation; serialization round-trips without loss (§27).
+  and/or `count==0`. `GameCompactArmy` has kept non-empty troops contiguous
+  at the front, preserving order.
+- **REQ-158.** The player army has never been allowed to become entirely
+  empty through garrisoning (`GameGarrisonTroop` refuses the last troop); it
+  has become empty only through defeat / dismiss-last, which triggers temp
+  death.
+- **REQ-159.** Save schema parity: every persisted field above has had a 1:1
+  JSON representation; serialization has round-tripped without loss (§27).
 
 ---
 
@@ -541,16 +591,17 @@ except where a deviation is explicitly flagged (§34).
   pack supplies none). Driven by `src/startup.c`.
 - **REQ-163.** **CLASS SELECT** has presented four classes (`A`/`B`/`C`/`D`
   for Knight/Paladin/Sorceress/Barbarian) plus `L` for Load and `Esc` to quit.
+  In modern mode choosing a class has been two steps (REQ-532).
 - **REQ-164.** `L` has opened the **SAVE PICKER** (10 slots, 0..9, plus a
-  "New" row); an existing slot loads, an empty slot or "New" falls through to
-  character creation.
+  "New" row); an existing slot has loaded, and an empty slot or "New" has
+  fallen through to character creation.
 - **REQ-165.** **CHARACTER CREATION**: name entry (first letter capitalised),
   difficulty selection (Easy/Normal/Hard/Impossible, shown with starting days
   and score multiplier), and an intro banner.
 - **REQ-166.** A pack has held a catalog of 256 worlds, selected by an 8-bit
-  index. `--seed N` has supplied that index directly (`0`–`255`); out-of-range,
-  negative, or unparseable values have printed a notice and fallen back to
-  world 0. Without `--seed`, the index has been `(time(NULL) XOR hash(name) XOR
+  index. `--seed N` has supplied that index directly (`0`–`255`); an
+  out-of-range, negative, or unparseable value has been a hard error (exit 2,
+  `src/main.c`). Without `--seed`, the index has been `(time(NULL) XOR hash(name) XOR
   class_index) AND 0xFF`. `GameInitSeeded` has expanded the index into
   `Game.seed` via `GameSeedFromIndex` (REQ-181a) and recorded it in
   `Game.seed_index`; `GameInit` has remained the raw-seed path, honoring a
@@ -559,30 +610,35 @@ except where a deviation is explicitly flagged (§34).
 - **REQ-167.** **ADVENTURE** has been the main loop, exited only by combat
   trigger or game end (win via search-on-scepter; loss via `days_left == 0`).
 - **REQ-168.** **COMBAT** has run a separate state machine (§25) on a tactical
-  grid; on completion, control returns to adventure with results applied.
+  grid; on completion, control has returned to adventure with results
+  applied.
 - **REQ-169.** **END GAME** has shown a win cartoon (§26.5) or a lose dialog
-  with the final score; any key returns to title and ultimately **EXIT**.
+  with the final score; any key has returned to title and ultimately
+  **EXIT**.
 
 ### 5.3 Main loop
 
 - **REQ-170.** Each frame has performed, in order: harness tick (§35), audio
-  tick, `Alt+Enter` fullscreen toggle, `F10` cheat-menu toggle (§31), input
-  dispatch, animation update, render to the 320×200 offscreen target, blit to
-  the window with integer scaling. Per-frame draw dispatch is `src/shell_frame.c`.
-- **REQ-171.** The window has been initialised at **640×400**
+  tick, `Alt+Enter` fullscreen toggle, input dispatch, animation update,
+  render to the offscreen target (320×200 in legacy, the pack's buffer in
+  modern), blit to the window at a whole-number scale. Per-frame draw
+  dispatch has been `src/shell_frame.c`.
+- **REQ-171.** In legacy mode the window has been initialised at **640×400**
   (`CL_WINDOW_W/H` = `CL_SCREEN_W/H` × `CL_SCALE` = 320×200 × 2;
-  `src/layout.h`) with `FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT`, minimum
-  size 320×200, target FPS 60, and `KEY_NULL` as the raylib exit key (so
-  `Escape` does not close the window). The window size is fixed in code, not a
-  `game.json` field.
+  `src/layout.h`); in modern mode at the declared buffer times the largest
+  whole scale the monitor can show (REQ-528). In both, the window has been
+  created with `FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT`, target FPS 60, and
+  `KEY_NULL` as the raylib exit key (so `Escape` does not close the
+  window).
 - **REQ-172.** Input dispatch has followed a strict overlay hierarchy
   (highest priority first): fast-quit prompt → active prompt → active view →
   active dialog → adventure-mode actions → movement.
 - **REQ-173.** HUD visibility has been remembered when an overlay opens:
-  `hud_visible` is forced false and restored to the player's setting on dismiss.
+  `hud_visible` has been forced false and restored to the player's setting on
+  dismiss.
 - **REQ-174.** Animation frames (`Game.anim_frame`) have advanced at intervals
   of `0.05 + options[0] * 0.05` s (0.05..0.30 s); with the animation toggle
-  (`options[3]`) off, `anim_frame` stays 0.
+  (`options[3]`) off, `anim_frame` has stayed 0.
 
 ---
 
@@ -592,13 +648,14 @@ except where a deviation is explicitly flagged (§34).
 
 - **REQ-180.** A single deterministic Java-style LCG has driven all world
   randomness (`engine/game.c`): `state = (state * 25214903917 + 11) &
-  0xFFFFFFFFFFFFFFFF`; `result = state >> 32`. It is a process-global state
-  snapshot/restorable via `GameRngSnapshot` / `GameRngRestore` (§36).
+  0xFFFFFFFFFFFFFFFF`; `result = state >> 32`. It has been process-global
+  state, snapshot/restorable via `GameRngSnapshot` / `GameRngRestore` (§36).
 - **REQ-181.** The PRNG has been seeded from `Game.seed` XORed with
   `0x5DEECE66D` at game start.
 - **REQ-181a.** `GameSeedFromIndex(index)` has expanded an 8-bit catalog index
   into the full-width `Game.seed` with a splitmix64 finalizer. The expansion has
-  been required, not cosmetic: the engine reads the seed at three widths, `(seed >> 8)` for spawn rolls (REQ-186a), `(unsigned)` truncation in
+  been required, not cosmetic: the engine has read the seed at three widths,
+  `(seed >> 8)` for spawn rolls (REQ-186a), `(unsigned)` truncation in
   `chest_rand` / the dwelling pick / the weekly growth salt, and all 64 bits in
   the LCG (REQ-180), so a raw `0`–`255` seed would supply `(seed >> 8)` a
   constant 0 for every world. All 256 indices have stayed distinct through each
@@ -609,25 +666,26 @@ except where a deviation is explicitly flagged (§34).
   inclusive range `[min, max]`.
 - **REQ-183.** A per-tile hash (`chest_rand(game, x, y, salt)`) has produced a
   deterministic per-tile value from `(seed, x, y, salt)`, so re-rolling the
-  same chest yields the same outcome until consumed.
+  same chest has yielded the same outcome until consumed.
 - **REQ-184.** Combat has used an **independent** LCG state (`Combat.rng_state`,
-  §25.14) so combat rolls never advance the world RNG.
+  §25.14) so combat rolls have never advanced the world RNG.
 
 ### 6.2 Determinism guarantees
 
-- **REQ-185.** Given the same catalog index (or raw seed) and the same sequence of player inputs, the
-  entire game has been reproduced bit-for-bit (floating point is used only for
-  animation and rendering, never gameplay).
+- **REQ-185.** Given the same catalog index (or raw seed) and the same
+  sequence of player inputs, the entire game has been reproduced bit-for-bit
+  (floating point has been used only for animation and rendering, never
+  gameplay).
 - **REQ-186.** All randomised game-start placements (zones, villains, scepter,
-  dwellings, foes, telecaves, navmaps, orbs, artifacts, town spells) derive
-  from `seed`, so loading a save restores identical placements. A catalog save
-  has stored `seed_index` rather than `seed` and re-derived the seed on load
-  (REQ-166); this is exact, whereas a raw `seed` is written as a JSON number and
-  so is lossy above 2^53.
+  dwellings, foes, telecaves, navmaps, orbs, artifacts, town spells) have
+  derived from `seed`, so loading a save has restored identical placements. A
+  catalog save has stored `seed_index` rather than `seed` and re-derived the
+  seed on load (REQ-166); this has been exact, whereas a raw `seed` written as
+  a JSON number has been lossy above 2^53.
 - **REQ-186a.** Town spell selection has computed `(seed XOR (slot + 1)) mod
-  spells_count()` in `uint64_t`. `unsigned long` was not used: it is 32-bit on
-  Windows and 64-bit elsewhere, which gave one world different town spells per
-  platform once the seed carried entropy above bit 31.
+  spells_count()` in `uint64_t`, never `unsigned long`: that type has been
+  32-bit on Windows and 64-bit elsewhere, so it would give one world different
+  town spells per platform once the seed carries entropy above bit 31.
 - **REQ-187.** Real-time animation, audio, and rendering have not affected
   gameplay state.
 
@@ -651,7 +709,7 @@ except where a deviation is explicitly flagged (§34).
   (4) if `steps_left_today <= 0`, fired the day rollover.
 - **REQ-192.** Day rollover has decremented `days_left`, reset
   `steps_left_today` to `time.day_steps`, and set `game_over = true` when
-  `days_left` reaches 0. A week boundary is detected when `days_left %
+  `days_left` reaches 0. A week boundary has been detected when `days_left %
   week_days == 0`, firing week-end processing (§24).
 
 ### 7.3 Time spend helpers
@@ -659,12 +717,12 @@ except where a deviation is explicitly flagged (§34).
 - **REQ-193.** `GameSpendDays(g, n, &paid)` has spent `n` days (firing one day
   rollover each), accumulating commission paid into `*paid`.
   `GameSpendWeek(g, &paid)` has spent enough days to cross exactly one week
-  boundary; used by End Week and by zone-switch sailing.
+  boundary; End Week and zone-switch sailing have used it.
 - **REQ-194.** Search (key `S`) has cost 10 days regardless of result, except
   that revealing the buried scepter ends the game as a win immediately.
 - **REQ-195.** `time_stop` has been reset to 0 at every day rollover, except
-  that the Time Stop spell applies its bonus before the rollover and so carries
-  over until consumed.
+  that the Time Stop spell has applied its bonus before the rollover and so
+  carried over until consumed.
 
 ---
 
@@ -672,21 +730,22 @@ except where a deviation is explicitly flagged (§34).
 
 ### 8.1 Classes
 
-- **REQ-200.** Exactly four classes: Knight (0), Paladin (1), Sorceress (2),
-  Barbarian (3), declared in `game.json:classes[]`.
-- **REQ-201.** Each class has a `starting_gold` and a `starting_troops` array.
-  Initial values: Knight 7,500g (20 militia, 2 archers); Paladin 10,000g
-  (20 peasants, 20 militia); Sorceress 10,000g (30 peasants, 10 sprites);
-  Barbarian 7,500g (20 wolves). (See §Appendix A for the catalog values.)
-- **REQ-202.** Each class has four ranks (0..3) with fields `id`, `name`,
+- **REQ-200.** There have been exactly four classes: Knight (0), Paladin (1),
+  Sorceress (2), Barbarian (3), declared in `game.json:classes[]`.
+- **REQ-201.** Each class has had a `starting_gold` and a `starting_troops`
+  array. Initial values: Knight 7,500g (20 militia, 2 archers); Paladin
+  10,000g (20 peasants, 20 militia); Sorceress 10,000g (30 peasants, 10
+  sprites); Barbarian 7,500g (20 wolves). (See §Appendix A for the catalog
+  values.)
+- **REQ-202.** Each class has had four ranks (0..3) with fields `id`, `name`,
   `villains_needed`, `leadership`, `max_spells`, `spell_power`, `commission`,
   `knows_magic`, `instant_army` (troop catalog index for Instant Army).
-  `ClassDef` / `RankDef` are defined in `engine/include/tables.h`.
+  `ClassDef` / `RankDef` have been defined in `engine/include/tables.h`.
 
 ### 8.2 Per-rank tables
 
-- **REQ-203.** The four classes follow these per-rank tables (delta values;
-  cumulative stats accumulate by summing rank 0..n).
+- **REQ-203.** The four classes have followed these per-rank tables (delta
+  values; cumulative stats accumulate by summing rank 0..n).
 
 **Knight:**
 
@@ -729,42 +788,44 @@ except where a deviation is explicitly flagged (§34).
 - **REQ-204.** `leadership_base` has been the sum of `leadership` deltas
   through the current rank; `leadership_current` has been the live value,
   modified by alcove, Raise Control, chest leadership, and combat losses.
-- **REQ-205.** `commission_weekly` has been the cumulative `commission` deltas,
-  optionally augmented by the `INCREASE_COMMISSION` artifact (§20.4).
-- **REQ-206.** `max_spells` and `spell_power` accumulate similarly; the
-  `DOUBLE_MAX_SPELLS` and `DOUBLE_SPELL_POWER` artifacts apply a multiplicative
-  doubling on pickup.
+- **REQ-205.** `commission_weekly` has been the cumulative `commission`
+  deltas, optionally augmented by the `INCREASE_COMMISSION` artifact (§20.4).
+- **REQ-206.** `max_spells` and `spell_power` have accumulated similarly; the
+  `DOUBLE_MAX_SPELLS` and `DOUBLE_SPELL_POWER` artifacts have applied a
+  multiplicative doubling on pickup.
 - **REQ-207.** `knows_magic` has been initialised from the rank-0 class flag;
-  only the Sorceress sets it true at creation. Any class can learn magic at the
-  Archmage Aurange alcove (§18.5).
+  only the Sorceress has set it true at creation. Any class has been able to
+  learn magic at the Archmage Aurange alcove (§18.5).
 
 ### 8.4 Rank-up
 
 - **REQ-208.** After each villain capture, `GameMaybeRankUp` has checked the
   next rank's `villains_needed`; while `villains_caught >=
-  ranks[rank+1].villains_needed`, the rank advances and stats recompute. On
-  rank-up, `leadership_base`/`commission_weekly`/`max_spells`/`spell_power`
-  recompute cumulatively and `leadership_current` resets to the new
-  `leadership_base`. Rank advancement opens no popup of its own; the King's
-  audience (§17.7) reports it on the next visit.
+  ranks[rank+1].villains_needed`, the rank has advanced and stats have
+  recomputed. On rank-up, `leadership_base`/`commission_weekly`/`max_spells`/
+  `spell_power` have gained the new ranks' deltas additively, so every
+  chest-accumulated bonus survives, and `leadership_current` has gained the
+  same delta. Rank advancement has opened no popup of its own; the King's
+  audience (§17.7) has reported it on the next visit. Outside autoplay and
+  demo (`Game.oracle_mode`), promotion has happened only at an audience.
 
 ### 8.5 Instant-army count formula
 
-- **REQ-209.** Instant Army (the adventure spell, §19.4) summons
+- **REQ-209.** Instant Army (the adventure spell, §19.4) has summoned
   `class.ranks[rank].instant_army` troops with count `(spell_power + 1) *
   instant_army_multiplier[rank]`, multiplier `[3, 2, 1, 1]` for ranks 0..3
   (minimum 1).
 
 ### 8.6 Difficulty and mount
 
-- **REQ-210.** `Difficulty` affects `days_left` (§7.1) and the final score
-  multiplier (§26.2) only, not starting gold, army, garrisons, foe spawn
+- **REQ-210.** `Difficulty` has affected `days_left` (§7.1) and the final
+  score multiplier (§26.2) only, not starting gold, army, garrisons, foe spawn
   rates, or chest contents.
 - **REQ-211.** The mount has been one of `MOUNT_RIDE` (walking, default),
   `MOUNT_SAIL` (boat), `MOUNT_FLY` (flying). Flying (key `F`) has required
-  `GamePlayerCanFly` (every non-empty stack has `TROOP_ABIL_FLY` and
-  `skill_level >= 2`); landing (key `L`) has required a grass, non-interactive,
-  non-foot-blocking destination tile.
+  `GamePlayerCanFly` (every non-empty troop has `TROOP_ABIL_FLY` and
+  `skill_level >= 2`); landing (key `L`) has required a grass,
+  non-interactive, non-foot-blocking destination tile.
 
 ---
 
@@ -772,174 +833,184 @@ except where a deviation is explicitly flagged (§34).
 
 ### 9.1 Zones
 
-- **REQ-220.** The world has consisted of four zones: `continentia`,
-  `forestria`, `archipelia`, `saharia` (`game.json:zones[]`), each 64×64 tiles.
+- **REQ-220.** The world has consisted of the pack's zones
+  (`game.json:zones[]`): `kings-bounty` has four, `continentia`, `forestria`,
+  `archipelia`, `saharia`, each 64×64 tiles; `glory-of-rome` has four,
+  `italia` (64×128), `galliae` (64×64), `africa` (64×28) and `oriens` (64×44).
 - **REQ-221.** Each zone has declared: `id`, display `name`, `map_path`,
   `hero_spawn_x/y`, optional `home_spawn_x/y` + `is_home`, optional
   `magic_alcove_x/y`, `neighbors[]` (zone ids reachable by sailing), a `salt`
   config (§10), and per-feature lists (towns, castles, signs, chests,
-  dwellings, armies). Exactly one zone has `is_home: true` (Continentia).
-- **REQ-221b.** **One-time vistas (`events`).** A zone may declare `events`, a
-  list of one-time moments. Each has an `id`, a trigger tile `(x, y)`, a
-  `scene` image, a `title` and `body`, a `requires` list and an `effects` list.
-  Stepping onto the tile with every precondition held (`GameTryFireEvent`,
-  `engine/game.c`) spends what the preconditions mark `consume`, writes each
-  effect's `tile` (a `tile_codes` key) onto the map, records the id in
-  `events_done`, and queues the scene as a `PIO_NOTE_SCENE` with
-  `REQ_FACE_EVENT`, drawn full width with the pack's art and a single
-  Continue. It never fires again, and a vista never bounces the hero back.
-  Preconditions are `spell` (charges), `troop` (in the army), `gold` (held) and
-  `artifact` (found), each with a `count` and an optional `consume`; troops and
-  artifacts are held, never spent. An effect is either a `tile` (a tile_codes
-  key written onto the map) or `"reveal": true`, which lifts the fog over the
-  whole zone -- the fog is saved, so only tile effects are re-applied on load. `events_done` is saved, and
-  `GameApplyTileMutations` re-applies every played vista's tiles whenever the
-  zone loads, so the change outlives a zone switch and a reload. Lists are
-  heap, sized by the pack; a pack that declares none behaves exactly as before
-  (`kings-bounty` declares none). `glory-of-rome` declares the Rubicon (the
-  Pontifex rite, one charge, consumed, opens the bridge the Po plain is behind)
-  the Pharos of Alexandria (3,000 gold, paid, reveals the whole of Africa) and
-  the Temple of Ocean in Galliae (both of that zone's relics, held not spent:
-  the crag on the islet's near side becomes grass and two bridge tiles lay a
-  causeway to it).
-- **REQ-296a.** **A gate army may demand one arm.** A static army with
-  `"requires_troop": "<troop id>"` refuses the fight unless that troop stands
-  in the hero's army (`GameFoeBarsHero`, `engine/game.c`): stepping onto it
-  bounces the hero back with the `foe_requires_troop` banner, drawn as a scene
-  when the army also names one (`"scene"`, headed by its own `"title"` and
-  sharing the vistas' art list). A
-  dwelling may be pinned to a breed with `"troop"` instead of rolling from the
-  zone's pool. Autoplay treats the demand as a prerequisite candidate
-  (`exec_muster`, `autoplay/primitives.c`): it marches to the dwelling that
-  breeds the arm, gives up its weakest stack for a slot if the army is full,
-  and recruits what the purse and leadership allow. `glory-of-rome` holds the
-  Armenian pass against everything but the Elephanti, bred at Apamea, with
-  Artaxata behind it.
-- **REQ-230d.** **A chest may carry a declared purse.** A zone chest with
-  `"gold": N` always holds exactly N and rolls nothing (`GameRollChest`,
-  `engine/game.c`); the leadership offer stays N/50, doubled by the artifact
-  power as usual. Galliae's island chest holds 5,000.
-- **REQ-229h.** **A tile code may name its `ground`.** A landmark tile (the
-  Pharos) is transparent around its art, so its code names the art drawn under
-  it; `fill_tile_from_code` (`engine/map.c`) sets the tile's ground from it and
-  the renderer lays that down first, exactly as it does under an object tile.
-  Absent, a tile is its own ground, as terrain has always been.
-- **REQ-221d.** **Town backdrops per continent.** The town screen's picture is
-  the town's own `backdrop` when it names one, else its zone's `town_backdrop`,
-  else the pack's shared `sprites.ui.town_backdrop`
-  (`town_backdrop_for`, `src/modern/overlay.c`). All three are listed in the
-  art manifest, so the pack zip carries what it declares. `glory-of-rome` gives
-  each continent its own town street and keeps the original picture for Roma
-  alone; `kings-bounty` declares neither and draws the shared one as before.
-- **REQ-221c.** **Sailing is a scene, with a confirmation.** When a pack ships
-  `sprites.ui.sail_backdrop` and the string `body_navigate_confirm`, the modern
-  shell draws the sail-to decision as a scene over that picture: one row per
-  province plus Cancel, then a yes/no confirmation ("Sail for %ZONE%?") over
-  the same picture, drawn by `modern_overlay_draw_sail` (`src/modern/overlay.c`)
-  through the scene shape the foe view uses. The two steps live in the SHELL
-  (`src/shell_promptdispatch.c`): the engine still receives exactly one answer,
-  the province, so autoplay, recordings and replays are unchanged, and a pack
-  with neither key keeps the bottom-frame list (`kings-bounty`). Declining the
-  confirmation puts the province list back up; cancelling it ends the sail.
-- **REQ-221a.** **Arrival by origin.** A zone may declare `arrivals`, an
-  object keyed by the zone sailed from, each `{x, y}`. `GameSwitchZone`
-  lands the hero at the entry for the zone being left, else at `hero_spawn`
-  (`resources_zone_arrival`). A landing on water arrives in the boat, as
-  any water spawn does. Gate spells and defeat still override the landing
-  afterwards. `glory-of-rome` declares an arrival for every neighbour, each a
-  sea tile touching the coast beside the port a ship from there would make
-  for; `tools/mapbuild.py check` requires each to be on the open sea and
-  touching land, and counts its sea as sailed when proving the gates.
-  `kings-bounty` declares none and behaves exactly as before.
+  dwellings, armies). Exactly one zone has had `is_home: true` (Continentia;
+  Italia in Rome).
+- **REQ-221b.** **One-time vistas (`events`).** A zone has been able to
+  declare `events`, a list of one-time moments. Each has had an `id`, a
+  trigger tile `(x, y)`, a `scene` image, a `title` and `body`, a `requires`
+  list and an `effects` list. Stepping onto the tile with every precondition
+  held (`GameTryFireEvent`, `engine/game.c`) has spent what the
+  preconditions mark `consume`, written each effect's `tile` (a `tile_codes`
+  key) onto the map, recorded the id in `events_done`, and queued the scene as
+  a `PIO_NOTE_SCENE` with `REQ_FACE_EVENT`, drawn full width with the pack's
+  art and a single Continue. It has never fired again, and a vista has never
+  bounced the hero back. Preconditions have been `spell` (charges), `troop`
+  (in the army), `gold` (held) and `artifact` (found), each with a `count` and
+  an optional `consume`; troops and artifacts have been held, never spent. An
+  effect has been either a `tile` (a tile_codes key written onto the map) or
+  `"reveal": true`, which lifts the fog over the whole zone -- the fog is
+  saved, so only tile effects are re-applied on load. `events_done` has been
+  saved, and `GameApplyTileMutations` has re-applied every played vista's
+  tiles whenever the zone loads, so the change outlives a zone switch and a
+  reload. Lists have been heap, sized by the pack; `kings-bounty` has
+  declared none. `glory-of-rome` has declared the Rubicon (the Pontifex rite,
+  one charge, consumed, opens the bridge the Po plain is behind), the Pharos
+  of Alexandria (3,000 gold, paid, reveals the whole of Africa) and the Temple
+  of Ocean in Galliae (both of that zone's relics, held not spent: the crag on
+  the islet's near side becomes grass and two bridge tiles lay a causeway to
+  it).
+- **REQ-296a.** **A gate army has been able to demand one arm.** A static
+  army with `"requires_troop": "<troop id>"` has refused the fight unless that
+  troop stands in the hero's army (`GameFoeBarsHero`, `engine/game.c`):
+  stepping onto it has bounced the hero back with the `foe_requires_troop`
+  banner, drawn as a scene when the army also names one (`"scene"`, headed by
+  its own `"title"` and sharing the vistas' art list). A dwelling has been
+  pinnable to a breed with `"troop"` instead of rolling from the zone's pool.
+  Autoplay has treated the demand as a prerequisite candidate (`exec_muster`,
+  `autoplay/primitives.c`): it marches to the dwelling that breeds the arm,
+  gives up its weakest troop for a slot if the army is full, and recruits
+  what the purse and leadership allow. `glory-of-rome` has held the Armenian
+  pass against everything but the Elephanti, bred at Apamea, with Artaxata
+  behind it.
+- **REQ-230d.** **A chest has been able to carry a declared purse.** A zone
+  chest with `"gold": N` has always held exactly N and rolled nothing
+  (`GameRollChest`, `engine/game.c`); the leadership offer has stayed N/50,
+  doubled by the artifact power as usual. Galliae's island chest has held
+  5,000.
+- **REQ-229h.** **A tile code has been able to name its `ground`.** A
+  landmark tile (the Pharos) has been transparent around its art, so its code
+  names the art drawn under it; `fill_tile_from_code` (`engine/map.c`) has set
+  the tile's ground from it and the renderer has laid that down first, exactly
+  as it does under an object tile. Absent, a tile has been its own ground.
+- **REQ-221d.** **Town backdrops per continent.** The town screen's picture
+  has been the town's own `backdrop` when it names one, else its zone's
+  `town_backdrop`, else the pack's shared `sprites.ui.town_backdrop`
+  (`town_backdrop_for`, `src/modern/overlay.c`). All three have been listed in
+  the art manifest, so the pack zip carries what it declares. `glory-of-rome`
+  has given each continent its own town street and kept the original picture
+  for Roma alone; `kings-bounty` has declared neither and drawn the shared
+  one.
+- **REQ-221c.** **Sailing has been a scene, with a confirmation.** When a
+  pack ships `sprites.ui.sail_backdrop` and the string
+  `body_navigate_confirm`, the modern shell has drawn the sail-to decision as a
+  scene over that picture: one row per province plus Cancel, then a yes/no
+  confirmation ("Sail for %ZONE%?") over the same picture, drawn by
+  `modern_overlay_draw_sail` (`src/modern/overlay.c`) through the scene shape
+  the foe view uses. The two steps have lived in the SHELL
+  (`src/shell_promptdispatch.c`): the engine has received exactly one answer,
+  the province, so autoplay, recordings and replays see one decision, and a
+  pack with neither key has kept the bottom-frame list (`kings-bounty`).
+  Declining the confirmation has put the province list back up; cancelling it
+  has ended the sail.
+- **REQ-221a.** **Arrival by origin.** A zone has been able to declare
+  `arrivals`, an object keyed by the zone sailed from, each `{x, y}`.
+  `GameSwitchZone` has landed the hero at the entry for the zone being left,
+  else at `hero_spawn` (`resources_zone_arrival`). A landing on water has
+  arrived in the boat, as any water spawn does. Gate spells and defeat have
+  still overridden the landing afterwards. `glory-of-rome` has declared an
+  arrival for every neighbour, each a sea tile touching the coast beside the
+  port a ship from there would make for; `tools/mapbuild.py check` has
+  required each to be on the open sea and touching land, and counted its sea
+  as sailed when proving the gates. `kings-bounty` has declared none.
 
 ### 9.2 Coordinates
 
-- **REQ-222.** The origin is the top-left of each zone; `x` east, `y` south.
-  All gameplay coordinates are integer tile indices; there is no sub-tile
-  position.
+- **REQ-222.** The origin has been the top-left of each zone; `x` east, `y`
+  south. All gameplay coordinates have been integer tile indices; there has
+  been no sub-tile position.
 
 ### 9.3 Terrain
 
 - **REQ-223.** Terrain (`engine/include/tile.h`): `TERRAIN_GRASS`, `_FOREST`,
   `_MOUNTAIN`, `_WATER`, `_DESERT`.
 - **REQ-224.** Walkability on foot (`TerrainWalkable`, `engine/tile.c`): grass
-  and desert are walkable; forest, mountain, water are not. A grass tile
-  flagged `is_bridge` is walkable on foot and traversable in a boat. Stepping
-  onto a desert tile sets `steps_left_today = 0` immediately (§7.2).
+  and desert have been walkable; forest, mountain, water have not. A grass
+  tile flagged `is_bridge` has been walkable on foot and traversable in a
+  boat. Stepping onto a desert tile has set `steps_left_today = 0`
+  immediately (§7.2).
 
 ### 9.4 Interactive overlay
 
 - **REQ-225.** A tile has carried at most one interactive overlay (the
-  `Interact` enum, §3.4); `INTERACT_NONE` means none. Castle wall tiles are
-  non-interactive but set `blocks_foot = true`.
+  `Interact` enum, §3.4); `INTERACT_NONE` has meant none. Castle wall tiles
+  have been non-interactive but set `blocks_foot = true`.
 
 ### 9.5 Tile data
 
 - **REQ-226.** Each `Tile` (`engine/include/map.h`) has stored: `art` (sprite
-  filename root), `terrain` (derived from art at load via `TerrainFromArt`),
-  `interactive`, optional `id` (named instance, e.g. "kings_castle"),
-  `blocks_foot`, `is_bridge`, optional `sign_title` / `sign_body`, and
-  `boat_spawn_x/y` (for town tiles).
+  filename root), `ground` (the terrain art drawn beneath, REQ-229f),
+  `terrain` (derived from art at load via `TerrainFromArt`), `interactive`,
+  optional `id` (named instance, e.g. "kings_castle"), `blocks_foot`,
+  `is_bridge`, optional `sign_title` / `sign_body`, and `boat_spawn_x/y` (for
+  town tiles).
 
 ### 9.6 Map file format
 
-- **REQ-227.** Maps have been plain-text files (`assets/kings-bounty/maps/<zone>.dat`),
-  one ASCII byte per tile, row-major. Lines beginning with `#` and blank lines
-  are ignored. Each byte is looked up in `Resources.tile_codes[128]` to produce
-  an art name plus terrain/blocking flags; short rows are padded with grass.
-  The shipped pack uses 54 distinct tile codes (§Appendix A).
+- **REQ-227.** Maps have been plain-text files (`maps/<zone>.dat` in the
+  pack), one ASCII byte per tile, row-major. Lines beginning with `#` and
+  blank lines have been ignored. Each byte has been looked up in
+  `Resources.tile_codes` to produce an art name plus terrain/blocking flags;
+  short rows have been padded with grass. `kings-bounty` has used 54 distinct
+  tile codes (§Appendix A).
 - **REQ-228a.** A town has been stamped with its catalog entry's `art` stem
   when one is declared (`engine/map.c stamp_objects`), else `town`. The art
-  manifest lists each declared stem once and the shared `town` tile only
-  while some town lacks an `art` of its own, so `kings-bounty`, which
-  declares none, is unchanged.
+  manifest has listed each declared stem once and the shared `town` tile only
+  while some town lacks an `art` of its own.
 - **REQ-165b.** In a siege the shell has drawn a decorative band above row 0
   from `sprites.ui.siege_back_wall` (end cells from `_left` / `_right`) over
-  field tiles, when the pack names them; outside the grid, so nothing in
-  play changes and packs without the keys draw nothing.
+  field tiles, when the pack names them; outside the grid, so nothing in play
+  changes, and packs without the keys have drawn nothing.
 - **REQ-165c.** When `sprites.ui.siege_grid` names a prefix, the engine has
   expanded it to one path per cell of the band plus board
   (`resources_siege_grid_path`, `COMBAT_W x (COMBAT_H + 1)` entries in the
   manifest) and the shell, in a siege only and only when every cell loaded,
   has drawn each cell's own tile as the ground, row 0 in the band above the
   board, and skipped the wall codes 5..10 at the obstacle stamp; the
-  `siege_back_wall*` band is not drawn then, and `sprites.combat[5..10]`
-  leave the manifest (Rome ships no wall pieces, 2026-09-08). `castle_omap`
-  and movement are untouched. Absent, REQ-165b and the per-code pieces apply, so
-  `kings-bounty` is unchanged (2026-09-07).
+  `siege_back_wall*` band has not been drawn then, and `sprites.combat[5..10]`
+  have left the manifest (Rome has shipped no wall pieces). `castle_omap` and
+  movement have been untouched. Absent, REQ-165b and the per-code pieces have
+  applied (`kings-bounty`).
 - **REQ-165d.** With `sprites.ui.combat_ground` `"terrain"`
   (`resources_combat_ground_is_terrain`), the shell has set the combat ground
   before every fight (`combat_render_set_ground`, from
   `shell_promptdispatch.c`) to the hero's map tile, water falling back to
   grass, and drawn it under every cell and the siege band in place of
-  `sprites.combat[0]`, which the manifest then omits. Absent or `"field"`,
-  the field tile draws as before, so `kings-bounty` is unchanged (2026-09-08).
+  `sprites.combat[0]`, which the manifest then omits. Absent or `"field"`, the
+  field tile has drawn (`kings-bounty`).
 - **REQ-165a.** When `sprites.ui.panel_frame` names a palette colour the
   shell has drawn a frame round every panel slot (`ui_panel_frame`: HUD
   panels, inventory cells, contract face) so the art carries none; absent,
-  nothing is drawn and packs with painted frames are unchanged.
+  nothing has been drawn and the art has carried its own frame.
 - **REQ-163a.** A class entry has optionally carried a `hero` block (walk,
   idle, boat, tile) parsed into `Resources.class_hero[]`
-  (`resources_class_hero`); the shell draws the chosen class's sets for the
-  map hero and the win-cartoon tile (`sprites_hero_anim`, `sprites_end_hero`)
-  and falls back to the pack-wide `sprites.hero` and `ending.hero_tile` for
-  anything undeclared, so `kings-bounty`, which declares none, is unchanged.
-  The cartoon's grass backdrop is `ending.grass_tile` when declared, else the
-  map's `grass` tile from the tile cache (2026-09-07), so `glory-of-rome`
-  declares neither `grass_tile` nor `hero_tile` and ships neither file.
+  (`resources_class_hero`); the shell has drawn the chosen class's sets for
+  the map hero and the win-cartoon tile (`sprites_hero_anim`,
+  `sprites_end_hero`) and fallen back to the pack-wide `sprites.hero` and
+  `ending.hero_tile` for anything undeclared (`kings-bounty` declares none).
+  The cartoon's grass backdrop has been `ending.grass_tile` when declared,
+  else the map's `grass` tile from the tile cache, so `glory-of-rome` has
+  declared neither `grass_tile` nor `hero_tile` and shipped neither file.
 - **REQ-228b.** A wandering foe has been stamped with its zone's `army_art`
   stem when the zone declares one (`Map.army_art`, read by both foe stamp
-  sites), else `wandering_army`; the map draws that tile for every foe (the
-  lead-troop sprite of issue #9 was reverted 2026-09-06). The manifest lists
-  each declared stem once and the shared tile only while some zone lacks one.
+  sites), else `wandering_army`; the map has drawn that tile for every foe.
+  The manifest has listed each declared stem once and the shared tile only
+  while some zone lacks one.
 - **REQ-227a.** A zone that declares `tile_set` has had every terrain art
   name it stamps prefixed with `<tile_set>/` (`engine/map.c MapTerrainArt`),
   including the grass padding, the grass or water a cleared object reverts
   to, and bridge tiles built by the Bridge spell, so the shell's tile cache
   loads `art/tiles/<tile_set>/<art>.png`. Object art stamped from the zone
-  lists is never prefixed. A zone without the key is unchanged. The art
-  manifest lists the shared terrain only while some zone draws it, and each
-  declared set once.
+  lists has never been prefixed. A zone without the key has drawn the shared
+  set. The art manifest has listed the shared terrain only while some zone
+  draws it, and each declared set once.
 
 ### 9.7 Castle and town tile placement
 
@@ -947,51 +1018,55 @@ except where a deviation is explicitly flagged (§34).
   catalog entry by `castles[].footprint` (`engine/resources.c parse_castles`,
   `engine/map.c stamp_objects`):
   - **`3x2`**, the default when the key is absent: a block centred on the
-    gate. The gate tile (interactive `CASTLE_GATE`, walkable) sits at `(x, y)`;
-    the five surrounding tiles are wall pieces (`castle_tl/br/tr/ml/mr`,
-    non-interactive, `blocks_foot = true`).
+    gate. The gate tile (interactive `CASTLE_GATE`, walkable) sits at
+    `(x, y)`; the five surrounding tiles are wall pieces
+    (`castle_tl/br/tr/ml/mr`, non-interactive, `blocks_foot = true`).
   - **`1x1`**: the gate tile alone, drawn with the single `castle` art, so the
     castle sits on the map the way a town does. No wall tiles; the eight
     neighbours keep their `.dat` terrain. The `castle` art is transparent: the
     renderer (`src/map_render.c map_render_draw`) draws a tile's plain terrain
     beneath every object tile before the object's own art, so the castle
     stands on the ground it occupies (ART-SPEC §4). An opaque object covers
-    that ground and draws exactly as before.
-  An unrecognised value has printed a notice and stamped `3x2`. Castles may
-  declare extra decorative wall pieces (the King's castle has 24), honoured
-  for either footprint. A town has been a single `INTERACT_TOWN` tile with a
-  `boat_spawn_x/y` used when a boat is rented. When a castle's `gate` object is
-  absent, the gate landing tile is computed as `(x, y+1)`. The art manifest
-  (`resources_art_manifest`) has listed a footprint's castle art only when some
-  castle in the pack uses it (`map_castle_art_names`), so a pack ships only the
-  pieces it stamps. Everything else about a castle, the visit flow, sieges,
-  garrisons, contracts, the Castle Gate landing, the foe doorstep rule, keys off
-  the gate tile and is the same for both footprints.
+    that ground.
+  An unrecognised value has printed a notice and stamped `3x2`. Castles have
+  been able to declare extra decorative wall pieces (the King's castle has
+  24), honoured for either footprint. A town has been a single
+  `INTERACT_TOWN` tile with a `boat_spawn_x/y` used when a boat is rented.
+  When a castle's `gate` object is absent, the gate landing tile has been
+  computed as `(x, y+1)`. The art manifest (`resources_art_manifest`) has
+  listed a footprint's castle art only when some castle in the pack uses it
+  (`map_castle_art_names`), so a pack ships only the pieces it stamps.
+  Everything else about a castle -- the visit flow, sieges, garrisons,
+  contracts, the Castle Gate landing, the foe doorstep rule -- has keyed off
+  the gate tile and been the same for both footprints.
 
 ### 9.8 Terrain edge variants (baked, not generated)
 
-- **REQ-229.** Every terrain except grass has shipped **twelve edge variants**
-  alongside its plain tile (`water_edge_00..11`, `forest_edge_01..12`,
-  `mountain_edge_01..12`, `desert_edge_01..12`; 48 of the pack's 54 tile
-  codes). They are the transition pieces that blend a terrain into its
-  neighbour, and they are **baked into the `.dat` files by the map author**,
-  not generated at runtime. **A `.dat` holds the fully rendered map; nothing
-  about its appearance is computed at game time.** This is a ratified
-  decision, not an accident of implementation: `furnish_map` (`engine/game.c`)
-  is retained as a permanent **no-op** mirroring OpenKB's `spawn_game` call
+- **REQ-229.** Every terrain except grass has shipped **twelve edge
+  variants** alongside its plain tile (`water_edge_00..11`,
+  `forest_edge_01..12`, `mountain_edge_01..12`, `desert_edge_01..12`; 48 of
+  the reference pack's 54 tile codes). They have been the transition pieces
+  that blend a terrain into its neighbour, and they have been **baked into
+  the `.dat` files by the map author**, not generated at runtime. **A `.dat`
+  has held the fully rendered map; nothing about its appearance has been
+  computed at game time.** This has been a ratified decision, not an
+  accident of implementation: `furnish_map` (`engine/game.c`) has been
+  retained as a permanent **no-op** mirroring OpenKB's `spawn_game` call
   sequence, where a real furnishing pass (`rogue.c`, `OPENKB-SPEC.md` §12.5)
-  rewrote base terrain bytes into edge bytes at load. OpenBounty will not do
-  that. The consequences are intended: a `.dat` is self-contained and renders
-  identically in the game, in an editor, and in any third-party tool, with no
-  shared algorithm to keep in agreement; load does no per-tile work; and a
-  pack author's saved file is exactly what a player sees. A `.dat` written with only the plain terrain codes therefore renders
-  with hard stair-stepped coastlines; the shipped `continentia` uses all 54
-  codes, and its edge tiles outnumber its plain ones.
+  rewrote base terrain bytes into edge bytes at load. OpenBounty has not done
+  that. The consequences have been intended: a `.dat` is self-contained and
+  renders identically in the game, in an editor, and in any third-party tool,
+  with no shared algorithm to keep in agreement; load does no per-tile work;
+  and a pack author's saved file is exactly what a player sees. A `.dat`
+  written with only the plain terrain codes has therefore rendered with hard
+  stair-stepped coastlines; `continentia` has used all 54 codes, and its edge
+  tiles have outnumbered its plain ones.
 
-- **REQ-229a.** The variant is selected by which of the tile's eight
+- **REQ-229a.** The variant has been selected by which of the tile's eight
   neighbours carry a **different terrain**, cardinals taking precedence over
-  diagonals. Two families exist, differing in both base and permutation
-  (matching OpenKB's `tile_offset` table, which gives water its own row):
+  diagonals. Two families have existed, differing in both base and
+  permutation (matching OpenKB's `tile_offset` table, which gives water its
+  own row):
 
   | Differing neighbours | water | forest / mountain / desert |
   |---|---|---|
@@ -1008,178 +1083,171 @@ except where a deviation is explicitly flagged (§34).
   | SW only | `06` | `07` |
   | NW only | `07` | `08` |
 
-  Water is 0-based (`00`–`11`); the other three are 1-based (`01`–`12`) and
-  have no `00`. A tile with no differing neighbour uses the plain terrain
-  code. Three or more differing cardinals (a one-tile spit) has no dedicated
-  variant and is the author's choice; the shipped maps avoid the shape.
+  Water has been 0-based (`00`–`11`); the other three 1-based (`01`–`12`)
+  with no `00`. A tile with no differing neighbour has used the plain terrain
+  code. Three or more differing cardinals (a one-tile spit) have used the
+  REQ-229e variants.
 
-- **REQ-229b.** This table was **derived from the shipped maps**, by
-  classifying every edge tile in all four zones by its neighbour pattern, then
-  re-applied as a rule and measured against what the authors actually placed.
-  Of the **7,870** edge tiles in the four shipped zones it reproduces **7,590
-  (96.4%)** exactly; **169 (2.1%)** sit on patterns the table leaves undefined
-  (three or more differing cardinals, or more than one differing diagonal with
-  no cardinal), and **111 (1.4%)** disagree, which is the expected residue of
-  a hand-drawn map. The convention is therefore exact enough to author
-  against, and a generator applying it will produce coastlines
-  indistinguishable from the shipped ones.
+- **REQ-229b.** This table has been **derived from the reference pack's
+  maps**, by classifying every edge tile in all four zones by its neighbour
+  pattern, then re-applied as a rule and measured against what the authors
+  actually placed. Of the **7,870** edge tiles in the four zones it has
+  reproduced **7,590 (96.4%)** exactly; **169 (2.1%)** have sat on patterns
+  the table leaves undefined (three or more differing cardinals, or more than
+  one differing diagonal with no cardinal), and **111 (1.4%)** have
+  disagreed, the expected residue of a hand-drawn map. The convention has
+  therefore been exact enough to author against, and a generator applying it
+  produces coastlines indistinguishable from the originals.
 
----
-
-- **REQ-229e.** Seven more variants close the shapes REQ-229a leaves
-  undefined, keyed by the tile's OPEN (differing) cardinals: `13` N+S,
-  `14` E+W (one-wide strips), `15` N+E+S, `16` E+S+W, `17` S+W+N, `18`
-  W+N+E (spits, attached on the remaining side), `19` all four (an island).
-  Water is 0-based as before (`12`..`18`). `glory-of-rome` ships all seven
-  for forest and mountain and the two strips and the island for water; the
-  four shipped zones contain no other shape. `tools/mapbuild.py build`
-  assigns them when it bakes a map from its source; the art comes from the same lattice
-  and stitching tools as the twelve, so every side that is open is a
+- **REQ-229e.** Seven more variants have closed the shapes REQ-229a leaves
+  undefined, keyed by the tile's OPEN (differing) cardinals: `13` N+S, `14`
+  E+W (one-wide strips), `15` N+E+S, `16` E+S+W, `17` S+W+N, `18` W+N+E
+  (spits, attached on the remaining side), `19` all four (an island). Water
+  has been 0-based (`12`..`18`). `glory-of-rome` has shipped all seven for
+  forest and mountain and the two strips and the island for water; its four
+  zones have contained no other shape. `tools/mapbuild.py build` has assigned
+  them when it bakes a map from its source; the art has come from the same
+  lattice and stitching tools as the twelve, so every side that is open is a
   terminal edge and every closed side the standard interface.
 
-- **REQ-229f.** A tile keeps its own terrain art (`Tile.ground`) beside
-  the art it draws. An object stamped on a cell (a foe, a chest, a town)
-  replaces only the drawn art; the renderer draws `ground` beneath the
-  object, and `MapClearInteractive` restores `ground` when the object goes.
-  So a road or a grass variant survives a foe walking over it. Only
-  grass-terrain ground is restored: on any other ground (desert, a dwelling
-  on a mountain edge) the original rule still applies and the cleared cell
-  becomes plain grass, so the legacy pack plays exactly as before; water
-  stays water. Fixed 2026-09-10: the clear wrote the literal "grass" into
-  every vacated cell, which erased roads for the rest of the game.
+- **REQ-229f.** A tile has kept its own terrain art (`Tile.ground`) beside
+  the art it draws. An object stamped on a cell (a foe, a chest, a town) has
+  replaced only the drawn art; the renderer has drawn `ground` beneath the
+  object, and `MapClearInteractive` has restored `ground` when the object
+  goes, so a road or a grass variant survives a foe walking over it. Only
+  grass-terrain ground has been restored: on any other ground (desert, a
+  dwelling on a mountain edge) the cleared cell has become plain grass, and
+  water has stayed water.
 
 ### 9.9 Roads (grass-terrain tile codes)
 
-- **REQ-229c.** A road is a **tile, not an object**: a `tile_codes` entry
-  with `terrain: grass` and its own art, exactly like `grass_variant`. The
-  engine needs no road concept: walkability and move cost come from the
-  terrain (grass, cost 1, unchanged), salt and foe logic see grass, and the
-  renderer draws the entry's art. The map author bakes the road pieces into
-  the `.dat` like the edge variants (REQ-229). `glory-of-rome` ships
+- **REQ-229c.** A road has been a **tile, not an object**: a `tile_codes`
+  entry with `terrain: grass` and its own art, exactly like `grass_variant`.
+  The engine has needed no road concept: walkability and move cost come from
+  the terrain (grass, cost 1), salt and foe logic see grass, and the renderer
+  draws the entry's art. The map author has baked the road pieces into the
+  `.dat` like the edge variants (REQ-229). `glory-of-rome` has shipped
   twenty-four pieces, codes `f`..`y` and `\x80`..`\x83`: straights
-  `road_ns`/`road_ew`; the four
-  curves `road_ne`, `road_es`, `road_sw`, `road_wn` (named by their two
-  exits); the diagonals `road_nesw`/`road_nwse`; eight joins from a straight
-  exit to a diagonal corner (`road_n_sw`, `road_n_se`, `road_s_nw`,
-  `road_s_ne`, `road_e_nw`, `road_e_sw`, `road_w_ne`, `road_w_se`); and the
-  four **companions** `road_c_nw/ne/sw/se`, grass with the road's triangle in
-  one corner. A diagonal passes through a tile corner that two side
-  neighbours share, so the author places the companions on those two cells
-  (a `road_nwse` at (x, y) takes `road_c_sw` at (x+1, y) and `road_c_ne` at
-  (x, y+1); a `road_nesw` takes `road_c_se` at (x-1, y)... see
-  `tools/romeart.py sweep`). Last, the four **ends** `road_n`, `road_e`, `road_s`,
-  `road_w`, named by their one exit: the road enters through that side at the
-  full band width and stops inside the tile, so a run can finish in open
-  grass rather than only where an object replaces its code (an object on a
-  road cell still does that, which is why a road needs no end piece beside a
-  gate or town).
+  `road_ns`/`road_ew`; the four curves `road_ne`, `road_es`, `road_sw`,
+  `road_wn` (named by their two exits); the diagonals `road_nesw`/
+  `road_nwse`; eight joins from a straight exit to a diagonal corner
+  (`road_n_sw`, `road_n_se`, `road_s_nw`, `road_s_ne`, `road_e_nw`,
+  `road_e_sw`, `road_w_ne`, `road_w_se`); and the four **companions**
+  `road_c_nw/ne/sw/se`, grass with the road's triangle in one corner. A
+  diagonal passes through a tile corner that two side neighbours share, so
+  the author places the companions on those two cells (a `road_nwse` at
+  (x, y) takes `road_c_sw` at (x+1, y) and `road_c_ne` at (x, y+1); a
+  `road_nesw` takes `road_c_se` at (x-1, y)... see `tools/romeart.py sweep`).
+  Last, the four **ends** `road_n`, `road_e`, `road_s`, `road_w`, named by
+  their one exit: the road enters through that side at the full band width
+  and stops inside the tile, so a run can finish in open grass rather than
+  only where an object replaces its code (an object on a road cell does that,
+  which is why a road needs no end piece beside a gate or town).
 
-  Every straight exit is a 32 px band centred on the side and every diagonal
-  exit the same corner triangle, so any piece joins any other, ends included;
-  `tools/romeart.py sweep` checks that contract on every run. The pieces are not
-  drawn: the tool sweeps them out of a PixelLab terrain set, filling each
-  piece's signed-distance shape with the set's road tile and leaving the
-  pack's own grass outside (see docs/ART-PIPELINE.md). Rome's surface is
-  cobblestone as of 2026-09-12, from `art/jobs/t32_cobble_203.json`, with a
-  two-pixel edging course a shade darker than the paving painted by the
-  sweep's `--rim` / `--rim-shade` -- the set's own transition tiles are
-  discarded, so an edging described in a prompt would never reach the game.
-  An end's last stretch is cut off at a slanted front and frayed by the
-  boundary noise, so the paving breaks up into loose stones instead of
-  tapering to a point; the fray is scaled to zero at the exit side, where the
-  contract has to hold exactly.
+  Every straight exit has been a 32 px band centred on the side and every
+  diagonal exit the same corner triangle, so any piece joins any other, ends
+  included; `tools/romeart.py sweep` has checked that contract on every run.
+  The pieces have not been drawn by hand: the tool sweeps them out of a
+  PixelLab terrain set, filling each piece's signed-distance shape with the
+  set's road tile and leaving the pack's own grass outside (see
+  docs/ART-PIPELINE.md). Rome's surface has been cobblestone, from
+  `art/jobs/t32_cobble_203.json`, with a two-pixel edging course a shade
+  darker than the paving painted by the sweep's `--rim` / `--rim-shade` --
+  the set's own transition tiles are discarded, so an edging described in a
+  prompt never reaches the game. An end's last stretch has been cut off at a
+  slanted front and frayed by the boundary noise, so the paving breaks up into
+  loose stones instead of tapering to a point; the fray has been scaled to
+  zero at the exit side, where the contract has to hold exactly.
 
-- **REQ-229d.** A tile code may declare cosmetic **`variants`**, up to eight
-  art names with the same terrain and flags (a name may repeat to weight
-  it; the base art counts once more). The shell (`src/tilevar.c`) picks one
-  per cell when it draws, from the cell's x, y and a seed drawn once per
-  launch, so a field of one code is not a single stamp and shuffles between
-  launches. This is the one stated exception to "nothing about appearance
-  is computed at game time" (REQ-229): the choice is draw-time only and
-  cosmetic. The `.dat`, the engine, saves, replays and byte determinism
-  never see it. The ground drawn under an object goes through the same
-  pick. Every variant must join every other and the base at any edge, which
-  the pack guarantees by keeping variant edges identical to the base
-  (`glory-of-rome`: `grass_01..06`, the grass with a patch of dry grass
-  inside, from `tools/romeart.py grass`). Packs that declare no variants draw
-  exactly as before; the legacy pack declares none.
+- **REQ-229d.** A tile code has been able to declare cosmetic **`variants`**,
+  any number of art names (heap) with the same terrain and flags (a name may repeat to
+  weight it; the base art counts once more). The shell (`src/tilevar.c`) has
+  picked one per cell when it draws, from the cell's x, y and a seed drawn
+  once per launch, so a field of one code is not a single stamp and shuffles
+  between launches. This has been the one stated exception to "nothing about
+  appearance is computed at game time" (REQ-229): the choice has been
+  draw-time only and cosmetic. The `.dat`, the engine, saves, replays and
+  byte determinism have never seen it. The ground drawn under an object has
+  gone through the same pick. Every variant has had to join every other and
+  the base at any edge, which the pack guarantees by keeping variant edges
+  identical to the base (`glory-of-rome`: `grass_01..10` on `grass_variant`,
+  the grass with a patch of dry grass inside, from `tools/romeart.py grass`). The legacy pack
+  has declared no variants.
 
 ## 10. Salt: per-zone object placement
 
 ### 10.1 Salt budget
 
-- **REQ-229g.** **The magic alcove names its own art.** The alcove borrowed
-  three other assets, each chosen in C rather than declared: the
-  hills-dwelling tile for its map icon (`engine/map.c`), the hill cave's
-  backdrop, and a troop sprite for the figure on it -- `src/screens/alcove.c`
-  hard-coded the troop id `gnomes`, which in `glory-of-rome` draws Fauni, and
-  the comment admitted it was a leftover from the original, where the alcove
-  was the archmage's home. A pack may now declare all three: a zone's
-  `alcove_art` names the map tile (per zone, exactly as `army_art` does), and
-  `sprites.ui.alcove_backdrop`, `sprites.ui.alcove_figure` and
-  `sprites.ui.alcove_figure_animation` name the location backdrop and the
-  figure's frames. Each is optional and each falls back to what the alcove
-  borrowed before, so a pack that declares none behaves exactly as it did:
-  `kings-bounty` still shows a hill cave with its gnomes. The figure cycles on
-  the same tick and fills the same tile-shaped slot the troop strip did, so the
-  backdrop geometry is one rule for both. The location kind `LOC_ALCOVE` (7)
-  exists so the screen can ask for its own backdrop instead of the hill
-  cave's.
+- **REQ-229g.** **The magic alcove has named its own art.** A zone's
+  `alcove_art` has named the alcove's map tile (per zone, exactly as
+  `army_art` does), and `sprites.ui.alcove_backdrop`, `sprites.ui.alcove_figure`
+  and `sprites.ui.alcove_figure_animation` have named the location backdrop
+  and the figure's frames. Each has been optional and each has fallen back to
+  the reference pack's choice: the hills-dwelling tile, the hill cave's
+  backdrop and the `gnomes` troop sprite, which is what `kings-bounty`
+  shows. The figure has cycled on the troop tick and filled the same
+  tile-shaped slot a troop strip does, so the backdrop geometry has been one
+  rule for both. The location kind `LOC_ALCOVE` (7) has existed so the screen
+  asks for its own backdrop instead of the hill cave's.
 - **REQ-230.** Each zone has declared a `salt` block: `artifacts`, `navmaps`,
   `orbs`, `telecaves`, `dwellings`, `friendly_foes` (counts), plus
   `preferred_troops[]` and `dwelling_range[lo, hi]` for dwelling troop
-  selection. The default per-zone budget: artifacts=2, navmaps=1, orbs=1,
-  telecaves=2, dwellings=10, friendly_foes=5.
+  selection. The default per-zone budget has been: artifacts=2, navmaps=1,
+  orbs=1, telecaves=2, dwellings=10, friendly_foes=5.
 
 ### 10.2 Algorithm
 
-- **REQ-231.** `salt_continent` (`engine/game.c`) has run once per zone at game
-  init. It has: (1) registered every static foe army on the zone as a hostile
-  `FoeState`; (2) built a barrel of `chest_count` slots (one per chest
-  placeholder), each tagged `SALT_NONE`; (3) for each kind in order (artifacts, navmaps, orbs, telecaves, dwellings, friendly foes) repeatedly
-  picked a random unclaimed barrel slot and tagged it, until the quota was met
-  or a guard counter (`barrel_len * 20`) was exhausted; (4) walked the barrel
-  and emitted a `SaltedPlacement` (or `FoeState`) per tagged slot. When the
-  guard is exhausted early, missing items are silently skipped.
+- **REQ-231.** `salt_continent` (`engine/game.c`) has run once per zone at
+  game init. It has: (1) registered every static foe army on the zone as a
+  hostile `FoeState`; (2) built a barrel of `chest_count` slots (one per chest
+  placeholder), each tagged `SALT_NONE`; (3) for each kind in order
+  (artifacts, navmaps, orbs, telecaves, dwellings, friendly foes) repeatedly
+  picked a random unclaimed barrel slot and tagged it, until the quota is
+  met or a guard counter (`barrel_len * 20`) runs out; (4) walked the
+  barrel and emitted a `SaltedPlacement` (or `FoeState`) per tagged slot.
+  When the guard runs out early, the missing items have been silently
+  skipped.
 
 ### 10.3 Slot semantics
 
-- **REQ-232.** `SALT_ARTIFACT` placed `INTERACT_ARTIFACT` by matching `(zone,
-  local_idx)` against the artifact catalog. `SALT_NAVMAP`/`SALT_ORB`/
-  `SALT_TELECAVE` placed the corresponding interactive with id `<kind>_<n>`.
-  `SALT_DWELLING` picked a troop (zone `preferred_troops[]` first, else
-  `dwelling_range`), derived the dwelling kind from the troop's `dwelling`
-  field, placed `INTERACT_DWELLING_*`, and registered a pinned `DwellingState`.
-  `SALT_FRIENDLY` created a `FoeState` with `friendly = true` and a placeholder
-  garrison (re-rolled fresh on accept, §15.5).
+- **REQ-232.** `SALT_ARTIFACT` has placed `INTERACT_ARTIFACT` by matching
+  `(zone, local_idx)` against the artifact catalog. `SALT_NAVMAP`/`SALT_ORB`/
+  `SALT_TELECAVE` have placed the corresponding interactive with id
+  `<kind>_<n>`. `SALT_DWELLING` has picked a troop (zone `preferred_troops[]`
+  first, else `dwelling_range`), derived the dwelling kind from the troop's
+  `dwelling` field, placed `INTERACT_DWELLING_*`, and registered a pinned
+  `DwellingState`. `SALT_FRIENDLY` has created a `FoeState` with
+  `friendly = true` and a placeholder garrison (re-rolled fresh on accept,
+  §15.5).
 
 ### 10.4 Salt of villains
 
 - **REQ-233.** `salt_villains` (`engine/game.c`) has run after
-  `salt_continent`. For each villain in catalog order, a retry loop (guarded by
-  `min(ncastles * 20, max_attempts)`) picks a random castle in the villain's
-  declared `zone` that is not excluded from contracts and not already
-  villain-owned; the chosen castle gets `owner_kind = CASTLE_OWNER_VILLAIN`,
-  `villain_id`, and a garrison populated from the villain's pre-built army
-  (5 stacks).
+  `salt_continent`. For each villain in catalog order, a retry loop (guarded
+  by `min(ncastles * 20, max_attempts)`) has picked a random castle in the
+  villain's declared `zone` that is not excluded from contracts and not
+  already villain-owned; the chosen castle has got `owner_kind =
+  CASTLE_OWNER_VILLAIN`, `villain_id`, and a garrison populated from the
+  villain's pre-built army.
 
 ### 10.5 Salt of spells
 
 - **REQ-234.** `salt_spells` (`engine/game.c`) has assigned exactly one spell
   to each town's `spell_for_sale` in three phases: (1) **pinned**: each town
-  with a non-empty `pinned_spell` receives it and the spell is marked claimed;
-  (2) **random**: each unclaimed spell is placed in a random spell-less town;
-  (3) **fallback**: any still-empty town receives a random spell from the
-  fully-claimed pool.
+  with a non-empty `pinned_spell` receives it and the spell is marked
+  claimed; (2) **random**: each unclaimed spell is placed in a random
+  spell-less town; (3) **fallback**: any still-empty town receives a random
+  spell from the fully-claimed pool.
 
 ### 10.6 Scepter burial
 
-- **REQ-235.** `bury_scepter` (`engine/game.c`) has chosen one of the four
-  zones uniformly at random, loaded its map, counted all tiles whose terrain is
-  `TERRAIN_GRASS`, interactive is `INTERACT_NONE`, and `blocks_foot` is false;
-  picked the Nth such tile (N uniform in `[0, count-1]`); and stored the tile's
-  zone id, x, and y in `Game.scepter`. The scepter is not visible on the map;
-  searching (key `S`) on the buried tile triggers the win flow (§26).
+- **REQ-235.** `bury_scepter` (`engine/game.c`) has chosen one of the pack's
+  zones uniformly at random, loaded its map, counted all tiles whose terrain
+  is `TERRAIN_GRASS`, interactive is `INTERACT_NONE`, and `blocks_foot` is
+  false; picked the Nth such tile (N uniform in `[0, count-1]`); and stored
+  the tile's zone id, x, and y in `Game.scepter`. The scepter has not been
+  visible on the map; searching (key `S`) on the buried tile has triggered
+  the win flow (§26).
 
 ---
 
@@ -1187,55 +1255,57 @@ except where a deviation is explicitly flagged (§34).
 
 ### 11.1 Eight-directional movement
 
-- **REQ-240.** Movement has supported four cardinals (arrows, numpad 2/4/6/8)
-  and four diagonals (numpad 7/9/1/3 or Home/PgUp/End/PgDn), as single-step
-  `(±1, ±1)` deltas. The one-tile step entry point is `step_try`
-  (`engine/step.c`); walkability is decided by `engine/adventure.c`.
+- **REQ-240.** Movement has supported four cardinals (arrows, numpad
+  2/4/6/8) and four diagonals (numpad 7/9/1/3 or Home/PgUp/End/PgDn), as
+  single-step `(±1, ±1)` deltas, plus a tap on the map in modern mode. The
+  one-tile step entry point has been `GameStep` (`engine/step.c`);
+  walkability has been decided by `engine/adventure.c`.
 - **REQ-241.** A blocked move has played the bump sound and left position,
   facing, and travel mode unchanged. A successful move has updated
   `position.x/y`, set `facing_left = (dx < 0)`, revealed the fog at the new
-  position (`FogRevealFor`: exactly the pack's viewport, `render.tiles_w` x
-  `tiles_h`, around the hero -- the original's 5x5 for a 5x5 viewport, 7x5 for
-  Rome -- so the tile past each edge of the view stays unexplored until walked
-  towards and shows the fog fade, the same in both modes), and called
-  `GameOnStep`.
+  position (`FogRevealFor`: exactly the pack's declared viewport,
+  `render.tiles_w` x `tiles_h`, around the hero -- the original's 5x5 for a
+  5x5 viewport, 7x5 for Rome -- so the tile past each edge of the view stays
+  unexplored until walked towards and shows the fog fade, the same in both
+  modes), and called `GameOnStep`.
 
 ### 11.2 Walking, sailing, flying
 
-- **REQ-242.** While walking, walkability follows §9.3. In a boat, the hero
-  can enter water, bridge, and grass/desert tiles (the last triggering
-  disembark). While flying, every terrain is walkable and interactive tiles do
-  not fire.
-- **REQ-243.** Stepping from walk mode onto the parked boat sets `travel_mode =
-  TRAVEL_BOAT`. Stepping in boat mode from water/bridge onto land parks the
-  boat at the previous water tile and sets `travel_mode = TRAVEL_WALK`. Boat-mode
-  movement on land is only ever a single disembark step.
+- **REQ-242.** While walking, walkability has followed §9.3. In a boat, the
+  hero has been able to enter water, bridge, and grass/desert tiles (the last
+  triggering disembark). While flying, every terrain has been walkable and
+  interactive tiles have not fired.
+- **REQ-243.** Stepping from walk mode onto the parked boat has set
+  `travel_mode = TRAVEL_BOAT`. Stepping in boat mode from water/bridge onto
+  land has parked the boat at the previous water tile and set `travel_mode =
+  TRAVEL_WALK`. Boat-mode movement on land has only ever been a single
+  disembark step.
 
 ### 11.3 Boat rental
 
-- **REQ-244.** A boat has been rented at any town menu (`B`) for `GameBoatCost`
-  (`economy.boat_cost_normal = 500`, or `boat_cost_cheap = 100` with the Anchor
-  of Admirability) and parked at the town's `boat_x/boat_y`. Rental is
-  cancelled at the same menu when the boat is on land; mid-sail cancellation is
-  refused. A rented boat costs one weekly rental at each week boundary; on
-  bankruptcy it is repossessed.
+- **REQ-244.** A boat has been rented at any town menu (`B`) for
+  `GameBoatCost` (`economy.boat_cost_normal = 500`, or `boat_cost_cheap = 100`
+  with the Anchor of Admirability) and parked at the town's `boat_x/boat_y`.
+  Rental has been cancellable at the same menu when the boat is on land;
+  mid-sail cancellation has been refused. A rented boat has cost one weekly
+  rental at each week boundary; on bankruptcy it has been repossessed.
 
 ### 11.4 Sail navigation
 
-- **REQ-245.** In boat mode, key `N` has opened a 1..5 prompt listing up to
-  five `neighbors` of the current zone; selecting a digit calls
-  `GameSwitchZone` and `GameSpendWeek` (one week passes during the journey).
-  Outside boat mode, `N` produces a "must be sailing" dialog and consumes no
-  time.
+- **REQ-245.** In boat mode, key `N` has opened a prompt listing the
+  `neighbors` of the current zone; selecting one has called `GameSwitchZone`
+  and `GameSpendWeek` (one week passes during the journey), with the scene
+  and confirmation of REQ-221c where the pack declares them. Outside boat
+  mode, `N` has produced a "must be sailing" dialog and consumed no time.
 
 ### 11.5 Bounce-back
 
 - **REQ-246.** When the hero has stepped onto a tile that opens a bouncing
   interactive flow (towns, castles, dwellings, alcove, hostile foes) and the
   player dismisses it without committing, position/travel-mode/boat coords
-  revert to the pre-step values. Non-bouncing interactives (chest, navmap, orb,
-  telecave, sign, friendly-foe accept, artifact) leave the hero on the
-  destination tile.
+  have reverted to the pre-step values. Non-bouncing interactives (chest,
+  navmap, orb, telecave, sign, friendly-foe accept, artifact) have left the
+  hero on the destination tile.
 
 ---
 
@@ -1243,33 +1313,35 @@ except where a deviation is explicitly flagged (§34).
 
 ### 12.1 Action key bindings
 
-- **REQ-250.** Adventure-mode keys (one action per press; no autorepeat within
-  a turn), dispatched through `src/shell_actions.c` / `src/input.c`:
-  `A` view army, `C` view controls, `D` dismiss army, `F` fly, `I` view
-  contract, `L` land, `M` worldmap, `N` navigate (sail), `O` options, `P` view
-  puzzle, `Q` save-and-quit, `Ctrl+Q` fast quit, `S` search, `U` cast spell,
-  `V` view character, `W` end week, `Numpad 5` rest one day, `F10` cheat menu,
-  `Esc` close overlay, `Tab` game menu.
+- **REQ-250.** Adventure-mode keys (one action per press; no autorepeat
+  within a turn), dispatched through `src/shell_actions.c` / `src/input.c`,
+  have been: `A` view army, `C` view controls, `D` dismiss army, `F` fly, `I`
+  view contract, `L` land, `M` worldmap, `N` navigate (sail), `O` options
+  (legacy) or the game menu (modern), `P` view puzzle, `Q` save-and-quit,
+  `Ctrl+Q` fast quit, `S` search, `U` cast spell, `V` view character, `W` end
+  week, `Numpad 5` rest one day, `Esc` close overlay (and, in modern mode with
+  nothing open, the game menu). Cheats have been reached only through the
+  Debug page, with `--debug` (§31).
 
 ### 12.2 Gamepad mapping
 
-- **REQ-251.** D-pad / left stick → 8-direction movement; A → search; X → cast
-  spell; Y → end week; LB → army; RB → character; LT → fly; RT → land; Start →
-  worldmap; Back → options; B → cancel.
+- **REQ-251.** D-pad / left stick → 8-direction movement; A → search; X →
+  cast spell; Y → end week; LB → army; RB → character; LT → fly; RT → land;
+  Start → worldmap; Back → options; B → cancel.
 
 ### 12.3 Search / dismiss / end week
 
-- **REQ-252.** `S` has opened a yes/no "It will take 10 days to do a search…"
-  prompt (`tuning.search_cost_days = 10`); Yes compares zone/x/y to
-  `Game.scepter`, on match, the win flow fires; otherwise `GameSpendDays(10)`
-  runs and the "revealed nothing" banner shows.
+- **REQ-252.** `S` has opened a yes/no "It will take 10 days to do a
+  search…" prompt (`tuning.search_cost_days = 10`); Yes has compared
+  zone/x/y to `Game.scepter`: on a match the win flow has fired; otherwise
+  `GameSpendDays(10)` has run and the "revealed nothing" banner has shown.
 - **REQ-253.** `D` has opened a numeric (1..5) prompt of non-empty slots.
-  Choosing any but the last zeros that stack and runs `GameCompactArmy`.
-  Choosing the last remaining stack chains into a yes/no prompt; Yes runs temp
-  death (clear army, zero siege weapons, grant 20 peasants, teleport home,
-  dismount, drop boat).
+  Choosing any but the last has zeroed that troop and run `GameCompactArmy`.
+  Choosing the last remaining troop has chained into a yes/no prompt; Yes has
+  run temp death (clear army, zero siege weapons, grant 20 peasants, teleport
+  home, dismount, drop boat).
 - **REQ-254.** `W` has called `GameSpendWeek` and scheduled the post-week
-  dialog sequence (§24.5); running out of days fires the lose flow.
+  dialog sequence (§24.5); running out of days has fired the lose flow.
 
 ---
 
@@ -1277,41 +1349,43 @@ except where a deviation is explicitly flagged (§34).
 
 ### 13.1 Catalog
 
-- **REQ-260.** The troop catalog has held exactly 25 entries, indexed 0..24
-  (`game.json:troops[]`; `TroopDef` in `engine/include/tables.h`). The full
-  catalog appears in §Appendix A. Each troop carries: `skill_level`,
-  `hit_points`, `move_rate`, `recruit_cost`, `spoils`, an ability mask,
-  `dwelling` kind, `max_population`, `growth_per_week`, a morale group A..E,
-  and a `tier_counts[4]` row (foe-garrison stack sizes per continent tier, used
-  by `roll_creature`, §15.4).
+- **REQ-260.** The troop catalog (`game.json:troops[]`; `TroopDef` in
+  `engine/include/tables.h`) has been sized by the pack: 25 entries in
+  `kings-bounty`, indexed 0..24 (§Appendix A), and 27 in `glory-of-rome`.
+  Each troop has carried: `skill_level`, `hit_points`, `move_rate`,
+  `recruit_cost`, `spoils`, an ability mask, `dwelling` kind,
+  `max_population`, `growth_per_week`, a morale group A..E, and a
+  `tier_counts[4]` row (foe-garrison troop sizes per continent tier, used by
+  `roll_creature`, §15.4).
 
 ### 13.2 Ability flags
 
 - **REQ-261.** The 8-bit ability mask (§3.5): `FLY` (flies over impassable
-  terrain; required for hero flight), `REGEN` (regenerates HP between rounds),
-  `MAGIC` (casts combat spells / fixed ranged), `IMMUNE` (immune to magic
-  damage), `ABSORB` (converted to peasants on a Peasants astrology week, and
-  grows on kills in combat), `LEECH` (heals from melee dealt), `SCYTHE`
-  (special doubled-damage rule), `UNDEAD` (eligible for Turn Undead, immune to
-  morale).
+  terrain; required for hero flight), `REGEN` (regenerates HP between
+  rounds), `MAGIC` (casts combat spells / fixed ranged), `IMMUNE` (immune to
+  magic damage), `ABSORB` (converted to peasants on a Peasants astrology
+  week, and grows on kills in combat), `LEECH` (heals from melee dealt),
+  `SCYTHE` (special doubled-damage rule), `UNDEAD` (eligible for Turn Undead,
+  immune to morale).
 
-### 13.3 Army stacks
+### 13.3 The army
 
-- **REQ-262.** The player army has had five slots (`GAME_ARMY_SLOTS = 5`); each
-  stack holds a troop id and count. Adding a troop matching an existing stack
-  increments it; otherwise the first empty slot is used; with no empty slot and
-  no match, the add fails and the source flow shows a banner.
-  `GameCompactArmy` keeps non-empty stacks contiguous, preserving order.
+- **REQ-262.** The player army has had five slots (`GAME_ARMY_SLOTS = 5`);
+  each has held a troop id and count. Adding a troop that matches an existing
+  slot has incremented it; otherwise the first empty slot has been used; with
+  no empty slot and no match, the add has failed and the source flow has
+  shown a banner. `GameCompactArmy` has kept non-empty slots contiguous,
+  preserving order.
 
 ### 13.4 Recruitment cap and upkeep
 
 - **REQ-263.** `GameMaxRecruitable(troop_id)`: `same_troop_consumed =
-  sum(stack.count * troop.hp)` over stacks of that troop; `free_leadership =
-  leadership_current - same_troop_consumed`; result is `free_leadership /
-  troop.hp` (0 / "n/a" when free leadership is negative). Buying costs
-  `recruit_cost * count`; the gold check uses strict `<` (insufficient when
-  `gold < cost`).
-- **REQ-264.** At each week boundary, each non-empty stack pays `upkeep =
+  sum(slot.count * troop.hp)` over slots of that troop; `free_leadership =
+  leadership_current - same_troop_consumed`; the result has been
+  `free_leadership / troop.hp` (0 / "n/a" when free leadership is negative).
+  Buying has cost `recruit_cost * count`; the gold check has used strict `<`
+  (insufficient when `gold < cost`).
+- **REQ-264.** At each week boundary, each non-empty slot has paid `upkeep =
   count * (recruit_cost / 10)` gold (integer division), deducted after
   commission is credited.
 
@@ -1321,8 +1395,8 @@ except where a deviation is explicitly flagged (§34).
 
 ### 14.1 Morale groups and chart
 
-- **REQ-270.** Each troop belongs to one of five groups A..E (§Appendix A). The
-  5×5 morale chart (`game.json:combat.morale_chart`):
+- **REQ-270.** Each troop has belonged to one of five groups A..E (§Appendix
+  A). The 5×5 morale chart (`game.json:combat.morale_chart`):
 
   ```
            A   B   C   D   E
@@ -1333,16 +1407,18 @@ except where a deviation is explicitly flagged (§34).
       E    L   L   L   N   N
   ```
 
-  Row = the stack whose morale is computed; column = another stack present.
-- **REQ-271.** Per-stack morale: a single non-empty stack is High; otherwise
-  each other non-empty stack is consulted on the chart and results counted, any `L` → Low; all `H` (≥1) → High; else Normal.
+  Row = the troop whose morale is computed; column = another troop present.
+- **REQ-271.** Per-troop morale: a troop alone in the army has been High;
+  otherwise each other non-empty slot has been consulted on the chart and the
+  results counted: any `L` → Low; all `H` (≥1) → High; else Normal.
 
 ### 14.2 Out-of-control
 
-- **REQ-272.** A stack is out of control (OOC) when `(troop.hp * stack.count) >
-  leadership_current`. In the army view this shows as "Out of Control" in red
-  (mutually exclusive with the Low/Normal/High labels). In combat an OOC unit
-  still takes turns but attacks its own side (§25.4).
+- **REQ-272.** A troop has been out of control (OOC) when
+  `(troop.hp * count) > leadership_current`. In the army view this has shown
+  as "Out of Control" in red (mutually exclusive with the Low/Normal/High
+  labels). In combat an OOC unit has still taken turns but attacked its own
+  side (§25.4).
 
 ---
 
@@ -1350,14 +1426,15 @@ except where a deviation is explicitly flagged (§34).
 
 ### 15.1 Foe state and sources
 
-- **REQ-280.** A `FoeState` (§4.3) holds zone, `(x,y)`, `placement_id`,
-  `alive`, `friendly`, and a 5-troop garrison. The foe list grows as foes are
-  salted, and static zone armies and salt-placed friendly foes share it. To
-  keep OpenKB's per-continent split, `salt_continent` raises every army a
-  zone declares in `wandering_armies` (no cap: the list is sized by the pack;
-  King's Bounty declares at most 35 a zone, OpenKB's `foe_coords[4][40]` less
-  5 friendly) plus its `friendly_foes` friendlies. Static hostile foes come from `zones[].armies[]` with garrisons
-  pre-rolled at salt time (`roll_hostile_garrison`); friendly foes are
+- **REQ-280.** A `FoeState` (§4.3) has held zone, `(x,y)`, `placement_id`,
+  `alive`, `friendly`, and a 5-troop garrison. The foe list has grown as foes
+  are salted, and static zone armies and salt-placed friendly foes have
+  shared it. Keeping OpenKB's per-continent split, `salt_continent` has
+  raised every army a zone declares in `wandering_armies` (no cap: the list
+  is sized by the pack; King's Bounty declares at most 35 a zone, OpenKB's
+  `foe_coords[4][40]` less 5 friendly) plus its `friendly_foes` friendlies.
+  Static hostile foes have come from `zones[].armies[]` with garrisons
+  pre-rolled at salt time (`roll_hostile_garrison`); friendly foes have been
   salt-placed with placeholder garrisons re-rolled on join (§15.5).
 
 ### 15.2 Spawn pool
@@ -1383,53 +1460,54 @@ except where a deviation is explicitly flagged (§34).
 ### 15.3 Roll
 
 - **REQ-283.** `roll_creature(continent_tier)` (`engine/game.c`): `kind =
-  rng(0,3)`; `chance = rng(1,100)`; walk `chance_curve[tier]` for the smallest
-  slot where `chance <= curve[slot]` (else slot 4); `troop_id =
+  rng(0,3)`; `chance = rng(1,100)`; walk `chance_curve[tier]` for the
+  smallest slot where `chance <= curve[slot]` (else slot 4); `troop_id =
   troop_pool[kind][slot]`; `count = troop.tier_counts[tier] + rng(0,
-  tier_counts[tier]/2)`, clamped to ≥ 2. `roll_hostile_garrison` fills 1..3
-  stacks (`rng(0,2)+1`) via `roll_creature`.
+  tier_counts[tier]/2)`, clamped to ≥ 2. `roll_hostile_garrison` has filled
+  1..3 slots (`rng(0,2)+1`) via `roll_creature`.
 
 ### 15.4 Encounter flows
 
-- **REQ-284.** Stepping onto a hostile foe shows the garrison banner and a
-  yes/no fight prompt: Yes enters combat, No bounces back. Stepping onto a
-  friendly foe re-rolls a fresh troop offer; Yes with a free slot runs
-  `GameAddTroop` (no gold cost) and consumes the foe; Yes with no slot, or No,
-  consumes the foe with the "flee in terror" banner.
+- **REQ-284.** Stepping onto a hostile foe has shown the garrison (the foe
+  view in modern mode) and a fight decision: Fight has entered combat, No /
+  Evade has bounced back. Stepping onto a friendly foe has re-rolled a fresh
+  troop offer; Yes with a free slot has run `GameAddTroop` (no gold cost) and
+  consumed the foe; Yes with no slot, or No, has consumed the foe with the
+  "flee in terror" banner.
 
 ### 15.5 Hero-on-foe
 
-- **REQ-285.** Hostile (and friendly) foes proactively walk toward the hero
-  each turn via `GameFoesFollow` (`engine/game.c`): for each foe within
+- **REQ-285.** Hostile (and friendly) foes have proactively walked toward the
+  hero each turn via `GameFoesFollow` (`engine/game.c`): for each foe within
   Chebyshev distance 2 of the hero's *previous* position, all 9 cells of the
-  foe's 3×3 neighborhood are scored by Euclidean distance to that position;
-  unwalkable/occupied non-center cells get a sentinel max score; the hero's
-  current tile is **not** excluded (landing on it is the combat trigger). The
-  foe moves to the lowest-score cell; if that is the hero's tile,
-  `GameFoesFollow` returns the foe index so the caller fires the
-  attack/recruit flow. Foe motion does not consume the hero's day budget and
-  stops at impassable terrain.
-  A hostile foe that lands on the hero opens the same Fight/Evade decision as
-  stepping onto it, and declining bounces back the same way (REQ-246): the hero
-  returns to the tile, travel mode and boat of before that step, and the foe,
-  unstamped while it shared the hero's tile, is stamped where it stands so it is
-  drawn (`flow_apply_evade_bounce`; openKB `game.c`: `walk = !attack_foe(game)`
-  swaps the hero back to `last_x, last_y`). Before 2026-09-19 the hero stayed on
-  the foe and the foe was not drawn until the hero's next step.
+  foe's 3×3 neighborhood have been scored by Euclidean distance to that
+  position; unwalkable/occupied non-center cells get a sentinel max score;
+  the hero's current tile has **not** been excluded (landing on it is the
+  combat trigger). The foe has moved to the lowest-score cell; if that is the
+  hero's tile, `GameFoesFollow` has returned the foe index so the caller fires
+  the attack/recruit flow. Foe motion has not consumed the hero's day budget
+  and has stopped at impassable terrain. A hostile foe that lands on the hero
+  has opened the same Fight/Evade decision as stepping onto it, and declining
+  has bounced back the same way (REQ-246): the hero returns to the tile,
+  travel mode and boat of before that step, and the foe, unstamped while it
+  shared the hero's tile, is stamped where it stands so it is drawn
+  (`flow_apply_evade_bounce`; openKB `game.c`: `walk = !attack_foe(game)`
+  swaps the hero back to `last_x, last_y`).
 
 ---
 
 ## 16. Towns
 
-- **REQ-290.** The town catalog has held 26 towns (`game.json:towns[]`) in the
-  shipped pack, which names one per letter A..Z. That naming is a convention of
-  that pack, not an engine requirement: the engine sizes its town table from
-  the pack, so a pack may declare any number and may name them freely (REQ-322 selects gate destinations
-  from a list, not by first letter). Each town carries id, name, zone, `(x,y)`, gate coords, boat
-  coords, an intel castle, and an optional pinned spell (full table in
-  §Appendix A). Each `TownRecord` tracks `visited` and `spell_for_sale`.
-- **REQ-291.** The town view (`src/screens/` / `src/views_render.c`) has shown
-  `Town of <NAME>` + `GP=<gold>K` and five rows:
+- **REQ-290.** The town catalog (`game.json:towns[]`) has been sized by the
+  pack: 26 towns in both shipped packs, `kings-bounty` naming one per letter
+  A..Z. That naming has been a convention of that pack, not an engine
+  requirement: a pack may declare any number and name them freely (REQ-322
+  selects gate destinations from a list, not by first letter). Each town has
+  carried id, name, zone, `(x,y)`, gate coords, boat coords, an intel castle,
+  and an optional pinned spell (full table in §Appendix A). Each `TownRecord`
+  has tracked `visited` and `spell_for_sale`.
+- **REQ-291.** The town view (`src/screens/` / `src/views_render.c`, and the
+  modern town screen of UI-PANELS) has offered five actions:
   - **A) Get New Contract**: `GameTakeNextContract`; shows the villain id,
     reward, and last-known zone, or "no contracts" when none remain.
   - **B) Rent / Cancel boat**: toggles `boat.has_boat` at `GameBoatCost`;
@@ -1439,10 +1517,12 @@ except where a deviation is explicitly flagged (§34).
     when the castle is excluded from intel.
   - **D) `<Spell>` spell (`<cost>`)**: buys `spell_for_sale` if
     `GameKnownSpells < max_spells` and `gold > cost` (strict, OpenKB-faithful);
-    deducts gold, increments the spell count.
+    deducts gold, increments the spell count. In `glory-of-rome` a zone's
+    temple has taught only once that zone's rites are known (REQ-314a).
   - **E) Buy siege weapons (3000) / owned**: sets `siege_weapons = 1`; the
-    flag is not enforced anywhere in combat (§38).
-  Every action is at-most-once per visit; the dialog persists until `Esc`.
+    flag has not been enforced anywhere in combat (§38).
+  Every action has been at-most-once per visit; the view has persisted until
+  `Esc`.
 
 ---
 
@@ -1450,82 +1530,98 @@ except where a deviation is explicitly flagged (§34).
 
 ### 17.1 Catalog
 
-- **REQ-300.** The castle catalog has held **27** castles in the shipped pack:
-  26 villain/monster castles (named A..Z by that pack's convention) plus King
-  Maximus's castle (full table + difficulty tiers in §Appendix A). The 26 is
-  that pack's choice, not a required count (§3.1). A pack must
-  still declare, per zone, more contract-eligible castles than that zone's
-  villain count, or `salt_villains`' retry loop (REQ-233) exhausts its guard
-  and villains silently fail to place. Each `CastleRecord` tracks `visited`,
-  `known`, `owner_kind`, `villain_id` (when applicable), and a 5-stack
-  garrison.
+- **REQ-300.** The castle catalog has been sized by the pack: `kings-bounty`
+  has held **27** castles, 26 villain/monster castles (named A..Z by that
+  pack's convention) plus King Maximus's castle (full table + difficulty
+  tiers in §Appendix A); `glory-of-rome` has held 26. No count has been
+  required (§3.1), but a pack has had to declare, per zone, more
+  contract-eligible castles than that zone's villain count, or
+  `salt_villains`' retry loop (REQ-233) exhausts its guard and villains
+  silently fail to place. Each `CastleRecord` has tracked `visited`, `known`,
+  `owner_kind`, `villain_id` (when applicable), and a 5-slot garrison.
 
 ### 17.2 Owner kinds
 
-- **REQ-301.** `CASTLE_OWNER_VILLAIN`, populated by `salt_villains`; garrison
-  is the villain's pre-built army. `CASTLE_OWNER_MONSTERS`, populated by
-  `repopulate_castle` using the castle's `difficulty_tier` (5×
-  `roll_creature`). `CASTLE_OWNER_PLAYER`, after capture; supports
-  garrison/ungarrison via the Own Castle view. `CASTLE_OWNER_SPECIAL`, only
-  the King's castle; never siegeable, never repopulated.
+- **REQ-301.** `CASTLE_OWNER_VILLAIN` has been populated by `salt_villains`,
+  its garrison the villain's pre-built army. `CASTLE_OWNER_MONSTERS` has been
+  populated by `repopulate_castle` using the castle's `difficulty_tier` (5×
+  `roll_creature`). `CASTLE_OWNER_PLAYER` has followed capture and supported
+  garrison/ungarrison via the Own Castle view. `CASTLE_OWNER_SPECIAL` has been
+  only the King's castle: never siegeable, never repopulated.
 
 ### 17.3 Repopulation
 
-- **REQ-302.** At game init, every monster castle is seeded by
+- **REQ-302.** At game init, every monster castle has been seeded by
   `repopulate_castle`. At each week boundary, each player-owned castle whose
-  garrison is *completely* empty is auto-repopulated by the same call; a
-  partially-populated player castle is preserved. Astrology growth (§24.3)
-  applies weekly to non-player castle stacks matching the astrology creature.
+  garrison is *completely* empty has been auto-repopulated by the same call;
+  a partially-populated player castle has been preserved. Astrology growth
+  (§24.3) has applied weekly to non-player castle troops matching the
+  astrology creature.
 
 ### 17.4 Visit / siege / own / audience
 
-- **REQ-303.** Stepping onto a castle gate: player-owned → **Own Castle** view;
-  monsters → siege-monster flow; villain → siege-villain flow; the King's
-  castle → audience. A siege flow shows a yes/no prompt with the garrison; Yes
-  enters combat, No bounces back. Combat win sets `owner_kind =
-  CASTLE_OWNER_PLAYER`; a villain-castle win additionally fulfils the contract
-  (§21.3).
-- **REQ-304.** **Own Castle** (`src/screens/own_castle.c`) shows the 5-slot
-  garrison with letter selectors A..E plus Space to toggle direction (army ↔
-  garrison). Each transfer merges into a matching slot or fills the first empty
-  one; the player army is never allowed to become entirely empty.
+- **REQ-303.** Stepping onto a castle gate: player-owned → **Own Castle**
+  view; monsters → siege-monster flow; villain → siege-villain flow; the
+  King's castle → audience. A siege flow has shown a yes/no prompt with the
+  garrison; Yes has entered combat, No has bounced back. A combat win has set
+  `owner_kind = CASTLE_OWNER_PLAYER`; a villain-castle win has additionally
+  fulfilled the contract (§21.3).
+- **REQ-304.** **Own Castle** (`src/screens/own_castle.c`) has shown the
+  5-slot garrison with letter selectors A..E plus Space to toggle direction
+  (army ↔ garrison); in modern mode, Garrison and Withdraw pages with a
+  How-many step (`docs/UI-PANELS.md`). Each transfer has merged into a
+  matching slot or filled the first empty one; the player army has never been
+  allowed to become entirely empty.
 - **REQ-305.** **King's audience** (`src/shell_audience.c`,
-  `src/screens/home_castle.c`) shows the intro, a rank-up report when the next
-  rank's `villains_needed` is met, a "capture N more villains" message
+  `src/screens/home_castle.c`) has shown the intro, a rank-up report when the
+  next rank's `villains_needed` is met, a "capture N more villains" message
   otherwise, and a final-rank "recover my Scepter" line. The King's castle
-  doubles as the **Home Castle** view, which also offers (`A`) Recruit Soldiers
-  for castle-class troops (`src/screens/recruit_soldiers.c`).
+  has doubled as the **Home Castle** view, which also offers (`A`) Recruit
+  Soldiers for castle-class troops (`src/screens/recruit_soldiers.c`). With
+  `audiences` in `game.json` the modern audience has offered Promotion,
+  Blessing and Tribute (REQ-430q).
 
 ---
 
 ## 18. Dwellings
 
-- **REQ-310.** Dwelling kinds: `plains`, `forest`, `hills` (singular `hill` in
-  the troop catalog), `dungeon`; each `TroopDef` names exactly one via its
-  `dwelling` field. Castle-kind troops (militia, archers, pikemen, knights,
-  cavalry) have `max_population = 0` and are recruitable only at the home
-  castle's recruit screen.
-- **REQ-311.** Each `DwellingState` tracks `(zone,x,y)`, `troop_id`,
-  `max_population`, `count`; the list grows as dwellings are created. A dwelling is
-  created lazily on first visit if not salt-placed; the troop is picked
-  deterministically by `(seed, x, y)` (`GameDwellingTroopAt`); initial `count`
-  is the troop's `max_population`. Salt-placed dwellings are pinned to their
-  troop.
-- **REQ-312.** Visiting a dwelling bounces the hero and opens the dwelling
-  screen (`src/screens/dwelling.c`) showing kind, count, cost per unit, gold,
-  and the `recruit_cost * count <= gold && count <= GameMaxRecruitable` clamp.
-  Yes + a numeric input runs `GameBuyTroop` (deduct gold, add to army,
-  decrement dwelling count).
+- **REQ-310.** Dwelling kinds: `plains`, `forest`, `hills` (singular `hill`
+  in the troop catalog), `dungeon`; each `TroopDef` has named exactly one via
+  its `dwelling` field. Castle-kind troops (militia, archers, pikemen,
+  knights, cavalry in `kings-bounty`) have had `max_population = 0` and been
+  recruitable only at the home castle's recruit screen.
+- **REQ-311.** Each `DwellingState` has tracked `(zone,x,y)`, `troop_id`,
+  `max_population`, `count`; the list has grown as dwellings are created. A
+  dwelling has been created lazily on first visit if not salt-placed; the
+  troop has been picked deterministically by `(seed, x, y)`
+  (`GameDwellingTroopAt`); the initial `count` has been the troop's
+  `max_population`. Salt-placed dwellings have been pinned to their troop.
+- **REQ-312.** Visiting a dwelling has bounced the hero and opened the
+  dwelling screen (`src/screens/dwelling.c`) showing kind, count, cost per
+  unit, gold, and the `recruit_cost * count <= gold && count <=
+  GameMaxRecruitable` clamp. Yes + a count has run `GameBuyTroop` (deduct
+  gold, add to army, decrement dwelling count).
 - **REQ-313.** **Astrology growth** (§24.2): only dwellings whose `troop_id`
-  matches the astrology creature refill to `max_population`; non-matching
-  dwellings keep their current count.
-- **REQ-314.** **Alcove** (Aurange): each zone declares one `magic_alcove_x/y`
-  (`INTERACT_ALCOVE`). When the class sets `knows_magic` at start (Sorceress),
-  every alcove is marked consumed at init. Visiting an unconsumed alcove
-  (`src/screens/alcove.c`) bounces the hero and offers "Visit Archmage
-  Aurange's chamber? cost = `economy.alcove_cost = 5000`g"; Yes + sufficient
-  gold (strict `<`) sets `knows_magic`, deducts 5000, consumes the tile, and
-  adds a permanent leadership bonus.
+  matches the astrology creature have refilled to `max_population`;
+  non-matching dwellings have kept their current count.
+- **REQ-314.** **Alcove** (Aurange): each zone has declared one
+  `magic_alcove_x/y` (`INTERACT_ALCOVE`). When the class sets `knows_magic`
+  at start (Sorceress), every alcove has been marked consumed at init.
+  Visiting an unconsumed alcove (`src/screens/alcove.c`) has bounced the hero
+  and offered magic for `GameAlcoveCost`: the zone's `alcove_cost` when it
+  declares one, else `economy.alcove_cost` (5000 in `kings-bounty`). Yes +
+  sufficient gold (strict `<`) has set `knows_magic`, deducted the cost and
+  consumed the tile (`flow_apply_alcove`, `engine/flow_resolve.c`).
+- **REQ-314a.** **Rites per zone.** With `game.json` `magic.rites_per_zone`
+  true (`glory-of-rome`), magic has been learned zone by zone: each zone's
+  alcove (the Augur) has taught that zone's rites (`Game.world.zone_rites`),
+  a town has sold its spell only when the hero holds the rites of the town's
+  zone (`GameTownHasRites`; `GameBuySpell` answers `SPELL_BUY_NO_RITES`
+  otherwise, and the temple names the Augur's position), and a class that
+  knows magic at creation has started with the home zone's rites only, only
+  that alcove consumed. Rome's zones have priced their rites at 2,500 /
+  5,000 / 7,500 / 10,000. Without the key, one purchase has taught magic
+  everywhere.
 
 ---
 
@@ -1536,53 +1632,54 @@ except where a deviation is explicitly flagged (§34).
 - **REQ-320.** The spell catalog has held 14 spells (`game.json:spells[]`),
   indexed 0..13: combat (0..6), clone(2000), teleport(500), fireball(1500),
   lightning(500), freeze(300), resurrect(5000), turn_undead(2000); adventure
-  (7..13), bridge(100), time_stop(200), find_villain(1000), castle_gate(1000),
-  town_gate(500), instant_army(1000), raise_control(500). (Full table in
-  §Appendix A.)
+  (7..13), bridge(100), time_stop(200), find_villain(1000),
+  castle_gate(1000), town_gate(500), instant_army(1000), raise_control(500).
+  (Full table in §Appendix A.)
 
 ### 19.2 Counts, storage, buying
 
-- **REQ-321.** `Game.spells.counts[14]` holds one count per spell.
-  `GameKnownSpells` sums them; `max_spells` caps purchases; casting decrements,
-  buying increments. Spells are bought at the town menu (§16) for the spell's
-  `cost`. Buying does not require `knows_magic` (OpenKB-faithful); casting does.
-  The gold check is strict `<`.
+- **REQ-321.** `Game.spells.counts` has held one count per spell.
+  `GameKnownSpells` has summed them; `max_spells` has capped purchases;
+  casting has decremented, buying incremented. Spells have been bought at the
+  town menu (§16) for the spell's `cost`. Buying has not required
+  `knows_magic` (OpenKB-faithful) except under rites per zone (REQ-314a);
+  casting has. The gold check has been strict: a purchase fails when `gold <=
+  cost`.
 
 ### 19.3 Adventure spell effects
 
-- **REQ-322.** Adventure spells are implemented in
+- **REQ-322.** Adventure spells have been implemented in
   `engine/spells_adventure.c` (dispatched via `dispatch_adventure_spell`),
   with `GameCastTimeStop` / `GameCastFindVillain` exposed directly on
-  `engine/include/game.h`. Modal continuations route through
-  `engine/pending.h`.
-  - **Bridge** (100): on cast, awaits a direction key; then walks up to 5 water
-    tiles in `(dx,dy)`, converting up to 2 consecutive water tiles to
+  `engine/include/game.h`. Modal continuations have routed through
+  `engine/include/pending.h`.
+  - **Bridge** (100): on cast, awaits a direction key; then walks up to 5
+    water tiles in `(dx,dy)`, converting up to 2 consecutive water tiles to
     `is_bridge` grass with the appropriate art. The count decrements only on
     success.
-  - **Time Stop** (200): adds `max(spell_power * 10, 10)` to `time_stop`. Steps
-    in the time-stop window do not advance the day.
+  - **Time Stop** (200): adds `max(spell_power * 10, 10)` to `time_stop`.
+    Steps in the time-stop window do not advance the day.
   - **Find Villain** (1000): scans castles for the active contract's villain
-    and sets that castle `known = true`. With no active contract, no effect and
-    no decrement.
+    and sets that castle `known = true`. With no active contract, no effect
+    and no decrement.
   - **Castle Gate** (1000) / **Town Gate** (500): open a cursored destination
     picker over the visited, gate-eligible castles / towns. The cast function
     (`cast_castle_gate` / `cast_town_gate`) counts eligible destinations,
     shows the "none" banner and stops when there are none, and otherwise arms
     `gate_state = GATE_STATE_SELECT` plus `gate_mode` (0 castle / 1 town). The
-    shell pump (`src/shell_gate.c gate_menu_tick`) then asks the engine for the
-    list through `GameGateDestinations` and opens `VIEW_GATE`
+    shell pump (`src/shell_gate.c gate_menu_tick`) then asks the engine for
+    the list through `GameGateDestinations` and opens `VIEW_GATE`
     (`views_gate_open`); the view's input branch calls `GameGateTeleport`
     (boat-aware) on selection. The charge is consumed only on a committed
     teleport, never on cast or cancel. Castle Gate excludes the home/audience
-    castle. Cross-zone destinations are allowed. Town Gate's default landing is
-    `(town.boat_x, boat_y)` when no gate is declared. Destinations are chosen
-    from a list, **not** addressed by first letter: the engine builds
+    castle. Cross-zone destinations are allowed. Town Gate's default landing
+    is `(town.boat_x, boat_y)` when no gate is declared. Destinations are
+    chosen from a list, **not** addressed by first letter: the engine builds
     `GateDestination` rows (`engine/include/game.h`: display `name`,
     destination `zone`, landing `x`/`y`) so neither the shell nor autoplay
-    reaches into `g->towns` / `g->castles` directly. The legacy A–Z
-    first-letter addressing this spell once used is gone; nothing requires
+    reaches into `g->towns` / `g->castles` directly. Nothing has required
     castle or town names to begin with distinct letters, and the `GATE_MAX 26`
-    buffer bound in `src/shell_gate.c` is the storage cap (§3.1), not a
+    buffer bound in `src/shell_gate.c` has been a storage cap (§3.1), not a
     letter-space.
   - **Instant Army** (1000): resolves the troop via
     `class.ranks[rank].instant_army` and count `(spell_power + 1) *
@@ -1592,10 +1689,11 @@ except where a deviation is explicitly flagged (§34).
 
 ### 19.4 Casting gate
 
-- **REQ-323.** `U` in adventure mode with `knows_magic` opens `VIEW_SPELLS`
-  (combat spells 0..6 left column, adventure 7..13 right); without it, a "no
-  magic" dialog hints at the alcove. Only adventure spells are castable from
-  adventure mode; combat spells fire from the in-combat menu (§25.8).
+- **REQ-323.** `U` in adventure mode with `knows_magic` has opened
+  `VIEW_SPELLS` (combat spells 0..6 left column, adventure 7..13 right);
+  without it, a "no magic" dialog has hinted at the alcove. Only adventure
+  spells have been castable from adventure mode; combat spells have fired
+  from the in-combat menu (§25.8).
 
 ---
 
@@ -1604,22 +1702,23 @@ except where a deviation is explicitly flagged (§34).
 ### 20.1 Catalog and placement
 
 - **REQ-330.** The artifact catalog has held 8 artifacts
-  (`game.json:artifacts[]`; full table in §Appendix A). Each zone holds two
-  (`local_idx` 0 and 1); `salt_continent` places artifact tiles by matching
-  `(zone, local_idx)`.
+  (`game.json:artifacts[]`; full table in §Appendix A). Each zone has held
+  two (`local_idx` 0 and 1); `salt_continent` has placed artifact tiles by
+  matching `(zone, local_idx)`.
 
 ### 20.2 Pickup and powers
 
-- **REQ-331.** Stepping onto an artifact tile calls `GameClaimArtifact(idx)`:
-  sets `artifacts.found[idx]`, applies the instant power, consumes the tile,
-  and shows the banner.
-- **REQ-332.** Pickup-time (instant) effects: `DOUBLE_LEADERSHIP` (Crown), `leadership_base *= 2; leadership_current = leadership_base`;
+- **REQ-331.** Stepping onto an artifact tile has called
+  `GameClaimArtifact(idx)`: set `artifacts.found[idx]`, applied the instant
+  power, consumed the tile, and shown the banner.
+- **REQ-332.** Pickup-time (instant) effects: `DOUBLE_LEADERSHIP` (Crown),
+  `leadership_base *= 2; leadership_current = leadership_base`;
   `INCREASE_COMMISSION` (Articles), `commission_weekly += 2000`;
   `DOUBLE_SPELL_POWER` (Amulet), `spell_power *= 2`; `DOUBLE_MAX_SPELLS`
   (Ring), `max_spells *= 2`.
 - **REQ-333.** Live-checked (query-time) effects via `GameHasPower`:
   `INCREASED_DAMAGE` (Sword), combat damage +50%; `QUARTER_PROTECTION`
-  (Shield) (combat damage taken ×0.75; `CHEAPER_BOATS` (Anchor)) boat rental
+  (Shield), combat damage taken ×0.75; `CHEAPER_BOATS` (Anchor), boat rental
   100 instead of 500; `UNKNOWN` (Book of Necros), no effect, faithful to the
   unimplemented original.
 
@@ -1630,29 +1729,32 @@ except where a deviation is explicitly flagged (§34).
 ### 21.1 Catalog
 
 - **REQ-340.** The villain catalog has held 17 villains
-  (`game.json:villains[]`; full table + descriptions in §Appendix A). Per-zone
-  counts: `[6, 4, 4, 3]` (Continentia, Forestria, Archipelia, Saharia). Each
-  villain has a fixed five-stack army copied verbatim into its host castle at
+  (`game.json:villains[]`; full table + descriptions in §Appendix A).
+  Per-zone counts: `[6, 4, 4, 3]` (Continentia, Forestria, Archipelia,
+  Saharia; Italia, Galliae, Africa, Oriens in Rome). Each villain has had a
+  fixed army of up to five troops, copied verbatim into its host castle at
   salt time.
 
 ### 21.2 Contract cycle
 
-- **REQ-341.** `Contract` holds `active_id`, `cycle[5]` (rotating villain ids),
-  `last_contract` (index 0..4 of the most recently issued slot), `max_contract`
-  (next villain to rotate in), and `villains_caught[17]`. At init, `cycle` is
-  seeded with the first five villain ids, `last_contract = 4`, `max_contract =
-  5`. `GameTakeNextContract` increments `last_contract` (wrapping 0..4) and
-  copies `cycle[last_contract]` to `active_id`.
+- **REQ-341.** `Contract` has held `active_id`, `cycle` (rotating villain
+  ids, `contract.cycle_length` = 5), `last_contract` (index 0..4 of the most
+  recently issued slot), `max_contract` (next villain to rotate in), and
+  `villains_caught`. At init, `cycle` has been seeded with the first five
+  villain ids, `last_contract = 4`, `max_contract = 5`.
+  `GameTakeNextContract` has incremented `last_contract` (wrapping 0..4) and
+  copied `cycle[last_contract]` to `active_id`.
 
 ### 21.3 Fulfilment
 
-- **REQ-342.** A combat win on a villain castle calls
-  `GameFulfillContract(villain_id)`: credits `gold += villain.reward`, sets
-  the caught flag, clears `active_id`, and rotates the next uncaught villain
+- **REQ-342.** A combat win on a villain castle has called
+  `GameFulfillContract(villain_id)`: credited `gold += villain.reward`, set
+  the caught flag, cleared `active_id`, and rotated the next uncaught villain
   (from `max_contract`) into `cycle[last_contract]`, incrementing
-  `max_contract`. Capture also sets the castle's `owner_kind =
-  CASTLE_OWNER_PLAYER` and triggers the rank-up check (§8.4). The Find Villain
-  spell marks the active contract's castle `known = true` (§19.3).
+  `max_contract`. Capture has also set the castle's `owner_kind =
+  CASTLE_OWNER_PLAYER` and triggered the rank-up check (§8.4). The Find
+  Villain spell has marked the active contract's castle `known = true`
+  (§19.3).
 
 ---
 
@@ -1660,13 +1762,13 @@ except where a deviation is explicitly flagged (§34).
 
 ### 22.1 Chest table and roll
 
-- **REQ-350.** `economy.chest` holds chance/value tables indexed by zone
-  (0..3):
+- **REQ-350.** `economy.chest` has held chance/value tables indexed by zone
+  tier (0..3); the `kings-bounty` values:
 
   ```
   chance_gold        = [61, 66, 76, 71]
   chance_commission  = [81, 86, 86, 81]
-  chance_spell_power = [86, 92, 93, 91]
+  chance_spell_power = [83, 89, 89, 86]
   chance_max_spells  = [86, 92, 93, 91]
   chance_new_spell   = [101, 101, 101, 101]
   gold_min           = [0, 4, 9, 19]
@@ -1676,35 +1778,40 @@ except where a deviation is explicitly flagged (§34).
   max_spells_base    = [1, 1, 2, 2]
   ```
 
-- **REQ-351.** `GameRollChest(zone, x, y)` (`engine/game.c`) rolls `chance =
-  (chest_rand(g,x,y,1) % 100) + 1` and walks cumulative thresholds in order (gold → commission → spell_power → max_spells → new_spell → empty) taking the
-  first whose threshold exceeds `chance`. Because `chance_spell_power ==
-  chance_max_spells` element-wise, the **max_spells** outcome is unreachable in
-  the shipped tables (OpenKB-faithful collision, preserved).
-- **REQ-352.** `GamePeekChest` is a read-only equivalent (no mutation) used by
-  the autoplay planner (§36) to pre-plan chest choices.
+- **REQ-351.** `GameRollChest(zone, x, y)` (`engine/game.c`) has rolled
+  `chance = (chest_rand(g,x,y,1) % 100) + 1` and walked cumulative thresholds
+  in order (gold → commission → spell_power → max_spells → new_spell → empty),
+  taking the first whose threshold exceeds `chance`. `chance_spell_power`
+  has sat three to five points below `chance_max_spells` in every tier, so
+  the **max_spells** outcome has had that window (REQ-525). A chest with a
+  declared `gold` has rolled nothing (REQ-230d).
+- **REQ-352.** `GamePeekChest` has been a read-only equivalent (no mutation)
+  used by the autoplay planner (§36) to pre-plan chest choices.
 
 ### 22.2 Outcomes
 
-- **REQ-353.** **Gold**: `points ∈ [gold_min, gold_max]`; `gold = points *
-  100`; an A/B prompt offers take-gold vs distribute (`+leadership = gold/50`,
+- **REQ-353.** The outcomes have been: **Gold**: `points ∈ [gold_min,
+  gold_max]`; `gold = points * 100`; an A/B prompt offers take-gold vs
+  distribute (`+leadership = gold/50`,
   doubled with `DOUBLE_LEADERSHIP`). Resolved via `GameAcceptChestGold` /
   `GameAcceptChestLeadership`. **Commission**: `commission_weekly += points ∈
   [commission_min, commission_max]`. **Spell power**: `+1`. **Max spells**
-  (unreachable): `+= max_spells_base[zi]`, doubled by `DOUBLE_MAX_SPELLS`.
+  `+= max_spells_base[zi]`, doubled by `DOUBLE_MAX_SPELLS`.
   **New spell**: a random spell, count `(chest_rand % (zi+1)) + 1`. **Empty**:
-  no change. Every outcome consumes the chest tile (adds to `consumed[]`).
+  no change. Every outcome has consumed the chest tile (added to
+  `consumed`).
 
 ### 22.3 Other chest types
 
-- **REQ-354.** **Navmap chest** reveals the next undiscovered zone
-  (`world.zones_discovered[zi+1] = true`) and consumes. **Orb chest** reveals
-  the entire current zone's fog (`world.orbs_found[zi] = true`); the worldmap
-  then supports a Space-toggle between fog-gated and fully-revealed views.
-  **Telecave**: tiles paired by index within a zone (0↔1, 2↔3); stepping on one
-  teleports to its pair (an odd telecave is a one-way dead-end). **Signpost**:
-  each sign tile carries per-tile `sign_title` / `sign_body` shown in a dialog;
-  there is no global sign index.
+- **REQ-354.** A **navmap chest** has revealed the next undiscovered zone
+  (`world.zones_discovered[zi+1] = true`) and been consumed. An **orb chest**
+  has revealed the entire current zone's fog (`world.orbs_found[zi] = true`);
+  the worldmap has then supported a toggle between fog-gated and
+  fully-revealed views. **Telecaves** have been paired by index within a zone
+  (0↔1, 2↔3); stepping on one has teleported to its pair (an odd telecave is a
+  one-way dead-end). **Signposts**: each sign tile has carried per-tile
+  `sign_title` / `sign_body` shown in a dialog; there has been no global sign
+  index.
 
 ---
 
@@ -1712,11 +1819,12 @@ except where a deviation is explicitly flagged (§34).
 
 ### 23.1 Sources and sinks
 
-- **REQ-360.** Gold sources: starting gold (`class.starting_gold`), weekly
-  commission (`gold += commission_weekly`), chest gold, villain reward. Gold
-  sinks: troop recruitment (`recruit_cost * count`), boat rental (per week),
-  spell purchase (`cost`), siege weapons (3000, one-time), alcove (5000,
-  one-time).
+- **REQ-360.** Gold sources have been: starting gold
+  (`class.starting_gold`), weekly commission (`gold += commission_weekly`),
+  chest gold, villain reward. Gold sinks have been: troop recruitment
+  (`recruit_cost * count`), boat rental (per week), spell purchase (`cost`),
+  siege weapons (3000, one-time), the alcove (`GameAlcoveCost`, once per zone
+  under rites per zone), and in modern Rome the Tribute (REQ-430q).
 
 ### 23.2 Week-end ordering
 
@@ -1724,7 +1832,7 @@ except where a deviation is explicitly flagged (§34).
   day/week rollover): (1) `time_stop = 0`; (2) `leadership_current =
   leadership_base`; (3) `astrology = GamePickAstrologyCreature(week_id)`;
   (4) `gold += commission_weekly`, `last_commission = commission_weekly`;
-  (5) `gold -= sum(stack.count * (recruit_cost / 10))`; (6) if `boat.has_boat`,
+  (5) `gold -= sum(slot.count * (recruit_cost / 10))`; (6) if `boat.has_boat`,
   `gold -= GameBoatCost`, repossessing the boat on shortfall; (7) `gold =
   max(0, gold)`; (8) astrology effects (§24).
 
@@ -1734,57 +1842,58 @@ except where a deviation is explicitly flagged (§34).
 
 ### 24.1 Pick
 
-- **REQ-370.** `GamePickAstrologyCreature(week_id)` (`engine/game.c`) returns
-  troop 0 (peasants) when `(week_id & 3) == 0` (every 4th week from week 0);
+- **REQ-370.** `GamePickAstrologyCreature(week_id)` (`engine/game.c`) has
+  returned troop 0 (peasants) when `(week_id & 3) == 0` (every 4th week from week 0);
   otherwise `1 + ((seed XOR week_id) * 1664525 + 1013904223) mod (troops_count
   - 1)` (deterministic, so a reload shows the same creature).
 
 ### 24.2 Effects
 
 - **REQ-371.** `GameApplyAstrology(troop_idx)`: dwellings whose `troop_id`
-  matches refill to `max_population` (non-matching keep their count). For each
-  non-player castle and each hostile foe, every stack matching the astrology
-  creature grows by `troop.growth_per_week`. When the week is Peasants, every
-  player-army stack with `TROOP_ABIL_ABSORB` (ghosts) has its id rewritten to
-  `peasants` (count preserved). When no astrology event applies,
-  `GameGrowDwellings` grows all dwellings by their `growth_per_week` instead
-  (capped at `max_population`).
+  matches have refilled to `max_population` (non-matching have kept their
+  count). For each non-player castle and each hostile foe, every troop
+  matching the astrology creature has grown by `troop.growth_per_week`. When
+  the week is Peasants, every player-army slot with `TROOP_ABIL_ABSORB`
+  (ghosts) has had its id rewritten to `peasants` (count preserved). When no
+  astrology event applies, `GameGrowDwellings` has grown all dwellings by
+  their `growth_per_week` instead (capped at `max_population`).
 
 ### 24.3 Week-end dialog
 
-- **REQ-372.** After processing, a two-phase dialog sequence is queued
-  (`src/shell_weekend.c`): **Phase 1 (Astrology)** shows the new week's
-  creature; **Phase 2 (Budget)** shows gold on hand, commission paid, boat cost
-  (if any), per-stack upkeep, and the final balance. Dismissed by any key.
+- **REQ-372.** After processing, a two-phase dialog sequence has been queued
+  (`src/shell_weekend.c`): **Phase 1 (Astrology)** has shown the new week's
+  creature; **Phase 2 (Budget)** has shown gold on hand, commission paid, boat
+  cost (if any), per-troop upkeep, and the final balance. Any key has
+  dismissed it.
 
 ---
 
 ## 25. Combat
 
-Combat has been **fully implemented** (engine state machine + rendered shell
-loop + golden-digest regression tests). The engine half lives in
-`engine/combat.c` (state, AI, headless turn loop, damage formula, combat
-spells); the rendered loop (`RunCombat`, modal input, target picker, per-frame
-present) lives in `src/combat_loop.c`; the battlefield renderer is
-`src/combat_render.c`. Both halves share the `Combat` struct in
-`engine/include/combat.h`.
+The engine half of combat has lived in `engine/combat.c` (state, AI,
+headless turn loop, damage formula, combat spells); the rendered loop
+(`RunCombat`, modal input, target picker, per-frame present) in
+`src/combat_loop.c`; the battlefield renderer in `src/combat_render.c`. Both
+halves have shared the `Combat` struct in `engine/include/combat.h`, and
+golden-digest regression tests have pinned the formulas.
 
 ### 25.1 Arena
 
 - **REQ-380.** The grid has been 6 columns × 5 rows (`COMBAT_W = 6`,
-  `COMBAT_H = 5`), each cell 48×34 design pixels holding at most one unit. Each
-  side has up to 5 slots (`COMBAT_SLOTS = 5`); player = side 0
-  (`COMBAT_SIDE_PLAYER`), AI = side 1. Two modes: **field**
-  (`COMBAT_MODE_FOE`, open field, scattered obstacles) and **castle**
-  (`COMBAT_MODE_CASTLE`, siege layout with walls). The player starts one stack
-  per row (slot i → column 0, row i). The obstacle map (`omap`) uses codes
-  1..3 for field obstacles and 5..10 for castle walls (0 = open); the unit map
-  (`umap`) holds packed unit ids (1-based; 0 = empty). Both maps are sized
-  `[H+1][W+1]` for off-by-one guards.
+  `COMBAT_H = 5`), each cell one map tile (48×34 design pixels in legacy, the
+  pack's tile in modern) holding at most one unit. Each side has had up to 5
+  slots (`COMBAT_SLOTS = 5`); player = side 0 (`COMBAT_SIDE_PLAYER`), AI =
+  side 1. Two modes: **field** (`COMBAT_MODE_FOE`, open field, scattered
+  obstacles) and **castle** (`COMBAT_MODE_CASTLE`, siege layout with walls).
+  The player has started one troop per row (slot i → column 0, row i). The
+  obstacle map (`omap`) has used codes 1..3 for field obstacles and 5..10 for
+  castle walls (0 = open); the unit map (`umap`) has held packed unit ids
+  (1-based; 0 = empty). Both maps have been sized `[H+1][W+1]` for off-by-one
+  guards.
 
 ### 25.2 Combat state
 
-- **REQ-381.** The `Combat` struct holds `units[2][5]`, `omap`, `umap`,
+- **REQ-381.** The `Combat` struct has held `units[2][5]`, `omap`, `umap`,
   `spoils[2]`, `powers[2]` (per-side artifact bits), `heroes[2]` (`g` for
   player, `NULL` for AI), `turn`, `phase`, `spells_this_round`, `side`,
   `unit_id`, `castle` (siege flag), `first_kill_seen`, `stacks_destroyed`,
@@ -1793,7 +1902,7 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   (`cast_phase`, `cast_spell_idx`, `pick_reason`, `pick_filter`, first-target
   and destination scratch), `result` (0 running / 1 player win / 2 AI win),
   `villain_id`, `mode`, `target_name`.
-- **REQ-382.** A `CombatUnit` holds `troop_idx` (-1 = empty), `count`,
+- **REQ-382.** A `CombatUnit` has held `troop_idx` (-1 = empty), `count`,
   `turn_count` (snapshot at turn start, for the damage formula), `max_count`
   (snapshot at combat start, the ABSORB/LEECH cap), `dead`, `frame`, `injury`
   (sub-HP residual), `acted`, `retaliated`, `moves`, `shots`, `flights`,
@@ -1801,156 +1910,163 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
 
 ### 25.3 Turn order
 
-- **REQ-383.** The player side acts first each round; within a side, lowest
-  slot index first. `combat_next_unit` scans `[unit_id+1..4]` for the first
-  stack with `count > 0 && !acted`, then wraps via `phase++` to scan
-  `[0..unit_id]`. `combat_reset_turn` resets `acted`/`retaliated`, refreshes
-  `moves = move_rate` and `flights = 2` for FLY units, and (REGEN/Trolls)
-  resets `injury = 0` at the start of the player side. A `frozen` unit skips
-  its turn (`acted = true`), then has `frozen` cleared by the next reset.
+- **REQ-383.** The player side has acted first each round; within a side,
+  lowest slot index first. `combat_next_unit` has scanned `[unit_id+1..4]`
+  for the first unit with `count > 0 && !acted`, then wrapped via `phase++`
+  to scan `[0..unit_id]`. `combat_reset_turn` has reset `acted`/`retaliated`,
+  refreshed `moves = move_rate` and `flights = 2` for FLY units, and
+  (REGEN/Trolls) reset `injury = 0` at the start of the player side. A
+  `frozen` unit has skipped its turn (`acted = true`), then had `frozen`
+  cleared by the next reset.
 
 ### 25.4 Move and fly
 
-- **REQ-384.** `combat_move_unit` moves one tile: out-of-bounds or obstacle →
-  blocked; friendly under-control unit in target → blocked; hostile (or
-  own-side OOC) unit in target → melee attack (`acted = true`); empty cell →
-  relocate, `moves -= 1`, `acted` when `moves == 0`. `combat_fly_unit` ignores
-  obstacles/units and lands only in empty cells; `flights -= 1`, `acted` when
-  `flights == 0`. OOC units keep taking turns but attack their own side.
+- **REQ-384.** `combat_move_unit` has moved one tile: out-of-bounds or
+  obstacle → blocked; friendly under-control unit in target → blocked;
+  hostile (or own-side OOC) unit in target → melee attack (`acted = true`);
+  empty cell → relocate, `moves -= 1`, `acted` when `moves == 0`.
+  `combat_fly_unit` has ignored obstacles/units and landed only in empty
+  cells; `flights -= 1`, `acted` when `flights == 0`. OOC units have kept
+  taking turns but attacked their own side.
 
 ### 25.5 Damage formula
 
-- **REQ-385.** `combat_deal_damage` (`engine/combat.c`) computes final damage:
+- **REQ-385.** `combat_deal_damage` (`engine/combat.c`) has computed final
+  damage:
   1. **External path** (spell): `final_damage = external_damage`.
   2. **Internal path**: `dmg = is_ranged ? (MAGIC ? ranged_min :
-     rand(ranged_min, ranged_max)) : rand(melee_min, melee_max)`; `total = dmg
-     * turn_count`; `skill_diff = attacker.skill + 5 - target.skill`;
-     `final_damage = (total * skill_diff) / 10`. **SCYTHE** (Demon): 10% chance
-     adds `target.hp * ceil(target.count / 2)` after the morale/artifact passes.
-  3. **Morale** (attacker has hero and is in control): Low → `/2`; High → `×1.5`;
-     Normal → unchanged.
+     rand(ranged_min, ranged_max)) : rand(melee_min, melee_max)`; `total =
+     dmg * turn_count`; `skill_diff = attacker.skill + 5 - target.skill`;
+     `final_damage = (total * skill_diff) / 10`. **SCYTHE** (Demon): 10%
+     chance adds `target.hp * ceil(target.count / 2)` after the
+     morale/artifact passes.
+  3. **Morale** (attacker has hero and is in control): Low → `/2`; High →
+     `×1.5`; Normal → unchanged.
   4. **Artifact attacker** `INCREASED_DAMAGE` → `×1.5`.
   5. **Artifact target** `QUARTER_PROTECTION` → `×0.75`.
   6. Accumulate `+= target.injury`; add the SCYTHE bonus.
   7. `kills = final_damage / target.hp`; `injury = final_damage % target.hp`;
-     stack outcome updates count or marks dead.
-- **REQ-386.** A MAGIC ranged attack against an `IMMUNE` defender returns -1
-  (fizzle, no state change); non-MAGIC attacks ignore IMMUNE. Ranged attacks
-  decrement `shots` regardless of outcome. When the target side has the hero,
-  `kills` are added to `g->stats.followers_killed`.
+     the outcome updates count or marks the unit dead.
+- **REQ-386.** A MAGIC ranged attack against an `IMMUNE` defender has
+  returned -1 (fizzle, no state change); non-MAGIC attacks have ignored
+  IMMUNE. Ranged attacks have decremented `shots` regardless of outcome. When
+  the target side has the hero, `kills` have been added to
+  `g->stats.followers_killed`.
 
 ### 25.6 Retaliation
 
-- **REQ-387.** Retaliation fires iff: not external; not already a retaliation
-  pass; the defender has not retaliated this round; the defender survived; the
-  attack was melee (ranged sets `retaliated` early to skip). It is a recursive
-  `combat_deal_damage` from defender to attacker with `retaliation = true`; the
-  flag is set first to prevent infinite recursion, and reset at the unit's next
-  turn.
+- **REQ-387.** Retaliation has fired iff: not external; not already a
+  retaliation pass; the defender has not retaliated this round; the defender
+  survived; the attack is melee (ranged sets `retaliated` early to skip). It
+  has been a recursive `combat_deal_damage` from defender to attacker with
+  `retaliation = true`; the flag has been set first to prevent infinite
+  recursion, and reset at the unit's next turn.
 
 ### 25.7 Special-ability post-effects
 
 - **REQ-388.** **ABSORB** (Ghosts): `count += kills`. **LEECH** (Vampires):
   `count += final_damage / hp`, clamped to `max_count`. **REGEN** (Trolls):
-  `injury = 0` at the start of the player side. **MAGIC** (Druids, Archmages):
-  ranged uses fixed `ranged_min`, cancelled by IMMUNE. **IMMUNE** (Dragons):
-  blocks MAGIC attacks and Fireball/Lightning/Freeze/Turn Undead. **SCYTHE**
-  (Demons): see REQ-385. **UNDEAD**: only Turn Undead targets them; immune to
-  morale.
+  `injury = 0` at the start of the player side. **MAGIC** (Druids,
+  Archmages): ranged uses fixed `ranged_min`, cancelled by IMMUNE. **IMMUNE**
+  (Dragons): blocks MAGIC attacks and Fireball/Lightning/Freeze/Turn Undead.
+  **SCYTHE** (Demons): see REQ-385. **UNDEAD**: only Turn Undead targets them;
+  immune to morale.
 
 ### 25.8 Combat spells
 
-- **REQ-389.** One spell per round (`spells_this_round < 1`); requires the
-  hero's class+rank `knows_magic`. SP comes from `g->stats.spell_power` (the
-  Amulet doubles it at pickup).
+- **REQ-389.** One spell per round (`spells_this_round < 1`); casting has
+  required the hero's class+rank `knows_magic`. SP has come from
+  `g->stats.spell_power` (the Amulet doubles it at pickup).
   - **Clone** (2000): `clones = (sp*10 + injury) / hp`; `count += clones`,
     `max_count += clones`.
   - **Teleport** (500): two-pick workflow (unit, then empty destination).
   - **Fireball** (1500): external `25 * sp`; blocked by IMMUNE.
   - **Lightning** (500): external `10 * sp`; blocked by IMMUNE.
   - **Freeze** (300): sets `frozen`; blocked by IMMUNE.
-  - **Resurrect** (5000): `revived = max(1, sp)`, clamped so `count + revived <=
-    max_count`.
+  - **Resurrect** (5000): `revived = max(1, sp)`, clamped so `count +
+    revived <= max_count`.
   - **Turn Undead** (2000): external `50 * sp` vs UNDEAD only; blocked by
     IMMUNE.
   The target picker (`combat_cell_passes_filter`, shell-side
-  `combat_pick_target`) supports filters `ANY`, `EMPTY`, `ANY_UNIT`,
+  `combat_pick_target`) has supported filters `ANY`, `EMPTY`, `ANY_UNIT`,
   `FRIENDLY`, `ENEMY`, `UNDEAD`.
 
 ### 25.9 Player input
 
 - **REQ-390.** Movement via arrows / numpad 8/4/6/2 (cardinals) and
-  Home/PgUp/End/PgDn or numpad 7/9/1/3 (diagonals); numpad 5 = wait. `S` shoots
-  (rejected when `shots == 0` or surrounded). `U` opens the spell menu (A..G
-  for spells 0..6). `G` (give up) and `Esc` set `result = 2`. `C` shows the
-  controls overlay (modal, does not consume the turn).
+  Home/PgUp/End/PgDn or numpad 7/9/1/3 (diagonals); numpad 5 = wait. `S` has
+  shot (rejected when `shots == 0` or surrounded). `U` has opened the spell
+  menu (A..G for spells 0..6). `G` (give up) and `Esc` have set `result = 2`
+  in legacy; in modern mode Esc has opened the combat menu, whose Game page
+  holds Give up (REQ-533, `docs/MENUS.md`). `C` has shown the controls
+  overlay (modal, not consuming the turn).
 
 ### 25.10 AI behaviour
 
-- **REQ-391.** `combat_ai_action` (`engine/combat.c`) selects, in priority:
-  frozen → skip; close (1-tile) target → melee; ranged when shots > 0 and not
-  surrounded → far target; fly when FLY and flights > 0 → land adjacent to a
-  far target; walk toward closest/far target; else pass. `ai_pick_target`
-  scores far ranged enemies = 10000, others = `1000 - hp` (lower-HP preferred);
-  OOC attackers treat their own side as targetable. Movement tie-breaks iterate
-  `dy ∈ {+1,0,-1}` outer, `dx ∈ {-1,0,+1}` inner.
+- **REQ-391.** `combat_ai_action` (`engine/combat.c`) has selected, in
+  priority: frozen → skip; close (1-tile) target → melee; ranged when shots >
+  0 and not surrounded → far target; fly when FLY and flights > 0 → land
+  adjacent to a far target; walk toward closest/far target; else pass.
+  `ai_pick_target` has scored far ranged enemies = 10000, others = `1000 -
+  hp` (lower-HP preferred); OOC attackers have treated their own side as
+  targetable. Movement tie-breaks have iterated `dy ∈ {+1,0,-1}` outer,
+  `dx ∈ {-1,0,+1}` inner.
 
 ### 25.11 Log, banner, result, spoils
 
-- **REQ-392.** Up to 8 log lines (`COMBAT_LOG_LINES`) ring-buffer from
-  `game.json:combat_log` templates (`melee_hit`, `retaliate`, `ranged_hit`,
-  `frozen`, `immune`, `cloned`, `resurrected`, `teleported`, etc.). The banner
-  shows the actor's name + M/S counters before the first kill, then "<actor>
-  vs <target> killing N".
+- **REQ-392.** Up to 8 log lines (`COMBAT_LOG_LINES`) have ring-buffered from
+  the pack's `combat_log` strings (`melee_hit`, `retaliate`, `ranged_hit`,
+  `frozen`, `immune`, `cloned`, `resurrected`, `teleported`, etc.). The
+  banner has shown the actor's name + M/S counters before the first kill,
+  then "<actor> vs <target> killing N".
 - **REQ-393.** **Win** (`result = 1`): all defenders dead; spoils =
   `sum(troop.spoils * 5 * count)` over killed enemies credited to gold;
   survivors written back to `g->army` with `GameCompactArmy`. **Loss / flee**
-  (`result = 2`): all attackers dead, or Esc/G; triggers temp death (clear
-  army, grant 20 peasants, dismount, drop boat, teleport home).
+  (`result = 2`): all attackers dead, or give up; this has triggered temp
+  death (clear army, grant 20 peasants, dismount, drop boat, teleport home).
 
 ### 25.12 Siege weapons
 
-- **REQ-394.** The `siege_weapons` flag is purchased and persisted but is not
-  checked anywhere in combat or the siege flow (OpenKB-faithful, §38).
+- **REQ-394.** The `siege_weapons` flag has been purchased and persisted but
+  not checked anywhere in combat or the siege flow (OpenKB-faithful, §38).
 
 ### 25.13 Combat RNG
 
-- **REQ-395.** Combat uses an independent LCG (`Combat.rng_state`) seeded by
-  `combat_seed_rng` as a pure function of (world seed, the encounter's stable
-  identity (a foe's `placement_id` or castle id) and the combat mode), so a
-  fight's RNG does not depend on casualty history and the autoplay planner's
-  prediction matches the live outcome. `combat_rand(c, min, max)` advances
-  `state = state * 25214903917 + 11` and returns `min + (state >> 32) % (max -
-  min + 1)`.
+- **REQ-395.** Combat has used an independent LCG (`Combat.rng_state`) seeded
+  by `combat_seed_rng` as a pure function of (world seed, the encounter's
+  stable identity (a foe's `placement_id` or castle id) and the combat mode),
+  so a fight's RNG has not depended on casualty history and the autoplay
+  planner's prediction has matched the live outcome. `combat_rand(c, min,
+  max)` has advanced `state = state * 25214903917 + 11` and returned `min +
+  (state >> 32) % (max - min + 1)`.
 
 ### 25.14 Headless loop and test harness
 
-- **REQ-396.** `combat_run_headless(g, mode, target, cap_rounds)` drives both
-  sides with `combat_ai_action` (no raylib, no input, no animation), mirroring
-  `RunCombat`'s setup + writeback. `combat_test_digest(seed, attacker, count_a,
-  defender, count_b, rounds)` runs a deterministic two-stack fight and returns a
-  64-bit digest; the 25 golden cases in
-  `tests/regression/test_combat_digests.c` run under `make test` to catch
-  formula regressions. `combat_run_headless` / `combat_test_digest` are also
-  exercised by `tests/unit/test_combat_ai.c`.
+- **REQ-396.** `combat_run_headless(g, mode, target, cap_rounds)` has driven
+  both sides with `combat_ai_action` (no raylib, no input, no animation),
+  mirroring `RunCombat`'s setup + writeback. `combat_test_digest(seed,
+  attacker, count_a, defender, count_b, rounds)` has run a deterministic
+  two-troop fight and returned a 64-bit digest; the 25 golden cases in
+  `tests/regression/test_combat_digests.c` have run under `make test` to
+  catch formula regressions. `combat_run_headless` / `combat_test_digest`
+  have also been exercised by `tests/unit/test_combat_ai.c`.
 
 ### 25.15 Render
 
-- **REQ-397.** `src/combat_render.c` draws the arena at `(CL_COMBAT_X = 16,
-  CL_COMBAT_Y = 22)`, size 288×170, cell 48×34. Render order: grass field,
-  obstacles, units (with count badge), damage-flash overlay, picker cursor
-  (when `picker_active`), then chrome and title bar. Only the active unit
-  animates (frames 0..3 at ~150 ms); on frame wrap the AI takes its action.
-  While `RunCombat` is active, `combat_current_rendered` points at its local
-  `Combat` so gameplay-test scenarios can introspect state via the frame-host
-  callback.
+- **REQ-397.** `src/combat_render.c` has drawn the arena at the field origin
+  (`CL_COMBAT_X`, `CL_COMBAT_Y`: 16, 22 in legacy, where the field is 288×170
+  in cells of 48×34; centred in the pane in modern, cells one tile). Render
+  order: the field ground, obstacles, units (with count badge), damage-flash
+  overlay, picker cursor (when `picker_active`), then chrome and title bar.
+  Only the active unit has animated (frames at ~150 ms); on frame wrap the AI
+  has taken its action.
 
 - **REQ-398.** **Beat order of a blow (modern only).** `combat_hit_unit`
-  (`engine/combat.c`) deals the damage, sets the target's `hit_flash = 3` and
-  bumps `attack_seq` in one call, so the engine's numbers change before the
-  swing has been drawn. The shell stages what the player SEES
-  (`src/combat_loop.c`, `src/combat_render.c`); every step is a length of
-  time, not a count of ticks, so every troop swings in the same time:
+  (`engine/combat.c`) has dealt the damage, set the target's `hit_flash = 3`
+  and bumped `attack_seq` in one call, so the engine's numbers change before
+  the swing is drawn. The shell has staged what the player SEES
+  (`src/combat_loop.c`, `src/combat_render.c`); every step has been a length
+  of time, not a count of ticks, so every troop swings in the same time:
 
   1. **0 ms** -- the attacker's strip starts. The target still shows its
      pre-blow count (`turn_count`) and no splat.
@@ -1958,22 +2074,19 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
      splat appears. The whole swing is 360 ms whatever its frame count
      (`ATTACK_STRIP_S`: 90 ms a frame at four frames, 60 ms at six).
   3. **+300 ms** -- the splat is done (`SPLAT_TICK_S` x 3, its own clock, so
-     idle troops keep their 150 ms cycle). A stack the blow killed stays on
+     idle troops keep their 150 ms cycle). A troop the blow killed stays on
      the field under its splat, without a badge, until now; then it leaves
      and the fight moves on.
   4. **End of a fight** -- after the killing blow's splat, the field is held
      0.5 s (`FIGHT_END_HOLD`) before victory or defeat, so the last blow and
      the emptied field are seen.
 
-  About 0.6 s a blow and 1.1 s from the last swing to the ending, where the
-  previous staging took 1.05 s a blow (1.35 s for a six-frame troop) and
-  1.8 s, and dropped the count before the swing.
+  That has come to about 0.6 s a blow and 1.1 s from the last swing to the
+  ending.
 
-  Legacy is unaffected and keeps King's Bounty's timing: `attack_anim_start`
-  returns early when not modern, so no strip ever plays, the burst is drawn on
-  the frame of the hit and decays from there. Measured the same way (King's
-  Bounty, a militia blow): the log line and the burst both appear on frame 288
-  and the burst runs to frame 301.
+  Legacy has kept King's Bounty's timing: `attack_anim_start` returns early
+  when not modern, so no strip plays, and the burst is drawn on the frame of
+  the hit and decays from there.
 
 ---
 
@@ -1983,25 +2096,27 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
 
 - **REQ-400.** `GameComputeScore` (`engine/game.c`): `score = 500 *
   villains_caught + 250 * artifacts_found + 100 * castles_owned -
-  followers_killed`. When difficulty is Easy and `score.easy_halves` is true,
-  the score is halved; otherwise it is multiplied by
-  `score.difficulty_multiplier` `[1, 2, 4, 8]` for Normal/Hard/Impossible
-  (the 5-slot table reserves a ×8 for an unused tier). Clamped at ≥ 0. The
-  score is recomputed at every state mutation and stored in `Game.stats.score`.
+  followers_killed` (the weights from `economy.scoring`). When difficulty is
+  Easy and `easy_halves` is true, the score has been halved; otherwise it has
+  been multiplied by `difficulty_multiplier[difficulty]`, 1 / 2 / 4 for
+  Normal / Hard / Impossible (the 5-slot table's fifth entry, 8, has been
+  unused). The result has been clamped at ≥ 0, recomputed at every state
+  mutation and stored in `Game.stats.score`.
 
 ### 26.2 Win and lose
 
-- **REQ-401.** The **win** fires when the player searches (key `S`) on the
-  buried scepter tile (matching zone, x, y), running `show_win_game`
-  (`engine/flows.c`). The **lose** fires when `days_left` reaches 0 (at the
-  next day rollover), running `show_lose_game`.
+- **REQ-401.** The **win** has fired when the player searches (key `S`) on
+  the buried scepter tile (matching zone, x, y), running `show_win_game`
+  (`engine/flows.c`). The **lose** has fired when `days_left` reaches 0 (at
+  the next day rollover), running `show_lose_game`.
 - **REQ-402.** Both end-game screens (`src/screens/end_game.c`,
-  `engine/include/end_screen.h`) show a left half (DBLUE background) with
-  header/body/footer from `strings.win` or `strings.lose`, and a right half
-  with an end-game cartoon (`src/end_cartoon.c`; animated throne approach for
-  win, lose-art for loss). Substitution tokens: `%NAME%`, `%RANK%`, `%SCORE%`.
-  Render-side concerns (the win cartoon) are invoked by the host before
-  `show_win_game`; the flow itself is render-free.
+  `engine/include/end_screen.h`) have shown a left half (DBLUE background)
+  with header/body/footer from the pack's `win` or `lose` strings, and a
+  right half with an end-game cartoon (`src/end_cartoon.c`; animated throne
+  approach for win, lose-art for loss). Substitution tokens: `%NAME%`,
+  `%RANK%`, `%SCORE%`. Render-side concerns (the win cartoon) have been
+  invoked by the host before `show_win_game`; the flow itself has been
+  render-free.
 
 ---
 
@@ -2011,36 +2126,43 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
 
 ### 27.1 Format
 
-- **REQ-410.** Saves have been **JSON, version 8** (`SAVE_VERSION` in
-  `engine/include/savegame.h`). Catalog references use string ids
-  (`troop_id: "knights"`), so saves are human-readable and pack-portable.
-  Read/write is `engine/savegame.c`; the full-state snapshot builder is
-  `engine/state_serialize.c`.
+- **REQ-410.** Saves have been **JSON, version 11** (`SAVE_VERSION` in
+  `engine/include/savegame.h`). Catalog references have used string ids
+  (`troop_id: "knights"`), so saves have been human-readable and
+  pack-portable. Read/write has been `engine/savegame.c`; the full-state
+  snapshot builder `engine/state_serialize.c`.
 - **REQ-411.** Save slots: 10 (`SAVE_SLOT_COUNT` in
-  `engine/include/savepath.h`). Filenames: `save_0.dat` … `save_9.dat` under
-  the platform save directory.
+  `engine/include/savepath.h`). Filenames: `save_0.dat` … `save_9.dat`.
 - **REQ-412.** Save directory (`engine/savepath.c`):
+  `<user-data>/saves/<pack_id>/`, one directory per pack, where
+  `<user-data>` has been:
   - **Linux**: `$XDG_DATA_HOME/openbounty/` if set, else
     `~/.local/share/openbounty/`. Created on first save.
+  - **macOS**: `~/Library/Application Support/OpenBounty/`.
   - **Windows**: `%APPDATA%\OpenBounty\`.
-- **REQ-413.** Fog of war is encoded compactly in the save (per-tile bits).
-  The scepter location is stored in the save (with the XOR key kept for parity,
-  §4.3).
+  - **Web**: `/saves`, an IndexedDB-backed mount the page syncs.
+  `--save-dir <dir>`, iOS (the app's `Documents/saves`) and Android (the
+  app's private `saves` directory) have used a flat directory with no
+  per-pack level.
+- **REQ-413.** Fog of war has been encoded compactly in the save (per-tile
+  bits), from each zone's own width and height. The scepter location has been
+  stored in the save (with the XOR key kept for parity, §4.3).
 
 ### 27.2 Schema and load
 
-- **REQ-414.** The save schema mirrors the `Game` struct field-for-field (§4),
-  so serialization round-trips without loss. The one deliberate exception is the
-  seed: a catalog game writes `seed_from_catalog: true` and `seed_index`, and
-  re-derives `Game.seed` on load (REQ-166, REQ-186); a raw-seed game writes
-  `seed_from_catalog: false` and the `seed` itself. Writing the index rather
-  than the expanded seed is what makes the round-trip exact, cJSON numbers are
-  doubles, so a full-width seed would not survive above 2^53. A save-format
-  change bumps `SAVE_VERSION` and updates/replaces the golden fixture
-  (`tests/fixtures/save_v1.dat`) and the round-trip regression test.
-- **REQ-415.** On load, the caller re-applies `consumed[]` tile mutations to
-  the loaded map (`GameApplyTileMutations`) and restores per-continent fog, so
-  consumed tiles render and behave as plain terrain.
+- **REQ-414.** The save schema has mirrored the `Game` struct field-for-field
+  (§4), so serialization has round-tripped without loss. The one deliberate
+  exception has been the seed: a catalog game writes `seed_from_catalog:
+  true` and `seed_index`, and re-derives `Game.seed` on load (REQ-166,
+  REQ-186); a raw-seed game writes `seed_from_catalog: false` and the `seed`
+  itself. Writing the index rather than the expanded seed has made the
+  round-trip exact: cJSON numbers are doubles, so a full-width seed would not
+  survive above 2^53. A save-format change has bumped `SAVE_VERSION` and
+  updated or replaced the golden fixture (`tests/fixtures/save_v1.dat`) and
+  the round-trip regression test.
+- **REQ-415.** On load, the caller has re-applied the `consumed` tile
+  mutations to the loaded map (`GameApplyTileMutations`) and restored
+  per-continent fog, so consumed tiles render and behave as plain terrain.
 
 ---
 
@@ -2048,530 +2170,524 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
 
 ### 28.1 `Resources`
 
-- **REQ-420.** `Resources` (`engine/include/resources.h`) has been loaded once
-  from `game.json` at startup (`engine/resources.c`) and treated as read-only
-  thereafter. It holds: world/time/economy/tuning/contract/combat blocks; the
-  troop/spell/artifact/villain/class catalogs; castle/town/zone tables; the
-  128-entry tile-code table; sprite paths; colors; audio metadata; controls
-  rows; and all `strings.*` (banners, UI labels, villain descriptions, win/lose
-  text, count buckets). Array sizes are compile-time bounded (§3.2).
-- **REQ-421.** Where a required numeric value is absent from `game.json`, the
-  engine substitutes a documented default; where a required string is absent,
-  it substitutes a built-in English fallback (so a minimal pack can omit
-  `strings` entirely).
+- **REQ-420.** `Resources` (`engine/include/resources.h`) has been loaded
+  once at startup (`engine/resources.c`) from the pack's `game.json` and its
+  `strings/<lang>.json` (the base `world.language`, or `--lang`), and treated
+  as read-only thereafter. It has held: world/time/economy/tuning/contract/
+  combat blocks; the troop/spell/artifact/villain/class catalogs;
+  castle/town/zone tables; the tile-code table; sprite paths; colors; audio
+  metadata; controls rows; and every string (banners, UI labels, villain
+  descriptions, win/lose text, count buckets). Every table has been heap,
+  sized by the pack (§3.1).
+- **REQ-421.** Where an optional numeric value is absent from `game.json`, the
+  engine has substituted a documented default. The engine has carried no text
+  of its own: a pack missing any required string key has been refused at load,
+  with every missing key printed.
 
-### 28.2 Asset embedding
+### 28.2 Asset loading
 
-- **REQ-422.** In embedded-asset mode (`-DEMBED_ASSETS`, used for the Linux
-  release and all Windows builds), `scripts/embed_assets.sh` walks `assets/`
-  and emits `build/embedded.c` + `build/embedded.h` containing every file as a
-  byte array plus a path→data lookup; the shell asset loader (`src/assets.c`)
-  reads from these tables instead of the filesystem. Engine-side byte reads go
-  through `LoadAssetBytes` (`engine/assets_bytes.c`); shell-side texture loads
-  go through `LoadAssetTexture` (`src/assets.c`). The engine never touches GPU
-  textures.
+- **REQ-422.** Every build has read its game data from a pack: a
+  `.openbounty` zip, or a loose directory holding `game.json`. Engine-side
+  byte reads have gone through `LoadAssetBytes` (`engine/assets_bytes.c`);
+  shell-side texture loads through `LoadAssetTexture` (`src/assets.c`). The
+  engine has never touched GPU textures.
 
 ---
 
 ## 29. UI: views, HUD, dialogs, prompts
 
+`docs/UI-PANELS.md` has tabulated every modern panel's size and position, and
+`docs/MENUS.md` every menu; this section has held the rules.
+
 ### 29.1 Adventure HUD and chrome
 
-- **REQ-430.** The adventure layout (`src/chrome.c`, `src/hud.c`,
-  `src/map_render.c`, constants in `src/layout.h`): a **top status bar** (yellow
-  border) showing Options / Controls / Days Left; a **map viewport** (5×5 tiles,
-  240×170, hero centred, camera clamped at zone edges); a **right sidebar**
-  (48px: portrait, contract/siege/magic/puzzle icons, gold); and a **bottom**
-  region that drops out for dialogs and prompts.
-- **REQ-430a.** A modern pack may fix its buffer with `render.native_w` /
-  `native_h` (`CL_IS_NATIVE`, `src/layout.c`): the screen is that size, the
-  viewport is exactly the declared tile count, and the leftover space widens
-  the chrome bands (`g_layout.frame_l/r/t/b`, read by the `CL_FRAME_*`
-  macros) so the map stays centred. `layout_fit_window` is then a no-op, the
-  minimum window is the buffer, and `present_scale` shows the buffer at the
-  largest of 1x, 2x, 3x that fits (`CL_SCALE_MAX_NATIVE`), letterboxed. The
-  Scale control cycles 1x → 2x → 3x → 1x, wrapping at what the monitor can
-  hold, and resizes the window to the buffer times the scale
-  (`present_zoom_window`; not in fullscreen). The camera centres the hero
+- **REQ-430.** The legacy adventure layout (`src/chrome.c`, `src/hud.c`,
+  `src/map_render.c`, constants in `src/layout.h`): a **top status bar**
+  (yellow border) showing Options / Controls / Days Left; a **map viewport**
+  (5×5 tiles, 240×170, hero centred, camera clamped at zone edges); a **right
+  sidebar** (48px: portrait, contract/siege/magic/puzzle icons, gold); and a
+  **bottom** region that drops out for dialogs and prompts. The modern layout
+  has kept the same parts at the pack's sizes (UI-PANELS, "The screen").
+- **REQ-430a.** **A declared buffer.** A modern pack has been able to declare
+  its buffer with `render.native_w` / `native_h` (`CL_IS_NATIVE`,
+  `src/layout.c`): at that size the viewport has been exactly the declared
+  tile count, and `layout_init` has laid the leftover space out as edges, a
+  band between the pane and the HUD, and the status band, so the map stays
+  centred. The buffer has been a floor, not a fixed size: the scale and the
+  world map's growth have followed REQ-528. The camera has centred the hero
   with a radius per axis (`RADIUS_X`, `RADIUS_Y` in `src/map_render.c`), so a
-  7 x 5 viewport centres on both. Legacy and a modern pack without a native
-  size behave as before (2026-09-08).
+  7 x 5 viewport centres on both.
 - **REQ-430b.** **Code-drawn chrome.** A modern pack without
-  `sprites.ui.chrome_overworld` gets the gold lattice (`src/lattice.c`): a
+  `sprites.ui.chrome_overworld` has had the gold lattice (`src/lattice.c`): a
   cross-hatch pattern built once as a texture at `ui_scale` and tiled from the
-  screen origin. `chrome_draw` and `chrome_draw_with_status` fill the four
-  frame bands and the bar band with it; `ui_panel_frame` draws it as a
-  two-unit ring inside each HUD panel; `ui_window_frame` draws a four-unit
-  ring just outside every window rect, replacing the one-pixel line at the
-  prompt, location-menu, credits, encode-dialog, view (character, army, gate,
-  puzzle, map, spells), contract-panel, dialog-box and combat spell-menu
-  sites, which in legacy still draw the line in their historic colour.
-  Splash, title and class-picker art draws at the largest whole scale that
-  fits the buffer (`ui_fit_scale`; legacy stays at 1x). Rome ships no chrome
-  bitmap or bar strip (2026-09-08).
-- **REQ-430c.** **Pack-declared TrueType font, proportional.** A modern
-  pack may declare a `font` block (`file`, `size`, `caps`, `license`;
-  `ResFont`, `engine/resources.c`, both paths in the manifest). The shell
-  has two text backends behind the `bfont_*` names: the bitmap strip in its
-  `8 * ui_scale` cell (legacy, and any pack without the block, unchanged),
-  and `src/text.c`, which rasterises the face at `size` through raylib's
-  `LoadFontData`, draws every glyph centred in one fixed cell (the face's
-  widest advance) on its baseline, and uppercases when `caps` is set. `bfont_preload_metrics` runs before
-  `layout_init` (CPU only) so `BFONT_GLYPH_H` is the face's line height and
-  `BFONT_GLYPH_W` the advance of `0`; `CL_STATUS_H` and `CL_PANEL_H`
-  (`src/layout.h`) are expressed in those and evaluate to 9 and 68 in
-  legacy. `bfont_take_line` wraps to a pixel width: legacy by
-  `max_w / 8` characters keeping every newline (the wrap the dialog and
-  prompt carried as private copies); modern by the face's cell, every
-  newline kept as authored. `layout_init` lets a
-  fixed buffer's top and bottom bands shrink to a two-unit floor to hold a
-  taller status band. Rome ships Press Start 2P (SIL OFL) at 16, a 16 px cell (2026-09-09).
-  Modern panels wrap to their own inner width rather than the legacy
-  30-column budget. Views take the map pane's full height (`VIEW_H`),
-  which in legacy is the content rect it always was.
-- **REQ-430d.** **Rendered at zoom.** For a fixed buffer (`CL_IS_NATIVE`)
-  the render target is the buffer times the presentation scale
-  (`present_target_size`, `present_refit`), every frame site draws through
-  `present_begin`/`present_end`, a camera at that zoom, so all draw calls
-  keep design coordinates and art is pixel-identical to the integer blit it
-  replaces; `present_scaled` blits the target 1:1 and stores the zoom so
-  `present_window_to_screen` still yields design pixels. The map scissor
-  multiplies by `present_get_zoom`. `bfont_set_zoom` rebuilds the TrueType
-  atlas at size times zoom; design metrics never change, only sharpness. The zoom is locked while the recorder runs
-  (one frame size per movie). Legacy: plain `BeginTextureMode`, 320x200
-  target, unchanged (2026-09-08).
+  screen origin. `chrome_draw` and `chrome_draw_with_status` have filled the
+  frame bands and the bar band with it; `ui_panel_frame` has drawn it as a
+  two-unit ring inside each HUD panel; `ui_window_frame` has drawn a four-unit
+  ring just outside every window rect (prompt, location menu, credits,
+  encode dialog, views, contract panel, dialog box, combat spell menu), where
+  legacy draws a one-pixel line in its original colour. Splash, title and
+  class-picker art has drawn at the largest whole scale that fits the buffer
+  (`ui_fit_scale`; legacy at 1x). Rome has shipped no chrome bitmap or bar
+  strip.
+- **REQ-430c.** **Pack-declared TrueType font.** A modern pack has been able
+  to declare a `font` block (`file`, `size`, `caps`, `license`; `ResFont`,
+  `engine/resources.c`, both paths in the manifest). The shell has had two
+  text backends behind the `bfont_*` names: the bitmap strip in its
+  `8 * ui_scale` cell (legacy, and any pack without the block), and
+  `src/text.c`, which rasterises the face at `size` through raylib's
+  `LoadFontData` (stb_truetype on iOS), draws every glyph centred in one
+  fixed cell (the face's widest advance) on its baseline, and uppercases when
+  `caps` is set. `bfont_preload_metrics` has run before `layout_init` (CPU
+  only) so `BFONT_GLYPH_H` is the face's line height and `BFONT_GLYPH_W` the
+  advance of `0`; `CL_STATUS_H` and `CL_PANEL_H` (`src/layout.h`) have been
+  expressed in those and evaluated to 9 and 68 in legacy. `bfont_take_line`
+  has wrapped to a pixel width: legacy by `max_w / 8` characters keeping
+  every newline; modern by the face's cell, every newline kept as authored.
+  Rome has shipped Press Start 2P (SIL OFL) at 16, a 16 px cell. Modern
+  panels have wrapped to their own inner width. Views have taken the map
+  pane's full height (`VIEW_H`), which in legacy is the content rect.
+- **REQ-430d.** **Rendered at zoom.** For a declared buffer (`CL_IS_NATIVE`)
+  the render target has been the buffer times the presentation scale
+  (`present_target_size`, `present_refit`), and every frame site has drawn
+  through `present_begin`/`present_end`, a camera at that zoom, so all draw
+  calls keep design coordinates and art is pixel-identical to an integer
+  blit; `present_scaled` has blitted the target 1:1 and stored the zoom so
+  `present_window_to_screen` yields design pixels. The map scissor has
+  multiplied by `present_get_zoom`. `bfont_set_zoom` has rebuilt the TrueType
+  atlas at size times zoom; design metrics never change, only sharpness.
+  Legacy: plain `BeginTextureMode`, a 320x200 target.
 - **REQ-430e.** **Cursor selection on every menu (modern).** One helper,
-  `src/select.c`: `sel_input` moves a list cursor with Up/Down (W/S,
-  KP8/KP2), confirms with Enter/KP Enter/Space, and treats a tapped row
+  `src/select.c`: `sel_input` has moved a list cursor with Up/Down (W/S,
+  KP8/KP2), confirmed with Enter/KP Enter/Space, and treated a tapped row
   (`touch_tapped_row`) or the screen's hotkey as select-and-confirm;
-  `sel_row` draws the cursor row inverted, a bar in the row colour with
-  the text in the panel colour, and registers the row's tap region. Wired
-  into the town menu, game menu, controls, gate picker, spell panel
-  (Left/Right switch column), combat spell menu, recruit soldiers, own
-  castle slots, the save picker and difficulty rows, the class picker (a
-  lattice ring on the selected column, Left/Right, Enter), and the yes/no
-  prompt (Yes and No rows; Enter confirms the cursor row rather than
-  answering yes). The old letters and digits still answer everywhere. In
-  legacy `sel_input` returns nothing and `sel_row` draws plain text, so
-  every legacy screen keeps its own handling and pixels; numeric and A/B
-  prompts and the debug menu keep their key form (2026-09-09).
-- **REQ-430g.** **Dimmed scene under detail views (modern).** Whenever a
-  view, a prompt or a dialog is open, `overlay_draw` first darkens the
-  chrome interior (map pane and sidebar, not the status band or frame) with
-  black at the pack's `render.dim` percent (default 55, 0 disables), then
-  draws the panel, so the panel is what the eye lands on and the live map
-  stays readable behind it. Location screens (town, castles, dwelling,
-  alcove, recruit) no longer black out the pane around their backdrop card
-  in modern; the card floats on the dimmed map. Combat dims the field under
-  its spell picker, the victory dialog, prompts and any opened view. Toasts
-  do not dim. `overlay_dim_scene` / `overlay_dim_alpha` (`src/overlay.c`);
-  legacy never dims and draws exactly as before.
-- **REQ-430h.** **One panel rect (modern).** (Every panel's size and position by circumstance is tabulated in `docs/UI-PANELS.md`.) Every bottom text panel, the
-  message dialog, the prompts, the town, castle, dwelling, alcove and recruit
-  menus, is exactly the content rect in width and left edge (`CL_PANEL_X`,
-  `CL_PANEL_W`), eight text lines tall, bottom-aligned in the content rect,
-  and the location backdrop card sits directly above it at the same edge and
-  width. Legacy keeps its one-sided 5 px margin. Also settled with the
-  2026-09-11 overlay audit: dialog headers wrap like body text (the audience
-  passes the Emperor's words as the header); the four legacy arrow control
-  codes render as the font's arrow glyphs; the Options panel sizes itself to
-  its list and splits the keybinds into two columns when they do not fit;
-  recruit rows pad the name to the longest in the pool; empty army slots stay
-  panel-coloured; the character card prints zeros; Escape on the map opens
-  the Game Menu (`INPUT_ACTION_GAME_MENU`). Legacy is unchanged in all of these.
-- **REQ-430i.** **The draw layer is forked; legacy is frozen.** The overlay,
-  the detail views and the prompt panel each exist twice: `src/legacy/` holds
-  the DOS original's drawing and `src/modern/` holds the modern UI's, with
-  `src/overlay.c`, `src/views_render.c` and `src/prompt.c` reduced to
-  dispatchers that keep the public entry points, the layer order and any state
-  (the dialog's text and page, the world map's reveal flag, the prompt's state
-  machine) and send only the drawing to one side or the other, through
-  `*_impl.h`. Legacy's copies are frozen: their behaviour is the specification,
-  so they are not edited to serve anything modern needs, and new UI work lands
-  in `src/modern/` alone. `tests/unit/test_legacy_freeze.c` holds legacy's
-  geometry and pure logic to fixed values -- chrome bands, map, sidebar,
-  content and panel rects, window scale, the 30-column wrap, dialog paging,
-  prompt state, and the two modern-only selectors staying inert -- so a modern
-  change that would move a legacy pixel fails the build instead of shipping.
-  `src/layout.h` is deliberately NOT forked: both paths draw into one
-  coordinate system (2026-09-12).
-
-- **REQ-430j.** **Five named layouts and one menu (modern).** Every modern
-  panel draws into one of five rects, computed from the map pane, the sidebar
-  and the tile and never from `ui_scale` (`src/modern/mlayout.c`): **small**,
-  the full pane width one tile tall along its bottom, for prompts and any
-  message that fits; **large**, six by four tiles centred in the pane, for
-  longer messages, the game menu and its Controls page, and combat's spell
-  picker and victory dialog; **location**, the backdrop across the top of the
-  pane at the smallest whole-number scale that covers its width (cropped
-  evenly at the sides) with the text area directly under it reaching the HUD,
-  shared by the town, both castles, the dwelling, the alcove and recruiting;
-  **full screen**, the pane plus the HUD with the status band left visible,
-  for every detail view; and the toast, unchanged. A message or prompt takes
-  the small band when its header, whole body and answer rows fit, and the
-  large rect otherwise; the pager asks the same function that places the
-  panel, so the page count and the panel cannot disagree. Modern has one game
-  menu: Screens and Actions pages built from the pack's `keybinds` (a single
-  letter, or `5` for rest), filtered to what applies to the hero (Fly only
-  when not flying), then Controls, Save, Load, New Game and Exit; no row shows
-  a key. Choosing a Screens or Actions row closes the menu and presses its key
-  on the next frame, so every action runs the path its keypress does. `O` opens the menu and the Options panel is retired in
-  modern. Legacy keeps `CL_CONTENT_*` / `CL_PANEL_*`, its own menu and the
-  Options panel; the location screens reach their text rect through
-  `screens_text_rect`, which the freeze tests pin to the legacy panel
-  (2026-09-12).
-- **REQ-430k.** **Menu driven (modern) and `--debug`.** In modern every
-  action is a row reached by the arrows and Enter or a tap; keys remain as
-  shortcuts and nothing is reachable only by a key. Rows carry no key letters.
-  The home castle has Recruit and Audience rows; the own castle's first row
-  flips Garrison / Remove; the world map, with the orb, has a row that swaps
-  your map and the whole map; class select dims the unselected figures, frames
-  and names the selected one, and has a Load saved game row; numeric and A/B
-  prompts answer by rows taken from the body's own choice lines (`1. Italia`,
-  `A) Take the gold`) or set by the opener (dismiss lists the troops), and the
-  touch answer bar is not shown; Ctrl+Q asks with the yes/no prompt; a tap
-  skips the end cartoon. In combat, Enter or a tap on the active unit opens an
-  Actions menu in the large rect -- Wait, Shoot, Fly, Cast a spell, Army,
-  Character, Controls, Give up, less the rows that cannot apply -- whose rows
-  press their key next frame; the Options panel and the touch verb bar are not
-  used. The debug cheats are reachable only when the game is started with
-  `--debug`, as a Debug page at the end of the modern game menu; without the
-  flag no key or row reaches them in either mode (F10 is gone). Legacy is
-  otherwise unchanged (2026-09-12).
-- **REQ-430l.** **Standard select rows (modern).** A list of choices is drawn
-  as rows half a tile tall (never shorter than a text line plus padding),
-  stacked from the top of their column with a 2 px rail under each, and never
-  stretched to fill the column; the height below them stays empty, and a list
-  longer than its column scrolls to keep the cursor in view. Defined
-  once as `ml_row_h` / `ML_ROW_RULE` in `src/modern/mlayout.h` and documented
-  in `docs/UI-PANELS.md`; the town screen uses it first (2026-09-13).
-- **REQ-430m.** **Modern castles and the count stepper.** The home castle and
-  owned castles use the town screen's layout (sections, pages of rows and Back,
-  Esc back a level). Recruit lists the castle troops with their statistics;
-  Audience is always available and promotes when a promotion is due, showing
-  the castle's `special.promotion[rank]` image and the rank's gains; the ruler's
-  portrait and standing figure come from `special.portrait` / `special.figure`.
-  Garrison and Withdraw move any part of a stack (`GameGarrisonTroopCount`,
-  `GameUngarrisonTroopCount`; a whole stack is exactly the original move, and
-  only a whole last stack is refused). Counts are chosen with the count
-  stepper documented in `docs/UI-PANELS.md`. Legacy unchanged (2026-09-13).
-- **REQ-430n.** **Question dialogs and lists on standard rows (modern).** Every
-  modern question draws its text, a lattice band, then standard select rows
-  (Yes/No from `strings.prompts.yes` / `no`, one row per numbered or A/B
-  choice) or the count stepper for a count, in a panel on the map pane's
-  bottom edge sized to its content, its rows scrolling past the pane's top.
-  The game menu, Controls, title menu, load picker, difficulty rows, world map
-  orb row, spells view and gate picker use the same rows (`src/modern/mlist.c`).
-  Combat's Actions menu and spell picker are unchanged for now; legacy is
-  unchanged (2026-09-13).
-- **REQ-430o.** **Foe view and the evade rule.** A hostile foe on the map opens
-  the modern foe view (docs/UI-PANELS.md) with Fight and Evade. With
-  `game.json` `foes.evade_needs_free_square` set, `GameFoeCanEvade` allows
-  Evade only while one of the 8 squares around the hero is walkable for how
-  they travel and has no object or foe on it; the engine records the result
-  for the pending decision (`pending_foe_evade_blocked`, judged after any bounce
-  back), and autoplay and the demo must fight when it is set. Packs without the
-  setting keep the free decline (2026-09-13).
-- **REQ-430p.** **Title sequence (modern).** With `sprites.ui.title_battle`,
-  `title_eagle` and `title_words` all declared, the title menu opens on the
-  words and eagle standard over purple; the battle fades in from 1.0 s to
-  2.5 s, the eagle slides left from 2.5 s to 3.5 s, and the menu then appears.
-  Any key or tap skips to the end; the sequence plays once per run, and the
-  credits, the load picker and a return to the title show the finished
-  screen. Without all three the title is `splash_title`, still (2026-09-13).
-- **REQ-430q.** **Blessing and Tribute (modern home castle).** With
-  `game.json` `audiences`, `GameSeekBlessing` grants once, when every artifact
-  is found (enemies left or not), leadership + `blessing_leadership_pct` (50)
-  of the base; `GamePayTribute` takes `tribute_cost` (50000) gold, any number of
-  times, for leadership + `tribute_leadership_pct` (25) and spell power and
-  spell capacity each + `tribute_magic_pct` (25) of what the hero has then
-  (at least 1 of a stat above 0). A short purse pays nothing. `stats.blessed`
-  and `stats.tributes` are saved only for such a pack; autoplay uses neither
-  (2026-09-13).
-- **REQ-430r.** **Temple and dwelling screens (modern).** VIEW_ALCOVE and
-  VIEW_DWELLING draw their own full screens over the unchanged FLOW_ALCOVE
-  yes/no and FLOW_RECRUIT count prompts (docs/UI-PANELS.md). The shell keeps
-  the view open through the answer's message and closes it when no prompt,
-  dialog or queued request remains. With `economy.rites_per_zone` a known
-  zone's temple raises the alcove view behind its message (2026-09-13).
-- **REQ-430s.** **Game and combat menus (modern).** Traditional drill-down
-  menus (`src/modern/gamemenu.c`, docs/UI-PANELS.md): one column of rows per
-  page ending in Back, the path in the title strip, a description beside the
-  rows. Game menu: Hero, World, Game; Debug first and Exit last on Game. The
-  combat menu opens on its Unit page. Rows that do not apply are greyed with
-  the reason rather than removed. In-game Save and Load pick one of the ten
-  slots; overwriting, loading and Exit ask Yes/No. Legacy menus are unchanged
-  (2026-09-13).
-- **REQ-430t.** **In-lay dialog (modern).** A queued message may carry a
-  picture hint (`PlayerRequest.face` / `face_index`: enemy, troop, artifact);
-  the modern shell shows such a message as an in-lay dialog with the picture at
-  2x (docs/UI-PANELS.md), legacy ignores it. The capture message is composed
-  from `banners.capture_*` (King's Bounty keeps its original wording) and
-  carries the captured enemy's face (2026-09-14).
+  `sel_row` has drawn the cursor row inverted, a bar in the row colour with
+  the text in the panel colour, and registered the row's tap region. It has
+  served every modern list, with the modern menus drawn on the standard rows
+  of REQ-430l; letters and digits have still answered. In legacy `sel_input`
+  has returned nothing and `sel_row` drawn plain text, so every legacy screen
+  keeps its own handling and pixels.
 - **REQ-430f.** **Keyboard detection and the letter selector (modern).**
-  `input_host` latches which physical devices have been used: a real key
+  `input_host` has latched which physical devices have been used: a real key
   event (not an injected one), a touch contact, a gamepad button or stick
   (`input_host_note_gamepad`, called from `src/input.c`).
-  `input_has_keyboard` is true once a key has been seen, and before that
-  true unless touch or a gamepad was seen first; `input_text_mode` maps it
-  to typed entry or the selector. `src/textsel.c` is the selector: an
-  in-game grid drawn in the buffer, A..Z SPC DEL OK in 6 x 5 or 7 8 9 DEL /
-  4 5 6 OK / 1 2 3 0 for numbers, moved by arrows, keypad or the gamepad
-  d-pad and stick (`input_gamepad_dir`), picked by Enter or the A button
-  (`input_gamepad_confirm`), deleted by Backspace or B, or tapped
-  (`TOUCH_LIST_TEXTSEL`); the cursor cell is inverted. It writes the field's
-  buffer directly, through the same bounds the typed path applies. Wired
-  into the hero name (`startup.c`), the recruit count
-  (`recruit_soldiers.c`) and the numeric prompt (`prompt.c`), shown when
-  text mode is the selector or when a pad or touch has been used, with
-  typing still accepted alongside. Keyboard-only sessions see no change.
-  Legacy keeps typed entry and its window-chrome keyboard and digit pad
-  (2026-09-10).
+  `input_has_keyboard` has been true once a key has been seen, and before
+  that true unless touch or a gamepad is seen first; `input_text_mode` has
+  mapped it to typed entry or the selector. `src/textsel.c` has been the
+  selector: an in-game grid drawn in the buffer, A..Z SPC DEL OK in 6 x 5 or
+  7 8 9 DEL / 4 5 6 OK / 1 2 3 0 for numbers, moved by arrows, keypad or the
+  gamepad d-pad and stick (`input_gamepad_dir`), picked by Enter or the A
+  button (`input_gamepad_confirm`), deleted by Backspace or B, or tapped
+  (`TOUCH_LIST_TEXTSEL`); the cursor cell is inverted. It has written the
+  field's buffer directly, through the same bounds the typed path applies.
+  It has served the hero name on a gamepad or a keyboardless desktop (a
+  phone uses the on-screen keyboard, REQ-531), the recruit count
+  (`recruit_soldiers.c`) and the numeric prompt (`prompt.c`), with typing
+  still accepted alongside. Legacy has kept typed entry and its window-chrome
+  keyboard and digit pad.
+- **REQ-430g.** **Dimmed scene under detail views (modern).** Whenever a
+  view, a prompt or a dialog is open, `overlay_draw` has first darkened the
+  chrome interior (map pane and sidebar, not the status band or frame) with
+  black at the pack's `render.dim` percent (default 55, 0 disables; Rome 35),
+  then drawn the panel, so the panel is what the eye lands on and the live
+  map stays readable behind it. Location screens have floated their card on
+  the dimmed map. Combat has dimmed the field under its spell picker, the
+  victory dialog, prompts and any opened view. Toasts have not dimmed.
+  `overlay_dim_scene` / `overlay_dim_alpha` (`src/overlay.c`); legacy has
+  never dimmed.
+- **REQ-430h.** **One panel rect (modern).** Every bottom text panel -- the
+  message dialog, the prompts, the town, castle, dwelling, alcove and recruit
+  menus -- has taken one of the modern layouts (REQ-430j), never a legacy
+  rect. Dialog headers have wrapped like body text (the audience passes the
+  Emperor's words as the header); the four legacy arrow control codes have
+  rendered as the font's arrow glyphs; recruit rows have padded the name to
+  the longest in the pool; empty army slots have stayed panel-coloured; the
+  character card has printed zeros; Escape on the map has opened the game
+  menu (`INPUT_ACTION_GAME_MENU`). Legacy has kept its one-sided 5 px margin
+  and its own drawing for all of these.
+- **REQ-430i.** **The draw layer has been forked; legacy frozen.** The
+  overlay, the detail views and the prompt panel have each existed twice:
+  `src/legacy/` holds the DOS original's drawing and `src/modern/` the modern
+  UI's, with `src/overlay.c`, `src/views_render.c` and `src/prompt.c` as
+  dispatchers that keep the public entry points, the layer order and any
+  state (the dialog's text and page, the world map's reveal flag, the
+  prompt's state machine) and send only the drawing to one side or the other,
+  through `*_impl.h`. Legacy's copies have been frozen: their behaviour is the
+  specification, so they are not edited to serve anything modern needs, and
+  new UI work lands in `src/modern/` alone. `tests/unit/test_legacy_freeze.c`
+  has held legacy's geometry and pure logic to fixed values -- chrome bands,
+  map, sidebar, content and panel rects, window scale, the 30-column wrap,
+  dialog paging, prompt state, and the two modern-only selectors staying
+  inert -- so a modern change that would move a legacy pixel fails the build.
+  `src/layout.h` has deliberately NOT been forked: both paths draw into one
+  coordinate system.
+- **REQ-430j.** **Five named layouts (modern).** Every modern panel has drawn
+  into one of five rects, computed from the map pane, the sidebar and the
+  tile and never from `ui_scale` (`src/modern/mlayout.c`): **small**, the
+  pane's width along its bottom, for prompts and any message that fits;
+  **large**, six by four tiles centred in the pane, for longer messages, the
+  game menu and its Controls page, and combat's menus and victory dialog;
+  **location**, the backdrop across the top of the pane at the smallest
+  whole-number scale that covers its width (cropped evenly at the sides) with
+  the text area directly under it, shared by the town, both castles, the
+  dwelling, the alcove and recruiting; **full screen**, the pane plus the HUD
+  with the status band left visible, for every detail view; and the toast. A
+  message or prompt has taken the small band when its header, whole body and
+  answer rows fit, and the large rect otherwise; the pager has asked the same
+  function that places the panel, so the page count and the panel cannot
+  disagree. Panels in the pane have laid out against the declared pane
+  (`CL_PANE_BASE_*`), so a grown world map (REQ-528) never moves them. The
+  location screens have reached their text rect through `screens_text_rect`,
+  which the freeze tests pin to the legacy panel in legacy.
+- **REQ-430k.** **Menu driven (modern) and `--debug`.** In modern every
+  action has been a row reached by the arrows and Enter or a tap; keys have
+  remained as shortcuts and nothing has been reachable only by a key
+  (`docs/MENUS.md`). The home castle has had Recruit and Audience rows; the
+  own castle's first row has flipped Garrison / Remove; the world map, with
+  the orb, has had a row that swaps your map and the whole map; numeric and
+  A/B prompts have answered by rows taken from the body's own choice lines
+  (`1. Italia`, `A) Take the gold`) or set by the opener (dismiss lists the
+  troops); Ctrl+Q has asked with the yes/no prompt; a tap has skipped the end
+  cartoon. The debug cheats have been reachable only when the game is started
+  with `--debug`, as a Debug page in the game menu; without the flag no key or
+  row reaches them in either mode.
+- **REQ-430l.** **Standard select rows (modern).** A list of choices has been
+  drawn as rows half a tile tall (never shorter than a text line plus
+  padding), stacked from the top of their column with a 2 px rail under each,
+  and never stretched to fill the column; the height below them has stayed
+  empty, and a list longer than its column has scrolled to keep the cursor in
+  view. Defined once as `ml_row_h` / `ML_ROW_RULE` in
+  `src/modern/mlayout.h`.
+- **REQ-430m.** **Modern castles and the count stepper.** The home castle and
+  owned castles have used the town screen's layout (sections, pages of rows
+  and Back, Esc back a level). Recruit has listed the castle troops with their
+  statistics; Audience has always been available and promoted when a
+  promotion is due, showing the castle's `special.promotion[rank]` image and
+  the rank's gains; the ruler's portrait and standing figure have come from
+  `special.portrait` / `special.figure`. Garrison and Withdraw have moved any
+  part of a troop (`GameGarrisonTroopCount`, `GameUngarrisonTroopCount`; a
+  whole troop is exactly the original move, and only a whole last troop is
+  refused). Counts have been chosen with the How-many step of UI-PANELS.
+- **REQ-430n.** **Question dialogs and lists on standard rows (modern).**
+  Every modern question has drawn its text, a lattice band, then standard
+  select rows (Yes/No from `strings.prompts.yes` / `no`, one row per numbered
+  or A/B choice) or the count stepper for a count, in a panel on the map
+  pane's bottom edge sized to its content, its rows scrolling past the pane's
+  top. The game menu, Controls, title menu, load picker, difficulty rows,
+  world map orb row, spells view, gate picker and combat menu have used the
+  same rows (`src/modern/mlist.c`).
+- **REQ-430o.** **Foe view and the evade rule.** A hostile foe on the map has
+  opened the modern foe view (UI-PANELS) with Fight and Evade. With
+  `game.json` `foes.evade_needs_free_square` set, `GameFoeCanEvade` has
+  allowed Evade only while one of the 8 squares around the hero is walkable
+  for how they travel and has no object or foe on it; the engine has recorded
+  the result for the pending decision (`pending_foe_evade_blocked`, judged
+  after any bounce back), and autoplay and the demo have had to fight when it
+  is set. Packs without the setting have kept the free decline.
+- **REQ-430p.** **Title sequence (modern).** With `sprites.ui.title_battle`,
+  `title_eagle` and `title_words` all declared, the title menu has opened on
+  the words and eagle standard over purple; the battle fades in from 1.0 s to
+  2.5 s, the eagle slides left from 2.5 s to 3.5 s, and the menu then
+  appears. Any key or tap has skipped to the end; the sequence has played
+  once per run, and the credits, the load picker and a return to the title
+  have shown the finished screen. Without all three the title has been
+  `splash_title`, still.
+- **REQ-430q.** **Blessing and Tribute (modern home castle).** With
+  `game.json` `audiences`, `GameSeekBlessing` has granted once, when every
+  artifact is found (enemies left or not), leadership +
+  `blessing_leadership_pct` (50) of the base; `GamePayTribute` has taken
+  `tribute_cost` (50000) gold, any number of times, for leadership +
+  `tribute_leadership_pct` (25) and spell power and spell capacity each +
+  `tribute_magic_pct` (25) of what the hero has then (at least 1 of a stat
+  above 0). A short purse has paid nothing. `stats.blessed` and
+  `stats.tributes` have been saved only for such a pack; autoplay has used
+  neither.
+- **REQ-430r.** **Temple and dwelling screens (modern).** VIEW_ALCOVE and
+  VIEW_DWELLING have drawn their own full screens over the FLOW_ALCOVE yes/no
+  and FLOW_RECRUIT count prompts (UI-PANELS). The shell has kept the view open
+  through the answer's message and closed it when no prompt, dialog or queued
+  request remains. With `magic.rites_per_zone` a known zone's temple has
+  raised the alcove view behind its message.
+- **REQ-430s.** **Game and combat menus (modern).** Drill-down menus
+  (`src/modern/gamemenu.c`; the combat pages in `src/combat_loop.c`
+  `combat_menu_page`): one column of rows per page ending in Back, the path in
+  the title strip, a description beside the rows. The game menu's pages have
+  been Menu (Hero, World, Game, Close, and Exit on the foot of the page,
+  REQ-529), Hero, World and Game (Debug first with `--debug`, Save, Load,
+  Controls, New Game). The combat menu's have been Unit (REQ-533), Hero and
+  Game (Controls, and Give up last). Rows that do not apply have been greyed
+  with the reason rather than removed. In-game Save and Load have picked one
+  of the ten slots; overwriting, loading and Exit have asked Yes/No.
+- **REQ-430t.** **In-lay dialog (modern).** A queued message has been able to
+  carry a picture hint (`PlayerRequest.face` / `face_index`: enemy, troop,
+  artifact); the modern shell has shown such a message as an in-lay dialog
+  with the picture at 2x (UI-PANELS), and legacy has ignored it. The capture
+  message has been composed from `banners.capture_*` (King's Bounty keeps its
+  original wording) and carried the captured enemy's face.
 
 ### 29.2 Views
 
-- **REQ-431.** Full-screen overlays (`ViewKind`, §3.4), managed by
-  `src/views.c` and drawn by `src/views_render.c`, with per-location screens in
-  `src/screens/`. Toggle views: Army (`A`), Character (`V`), Contract (`I`),
-  Puzzle (`P`, 5×5 grid derived from villains_caught + artifacts_found),
-  Worldmap (`M`), Controls (`C`), Options (`O`). Location views: Town, Home
-  Castle, Own Castle, Dwelling, Alcove, Recruit Soldiers. Spell-driven view:
-  Gate, the Town/Castle Gate destination picker opened by a cast rather than
-  by a key (REQ-322). End views: Win, Lose.
+- **REQ-431.** Full-screen overlays (`ViewKind`, §3.4) have been managed by
+  `src/views.c` and drawn by `src/views_render.c`, with per-location screens
+  in `src/screens/`. Toggle views: Army (`A`), Character (`V`), Contract
+  (`I`), Puzzle (`P`, 5×5 grid derived from villains_caught +
+  artifacts_found), Worldmap (`M`), Controls (`C`), Options (`O`, legacy).
+  Location views: Town, Home Castle, Own Castle, Dwelling, Alcove, Recruit
+  Soldiers. Spell-driven view: Gate, the Town/Castle Gate destination picker
+  opened by a cast rather than by a key (REQ-322). End views: Win, Lose.
 
 ### 29.3 Dialogs and prompts
 
-- **REQ-432.** Two dialog flavors: `open_dialog(header, body)` (`src/ui.c`), a bottom-frame box dismissed by any key, supporting paginated body (split on
-  form-feed `\f`); and the blocking prompts (`src/prompt.c`) (`prompt_yes_no_open`, `prompt_numeric_open`, `prompt_text_input_open`) whose
-  results are dispatched through a pending-flow state machine
-  (`src/shell_promptdispatch.c`, `engine/pending.h`). The engine never renders;
-  it requests prompts/dialogs through the host callbacks in
-  `engine/include/ui_host.h`, which the shell implements.
+- **REQ-432.** Two dialog flavors: `open_dialog(header, body)` (`src/ui.c`), a
+  bottom-frame box dismissed by any key, supporting a paginated body (split
+  on form-feed `\f`); and the blocking prompts (`src/prompt.c`:
+  `prompt_yes_no_open`, `prompt_numeric_open`, `prompt_text_input_open`)
+  whose results have been dispatched through a pending-flow state machine
+  (`src/shell_promptdispatch.c`, `engine/include/pending.h`). The engine has
+  never rendered; it has requested prompts and dialogs through the player-IO
+  queue and the host callbacks in `engine/include/ui_host.h`, which the shell
+  implements.
 
 ---
 
 ## 30. Input and controls
 
-- **REQ-440.** Keyboard bindings (adventure §12; combat §25.9) are owned by
-  `src/input.c`, which also maps the gamepad. The render exit key is disabled
-  so `Escape` dismisses overlays rather than closing the window.
-- **REQ-441.** The Controls menu (`VIEW_CONTROLS`) exposes per-game settings
-  persisted in `Game.stats.options[7]` (parallel to `res->controls.items[]`):
-  animation delay, sounds, walk-beep, animation toggle, CGA, music, volume.
-  Meta keys: Alt+Enter fullscreen, backtick screenshot
-  (`screenshots/shot_NNNN.png`, `src/screenshot.c`, the folder created on
-  first use; the automatic `char_NNNN` save on entering the Character view
-  was removed 2026-09-07), `Q` save-and-quit,
-  `Ctrl+Q` fast quit (`src/shell_fastquit.c`).
-- **REQ-442.** **Touch/pointer input** (`src/touch.c`) translates taps into
+- **REQ-440.** Keyboard bindings (adventure §12; combat §25.9) have been owned
+  by `src/input.c`, which has also mapped the gamepad. The raylib exit key has
+  been disabled so `Escape` dismisses overlays rather than closing the window.
+- **REQ-441.** The Controls menu (`VIEW_CONTROLS`) has exposed per-game
+  settings persisted in `Game.stats.options[7]` (parallel to
+  `res->controls.items[]`): animation delay, sounds, walk-beep, animation
+  toggle, CGA, music, volume. Meta keys: Alt+Enter fullscreen, backtick
+  screenshot (`screenshots/shot_NNNN.png`, `src/screenshot.c`, the folder
+  created on first use), `Q` save-and-quit, `Ctrl+Q` fast quit
+  (`src/shell_fastquit.c`).
+- **REQ-442.** **Touch input** (`src/touch.c`) has translated taps into
   synthetic key events injected at the `input_host` shim
   (`input_host_inject_key/_char`), so every screen keeps its keyboard
-  handling and the recorder/replay see a keyboard-shaped input stream.
-  Screens register per-frame tap regions while they run: plain rects mapped
-  to a key, cursor-list rows (`touch_region_row`/`touch_tapped_row`), the
-  adventure/combat tile viewport (tap → direction key relative to the centre
-  tile / active unit; hold repeats one discrete keypress per beat), and the
-  combat picker grid (tap → cursor jump + confirm). Injected keys are
-  one-frame edges cleared by `touch_frame()`, which runs from
-  `frame_host_end_frame()` after the poll/yield.
+  handling and the recorder/replay see a keyboard-shaped input stream. The
+  pointer has been read only while a touch contact exists: a desktop mouse
+  drives nothing. Screens have registered per-frame tap regions while they
+  run: plain rects mapped to a key, cursor-list rows
+  (`touch_region_row`/`touch_tapped_row`), scrolling lists
+  (`touch_region_scroll`), the adventure/combat tile viewport (tap →
+  direction key relative to the centre tile / active unit; hold repeats one
+  discrete keypress per beat), and the combat picker grid (tap → cursor jump
+  + confirm). Injected keys have been one-frame edges cleared by
+  `touch_frame()`, which runs from `frame_host_end_frame()` after the
+  poll/yield.
 - **REQ-443.** **Touch chrome**: on-screen buttons (adventure/combat action
-  bars, ESC, Yes/No / 1-N / A-B prompt bars, digit pad, A-Z keyboard for
-  name entry) are drawn by `touch_draw_chrome()` from `present_scaled`, in
+  bars, ESC, Yes/No / 1-N / A-B prompt bars, digit pad, A-Z keyboard for name
+  entry) have been drawn by `touch_draw_chrome()` from `present_scaled`, in
   window pixels over the letterbox margins, outside the design-space render
-  target. Chrome renders only after a real touch contact has been seen
-  (`input_touch_active`); keyboard/mouse desktop sessions are pixel-identical
-  to the pre-touch build. Tap positions map back to design space via
-  `present_window_to_screen` (inverse of the letterboxed integer-scale blit).
+  target, sized by REQ-530. Chrome has rendered only after a real touch
+  contact has been seen (`input_touch_active`), so a keyboard session draws
+  none of it. Tap positions have mapped back to design space via
+  `present_window_to_screen` (the inverse of the whole-number blit).
 
 ---
 
 ## 31. Cheats and debug
 
-- **REQ-450.** `F10` opens a debug cheat menu (`src/shell_cheats.c`) for
-  development: granting gold, spells, leadership, revealing the map, jumping
-  zones, etc. It is gated behind the F10 toggle and is not part of normal play.
+- **REQ-450.** Debug cheats (`src/shell_cheats.c`: granting gold, spells,
+  leadership, revealing the map, jumping zones, etc.) have been reachable only
+  when the game is started with `--debug`, as a Debug page in the game menu
+  (REQ-430k); without the flag no key or row reaches them, in either mode.
 
 ---
 
 ## 32. Audio
 
-- **REQ-460.** Audio (`src/audio.c`) plays OGG music tracks and WAV sound
-  effects through raylib's audio device, driven by abstract engine events
-  (`audio_play_tune` host callback). Track and SFX paths come from
-  `game.json:audio`. Volume, ducking, and the sound on/off option are handled
-  shell-side; the engine only emits tune/sfx events.
+- **REQ-460.** Audio (`src/audio.c`) has played OGG music tracks and WAV
+  sound effects, driven by abstract engine events (`audio_play_tune` host
+  callback), through the `src/audio_backend.h` seam: raylib's audio device
+  (`src/audio_raylib.c`) everywhere but iOS, `AVAudioEngine`
+  (`ios/audio_ios.mm`) there. Track and SFX paths have come from
+  `game.json:audio`. Volume, ducking, and the sound on/off option have been
+  handled shell-side; the engine has only emitted tune/sfx events.
 
 ---
 
 ## 33. Rendering
 
-- **REQ-470.** The internal render target is **320×200** (`CL_SCREEN_W/H`,
-  the original VGA mode), integer-scaled to fit the window preserving aspect
-  ratio (minimum 2×). The base window is 640×400 (§5.3). A 256-color VGA
-  palette is loaded from `assets/kings-bounty/data/palette.bin` (768 bytes;
-  `src/palette.c`). The font is an 8×8 bitmap (`kb-font.png`, `src/bfont.c`).
-  Map tiles are 48×34; sprites are 48×34 except hero/troop frame cycles
-  (`<name>_00..03.png`). Tiles are cached as textures by `src/tile_cache.c`;
-  sprite sheets load via `src/sprites.c`. The end cartoon is `src/end_cartoon.c`.
+- **REQ-470.** **Legacy.** The internal render target has been **320×200**
+  (`CL_SCREEN_W/H`, the original VGA mode), integer-scaled to fit the window
+  preserving aspect ratio (minimum 2×). The base window has been 640×400
+  (§5.3). A 256-color VGA palette has been loaded from the pack's
+  `palettes/palette.bin` (768 bytes; `src/palette.c`). The font has been an
+  8×8 bitmap (`kb-font.png`, `src/bfont.c`). Map tiles have been 48×34;
+  sprites 48×34, hero/troop frame cycles `<name>_00..03.png`. **Modern**: the
+  pack has declared its tile size, viewport, buffer and font (REQ-430a,
+  REQ-430c, REQ-528). In both, tiles have been cached as textures by
+  `src/tile_cache.c`, sprite sheets loaded via `src/sprites.c`, and the end
+  cartoon drawn by `src/end_cartoon.c`. Every draw has gone through the
+  `src/gfx.h` seam (`src/gfx_raylib.c`; `ios/gfx_metal.mm` on iOS).
 
-- **REQ-528.** **The scale is the surface's, and the world map spends what it
-  leaves.** Modern mode has no zoom setting: `present_scale` returns the
-  largest whole number the surface can show, measured against the buffer the
-  pack declared (`render.native_w/native_h`), which is a **floor and not a
-  fixed size**. What that scale leaves over goes to the map viewport, in whole
-  tiles, an odd count so the hero keeps the centre cell
-  (`layout_grow_native`, `src/layout.c`).
+- **REQ-528.** **The scale has been the surface's, and the world map has
+  spent what it leaves.** Modern mode has had no zoom setting:
+  `present_scale` has returned the largest whole number the surface can show,
+  measured against the buffer the pack declared (`render.native_w/native_h`),
+  which has been a **floor and not a fixed size**. What that scale leaves
+  over has gone to the map viewport, in whole tiles, an odd count so the hero
+  keeps the centre cell (`layout_grow_native`, `src/layout.c`).
 
-  Only world exploration grows. `present_allow_growth` is off by default and
-  set for one frame by the world frame alone (`shell_present_frame`,
-  `src/shell_frame.c`, and the main loop's draw), so a town, a castle, the
-  battlefield, the title and every dialog refit to the declared buffer and are
-  letterboxed: their layouts are drawn for that size and a wider buffer would
-  leave them adrift in it. Nothing the pack sized ever changes -- the chrome
-  bands, the sidebar and its gap, the status and bar heights, every panel --
-  they re-centre, and that is all.
+  Only world exploration has grown. `present_allow_growth` has been off by
+  default and set for one frame by the world frame alone
+  (`shell_present_frame`, `src/shell_frame.c`, and the main loop's draw), so
+  a town, a castle, the battlefield, the title and every dialog have refitted
+  to the declared buffer and been letterboxed: their layouts are drawn for
+  that size and a wider buffer would leave them adrift in it. Nothing the
+  pack sized has ever changed -- the chrome bands, the sidebar and its gap,
+  the status and bar heights, every panel -- they have re-centred, and that
+  is all.
 
-  The desktop window opens at the declared buffer times the largest whole
-  scale the monitor can show, so it is always an exact multiple and never an
-  arbitrary size (`src/main.c`). Mobile and the web canvas take whatever
-  surface they are given. Legacy mode is untouched: fixed 320x200, auto-fit
-  with the 2x floor, and King's Bounty's gallery stays byte-identical.
+  The desktop window has opened at the declared buffer times the largest
+  whole scale the monitor can show, so it has always been an exact multiple
+  (`src/main.c`). Mobile and the web canvas have taken whatever surface they
+  are given. Legacy mode has kept its fixed 320x200, auto-fit with the 2x
+  floor.
 
-- **REQ-530.** **Touch controls are sized in physical units.** Every on-screen
-  control sizes itself from `touch_unit()` (`src/touch.c`): 11% of the
-  window's short side, floored at 44px, which is Apple's 44pt and Android's
-  48dp on the phones this ships to. Fixed pixel counts meant something
-  different on every screen -- the on-screen keyboard's keys were 15pt on an
-  iPhone 12. The action bars, the keyboard, the digit pad and the corner
-  buttons all derive from it.
+- **REQ-530.** **Touch controls have been sized in physical units.** Every
+  on-screen control has sized itself from `touch_unit()` (`src/touch.c`): 11%
+  of the window's short side, floored at 44px, which is Apple's 44pt and
+  Android's 48dp on the phones this ships to. The action bars, the keyboard,
+  the digit pad and the corner buttons have all derived from it.
 
-  Small **design-space** regions are answered by a forgiving second pass in
-  `resolve_tap`: a tap that hits nothing exactly takes the nearest region
-  within half a touch unit, nearest first, so an exact hit is never stolen
-  from a neighbour. That is what makes a 20px menu band answerable on a phone
-  without changing what is drawn.
+  Small **design-space** regions have been answered by a forgiving second
+  pass in `resolve_tap`: a tap that hits nothing exactly has taken the
+  nearest region within half a touch unit, nearest first, so an exact hit is
+  never stolen from a neighbour. That has made a 20px menu band answerable on
+  a phone without changing what is drawn.
 
-  On a touch session the menu band itself also grows to a touch unit, but
+  On a touch session the menu band itself has also grown to a touch unit, but
   **only out of the slack the whole tiles leave** (`layout_grow_native`'s
-  `want_status_h`): the viewport count is odd, so taking a row costs two rows
-  of world, and the band never does that.
+  `want_status_h`): the viewport count is odd, so taking a row would cost two
+  rows of world, and the band has never done that.
 
-- **REQ-531.** **Naming the hero on a phone uses the on-screen keyboard**, not
-  the in-buffer letter grid (`src/startup.c`): the grid is laid out in the
-  pack's design pixels, which is a 21x13pt key on an iPhone 12, while the
-  chrome keyboard is drawn in window pixels at a touch unit. The grid remains
-  for a gamepad and for a desktop with no keyboard, and its cells are now at
-  least `textsel_min_cell_w()` wide -- four glyphs, so `DEL` and `SPC` stop
-  overlapping their neighbours.
+- **REQ-531.** **Naming the hero on a phone has used the on-screen
+  keyboard**, not the in-buffer letter grid (`src/startup.c`): the grid is
+  laid out in the pack's design pixels, while the chrome keyboard is drawn in
+  window pixels at a touch unit. The grid has served a gamepad and a desktop
+  with no keyboard, with cells at least `textsel_min_cell_w()` wide -- four
+  glyphs, so `DEL` and `SPC` clear their neighbours.
 
-- **REQ-532.** **Choosing a class is two steps, the same two for every
-  input.** Picking a figure -- an arrow key, a pad or a tap -- gives it the
-  gold outline and brings up its description; the panel then carries
-  **Continue** and **Cancel** rows, and only those finish the choice
-  (`src/startup.c`). Before this a tap both selected and confirmed, so the
-  outline and the description were never on screen, and the keyboard
-  confirmed on Enter with no way back.
+- **REQ-532.** **Choosing a class has been two steps, the same two for every
+  input.** Picking a figure -- an arrow key, a pad or a tap -- has given it
+  the gold outline and brought up its description; the panel has then carried
+  **Continue** and **Cancel** rows, and only those have finished the choice
+  (`src/startup.c`).
 
-- **REQ-533.** **A shooter's combat menu opens on Shoot.** The unit page lists
-  Shoot first when the troop has ranged ammo, Wait first otherwise
-  (`src/combat_loop.c`). The order follows the troop's declared ammo rather
-  than the shots left this fight, so it does not rearrange itself mid battle
-  as the quiver empties.
+- **REQ-533.** **A shooter's combat menu has opened on Shoot.** The unit page
+  has listed Shoot first when the troop has ranged ammo, Wait first otherwise
+  (`src/combat_loop.c`). The order has followed the troop's declared ammo
+  rather than the shots left this fight, so it does not rearrange itself mid
+  battle as the quiver empties.
 
 - **REQ-529.** **No Exit on a phone.** The title menu's Exit row and the game
-  menu's Exit footer are compiled out under `PLATFORM_IOS` and
-  `PLATFORM_ANDROID` (`src/startup.c`, `src/modern/gamemenu.c`). iOS has no
-  notion of an app quitting itself and Apple refuses a control that says
-  otherwise; Android's system handles it. Desktop and web keep both rows.
+  menu's Exit footer have been compiled out under `PLATFORM_IOS` and
+  `PLATFORM_ANDROID` (`src/startup.c`, `src/modern/gamemenu.c`). iOS has had
+  no notion of an app quitting itself and Apple refuses a control that says
+  otherwise; Android's system handles it. Desktop and web have kept both
+  rows.
 
 ---
 
 ## 34. CLI, packs, and platform
 
-### 34.1 CLI flags (`build/openbounty`)
+### 34.1 CLI flags (`build/debug/openbounty`)
 
 - **REQ-480.** Parsed in `src/main.c` (early-exit modes in
   `src/shell_earlyexit.c`): `--version`/`-v`, `--help`/`-h`, `--fullscreen`,
-  `--pack <name|path>`, `--save-dir <dir>`, `--seed N` (catalog world `0`–`255`,
-  REQ-166), `--movie [<path>]`,
-  `--demo` (the human-like agent, `DEMO-SPEC.md`), `--autoplay` (the
-  winnability oracle, `AUTOPLAY-SPECS.md`) with its modifiers
+  `--pack <name|path>`, `--lang <code>`, `--save-dir <dir>`, `--seed N`
+  (catalog world `0`–`255`, REQ-166), `--movie [<path>]`, `--debug` (the
+  Debug page, §31), `--gallery <dir>` (every modern screen to PNG, with the
+  tap check), `--demo` (the human-like agent, `DEMO-SPEC.md`), `--autoplay`
+  (the winnability oracle, `AUTOPLAY-SPECS.md`) with its modifiers
   `--autoplay-hero=<class>`, `--autoplay-level=<easy|normal|hard|impossible>`
   and `--autoplay-speed=<slow|normal|fast>`, `--validate-pack [LO [HI]]` (the
   pack-author winnability report), `--headless` (modifier for the agent
   modes), `--verbose` (agent diagnostics), `--extract`, `--out-dir <dir>`
-  (modifier for `--extract`), `--pack-dir <src> <dst>`. Normal play takes no
-  flags.
-  Parsing has been STRICT: a flag needing a value with none, a value outside
-  its range, an unknown flag, or a stray token has printed the reason to
-  stderr and exited `2` without running anything.
+  (modifier for `--extract`), `--pack-dir <src> <dst>`. Normal play has taken
+  no flags; README §3 has described each. Parsing has been STRICT: a flag
+  needing a value with none, a value outside its range, an unknown flag, or a
+  stray token has printed the reason to stderr and exited `2` without running
+  anything.
 
 ### 34.2 Packs
 
-- **REQ-481.** A pack is a self-contained tree (`game.json` + `art/` + `audio/`
-  + `maps/` + `palettes/`) or a zipped `.openbounty` archive; the engine treats
-  loose dirs and archives interchangeably (`engine/pack.c`, miniz). Pack
-  discovery (`engine/pack.c`): with no `--pack`, search the cwd then the user
-  packs directory; if more than one is found, the pack picker
-  (`src/pack_select.c`) runs before character creation. Pack schema version is
-  1 (`PACK-FORMAT.md`); the engine refuses incompatible versions. The shipped
-  game ships **without** game data, the user supplies a pack via `--extract`
-  (§37). The full pack format is documented in `docs/PACK-FORMAT.md`.
+- **REQ-481.** A pack has been a self-contained tree (`game.json` +
+  `strings/` + `art/` + `audio/` + `maps/` + `palettes/`) or a zipped
+  `.openbounty` archive; the engine has treated loose dirs and archives
+  interchangeably (`engine/pack.c`, miniz). With no `--pack`, discovery
+  (`engine/pack.c pack_discover`) has scanned the `.openbounty` zips in the
+  working directory, the user data directory and `<exe>/assets`, in that
+  order; one found has opened directly, and more than one has run the pack
+  picker (`src/pack_select.c`) before character creation. A bare `--pack`
+  name has also found a loose `<name>/game.json` under those roots. The pack
+  schema version has been 1 (`PACK-FORMAT.md`). The OpenBounty desktop
+  archives have shipped **without** game data -- the user supplies a pack via
+  `--extract` (§37) -- while Glory of Rome's archives and apps have carried
+  their own pack. `docs/PACK-FORMAT.md` has documented the full format.
 
 ### 34.3 Platform
 
-- **REQ-482.** Four release targets (`docs/RELEASE-PROCESS.md`): Linux
-  x86_64 (tar.gz), Windows x86_64 + i686 (zip, single static .exe, no DLLs),
-  macOS universal (zip, arm64 + x86_64, ad-hoc signed), and Web/WebAssembly
-  (zip; `.html`/`.js`/`.wasm`/`.data`, the only target that embeds the asset
-  pack). Releases are sequential build numbers under `release-N` tags; the
-  build number is embedded at compile time and exposed via `--version`.
+- **REQ-482.** Every release (`docs/RELEASE-PROCESS.md`) has carried: the
+  OpenBounty engine and the Glory of Rome package for Linux x86_64
+  (tar.gz), Windows x86_64 + i686 (zip, single static .exe, no DLLs) and
+  macOS universal (zip, arm64 + x86_64, ad-hoc signed); the Web/WebAssembly
+  zip (`.html`/`.js`/`.wasm`/`.data`, Glory of Rome embedded); the iOS `.ipa`
+  (native Metal, `IOS-BACKEND.md`); and the Android APK and AAB. Releases have
+  been sequential build numbers under `release-N` tags; the build number has
+  been embedded at compile time and exposed via `--version`.
 
 ---
 
 ## 35. Recorder, encoder, and harness
 
-- **REQ-490.** `--movie [<path>]` records gameplay to an MP4
+- **REQ-490.** `--movie [<path>]` has recorded gameplay to an MP4
   (`src/recorder.c`, `src/encode_mp4*.c`, `src/encode_dialog.c`; vendored
-  minih264 + minimp4). Intermediate per-tick frames live in a hidden temp dir;
-  at shutdown an "Encoding…" dialog runs the muxer and the temp frames are
-  deleted. With no path argument, output goes to
-  `<user-data>/openbounty/movie-<timestamp>.mp4`.
+  minih264 + minimp4). Intermediate per-tick frames have lived in a hidden
+  temp dir; at shutdown an "Encoding…" dialog has run the muxer and the temp
+  frames have been deleted, so the file exists only after a clean shutdown.
+  With no path argument, output has gone to
+  `<user-data>/movie-<timestamp>.mp4`.
 - **REQ-491.** A frame-host harness (`src/frame_host.c`, `src/input_host.c`)
-  provides a per-frame hook used by gameplay tests and the recorder to script
-  input and capture state; the engine exposes a JSON state snapshot
-  (`engine/state_serialize.c`) for these consumers.
+  has provided a per-frame hook used by gameplay tests and the recorder to
+  script input and capture state; the engine has exposed a JSON state
+  snapshot (`engine/state_serialize.c`) for these consumers.
 
 ---
 
 ## 36. Autoplay planner
 
-- **REQ-500.** The engine exposes a determinism-preserving introspection
+- **REQ-500.** The engine has exposed a determinism-preserving introspection
   surface for an autoplay planner: `GameRngSnapshot` / `GameRngRestore`
   (`engine/game.c`) snapshot and restore the process-global world RNG so the
   planner's plan-time engine replays do not perturb the live game's RNG
   sequence; `GamePeekChest` (§22.1) returns what a chest *would* yield without
   mutating state; and combat's stable per-encounter RNG seeding (§25.13) makes
   a fight's outcome a pure function of (seed, encounter identity, mode) so a
-  predicted result matches the live one. These exist so an automated player can
-  plan ahead deterministically.
+  predicted result matches the live one. These have existed so an automated
+  player can plan ahead deterministically.
 
 ---
 
 ## 37. Tools, asset extraction
 
-- **REQ-510.** Asset extraction is pure C compiled into the `openbounty`
-  binary (`tools/extract*.c`); the invocation is `./build/openbounty --extract`.
-  The extractor reads a user's DOS King's Bounty distribution (`KB.EXE`, etc.;
-  input `legacy/bin/KB.EXE` if present, else `./KB.EXE`) and writes a complete
+- **REQ-510.** Asset extraction has been pure C compiled into the
+  `openbounty` binary (`tools/extract*.c`); the invocation has been
+  `./build/debug/openbounty --extract`, which takes no path. The extractor has
+  read a user's DOS King's Bounty distribution (`KB.EXE`, etc.; input
+  `legacy/bin/KB.EXE` if present, else `./KB.EXE`) and written a complete
   `.openbounty` pack (palette, font, sprites, tiles, chrome, audio metadata,
-  `game.json`) to `<user-data>/openbounty/<pack_id>.openbounty`. It is split one
-  translation unit per pipeline stage: `extract_unpack.c`, `extract_lzw.c`,
-  `extract_vga.c`, `extract_png.c`, `extract_chrome.c`, `extract_gamejson.c`,
-  `extract_io.c`, plus the dispatcher `extract.c`. `--out-dir` emits a loose
-  tree instead of a zip; `--pack-dir <src> <dst>` zips a pre-extracted tree
-  into a `.openbounty` archive. The shipped pack is **not** distributed (the
-  DOS-extracted assets are copyright-restricted). There is no Python.
+  `game.json`, strings) to `<user-data>/<pack_id>.openbounty`. It has been
+  split one translation unit per pipeline stage: `extract_unpack.c`,
+  `extract_lzw.c`, `extract_vga.c`, `extract_png.c`, `extract_chrome.c`,
+  `extract_gamejson.c`, `extract_io.c`, plus the dispatcher `extract.c`.
+  `--out-dir` has emitted a loose tree instead of a zip; `--pack-dir <src>
+  <dst>` has zipped a pre-extracted tree into a `.openbounty` archive. The
+  King's Bounty pack has **not** been distributed (the DOS-extracted assets
+  are copyright-restricted). The Python in `tools/` has been the Glory of Rome
+  authoring tools (REQ-022), which no build step runs.
 
 ---
 
@@ -2579,57 +2695,59 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
 
 ## 38. Known deviations from OpenKB
 
-These are the standing differences between OpenBounty and OpenKB: where the
-architecture diverges without changing gameplay (§38.1), where gameplay itself
-differs from OpenKB or DOS (§38.2), where an OpenKB behaviour is preserved
-even though DOS differs (§38.3), and what is deliberately out of scope
-(§38.4).
+These have been the standing differences between OpenBounty and OpenKB: where
+the architecture diverges without changing gameplay (§38.1), where gameplay
+itself differs from OpenKB or DOS (§38.2), where an OpenKB behaviour is
+preserved even though DOS differs (§38.3), and what is deliberately out of
+scope (§38.4).
 
 ### 38.1 Architectural divergences (no gameplay change)
 
-- **REQ-520.** raylib instead of SDL 1.2; JSON saves instead of the OpenKB
-  20,421-byte binary (saves are not interchangeable with OpenKB or DOS); a
-  single `assets/kings-bounty/` tree + `.openbounty` packs instead of DOS `.CC`
-  packs / module dirs; Java-style LCG seeded from `g->seed` instead of libc
-  `rand()`; per-tile terrain+interact struct instead of a 128-byte tile-id
-  space; per-tile sign text instead of a global indexed list. See §1.10.
+- **REQ-520.** raylib (and native Metal on iOS) instead of SDL 1.2; JSON saves
+  instead of the OpenKB 20,421-byte binary (saves are not interchangeable with
+  OpenKB or DOS); `.openbounty` packs instead of DOS `.CC` packs / module
+  dirs; Java-style LCG seeded from `g->seed` instead of libc `rand()`;
+  per-tile terrain+interact struct instead of a 128-byte tile-id space;
+  per-tile sign text instead of a global indexed list. See §1.10.
 
 ### 38.2 Gameplay deviations from OpenKB / DOS
 
-- **REQ-521.** **Pikemen cost**: OpenBounty uses 300 (DOS-original); OpenKB
-  inherited 800. This is the only catalog-data deviation between OpenBounty and
-  OpenKB.
-- **REQ-522.** **Time Stop floor**: OpenBounty imposes a 10-step floor that
-  OpenKB does not (the bonus is `max(spell_power * 10, 10)`; §19.3).
-- **REQ-523.** **Astrology dwelling refresh**: matches OpenKB exactly: only
-  the matching dwelling refills to `max_population`; non-matching dwellings keep
-  their current count (§24.2).
+- **REQ-521.** **Pikemen cost**: OpenBounty has used 300 (DOS-original);
+  OpenKB inherited 800.
+- **REQ-522.** **Time Stop floor**: OpenBounty has imposed a 10-step floor
+  that OpenKB does not (the bonus is `max(spell_power * 10, 10)`; §19.3).
+- **REQ-523.** **Astrology dwelling refresh**: this has matched OpenKB
+  exactly: only the matching dwelling refills to `max_population`;
+  non-matching dwellings keep their current count (§24.2).
+- **REQ-525.** **The max-spells chest outcome has been reachable.** OpenKB's chest
+  tables set `chance_spell_power == chance_max_spells`, so its max_spells
+  outcome can never roll; OpenBounty's have lowered `chance_spell_power`
+  (§22.1) to open a window for it. This and the Pikemen cost have been the
+  catalog-data deviations between OpenBounty and OpenKB.
 
 ### 38.3 OpenKB-faithful behaviours (preserved even where DOS differs)
 
 - **REQ-524.** **No siege-weapons gate**: the `siege_weapons` purchase flag
-  exists and persists but `lay_siege` never checks it (§25.12).
-- **REQ-525.** **Max-spells chest outcome unreachable**: the shipped chest
-  chance tables make the max_spells outcome unreachable (`chance_spell_power ==
-  chance_max_spells`); preserved deliberately (§22.1).
-- **REQ-526.** **Strict gold checks**: spell/boat/alcove purchases use strict
-  `<` comparisons matching OpenKB.
+  has existed and persisted but laying siege has never checked it (§25.12).
+- **REQ-526.** **Strict gold checks**: spell/boat/alcove purchases have used
+  strict comparisons matching OpenKB.
 
 ### 38.4 Non-goals
 
 - **REQ-527.** **Multiplayer**: OpenKB carried SDL_net combat; OpenBounty has
-  none, by design. **Module system**: OpenKB's discovery + chain-of-
-  responsibility loader is replaced by a single active pack. **DOS binary save
-  compatibility**, not a goal; saves are JSON.
+  had none, by design. **Module system**: a single active pack has stood in
+  for OpenKB's discovery + chain-of-responsibility loader. **DOS binary save
+  compatibility** has not been a goal; saves are JSON.
 
 ---
 
 ## Appendix A, Complete data tables (from `game.json`)
 
-These tables were regenerated from `assets/kings-bounty/game.json` (the
-shipped `kings-bounty` pack). Values are the authoritative source; the spec
-body names JSON paths rather than copying values, so this appendix is the one
-place the full tables are reproduced.
+These tables have been reproduced from `assets/kings-bounty/game.json` (the
+reference `kings-bounty` pack; Glory of Rome's are in `GLORY-OF-ROME.md`). The
+pack's values have been the authoritative source; the spec body names JSON
+paths rather than copying values, so this appendix has been the one place the
+full tables appear.
 
 ### A.1 Troops (25)
 
@@ -2730,10 +2848,10 @@ Per-rank tables are in §8.2.
 | 15 | urthrax | Urthrax Killspite | saharia | 45000 |
 | 16 | arech | Arech Dragonbreath | saharia | 50000 |
 
-Per-zone counts: `[6, 4, 4, 3]`. Each villain has a fixed 5-stack army
-(`game.json:villains[].army_*`) copied into its host castle at salt time.
-Per-villain `features` / `crimes` flavor text lives in
-`game.json:strings.villain_descriptions` (17 entries).
+Per-zone counts: `[6, 4, 4, 3]`. Each villain has had a fixed army
+(`game.json:villains[].army`) copied into its host castle at salt time.
+Per-villain `features` / `crimes` flavor text has lived in
+`strings/en.json:villain_descriptions` (17 entries).
 
 ### A.6 Towns (26)
 
@@ -2766,9 +2884,9 @@ Per-villain `features` / `crimes` flavor text lives in
 | woods_end | Woods End | forestria | 3 | 55 |
 | zaezoizu | Zaezoizu | saharia | 58 | 15 |
 
-Each town additionally carries gate coords, boat coords, an intel castle, and
-an optional pinned spell (`game.json:towns[]`). Hunterville pins the Bridge
-spell.
+Each town has additionally carried gate coords, boat coords, an intel
+castle, and an optional pinned spell (`game.json:towns[]`). Hunterville has
+pinned the Bridge spell.
 
 ### A.7 Castles (27)
 
@@ -2809,19 +2927,6 @@ spell.
   (`game.json:zones[]`).
 - **tile_codes:** 54 entries (`game.json:tile_codes`), mapping ASCII map
   characters to terrain + art + flags.
-- **strings.banners:** 111 entries (`game.json:strings.banners`).
+- **banners:** 282 entries (`strings/en.json:banners`).
 - **economy / spawn / score / combat blocks:** values reproduced inline in
   §22.1 (chest), §15.2 (spawn), §26.1 (score), §14.1 (morale chart).
-
----
-
-## Document history
-
-This document merges the former `GAMEPLAY-SPEC.md` (game-design/rules) and the
-former `OPENBOUNTY-SPEC.md` (implementation) into one source. The merge
-corrected the earlier implementation spec's stale combat description (combat is
-fully implemented, §25), updated the save version (7), save slot count (10),
-and storage caps (`GAME_MAX_MUTATIONS` = 1024) to current values, repointed all
-code citations from the pre-engine-split `src/` paths to `engine/` +
-`engine/include/`, and regenerated the data tables from the current
-`game.json`.

@@ -1,28 +1,30 @@
 Glory of Rome <version>
 =======================
 
-Glory of Rome is a turn-based fantasy strategy game: raise an army, hunt the
-villains who have carved up Italia, and deliver them to the Senate before
-your commission runs out. It runs on OpenBounty, an open-source engine, and
-everything it needs is in this folder -- there is nothing else to download.
+Glory of Rome has been a turn-based fantasy strategy game: raise an army,
+hunt the villains who have carved up Italia, and deliver them to the Senate
+before your commission runs out. It has run on OpenBounty, an open-source
+engine, and everything it needs has been in this folder -- there has been
+nothing else to download.
 
 
 INSTALL
 
   Linux:    extract the tarball and run ./openbounty
   Windows:  extract the zip and double-click openbounty.exe
-  macOS:    extract the zip; first launch will be blocked by Gatekeeper.
+  macOS:    extract the zip; Gatekeeper has blocked the first launch.
             Right-click openbounty in Finder, choose Open, then click
             Open in the dialog. Or, from a terminal:
               xattr -dr com.apple.quarantine ./openbounty
 
-  Keep the assets folder next to the program: the game is in it.
+  Keep the assets folder next to the program: the game has been in it.
 
 
 CONTROLS
 
-  Arrow keys or the numeric keypad move; Enter chooses; Esc opens the game
-  menu, where every command lives. A gamepad works too.
+  Arrow keys or the numeric keypad have moved; Enter has chosen; Esc has
+  opened the game menu, where every command lives. A gamepad has worked
+  too.
 
 
 MORE

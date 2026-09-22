@@ -7,7 +7,7 @@
 //   ios/gfx_metal.mm   one Metal pipeline    (iOS, links no raylib)
 //
 // Drawing code calls these instead of raylib directly, so all of it is shared
-// and only the primitives are swapped per platform. docs/IOS-BACKEND-SPIKE.md
+// and only the primitives are swapped per platform. docs/IOS-BACKEND.md
 // has the full inventory this was derived from: 85 raylib functions across 429
 // call sites, of which the drawing ones are what live here.
 //

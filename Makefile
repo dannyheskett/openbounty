@@ -580,7 +580,7 @@ $(ANDROID_AAB): $(ANDROID_LIB) $(ANDROID_DEX) $(BUNDLETOOL) $(PLAY_KEYSTORE) \
 # ---------------------------------------------------------------------------
 # iOS (native Metal, no raylib). CI-only: needs Xcode's toolchain, which exists
 # on macOS alone -- there is no Mac here, so the FIRST build of every one of
-# these files is the macOS runner (docs/IOS-BACKEND-SPIKE.md).
+# these files is the macOS runner (docs/IOS-BACKEND.md).
 #
 #   ios-sim  -- Simulator .app (arm64 simulator, unsigned) for CI screenshots.
 #   ios      -- device .ipa (arm64, unsigned unless a signing identity is set).
@@ -974,7 +974,7 @@ $(LIBTEST_STAMP): tests/library/consumer.c engine/host_noop.c $(DEMO_OBJ) $(AUTO
 # ---------------------------------------------------------------------------
 # iOS purity check: every shell file the iOS build will compile must type-check
 # with -DPLATFORM_IOS and NO raylib include path at all. iOS links no raylib
-# (docs/IOS-BACKEND-SPIKE.md); this is what keeps the seams honest on a machine
+# (docs/IOS-BACKEND.md); this is what keeps the seams honest on a machine
 # with no Apple toolchain, long before a macOS runner ever sees the code.
 #
 # The excluded list is the desktop-only subsystems -- recorder, mp4 encoder,
