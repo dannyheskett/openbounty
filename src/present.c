@@ -5,6 +5,7 @@
 #include "safe_area.h"
 #include "layout.h"
 #include "touch.h"
+#include "input_host.h"   // input_touch_active: the band grows for a finger
 #include "bfont.h"
 
 // The blit rect of the last present_scaled, in window pixels, and the scale
@@ -150,9 +151,12 @@ bool present_refit(RenderTexture2D *rt) {
         int z = present_scale(win_w, win_h);
         // Off the world map the buffer goes back to exactly what the pack
         // declared: passing the declared size shrinks the pane to its floor.
+        // A touch session gets a menu band as tall as a touch target, but
+        // only out of the slack the whole tiles leave (layout_grow_native).
+        int want_status = input_touch_active() ? touch_unit() / (z > 0 ? z : 1) : 0;
         bool grown = s_grow_world
-            ? layout_grow_native(win_w, win_h, z)
-            : layout_grow_native(0, 0, 1);
+            ? layout_grow_native(win_w, win_h, z, want_status)
+            : layout_grow_native(0, 0, 1, 0);
         int w, h;
         present_target_size(win_w, win_h, &w, &h);
         bool changed = grown || (rt->texture.width != w || rt->texture.height != h);
@@ -276,6 +280,8 @@ bool present_window_to_screen(int wx, int wy, int *sx, int *sy) {
     if (sy) *sy = (wy - s_dst_y) / s_dst_scale;
     return true;
 }
+
+int present_get_dst_scale(void) { return s_dst_scale; }
 
 void present_last_dst(int *x, int *y, int *w, int *h) {
     if (x) *x = s_dst_x;

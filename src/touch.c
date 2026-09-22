@@ -163,6 +163,30 @@ static int map_region_key(const Region *r, int sx, int sy) {
     return direction_key(dx, dy);
 }
 
+// How far outside a region a tap still counts, in DESIGN pixels: enough to
+// bring anything smaller than a touch unit up to one. A 20px status band on a
+// phone is 13pt tall against Apple's 44pt minimum, and no amount of aiming
+// fixes that -- but a tap that lands just below it plainly meant it.
+//
+// Applied as a SECOND pass over the regions, nearest first, so exact hits are
+// never stolen from a neighbour and the forgiveness only decides taps that
+// would otherwise have hit nothing at all.
+static int touch_slack(void) {
+    int scale = present_get_dst_scale();
+    if (scale < 1) scale = 1;
+    int u = touch_unit() / scale;      // the unit in design pixels
+    return u / 2;
+}
+
+static int rect_distance(const Region *r, int px, int py) {
+    int dx = 0, dy = 0;
+    if (px < r->x)              dx = r->x - px;
+    else if (px >= r->x + r->w) dx = px - (r->x + r->w) + 1;
+    if (py < r->y)              dy = r->y - py;
+    else if (py >= r->y + r->h) dy = py - (r->y + r->h) + 1;
+    return (dx > dy) ? dx : dy;         // Chebyshev: a square of slack
+}
+
 // Resolve a tap at window position (wx,wy). Chrome buttons sit on top, then
 // design-space regions, then the any-key fallback. `*was_map` reports a map
 // viewport hit so the caller can arm hold-to-repeat.
@@ -201,6 +225,30 @@ static void resolve_tap(int wx, int wy, bool *was_map) {
         }
         input_host_inject_key(r->key);
         return;
+    }
+
+    // Nothing was hit squarely. Take the nearest region within the slack --
+    // small targets (the menu band, a narrow row) then behave as though they
+    // were a full touch unit, without growing and overlapping each other.
+    {
+        int slack = touch_slack();
+        const Region *best = NULL;
+        int best_d = slack + 1;
+        for (int i = 0; i < s_region_count; i++) {
+            const Region *r = &s_regions[i];
+            if (r->kind != REGION_SCREEN && r->kind != REGION_ROW) continue;
+            int d = rect_distance(r, sx, sy);
+            if (d < best_d) { best_d = d; best = r; }
+        }
+        if (best) {
+            if (best->kind == REGION_ROW) {
+                s_tapped_list = best->list_id;
+                s_tapped_row  = best->row;
+            } else {
+                input_host_inject_key(best->key);
+            }
+            return;
+        }
     }
 
     if (s_any_key) input_host_inject_key(s_any_key);
@@ -335,6 +383,22 @@ bool touch_last_key_rect(int key, int *x, int *y, int *w, int *h) {
 
 typedef struct { const char *label; int key; } Button;
 
+// A touch control's size in WINDOW pixels, from the one number that tracks
+// physical size across every device we ship on: the short side of the window.
+// Apple asks for 44pt and Android for 48dp; on the phones this runs on that is
+// very close to 11% of the short side (iPhone 12: 44/390pt; Pixel 6:
+// 44/411dp). The 44px floor keeps a small desktop window sane.
+//
+// Everything in this file sizes itself from this rather than from a pixel
+// count, because a pixel count means something different on every screen --
+// which is how the keyboard ended up with 15pt keys.
+int touch_unit(void) {
+    int w = frame_host_window_width(), h = frame_host_window_height();
+    int shortest = (w < h) ? w : h;
+    int u = shortest * 11 / 100;
+    return (u < 44) ? 44 : u;
+}
+
 static void chrome_button(int x, int y, int w, int h,
                           const char *label, int key, bool is_char) {
     gfx_rect(x, y, w, h, (Color){ 36, 36, 44, 230 });
@@ -360,7 +424,8 @@ static void chrome_bar(const Button *btns, int count) {
     int gx, gy, gw, gh;
     present_last_dst(&gx, &gy, &gw, &gh);
 
-    int bw = 62, bh = 42, gap = 5;
+    int u = touch_unit();
+    int bw = u * 3 / 2, bh = u, gap = u / 6;
     int per_row = (win_w - gap) / (bw + gap);
     if (per_row < 1) per_row = 1;
     if (per_row > count) per_row = count;
@@ -384,13 +449,15 @@ static void chrome_bar(const Button *btns, int count) {
 
 static void chrome_corner(void) {
     int win_w = frame_host_window_width();
-    int x = win_w - 56 - 6, y = 6;
+    int u = touch_unit();
+    int bw = u * 3 / 2, gap = u / 6;
+    int x = win_w - bw - gap, y = gap;
     if (s_chrome & TOUCH_CHROME_BACK) {
-        chrome_button(x, y, 56, 42, "ESC", KEY_ESCAPE, false);
-        x -= 56 + 6;
+        chrome_button(x, y, bw, u, "ESC", KEY_ESCAPE, false);
+        x -= bw + gap;
     }
     if (s_chrome & TOUCH_CHROME_CONFIRM)
-        chrome_button(x, y, 56, 42, "OK", KEY_ENTER, false);
+        chrome_button(x, y, bw, u, "OK", KEY_ENTER, false);
 }
 
 static void chrome_digits(void) {
@@ -398,10 +465,10 @@ static void chrome_digits(void) {
         { "7", "8", "9" }, { "4", "5", "6" },
         { "1", "2", "3" }, { "<", "0", "OK" },
     };
-    int bw = 48, gap = 5;
+    int bw = touch_unit(), gap = bw / 6;
     int win_w = frame_host_window_width(), win_h = frame_host_window_height();
-    int x0 = win_w - 3 * (bw + gap) - 6;
-    int y0 = win_h - 4 * (bw + gap) - 6;
+    int x0 = win_w - 3 * (bw + gap) - gap;
+    int y0 = win_h - 4 * (bw + gap) - gap;
     for (int r = 0; r < 4; r++) {
         for (int c = 0; c < 3; c++) {
             const char *l = labels[r][c];
@@ -418,11 +485,14 @@ static void chrome_digits(void) {
 static void chrome_keyboard(void) {
     static const char *rows[3] = { "QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM" };
     int win_w = frame_host_window_width(), win_h = frame_host_window_height();
-    int gap = 4;
+    int u = touch_unit();
+    int gap = u / 6;
+    // Ten keys and eleven gaps across, but never below the touch unit: on a
+    // phone in landscape the width is generous and the unit is what decides.
     int bw = (win_w - 11 * gap) / 10;
-    if (bw > 46) bw = 46;
-    int bh = bw + 6;
-    int y0 = win_h - 4 * (bh + gap) - 4;
+    if (bw < u) bw = u;
+    int bh = u;
+    int y0 = win_h - 4 * (bh + gap) - gap;
 
     char label[2] = { 0, 0 };
     for (int r = 0; r < 3; r++) {

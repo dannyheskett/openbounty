@@ -91,6 +91,11 @@ void touch_request_prompt_ab(void);           // "A"/"B" -> KEY_A/KEY_B
 
 // Called from present_scaled, inside the frame's draw. Renders requested
 // chrome in window pixels and registers its window-space regions.
+// A touch control's size in window pixels -- Apple's 44pt / Android's 48dp,
+// tracked as 11% of the window's short side with a 44px floor. Exposed so the
+// layout can make the menu band a comfortable target too.
+int  touch_unit(void);
+
 void touch_draw_chrome(void);
 
 // Per-frame tick, called from frame_host_end_frame after the yield.

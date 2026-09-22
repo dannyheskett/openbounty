@@ -47,6 +47,10 @@ void textsel_draw(const TextSel *t, int x, int y, int cell_w, int cell_h,
                   Color fg, Color bg, int touch_list);
 
 // The grid's size in pixels for a cell size.
+// The narrowest cell the grid draws correctly: the widest label ("DEL") plus
+// a glyph of margin. textsel_draw clamps to it; callers should size with it.
+int  textsel_min_cell_w(void);
+
 int  textsel_w(bool numeric, int cell_w);
 int  textsel_h(bool numeric, int cell_h);
 

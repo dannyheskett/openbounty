@@ -107,6 +107,10 @@ bool present_window_to_screen(int wx, int wy, int *sx, int *sy);
 // pixels. The touch layer lays its chrome out around this.
 void present_last_dst(int *x, int *y, int *w, int *h);
 
+// The scale the last frame was blitted at: window pixels per design pixel.
+// touch.c converts its physical sizes back into design pixels with it.
+int present_get_dst_scale(void);
+
 // Record the blit rect + scale the mapping above reads. Called by
 // present_scaled with what it actually drew; public so tests can exercise
 // present_window_to_screen without a window.

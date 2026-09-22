@@ -134,6 +134,7 @@ void layout_init(const struct Resources *res) {
             g_layout.frame_b  = edge;
             g_layout.bar_h    = gap;
             g_layout.status_h = status;
+            g_layout.native_status_h = status;
         }
     }
 
@@ -202,7 +203,8 @@ void layout_min_window(int *out_w, int *out_h) {
 // The surface is measured at the scale, and the DECLARED size is the floor, so
 // this can only ever add. Growth is in whole tiles and the count stays odd so
 // the hero keeps the centre cell.
-bool layout_grow_native(int surface_w, int surface_h, int scale) {
+bool layout_grow_native(int surface_w, int surface_h, int scale,
+                        int want_status_h) {
     if (!g_layout.is_modern || !g_layout.is_native) return false;
     if (scale < 1) scale = 1;
     if (g_layout.native_w <= 0 || g_layout.native_h <= 0) return false;
@@ -224,11 +226,30 @@ bool layout_grow_native(int surface_w, int surface_h, int scale) {
     if (tiles_w < g_layout.pack_tiles_w) tiles_w = g_layout.pack_tiles_w;
     if (tiles_h < g_layout.pack_tiles_h) tiles_h = g_layout.pack_tiles_h;
 
+    // The menu band may take what the whole tiles leave over, up to the
+    // height asked for (a touch unit) -- and not one pixel more, because the
+    // tile count is odd and losing a row costs two rows of world, not one.
+    // The DECLARED band, not the live one: chrome_h below is derived from the
+    // declared buffer, so measuring from a band this function already grew
+    // would count the growth twice.
+    int base_status = g_layout.native_status_h > 0 ? g_layout.native_status_h
+                                                   : g_layout.status_h;
+    int status_h = base_status;
+    if (want_status_h > base_status) {
+        int spare = avail_h - (chrome_h + g_layout.tile_h * tiles_h);
+        int give = want_status_h - base_status;
+        if (give > spare) give = spare;
+        if (give > 0) status_h = base_status + give;
+    }
+    chrome_h += status_h - base_status;
+
     int screen_w = chrome_w + g_layout.tile_w * tiles_w;
     int screen_h = chrome_h + g_layout.tile_h * tiles_h;
     if (screen_w == g_layout.screen_w && screen_h == g_layout.screen_h &&
-        tiles_w == g_layout.tiles_w && tiles_h == g_layout.tiles_h) return false;
+        tiles_w == g_layout.tiles_w && tiles_h == g_layout.tiles_h &&
+        status_h == g_layout.status_h) return false;
 
+    g_layout.status_h = status_h;
     g_layout.tiles_w  = tiles_w;
     g_layout.tiles_h  = tiles_h;
     g_layout.map_w    = g_layout.tile_w * tiles_w;

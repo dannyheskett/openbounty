@@ -36,6 +36,8 @@ typedef struct {
     int sidebar_gap;           // modern fixed buffer: the band between the map
                                // pane and the HUD, as wide as the side bands so
                                // left edge, middle and right edge match. 0 else.
+    int native_status_h;       // the status band as declared, before a touch
+                               // session grew it into the tiles' slack
     int native_w, native_h;    // the buffer the pack declared: a FLOOR, not a
                                // fixed size. The map pane may grow past it to
                                // fill a bigger surface; nothing else does, and
@@ -69,7 +71,8 @@ bool layout_fit_window(int win_w, int win_h, int scale);
 // geometry all keep the sizes the pack declared and simply re-centre. The
 // declared size is the floor, so a surface smaller than it changes nothing.
 // Returns true when the buffer size changed.
-bool layout_grow_native(int surface_w, int surface_h, int scale);
+bool layout_grow_native(int surface_w, int surface_h, int scale,
+                        int want_status_h);
 
 // The smallest window this pack can be played in, derived from its tile size.
 // Set as the window's minimum so the player cannot drag below it. The binding

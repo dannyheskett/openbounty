@@ -2434,6 +2434,40 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   surface they are given. Legacy mode is untouched: fixed 320x200, auto-fit
   with the 2x floor, and King's Bounty's gallery stays byte-identical.
 
+- **REQ-530.** **Touch controls are sized in physical units.** Every on-screen
+  control sizes itself from `touch_unit()` (`src/touch.c`): 11% of the
+  window's short side, floored at 44px, which is Apple's 44pt and Android's
+  48dp on the phones this ships to. Fixed pixel counts meant something
+  different on every screen -- the on-screen keyboard's keys were 15pt on an
+  iPhone 12. The action bars, the keyboard, the digit pad and the corner
+  buttons all derive from it.
+
+  Small **design-space** regions are answered by a forgiving second pass in
+  `resolve_tap`: a tap that hits nothing exactly takes the nearest region
+  within half a touch unit, nearest first, so an exact hit is never stolen
+  from a neighbour. That is what makes a 20px menu band answerable on a phone
+  without changing what is drawn.
+
+  On a touch session the menu band itself also grows to a touch unit, but
+  **only out of the slack the whole tiles leave** (`layout_grow_native`'s
+  `want_status_h`): the viewport count is odd, so taking a row costs two rows
+  of world, and the band never does that.
+
+- **REQ-531.** **Naming the hero on a phone uses the on-screen keyboard**, not
+  the in-buffer letter grid (`src/startup.c`): the grid is laid out in the
+  pack's design pixels, which is a 21x13pt key on an iPhone 12, while the
+  chrome keyboard is drawn in window pixels at a touch unit. The grid remains
+  for a gamepad and for a desktop with no keyboard, and its cells are now at
+  least `textsel_min_cell_w()` wide -- four glyphs, so `DEL` and `SPC` stop
+  overlapping their neighbours.
+
+- **REQ-532.** **The class you picked is visible while you name the hero.**
+  The entry panel reserves a right-hand column for the class portrait and
+  widens to hold it, so the difficulty table keeps its own column
+  (`src/startup.c`). On touch, choosing a class takes **two taps**: the first
+  selects and shows the description, the second confirms. A single tap both
+  selected and confirmed, so the choice was never on screen for a frame.
+
 - **REQ-529.** **No Exit on a phone.** The title menu's Exit row and the game
   menu's Exit footer are compiled out under `PLATFORM_IOS` and
   `PLATFORM_ANDROID` (`src/startup.c`, `src/modern/gamemenu.c`). iOS has no

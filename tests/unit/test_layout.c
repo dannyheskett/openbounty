@@ -87,11 +87,11 @@ TEST native_pane_grows_and_nothing_else_does(void) {
     int frame_l = CL_FRAME_LEFT_W, sidebar = CL_SIDEBAR_W, bar = CL_BAR_H;
 
     // A surface exactly the declared buffer changes nothing.
-    ASSERT_FALSE(layout_grow_native(base_w, base_h, 1));
+    ASSERT_FALSE(layout_grow_native(base_w, base_h, 1, 0));
     ASSERT_EQ(base_w, CL_SCREEN_W);
 
     // A phone-shaped surface at 2x: the buffer widens, in whole tiles.
-    ASSERT(layout_grow_native(2400, 1080, 2));
+    ASSERT(layout_grow_native(2400, 1080, 2, 0));
     ASSERT(CL_SCREEN_W > base_w);
     ASSERT_EQ(0, (CL_SCREEN_W - base_w) % CL_TILE_W);   // whole tiles only
     ASSERT_EQ(1, CL_MAP_TILES_W % 2);                   // odd: the hero centres
@@ -104,10 +104,25 @@ TEST native_pane_grows_and_nothing_else_does(void) {
     ASSERT_EQ(bar, CL_BAR_H);
 
     // Idempotent: the answer depends on the surface, not on the current pane.
-    ASSERT_FALSE(layout_grow_native(2400, 1080, 2));
+    ASSERT_FALSE(layout_grow_native(2400, 1080, 2, 0));
+
+    // The menu band takes what the tiles leave over, up to what is asked
+    // for, and never a pixel that would cost a tile row.
+    {
+        int before_rows = CL_MAP_TILES_H;
+        int before_status = CL_STATUS_H;
+        // 1200 tall leaves slack after five whole rows; 1080 leaves none,
+        // and the band must not take a row to get its height.
+        ASSERT(layout_grow_native(2400, 1200, 2, before_status + 40));
+        ASSERT(CL_STATUS_H > before_status);           // it grew
+        ASSERT_EQ(before_rows, CL_MAP_TILES_H);        // but not out of the map
+        ASSERT(CL_SCREEN_H <= 1200 / 2);
+        ASSERT_FALSE(layout_grow_native(2400, 1080, 2, before_status + 40) &&
+                     CL_MAP_TILES_H < before_rows);    // no slack: no growth
+    }
 
     // And it shrinks back to the floor, never below it.
-    ASSERT(layout_grow_native(832, 540, 1));
+    ASSERT(layout_grow_native(832, 540, 1, 0));
     ASSERT_EQ(base_w, CL_SCREEN_W);
     ASSERT_EQ(base_h, CL_SCREEN_H);
     PASS();
