@@ -1,5 +1,5 @@
 // Metal backend for src/gfx.h. The iOS build links no raylib at all, so every
-// drawing call the shell makes lands here (docs/IOS-BACKEND-SPIKE.md).
+// drawing call the shell makes lands here (docs/IOS-BACKEND.md).
 //
 // One pipeline, one shader, one vertex buffer. Every primitive the game draws
 // is a triangle list of (position, colour, uv) vertices: a filled rectangle is

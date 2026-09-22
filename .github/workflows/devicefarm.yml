@@ -58,7 +58,6 @@ jobs:
           sdkmanager --install "ndk;${NDK_VERSION}" \
             "build-tools;${ANDROID_BUILD_TOOLS}" \
             "platforms;android-${ANDROID_PLATFORM_VER}"
-          echo "ANDROID_NDK=${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
       # The APK embeds the pack, and the pack is zipped by the native binary,
       # so the Linux toolchain is needed even though nothing native ships here.
       - name: Install Linux build deps
@@ -70,10 +69,12 @@ jobs:
       - name: Build raylib (Linux)
         run: ./scripts/build_raylib_linux.sh
       - name: Build raylib (Android, arm64-v8a static)
-        run: ./scripts/build_raylib_android.sh
+        run: ./scripts/build_raylib_android.sh --ndk "${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}"
       - name: Build APK
         run: |
           make android \
+            ANDROID_NDK="${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" \
+            ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT}" \
             ANDROID_BUILD_TOOLS="${ANDROID_BUILD_TOOLS}" \
             ANDROID_PLATFORM_VER="${ANDROID_PLATFORM_VER}"
       - name: Configure AWS credentials (OIDC)

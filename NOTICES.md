@@ -1,16 +1,17 @@
 # Third-party notices
 
-OpenBounty bundles or links the following third-party components. Each is
-distributed under its own license; the full license text for every
-shipped component is reproduced inline below so this file is
+OpenBounty has bundled or linked the following third-party components.
+Each has been distributed under its own license; the full license text for
+every shipped component has been reproduced inline below so this file is
 self-contained when packaged with a release binary.
 
-The `greatest` testing framework is used only by the unit-test binary
-and is not linked into the shipped game; it is listed for completeness.
+The `greatest` testing framework has been used only by the unit-test binary
+and has not been linked into the shipped game; it is listed for
+completeness.
 
 ## Liberation Sans
 
-The face of the pack picker, which draws before any game pack is open.
+The face of the pack picker, which has drawn before any game pack is open.
 
 - License: SIL Open Font License 1.1
 - Copyright (c) 2010 Google Corporation with Reserved Font Arimo, Tinos and Cousine; Copyright (c) 2012 Red Hat, Inc. with Reserved Font Name Liberation
@@ -237,10 +238,9 @@ THE SOFTWARE.
 ## stb (stb_image, stb_truetype, stb_vorbis) *(iOS build only)*
 
 Single-file public-domain libraries by Sean Barrett, vendored under
-`third_party/stb/`. The iOS build links no raylib, so it decodes PNGs,
-rasterises the pack's TrueType face and decodes OGG music with these -- the
-same three libraries raylib itself uses internally, at the same versions
-(`third_party/raylib/src/external/`).
+`third_party/stb/`. The iOS build has linked no raylib, so it has decoded
+PNGs, rasterised the pack's TrueType face and decoded OGG music with these
+-- the same three libraries raylib itself uses internally.
 
 - License: public domain (or MIT, dual-licensed at the user's choice)
 - Project: https://github.com/nothings/stb
@@ -299,24 +299,36 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ## Original game attribution
 
-OpenBounty is a clean-room reimplementation of *King's Bounty* (1990).
-The original game was designed by Jon Van Caneghem, programmed by Mark
-and Andy Caldwell, with graphics by Kenneth L. Mayfield and Vincent
+OpenBounty has been a clean-room reimplementation of *King's Bounty*
+(1990). The original game was designed by Jon Van Caneghem, programmed by
+Mark and Andy Caldwell, with graphics by Kenneth L. Mayfield and Vincent
 DeQuattro, Jr. Copyright 1990 New World Computing, Inc. All rights
 reserved.
 
-OpenBounty ships none of the original game's binaries, art, or audio.
-Original assets must be supplied by the player from a legally-owned
-copy of the DOS distribution; the `--extract` mode produces a runnable
-asset pack from such a distribution.
+OpenBounty has shipped none of the original game's binaries, art, or audio.
+The player supplies original assets from a legally-owned copy of the DOS
+distribution; the `--extract` mode has produced a runnable asset pack from
+such a distribution.
 
 ## Glory of Rome bitmap font
 
-`assets/glory-of-rome/art/font/rome-font.png` is derived from **Px437
-EagleSpCGA Alt3**, from the Ultimate Oldschool PC Font Pack by **VileR**
-(<https://int10h.org/oldschool-pc-fonts/>), which is licensed
-**CC BY-SA 4.0** (<https://creativecommons.org/licenses/by-sa/4.0/>).
+`assets/glory-of-rome/art/font/rome-font.png`, the pack's fallback strip,
+has been derived from **Px437 EagleSpCGA Alt3**, from the Ultimate Oldschool
+PC Font Pack by **VileR** (<https://int10h.org/oldschool-pc-fonts/>),
+licensed **CC BY-SA 4.0** (<https://creativecommons.org/licenses/by-sa/4.0/>).
 
-The PNG is an adaptation of that font -- the glyphs rendered to a 1024x8
-strip -- and is therefore itself covered by CC BY-SA 4.0. This applies to
-that file only, not to the rest of the pack.
+The PNG has been an adaptation of that font -- the glyphs rendered to a
+1024x8 strip -- and is therefore itself covered by CC BY-SA 4.0. This has
+applied to that file only, not to the rest of the pack.
+
+## Press Start 2P
+
+`assets/glory-of-rome/art/font/PressStart2P-Regular.ttf`, the TrueType face
+Glory of Rome has drawn its text in (every Glory of Rome package and app
+carries it).
+
+- License: SIL Open Font License 1.1, the same text reproduced under
+  Liberation Sans above; it also ships beside the face as
+  `art/font/OFL-PressStart2P.txt`.
+- Copyright 2012 The Press Start 2P Project Authors (cody@zone38.net), with
+  Reserved Font Name "Press Start 2P".

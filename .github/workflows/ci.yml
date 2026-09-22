@@ -1,14 +1,11 @@
 name: ci
 
 # Every artifact here is a throwaway kept for 5 days, not GitHub's default
-# 90: a full run uploads ~45 MB, and it was the account's artifact storage
-# quota -- not the build -- that failed release-25 with a 403.
+# 90: a full run uploads ~45 MB, and the account's artifact storage quota,
+# not the build, is what a 403 on upload means.
 
-# Inlined, not called. The shared copy in dannyheskett/.github is being retired, so this
-# repository carries its own. The body below is that workflow verbatim, with two edits:
-# the workflow_call trigger becomes this repo's real pull_request trigger, and the
-# `platforms` input and its per-job gates are gone -- a platform this repo does not build
-# is simply not a job here, rather than a job that reports skipped.
+# This repository's own CI workflow, not a call to a shared one: a platform this repo does
+# not build is simply not a job here, rather than a job that reports skipped.
 #
 # Check names are therefore the bare job ids ("linux"), not "ci / linux".
 on:
@@ -139,7 +136,6 @@ jobs:
           sdkmanager --install "ndk;${NDK_VERSION}" \
             "build-tools;${ANDROID_BUILD_TOOLS}" \
             "platforms;android-${ANDROID_PLATFORM_VER}"
-          echo "ANDROID_NDK=${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
       # The APK embeds the Glory of Rome pack, and the pack is zipped by the
       # NATIVE binary (./build/debug/openbounty --pack-dir), so the Linux
       # toolchain is required even though nothing native ships from this job.
@@ -152,10 +148,12 @@ jobs:
       - name: Build raylib (Linux)
         run: ./scripts/build_raylib_linux.sh
       - name: Build raylib (Android, arm64-v8a static)
-        run: ./scripts/build_raylib_android.sh
+        run: ./scripts/build_raylib_android.sh --ndk "${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}"
       - name: Build APK (sideload)
         run: |
           make android \
+            ANDROID_NDK="${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" \
+            ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT}" \
             ANDROID_BUILD_TOOLS="${ANDROID_BUILD_TOOLS}" \
             ANDROID_PLATFORM_VER="${ANDROID_PLATFORM_VER}"
       - name: Verify the APK carries the pack and the lib
@@ -185,10 +183,12 @@ jobs:
       # assembled arm64 APK could not tell us.
       # ---------------------------------------------------------------------
       - name: Build raylib (Android, x86_64 static, for the emulator)
-        run: ANDROID_ARCHES=x86_64 ./scripts/build_raylib_android.sh
+        run: ./scripts/build_raylib_android.sh --ndk "${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" --arch x86_64
       - name: Build APK (x86_64, emulator only)
         run: |
           make android \
+            ANDROID_NDK="${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" \
+            ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT}" \
             ANDROID_ABI=x86_64 \
             ANDROID_APK=build/gloryofrome-x86_64.apk \
             ANDROID_APK_DIR=build/android-x86_64 \
@@ -232,7 +232,7 @@ jobs:
   ios:
     # The ONLY machine that can compile this: Xcode's SDK, xcrun and the
     # Simulator exist on macOS alone, and there is no Mac to hand. Every iOS
-    # file's first build is therefore this job (docs/IOS-BACKEND-SPIKE.md).
+    # file's first build is therefore this job (docs/IOS-BACKEND.md).
     #
     # macos-26: the same toolchain the release uses, so the signed build
     # checked below is the one Apple would actually receive. Apple refuses an

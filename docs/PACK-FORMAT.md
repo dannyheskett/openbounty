@@ -1,11 +1,12 @@
 # Pack format
 
-A *pack* is a self-contained directory (or zipped `.openbounty` archive)
-that supplies everything the engine needs to run one specific game:
-gameplay rules, world data, art, audio, fonts, and palettes. The base
-King's Bounty pack at `assets/kings-bounty/` is the canonical reference.
+A *pack* has been a self-contained directory (or zipped `.openbounty`
+archive) that supplies everything the engine needs to run one specific game:
+gameplay rules, world data, text, art, audio, fonts, and palettes. The base
+King's Bounty pack at `assets/kings-bounty/` has been the canonical
+reference, and `assets/glory-of-rome/` the modern one.
 
-Packs are how OpenBounty supports re-themed games, total conversions,
+Packs have been how OpenBounty supports re-themed games, total conversions,
 and community content without recompiling the engine.
 
 ---
@@ -18,21 +19,22 @@ my-pack/
 ├── art/               # Sprites, tiles, fonts, UI chrome (PNG)
 ├── audio/             # Music + SFX (WAV / OGG)
 ├── maps/              # Zone tile-grid files (*.dat, ASCII)
-└── palettes/          # 256-color palette binaries (768-byte raw RGB)
+├── palettes/          # 256-color palette binaries (768-byte raw RGB)
+└── strings/           # All user-visible text, one file per language (en.json, ...)
 ```
 
-The directory name has no special meaning. The pack identifies itself
-via `pack_id` inside `game.json`.
+The directory name has had no special meaning. The pack has identified
+itself via `pack_id` inside `game.json`.
 
-A packaged distribution is a ZIP file with the `.openbounty` extension,
-containing the same tree at the archive root. The engine treats loose
+A packaged distribution has been a ZIP file with the `.openbounty` extension,
+containing the same tree at the archive root. The engine has treated loose
 directories and `.openbounty` archives interchangeably.
 
 ---
 
 ## 2. `game.json` top-level keys
 
-All paths are relative to the pack root. Required fields are marked.
+All paths have been relative to the pack root. Required fields are marked ✱.
 
 | Key | Type | Purpose |
 |---|---|---|
@@ -41,7 +43,7 @@ All paths are relative to the pack root. Required fields are marked.
 | `pack_kind`   | string   | `"base"` or `"mod"`. Informational. |
 | `title`       | string   | Window title. |
 | `version`     | int      | Pack schema version. Current: `1`. |
-| `world`       | object ✱ | Global world flags (see §3). |
+| `world`       | object ✱ | Global world flags, including `language`, the base locale in `strings/` (default `en`). |
 | `time`        | object ✱ | Day/week/difficulty constants. |
 | `economy`     | object ✱ | Costs, chest tables, scoring. |
 | `tuning`      | object   | Spell multipliers, search cost, temp-death army (`temp_death`: `{"troop": id, "count": n}`; defaults: the cheapest-recruit-cost troop, 20). |
@@ -63,7 +65,7 @@ All paths are relative to the pack root. Required fields are marked.
 | `zones`       | array  ✱ | Continent / map definitions. |
 | `spawn`       | object   | Per-continent monster-spawn tables. |
 | `contract`    | object   | Contract cycle parameters. |
-| `strings`     | object   | All user-visible text (see §5). |
+| `audiences`   | object   | Modern home-castle audience pages (Promotion, Blessing, Tribute). |
 | `credits`     | object   | Credits-screen lines. |
 | `ending`      | object   | Victory cartoon parameters. |
 
@@ -71,35 +73,39 @@ All paths are relative to the pack root. Required fields are marked.
 
 ```json
 "render": { "mode": "modern", "tile_w": 96, "tile_h": 96, "tiles_w": 7, "tiles_h": 5,
-            "ui_scale": 2, "native_w": 832, "native_h": 540 }
+            "ui_scale": 1, "dim": 35, "native_w": 800, "native_h": 532 }
 ```
 
-`mode` is required: `"legacy"` is the 320 x 200 layout (48 x 34 tiles, 5 x 5
-viewport, `ui_scale` 1, the other keys ignored); `"modern"` takes the tile
-size, the viewport in tiles (odd on both axes) and `ui_scale`, which
-multiplies the font and the chrome bands.
+`mode` has been required: `"legacy"` has been the 320 x 200 layout (48 x 34
+tiles, 5 x 5 viewport, `ui_scale` 1, the other keys ignored); `"modern"` has
+taken the tile size, the viewport in tiles (odd on both axes) and `ui_scale`,
+which multiplies the chrome bands and the bitmap font.
 
-`dim` (modern only, optional, default 55) is the percent of black laid over the map and sidebar under any detail view, prompt or dialog (OPENBOUNTY-SPEC REQ-430g); 0 turns it off.
+`dim` (modern only, optional, default 55) has been the percent of black laid
+over the map and sidebar under any detail view, prompt or dialog
+(OPENBOUNTY-SPEC REQ-430g); 0 turns it off.
 
-`native_w` / `native_h` (modern only, optional) fix the buffer size. Without
-them the buffer follows the window and the viewport grows to fill it. With
-them the screen is exactly that size, the viewport is exactly `tiles_w` x
-`tiles_h`, and the space the viewport, the one-tile sidebar and the thinnest
-chrome bands do not use is split between the left and right bands and between
-the top and bottom bands, so the map stays centred. The window opens at 1x and
-the Scale control cycles 1x, 2x, 3x, resizing the window to the buffer times
-the scale; a window of any other size shows the buffer at the largest of those
-that fits, letterboxed. The buffer must hold the viewport (the loader rejects
-one that cannot). Rome: 832 x 540 with 7 x 5 tiles of 96 gives 32-pixel side
-bands and 16-pixel top and bottom bands, the minimum for that viewport.
+`native_w` / `native_h` (modern only, optional) have declared the buffer.
+Without them the buffer has followed the window and the viewport has grown
+to fill it. With them the declared size has been a floor: the viewport has
+been `tiles_w` x `tiles_h` at that size, and the space the viewport and the
+one-tile sidebar do not use has been laid out as edges, a band between the
+pane and the HUD, and the status band (`layout_init`, `src/layout.c`). The
+screen has been shown at the largest whole scale the surface allows, and on
+the world map what that scale leaves over has gone to the viewport in whole
+tiles; every other screen has stayed at the declared size, centred
+(OPENBOUNTY-SPEC REQ-528, `MODERN-RESOLUTION.md`). The buffer has had to hold
+the viewport (the loader has rejected one that cannot). Rome: 800 x 532 with
+7 x 5 tiles of 96 is 12 + 672 + 8 + 96 + 12 across and
+12 + 20 + 8 + 480 + 12 down.
 
-A modern pack that ships no `sprites.ui.chrome_overworld` gets its chrome
-drawn in code: the gold lattice (`src/lattice.c`) fills the frame bands and
-the bar under the status line, borders every HUD panel
-(`sprites.ui.panel_frame` still has to name a colour to turn panel borders
-on) and rings every window (prompts, dialogs, views, location menus).
-`sprites.hud.bar_strip` is then unused too. A legacy pack, or one that ships
-the bitmap, draws it as before.
+A modern pack that ships no `sprites.ui.chrome_overworld` has had its chrome
+drawn in code: the gold lattice (`src/lattice.c`) has filled the frame bands
+and the bar under the status line, bordered every HUD panel
+(`sprites.ui.panel_frame` still names a colour to turn panel borders on) and
+ringed every window (prompts, dialogs, views, location menus).
+`sprites.hud.bar_strip` has then been unused too. A legacy pack, or one that
+ships the bitmap, has drawn the bitmap as a nine-slice (ART-SPEC §3).
 
 ### 2.2 `font`
 
@@ -108,68 +114,71 @@ the bitmap, draws it as before.
           "license": "art/font/OFL-PressStart2P.txt" }
 ```
 
-Modern packs only. `file` is a `.ttf` or `.otf` inside the pack; `size` is
-the height of the line box in pixels, ascent plus descent, the meaning
-raylib gives a font size (6..64, default 16; a pixel face such as Press Start 2P is crisp at
-whole multiples of its 8 px grid, 16 or 24); `caps` true draws every
-string in capitals; `license` is the licence text shipped beside the font.
-The file and the licence are both in the art manifest, so the archive
-carries them.
+Modern packs only. `file` has been a `.ttf` or `.otf` inside the pack;
+`size` the height of the line box in pixels, ascent plus descent, the meaning
+raylib gives a font size (6..64, default 16; a pixel face such as Press Start
+2P is crisp at whole multiples of its 8 px grid, 16 or 24); `caps` true has
+drawn every string in capitals; `license` has been the licence text shipped
+beside the font. The file and the licence have both been in the art
+manifest, so the archive has carried them.
 
-With this block the shell draws text from the face at `size`, anti-aliased,
-in a FIXED cell: every glyph advances by the face's widest advance and is
-centred in it, so the screens' column layouts hold. Declare a monospaced
-face; a proportional one gets letter-spaced to its widest glyph. Lines are
-the face's line height. The layout follows the font rather than
-the other way round: the status band is one line plus padding, the message
-panel is eight lines plus padding, list rows are a line high, and a fixed
-buffer gives the extra height back from its top and bottom bands. Word wrap
-is by pixel width and every authored newline is kept, so menus and tables
-in the strings hold their shape. At 2x and 3x the atlas is rebuilt at that zoom, so text is sharp
-while art stays pixel-identical. The start-up log reports the size, line
-height and digit width. If the file fails to load the strip in
-`sprites.font` is used instead, in its 8 x 8 cell. Legacy packs never read
-this block: they keep the strip, the cell and their character wrap exactly.
+With this block the shell has drawn text from the face at `size`,
+anti-aliased, in a FIXED cell: every glyph has advanced by the face's widest
+advance and been centred in it, so the screens' column layouts hold. Declare
+a monospaced face; a proportional one has been letter-spaced to its widest
+glyph. Lines have been the face's line height. The layout has followed the
+font rather than the other way round: the status band holds one line, list
+rows are at least a line plus padding high, and a declared buffer has given
+the extra height back from its top and bottom bands. Word wrap has been by
+pixel width and every authored newline has been kept, so menus and tables in
+the strings hold their shape. At 2x and 3x the atlas has been rebuilt at that
+zoom, so text has been sharp while art has stayed pixel-identical. The
+start-up log has reported the size, line height and digit width. If the file
+fails to load, the strip in `sprites.font` has been used instead, in its
+8 x 8 cell. Legacy packs have never read this block: they have kept the
+strip, the cell and their character wrap exactly.
 
 ---
 
 ## 3. Conventions
 
-**IDs.** Catalog entries (troops, spells, castles, etc.) are referenced
-by string id rather than array index. Ids are lowercase, snake_case, and
-must be stable across pack versions if you want save compatibility.
+**IDs.** Catalog entries (troops, spells, castles, etc.) have been
+referenced by string id rather than array index. Ids have been lowercase,
+snake_case, and stable across pack versions where save compatibility
+matters.
 
-**Coordinates.** Tile coordinates are `(x, y)` integers in zone-local
-space. `(0, 0)` is the top-left tile of each zone's map. Maps are 64×64
-in the base pack but each zone declares its own `width` and `height`.
+**Coordinates.** Tile coordinates have been `(x, y)` integers in zone-local
+space. `(0, 0)` has been the top-left tile of each zone's map. Maps have been
+64×64 in the base pack, and each zone has declared its own `width` and
+`height`.
 
-**Asset paths.** All paths are relative to the pack root. Forward
+**Asset paths.** All paths have been relative to the pack root. Forward
 slashes only.
 
-**Optional fields.** Anything not marked `required` is optional. The
-engine has a built-in fallback for every UI string (see §5) so a
-minimal pack can omit `strings` entirely.
+**Optional fields.** Anything not marked ✱ has been optional, except text:
+the engine has carried no text of its own, so every string key has had to be
+supplied (see §5).
 
-**Numbers.** All numeric fields are integers unless context indicates
+**Numbers.** All numeric fields have been integers unless context indicates
 otherwise.
 
 ---
 
 ## 4. Sprites and tiles
 
-The `sprites` block points at PNG files. Each entry is either:
+The `sprites` block has pointed at PNG files. Each entry has been either:
 
 - A single path (`"path": "art/foo.png"`).
 - A path + frame count for animated sprites (`{"path": "...", "frames": 4}`).
 
 ### 4.1 Animations
 
-An animation is a JSON array of frame paths, and **the length of that array is
-the cycle**. A pack ships as many frames as it has, up to 16; nothing is fixed
-at four. This applies to `sprites.hero.*`, `sprites.hud.*_animation`,
+An animation has been a JSON array of frame paths, and **the length of that
+array has been the cycle**. A pack has shipped as many frames as it has, up to
+16; nothing has been fixed at four. This has applied to `sprites.hero.*`, `sprites.hud.*_animation`,
 `troops[].anim` and `villains[].anim`.
 
-The hero's `walk`, `idle` and `boat` may instead be authored per facing:
+The hero's `walk`, `idle` and `boat` have also been authorable per facing:
 
 ```json
 "hero": {
@@ -179,25 +188,25 @@ The hero's `walk`, `idle` and `boat` may instead be authored per facing:
 }
 ```
 
-The two forms mean different things to the renderer:
+The two forms have meant different things to the renderer:
 
 - **Flat array** — one strip, mirrored horizontally when the hero faces west.
-  Walking north or south shows the side-on view. This is how `kings-bounty` is
-  authored.
-- **Per-facing object** — the authored facing is drawn and the sprite is
-  **never mirrored**, so an asymmetric figure keeps its shield on the correct
-  arm walking west. Facings may be omitted individually; a missing one falls
-  back to `south`.
+  Walking north or south has shown the side-on view. `kings-bounty` has been
+  authored this way.
+- **Per-facing object** — the authored facing has been drawn and the sprite
+  has **never been mirrored**, so an asymmetric figure has kept its shield on
+  the correct arm walking west. Facings have been individually optional; a
+  missing one has fallen back to `south`.
 
-Each facing carries its own frame count, so a six-frame walk east alongside a
-four-frame walk north is legal.
+Each facing has carried its own frame count, so a six-frame walk east
+alongside a four-frame walk north has been legal.
 
-`idle` is optional. With it, the hero animates while standing still. Without
-it, he holds frame 0 between steps, which is what every pack did before `idle`
-existed.
+`idle` has been optional. With it, the hero has animated while standing
+still. Without it, he has held frame 0 between steps.
 
-**Per-class hero art.** A class entry may carry its own `hero` block with the
-same `walk` / `idle` / `boat` keys, plus `tile`, the win-cartoon hero tile:
+**Per-class hero art.** A class entry has been able to carry its own `hero`
+block with the same `walk` / `idle` / `boat` keys, plus `tile`, the
+win-cartoon hero tile:
 
 ```json
 { "id": "knight", "name": "Legatus", "portrait": "art/classes/legatus.png",
@@ -205,15 +214,16 @@ same `walk` / `idle` / `boat` keys, plus `tile`, the win-cartoon hero tile:
             "walk": ["art/classes/legatus_walk_00.png", "..."] }, ... }
 ```
 
-The map and the win cartoon draw the chosen class's art when it is declared
-and fall back to `sprites.hero` and `ending.hero_tile` for anything the class
-leaves out, so packs that declare nothing are unchanged. A pack whose classes
-all declare a hero tile may leave `ending.hero_tile` out, and a pack may leave
-`ending.grass_tile` out: the cartoon then draws the map's `grass` tile
-(`glory-of-rome` does both; `kings-bounty` declares both tiles).
+The map and the win cartoon have drawn the chosen class's art when it is
+declared and fallen back to `sprites.hero` and `ending.hero_tile` for
+anything the class leaves out. A pack whose classes all declare a hero tile
+has been able to leave `ending.hero_tile` out, and a pack has been able to
+leave `ending.grass_tile` out: the cartoon has then drawn the map's `grass`
+tile (`glory-of-rome` has done both; `kings-bounty` has declared both
+tiles).
 
-Tile images live under `art/tiles/` by convention. Each `tile_codes`
-entry maps an ASCII character (used in `.dat` map files) to a tile
+Tile images have lived under `art/tiles/` by convention. Each `tile_codes`
+entry has mapped an ASCII character (used in `.dat` map files) to a tile
 record:
 
 ```json
@@ -223,30 +233,41 @@ record:
 }
 ```
 
-`terrain` must be one of: `grass`, `forest`, `mountain`, `water`,
-`desert`. Several codes may share a terrain with different art: `glory-of-rome` has a grass variant and twenty road pieces (`road_*`) that are plain grass to the engine (OPENBOUNTY-SPEC REQ-229c). An optional `variants` list (up to eight art names, repeats allowed to weight them) gives a code cosmetic alternates the shell picks per cell at draw time (OPENBOUNTY-SPEC REQ-229d). `blocks_foot` and `is_bridge` are booleans that interact with
-walkability (a non-blocking terrain or `is_bridge` lets the hero walk).
+`terrain` has had to be one of: `grass`, `forest`, `mountain`, `water`,
+`desert`. Several codes have been able to share a terrain with different
+art: `glory-of-rome` has had a grass variant and twenty-four road pieces
+(`road_*`) that are plain grass to the engine (OPENBOUNTY-SPEC REQ-229c). An
+optional `variants` list (any number of art names, repeats allowed to weight
+them) has given a code cosmetic alternates the shell picks per cell at draw
+time (OPENBOUNTY-SPEC REQ-229d). `blocks_foot` and `is_bridge` have been
+booleans that interact with walkability (a non-blocking terrain or
+`is_bridge` lets the hero walk).
 
 ---
 
 ## 5. Strings and localization
 
-User-visible text lives under `strings.<group>.<key>`. Examples:
+User-visible text has lived in `strings/<lang>.json`, one file per language,
+grouped by `<group>.<key>`. Examples:
 
-- `strings.banners.*`: chest, town, dwelling, encounter dialogs.
-- `strings.ui.*`: labels, prompts, exit hints.
-- `strings.contract_view.*`: contract screen.
-- `strings.win.*` / `strings.lose.*`, endings.
+- `banners.*`: chest, town, dwelling, encounter dialogs.
+- `ui.*`: labels, prompts, exit hints.
+- `contract_view.*`: contract screen.
+- `win.*` / `lose.*`: endings.
 
-Most strings support `%TOKEN%` substitution (e.g. `%NAME%`, `%GOLD%`,
-`%COUNT%`). Tokens are documented per-string in
+The base language has been `world.language` (default `en`); `--lang <code>`
+has loaded `strings/<code>.json` instead, falling back to the base file when
+that one is absent.
+
+Most strings have supported `%TOKEN%` substitution (e.g. `%NAME%`, `%GOLD%`,
+`%COUNT%`). Tokens have been documented per-string in
 `engine/include/resources.h` next to each field.
 
-Translating a pack means replacing the string values; the keys, tokens,
-and grammatical positions of substitutions stay the same.
+Translating a pack has meant adding a `strings/<code>.json` with the same
+keys, tokens and grammatical positions of substitutions.
 
-If a `strings.*` key is missing, the engine falls back to a built-in
-English default.
+The engine has carried no text of its own: a pack missing any required key
+has been refused at load, with every missing key printed.
 
 ---
 
@@ -261,19 +282,19 @@ GGGGGGGGFFFFFFGGGGG
 ...
 ```
 
-One character per tile, one row per line. Characters resolve through
-`tile_codes` in `game.json`. Width/height come from the zone's
-`width`/`height` fields (the engine validates the map matches).
+One character per tile, one row per line. Characters have resolved through
+`tile_codes` in `game.json`. Width/height have come from the zone's
+`width`/`height` fields (short rows pad with grass).
 
-Interactive objects (towns, castles, chests, signs, dwellings,
-artifacts, foes, telecaves, navmaps, orbs) are **not** placed via map
-characters. They live in the zone's JSON arrays and are stamped onto
-the map at load time.
+Interactive objects (towns, castles, chests, signs, dwellings, artifacts,
+foes, telecaves, navmaps, orbs) have **not** been placed via map characters.
+They have lived in the zone's JSON arrays and been stamped onto the map at
+load time.
 
-A castle is stamped as a 3×2 block by default: its gate tile at `x, y`
+A castle has been stamped as a 3×2 block by default: its gate tile at `x, y`
 plus five blocking wall tiles above and beside it, drawn with the
 `castle_tl/br/tr/ml/mr` and `castle_gate` tile art. A catalog entry that
-declares `"footprint": "1x1"` is stamped as the gate tile alone, drawn
+declares `"footprint": "1x1"` has been stamped as the gate tile alone, drawn
 with `art/tiles/castle.png`, the way a town is:
 
 ```json
@@ -281,109 +302,114 @@ with `art/tiles/castle.png`, the way a town is:
   "difficulty_tier": 0, "footprint": "1x1" }
 ```
 
-A pack only needs the castle art for the footprints it uses.
+A pack has needed castle art only for the footprints it uses.
 
-**Panel frame.** `sprites.ui.panel_frame` names a palette colour
-(`YELLOW`, `GREY`, ... or a raw index) and the shell then draws a
+**Panel frame.** `sprites.ui.panel_frame` has named a palette colour
+(`YELLOW`, `GREY`, ... or a raw index) and the shell has then drawn a
 one-design-pixel frame in that colour, with a darker inner line, round every
 panel slot: the HUD panels, the inventory belt cells and the contract face.
-Art for those slots is authored edge to edge with no frame of its own.
-Absent, the shell draws nothing and the art carries its own frame, which is
-how `kings-bounty` ships.
+Art for those slots has been authored edge to edge with no frame of its own.
+Absent, the shell has drawn nothing and the art has carried its own frame,
+which is how `kings-bounty` has shipped.
 
-**Siege back wall.** `sprites.ui.siege_back_wall` names a cell-sized tile the
-shell repeats across the band above the siege board, with
-`siege_back_wall_left` / `_right` for the band's end cells; field tiles are
-drawn beneath. Decorative, outside the grid, siege only; absent, nothing is
-drawn.
+**Siege back wall.** `sprites.ui.siege_back_wall` has named a cell-sized
+tile the shell repeats across the band above the siege board, with
+`siege_back_wall_left` / `_right` for the band's end cells; field tiles have
+been drawn beneath. Decorative, outside the grid, siege only; absent, nothing
+has been drawn.
 
-**Combat ground.** `sprites.ui.combat_ground` is `"field"` (default) or
-`"terrain"`. With `"terrain"` the shell draws the map tile the hero stands on
-under every combat cell (grass, desert, ...; water falls back to grass) and the
-pack ships no field tile: `sprites.combat[0]` is left out of the manifest.
-`kings-bounty` declares nothing and draws its field tile as before.
+**Combat ground.** `sprites.ui.combat_ground` has been `"field"` (default)
+or `"terrain"`. With `"terrain"` the shell has drawn the map tile the hero
+stands on under every combat cell (grass, desert, ...; water falls back to
+grass) and the pack has shipped no field tile: `sprites.combat[0]` has been
+left out of the manifest. `kings-bounty` has declared nothing and drawn its
+field tile.
 
-**Siege grid.** `sprites.ui.siege_grid` names a path prefix for a full grid of
-siege tiles, one file per cell: `<prefix>_<x>_<y>.png` for `x` in `0..5` and
-`y` in `0..5`, row 0 the band above the board and rows 1..5 the board's rows
-0..4 (36 files). In a siege the shell draws each cell's own tile as the ground
-and nothing for the wall codes, since the walls are painted in the tiles; the
-tiles may be any size and are scaled to the cell. When it is set the
-`siege_back_wall*` keys are ignored and the per-code wall pieces,
-`sprites.combat[5..10]`, leave the manifest, so the pack need not ship them. Draw-only: the castle layout still
-blocks the wall cells. Absent, the per-code wall pieces draw as above
-(`kings-bounty` declares none; `glory-of-rome` ships 36 cells at 64).
+**Siege grid.** `sprites.ui.siege_grid` has named a path prefix for a full
+grid of siege tiles, one file per cell: `<prefix>_<x>_<y>.png` for `x` in
+`0..5` and `y` in `0..5`, row 0 the band above the board and rows 1..5 the
+board's rows 0..4 (36 files). In a siege the shell has drawn each cell's own
+tile as the ground and nothing for the wall codes, since the walls are
+painted in the tiles; the tiles have been free to be any size and have been
+scaled to the cell. When it is set the `siege_back_wall*` keys have been
+ignored and the per-code wall pieces, `sprites.combat[5..10]`, have left the
+manifest, so the pack has not needed to ship them. Draw-only: the castle
+layout has still blocked the wall cells. Absent, the per-code wall pieces
+have drawn as above (`kings-bounty` has declared none; `glory-of-rome` has
+shipped 36 cells at 32).
 
-**Per-town art.** A town catalog entry may declare `"art": "<stem>"`, a
-tile under `art/tiles/`, and the engine stamps that tile at the town's
-position instead of the shared `art/tiles/town.png`. Absent means `town`, so
-older packs are unchanged; the shared tile is only required while some town
-still uses it, and the art manifest lists each declared stem once.
+**Per-town art.** A town catalog entry has been able to declare
+`"art": "<stem>"`, a tile under `art/tiles/`, and the engine has stamped that
+tile at the town's position instead of the shared `art/tiles/town.png`.
+Absent has meant `town`; the shared tile has been required only while some
+town uses it, and the art manifest has listed each declared stem once.
 
 ```json
 { "id": "massilia", "name": "Massilia", "art": "town_galliae", "x": 28, "y": 21,
   "zone": "galliae", ... }
 ```
 
-**Per-zone wandering-army art.** A zone may declare
+**Per-zone wandering-army art.** A zone has been able to declare
 `"army_art": "<stem>"`, a tile under `art/tiles/`; every wandering foe in
-that zone, declared or salted, then draws that tile instead of the shared
-`art/tiles/wandering_army.png`. Absent means the shared tile, which is only
-required while some zone still uses it.
+that zone, declared or salted, has then drawn that tile instead of the shared
+`art/tiles/wandering_army.png`. Absent has meant the shared tile, which has
+been required only while some zone uses it.
 
-**Per-zone terrain art.** A zone may declare `"tile_set": "<folder>"`. Every
-`tile_codes` art name for that zone then resolves under
-`art/tiles/<folder>/` instead of `art/tiles/`, so one `.dat` and one
-`tile_codes` table serve every continent while each draws its own grass,
-forest, water, edges and bridges. The folder must hold a file for every
-`tile_codes` art the pack declares; the art manifest lists them, so
-validation catches a missing one. Object tiles (towns, castles, chests,
-signs, dwellings) are never affected. A zone without the key draws the
-shared `art/tiles/` set, so packs that predate the key load unchanged, and
-the shared set is only required while some zone still uses it.
+**Per-zone terrain art.** A zone has been able to declare
+`"tile_set": "<folder>"`. Every `tile_codes` art name for that zone has then
+resolved under `art/tiles/<folder>/` instead of `art/tiles/`, so one `.dat`
+and one `tile_codes` table have served every continent while each draws its
+own grass, forest, water, edges and bridges. The folder has had to hold a
+file for every `tile_codes` art the pack declares; the art manifest has
+listed them, so validation has caught a missing one. Object tiles (towns,
+castles, chests, signs, dwellings) have never been affected. A zone without
+the key has drawn the shared `art/tiles/` set, which has been required only
+while some zone uses it.
 
 ```json
 { "id": "galliae", "name": "Galliae", "map": "maps/galliae.dat",
   "tile_set": "galliae", ... }
 ```
 
-**Overriding single tiles.** A zone may instead fork only some of the
-master set: `"tile_set_arts"` lists the art names its folder overrides, one
-by one. Those names draw from `art/tiles/<folder>/`; every other name draws
-from the master `art/tiles/` set, so the folder holds only what differs. A
-cosmetic variant is a name of its own and is forked by listing it. The art
-manifest asks the folder for exactly the listed files, and keeps the master
-set for everything else.
+**Overriding single tiles.** A zone has also been able to fork only some of
+the master set: `"tile_set_arts"` has listed the art names its folder
+overrides, one by one. Those names have drawn from `art/tiles/<folder>/`;
+every other name has drawn from the master `art/tiles/` set, so the folder
+has held only what differs. A cosmetic variant has been a name of its own and
+has been forked by listing it. The art manifest has asked the folder for
+exactly the listed files, and kept the master set for everything else.
 
 ```json
 { "id": "galliae", "tile_set": "galliae",
   "tile_set_arts": ["grass", "grass_variant", "grass_01", "forest", "forest_edge_01"] }
 ```
 
-**Town backdrops.** A zone may declare `"town_backdrop"`, and a town its own
-`"backdrop"`, both 240x102. A town's own wins, then its zone's, then the
-pack's `sprites.ui.town_backdrop`.
+**Town backdrops.** A zone has been able to declare `"town_backdrop"`, and a
+town its own `"backdrop"`, both 240x102. A town's own has won, then its
+zone's, then the pack's `sprites.ui.town_backdrop`.
 
-**A gate that demands one arm.** A static `wandering_armies` entry may carry
-`"requires_troop"` (a troop id), `"scene"` (240x102) and `"title"`: the fight is
-refused until that troop is in the army, and the refusal is drawn over the
-picture under that heading. A
-`dwellings` entry may carry `"troop"`, pinning what it breeds.
+**A gate that demands one arm.** A static `wandering_armies` entry has been
+able to carry `"requires_troop"` (a troop id), `"scene"` (240x102) and
+`"title"`: the fight has been refused until that troop is in the army, and
+the refusal has been drawn over the picture under that heading. A
+`dwellings` entry has been able to carry `"troop"`, pinning what it breeds.
 
-**A pinned purse.** A zone chest may carry `"gold": N`: it then always holds
-exactly that, instead of rolling.
+**A pinned purse.** A zone chest has been able to carry `"gold": N`: it has
+then always held exactly that, instead of rolling.
 
-**The sailing scene.** A pack may ship `sprites.ui.sail_backdrop` (240x102, as
-every backdrop) and the string `body_navigate_confirm` ("Sail for %ZONE%?").
-With both, sailing to another zone is drawn over that picture: the provinces,
-then a confirmation. With neither, the plain list is used.
+**The sailing scene.** A pack has been able to ship `sprites.ui.sail_backdrop`
+(240x102, as every backdrop) and the string `body_navigate_confirm` ("Sail
+for %ZONE%?"). With both, sailing to another zone has been drawn over that
+picture: the provinces, then a confirmation. With neither, the plain list has
+been used.
 
-**One-time vistas.** A zone may declare `events`: moments that play once, when
-the hero steps onto their tile holding what they ask for. The scene is drawn
-full width (the image is 240x102, like every backdrop) with a single Continue,
-and the effects change the map for good -- they survive a zone switch and a
-save. `requires` takes `spell`, `troop`, `gold` or `artifact`, each with an
-optional `count` and `consume`; `effects` name a tile by its `tile_codes` key.
+**One-time vistas.** A zone has been able to declare `events`: moments that
+play once, when the hero steps onto their tile holding what they ask for. The
+scene has been drawn full width (the image is 240x102, like every backdrop)
+with a single Continue, and the effects have changed the map for good -- they
+survive a zone switch and a save. `requires` has taken `spell`, `troop`,
+`gold` or `artifact`, each with an optional `count` and `consume`; `effects`
+have named a tile by its `tile_codes` key.
 
 ```json
 { "id": "rubicon", "x": 31, "y": 31,
@@ -393,9 +419,9 @@ optional `count` and `consume`; `effects` name a tile by its `tile_codes` key.
   "effects":  [ { "x": 30, "y": 30, "tile": "\\xcc" } ] }
 ```
 
-**Arrivals.** A zone may declare where a hero sailing in lands, by the zone
-sailed from. A zone left out, or no `arrivals` at all, lands at
-`hero_spawn`. A water tile arrives in the boat.
+**Arrivals.** A zone has been able to declare where a hero sailing in lands,
+by the zone sailed from. A zone left out, or no `arrivals` at all, has landed
+at `hero_spawn`. A water tile has arrived in the boat.
 
 ```json
 { "id": "africa", "hero_spawn": {"x": 24, "y": 2},
@@ -406,10 +432,10 @@ sailed from. A zone left out, or no `arrivals` at all, lands at
 
 ## 7. Palettes
 
-A pack ships a 256-color VGA-style palette at
-`palettes/<name>.bin`, exactly 768 bytes (256 × RGB). The first 16
-entries are reserved for the standard named indices (black, dblue,
-yellow, etc.); the rest are free for art.
+A pack has shipped a 256-color VGA-style palette at `palettes/<name>.bin`,
+exactly 768 bytes (256 × RGB). The first 16 entries have been reserved for
+the standard named indices (black, dblue, yellow, etc.); the rest have been
+free for art.
 
 ---
 
@@ -423,8 +449,8 @@ To distribute a pack:
    what tells the engine to treat it as a pack).
 3. Drop the `.openbounty` file into the user data directory (below).
 
-**Discovery.** At startup the engine scans three roots in order, taking
-the first match on a duplicate name (`engine/pack.c pack_discover`):
+**Discovery.** At startup the engine has scanned three roots in order,
+taking the first match on a duplicate name (`engine/pack.c pack_discover`):
 
 1. the current working directory,
 2. the user data directory, flat, with no `packs/` subdirectory:
@@ -433,16 +459,17 @@ the first match on a duplicate name (`engine/pack.c pack_discover`):
    - Windows: `%APPDATA%\OpenBounty`
 3. `<directory containing the binary>/assets`.
 
-Discovery matches `*.openbounty` archives **only**. A loose directory is
-a perfectly valid pack and the engine loads it happily, but it is never
-found by scanning, pass it explicitly with `--pack <path>`. If more than
-one pack is discovered, the pack picker runs before character creation.
+Discovery has matched `*.openbounty` archives **only**. A loose directory has
+been a perfectly valid pack and the engine has loaded it, but it has never
+been found by scanning: pass it explicitly with `--pack <path>`, or by bare
+name, which also finds `<name>/game.json` under each root. If more than one
+pack is discovered, the pack picker has run before character creation; with
+exactly one it has opened directly.
 
 ## 9. Validating a pack
 
-`--validate-pack` runs the headless autoplay oracle over a range of
-catalog worlds and reports, per seed, whether the pack is winnable at
-all:
+`--validate-pack` has run the headless autoplay oracle over a range of
+catalog worlds and reported, per seed, whether the pack is winnable at all:
 
 ```sh
 ./openbounty --validate-pack            # the whole catalog, seeds 0..255
@@ -451,28 +478,26 @@ all:
 ./openbounty --validate-pack 0 9 --pack /path/to/my-pack
 ```
 
-It prints one row per seed, verdict, objectives cleared, days, score,
-moves, elapsed time, and, on a seed the oracle could not clear, the
-first objective that blocked it and why. The closing row totals the run:
-`PASS` only when every seed in the range solved. Exit status is 0 on
-PASS, 1 on FAIL, 2 if the run could not be set up (an unreadable pack or
+It has printed one row per seed, verdict, objectives cleared, days, score,
+moves, elapsed time, and, on a seed the oracle has not cleared, the first
+objective that blocked it and why. The closing row has totalled the run:
+`PASS` only when every seed in the range has solved. Exit status has been 0
+on PASS, 1 on FAIL, 2 if the run has not been set up (an unreadable pack or
 an unknown `--autoplay-hero` class).
 
-The oracle plays a knight at Normal by default; `--autoplay-hero=<class>`
-and `--autoplay-level=<easy|normal|hard|impossible>` change the class and
-the day budget it validates against. A NOT-SOLVED row is not a proof that
-the seed is unwinnable, see `AUTOPLAY-SPECS.md` (AP-016) for exactly
-what the two verdicts claim.
+The oracle has played a knight at Normal by default; `--autoplay-hero=<class>`
+and `--autoplay-level=<easy|normal|hard|impossible>` have changed the class
+and the day budget it validates against. A NOT-SOLVED row has not been a
+proof that the seed is unwinnable; see `AUTOPLAY-SPECS.md` (AP-016) for
+exactly what the two verdicts claim.
 
 ---
 
 ## 10. Versioning
 
-Pack schema version is declared by the top-level `version` field.
-Current: `1`. The engine checks this on load. Breaking changes will
-bump the version and the engine will refuse to load older packs until
-they're migrated.
+Pack schema version has been declared by the top-level `version` field, `1`
+in both shipped packs. A breaking change bumps it.
 
-Within a single schema version, the engine guarantees backward
-compatibility: new optional fields can be added to packs without
-breaking older engine builds (older engines ignore unknown keys).
+Within a single schema version, new optional fields have been addable to
+packs without breaking older engine builds (older engines ignore unknown
+keys).

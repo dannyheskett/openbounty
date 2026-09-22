@@ -307,9 +307,9 @@ WEB_LDFLAGS := -L$(RAYLIB_WEB)/lib -lraylib -lidbfs.js \
                -sSTACK_SIZE=8388608 -sFORCE_FILESYSTEM \
                -sEXPORTED_RUNTIME_METHODS=FS,IDBFS,addRunDependency,removeRunDependency
 
-# The packs that get a web build. King's Bounty is local-only: its pack is
-# DOS-extracted and copyright-restricted, so only Glory of Rome is packaged by
-# dist-web. Both are built by `make web` so CI exercises each.
+# The packs that get a web build. `make web` builds both, and dist-web
+# packages each as its own zip (openbounty-* for King's Bounty, gloryofrome-*
+# for Glory of Rome).
 WEB_PACK_NAMES := kings-bounty glory-of-rome
 WEB_OUTS       := $(foreach p,$(WEB_PACK_NAMES),build/web/$(p)/openbounty.html)
 OUT_WEB_ROME   := build/web/glory-of-rome/openbounty.html
@@ -357,8 +357,21 @@ web-serve: $(WEB_OUTS)
 # picker, and King's Bounty (DOS-extracted, copyright-restricted) is never
 # packaged.
 #
-# Requires env: ANDROID_NDK, ANDROID_SDK_ROOT.
+# Pass the toolchain on the make command line, never through the environment:
+#   make android ANDROID_NDK=<ndk root> ANDROID_SDK_ROOT=<sdk root>
 # ---------------------------------------------------------------------------
+ANDROID_GOALS := android android-play dist-android dist-android-play
+ifneq ($(filter $(ANDROID_GOALS),$(MAKECMDGOALS)),)
+ifneq ($(filter environment%,$(origin ANDROID_NDK) $(origin ANDROID_SDK_ROOT)),)
+$(error ANDROID_NDK and ANDROID_SDK_ROOT come from the make command line, not the environment)
+endif
+ifeq ($(ANDROID_NDK),)
+$(error pass ANDROID_NDK=<ndk root> on the make command line)
+endif
+ifeq ($(ANDROID_SDK_ROOT),)
+$(error pass ANDROID_SDK_ROOT=<sdk root> on the make command line)
+endif
+endif
 ANDROID_API          ?= 24
 # The shipped ABI. arm64-v8a is every Android phone Play still serves, and is
 # what the APK and the AAB carry. It is overridable for one reason: the CI
@@ -580,7 +593,7 @@ $(ANDROID_AAB): $(ANDROID_LIB) $(ANDROID_DEX) $(BUNDLETOOL) $(PLAY_KEYSTORE) \
 # ---------------------------------------------------------------------------
 # iOS (native Metal, no raylib). CI-only: needs Xcode's toolchain, which exists
 # on macOS alone -- there is no Mac here, so the FIRST build of every one of
-# these files is the macOS runner (docs/IOS-BACKEND-SPIKE.md).
+# these files is the macOS runner (docs/IOS-BACKEND.md).
 #
 #   ios-sim  -- Simulator .app (arm64 simulator, unsigned) for CI screenshots.
 #   ios      -- device .ipa (arm64, unsigned unless a signing identity is set).
@@ -838,17 +851,24 @@ dist-rome-mac: $(OUT_MAC) $(ROME_PACK_FILE)
 # All four emitted files are required to run it: the .js loader, the .wasm
 # module, the .data pack image, and the .html shell. Serve them over HTTP --
 # browsers refuse to fetch .wasm/.data over file://.
-# Glory of Rome only: King's Bounty's pack is DOS-extracted and
-# copyright-restricted, so its web build never leaves this machine.
-dist-web: $(OUT_WEB_ROME)
-	@rm -rf $(STAGING)/web && mkdir -p $(STAGING)/web/openbounty-$(OPENBOUNTY_VERSION_SLUG)-web
-	cp build/web/glory-of-rome/openbounty.html build/web/glory-of-rome/openbounty.js \
-	   build/web/glory-of-rome/openbounty.wasm build/web/glory-of-rome/openbounty.data \
-	   $(STAGING)/web/openbounty-$(OPENBOUNTY_VERSION_SLUG)-web/
-	sed "s/<version>/$(OPENBOUNTY_VERSION_DISPLAY)/g" $(DIST)/README.txt.in > $(STAGING)/web/openbounty-$(OPENBOUNTY_VERSION_SLUG)-web/README.txt
-	cp LICENSE NOTICES.md $(STAGING)/web/openbounty-$(OPENBOUNTY_VERSION_SLUG)-web/
+# Two zips, one per game: openbounty-* carries King's Bounty and gloryofrome-*
+# Glory of Rome, each with its pack embedded in the .data image. The site pulls
+# each by its prefix into its own URL.
+# $(call web_stage,<pack-name>,<zip-prefix>,<readme-template>)
+define web_stage
+	@rm -rf $(STAGING)/web-$(2) && mkdir -p $(STAGING)/web-$(2)/$(2)-$(OPENBOUNTY_VERSION_SLUG)-web
+	cp build/web/$(1)/openbounty.html build/web/$(1)/openbounty.js \
+	   build/web/$(1)/openbounty.wasm build/web/$(1)/openbounty.data \
+	   $(STAGING)/web-$(2)/$(2)-$(OPENBOUNTY_VERSION_SLUG)-web/
+	sed "s/<version>/$(OPENBOUNTY_VERSION_DISPLAY)/g" $(3) > $(STAGING)/web-$(2)/$(2)-$(OPENBOUNTY_VERSION_SLUG)-web/README.txt
+	cp LICENSE NOTICES.md $(STAGING)/web-$(2)/$(2)-$(OPENBOUNTY_VERSION_SLUG)-web/
 	@mkdir -p $(DIST)
-	(cd $(STAGING)/web && zip -qr ../../../$(DIST)/openbounty-$(OPENBOUNTY_VERSION_SLUG)-web-wasm.zip openbounty-$(OPENBOUNTY_VERSION_SLUG)-web)
+	(cd $(STAGING)/web-$(2) && zip -qr ../../../$(DIST)/$(2)-$(OPENBOUNTY_VERSION_SLUG)-web-wasm.zip $(2)-$(OPENBOUNTY_VERSION_SLUG)-web)
+endef
+
+dist-web: build/web/kings-bounty/openbounty.html $(OUT_WEB_ROME)
+	$(call web_stage,kings-bounty,openbounty,$(DIST)/README.txt.in)
+	$(call web_stage,glory-of-rome,gloryofrome,$(DIST)/README-rome.txt.in)
 
 # Android ships as the APK and the AAB themselves -- no archive, no README
 # alongside: a store artifact is a single signed file. Both carry the Glory of
@@ -974,7 +994,7 @@ $(LIBTEST_STAMP): tests/library/consumer.c engine/host_noop.c $(DEMO_OBJ) $(AUTO
 # ---------------------------------------------------------------------------
 # iOS purity check: every shell file the iOS build will compile must type-check
 # with -DPLATFORM_IOS and NO raylib include path at all. iOS links no raylib
-# (docs/IOS-BACKEND-SPIKE.md); this is what keeps the seams honest on a machine
+# (docs/IOS-BACKEND.md); this is what keeps the seams honest on a machine
 # with no Apple toolchain, long before a macOS runner ever sees the code.
 #
 # The excluded list is the desktop-only subsystems -- recorder, mp4 encoder,

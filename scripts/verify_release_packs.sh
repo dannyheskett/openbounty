@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # The release's pack rule, checked on the archives themselves.
 #
-#   openbounty-*   the engine: NO pack file of any kind. King's Bounty's pack
-#                  is extracted from the player's own KB.EXE and is
-#                  copyright-restricted; it may never ship.
+#   openbounty-*   the engine: NO pack file of any kind. The desktop player
+#                  extracts King's Bounty's pack from their own KB.EXE.
 #   gloryofrome-*  the game: MUST carry assets/glory-of-rome.openbounty, and
 #                  nothing from King's Bounty.
+#   *-web-*        a browser bundle: its game's pack embedded in
+#                  openbounty.data (King's Bounty in openbounty-*, Glory of
+#                  Rome in gloryofrome-*), never a loose pack file.
 #
 # Every archive in the given directory is checked. The lister's own status is
 # tested separately: inside an `if`, a pipeline's status is its truth value,
@@ -36,19 +38,20 @@ for f in "$DIR"/*.tar.gz "$DIR"/*.zip; do
         echo "FAIL: $name contains King's Bounty data"; fail=1
     fi
     case "$name" in
+        gloryofrome-*-web-*|openbounty-*-web-*)
+            # A web bundle embeds its game's pack inside openbounty.data by
+            # design (King's Bounty in openbounty-*, Glory of Rome in
+            # gloryofrome-*); no loose pack file may appear beside it.
+            if printf '%s\n' "$listing" | grep -qE '\.openbounty$'; then
+                echo "FAIL: $name has a loose pack file"; fail=1
+            else
+                echo "ok:   $name (pack embedded in the .data image)"
+            fi ;;
         gloryofrome-*)
             if printf '%s\n' "$listing" | grep -qE '(^|/)assets/glory-of-rome\.openbounty$'; then
                 echo "ok:   $name carries the Glory of Rome pack"
             else
                 echo "FAIL: $name is missing assets/glory-of-rome.openbounty"; fail=1
-            fi ;;
-        openbounty-*-web-*)
-            # The web bundle embeds Rome's pack inside openbounty.data by
-            # design; no loose pack file may appear beside it.
-            if printf '%s\n' "$listing" | grep -qE '\.openbounty$'; then
-                echo "FAIL: $name has a loose pack file"; fail=1
-            else
-                echo "ok:   $name (pack embedded in the .data image)"
             fi ;;
         openbounty-*)
             if printf '%s\n' "$listing" | grep -qE '\.openbounty$'; then

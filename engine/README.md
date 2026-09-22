@@ -1,10 +1,10 @@
 # OpenBounty engine
 
-Game logic, mechanics, and state. Builds as `libobengine.a`, a
-self-contained static archive vendoring cJSON and miniz, with no
-raylib, audio, or window dependency.
+Game logic, mechanics, and state. The engine has built as `libobengine.a`, a
+self-contained static archive vendoring cJSON and miniz, with no raylib,
+audio, or window dependency.
 
-Consumers link the library and provide implementations of the
+Consumers have linked the library and provided implementations of the
 host-callback functions declared in `engine/include/ui_host.h`.
 
 ## Layout
@@ -18,12 +18,16 @@ engine/
 │   ├── dwelling_kind.h   # DwellingKind enum (engine/shell shared)
 │   ├── end_screen.h      # screen_end_game_open contract
 │   ├── fatal.h
+│   ├── flow_answer.h     # The answer a resolved decision carries (leaf header)
+│   ├── flow_resolve.h    # Engine-side apply-cores for prompt flows
 │   ├── flows.h           # Encounter / week-end / endgame flows
 │   ├── fog.h
 │   ├── game.h            # Game state, GameInit
+│   ├── game_fwd.h        # Forward declaration of Game
 │   ├── map.h
 │   ├── pack.h            # Pack discovery and access
 │   ├── pending.h         # Deferred-action scratch
+│   ├── player_io.h       # The player-IO request queue
 │   ├── resources.h       # game.json schema
 │   ├── savegame.h
 │   ├── savepath.h
@@ -44,10 +48,13 @@ engine/
 ├── map.c                 # Tile grid + .dat parsing
 ├── fog.c                 # Fog of war
 ├── adventure.c           # Walkability + interact dispatch
-├── step.c                # `step_try`, one-tile movement
+├── step.c                # `GameStep`, one-tile movement
 ├── combat.c              # Combat state, AI, headless turn loop, damage
 ├── combat_log.c          # Combat log line append (pure data)
 ├── flows.c               # Encounter / week-end / endgame
+├── flow_resolve.c        # Apply-cores: the state half of each prompt flow
+├── player_io.c           # The player-IO request queue
+├── pack.c                # Pack reader: ZIP or loose tree, held in RAM
 ├── savegame.c            # JSON save read/write
 ├── savepath.c            # User save dir
 ├── state_serialize.c     # JSON snapshot builder
@@ -68,8 +75,8 @@ engine/
 make build/libobengine.a
 ```
 
-The archive is produced at `build/libobengine.a`. Internal `.o` files
-live in `build/objs/englib/`.
+The archive has been produced at `build/libobengine.a`. Internal `.o` files
+have lived in `build/objs/englib/`.
 
 Compile flags used (from the Makefile):
 ```
@@ -81,16 +88,16 @@ gcc -std=c99 -Wall -Wextra -O2 -fPIC \
 ar rcs libobengine.a <objects>
 ```
 
-The engine library compile uses **no `-Isrc`**: engine sources never
-include a shell header. Everything the engine needs from the host (dialog,
-prompt, audio, recorder, asset bytes) is declared in `engine/include`
+The engine library compile has used **no `-Isrc`**: engine sources have never
+included a shell header. Everything the engine needs from the host (dialog,
+prompt, audio, recorder, asset bytes) has been declared in `engine/include`
 (`ui_host.h`, `assets_bytes.h`). If an engine `.c` ever reaches into `src/`,
-this compile fails, the missing include path is the enforcement.
+this compile has failed: the missing include path has been the enforcement.
 
 ## Linking against the library
 
-A minimal consumer links the archive + a host-callback implementation.
-The simplest version uses the bundled `engine/host_noop.c`:
+A minimal consumer has linked the archive + a host-callback implementation.
+The simplest version has used the bundled `engine/host_noop.c`:
 
 ```
 gcc -std=c99 -O2 \
@@ -100,21 +107,20 @@ gcc -std=c99 -O2 \
     -lm -lpthread
 ```
 
-Note the link line includes **only `-lm -lpthread`**: no raylib, no
-X11, no audio device. If your consumer accidentally pulls those, the
-link will fail.
+The link line has included **only `-lm -lpthread`**: no raylib, no X11, no
+audio device. If a consumer accidentally pulls those, the link has failed.
 
-For a working example, see `tests/library/consumer.c`. `make all`
-builds the same consumer + host_noop + libobengine.a as a link-time
-boundary check; the resulting binary is discarded and a stamp file
-(`build/libtest-pass.stamp`) records success. A build that produces
-the stamp proves the library is consumable in isolation. If the
-engine ever depends on shell headers or shell symbols, that link
-fails and `make all` fails.
+For a working example, see `tests/library/consumer.c`. `make all` has built
+the same consumer + host_noop + libobengine.a as a link-time boundary check;
+the resulting binary has been discarded and a stamp file
+(`build/libtest-pass.stamp`) has recorded success. A build that produces the
+stamp has proved the library consumable in isolation. If the engine ever
+depends on shell headers or shell symbols, that link has failed and `make
+all` has failed.
 
 ## Required host callbacks
 
-Consumers must define every function declared in
+Consumers have had to define every function declared in
 `engine/include/ui_host.h`:
 
 - Modal prompts (`prompt_yes_no_open`, `prompt_ab_open`,
@@ -125,31 +131,32 @@ Consumers must define every function declared in
 - Recorder events (`recorder_capture`)
 - Engine state queries (`main_fast_quit_active`)
 
-Headless consumers can link `engine/host_noop.c` and get no-op
-implementations of all of them. Real consumers (the game's shell)
-implement them for real.
+Headless consumers have been able to link `engine/host_noop.c` and get no-op
+implementations of all of them. Real consumers (the game's shell) have
+implemented them for real.
 
 ## Rules for engine code
 
-1. No `#include "raylib.h"` outside `engine/headless/`. Engine `.c`
-   files should be raylib-free.
-2. No audio playback, no rendering, no input polling. The engine emits
+1. No `#include "raylib.h"` outside `engine/headless/`. Engine `.c` files
+   have been raylib-free.
+2. No audio playback, no rendering, no input polling. The engine has emitted
    abstract events via `ui_host.h` callbacks.
-3. No window or `GetTime()` dependencies in engine source. Time is a
+3. No window or `GetTime()` dependencies in engine source. Time has been a
    logical-tick counter on the game state.
-4. The engine library is self-contained, cJSON and miniz are vendored
-   inside `libobengine.a`. Consumers don't need their own copies.
+4. The engine library has been self-contained: cJSON and miniz have been
+   vendored inside `libobengine.a`. Consumers have not needed their own
+   copies.
 
 ## Architectural notes
 
 - **Combat split.** Engine combat (state, AI, headless turn loop, damage
-  formula) is in `engine/combat.c`. The rendered combat loop
-  (`RunCombat`, modal input, target picker, per-frame present) is in
-  `src/combat_loop.c` (shell). The same `Combat` struct (defined in
-  `engine/include/combat.h`) is used by both.
-- **Assets split.** `LoadAssetBytes` (byte-level reads from the pack
-  stack) is engine. `LoadAssetTexture` (raylib `Texture2D` loader) is
-  shell. The engine never touches GPU textures.
-- **flows.h is clean.** `show_win_game` no longer takes
-  `RenderTexture2D *`, render-side concerns (the win cartoon) are
-  invoked separately by the host before calling `show_win_game`.
+  formula) has lived in `engine/combat.c`. The rendered combat loop
+  (`RunCombat`, modal input, target picker, per-frame present) has lived in
+  `src/combat_loop.c` (shell). Both have used the same `Combat` struct
+  (defined in `engine/include/combat.h`).
+- **Assets split.** `LoadAssetBytes` (byte-level reads from the pack stack)
+  has been engine. `LoadAssetTexture` (raylib `Texture2D` loader) has been
+  shell. The engine has never touched GPU textures.
+- **flows.h is clean.** `show_win_game` has taken no `RenderTexture2D *`:
+  render-side concerns (the win cartoon) have been invoked separately by the
+  host before calling `show_win_game`.

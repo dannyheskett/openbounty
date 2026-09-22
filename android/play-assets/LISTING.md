@@ -1,12 +1,12 @@
 # Glory of Rome — Google Play store listing
 
 Copy these into the Play Console (**Grow → Store presence → Main store
-listing**, plus **Store settings** for the category). Everything here is text
-that can be pasted; the image assets this folder should hold are listed first,
-and the ones still missing are called out in `docs/STORE-SUBMISSION.md`.
+listing**, plus **Store settings** for the category). Everything here has been
+text that can be pasted; the image assets the listing takes are listed first.
 
-The Play app is **Glory of Rome only** — one pack, no pack picker, no King's
-Bounty. The desktop game is a different thing and is not mentioned here.
+The Play app has been **Glory of Rome only** — one pack, no pack picker, no
+King's Bounty. The desktop game has been a different thing and has not been
+mentioned here.
 
 ## Assets
 
@@ -17,8 +17,8 @@ Bounty. The desktop game is a different thing and is not mentioned here.
 | `screenshots/phone/` | Phone screenshots | 2–8 landscape PNGs, at least 1080 on the long edge |
 | `screenshots/tablet/` | 7-inch and 10-inch screenshots | the same landscape captures fit both slots |
 
-The game is a fixed 800×532 buffer shown at a whole-number scale, so a
-screenshot is a capture of the real frame, not a mock-up.
+The game has been shown at a whole-number scale of its own buffer, so a
+screenshot has been a capture of the real frame, not a mock-up.
 
 ## App name (≤30 chars)
 
@@ -48,7 +48,7 @@ WHAT YOU DO
 
 BUILT RIGHT
 • Completely offline. No ads, no tracking, no accounts, no in-app purchases, no permissions.
-• Designed for touch: everything is a tap, with an on-screen letter picker instead of the keyboard
+• Designed for touch: everything is a tap, with an on-screen keyboard to name your hero
 • Landscape, full screen, and clear of notches and gesture bars
 
 FREE AND OPEN SOURCE
@@ -67,15 +67,15 @@ Glory of Rome is built on OpenBounty, an open-source engine. Read the code, repo
 
 ## Content rating questionnaire
 
-Answer it honestly and it lands at PEGI 7 / ESRB Everyone 10+:
+Answered honestly, it has landed at PEGI 7 / ESRB Everyone 10+:
 
 - **Violence:** yes, cartoon/fantasy — troops fight in an abstract grid battle,
   units vanish rather than bleed. No blood, no gore, no realistic violence.
 - **Sexuality, drugs, gambling, language:** none.
-- **User interaction, sharing, location:** none — the app has no network access.
+- **User interaction, sharing, location:** none — the app has had no network access.
 
 ## Data safety
 
-No data collected, no data shared, no permissions requested. The app has no
-internet permission at all, which is the honest answer to every question in
-the form.
+No data collected, no data shared, no permissions requested. The app has had
+no internet permission at all, which has been the honest answer to every
+question in the form.

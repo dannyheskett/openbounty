@@ -3,7 +3,7 @@
 // window, so the whole app is clang plus a plist (see the Makefile's ios_build).
 //
 // THE LOOP. openbounty's shell is fifteen blocking loops across five files
-// (docs/IOS-BACKEND-SPIKE.md); the web build only works because ASYNCIFY
+// (docs/IOS-BACKEND.md); the web build only works because ASYNCIFY
 // unwinds them, and iOS has no equivalent. So the game runs on its OWN THREAD
 // with its loops intact, and the display link on the main thread does nothing
 // but tick the clock the game waits on. The game thread is the only thread
@@ -57,7 +57,7 @@ extern "C" void plat_ios_log_stdout(void);
 }
 
 // The game runs on its own thread with its blocking loops intact -- the one
-// architectural decision of this port (docs/IOS-BACKEND-SPIKE.md). It is also
+// architectural decision of this port (docs/IOS-BACKEND.md). It is also
 // the only thread that encodes Metal work, which is legal because the main
 // thread never does.
 //

@@ -571,7 +571,7 @@ int shell_run_game(int argc, char **argv) {
         int n = pack_discover(&entries);
         if (n == 0) {
             // Final fallback: a fresh first-run KB.EXE extract from cwd.
-            // Output goes to <user-data>/openbounty/<id>.openbounty so
+            // Output goes to <user-data>/<id>.openbounty so
             // future launches will find it via discovery step 2.
             struct stat st;
             const char *in_dir = NULL;
@@ -601,12 +601,12 @@ int shell_run_game(int argc, char **argv) {
                     "OpenBounty cannot start because no game pack was found.\n\n"
                     "OpenBounty is a reimplementation of King's Bounty (1990) and ships without game data. To play, you must supply your own asset pack derived from a legally-owned copy of the original game.\n\n"
                     "How to fix this:\n\n"
-                    "1. Place a *.openbounty pack file in either of these folders:\n"
+                    "1. Place a *.openbounty pack file in this folder:\n"
                     "     %s\n"
-                    "     (or the folder containing openbounty.exe)\n\n"
-                    "2. Or, place KB.EXE next to openbounty.exe and re-run; the engine will extract a pack on first launch.\n\n"
-                    "3. Or, from a command prompt:\n"
-                    "     openbounty.exe --pack <path-to-pack-or-KB.EXE-folder>\n\n"
+                    "     or in the folder you start openbounty.exe from.\n\n"
+                    "2. Or, place your KB.EXE and its game files in the folder you start openbounty.exe from and re-run; the engine extracts a pack on first launch.\n\n"
+                    "3. Or, from a command prompt in the folder that holds KB.EXE:\n"
+                    "     openbounty.exe --extract\n\n"
                     "See README.txt for the full instructions.",
                     user_dir[0] ? user_dir : "(your AppData\\OpenBounty folder)");
 #elif defined(__APPLE__)
@@ -618,9 +618,9 @@ int shell_run_game(int argc, char **argv) {
                     "How to fix this:\n\n"
                     "1. Place a *.openbounty pack file in:\n"
                     "     %s\n"
-                    "   or in the folder containing the openbounty binary.\n\n"
-                    "2. Or, from a Terminal, run:\n"
-                    "     ./openbounty --extract /path/to/KB.EXE\n"
+                    "   or in the folder you run openbounty from.\n\n"
+                    "2. Or, from a Terminal in the folder that holds KB.EXE, run:\n"
+                    "     ./openbounty --extract\n"
                     "   to generate a pack from your own copy of the game.\n\n"
                     "See README.txt for the full instructions.",
                     user_dir[0] ? user_dir : "~/Library/Application Support/OpenBounty");
@@ -634,8 +634,8 @@ int shell_run_game(int argc, char **argv) {
                     "1. Place a *.openbounty pack file in:\n"
                     "     %s\n"
                     "   or in the directory you run openbounty from.\n\n"
-                    "2. Or, run:\n"
-                    "     ./openbounty --extract /path/to/KB.EXE\n"
+                    "2. Or, in the directory that holds KB.EXE, run:\n"
+                    "     ./openbounty --extract\n"
                     "   to generate a pack from your own copy of the game.\n\n"
                     "See README.txt for the full instructions.",
                     user_dir[0] ? user_dir : "$XDG_DATA_HOME/openbounty (default ~/.local/share/openbounty)");
@@ -696,8 +696,9 @@ int shell_run_game(int argc, char **argv) {
         snprintf(body, sizeof body,
             "Failed to open the game pack at:\n\n    %s\n\n"
             "The file may be corrupt, the wrong format, or unreadable. "
-            "Try replacing it with a fresh extraction:\n\n"
-            "    openbounty --extract /path/to/KB.EXE",
+            "Try replacing it with a fresh extraction, run in the "
+            "folder that holds KB.EXE:\n\n"
+            "    openbounty --extract",
             pack_path);
         fatal_user_error("OpenBounty: cannot open game pack", body);
         return 1;

@@ -1,17 +1,18 @@
 # Submitting Glory of Rome to the App Store and Google Play
 
-The mobile app is **Glory of Rome only** — one pack, no picker, bundle id
-`com.danheskett.gloryofrome` on both stores. Desktop OpenBounty is unaffected
-by everything here.
+The mobile app has been **Glory of Rome only** — one pack, no picker, bundle id
+`com.danheskett.gloryofrome` on both stores. Desktop OpenBounty has been
+unaffected by everything here.
 
-This is the procedure and the reference: how the two apps are built, what each
-store requires, and which parts are scripted.
+This has been the procedure and the reference: how the two apps have been
+built, what each store has required, and which parts have been scripted.
 
 ---
 
-## 1. How the apps are built
+## 1. How the apps have been built
 
-Both platforms build from the Makefile, with no Xcode project and no Gradle.
+Both platforms have built from the Makefile, with no Xcode project and no
+Gradle.
 
 | | Android | iOS |
 |---|---|---|
@@ -20,72 +21,74 @@ Both platforms build from the Makefile, with no Xcode project and no Gradle.
 | Pack | inside the APK/AAB assets | inside the `.app` bundle |
 | Saves | app internal storage | the app's `Documents/saves` |
 | Orientation | landscape-locked in the manifest | landscape-only in `Info.plist` |
-| Presentation | fixed 800x532 buffer at the largest whole-number scale that fits the safe area | same |
+| Presentation | an 800x532 buffer at the largest whole-number scale that fits the safe area; the world map has grown into what is left (REQ-528) | same |
 | Safe area | display cutout insets over JNI | `safeAreaInsets` in device pixels |
-| Network | none — no permission is requested | none |
-| Logs | the game's stdout is piped into logcat | and into `os_log` |
+| Network | none — no permission requested | none |
+| Logs | the game's stdout piped into logcat | and into `os_log` |
 
-The shipped ABI is arm64-v8a. `ANDROID_ABI=x86_64` builds a second APK for the
-CI emulator; it is never shipped.
+The shipped ABI has been arm64-v8a. `ANDROID_ABI=x86_64` has built a second
+APK for the CI emulator; it has never shipped.
 
-`scripts/raylib-android-eglconfig.patch` is applied by
-`scripts/build_raylib_android.sh`: raylib's Android backend ignores what
-`eglChooseConfig` returns, so when no configuration matches its request it
-creates a context against an unset one and fails with `EGL_BAD_CONFIG` and no
-diagnosis. The patch walks colour and depth down, and failing that picks a
-window-capable ES2 configuration by hand.
+`scripts/build_raylib_android.sh` has applied
+`scripts/raylib-android-eglconfig.patch`: raylib's Android backend has ignored
+what `eglChooseConfig` returns, so when no configuration has matched its
+request it has created a context against an unset one and failed with
+`EGL_BAD_CONFIG` and no diagnosis. The patch has walked colour and depth down,
+and failing that has picked a window-capable ES2 configuration by hand.
 
 ---
 
-## 2. What each store requires
+## 2. What each store has required
 
 **Assets**
 
 | File | Store | Spec |
 |---|---|---|
-| `ios/Assets.xcassets/AppIcon.appiconset/icon-1024.png` | Apple | 1024x1024, opaque, no rounded corners. `actool` derives every other size. A signed `make ios` fails without it. |
+| `ios/Assets.xcassets/AppIcon.appiconset/icon-1024.png` | Apple | 1024x1024, opaque, no rounded corners. `actool` has derived every other size. A signed `make ios` has failed without it. |
 | `android/res/mipmap-*/ic_launcher.png` + `android:icon` in the manifest | Play | the launcher icon |
 | `android/play-assets/icon-512.png` | Play | 512x512, 32-bit, no transparency |
 | `android/play-assets/feature-graphic-1024x500.png` | Play | 1024x500 |
-| `ios/app-store-assets/screenshots/iphone-6.9/` | Apple | 2868x1320 landscape. `xcrun simctl io <udid> screenshot` on an iPhone 16 Pro Max captures exactly that from the real app, so no image is ever scaled or composited to hit a store's size. |
-| `ios/app-store-assets/screenshots/ipad-13/` | Apple | required while `UIDeviceFamily` includes iPad |
+| `ios/app-store-assets/screenshots/iphone-6.9/` | Apple | landscape; the 6.9" slot has taken 2868x1320 or 2796x1290 (the five here are 2796x1290). `xcrun simctl io <udid> screenshot` on a Simulator of that size has captured the real app, so no image has been scaled or composited to hit a store's size. |
+| `ios/app-store-assets/screenshots/ipad-13/` | Apple | 2732x2048 landscape; required while `UIDeviceFamily` has included iPad |
 | `android/play-assets/screenshots/` | Play | landscape, at least 1080 on the long edge |
 
 **Text** — `android/play-assets/LISTING.md` and `ios/app-store-assets/LISTING.md`
-hold every field, in fenced blocks that `scripts/store_listing.py` parses.
-`android/play-assets/PRIVACY.md` is the privacy policy; both stores want it at
-a public URL.
+have held every field, in fenced blocks that `scripts/store_listing.py` has
+parsed. `android/play-assets/PRIVACY.md` has been the privacy policy; both
+stores have wanted it at a public URL.
 
-**Console work, which neither store exposes an API for**
+**Console work, which neither store has exposed an API for**
 
 - Apple: creating the app record, and the App Privacy nutrition label.
 - Play: everything — the app record, the Data safety form, the IARC content
   rating, the target-audience declaration, and the closed-testing gate for
-  production access. The answers are all "none"; the copy to paste is in
-  `LISTING.md`.
+  production access. The answers have all been "none"; the copy to paste has
+  been in `LISTING.md`.
 
-**Secrets** — `docs/RELEASE-PROCESS.md` lists them by name and says what each
-one unlocks. `ios/app-store-assets/TESTFLIGHT.md` is the step-by-step for
-creating them without a Mac.
+**Secrets** — `docs/RELEASE-PROCESS.md` has listed them by name and said what
+each one unlocks. `ios/app-store-assets/TESTFLIGHT.md` has been the
+step-by-step for creating them without a Mac.
 
 ---
 
-## 3. What is scripted
+## 3. What has been scripted
 
-| Script | What it does |
+| Script | What it has done |
 |---|---|
-| `scripts/store_listing.py` | parses both LISTING.md files, enforces each store's length limits, and bans a listing that names another store or the original game. CI runs `--check` on every PR. |
-| `scripts/asc_setup.py` | one-time Apple setup: register the App ID, create the App Store provisioning profile bound to the team certificate, then set category, content rights, age rating, privacy-policy URL, support/marketing URLs, a free price, and availability in every territory except mainland China. |
+| `scripts/store_listing.py` | parsed both LISTING.md files, enforced each store's length limits, and banned a listing that names another store or the original game. CI has run `--check` on every PR. |
+| `scripts/asc_setup.py` | one-time Apple setup: registered the App ID, created the App Store provisioning profile bound to the team certificate, then set category, content rights, age rating, privacy-policy URL, support/marketing URLs, a free price, and availability in every territory except mainland China. |
 | `scripts/asc_release.py` | `status`, `listing` (text + screenshots), `release --build N [--submit]`. |
-| `scripts/testflight_notes.py` | waits out Apple's processing window and writes "What to Test" onto the build TestFlight just received. |
-| `scripts/devicefarm_run.py` | uploads the APK or `.ipa` to AWS Device Farm and fuzz-tests it on real phones. |
-| `scripts/android_smoke.sh` | installs the emulator APK in CI, launches it, and fails unless the process is alive 20 s later. |
+| `scripts/asc_next_build.py` | printed the next build number App Store Connect has not seen, so branch and release builds have never collided. |
+| `scripts/testflight_notes.py` | waited out Apple's processing window and written "What to Test" onto the build TestFlight has just received. |
+| `scripts/devicefarm_run.py` | uploaded the APK or `.ipa` to AWS Device Farm and fuzz-tested it on real phones. |
+| `scripts/android_smoke.sh` | installed the emulator APK in CI, launched it, and failed unless the process has been alive 20 s later. |
 
 | Workflow | Trigger |
 |---|---|
 | `asc-setup.yml` | manual; one verb per run, `dry_run` on by default |
-| `store-release.yml` | manual; push the listing and submit a chosen build, `dry_run` on by default |
+| `store-release.yml` | manual; the listing pushed and a chosen build submitted, `dry_run` on by default |
+| `testflight.yml` | manual; the chosen branch built, signed and sent to TestFlight, with no tag and no release |
 | `devicefarm.yml` | manual; real-device fuzz test of both apps (AWS OIDC, no stored keys) |
-| `release.yml` — `build-ios`, `publish-testflight`, `testflight-notes`, `submit-appstore`, `build-android`, `publish-play` | every merge to `main`, each gated on its own secrets |
+| `release.yml` — `build-ios`, `publish-testflight`, `testflight-notes`, `submit-appstore`, `build-android`, `publish-play` | every merge to `main`, each gated on its own secrets; `submit-appstore` only when asked for |
 
-Play has no equivalent automation beyond the internal-track upload.
+Play has had no automation beyond the internal-track upload.

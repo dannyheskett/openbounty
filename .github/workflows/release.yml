@@ -1,14 +1,8 @@
 name: release
 
-# Inlined, not called. The shared copy in dannyheskett/.github is being retired, so this
-# repository carries its own. The body below is that workflow verbatim, with the edits the
-# shared form existed to avoid needing:
-#   - workflow_call becomes this repo's real push + workflow_dispatch triggers
-#   - the `platforms` input and its per-job gates are gone; a platform this repo does not
-#     build is simply not a job
-#   - `play_publish` and the publish-play job are gone; this repo ships no Android bundle
-#   - the pack guard steps are unconditional, the `verify_no_pack` input having no other
-#     caller to be false for
+# This repository's own release workflow, not a call to a shared one: every job runs on
+# every release, a platform this repo does not build is simply not a job, and the pack
+# guard steps are unconditional. docs/RELEASE-PROCESS.md describes each job.
 #
 on:
   push:
@@ -330,7 +324,6 @@ jobs:
           sdkmanager --install "ndk;${NDK_VERSION}" \
             "build-tools;${ANDROID_BUILD_TOOLS}" \
             "platforms;android-${ANDROID_PLATFORM_VER}"
-          echo "ANDROID_NDK=${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
       # The APK embeds the Glory of Rome pack, and the pack is zipped by the
       # NATIVE binary (./build/debug/openbounty --pack-dir), so the Linux
       # toolchain is required even though nothing native ships from this job.
@@ -343,10 +336,12 @@ jobs:
       - name: Build raylib (Linux)
         run: ./scripts/build_raylib_linux.sh
       - name: Build raylib (Android, arm64-v8a)
-        run: ./scripts/build_raylib_android.sh
+        run: ./scripts/build_raylib_android.sh --ndk "${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}"
       - name: Package sideload APK (debug-signed)
         run: |
           make dist-android \
+            ANDROID_NDK="${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" \
+            ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT}" \
             ANDROID_BUILD_TOOLS="${ANDROID_BUILD_TOOLS}" \
             ANDROID_PLATFORM_VER="${ANDROID_PLATFORM_VER}" \
             RELEASE_VERSION=${{ needs.prepare.outputs.version }}
@@ -377,6 +372,8 @@ jobs:
         run: |
           echo "$PLAY_UPLOAD_KEYSTORE" | base64 -d > "$RUNNER_TEMP/upload.jks"
           make dist-android-play \
+            ANDROID_NDK="${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" \
+            ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT}" \
             ANDROID_BUILD_TOOLS="${ANDROID_BUILD_TOOLS}" \
             ANDROID_PLATFORM_VER="${ANDROID_PLATFORM_VER}" \
             RELEASE_VERSION=${{ needs.prepare.outputs.version }} \

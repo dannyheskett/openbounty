@@ -9,22 +9,43 @@
 # ABI; the game links libraylib.a into libgloryofrome.so. Pinned to raylib 6.0 to
 # match the desktop builds; bump RAYLIB_TAG to move.
 #
-# Required env:
-#   ANDROID_NDK        path to the NDK root (CI's setup-android exports this)
-# Optional env:
-#   ANDROID_API        target API level         (default 24)
-#   ANDROID_ARCHES     space-separated raylib arch names to build (default arm64)
-#                      valid: arm64 arm x86_64 x86
+# Usage:
+#   scripts/build_raylib_android.sh --ndk <dir> [--api <level>] [--arch <name>]...
+#
+#   --ndk   the Android NDK root (required)
+#   --api   target API level (default 24)
+#   --arch  a raylib arch name to build, repeatable (default arm64);
+#           valid: arm64 arm x86_64 x86
+#
+# Everything comes from the command line: the script reads no environment
+# variables.
 
 set -euo pipefail
 
-RAYLIB_TAG="${RAYLIB_TAG:-6.0}"
-RAYLIB_SRC_DIR="${RAYLIB_SRC_DIR:-third_party/raylib}"
-INSTALL_DIR="${RAYLIB_ANDROID_INSTALL_DIR:-third_party/raylib-install-android}"
-ANDROID_API="${ANDROID_API:-24}"
-ANDROID_ARCHES="${ANDROID_ARCHES:-arm64}"
+RAYLIB_TAG="6.0"
+RAYLIB_SRC_DIR="third_party/raylib"
+INSTALL_DIR="third_party/raylib-install-android"
+ANDROID_NDK=""
+ANDROID_API="24"
+ANDROID_ARCHES=""
 
-: "${ANDROID_NDK:?set ANDROID_NDK to the Android NDK root}"
+usage() {
+    echo "usage: $0 --ndk <dir> [--api <level>] [--arch <name>]..." >&2
+    exit 2
+}
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --ndk)  [ $# -ge 2 ] || usage; ANDROID_NDK="$2"; shift 2 ;;
+        --api)  [ $# -ge 2 ] || usage; ANDROID_API="$2"; shift 2 ;;
+        --arch) [ $# -ge 2 ] || usage; ANDROID_ARCHES="$ANDROID_ARCHES $2"; shift 2 ;;
+        *) echo "[build_raylib_android] unknown argument: $1" >&2; usage ;;
+    esac
+done
+
+[ -n "$ANDROID_NDK" ] || usage
+[ -d "$ANDROID_NDK" ] || { echo "[build_raylib_android] no NDK at $ANDROID_NDK" >&2; exit 2; }
+[ -n "$ANDROID_ARCHES" ] || ANDROID_ARCHES="arm64"
 
 if [ ! -d "$RAYLIB_SRC_DIR" ]; then
     git clone --depth 1 --branch "$RAYLIB_TAG" \
