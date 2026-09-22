@@ -2461,12 +2461,19 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
   least `textsel_min_cell_w()` wide -- four glyphs, so `DEL` and `SPC` stop
   overlapping their neighbours.
 
-- **REQ-532.** **The class you picked is visible while you name the hero.**
-  The entry panel reserves a right-hand column for the class portrait and
-  widens to hold it, so the difficulty table keeps its own column
-  (`src/startup.c`). On touch, choosing a class takes **two taps**: the first
-  selects and shows the description, the second confirms. A single tap both
-  selected and confirmed, so the choice was never on screen for a frame.
+- **REQ-532.** **Choosing a class is two steps, the same two for every
+  input.** Picking a figure -- an arrow key, a pad or a tap -- gives it the
+  gold outline and brings up its description; the panel then carries
+  **Continue** and **Cancel** rows, and only those finish the choice
+  (`src/startup.c`). Before this a tap both selected and confirmed, so the
+  outline and the description were never on screen, and the keyboard
+  confirmed on Enter with no way back.
+
+- **REQ-533.** **A shooter's combat menu opens on Shoot.** The unit page lists
+  Shoot first when the troop has ranged ammo, Wait first otherwise
+  (`src/combat_loop.c`). The order follows the troop's declared ammo rather
+  than the shots left this fight, so it does not rearrange itself mid battle
+  as the quiver empties.
 
 - **REQ-529.** **No Exit on a phone.** The title menu's Exit row and the game
   menu's Exit footer are compiled out under `PLATFORM_IOS` and

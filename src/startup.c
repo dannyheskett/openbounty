@@ -478,6 +478,16 @@ static void draw_title_menu(const Sprites *sprites, const char **labels, int cou
                  touch_list, uk_ink());
 }
 
+// The class picker's two confirm rows. Hardcoded like the other shell-owned
+// touch labels (the letter selector's DEL / SPC / OK): they belong to the
+// shell's flow, not to a pack's content.
+static bool class_confirm_row(void *ctx, int i, char *label, char *right, int cap) {
+    (void)ctx;
+    right[0] = '\0';
+    snprintf(label, (size_t)cap, "%s", i == 0 ? "Continue" : "Cancel");
+    return true;
+}
+
 static bool run_title_menu(const Resources *res, const Sprites *sprites,
                            RenderTexture2D *rt, StartupChoice *out) {
     // No Exit on a phone: iOS has no notion of quitting an app and Apple
@@ -577,6 +587,7 @@ static bool run_class_select(const Resources *res,
     // Modern: the carousel starts on the whole painting with no one picked;
     // Left/Right step through the figures, Enter picks.
     int class_cursor = CL_IS_MODERN ? -1 : 0;
+    int confirm_row = 0;        // 0 Continue, 1 Cancel, once a class is picked
     double opened = frame_host_time();   // modern: nothing picked after 2 s -> the first class
 
     while (!frame_host_should_close()) {
@@ -609,18 +620,34 @@ static bool run_class_select(const Resources *res,
                 class_cursor = class_cursor < 0 ? 0 : sel_wrap(class_cursor, 1, n);
             }
             bool enter = !woke && (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER));
-            // Touch takes TWO taps, and the first one is the point: it puts
-            // the outline on the figure and its description on screen. A tap
-            // that both selected and confirmed meant the choice was never
-            // visible -- the panel was already up over the figures. A tap on
-            // a different class moves the selection instead of confirming.
+
+            // Choosing a class is TWO steps, the same two for every input:
+            // pick a figure (it takes the gold outline and its description
+            // comes up), then Continue or Cancel. A tap used to do both at
+            // once, so the choice was never on screen; and the keyboard used
+            // to confirm on Enter with no way back.
             int tapped = touch_tapped_row(TOUCH_LIST_CLASS);
-            bool tap_confirms = false;
             if (tapped >= 0 && tapped < n) {
-                tap_confirms = (tapped == class_cursor);
                 class_cursor = tapped;
+                confirm_row = 0;
             }
-            if (tap_confirms || (enter && class_cursor >= 0)) {
+            if (class_cursor >= 0) {
+                if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_KP_8) ||
+                    input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2))
+                    confirm_row = !confirm_row;
+                int crow = touch_tapped_row(TOUCH_LIST_CLASS_CONFIRM);
+                if (crow >= 0) confirm_row = crow;
+                bool go = (crow == 0) || (enter && confirm_row == 0);
+                bool back = (crow == 1) || (enter && confirm_row == 1);
+                if (back) {
+                    class_cursor = -1;      // the painting, nothing picked
+                    confirm_row = 0;
+                    enter = false;
+                    go = false;
+                }
+                if (!go) enter = false;
+            }
+            if (enter && class_cursor >= 0) {
                 const ClassDef *c = class_by_index(class_cursor);
                 safe_copy(out->class_id, sizeof(out->class_id), c ? c->id : "knight");
                 out->action = STARTUP_NEW;
@@ -708,10 +735,22 @@ static bool run_class_select(const Resources *res,
             int cw = 700, tw = cw - 2 * UK_INSET;
             int lines = uk_lines(desc, tw);
             int chh = 2 * UK_INSET + (1 + lines) * uk_line_h();
+            // Two rows under the description, and they are the ONLY way on:
+            // Continue takes the class, Cancel puts the painting back. The
+            // same two rows whatever the input -- a tap, an arrow key or a
+            // pad all land on them, so no one route confirms invisibly.
+            chh += ML_ROW_RULE + 2 * ml_row_h();
             int cx = (CL_SCREEN_W - cw) / 2, cy = CL_SCREEN_H - chh - 16;
             panel(cx, cy, cw, chh);
             bfont_draw(pc ? pc->name : "", cx + UK_INSET, cy + UK_INSET, PAL_CLR(YELLOW));
             uk_flow(cx + UK_INSET, cy + UK_INSET + uk_line_h(), tw, cx, 0, cy + chh, desc, PAL_CLR(WHITE));
+
+            int ry = cy + 2 * UK_INSET + (1 + lines) * uk_line_h();
+            lattice_band_h(cx, ry, cw, ML_ROW_RULE);
+            ry += ML_ROW_RULE;
+            ml_list_draw(cx, ry, cw, ml_list_height(2), 2, confirm_row,
+                         class_confirm_row, NULL, TOUCH_LIST_CLASS_CONFIRM,
+                         uk_ink());   // cursor: 0 Continue, 1 Cancel
         }
 
         // Status-bar hint at top (). Modern: the picked figure's class.
@@ -895,32 +934,13 @@ static bool run_create_game(const Resources *res,
             int mrow = GH + 4;
             int sel_h = (!has_name && selector) ? textsel_h(false, GH + 4) + mrow : 0;
             int mh = UK_INSET + 3 * mrow + UK_BAND + ml_list_height(n) + sel_h;
-
-            // The class you picked gets its own column on the right: the
-            // panel and its dim cover the figures behind, so without this the
-            // choice is invisible once you are on this screen. Sized to the
-            // panel's height at a whole scale, and the panel widens to hold
-            // it so nothing is drawn over the difficulty table.
-            Texture2D port = { 0 };
-            if (sprites && cls && cls->index >= 0 && sprites->class_portrait &&
-                sprites->class_portrait[cls->index].id)
-                port = sprites->class_portrait[cls->index];
-            int pw2 = 0, ph2 = 0;
-            if (port.id && port.height > 0) {
-                int ps = (mh - 2 * UK_INSET) / port.height;
-                if (ps < 1) ps = 1;
-                pw2 = port.width * ps;
-                ph2 = port.height * ps;
-            }
-            int mw = UK_INLAY_W + (pw2 ? pw2 + UK_INSET : 0);
+            int mw = UK_INLAY_W;
             int mx = (CL_SCREEN_W - mw) / 2, my = (CL_SCREEN_H - mh) / 2;
             if (my < GH + 8) my = GH + 8;
             gfx_rect(0, GH + 2, CL_SCREEN_W, CL_SCREEN_H, (Color){ 0, 0, 0, 110 });
             panel(mx, my, mw, mh);
             int cx0 = mx + UK_INSET;
             int ty = my + UK_INSET;
-
-            if (pw2) ui_blit(port, mx + mw - UK_INSET - pw2, my + UK_INSET, pw2, ph2);
 
             // "Hero Name: " then the name as plain text, the default in grey
             // until something is typed, and a caret while typing.
@@ -950,8 +970,7 @@ static bool run_create_game(const Resources *res,
                     while (*p && *p != ' ') p++;
                     if (*p) *p++ = '\0';
                     // The last column sits over the scores, right-aligned in the rows.
-                    int text_w = mw - (pw2 ? pw2 + UK_INSET : 0);
-                    int hx = (k == 2) ? mx + text_w - ML_PAD - bfont_text_width(tok)
+                    int hx = (k == 2) ? mx + mw - ML_PAD - bfont_text_width(tok)
                                       : cx0 + col[k] * GW;
                     if (*tok) bfont_draw(tok, hx, ty,
                                          PAL_CLR(YELLOW));
@@ -962,19 +981,16 @@ static bool run_create_game(const Resources *res,
             // not tappable until a name is entered.
             DiffCtx dc = { res, { 0 }, { 0 }, has_name };
             for (int k = 0; k < n; k++) { dc.labels[k] = rows[k].label; dc.scores[k] = rows[k].score; }
-            // The rows live in the text column, left of the portrait, so the
-            // right-aligned score never runs under it.
-            int text_w = mw - (pw2 ? pw2 + UK_INSET : 0);
-            lattice_band_h(mx, ty, text_w, 4);
+            lattice_band_h(mx, ty, mw, 4);
             ty += 4;
-            ml_list_draw(mx, ty, text_w, ml_list_height(n), n, has_name ? sel : -1,
+            ml_list_draw(mx, ty, mw, ml_list_height(n), n, has_name ? sel : -1,
                          difficulty_row, &dc, has_name ? TOUCH_LIST_STARTUP : 0,
                          uk_ink());
             ty += ml_list_height(n);
 
             if (!has_name && selector) {
                 int cw = textsel_min_cell_w(), chh = GH + 6;
-                int gx = mx + (mw - (pw2 ? pw2 + UK_INSET : 0) - textsel_w(false, cw)) / 2;
+                int gx = mx + (mw - textsel_w(false, cw)) / 2;
                 int gy = ty + mrow / 2;
                 textsel_draw(&ts, gx, gy, cw, chh, PAL_CLR(YELLOW), uk_ink(),
                              TOUCH_LIST_TEXTSEL);

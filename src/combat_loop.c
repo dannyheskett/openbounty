@@ -322,9 +322,19 @@ static void combat_menu_page(const Combat *c, const Game *g, int id, GmPage *p) 
         bool magic = hero && hero->stats.knows_magic;
         bool spell_left = c->spells_this_round < 1;
         p->title = ui->gm_unit;
+        // A shooter's menu opens on Shoot: it is what you came to the menu
+        // for, and having Wait above it put the one thing you never want
+        // under the cursor. The order follows the troop's ranged ammo, not
+        // the shots left this fight, so it does not rearrange itself mid
+        // battle as the quiver empties.
+        bool shooter = t && t->ranged_ammo > 0;
+        if (shooter)
+            ROW(ui->gm_shoot, !shots ? bn->gmr_no_shots : close ? bn->gmr_adjacent : bn->gmd_shoot,
+                "S", KEY_S, shots && !close);
         ROW(ui->gm_wait, bn->gmd_wait, "", KEY_SPACE, true);
-        ROW(ui->gm_shoot, !shots ? bn->gmr_no_shots : close ? bn->gmr_adjacent : bn->gmd_shoot,
-            "S", KEY_S, shots && !close);
+        if (!shooter)
+            ROW(ui->gm_shoot, !shots ? bn->gmr_no_shots : close ? bn->gmr_adjacent : bn->gmd_shoot,
+                "S", KEY_S, shots && !close);
         ROW(ui->gm_fly, fly ? bn->gmd_unit_fly : bn->gmr_cannot_fly, "F", KEY_F, fly);
         ROW(ui->gm_cast, !magic ? bn->gmr_no_magic : !spell_left ? bn->gmr_one_spell : bn->gmd_combat_cast,
             "U", GM_ACT_PAGE + CM_CAST, magic && spell_left);
