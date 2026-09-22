@@ -2633,8 +2633,9 @@ golden-digest regression tests have pinned the formulas.
 - **REQ-482.** Every release (`docs/RELEASE-PROCESS.md`) has carried: the
   OpenBounty engine and the Glory of Rome package for Linux x86_64
   (tar.gz), Windows x86_64 + i686 (zip, single static .exe, no DLLs) and
-  macOS universal (zip, arm64 + x86_64, ad-hoc signed); the Web/WebAssembly
-  zip (`.html`/`.js`/`.wasm`/`.data`, Glory of Rome embedded); the iOS `.ipa`
+  macOS universal (zip, arm64 + x86_64, ad-hoc signed); two Web/WebAssembly
+  zips (`.html`/`.js`/`.wasm`/`.data`), `openbounty-*` with King's Bounty
+  embedded and `gloryofrome-*` with Glory of Rome; the iOS `.ipa`
   (native Metal, `IOS-BACKEND.md`); and the Android APK and AAB. Releases have
   been sequential build numbers under `release-N` tags; the build number has
   been embedded at compile time and exposed via `--version`.

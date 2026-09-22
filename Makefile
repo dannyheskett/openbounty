@@ -307,9 +307,9 @@ WEB_LDFLAGS := -L$(RAYLIB_WEB)/lib -lraylib -lidbfs.js \
                -sSTACK_SIZE=8388608 -sFORCE_FILESYSTEM \
                -sEXPORTED_RUNTIME_METHODS=FS,IDBFS,addRunDependency,removeRunDependency
 
-# The packs that get a web build. King's Bounty is local-only: its pack is
-# DOS-extracted and copyright-restricted, so only Glory of Rome is packaged by
-# dist-web. Both are built by `make web` so CI exercises each.
+# The packs that get a web build. `make web` builds both, and dist-web
+# packages each as its own zip (openbounty-* for King's Bounty, gloryofrome-*
+# for Glory of Rome).
 WEB_PACK_NAMES := kings-bounty glory-of-rome
 WEB_OUTS       := $(foreach p,$(WEB_PACK_NAMES),build/web/$(p)/openbounty.html)
 OUT_WEB_ROME   := build/web/glory-of-rome/openbounty.html
@@ -851,17 +851,24 @@ dist-rome-mac: $(OUT_MAC) $(ROME_PACK_FILE)
 # All four emitted files are required to run it: the .js loader, the .wasm
 # module, the .data pack image, and the .html shell. Serve them over HTTP --
 # browsers refuse to fetch .wasm/.data over file://.
-# Glory of Rome only: King's Bounty's pack is DOS-extracted and
-# copyright-restricted, so its web build never leaves this machine.
-dist-web: $(OUT_WEB_ROME)
-	@rm -rf $(STAGING)/web && mkdir -p $(STAGING)/web/openbounty-$(OPENBOUNTY_VERSION_SLUG)-web
-	cp build/web/glory-of-rome/openbounty.html build/web/glory-of-rome/openbounty.js \
-	   build/web/glory-of-rome/openbounty.wasm build/web/glory-of-rome/openbounty.data \
-	   $(STAGING)/web/openbounty-$(OPENBOUNTY_VERSION_SLUG)-web/
-	sed "s/<version>/$(OPENBOUNTY_VERSION_DISPLAY)/g" $(DIST)/README.txt.in > $(STAGING)/web/openbounty-$(OPENBOUNTY_VERSION_SLUG)-web/README.txt
-	cp LICENSE NOTICES.md $(STAGING)/web/openbounty-$(OPENBOUNTY_VERSION_SLUG)-web/
+# Two zips, one per game: openbounty-* carries King's Bounty and gloryofrome-*
+# Glory of Rome, each with its pack embedded in the .data image. The site pulls
+# each by its prefix into its own URL.
+# $(call web_stage,<pack-name>,<zip-prefix>,<readme-template>)
+define web_stage
+	@rm -rf $(STAGING)/web-$(2) && mkdir -p $(STAGING)/web-$(2)/$(2)-$(OPENBOUNTY_VERSION_SLUG)-web
+	cp build/web/$(1)/openbounty.html build/web/$(1)/openbounty.js \
+	   build/web/$(1)/openbounty.wasm build/web/$(1)/openbounty.data \
+	   $(STAGING)/web-$(2)/$(2)-$(OPENBOUNTY_VERSION_SLUG)-web/
+	sed "s/<version>/$(OPENBOUNTY_VERSION_DISPLAY)/g" $(3) > $(STAGING)/web-$(2)/$(2)-$(OPENBOUNTY_VERSION_SLUG)-web/README.txt
+	cp LICENSE NOTICES.md $(STAGING)/web-$(2)/$(2)-$(OPENBOUNTY_VERSION_SLUG)-web/
 	@mkdir -p $(DIST)
-	(cd $(STAGING)/web && zip -qr ../../../$(DIST)/openbounty-$(OPENBOUNTY_VERSION_SLUG)-web-wasm.zip openbounty-$(OPENBOUNTY_VERSION_SLUG)-web)
+	(cd $(STAGING)/web-$(2) && zip -qr ../../../$(DIST)/$(2)-$(OPENBOUNTY_VERSION_SLUG)-web-wasm.zip $(2)-$(OPENBOUNTY_VERSION_SLUG)-web)
+endef
+
+dist-web: build/web/kings-bounty/openbounty.html $(OUT_WEB_ROME)
+	$(call web_stage,kings-bounty,openbounty,$(DIST)/README.txt.in)
+	$(call web_stage,glory-of-rome,gloryofrome,$(DIST)/README-rome.txt.in)
 
 # Android ships as the APK and the AAB themselves -- no archive, no README
 # alongside: a store artifact is a single signed file. Both carry the Glory of

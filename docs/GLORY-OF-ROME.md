@@ -417,13 +417,13 @@ These have been the engine's limits, and they have bound the design.
 
 ## 9. Shipping
 
-Glory of Rome has been the pack the releases carry: the `gloryofrome-*`
-desktop archives, the iOS app and the Android app. It has been original,
-where `kings-bounty` has been DOS-extracted and copyright-restricted.
-`scripts/verify_release_packs.sh` has checked every archive: a
-`gloryofrome-*` archive has had to carry `assets/glory-of-rome.openbounty` and
-nothing from King's Bounty, and an `openbounty-*` archive has carried no pack
-at all.
+Glory of Rome has been the pack of the `gloryofrome-*` release files: the
+desktop archives, the browser build (danheskett.com/dist/gloryofrome/), the
+iOS app and the Android app. It has been original, where `kings-bounty` has
+been DOS-extracted. `scripts/verify_release_packs.sh` has checked every
+archive: a `gloryofrome-*` desktop archive has had to carry
+`assets/glory-of-rome.openbounty` and nothing from King's Bounty, and the web
+zip has carried the pack only inside `openbounty.data`.
 
 ---
 

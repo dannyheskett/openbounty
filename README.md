@@ -27,9 +27,11 @@ Windows x86_64 and i686, and macOS universal, plus the web and mobile builds
   launch finds it.
 - **Glory of Rome** (`gloryofrome-build-N-*`): the same binary with
   `assets/glory-of-rome.openbounty` beside it; it starts with no flags.
-- **Web / WebAssembly** (`openbounty-build-N-web-wasm.zip`):
-  `.html`/`.js`/`.wasm`/`.data`, served over HTTP, with Glory of Rome
-  embedded.
+- **Web / WebAssembly**: two zips of `.html`/`.js`/`.wasm`/`.data`, served
+  over HTTP, each with its game embedded: `openbounty-build-N-web-wasm.zip`
+  (King's Bounty, danheskett.com/dist/openbounty/) and
+  `gloryofrome-build-N-web-wasm.zip` (Glory of Rome,
+  danheskett.com/dist/gloryofrome/).
 - **iOS** (`.ipa`, also on TestFlight) and **Android** (sideload `.apk` and
   the Play `.aab`): Glory of Rome only.
 
@@ -191,9 +193,9 @@ each in its own `build/web/<pack>/`. The pack has gone into `openbounty.data`
 via `--preload-file`, so each build has been self-contained. All four files
 have been needed, served over HTTP: browsers refuse to fetch `.wasm`/`.data`
 over `file://`. Saves have persisted in IndexedDB. `make web` has not been
-part of `make dist`; the release workflow has packaged **Glory of Rome only**
-via `make dist-web` -- King's Bounty's pack is DOS-extracted and
-copyright-restricted, so its web build has stayed local.
+part of `make dist`; `make dist-web` has packaged each build as its own zip,
+`openbounty-*` for King's Bounty and `gloryofrome-*` for Glory of Rome, and
+the site has served each at its own URL.
 
 ### Android
 
@@ -365,7 +367,7 @@ depending on shell headers or shell symbols, this build step has failed and
 | `make extract-pack` | Regenerated `assets/kings-bounty/` from a user's DOS files. |
 | `make dist-{linux,windows,mac}` | OpenBounty distribution archives. |
 | `make dist-rome-{linux,windows,mac}` | Glory of Rome distribution archives. |
-| `make dist-web`, `make dist-android`, `make dist-android-play`, `make dist-ios` | The web zip and the mobile packages in `dist/`. |
+| `make dist-web`, `make dist-android`, `make dist-android-play`, `make dist-ios` | The two web zips and the mobile packages in `dist/`. |
 | `make clean` | Removed `build/` and `dist/` archives. |
 
 ---

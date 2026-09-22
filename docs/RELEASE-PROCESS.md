@@ -62,7 +62,7 @@ by `workflow_dispatch`. It has run twelve jobs:
   universal binary, ad-hoc codesigned it, packaged both archives and verified
   the pack rule.
 - **web (WASM) build** (Ubuntu): has set up emsdk, built raylib for both Linux
-  and web, built the wasm bundle and packaged `dist-web`. It has needed the
+  and web, built both wasm bundles and packaged `dist-web`. It has needed the
   *Linux* toolchain as well as emsdk because the wasm target depends on the
   asset pack, and the native binary is what zips that pack.
 - **iOS build** (macOS 26): has built raylib for macOS and the pack tool
@@ -107,13 +107,15 @@ any build fails, no tag has been created and `N` has been reused next time.
 Each desktop archive has contained: the binary, `README.txt` (rendered from
 `dist/README.txt.in` with the build number substituted), `LICENSE`, and
 `NOTICES.md`; a `gloryofrome-*` archive has also carried
-`assets/glory-of-rome.openbounty`. King's Bounty's pack has never shipped: it
-is DOS-extracted and copyright-restricted, and desktop users supply their own
-by running `./openbounty --extract` in the directory that holds `KB.EXE`.
+`assets/glory-of-rome.openbounty`. No desktop archive has carried King's
+Bounty's pack: desktop users supply their own by running `./openbounty
+--extract` in the directory that holds `KB.EXE`.
 
-The web archive has embedded the Glory of Rome pack inside
-`openbounty.data`, since it must carry a pack to run at all; King's Bounty's
-web build has stayed local.
+Each web archive has embedded its game's pack inside `openbounty.data`,
+since it must carry a pack to run at all: `openbounty-*-web-wasm.zip` King's
+Bounty, `gloryofrome-*-web-wasm.zip` Glory of Rome. The site
+(danheskett.com) has pulled each from the latest release by its prefix, into
+`/dist/openbounty/` and `/dist/gloryofrome/`.
 
 The Android and iOS artifacts have carried `glory-of-rome.openbounty` inside
 them, which is ours to distribute. Their own guards have checked the opposite
@@ -155,16 +157,17 @@ Each merge to `main` has produced one `release-N` with all of these:
 |---|---|
 | `openbounty-build-<N>-linux-x86_64.tar.gz`, `-windows-x86_64.zip`, `-windows-i686.zip`, `-macos-universal.zip` | **OpenBounty** -- the engine alone. Plays King's Bounty from a pack the player builds from their own `KB.EXE` (`openbounty --extract`). Contains no pack. |
 | `gloryofrome-build-<N>-linux-x86_64.tar.gz`, `-windows-x86_64.zip`, `-windows-i686.zip`, `-macos-universal.zip` | **Glory of Rome** -- the same binary with `assets/glory-of-rome.openbounty` beside it, where pack discovery already looks, so it starts with no flags. |
-| `openbounty-build-<N>-web-wasm.zip` | The Glory of Rome browser build (its pack embedded in `openbounty.data`). |
+| `openbounty-build-<N>-web-wasm.zip` | The King's Bounty browser build (its pack embedded in `openbounty.data`), served at danheskett.com/dist/openbounty/. |
+| `gloryofrome-build-<N>-web-wasm.zip` | The Glory of Rome browser build (its pack embedded in `openbounty.data`), served at danheskett.com/dist/gloryofrome/. |
 | `gloryofrome-build-<N>-ios-arm64.ipa` | The App Store-signed iOS app, uploaded to TestFlight. |
 | `gloryofrome-build-<N>-android-arm64.apk`, `gloryofrome-build-<N>-android.aab` | The Android sideload APK and the upload-signed Play bundle, pushed to Play's internal track when `PLAY_SERVICE_ACCOUNT_JSON` exists. |
 
-King's Bounty's pack has never been in any of them: it is extracted from the
-player's own copy and is copyright-restricted. `scripts/verify_release_packs.sh`
-has enforced both halves of the rule on every archive -- no pack in an
-`openbounty-*` archive, Rome's pack present in every `gloryofrome-*` one, and
-nothing from King's Bounty anywhere -- in each build job, and the Linux PR
-job has built and checked the Rome package too.
+`scripts/verify_release_packs.sh` has enforced the pack rule on every
+archive in each build job: no pack in an `openbounty-*` desktop archive,
+Rome's pack present in every `gloryofrome-*` desktop one, nothing from King's
+Bounty in any file name, and in a web zip the pack only inside
+`openbounty.data`, never loose. The Linux PR job has built and checked the
+Rome package too.
 
 ---
 
@@ -250,7 +253,7 @@ make dist-linux       # OpenBounty Linux archive in dist/
 make dist-windows     # OpenBounty Windows zips in dist/
 make dist-mac         # OpenBounty macOS zip in dist/ (only on macOS)
 make dist-rome-linux  # Glory of Rome Linux archive (also -windows, -mac)
-make dist-web         # WASM zip in dist/ (needs emsdk)
+make dist-web         # the two WASM zips in dist/ (needs emsdk)
 make dist-android     # sideload APK (also dist-android-play for the AAB)
 make dist-ios         # device .ipa (only on macOS)
 make dist             # linux + windows + mac at once (not web)
