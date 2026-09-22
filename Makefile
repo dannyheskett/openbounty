@@ -357,8 +357,21 @@ web-serve: $(WEB_OUTS)
 # picker, and King's Bounty (DOS-extracted, copyright-restricted) is never
 # packaged.
 #
-# Requires env: ANDROID_NDK, ANDROID_SDK_ROOT.
+# Pass the toolchain on the make command line, never through the environment:
+#   make android ANDROID_NDK=<ndk root> ANDROID_SDK_ROOT=<sdk root>
 # ---------------------------------------------------------------------------
+ANDROID_GOALS := android android-play dist-android dist-android-play
+ifneq ($(filter $(ANDROID_GOALS),$(MAKECMDGOALS)),)
+ifneq ($(filter environment%,$(origin ANDROID_NDK) $(origin ANDROID_SDK_ROOT)),)
+$(error ANDROID_NDK and ANDROID_SDK_ROOT come from the make command line, not the environment)
+endif
+ifeq ($(ANDROID_NDK),)
+$(error pass ANDROID_NDK=<ndk root> on the make command line)
+endif
+ifeq ($(ANDROID_SDK_ROOT),)
+$(error pass ANDROID_SDK_ROOT=<sdk root> on the make command line)
+endif
+endif
 ANDROID_API          ?= 24
 # The shipped ABI. arm64-v8a is every Android phone Play still serves, and is
 # what the APK and the AAB carry. It is overridable for one reason: the CI

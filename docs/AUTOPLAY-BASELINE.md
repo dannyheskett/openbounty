@@ -1,14 +1,12 @@
 # Autoplay, Winnability Baseline
 
 How the headless autoplay oracle has performed on the reference pack, seed by
-seed and difficulty by difficulty, measured on the commit named below. It has
-recorded measured behaviour, not requirements -- those have been
-`AUTOPLAY-SPECS.md` -- and a change to autoplay's behaviour has come with a new
-measurement here.
+seed and difficulty by difficulty. It has recorded measured behaviour, not
+requirements -- those have been `AUTOPLAY-SPECS.md` -- and a change to
+autoplay's behaviour has come with a new measurement here.
 
 ## Measurement
 
-- **Commit:** `fc0190d`.
 - **Pack:** `assets/kings-bounty`.
 - **Command:** one run per difficulty:
 
@@ -81,5 +79,5 @@ Wall clock for the whole 5-seed sweep on the reference machine has been: easy
 
 Build release, then run the three commands above. The search has been
 deterministic (same build, seed and difficulty have given the same plan), so
-every column has reproduced exactly on the same commit. `--validate-pack` has
+every column has reproduced exactly on the same build. `--validate-pack` has
 exited 0 only when every seed in the range has solved.

@@ -136,7 +136,6 @@ jobs:
           sdkmanager --install "ndk;${NDK_VERSION}" \
             "build-tools;${ANDROID_BUILD_TOOLS}" \
             "platforms;android-${ANDROID_PLATFORM_VER}"
-          echo "ANDROID_NDK=${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
       # The APK embeds the Glory of Rome pack, and the pack is zipped by the
       # NATIVE binary (./build/debug/openbounty --pack-dir), so the Linux
       # toolchain is required even though nothing native ships from this job.
@@ -149,10 +148,12 @@ jobs:
       - name: Build raylib (Linux)
         run: ./scripts/build_raylib_linux.sh
       - name: Build raylib (Android, arm64-v8a static)
-        run: ./scripts/build_raylib_android.sh
+        run: ./scripts/build_raylib_android.sh --ndk "${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}"
       - name: Build APK (sideload)
         run: |
           make android \
+            ANDROID_NDK="${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" \
+            ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT}" \
             ANDROID_BUILD_TOOLS="${ANDROID_BUILD_TOOLS}" \
             ANDROID_PLATFORM_VER="${ANDROID_PLATFORM_VER}"
       - name: Verify the APK carries the pack and the lib
@@ -182,10 +183,12 @@ jobs:
       # assembled arm64 APK could not tell us.
       # ---------------------------------------------------------------------
       - name: Build raylib (Android, x86_64 static, for the emulator)
-        run: ANDROID_ARCHES=x86_64 ./scripts/build_raylib_android.sh
+        run: ./scripts/build_raylib_android.sh --ndk "${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" --arch x86_64
       - name: Build APK (x86_64, emulator only)
         run: |
           make android \
+            ANDROID_NDK="${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" \
+            ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT}" \
             ANDROID_ABI=x86_64 \
             ANDROID_APK=build/gloryofrome-x86_64.apk \
             ANDROID_APK_DIR=build/android-x86_64 \

@@ -198,10 +198,15 @@ copyright-restricted, so its web build has stayed local.
 ### Android
 
 ```
-./scripts/build_raylib_android.sh   # raylib 6.0, arm64-v8a static
-make android                        # -> build/gloryofrome.apk
-make android-play                   # -> the upload-signed .aab
+./scripts/build_raylib_android.sh --ndk <ndk>        # raylib 6.0, arm64-v8a static
+make android ANDROID_NDK=<ndk> ANDROID_SDK_ROOT=<sdk>   # -> build/gloryofrome.apk
+make android-play ANDROID_NDK=<ndk> ANDROID_SDK_ROOT=<sdk>  # -> the upload-signed .aab
 ```
+
+The NDK and SDK paths have come only from the command line: the script has
+taken `--ndk`, `--api` and `--arch`, and the Makefile has stopped with an
+error when `ANDROID_NDK` or `ANDROID_SDK_ROOT` arrives through the
+environment.
 
 **Mobile has shipped Glory of Rome only** -- one pack, bundled in the APK's
 `assets/`, opened by `src/plat_android.c` (`pack_open_mem`, so it has not
