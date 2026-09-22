@@ -149,6 +149,27 @@ produces the unsigned `.ipa` and skips the upload.
 
 ---
 
+## What every release ships
+
+Each merge to `main` produces one `release-N` with all of these:
+
+| Artifact | What it is |
+|---|---|
+| `openbounty-<N>-linux-x86_64.tar.gz`, `-windows-x86_64.zip`, `-windows-i686.zip`, `-macos-universal.zip` | **OpenBounty** -- the engine alone. Plays King's Bounty from a pack the player builds from their own `KB.EXE` (`openbounty --extract`). Contains no pack. |
+| `gloryofrome-<N>-linux-x86_64.tar.gz`, `-windows-x86_64.zip`, `-windows-i686.zip`, `-macos-universal.zip` | **Glory of Rome** -- the same binary with `assets/glory-of-rome.openbounty` beside it, where pack discovery already looks, so it starts with no flags. |
+| `openbounty-<N>-web-wasm.zip` | The Glory of Rome browser build (its pack embedded in `openbounty.data`), also published to danheskett.com. |
+| `gloryofrome-<N>-ios-arm64.ipa` | The App Store-signed iOS app, uploaded to TestFlight. |
+| `.apk` / `.aab` | The Android sideload APK and the upload-signed Play bundle, pushed to Play's internal track once `PLAY_SERVICE_ACCOUNT_JSON` exists. |
+
+King's Bounty's pack is never in any of them: it is extracted from the
+player's own copy and is copyright-restricted. `scripts/verify_release_packs.sh`
+enforces both halves of the rule on every archive -- no pack in an
+`openbounty-*` archive, Rome's pack present in every `gloryofrome-*` one, and
+nothing from King's Bounty anywhere -- in each build job, and the Linux PR job
+builds and checks the Rome package too.
+
+---
+
 ## 3. CI on every PR
 
 `.github/workflows/ci.yml` runs on every pull request. The Linux job
