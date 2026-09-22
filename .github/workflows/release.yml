@@ -162,6 +162,11 @@ jobs:
   build-ios:
     name: iOS device .ipa build
     needs: prepare
+    # The build number actually uploaded, which can be above the release
+    # number (see "Work out the iOS build number"); the TestFlight note and
+    # the review submission look the build up by it.
+    outputs:
+      build: ${{ steps.iosnum.outputs.build || needs.prepare.outputs.version }}
     # macos-26 carries Xcode 26 and the iOS 26 SDK. Apple refuses an upload
     # built against anything older ("This app was built with the iOS 18.5
     # SDK"), which is what macos-15 produced and what failed release-23.
@@ -209,6 +214,30 @@ jobs:
       # App Store-submittable .ipa: the distribution certificate goes into a
       # throwaway keychain that dies with the runner, the profile is embedded,
       # and the Makefile writes the entitlements.
+      # The build number must be higher than every build App Store Connect
+      # already holds -- including builds pushed from a branch by
+      # testflight.yml, which take the next free number and so can overtake
+      # the release count. release-26 collided with a branch build 26 exactly
+      # that way. Take whichever is higher: the release number, or Apple's
+      # next free one.
+      - name: Work out the iOS build number
+        id: iosnum
+        if: steps.iossecret.outputs.present == 'true'
+        env:
+          ASC_KEY_P8:    ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID:    ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          N:             ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          build="$N"
+          if [ -n "$ASC_KEY_P8" ]; then
+            python3 -m pip install --quiet --break-system-packages cryptography
+            free=$(python3 scripts/asc_next_build.py)
+            if [ "$free" -gt "$build" ]; then build="$free"; fi
+          fi
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+          echo "release $N -> iOS build $build"
       - name: Package iOS .ipa (App Store signed)
         if: steps.iossecret.outputs.present == 'true'
         env:
@@ -245,6 +274,8 @@ jobs:
           make dist-ios \
             PACK_TOOL=build/openbounty-mac \
             RELEASE_VERSION=${{ needs.prepare.outputs.version }} \
+            IOS_BUILD_NUMBER=${{ steps.iosnum.outputs.build }} \
+            IOS_VERSION_NAME=1.0.${{ steps.iosnum.outputs.build }} \
             IOS_SIGN_IDENTITY="$IDENTITY" \
             IOS_PROFILE="$RUNNER_TEMP/profile.mobileprovision" \
             IOS_TEAM_ID="$IOS_TEAM_ID"
@@ -531,7 +562,7 @@ jobs:
   testflight-notes:
     if: ${{ !inputs.dry_run && needs.publish-testflight.result == 'success' }}
     name: attach TestFlight release notes
-    needs: [prepare, publish-testflight]
+    needs: [prepare, build-ios, publish-testflight]
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     steps:
@@ -549,7 +580,7 @@ jobs:
           ASC_KEY_ID:    ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           BUNDLE_ID:     com.danheskett.gloryofrome
-          BUILD_VERSION: ${{ needs.prepare.outputs.version }}
+          BUILD_VERSION: ${{ needs.build-ios.outputs.build }}
           NOTES: |
             release-${{ needs.prepare.outputs.version }}
 
@@ -592,7 +623,7 @@ jobs:
     # store-release.yml, which exists for exactly this.
     if: ${{ inputs.submit_for_review && !inputs.dry_run && !cancelled() && needs.publish-testflight.result == 'success' }}
     name: submit the build to App Review
-    needs: [prepare, publish-testflight, testflight-notes]
+    needs: [prepare, build-ios, publish-testflight, testflight-notes]
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     steps:
@@ -618,7 +649,7 @@ jobs:
           ASC_KEY_P8:    ${{ secrets.ASC_KEY_P8 }}
           ASC_KEY_ID:    ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          BUILD: ${{ needs.prepare.outputs.version }}
+          BUILD: ${{ needs.build-ios.outputs.build }}
         run: |
           # "What's New" defaults to a standard line inside asc_release.py. It is
           # deliberately not the commit subject: that is written for developers,
@@ -645,7 +676,7 @@ jobs:
           ASC_KEY_P8:    ${{ secrets.ASC_KEY_P8 }}
           ASC_KEY_ID:    ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          BUILD: ${{ needs.prepare.outputs.version }}
+          BUILD: ${{ needs.build-ios.outputs.build }}
         run: |
           python3 scripts/asc_release.py release \
             --build "$BUILD" --submit --skip-if-busy
