@@ -19,6 +19,12 @@ void combat_render_set_ground(Texture2D ground);
 // strip -- an attack playing out. frame < 0 clears it. Legacy never sets it.
 void combat_render_set_attack(int side, int x, int y, int frame);
 
+// Modern: whether the playing blow has LANDED. Before impact a unit the blow
+// has already damaged (engine-side) is drawn with its pre-blow count and no
+// splat -- the number falls, and the splat appears, on the swing's last
+// frame, not when the engine did the arithmetic (REQ-398).
+void combat_render_set_impact(bool landed);
+
 void combat_render_frame(const Combat *c, const Game *g,
                          const Sprites *sprites);
 

@@ -635,7 +635,9 @@ static bool combat_tick_anim(Combat *c, double *next_tick,
     // splat plays out over a now-empty cell). Frozen while an attacker's
     // strip is playing: the splat is not drawn during the swing, so
     // counting it down there would spend it unseen.
-    if (!attack_playing) {
+    // Modern decays the splat on its own faster clock (splat_tick), from the
+    // moment the blow lands; legacy keeps King's Bounty's 150 ms decay here.
+    if (!CL_IS_MODERN && !attack_playing) {
         for (int s = 0; s < COMBAT_SIDES; s++) {
             for (int i = 0; i < COMBAT_SLOTS; i++) {
                 CombatUnit *u = &c->units[s][i];
@@ -659,18 +661,35 @@ static bool combat_tick_anim(Combat *c, double *next_tick,
     return true;
 }
 
-// Modern: an attack plays the attacker's whole strip from frame 0, one frame
-// per beat, and the fight waits until it has played. The attacker is found by
-// side and cell, which survive the slot renumbering a death causes.
-typedef struct { int side, x, y, frame, frames, seq; } AttackAnim;
+// Modern: the beat of one blow (REQ-398). Every number here is a length of
+// time, not a count of ticks, so a 6-frame troop swings in the same time as a
+// 4-frame one.
+//
+//   0 ms         the swing starts; the engine has already dealt the damage,
+//                but the target still SHOWS its old count and no splat
+//   last frame   the blow lands: the count drops and the splat appears
+//   +300 ms      the splat is done; a stack the blow killed leaves the field
+//                and the fight moves on
+//
+// About 0.6 s a blow. At the end of a fight the field is then held 0.5 s so
+// the killing blow and the empty field are seen before victory or defeat.
+#define ATTACK_STRIP_S  0.36   // the whole swing, whatever its frame count
+#define SPLAT_TICK_S    0.10   // hit_flash is 3: a 300 ms splat
+#define FIGHT_END_HOLD  0.50   // after the last splat, before the ending
+
+// The attacker is found by side and cell, which survive the slot renumbering
+// a death causes.
+typedef struct { int side, x, y, frame, frames, seq; double start; bool impact; } AttackAnim;
 
 static void attack_anim_start(AttackAnim *a, const Combat *c, const Sprites *sprites) {
     a->seq = c->attack_seq;
     a->frame = -1;
+    a->impact = true;          // no strip: the blow lands at once
     if (!CL_IS_MODERN) return;
     for (int i = 0; i < COMBAT_SLOTS; i++) {
         const CombatUnit *u = &c->units[c->attack_side][i];
-        if (u->troop_idx < 0 || u->count <= 0 || u->x != c->attack_x || u->y != c->attack_y)
+        // The attacker cannot be dead, but the cell test is what finds it.
+        if (u->troop_idx < 0 || u->x != c->attack_x || u->y != c->attack_y)
             continue;
         if (u->troop_idx >= sprites->troop_count) break;
         a->frames = sprites->troop_anim_frames[u->troop_idx];
@@ -679,17 +698,52 @@ static void attack_anim_start(AttackAnim *a, const Combat *c, const Sprites *spr
         a->x = c->attack_x;
         a->y = c->attack_y;
         a->frame = 0;
+        a->start = frame_host_time();
+        a->impact = false;
         break;
     }
+    combat_render_set_impact(a->impact);
     combat_render_set_attack(a->side, a->x, a->y, a->frame);
 }
 
-// One beat of a playing attack. True while it still plays.
-static bool attack_anim_step(AttackAnim *a, bool ticked) {
+// One frame of a playing swing. True while it still plays. The blow lands on
+// the strip's last frame, not after it: the impact is part of the swing.
+static bool attack_anim_step(AttackAnim *a) {
     if (a->frame < 0) return false;
-    if (ticked && ++a->frame >= a->frames) a->frame = -1;
+    double t = frame_host_time() - a->start;
+    int f = (int)(t / (ATTACK_STRIP_S / a->frames));
+    if (f >= a->frames) {
+        a->frame = -1;
+    } else {
+        a->frame = f;
+        if (f == a->frames - 1 && !a->impact) {
+            a->impact = true;
+            combat_render_set_impact(true);
+        }
+    }
     combat_render_set_attack(a->side, a->x, a->y, a->frame);
     return a->frame >= 0;
+}
+
+// Modern: the splat's own clock, running only once the blow has landed.
+static void splat_tick(Combat *c, const AttackAnim *a, double *next) {
+    if (!CL_IS_MODERN || !a->impact) return;
+    double now = frame_host_time();
+    if (now < *next) return;
+    *next = now + SPLAT_TICK_S;
+    for (int s = 0; s < COMBAT_SIDES; s++)
+        for (int i = 0; i < COMBAT_SLOTS; i++) {
+            CombatUnit *u = &c->units[s][i];
+            if (u->troop_idx >= 0 && u->hit_flash > 0) u->hit_flash--;
+        }
+}
+
+// Any splat still on the field.
+static bool splat_showing(const Combat *c) {
+    for (int s = 0; s < COMBAT_SIDES; s++)
+        for (int i = 0; i < COMBAT_SLOTS; i++)
+            if (c->units[s][i].troop_idx >= 0 && c->units[s][i].hit_flash > 0) return true;
+    return false;
 }
 
 // Block until the player acknowledges the open end-of-combat dialog,
@@ -747,9 +801,11 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
 
     RenderTexture2D *rt = (RenderTexture2D *)render_target;
     double next_tick = frame_host_time() + 0.15;
-    AttackAnim atk = { -1, 0, 0, -1, 0, c.attack_seq };
+    AttackAnim atk = { -1, 0, 0, -1, 0, c.attack_seq, 0.0, true };
+    double next_splat = frame_host_time();
     int deferred_acted = 0;   // modern: a struck blow waiting for its swing
     combat_render_set_attack(-1, 0, 0, -1);
+    combat_render_set_impact(true);
 
     while (c.result == 0 && !frame_host_should_close()) {
         // Keep audio and presentation ticking every frame while the battle
@@ -822,16 +878,18 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         }
 
         bool frame_rollover;
-        bool ticked = combat_tick_anim(&c, &next_tick, &frame_rollover,
-                                       atk.frame >= 0);
-        // An attack is playing: nothing else happens until it has.
-        if (attack_anim_step(&atk, ticked)) continue;
+        (void)combat_tick_anim(&c, &next_tick, &frame_rollover, atk.frame >= 0);
+        splat_tick(&c, &atk, &next_splat);
+        // A blow is playing: nothing else happens until the swing has played
+        // AND its splat is done, so the dead leave the field after you have
+        // seen what killed them.
+        if (attack_anim_step(&atk)) continue;
+        if (CL_IS_MODERN && deferred_acted && splat_showing(&c)) continue;
 
         int acted = 0;
-        // Modern: the strip that just finished was struck a frame ago, and
-        // its effect was held back so the swing reads first. Settle it now
-        // -- the splat starts its ticks, the dead leave the field -- before
-        // anyone acts again.
+        // Modern: settle the blow that was struck at the start of the swing
+        // -- the dead leave the field, the turn moves on -- before anyone acts
+        // again.
         if (deferred_acted) {
             acted = deferred_acted;
             deferred_acted = 0;
@@ -977,23 +1035,22 @@ settle:
         }
     }
 
-    // The blow that ended the fight plays out before the ending shows.
-    while (atk.frame >= 0 && !frame_host_should_close()) {
+    // The blow that ended the fight plays out -- swing, then splat -- before
+    // the ending shows.
+    while ((atk.frame >= 0 || (CL_IS_MODERN && splat_showing(&c))) &&
+           !frame_host_should_close()) {
         audio_tick();
         combat_present(&c, g, sprites, rt);
         bool rolled;
-        attack_anim_step(&atk, combat_tick_anim(&c, &next_tick, &rolled, true));
+        (void)combat_tick_anim(&c, &next_tick, &rolled, atk.frame >= 0);
+        attack_anim_step(&atk);
+        splat_tick(&c, &atk, &next_splat);
     }
     combat_render_set_attack(-1, 0, 0, -1);
+    combat_render_set_impact(true);
 
-    // Modern: hold the field a moment on the last blow. The killing swing
-    // has played and its splat only starts now (the strip froze it), so
-    // without this beat victory or defeat cuts in over the field before the
-    // player has seen what ended the fight. ~0.75s, five anim ticks: the
-    // splat's three and a breath after. Legacy ends as abruptly as it always
-    // did.
     if (CL_IS_MODERN) {
-        double until = frame_host_time() + 0.75;
+        double until = frame_host_time() + FIGHT_END_HOLD;
         while (frame_host_time() < until && !frame_host_should_close()) {
             audio_tick();
             combat_present(&c, g, sprites, rt);

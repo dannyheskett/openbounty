@@ -1947,24 +1947,27 @@ present) lives in `src/combat_loop.c`; the battlefield renderer is
 
 - **REQ-398.** **Beat order of a blow (modern only).** `combat_hit_unit`
   (`engine/combat.c`) deals the damage, sets the target's `hit_flash = 3` and
-  bumps `attack_seq` in one call; the shell only sees the bump on the next
-  frame. So the shell holds the blow's effect back until the attacker's strip
-  has played (`src/combat_loop.c`, `src/combat_render.c`):
+  bumps `attack_seq` in one call, so the engine's numbers change before the
+  swing has been drawn. The shell stages what the player SEES
+  (`src/combat_loop.c`, `src/combat_render.c`); every step is a length of
+  time, not a count of ticks, so every troop swings in the same time:
 
-  1. The strip plays from frame 0, one frame per 150 ms anim tick, and nothing
-     else happens while it does.
-  2. While it plays, the damage burst is **not drawn** and `hit_flash` is
-     **not decayed**, and the blow's settlement -- `combat_compact`, the
-     dead-side tests, the advance to the next unit -- is deferred.
-  3. When the strip ends, the blow settles: the killed stacks leave the field
-     and the burst is drawn for its three ticks (~450 ms).
-  4. After the fight's last swing the field is held ~0.75 s before the victory
-     or defeat presentation, so the ending does not cut in over the killing
-     blow.
+  1. **0 ms** -- the attacker's strip starts. The target still shows its
+     pre-blow count (`turn_count`) and no splat.
+  2. **The strip's last frame** -- the blow lands: the count drops and the
+     splat appears. The whole swing is 360 ms whatever its frame count
+     (`ATTACK_STRIP_S`: 90 ms a frame at four frames, 60 ms at six).
+  3. **+300 ms** -- the splat is done (`SPLAT_TICK_S` x 3, its own clock, so
+     idle troops keep their 150 ms cycle). A stack the blow killed stays on
+     the field under its splat, without a badge, until now; then it leaves
+     and the fight moves on.
+  4. **End of a fight** -- after the killing blow's splat, the field is held
+     0.5 s (`FIGHT_END_HOLD`) before victory or defeat, so the last blow and
+     the emptied field are seen.
 
-  Measured on video at 30 fps (2026-09-20, Rome, a tirones blow): strip frames
-  at t = 3.83 / 4.00 / 4.17 s confined to the attacker's cell, the burst from
-  t = 4.33 s to 4.77 s, the field settling at 4.80 s.
+  About 0.6 s a blow and 1.1 s from the last swing to the ending, where the
+  previous staging took 1.05 s a blow (1.35 s for a six-frame troop) and
+  1.8 s, and dropped the count before the swing.
 
   Legacy is unaffected and keeps King's Bounty's timing: `attack_anim_start`
   returns early when not modern, so no strip ever plays, the burst is drawn on
