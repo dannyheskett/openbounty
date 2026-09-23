@@ -11,7 +11,7 @@
 //   draws; the registry is cleared every frame, so a region lives exactly
 //   as long as the screen that wants it. A tap inside injects the key.
 //
-//   Chrome -- on-screen buttons (action bar, ESC, digit pad, keyboard)
+//   Chrome -- on-screen buttons (combat bar, ESC, digit pad, keyboard)
 //   drawn AFTER the game's blit, in window pixels, over the letterbox
 //   margins. Screens request chrome per frame; it renders only once a real
 //   touch has been seen (input_touch_active), so keyboard/mouse desktop
@@ -77,7 +77,6 @@ bool touch_tapped_cell(int grid_id, int *cx, int *cy);
 
 // On-screen chrome, requested per frame by the active screen.
 enum {
-    TOUCH_CHROME_ADVENTURE = 1 << 0,   // adventure action bar
     TOUCH_CHROME_COMBAT    = 1 << 1,   // combat action bar
     TOUCH_CHROME_BACK      = 1 << 2,   // ESC button, top-right
     TOUCH_CHROME_CONFIRM   = 1 << 3,   // Enter button, next to ESC

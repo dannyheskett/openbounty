@@ -534,15 +534,6 @@ static void chrome_prompt_bar(void) {
 void touch_draw_chrome(void) {
     if ((!s_chrome && !s_prompt_bar) || !input_touch_active()) return;
 
-    if (s_chrome & TOUCH_CHROME_ADVENTURE) {
-        static const Button btns[] = {
-            { "Srch", KEY_S }, { "Cast", KEY_U }, { "Wait", KEY_W },
-            { "Fly",  KEY_F }, { "Land", KEY_L }, { "Army", KEY_A },
-            { "Hero", KEY_V }, { "Info", KEY_I }, { "Map",  KEY_M },
-            { "Puzl", KEY_P }, { "Ctrl", KEY_C }, { "Save", KEY_Q },
-        };
-        chrome_bar(btns, (int)(sizeof btns / sizeof btns[0]));
-    }
     if (s_chrome & TOUCH_CHROME_COMBAT) {
         static const Button btns[] = {
             { "Wait", KEY_SPACE }, { "Pass", KEY_KP_5 },
