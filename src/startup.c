@@ -645,7 +645,11 @@ static bool run_class_select(const Resources *res,
                     enter = false;
                     go = false;
                 }
-                if (!go) enter = false;
+                // A tap on Continue IS the confirmation. The accept below
+                // tested `enter` alone, so on a touch screen Continue set
+                // `go` and nothing read it: the picker could be reached, and
+                // never left.
+                enter = go;
             }
             if (enter && class_cursor >= 0) {
                 const ClassDef *c = class_by_index(class_cursor);
