@@ -2530,21 +2530,42 @@ golden-digest regression tests have pinned the formulas.
   over has gone to the map viewport, in whole tiles, an odd count so the hero
   keeps the centre cell (`layout_grow_native`, `src/layout.c`).
 
-  Only world exploration has grown. `present_allow_growth` has been off by
-  default and set for one frame by the world frame alone
-  (`shell_present_frame`, `src/shell_frame.c`, and the main loop's draw), so
-  a town, a castle, the battlefield, the title and every dialog have refitted
-  to the declared buffer and been letterboxed: their layouts are drawn for
-  that size and a wider buffer would leave them adrift in it. Nothing the
-  pack sized has ever changed -- the chrome bands, the sidebar and its gap,
-  the status and bar heights, every panel -- they have re-centred, and that
-  is all.
+  Only the map has grown. Nothing the pack sized has ever changed -- the
+  chrome bands, the sidebar and its gap, the status and bar heights, every
+  panel -- they have re-centred, and that is all.
+
+  A screen drawn for the declared buffer has therefore been a **modal** on a
+  surface bigger than it: `uk_page` (`src/modern/uikit.c`) has dimmed the
+  whole buffer, kept the page at its declared size and drawn the ring a panel
+  has. With no spare room the page has filled the buffer and nothing has
+  shown around it, which is the desktop window at its opening size. The
+  battlefield has kept the buffer the world had rather than refitting to the
+  declared one, so no fight has snapped the screen a step smaller; it has
+  centred on the screen it is given and filled the width either side with its
+  own darkened ground. The title, name entry and the end cartoon have kept
+  letterboxing: they have no world behind them.
+
+  Spare width has also paid for the **left rail** (REQ-533).
 
   The desktop window has opened at the declared buffer times the largest
   whole scale the monitor can show, so it has always been an exact multiple
   (`src/main.c`). Mobile and the web canvas have taken whatever surface they
   are given. Legacy mode has kept its fixed 320x200, auto-fit with the 2x
   floor.
+
+- **REQ-533.** **The left rail has been five one-tile icons down the edge of
+  the map**, mirroring the HUD sidebar on the other side: Menu, Map, Army,
+  Search and Cast, each firing the action its key fires
+  (`src/modern/rail.c`, `shell_dispatch_action`).
+
+  It has been a test of the surface and never of the device or the input.
+  `layout_grow_native` has reserved a tile and the sidebar's gap for it only
+  where the width left over has still held the tile count the pack declared,
+  so the declared buffer has had no rail, a maximised window and a phone have
+  had one, and the map has lost no column it would otherwise have kept -- the
+  count stays odd, so the column the rail takes is one the viewport was
+  discarding. A page of its own has owned every tap while it is open: the
+  rail has registered no region then.
 
 - **REQ-530.** **Touch controls have been sized in physical units.** Every
   on-screen control has sized itself from `touch_unit()` (`src/touch.c`): 11%

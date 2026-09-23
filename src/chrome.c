@@ -130,8 +130,13 @@ static void draw_lattice_chrome_ex(bool map_rail) {
         lattice_band_h(CL_STATUS_X, CL_BAR_Y, CL_STATUS_W, CL_BAR_H);
     else
         lattice_fill(CL_STATUS_X, CL_BAR_Y, CL_STATUS_W, CL_BAR_H);
-    if (map_rail && CL_SIDEBAR_GAP > 0)   // the rail between map and HUD; not over combat
+    if (map_rail && CL_SIDEBAR_GAP > 0) { // the rail between map and HUD; not over combat
         lattice_band_v(CL_MAP_X + CL_MAP_W, CL_MAP_Y, CL_SIDEBAR_GAP, CL_MAP_H);
+        // ...and its mirror on the other side, so the left rail's column is
+        // bounded exactly as the HUD's is.
+        if (CL_RAIL_W > 0)
+            lattice_band_v(CL_RAIL_X + CL_RAIL_W, CL_RAIL_Y, CL_SIDEBAR_GAP, CL_RAIL_H);
+    }
 }
 
 static Color status_bg_for_difficulty(Difficulty d) {

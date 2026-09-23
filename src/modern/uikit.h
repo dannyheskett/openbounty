@@ -39,6 +39,11 @@ int   uk_line_h(void);  // a text line's pitch
 // A framed panel: the fill and the lattice ring outside the rect.
 void uk_panel(int x, int y, int w, int h);
 // The fill alone over the full-screen rect (the chrome frames it).
+// A full-screen page. `uk_page_is_modal` is true when the buffer is bigger
+// than the screen the pack declared; the page then draws as a modal over the
+// dimmed world, with a ring around it.
+bool uk_page_is_modal(void);
+void uk_page(ML_Rect r);
 void uk_sheet(void);
 // The title strip at (x, y, w): `left` yellow, `right` at the right edge.
 // Returns the y under its band.

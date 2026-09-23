@@ -28,13 +28,21 @@ centre cell (`layout_grow_native`, `src/layout.c`). The chrome bands, the
 sidebar and its gap, the status and bar heights and every panel have kept the
 size the pack declared and re-centred.
 
-Only the world map has grown. `present_allow_growth` has been off by default
-and set for one frame by the world frame alone (`shell_present_frame` in
-`src/shell_frame.c`, and the main loop's draw). A town, a castle, the
-battlefield, the title and every dialog have refitted to the declared buffer
-and been letterboxed. Panels that sit in the map pane have laid out against
+Only the map has grown. Panels that sit in the map pane have laid out against
 `CL_PANE_BASE_*` (`src/layout.h`), a clamp that has pinned a grown pane back
 to its declared size, so a panel has kept the exact size it was drawn for.
+
+A page drawn for the declared buffer has been a modal on a bigger surface:
+`uk_page` (`src/modern/uikit.c`) has dimmed the buffer behind it and given it
+a ring. With no spare room -- the desktop window at its opening size -- the
+page has filled the buffer exactly as before. The battlefield has kept the
+buffer the world had, so a fight has not snapped the screen smaller; the title,
+name entry and the end cartoon have letterboxed, having no world behind them.
+
+Spare width has paid for the left rail: one tile and the sidebar's gap,
+reserved by `layout_grow_native` only where the tiles left over have still met
+the count the pack declared. The declared buffer has had no rail; a phone and
+a maximised window have had one, out of the column an odd tile count discards.
 
 On a touch session the menu band has grown to a touch unit, but only out of
 the slack the whole tiles leave: the tile count has been odd, so taking a row

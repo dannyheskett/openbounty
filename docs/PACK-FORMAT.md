@@ -171,6 +171,20 @@ The `sprites` block has pointed at PNG files. Each entry has been either:
 - A single path (`"path": "art/foo.png"`).
 - A path + frame count for animated sprites (`{"path": "...", "frames": 4}`).
 
+### 4.0a The left rail
+
+`sprites.rail` has named the five tiles of the left rail (REQ-533), each one
+map tile square and drawn in the HUD panels' style, because the shell has
+drawn the frame around them:
+
+```json
+"rail": { "menu": "art/ui/rail_menu.png", "map": "art/ui/rail_map.png",
+          "army": "art/ui/rail_army.png", "search": "art/ui/rail_search.png",
+          "cast": "art/ui/rail_cast.png" }
+```
+
+A pack that has named none has simply had no rail.
+
 ### 4.1 Animations
 
 An animation has been a JSON array of frame paths, and **the length of that

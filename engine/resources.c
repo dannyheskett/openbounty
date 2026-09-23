@@ -1220,6 +1220,28 @@ static void parse_sprites(Resources *res, cJSON *obj) {
                  sizeof(res->sprites.hud_bar_strip),
                  json_str(hud, "bar_strip", ""));
     }
+    cJSON *rail = cJSON_GetObjectItem(obj, "rail");
+    if (cJSON_IsObject(rail)) {
+        copy_str(res->sprites.rail_menu,   sizeof(res->sprites.rail_menu),
+                 json_str(rail, "menu", ""));
+        copy_str(res->sprites.rail_map,    sizeof(res->sprites.rail_map),
+                 json_str(rail, "map", ""));
+        copy_str(res->sprites.rail_army,   sizeof(res->sprites.rail_army),
+                 json_str(rail, "army", ""));
+        copy_str(res->sprites.rail_search, sizeof(res->sprites.rail_search),
+                 json_str(rail, "search", ""));
+        copy_str(res->sprites.rail_cast,   sizeof(res->sprites.rail_cast),
+                 json_str(rail, "cast", ""));
+    }
+    cJSON *cpan = cJSON_GetObjectItem(obj, "combat_panel");
+    if (cJSON_IsObject(cpan)) {
+        copy_str(res->sprites.combat_shoot, sizeof(res->sprites.combat_shoot),
+                 json_str(cpan, "shoot", ""));
+        copy_str(res->sprites.combat_wait,  sizeof(res->sprites.combat_wait),
+                 json_str(cpan, "wait", ""));
+        copy_str(res->sprites.combat_fly,   sizeof(res->sprites.combat_fly),
+                 json_str(cpan, "fly", ""));
+    }
 }
 
 // ---- Audio (background music tracks) -------------------------------------
@@ -3308,6 +3330,14 @@ int resources_art_manifest(const Resources *res, ResArtList *out) {
         art_add(out, cap, &n, res->sprites.hud_magic_animation[i]);
     art_add(out, cap, &n, res->sprites.hud_puzzle_grid);
     art_add(out, cap, &n, res->sprites.hud_gold_purse);
+    art_add(out, cap, &n, res->sprites.rail_menu);
+    art_add(out, cap, &n, res->sprites.rail_map);
+    art_add(out, cap, &n, res->sprites.rail_army);
+    art_add(out, cap, &n, res->sprites.rail_search);
+    art_add(out, cap, &n, res->sprites.rail_cast);
+    art_add(out, cap, &n, res->sprites.combat_shoot);
+    art_add(out, cap, &n, res->sprites.combat_wait);
+    art_add(out, cap, &n, res->sprites.combat_fly);
     art_add(out, cap, &n, res->sprites.hud_bar_strip);
     art_add(out, cap, &n, res->sprites.chrome_overworld);
     art_add(out, cap, &n, res->sprites.splash_logo);

@@ -1,0 +1,17 @@
+{
+  "id": "rail_army",
+  "prompt": "a red crested Roman legionary helmet beside a tall red oval shield on a grey flagstone shelf, warm lamplight, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering",
+  "style": "rd_pro__default",
+  "width": 96,
+  "height": 96,
+  "seed": 7903,
+  "bypass_prompt_expansion": true,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/ui/rail_army.png",
+  "_note": "Touch rail tile, the HUD sidebar panel route: opaque card, rd_pro__default, 96x96, no references, no lettering; the shell draws the frame."
+}

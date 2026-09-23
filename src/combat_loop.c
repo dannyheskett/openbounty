@@ -322,19 +322,13 @@ static void combat_menu_page(const Combat *c, const Game *g, int id, GmPage *p) 
         bool magic = hero && hero->stats.knows_magic;
         bool spell_left = c->spells_this_round < 1;
         p->title = ui->gm_unit;
-        // A shooter's menu opens on Shoot: it is what you came to the menu
-        // for, and having Wait above it put the one thing you never want
-        // under the cursor. The order follows the troop's ranged ammo, not
-        // the shots left this fight, so it does not rearrange itself mid
-        // battle as the quiver empties.
-        bool shooter = t && t->ranged_ammo > 0;
-        if (shooter)
-            ROW(ui->gm_shoot, !shots ? bn->gmr_no_shots : close ? bn->gmr_adjacent : bn->gmd_shoot,
-                "S", KEY_S, shots && !close);
+        // One order, always: Shoot, Wait, Fly, Cast. The rows grey and light
+        // with what the unit can do, but they never move -- a command has to
+        // be in the same place every turn, on the menu and on the panel
+        // beside the field alike.
+        ROW(ui->gm_shoot, !shots ? bn->gmr_no_shots : close ? bn->gmr_adjacent : bn->gmd_shoot,
+            "S", KEY_S, shots && !close);
         ROW(ui->gm_wait, bn->gmd_wait, "", KEY_SPACE, true);
-        if (!shooter)
-            ROW(ui->gm_shoot, !shots ? bn->gmr_no_shots : close ? bn->gmr_adjacent : bn->gmd_shoot,
-                "S", KEY_S, shots && !close);
         ROW(ui->gm_fly, fly ? bn->gmd_unit_fly : bn->gmr_cannot_fly, "F", KEY_F, fly);
         ROW(ui->gm_cast, !magic ? bn->gmr_no_magic : !spell_left ? bn->gmr_one_spell : bn->gmd_combat_cast,
             "U", GM_ACT_PAGE + CM_CAST, magic && spell_left);
@@ -406,6 +400,97 @@ static void combat_action_menu_draw(const Combat *c, const Game *g) {
 
 
 
+
+// ---- the combat command panel ------------------------------------------------
+//
+// A column of one-tile commands down the left of the field, in the space a
+// wide surface leaves: the same test the left rail uses -- room, not device.
+// Its rows ARE the menu's Unit page, so a command lights and dims exactly as
+// the menu says it does, and a tap fires the key the menu row fires.
+
+// The column's rect, or false when the fight has no room for it. It hangs on
+// the field's left edge, inside the field's own ring, so the commands sit
+// against the battlefield rather than adrift by the frame. COMBAT_RING is the
+// ring combat_render_frame draws around the field.
+#define COMBAT_RING 4
+static bool combat_panel_rect(int *x, int *y, int *w, int *h) {
+    if (!CL_IS_MODERN) return false;
+    int need = CL_TILE_W + 2 * COMBAT_RING;
+    if (CL_COMBAT_X - COMBAT_RING - CL_FRAME_LEFT_W < need) return false;
+    if (x) *x = CL_COMBAT_X - COMBAT_RING - CL_TILE_W;
+    if (y) *y = CL_COMBAT_Y;
+    if (w) *w = CL_TILE_W;
+    if (h) *h = COMBAT_H * CL_COMBAT_CELL_H;
+    return true;
+}
+
+// The art for a row, by the key the row fires. Cast reuses the rail's lituus.
+static Texture2D combat_panel_art(const Sprites *s, int key) {
+    if (!s) { Texture2D none = { 0 }; return none; }
+    if (key == KEY_S)     return s->combat_shoot;
+    if (key == KEY_SPACE) return s->combat_wait;
+    if (key == KEY_F)     return s->combat_fly;
+    if (key == GM_ACT_PAGE + CM_CAST) return s->rail_cast;
+    Texture2D none = { 0 };
+    return none;
+}
+
+// Draw it, and register a tap per enabled row unless something else owns the
+// screen. `live` is false while a menu, prompt, dialog, picker or cast phase
+// is up: the panel still draws, greyed, but takes no taps.
+static void combat_panel_draw(const Combat *c, const Game *g,
+                              const Sprites *sprites, bool live) {
+    int x, y, w, h;
+    if (!combat_panel_rect(&x, &y, &w, &h)) return;
+    GmPage p;
+    combat_menu_page(c, g, CM_UNIT, &p);
+    int row = 0;
+    for (int i = 0; i < p.n; i++) {
+        int key = p.item[i].key;
+        Texture2D t = combat_panel_art(sprites, key);
+        if (!t.id) continue;                        // Back, and anything unmapped
+        int ry = y + row * CL_TILE_H;
+        if (ry + CL_TILE_H > y + h) break;
+        Rectangle src = { 0, 0, (float)t.width, (float)t.height };
+        Rectangle dst = { (float)x, (float)ry, (float)w, (float)CL_TILE_H };
+        gfx_texture_draw(t, src, dst, WHITE);
+        if (!p.item[i].enabled)                      // half ink: it cannot be used
+            gfx_rect(x, ry, w, CL_TILE_H, (Color){ 0, 0, 0, 150 });
+        // One rail between commands -- the container's own ring closes the
+        // outside, so a frame per tile would double every edge.
+        if (row > 0) lattice_band_h(x, ry - COMBAT_RING / 2, w, COMBAT_RING / 2);
+        if (live && p.item[i].enabled)
+            touch_region_row(x, ry, w, CL_TILE_H, TOUCH_LIST_COMBAT_PANEL, i);
+        row++;
+    }
+    // The container is the field's full height, like the HUD sidebar beside
+    // the map: the commands fill it from the top and what is left below them
+    // stays empty. Chrome on the three outside edges; the fourth is the
+    // field's own ring, which the column is hung on.
+    lattice_ring(x - COMBAT_RING, y - COMBAT_RING,
+                 w + COMBAT_RING, h + 2 * COMBAT_RING,
+                 COMBAT_RING, 0, COMBAT_RING, COMBAT_RING);
+}
+
+// The tap, resolved the way the menu resolves the same row.
+static void combat_panel_tap(const Combat *c, const Game *g) {
+    int x;
+    if (!combat_panel_rect(&x, NULL, NULL, NULL)) return;
+    int row = touch_tapped_row(TOUCH_LIST_COMBAT_PANEL);
+    if (row < 0) return;
+    GmPage p;
+    combat_menu_page(c, g, CM_UNIT, &p);
+    if (row >= p.n || !p.item[row].enabled) return;
+    int key = p.item[row].key;
+    if (key == GM_ACT_PAGE + CM_CAST) {             // the spells are a menu page
+        combat_menu_open();
+        s_act_page[2] = CM_CAST; s_act_cursor[2] = 0;
+        s_act_depth = 3;
+        return;
+    }
+    if (key) input_host_inject_key_next_frame(key);
+}
+
 static int combat_player_action_full(Combat *c, const Game *g,
                                      const Sprites *sprites,
                                      RenderTexture2D *target) {
@@ -414,6 +499,7 @@ static int combat_player_action_full(Combat *c, const Game *g,
     // tap, one step, like the adventure map). Legacy: the bar carries the
     // verbs. Modern: a tap on the active unit opens the action menu.
     if (!CL_IS_MODERN) touch_request(TOUCH_CHROME_COMBAT);
+    combat_panel_tap(c, g);
     if (CL_IS_MODERN && s_act_open) {
         int d = s_act_depth - 1;
         GmPage p;
@@ -548,12 +634,27 @@ static int combat_player_action_full(Combat *c, const Game *g,
 static void combat_present(const Combat *c, const Game *g,
                            const Sprites *sprites,
                            RenderTexture2D *target) {
+    // The battlefield keeps whatever buffer the world had: refitting back to
+    // the declared size here would snap the whole screen a step smaller as a
+    // fight starts. The field centres on the screen it is given
+    // (CL_COMBAT_X) and modern fills the width either side of it with the
+    // darkened ground, so a grown buffer costs nothing.
+    present_allow_growth(true);
     present_refit(target);
+    present_allow_growth(false);
     present_begin(target);
     ml_set_area(ML_AREA_FULL);     // the field is full width: panels centre on it
     ml_set_field((ML_Rect){ CL_COMBAT_X, CL_COMBAT_Y, CL_COMBAT_W, CL_COMBAT_H });
     if (CL_IS_MODERN) modern_overlay_set_sprites(sprites);
     combat_render_frame(c, g, sprites);
+    // The command panel beside the field: it takes taps only when nothing
+    // else owns the screen, and draws greyed when the unit cannot act.
+    {
+        bool live = CL_IS_MODERN && !s_act_open && views_active() == VIEW_NONE &&
+                    !prompt_is_active() && !dialog_is_active() &&
+                    !c->picker_active && c->cast_phase == COMBAT_CAST_NONE;
+        combat_panel_draw(c, g, sprites, live);
+    }
     // Open view (Options / Controls / Army / Character) draws over the
     // battlefield, on top of the still-visible field. map/fog are NULL
     // because the views combat can open never read them (WORLDMAP isn't

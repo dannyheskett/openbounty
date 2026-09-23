@@ -16,7 +16,7 @@
 		"tiles_w":	7,
 		"tiles_h":	5,
 		"ui_scale":	1,
-		"dim":	35,
+		"dim":	22,
 		"native_w":	800,
 		"native_h":	532 },
 	"world":	{
@@ -4602,6 +4602,18 @@
 			"magic_animation":	["art/ui/hud_magic_00.png", "art/ui/hud_magic_01.png", "art/ui/hud_magic_02.png", "art/ui/hud_magic_03.png"],
 			"puzzle_grid":	"art/ui/hud_puzzle_grid.png",
 			"gold_purse":	"art/ui/hud_gold_purse.png"
+		},
+		"rail":	{
+			"menu":	"art/ui/rail_menu.png",
+			"map":	"art/ui/rail_map.png",
+			"army":	"art/ui/rail_army.png",
+			"search":	"art/ui/rail_search.png",
+			"cast":	"art/ui/rail_cast.png"
+		},
+		"combat_panel":	{
+			"shoot":	"art/ui/combat_shoot.png",
+			"wait":	"art/ui/combat_wait.png",
+			"fly":	"art/ui/combat_fly.png"
 		}
 	},
 	"ending":	{

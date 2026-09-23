@@ -247,6 +247,14 @@ void sprites_load(Sprites *s, const Resources *res) {
     s->hud_magic_silhouette    = load_rel(res->sprites.hud_magic_silhouette);
     s->hud_puzzle_grid         = load_rel(res->sprites.hud_puzzle_grid);
     s->hud_gold_purse          = load_rel(res->sprites.hud_gold_purse);
+    s->rail_menu               = load_rel(res->sprites.rail_menu);
+    s->rail_map                = load_rel(res->sprites.rail_map);
+    s->rail_army               = load_rel(res->sprites.rail_army);
+    s->rail_search             = load_rel(res->sprites.rail_search);
+    s->rail_cast               = load_rel(res->sprites.rail_cast);
+    s->combat_shoot            = load_rel(res->sprites.combat_shoot);
+    s->combat_wait             = load_rel(res->sprites.combat_wait);
+    s->combat_fly              = load_rel(res->sprites.combat_fly);
     s->hud_siege_anim = load_strip((const char (*)[RES_PATH_LEN])res->sprites.hud_siege_animation,
                                    res->sprites.hud_siege_animation_count);
     s->hud_siege_anim_frames = s->hud_siege_anim ? res->sprites.hud_siege_animation_count : 0;
@@ -378,6 +386,14 @@ void sprites_unload(Sprites *s) {
     gfx_texture_free(s->hud_magic_silhouette);
     gfx_texture_free(s->hud_puzzle_grid);
     gfx_texture_free(s->hud_gold_purse);
+    gfx_texture_free(s->rail_menu);
+    gfx_texture_free(s->rail_map);
+    gfx_texture_free(s->rail_army);
+    gfx_texture_free(s->rail_search);
+    gfx_texture_free(s->rail_cast);
+    gfx_texture_free(s->combat_shoot);
+    gfx_texture_free(s->combat_wait);
+    gfx_texture_free(s->combat_fly);
     unload_strip(&s->hud_siege_anim, &s->hud_siege_anim_frames);
     unload_strip(&s->hud_magic_anim, &s->hud_magic_anim_frames);
     gfx_texture_free(s->hud_bar_strip);

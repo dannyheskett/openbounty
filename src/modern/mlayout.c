@@ -31,20 +31,28 @@ bool ml_field(ML_Rect *out) {
 
 ML_Rect ml_area(void) {
     if (s_area == ML_AREA_FULL) return ml_full();
-    // The DECLARED pane and screen, never the grown ones: a panel keeps the
-    // size it was drawn for and centres (layout.h, REQ-528).
+    // The DECLARED screen, never the grown one: a panel over a screen keeps
+    // the size it was drawn for and centres (layout.h, REQ-528).
     if (s_area == ML_AREA_SCREEN)
         return (ML_Rect){ CL_SCREEN_BASE_X, CL_SCREEN_BASE_Y,
                           CL_SCREEN_BASE_W, CL_SCREEN_BASE_H };
-    return (ML_Rect){ CL_PANE_BASE_X, CL_PANE_BASE_Y,
-                      CL_PANE_BASE_W, CL_PANE_BASE_H };
+    // A panel over the MAP anchors on the pane the player can see, not on the
+    // declared rect centred inside it: the bottom box belongs on the foot of
+    // the map as it always has, and a centred panel belongs in the middle of
+    // it. The panels keep their declared sizes -- each clamps its own width
+    // and height to what it was drawn for (ml_small below, uk_inlay, ml_large).
+    return (ML_Rect){ CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H };
 }
 
 ML_Rect ml_small(void) {
     int S = ml_space();
     ML_Rect a = ml_area();
     int h = ML_SMALL_LINES * BFONT_GLYPH_H + 2 * ML_PAD;
-    ML_Rect r = { a.x + S, a.y + a.h - S - h, a.w - 2 * S, h };
+    // Never wider than the pane the pack declared, whatever the map has grown
+    // to, and centred on the pane it sits on.
+    int w = a.w - 2 * S;
+    if (w > CL_PANE_BASE_W - 2 * S) w = CL_PANE_BASE_W - 2 * S;
+    ML_Rect r = { a.x + (a.w - w) / 2, a.y + a.h - S - h, w, h };
     return r;
 }
 

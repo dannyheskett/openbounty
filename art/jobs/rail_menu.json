@@ -1,0 +1,17 @@
+{
+  "id": "rail_menu",
+  "prompt": "a bronze stylus lying on an open wooden wax writing tablet on a grey flagstone shelf, warm lamplight, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 8201,
+  "bypass_prompt_expansion": true,
+  "raw_only": false,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/ui/rail_menu.png",
+  "_note": "Rail / combat command tile: generated at 128 because rd_pro__default paints a frame at 96 and 104 whatever the prompt says (ART-PIPELINE, villain portraits), then downscaled to the pack tile by Retro Diffusion's k_centroid tool; the shell draws the frame."
+}

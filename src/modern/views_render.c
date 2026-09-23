@@ -82,7 +82,7 @@ static void draw_character(const Game *g, const Sprites *s) {
     const ResUI *ui = &g->res->ui;
     const ML_Rect r = ml_full();
     const int pad = UK_INSET, BAND = UK_BAND, THIN = 2;
-    const int line = GH + 2, head = GH + 6;
+    const int line = GH + 2, head = GH + 2;
     const int tile = CL_TILE_W;
     uk_sheet();
     char buf[96], nb[32], mb[32];
@@ -139,7 +139,7 @@ static void draw_character(const Game *g, const Sprites *s) {
     lattice_band_h(r.x, y, r.w, THIN);
     y += THIN;
     int ax = r.x + (r.w - 8 * tile) / 2;
-    bfont_draw(ui->cv_sacred, ax, y + 3, PAL_CLR(YELLOW));
+    bfont_draw(ui->cv_sacred, ax, y + 1, PAL_CLR(YELLOW));
     y += head;
     for (int i = 0; i < 8; i++)
         cv_icon(i < s->view_icon_count ? s->view_icon[i] : (Texture2D){ 0 }, i < total_a && g->artifacts.found[i], ax + i * tile, y, tile);
@@ -148,12 +148,12 @@ static void draw_character(const Game *g, const Sprites *s) {
     // The continents, and beside them the pack's honours.
     lattice_band_h(r.x, y, r.w, THIN);
     y += THIN;
-    bfont_draw(ui->cv_continents, ax, y + 3, PAL_CLR(YELLOW));
+    bfont_draw(ui->cv_continents, ax, y + 1, PAL_CLR(YELLOW));
     int nz = g->res->zone_count < 4 ? g->res->zone_count : 4;
     const ResEconomy *ec = &g->res->economy;
     bool honours = ec->audiences || ec->rites_per_zone;
     int hx = ax + 4 * tile + BAND + pad;
-    if (honours) bfont_draw(ui->cv_honours, hx, y + 3, PAL_CLR(YELLOW));
+    if (honours) bfont_draw(ui->cv_honours, hx, y + 1, PAL_CLR(YELLOW));
     y += head;
     for (int i = 0; i < 4; i++)
         cv_icon(i < nz && s->view_icon_extra_base + i < s->view_icon_count

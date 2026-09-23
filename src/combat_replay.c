@@ -15,6 +15,7 @@
 // board the resolution used.
 
 #include "combat_replay.h"
+#include "layout.h"
 
 #include "gfx.h"
 #include "combat.h"
@@ -67,7 +68,8 @@ static bool replay_build_target(Game *g, CombatMode *out_mode,
         out_tgt->name = "Hostile band";
         out_tgt->seed_key = pending_foe_id;
         if (foe) { out_tgt->garrison = foe->garrison;
-                   out_tgt->garrison_slots = GAME_ARMY_SLOTS; }
+                   out_tgt->garrison_slots = GAME_ARMY_SLOTS;
+                   out_tgt->full_band = CL_IS_MODERN && foe->is_static; }
         return true;
     }
     return false;
