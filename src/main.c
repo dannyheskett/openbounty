@@ -1681,12 +1681,11 @@ title:;
             //
             // Touch: the hero is always the centre tile of the viewport, so
             // a tap picks its direction relative to centre -- one tap, one
-            // injected direction key, one step. The action bar carries the
-            // letter-key verbs.
+            // injected direction key, one step. The verbs are the left rail
+            // and the game menu; there is no action bar.
             touch_region_map(CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H,
                              CL_TILE_W, CL_TILE_H,
                              CL_MAP_TILES_W / 2, CL_MAP_TILES_H / 2, 0);
-            touch_request(TOUCH_CHROME_ADVENTURE);
             InputState in = input_poll();
             // The rail's tap, if any, is the frame's action: it fires the
             // same case the key would (src/modern/rail.c).
