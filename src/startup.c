@@ -478,13 +478,13 @@ static void draw_title_menu(const Sprites *sprites, const char **labels, int cou
                  touch_list, uk_ink());
 }
 
-// The class picker's two confirm rows. Hardcoded like the other shell-owned
-// touch labels (the letter selector's DEL / SPC / OK): they belong to the
-// shell's flow, not to a pack's content.
+// The class picker's confirm row. Hardcoded like the other shell-owned touch
+// labels (the letter selector's DEL / SPC / OK): it belongs to the shell's
+// flow, not to a pack's content. One row: there is nothing to cancel to.
 static bool class_confirm_row(void *ctx, int i, char *label, char *right, int cap) {
-    (void)ctx;
+    (void)ctx; (void)i;
     right[0] = '\0';
-    snprintf(label, (size_t)cap, "%s", i == 0 ? "Continue" : "Cancel");
+    snprintf(label, (size_t)cap, "Continue");
     return true;
 }
 
@@ -587,7 +587,6 @@ static bool run_class_select(const Resources *res,
     // Modern: the carousel starts on the whole painting with no one picked;
     // Left/Right step through the figures, Enter picks.
     int class_cursor = CL_IS_MODERN ? -1 : 0;
-    int confirm_row = 0;        // 0 Continue, 1 Cancel, once a class is picked
     double opened = frame_host_time();   // modern: nothing picked after 2 s -> the first class
 
     while (!frame_host_should_close()) {
@@ -627,29 +626,13 @@ static bool run_class_select(const Resources *res,
             // once, so the choice was never on screen; and the keyboard used
             // to confirm on Enter with no way back.
             int tapped = touch_tapped_row(TOUCH_LIST_CLASS);
-            if (tapped >= 0 && tapped < n) {
-                class_cursor = tapped;
-                confirm_row = 0;
-            }
+            if (tapped >= 0 && tapped < n) class_cursor = tapped;
             if (class_cursor >= 0) {
-                if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_KP_8) ||
-                    input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2))
-                    confirm_row = !confirm_row;
+                // A tap on Continue IS the confirmation; Enter is the same
+                // row from a keyboard. (The accept below tested `enter`
+                // alone, so the tap set nothing anyone read.)
                 int crow = touch_tapped_row(TOUCH_LIST_CLASS_CONFIRM);
-                if (crow >= 0) confirm_row = crow;
-                bool go = (crow == 0) || (enter && confirm_row == 0);
-                bool back = (crow == 1) || (enter && confirm_row == 1);
-                if (back) {
-                    class_cursor = -1;      // the painting, nothing picked
-                    confirm_row = 0;
-                    enter = false;
-                    go = false;
-                }
-                // A tap on Continue IS the confirmation. The accept below
-                // tested `enter` alone, so on a touch screen Continue set
-                // `go` and nothing read it: the picker could be reached, and
-                // never left.
-                enter = go;
+                enter = (crow == 0) || enter;
             }
             if (enter && class_cursor >= 0) {
                 const ClassDef *c = class_by_index(class_cursor);
@@ -736,11 +719,11 @@ static bool run_class_select(const Resources *res,
             int cw = 700, tw = cw - 2 * UK_INSET;
             int lines = uk_lines(desc, tw);
             int chh = 2 * UK_INSET + (1 + lines) * uk_line_h();
-            // Two rows under the description, and they are the ONLY way on:
-            // Continue takes the class, Cancel puts the painting back. The
-            // same two rows whatever the input -- a tap, an arrow key or a
-            // pad all land on them, so no one route confirms invisibly.
-            chh += ML_ROW_RULE + 2 * ml_row_h();
+            // One row under the description, and it is the only way on:
+            // Continue takes the class. The same row whatever the input --
+            // a tap, a key or a pad lands on it, so no route confirms
+            // invisibly. Picking another figure is the way to change class.
+            chh += ML_ROW_RULE + ml_row_h();
             int cx = (CL_SCREEN_W - cw) / 2, cy = CL_SCREEN_H - chh - 16;
             panel(cx, cy, cw, chh);
             bfont_draw(pc ? pc->name : "", cx + UK_INSET, cy + UK_INSET, PAL_CLR(YELLOW));
@@ -749,9 +732,9 @@ static bool run_class_select(const Resources *res,
             int ry = cy + 2 * UK_INSET + (1 + lines) * uk_line_h();
             lattice_band_h(cx, ry, cw, ML_ROW_RULE);
             ry += ML_ROW_RULE;
-            ml_list_draw(cx, ry, cw, ml_list_height(2), 2, confirm_row,
+            ml_list_draw(cx, ry, cw, ml_list_height(1), 1, 0,
                          class_confirm_row, NULL, TOUCH_LIST_CLASS_CONFIRM,
-                         uk_ink());   // cursor: 0 Continue, 1 Cancel
+                         uk_ink());
         }
 
         // Touch: the picker art shows the classes side by side, one column
