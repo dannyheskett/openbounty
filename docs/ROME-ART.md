@@ -3,7 +3,7 @@
 **Generated** by `tools/romeart.py prompts` from `art/jobs/*.json`. Do not
 edit by hand: change the job file and run the tool again.
 
-365 jobs. A job with a **Pack path** has produced that file in the pack; a
+363 jobs. A job with a **Pack path** has produced that file in the pack; a
 job without one has produced a step towards it (the still an animation starts
 from). The routes themselves -- which engine, which settings, and why -- have
 been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
@@ -1879,13 +1879,6 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **prompt:** a bronze lituus, the augur's curved staff, lying on a grey flagstone shelf with a faint pale glow around its curl, warm lamplight, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=128`, `raw_only=false`, `seed=8203`, `style=rd_pro__default`, `target=[96, 96]`, `width=128`
 
-### rail_land
-
-- **Engine:** Retro Diffusion rd_pro__default (96x96, seed 7906)
-- **Pack path:** `art/ui/rail_land.png`
-- **prompt:** a wooden gangplank running from the prow of a boat down onto a rocky brown shore, blue water below it, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `seed=7906`, `style=rd_pro__default`, `target=[96, 96]`, `width=96`
-
 ### rail_map
 
 - **Engine:** Retro Diffusion rd_pro__default (96x96, seed 7902)
@@ -1899,13 +1892,6 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Pack path:** `art/ui/rail_menu.png`
 - **prompt:** a bronze stylus lying on an open wooden wax writing tablet on a grey flagstone shelf, warm lamplight, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=128`, `raw_only=false`, `seed=8201`, `style=rd_pro__default`, `target=[96, 96]`, `width=128`
-
-### rail_sail
-
-- **Engine:** Retro Diffusion rd_pro__default (96x96, seed 7905)
-- **Pack path:** `art/ui/rail_sail.png`
-- **prompt:** a small wooden Roman galley with a square cream sail on blue open water seen from the side, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `seed=7905`, `style=rd_pro__default`, `target=[96, 96]`, `width=96`
 
 ### rail_search
 

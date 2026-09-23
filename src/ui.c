@@ -7,6 +7,7 @@
 #include "lattice.h"
 #include "palette.h"
 #include "touch.h"
+#include "uitouch.h"
 #include "overlay.h"     // overlay_dialog_page_count (renderer owns the wrap)
 #include "player_io.h"   // engine player-IO message queue
 #include "ob_types.h"
@@ -34,10 +35,14 @@ void ui_blit_mirrored(Texture2D t, int x, int y, int w, int h) {
 }
 
 // ---- any-key helper --------------------------------------------------------
-bool ui_any_key_pressed(void) {
+bool ui_any_key_pressed(void) { return ui_any_key_pressed_ex(true); }
+
+bool ui_any_key_pressed_ex(bool allow_tap) {
     // Every caller means "any key advances/dismisses", so a tap anywhere
-    // counts as one. Explicit touch regions still win over this.
-    touch_region_any(KEY_ENTER);
+    // counts as one -- unless the screen is one the player chooses on, where
+    // a stray tap must not answer for them. Explicit touch regions still win
+    // over this.
+    if (allow_tap) ui_dismiss_on_tap(KEY_ENTER);
     int k = input_get_key_pressed();
     while (k != 0) {
         if (k != KEY_LEFT_SHIFT && k != KEY_RIGHT_SHIFT &&

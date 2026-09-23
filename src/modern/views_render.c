@@ -17,6 +17,7 @@
 #include "modern/uikit.h"
 #include "modern/gamemenu.h"   // GM_PAGE_W: a page is one width
 #include "touch.h"
+#include "uitouch.h"
 #include "select.h"
 #include "layout.h"
 #include "palette.h"
@@ -596,7 +597,7 @@ static void draw_worldmap_exit_hint(const Game *g) {
     const ResUI *ui = &g->res->ui;
     char txt[96];
     ml_hint_text(txt, sizeof txt, ui->hint_back, ui->key_esc, ui->pad_back);
-    touch_region(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H, KEY_ESCAPE);
+    ui_bar(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H, KEY_ESCAPE);
     bfont_draw_centered(txt,
                         CL_STATUS_X + CL_STATUS_W / 2,
                         CL_STATUS_Y + 1,

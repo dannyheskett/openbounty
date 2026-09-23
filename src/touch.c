@@ -2,6 +2,7 @@
 #include "gfx.h"
 #include "input_host.h"
 #include "present.h"
+#include "layout.h"
 #include "frame_host.h"
 #include "ob_types.h"
 #include <stddef.h>
@@ -24,6 +25,7 @@ typedef enum {
 typedef struct {
     RegionKind kind;
     int x, y, w, h;
+    bool priority;                // chrome: beats a squarely-hit world region
     int key;                      // REGION_SCREEN / REGION_WINDOW
     bool is_char;                 // REGION_WINDOW: inject as char, not key
     int tile_w, tile_h;           // REGION_MAP
@@ -71,6 +73,14 @@ void touch_region(int x, int y, int w, int h, int key) {
     Region r = { 0 };
     r.kind = REGION_SCREEN;
     r.x = x; r.y = y; r.w = w; r.h = h; r.key = key;
+    add_region(r);
+}
+
+void touch_region_priority(int x, int y, int w, int h, int key) {
+    Region r = { 0 };
+    r.kind = REGION_SCREEN;
+    r.x = x; r.y = y; r.w = w; r.h = h; r.key = key;
+    r.priority = true;
     add_region(r);
 }
 
@@ -204,6 +214,16 @@ static void resolve_tap(int wx, int wy, bool *was_map) {
     int sx, sy;
     if (!present_window_to_screen(wx, wy, &sx, &sy)) return;
 
+    // Chrome first, whatever registered before it: a band grown to a touch
+    // unit overlaps the map's top row, and the map is registered earlier in
+    // the frame. Only inside the chrome's own rect -- no extra reach.
+    for (int i = 0; i < s_region_count; i++) {
+        const Region *r = &s_regions[i];
+        if (!r->priority || !rect_has(r, sx, sy)) continue;
+        input_host_inject_key(r->key);
+        return;
+    }
+
     for (int i = 0; i < s_region_count; i++) {
         const Region *r = &s_regions[i];
         if (r->kind == REGION_WINDOW || r->kind == REGION_SCROLL || !rect_has(r, sx, sy)) continue;
@@ -335,6 +355,12 @@ bool touch_last_hit(int sx, int sy, int *list_id, int *row, int *key) {
     if (list_id) *list_id = 0;
     if (row) *row = -1;
     if (key) *key = 0;
+    for (int i = 0; i < s_last_count; i++) {          // chrome first, as resolve_tap does
+        const Region *r = &s_last[i];
+        if (!r->priority || !rect_has(r, sx, sy)) continue;
+        if (key) *key = r->key;
+        return true;
+    }
     for (int i = 0; i < s_last_count; i++) {
         const Region *r = &s_last[i];
         if (r->kind == REGION_WINDOW || r->kind == REGION_SCROLL || !rect_has(r, sx, sy)) continue;
@@ -397,6 +423,13 @@ int touch_unit(void) {
     int shortest = (w < h) ? w : h;
     int u = shortest * 11 / 100;
     return (u < 44) ? 44 : u;
+}
+
+int touch_unit_design(void) {
+    int scale = present_get_dst_scale();
+    if (scale < 1) scale = 1;
+    int u = touch_unit() / scale;
+    return u < 1 ? 1 : u;
 }
 
 static void chrome_button(int x, int y, int w, int h,
@@ -533,6 +566,13 @@ static void chrome_prompt_bar(void) {
 
 void touch_draw_chrome(void) {
     if ((!s_chrome && !s_prompt_bar) || !input_touch_active()) return;
+    // MODERN DRAWS NONE OF THIS. Every one of these is a window-pixel button
+    // whose label goes through gfx_label, which is an empty stub on iOS: the
+    // bars, the corner and the keyboard were blank boxes on the device.
+    // Modern answers a finger with the screens themselves -- the band, the
+    // rail, the rows, the letter grid -- all drawn in the buffer with the
+    // pack's own font. Legacy keeps every one: it has no such screens.
+    if (CL_IS_MODERN) return;
 
     if (s_chrome & TOUCH_CHROME_COMBAT) {
         static const Button btns[] = {

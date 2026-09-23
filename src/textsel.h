@@ -51,6 +51,12 @@ void textsel_draw(const TextSel *t, int x, int y, int cell_w, int cell_h,
 // a glyph of margin. textsel_draw clamps to it; callers should size with it.
 int  textsel_min_cell_w(void);
 
+// The cell a screen should draw: the text minimum, or a touch unit on a touch
+// session, so a letter is a real target rather than a 21 x 13 pt key. Cells
+// are tiled, so they are sized here and never inflated after the fact.
+int  textsel_cell_w(void);
+int  textsel_cell_h(void);
+
 int  textsel_w(bool numeric, int cell_w);
 int  textsel_h(bool numeric, int cell_h);
 

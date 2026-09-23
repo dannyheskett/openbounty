@@ -58,6 +58,7 @@
 #include "overlay.h"
 #include "input.h"
 #include "touch.h"
+#include "uitouch.h"
 #include "prompt.h"
 #include "startup.h"
 #include "end_cartoon.h"
@@ -1593,7 +1594,10 @@ title:;
                 } else {
                     views_dismiss();
                 }
-            } else if (ui_any_key_pressed()) {
+            } else if (ui_any_key_pressed_ex(views_closes_on_tap(views_active()))) {
+                // One rule for every page (views_closes_on_tap): a sheet or a
+                // picture goes away under a finger; a page with rows waits for
+                // a row or the band.
                 ViewKind dismissing = views_active();
                 views_dismiss();
                 // WIN HAND-OFF: dismissing the agent's win screen returns
@@ -1610,7 +1614,7 @@ title:;
             // Handle bridge direction input if waiting for it
             if (bridge_state == BRIDGE_STATE_DIRECTION) {
                 // Touch: tap the target tile; ESC chrome cancels.
-                touch_region_map(CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H,
+                ui_map(CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H,
                                  CL_TILE_W, CL_TILE_H,
                                  CL_MAP_TILES_W / 2, CL_MAP_TILES_H / 2, 0);
                 touch_request(TOUCH_CHROME_BACK);
@@ -1683,13 +1687,14 @@ title:;
             // a tap picks its direction relative to centre -- one tap, one
             // injected direction key, one step. The verbs are the left rail
             // and the game menu; there is no action bar.
-            touch_region_map(CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H,
+            ui_map(CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H,
                              CL_TILE_W, CL_TILE_H,
                              CL_MAP_TILES_W / 2, CL_MAP_TILES_H / 2, 0);
             InputState in = input_poll();
             // The rail's tap, if any, is the frame's action: it fires the
             // same case the key would (src/modern/rail.c).
             InputAction ra = rail_tapped();
+            if (ra == INPUT_ACTION_NONE) ra = hud_tapped();   // the other column
             if (ra != INPUT_ACTION_NONE) in.action = ra;
             shell_dispatch_action(&sctx, &in);
             if (in.action == INPUT_ACTION_NONE && (in.dx || in.dy)) {

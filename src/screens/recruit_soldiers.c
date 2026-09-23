@@ -18,6 +18,7 @@
 #include "gfx.h"
 #include "recruit_soldiers.h"
 #include "touch.h"
+#include "uitouch.h"
 #include "layout.h"
 #include "overlay.h"
 #include "palette.h"
@@ -262,7 +263,7 @@ bool screen_recruit_soldiers_update(Game *g) {
     // the player presses any key. Don't consume the key on the same
     // frame the popup opened.
     if (s_error_msg[0]) {
-        touch_region_any(KEY_ENTER);   // tap dismisses the error popup
+        ui_dismiss_on_tap(KEY_ENTER);  // tap dismisses the error popup
         if (s_error_just_set) {
             s_error_just_set = false;
         } else if (input_get_key_pressed() != 0) {
@@ -418,8 +419,8 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
             // Touch: rows answer to their letters (only while idle -- during
             // count entry the digit pad owns input).
             if (s_whom == 0 && !unreachable)
-                touch_region(tx, troop_ty + i * row_h,
-                             20 * BFONT_GLYPH_W, row_h, KEY_A + i);
+                ui_tile(tx, troop_ty + i * row_h,
+                        CL_PANEL_W - (tx - CL_PANEL_X), row_h, KEY_A + i);
         }
     }
 

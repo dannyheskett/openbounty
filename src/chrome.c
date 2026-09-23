@@ -9,6 +9,7 @@
 #include "lattice.h"
 #include "prompt.h"
 #include "touch.h"
+#include "uitouch.h"
 #include "modern/mlist.h"
 #include "modern/mlayout.h"
 #include <stdbool.h>
@@ -247,7 +248,7 @@ void chrome_draw(const Game *g, const Sprites *s) {
             bfont_draw_centered(hb, CL_STATUS_X + CL_STATUS_W / 2,
                                 CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0),
                                 PAL_CLR(WHITE));
-            touch_region(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H, KEY_ESCAPE);
+            ui_bar(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H, KEY_ESCAPE);
         } else if (views_wants_exit_hint() || dialog_is_active()) {
             bfont_draw_centered(ui->press_esc_to_exit,
                                 CL_STATUS_X + CL_STATUS_W / 2,
@@ -271,7 +272,7 @@ void chrome_draw(const Game *g, const Sprites *s) {
                 bfont_draw(left, CL_STATUS_X + ML_PAD, ty, PAL_CLR(WHITE));
                 bfont_draw_right(right, CL_STATUS_X + CL_STATUS_W - ML_PAD, ty, PAL_CLR(WHITE));
                 if (views_active() == VIEW_NONE && !prompt_is_active())
-                    touch_region(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H, KEY_ESCAPE);
+                    ui_bar(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H, KEY_ESCAPE);
                 return;
             }
             if (g->stats.time_stop > 0) {
@@ -304,7 +305,7 @@ void chrome_draw(const Game *g, const Sprites *s) {
             bfont_draw(buf, CL_STATUS_X + 1, CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0), PAL_CLR(WHITE));
             // Modern: a tap on the bar is Escape, which opens the game menu.
             if (CL_IS_MODERN && views_active() == VIEW_NONE && !prompt_is_active())
-                touch_region(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H, KEY_ESCAPE);
+                ui_bar(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H, KEY_ESCAPE);
         }
     }
 }

@@ -8,6 +8,7 @@
 #include "lattice.h"
 #include "select.h"
 #include "touch.h"
+#include "uitouch.h"
 #include "palette.h"
 #include "bfont.h"
 #include "resources.h"
@@ -46,13 +47,13 @@ int ml_list_draw_ex(int x, int y, int w, int h, int count, int cursor,
     // target that moves the cursor (so the list scrolls) -- registered before
     // the rows, since the first region hit wins.
     if (touch_list && count > vis)
-        touch_region_scroll(x, y, w, vis * pitch, pitch);    // drag to scroll
+        ui_scroll(x, y, w, vis * pitch, pitch);              // drag to scroll
     if (touch_list) {
         int aw = ML_PAD * 3;
         if (first > 0)
-            touch_region(x + w - aw, y, aw, rh, KEY_UP);
+            ui_button(x + w - aw, y, aw, rh, KEY_UP);
         if (first + vis < count)
-            touch_region(x + w - aw, y + (vis - 1) * pitch, aw, rh, KEY_DOWN);
+            ui_button(x + w - aw, y + (vis - 1) * pitch, aw, rh, KEY_DOWN);
     }
     for (int i = first; i < count && shown < vis; i++, shown++) {
         char label[96] = "", right[48] = "";
@@ -117,12 +118,12 @@ void ml_stepper_draw(int x, int y, int w, const char *text) {
                 gfx_triangle((Vector2){ ax - 5, (float)cy - 7 }, (Vector2){ ax - 5, (float)cy + 7 },
                              (Vector2){ ax + 5, (float)cy }, PAL_CLR(YELLOW));
         }
-        touch_region(bx, y, bw, bh, keys[k]);
+        ui_button(bx, y, bw, bh, keys[k]);
     }
     int tw = (int)bfont_measure(text).x;
     int mid = x + w / 2;
     bfont_draw(text, mid - tw / 2, y + (bh - gh) / 2, PAL_CLR(YELLOW));
-    touch_region(mid - tw / 2 - pad, y, tw + 2 * pad, bh, KEY_ENTER);
+    ui_button(mid - tw / 2 - pad, y, tw + 2 * pad, bh, KEY_ENTER);
 }
 
 void ml_hint_text(char *out, int cap, const char *label, const char *kb_key, const char *pad_key) {
@@ -146,7 +147,7 @@ int ml_hint_button(int x, int y, const char *label, const char *kb_key, const ch
     int w = (int)bfont_measure(t).x + 2 * ML_PAD, h = BFONT_GLYPH_H + 8;
     gfx_rect_lines(x, y, w, h, PAL_CLR(YELLOW));
     bfont_draw(t, x + ML_PAD, y + 4, PAL_CLR(YELLOW));
-    touch_region(x, y, w, h, key);
+    ui_button(x, y, w, h, key);
     return w;
 }
 
@@ -180,7 +181,7 @@ int ml_count_buttons(int x, int y, int w, int value, int max) {
         gfx_rect_lines(cx + 1, y + 1, bw - 2, bh - 2, edge);
         int lw = (int)bfont_measure(labels[b]).x;
         bfont_draw(labels[b], cx + (bw - lw) / 2, y + (bh - gh) / 2, PAL_CLR(YELLOW));
-        touch_region(cx, y, bw, bh, KEYS[b]);
+        ui_button(cx, y, bw, bh, KEYS[b]);
         cx += bw + pad;
     }
     int bar_y = y + bh + pad, bar_h = 8;

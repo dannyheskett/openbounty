@@ -2,6 +2,7 @@
 #include "views.h"
 #include "frame_host.h"
 #include "touch.h"
+#include "uitouch.h"
 #include "select.h"
 #include "present.h"
 #include "layout.h"
@@ -39,6 +40,29 @@ static struct {
 
 int views_spells_cursor(void) { return CL_IS_MODERN ? spell_state.cursor : -1; }
 bool views_spells_casting(void) { return spell_state.active; }
+
+// See views.h. Rows mean the player is choosing: a tap must land on a row or
+// on the band, never dismiss by accident. Everything else -- a sheet, a
+// picture, a result -- closes on a tap anywhere, as its dialog does.
+bool views_closes_on_tap(ViewKind v) {
+    switch (v) {
+    case VIEW_MENU:            // rows
+    case VIEW_TOWN:
+    case VIEW_CONTROLS:
+    case VIEW_GATE:
+    case VIEW_HOME_CASTLE:
+    case VIEW_OWN_CASTLE:
+    case VIEW_DWELLING:
+    case VIEW_ALCOVE:
+    case VIEW_RECRUIT_SOLDIERS:
+    case VIEW_SPELLS:          // a list to cast from
+    case VIEW_WORLDMAP:        // modern: a list of places
+        return false;
+    default:                   // character, army, contract, puzzle, options,
+        return true;           // win, lose
+    }
+}
+
 
 void views_spells_set_mode(bool cast_mode) {
     spell_state.active = cast_mode;
@@ -1230,7 +1254,7 @@ bool views_town_update(Game *g) {
 
     if (town.info_active) {
         // Any key dismisses the info panel and returns to the menu.
-        touch_region_any(KEY_ENTER);
+        ui_dismiss_on_tap(KEY_ENTER);
         if (input_key_pressed(KEY_ESCAPE) || input_key_pressed(KEY_ENTER) ||
             input_key_pressed(KEY_KP_ENTER) || input_key_pressed(KEY_SPACE)) {
             town.info_active = false;

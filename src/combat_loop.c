@@ -9,6 +9,7 @@
 #include "gfx.h"
 #include "input_host.h"
 #include "touch.h"
+#include "uitouch.h"
 #include "combat.h"
 #include "combat_loop.h"
 #include "combat_render.h"
@@ -54,7 +55,7 @@ bool combat_pick_step(Combat *c, const Game *g, const Sprites *sprites,
     // Touch: tap a cell to jump the cursor there; if the cell passes the
     // pick filter it confirms in the same tap. ESC chrome cancels.
     touch_request(TOUCH_CHROME_BACK);
-    touch_region_grid(CL_COMBAT_X, CL_COMBAT_Y,
+    ui_grid(CL_COMBAT_X, CL_COMBAT_Y,
                       COMBAT_W * CL_COMBAT_CELL_W, COMBAT_H * CL_COMBAT_CELL_H,
                       CL_COMBAT_CELL_W, CL_COMBAT_CELL_H, TOUCH_GRID_COMBAT);
     int tcx, tcy;
@@ -269,6 +270,10 @@ static bool s_act_open = false;
 // the Unit page; Back from there goes to the top level, Back again closes.
 enum { CM_ROOT = 0, CM_UNIT, CM_HERO, CM_GAME, CM_CAST };
 static int s_act_page[3], s_act_cursor[3], s_act_depth = 0;
+// The Unit page is always Shoot, Wait, Fly, Cast -- so the first row is
+// often one this unit cannot use. The ORDER stays put and the cursor moves
+// to the first row that can be chosen, once, as the page opens.
+static bool s_act_open_on_enabled;
 
 void combat_gallery_menu(bool open) {
     s_act_open = open;
@@ -289,6 +294,7 @@ static void combat_menu_open(void) {
     s_act_page[0] = CM_ROOT; s_act_cursor[0] = 0;
     s_act_page[1] = CM_UNIT; s_act_cursor[1] = 0;
     s_act_depth = 2;
+    s_act_open_on_enabled = true;   // the rows never move; the cursor may
 }
 
 // What a spell does, for the Cast page's description: the pack's one-line
@@ -391,6 +397,11 @@ static void combat_action_menu_draw(const Combat *c, const Game *g) {
         size_t n = strlen(path);
         snprintf(path + n, sizeof path - n, "%s%s", i ? " > " : "", pi.title ? pi.title : "");
     }
+    if (s_act_open_on_enabled) {
+        s_act_open_on_enabled = false;
+        for (int i = 0; i < p.n; i++)
+            if (p.item[i].enabled) { s_act_cursor[d] = i; break; }
+    }
     int cursor = s_act_cursor[d] < p.n ? s_act_cursor[d] : p.n - 1;
     // The Cast page shows each spell's charges at the row's right.
     bool cast = s_act_page[d] == CM_CAST;
@@ -460,7 +471,7 @@ static void combat_panel_draw(const Combat *c, const Game *g,
         // outside, so a frame per tile would double every edge.
         if (row > 0) lattice_band_h(x, ry - COMBAT_RING / 2, w, COMBAT_RING / 2);
         if (live && p.item[i].enabled)
-            touch_region_row(x, ry, w, CL_TILE_H, TOUCH_LIST_COMBAT_PANEL, i);
+            ui_tile_row(x, ry, w, CL_TILE_H, TOUCH_LIST_COMBAT_PANEL, i);
         row++;
     }
     // The container is the field's full height, like the HUD sidebar beside
@@ -526,7 +537,7 @@ static int combat_player_action_full(Combat *c, const Game *g,
     }
     if (c->unit_id >= 0) {
         const CombatUnit *au = &c->units[c->side][c->unit_id];
-        touch_region_map(CL_COMBAT_X, CL_COMBAT_Y,
+        ui_map(CL_COMBAT_X, CL_COMBAT_Y,
                          COMBAT_W * CL_COMBAT_CELL_W,
                          COMBAT_H * CL_COMBAT_CELL_H,
                          CL_COMBAT_CELL_W, CL_COMBAT_CELL_H,
@@ -669,7 +680,7 @@ static void combat_present(const Combat *c, const Game *g,
     // Modern: the top bar is touchable and acts as Escape (the action menu).
     if (CL_IS_MODERN && !s_act_open && views_active() == VIEW_NONE && !prompt_is_active() &&
         !dialog_is_active() && !c->picker_active && c->cast_phase == COMBAT_CAST_NONE)
-        touch_region(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H, KEY_ESCAPE);
+        ui_bar(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H, KEY_ESCAPE);
     // Spell-pick menu overlay. Drawn while the cast state machine is
     // in PICK_SPELL phase; the outer loop drives combat_cast_step one
     // input per frame.
@@ -691,7 +702,7 @@ static void combat_present(const Combat *c, const Game *g,
             snprintf(line, sizeof line, "%d %-12s %c",
                      count, sd->name, 'A' + i);
             bfont_draw(line, 56, 64 + i * 10, PAL_CLR(WHITE));
-            touch_region(56, 64 + i * 10, 224, 10, KEY_A + i);
+            ui_tile(56, 64 + i * 10, 224, 10, KEY_A + i);
         }
         bfont_draw(ui->combat_spells_prompt, 70, 144, PAL_CLR(WHITE));
     }
