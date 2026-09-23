@@ -60,6 +60,7 @@ enum {
     TOUCH_LIST_CLASS_CONFIRM,  // the class picker's Continue / Cancel rows
     TOUCH_LIST_RAIL,           // the left rail's five icons
     TOUCH_LIST_COMBAT_PANEL,   // the combat command panel's rows
+    TOUCH_LIST_HUD,            // the HUD sidebar's five panels
 };
 void touch_region_row(int x, int y, int w, int h, int list_id, int row);
 // A list taller than its space: a vertical drag over it moves it a row per
@@ -97,6 +98,16 @@ void touch_request_prompt_ab(void);           // "A"/"B" -> KEY_A/KEY_B
 // tracked as 11% of the window's short side with a 44px floor. Exposed so the
 // layout can make the menu band a comfortable target too.
 int  touch_unit(void);
+
+// The same unit in DESIGN pixels -- what a widget must measure against, since
+// every rect the shell draws is in the render target's space.
+int  touch_unit_design(void);
+
+// A region the player aims at deliberately (the top band, a corner). Inside
+// its own rect it wins whatever registered first, so chrome that overlaps the
+// world -- a band grown to a touch unit over the map's top row -- takes the
+// tap instead of stepping the hero. No extra reach: only its own rect.
+void touch_region_priority(int x, int y, int w, int h, int key);
 
 void touch_draw_chrome(void);
 

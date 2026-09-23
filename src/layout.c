@@ -55,6 +55,10 @@ void layout_init(const struct Resources *res) {
     g_layout.ui_scale     = (r->ui_scale > 0) ? r->ui_scale : 1;
     g_layout.sidebar_gap  = 0;
     g_layout.rail_w       = 0;   // granted per surface by layout_grow_native
+    // Cleared with the rest: it is only written when the declared buffer
+    // mirrors its bands, and a stale value from the last pack loaded made the
+    // next pack's first grow report a change it had not made.
+    g_layout.native_status_h = 0;
     g_layout.status_h     = 0;
     g_layout.bar_h        = 0;
     set_base_frame();

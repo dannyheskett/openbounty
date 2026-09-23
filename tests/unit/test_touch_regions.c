@@ -10,6 +10,11 @@
 
 #include "greatest.h"
 #include "touch.h"
+#include "uitouch.h"
+#include "layout.h"
+#include "resources.h"
+#include "views.h"
+#include <string.h>
 
 // Rome's geometry: the 256x164 picker at 3x in an 800x532 buffer, and the
 // description panel along the foot.
@@ -138,6 +143,147 @@ TEST with_no_rail_rows_registered_the_column_falls_through(void) {
     PASS();
 }
 
+// ---- the widget layer (src/uitouch.h) --------------------------------------
+//
+// A screen says what a thing IS; the widget decides how a finger finds it.
+// The rules these pin are the ones that were decided 25 different ways:
+//   * an ISOLATED target is grown to a touch unit -- in modern only
+//   * a TILED target is never grown: its neighbours are its own kind, and
+//     growing one would swallow the next
+//   * chrome marked priority beats a region registered before it, inside its
+//     own rect and no further
+
+// The widget rules are mode-dependent, so each test says which mode it is in
+// rather than inheriting whatever the last suite left behind.
+static Resources s_res;
+
+static void modern_layout(void) {
+    memset(&s_res, 0, sizeof s_res);
+    s_res.render.mode = RENDER_MODE_MODERN;
+    s_res.render.tile_w = 96;  s_res.render.tile_h = 96;
+    s_res.render.tiles_w = 7;  s_res.render.tiles_h = 5;
+    s_res.render.ui_scale = 1;
+    s_res.render.native_w = 800; s_res.render.native_h = 532;
+    layout_init((const struct Resources *)&s_res);
+}
+
+static void legacy_layout(void) {
+    memset(&s_res, 0, sizeof s_res);
+    s_res.render.mode = RENDER_MODE_LEGACY;
+    s_res.render.tile_w = 48;  s_res.render.tile_h = 34;
+    s_res.render.tiles_w = 5;  s_res.render.tiles_h = 5;
+    s_res.render.ui_scale = 1;
+    layout_init((const struct Resources *)&s_res);
+}
+
+TEST a_button_is_grown_to_a_touch_unit(void) {
+    modern_layout();
+    int u = touch_unit_design();
+    ui_button(200, 200, 10, 10, KEY_X);
+    touch_frame();
+
+    int list = 0, row = -1, key = 0;
+    // Its centre stays put, so the target grows around what was drawn.
+    ASSERT(touch_last_hit(205 - u / 2 + 1, 205, &list, &row, &key));
+    ASSERT_EQ(KEY_X, key);
+    ASSERT(touch_last_hit(205, 205 + u / 2 - 1, &list, &row, &key));
+    ASSERT_EQ(KEY_X, key);
+    // ...and not past it.
+    ASSERT_FALSE(touch_last_hit(205 - u, 205, &list, &row, &key));
+    PASS();
+}
+
+TEST a_tile_is_registered_exactly_as_drawn(void) {
+    modern_layout();
+    ui_tile(200, 200, 10, 10, KEY_X);
+    touch_frame();
+
+    int list = 0, row = -1, key = 0;
+    ASSERT(touch_last_hit(205, 205, &list, &row, &key));
+    ASSERT_EQ(KEY_X, key);
+    ASSERT_FALSE(touch_last_hit(195, 205, &list, &row, &key));   // never grown
+    PASS();
+}
+
+// Two tiles side by side: growing either would put it over its neighbour and
+// the first registered would answer for both. This is why rows are sized
+// where they are drawn instead.
+TEST neighbouring_tiles_keep_their_own_taps(void) {
+    modern_layout();
+    ui_tile(200, 200, 20, 20, KEY_A);
+    ui_tile(220, 200, 20, 20, KEY_B);
+    touch_frame();
+
+    int list = 0, row = -1, key = 0;
+    ASSERT(touch_last_hit(210, 210, &list, &row, &key));
+    ASSERT_EQ(KEY_A, key);
+    ASSERT(touch_last_hit(230, 210, &list, &row, &key));
+    ASSERT_EQ(KEY_B, key);
+    PASS();
+}
+
+// The map is registered before the frame is drawn, so the band -- grown to a
+// touch unit over the map's top row -- would lose every overlapping tap to a
+// step of the hero without this.
+TEST chrome_beats_the_world_it_overlaps(void) {
+    modern_layout();
+    // The overlap is what matters, so it is made explicit here: the map is
+    // registered first (the main loop registers it before the frame is
+    // drawn) and the band's rect lies over its top rows.
+    touch_region_map(0, 12, 480, 480, 96, 96, 2, 2, 0);   // registered first
+    ui_bar(0, 12, 800, 20, KEY_ESCAPE);
+    touch_frame();
+
+    int list = 0, row = -1, key = 0;
+    ASSERT(touch_last_hit(200, 20, &list, &row, &key));   // inside both
+    ASSERT_EQ(KEY_ESCAPE, key);
+    // Well below the band, the map still answers.
+    ASSERT(touch_last_hit(200, 400, &list, &row, &key));
+    ASSERT(key != KEY_ESCAPE);
+    PASS();
+}
+
+TEST legacy_is_never_grown(void) {
+    legacy_layout();
+    ui_button(100, 100, 10, 10, KEY_X);
+    touch_frame();
+
+    int list = 0, row = -1, key = 0;
+    ASSERT(touch_last_hit(105, 105, &list, &row, &key));
+    ASSERT_EQ(KEY_X, key);
+    ASSERT_FALSE(touch_last_hit(95, 105, &list, &row, &key));   // the drawn rect, nothing more
+    PASS();
+}
+
+// One dismissal rule, written down: a page the player chooses on never goes
+// away under a stray finger, and a page with nothing to choose always does.
+// This used to be decided by which branch of main.c's chain a view fell into.
+TEST pages_with_rows_do_not_close_on_a_stray_tap(void) {
+    ASSERT_FALSE(views_closes_on_tap(VIEW_MENU));
+    ASSERT_FALSE(views_closes_on_tap(VIEW_TOWN));
+    ASSERT_FALSE(views_closes_on_tap(VIEW_CONTROLS));
+    ASSERT_FALSE(views_closes_on_tap(VIEW_GATE));
+    ASSERT_FALSE(views_closes_on_tap(VIEW_HOME_CASTLE));
+    ASSERT_FALSE(views_closes_on_tap(VIEW_OWN_CASTLE));
+    ASSERT_FALSE(views_closes_on_tap(VIEW_DWELLING));
+    ASSERT_FALSE(views_closes_on_tap(VIEW_ALCOVE));
+    ASSERT_FALSE(views_closes_on_tap(VIEW_RECRUIT_SOLDIERS));
+    ASSERT_FALSE(views_closes_on_tap(VIEW_SPELLS));
+    ASSERT_FALSE(views_closes_on_tap(VIEW_WORLDMAP));
+    PASS();
+}
+
+TEST pages_with_nothing_to_choose_close_on_a_tap(void) {
+    ASSERT(views_closes_on_tap(VIEW_CHARACTER));
+    ASSERT(views_closes_on_tap(VIEW_ARMY));
+    ASSERT(views_closes_on_tap(VIEW_CONTRACT));
+    ASSERT(views_closes_on_tap(VIEW_PUZZLE));
+    ASSERT(views_closes_on_tap(VIEW_OPTIONS));
+    ASSERT(views_closes_on_tap(VIEW_WIN));
+    ASSERT(views_closes_on_tap(VIEW_LOSE));
+    PASS();
+}
+
 SUITE(unit_touch_regions_suite) {
     RUN_TEST(the_panel_lies_over_the_painting);
     RUN_TEST(rows_first_wins_the_tap);
@@ -145,4 +291,12 @@ SUITE(unit_touch_regions_suite) {
     RUN_TEST(columns_first_shadow_the_rows);
     RUN_TEST(the_map_is_registered_first_and_the_rail_still_takes_its_column);
     RUN_TEST(with_no_rail_rows_registered_the_column_falls_through);
+    RUN_TEST(a_button_is_grown_to_a_touch_unit);
+    RUN_TEST(a_tile_is_registered_exactly_as_drawn);
+    RUN_TEST(neighbouring_tiles_keep_their_own_taps);
+    RUN_TEST(chrome_beats_the_world_it_overlaps);
+    RUN_TEST(legacy_is_never_grown);
+    RUN_TEST(pages_with_rows_do_not_close_on_a_stray_tap);
+    RUN_TEST(pages_with_nothing_to_choose_close_on_a_tap);
+    legacy_layout();   // leave the layout as the fixture pack expects it
 }

@@ -5,12 +5,20 @@
 #include "input_host.h"
 #include "layout.h"
 #include "touch.h"
+#include "uitouch.h"
 #include <string.h>
 
 static const char ALPHA[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ \b\n";    // 29
 static const char NUM[]   = "789\b456\n1230";                     // 12
 
-int textsel_cols(bool numeric)  { return numeric ? 4 : 6; }
+// Six columns of text-sized cells, or ten of touch-sized ones: at a touch
+// unit the letters are 66 px square, and six columns would stack five rows
+// (330 px) into a panel that has to hold a name and a difficulty table as
+// well. Ten columns is three rows, 660 x 198, inside the 800 x 532 buffer.
+int textsel_cols(bool numeric) {
+    if (numeric) return 4;
+    return (CL_IS_MODERN && input_touch_active()) ? 10 : 6;
+}
 int textsel_count(bool numeric) { return numeric ? 12 : 29; }
 
 int textsel_char(int cursor, bool numeric) {
@@ -98,6 +106,26 @@ bool textsel_input(TextSel *t, char *buf, int *len, int cap, int touch_list,
 // what the last row's "ZSPDELOK" mush was.
 int textsel_min_cell_w(void) { return 4 * bfont_glyph_w(); }
 
+// A cell is tiled, so it is never inflated after the fact (a neighbour would
+// swallow it): the grid is drawn at the size a finger needs instead.
+int textsel_cell_w(void) {
+    int w = textsel_min_cell_w();
+    if (CL_IS_MODERN && input_touch_active()) {
+        int u = touch_unit_design();
+        if (w < u) w = u;
+    }
+    return w;
+}
+
+int textsel_cell_h(void) {
+    int h = bfont_glyph_h() + 6 * CL_UI;
+    if (CL_IS_MODERN && input_touch_active()) {
+        int u = touch_unit_design();
+        if (h < u) h = u;
+    }
+    return h;
+}
+
 void textsel_draw(const TextSel *t, int x, int y, int cell_w, int cell_h,
                   Color fg, Color bg, int touch_list) {
     if (!CL_IS_MODERN || !t) return;
@@ -116,6 +144,6 @@ void textsel_draw(const TextSel *t, int x, int y, int cell_w, int cell_h,
         if (sel) gfx_rect(cx, cy, cell_w, cell_h, fg);
         int tw = bfont_text_width(label);
         bfont_draw(label, cx + (cell_w - tw) / 2, cy + (cell_h - bfont_line_height()) / 2, sel ? bg : fg);
-        if (touch_list) touch_region_row(cx, cy, cell_w, cell_h, touch_list, i);
+        if (touch_list) ui_tile_row(cx, cy, cell_w, cell_h, touch_list, i);
     }
 }

@@ -114,4 +114,10 @@ void toast_show(const char *msg);
 // raylib key-press queue.
 bool ui_any_key_pressed(void);
 
+// The same, with the tap half made explicit: `allow_tap` false reads the
+// keyboard and the pad only, and registers nothing, so a screen the player is
+// choosing on cannot be dismissed by a stray finger (views_closes_on_tap,
+// src/views.h). The keyboard path is identical either way.
+bool ui_any_key_pressed_ex(bool allow_tap);
+
 #endif

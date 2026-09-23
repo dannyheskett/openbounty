@@ -3,6 +3,7 @@
 #include "input_host.h"
 #include "startup.h"
 #include "touch.h"
+#include "uitouch.h"
 #include "layout.h"
 #include "modern/mlayout.h"
 #include "modern/mlist.h"
@@ -66,10 +67,19 @@ static void draw_class_picker_backdrop(const Sprites *sprites) {
     ui_blit(t, (CL_SCREEN_W - pw) / 2, (CL_SCREEN_H - ph) / 2, pw, ph);
 }
 
-static void draw_class_picker_status_hint(const Resources *res) {
+// The band every pre-game screen wears. It is also the way back out of the
+// screen for a finger: these screens are not views, so the game's own band
+// (chrome.c) is not drawn and nothing else here answers a tap. The title menu
+// does NOT call this -- Escape there leaves the menu, and a stray tap must
+// not do that.
+static void startup_bar(const char *text) {
     gfx_rect(0, 0, CL_SCREEN_W, GH + 2, PAL_CLR(DRED));
-    bfont_draw_centered(res->ui.startup_class_select_hint,
-                        CL_SCREEN_W / 2, 1, PAL_CLR(WHITE));
+    bfont_draw_centered(text, CL_SCREEN_W / 2, 1, PAL_CLR(WHITE));
+    ui_bar(0, 0, CL_SCREEN_W, GH + 2, KEY_ESCAPE);
+}
+
+static void draw_class_picker_status_hint(const Resources *res) {
+    startup_bar(res->ui.startup_class_select_hint);
 }
 
 static void frame_end(RenderTexture2D *rt) {
@@ -169,7 +179,7 @@ static void draw_title_backdrop(const Sprites *sprites) {
 // Helper: true if any key was pressed this frame (other than pure
 // modifier keys).  behavior.
 static bool any_key_pressed(void) {
-    touch_region_any(KEY_ENTER);   // a tap counts as any key
+    ui_dismiss_on_tap(KEY_ENTER);  // a tap counts as any key
     int k = input_get_key_pressed();
     while (k != 0) {
         if (k != KEY_LEFT_SHIFT && k != KEY_RIGHT_SHIFT &&
@@ -421,7 +431,7 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
                         TOUCH_LIST_STARTUP, i);
             } else {
                 bfont_draw(line, x + pad, ty, fg);
-                touch_region_row(x, ty, w, row_h, TOUCH_LIST_STARTUP, i);
+                ui_tile_row(x, ty, w, row_h, TOUCH_LIST_STARTUP, i);
             }
             ty += row_h;
         }
@@ -435,7 +445,7 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
                  ui->startup_save_picker_new_game);
         if (!CL_IS_MODERN) {
             bfont_draw(ng_line, x + pad, ty, nfg);
-            touch_region_row(x, ty, w, row_h, TOUCH_LIST_STARTUP, new_row);
+            ui_tile_row(x, ty, w, row_h, TOUCH_LIST_STARTUP, new_row);
         }
 
         // Hint fits in the 33-char content width (280 - 2*pad).
@@ -478,13 +488,13 @@ static void draw_title_menu(const Sprites *sprites, const char **labels, int cou
                  touch_list, uk_ink());
 }
 
-// The class picker's two confirm rows. Hardcoded like the other shell-owned
-// touch labels (the letter selector's DEL / SPC / OK): they belong to the
-// shell's flow, not to a pack's content.
+// The class picker's confirm row. Hardcoded like the other shell-owned touch
+// labels (the letter selector's DEL / SPC / OK): it belongs to the shell's
+// flow, not to a pack's content. One row: there is nothing to cancel to.
 static bool class_confirm_row(void *ctx, int i, char *label, char *right, int cap) {
-    (void)ctx;
+    (void)ctx; (void)i;
     right[0] = '\0';
-    snprintf(label, (size_t)cap, "%s", i == 0 ? "Continue" : "Cancel");
+    snprintf(label, (size_t)cap, "Continue");
     return true;
 }
 
@@ -587,7 +597,6 @@ static bool run_class_select(const Resources *res,
     // Modern: the carousel starts on the whole painting with no one picked;
     // Left/Right step through the figures, Enter picks.
     int class_cursor = CL_IS_MODERN ? -1 : 0;
-    int confirm_row = 0;        // 0 Continue, 1 Cancel, once a class is picked
     double opened = frame_host_time();   // modern: nothing picked after 2 s -> the first class
 
     while (!frame_host_should_close()) {
@@ -627,25 +636,13 @@ static bool run_class_select(const Resources *res,
             // once, so the choice was never on screen; and the keyboard used
             // to confirm on Enter with no way back.
             int tapped = touch_tapped_row(TOUCH_LIST_CLASS);
-            if (tapped >= 0 && tapped < n) {
-                class_cursor = tapped;
-                confirm_row = 0;
-            }
+            if (tapped >= 0 && tapped < n) class_cursor = tapped;
             if (class_cursor >= 0) {
-                if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_KP_8) ||
-                    input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2))
-                    confirm_row = !confirm_row;
+                // A tap on Continue IS the confirmation; Enter is the same
+                // row from a keyboard. (The accept below tested `enter`
+                // alone, so the tap set nothing anyone read.)
                 int crow = touch_tapped_row(TOUCH_LIST_CLASS_CONFIRM);
-                if (crow >= 0) confirm_row = crow;
-                bool go = (crow == 0) || (enter && confirm_row == 0);
-                bool back = (crow == 1) || (enter && confirm_row == 1);
-                if (back) {
-                    class_cursor = -1;      // the painting, nothing picked
-                    confirm_row = 0;
-                    enter = false;
-                    go = false;
-                }
-                if (!go) enter = false;
+                enter = (crow == 0) || enter;
             }
             if (enter && class_cursor >= 0) {
                 const ClassDef *c = class_by_index(class_cursor);
@@ -732,11 +729,11 @@ static bool run_class_select(const Resources *res,
             int cw = 700, tw = cw - 2 * UK_INSET;
             int lines = uk_lines(desc, tw);
             int chh = 2 * UK_INSET + (1 + lines) * uk_line_h();
-            // Two rows under the description, and they are the ONLY way on:
-            // Continue takes the class, Cancel puts the painting back. The
-            // same two rows whatever the input -- a tap, an arrow key or a
-            // pad all land on them, so no one route confirms invisibly.
-            chh += ML_ROW_RULE + 2 * ml_row_h();
+            // One row under the description, and it is the only way on:
+            // Continue takes the class. The same row whatever the input --
+            // a tap, a key or a pad lands on it, so no route confirms
+            // invisibly. Picking another figure is the way to change class.
+            chh += ML_ROW_RULE + ml_row_h();
             int cx = (CL_SCREEN_W - cw) / 2, cy = CL_SCREEN_H - chh - 16;
             panel(cx, cy, cw, chh);
             bfont_draw(pc ? pc->name : "", cx + UK_INSET, cy + UK_INSET, PAL_CLR(YELLOW));
@@ -745,9 +742,9 @@ static bool run_class_select(const Resources *res,
             int ry = cy + 2 * UK_INSET + (1 + lines) * uk_line_h();
             lattice_band_h(cx, ry, cw, ML_ROW_RULE);
             ry += ML_ROW_RULE;
-            ml_list_draw(cx, ry, cw, ml_list_height(2), 2, confirm_row,
+            ml_list_draw(cx, ry, cw, ml_list_height(1), 1, 0,
                          class_confirm_row, NULL, TOUCH_LIST_CLASS_CONFIRM,
-                         uk_ink());   // cursor: 0 Continue, 1 Cancel
+                         uk_ink());
         }
 
         // Touch: the picker art shows the classes side by side, one column
@@ -758,19 +755,18 @@ static bool run_class_select(const Resources *res,
         // Continue and Cancel, and touch had no way off this screen (REQ-532).
         if (picker_shown) {
             for (int k = 0; k < n; k++) {
-                if (CL_IS_MODERN) touch_region_row(px + k * (pw / n), py, pw / n, ph, TOUCH_LIST_CLASS, k);
-                else              touch_region(px + k * (pw / n), py, pw / n, ph, KEY_A + k);
+                if (CL_IS_MODERN) ui_tile_row(px + k * (pw / n), py, pw / n, ph, TOUCH_LIST_CLASS, k);
+                else              ui_tile(px + k * (pw / n), py, pw / n, ph, KEY_A + k);
             }
         }
 
         // Status-bar hint at top (). Modern: the picked figure's class.
-        gfx_rect(0, 0, CL_SCREEN_W, GH + 2, PAL_CLR(DRED));
         const char *hint = res->ui.startup_class_select_hint;
         if (CL_IS_MODERN && class_cursor >= 0) {
             const ClassDef *pc = class_by_index(class_cursor);
             if (pc && pc->name[0]) hint = pc->name;
         }
-        bfont_draw_centered(hint, CL_SCREEN_W / 2, 1, PAL_CLR(WHITE));
+        startup_bar(hint);
 
         frame_end(rt);
     }
@@ -849,15 +845,18 @@ static bool run_create_game(const Resources *res,
         int tapped = touch_tapped_row(TOUCH_LIST_STARTUP);
         if (!has_name) {
             // Modern: without a keyboard, or once a pad or touch has been
-            // used, the in-game letter selector takes the field; typing
-            // still works alongside it. Legacy keeps the window keyboard.
-            // A finger gets the on-screen KEYBOARD, not the in-buffer letter
-            // grid: the grid is laid out in the pack's design pixels, which
-            // on a phone is a 21x13pt key, while the chrome keyboard is drawn
-            // in window pixels and can be a proper size. The grid stays for a
-            // gamepad and for a desktop with no keyboard.
-            selector = CL_IS_MODERN && !input_touch_active() &&
-                       (input_text_mode() == TEXT_MODE_SELECTOR || input_pad_or_touch_seen());
+            // used, the in-game letter selector takes the field; typing still
+            // works alongside it. Legacy keeps the window keyboard.
+            //
+            // A finger gets the SELECTOR too. It used to get the chrome
+            // keyboard instead, on the grounds that the grid's cells were a
+            // 21x13pt key -- but that keyboard draws its letters with
+            // gfx_label, which is an empty stub on iOS, so every key was
+            // blank and a name could not be typed at all. The cells are sized
+            // from the touch unit below instead.
+            selector = CL_IS_MODERN &&
+                       (input_text_mode() == TEXT_MODE_SELECTOR ||
+                        input_pad_or_touch_seen() || input_touch_active());
             if (!selector) touch_request(TOUCH_CHROME_KEYBOARD);
             bool done = false;
             if (selector) {
@@ -936,13 +935,12 @@ static bool run_create_game(const Resources *res,
                 ui_blit(bg, (CL_SCREEN_W - bg.width * fs) / 2,
                         (CL_SCREEN_H - bg.height * fs) / 2, bg.width * fs, bg.height * fs);
             }
-            gfx_rect(0, 0, CL_SCREEN_W, GH + 2, PAL_CLR(DRED));
-            bfont_draw_centered(class_title, CL_SCREEN_W / 2, 1, PAL_CLR(WHITE));
+            startup_bar(class_title);
 
             // An in-lay as tall as what it holds: the name, the difficulty
             // table, and the letter selector while it takes the name.
             int mrow = GH + 4;
-            int sel_h = (!has_name && selector) ? textsel_h(false, GH + 4) + mrow : 0;
+            int sel_h = (!has_name && selector) ? textsel_h(false, textsel_cell_h()) + mrow : 0;
             int mh = UK_INSET + 3 * mrow + UK_BAND + ml_list_height(n) + sel_h;
             int mw = UK_INLAY_W;
             int mx = (CL_SCREEN_W - mw) / 2, my = (CL_SCREEN_H - mh) / 2;
@@ -999,7 +997,7 @@ static bool run_create_game(const Resources *res,
             ty += ml_list_height(n);
 
             if (!has_name && selector) {
-                int cw = textsel_min_cell_w(), chh = GH + 6;
+                int cw = textsel_cell_w(), chh = textsel_cell_h();
                 int gx = mx + (mw - textsel_w(false, cw)) / 2;
                 int gy = ty + mrow / 2;
                 textsel_draw(&ts, gx, gy, cw, chh, PAL_CLR(YELLOW), uk_ink(),
@@ -1057,7 +1055,7 @@ static bool run_create_game(const Resources *res,
             } else {
                 bfont_draw(line, x + GW, ROW_Y(5 + i), PAL_CLR(WHITE));
                 if (has_name)
-                    touch_region_row(x, ROW_Y(5 + i), w, GH,
+                    ui_tile_row(x, ROW_Y(5 + i), w, GH,
                                      TOUCH_LIST_STARTUP, i);
             }
         }
@@ -1079,7 +1077,7 @@ static bool run_create_game(const Resources *res,
         }
 
         if (!has_name && selector) {
-            int cw = textsel_min_cell_w(), chh = GH + 6 * CL_UI;
+            int cw = textsel_cell_w(), chh = textsel_cell_h();
             int gx = x + (w - textsel_w(false, cw)) / 2;
             int gy = y + h + 4 * CL_UI;
             gfx_rect(gx - 2 * CL_UI, gy - 2 * CL_UI,
@@ -1177,9 +1175,7 @@ static bool run_new_game_intro(RenderTexture2D *rt,
         draw_class_picker_backdrop(sprites);
 
         // Status hint at top.
-        gfx_rect(0, 0, CL_SCREEN_W, GH + 2, PAL_CLR(DRED));
-        bfont_draw_centered(res->ui.startup_class_select_hint,
-                            CL_SCREEN_W / 2, 1, PAL_CLR(WHITE));
+        startup_bar(res->ui.startup_class_select_hint);
 
         // Panel.
         panel(px, py, panel_w, panel_h);

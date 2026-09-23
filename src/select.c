@@ -5,6 +5,7 @@
 #include "input_host.h"
 #include "layout.h"
 #include "touch.h"
+#include "uitouch.h"
 
 int sel_wrap(int cursor, int delta, int count) {
     if (count <= 0) return 0;
@@ -62,5 +63,5 @@ void sel_row(int x, int y, int w, int h, int text_x, const char *text,
     } else {
         bfont_draw(text, text_x, CL_IS_MODERN ? y + (h - bfont_line_height()) / 2 : y, fg);
     }
-    if (touch_list) touch_region_row(x, y, w, h, touch_list, row);
+    if (touch_list) ui_tile_row(x, y, w, h, touch_list, row);
 }

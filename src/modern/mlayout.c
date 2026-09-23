@@ -3,6 +3,8 @@
 #include "mlayout.h"
 #include "layout.h"
 #include "bfont.h"
+#include "touch.h"
+#include "input_host.h"
 
 // The margin every map panel keeps from the map pane's edges: the screen's
 // own spacing (the band between the pane and the HUD), so a panel sits inside
@@ -109,7 +111,16 @@ ML_Rect ml_loc_text(void) {
 int ml_row_h(void) {
     int h = CL_TILE_H / 2;
     int min = BFONT_GLYPH_H + ML_PAD;
-    return h < min ? min : h;
+    if (h < min) h = min;
+    // A row is TILED: its neighbours are rows, so it cannot be inflated after
+    // the fact without stealing them. It is drawn at the size a finger needs
+    // instead -- a page then shows fewer rows and scrolls, which ml_list_draw
+    // already does.
+    if (CL_IS_MODERN && input_touch_active()) {
+        int u = touch_unit_design();
+        if (h < u) h = u;
+    }
+    return h;
 }
 
 int ml_cols(ML_Rect r) {

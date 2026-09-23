@@ -12,6 +12,7 @@
 #include "gfx.h"
 #include "overlay_impl.h"
 #include "touch.h"
+#include "uitouch.h"
 #include "layout.h"
 #include "palette.h"
 #include "views.h"
@@ -236,7 +237,7 @@ void legacy_overlay_draw_menu(void) {
 
         if (sel) bfont_draw(">", tx, ty, PAL_CLR(YELLOW));
         bfont_draw(buf, tx + GW + 4 * CL_UI, ty, fg);
-        touch_region_row(x, ty, w, row_h, TOUCH_LIST_MENU, i);
+        ui_tile_row(x, ty, w, row_h, TOUCH_LIST_MENU, i);
         ty += row_h;
     }
 }
@@ -500,7 +501,7 @@ void legacy_overlay_draw_town(const Game *g, const Sprites *s) {
         // Touch: rows answer to their letters directly. Only while the menu is
         // showing -- with the info popup up, any tap dismisses it (the update
         // fn's any-key path), so no row regions then.
-        if (live) touch_region(x, ty, w, row_h, KEY_A + r);
+        if (live) ui_tile(x, ty, w, row_h, KEY_A + r);
         ty += row_h;
     }
 
@@ -672,7 +673,7 @@ void legacy_overlay_draw_controls(const Game *g) {
                  '1' + k, g->res->controls.items[i].label);
         bfont_draw(label, tx, ty, fg);
         // Touch: rows answer to their digit (select + advance in one).
-        touch_region(x, ty, w, GH + 2, KEY_ONE + k);
+        ui_tile(x, ty, w, GH + 2, KEY_ONE + k);
 
         int val = g->stats.options[i];
         const char *type = g->res->controls.items[i].type;

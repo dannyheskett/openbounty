@@ -10,6 +10,7 @@
 #include "bfont.h"
 #include "ui.h"
 #include "touch.h"
+#include "uitouch.h"
 #include "overlay.h"
 #include "overlay_impl.h"
 #include "sprites.h"
@@ -605,8 +606,8 @@ int uk_doc_draw(const UkDoc *d, ML_Rect a, int pic_w, int pic_h, int page, bool 
                      (Vector2){ (float)(px + aw), (float)(py + GH) }, page > 0 ? PAL_CLR(YELLOW) : dim);
         gfx_triangle((Vector2){ (float)nx, (float)py }, (Vector2){ (float)(nx + aw / 2), (float)(py + GH) },
                      (Vector2){ (float)(nx + aw), (float)py }, page + 1 < pages ? PAL_CLR(YELLOW) : dim);
-        if (page > 0) touch_region(px - 8, py - 8, aw + 16, GH + 16, KEY_UP);
-        if (page + 1 < pages) touch_region(nx - 8, py - 8, aw + 16, GH + 16, KEY_DOWN);
+        if (page > 0) ui_button(px - 8, py - 8, aw + 16, GH + 16, KEY_UP);
+        if (page + 1 < pages) ui_button(nx - 8, py - 8, aw + 16, GH + 16, KEY_DOWN);
     }
     return pages;
 }

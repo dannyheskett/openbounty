@@ -5,6 +5,7 @@
 #include "layout.h"
 #include "sprites.h"
 #include "touch.h"
+#include "uitouch.h"
 #include "ui.h"
 #include "views.h"
 #include "overlay.h"
@@ -56,7 +57,7 @@ void rail_draw(const Game *g, const Sprites *s) {
             gfx_texture_draw(t, src, dst, WHITE);
         }
         ui_panel_frame(x, y, CL_RAIL_W, CL_TILE_H);
-        if (!page) touch_region_row(x, y, CL_RAIL_W, CL_TILE_H, TOUCH_LIST_RAIL, i);
+        if (!page) ui_tile_row(x, y, CL_RAIL_W, CL_TILE_H, TOUCH_LIST_RAIL, i);
         y += CL_TILE_H;
     }
 }

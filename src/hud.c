@@ -5,6 +5,11 @@
 #include "bfont.h"
 #include "ui.h"
 #include "ob_types.h"
+#include "touch.h"
+#include "uitouch.h"
+#include "views.h"
+#include "overlay.h"
+#include "prompt_impl.h"
 #include <stdio.h>
 
 // Same puzzle layout used by the full-screen view (views.c). Each cell
@@ -73,10 +78,33 @@ void hud_draw_gold_tile(const Game *g, const Sprites *s, int x, int y) {
     }
 }
 
+// Each panel stands for a screen, so each panel opens it: the same rule the
+// rail on the other side follows, and the same list order the sidebar draws.
+static const InputAction HUD_ACTIONS[5] = {
+    INPUT_ACTION_VIEW_CONTRACT,     // the villain's face
+    INPUT_ACTION_VIEW_CHARACTER,    // siege weapons are reported there
+    INPUT_ACTION_CAST_SPELL,        // the magic star
+    INPUT_ACTION_VIEW_PUZZLE,       // the puzzle grid
+    INPUT_ACTION_VIEW_CHARACTER,    // the purse
+};
+
+InputAction hud_tapped(void) {
+    if (!CL_IS_MODERN) return INPUT_ACTION_NONE;
+    int row = touch_tapped_row(TOUCH_LIST_HUD);
+    if (row < 0 || row >= 5) return INPUT_ACTION_NONE;
+    return HUD_ACTIONS[row];
+}
+
 void hud_draw(const Game *g, const Sprites *s) {
     if (!s) return;
     int x = CL_SIDEBAR_X;
     int y = CL_SIDEBAR_Y;
+    // A page of its own owns every tap while it is up.
+    bool page = views_active() != VIEW_NONE || dialog_is_active() || prompt_is_active();
+    if (CL_IS_MODERN && !page) {
+        for (int i = 0; i < 5; i++)
+            ui_tile_row(x, y + i * CL_TILE_H, CL_SIDEBAR_W, CL_TILE_H, TOUCH_LIST_HUD, i);
+    }
 
     // 1. Contract panel (+ villain portrait overlay if there's an active
     //    contract). overlays the villain face right on top.

@@ -2567,11 +2567,45 @@ golden-digest regression tests have pinned the formulas.
   discarding. A page of its own has owned every tap while it is open: the
   rail has registered no region then.
 
+- **REQ-534.** **One widget layer has owned every touch target.**
+  `src/uitouch.h` has been the only caller of the raw region API: a screen has
+  said what a thing IS -- an isolated button, a tiled row, a bar, the map --
+  and the widget has decided how a finger finds it. A build guard
+  (`TOUCH_STAMP`, the Makefile) has failed `make all` when any other shell
+  file has registered a region, the way the library-boundary check has fenced
+  the engine.
+
+  Three modes, every widget: **legacy** has registered exactly the rect it
+  draws, because the DOS pitch is the spec; **modern with touch** has grown an
+  ISOLATED target to a touch unit, and never a tiled one, because growing one
+  tile makes it swallow its neighbours -- a row, a cell or an icon has been
+  sized where it is DRAWN instead (`ml_row_h`, `textsel_cell_w/h`);
+  **modern with a keyboard** has been unchanged, since every widget injects
+  the key the screen already reads.
+
+  Chrome registered with `ui_bar` has carried a priority flag: inside its own
+  rect it has taken the tap from a region registered before it, so the band
+  grown over the map's top row has opened the menu instead of stepping the
+  hero. No extra reach beyond its own rect.
+
+- **REQ-535.** **One dismissal rule.** `views_closes_on_tap`
+  (`src/views.h`) has decided it for every page: a page the player chooses on
+  -- rows -- has waited for a row or the band, and a page with nothing to
+  choose has closed on a tap anywhere, as its dialog has. It used to be
+  decided by which branch of the main loop's chain a view fell into, so eight
+  views closed on a stray tap and twelve did not.
+
 - **REQ-530.** **Touch controls have been sized in physical units.** Every
   on-screen control has sized itself from `touch_unit()` (`src/touch.c`): 11%
   of the window's short side, floored at 44px, which is Apple's 44pt and
   Android's 48dp on the phones this ships to. The action bars, the keyboard,
   the digit pad and the corner buttons have all derived from it.
+
+  The window-pixel chrome -- the action bars, the corner buttons, the
+  keyboard and the digit pad -- has been **legacy's alone**. Every one of them
+  draws its label through `gfx_label`, which the iOS backend does not
+  implement, so in modern they were blank boxes; modern has answered a finger
+  with the screens themselves, drawn in the buffer with the pack's own font.
 
   Small **design-space** regions have been answered by a forgiving second
   pass in `resolve_tap`: a tap that hits nothing exactly has taken the

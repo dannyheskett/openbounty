@@ -19,6 +19,7 @@
 #include "modern/uikit.h"
 #include "modern/gamemenu.h"   // GM_PAGE_W: a page is one width
 #include "touch.h"
+#include "uitouch.h"
 #include "select.h"
 #include "layout.h"
 #include "palette.h"
@@ -1411,7 +1412,7 @@ void modern_overlay_draw_controls(const Game *g) {
     int vis_rows = ml_list_fit(b.h);
     int first = ml_list_first(rows, cur_k, vis_rows);
     for (int k = first; k < rows && k < first + vis_rows; k++)
-        touch_region(b.x, b.y + (k - first) * (ml_row_h() + ML_ROW_RULE), b.w, ml_row_h(),
+        ui_tile(b.x, b.y + (k - first) * (ml_row_h() + ML_ROW_RULE), b.w, ml_row_h(),
                      k == c.vis ? KEY_ESCAPE : KEY_ONE + k);
 }
 

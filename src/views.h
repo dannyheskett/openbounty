@@ -39,6 +39,16 @@ int views_depth(void);
 
 // views_active() is declared in engine/include/ui_host.h since engine
 // code (state_serialize, flows) also calls it.
+
+// ---- One dismissal rule ----------------------------------------------------
+//
+// A page with nothing to choose closes on a tap anywhere; a page with rows
+// does not, or a stray tap would answer for the player. This was decided
+// branch by branch in main.c's view chain, so which `else if` a view fell
+// into was the rule -- eight views closed on a tap and twelve did not, for no
+// reason the player could see.
+bool views_closes_on_tap(ViewKind v);
+
 void     views_set(ViewKind v);   // Replace stack with [v] (or empty if VIEW_NONE).
 void     views_dismiss(void);     // Pop top; if stack empty, do nothing.
 
