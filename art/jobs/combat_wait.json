@@ -1,0 +1,17 @@
+{
+  "id": "combat_wait",
+  "prompt": "a bronze hourglass with pale sand running through it, standing on a grey flagstone shelf, warm lamplight, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 8205,
+  "bypass_prompt_expansion": true,
+  "raw_only": false,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/ui/combat_wait.png",
+  "_note": "Rail / combat command tile: generated at 128 because rd_pro__default paints a frame at 96 and 104 whatever the prompt says (ART-PIPELINE, villain portraits), then downscaled to the pack tile by Retro Diffusion's k_centroid tool; the shell draws the frame."
+}

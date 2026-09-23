@@ -27,6 +27,7 @@ need.
 | band | Rome | rule |
 |---|---|---|
 | left edge | x 0-12, lattice | the horizontal space the pane and HUD leave, split 3 : 2 : 3 |
+| left rail | x 12, 96x480 | one tile wide, five icons, only where the surface has spare width (REQ-533); the map has started after it |
 | map pane | x 12, 672x480 | 7x5 tiles of 96 |
 | middle band | x 684-692, lattice | the same module as the side bands: a gold rail against each panel, the pattern between |
 | HUD sidebar | x 692, 96x480 | one tile wide |

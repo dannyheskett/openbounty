@@ -33,6 +33,9 @@ typedef struct {
     int status_h, bar_h;       // modern fixed buffer: the status band and the
                                // band under it, set so the vertical stack
                                // mirrors the horizontal one. 0: the formulas.
+    int rail_w;                // the left rail's column, one tile wide, or 0
+                               // when the surface has no room for it. Legacy
+                               // and a pack with no declared buffer: always 0.
     int sidebar_gap;           // modern fixed buffer: the band between the map
                                // pane and the HUD, as wide as the side bands so
                                // left edge, middle and right edge match. 0 else.
@@ -71,8 +74,12 @@ bool layout_fit_window(int win_w, int win_h, int scale);
 // geometry all keep the sizes the pack declared and simply re-centre. The
 // declared size is the floor, so a surface smaller than it changes nothing.
 // Returns true when the buffer size changed.
+// `want_rail` asks for the left rail's column as well. It is granted only if
+// the tile count that falls out is still at least the pack's declared
+// tiles_w, so a surface with no spare width lays out exactly as it did
+// before the rail existed.
 bool layout_grow_native(int surface_w, int surface_h, int scale,
-                        int want_status_h);
+                        int want_status_h, bool want_rail);
 
 // The smallest window this pack can be played in, derived from its tile size.
 // Set as the window's minimum so the player cannot drag below it. The binding
@@ -165,7 +172,12 @@ int bfont_glyph_h(void);
 //   map.w = screen->w - purse->w - right - left;  (purse = one tile = 48
 //                                                  => 320 - 48 - 16 - 16 = 240)
 //   map.h = screen->h - top - bar - status - bot; (= 200 - 8 - 5 - 9 - 8 = 170)
-#define CL_MAP_X          CL_FRAME_LEFT_W
+// The left rail sits between the frame and the map, with the same gap the
+// sidebar has on the other side, so the two columns mirror each other.
+#define CL_RAIL_W         (g_layout.rail_w)
+#define CL_RAIL_X         CL_FRAME_LEFT_W
+#define CL_RAIL_GAP       (CL_RAIL_W ? CL_SIDEBAR_GAP : 0)
+#define CL_MAP_X          (CL_FRAME_LEFT_W + CL_RAIL_W + CL_RAIL_GAP)
 #define CL_MAP_Y          (CL_FRAME_TOP_H + CL_STATUS_H + CL_BAR_H)  // 22
 #define CL_MAP_W          (g_layout.map_w)     // legacy: tile_w * tiles_w;
                                                // modern: the whole interior
@@ -179,6 +191,8 @@ int bfont_glyph_h(void);
 #define CL_SIDEBAR_Y      CL_MAP_Y
 #define CL_SIDEBAR_W      (g_layout.sidebar_w)                        // one tile
 #define CL_SIDEBAR_H      CL_MAP_H
+#define CL_RAIL_Y         CL_MAP_Y
+#define CL_RAIL_H         CL_MAP_H
 
 // Bottom chrome strip (the 8px decorative frame at the very bottom of the
 // screen). Distinct from the dialog/prompt panel below.

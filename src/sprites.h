@@ -83,6 +83,16 @@ typedef struct {
     Texture2D hud_magic_silhouette;
     Texture2D hud_puzzle_grid;
     Texture2D hud_gold_purse;
+    // The left rail's five tiles, in rail order.
+    Texture2D rail_menu;
+    Texture2D rail_map;
+    Texture2D rail_army;
+    Texture2D rail_search;
+    Texture2D rail_cast;
+    // The combat command panel; Cast reuses rail_cast.
+    Texture2D combat_shoot;
+    Texture2D combat_wait;
+    Texture2D combat_fly;
     int        hud_siege_anim_frames;
     Texture2D *hud_siege_anim;
     int        hud_magic_anim_frames;

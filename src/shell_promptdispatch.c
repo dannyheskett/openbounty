@@ -182,7 +182,9 @@ bool prompt_dispatch_tick(ShellCtx *ctx) {
         tgt.name = "Hostile band";
         tgt.seed_key = pending_foe_id;      // stable identity for RNG seed
         if (foe) { tgt.garrison = foe->garrison;
-                   tgt.garrison_slots = GAME_ARMY_SLOTS; }
+                   tgt.garrison_slots = GAME_ARMY_SLOTS;
+                   // A modern pack's fixed guardian fields all five.
+                   tgt.full_band = CL_IS_MODERN && foe->is_static; }
         shell_set_combat_ground(ctx);
         CombatResult cr = RunCombat(g, ctx->sprites, ctx->render_target,
                                     COMBAT_MODE_FOE, &tgt);

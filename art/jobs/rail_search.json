@@ -1,0 +1,17 @@
+{
+  "id": "rail_search",
+  "prompt": "a lit bronze Roman oil lamp with a small flame standing on dark broken ground, warm light pooling below it, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 8202,
+  "bypass_prompt_expansion": true,
+  "raw_only": false,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/ui/rail_search.png",
+  "_note": "Rail / combat command tile: generated at 128 because rd_pro__default paints a frame at 96 and 104 whatever the prompt says (ART-PIPELINE, villain portraits), then downscaled to the pack tile by Retro Diffusion's k_centroid tool; the shell draws the frame."
+}

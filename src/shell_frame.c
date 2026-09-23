@@ -9,6 +9,7 @@
 #include "present.h"     // CL_SCREEN_W/H (present-frame blit scaling)
 #include "chrome.h"
 #include "hud.h"
+#include "modern/rail.h"
 #include "map_render.h"
 #include "overlay.h"
 
@@ -18,6 +19,7 @@ void draw_frame(const Game *game, const Map *map, const Fog *fog,
     chrome_draw(game, sprites);
     map_render_draw(game, map, fog, sprites);
     hud_draw(game, sprites);
+    rail_draw(game, sprites);
     overlay_draw(game, map, fog, sprites);
 }
 

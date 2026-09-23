@@ -190,6 +190,7 @@ static void animate_pending_combat(ShellCtx *ctx) {
             if (foe) {
                 tgt.garrison = foe->garrison;
                 tgt.garrison_slots = GAME_ARMY_SLOTS;
+                tgt.full_band = CL_IS_MODERN && foe->is_static;
             }
         }
         combat_run_headless_rec(&tmp, mode, &tgt, COMBAT_MAX_ROUNDS, autoplay_combat_policy,

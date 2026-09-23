@@ -7,6 +7,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 TEST init_unit_sets_count_and_max(void) {
     CombatUnit u;
@@ -86,6 +87,58 @@ TEST under_control_invalid_troop_returns_false(void) {
     PASS();
 }
 
+// Open field fields three of the five garrison slots -- the original's quirk --
+// unless the target is a fixed guardian in a modern pack, which fields all
+// five (combat_prepare_foe, engine/combat.c).
+static void fill_five(Unit *g) {
+    for (int i = 0; i < 5; i++) {
+        const TroopDef *t = troop_by_index(i);
+        snprintf(g[i].id, sizeof g[i].id, "%s", t->id);
+        g[i].count = 10 + i;
+    }
+}
+
+static int foe_units(const Combat *c) {
+    int n = 0;
+    for (int i = 0; i < COMBAT_SLOTS; i++)
+        if (c->units[COMBAT_SIDE_AI][i].count > 0) n++;
+    return n;
+}
+
+TEST wandering_band_fields_three(void) {
+    Resources *res = fx_load_resources();
+    ASSERT(res);
+    Unit garrison[5] = { 0 };
+    fill_five(garrison);
+    CombatTarget t = { 0 };
+    t.name = "band"; t.garrison = garrison; t.garrison_slots = 5;
+    Combat c; memset(&c, 0, sizeof c);
+    combat_prepare_foe(&c, &t);
+    ASSERT_EQ(3, foe_units(&c));
+    resources_free(res); free(res);
+    PASS();
+}
+
+TEST fixed_guardian_fields_five(void) {
+    Resources *res = fx_load_resources();
+    ASSERT(res);
+    Unit garrison[5] = { 0 };
+    fill_five(garrison);
+    CombatTarget t = { 0 };
+    t.name = "guardian"; t.garrison = garrison; t.garrison_slots = 5;
+    t.full_band = true;
+    Combat c; memset(&c, 0, sizeof c);
+    combat_prepare_foe(&c, &t);
+    ASSERT_EQ(5, foe_units(&c));
+    // Each on its own row, at the field's right edge.
+    for (int i = 0; i < 5; i++) {
+        ASSERT_EQ(COMBAT_W - 1, c.units[COMBAT_SIDE_AI][i].x);
+        ASSERT_EQ(i, c.units[COMBAT_SIDE_AI][i].y);
+    }
+    resources_free(res); free(res);
+    PASS();
+}
+
 SUITE(unit_combat_unit_suite) {
     RUN_TEST(init_unit_sets_count_and_max);
     RUN_TEST(init_unit_zero_count);
@@ -93,4 +146,6 @@ SUITE(unit_combat_unit_suite) {
     RUN_TEST(under_control_when_leadership_sufficient);
     RUN_TEST(under_control_when_leadership_insufficient);
     RUN_TEST(under_control_invalid_troop_returns_false);
+    RUN_TEST(wandering_band_fields_three);
+    RUN_TEST(fixed_guardian_fields_five);
 }

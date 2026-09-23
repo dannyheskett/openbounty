@@ -54,6 +54,7 @@ void layout_init(const struct Resources *res) {
     g_layout.pack_tiles_h = r->tiles_h;
     g_layout.ui_scale     = (r->ui_scale > 0) ? r->ui_scale : 1;
     g_layout.sidebar_gap  = 0;
+    g_layout.rail_w       = 0;   // granted per surface by layout_grow_native
     g_layout.status_h     = 0;
     g_layout.bar_h        = 0;
     set_base_frame();
@@ -204,7 +205,7 @@ void layout_min_window(int *out_w, int *out_h) {
 // this can only ever add. Growth is in whole tiles and the count stays odd so
 // the hero keeps the centre cell.
 bool layout_grow_native(int surface_w, int surface_h, int scale,
-                        int want_status_h) {
+                        int want_status_h, bool want_rail) {
     if (!g_layout.is_modern || !g_layout.is_native) return false;
     if (scale < 1) scale = 1;
     if (g_layout.native_w <= 0 || g_layout.native_h <= 0) return false;
@@ -220,6 +221,19 @@ bool layout_grow_native(int surface_w, int surface_h, int scale,
     // answer depends on the surface alone, not on what the pane already is.
     int chrome_w = g_layout.native_w - g_layout.tile_w * g_layout.pack_tiles_w;
     int chrome_h = g_layout.native_h - g_layout.tile_h * g_layout.pack_tiles_h;
+
+    // The left rail costs one tile and the sidebar's gap. It is granted only
+    // out of spare width: if reserving it would push the viewport under the
+    // count the pack declared, the rail is dropped and the arithmetic below
+    // is exactly what it was before the rail existed.
+    int rail_w = 0;
+    if (want_rail && g_layout.is_modern) {
+        int cost = g_layout.tile_w + g_layout.sidebar_gap;
+        if ((avail_w - chrome_w - cost) / g_layout.tile_w >= g_layout.pack_tiles_w) {
+            rail_w = g_layout.tile_w;
+            chrome_w += cost;
+        }
+    }
 
     int tiles_w = odd_clamp((avail_w - chrome_w) / g_layout.tile_w);
     int tiles_h = odd_clamp((avail_h - chrome_h) / g_layout.tile_h);
@@ -247,8 +261,9 @@ bool layout_grow_native(int surface_w, int surface_h, int scale,
     int screen_h = chrome_h + g_layout.tile_h * tiles_h;
     if (screen_w == g_layout.screen_w && screen_h == g_layout.screen_h &&
         tiles_w == g_layout.tiles_w && tiles_h == g_layout.tiles_h &&
-        status_h == g_layout.status_h) return false;
+        status_h == g_layout.status_h && rail_w == g_layout.rail_w) return false;
 
+    g_layout.rail_w   = rail_w;
     g_layout.status_h = status_h;
     g_layout.tiles_w  = tiles_w;
     g_layout.tiles_h  = tiles_h;

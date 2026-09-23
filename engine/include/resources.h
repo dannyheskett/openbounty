@@ -1518,6 +1518,17 @@ typedef struct {
         // which is what a troop strip on that screen always played at.
         int  alcove_figure_frame_ms;
         char hud_puzzle_grid[RES_PATH_LEN];
+        // The left rail's five tiles, one map tile each, drawn down the edge
+        // of the map when the surface has room for the column (REQ-528).
+        char rail_menu[RES_PATH_LEN];
+        char rail_map[RES_PATH_LEN];
+        char rail_army[RES_PATH_LEN];
+        char rail_search[RES_PATH_LEN];
+        char rail_cast[RES_PATH_LEN];
+        // The combat command panel's tiles; Cast reuses the rail's lituus.
+        char combat_shoot[RES_PATH_LEN];
+        char combat_wait[RES_PATH_LEN];
+        char combat_fly[RES_PATH_LEN];
         char hud_gold_purse[RES_PATH_LEN];
         char hud_bar_strip[RES_PATH_LEN];   // 320x5 middle bar (GR_SELECT, 1)
         char chrome_overworld[RES_PATH_LEN]; // 320x200 frame bitmap,

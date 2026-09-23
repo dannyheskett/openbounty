@@ -28,9 +28,35 @@ void uk_panel(int x, int y, int w, int h) {
     ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
 }
 
-void uk_sheet(void) {
-    ML_Rect r = ml_full();
+// A full-screen page fills the rect the pack declared. When the buffer is
+// bigger than that -- a phone, a window the player grew -- the page cannot
+// fill the screen and is a modal instead: the world behind it is dimmed and
+// it takes the same ring a panel has. With no spare room this is exactly the
+// old fill and nothing shows around it.
+bool uk_page_is_modal(void) {
+    return CL_IS_MODERN &&
+           (CL_SCREEN_W > CL_SCREEN_BASE_W || CL_SCREEN_H > CL_SCREEN_BASE_H);
+}
+
+void uk_page(ML_Rect r) {
+    if (uk_page_is_modal()) {
+        const Resources *res = resources_current();
+        int pct = (res && res->render.dim > 0) ? res->render.dim : 45;
+        gfx_rect(0, 0, CL_SCREEN_W, CL_SCREEN_H,
+                 (Color){ 0, 0, 0, (unsigned char)overlay_dim_alpha(pct) });
+    }
     gfx_rect(r.x, r.y, r.w, r.h, uk_fill());
+    // The ring is the SCREEN's module, not a panel's: a page is a window on
+    // the world, so it is framed the way the screen is framed, at the frame's
+    // own thickness and outside its rect, so the page keeps every pixel.
+    if (uk_page_is_modal()) {
+        int t = CL_FRAME_LEFT_W;
+        lattice_ring(r.x - t, r.y - t, r.w + 2 * t, r.h + 2 * t, t, t, t, t);
+    }
+}
+
+void uk_sheet(void) {
+    uk_page(ml_full());
 }
 
 int uk_title(int x, int y, int w, const char *left, const char *right, Color right_c) {
@@ -70,8 +96,12 @@ void uk_dim(void) {
     // the map darken alike. A pack that sets none gets a light default.
     const Resources *res = resources_current();
     int pct = (res && res->render.dim > 0) ? res->render.dim : 45;
-    ML_Rect r = ml_full();
-    gfx_rect(r.x, r.y, r.w, r.h, (Color){ 0, 0, 0, (unsigned char)overlay_dim_alpha(pct) });
+    // The WHOLE buffer, not the declared rect: on a surface with room to
+    // spare the declared rect is a box floating inside the screen, and
+    // dimming only that left a bright band around whatever is behind the
+    // panel.
+    gfx_rect(0, 0, CL_SCREEN_W, CL_SCREEN_H,
+             (Color){ 0, 0, 0, (unsigned char)overlay_dim_alpha(pct) });
 }
 
 ML_Rect uk_inlay(int w, int h, const char *title, const char *right) {
@@ -220,7 +250,7 @@ UkScene uk_scene_ex(const char *title, const char *right, Texture2D bd, int rows
 UkScene uk_scene_extra(const char *title, const char *right, Texture2D bd, int rows, int intro_min,
                        int extra_h) {
     ML_Rect r = ml_full();
-    gfx_rect(r.x, r.y, r.w, r.h, uk_fill());
+    uk_page(r);
     int top = uk_title(r.x, r.y, r.w, title, right, PAL_CLR(YELLOW));
     int n = rows < 1 ? 1 : rows;
     int rows_h = ml_list_height(n);
@@ -263,7 +293,7 @@ void uk_scene_doc(const UkScene *L, const UkDoc *doc) {
 ML_Rect uk_frame(const char *title, const char *right) {
     // A step of its own over the whole screen: nothing behind it shows.
     ML_Rect r = ml_full();
-    gfx_rect(r.x, r.y, r.w, r.h, uk_fill());
+    uk_page(r);
     int top = uk_title(r.x, r.y, r.w, title, right, PAL_CLR(YELLOW));
     return (ML_Rect){ r.x, top, r.w, r.y + r.h - top };
 }
@@ -271,7 +301,7 @@ ML_Rect uk_frame(const char *title, const char *right) {
 UkMuster uk_muster(const char *title, const char *right, Texture2D bd, int list_rows, int list_w) {
     UkMuster M;
     ML_Rect r = ml_full();
-    gfx_rect(r.x, r.y, r.w, r.h, uk_fill());
+    uk_page(r);
     int top = uk_title(r.x, r.y, r.w, title, right, PAL_CLR(YELLOW));
     int n = list_rows < 1 ? 1 : list_rows;
     // The band is what is left over the two columns -- sized so a figure at 2x

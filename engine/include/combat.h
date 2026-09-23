@@ -34,6 +34,10 @@ typedef struct {
     // -- so the autoplay planner's prediction always matches the live
     // outcome for the same foe. See combat_seed_rng.
     const char *seed_key;
+    // Open field fields the first three garrison slots, the quirk the original
+    // shipped. A modern pack's hand-placed guardian is a gate rather than a
+    // wandering band, so it fields all five; the shell sets this.
+    bool        full_band;
 } CombatTarget;
 
 // ----- Battlefield constants -------------------------------------------------

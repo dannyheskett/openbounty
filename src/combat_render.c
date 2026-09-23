@@ -201,28 +201,34 @@ void combat_render_frame(const Combat *c, const Game *g,
         }
     }
 
-    // Modern: the bars either side of the field are the same ground, darkened,
-    // with a lattice rail where the field ends.
+    // Modern: the field is a lit clearing in the same ground, darkened, which
+    // runs to the chrome on every side -- so a surface with room to spare
+    // shows more field, not more black. A lattice ring closes the clearing.
     if (CL_IS_MODERN) {
         int fx = CL_COMBAT_X, fw = COMBAT_W * CL_COMBAT_CELL_W;
         int top = CL_COMBAT_Y - (c->castle ? CL_COMBAT_CELL_H : 0);
         int fh = COMBAT_H * CL_COMBAT_CELL_H + (CL_COMBAT_Y - top);
-        for (int side = 0; side < 2; side++) {
-            for (int k = 1; ; k++) {
-                int px = side ? fx + fw + (k - 1) * CL_COMBAT_CELL_W : fx - k * CL_COMBAT_CELL_W;
-                if (side ? px >= CL_SCREEN_W : px + CL_COMBAT_CELL_W <= 0) break;
-                for (int y = 0; y < COMBAT_H; y++) {
-                    int py = CL_COMBAT_Y + y * CL_COMBAT_CELL_H;
-                    if (s_ground.id) ui_blit(s_ground, px, py, CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
-                    else draw_tile(sprites, 0, px, py);
-                }
+        // The whole interior, in the cell grid the field sits on so the
+        // pattern runs through it unbroken.
+        int ix = CL_FRAME_LEFT_W, iw = CL_SCREEN_W - CL_FRAME_LEFT_W - CL_FRAME_RIGHT_W;
+        int iy = CL_MAP_Y,        ih = CL_MAP_H;
+        int x0 = fx, y0 = top;
+        while (x0 > ix) x0 -= CL_COMBAT_CELL_W;
+        while (y0 > iy) y0 -= CL_COMBAT_CELL_H;
+        for (int py = y0; py < iy + ih; py += CL_COMBAT_CELL_H) {
+            for (int px = x0; px < ix + iw; px += CL_COMBAT_CELL_W) {
+                // The field's own cells are already drawn, lit.
+                if (px >= fx && px < fx + fw && py >= top && py < top + fh) continue;
+                if (s_ground.id) ui_blit(s_ground, px, py, CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
+                else draw_tile(sprites, 0, px, py);
             }
         }
         Color shade = { 0, 0, 0, 150 };
-        gfx_rect(0, top, fx, fh, shade);
-        gfx_rect(fx + fw, top, CL_SCREEN_W - fx - fw, fh, shade);
-        lattice_band_v(fx - 4, top, 4, fh);
-        lattice_band_v(fx + fw, top, 4, fh);
+        gfx_rect(ix, iy, fx - ix, ih, shade);                                  // left of the field
+        gfx_rect(fx + fw, iy, ix + iw - (fx + fw), ih, shade);                  // right of it
+        gfx_rect(fx, iy, fw, top - iy, shade);                                  // above
+        gfx_rect(fx, top + fh, fw, iy + ih - (top + fh), shade);                // below
+        lattice_ring(fx - 4, top - 4, fw + 8, fh + 8, 4, 4, 4, 4);
     }
 
     // Siege grid band: row 0 of the grid across the band above the board.

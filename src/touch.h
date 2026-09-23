@@ -58,6 +58,8 @@ enum {
     TOUCH_LIST_TEXTSEL,      // letter selector cells
     TOUCH_LIST_COMBAT_ACTIONS, // modern combat action menu rows
     TOUCH_LIST_CLASS_CONFIRM,  // the class picker's Continue / Cancel rows
+    TOUCH_LIST_RAIL,           // the left rail's five icons
+    TOUCH_LIST_COMBAT_PANEL,   // the combat command panel's rows
 };
 void touch_region_row(int x, int y, int w, int h, int list_id, int row);
 // A list taller than its space: a vertical drag over it moves it a row per

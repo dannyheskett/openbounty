@@ -250,15 +250,16 @@ static inline unsigned char pack_uid(int side, int slot) {
     }
 }
 
-// AI side: open-field foe band -- limit to first 3 of 5 slots
-// ( line 5216). Place at column W-1 = 5, rows 0..2.
+// AI side: open-field foe band -- the first 3 of 5 slots ( line 5216),
+// unless the target asks for the full band (a fixed guardian in a modern
+// pack). Place at column W-1 = 5, rows 0..placed-1.
 // Castles use the full 5 slots (placement happens in reset_match).
 /* exposed for tests */ void combat_prepare_foe(Combat *c, const CombatTarget *target) {
     if (!target || !target->garrison) return;
     int placed = 0;
     int slots = target->garrison_slots;
     if (slots > COMBAT_SLOTS) slots = COMBAT_SLOTS;
-    const int max_band = 3;
+    const int max_band = target->full_band ? COMBAT_SLOTS : 3;
     for (int i = 0; i < slots && placed < max_band; i++) {
         const Unit *src = &target->garrison[i];
         if (!src->id[0] || src->count == 0) continue;

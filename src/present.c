@@ -154,9 +154,12 @@ bool present_refit(RenderTexture2D *rt) {
         // A touch session gets a menu band as tall as a touch target, but
         // only out of the slack the whole tiles leave (layout_grow_native).
         int want_status = input_touch_active() ? touch_unit() / (z > 0 ? z : 1) : 0;
+        // The rail is asked for whenever the world is: layout_grow_native
+        // grants it only where the width pays for it, so this is not a device
+        // or input test -- a small window simply never gets one.
         bool grown = s_grow_world
-            ? layout_grow_native(win_w, win_h, z, want_status)
-            : layout_grow_native(0, 0, 1, 0);
+            ? layout_grow_native(win_w, win_h, z, want_status, CL_IS_MODERN)
+            : layout_grow_native(0, 0, 1, 0, false);
         int w, h;
         present_target_size(win_w, win_h, &w, &h);
         bool changed = grown || (rt->texture.width != w || rt->texture.height != h);

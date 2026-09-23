@@ -87,11 +87,11 @@ TEST native_pane_grows_and_nothing_else_does(void) {
     int frame_l = CL_FRAME_LEFT_W, sidebar = CL_SIDEBAR_W, bar = CL_BAR_H;
 
     // A surface exactly the declared buffer changes nothing.
-    ASSERT_FALSE(layout_grow_native(base_w, base_h, 1, 0));
+    ASSERT_FALSE(layout_grow_native(base_w, base_h, 1, 0, false));
     ASSERT_EQ(base_w, CL_SCREEN_W);
 
     // A phone-shaped surface at 2x: the buffer widens, in whole tiles.
-    ASSERT(layout_grow_native(2400, 1080, 2, 0));
+    ASSERT(layout_grow_native(2400, 1080, 2, 0, false));
     ASSERT(CL_SCREEN_W > base_w);
     ASSERT_EQ(0, (CL_SCREEN_W - base_w) % CL_TILE_W);   // whole tiles only
     ASSERT_EQ(1, CL_MAP_TILES_W % 2);                   // odd: the hero centres
@@ -104,7 +104,7 @@ TEST native_pane_grows_and_nothing_else_does(void) {
     ASSERT_EQ(bar, CL_BAR_H);
 
     // Idempotent: the answer depends on the surface, not on the current pane.
-    ASSERT_FALSE(layout_grow_native(2400, 1080, 2, 0));
+    ASSERT_FALSE(layout_grow_native(2400, 1080, 2, 0, false));
 
     // The menu band takes what the tiles leave over, up to what is asked
     // for, and never a pixel that would cost a tile row.
@@ -113,16 +113,16 @@ TEST native_pane_grows_and_nothing_else_does(void) {
         int before_status = CL_STATUS_H;
         // 1200 tall leaves slack after five whole rows; 1080 leaves none,
         // and the band must not take a row to get its height.
-        ASSERT(layout_grow_native(2400, 1200, 2, before_status + 40));
+        ASSERT(layout_grow_native(2400, 1200, 2, before_status + 40, false));
         ASSERT(CL_STATUS_H > before_status);           // it grew
         ASSERT_EQ(before_rows, CL_MAP_TILES_H);        // but not out of the map
         ASSERT(CL_SCREEN_H <= 1200 / 2);
-        ASSERT_FALSE(layout_grow_native(2400, 1080, 2, before_status + 40) &&
+        ASSERT_FALSE(layout_grow_native(2400, 1080, 2, before_status + 40, false) &&
                      CL_MAP_TILES_H < before_rows);    // no slack: no growth
     }
 
     // And it shrinks back to the floor, never below it.
-    ASSERT(layout_grow_native(832, 540, 1, 0));
+    ASSERT(layout_grow_native(832, 540, 1, 0, false));
     ASSERT_EQ(base_w, CL_SCREEN_W);
     ASSERT_EQ(base_h, CL_SCREEN_H);
     PASS();
@@ -182,6 +182,53 @@ TEST modern_without_native_still_follows_the_window(void) {
     PASS();
 }
 
+// The left rail is a test of the surface, never of the device: it is granted
+// only when the width left over still holds the tile count the pack declared,
+// so the declared buffer never has one and a wide surface does.
+TEST the_rail_is_granted_out_of_spare_width(void) {
+    rome_like();
+    int frame_l = CL_FRAME_LEFT_W, gap = CL_SIDEBAR_GAP, tile = CL_TILE_W;
+
+    // The declared buffer has no room: reserving the column would leave five
+    // tiles against the seven the pack declared.
+    layout_grow_native(CL_SCREEN_W, CL_SCREEN_H, 1, 0, true);
+    ASSERT_EQ(0, CL_RAIL_W);
+    ASSERT_EQ(frame_l, CL_MAP_X);
+
+    // A wide surface pays for it: the column appears and the map starts after
+    // it, by exactly a tile and the sidebar's gap.
+    ASSERT(layout_grow_native(2400, 1080, 2, 0, true));
+    ASSERT_EQ(tile, CL_RAIL_W);
+    ASSERT_EQ(frame_l + tile + gap, CL_MAP_X);
+    ASSERT(CL_MAP_TILES_W >= 7);                 // never under the pack's count
+    ASSERT_EQ(1, CL_MAP_TILES_W % 2);            // still odd: the hero centres
+    ASSERT_EQ(frame_l + tile + gap + CL_MAP_W + gap + CL_SIDEBAR_W + CL_FRAME_RIGHT_W,
+              CL_SCREEN_W);
+    ASSERT(CL_SCREEN_W <= 2400 / 2);             // still inside the surface
+
+    // Idempotent, like the rest of the growth.
+    ASSERT_FALSE(layout_grow_native(2400, 1080, 2, 0, true));
+
+    // Not asked for: the column goes, and the map is back against the frame.
+    ASSERT(layout_grow_native(2400, 1080, 2, 0, false));
+    ASSERT_EQ(0, CL_RAIL_W);
+    ASSERT_EQ(frame_l, CL_MAP_X);
+
+    // The reset path (every screen but the world) never has one.
+    layout_grow_native(0, 0, 1, 0, false);
+    ASSERT_EQ(0, CL_RAIL_W);
+    PASS();
+}
+
+// Legacy never grows and never rails, however wide the window.
+TEST legacy_never_gets_a_rail(void) {
+    legacy();
+    ASSERT_FALSE(layout_grow_native(2400, 1080, 2, 0, true));
+    ASSERT_EQ(0, CL_RAIL_W);
+    ASSERT_EQ(CL_FRAME_LEFT_W, CL_MAP_X);
+    PASS();
+}
+
 SUITE(unit_layout_suite) {
     RUN_TEST(native_buffer_fixes_the_screen_and_widens_the_bands);
     RUN_TEST(native_buffer_ignores_the_window);
@@ -190,6 +237,8 @@ SUITE(unit_layout_suite) {
     RUN_TEST(native_target_is_the_buffer_times_the_zoom);
     RUN_TEST(legacy_geometry_is_unchanged);
     RUN_TEST(modern_without_native_still_follows_the_window);
+    RUN_TEST(the_rail_is_granted_out_of_spare_width);
+    RUN_TEST(legacy_never_gets_a_rail);
     // Leave the layout as the fixture pack expects it.
     legacy();
 }

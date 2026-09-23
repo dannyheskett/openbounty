@@ -92,6 +92,7 @@
 #include "shell_ctx.h"
 #include "shell_promptdispatch.h"
 #include "shell_actions.h"
+#include "modern/rail.h"
 #include "shell_earlyexit.h"
 
 // Adventure spell casting (cast_*, dispatch_adventure_spell, bridge/gate
@@ -1687,6 +1688,10 @@ title:;
                              CL_MAP_TILES_W / 2, CL_MAP_TILES_H / 2, 0);
             touch_request(TOUCH_CHROME_ADVENTURE);
             InputState in = input_poll();
+            // The rail's tap, if any, is the frame's action: it fires the
+            // same case the key would (src/modern/rail.c).
+            InputAction ra = rail_tapped();
+            if (ra != INPUT_ACTION_NONE) in.action = ra;
             shell_dispatch_action(&sctx, &in);
             if (in.action == INPUT_ACTION_NONE && (in.dx || in.dy)) {
                 if (GameStep(&game, &map, &fog, &res, in.dx, in.dy)) {

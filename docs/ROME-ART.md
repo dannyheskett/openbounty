@@ -3,7 +3,7 @@
 **Generated** by `tools/romeart.py prompts` from `art/jobs/*.json`. Do not
 edit by hand: change the job file and run the tool again.
 
-355 jobs. A job with a **Pack path** has produced that file in the pack; a
+365 jobs. A job with a **Pack path** has produced that file in the pack; a
 job without one has produced a step towards it (the still an animation starts
 from). The routes themselves -- which engine, which settings, and why -- have
 been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
@@ -1501,6 +1501,27 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **prompt:** an empty colonnaded avenue in an eastern Roman city, tall limestone columns with striped awnings between them, a tetrapylon at the far end, pale stone paving, dry hills beyond, low golden light, the avenue deserted, no people anywhere
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=102`, `raw_only=true`, `seed=6704`, `style=rd_pro__default`, `target=[240, 102]`, `width=240`
 
+### combat_fly
+
+- **Engine:** Retro Diffusion rd_pro__default (96x96, seed 7910)
+- **Pack path:** `art/ui/combat_fly.png`
+- **prompt:** a leather sandal with small white feathered wings at its heel, resting on a grey flagstone shelf, warm lamplight, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `seed=7910`, `style=rd_pro__default`, `target=[96, 96]`, `width=96`
+
+### combat_shoot
+
+- **Engine:** Retro Diffusion rd_pro__default (128x128, seed 8204)
+- **Pack path:** `art/ui/combat_shoot.png`
+- **prompt:** a bundle of three iron-tipped Roman javelins leaning against a grey flagstone wall beside a round wicker target, warm lamplight, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=128`, `raw_only=false`, `seed=8204`, `style=rd_pro__default`, `target=[96, 96]`, `width=128`
+
+### combat_wait
+
+- **Engine:** Retro Diffusion rd_pro__default (128x128, seed 8205)
+- **Pack path:** `art/ui/combat_wait.png`
+- **prompt:** a bronze hourglass with pale sand running through it, standing on a grey flagstone shelf, warm lamplight, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=128`, `raw_only=false`, `seed=8205`, `style=rd_pro__default`, `target=[96, 96]`, `width=128`
+
 ### disgraced_dux
 
 - **Engine:** Retro Diffusion rd_pro__default (240x102, seed 7431)
@@ -1843,6 +1864,55 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Pack path:** `art/ui/promotion_rank_3.png`
 - **prompt:** Emperor Traianus, a regal clean-shaven grey-haired Roman emperor in a golden laurel wreath and a deep imperial purple toga with gold embroidery over a gilded cuirass, standing before his marble throne under purple hangings and presenting a long ivory sceptre topped with a small golden eagle, held out horizontally in both hands toward the viewer as an award, a proud stern expression, the award catching the light and the brightest thing in the scene, marble columns and a golden eagle standard behind him, the scene filling the whole picture edge to edge
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=170`, `raw_only=true`, `seed=6311`, `style=rd_pro__default`, `target=[144, 170]`, `width=144`
+
+### rail_army
+
+- **Engine:** Retro Diffusion rd_pro__default (96x96, seed 7903)
+- **Pack path:** `art/ui/rail_army.png`
+- **prompt:** a red crested Roman legionary helmet beside a tall red oval shield on a grey flagstone shelf, warm lamplight, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `seed=7903`, `style=rd_pro__default`, `target=[96, 96]`, `width=96`
+
+### rail_cast
+
+- **Engine:** Retro Diffusion rd_pro__default (128x128, seed 8203)
+- **Pack path:** `art/ui/rail_cast.png`
+- **prompt:** a bronze lituus, the augur's curved staff, lying on a grey flagstone shelf with a faint pale glow around its curl, warm lamplight, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=128`, `raw_only=false`, `seed=8203`, `style=rd_pro__default`, `target=[96, 96]`, `width=128`
+
+### rail_land
+
+- **Engine:** Retro Diffusion rd_pro__default (96x96, seed 7906)
+- **Pack path:** `art/ui/rail_land.png`
+- **prompt:** a wooden gangplank running from the prow of a boat down onto a rocky brown shore, blue water below it, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `seed=7906`, `style=rd_pro__default`, `target=[96, 96]`, `width=96`
+
+### rail_map
+
+- **Engine:** Retro Diffusion rd_pro__default (96x96, seed 7902)
+- **Pack path:** `art/ui/rail_map.png`
+- **prompt:** a partly unrolled parchment scroll showing a brown ink coastline, its rolled ends visible at the left and right, lying on a grey flagstone shelf, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `seed=7902`, `style=rd_pro__default`, `target=[96, 96]`, `width=96`
+
+### rail_menu
+
+- **Engine:** Retro Diffusion rd_pro__default (128x128, seed 8201)
+- **Pack path:** `art/ui/rail_menu.png`
+- **prompt:** a bronze stylus lying on an open wooden wax writing tablet on a grey flagstone shelf, warm lamplight, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=128`, `raw_only=false`, `seed=8201`, `style=rd_pro__default`, `target=[96, 96]`, `width=128`
+
+### rail_sail
+
+- **Engine:** Retro Diffusion rd_pro__default (96x96, seed 7905)
+- **Pack path:** `art/ui/rail_sail.png`
+- **prompt:** a small wooden Roman galley with a square cream sail on blue open water seen from the side, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `seed=7905`, `style=rd_pro__default`, `target=[96, 96]`, `width=96`
+
+### rail_search
+
+- **Engine:** Retro Diffusion rd_pro__default (128x128, seed 8202)
+- **Pack path:** `art/ui/rail_search.png`
+- **prompt:** a lit bronze Roman oil lamp with a small flame standing on dark broken ground, warm light pooling below it, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=128`, `raw_only=false`, `seed=8202`, `style=rd_pro__default`, `target=[96, 96]`, `width=128`
 
 ### splash_logo_emblem
 
