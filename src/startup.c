@@ -158,8 +158,7 @@ static void draw_title_sequence(const Sprites *s, double t) {
     int fs = ui_fit_scale(b.width, b.height, CL_SCREEN_W, CL_SCREEN_H);
     int pw = b.width * fs, ph = b.height * fs;
     int ox = (CL_SCREEN_W - pw) / 2, oy = (CL_SCREEN_H - ph) / 2;
-    // Full-bleed art, in the frame's lattice where the screen is larger.
-    page_art_margins((ML_Rect){ ox, oy, pw, ph });
+    // Full-bleed art, on black where the screen is larger.
     gfx_rect(ox, oy, pw, ph, title_purple());
     unsigned char a = (unsigned char)(255 * title_phase(t, TITLE_HOLD, TITLE_FADED));
     gfx_texture_draw(b, (Rectangle){ 0, 0, (float)b.width, (float)b.height },
@@ -188,7 +187,7 @@ static bool any_key_pressed(void) { return ui_any_key_pressed(); }
 // A full-screen splash: the texture centred on `bg_color`.
 static void draw_splash(Texture2D tex, Color bg_color) {
     gfx_clear(bg_color);
-    // Modern: full-bleed art at the largest whole multiple, in the lattice.
+    // Modern: full-bleed art at the largest whole multiple, on black.
     if (CL_IS_MODERN) { page_art(tex, NULL); return; }
     // Splash art is authored in the 320x200 design space; legacy draws it at 1x.
     int fs = ui_fit_scale(tex.width, tex.height, CL_SCREEN_W, CL_SCREEN_H);

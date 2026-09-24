@@ -2235,8 +2235,8 @@ every menu; this section has held the rules.
   chrome and its one-pixel window lines (`legacy_window_frame`,
   `legacy_panel_frame`, `src/ui.c`), which have drawn nothing in modern.
   Splash, title and class-picker art has been drawn at the largest whole
-  scale that fits the screen, the frame's lattice round it (`page_art`;
-  legacy at 1x). Rome has shipped no chrome bitmap or bar strip.
+  scale that fits the screen, on black (`page_art`; legacy at 1x); the
+  victory cartoon has had the frame's lattice round it. Rome has shipped no chrome bitmap or bar strip.
 - **REQ-430c.** **Pack-declared TrueType font.** A modern pack has been able
   to declare a `font` block (`file`, `size`, `caps`, `license`; `ResFont`,
   `engine/resources.c`, both paths in the manifest). The shell has had two

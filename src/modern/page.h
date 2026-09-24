@@ -172,9 +172,10 @@ Page    page_caption(int h, const char *title, const char *back, int tap_key);
 
 // ---- full-bleed art ---------------------------------------------------------------
 
-// Art that is the whole screen (the title, the class painting): `t` at the
-// largest whole multiple the screen holds, centred, and the screen round it
-// the frame's lattice. Returns where it went and *scale its multiple.
+// Art that is the whole screen before the game (the logo, the title, the
+// class painting): `t` at the largest whole multiple the screen holds,
+// centred on the black the screen has been cleared to. Returns where it went
+// and *scale its multiple.
 ML_Rect page_art(Texture2D t, int *scale);
 // The lattice round a rect of full-bleed art already drawn (the cartoon).
 void    page_art_margins(ML_Rect art);

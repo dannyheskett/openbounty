@@ -1036,8 +1036,9 @@ Source: `src/modern/views_render.c` `draw_puzzle`, `cv_icon`,
 
 **DSGN-0108. Full-bleed art.** The logo, the title, the class painting and
 the victory cartoon have been drawn at the largest whole multiple of their
-authored size that has fitted the screen on both axes (at least 1×), centred,
-the screen round them the frame's lattice railed against the art.
+authored size that has fitted the screen on both axes (at least 1×), centred.
+Before the game the screen round the art has been black; round the victory
+cartoon it has been the frame's lattice, railed against the art.
 Source: `src/modern/page.c` `page_art`, `page_art_margins`; `src/ui.c`
 `ui_fit_scale`; `src/startup.c`; `src/end_cartoon.c` `cartoon_place`.
 
@@ -1465,7 +1466,7 @@ Source: `src/modern/page.c` `page_status`; `src/encode_dialog.c`
 **DSGN-0145. Pre-game frames.** The pre-game screens have drawn no frame:
 each has cleared to black and set the frame bare (DSGN-0030), so a page over
 the art has been measured from the screen's edges, and the art has been drawn
-full-bleed (DSGN-0108).
+full-bleed on that black (DSGN-0108).
 Source: `src/startup.c` `frame_begin`.
 
 **DSGN-0146. Logo.** The publisher's logo (`game.json:sprites.ui.splash_logo`)
