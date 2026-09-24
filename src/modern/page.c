@@ -412,10 +412,7 @@ ML_Rect page_art(Texture2D t, int *scale) {
     int s = ui_fit_scale(t.width, t.height, CL_SCREEN_W, CL_SCREEN_H);
     ML_Rect a = { (CL_SCREEN_W - t.width * s) / 2, (CL_SCREEN_H - t.height * s) / 2,
                   t.width * s, t.height * s };
-    if (t.id) {
-        page_art_margins(a);
-        ui_blit(t, a.x, a.y, a.w, a.h);
-    }
+    if (t.id) ui_blit(t, a.x, a.y, a.w, a.h);
     if (scale) *scale = s;
     return a;
 }
