@@ -13,6 +13,8 @@ static Entry    s_ent[RES_TILE_CODE_COUNT];
 static int      s_n = 0;
 static unsigned s_seed = 0;
 
+void tilevar_seed(unsigned seed) { s_seed = seed; }
+
 void tilevar_init(const struct Resources *res, unsigned seed) {
     const Resources *r = (const Resources *)res;
     s_n = 0;

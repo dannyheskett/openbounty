@@ -42,6 +42,35 @@ static void set_base_frame(void) {
     g_layout.frame_b =  8 * g_layout.ui_scale;
 }
 
+static int odd_clamp(int n);
+
+// A declared buffer's screen at w x h: everything between the two columns is
+// map. The map counts an odd number of whole tiles each way, never fewer than
+// the pack declared; it draws them centred across, with a part tile either
+// side, and down from its top, with a part row at its foot (map_render.c).
+// Past the tile ceiling the screen stops growing and the surface's remainder
+// is letterboxed.
+static void native_fit(int w, int h) {
+    int side = CL_FRAME_LEFT_W + g_layout.rail_w + g_layout.sidebar_gap;
+    int pane_w = w - 2 * side;
+    int pane_h = h - CL_FRAME_TOP_H - CL_FRAME_BOTTOM_H;
+    int tw = odd_clamp(pane_w / g_layout.tile_w);
+    int th = odd_clamp(pane_h / g_layout.tile_h);
+    if (tw < g_layout.pack_tiles_w) tw = g_layout.pack_tiles_w;
+    if (th < g_layout.pack_tiles_h) th = g_layout.pack_tiles_h;
+    // At the ceiling a part tile either side is all the pane can show.
+    if (tw == CL_TILES_MAX && pane_w > (tw + 1) * g_layout.tile_w)
+        pane_w = (tw + 1) * g_layout.tile_w;
+    if (th == CL_TILES_MAX && pane_h > (th + 1) * g_layout.tile_h)
+        pane_h = (th + 1) * g_layout.tile_h;
+    g_layout.tiles_w  = tw;
+    g_layout.tiles_h  = th;
+    g_layout.map_w    = pane_w;
+    g_layout.map_h    = pane_h;
+    g_layout.screen_w = pane_w + 2 * side;
+    g_layout.screen_h = pane_h + CL_FRAME_TOP_H + CL_FRAME_BOTTOM_H;
+}
+
 void layout_init(const struct Resources *res) {
     if (!res) return;
     const ResRender *r = &((const Resources *)res)->render;
@@ -54,13 +83,11 @@ void layout_init(const struct Resources *res) {
     g_layout.pack_tiles_h = r->tiles_h;
     g_layout.ui_scale     = (r->ui_scale > 0) ? r->ui_scale : 1;
     g_layout.sidebar_gap  = 0;
-    g_layout.rail_w       = 0;   // granted per surface by layout_grow_native
-    // Cleared with the rest: it is only written when the declared buffer
-    // mirrors its bands, and a stale value from the last pack loaded made the
-    // next pack's first grow report a change it had not made.
-    g_layout.native_status_h = 0;
-    g_layout.status_h     = 0;
-    g_layout.bar_h        = 0;
+    g_layout.rail_w       = 0;
+    g_layout.no_band      = 0;
+    g_layout.native_w     = 0;
+    g_layout.native_h     = 0;
+    g_layout.is_native    = 0;
     set_base_frame();
 
     g_layout.map_w     = g_layout.tile_w * g_layout.tiles_w;
@@ -72,75 +99,23 @@ void layout_init(const struct Resources *res) {
     g_layout.screen_h  = CL_FRAME_TOP_H + CL_STATUS_H + CL_BAR_H
                        + g_layout.map_h + CL_FRAME_BOTTOM_H;
 
-    // A fixed buffer: the pack said how big the screen is, and the viewport
-    // is exactly the declared tile count. Whatever the viewport, sidebar and
-    // thin bands do not cover is split between the two side bands and between
-    // the top and bottom bands, so the map keeps its centre. Rome's 800x510
-    // with 7x5 tiles of 96 gives 16-pixel sides; the top and bottom bands
-    // shrink below their own 8px base to fit the declared height (see the
-    // shrink step just below).
-    // resources_load has already rejected a buffer too small to hold it.
-    g_layout.is_native = 0;
-    // A modern font makes the status band taller than the 9 units the base
-    // bands were summed with; the top and bottom bands give that back, down
-    // to a floor of two units (the lattice rail), before the buffer is
-    // judged too small.
-    if (r->mode == RENDER_MODE_MODERN && r->native_h > 0 && r->native_h < g_layout.screen_h) {
-        int short_by = g_layout.screen_h - r->native_h;
-        int floor_b = 2 * g_layout.ui_scale;
-        int give = (g_layout.frame_t - floor_b) + (g_layout.frame_b - floor_b);
-        if (give >= short_by) {
-            int t = short_by / 2, b = short_by - short_by / 2;
-            if (g_layout.frame_t - t < floor_b) { b += floor_b - (g_layout.frame_t - t); t = g_layout.frame_t - floor_b; }
-            if (g_layout.frame_b - b < floor_b) { t += floor_b - (g_layout.frame_b - b); b = g_layout.frame_b - floor_b; }
-            g_layout.frame_t -= t;
-            g_layout.frame_b -= b;
-            g_layout.screen_h = r->native_h;
-        }
-    }
-    if (r->mode == RENDER_MODE_MODERN && r->native_w > 0 && r->native_h > 0 &&
-        r->native_w >= g_layout.screen_w && r->native_h >= g_layout.screen_h) {
-        int slack_w = r->native_w - g_layout.screen_w;
-        int slack_h = r->native_h - g_layout.screen_h;
-        g_layout.frame_l += slack_w / 2;
-        g_layout.frame_r += slack_w - slack_w / 2;
-        g_layout.frame_t += slack_h / 2;
-        g_layout.frame_b += slack_h - slack_h / 2;
-        g_layout.screen_w  = r->native_w;
-        g_layout.screen_h  = r->native_h;
-        g_layout.native_w  = r->native_w;
-        g_layout.native_h  = r->native_h;
-        g_layout.is_native = 1;
-
-        // Spacing across the screen: the horizontal space the map pane and the
-        // HUD do not use is split three ways -- left edge, a band between the
-        // pane and the HUD, right edge -- in the proportion 3 : 2 : 3, so the
-        // middle band is two thirds of an edge instead of the HUD sitting
-        // flush against the map. What the proportion leaves goes to the two
-        // edges. Rome's 800 = 12 + 672 + 8 + 96 + 12.
-        int spare = r->native_w - g_layout.map_w - g_layout.sidebar_w;
-        int gap  = spare * 2 / 8;
-        int side = spare - gap;
-        g_layout.sidebar_gap = gap;
-        g_layout.frame_l = side / 2;
-        g_layout.frame_r = side - side / 2;
-
-        // The vertical stack mirrors the horizontal one: top edge, status
-        // band, band, map pane, bottom edge -- the status band standing in
-        // for the HUD, the band under it the same width as the one beside the
-        // HUD, and both outer edges as thick as the side edges. The status
-        // band takes what is left, provided that still holds a text line;
-        // otherwise the buffer is too short to mirror and keeps the frames
-        // computed above. Rome's 532 = 12 + 20 + 8 + 480 + 12.
-        int edge = g_layout.frame_l;
-        int status = r->native_h - g_layout.map_h - 2 * edge - gap;
-        if (status >= bfont_glyph_h()) {
-            g_layout.frame_t  = edge;
-            g_layout.frame_b  = edge;
-            g_layout.bar_h    = gap;
-            g_layout.status_h = status;
-            g_layout.native_status_h = status;
-        }
+    // A declared buffer: the smallest screen the pack is drawn on. Across it,
+    // the frame, the left column (the rail), a band, the map, a band, the
+    // right column (the HUD) and the frame; down it, the frame, the map and the
+    // frame -- no status band. Rome's 800 x 504 is 12 + 96 + 4 + 576 + 4 + 96
+    // + 12 by 12 + 480 + 12. resources_load has already rejected a buffer too
+    // small to hold it.
+    if (r->mode == RENDER_MODE_MODERN && r->native_w > 0 && r->native_h > 0) {
+        int frame = RES_MODERN_FRAME * g_layout.ui_scale;
+        g_layout.frame_l = g_layout.frame_r = frame;
+        g_layout.frame_t = g_layout.frame_b = frame;
+        g_layout.sidebar_gap = RES_MODERN_GAP * g_layout.ui_scale;
+        g_layout.rail_w      = g_layout.tile_w;
+        g_layout.no_band     = 1;
+        g_layout.native_w    = r->native_w;
+        g_layout.native_h    = r->native_h;
+        g_layout.is_native   = 1;
+        native_fit(r->native_w, r->native_h);
     }
 
     // Legacy opens at 2x because 320x200 is tiny on a modern display. A modern
@@ -163,10 +138,10 @@ static int odd_clamp(int n) {
 }
 
 void layout_min_window(int *out_w, int *out_h) {
-    // A fixed buffer is the floor: it is shown whole at 1x or not at all.
+    // A declared buffer is the smallest screen: the window never goes below it.
     if (g_layout.is_native) {
-        if (out_w) *out_w = g_layout.screen_w;
-        if (out_h) *out_h = g_layout.screen_h;
+        if (out_w) *out_w = g_layout.native_w;
+        if (out_h) *out_h = g_layout.native_h;
         return;
     }
     // Two things set the floor, and the pack's tile size moves both, so this
@@ -197,85 +172,20 @@ void layout_min_window(int *out_w, int *out_h) {
                       + CL_BAR_H + CL_FRAME_BOTTOM_H;
 }
 
-// Grow a declared buffer's MAP PANE only (layout.h).
-//
-// Everything the pack sized stays the size it declared: the chrome bands, the
-// sidebar and its gap, the status and bar heights, every dialog and panel --
-// they are built from the content rect, so they simply re-centre in a wider
-// buffer. Only the viewport gains tiles, which is the one thing a bigger
-// screen should buy: more world, not bigger pixels.
-//
-// The surface is measured at the scale, and the DECLARED size is the floor, so
-// this can only ever add. Growth is in whole tiles and the count stays odd so
-// the hero keeps the centre cell.
-bool layout_grow_native(int surface_w, int surface_h, int scale,
-                        int want_status_h, bool want_rail) {
+// A declared buffer takes the whole surface (layout.h). The declared size is
+// the floor: below it the screen stays at the declared size and present.c fits
+// it down to the surface.
+bool layout_grow_native(int surface_w, int surface_h, int scale) {
     if (!g_layout.is_modern || !g_layout.is_native) return false;
     if (scale < 1) scale = 1;
-    if (g_layout.native_w <= 0 || g_layout.native_h <= 0) return false;
-
-    // What the buffer would be at this scale, never below the declared floor.
-    int avail_w = surface_w / scale;
-    int avail_h = surface_h / scale;
-    if (avail_w < g_layout.native_w) avail_w = g_layout.native_w;
-    if (avail_h < g_layout.native_h) avail_h = g_layout.native_h;
-
-    // The furniture around the pane, at the declared size. Taking it from the
-    // declared buffer rather than the current one keeps this idempotent: the
-    // answer depends on the surface alone, not on what the pane already is.
-    int chrome_w = g_layout.native_w - g_layout.tile_w * g_layout.pack_tiles_w;
-    int chrome_h = g_layout.native_h - g_layout.tile_h * g_layout.pack_tiles_h;
-
-    // The left rail costs one tile and the sidebar's gap. It is granted only
-    // out of spare width: if reserving it would push the viewport under the
-    // count the pack declared, the rail is dropped and the arithmetic below
-    // is exactly what it was before the rail existed.
-    int rail_w = 0;
-    if (want_rail && g_layout.is_modern) {
-        int cost = g_layout.tile_w + g_layout.sidebar_gap;
-        if ((avail_w - chrome_w - cost) / g_layout.tile_w >= g_layout.pack_tiles_w) {
-            rail_w = g_layout.tile_w;
-            chrome_w += cost;
-        }
-    }
-
-    int tiles_w = odd_clamp((avail_w - chrome_w) / g_layout.tile_w);
-    int tiles_h = odd_clamp((avail_h - chrome_h) / g_layout.tile_h);
-    if (tiles_w < g_layout.pack_tiles_w) tiles_w = g_layout.pack_tiles_w;
-    if (tiles_h < g_layout.pack_tiles_h) tiles_h = g_layout.pack_tiles_h;
-
-    // The menu band may take what the whole tiles leave over, up to the
-    // height asked for (a touch unit) -- and not one pixel more, because the
-    // tile count is odd and losing a row costs two rows of world, not one.
-    // The DECLARED band, not the live one: chrome_h below is derived from the
-    // declared buffer, so measuring from a band this function already grew
-    // would count the growth twice.
-    int base_status = g_layout.native_status_h > 0 ? g_layout.native_status_h
-                                                   : g_layout.status_h;
-    int status_h = base_status;
-    if (want_status_h > base_status) {
-        int spare = avail_h - (chrome_h + g_layout.tile_h * tiles_h);
-        int give = want_status_h - base_status;
-        if (give > spare) give = spare;
-        if (give > 0) status_h = base_status + give;
-    }
-    chrome_h += status_h - base_status;
-
-    int screen_w = chrome_w + g_layout.tile_w * tiles_w;
-    int screen_h = chrome_h + g_layout.tile_h * tiles_h;
-    if (screen_w == g_layout.screen_w && screen_h == g_layout.screen_h &&
-        tiles_w == g_layout.tiles_w && tiles_h == g_layout.tiles_h &&
-        status_h == g_layout.status_h && rail_w == g_layout.rail_w) return false;
-
-    g_layout.rail_w   = rail_w;
-    g_layout.status_h = status_h;
-    g_layout.tiles_w  = tiles_w;
-    g_layout.tiles_h  = tiles_h;
-    g_layout.map_w    = g_layout.tile_w * tiles_w;
-    g_layout.map_h    = g_layout.tile_h * tiles_h;
-    g_layout.screen_w = screen_w;
-    g_layout.screen_h = screen_h;
-    return true;
+    int w = surface_w / scale, h = surface_h / scale;
+    if (w < g_layout.native_w) w = g_layout.native_w;
+    if (h < g_layout.native_h) h = g_layout.native_h;
+    int was_w = g_layout.screen_w, was_h = g_layout.screen_h;
+    int was_tw = g_layout.tiles_w, was_th = g_layout.tiles_h;
+    native_fit(w, h);
+    return g_layout.screen_w != was_w || g_layout.screen_h != was_h ||
+           g_layout.tiles_w != was_tw || g_layout.tiles_h != was_th;
 }
 
 bool layout_fit_window(int win_w, int win_h, int scale) {

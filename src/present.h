@@ -17,26 +17,18 @@
 // Re-fit the layout to the window and, if the design-space screen size changed,
 // reallocate `*rt` to match. Returns true when the target was replaced.
 //
-// Modern mode derives the buffer FROM the window, so the buffer is stale the
-// moment the window is resized: the frame is then drawn at the old size and
-// present_scaled either crops it or leaves a border. Every loop that owns a
-// render target has to call this at the top of its frame -- not just the main
-// one. The startup loop not calling it is why a resized window clipped the
-// class-select screen top and bottom.
+// Modern derives the buffer FROM the window, so the buffer is stale the moment
+// the window is resized. Every loop that owns a render target calls this at
+// the top of its frame -- not just the main one.
 //
-// Legacy geometry is fixed, so layout_fit_window is a no-op and this always
-// returns false.
-// Whether the NEXT refit may grow the map pane past the declared buffer
-// (layout_grow_native). Only world exploration may: a town, a castle, the
-// battlefield, the title and every dialog keep the size the pack declared and
-// are letterboxed, because their layouts are drawn for that size and a wider
-// buffer would leave them adrift in it.
-//
-// Default off, and every screen that is not the world leaves it off, so a new
-// screen cannot grow by accident.
-void present_allow_growth(bool on);
-
+// A declared buffer (CL_IS_NATIVE) takes the whole surface -- the window less
+// its safe-area insets -- on every screen, at the largest whole zoom the
+// declared buffer fits (layout_grow_native). Legacy geometry is fixed, so
+// layout_fit_window is a no-op and this always returns false.
 bool present_refit(RenderTexture2D *rt);
+// The last present_refit changed the screen: a tap made on the frame before
+// aimed at a layout that is gone (touch.c drops it).
+bool present_layout_changed(void);
 
 // The size the render target should be for this window: the screen size, or
 // for a fixed buffer (CL_IS_NATIVE) the screen times the presentation scale,
@@ -81,11 +73,6 @@ int  present_get_scale(void);
 // 1x, 2x, 3x whose whole buffer fits the window.
 int  present_max_scale(int win_w, int win_h);
 
-// Fixed buffer only: resize the window to the buffer times `scale` (1..3), so
-// the zoom is a whole-window ratio of the buffer rather than a crop of it.
-// Does nothing in fullscreen, when maximised, or for a buffer that follows
-// the window.
-void present_zoom_window(int scale);
 
 // Begin the frame and blit `rt` to the window, integer-scaled and centred,
 // with black letterbox around it. Takes the render texture BY VALUE; most
@@ -103,22 +90,26 @@ void present_scaled(RenderTexture2D rt);
 // mapping is testable without a window.
 bool present_window_to_screen(int wx, int wy, int *sx, int *sy);
 
+// A length in window pixels (a touch unit, a finger's slack) in design-space
+// pixels at the last present_scaled's blit: the length itself before any.
+int present_window_len_to_design(int len);
+
 // The letterboxed blit rect from the last present_scaled call, in window
 // pixels. The touch layer lays its chrome out around this.
 void present_last_dst(int *x, int *y, int *w, int *h);
 
-// The scale the last frame was blitted at: window pixels per design pixel.
-// touch.c converts its physical sizes back into design pixels with it.
-int present_get_dst_scale(void);
-
-// Record the blit rect + scale the mapping above reads. Called by
-// present_scaled with what it actually drew; public so tests can exercise
-// present_window_to_screen without a window.
+// Record a blit rect drawn at a whole `scale`, for present_window_to_screen:
+// public so tests can exercise the mapping without a window.
 void present_store_dst(int x, int y, int w, int h, int scale);
 
 // The largest whole number of times a dst_w x dst_h frame fits inside a
 // safe_w x safe_h area, at least 1. The mobile presentation multiple; see
 // present.c.
 int present_fit_multiple(int dst_w, int dst_h, int safe_w, int safe_h);
+
+// A w x h frame too big for a room_w x room_h area, shrunk to fit it with its
+// shape kept: true and the fitted size when it had to shrink, false (and the
+// size unchanged) when it already fits.
+bool present_fit_down(int w, int h, int room_w, int room_h, int *out_w, int *out_h);
 
 #endif

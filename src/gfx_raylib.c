@@ -20,8 +20,19 @@ void gfx_rect(int x, int y, int w, int h, Color color) {
     DrawRectangle(x, y, w, h, color);
 }
 
+// A 1px outline drawn INSIDE the rect, as four filled strips -- the way iOS
+// draws it (ios/gfx_metal.mm). raylib's DrawRectangleLines is GL lines, which
+// under a zoom camera rasterise one device pixel wide and drop the vertical
+// edges between pixel centres; filled strips scale with the camera like every
+// other rect.
 void gfx_rect_lines(int x, int y, int w, int h, Color color) {
-    DrawRectangleLines(x, y, w, h, color);
+    if (w <= 0 || h <= 0) return;
+    DrawRectangle(x, y, w, 1, color);
+    if (h > 1) DrawRectangle(x, y + h - 1, w, 1, color);
+    if (h > 2) {
+        DrawRectangle(x, y + 1, 1, h - 2, color);
+        if (w > 1) DrawRectangle(x + w - 1, y + 1, 1, h - 2, color);
+    }
 }
 
 void gfx_rect_rounded(int x, int y, int w, int h, float roundness,
@@ -72,6 +83,10 @@ void gfx_texture_point(Texture2D t) {
 void gfx_texture_point_clamp(Texture2D t) {
     SetTextureFilter(t, TEXTURE_FILTER_POINT);
     SetTextureWrap(t, TEXTURE_WRAP_CLAMP);
+}
+
+void gfx_texture_smooth(Texture2D t) {
+    SetTextureFilter(t, TEXTURE_FILTER_BILINEAR);
 }
 
 Image gfx_image_from_memory(const char *ext, const unsigned char *bytes, int size) {

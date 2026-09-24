@@ -6,8 +6,7 @@
 #include "layout.h"
 #include "ui.h"
 #include "chrome.h"
-#include "modern/mlist.h"   // ml_hint_text
-#include "lattice.h"
+#include "modern/uikit.h"   // UK_IDLE_FPS
 #include "ob_types.h"
 #include <stdio.h>
 #include <stdarg.h>
@@ -20,11 +19,14 @@
 //   s->combat_tile[5..10]  castle wall pieces (codes from castle_omap)
 //   s->combat_tile[11..14] cursor sprites (rings)
 //
-// Layout (320x200 design space, chrome y=22..191):
+// Layout, legacy (320x200 design space, chrome y=22..191):
 //   - Combat occupies the full inner width 288 (16..303) so cells
 //     are 48x34. No sidebar in combat mode.
 //   - Title bar text rendered into the existing chrome status
 //     strip via chrome_draw_with_status.
+// Layout, modern: the battle takes the base screen's places (page_combat) --
+// the commands in the left column, the turn in the right, the field where
+// the map stands.
 
 // ----- Title bar -------------------------------------------------------------
 
@@ -94,6 +96,19 @@ void combat_format_title(const Combat *c, const Game *g, char *buf, int cap) {
 
 static Texture2D s_ground;   // see combat_render_set_ground
 
+// Modern: the field's place in the battle (combat_render_set_field).
+static int  s_field_x, s_field_y;
+static bool s_wall;
+
+void combat_render_set_field(int x, int y, bool wall) {
+    s_field_x = x;
+    s_field_y = y;
+    s_wall = wall;
+}
+
+int combat_field_x(void) { return s_field_x; }
+int combat_field_y(void) { return s_field_y; }
+
 void combat_render_set_ground(Texture2D ground) { s_ground = ground; }
 
 static int s_atk_side = -1, s_atk_x, s_atk_y, s_atk_frame = -1;
@@ -156,14 +171,17 @@ static void draw_unit(const CombatUnit *u, int side,
         ui_blit_mirrored(tex, px, py, CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
     else
         ui_blit(tex, px, py, CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
-    // Count badge: white digits on black band, centered horizontally,
-    // anchored at the bottom of the cell.
     if (shown == 0) return;          // dying under its splat: no badge
+    combat_count_badge(px, py, CL_COMBAT_CELL_W, CL_COMBAT_CELL_H, shown);
+}
+
+void combat_count_badge(int x, int y, int w, int h, int count) {
+    // White digits on a black band, centred across the cell, on its foot.
     char buf[16];
-    snprintf(buf, sizeof buf, "%d", shown);
+    snprintf(buf, sizeof buf, "%d", count);
     Vector2 m = bfont_measure(buf);
-    int bx = px + (CL_COMBAT_CELL_W - (int)m.x) / 2;
-    int by = py + CL_COMBAT_CELL_H - BFONT_GLYPH_H - CL_UI;
+    int bx = x + (w - (int)m.x) / 2;
+    int by = y + h - BFONT_GLYPH_H - CL_UI;
     gfx_rect(bx - CL_UI, by - CL_UI,
                   (int)m.x + 2 * CL_UI, BFONT_GLYPH_H + 2 * CL_UI,
                   PAL_CLR(BLACK));
@@ -176,8 +194,9 @@ void combat_render_frame(const Combat *c, const Game *g,
                          const Sprites *sprites) {
     // Full-screen black so any letterbox area outside the chrome stays
     // dark; the chrome bitmap composites the frame on top, and the
-    // combat field sits inside the inner area.
-    gfx_rect(0, 0, CL_SCREEN_W, CL_SCREEN_H, PAL_CLR(BLACK));
+    // combat field sits inside the inner area. Modern: the battle's frame and
+    // ground are already drawn (combat_loop.c), and the field goes in them.
+    if (!CL_IS_MODERN) gfx_rect(0, 0, CL_SCREEN_W, CL_SCREEN_H, PAL_CLR(BLACK));
 
     // A siege on a pack that ships a full siege grid (sprites.ui.siege_grid)
     // draws each cell's own tile as the ground, with the walls painted in the
@@ -201,38 +220,10 @@ void combat_render_frame(const Combat *c, const Game *g,
         }
     }
 
-    // Modern: the field is a lit clearing in the same ground, darkened, which
-    // runs to the chrome on every side -- so a surface with room to spare
-    // shows more field, not more black. A lattice ring closes the clearing.
-    if (CL_IS_MODERN) {
-        int fx = CL_COMBAT_X, fw = COMBAT_W * CL_COMBAT_CELL_W;
-        int top = CL_COMBAT_Y - (c->castle ? CL_COMBAT_CELL_H : 0);
-        int fh = COMBAT_H * CL_COMBAT_CELL_H + (CL_COMBAT_Y - top);
-        // The whole interior, in the cell grid the field sits on so the
-        // pattern runs through it unbroken.
-        int ix = CL_FRAME_LEFT_W, iw = CL_SCREEN_W - CL_FRAME_LEFT_W - CL_FRAME_RIGHT_W;
-        int iy = CL_MAP_Y,        ih = CL_MAP_H;
-        int x0 = fx, y0 = top;
-        while (x0 > ix) x0 -= CL_COMBAT_CELL_W;
-        while (y0 > iy) y0 -= CL_COMBAT_CELL_H;
-        for (int py = y0; py < iy + ih; py += CL_COMBAT_CELL_H) {
-            for (int px = x0; px < ix + iw; px += CL_COMBAT_CELL_W) {
-                // The field's own cells are already drawn, lit.
-                if (px >= fx && px < fx + fw && py >= top && py < top + fh) continue;
-                if (s_ground.id) ui_blit(s_ground, px, py, CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
-                else draw_tile(sprites, 0, px, py);
-            }
-        }
-        Color shade = { 0, 0, 0, 150 };
-        gfx_rect(ix, iy, fx - ix, ih, shade);                                  // left of the field
-        gfx_rect(fx + fw, iy, ix + iw - (fx + fw), ih, shade);                  // right of it
-        gfx_rect(fx, iy, fw, top - iy, shade);                                  // above
-        gfx_rect(fx, top + fh, fw, iy + ih - (top + fh), shade);                // below
-        lattice_ring(fx - 4, top - 4, fw + 8, fh + 8, 4, 4, 4, 4);
-    }
-
     // Siege grid band: row 0 of the grid across the band above the board.
-    if (grid) {
+    // Modern shows it only where the map's place has room for it.
+    const bool wall_row = !CL_IS_MODERN || s_wall;
+    if (grid && wall_row) {
         for (int x = 0; x < COMBAT_W; x++) {
             int px, py;
             cell_origin(x, 0, &px, &py);
@@ -245,7 +236,7 @@ void combat_render_frame(const Combat *c, const Game *g,
     // Siege back wall: a decorative run across the band above row 0, field
     // tiles beneath it, only when the pack names one (sprites.ui.siege_back_wall)
     // and only for a siege. Outside the grid, so nothing in play changes.
-    if (!grid && c->castle && sprites->siege_back_wall.id) {
+    if (!grid && wall_row && c->castle && sprites->siege_back_wall.id) {
         for (int x = 0; x < COMBAT_W; x++) {
             int px, py;
             cell_origin(x, 0, &px, &py);
@@ -307,26 +298,22 @@ void combat_render_frame(const Combat *c, const Game *g,
     // -- the active unit's own sprite-frame cycling indicates whose turn
     // it is.
     if (c->picker_active) {
-        int idx = 11 + (c->cursor_frame & 3);
+        // Modern: its four frames turn at the idle pace; legacy's holds one.
+        int frame = CL_IS_MODERN ? (int)(ui_anim_time() * UK_IDLE_FPS) : c->cursor_frame;
+        int idx = 11 + (frame & 3);
         int px, py;
         cell_origin(c->cursor_x, c->cursor_y, &px, &py);
         draw_tile(sprites, idx, px, py);
     }
 
-    // Title bar via the chrome path. chrome_draw_with_status paints
-    // the border, status fill, bar strip, and our title text -- same
+    // Legacy: the title bar via the chrome path. chrome_draw_with_status
+    // paints the border, status fill, bar strip, and our title text -- same
     // chrome adventure mode uses, so combat sits inside the same yellow
-    // frame.
-    char title[COMBAT_BANNER_LEN];
-    combat_format_title(c, g, title, sizeof title);
-    if (CL_IS_MODERN && g && g->res) {
-        // The map's bar: the Game Menu button at the left, this turn's words
-        // at the right.
-        char left[96];
-        ml_hint_text(left, sizeof left, g->res->banners.status_game_menu,
-                     g->res->ui.key_esc, g->res->ui.pad_back);
-        chrome_draw_with_status_lr(g, sprites, left, title);
-    } else {
+    // frame. Modern: the battle's columns say what the band said
+    // (src/combat_loop.c).
+    if (!CL_IS_MODERN) {
+        char title[COMBAT_BANNER_LEN];
+        combat_format_title(c, g, title, sizeof title);
         chrome_draw_with_status(g, sprites, title);
     }
 

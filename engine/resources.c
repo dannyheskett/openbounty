@@ -1216,6 +1216,8 @@ static void parse_sprites(Resources *res, cJSON *obj) {
         copy_str(res->sprites.hud_gold_purse,
                  sizeof(res->sprites.hud_gold_purse),
                  json_str(hud, "gold_purse", ""));
+        copy_str(res->sprites.hud_days, sizeof(res->sprites.hud_days),
+                 json_str(hud, "days", ""));
         copy_str(res->sprites.hud_bar_strip,
                  sizeof(res->sprites.hud_bar_strip),
                  json_str(hud, "bar_strip", ""));
@@ -1353,6 +1355,7 @@ static void parse_controls(Resources *res, cJSON *obj) {
         res->controls.items[n].def   = json_int(it, "default", 0);
         cJSON *h = cJSON_GetObjectItem(it, "hidden");
         res->controls.items[n].hidden = cJSON_IsTrue(h);
+        res->controls.items[n].audio = cJSON_IsTrue(cJSON_GetObjectItem(it, "audio"));
         n++;
     }
     res->controls.count = n;
@@ -1466,6 +1469,18 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
                res->strings_missing++; } \
     } while (0)
     SET_BANNER(chest_gold,        "chest_gold");
+    // Optional (modern): a pack without them shows the rows as A and B.
+    #define SET_BANNER_OPT(field, key) do { \
+        const char *s = cJSON_IsObject(obj) ? json_str(obj, key, NULL) : NULL; \
+        copy_str(b->field, sizeof(b->field), s ? s : ""); \
+    } while (0)
+    SET_BANNER_OPT(chest_gold_title, "chest_gold_title");
+    SET_BANNER_OPT(chest_gold_found, "chest_gold_found");
+    SET_BANNER_OPT(chest_gold_take,  "chest_gold_take");
+    SET_BANNER_OPT(chest_gold_share, "chest_gold_share");
+    SET_BANNER_OPT(gmr_spell_in_fight, "gmr_spell_in_fight");
+    SET_BANNER_OPT(gmr_spell_on_map,   "gmr_spell_on_map");
+    #undef SET_BANNER_OPT
     SET_BANNER(chest_commission,  "chest_commission");
     SET_BANNER(chest_spell_power, "chest_spell_power");
     SET_BANNER(chest_max_spells,  "chest_max_spells");
@@ -1484,10 +1499,6 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(worldmap_boat, "worldmap_boat");
     SET_BANNER(worldmap_boat_elsewhere, "worldmap_boat_elsewhere");
     SET_BANNER(worldmap_no_boat, "worldmap_no_boat");
-    SET_BANNER(class_desc_knight, "class_desc_knight");
-    SET_BANNER(class_desc_paladin, "class_desc_paladin");
-    SET_BANNER(class_desc_sorceress, "class_desc_sorceress");
-    SET_BANNER(class_desc_barbarian, "class_desc_barbarian");
     SET_BANNER(spell_bridge_prompt_modern, "spell_bridge_prompt_modern");
     SET_BANNER(save_done_title, "save_done_title");
     SET_BANNER(save_done, "save_done");
@@ -2065,6 +2076,9 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(combat_spells_title,      "combat_spells_title");
         UI_SET(combat_spells_col_combat, "combat_spells_col_combat");
         UI_SET(combat_spells_prompt,     "combat_spells_prompt");
+        UI_SET(combat_moves,             "combat_moves");
+        UI_SET(combat_shots,             "combat_shots");
+        UI_SET(combat_round,             "combat_round");
         UI_SET(dwelling_kind_plains,       "dwelling_kind_plains");
         UI_SET(dwelling_kind_forest,       "dwelling_kind_forest");
         UI_SET(dwelling_kind_hill,         "dwelling_kind_hill");
@@ -2173,6 +2187,17 @@ static void parse_strings(Resources *res, cJSON *obj) {
                      cJSON_IsObject(obj) ? cJSON_GetObjectItem(obj, "combat_log") : NULL, res);
     parse_ui(res, obj);
     if (!cJSON_IsObject(obj)) return;
+    // Each class's words: banners.class_desc_<its id>, for whatever classes
+    // the pack declares.
+    {
+        cJSON *bo = cJSON_GetObjectItem(obj, "banners");
+        for (int i = 0; i < res->classes_count && res->class_hero; i++) {
+            char key[64];
+            snprintf(key, sizeof key, "class_desc_%s", res->classes[i].id);
+            const char *d = cJSON_IsObject(bo) ? json_str(bo, key, NULL) : NULL;
+            copy_str(res->class_hero[i].desc, sizeof res->class_hero[i].desc, d ? d : "");
+        }
+    }
     parse_end_text(&res->win_text,  cJSON_GetObjectItem(obj, "win"));
     parse_end_text(&res->lose_text, cJSON_GetObjectItem(obj, "lose"));
 
@@ -2755,13 +2780,17 @@ bool resources_load(Resources *res, const char *manifest_path) {
                     res->render.ui_scale);
             return false;
         }
-        // A fixed buffer must hold the viewport, the one-tile sidebar and the
-        // thinnest chrome bands (16 and 8 pixels a side, status 9, bar 5, all
-        // times ui_scale); the shell puts whatever is left into the bands.
+        // A declared buffer must hold the frame, a one-tile column either side
+        // of the map with its band, and the map at its whole tiles -- or the
+        // battlefield, the same six by five tiles wide and tall whatever the
+        // viewport, if that is bigger.
         {
             const ResRender *r = &res->render;
-            int need_w = r->tiles_w * r->tile_w + r->tile_w + 32 * r->ui_scale;
-            int need_h = r->tiles_h * r->tile_h + 30 * r->ui_scale;
+            int frame = RES_MODERN_FRAME * r->ui_scale, gap = RES_MODERN_GAP * r->ui_scale;
+            int cols = r->tiles_w > COMBAT_W ? r->tiles_w : COMBAT_W;
+            int rows = r->tiles_h > COMBAT_H ? r->tiles_h : COMBAT_H;
+            int need_w = cols * r->tile_w + 2 * (r->tile_w + gap) + 2 * frame;
+            int need_h = rows * r->tile_h + 2 * frame;
             bool none = (r->native_w == 0 && r->native_h == 0);
             if (!none && (r->native_w < need_w || r->native_h < need_h)) {
                 fprintf(stdout,
@@ -3330,6 +3359,7 @@ int resources_art_manifest(const Resources *res, ResArtList *out) {
         art_add(out, cap, &n, res->sprites.hud_magic_animation[i]);
     art_add(out, cap, &n, res->sprites.hud_puzzle_grid);
     art_add(out, cap, &n, res->sprites.hud_gold_purse);
+    art_add(out, cap, &n, res->sprites.hud_days);
     art_add(out, cap, &n, res->sprites.rail_menu);
     art_add(out, cap, &n, res->sprites.rail_map);
     art_add(out, cap, &n, res->sprites.rail_army);

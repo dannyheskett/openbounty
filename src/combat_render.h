@@ -25,6 +25,10 @@ void combat_render_set_attack(int side, int x, int y, int frame);
 // frame, not when the engine did the arithmetic (REQ-398).
 void combat_render_set_impact(bool landed);
 
+// A troop's count on the foot of its cell (x, y, w, h): the one badge, on the
+// field and in the turn column alike.
+void combat_count_badge(int x, int y, int w, int h, int count);
+
 void combat_render_frame(const Combat *c, const Game *g,
                          const Sprites *sprites);
 
@@ -58,9 +62,20 @@ void combat_format_title(const Combat *c, const Game *g, char *buf, int cap);
 #define CL_COMBAT_CELL_H  CL_TILE_H
 #define CL_COMBAT_W       (CL_COMBAT_CELL_W * COMBAT_W)
 #define CL_COMBAT_H       (CL_COMBAT_CELL_H * COMBAT_H)
-#define CL_COMBAT_X       (CL_FRAME_LEFT_W + \
-                           ((CL_SCREEN_W - CL_FRAME_LEFT_W - CL_FRAME_RIGHT_W) \
-                            - CL_COMBAT_W) / 2)
-#define CL_COMBAT_Y       (CL_MAP_Y + (CL_MAP_H - CL_COMBAT_H) / 2)
+// Modern: the field is where page_combat put it (set each frame by
+// combat_render_set_field) -- in the map's place, between the command column
+// and the turn column.
+int combat_field_x(void);
+int combat_field_y(void);
+#define CL_COMBAT_X       (CL_IS_MODERN ? combat_field_x() : \
+                           (CL_FRAME_LEFT_W + \
+                            ((CL_SCREEN_W - CL_FRAME_LEFT_W - CL_FRAME_RIGHT_W) \
+                             - CL_COMBAT_W) / 2))
+#define CL_COMBAT_Y       (CL_IS_MODERN ? combat_field_y() : \
+                           (CL_MAP_Y + (CL_MAP_H - CL_COMBAT_H) / 2))
+
+// Modern: the field's top-left cell, and whether the castle's back wall
+// shows above it (a siege the screen has room for).
+void combat_render_set_field(int x, int y, bool wall);
 
 #endif

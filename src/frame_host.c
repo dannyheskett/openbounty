@@ -58,6 +58,13 @@ void frame_host_end_frame(void) {
 // all -- a tap is a touch contact), no exit key (Escape is the game's own
 // back, and raylib would otherwise close the window on it), and a 60fps cap.
 
+// The size the game last gave the window (opening or placing it); 0: none.
+static int s_set_w, s_set_h;
+
+bool frame_host_window_at_set_size(void) {
+    return s_set_w > 0 && GetScreenWidth() == s_set_w && GetScreenHeight() == s_set_h;
+}
+
 void frame_host_window_open(int w, int h, const char *title) {
 #if defined(PLATFORM_ANDROID)
     // Two things differ on a phone, and both of them showed up as a smeared,
@@ -71,7 +78,7 @@ void frame_host_window_open(int w, int h, const char *title) {
     // context is never created and every frame goes nowhere.
     //
     // 0 x 0 means "the display". Give raylib a size of our own and it treats
-    // it as a virtual screen: it keeps drawing at 800x532 and stretches the
+    // it as a virtual screen: it keeps drawing at the declared size and stretches the
     // result to the display through a non-integer matrix with a bilinear
     // filter, while GetScreenWidth() keeps reporting 800 -- so present.c
     // cannot see the real screen either, and its own whole-number scale is
@@ -82,6 +89,7 @@ void frame_host_window_open(int w, int h, const char *title) {
 #else
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
     InitWindow(w, h, title);
+    s_set_w = w; s_set_h = h;
 #endif
     HideCursor();
     SetTargetFPS(60);
@@ -105,6 +113,52 @@ void frame_host_display_size(int *w, int *h) {
     if (w) *w = GetMonitorWidth(mon);
     if (h) *h = GetMonitorHeight(mon);
 }
+
+#if !defined(__EMSCRIPTEN__) && !defined(PLATFORM_ANDROID)
+// raylib's desktop backend is GLFW (scripts/build_raylib_*.sh build it with
+// PLATFORM_DESKTOP_GLFW), and raylib has no call for a monitor's work area or
+// a window's decorations, so these come from GLFW directly.
+typedef struct GLFWmonitor GLFWmonitor;
+typedef struct GLFWwindow GLFWwindow;
+GLFWmonitor **glfwGetMonitors(int *count);
+void glfwGetMonitorWorkarea(GLFWmonitor *monitor, int *x, int *y, int *w, int *h);
+void glfwGetWindowFrameSize(GLFWwindow *window, int *l, int *t, int *r, int *b);
+// The game's window: its GL context is the current one. (raylib's
+// GetWindowHandle is the platform's own handle -- an HWND, an X11 id -- not
+// GLFW's.)
+GLFWwindow *glfwGetCurrentContext(void);
+
+static bool work_area(int *x, int *y, int *w, int *h, int *fl, int *ft, int *fr, int *fb) {
+    int count = 0;
+    GLFWmonitor **mons = glfwGetMonitors(&count);
+    int mon = GetCurrentMonitor();
+    if (!mons || mon < 0 || mon >= count || !IsWindowReady()) return false;
+    glfwGetMonitorWorkarea(mons[mon], x, y, w, h);
+    *fl = *ft = *fr = *fb = 0;
+    GLFWwindow *win = glfwGetCurrentContext();
+    if (win) glfwGetWindowFrameSize(win, fl, ft, fr, fb);
+    return *w > 0 && *h > 0;
+}
+
+bool frame_host_window_room(int *w, int *h) {
+    int ax, ay, aw, ah, l, t, r, b;
+    if (!work_area(&ax, &ay, &aw, &ah, &l, &t, &r, &b)) return false;
+    if (w) *w = aw - l - r;
+    if (h) *h = ah - t - b;
+    return true;
+}
+
+void frame_host_window_place(int w, int h) {
+    int ax, ay, aw, ah, l, t, r, b;
+    SetWindowSize(w, h);
+    s_set_w = w; s_set_h = h;
+    if (!work_area(&ax, &ay, &aw, &ah, &l, &t, &r, &b)) return;
+    SetWindowPosition(ax + (aw - (w + l + r)) / 2 + l, ay + (ah - (h + t + b)) / 2 + t);
+}
+#else
+bool frame_host_window_room(int *w, int *h) { (void)w; (void)h; return false; }
+void frame_host_window_place(int w, int h) { (void)w; (void)h; }
+#endif
 
 void frame_host_poll_events(void) { PollInputEvents(); }
 

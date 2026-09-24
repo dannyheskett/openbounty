@@ -72,8 +72,13 @@ void gfx_clip_end(void);
 Texture2D gfx_texture_from_image(Image img);
 void      gfx_texture_free(Texture2D t);
 // Point filtering: the pack is pixel art, and every texture in the game is
-// sampled this way -- no backend here has ever used a smooth filter.
+// sampled this way. The one exception is gfx_texture_smooth.
 void      gfx_texture_point(Texture2D t);
+// Smooth filtering, for the whole frame fitted DOWN to a window smaller than
+// the smallest screen (present.c): shrunk by a fraction, it keeps every pixel
+// row and column instead of dropping some. Point filtering is put back when
+// the window is large enough again.
+void      gfx_texture_smooth(Texture2D t);
 // Clamped edges as well, which is what stops a neighbouring tile bleeding in
 // at a sub-pixel scroll position. Only the map tiles need it.
 void      gfx_texture_point_clamp(Texture2D t);

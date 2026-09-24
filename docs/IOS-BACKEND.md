@@ -109,8 +109,8 @@ There has been no keyboard or gamepad on iOS; the key and pad queries have
 answered "no device", and every screen has worked by touch (`src/touch.c`). A
 tap has become a keypress through the injected-key queue in `ios/host_ios.c`,
 so each screen has kept its existing key handling. Touch controls have been
-sized in physical units (REQ-530), naming the hero has used the on-screen
-keyboard (REQ-531), and the menus have had no Exit row (REQ-529).
+sized in physical units (REQ-530), naming the hero has used the in-game
+letter grid (REQ-531), and the menus have had no Exit row (REQ-529).
 
 ## Building and shipping
 

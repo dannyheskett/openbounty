@@ -119,7 +119,7 @@ shell has reached the platform only through five seams (`src/gfx.h`,
 ```
 
 `docs/`: `OPENBOUNTY-SPEC.md` (the reproduction-grade spec), `PACK-FORMAT.md`,
-`MODERN-RESOLUTION.md`, `UI-PANELS.md`, `MENUS.md`, `ART-SPEC.md`,
+`DESIGN-SPEC.md`, `ART-SPEC.md`,
 `ART-PIPELINE.md`, `ART-WORKLIST.md`, `ROME-ART.md` (every prompt, generated),
 `GLORY-OF-ROME.md`, `DEMO-SPEC.md`, `AUTOPLAY-SPECS.md`,
 `AUTOPLAY-BASELINE.md`, `IOS-BACKEND.md`, `RELEASE-PROCESS.md`,
@@ -380,13 +380,14 @@ depending on shell headers or shell symbols, this build step has failed and
   (`CL_SCREEN_W/H`, the original VGA mode), integer-scaled to fit the window
   preserving aspect ratio, minimum 2×. The base window has been 640×400
   (`CL_WINDOW_W/H` = `CL_SCREEN_W/H` × `CL_SCALE` in `src/layout.h`).
-- **Modern mode** (Glory of Rome): the pack has declared a buffer (800×532
-  for Rome) that is a floor, not a fixed size. The scale has been the largest
-  whole number the surface can show -- there has been no zoom setting -- and
-  the world map has spent what that leaves over in whole tiles; every other
-  screen has kept the declared size, centred (REQ-528). The desktop window
-  has opened at the declared buffer times the largest whole scale the
-  monitor allows.
+- **Modern mode** (Glory of Rome): the pack has declared a buffer (800×504
+  for Rome), the smallest screen, not a fixed size. The scale has been the
+  largest whole number (3 at most) at which it fits the surface -- there has
+  been no zoom setting, and a desktop window has held its scale while an
+  edge is dragged -- and what the surface leaves over at that scale has gone
+  to the map; every page has kept its size (`docs/DESIGN-SPEC.md`). The
+  desktop window has opened at the declared buffer times the largest whole
+  scale the monitor allows.
 - The window has been resizable. Fullscreen toggle: Alt+Enter.
 - 256-color palette loaded from the pack's `palettes/palette.bin` (for King's
   Bounty, extracted from the original DOS MCGA.DRV).
@@ -675,8 +676,8 @@ Turn-based tactical combat on a 6×5 grid. Split:
 Player input has included movement, wait/skip (Space/W), shoot (S), **fly
 (F, only when the active unit has TROOP_ABIL_FLY)**, use magic (U), give up
 (G), and the controls/options/army/character views. In modern mode every one
-of them has also been a row in the combat menu (`docs/MENUS.md`), which a
-shooter's opens on Shoot (REQ-533).
+of them has also been a row in the combat menu (`docs/DESIGN-SPEC.md`), which
+has opened on the first command the active unit can use (DSGN-0119).
 
 The combat-formula digests (25 golden cases) have lived in
 `tests/regression/test_combat_digests.c` and run via `make test`.
@@ -686,7 +687,7 @@ The combat-formula digests (25 golden cases) have lived in
 ## 8. Keybindings
 
 Adventure mode (overworld). In modern mode every action has also been a menu
-row or a tap (`docs/MENUS.md`).
+row or a tap (`docs/DESIGN-SPEC.md`).
 
 ### Movement
 
@@ -751,7 +752,7 @@ row or a tap (`docs/MENUS.md`).
 ## 9. UI conventions
 
 Legacy mode's conventions follow; modern mode's panels have been in
-`docs/UI-PANELS.md`.
+`docs/DESIGN-SPEC.md`.
 
 ### Adventure HUD
 

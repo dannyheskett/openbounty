@@ -49,11 +49,8 @@ bool menu_load(void *ud) {
 
 bool menu_new(void *ud) {
     MenuCtx *c = (MenuCtx *)ud;
-    // Modern: a real new game, through the title menu. main.c asks first.
-    if (CL_IS_MODERN && c->new_game_flag) {
-        *c->new_game_flag = true;
-        return true;
-    }
+    // Legacy's New Game. Modern's asks in the game menu's own page and goes
+    // back to the title menu (src/main.c, GM_DO_NEW).
     c->game->position.x = c->spawn_x;
     c->game->position.y = c->spawn_y;
     c->game->travel_mode = TRAVEL_WALK;

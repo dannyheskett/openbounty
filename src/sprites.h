@@ -83,6 +83,7 @@ typedef struct {
     Texture2D hud_magic_silhouette;
     Texture2D hud_puzzle_grid;
     Texture2D hud_gold_purse;
+    Texture2D hud_days;
     // The left rail's five tiles, in rail order.
     Texture2D rail_menu;
     Texture2D rail_map;

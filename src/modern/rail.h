@@ -1,11 +1,9 @@
 #ifndef OB_MODERN_RAIL_H
 #define OB_MODERN_RAIL_H
 
-// The left rail: five one-tile icons down the edge of the map, mirroring the
-// HUD sidebar on the other side. It exists only where the surface has spare
-// width for the column (CL_RAIL_W, set by layout_grow_native), which is a
-// test of the surface and not of the device or the input: a small window
-// never has one, a phone and a maximised window do.
+// The left rail: five one-tile icons down the edge of the map -- Menu, Map,
+// Army, Search, Puzzle -- mirroring the HUD sidebar on the other side. A
+// modern declared buffer always has it (CL_RAIL_W).
 //
 // Drawn with the world by draw_frame (src/shell_frame.c), so the main loop,
 // the held-screen path and --gallery all get it.

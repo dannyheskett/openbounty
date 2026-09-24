@@ -45,7 +45,7 @@ void legacy_prompt_draw(const PromptView *p) {
     else                               bottom_rows = 1;
 
     gfx_rect(x, y, w, h, PAL_CLR(DBLUE));
-    ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
+    legacy_window_frame(x, y, w, h, PAL_CLR(YELLOW));
 
     int tx = x + pad;
     int ty = y + pad;

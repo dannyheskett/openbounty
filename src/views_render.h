@@ -15,4 +15,10 @@ void views_render_draw(const Game *g, const Map *m, const Fog *f,
 // Toggle worldmap "hero only" mode .
 void views_render_worldmap_toggle_hero_only(void);
 
+// Modern: the one spells page (views_spells_input reads it), on the map and
+// in a fight: `combat` greys the adventure column, else the combat one. `cur`
+// 0..13 a spell, 14 the exit, labelled `exit_label`.
+void modern_spells_draw(const Game *g, bool combat, int cur, const char *title, const char *right,
+                        const char *exit_label);
+
 #endif

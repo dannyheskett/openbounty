@@ -3,6 +3,7 @@
 #include "layout.h"
 #include "modern/mlayout.h"
 #include "modern/uikit.h"
+#include "modern/page.h"
 #include "resources.h"
 #include "touch.h"
 #include "ui.h"
@@ -34,25 +35,30 @@ void screen_end_game_open(bool won, const char *body) {
     // renderer; the shell's per-frame sync pushes the view.
 }
 
-// Modern: a ceremony -- the ending picture at 2x at the left, the words
-// beside it, Continue along the foot.
+// Modern: a page to read -- its title, the ending picture at the largest
+// whole multiple its place holds at the left, the words beside it, Continue
+// along the foot. Continue is its one action: a tap anywhere is it.
 static void draw_modern(const Game *g, const Sprites *s) {
-    const ML_Rect r = ml_full();
-    uk_sheet();
-    UkRows rows = { { (g && g->res) ? g->res->banners.castle_continue : "" }, { true } };
-    int foot = uk_foot_rows(r, 1, 0, uk_rows_fn, &rows, TOUCH_LIST_PROMPT);
+    // Its title: the pack's header for the ending, else its word for it.
+    const Resources *res = (g && g->res) ? g->res : NULL;
+    const char *title = "";
+    if (res) {
+        const ResEndText *et = s_won ? &res->win_text : &res->lose_text;
+        title = et->header[0] ? et->header : (s_won ? res->ui.dt_win_fallback : res->ui.dt_lose_fallback);
+    }
+    const ML_Rect r = page_sheet(title, NULL, KEY_ENTER);
+    UkRows rows = { { (g && g->res) ? g->res->banners.castle_continue : "" }, { true }, 1 };
+    int foot = uk_foot_rows(r, 1, 0, uk_rows_fn, &rows, 0);
     Texture2D img = s_won ? s->ending_win : s->ending_lose;
     int iw = 0;
     if (img.id && img.width > 0 && img.height > 0) {
-        int sc = 3;
-        while (sc > 1 && img.height * sc > foot - r.y) sc--;
+        int sc = ui_fit_scale(img.width, img.height, r.w / 2, foot - r.y);
         iw = img.width * sc;
-        int ih = img.height * sc;
-        ui_blit(img, r.x, r.y, iw, ih);                     // flush with the top
+        ui_blit(img, r.x, r.y, iw, img.height * sc);         // flush with the top
         lattice_band_v(r.x + iw, r.y, UK_BAND, foot - r.y);
     }
     int tx = r.x + iw + UK_BAND + UK_INSET;
-    uk_flow(tx, r.y + UK_INSET, r.x + r.w - UK_INSET - tx, tx, 0, foot - ML_PAD, s_body, PAL_CLR(WHITE));
+    uk_flow(tx, r.y + UK_INSET, r.x + r.w - UK_INSET - tx, tx, 0, foot - UK_INSET, s_body, PAL_CLR(WHITE));
 }
 
 void screen_end_game_draw(const Game *g, const Sprites *s) {
@@ -82,11 +88,6 @@ void screen_end_game_draw(const Game *g, const Sprites *s) {
                        - total_w) / 2;
     int total_top   = CL_MAP_Y;
     int total_h     = CL_SCREEN_H - CL_MAP_Y - CL_FRAME_BOTTOM_H;
-    if (CL_IS_MODERN) {
-        // The full-screen layout, like every other detail view (REQ-430j).
-        ML_Rect fr = ml_full();
-        total_w = fr.w; total_left = fr.x; total_top = fr.y; total_h = fr.h;
-    }
 
     // Black around it, then the panel itself (CS_ENDING background).
     gfx_rect(CL_MAP_X, CL_MAP_Y, CL_SIDEBAR_X + CL_SIDEBAR_W - CL_MAP_X, CL_MAP_H,
@@ -135,15 +136,6 @@ void screen_end_game_draw(const Game *g, const Sprites *s) {
 
     const char *p = s_body;
     char line[160];
-    if (CL_IS_MODERN) {
-        // Modern: wrap by pixel width, keeping the authored line breaks.
-        while (*p && ty + line_h <= floor_y) {
-            if (bfont_take_line(&p, text_w, line, (int)sizeof line) <= 0) break;
-            bfont_draw(line, tx, ty, PAL_CLR(WHITE));
-            ty += line_h;
-        }
-        return;
-    }
     while (*p && ty + line_h <= floor_y) {
         int n = 0;
         // Read one logical line (up to '\n' or NUL).

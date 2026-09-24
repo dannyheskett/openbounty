@@ -18,6 +18,7 @@
 #include "frame_host.h"
 #include "layout.h"
 #include "present.h"        // CL_SCREEN_W/H
+#include "modern/page.h"
 #include "palette.h"       // PAL[] -- the pack's canonical colors
 #include "pending.h"
 #include "prompt.h"
@@ -54,6 +55,21 @@ static void draw_processing(ShellCtx *ctx, int done, int total) {
     const int W = CL_SCREEN_W, H = CL_SCREEN_H;
     present_begin(target);
     gfx_clear(BLACK);
+    if (CL_IS_MODERN) {
+        // A message page: the title, how far it has got, and the bar.
+        char words[64];
+        snprintf(words, sizeof words, "%d / %d objectives", done, total);
+        ML_Rect bar = page_status("AUTOPLAY PROCESSING", words);
+        int fw = (total > 0) ? (bar.w * done) / total : 0;
+        if (fw < 0) fw = 0;
+        if (fw > bar.w) fw = bar.w;
+        gfx_rect(bar.x, bar.y, bar.w, bar.h, PAL_CLR(BLACK));      // the track
+        gfx_rect(bar.x, bar.y, fw, bar.h, uk_button());            // the fill, as a count's bar
+        present_end();
+        present_scaled(*target);
+        frame_host_end_frame();
+        return;
+    }
     // A centered KB-style panel: blue field, yellow border.
     int pw = 240 * CL_UI, ph = 90 * CL_UI;
     int px = (W - pw) / 2, py = (H - ph) / 2;

@@ -13,12 +13,12 @@
 		"mode":	"modern",
 		"tile_w":	96,
 		"tile_h":	96,
-		"tiles_w":	7,
+		"tiles_w":	5,
 		"tiles_h":	5,
 		"ui_scale":	1,
-		"dim":	22,
+		"dim":	30,
 		"native_w":	800,
-		"native_h":	532 },
+		"native_h":	504 },
 	"world":	{
 		"language":	"en",
 		"max_army_slots":	5,
@@ -4514,6 +4514,7 @@
 				"default":	5
 			}, {
 				"id":	"sounds",
+				"audio":	true,
 				"label":	"Sounds",
 				"type":	"bool",
 				"default":	1
@@ -4536,11 +4537,13 @@
 				"hidden":	true
 			}, {
 				"id":	"music",
+				"audio":	true,
 				"label":	"Music",
 				"type":	"bool",
 				"default":	0
 			}, {
 				"id":	"volume",
+				"audio":	true,
 				"label":	"Volume",
 				"type":	"numeric",
 				"range":	10,
@@ -4601,7 +4604,8 @@
 			"magic_silhouette":	"art/ui/hud_magic_silhouette.png",
 			"magic_animation":	["art/ui/hud_magic_00.png", "art/ui/hud_magic_01.png", "art/ui/hud_magic_02.png", "art/ui/hud_magic_03.png"],
 			"puzzle_grid":	"art/ui/hud_puzzle_grid.png",
-			"gold_purse":	"art/ui/hud_gold_purse.png"
+			"gold_purse":	"art/ui/hud_gold_purse.png",
+			"days":	"art/ui/hud_days.png"
 		},
 		"rail":	{
 			"menu":	"art/ui/rail_menu.png",

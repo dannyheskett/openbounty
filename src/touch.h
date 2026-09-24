@@ -29,14 +29,15 @@ void touch_region(int x, int y, int w, int h, int key);
 // dismiss-on-any-key views. Explicit regions win over this.
 void touch_region_any(int key);
 
-// A tile viewport: a tap picks the direction from the tapped tile toward /
-// away from the centre tile (sign per axis) and injects the matching
-// numpad direction key. A tap ON the centre tile injects center_key
-// (0 = ignore). Holding repeats the injection, one discrete keypress per
-// beat, so "one step per keypress" holds at the engine boundary.
+// A tile viewport: a tap in (x, y, w, h) picks the direction from the cell
+// whose top-left corner is (cell_x, cell_y) -- the hero's, or the unit's --
+// toward the tap (sign per axis) and injects the matching numpad direction
+// key. A tap ON that cell injects center_key (0 = ignore). Holding repeats
+// the injection, one discrete keypress per beat, so "one step per keypress"
+// holds at the engine boundary.
 void touch_region_map(int x, int y, int w, int h,
-                      int tile_w, int tile_h,
-                      int center_tx, int center_ty, int center_key);
+                      int cell_x, int cell_y, int tile_w, int tile_h,
+                      int center_key);
 
 // Cursor lists: the renderer tags each row's rect with a list id + row
 // index; the screen's update code asks which row was tapped and applies
@@ -95,12 +96,12 @@ void touch_request_prompt_ab(void);           // "A"/"B" -> KEY_A/KEY_B
 // Called from present_scaled, inside the frame's draw. Renders requested
 // chrome in window pixels and registers its window-space regions.
 // A touch control's size in window pixels -- Apple's 44pt / Android's 48dp,
-// tracked as 11% of the window's short side with a 44px floor. Exposed so the
-// layout can make the menu band a comfortable target too.
+// tracked as 11% of the window's short side with a 44px floor. Legacy's window
+// buttons are sized from it.
 int  touch_unit(void);
 
-// The same unit in DESIGN pixels -- what a widget must measure against, since
-// every rect the shell draws is in the render target's space.
+// The unit in DESIGN pixels -- what a widget measures against. Modern: a row's
+// height (ml_row_h), fixed for the session; legacy: touch_unit in design pixels.
 int  touch_unit_design(void);
 
 // A region the player aims at deliberately (the top band, a corner). Inside
@@ -110,6 +111,15 @@ int  touch_unit_design(void);
 void touch_region_priority(int x, int y, int w, int h, int key);
 
 void touch_draw_chrome(void);
+
+// The page on top this frame (src/modern/page.c): the rect it covers, the key
+// a tap inside it presses and the key a tap outside it presses (0: nothing).
+// A MODAL page owns the screen: nothing registered before it -- under it --
+// takes a tap, and the near-miss allowance reaches only its own regions and
+// only inside it. A page that is not modal (the bridge's message) blocks
+// what is under its own rect and lets the rest take taps. A tap on nothing
+// is the page's. The last call in a frame wins -- the page on top.
+void touch_page(int x, int y, int w, int h, int inside_key, int outside_key, bool modal);
 
 // Per-frame tick, called from frame_host_end_frame after the yield.
 void touch_frame(void);
@@ -122,5 +132,12 @@ bool touch_last_hit(int sx, int sy, int *list_id, int *row, int *key);
 // The rect of row `row` of `list_id`, or of the button for `key`.
 bool touch_last_row_rect(int list_id, int row, int *x, int *y, int *w, int *h);
 bool touch_last_key_rect(int key, int *x, int *y, int *w, int *h);
+// The key the last frame's page would press for a tap at (sx, sy) that no
+// region took (0: nothing), or -1 when no page was up.
+int  touch_last_page_key(int sx, int sy);
+// Everything a tap at (sx, sy) would do over the last frame's regions: the
+// chrome, a square hit, the near-miss allowance, the page, the any-key -- the
+// frame's own rule. False when it would do nothing.
+bool touch_last_resolve(int sx, int sy, int *list_id, int *row, int *key);
 
 #endif

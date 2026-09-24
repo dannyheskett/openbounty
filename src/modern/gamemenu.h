@@ -1,11 +1,14 @@
 // src/modern/gamemenu.h
 //
 // The modern game menu and combat menu (REQ-430s): traditional drill-down
-// menus. Each page is one column of standard rows ending in Back (on the Game
-// page Back sits above Exit, which is always last); a row that opens a page
-// shows ">". The title strip shows the path ("Menu > Game > Save"); the panel
-// beside the rows describes the row under the cursor, or says why a greyed row
-// does not apply. Legacy never includes this header; its menus are unchanged.
+// menus. Each page is a menu page (src/modern/page.h) of standard rows ending
+// in its exit -- Close on the first page, Back on every page under it --
+// standing on the page's foot with any row that ends the game (Exit, Give
+// up). A row that opens a page shows ">". The title strip shows the path
+// ("Menu > Game > Save"); two lines under it describe the row under the
+// cursor, or say why a greyed row does not apply. A row's key, shown at its
+// right while the keyboard is in use, acts on it. Legacy never includes this
+// header; its menus are unchanged.
 
 #ifndef OB_MODERN_GAMEMENU_H
 #define OB_MODERN_GAMEMENU_H
@@ -16,18 +19,12 @@
 #include <stdbool.h>
 
 #define GM_ROWS_MAX 16
-// Options a page shows at once; a longer page scrolls. Every menu page is
-// this tall, so the panel never changes size from page to page.
-#define GM_PAGE_ROWS 7
-// And this wide, game menu and combat menu alike: the save slots' rows (slot,
-// name, rank, days) are the widest thing a page holds.
-#define GM_PAGE_W 656
 #define GM_DEPTH_MAX 4
 
 typedef struct {
     const char *label;
     const char *desc;      // what it does, or why it is greyed
-    const char *shortcut;  // key name shown at the right with a keyboard ("" = none)
+    const char *shortcut;  // the key it answers to, shown at the right with a keyboard ("" = none)
     int         key;       // the key it presses, or an internal action (GM_ACT_*)
     bool        enabled;
 } GmItem;
@@ -35,7 +32,7 @@ typedef struct {
 typedef struct {
     const char *title;
     int         n;
-    int         foot;      // the last `foot` items stand on the list's foot, a gap above them
+    int         foot;      // the last `foot` items stand on the page's foot, a gap above them
     GmItem      item[GM_ROWS_MAX];
 } GmPage;
 
@@ -48,16 +45,24 @@ enum {
 
 typedef enum { GM_EV_NONE = 0, GM_EV_ACT, GM_EV_BACK } GmEvent;
 
-// One frame of list input: Up/Down move (wrapping), Enter or a tap on an
-// enabled row acts, Escape goes back. The cursor may rest on a greyed row.
+// One frame of a page's input, through the one list reader (ml_list_input):
+// Up/Down move (wrapping), Enter or a tap on an enabled row acts, a row's key
+// acts on it, Escape goes back. The cursor may rest on a greyed row.
 GmEvent gm_page_input(const GmPage *p, int *cursor, int touch_list);
+// The first row that can be chosen: where a page opens its cursor.
+int     gm_first_enabled(const GmPage *p);
+// A page's row: its label (">" after one that opens a page), its key at the
+// right while the keyboard is in use -- the exit row's is Escape -- and
+// whether it can be chosen. The one row function every menu page uses.
+bool    gm_row(void *ctx, int i, char *label, char *right, int cap);
 
-// Draw a page: GM_PAGE_W wide and GM_PAGE_ROWS tall, centred on the area. The
-// path in the title strip, `right_title` at its right, the row under the
-// cursor described under it, then the rows (scrolling to the cursor).
-// `row_fn` / `row_ctx` may give the rows their own labels (NULL: the items').
-void gm_draw_page(const GmPage *p, const char *path, const char *right_title, int cursor, int touch_list,
-                  MlRowFn row_fn, void *row_ctx);
+// The Load page: the save slots -- a slot with no save greyed, saying so --
+// then Back on the foot; `title` its name. The in-game menu's and the title's
+// are this one page.
+struct SlotSet;
+void    gm_load_page(GmPage *p, const struct SlotSet *slots, const char *title);
+
+// A page is drawn by page_menu (src/modern/page.h).
 
 // ---- the game menu ----------------------------------------------------------------
 void modern_gamemenu_open(bool debug);
@@ -65,6 +70,9 @@ void modern_gamemenu_open(bool debug);
 void modern_gamemenu_open_save(void);
 void modern_gamemenu_update(Game *g);    // input while VIEW_MENU is up
 void modern_gamemenu_draw(const Game *g);
+// The open pages' path ("Menu > Game"), the title of the page on top; empty
+// while the menu is shut. A page opened from the menu adds its own name.
+void modern_gamemenu_path(const Game *g, char *out, int cap);
 
 // A Yes/No waits: true once, writing the question. On Yes the main loop calls
 // modern_gamemenu_confirm_yes.
@@ -72,6 +80,9 @@ bool modern_gamemenu_take_confirm(const Game *g, char *body, int cap);
 void modern_gamemenu_confirm_yes(void);
 
 typedef enum { GM_DO_NONE = 0, GM_DO_SAVE, GM_DO_LOAD, GM_DO_NEW, GM_DO_EXIT } GmDo;
+// Every question the menu asks -- save over a slot, load, a new game, leave --
+// is asked in its own page and answered Yes before the main loop carries it
+// out.
 // What the main loop must carry out now (*slot for Save and Load).
 GmDo modern_gamemenu_take_action(int *slot);
 // A Debug row's cheat (--debug), or -1.

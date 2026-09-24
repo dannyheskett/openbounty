@@ -42,10 +42,12 @@ void prompt_numeric_open(const char *header, const char *body, int max_choice);
 //  two_choices), where the body labels its options A) and B).
 void prompt_ab_open(const char *header, const char *body);
 
-// Modern: the rows of the numeric or A/B prompt just opened, when its body
-// does not name the choices itself (dismiss: the troops). values[i] is the
-// answer row i gives, 1 = PROMPT_RESULT_1.
+// Modern: the rows of the numeric or A/B prompt just opened (dismiss: the
+// troops; sailing: the provinces), and the words shown with them. values[i]
+// is the answer row i gives, 1 = PROMPT_RESULT_1. Without it the rows are the
+// answers themselves (1 to N, or A and B) and the words are the body.
 void prompt_set_choices(const char *const *labels, const int *values, int n);
+void prompt_set_lead(const char *lead);
 
 // Open a multi-digit numeric entry prompt (0-9, Backspace, Enter, Esc).
 // Accepts numbers up to `max_digits`. Max accepted value is `max_value`;

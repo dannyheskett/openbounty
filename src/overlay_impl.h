@@ -38,6 +38,9 @@ void modern_overlay_draw_note(void);
 // The sprites the modern in-lay dialog draws its picture from.
 void modern_overlay_set_sprites(const Sprites *s);
 const Sprites *modern_overlay_sprites(void);
+// The game the overlay is drawing, for a page that names the hero.
+void modern_overlay_set_game(const Game *g);
+const Game *modern_overlay_game(void);
 int  modern_overlay_dialog_page_count(void);
 void modern_overlay_draw_town(const Game *g, const Sprites *s);
 void modern_overlay_draw_castle(const Game *g, const Sprites *s);
@@ -47,14 +50,7 @@ void modern_overlay_draw_sail(const Game *g, const Sprites *s);
 // The temple and dwelling screens: their prompt, or the answer after it.
 void modern_overlay_draw_temple(const Game *g, const Sprites *s);
 void modern_overlay_draw_dwelling(const Game *g, const Sprites *s);
-void modern_overlay_draw_options(const Game *g);
 void modern_overlay_draw_controls(const Game *g);
 void modern_overlay_draw_toast(void);
-void modern_overlay_draw_location_backdrop(const Game *g, const Sprites *s,
-                                           int loc_kind, int troop_idx,
-                                           int troop_frame);
-// Modern only: no legacy counterpart. The dimmed scene under a detail view,
-// prompt or dialog (REQ-430g).
-void modern_overlay_dim_scene(void);
 
 #endif

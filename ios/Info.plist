@@ -31,7 +31,7 @@
     <false/>
     <key>UILaunchScreen</key>
     <dict/>
-    <!-- Landscape only: the pack declares a fixed 800x532 buffer, which has no
+    <!-- Landscape only: the pack declares a fixed 800x504 buffer, which has no
          portrait form. The OS enforces this, so there is no rotate-to-play
          overlay to write. -->
     <key>UISupportedInterfaceOrientations</key>

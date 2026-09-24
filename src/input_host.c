@@ -60,13 +60,28 @@ static bool injected_has(int key) {
 
 static bool s_key_seen;
 static bool s_pad_seen;
+static bool s_touch_forced;          // --touch
+static int  s_last = -1;             // the InputDevice last used; -1 none yet
 
 static bool note_key(bool real) {
-    if (real) s_key_seen = true;
+    if (real) { s_key_seen = true; s_last = INPUT_DEV_KEYS; }
     return real;
 }
 
-void input_host_note_gamepad(void) { s_pad_seen = true; }
+void input_host_note_gamepad(void) { s_pad_seen = true; s_last = INPUT_DEV_PAD; }
+
+bool input_touch_device(void) {
+#if defined(PLATFORM_ANDROID)
+    return true;
+#else
+    return s_touch_forced;
+#endif
+}
+
+InputDevice input_last_device(void) {
+    if (s_last >= 0) return (InputDevice)s_last;
+    return input_touch_device() ? INPUT_DEV_TOUCH : INPUT_DEV_KEYS;
+}
 
 // ---- gamepad ----------------------------------------------------------------
 //
@@ -109,7 +124,7 @@ int input_get_key_pressed(void) {
     if (guarded()) { while (GetKeyPressed() != 0) {} return 0; }
     if (s_key_drain < s_key_count) return s_keys[s_key_drain++];
     int k = GetKeyPressed();
-    if (k) s_key_seen = true;
+    if (k) { s_key_seen = true; s_last = INPUT_DEV_KEYS; }
     return k;
 }
 
@@ -117,7 +132,7 @@ int input_get_char_pressed(void) {
     if (guarded()) { while (GetCharPressed() != 0) {} return 0; }
     if (s_char_drain < s_char_count) return s_chars[s_char_drain++];
     int c = GetCharPressed();
-    if (c) s_key_seen = true;
+    if (c) { s_key_seen = true; s_last = INPUT_DEV_KEYS; }
     return c;
 }
 
@@ -140,6 +155,7 @@ void input_touch_sample(void) {
     if (s_touch_now) {
         s_touch_pos  = GetTouchPosition(0);
         s_touch_seen = true;
+        s_last = INPUT_DEV_TOUCH;
     }
 }
 
@@ -160,6 +176,8 @@ bool input_touch_down(int *x, int *y) {
 bool input_touch_released(void) {
     return s_touch_prev && !s_touch_now;
 }
+
+void input_host_force_touch(void) { s_touch_seen = true; s_touch_forced = true; }
 
 bool input_touch_active(void) {
     return s_touch_seen;

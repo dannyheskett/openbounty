@@ -33,15 +33,14 @@
 #include "ui.h"              // open_dialog / dialog_is_active / dialog_dismiss
 #include "prompt.h"          // prompt_is_active / prompt_dismiss (clear pre-fight)
 #include "overlay.h"         // overlay_draw_note (victory banner)
+#include "shell_promptdispatch.h"   // shell_set_combat_ground
 
 #include <string.h>
 #include <stdio.h>
 
-// The presenter (field draw + scale-to-window blit) is defined by
-// combat_loop.c and exposed publicly so the replay animator can draw a
-// throwaway Combat without duplicating the render path.
-void combat_present_public(const Combat *c, const Game *g,
-                           const Sprites *sprites, void *render_target);
+// The presenter (field draw + scale-to-window blit) is combat_loop.c's
+// combat_present_public, so the replay animator draws a throwaway Combat
+// without duplicating the render path.
 
 // Build the CombatTarget for the pending flow on the live (pre-fight) game --
 // the same target the headless resolution builds from the same pending flow.
@@ -77,17 +76,25 @@ static bool replay_build_target(Game *g, CombatMode *out_mode,
 
 // Pace one beat: present the current board for ~one beat (0.15s, scaled by
 // the driver's step delay so the driver's pace also speeds/slows fights),
-// pumping audio + screenshots + window-close each frame. Returns false if the
-// window was asked to close (abort the run).
-static bool replay_beat(const Combat *c, const Game *g, const Sprites *sprites,
-                        void *rt, double beat_s) {
-    double until = frame_host_time() + beat_s;
+// pumping audio + screenshots + window-close each frame. A troop that struck
+// in this beat (`atk_side` >= 0, standing at atk_x, atk_y) plays its attack
+// strip across the beat, as it does in a fight. Returns false if the window
+// was asked to close (abort the run).
+static bool replay_beat(const Combat *c, const Game *g, const ShellCtx *ctx,
+                        const Sprites *sprites, void *rt, double beat_s,
+                        int atk_side, int atk_x, int atk_y, int atk_frames) {
+    double start = frame_host_time(), until = start + beat_s;
     do {
         if (frame_host_should_close()) return false;
         audio_tick();
-        combat_present_public(c, g, sprites, rt);
+        if (CL_IS_MODERN && atk_side >= 0 && atk_frames > 1 && beat_s > 0.0) {
+            int f = (int)((frame_host_time() - start) / beat_s * atk_frames);
+            combat_render_set_attack(atk_side, atk_x, atk_y, f < atk_frames ? f : atk_frames - 1);
+        }
+        combat_present_public(c, g, ctx->map, ctx->fog, sprites, rt);
         screenshot_tick(*(RenderTexture2D *)rt, "shot");
     } while (frame_host_time() < until);
+    combat_render_set_attack(-1, 0, 0, -1);
     return true;
 }
 
@@ -100,6 +107,11 @@ static void replay_apply_entry(Combat *c, const CombatTurnEntry *e) {
             au->x = e->to_x; au->y = e->to_y;
             au->count = e->act_count_after;
             if (au->count <= 0) au->troop_idx = -1;   // acting stack wiped
+            // Modern: whose turn it is, as the turn column shows it in a fight.
+            if (CL_IS_MODERN) {
+                c->side = e->act_side;
+                c->unit_id = au->troop_idx >= 0 ? e->act_slot : -1;
+            }
         }
     }
     if (e->tgt_side < COMBAT_SIDES && e->tgt_slot < COMBAT_SLOTS) {
@@ -107,7 +119,9 @@ static void replay_apply_entry(Combat *c, const CombatTurnEntry *e) {
         if (tu->troop_idx >= 0) {
             tu->count = e->tgt_count_after;
             tu->hit_flash = 3;                          // splat overlay
-            if (tu->count <= 0) tu->troop_idx = -1;     // target stack wiped
+            // Modern: a troop the blow killed stays under its splat until
+            // the splat is done (replay's decay below), as in a fight.
+            if (tu->count <= 0 && !CL_IS_MODERN) tu->troop_idx = -1;
         }
     }
     if (e->log_line[0]) combat_log(c, "%s", e->log_line);
@@ -145,6 +159,8 @@ CombatReplayStatus RenderCombatRecord(void *shell_ctx, CombatMode mode,
     combat_reset_match(&c);
 
     audio_set_track(AUDIO_TRACK_COMBAT);
+    // Modern: the ground the fight is on, as RunCombat's caller sets it.
+    if (CL_IS_MODERN) shell_set_combat_ground(ctx);
 
     // Beat length scales off the driver's step delay (demo's beat when demo
     // mode drives, else the visible-autoplay presenter's). step_delay 0 =>
@@ -156,17 +172,30 @@ CombatReplayStatus RenderCombatRecord(void *shell_ctx, CombatMode mode,
     if (beat < 0.0) beat = 0.0;
 
     CombatReplayStatus rv = COMBAT_REPLAY_OK;
+    combat_render_set_impact(true);
     // Show the opening board for a beat, then animate each recorded action.
-    if (!replay_beat(&c, g, sprites, render_target, beat)) rv = COMBAT_REPLAY_ABORT;
+    if (!replay_beat(&c, g, ctx, sprites, render_target, beat, -1, 0, 0, 0)) rv = COMBAT_REPLAY_ABORT;
     for (int i = 0; i < rec->count && rv == COMBAT_REPLAY_OK; i++) {
-        replay_apply_entry(&c, &rec->entries[i]);
-        // decay hit flashes a touch each beat so splats don't persist forever
+        const CombatTurnEntry *e = &rec->entries[i];
+        replay_apply_entry(&c, e);
+        // decay hit flashes a touch each beat so splats don't persist forever;
+        // a troop killed under its splat leaves when it is done
         for (int s = 0; s < COMBAT_SIDES; s++)
-            for (int u = 0; u < COMBAT_SLOTS; u++)
-                if (c.units[s][u].hit_flash > 0 &&
-                    !(s == rec->entries[i].tgt_side && u == rec->entries[i].tgt_slot))
-                    c.units[s][u].hit_flash--;
-        if (!replay_beat(&c, g, sprites, render_target, beat))
+            for (int u = 0; u < COMBAT_SLOTS; u++) {
+                CombatUnit *cu = &c.units[s][u];
+                if (cu->hit_flash > 0 && !(s == e->tgt_side && u == e->tgt_slot)) cu->hit_flash--;
+                if (cu->troop_idx >= 0 && cu->count <= 0 && cu->hit_flash <= 0) cu->troop_idx = -1;
+            }
+        // A blow: the striker plays its attack strip over the beat.
+        int atk_side = -1, frames = 0;
+        if (e->tgt_side < COMBAT_SIDES && e->act_side < COMBAT_SIDES && e->act_slot < COMBAT_SLOTS) {
+            const CombatUnit *au = &c.units[e->act_side][e->act_slot];
+            if (au->troop_idx >= 0 && au->troop_idx < sprites->troop_count) {
+                atk_side = e->act_side;
+                frames = sprites->troop_anim_frames[au->troop_idx];
+            }
+        }
+        if (!replay_beat(&c, g, ctx, sprites, render_target, beat, atk_side, e->to_x, e->to_y, frames))
             rv = COMBAT_REPLAY_ABORT;
     }
 
@@ -205,7 +234,7 @@ CombatReplayStatus RenderCombatRecord(void *shell_ctx, CombatMode mode,
             // Hold the banner; combat_present draws it (overlay_draw_note
             // centered) while dialog_is_active(). replay_beat pumps audio +
             // screenshots + movie frames + window-close each frame.
-            if (!replay_beat(&c, g, sprites, render_target, dwell))
+            if (!replay_beat(&c, g, ctx, sprites, render_target, dwell, -1, 0, 0, 0))
                 rv = COMBAT_REPLAY_ABORT;
         }
         dialog_dismiss();

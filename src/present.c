@@ -5,13 +5,14 @@
 #include "safe_area.h"
 #include "layout.h"
 #include "touch.h"
-#include "input_host.h"   // input_touch_active: the band grows for a finger
 #include "bfont.h"
+#include "modern/page.h"
 
-// The blit rect of the last present_scaled, in window pixels, and the scale
-// it used. This is what turns a tap's window position back into design-space
-// pixels, and what the touch chrome lays itself out around.
-static int s_dst_x, s_dst_y, s_dst_w, s_dst_h, s_dst_scale = 1;
+// The blit rect of the last present_scaled, in window pixels, and the
+// design-space size it showed: what turns a tap's window position back into
+// design-space pixels. The touch chrome lays itself out around the rect.
+static int s_dst_x, s_dst_y, s_dst_w, s_dst_h;
+static int s_des_w, s_des_h;
 
 // Runtime display scale, in whole pixels. 1 means one buffer pixel is one
 // screen pixel, which is the startup state and what a modern pack is authored
@@ -22,6 +23,31 @@ static int s_scale = 1;
 
 // Zoom the current target is rendered at (fixed buffers only; else 1).
 static int s_zoom = 1;
+#if !defined(PLATFORM_IOS) && !defined(PLATFORM_ANDROID) && !defined(__EMSCRIPTEN__)
+static bool s_zoomed;          // a zoom has been chosen
+static int  s_zoom_state;      // the window's maximised / full-screen state then
+#endif
+static bool s_layout_changed;  // the last refit changed the screen
+static bool s_smooth;          // the target is filtered smoothly (fitted down)
+
+bool present_layout_changed(void) { return s_layout_changed; }
+
+// The zoom a surface gets, `fit` being the largest that fits it. On a desktop
+// window the zoom never rises while an edge is dragged: it rises only when
+// the window is the size the game gave it, or has just been maximised,
+// restored or made full screen. It falls whenever the surface can no longer
+// hold it. A phone, and the browser's canvas, take the largest that fits.
+static int held_zoom(int fit) {
+#if defined(PLATFORM_IOS) || defined(PLATFORM_ANDROID) || defined(__EMSCRIPTEN__)
+    return fit;
+#else
+    int state = (frame_host_window_maximized() ? 1 : 0) | (frame_host_window_fullscreen() ? 2 : 0);
+    bool free_rise = !s_zoomed || state != s_zoom_state || frame_host_window_at_set_size();
+    s_zoomed = true;
+    s_zoom_state = state;
+    return (free_rise || fit < s_zoom) ? fit : s_zoom;
+#endif
+}
 
 int present_get_zoom(void) { return s_zoom; }
 
@@ -32,6 +58,8 @@ void present_target_size(int win_w, int win_h, int *w, int *h) {
 }
 
 void present_begin(RenderTexture2D *rt) {
+    // A frame starts with no page open (modern pages: src/modern/page.c).
+    page_frame_begin();
     gfx_target_begin(*rt);
     if (CL_IS_NATIVE && s_zoom > 1) {
         gfx_zoom_begin((float)s_zoom);
@@ -127,55 +155,59 @@ int present_scale(int win_w, int win_h) {
     return present_max_scale(win_w, win_h);
 }
 
-void present_zoom_window(int scale) {
-    if (!CL_IS_NATIVE) return;
-    if (scale < 1) scale = 1;
-    if (scale > CL_SCALE_MAX_NATIVE) scale = CL_SCALE_MAX_NATIVE;
-    if (frame_host_window_fullscreen() || frame_host_window_maximized()) return;
-    frame_host_window_size_set(CL_SCREEN_W * scale, CL_SCREEN_H * scale);
+// The part of the window the game may draw in: all of it, less any display
+// cutout or gesture-bar insets (safe_area.c). Every inset is zero on desktop,
+// web and iOS (whose window already IS its safe area); on Android it is what
+// the camera notch and the navigation bar leave. A degenerate inset (wider
+// than the window) is ignored.
+static void safe_rect(int *x, int *y, int *w, int *h) {
+    int win_w = frame_host_window_width();
+    int win_h = frame_host_window_height();
+    SafeArea sa = safe_area_get();
+    int sx = sa.left, sy = sa.top;
+    int sw = win_w - sa.left - sa.right;
+    int sh = win_h - sa.top  - sa.bottom;
+    if (sw <= 0) { sx = 0; sw = win_w; }
+    if (sh <= 0) { sy = 0; sh = win_h; }
+    if (x) *x = sx;
+    if (y) *y = sy;
+    if (w) *w = sw;
+    if (h) *h = sh;
 }
-
-static bool s_grow_world;   // see present_allow_growth (present.h)
-
-void present_allow_growth(bool on) { s_grow_world = on; }
 
 bool present_refit(RenderTexture2D *rt) {
     if (!rt) return false;
-    int win_w = frame_host_window_width();
-    int win_h = frame_host_window_height();
+    s_layout_changed = false;
     if (CL_IS_NATIVE) {
-        // The buffer follows the window in ONE dimension: the map pane grows
-        // in whole tiles to fill what the whole-number scale leaves over
-        // (layout_grow_native). Everything else the pack sized keeps its size
-        // and re-centres. The target is then the buffer times the zoom.
-        int z = present_scale(win_w, win_h);
-        // Off the world map the buffer goes back to exactly what the pack
-        // declared: passing the declared size shrinks the pane to its floor.
-        // A touch session gets a menu band as tall as a touch target, but
-        // only out of the slack the whole tiles leave (layout_grow_native).
-        int want_status = input_touch_active() ? touch_unit() / (z > 0 ? z : 1) : 0;
-        // The rail is asked for whenever the world is: layout_grow_native
-        // grants it only where the width pays for it, so this is not a device
-        // or input test -- a small window simply never gets one.
-        bool grown = s_grow_world
-            ? layout_grow_native(win_w, win_h, z, want_status, CL_IS_MODERN)
-            : layout_grow_native(0, 0, 1, 0, false);
-        int w, h;
-        present_target_size(win_w, win_h, &w, &h);
+        // A declared buffer takes the whole surface, on every screen: the
+        // zoom is the largest whole number (3 at most) at which the declared
+        // buffer fits -- held while a window edge is dragged (held_zoom) --
+        // and the screen is the surface at that zoom (layout_grow_native).
+        // The target is the screen times the zoom.
+        int sw, sh;
+        safe_rect(NULL, NULL, &sw, &sh);
+        int z = held_zoom(present_scale(sw, sh));
+        bool grown = layout_grow_native(sw, sh, z);
+        int w = CL_SCREEN_W * z, h = CL_SCREEN_H * z;
         bool changed = grown || (rt->texture.width != w || rt->texture.height != h);
         if (changed) {
             gfx_target_free(*rt);
             *rt = gfx_target_create(w, h);
             gfx_texture_point(rt->texture);
+            s_smooth = false;
         }
         if (z != s_zoom) { s_zoom = z; bfont_set_zoom(z); }
+        s_layout_changed = changed;
         return changed;
     }
+    int win_w = frame_host_window_width();
+    int win_h = frame_host_window_height();
     if (!layout_fit_window(win_w, win_h, present_scale(win_w, win_h)))
         return false;
     gfx_target_free(*rt);
     *rt = gfx_target_create(CL_SCREEN_W, CL_SCREEN_H);
     gfx_texture_point(rt->texture);
+    s_layout_changed = true;
     return true;
 }
 
@@ -183,7 +215,7 @@ bool present_refit(RenderTexture2D *rt) {
 // safe area, never less than 1.
 //
 // Only the mobile paths multiply by this: a phone has no window to resize and
-// no scale control, so the desktop's 1x would leave an 800x532 buffer as a
+// no scale control, so the desktop's 1x would leave an 800x504 buffer as a
 // small panel in the middle of a 2400x1080 screen. A whole number keeps every
 // pack pixel square and the art hard-edged. Compiled everywhere so it can be
 // tested anywhere; on a screen smaller than the frame it answers 1 and the
@@ -196,31 +228,48 @@ int present_fit_multiple(int dst_w, int dst_h, int safe_w, int safe_h) {
     return (fit < 1) ? 1 : fit;
 }
 
+bool present_fit_down(int w, int h, int room_w, int room_h, int *out_w, int *out_h) {
+    if (out_w) *out_w = w;
+    if (out_h) *out_h = h;
+    if (w <= 0 || h <= 0 || room_w <= 0 || room_h <= 0) return false;
+    if (w <= room_w && h <= room_h) return false;
+    if ((long)w * room_h > (long)h * room_w) {
+        if (out_h) *out_h = (int)((long)h * room_w / w);
+        if (out_w) *out_w = room_w;
+    } else {
+        if (out_w) *out_w = (int)((long)w * room_h / h);
+        if (out_h) *out_h = room_h;
+    }
+    return true;
+}
+
 void present_scaled(RenderTexture2D rt) {
     gfx_frame_begin();
     gfx_clear(BLACK);
 
-    int win_w = frame_host_window_width();
-    int win_h = frame_host_window_height();
-
-    // The window minus any display cutout / gesture-bar insets (safe_area.c).
-    // Every inset is zero on desktop, web and iOS, so this is the whole window
-    // there; on Android it is what the camera notch and the navigation bar
-    // leave, and the game is fitted and centred inside it rather than under
-    // them. A degenerate inset (wider than the window) is ignored.
-    SafeArea sa = safe_area_get();
-    int safe_x = sa.left, safe_y = sa.top;
-    int safe_w = win_w - sa.left - sa.right;
-    int safe_h = win_h - sa.top  - sa.bottom;
-    if (safe_w <= 0) { safe_x = 0; safe_w = win_w; }
-    if (safe_h <= 0) { safe_y = 0; safe_h = win_h; }
+    // The game is fitted and centred inside the safe area, never under a
+    // notch or a gesture bar.
+    int safe_x, safe_y, safe_w, safe_h;
+    safe_rect(&safe_x, &safe_y, &safe_w, &safe_h);
 
     int scale = present_scale(safe_w, safe_h);
 
     int dst_w = CL_SCREEN_W * scale;
     int dst_h = CL_SCREEN_H * scale;
-    // A fixed buffer was rendered at the zoom already: blit it 1:1.
-    if (CL_IS_NATIVE) { dst_w = rt.texture.width; dst_h = rt.texture.height; scale = s_zoom; }
+    if (CL_IS_NATIVE) {
+        // A declared buffer was rendered at the zoom already: blit it 1:1.
+        dst_w = rt.texture.width; dst_h = rt.texture.height; scale = s_zoom;
+        // Below the smallest screen -- a browser window can be -- the frame
+        // is fitted down to the window rather than cut off, smoothly, so no
+        // row or column of pixels is dropped.
+        bool down = present_fit_down(dst_w, dst_h, safe_w, safe_h, &dst_w, &dst_h);
+        if (down) scale = 1;
+        if (down != s_smooth) {
+            s_smooth = down;
+            if (down) gfx_texture_smooth(rt.texture);
+            else      gfx_texture_point(rt.texture);
+        }
+    }
 
 #if defined(PLATFORM_IOS) || defined(PLATFORM_ANDROID)
     // Mobile shows the frame at the largest whole-number multiple of whatever
@@ -243,7 +292,9 @@ void present_scaled(RenderTexture2D rt) {
                       (float)dst_w, (float)dst_h };
     gfx_texture_draw(rt.texture, src, dst, WHITE);
 
-    present_store_dst((int)dst.x, (int)dst.y, dst_w, dst_h, scale);
+    s_dst_x = (int)dst.x; s_dst_y = (int)dst.y;
+    s_dst_w = dst_w;      s_dst_h = dst_h;
+    s_des_w = CL_SCREEN_W; s_des_h = CL_SCREEN_H;
 
 #if defined(PLATFORM_IOS) || defined(PLATFORM_ANDROID)
     // The first frame's arithmetic, once, into the platform log: a frame in the
@@ -253,7 +304,8 @@ void present_scaled(RenderTexture2D rt) {
         if (!said) {
             said = true;
             printf("[present] window %dx%d safe %d,%d %dx%d buffer %dx%d -> dst %d,%d %dx%d scale %d\n",
-                   win_w, win_h, safe_x, safe_y, safe_w, safe_h,
+                   frame_host_window_width(), frame_host_window_height(),
+                   safe_x, safe_y, safe_w, safe_h,
                    rt.texture.width, rt.texture.height,
                    (int)dst.x, (int)dst.y, dst_w, dst_h, scale);
             fflush(stdout);
@@ -272,19 +324,24 @@ void present_scaled(RenderTexture2D rt) {
 void present_store_dst(int x, int y, int w, int h, int scale) {
     s_dst_x = x; s_dst_y = y;
     s_dst_w = w; s_dst_h = h;
-    s_dst_scale = scale;
+    s_des_w = scale > 0 ? w / scale : 0;
+    s_des_h = scale > 0 ? h / scale : 0;
 }
 
 bool present_window_to_screen(int wx, int wy, int *sx, int *sy) {
-    if (s_dst_w <= 0 || s_dst_h <= 0 || s_dst_scale <= 0) return false;
+    if (s_dst_w <= 0 || s_dst_h <= 0 || s_des_w <= 0 || s_des_h <= 0) return false;
     if (wx < s_dst_x || wy < s_dst_y ||
         wx >= s_dst_x + s_dst_w || wy >= s_dst_y + s_dst_h) return false;
-    if (sx) *sx = (wx - s_dst_x) / s_dst_scale;
-    if (sy) *sy = (wy - s_dst_y) / s_dst_scale;
+    if (sx) *sx = (int)((long)(wx - s_dst_x) * s_des_w / s_dst_w);
+    if (sy) *sy = (int)((long)(wy - s_dst_y) * s_des_h / s_dst_h);
     return true;
 }
 
-int present_get_dst_scale(void) { return s_dst_scale; }
+int present_window_len_to_design(int len) {
+    if (s_dst_w <= 0 || s_des_w <= 0) return len;
+    return (int)((long)len * s_des_w / s_dst_w);
+}
+
 
 void present_last_dst(int *x, int *y, int *w, int *h) {
     if (x) *x = s_dst_x;

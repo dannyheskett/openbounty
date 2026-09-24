@@ -8,6 +8,7 @@
 #include "modern/mlayout.h"
 #include "modern/mlist.h"
 #include "modern/uikit.h"
+#include "modern/page.h"
 #include "modern/saveslots.h"
 #include "modern/gamemenu.h"
 #include "lattice.h"
@@ -52,7 +53,9 @@ static void frame_begin(RenderTexture2D *rt) {
     present_refit(rt);
     present_begin(rt);
     gfx_clear(PAL_CLR(BLACK));
-    ml_set_area(ML_AREA_SCREEN);   // startup panels centre on the whole screen
+    // The pre-game screens have no frame: their art is full-bleed, and a page
+    // over it measures from the screen's edges.
+    page_bare();
 }
 
 // Draw the class-select cartoon as the screen backdrop, so dialog
@@ -61,6 +64,7 @@ static void frame_begin(RenderTexture2D *rt) {
 static void draw_class_picker_backdrop(const Sprites *sprites) {
     if (!sprites || !sprites->class_picker.id) return;
     Texture2D t = sprites->class_picker;
+    if (CL_IS_MODERN) { page_art(t, NULL); return; }
     int fs = ui_fit_scale(t.width, t.height, CL_SCREEN_W, CL_SCREEN_H);
     int pw = t.width  * fs;
     int ph = t.height * fs;
@@ -92,10 +96,10 @@ static void frame_end(RenderTexture2D *rt) {
     screenshot_tick(*rt, "shot");
 }
 
+// Legacy's panel: blue, with its yellow frame. Modern's are pages.
 static void panel(int x, int y, int w, int h) {
-    if (CL_IS_MODERN) { uk_panel(x, y, w, h); return; }
     gfx_rect(x, y, w, h, PAL_CLR(DBLUE));
-    ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
+    legacy_window_frame(x, y, w, h, PAL_CLR(YELLOW));
 }
 
 // Drain any queued typed characters from raylib's input queue. Call this
@@ -146,12 +150,17 @@ static float title_phase(double t, double from, double to) {
     return f < 0 ? 0 : f > 1 ? 1 : f;
 }
 
+// The purple the title sequence opens on, before the battle fades in.
+static Color title_purple(void) { return (Color){ 65, 9, 104, 255 }; }
+
 static void draw_title_sequence(const Sprites *s, double t) {
     Texture2D b = s->title_battle, e = s->title_eagle;
     int fs = ui_fit_scale(b.width, b.height, CL_SCREEN_W, CL_SCREEN_H);
     int pw = b.width * fs, ph = b.height * fs;
     int ox = (CL_SCREEN_W - pw) / 2, oy = (CL_SCREEN_H - ph) / 2;
-    gfx_rect(ox, oy, pw, ph, (Color){ 65, 9, 104, 255 });
+    // Full-bleed art, in the frame's lattice where the screen is larger.
+    page_art_margins((ML_Rect){ ox, oy, pw, ph });
+    gfx_rect(ox, oy, pw, ph, title_purple());
     unsigned char a = (unsigned char)(255 * title_phase(t, TITLE_HOLD, TITLE_FADED));
     gfx_texture_draw(b, (Rectangle){ 0, 0, (float)b.width, (float)b.height },
                    (Rectangle){ (float)ox, (float)oy, (float)pw, (float)ph }, (Color){ 255, 255, 255, a });
@@ -170,28 +179,22 @@ static void draw_title_sequence(const Sprites *s, double t) {
 static void draw_title_backdrop(const Sprites *sprites) {
     if (title_sequence_ok(sprites)) { draw_title_sequence(sprites, TITLE_END); return; }
     if (!sprites || !sprites->splash_title.id) return;
-    Texture2D t = sprites->splash_title;
-    int fs = ui_fit_scale(t.width, t.height, CL_SCREEN_W, CL_SCREEN_H);
-    int pw = t.width * fs, ph = t.height * fs;
-    ui_blit(t, (CL_SCREEN_W - pw) / 2, (CL_SCREEN_H - ph) / 2, pw, ph);
+    page_art(sprites->splash_title, NULL);
 }
 
-// Helper: true if any key was pressed this frame (other than pure
-// modifier keys).  behavior.
-static bool any_key_pressed(void) {
-    ui_dismiss_on_tap(KEY_ENTER);  // a tap counts as any key
-    int k = input_get_key_pressed();
-    while (k != 0) {
-        if (k != KEY_LEFT_SHIFT && k != KEY_RIGHT_SHIFT &&
-            k != KEY_LEFT_CONTROL && k != KEY_RIGHT_CONTROL &&
-            k != KEY_LEFT_ALT && k != KEY_RIGHT_ALT &&
-            k != KEY_LEFT_SUPER && k != KEY_RIGHT_SUPER &&
-            k != KEY_CAPS_LOCK && k != KEY_NUM_LOCK && k != KEY_SCROLL_LOCK) {
-            return true;
-        }
-        k = input_get_key_pressed();
-    }
-    return false;
+// Any key but a modifier, or a tap: the one any-key check (src/ui.c).
+static bool any_key_pressed(void) { return ui_any_key_pressed(); }
+
+// A full-screen splash: the texture centred on `bg_color`.
+static void draw_splash(Texture2D tex, Color bg_color) {
+    gfx_clear(bg_color);
+    // Modern: full-bleed art at the largest whole multiple, in the lattice.
+    if (CL_IS_MODERN) { page_art(tex, NULL); return; }
+    // Splash art is authored in the 320x200 design space; legacy draws it at 1x.
+    int fs = ui_fit_scale(tex.width, tex.height, CL_SCREEN_W, CL_SCREEN_H);
+    int iw = tex.width  * fs;
+    int ih = tex.height * fs;
+    ui_blit(tex, (CL_SCREEN_W - iw) / 2, (CL_SCREEN_H - ih) / 2, iw, ih);
 }
 
 // Show a full-screen splash (texture centered on `bg_color`) for 2 seconds,
@@ -208,19 +211,8 @@ static bool run_splash(RenderTexture2D *rt,
         if (frame_host_time() - start_time >= timeout || any_key_pressed()) return true;
 
         frame_begin(rt);
-        gfx_clear(bg_color);
-        // Splash art is authored in the 320x200 design space; legacy draws
-        // it at 1x, modern at the largest whole scale the buffer holds.
-        int fs = ui_fit_scale(tex.width, tex.height, CL_SCREEN_W, CL_SCREEN_H);
-        int iw = tex.width  * fs;
-        int ih = tex.height * fs;
-        ui_blit(tex, (CL_SCREEN_W - iw) / 2, (CL_SCREEN_H - ih) / 2, iw, ih);
-        present_end();
-
-        present_scaled(*rt);
-        frame_host_end_frame();
-
-        screenshot_tick(*rt, "shot");
+        draw_splash(tex, bg_color);
+        frame_end(rt);
     }
     return false;
 }
@@ -232,13 +224,6 @@ static bool run_splash(RenderTexture2D *rt,
 // ---------------------------------------------------------------------------
 
 // The slots and their rows: src/modern/saveslots.c (the in-game menu uses them too).
-
-static bool title_row(void *ctx, int i, char *label, char *right, int cap) {
-    const char **labels = (const char **)ctx;
-    right[0] = '\0';
-    snprintf(label, (size_t)cap, "%s", labels[i]);
-    return true;
-}
 
 typedef struct {
     const Resources *res;
@@ -259,6 +244,14 @@ static bool difficulty_row(void *ctx, int i, char *label, char *right, int cap) 
     return true;          // readable before a name; chosen only after one
 }
 
+typedef struct { const DiffCtx *d; const char *cancel; } DiffRowsCtx;
+
+static bool difficulty_or_cancel_row(void *ctx, int i, char *label, char *right, int cap) {
+    const DiffRowsCtx *c = (const DiffRowsCtx *)ctx;
+    if (i >= 4) { ml_exit_hint(right); snprintf(label, (size_t)cap, "%s", c->cancel); return true; }
+    return difficulty_row((void *)c->d, i, label, right, cap);
+}
+
 // Modern: the slot rows, then Back.
 typedef struct { const GmPage *page; const SlotSet *slots; } TitleSlotsCtx;
 
@@ -267,33 +260,42 @@ static bool title_slot_row(void *ctx, int i, char *label, char *right, int cap) 
     const GmPage *p = c->page;
     if (i < MODERN_SAVE_SLOTS) {
         saveslots_row((void *)c->slots, i, label, right, cap);
-    } else {
-        snprintf(label, (size_t)cap, "%s", p->item[i].label ? p->item[i].label : "");
-        right[0] = '\0';
+        return p->item[i].enabled;
     }
-    return p->item[i].enabled;
+    return gm_row((void *)p, i, label, right, cap);
 }
 
-// Modern: the title's Load Saved Game is the in-game Load page -- the same
-// panel, width and rows (gm_draw_page), with "Load Saved Game" for its path.
+// Modern: the title's Load Saved Game is the in-game Load page -- built by
+// the same function, so its rows and their words are the same -- with "Load
+// Saved Game" for its path.
+static void load_page_build(GmPage *p, const Resources *r, const SlotSet *slots) {
+    gm_load_page(p, slots, r->ui.title_load_adventure);
+}
+
+// The cursor the Load page opens on: its first row that can be chosen.
+static int load_page_cursor(const SlotSet *slots) {
+    const Resources *r = resources_current();
+    GmPage p;
+    if (!r) return 0;
+    load_page_build(&p, r, slots);
+    return gm_first_enabled(&p);
+}
+
+static void draw_save_picker_modern(const Sprites *sprites, const GmPage *p,
+                                    int cursor, TitleSlotsCtx *ctx) {
+    draw_title_backdrop(sprites);
+    // The in-game Load page, over the title art.
+    page_menu(p, p->title, NULL, cursor, TOUCH_LIST_STARTUP, title_slot_row, ctx);
+}
+
 static bool run_save_picker_modern(RenderTexture2D *rt, const Sprites *sprites,
                                    StartupChoice *out, const SlotSet *slots) {
     const Resources *r = resources_current();
     if (!r) { out->action = STARTUP_BACK; return true; }
-    const ResUI *ui = &r->ui;
-    const ResBanners *bn = &r->banners;
     GmPage p;
-    memset(&p, 0, sizeof p);
-    p.title = ui->title_load_adventure;
-    for (int i = 0; i < MODERN_SAVE_SLOTS; i++)
-        p.item[p.n++] = (GmItem){ "", bn->gmd_load, "", GM_ACT_USER + i,
-                                  slots->hdrs[i].exists };
-    p.item[p.n++] = (GmItem){ ui->gm_back, bn->gmd_back_up, "", GM_ACT_BACK, true };
-
+    load_page_build(&p, r, slots);
     TitleSlotsCtx ctx = { &p, slots };
-    int cursor = MODERN_SAVE_SLOTS;   // Back, unless a save exists
-    for (int i = 0; i < MODERN_SAVE_SLOTS; i++)
-        if (slots->hdrs[i].exists) { cursor = i; break; }
+    int cursor = load_page_cursor(slots);
 
     while (!frame_host_should_close()) {
         GmEvent ev = gm_page_input(&p, &cursor, TOUCH_LIST_STARTUP);
@@ -308,16 +310,71 @@ static bool run_save_picker_modern(RenderTexture2D *rt, const Sprites *sprites,
             return true;
         }
         frame_begin(rt);
-        draw_title_backdrop(sprites);
-        gfx_rect(0, 0, CL_SCREEN_W, CL_SCREEN_H, (Color){ 0, 0, 0, 110 });
-        // The title screen has no chrome around the pane, so the page centres
-        // on the screen; its width and rows are the menu's (gm_draw_page).
-        ml_set_area(ML_AREA_SCREEN);
-        gm_draw_page(&p, p.title, NULL, cursor, TOUCH_LIST_STARTUP, title_slot_row, &ctx);
+        draw_save_picker_modern(sprites, &p, cursor, &ctx);
         frame_end(rt);
     }
     out->action = STARTUP_QUIT;
     return false;
+}
+
+// Legacy: ten slot rows and New game, over the class-select cartoon.
+static void draw_save_picker_legacy(const Sprites *sprites, const SlotSet *slots,
+                                    int cursor, int new_row) {
+    draw_class_picker_backdrop(sprites);
+    draw_class_picker_status_hint(resources_current());
+
+    // Layout: pad / header row / body rows / gap / instruction row / pad.
+    int pad      = 6 * CL_UI;
+    int row_h    = GH + 2 * CL_UI;
+    int header_h = GH + 4 * CL_UI;  // title plus a little breathing room
+    int gap_h    = 4 * CL_UI;       // last body row to instructions
+    int instr_h  = GH;              // "UP/DN select ..." line
+    int body_h   = (SAVE_SLOT_COUNT + 1) * row_h;
+    int w = 280 * CL_UI;
+    int h = pad + header_h + body_h + gap_h + instr_h + pad;
+    int x = (CL_SCREEN_W - w) / 2;
+    int y = (CL_SCREEN_H - h) / 2;
+    panel(x, y, w, h);
+
+    const Resources *r = resources_current();
+    const ResUI *ui = r ? &r->ui : NULL;
+    bfont_draw(ui ? ui->startup_save_picker_title : " Select game:",
+               x + pad, y + pad, PAL_CLR(YELLOW));
+    int ty = y + pad + header_h;
+
+    const char *empty_lbl = ui ? ui->startup_save_picker_empty : "(empty)";
+    for (int i = 0; i < SAVE_SLOT_COUNT; i++) {
+        Color fg = (i == cursor) ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
+        char line[80];
+        if (slots->hdrs[i].exists) {
+            snprintf(line, sizeof(line),
+                     "%2d. %-10s  %-9s  %3dd",
+                     i + 1,
+                     slots->hdrs[i].name,
+                     slots->hdrs[i].rank_title,
+                     slots->hdrs[i].days_left);
+        } else {
+            snprintf(line, sizeof(line), "%2d. %s", i + 1, empty_lbl);
+        }
+        bfont_draw(line, x + pad, ty, fg);
+        ui_tile_row(x, ty, w, row_h, TOUCH_LIST_STARTUP, i);
+        ty += row_h;
+    }
+    // "New game" row -- slot index `new_row == SAVE_SLOT_COUNT`, one row
+    // past the save slots. The loop above draws exactly SAVE_SLOT_COUNT
+    // rows and leaves `ty` sitting on this one, so it needs no further
+    // advance.
+    Color nfg = (cursor == new_row) ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
+    char ng_line[64];
+    snprintf(ng_line, sizeof ng_line, "    %s",
+             ui->startup_save_picker_new_game);
+    bfont_draw(ng_line, x + pad, ty, nfg);
+    ui_tile_row(x, ty, w, row_h, TOUCH_LIST_STARTUP, new_row);
+
+    // Hint fits in the 33-char content width (280 - 2*pad).
+    // Source: res.ui.startup_controls_hint (game.json strings.startup).
+    const char *hint = ui->startup_controls_hint;
+    bfont_draw(hint, x + pad, y + h - pad - instr_h, PAL_CLR(GREY));
 }
 
 static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
@@ -327,18 +384,16 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
     screen_open();
     if (CL_IS_MODERN) return run_save_picker_modern(rt, sprites, out, &slots);
 
-    int cursor = 0;
-    // Row index = 0..SAVE_SLOT_COUNT-1 for slots, SAVE_SLOT_COUNT for "New".
-    // Modern has no "New game" row: New Game lives on the title menu.
-    int nslots    = CL_IS_MODERN ? MODERN_SAVE_SLOTS : SAVE_SLOT_COUNT;
-    int row_count = nslots + (CL_IS_MODERN ? 0 : 1);
-    int new_row   = CL_IS_MODERN ? -1 : SAVE_SLOT_COUNT;
+    // Legacy. Row index = 0..SAVE_SLOT_COUNT-1 for slots, SAVE_SLOT_COUNT
+    // for "New".
+    int row_count = SAVE_SLOT_COUNT + 1;
+    int new_row   = SAVE_SLOT_COUNT;
 
     // Cursor lands on the first existing slot, else on "New". Saves are
     // physically segregated by pack (<user-data>/openbounty/saves/<pack_id>/),
     // so every slot we see here belongs to the active pack.
-    cursor = CL_IS_MODERN ? 0 : new_row;
-    for (int i = 0; i < nslots; i++) {
+    int cursor = new_row;
+    for (int i = 0; i < SAVE_SLOT_COUNT; i++) {
         if (slots.hdrs[i].exists) { cursor = i; break; }
     }
 
@@ -380,79 +435,16 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
                 out->action = STARTUP_LOAD;
                 out->slot   = cursor;
                 return true;
-            } else if (!CL_IS_MODERN) {
-                // Empty slot chosen directly -> new game into that slot.
-                out->action = STARTUP_NEW;
-                out->slot   = cursor;
-                return true;
             }
+            // Empty slot chosen directly -> new game into that slot.
+            out->action = STARTUP_NEW;
+            out->slot   = cursor;
+            return true;
         }
 
         // ---- Render --------------------------------------------------
         frame_begin(rt);
-        draw_class_picker_backdrop(sprites);
-        draw_class_picker_status_hint(resources_current());
-
-        // Layout: pad / header row / body rows / gap / instruction row / pad.
-        int pad      = 6 * CL_UI;
-        int row_h    = GH + 2 * CL_UI;
-        int header_h = GH + 4 * CL_UI;  // title plus a little breathing room
-        int gap_h    = 4 * CL_UI;       // last body row to instructions
-        int instr_h  = GH;              // "UP/DN select ..." line
-        int body_h   = (SAVE_SLOT_COUNT + 1) * row_h;
-        int w = 280 * CL_UI;
-        int h = pad + header_h + body_h + gap_h + instr_h + pad;
-        int x = (CL_SCREEN_W - w) / 2;
-        int y = (CL_SCREEN_H - h) / 2;
-        panel(x, y, w, h);
-
-        const Resources *r = resources_current();
-        const ResUI *ui = r ? &r->ui : NULL;
-        bfont_draw(ui ? ui->startup_save_picker_title : " Select game:",
-                   x + pad, y + pad, PAL_CLR(YELLOW));
-        int ty = y + pad + header_h;
-
-        const char *empty_lbl = ui ? ui->startup_save_picker_empty : "(empty)";
-        for (int i = 0; i < SAVE_SLOT_COUNT; i++) {
-            Color fg = (i == cursor) ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
-            char line[80];
-            if (slots.hdrs[i].exists) {
-                snprintf(line, sizeof(line),
-                         "%2d. %-10s  %-9s  %3dd",
-                         i + 1,
-                         slots.hdrs[i].name,
-                         slots.hdrs[i].rank_title,
-                         slots.hdrs[i].days_left);
-            } else {
-                snprintf(line, sizeof(line), "%2d. %s", i + 1, empty_lbl);
-            }
-            if (CL_IS_MODERN) {
-                sel_row(x, ty, w, row_h, x + pad, line, i == cursor, fg, PAL_CLR(DBLUE),
-                        TOUCH_LIST_STARTUP, i);
-            } else {
-                bfont_draw(line, x + pad, ty, fg);
-                ui_tile_row(x, ty, w, row_h, TOUCH_LIST_STARTUP, i);
-            }
-            ty += row_h;
-        }
-        // "New game" row -- slot index `new_row == SAVE_SLOT_COUNT`, one row
-        // past the save slots. The loop above draws exactly SAVE_SLOT_COUNT
-        // rows and leaves `ty` sitting on this one, so it needs no further
-        // advance.
-        Color nfg = (cursor == new_row) ? PAL_CLR(YELLOW) : PAL_CLR(WHITE);
-        char ng_line[64];
-        snprintf(ng_line, sizeof ng_line, "    %s",
-                 ui->startup_save_picker_new_game);
-        if (!CL_IS_MODERN) {
-            bfont_draw(ng_line, x + pad, ty, nfg);
-            ui_tile_row(x, ty, w, row_h, TOUCH_LIST_STARTUP, new_row);
-        }
-
-        // Hint fits in the 33-char content width (280 - 2*pad).
-        // Source: res.ui.startup_controls_hint (game.json strings.startup).
-        const char *hint = ui->startup_controls_hint;
-        bfont_draw(hint, x + pad, y + h - pad - instr_h, PAL_CLR(GREY));
-
+        draw_save_picker_legacy(sprites, &slots, cursor, new_row);
         frame_end(rt);
     }
     out->action = STARTUP_QUIT;
@@ -469,23 +461,12 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
 static bool run_credits(RenderTexture2D *rt, const Resources *res,
                         const Sprites *sprites);
 
-// The title menu's panel and rows; touch_list 0 registers no tap regions.
+// The title menu's rows over the title art; touch_list 0 registers no tap
+// regions. Nothing is under it to go back to, so a tap off it does nothing.
 static void draw_title_menu(const Sprites *sprites, const char **labels, int count,
                             int cursor, int touch_list) {
-    // Standard select rows (REQ-430n) in a panel sized to them.
-    int w = 0;
-    for (int i = 0; i < count; i++) {
-        int tw = bfont_text_width(labels[i]);
-        if (tw > w) w = tw;
-    }
-    w += 2 * ML_PAD + 64;
-    int h = ml_list_height(count);
-    int x = (CL_SCREEN_W - w) / 2;
-    int y = CL_SCREEN_H / 2 + (CL_SCREEN_H / 2 - h) / 2 - CL_SCREEN_H / 16;
-    if (title_sequence_ok(sprites)) y -= 40;   // clear of the subtitle at the art's foot
-    panel(x, y, w, h);
-    ml_list_draw(x, y, w, h, count, cursor, title_row, (void *)labels,
-                 touch_list, uk_ink());
+    (void)sprites;
+    page_title_menu(labels, count, cursor, touch_list);
 }
 
 // The class picker's confirm row. Hardcoded like the other shell-owned touch
@@ -498,24 +479,28 @@ static bool class_confirm_row(void *ctx, int i, char *label, char *right, int ca
     return true;
 }
 
+// The title menu's rows. No Exit on a phone: iOS has no notion of quitting an
+// app and Apple rejects a control that claims otherwise, and on Android the
+// system handles it. Everywhere else the row stays exactly where it was.
+#if defined(PLATFORM_IOS) || defined(PLATFORM_ANDROID)
+enum { ROW_NEW, ROW_LOAD, ROW_CREDITS, ROW_COUNT };
+#else
+enum { ROW_NEW, ROW_LOAD, ROW_CREDITS, ROW_EXIT, ROW_COUNT };
+#endif
+
+static void title_menu_labels(const ResUI *ui, const char *labels[ROW_COUNT]) {
+    labels[ROW_NEW]     = ui->title_new_adventure;
+    labels[ROW_LOAD]    = ui->title_load_adventure;
+    labels[ROW_CREDITS] = ui->title_credits;
+#if !defined(PLATFORM_IOS) && !defined(PLATFORM_ANDROID)
+    labels[ROW_EXIT]    = ui->menu_exit;
+#endif
+}
+
 static bool run_title_menu(const Resources *res, const Sprites *sprites,
                            RenderTexture2D *rt, StartupChoice *out) {
-    // No Exit on a phone: iOS has no notion of quitting an app and Apple
-    // rejects a control that claims otherwise, and on Android the system
-    // handles it. Everywhere else the row stays exactly where it was.
-#if defined(PLATFORM_IOS) || defined(PLATFORM_ANDROID)
-    enum { ROW_NEW, ROW_LOAD, ROW_CREDITS, ROW_COUNT };
-    const ResUI *ui = &res->ui;
-    const char *labels[ROW_COUNT] = {
-        ui->title_new_adventure, ui->title_load_adventure, ui->title_credits,
-    };
-#else
-    enum { ROW_NEW, ROW_LOAD, ROW_CREDITS, ROW_EXIT, ROW_COUNT };
-    const ResUI *ui = &res->ui;
-    const char *labels[ROW_COUNT] = {
-        ui->title_new_adventure, ui->title_load_adventure, ui->title_credits, ui->menu_exit,
-    };
-#endif
+    const char *labels[ROW_COUNT];
+    title_menu_labels(&res->ui, labels);
 
     screen_open();
     SelList l = { ROW_COUNT, 0 };
@@ -537,19 +522,30 @@ static bool run_title_menu(const Resources *res, const Sprites *sprites,
         if (playing) {
             // The fading menu is drawn once into its own texture, then onto
             // the scene at the fade's alpha; it takes no taps until it is up.
+            // Drawn at the screen's zoom, as the screen is, so its words are
+            // as sharp fading in as they are once it is up.
             float a = title_phase(t, TITLE_MENU_IN, TITLE_END);
-            if (a > 0 && !menu_rt.id) menu_rt = gfx_target_create(CL_SCREEN_W, CL_SCREEN_H);
+            int z = present_get_zoom();
+            if (menu_rt.id && menu_rt.texture.width != CL_SCREEN_W * z) {
+                gfx_target_free(menu_rt);
+                menu_rt = (RenderTexture2D){ 0 };
+            }
+            if (a > 0 && !menu_rt.id) menu_rt = gfx_target_create(CL_SCREEN_W * z, CL_SCREEN_H * z);
             if (a > 0 && menu_rt.id) {
                 gfx_target_begin(menu_rt);
                 gfx_clear(BLANK);
+                if (z > 1) gfx_zoom_begin((float)z);
+                page_frame_begin();
+                page_bare();
                 draw_title_menu(sprites, labels, ROW_COUNT, l.cursor, 0);
+                if (z > 1) gfx_zoom_end();
                 gfx_target_end();
             }
             frame_begin(rt);
             draw_title_sequence(sprites, t);
             if (a > 0 && menu_rt.id)
                 gfx_texture_draw(menu_rt.texture,
-                                 (Rectangle){ 0, 0, (float)CL_SCREEN_W, -(float)CL_SCREEN_H },
+                                 (Rectangle){ 0, 0, (float)menu_rt.texture.width, -(float)menu_rt.texture.height },
                                  (Rectangle){ 0, 0, (float)CL_SCREEN_W, (float)CL_SCREEN_H },
                                  (Color){ 255, 255, 255, (unsigned char)(255 * a) });
             frame_end(rt);
@@ -585,6 +581,104 @@ static bool run_title_menu(const Resources *res, const Sprites *sprites,
 // ---------------------------------------------------------------------------
 // Class selection: every class in the catalog (legacy: the first four).
 // ---------------------------------------------------------------------------
+
+// The class picker: the painting, the picked figure ringed and captioned.
+// class_cursor < 0: modern, before anyone is picked -- the whole painting.
+static void draw_class_select(const Resources *res, const Sprites *sprites,
+                              int n, int class_cursor) {
+    // Background: solid black.
+    gfx_rect(0, 0, CL_SCREEN_W, CL_SCREEN_H, PAL_CLR(BLACK));
+
+    // Picker bitmap, centered. Sized per frame: present_refit can change
+    // the screen out from under us when the window is resized.
+    int pw = 288 * CL_UI, ph = 184 * CL_UI;
+    int px = 0, py = 0;
+    bool picker_shown = false;
+    if (sprites && sprites->class_picker.id && CL_IS_MODERN) {
+        // Modern: the carousel frame for the picked figure, pre-rendered
+        // with the others dimmed and the figure ringed in gold
+        // (tools/classpicker.py); the whole painting before anyone is
+        // picked. Full-bleed art, at the largest whole multiple.
+        bool picked = class_cursor >= 0;
+        bool carousel = picked && class_cursor < sprites->class_picker_selected_count &&
+                        sprites->class_picker_selected[class_cursor].id;
+        ML_Rect a = page_art(carousel ? sprites->class_picker_selected[class_cursor]
+                                      : sprites->class_picker, NULL);
+        px = a.x; py = a.y; pw = a.w; ph = a.h;
+        picker_shown = true;
+        // A pack without carousel frames dims by column instead.
+        if (picked && !carousel) {
+            int cw = pw / n;
+            for (int k = 0; k < n; k++)
+                if (k != class_cursor) gfx_rect(px + k * cw, py, cw, ph, uk_shade());
+            int cx = px + class_cursor * cw;
+            for (int t = 0; t < 3; t++)
+                gfx_rect_lines(cx + t, py + t, cw - 2 * t, ph - 2 * t, PAL_CLR(YELLOW));
+        }
+    } else if (sprites && sprites->class_picker.id) {
+        int fs = ui_fit_scale(sprites->class_picker.width,
+                              sprites->class_picker.height,
+                              CL_SCREEN_W, CL_SCREEN_H);
+        pw = sprites->class_picker.width  * fs;
+        ph = sprites->class_picker.height * fs;
+        px = (CL_SCREEN_W - pw) / 2;
+        py = (CL_SCREEN_H - ph) / 2;
+        picker_shown = true;
+        ui_blit(sprites->class_picker, px, py, pw, ph);
+    } else {
+        // Fallback: text list if asset missing.
+        bfont_draw(res->ui.startup_class_picker_missing,
+                   40 * CL_UI, 90 * CL_UI, PAL_CLR(YELLOW));
+    }
+
+    if (!CL_IS_MODERN) {
+        // Touch: the picker art shows the classes side by side, one column
+        // each; tapping a column picks that class (A-D).
+        if (picker_shown)
+            for (int k = 0; k < n; k++)
+                ui_tile(px + k * (pw / n), py, pw / n, ph, KEY_A + k);
+        startup_bar(res->ui.startup_class_select_hint);
+        return;
+    }
+
+    // Modern: a caption along the painting's foot -- "Choose your class" until
+    // a figure is picked, then its class, what it is like, and Continue, the
+    // one way on. Its strip carries Back, to the title. The same row whatever
+    // the input: a tap, a key or a pad lands on it, so no route confirms
+    // invisibly. Picking another figure is the way to change class.
+    const int tw = page_msg_w() - 2 * UK_INSET;
+    const char *back = res->ui.gm_back;
+    int top = CL_SCREEN_H;
+    if (class_cursor >= 0) {
+        const ClassDef *pc = class_by_index(class_cursor);
+        const ResClassHero *ch = pc ? resources_class_hero(res, pc->id) : NULL;
+        const char *desc = ch ? ch->desc : "";
+        int lines = uk_lines(desc, tw);
+        int chh = uk_title_h() + UK_BAND + 2 * UK_INSET + lines * uk_line_h()
+                + UK_BAND + ml_list_height(1);
+        Page cp = page_caption(chh, pc ? pc->name : "", back, KEY_ENTER);
+        ML_Rect r = cp.r;
+        top = cp.outer.y;
+        int ty = r.y + uk_title_h() + UK_BAND;
+        uk_flow(r.x + UK_INSET, ty + UK_INSET, tw, r.x, 0, r.y + r.h, desc, PAL_CLR(WHITE));
+        int ry = r.y + r.h - ml_list_height(1);
+        lattice_band_h(r.x, ry - UK_BAND, r.w, UK_BAND);
+        ml_list_draw(r.x, ry, r.w, ml_list_height(1), 1, 0,
+                     class_confirm_row, NULL, TOUCH_LIST_CLASS_CONFIRM,
+                     uk_ink());
+    } else {
+        Page cp = page_caption(uk_title_h() + UK_BAND, res->ui.startup_class_select_hint, back, 0);
+        top = cp.outer.y;
+    }
+
+    // Touch: each figure is a column of the painting, down to the caption; a
+    // tap on one picks it.
+    if (picker_shown) {
+        int fh = (top < py + ph ? top : py + ph) - py;
+        for (int k = 0; k < n; k++)
+            ui_tile_row(px + k * (pw / n), py, pw / n, fh, TOUCH_LIST_CLASS, k);
+    }
+}
 
 static bool run_class_select(const Resources *res,
                              const Sprites   *sprites,
@@ -630,17 +724,15 @@ static bool run_class_select(const Resources *res,
             }
             bool enter = !woke && (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER));
 
-            // Choosing a class is TWO steps, the same two for every input:
+            // Choosing a class is two steps, the same two for every input:
             // pick a figure (it takes the gold outline and its description
-            // comes up), then Continue or Cancel. A tap used to do both at
-            // once, so the choice was never on screen; and the keyboard used
-            // to confirm on Enter with no way back.
+            // comes up), then Continue -- so the choice is on screen before
+            // it is made.
             int tapped = touch_tapped_row(TOUCH_LIST_CLASS);
             if (tapped >= 0 && tapped < n) class_cursor = tapped;
             if (class_cursor >= 0) {
-                // A tap on Continue IS the confirmation; Enter is the same
-                // row from a keyboard. (The accept below tested `enter`
-                // alone, so the tap set nothing anyone read.)
+                // A tap on Continue is the confirmation; Enter is the same
+                // row from a keyboard.
                 int crow = touch_tapped_row(TOUCH_LIST_CLASS_CONFIRM);
                 enter = (crow == 0) || enter;
             }
@@ -672,101 +764,7 @@ static bool run_class_select(const Resources *res,
         }
 
         frame_begin(rt);
-        // Background: solid black.
-        gfx_rect(0, 0, CL_SCREEN_W, CL_SCREEN_H, PAL_CLR(BLACK));
-
-        // Picker bitmap, centered. Sized per frame: present_refit can change
-        // the screen out from under us when the window is resized.
-        int pw = 288 * CL_UI, ph = 184 * CL_UI;
-        int px = 0, py = 0;
-        bool picker_shown = false;
-        if (sprites && sprites->class_picker.id) {
-            int fs = ui_fit_scale(sprites->class_picker.width,
-                                  sprites->class_picker.height,
-                                  CL_SCREEN_W, CL_SCREEN_H);
-            pw = sprites->class_picker.width  * fs;
-            ph = sprites->class_picker.height * fs;
-            px = (CL_SCREEN_W - pw) / 2;
-            py = (CL_SCREEN_H - ph) / 2;
-            picker_shown = true;
-            // Modern: the carousel frame for the picked figure, pre-rendered
-            // with the others dimmed and the figure ringed in gold
-            // (tools/classpicker.py); the whole painting before anyone is
-            // picked.
-            bool picked = CL_IS_MODERN && class_cursor >= 0;
-            bool carousel = picked && class_cursor < sprites->class_picker_selected_count &&
-                            sprites->class_picker_selected[class_cursor].id;
-            ui_blit(carousel ? sprites->class_picker_selected[class_cursor]
-                             : sprites->class_picker, px, py, pw, ph);
-            // Modern: the red header names the picked figure. A pack without
-            // carousel frames dims by column instead.
-            if (CL_IS_MODERN) {
-                if (picked && !carousel) {
-                    int cw = pw / n;
-                    for (int k = 0; k < n; k++)
-                        if (k != class_cursor)
-                            gfx_rect(px + k * cw, py, cw, ph, (Color){ 0, 0, 0, 150 });
-                    int cx = px + class_cursor * cw;
-                    for (int t = 0; t < 3; t++)
-                        gfx_rect_lines(cx + t, py + t, cw - 2 * t, ph - 2 * t, PAL_CLR(YELLOW));
-                }
-            }
-        } else {
-            // Fallback: text list if asset missing.
-            bfont_draw(res->ui.startup_class_picker_missing,
-                       40 * CL_UI, 90 * CL_UI, PAL_CLR(YELLOW));
-        }
-
-        // Modern: the picked figure's caption along the foot -- its class and
-        // what it is like.
-        if (CL_IS_MODERN && class_cursor >= 0) {
-            const ClassDef *pc = class_by_index(class_cursor);
-            const ResBanners *bn = &res->banners;
-            const char *desc = !pc ? "" : strcmp(pc->id, "knight") == 0 ? bn->class_desc_knight
-                             : strcmp(pc->id, "paladin") == 0 ? bn->class_desc_paladin
-                             : strcmp(pc->id, "sorceress") == 0 ? bn->class_desc_sorceress
-                             : strcmp(pc->id, "barbarian") == 0 ? bn->class_desc_barbarian : "";
-            int cw = 700, tw = cw - 2 * UK_INSET;
-            int lines = uk_lines(desc, tw);
-            int chh = 2 * UK_INSET + (1 + lines) * uk_line_h();
-            // One row under the description, and it is the only way on:
-            // Continue takes the class. The same row whatever the input --
-            // a tap, a key or a pad lands on it, so no route confirms
-            // invisibly. Picking another figure is the way to change class.
-            chh += ML_ROW_RULE + ml_row_h();
-            int cx = (CL_SCREEN_W - cw) / 2, cy = CL_SCREEN_H - chh - 16;
-            panel(cx, cy, cw, chh);
-            bfont_draw(pc ? pc->name : "", cx + UK_INSET, cy + UK_INSET, PAL_CLR(YELLOW));
-            uk_flow(cx + UK_INSET, cy + UK_INSET + uk_line_h(), tw, cx, 0, cy + chh, desc, PAL_CLR(WHITE));
-
-            int ry = cy + 2 * UK_INSET + (1 + lines) * uk_line_h();
-            lattice_band_h(cx, ry, cw, ML_ROW_RULE);
-            ry += ML_ROW_RULE;
-            ml_list_draw(cx, ry, cw, ml_list_height(1), 1, 0,
-                         class_confirm_row, NULL, TOUCH_LIST_CLASS_CONFIRM,
-                         uk_ink());
-        }
-
-        // Touch: the picker art shows the classes side by side, one column
-        // each; tapping a column picks that class (A-D). Registered AFTER the
-        // description panel, because the panel sits INSIDE the painting and a
-        // tap takes the first region that contains it (`resolve_tap`,
-        // src/touch.c): registered first, the columns swallowed every tap on
-        // Continue and Cancel, and touch had no way off this screen (REQ-532).
-        if (picker_shown) {
-            for (int k = 0; k < n; k++) {
-                if (CL_IS_MODERN) ui_tile_row(px + k * (pw / n), py, pw / n, ph, TOUCH_LIST_CLASS, k);
-                else              ui_tile(px + k * (pw / n), py, pw / n, ph, KEY_A + k);
-            }
-        }
-
-        // Status-bar hint at top (). Modern: the picked figure's class.
-        const char *hint = res->ui.startup_class_select_hint;
-        if (CL_IS_MODERN && class_cursor >= 0) {
-            const ClassDef *pc = class_by_index(class_cursor);
-            if (pc && pc->name[0]) hint = pc->name;
-        }
-        startup_bar(hint);
+        draw_class_select(res, sprites, n, class_cursor);
 
         frame_end(rt);
     }
@@ -798,6 +796,295 @@ static bool name_char_allowed(const char *buf, int len, int ch) {
            (ch >= '0' && ch <= '9') || ch == ' ';
 }
 
+// ---------------------------------------------------------------------------
+// Modern new game: one question a screen -- class, then difficulty, then the
+// name -- each a step back from the next: Back on the name goes to the
+// difficulty, on the difficulty to the class, on the class to the title.
+// ---------------------------------------------------------------------------
+
+// The backdrop both screens wear: the chosen figure's frame of the painting.
+static void new_game_backdrop(const Sprites *sprites, const ClassDef *cls) {
+    Texture2D bg = sprites ? sprites->class_picker : (Texture2D){ 0 };
+    if (sprites && cls && cls->index >= 0 && cls->index < sprites->class_picker_selected_count &&
+        sprites->class_picker_selected[cls->index].id)
+        bg = sprites->class_picker_selected[cls->index];
+    if (bg.id) page_art(bg, NULL);
+}
+
+// Difficulty: a menu page over the painting -- its class as the title, the
+// column words over the rows, the four with their days and scores, then Back
+// on the foot.
+static void draw_difficulty_modern(const Resources *res, const Sprites *sprites,
+                                   const ClassDef *cls, int sel) {
+    DiffCtx dc = { res, { 0 }, { 0 }, true };
+    for (int i = 0; i < 4; i++) {
+        dc.labels[i] = res ? res->ui.difficulty[i].label : "";
+        dc.scores[i] = res ? res->ui.difficulty[i].score_mult : "";
+    }
+    const int n = 4;
+    new_game_backdrop(sprites, cls);
+    ML_Rect b = page_menu_body(cls ? cls->name : "", NULL, 0);
+    int ty = b.y + UK_INSET;
+    // The pack's three column words over the rows they head.
+    static const int col[3] = { 0, 13, 21 };
+    char hdr[64];
+    snprintf(hdr, sizeof hdr, "%s", res->ui.startup_new_game_table_header);
+    char *hp = hdr;
+    for (int k = 0; k < 3 && *hp; k++) {
+        while (*hp == ' ') hp++;
+        char *tok = hp;
+        while (*hp && *hp != ' ') hp++;
+        if (*hp) *hp++ = '\0';
+        int hx = (k == 2) ? b.x + b.w - UK_INSET - bfont_text_width(tok)
+                          : b.x + UK_INSET + col[k] * GW;
+        if (*tok) bfont_draw(tok, hx, ty, PAL_CLR(YELLOW));
+    }
+    ty += uk_line_h() + UK_INSET;
+    lattice_band_h(b.x, ty - UK_BAND, b.w, UK_BAND);
+    DiffRowsCtx rc = { &dc, res ? res->ui.gm_back : "Back" };
+    ml_rows_draw((ML_Rect){ b.x, ty, b.w, b.y + b.h - ty }, n + 1, 1, sel, difficulty_or_cancel_row,
+                 &rc, TOUCH_LIST_STARTUP);
+}
+
+// Difficulty: four rows and Back, live from the moment the screen opens.
+static bool run_difficulty_modern(const Resources *res, const Sprites *sprites,
+                                  RenderTexture2D *rt, StartupChoice *out) {
+    screen_open();
+    const ClassDef *cls = class_by_id(out->class_id);
+    static const Difficulty diff_order[4] = {
+        DIFFICULTY_EASY, DIFFICULTY_NORMAL, DIFFICULTY_HARD, DIFFICULTY_IMPOSSIBLE,
+    };
+    const int n = 4;
+    int sel = 1;   // Normal
+    for (int i = 0; i < n; i++) if (diff_order[i] == out->difficulty && out->name[0]) sel = i;
+
+    while (!frame_host_should_close()) {
+        MlList l = { n + 1, sel, NULL, NULL };  // the four, then Back
+        int row = -1;
+        MlEvent ev = ml_list_input(&l, TOUCH_LIST_STARTUP, &row);
+        sel = l.cursor;
+        if (ev == ML_EV_BACK || (ev == ML_EV_ACT && row == n)) {
+            out->action = STARTUP_BACK;      // to the class
+            advance_input_frame();
+            return true;
+        }
+        if (ev == ML_EV_ACT && row >= 0 && row < n) {
+            out->difficulty = diff_order[row];
+            out->action = STARTUP_NEW;
+            advance_input_frame();
+            drain_char_queue();
+            return true;
+        }
+
+        frame_begin(rt);
+        draw_difficulty_modern(res, sprites, cls, sel);
+        frame_end(rt);
+    }
+    out->action = STARTUP_QUIT;
+    return false;
+}
+
+// The name page's Back row.
+static bool name_back_row(void *ctx, int i, char *label, char *right, int cap) {
+    (void)i;
+    snprintf(label, (size_t)cap, "%s", (const char *)ctx);
+    ml_exit_hint(right);
+    return true;
+}
+
+// Name: a menu page over the painting -- the field, the letter grid while a
+// finger or a pad is what the player last used, and Back on the foot.
+static void draw_name_modern(const Resources *res, const Sprites *sprites,
+                             const ClassDef *cls, const char *name_buf, int name_len,
+                             bool caret, bool selector, const TextSel *ts, bool on_back) {
+    new_game_backdrop(sprites, cls);
+    ML_Rect b = page_menu_body(cls ? cls->name : "", NULL, 0);
+    const int lh = uk_line_h();
+    int cx0 = b.x + UK_INSET, ty = b.y + UK_INSET;
+    const char *label = res->ui.hero_name_label;
+    bfont_draw(label, cx0, ty, PAL_CLR(YELLOW));
+    int fx = cx0 + bfont_text_width(label) + GW;
+    if (name_len > 0) bfont_draw(name_buf, fx, ty, PAL_CLR(WHITE));
+    else              bfont_draw(res->world.default_name, fx, ty, PAL_CLR(DGREY));
+    if (caret && name_len < 10)
+        gfx_rect(fx + bfont_text_width(name_buf), ty + GH - 2, GW, 2, PAL_CLR(YELLOW));
+    ty += lh + UK_INSET;
+    lattice_band_h(b.x, ty - UK_BAND, b.w, UK_BAND);
+
+    int foot_y = b.y + b.h - ml_list_height(1);
+    if (selector) {
+        // The letter grid takes what the page leaves it.
+        int room = foot_y - UK_BAND - ty - UK_INSET;
+        textsel_layout(false, b.w - 2 * UK_INSET, room);
+        int cw = textsel_cell_w(), chh = textsel_cell_h();
+        int gx = b.x + (b.w - textsel_w(false, cw)) / 2;
+        TextSel shown = *ts;
+        if (on_back) shown.cursor = -1;
+        textsel_draw(&shown, gx, ty + UK_INSET / 2, cw, chh,
+                     PAL_CLR(YELLOW), uk_ink(), TOUCH_LIST_TEXTSEL);
+    } else {
+        // Typing: what the keys do, in the prompt's own words.
+        uk_flow(cx0, ty + UK_INSET / 2, b.w - 2 * UK_INSET, cx0, 0, foot_y - UK_BAND,
+                res->ui.prompt_text_hint, PAL_CLR(WHITE));
+    }
+    lattice_band_h(b.x, foot_y - UK_BAND, b.w, UK_BAND);
+    ml_list_draw(b.x, foot_y, b.w, ml_list_height(1), 1, on_back ? 0 : -1, name_back_row,
+                 (void *)(res ? res->ui.gm_back : "Back"), TOUCH_LIST_STARTUP, uk_ink());
+}
+
+// Name: the field, and the way to type into it. Typed letters are taken
+// whatever was used last; the grid shows while a finger or a pad was.
+static bool run_name_modern(const Resources *res, const Sprites *sprites,
+                            RenderTexture2D *rt, StartupChoice *out) {
+    screen_open();
+    const ClassDef *cls = class_by_id(out->class_id);
+    char name_buf[11] = { 0 };
+    int  name_len = 0;
+    double blink = 0;
+    TextSel ts = { 0, false };
+    bool on_back = false;       // the grid's cursor has gone down to Back
+
+    while (!frame_host_should_close()) {
+        bool selector = input_last_device() != INPUT_DEV_KEYS;
+        bool done = false;
+        int back = touch_tapped_row(TOUCH_LIST_STARTUP);
+        if (input_key_pressed(KEY_ESCAPE) || back == 0 ||
+            (on_back && (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER)))) {
+            out->action = STARTUP_BACK;      // to the difficulty
+            advance_input_frame();
+            return true;
+        }
+        if (selector && on_back) {
+            // Back is under the grid: Up returns to the grid's last row.
+            if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_KP_8)) on_back = false;
+        } else if (selector) {
+            // Down from the grid's last row reaches Back.
+            int cols = textsel_cols(false), n = textsel_count(false);
+            bool last_row = ts.cursor / cols == (n - 1) / cols;
+            if (last_row && (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2))) on_back = true;
+            else done = textsel_input(&ts, name_buf, &name_len, (int)sizeof name_buf,
+                                      TOUCH_LIST_TEXTSEL, name_char_allowed);
+        }
+        if (!selector && (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER))) done = true;
+        if (done) {
+            if (name_len == 0) {
+                safe_copy(name_buf, sizeof name_buf, res->world.default_name);
+                name_len = (int)strlen(name_buf);
+            }
+            if (name_buf[0] >= 'a' && name_buf[0] <= 'z')
+                name_buf[0] = (char)(name_buf[0] - 'a' + 'A');
+            safe_copy(out->name, sizeof(out->name), name_buf);
+            out->action = STARTUP_NEW;
+            advance_input_frame();
+            drain_char_queue();
+            return true;
+        }
+        // Typing is taken whatever the player used last.
+        if (input_key_pressed(KEY_BACKSPACE) && name_len > 0 && !selector) {
+            name_buf[--name_len] = '\0';
+        } else {
+            int ch = input_get_char_pressed();
+            while (ch > 0) {
+                if (name_char_allowed(name_buf, name_len, ch)) {
+                    name_buf[name_len++] = (char)ch;
+                    name_buf[name_len] = '\0';
+                }
+                ch = input_get_char_pressed();
+            }
+        }
+
+        blink += (float)frame_host_delta();
+        bool caret = (int)(blink * 2.0) & 1;
+
+        frame_begin(rt);
+        draw_name_modern(res, sprites, cls, name_buf, name_len, caret, selector, &ts, on_back);
+        frame_end(rt);
+    }
+    out->action = STARTUP_QUIT;
+    return false;
+}
+
+// Legacy: name and difficulty on one panel, over the class-select cartoon.
+// The name is typed first; the difficulty rows take the keys once it is in.
+static void draw_create_game_legacy(const Resources *res, const Sprites *sprites,
+                                    const char *class_title, const char *name_buf,
+                                    bool has_name, bool show_caret, int sel) {
+    int name_len = (int)strlen(name_buf);
+    draw_class_picker_backdrop(sprites);
+    draw_class_picker_status_hint(res);
+
+    int w = 30 * GW;           // 240
+    int h = 12 * GH;           //  96
+    int x = (CL_SCREEN_W - w) / 2;
+    int y = (CL_SCREEN_H - h) / 2;
+    panel(x, y, w, h);
+
+    // Row offsets: menu.y + fs->h * N. Row 1 (first inner row)
+    // is at fs->h. We mirror that -- text drawn at y + GH*N (N = 1..10).
+    #define ROW_Y(n) (y + GH * (n))
+
+    // Row 1: " Knight    Name: [cursor]name_buf"
+    // Format: " %-9s Name: " using class title.
+    // text_input is drawn separately at menu.x + fs->w*18 (column 18).
+    {
+        char prefix[64];
+        snprintf(prefix, sizeof(prefix), " %-9s Name: ", class_title);
+        bfont_draw(prefix, x + GW, ROW_Y(1), PAL_CLR(WHITE));
+    }
+    // Text input at column 18.
+    int name_x = x + GW * 18;
+    int name_y = ROW_Y(1);
+    bfont_draw(name_buf, name_x, name_y, PAL_CLR(WHITE));
+    if (!has_name && show_caret && name_len < 10) {
+        // Blinking caret after the last typed char.
+        int cx = name_x + bfont_text_width(name_buf);
+        gfx_rect(cx, name_y, 1, GH, PAL_CLR(YELLOW));
+    }
+
+    // Row 3: difficulty table header.
+    bfont_draw(res ? res->ui.startup_new_game_table_header
+                   : "   Difficulty   Days  Score",
+               x + GW, ROW_Y(3), PAL_CLR(WHITE));
+
+    // Labels + score-multiplier text from res.ui.difficulty (game.json
+    // strings.difficulty).
+    struct { const char *label, *score; } rows[4];
+    for (int i = 0; i < 4; i++) {
+        rows[i].label = (res ? res->ui.difficulty[i].label : "");
+        rows[i].score = (res ? res->ui.difficulty[i].score_mult : "");
+    }
+
+    // Rows 5-8: difficulty table:
+    //   "   Easy         %3d    x.5 "  (11-char label, %3d days, score)
+    for (int i = 0; i < 4; i++) {
+        int days = res ? res->time.days_per_difficulty[i] : 0;
+        char line[32];
+        snprintf(line, sizeof(line), "   %-11s %3d    %s",
+                 rows[i].label, days, rows[i].score);
+        bfont_draw(line, x + GW, ROW_Y(5 + i), PAL_CLR(WHITE));
+        if (has_name)
+            ui_tile_row(x, ROW_Y(5 + i), w, GH,
+                             TOUCH_LIST_STARTUP, i);
+    }
+
+    // After has_name: draw the ">" cursor at col 0 of the selected row,
+    // and the "^v to select   Ent to Accept" hint on row 10.
+    if (has_name) {
+        // ">" cursor -- print sel==i ? ">\n" : " \n" at
+        //   menu.x + fs->w, menu.y + fs->h * 5  (i.e. col 1, row 5)
+        // and walks down 4 rows. The cursor column is the same column as
+        // the "   " prefix in the difficulty lines (col 1).
+        bfont_draw(">", x + GW, ROW_Y(5 + sel), PAL_CLR(WHITE));
+
+        // Hint on row 10: "\x18\x19 to select   Ent to Accept"
+        // -- 0x18 and 0x19 are CP437 up/down arrows. Our bfont is ASCII-
+        // only, so substitute "^v".
+        bfont_draw(res->ui.startup_new_game_select_hint,
+                   x + GW, ROW_Y(10), PAL_CLR(WHITE));
+    }
+    #undef ROW_Y
+}
+
 static bool run_create_game(const Resources *res,
                             const Sprites   *sprites,
                             RenderTexture2D *rt,
@@ -807,30 +1094,18 @@ static bool run_create_game(const Resources *res,
     bool has_name = false;
     int  sel = 1;             // initial difficulty is Normal
     double cursor_blink = 0;
-    TextSel ts = { 0, false };   // modern: the letter selector when there is no keyboard
-    bool selector = false;
     screen_open();
 
     // Look up class title via out->class_id (set by run_class_select).
     const ClassDef *cls = class_by_id(out->class_id);
     const char *class_title = cls->name;
 
-    // Labels + score-multiplier text from res.ui.difficulty (game.json
+    // Difficulty per row, in the order of res.ui.difficulty (game.json
     // strings.difficulty); enum order matches the JSON key order.
-    struct {
-        const char *label;   // %-11s 
-        const char *score;   // 3-char right-aligned score multiplier
-        Difficulty  diff;
-    } rows[4];
     static const Difficulty diff_order[4] = {
         DIFFICULTY_EASY, DIFFICULTY_NORMAL,
         DIFFICULTY_HARD, DIFFICULTY_IMPOSSIBLE,
     };
-    for (int i = 0; i < 4; i++) {
-        rows[i].label = (res ? res->ui.difficulty[i].label : "");
-        rows[i].score = (res ? res->ui.difficulty[i].score_mult : "");
-        rows[i].diff  = diff_order[i];
-    }
     const int n = 4;
 
     while (!frame_host_should_close()) {
@@ -844,29 +1119,11 @@ static bool run_create_game(const Resources *res,
 
         int tapped = touch_tapped_row(TOUCH_LIST_STARTUP);
         if (!has_name) {
-            // Modern: without a keyboard, or once a pad or touch has been
-            // used, the in-game letter selector takes the field; typing still
-            // works alongside it. Legacy keeps the window keyboard.
-            //
-            // A finger gets the SELECTOR too. It used to get the chrome
-            // keyboard instead, on the grounds that the grid's cells were a
-            // 21x13pt key -- but that keyboard draws its letters with
-            // gfx_label, which is an empty stub on iOS, so every key was
-            // blank and a name could not be typed at all. The cells are sized
-            // from the touch unit below instead.
-            selector = CL_IS_MODERN &&
-                       (input_text_mode() == TEXT_MODE_SELECTOR ||
-                        input_pad_or_touch_seen() || input_touch_active());
-            if (!selector) touch_request(TOUCH_CHROME_KEYBOARD);
-            bool done = false;
-            if (selector) {
-                done = textsel_input(&ts, name_buf, &name_len, (int)sizeof name_buf,
-                                     TOUCH_LIST_TEXTSEL, name_char_allowed);
-            }
+            // The window keyboard takes the name on a touch screen.
+            touch_request(TOUCH_CHROME_KEYBOARD);
             // Name entry phase. Enter confirms; BACKSPACE deletes; alpha/
-            // digit/space appends. With the selector up, Enter picks a cell
-            // instead, and OK on the grid is the confirm.
-            if (done || (!selector && (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER)))) {
+            // digit/space appends.
+            if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER)) {
                 if (name_len == 0) {
                     // We default to world.default_name on empty name
                     // (from game.json) so the flow always completes.
@@ -879,7 +1136,7 @@ static bool run_create_game(const Resources *res,
                     name_buf[0] = (char)(name_buf[0] - 'a' + 'A');
                 }
                 has_name = true;
-            } else if (!selector && input_key_pressed(KEY_BACKSPACE) && name_len > 0) {
+            } else if (input_key_pressed(KEY_BACKSPACE) && name_len > 0) {
                 name_buf[--name_len] = '\0';
             } else {
                 int ch = input_get_char_pressed();
@@ -909,7 +1166,7 @@ static bool run_create_game(const Resources *res,
             }
             if (tapped >= 0 ||
                 input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER)) {
-                out->difficulty = rows[sel].diff;
+                out->difficulty = diff_order[sel];
                 safe_copy(out->name, sizeof(out->name), name_buf);
                 out->action = STARTUP_NEW;
                 return true;
@@ -919,173 +1176,9 @@ static bool run_create_game(const Resources *res,
         cursor_blink += (float)frame_host_delta();
         bool show_caret = (int)(cursor_blink * 2.0) & 1;
 
-        // ---- Render  ----
         frame_begin(rt);
-        if (CL_IS_MODERN) {
-            // Modern: the chosen figure's carousel frame behind, its class in
-            // the red header, and a panel sized to its text: a Name field
-            // (the default name in grey until something is typed), then the
-            // difficulty rows.
-            Texture2D bg = sprites ? sprites->class_picker : (Texture2D){ 0 };
-            if (sprites && cls && cls->index >= 0 && cls->index < sprites->class_picker_selected_count &&
-                sprites->class_picker_selected[cls->index].id)
-                bg = sprites->class_picker_selected[cls->index];
-            if (bg.id) {
-                int fs = ui_fit_scale(bg.width, bg.height, CL_SCREEN_W, CL_SCREEN_H);
-                ui_blit(bg, (CL_SCREEN_W - bg.width * fs) / 2,
-                        (CL_SCREEN_H - bg.height * fs) / 2, bg.width * fs, bg.height * fs);
-            }
-            startup_bar(class_title);
-
-            // An in-lay as tall as what it holds: the name, the difficulty
-            // table, and the letter selector while it takes the name.
-            int mrow = GH + 4;
-            int sel_h = (!has_name && selector) ? textsel_h(false, textsel_cell_h()) + mrow : 0;
-            int mh = UK_INSET + 3 * mrow + UK_BAND + ml_list_height(n) + sel_h;
-            int mw = UK_INLAY_W;
-            int mx = (CL_SCREEN_W - mw) / 2, my = (CL_SCREEN_H - mh) / 2;
-            if (my < GH + 8) my = GH + 8;
-            gfx_rect(0, GH + 2, CL_SCREEN_W, CL_SCREEN_H, (Color){ 0, 0, 0, 110 });
-            panel(mx, my, mw, mh);
-            int cx0 = mx + UK_INSET;
-            int ty = my + UK_INSET;
-
-            // "Hero Name: " then the name as plain text, the default in grey
-            // until something is typed, and a caret while typing.
-            const char *label = res->ui.hero_name_label;
-            bfont_draw(label, cx0, ty, PAL_CLR(YELLOW));
-            int fx = cx0 + bfont_text_width(label) + GW;
-            if (name_len > 0 || has_name) {
-                bfont_draw(name_buf, fx, ty, PAL_CLR(WHITE));
-            } else if (!has_name) {
-                bfont_draw(res->world.default_name, fx, ty, PAL_CLR(GREY));
-            }
-            if (!has_name && show_caret && name_len < 10) {
-                int cx = fx + bfont_text_width(name_buf);
-                gfx_rect(cx, ty + GH - 2, GW, 2, PAL_CLR(YELLOW));
-            }
-            ty += 2 * mrow;
-
-            // The pack's header is three words; each sits over its column.
-            {
-                static const int col[3] = { 0, 13, 21 };
-                char hdr[64];
-                snprintf(hdr, sizeof hdr, "%s", res->ui.startup_new_game_table_header);
-                char *p = hdr;
-                for (int k = 0; k < 3 && *p; k++) {
-                    while (*p == ' ') p++;
-                    char *tok = p;
-                    while (*p && *p != ' ') p++;
-                    if (*p) *p++ = '\0';
-                    // The last column sits over the scores, right-aligned in the rows.
-                    int hx = (k == 2) ? mx + mw - ML_PAD - bfont_text_width(tok)
-                                      : cx0 + col[k] * GW;
-                    if (*tok) bfont_draw(tok, hx, ty,
-                                         PAL_CLR(YELLOW));
-                }
-            }
-            ty += mrow;
-            // The difficulties as standard select rows (REQ-430n); grey and
-            // not tappable until a name is entered.
-            DiffCtx dc = { res, { 0 }, { 0 }, has_name };
-            for (int k = 0; k < n; k++) { dc.labels[k] = rows[k].label; dc.scores[k] = rows[k].score; }
-            lattice_band_h(mx, ty, mw, 4);
-            ty += 4;
-            ml_list_draw(mx, ty, mw, ml_list_height(n), n, has_name ? sel : -1,
-                         difficulty_row, &dc, has_name ? TOUCH_LIST_STARTUP : 0,
-                         uk_ink());
-            ty += ml_list_height(n);
-
-            if (!has_name && selector) {
-                int cw = textsel_cell_w(), chh = textsel_cell_h();
-                int gx = mx + (mw - textsel_w(false, cw)) / 2;
-                int gy = ty + mrow / 2;
-                textsel_draw(&ts, gx, gy, cw, chh, PAL_CLR(YELLOW), uk_ink(),
-                             TOUCH_LIST_TEXTSEL);
-            }
-            frame_end(rt);
-            continue;
-        }
-        draw_class_picker_backdrop(sprites);
-        draw_class_picker_status_hint(res);
-
-        int w = 30 * GW;           // 240
-        int h = 12 * GH;           //  96
-        int x = (CL_SCREEN_W - w) / 2;
-        int y = (CL_SCREEN_H - h) / 2;
-        panel(x, y, w, h);
-
-        // Row offsets: menu.y + fs->h * N. Row 1 (first inner row)
-        // is at fs->h. We mirror that -- text drawn at y + GH*N (N = 1..10).
-        #define ROW_Y(n) (y + GH * (n))
-
-        // Row 1: " Knight    Name: [cursor]name_buf"
-        // Format: " %-9s Name: " using class title.
-        // text_input is drawn separately at menu.x + fs->w*18 (column 18).
-        {
-            char prefix[64];
-            snprintf(prefix, sizeof(prefix), " %-9s Name: ", class_title);
-            bfont_draw(prefix, x + GW, ROW_Y(1), PAL_CLR(WHITE));
-        }
-        // Text input at column 18.
-        int name_x = x + GW * 18;
-        int name_y = ROW_Y(1);
-        bfont_draw(name_buf, name_x, name_y, PAL_CLR(WHITE));
-        if (!has_name && show_caret && name_len < 10) {
-            // Blinking caret after the last typed char.
-            int cx = name_x + bfont_text_width(name_buf);
-            gfx_rect(cx, name_y, 1, GH, PAL_CLR(YELLOW));
-        }
-
-        // Row 3: difficulty table header.
-        bfont_draw(res ? res->ui.startup_new_game_table_header
-                       : "   Difficulty   Days  Score",
-                   x + GW, ROW_Y(3), PAL_CLR(WHITE));
-
-        // Rows 5-8: difficulty table:
-        //   "   Easy         %3d    x.5 "  (11-char label, %3d days, score)
-        for (int i = 0; i < n; i++) {
-            int days = res ? res->time.days_per_difficulty[i] : 0;
-            char line[32];
-            snprintf(line, sizeof(line), "   %-11s %3d    %s",
-                     rows[i].label, days, rows[i].score);
-            if (CL_IS_MODERN && has_name) {
-                sel_row(x, ROW_Y(5 + i), w, GH, x + GW, line, sel == i,
-                        PAL_CLR(WHITE), PAL_CLR(DBLUE), TOUCH_LIST_STARTUP, i);
-            } else {
-                bfont_draw(line, x + GW, ROW_Y(5 + i), PAL_CLR(WHITE));
-                if (has_name)
-                    ui_tile_row(x, ROW_Y(5 + i), w, GH,
-                                     TOUCH_LIST_STARTUP, i);
-            }
-        }
-
-        // After has_name: draw the ">" cursor at col 0 of the selected row,
-        // and the "^v to select   Ent to Accept" hint on row 10.
-        if (has_name) {
-            // ">" cursor -- print sel==i ? ">\n" : " \n" at
-            //   menu.x + fs->w, menu.y + fs->h * 5  (i.e. col 1, row 5)
-            // and walks down 4 rows. The cursor column is the same column as
-            // the "   " prefix in the difficulty lines (col 1).
-            if (!CL_IS_MODERN) bfont_draw(">", x + GW, ROW_Y(5 + sel), PAL_CLR(WHITE));
-
-            // Hint on row 10: "\x18\x19 to select   Ent to Accept"
-            // -- 0x18 and 0x19 are CP437 up/down arrows. Our bfont is ASCII-
-            // only, so substitute "^v".
-            bfont_draw(res->ui.startup_new_game_select_hint,
-                       x + GW, ROW_Y(10), PAL_CLR(WHITE));
-        }
-
-        if (!has_name && selector) {
-            int cw = textsel_cell_w(), chh = textsel_cell_h();
-            int gx = x + (w - textsel_w(false, cw)) / 2;
-            int gy = y + h + 4 * CL_UI;
-            gfx_rect(gx - 2 * CL_UI, gy - 2 * CL_UI,
-                          textsel_w(false, cw) + 4 * CL_UI, textsel_h(false, chh) + 4 * CL_UI,
-                          PAL_CLR(DBLUE));
-            textsel_draw(&ts, gx, gy, cw, chh, PAL_CLR(YELLOW), PAL_CLR(DBLUE), TOUCH_LIST_TEXTSEL);
-        }
-        #undef ROW_Y
+        draw_create_game_legacy(res, sprites, class_title, name_buf, has_name,
+                                show_caret, sel);
         frame_end(rt);
     }
     out->action = STARTUP_QUIT;
@@ -1118,29 +1211,21 @@ static void expand_version(char *out, int out_sz, const char *src,
     out[o] = '\0';
 }
 
-// Last step: a "new game is being
-// created" panel over the class-select cartoon. Any key advances; we
-// also auto-advance after a short timeout so harness/replay flows
-// don't stall.
-static bool run_new_game_intro(RenderTexture2D *rt,
-                               const Resources *res,
-                               const Sprites   *sprites,
-                               const StartupChoice *out,
-                               const char *name) {
-    if (!res || !res->banners.new_game_intro[0]) return true;
-
-    const ClassDef *cls = class_by_id(out->class_id);
+// The body the intro shows: "<Name> the <Class>, a new game is being created".
+static void new_game_intro_body(const Resources *res, const char *class_id,
+                                const char *name, char *body, size_t cap) {
+    const ClassDef *cls = class_by_id(class_id);
     const char *class_title = cls->name;
-
-    char body[RES_BANNER_LEN];
     ResTemplateVar vars[2] = {
         { "NAME",  name && name[0] ? name : res->world.default_name },
         { "CLASS", class_title },
     };
-    resources_format_template(body, sizeof(body),
-                              res->banners.new_game_intro, vars, 2);
+    resources_format_template(body, cap, res->banners.new_game_intro, vars, 2);
+}
 
-    // Pre-compute panel size from the body's longest line.
+static void draw_new_game_intro(const Resources *res, const Sprites *sprites,
+                                const char *body) {
+    // Panel size from the body's longest line.
     int line_count = 1;
     int max_chars = 0;
     {
@@ -1163,6 +1248,46 @@ static bool run_new_game_intro(RenderTexture2D *rt,
     int px = (CL_SCREEN_W - panel_w) / 2;
     int py = (CL_SCREEN_H - panel_h) / 2;
 
+    // Background: same class-select cartoon (sprites->class_picker).
+    draw_class_picker_backdrop(sprites);
+
+    // Status hint at top.
+    startup_bar(res->ui.startup_class_select_hint);
+
+    // Panel.
+    panel(px, py, panel_w, panel_h);
+
+    int y = py + pad;
+    const char *p = body;
+    while (*p) {
+        const char *e = p;
+        while (*e && *e != '\n') e++;
+        char line[128];
+        int n = (int)(e - p);
+        if (n >= (int)sizeof(line)) n = sizeof(line) - 1;
+        memcpy(line, p, n);
+        line[n] = '\0';
+        bfont_draw(line, px + pad, y, PAL_CLR(WHITE));
+        y += line_h;
+        if (*e == '\n') e++;
+        p = e;
+    }
+}
+
+// Last step: a "new game is being
+// created" panel over the class-select cartoon. Any key advances; we
+// also auto-advance after a short timeout so harness/replay flows
+// don't stall.
+static bool run_new_game_intro(RenderTexture2D *rt,
+                               const Resources *res,
+                               const Sprites   *sprites,
+                               const StartupChoice *out,
+                               const char *name) {
+    if (!res || !res->banners.new_game_intro[0]) return true;
+
+    char body[RES_BANNER_LEN];
+    new_game_intro_body(res, out->class_id, name, body, sizeof body);
+
     screen_open();
     double start = frame_host_time();
     double timeout = 4.0;
@@ -1170,44 +1295,17 @@ static bool run_new_game_intro(RenderTexture2D *rt,
         if (any_key_pressed() || (frame_host_time() - start) >= timeout) return true;
 
         frame_begin(rt);
-
-        // Background: same class-select cartoon (sprites->class_picker).
-        draw_class_picker_backdrop(sprites);
-
-        // Status hint at top.
-        startup_bar(res->ui.startup_class_select_hint);
-
-        // Panel.
-        panel(px, py, panel_w, panel_h);
-
-        int y = py + pad;
-        const char *p = body;
-        while (*p) {
-            const char *e = p;
-            while (*e && *e != '\n') e++;
-            char line[128];
-            int n = (int)(e - p);
-            if (n >= (int)sizeof(line)) n = sizeof(line) - 1;
-            memcpy(line, p, n);
-            line[n] = '\0';
-            bfont_draw(line, px + pad, y, PAL_CLR(WHITE));
-            y += line_h;
-            if (*e == '\n') e++;
-            p = e;
-        }
-
+        draw_new_game_intro(res, sprites, body);
         frame_end(rt);
     }
     return false;
 }
 
-static bool run_credits(RenderTexture2D *rt, const Resources *res,
-                        const Sprites *sprites) {
-    if (!res) return true;
+// The credits: group labels and names, the copyright lines, the class-select
+// highlight inset at the right. Modern adds Back along the foot.
+static void draw_credits(const Resources *res, const Sprites *sprites) {
     int gn = res->credits.group_count;
     int cn = res->credits.copyright_count;
-    if (gn == 0 && cn == 0) return true;
-
     // Title-page credit layout: a yellow-chrome bordered blue panel
     // sitting over the title splash, with group labels left-aligned,
     // names indented one space, the class-select highlight sprite inset
@@ -1262,14 +1360,72 @@ static bool run_credits(RenderTexture2D *rt, const Resources *res,
     int min_panel_h = pad * 2 + image_h;
     if (panel_h < min_panel_h) panel_h = min_panel_h;
 
-    // Modern: a Back row along the foot (any key or tap still closes them).
+    int px, py;
     if (CL_IS_MODERN) {
+        // A page to read over the title art: a menu page's size, its title
+        // strip with Close, and a tap anywhere closes it. Its lines are every
+        // page's lines apart.
         pad = UK_INSET;
-        panel_h += 2 * (UK_INSET - 6) + UK_BAND + ml_list_height(1);
-        panel_w += 2 * (UK_INSET - 6);
+        line_h = uk_line_h();
+        draw_title_backdrop(sprites);
+        ML_Rect r = page_sheet_small(res->ui.title_credits, NULL);
+        px = r.x;
+        py = r.y;
+        panel_w = r.w;
+        panel_h = r.h;
+    } else {
+        // Legacy drapes the credits over the character-pick screen.
+        px = (CL_SCREEN_W - panel_w) / 2;
+        py = (CL_SCREEN_H - panel_h) / 2;
+        draw_class_picker_backdrop(sprites);
+        draw_class_picker_status_hint(res);
+        panel(px, py, panel_w, panel_h);
     }
-    int px = (CL_SCREEN_W - panel_w) / 2;
-    int py = (CL_SCREEN_H - panel_h) / 2;
+
+    // Text column.
+    int tx = px + pad;
+    int ty = py + pad;
+    for (int g = 0; g < gn; g++) {
+        bfont_draw(res->credits.groups[g].label, tx, ty, PAL_CLR(WHITE));
+        ty += line_h;
+        for (int n = 0; n < res->credits.groups[g].name_count; n++) {
+            bfont_draw(res->credits.groups[g].names[n],
+                       tx + 2 * GW, ty, PAL_CLR(WHITE));
+            ty += line_h;
+        }
+        if (g + 1 < gn) ty += line_h; // blank line between groups
+    }
+    if (spacer_before_copyright) ty += line_h;
+    for (int c = 0; c < cn; c++) {
+        char line[64];
+        expand_version(line, sizeof(line),
+                       res->credits.copyright[c], res->version);
+        int tw = bfont_text_width(line);
+        int cx = px + (panel_w - tw) / 2;
+        bfont_draw(line, cx, ty, PAL_CLR(WHITE));
+        ty += line_h;
+    }
+
+    // Inset image (re-using class_select_highlight). Vertically
+    // centered against the group block, with a thin green outline.
+    if (image_w) {
+        int ix = px + panel_w - pad - image_w;
+        int iy = py + pad + line_h;
+        if (iy + image_h > py + panel_h - pad) {
+            iy = py + panel_h - pad - image_h;
+        }
+        ui_blit(inset, ix, iy, image_w, image_h);
+        gfx_rect_lines(ix - CL_UI, iy - CL_UI,
+                           image_w + 2 * CL_UI, image_h + 2 * CL_UI,
+                           PAL_CLR(DGREEN));
+    }
+
+}
+
+static bool run_credits(RenderTexture2D *rt, const Resources *res,
+                        const Sprites *sprites) {
+    if (!res) return true;
+    if (res->credits.group_count == 0 && res->credits.copyright_count == 0) return true;
 
     screen_open();
     double start = frame_host_time();
@@ -1281,64 +1437,7 @@ static bool run_credits(RenderTexture2D *rt, const Resources *res,
             return true;
 
         frame_begin(rt);
-
-        // Backdrop: legacy drapes the credits over the character-pick screen;
-        // modern over the title art, since class select is not next.
-        if (CL_IS_MODERN) {
-            draw_title_backdrop(sprites);
-        } else {
-            draw_class_picker_backdrop(sprites);
-            draw_class_picker_status_hint(res);
-        }
-
-        panel(px, py, panel_w, panel_h);
-
-        // Text column.
-        int tx = px + pad;
-        int ty = py + pad;
-        for (int g = 0; g < gn; g++) {
-            bfont_draw(res->credits.groups[g].label, tx, ty, PAL_CLR(WHITE));
-            ty += line_h;
-            for (int n = 0; n < res->credits.groups[g].name_count; n++) {
-                bfont_draw(res->credits.groups[g].names[n],
-                           tx + 2 * GW, ty, PAL_CLR(WHITE));
-                ty += line_h;
-            }
-            if (g + 1 < gn) ty += line_h; // blank line between groups
-        }
-        if (spacer_before_copyright) ty += line_h;
-        for (int c = 0; c < cn; c++) {
-            char line[64];
-            expand_version(line, sizeof(line),
-                           res->credits.copyright[c], res->version);
-            int tw = bfont_text_width(line);
-            int cx = px + (panel_w - tw) / 2;
-            bfont_draw(line, cx, ty, PAL_CLR(WHITE));
-            ty += line_h;
-        }
-
-        if (CL_IS_MODERN) {
-            const char *back[1] = { res->ui.gm_back };
-            int ry = py + panel_h - ml_list_height(1);
-            lattice_band_h(px, ry - UK_BAND, panel_w, UK_BAND);
-            ml_list_draw(px, ry, panel_w, ml_list_height(1), 1, 0, title_row, (void *)back,
-                         TOUCH_LIST_STARTUP, uk_ink());
-        }
-
-        // Inset image (re-using class_select_highlight). Vertically
-        // centered against the group block, with a thin green outline.
-        if (image_w) {
-            int ix = px + panel_w - pad - image_w;
-            int iy = py + pad + line_h;
-            if (iy + image_h > py + panel_h - pad) {
-                iy = py + panel_h - pad - image_h;
-            }
-            ui_blit(inset, ix, iy, image_w, image_h);
-            gfx_rect_lines(ix - CL_UI, iy - CL_UI,
-                               image_w + 2 * CL_UI, image_h + 2 * CL_UI,
-                               PAL_CLR(DGREEN));
-        }
-
+        draw_credits(res, sprites);
         frame_end(rt);
     }
     return false;
@@ -1390,15 +1489,19 @@ bool startup_flow(const Resources *res,
             if (out->action == STARTUP_LOAD) break;
             continue;
         }
-        bool to_title = false;                                     // New Game
-        for (;;) {
-            if (!run_class_select(res, sprites, rt, out)) return false;
-            if (out->action == STARTUP_BACK) { to_title = true; break; }
-            if (!run_create_game(res, sprites, rt, out)) return false;
-            if (out->action == STARTUP_BACK) continue;
-            break;
+        // New Game: class, then difficulty, then the name -- one question a
+        // screen, Back on each going one step back: from the name to the
+        // difficulty, from the difficulty to the class, from the class to the
+        // title menu.
+        int step = 0;
+        while (step >= 0 && step < 3) {
+            bool ok = step == 0 ? run_class_select(res, sprites, rt, out)
+                    : step == 1 ? run_difficulty_modern(res, sprites, rt, out)
+                                : run_name_modern(res, sprites, rt, out);
+            if (!ok) return false;
+            step += out->action == STARTUP_BACK ? -1 : 1;
         }
-        if (to_title) continue;
+        if (step < 0) continue;
         break;
     }
 
@@ -1431,5 +1534,96 @@ bool startup_flow(const Resources *res,
         run_new_game_intro(rt, res, sprites, out, out->name);
     }
 
+    return true;
+}
+
+// ---------------------------------------------------------------------------
+// --gallery: one pre-game screen, drawn as its loop draws it, no input read.
+// ---------------------------------------------------------------------------
+
+bool startup_gallery_draw(StartupShot shot, const Resources *res,
+                          const Sprites *sprites, void *render_target) {
+    RenderTexture2D *rt = (RenderTexture2D *)render_target;
+    if (!res || !sprites || !rt) return false;
+    // The new-game screens show the second class, as a player who stepped
+    // one figure along would see them.
+    const ClassDef *cls = class_by_index(res->classes_count > 1 ? 1 : 0);
+    int n = res->classes_count < 1 ? 1 : res->classes_count;
+    if (!CL_IS_MODERN && n > 4) n = 4;
+    SlotSet none;
+    memset(&none, 0, sizeof none);
+    const Color black = { 0x00, 0x00, 0x00, 0xFF };
+
+    switch (shot) {
+    case STARTUP_SHOT_LOGO:
+        if (!sprites->splash_logo.id) return false;
+        frame_begin(rt);
+        draw_splash(sprites->splash_logo, black);
+        break;
+    case STARTUP_SHOT_TITLE:
+        if (CL_IS_MODERN) {
+            const char *labels[ROW_COUNT];
+            title_menu_labels(&res->ui, labels);
+            frame_begin(rt);
+            draw_title_backdrop(sprites);
+            draw_title_menu(sprites, labels, ROW_COUNT, 0, TOUCH_LIST_STARTUP);
+        } else {
+            if (!sprites->splash_title.id) return false;
+            frame_begin(rt);
+            draw_splash(sprites->splash_title, black);
+        }
+        break;
+    case STARTUP_SHOT_CREDITS:
+        if (res->credits.group_count == 0 && res->credits.copyright_count == 0) return false;
+        frame_begin(rt);
+        draw_credits(res, sprites);
+        break;
+    case STARTUP_SHOT_LOAD:
+        frame_begin(rt);
+        if (CL_IS_MODERN) {
+            GmPage p;
+            load_page_build(&p, res, &none);
+            TitleSlotsCtx ctx = { &p, &none };
+            draw_save_picker_modern(sprites, &p, load_page_cursor(&none), &ctx);
+        } else {
+            draw_save_picker_legacy(sprites, &none, SAVE_SLOT_COUNT, SAVE_SLOT_COUNT);
+        }
+        break;
+    case STARTUP_SHOT_CLASS:
+        frame_begin(rt);
+        draw_class_select(res, sprites, n, CL_IS_MODERN ? -1 : 0);
+        break;
+    case STARTUP_SHOT_CLASS_PICKED:
+        if (!CL_IS_MODERN) return false;      // legacy picks on a key, at once
+        frame_begin(rt);
+        draw_class_select(res, sprites, n, cls ? cls->index : 0);
+        break;
+    case STARTUP_SHOT_DIFFICULTY:
+        frame_begin(rt);
+        if (CL_IS_MODERN) draw_difficulty_modern(res, sprites, cls, 1);
+        else draw_create_game_legacy(res, sprites, cls ? cls->name : "", "Dan", true, false, 1);
+        break;
+    case STARTUP_SHOT_NAME:
+        frame_begin(rt);
+        if (CL_IS_MODERN) {
+            bool selector = input_last_device() != INPUT_DEV_KEYS;
+            TextSel ts = { 0, false };
+            draw_name_modern(res, sprites, cls, "Dan", 3, true, selector, &ts, false);
+        } else {
+            draw_create_game_legacy(res, sprites, cls ? cls->name : "", "Dan", false, true, 1);
+        }
+        break;
+    case STARTUP_SHOT_INTRO: {
+        if (CL_IS_MODERN || !res->banners.new_game_intro[0]) return false;
+        char body[RES_BANNER_LEN];
+        new_game_intro_body(res, cls ? cls->id : "", "Dan", body, sizeof body);
+        frame_begin(rt);
+        draw_new_game_intro(res, sprites, body);
+        break;
+    }
+    default:
+        return false;
+    }
+    frame_end(rt);
     return true;
 }

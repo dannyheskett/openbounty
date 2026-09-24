@@ -3,7 +3,7 @@
 **Generated** by `tools/romeart.py prompts` from `art/jobs/*.json`. Do not
 edit by hand: change the job file and run the tool again.
 
-363 jobs. A job with a **Pack path** has produced that file in the pack; a
+364 jobs. A job with a **Pack path** has produced that file in the pack; a
 job without one has produced a step towards it (the still an animation starts
 from). The routes themselves -- which engine, which settings, and why -- have
 been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
@@ -1654,6 +1654,13 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Pack path:** `art/ui/hud_contract_silhouette.png`
 - **prompt:** a black silhouette of a hooded bust against a deep blue background, painted as a small game sidebar panel, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `seed=7702`, `style=rd_pro__default`, `target=[96, 96]`, `width=96`
+
+### hud_days
+
+- **Engine:** Retro Diffusion rd_pro__default (128x128, seed 8301)
+- **Pack path:** `art/ui/hud_days.png`
+- **prompt:** a bronze Roman sundial on a short stone pillar casting a sharp shadow, standing on a grey flagstone shelf, warm daylight, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=128`, `raw_only=false`, `seed=8301`, `style=rd_pro__default`, `target=[96, 96]`, `width=128`
 
 ### hud_gold_purse
 

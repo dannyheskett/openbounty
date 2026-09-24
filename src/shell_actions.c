@@ -56,6 +56,7 @@ void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
         } else {
             views_set(VIEW_SPELLS);
             views_spells_set_mode(true);
+            if (CL_IS_MODERN) views_spells_set_cursor(views_spells_first(g, false));
         }
         break;
     // Modern retires the Options panel: the one menu has a row for every action.
@@ -214,18 +215,21 @@ void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
         }
         pending_flow = FLOW_NAVIGATE;
         prompt_numeric_open(r_->ui.dt_navigate, body, pending_nav_count);
+        shell_navigate_choices(r_);
+        player_io_ask_choice(g, FLOW_NAVIGATE, r_->ui.dt_navigate, body,
+                             pending_nav_count);
         // A pack that ships the sailing picture gets the scene: the provinces
-        // over the ship, then a confirmation. Without it, the bottom-frame
-        // list as before (REQ-221c).
+        // over the ship, then a confirmation -- the first list and every one
+        // after it. Named after the ask, which names its own kind. Without the
+        // picture, the message box's list (REQ-221c).
         if (CL_IS_MODERN && r_->sprites.sail_backdrop[0] &&
             r_->banners.body_navigate_confirm[0])
             prompt_set_req_kind(PIO_ASK_SCENE);
-        player_io_ask_choice(g, FLOW_NAVIGATE, r_->ui.dt_navigate, body,
-                             pending_nav_count);
         break;
     }
     case INPUT_ACTION_VIEW_CONTROLS:
         views_set(VIEW_CONTROLS);
+        if (CL_IS_MODERN) views_controls_set_cursor(0);   // a page opens on its first row
         break;
     case INPUT_ACTION_REST: {
         // numpad 5 rests one day (one step worth) in place. Drives
@@ -241,4 +245,18 @@ void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
     case INPUT_ACTION_NONE:
     default: break;
     }
+}
+
+void shell_navigate_choices(const Resources *res) {
+    if (!CL_IS_MODERN || !res) return;
+    const char *labels[5];
+    int values[5], n = 0;
+    for (int i = 0; i < pending_nav_count && i < 5; i++) {
+        const ResZone *z = resources_zone_by_id(res, pending_nav_zones[i]);
+        labels[n] = (z && z->name[0]) ? z->name : pending_nav_zones[i];
+        values[n] = i + 1;
+        n++;
+    }
+    prompt_set_choices(labels, values, n);
+    prompt_set_lead("");
 }

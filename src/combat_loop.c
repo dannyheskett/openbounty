@@ -27,6 +27,10 @@
 #include "modern/mlist.h"
 #include "modern/uikit.h"
 #include "modern/gamemenu.h"
+#include "modern/page.h"
+#include "map_render.h"
+#include "hud.h"
+#include "modern/rail.h"
 #include "lattice.h"
 #include "present.h"
 #include "chrome.h"
@@ -35,6 +39,7 @@
 #include "prompt.h"
 #include "screenshot.h"
 #include "views.h"
+#include "views_render.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -280,6 +285,7 @@ void combat_gallery_menu(bool open) {
     s_act_page[0] = CM_ROOT; s_act_cursor[0] = 0;
     s_act_page[1] = CM_UNIT; s_act_cursor[1] = 0;
     s_act_depth = open ? 2 : 0;
+    s_act_open_on_enabled = open;   // as combat_menu_open: on the first usable command
 }
 
 // --gallery: the menu opened on its Cast page (Actions > Unit > Spells).
@@ -287,6 +293,7 @@ void combat_gallery_cast_page(void) {
     combat_gallery_menu(true);
     s_act_page[2] = CM_CAST; s_act_cursor[2] = 0;
     s_act_depth = 3;
+    s_act_open_on_enabled = true;   // as the Cast row opens it: on the first spell held
 }
 
 static void combat_menu_open(void) {
@@ -295,14 +302,6 @@ static void combat_menu_open(void) {
     s_act_page[1] = CM_UNIT; s_act_cursor[1] = 0;
     s_act_depth = 2;
     s_act_open_on_enabled = true;   // the rows never move; the cursor may
-}
-
-// What a spell does, for the Cast page's description: the pack's one-line
-// brief (strings.spell_brief), else the spell's own description. Never lore.
-static const char *spell_brief(const Resources *res, const SpellDef *sd) {
-    if (!sd) return "";
-    const char *b = resources_spell_brief(res, sd->id);
-    return (b && b[0]) ? b : sd->description;
 }
 
 static void combat_menu_page(const Combat *c, const Game *g, int id, GmPage *p) {
@@ -317,6 +316,7 @@ static void combat_menu_page(const Combat *c, const Game *g, int id, GmPage *p) 
         ROW(ui->gm_hero, bn->gmd_combat_army, "", GM_ACT_PAGE + CM_HERO, true);
         ROW(ui->gm_game, bn->gmd_controls, "", GM_ACT_PAGE + CM_GAME, true);
         ROW(ui->gm_close, bn->gmd_back, "", GM_ACT_BACK, true);
+        p->foot = 1;
         break;
     case CM_UNIT: {
         const CombatUnit *u = (c->unit_id >= 0) ? &c->units[c->side][c->unit_id] : NULL;
@@ -334,11 +334,12 @@ static void combat_menu_page(const Combat *c, const Game *g, int id, GmPage *p) 
         // beside the field alike.
         ROW(ui->gm_shoot, !shots ? bn->gmr_no_shots : close ? bn->gmr_adjacent : bn->gmd_shoot,
             "S", KEY_S, shots && !close);
-        ROW(ui->gm_wait, bn->gmd_wait, "", KEY_SPACE, true);
+        ROW(ui->gm_wait, bn->gmd_wait, "W", KEY_SPACE, true);
         ROW(ui->gm_fly, fly ? bn->gmd_unit_fly : bn->gmr_cannot_fly, "F", KEY_F, fly);
         ROW(ui->gm_cast, !magic ? bn->gmr_no_magic : !spell_left ? bn->gmr_one_spell : bn->gmd_combat_cast,
             "U", GM_ACT_PAGE + CM_CAST, magic && spell_left);
         ROW(ui->gm_back, bn->gmd_back_up, "", GM_ACT_BACK, true);
+        p->foot = 1;
         break;
     }
     case CM_HERO:
@@ -346,48 +347,50 @@ static void combat_menu_page(const Combat *c, const Game *g, int id, GmPage *p) 
         ROW(ui->gm_army, bn->gmd_combat_army, "A", KEY_A, true);
         ROW(ui->gm_character, bn->gmd_combat_character, "V", KEY_V, true);
         ROW(ui->gm_back, bn->gmd_back_up, "", GM_ACT_BACK, true);
+        p->foot = 1;
         break;
-    case CM_CAST: {
-        // The spells as a page of this menu: no letters, no in-panel Back, the
-        // spell's lore as the description beside them.
-        const Game *hero = c->heroes[c->side];
+    case CM_CAST:
+        // The spells: the one spells page (views_render.c), drawn and read by
+        // its own functions. The menu keeps only its name, for the path.
         p->title = ui->combat_spells_title;
-        for (int i = 0; i < 7; i++) {
-            const SpellDef *sd = spell_by_index(i);
-            int held = hero ? hero->spells.counts[i] : 0;
-            ROW(sd ? sd->name : "", held > 0 ? spell_brief(g->res, sd) : bn->gmr_no_spell_held, "",
-                GM_ACT_USER + i, held > 0);
-        }
-        ROW(ui->gm_back, bn->gmd_back_up, "", GM_ACT_BACK, true);
         break;
-    }
     case CM_GAME:
         p->title = ui->gm_game;
         ROW(ui->gm_controls, bn->gmd_controls, "C", KEY_C, true);
         ROW(ui->gm_back, bn->gmd_back_up, "", GM_ACT_BACK, true);
         ROW(ui->gm_give_up, bn->gmd_give_up, "G", KEY_G, true);   // last, like Exit
+        p->foot = 2;
         break;
     }
     #undef ROW
 }
 
-typedef struct { const Game *hero; const GmPage *page; } SpellRowCtx;
-
-// A row of the menu's Cast page: the spell's name, the charges held at the
-// right. No letter -- the menu is cursored and tapped, like every other list.
-static bool combat_spell_row(void *ctx, int i, char *label, char *right, int cap) {
-    const SpellRowCtx *sc = (const SpellRowCtx *)ctx;
-    const GmItem *it = &sc->page->item[i];
-    snprintf(label, (size_t)cap, "%s", it->label ? it->label : "");
-    if (i < 7 && sc->hero) snprintf(right, 48, "%d", sc->hero->spells.counts[i]);
-    else right[0] = '\0';
-    return it->enabled;
+// A page of the menu opens with its cursor on its first row that can be
+// chosen (the spells: the first spell held).
+static int combat_menu_first(const Combat *c, const Game *g, int id) {
+    if (id == CM_CAST) return views_spells_first(c->heroes[c->side], true);
+    GmPage p;
+    combat_menu_page(c, g, id, &p);
+    return gm_first_enabled(&p);
 }
 
-// The large panel: the path, the page's rows, the description beside them.
+// Open page `id` over the menu's current page.
+static void combat_menu_push(const Combat *c, const Game *g, int id) {
+    if (s_act_depth >= 3) return;
+    s_act_page[s_act_depth] = id;
+    s_act_cursor[s_act_depth] = combat_menu_first(c, g, id);
+    s_act_depth++;
+}
+
+// The menu page: the path as its title, the hero's name at its right, the
+// page's rows -- or, on the Cast page, the one spells page.
 static void combat_action_menu_draw(const Combat *c, const Game *g) {
     if (s_act_depth < 1) return;
     int d = s_act_depth - 1;
+    if (s_act_open_on_enabled) {
+        s_act_open_on_enabled = false;
+        s_act_cursor[d] = combat_menu_first(c, g, s_act_page[d]);
+    }
     GmPage p;
     combat_menu_page(c, g, s_act_page[d], &p);
     char path[96] = "";
@@ -397,45 +400,26 @@ static void combat_action_menu_draw(const Combat *c, const Game *g) {
         size_t n = strlen(path);
         snprintf(path + n, sizeof path - n, "%s%s", i ? " > " : "", pi.title ? pi.title : "");
     }
-    if (s_act_open_on_enabled) {
-        s_act_open_on_enabled = false;
-        for (int i = 0; i < p.n; i++)
-            if (p.item[i].enabled) { s_act_cursor[d] = i; break; }
+    const char *hero = g ? g->character.name : "";
+    if (s_act_page[d] == CM_CAST) {
+        modern_spells_draw(c->heroes[c->side], true, s_act_cursor[d], path, hero, g->res->ui.gm_back);
+        return;
     }
     int cursor = s_act_cursor[d] < p.n ? s_act_cursor[d] : p.n - 1;
-    // The Cast page shows each spell's charges at the row's right.
-    bool cast = s_act_page[d] == CM_CAST;
-    SpellRowCtx sc = { c->heroes[c->side], &p };
-    gm_draw_page(&p, path, "", cursor, TOUCH_LIST_COMBAT_ACTIONS, cast ? combat_spell_row : NULL, cast ? &sc : NULL);
+    page_menu(&p, path, hero, cursor, TOUCH_LIST_COMBAT_ACTIONS, NULL, NULL);
 }
 
-
-
-
-// ---- the combat command panel ------------------------------------------------
+// ---- the battle's columns ---------------------------------------------------
 //
-// A column of one-tile commands down the left of the field, in the space a
-// wide surface leaves: the same test the left rail uses -- room, not device.
-// Its rows ARE the menu's Unit page, so a command lights and dims exactly as
-// the menu says it does, and a tap fires the key the menu row fires.
+// Modern: the battle takes the base screen's places (page_combat,
+// src/modern/page.c) -- the command column in the left column's, the field in
+// the map's, the turn column in the right column's. The command
+// column is Menu and then the Unit page's commands, always in that order: a
+// command the unit cannot use is greyed, never moved, and says why on the
+// menu. The turn column says whose turn it is: the unit, its count and name,
+// its moves and shots left, and the round.
 
-// The column's rect, or false when the fight has no room for it. It hangs on
-// the field's left edge, inside the field's own ring, so the commands sit
-// against the battlefield rather than adrift by the frame. COMBAT_RING is the
-// ring combat_render_frame draws around the field.
-#define COMBAT_RING 4
-static bool combat_panel_rect(int *x, int *y, int *w, int *h) {
-    if (!CL_IS_MODERN) return false;
-    int need = CL_TILE_W + 2 * COMBAT_RING;
-    if (CL_COMBAT_X - COMBAT_RING - CL_FRAME_LEFT_W < need) return false;
-    if (x) *x = CL_COMBAT_X - COMBAT_RING - CL_TILE_W;
-    if (y) *y = CL_COMBAT_Y;
-    if (w) *w = CL_TILE_W;
-    if (h) *h = COMBAT_H * CL_COMBAT_CELL_H;
-    return true;
-}
-
-// The art for a row, by the key the row fires. Cast reuses the rail's lituus.
+// The art for a command, by the key its row fires. Cast reuses the rail's lituus.
 static Texture2D combat_panel_art(const Sprites *s, int key) {
     if (!s) { Texture2D none = { 0 }; return none; }
     if (key == KEY_S)     return s->combat_shoot;
@@ -446,60 +430,129 @@ static Texture2D combat_panel_art(const Sprites *s, int key) {
     return none;
 }
 
-// Draw it, and register a tap per enabled row unless something else owns the
-// screen. `live` is false while a menu, prompt, dialog, picker or cast phase
-// is up: the panel still draws, greyed, but takes no taps.
-static void combat_panel_draw(const Combat *c, const Game *g,
-                              const Sprites *sprites, bool live) {
-    int x, y, w, h;
-    if (!combat_panel_rect(&x, &y, &w, &h)) return;
-    GmPage p;
-    combat_menu_page(c, g, CM_UNIT, &p);
-    int row = 0;
-    for (int i = 0; i < p.n; i++) {
-        int key = p.item[i].key;
-        Texture2D t = combat_panel_art(sprites, key);
-        if (!t.id) continue;                        // Back, and anything unmapped
-        int ry = y + row * CL_TILE_H;
-        if (ry + CL_TILE_H > y + h) break;
-        Rectangle src = { 0, 0, (float)t.width, (float)t.height };
-        Rectangle dst = { (float)x, (float)ry, (float)w, (float)CL_TILE_H };
-        gfx_texture_draw(t, src, dst, WHITE);
-        if (!p.item[i].enabled)                      // half ink: it cannot be used
-            gfx_rect(x, ry, w, CL_TILE_H, (Color){ 0, 0, 0, 150 });
-        // One rail between commands -- the container's own ring closes the
-        // outside, so a frame per tile would double every edge.
-        if (row > 0) lattice_band_h(x, ry - COMBAT_RING / 2, w, COMBAT_RING / 2);
-        if (live && p.item[i].enabled)
-            ui_tile_row(x, ry, w, CL_TILE_H, TOUCH_LIST_COMBAT_PANEL, i);
-        row++;
-    }
-    // The container is the field's full height, like the HUD sidebar beside
-    // the map: the commands fill it from the top and what is left below them
-    // stays empty. Chrome on the three outside edges; the fourth is the
-    // field's own ring, which the column is hung on.
-    lattice_ring(x - COMBAT_RING, y - COMBAT_RING,
-                 w + COMBAT_RING, h + 2 * COMBAT_RING,
-                 COMBAT_RING, 0, COMBAT_RING, COMBAT_RING);
+// The key each command answers to (the combat loop's own keys).
+static const char *combat_panel_key(int key) {
+    if (key == KEY_S)     return "S";
+    if (key == KEY_SPACE) return "W";
+    if (key == KEY_F)     return "F";
+    if (key == GM_ACT_PAGE + CM_CAST) return "U";
+    return NULL;
 }
 
-// The tap, resolved the way the menu resolves the same row.
-static void combat_panel_tap(const Combat *c, const Game *g) {
-    int x;
-    if (!combat_panel_rect(&x, NULL, NULL, NULL)) return;
-    int row = touch_tapped_row(TOUCH_LIST_COMBAT_PANEL);
-    if (row < 0) return;
+// The player's turn: the unit whose turn it is is theirs and answers to them.
+static bool players_turn(const Combat *c) {
+    return c->side == COMBAT_SIDE_PLAYER && c->unit_id >= 0 &&
+           !c->units[c->side][c->unit_id].out_of_control;
+}
+
+// Draw the command column in `col`, and register a tap per usable tile while
+// `live` -- nothing else owns the screen. On the foe's turn every command is
+// greyed: none of them is the player's to use.
+static void combat_panel_draw(const Combat *c, const Game *g, const Sprites *sprites,
+                              ML_Rect col, bool live) {
+    const int tile = CL_TILE_H;
     GmPage p;
     combat_menu_page(c, g, CM_UNIT, &p);
-    if (row >= p.n || !p.item[row].enabled) return;
-    int key = p.item[row].key;
-    if (key == GM_ACT_PAGE + CM_CAST) {             // the spells are a menu page
+    bool mine = players_turn(c);
+    // Menu, then Shoot, Wait, Fly and Cast.
+    int n = 0;
+    bool enabled[5];
+    for (int i = 0; i < 5; i++) {
+        int y = col.y + i * tile;
+        if (y + tile > col.y + col.h) break;
+        Texture2D t = { 0 };
+        enabled[i] = mine;
+        if (i == 0) {
+            t = sprites ? sprites->rail_menu : (Texture2D){ 0 };
+        } else if (i - 1 < p.n) {
+            t = combat_panel_art(sprites, p.item[i - 1].key);
+            enabled[i] = mine && p.item[i - 1].enabled;
+        }
+        if (t.id) {
+            Rectangle src = { 0, 0, (float)t.width, (float)t.height };
+            Rectangle dst = { (float)col.x, (float)y, (float)col.w, (float)tile };
+            gfx_texture_draw(t, src, dst, WHITE);
+        }
+        if (!enabled[i]) gfx_rect(col.x, y, col.w, tile, uk_shade());   // it cannot be used now
+        n++;
+    }
+    hud_column_finish(col.x, col.y, col.w, col.h, n);
+    for (int i = 0; i < n; i++) {
+        int y = col.y + i * tile;
+        const char *key = i == 0 ? (g && g->res ? g->res->ui.key_esc : "Esc")
+                                 : (i - 1 < p.n ? combat_panel_key(p.item[i - 1].key) : NULL);
+        // A command's key shows while it can be pressed.
+        if (live && enabled[i]) {
+            hud_key_hint(col.x, y, key);
+            ui_tile_row(col.x, y, col.w, tile, TOUCH_LIST_COMBAT_PANEL, i);
+        }
+    }
+}
+
+// The tap on the command column, resolved the way its key resolves: Menu is
+// Escape (the combat menu), each command the key its menu row fires.
+static void combat_panel_tap(const Combat *c, const Game *g) {
+    if (!CL_IS_MODERN) return;
+    int row = touch_tapped_row(TOUCH_LIST_COMBAT_PANEL);
+    if (row < 0) return;
+    if (row == 0) { input_host_inject_key_next_frame(KEY_ESCAPE); return; }
+    GmPage p;
+    combat_menu_page(c, g, CM_UNIT, &p);
+    int i = row - 1;
+    if (i >= p.n || !p.item[i].enabled) return;
+    int key = p.item[i].key;
+    if (key == GM_ACT_PAGE + CM_CAST) {             // the spells are a page of the menu
         combat_menu_open();
-        s_act_page[2] = CM_CAST; s_act_cursor[2] = 0;
-        s_act_depth = 3;
+        s_act_open_on_enabled = false;
+        combat_menu_push(c, g, CM_CAST);
         return;
     }
     if (key) input_host_inject_key_next_frame(key);
+}
+
+// A label over its number, centred in the column.
+static int turn_stat(int cx, int y, const char *label, int value) {
+    char nb[16];
+    snprintf(nb, sizeof nb, "%d", value);
+    bfont_draw_centered(label, cx, y, PAL_CLR(YELLOW));
+    y += uk_line_h();
+    bfont_draw_centered(nb, cx, y, PAL_CLR(WHITE));
+    return y + uk_line_h() + UK_INSET;
+}
+
+// The turn column: the unit whose turn it is -- its portrait with its count,
+// its name, its moves and shots left -- and the round. A tap on the portrait
+// opens the Army sheet on the player's turn.
+static void combat_turn_draw(const Combat *c, const Game *g, const Sprites *sprites,
+                             ML_Rect col, bool live) {
+    const int tile = CL_TILE_H;
+    const ResUI *ui = (g && g->res) ? &g->res->ui : NULL;
+    lattice_ground(col.x, col.y, col.w, col.h);
+    int cx = col.x + col.w / 2, y = col.y;
+    const CombatUnit *u = (c->unit_id >= 0) ? &c->units[c->side][c->unit_id] : NULL;
+    const TroopDef *t = (u && u->troop_idx >= 0) ? troop_by_index(u->troop_idx) : NULL;
+    if (t && sprites && u->troop_idx < sprites->troop_count) {
+        Texture2D face = sprites->troop_portrait[u->troop_idx].id ? sprites->troop_portrait[u->troop_idx]
+                                                                  : sprites->troop_sprite[u->troop_idx];
+        gfx_rect(col.x, y, col.w, tile, PAL_CLR(BLACK));
+        if (face.id) ui_blit(face, col.x, y, col.w, tile);
+        combat_count_badge(col.x, y, col.w, tile, u->count);
+        if (live && c->side == COMBAT_SIDE_PLAYER) ui_tile(col.x, y, col.w, tile, KEY_A);
+        y += tile;
+        lattice_band_h(col.x, y - CL_UI, col.w, 2 * CL_UI);
+        y += UK_INSET;
+        // The name across the column, broken where it must be (three lines
+        // at most); yellow for the player's troop, red for the foe's.
+        y = uk_words_centred(t->name, cx, y, col.w, 3,
+                             c->side == COMBAT_SIDE_PLAYER ? PAL_CLR(YELLOW) : PAL_CLR(RED));
+        y += UK_INSET;
+        if (ui) {
+            y = turn_stat(cx, y, ui->combat_moves, u->moves);
+            if (u->shots > 0) y = turn_stat(cx, y, ui->combat_shots, u->shots);
+        }
+    }
+    // The round, counted from one.
+    if (ui) turn_stat(cx, col.y + col.h - 2 * uk_line_h() - UK_INSET, ui->combat_round, c->turn + 1);
 }
 
 static int combat_player_action_full(Combat *c, const Game *g,
@@ -513,6 +566,18 @@ static int combat_player_action_full(Combat *c, const Game *g,
     combat_panel_tap(c, g);
     if (CL_IS_MODERN && s_act_open) {
         int d = s_act_depth - 1;
+        if (s_act_page[d] == CM_CAST) {
+            // The spells page: a spell cast closes the menu and picks its target.
+            int spell = -1;
+            SpellsEvent ev = views_spells_input(c->heroes[c->side], true, &s_act_cursor[d], &spell);
+            if (ev == SPELLS_BACK) {
+                if (--s_act_depth < 1) s_act_open = false;
+            } else if (ev == SPELLS_CAST) {
+                s_act_open = false;
+                combat_begin_cast(c, c->heroes[c->side], spell);
+            }
+            return 0;
+        }
         GmPage p;
         combat_menu_page(c, g, s_act_page[d], &p);
         GmEvent ev = gm_page_input(&p, &s_act_cursor[d], TOUCH_LIST_COMBAT_ACTIONS);
@@ -520,15 +585,7 @@ static int combat_player_action_full(Combat *c, const Game *g,
         if (ev == GM_EV_BACK || key == GM_ACT_BACK) {
             if (--s_act_depth < 1) s_act_open = false;
         } else if (key >= GM_ACT_PAGE && key < GM_ACT_USER) {
-            if (s_act_depth < 3) {
-                s_act_page[s_act_depth] = key - GM_ACT_PAGE;
-                s_act_cursor[s_act_depth] = 0;
-                s_act_depth++;
-            }
-        } else if (key >= GM_ACT_USER) {
-            // A spell on the Cast page: close the menu and pick its target.
-            s_act_open = false;
-            combat_begin_cast(c, c->heroes[c->side], key - GM_ACT_USER);
+            combat_menu_push(c, g, key - GM_ACT_PAGE);
         } else if (key) {
             s_act_open = false;
             input_host_inject_key_next_frame(key);
@@ -540,8 +597,10 @@ static int combat_player_action_full(Combat *c, const Game *g,
         ui_map(CL_COMBAT_X, CL_COMBAT_Y,
                          COMBAT_W * CL_COMBAT_CELL_W,
                          COMBAT_H * CL_COMBAT_CELL_H,
+                         CL_COMBAT_X + au->x * CL_COMBAT_CELL_W,
+                         CL_COMBAT_Y + au->y * CL_COMBAT_CELL_H,
                          CL_COMBAT_CELL_W, CL_COMBAT_CELL_H,
-                         au->x, au->y, CL_IS_MODERN ? KEY_ENTER : 0);
+                         CL_IS_MODERN ? KEY_ENTER : 0);
     }
     if (CL_IS_MODERN &&
         (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER))) {
@@ -624,9 +683,8 @@ static int combat_player_action_full(Combat *c, const Game *g,
         }
         if (CL_IS_MODERN) {
             combat_menu_open();
-            s_act_page[s_act_depth] = CM_CAST;
-            s_act_cursor[s_act_depth] = 0;
-            s_act_depth++;
+            s_act_open_on_enabled = false;
+            combat_menu_push(c, g, CM_CAST);
         } else {
             c->cast_phase = COMBAT_CAST_PICK_SPELL;
         }
@@ -637,57 +695,62 @@ static int combat_player_action_full(Combat *c, const Game *g,
         // handles its own input and dismissal. The C<->O swap is
         // implemented there too.
         views_set(VIEW_CONTROLS);
+        if (CL_IS_MODERN) views_controls_set_cursor(0);
         return 0;
     }
     return 0;
 }
 
-static void combat_present(const Combat *c, const Game *g,
-                           const Sprites *sprites,
-                           RenderTexture2D *target) {
-    // The battlefield keeps whatever buffer the world had: refitting back to
-    // the declared size here would snap the whole screen a step smaller as a
-    // fight starts. The field centres on the screen it is given
-    // (CL_COMBAT_X) and modern fills the width either side of it with the
-    // darkened ground, so a grown buffer costs nothing.
-    present_allow_growth(true);
+static void combat_present(const Combat *c, const Game *g, const Map *m, const Fog *f,
+                           const Sprites *sprites, RenderTexture2D *target) {
     present_refit(target);
-    present_allow_growth(false);
     present_begin(target);
-    ml_set_area(ML_AREA_FULL);     // the field is full width: panels centre on it
-    ml_set_field((ML_Rect){ CL_COMBAT_X, CL_COMBAT_Y, CL_COMBAT_W, CL_COMBAT_H });
-    if (CL_IS_MODERN) modern_overlay_set_sprites(sprites);
-    combat_render_frame(c, g, sprites);
-    // The command panel beside the field: it takes taps only when nothing
-    // else owns the screen, and draws greyed when the unit cannot act.
-    {
-        bool live = CL_IS_MODERN && !s_act_open && views_active() == VIEW_NONE &&
+    if (CL_IS_MODERN) {
+        (void)m; (void)f;
+        // The battle takes the base screen's places, and nothing of the world
+        // is drawn: the frame and its bands, the command column where the left
+        // column stands, the field in the map's place, the turn column where
+        // the right column stands.
+        chrome_draw(g, sprites);
+        PageCombat pc = page_combat(c->castle);
+        combat_render_set_field(pc.field.x, pc.field.y, pc.has_wall);
+        combat_render_frame(c, g, sprites);
+        bool live = !s_act_open && views_active() == VIEW_NONE &&
                     !prompt_is_active() && !dialog_is_active() &&
                     !c->picker_active && c->cast_phase == COMBAT_CAST_NONE;
-        combat_panel_draw(c, g, sprites, live);
+        combat_panel_draw(c, g, sprites, pc.commands, live);
+        combat_turn_draw(c, g, sprites, pc.turn, live);
+        // What just happened: a toast on the field's top edge, as a toast is
+        // on the map, for as long.
+        static char s_said[COMBAT_BANNER_LEN];
+        if (strcmp(s_said, c->banner) != 0) {
+            snprintf(s_said, sizeof s_said, "%s", c->banner);
+            if (c->banner[0]) toast_show(c->banner);
+        }
+        // Then the pages, in the one order the map has too: the menu, an open
+        // view, the question, the message, and the toast last.
+        if (s_act_open && views_active() == VIEW_NONE) combat_action_menu_draw(c, g);
+        overlay_draw(g, NULL, NULL, sprites);
+        present_end();
+        present_scaled(*target);
+        frame_host_end_frame();
+        return;
     }
+    combat_render_frame(c, g, sprites);
     // Open view (Options / Controls / Army / Character) draws over the
     // battlefield, on top of the still-visible field. map/fog are NULL
     // because the views combat can open never read them (WORLDMAP isn't
     // reachable from combat).
     if (views_active() != VIEW_NONE) {
-        overlay_draw(g, NULL, NULL, sprites);      // dims the field itself
+        overlay_draw(g, NULL, NULL, sprites);
     }
-    // Every modern panel dims the field behind it (uk_inlay / uk_ask_over), so
-    // the field is never dimmed twice.
-    if (s_act_open && views_active() == VIEW_NONE && CL_IS_MODERN)
-        combat_action_menu_draw(c, g);
-    // Modern: the top bar is touchable and acts as Escape (the action menu).
-    if (CL_IS_MODERN && !s_act_open && views_active() == VIEW_NONE && !prompt_is_active() &&
-        !dialog_is_active() && !c->picker_active && c->cast_phase == COMBAT_CAST_NONE)
-        ui_bar(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H, KEY_ESCAPE);
     // Spell-pick menu overlay. Drawn while the cast state machine is
     // in PICK_SPELL phase; the outer loop drives combat_cast_step one
     // input per frame.
-    if (c->cast_phase == COMBAT_CAST_PICK_SPELL && !CL_IS_MODERN) {
+    if (c->cast_phase == COMBAT_CAST_PICK_SPELL) {
         // Legacy: the historic 320x200 positions, untouched.
         gfx_rect(40, 30, 240, 130, PAL_CLR(DBLUE));
-        ui_window_frame(40, 30, 240, 130, PAL_CLR(YELLOW));
+        legacy_window_frame(40, 30, 240, 130, PAL_CLR(YELLOW));
         const Game *gw = c->heroes[c->side];
         const ResUI *ui = &gw->res->ui;
         bfont_draw(ui->combat_spells_title,      140, 36, PAL_CLR(YELLOW));
@@ -706,8 +769,6 @@ static void combat_present(const Combat *c, const Game *g,
         }
         bfont_draw(ui->combat_spells_prompt, 70, 144, PAL_CLR(WHITE));
     }
-    // Modern has no picker of its own: the spells are a page of the combat
-    // menu (CM_CAST), drawn by combat_action_menu_draw like every other page.
     // Victory dialog : centered modal
     // floating over the still-rendered battlefield. Defeat does not
     // draw here -- combat exits silently and perform_temp_death shows
@@ -716,7 +777,6 @@ static void combat_present(const Combat *c, const Game *g,
     // Give-up confirm and any other y/n / numeric prompt draws on top
     // of everything else as a bottom-frame modal.
     if (prompt_is_active()) prompt_draw();
-    ml_clear_field();
     present_end();
 
     present_scaled(*target);
@@ -726,9 +786,9 @@ static void combat_present(const Combat *c, const Game *g,
 // Public presenter for the visible-combat animator: a thin wrapper over
 // the static combat_present so src/combat_replay.c can draw a throwaway Combat
 // without duplicating the field-draw + scale-to-window blit.
-void combat_present_public(const Combat *c, const Game *g,
+void combat_present_public(const Combat *c, const Game *g, const Map *m, const Fog *f,
                            const Sprites *sprites, void *render_target) {
-    combat_present(c, g, sprites, (RenderTexture2D *)render_target);
+    combat_present(c, g, m, f, sprites, (RenderTexture2D *)render_target);
 }
 
 // Combat tick: decays damage-burst, advances the active unit's
@@ -865,10 +925,11 @@ static bool splat_showing(const Combat *c) {
 // be drawn over the overworld instead of over the battle that produced
 // it.
 static void combat_wait_for_dialog_ack(const Combat *c, const Game *g,
+                                       const Map *m, const Fog *f,
                                        const Sprites *sprites,
                                        RenderTexture2D *target) {
     while (dialog_is_active() && !frame_host_should_close()) {
-        combat_present(c, g, sprites, target);
+        combat_present(c, g, m, f, sprites, target);
         // Allow screenshots while paused on the end-of-combat dialog
         // (main loop is suspended during RunCombat).
         screenshot_tick(*target, "shot");
@@ -878,7 +939,7 @@ static void combat_wait_for_dialog_ack(const Combat *c, const Game *g,
     }
 }
 
-CombatResult RunCombat(Game *g, const Sprites *sprites,
+CombatResult RunCombat(Game *g, const Map *m, const Fog *f, const Sprites *sprites,
                        void *render_target,
                        CombatMode mode, const CombatTarget *target) {
     Combat c;
@@ -923,7 +984,7 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         // Keep audio and presentation ticking every frame while the battle
         // runs, so music and the rendered field stay live.
         audio_tick();
-        combat_present(&c, g, sprites, rt);
+        combat_present(&c, g, m, f, sprites, rt);
 
         // Modal prompts (give-up confirm) take priority over every
         // other input path and pause combat -- a blocking call inside
@@ -969,6 +1030,14 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
         // While a view is open, combat is paused: no AI advancement,
         // no animation frame ticks driving acts. The view handles its
         // own input (and number-key cycling for Controls -- see below).
+        if (views_active() != VIEW_NONE && CL_IS_MODERN) {
+            // Controls reads its own keys, as it does on the map; a sheet
+            // closes on any key, as it does on the map.
+            ViewKind v = views_active();
+            if (v == VIEW_CONTROLS)                           views_controls_input(g);
+            else if (views_closes_on_tap(v) && ui_any_key_pressed()) views_dismiss();
+            continue;
+        }
         if (views_active() != VIEW_NONE) {
             touch_request(TOUCH_CHROME_BACK);   // ESC dismisses the view
             // Swap between Options and Controls without leaving the menu.
@@ -1040,6 +1109,10 @@ CombatResult RunCombat(Game *g, const Sprites *sprites,
             }
             if (input_key_pressed(KEY_A)) {
                 views_set(VIEW_ARMY);
+                // Modern: on your turn the sheet opens on the troop whose turn
+                // it is (a tap on its portrait in the turn column is this key).
+                if (CL_IS_MODERN && c.side == COMBAT_SIDE_PLAYER && c.unit_id >= 0)
+                    views_army_mark(c.units[c.side][c.unit_id].troop_idx);
                 continue;
             }
             if (input_key_pressed(KEY_V)) {
@@ -1152,7 +1225,7 @@ settle:
     while ((atk.frame >= 0 || (CL_IS_MODERN && splat_showing(&c))) &&
            !frame_host_should_close()) {
         audio_tick();
-        combat_present(&c, g, sprites, rt);
+        combat_present(&c, g, m, f, sprites, rt);
         bool rolled;
         (void)combat_tick_anim(&c, &next_tick, &rolled, atk.frame >= 0);
         attack_anim_step(&atk);
@@ -1165,7 +1238,7 @@ settle:
         double until = frame_host_time() + FIGHT_END_HOLD;
         while (frame_host_time() < until && !frame_host_should_close()) {
             audio_tick();
-            combat_present(&c, g, sprites, rt);
+            combat_present(&c, g, m, f, sprites, rt);
             bool rolled;
             combat_tick_anim(&c, &next_tick, &rolled, false);
         }
@@ -1198,7 +1271,7 @@ settle:
                                       bn->combat_victory_unnamed, vars, 2);
         }
         open_dialog_kind(g->res->ui.dt_combat_victory, body, PIO_NOTE_OVER_FIELD);
-        combat_wait_for_dialog_ack(&c, g, sprites, rt);
+        combat_wait_for_dialog_ack(&c, g, m, f, sprites, rt);
         // Write surviving troops back to g->army so the player keeps
         // their losses. Vacated slots get compacted afterwards so the
         // army view stays contiguous (no gaps where a stack was wiped).

@@ -37,6 +37,9 @@ void lattice_band_v(int x, int y, int w, int h);
 // and the map, railed on its top and bottom edges only.
 void lattice_band_h(int x, int y, int w, int h);
 
+// The lattice's dark ground, plain: a panel's empty part.
+void lattice_ground(int x, int y, int w, int h);
+
 // Release the pattern texture. Safe when nothing was built.
 void lattice_shutdown(void);
 

@@ -19,111 +19,39 @@
 
 #define GH BFONT_GLYPH_H
 
-Color uk_fill(void) { return (Color){ 12, 14, 30, 255 }; }
-Color uk_ink(void)  { return (Color){ 16, 18, 36, 255 }; }
-int   uk_title_h(void) { return GH + 14; }
-int   uk_line_h(void)  { return GH + 2; }
+Color uk_fill(void)     { return (Color){  12,  14,  30, 255 }; }
+Color uk_ink(void)      { return (Color){  16,  18,  36, 255 }; }
+Color uk_edge(void)     { return (Color){ 150, 118,  48, 255 }; }
+Color uk_edge_dim(void) { return (Color){  60,  52,  34, 255 }; }
+Color uk_ghost(void)    { return (Color){  60,  60,  70, 255 }; }
+Color uk_shade(void)    { return (Color){   0,   0,   0, 150 }; }
+Color uk_hint_bg(void)  { return (Color){   0,   0,   0, 190 }; }
+Color uk_button(void)   { return (Color){ 200, 160,  60, 255 }; }
+Color uk_bar_edge(void) { return (Color){  90,  72,  30, 255 }; }
+int   uk_title_h(void)  { return GH + 14; }
+int   uk_line_h(void)   { return GH + 2; }
 
-void uk_panel(int x, int y, int w, int h) {
-    gfx_rect(x, y, w, h, uk_fill());
-    ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
-}
+// ---- words -------------------------------------------------------------------------
 
-// A full-screen page fills the rect the pack declared. When the buffer is
-// bigger than that -- a phone, a window the player grew -- the page cannot
-// fill the screen and is a modal instead: the world behind it is dimmed and
-// it takes the same ring a panel has. With no spare room this is exactly the
-// old fill and nothing shows around it.
-bool uk_page_is_modal(void) {
-    return CL_IS_MODERN &&
-           (CL_SCREEN_W > CL_SCREEN_BASE_W || CL_SCREEN_H > CL_SCREEN_BASE_H);
-}
-
-void uk_page(ML_Rect r) {
-    if (uk_page_is_modal()) {
-        const Resources *res = resources_current();
-        int pct = (res && res->render.dim > 0) ? res->render.dim : 45;
-        gfx_rect(0, 0, CL_SCREEN_W, CL_SCREEN_H,
-                 (Color){ 0, 0, 0, (unsigned char)overlay_dim_alpha(pct) });
+void uk_mark_cut(char *buf, int cap, int w) {
+    size_t n = strlen(buf);
+    char probe[256];
+    for (;;) {
+        snprintf(probe, sizeof probe, "%.*s..", (int)n, buf);
+        if (n == 0 || bfont_text_width(probe) <= w) break;
+        n--;
+        while (n > 0 && buf[n - 1] == ' ') n--;
     }
-    gfx_rect(r.x, r.y, r.w, r.h, uk_fill());
-    // The ring is the SCREEN's module, not a panel's: a page is a window on
-    // the world, so it is framed the way the screen is framed, at the frame's
-    // own thickness and outside its rect, so the page keeps every pixel.
-    if (uk_page_is_modal()) {
-        int t = CL_FRAME_LEFT_W;
-        lattice_ring(r.x - t, r.y - t, r.w + 2 * t, r.h + 2 * t, t, t, t, t);
-    }
+    snprintf(buf, (size_t)cap, "%s", probe);
 }
 
-void uk_sheet(void) {
-    uk_page(ml_full());
-}
-
-int uk_title(int x, int y, int w, const char *left, const char *right, Color right_c) {
-    int th = uk_title_h();
-    int ty = y + (th - GH) / 2;
-    int rw = (right && right[0]) ? bfont_text_width(right) : 0;
-    if (rw) bfont_draw(right, x + w - ML_PAD - rw, ty, right_c);
-    if (left && left[0]) {
-        // A long title gives way to the right text: cut at a word, with "..".
-        int room = w - 2 * ML_PAD - (rw ? rw + 2 * ML_PAD : 0);
-        if (bfont_text_width(left) <= room) {
-            bfont_draw(left, x + ML_PAD, ty, PAL_CLR(YELLOW));
-        } else {
-            char buf[160];
-            snprintf(buf, sizeof buf, "%s", left);
-            size_t n = strlen(buf);
-            while (n > 0) {
-                buf[--n] = '\0';
-                char probe[164];
-                snprintf(probe, sizeof probe, "%s..", buf);
-                if (bfont_text_width(probe) <= room) { bfont_draw(probe, x + ML_PAD, ty, PAL_CLR(YELLOW)); break; }
-            }
-        }
-    }
-    lattice_band_h(x, y + th, w, UK_BAND);
-    return y + th + UK_BAND;
-}
-
-void uk_gold_text(const Game *g, char *out, int cap) {
-    if (!g || !g->res) { out[0] = '\0'; return; }
-    snprintf(out, (size_t)cap, "%s %d", g->res->ui.cv_gold, g->stats.gold);
-}
-
-void uk_dim(void) {
-    // One dim for the whole of modern: the pack's render.dim, the same value
-    // modern_overlay_dim_scene uses, so a panel over a screen and a panel over
-    // the map darken alike. A pack that sets none gets a light default.
-    const Resources *res = resources_current();
-    int pct = (res && res->render.dim > 0) ? res->render.dim : 45;
-    // The WHOLE buffer, not the declared rect: on a surface with room to
-    // spare the declared rect is a box floating inside the screen, and
-    // dimming only that left a bright band around whatever is behind the
-    // panel.
-    gfx_rect(0, 0, CL_SCREEN_W, CL_SCREEN_H,
-             (Color){ 0, 0, 0, (unsigned char)overlay_dim_alpha(pct) });
-}
-
-ML_Rect uk_inlay(int w, int h, const char *title, const char *right) {
-    ML_Rect a = ml_area();
-    int sp = ml_space();
-    bool titled = (title && title[0]) || (right && right[0]);
-    if (!titled) h -= uk_title_h() + UK_BAND;    // no title: no strip
-    if (w > a.w - 2 * sp) w = a.w - 2 * sp;
-    if (h > a.h) h = a.h;             // the tallest may meet the area's edges
-    int x = a.x + (a.w - w) / 2, y = a.y + (a.h - h) / 2;
-    uk_dim();
-    uk_panel(x, y, w, h);
-    if (!titled) return (ML_Rect){ x, y, w, h };
-    int top = uk_title(x, y, w, title, right, PAL_CLR(YELLOW));
-    return (ML_Rect){ x, top, w, y + h - top };
-}
-
-void uk_picture(Texture2D t, int x, int y, int w, int h) {
-    gfx_rect(x, y, w, h, PAL_CLR(BLACK));
-    if (t.id) ui_blit(t, x, y, w, h);
-    gfx_rect_lines(x - 1, y - 1, w + 2, h + 2, (Color){ 150, 118, 48, 255 });
+void uk_line(const char *text, int x, int y, int w, Color fg) {
+    if (!text || !text[0]) return;
+    if (bfont_text_width(text) <= w) { bfont_draw(text, x, y, fg); return; }
+    char buf[256];
+    snprintf(buf, sizeof buf, "%s", text);
+    uk_mark_cut(buf, sizeof buf, w);
+    bfont_draw(buf, x, y, fg);
 }
 
 int uk_lines(const char *text, int w) {
@@ -132,6 +60,18 @@ int uk_lines(const char *text, int w) {
     char line[200];
     while (*p && bfont_take_line(&p, w, line, (int)sizeof line) > 0) n++;
     return n;
+}
+
+int uk_lines_draw(const char *text, int x, int y, int w, int max_lines, Color fg) {
+    const char *p = text ? text : "";
+    char line[200];
+    for (int i = 0; i < max_lines && *p; i++) {
+        if (bfont_take_line(&p, w, line, (int)sizeof line) <= 0) break;
+        if (*p && i + 1 == max_lines) uk_mark_cut(line, sizeof line, w);
+        bfont_draw(line, x, y, fg);
+        y += uk_line_h();
+    }
+    return y;
 }
 
 int uk_flow(int x, int y, int w, int pic_r, int pic_b, int max_y, const char *text, Color fg) {
@@ -143,11 +83,96 @@ int uk_flow(int x, int y, int w, int pic_r, int pic_b, int max_y, const char *te
         int lx = beside ? pic_r : x;
         int lw = w - (lx - x);
         if (bfont_take_line(&p, lw, line, (int)sizeof line) <= 0) break;
+        // The last line that fits, with more to come: marked as cut.
+        if (*p && y + lh + GH > max_y) uk_mark_cut(line, sizeof line, lw);
         bfont_draw(line, lx, y, fg);
         y += lh;
     }
     return y;
 }
+
+int uk_words_centred(const char *text, int cx, int y, int w, int max_lines, Color fg) {
+    const char *p = text ? text : "";
+    char line[200];
+    for (int n = 0; *p && n < max_lines; n++) {
+        if (bfont_take_line(&p, w, line, (int)sizeof line) <= 0) break;
+        if (*p && n + 1 == max_lines) uk_mark_cut(line, sizeof line, w);
+        bfont_draw(line, cx - bfont_text_width(line) / 2, y, fg);
+        y += uk_line_h();
+    }
+    return y;
+}
+
+// ---- the title strip ------------------------------------------------------------------
+
+int uk_title(int x, int y, int w, const char *left, const char *right, const char *close) {
+    const Resources *res = resources_current();
+    const ResUI *ui = res ? &res->ui : NULL;
+    int th = uk_title_h();
+    int ty = y + (th - GH) / 2;
+    const int room = w - 2 * UK_INSET, gap = 2 * UK_INSET;
+    char cl[64] = "";
+    if (close && close[0]) ml_hint_text(cl, sizeof cl, close, ui ? ui->key_esc : "Esc", ui ? ui->pad_back : "");
+    int lw = (left && left[0]) ? bfont_text_width(left) : 0;
+    int rw = (right && right[0]) ? bfont_text_width(right) : 0;
+    // Close gives up its key name first, then the words at the right go; only
+    // then is the title cut.
+    if (cl[0] && lw + gap + bfont_text_width(cl) + (rw ? rw + gap : 0) > room)
+        snprintf(cl, sizeof cl, "%s", close);
+    int cw = cl[0] ? bfont_text_width(cl) : 0;
+    if (rw && lw + gap + (cw ? cw + gap : 0) + rw > room) rw = 0;
+    int end = x + w - UK_INSET;
+    if (cw) {
+        bfont_draw(cl, end - cw, ty, PAL_CLR(WHITE));
+        ui_button(end - cw - UK_INSET, y, cw + 2 * UK_INSET, th, KEY_ESCAPE);
+        end -= cw + gap;
+    }
+    if (rw) {
+        bfont_draw(right, end - rw, ty, PAL_CLR(YELLOW));
+        end -= rw + gap;
+    }
+    if (lw) uk_line(left, x + UK_INSET, ty, end - (x + UK_INSET), PAL_CLR(YELLOW));
+    lattice_band_h(x, y + th, w, UK_BAND);
+    return y + th + UK_BAND;
+}
+
+void uk_gold_text(const Game *g, char *out, int cap) {
+    if (!g || !g->res) { out[0] = '\0'; return; }
+    snprintf(out, (size_t)cap, "%s %d", g->res->ui.cv_gold, g->stats.gold);
+}
+
+// ---- pictures ---------------------------------------------------------------------------
+
+void uk_picture(Texture2D t, int x, int y, int w, int h) {
+    gfx_rect(x, y, w, h, PAL_CLR(BLACK));
+    if (t.id) ui_blit(t, x, y, w, h);
+    gfx_rect_lines(x - 1, y - 1, w + 2, h + 2, uk_edge());
+}
+
+void uk_picture_cut(Texture2D t, int x, int y, int w, int h) {
+    gfx_rect(x, y, w, h, PAL_CLR(BLACK));
+    if (t.id) {
+        int sw = t.width < w ? t.width : w, sh = t.height < h ? t.height : h;
+        Rectangle src = { 0, 0, (float)sw, (float)sh };
+        Rectangle dst = { (float)x, (float)y, (float)sw, (float)sh };
+        gfx_texture_draw(t, src, dst, WHITE);
+    }
+    gfx_rect_lines(x - 1, y - 1, w + 2, h + 2, uk_edge());
+}
+
+void uk_figure(Texture2D t, int x, int foot_y, int scale, int top_y, bool mirror) {
+    if (!t.id || scale < 1) return;
+    int w = t.width * scale, h = t.height * scale;
+    int y = foot_y - h;
+    int cut = 0;                                   // source rows cut off the top
+    if (y < top_y) cut = (top_y - y + scale - 1) / scale;
+    if (cut >= t.height) return;
+    Rectangle src = { 0, (float)cut, (float)(mirror ? -t.width : t.width), (float)(t.height - cut) };
+    Rectangle dst = { (float)x, (float)(y + cut * scale), (float)w, (float)((t.height - cut) * scale) };
+    gfx_texture_draw(t, src, dst, WHITE);
+}
+
+// ---- rows --------------------------------------------------------------------------------
 
 int uk_foot_rows(ML_Rect body, int n, int cursor, MlRowFn fn, void *ctx, int touch_list) {
     int rows_h = ml_list_height(n);
@@ -161,6 +186,7 @@ bool uk_rows_fn(void *ctx, int i, char *label, char *right, int cap) {
     const UkRows *r = (const UkRows *)ctx;
     right[0] = '\0';
     snprintf(label, (size_t)cap, "%s", (i >= 0 && i < 8 && r->label[i]) ? r->label[i] : "");
+    if (r->esc && i == r->esc - 1) ml_exit_hint(right);
     return i >= 0 && i < 8 && r->enabled[i];
 }
 
@@ -187,22 +213,11 @@ static void draw_column(const Sprites *sp, int x, int y, int w, int h, bool mirr
     column_piece(base, x, end, w, base.height, mirror);
 }
 
-UkScene uk_scene(const char *title, const char *right, Texture2D bd, int rows) {
-    return uk_scene_ex(title, right, bd, rows, 2 * uk_line_h() + 2 * ML_PAD);
-}
-
-UkScene uk_scene_for(const char *title, const char *right, Texture2D bd, int rows, const char *intro) {
-    int n = uk_lines(intro, ml_full().w - 2 * ML_PAD);
-    if (n < 2) n = 2;
-    if (n > 3) n = 3;
-    return uk_scene_ex(title, right, bd, rows, n * uk_line_h() + 2 * ML_PAD);
-}
-
-// The backdrop as a band at `top`, at most `band_h` tall: its top trimmed in
-// whole source pixels so the art stays square, the columns (or the lattice) in
-// the bars beside it, and a lattice divider under it. Whatever the caller puts
+// The backdrop as a band at `top`, `band_h` tall: its top trimmed in whole
+// source pixels so the art stays square, the columns (or the lattice) in the
+// bars beside it, and a lattice divider under it. Whatever the caller puts
 // below starts at scene.y + scene.h + UK_BAND.
-static UkScene scene_band(ML_Rect r, int top, Texture2D bd, int band_h) {
+UkScene uk_scene_band(ML_Rect r, int top, Texture2D bd, int band_h) {
     UkScene L;
     memset(&L, 0, sizeof L);
     L.full = r;
@@ -218,8 +233,9 @@ static UkScene scene_band(ML_Rect r, int top, Texture2D bd, int band_h) {
     L.scene = (ML_Rect){ r.x + (r.w - bw) / 2, top, bw, bh - L.trim };
     gfx_rect(L.scene.x, L.scene.y, L.scene.w, L.scene.h, PAL_CLR(BLACK));
     if (bd.id && bd.height > 0) {
-        float per = (float)bd.height / (float)bh;            // source px per screen px
-        Rectangle src = { 0, L.trim * per, (float)bd.width, (bh - L.trim) * per };
+        int per = bd.height / ML_BACKDROP_H > 0 ? bd.height / ML_BACKDROP_H : 1;   // source px per art px
+        Rectangle src = { 0, (float)(L.trim / L.scale * per), (float)bd.width,
+                          (float)((bh - L.trim) / L.scale * per) };
         Rectangle dst = { (float)L.scene.x, (float)L.scene.y, (float)L.scene.w, (float)L.scene.h };
         gfx_texture_draw(bd, src, dst, WHITE);
     }
@@ -244,262 +260,8 @@ static UkScene scene_band(ML_Rect r, int top, Texture2D bd, int band_h) {
     return L;
 }
 
-UkScene uk_scene_ex(const char *title, const char *right, Texture2D bd, int rows, int intro_min) {
-    return uk_scene_extra(title, right, bd, rows, intro_min, 0);
-}
-
-UkScene uk_scene_extra(const char *title, const char *right, Texture2D bd, int rows, int intro_min,
-                       int extra_h) {
-    ML_Rect r = ml_full();
-    uk_page(r);
-    int top = uk_title(r.x, r.y, r.w, title, right, PAL_CLR(YELLOW));
-    int n = rows < 1 ? 1 : rows;
-    int rows_h = ml_list_height(n);
-    int rows_y = r.y + r.h - rows_h;
-    if (extra_h < 0) extra_h = 0;
-    // Whatever the rows, the words and the block above the rows need comes off
-    // the backdrop's top.
-    UkScene L = scene_band(r, top, bd, rows_y - ML_ROW_RULE - extra_h - intro_min - UK_BAND - top);
-    L.rows = n;
-    L.rows_y = rows_y;
-    L.intro_y = L.scene.y + L.scene.h + UK_BAND;
-    L.extra_h = extra_h;
-    L.extra_y = rows_y - ML_ROW_RULE - extra_h;
-    L.intro_h = L.extra_y - L.intro_y;
-    lattice_band_h(r.x, rows_y - ML_ROW_RULE, r.w, ML_ROW_RULE);
-    return L;
-}
-
-// The words band's width: the scene's full width less its margins.
-static int scene_words_w(void) { return ml_full().w - 2 * ML_PAD; }
-
-UkScene uk_scene_for_doc(const char *title, const char *right, Texture2D bd, int rows, const UkDoc *doc,
-                         int extra_h) {
-    ML_Rect probe = { 0, 0, scene_words_w(), 0 };
-    int words = doc ? uk_doc_height(doc, probe, 0, 0) : 0;
-    if (words < 2 * uk_line_h()) words = 2 * uk_line_h();
-    return uk_scene_extra(title, right, bd, rows, words + 2 * ML_PAD, extra_h);
-}
-
-void uk_scene_doc(const UkScene *L, const UkDoc *doc) {
-    if (!doc) return;
-    ML_Rect probe = { 0, 0, scene_words_w(), 0 };
-    int words = uk_doc_height(doc, probe, 0, 0);
-    int y = L->intro_y + (L->intro_h - words) / 2;
-    if (y < L->intro_y + ML_PAD) y = L->intro_y + ML_PAD;
-    ML_Rect a = { L->full.x + ML_PAD, y, scene_words_w(), L->intro_y + L->intro_h - y };
-    uk_doc_draw(doc, a, 0, 0, -1, true);
-}
-
-ML_Rect uk_frame(const char *title, const char *right) {
-    // A step of its own over the whole screen: nothing behind it shows.
-    ML_Rect r = ml_full();
-    uk_page(r);
-    int top = uk_title(r.x, r.y, r.w, title, right, PAL_CLR(YELLOW));
-    return (ML_Rect){ r.x, top, r.w, r.y + r.h - top };
-}
-
-UkMuster uk_muster(const char *title, const char *right, Texture2D bd, int list_rows, int list_w) {
-    UkMuster M;
-    ML_Rect r = ml_full();
-    uk_page(r);
-    int top = uk_title(r.x, r.y, r.w, title, right, PAL_CLR(YELLOW));
-    int n = list_rows < 1 ? 1 : list_rows;
-    // The band is what is left over the two columns -- sized so a figure at 2x
-    // stands whole in it.
-    int body_min = ml_list_height(n);
-    M.top = scene_band(r, top, bd, r.y + r.h - body_min - UK_BAND - top);
-    int by = M.top.scene.y + M.top.scene.h + UK_BAND;
-    int bh = r.y + r.h - by;
-    if (list_w > r.w / 2) list_w = r.w / 2;
-    M.list = (ML_Rect){ r.x, by, list_w, bh };
-    lattice_band_v(r.x + list_w, by, UK_BAND, bh);
-    int dx = r.x + list_w + UK_BAND + UK_INSET;
-    M.detail = (ML_Rect){ dx, by + ML_PAD, r.x + r.w - UK_INSET - dx, bh - 2 * ML_PAD };
-    return M;
-}
-
-void uk_scene_blit(const UkScene *L, Texture2D t, int bx, int by, int bw, int bh) {
-    if (!t.id) return;
-    int x = L->scene.x + bx * L->scale, y = L->scene.y + by * L->scale - L->trim;
-    int w = bw * L->scale, h = bh * L->scale;
-    // Clip what the trim cut off.
-    int cut = L->scene.y - y;
-    if (cut <= 0) { ui_blit(t, x, y, w, h); return; }
-    if (cut >= h) return;
-    float per = (float)t.height / (float)h;
-    Rectangle src = { 0, cut * per, (float)t.width, (h - cut) * per };
-    Rectangle dst = { (float)x, (float)L->scene.y, (float)w, (float)(h - cut) };
-    gfx_texture_draw(t, src, dst, WHITE);
-}
-
 void uk_scene_figure(const UkScene *L, Texture2D t, int x) {
-    if (!t.id) return;
-    int s = 2 * CL_TILE_W;
-    int h = s < L->scene.h ? s : L->scene.h;
-    ui_blit(t, L->scene.x + x, L->scene.y + L->scene.h - h, s, h);
-}
-
-void uk_scene_intro(const UkScene *L, const char *text) {
-    const ML_Rect r = L->full;
-    int w = r.w - 2 * ML_PAD;
-    const char *p = text ? text : "";
-    char l[3][200];
-    int n = 0;
-    while (n < 3 && *p && bfont_take_line(&p, w, l[n], (int)sizeof l[n]) > 0) n++;
-    int fit = L->intro_h / uk_line_h();
-    if (n > fit) n = fit;
-    int y = L->intro_y + (L->intro_h - n * uk_line_h()) / 2;
-    for (int i = 0; i < n; i++) bfont_draw(l[i], r.x + ML_PAD, y + i * uk_line_h(), PAL_CLR(WHITE));
-}
-
-void uk_scene_rows(const UkScene *L, int n, int cursor, MlRowFn fn, void *ctx, int touch_list) {
-    ml_list_draw(L->full.x, L->rows_y, L->full.w, ml_list_height(L->rows), n, cursor, fn, ctx,
-                 touch_list, uk_ink());
-}
-
-// ---- the standard message ----------------------------------------------------------
-
-static ML_Rect message_rect(void) {
-    ML_Rect a = ml_area();
-    int sp = ml_space();
-    // The PANE's width, at the size the pack declared -- not the area's,
-    // which on a full-screen view also covers the HUD.
-    return (ML_Rect){ CL_PANE_BASE_X + sp, a.y, CL_PANE_BASE_W - 2 * sp, a.h - sp };
-}
-
-int uk_message_text_w(void) { return message_rect().w - 2 * UK_INSET; }
-
-// The span uk_ask_over draws across: over a battlefield, the field itself, so
-// a note or a question in combat sits centred on the fight; elsewhere a map
-// message's width and place.
-static ML_Rect ask_over_rect(void) {
-    ML_Rect a;
-    int sp = ml_space();
-    // Over a battlefield: the field itself, exactly as before.
-    if (ml_field(&a))
-        return (ML_Rect){ a.x + sp, a.y, a.w - 2 * sp, a.h - sp };
-    // Elsewhere: the pane's width, pinned to the declared size so a grown
-    // pane does not stretch the panel across it.
-    a = ml_area();
-    return (ML_Rect){ CL_PANE_BASE_X + sp, a.y, CL_PANE_BASE_W - 2 * sp, a.h - sp };
-}
-
-int uk_ask_over_text_w(void) { return ask_over_rect().w - 2 * UK_INSET; }
-
-// The title, wrapped to `w` and cut to UK_ASK_TITLE_LINES: how many lines it
-// takes, written into `out` when it is given. A title may arrive with its own
-// newlines (the engine's artifact message), so it is wrapped like the body and
-// never drawn as one line.
-#define UK_ASK_TITLE_LINES 3
-static int ask_title_lines(const char *title, int w, char out[][200]) {
-    if (!title || !title[0]) return 0;
-    const char *p = title;
-    char tmp[200];
-    int n = 0;
-    while (n < UK_ASK_TITLE_LINES && *p && bfont_take_line(&p, w, tmp, (int)sizeof tmp) > 0) {
-        if (out) snprintf(out[n], 200, "%s", tmp);
-        n++;
-    }
-    return n;
-}
-
-// The one shape, drawn in `a`: the gold title, the white words, a lattice band,
-// then the answers as full-width rows along the foot.
-static void ask_draw(ML_Rect a, int y, int h, const char *title, const char *const lines[],
-                     int n_lines, int n_rows, int cursor, MlRowFn fn, void *ctx, int touch_list) {
-    const int lh = uk_line_h();
-    char tl[UK_ASK_TITLE_LINES][200];
-    int n_title = ask_title_lines(title, a.w - 2 * UK_INSET, tl);
-    uk_panel(a.x, y, a.w, h);
-    int ty = y + UK_INSET;
-    for (int i = 0; i < n_title; i++, ty += lh)
-        bfont_draw(tl[i], a.x + UK_INSET, ty, PAL_CLR(YELLOW));
-    for (int i = 0; i < n_lines; i++, ty += lh)
-        bfont_draw(lines[i] ? lines[i] : "", a.x + UK_INSET, ty, PAL_CLR(WHITE));
-    if (n_rows > 0) {
-        int ry = y + h - ml_list_height(n_rows);
-        lattice_band_h(a.x, ry - UK_BAND, a.w, UK_BAND);
-        ml_list_draw(a.x, ry, a.w, ml_list_height(n_rows), n_rows, cursor, fn, ctx, touch_list, uk_ink());
-    }
-}
-
-static int ask_height(ML_Rect a, const char *title, int n_lines, int n_rows) {
-    int text_lines = ask_title_lines(title, a.w - 2 * UK_INSET, NULL) + n_lines;
-    if (text_lines < 1) text_lines = 1;
-    int rows_h = n_rows > 0 ? UK_BAND + ml_list_height(n_rows) : 0;
-    return 2 * UK_INSET + text_lines * uk_line_h() + rows_h;
-}
-
-void uk_ask(const char *title, const char *const lines[], int n_lines,
-            int n_rows, int cursor, MlRowFn fn, void *ctx, int touch_list) {
-    ML_Rect a = message_rect();
-    if (n_rows > UK_ASK_ROWS) n_rows = UK_ASK_ROWS;
-    int h = ask_height(a, title, n_lines, n_rows);
-    ask_draw(a, a.y + a.h - h, h, title, lines, n_lines, n_rows, cursor, fn, ctx, touch_list);
-}
-
-void uk_ask_over(const char *title, const char *const lines[], int n_lines,
-                 int n_rows, int cursor, MlRowFn fn, void *ctx, int touch_list) {
-    // The map message's shape on the foot of the battlefield, at its width.
-    ML_Rect a = ask_over_rect();
-    if (n_rows > UK_ASK_ROWS) n_rows = UK_ASK_ROWS;
-    int h = ask_height(a, title, n_lines, n_rows);
-    if (h > a.h) h = a.h;
-    uk_dim();
-    ask_draw(a, a.y + a.h - h, h, title, lines, n_lines, n_rows, cursor, fn, ctx, touch_list);
-}
-
-// ---- in-lays -----------------------------------------------------------------------
-
-static void uk_result_doc(const char *title, Texture2D face, const UkDoc *doc,
-                          const char *const *labels, int n_rows, int cursor, int touch_list);
-
-void uk_result_inlay(const char *title, Texture2D face, const char *text, const char *row_label,
-                     int touch_list) {
-    UkDoc d = { 0 };
-    uk_doc_add(&d, text, PAL_CLR(WHITE));
-    uk_result_doc(title, face, &d, &row_label, 1, 0, touch_list);
-}
-
-void uk_result_ask(const char *title, Texture2D face, const char *text,
-                   const char *const *labels, int n_rows, int cursor, int touch_list) {
-    UkDoc d = { 0 };
-    uk_doc_add(&d, text, PAL_CLR(WHITE));
-    uk_result_doc(title, face, &d, labels, n_rows, cursor, touch_list);
-}
-
-static void uk_result_doc(const char *title, Texture2D face, const UkDoc *doc,
-                          const char *const *labels, int n_rows, int cursor,
-                          int touch_list) {
-    // Every result is the same size: the title strip, the picture at 2x with
-    // the words in one column beside it, and the answers along the foot --
-    // Continue for a note, Yes and No for a question.
-    const int size = 2 * CL_TILE_W;
-    const int w = UK_INLAY_W;
-    // The body holds the longest words any result has (the Emperor's answer
-    // with its gains), so every result is the same size.
-    int body_h = 12 * uk_line_h();
-    if (body_h < size) body_h = size;
-    if (n_rows < 1) n_rows = 1;
-    const int h = uk_title_h() + UK_BAND + 2 * UK_INSET + body_h + UK_BAND + ml_list_height(n_rows);
-    ML_Rect a = ml_area();
-    int sp = ml_space();
-    int cw = w > a.w - 2 * sp ? a.w - 2 * sp : w;
-    int ch = h > a.h ? a.h : h;
-    int x = a.x + (a.w - cw) / 2, y = a.y + (a.h - ch) / 2;
-    uk_dim();
-    uk_panel(x, y, cw, ch);
-    int top = uk_title(x, y, cw, title, NULL, PAL_CLR(YELLOW));
-    UkRows rows = { { 0 }, { false } };
-    for (int i = 0; i < n_rows && i < 8; i++) { rows.label[i] = labels[i]; rows.enabled[i] = true; }
-    ML_Rect body = { x, top, cw, y + ch - top };
-    int foot = uk_foot_rows(body, n_rows, cursor, uk_rows_fn, &rows, touch_list);
-    int px = x + UK_INSET, py = top + UK_INSET;
-    int pic = size;
-    if (face.id) uk_picture(face, px, py, pic, pic);
-    ML_Rect area = { px, py, cw - 2 * UK_INSET, foot - ML_PAD - py };
-    uk_doc_draw(doc, area, face.id ? pic : 0, area.h, -1, true);
+    uk_figure(t, L->scene.x + x, L->scene.y + L->scene.h, 2, L->scene.y, false);
 }
 
 
@@ -534,15 +296,6 @@ void uk_doc_labeled(UkDoc *d, const char *tmpl, const char *value) {
     }
 }
 
-static int s_doc_h, s_doc_last_w, s_doc_prev_w;   // the last layout's height and its last two lines' widths
-
-int uk_doc_height(const UkDoc *d, ML_Rect a, int pic_w, int pic_h) {
-    a.h = 100000;
-    s_doc_last_w = s_doc_prev_w = 0;
-    uk_doc_draw(d, a, pic_w, pic_h, -1, false);
-    return s_doc_h;
-}
-
 int uk_doc_draw(const UkDoc *d, ML_Rect a, int pic_w, int pic_h, int page, bool draw) {
     const int lh = uk_line_h();
     bool pager = page >= 0;          // page < 0: the first page, no pager
@@ -550,31 +303,37 @@ int uk_doc_draw(const UkDoc *d, ML_Rect a, int pic_w, int pic_h, int page, bool 
     int pic_r = pic_w > 0 ? a.x + pic_w + UK_INSET : a.x;
     // Beside a picture the words stay in one column all the way down; they
     // never wrap back under it.
-    int pic_b = pic_w > 0 ? a.y + (a.h > pic_h ? a.h : pic_h) + ML_PAD : a.y + pic_h + ML_PAD;
+    int pic_b = pic_w > 0 ? a.y + (a.h > pic_h ? a.h : pic_h) + UK_INSET : a.y + pic_h + UK_INSET;
     int top = a.y;
     if (pic_w > 0 && a.x + a.w - pic_r < 16 * BFONT_GLYPH_W) {
         // Too narrow beside the picture to read: the words start under it.
-        top = a.y + pic_h + ML_PAD;
+        top = a.y + pic_h + UK_INSET;
         pic_w = 0;
     }
     // Layout pass: walk every line, starting a new page when the next one
     // would pass the foot (less a line for the pager).
     int foot = a.y + a.h - (pager ? lh : 0);
-    int pages = 1, y = top, max_y = top;
+    int pages = 1, y = top;
+    bool cut = false;
     char line[200];
     for (int i = 0; i < d->n; i++) {
         const char *p = d->pool + d->off[i];
         bool first = true;
         if (d->gap[i] && y > top) y += lh / 2 + 2;
         while (*p) {
-            if (y + GH > foot) { pages++; y = top; }
+            if (y + GH > foot) {
+                if (!pager) { cut = true; break; }     // one page: the rest is cut
+                pages++;
+                y = top;
+            }
             bool beside = y < pic_b && pic_w > 0;
             int lx = beside ? pic_r : a.x;
             int lw = a.x + a.w - lx;
             const char *start = p;
             if (bfont_take_line(&p, lw, line, (int)sizeof line) <= 0) break;
-            s_doc_prev_w = s_doc_last_w;
-            s_doc_last_w = (lx - a.x) + bfont_text_width(line);
+            // The last line one page holds, with words after it: marked cut.
+            bool more = *p || i + 1 < d->n;
+            if (!pager && more && y + lh + GH > foot) { uk_mark_cut(line, sizeof line, lw); cut = true; }
             if (draw && pages - 1 == page) {
                 int lab = first ? d->label[i] : 0;
                 int n = (int)strlen(line);
@@ -589,115 +348,37 @@ int uk_doc_draw(const UkDoc *d, ML_Rect a, int pic_w, int pic_h, int page, bool 
             }
             first = false;
             y += lh;
-            if (y > max_y) max_y = y;
+            if (cut) break;
         }
+        if (cut) break;
     }
-    s_doc_h = (pages > 1 ? a.h : max_y - a.y);
     if (draw && pager && pages > 1) {
         char pg[32];
         snprintf(pg, sizeof pg, "%d/%d", page + 1, pages);
         int py = a.y + a.h - GH, aw = GH;
         int nx = a.x + a.w - aw;
-        int tx = nx - ML_PAD - bfont_text_width(pg);
-        int px = tx - ML_PAD - aw;
+        int tx = nx - UK_INSET - bfont_text_width(pg);
+        int px = tx - UK_INSET - aw;
         bfont_draw(pg, tx, py, PAL_CLR(YELLOW));
-        Color dim = (Color){ 90, 90, 90, 255 };
+        Color off = PAL_CLR(DGREY);
         gfx_triangle((Vector2){ (float)(px + aw / 2), (float)py }, (Vector2){ (float)px, (float)(py + GH) },
-                     (Vector2){ (float)(px + aw), (float)(py + GH) }, page > 0 ? PAL_CLR(YELLOW) : dim);
+                     (Vector2){ (float)(px + aw), (float)(py + GH) }, page > 0 ? PAL_CLR(YELLOW) : off);
         gfx_triangle((Vector2){ (float)nx, (float)py }, (Vector2){ (float)(nx + aw / 2), (float)(py + GH) },
-                     (Vector2){ (float)(nx + aw), (float)py }, page + 1 < pages ? PAL_CLR(YELLOW) : dim);
+                     (Vector2){ (float)(nx + aw), (float)py }, page + 1 < pages ? PAL_CLR(YELLOW) : off);
         if (page > 0) ui_button(px - 8, py - 8, aw + 16, GH + 16, KEY_UP);
         if (page + 1 < pages) ui_button(nx - 8, py - 8, aw + 16, GH + 16, KEY_DOWN);
     }
     return pages;
 }
 
-// ---- the card --------------------------------------------------------------------
+// ---- How many ----------------------------------------------------------------------
 
-typedef struct { const UkCard *c; } CardRowsCtx;
-
-static bool card_row_fn(void *ctx, int i, char *label, char *right, int cap) {
-    const UkCard *c = ((const CardRowsCtx *)ctx)->c;
-    int k = i - c->touch_base;
-    right[0] = '\0';
-    snprintf(label, (size_t)cap, "%s", (k >= 0 && k < c->n_answers && c->answers[k]) ? c->answers[k] : "");
-    return k >= 0 && k < c->n_answers && !c->disabled[k];
-}
-
-void uk_card(const UkCard *c, UkCardOut *out) {
-    ML_Rect a = ml_area();
-    const int pic = c->face.id ? 2 * CL_TILE_W : 0;
-    const int inset = UK_INSET, gap = ML_PAD + 4;
-    int head = (c->title && c->title[0]) || (c->right && c->right[0]) ? uk_title_h() + UK_BAND : 0;
-    // The answers: full-width rows along the card's foot, stacked.
-    int rows_h = c->n_answers > 0 ? UK_BAND + ml_list_height(c->n_answers) : 0;
-    int label_w = 0;
-    for (int i = 0; i < c->n_answers; i++) {
-        int lw = bfont_text_width(c->answers[i] ? c->answers[i] : "") + 2 * ML_PAD;
-        if (lw > label_w) label_w = lw;
-    }
-    int max_w = a.w - 2 * ml_space();
-    int col_max = max_w - 2 * inset - (pic ? pic + inset : 0);
-    if (col_max > 40 * BFONT_GLYPH_W) col_max = 40 * BFONT_GLYPH_W;
-    int col_min = 20 * BFONT_GLYPH_W;
-    int want_min = c->min_w - 2 * inset - (pic ? pic + inset : 0);
-    if (col_min < want_min) col_min = want_min;
-    if (col_min > col_max) col_min = col_max;
-    int natural = 0;
-    for (int i = 0; c->doc && i < c->doc->n; i++) {
-        int tw = bfont_text_width(c->doc->pool + c->doc->off[i]);
-        if (tw > natural) natural = tw;
-    }
-    ML_Rect probe = { 0, 0, 0, 0 };
-    int col = col_min;
-    if (pic) {
-        // The narrowest column whose words fit beside the picture; failing
-        // that, the widest (the fewest lines).
-        col = col_max;
-        for (int w = col_min; w <= col_max; w += BFONT_GLYPH_W) {
-            probe.w = w;
-            if ((c->doc ? uk_doc_height(c->doc, probe, 0, 0) : 0) <= pic) { col = w; break; }
-        }
-    } else {
-        col = natural + 2;
-        if (col < col_min) col = col_min;
-        if (col > col_max) col = col_max;
-    }
-    probe.w = col;
-    int words_h = c->doc ? uk_doc_height(c->doc, probe, 0, 0) : 0;
-    int body_h = words_h > pic ? words_h : pic;
-    int w = 2 * inset + (pic ? pic + inset : 0) + col;
-    if (w < label_w) w = label_w;
-    // Room for the whole title and its right-hand words.
-    int title_w = (c->title ? bfont_text_width(c->title) : 0) + (c->right && c->right[0] ? bfont_text_width(c->right) + 4 * BFONT_GLYPH_W : 0) + 2 * ML_PAD;
-    if (w < title_w) w = title_w;
-    if (w < c->min_w) w = c->min_w;
-    if (w > max_w) w = max_w;
-    int extra_block = c->extra_h ? gap + c->extra_h + inset : 0;
-    int h = head + 2 * inset + body_h + extra_block + rows_h;
-    if (h > a.h - 2 * ml_space()) h = a.h - 2 * ml_space();
-    int x = a.x + (a.w - w) / 2;
-    int y = c->at_foot ? a.y + a.h - ml_space() - h : a.y + (a.h - h) / 2;
-    if (!c->no_dim && !c->at_foot) uk_dim();
-    uk_panel(x, y, w, h);
-    int top = head ? uk_title(x, y, w, c->title, c->right, PAL_CLR(YELLOW)) : y;
-    int bx = x + inset, by = top + inset;
-    if (pic) uk_picture(c->face, bx, by, pic, pic);
-    int cx = bx + (pic ? pic + inset : 0), cw = x + w - inset - cx;
-    if (c->doc) {
-        ML_Rect area = { cx, by, cw, (y + h) - rows_h - inset - by };
-        uk_doc_draw(c->doc, area, 0, 0, -1, true);
-    }
-    int ey = by + body_h + gap;
-    if (out) {
-        out->card = (ML_Rect){ x, y, w, h };
-        out->extra = (ML_Rect){ bx, ey, w - 2 * inset, c->extra_h };
-    }
-    if (c->n_answers > 0) {
-        int ry = y + h - ml_list_height(c->n_answers);
-        lattice_band_h(x, ry - UK_BAND, w, UK_BAND);
-        CardRowsCtx rc = { c };
-        ml_list_draw_ex(x, ry, w, ml_list_height(c->n_answers), c->n_answers, c->cursor, card_row_fn, &rc,
-                        c->touch_list, uk_ink(), c->touch_base);
-    }
+int uk_count(ML_Rect a, const char *heading, const char *sub, const char *cost, int value, int max) {
+    int y = a.y;
+    const int lh = uk_line_h();
+    if (heading && heading[0]) { uk_line(heading, a.x, y, a.w, PAL_CLR(YELLOW)); y += lh; }
+    if (sub && sub[0])         { uk_line(sub, a.x, y, a.w, PAL_CLR(WHITE));      y += lh; }
+    if (cost && cost[0])       { uk_line(cost, a.x, y, a.w, PAL_CLR(YELLOW));    y += lh; }
+    y += UK_INSET;
+    return y + ml_count_buttons(a.x, y, a.w, value, max);
 }

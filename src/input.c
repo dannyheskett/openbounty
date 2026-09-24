@@ -142,7 +142,8 @@ InputState input_poll(void) {
     else if (input_key_pressed(KEY_O))                 in.action = INPUT_ACTION_OPTIONS_MENU;
     else if (CL_IS_MODERN && input_key_pressed(KEY_ESCAPE)) in.action = INPUT_ACTION_GAME_MENU;
     else if (input_key_pressed(KEY_N))                 in.action = INPUT_ACTION_NEW_CONTINENT;
-    else if (input_key_pressed(KEY_KP_5))              in.action = INPUT_ACTION_REST;
+    else if (input_key_pressed(KEY_KP_5) ||
+             (CL_IS_MODERN && input_key_pressed(KEY_FIVE))) in.action = INPUT_ACTION_REST;   // modern: either row's 5
     else if (ctrl && input_key_pressed(KEY_Q))         in.action = INPUT_ACTION_FAST_QUIT;
     else if (input_key_pressed(KEY_Q))                 in.action = INPUT_ACTION_SAVE_QUIT;
 

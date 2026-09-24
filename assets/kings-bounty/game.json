@@ -4476,6 +4476,7 @@
 				"default":	5
 			}, {
 				"id":	"sounds",
+				"audio":	true,
 				"label":	"Sounds",
 				"type":	"bool",
 				"default":	1
@@ -4498,11 +4499,13 @@
 				"hidden":	true
 			}, {
 				"id":	"music",
+				"audio":	true,
 				"label":	"Music",
 				"type":	"bool",
 				"default":	0
 			}, {
 				"id":	"volume",
+				"audio":	true,
 				"label":	"Volume",
 				"type":	"numeric",
 				"range":	10,

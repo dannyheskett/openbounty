@@ -11,13 +11,37 @@
 static const char ALPHA[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ \b\n";    // 29
 static const char NUM[]   = "789\b456\n1230";                     // 12
 
-// Six columns of text-sized cells, or ten of touch-sized ones: at a touch
-// unit the letters are 66 px square, and six columns would stack five rows
-// (330 px) into a panel that has to hold a name and a difficulty table as
-// well. Ten columns is three rows, 660 x 198, inside the 800 x 532 buffer.
+// The grid's shape, decided by textsel_layout against the box it is drawn in.
+// Zero means nobody laid it out: the text-sized default.
+static int s_cols, s_cell_w, s_cell_h;
+
 int textsel_cols(bool numeric) {
     if (numeric) return 4;
-    return (CL_IS_MODERN && input_touch_active()) ? 10 : 6;
+    return s_cols > 0 ? s_cols : 6;
+}
+
+void textsel_layout(bool numeric, int inner_w, int avail_h) {
+    s_cols = s_cell_w = s_cell_h = 0;
+    if (!CL_IS_MODERN || inner_w <= 0) return;
+    int min_w = textsel_min_cell_w();
+    int min_h = bfont_glyph_h() + 6 * CL_UI;
+    int want = (input_touch_active()) ? touch_unit_design() : 0;
+    int cw = want > min_w ? want : min_w;
+    // As many columns of that cell as the width holds, within what the grid
+    // is worth: fewer than four is unreadable, more than ten is a keyboard.
+    int cols = inner_w / (cw > 0 ? cw : 1);
+    if (cols > 10) cols = 10;
+    if (cols < 4) cols = 4;
+    if (cols * cw > inner_w) cw = inner_w / cols;      // the box decides
+    if (cw < min_w) cw = min_w;
+    int n = textsel_count(numeric);
+    int rows = (n + cols - 1) / cols;
+    int ch = want > min_h ? want : min_h;
+    if (avail_h > 0 && rows * ch > avail_h) ch = avail_h / rows;
+    if (ch < min_h) ch = min_h;
+    s_cols = numeric ? 4 : cols;
+    s_cell_w = cw;
+    s_cell_h = ch;
 }
 int textsel_count(bool numeric) { return numeric ? 12 : 29; }
 
@@ -109,21 +133,11 @@ int textsel_min_cell_w(void) { return 4 * bfont_glyph_w(); }
 // A cell is tiled, so it is never inflated after the fact (a neighbour would
 // swallow it): the grid is drawn at the size a finger needs instead.
 int textsel_cell_w(void) {
-    int w = textsel_min_cell_w();
-    if (CL_IS_MODERN && input_touch_active()) {
-        int u = touch_unit_design();
-        if (w < u) w = u;
-    }
-    return w;
+    return s_cell_w > 0 ? s_cell_w : textsel_min_cell_w();
 }
 
 int textsel_cell_h(void) {
-    int h = bfont_glyph_h() + 6 * CL_UI;
-    if (CL_IS_MODERN && input_touch_active()) {
-        int u = touch_unit_design();
-        if (h < u) h = u;
-    }
-    return h;
+    return s_cell_h > 0 ? s_cell_h : bfont_glyph_h() + 6 * CL_UI;
 }
 
 void textsel_draw(const TextSel *t, int x, int y, int cell_w, int cell_h,

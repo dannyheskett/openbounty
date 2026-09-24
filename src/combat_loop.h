@@ -9,14 +9,23 @@
 
 #include "combat.h"
 #include "sprites.h"
+#include "map.h"
+#include "fog.h"
 
 // Runs a battle. render_target is the offscreen RenderTexture2D the
 // rest of the game renders into; combat shares the same target so the
 // outer scaling / letterbox logic in main.c is unchanged. Passed as
-// void * to keep this header free of raylib.h.
-CombatResult RunCombat(Game *g, const Sprites *sprites,
+// void * to keep this header free of raylib.h. `m` and `f` are the world
+// the battle is fought in: modern draws it behind the battle wherever the
+// battle floats over it.
+CombatResult RunCombat(Game *g, const Map *m, const Fog *f, const Sprites *sprites,
                        void *render_target,
                        CombatMode mode, const CombatTarget *target);
+
+// One frame of a battle (field, columns, pages) into render_target and to the
+// window: the replay animator and --gallery draw their throwaway fights with it.
+void combat_present_public(const Combat *c, const Game *g, const Map *m, const Fog *f,
+                           const Sprites *sprites, void *render_target);
 
 // One-frame target-picker step. Reads at most one input. Returns
 // true and writes (*out_x, *out_y) once the player confirms a valid
