@@ -1200,8 +1200,9 @@ settle:
             // moves/flights are spent (or it attacked); a hero spell never sets
             // it. So one action no longer ends the turn: a unit walks its full
             // move_rate, a flyer can attack the same turn it flies, and casting
-            // a spell doesn't skip the current creature. The AI path is
-            // unaffected -- combat_ai_action marks its unit acted each call.
+            // a spell doesn't skip the current creature. The AI walks the same
+            // way: combat_ai_action takes one step per call until its moves
+            // run out (#54).
             const CombatUnit *cur =
                 (c.unit_id >= 0) ? &c.units[c.side][c.unit_id] : NULL;
             bool unit_done = (!cur) || cur->troop_idx < 0 ||
