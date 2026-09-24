@@ -211,5 +211,7 @@ InputTextMode input_text_mode(void) { return TEXT_MODE_SELECTOR; }
 bool input_pad_or_touch_seen(void) { return true; }
 bool input_touch_device(void) { return true; }
 InputDevice input_last_device(void) { return INPUT_DEV_TOUCH; }
+// --touch: a phone is a touch device already.
+void input_host_force_touch(void) {}
 
 #endif // PLATFORM_IOS
