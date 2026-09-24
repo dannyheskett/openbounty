@@ -14,11 +14,15 @@ mentioned here.
 |------|-----------|------|
 | `icon-512.png` | App icon | 512×512 PNG, 32-bit, no transparency |
 | `feature-graphic-1024x500.png` | Feature graphic | 1024×500 PNG or JPG |
-| `screenshots/phone/` | Phone screenshots | 2–8 landscape PNGs, at least 1080 on the long edge |
-| `screenshots/tablet/` | 7-inch and 10-inch screenshots | the same landscape captures fit both slots |
+| `screenshots/phone/` | Phone screenshots | eight 1920×1080 PNGs, 24-bit |
+| `screenshots/tablet-7/` | 7-inch tablet screenshots | eight 1920×1200 PNGs, 24-bit |
+| `screenshots/tablet-10/` | 10-inch tablet screenshots | eight 2559×1599 PNGs, 24-bit |
 
 The game has been shown at a whole-number scale of its own buffer, so a
-screenshot has been a capture of the real frame, not a mock-up.
+screenshot has been a capture of the real frame, not a mock-up. Each set has
+come from `--gallery` with `--touch` and `--window` at that device's size
+(2559×1599 is the 10-inch buffer at 3x); the frame has been laid over black,
+as the screen draws it, to drop the alpha channel Play refuses.
 
 ## App name (≤30 chars)
 
