@@ -113,7 +113,7 @@ void screen_home_castle_draw(const Game *g, const Sprites *s) {
     int x, y, w, h;
     screens_text_rect(&x, &y, &w, &h);
     gfx_rect(x, y, w, h, PAL_CLR(DBLUE));
-    ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
+    legacy_window_frame(x, y, w, h, PAL_CLR(YELLOW));
 
     int pad = screens_text_pad();   // legacy 4: the panel holds exactly CL_PANEL_COLS glyphs
     int row_h = BFONT_GLYPH_H + CL_UI;

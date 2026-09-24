@@ -47,6 +47,11 @@ void input_host_flush(double guard_seconds);
 // input reads it; this holds one key across the clear, the way a tap arrives.
 void input_host_inject_key_next_frame(int key);
 
+// Test geometry (--touch): this session is a touch device's, without a
+// contact, so everything a finger changes -- the row height, the letter grid,
+// no key names -- draws on a desktop where it can be looked at.
+void input_host_force_touch(void);
+
 // ---- touch ----------------------------------------------------------------
 //
 // Single touch, read through raylib's touch API only. There is NO mouse
@@ -75,5 +80,16 @@ bool          input_has_keyboard(void);
 InputTextMode input_text_mode(void);
 bool          input_pad_or_touch_seen(void);   // selector is offered alongside typing
 void          input_host_note_gamepad(void);   // called by input.c on any pad event
+
+// ---- the device in use (modern) -----------------------------------------------
+//
+// A touch device is a phone or tablet build, or a session started with
+// --touch. It is fixed for the session: what a finger needs (the row height,
+// the letter grid) never changes after the first touch or key.
+bool input_touch_device(void);
+// The last thing the player used: the keyboard, a finger or a gamepad. Before
+// anything is used, the keyboard on a device that is not a touch device.
+typedef enum { INPUT_DEV_KEYS = 0, INPUT_DEV_TOUCH, INPUT_DEV_PAD } InputDevice;
+InputDevice   input_last_device(void);
 
 #endif

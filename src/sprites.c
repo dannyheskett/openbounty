@@ -247,6 +247,7 @@ void sprites_load(Sprites *s, const Resources *res) {
     s->hud_magic_silhouette    = load_rel(res->sprites.hud_magic_silhouette);
     s->hud_puzzle_grid         = load_rel(res->sprites.hud_puzzle_grid);
     s->hud_gold_purse          = load_rel(res->sprites.hud_gold_purse);
+    s->hud_days                = load_rel(res->sprites.hud_days);
     s->rail_menu               = load_rel(res->sprites.rail_menu);
     s->rail_map                = load_rel(res->sprites.rail_map);
     s->rail_army               = load_rel(res->sprites.rail_army);
@@ -386,6 +387,7 @@ void sprites_unload(Sprites *s) {
     gfx_texture_free(s->hud_magic_silhouette);
     gfx_texture_free(s->hud_puzzle_grid);
     gfx_texture_free(s->hud_gold_purse);
+    gfx_texture_free(s->hud_days);
     gfx_texture_free(s->rail_menu);
     gfx_texture_free(s->rail_map);
     gfx_texture_free(s->rail_army);

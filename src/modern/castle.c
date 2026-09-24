@@ -264,9 +264,18 @@ static void act(Game *g, int i) {
     if (mc.page == MC_MENU) {
         mc.page = mc.home ? (i == 0 ? MC_RECRUIT : MC_AUDIENCE)
                           : (i == 0 ? MC_GARRISON : MC_WITHDRAW);
-        mc.list_cursor = 0;
         mc.audience = 0;
         mc.aud_result = 0;
+        // The page opens on its first row that can be chosen.
+        mc.list_cursor = 0;
+        if (mc.page == MC_RECRUIT) {
+            int rows = modern_castle_rows(g);
+            for (int r = 0; r < rows - 1; r++) {
+                const TroopDef *t = troop_by_index(modern_castle_pool_troop(r));
+                if (t && modern_castle_troop_offered(g, t)) { mc.list_cursor = r; break; }
+                mc.list_cursor = rows - 1;
+            }
+        }
         return;
     }
     if (i == modern_castle_rows(g) - 1) {        // Back
@@ -366,7 +375,12 @@ static bool pressed_confirm(void) {
 }
 
 bool modern_castle_update(Game *g) {
-    touch_request(TOUCH_CHROME_BACK);
+    // The promotion, like every outcome, is put away by any key or a tap, and
+    // goes back to the audience.
+    if (mc.page == MC_PROMOTION) {
+        if (ui_any_key_pressed() || touch_tapped_row(TOUCH_LIST_PROMPT) == 0) act(g, 0);
+        return false;
+    }
     // A message or the Emperor's answer takes the page's place until any key
     // or a tap on Continue puts it away, and does nothing else.
     if (mc.message[0] || (mc.page == MC_AUDIENCE && (mc.aud_result || mc.audience))) {
@@ -405,11 +419,11 @@ bool modern_castle_update(Game *g) {
         act(g, tapped);
         return false;
     }
-    if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_W) || input_key_pressed(KEY_KP_8)) {
+    if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_KP_8)) {
         *cur = (*cur - 1 + rows) % rows;
         return false;
     }
-    if (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_S) || input_key_pressed(KEY_KP_2)) {
+    if (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2)) {
         *cur = (*cur + 1) % rows;
         return false;
     }

@@ -12,6 +12,7 @@
 #include "present.h"
 #include "raylib.h"
 #include "frame_host.h"
+#include "modern/page.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -47,7 +48,27 @@ static void frame_end(RenderTexture2D *rt) {
 //   +------------------------------+
 //
 // Width: 36 chars. Height: 11 rows.
+// Modern: a message page on black -- the title, the frame count, the bar, the
+// time and the status. (Over the last frame, the dim a page brings would
+// deepen every frame, since the target is never cleared.)
+static void draw_panel_modern(const EncodeProgress *p, const char *footer) {
+    gfx_clear(BLACK);
+    int pct = (p->total > 0) ? (p->current * 100 / p->total) : 0;
+    if (pct > 100) pct = 100;
+    char words[400];
+    snprintf(words, sizeof words, "Frame %d of %d (%d%%)\nElapsed: %.1fs\nstatus: %s%s%s",
+             p->current, p->total, pct, p->elapsed_s, p->status ? p->status : "",
+             footer && footer[0] ? "\n" : "", footer ? footer : "");
+    ML_Rect bar = page_status("Encoding Video", words);
+    int filled = (p->total > 0) ? (int)((long long)bar.w * p->current / p->total) : 0;
+    if (filled < 0) filled = 0;
+    if (filled > bar.w) filled = bar.w;
+    gfx_rect(bar.x, bar.y, bar.w, bar.h, PAL_CLR(BLACK));      // the track
+    gfx_rect(bar.x, bar.y, filled, bar.h, uk_button());        // the fill, as a count's bar
+}
+
 static void draw_panel(const EncodeProgress *p, const char *footer) {
+    if (CL_IS_MODERN) { draw_panel_modern(p, footer); return; }
     // 36-char inner width, 8-px padding all round. The 320x200 screen
     // can fit 36 cols comfortably (288 px + 16 px padding = 304 px).
     int cols = 36, rows = 11;
@@ -59,7 +80,7 @@ static void draw_panel(const EncodeProgress *p, const char *footer) {
 
     // Solid panel background covers anything from the previous frame.
     DrawRectangle(x, y, w, h, PAL_CLR(DBLUE));
-    ui_window_frame(x, y, w, h, PAL_CLR(YELLOW));
+    legacy_window_frame(x, y, w, h, PAL_CLR(YELLOW));
 
     int tx = x + pad;
     int ty = y + pad;

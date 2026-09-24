@@ -36,71 +36,26 @@ static int  g_step_value      = 0;     // modern count entry: the stepper
 static char g_text_buf[8];
 static int  g_text_len = 0;
 
-// Modern numeric and A/B prompts answer by rows. The rows come from the body's
-// own choice lines ("1. Italia", "A) Take the gold"), or from
-// prompt_set_choices when the body names none.
+// Modern numeric and A/B prompts answer by rows: the ones the opener names
+// (prompt_set_choices), else the answers themselves -- 1 to N, or A and B.
+// Nothing is read out of the body's words.
 #define PROMPT_CHOICES_MAX 5
-static char g_lead[256];
+static char g_lead[RES_BANNER_LEN];   // the body, or a pack banner
 static char g_choice[PROMPT_CHOICES_MAX][96];
 static int  g_choice_value[PROMPT_CHOICES_MAX];
 static int  g_choice_n = 0;
 static int  g_choice_cursor = 0;
 
-// A choice line: optional spaces, then a digit 1-5 (numeric) or A/B (A/B),
-// then '.' or ')'. Returns the answer (1-based) and sets *label, or 0.
-static int choice_prefix(const char *s, bool ab, const char **label) {
-    while (*s == ' ') s++;
-    int v = 0;
-    if (ab && (s[0] == 'A' || s[0] == 'B')) v = s[0] - 'A' + 1;
-    else if (!ab && s[0] >= '1' && s[0] <= '5') v = s[0] - '0';
-    if (!v || (s[1] != '.' && s[1] != ')')) return 0;
-    s += 2;
-    while (*s == ' ') s++;
-    *label = s;
-    return v;
-}
-
-static void append(char *dst, int cap, const char *src, int n) {
-    int len = (int)strlen(dst);
-    while (n-- > 0 && *src && len + 1 < cap) dst[len++] = *src++;
-    dst[len] = '\0';
-}
-
-// Splits g_body into the lead text and the choice rows. A line that follows a
-// choice without a prefix of its own continues it.
-static void parse_choices(bool ab, int max_choice) {
-    g_lead[0] = '\0';
+static void default_choices(bool ab, int max_choice) {
+    snprintf(g_lead, sizeof g_lead, "%s", g_body);
+    int count = ab ? 2 : max_choice;
     g_choice_n = 0;
     g_choice_cursor = 0;
-    const char *p = g_body;
-    while (*p) {
-        const char *e = strchr(p, '\n');
-        int n = e ? (int)(e - p) : (int)strlen(p);
-        char line[256];
-        snprintf(line, sizeof line, "%.*s", n, p);
-        const char *label = NULL;
-        int v = choice_prefix(line, ab, &label);
-        if (v && g_choice_n < PROMPT_CHOICES_MAX) {
-            snprintf(g_choice[g_choice_n], sizeof g_choice[0], "%s", label);
-            g_choice_value[g_choice_n++] = v;
-        } else if (g_choice_n > 0 && line[0]) {
-            append(g_choice[g_choice_n - 1], sizeof g_choice[0], " ", 1);
-            append(g_choice[g_choice_n - 1], sizeof g_choice[0], line, n);
-        } else if (g_choice_n == 0) {
-            append(g_lead, sizeof g_lead, p, n);
-            if (e) append(g_lead, sizeof g_lead, "\n", 1);
-        }
-        p = e ? e + 1 : p + n;
-    }
-    if (g_choice_n == 0) {
-        // Nothing named: the answers themselves are the rows.
-        int count = ab ? 2 : max_choice;
-        for (int i = 0; i < count && i < PROMPT_CHOICES_MAX; i++) {
-            if (ab) snprintf(g_choice[i], sizeof g_choice[0], "%c", 'A' + i);
-            else    snprintf(g_choice[i], sizeof g_choice[0], "%d", i + 1);
-            g_choice_value[i] = i + 1;
-        }
-        g_choice_n = count;
+    for (int i = 0; i < count && i < PROMPT_CHOICES_MAX; i++) {
+        if (ab) snprintf(g_choice[i], sizeof g_choice[0], "%c", 'A' + i);
+        else    snprintf(g_choice[i], sizeof g_choice[0], "%d", i + 1);
+        g_choice_value[i] = i + 1;
+        g_choice_n++;
     }
 }
 
@@ -121,6 +76,10 @@ void prompt_set_choices(const char *const *labels, const int *values, int n) {
     }
     g_choice_n = n;
     g_choice_cursor = 0;
+}
+
+void prompt_set_lead(const char *lead) {
+    snprintf(g_lead, sizeof g_lead, "%s", lead ? lead : "");
 }
 
 static void copy_to(char *dst, int dst_sz, const char *src) {
@@ -156,7 +115,7 @@ void prompt_numeric_open(const char *header, const char *body, int max_choice) {
     g_max_choice = max_choice;
     copy_to(g_header, sizeof(g_header), header);
     copy_to(g_body,   sizeof(g_body),   body);
-    parse_choices(false, max_choice);
+    default_choices(false, max_choice);
     emit_open_trace("numeric");
 }
 
@@ -166,7 +125,24 @@ void prompt_ab_open(const char *header, const char *body) {
     g_req_face = 0;
     copy_to(g_header, sizeof(g_header), header);
     copy_to(g_body,   sizeof(g_body),   body);
-    parse_choices(true, 2);
+    default_choices(true, 2);
+    // The treasure's two answers, where the pack names them: the title and
+    // the words, then the gold and the leadership as rows.
+    const Resources *res = resources_current();
+    if (CL_IS_MODERN && res && pending_flow == FLOW_CHEST_CHOICE &&
+        res->banners.chest_gold_take[0] && res->banners.chest_gold_share[0]) {
+        char gb[16], lb[16], take[96], share[96];
+        snprintf(gb, sizeof gb, "%d", pending_chest_gold);
+        snprintf(lb, sizeof lb, "%d", pending_chest_leadership);
+        ResTemplateVar v[] = { { "GOLD", gb }, { "LEADERSHIP", lb } };
+        resources_format_template(take, sizeof take, res->banners.chest_gold_take, v, 2);
+        resources_format_template(share, sizeof share, res->banners.chest_gold_share, v, 2);
+        const char *labels[2] = { take, share };
+        static const int values[2] = { 1, 2 };
+        prompt_set_choices(labels, values, 2);
+        prompt_set_lead(res->banners.chest_gold_found);
+        if (!g_header[0]) copy_to(g_header, sizeof g_header, res->banners.chest_gold_title);
+    }
     emit_open_trace("ab");
 }
 
@@ -351,11 +327,14 @@ PromptResult prompt_update(void) {
         return PROMPT_RESULT_NONE;
     }
     if (g_kind == PK_TEXT_INPUT && CL_IS_MODERN) {
-        // The count stepper: Left/Right one, Down/Up ten, Enter commits the
-        // value into the text buffer the flow reads (prompt_text_input_value).
+        // The count: Left/Right one, Down/Up ten, Home and End the ends; Enter
+        // or its Continue row commits the value into the text buffer the flow
+        // reads (prompt_text_input_value), its Cancel row puts it away.
         int lo = g_text_max_value > 0 ? 1 : 0;
         ml_stepper_keys(&g_step_value, lo, g_text_max_value > 0 ? g_text_max_value : 0);
-        if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
+        int tapped = touch_tapped_row(TOUCH_LIST_PROMPT);
+        if (tapped == 1) { prompt_dismiss(); return PROMPT_RESULT_CANCEL; }
+        if (tapped == 0 || input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
             input_key_pressed(KEY_SPACE)) {
             snprintf(g_text_buf, sizeof g_text_buf, "%d", g_step_value);
             g_text_len = (int)strlen(g_text_buf);

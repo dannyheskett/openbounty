@@ -43,13 +43,16 @@ int views_depth(void);
 // ---- One dismissal rule ----------------------------------------------------
 //
 // A page with nothing to choose closes on a tap anywhere; a page with rows
-// does not, or a stray tap would answer for the player. This was decided
-// branch by branch in main.c's view chain, so which `else if` a view fell
-// into was the rule -- eight views closed on a tap and twelve did not, for no
-// reason the player could see.
+// does not, or a stray tap would answer for the player. Every view's rule is
+// read here, so no screen decides it for itself.
 bool views_closes_on_tap(ViewKind v);
 
 void     views_set(ViewKind v);   // Replace stack with [v] (or empty if VIEW_NONE).
+
+// The Army sheet opened in a fight marks the troop whose turn it is (a troop
+// catalog index; -1 none). views_set clears it, so it lasts one opening.
+void     views_army_mark(int troop_idx);
+int      views_army_marked(void);
 void     views_dismiss(void);     // Pop top; if stack empty, do nothing.
 
 // Sync the shell view stack from the engine's player-IO queue. When the
@@ -217,13 +220,14 @@ int  views_controls_cursor(void);
 void views_controls_set_cursor(int r);
 // Called with a game-state handle each frame -- nudges value at `row` by
 // +1 (wraps to 0 at range). Updates g->stats.options[row].
+// Modern: one frame of Controls' keys and taps, on the map and in a fight
+// alike (the visible settings' digits, never the hidden ones'). True when it
+// closed.
+bool views_controls_input(struct Game *g);
 void views_controls_advance(struct Game *g, int row);
 // True iff the row should render dimmed and ignore input -- currently
 // only the audio rows when no playback device is available.
 bool views_controls_row_disabled(const struct Game *g, int row);
-
-// The shell-appended Scale row. Not pack data and not game state: it is a
-// runtime display preference held in present.c.
 
 // ---- Spell casting (VIEW_SPELLS) -------------------------------------------
 // Enter interactive cast mode for the spell view.
@@ -232,8 +236,25 @@ void views_spells_set_mode(bool cast_mode);
 // Consumes the selection (next call returns -1 until a new selection).
 int  views_spells_chosen(void);
 // Update spell selection input (Left/Right columns, A-G cast, Esc dismiss).
-// Returns true if a selection was made.
+// Returns true if a selection was made. Legacy.
 bool views_spells_update(void);
+
+// ---- The spells page (modern): one list of spells, on the map and in a fight --
+// Two columns -- the combat spells, then the adventure spells -- each with the
+// charges held; the column that is not cast here is greyed and says why; the
+// exit on the foot. views_spells_input is its one input: the cursor is 0..13
+// (column * 7 + row) or 14, the exit.
+typedef enum { SPELLS_NONE = 0, SPELLS_MOVED, SPELLS_CAST, SPELLS_BACK } SpellsEvent;
+SpellsEvent views_spells_input(const struct Game *g, bool combat, int *cursor, int *spell);
+// Spell `idx` can be cast here: its column is this one's and a charge is held.
+bool views_spell_castable(const struct Game *g, bool combat, int idx);
+// Where the page opens its cursor: the first spell castable here, else the
+// top of this column.
+int  views_spells_first(const struct Game *g, bool combat);
+void views_spells_set_cursor(int cursor);
+// The map's spells page, through views_spells_input. True when a spell was
+// chosen (views_spells_chosen).
+bool views_spells_update_modern(const struct Game *g);
 
 // ---- Gate destination picker (VIEW_GATE) -----------------------------------
 // Open the gate picker over the supplied destination list. `is_town` selects
@@ -247,6 +268,8 @@ int  views_gate_count(void);
 #define VIEWS_GATE_COLUMNS 3
 int  views_gate_rows_per_column(void);
 bool views_gate_is_town(void);
+// Modern: the list's cursor -- a destination, Travel (the count) or Cancel.
+int  views_gate_row(void);
 int  views_gate_cursor(void);
 const GateDestination *views_gate_dest(int idx);
 // Returns the chosen destination index, or -1 if none yet. Consumes it.

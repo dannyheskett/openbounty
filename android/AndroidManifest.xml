@@ -6,7 +6,7 @@
   "android.app.lib_name" meta-data names the .so without its "lib" prefix or
   ".so" suffix).
 
-  Landscape-locked: the pack declares a fixed 800x532 buffer (render.native_w /
+  Landscape-locked: the pack declares a fixed 800x504 buffer (render.native_w /
   native_h in game.json), which has no portrait form.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"

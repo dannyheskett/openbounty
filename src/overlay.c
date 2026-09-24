@@ -15,7 +15,6 @@
 #include "overlay_impl.h"
 #include "modern/gamemenu.h"
 #include "pending.h"
-#include "modern/mlayout.h"
 #include "layout.h"
 #include "views.h"
 #include "prompt.h"
@@ -58,26 +57,20 @@ int overlay_dialog_page_count(void) {
 //
 // `troop_frame` is the 0..3 animation frame the caller owns. The screens
 // advance their own frame from SYN ticks.
+// Modern never draws these screens (its places are src/modern/overlay.c's), so
+// they are the legacy shapes, whatever the mode.
 void screens_draw_location_backdrop(const Game *g, const Sprites *s,
                                     int loc_kind, int troop_idx,
                                     int troop_frame) {
-    if (CL_IS_MODERN)
-        modern_overlay_draw_location_backdrop(g, s, loc_kind, troop_idx, troop_frame);
-    else
-        legacy_overlay_draw_location_backdrop(g, s, loc_kind, troop_idx, troop_frame);
+    legacy_overlay_draw_location_backdrop(g, s, loc_kind, troop_idx, troop_frame);
 }
 
 void screens_text_rect(int *x, int *y, int *w, int *h) {
-    if (CL_IS_MODERN) {
-        ML_Rect r = ml_loc_text();
-        *x = r.x; *y = r.y; *w = r.w; *h = r.h;
-    } else {
-        *x = CL_PANEL_X; *y = CL_PANEL_Y; *w = CL_PANEL_W; *h = CL_PANEL_H;
-    }
+    *x = CL_PANEL_X; *y = CL_PANEL_Y; *w = CL_PANEL_W; *h = CL_PANEL_H;
 }
 
 int screens_text_pad(void) {
-    return CL_IS_MODERN ? ML_PAD : CL_PANEL_PAD_X;
+    return CL_PANEL_PAD_X;
 }
 
 // The alpha byte for a dim percent, clamped to 0..100. Pure, and the same
@@ -86,12 +79,6 @@ int overlay_dim_alpha(int percent) {
     if (percent < 0) percent = 0;
     if (percent > 100) percent = 100;
     return percent * 255 / 100;
-}
-
-// Modern only (REQ-430g): legacy has no dim and never did.
-void overlay_dim_scene(void) {
-    if (!CL_IS_MODERN) return;
-    modern_overlay_dim_scene();
 }
 
 // ---------------------------------------------------------------------------
@@ -107,9 +94,9 @@ static void draw_town(const Game *g, const Sprites *s) {
     else              legacy_overlay_draw_town(g, s);
 }
 
+// Legacy only: modern's O key opens the game menu (src/shell_actions.c).
 static void draw_options(const Game *g) {
-    if (CL_IS_MODERN) modern_overlay_draw_options(g);
-    else              legacy_overlay_draw_options(g);
+    legacy_overlay_draw_options(g);
 }
 
 static void draw_controls(const Game *g) {
@@ -125,22 +112,9 @@ static void draw_toast(void) {
 void overlay_draw(const Game *g, const Map *m, const Fog *f,
                           const Sprites *s) {
     ViewKind v = views_active();
-    if (CL_IS_MODERN) modern_overlay_set_sprites(s);
-    // Panels centre on what is behind them: the map pane only while the map
-    // itself shows (no view, or Controls opened straight from the map).
-    // Combat draws its views through here with no map (m == NULL): the
-    // battlefield behind them is full width.
-    if (CL_IS_MODERN) {
-        bool map_behind = m && (v == VIEW_NONE || (v == VIEW_CONTROLS && views_depth() == 1));
-        // A question raised as a scene of its own covers the whole pane.
-        bool scene_ask = prompt_is_active() && prompt_req_kind() == PIO_ASK_SCENE;
-        ml_set_area(map_behind && !scene_ask ? ML_AREA_MAP : ML_AREA_FULL);
-    }
-
-    // Modern: a detail view, a prompt or a dialog sits on a dimmed scene, so
-    // the panel is what the eye lands on. The toast alone does not dim.
-    if (v != VIEW_NONE || prompt_is_active() || dialog_is_active())
-        overlay_dim_scene();
+    (void)m; (void)f;
+    // Modern: every page places and dims itself (src/modern/page.c).
+    if (CL_IS_MODERN) { modern_overlay_set_sprites(s); modern_overlay_set_game(g); }
 
     if (v == VIEW_OPTIONS) {
         draw_options(g);

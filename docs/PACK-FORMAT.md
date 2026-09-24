@@ -72,39 +72,37 @@ All paths have been relative to the pack root. Required fields are marked ✱.
 ### 2.1 `render`
 
 ```json
-"render": { "mode": "modern", "tile_w": 96, "tile_h": 96, "tiles_w": 7, "tiles_h": 5,
-            "ui_scale": 1, "dim": 35, "native_w": 800, "native_h": 532 }
+"render": { "mode": "modern", "tile_w": 96, "tile_h": 96, "tiles_w": 5, "tiles_h": 5,
+            "ui_scale": 1, "dim": 30, "native_w": 800, "native_h": 504 }
 ```
 
 `mode` has been required: `"legacy"` has been the 320 x 200 layout (48 x 34
 tiles, 5 x 5 viewport, `ui_scale` 1, the other keys ignored); `"modern"` has
 taken the tile size, the viewport in tiles (odd on both axes) and `ui_scale`,
-which multiplies the chrome bands and the bitmap font.
+which multiplies the chrome bands and the bitmap font. The viewport has also
+been the fog cleared round the hero at every step (`FogRevealFor`).
 
 `dim` (modern only, optional, default 55) has been the percent of black laid
-over the map and sidebar under any detail view, prompt or dialog
-(OPENBOUNTY-SPEC REQ-430g); 0 turns it off.
+once over the screen behind a floating page (OPENBOUNTY-SPEC REQ-430g,
+DESIGN-SPEC DSGN-0036); 0 turns it off.
 
 `native_w` / `native_h` (modern only, optional) have declared the buffer.
 Without them the buffer has followed the window and the viewport has grown
-to fill it. With them the declared size has been a floor: the viewport has
-been `tiles_w` x `tiles_h` at that size, and the space the viewport and the
-one-tile sidebar do not use has been laid out as edges, a band between the
-pane and the HUD, and the status band (`layout_init`, `src/layout.c`). The
-screen has been shown at the largest whole scale the surface allows, and on
-the world map what that scale leaves over has gone to the viewport in whole
-tiles; every other screen has stayed at the declared size, centred
-(OPENBOUNTY-SPEC REQ-528, `MODERN-RESOLUTION.md`). The buffer has had to hold
-the viewport (the loader has rejected one that cannot). Rome: 800 x 532 with
-7 x 5 tiles of 96 is 12 + 672 + 8 + 96 + 12 across and
-12 + 20 + 8 + 480 + 12 down.
+to fill it. With them the declared size has been the smallest screen: across
+it the frame, a one-tile column, a band, the map, a band, a one-tile column
+and the frame; down it the frame, the map and the frame, with no status band
+(`layout_init`, `src/layout.c`). The screen has been shown at the largest
+whole scale the surface allows (3 at most), and what the surface has left
+over at that scale has gone to the map; every page has kept the size it has
+at the declared screen (DESIGN-SPEC DSGN-0003 to DSGN-0006, DSGN-0040). The
+buffer has had to hold the viewport and the battlefield (the loader has
+rejected one that cannot). Rome: 800 x 504 with 5 x 5 tiles of 96 is
+12 + 96 + 4 + 576 + 4 + 96 + 12 across and 12 + 480 + 12 down.
 
 A modern pack that ships no `sprites.ui.chrome_overworld` has had its chrome
-drawn in code: the gold lattice (`src/lattice.c`) has filled the frame bands
-and the bar under the status line, bordered every HUD panel
-(`sprites.ui.panel_frame` still names a colour to turn panel borders on) and
-ringed every window (prompts, dialogs, views, location menus).
-`sprites.hud.bar_strip` has then been unused too. A legacy pack, or one that
+drawn in code: the gold lattice (`src/lattice.c`) has filled the frame and the
+bands beside the map, joined the column tiles and ringed every floating page.
+`sprites.hud.bar_strip` has then been unused. A legacy pack, or one that
 ships the bitmap, has drawn the bitmap as a nine-slice (ART-SPEC §3).
 
 ### 2.2 `font`
@@ -127,9 +125,8 @@ anti-aliased, in a FIXED cell: every glyph has advanced by the face's widest
 advance and been centred in it, so the screens' column layouts hold. Declare
 a monospaced face; a proportional one has been letter-spaced to its widest
 glyph. Lines have been the face's line height. The layout has followed the
-font rather than the other way round: the status band holds one line, list
-rows are at least a line plus padding high, and a declared buffer has given
-the extra height back from its top and bottom bands. Word wrap has been by
+font rather than the other way round: a title strip holds one line and its
+padding, and list rows are at least a line plus padding high. Word wrap has been by
 pixel width and every authored newline has been kept, so menus and tables in
 the strings hold their shape. At 2x and 3x the atlas has been rebuilt at that
 zoom, so text has been sharp while art has stayed pixel-identical. The
@@ -137,6 +134,21 @@ start-up log has reported the size, line height and digit width. If the file
 fails to load, the strip in `sprites.font` has been used instead, in its
 8 x 8 cell. Legacy packs have never read this block: they have kept the
 strip, the cell and their character wrap exactly.
+
+### 2.3 `controls`
+
+```json
+"controls": { "settings": [
+  { "id": "delay", "label": "Delay", "type": "numeric", "range": 10, "default": 5 },
+  { "id": "sounds", "label": "Sounds", "type": "bool", "default": 1, "audio": true },
+  { "id": "cga", "label": "CGA", "type": "numeric", "range": 8, "default": 0, "hidden": true } ] }
+```
+
+Each setting has been a row of the Controls page, in order: `label` its
+words, `type` `"bool"` (On and Off) or `"numeric"` (0 to `range` − 1),
+`default` its first value. `hidden` true has kept the setting and left it off
+the page. `audio` true has marked a sound setting, greyed when the machine has
+had no audio device.
 
 ---
 
@@ -171,11 +183,14 @@ The `sprites` block has pointed at PNG files. Each entry has been either:
 - A single path (`"path": "art/foo.png"`).
 - A path + frame count for animated sprites (`{"path": "...", "frames": 4}`).
 
-### 4.0a The left rail
+### 4.0a The columns and the combat commands
 
-`sprites.rail` has named the five tiles of the left rail (REQ-533), each one
-map tile square and drawn in the HUD panels' style, because the shell has
-drawn the frame around them:
+`sprites.rail` has named the tiles of the left column, each one map tile
+square, edge to edge, because the shell has drawn the joins between them
+(DESIGN-SPEC DSGN-0022, DSGN-0023): Menu, Map, Army and Search, then the
+puzzle, which the shell has drawn from `sprites.hud.puzzle_grid` and
+`sprites.ui.puzzle_cover`. `cast` has been the Cast command's tile in a
+fight:
 
 ```json
 "rail": { "menu": "art/ui/rail_menu.png", "map": "art/ui/rail_map.png",
@@ -183,7 +198,17 @@ drawn the frame around them:
           "cast": "art/ui/rail_cast.png" }
 ```
 
-A pack that has named none has simply had no rail.
+`sprites.hud.days` has been the right column's last tile, under the days
+figure. `sprites.combat_panel` has named the Shoot, Wait and Fly tiles of the
+command column in a fight (DSGN-0113); Menu there has been `rail.menu`:
+
+```json
+"combat_panel": { "shoot": "art/ui/combat_shoot.png", "wait": "art/ui/combat_wait.png",
+                  "fly": "art/ui/combat_fly.png" }
+```
+
+A tile the pack has not named has been left dark; the column has stood all
+the same.
 
 ### 4.1 Animations
 
@@ -283,6 +308,18 @@ keys, tokens and grammatical positions of substitutions.
 The engine has carried no text of its own: a pack missing any required key
 has been refused at load, with every missing key printed.
 
+A few keys have been optional, each read by modern screens only:
+
+- `banners.chest_gold_title`, `chest_gold_found`, `chest_gold_take`,
+  `chest_gold_share`: the treasure chest's title, its words and its two
+  answers as rows (`chest_gold`'s A and B lines, apart). Absent, the chest has
+  had no title and its rows have been A and B.
+- `banners.gmr_spell_in_fight`, `gmr_spell_on_map`: why a spell cannot be
+  cast here, on the spells page.
+
+A class's description on the class picker has been
+`banners.class_desc_<the class's id>`.
+
 ---
 
 ## 6. Maps
@@ -319,12 +356,13 @@ with `art/tiles/castle.png`, the way a town is:
 A pack has needed castle art only for the footprints it uses.
 
 **Panel frame.** `sprites.ui.panel_frame` has named a palette colour
-(`YELLOW`, `GREY`, ... or a raw index) and the shell has then drawn a
+(`YELLOW`, `GREY`, ... or a raw index) and a legacy screen has then drawn a
 one-design-pixel frame in that colour, with a darker inner line, round every
 panel slot: the HUD panels, the inventory belt cells and the contract face.
 Art for those slots has been authored edge to edge with no frame of its own.
 Absent, the shell has drawn nothing and the art has carried its own frame,
-which is how `kings-bounty` has shipped.
+which is how `kings-bounty` has shipped. A modern screen has drawn no panel
+frames: its columns have been joined by the lattice.
 
 **Siege back wall.** `sprites.ui.siege_back_wall` has named a cell-sized
 tile the shell repeats across the band above the siege board, with

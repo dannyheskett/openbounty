@@ -34,9 +34,9 @@ void ui_tile_row(int x, int y, int w, int h, int list_id, int row) {
     touch_region_row(x, y, w, h, list_id, row);
 }
 
-void ui_map(int x, int y, int w, int h, int tile_w, int tile_h,
-            int center_tx, int center_ty, int center_key) {
-    touch_region_map(x, y, w, h, tile_w, tile_h, center_tx, center_ty, center_key);
+void ui_map(int x, int y, int w, int h, int cell_x, int cell_y,
+            int tile_w, int tile_h, int center_key) {
+    touch_region_map(x, y, w, h, cell_x, cell_y, tile_w, tile_h, center_key);
 }
 
 void ui_grid(int x, int y, int w, int h, int tile_w, int tile_h, int grid_id) {

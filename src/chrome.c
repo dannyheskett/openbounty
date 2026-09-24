@@ -7,11 +7,6 @@
 #include "views.h"
 #include "ui.h"
 #include "lattice.h"
-#include "prompt.h"
-#include "touch.h"
-#include "uitouch.h"
-#include "modern/mlist.h"
-#include "modern/mlayout.h"
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -140,6 +135,24 @@ static void draw_lattice_chrome_ex(bool map_rail) {
     }
 }
 
+// The base screen's chrome, for a modern declared buffer (no_band): the frame,
+// and the band between each column and the map. There is no status band; the
+// columns draw themselves (src/modern/rail.c, src/hud.c).
+static void draw_frame(const Sprites *s) {
+    if (use_lattice(s))
+        lattice_ring(0, 0, CL_SCREEN_W, CL_SCREEN_H,
+                     CL_FRAME_LEFT_W, CL_FRAME_RIGHT_W,
+                     CL_FRAME_TOP_H, CL_FRAME_BOTTOM_H);
+    else if (s && s->chrome_overworld.id)
+        draw_chrome_frame(s->chrome_overworld);
+}
+
+static void draw_base_chrome(const Sprites *s) {
+    draw_frame(s);
+    lattice_band_v(CL_RAIL_X + CL_RAIL_W, CL_MAP_Y, CL_SIDEBAR_GAP, CL_MAP_H);
+    lattice_band_v(CL_MAP_X + CL_MAP_W, CL_MAP_Y, CL_SIDEBAR_GAP, CL_MAP_H);
+}
+
 static Color status_bg_for_difficulty(Difficulty d) {
     const Resources *res = resources_current();
     if (res) {
@@ -161,26 +174,18 @@ static Color status_bg_for_difficulty(Difficulty d) {
     return (Color){ 0x00, 0xAA, 0xAA, 0xFF };
 }
 
-// Draw chrome shell + a custom status text. Used by combat so the
+// Draw chrome shell + a custom status text. Used by legacy combat so the
 // title bar reads "Options / <Actor> M<n>" or "<Player> vs <Foe>
 // killing <N>" without going through the adventure-mode time-stop /
 // days-left paths. Pass status_text=NULL to skip status text.
-void chrome_draw_with_status_lr(const Game *g, const Sprites *s,
-                                const char *left, const char *right) {
-    chrome_draw_with_status(g, s, left);
-    if (right && right[0]) {
-        bfont_draw_right(right, CL_STATUS_X + CL_STATUS_W - ML_PAD,
-                         CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0),
-                         PAL_CLR(WHITE));
-    }
-}
-
 void chrome_draw_with_status(const Game *g, const Sprites *s,
                                      const char *status_text) {
     // Caller has already painted the inner area (combat field, modal
     // body, etc). Do NOT full-screen black here -- that would erase
     // everything below us. The chrome bitmap below has a transparent
     // interior, so the field shows through.
+    // No status band: the frame alone.
+    if (g_layout.no_band) { draw_frame(s); return; }
     Color status_bg = status_bg_for_difficulty(
         g ? g->character.difficulty : DIFFICULTY_NORMAL);
     gfx_rect(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H,
@@ -201,6 +206,10 @@ void chrome_draw(const Game *g, const Sprites *s) {
     // Fill the whole screen black. The chrome bitmap paints the frame on
     // top; map / sidebar / views paint the interior on top.
     gfx_rect(0, 0, CL_SCREEN_W, CL_SCREEN_H, PAL_CLR(BLACK));
+
+    // A modern declared buffer has no status band: its menu is the left
+    // column's first tile and its day count the right column's last.
+    if (g_layout.no_band) { draw_base_chrome(s); return; }
 
     // Status bar fill (y=8..16, x=16..303) with difficulty color.
     Color status_bg = status_bg_for_difficulty(
@@ -237,18 +246,6 @@ void chrome_draw(const Game *g, const Sprites *s) {
                                 CL_STATUS_X + CL_STATUS_W / 2,
                                 CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0),
                                 PAL_CLR(WHITE));
-        } else if (CL_IS_MODERN &&
-                   (views_active() == VIEW_WIN || views_active() == VIEW_LOSE)) {
-            // The game is over: there is nothing to go back to, and the screen's
-            // own Continue ends it.
-        } else if (CL_IS_MODERN && (views_active() != VIEW_NONE || dialog_is_active() || prompt_is_active())) {
-            // Modern: "< Back" with the key for the device; the bar is the button.
-            char hb[96];
-            ml_hint_text(hb, sizeof hb, ui->hint_back, ui->key_esc, ui->pad_back);
-            bfont_draw_centered(hb, CL_STATUS_X + CL_STATUS_W / 2,
-                                CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0),
-                                PAL_CLR(WHITE));
-            ui_bar(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H, KEY_ESCAPE);
         } else if (views_wants_exit_hint() || dialog_is_active()) {
             bfont_draw_centered(ui->press_esc_to_exit,
                                 CL_STATUS_X + CL_STATUS_W / 2,
@@ -257,32 +254,11 @@ void chrome_draw(const Game *g, const Sprites *s) {
         } else {
             char buf[64], nbuf[16];
             const ResBanners *bn = (g->res) ? &g->res->banners : NULL;
-            if (CL_IS_MODERN && bn && ui) {
-                // Modern: the bar is the Game Menu button -- its name at the
-                // left (with Esc on a keyboard), the days remaining at the
-                // right; a tap anywhere on it opens the menu.
-                int ty = CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0);
-                char left[96], right[96];
-                ml_hint_text(left, sizeof left, bn->status_game_menu, ui->key_esc, ui->pad_back);
-                bool stop = g->stats.time_stop > 0;
-                snprintf(nbuf, sizeof nbuf, "%d", stop ? g->stats.time_stop : g->stats.days_left);
-                ResTemplateVar rv[] = { { "DAYS", nbuf }, { "STEPS", nbuf } };
-                resources_format_template(right, sizeof right,
-                                          stop ? bn->status_time_stop_remaining : bn->status_days_remaining, rv, 2);
-                bfont_draw(left, CL_STATUS_X + ML_PAD, ty, PAL_CLR(WHITE));
-                bfont_draw_right(right, CL_STATUS_X + CL_STATUS_W - ML_PAD, ty, PAL_CLR(WHITE));
-                if (views_active() == VIEW_NONE && !prompt_is_active())
-                    ui_bar(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H, KEY_ESCAPE);
-                return;
-            }
             if (g->stats.time_stop > 0) {
                 snprintf(nbuf, sizeof nbuf, "%d", g->stats.time_stop);
                 ResTemplateVar vars[] = { { "STEPS", nbuf } };
                 if (bn) {
-                    resources_format_template(buf, sizeof buf,
-                                              (CL_IS_MODERN && bn->status_time_stop_modern[0])
-                                                  ? bn->status_time_stop_modern : bn->status_time_stop,
-                                              vars, 1);
+                    resources_format_template(buf, sizeof buf, bn->status_time_stop, vars, 1);
                 } else {
                     snprintf(buf, sizeof buf,
                              " Options / Controls / Time Stop:%d ",
@@ -292,10 +268,7 @@ void chrome_draw(const Game *g, const Sprites *s) {
                 snprintf(nbuf, sizeof nbuf, "%d", g->stats.days_left);
                 ResTemplateVar vars[] = { { "DAYS", nbuf } };
                 if (bn) {
-                    resources_format_template(buf, sizeof buf,
-                                              (CL_IS_MODERN && bn->status_days_left_modern[0])
-                                                  ? bn->status_days_left_modern : bn->status_days_left,
-                                              vars, 1);
+                    resources_format_template(buf, sizeof buf, bn->status_days_left, vars, 1);
                 } else {
                     snprintf(buf, sizeof buf,
                              " Options / Controls / Days Left:%d ",
@@ -303,9 +276,6 @@ void chrome_draw(const Game *g, const Sprites *s) {
                 }
             }
             bfont_draw(buf, CL_STATUS_X + 1, CL_STATUS_Y + (CL_STATUS_H - bfont_glyph_h()) / 2 + (CL_UI == 1 ? 1 : 0), PAL_CLR(WHITE));
-            // Modern: a tap on the bar is Escape, which opens the game menu.
-            if (CL_IS_MODERN && views_active() == VIEW_NONE && !prompt_is_active())
-                ui_bar(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H, KEY_ESCAPE);
         }
     }
 }

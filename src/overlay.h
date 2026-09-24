@@ -25,16 +25,9 @@ void overlay_draw_note(void);
 // The pager uses this so its page count matches what the renderer displays.
 int overlay_dialog_page_count(void);
 
-// Modern: darken the chrome interior (map pane and sidebar) under a detail
-// view, prompt or dialog, by the pack's render.dim percent (REQ-430g). A
-// no-op in legacy and at 0. Combat calls it over the battlefield before its
-// own panels.
-void overlay_dim_scene(void);
-
 // The rect a location screen (home castle, own castle, dwelling, recruit)
-// draws its text panel into, and the padding inside it. Modern: the location
-// layout's text area under the backdrop (REQ-430j). Legacy: the bottom panel
-// rect it has always used.
+// draws its text panel into, and the padding inside it: the bottom panel rect
+// legacy has always used. Modern draws its places itself (src/modern/overlay.c).
 void screens_text_rect(int *x, int *y, int *w, int *h);
 int  screens_text_pad(void);
 

@@ -42,9 +42,10 @@ void ui_bar(int x, int y, int w, int h, int key);
 void ui_tile(int x, int y, int w, int h, int key);
 void ui_tile_row(int x, int y, int w, int h, int list_id, int row);
 
-// The map viewport and the combat grid: a tap picks a tile.
-void ui_map(int x, int y, int w, int h, int tile_w, int tile_h,
-            int center_tx, int center_ty, int center_key);
+// The map viewport and the combat grid: a tap steps from the cell at
+// (cell_x, cell_y) toward it (touch_region_map).
+void ui_map(int x, int y, int w, int h, int cell_x, int cell_y,
+            int tile_w, int tile_h, int center_key);
 void ui_grid(int x, int y, int w, int h, int tile_w, int tile_h, int grid_id);
 
 // A list taller than its space: a vertical drag scrolls it.

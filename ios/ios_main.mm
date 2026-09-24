@@ -101,7 +101,7 @@ extern "C" void plat_ios_log_stdout(void);
     // The game is given the safe rectangle, in DEVICE PIXELS: it presents its
     // buffer at an integer scale of whatever it is told the window is, and on
     // a phone the device count is the one that matters (a 390pt-wide screen is
-    // 1170 real pixels, which is what makes an 800x532 buffer fit at all).
+    // 1170 real pixels, which is what makes an 800x504 buffer fit at all).
     UIEdgeInsets ins = self.safeAreaInsets;
     int ox = (int)(ins.left * scale);
     int oy = (int)(ins.top  * scale);

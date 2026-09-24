@@ -150,6 +150,11 @@ void lattice_ring(int x, int y, int w, int h, int l, int r, int t, int b) {
     gfx_rect(ix + iw, iy - u, u, ih + 2 * u, C_RAIL);
 }
 
+void lattice_ground(int x, int y, int w, int h) {
+    if (w <= 0 || h <= 0) return;
+    gfx_rect(x, y, w, h, C_WOOD);
+}
+
 void lattice_shutdown(void) {
     if (s_tex.id) gfx_texture_free(s_tex);
     s_tex = (Texture2D){ 0 };

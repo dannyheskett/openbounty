@@ -209,13 +209,9 @@ void ui_set_panel_frame(const char *palette_name) {
     if (idx > 0 && idx < PAL_SIZE) s_panel_frame = idx;
 }
 
-void ui_panel_frame(int x, int y, int w, int h) {
-    if (s_panel_frame < 0) return;
+void legacy_panel_frame(int x, int y, int w, int h) {
+    if (s_panel_frame < 0 || CL_IS_MODERN) return;
     int t = CL_UI;
-    if (CL_IS_MODERN) {
-        lattice_ring(x, y, w, h, 2 * t, 2 * t, 2 * t, 2 * t);
-        return;
-    }
     Color outer = PAL[s_panel_frame];
     Color inner = PAL[PAL_IDX_DGREY];
     gfx_rect(x, y, w, t, outer);
@@ -228,12 +224,8 @@ void ui_panel_frame(int x, int y, int w, int h) {
     gfx_rect(x + w - 2 * t, y + t, t, h - 2 * t, inner);
 }
 
-void ui_window_frame(int x, int y, int w, int h, Color legacy) {
-    if (!CL_IS_MODERN) { gfx_rect_lines(x, y, w, h, legacy); return; }
-    // Outside the rect: the window's content keeps every pixel it had, and
-    // nothing drawn after this can paint over the ring.
-    int t = 4 * CL_UI;
-    lattice_ring(x - t, y - t, w + 2 * t, h + 2 * t, t, t, t, t);
+void legacy_window_frame(int x, int y, int w, int h, Color legacy) {
+    if (!CL_IS_MODERN) gfx_rect_lines(x, y, w, h, legacy);
 }
 
 int ui_fit_scale(int tex_w, int tex_h, int avail_w, int avail_h) {

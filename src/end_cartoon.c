@@ -9,6 +9,8 @@
 #include "ui.h"
 #include "tables.h"
 #include "tile_cache.h"
+#include "modern/page.h"
+#include "modern/uikit.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -24,7 +26,9 @@
 // the map viewport's Y origin. Frames advance every `ticks_per_step`
 // ticks; any keypress short-circuits the animation.
 
-static bool any_key_pressed(void) {
+// Legacy's own any-key test, as the original's cartoon read it; modern reads
+// the one any-key check (ui_any_key_pressed), a tap included.
+static bool legacy_any_key_pressed(void) {
     int k = input_get_key_pressed();
     while (k != 0) {
         if (k != KEY_LEFT_SHIFT && k != KEY_RIGHT_SHIFT &&
@@ -35,11 +39,36 @@ static bool any_key_pressed(void) {
     return false;
 }
 
+// A cell of the grid: one tile (legacy), or -- the cartoon being full-bleed
+// art -- the largest whole multiple of one at which the grid fits the screen,
+// by the rule every full-bleed picture follows (ui_fit_scale).
+static int s_cell_w = 48, s_cell_h = 34;
+
+// Size the cells for this screen and place the grid: legacy centred on the
+// map pane as it always was; modern centred on the whole screen, in the
+// frame's lattice where the screen is larger.
+static void cartoon_place(int gw, int gh, int *origin_x, int *origin_y) {
+    s_cell_w = CL_TILE_W;
+    s_cell_h = CL_TILE_H;
+    if (CL_IS_MODERN) {
+        int k = ui_fit_scale(gw * CL_TILE_W, gh * CL_TILE_H, CL_SCREEN_W, CL_SCREEN_H);
+        s_cell_w = CL_TILE_W * k;
+        s_cell_h = CL_TILE_H * k;
+        *origin_x = (CL_SCREEN_W - gw * s_cell_w) / 2;
+        *origin_y = (CL_SCREEN_H - gh * s_cell_h) / 2;
+        return;
+    }
+    *origin_x = CL_MAP_X + (CL_MAP_W - gw * CL_TILE_W) / 2;
+    *origin_y = CL_MAP_Y + (CL_MAP_H - gh * CL_TILE_H) / 2;
+    if (*origin_x < CL_MAP_X) *origin_x = CL_MAP_X;
+    if (*origin_y < CL_MAP_Y) *origin_y = CL_MAP_Y;
+}
+
 static void draw_tile(Texture2D tex, int gx, int gy, int origin_x, int origin_y,
                       bool flip_h) {
     if (!tex.id) return;
-    int dx = origin_x + gx * CL_TILE_W;
-    int dy = origin_y + gy * CL_TILE_H;
+    int dx = origin_x + gx * s_cell_w;
+    int dy = origin_y + gy * s_cell_h;
     Rectangle src = {
         0, 0,
         flip_h ? -(float)tex.width : (float)tex.width,
@@ -47,7 +76,7 @@ static void draw_tile(Texture2D tex, int gx, int gy, int origin_x, int origin_y,
     };
     Rectangle dst = {
         (float)dx, (float)dy,
-        (float)CL_TILE_W, (float)CL_TILE_H
+        (float)s_cell_w, (float)s_cell_h
     };
     gfx_texture_draw(tex, src, dst, WHITE);
 }
@@ -98,8 +127,10 @@ static void draw_cartoon_frame(const Resources *res, const Sprites *sprites,
         int x = 0, y = 0;
         for (int i = 0; i < nt && y < gh; i++) {
             bool flip = (x == gw - 1);
+            // Modern: standing at the one idle pace; legacy: the cartoon's tick.
             Texture2D tex = sprites_strip(sprites->troop_anim[i], sprites->troop_anim_frames[i],
-                                          CL_IS_MODERN ? sprites_stand(tick) : tick);
+                                          CL_IS_MODERN ? sprites_stand((int)(ui_anim_time() * UK_IDLE_FPS))
+                                                       : tick);
             if (!tex.id) tex = sprites->troop_sprite[i];
             draw_tile(tex, x, y, origin_x, origin_y, flip);
             x++;
@@ -118,16 +149,11 @@ void end_cartoon_gallery_draw(RenderTexture2D *rt, const Resources *res,
     int gw = res->ending.grid_width  > 0 ? res->ending.grid_width  : 6;
     int gh = res->ending.grid_height > 0 ? res->ending.grid_height : 5;
     present_refit(rt);
-    int origin_x = CL_MAP_X + (CL_MAP_W - gw * CL_TILE_W) / 2;
-    int origin_y = CL_MAP_Y + (CL_MAP_H - gh * CL_TILE_H) / 2;
-    if (origin_x < CL_MAP_X) origin_x = CL_MAP_X;
-    if (origin_y < CL_MAP_Y) origin_y = CL_MAP_Y;
-    if (CL_IS_MODERN) {   // the cartoon has the whole screen: centre it there
-        origin_x = (CL_SCREEN_W - gw * CL_TILE_W) / 2;
-        origin_y = (CL_SCREEN_H - gh * CL_TILE_H) / 2;
-    }
+    int origin_x, origin_y;
+    cartoon_place(gw, gh, &origin_x, &origin_y);
     present_begin(rt);
     gfx_clear(BLACK);
+    if (CL_IS_MODERN) page_art_margins((ML_Rect){ origin_x, origin_y, gw * s_cell_w, gh * s_cell_h });
     draw_cartoon_frame(res, sprites, grass, hero, origin_x, origin_y, 0, frame);
     present_end();
 }
@@ -160,7 +186,7 @@ void run_end_cartoon(RenderTexture2D *rt,
 
     while (!frame_host_should_close() && !done) {
         // Modern: a tap counts too, as on every other any-key screen.
-        if (CL_IS_MODERN ? ui_any_key_pressed() : any_key_pressed()) { done = true; break; }
+        if (CL_IS_MODERN ? ui_any_key_pressed() : legacy_any_key_pressed()) { done = true; break; }
 
         if (ui_anim_time() - last_advance >= tick_interval) {
             last_advance = ui_anim_time();
@@ -179,17 +205,12 @@ void run_end_cartoon(RenderTexture2D *rt,
         // under us when the window changes, which would leave the origin
         // pointing at the old geometry.
         present_refit(rt);
-        int origin_x = CL_MAP_X + (CL_MAP_W - gw * CL_TILE_W) / 2;
-        int origin_y = CL_MAP_Y + (CL_MAP_H - gh * CL_TILE_H) / 2;
-        if (origin_x < CL_MAP_X) origin_x = CL_MAP_X;
-        if (origin_y < CL_MAP_Y) origin_y = CL_MAP_Y;
-        if (CL_IS_MODERN) {   // the cartoon has the whole screen: centre it there
-            origin_x = (CL_SCREEN_W - gw * CL_TILE_W) / 2;
-            origin_y = (CL_SCREEN_H - gh * CL_TILE_H) / 2;
-        }
+        int origin_x, origin_y;
+        cartoon_place(gw, gh, &origin_x, &origin_y);
 
         present_begin(rt);
         gfx_clear(BLACK);
+        if (CL_IS_MODERN) page_art_margins((ML_Rect){ origin_x, origin_y, gw * s_cell_w, gh * s_cell_h });
         draw_cartoon_frame(res, sprites, grass, hero, origin_x, origin_y, tick, frame);
         present_end();
 

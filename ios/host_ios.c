@@ -82,6 +82,8 @@ bool frame_host_window_maximized(void)  { return false; }
 void frame_host_window_fullscreen_toggle(void) {}
 
 void frame_host_display_size(int *w, int *h) { plat_ios_screen(w, h); }
+bool frame_host_window_room(int *w, int *h) { (void)w; (void)h; return false; }
+void frame_host_window_place(int w, int h) { (void)w; (void)h; }
 
 // UIKit delivers events on the main thread; the game thread has nothing to
 // poll for.
@@ -207,5 +209,7 @@ bool input_touch_active(void)   { return s_touch_seen; }
 bool input_has_keyboard(void) { return false; }
 InputTextMode input_text_mode(void) { return TEXT_MODE_SELECTOR; }
 bool input_pad_or_touch_seen(void) { return true; }
+bool input_touch_device(void) { return true; }
+InputDevice input_last_device(void) { return INPUT_DEV_TOUCH; }
 
 #endif // PLATFORM_IOS

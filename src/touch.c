@@ -5,6 +5,7 @@
 #include "layout.h"
 #include "frame_host.h"
 #include "ob_types.h"
+#include "modern/mlayout.h"
 #include <stddef.h>
 
 // See touch.h for the frame shape. Everything here is per-frame state:
@@ -28,8 +29,8 @@ typedef struct {
     bool priority;                // chrome: beats a squarely-hit world region
     int key;                      // REGION_SCREEN / REGION_WINDOW
     bool is_char;                 // REGION_WINDOW: inject as char, not key
-    int tile_w, tile_h;           // REGION_MAP
-    int center_tx, center_ty;
+    int tile_w, tile_h;           // REGION_MAP: the cell a tap steps from
+    int cell_x, cell_y;
     int center_key;
     int list_id, row;             // REGION_ROW
     int step;                     // REGION_SCROLL: pixels of drag per row
@@ -50,6 +51,12 @@ static int      s_region_count;
 static Region   s_last[REGION_MAX];
 static int      s_last_count;
 static int      s_any_key;        // touch_region_any, 0 = none
+static int      s_last_any_key;
+
+// The page on top (touch_page): what a tap nothing else took does. `first`:
+// the regions registered before it -- under it -- are those below this index.
+typedef struct { bool set, modal; int x, y, w, h, inside, outside, first; } PageTap;
+static PageTap  s_page, s_last_page;
 static unsigned s_chrome;         // requested this frame
 
 // Hold-to-repeat over a map viewport. First step on the press edge, then
@@ -88,14 +95,31 @@ void touch_region_any(int key) {
     s_any_key = key;
 }
 
+void touch_page(int x, int y, int w, int h, int inside_key, int outside_key, bool modal) {
+    s_page.set = true;
+    s_page.modal = modal;
+    s_page.x = x; s_page.y = y; s_page.w = w; s_page.h = h;
+    s_page.inside = inside_key;
+    s_page.outside = outside_key;
+    s_page.first = s_region_count;
+}
+
+static bool page_has(const PageTap *p, int sx, int sy) {
+    return sx >= p->x && sy >= p->y && sx < p->x + p->w && sy < p->y + p->h;
+}
+
+static int page_key(const PageTap *p, int sx, int sy) {
+    return page_has(p, sx, sy) ? p->inside : (p->modal ? p->outside : 0);
+}
+
 void touch_region_map(int x, int y, int w, int h,
-                      int tile_w, int tile_h,
-                      int center_tx, int center_ty, int center_key) {
+                      int cell_x, int cell_y, int tile_w, int tile_h,
+                      int center_key) {
     Region r = { 0 };
     r.kind = REGION_MAP;
     r.x = x; r.y = y; r.w = w; r.h = h;
     r.tile_w = tile_w; r.tile_h = tile_h;
-    r.center_tx = center_tx; r.center_ty = center_ty;
+    r.cell_x = cell_x; r.cell_y = cell_y;
     r.center_key = center_key;
     add_region(r);
 }
@@ -137,13 +161,17 @@ bool touch_tapped_cell(int grid_id, int *cx, int *cy) {
     return true;
 }
 
+// The window buttons are legacy's (touch_draw_chrome): a modern screen asks
+// for none, so a request made on a path both modes share is dropped here.
 void touch_request(unsigned chrome) {
+    if (CL_IS_MODERN) return;
     s_chrome |= chrome;
 }
 
-void touch_request_prompt_yesno(void)      { s_prompt_bar = 'y'; }
-void touch_request_prompt_ab(void)         { s_prompt_bar = 'a'; }
+void touch_request_prompt_yesno(void)      { if (!CL_IS_MODERN) s_prompt_bar = 'y'; }
+void touch_request_prompt_ab(void)         { if (!CL_IS_MODERN) s_prompt_bar = 'a'; }
 void touch_request_prompt_numeric(int max) {
+    if (CL_IS_MODERN) return;
     s_prompt_bar = 'n';
     s_prompt_max = (max < 1) ? 1 : (max > 5) ? 5 : max;
 }
@@ -165,10 +193,8 @@ static int direction_key(int dx, int dy) {
 }
 
 static int map_region_key(const Region *r, int sx, int sy) {
-    int tx = (sx - r->x) / r->tile_w;
-    int ty = (sy - r->y) / r->tile_h;
-    int dx = (tx > r->center_tx) - (tx < r->center_tx);
-    int dy = (ty > r->center_ty) - (ty < r->center_ty);
+    int dx = (sx >= r->cell_x + r->tile_w) - (sx < r->cell_x);
+    int dy = (sy >= r->cell_y + r->tile_h) - (sy < r->cell_y);
     if (dx == 0 && dy == 0) return r->center_key;
     return direction_key(dx, dy);
 }
@@ -182,10 +208,9 @@ static int map_region_key(const Region *r, int sx, int sy) {
 // never stolen from a neighbour and the forgiveness only decides taps that
 // would otherwise have hit nothing at all.
 static int touch_slack(void) {
-    int scale = present_get_dst_scale();
-    if (scale < 1) scale = 1;
-    int u = touch_unit() / scale;      // the unit in design pixels
-    return u / 2;
+    // Half a row in modern, fixed for the session; half a unit in legacy.
+    if (CL_IS_MODERN) return ml_row_h() / 2;
+    return present_window_len_to_design(touch_unit()) / 2;
 }
 
 static int rect_distance(const Region *r, int px, int py) {
@@ -197,9 +222,91 @@ static int rect_distance(const Region *r, int px, int py) {
     return (dx > dy) ? dx : dy;         // Chebyshev: a square of slack
 }
 
+// What a tap at design pixel (sx, sy) reaches, over a set of regions and the
+// page on top: the design-space half of a tap, pure, so the frame's own tap
+// and a check of the last frame (touch_last_resolve) are one rule.
+typedef enum { HIT_NONE = 0, HIT_KEY, HIT_ROW, HIT_GRID, HIT_MAP } HitKind;
+typedef struct { HitKind kind; int key, list, row, cx, cy; } Hit;
+
+// A region under the page on top takes no tap: under a modal page, none of
+// them; under one that is not modal, none inside its rect.
+static bool under_page(const PageTap *page, int i, int sx, int sy) {
+    if (!page || !page->set || i >= page->first) return false;
+    return page->modal || page_has(page, sx, sy);
+}
+
+static Hit resolve(const Region *regs, int n, const PageTap *page, int any_key, int sx, int sy) {
+    Hit h = { HIT_NONE, 0, 0, -1, 0, 0 };
+
+    // Chrome first, whatever registered before it: a band grown to a touch
+    // unit overlaps the map's top row, and the map is registered earlier in
+    // the frame. Only inside the chrome's own rect -- no extra reach.
+    for (int i = 0; i < n; i++) {
+        const Region *r = &regs[i];
+        if (!r->priority || !rect_has(r, sx, sy) || under_page(page, i, sx, sy)) continue;
+        h.kind = HIT_KEY; h.key = r->key;
+        return h;
+    }
+
+    for (int i = 0; i < n; i++) {
+        const Region *r = &regs[i];
+        if (r->kind == REGION_WINDOW || r->kind == REGION_SCROLL || !rect_has(r, sx, sy)) continue;
+        if (under_page(page, i, sx, sy)) continue;
+        if (r->kind == REGION_MAP) {
+            h.kind = HIT_MAP; h.key = map_region_key(r, sx, sy);
+            return h;
+        }
+        if (r->kind == REGION_ROW) {
+            h.kind = HIT_ROW; h.list = r->list_id; h.row = r->row;
+            return h;
+        }
+        if (r->kind == REGION_GRID) {
+            h.kind = HIT_GRID; h.list = r->list_id;
+            h.cx = (sx - r->x) / r->tile_w;
+            h.cy = (sy - r->y) / r->tile_h;
+            return h;
+        }
+        h.kind = HIT_KEY; h.key = r->key;
+        return h;
+    }
+
+    // Nothing was hit squarely. Take the nearest region within the slack --
+    // small targets (the menu band, a narrow row) then behave as though they
+    // were a full touch unit, without growing and overlapping each other.
+    // With a page up, only its own regions, and only for a tap inside it.
+    if (!page || !page->set || !page->modal || page_has(page, sx, sy)) {
+        int slack = touch_slack();
+        const Region *best = NULL;
+        int best_d = slack + 1;
+        for (int i = 0; i < n; i++) {
+            const Region *r = &regs[i];
+            if (r->kind != REGION_SCREEN && r->kind != REGION_ROW) continue;
+            if (under_page(page, i, sx, sy)) continue;
+            int d = rect_distance(r, sx, sy);
+            if (d < best_d) { best_d = d; best = r; }
+        }
+        if (best) {
+            if (best->kind == REGION_ROW) { h.kind = HIT_ROW; h.list = best->list_id; h.row = best->row; }
+            else                          { h.kind = HIT_KEY; h.key = best->key; }
+            return h;
+        }
+    }
+
+    // A page is up: the tap is the page's -- inside it, nothing or its one
+    // action; outside a floating page, its exit.
+    if (page && page->set) {
+        int key = page_key(page, sx, sy);
+        if (key) { h.kind = HIT_KEY; h.key = key; }
+        return h;
+    }
+
+    if (any_key) { h.kind = HIT_KEY; h.key = any_key; }
+    return h;
+}
+
 // Resolve a tap at window position (wx,wy). Chrome buttons sit on top, then
-// design-space regions, then the any-key fallback. `*was_map` reports a map
-// viewport hit so the caller can arm hold-to-repeat.
+// design-space regions, then the page, then the any-key fallback. `*was_map`
+// reports a map viewport hit so the caller can arm hold-to-repeat.
 static void resolve_tap(int wx, int wy, bool *was_map) {
     *was_map = false;
 
@@ -214,64 +321,26 @@ static void resolve_tap(int wx, int wy, bool *was_map) {
     int sx, sy;
     if (!present_window_to_screen(wx, wy, &sx, &sy)) return;
 
-    // Chrome first, whatever registered before it: a band grown to a touch
-    // unit overlaps the map's top row, and the map is registered earlier in
-    // the frame. Only inside the chrome's own rect -- no extra reach.
-    for (int i = 0; i < s_region_count; i++) {
-        const Region *r = &s_regions[i];
-        if (!r->priority || !rect_has(r, sx, sy)) continue;
-        input_host_inject_key(r->key);
-        return;
+    Hit h = resolve(s_regions, s_region_count, &s_page, s_any_key, sx, sy);
+    switch (h.kind) {
+    case HIT_MAP:
+        if (h.key) { input_host_inject_key(h.key); *was_map = true; }
+        break;
+    case HIT_ROW:
+        s_tapped_list = h.list;
+        s_tapped_row  = h.row;
+        break;
+    case HIT_GRID:
+        s_tapped_grid = h.list;
+        s_tapped_cx = h.cx;
+        s_tapped_cy = h.cy;
+        break;
+    case HIT_KEY:
+        input_host_inject_key(h.key);
+        break;
+    case HIT_NONE:
+        break;
     }
-
-    for (int i = 0; i < s_region_count; i++) {
-        const Region *r = &s_regions[i];
-        if (r->kind == REGION_WINDOW || r->kind == REGION_SCROLL || !rect_has(r, sx, sy)) continue;
-        if (r->kind == REGION_MAP) {
-            int key = map_region_key(r, sx, sy);
-            if (key) { input_host_inject_key(key); *was_map = true; }
-            return;
-        }
-        if (r->kind == REGION_ROW) {
-            s_tapped_list = r->list_id;
-            s_tapped_row  = r->row;
-            return;
-        }
-        if (r->kind == REGION_GRID) {
-            s_tapped_grid = r->list_id;
-            s_tapped_cx = (sx - r->x) / r->tile_w;
-            s_tapped_cy = (sy - r->y) / r->tile_h;
-            return;
-        }
-        input_host_inject_key(r->key);
-        return;
-    }
-
-    // Nothing was hit squarely. Take the nearest region within the slack --
-    // small targets (the menu band, a narrow row) then behave as though they
-    // were a full touch unit, without growing and overlapping each other.
-    {
-        int slack = touch_slack();
-        const Region *best = NULL;
-        int best_d = slack + 1;
-        for (int i = 0; i < s_region_count; i++) {
-            const Region *r = &s_regions[i];
-            if (r->kind != REGION_SCREEN && r->kind != REGION_ROW) continue;
-            int d = rect_distance(r, sx, sy);
-            if (d < best_d) { best_d = d; best = r; }
-        }
-        if (best) {
-            if (best->kind == REGION_ROW) {
-                s_tapped_list = best->list_id;
-                s_tapped_row  = best->row;
-            } else {
-                input_host_inject_key(best->key);
-            }
-            return;
-        }
-    }
-
-    if (s_any_key) input_host_inject_key(s_any_key);
 }
 
 // Drag scrolling: a press inside a scrolling list waits. Moving the finger a
@@ -286,7 +355,8 @@ static int  s_drag_step;
 
 static const Region *scroll_region_at(int sx, int sy) {
     for (int i = 0; i < s_region_count; i++)
-        if (s_regions[i].kind == REGION_SCROLL && rect_has(&s_regions[i], sx, sy))
+        if (s_regions[i].kind == REGION_SCROLL && rect_has(&s_regions[i], sx, sy) &&
+            !under_page(&s_page, i, sx, sy))
             return &s_regions[i];
     return NULL;
 }
@@ -325,6 +395,11 @@ void touch_frame(void) {
         s_drag_wx = wx; s_drag_wy = wy;
         s_drag_last_sy = sy;
         s_drag_step = sr->step;
+    } else if (input_touch_pressed(&wx, &wy) && present_layout_changed()) {
+        // The screen changed under the finger this frame (the window was
+        // resized): what it aimed at is not where it was, so the tap is
+        // dropped rather than landing on whatever moved there.
+        s_press_on_map = false;
     } else if (input_touch_pressed(&wx, &wy)) {
         resolve_tap(wx, wy, &s_press_on_map);
         s_next_repeat = frame_host_time() + REPEAT_FIRST_DELAY;
@@ -341,6 +416,9 @@ void touch_frame(void) {
 
     for (int i = 0; i < s_region_count; i++) s_last[i] = s_regions[i];
     s_last_count = s_region_count;
+    s_last_page = s_page;
+    s_last_any_key = s_any_key;
+    s_page.set = false;
     s_region_count = 0;
     s_any_key = 0;
     s_chrome = 0;
@@ -394,6 +472,18 @@ bool touch_last_row_rect(int list_id, int row, int *x, int *y, int *w, int *h) {
     return false;
 }
 
+int touch_last_page_key(int sx, int sy) {
+    return s_last_page.set ? page_key(&s_last_page, sx, sy) : -1;
+}
+
+bool touch_last_resolve(int sx, int sy, int *list_id, int *row, int *key) {
+    Hit h = resolve(s_last, s_last_count, &s_last_page, s_last_any_key, sx, sy);
+    if (list_id) *list_id = (h.kind == HIT_ROW || h.kind == HIT_GRID) ? h.list : 0;
+    if (row) *row = h.kind == HIT_ROW ? h.row : -1;
+    if (key) *key = (h.kind == HIT_KEY || h.kind == HIT_MAP) ? h.key : 0;
+    return h.kind != HIT_NONE;
+}
+
 bool touch_last_key_rect(int key, int *x, int *y, int *w, int *h) {
     for (int i = 0; i < s_last_count; i++)
         if (s_last[i].kind == REGION_SCREEN && s_last[i].key == key)
@@ -421,14 +511,18 @@ typedef struct { const char *label; int key; } Button;
 int touch_unit(void) {
     int w = frame_host_window_width(), h = frame_host_window_height();
     int shortest = (w < h) ? w : h;
+    // A tablet's short side is two phones' worth; a finger is not. Modern's
+    // unit stops growing at a large phone's short side (1284 device pixels,
+    // an iPhone Pro Max: 141 px, 47 pt), or an iPad's rows are twice a
+    // finger and its menus cannot show whole.
+    if (CL_IS_MODERN && shortest > 1284) shortest = 1284;
     int u = shortest * 11 / 100;
     return (u < 44) ? 44 : u;
 }
 
 int touch_unit_design(void) {
-    int scale = present_get_dst_scale();
-    if (scale < 1) scale = 1;
-    int u = touch_unit() / scale;
+    if (CL_IS_MODERN) return ml_row_h();
+    int u = present_window_len_to_design(touch_unit());
     return u < 1 ? 1 : u;
 }
 

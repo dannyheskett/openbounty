@@ -3,6 +3,7 @@
 #include "modern/gamemenu.h"
 #include "modern/mlayout.h"
 #include "modern/uikit.h"
+#include "modern/page.h"
 #include "modern/saveslots.h"
 #include "shell_cheats.h"
 #include "input_host.h"
@@ -20,79 +21,31 @@
 
 GmEvent gm_page_input(const GmPage *p, int *cursor, int touch_list) {
     if (p->n <= 0) return GM_EV_BACK;
-    if (*cursor >= p->n) *cursor = p->n - 1;
-    if (*cursor < 0) *cursor = 0;
-    touch_request(TOUCH_CHROME_BACK);
-    int tapped = touch_tapped_row(touch_list);
-    if (tapped >= 0 && tapped < p->n) {
-        *cursor = tapped;
-        return p->item[tapped].enabled ? GM_EV_ACT : GM_EV_NONE;
+    bool enabled[GM_ROWS_MAX];
+    const char *keys[GM_ROWS_MAX];
+    for (int i = 0; i < p->n; i++) {
+        enabled[i] = p->item[i].enabled;
+        keys[i] = p->item[i].shortcut;
     }
-    if (input_key_pressed(KEY_ESCAPE)) return GM_EV_BACK;
-    if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_KP_8))
-        *cursor = (*cursor - 1 + p->n) % p->n;
-    if (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2))
-        *cursor = (*cursor + 1) % p->n;
-    if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) || input_key_pressed(KEY_SPACE))
-        return p->item[*cursor].enabled ? GM_EV_ACT : GM_EV_NONE;
-    return GM_EV_NONE;
+    MlList l = { p->n, *cursor, enabled, keys };
+    MlEvent ev = ml_list_input(&l, touch_list, NULL);
+    *cursor = l.cursor;
+    return ev == ML_EV_ACT ? GM_EV_ACT : ev == ML_EV_BACK ? GM_EV_BACK : GM_EV_NONE;
 }
 
-static bool page_row(void *ctx, int i, char *label, char *right, int cap) {
+int gm_first_enabled(const GmPage *p) {
+    for (int i = 0; i < p->n; i++) if (p->item[i].enabled) return i;
+    return 0;
+}
+
+bool gm_row(void *ctx, int i, char *label, char *right, int cap) {
     const GmPage *p = (const GmPage *)ctx;
     const GmItem *it = &p->item[i];
     bool sub = it->key >= GM_ACT_PAGE && it->key < GM_ACT_USER;
     snprintf(label, (size_t)cap, "%s%s", it->label ? it->label : "", sub ? " >" : "");
-    snprintf(right, 48, "%s", (input_has_keyboard() && it->shortcut) ? it->shortcut : "");
+    if (it->key == GM_ACT_BACK) ml_exit_hint(right);
+    else snprintf(right, 48, "%s", (ml_keys_shown() && it->shortcut) ? it->shortcut : "");
     return it->enabled;
-}
-
-void gm_draw_page(const GmPage *p, const char *path, const char *right_title, int cursor, int touch_list,
-                  MlRowFn row_fn, void *row_ctx) {
-    // Every menu page is the same panel: GM_PAGE_W wide, one fixed height,
-    // centred. The path is its title; under it a fixed two-line block says what
-    // the row under the cursor does, or why it is greyed; then the options. A
-    // page with more rows than fit scrolls; its last `foot` rows stand on the
-    // foot of the list with a gap above them.
-    const int lh = uk_line_h();
-    int w = GM_PAGE_W;
-    int max_w = ml_area().w - 2 * ml_space();
-    if (w > max_w) w = max_w;
-    int text_w = w - 2 * UK_INSET;
-    const int desc_lines = 2;
-    int head = uk_title_h() + UK_BAND;
-    int desc_h = 2 * ML_PAD + desc_lines * lh + UK_BAND;
-    ML_Rect area = ml_area();
-    int max_h = area.h - 2 * ml_space();
-    int fit_rows = ml_list_fit(max_h - head - desc_h);
-    if (fit_rows > GM_PAGE_ROWS) fit_rows = GM_PAGE_ROWS;
-    ML_Rect b = uk_inlay(w, head + desc_h + ml_list_height(fit_rows), path, right_title);
-
-    // The description, always white, then its band.
-    const char *d = (cursor >= 0 && cursor < p->n) ? p->item[cursor].desc : NULL;
-    char line[160];
-    int ty = b.y + ML_PAD;
-    for (int i = 0; d && *d && i < desc_lines; i++) {
-        if (bfont_take_line(&d, text_w, line, (int)sizeof line) <= 0) break;
-        bfont_draw(line, b.x + UK_INSET, ty, PAL_CLR(WHITE));
-        ty += lh;
-    }
-    int ry = b.y + desc_h;
-    lattice_band_h(b.x, ry - UK_BAND, b.w, UK_BAND);
-    MlRowFn fn = row_fn ? row_fn : page_row;
-    void *ctx = row_fn ? row_ctx : (void *)p;
-    int list_h = b.y + b.h - ry;
-    int foot = (p->foot > 0 && p->foot < p->n && p->n <= fit_rows) ? p->foot : 0;
-    if (!foot) {
-        ml_list_draw(b.x, ry, b.w, list_h, p->n, cursor, fn, ctx, touch_list, uk_ink());
-        return;
-    }
-    int top_n = p->n - foot;
-    ml_list_draw_ex(b.x, ry, b.w, ml_list_height(top_n), top_n, cursor < top_n ? cursor : -1,
-                    fn, ctx, touch_list, uk_ink(), 0);
-    int fy = b.y + b.h - ml_list_height(foot);
-    ml_list_draw_ex(b.x, fy, b.w, ml_list_height(foot), foot, cursor >= top_n ? cursor - top_n : -1,
-                    fn, ctx, touch_list, uk_ink(), top_n);
 }
 
 // ---- the game menu ------------------------------------------------------------------
@@ -101,7 +54,7 @@ enum { ACT_CONTROLS = GM_ACT_USER, ACT_NEW, ACT_EXIT,
        ACT_SLOT = GM_ACT_USER + 100,      // + slot index
        ACT_CHEAT = GM_ACT_USER + 200 };   // + cheat index
 
-typedef enum { ASK_NONE = 0, ASK_OVERWRITE, ASK_LOAD, ASK_EXIT } GmAsk;
+typedef enum { ASK_NONE = 0, ASK_OVERWRITE, ASK_LOAD, ASK_EXIT, ASK_NEW } GmAsk;
 
 static struct {
     GmPageId page[GM_DEPTH_MAX];
@@ -133,6 +86,13 @@ void modern_gamemenu_open(bool debug) {
     saveslots_scan(&gm.slots);
 }
 
+// A page opens with its cursor on its first row that can be chosen.
+static int open_cursor(const Game *g, GmPageId id) {
+    GmPage p;
+    modern_gamemenu_page(g, id, &p);
+    return gm_first_enabled(&p);
+}
+
 static void add(GmPage *p, const char *label, const char *desc, const char *reason,
                 const char *shortcut, int key, bool enabled) {
     if (p->n >= GM_ROWS_MAX) return;
@@ -150,11 +110,12 @@ void modern_gamemenu_page(const Game *g, GmPageId id, GmPage *p) {
         add(p, ui->gm_world, bn->gmd_world, NULL, "", GM_ACT_PAGE + GM_PAGE_WORLD, true);
         add(p, ui->gm_game,  bn->gmd_game,  NULL, "", GM_ACT_PAGE + GM_PAGE_GAME, true);
         add(p, ui->gm_close, bn->gmd_back,  NULL, "", GM_ACT_BACK, true);
-        // Exit only here, on the foot of the page -- and not at all on a
-        // phone, where quitting an app is not the player's job.
+        p->foot = 1;
+        // Exit only here, last on the foot -- and not at all on a phone,
+        // where quitting an app is not the player's job.
 #if !defined(PLATFORM_IOS) && !defined(PLATFORM_ANDROID)
         add(p, ui->gm_exit,  bn->gmd_exit,  NULL, "", ACT_EXIT, true);
-        p->foot = 1;
+        p->foot = 2;
 #endif
         break;
     case GM_PAGE_HERO: {
@@ -168,6 +129,7 @@ void modern_gamemenu_page(const Game *g, GmPageId id, GmPage *p) {
         add(p, ui->gm_puzzle,    bn->gmd_puzzle,    NULL, "P", KEY_P, true);
         add(p, ui->gm_dismiss,   bn->gmd_dismiss,   bn->gmr_no_troops, "D", KEY_D, troops);
         add(p, ui->gm_back,      bn->gmd_back_up,   NULL, "", GM_ACT_BACK, true);
+        p->foot = 1;
         break;
     }
     case GM_PAGE_WORLD: {
@@ -183,6 +145,7 @@ void modern_gamemenu_page(const Game *g, GmPageId id, GmPage *p) {
         add(p, ui->gm_rest,     bn->gmd_rest,     NULL, "5", KEY_KP_5, true);
         add(p, ui->gm_sail,     bn->gmd_sail,     bn->gmr_not_sailing, "N", KEY_N, sailing);
         add(p, ui->gm_back,     bn->gmd_back_up,  NULL, "", GM_ACT_BACK, true);
+        p->foot = 1;
         break;
     }
     case GM_PAGE_GAME:
@@ -194,22 +157,39 @@ void modern_gamemenu_page(const Game *g, GmPageId id, GmPage *p) {
         add(p, ui->gm_controls, bn->gmd_controls, NULL, "C", ACT_CONTROLS, true);
         add(p, ui->gm_new_game, bn->gmd_new_game, NULL, "", ACT_NEW, true);
         add(p, ui->gm_back,     bn->gmd_back_up,  NULL, "", GM_ACT_BACK, true);
+        p->foot = 1;
         break;
     case GM_PAGE_SAVE:
-    case GM_PAGE_LOAD:
-        p->title = id == GM_PAGE_SAVE ? ui->gm_save : ui->gm_load;
+        p->title = ui->gm_save;
         for (int i = 0; i < MODERN_SAVE_SLOTS; i++)
-            add(p, "", id == GM_PAGE_SAVE ? bn->gmd_save : bn->gmd_load, bn->gmr_empty_slot, "",
-                ACT_SLOT + i, id == GM_PAGE_SAVE || gm.slots.hdrs[i].exists);
+            add(p, "", bn->gmd_save, NULL, "", ACT_SLOT + i, true);
         add(p, ui->gm_back, bn->gmd_back_up, NULL, "", GM_ACT_BACK, true);
+        p->foot = 1;
+        break;
+    case GM_PAGE_LOAD:
+        gm_load_page(p, &gm.slots, ui->gm_load);
         break;
     case GM_PAGE_DEBUG:
         p->title = ui->gm_debug;
         for (int i = 0; i < CHEAT_COUNT; i++)
             add(p, cheat_label((CheatAction)i), cheat_desc((CheatAction)i), NULL, "", ACT_CHEAT + i, true);
         add(p, ui->gm_back, bn->gmd_back_up, NULL, "", GM_ACT_BACK, true);
+        p->foot = 1;
         break;
     }
+}
+
+void gm_load_page(GmPage *p, const SlotSet *slots, const char *title) {
+    const Resources *r = resources_current();
+    memset(p, 0, sizeof *p);
+    if (!r) return;
+    const ResUI *ui = &r->ui;
+    const ResBanners *bn = &r->banners;
+    p->title = title;
+    for (int i = 0; i < MODERN_SAVE_SLOTS; i++)
+        add(p, "", bn->gmd_load, bn->gmr_empty_slot, "", ACT_SLOT + i, slots->hdrs[i].exists);
+    add(p, ui->gm_back, bn->gmd_back_up, NULL, "", GM_ACT_BACK, true);
+    p->foot = 1;
 }
 
 void modern_gamemenu_gallery(int n, const GmPageId *pages, int cursor) {
@@ -238,7 +218,7 @@ void modern_gamemenu_update(Game *g) {
     } else if (key >= GM_ACT_PAGE && key < GM_ACT_USER) {
         if (gm.depth < GM_DEPTH_MAX) {
             gm.page[gm.depth] = (GmPageId)(key - GM_ACT_PAGE);
-            gm.cursor[gm.depth] = 0;
+            gm.cursor[gm.depth] = open_cursor(g, gm.page[gm.depth]);
             gm.depth++;
         }
     } else if (key >= ACT_CHEAT) {
@@ -250,9 +230,10 @@ void modern_gamemenu_update(Game *g) {
         else if (gm.slots.hdrs[slot].exists) { gm.ask = ASK_OVERWRITE; gm.ask_slot = slot; }
         else                                 { gm.act = GM_DO_SAVE; gm.act_slot = slot; }
     } else if (key == ACT_CONTROLS) {
-        views_push(VIEW_CONTROLS);           // over the menu: closing it comes back here
+        views_push(VIEW_CONTROLS);           // over the menu: Back comes back here
+        views_controls_set_cursor(0);
     } else if (key == ACT_NEW) {
-        gm.act = GM_DO_NEW;
+        gm.ask = ASK_NEW;                    // asked in this page, like every question here
     } else if (key == ACT_EXIT) {
         gm.ask = ASK_EXIT;
     } else {
@@ -270,7 +251,8 @@ bool modern_gamemenu_take_confirm(const Game *g, char *body, int cap) {
     snprintf(sb, sizeof sb, "%d", gm.ask_slot + 1);
     ResTemplateVar v[] = { { "SLOT", sb } };
     resources_format_template(body, cap, gm.ask == ASK_OVERWRITE ? bn->gmc_overwrite
-                                         : gm.ask == ASK_LOAD ? bn->gmc_load : bn->gmc_exit, v, 1);
+                                         : gm.ask == ASK_LOAD ? bn->gmc_load
+                                         : gm.ask == ASK_NEW ? g->res->ui.new_game_confirm : bn->gmc_exit, v, 1);
     gm.asked = gm.ask;
     gm.ask = ASK_NONE;
     return true;
@@ -278,7 +260,7 @@ bool modern_gamemenu_take_confirm(const Game *g, char *body, int cap) {
 
 void modern_gamemenu_confirm_yes(void) {
     gm.act = gm.asked == ASK_OVERWRITE ? GM_DO_SAVE : gm.asked == ASK_LOAD ? GM_DO_LOAD
-           : gm.asked == ASK_EXIT ? GM_DO_EXIT : GM_DO_NONE;
+           : gm.asked == ASK_EXIT ? GM_DO_EXIT : gm.asked == ASK_NEW ? GM_DO_NEW : GM_DO_NONE;
     gm.act_slot = gm.ask_slot;
     gm.asked = ASK_NONE;
 }
@@ -300,9 +282,30 @@ int modern_gamemenu_take_cheat(void) {
 // Slot pages: the rows carry the save headers ("1  Name  Rank  600d").
 static bool slot_row(void *ctx, int i, char *label, char *right, int cap) {
     const GmPage *p = (const GmPage *)ctx;
-    if (i >= MODERN_SAVE_SLOTS) return page_row(ctx, i, label, right, cap);
+    if (i >= MODERN_SAVE_SLOTS) return gm_row(ctx, i, label, right, cap);
     saveslots_row(&gm.slots, i, label, right, cap);
     return p->item[i].enabled;
+}
+
+// The menu's questions: Yes, and No -- the row Escape presses.
+static bool yes_no_row(void *ctx, int i, char *label, char *right, int cap) {
+    const Resources *res = (const Resources *)ctx;
+    snprintf(label, (size_t)cap, "%s", i == 0 ? res->ui.prompt_yes : res->ui.prompt_no);
+    if (i == 1) ml_exit_hint(right);
+    else snprintf(right, 48, "%s", ml_keys_shown() ? "Y" : "");
+    return true;
+}
+
+void modern_gamemenu_path(const Game *g, char *out, int cap) {
+    if (!out || cap <= 0) return;
+    out[0] = '\0';
+    if (!g || !g->res) return;
+    for (int i = 0; i < gm.depth; i++) {
+        GmPage pi;
+        modern_gamemenu_page(g, gm.page[i], &pi);
+        size_t n = strlen(out);
+        snprintf(out + n, (size_t)cap - n, "%s%s", i ? " > " : "", pi.title ? pi.title : "");
+    }
 }
 
 void modern_gamemenu_draw(const Game *g) {
@@ -311,13 +314,8 @@ void modern_gamemenu_draw(const Game *g) {
     GmPage p;
     modern_gamemenu_page(g, gm.page[d], &p);
     // The path: "Menu > Game > Save".
-    char path[128] = "";
-    for (int i = 0; i < gm.depth; i++) {
-        GmPage pi;
-        modern_gamemenu_page(g, gm.page[i], &pi);
-        size_t n = strlen(path);
-        snprintf(path + n, sizeof path - n, "%s%s", i ? " > " : "", pi.title ? pi.title : "");
-    }
+    char path[128];
+    modern_gamemenu_path(g, path, (int)sizeof path);
     bool slots = gm.page[d] == GM_PAGE_SAVE || gm.page[d] == GM_PAGE_LOAD;
     int cursor = gm.cursor[d] < p.n ? gm.cursor[d] : p.n - 1;
     const char *hero = g->character.name;
@@ -331,10 +329,11 @@ void modern_gamemenu_draw(const Game *g) {
         memset(&q, 0, sizeof q);
         q.title = p.title;
         q.n = 2;
-        q.item[0] = (GmItem){ g->res->ui.prompt_yes, pv->body, "", GM_ACT_BACK, true };
+        q.foot = 2;
+        q.item[0] = (GmItem){ g->res->ui.prompt_yes, pv->body, "Y", 0, true };
         q.item[1] = (GmItem){ g->res->ui.prompt_no, pv->body, "", GM_ACT_BACK, true };
-        gm_draw_page(&q, path, hero, pv->yn_cursor, TOUCH_LIST_PROMPT, NULL, NULL);
+        page_menu(&q, path, hero, pv->yn_cursor, TOUCH_LIST_PROMPT, yes_no_row, (void *)g->res);
         return;
     }
-    gm_draw_page(&p, path, hero, cursor, TOUCH_LIST_MENU, slots ? slot_row : NULL, &p);
+    page_menu(&p, path, hero, cursor, TOUCH_LIST_MENU, slots ? slot_row : NULL, &p);
 }

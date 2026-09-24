@@ -13,6 +13,7 @@
 // run combat or touch render/view state.
 
 #include "shell_promptdispatch.h"
+#include "shell_actions.h"
 #include "prompt_impl.h"      // prompt_view: the province rows, to put the picker back
 // Sailing with the picture is a two-step in the SHELL: the province picked
 // (1..5), then confirmed. -1 = no pick outstanding.
@@ -93,7 +94,7 @@ static CombatResult run_castle_combat(ShellCtx *ctx, const char *castle_id) {
         tgt.garrison = cr->garrison;
         tgt.garrison_slots = GAME_ARMY_SLOTS;
     }
-    return RunCombat(g, ctx->sprites, ctx->render_target,
+    return RunCombat(g, ctx->map, ctx->fog, ctx->sprites, ctx->render_target,
                      COMBAT_MODE_CASTLE, &tgt);
 }
 
@@ -153,6 +154,7 @@ bool prompt_dispatch_tick(ShellCtx *ctx) {
                 // No, or Esc: back to the provinces, the sail still open.
                 prompt_numeric_open(r_->ui.dt_navigate, s_sail_body,
                                     pending_nav_count);
+                shell_navigate_choices(r_);
                 prompt_set_req_kind(PIO_ASK_SCENE);
                 return true;
             }
@@ -186,7 +188,7 @@ bool prompt_dispatch_tick(ShellCtx *ctx) {
                    // A modern pack's fixed guardian fields all five.
                    tgt.full_band = CL_IS_MODERN && foe->is_static; }
         shell_set_combat_ground(ctx);
-        CombatResult cr = RunCombat(g, ctx->sprites, ctx->render_target,
+        CombatResult cr = RunCombat(g, ctx->map, ctx->fog, ctx->sprites, ctx->render_target,
                                     COMBAT_MODE_FOE, &tgt);
         outcome = (cr == COMBAT_RESULT_WIN) ? PLAYER_IO_COMBAT_WON
                                             : PLAYER_IO_COMBAT_LOST;

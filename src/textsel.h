@@ -27,6 +27,12 @@ typedef struct { int cursor; bool numeric; } TextSel;
 // TEXTSEL_OK. Pure.
 int  textsel_char(int cursor, bool numeric);
 int  textsel_cols(bool numeric);
+
+// Lay the grid out inside the box that holds it. The cell is a touch unit
+// when the box can pay for one and as large as the box allows when it cannot
+// -- the grid never decides the panel's size, the panel decides the grid's.
+// Call before drawing; `textsel_cols/_w/_h/_draw` all follow it.
+void textsel_layout(bool numeric, int inner_w, int avail_h);
 int  textsel_count(bool numeric);
 
 // Cursor after a step of (dx, dy), wrapping on each axis; a step onto a

@@ -7,8 +7,8 @@ derived from numbers a pack declares in `game.json`, so this document has been
 a worked example, not a set of constants. Glory of Rome's block:
 
 ```json
-"render": { "mode": "modern", "tile_w": 96, "tile_h": 96, "tiles_w": 7, "tiles_h": 5,
-            "ui_scale": 1, "dim": 35, "native_w": 800, "native_h": 532 }
+"render": { "mode": "modern", "tile_w": 96, "tile_h": 96, "tiles_w": 5, "tiles_h": 5,
+            "ui_scale": 1, "dim": 30, "native_w": 800, "native_h": 504 }
 ```
 
 Glory of Rome has been the target this spec is written for: **96 x 96 tiles,
@@ -39,7 +39,7 @@ spilled out of the sidebar. A pack on the bitmap strip font has had an
 Font), the same one-sixth of its 96 px tile, so it has declared `ui_scale` 1.
 
 The whole picture has been shown at the largest whole scale the screen allows
-(`MODERN-RESOLUTION.md`), which has changed nothing about what you author.
+(`DESIGN-SPEC.md`), which has changed nothing about what you author.
 
 Everything an artist delivers has fallen into one of two classes:
 
@@ -88,7 +88,7 @@ One square size has meant it is correct in all of them.
 | chrome frame | 320 x 200 | none: drawn in code (section 3) | -- |
 | splash title | 320 x 200 | **256 x 164** (RD Pro cap) | `art/ui/` |
 | splash logo | 320 x 84 | **320 x 84** | `art/ui/` |
-| status bar strip | 320 x 5 | none: drawn in code (section 3) | -- |
+| status bar strip | 320 x 5 | none: a modern screen has no status bar | -- |
 | class picker | 288 x 184 | **256 x 164** (RD Pro cap) | `art/ui/` |
 | location backdrops | 240 x 102 | **240 x 102** | `art/ui/` |
 | ending win / lose, promotion | 144 x 170 | **144 x 170** | `art/ui/` |
@@ -100,9 +100,9 @@ One square size has meant it is correct in all of them.
 
 Rome has declared a TrueType face in `game.json` (`font` block, PACK-FORMAT
 §2.2): Press Start 2P, SIL OFL, drawn at 16 (a 16 px cell) in a fixed cell
-with anti-aliasing; the status band, message panel and list rows have taken
-their height from the face. The 8 x 8 strip `rome-font.png` has been in the
-pack as the fallback.
+with anti-aliasing; the title strips, the message box and the text in rows
+have taken their height from the face. The 8 x 8 strip `rome-font.png` has
+been in the pack as the fallback.
 
 The bitmap strip route, which legacy has used, has been a single horizontal
 strip of 128 glyphs, ASCII order, no padding, read at whatever glyph size it
@@ -110,15 +110,16 @@ has been authored at and drawn into the `8 * ui_scale` cell.
 
 ## 3. The chrome has been drawn in code; a bitmap frame has been a nine-slice
 
-Rome has shipped no chrome bitmap. Its frame bands, the bar under the status
-line, the HUD panel borders and every window border have been the gold
-lattice drawn by `src/lattice.c`: a cross-hatch of two gold strands on dark
-wood, bright where they cross, one repeat every 8 units (8 px at `ui_scale`
-1), railed in gold with a dark line inside the rail. The declared buffer has
-been 800 x 532 (`render.native_w/native_h`) with a 7 x 5 viewport; across it
-have run a 12 px edge, the 672 px map pane, an 8 px band, the 96 px HUD and a
-12 px edge, and down it a 12 px edge, a 20 px status band, an 8 px band, the
-480 px pane and a 12 px edge (`layout_init`, `src/layout.c`).
+Rome has shipped no chrome bitmap. Its frame, the bands beside the map, the
+joins between column tiles and every page's ring have been the gold lattice
+drawn by `src/lattice.c`: a cross-hatch of two gold strands on dark wood,
+bright where they cross, one repeat every 8 units (8 px at `ui_scale` 1),
+railed in gold with a dark line inside the rail. The declared buffer has been
+800 x 504 (`render.native_w/native_h`) with a 5 x 5 viewport; across it have
+run a 12 px edge, the 96 px left column, a 4 px band, the 576 px map, a 4 px
+band, the 96 px right column and a 12 px edge, and down it a 12 px edge, the
+480 px map and a 12 px edge (`layout_init`, `src/layout.c`; DESIGN-SPEC
+DSGN-0003).
 
 A pack that ships `chrome_overworld.png` has had it cut into nine pieces
 rather than stretched to the screen: four corners drawn 1:1, four edge bands

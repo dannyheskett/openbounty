@@ -1,21 +1,21 @@
 // src/modern/uikit.h
 //
-// The modern screens' shared kit: one look for every panel, title strip,
-// scene, in-lay and picture, so the art is what the eye lands on and the
-// interface is the same everywhere.
+// The modern screens' content builders: one look for every title strip,
+// scene, picture, column of words and row, so the art is what the eye lands
+// on and the interface is the same everywhere. Where a page goes is the page
+// engine's alone (src/modern/page.h); these draw inside the rect it returns.
 //
-//   panel     a dark, nearly opaque fill ringed by the lattice -- never a flat
-//             blue box
-//   title     the strip across a screen's top: its name at the left, what it
-//             is about (a zone, the purse) at the right, a lattice band under it
-//   scene     a place screen: the backdrop whole at 3x (720x306) framed by the
-//             lattice at the sides, a two-line introduction under it, and two
-//             full-width rows -- or three, with the backdrop's top trimmed
-//   in-lay    a framed panel centred over the dimmed screen: a title, a picture
-//             at 2x with the words flowing beside it and then beneath, and its
-//             rows along the foot
+//   title     the strip across a page's top: its name at the left, what it is
+//             about (the purse, the hero) at the right, a lattice band under it
+//   scene     a place: the backdrop at 3x between its columns, the words under
+//             it, and the rows along the foot
+//   doc       paragraphs of words beside a picture, paged
 //
-// On Rome's 776x480: scene 36 + 306 + 36 + 2 + 100, or 36 + 255 + 37 + 2 + 150.
+// Words: every block of text is inset UK_INSET from its panel's edges, lines
+// are uk_line_h() apart, and text that does not fit is cut with ".." -- a
+// line at its end, a block on its last line. Colours: labels and titles gold,
+// values and words white, what cannot be chosen dark grey.
+//
 // Legacy never includes this header.
 
 #ifndef OB_MODERN_UIKIT_H
@@ -28,54 +28,67 @@
 
 struct Game;
 
-#define UK_BAND   4     // the lattice band between parts
-#define UK_INSET  12    // text inset inside a panel
+#define UK_BAND   4     // the lattice band between parts, and above a page's rows
+#define UK_INSET  12    // text inset inside a panel, on every side
+// Every figure and troop standing still, out of a fight and in one: a frame
+// every 150 ms, the combat tick's pace.
+#define UK_IDLE_FPS (1000.0 / 150.0)
+// A face that talks (a portrait, a villain's): two frames a second.
+#define UK_FACE_FPS 2.0
 
-Color uk_fill(void);    // a panel's fill
-Color uk_ink(void);     // a selected row's text (solid)
-int   uk_title_h(void); // the title strip, without its band
-int   uk_line_h(void);  // a text line's pitch
+// The colours every modern page uses.
+Color uk_fill(void);      // a panel's fill
+Color uk_ink(void);       // a lit row's text (solid)
+Color uk_edge(void);      // a picture's thin gold edge
+Color uk_edge_dim(void);  // the edge of an icon still to find
+Color uk_ghost(void);     // an icon still to find (a tint)
+Color uk_shade(void);     // laid over what cannot be used now
+Color uk_hint_bg(void);   // behind a key name on a tile
+Color uk_button(void);    // a count button's edge, and its bar
+Color uk_bar_edge(void);  // the count bar's frame
 
-// A framed panel: the fill and the lattice ring outside the rect.
-void uk_panel(int x, int y, int w, int h);
-// The fill alone over the full-screen rect (the chrome frames it).
-// A full-screen page. `uk_page_is_modal` is true when the buffer is bigger
-// than the screen the pack declared; the page then draws as a modal over the
-// dimmed world, with a ring around it.
-bool uk_page_is_modal(void);
-void uk_page(ML_Rect r);
-void uk_sheet(void);
-// The title strip at (x, y, w): `left` yellow, `right` at the right edge.
-// Returns the y under its band.
-int  uk_title(int x, int y, int w, const char *left, const char *right, Color right_c);
+int   uk_title_h(void);   // the title strip, without its band
+int   uk_line_h(void);    // a text line's pitch
+
+// The title strip at (x, y, w): `left` gold at the left, `right` gold at the
+// right, and `close` (NULL: none) after it -- a button for Escape. When the
+// strip cannot hold everything, Close gives up its key name, then `right`
+// goes; only then is `left` cut, with "..". Returns the y under its band.
+int  uk_title(int x, int y, int w, const char *left, const char *right, const char *close);
 // "Gold 12000", for a place screen's title strip (the HUD is hidden there).
 void uk_gold_text(const struct Game *g, char *out, int cap);
-// Darken everything under an in-lay.
-void uk_dim(void);
-
-// An in-lay w x h centred on ml_area(): dims, draws the panel and its title,
-// and returns the body under the title band.
-ML_Rect uk_inlay(int w, int h, const char *title, const char *right);
-// A step that stands in place of the one before it: the whole screen, the fill
-// and the title strip, nothing behind. Returns the body under the title band.
-ML_Rect uk_frame(const char *title, const char *right);
-// The in-lay sizes: standard, tall, wide.
-#define UK_INLAY_W   576
-#define UK_TALL_H    444
-
-// A picture in a black square with a thin gold edge.
+// A picture in a black square with a thin gold edge, at w x h (a whole
+// multiple of the art).
 void uk_picture(Texture2D t, int x, int y, int w, int h);
+// The same at the art's own size, cut to w x h from its top left: a picture
+// whose place is smaller than it loses its foot, never its scale.
+void uk_picture_cut(Texture2D t, int x, int y, int w, int h);
+// A figure: `t` at `scale` (a whole multiple) with its foot on `foot_y`,
+// from `x`. Where it would pass `top_y` its top is cut in whole pixels of the
+// art -- never squashed.
+void uk_figure(Texture2D t, int x, int foot_y, int scale, int top_y, bool mirror);
 
+// One line of text at (x, y), cut with ".." to `w`.
+void uk_line(const char *text, int x, int y, int w, Color fg);
+// Make `buf` end with ".." inside `w` (a line that has more after it).
+void uk_mark_cut(char *buf, int cap, int w);
+// `text` wrapped to `w` from (x, y), at most `max_lines` lines; a cut is
+// marked on the last. Returns the y under the last line.
+int  uk_lines_draw(const char *text, int x, int y, int w, int max_lines, Color fg);
 // Words wrapped from (x, y) across w; while a line's top is above `pic_b` it
 // starts at `pic_r` instead (beside a picture), then runs the full width.
-// Stops before `max_y`. Returns the y under the last line.
+// Stops before `max_y`, marking a cut. Returns the y under the last line.
 int  uk_flow(int x, int y, int w, int pic_r, int pic_b, int max_y, const char *text, Color fg);
 // Lines `text` wraps to at width w.
 int  uk_lines(const char *text, int w);
+// `text` wrapped to `w` and centred on `cx`, at most `max_lines` lines, a cut
+// marked. Returns the y under the last line.
+int  uk_words_centred(const char *text, int cx, int y, int w, int max_lines, Color fg);
 
 // `n` full-width rows along the foot of `body` with a band above them; returns
 // the y of the band (the words above stop there).
 int  uk_foot_rows(ML_Rect body, int n, int cursor, MlRowFn fn, void *ctx, int touch_list);
+
 
 // ---- the place scene ---------------------------------------------------------------
 
@@ -85,63 +98,29 @@ typedef struct {
     int     scale;
     int     trim;       // screen pixels cut off the backdrop's top
     int     intro_y, intro_h;
-    int     extra_y, extra_h;   // a block between the words and the rows (0: none)
     int     rows_y;
     int     rows;
 } UkScene;
 
-// Draw the frame, title and backdrop for a scene with `rows` answers (2 or 3).
-UkScene uk_scene(const char *title, const char *right, Texture2D backdrop, int rows);
-// As uk_scene with a band of `band_h` between the backdrop and the rows (the
-// foe's cards), the backdrop's top trimmed to make room.
-UkScene uk_scene_ex(const char *title, const char *right, Texture2D backdrop, int rows, int band_h);
-// As uk_scene, with room for the whole introduction (up to three lines).
-UkScene uk_scene_for(const char *title, const char *right, Texture2D backdrop, int rows, const char *intro);
-// Blit art placed in the backdrop's own 240x102 units.
-void    uk_scene_blit(const UkScene *L, Texture2D t, int bx, int by, int bw, int bh);
-// A figure standing on the backdrop's bottom edge, `x` screen pixels in, at 2x.
+// The backdrop as a band across `r` from `top`, `band_h` tall, at the largest
+// whole scale (3 at most) its width allows: its top trimmed in whole source
+// pixels, a column in each bar beside it (or the lattice), and a lattice
+// divider under it.
+UkScene uk_scene_band(ML_Rect r, int top, Texture2D backdrop, int band_h);
+// A figure standing on the backdrop's bottom edge at 2x, `x` screen pixels
+// in from the backdrop's left.
 void    uk_scene_figure(const UkScene *L, Texture2D t, int x);
-void    uk_scene_intro(const UkScene *L, const char *text);
-void    uk_scene_rows(const UkScene *L, int n, int cursor, MlRowFn fn, void *ctx, int touch_list);
-// As uk_scene_ex, with a block `extra_h` tall between the words and the rows
-// (the count buttons); its top is L.extra_y.
-UkScene uk_scene_extra(const char *title, const char *right, Texture2D backdrop, int rows, int intro_min,
-                       int extra_h);
 
-// ---- the muster: a scene over two columns --------------------------------------------
-//
-// The castle's Recruit, Garrison and Withdraw pages: the title strip, the
-// backdrop as a band with its keeper standing in it at 2x (uk_scene_figure on
-// `top`), a lattice divider, then the roll of troops at the left and the one
-// under the cursor beside it. The band takes whatever the list leaves.
-typedef struct {
-    UkScene top;        // the band; use uk_scene_figure / uk_scene_blit on it
-    ML_Rect list;       // the left column, for ml_list_draw
-    ML_Rect detail;     // the right column, its inset already taken
-} UkMuster;
-
-UkMuster uk_muster(const char *title, const char *right, Texture2D backdrop,
-                   int list_rows, int list_w);
-
-
-// A row source over a fixed list of labels.
-typedef struct { const char *label[8]; bool enabled[8]; } UkRows;
+// A row source over a fixed list of labels. `esc` is one more than the row
+// Escape presses (0: none): that row shows the key while the keyboard is in
+// use.
+typedef struct { const char *label[8]; bool enabled[8]; int esc; } UkRows;
 bool uk_rows_fn(void *ctx, int i, char *label, char *right, int cap);
-
-// A confirmation in-lay: title, picture at 2x (none: the words take the width),
-// the words, and one row (Continue).
-// A question in the same panel a result note uses: the picture, the words, and
-// the answers along the foot. One shape for everything raised with a face.
-void uk_result_ask(const char *title, Texture2D face, const char *text,
-                   const char *const *labels, int n_rows, int cursor, int touch_list);
-void uk_result_inlay(const char *title, Texture2D face, const char *text, const char *row_label,
-                     int touch_list);
-
 
 // ---- paged words beside a picture ------------------------------------------------
 
 // Paragraphs of words for an in-lay's body: each may start with a gap, and its
-// first `label` bytes may be yellow before a value.
+// first `label` bytes may be gold before a value.
 #define UK_DOC_PARAS 32
 typedef struct {
     int   off[UK_DOC_PARAS];
@@ -157,67 +136,18 @@ typedef struct {
 void uk_doc_add(UkDoc *d, const char *text, Color fg);
 // The next paragraph starts after a gap.
 void uk_doc_gap(UkDoc *d);
-// "Label: value" from a template holding %VALUE%: the part before it yellow.
+// "Label: value" from a template holding %VALUE%: the part before it gold.
 void uk_doc_labeled(UkDoc *d, const char *tmpl, const char *value);
 // Lay the words out in `area`, beside a pic_w x pic_h picture at its top left
 // (0: none), and draw page `page` with a "1/2" pager at the foot when there are
-// more (page < 0: the first page and no pager). Returns the page count (draw
-// false: count only).
+// more (page < 0: the first page, no pager, and a cut marked). Returns the
+// page count (draw false: count only).
 int  uk_doc_draw(const UkDoc *d, ML_Rect area, int pic_w, int pic_h, int page, bool draw);
-// The height the words take in one page at area's width (beside the picture).
-int  uk_doc_height(const UkDoc *d, ML_Rect area, int pic_w, int pic_h);
 
-// A scene whose words band is as tall as `doc` needs -- a result, the Emperor's
-// answer with its gains -- the backdrop's top trimmed to make room.
-UkScene uk_scene_for_doc(const char *title, const char *right, Texture2D backdrop, int rows,
-                         const UkDoc *doc, int extra_h);
-// Draw `doc` in the scene's words band.
-void    uk_scene_doc(const UkScene *L, const UkDoc *doc);
+// ---- How many ----------------------------------------------------------------------
 
-// ---- the card: the one panel model -------------------------------------------------
-//
-// A framed panel sized to what it holds: an optional title strip; an optional
-// picture, always at 2x, with the words in one column beside it; optionally a
-// block the full width of the card under them (the count row); the answers as
-// full-width rows stacked along the foot. The narrowest column that fits
-// beside the picture is chosen, so short words make a narrow card and long
-// words a wide one.
-
-#define UK_CARD_ANSWERS 4
-typedef struct {
-    const char  *title, *right;               // title strip (NULL: none)
-    Texture2D    face;                        // 2x picture (id 0: none)
-    const UkDoc *doc;                         // the words (may be NULL)
-    const char  *answers[UK_CARD_ANSWERS];    // fixed answers, as rows
-    bool         disabled[UK_CARD_ANSWERS];
-    int          n_answers, cursor, touch_list;
-    int          touch_base;                  // the first answer's row in touch_list
-    int          extra_h;                     // full-width block under the body (0: none)
-    int          min_w;                       // the card at least this wide
-    bool         at_foot;                     // on the area's foot (the map), else centred
-    bool         no_dim;
-} UkCard;
-
-typedef struct { ML_Rect card; ML_Rect extra; } UkCardOut;
-
-// Lay out and draw the card; out (may be NULL) gives the extra block's rect.
-void uk_card(const UkCard *c, UkCardOut *out);
-
-// ---- the map message and question ------------------------------------------------
-//
-// Every message and question on the map, one look: the width of the map pane
-// less its margin, on its foot; an optional gold title line; the white words
-// directly under it; a lattice band; then 0-6 full-width answer rows (a
-// message has one, Continue). As tall as what it holds.
-#define UK_ASK_ROWS      6
-#define UK_MESSAGE_LINES 6          // a message's body lines per page
-int  uk_message_text_w(void);       // the width its words wrap to
-int  uk_ask_over_text_w(void);      // the same, for uk_ask_over
-void uk_ask(const char *title, const char *const lines[], int n_lines,
-            int n_rows, int cursor, MlRowFn fn, void *ctx, int touch_list);
-// The same shape on the foot of the battlefield, at its width (the area's,
-// outside combat), over the dimmed field. The combat helper.
-void uk_ask_over(const char *title, const char *const lines[], int n_lines,
-                 int n_rows, int cursor, MlRowFn fn, void *ctx, int touch_list);
+// The one count: `heading` gold, `sub` white, `cost` gold (NULL: none), then
+// the count's buttons across `a`, from its top. Returns the y under it.
+int  uk_count(ML_Rect a, const char *heading, const char *sub, const char *cost, int value, int max);
 
 #endif

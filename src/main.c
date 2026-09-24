@@ -119,6 +119,7 @@
 #include "shell_audience.h"
 #include "modern/castle.h"
 #include "modern/gamemenu.h"
+#include "modern/mlist.h"
 #include "modern/location.h"
 #include "shell_gallery.h"
 
@@ -252,6 +253,14 @@ static int validate_pack_run(const char *pack_dir, int lo, int hi,
     return (total > 0 && solved == total) ? 0 : 1;
 }
 
+// The cell a tap on the map steps from. Modern: the hero's own cell, wherever
+// the camera put it. Legacy: the viewport's centre tile, as it always was.
+static void map_tap_cell(const Game *g, const Map *m, int *x, int *y) {
+    if (CL_IS_MODERN) { map_render_hero_cell(g, m, x, y); return; }
+    *x = CL_MAP_X + (CL_MAP_TILES_W / 2) * CL_TILE_W;
+    *y = CL_MAP_Y + (CL_MAP_TILES_H / 2) * CL_TILE_H;
+}
+
 // ===========================================================================
 // main
 // ===========================================================================
@@ -294,6 +303,12 @@ int shell_run_game(int argc, char **argv) {
     bool        movie_requested = false;
     const char *movie_path_arg  = NULL;
     const char *gallery_dir     = NULL;   // --gallery <dir>: capture every modern screen
+    // --window WxH / --touch: the geometry a device has, on this desk. The
+    // window size drives everything (present_refit derives the buffer from
+    // it), and --touch turns on what only a finger turns on, so a capture at
+    // 1125x553 is the picture the phone draws rather than a guess about it.
+    int want_win_w = 0, want_win_h = 0;
+    bool force_touch = false;
     // --seed N: pick catalog world N (0..255) for a reproducible run. -1 means
     // "not asked for" -- the world is derived from time + name + class instead.
     int seed_index = -1;
@@ -432,6 +447,16 @@ int shell_run_game(int argc, char **argv) {
             }
         } else if (strcmp(a, "--gallery") == 0 && i + 1 < argc) {
             gallery_dir = argv[++i];
+        } else if (strcmp(a, "--window") == 0 && i + 1 < argc) {
+            int w = 0, h = 0;
+            if (sscanf(argv[++i], "%dx%d", &w, &h) == 2 && w > 0 && h > 0) {
+                want_win_w = w; want_win_h = h;
+            } else {
+                fprintf(stderr, "--window wants WxH, e.g. --window 1125x553\n");
+                return 2;
+            }
+        } else if (strcmp(a, "--touch") == 0) {
+            force_touch = true;
         } else if (strcmp(a, "--headless") == 0) {
             headless_mode = true;
         } else if (strcmp(a, "--verbose") == 0) {
@@ -748,34 +773,34 @@ int shell_run_game(int argc, char **argv) {
     // that declared no render.mode.
     layout_init((const struct Resources *)&res);
 
-    // The window opens at the declared buffer times the largest whole scale
-    // the monitor can show -- an exact multiple, never an odd size, and never
-    // a window smaller than the screen allows. A declared buffer is the case
-    // this matters for; everything else keeps the size the layout derived.
+    // The window opens at the smallest screen; once it exists it grows to the
+    // largest whole multiple of that the monitor has room for (below).
+    // --window WxH wins: it is the whole point of the flag.
     int base_w = CL_WINDOW_W;
     int base_h = CL_WINDOW_H;
-#if !defined(PLATFORM_IOS) && !defined(PLATFORM_ANDROID) && !defined(__EMSCRIPTEN__)
-    if (CL_IS_MODERN && CL_IS_NATIVE) {
-        int disp_w = 0, disp_h = 0;
-        frame_host_display_size(&disp_w, &disp_h);
-        if (disp_w > 0 && disp_h > 0) {
-            int z = present_max_scale(disp_w, disp_h);
-            base_w = CL_SCREEN_W * z;
-            base_h = CL_SCREEN_H * z;
-        }
-    }
-#endif
+    if (want_win_w > 0 && want_win_h > 0) { base_w = want_win_w; base_h = want_win_h; }
 
     // The window: resizable, no cursor, no exit key, 60fps -- all of that is
     // frame_host_window_open's, so every platform opens it the same way.
-    // Modern starts at 1x -- one buffer pixel to one screen pixel, the
-    // resolution the pack was authored for. Maximising shows more tiles rather
-    // than bigger ones; higher scales are an explicit choice for a 4K panel.
     // Demo mode paces itself via per-beat holds in shell_demo.c; the frame rate
     // stays at the human 60fps cap. Human play is 60fps too.
     BOOT_TRACE("[boot] resources loaded, opening the window\n");
     frame_host_window_open(base_w, base_h,
                            res.title[0] ? res.title : "OpenBounty");
+    // --touch: after the window, because the host clears its input state as it
+    // opens. Everything a finger changes now draws on this desk.
+    if (force_touch) input_host_force_touch();
+    // The room is known only now the window exists: the monitor's work area
+    // less the title bar and the taskbar. A declared buffer grows to the
+    // largest whole multiple of itself (3 at most) that the room holds.
+    if (CL_IS_MODERN && CL_IS_NATIVE && !(want_win_w > 0 && want_win_h > 0) &&
+        !want_fullscreen) {
+        int room_w = 0, room_h = 0;
+        if (frame_host_window_room(&room_w, &room_h)) {
+            int z = present_max_scale(room_w, room_h);
+            if (z > 1) frame_host_window_place(CL_SCREEN_W * z, CL_SCREEN_H * z);
+        }
+    }
     {
         int dw = 0, dh = 0;
         frame_host_display_size(&dw, &dh);
@@ -801,8 +826,9 @@ int shell_run_game(int argc, char **argv) {
     sprites_load(&sprites, &res);
     BOOT_TRACE("[boot] sprites loaded\n");
     tile_cache_attach(&res);
-    // Cosmetic tile variants: a fresh shuffle every launch (draw-time only).
-    tilevar_init((const struct Resources *)&res, (unsigned)time(NULL));
+    // Cosmetic tile variants (draw-time only): picked from the game's own
+    // seed, which the frame hands tilevar each time it draws the map.
+    tilevar_init((const struct Resources *)&res, 0);
 
     // Fit the layout to the window before anything allocates a target. In
     // modern the buffer is the window divided by the scale; without this the
@@ -962,8 +988,6 @@ title:;
     }
 
     bool quit_requested = false;
-    bool new_game_requested = false;   // modern New Game row chosen: ask
-    bool new_game_asking = false;      // its yes/no prompt is up
     bool menu_asking = false;          // modern game menu: Yes/No before exit, load or overwrite
     bool castle_asking = false;        // modern home castle: Yes/No before a tribute
     bool town_asking = false;          // modern town: a Yes/No before an action is up
@@ -980,7 +1004,6 @@ title:;
         .spawn_x = spawn_x, .spawn_y = spawn_y,
         .quit_flag = &quit_requested,
         .hud_pref = game.hud_visible,
-        .new_game_flag = &new_game_requested,
     };
     MenuCallbacks menu_cbs = {
         .on_save = menu_save, .on_load = menu_load,
@@ -1158,13 +1181,6 @@ title:;
 
         // ==== Input ====
 
-        // Modern New Game: confirm, then leave the loop for the title menu.
-        if (new_game_asking) {
-            PromptResult r = prompt_update();
-            if (r != PROMPT_RESULT_NONE) new_game_asking = false;
-            if (r == PROMPT_RESULT_YES) { back_to_title = true; quit_requested = true; }
-            goto end_input;
-        }
         // Modern town: an action waits on its Yes/No.
         if (town_asking) {
             PromptResult r = prompt_update();
@@ -1289,24 +1305,19 @@ title:;
                 dialog_dismiss();
             }
             if (loc_deal_pending() && !prompt_is_active() && !loc_deal_revealed()) {
-                // The panorama first: its action row brings up the in-lay, Leave exits.
-                touch_request(TOUCH_CHROME_BACK);
-                int *cur = loc_deal_cursor();
-                int tapped = touch_tapped_row(TOUCH_LIST_PROMPT);
-                if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_DOWN)) *cur = 1 - *cur;
-                if (tapped >= 0) *cur = tapped;
-                bool go = tapped >= 0 || input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
-                          input_key_pressed(KEY_SPACE);
-                if (input_key_pressed(KEY_ESCAPE) || (go && *cur == 1)) { loc_deal_clear(); views_dismiss(); }
-                else if (go) loc_deal_reveal();
+                // The place first: its action row brings up the outcome, Leave exits.
+                MlList l = { 2, *loc_deal_cursor(), NULL, NULL };
+                int row = -1;
+                MlEvent ev = ml_list_input(&l, TOUCH_LIST_PROMPT, &row);
+                *loc_deal_cursor() = l.cursor;
+                if (ev == ML_EV_BACK || (ev == ML_EV_ACT && row == 1)) { loc_deal_clear(); views_dismiss(); }
+                else if (ev == ML_EV_ACT) loc_deal_reveal();
                 goto end_input;
             }
             if (loc_deal_pending() && !prompt_is_active()) {
-                // The deal is on show: Continue (Enter, Escape or a tap) closes it.
-                touch_request(TOUCH_CHROME_BACK);
-                int tapped = touch_tapped_row(TOUCH_LIST_PROMPT);
-                if (tapped == 0 || input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
-                    input_key_pressed(KEY_SPACE) || input_key_pressed(KEY_ESCAPE)) {
+                // The outcome is on show: Continue -- any key, or a tap -- closes
+                // it, as every outcome does.
+                if (ui_any_key_pressed() || touch_tapped_row(TOUCH_LIST_PROMPT) == 0) {
                     loc_deal_clear();
                     views_dismiss();
                 }
@@ -1348,18 +1359,13 @@ title:;
                         break;
                     }
                     case GM_DO_LOAD: menu_ctx.slot = slot; if (menu_load(&menu_ctx)) views_dismiss(); break;
-                    case GM_DO_NEW:  menu_new(&menu_ctx); views_dismiss(); break;
+                    // New Game was answered Yes in its page: back to the title.
+                    case GM_DO_NEW:  views_dismiss(); back_to_title = true; quit_requested = true; break;
                     case GM_DO_EXIT: menu_quit(&menu_ctx); break;
                     case GM_DO_NONE: break;
                 }
             } else {
                 views_menu_update(&menu_cbs, &menu_ctx);
-            }
-            if (new_game_requested) {
-                new_game_requested = false;
-                prompt_yes_no_open(NULL, res.ui.new_game_confirm);
-                prompt_set_req_kind(PIO_ASK_IN_PLACE);
-                new_game_asking = true;
             }
             // A Debug row (--debug only) closes the menu and names a cheat.
             int cheat = views_menu_take_cheat();
@@ -1376,6 +1382,8 @@ title:;
                 prompt_set_req_kind(PIO_ASK_IN_PLACE);   // the town asks in its own panel
                 town_asking = true;
             }
+        } else if (views_active() == VIEW_CONTROLS && CL_IS_MODERN) {
+            views_controls_input(&game);      // the one Controls input (views.c)
         } else if (views_active() == VIEW_CONTROLS) {
             // Navigate rows with Up/Down; digit keys 1..N jump to and
             // advance the matching row; ESC / any unhandled key closes.
@@ -1425,6 +1433,12 @@ title:;
                 }
             } else if (ui_any_key_pressed()) {
                 views_dismiss();
+            }
+        } else if (views_active() == VIEW_SPELLS && CL_IS_MODERN) {
+            // The one spells page (views_spells_input); a chosen spell is cast.
+            if (views_spells_update_modern(&game)) {
+                int spell_idx = views_spells_chosen();
+                if (spell_idx >= 0) dispatch_adventure_spell(&game, spell_idx);
             }
         } else if (views_active() == VIEW_SPELLS) {
             // Spell casting with Left/Right to switch columns, A-G to cast.
@@ -1594,10 +1608,12 @@ title:;
                 } else {
                     views_dismiss();
                 }
-            } else if (ui_any_key_pressed_ex(views_closes_on_tap(views_active()))) {
-                // One rule for every page (views_closes_on_tap): a sheet or a
-                // picture goes away under a finger; a page with rows waits for
-                // a row or the band.
+            } else if (CL_IS_MODERN ? ui_any_key_pressed_ex(false)
+                                    : ui_any_key_pressed_ex(views_closes_on_tap(views_active()))) {
+                // Legacy: one rule for every page (views_closes_on_tap): a
+                // sheet or a picture goes away under a finger; a page with
+                // rows waits for a row. Modern: the page itself decides a tap
+                // (src/modern/page.c) and presses a key, which lands here.
                 ViewKind dismissing = views_active();
                 views_dismiss();
                 // WIN HAND-OFF: dismissing the agent's win screen returns
@@ -1614,9 +1630,10 @@ title:;
             // Handle bridge direction input if waiting for it
             if (bridge_state == BRIDGE_STATE_DIRECTION) {
                 // Touch: tap the target tile; ESC chrome cancels.
-                ui_map(CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H,
-                                 CL_TILE_W, CL_TILE_H,
-                                 CL_MAP_TILES_W / 2, CL_MAP_TILES_H / 2, 0);
+                int cx, cy;
+                map_tap_cell(&game, &map, &cx, &cy);
+                ui_map(CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H, cx, cy,
+                       CL_TILE_W, CL_TILE_H, 0);
                 touch_request(TOUCH_CHROME_BACK);
                 InputState in = input_poll();
                 if (in.dx != 0 || in.dy != 0) {
@@ -1687,9 +1704,12 @@ title:;
             // a tap picks its direction relative to centre -- one tap, one
             // injected direction key, one step. The verbs are the left rail
             // and the game menu; there is no action bar.
-            ui_map(CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H,
-                             CL_TILE_W, CL_TILE_H,
-                             CL_MAP_TILES_W / 2, CL_MAP_TILES_H / 2, 0);
+            {
+                int cx, cy;
+                map_tap_cell(&game, &map, &cx, &cy);
+                ui_map(CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H, cx, cy,
+                       CL_TILE_W, CL_TILE_H, 0);
+            }
             InputState in = input_poll();
             // The rail's tap, if any, is the frame's action: it fires the
             // same case the key would (src/modern/rail.c).
@@ -1731,14 +1751,9 @@ title:;
         end_input:;
 
         // ==== Draw ====
-        // Modern grows the viewport to whatever whole tiles the window can
-        // show, so the render target changes size when the window does. This
-        // is the world frame, the one screen allowed to use the whole surface;
-        // every other screen refits back to the declared buffer. Legacy is
-        // fixed and this is a no-op for it.
-        present_allow_growth(true);
+        // Modern takes whatever the window gives, so the render target changes
+        // size when the window does. Legacy is fixed and this is a no-op.
         present_refit(&render_target);
-        present_allow_growth(false);
 
         // Render into the offscreen target.
         present_begin(&render_target);

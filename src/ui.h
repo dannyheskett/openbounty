@@ -21,14 +21,14 @@ void ui_blit(Texture2D t, int x, int y, int w, int h);
 // one-design-pixel outer line in that colour and a darker inner line, so the
 // art itself carries no frame. No-op when the pack names none.
 void ui_set_panel_frame(const char *palette_name);
-void ui_panel_frame(int x, int y, int w, int h);
+// Legacy's panel frame. Modern draws no panel of its own anywhere but the
+// page engine (src/modern/page.h): in modern this draws nothing.
+void legacy_panel_frame(int x, int y, int w, int h);
 
-// Border of a window: a prompt, a view, a location menu, a modal. Legacy draws
-// the one-pixel line in `legacy` it always has. Modern draws the gold lattice
-// ring (src/lattice.c), four units thick just OUTSIDE the rect, so every
-// window on screen carries the same chrome as the frame and the HUD panels
-// and its content is untouched.
-void ui_window_frame(int x, int y, int w, int h, Color legacy);
+// Legacy's window border: a prompt, a view, a location menu, a modal, drawn as
+// the one-pixel line in `legacy` it always has. In modern it draws nothing: a
+// modern window is a page (src/modern/page.h).
+void legacy_window_frame(int x, int y, int w, int h, Color legacy);
 
 // Largest whole multiple of a picture that fits the space, floored at 1. In
 // legacy this is ui_scale (1) as it always was; in modern a title, splash or

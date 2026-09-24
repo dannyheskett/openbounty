@@ -1,0 +1,17 @@
+{
+  "id": "hud_days",
+  "prompt": "a bronze Roman sundial on a short stone pillar casting a sharp shadow, standing on a grey flagstone shelf, warm daylight, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering",
+  "style": "rd_pro__default",
+  "width": 128,
+  "height": 128,
+  "seed": 8301,
+  "bypass_prompt_expansion": true,
+  "raw_only": false,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/ui/hud_days.png",
+  "_note": "HUD sidebar panel, the days-remaining readout: generated at 128 because rd_pro__default paints a frame at 96 whatever the prompt says (ART-PIPELINE, villain portraits), then downscaled to the pack tile by Retro Diffusion's k_centroid tool; the shell draws the frame."
+}

@@ -15,30 +15,30 @@
 #include "present.h"
 
 TEST multiple_is_the_largest_whole_fit(void) {
-    // A 800x532 pack on the phones this ships to.
-    ASSERT_EQ(2, present_fit_multiple(800, 532, 2400, 1080));  // Pixel 6, landscape
-    ASSERT_EQ(2, present_fit_multiple(800, 532, 2622, 1206));  // iPhone 16 Simulator
-    ASSERT_EQ(4, present_fit_multiple(800, 532, 3200, 2400));  // a tablet
+    // Rome's 800x504 on the phones this ships to.
+    ASSERT_EQ(2, present_fit_multiple(800, 504, 2400, 1080));  // Pixel 6, landscape
+    ASSERT_EQ(2, present_fit_multiple(800, 504, 2622, 1206));  // iPhone 16 Simulator
+    ASSERT_EQ(4, present_fit_multiple(800, 504, 3200, 2400));  // a tablet
     // Height is the binding dimension on a wide phone: 2400/800 = 3, but
-    // 1080/532 = 2, and the smaller wins or the frame would not fit.
-    ASSERT_EQ(2, present_fit_multiple(800, 532, 2400, 1079));
+    // 1079/504 = 2, and the smaller wins or the frame would not fit.
+    ASSERT_EQ(2, present_fit_multiple(800, 504, 2400, 1079));
     PASS();
 }
 
 TEST multiple_never_shrinks_below_one(void) {
     // A screen smaller than the frame: the answer is 1 and the frame is
     // centred and clipped, never scaled down to a blur.
-    ASSERT_EQ(1, present_fit_multiple(800, 532, 640, 320));
-    ASSERT_EQ(1, present_fit_multiple(800, 532, 0, 0));
+    ASSERT_EQ(1, present_fit_multiple(800, 504, 640, 320));
+    ASSERT_EQ(1, present_fit_multiple(800, 504, 0, 0));
     // A degenerate frame cannot divide by zero.
     ASSERT_EQ(1, present_fit_multiple(0, 0, 2400, 1080));
     PASS();
 }
 
 TEST a_tap_comes_back_as_the_pack_pixel_under_it(void) {
-    // 800x532 at 2x is 1600x1064, centred in 2400x1080: x from 400, y from 8.
-    int fit = present_fit_multiple(800, 532, 2400, 1080);
-    int w = 800 * fit, h = 532 * fit;
+    // 800x504 at 2x is 1600x1008, centred in 2400x1080: x from 400, y from 36.
+    int fit = present_fit_multiple(800, 504, 2400, 1080);
+    int w = 800 * fit, h = 504 * fit;
     int x = (2400 - w) / 2, y = (1080 - h) / 2;
     present_store_dst(x, y, w, h, fit);
 
@@ -48,11 +48,11 @@ TEST a_tap_comes_back_as_the_pack_pixel_under_it(void) {
 
     // The middle of the frame is the middle of the pack.
     ASSERT(present_window_to_screen(x + w / 2, y + h / 2, &sx, &sy));
-    ASSERT_EQ(400, sx); ASSERT_EQ(266, sy);
+    ASSERT_EQ(400, sx); ASSERT_EQ(252, sy);
 
     // The last device pixel inside the frame is the last pack pixel.
     ASSERT(present_window_to_screen(x + w - 1, y + h - 1, &sx, &sy));
-    ASSERT_EQ(799, sx); ASSERT_EQ(531, sy);
+    ASSERT_EQ(799, sx); ASSERT_EQ(503, sy);
 
     // Both device pixels of a 2x block answer the same pack pixel.
     int ax = 0, ay = 0, bx = 0, by = 0;
@@ -63,8 +63,8 @@ TEST a_tap_comes_back_as_the_pack_pixel_under_it(void) {
 }
 
 TEST a_tap_in_the_letterbox_is_not_in_the_frame(void) {
-    int fit = present_fit_multiple(800, 532, 2400, 1080);
-    int w = 800 * fit, h = 532 * fit;
+    int fit = present_fit_multiple(800, 504, 2400, 1080);
+    int w = 800 * fit, h = 504 * fit;
     int x = (2400 - w) / 2, y = (1080 - h) / 2;
     present_store_dst(x, y, w, h, fit);
 

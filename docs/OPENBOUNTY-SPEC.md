@@ -300,7 +300,7 @@ flagged (§38).
   | Saves | 20,421-byte binary | JSON (version 11) |
   | Asset bundling | DOS `.CC` packs / module dirs | single `assets/kings-bounty/` tree + `.openbounty` packs |
   | Module system | discovery + chain-of-responsibility loader | N/A, one active pack |
-  | Render target | 320×200, scaled | legacy: 320×200, integer-scaled to a 640×400 base window; modern: the pack's declared buffer at the largest whole scale (REQ-528) |
+  | Render target | 320×200, scaled | legacy: 320×200, integer-scaled to a 640×400 base window; modern: the surface divided by the largest whole scale at which the pack's smallest screen fits (REQ-528) |
   | Palette | EGA / CGA / Hercules build-time | VGA only at runtime |
   | RNG | libc `rand()` | Java-style LCG seeded from `g->seed` |
   | Tile data | 128-byte tile-id space | per-tile struct (terrain + interact + flags) |
@@ -625,8 +625,9 @@ flagged (§38).
   dispatch has been `src/shell_frame.c`.
 - **REQ-171.** In legacy mode the window has been initialised at **640×400**
   (`CL_WINDOW_W/H` = `CL_SCREEN_W/H` × `CL_SCALE` = 320×200 × 2;
-  `src/layout.h`); in modern mode at the declared buffer times the largest
-  whole scale the monitor can show (REQ-528). In both, the window has been
+  `src/layout.h`); in modern mode at the pack's smallest screen, then resized to
+  the largest whole multiple of it that the monitor's work area holds
+  (REQ-528). In both, the window has been
   created with `FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT`, target FPS 60, and
   `KEY_NULL` as the raylib exit key (so `Escape` does not close the
   window).
@@ -900,16 +901,16 @@ flagged (§38).
   one.
 - **REQ-221c.** **Sailing has been a scene, with a confirmation.** When a
   pack ships `sprites.ui.sail_backdrop` and the string
-  `body_navigate_confirm`, the modern shell has drawn the sail-to decision as a
-  scene over that picture: one row per province plus Cancel, then a yes/no
-  confirmation ("Sail for %ZONE%?") over the same picture, drawn by
-  `modern_overlay_draw_sail` (`src/modern/overlay.c`) through the scene shape
-  the foe view uses. The two steps have lived in the SHELL
-  (`src/shell_promptdispatch.c`): the engine has received exactly one answer,
-  the province, so autoplay, recordings and replays see one decision, and a
-  pack with neither key has kept the bottom-frame list (`kings-bounty`).
-  Declining the confirmation has put the province list back up; cancelling it
-  has ended the sail.
+  `body_navigate_confirm`, the modern shell has drawn the sail-to decision,
+  from the first list on, as a place page over that picture: one row per
+  province plus Cancel, then a yes/no confirmation ("Sail for %ZONE%?") over
+  the same picture, drawn by `modern_overlay_draw_sail`
+  (`src/modern/overlay.c`; `DESIGN-SPEC.md` DSGN-0133). The two steps have
+  lived in the SHELL (`src/shell_promptdispatch.c`): the engine has received
+  exactly one answer, the province, so autoplay, recordings and replays see
+  one decision, and a pack with neither key has kept the bottom-frame list
+  (`kings-bounty`). Declining the confirmation has put the province list
+  back up; cancelling it has ended the sail.
 - **REQ-221a.** **Arrival by origin.** A zone has been able to declare
   `arrivals`, an object keyed by the zone sailed from, each `{x, y}`.
   `GameSwitchZone` has landed the hero at the entry for the zone being left,
@@ -1507,7 +1508,7 @@ flagged (§38).
   and an optional pinned spell (full table in §Appendix A). Each `TownRecord`
   has tracked `visited` and `spell_for_sale`.
 - **REQ-291.** The town view (`src/screens/` / `src/views_render.c`, and the
-  modern town screen of UI-PANELS) has offered five actions:
+  modern town screen of `DESIGN-SPEC.md` DSGN-0140) has offered five actions:
   - **A) Get New Contract**: `GameTakeNextContract`; shows the villain id,
     reward, and last-known zone, or "no contracts" when none remain.
   - **B) Rent / Cancel boat**: toggles `boat.has_boat` at `GameBoatCost`;
@@ -1569,7 +1570,7 @@ flagged (§38).
 - **REQ-304.** **Own Castle** (`src/screens/own_castle.c`) has shown the
   5-slot garrison with letter selectors A..E plus Space to toggle direction
   (army ↔ garrison); in modern mode, Garrison and Withdraw pages with a
-  How-many step (`docs/UI-PANELS.md`). Each transfer has merged into a
+  How-many step (`docs/DESIGN-SPEC.md`). Each transfer has merged into a
   matching slot or filled the first empty one; the player army has never been
   allowed to become entirely empty.
 - **REQ-305.** **King's audience** (`src/shell_audience.c`,
@@ -1998,7 +1999,7 @@ golden-digest regression tests have pinned the formulas.
   shot (rejected when `shots == 0` or surrounded). `U` has opened the spell
   menu (A..G for spells 0..6). `G` (give up) and `Esc` have set `result = 2`
   in legacy; in modern mode Esc has opened the combat menu, whose Game page
-  holds Give up (REQ-533, `docs/MENUS.md`). `C` has shown the controls
+  holds Give up (REQ-430s, `docs/DESIGN-SPEC.md`). `C` has shown the controls
   overlay (modal, not consuming the turn).
 
 ### 25.10 AI behaviour
@@ -2196,8 +2197,8 @@ golden-digest regression tests have pinned the formulas.
 
 ## 29. UI: views, HUD, dialogs, prompts
 
-`docs/UI-PANELS.md` has tabulated every modern panel's size and position, and
-`docs/MENUS.md` every menu; this section has held the rules.
+`docs/DESIGN-SPEC.md` has recorded every modern panel's size and position and
+every menu; this section has held the rules.
 
 ### 29.1 Adventure HUD and chrome
 
@@ -2207,190 +2208,217 @@ golden-digest regression tests have pinned the formulas.
   (5×5 tiles, 240×170, hero centred, camera clamped at zone edges); a **right
   sidebar** (48px: portrait, contract/siege/magic/puzzle icons, gold); and a
   **bottom** region that drops out for dialogs and prompts. The modern layout
-  has kept the same parts at the pack's sizes (UI-PANELS, "The screen").
-- **REQ-430a.** **A declared buffer.** A modern pack has been able to declare
-  its buffer with `render.native_w` / `native_h` (`CL_IS_NATIVE`,
-  `src/layout.c`): at that size the viewport has been exactly the declared
-  tile count, and `layout_init` has laid the leftover space out as edges, a
-  band between the pane and the HUD, and the status band, so the map stays
-  centred. The buffer has been a floor, not a fixed size: the scale and the
-  world map's growth have followed REQ-528. The camera has centred the hero
-  with a radius per axis (`RADIUS_X`, `RADIUS_Y` in `src/map_render.c`), so a
-  7 x 5 viewport centres on both.
+  has had no status bar: the frame, a one-tile column either side of the map,
+  and the map between them (REQ-430a, `DESIGN-SPEC.md` DSGN-0003).
+- **REQ-430a.** **A declared smallest screen.** A modern pack has been able to
+  declare the smallest screen it is drawn on with `render.native_w` /
+  `native_h` (`CL_IS_NATIVE`, `src/layout.c`). Across it `layout_init` has
+  laid out the frame (`RES_MODERN_FRAME`), the left column (one tile), a band
+  (`RES_MODERN_GAP`), the map, a band, the right column and the frame; down
+  it the frame, the map and the frame. `resources_load` has rejected a
+  declared screen too small for the frame, both columns and their bands, and
+  the larger of the viewport and the battlefield. The size has been a floor,
+  not a fixed size: the scale and the map's growth have followed REQ-528. The
+  hero's cell has been centred across the map on the row that holds the
+  map's middle, the rows standing flush with the columns' tiles; every cell
+  the map shows has been drawn, part cells at its edges and foot included,
+  and the camera has never clamped (`map_view`, `src/map_render.c`).
 - **REQ-430b.** **Code-drawn chrome.** A modern pack without
   `sprites.ui.chrome_overworld` has had the gold lattice (`src/lattice.c`): a
   cross-hatch pattern built once as a texture at `ui_scale` and tiled from the
-  screen origin. `chrome_draw` and `chrome_draw_with_status` have filled the
-  frame bands and the bar band with it; `ui_panel_frame` has drawn it as a
-  two-unit ring inside each HUD panel; `ui_window_frame` has drawn a four-unit
-  ring just outside every window rect (prompt, location menu, credits,
-  encode dialog, views, contract panel, dialog box, combat spell menu), where
-  legacy draws a one-pixel line in its original colour. Splash, title and
-  class-picker art has drawn at the largest whole scale that fits the buffer
-  (`ui_fit_scale`; legacy at 1x). Rome has shipped no chrome bitmap or bar
-  strip.
+  screen origin. `chrome_draw` has filled the frame ring and the band beside
+  each column with it. Each column has been one tile to a row, with no frame
+  per tile: a 2 px lattice band across every edge of every tile and the
+  column's dark ground (`lattice_ground`) below its tiles
+  (`hud_column_finish`, `src/hud.c`). Every page's ring has been drawn by the
+  page engine, as thick as the frame (REQ-430j). Legacy has kept its bitmap
+  chrome and its one-pixel window lines (`legacy_window_frame`,
+  `legacy_panel_frame`, `src/ui.c`), which have drawn nothing in modern.
+  Splash, title and class-picker art has been drawn at the largest whole
+  scale that fits the screen, the frame's lattice round it (`page_art`;
+  legacy at 1x). Rome has shipped no chrome bitmap or bar strip.
 - **REQ-430c.** **Pack-declared TrueType font.** A modern pack has been able
   to declare a `font` block (`file`, `size`, `caps`, `license`; `ResFont`,
   `engine/resources.c`, both paths in the manifest). The shell has had two
   text backends behind the `bfont_*` names: the bitmap strip in its
   `8 * ui_scale` cell (legacy, and any pack without the block), and
-  `src/text.c`, which rasterises the face at `size` through raylib's
-  `LoadFontData` (stb_truetype on iOS), draws every glyph centred in one
-  fixed cell (the face's widest advance) on its baseline, and uppercases when
-  `caps` is set. `bfont_preload_metrics` has run before `layout_init` (CPU
-  only) so `BFONT_GLYPH_H` is the face's line height and `BFONT_GLYPH_W` the
-  advance of `0`; `CL_STATUS_H` and `CL_PANEL_H` (`src/layout.h`) have been
-  expressed in those and evaluated to 9 and 68 in legacy. `bfont_take_line`
-  has wrapped to a pixel width: legacy by `max_w / 8` characters keeping
-  every newline; modern by the face's cell, every newline kept as authored.
-  Rome has shipped Press Start 2P (SIL OFL) at 16, a 16 px cell. Modern
-  panels have wrapped to their own inner width. Views have taken the map
-  pane's full height (`VIEW_H`), which in legacy is the content rect.
-- **REQ-430d.** **Rendered at zoom.** For a declared buffer (`CL_IS_NATIVE`)
-  the render target has been the buffer times the presentation scale
-  (`present_target_size`, `present_refit`), and every frame site has drawn
-  through `present_begin`/`present_end`, a camera at that zoom, so all draw
-  calls keep design coordinates and art is pixel-identical to an integer
-  blit; `present_scaled` has blitted the target 1:1 and stored the zoom so
-  `present_window_to_screen` yields design pixels. The map scissor has
-  multiplied by `present_get_zoom`. `bfont_set_zoom` has rebuilt the TrueType
-  atlas at size times zoom; design metrics never change, only sharpness.
-  Legacy: plain `BeginTextureMode`, a 320x200 target.
-- **REQ-430e.** **Cursor selection on every menu (modern).** One helper,
-  `src/select.c`: `sel_input` has moved a list cursor with Up/Down (W/S,
-  KP8/KP2), confirmed with Enter/KP Enter/Space, and treated a tapped row
-  (`touch_tapped_row`) or the screen's hotkey as select-and-confirm;
-  `sel_row` has drawn the cursor row inverted, a bar in the row colour with
-  the text in the panel colour, and registered the row's tap region. It has
-  served every modern list, with the modern menus drawn on the standard rows
-  of REQ-430l; letters and digits have still answered. In legacy `sel_input`
-  has returned nothing and `sel_row` drawn plain text, so every legacy screen
-  keeps its own handling and pixels.
+  `src/text.c`, which has rasterised the face at `size` through raylib's
+  `LoadFontData` (stb_truetype on iOS), drawn every glyph centred in one
+  fixed cell (the face's widest advance) on its baseline, and uppercased
+  when `caps` has been set. `bfont_preload_metrics` has run before
+  `layout_init` (CPU only) so `BFONT_GLYPH_H` has been the face's line
+  height and `BFONT_GLYPH_W` the advance of `0`; `CL_STATUS_H` and
+  `CL_PANEL_H` (`src/layout.h`) have been expressed in those and evaluated to
+  9 and 68 in legacy. `bfont_take_line` has wrapped to a pixel width: legacy
+  by `max_w / 8` characters keeping every newline; modern by the face's cell,
+  every newline kept as authored, breaking after a word's own hyphen where
+  that has come later than a space, and hyphenating a word longer than the
+  line. Rome has shipped Press Start 2P (SIL OFL) at 16, a 16 px cell.
+  Modern pages have wrapped to their own inner width; legacy views have
+  taken the map pane's full height (`VIEW_H`), the content rect.
+- **REQ-430d.** **Rendered at zoom.** For a declared smallest screen
+  (`CL_IS_NATIVE`) the render target has been the screen times the scale
+  (`present_refit`), and every frame site has drawn through
+  `present_begin`/`present_end`, a camera at that zoom, so every draw call
+  has kept design coordinates and art has been pixel-identical to an integer
+  blit; `present_scaled` has blitted the target 1:1, centred in the safe
+  area, or fitted it down into a smaller surface (`present_fit_down`, with a
+  smooth filter while fitted down), and stored the blit rect so
+  `present_window_to_screen` has yielded design pixels. The map scissor has
+  multiplied by `present_get_zoom`. `bfont_set_zoom` has rebuilt the
+  TrueType atlas at size times zoom; design metrics have never changed, only
+  sharpness. Legacy: plain `BeginTextureMode`, a 320x200 target.
+- **REQ-430e.** **One list reader (modern).** `ml_list_input`
+  (`src/modern/mlist.c`) has read every modern list: Up/Down and KP8/KP2 have
+  moved the cursor, wrapping; Enter, KP Enter and Space have acted on the
+  cursor's row; a tapped row (`touch_tapped_row`) has been select-and-act; a
+  row's own key -- its shortcut letter or its digit -- has acted on that row;
+  Escape has been Back. A row that cannot be chosen has taken the cursor and
+  not acted. `sel_input` (`src/select.c`) has wrapped it for the lists that
+  have used it, and returned nothing in legacy; `sel_row` has drawn legacy's
+  plain text and its tap region, so every legacy screen has kept its own
+  handling and pixels.
 - **REQ-430f.** **Keyboard detection and the letter selector (modern).**
   `input_host` has latched which physical devices have been used: a real key
   event (not an injected one), a touch contact, a gamepad button or stick
-  (`input_host_note_gamepad`, called from `src/input.c`).
-  `input_has_keyboard` has been true once a key has been seen, and before
-  that true unless touch or a gamepad is seen first; `input_text_mode` has
-  mapped it to typed entry or the selector. `src/textsel.c` has been the
-  selector: an in-game grid drawn in the buffer, A..Z SPC DEL OK in 6 x 5 or
-  7 8 9 DEL / 4 5 6 OK / 1 2 3 0 for numbers, moved by arrows, keypad or the
-  gamepad d-pad and stick (`input_gamepad_dir`), picked by Enter or the A
-  button (`input_gamepad_confirm`), deleted by Backspace or B, or tapped
-  (`TOUCH_LIST_TEXTSEL`); the cursor cell is inverted. It has written the
-  field's buffer directly, through the same bounds the typed path applies.
-  It has served the hero name on a gamepad or a keyboardless desktop (a
-  phone uses the on-screen keyboard, REQ-531), the recruit count
-  (`recruit_soldiers.c`) and the numeric prompt (`prompt.c`), with typing
-  still accepted alongside. Legacy has kept typed entry and its window-chrome
-  keyboard and digit pad.
-- **REQ-430g.** **Dimmed scene under detail views (modern).** Whenever a
-  view, a prompt or a dialog is open, `overlay_draw` has first darkened the
-  chrome interior (map pane and sidebar, not the status band or frame) with
-  black at the pack's `render.dim` percent (default 55, 0 disables; Rome 35),
-  then drawn the panel, so the panel is what the eye lands on and the live
-  map stays readable behind it. Location screens have floated their card on
-  the dimmed map. Combat has dimmed the field under its spell picker, the
-  victory dialog, prompts and any opened view. Toasts have not dimmed.
-  `overlay_dim_scene` / `overlay_dim_alpha` (`src/overlay.c`); legacy has
-  never dimmed.
-- **REQ-430h.** **One panel rect (modern).** Every bottom text panel -- the
-  message dialog, the prompts, the town, castle, dwelling, alcove and recruit
-  menus -- has taken one of the modern layouts (REQ-430j), never a legacy
-  rect. Dialog headers have wrapped like body text (the audience passes the
-  Emperor's words as the header); the four legacy arrow control codes have
-  rendered as the font's arrow glyphs; recruit rows have padded the name to
-  the longest in the pool; empty army slots have stayed panel-coloured; the
-  character card has printed zeros; Escape on the map has opened the game
-  menu (`INPUT_ACTION_GAME_MENU`). Legacy has kept its one-sided 5 px margin
-  and its own drawing for all of these.
+  (`input_host_note_gamepad`, called from `src/input.c`), and has kept the
+  one used last (`input_last_device`). `input_has_keyboard` has been true
+  once a key has been seen, and before that true unless touch or a gamepad
+  has been seen first; `input_text_mode` has mapped it to typed entry or the
+  selector. `src/textsel.c` has been the selector: an in-game grid drawn in
+  the buffer, A..Z SPC DEL OK or 7 8 9 DEL / 4 5 6 OK / 1 2 3 0 for numbers,
+  moved by arrows, keypad or the gamepad d-pad and stick
+  (`input_gamepad_dir`), picked by Enter or the A button
+  (`input_gamepad_confirm`), deleted by Backspace or B, or tapped
+  (`TOUCH_LIST_TEXTSEL`); the cursor cell has been inverted. It has written
+  the field's buffer directly, through the same bounds the typed path
+  applies. In modern it has served the hero name whenever the device last
+  used has not been the keyboard (REQ-531), with typing still accepted
+  alongside. Legacy has kept typed entry and its window-chrome keyboard and
+  digit pad.
+- **REQ-430g.** **Dim once (modern).** A floating page (REQ-430j) has first
+  darkened what is behind it -- the whole base screen, or the page it opens
+  over -- with black at the pack's `render.dim` percent, then drawn itself,
+  so the page has been what the eye lands on and the world has stayed
+  readable behind it. Nothing has been darkened twice. A page that fills has
+  dimmed nothing, since it covers what it would dim; toasts and the class
+  caption have not dimmed. `overlay_dim_alpha` (`src/overlay.c`) and the page
+  engine's `dim` (`src/modern/page.c`); legacy has never dimmed.
+- **REQ-430h.** **Every modern panel a page.** Every modern panel -- the
+  message, the questions, the town, castle, dwelling, temple and recruit
+  screens, the views and the menus -- has been a page of REQ-430j, never a
+  legacy rect. Dialog headers have wrapped like body text (the audience
+  passes the Emperor's words as the header); the four legacy arrow control
+  codes have rendered as the font's arrow glyphs; recruit rows have padded the
+  name to the longest in the pool; empty army slots have stayed
+  panel-coloured; the character card has printed zeros; Escape on the map has
+  opened the game menu (`INPUT_ACTION_GAME_MENU`). Legacy has kept its
+  one-sided 5 px margin and its own drawing for all of these.
 - **REQ-430i.** **The draw layer has been forked; legacy frozen.** The
   overlay, the detail views and the prompt panel have each existed twice:
-  `src/legacy/` holds the DOS original's drawing and `src/modern/` the modern
-  UI's, with `src/overlay.c`, `src/views_render.c` and `src/prompt.c` as
-  dispatchers that keep the public entry points, the layer order and any
-  state (the dialog's text and page, the world map's reveal flag, the
-  prompt's state machine) and send only the drawing to one side or the other,
-  through `*_impl.h`. Legacy's copies have been frozen: their behaviour is the
-  specification, so they are not edited to serve anything modern needs, and
-  new UI work lands in `src/modern/` alone. `tests/unit/test_legacy_freeze.c`
-  has held legacy's geometry and pure logic to fixed values -- chrome bands,
-  map, sidebar, content and panel rects, window scale, the 30-column wrap,
-  dialog paging, prompt state, and the two modern-only selectors staying
-  inert -- so a modern change that would move a legacy pixel fails the build.
-  `src/layout.h` has deliberately NOT been forked: both paths draw into one
-  coordinate system.
-- **REQ-430j.** **Five named layouts (modern).** Every modern panel has drawn
-  into one of five rects, computed from the map pane, the sidebar and the
-  tile and never from `ui_scale` (`src/modern/mlayout.c`): **small**, the
-  pane's width along its bottom, for prompts and any message that fits;
-  **large**, six by four tiles centred in the pane, for longer messages, the
-  game menu and its Controls page, and combat's menus and victory dialog;
-  **location**, the backdrop across the top of the pane at the smallest
-  whole-number scale that covers its width (cropped evenly at the sides) with
-  the text area directly under it, shared by the town, both castles, the
-  dwelling, the alcove and recruiting; **full screen**, the pane plus the HUD
-  with the status band left visible, for every detail view; and the toast. A
-  message or prompt has taken the small band when its header, whole body and
-  answer rows fit, and the large rect otherwise; the pager has asked the same
-  function that places the panel, so the page count and the panel cannot
-  disagree. Panels in the pane have laid out against the declared pane
-  (`CL_PANE_BASE_*`), so a grown world map (REQ-528) never moves them. The
-  location screens have reached their text rect through `screens_text_rect`,
-  which the freeze tests pin to the legacy panel in legacy.
+  `src/legacy/` has held the DOS original's drawing and `src/modern/` the
+  modern UI's, with `src/overlay.c`, `src/views_render.c` and `src/prompt.c`
+  as dispatchers that have kept the public entry points, the layer order and
+  any state (the dialog's text and page, the world map's reveal flag, the
+  prompt's state machine) and sent only the drawing to one side or the
+  other, through `*_impl.h`. Legacy's copies have been frozen: their
+  behaviour has been the specification, so they have not been edited to
+  serve anything modern needs, and new UI work has landed in `src/modern/`
+  alone. `tests/unit/test_legacy_freeze.c` has held legacy's geometry and
+  pure logic to fixed values -- chrome bands, map, sidebar, content and panel
+  rects, window scale, the 30-column wrap, dialog paging, prompt state, and
+  the two modern-only selectors staying inert -- so a modern change that
+  would move a legacy pixel has failed the build. `src/layout.h` has
+  deliberately NOT been forked: both paths have drawn into one coordinate
+  system.
+- **REQ-430j.** **Pages (modern).** Everything drawn over the base screen
+  has been a page, placed by one engine (`src/modern/page.c`;
+  `DESIGN-SPEC.md` DSGN-0030 to DSGN-0040). Every page has been one of three
+  kinds, each one size on a screen, taken from the pack's declared screen: a
+  **full page** (the space inside the smallest screen's frame: a place, a
+  sheet, the world map, the spells), a **menu page** (a full page less a
+  ring and a gap on every side: a menu, a list, a count, a question with more
+  than two answers) and a **message** (the smallest map's width less a ring
+  and a gap each side, as tall as it holds, on the foot of the map or of the
+  battlefield). A full page has **floated** where the space inside the frame
+  holds it with its ring, as thick as the frame, and a gap as wide on every
+  side, and **filled** that space otherwise, with no ring of its own; every
+  full page has done the same on the same screen. Menu pages and messages
+  have always floated. A floating ring has never stood closer than a frame's
+  thickness to the frame, and no page has drawn a ring over chrome. One page
+  has been open at a time: a step has replaced a page's words and rows in
+  place. Taps: a page has been modal -- nothing registered under it has
+  taken a tap; a page with a single action has done it on a tap anywhere; on
+  a page with choices a tap on nothing inside has done nothing and a tap
+  outside it -- on the dimmed screen, or on the frame round a page that fills
+  -- has been its exit; every page with choices has ended in its exit row,
+  Escape has been the exit and Enter the highlighted row. A build guard
+  (`PAGE_STAMP`, the Makefile) has failed `make all` when a shell file other
+  than the page engine, the chrome, the lattice and `src/ui.c` draws a ring
+  of its own. The legacy location screens have reached their text rect
+  through `screens_text_rect`, which the freeze tests pin to the legacy
+  panel.
 - **REQ-430k.** **Menu driven (modern) and `--debug`.** In modern every
   action has been a row reached by the arrows and Enter or a tap; keys have
-  remained as shortcuts and nothing has been reachable only by a key
-  (`docs/MENUS.md`). The home castle has had Recruit and Audience rows; the
-  own castle's first row has flipped Garrison / Remove; the world map, with
-  the orb, has had a row that swaps your map and the whole map; numeric and
-  A/B prompts have answered by rows taken from the body's own choice lines
-  (`1. Italia`, `A) Take the gold`) or set by the opener (dismiss lists the
-  troops); Ctrl+Q has asked with the yes/no prompt; a tap has skipped the end
-  cartoon. The debug cheats have been reachable only when the game is started
-  with `--debug`, as a Debug page in the game menu; without the flag no key or
-  row reaches them in either mode.
+  remained as shortcuts, each shown at its row while the keyboard is in use
+  and acting on its row inside a menu, and nothing has been reachable only by
+  a key (`docs/DESIGN-SPEC.md`). The home castle has had Recruit and Audience
+  rows; the own castle Garrison and Withdraw rows; the world map, with the
+  orb, has had a row that swaps your map and the whole map; numeric and A/B
+  prompts have answered by rows the opener names (`prompt_set_choices`: the
+  provinces, the troops to dismiss, the treasure's two uses from the pack's
+  strings) or, when it names none, by the answers themselves, 1 to N or A and
+  B -- nothing has been read out of the words; Ctrl+Q has asked with the
+  yes/no prompt; a tap has skipped the end cartoon. The debug cheats have
+  been reachable only when the game is started with `--debug`, as a Debug
+  page in the game menu; without the flag no key or row has reached them in
+  either mode.
 - **REQ-430l.** **Standard select rows (modern).** A list of choices has been
-  drawn as rows half a tile tall (never shorter than a text line plus
-  padding), stacked from the top of their column with a 2 px rail under each,
-  and never stretched to fill the column; the height below them has stayed
-  empty, and a list longer than its column has scrolled to keep the cursor in
-  view. Defined once as `ml_row_h` / `ML_ROW_RULE` in
-  `src/modern/mlayout.h`.
-- **REQ-430m.** **Modern castles and the count stepper.** The home castle and
-  owned castles have used the town screen's layout (sections, pages of rows
-  and Back, Esc back a level). Recruit has listed the castle troops with their
-  statistics; Audience has always been available and promoted when a
-  promotion is due, showing the castle's `special.promotion[rank]` image and
-  the rank's gains; the ruler's portrait and standing figure have come from
-  `special.portrait` / `special.figure`. Garrison and Withdraw have moved any
-  part of a troop (`GameGarrisonTroopCount`, `GameUngarrisonTroopCount`; a
-  whole troop is exactly the original move, and only a whole last troop is
-  refused). Counts have been chosen with the How-many step of UI-PANELS.
+  drawn as rows two to a tile -- a row and its 2 px rule half a tile, never
+  shorter than a text line plus padding -- and, on a touch device, two thirds
+  of a tile, one height for the whole session; stacked from the top of their
+  column with the rule under each, and never stretched to fill the column;
+  the height below them has stayed empty, and a list longer than its column
+  has scrolled to keep the cursor in view. Defined once as `ml_row_h` /
+  `ML_ROW_RULE` in `src/modern/mlayout.h`.
+- **REQ-430m.** **Modern castles and the count.** The home castle and owned
+  castles have been rooms and persons (`DESIGN-SPEC.md` DSGN-0141): pages of
+  rows ending in Back or Leave, Esc back a level. Recruit has listed the
+  castle troops with their statistics; Audience has always been available and
+  promoted when a promotion is due, showing the castle's
+  `special.promotion[rank]` image and the rank's gains; the ruler's portrait
+  and standing figure have come from `special.portrait` / `special.figure`.
+  Garrison and Withdraw have moved any part of a troop
+  (`GameGarrisonTroopCount`, `GameUngarrisonTroopCount`; a whole troop is
+  exactly the original move, and only a whole last troop is refused). Counts
+  have been chosen with the How-many block of `DESIGN-SPEC.md` DSGN-0055.
 - **REQ-430n.** **Question dialogs and lists on standard rows (modern).**
-  Every modern question has drawn its text, a lattice band, then standard
-  select rows (Yes/No from `strings.prompts.yes` / `no`, one row per numbered
-  or A/B choice) or the count stepper for a count, in a panel on the map
-  pane's bottom edge sized to its content, its rows scrolling past the pane's
-  top. The game menu, Controls, title menu, load picker, difficulty rows,
-  world map orb row, spells view, gate picker and combat menu have used the
-  same rows (`src/modern/mlist.c`).
+  A question with two answers (Yes/No from `strings.prompts.yes` / `no`) has
+  been the message box on the foot of the map -- of the battlefield in a
+  fight -- whatever has been open: its words, a lattice band, and the two
+  rows. A numbered or lettered question has been a menu page, its words as
+  the description and one row per choice (each up to two lines of its row),
+  a numbered one with Cancel on the foot; a count has been a menu page with
+  the How-many block and Continue and Cancel. The game menu, Controls, title
+  menu, load picker, difficulty rows, world map, spells, gate picker and
+  combat menu have used the same rows (`src/modern/mlist.c`).
 - **REQ-430o.** **Foe view and the evade rule.** A hostile foe on the map has
-  opened the modern foe view (UI-PANELS) with Fight and Evade. With
-  `game.json` `foes.evade_needs_free_square` set, `GameFoeCanEvade` has
-  allowed Evade only while one of the 8 squares around the hero is walkable
-  for how they travel and has no object or foe on it; the engine has recorded
-  the result for the pending decision (`pending_foe_evade_blocked`, judged
-  after any bounce back), and autoplay and the demo have had to fight when it
-  is set. Packs without the setting have kept the free decline.
+  opened the modern foe view (`DESIGN-SPEC.md` DSGN-0132) with Fight and
+  Evade. With `game.json` `foes.evade_needs_free_square` set,
+  `GameFoeCanEvade` has allowed Evade only while one of the 8 squares around
+  the hero is walkable for how they travel and has no object or foe on it;
+  the engine has recorded the result for the pending decision
+  (`pending_foe_evade_blocked`, judged after any bounce back), and autoplay
+  and the demo have had to fight when it has been set. Packs without the
+  setting have kept the free decline.
 - **REQ-430p.** **Title sequence (modern).** With `sprites.ui.title_battle`,
   `title_eagle` and `title_words` all declared, the title menu has opened on
-  the words and eagle standard over purple; the battle fades in from 1.0 s to
-  2.5 s, the eagle slides left from 2.5 s to 3.5 s, and the menu then
-  appears. Any key or tap has skipped to the end; the sequence has played
-  once per run, and the credits, the load picker and a return to the title
-  have shown the finished screen. Without all three the title has been
-  `splash_title`, still.
+  the words and eagle standard over purple; the battle has faded in from
+  1.0 s to 2.5 s, the eagle has slid left from 2.5 s to 3.5 s, and the menu
+  has faded in from 3.0 s, drawn at the screen's zoom. Any key or tap has
+  skipped to the end; the sequence has played once per run, and the credits,
+  the load picker and a return to the title have shown the finished screen.
+  Without all three the title has been `splash_title`, still.
 - **REQ-430q.** **Blessing and Tribute (modern home castle).** With
   `game.json` `audiences`, `GameSeekBlessing` has granted once, when every
   artifact is found (enemies left or not), leadership +
@@ -2403,26 +2431,34 @@ golden-digest regression tests have pinned the formulas.
   neither.
 - **REQ-430r.** **Temple and dwelling screens (modern).** VIEW_ALCOVE and
   VIEW_DWELLING have drawn their own full screens over the FLOW_ALCOVE yes/no
-  and FLOW_RECRUIT count prompts (UI-PANELS). The shell has kept the view open
-  through the answer's message and closed it when no prompt, dialog or queued
-  request remains. With `magic.rites_per_zone` a known zone's temple has
-  raised the alcove view behind its message.
+  and FLOW_RECRUIT count prompts (`DESIGN-SPEC.md` DSGN-0142). The shell has
+  kept the view open through the answer's message and closed it when no
+  prompt, dialog or queued request has remained. With
+  `magic.rites_per_zone` a known zone's temple has raised the alcove view
+  behind its message.
 - **REQ-430s.** **Game and combat menus (modern).** Drill-down menus
   (`src/modern/gamemenu.c`; the combat pages in `src/combat_loop.c`
-  `combat_menu_page`): one column of rows per page ending in Back, the path in
-  the title strip, a description beside the rows. The game menu's pages have
-  been Menu (Hero, World, Game, Close, and Exit on the foot of the page,
-  REQ-529), Hero, World and Game (Debug first with `--debug`, Save, Load,
-  Controls, New Game). The combat menu's have been Unit (REQ-533), Hero and
-  Game (Controls, and Give up last). Rows that do not apply have been greyed
-  with the reason rather than removed. In-game Save and Load have picked one
-  of the ten slots; overwriting, loading and Exit have asked Yes/No.
-- **REQ-430t.** **In-lay dialog (modern).** A queued message has been able to
-  carry a picture hint (`PlayerRequest.face` / `face_index`: enemy, troop,
-  artifact); the modern shell has shown such a message as an in-lay dialog
-  with the picture at 2x (UI-PANELS), and legacy has ignored it. The capture
-  message has been composed from `banners.capture_*` (King's Bounty keeps its
-  original wording) and carried the captured enemy's face.
+  `combat_menu_page`): one column of rows per page ending in Back, the path
+  in the title strip, the row under the cursor described under it, each page
+  opening on its first row that can be chosen. The game menu has opened with
+  Escape or the left column's Menu tile; its pages have been Menu (Hero,
+  World, Game, then Close and Exit on the foot of the page, REQ-529), Hero,
+  World and Game (Debug first with `--debug`, Save, Load, Controls, New
+  Game). The combat menu has opened with Enter, Escape, a tap on the active
+  unit or the command column's Menu tile, on its Unit page (REQ-536); its
+  top page has held Unit, Hero, Game and Close, and Game has held Controls,
+  Back and Give up last. Rows that do not apply have been greyed with the
+  reason rather than removed. In-game Save and Load have picked one of five
+  slots; overwriting, loading, a new game and Exit have asked Yes/No in the
+  page's place.
+- **REQ-430t.** **A message with a face (modern).** A queued message or
+  question has been able to carry a picture hint (`PlayerRequest.face` /
+  `face_index`: enemy, troop, artifact, portrait); the modern shell has shown
+  it in the message box, the picture at 1x at its left with the words beside
+  it and the answers along the foot (`DESIGN-SPEC.md` DSGN-0062). Legacy has
+  ignored the hint. The capture message has been composed from
+  `banners.capture_*` (King's Bounty has kept its original wording) and carried
+  the captured enemy's face.
 
 ### 29.2 Views
 
@@ -2463,7 +2499,7 @@ golden-digest regression tests have pinned the formulas.
   (`src/shell_fastquit.c`).
 - **REQ-442.** **Touch input** (`src/touch.c`) has translated taps into
   synthetic key events injected at the `input_host` shim
-  (`input_host_inject_key/_char`), so every screen keeps its keyboard
+  (`input_host_inject_key/_char`), so every screen has kept its keyboard
   handling and the recorder/replay see a keyboard-shaped input stream. The
   pointer has been read only while a touch contact exists: a desktop mouse
   drives nothing. Screens have registered per-frame tap regions while they
@@ -2475,14 +2511,16 @@ golden-digest regression tests have pinned the formulas.
   + confirm). Injected keys have been one-frame edges cleared by
   `touch_frame()`, which runs from `frame_host_end_frame()` after the
   poll/yield.
-- **REQ-443.** **Touch chrome**: on-screen buttons (adventure/combat action
+- **REQ-443.** **Touch chrome (legacy)**: on-screen buttons (adventure/combat action
   bars, ESC, Yes/No / 1-N / A-B prompt bars, digit pad, A-Z keyboard for name
   entry) have been drawn by `touch_draw_chrome()` from `present_scaled`, in
   window pixels over the letterbox margins, outside the design-space render
   target, sized by REQ-530. Chrome has rendered only after a real touch
   contact has been seen (`input_touch_active`), so a keyboard session draws
   none of it. Tap positions have mapped back to design space via
-  `present_window_to_screen` (the inverse of the whole-number blit).
+  `present_window_to_screen` (the inverse of the whole-number blit). Modern
+  has requested and drawn none of it: `touch_request` has dropped a request
+  made in modern (REQ-530).
 
 ---
 
@@ -2522,126 +2560,139 @@ golden-digest regression tests have pinned the formulas.
   cartoon drawn by `src/end_cartoon.c`. Every draw has gone through the
   `src/gfx.h` seam (`src/gfx_raylib.c`; `ios/gfx_metal.mm` on iOS).
 
-- **REQ-528.** **The scale has been the surface's, and the world map has
-  spent what it leaves.** Modern mode has had no zoom setting:
-  `present_scale` has returned the largest whole number the surface can show,
-  measured against the buffer the pack declared (`render.native_w/native_h`),
-  which has been a **floor and not a fixed size**. What that scale leaves
-  over has gone to the map viewport, in whole tiles, an odd count so the hero
-  keeps the centre cell (`layout_grow_native`, `src/layout.c`).
+- **REQ-528.** **The scale has been the surface's, and the map has spent what
+  it leaves.** Modern mode has had no zoom setting: `present_scale` has
+  returned the largest whole number, 3 at most, at which the pack's declared
+  smallest screen (`render.native_w/native_h`) fits the surface -- the
+  window, the web canvas or a phone's safe area. The screen has been the
+  surface divided by that scale (`layout_grow_native`, `src/layout.c`), so
+  the surface has been used whole. A desktop window has held its scale while
+  an edge is dragged, raising it only at the size the game gave the window
+  or when the window is maximised, restored or made full screen
+  (`held_zoom`, `src/present.c`).
 
-  Only the map has grown. Nothing the pack sized has ever changed -- the
-  chrome bands, the sidebar and its gap, the status and bar heights, every
-  panel -- they have re-centred, and that is all.
+  Only the map has grown. The frame, both columns and their bands have kept
+  their size; the map has taken everything between the columns, the hero's
+  cell centred across it, with the part cells at its edges drawn too. Both
+  columns have run the map's full height.
 
-  A screen drawn for the declared buffer has therefore been a **modal** on a
-  surface bigger than it: `uk_page` (`src/modern/uikit.c`) has dimmed the
-  whole buffer, kept the page at its declared size and drawn the ring a panel
-  has. With no spare room the page has filled the buffer and nothing has
-  shown around it, which is the desktop window at its opening size. The
-  battlefield has kept the buffer the world had rather than refitting to the
-  declared one, so no fight has snapped the screen a step smaller; it has
-  centred on the screen it is given and filled the width either side with its
-  own darkened ground. The title, name entry and the end cartoon have kept
-  letterboxing: they have no world behind them.
+  Every other screen has been a page (REQ-430j), each kind one size on a
+  screen: a full page has floated over the dimmed base screen where the
+  screen has room for it and its ring, and filled the space inside the frame
+  otherwise; menu pages and messages have always floated. A battle has taken
+  the base screen's places: its commands in the left column's, its turn in
+  the right column's and its field in the map's, flush with the map's top.
+  The title, the class art and the end cartoon have been drawn full-bleed at
+  the largest whole multiple that fits the screen.
 
-  Spare width has also paid for the **left rail** (REQ-533).
+  The desktop window has opened at the smallest screen and, once it exists,
+  been resized to the largest whole multiple of it that the monitor's work
+  area holds (`frame_host_window_room` and `frame_host_window_place`,
+  `src/frame_host.c`, called from `main`, `src/main.c`); its minimum size
+  has been the smallest screen. The web canvas has followed the browser
+  window, fitted down smoothly below the smallest screen, and mobile has
+  taken its safe area. Legacy mode has kept its fixed 320x200, auto-fit with
+  the 2x floor.
 
-  The desktop window has opened at the declared buffer times the largest
-  whole scale the monitor can show, so it has always been an exact multiple
-  (`src/main.c`). Mobile and the web canvas have taken whatever surface they
-  are given. Legacy mode has kept its fixed 320x200, auto-fit with the 2x
-  floor.
-
-- **REQ-533.** **The left rail has been five one-tile icons down the edge of
-  the map**, mirroring the HUD sidebar on the other side: Menu, Map, Army,
-  Search and Cast, each firing the action its key fires
-  (`src/modern/rail.c`, `shell_dispatch_action`).
-
-  It has been a test of the surface and never of the device or the input.
-  `layout_grow_native` has reserved a tile and the sidebar's gap for it only
-  where the width left over has still held the tile count the pack declared,
-  so the declared buffer has had no rail, a maximised window and a phone have
-  had one, and the map has lost no column it would otherwise have kept -- the
-  count stays odd, so the column the rail takes is one the viewport was
-  discarding. A page of its own has owned every tap while it is open: the
-  rail has registered no region then.
+- **REQ-533.** **The two columns have been one tile wide and always there.**
+  The left column has held Menu, Map, Army, Search and Puzzle
+  (`src/modern/rail.c`), the right column Contract, Siege, Magic, Gold and
+  Days (`src/hud.c`); each tile has fired the action its key fires
+  (`shell_dispatch_action`). Both have shown at every size and on every
+  device, both have run the full height of the map, and neither has shown a
+  key or registered a tap while a page is open. The puzzle tile has covered
+  each piece still to be won; the Days tile has shown Time Stop's steps
+  left, in another colour, while it runs; the gold and the days have been
+  shortened alike when too wide for their tile; with the keyboard in use
+  each tile has shown its key in a corner.
 
 - **REQ-534.** **One widget layer has owned every touch target.**
   `src/uitouch.h` has been the only caller of the raw region API: a screen has
   said what a thing IS -- an isolated button, a tiled row, a bar, the map --
-  and the widget has decided how a finger finds it. A build guard
-  (`TOUCH_STAMP`, the Makefile) has failed `make all` when any other shell
-  file has registered a region, the way the library-boundary check has fenced
-  the engine.
+  and the widget has decided how a finger finds it. The page engine
+  (`src/modern/page.c`) has been the only caller of `touch_page`, a page's
+  tap rule. A build guard (`TOUCH_STAMP`, the Makefile) has failed
+  `make all` when any other shell file has registered a region or a page's
+  taps, the way the library-boundary check has fenced the engine.
 
   Three modes, every widget: **legacy** has registered exactly the rect it
-  draws, because the DOS pitch is the spec; **modern with touch** has grown an
-  ISOLATED target to a touch unit, and never a tiled one, because growing one
-  tile makes it swallow its neighbours -- a row, a cell or an icon has been
-  sized where it is DRAWN instead (`ml_row_h`, `textsel_cell_w/h`);
-  **modern with a keyboard** has been unchanged, since every widget injects
-  the key the screen already reads.
+  draws, because the DOS pitch has been the spec; **modern with touch** has
+  grown an ISOLATED target to a touch unit, and never a tiled one, because
+  growing one tile makes it swallow its neighbours -- a row, a cell or an
+  icon has been sized where it is DRAWN instead (`ml_row_h`,
+  `textsel_cell_w/h`); **modern with a keyboard** has been unchanged, since
+  every widget has injected the key the screen already reads.
 
-  Chrome registered with `ui_bar` has carried a priority flag: inside its own
-  rect it has taken the tap from a region registered before it, so the band
-  grown over the map's top row has opened the menu instead of stepping the
-  hero. No extra reach beyond its own rect.
+  Chrome registered with `ui_bar` (legacy's pre-game band) has carried a
+  priority flag: inside its own rect it has taken the tap from a region
+  registered before it. No extra reach beyond its own rect.
 
-- **REQ-535.** **One dismissal rule.** `views_closes_on_tap`
-  (`src/views.h`) has decided it for every page: a page the player chooses on
-  -- rows -- has waited for a row or the band, and a page with nothing to
-  choose has closed on a tap anywhere, as its dialog has. It used to be
-  decided by which branch of the main loop's chain a view fell into, so eight
-  views closed on a stray tap and twelve did not.
+- **REQ-535.** **One dismissal rule.** In modern the page has decided it
+  (REQ-430j): a page with a single action -- a message, a sheet, an outcome
+  -- has done it on a tap anywhere, and a page the player chooses on has
+  waited for a row, a tap outside it -- on the dimmed screen, or on the frame
+  round a page that fills -- being its exit. Legacy has kept
+  `views_closes_on_tap` (`src/views.h`) for the same split: a view with rows
+  has waited for a row or the band, and one with nothing to choose has closed
+  on a tap anywhere.
 
-- **REQ-530.** **Touch controls have been sized in physical units.** Every
-  on-screen control has sized itself from `touch_unit()` (`src/touch.c`): 11%
-  of the window's short side, floored at 44px, which is Apple's 44pt and
-  Android's 48dp on the phones this ships to. The action bars, the keyboard,
-  the digit pad and the corner buttons have all derived from it.
+- **REQ-530.** **Touch controls have been sized in physical units.** Legacy's
+  on-screen controls have sized themselves from `touch_unit()`
+  (`src/touch.c`): 11% of the window's short side, floored at 44px, which is
+  Apple's 44pt and Android's 48dp on the phones this ships to. The action
+  bars, the keyboard, the digit pad and the corner buttons have all derived
+  from it. In modern the short side has been capped at 1284 device pixels
+  first, a large phone's, and a finger has been answered in the buffer: a
+  touch device's rows have been two thirds of a tile (REQ-430l), and the
+  design-space touch unit has been that row height, fixed for the session
+  (`touch_unit_design`).
 
   The window-pixel chrome -- the action bars, the corner buttons, the
-  keyboard and the digit pad -- has been **legacy's alone**. Every one of them
-  draws its label through `gfx_label`, which the iOS backend does not
-  implement, so in modern they were blank boxes; modern has answered a finger
-  with the screens themselves, drawn in the buffer with the pack's own font.
+  keyboard and the digit pad -- has been **legacy's alone**. Every one of
+  them has drawn its label through `gfx_label`, which the iOS backend has not
+  implemented; modern has answered a finger with the screens themselves,
+  drawn in the buffer with the pack's own font.
 
   Small **design-space** regions have been answered by a forgiving second
   pass in `resolve_tap`: a tap that hits nothing exactly has taken the
-  nearest region within half a touch unit, nearest first, so an exact hit is
-  never stolen from a neighbour. That has made a 20px menu band answerable on
-  a phone without changing what is drawn.
+  nearest region within the slack -- half a touch unit in legacy, half a row
+  in modern -- nearest first, so an exact hit has never been stolen from a
+  neighbour. While a page is open only the page's own regions have been in
+  reach, and only for a tap inside it. That has made a small target
+  answerable on a phone without changing what is drawn. A tap on a frame
+  whose screen has just changed (a resized window) has been dropped.
 
-  On a touch session the menu band itself has also grown to a touch unit, but
-  **only out of the slack the whole tiles leave** (`layout_grow_native`'s
-  `want_status_h`): the viewport count is odd, so taking a row would cost two
-  rows of world, and the band has never done that.
-
-- **REQ-531.** **Naming the hero on a phone has used the on-screen
-  keyboard**, not the in-buffer letter grid (`src/startup.c`): the grid is
-  laid out in the pack's design pixels, while the chrome keyboard is drawn in
-  window pixels at a touch unit. The grid has served a gamepad and a desktop
-  with no keyboard, with cells at least `textsel_min_cell_w()` wide -- four
-  glyphs, so `DEL` and `SPC` clear their neighbours.
+- **REQ-531.** **Naming the hero without a keyboard has used the letter
+  grid.** While the device last used has been a finger or a gamepad
+  (`input_last_device`), the name page has held the in-buffer letter grid
+  (`src/textsel.c`), laid out in the page with cells at least
+  `textsel_min_cell_w()` wide -- four glyphs, so `DEL` and `SPC` clear their
+  neighbours -- and typing has still been accepted alongside it. With the
+  keyboard last used, the page has shown how to type instead
+  (`src/startup.c`). Legacy has kept its window-chrome keyboard.
 
 - **REQ-532.** **Choosing a class has been two steps, the same two for every
   input.** Picking a figure -- an arrow key, a pad or a tap -- has given it
-  the gold outline and brought up its description; the panel has then carried
-  **Continue** and **Cancel** rows, and only those have finished the choice
-  (`src/startup.c`).
+  the gold outline and brought up its description in a caption on the
+  screen's foot; the caption's one row, **Continue**, has finished the
+  choice, and Back in its strip, or Escape, has returned to the title
+  (`src/startup.c`). Difficulty and then the name have followed, each a
+  page ending in Back, which has stepped back one screen: the name to the
+  difficulty, the difficulty to the class.
 
-- **REQ-533.** **A shooter's combat menu has opened on Shoot.** The unit page
-  has listed Shoot first when the troop has ranged ammo, Wait first otherwise
-  (`src/combat_loop.c`). The order has followed the troop's declared ammo
-  rather than the shots left this fight, so it does not rearrange itself mid
-  battle as the quiver empties.
+- **REQ-536.** **The combat commands have kept one order.** The Unit page of
+  the combat menu and the command column beside the field have listed Shoot,
+  Wait, Fly and Cast in that order for every troop, greying what the unit
+  cannot do this turn, so a command has been in the same place every turn
+  (`src/combat_loop.c`). The menu has opened with its cursor on the first
+  command the unit can use; on the foe's turn every command tile has been
+  greyed.
 
 - **REQ-529.** **No Exit on a phone.** The title menu's Exit row and the game
   menu's Exit footer have been compiled out under `PLATFORM_IOS` and
   `PLATFORM_ANDROID` (`src/startup.c`, `src/modern/gamemenu.c`). iOS has had
-  no notion of an app quitting itself and Apple refuses a control that says
-  otherwise; Android's system handles it. Desktop and web have kept both
+  no notion of an app quitting itself and Apple has refused a control that
+  says otherwise; Android's system has handled it. Desktop and web have kept both
   rows.
 
 ---

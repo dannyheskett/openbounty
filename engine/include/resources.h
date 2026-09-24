@@ -31,6 +31,7 @@
 #define RES_VDESC_TEXT_LEN   320     // per-villain features / crimes block
 #define RES_SPELL_LORE_LEN   1024    // per-spell long description (strings.spell_lore)
 #define RES_DOCK_TEXT_LEN    256     // strings.town_docks: where a town's boat waits
+#define RES_BANNER_LEN       320     // a banner / dialog-body template
 
 // ---- Sub-structures --------------------------------------------------------
 
@@ -50,12 +51,14 @@ typedef struct {
     char (*frames[OB_FACE_COUNT])[RES_PATH_LEN];   // heap per facing, count[f] frames
 } ResAnimSet;
 
-// Optional per-class hero art (a class entry's "hero" block). Any part a
-// class leaves out falls back to the pack-wide sprites.hero / ending.hero_tile.
+// Optional per-class hero art (a class entry's "hero" block) and the class's
+// words. Any art a class leaves out falls back to the pack-wide sprites.hero /
+// ending.hero_tile.
 typedef struct {
     ResAnimSet walk, idle, boat;
     char tile[RES_PATH_LEN];      // win-cartoon hero tile
     char disgraced[RES_PATH_LEN]; // modern: the temporary-death scene (a 240x102 backdrop)
+    char desc[RES_BANNER_LEN];    // strings.banners.class_desc_<id>: what the class is like
 } ResClassHero;
 
 typedef struct {
@@ -207,15 +210,23 @@ typedef struct {
                               // that doubles its tile must say so, or its
                               // furniture stays at 320x200 size around giant
                               // tiles. Legacy is 1.
-    int native_w, native_h;   // modern only, optional: a FIXED buffer size.
-                              // The viewport (tiles_w x tiles_h) sits in it and
-                              // the space left over becomes chrome bands; the
-                              // window shows the buffer at 1x, 2x or 3x. Zero
-                              // means the buffer is derived from the window.
+    int native_w, native_h;   // modern only, optional: the SMALLEST screen.
+                              // It holds the frame, a one-tile column either
+                              // side of the map and the map, which shows at
+                              // least tiles_w x tiles_h whole tiles. The screen
+                              // is the surface at 1x, 2x or 3x, never smaller
+                              // than this. Zero means the buffer is derived
+                              // from the window.
     int dim;                  // modern only: how much the scene darkens under a
                               // detail view, prompt or dialog, 0..100 percent
                               // of black (REQ-430g). Default 55. Legacy is 0.
 } ResRender;
+
+// The chrome of a modern declared buffer, in units of ui_scale: the outer
+// frame, and the band between each column and the map. The shell lays the
+// screen out from the same numbers (src/layout.c).
+#define RES_MODERN_FRAME 12
+#define RES_MODERN_GAP    4
 
 typedef struct {
     char starting_zone[RES_ID_LEN];
@@ -456,11 +467,21 @@ typedef struct {
 // printf-template-free string; substitution uses %TOKEN% pairs supplied by
 // the caller via resources_format_template (resources.c). Loaded from
 // game.json strings.banners.*. Built-in defaults are used when absent.
-#define RES_BANNER_LEN 320
 typedef struct {
     // Treasure-chest outcomes .
     // Substitutions: %GOLD%, %LEADERSHIP%, %POINTS%, %COUNT%, %SPELL%.
     char chest_gold[RES_BANNER_LEN];
+    // Modern, optional: the treasure's title, its words and its two answers
+    // as rows (chest_gold's A and B lines, apart). Empty: no title, and the
+    // rows are A and B.
+    char chest_gold_title[RES_BANNER_LEN];
+    char chest_gold_found[RES_BANNER_LEN];
+    char chest_gold_take[RES_BANNER_LEN];
+    char chest_gold_share[RES_BANNER_LEN];
+    // Modern, optional: why a spell cannot be cast here -- a combat spell on
+    // the map, an adventure spell in a fight.
+    char gmr_spell_in_fight[RES_BANNER_LEN];
+    char gmr_spell_on_map[RES_BANNER_LEN];
     char chest_commission[RES_BANNER_LEN];
     char chest_spell_power[RES_BANNER_LEN];
     char chest_max_spells[RES_BANNER_LEN];
@@ -482,10 +503,6 @@ typedef struct {
     char worldmap_boat[RES_BANNER_LEN];
     char worldmap_boat_elsewhere[RES_BANNER_LEN];
     char worldmap_no_boat[RES_BANNER_LEN];
-    char class_desc_knight[RES_BANNER_LEN];
-    char class_desc_paladin[RES_BANNER_LEN];
-    char class_desc_sorceress[RES_BANNER_LEN];
-    char class_desc_barbarian[RES_BANNER_LEN];
     char spell_bridge_prompt_modern[RES_BANNER_LEN];
     char save_done_title[RES_BANNER_LEN];
     char save_done[RES_BANNER_LEN];
@@ -1064,6 +1081,11 @@ typedef struct {
     char combat_spells_title[RES_UI_LABEL_LEN];
     char combat_spells_col_combat[RES_UI_LABEL_LEN];
     char combat_spells_prompt[RES_UI_LABEL_LEN];
+    // Modern combat's turn column: the active unit's moves and shots left,
+    // and the round, each over its number.
+    char combat_moves[RES_UI_LABEL_LEN];
+    char combat_shots[RES_UI_LABEL_LEN];
+    char combat_round[RES_UI_LABEL_LEN];
 
     // Adventure dwelling backdrop labels.
     char dwelling_kind_plains[RES_UI_LABEL_LEN];
@@ -1384,6 +1406,7 @@ typedef struct {
             int  range;          // numeric upper bound (exclusive)
             int  def;            // default value
             bool hidden;         // not shown unless CGA mode active
+            bool audio;          // needs a working audio device ("audio": true)
         } items[8];
     } controls;
 
@@ -1530,6 +1553,7 @@ typedef struct {
         char combat_wait[RES_PATH_LEN];
         char combat_fly[RES_PATH_LEN];
         char hud_gold_purse[RES_PATH_LEN];
+        char hud_days[RES_PATH_LEN];   // the days-remaining readout
         char hud_bar_strip[RES_PATH_LEN];   // 320x5 middle bar (GR_SELECT, 1)
         char chrome_overworld[RES_PATH_LEN]; // 320x200 frame bitmap,
                                              // transparent interior; pixel-

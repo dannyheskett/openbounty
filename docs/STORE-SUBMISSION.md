@@ -21,7 +21,7 @@ Gradle.
 | Pack | inside the APK/AAB assets | inside the `.app` bundle |
 | Saves | app internal storage | the app's `Documents/saves` |
 | Orientation | landscape-locked in the manifest | landscape-only in `Info.plist` |
-| Presentation | an 800x532 buffer at the largest whole-number scale that fits the safe area; the world map has grown into what is left (REQ-528) | same |
+| Presentation | an 800x504 buffer at the largest whole-number scale that fits the safe area; the map has grown into what is left (REQ-528) | same |
 | Safe area | display cutout insets over JNI | `safeAreaInsets` in device pixels |
 | Network | none — no permission requested | none |
 | Logs | the game's stdout piped into logcat | and into `os_log` |

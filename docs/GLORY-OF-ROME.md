@@ -445,10 +445,10 @@ navigated only its own 64×128 grid.
 
 ### 10.2 Scale, in play terms
 
-The player has seen a **7 × 5 tile viewport** at the declared buffer (more on
-a bigger screen, `MODERN-RESOLUTION.md`), and a step has uncovered the fog
-over that declared rectangle, so a 64×64 zone has been about 117 screens of
-area. At 40 steps per day a corner-to-corner diagonal has been ~64 steps,
+The player has seen a **5 × 5 tile viewport** at the declared buffer (more on
+a bigger screen, `DESIGN-SPEC.md`), and a step has uncovered the fog
+over that declared 5 × 5 rectangle, so a 64×64 zone has been about 164
+screens of area. At 40 steps per day a corner-to-corner diagonal has been ~64 steps,
 under two days; a round trip across a zone has been about three days against
 a 600-day normal budget.
 

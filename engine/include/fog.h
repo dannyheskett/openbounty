@@ -40,9 +40,10 @@ void FogRevealRect(Fog *fog, const Map *map, int cx, int cy, int rx, int ry);
 // (render.tiles_w x tiles_h) around the hero, in both modes. The original's
 // clear_fog reveals its 5x5 viewport, so the tile just past each edge of the
 // view is unexplored until walked towards and the edge tiles show the fog
-// fade; a 5x5 viewport gets exactly the original's 5x5, and Rome's 7x5 gets
-// 7x5 (a 7x7 reveal left the rows past the top and bottom edges always
-// explored, so they never showed fog -- 2026-09-19).
+// fade; a 5x5 viewport -- the original's, and Rome's -- gets exactly 5x5, and
+// a wider one its own width (a square reveal wider than the view's height
+// leaves the rows past its top and bottom edges explored, so they never show
+// fog).
 void FogRevealFor(const Resources *res, Fog *fog, const Map *map,
                   int cx, int cy);
 

@@ -11,7 +11,7 @@
 // The modern screens offer the first five slots.
 #define MODERN_SAVE_SLOTS 5
 
-typedef struct {
+typedef struct SlotSet {
     SaveHeader hdrs[SAVE_SLOT_COUNT];
     int        existing;
 } SlotSet;

@@ -572,6 +572,9 @@ void gfx_texture_free(Texture2D t) {
 // true of every texture and nothing has to change.
 void gfx_texture_point(Texture2D t) { (void)t; }
 void gfx_texture_point_clamp(Texture2D t) { (void)t; }
+// A phone's surface is never smaller than the smallest screen, so the frame is
+// never fitted down here.
+void gfx_texture_smooth(Texture2D t) { (void)t; }
 
 void gfx_texture_draw(Texture2D t, Rectangle src, Rectangle dst, Color tint) {
     if (t.id == 0 || t.width <= 0 || t.height <= 0) return;

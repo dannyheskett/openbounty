@@ -1,8 +1,9 @@
 // src/modern/views_render.c
 //
-// The detail views for a pack that declared render.mode "modern": the ringed
-// card, the inverted cursor row (REQ-430e), text wrapped to the panel width.
-// Modern UI work happens here.
+// The detail views for a pack that declared render.mode "modern", each a page
+// of the page engine (src/modern/page.h): the sheets to read -- the hero, the
+// army, the contract, the puzzle -- and the pages to choose on -- the world
+// map, the spells and the gate.
 //
 // The DOS original's views are in src/legacy/views_render.c and are frozen.
 //
@@ -15,7 +16,10 @@
 #include "lattice.h"
 #include "modern/mlist.h"
 #include "modern/uikit.h"
-#include "modern/gamemenu.h"   // GM_PAGE_W: a page is one width
+#include "modern/page.h"
+#include "modern/gamemenu.h"
+#include "map_render.h"
+#include "present.h"
 #include "touch.h"
 #include "uitouch.h"
 #include "select.h"
@@ -37,34 +41,15 @@
 #define GW  BFONT_GLYPH_W
 #define GH  BFONT_GLYPH_H
 
-// Every modern detail view takes the full-screen layout (REQ-430j): the map
-// pane plus the HUD, the status band left visible above it. One rect for
-// all of them, computed from the pane -- the content rect times ui_scale this
-// used to read is the DOS original's 240x170 and held 14 characters a line.
-#define VIEW_X       (ml_full().x)
-#define VIEW_Y       (ml_full().y)
-#define VIEW_W       (ml_full().w)
-#define VIEW_H       (ml_full().h)
-#define VIEW_PAD     ML_PAD
-
-// The "wide" views (Character, Army, Gate) were the content rect plus a
-// sidebar; with every view full screen, wide and narrow are the same rect.
-#define FULL_VIEW_W  VIEW_W
-#define FULL_VIEW_X  VIEW_X
-
 // ---------------------------------------------------------------------------
-//  CHARACTER VIEW -- 
-//  Portrait on left, stat table on right, artifact belt below.
+//  THE HERO -- the class portrait, the numbers in two headed columns, the
+//  sacred artifacts and the continents, and the pack's honours
 // ---------------------------------------------------------------------------
 
-// The character sheet (modern): the class portrait at its full 192x204, the
-// numbers in headed groups in two columns beside it, then the sacred artifacts
-// and the continents as full 96 px icons, and the pack's honours (blessing,
-// tributes, rites) where it has them. On Rome's 776x480 the rows add up to the
-// height exactly.
+// A label in gold and its value in white at the column's right edge.
 static void cv_row(const char *label, const char *value, int x, int w, int y) {
-    bfont_draw(label, x, y, PAL_CLR(WHITE));
-    bfont_draw(value, x + w - (int)bfont_measure(value).x, y, PAL_CLR(WHITE));
+    bfont_draw(label, x, y, PAL_CLR(YELLOW));
+    bfont_draw(value, x + w - bfont_text_width(value), y, PAL_CLR(WHITE));
 }
 
 // An icon slot: the icon when held; else its ghost, dark, so the set reads
@@ -74,22 +59,21 @@ static void cv_icon(Texture2D tex, bool have, int x, int y, int size) {
     if (tex.id) {
         Rectangle src = { 0, 0, (float)tex.width, (float)tex.height };
         Rectangle dst = { (float)x, (float)y, (float)size, (float)size };
-        gfx_texture_draw(tex, src, dst, have ? WHITE : (Color){ 60, 60, 70, 255 });
+        gfx_texture_draw(tex, src, dst, have ? WHITE : uk_ghost());
     }
-    gfx_rect_lines(x, y, size, size, have ? (Color){ 150, 118, 48, 255 } : (Color){ 60, 52, 34, 255 });
+    gfx_rect_lines(x, y, size, size, have ? uk_edge() : uk_edge_dim());
 }
 
 static void draw_character(const Game *g, const Sprites *s) {
     const ResUI *ui = &g->res->ui;
-    const ML_Rect r = ml_full();
-    const int pad = UK_INSET, BAND = UK_BAND, THIN = 2;
-    const int line = GH + 2, head = GH + 2;
-    const int tile = CL_TILE_W;
-    uk_sheet();
     char buf[96], nb[32], mb[32];
-
-    // Title: name and rank; the next rank and how far off it is at the right.
+    // The strip carries the name and Close; the next rank is told under the
+    // numbers at the left.
     snprintf(buf, sizeof buf, "%s the %s", g->character.name, g->character.cls.rank_title);
+    const ML_Rect r = page_sheet(buf, NULL, KEY_ESCAPE);
+    const int pad = UK_INSET, BAND = UK_BAND, THIN = 2;
+    const int line = uk_line_h(), head = uk_line_h();
+    const int tile = CL_TILE_W;
     const ClassDef *cls = class_by_id(g->character.cls.id);
     int rank = g->character.cls.rank_index;
     char right[96];
@@ -101,11 +85,13 @@ static void draw_character(const Game *g, const Sprites *s) {
     } else {
         snprintf(right, sizeof right, "%s", ui->cv_top_rank);
     }
-    int top = uk_title(r.x, r.y, r.w, buf, right, PAL_CLR(YELLOW));
+    int top = r.y;
 
-    // Portrait at its authored size.
-    int pw = 192, ph = 204;
-    if (cls && cls->index >= 0 && cls->index < s->class_count && s->class_portrait[cls->index].id) ui_blit(s->class_portrait[cls->index], r.x, top, pw, ph);
+    // The portrait at its authored size.
+    Texture2D portrait = (cls && cls->index >= 0 && cls->index < s->class_count) ? s->class_portrait[cls->index]
+                                                                                  : (Texture2D){ 0 };
+    int pw = portrait.id ? portrait.width : 192, ph = portrait.id ? portrait.height : 204;
+    if (portrait.id) ui_blit(portrait, r.x, top, pw, ph);
     else gfx_rect(r.x, top, pw, ph, PAL_CLR(BLACK));
     lattice_band_v(r.x + pw, top, BAND, ph);
 
@@ -114,19 +100,19 @@ static void draw_character(const Game *g, const Sprites *s) {
     int lx = cx + pad, lw = cw - 2 * pad;
     int rx = cx + cw + pad, rw = r.x + r.w - rx - pad;
     lattice_band_v(cx + cw - 2, top, BAND, ph);
-    int y = top + 6;
+    int y = top + pad;
     bfont_draw(ui->cv_army, lx, y, PAL_CLR(YELLOW));                      y += head;
     snprintf(nb, sizeof nb, "%d", g->stats.leadership_current);  cv_row(ui->cv_leadership, nb, lx, lw, y); y += line;
     snprintf(nb, sizeof nb, "%d", g->stats.commission_weekly);   cv_row(ui->cv_commission, nb, lx, lw, y); y += line;
-    snprintf(nb, sizeof nb, "%d", g->stats.gold);                cv_row(ui->cv_gold, nb, lx, lw, y);       y += line + 6;
+    snprintf(nb, sizeof nb, "%d", g->stats.gold);                cv_row(ui->cv_gold, nb, lx, lw, y);       y += line + line / 2;
     bfont_draw(ui->cv_magic, lx, y, PAL_CLR(YELLOW));                     y += head;
     snprintf(nb, sizeof nb, "%d", g->stats.spell_power);         cv_row(ui->cv_spell_power, nb, lx, lw, y); y += line;
-    snprintf(nb, sizeof nb, "%d", g->stats.max_spells);          cv_row(ui->cv_spell_capacity, nb, lx, lw, y);
+    snprintf(nb, sizeof nb, "%d", g->stats.max_spells);          cv_row(ui->cv_spell_capacity, nb, lx, lw, y); y += line + line / 2;
+    uk_flow(lx, y, lw, lx, 0, top + ph, right, PAL_CLR(WHITE));
 
-    int total_v = 0;
-    for (int i = 0; i < g->res->villains_count; i++) total_v++;
+    int total_v = g->res->villains_count;
     int total_a = artifacts_count() < 8 ? artifacts_count() : 8;
-    y = top + 6;
+    y = top + pad;
     bfont_draw(ui->cv_campaign, rx, y, PAL_CLR(YELLOW));                  y += head;
     snprintf(nb, sizeof nb, "%d/%d", GameVillainsCaught(g), total_v); cv_row(ui->cv_captured, nb, rx, rw, y);  y += line;
     snprintf(nb, sizeof nb, "%d/%d", GameArtifactsFound(g), total_a); cv_row(ui->cv_artifacts, nb, rx, rw, y); y += line;
@@ -135,7 +121,7 @@ static void draw_character(const Game *g, const Sprites *s) {
     snprintf(nb, sizeof nb, "%d", GameComputeScore(g));          cv_row(ui->cv_score, nb, rx, rw, y);      y += line;
     snprintf(nb, sizeof nb, "%d", g->stats.days_left);           cv_row(ui->cv_days, nb, rx, rw, y);
 
-    // The sacred artifacts: eight full icons across; one still to find is a ghost.
+    // The sacred artifacts: eight icons across at 1x; one still to find is a ghost.
     y = top + ph;
     lattice_band_h(r.x, y, r.w, THIN);
     y += THIN;
@@ -188,8 +174,7 @@ static void draw_character(const Game *g, const Sprites *s) {
 }
 
 // ---------------------------------------------------------------------------
-//  ARMY VIEW -- 
-//  5 rows, each showing one troop stack.
+//  THE ARMY -- five rows, one troop each
 // ---------------------------------------------------------------------------
 
 // Compare this slot's group against
@@ -218,34 +203,31 @@ static const char *army_slot_morale(const Game *g, int slot) {
 }
 
 static void draw_army(const Game *g, const Sprites *s) {
-    // The title strip every view has, then five rows: each troop's portrait,
-    // its name and how many, its morale at the right, and its numbers in
-    // aligned columns under them. An empty slot is an empty row.
-    ML_Rect r = ml_full();
+    // The title strip with Close, then five rows: each troop's portrait at
+    // 1x (cut to its row), its name and how many, its morale at the right,
+    // and its numbers in aligned columns under them. An empty slot is an
+    // empty row.
     const ResUI *ui = &g->res->ui;
-    uk_sheet();
     char gold[48];
     uk_gold_text(g, gold, sizeof gold);
-    int top = uk_title(r.x, r.y, r.w, ui->menu_army, gold, PAL_CLR(YELLOW));
-    r.h -= top - r.y;
-    r.y = top;
-    const int tile = r.h / 5, lh = GH + 4;
+    ML_Rect r = page_sheet(ui->menu_army, gold, KEY_ESCAPE);
+    const int row = r.h / 5, lh = uk_line_h();
     int col[3] = { 0, 0, 0 };
-    int tx0 = r.x + tile + UK_INSET;
+    int tx0 = r.x + CL_TILE_W + 2 + UK_INSET;
     int cw = (r.x + r.w - UK_INSET - tx0) / 3;
     for (int k = 0; k < 3; k++) col[k] = tx0 + k * cw;
+    const int mark = views_army_marked();
     for (int i = 0; i < 5; i++) {
-        int ry = r.y + i * tile;
+        int ry = r.y + i * row;
         if (i > 0) lattice_band_h(r.x, ry - 1, r.w, 2);
         bool filled = g->army[i].id[0] && g->army[i].count != 0;
         const TroopDef *t = filled ? troop_by_id(g->army[i].id) : NULL;
         if (!t) continue;   // an empty slot: nothing to draw
         Texture2D face = s->troop_portrait[t->index].id ? s->troop_portrait[t->index] : s->troop_sprite[t->index];
-        uk_picture(face, r.x + 1, ry + 1, tile - 2, tile - 2);
-        int ty = ry + (tile - 3 * lh) / 2 + 2;
+        uk_picture_cut(face, r.x + 1, ry + 1, CL_TILE_W, row - 3);
+        int ty = ry + (row - 3 * lh) / 2 + 2;
         char buf[96];
         snprintf(buf, sizeof buf, "%d %s", g->army[i].count, t->name);
-        bfont_draw(buf, tx0, ty, PAL_CLR(YELLOW));
         int free_lead = g->stats.leadership_current - t->hit_points * g->army[i].count;
         const char *mor = free_lead < 0 ? ui->out_of_control : NULL;
         char mbuf[64];
@@ -254,7 +236,9 @@ static void draw_army(const Game *g, const Sprites *s) {
         Color mc = free_lead < 0 ? PAL_CLR(RED)
                  : strcmp(mw, ui->morale_low) == 0 ? PAL_CLR(RED)
                  : strcmp(mw, ui->morale_high) == 0 ? PAL_CLR(GREEN) : PAL_CLR(WHITE);
+        int mwid = bfont_text_width(mor);
         bfont_draw_right(mor, r.x + r.w - UK_INSET, ty, mc);
+        uk_line(buf, tx0, ty, r.x + r.w - UK_INSET - mwid - UK_INSET - tx0, PAL_CLR(YELLOW));
         ty += lh;
         struct { const char *l; char v[32]; } cell[6];
         cell[0].l = ui->army_skill;      snprintf(cell[0].v, 32, "%d", t->skill_level);
@@ -269,30 +253,33 @@ static void draw_army(const Game *g, const Sprites *s) {
             if (!cell[k].l[0] && !cell[k].v[0]) continue;
             // The value one space after the column's longer label.
             int lw = bfont_text_width(cell[k % 3].l), lw2 = bfont_text_width(cell[k % 3 + 3].l);
-            bfont_draw(cell[k].l, cx, cy, PAL_CLR(GREY));
+            bfont_draw(cell[k].l, cx, cy, PAL_CLR(YELLOW));
             bfont_draw(cell[k].v, cx + (lw > lw2 ? lw : lw2) + GW, cy, PAL_CLR(WHITE));
+        }
+        // Opened from a fight: the troop whose turn it is, ringed in gold.
+        if (t->index == mark) {
+            gfx_rect_lines(r.x, ry + 1, r.w, row - 3, PAL_CLR(YELLOW));
+            gfx_rect_lines(r.x + 1, ry + 2, r.w - 2, row - 5, PAL_CLR(YELLOW));
         }
     }
 }
 
 // ---------------------------------------------------------------------------
-//  CONTRACT VIEW -- 
+//  THE CONTRACT
 // ---------------------------------------------------------------------------
 
 static void draw_contract(const Game *g, const Sprites *s) {
     views_contract_set_active(g && g->contract.active_id[0] != '\0');
-    const ML_Rect r = ml_full();
     const ResUI *ui = &g->res->ui;
     const ResBanners *bn = &g->res->banners;
     const int size = 2 * CL_TILE_W;
-    uk_sheet();
     const VillainDef *v = g->contract.active_id[0] ? villain_by_id(g->contract.active_id) : NULL;
     if (!v) {
         // No contract: the empty silhouette at 2x and where to get one.
-        int top = uk_title(r.x, r.y, r.w, ui->cv_title_no_contract, NULL, PAL_CLR(YELLOW));
-        int by = top + (r.y + r.h - top - size - 3 * uk_line_h()) / 2;
+        const ML_Rect r = page_sheet(ui->cv_title_no_contract, NULL, KEY_ESCAPE);
+        int by = r.y + (r.h - size - 3 * uk_line_h()) / 2;
         uk_picture(s ? s->hud_contract_silhouette : (Texture2D){ 0 }, r.x + (r.w - size) / 2, by, size, size);
-        int tw = 34 * GW, ty = by + size + UK_INSET;
+        int tw = r.w - 2 * UK_INSET, ty = by + size + UK_INSET;
         const char *p = bn->cv_no_contract_hint;
         char line[160];
         while (*p && bfont_take_line(&p, tw, line, (int)sizeof line) > 0) {
@@ -308,15 +295,15 @@ static void draw_contract(const Game *g, const Sprites *s) {
     snprintf(rb, sizeof rb, "%d", v->reward);
     ResTemplateVar rv[] = { { "VALUE", rb } };
     resources_format_template(reward, sizeof reward, ui->cv_label_reward, rv, 1);
-    int top = uk_title(r.x, r.y, r.w, title, reward, PAL_CLR(YELLOW));
+    const ML_Rect r = page_sheet(title, reward, KEY_ESCAPE);
 
     Texture2D face = { 0 };
     if (v->index >= 0 && v->index < s->villain_count) {
         face = sprites_strip(s->villain_anim[v->index], s->villain_anim_frames[v->index],
-                             (int)(ui_anim_time() * 2.0));
+                             (int)(ui_anim_time() * UK_FACE_FPS));
         if (!face.id) face = s->villain_portrait[v->index];
     }
-    ML_Rect a = { r.x + UK_INSET, top + UK_INSET, r.w - 2 * UK_INSET, r.y + r.h - UK_INSET - (top + UK_INSET) };
+    ML_Rect a = { r.x + UK_INSET, r.y + UK_INSET, r.w - 2 * UK_INSET, r.h - 2 * UK_INSET };
     uk_picture(face, a.x, a.y, size, size);
 
     UkDoc d = { 0 };
@@ -350,15 +337,12 @@ static void draw_contract(const Game *g, const Sprites *s) {
 }
 
 // ---------------------------------------------------------------------------
-//  PUZZLE VIEW -- 
-//  5x5 grid; each cell is a villain face or artifact icon, covered with
-//  a tile sprite until found/caught.
+//  THE PUZZLE -- the 5x5 grid of tiles at the left, what it is beside it
 // ---------------------------------------------------------------------------
 
 // Position -> entity mapping lives in the engine (tables.c PUZZLE_GRID,
 // accessor puzzle_grid_entity): negative values are artifact-index-minus-one
-// (-1 = artifact 0, ...), non-negative values are villain indices. Demo mode's
-// scepter deduction reads the same table.
+// (-1 = artifact 0, ...), non-negative values are villain indices.
 
 // Lazy-loaded scepter-zone map. The puzzle-view background shows the
 // scepter location with its 5x5 surroundings revealed cell-by-cell
@@ -388,49 +372,38 @@ static void puzzle_load_scepter_map(const Game *g) {
 }
 
 static void draw_puzzle(const Game *g, const Sprites *s) {
-    // The grid of five tiles at the left, whole; beside it what it is and how
-    // much of it is uncovered.
-    uk_sheet();
+    // The grid is five tiles at 1x, as tall as the page, so the strip with
+    // Close spans the words beside it: what the puzzle is and how much of it
+    // is uncovered.
+    const ResUI *ui = &g->res->ui;
+    ML_Rect grid;
+    ML_Rect w = page_sheet_beside(5 * CL_TILE_W, ui->gm_puzzle, NULL, &grid);
     {
-        const ML_Rect r = ml_full();
-        const ResUI *ui = &g->res->ui;
-        int px = r.x + 5 * CL_TILE_W + UK_BAND;
-        lattice_band_v(px - UK_BAND, r.y, UK_BAND, r.h);
-        int top = uk_title(px, r.y, r.x + r.w - px, g->res->ui.gm_puzzle, NULL, PAL_CLR(YELLOW));
-        int x = px + UK_INSET, w = r.x + r.w - UK_INSET - x;
-        int y = uk_flow(x, top + UK_INSET, w, x, 0, r.y + r.h, g->res->banners.puzzle_legend, PAL_CLR(WHITE));
+        int x = w.x + UK_INSET, ww = w.w - 2 * UK_INSET;
+        int y = uk_flow(x, w.y + UK_INSET, ww, x, 0, w.y + w.h, g->res->banners.puzzle_legend, PAL_CLR(WHITE));
         char nb[32];
         int total_v = g->res->villains_count;
         int total_a = artifacts_count() < 8 ? artifacts_count() : 8;
         y += uk_line_h();
         snprintf(nb, sizeof nb, "%d/%d", GameVillainsCaught(g), total_v);
-        bfont_draw(ui->cv_captured, x, y, PAL_CLR(YELLOW)); bfont_draw_right(nb, x + w, y, PAL_CLR(WHITE));
+        bfont_draw(ui->cv_captured, x, y, PAL_CLR(YELLOW)); bfont_draw_right(nb, x + ww, y, PAL_CLR(WHITE));
         y += uk_line_h();
         snprintf(nb, sizeof nb, "%d/%d", GameArtifactsFound(g), total_a);
-        bfont_draw(ui->cv_artifacts, x, y, PAL_CLR(YELLOW)); bfont_draw_right(nb, x + w, y, PAL_CLR(WHITE));
+        bfont_draw(ui->cv_artifacts, x, y, PAL_CLR(YELLOW)); bfont_draw_right(nb, x + ww, y, PAL_CLR(WHITE));
     }
 
-    // Cells span ONLY the map area (240x170), NOT the sidebar -- matches
-    // . Each cell is 48x34, same as a map tile, so
-    // the scepter terrain we draw underneath aligns to the tile grid.
-    // Each cell holds tile-shaped art -- a villain portrait, an artifact icon,
-    // or a literal map tile from the scepter's zone -- so the cell is a tile,
-    // and the 5x5 is centred in the panel. Dividing the panel by 5 instead only
-    // agreed with the tile while the tile was exactly a fifth of it. In legacy
-    // 5*48 == 240 == VIEW_W and 5*34 == 170 == VIEW_H, so both offsets are zero
-    // and this lands on the historic grid.
+    // Each cell is one map tile, so the scepter's land under it lines up with
+    // the tile grid; the 5x5 stands in the page's full height.
     int cell_w = CL_TILE_W;
     int cell_h = CL_TILE_H;
-    int grid_x = VIEW_X;
-    int grid_y = VIEW_Y + (VIEW_H - cell_h * 5) / 2;
+    int grid_x = grid.x;
+    int grid_y = grid.y + (grid.h - cell_h * 5) / 2;
 
     puzzle_load_scepter_map(g);
 
-    // Center the 5x5 viewport on the scepter, clamped to map bounds.
-    int sx = g->scepter.x;
-    int sy = g->scepter.y;
-    int cam_x = sx - 2;
-    int cam_y = sy - 2;
+    // Centre the 5x5 viewport on the scepter, clamped to map bounds.
+    int cam_x = g->scepter.x - 2;
+    int cam_y = g->scepter.y - 2;
     if (s_puzzle_scepter_loaded) {
         const Map *m = &s_puzzle_scepter_map;
         if (cam_x < 0) cam_x = 0;
@@ -439,32 +412,23 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
         if (cam_y > m->height - 5) cam_y = m->height - 5;
     }
 
-    // Reveal cells one-by-one in two passes: artifacts first,
-    // then villains, row-major within each pass, 150ms per cell.
+    // Reveal cells one by one in two passes: artifacts first, then villains,
+    // row-major within each pass, 150 ms a cell.
     static double s_open_time = 0.0;
     static bool   s_prev_active = false;
     bool active = (views_active() == VIEW_PUZZLE);
     if (active && !s_prev_active) s_open_time = ui_anim_time();
     s_prev_active = active;
     double elapsed = ui_anim_time() - s_open_time;
-    int reveal_step = (int)(elapsed / 0.150);   // 150ms / cell
+    int reveal_step = (int)(elapsed / 0.150);
+    int anim_tick = (int)(ui_anim_time() * UK_FACE_FPS);
 
-    // Tick villain faces at ~2 Hz on the puzzle page, same as
-    // the HUD contract panel (hud.c:51).
-    int anim_tick = (int)(ui_anim_time() * 2.0);
-
-    // Two-pass cell ordering: pass 0 = artifacts (id<0), pass 1 = villains.
-    // Within each pass, row-major (j, then i). cell_seq counts only
-    // matching-pass cells, so the animation actually reveals one cell
-    // per 150ms regardless of how many of each kind there are.
     int seq[5][5];
     {
         int n = 0;
-        // Pass 0: artifacts.
         for (int j = 0; j < 5; j++)
             for (int i = 0; i < 5; i++)
                 if (puzzle_grid_entity(j, i) < 0) seq[j][i] = n++;
-        // Pass 1: villains.
         for (int j = 0; j < 5; j++)
             for (int i = 0; i < 5; i++)
                 if (puzzle_grid_entity(j, i) >= 0) seq[j][i] = n++;
@@ -475,10 +439,8 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
             int id = puzzle_grid_entity(j, i);
             int x = grid_x + i * cell_w;
             int y = grid_y + j * cell_h;
-
             bool caught = false;
             Texture2D face = { 0 };
-
             if (id < 0) {
                 int artifact_id = -id - 1;
                 caught = g->artifacts.found[artifact_id];
@@ -490,41 +452,16 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
                     if (!face.id) face = s->villain_portrait[id];
                 }
             }
-            // Animation gate.
             if (reveal_step < seq[j][i]) caught = false;
-
+            Rectangle dst = { (float)x, (float)y, (float)cell_w, (float)cell_h };
             if (caught) {
-                // Reveal: show the underlying scepter-location terrain
-                // (). Each puzzle cell maps to a
-                // map tile at (cam_x + i, cam_y + j).
-                bool drew = false;
-                if (s_puzzle_scepter_loaded) {
-                    int mx = cam_x + i;
-                    int my = cam_y + j;
-                    const Tile *t = MapGetTile(&s_puzzle_scepter_map, mx, my);
-                    if (t && t->art) {
-                        Texture2D tex = tile_cache_get(TileArt(&s_puzzle_scepter_map, t));
-                        if (tex.id) {
-                            Rectangle src = { 0, 0,
-                                              (float)tex.width,
-                                              (float)tex.height };
-                            Rectangle dst = { (float)x, (float)y,
-                                              (float)cell_w, (float)cell_h };
-                            gfx_texture_draw(tex, src, dst, WHITE);
-                            drew = true;
-                        }
-                    }
-                }
-                if (!drew) {
-                    gfx_rect(x, y, cell_w, cell_h, PAL_CLR(BLACK));
-                }
+                // Uncovered: the scepter's land under the piece, drawn as the
+                // map draws it.
+                gfx_rect(x, y, cell_w, cell_h, PAL_CLR(BLACK));
+                if (s_puzzle_scepter_loaded)
+                    map_render_cell(&s_puzzle_scepter_map, cam_x + i, cam_y + j, dst);
             } else if (face.id) {
-                // Cover: show the entity face (villain portrait or
-                // artifact icon).
-                Rectangle src = { 0, 0, (float)face.width, (float)face.height };
-                Rectangle dst = { (float)x, (float)y,
-                                  (float)cell_w, (float)cell_h };
-                gfx_texture_draw(face, src, dst, WHITE);
+                gfx_texture_draw(face, (Rectangle){ 0, 0, (float)face.width, (float)face.height }, dst, WHITE);
             } else {
                 gfx_rect(x, y, cell_w, cell_h, PAL_CLR(DGREY));
             }
@@ -533,8 +470,7 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
 }
 
 // ---------------------------------------------------------------------------
-//  WORLDMAP VIEW -- 
-//  Full-continent overview with fog, hero position blinking.
+//  THE WORLD MAP -- the continent, and the places visited on it
 // ---------------------------------------------------------------------------
 
 // Convert a packed 0xAARRGGBB color from res->colors into a raylib Color.
@@ -589,23 +525,9 @@ static bool worldmap_has_orb(const Game *g) {
     return g->world.orbs_found[zi];
 }
 
-static void draw_worldmap_exit_hint(const Game *g) {
-    // KB_TopBox strings.
-    gfx_rect(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H,
-                  PAL_CLR(DRED));
-    // The reveal is a row under the map, so the band only says how to leave.
-    const ResUI *ui = &g->res->ui;
-    char txt[96];
-    ml_hint_text(txt, sizeof txt, ui->hint_back, ui->key_esc, ui->pad_back);
-    ui_bar(CL_STATUS_X, CL_STATUS_Y, CL_STATUS_W, CL_STATUS_H, KEY_ESCAPE);
-    bfont_draw_centered(txt,
-                        CL_STATUS_X + CL_STATUS_W / 2,
-                        CL_STATUS_Y + 1,
-                        PAL_CLR(WHITE));
-}
-
 // The places list: "All of <continent>", then the towns and castles of this
-// continent the hero has visited. Choosing one zooms the map in on it.
+// continent the hero has visited, then Back. Choosing a place zooms the map in
+// on it.
 typedef struct { char name[64]; int x, y; bool castle; } WmPlace;
 static int s_wm_cursor;
 static bool s_wm_open;
@@ -639,6 +561,11 @@ typedef struct { const Game *g; const WmPlace *p; int n; } WmRows;
 static bool worldmap_row_fn(void *ctx, int i, char *label, char *right, int cap) {
     const WmRows *w = (const WmRows *)ctx;
     right[0] = '\0';
+    if (i == w->n + 1) {                      // the page's exit, on the foot
+        snprintf(label, (size_t)cap, "%s", w->g->res->ui.gm_close);
+        ml_exit_hint(right);
+        return true;
+    }
     if (i == 0) {
         const ResZone *z = resources_zone_by_id(w->g->res, w->g->position.zone);
         ResTemplateVar v[] = { { "ZONE", (z && z->name[0]) ? z->name : w->g->position.zone } };
@@ -649,56 +576,60 @@ static bool worldmap_row_fn(void *ctx, int i, char *label, char *right, int cap)
     return true;
 }
 
-// Rows the side panel's list shows, given whether the orb row is under it.
-static int worldmap_list_h(bool orb) {
-    const int foot = 2 * (GH + 4) + 2 * ML_PAD + UK_BAND;
-    return VIEW_H - uk_title_h() - UK_BAND - foot - (orb ? ml_row_h() + UK_BAND : 0);
+// The orb's row: the whole map, or yours.
+static bool worldmap_orb_row(void *ctx, int i, char *label, char *right, int cap) {
+    (void)i;
+    const Game *g = (const Game *)ctx;
+    const ResUI *ui = &g->res->ui;
+    right[0] = '\0';
+    snprintf(label, (size_t)cap, "%s", views_render_worldmap_whole() ? ui->worldmap_row_your_map
+                                                                     : ui->worldmap_row_whole_map);
+    return true;
 }
 
 bool modern_worldmap_input(const Game *g) {
     if (views_active() != VIEW_WORLDMAP || !g || !g->res) { s_wm_open = false; return false; }
     if (!s_wm_open) { s_wm_open = true; s_wm_cursor = 0; }
     WmPlace places[64];
-    int n = worldmap_places(g, places, 64) + 1;
-    if (s_wm_cursor >= n) s_wm_cursor = n - 1;
-    touch_request(TOUCH_CHROME_BACK);
-    int tapped = touch_tapped_row(TOUCH_LIST_MENU);
-    if (tapped >= 0 && tapped < n) { s_wm_cursor = tapped; return true; }
-    if (input_key_pressed(KEY_ESCAPE)) { views_dismiss(); s_wm_open = false; return true; }
-    if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_KP_8)) { s_wm_cursor = (s_wm_cursor - 1 + n) % n; return true; }
-    if (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2)) { s_wm_cursor = (s_wm_cursor + 1) % n; return true; }
-    bool orb = worldmap_has_orb(g);
-    if (orb && (touch_tapped_row(TOUCH_LIST_PROMPT) == 0 || input_key_pressed(KEY_SPACE) ||
-                input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER))) {
-        views_render_worldmap_toggle_hero_only();
-        return true;
+    int n = worldmap_places(g, places, 64) + 2;       // All, the places, Close
+    int close_row = n - 1;
+    MlList l = { n, s_wm_cursor, NULL, NULL };
+    int row = -1;
+    MlEvent ev = ml_list_input(&l, TOUCH_LIST_MENU, &row);
+    s_wm_cursor = l.cursor;
+    if (ev == ML_EV_BACK || (ev == ML_EV_ACT && row == close_row)) {
+        views_dismiss(); s_wm_open = false; return true;
     }
-    return true;     // the view holds the keys; Esc or Back leaves
+    // With the orb, its row (or Space) swaps the whole map and yours.
+    bool orb = worldmap_has_orb(g);
+    if (orb && (touch_tapped_row(TOUCH_LIST_PROMPT) == 0 || input_key_pressed(KEY_SPACE)))
+        views_render_worldmap_toggle_hero_only();
+    return true;     // the view holds the keys; Escape or Close leaves
 }
 
 static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
-    uk_sheet();
-    (void)draw_worldmap_exit_hint;
-    if (!m || m->width <= 0 || m->height <= 0) return;
-    const ResUI *ui = &g->res->ui;
     const ResBanners *bn = &g->res->banners;
+    const Resources *r = g->res;
+    const ResZone *z = resources_zone_by_id(r, g->position.zone);
+    const ML_Rect page = page_full_body((z && z->name[0]) ? z->name : g->position.zone, NULL);
+    if (!m || m->width <= 0 || m->height <= 0) return;
     bool orb = worldmap_has_orb(g);
     bool reveal_all = orb && views_render_worldmap_whole();
 
     WmPlace places[64];
     int np = worldmap_places(g, places, 64);
     int cursor = s_wm_open ? s_wm_cursor : 0;
-    if (cursor > np) cursor = np;
+    if (cursor > np + 1) cursor = np + 1;
 
-    // The map at the left: the whole continent at the largest whole scale,
-    // or three times that over the chosen place.
-    const int side_w = 280;
-    int map_w = VIEW_W - side_w - UK_BAND;
-    int avail_w = map_w - 2 * VIEW_PAD, avail_h = VIEW_H - 2 * VIEW_PAD;
+    // The map at the left: the whole continent at the largest whole cell
+    // size, or three times that over the chosen place.
+    const int side_w = 16 * GW + 2 * UK_INSET;
+    int map_w = page.w - side_w - UK_BAND;
+    int avail_w = map_w - 2 * UK_INSET, avail_h = page.h - 2 * UK_INSET;
     int pix = (avail_w / m->width < avail_h / m->height) ? avail_w / m->width : avail_h / m->height;
     if (pix < 1) pix = 1;
     int cam_x = 0, cam_y = 0, cols = m->width, rows = m->height;
-    const WmPlace *sel = cursor > 0 ? &places[cursor - 1] : NULL;
+    const WmPlace *sel = (cursor > 0 && cursor <= np) ? &places[cursor - 1] : NULL;
     if (sel) {
         pix *= 3;
         cols = avail_w / pix; rows = avail_h / pix;
@@ -711,8 +642,8 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
         if (cam_y < 0) cam_y = 0;
     }
     int grid_w = pix * cols, grid_h = pix * rows;
-    int gx = VIEW_X + (map_w - grid_w) / 2;
-    int gy = VIEW_Y + (VIEW_H - grid_h) / 2;
+    int gx = page.x + (map_w - grid_w) / 2;
+    int gy = page.y + (page.h - grid_h) / 2;
     gfx_rect(gx, gy, grid_w, grid_h, PAL_CLR(BLACK));
     const ResColors *mm_col = &g->res->colors;
     for (int y = 0; y < rows; y++) {
@@ -724,7 +655,6 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
             gfx_rect(gx + x * pix, gy + y * pix, pix, pix, terrain_minimap_color(mm_col, t->terrain));
         }
     }
-    const Resources *r = g->res;
     // A marker: a filled cell with a dark edge, so it reads on any terrain.
     #define MARK(mx, my, col) do { int _x = gx + ((mx) - cam_x) * pix, _y = gy + ((my) - cam_y) * pix; \
         gfx_rect(_x, _y, pix, pix, col); \
@@ -748,9 +678,9 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
         int rx = gx + (sel->x - cam_x) * pix, ry = gy + (sel->y - cam_y) * pix;
         for (int t = 0; t < 3; t++)
             gfx_rect_lines(rx - pix - t, ry - pix - t, 3 * pix + 2 * t, 3 * pix + 2 * t,
-                               t == 1 ? PAL_CLR(YELLOW) : PAL_CLR(BLACK));
+                           t == 1 ? PAL_CLR(YELLOW) : PAL_CLR(BLACK));
     }
-    // The boat (white) and the hero (blinking), always.
+    // The boat, and the hero blinking, always.
     if (g->boat.has_boat && strcmp(g->boat.zone, g->position.zone) == 0 && IN_VIEW(g->boat.x, g->boat.y))
         MARK(g->boat.x, g->boat.y, PAL_CLR(CYAN));
     if (IN_VIEW(g->position.x, g->position.y))
@@ -758,32 +688,20 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
     #undef IN_VIEW
     #undef MARK
 
-    // The side panel: the continent, the places, where you and your boat are.
-    int sx = VIEW_X + map_w;
-    lattice_band_v(sx, VIEW_Y, UK_BAND, VIEW_H);
-    int px = sx + UK_BAND, pw = VIEW_X + VIEW_W - px;
-    const ResZone *z = resources_zone_by_id(r, g->position.zone);
-    int top = uk_title(px, VIEW_Y, pw, (z && z->name[0]) ? z->name : g->position.zone, NULL, PAL_CLR(YELLOW));
-    WmRows wr = { g, places, np };
-    int list_h = worldmap_list_h(orb);
-    ml_list_draw(px, top, pw, list_h, np + 1, cursor, worldmap_row_fn, &wr, TOUCH_LIST_MENU, uk_ink());
-    int y = VIEW_Y + VIEW_H;
-    if (orb) {
-        const char *label = views_render_worldmap_whole() ? ui->worldmap_row_your_map : ui->worldmap_row_whole_map;
-        y -= ml_row_h();
-        lattice_band_h(px, y - UK_BAND, pw, UK_BAND);
-        sel_row(px, y, pw, ml_row_h(), px + ML_PAD, label, false, PAL_CLR(WHITE), uk_ink(), TOUCH_LIST_PROMPT, 0);
-        y -= UK_BAND;
-    }
-    int foot_h = 2 * (GH + 4) + 2 * ML_PAD;
-    y -= foot_h;
-    lattice_band_h(px, y - UK_BAND, pw, UK_BAND);
+    // The column at the right: where you and your boat are, the places, the
+    // orb's row, and Close on the foot.
+    int sx = page.x + map_w;
+    lattice_band_v(sx, page.y, UK_BAND, page.h);
+    int px = sx + UK_BAND, pw = page.x + page.w - px;
+    const int lh = uk_line_h();
     char xb[12], yb[12], line[RES_BANNER_LEN];
+    int ty = page.y + UK_INSET;
     snprintf(xb, sizeof xb, "%d", g->position.x);
     snprintf(yb, sizeof yb, "%d", g->position.y);
     ResTemplateVar yv[] = { { "X", xb }, { "Y", yb } };
     resources_format_template(line, sizeof line, bn->worldmap_you, yv, 2);
-    bfont_draw(line, px + ML_PAD, y + ML_PAD, PAL_CLR(WHITE));
+    uk_line(line, px + UK_INSET, ty, pw - 2 * UK_INSET, PAL_CLR(WHITE));
+    ty += lh;
     if (!g->boat.has_boat) {
         snprintf(line, sizeof line, "%s", bn->worldmap_no_boat);
     } else if (strcmp(g->boat.zone, g->position.zone) != 0) {
@@ -796,94 +714,117 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
         ResTemplateVar bv[] = { { "X", xb }, { "Y", yb } };
         resources_format_template(line, sizeof line, bn->worldmap_boat, bv, 2);
     }
-    bfont_draw(line, px + ML_PAD, y + ML_PAD + GH + 4, PAL_CLR(WHITE));
+    uk_line(line, px + UK_INSET, ty, pw - 2 * UK_INSET, PAL_CLR(WHITE));
+    ty += lh + UK_INSET;
+    lattice_band_h(px, ty - UK_BAND, pw, UK_BAND);
+    int foot = page.y + page.h;
+    if (orb) {
+        // The orb's row stands over the places' foot.
+        int oy = foot - ml_list_height(1) - UK_BAND - ml_list_height(1);
+        ml_list_draw(px, oy, pw, ml_list_height(1), 1, -1, worldmap_orb_row, (void *)g,
+                     TOUCH_LIST_PROMPT, uk_ink());
+        lattice_band_h(px, oy - UK_BAND, pw, UK_BAND);
+        foot = oy - UK_BAND;
+    }
+    WmRows wr = { g, places, np };
+    ML_Rect list = { px, ty, pw, page.y + page.h - ty };
+    if (orb) {
+        // The places and the orb's row, then Close alone on the foot.
+        int close_y = page.y + page.h - ml_list_height(1);
+        ml_list_draw_ex(px, ty, pw, foot - ty, np + 1, cursor <= np ? cursor : -1,
+                        worldmap_row_fn, &wr, TOUCH_LIST_MENU, uk_ink(), 0);
+        ml_list_draw_ex(px, close_y, pw, ml_list_height(1), 1, cursor == np + 1 ? 0 : -1,
+                        worldmap_row_fn, &wr, TOUCH_LIST_MENU, uk_ink(), np + 1);
+    } else {
+        ml_rows_draw(list, np + 2, 1, cursor, worldmap_row_fn, &wr, TOUCH_LIST_MENU);
+    }
 }
 
 // --gallery: the list's cursor.
 void modern_worldmap_gallery(int cursor) { s_wm_open = true; s_wm_cursor = cursor; }
 
 // ---------------------------------------------------------------------------
-//  SPELLS VIEW -- combat + adventure spell lists
-//  Two columns: Combat (0..6) on left, Adventuring (7..13) on right.
+//  THE SPELLS -- one page on the map and in a fight
 // ---------------------------------------------------------------------------
 
-typedef struct { const Game *g; } SpellsCtx;
+typedef struct { const Game *g; bool combat; } SpellsCtx;
 
+// A spell's row: its name, the charges held at the right; it can be chosen
+// where it can be cast.
 static bool spell_row(void *ctx, int i, char *label, char *right, int cap) {
-    const Game *g = ((const SpellsCtx *)ctx)->g;
+    const SpellsCtx *c = (const SpellsCtx *)ctx;
     const SpellDef *sp = spell_by_index(i);
-    int cnt = g->spells.counts[i];
     snprintf(label, (size_t)cap, "%s", sp ? sp->name : "");
-    snprintf(right, 48, "%d", cnt);
-    return cnt > 0;
+    snprintf(right, 48, "%d", c->g->spells.counts[i]);
+    return views_spell_castable(c->g, c->combat, i);
 }
 
-static void draw_spells(const Game *g) {
-    // The two lists side by side under their headings, and the spell under the
-    // cursor described along the foot.
-    const ML_Rect r = ml_full();
+typedef struct { const char *label; } ExitCtx;
+
+static bool exit_row(void *ctx, int i, char *label, char *right, int cap) {
+    (void)i;
+    snprintf(label, (size_t)cap, "%s", ((const ExitCtx *)ctx)->label);
+    ml_exit_hint(right);
+    return true;
+}
+
+void modern_spells_draw(const Game *g, bool combat, int cur, const char *title, const char *right,
+                        const char *exit_label) {
+    // The two columns under their headings, what the spell under the cursor
+    // does -- or why it cannot be cast here -- under them, and the exit on
+    // the foot. Columns longer than their space scroll.
     const ResUI *ui = &g->res->ui;
-    uk_sheet();
-    int top = uk_title(r.x, r.y, r.w, ui->sv_title, NULL, PAL_CLR(YELLOW));
-    int half = r.w / 2;
-    bfont_draw(ui->sv_combat_col,    r.x + ML_PAD, top + 4, PAL_CLR(YELLOW));
-    bfont_draw(ui->sv_adventure_col, r.x + half + UK_BAND + ML_PAD, top + 4, PAL_CLR(YELLOW));
-    int row_y = top + GH + 8;
-    int rows_h = ml_list_height(7);
-    int cur = views_spells_cursor();
-    SpellsCtx c = { g };
+    const ResBanners *bn = &g->res->banners;
+    const int lh = uk_line_h();
+    const ML_Rect r = page_full_body(title, right);
+    int half = (r.w - UK_BAND) / 2;
+    int hy = r.y + UK_INSET;
+    uk_line(ui->sv_combat_col, r.x + UK_INSET, hy, half - 2 * UK_INSET, PAL_CLR(YELLOW));
+    uk_line(ui->sv_adventure_col, r.x + half + UK_BAND + UK_INSET, hy, half - 2 * UK_INSET, PAL_CLR(YELLOW));
+    int row_y = hy + lh + UK_INSET / 2;
+    int exit_y = r.y + r.h - ml_list_height(1);
+    const int desc_lines = 2;
+    int desc_h = UK_BAND + 2 * UK_INSET + desc_lines * lh;
+    int rows_h = exit_y - UK_BAND - desc_h - row_y;
+    SpellsCtx c = { g, combat };
     ml_list_draw_ex(r.x, row_y, half, rows_h, 7, cur < 7 ? cur : -1,
                     spell_row, &c, TOUCH_LIST_SPELLS, uk_ink(), 0);
-    lattice_band_v(r.x + half, top, UK_BAND, row_y + rows_h - top);
-    ml_list_draw_ex(r.x + half + UK_BAND, row_y, r.w - half - UK_BAND, rows_h, 7, cur >= 7 ? cur - 7 : -1,
+    lattice_band_v(r.x + half, r.y, UK_BAND, row_y + rows_h - r.y);
+    ml_list_draw_ex(r.x + half + UK_BAND, row_y, r.w - half - UK_BAND, rows_h, 7,
+                    cur >= 7 && cur < 14 ? cur - 7 : -1,
                     spell_row, &c, TOUCH_LIST_SPELLS, uk_ink(), 7);
     int fy = row_y + rows_h;
     lattice_band_h(r.x, fy, r.w, UK_BAND);
-    // What the spell under the cursor does: the pack's one-line brief, else the
-    // spell's own description, else (a pack with only lore) its lore.
-    const SpellDef *sp = (cur >= 0) ? spell_by_index(cur) : NULL;
-    const char *desc = sp ? resources_spell_brief(g->res, sp->id) : NULL;
-    if ((!desc || !desc[0]) && sp) desc = sp->description;
-    if ((!desc || !desc[0]) && sp) desc = resources_spell_lore(g->res, sp->id);
-    if (desc) {
-        // As many whole sentences as the foot holds. A sentence ends after its
-        // full stop AND any quotation mark closing it, so "bridge-builder."
-        // keeps its quote.
-        int tw = r.w - 2 * UK_INSET, fit = (r.y + r.h - (fy + UK_BAND + 6)) / uk_line_h();
-        char text[512];
-        snprintf(text, sizeof text, "%s", desc);
-        if (uk_lines(text, tw) > fit) {
-            int keep = 0;
-            for (int i = 0; text[i]; i++) {
-                if (text[i] != '.' && text[i] != '!' && text[i] != '?') continue;
-                int e = i + 1;
-                if (text[e] == '"' || text[e] == '\'') e++;
-                if (text[e] && text[e] != ' ' && text[e] != '\n') continue;
-                char save = text[e];
-                text[e] = '\0';
-                bool fits = uk_lines(text, tw) <= fit;
-                text[e] = save;
-                if (!fits) break;
-                keep = e;
-            }
-            if (keep > 0) text[keep] = '\0';   // nothing whole fits: let it clip
-        }
-        uk_flow(r.x + UK_INSET, fy + UK_BAND + 6, tw, r.x, 0, r.y + r.h, text, PAL_CLR(WHITE));
+    // What the spell does: the pack's one-line brief, else its description,
+    // else its lore; a spell not cast here says why.
+    const SpellDef *sp = (cur >= 0 && cur < 14) ? spell_by_index(cur) : NULL;
+    const char *desc = NULL;
+    if (sp && (cur < 7) != combat)       desc = combat ? bn->gmr_spell_on_map : bn->gmr_spell_in_fight;
+    else if (sp && g->spells.counts[cur] <= 0) desc = bn->gmr_no_spell_held;
+    else if (sp) {
+        desc = resources_spell_brief(g->res, sp->id);
+        if (!desc || !desc[0]) desc = sp->description;
+        if (!desc || !desc[0]) desc = resources_spell_lore(g->res, sp->id);
     }
+    uk_lines_draw(desc, r.x + UK_INSET, fy + UK_BAND + UK_INSET, r.w - 2 * UK_INSET, desc_lines, PAL_CLR(WHITE));
+    lattice_band_h(r.x, exit_y - UK_BAND, r.w, UK_BAND);
+    ExitCtx ec = { exit_label };
+    ml_list_draw_ex(r.x, exit_y, r.w, ml_list_height(1), 1, cur == 14 ? 0 : -1,
+                    exit_row, &ec, TOUCH_LIST_SPELLS, uk_ink(), 14);
+}
+
+static void draw_spells(const Game *g) {
+    // On the map the page is opened from the map: its exit is Close.
+    char gold[48];
+    uk_gold_text(g, gold, sizeof gold);
+    modern_spells_draw(g, false, views_spells_cursor(), g->res->ui.sv_title, g->character.name,
+                       g->res->ui.gm_close);
 }
 
 // ---------------------------------------------------------------------------
-//  GATE PICKER VIEW (VIEW_GATE)
-//  Town/Castle Gate destination chooser. Two lettered columns with an
-//  arrow-key cursor + highlight, modeled on the Spells view but cursored like
-//  the Game Menu. Data comes from the view-state snapshot (views_gate_*), never
-//  from game state.
+//  THE GATE -- where the Town or Castle Gate spell may take you
 // ---------------------------------------------------------------------------
 
-#define GATE_NAME_COL 14
-
-// Columns of standard select rows the modern gate picker uses; views.c reads
-// the same number for Left/Right.
 static bool gate_row(void *ctx, int i, char *label, char *right, int cap) {
     (void)ctx;
     const GateDestination *d = views_gate_dest(i);
@@ -892,8 +833,18 @@ static bool gate_row(void *ctx, int i, char *label, char *right, int cap) {
     return d != NULL;
 }
 
-// The destination's surroundings, drawn from its continent's map (loaded once
-// per continent, like the puzzle's).
+typedef struct { const char *travel, *cancel; bool can_travel; } GateFoot;
+
+static bool gate_foot_row(void *ctx, int i, char *label, char *right, int cap) {
+    const GateFoot *f = (const GateFoot *)ctx;
+    right[0] = '\0';
+    snprintf(label, (size_t)cap, "%s", i == 0 ? f->travel : f->cancel);
+    if (i == 1) ml_exit_hint(right);
+    return i == 1 || f->can_travel;
+}
+
+// The destination's surroundings at 1x, as the map draws them, centred on it
+// and cut at the preview's edges.
 static Map  s_gate_map;
 static char s_gate_zone[RES_ID_LEN];
 
@@ -905,47 +856,35 @@ static void draw_gate_map(const Resources *res, const GateDestination *d, ML_Rec
         snprintf(s_gate_zone, sizeof s_gate_zone, "%s", d->zone);
     }
     const Map *m = &s_gate_map;
-    const int cell = CL_TILE_W / 2;
-    int cols = a.w / cell, rows = a.h / cell;
-    int ox = a.x + (a.w - cols * cell) / 2, oy = a.y + (a.h - rows * cell) / 2;
-    int cam_x = d->x - cols / 2, cam_y = d->y - rows / 2;
-    for (int ty = 0; ty < rows; ty++) {
-        for (int tx = 0; tx < cols; tx++) {
-            int mx = cam_x + tx, my = cam_y + ty;
+    const int tw = CL_TILE_W, th = CL_TILE_H;
+    int cx = a.x + (a.w - tw) / 2, cy = a.y + (a.h - th) / 2;     // the landing square
+    int x0 = -((cx - a.x + tw - 1) / tw), x1 = (a.x + a.w - (cx + tw) + tw - 1) / tw;
+    int y0 = -((cy - a.y + th - 1) / th), y1 = (a.y + a.h - (cy + th) + th - 1) / th;
+    int z = present_get_zoom();
+    gfx_clip_begin(a.x * z, a.y * z, a.w * z, a.h * z);
+    for (int ty = y0; ty <= y1; ty++) {
+        for (int tx = x0; tx <= x1; tx++) {
+            int mx = d->x + tx, my = d->y + ty;
             if (mx < 0 || my < 0 || mx >= m->width || my >= m->height) continue;
-            const Tile *t = MapGetTile(m, mx, my);
-            if (!t) continue;
-            Rectangle dst = { (float)(ox + tx * cell), (float)(oy + ty * cell), (float)cell, (float)cell };
-            char va[TILE_ART_NAME_LEN];
-            if (t->interactive != INTERACT_NONE) {
-                char ga[TILE_ART_NAME_LEN];
-                const char *gart = t->ground ? TileGround(m, t) : MapTerrainArt(m, TerrainName(t->terrain), ga, sizeof ga);
-                Texture2D ground = tile_cache_get(tilevar_art(gart, mx, my, va, sizeof va));
-                if (ground.id) gfx_texture_draw(ground, (Rectangle){ 0, 0, (float)ground.width, (float)ground.height },
-                                              dst, WHITE);
-            }
-            Texture2D tex = tile_cache_get(tilevar_art(TileArt(m, t), mx, my, va, sizeof va));
-            if (tex.id) gfx_texture_draw(tex, (Rectangle){ 0, 0, (float)tex.width, (float)tex.height },
-                                       dst, WHITE);
+            Rectangle dst = { (float)(cx + tx * tw), (float)(cy + ty * th), (float)tw, (float)th };
+            map_render_cell(m, mx, my, dst);
         }
     }
-    // The landing square ringed.
-    int rx = ox + (d->x - cam_x) * cell, ry = oy + (d->y - cam_y) * cell;
     for (int t = 0; t < 3; t++)
-        gfx_rect_lines(rx - t, ry - t, cell + 2 * t, cell + 2 * t, t == 1 ? PAL_CLR(YELLOW) : PAL_CLR(BLACK));
+        gfx_rect_lines(cx - t, cy - t, tw + 2 * t, th + 2 * t, t == 1 ? PAL_CLR(YELLOW) : PAL_CLR(BLACK));
+    gfx_clip_end();
 }
 
 static void draw_gate(const Game *g) {
-    // A menu page's panel: the destinations as one list at the left, the chosen
-    // one's surroundings at the right, then Travel and Back along the foot.
+    // A menu page: the destinations at the left, the chosen one's
+    // surroundings beside them, then Travel and Cancel on the foot.
     const Resources *res = resources_current();
     const ResUI *ui = &res->ui;
     const char *title = views_gate_is_town() ? ui->gate_title_town : ui->gate_title_castle;
     int n = views_gate_count();
     int cursor = views_gate_cursor();
-    char gold[48];
-    uk_gold_text(g, gold, sizeof gold);
-    ML_Rect b = uk_inlay(GM_PAGE_W, UK_TALL_H, title, gold);
+    int row = views_gate_row();
+    ML_Rect b = page_menu_body(title, g->character.name, 0);
     const GateDestination *d = views_gate_dest(cursor);
     char travel[RES_BANNER_LEN] = "";
     if (d) {
@@ -953,12 +892,16 @@ static void draw_gate(const Game *g) {
         ResTemplateVar v[] = { { "TOWN", d->name }, { "ZONE", (z && z->name[0]) ? z->name : d->zone } };
         resources_format_template(travel, sizeof travel, res->banners.gate_travel, v, 2);
     }
-    UkRows foot_rows = { { travel, ui->gm_back }, { d != NULL, true } };
-    int foot = uk_foot_rows(b, 2, 0, uk_rows_fn, &foot_rows, TOUCH_LIST_PROMPT);
-    int lw = 14 * GW + 2 * ML_PAD;
-    ml_list_draw(b.x, b.y, lw, foot - b.y, n, cursor, gate_row, NULL, TOUCH_LIST_GATE, uk_ink());
-    lattice_band_v(b.x + lw, b.y, UK_BAND, foot - b.y);
-    ML_Rect a = { b.x + lw + UK_BAND, b.y, b.x + b.w - (b.x + lw + UK_BAND), foot - b.y };
+    GateFoot foot = { travel, res->banners.count_cancel, d != NULL };
+    int foot_y = b.y + b.h - ml_list_height(2);
+    lattice_band_h(b.x, foot_y - UK_BAND, b.w, UK_BAND);
+    ml_list_draw(b.x, foot_y, b.w, ml_list_height(2), 2, row >= n ? row - n : -1,
+                 gate_foot_row, &foot, TOUCH_LIST_PROMPT, uk_ink());
+    int top_h = foot_y - UK_BAND - b.y;
+    int lw = 16 * GW + 2 * UK_INSET;
+    ml_list_draw(b.x, b.y, lw, top_h, n, row < n ? row : -1, gate_row, NULL, TOUCH_LIST_GATE, uk_ink());
+    lattice_band_v(b.x + lw, b.y, UK_BAND, top_h);
+    ML_Rect a = { b.x + lw + UK_BAND, b.y, b.x + b.w - (b.x + lw + UK_BAND), top_h };
     draw_gate_map(res, d, a);
 }
 

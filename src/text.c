@@ -191,15 +191,34 @@ int text_take_line(const char **p, int max_w, char *out, int cap) {
     int n = 0, w = 0;
     int last_space = -1, w_at_space = 0;
     const char *src_at_space = NULL;
+    // Just after a hyphen inside a word ("bridge-|builder"): a break the
+    // word offers of its own.
+    int last_hyph = -1, w_at_hyph = 0;
+    const char *src_at_hyph = NULL;
     while (*s == ' ' || *s == '\t') s++;
     while (*s && *s != '\n' && n + 1 < cap) {
         unsigned char ch = (unsigned char)*s;
         int adv = s_adv[codepoint(ch) - T_FIRST];
         if (w + adv > max_w && n > 0) {
-            if (ch != ' ' && last_space >= 0) {   // mid-word: back up to the last space
+            if (ch != ' ' && last_hyph > last_space) {   // mid-word: after its own hyphen
+                n = last_hyph;
+                s = src_at_hyph;
+                w = w_at_hyph;
+            } else if (ch != ' ' && last_space >= 0) {   // mid-word: back up to the last space
                 n = last_space;
                 s = src_at_space;
                 w = w_at_space;
+            } else if (ch != ' ') {
+                // A word longer than the line: broken with a hyphen, which
+                // takes the place of as many letters as it needs -- unless
+                // the break falls just after a hyphen of the word's own.
+                int hy = s_adv[codepoint('-') - T_FIRST];
+                while (n > 1 && w + hy > max_w) {
+                    n--;
+                    s--;
+                    w -= s_adv[codepoint((unsigned char)out[n]) - T_FIRST];
+                }
+                if (out[n - 1] != '-' && n + 1 < cap) out[n++] = '-';
             }
             break;                                 // on a space: the line ends here
         }
@@ -207,6 +226,9 @@ int text_take_line(const char **p, int max_w, char *out, int cap) {
         out[n++] = (char)ch;
         w += adv;
         s++;
+        if (ch == '-' && n > 1 && out[n - 2] != ' ' && *s && *s != ' ' && *s != '\n') {
+            last_hyph = n; src_at_hyph = s; w_at_hyph = w;
+        }
     }
     while (n > 0 && out[n - 1] == ' ') n--;       // no trailing space on a line
     while (*s == ' ') s++;                         // nor a leading one on the next

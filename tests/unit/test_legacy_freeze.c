@@ -37,9 +37,9 @@ static void modern(void) {
     memset(&s_res, 0, sizeof s_res);
     s_res.render.mode = RENDER_MODE_MODERN;
     s_res.render.tile_w = 96;  s_res.render.tile_h = 96;
-    s_res.render.tiles_w = 7;  s_res.render.tiles_h = 5;
+    s_res.render.tiles_w = 5;  s_res.render.tiles_h = 5;
     s_res.render.ui_scale = 2;
-    s_res.render.native_w = 832; s_res.render.native_h = 540;
+    s_res.render.native_w = 800; s_res.render.native_h = 504;
     layout_init((const struct Resources *)&s_res);
 }
 
@@ -66,6 +66,9 @@ TEST legacy_status_and_bar(void) {
     ASSERT_EQ(8,   CL_STATUS_Y);
     ASSERT_EQ(288, CL_STATUS_W);
     ASSERT_EQ(9,   CL_STATUS_H);
+    ASSERT_EQ(9,   CL_STATUS_H);
+    ASSERT_EQ(5,   CL_BAR_H);
+    ASSERT_EQ(0,   CL_RAIL_W);
     ASSERT_EQ(17,  CL_BAR_Y);
     ASSERT_EQ(5,   CL_BAR_H);
     PASS();
@@ -308,8 +311,9 @@ TEST legacy_letter_selector_is_inert(void) {
 // and then a legacy one must land back on every number above.
 TEST legacy_survives_a_modern_pack(void) {
     modern();
-    ASSERT_EQ(832, CL_SCREEN_W);
+    ASSERT_EQ(800, CL_SCREEN_W);
     ASSERT_EQ(2,   CL_UI);
+    ASSERT_EQ(0,   CL_STATUS_H);
     legacy();
     ASSERT_EQ(320, CL_SCREEN_W);
     ASSERT_EQ(200, CL_SCREEN_H);

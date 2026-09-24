@@ -12,6 +12,8 @@
 #include "tables.h"
 #include "recorder.h"
 #include "modern/gamemenu.h"
+#include "modern/mlist.h"
+#include "input.h"
 #include "ui.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,7 +37,7 @@ static struct {
     bool active;       // in cast mode (not just viewing)
     int  column;       // 0=combat, 1=adventure
     int  chosen;       // spell index after A-G press, -1=none
-    int  cursor;       // modern: the selected row, 0..13 (column * 7 + slot)
+    int  cursor;       // modern: the selected row, 0..13 (column * 7 + slot), 14 the exit
 } spell_state = { 0 };
 
 int views_spells_cursor(void) { return CL_IS_MODERN ? spell_state.cursor : -1; }
@@ -71,17 +73,96 @@ void views_spells_set_mode(bool cast_mode) {
     spell_state.cursor = 7;
 }
 
+void views_spells_set_cursor(int cursor) { spell_state.cursor = cursor; }
+
+bool views_spell_castable(const Game *g, bool combat, int idx) {
+    if (!g || idx < 0 || idx >= 14) return false;
+    if ((idx < 7) != combat) return false;           // the other column's are cast elsewhere
+    return g->spells.counts[idx] > 0;
+}
+
+int views_spells_first(const Game *g, bool combat) {
+    int base = combat ? 0 : 7;
+    for (int i = 0; i < 7; i++) if (views_spell_castable(g, combat, base + i)) return base + i;
+    return base;
+}
+
+SpellsEvent views_spells_input(const Game *g, bool combat, int *cursor, int *spell) {
+    // The one spells page's keys and taps, on the map and in a fight. The
+    // two columns run down 0..6 and 7..13, the exit is 14: Up and Down move
+    // in a column and pass through the exit at either end; Left and Right
+    // change column; Enter, or a tap, casts a spell that can be cast here.
+    static int s_col;                   // the column the exit was reached from
+    int c = *cursor;
+    if (c < 0 || c > 14) c = views_spells_first(g, combat);
+    if (c < 14) s_col = c / 7;
+    if (spell) *spell = -1;
+    int tapped = touch_tapped_row(TOUCH_LIST_SPELLS);
+    if (tapped == 14 || input_key_pressed(KEY_ESCAPE)) { *cursor = c; return SPELLS_BACK; }
+    if (tapped >= 0 && tapped < 14) {
+        *cursor = tapped;
+        if (!views_spell_castable(g, combat, tapped)) return SPELLS_MOVED;
+        if (spell) *spell = tapped;
+        return SPELLS_CAST;
+    }
+    SpellsEvent ev = SPELLS_NONE;
+    if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_KP_8)) {
+        c = c == 14 ? s_col * 7 + 6 : (c % 7 == 0 ? 14 : c - 1);
+        ev = SPELLS_MOVED;
+    } else if (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2)) {
+        c = c == 14 ? s_col * 7 : (c % 7 == 6 ? 14 : c + 1);
+        ev = SPELLS_MOVED;
+    } else if ((input_key_pressed(KEY_LEFT) || input_key_pressed(KEY_KP_4)) && c != 14) {
+        c = c % 7;
+        ev = SPELLS_MOVED;
+    } else if ((input_key_pressed(KEY_RIGHT) || input_key_pressed(KEY_KP_6)) && c != 14) {
+        c = 7 + c % 7;
+        ev = SPELLS_MOVED;
+    } else if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) || input_key_pressed(KEY_SPACE)) {
+        *cursor = c;
+        if (c == 14) return SPELLS_BACK;
+        if (!views_spell_castable(g, combat, c)) return SPELLS_NONE;
+        if (spell) *spell = c;
+        return SPELLS_CAST;
+    }
+    *cursor = c;
+    return ev;
+}
+
 int views_spells_chosen(void) {
     int result = spell_state.chosen;
     spell_state.chosen = -1;
     return result;
 }
 
+bool views_spells_update_modern(const Game *g) {
+    if (!spell_state.active) return false;
+    int spell = -1;
+    SpellsEvent ev = views_spells_input(g, false, &spell_state.cursor, &spell);
+    if (ev == SPELLS_BACK) {
+        spell_state.active = false;
+        views_dismiss();
+        return false;
+    }
+    if (ev == SPELLS_CAST) {
+        spell_state.chosen = spell;
+        views_dismiss();
+        return true;
+    }
+    return false;
+}
+
 bool views_spells_update(void) {
     if (!spell_state.active) return false;
     touch_request(TOUCH_CHROME_BACK);
-    // Touch: a tapped cell carries its column, so one tap casts.
+    // Touch: a tapped cell carries its column, so one tap casts. Row 14 is
+    // modern's Back, the page's exit.
     int tapped = touch_tapped_row(TOUCH_LIST_SPELLS);
+    if (tapped == 14) {
+        spell_state.active = false;
+        views_dismiss();
+        return false;
+    }
     if (tapped >= 0) {
         spell_state.column = tapped / 7;
         spell_state.chosen = tapped;
@@ -127,7 +208,8 @@ static struct {
     GateDestination *list;   // heap, count entries
     int  count;
     bool is_town;
-    int  cursor;       // 0..count-1
+    int  cursor;       // 0..count-1: the destination shown
+    int  row;          // modern: the list's cursor -- a destination, Travel (count) or Cancel (count + 1)
     int  chosen;       // confirmed index, -1 = none
 } gate_view = { 0 };
 
@@ -140,9 +222,12 @@ void views_gate_open(const GateDestination *dests, int count, bool is_town) {
     gate_view.count = count;
     gate_view.is_town = is_town;
     gate_view.cursor = 0;
+    gate_view.row = 0;
     gate_view.chosen = -1;
     views_push(VIEW_GATE);
 }
+
+int views_gate_row(void) { return gate_view.row; }
 
 int  views_gate_count(void)   { return gate_view.count; }
 int  views_gate_rows_per_column(void) {
@@ -163,9 +248,41 @@ int views_gate_chosen(void) {
     return r;
 }
 
+// Modern: one list -- the destinations, then Travel and Cancel on the foot --
+// through the one reader. A destination under the cursor is the one shown;
+// Enter (or a second tap) on it travels, as Travel does.
+static bool gate_update_modern(void) {
+    int n = gate_view.count;
+    MlList l = { n + 2, gate_view.row, NULL, NULL };
+    int tapped = touch_tapped_row(TOUCH_LIST_GATE);
+    int foot = touch_tapped_row(TOUCH_LIST_PROMPT);
+    if (tapped >= 0 && tapped < n) {
+        bool again = tapped == gate_view.cursor && gate_view.row == tapped;
+        gate_view.row = gate_view.cursor = tapped;
+        if (!again) return true;
+        gate_view.chosen = tapped;
+        views_dismiss();
+        return true;
+    }
+    if (foot == 1) { views_dismiss(); return true; }
+    if (foot == 0) { gate_view.chosen = gate_view.cursor; views_dismiss(); return true; }
+    int row = -1;
+    MlEvent ev = ml_list_input(&l, 0, &row);
+    gate_view.row = l.cursor;
+    if (gate_view.row < n) gate_view.cursor = gate_view.row;
+    if (ev == ML_EV_BACK || (ev == ML_EV_ACT && row == n + 1)) { views_dismiss(); return true; }
+    if (ev == ML_EV_ACT) {
+        gate_view.chosen = row < n ? row : gate_view.cursor;
+        views_dismiss();
+        return true;
+    }
+    return ev == ML_EV_MOVED;
+}
+
 bool views_gate_update(void) {
     int n = gate_view.count;
     if (n <= 0) return false;
+    if (CL_IS_MODERN) return gate_update_modern();
     int left = (n + 1) / 2;   // rows in the left column (matches the renderer)
     // Modern: one list, so Left/Right do nothing.
     if (CL_IS_MODERN) left = n;
@@ -379,8 +496,13 @@ static const MenuFrame *menu_top(void) {
 ViewKind views_active(void)    { return view_stack_top(); }
 int      views_depth(void)     { return view_stack_depth; }
 
+static int s_army_mark = -1;
+void views_army_mark(int troop_idx) { s_army_mark = troop_idx; }
+int  views_army_marked(void)        { return s_army_mark; }
+
 void     views_set(ViewKind v) {
     // Replace the stack with a single entry (or clear if VIEW_NONE).
+    s_army_mark = -1;
     view_stack_depth = 0;
     if (v != VIEW_NONE) {
         view_stack[view_stack_depth++] = v;
@@ -1164,21 +1286,13 @@ bool views_town_result_dialog(void) {
 
 static bool town_modern_update(Game *g) {
     if (!town.visit) {
-        // The scene: Visit the town, or Leave.
-        int tapped = touch_tapped_row(TOUCH_LIST_TOWN);
-        if (tapped == 0 || tapped == 1) town.scene_cursor = tapped;
-        bool go = tapped >= 0 || input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
-                  input_key_pressed(KEY_SPACE);
-        if (input_key_pressed(KEY_ESCAPE)) { views_dismiss(); return true; }
-        if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_W) ||
-            input_key_pressed(KEY_S) || input_key_pressed(KEY_KP_8) || input_key_pressed(KEY_KP_2)) {
-            town.scene_cursor = 1 - town.scene_cursor;
-            return true;
-        }
-        if (go) {
-            if (town.scene_cursor == 0) { town.visit = true; town.cursor = TOWN_ROW_CONTRACT; }
-            else                        views_dismiss();
-        }
+        // The square: Visit the town, or Leave -- through the one reader.
+        MlList l = { 2, town.scene_cursor, NULL, NULL };
+        int row = -1;
+        MlEvent ev = ml_list_input(&l, TOUCH_LIST_TOWN, &row);
+        town.scene_cursor = l.cursor;
+        if (ev == ML_EV_BACK || (ev == ML_EV_ACT && row == 1)) { views_dismiss(); return true; }
+        if (ev == ML_EV_ACT) { town.visit = true; town.cursor = TOWN_ROW_CONTRACT; }
         return true;
     }
     if (town.result_dialog) {
@@ -1209,10 +1323,8 @@ static bool town_modern_update(Game *g) {
         else      { town.lcursor = tapped; town.detail_page = 0; town_list_do_row(g, tapped); }
         return true;
     }
-    int dir = (input_key_pressed(KEY_UP) || input_key_pressed(KEY_W) ||
-               input_key_pressed(KEY_KP_8)) ? -1
-            : (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_S) ||
-               input_key_pressed(KEY_KP_2)) ? +1 : 0;
+    int dir = (input_key_pressed(KEY_UP) || input_key_pressed(KEY_KP_8)) ? -1
+            : (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2)) ? +1 : 0;
     if (dir && menu) {
         town.cursor = (town.cursor + dir + rows) % rows;
         town.detail_page = 0;
@@ -1509,21 +1621,43 @@ void views_controls_set_cursor(int r) {
     g_controls_cursor = r;
 }
 
-// True iff the row labels Sounds / Music / Volume -- the three controls
-// that depend on a working audio device.
+// A setting the pack marks as needing a working audio device ("audio": true).
 static bool controls_row_is_audio(const struct Game *g, int row) {
     if (!g || !g->res || row < 0 || row >= g->res->controls.count) return false;
-    const char *L = g->res->controls.items[row].label;
-    if (!L) return false;
-    return strcmp(L, "Sounds") == 0 ||
-           strcmp(L, "Music")  == 0 ||
-           strcmp(L, "Volume") == 0;
+    return g->res->controls.items[row].audio;
 }
 
 bool views_controls_row_disabled(const struct Game *g, int row) {
     // Only once the device has definitely failed: while it is still opening
     // in the background the rows stay live.
     return controls_row_is_audio(g, row) && audio_status() == AUDIO_UNAVAILABLE;
+}
+
+bool views_controls_input(struct Game *g) {
+    if (!g || !g->res) return false;
+    // The settings the page shows (the hidden ones are not rows), then its
+    // exit. A row's digit, a tap or Enter steps the setting; the exit, Escape
+    // or C closes -- the same wherever Controls is open.
+    int vis_map[8], vis = 0;
+    for (int i = 0; i < g->res->controls.count && vis < 8; i++)
+        if (!g->res->controls.items[i].hidden) vis_map[vis++] = i;
+    bool enabled[9];
+    const char *keys[9];
+    static const char *const DIGITS[8] = { "1", "2", "3", "4", "5", "6", "7", "8" };
+    for (int k = 0; k < vis; k++) { enabled[k] = !views_controls_row_disabled(g, vis_map[k]); keys[k] = DIGITS[k]; }
+    enabled[vis] = true;
+    keys[vis] = "";
+    MlList l = { vis + 1, g_controls_cursor, enabled, keys };
+    int row = -1;
+    MlEvent ev = ml_list_input(&l, TOUCH_LIST_CONTROLS, &row);
+    g_controls_cursor = l.cursor;
+    if (ev == ML_EV_BACK || (ev == ML_EV_ACT && row == vis) || input_key_pressed(KEY_C) ||
+        gamepad_pressed_cancel()) {
+        views_dismiss();
+        return true;
+    }
+    if (ev == ML_EV_ACT && row >= 0 && row < vis) views_controls_advance(g, vis_map[row]);
+    return false;
 }
 
 void views_controls_advance(struct Game *g, int row) {

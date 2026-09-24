@@ -18,6 +18,7 @@
 #include "pending.h"
 #include "player_io.h"
 #include "ui.h"
+#include "bfont.h"
 #include "tables.h"
 #include "resources.h"
 #include "combat.h"
@@ -31,6 +32,10 @@
 #include "tile_cache.h"
 #include "shell_weekend.h"
 #include "touch.h"
+#include "startup.h"
+#include "present.h"
+#include "modern/page.h"
+#include "shell_actions.h"
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -43,7 +48,6 @@
 #define MKDIR(p) mkdir((p), 0755)
 #endif
 
-void combat_present_public(const Combat *c, const Game *g, const Sprites *sprites, void *render_target);
 void combat_gallery_menu(bool open);
 void combat_gallery_cast_page(void);
 void end_cartoon_gallery_draw(RenderTexture2D *rt, const Resources *res, const Sprites *sprites,
@@ -59,7 +63,59 @@ typedef struct {
     Game *g; Map *m; Fog *f; const Resources *res; const Sprites *s;
     RenderTexture2D *rt; const char *dir;
     FILE *manifest;
+    FILE *pages;      // modern: where each shot's pages went (pages.txt)
 } Gal;
+
+// One line per shot: the screen, the font's glyph (GW x GH, measured when the
+// face loads), the space inside the frame, the map, and each page open -- its
+// anchor, content, outer rect and whether it floats -- for the measured
+// checks (page centred, ring clear of the frame).
+static void log_pages(Gal *G, const char *name) {
+    if (!G->pages || !CL_IS_MODERN) return;
+    ML_Rect in = page_interior();
+    fprintf(G->pages, "%s screen=%d,%d zoom=%d font=%d,%d bare=%d interior=%d,%d,%d,%d map=%d,%d,%d,%d",
+            name, CL_SCREEN_W, CL_SCREEN_H, present_get_zoom(), BFONT_GLYPH_W, BFONT_GLYPH_H,
+            page_is_bare() ? 1 : 0, in.x, in.y, in.w, in.h, CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H);
+    ML_Rect fld;
+    if (page_field(&fld)) fprintf(G->pages, " field=%d,%d,%d,%d", fld.x, fld.y, fld.w, fld.h);
+    Page st[8];
+    int n = page_stack(st, 8);
+    for (int i = 0; i < n; i++)
+        fprintf(G->pages, " page=%d:%d,%d,%d,%d:%d,%d,%d,%d:%d", (int)st[i].anchor,
+                st[i].r.x, st[i].r.y, st[i].r.w, st[i].r.h,
+                st[i].outer.x, st[i].outer.y, st[i].outer.w, st[i].outer.h, st[i].floats ? 1 : 0);
+    fprintf(G->pages, "\n");
+}
+
+static void tap_fail(const char *shot_name, const char *what);
+static int s_tap_checks;
+
+// Every shot's page keeps the page engine's tap rule (src/modern/page.c): with
+// one action, a tap anywhere presses it; with choices, a tap on its ring does
+// nothing and a tap outside it -- on the dimmed screen, or on the frame round
+// a page that fills -- is its exit.
+static void tap_page_rules(const char *name) {
+    if (!CL_IS_MODERN) return;
+    Page st[8];
+    int n = page_stack(st, 8);
+    if (n < 1) return;
+    const Page *p = &st[n - 1];
+    char what[160];
+    int want_out = p->tap_key ? p->tap_key : p->exit_key;
+    int want_in  = p->tap_key ? p->tap_key : 0;
+    s_tap_checks++;
+    int got = touch_last_page_key(2, 2);                 // the frame's corner
+    if (got != want_out) {
+        snprintf(what, sizeof what, "a tap outside the page presses %d, not %d", got, want_out);
+        tap_fail(name, what);
+    }
+    s_tap_checks++;
+    got = touch_last_page_key(p->outer.x + 2, p->outer.y + 2);   // its ring or its edge
+    if (got != want_in) {
+        snprintf(what, sizeof what, "a tap on the page's edge presses %d, not %d", got, want_in);
+        tap_fail(name, what);
+    }
+}
 
 static void save_target(Gal *G, const char *name) {
     Image img = LoadImageFromTexture(G->rt->texture);
@@ -69,6 +125,8 @@ static void save_target(Gal *G, const char *name) {
     ExportImage(img, path);
     UnloadImage(img);
     if (G->manifest) fprintf(G->manifest, "%s\n", name);
+    log_pages(G, name);
+    tap_page_rules(name);
     fprintf(stdout, "[gallery] %s\n", path);
 }
 
@@ -99,7 +157,7 @@ static void reset(Gal *G) {
 // last captured frame registered (touch_last_*). A failure is printed and makes
 // the gallery exit non-zero.
 
-static int s_tap_checks, s_tap_fails;
+static int s_tap_fails;
 
 static void tap_fail(const char *shot_name, const char *what) {
     s_tap_fails++;
@@ -182,7 +240,12 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     MKDIR(dir);
     char mpath[1024];
     snprintf(mpath, sizeof mpath, "%s/manifest.txt", dir);
-    Gal G = { g, m, f, res, s, rt, dir, fopen(mpath, "w") };
+    Gal G = { g, m, f, res, s, rt, dir, fopen(mpath, "w"), NULL };
+    if (CL_IS_MODERN) {
+        char ppath[1024];
+        snprintf(ppath, sizeof ppath, "%s/pages.txt", dir);
+        G.pages = fopen(ppath, "w");
+    }
     ui_anim_freeze(true);   // every animated frame the same from run to run
     const ResUI *ui = &res->ui;
     const ResBanners *bn = &res->banners;
@@ -199,6 +262,38 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         set_army(g, ids, counts, 4);
     }
 
+    // Modern: the land round the hero uncovered, wider and taller than the
+    // biggest pane, so every tile the map can show -- the part tiles at its
+    // edges too -- is drawn rather than left dark as unexplored.
+    if (CL_IS_MODERN) FogRevealRect(f, m, g->position.x, g->position.y, 12, 8);
+
+    // ---- before the game: the title and the new-game screens --------------------
+    {
+        static const struct { StartupShot shot; const char *name; } P[] = {
+            { STARTUP_SHOT_LOGO,         "00a_logo" },
+            { STARTUP_SHOT_TITLE,        "00b_title" },
+            { STARTUP_SHOT_CREDITS,      "00c_credits" },
+            { STARTUP_SHOT_LOAD,         "00d_load" },
+            { STARTUP_SHOT_CLASS,        "00e_class" },
+            { STARTUP_SHOT_CLASS_PICKED, "00f_class_picked" },
+            { STARTUP_SHOT_DIFFICULTY,   "00g_difficulty" },
+            { STARTUP_SHOT_NAME,         "00h_name" },
+            { STARTUP_SHOT_INTRO,        "00i_intro" },
+        };
+        for (size_t i = 0; i < sizeof P / sizeof P[0]; i++) {
+            bool drawn = false;
+            for (int k = 0; k < 3; k++) drawn = startup_gallery_draw(P[i].shot, res, s, rt);
+            if (drawn) save_target(&G, P[i].name);
+            // Every page with choices ends in its exit row, and a finger can
+            // reach it: Load's Back, Difficulty's Back, Name's Back.
+            if (drawn && CL_IS_MODERN) {
+                if (P[i].shot == STARTUP_SHOT_LOAD)       tap_row(P[i].name, TOUCH_LIST_STARTUP, 5);
+                if (P[i].shot == STARTUP_SHOT_DIFFICULTY) tap_row(P[i].name, TOUCH_LIST_STARTUP, 4);
+                if (P[i].shot == STARTUP_SHOT_NAME)       tap_row(P[i].name, TOUCH_LIST_STARTUP, 0);
+            }
+        }
+    }
+
     // ---- the map and its panels ----------------------------------------------
     reset(&G); shot(&G, "01_map");
     {
@@ -207,6 +302,13 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         g->stats.gold = 280000;
         reset(&G); shot(&G, "01b_map_big_purse");
         g->stats.gold = keep;
+    }
+    {
+        // Time Stop running: its steps count down where the days are.
+        int keep = g->stats.time_stop;
+        g->stats.time_stop = 12;
+        reset(&G); shot(&G, "01c_map_time_stop");
+        g->stats.time_stop = keep;
     }
     reset(&G);
     {
@@ -308,6 +410,8 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         ResTemplateVar cv[] = { { "GOLD", "1200" }, { "LEADERSHIP", "30" } };
         resources_format_template(tb, sizeof tb, bn->chest_gold, cv, 2);
         pending_flow = FLOW_CHEST_CHOICE;
+        pending_chest_gold = 1200;
+        pending_chest_leadership = 30;
         prompt_ab_open("", tb);
     }
     shot(&G, "09c_chest_choice");
@@ -344,7 +448,12 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
             off += (size_t)snprintf(body + off, sizeof body - off, "%s", frag);
         }
         pending_flow = FLOW_NAVIGATE;
-        prompt_numeric_open(ui->dt_navigate, body, 3);
+        // The provinces as shell_actions.c names them.
+        pending_nav_count = 0;
+        for (int zi = 1; zi < res->zone_count && zi < 4; zi++)
+            cpy(pending_nav_zones[pending_nav_count++], sizeof pending_nav_zones[0], res->zones[zi].id);
+        prompt_numeric_open(ui->dt_navigate, body, pending_nav_count);
+        shell_navigate_choices(res);
         if (CL_IS_MODERN && res->sprites.sail_backdrop[0] &&
             bn->body_navigate_confirm[0])
             prompt_set_req_kind(PIO_ASK_SCENE);
@@ -433,7 +542,9 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         GmPageId p4[2] = { GM_PAGE_ROOT, GM_PAGE_GAME };
         GmPageId p5[3] = { GM_PAGE_ROOT, GM_PAGE_GAME, GM_PAGE_SAVE };
         reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(1, p1, 0); shot(&G, "10_menu_top");
+        if (CL_IS_MODERN) { tap_row("10_menu_top", TOUCH_LIST_MENU, 3); tap_row("10_menu_top", TOUCH_LIST_MENU, 4); }
         reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(2, p2, 4); shot(&G, "11_menu_hero");
+        if (CL_IS_MODERN) tap_row("11_menu_hero", TOUCH_LIST_MENU, 5);
         reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(2, p3, 6); shot(&G, "12_menu_world_greyed");
         reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(2, p4, 0); shot(&G, "13_menu_game");
         reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(3, p5, 0); shot(&G, "14_menu_save_slots");
@@ -454,7 +565,9 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
             reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(2, p4, 3);
             prompt_yes_no_open(NULL, ui->new_game_confirm); prompt_set_req_kind(PIO_ASK_IN_PLACE); shot(&G, "15d_menu_new_game_question"); tap_yes_no("15d_menu_new_game_question", TOUCH_LIST_MENU);
         }
-        reset(&G); views_set(VIEW_MENU); views_push(VIEW_CONTROLS); shot(&G, "16_controls");
+        // Controls, opened from the menu's Game page.
+        reset(&G); views_set(VIEW_MENU); if (CL_IS_MODERN) modern_gamemenu_gallery(2, p4, 2);
+        views_push(VIEW_CONTROLS); shot(&G, "16_controls");
     }
 
     // ---- detail views ---------------------------------------------------------
@@ -495,6 +608,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         g->boat.has_boat = keep_boat;
     }
     reset(&G); views_set(VIEW_SPELLS); views_spells_set_mode(true); shot(&G, "25_spells");
+    if (CL_IS_MODERN) tap_row("25_spells", TOUCH_LIST_SPELLS, 14);
     reset(&G);
     {
         GateDestination d[6];
@@ -507,6 +621,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         views_gate_open(d, n, true);
     }
     shot(&G, "26_gate_picker");
+    if (CL_IS_MODERN) tap_row("26_gate_picker", TOUCH_LIST_PROMPT, 1);
 
     // ---- a town ------------------------------------------------------------------
     const ResTown *tw = first_town_in(res, g->position.zone);
@@ -571,6 +686,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         cpy(g->position.home_castle, sizeof g->position.home_castle, home->id);
         modern_castle_open(g, true, home->id);
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_MENU, 0, 0, 0); shot(&G, "40_home_castle");
+        if (CL_IS_MODERN) tap_row("40_home_castle", TOUCH_LIST_CASTLE, 2);
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_RECRUIT, 1, 0, 0); shot(&G, "41_castle_recruit");
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_RECRUIT, 4, 0, 0); shot(&G, "42_castle_recruit_greyed");
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_RECRUIT, 1, 18, 30); shot(&G, "43_castle_how_many"); tap_row("43_castle_how_many", TOUCH_LIST_CASTLE, 0); tap_row("43_castle_how_many", TOUCH_LIST_CASTLE, 1); tap_gone("43_castle_how_many", TOUCH_LIST_CASTLE, 2); tap_key("43_castle_how_many", KEY_UP); tap_key("43_castle_how_many", KEY_DOWN);
@@ -607,7 +723,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
             g->character.cls.rank_index = 1;
             reset(&G); views_set(VIEW_HOME_CASTLE);
             modern_castle_gallery_audience(GAME_AUDIENCE_PROMOTED + 1, 0, 1);
-            modern_castle_gallery(MC_PROMOTION, 0, 0, 0); shot(&G, "45_castle_promotion"); tap_row("45_castle_promotion", TOUCH_LIST_CASTLE, 0);
+            modern_castle_gallery(MC_PROMOTION, 0, 0, 0); shot(&G, "45_castle_promotion"); tap_row("45_castle_promotion", TOUCH_LIST_PROMPT, 0);
             g->character.cls.rank_index = keep;
         }
         g->position.home_castle[0] = '\0';
@@ -698,44 +814,76 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         combat_render_set_ground(tile_cache_get("grass"));
         combat_reset_turn(&c, COMBAT_SIDE_AI);
         c.unit_id = combat_next_unit(&c);
-        for (int i = 0; i < 3; i++) combat_present_public(&c, g, s, rt);
+        for (int i = 0; i < 3; i++) combat_present_public(&c, g, m, f, s, rt);
         save_target(&G, "70_combat");
         {
             // A troop attacking plays its whole strip: the unit whose turn it
             // is, two frames into its attack.
             const CombatUnit *act = &c.units[c.side][c.unit_id];
             combat_render_set_attack(c.side, act->x, act->y, 2);
-            for (int i = 0; i < 3; i++) combat_present_public(&c, g, s, rt);
+            for (int i = 0; i < 3; i++) combat_present_public(&c, g, m, f, s, rt);
             save_target(&G, "70b_combat_attack_frame");
             combat_render_set_attack(-1, 0, 0, -1);
         }
         combat_gallery_menu(true);
-        for (int i = 0; i < 3; i++) combat_present_public(&c, g, s, rt);
+        for (int i = 0; i < 3; i++) combat_present_public(&c, g, m, f, s, rt);
         save_target(&G, "71_combat_menu");
         combat_gallery_menu(false);
         c.picker_active = true;
         c.cursor_x = c.units[COMBAT_SIDE_AI][0].x;
         c.cursor_y = c.units[COMBAT_SIDE_AI][0].y;
-        for (int i = 0; i < 3; i++) combat_present_public(&c, g, s, rt);
+        for (int i = 0; i < 3; i++) combat_present_public(&c, g, m, f, s, rt);
         save_target(&G, "71b_combat_target_picker");
         c.picker_active = false;
         views_set(VIEW_ARMY);
-        for (int i = 0; i < 3; i++) combat_present_public(&c, g, s, rt);
+        // As a tap on the turn column's portrait opens it: on the troop whose
+        // turn it is.
+        if (c.unit_id >= 0) views_army_mark(c.units[c.side][c.unit_id].troop_idx);
+        for (int i = 0; i < 3; i++) combat_present_public(&c, g, m, f, s, rt);
         save_target(&G, "71c_combat_army_view");
         views_set(VIEW_NONE);
         combat_gallery_cast_page();
-        for (int i = 0; i < 3; i++) combat_present_public(&c, g, s, rt);
+        for (int i = 0; i < 3; i++) combat_present_public(&c, g, m, f, s, rt);
         save_target(&G, "72_combat_spells");
         combat_gallery_menu(false);
         prompt_yes_no_open(ui->give_up_header_modern, bn->combat_give_up_body); prompt_set_req_kind(PIO_ASK_OVER_FIELD);
-        for (int i = 0; i < 3; i++) combat_present_public(&c, g, s, rt);
+        for (int i = 0; i < 3; i++) combat_present_public(&c, g, m, f, s, rt);
         save_target(&G, "73_combat_give_up");
         prompt_dismiss();
         open_dialog_kind(ui->dt_combat_victory, "You have defeated the hostile band.\n\nSpoils: 1,250 gold.",
                          PIO_NOTE_OVER_FIELD);
-        for (int i = 0; i < 3; i++) combat_present_public(&c, g, s, rt);
+        for (int i = 0; i < 3; i++) combat_present_public(&c, g, m, f, s, rt);
         save_target(&G, "74_combat_victory");
         dialog_dismiss();
+    }
+
+    // ---- a siege ----------------------------------------------------------------------
+    {
+        reset(&G);
+        // A castle's garrison behind its walls, as run_castle_combat raises it.
+        Unit garrison[GAME_ARMY_SLOTS] = { 0 };
+        for (int k = 0; k < 4; k++) {
+            const TroopDef *t = troop_by_index(8 + k);
+            cpy(garrison[k].id, sizeof garrison[k].id, t->id);
+            garrison[k].count = 12 + k * 6;
+        }
+        CombatTarget tgt = { 0 };
+        tgt.name = "Castle";
+        tgt.seed_key = "gallery-siege";
+        tgt.garrison = garrison;
+        tgt.garrison_slots = GAME_ARMY_SLOTS;
+        static Combat c;
+        memset(&c, 0, sizeof c);
+        combat_init(&c, g, COMBAT_MODE_CASTLE, &tgt);
+        combat_seed_rng(&c, g, COMBAT_MODE_CASTLE, &tgt);
+        combat_prepare_player(&c, g);
+        combat_prepare_castle(&c, &tgt);
+        combat_reset_match(&c);
+        combat_render_set_ground(tile_cache_get("grass"));
+        combat_reset_turn(&c, COMBAT_SIDE_AI);
+        c.unit_id = combat_next_unit(&c);
+        for (int i = 0; i < 3; i++) combat_present_public(&c, g, m, f, s, rt);
+        save_target(&G, "75_siege");
     }
 
     // ---- the end ----------------------------------------------------------------------
@@ -756,6 +904,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
 
     reset(&G);
     if (G.manifest) fclose(G.manifest);
+    if (G.pages) fclose(G.pages);
     fprintf(stdout, "[tapcheck] %d checks, %d failed\n", s_tap_checks, s_tap_fails);
     ui_anim_freeze(false);
     return s_tap_fails ? 1 : 0;

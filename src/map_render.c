@@ -6,16 +6,95 @@
 #include "tables.h"     // troop_by_id (flying hero shows the lead troop)
 #include "tile_cache.h"
 #include "tilevar.h"
+#include "tile.h"
 #include <stdio.h>
 #include <string.h>
 
-// Viewport centering (OpenKB's game.c:1157): the hero is held centered in the
-// viewport except when the camera is clamped at a map edge. Half the tile
-// count (2 in the 5x5 original) on each side of the hero is visible, plus the
-// hero tile. Each axis has its own radius: a 7x5 viewport centred with the
-// width's radius put the hero a row low.
+// Viewport centering (OpenKB's game.c:1157), legacy: the hero is held
+// centred in the viewport except when the camera is clamped at a map edge.
+// Half the tile count (2 in the 5x5 original) on each side of the hero is
+// visible, plus the hero tile.
 #define RADIUS_X  (CL_MAP_TILES_W / 2)
 #define RADIUS_Y  (CL_MAP_TILES_H / 2)
+
+// The camera: the map cell drawn at (ox, oy), and the cells drawn round it --
+// from x0..x1 and y0..y1 in cells relative to it (inclusive).
+//
+// Legacy: the whole-tile grid is the pane (5x5), the camera clamps at the
+// map's edge.
+//
+// Modern: the hero's cell is centred across the pane and on the row that
+// holds the pane's middle, its rows flush with the columns' tiles at the
+// pane's top; every cell the pane shows is drawn, a part of one to the last
+// pixel, on every side; and the camera never clamps -- past the world's edge
+// the pane is dark, and the hero stays on the centre tile.
+typedef struct { int cam_x, cam_y, ox, oy, x0, x1, y0, y1; } MapView;
+
+static MapView map_view(const Game *g, const Map *m) {
+    MapView v;
+    if (!CL_IS_MODERN) {
+        v.ox = CL_MAP_X;
+        v.oy = CL_MAP_Y;
+        v.cam_x = g->position.x - RADIUS_X;
+        v.cam_y = g->position.y - RADIUS_Y;
+        if (v.cam_x > m->width  - CL_MAP_TILES_W) v.cam_x = m->width  - CL_MAP_TILES_W;
+        if (v.cam_y > m->height - CL_MAP_TILES_H) v.cam_y = m->height - CL_MAP_TILES_H;
+        if (v.cam_x < 0) v.cam_x = 0;
+        if (v.cam_y < 0) v.cam_y = 0;
+        v.x0 = 0; v.x1 = CL_MAP_TILES_W - 1;
+        v.y0 = 0; v.y1 = CL_MAP_TILES_H - 1;
+        return v;
+    }
+    int hx = CL_MAP_X + (CL_MAP_W - CL_TILE_W) / 2;           // the hero's cell
+    int hr = (CL_MAP_H / 2) / CL_TILE_H;                      // its row
+    int hy = CL_MAP_Y + hr * CL_TILE_H;
+    v.ox = hx; v.oy = hy;
+    v.cam_x = g->position.x;
+    v.cam_y = g->position.y;
+    v.x0 = -((hx - CL_MAP_X + CL_TILE_W - 1) / CL_TILE_W);
+    v.x1 = (CL_MAP_X + CL_MAP_W - (hx + CL_TILE_W) + CL_TILE_W - 1) / CL_TILE_W;
+    v.y0 = -hr;
+    v.y1 = (CL_MAP_Y + CL_MAP_H - (hy + CL_TILE_H) + CL_TILE_H - 1) / CL_TILE_H;
+    return v;
+}
+
+// Where the last map_render_draw put the hero's cell (a message about the
+// squares beside him outlines them).
+static int s_hero_x, s_hero_y;
+
+void map_render_last_hero_cell(int *x, int *y) {
+    if (x) *x = s_hero_x;
+    if (y) *y = s_hero_y;
+}
+
+void map_render_hero_cell(const Game *g, const Map *m, int *x, int *y) {
+    if (!g || !m) return;
+    MapView v = map_view(g, m);
+    if (x) *x = v.ox + (g->position.x - v.cam_x) * CL_TILE_W;
+    if (y) *y = v.oy + (g->position.y - v.cam_y) * CL_TILE_H;
+}
+
+void map_render_cell(const Map *m, int mx, int my, Rectangle dst) {
+    const Tile *t = MapGetTile(m, mx, my);
+    if (!t) return;
+    // An object tile, or a landmark whose code names its own ground, is drawn
+    // over that ground (ART-SPEC section 4): the plain terrain tile first,
+    // then the object's art. A code with cosmetic variants draws one of them,
+    // chosen per cell (src/tilevar.c); the ground under an object goes
+    // through the same pick so it matches its neighbours.
+    char va[TILE_ART_NAME_LEN];
+    if (t->interactive != INTERACT_NONE || t->ground != t->art) {
+        char ga[TILE_ART_NAME_LEN];
+        const char *gart = t->ground ? TileGround(m, t)
+                           : MapTerrainArt(m, TerrainName(t->terrain), ga, sizeof ga);
+        Texture2D ground = tile_cache_get(tilevar_art(gart, mx, my, va, sizeof va));
+        if (ground.id)
+            gfx_texture_draw(ground, (Rectangle){ 0, 0, (float)ground.width, (float)ground.height },
+                             dst, WHITE);
+    }
+    Texture2D tex = tile_cache_get(tilevar_art(TileArt(m, t), mx, my, va, sizeof va));
+    if (tex.id) gfx_texture_draw(tex, (Rectangle){ 0, 0, (float)tex.width, (float)tex.height }, dst, WHITE);
+}
 
 // A wandering foe draws the generic wandering-army tile, the same as every
 // other placed object. An earlier change (issue #9) drew the foe's lead troop
@@ -25,18 +104,10 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
                       const Sprites *s) {
     if (!g || !m) return;
 
-    // Compute the top-left visible tile (camera anchor). Clamp at map edges.
-    int cam_x = g->position.x - RADIUS_X;
-    int cam_y = g->position.y - RADIUS_Y;
-    if (cam_x < 0) cam_x = 0;
-    if (cam_y < 0) cam_y = 0;
-    if (cam_x > m->width  - CL_MAP_TILES_W) cam_x = m->width  - CL_MAP_TILES_W;
-    if (cam_y > m->height - CL_MAP_TILES_H) cam_y = m->height - CL_MAP_TILES_H;
-    // A modern viewport grows with the window and can end up wider than the
-    // map itself, which makes the clamp above negative. Pin it back to the
-    // origin: the surplus tiles fall outside the map and are simply not drawn.
-    if (cam_x < 0) cam_x = 0;
-    if (cam_y < 0) cam_y = 0;
+    const MapView v = map_view(g, m);
+    const int cam_x = v.cam_x, cam_y = v.cam_y;
+    s_hero_x = v.ox + (g->position.x - cam_x) * CL_TILE_W;
+    s_hero_y = v.oy + (g->position.y - cam_y) * CL_TILE_H;
 
     // Scissor so partial tiles at the map boundary don't spill.
     // The scissor is in framebuffer pixels, not design pixels: a fixed
@@ -46,54 +117,19 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
         gfx_clip_begin(CL_MAP_X * z, CL_MAP_Y * z, CL_MAP_W * z, CL_MAP_H * z);
     }
 
-    // Fill unseen tiles as black. This also blacks out the sub-tile slack: in
-    // modern mode the pane is the whole interior of the frame, which is rarely
-    // an exact multiple of the tile, and a partial tile is never drawn.
+    // Fill unseen tiles as black.
     gfx_rect(CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H, PAL_CLR(BLACK));
 
-    // Centre the whole-tile grid in the pane, so the leftover splits evenly
-    // either side and the hero still sits at the middle of the window.
-    const int ox = CL_MAP_X + (CL_MAP_W - CL_MAP_TILES_W * CL_TILE_W) / 2;
-    const int oy = CL_MAP_Y + (CL_MAP_H - CL_MAP_TILES_H * CL_TILE_H) / 2;
-
-    for (int ty = 0; ty < CL_MAP_TILES_H; ty++) {
-        for (int tx = 0; tx < CL_MAP_TILES_W; tx++) {
+    const int ox = v.ox, oy = v.oy;
+    for (int ty = v.y0; ty <= v.y1; ty++) {
+        for (int tx = v.x0; tx <= v.x1; tx++) {
             int mx = cam_x + tx;
             int my = cam_y + ty;
             if (mx < 0 || my < 0 || mx >= m->width || my >= m->height) continue;
             if (!FogSeen(f, mx, my)) continue;
-            const Tile *t = MapGetTile(m, mx, my);
-            if (!t) continue;
-            int px = ox + tx * CL_TILE_W;
-            int py = oy + ty * CL_TILE_H;
-            Rectangle dst = { (float)px, (float)py,
+            Rectangle dst = { (float)(ox + tx * CL_TILE_W), (float)(oy + ty * CL_TILE_H),
                               (float)CL_TILE_W, (float)CL_TILE_H };
-            // An object tile is drawn over its ground (ART-SPEC section 4):
-            // the plain terrain tile first, then the object's art. A
-            // transparent object -- the 1x1 castle, a town -- then stands on the ground it occupies instead
-            // of the black map fill; an opaque object covers the ground
-            // completely, so nothing that drew before this draws differently.
-            // A code with cosmetic variants draws one of them, chosen per
-            // cell for the session (src/tilevar.c); the ground under an
-            // object goes through the same pick so it matches its neighbours.
-            char va[TILE_ART_NAME_LEN];
-            // An object tile, or a landmark whose code names its own ground,
-            // is drawn over that ground (ART-SPEC section 4).
-            if (t->interactive != INTERACT_NONE || t->ground != t->art) {
-                char ga[TILE_ART_NAME_LEN];
-                const char *gart = t->ground ? TileGround(m, t)
-                                   : MapTerrainArt(m, TerrainName(t->terrain), ga, sizeof ga);
-                Texture2D ground = tile_cache_get(tilevar_art(gart, mx, my, va, sizeof va));
-                if (ground.id) {
-                    Rectangle gsrc = { 0, 0, (float)ground.width,
-                                       (float)ground.height };
-                    gfx_texture_draw(ground, gsrc, dst, WHITE);
-                }
-            }
-            Texture2D tex = tile_cache_get(tilevar_art(TileArt(m, t), mx, my, va, sizeof va));
-            if (tex.id == 0) continue;
-            Rectangle src = { 0, 0, (float)tex.width, (float)tex.height };
-            gfx_texture_draw(tex, src, dst, WHITE);
+            map_render_cell(m, mx, my, dst);
         }
     }
 
@@ -109,8 +145,7 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
         FogSeen(f, g->boat.x, g->boat.y)) {
         int bvx = g->boat.x - cam_x;
         int bvy = g->boat.y - cam_y;
-        if (bvx >= 0 && bvy >= 0 &&
-            bvx < CL_MAP_TILES_W && bvy < CL_MAP_TILES_H) {
+        if (bvx >= v.x0 && bvy >= v.y0 && bvx <= v.x1 && bvy <= v.y1) {
             // A boat the hero left behind sits still: frame 0, no facing.
             Texture2D bt = sprites_anim_tex(&s->hero_boat, OB_FACE_SOUTH,
                                             0, NULL);
@@ -186,8 +221,8 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
     // 96 px tile fades as far in as King's Bounty's does.
     const int bw = CL_TILE_W / 24 > 0 ? CL_TILE_W / 24 : 1;
     const int bh = CL_TILE_H / 17 > 0 ? CL_TILE_H / 17 : 1;
-    for (int ty = 0; ty < CL_MAP_TILES_H; ty++) {
-        for (int tx = 0; tx < CL_MAP_TILES_W; tx++) {
+    for (int ty = v.y0; ty <= v.y1; ty++) {
+        for (int tx = v.x0; tx <= v.x1; tx++) {
             int mx = cam_x + tx;
             int my = cam_y + ty;
             if (mx < 0 || my < 0 || mx >= m->width || my >= m->height) continue;

@@ -2,11 +2,11 @@
 //
 // Cosmetic tile variants. A pack may give a tile code a list of alternate
 // art names (`variants` in tile_codes, PACK-FORMAT section 4); the shell
-// picks one per map cell when it draws, from the cell's x, y and a seed
-// drawn once per session, so a field of grass is not one stamp repeated
-// and looks a little different every launch. Draw-time only: the map, the
-// game state, saves and replays are untouched (OPENBOUNTY-SPEC REQ-229d).
-// Legacy packs declare no variants and draw exactly as before.
+// picks one per map cell when it draws, from the cell's x, y and the game's
+// own seed, so a field of grass is not one stamp repeated, and one game looks
+// the same from launch to launch. Draw-time only: the map, the game state,
+// saves and replays are untouched (OPENBOUNTY-SPEC REQ-229d). Legacy packs
+// declare no variants and draw exactly as before.
 
 #ifndef OB_TILEVAR_H
 #define OB_TILEVAR_H
@@ -15,8 +15,10 @@
 
 struct Resources;
 
-// Remember every code's variants and the session seed.
+// Remember every code's variants.
 void tilevar_init(const struct Resources *res, unsigned seed);
+// The seed the picks are drawn from: the game's (the frame sets it).
+void tilevar_seed(unsigned seed);
 
 // Which of n choices cell (x, y) gets under this seed: 0..n-1, the same
 // for the same inputs, spread evenly. 0 when n <= 1. Pure.

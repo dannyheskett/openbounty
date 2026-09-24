@@ -43,4 +43,23 @@ bool startup_flow(const Resources *res,
                           StartupChoice   *out,
                           bool             skip_intro);     // no splashes or credits (back to the title)
 
+// The pre-game screens one at a time, for --gallery (src/shell_gallery.c).
+typedef enum {
+    STARTUP_SHOT_LOGO,           // the publisher splash
+    STARTUP_SHOT_TITLE,          // modern: the title with its menu; legacy: the title splash
+    STARTUP_SHOT_CREDITS,
+    STARTUP_SHOT_LOAD,           // the save picker, no saves
+    STARTUP_SHOT_CLASS,          // the class painting (modern: no one picked yet)
+    STARTUP_SHOT_CLASS_PICKED,   // modern: the second figure picked, its caption up
+    STARTUP_SHOT_DIFFICULTY,     // modern: its own page; legacy: the new-game panel, name in
+    STARTUP_SHOT_NAME,           // "Dan" typed (modern: a letter grid on touch)
+    STARTUP_SHOT_INTRO,          // legacy: the new game being created
+    STARTUP_SHOT_COUNT
+} StartupShot;
+
+// Draw one frame of `shot` into the render target exactly as its screen's
+// loop draws it, reading no input. False when this pack has no such screen.
+bool startup_gallery_draw(StartupShot shot, const Resources *res,
+                          const Sprites *sprites, void *render_target);
+
 #endif
