@@ -1563,6 +1563,14 @@ void GameApplyTileMutations(const Game *g, Map *map, const char *zone) {
     }
 }
 
+bool GameReloadZoneMap(const Game *g, Map *map, const char *zone) {
+    if (!g || !map || !zone || !zone[0]) return false;
+    if (!MapLoadZoneWithPlacements(map, g->res, zone, g)) return false;
+    // Re-apply consumed tiles so picked-up artifacts / chests stay gone.
+    GameApplyTileMutations(g, map, zone);
+    return true;
+}
+
 bool GameFoeBarsHero(const Game *g, const FoeState *f) {
     if (!g || !f || !f->requires_troop[0]) return false;
     for (int i = 0; i < GAME_ARMY_SLOTS; i++)
@@ -1733,7 +1741,13 @@ bool GameFoeCanEvade(const Game *g, const Map *map) {
             int x = g->position.x + dx, y = g->position.y + dy;
             const Tile *t = MapGetTile(map, x, y);
             if (!t || t->interactive != INTERACT_NONE) continue;
-            bool ok = (g->character.mount == MOUNT_FLY) ? adventure_walkable_in_flight(t)
+            // The hero's own boat, parked beside them in this zone, is a way
+            // out for a hero on foot: stepping onto it boards it.
+            bool boat_here = g->travel_mode == TRAVEL_WALK && g->character.mount != MOUNT_FLY &&
+                             g->boat.has_boat && g->boat.x == x && g->boat.y == y &&
+                             (g->boat.zone[0] == '\0' || strcmp(g->boat.zone, g->position.zone) == 0);
+            bool ok = boat_here ? true
+                    : (g->character.mount == MOUNT_FLY) ? adventure_walkable_in_flight(t)
                     : (g->travel_mode == TRAVEL_BOAT)   ? (t->terrain == TERRAIN_WATER || t->is_bridge)
                     :                                     adventure_walkable_on_foot(t);
             if (!ok) continue;
@@ -2520,9 +2534,7 @@ bool GameSwitchZone(Game *g, Map *map, Fog *fog, const char *zone_id) {
     char from[sizeof g->position.zone];
     copy_id(from, sizeof from, g->position.zone);
 
-    if (!MapLoadZoneWithPlacements(map, g->res, zone_id, g)) return false;
-    // Re-apply consumed tiles so picked-up artifacts / chests stay gone.
-    GameApplyTileMutations(g, map, zone_id);
+    if (!GameReloadZoneMap(g, map, zone_id)) return false;
     // Move hero to the arrival point.
     copy_id(g->position.zone, sizeof(g->position.zone), zone_id);
     g->position.x = map->hero_spawn_x;

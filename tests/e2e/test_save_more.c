@@ -4,6 +4,8 @@
 #include "savegame.h"
 #include "fixtures.h"
 #include "tables.h"
+#include "map.h"
+#include "tile.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -133,9 +135,54 @@ TEST save_load_save_state_identical(void) {
     PASS();
 }
 
+
+// A save read into a running game brings its zone back onto the map: an
+// artifact picked up after the save was written stands again, and one picked
+// up before it stays gone (issue #58, the in-game Load).
+TEST reload_zone_after_reading_a_save(void) {
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, NULL, FIXTURE_SEED));
+    // The first artifact salted onto the fixture's zone.
+    int ax = -1, ay = -1;
+    for (int i = 0; i < g->placement_count; i++) {
+        const SaltedPlacement *sp = &g->placements[i];
+        if (sp->kind == INTERACT_ARTIFACT && strcmp(sp->zone, g->position.zone) == 0) { ax = sp->x; ay = sp->y; break; }
+    }
+    ASSERT(ax >= 0);
+    ASSERT_EQ(INTERACT_ARTIFACT, MapGetTile(m, ax, ay)->interactive);
+    ASSERT_EQ(SAVE_OK, SaveGameWrite(SAVE_PATH, g, m, f));          // before the pickup
+    // Take it: clear the tile and record it, as the step does.
+    const ArtifactDef *a = artifact_by_id(TileId(m, MapGetTile(m, ax, ay)));
+    ASSERT(a);
+    ASSERT(GameClaimArtifact(g, a->index));
+    MapClearInteractive(m, ax, ay);
+    GameAddConsumed(g, g->position.zone, ax, ay);
+    ASSERT_EQ(INTERACT_NONE, MapGetTile(m, ax, ay)->interactive);
+    // Read the older save into the running game and bring its zone back.
+    ASSERT_EQ(SAVE_OK, SaveGameRead(SAVE_PATH, g, m, f));
+    ASSERT(GameReloadZoneMap(g, m, g->position.zone));
+    ASSERT_FALSE(g->artifacts.found[a->index]);
+    ASSERT_EQ(INTERACT_ARTIFACT, MapGetTile(m, ax, ay)->interactive);   // back where it was
+    // The other way round: pick up, save, read that save over a fresh map.
+    ASSERT(GameClaimArtifact(g, a->index));
+    MapClearInteractive(m, ax, ay);
+    GameAddConsumed(g, g->position.zone, ax, ay);
+    ASSERT_EQ(SAVE_OK, SaveGameWrite(SAVE_PATH, g, m, f));
+    ASSERT(MapLoadZoneWithPlacements(m, res, g->position.zone, g));    // a stale map with the tile
+    ASSERT_EQ(INTERACT_ARTIFACT, MapGetTile(m, ax, ay)->interactive);
+    ASSERT_EQ(SAVE_OK, SaveGameRead(SAVE_PATH, g, m, f));
+    ASSERT(GameReloadZoneMap(g, m, g->position.zone));
+    ASSERT(g->artifacts.found[a->index]);
+    ASSERT_EQ(INTERACT_NONE, MapGetTile(m, ax, ay)->interactive);       // gone, as found
+    unlink(SAVE_PATH);
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
 SUITE(e2e_save_more_suite) {
     RUN_TEST(save_preserves_army_contents);
     RUN_TEST(save_preserves_consumed_list);
     RUN_TEST(save_preserves_villains_caught);
     RUN_TEST(save_load_save_state_identical);
+    RUN_TEST(reload_zone_after_reading_a_save);
 }
