@@ -207,7 +207,7 @@ fight:
 
 `sprites.hud.days` has been the right column's last tile, under the days
 figure. `sprites.combat_panel` has named the Shoot, Wait and Fly tiles of the
-command column in a fight (DSGN-0113); Menu there has been `rail.menu`:
+command grid in a fight (DSGN-0113); Menu there has been `rail.menu`:
 
 ```json
 "combat_panel": { "shoot": "art/ui/combat_shoot.png", "wait": "art/ui/combat_wait.png",

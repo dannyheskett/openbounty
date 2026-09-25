@@ -2116,7 +2116,9 @@ golden-digest regression tests have pinned the formulas.
   the pack's `combat_log` strings (`melee_hit`, `retaliate`, `ranged_hit`,
   `frozen`, `immune`, `cloned`, `resurrected`, `teleported`, etc.). The
   banner has shown the actor's name + M/S counters before the first kill,
-  then "<actor> vs <target> killing N".
+  then "<actor> vs <target> killing N". In modern the lines have also stood
+  as cards in the battle column, newest first, as many as the column has
+  held (`DESIGN-SPEC.md` DSGN-0115).
 - **REQ-393.** **Win** (`result = 1`): all defenders dead; spoils =
   `sum(troop.spoils * 5 * count)` over killed enemies credited to gold;
   survivors written back to `g->army` with `GameCompactArmy`. **Loss / flee**
@@ -2158,7 +2160,8 @@ golden-digest regression tests have pinned the formulas.
 
 - **REQ-397.** `src/combat_render.c` has drawn the arena at the field origin
   (`CL_COMBAT_X`, `CL_COMBAT_Y`: 16, 22 in legacy, where the field is 288×170
-  in cells of 48×34; centred in the pane in modern, cells one tile). Render
+  in cells of 48×34; in modern where `page_combat` puts it left of the
+  battle column, cells one tile). Render
   order: the field ground, obstacles, units (with count badge), damage-flash
   overlay, picker cursor (when `picker_active`), then chrome and title bar.
   Only the active unit has animated (frames at ~150 ms); on frame wrap the AI
@@ -2549,7 +2552,7 @@ every menu; this section has held the rules.
   World, Game, then Close and Exit on the foot of the page, REQ-529), Hero,
   World and Game (Debug first with `--debug`, Save, Load, Controls, New
   Game). The combat menu has opened with Enter, Escape, a tap on the active
-  unit or the command column's Menu tile, on its Unit page (REQ-536); its
+  unit or the battle column's Menu tile, on its Unit page (REQ-536); its
   top page has held Unit, Hero, Game and Close, and Game has held Controls,
   Back and Give up last. Rows that do not apply have been greyed with the
   reason rather than removed. In-game Save and Load have picked one of five
@@ -2685,8 +2688,11 @@ every menu; this section has held the rules.
   screen: a full page has floated over the dimmed base screen where the
   screen has room for it and its ring, and filled the space inside the frame
   otherwise; menu pages and messages have always floated. A battle has taken
-  the base screen's places: its commands in the left column's, its turn in
-  the right column's and its field in the map's, flush with the map's top.
+  the base screen's interior: one column two tiles wide against the right
+  frame, holding whose turn it is and the commands, and the field in the
+  room left of it, flush with the top and centred across that room when a
+  band and a pixel of ground fit either side, flush with the left frame
+  otherwise (`page_combat`, `DESIGN-SPEC.md` DSGN-0110).
   The title, the class art and the end cartoon have been drawn full-bleed at
   the largest whole multiple that fits the screen.
 
@@ -2703,9 +2709,10 @@ every menu; this section has held the rules.
   The left column has held Menu, Map, Army, Search and Puzzle
   (`src/modern/rail.c`), the right column Contract, Siege, Magic, Gold and
   Days (`src/hud.c`); each tile has fired the action its key fires
-  (`shell_dispatch_action`). Both have shown at every size and on every
-  device, both have run the full height of the map, and neither has shown a
-  key or registered a tap while a page is open. The puzzle tile has covered
+  (`shell_dispatch_action`). On the map both have shown at every size and on
+  every device, both have run the full height of the map, and neither has
+  shown a key or registered a tap while a page is open. A battle has replaced
+  them with its one column (REQ-528). The puzzle tile has covered
   each piece still to be won; the Days tile has shown Time Stop's steps
   left, in another colour, while it runs; the gold and the days have been
   shortened alike when too wide for their tile; with the keyboard in use
@@ -2786,9 +2793,10 @@ every menu; this section has held the rules.
   difficulty, the difficulty to the class.
 
 - **REQ-536.** **The combat commands have kept one order.** The Unit page of
-  the combat menu and the command column beside the field have listed Shoot,
-  Wait, Fly and Cast in that order for every troop, greying what the unit
-  cannot do this turn, so a command has been in the same place every turn
+  the combat menu and the command grid in the battle column have listed
+  Shoot, Wait, Fly and Cast in that order for every troop (the grid reading
+  across then down after its Menu tile), greying what the unit cannot do
+  this turn, so a command has been in the same place every turn
   (`src/combat_loop.c`). The menu has opened with its cursor on the first
   command the unit can use; on the foe's turn every command tile has been
   greyed.

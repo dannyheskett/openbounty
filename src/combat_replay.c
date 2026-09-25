@@ -107,7 +107,7 @@ static void replay_apply_entry(Combat *c, const CombatTurnEntry *e) {
             au->x = e->to_x; au->y = e->to_y;
             au->count = e->act_count_after;
             if (au->count <= 0) au->troop_idx = -1;   // acting stack wiped
-            // Modern: whose turn it is, as the turn column shows it in a fight.
+            // Modern: whose turn it is, as the battle column shows it in a fight.
             if (CL_IS_MODERN) {
                 c->side = e->act_side;
                 c->unit_id = au->troop_idx >= 0 ? e->act_slot : -1;
