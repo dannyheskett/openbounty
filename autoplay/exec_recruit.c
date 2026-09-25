@@ -1729,9 +1729,9 @@ bool exec_recruit(ExecCtx *ctx, const RecruitRequest *req,
     if (win < 0 && exec_wait_allowed()) {
         // THE FUNDED WAIT (AP-053): shape the wait world FIRST (the trim
         // dismisses held stacks -- quote credit the bisect must not price),
-        // then bisect the smallest budget that buys any winner, verify weekly
-        // commission can EXCEED it with one week of slack, play for it, and
-        // search again on the richer world.
+        // then bisect the smallest budget that buys any winner, play for it
+        // (no calendar look-ahead: the engine's TIME failure ends a wait the
+        // days cannot cover), and search again on the richer world.
         exec_prepare_gold_wait(ctx);
         SearchArgs probe = { ctx, req, INT_MAX / 4, 0, true };
         if (search_all(&probe) >= 0) {

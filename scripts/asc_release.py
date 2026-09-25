@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Push the store listing, and submit a build for review, on the App Store.
 
-The mirror of scripts/play_release.py, with the same three verbs, so one
-workflow can drive both stores the same way:
+Three verbs, so one workflow can drive the store:
 
     listing   subtitle / description / keywords / promo text + screenshots
     release   attach an uploaded build to a version and submit it for review

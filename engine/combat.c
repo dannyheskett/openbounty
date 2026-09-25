@@ -1194,11 +1194,11 @@ int combat_cast_spell(Combat *c, int side, int spell_idx,
             int ox, oy;
             unit_move_offset(c, u, target->x, target->y, &ox, &oy);
             if (ox != 0 || oy != 0) {
+                // combat_move_unit ends the turn on an attack or once the
+                // moves run out; a step with moves left keeps the unit, and it
+                // walks on the next call, as the original does (#54).
                 int r = combat_move_unit(c, side, slot, ox, oy);
-                if (r != 0) {
-                    u->acted = true;
-                    return 1;
-                }
+                if (r != 0) return 1;
             }
         }
     }

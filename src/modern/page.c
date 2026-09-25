@@ -450,24 +450,33 @@ PageCombat page_combat(bool siege) {
     // The castle's back wall shows where the map has a tile's more height.
     c.has_wall = siege && CL_MAP_H >= field_h + CL_TILE_H;
     int wall_h = c.has_wall ? CL_TILE_H : 0;
-    c.commands = (ML_Rect){ CL_RAIL_X, CL_RAIL_Y, CL_RAIL_W, CL_RAIL_H };
-    c.turn     = (ML_Rect){ CL_SIDEBAR_X, CL_SIDEBAR_Y, CL_SIDEBAR_W, CL_SIDEBAR_H };
-    int fx = CL_MAP_X + (CL_MAP_W - field_w) / 2;
+    // One column, two tiles wide, against the right frame. The field has the
+    // interior left of it: centred when there is room for a band and ground
+    // either side, flush with the left frame otherwise (the smallest screen),
+    // when the band before the column takes what little is left.
+    int col_w  = 2 * CL_TILE_W;
+    c.column   = (ML_Rect){ CL_SCREEN_W - CL_FRAME_RIGHT_W - col_w, CL_MAP_Y, col_w, CL_MAP_H };
+    int pane_x = CL_FRAME_LEFT_W;
+    int pane_w = c.column.x - CL_SIDEBAR_GAP - pane_x;
+    int spare  = pane_w - field_w;
+    bool sides = spare >= 2 * (UK_BAND + CL_UI);
+    int fx = sides ? pane_x + spare / 2 : pane_x;
     c.wall  = (ML_Rect){ fx, CL_MAP_Y, field_w, wall_h };
     c.field = (ML_Rect){ fx, CL_MAP_Y + wall_h, field_w, field_h };
-    // Round the field, the map's place is the columns' dark ground, and a
-    // band marks the field's edge wherever the ground shows.
+    // Round the field the interior is the column's dark ground, and a band
+    // marks the field's edge wherever the ground shows.
     int fy = c.wall.y, fh = field_h + wall_h;
-    bool sides = fx > CL_MAP_X, below = fh < CL_MAP_H;
-    if (sides || below) {
-        lattice_ground(CL_MAP_X, CL_MAP_Y, CL_MAP_W, CL_MAP_H);
-        if (sides) {
-            lattice_band_v(fx - UK_BAND, fy, UK_BAND, fh + (below ? UK_BAND : 0));
-            lattice_band_v(fx + field_w, fy, UK_BAND, fh + (below ? UK_BAND : 0));
-        }
-        if (below) lattice_band_h(fx - (sides ? UK_BAND : 0), fy + fh,
-                                  field_w + (sides ? 2 * UK_BAND : 0), UK_BAND);
+    bool below = fh < CL_MAP_H;
+    lattice_ground(pane_x, CL_MAP_Y, pane_w, CL_MAP_H);
+    if (sides) {
+        lattice_band_v(fx - UK_BAND, fy, UK_BAND, fh + (below ? UK_BAND : 0));
+        lattice_band_v(fx + field_w, fy, UK_BAND, fh + (below ? UK_BAND : 0));
+        lattice_band_v(c.column.x - CL_SIDEBAR_GAP, CL_MAP_Y, CL_SIDEBAR_GAP, CL_MAP_H);
+    } else {
+        lattice_band_v(fx + field_w, CL_MAP_Y, c.column.x - (fx + field_w), CL_MAP_H);
     }
+    if (below) lattice_band_h(fx - (sides ? UK_BAND : 0), fy + fh,
+                              field_w + (sides ? 2 * UK_BAND : 0), UK_BAND);
     S.field = c.field;
     S.has_field = true;
     return c;

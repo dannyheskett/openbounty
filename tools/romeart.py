@@ -50,7 +50,7 @@ PACK = "assets/glory-of-rome"
 def _tile2x2(argv):
     """Lay a 48x48 seamless tile 2x2 into the 96x96 pack tile (ART-PIPELINE, base terrain).
 
-    python3 tools/tile2x2.py build/art/grass/run01/01_raw.png build/art/grass/run01/01_96.png
+    python3 tools/romeart.py tile2x2 build/art/grass/run01/01_raw.png build/art/grass/run01/01_96.png
     """
 
     src = Image.open(argv[1]).convert("RGBA")
@@ -70,7 +70,7 @@ def _tile2x2(argv):
 def _mirrorhalf(argv):
     """Make a tile symmetric by mirroring one half over the other.
 
-    python3 tools/mirrorhalf.py in.png out.png bottom|top|left|right
+    python3 tools/romeart.py mirror in.png out.png bottom|top|left|right
 
 The named half is kept and its mirror replaces the opposite half, so the
 result is exactly symmetric about the tile's centre line. Used on the Rome
@@ -100,7 +100,7 @@ bridge tiles (2026-09-07) whose generated kerbs were thicker on one side.
 def _cropcentre(argv):
     """Centre-crop a generated still to the pack size.
 
-    python3 tools/cropcentre.py in.png out.png [size] [top]
+    python3 tools/romeart.py crop in.png out.png [size] [top]
 
 The rd_pro__default engine draws a painted frame round most 96x96 portraits.
 Generating at 128x128 and keeping the centre 96x96 discards up to 16px of
@@ -128,7 +128,7 @@ def _rivermouth(argv):
     """A river mouth: a coast tile with a river running into its sea, the river's
 water blending into the sea's across the tile.
 
-    python3 tools/rivermouth.py <coast.png> <river_ew.png> <grass.png> <sea.png> <out.png>
+    python3 tools/romeart.py mouth <coast.png> <river_ew.png> <grass.png> <sea.png> <out.png>
 
 The river enters from the WEST edge (a coast with its sea to the east). The
 band is the river_ew piece's own shape -- every pixel where that piece differs
@@ -174,7 +174,7 @@ new T base where it is terrain and the new grass base elsewhere, so the
 edges seam with their bases by construction (ART-PIPELINE, terrain edges;
 OPENBOUNTY-SPEC REQ-229). No generation.
 
-    python3 tools/tileedges.py [pack-dir] [tile-set]
+    python3 tools/romeart.py edges [pack-dir] [tile-set]
 
 Default pack assets/glory-of-rome; with a tile set the bases are read from
 and the edges written to art/tiles/<set>/.
@@ -233,7 +233,7 @@ and the edges written to art/tiles/<set>/.
 def _stitch96(argv):
     """Stitch a PixelLab 16px corner tileset into the pack's 96px terrain tiles.
 
-    python3 tools/stitch96.py <set-dir> <terrain> <out-dir> [--seed N] [--invert]
+    python3 tools/romeart.py stitch <set-dir> <terrain> <out-dir> [--seed N] [--invert]
                               [--pool DIR --pool-rate R] [--decor DIR --decor-rate R]
 
 A 96px tile is a 6x6 grid of 16px sub-tiles chosen from the set's corner
@@ -642,7 +642,7 @@ Writes <terrain>.png (all terrain), grass.png (all grass) and
 def _grassvar(argv):
     """Grass variants: the pack grass with a patch of a second grass inside.
 
-    python3 tools/grassvar.py <set-dir> <out-dir> [--count N] [--seed S] [--set DIR ...]
+    python3 tools/romeart.py grass <set-dir> <out-dir> [--count N] [--seed S] [--set DIR ...]
 
 The set is a PixelLab 16 px tileset whose lower terrain is the pack grass
 and whose upper is a detail (weeds, pebbles, flowers, dry grass). More
@@ -816,8 +816,8 @@ Writes grass_01.png .. grass_NN.png and sheet.png (a field mixing them).
 def _forestlattice(argv):
     """Forest and mountain tiles from one lattice, under the border contract.
 
-    python3 tools/forestlattice.py <out.json> --sprites DIR --crown N --name forest
-    python3 tools/forestlattice.py <out.json> --sprites DIR --terrain mountain --name mountain
+    python3 tools/romeart.py lattice <out.json> --sprites DIR --crown N --name forest
+    python3 tools/romeart.py lattice <out.json> --sprites DIR --terrain mountain --name mountain
 
 The contract (2026-09-10), checked mechanically by tools/seamcheck.py:
 
@@ -1080,7 +1080,7 @@ tools/treetile.py with wrap off, every sprite listed, negatives included.
 def _treetile(argv):
     """Compose 96px terrain tiles from hand-placed 32px sprites.
 
-    python3 tools/treetile.py <layout.json> <out-dir>
+    python3 tools/romeart.py compose <layout.json> <out-dir>
 
 The layout file is the record of how every tile was made:
 
@@ -1170,7 +1170,7 @@ times over a row of grass, to check the horizontal seam and the south edge.
 def _seamcheck(argv):
     """Check a lattice layout against the border contract, mechanically.
 
-    python3 tools/seamcheck.py <layout.json>
+    python3 tools/romeart.py seamcheck <layout.json>
 
 For every ordered pair of tile codes that the engine can place side by side
 (horizontally and vertically), take every sprite whose INK straddles the
@@ -1312,10 +1312,10 @@ diagonal-only (all sides interfaces), 0 plain.
 def _roadtile(argv):
     """Road tiles from a PixelLab 16 px dirt-over-grass tileset.
 
-    python3 tools/roadtile.py <set-dir> <out-dir> [--seed N]
-    python3 tools/roadtile.py <set-dir> <out-dir> --sweep [--rim N --rim-shade F]
-    python3 tools/roadtile.py <set-dir> <out-dir> --sweep --prefix river   (river_*.png)
-    python3 tools/roadtile.py <set-dir> <out-dir> --sweep --fill PAVING.png --grass RIVER.png
+    python3 tools/romeart.py sweep <set-dir> <out-dir> [--seed N]
+    python3 tools/romeart.py sweep <set-dir> <out-dir> --sweep [--rim N --rim-shade F]
+    python3 tools/romeart.py sweep <set-dir> <out-dir> --sweep --prefix river   (river_*.png)
+    python3 tools/romeart.py sweep <set-dir> <out-dir> --sweep --fill PAVING.png --grass RIVER.png
         (a bridge deck: the band filled with a 96 px tile over another piece)
 
 A road piece is a 96 px tile built the way tools/stitch96.py builds a
@@ -1807,7 +1807,7 @@ never change, they are the contract.
 def _artprompts(argv):
     """Rebuild docs/ROME-ART.md: every prompt and setting the pack's art was made from.
 
-    python3 tools/artprompts.py [out.md]
+    python3 tools/romeart.py prompts [out.md]
 
 One page, generated from art/jobs/*.json, so it cannot drift from the jobs
 themselves. Each entry carries the engine and its settings and the prompt

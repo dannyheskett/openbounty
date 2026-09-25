@@ -12,6 +12,10 @@ Releases have been sequential build numbers tagged `release-1`, `release-2`,
 `release-3`, etc. No semver, no suffixes. The number has been picked
 **automatically**: you do not choose or tag it.
 
+Work has reached `main` through `staging`: pull requests have been
+squash-merged into `staging`, and a merge-commit pull request from `staging`
+to `main` has been the release. Nothing has been pushed to `main` directly.
+
 **Every push to `main` has cut a release.** Merging a PR (or pushing
 directly) has run the release workflow, which has picked the next `N`, built
 every target, and published. Docs-only pushes have been skipped via
@@ -174,7 +178,9 @@ Rome package too.
 ## 3. CI on every PR
 
 `.github/workflows/ci.yml` has run on every pull request. The Linux job has
-built the dev binary (`make`) and run the full test suite (`make test`).
+run the full test suite (`make test`), built the dev and release binaries
+(`make all release`), packaged the Rome Linux archive and checked the pack
+rule, and validated the store listings (`scripts/store_listing.py --check`).
 Windows, macOS, web, iOS and Android jobs have run a cross-compile /
 universal / wasm / Simulator / APK smoke build as cheap insurance that the
 other targets still build before a release is cut. The Android job has also
@@ -214,11 +220,12 @@ Then fix the issue and push to `main`, which runs the release workflow again.
 ## 5. Version handling
 
 The build number has come from the **`release-*` git tags**: the Makefile has
-derived `OPENBOUNTY_VERSION` as the highest `release-N` tag number, falling
-back to `0` when there are no tags (a fresh checkout). The release workflow
-has passed the computed `N` explicitly via `OPENBOUNTY_VERSION=N` on every
-`make` invocation, so the binary has been stamped with the release number
-even before the tag exists.
+derived `RELEASE_VERSION` as the highest `release-N` tag number, falling
+back to `0` when there are no tags (a fresh checkout), and
+`OPENBOUNTY_VERSION` has defaulted to it. The release workflow has passed the
+computed `N` explicitly via `RELEASE_VERSION=N` on every `make` invocation,
+so the binary has been stamped with the release number even before the tag
+exists.
 
 The number has been embedded into every binary at compile time (into
 `build/version.h`) and exposed via:
@@ -227,11 +234,11 @@ The number has been embedded into every binary at compile time (into
 ./openbounty --version       # → openbounty build 3
 ```
 
-To override locally for testing, pass it as a make variable, the same form
-the release workflow uses:
+To override locally for testing, pass either variable on the make command
+line, the first being the form the release workflow uses:
 
 ```sh
-make OPENBOUNTY_VERSION=99
+make RELEASE_VERSION=99
 ./build/debug/openbounty --version   # → openbounty build 99
 ```
 

@@ -48,9 +48,8 @@ have needed no guards. The demo agent and autoplay have been in the build.
   game thread has paced itself in `frame_host_yield` (`ios/host_ios.c`). This
   has been the one structural difference from the web build, which has
   unwound the same loops with ASYNCIFY.
-- The process's launch arguments have been forwarded to the game, minus the
-  flags Xcode and `simctl` inject, so `simctl launch <udid> <bundle> --demo`
-  has played the game unattended.
+- The game thread has started the game with no arguments
+  (`shell_run_game(1, {"gloryofrome"})`): the app has taken no launch flags.
 - The game's stdout has been piped into the unified log with `os_log`
   (`plat_ios_log_stdout`, `ios/plat_ios.mm`). stderr has been left alone,
   because `NSLog` writes there and would feed itself.

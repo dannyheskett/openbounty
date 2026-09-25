@@ -11,6 +11,10 @@
 // strip: the frame, and the band between each column and the map.
 void chrome_draw(const Game *g, const Sprites *s);
 
+// The frame alone on black, no column bands: the battle, which lays its own
+// column and field inside the ring (src/modern/page.c page_combat).
+void chrome_draw_ring(const Game *g, const Sprites *s);
+
 // Combat / sub-screen variant: same chrome (status fill, bar strip,
 // frame bitmap) but the status-bar text is supplied by the caller.
 // Used by legacy combat to put the active-troop name + move counter in the

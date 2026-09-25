@@ -1,0 +1,31 @@
+# Promotion gate: main takes pull requests from staging only.
+#
+# Work lands on staging, squashed, through a pull request per change. A
+# staging -> main pull request, merged with a merge commit, is the release. The
+# main ruleset requires this check, because GitHub has no setting that limits a
+# pull request's source branch.
+name: promotion
+
+on:
+  pull_request:
+    branches: [main]
+    # 'edited' matters: retargeting a pull request to main is an edit.
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  from-staging:
+    name: from staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: The source branch is this repository's staging
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          if [ "$HEAD_REF" = staging ] && [ "$HEAD_REPO" = "$GITHUB_REPOSITORY" ]; then
+            echo "from staging"
+          else
+            echo "::error::main takes pull requests from staging only, not $HEAD_REPO:$HEAD_REF"
+            exit 1
+          fi
