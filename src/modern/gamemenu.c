@@ -134,7 +134,7 @@ void modern_gamemenu_page(const Game *g, GmPageId id, GmPage *p) {
     }
     case GM_PAGE_WORLD: {
         bool flying = g->character.mount == MOUNT_FLY;
-        bool sailing = g->character.mount == MOUNT_SAIL;
+        bool sailing = g->travel_mode == TRAVEL_BOAT;
         p->title = ui->gm_world;
         add(p, ui->gm_map,    bn->gmd_map,    NULL, "M", KEY_M, true);
         add(p, ui->gm_cast,   bn->gmd_cast,   NULL, "U", KEY_U, true);

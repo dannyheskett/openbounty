@@ -716,6 +716,12 @@ void GameAddConsumed(Game *g, const char *zone, int x, int y);
 // the map for the hero's current zone (on new game, save load, or zone
 // switch).
 void GameApplyTileMutations(const Game *g, Map *map, const char *zone);
+// Load `zone`'s map with this game's placements stamped and its consumed
+// tiles re-applied: the one way a zone comes onto the screen, whether at
+// start, on a zone switch, or after a save is read into a running game (a
+// save restores the Game and the fog, never the Map). False when the map
+// cannot be loaded.
+bool GameReloadZoneMap(const Game *g, Map *map, const char *zone);
 
 // True when the zone's event `id` has already played.
 bool GameEventFired(const Game *g, const char *zone, const char *id);

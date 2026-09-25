@@ -286,11 +286,20 @@ TEST a_vista_fires_once_and_changes_the_map(void) {
     ASSERT(sp >= 0);
     int hx = g->position.x, hy = g->position.y;
 
-    // No charge: nothing happens.
+    // No charge: nothing happens, and a vista without a hint says nothing.
     g->spells.counts[sp] = 0;
     GameStep(g, m, f, res, sdx, sdy);
     ASSERT_EQ(0, g->events_done_count);
     ASSERT(player_io_idle(g));
+    // With a hint, the place speaks each time the hero stands here unmet,
+    // and still does not fire.
+    strcpy(ev->hint, "The water is high.");
+    g->position.x = hx; g->position.y = hy;
+    GameStep(g, m, f, res, sdx, sdy);
+    ASSERT_EQ(0, g->events_done_count);
+    ASSERT_FALSE(player_io_idle(g));
+    player_io_reset(g);
+    ev->hint[0] = '\0';
 
     // With the charge: the scene, the spend, the tile.
     g->position.x = hx; g->position.y = hy;

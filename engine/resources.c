@@ -487,6 +487,7 @@ static void parse_zones(Resources *res, cJSON *arr) {
             }
         }
         copy_str(z->army_art, sizeof(z->army_art), json_str(it, "army_art", ""));
+        copy_str(z->field_grid, sizeof(z->field_grid), json_str(it, "field_grid", ""));
         copy_str(z->alcove_art, sizeof(z->alcove_art), json_str(it, "alcove_art", ""));
         copy_str(z->pontifex, sizeof(z->pontifex), json_str(it, "pontifex", ""));
         z->alcove_cost = json_int(it, "alcove_cost", -1);
@@ -529,6 +530,7 @@ static void parse_zones(Resources *res, cJSON *arr) {
                 copy_str(ev->scene, sizeof ev->scene, json_str(e, "scene", ""));
                 copy_str(ev->title, sizeof ev->title, json_str(e, "title", ""));
                 copy_str(ev->body, sizeof ev->body, json_str(e, "body", ""));
+                copy_str(ev->hint, sizeof ev->hint, json_str(e, "hint", ""));
                 cJSON *jrq = cJSON_GetObjectItem(e, "requires");
                 int nrq = cJSON_IsArray(jrq) ? cJSON_GetArraySize(jrq) : 0;
                 ev->reqs = nrq > 0 ? calloc((size_t)nrq, sizeof *ev->reqs) : NULL;
@@ -1157,6 +1159,8 @@ static void parse_sprites(Resources *res, cJSON *obj) {
                  json_str(ui, "siege_back_wall_right", ""));
         copy_str(res->sprites.siege_grid, sizeof(res->sprites.siege_grid),
                  json_str(ui, "siege_grid", ""));
+        copy_str(res->sprites.field_grid, sizeof(res->sprites.field_grid),
+                 json_str(ui, "field_grid", ""));
         copy_str(res->sprites.combat_ground, sizeof(res->sprites.combat_ground),
                  json_str(ui, "combat_ground", "field"));
         copy_str(res->sprites.ending_lose, sizeof(res->sprites.ending_lose),
@@ -3347,6 +3351,14 @@ int resources_art_manifest(const Resources *res, ResArtList *out) {
             if (resources_siege_grid_path(res, x, y, p, sizeof p))
                 art_add(out, cap, &n, p);
         }
+    // The open-field grids: the pack's and each zone's own, every cell once.
+    for (int zi = -1; zi < res->zone_count; zi++)
+        for (int y = 0; y < COMBAT_H; y++)
+            for (int x = 0; x < COMBAT_W; x++) {
+                char p[RES_PATH_LEN];
+                if (resources_field_grid_path(res, zi, x, y, p, sizeof p))
+                    art_add(out, cap, &n, p);
+            }
     for (int i = 0; i < res->sprites.view_icons_extra_count; i++)
         art_add(out, cap, &n, res->sprites.view_icons_extra[i]);
     art_add(out, cap, &n, res->sprites.hud_contract_silhouette);
@@ -3575,6 +3587,19 @@ bool resources_siege_grid_path(const Resources *res, int x, int y,
     if (!res || !out || cap <= 0 || !res->sprites.siege_grid[0]) return false;
     if (x < 0 || x >= COMBAT_W || y < 0 || y > COMBAT_H) return false;
     snprintf(out, (size_t)cap, "%s_%d_%d.png", res->sprites.siege_grid, x, y);
+    return true;
+}
+
+bool resources_field_grid_path(const Resources *res, int zone_index, int x, int y,
+                               char *out, int cap) {
+    if (out && cap > 0) out[0] = '\0';
+    if (!res || !out || cap <= 0) return false;
+    if (x < 0 || x >= COMBAT_W || y < 0 || y >= COMBAT_H) return false;
+    const char *prefix = res->sprites.field_grid;
+    if (zone_index >= 0 && zone_index < res->zone_count && res->zones[zone_index].field_grid[0])
+        prefix = res->zones[zone_index].field_grid;
+    if (!prefix[0]) return false;
+    snprintf(out, (size_t)cap, "%s_%d_%d.png", prefix, x, y);
     return true;
 }
 

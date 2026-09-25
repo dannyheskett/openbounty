@@ -1250,6 +1250,10 @@ typedef struct {
     int  scene_index;        // into Resources.event_scenes (-1 when none)
     char title[RES_NAME_LEN];
     char body[RES_BANNER_LEN];
+    // What the place says while a precondition is still missing: a plain
+    // note under the vista's title, each time the hero steps here. Empty:
+    // nothing, the tile is silent until the vista fires.
+    char hint[RES_BANNER_LEN];
     int  req_count;       ResEventReq    *reqs;
     int  effect_count;    ResEventEffect *effects;
 } ResZoneEvent;
@@ -1274,6 +1278,9 @@ typedef struct {
     // Optional wandering-army tile art for this zone (a stem under
     // art/tiles/). Empty means the shared "wandering_army".
     char army_art[RES_TILE_ART_LEN];
+    // Optional open-field ground for fights on this zone: the prefix of its
+    // 30 cells (see sprites.field_grid). Empty means the pack's field_grid.
+    char field_grid[RES_PATH_LEN];
     // The map tile the zone's magic alcove is drawn with. Empty falls back to
     // the hills-dwelling sprite, which is what the alcove borrowed before it
     // could name its own art.
@@ -1588,6 +1595,11 @@ typedef struct {
         // cell's own tile as the siege ground and nothing for the wall codes,
         // and the siege_back_wall keys are ignored. Empty: the per-code walls.
         char siege_grid[RES_PATH_LEN];
+        // Optional open-field ground picture, one file per board cell:
+        // "<prefix>_<x>_<y>.png" for x in 0..COMBAT_W-1 and y in 0..COMBAT_H-1,
+        // a 6x5 picture cut into 96 px cells. A zone's own field_grid wins over
+        // this; when the hero's zone has neither, the combat ground below.
+        char field_grid[RES_PATH_LEN];
         // Combat ground: "field" (default) draws sprites.combat[0] under every
         // cell; "terrain" draws the map tile the hero stands on instead and
         // combat[0] is not part of the pack.
@@ -1706,6 +1718,11 @@ bool resources_parse_castle_footprint(const char *s, ResCastleFootprint *out);
 // above the board, rows 1..COMBAT_H = board rows 0..COMBAT_H-1), built from
 // sprites.siege_grid. False, and out empty, when the pack declares no grid.
 bool resources_siege_grid_path(const Resources *res, int x, int y,
+                               char *out, int cap);
+// The open-field ground cell for board column x and row y in zone
+// `zone_index` (its own field_grid, else the pack's; a negative index asks
+// for the pack's alone). False, and out empty, when neither is declared.
+bool resources_field_grid_path(const Resources *res, int zone_index, int x, int y,
                                char *out, int cap);
 
 // True when the pack draws the hero's map terrain as the combat ground

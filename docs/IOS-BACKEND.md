@@ -60,7 +60,12 @@ Screen size and safe-area origin, one touch contact, foreground state and the
 frame clock. Each value has been a word-sized store; the touch position and
 its down state have been published together under a sequence counter so the
 game thread has never read half an update. A contact has been measured from
-the safe-area origin, the same origin the frame is drawn at.
+the safe-area origin, the same origin the frame is drawn at. The view has
+published the touch it was given, never one read out of the event's whole
+set, so a finger resting elsewhere on the glass has not been mistaken for
+the contact after a tap lifted. A press the game has not sampled yet has been
+kept until a read has seen it, so a tap that began and ended between two of
+the game's once-a-frame looks has still arrived as a one-frame contact.
 
 `src/plat_ios.c` has been the shell half: the save root has been the app's
 `Documents/saves`, and the pack (`glory-of-rome.openbounty`, a bundle

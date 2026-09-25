@@ -627,7 +627,8 @@ flagged (§38).
   capitalised), then difficulty (Easy/Normal/Hard/Impossible, shown with
   starting days and score multiplier) on the same panel, then an intro
   banner. Modern: difficulty, then the name, each a page whose Back has
-  stepped one screen back (REQ-532), and no intro.
+  stepped one screen back (REQ-532), the name page ending in Continue and
+  Back, and no intro.
 - **REQ-166.** A pack has held a catalog of 256 worlds, selected by an 8-bit
   index. `--seed N` has supplied that index directly (`0`–`255`); an
   out-of-range, negative, or unparseable value has been a hard error (exit 2,
@@ -881,19 +882,24 @@ flagged (§38).
   reachable by sailing), a `salt` config (§10), and per-feature lists
   (`towns`, `castles`, `signs`, `chests`, `artifacts`, `dwellings`,
   `wandering_armies`). `glory-of-rome` has added `events`, `arrivals`,
-  `alcove_art`, `alcove_cost`, `army_art`, `town_backdrop`, `tile_set`,
+  `alcove_art`, `alcove_cost`, `army_art`, `field_grid` (REQ-165e),
+  `town_backdrop`, `tile_set`,
   `tile_set_arts`, and the `boatmaster`, `pontifex` and `siegemaster`
   figures (`PACK-FORMAT.md` §6). Exactly one zone has had `is_home: true`
   (Continentia; Italia in Rome).
 - **REQ-221b.** **One-time vistas (`events`).** A zone has been able to
   declare `events`, a list of one-time moments. Each has had an `id`, a
   trigger tile `(x, y)`, a `scene` image, a `title` and `body`, a `requires`
-  list and an `effects` list. Stepping onto the tile with every precondition
+  list, an `effects` list and an optional `hint`: what the place says, as a
+  plain note under its title, each time the hero steps onto the tile with a
+  precondition still missing (silent without one; `glory-of-rome`'s Temple
+  of Ocean has one). Stepping onto the tile with every precondition
   held (`GameTryFireEvent`, `engine/game.c`) has spent what the
   preconditions mark `consume`, written each effect's `tile` (a `tile_codes`
   key) onto the map, recorded the id in `events_done`, and queued the scene as
-  a `PIO_NOTE_SCENE` with `REQ_FACE_EVENT`, drawn full width with the pack's
-  art and a single Continue. It has never fired again, and a vista has never
+  a `PIO_NOTE_SCENE` with `REQ_FACE_EVENT`, drawn whole with the pack's art
+  at 3× with its words paged beside a single Continue (`DESIGN-SPEC.md`
+  DSGN-0127). It has never fired again, and a vista has never
   bounced the hero back. Preconditions have been `spell` (charges), `troop`
   (in the army), `gold` (held) and `artifact` (found), each with a `count` and
   an optional `consume`; troops and artifacts have been held, never spent. An
@@ -1029,6 +1035,19 @@ flagged (§38).
   grass, and drawn it under every cell and the siege band in place of
   `sprites.combat[0]`, which the manifest then omits. Absent or `"field"`, the
   field tile has drawn (`kings-bounty`).
+- **REQ-165e.** An open-field fight on a zone with a field grid has drawn
+  each board cell's own picture as its ground: `sprites.ui.field_grid`, or
+  the zone's own `field_grid`, has named a prefix expanded to
+  `<prefix>_<x>_<y>.png` for the 6 × 5 board (`resources_field_grid_path`,
+  every cell of the pack's and each zone's grid in the manifest once). The
+  shell has loaded every zone's grid at start (`Sprites.field_grid`, all or
+  nothing per zone) and drawn the hero's zone's cells under the obstacles
+  and troops in place of the combat ground (`src/combat_render.c`); a siege
+  has kept the siege grid, and a zone with no grid the ground of REQ-165d.
+  `glory-of-rome` has shipped Italia's, thirty 96 px cells cut from the
+  largest centred 6:5 rectangle of content in one picture, scaled to
+  576 × 480 (`art/fields/italia.png`, `tools/siegeslice.py --field`);
+  `kings-bounty` has declared none.
 - **REQ-165a.** When `sprites.ui.panel_frame` names a palette colour the
   legacy shell has drawn a frame round every panel slot
   (`legacy_panel_frame`: HUD panels, inventory cells, contract face) so the
@@ -2267,9 +2286,14 @@ golden-digest regression tests have pinned the formulas.
   updated or replaced the golden fixture (`tests/fixtures/save_v1.dat`) and
   the round-trip regression test. A save written by another pack has been
   refused (`SAVE_ERR_PACK`).
-- **REQ-415.** On load, the caller has re-applied the `consumed` tile
-  mutations to the loaded map (`GameApplyTileMutations`) and restored
-  per-continent fog, so consumed tiles render and behave as plain terrain.
+- **REQ-415.** A save has restored the `Game` and the fog, never the `Map`:
+  after every read, at start-up (`src/main.c`) and from the game menu
+  (`src/shell_menu.c menu_load`) alike, the caller has brought the saved
+  zone back with `GameReloadZoneMap`, which loads the zone with the game's
+  placements stamped and re-applies the `consumed` tile mutations
+  (`GameApplyTileMutations`), so consumed tiles render and behave as plain
+  terrain and an object the loaded game has not yet taken stands again.
+  `GameSwitchZone` has gone through the same call.
 
 ---
 
@@ -2513,7 +2537,9 @@ every menu; this section has held the rules.
   opened the modern foe view (`DESIGN-SPEC.md` DSGN-0132) with Fight and
   Evade. With `game.json` `foes.evade_needs_free_square` set,
   `GameFoeCanEvade` has allowed Evade only while one of the 8 squares around
-  the hero is walkable for how they travel and has no object or foe on it;
+  the hero is walkable for how they travel and has no object or foe on it,
+  the hero's own parked boat in this zone counting as such a square for a
+  hero on foot, since stepping onto it boards it;
   the engine has recorded the result for the pending decision
   (`pending_foe_evade_blocked`, judged after any bounce back), and autoplay
   and the demo have had to fight when it has been set. Packs without the

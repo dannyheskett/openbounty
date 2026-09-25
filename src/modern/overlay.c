@@ -113,10 +113,25 @@ static Texture2D note_face(void) {
     return (Texture2D){ 0 };
 }
 
+// The scene a PIO_NOTE_SCENE draws: a one-time vista's own art, or the
+// temporary-death scene of the hero's class; none when the pack has neither.
+static Texture2D note_scene_texture(void) {
+    int idx = 0;
+    int kind = dialog_face(&idx);
+    const Sprites *s = s_dialog_sprites;
+    Texture2D scene = { 0 };
+    if (kind == REQ_FACE_EVENT) {
+        if (s && idx >= 0 && idx < s->event_scene_count) scene = s->event_scene[idx];
+    } else if (s && idx >= 0 && idx < s->class_count) {
+        scene = s->class_disgraced[idx];
+    }
+    return scene;
+}
 int modern_overlay_dialog_page_count(void) {
-    // A note drawn as a scene shows its words at once; every other note is
-    // the message box, paged.
-    if (dialog_kind() == PIO_NOTE_SCENE) return 1;
+    // A note drawn as a scene pages its words beside its 3x picture; every
+    // other note is the message box, paged.
+    if (dialog_kind() == PIO_NOTE_SCENE && note_scene_texture().id)
+        return page_scene_pages(dialog_body_text());
     return page_message_pages(dialog_body_text(), note_face().id != 0);
 }
 
@@ -163,25 +178,13 @@ static void draw_message(void) {
 static void draw_note_scene(void) {
     const Resources *res = resources_current();
     if (!res) return;
-    int idx = 0;
-    int kind = dialog_face(&idx);
-    const Sprites *s = s_dialog_sprites;
-    // A one-time vista draws the pack's own scene art; the temporary-death
-    // scene draws the class's.
-    Texture2D scene = { 0 };
-    if (kind == REQ_FACE_EVENT) {
-        if (s && idx >= 0 && idx < s->event_scene_count) scene = s->event_scene[idx];
-    } else if (s && idx >= 0 && idx < s->class_count) {
-        scene = s->class_disgraced[idx];
-    }
+    Texture2D scene = note_scene_texture();
     if (!scene.id) { draw_message(); return; }
     const char *hdr = dialog_header_text();
     const char *title = (hdr && hdr[0]) ? hdr : "";
     for (int i = 0; !title[0] && i < res->castle_count; i++)
         if (resources_castle_is_home(&res->castles[i])) title = res->castles[i].name;
-    PagePlace P = page_place(title, NULL, scene, 1);
-    uk_flow(P.words.x, P.words.y, P.words.w, P.words.x, 0, P.words.y + P.words.h,
-            dialog_body_text(), PAL_CLR(WHITE));
+    PagePlace P = page_scene(title, NULL, scene, dialog_body_text(), dialog_page_current());
     // Continue is the page's one action: a tap anywhere is it.
     UkRows rows = { { res->banners.castle_continue }, { true }, 1 };
     ml_rows_draw(P.rows, 1, 1, 0, uk_rows_fn, &rows, 0);

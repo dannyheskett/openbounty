@@ -218,10 +218,15 @@ static void draw_column(const Sprites *sp, int x, int y, int w, int h, bool mirr
 // bars beside it, and a lattice divider under it. Whatever the caller puts
 // below starts at scene.y + scene.h + UK_BAND.
 UkScene uk_scene_band(ML_Rect r, int top, Texture2D bd, int band_h) {
+    return uk_scene_band_at(r, top, bd, band_h, r.w / ML_BACKDROP_W);
+}
+
+UkScene uk_scene_band_at(ML_Rect r, int top, Texture2D bd, int band_h, int scale) {
     UkScene L;
     memset(&L, 0, sizeof L);
     L.full = r;
-    L.scale = r.w / ML_BACKDROP_W;
+    L.scale = scale;
+    if (L.scale > r.w / ML_BACKDROP_W) L.scale = r.w / ML_BACKDROP_W;
     if (L.scale > 3) L.scale = 3;
     if (L.scale < 1) L.scale = 1;
     int bw = ML_BACKDROP_W * L.scale, bh = ML_BACKDROP_H * L.scale;
@@ -247,10 +252,15 @@ UkScene uk_scene_band(ML_Rect r, int top, Texture2D bd, int band_h) {
         const Sprites *sp = modern_overlay_sprites();
         int rx = L.scene.x + L.scene.w, rw = r.x + r.w - rx;
         if (sp && sp->scene_column[0].id && sp->scene_column[1].id && sp->scene_column[2].id) {
+            // A column at its own width, standing against the picture; what
+            // is left of a wider bar is the panel fill, never a stretched
+            // column.
+            int cw = sp->scene_column[0].width;
+            if (cw > side) cw = side;
             gfx_rect(r.x, top, side, L.scene.h, uk_fill());
             gfx_rect(rx, top, rw, L.scene.h, uk_fill());
-            draw_column(sp, r.x, top, side, L.scene.h, false);
-            draw_column(sp, rx, top, rw, L.scene.h, true);
+            draw_column(sp, L.scene.x - cw, top, cw, L.scene.h, false);
+            draw_column(sp, rx, top, cw, L.scene.h, true);
         } else {
             lattice_band_v(r.x, top, side, L.scene.h);
             lattice_band_v(rx, top, rw, L.scene.h);

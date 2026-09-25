@@ -18,6 +18,7 @@
 #include "pending.h"
 #include "player_io.h"
 #include "ui.h"
+#include "overlay.h"
 #include "bfont.h"
 #include "tables.h"
 #include "resources.h"
@@ -158,6 +159,19 @@ static void shot(Gal *G, const char *name) {
     save_target(G, name);
 }
 
+// A note's later pages, when it has them: Continue turns the page, and each
+// page is its own shot, <name>_p2, _p3 ...
+static void shot_pages(Gal *G, const char *name) {
+    int pages = overlay_dialog_page_count();
+    for (int pg = 2; pg <= pages && pg <= 4; pg++) {
+        dialog_advance();
+        char nm[96];
+        snprintf(nm, sizeof nm, "%s_p%d", name, pg);
+        shot(G, nm);
+    }
+}
+
+
 static void reset(Gal *G) {
     toast_show("");
     dialog_dismiss();
@@ -186,7 +200,8 @@ static void tap_fail(const char *shot_name, const char *what) {
     fprintf(stderr, "[tapcheck] FAIL %s: %s\n", shot_name, what);
 }
 
-// Row `row` of `list` is registered, and a tap at its centre reaches it.
+// Row `row` of `list` is registered, and a tap at its centre reaches it through
+// the real resolver, the page rule included (a page masks what stands under it).
 static void tap_row(const char *shot_name, int list, int row) {
     char what[128];
     int x, y, w, h, hl, hr, hk;
@@ -196,7 +211,7 @@ static void tap_row(const char *shot_name, int list, int row) {
         tap_fail(shot_name, what);
         return;
     }
-    if (!touch_last_hit(x + w / 2, y + h / 2, &hl, &hr, &hk) || hl != list || hr != row) {
+    if (!touch_last_resolve(x + w / 2, y + h / 2, &hl, &hr, &hk) || hl != list || hr != row) {
         snprintf(what, sizeof what, "a tap on list %d row %d reaches list %d row %d key %d",
                  list, row, hl, hr, hk);
         tap_fail(shot_name, what);
@@ -213,7 +228,7 @@ static void tap_key(const char *shot_name, int key) {
         tap_fail(shot_name, what);
         return;
     }
-    if (!touch_last_hit(x + w / 2, y + h / 2, &hl, &hr, &hk) || hk != key) {
+    if (!touch_last_resolve(x + w / 2, y + h / 2, &hl, &hr, &hk) || hk != key) {
         snprintf(what, sizeof what, "a tap on the key %d button reaches list %d row %d key %d", key, hl, hr, hk);
         tap_fail(shot_name, what);
     }
@@ -311,7 +326,10 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
             if (drawn && CL_IS_MODERN) {
                 if (P[i].shot == STARTUP_SHOT_LOAD)       tap_row(P[i].name, TOUCH_LIST_STARTUP, 5);
                 if (P[i].shot == STARTUP_SHOT_DIFFICULTY) tap_row(P[i].name, TOUCH_LIST_STARTUP, 4);
-                if (P[i].shot == STARTUP_SHOT_NAME)       tap_row(P[i].name, TOUCH_LIST_STARTUP, 0);
+                if (P[i].shot == STARTUP_SHOT_NAME) {     // Continue, then Back
+                    tap_row(P[i].name, TOUCH_LIST_STARTUP, 0);
+                    tap_row(P[i].name, TOUCH_LIST_STARTUP, 1);
+                }
             }
         }
     }
@@ -509,6 +527,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         shell_pump_note(g);
     }
     shot(&G, "09f_temporary_death");
+    shot_pages(&G, "09f_temporary_death");
     for (int ci = 0; ci < res->classes_count && ci < 4; ci++) {
         reset(&G);
         player_io_note_scene(g, NULL, bn->temp_death, ci);
@@ -529,6 +548,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
             char nm[64];
             snprintf(nm, sizeof nm, "09h_vista_%s", ev->id);
             shot(&G, nm);
+            shot_pages(&G, nm);
         }
     }
 

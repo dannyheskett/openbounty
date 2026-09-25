@@ -203,6 +203,10 @@ void combat_render_frame(const Combat *c, const Game *g,
     // tiles; the per-code wall pieces are then not drawn. Draw-only: the
     // omap still blocks the wall cells exactly as before.
     const bool grid = c->castle && sprites->siege_grid_ok;
+    // An open fight on a zone with a field grid (its own, else the pack's,
+    // sprites.ui.field_grid) draws each cell's own picture as the ground.
+    int fz = (!c->castle && g && g->res) ? resources_zone_index(g->res, g->position.zone) : -1;
+    const bool field = !c->castle && sprites_field_grid_ok(sprites, fz);
 
     // Tile the field with frame_00 (grass background). One tile per
     // cell; doubles as the open-field backdrop.
@@ -212,6 +216,9 @@ void combat_render_frame(const Combat *c, const Game *g,
             cell_origin(x, y, &px, &py);
             if (grid)
                 ui_blit(sprites->siege_grid[y + 1][x], px, py,
+                        CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
+            else if (field)
+                ui_blit(sprites_field_cell(sprites, fz, x, y), px, py,
                         CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);
             else if (s_ground.id)
                 ui_blit(s_ground, px, py, CL_COMBAT_CELL_W, CL_COMBAT_CELL_H);

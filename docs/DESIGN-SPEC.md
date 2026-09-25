@@ -575,9 +575,10 @@ whole scale its page's width has allowed, at most 3:
 scale = clamp(width / `ML_BACKDROP_W` 240, 1, 3), 720 × 306 on a full page.
 - The side bars ((width − 720) / 2) have held a column: the capital, a
   repeated shaft and the base from `game.json:sprites.ui.scene_column_capital`,
-  `scene_column_shaft` and `scene_column_base`, at 1× height stretched to the
-  bar's width, mirrored on the right, over `uk_fill`; without them, the
-  lattice.
+  `scene_column_shaft` and `scene_column_base`, at 1× and at the art's own
+  width (28 px), standing against the picture's edge, mirrored on the right,
+  over `uk_fill`, which has filled whatever a wider bar has left (a scene
+  note at 2×, DSGN-0127); without them, the lattice.
 - When the band has been shorter than the backdrop, the backdrop's top has
   been trimmed by trim = ceil((306 − band) / 3) × 3, in whole source pixels.
 - Black has been drawn behind the art, and a `UK_BAND` divider under it.
@@ -647,7 +648,8 @@ Source: `src/modern/page.c` `page_place`, `page_person`.
 where the rows have needed the room so `PAGE_PLACE_ROWS` 3 rows and the exit
 have fitted under it (on a touch device); its keeper standing in it
 (DSGN-0060); then the rows column and the words. Used for a place's front, a
-roll of troops, How many, a note drawn as a scene, and sailing.
+roll of troops, How many, and sailing; a note drawn as a scene has had a room
+of its own (DSGN-0127).
 Source: `src/modern/page.c` `page_place`.
 
 **DSGN-0068. The toast.** A toast has not been a page: one `YELLOW` line, cut
@@ -1225,10 +1227,18 @@ week's creature) has been the message box with the picture at its left
 Source: `src/modern/overlay.c` `draw_message`, `note_face`.
 
 **DSGN-0127. A note as a scene.** A note drawn as a scene (temporary death,
-a one-time vista, a refused gate) has been the room (DSGN-0067) with the
-scene's own art as its band, its words beside one Continue row; without its
-scene art it has been the message box.
-Source: `src/modern/overlay.c` `draw_note_scene`.
+a one-time vista, a refused gate) has been a room of its own
+(`page_scene`): the title strip, then the scene's art **whole**, never
+trimmed, at 3× (the largest whole scale the page's width holds), the column
+bars either side as in the room; under the band the one Continue row in the
+rows column and the words beside it, **paged** like the message box: as
+many lines to a page as the room under the band holds, the last line of a
+page ending `..` when more follow, and
+Continue turning the page until the last closes the note
+(`page_scene_pages` is the pager's count). Without its scene art it has been
+the message box.
+Source: `src/modern/page.c` `page_scene`; `src/modern/overlay.c`
+`draw_note_scene`.
 
 **DSGN-0128. Yes/No questions.** A yes/no question has been two rows, Yes and
 No, the cursor on Yes: the message box on the map's foot, on the
@@ -1574,10 +1584,16 @@ own (DSGN-0072) titled with the class:
 - The letter grid (DSGN-0154) has shown while a finger or the pad has been
   the device last used, and `prompts.text_hint` otherwise; typed letters have
   been taken either way.
-- Back has been the foot row; Down from the grid's last row has reached it.
+- The foot has held two rows, Continue (`banners.castle_continue`) then
+  Back; Down from the grid's last row has reached Continue, Down again Back,
+  Up has climbed back. Continue, the grid's OK or Enter has finished the
+  name.
 - A name has held at most 10 letters, digits and spaces, its first letter a
   capital, and an empty name has become the default.
 - Escape, Back or a tap outside has returned to the difficulty.
+- A tap that has closed one start-up page has been forgotten before the
+  next one's first read (`touch_forget_tap`), so no page has answered the
+  tap that opened it.
 Source: `src/startup.c` `draw_name_modern`, `run_name_modern`,
 `name_char_allowed`.
 
