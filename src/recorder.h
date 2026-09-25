@@ -9,7 +9,7 @@
 
 // Gameplay-movie recorder. When enabled via recorder_init(), each
 // recorder_capture() call writes one state-JSON + framebuffer-PNG pair
-// into a hidden temp directory; on shutdown, the encoder muxes those
+// into /tmp/openbounty-movie-<pid>; on shutdown, the encoder muxes those
 // PNGs into the configured output .mp4.
 //
 // When NOT initialized, every recorder_capture() call is a free no-op

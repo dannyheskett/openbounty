@@ -612,7 +612,8 @@ static int combat_player_action_full(Combat *c, const Game *g,
         if (c->unit_id < 0) return 0;
         return combat_move_unit(c, c->side, c->unit_id, dx, dy);
     }
-    if (input_key_pressed(KEY_SPACE) || input_key_pressed(KEY_W)) {
+    if (input_key_pressed(KEY_SPACE) || input_key_pressed(KEY_W) ||
+        input_key_pressed(KEY_KP_5)) {
         if (c->unit_id >= 0) c->units[c->side][c->unit_id].acted = true;
         return 1;
     }

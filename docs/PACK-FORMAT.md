@@ -34,7 +34,12 @@ directories and `.openbounty` archives interchangeably.
 
 ## 2. `game.json` top-level keys
 
-All paths have been relative to the pack root. Required fields are marked ✱.
+All paths have been relative to the pack root. ✱ marks what a playable pack
+has supplied. The loader itself has refused only a manifest it cannot open or
+parse, a missing `render.mode`, a `font` block without a file or with a size
+outside 6..64, a tile size or buffer it cannot lay out, a villain with an
+invalid index, a bad `tuning.temp_death`, and missing string keys (§5); any
+other absent block has parsed as empty or as its defaults.
 
 | Key | Type | Purpose |
 |---|---|---|
@@ -46,7 +51,7 @@ All paths have been relative to the pack root. Required fields are marked ✱.
 | `world`       | object ✱ | Global world flags, including `language`, the base locale in `strings/` (default `en`). |
 | `time`        | object ✱ | Day/week/difficulty constants. |
 | `economy`     | object ✱ | Costs, chest tables, scoring. |
-| `tuning`      | object   | Spell multipliers, search cost, temp-death army (`temp_death`: `{"troop": id, "count": n}`; defaults: the cheapest-recruit-cost troop, 20). |
+| `tuning`      | object   | `instant_army_multiplier` (per rank), `search_cost_days`, and the temp-death army (`temp_death`: `{"troop": id, "count": n}`; defaults: the cheapest-recruit-cost troop, 20). |
 | `combat`      | object ✱ | Morale chart, number-name labels. |
 | `controls`    | object   | Settings-menu rows. |
 | `colors`      | object   | Difficulty-bar colors, minimap palette. |
@@ -55,17 +60,20 @@ All paths have been relative to the pack root. Required fields are marked ✱.
 | `font`        | object   | A TrueType/OpenType font rasterised at load into the glyph cell (see §2.2). Absent: the bitmap strip in `sprites.font`. |
 | `sprites`     | object ✱ | Texture-atlas paths (see §4). |
 | `tile_codes`  | object ✱ | Map-character → terrain mapping. |
-| `troops`      | array  ✱ | Troop catalog. |
-| `spells`      | array  ✱ | Spell catalog. |
-| `artifacts`   | array  ✱ | Artifact catalog. |
-| `villains`    | array  ✱ | Villain catalog. |
-| `classes`     | array  ✱ | Player-class catalog. |
-| `castles`     | array  ✱ | Castle catalog. |
-| `towns`       | array  ✱ | Town catalog. |
-| `zones`       | array  ✱ | Continent / map definitions. |
-| `spawn`       | object   | Per-continent monster-spawn tables. |
+| `troops`      | array  ✱ | Troop catalog. Each: `id`, `name`, `sprite`, `portrait` (modern still, optional), `anim` (frames, §4.1), `skill_level`, `hit_points`, `move_rate`, `melee` `[min, max]`, `ranged` `[min, max, ammo]`, `recruit_cost`, `spoils_factor`, `abilities` (a `\|`-joined mask of `FLY`, `REGEN`, `MAGIC`, `IMMUNE`, `ABSORB`, `LEECH`, `SCYTHE`, `UNDEAD`), `dwelling` (`plains`, `forest`, `hill`, `dungeon` or `castle`), `max_population`, `growth_per_week`, `morale_group` (`A`..`E`), `tier_counts` (one foe-garrison count per continent tier). OPENBOUNTY-SPEC §13. |
+| `spells`      | array  ✱ | Spell catalog, in engine order: seven combat spells then seven adventure spells. Each: `id`, `name`, `cost`, `kind` (`combat` or `adventure`). OPENBOUNTY-SPEC §19. |
+| `artifacts`   | array  ✱ | Artifact catalog. Each: `id`, `name`, `icon`, `power` (`increased_damage`, `quarter_protection`, `double_leadership`, `increase_commission`, `double_spell_power`, `double_max_spells`, `cheaper_boat_rental`; any other string has no effect), `effect` (its one-line description), `puzzle_cell`, and its placement `zone` and `local_idx` (0 or 1). OPENBOUNTY-SPEC §20. |
+| `villains`    | array  ✱ | Villain catalog. Each: `id`, `name`, `portrait`, optional `anim` (frames; absent, `<portrait-stem>_00..03`), `zone`, `reward`, `puzzle_cell`, `army` (entries of `troop` and `count`, the castle garrison). OPENBOUNTY-SPEC §21. |
+| `classes`     | array  ✱ | Player-class catalog. Each: `id`, `name`, `portrait`, `starting_gold`, `starting_troops` (`id`, `count`), `ranks` (four, each `id`, `name`, `villains_needed`, `leadership`, `max_spells`, `spell_power`, `commission`, `knows_magic`, `instant_army`), and an optional `hero` block (`walk`, `idle`, `boat`, `tile`, `disgraced`; §4.1). OPENBOUNTY-SPEC §8. |
+| `castles`     | array  ✱ | Castle catalog. Each: `id`, `name`, `zone`, `x`, `y`, `difficulty_tier` (0..3), optional `footprint` (`3x2` or `1x1`, §6) and `art`; the King's castle carries `special` (`flow`, `dialog`, `audience`, `win_condition`, the `excluded_from_contract` / `_intel` / `_siege` flags and, for the modern screens, `portrait`, `figure`, `promotion`, `barracks_portrait`, `barracks_figure`, `greeter_figure` naming `portraits` ids). OPENBOUNTY-SPEC §17. |
+| `towns`       | array  ✱ | Town catalog. Each: `id`, `name`, `zone`, `x`, `y`, `gate` `{x, y}`, `boat` `{x, y}`, `intel_castle`, optional `intel_artifact` (the informant reports an artifact instead), optional `pinned_spell`, optional `art` and `backdrop` (§6), and the modern screen's `headman`, `informant`, `townhead` (`portraits` ids) and `invitations` (a `strings.town_invitations` block). OPENBOUNTY-SPEC §16. |
+| `zones`       | array  ✱ | Continent / map definitions. Each: `id`, `name`, `map`, `width`, `height`, `hero_spawn` `{x, y}`, optional `home_spawn` and `is_home` (exactly one zone), optional `magic_alcove`, `neighbors` (zone ids reachable by sea), `salt` (§6), and the object lists `towns`, `castles`, `signs`, `chests`, `artifacts`, `dwellings`, `wandering_armies`; a modern pack has added `events`, `arrivals`, `alcove_art`, `alcove_cost`, `army_art`, `town_backdrop`, `tile_set`, `tile_set_arts` and the `boatmaster`, `pontifex`, `siegemaster` portrait ids (§6). OPENBOUNTY-SPEC §9–§10. |
+| `spawn`       | object   | Per-continent monster-spawn tables: `tier_chance_curve` (one threshold list per continent tier), `tier_troop_pool` (one troop list per dwelling kind, any length), and an optional `kind_chance_curve` (per kind, a curve set of its own or `null` to keep the tier curve; `glory-of-rome` uses it for its six-troop plains kind). |
 | `contract`    | object   | Contract cycle parameters. |
 | `audiences`   | object   | Modern home-castle audience pages (Promotion, Blessing, Tribute). |
+| `magic`       | object   | `rites_per_zone`: each zone's temple has taught spells only once that zone's rites are known (OPENBOUNTY-SPEC REQ-314a). |
+| `foes`        | object   | `evade_needs_free_square`: Evade has been offered only with a free square beside the hero (REQ-430o). |
+| `portraits`   | array    | The people of the modern place screens: each an `id` and an `anim` list of frames, named by a town's `headman` / `informant` / `townhead`, a zone's `boatmaster` / `pontifex` / `siegemaster` and a castle's `special` block. |
 | `credits`     | object   | Credits-screen lines. |
 | `ending`      | object   | Victory cartoon parameters. |
 
@@ -129,8 +137,7 @@ font rather than the other way round: a title strip holds one line and its
 padding, and list rows are at least a line plus padding high. Word wrap has been by
 pixel width and every authored newline has been kept, so menus and tables in
 the strings hold their shape. At 2x and 3x the atlas has been rebuilt at that
-zoom, so text has been sharp while art has stayed pixel-identical. The
-start-up log has reported the size, line height and digit width. If the file
+zoom, so text has been sharp while art has stayed pixel-identical. If the file
 fails to load, the strip in `sprites.font` has been used instead, in its
 8 x 8 cell. Legacy packs have never read this block: they have kept the
 strip, the cell and their character wrap exactly.
@@ -181,7 +188,7 @@ otherwise.
 The `sprites` block has pointed at PNG files. Each entry has been either:
 
 - A single path (`"path": "art/foo.png"`).
-- A path + frame count for animated sprites (`{"path": "...", "frames": 4}`).
+- An array of frame paths for an animated sprite (§4.1).
 
 ### 4.0a The columns and the combat commands
 
@@ -210,12 +217,61 @@ command column in a fight (DSGN-0113); Menu there has been `rail.menu`:
 A tile the pack has not named has been left dark; the column has stood all
 the same.
 
+### 4.0b The `ui`, `hud` and `font` keys
+
+`sprites.ui` has held the screens and their dressing, each a path unless
+noted; every key has been optional and an absent one has drawn nothing or
+borrowed as described:
+
+- `splash_logo`, `splash_title`: the publisher and title splashes;
+  `title_battle`, `title_eagle`, `title_words`: the modern title sequence
+  (all three or none; otherwise the title is `splash_title`, still).
+- `class_picker`, `class_highlight`, `class_picker_selected` (one per class,
+  in catalog order): the class painting, its cursor glow and the painting
+  with each figure picked out.
+- `chrome_overworld`: a bitmap frame (absent, the modern lattice);
+  `panel_frame`: a palette colour name for legacy's panel frames (§6).
+- `puzzle_cover`: the chip over each puzzle piece still to be won;
+  `view_icons_extra`: extra view icons, a list.
+- `town_backdrop`, `castle_backdrop`, `plains_backdrop`, `forest_backdrop`,
+  `hillcave_backdrop`, `dungeon_backdrop`: the place screens' pictures;
+  `palace_welcome`, `palace_barracks`, `palace_throne`: the King's castle's
+  three scenes (absent, the shared castle backdrop); `sail_backdrop`: the
+  sail-to scene; `scene_column_capital`, `scene_column_shaft`,
+  `scene_column_base`: the column pieces in the bars beside a place
+  backdrop (absent, the lattice).
+- `alcove_backdrop`, `alcove_figure`, `alcove_figure_animation` (frames),
+  `alcove_figure_frame_ms` (a number; 0 = the screen's tick),
+  `alcove_figure_place` (`x`, `y`, `w`, `h` in the backdrop's 240x102
+  units), `alcove_portrait`: the temple and its keeper (absent, the hill
+  cave's backdrop and the `gnomes` troop in the troop slot).
+- `ending_win`, `ending_lose`: the ending pictures.
+- `siege_back_wall`, `siege_back_wall_left`, `siege_back_wall_right`,
+  `siege_grid`, `combat_ground` (`field` or `terrain`): the fight's ground
+  and walls (§6).
+
+`sprites.hud` has held the right column and its readouts:
+`contract_silhouette`, `siege_silhouette` with `siege_animation` (frames),
+`magic_silhouette` with `magic_animation` (frames), `boat_silhouette` (the
+town's Boat screen with no boat master), `gold_purse`, `days`,
+`puzzle_grid` and legacy's `bar_strip`.
+
+`sprites.font` has been the bitmap font strip (default
+`art/font/kb-font.png`), `sprites.palette` the VGA palette binary (default
+`palettes/palette.bin`), `sprites.combat` a list of the fight's fifteen
+tile roles in fixed order (field, three obstacles, castle item, six walls,
+four cursor frames; default the reference `art/combat/` names) and
+`sprites.hero` the hero's sets (§4.1). Neither pack has declared `combat`
+or `palette`.
+
 ### 4.1 Animations
 
 An animation has been a JSON array of frame paths, and **the length of that
-array has been the cycle**. A pack has shipped as many frames as it has, up to
-16; nothing has been fixed at four. This has applied to `sprites.hero.*`, `sprites.hud.*_animation`,
-`troops[].anim` and `villains[].anim`.
+array has been the cycle**. A pack has shipped as many frames as it lists,
+with no ceiling; nothing has been fixed at four. This has applied to
+`sprites.hero.*`, `sprites.hud.*_animation`, `troops[].anim` and
+`villains[].anim`. A villain without `anim` has fallen back to
+`<stem>_00..03`.
 
 The hero's `walk`, `idle` and `boat` have also been authorable per facing:
 
@@ -273,7 +329,9 @@ record:
 ```
 
 `terrain` has had to be one of: `grass`, `forest`, `mountain`, `water`,
-`desert`. Several codes have been able to share a terrain with different
+`desert`, `river`. River has been inland water: it has blocked walking and
+boats alike, taken the bridge spell (the `bridge_river_*` pieces) and been
+flown over. Several codes have been able to share a terrain with different
 art: `glory-of-rome` has had a grass variant and twenty-four road pieces
 (`road_*`) that are plain grass to the engine (OPENBOUNTY-SPEC REQ-229c). An
 optional `variants` list (any number of art names, repeats allowed to weight
@@ -449,6 +507,21 @@ the refusal has been drawn over the picture under that heading. A
 **A pinned purse.** A zone chest has been able to carry `"gold": N`: it has
 then always held exactly that, instead of rolling.
 
+**A fixed chest.** A zone chest has been able to carry `"fixed": true`: it
+has stayed out of the salt barrel (OPENBOUNTY-SPEC REQ-231) and always been
+a chest.
+
+**An explicit garrison.** A `wandering_armies` entry has been able to carry
+`army`, a list of `{"troop": id, "count": n}`, fielded verbatim instead of a
+rolled garrison.
+
+**The alcove per zone.** A zone has been able to declare `alcove_art`, the
+tile stem its alcove is drawn with, and `alcove_cost`, its own fee in place
+of `economy.alcove_cost` (`glory-of-rome` has charged 2500, 5000, 7500 and
+10000 by zone).
+
+**Telecaves** have been drawn with the dungeon dwelling's tile.
+
 **The sailing scene.** A pack has been able to ship `sprites.ui.sail_backdrop`
 (240x102, as every backdrop) and the string `body_navigate_confirm` ("Sail
 for %ZONE%?"). With both, sailing to another zone has been drawn over that
@@ -461,7 +534,8 @@ scene has been drawn full width (the image is 240x102, like every backdrop)
 with a single Continue, and the effects have changed the map for good -- they
 survive a zone switch and a save. `requires` has taken `spell`, `troop`,
 `gold` or `artifact`, each with an optional `count` and `consume`; `effects`
-have named a tile by its `tile_codes` key.
+have named a tile by its `tile_codes` key, or `{"reveal": true}` to uncover
+the whole zone's fog.
 
 ```json
 { "id": "rubicon", "x": 31, "y": 31,
@@ -529,6 +603,9 @@ catalog worlds and reported, per seed, whether the pack is winnable at all:
 ./openbounty --validate-pack 7          # seed 7 only
 ./openbounty --validate-pack 0 9 --pack /path/to/my-pack
 ```
+
+`--pack` has named the pack; without it these modes have opened the loose
+`assets/kings-bounty` tree of a source checkout, not a discovered pack.
 
 It has printed one row per seed, verdict, objectives cleared, days, score,
 moves, elapsed time, and, on a seed the oracle has not cleared, the first

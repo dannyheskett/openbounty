@@ -111,7 +111,8 @@ The link line has included **only `-lm -lpthread`**: no raylib, no X11, no
 audio device. If a consumer accidentally pulls those, the link has failed.
 
 For a working example, see `tests/library/consumer.c`. `make all` has built
-the same consumer + host_noop + libobengine.a as a link-time boundary check;
+the same consumer + host_noop + libobengine.a, with the demo and autoplay
+objects linked beside them, as a link-time boundary check;
 the resulting binary has been discarded and a stamp file
 (`build/libtest-pass.stamp`) has recorded success. A build that produces the
 stamp has proved the library consumable in isolation. If the engine ever

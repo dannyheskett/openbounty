@@ -5,8 +5,8 @@ in **`docs/ROME-ART.md`**, generated from `art/jobs/*.json` by
 `tools/romeart.py prompts`. This file has been the *routes* (which engine,
 which settings, and why); that file has been the *record*.
 
-A troop has been two calls: the still, then its animation. `ART-WORKLIST.md`
-has held the prompt for each artwork; this file has been how to run them.
+A troop has been two calls: the still, then its animation. `ROME-ART.md` has
+held the prompt for each artwork; this file has been how to run them.
 
 ---
 
@@ -79,11 +79,13 @@ reads at 1:1 over grass.
 - 96x96 — the size the frames have come back at, and the size a troop file
   has been
 - `frames_duration` — the frame count has been per troop, not fixed: the
-  pack's `anim` list for the troop has been the cycle (1 to 16 frames,
-  `OB_ANIM_FRAMES_MAX`), so install however many frames the run returns and
+  pack's `anim` list for the troop has been the cycle (the list's length,
+  with no ceiling), so install however many frames the run returns and
   declare them. The API guide has given **six for a single action** and eight
   for a breathing loop; an attack at four frames has ended with an empty hand
-  where six has had room for the return. Use six for attacks.
+  where six has had room for the return. Use six for attacks. The installed
+  `art/jobs/velites_attack.json` has carried four frames and expansion off;
+  the recipe above is the settled one.
 - `bypass_prompt_expansion` — **leave expansion on** (`false`) for
   animations; see "Prompt expansion" below.
 - `input_image_keep_alpha: true` — what has made the frames transparent
@@ -110,7 +112,8 @@ area-averaged to 96 and thresholded at half. Watch the animation, then:
 cp build/art/<id>/run01/frame_0N.png assets/glory-of-rome/art/troops/<name>_0N.png
 ```
 
-and record both prompts in `ART-WORKLIST.md`.
+and keep both job files under `art/jobs/`, which `ROME-ART.md` has been
+generated from.
 
 ---
 
@@ -183,7 +186,7 @@ and record both prompts in `ART-WORKLIST.md`.
   (`rd_pro__topdown`), no background removal, no water in the picture: the
   original tile has had none, and a transparent deck over water has not come
   back usable.
-- **Terrain edges** (48 files) — not generated. `tools/romeart.py edges` has
+- **Terrain edges** — not generated. `tools/romeart.py edges` has
   composited each from the installed base and grass tiles: the original
   48x34 edge tile under `art/reference/edges/` has been read as a shape (each
   pixel is terrain or grass by which original base's colours it is nearest),
@@ -219,8 +222,8 @@ and record both prompts in `ART-WORKLIST.md`.
   it on for animations. Some installed troop loops have been made with it
   off; test expansion on first for a re-run or a new troop.
 - **Inventory icons** (`art/ui/inventory_artifact_*`, `inventory_zone_*`) —
-  opaque cards **with no frame in the art** (the shell has drawn one, see
-  "Frames" below), drawn in the inventory belt and the puzzle grid at the
+  opaque cards **with no frame in the art** (none has been drawn round them
+  either, see "Frames" below), drawn in the inventory belt and the puzzle grid at the
   tile size: `rd_pro__default`, 96x96, no references, the object "painted as
   a small game inventory icon ... inside a thin gold frame", and **no
   writing, lettering, banner or ribbon** named in the prompt, because the
@@ -231,15 +234,15 @@ and record both prompts in `ART-WORKLIST.md`.
 - **HUD panels** (`art/ui/hud_*`) — the inventory icon route for the seven
   stills (opaque cards, no frame in the art, `rd_pro__default`, no
   lettering); the siege and magic cycles have been the villain loop route on
-  the framed still (custom action, four frames, expansion on, "static
-  background, smooth loop"). The sidebar has cycled a loop at two frames a
+  the still (custom action, eight frames for the siege and four for the
+  magic, expansion on, "static background, smooth loop"). The sidebar has cycled a loop at two frames a
   second, so the magic loop has been a colour change (gold to violet), not a
   flicker, or the change would be invisible at that rate.
 - **Frames** — no generated piece has carried a painted frame or border. The
-  model has drawn a different frame every run (gold, thin, missing), so the
-  frame has been the shell's: `sprites.ui.panel_frame` has named the colour
-  and `ui_panel_frame` has drawn it round HUD panels, inventory cells and the
-  contract face. Prompts for those pieces have said "filling the whole
+  model has drawn a different frame every run (gold, thin, missing), so no
+  piece has had one: a modern screen has drawn no panel frame either (its
+  columns are joined by the lattice), and `sprites.ui.panel_frame` has been
+  read by legacy screens alone. Prompts for those pieces have said "filling the whole
   picture edge to edge, no frame, no border". The one allowed edge treatment
   has been a villain portrait's flat colour bar, and only when it is
   identical on all eight frames of that villain.

@@ -295,7 +295,8 @@ typedef struct {
 typedef struct {
     char             zone[24];        // zone id
     int              x, y;            // tile coords
-    unsigned         key;             // XOR key used; kept for save-load parity
+    unsigned         key;             // first RNG draw after seeding (play.c's hide-scepter
+                                      // key); never read again and not saved
 } ScepterLocation;
 
 struct Game {
