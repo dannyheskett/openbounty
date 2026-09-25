@@ -298,6 +298,21 @@ void sprites_load(Sprites *s, const Resources *res) {
                 s->siege_grid[y][x] = load_rel(p);
             if (s->siege_grid[y][x].id == 0) s->siege_grid_ok = false;
         }
+    // Open-field grids, per zone: all or nothing for each zone.
+    s->field_grid_zones = res->zone_count;
+    s->field_grid_ok = calloc((size_t)(res->zone_count > 0 ? res->zone_count : 1), sizeof *s->field_grid_ok);
+    s->field_grid = calloc((size_t)(res->zone_count > 0 ? res->zone_count : 1) * COMBAT_H * COMBAT_W, sizeof *s->field_grid);
+    for (int z = 0; z < res->zone_count && s->field_grid_ok && s->field_grid; z++) {
+        char p[RES_PATH_LEN];
+        bool ok = resources_field_grid_path(res, z, 0, 0, p, sizeof p);
+        for (int y = 0; ok && y < COMBAT_H; y++)
+            for (int x = 0; x < COMBAT_W; x++) {
+                Texture2D *t = &s->field_grid[((z * COMBAT_H) + y) * COMBAT_W + x];
+                if (resources_field_grid_path(res, z, x, y, p, sizeof p)) *t = load_rel(p);
+                if (t->id == 0) ok = false;
+            }
+        s->field_grid_ok[z] = ok;
+    }
 
     // Combat tileset, in the role order the renderer indexes by. The list
     // lives in the manifest now (res->sprites.combat) rather than here, so a
@@ -418,6 +433,11 @@ void sprites_unload(Sprites *s) {
     gfx_texture_free(s->siege_back_wall_end[1]);
     for (int y = 0; y <= COMBAT_H; y++)
         for (int x = 0; x < COMBAT_W; x++) gfx_texture_free(s->siege_grid[y][x]);
+    for (int i = 0; i < s->field_grid_zones * COMBAT_H * COMBAT_W && s->field_grid; i++)
+        gfx_texture_free(s->field_grid[i]);
+    free(s->field_grid);    s->field_grid = NULL;
+    free(s->field_grid_ok); s->field_grid_ok = NULL;
+    s->field_grid_zones = 0;
     gfx_texture_free(s->end_throne);
 }
 
@@ -441,4 +461,14 @@ Texture2D sprites_end_hero(const Sprites *s, const char *class_id) {
     int i = class_slot(s, class_id);
     if (i >= 0 && s->class_end_hero[i].id) return s->class_end_hero[i];
     return s->end_hero;
+}
+
+bool sprites_field_grid_ok(const Sprites *s, int z) {
+    return s && s->field_grid_ok && z >= 0 && z < s->field_grid_zones && s->field_grid_ok[z];
+}
+
+Texture2D sprites_field_cell(const Sprites *s, int z, int x, int y) {
+    Texture2D none = { 0 };
+    if (!sprites_field_grid_ok(s, z) || x < 0 || x >= COMBAT_W || y < 0 || y >= COMBAT_H) return none;
+    return s->field_grid[((z * COMBAT_H) + y) * COMBAT_W + x];
 }

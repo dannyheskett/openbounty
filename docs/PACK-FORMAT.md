@@ -67,7 +67,7 @@ other absent block has parsed as empty or as its defaults.
 | `classes`     | array  ✱ | Player-class catalog. Each: `id`, `name`, `portrait`, `starting_gold`, `starting_troops` (`id`, `count`), `ranks` (four, each `id`, `name`, `villains_needed`, `leadership`, `max_spells`, `spell_power`, `commission`, `knows_magic`, `instant_army`), and an optional `hero` block (`walk`, `idle`, `boat`, `tile`, `disgraced`; §4.1). OPENBOUNTY-SPEC §8. |
 | `castles`     | array  ✱ | Castle catalog. Each: `id`, `name`, `zone`, `x`, `y`, `difficulty_tier` (0..3), optional `footprint` (`3x2` or `1x1`, §6) and `art`; the King's castle carries `special` (`flow`, `dialog`, `audience`, `win_condition`, the `excluded_from_contract` / `_intel` / `_siege` flags and, for the modern screens, `portrait`, `figure`, `promotion`, `barracks_portrait`, `barracks_figure`, `greeter_figure` naming `portraits` ids). OPENBOUNTY-SPEC §17. |
 | `towns`       | array  ✱ | Town catalog. Each: `id`, `name`, `zone`, `x`, `y`, `gate` `{x, y}`, `boat` `{x, y}`, `intel_castle`, optional `intel_artifact` (the informant reports an artifact instead), optional `pinned_spell`, optional `art` and `backdrop` (§6), and the modern screen's `headman`, `informant`, `townhead` (`portraits` ids) and `invitations` (a `strings.town_invitations` block). OPENBOUNTY-SPEC §16. |
-| `zones`       | array  ✱ | Continent / map definitions. Each: `id`, `name`, `map`, `width`, `height`, `hero_spawn` `{x, y}`, optional `home_spawn` and `is_home` (exactly one zone), optional `magic_alcove`, `neighbors` (zone ids reachable by sea), `salt` (§6), and the object lists `towns`, `castles`, `signs`, `chests`, `artifacts`, `dwellings`, `wandering_armies`; a modern pack has added `events`, `arrivals`, `alcove_art`, `alcove_cost`, `army_art`, `town_backdrop`, `tile_set`, `tile_set_arts` and the `boatmaster`, `pontifex`, `siegemaster` portrait ids (§6). OPENBOUNTY-SPEC §9–§10. |
+| `zones`       | array  ✱ | Continent / map definitions. Each: `id`, `name`, `map`, `width`, `height`, `hero_spawn` `{x, y}`, optional `home_spawn` and `is_home` (exactly one zone), optional `magic_alcove`, `neighbors` (zone ids reachable by sea), `salt` (§6), and the object lists `towns`, `castles`, `signs`, `chests`, `artifacts`, `dwellings`, `wandering_armies`; a modern pack has added `events`, `arrivals`, `alcove_art`, `alcove_cost`, `army_art`, `field_grid`, `town_backdrop`, `tile_set`, `tile_set_arts` and the `boatmaster`, `pontifex`, `siegemaster` portrait ids (§6). OPENBOUNTY-SPEC §9–§10. |
 | `spawn`       | object   | Per-continent monster-spawn tables: `tier_chance_curve` (one threshold list per continent tier), `tier_troop_pool` (one troop list per dwelling kind, any length), and an optional `kind_chance_curve` (per kind, a curve set of its own or `null` to keep the tier curve; `glory-of-rome` uses it for its six-troop plains kind). |
 | `contract`    | object   | Contract cycle parameters. |
 | `audiences`   | object   | Modern home-castle audience pages (Promotion, Blessing, Tribute). |
@@ -247,8 +247,8 @@ borrowed as described:
   cave's backdrop and the `gnomes` troop in the troop slot).
 - `ending_win`, `ending_lose`: the ending pictures.
 - `siege_back_wall`, `siege_back_wall_left`, `siege_back_wall_right`,
-  `siege_grid`, `combat_ground` (`field` or `terrain`): the fight's ground
-  and walls (§6).
+  `siege_grid`, `field_grid`, `combat_ground` (`field` or `terrain`): the
+  fight's ground and walls (§6).
 
 `sprites.hud` has held the right column and its readouts:
 `contract_silhouette`, `siege_silhouette` with `siege_animation` (frames),
@@ -447,6 +447,21 @@ manifest, so the pack has not needed to ship them. Draw-only: the castle
 layout has still blocked the wall cells. Absent, the per-code wall pieces
 have drawn as above (`kings-bounty` has declared none; `glory-of-rome` has
 shipped 36 cells at 32).
+
+**Field grid.** `sprites.ui.field_grid` has named a path prefix for the
+ground of an open-field fight, one file per board cell:
+`<prefix>_<x>_<y>.png` for `x` in `0..5` and `y` in `0..4` (30 files), a
+6 × 5 picture cut into 96 px cells (`tools/siegeslice.py --field` takes the
+largest 6:5 rectangle of content centred in a picture, so a meadow painted on
+white keeps its white out, scales it to 576 × 480 and cuts it). A zone has
+been able to declare its
+own `field_grid` prefix, which has won for fights on that zone, so each
+continent can have its own ground. The shell has drawn each cell's own
+picture under the obstacles and troops, in place of `combat_ground`, when
+every cell of the zone's grid loaded; a siege has kept the siege grid.
+Absent, `combat_ground` has applied. `glory-of-rome` has shipped Italia's
+grid (`art/combat/field/italia_<x>_<y>.png`); `kings-bounty` has declared
+none.
 
 **Per-town art.** A town catalog entry has been able to declare
 `"art": "<stem>"`, a tile under `art/tiles/`, and the engine has stamped that

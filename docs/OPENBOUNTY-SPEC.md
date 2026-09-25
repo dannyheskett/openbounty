@@ -882,7 +882,8 @@ flagged (§38).
   reachable by sailing), a `salt` config (§10), and per-feature lists
   (`towns`, `castles`, `signs`, `chests`, `artifacts`, `dwellings`,
   `wandering_armies`). `glory-of-rome` has added `events`, `arrivals`,
-  `alcove_art`, `alcove_cost`, `army_art`, `town_backdrop`, `tile_set`,
+  `alcove_art`, `alcove_cost`, `army_art`, `field_grid` (REQ-165e),
+  `town_backdrop`, `tile_set`,
   `tile_set_arts`, and the `boatmaster`, `pontifex` and `siegemaster`
   figures (`PACK-FORMAT.md` §6). Exactly one zone has had `is_home: true`
   (Continentia; Italia in Rome).
@@ -1034,6 +1035,19 @@ flagged (§38).
   grass, and drawn it under every cell and the siege band in place of
   `sprites.combat[0]`, which the manifest then omits. Absent or `"field"`, the
   field tile has drawn (`kings-bounty`).
+- **REQ-165e.** An open-field fight on a zone with a field grid has drawn
+  each board cell's own picture as its ground: `sprites.ui.field_grid`, or
+  the zone's own `field_grid`, has named a prefix expanded to
+  `<prefix>_<x>_<y>.png` for the 6 × 5 board (`resources_field_grid_path`,
+  every cell of the pack's and each zone's grid in the manifest once). The
+  shell has loaded every zone's grid at start (`Sprites.field_grid`, all or
+  nothing per zone) and drawn the hero's zone's cells under the obstacles
+  and troops in place of the combat ground (`src/combat_render.c`); a siege
+  has kept the siege grid, and a zone with no grid the ground of REQ-165d.
+  `glory-of-rome` has shipped Italia's, thirty 96 px cells cut from the
+  largest centred 6:5 rectangle of content in one picture, scaled to
+  576 × 480 (`art/fields/italia.png`, `tools/siegeslice.py --field`);
+  `kings-bounty` has declared none.
 - **REQ-165a.** When `sprites.ui.panel_frame` names a palette colour the
   legacy shell has drawn a frame round every panel slot
   (`legacy_panel_frame`: HUD panels, inventory cells, contract face) so the
