@@ -135,6 +135,7 @@
 					"y":	31,
 					"scene":	"art/scenes/rubicon.png",
 					"title":	"The Rubicon",
+					"hint":	"The river runs fast and deep, and no bridge stands on it. Your pontifex says the gods would give their leave for a bridge, if he held the rite to ask it.",
 					"body":	"Your pontifex speaks the rite at the water's edge, the birds are read, and the gods give their leave. Far off, a column of legionaries is already crossing a bridge that was not there before.",
 					"requires":	[{
 							"spell":	"bridge",
@@ -665,6 +666,7 @@
 					"y":	29,
 					"scene":	"art/scenes/causeway.png",
 					"title":	"The Temple of Ocean",
+					"hint":	"The altar of Ocean stands bare, and the sea keeps the islet beyond the rocks. The priests speak of a prayer that parts the water, said over the two relics of Gaul laid together on this stone.",
 					"body":	"You lay the Gladius and the Anchor on the altar and speak the prayer. The sea draws back off the rocks, the crag on the near shore of the island splits and falls away, and a paved causeway stands where the water was.",
 					"requires":	[{
 							"artifact":	"sword"
@@ -1032,6 +1034,7 @@
 					"y":	21,
 					"scene":	"art/scenes/pharos.png",
 					"title":	"The Pharos",
+					"hint":	"The keeper bars the stair. For three thousand gold he will light the great lamp and let you climb; from the fire at the top, they say, the whole province lies open to the eye.",
 					"body":	"The keeper takes your coin and lets you climb. From the fire at the top, in the first light, the whole province lies open beneath you: every road, every river, every town from Mauretania to the Nile.",
 					"requires":	[{
 							"gold":	3000,

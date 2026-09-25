@@ -535,7 +535,10 @@ with a single Continue, and the effects have changed the map for good -- they
 survive a zone switch and a save. `requires` has taken `spell`, `troop`,
 `gold` or `artifact`, each with an optional `count` and `consume`; `effects`
 have named a tile by its `tile_codes` key, or `{"reveal": true}` to uncover
-the whole zone's fog.
+the whole zone's fog. An optional `hint` has been what the place says, as a
+note under the vista's title, each time the hero steps onto its tile while
+something is still missing; without one the tile has stayed silent until the
+vista fires.
 
 ```json
 { "id": "rubicon", "x": 31, "y": 31,

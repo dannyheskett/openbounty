@@ -888,7 +888,10 @@ flagged (§38).
 - **REQ-221b.** **One-time vistas (`events`).** A zone has been able to
   declare `events`, a list of one-time moments. Each has had an `id`, a
   trigger tile `(x, y)`, a `scene` image, a `title` and `body`, a `requires`
-  list and an `effects` list. Stepping onto the tile with every precondition
+  list, an `effects` list and an optional `hint`: what the place says, as a
+  plain note under its title, each time the hero steps onto the tile with a
+  precondition still missing (silent without one; `glory-of-rome`'s Temple
+  of Ocean has one). Stepping onto the tile with every precondition
   held (`GameTryFireEvent`, `engine/game.c`) has spent what the
   preconditions mark `consume`, written each effect's `tile` (a `tile_codes`
   key) onto the map, recorded the id in `events_done`, and queued the scene as
