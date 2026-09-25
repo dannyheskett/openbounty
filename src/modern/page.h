@@ -186,12 +186,13 @@ ML_Rect page_status(const char *title, const char *words);
 
 // ---- the battle -----------------------------------------------------------------
 
-// The battle takes the base screen's places: the command column is the left
-// column, the turn column the right one, and the field stands in the map's
-// place -- flush with its top, centred across it -- with the castle's back
-// wall above it where the map has a tile's more height. Draws the frame and
-// the bands; the columns and the field are the caller's.
-typedef struct { ML_Rect commands, field, turn, wall; bool has_wall; } PageCombat;
+// The battle has one column, two tiles wide, on the right: whose turn it is
+// and the commands. The field has the rest of the interior -- flush with its
+// top, centred across it where there is room for a band and ground either
+// side, flush with the left frame otherwise -- with the castle's back wall
+// above it where the map has a tile's more height. Draws the ground and the
+// bands; the column and the field are the caller's.
+typedef struct { ML_Rect column, field, wall; bool has_wall; } PageCombat;
 PageCombat page_combat(bool siege);
 
 // One line on the top edge of the map (of the battlefield, in a fight). Not a

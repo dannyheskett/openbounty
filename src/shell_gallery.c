@@ -836,8 +836,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         save_target(&G, "71b_combat_target_picker");
         c.picker_active = false;
         views_set(VIEW_ARMY);
-        // As a tap on the turn column's portrait opens it: on the troop whose
-        // turn it is.
+        // As A opens it in a fight: on the troop whose turn it is.
         if (c.unit_id >= 0) views_army_mark(c.units[c.side][c.unit_id].troop_idx);
         for (int i = 0; i < 3; i++) combat_present_public(&c, g, m, f, s, rt);
         save_target(&G, "71c_combat_army_view");

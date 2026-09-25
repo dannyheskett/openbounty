@@ -411,13 +411,12 @@ static void combat_action_menu_draw(const Combat *c, const Game *g) {
 
 // ---- the battle's columns ---------------------------------------------------
 //
-// Modern: the battle takes the base screen's places (page_combat,
-// src/modern/page.c) -- the command column in the left column's, the field in
-// the map's, the turn column in the right column's. The command
-// column is Menu and then the Unit page's commands, always in that order: a
-// command the unit cannot use is greyed, never moved, and says why on the
-// menu. The turn column says whose turn it is: the unit, its count and name,
-// its moves and shots left, and the round.
+// Modern: the battle takes the base screen's interior (page_combat,
+// src/modern/page.c) -- the field left of one column, two tiles wide,
+// against the right frame: whose turn it is (the unit's name, count, moves and shots),
+// then the commands as tiles -- Menu and the Unit page's commands, always in
+// that order, a command the unit cannot use greyed, never moved, and saying
+// why on the menu -- and the round.
 
 // The art for a command, by the key its row fires. Cast reuses the rail's lituus.
 static Texture2D combat_panel_art(const Sprites *s, int key) {
@@ -445,51 +444,106 @@ static bool players_turn(const Combat *c) {
            !c->units[c->side][c->unit_id].out_of_control;
 }
 
-// Draw the command column in `col`, and register a tap per usable tile while
-// `live` -- nothing else owns the screen. On the foe's turn every command is
-// greyed: none of them is the player's to use.
-static void combat_panel_draw(const Combat *c, const Game *g, const Sprites *sprites,
-                              ML_Rect col, bool live) {
-    const int tile = CL_TILE_H;
+// A label and its figure on one line, centred in the column.
+static int turn_line(int cx, int y, const char *label, int value) {
+    char nb[16];
+    snprintf(nb, sizeof nb, "%d", value);
+    int lw = bfont_text_width(label), sw = bfont_text_width(" "), nw = bfont_text_width(nb);
+    int x = cx - (lw + sw + nw) / 2;
+    bfont_draw(label, x, y, PAL_CLR(YELLOW));
+    bfont_draw(nb, x + lw + sw, y, PAL_CLR(WHITE));
+    return y + uk_line_h();
+}
+
+// A label over its number, centred on cx.
+static int turn_stat(int cx, int y, const char *label, int value) {
+    char nb[16];
+    snprintf(nb, sizeof nb, "%d", value);
+    bfont_draw_centered(label, cx, y, PAL_CLR(YELLOW));
+    y += uk_line_h();
+    bfont_draw_centered(nb, cx, y, PAL_CLR(WHITE));
+    return y + uk_line_h() + UK_INSET;
+}
+
+// The column: whose turn it is -- the unit's name, its count, its moves and
+// shots left -- then the commands as a grid of tiles, two across and three
+// down, with the round in the sixth cell. Menu, then Shoot, Wait, Fly and
+// Cast, always in that order: a command the unit cannot use is shaded, never
+// moved, and says why on the menu; on the foe's turn every command is shaded.
+// A tap per usable tile is registered while `live` -- nothing else owns the
+// screen.
+static void combat_column_draw(const Combat *c, const Game *g, const Sprites *sprites,
+                               ML_Rect col, bool live) {
+    const int tw = CL_TILE_W, th = CL_TILE_H;
+    const ResUI *ui = (g && g->res) ? &g->res->ui : NULL;
+    lattice_ground(col.x, col.y, col.w, col.h);
+    int cx = col.x + col.w / 2, y = col.y + UK_INSET;
+    const CombatUnit *u = (c->unit_id >= 0) ? &c->units[c->side][c->unit_id] : NULL;
+    const TroopDef *t = (u && u->troop_idx >= 0) ? troop_by_index(u->troop_idx) : NULL;
+    if (t) {
+        // The name across the column, two lines at most; yellow for the
+        // player's troop, red for the foe's. Its count under it.
+        y = uk_words_centred(t->name, cx, y, col.w - 2 * UK_INSET, 2,
+                             c->side == COMBAT_SIDE_PLAYER ? PAL_CLR(YELLOW) : PAL_CLR(RED));
+        char nb[16];
+        snprintf(nb, sizeof nb, "%d", u->count);
+        bfont_draw_centered(nb, cx, y, PAL_CLR(WHITE));
+        y += uk_line_h();
+        if (ui) {
+            y = turn_line(cx, y, ui->combat_moves, u->moves);
+            if (u->shots > 0) y = turn_line(cx, y, ui->combat_shots, u->shots);
+        }
+    }
+    // The commands, a grid under the words.
+    int gy = y + UK_INSET;
     GmPage p;
     combat_menu_page(c, g, CM_UNIT, &p);
     bool mine = players_turn(c);
-    // Menu, then Shoot, Wait, Fly and Cast.
     int n = 0;
     bool enabled[5];
+    int tx[5], ty[5];
     for (int i = 0; i < 5; i++) {
-        int y = col.y + i * tile;
-        if (y + tile > col.y + col.h) break;
-        Texture2D t = { 0 };
+        tx[i] = col.x + (i % 2) * tw;
+        ty[i] = gy + (i / 2) * th;
+        if (ty[i] + th > col.y + col.h) break;
+        Texture2D tex = { 0 };
         enabled[i] = mine;
         if (i == 0) {
-            t = sprites ? sprites->rail_menu : (Texture2D){ 0 };
+            tex = sprites ? sprites->rail_menu : (Texture2D){ 0 };
         } else if (i - 1 < p.n) {
-            t = combat_panel_art(sprites, p.item[i - 1].key);
+            tex = combat_panel_art(sprites, p.item[i - 1].key);
             enabled[i] = mine && p.item[i - 1].enabled;
         }
-        if (t.id) {
-            Rectangle src = { 0, 0, (float)t.width, (float)t.height };
-            Rectangle dst = { (float)col.x, (float)y, (float)col.w, (float)tile };
-            gfx_texture_draw(t, src, dst, WHITE);
+        if (tex.id) {
+            Rectangle src = { 0, 0, (float)tex.width, (float)tex.height };
+            Rectangle dst = { (float)tx[i], (float)ty[i], (float)tw, (float)th };
+            gfx_texture_draw(tex, src, dst, WHITE);
         }
-        if (!enabled[i]) gfx_rect(col.x, y, col.w, tile, uk_shade());   // it cannot be used now
+        if (!enabled[i]) gfx_rect(tx[i], ty[i], tw, th, uk_shade());   // it cannot be used now
         n++;
     }
-    hud_column_finish(col.x, col.y, col.w, col.h, n);
+    // The joins: a band across every tile edge of each grid column, one down
+    // the middle, and the column's own ground below.
+    int rows_l = (n + 1) / 2, rows_r = (n == 5) ? 3 : n / 2;
+    hud_column_finish(col.x, gy, tw, col.y + col.h - gy, rows_l);
+    hud_column_finish(col.x + tw, gy, tw, col.y + col.h - gy, rows_r);
+    lattice_band_v(col.x + tw - CL_UI, gy - CL_UI, 2 * CL_UI, rows_l * th + 2 * CL_UI);
     for (int i = 0; i < n; i++) {
-        int y = col.y + i * tile;
         const char *key = i == 0 ? (g && g->res ? g->res->ui.key_esc : "Esc")
                                  : (i - 1 < p.n ? combat_panel_key(p.item[i - 1].key) : NULL);
         // A command's key shows while it can be pressed.
         if (live && enabled[i]) {
-            hud_key_hint(col.x, y, key);
-            ui_tile_row(col.x, y, col.w, tile, TOUCH_LIST_COMBAT_PANEL, i);
+            hud_key_hint(tx[i], ty[i], key);
+            ui_tile_row(tx[i], ty[i], tw, th, TOUCH_LIST_COMBAT_PANEL, i);
         }
     }
+    // The round, counted from one, in the sixth cell.
+    if (ui && n == 5)
+        turn_stat(col.x + tw + tw / 2, gy + 2 * th + (th - 2 * uk_line_h()) / 2,
+                  ui->combat_round, c->turn + 1);
 }
 
-// The tap on the command column, resolved the way its key resolves: Menu is
+// The tap on a command tile, resolved the way its key resolves: Menu is
 // Escape (the combat menu), each command the key its menu row fires.
 static void combat_panel_tap(const Combat *c, const Game *g) {
     if (!CL_IS_MODERN) return;
@@ -508,51 +562,6 @@ static void combat_panel_tap(const Combat *c, const Game *g) {
         return;
     }
     if (key) input_host_inject_key_next_frame(key);
-}
-
-// A label over its number, centred in the column.
-static int turn_stat(int cx, int y, const char *label, int value) {
-    char nb[16];
-    snprintf(nb, sizeof nb, "%d", value);
-    bfont_draw_centered(label, cx, y, PAL_CLR(YELLOW));
-    y += uk_line_h();
-    bfont_draw_centered(nb, cx, y, PAL_CLR(WHITE));
-    return y + uk_line_h() + UK_INSET;
-}
-
-// The turn column: the unit whose turn it is -- its portrait with its count,
-// its name, its moves and shots left -- and the round. A tap on the portrait
-// opens the Army sheet on the player's turn.
-static void combat_turn_draw(const Combat *c, const Game *g, const Sprites *sprites,
-                             ML_Rect col, bool live) {
-    const int tile = CL_TILE_H;
-    const ResUI *ui = (g && g->res) ? &g->res->ui : NULL;
-    lattice_ground(col.x, col.y, col.w, col.h);
-    int cx = col.x + col.w / 2, y = col.y;
-    const CombatUnit *u = (c->unit_id >= 0) ? &c->units[c->side][c->unit_id] : NULL;
-    const TroopDef *t = (u && u->troop_idx >= 0) ? troop_by_index(u->troop_idx) : NULL;
-    if (t && sprites && u->troop_idx < sprites->troop_count) {
-        Texture2D face = sprites->troop_portrait[u->troop_idx].id ? sprites->troop_portrait[u->troop_idx]
-                                                                  : sprites->troop_sprite[u->troop_idx];
-        gfx_rect(col.x, y, col.w, tile, PAL_CLR(BLACK));
-        if (face.id) ui_blit(face, col.x, y, col.w, tile);
-        combat_count_badge(col.x, y, col.w, tile, u->count);
-        if (live && c->side == COMBAT_SIDE_PLAYER) ui_tile(col.x, y, col.w, tile, KEY_A);
-        y += tile;
-        lattice_band_h(col.x, y - CL_UI, col.w, 2 * CL_UI);
-        y += UK_INSET;
-        // The name across the column, broken where it must be (three lines
-        // at most); yellow for the player's troop, red for the foe's.
-        y = uk_words_centred(t->name, cx, y, col.w, 3,
-                             c->side == COMBAT_SIDE_PLAYER ? PAL_CLR(YELLOW) : PAL_CLR(RED));
-        y += UK_INSET;
-        if (ui) {
-            y = turn_stat(cx, y, ui->combat_moves, u->moves);
-            if (u->shots > 0) y = turn_stat(cx, y, ui->combat_shots, u->shots);
-        }
-    }
-    // The round, counted from one.
-    if (ui) turn_stat(cx, col.y + col.h - 2 * uk_line_h() - UK_INSET, ui->combat_round, c->turn + 1);
 }
 
 static int combat_player_action_full(Combat *c, const Game *g,
@@ -708,19 +717,17 @@ static void combat_present(const Combat *c, const Game *g, const Map *m, const F
     present_begin(target);
     if (CL_IS_MODERN) {
         (void)m; (void)f;
-        // The battle takes the base screen's places, and nothing of the world
-        // is drawn: the frame and its bands, the command column where the left
-        // column stands, the field in the map's place, the turn column where
-        // the right column stands.
-        chrome_draw(g, sprites);
+        // The battle takes the base screen's interior, and nothing of the world
+        // is drawn: the frame, the field flush left or centred in what the
+        // column leaves, and the one column against the right frame.
+        chrome_draw_ring(g, sprites);
         PageCombat pc = page_combat(c->castle);
         combat_render_set_field(pc.field.x, pc.field.y, pc.has_wall);
         combat_render_frame(c, g, sprites);
         bool live = !s_act_open && views_active() == VIEW_NONE &&
                     !prompt_is_active() && !dialog_is_active() &&
                     !c->picker_active && c->cast_phase == COMBAT_CAST_NONE;
-        combat_panel_draw(c, g, sprites, pc.commands, live);
-        combat_turn_draw(c, g, sprites, pc.turn, live);
+        combat_column_draw(c, g, sprites, pc.column, live);
         // What just happened: a toast on the field's top edge, as a toast is
         // on the map, for as long.
         static char s_said[COMBAT_BANNER_LEN];
@@ -1111,7 +1118,7 @@ CombatResult RunCombat(Game *g, const Map *m, const Fog *f, const Sprites *sprit
             if (input_key_pressed(KEY_A)) {
                 views_set(VIEW_ARMY);
                 // Modern: on your turn the sheet opens on the troop whose turn
-                // it is (a tap on its portrait in the turn column is this key).
+                // it is (the combat menu's Hero page reaches this key too).
                 if (CL_IS_MODERN && c.side == COMBAT_SIDE_PLAYER && c.unit_id >= 0)
                     views_army_mark(c.units[c.side][c.unit_id].troop_idx);
                 continue;

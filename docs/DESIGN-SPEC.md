@@ -912,7 +912,7 @@ Source: `src/modern/uikit.c` `uk_line_h`; `src/modern/mlist.c` `draw_row`;
 **DSGN-0096. How much text a block has held.** A message's title has held at
 most 3 lines and a page of words `PAGE_MSG_LINES`; a question's words at most
 12 lines; a choice at most 2 lines of its row; a menu description 2 lines; the
-turn column's name 3 lines; a count question's words 3 lines; a formatted
+battle column's name 2 lines; a count question's words 3 lines; a formatted
 block has been paged when given a pager and has shown its first page
 otherwise. Past those limits the last line shown has ended "..".
 Source: `src/modern/page.c` `ask`, `page_message`, `page_question`,
@@ -959,7 +959,7 @@ of the pack's `palettes/palette.bin`: `BLACK` 0, `DBLUE` 1, `DGREEN` 2,
 built-in 16-colour table has been installed when the file has failed to load.
 Source: `src/palette.c` `palette_init`.
 
-**DSGN-0101. Signal colours.** `RED` has marked the foe (the turn column's
+**DSGN-0101. Signal colours.** `RED` has marked the foe (the battle column's
 name on the foe's turn), low morale or an army out of control, and castles on
 the world map; `GREEN` high morale; `CYAN` the Time Stop steps and the boat on
 the world map; the hero's marker on the world map has blinked `YELLOW` and
@@ -1002,8 +1002,8 @@ Source: `src/map_render.c` `map_render_draw`; `src/hud.c` `blit_tile`;
 **DSGN-0105. Portraits.** Every portrait has been drawn at a whole multiple:
 - 2× (2 × `TW` square): a person speaking (DSGN-0069), a castle's troop, the
   contract's villain, the promotion.
-- 1×: a message's picture, the foe's cards, the turn column, the army sheet
-  (cut to its row, `uk_picture_cut`).
+- 1×: a message's picture, the foe's cards, the army sheet (cut to its row,
+  `uk_picture_cut`).
 - The class portrait on the character sheet at its authored size.
 - The ending picture at the largest whole multiple that has fitted half the
   page's width and the height above its row, flush top-left.
@@ -1054,13 +1054,17 @@ stood over that.
 Source: `src/combat_loop.c` `combat_present`; `src/modern/page.c`
 `page_combat`.
 
-**DSGN-0110. The battle's places.** The command column has been the left
-column's place, the turn column the right column's, and the battlefield
-(6 × `TW` by 5 × `TH`) has stood in the map's place, flush with its top and
-centred across it. In a siege, where the map's place has been at least one
-tile taller than the field, the castle's back wall row has stood above the
-field. Round the field, the map's place has been lattice ground, with a
-`UK_BAND` band along each edge of the field the ground has shown beside.
+**DSGN-0110. The battle's places.** A battle has had one column, two tiles
+wide (2 × `TW`), against the right frame, the full height of the interior;
+the battlefield (6 × `TW` by 5 × `TH`) has had the interior left of it, flush
+with its top. Where that room has held the field with a `UK_BAND` band and a
+pixel of ground either side, the field has been centred in it, with a `G`
+band before the column; otherwise (the smallest screen) the field has stood
+flush with the left frame and the band before the column has taken what was
+left. In a siege, where the interior has been at least one tile taller than
+the field, the castle's back wall row has stood above the field. Round the
+field the interior has been lattice ground, with a band along each edge of
+the field the ground has shown beside.
 Source: `src/modern/page.c` `page_combat`.
 
 **DSGN-0111. Battlefield.** Each of the 6 × 5 cells has been one tile at the
@@ -1085,12 +1089,15 @@ Source: `src/combat_render.c` `draw_unit`, `combat_count_badge`;
 `src/combat_loop.c` `combat_tick_anim`, `attack_anim_start`, `splat_tick`,
 `RunCombat`.
 
-**DSGN-0113. Command column.** The command column has been five tiles in a
-fixed order: Menu (`game.json:sprites.rail.menu`), Shoot, Wait, Fly and Cast.
-A command the unit has not been able to use has been shaded `uk_shade` and has
-never moved; on the foe's turn every tile has been shaded. The joins and
-ground have been DSGN-0022's.
-Source: `src/combat_loop.c` `combat_panel_draw`, `combat_panel_art`.
+**DSGN-0113. Command grid.** Under the column's words, the commands have been
+five tiles in a grid two across and three down, in a fixed order read across
+then down: Menu (`game.json:sprites.rail.menu`), Shoot, Wait, Fly and Cast;
+the sixth cell has held Round (`ui.combat_round`) over the round + 1. A
+command the unit has not been able to use has been shaded `uk_shade` and has
+never moved; on the foe's turn every tile has been shaded. The joins have
+been DSGN-0022's across every tile edge of each grid column, with a 2 × `UI`
+band down the middle, and the column's ground below.
+Source: `src/combat_loop.c` `combat_column_draw`, `combat_panel_art`.
 
 **DSGN-0114. Command taps.** The tiles have taken taps only while live (the
 player's turn, and no menu, view, question, message, picker or cast open):
@@ -1098,22 +1105,25 @@ Menu has pressed Escape, Shoot S, Wait Space and Fly F on the next frame, and
 Cast has opened the combat menu on its spells page.
 Source: `src/combat_loop.c` `combat_panel_tap`, `combat_menu_page`.
 
-**DSGN-0115. Turn column.** The turn column has shown, on lattice ground:
-- the active unit's portrait, one tile, on black, with its count badge;
-- a 2 × `UI` band under the portrait, then `UK_INSET`;
-- the unit's name, centred at the column's width, at most 3 lines, `YELLOW`
-  on the player's turn and `RED` on the foe's, then `UK_INSET`;
-- Moves and, when the unit has had shots, Shots, each a `YELLOW` label over a
-  `WHITE` figure (`ui.combat_moves`, `ui.combat_shots`);
-- Round (`ui.combat_round`) at the foot, the round + 1.
+**DSGN-0115. The column's words.** Above the grid, on lattice ground, from
+`UK_INSET` under the column's top:
+- the active unit's name, centred at the column's width less `UK_INSET`
+  each side, at most 2 lines, `YELLOW` on the player's turn and `RED` on the
+  foe's;
+- its count under the name, `WHITE`;
+- Moves and, when the unit has had shots, Shots, each one line, a `YELLOW`
+  label and a `WHITE` figure (`ui.combat_moves`, `ui.combat_shots`), centred
+  together;
+- then `UK_INSET`, and the grid (DSGN-0113).
 
-While live, a tap on the portrait has pressed A.
-Source: `src/combat_loop.c` `combat_turn_draw`, `turn_stat`.
+The unit itself has been marked on the field: it alone has animated
+(DSGN-0112).
+Source: `src/combat_loop.c` `combat_column_draw`, `turn_line`, `turn_stat`.
 
 **DSGN-0116. Command keys.** While the keyboard has been the device last used
 and the column has been live, each command that could be pressed has shown
-its key: `ui.key_esc`, S, W, F and U.
-Source: `src/combat_loop.c` `combat_panel_draw`, `combat_panel_key`.
+its key in its tile's corner (DSGN-0028): `ui.key_esc`, S, W, F and U.
+Source: `src/combat_loop.c` `combat_column_draw`, `combat_panel_key`.
 
 **DSGN-0117. The combat log line.** Each new combat log line has been shown as
 a toast (DSGN-0068) on the battlefield's top edge for 2.0 s, the same as a

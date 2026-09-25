@@ -25,8 +25,8 @@ void combat_render_set_attack(int side, int x, int y, int frame);
 // frame, not when the engine did the arithmetic (REQ-398).
 void combat_render_set_impact(bool landed);
 
-// A troop's count on the foot of its cell (x, y, w, h): the one badge, on the
-// field and in the turn column alike.
+// A troop's count on the foot of its cell (x, y, w, h): the one badge on the
+// field.
 void combat_count_badge(int x, int y, int w, int h, int count);
 
 void combat_render_frame(const Combat *c, const Game *g,
@@ -63,8 +63,7 @@ void combat_format_title(const Combat *c, const Game *g, char *buf, int cap);
 #define CL_COMBAT_W       (CL_COMBAT_CELL_W * COMBAT_W)
 #define CL_COMBAT_H       (CL_COMBAT_CELL_H * COMBAT_H)
 // Modern: the field is where page_combat put it (set each frame by
-// combat_render_set_field) -- in the map's place, between the command column
-// and the turn column.
+// combat_render_set_field) -- the interior left of the battle's one column.
 int combat_field_x(void);
 int combat_field_y(void);
 #define CL_COMBAT_X       (CL_IS_MODERN ? combat_field_x() : \

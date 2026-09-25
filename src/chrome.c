@@ -152,6 +152,11 @@ static void draw_base_chrome(const Sprites *s) {
     lattice_band_v(CL_RAIL_X + CL_RAIL_W, CL_MAP_Y, CL_SIDEBAR_GAP, CL_MAP_H);
     lattice_band_v(CL_MAP_X + CL_MAP_W, CL_MAP_Y, CL_SIDEBAR_GAP, CL_MAP_H);
 }
+void chrome_draw_ring(const Game *g, const Sprites *s) {
+    (void)g;
+    gfx_rect(0, 0, CL_SCREEN_W, CL_SCREEN_H, PAL_CLR(BLACK));
+    draw_frame(s);
+}
 
 static Color status_bg_for_difficulty(Difficulty d) {
     const Resources *res = resources_current();
