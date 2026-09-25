@@ -452,7 +452,9 @@ shipped 36 cells at 32).
 ground of an open-field fight, one file per board cell:
 `<prefix>_<x>_<y>.png` for `x` in `0..5` and `y` in `0..4` (30 files), a
 6 × 5 picture cut into 96 px cells (`tools/siegeslice.py --field` takes the
-centre 576 × 480 of a picture at 1:1). A zone has been able to declare its
+largest 6:5 rectangle of content centred in a picture, so a meadow painted on
+white keeps its white out, scales it to 576 × 480 and cuts it). A zone has
+been able to declare its
 own `field_grid` prefix, which has won for fights on that zone, so each
 continent can have its own ground. The shell has drawn each cell's own
 picture under the obstacles and troops, in place of `combat_ground`, when

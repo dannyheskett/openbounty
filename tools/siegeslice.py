@@ -5,7 +5,8 @@ compose the siege screen from them.
     python3 tools/siegeslice.py <scene.png> <out-dir>          (recipe mode)
     python3 tools/siegeslice.py <scene.png> <out-dir> --grid   (36 cells, untouched)
     python3 tools/siegeslice.py <field.png> <out-dir> --field <prefix>
-                                    (30 open-field cells, the centre 576x480 at 1:1)
+                                    (30 open-field cells: the largest centred 6:5 rectangle
+                                     of content, scaled to 576x480)
 
 The picture is a 4x4 grid of 96 cells: the top row is the back wall (with
 its two corners), the side columns are the left and right walls, the bottom
@@ -47,20 +48,41 @@ im = Image.open(src).convert("RGBA")
 
 if "--field" in sys.argv:
     # Field mode: an open-field ground picture (sprites.ui.field_grid, or a
-    # zone's field_grid). The centre 576x480 of the picture, at 1:1, is the
-    # 6x5 board of 96 px cells; each is written untouched as
-    # <prefix>_<x>_<y>.png. No scaling: the picture is used at its own size.
+    # zone's field_grid). The largest 6x5 rectangle of content centred in the
+    # picture -- a meadow painted on white keeps its white out -- is scaled
+    # down (Lanczos) to the 576x480 board and cut into the 6x5 grid of 96 px
+    # cells, <prefix>_<x>_<y>.png. A picture with no margin uses its whole
+    # width.
     prefix = sys.argv[sys.argv.index("--field") + 1]
     W, H, T = 6, 5, 96
     bw, bh = W * T, H * T
-    assert im.width >= bw and im.height >= bh, im.size
-    x0, y0 = (im.width - bw) // 2, (im.height - bh) // 2
-    board = im.crop((x0, y0, x0 + bw, y0 + bh))
+    px = im.load()
+    def content(x, y):
+        r, g, b, a = px[x, y]
+        return a > 16 and not (r > 235 and g > 235 and b > 235)
+    cx, cy = im.width // 2, im.height // 2
+    # Shrink a centred 6:5 rectangle until every pixel on its edge is content.
+    rw = min(im.width, im.height * W // H)
+    rh = rw * H // W
+    def edge_ok(rw, rh):
+        x0, y0 = cx - rw // 2, cy - rh // 2
+        x1, y1 = x0 + rw - 1, y0 + rh - 1
+        if x0 < 0 or y0 < 0 or x1 >= im.width or y1 >= im.height: return False
+        step = 4
+        for x in range(x0, x1 + 1, step):
+            if not content(x, y0) or not content(x, y1): return False
+        for y in range(y0, y1 + 1, step):
+            if not content(x0, y) or not content(x1, y): return False
+        return True
+    while rw > bw and not edge_ok(rw, rh):
+        rw -= 6; rh = rw * H // W
+    x0, y0 = cx - rw // 2, cy - rh // 2
+    board = im.crop((x0, y0, x0 + rw, y0 + rh)).resize((bw, bh), Image.LANCZOS)
     for y in range(H):
         for x in range(W):
             board.crop((x * T, y * T, x * T + T, y * T + T)).save(
                 os.path.join(out, f"{prefix}_{x}_{y}.png"))
-    print(f"{W * H} cells of {T}x{T} from the centre {bw}x{bh} of {im.size[0]}x{im.size[1]} in {out}")
+    print(f"{W * H} cells of {T}x{T}: the centre {rw}x{rh} of {im.size[0]}x{im.size[1]} scaled to {bw}x{bh}, in {out}")
     sys.exit(0)
 
 if "--grid" in sys.argv:
