@@ -186,7 +186,8 @@ static void tap_fail(const char *shot_name, const char *what) {
     fprintf(stderr, "[tapcheck] FAIL %s: %s\n", shot_name, what);
 }
 
-// Row `row` of `list` is registered, and a tap at its centre reaches it.
+// Row `row` of `list` is registered, and a tap at its centre reaches it through
+// the real resolver, the page rule included (a page masks what stands under it).
 static void tap_row(const char *shot_name, int list, int row) {
     char what[128];
     int x, y, w, h, hl, hr, hk;
@@ -196,7 +197,7 @@ static void tap_row(const char *shot_name, int list, int row) {
         tap_fail(shot_name, what);
         return;
     }
-    if (!touch_last_hit(x + w / 2, y + h / 2, &hl, &hr, &hk) || hl != list || hr != row) {
+    if (!touch_last_resolve(x + w / 2, y + h / 2, &hl, &hr, &hk) || hl != list || hr != row) {
         snprintf(what, sizeof what, "a tap on list %d row %d reaches list %d row %d key %d",
                  list, row, hl, hr, hk);
         tap_fail(shot_name, what);
@@ -213,7 +214,7 @@ static void tap_key(const char *shot_name, int key) {
         tap_fail(shot_name, what);
         return;
     }
-    if (!touch_last_hit(x + w / 2, y + h / 2, &hl, &hr, &hk) || hk != key) {
+    if (!touch_last_resolve(x + w / 2, y + h / 2, &hl, &hr, &hk) || hk != key) {
         snprintf(what, sizeof what, "a tap on the key %d button reaches list %d row %d key %d", key, hl, hr, hk);
         tap_fail(shot_name, what);
     }
