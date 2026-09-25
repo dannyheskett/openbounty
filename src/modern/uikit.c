@@ -252,10 +252,15 @@ UkScene uk_scene_band_at(ML_Rect r, int top, Texture2D bd, int band_h, int scale
         const Sprites *sp = modern_overlay_sprites();
         int rx = L.scene.x + L.scene.w, rw = r.x + r.w - rx;
         if (sp && sp->scene_column[0].id && sp->scene_column[1].id && sp->scene_column[2].id) {
+            // A column at its own width, standing against the picture; what
+            // is left of a wider bar is the panel fill, never a stretched
+            // column.
+            int cw = sp->scene_column[0].width;
+            if (cw > side) cw = side;
             gfx_rect(r.x, top, side, L.scene.h, uk_fill());
             gfx_rect(rx, top, rw, L.scene.h, uk_fill());
-            draw_column(sp, r.x, top, side, L.scene.h, false);
-            draw_column(sp, rx, top, rw, L.scene.h, true);
+            draw_column(sp, L.scene.x - cw, top, cw, L.scene.h, false);
+            draw_column(sp, rx, top, cw, L.scene.h, true);
         } else {
             lattice_band_v(r.x, top, side, L.scene.h);
             lattice_band_v(rx, top, rw, L.scene.h);

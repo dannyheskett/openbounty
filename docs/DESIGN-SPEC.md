@@ -575,9 +575,10 @@ whole scale its page's width has allowed, at most 3:
 scale = clamp(width / `ML_BACKDROP_W` 240, 1, 3), 720 × 306 on a full page.
 - The side bars ((width − 720) / 2) have held a column: the capital, a
   repeated shaft and the base from `game.json:sprites.ui.scene_column_capital`,
-  `scene_column_shaft` and `scene_column_base`, at 1× height stretched to the
-  bar's width, mirrored on the right, over `uk_fill`; without them, the
-  lattice.
+  `scene_column_shaft` and `scene_column_base`, at 1× and at the art's own
+  width (28 px), standing against the picture's edge, mirrored on the right,
+  over `uk_fill`, which has filled whatever a wider bar has left (a scene
+  note at 2×, DSGN-0127); without them, the lattice.
 - When the band has been shorter than the backdrop, the backdrop's top has
   been trimmed by trim = ceil((306 − band) / 3) × 3, in whole source pixels.
 - Black has been drawn behind the art, and a `UK_BAND` divider under it.
