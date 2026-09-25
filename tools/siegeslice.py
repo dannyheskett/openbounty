@@ -4,6 +4,8 @@ compose the siege screen from them.
 
     python3 tools/siegeslice.py <scene.png> <out-dir>          (recipe mode)
     python3 tools/siegeslice.py <scene.png> <out-dir> --grid   (36 cells, untouched)
+    python3 tools/siegeslice.py <field.png> <out-dir> --field <prefix>
+                                    (30 open-field cells, the centre 576x480 at 1:1)
 
 The picture is a 4x4 grid of 96 cells: the top row is the back wall (with
 its two corners), the side columns are the left and right walls, the bottom
@@ -42,6 +44,24 @@ src = sys.argv[1]
 out = sys.argv[2]
 os.makedirs(out, exist_ok=True)
 im = Image.open(src).convert("RGBA")
+
+if "--field" in sys.argv:
+    # Field mode: an open-field ground picture (sprites.ui.field_grid, or a
+    # zone's field_grid). The centre 576x480 of the picture, at 1:1, is the
+    # 6x5 board of 96 px cells; each is written untouched as
+    # <prefix>_<x>_<y>.png. No scaling: the picture is used at its own size.
+    prefix = sys.argv[sys.argv.index("--field") + 1]
+    W, H, T = 6, 5, 96
+    bw, bh = W * T, H * T
+    assert im.width >= bw and im.height >= bh, im.size
+    x0, y0 = (im.width - bw) // 2, (im.height - bh) // 2
+    board = im.crop((x0, y0, x0 + bw, y0 + bh))
+    for y in range(H):
+        for x in range(W):
+            board.crop((x * T, y * T, x * T + T, y * T + T)).save(
+                os.path.join(out, f"{prefix}_{x}_{y}.png"))
+    print(f"{W * H} cells of {T}x{T} from the centre {bw}x{bh} of {im.size[0]}x{im.size[1]} in {out}")
+    sys.exit(0)
 
 if "--grid" in sys.argv:
     # Grid mode: the whole picture is the siege board plus its back band, a

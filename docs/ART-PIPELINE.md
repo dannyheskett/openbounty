@@ -273,6 +273,13 @@ generated from.
   shell has scaled each to the 96 cell. Why not pieces: a per-code piece
   repeats in every cell of its code, so a gatehouse, two different broken
   ends and a moat under the bottom wall only have not been drawable that way.
+- **Field grid** (`art/combat/field/<zone>_<x>_<y>.png`, 30 cells at 96) —
+  the ground of an open fight, one picture per continent (a zone's
+  `field_grid`, REQ-165e). Italia's has come from a supplied 1254 x 1254
+  meadow picture kept at `art/fields/italia.png`: `tools/siegeslice.py
+  --field` has taken its centre 576 x 480 at 1:1 and cut the thirty cells,
+  nothing scaled. The other three continents have no field picture yet and
+  draw the hero's map tile.
 - **The title screen** (`art/ui/splash_title.png`, 256x164) — the eagle has
   been generated (screen route, no border); the words have been drawn by
   `tools/splashtitle.py` from C059 Bold, gold with dark shading, title above

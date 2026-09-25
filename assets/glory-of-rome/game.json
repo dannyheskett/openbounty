@@ -106,6 +106,7 @@
 			"id":	"italia",
 			"name":	"Italia",
 			"map":	"maps/italia.dat",
+			"field_grid":	"art/combat/field/italia",
 			"town_backdrop":	"art/ui/backdrop_town_italia.png",
 			"army_art":	"wandering_army_italia",
 			"width":	64,

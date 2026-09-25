@@ -138,6 +138,12 @@ typedef struct {
     // tile loaded; then the renderer draws these instead of the per-code walls.
     bool      siege_grid_ok;
     Texture2D siege_grid[COMBAT_H + 1][COMBAT_W];
+    // Optional open-field grids, one per zone (a zone's field_grid, else the
+    // pack's): field_grid_ok[z] only when every cell of zone z loaded; then
+    // the renderer draws them as the ground of an open fight there.
+    int        field_grid_zones;
+    bool      *field_grid_ok;                       // heap, field_grid_zones
+    Texture2D *field_grid;                          // heap, zones x COMBAT_H x COMBAT_W
 
     // Combat tileset .
     //   [0]      grass field background
@@ -212,6 +218,9 @@ void sprites_load(Sprites *s, const Resources *res);
 const SpriteAnim *sprites_hero_anim(const Sprites *s, const char *class_id, int kind);
 // The win-cartoon hero tile for a class, else the pack-wide ending tile.
 Texture2D sprites_end_hero(const Sprites *s, const char *class_id);
+// The open-field ground cell (x, y) of zone z, when sprites_field_grid_ok(s, z).
+bool      sprites_field_grid_ok(const Sprites *s, int z);
+Texture2D sprites_field_cell(const Sprites *s, int z, int x, int y);
 void sprites_unload(Sprites *s);
 
 #endif
