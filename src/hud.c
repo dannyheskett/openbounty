@@ -91,16 +91,20 @@ void hud_draw_puzzle_tile(const Game *g, const Sprites *s, int x, int y, bool fr
         // leaving the underlying map-fragment art visible only on
         // caught/found cells.
         // Legacy: the chip (9x6) and its 2 px inset on the 48x34 panel, as the
-        // original. Modern: the chip at the largest whole multiple the panel
-        // holds over that one, in five square cells a chip wide, centred --
-        // never stretched by a different amount in x and y.
+        // original. Modern: the chip at its own size times the largest whole
+        // multiple at which five of them fit the tile both ways, each cell
+        // exactly a chip, the grid centred -- a pack authors the chip for its
+        // tile (Rome's is 18x18, five to a 90 px grid on the 96 px tile).
         int cw = 9, ch = 6, px = 9, py = 6, ins_x = 2, ins_y = 2;
         if (CL_IS_MODERN) {
-            int k = CL_SIDEBAR_W / 48 < CL_TILE_H / 34 ? CL_SIDEBAR_W / 48 : CL_TILE_H / 34;
+            int aw = s->puzzle_cover.width  > 0 ? s->puzzle_cover.width  : 9;
+            int ah = s->puzzle_cover.height > 0 ? s->puzzle_cover.height : 6;
+            int kx = CL_SIDEBAR_W / (5 * aw), ky = CL_TILE_H / (5 * ah);
+            int k = kx < ky ? kx : ky;
             if (k < 1) k = 1;
-            cw = 9 * k; ch = 6 * k; px = py = cw;
+            cw = px = aw * k; ch = py = ah * k;
             ins_x = (CL_SIDEBAR_W - 5 * px) / 2;
-            ins_y = (CL_TILE_H - 5 * py) / 2 + (py - ch) / 2;
+            ins_y = (CL_TILE_H - 5 * py) / 2;
         }
         for (int j = 0; j < 5; j++) {
             for (int i = 0; i < 5; i++) {

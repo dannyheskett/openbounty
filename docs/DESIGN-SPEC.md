@@ -282,9 +282,12 @@ Source: `src/hud.c` `days_tile`.
 **DSGN-0027. Puzzle tile.** The puzzle tile has been the grid art with a
 cover chip (`game.json:sprites.ui.puzzle_cover`) over every piece not yet won,
 laid out 5 × 5 by the engine's `puzzle_grid_entity` (the layout the puzzle
-sheet has used). Each chip has been the legacy 9 × 6 chip at the largest whole
-multiple `k` = max(1, min(`TW` / 48, `TH` / 34)), in five square cells 9`k`
-wide, the grid centred on the tile.
+sheet has used). Each cell has been exactly one chip at the chip's own size
+times the largest whole multiple `k` at which five chips fit the tile both
+ways, `k` = max(1, min(`TW` / (5 × chip width), `TH` / (5 × chip height))),
+the grid centred on the tile, so the covers tile edge to edge. Glory of Rome
+has authored its chip 18 × 18 (ART-SPEC), five to a 90 px grid on the 96 px
+tile.
 Source: `src/hud.c` `hud_draw_puzzle_tile`; `engine/tables.c`
 `puzzle_grid_entity`.
 
