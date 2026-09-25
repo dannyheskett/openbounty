@@ -290,6 +290,76 @@ PagePlace page_place(const char *title, const char *right, Texture2D bd, int n_r
     return P;
 }
 
+// The scene note's room without drawing it: where the words go and how many
+// lines fit, so the pager and the drawer agree.
+typedef struct { ML_Rect r; int top, scale, band, words_x, words_w, per; } SceneGeom;
+static SceneGeom scene_geom(void) {
+    SceneGeom G;
+    memset(&G, 0, sizeof G);
+    ML_Rect in = page_interior();
+    int w = page_full_w(), h = page_full_h();
+    const int room = 2 * page_ring();
+    if (fits(in, w, h)) {
+        int mw = in.w - 2 * room, mh = in.h - 2 * room;
+        if (w > mw) w = mw;
+        if (h > mh) h = mh;
+        G.r = (ML_Rect){ in.x + (in.w - w) / 2, in.y + (in.h - h) / 2, w, h };
+    } else {
+        if (w > in.w) w = in.w;
+        if (h > in.h) h = in.h;
+        G.r = (ML_Rect){ in.x + (in.w - w) / 2, in.y + (in.h - h) / 2, w, h };
+    }
+    G.top = G.r.y + uk_title_h() + UK_BAND;
+    G.scale = G.r.w / ML_BACKDROP_W;
+    if (G.scale > 3) G.scale = 3;
+    if (G.scale < 1) G.scale = 1;
+    G.band = ML_BACKDROP_H * G.scale;
+    int lw = 16 * GW + 2 * UK_INSET;
+    G.words_x = G.r.x + lw + UK_BAND + UK_INSET;
+    G.words_w = G.r.x + G.r.w - UK_INSET - G.words_x;
+    int words_h = G.r.y + G.r.h - (G.top + G.band + UK_BAND) - 2 * UK_INSET;
+    G.per = words_h / uk_line_h();
+    if (G.per < 1) G.per = 1;
+    return G;
+}
+
+int page_scene_pages(const char *words) {
+    SceneGeom G = scene_geom();
+    int n = uk_lines(words, G.words_w);
+    int pages = (n + G.per - 1) / G.per;
+    return pages < 1 ? 1 : pages;
+}
+
+PagePlace page_scene(const char *title, const char *right, Texture2D scene, const char *words, int page) {
+    SceneGeom G = scene_geom();
+    Page p = open_page(page_full_w(), page_full_h(), PAGE_CENTER, KEY_ENTER, KEY_ESCAPE, true, true);
+    ML_Rect r = p.r;
+    int top = uk_title(r.x, r.y, r.w, title, right, NULL);
+    PagePlace P;
+    P.band = uk_scene_band_at(r, top, scene, G.band, G.scale);
+    int by = P.band.scene.y + P.band.scene.h + UK_BAND;
+    int bh = r.y + r.h - by;
+    int lw = 16 * GW + 2 * UK_INSET;
+    P.rows = (ML_Rect){ r.x, by, lw, bh };
+    lattice_band_v(r.x + lw, by, UK_BAND, bh);
+    int wx = r.x + lw + UK_BAND + UK_INSET;
+    P.words = (ML_Rect){ wx, by + UK_INSET, r.x + r.w - UK_INSET - wx, bh - 2 * UK_INSET };
+    // The page's lines: skip the pages before, draw this one, and end its
+    // last line with ".." when more follow.
+    const int lh = uk_line_h();
+    const char *q = words ? words : "";
+    char line[200];
+    for (int i = 0; i < page * G.per && *q; i++)
+        if (bfont_take_line(&q, P.words.w, line, (int)sizeof line) <= 0) break;
+    int y = P.words.y;
+    for (int i = 0; i < G.per && *q; i++, y += lh) {
+        if (bfont_take_line(&q, P.words.w, line, (int)sizeof line) <= 0) break;
+        if (*q && i + 1 == G.per) uk_mark_cut(line, sizeof line, P.words.w);
+        uk_line(line, P.words.x, y, P.words.w, PAL_CLR(WHITE));
+    }
+    return P;
+}
+
 PagePlace page_person(const char *title, const char *right, int n_rows) {
     Page p = open_page(page_full_w(), page_full_h(), PAGE_CENTER, n_rows == 1 ? KEY_ENTER : 0,
                        KEY_ESCAPE, true, true);
