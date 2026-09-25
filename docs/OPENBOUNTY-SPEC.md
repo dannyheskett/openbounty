@@ -895,8 +895,10 @@ flagged (§38).
   held (`GameTryFireEvent`, `engine/game.c`) has spent what the
   preconditions mark `consume`, written each effect's `tile` (a `tile_codes`
   key) onto the map, recorded the id in `events_done`, and queued the scene as
-  a `PIO_NOTE_SCENE` with `REQ_FACE_EVENT`, drawn full width with the pack's
-  art and a single Continue. It has never fired again, and a vista has never
+  a `PIO_NOTE_SCENE` with `REQ_FACE_EVENT`, drawn whole with the pack's art
+  at the largest scale that leaves its words their room and a single
+  Continue (`DESIGN-SPEC.md` DSGN-0127). It has never fired again, and a
+  vista has never
   bounced the hero back. Preconditions have been `spell` (charges), `troop`
   (in the army), `gold` (held) and `artifact` (found), each with a `count` and
   an optional `consume`; troops and artifacts have been held, never spent. An

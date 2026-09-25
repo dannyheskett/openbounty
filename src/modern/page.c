@@ -290,6 +290,33 @@ PagePlace page_place(const char *title, const char *right, Texture2D bd, int n_r
     return P;
 }
 
+PagePlace page_scene(const char *title, const char *right, Texture2D scene, const char *words) {
+    Page p = open_page(page_full_w(), page_full_h(), PAGE_CENTER, KEY_ENTER, KEY_ESCAPE, true, true);
+    ML_Rect r = p.r;
+    int top = uk_title(r.x, r.y, r.w, title, right, NULL);
+    // The picture whole: the largest scale at which every line of the words
+    // still fits beside the one row under it, else the smallest.
+    int lw = 16 * GW + 2 * UK_INSET;
+    int words_w = r.x + r.w - UK_INSET - (r.x + lw + UK_BAND + UK_INSET);
+    int need = uk_lines(words, words_w) * uk_line_h();
+    int scale = 1;
+    for (int s = 3; s >= 1; s--) {
+        if (ML_BACKDROP_W * s > r.w) continue;
+        int band = ML_BACKDROP_H * s;
+        int room = r.y + r.h - (top + band + UK_BAND) - 2 * UK_INSET;
+        if (need <= room) { scale = s; break; }
+    }
+    PagePlace P;
+    P.band = uk_scene_band_at(r, top, scene, ML_BACKDROP_H * scale, scale);
+    int by = P.band.scene.y + P.band.scene.h + UK_BAND;
+    int bh = r.y + r.h - by;
+    P.rows = (ML_Rect){ r.x, by, lw, bh };
+    lattice_band_v(r.x + lw, by, UK_BAND, bh);
+    int wx = r.x + lw + UK_BAND + UK_INSET;
+    P.words = (ML_Rect){ wx, by + UK_INSET, r.x + r.w - UK_INSET - wx, bh - 2 * UK_INSET };
+    return P;
+}
+
 PagePlace page_person(const char *title, const char *right, int n_rows) {
     Page p = open_page(page_full_w(), page_full_h(), PAGE_CENTER, n_rows == 1 ? KEY_ENTER : 0,
                        KEY_ESCAPE, true, true);

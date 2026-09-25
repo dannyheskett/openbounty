@@ -218,10 +218,15 @@ static void draw_column(const Sprites *sp, int x, int y, int w, int h, bool mirr
 // bars beside it, and a lattice divider under it. Whatever the caller puts
 // below starts at scene.y + scene.h + UK_BAND.
 UkScene uk_scene_band(ML_Rect r, int top, Texture2D bd, int band_h) {
+    return uk_scene_band_at(r, top, bd, band_h, r.w / ML_BACKDROP_W);
+}
+
+UkScene uk_scene_band_at(ML_Rect r, int top, Texture2D bd, int band_h, int scale) {
     UkScene L;
     memset(&L, 0, sizeof L);
     L.full = r;
-    L.scale = r.w / ML_BACKDROP_W;
+    L.scale = scale;
+    if (L.scale > r.w / ML_BACKDROP_W) L.scale = r.w / ML_BACKDROP_W;
     if (L.scale > 3) L.scale = 3;
     if (L.scale < 1) L.scale = 1;
     int bw = ML_BACKDROP_W * L.scale, bh = ML_BACKDROP_H * L.scale;

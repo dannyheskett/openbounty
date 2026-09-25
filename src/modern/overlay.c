@@ -179,7 +179,7 @@ static void draw_note_scene(void) {
     const char *title = (hdr && hdr[0]) ? hdr : "";
     for (int i = 0; !title[0] && i < res->castle_count; i++)
         if (resources_castle_is_home(&res->castles[i])) title = res->castles[i].name;
-    PagePlace P = page_place(title, NULL, scene, 1);
+    PagePlace P = page_scene(title, NULL, scene, dialog_body_text());
     uk_flow(P.words.x, P.words.y, P.words.w, P.words.x, 0, P.words.y + P.words.h,
             dialog_body_text(), PAL_CLR(WHITE));
     // Continue is the page's one action: a tap anywhere is it.

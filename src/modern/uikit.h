@@ -107,6 +107,9 @@ typedef struct {
 // pixels, a column in each bar beside it (or the lattice), and a lattice
 // divider under it.
 UkScene uk_scene_band(ML_Rect r, int top, Texture2D backdrop, int band_h);
+// The same band at a scale the caller has chosen (1..3, never wider than r):
+// a scene note picks the largest at which its picture stands whole.
+UkScene uk_scene_band_at(ML_Rect r, int top, Texture2D backdrop, int band_h, int scale);
 // A figure standing on the backdrop's bottom edge at 2x, `x` screen pixels
 // in from the backdrop's left.
 void    uk_scene_figure(const UkScene *L, Texture2D t, int x);
