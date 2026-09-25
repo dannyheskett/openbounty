@@ -311,7 +311,10 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
             if (drawn && CL_IS_MODERN) {
                 if (P[i].shot == STARTUP_SHOT_LOAD)       tap_row(P[i].name, TOUCH_LIST_STARTUP, 5);
                 if (P[i].shot == STARTUP_SHOT_DIFFICULTY) tap_row(P[i].name, TOUCH_LIST_STARTUP, 4);
-                if (P[i].shot == STARTUP_SHOT_NAME)       tap_row(P[i].name, TOUCH_LIST_STARTUP, 0);
+                if (P[i].shot == STARTUP_SHOT_NAME) {     // Continue, then Back
+                    tap_row(P[i].name, TOUCH_LIST_STARTUP, 0);
+                    tap_row(P[i].name, TOUCH_LIST_STARTUP, 1);
+                }
             }
         }
     }

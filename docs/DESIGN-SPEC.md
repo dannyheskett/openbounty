@@ -1574,10 +1574,16 @@ own (DSGN-0072) titled with the class:
 - The letter grid (DSGN-0154) has shown while a finger or the pad has been
   the device last used, and `prompts.text_hint` otherwise; typed letters have
   been taken either way.
-- Back has been the foot row; Down from the grid's last row has reached it.
+- The foot has held two rows, Continue (`banners.castle_continue`) then
+  Back; Down from the grid's last row has reached Continue, Down again Back,
+  Up has climbed back. Continue, the grid's OK or Enter has finished the
+  name.
 - A name has held at most 10 letters, digits and spaces, its first letter a
   capital, and an empty name has become the default.
 - Escape, Back or a tap outside has returned to the difficulty.
+- A tap that has closed one start-up page has been forgotten before the
+  next one's first read (`touch_forget_tap`), so no page has answered the
+  tap that opened it.
 Source: `src/startup.c` `draw_name_modern`, `run_name_modern`,
 `name_char_allowed`.
 

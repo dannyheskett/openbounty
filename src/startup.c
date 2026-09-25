@@ -121,6 +121,9 @@ static void advance_input_frame(void) {
     // Injected (touch) keys have the same one-frame-edge hazard: an ESC
     // injected for this screen must not re-fire in the next screen's loop.
     input_host_clear_injected();
+    // Nor may the tap that closed this screen answer the next one's first
+    // read, which comes before it has drawn a frame.
+    touch_forget_tap();
 }
 
 // Every startup screen opens with this: keys pressed during the screen before,
@@ -883,19 +886,22 @@ static bool run_difficulty_modern(const Resources *res, const Sprites *sprites,
     return false;
 }
 
-// The name page's Back row.
-static bool name_back_row(void *ctx, int i, char *label, char *right, int cap) {
-    (void)i;
-    snprintf(label, (size_t)cap, "%s", (const char *)ctx);
-    ml_exit_hint(right);
+// The name page's foot: Continue, then Back.
+typedef struct { const char *cont, *back; } NameFoot;
+static bool name_foot_row(void *ctx, int i, char *label, char *right, int cap) {
+    const NameFoot *f = (const NameFoot *)ctx;
+    snprintf(label, (size_t)cap, "%s", i == 0 ? f->cont : f->back);
+    if (i == 0) right[0] = '\0';
+    else        ml_exit_hint(right);
     return true;
 }
+#define NAME_FOOT_ROWS 2
 
 // Name: a menu page over the painting -- the field, the letter grid while a
 // finger or a pad is what the player last used, and Back on the foot.
 static void draw_name_modern(const Resources *res, const Sprites *sprites,
                              const ClassDef *cls, const char *name_buf, int name_len,
-                             bool caret, bool selector, const TextSel *ts, bool on_back) {
+                             bool caret, bool selector, const TextSel *ts, int foot) {
     new_game_backdrop(sprites, cls);
     ML_Rect b = page_menu_body(cls ? cls->name : "", NULL, 0);
     const int lh = uk_line_h();
@@ -910,7 +916,7 @@ static void draw_name_modern(const Resources *res, const Sprites *sprites,
     ty += lh + UK_INSET;
     lattice_band_h(b.x, ty - UK_BAND, b.w, UK_BAND);
 
-    int foot_y = b.y + b.h - ml_list_height(1);
+    int foot_y = b.y + b.h - ml_list_height(NAME_FOOT_ROWS);
     if (selector) {
         // The letter grid takes what the page leaves it.
         int room = foot_y - UK_BAND - ty - UK_INSET;
@@ -918,7 +924,7 @@ static void draw_name_modern(const Resources *res, const Sprites *sprites,
         int cw = textsel_cell_w(), chh = textsel_cell_h();
         int gx = b.x + (b.w - textsel_w(false, cw)) / 2;
         TextSel shown = *ts;
-        if (on_back) shown.cursor = -1;
+        if (foot >= 0) shown.cursor = -1;
         textsel_draw(&shown, gx, ty + UK_INSET / 2, cw, chh,
                      PAL_CLR(YELLOW), uk_ink(), TOUCH_LIST_TEXTSEL);
     } else {
@@ -927,8 +933,9 @@ static void draw_name_modern(const Resources *res, const Sprites *sprites,
                 res->ui.prompt_text_hint, PAL_CLR(WHITE));
     }
     lattice_band_h(b.x, foot_y - UK_BAND, b.w, UK_BAND);
-    ml_list_draw(b.x, foot_y, b.w, ml_list_height(1), 1, on_back ? 0 : -1, name_back_row,
-                 (void *)(res ? res->ui.gm_back : "Back"), TOUCH_LIST_STARTUP, uk_ink());
+    NameFoot nf = { res ? res->banners.castle_continue : "Continue", res ? res->ui.gm_back : "Back" };
+    ml_list_draw(b.x, foot_y, b.w, ml_list_height(NAME_FOOT_ROWS), NAME_FOOT_ROWS, foot,
+                 name_foot_row, &nf, TOUCH_LIST_STARTUP, uk_ink());
 }
 
 // Name: the field, and the way to type into it. Typed letters are taken
@@ -941,30 +948,32 @@ static bool run_name_modern(const Resources *res, const Sprites *sprites,
     int  name_len = 0;
     double blink = 0;
     TextSel ts = { 0, false };
-    bool on_back = false;       // the grid's cursor has gone down to Back
+    int foot = -1;              // -1 the grid; 0 Continue; 1 Back
 
     while (!frame_host_should_close()) {
         bool selector = input_last_device() != INPUT_DEV_KEYS;
         bool done = false;
-        int back = touch_tapped_row(TOUCH_LIST_STARTUP);
-        if (input_key_pressed(KEY_ESCAPE) || back == 0 ||
-            (on_back && (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER)))) {
+        bool enter = input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER);
+        int tapped = touch_tapped_row(TOUCH_LIST_STARTUP);
+        if (input_key_pressed(KEY_ESCAPE) || tapped == 1 || (foot == 1 && enter)) {
             out->action = STARTUP_BACK;      // to the difficulty
             advance_input_frame();
             return true;
         }
-        if (selector && on_back) {
-            // Back is under the grid: Up returns to the grid's last row.
-            if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_KP_8)) on_back = false;
+        if (tapped == 0 || (foot == 0 && enter)) done = true;
+        if (selector && foot >= 0) {
+            // On the foot: Up climbs back towards the grid, Down goes on to Back.
+            if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_KP_8)) foot--;
+            else if (foot == 0 && (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2))) foot = 1;
         } else if (selector) {
-            // Down from the grid's last row reaches Back.
+            // Down from the grid's last row reaches Continue.
             int cols = textsel_cols(false), n = textsel_count(false);
             bool last_row = ts.cursor / cols == (n - 1) / cols;
-            if (last_row && (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2))) on_back = true;
-            else done = textsel_input(&ts, name_buf, &name_len, (int)sizeof name_buf,
-                                      TOUCH_LIST_TEXTSEL, name_char_allowed);
+            if (last_row && (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2))) foot = 0;
+            else if (!done) done = textsel_input(&ts, name_buf, &name_len, (int)sizeof name_buf,
+                                                 TOUCH_LIST_TEXTSEL, name_char_allowed);
         }
-        if (!selector && (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER))) done = true;
+        if (!selector && enter) done = true;
         if (done) {
             if (name_len == 0) {
                 safe_copy(name_buf, sizeof name_buf, res->world.default_name);
@@ -996,7 +1005,7 @@ static bool run_name_modern(const Resources *res, const Sprites *sprites,
         bool caret = (int)(blink * 2.0) & 1;
 
         frame_begin(rt);
-        draw_name_modern(res, sprites, cls, name_buf, name_len, caret, selector, &ts, on_back);
+        draw_name_modern(res, sprites, cls, name_buf, name_len, caret, selector, &ts, foot);
         frame_end(rt);
     }
     out->action = STARTUP_QUIT;
@@ -1607,7 +1616,7 @@ bool startup_gallery_draw(StartupShot shot, const Resources *res,
         if (CL_IS_MODERN) {
             bool selector = input_last_device() != INPUT_DEV_KEYS;
             TextSel ts = { 0, false };
-            draw_name_modern(res, sprites, cls, "Dan", 3, true, selector, &ts, false);
+            draw_name_modern(res, sprites, cls, "Dan", 3, true, selector, &ts, -1);
         } else {
             draw_create_game_legacy(res, sprites, cls ? cls->name : "", "Dan", false, true, 1);
         }
