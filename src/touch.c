@@ -143,6 +143,11 @@ void touch_region_row(int x, int y, int w, int h, int list_id, int row) {
 int touch_tapped_row(int list_id) {
     return (s_tapped_list == list_id) ? s_tapped_row : -1;
 }
+void touch_forget_tap(void) {
+    s_tapped_list = 0;
+    s_tapped_row  = -1;
+    s_tapped_grid = 0;
+}
 
 void touch_region_grid(int x, int y, int w, int h,
                        int tile_w, int tile_h, int grid_id) {

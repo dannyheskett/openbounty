@@ -68,6 +68,9 @@ void touch_region_row(int x, int y, int w, int h, int list_id, int row);
 // `step` pixels (injecting Up/Down), and a tap on it resolves on release.
 void touch_region_scroll(int x, int y, int w, int h, int step);
 int  touch_tapped_row(int list_id);   // row tapped, -1 = none this frame
+// Forget this frame's tap: a page that closes on it must not leave it for
+// the page that opens next, which reads before it has drawn a frame.
+void touch_forget_tap(void);
 
 // Absolute-cell grid (the combat target picker): a tap reports the tile it
 // landed on instead of a direction, so the screen can jump its cursor

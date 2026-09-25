@@ -38,9 +38,15 @@ void plat_ios_set_screen(int w, int h, int origin_x, int origin_y, float scale) 
     atomic_store(&s_origin_y, origin_y);
 }
 
+// A press the game has not sampled yet. The game looks once a frame, and a
+// light tap can begin and end between two looks; the press is kept until a
+// read has seen a contact, so no tap is ever shorter than a frame.
+static _Atomic bool s_unread_press;
+
 void plat_ios_set_touch(bool down, int x, int y) {
     unsigned seq = atomic_load(&s_touch_seq);
     atomic_store(&s_touch_seq, seq + 1);        // odd: update in progress
+    if (down) atomic_store(&s_unread_press, true);
     s_touch_down = down;
     // Into the game's space: it draws inside the safe area, so a contact is
     // measured from the same origin the frame is.
@@ -69,6 +75,11 @@ bool plat_ios_touch(int *x, int *y) {
         int tx = s_touch_x, ty = s_touch_y;
         unsigned b = atomic_load(&s_touch_seq);
         if (a != b) continue;                   // changed under us
+        // A press that came and went since the last read is reported once as
+        // a contact, so the game sees its press edge and, next read, its
+        // release.
+        bool unread = atomic_exchange(&s_unread_press, false);
+        if (!down && unread) down = true;
         if (x) *x = tx;
         if (y) *y = ty;
         return down;

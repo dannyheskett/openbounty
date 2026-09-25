@@ -123,8 +123,12 @@ extern "C" void plat_ios_log_stdout(void);
 
 // --- touches: one contact, in the game's coordinate space -------------------
 
-- (void)publish:(UIEvent *)event {
-    UITouch *t = [[event allTouches] anyObject];
+// The contact is the touch this view was given, never one read out of the
+// event's whole set: event.allTouches can carry a finger resting elsewhere
+// on the glass, and reading that one after a tap lifted left the game seeing
+// a contact that never released.
+- (void)publish:(NSSet<UITouch *> *)touches {
+    UITouch *t = [touches anyObject];
     if (!t || t.phase == UITouchPhaseEnded || t.phase == UITouchPhaseCancelled) {
         plat_ios_set_touch(false, 0, 0);
         return;
@@ -135,16 +139,16 @@ extern "C" void plat_ios_log_stdout(void);
 }
 
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    (void)touches; [self publish:event];
+    (void)event; [self publish:touches];
 }
 - (void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    (void)touches; [self publish:event];
+    (void)event; [self publish:touches];
 }
 - (void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    (void)touches; [self publish:event];
+    (void)event; [self publish:touches];
 }
 - (void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    (void)touches; [self publish:event];
+    (void)event; [self publish:touches];
 }
 
 @end

@@ -627,7 +627,8 @@ flagged (§38).
   capitalised), then difficulty (Easy/Normal/Hard/Impossible, shown with
   starting days and score multiplier) on the same panel, then an intro
   banner. Modern: difficulty, then the name, each a page whose Back has
-  stepped one screen back (REQ-532), and no intro.
+  stepped one screen back (REQ-532), the name page ending in Continue and
+  Back, and no intro.
 - **REQ-166.** A pack has held a catalog of 256 worlds, selected by an 8-bit
   index. `--seed N` has supplied that index directly (`0`–`255`); an
   out-of-range, negative, or unparseable value has been a hard error (exit 2,
