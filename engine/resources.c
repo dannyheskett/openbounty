@@ -529,6 +529,7 @@ static void parse_zones(Resources *res, cJSON *arr) {
                 copy_str(ev->scene, sizeof ev->scene, json_str(e, "scene", ""));
                 copy_str(ev->title, sizeof ev->title, json_str(e, "title", ""));
                 copy_str(ev->body, sizeof ev->body, json_str(e, "body", ""));
+                copy_str(ev->hint, sizeof ev->hint, json_str(e, "hint", ""));
                 cJSON *jrq = cJSON_GetObjectItem(e, "requires");
                 int nrq = cJSON_IsArray(jrq) ? cJSON_GetArraySize(jrq) : 0;
                 ev->reqs = nrq > 0 ? calloc((size_t)nrq, sizeof *ev->reqs) : NULL;

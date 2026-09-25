@@ -1250,6 +1250,10 @@ typedef struct {
     int  scene_index;        // into Resources.event_scenes (-1 when none)
     char title[RES_NAME_LEN];
     char body[RES_BANNER_LEN];
+    // What the place says while a precondition is still missing: a plain
+    // note under the vista's title, each time the hero steps here. Empty:
+    // nothing, the tile is silent until the vista fires.
+    char hint[RES_BANNER_LEN];
     int  req_count;       ResEventReq    *reqs;
     int  effect_count;    ResEventEffect *effects;
 } ResZoneEvent;

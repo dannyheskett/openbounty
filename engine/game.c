@@ -1643,7 +1643,11 @@ bool GameTryFireEvent(Game *g, Map *map, Fog *fog, int x, int y) {
         if (ev->x != x || ev->y != y) continue;
         if (GameEventFired(g, g->position.zone, ev->id)) return false;
         for (int q = 0; q < ev->req_count; q++)
-            if (event_req_held(g, &ev->reqs[q]) < ev->reqs[q].count) return false;
+            if (event_req_held(g, &ev->reqs[q]) < ev->reqs[q].count) {
+                // Not yet: the place says so, when the pack gave it words.
+                if (ev->hint[0]) player_io_note(g, ev->title[0] ? ev->title : NULL, ev->hint);
+                return false;
+            }
         if (!GameReserveEventsDone(g, g->events_done_count + 1)) return false;
         for (int q = 0; q < ev->req_count; q++) event_req_spend(g, &ev->reqs[q]);
         for (int e = 0; e < ev->effect_count; e++) {

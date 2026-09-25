@@ -665,6 +665,7 @@
 					"y":	29,
 					"scene":	"art/scenes/causeway.png",
 					"title":	"The Temple of Ocean",
+					"hint":	"The altar of Ocean stands bare, and the sea keeps the islet beyond the rocks. The priests speak of a prayer that parts the water, said over the two relics of Gaul laid together on this stone.",
 					"body":	"You lay the Gladius and the Anchor on the altar and speak the prayer. The sea draws back off the rocks, the crag on the near shore of the island splits and falls away, and a paved causeway stands where the water was.",
 					"requires":	[{
 							"artifact":	"sword"
