@@ -81,10 +81,30 @@ TEST without_the_rule_evade_is_always_allowed(void) {
     PASS();
 }
 
+
+TEST the_parked_boat_is_a_way_out(void) {
+    // Boxed in on land, with the hero's own boat on the water beside them:
+    // stepping onto it boards it, so Evade stands.
+    EvFx fx = ev_make(true);
+    block_all_but(&fx, 1, 0);
+    MAP_TILE(fx.m, 9, 8).terrain = TERRAIN_WATER;   // no foot goes there ...
+    ASSERT_FALSE(GameFoeCanEvade(fx.g, fx.m));
+    fx.g->boat.has_boat = true;                     // ... but the boat waits there
+    fx.g->boat.x = 9; fx.g->boat.y = 8;
+    strcpy(fx.g->boat.zone, "z");
+    fx.g->travel_mode = TRAVEL_WALK;
+    ASSERT(GameFoeCanEvade(fx.g, fx.m));
+    strcpy(fx.g->boat.zone, "elsewhere");           // a boat left in another zone is no way out
+    ASSERT_FALSE(GameFoeCanEvade(fx.g, fx.m));
+    ev_free(&fx);
+    PASS();
+}
+
 SUITE(unit_foe_evade_suite) {
     RUN_TEST(open_ground_allows_evade);
     RUN_TEST(boxed_in_blocks_evade);
     RUN_TEST(one_free_diagonal_is_enough);
     RUN_TEST(an_object_or_a_foe_is_not_free);
     RUN_TEST(without_the_rule_evade_is_always_allowed);
+    RUN_TEST(the_parked_boat_is_a_way_out);
 }

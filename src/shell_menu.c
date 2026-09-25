@@ -3,6 +3,7 @@
 #include "shell_menu.h"
 #include "layout.h"
 
+#include "game.h"
 #include "savegame.h"
 #include "savepath.h"
 #include "ui.h"
@@ -42,7 +43,20 @@ bool menu_load(void *ud) {
         return false;
     }
     SaveResult r = SaveGameRead(path, c->game, c->map, c->fog);
-    if (r == SAVE_OK) toast_show(c->res->ui.toast_load_ok);
+    if (r == SAVE_OK) {
+        // A save restores the Game and the fog, never the Map: bring the
+        // saved zone onto the screen with its placements and consumed tiles,
+        // exactly as the start-up load does (src/main.c).
+        const char *zone = c->game->position.zone[0] ? c->game->position.zone
+                                                     : c->res->world.starting_zone;
+        if (!GameReloadZoneMap(c->game, c->map, zone)) {
+            toast_with_reason(c->res->ui.toast_load_failed, zone);
+            return false;
+        }
+        c->game->position.last_x = c->game->position.x;
+        c->game->position.last_y = c->game->position.y;
+        toast_show(c->res->ui.toast_load_ok);
+    }
     else toast_with_reason(c->res->ui.toast_load_failed, SaveResultText(r));
     return r == SAVE_OK;
 }

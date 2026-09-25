@@ -961,7 +961,7 @@ title:;
     // from the save.
     const char *load_zone = game.position.zone;
     if (!load_zone[0]) load_zone = res.world.starting_zone;
-    if (!MapLoadZoneWithPlacements(&map, &res, load_zone, &game)) {
+    if (!GameReloadZoneMap(&game, &map, load_zone)) {
         gfx_target_free(render_target_startup);
         sprites_unload(&sprites);
         bfont_shutdown();
@@ -972,10 +972,6 @@ title:;
         pack_stack_clear();
         return 1;
     }
-    // Apply consumed-tile mutations (artifact pickups, removed alcoves, etc.)
-    // for the freshly-loaded zone. GameSwitchZone does this on later loads;
-    // this is the initial-load equivalent.
-    GameApplyTileMutations(&game, &map, load_zone);
     game.position.last_x = game.position.x;
     game.position.last_y = game.position.y;
     game.hud_visible = true;

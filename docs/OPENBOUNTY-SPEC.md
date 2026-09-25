@@ -2267,9 +2267,14 @@ golden-digest regression tests have pinned the formulas.
   updated or replaced the golden fixture (`tests/fixtures/save_v1.dat`) and
   the round-trip regression test. A save written by another pack has been
   refused (`SAVE_ERR_PACK`).
-- **REQ-415.** On load, the caller has re-applied the `consumed` tile
-  mutations to the loaded map (`GameApplyTileMutations`) and restored
-  per-continent fog, so consumed tiles render and behave as plain terrain.
+- **REQ-415.** A save has restored the `Game` and the fog, never the `Map`:
+  after every read, at start-up (`src/main.c`) and from the game menu
+  (`src/shell_menu.c menu_load`) alike, the caller has brought the saved
+  zone back with `GameReloadZoneMap`, which loads the zone with the game's
+  placements stamped and re-applies the `consumed` tile mutations
+  (`GameApplyTileMutations`), so consumed tiles render and behave as plain
+  terrain and an object the loaded game has not yet taken stands again.
+  `GameSwitchZone` has gone through the same call.
 
 ---
 
@@ -2513,7 +2518,9 @@ every menu; this section has held the rules.
   opened the modern foe view (`DESIGN-SPEC.md` DSGN-0132) with Fight and
   Evade. With `game.json` `foes.evade_needs_free_square` set,
   `GameFoeCanEvade` has allowed Evade only while one of the 8 squares around
-  the hero is walkable for how they travel and has no object or foe on it;
+  the hero is walkable for how they travel and has no object or foe on it,
+  the hero's own parked boat in this zone counting as such a square for a
+  hero on foot, since stepping onto it boards it;
   the engine has recorded the result for the pending decision
   (`pending_foe_evade_blocked`, judged after any bounce back), and autoplay
   and the demo have had to fight when it has been set. Packs without the

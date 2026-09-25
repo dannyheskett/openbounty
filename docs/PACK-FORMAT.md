@@ -72,7 +72,7 @@ other absent block has parsed as empty or as its defaults.
 | `contract`    | object   | Contract cycle parameters. |
 | `audiences`   | object   | Modern home-castle audience pages (Promotion, Blessing, Tribute). |
 | `magic`       | object   | `rites_per_zone`: each zone's temple has taught spells only once that zone's rites are known (OPENBOUNTY-SPEC REQ-314a). |
-| `foes`        | object   | `evade_needs_free_square`: Evade has been offered only with a free square beside the hero (REQ-430o). |
+| `foes`        | object   | `evade_needs_free_square`: Evade has been offered only with a free square beside the hero, the hero's own parked boat counting as one (REQ-430o). |
 | `portraits`   | array    | The people of the modern place screens: each an `id` and an `anim` list of frames, named by a town's `headman` / `informant` / `townhead`, a zone's `boatmaster` / `pontifex` / `siegemaster` and a castle's `special` block. |
 | `credits`     | object   | Credits-screen lines. |
 | `ending`      | object   | Victory cartoon parameters. |
