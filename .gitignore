@@ -49,7 +49,7 @@ tmp/
 save.dat
 *.sav
 
-# Splicer backup (created by tools/splice_overlays.c)
+# Editor backups of JSON
 *.json.bak
 
 # Tooling scratch
@@ -58,5 +58,10 @@ __pycache__/
 *.pyc
 *:Zone.Identifier
 
-# Local Claude Code harness state (session locks, scheduled tasks).
-.claude/
+# Signing material, never committed (ios/app-store-assets/TESTFLIGHT.md)
+*.key
+*.csr
+*.cer
+*.pem
+*.p12
+*.p8

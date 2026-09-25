@@ -99,7 +99,7 @@ Download it as `profile.mobileprovision`.
 | Field | Value |
 | --- | --- |
 | Platform | iOS |
-| Name | `Glory of Rome` (see [LISTING.md](LISTING.md) for fallbacks if taken) |
+| Name | `Glory of Rome` |
 | Primary Language | English (U.S.) |
 | Bundle ID | `com.danheskett.gloryofrome` |
 | SKU | `gloryofrome` |

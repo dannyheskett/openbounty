@@ -93,8 +93,7 @@ OUT := build/$(BUILD)/openbounty
 # build/$(BUILD)/assets/<name>.openbounty, IN THE BINARY'S OWN DIRECTORY so
 # discovery step 3 (<exe-dir>/assets/*.openbounty) finds them next to the
 # binary from any cwd. Built per-config because the binary lives under
-# build/$(BUILD)/. Today only assets/kings-bounty/ exists; the pattern
-# handles N games.
+# build/$(BUILD)/. Every top-level dir under assets/ becomes one pack.
 PACK_NAMES := $(notdir $(patsubst %/,%,$(wildcard assets/*/)))
 PACK_DIR   := build/$(BUILD)/assets
 PACKS := $(addprefix $(PACK_DIR)/,$(addsuffix .openbounty,$(PACK_NAMES)))
@@ -603,9 +602,6 @@ $(ANDROID_AAB): $(ANDROID_LIB) $(ANDROID_DEX) $(BUNDLETOOL) $(PLAY_KEYSTORE) \
 # Assembled by hand (clang + Info.plist + zip), no Xcode project, mirroring the
 # no-Gradle Android target. The Metal shader is compiled at RUNTIME from source
 # (ios/gfx_metal.mm), so no offline Metal compiler is needed either.
-#
-# CHECKPOINT 2 of the spike: this builds the app shell and the renderer only --
-# the game's C is not linked yet, and the app draws the renderer self-test.
 # ---------------------------------------------------------------------------
 IOS_MIN        ?= 15.0
 IOS_APP_NAME   := GloryOfRome

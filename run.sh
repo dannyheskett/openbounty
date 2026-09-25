@@ -6,12 +6,8 @@ make
 args=()
 if [[ "${1:-}" == "--record" || "${1:-}" == "-r" ]]; then
     dir="$(mktemp -d -t openbounty-record-XXXXXX)"
-    echo "[run.sh] recording to $dir"
-    args+=(--record "$dir")
-    shift
-fi
-if [[ "${1:-}" == "--encode" || "${1:-}" == "-e" ]]; then
-    args+=(--encode-movie)
+    echo "[run.sh] recording to $dir/movie.mp4"
+    args+=(--movie "$dir/movie.mp4")
     shift
 fi
 

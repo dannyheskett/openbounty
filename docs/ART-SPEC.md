@@ -62,17 +62,17 @@ the size in the "authored" column.
 
 ### Tile-shaped — all 96 x 96
 
-| category | count | path |
-|---|---|---|
-| terrain and map objects | 205 | `art/tiles/` (a zone with `tile_set` draws its terrain from `art/tiles/<set>/` instead; objects stay shared) |
-| zone terrain sets | 530 | `art/tiles/africa/`, `galliae/`, `oriens/` |
-| troop sprites and their animation frames | 116 | `art/troops/` |
-| villain portraits and frames | 136 | `art/villains/` |
-| character portraits and frames | 228 | `art/portraits/` |
-| hero figures and walk frames | 20 | `art/classes/` |
-| boat frames | 4 | `art/sprites/` |
-| obstacles, castle spike, cursors | 8 | `art/combat/` |
-| HUD panels, inventory icons, location figures | 101 | `art/ui/` |
+| category | path |
+|---|---|
+| terrain and map objects | `art/tiles/` (a zone with `tile_set` draws its terrain from `art/tiles/<set>/` instead; objects stay shared) |
+| zone terrain sets | `art/tiles/africa/`, `galliae/`, `oriens/` |
+| troop sprites and their animation frames | `art/troops/` |
+| villain portraits and frames | `art/villains/` |
+| character portraits and frames | `art/portraits/` |
+| hero figures and walk frames | `art/classes/` |
+| boat frames | `art/sprites/` |
+| obstacles, castle spike, cursors | `art/combat/` |
+| HUD panels, inventory icons, location figures | `art/ui/` |
 
 The castle battlefield has been the one exception: 36 cells at 32 x 32 in
 `art/combat/siege/`, scaled to the cell (PACK-FORMAT, "Siege grid").
@@ -87,10 +87,16 @@ One square size has meant it is correct in all of them.
 |---|---|---|---|
 | chrome frame | 320 x 200 | none: drawn in code (section 3) | -- |
 | splash title | 320 x 200 | **256 x 164** (RD Pro cap) | `art/ui/` |
+| title battle and title words | 320 x 200 | **256 x 164** (RD Pro cap) | `art/ui/` |
+| title eagle | -- | **96 x 164** | `art/ui/` |
 | splash logo | 320 x 84 | **320 x 84** | `art/ui/` |
 | status bar strip | 320 x 5 | none: a modern screen has no status bar | -- |
 | class picker | 288 x 184 | **256 x 164** (RD Pro cap) | `art/ui/` |
+| class picker, one frame per figure picked | 288 x 184 | **256 x 164** (4) | `art/ui/` |
 | location backdrops | 240 x 102 | **240 x 102** | `art/ui/` |
+| disgraced scenes, one per class | 240 x 102 | **240 x 102** (4) | `art/ui/` |
+| one-time vistas | 240 x 102 | **240 x 102** | `art/scenes/` |
+| scene column capital, shaft, base | -- | **28 x 9**, **28 x 45**, **28 x 8** | `art/ui/` |
 | ending win / lose, promotion | 144 x 170 | **144 x 170** | `art/ui/` |
 | class portraits | 96 x 102 | **192 x 204** | `art/classes/` (4) |
 | class-select highlight | 42 x 44 | **42 x 44** | `art/ui/` |

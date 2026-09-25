@@ -19,8 +19,8 @@ using only what a player can see.
 - **DM-001.** Demo mode has lived in `demo/` as a SIBLING of `autoplay/`:
   engine-only (no `src/`, no raylib) and independent of autoplay (no include
   in either direction). Both properties have been build-enforced: demo
-  objects have compiled with only `-Idemo -Iengine/headless -Iengine/include`
-  (`Makefile` `DEMO_CFLAGS`) and linked in the library-boundary check beside
+  objects have compiled with only `-Idemo -Iengine/headless -Iengine/include
+  -Ithird_party/cjson` (`Makefile` `DEMO_CFLAGS`) and linked in the library-boundary check beside
   the autoplay objects (`Makefile` `$(LIBTEST_STAMP)`), so a cross-fence
   include or a shell-symbol reference has failed `make all`.
 - **DM-002.** The one shell adapter allowed to know demo has been
@@ -87,10 +87,12 @@ using only what a player can see.
 - **DM-030.** **All configuration and diagnostics have been command-line
   flags; the project has taken NO CONFIGURATION from environment variables**
   (the same rule AP-170 has recorded for autoplay). The one environment read
-  anywhere in the project has been the engine's user-data directory lookup
+  in the game's own code has been the engine's user-data directory lookup
   (`engine/savepath.c`: `XDG_DATA_HOME` / `HOME` on Linux, `HOME` on macOS,
   `APPDATA` on Windows), the platform's own convention for locating a user's
-  data directory, not a knob, and outside demo mode entirely. Demo's per-tick
+  data directory, not a knob, and outside demo mode entirely; the release
+  scripts and the Makefile's Android signer have read the CI runner's
+  environment, outside the game. Demo's per-tick
   decision trace has been gated by the existing `--verbose` flag, set once at boot
   (`src/main.c` → `demo_set_verbose`, beside autoplay's
   `ob_diag_set_verbose`) and read through `demo_verbose()`

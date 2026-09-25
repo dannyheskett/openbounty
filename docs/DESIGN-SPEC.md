@@ -299,7 +299,8 @@ Source: `src/hud.c` `hud_key_hint`, `HUD_KEYS`; `src/modern/rail.c` `ROWS`.
 
 **DSGN-0029. Column taps.** Each row has been a tiled tap target exactly its
 drawn rect, registered only while no view, message or question has been up.
-The left column has registered before the right.
+The right column has registered before the left, the order the frame has
+drawn them in.
 Source: `src/modern/rail.c` `a_page_is_open`, `rail_draw`; `src/hud.c`
 `hud_draw`; `src/uitouch.c` `ui_tile_row`.
 
@@ -1647,8 +1648,8 @@ every modern screen into `<dir>` as a PNG with no input:
   frame, the map, the battlefield, and every page's anchor, content and outer
   rects, floating or filling.
 - It has checked that a tap has reached the rows each screen has drawn, and
-  that a tap on a page's outside and on its exit row has done what the page
-  has registered.
+  that a tap on a page's outside and on its ring has done what the page has
+  registered; the exit rows have been checked on the screens that name them.
 
 Inspect every affected PNG.
 

@@ -106,8 +106,9 @@ mover, recruiter, and their measurement layer.
 - **AP-010.** A run has begun in `src/main.c` (the `--autoplay --headless`
   path, dispatched before any window is created), which has built an
   `AutoplayConfig`, `seed_index` (the `--seed N` catalog world `0`–`255`, else
-  `AUTOPLAY_DEFAULT_SEED_INDEX = 1`, `autoplay/autoplay.h`) and the pack dir,
-  and called `autoplay/autoplay.c autoplay_run`. The oracle has been ONE
+  `AUTOPLAY_DEFAULT_SEED_INDEX = 1`, `autoplay/autoplay.h`) and the pack dir
+  (`--pack`, else the loose `assets/kings-bounty` tree of a source checkout,
+  not discovery), and called `autoplay/autoplay.c autoplay_run`. The oracle has been ONE
   mechanism: a single snapshot-tree search (`autoplay/search.c search_run`,
   §6) run once from the boot state. Greedy play has not been a separate
   stage: it has been the tree's FIRST DESCENT, taken by following the step
@@ -382,15 +383,15 @@ mover, recruiter, and their measurement layer.
   fight whose search fails gold-bound never reaches a wait site (there is no
   plan to realize), so under the armed flag `exec_recruit` bisects the
   smallest budget that buys any winner (the same funnel in existence mode),
-  verifies the weekly NET income can deliver it within the calendar with one
-  week of slack, plays for it (`exec_ensure_gold`), and searches again on the
-  richer world, all rolled back with the attempt if the fight still cannot be
-  won (mechanics in AP-162). The funded wait has acted only on the engine's
-  own arithmetic: it commits calendar to a shortfall exactly when the weekly
-  net (`GameWeeklyNetGold`) can cover that shortfall within the remaining
-  days with a week of slack, and refuses a need past the income ceiling, so
-  the wait is bounded by what the pack's economy can deliver, never
-  speculative. The principle behind back-stacking all waiting to the
+  plays the income weeks that shortfall needs (`exec_ensure_gold`, with no
+  calendar look-ahead: the engine's own TIME failure has ended a wait the
+  days cannot cover), and searches again on the richer world, all rolled
+  back with the attempt if the fight still cannot be won (mechanics in
+  AP-162). The funded wait has acted only on the engine's own arithmetic: it
+  commits calendar to a shortfall only while the weekly net
+  (`GameWeeklyNetGold`) is positive, waits exactly the weeks that net needs,
+  and refuses a need the income cannot meet, so the wait is bounded by what
+  the pack's economy can deliver, never speculative. The principle behind back-stacking all waiting to the
   fixpoint: a fight strangled only by calendar (an endgame lord an in-line
   attempt cannot fund) becomes winnable when the whole run's accumulated
   income is made available at the proven end, at the cost of admitting more
@@ -398,6 +399,10 @@ mover, recruiter, and their measurement layer.
   proven useless, so it never lengthens a run that is clearing on its own.
 - **AP-055.** KEYSTONE PROMOTION AND CYCLE LOGISTICS, two mechanisms that
   have run at each cycle start, before the attempt loop:
+  - the FIRST-VILLAIN KEYSTONE (`planner_candidates`, `s_keystone_kind`):
+    while no villain has been caught, the cheapest villain in the hero's zone
+    has gone to the front of the order, so the contract economy starts
+    early;
   - the ALCOVE KEYSTONE PROMOTION (`planner_candidates`): the alcove unlocks
     the whole spell economy (AP-081), so an alcove still unmet with the
     wallet already covering its cost (`GameAlcoveCost`), whose FIRST failure
@@ -685,7 +690,7 @@ mover, recruiter, and their measurement layer.
   then fought (`exec_fight`). The same primitive has handled a wandering foe,
   engaging its live tile (AP-086).
 - **AP-083.** The typed failure seam has been the `ExecCause` enum
-  (`autoplay/primitives.h`): `NONE`, `OTHER`, `NO_WINNING_ARMY`, `STRANDED`
+  (`autoplay/exec.h`): `NONE`, `OTHER`, `NO_WINNING_ARMY`, `STRANDED`
   (done-but-marooned → roll back), `TIME` (calendar exhausted, terminal),
   `PREFOUGHT` (keep-without-admit), and the binding-constraint causes `GOLD`,
   `STOCK`, `LEADERSHIP`, `REACH`. A no-winning-army verdict has named the
@@ -1030,7 +1035,7 @@ mover, recruiter, and their measurement layer.
   beside the per-simulation `[RECRUIT-SIM]` lines.
 - **AP-132.** The leadership lift has been modeled on the engine: each
   `raise_control` cast has added `GameRaiseControlAmount` (`spell_power *
-  100`, floor 100) to `leadership_current`, which resets to `leadership_base`
+  100`, no floor) to `leadership_current`, which resets to `leadership_base`
   at each week boundary (`REQ-361`). `achievable_k` has bounded the
   achievable casts by held charges plus wallet-affordable charges, capped at
   `RAISE_K_MAX` (§11). The realize has applied the lift
@@ -1081,11 +1086,10 @@ mover, recruiter, and their measurement layer.
   inside `realize_plan` itself (bank held progress, spend the week, retry),
   in the wait-allowed pass only, each wait ended by a shortfall the oracle
   already wins with, a restock week that bought nothing (waiting proven
-  useless → STOCK), the calendar (`exec_spend_week` failing → TIME), or the
-  FUTILITY PROJECTION: at the measured per-week fill rate, a slot that cannot
-  complete within `days_left` defers STOCK, since that wait is not
-  engine-bounded progress. The loop's watchdog has itself been engine-bounded
-  (`days_left / week_days + 1`). Troops banked in owned-castle garrisons have
+  useless → STOCK), or the calendar (`exec_spend_week` failing → TIME). There
+  has been no calendar look-ahead: the loop's backstop has been a fixed count
+  (`RECRUIT_RESTOCK_MAX_ROUNDS`, `autoplay/exec.h`), calendar-free so the day
+  budget never changes play. Troops banked in owned-castle garrisons have
   paid no upkeep, never fallen out of control, and merged by troop id, so
   repeated buy legs plus restock weeks accumulate armies no single trip could
   field.
@@ -1243,9 +1247,10 @@ mover, recruiter, and their measurement layer.
   the binding constraint has been supply the engine's own week boundary
   refills. Under the armed pass (after the funded-wait block's world prep)
   the wait has spent restock weeks, re-searching the REAL world each week
-  (restock and income accrue together), and stopped when a winner appears,
-  the calendar runs short of a week of slack, or the weekly-grown target
-  recedes past even the restock ceiling. A run that clears without it has
+  (restock and income accrue together), and stopped when a winner appears, a
+  week adds no new dwelling stock anywhere (`dwelling_stock_total`: every
+  source at its ceiling), the weekly-grown target recedes past even the
+  restock ceiling, or the engine's own TIME failure ends it. A run that clears without it has
   never fired it.
 
 ---
@@ -1264,7 +1269,7 @@ mover, recruiter, and their measurement layer.
   **all** channels at once; there has been no per-channel selection, and no
   autoplay behavior has read environment variables (the same rule DM-030
   records for demo mode; the engine's save-path resolution has been the one
-  environment consumer, outside autoplay).
+  environment consumer in the game's own code, outside autoplay).
 - **AP-174.** DEFAULT OUTPUT HAS BEEN A SUMMARY, not a trace. A run without
   `--verbose` has printed only: the `[AUTOPLAY] begin` line; a `[SEARCH]` progress
   heartbeat every 1024 expansions; one compact `[SEARCH] timing` line; the one
@@ -1307,6 +1312,10 @@ mover, recruiter, and their measurement layer.
     mode / mount, the foe's live tile, and the pending flow before and after
     (AP-173 posture, it reads only state the engagement already reads; this
     channel measures the AP-086 co-location trap directly).
+  - the prerequisite dump (`autoplay/prereq.c prereq_dump`), `[PREREQ]`,
+    once per open; and the muster, realize and gold-wait traces, `[MUSTER]`
+    (`autoplay/primitives.c`), `[REALIZE]` and `[ENSURE]`
+    (`autoplay/exec_recruit.c`).
 - **AP-172.** The ledger has been behaviour-inert because its counters live
   in file-statics outside `Game`, so world fingerprints and saves stay
   untouched.

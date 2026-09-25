@@ -1026,7 +1026,7 @@ title:;
     }
 
     // Recorder: when --movie was passed, capture state + framebuffer
-    // PNGs on logical-tick mutations into a hidden temp dir, then mux
+    // PNGs on logical-tick mutations into /tmp/openbounty-movie-<pid>, then mux
     // to one .mp4 at shutdown. Off when --movie wasn't passed, in
     // which case every recorder_capture() call is a free no-op.
     if (movie_requested && !recorder_active()) {
