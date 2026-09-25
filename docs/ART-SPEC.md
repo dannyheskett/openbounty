@@ -100,7 +100,7 @@ One square size has meant it is correct in all of them.
 | ending win / lose, promotion | 144 x 170 | **144 x 170** | `art/ui/` |
 | class portraits | 96 x 102 | **192 x 204** | `art/classes/` (4) |
 | class-select highlight | 42 x 44 | **42 x 44** | `art/ui/` |
-| puzzle cover chip | 9 x 6 | **9 x 6** | `art/ui/` |
+| puzzle cover chip | 18 x 18 | **18 x 18** | `art/ui/` |
 
 ### Font
 
