@@ -135,6 +135,7 @@
 					"y":	31,
 					"scene":	"art/scenes/rubicon.png",
 					"title":	"The Rubicon",
+					"hint":	"The river runs fast and deep, and no bridge stands on it. Your pontifex says the gods would give their leave for a bridge, if he held the rite to ask it.",
 					"body":	"Your pontifex speaks the rite at the water's edge, the birds are read, and the gods give their leave. Far off, a column of legionaries is already crossing a bridge that was not there before.",
 					"requires":	[{
 							"spell":	"bridge",
@@ -1033,6 +1034,7 @@
 					"y":	21,
 					"scene":	"art/scenes/pharos.png",
 					"title":	"The Pharos",
+					"hint":	"The keeper bars the stair. For three thousand gold he will light the great lamp and let you climb; from the fire at the top, they say, the whole province lies open to the eye.",
 					"body":	"The keeper takes your coin and lets you climb. From the fire at the top, in the first light, the whole province lies open beneath you: every road, every river, every town from Mauretania to the Nile.",
 					"requires":	[{
 							"gold":	3000,
