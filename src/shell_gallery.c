@@ -48,6 +48,28 @@
 #define MKDIR(p) mkdir((p), 0755)
 #endif
 
+// A few lines of log for the battle column's cards, through the pack's own
+// templates, so the gallery shows the log as a fight would fill it.
+static void gallery_combat_log(Combat *c, const Game *g) {
+    const ResCombatLog *cl = &g->res->combat_log;
+    const TroopDef *a0 = troop_by_id(g->army[0].id), *a1 = troop_by_id(g->army[1].id),
+                   *a2 = troop_by_id(g->army[2].id);
+    const TroopDef *f0 = troop_by_index(10), *f1 = troop_by_index(11), *f2 = troop_by_index(12);
+    if (!a0 || !a1 || !a2 || !f0 || !f1 || !f2) return;
+    ResTemplateVar v1[] = { { "ATK", a0->name }, { "TGT", f0->name }, { "COUNT", "4" } };
+    combat_log_template(c, cl->melee_hit, v1, 3);
+    ResTemplateVar v2[] = { { "TGT", f0->name }, { "COUNT", "2" } };
+    combat_log_template(c, cl->retaliate, v2, 2);
+    ResTemplateVar v3[] = { { "TROOP", f2->name } };
+    combat_log_template(c, cl->move, v3, 1);
+    ResTemplateVar v4[] = { { "ATK", f1->name }, { "TGT", a1->name }, { "COUNT", "3" } };
+    combat_log_template(c, cl->ranged_hit, v4, 3);
+    ResTemplateVar v5[] = { { "TROOP", a1->name } };
+    combat_log_template(c, cl->fly, v5, 1);
+    ResTemplateVar v6[] = { { "COUNT", "12" }, { "TROOP", a2->name } };
+    combat_log_template(c, cl->cloned, v6, 2);
+}
+
 void combat_gallery_menu(bool open);
 void combat_gallery_cast_page(void);
 void end_cartoon_gallery_draw(RenderTexture2D *rt, const Resources *res, const Sprites *sprites,
@@ -814,6 +836,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         combat_render_set_ground(tile_cache_get("grass"));
         combat_reset_turn(&c, COMBAT_SIDE_AI);
         c.unit_id = combat_next_unit(&c);
+        gallery_combat_log(&c, g);
         for (int i = 0; i < 3; i++) combat_present_public(&c, g, m, f, s, rt);
         save_target(&G, "70_combat");
         {
@@ -881,6 +904,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         combat_render_set_ground(tile_cache_get("grass"));
         combat_reset_turn(&c, COMBAT_SIDE_AI);
         c.unit_id = combat_next_unit(&c);
+        gallery_combat_log(&c, g);
         for (int i = 0; i < 3; i++) combat_present_public(&c, g, m, f, s, rt);
         save_target(&G, "75_siege");
     }

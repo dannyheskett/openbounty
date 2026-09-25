@@ -465,6 +465,33 @@ static int turn_stat(int cx, int y, const char *label, int value) {
     return y + uk_line_h() + UK_INSET;
 }
 
+// The log under the grid, newest first, as cards: each a plate of the panel
+// fill the column's width with a thin edge and a bar down its left, its line
+// wrapped inside (three lines at most). The newest is lit -- gold edge, gold
+// bar, yellow words -- and the rest stand back with the dim edge and white
+// words; a band of ground parts them, and as many stand as the column has
+// room for.
+static void combat_log_cards(const Combat *c, ML_Rect col, int y) {
+    const int pad = 6, bar = 3, inset = 8, right = 4;
+    int tx = col.x + 1 + bar + inset, tw = col.x + col.w - right - tx;
+    int bottom = col.y + col.h - UK_BAND;
+    for (int i = c->log_count - 1, k = 0; i >= 0; i--, k++) {
+        const char *line = c->log_lines[i];
+        if (!line[0]) continue;
+        int n = uk_lines(line, tw);
+        if (n < 1) n = 1;
+        if (n > 3) n = 3;
+        int h = 2 * pad + n * uk_line_h();
+        if (y + h > bottom) break;
+        bool lit = (k == 0);
+        gfx_rect(col.x, y, col.w, h, uk_fill());
+        gfx_rect_lines(col.x, y, col.w, h, lit ? uk_edge() : uk_edge_dim());
+        gfx_rect(col.x + 1, y + 1, bar, h - 2, lit ? uk_edge() : uk_edge_dim());
+        uk_lines_draw(line, tx, y + pad, tw, 3, lit ? PAL_CLR(YELLOW) : PAL_CLR(WHITE));
+        y += h + UK_BAND;
+    }
+}
+
 // The column: whose turn it is -- the unit's name, its count, its moves and
 // shots left -- then the commands as a grid of tiles, two across and three
 // down, with the round in the sixth cell. Menu, then Shoot, Wait, Fly and
@@ -541,6 +568,8 @@ static void combat_column_draw(const Combat *c, const Game *g, const Sprites *sp
     if (ui && n == 5)
         turn_stat(col.x + tw + tw / 2, gy + 2 * th + (th - 2 * uk_line_h()) / 2,
                   ui->combat_round, c->turn + 1);
+    // What has happened so far, under the grid.
+    combat_log_cards(c, col, gy + rows_l * th + UK_BAND);
 }
 
 // The tap on a command tile, resolved the way its key resolves: Menu is

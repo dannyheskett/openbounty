@@ -2116,7 +2116,9 @@ golden-digest regression tests have pinned the formulas.
   the pack's `combat_log` strings (`melee_hit`, `retaliate`, `ranged_hit`,
   `frozen`, `immune`, `cloned`, `resurrected`, `teleported`, etc.). The
   banner has shown the actor's name + M/S counters before the first kill,
-  then "<actor> vs <target> killing N".
+  then "<actor> vs <target> killing N". In modern the lines have also stood
+  as cards in the battle column, newest first, as many as the column has
+  held (`DESIGN-SPEC.md` DSGN-0115).
 - **REQ-393.** **Win** (`result = 1`): all defenders dead; spoils =
   `sum(troop.spoils * 5 * count)` over killed enemies credited to gold;
   survivors written back to `g->army` with `GameCompactArmy`. **Loss / flee**

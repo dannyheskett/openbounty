@@ -1118,7 +1118,18 @@ Source: `src/combat_loop.c` `combat_panel_tap`, `combat_menu_page`.
 
 The unit itself has been marked on the field: it alone has animated
 (DSGN-0112).
-Source: `src/combat_loop.c` `combat_column_draw`, `turn_line`, `turn_stat`.
+
+Under the grid, from `UK_BAND` below its foot band, the combat log has stood
+as cards, newest at the top: each a plate of `uk_fill` the column's width, a
+1 px edge, a 3 px bar down its left, its line wrapped inside (8 px in from
+the bar, 4 px from the right, 6 px above and below, at most 3 lines, the
+last cut with `..`), a `UK_BAND` of ground between cards. The newest has
+been lit, `uk_edge` for its edge and bar and `YELLOW` words; the rest have
+had `uk_edge_dim` and `WHITE`. As many cards have stood as the column has
+held whole; the oldest have gone first. The lines have been the engine's
+own (`COMBAT_LOG_LINES` at most).
+Source: `src/combat_loop.c` `combat_column_draw`, `turn_line`, `turn_stat`,
+`combat_log_cards`.
 
 **DSGN-0116. Command keys.** While the keyboard has been the device last used
 and the column has been live, each command that could be pressed has shown
@@ -1127,7 +1138,7 @@ Source: `src/combat_loop.c` `combat_column_draw`, `combat_panel_key`.
 
 **DSGN-0117. The combat log line.** Each new combat log line has been shown as
 a toast (DSGN-0068) on the battlefield's top edge for 2.0 s, the same as a
-toast on the map.
+toast on the map, and has stayed in the column's cards (DSGN-0115).
 Source: `src/combat_loop.c` `combat_present`; `src/ui.c` `toast_show`.
 
 **DSGN-0118. Combat menu.** The combat menu has been menu pages (DSGN-0071)
