@@ -810,6 +810,7 @@
 		},
 		"puteoli":	{
 			"contracts":	"Welcome to Puteoli, %HERO%. The sulphur smoke hides many a traitor. Come this way, and let us discuss your contract.",
+			"boat":	"Greetings, %HERO%! The grain fleet from Alexandria touches Puteoli before any other port in Italia. Come and see my boats.",
 			"information":	"The merchants of Alexandria gossip on our quays, %HERO%, and I listen. Sit, and I'll tell you what is said of the castles.",
 			"temple":	"Serapis has a house in Puteoli, %HERO%, brought here by the grain fleet. Enter, and I will teach you a rite.",
 			"siege":	"Our concrete sets even under the sea, %HERO%, and our engines are as strong. Come to the workshop and see them."
@@ -855,6 +856,7 @@
 		},
 		"croton":	{
 			"contracts":	"Welcome to Croton, %HERO%, city of Milo the wrestler. We still admire strength against Roma's enemies. Come this way, and let us discuss your contract.",
+			"boat":	"Greetings, %HERO%! From Croton the ships cross the Ionian Sea to Hellas and back. Come and see mine.",
 			"information":	"Croton faces the sea to the east, %HERO%, and every Greek ship brings news. Sit, and I'll tell you what is said of the castles.",
 			"temple":	"Hera Lacinia's temple stands on the cape of Croton, %HERO%. Enter, and I will teach you a rite.",
 			"siege":	"Pythagoras taught mathematics here, %HERO%, and our engineers still use it to aim. Come to the workshop."
@@ -965,6 +967,7 @@
 		},
 		"ephesus":	{
 			"contracts":	"Welcome to Ephesus, %HERO%, first city of Asia. The proconsul sits here, and so do his enemies. Come this way, and let us discuss your contract.",
+			"boat":	"Greetings, %HERO%! Ephesus sends the wealth of Asia to every port on the Aegean. Come and see my ships.",
 			"information":	"Every road in Asia ends at our harbour, %HERO%, and every rumour with it. Sit, and I'll tell you what is said of the castles.",
 			"temple":	"The Temple of Artemis is one of the wonders of the world, %HERO%. Enter, and I will teach you a rite.",
 			"siege":	"Ephesus has changed masters a dozen times, %HERO%, and every one of them brought engineers. Come to the workshop."
