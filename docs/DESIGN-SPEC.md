@@ -1229,11 +1229,14 @@ Source: `src/modern/overlay.c` `draw_message`, `note_face`.
 **DSGN-0127. A note as a scene.** A note drawn as a scene (temporary death,
 a one-time vista, a refused gate) has been a room of its own
 (`page_scene`): the title strip, then the scene's art **whole**, never
-trimmed, at the largest scale (3 at most, never wider than the page) that
-leaves every line of its words their room beside the one Continue row under
-the band, else the smallest; the column bars either side of the picture as
-in the room, and the words and the row laid as the room lays them. Without
-its scene art it has been the message box.
+trimmed, at 3× (the largest whole scale the page's width holds), the column
+bars either side as in the room; under the band the one Continue row in the
+rows column and the words beside it, **paged** like the message box: as
+many lines to a page as the room under the band holds, the last line of a
+page ending `..` when more follow, and
+Continue turning the page until the last closes the note
+(`page_scene_pages` is the pager's count). Without its scene art it has been
+the message box.
 Source: `src/modern/page.c` `page_scene`; `src/modern/overlay.c`
 `draw_note_scene`.
 

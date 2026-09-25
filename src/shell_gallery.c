@@ -18,6 +18,7 @@
 #include "pending.h"
 #include "player_io.h"
 #include "ui.h"
+#include "overlay.h"
 #include "bfont.h"
 #include "tables.h"
 #include "resources.h"
@@ -157,6 +158,19 @@ static void shot(Gal *G, const char *name) {
     for (int i = 0; i < 3; i++) shell_present_frame(G->g, G->m, G->f, G->s, G->rt);
     save_target(G, name);
 }
+
+// A note's later pages, when it has them: Continue turns the page, and each
+// page is its own shot, <name>_p2, _p3 ...
+static void shot_pages(Gal *G, const char *name) {
+    int pages = overlay_dialog_page_count();
+    for (int pg = 2; pg <= pages && pg <= 4; pg++) {
+        dialog_advance();
+        char nm[96];
+        snprintf(nm, sizeof nm, "%s_p%d", name, pg);
+        shot(G, nm);
+    }
+}
+
 
 static void reset(Gal *G) {
     toast_show("");
@@ -509,6 +523,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         shell_pump_note(g);
     }
     shot(&G, "09f_temporary_death");
+    shot_pages(&G, "09f_temporary_death");
     for (int ci = 0; ci < res->classes_count && ci < 4; ci++) {
         reset(&G);
         player_io_note_scene(g, NULL, bn->temp_death, ci);
@@ -529,6 +544,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
             char nm[64];
             snprintf(nm, sizeof nm, "09h_vista_%s", ev->id);
             shot(&G, nm);
+            shot_pages(&G, nm);
         }
     }
 

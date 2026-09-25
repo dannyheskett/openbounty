@@ -126,9 +126,12 @@ typedef struct { UkScene band; ML_Rect rows; ML_Rect words; } PagePlace;
 PagePlace page_place(const char *title, const char *right, Texture2D backdrop, int n_rows);
 PagePlace page_person(const char *title, const char *right, int n_rows);
 // A note drawn as a scene: the room with a single action, its picture whole
-// at the largest scale (3 at most) that leaves `words` their lines beside
-// the row, never trimmed; the words and the rows as page_place lays them.
-PagePlace page_scene(const char *title, const char *right, Texture2D scene, const char *words);
+// at 3x (the largest whole scale the page's width holds), never trimmed, and
+// its words paged in what is left beside the row, as many lines to a page as
+// the room holds; `page` is the page shown. The rows as page_place lays them.
+PagePlace page_scene(const char *title, const char *right, Texture2D scene, const char *words, int page);
+// How many pages those words take on that page.
+int page_scene_pages(const char *words);
 
 // The foe on the plains: the same title strip, the plains as a band its
 // troops stand whole in at 1x, a card per troop under it (intro_y/intro_h)
