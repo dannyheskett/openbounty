@@ -909,6 +909,14 @@ static void add_foe(Game *g, int continent, const char *zone, int x, int y,
     }
 }
 
+// True when a chest of the zone pins this artifact ("artifact": id).
+static bool chest_pins_artifact(const ResZone *z, const char *artifact_id) {
+    if (!z || !artifact_id || !artifact_id[0]) return false;
+    for (int i = 0; i < z->chest_count; i++)
+        if (strcmp(z->chests[i].artifact, artifact_id) == 0) return true;
+    return false;
+}
+
 void salt_continent(Game *g, int continent, int min_artifacts, int min_navmaps,
                     int min_orbs, int min_telecaves, int min_dwellings,
                     int min_friendly) {
@@ -934,13 +942,26 @@ void salt_continent(Game *g, int continent, int min_artifacts, int min_navmaps,
                 a->is_static, a);
     }
 
+    // A chest that names an artifact ("artifact": id) is that artifact: it is
+    // placed here, before the salt draws, and counts against the zone's
+    // artifact quota, so the salt scatters only the rest.
+    int pinned = 0;
+    for (int i = 0; i < z->chest_count; i++) {
+        const ResZoneChest *c = &z->chests[i];
+        if (!c->artifact[0]) continue;
+        GameAddPlacement(g, z->id, c->x, c->y, INTERACT_ARTIFACT, c->artifact);
+        pinned++;
+    }
+    min_artifacts = (min_artifacts > pinned) ? min_artifacts - pinned : 0;
+
     // The barrel is every chest the salt may use: a "fixed" chest stays a
-    // chest (a prize at the end of a path), so it is left out.
+    // chest (a prize at the end of a path), and a pinned artifact is already
+    // placed, so both are left out.
     int *slots = (int *)calloc((size_t)(z->chest_count > 0 ? z->chest_count : 1), sizeof(int));
     if (!slots) return;
     int barrel_len = 0;
     for (int i = 0; i < z->chest_count; i++)
-        if (!z->chests[i].fixed) slots[barrel_len++] = i;
+        if (!z->chests[i].fixed && !z->chests[i].artifact[0]) slots[barrel_len++] = i;
     int min_len = min_artifacts + min_navmaps + min_orbs +
                   min_telecaves + min_dwellings + min_friendly;
 
@@ -999,17 +1020,26 @@ void salt_continent(Game *g, int continent, int min_artifacts, int min_navmaps,
                 // Each (continent, slot) is fixed by
                 // artifact_inversion[continent*2+slot]. We honour this by
                 // looking up the artifact whose `zone == z->id` and
-                // `local_idx == artifact_counter`.
+                // `local_idx == artifact_counter`, skipping any a chest has
+                // pinned (those are placed already, above).
                 int ac = g->res->artifacts_count;
                 int aidx = -1;
-                for (int j = 0; j < ac; j++) {
-                    const ArtifactDef *cand = artifact_by_index(j);
-                    if (cand &&
-                        strcmp(cand->zone, z->id) == 0 &&
-                        cand->local_idx == artifact_counter) {
-                        aidx = j;
-                        break;
+                while (aidx < 0 && artifact_counter < ac) {
+                    for (int j = 0; j < ac; j++) {
+                        const ArtifactDef *cand = artifact_by_index(j);
+                        if (cand &&
+                            strcmp(cand->zone, z->id) == 0 &&
+                            cand->local_idx == artifact_counter) {
+                            aidx = j;
+                            break;
+                        }
                     }
+                    if (aidx >= 0 && chest_pins_artifact(z, artifact_by_index(aidx)->id)) {
+                        aidx = -1;
+                        artifact_counter++;
+                        continue;
+                    }
+                    break;
                 }
                 if (aidx < 0) { artifact_counter++; break; }
                 const ArtifactDef *a = artifact_by_index(aidx);

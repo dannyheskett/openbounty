@@ -526,6 +526,12 @@ then always held exactly that, instead of rolling.
 has stayed out of the salt barrel (OPENBOUNTY-SPEC REQ-231) and always been
 a chest.
 
+**A pinned artifact.** A zone chest has been able to carry `"artifact": "<id>"`:
+it has then been that artifact, placed before the salt draws and counted
+against the zone's artifact quota, so the salt has scattered only the rest
+(OPENBOUNTY-SPEC REQ-231). It has stayed out of the barrel like a fixed chest.
+Glory of Rome's guarded trail on Sardinia has ended in one.
+
 **An explicit garrison.** A `wandering_armies` entry has been able to carry
 `army`, a list of `{"troop": id, "count": n}`, fielded verbatim instead of a
 rolled garrison.

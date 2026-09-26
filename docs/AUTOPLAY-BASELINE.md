@@ -20,13 +20,13 @@ autoplay's behaviour has come with a new measurement here.
   `time.days_per_difficulty` (AP-015): easy 900, normal 600, hard 400,
   impossible 200. There has been no arbitrary calendar override.
 - **Hero:** the default knight (`AUTOPLAY_HERO_CLASS`).
-- **Result:** 15 / 15 runs have cleared every objective, all 280, on every
-  seed at all three difficulties.
+- **Result:** 15 / 15 runs have cleared every objective on every seed at all
+  three difficulties.
 
 ## Days to clear, per seed and difficulty
 
-"days" has been the number of game days the run spent to clear all 280
-objectives; "score" has been the engine's end-of-game score; "moves" has been
+"days" has been the number of game days the run spent to clear every
+objective; "score" has been the engine's end-of-game score; "moves" has been
 the recorded `REC_MOVE` count (the turn tally).
 
 | seed | easy (900 days) | | | normal (600 days) | | | hard (400 days) | | |
