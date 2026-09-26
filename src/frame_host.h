@@ -36,13 +36,6 @@ void frame_host_window_fullscreen_toggle(void);
 // The display the window is on, for deciding how large a buffer could be
 // shown. On a phone this is the screen itself.
 void frame_host_display_size(int *w, int *h);
-// Desktop: the room the window's CONTENT has on the monitor it is on -- the
-// monitor's work area (less the taskbar, dock or menu bar) less the window's
-// own title bar and borders. False where there is no such thing (the web,
-// phones), or before the window exists.
-bool frame_host_window_room(int *w, int *h);
-// Desktop: size the window's content to w x h and centre it in the work area.
-void frame_host_window_place(int w, int h);
 
 // Poll the platform's event queue. Normally implicit in frame_host_end_frame;
 // a loop that reads input WITHOUT drawing a frame has to call it explicitly
