@@ -82,8 +82,6 @@ bool frame_host_window_maximized(void)  { return false; }
 void frame_host_window_fullscreen_toggle(void) {}
 
 void frame_host_display_size(int *w, int *h) { plat_ios_screen(w, h); }
-bool frame_host_window_room(int *w, int *h) { (void)w; (void)h; return false; }
-void frame_host_window_place(int w, int h) { (void)w; (void)h; }
 
 // UIKit delivers events on the main thread; the game thread has nothing to
 // poll for.

@@ -135,18 +135,15 @@ Source: `src/present.c` `present_window_to_screen`,
 `present_window_len_to_design`.
 
 **DSGN-0010. The desktop window.** The window has opened resizable at the
-smallest screen. Once it has existed, `frame_host_window_room` has measured
-the monitor's work area less the window's decorations; when that room has
-held a larger whole multiple of the smallest screen, the window has been
-resized to exactly that multiple and centred. The size the game has last
-given the window has been remembered (`frame_host_window_at_set_size`).
-`--window WxH` and `--fullscreen` have skipped the resize. The minimum window
-size has been the smallest screen. Alt+Enter has toggled fullscreen. The
-window has been created with a 4x MSAA hint (not on Android), a hidden
-cursor, 60 fps and no exit key. Android has opened at the display; iOS has
-reported its view.
+smallest screen, at the zoom of 1, and has stayed that size until the player
+has changed it: the zoom has risen only on maximise or full screen
+(DSGN-0006). The size the game has given the window has been remembered
+(`frame_host_window_at_set_size`). `--window WxH` has opened at that size
+instead. The minimum window size has been the smallest screen. Alt+Enter has
+toggled fullscreen. The window has been created with a 4x MSAA hint (not on
+Android), a hidden cursor, 60 fps and no exit key. Android has opened at the
+display; iOS has reported its view.
 Source: `src/main.c` `main`; `src/frame_host.c` `frame_host_window_open`,
-`frame_host_window_room`, `frame_host_window_place`,
 `frame_host_window_at_set_size`, `frame_host_window_min_size`;
 `src/layout.c` `layout_min_window`.
 
@@ -341,7 +338,11 @@ Source: `src/modern/page.c` `fits`, `page_full_floats`, `open_page`.
 **DSGN-0033. A floating page.** A floating page has sat at its size, centred
 in its area or on its foot, its content filled with `uk_fill` (12,14,30)
 inside a lattice ring `ring` thick (outer rect x − `ring`, y − `ring`,
-w + 2 × `ring`, h + 2 × `ring`).
+w + 2 × `ring`, h + 2 × `ring`). Over a battlefield (DSGN-0110) a centred
+page has been centred on the field, not the frame, and moved just as far as
+it must to keep its ring and a 2 × `ring` gap inside the frame; on the
+smallest screen, where the page has been wider than the field's room, that
+has put it where the frame's centre puts it.
 Source: `src/modern/page.c` `open_page`; `src/modern/uikit.c` `uk_fill`.
 
 **DSGN-0034. A filling page.** A full page that has not floated has painted
@@ -1061,15 +1062,18 @@ Source: `src/combat_loop.c` `combat_present`; `src/modern/page.c`
 
 **DSGN-0110. The battle's places.** A battle has had one column, two tiles
 wide (2 × `TW`), against the right frame, the full height of the interior;
-the battlefield (6 × `TW` by 5 × `TH`) has had the interior left of it, flush
-with its top. Where that room has held the field with a `UK_BAND` band and a
-pixel of ground either side, the field has been centred in it, with a `G`
-band before the column; otherwise (the smallest screen) the field has stood
-flush with the left frame and the band before the column has taken what was
-left. In a siege, where the interior has been at least one tile taller than
-the field, the castle's back wall row has stood above the field. Round the
-field the interior has been lattice ground, with a band along each edge of
-the field the ground has shown beside.
+the battlefield (6 × `TW` by 5 × `TH`) has had the interior left of it. Where
+that room has held the field with a `UK_BAND` band and a pixel of ground
+either side, the field has been centred in it, with a `G` band before the
+column; otherwise (the smallest screen) the field has stood flush with the
+left frame and the band before the column has taken what was left. Down the
+interior the same rule: where the interior has held the field, with its wall
+row, plus a band and a pixel of ground above and below, the field has been
+centred down it; otherwise it has stood flush with the top. In a siege, where
+the interior has been at least one tile taller than the field, the castle's
+back wall row has stood above the field. Round the field the interior has
+been lattice ground, with a band along each edge of the field the ground has
+shown beside.
 Source: `src/modern/page.c` `page_combat`.
 
 **DSGN-0111. Battlefield.** Each of the 6 × 5 cells has been one tile at the
