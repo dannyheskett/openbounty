@@ -545,8 +545,10 @@ armies from a fixed seed inside the region boxes in
 to `_3` hold the three gates of Sardinia's southern trail, whose last chamber
 has held the pinned Senatus Consultum). Sardinia has had Olbia on its east
 coast facing Ostia, the Augur inland on the road between the town and the
-trail, a mountain ridge down its east side and a river from the ridge to the
-western sea. `tools/mapbuild.py
+trail, a mountain ridge down its east side, a river from the ridge to the
+western sea, and a coast of wood and rock all round, so that a boat has
+landed only at Olbia's harbour, the two grass cells beside the town. A sign
+at the trail's head has said what the road guards. `tools/mapbuild.py
 check` has proved every object stands on walkable ground and every dock is on
 the open sea, and printed what the hero reaches from the spawn on foot and by
 boat -- a boat sails only the water it is rented on -- first with every river

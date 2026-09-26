@@ -215,6 +215,12 @@
 					"id":	"sign_italia_7",
 					"title":	"The Padus",
 					"body":	"The Padus, king of Italia's rivers, runs from the Alps to the Adriatic."
+				}, {
+					"x":	13,
+					"y":	84,
+					"id":	"sign_italia_8",
+					"title":	"The Guarded Road",
+					"body":	"Three gates hold this road, and no one has passed the third. What the Senate sent to Sardinia for safe keeping lies beyond it."
 				}],
 			"towns":	[{
 					"x":	30,
@@ -474,19 +480,19 @@
 					"static":	true,
 					"army":	[{
 						"troop":	"barbarians",
-						"count":	30
+						"count":	4
 					}, {
 						"troop":	"trolls",
-						"count":	20
+						"count":	2
 					}, {
 						"troop":	"ogres",
-						"count":	12
+						"count":	2
 					}, {
 						"troop":	"knights",
-						"count":	8
+						"count":	1
 					}, {
-						"troop":	"dragons",
-						"count":	2
+						"troop":	"archers",
+						"count":	4
 					}]
 				}, {
 					"x":	12,
@@ -641,8 +647,8 @@
 					"y":	68,
 					"id":	"wandering_army_025"
 				}, {
-					"x":	8,
-					"y":	71,
+					"x":	15,
+					"y":	82,
 					"id":	"wandering_army_026"
 				}, {
 					"x":	15,
