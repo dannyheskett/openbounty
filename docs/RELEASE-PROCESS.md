@@ -101,7 +101,9 @@ by `workflow_dispatch`. Its jobs:
   unsigned. Validation has run first because it names the rejection reason
   without consuming the build number.
 - **testflight-notes** (Ubuntu): has written the "What to Test" note onto the
-  uploaded build (`scripts/testflight_notes.py`).
+  uploaded build (`scripts/testflight_notes.py`), waiting up to 90 minutes
+  for Apple to process it, since the note can be attached only to a build
+  Apple has finished processing.
 - **submit-appstore** (Ubuntu): has sent the build to App Review, and has run
   only on a hand run with `submit_for_review` ticked.
 
