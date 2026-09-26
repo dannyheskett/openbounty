@@ -773,9 +773,10 @@ int shell_run_game(int argc, char **argv) {
     // that declared no render.mode.
     layout_init((const struct Resources *)&res);
 
-    // The window opens at the smallest screen; once it exists it grows to the
-    // largest whole multiple of that the monitor has room for (below).
-    // --window WxH wins: it is the whole point of the flag.
+    // The window opens at the smallest screen and stays there: the zoom
+    // rises only when the player maximises it or goes full screen
+    // (present.c held_zoom). --window WxH wins: it is the whole point of
+    // the flag.
     int base_w = CL_WINDOW_W;
     int base_h = CL_WINDOW_H;
     if (want_win_w > 0 && want_win_h > 0) { base_w = want_win_w; base_h = want_win_h; }
@@ -790,17 +791,6 @@ int shell_run_game(int argc, char **argv) {
     // --touch: after the window, because the host clears its input state as it
     // opens. Everything a finger changes now draws on this desk.
     if (force_touch) input_host_force_touch();
-    // The room is known only now the window exists: the monitor's work area
-    // less the title bar and the taskbar. A declared buffer grows to the
-    // largest whole multiple of itself (3 at most) that the room holds.
-    if (CL_IS_MODERN && CL_IS_NATIVE && !(want_win_w > 0 && want_win_h > 0) &&
-        !want_fullscreen) {
-        int room_w = 0, room_h = 0;
-        if (frame_host_window_room(&room_w, &room_h)) {
-            int z = present_max_scale(room_w, room_h);
-            if (z > 1) frame_host_window_place(CL_SCREEN_W * z, CL_SCREEN_H * z);
-        }
-    }
     {
         int dw = 0, dh = 0;
         frame_host_display_size(&dw, &dh);
