@@ -1432,8 +1432,8 @@ flagged (§38).
 ### 13.1 Catalog
 
 - **REQ-260.** The troop catalog (`game.json:troops[]`; `TroopDef` in
-  `engine/include/tables.h`) has been sized by the pack: 25 entries in
-  `kings-bounty`, indexed 0..24 (§Appendix A), and 27 in `glory-of-rome`.
+  `engine/include/tables.h`) has been sized by the pack (`kings-bounty` has
+  indexed its troops 0..24, §Appendix A).
   Each troop has carried: `id`, `name`, `sprite`, `portrait` (modern still),
   `anim` (heap frame list), `skill_level`, `hit_points`, `move_rate`,
   `melee_min`/`melee_max`, `ranged_min`/`ranged_max`/`ranged_ammo`,
@@ -1602,8 +1602,8 @@ flagged (§38).
 ## 16. Towns
 
 - **REQ-290.** The town catalog (`game.json:towns[]`) has been sized by the
-  pack: 26 towns in `kings-bounty`, naming one per letter A..Z, and 27 in
-  `glory-of-rome`. That naming has been a convention of that pack, not an engine
+  pack; `kings-bounty` has named one town per letter A..Z. That naming has
+  been a convention of that pack, not an engine
   requirement: a pack may declare any number and name them freely (REQ-322
   selects gate destinations from a list, not by first letter). Each town has
   carried id, name, zone, `(x,y)`, gate coords, boat coords, an intel castle,

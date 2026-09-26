@@ -121,7 +121,7 @@ Named for **real Roman cities**, with the count per zone set by what each
 map's geography supports rather than by a target number. The engine has sized
 both from the pack (§8), so there has been no filler obligation.
 
-Twenty-seven towns: Ostia, Puteoli, Cumae, Tarracina, Pisae, Ancona, Ravenna,
+The towns: Ostia, Puteoli, Cumae, Tarracina, Pisae, Ancona, Ravenna,
 Mediolanum, Croton, Roma and Olbia in Italia; Massilia, Lugdunum, Lutetia,
 Londinium, Tarraco and Emerita Augusta in Galliae; Utica, Cirta, Memphis,
 Hadrumetum, Oea and Ptolemais in Africa; Tarsus, Ephesus, Nicomedia and
