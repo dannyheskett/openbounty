@@ -136,6 +136,7 @@ jobs:
       # build so a tester knows which branch and which fix they are looking at.
       - name: Attach the What to Test note
         env:
+          TIMEOUT_MIN: "25"   # a macOS job: the hand-run upload keeps the short wait
           ASC_KEY_P8:    ${{ secrets.ASC_KEY_P8 }}
           ASC_KEY_ID:    ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}

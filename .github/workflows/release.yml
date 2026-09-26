@@ -564,7 +564,8 @@ jobs:
     name: attach TestFlight release notes
     needs: [prepare, build-ios, publish-testflight]
     runs-on: ubuntu-22.04
-    timeout-minutes: 30
+    # The script waits up to 90 minutes for Apple to process the build.
+    timeout-minutes: 100
     steps:
       - uses: actions/checkout@v7
       - name: Gate on the API-key secrets
