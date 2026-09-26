@@ -121,8 +121,8 @@ Named for **real Roman cities**, with the count per zone set by what each
 map's geography supports rather than by a target number. The engine has sized
 both from the pack (§8), so there has been no filler obligation.
 
-Twenty-six towns: Ostia, Puteoli, Cumae, Tarracina, Pisae, Ancona, Ravenna,
-Mediolanum, Croton and Roma in Italia; Massilia, Lugdunum, Lutetia,
+Twenty-seven towns: Ostia, Puteoli, Cumae, Tarracina, Pisae, Ancona, Ravenna,
+Mediolanum, Croton, Roma and Olbia in Italia; Massilia, Lugdunum, Lutetia,
 Londinium, Tarraco and Emerita Augusta in Galliae; Utica, Cirta, Memphis,
 Hadrumetum, Oea and Ptolemais in Africa; Tarsus, Ephesus, Nicomedia and
 Damascus in Oriens.
@@ -253,6 +253,11 @@ Two per zone, sited by theme (`local_idx` 0 and 1).
 | **Galliae** | Gladius of Mars, Anchor of Neptune | The Rhine frontier is Rome's endless war; the zone is also the sea-heaviest, holding the Atlantic, the Channel and Gibraltar |
 | **Africa** | Bulla of Jupiter, Anulus Aureus | Jupiter Ammon's oracle is at Siwa; the equestrian order's gold ring belongs with the grain wealth of the African provinces |
 | **Oriens** | Corona Triumphalis, Scutum of Aeneas | Eastern conquest is what Roman triumphs were awarded for, and Aeneas carried his shield out of burning Troy, which stands in Anatolia |
+
+The Senatus Consultum has not been salted: the chest at the end of Sardinia's
+guarded trail has pinned it (`"artifact"` on a zone chest, PACK-FORMAT), so
+the three guardians on that road have always kept an artifact, not a purse.
+The Sibylline Fragment has been salted as before.
 
 ---
 
@@ -536,7 +541,12 @@ moves 8-way with no corner rule and would step across a diagonal river.
 `tools/mapbuild.py place` has scattered the zone's chests and wandering
 armies from a fixed seed inside the region boxes in
 `art/maps/italia_regions.json`, and kept a static guardian where it says
-(`guardian_calabria` holds the one pass into the toe). `tools/mapbuild.py
+(`guardian_calabria` holds the one pass into the toe; `guardian_sardinia_1`
+to `_3` hold the three gates of Sardinia's southern trail, whose last chamber
+has held the pinned Senatus Consultum). Sardinia has had Olbia on its east
+coast facing Ostia, the Augur inland on the road between the town and the
+trail, a mountain ridge down its east side and a river from the ridge to the
+western sea. `tools/mapbuild.py
 check` has proved every object stands on walkable ground and every dock is on
 the open sea, and printed what the hero reaches from the spawn on foot and by
 boat -- a boat sails only the water it is rented on -- first with every river

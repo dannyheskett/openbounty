@@ -256,6 +256,10 @@
 					"x":	31,
 					"y":	57,
 					"id":	"roma"
+				}, {
+					"x":	17,
+					"y":	78,
+					"id":	"olbia"
 				}],
 			"castles":	[{
 					"x":	32,
@@ -436,7 +440,7 @@
 					"y":	82
 				}, {
 					"id":	"chest_35",
-					"x":	16,
+					"x":	14,
 					"y":	73
 				}, {
 					"id":	"chest_36",
@@ -458,7 +462,8 @@
 					"id":	"chest_sardinia_trail",
 					"x":	12,
 					"y":	95,
-					"fixed":	true
+					"fixed":	true,
+					"artifact":	"articles"
 				}],
 			"artifacts":	[],
 			"dwellings":	[],
@@ -2376,6 +2381,28 @@
 				"zone":	"italia",
 				"intel_castle":	"",
 				"intel_artifact":	true,
+				"pinned_spell":	""
+		}, {
+				"index":	26,
+				"id":	"olbia",
+				"headman":	"headman_italia",
+				"townhead":	"townhead_italia",
+				"invitations":	"olbia",
+				"informant":	"informant_market",
+				"name":	"Olbia",
+				"art":	"town_italia",
+				"x":	17,
+				"y":	78,
+				"boat":	{
+					"x":	18,
+					"y":	78
+				},
+				"gate":	{
+					"x":	16,
+					"y":	78
+				},
+				"zone":	"italia",
+				"intel_castle":	"castle_italia_9",
 				"pinned_spell":	""
 		}],
 	"castles":	[{

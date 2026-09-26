@@ -380,6 +380,8 @@ typedef struct {
     char id[RES_ID_LEN];
     bool fixed;          // "fixed": true -- always a chest, never salted
     int  gold;           // "gold": N -- this chest always holds N, never rolled
+    char artifact[RES_ID_LEN]; // "artifact": id -- this chest is that artifact,
+                               // placed before the salt draws; "" = none
 } ResZoneChest;
 
 typedef struct {

@@ -1275,7 +1275,11 @@ flagged (§38).
   barrel and emitted a `SaltedPlacement` (or `FoeState`) per tagged slot.
   When the guard runs out early, the missing items have been silently
   skipped. Chests declared `fixed` have not entered the barrel, and a zone
-  with fewer placeholders than the budget has been skipped whole.
+  with fewer placeholders than the budget has been skipped whole. A chest
+  declaring `artifact` has been placed as that artifact before the draw
+  (`INTERACT_ARTIFACT` at the chest's cell), has counted against the
+  artifact quota and has stayed out of the barrel; the draw has then skipped
+  a pinned artifact when matching `local_idx` (REQ-232).
 
 ### 10.3 Slot semantics
 
@@ -1598,8 +1602,8 @@ flagged (§38).
 ## 16. Towns
 
 - **REQ-290.** The town catalog (`game.json:towns[]`) has been sized by the
-  pack: 26 towns in both shipped packs, `kings-bounty` naming one per letter
-  A..Z. That naming has been a convention of that pack, not an engine
+  pack: 26 towns in `kings-bounty`, naming one per letter A..Z, and 27 in
+  `glory-of-rome`. That naming has been a convention of that pack, not an engine
   requirement: a pack may declare any number and name them freely (REQ-322
   selects gate destinations from a list, not by first letter). Each town has
   carried id, name, zone, `(x,y)`, gate coords, boat coords, an intel castle,

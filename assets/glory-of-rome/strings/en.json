@@ -796,6 +796,7 @@
 		"nicomedia":	"Your boat will be moored at the quay just west of the city.",
 		"puteoli":	"Your boat will wait in the harbour just west of the city.",
 		"croton":	"Your boat will be moored at the quay just east of the city.",
+		"olbia":	"Your boat will be moored at the quay just east of the city.",
 		"londinium":	"Your boat will lie at the quay on the Tamesis just east of the city.",
 		"tarraco":	"Your boat will wait in the harbour just east of the city.",
 		"ephesus":	"Your boat will wait in the harbour just west of the city."
@@ -860,6 +861,13 @@
 			"information":	"Croton faces the sea to the east, %HERO%, and every Greek ship brings news. Sit, and I'll tell you what is said of the castles.",
 			"temple":	"Hera Lacinia's temple stands on the cape of Croton, %HERO%. Enter, and I will teach you a rite.",
 			"siege":	"Pythagoras taught mathematics here, %HERO%, and our engineers still use it to aim. Come to the workshop."
+		},
+		"olbia":	{
+			"contracts":	"Welcome to Olbia, %HERO%, the port where Sardinia's grain ships leave for Ostia. The Emperor's enemies are named here as well. Come this way, and let us discuss your contract.",
+			"boat":	"Hail, %HERO%! From Olbia my ships run the short sea to Ostia and round the island's coasts. Come and see them.",
+			"information":	"Every grain ship out of Olbia brings back word from the mainland, %HERO%. Sit, and I'll tell you what is said of the castles.",
+			"temple":	"Ceres keeps the granaries of Olbia, %HERO%. Enter her temple, and I will teach you a rite.",
+			"siege":	"Sardinian timber is the best in the western sea, %HERO%, and our shipwrights build engines from it as well as hulls. Come to the workshop."
 		},
 		"roma":	{
 			"contracts":	"Welcome to Roma, %HERO%, the city of the Emperor. The Senate itself names the enemies it wants taken. Come this way, and let us discuss your contract.",

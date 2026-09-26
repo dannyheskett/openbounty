@@ -412,6 +412,7 @@ static void fill_zone_chest(cJSON *j, void *dst) {
     c->gold = json_int(j, "gold", 0);
     cJSON *fx = cJSON_GetObjectItem(j, "fixed");
     c->fixed = cJSON_IsBool(fx) && cJSON_IsTrue(fx);
+    copy_str(c->artifact, sizeof(c->artifact), json_str(j, "artifact", ""));
 }
 static void fill_zone_artifact(cJSON *j, void *dst) {
     ResZoneArtifact *a = (ResZoneArtifact *)dst;
