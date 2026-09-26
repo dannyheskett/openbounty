@@ -47,7 +47,7 @@ by `--version`.
 ## 2. What the workflow has done
 
 `.github/workflows/release.yml` has been triggered by any push to `main` and
-by `workflow_dispatch`. It has run twelve jobs:
+by `workflow_dispatch`. Its jobs:
 
 - **guard**: the attribution guard (`attribution-guard.yml`, reused via
   `workflow_call`) has gated everything, so a violating commit has never
