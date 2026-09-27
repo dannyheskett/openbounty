@@ -308,13 +308,6 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **prompt:** muted moss green grass seen from directly above, dull and slightly grey, with a few darker scrub tufts scattered through it, low contrast, the same everywhere
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=48`, `raw_only=true`, `seed=3421`, `style=rd_tile__single_tile`, `target=[48, 48]`, `width=48`
 
-### mountain
-
-- **Engine:** Retro Diffusion rd_tile__single_tile (48x48, seed 3431)
-- **Pack path:** `art/tiles/mountain.png`
-- **prompt:** bare rocky mountain ground seen from directly above, small angular grey-brown rocks with dark crevices between them, the same everywhere
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=48`, `raw_only=true`, `seed=3431`, `style=rd_tile__single_tile`, `target=[48, 48]`, `width=48`
-
 ### oriens_t32_cobble
 
 - **Engine:** PixelLab create-tileset (32 px, seed 4114)
@@ -1971,6 +1964,13 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **shared:** Northern broadleaf tree in autumn, round leafy crown of orange, russet and gold leaves with a visible trunk below it, seen from above at a slight angle, small shadow to the south-east, pixel art, transparent background
 - **batch 1:** copper beech, round crown, short trunk · English oak, russet round crown, trunk · ash tree, yellow airy crown, trunk · hornbeam, orange dense round crown, trunk
 - **batch 2:** old oak, wide russet crown, thick trunk · young beech, golden round crown · lime tree, gold full round crown, trunk · dark red round crown, thick trunk
+
+### italia_o96_rocks
+
+- **Engine:** PixelLab create-1-direction-object (96 px, 8 items)
+- **shared:** grey alpine limestone rock, the whole rock inside the frame, seen from above at a slight angle, lit from the north-west with a shaded front face on the south side, a little moss in its cracks, small shadow to the south-east, pixel art, transparent background
+- **batch 1:** large angular grey crag with a sheer shaded cliff face at the front and a white snow cap · rounded grey limestone boulder with dark crevices and moss patches · broad rocky massif with a jagged top ridge, shaded cliff face at the front · tall grey rock spire with a small snow cap
+- **batch 2:** pile of broken grey rocks and scree · low weathered grey boulder with moss on its top · split grey rock with a deep dark crevice, cliff face at the front · cluster of three jagged grey stones packed together
 
 ### oriens_o96_rocks
 

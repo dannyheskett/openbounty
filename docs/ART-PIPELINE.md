@@ -140,7 +140,8 @@ generated from.
 - **Location backdrops** — `figure: false`, `target [240, 102]`; the job has
   been `art/jobs/backdrop_castle.json`, and the others have differed only in
   id, prompt and seed.
-- **Base terrain** (grass, grass_variant, forest, mountain, desert, water) —
+- **Base terrain** (grass, grass_variant, forest, desert, water; the mountain
+  interior until 2026-09-27, see below) —
   `rd_tile__single_tile`, the API's purpose-built seamless tile style (cap 64;
   its craft guide sizes single tiles at 16 to 32), at **48x48**, laid 2x2 by
   `tools/romeart.py tile2x2` into the 96x96 pack tile at native pixel density,
@@ -154,6 +155,15 @@ generated from.
   terrain.
   - **Water** has been described flat, with no waves or bands: asked for
     waves, the tile style has drawn a block face with a lit top edge.
+  - **Mountain, Italia** — no longer a texture. The 48 px interior read as
+    rounded domes with a dark split (a tester: "a split Reese's cup", #67),
+    so on 2026-09-27 Italia's mountain has been rebuilt the way the other
+    continents' were: eight PixelLab rock sprites (`romeart.py sprites`,
+    `art/jobs/italia_o96_rocks.json`) composed by the lattice into the
+    interior and the 19 edges with a searched slot arrangement
+    (`romeart.py slots`, `art/primitives/italia/rock_slots.json`), and the
+    river bands carried onto the new interior (`romeart.py rebank`), all
+    recorded in `art/primitives/italia/BUILD.md`.
 - **Object tiles** (the per-zone towns, the castle, the four dwellings) —
   `rd_pro__topdown`, 96x96, `figure: false`, `remove_bg: true` with the
   magenta background named in the prompt, **no reference image**. Of
