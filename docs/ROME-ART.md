@@ -132,10 +132,10 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 
 ### artifact_chest
 
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7221)
+- **Engine:** Retro Diffusion rd_plus__topdown_item (64x64, seed 8100)
 - **Pack path:** `art/tiles/artifact_chest.png`
-- **prompt:** an isolated cut-out game sprite of an ornate gilded reliquary casket with glowing seams, seen from the front and above, a freestanding object with no ground under it: its lowest edge is the bottom of the sprite and only the flat magenta background shows below and around it, the whole object complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7221`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+- **prompt:** An ornate gilded reliquary casket with glowing seams, jewels, top down
+- **Settings:** `figure=false`, `height=64`, `num_images=4`, `raw_only=true`, `remove_bg=true`, `seed=8100`, `style=rd_plus__topdown_item`, `target=[64, 64]`, `width=64`
 
 ### artifact_ring
 
@@ -174,10 +174,10 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 
 ### chest
 
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7211)
+- **Engine:** Retro Diffusion rd_plus__topdown_item (64x64, seed 8100)
 - **Pack path:** `art/tiles/chest.png`
-- **prompt:** an isolated cut-out game sprite of a Roman strongbox, an iron-banded wooden arca with bronze studs, lid closed, seen from the front and above, a freestanding object with no ground under it: its lowest edge is the bottom of the sprite and only the flat magenta background shows below and around it, the whole object complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7211`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+- **prompt:** An ornate treasure chest overflowing with gold coins and jewels, gold trim, top down
+- **Settings:** `figure=false`, `height=64`, `num_images=4`, `raw_only=true`, `remove_bg=true`, `seed=8100`, `style=rd_plus__topdown_item`, `target=[64, 64]`, `width=64`
 
 ### desert
 
@@ -363,10 +363,10 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 
 ### sign
 
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7244)
+- **Engine:** Retro Diffusion rd_plus__topdown_item (64x64, seed 8100)
 - **Pack path:** `art/tiles/sign.png`
-- **prompt:** an isolated cut-out game sprite of a wooden signpost, a tall post with a plain pointed board nailed to it, the board carved with the four capital letters SPQR in a clear Roman inscription, seen from the front and above, a freestanding object with no ground under it: its lowest edge is the bottom of the sprite and only the flat magenta background shows below and around it, the whole object complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7244`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+- **prompt:** A wooden road signpost with one blank pointed board, roman road, top down
+- **Settings:** `figure=false`, `height=64`, `num_images=4`, `raw_only=true`, `remove_bg=true`, `seed=8100`, `style=rd_plus__topdown_item`, `target=[64, 64]`, `width=64`
 
 ### t16_dark_base
 
