@@ -276,13 +276,25 @@ generated from.
 - **Field grid** (`art/combat/field/<zone>_<x>_<y>.png`, 30 cells at 96) —
   the ground of an open fight, one picture per continent (a zone's
   `field_grid`, REQ-165e). Italia's has come from a supplied 1254 x 1254
-  picture kept at `art/fields/italia.png`, a light meadow painted on white:
-  `tools/siegeslice.py --field` has taken the largest 6:5 rectangle of
-  content centred in it (726 x 605, the white kept out), scaled it to
-  576 x 480 with Lanczos and cut the thirty cells. The ground has been kept
-  lighter and plainer than the troops, which have to read against it. The
-  other three continents have no field picture yet and draw the hero's map
-  tile.
+  picture kept at `art/fields/italia.png`, a light meadow painted on white,
+  calmed first by `tools/fieldcalm.py --level strong` into
+  `art/fields/italia_calm.png`: colour and size thresholds have masked the
+  boulders, small rocks, ferns, dark clumps, clover rosettes, pale moss and
+  brown earth patches, and G'MIC's patch-based inpainting has filled them
+  from the painting's own grass, so the tufts, tiny flowers and tonal
+  mottling stay and nothing large distracts from the troops. That is
+  preparation of a supplied source, not post-processing of generated
+  terrain; the fill is not deterministic, so the calmed picture that shipped
+  is kept beside the source. `tools/siegeslice.py --field` has then taken
+  the largest 6:5 rectangle of content centred in it (726 x 605, the white
+  kept out), scaled it to 576 x 480 with Lanczos and cut the thirty cells.
+  Generating this ground has been tried and rejected (2026-09-27): Retro
+  Diffusion's tile styles have tiled seamlessly but drawn flat game-green,
+  its RD Pro top-down style has drawn the look but stops at 256 and its
+  joins have not blended, and variation tiles and pasted objects have read
+  as squares and stickers; the painting route has been the only one that
+  kept the look. The other three continents have no field picture yet and
+  draw the hero's map tile.
 - **The title screen** (`art/ui/splash_title.png`, 256x164) — the eagle has
   been generated (screen route, no border); the words have been drawn by
   `tools/splashtitle.py` from C059 Bold, gold with dark shading, title above
