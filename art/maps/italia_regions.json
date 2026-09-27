@@ -22,6 +22,14 @@
   "chest_sardinia_trail": [
    12,
    95
+  ],
+  "chest_cove_mountain": [
+   38,
+   54
+  ],
+  "chest_cove_forest": [
+   49,
+   60
   ]
  },
  "regions": [
