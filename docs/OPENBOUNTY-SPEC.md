@@ -1046,7 +1046,9 @@ flagged (§38).
   has kept the siege grid, and a zone with no grid the ground of REQ-165d.
   `glory-of-rome` has shipped Italia's, thirty 96 px cells cut from the
   largest centred 6:5 rectangle of content in one picture, scaled to
-  576 × 480 (`art/fields/italia.png`, `tools/siegeslice.py --field`);
+  576 × 480 (`art/fields/italia_calm.png`, the supplied painting
+  `art/fields/italia.png` calmed by `tools/fieldcalm.py`, then
+  `tools/siegeslice.py --field`);
   `kings-bounty` has declared none.
 - **REQ-165a.** When `sprites.ui.panel_frame` names a palette colour the
   legacy shell has drawn a frame round every panel slot

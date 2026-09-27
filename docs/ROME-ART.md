@@ -132,10 +132,10 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 
 ### artifact_chest
 
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7221)
+- **Engine:** Retro Diffusion rd_plus__topdown_item (64x64, seed 8100)
 - **Pack path:** `art/tiles/artifact_chest.png`
-- **prompt:** an isolated cut-out game sprite of an ornate gilded reliquary casket with glowing seams, seen from the front and above, a freestanding object with no ground under it: its lowest edge is the bottom of the sprite and only the flat magenta background shows below and around it, the whole object complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7221`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+- **prompt:** An ornate gilded reliquary casket with glowing seams, jewels, top down
+- **Settings:** `figure=false`, `height=64`, `num_images=4`, `raw_only=true`, `remove_bg=true`, `seed=8100`, `style=rd_plus__topdown_item`, `target=[64, 64]`, `width=64`
 
 ### artifact_ring
 
@@ -174,10 +174,10 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 
 ### chest
 
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7211)
+- **Engine:** Retro Diffusion rd_plus__topdown_item (64x64, seed 8100)
 - **Pack path:** `art/tiles/chest.png`
-- **prompt:** an isolated cut-out game sprite of a Roman strongbox, an iron-banded wooden arca with bronze studs, lid closed, seen from the front and above, a freestanding object with no ground under it: its lowest edge is the bottom of the sprite and only the flat magenta background shows below and around it, the whole object complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7211`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+- **prompt:** An ornate treasure chest overflowing with gold coins and jewels, gold trim, top down
+- **Settings:** `figure=false`, `height=64`, `num_images=4`, `raw_only=true`, `remove_bg=true`, `seed=8100`, `style=rd_plus__topdown_item`, `target=[64, 64]`, `width=64`
 
 ### desert
 
@@ -308,13 +308,6 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **prompt:** muted moss green grass seen from directly above, dull and slightly grey, with a few darker scrub tufts scattered through it, low contrast, the same everywhere
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=48`, `raw_only=true`, `seed=3421`, `style=rd_tile__single_tile`, `target=[48, 48]`, `width=48`
 
-### mountain
-
-- **Engine:** Retro Diffusion rd_tile__single_tile (48x48, seed 3431)
-- **Pack path:** `art/tiles/mountain.png`
-- **prompt:** bare rocky mountain ground seen from directly above, small angular grey-brown rocks with dark crevices between them, the same everywhere
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=48`, `raw_only=true`, `seed=3431`, `style=rd_tile__single_tile`, `target=[48, 48]`, `width=48`
-
 ### oriens_t32_cobble
 
 - **Engine:** PixelLab create-tileset (32 px, seed 4114)
@@ -363,10 +356,10 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 
 ### sign
 
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7244)
+- **Engine:** Retro Diffusion rd_plus__topdown_item (64x64, seed 8100)
 - **Pack path:** `art/tiles/sign.png`
-- **prompt:** an isolated cut-out game sprite of a wooden signpost, a tall post with a plain pointed board nailed to it, the board carved with the four capital letters SPQR in a clear Roman inscription, seen from the front and above, a freestanding object with no ground under it: its lowest edge is the bottom of the sprite and only the flat magenta background shows below and around it, the whole object complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7244`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+- **prompt:** A wooden road signpost with one blank pointed board, roman road, top down
+- **Settings:** `figure=false`, `height=64`, `num_images=4`, `raw_only=true`, `remove_bg=true`, `seed=8100`, `style=rd_plus__topdown_item`, `target=[64, 64]`, `width=64`
 
 ### t16_dark_base
 
@@ -1971,6 +1964,13 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **shared:** Northern broadleaf tree in autumn, round leafy crown of orange, russet and gold leaves with a visible trunk below it, seen from above at a slight angle, small shadow to the south-east, pixel art, transparent background
 - **batch 1:** copper beech, round crown, short trunk · English oak, russet round crown, trunk · ash tree, yellow airy crown, trunk · hornbeam, orange dense round crown, trunk
 - **batch 2:** old oak, wide russet crown, thick trunk · young beech, golden round crown · lime tree, gold full round crown, trunk · dark red round crown, thick trunk
+
+### italia_o96_rocks
+
+- **Engine:** PixelLab create-1-direction-object (96 px, 8 items)
+- **shared:** grey alpine limestone rock, the whole rock inside the frame, seen from above at a slight angle, lit from the north-west with a shaded front face on the south side, a little moss in its cracks, small shadow to the south-east, pixel art, transparent background
+- **batch 1:** large angular grey crag with a sheer shaded cliff face at the front and a white snow cap · rounded grey limestone boulder with dark crevices and moss patches · broad rocky massif with a jagged top ridge, shaded cliff face at the front · tall grey rock spire with a small snow cap
+- **batch 2:** pile of broken grey rocks and scree · low weathered grey boulder with moss on its top · split grey rock with a deep dark crevice, cliff face at the front · cluster of three jagged grey stones packed together
 
 ### oriens_o96_rocks
 

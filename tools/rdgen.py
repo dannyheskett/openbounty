@@ -120,7 +120,7 @@ JOB_KEYS = {
     "id", "prompt", "style", "width", "height", "target",
     "raw_only", "figure", "headroom_rows",
     "input_image_path", "input_palette_path", "input_image_keep_alpha",
-    "reference_image_paths", "pad_to",
+    "reference_image_paths", "pad_to", "num_images",
     # forwarded to the API by request_payload()
     "seed", "remove_bg", "tile_x", "tile_y", "frames_duration",
     "return_spritesheet", "input_palette", "strength",
@@ -150,7 +150,7 @@ def request_payload(job, *, check_cost=False):
         "prompt_style": job["style"],
         "width": job["width"],
         "height": job["height"],
-        "num_images": 1,
+        "num_images": job.get("num_images", 1),
     }
     for k in ("seed", "remove_bg", "tile_x", "tile_y", "frames_duration",
               "return_spritesheet", "input_palette", "strength",

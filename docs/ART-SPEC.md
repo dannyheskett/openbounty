@@ -79,8 +79,9 @@ The castle battlefield has been the one exception: 36 cells at 32 x 32 in
 open field has been a picture of its own per continent, the largest 6:5
 rectangle of content centred in it scaled to 576 x 480 and cut into 30 cells
 of 96 x 96 in `art/combat/field/` (PACK-FORMAT, "Field grid"); Italia's has
-shipped, from `art/fields/italia.png`, a light meadow so the troops stand
-out on it.
+shipped from `art/fields/italia_calm.png`, the supplied light meadow
+`art/fields/italia.png` with its boulders, ferns, clover and earth patches
+painted out (`tools/fieldcalm.py`), so the troops stand out on it.
 
 These have been one class on purpose: the same troop PNG has been drawn into a
 combat cell, an army-roster row, a location screen and the victory cartoon.

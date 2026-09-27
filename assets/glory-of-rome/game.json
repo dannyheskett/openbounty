@@ -221,6 +221,12 @@
 					"id":	"sign_italia_8",
 					"title":	"The Guarded Road",
 					"body":	"Three gates hold this road, and no one has passed the third. What the Senate sent to Sardinia for safe keeping lies beyond it."
+				}, {
+					"x":	36,
+					"y":	37,
+					"id":	"sign_italia_9",
+					"title":	"The Coves",
+					"body":	"Fishermen speak of two coves south along this coast that no road reaches: one walled by the cliffs, one hidden in the wood. Only a keel finds them."
 				}],
 			"towns":	[{
 					"x":	30,
@@ -410,7 +416,7 @@
 					"y":	74
 				}, {
 					"id":	"chest_26",
-					"x":	45,
+					"x":	43,
 					"y":	59
 				}, {
 					"id":	"chest_27",
@@ -470,6 +476,17 @@
 					"y":	95,
 					"fixed":	true,
 					"artifact":	"articles"
+				}, {
+					"id":	"chest_cove_mountain",
+					"x":	38,
+					"y":	54,
+					"fixed":	true,
+					"artifact":	"book"
+				}, {
+					"id":	"chest_cove_forest",
+					"x":	49,
+					"y":	60,
+					"fixed":	true
 				}],
 			"artifacts":	[],
 			"dwellings":	[],

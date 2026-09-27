@@ -257,7 +257,7 @@ Two per zone, sited by theme (`local_idx` 0 and 1).
 The Senatus Consultum has not been salted: the chest at the end of Sardinia's
 guarded trail has pinned it (`"artifact"` on a zone chest, PACK-FORMAT), so
 the three guardians on that road have always kept an artifact, not a purse.
-The Sibylline Fragment has been salted as before.
+The Sibylline Fragment has been pinned too since 2026-09-27, in the mountain cove (#66), so Italia's salt has scattered no artifact of its own.
 
 ---
 
@@ -553,6 +553,19 @@ check` has proved every object stands on walkable ground and every dock is on
 the open sea, and printed what the hero reaches from the spawn on foot and by
 boat -- a boat sails only the water it is rented on -- first with every river
 shut, then with them bridged.
+
+**The two coves** (2026-09-27, #66: sailing had had no purpose on the
+peninsula itself). Two pockets on the Adriatic coast have been reachable only
+from the water, rented at Ancona's harbour: a winding channel into the
+Apennine cliffs east of the spine (in at column 43 of row 52, three cells
+west, two south, two west), whose last chamber has held the pinned Sibylline
+Fragment, and a winding grass path inside a ring of wood on the headland
+south of it (in at column 51 of row 58, four west, two south, two east),
+ending in a fixed chest. Only the entry cell of each has touched the sea, so
+a boat has landed there and nowhere else along the channel; `check` has
+shown both ends unreachable on foot and reachable by boat, with every town
+and castle reached as before. A sign beside Ancona's harbour has said the
+coves exist.
 
 **The Rubicon gate.** The Po plain (Mediolanum, Verona, Ravenna) has been
 closed by the Alps, the Maritime Alps, the Ligurian and Tusco-Emilian
