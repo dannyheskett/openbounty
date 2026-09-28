@@ -1189,19 +1189,40 @@ void bury_scepter(Game *g, int continent) {
     if (total <= 0) { MapFree(m); free(m); return; }
     int target = game_rng_next(0, total - 1);
     int count = 0;
+    bool passing = false;   // the drawn tile was a bridge; take the next plain one
     for (int y = 0; y < m->height; y++) {
         for (int x = 0; x < m->width; x++) {
             const Tile *t = &MAP_TILE(m, x, y);
             if (t->terrain != TERRAIN_GRASS) continue;
             if (t->interactive != INTERACT_NONE) continue;
             if (t->blocks_foot) continue;
-            if (count == target) {
+            if (count == target || passing) {
+                // A bridge declares grass terrain over a river (#117): the
+                // scepter passes on to the next plain tile in the same walk,
+                // with no further draw, so the count and the draw above are
+                // untouched and no world that never drew a bridge moves.
+                if (t->is_bridge) { passing = true; continue; }
                 g->scepter.x = x;
                 g->scepter.y = y;
                 MapFree(m); free(m);
                 return;
             }
             count++;
+        }
+    }
+    if (passing) {
+        // The drawn bridge was the last tile of the walk: wrap to the first
+        // plain tile so a bridge never leaves the scepter unburied.
+        for (int y = 0; y < m->height; y++) {
+            for (int x = 0; x < m->width; x++) {
+                const Tile *t = &MAP_TILE(m, x, y);
+                if (t->terrain != TERRAIN_GRASS || t->interactive != INTERACT_NONE ||
+                    t->blocks_foot || t->is_bridge) continue;
+                g->scepter.x = x;
+                g->scepter.y = y;
+                MapFree(m); free(m);
+                return;
+            }
         }
     }
     MapFree(m); free(m);

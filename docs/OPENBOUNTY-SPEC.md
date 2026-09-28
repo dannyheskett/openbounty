@@ -1335,7 +1335,11 @@ flagged (§38).
   past its count and a pack with more never used its later zones), loaded
   its map, counted all tiles whose terrain
   is `TERRAIN_GRASS`, interactive is `INTERACT_NONE`, and `blocks_foot` is
-  false; picked the Nth such tile (N uniform in `[0, count-1]`); and stored
+  false; picked the Nth such tile (N uniform in `[0, count-1]`), passing
+  on to the next such tile when the Nth is a bridge (a bridge declares
+  grass terrain over a river; since 2026-09-28, #117, with no further draw
+  so the count and the draw are unchanged and no shipped world moved); and
+  stored
   the tile's zone id, x, and y in `Game.scepter`. The draw's range is part
   of catalog identity (REQ-181a): both shipped packs declare four zones, so
   their draw is the same `0..3` it always was and no shipped world has
