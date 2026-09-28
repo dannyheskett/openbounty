@@ -177,19 +177,47 @@ typedef enum {
     return COMBAT_MORALE_NORMAL;
 }
 
-// Per-unit morale lookup. Mirrors play.c troop_morale exactly,
-// including the documented bug ( lines 2531-2545 + ):
-// the loop adopts the *lower-ranked* morale via `<`, where the
-// converter assigns NORMAL=0, LOW=1, HIGH=2. Net effect: any mixed
-// army that doesn't compute HIGH for every pairing degrades to
-// NORMAL, never LOW unless LOW is the only computed result. We
-// reproduce this faithfully -- instruction was "functionally
-// identical ".
+// Per-unit morale lookup, two rules chosen by the pack (REQ-385, #75):
+//
+// Ported (combat.morale_as_army_view absent or false; the King's Bounty
+// pack). Mirrors play.c troop_morale exactly, including the documented
+// bug ( lines 2531-2545 + ): every live unit of the side is
+// looked up, the unit itself included, as morale_result(other, self) --
+// the chart read the other way round from the army view -- and the
+// loop adopts the *lower-ranked* morale via `<`, where the converter
+// assigns NORMAL=0, LOW=1, HIGH=2. Net effect: any mixed army that
+// doesn't compute HIGH for every pairing degrades to NORMAL, never LOW
+// unless LOW is the only computed result. Reproduced faithfully --
+// instruction was "functionally identical ".
+//
+// Army view (combat.morale_as_army_view true; Glory of Rome). The rule the
+// player reads on the army screen, REQ-271: alone is High; every OTHER
+// live unit is looked up as morale_result(self, other); any L is Low,
+// all H is High, else Normal. The label and the damage multiplier agree.
 static CombatMorale troop_morale_for_unit(const Combat *c, int side, int slot) {
     const CombatUnit *self = &c->units[side][slot];
     if (self->troop_idx < 0) return COMBAT_MORALE_NORMAL;
     const TroopDef *ts = troop_by_index(self->troop_idx);
     if (!ts) return COMBAT_MORALE_NORMAL;
+    const Resources *res = resources_current();
+    if (res && res->morale_as_army_view) {
+        int others = 0, low = 0, high = 0;
+        for (int j = 0; j < COMBAT_SLOTS; j++) {
+            if (j == slot) continue;
+            const CombatUnit *o = &c->units[side][j];
+            if (o->troop_idx < 0 || o->count == 0) continue;
+            const TroopDef *to = troop_by_index(o->troop_idx);
+            if (!to) continue;
+            others++;
+            char r = morale_result(ts->morale_group, to->morale_group);
+            if (r == 'L') low++;
+            else if (r == 'H') high++;
+        }
+        if (others == 0)    return COMBAT_MORALE_HIGH;
+        if (low > 0)        return COMBAT_MORALE_LOW;
+        if (high == others) return COMBAT_MORALE_HIGH;
+        return COMBAT_MORALE_NORMAL;
+    }
     int morale = COMBAT_MORALE_HIGH;
     for (int j = 0; j < COMBAT_SLOTS; j++) {
         const CombatUnit *o = &c->units[side][j];
@@ -201,6 +229,10 @@ static CombatMorale troop_morale_for_unit(const Combat *c, int side, int slot) {
         if (r < morale) morale = r;
     }
     return (CombatMorale)morale;
+}
+
+/* exposed for tests */ int combat_unit_morale_rank(const Combat *c, int side, int slot) {
+    return (int)troop_morale_for_unit(c, side, slot);   // 0 Normal, 1 Low, 2 High
 }
 
 // ----- Battlefield setup ------------------------------

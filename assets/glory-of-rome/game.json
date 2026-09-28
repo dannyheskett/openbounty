@@ -81,6 +81,7 @@
 		"search_cost_days":	10
 	},
 	"combat":	{
+		"morale_as_army_view":	true,
 		"morale_chart":	[["N", "N", "N", "N", "N"], ["N", "N", "N", "N", "N"], ["N", "N", "H", "N", "N"], ["L", "N", "L", "H", "N"], ["L", "L", "L", "N", "N"]],
 		"number_names":	[{
 				"min":	500,

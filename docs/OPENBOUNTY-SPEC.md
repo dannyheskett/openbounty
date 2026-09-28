@@ -1497,7 +1497,9 @@ flagged (§38).
   Row = the troop whose morale is computed; column = another troop present.
 - **REQ-271.** Per-troop morale: a troop alone in the army has been High;
   otherwise each other non-empty slot has been consulted on the chart and the
-  results counted: any `L` → Low; all `H` (≥1) → High; else Normal.
+  results counted: any `L` → Low; all `H` (≥1) → High; else Normal. Whether
+  combat has applied this same rule or the ported one has depended on the
+  pack (REQ-385, item 3).
 
 ### 14.2 Out-of-control
 
@@ -2059,11 +2061,22 @@ golden-digest regression tests have pinned the formulas.
      ceil(target.count / 2)` after the morale/artifact passes.
   3. **Morale** (attacker has hero and is in control): Low → `/2`; High →
      `×1.5`; Normal → unchanged. The combat rank
-     (`troop_morale_for_unit`) has been the lowest chart result over the
-     side's live units, the attacker itself included, each looked up as
-     `morale_result(other, self)`; the army view's label (REQ-271) has
-     looked the pairs up the other way round and left the troop itself out,
-     so the two have been able to differ where the chart is asymmetric.
+     (`troop_morale_for_unit`) has followed one of two rules, chosen by the
+     pack's `combat.morale_as_army_view` (PACK-FORMAT):
+     - **Ported** (the flag absent or false; the `kings-bounty` pack): the
+       lowest-ranked chart result over the side's live units, the attacker
+       itself included, each looked up as `morale_result(other, self)`, with
+       the ranks Normal 0, Low 1, High 2, so a mixed army has degraded to
+       Normal and reached Low only when Low was the only result. This is
+       the original game's behaviour, kept unchanged for the legacy pack;
+       there the army view's label (REQ-271) has looked the pairs up the
+       other way round and left the troop itself out, so label and
+       multiplier have been able to differ where the chart is asymmetric.
+     - **Army view** (the flag true; `glory-of-rome`, 2026-09-27, #75):
+       exactly REQ-271 -- alone High; every other live unit looked up as
+       `morale_result(self, other)`; any L Low, all H High, else Normal --
+       so the label the player reads and the multiplier the blow uses have
+       been the same.
   4. **Artifact attacker** `INCREASED_DAMAGE` → `×1.5`.
   5. **Artifact target** `QUARTER_PROTECTION` → `×0.75`.
   6. Accumulate `+= target.injury`; add the SCYTHE bonus.

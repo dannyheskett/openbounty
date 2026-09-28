@@ -1290,7 +1290,9 @@ static void parse_combat(Resources *res, cJSON *obj) {
         for (int j = 0; j < 5; j++)
             res->morale_chart[i][j] = 'N';
     res->number_name_count = 0;
+    res->morale_as_army_view = false;
     if (!cJSON_IsObject(obj)) return;
+    res->morale_as_army_view = cJSON_IsTrue(cJSON_GetObjectItem(obj, "morale_as_army_view"));
 
     cJSON *mc = cJSON_GetObjectItem(obj, "morale_chart");
     if (cJSON_IsArray(mc)) {
