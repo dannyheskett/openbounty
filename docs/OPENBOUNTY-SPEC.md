@@ -1318,12 +1318,19 @@ flagged (§38).
 ### 10.6 Scepter burial
 
 - **REQ-235.** `bury_scepter` (`engine/game.c`) has taken the zone index
-  `GameInitSeeded` draws as `game_rng_next(0, 3)` (the four continents of
-  the reference world; a draw past the pack's zone count buries nothing),
-  loaded its map, counted all tiles whose terrain
+  `GameInitSeeded` draws as `game_rng_next(0, zone_count - 1)`, one draw
+  over every zone the pack declares (2026-09-28, #77; until then the draw
+  was a fixed `game_rng_next(0, 3)`, the four continents of the reference
+  world, so a pack with fewer zones buried nothing on the seeds that drew
+  past its count and a pack with more never used its later zones), loaded
+  its map, counted all tiles whose terrain
   is `TERRAIN_GRASS`, interactive is `INTERACT_NONE`, and `blocks_foot` is
   false; picked the Nth such tile (N uniform in `[0, count-1]`); and stored
-  the tile's zone id, x, and y in `Game.scepter`. The scepter has not been
+  the tile's zone id, x, and y in `Game.scepter`. The draw's range is part
+  of catalog identity (REQ-181a): both shipped packs declare four zones, so
+  their draw is the same `0..3` it always was and no shipped world has
+  re-mapped; a pack that changes its zone count re-maps its own worlds.
+  The scepter has not been
   visible on the map; searching (key `S`) on the buried tile has triggered
   the win flow (§26).
 
