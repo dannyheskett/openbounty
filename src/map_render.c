@@ -96,6 +96,18 @@ void map_render_cell(const Map *m, int mx, int my, Rectangle dst) {
     if (tex.id) gfx_texture_draw(tex, (Rectangle){ 0, 0, (float)tex.width, (float)tex.height }, dst, WHITE);
 }
 
+void map_render_cell_ground(const Map *m, int mx, int my, Rectangle dst) {
+    const Tile *t = MapGetTile(m, mx, my);
+    if (!t) return;
+    char ga[TILE_ART_NAME_LEN], va[TILE_ART_NAME_LEN];
+    const char *gart = t->ground ? TileGround(m, t)
+                       : MapTerrainArt(m, TerrainName(t->terrain), ga, sizeof ga);
+    Texture2D ground = tile_cache_get(tilevar_art(gart, mx, my, va, sizeof va));
+    if (ground.id)
+        gfx_texture_draw(ground, (Rectangle){ 0, 0, (float)ground.width, (float)ground.height },
+                         dst, WHITE);
+}
+
 // A wandering foe draws the generic wandering-army tile, the same as every
 // other placed object. An earlier change (issue #9) drew the foe's lead troop
 // sprite instead; reverted 2026-09-06 so the map reads as the original did,

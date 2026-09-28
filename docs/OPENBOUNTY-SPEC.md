@@ -2638,7 +2638,11 @@ every menu; this section has held the rules.
   `src/views.c` and drawn by `src/views_render.c`, with per-location screens
   in `src/screens/`. Toggle views: Army (`A`), Character (`V`), Contract
   (`I`), Puzzle (`P`, 5×5 grid derived from villains_caught +
-  artifacts_found), Worldmap (`M`), Controls (`C`), Options (`O`, legacy).
+  artifacts_found; a lifted piece has shown the scepter zone's land with
+  the ground alone where an object stands, as the original blanked its
+  objects, and the scepter's own cell has been framed, since the window is
+  clamped at the map's edge and the centre is not always the spot,
+  2026-09-28, #104), Worldmap (`M`), Controls (`C`), Options (`O`, legacy).
   Location views: Town, Home Castle, Own Castle, Dwelling, Alcove, Recruit
   Soldiers. Spell-driven view: Gate, the Town/Castle Gate destination picker
   opened by a cast rather than by a key (REQ-322). End views: Win, Lose.

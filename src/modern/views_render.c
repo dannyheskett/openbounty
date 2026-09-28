@@ -421,6 +421,7 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
     s_prev_active = active;
     double elapsed = ui_anim_time() - s_open_time;
     int reveal_step = (int)(elapsed / 0.150);
+    if (ui_anim_frozen()) reveal_step = 25;   // a held clock shows the lifted state, not the first cell
     int anim_tick = (int)(ui_anim_time() * UK_FACE_FPS);
 
     int seq[5][5];
@@ -455,16 +456,37 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
             if (reveal_step < seq[j][i]) caught = false;
             Rectangle dst = { (float)x, (float)y, (float)cell_w, (float)cell_h };
             if (caught) {
-                // Uncovered: the scepter's land under the piece, drawn as the
-                // map draws it.
+                // Uncovered: the scepter's land under the piece. The ground
+                // only where an object stands, as the original blanked its
+                // objects: this map has no salted placements (#104), so a
+                // chest here may be a lair in play, and the piece is a map,
+                // not an inventory.
                 gfx_rect(x, y, cell_w, cell_h, PAL_CLR(BLACK));
-                if (s_puzzle_scepter_loaded)
-                    map_render_cell(&s_puzzle_scepter_map, cam_x + i, cam_y + j, dst);
+                if (s_puzzle_scepter_loaded) {
+                    const Map *pm = &s_puzzle_scepter_map;
+                    const Tile *pt = MapGetTile(pm, cam_x + i, cam_y + j);
+                    if (pt && pt->interactive != INTERACT_NONE)
+                        map_render_cell_ground(pm, cam_x + i, cam_y + j, dst);
+                    else
+                        map_render_cell(pm, cam_x + i, cam_y + j, dst);
+                }
             } else if (face.id) {
                 gfx_texture_draw(face, (Rectangle){ 0, 0, (float)face.width, (float)face.height }, dst, WHITE);
             } else {
                 gfx_rect(x, y, cell_w, cell_h, PAL_CLR(DGREY));
             }
+        }
+    }
+    // The scepter's own cell, framed. It is the centre unless the map's edge
+    // has pushed the window (the clamp above), and the clamp is what sent a
+    // tester digging at a neighbour (#104); the frame says which cell to
+    // search, as the original's fixed centre did.
+    {
+        int si = g->scepter.x - cam_x, sj = g->scepter.y - cam_y;
+        if (s_puzzle_scepter_loaded && si >= 0 && si < 5 && sj >= 0 && sj < 5) {
+            int x = grid_x + si * cell_w, y = grid_y + sj * cell_h;
+            gfx_rect_lines(x, y, cell_w, cell_h, PAL_CLR(YELLOW));
+            gfx_rect_lines(x + 1, y + 1, cell_w - 2, cell_h - 2, PAL_CLR(YELLOW));
         }
     }
 }

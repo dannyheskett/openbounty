@@ -104,6 +104,7 @@ const char *toast_text_current(void);   // NULL if no active toast
 // the same image every run and two builds can be compared byte for byte.
 double ui_anim_time(void);
 void   ui_anim_freeze(bool frozen);
+bool   ui_anim_frozen(void);   // true while the gallery holds the clock: draw final states
 
 // ---- Toast ---------------------------------------------------------------
 // Transient banner near the top of the playfield. Lasts a few seconds.

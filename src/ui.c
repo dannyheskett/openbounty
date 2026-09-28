@@ -174,6 +174,7 @@ static double toast_until;
 // The drawing clock (ui.h): frozen while the gallery captures.
 static bool s_anim_frozen;
 void   ui_anim_freeze(bool frozen) { s_anim_frozen = frozen; }
+bool   ui_anim_frozen(void) { return s_anim_frozen; }
 double ui_anim_time(void) { return s_anim_frozen ? 0.0 : frame_host_time(); }
 
 void toast_show(const char *msg) {
