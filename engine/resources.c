@@ -2650,6 +2650,10 @@ bool resources_load(Resources *res, const char *manifest_path) {
     cJSON *jsp = cJSON_GetObjectItem(root, "spawn");
     if (cJSON_IsObject(jsp)) {
         ResSpawn *sp = &res->spawn;
+        // The calm start (REQ-283): absent radius = 0 = off.
+        sp->calm_radius     = json_int(jsp, "calm_radius", 0);
+        sp->calm_max_slot   = json_int(jsp, "calm_max_slot", 1);
+        sp->calm_max_stacks = json_int(jsp, "calm_max_stacks", 2);
         cJSON *jcc = cJSON_GetObjectItem(jsp, "tier_chance_curve");
         if (cJSON_IsArray(jcc)) {
             int ti = 0;
@@ -3175,6 +3179,12 @@ int resources_spawn_slot(const ResSpawn *sp, int kind, int tier, int chance) {
 const char *resources_spawn_troop(const ResSpawn *sp, int kind, int tier, int chance) {
     if (!sp) return "";
     int slot = resources_spawn_slot(sp, kind, tier, chance);
+    kind &= 3;
+    return (slot < sp->pool_count[kind] && sp->troop_pool[kind]) ? sp->troop_pool[kind][slot] : "";
+}
+
+const char *resources_spawn_troop_at(const ResSpawn *sp, int kind, int slot) {
+    if (!sp || slot < 0) return "";
     kind &= 3;
     return (slot < sp->pool_count[kind] && sp->troop_pool[kind]) ? sp->troop_pool[kind][slot] : "";
 }
