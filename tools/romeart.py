@@ -9,6 +9,7 @@
     sprites <job> <out>    a PixelLab rock/tree sprite batch (--run to post)
     slots <sprites> <out>  search rock-slot arrangements for a mountain lattice
     rebank <old> <new> <dir> <prefix>  river bands carried onto a new interior
+    fieldgrade <src> <out> --window x,y,w,h ...  a field painting derived from another
     icon [outdir]          the launcher icon, from the title art (128/512/1024)
     prompts                rebuild docs/ROME-ART.md from art/jobs/*.json
 
@@ -2372,12 +2373,67 @@ band pixel count of each.
         print(f"{f}: {int(band.sum())} band px")
 
 
+def cmd_fieldgrade(argv):
+    """Derive a continent's field painting from another's: a window, a flip, a colour grade.
+
+    python3 tools/romeart.py fieldgrade <src.png> <out.png> --window x,y,w,h [--flip h|v|180]
+                                        [--hue N] [--sat F] [--val F] [--tint R,G,B,W]
+
+Cuts the window (w:h should be 6:5 so `siegeslice.py --field` keeps all of
+it), flips it, shifts hue by N (OpenCV's 0..180 scale), scales saturation
+and value by F, and blends W of the tint colour over the result. The three
+non-Italian fields of Glory of Rome are windows of the calmed Italia
+painting graded this way (2026-09-28, #64; the exact calls are in
+art/fields/BUILD.md). Deterministic: the same call gives the same file.
+    """
+    if len(argv) < 2:
+        sys.exit("usage: romeart.py fieldgrade <src.png> <out.png> --window x,y,w,h [--flip h|v|180] [--hue N] [--sat F] [--val F] [--tint R,G,B,W]")
+    import numpy as np
+    import cv2
+    src, out = argv[0], argv[1]
+    opt = {"--window": None, "--flip": None, "--hue": "0", "--sat": "1", "--val": "1", "--tint": None}
+    i = 2
+    while i < len(argv):
+        if argv[i] in opt and i + 1 < len(argv):
+            opt[argv[i]] = argv[i + 1]; i += 2
+        else:
+            sys.exit(f"fieldgrade: bad argument {argv[i]}")
+    if not opt["--window"]:
+        sys.exit("fieldgrade: --window x,y,w,h is required")
+    x, y, w, h = [int(v) for v in opt["--window"].split(",")]
+    im = cv2.imread(src, cv2.IMREAD_UNCHANGED)
+    if im is None:
+        sys.exit(f"fieldgrade: cannot read {src}")
+    crop = im[y:y + h, x:x + w, :3].copy()
+    if opt["--flip"] == "h":
+        crop = crop[:, ::-1]
+    elif opt["--flip"] == "v":
+        crop = crop[::-1, :]
+    elif opt["--flip"] == "180":
+        crop = crop[::-1, ::-1]
+    elif opt["--flip"]:
+        sys.exit("fieldgrade: --flip takes h, v or 180")
+    hsv = cv2.cvtColor(np.ascontiguousarray(crop), cv2.COLOR_BGR2HSV).astype(np.float32)
+    hsv[:, :, 0] = (hsv[:, :, 0] + float(opt["--hue"])) % 180
+    hsv[:, :, 1] = np.clip(hsv[:, :, 1] * float(opt["--sat"]), 0, 255)
+    hsv[:, :, 2] = np.clip(hsv[:, :, 2] * float(opt["--val"]), 0, 255)
+    res = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2BGR).astype(np.float32)
+    if opt["--tint"]:
+        r, g, b, wt = [float(v) for v in opt["--tint"].split(",")]
+        res = res * (1 - wt) + np.array([b, g, r], np.float32) * wt
+    res = np.clip(res, 0, 255).astype(np.uint8)
+    cv2.imwrite(out, np.dstack([res, np.full((h, w), 255, np.uint8)]))
+    m = res.reshape(-1, 3).mean(axis=0)
+    print(f"{out}: {w}x{h} from ({x},{y}) flip {opt['--flip'] or 'none'}; mean RGB {int(m[2])},{int(m[1])},{int(m[0])}")
+
+
 COMMANDS = {
     "zone": cmd_zone, "install": cmd_install, "sheet": cmd_sheet,
     "icon": cmd_icon,
     "sprites": cmd_sprites,
     "slots": cmd_slots,
     "rebank": cmd_rebank,
+    "fieldgrade": cmd_fieldgrade,
     "prompts": lambda a: _artprompts(["romeart"] + a),
     "grass": lambda a: _grassvar(["romeart"] + a),
     "stitch": lambda a: _stitch96(["romeart"] + a),
