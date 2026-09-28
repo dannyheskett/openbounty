@@ -1297,7 +1297,11 @@ flagged (§38).
   `<kind>_<n>`. `SALT_DWELLING` has picked a troop (zone `preferred_troops[]`
   first, else `dwelling_range`), derived the dwelling kind from the troop's
   `dwelling` field, placed `INTERACT_DWELLING_*`, and registered a pinned
-  `DwellingState`. `SALT_FRIENDLY` has created a `FoeState` with
+  `DwellingState`. The lists and ranges are per zone and rise with it:
+  `kings-bounty` carries the original's four; `glory-of-rome` carried
+  Continentia's on all four provinces until 2026-09-28 (#106), so every
+  province salted the same low lairs, and now carries its own (GLORY-OF-ROME
+  §10.7). `SALT_FRIENDLY` has created a `FoeState` with
   `friendly = true` and a placeholder garrison (re-rolled fresh on accept,
   §15.5).
 

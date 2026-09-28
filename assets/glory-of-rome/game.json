@@ -732,8 +732,8 @@
 				"telecaves":	2,
 				"dwellings":	10,
 				"friendly_foes":	5,
-				"preferred_troops":	["peasants", "sprites", "orcs", "skeletons", "wolves", "gnomes"],
-				"dwelling_range":	[0, 14]
+				"preferred_troops":	["dwarves", "zombies", "druids", "elves", "ogres", "elves"],
+				"dwelling_range":	[1, 14]
 			},
 			"chests":	[{
 					"id":	"chest_sein",
@@ -1089,8 +1089,8 @@
 				"telecaves":	2,
 				"dwellings":	10,
 				"friendly_foes":	5,
-				"preferred_troops":	["peasants", "sprites", "orcs", "skeletons", "wolves", "gnomes"],
-				"dwelling_range":	[0, 14]
+				"preferred_troops":	["ghosts", "barbarians", "trolls", "nomads"],
+				"dwelling_range":	[2, 14]
 			},
 			"chests":	[{
 					"id":	"chest_1",
@@ -1434,8 +1434,8 @@
 				"telecaves":	2,
 				"dwellings":	10,
 				"friendly_foes":	5,
-				"preferred_troops":	["peasants", "sprites", "orcs", "skeletons", "wolves", "gnomes"],
-				"dwelling_range":	[0, 14]
+				"preferred_troops":	["giants", "vampires", "archmages", "dragons", "demons"],
+				"dwelling_range":	[20, 26]
 			},
 			"chests":	[{
 					"id":	"chest_1",
