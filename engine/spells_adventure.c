@@ -98,7 +98,10 @@ int try_build_bridge(Game *g, Map *map, int dx, int dy) {
         }
 
         built++;
-        if (built >= 2) break;  // builds max 2 tiles (or up to 5 water tiles)
+        // Two tiles at most. With the breaks above (the map edge, or a tile
+        // that is neither water nor river) the walk never passes i == 2, so
+        // the loop's bound of 5 is never what stops it.
+        if (built >= 2) break;
     }
     return built;
 }
