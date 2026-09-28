@@ -684,8 +684,7 @@
 					"x":	45,
 					"y":	122,
 					"id":	"wandering_army_030"
-				}],
-			"armies":	[]
+				}]
 		}, {
 			"id":	"galliae",
 			"name":	"Galliae",
@@ -887,7 +886,6 @@
 				"body":	"The Emperor's wall runs from sea to sea. Beyond it, Caledonia answers to no one."
 			}],
 			"dwellings":	[],
-			"armies":	[],
 			"hero_spawn":	{
 				"x":	47,
 				"y":	41
@@ -1244,7 +1242,6 @@
 					"body":	"Alexander came this way to ask the god who his father was. The god's guardians still keep the pass."
 				}],
 			"dwellings":	[],
-			"armies":	[],
 			"hero_spawn":	{
 				"x":	24,
 				"y":	2
@@ -1595,7 +1592,6 @@
 					"kind":	"plains",
 					"troop":	"elephants"
 				}],
-			"armies":	[],
 			"hero_spawn":	{
 				"x":	5,
 				"y":	15
