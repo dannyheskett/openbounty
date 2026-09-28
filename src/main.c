@@ -303,6 +303,7 @@ int shell_run_game(int argc, char **argv) {
     bool        movie_requested = false;
     const char *movie_path_arg  = NULL;
     const char *gallery_dir     = NULL;   // --gallery <dir>: capture every modern screen
+    const char *puzzle_sweep_dir = NULL;  // --puzzle-sweep <dir>: the puzzle view of all 256 worlds
     // --window WxH / --touch: the geometry a device has, on this desk. The
     // window size drives everything (present_refit derives the buffer from
     // it), and --touch turns on what only a finger turns on, so a capture at
@@ -447,6 +448,8 @@ int shell_run_game(int argc, char **argv) {
             }
         } else if (strcmp(a, "--gallery") == 0 && i + 1 < argc) {
             gallery_dir = argv[++i];
+        } else if (strcmp(a, "--puzzle-sweep") == 0 && i + 1 < argc) {
+            puzzle_sweep_dir = argv[++i];
         } else if (strcmp(a, "--window") == 0 && i + 1 < argc) {
             int w = 0, h = 0;
             if (sscanf(argv[++i], "%dx%d", &w, &h) == 2 && w > 0 && h > 0) {
@@ -845,7 +848,7 @@ int shell_run_game(int argc, char **argv) {
     bool audio_started = false;
 title:;
     StartupChoice choice = { 0 };
-    if (demo_mode || autoplay_mode || gallery_dir) {
+    if (demo_mode || autoplay_mode || gallery_dir || puzzle_sweep_dir) {
         if (seed_index < 0)
             seed_index = autoplay_mode ? AUTOPLAY_DEFAULT_SEED_INDEX
                                        : DEMO_DEFAULT_SEED_INDEX;
@@ -1001,6 +1004,15 @@ title:;
     // Render target was allocated above (render_target_startup)
     // so the pre-game flow can draw into it; reuse here.
     RenderTexture2D render_target = render_target_startup;
+    if (puzzle_sweep_dir) {
+        // The puzzle view of every catalog world, then quit (#108).
+        int rc = gallery_puzzle_sweep(&game, &map, &fog, &res, &sprites, &render_target, puzzle_sweep_dir);
+        gfx_target_free(render_target);
+        sprites_unload(&sprites);
+        frame_host_window_close();
+        resources_free(&res);
+        return rc;
+    }
     if (gallery_dir) {
         // Layout audit: capture every modern screen, then quit.
         int rc = gallery_run(&game, &map, &fog, &res, &sprites, &render_target, gallery_dir);

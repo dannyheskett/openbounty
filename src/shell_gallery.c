@@ -186,6 +186,44 @@ static void reset(Gal *G) {
     G->g->player_io.head = 0;
 }
 
+// ---- the puzzle sweep -----------------------------------------------------------------
+//
+// --puzzle-sweep <dir>: the puzzle view of every catalog world of the pack,
+// the centre piece lifted, one PNG per world named by index, scepter zone and
+// tile. What a lifted piece shows can then be checked across all 256 worlds
+// at once rather than the one a tester happened to play (#108).
+
+int gallery_puzzle_sweep(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
+                         RenderTexture2D *rt, const char *dir) {
+    MKDIR(dir);
+    Gal G = { g, m, f, res, s, rt, dir, NULL, NULL };
+    ui_anim_freeze(true);   // the puzzle draws its lifted state under a held clock
+    int done = 0;
+    for (int idx = 0; idx < 256; idx++) {
+        GameFree(g);
+        GameInitSeeded(g, "Hero", 0, DIFFICULTY_NORMAL, NULL, idx);
+        const char *zone = g->position.zone[0] ? g->position.zone : res->world.starting_zone;
+        if (!GameReloadZoneMap(g, m, zone)) continue;
+        FogInit(f);
+        FogRevealFor(res, f, m, g->position.x, g->position.y);
+        int centre = puzzle_grid_entity(2, 2);
+        if (centre >= 0) {
+            if (centre < g->contract.villain_count) g->contract.villains_caught[centre] = true;
+        } else if (-centre - 1 < g->artifacts.count) {
+            g->artifacts.found[-centre - 1] = true;
+        }
+        reset(&G);
+        views_set(VIEW_PUZZLE);
+        char name[96];
+        snprintf(name, sizeof name, "puzzle_%03d_%s_%d_%d", idx, g->scepter.zone, g->scepter.x, g->scepter.y);
+        shot(&G, name);
+        done++;
+    }
+    ui_anim_freeze(false);
+    fprintf(stdout, "[puzzle-sweep] %d of 256 worlds in %s\n", done, dir);
+    return done == 256 ? 0 : 1;
+}
+
 // ---- the tap check -------------------------------------------------------------------
 //
 // Each step that stands in place of another must offer a finger the rows its
