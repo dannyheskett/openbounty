@@ -407,7 +407,12 @@ void GameInitSeeded(Game *g, const char *name, int pclass, int difficulty,
     // seed (saves restore g->seed and re-derive identical state).
     game_rng_seed(g->seed);
     g->scepter.key = game_rng_next(0, 255);
-    int scepter_continent = game_rng_next(0, 3);
+    // The scepter's zone is drawn from every zone the pack declares (#77):
+    // a four-zone pack draws 0..3 as it always did, so no shipped world
+    // re-maps; a pack with fewer zones no longer buries nothing, and one
+    // with more can use them all.
+    int zones = g->res->zone_count > 0 ? g->res->zone_count : 1;
+    int scepter_continent = game_rng_next(0, zones - 1);
     bury_scepter(g, scepter_continent);
 
     // Step 3 (play.c:390-400): Character name, class, difficulty, days, gold.
