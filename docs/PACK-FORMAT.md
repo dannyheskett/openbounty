@@ -459,9 +459,9 @@ own `field_grid` prefix, which has won for fights on that zone, so each
 continent can have its own ground. The shell has drawn each cell's own
 picture under the obstacles and troops, in place of `combat_ground`, when
 every cell of the zone's grid loaded; a siege has kept the siege grid.
-Absent, `combat_ground` has applied. `glory-of-rome` has shipped Italia's
-grid (`art/combat/field/italia_<x>_<y>.png`); `kings-bounty` has declared
-none.
+Absent, `combat_ground` has applied. `glory-of-rome` has shipped a grid per
+zone (`art/combat/field/<zone>_<x>_<y>.png`, each zone's own `field_grid`);
+`kings-bounty` has declared none.
 
 **Per-town art.** A town catalog entry has been able to declare
 `"art": "<stem>"`, a tile under `art/tiles/`, and the engine has stamped that

@@ -303,8 +303,20 @@ generated from.
   its RD Pro top-down style has drawn the look but stops at 256 and its
   joins have not blended, and variation tiles and pasted objects have read
   as squares and stickers; the painting route has been the only one that
-  kept the look. The other three continents have no field picture yet and
-  draw the hero's map tile.
+  kept the look. Galliae, Africa and Oriens (2026-09-28, #64) have been
+  derived from the calmed Italia painting rather than painted: each is a
+  696 x 580 window of `art/fields/italia_calm.png` whose edge is all
+  content, taken off centre (top left, bottom right, top right), flipped,
+  and colour-graded for its land by `romeart.py fieldgrade` (Galliae hue
+  +6, saturation x1.2, value x0.86, a deeper cooler green for forest and
+  moor; Africa hue -12, saturation x0.9, value x1.05, 12% tan, dry coastal
+  grass against desert; Oriens hue -5, saturation x0.62, value x1.02, 10%
+  grey-beige, a sun-bleached plateau), kept as `art/fields/<zone>.png` and
+  sliced the same way. The exact calls are in `art/fields/BUILD.md`; the
+  grade is deterministic, so the kept paintings are what the calls produce.
+  One painting recoloured three ways shares its tufts across the four
+  fields; a painting per continent in the same style would replace a
+  derived one with no other change.
 - **The title screen** (`art/ui/splash_title.png`, 256x164) — the eagle has
   been generated (screen route, no border); the words have been drawn by
   `tools/splashtitle.py` from C059 Bold, gold with dark shading, title above
