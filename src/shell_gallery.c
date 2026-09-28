@@ -38,6 +38,7 @@
 #include "modern/page.h"
 #include "shell_actions.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 // mingw's mkdir takes one argument, as src/screenshot.c and src/recorder.c
@@ -620,6 +621,23 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     views_contract_set_active(true);
     reset(&G); views_set(VIEW_CONTRACT); shot(&G, "22_contract_held");
     reset(&G); views_set(VIEW_PUZZLE); shot(&G, "23_puzzle");
+    {
+        // Every piece lifted: the land round the scepter with its objects
+        // blanked, and the scepter's own cell framed (#104).
+        int nv = g->contract.villain_count, na = g->artifacts.count;
+        bool *vc = calloc((size_t)(nv > 0 ? nv : 1), sizeof *vc);
+        bool *af = calloc((size_t)(na > 0 ? na : 1), sizeof *af);
+        if (vc && af) {
+            memcpy(vc, g->contract.villains_caught, (size_t)nv * sizeof *vc);
+            memcpy(af, g->artifacts.found, (size_t)na * sizeof *af);
+            for (int i = 0; i < nv; i++) g->contract.villains_caught[i] = true;
+            for (int i = 0; i < na; i++) g->artifacts.found[i] = true;
+            reset(&G); views_set(VIEW_PUZZLE); shot(&G, "23_puzzle_lifted");
+            memcpy(g->contract.villains_caught, vc, (size_t)nv * sizeof *vc);
+            memcpy(g->artifacts.found, af, (size_t)na * sizeof *af);
+        }
+        free(vc); free(af);
+    }
     {
         // Places visited on this continent, the orb's whole map, a boat.
         int zi = 0;
