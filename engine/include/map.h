@@ -57,6 +57,9 @@ typedef struct {
     // The zone's wandering-army art stem ("wandering_army" unless the zone
     // declares `army_art`); every foe stamp reads it from here.
     char army_art[TILE_ART_NAME_LEN];
+    // world.clear_keeps_ground: MapClearInteractive restores walkable
+    // non-grass ground (desert) instead of writing plain grass (REQ-229f).
+    bool clear_keeps_ground;
     // The string pool the tiles index (see Tile). Rebuilt by every load.
     int      str_count;                // strings in use, index 0 = ""
     int      pool_used;                // bytes of `pool` in use
