@@ -1187,7 +1187,11 @@ flagged (§38).
   goes, so a road or a grass variant survives a foe walking over it. Only
   grass-terrain ground has been restored: on any other ground (desert, a
   dwelling on a mountain edge) the cleared cell has become plain grass, and
-  water has stayed water.
+  water has stayed water. A pack that sets `world.clear_keeps_ground`
+  (2026-09-28, #107) has had any walkable ground restored, desert included,
+  so a fought foe, an opened chest or a fled army on sand has left sand;
+  unwalkable ground has still become grass and water has stayed water.
+  `glory-of-rome` sets it; `kings-bounty` does not and plays as the original.
 
 ### 9.9 Roads (grass-terrain tile codes)
 
