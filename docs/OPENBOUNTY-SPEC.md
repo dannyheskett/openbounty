@@ -1565,7 +1565,14 @@ flagged (§38).
   `roll_hostile_garrison` (the foe roll) has filled 1..3 slots
   (`1 + rng(0,2)`), each with its own `kind` and `chance` rolls through the
   same slot walk and `count = base + rng(0, base / 2)` where `base` is
-  `tier_counts[tier]` clamped to ≥ 2.
+  `tier_counts[tier]` clamped to ≥ 2. **The calm start** (2026-09-28, #69):
+  when the pack's `spawn.calm_radius` is positive, a hostile foe whose spawn
+  tile lies within that Chebyshev distance of its zone's `hero_spawn` has
+  rolled `1 + rng(0, calm_max_stacks - 1)` stacks and, for each, the same
+  `kind` and `chance` draws with the slot walk's result clamped to
+  `calm_max_slot`, so only the weakest troops of each kind have stood beside
+  the spawn. Radius 0 (`kings-bounty`, which declares none) has left the roll
+  as the original's; `glory-of-rome` has set 12 / 1 / 2.
 
 ### 15.4 Encounter flows
 

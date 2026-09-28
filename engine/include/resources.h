@@ -172,6 +172,14 @@ typedef struct {
     bool   kind_curve_set[RES_SPAWN_TIERS];
     int   *kind_curve[RES_SPAWN_TIERS][RES_SPAWN_TIERS];   // [kind][tier]
     int    kind_curve_len[RES_SPAWN_TIERS][RES_SPAWN_TIERS];
+    // The calm start (2026-09-28, #69): a hostile foe whose spawn tile lies
+    // within calm_radius (Chebyshev) of its zone's hero_spawn rolls no pool
+    // slot above calm_max_slot and no more than calm_max_stacks stacks.
+    // calm_radius 0 (absent) disables it: the King's Bounty pack rolls as
+    // the original did. Glory of Rome sets 12 / 1 / 2.
+    int    calm_radius;
+    int    calm_max_slot;
+    int    calm_max_stacks;
 } ResSpawn;
 
 // The pool slot a chance roll (1..100) picks in pool `kind` at difficulty
@@ -181,6 +189,8 @@ typedef struct {
 int resources_spawn_slot(const ResSpawn *sp, int kind, int tier, int chance);
 // The troop id that roll picks ("" when the slot names none).
 const char *resources_spawn_troop(const ResSpawn *sp, int kind, int tier, int chance);
+// The troop id at a pool slot directly ("" past the pool's end).
+const char *resources_spawn_troop_at(const ResSpawn *sp, int kind, int slot);
 
 // Render geometry, declared by the pack. There is no default: a pack must say
 // which mode it is authored for, because the two are not interchangeable --

@@ -846,19 +846,43 @@ static const char *salt_pick_dwelling_troop(const Game *g, int continent,
 // chance distribution; the dwelling kind is rolled fresh each call and
 // indexes the troop pool independently. So Saharia (cont 3) skews to
 // the rarest slot regardless of kind, but kind itself is uniform.
-static void roll_hostile_garrison(const Game *g, int continent, Unit *out) {
+// The calm start (REQ-283, #69): true when a hostile foe at (x, y) lies within
+// spawn.calm_radius of its zone's hero_spawn. Radius 0 (the King's Bounty
+// pack) never calms, so the original roll runs unchanged.
+static bool foe_is_calm(const Game *g, int continent, int x, int y) {
+    const ResSpawn *sp = &g->res->spawn;
+    if (sp->calm_radius <= 0) return false;
+    if (continent < 0 || continent >= g->res->zone_count) return false;
+    const ResZone *z = &g->res->zones[continent];
+    int dx = x - z->hero_spawn_x, dy = y - z->hero_spawn_y;
+    if (dx < 0) dx = -dx;
+    if (dy < 0) dy = -dy;
+    return (dx > dy ? dx : dy) <= sp->calm_radius;
+}
+
+static void roll_hostile_garrison(const Game *g, int continent, int x, int y, Unit *out) {
     for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
         out[i].id[0] = '\0';
         out[i].count = 0;
     }
     if (!g || !g->res) return;
     int continent_tier = continent & 3;
-    int stacks = 1 + game_rng_next(0, 2);   // 1..3 stacks
+    const bool calm = foe_is_calm(g, continent, x, y);
+    const ResSpawn *sp = &g->res->spawn;
+    int max_stacks = calm ? (sp->calm_max_stacks > 0 ? sp->calm_max_stacks : 1) : 3;
+    int stacks = 1 + game_rng_next(0, max_stacks - 1);   // 1..3 stacks; calm: 1..calm_max_stacks
     if (stacks > GAME_ARMY_SLOTS) stacks = GAME_ARMY_SLOTS;
     for (int s = 0; s < stacks; s++) {
         int kind = game_rng_next(0, 3);     // dwelling = rand(0,3)
         int chance = game_rng_next(1, 100);
-        const char *tid = resources_spawn_troop(&g->res->spawn, kind, continent_tier, chance);
+        const char *tid;
+        if (calm) {
+            int slot = resources_spawn_slot(sp, kind, continent_tier, chance);
+            if (slot > sp->calm_max_slot) slot = sp->calm_max_slot;
+            tid = resources_spawn_troop_at(sp, kind, slot);
+        } else {
+            tid = resources_spawn_troop(sp, kind, continent_tier, chance);
+        }
         if (!tid || !tid[0]) continue;
         const TroopDef *td = troop_by_id(tid);
         if (!td) continue;
@@ -905,7 +929,7 @@ static void add_foe(Game *g, int continent, const char *zone, int x, int y,
             f->garrison[s].count = explicit_army->army_count[s];
         }
     } else {
-        roll_hostile_garrison(g, continent, f->garrison);
+        roll_hostile_garrison(g, continent, x, y, f->garrison);
     }
 }
 

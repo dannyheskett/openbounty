@@ -4552,6 +4552,9 @@
 		"\\xcf":	{"art":	"river_mouth_w", "terrain":	"river"}
 	},
 	"spawn":	{
+		"calm_radius":	12,
+		"calm_max_slot":	1,
+		"calm_max_stacks":	2,
 		"kind_chance_curve":	[[[60, 90, 94, 98, 101], [20, 70, 82, 95, 99], [10, 20, 35, 50, 90], [3, 6, 8, 10, 40]], null, null, null],
 		"tier_chance_curve":	[[60, 90, 98, 101], [20, 70, 95, 99], [10, 20, 50, 90], [3, 6, 10, 40]],
 		"tier_troop_pool":	[["peasants", "wolves", "archers", "nomads", "barbarians", "archmages"], ["sprites", "gnomes", "elves", "trolls", "druids"], ["orcs", "dwarves", "ogres", "giants", "dragons"], ["skeletons", "zombies", "ghosts", "vampires", "demons"]]

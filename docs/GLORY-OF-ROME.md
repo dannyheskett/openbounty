@@ -173,7 +173,12 @@ from the zone's tier.
 
 What the zone tier *has* driven has been ambient danger only: monster-castle
 garrisons (`difficulty_tier` → `repopulate_castle`), wandering-foe strength
-(`tier_chance_curve`), and the chest tables.
+(`tier_chance_curve`), and the chest tables. One exception since 2026-09-28
+(#69, a tester met giants north of Roma and worse south of it on day one):
+hostile foes within 12 cells of a zone's `hero_spawn` have rolled only the
+two weakest troops of each kind in at most two stacks (`spawn.calm_radius`,
+`calm_max_slot`, `calm_max_stacks`, PACK-FORMAT); the King's Bounty pack
+declares none and rolls as the original did.
 
 **The pacing lever has been catalog order.** The contract cycle has been
 seeded with the *first five villains in catalog order*, and `max_contract`
