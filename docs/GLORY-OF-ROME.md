@@ -647,6 +647,17 @@ Real requirements, not guidelines:
   them (REQ-231): 2 artifacts + 1 navmap + 1 orb + 2 telecaves + 10 dwellings
   + 5 friendly foes. Anything above 21 has remained a real chest. Reference
   zones have carried 45–75; Rome's have carried 30–40.
+- **Lairs have risen with the province** (2026-09-28, #106). The ten salted
+  dwellings take the zone's `preferred_troops` first and roll the rest from
+  its `dwelling_range`, so each province carries its own, on the reference
+  pack's curve with the flavour swapped where Rome demands it: Italia the
+  Coloni, Lares, Baleares, Larvae, Lupi and Fauni from the catalog's first
+  fifteen; Galliae the Ligures, Lemures, Druidae, Silvani, Cyclopes and
+  Silvani again, range `[1, 14]`; Africa the Manes, Sarmatae, Antaei and
+  Numidae, range `[2, 14]`; Oriens the Gigantes, Striges, Furiae, Dracones
+  and Empusae, range `[20, 26]`, which reaches the Elephanti. Until then all
+  four provinces copied Italia's list, so the last province had peasants'
+  lairs and Baleares everywhere.
 - **More contract-eligible castles than villains, with margin.** Italia has
   hosted six and has had ten.
 - **Castles have been single tiles.** Every catalog entry has declared
