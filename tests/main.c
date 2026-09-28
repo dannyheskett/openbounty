@@ -56,6 +56,7 @@ SUITE_EXTERN(unit_combat_rng_suite);
 SUITE_EXTERN(unit_combat_unit_suite);
 SUITE_EXTERN(unit_combat_geom_suite);
 SUITE_EXTERN(unit_combat_damage_suite);
+SUITE_EXTERN(unit_combat_morale_suite);
 SUITE_EXTERN(unit_combat_spells_suite);
 SUITE_EXTERN(unit_combat_ai_suite);
 
@@ -123,6 +124,7 @@ int main(int argc, char **argv) {
     RUN_SUITE(unit_combat_unit_suite);
     RUN_SUITE(unit_combat_geom_suite);
     RUN_SUITE(unit_combat_damage_suite);
+    RUN_SUITE(unit_combat_morale_suite);
     RUN_SUITE(unit_combat_spells_suite);
     RUN_SUITE(unit_combat_ai_suite);
 

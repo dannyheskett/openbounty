@@ -1394,6 +1394,12 @@ typedef struct {
     // Combat rules -- cross-group morale chart .
     // Indexed by (my_group - 'A', their_group - 'A'); values are 'N'/'L'/'H'.
     char morale_chart[5][5];
+    // combat.morale_as_army_view: true = a unit's combat morale is the
+    // army view's rule (REQ-271: alone High; each OTHER slot looked up as
+    // chart[mine][theirs]; any L Low, all H High, else Normal). Absent or
+    // false = the behaviour ported from King's Bounty (REQ-385), kept for
+    // the legacy pack. Glory of Rome sets it (2026-09-27, #75).
+    bool morale_as_army_view;
 
     // Fuzzy-number labels for intelligence / enemy-sight text
     // .

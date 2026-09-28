@@ -52,7 +52,7 @@ other absent block has parsed as empty or as its defaults.
 | `time`        | object ✱ | Day/week/difficulty constants. |
 | `economy`     | object ✱ | Costs, chest tables, scoring. |
 | `tuning`      | object   | `instant_army_multiplier` (per rank), `search_cost_days`, and the temp-death army (`temp_death`: `{"troop": id, "count": n}`; defaults: the cheapest-recruit-cost troop, 20). |
-| `combat`      | object ✱ | Morale chart, number-name labels. |
+| `combat`      | object ✱ | Morale chart, number-name labels; `morale_as_army_view` (bool, default false): a unit's combat morale follows the army view's rule (REQ-271) instead of the behaviour ported from King's Bounty (REQ-385). Glory of Rome sets it; the King's Bounty pack omits it. |
 | `controls`    | object   | Settings-menu rows. |
 | `colors`      | object   | Difficulty-bar colors, minimap palette. |
 | `audio`       | object   | Music track list, SFX paths. |
