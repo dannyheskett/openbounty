@@ -6,6 +6,7 @@
 #include "tables.h"
 #include "map.h"
 #include "tile.h"
+#include "spells_adventure.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -179,10 +180,59 @@ TEST reload_zone_after_reading_a_save(void) {
     PASS();
 }
 
+// A bridge the spell laid stays on the map when the zone reloads: sailing to
+// another zone and back, and a save read into the game (issue #109; the
+// original kept its bridge tiles in the world map).
+TEST bridge_survives_zone_reload(void) {
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, NULL, FIXTURE_SEED));
+    ASSERT(res->zone_count >= 2);
+    char home[sizeof g->position.zone];
+    snprintf(home, sizeof home, "%s", g->position.zone);
+    const char *away = strcmp(res->zones[0].id, home) != 0 ? res->zones[0].id
+                                                             : res->zones[1].id;
+    // A bare walkable tile with the sea to its east.
+    int hx = -1, hy = -1;
+    for (int y = 0; y < m->height && hx < 0; y++)
+        for (int x = 0; x + 1 < m->width; x++) {
+            const Tile *t = MapGetTile(m, x, y), *e = MapGetTile(m, x + 1, y);
+            if (t->terrain == TERRAIN_GRASS && !t->blocks_foot && !t->is_bridge &&
+                t->interactive == INTERACT_NONE && e->terrain == TERRAIN_WATER) {
+                hx = x; hy = y; break;
+            }
+        }
+    ASSERT(hx >= 0);
+    g->position.x = hx; g->position.y = hy;
+    int built = try_build_bridge(g, m, 1, 0);
+    ASSERT(built >= 1);
+    ASSERT_EQ(built, g->bridge_count);
+    ASSERT(MapGetTile(m, hx + 1, hy)->is_bridge);
+    ASSERT_EQ(SAVE_OK, SaveGameWrite(SAVE_PATH, g, m, f));
+    // Sail away and back.
+    ASSERT(GameSwitchZone(g, m, f, away));
+    ASSERT(GameSwitchZone(g, m, f, home));
+    for (int i = 1; i <= built; i++) {
+        ASSERT(MapGetTile(m, hx + i, hy)->is_bridge);
+        ASSERT(adventure_walkable_on_foot(MapGetTile(m, hx + i, hy)));
+    }
+    // A save read over a map fresh from the pack.
+    ASSERT(MapLoadZoneWithPlacements(m, res, home, g));
+    ASSERT_FALSE(MapGetTile(m, hx + 1, hy)->is_bridge);
+    ASSERT_EQ(SAVE_OK, SaveGameRead(SAVE_PATH, g, m, f));
+    ASSERT_EQ(built, g->bridge_count);
+    ASSERT(GameReloadZoneMap(g, m, g->position.zone));
+    for (int i = 1; i <= built; i++)
+        ASSERT(MapGetTile(m, hx + i, hy)->is_bridge);
+    unlink(SAVE_PATH);
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
 SUITE(e2e_save_more_suite) {
     RUN_TEST(save_preserves_army_contents);
     RUN_TEST(save_preserves_consumed_list);
     RUN_TEST(save_preserves_villains_caught);
     RUN_TEST(save_load_save_state_identical);
     RUN_TEST(reload_zone_after_reading_a_save);
+    RUN_TEST(bridge_survives_zone_reload);
 }

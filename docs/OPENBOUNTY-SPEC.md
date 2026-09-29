@@ -504,6 +504,7 @@ flagged (§38).
   | `castles` + `castle_count` | `CastleRecord *` | Per-castle owner + garrison, parallel to `res->castles` |
   | `scepter` | `ScepterLocation` | Buried scepter zone + `(x,y)` |
   | `consumed` + `consumed_count` | `TileMutation *` | Permanently consumed tiles |
+  | `bridges` + `bridge_count` | `BuiltBridge *` | Decks the Bridge spell laid |
   | `events_done` + `events_done_count` | `EventFired *` | One-time vistas already played (zone + event id) |
   | `dwellings` + `dwelling_count` | `DwellingState *` | Per-dwelling recruit pools |
   | `placements` + `placement_count` | `SaltedPlacement *` | Salt-time placements |
@@ -562,6 +563,13 @@ flagged (§38).
 - **REQ-152.** `TileMutation`: `zone[24]`, `x`, `y`, a tile permanently
   consumed (artifact picked up, chest opened). On load the caller has
   re-applied these so the tile renders and behaves as plain terrain.
+- **REQ-537.** `BuiltBridge`: `zone[24]`, `x`, `y`, `vertical`, one deck the
+  Bridge spell laid (`try_build_bridge` records each through `GameAddBridge`;
+  `MapLayBridge` in `engine/map.c` lays it). The map is rebuilt from the pack
+  on every zone load, so `GameReloadZoneMap` has laid every recorded deck of
+  the zone again: a bridge has stood after sailing away and back and after a
+  save was read into the game, as the original's world map kept its bridge
+  tiles. Saved as `bridges`; a save without the key has loaded none (#109).
 - **REQ-153.** `DwellingState`: `zone[24]`, `x`, `y`, `troop_id[32]`
   (deterministic, set on first visit), `count` (current available recruits),
   `max_population`.

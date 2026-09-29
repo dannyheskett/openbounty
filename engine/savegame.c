@@ -489,6 +489,26 @@ SaveResult SaveGameRead(const char *path,
             tm->y = jy->valueint;
         }
     }
+    // Bridge-spell decks (absent in a save written before they were kept,
+    // which then loads as none).
+    g->bridge_count = 0;
+    cJSON *jbridges = cJSON_GetObjectItem(root, "bridges");
+    if (cJSON_IsArray(jbridges)) {
+        cJSON *m;
+        cJSON_ArrayForEach(m, jbridges) {
+            if (!GameReserveBridges(g, g->bridge_count + 1)) break;
+            cJSON *jz = cJSON_GetObjectItem(m, "zone");
+            cJSON *jx = cJSON_GetObjectItem(m, "x");
+            cJSON *jy = cJSON_GetObjectItem(m, "y");
+            if (!cJSON_IsString(jz) ||
+                !cJSON_IsNumber(jx) || !cJSON_IsNumber(jy)) continue;
+            BuiltBridge *b = &g->bridges[g->bridge_count++];
+            copy_json_string(b->zone, sizeof(b->zone), jz);
+            b->x = jx->valueint;
+            b->y = jy->valueint;
+            b->vertical = cJSON_IsTrue(cJSON_GetObjectItem(m, "vertical")) ? 1 : 0;
+        }
+    }
     // One-time vistas already played (absent in a save written before they
     // existed, which then loads as none).
     g->events_done_count = 0;

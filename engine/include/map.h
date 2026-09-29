@@ -133,6 +133,12 @@ bool MapWalkable(const Map *map, int x, int y);
 // No-op if the coord is out of bounds.
 void MapClearInteractive(Map *map, int x, int y);
 
+// Lay one Bridge-spell deck at (x, y): a water or river tile becomes a walkable
+// grass tile flagged is_bridge, drawn as the river bridge over a river and the
+// plain bridge over the sea, running north-south when `vertical`. False (the
+// tile untouched) when (x, y) is off the map or is neither water nor river.
+bool MapLayBridge(Map *map, int x, int y, bool vertical);
+
 // Write the tile that `code` names in the pack's tile_codes at (x, y), the way
 // the map loader builds it. False when the code is not declared or (x, y) is
 // off the map.
