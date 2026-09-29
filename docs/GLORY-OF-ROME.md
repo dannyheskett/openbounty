@@ -180,6 +180,13 @@ two weakest troops of each kind in at most two stacks (`spawn.calm_radius`,
 `calm_max_slot`, `calm_max_stacks`, PACK-FORMAT); the King's Bounty pack
 declares none and rolls as the original did.
 
+The monster castles' `difficulty_tier` has stepped up with the province as
+the reference pack's does (Continentia 0, Forestria 1, Archipelia 2, Saharia
+3): Italia 0 and 1, Galliae 1, Africa 2, Oriens 3. Until #105 (2026-09-29)
+Africa sat at 1 with Galliae and Oriens at 2, so no Rome castle rolled from
+the top tier and the last sieges were easy; a castle left empty and retaken
+(REQ-302) refills at the same tier.
+
 **The pacing lever has been catalog order.** The contract cycle has been
 seeded with the *first five villains in catalog order*, and `max_contract`
 has walked the array from there. Catalog position, not zone, has decided what
