@@ -2609,7 +2609,7 @@
 			"x":	24,
 			"y":	4,
 			"zone":	"africa",
-			"difficulty_tier":	1,
+			"difficulty_tier":	2,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
@@ -2618,7 +2618,7 @@
 			"x":	21,
 			"y":	2,
 			"zone":	"africa",
-			"difficulty_tier":	1,
+			"difficulty_tier":	2,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
@@ -2627,7 +2627,7 @@
 			"x":	2,
 			"y":	10,
 			"zone":	"africa",
-			"difficulty_tier":	1,
+			"difficulty_tier":	2,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
@@ -2636,7 +2636,7 @@
 			"x":	33,
 			"y":	17,
 			"zone":	"africa",
-			"difficulty_tier":	1,
+			"difficulty_tier":	2,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
@@ -2645,7 +2645,7 @@
 			"x":	51,
 			"y":	25,
 			"zone":	"africa",
-			"difficulty_tier":	1,
+			"difficulty_tier":	2,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
@@ -2654,7 +2654,7 @@
 			"x":	56,
 			"y":	21,
 			"zone":	"africa",
-			"difficulty_tier":	1,
+			"difficulty_tier":	2,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
@@ -2663,7 +2663,7 @@
 			"x":	34,
 			"y":	21,
 			"zone":	"oriens",
-			"difficulty_tier":	2,
+			"difficulty_tier":	3,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
@@ -2672,7 +2672,7 @@
 			"x":	61,
 			"y":	8,
 			"zone":	"oriens",
-			"difficulty_tier":	2,
+			"difficulty_tier":	3,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
@@ -2681,7 +2681,7 @@
 			"x":	62,
 			"y":	31,
 			"zone":	"oriens",
-			"difficulty_tier":	2,
+			"difficulty_tier":	3,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
@@ -2690,7 +2690,7 @@
 			"x":	41,
 			"y":	26,
 			"zone":	"oriens",
-			"difficulty_tier":	2,
+			"difficulty_tier":	3,
 			"footprint":	"1x1"
 		}],
 	"troops":	[{
