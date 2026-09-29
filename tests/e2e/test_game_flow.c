@@ -553,6 +553,38 @@ TEST snapshot_after_state_change(void) {
     PASS();
 }
 
+// An artifact the hero walks onto stays found and off the map after sailing
+// away and back: the zone reloads from the pack with its consumed tiles
+// re-applied (issue #111).
+TEST found_artifact_stays_gone_after_sailing_back(void) {
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, "continentia", FIXTURE_SEED));
+    // A salted artifact on continentia with a bare walkable tile to its west.
+    int ax = -1, ay = -1;
+    for (int i = 0; i < g->placement_count && ax < 0; i++) {
+        const SaltedPlacement *sp = &g->placements[i];
+        if (sp->kind != INTERACT_ARTIFACT || strcmp(sp->zone, "continentia") != 0) continue;
+        const Tile *w = MapGetTile(m, sp->x - 1, sp->y);
+        if (w && w->terrain == TERRAIN_GRASS && !w->blocks_foot &&
+            w->interactive == INTERACT_NONE) { ax = sp->x; ay = sp->y; }
+    }
+    ASSERT(ax >= 0);
+    const ArtifactDef *a = artifact_by_id(TileId(m, MapGetTile(m, ax, ay)));
+    ASSERT(a);
+    ASSERT_FALSE(g->artifacts.found[a->index]);
+    g->position.x = ax - 1; g->position.y = ay;
+    g->position.last_x = ax - 1; g->position.last_y = ay;
+    GameStep(g, m, f, res, 1, 0);
+    ASSERT(g->artifacts.found[a->index]);
+    ASSERT_EQ(INTERACT_NONE, MapGetTile(m, ax, ay)->interactive);
+    ASSERT(GameSwitchZone(g, m, f, "forestria"));
+    ASSERT(GameSwitchZone(g, m, f, "continentia"));
+    ASSERT(g->artifacts.found[a->index]);
+    ASSERT_EQ(INTERACT_NONE, MapGetTile(m, ax, ay)->interactive);
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
 SUITE(e2e_game_flow_suite) {
     RUN_TEST(walk_save_load_walk_continues);
     RUN_TEST(chest_consumed_persists_across_save);
@@ -569,4 +601,5 @@ SUITE(e2e_game_flow_suite) {
     RUN_TEST(add_troop_changes_army);
     RUN_TEST(villain_capture_increments_count);
     RUN_TEST(snapshot_after_state_change);
+    RUN_TEST(found_artifact_stays_gone_after_sailing_back);
 }
