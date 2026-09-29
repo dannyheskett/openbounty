@@ -476,6 +476,7 @@ cJSON *state_build_snapshot(const Game *g,
             cJSON_AddStringToObject(c, "id", g->castles[i].id);
             cJSON_AddBoolToObject  (c, "visited", g->castles[i].visited);
             cJSON_AddBoolToObject  (c, "known",   g->castles[i].known);
+            cJSON_AddBoolToObject  (c, "taken",   g->castles[i].taken);
             cJSON_AddStringToObject(c, "owner",
                 castle_owner_id(g->castles[i].owner_kind));
             if (g->castles[i].villain_id[0])

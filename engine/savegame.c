@@ -443,6 +443,12 @@ SaveResult SaveGameRead(const char *path,
             g->castles[i].known   = cJSON_IsBool(jk) ? cJSON_IsTrue(jk) : false;
             cJSON *jo = cJSON_GetObjectItem(it, "owner");
             g->castles[i].owner_kind = castle_owner_from_id(cJSON_IsString(jo) ? jo->valuestring : NULL);
+            // Absent in a save written before castles could be lost: a castle
+            // the hero holds there was taken.
+            cJSON *jt = cJSON_GetObjectItem(it, "taken");
+            g->castles[i].taken = cJSON_IsBool(jt)
+                ? cJSON_IsTrue(jt)
+                : g->castles[i].owner_kind == CASTLE_OWNER_PLAYER;
             copy_json_string(g->castles[i].villain_id, sizeof(g->castles[i].villain_id),
                              cJSON_GetObjectItem(it, "villain"));
             parse_unit_array(cJSON_GetObjectItem(it, "garrison"),

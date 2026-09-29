@@ -558,7 +558,9 @@ flagged (§38).
   keeps the RNG call order of OpenKB's `spawn_game`).
 - **REQ-151.** `TownRecord`: `id[24]`, `visited`, `spell_for_sale[24]`.
   `CastleRecord`: `id[24]`, `visited`, `known` (revealed by Find Villain
-  etc.), `owner_kind`, `villain_id[24]` (when owner is a villain),
+  etc.), `taken` (the hero has won it at least once; set by both siege wins,
+  kept when an empty castle falls back to the monsters, REQ-302; a save
+  without it reads it from the owner), `owner_kind`, `villain_id[24]` (when owner is a villain),
   `garrison[5]`.
 - **REQ-152.** `TileMutation`: `zone[24]`, `x`, `y`, a tile permanently
   consumed (artifact picked up, chest opened). On load the caller has
@@ -1695,10 +1697,17 @@ flagged (§38).
 ### 17.3 Repopulation
 
 - **REQ-302.** At game init, every monster castle has been seeded by
-  `repopulate_castle`. A player-owned castle has never been repopulated: an
-  emptied garrison has stayed empty. Astrology growth
-  (§24.3) has applied weekly to non-player castle troops matching the
-  astrology creature.
+  `repopulate_castle`. At each week's end a player-owned castle with no
+  troops in any of its five slots has fallen back to the monsters:
+  `owner_kind = CASTLE_OWNER_MONSTERS` and a fresh `repopulate_castle`
+  garrison, so it has had to be besieged again, and it has no longer counted
+  among the hero's castles for the score. A castle holding any stack has
+  stayed the hero's untouched. The original (OPENKB-SPEC §16.11) tested stack
+  0 alone and kept the owner byte, so a castle with stack 0 moved out lost
+  the troops left in it; the whole-garrison test and the owner change are
+  this port's (#112). Astrology growth (§24.3) has applied weekly to
+  non-player castle troops matching the astrology creature, a castle retaken
+  that week included.
 
 ### 17.4 Visit / siege / own / audience
 
@@ -1987,7 +1996,8 @@ flagged (§38).
   (4) `gold += commission_weekly`, `last_commission = commission_weekly`;
   (5) `gold -= sum(slot.count * (recruit_cost / 10))`; (6) if `boat.has_boat`,
   `gold -= GameBoatCost`, repossessing the boat on shortfall; (7) `gold =
-  max(0, gold)`; (8) astrology effects (§24).
+  max(0, gold)`; (8) astrology effects (§24), with empty player castles
+  retaken (REQ-302) after the dwellings and before castle and foe growth.
 
 ---
 

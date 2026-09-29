@@ -306,7 +306,9 @@ mover, recruiter, and their measurement layer.
 - **AP-042.** Completion has been a single uniform per-kind predicate
   `autoplay/goals.c planstep_is_done`: consumables → tile in `g->consumed`;
   alcove → `GameHasRites` for the alcove's zone (`knows_magic` without rites
-  per zone); siege weapons → `siege_weapons`; monster castle → player-owned;
+  per zone); siege weapons → `siege_weapons`; monster castle → taken once
+  (`CastleRecord.taken`, or player-owned; a castle left empty falls back to
+  the monsters at the week's end, REQ-302, and is not an objective again);
   villain → `villains_caught`; scepter → `stats.won`; foe → gone by
   `placement_id`+zone; vista → `GameEventFired`; muster → the demanded troop
   in the army.

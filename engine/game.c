@@ -1451,15 +1451,26 @@ static void end_day(Game *g, bool *week_ended, int *commission_paid) {
         // ghosts -> peasants when creature == peasants.
         GameApplyAstrology(g, astrology);
 
-        // Player castles do NOT auto-repopulate. The hero garrisons
-        // them by transferring troops in via the own_castle screen;
-        // empty player castles stay empty until the player visits and
-        // deposits a stack. The astrology growth block below correctly
-        // skips player- and special-owned castles for the same reason.
-        //
-        // (Earlier this loop called repopulate_castle() -- the monster
-        // spawner -- on empty player castles, which silently stuffed
-        // captured castles with random monster garrisons every week.)
+        // A castle the hero left without a garrison falls back to the
+        // monsters (OPENKB-SPEC section 16.11): a fresh monster garrison at the
+        // castle's difficulty, and it must be besieged again. The original
+        // tested stack 0 alone and kept the owner byte; here the whole
+        // garrison must be empty and the owner changes, so a garrisoned
+        // castle is never overwritten and a retaken one is the monsters' (#112).
+        // Before the growth below, as in the original, so it grows this week.
+        for (int i = 0; i < g->castle_count; i++) {
+            CastleRecord *cr = &g->castles[i];
+            if (!cr->id[0] || cr->owner_kind != CASTLE_OWNER_PLAYER) continue;
+            bool empty = true;
+            for (int s = 0; s < GAME_ARMY_SLOTS; s++)
+                if (cr->garrison[s].count > 0) { empty = false; break; }
+            if (!empty) continue;
+            cr->owner_kind = CASTLE_OWNER_MONSTERS;
+            cr->villain_id[0] = '\0';
+            repopulate_castle(g, i);
+            if (strcmp(g->position.own_castle, cr->id) == 0)
+                g->position.own_castle[0] = '\0';
+        }
 
         // : weekly astrology growth.
         // For every non-player-owned castle, stacks whose troop matches
