@@ -16,13 +16,16 @@ Work has reached `main` through `staging`: pull requests have been
 squash-merged into `staging`, and a merge-commit pull request from `staging`
 to `main` has been the release. Nothing has been pushed to `main` directly.
 
-**Every push to `main` has cut a release.** Merging a PR (or pushing
-directly) has run the release workflow, which has picked the next `N`, built
-every target, and published. Docs-only pushes have been skipped via
-`paths-ignore`. The workflow has also been runnable by hand from the
-**Actions** tab → **release** → **Run workflow**, which is what you want
-after a force-push (see §4); a hand run has defaulted to `dry_run`, which
-builds and verifies everything and tags and publishes nothing.
+**Every merge to `main` has cut a release.** Merging the `staging` -> `main`
+pull request has pushed its merge commit to `main`, and that push has run the
+release workflow, which has picked the next `N`, built every target, and
+published. The `main` ruleset has refused direct pushes, so that merge has been
+the only way anything reaches `main`. Promotions that change only docs have
+been skipped via `paths-ignore`. The workflow has also been runnable by hand
+from the **Actions** tab → **release** → **Run workflow**, which is what you
+want to retry a release that failed for a reason outside the code (see §4); a
+hand run has defaulted to `dry_run`, which builds and verifies everything and
+tags and publishes nothing.
 
 The workflow has:
    - computed the next number `N` (max existing `release-N` tag + 1),
@@ -46,15 +49,16 @@ by `--version`.
 
 ## 2. What the workflow has done
 
-`.github/workflows/release.yml` has been triggered by any push to `main` and
-by `workflow_dispatch`. Its jobs:
+`.github/workflows/release.yml` has been triggered by any push to `main` (in
+practice, the merge of a `staging` -> `main` pull request) and by
+`workflow_dispatch`. Its jobs:
 
 - **guard**: the attribution guard (`attribution-guard.yml`, reused via
   `workflow_call`) has gated everything, so a violating commit has never
   reached the tag/publish step.
 - **prepare**: has computed the next release number `N` from the existing
   `release-*` tags, and captured the triggering commit SHA up front (so a
-  mid-build push to `main` can't change what gets tagged).
+  mid-build merge to `main` can't change what gets tagged).
 - **linux + windows builds** (Ubuntu 22.04): has rebuilt raylib from source
   against the runner's glibc, run `make test` (the full suite, unit, e2e,
   autoplay, and the combat-formula regression digests), built the Linux
@@ -192,16 +196,26 @@ unzipped the APK it built and asserted it carries the pack, the `.so` and
 CI has run on doc-only pull requests too; the release workflow is the one
 that has skipped them (`paths-ignore`).
 
-Pushes to `main` have not run CI and gone straight to the release workflow,
-which has run the same test suite before publishing anything.
+CI has run on pull requests into `staging` and into `main` alike, so a
+promotion has been tested as a pull request before its merge reaches `main`.
+The `staging` -> `main` pull request has also had to pass the **from staging**
+check (`.github/workflows/promotion.yml`): the `main` ruleset has required it,
+because GitHub has no setting that limits a pull request's source branch. The
+push that a merge makes to `main` has not run CI again; it has gone to the
+release workflow, which has run the same test suite before publishing
+anything.
 
 ---
 
 ## 4. Recovering from a failed release
 
 Because the tag has been created **last** (only after all builds succeed), a
-failed build has left no tag and no release. Fix the issue and push again, or
-re-run the workflow by hand with `dry_run` off; the same `N` has been reused.
+failed build has left no tag and no release, and the same `N` has been
+reused by the next run. If the failure was outside the code (a runner, an
+expired secret, a store outage), re-run the workflow by hand with `dry_run`
+off; it builds `main`'s tip. If the code needs a fix, land it on `staging`
+through a pull request and promote again with a new `staging` -> `main` pull
+request; `main` has taken no direct push.
 
 If a run failed *after* the publish job partially created the tag or
 release:
@@ -215,7 +229,8 @@ git tag -d release-3
 gh release delete release-3 --yes
 ```
 
-Then fix the issue and push to `main`, which runs the release workflow again.
+Then re-run the workflow by hand, or land the fix on `staging` and promote it
+with a new `staging` -> `main` pull request, as above.
 
 ---
 

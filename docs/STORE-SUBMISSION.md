@@ -89,6 +89,6 @@ step-by-step for creating them without a Mac.
 | `store-release.yml` | manual; the listing pushed and a chosen build submitted, `dry_run` on by default |
 | `testflight.yml` | manual; the chosen branch built, signed and sent to TestFlight, with no tag and no release |
 | `devicefarm.yml` | manual; real-device fuzz test of both apps (AWS OIDC, no stored keys) |
-| `release.yml` — `build-ios`, `publish-testflight`, `testflight-notes`, `submit-appstore`, `build-android`, `publish-play` | every merge to `main`, each gated on its own secrets; `submit-appstore` only when asked for |
+| `release.yml` — `build-ios`, `publish-testflight`, `testflight-notes`, `submit-appstore`, `build-android`, `publish-play` | every merge to `main` (a `staging` -> `main` promotion), each gated on its own secrets; `submit-appstore` only when asked for |
 
 Play has had no automation beyond the internal-track upload.
