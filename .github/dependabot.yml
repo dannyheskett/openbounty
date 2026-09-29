@@ -5,6 +5,8 @@ updates:
   # through the cross-platform CI before it can merge.
   - package-ecosystem: "github-actions"
     directory: "/"
+    # Work lands on staging; main takes pull requests from staging only.
+    target-branch: "staging"
     schedule:
       interval: "weekly"
     commit-message:

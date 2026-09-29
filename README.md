@@ -40,8 +40,9 @@ builds have been a single .exe with no installer and no DLLs. The macOS build
 has been ad-hoc signed: on first run, right-click → Open to bypass
 Gatekeeper, or run `xattr -dr com.apple.quarantine ./openbounty`.
 
-Releases have been sequential build numbers under `release-N` tags. Every
-push to `main` has run the release workflow, which has picked the next N,
+Releases have been sequential build numbers under `release-N` tags. Work has
+been merged into `staging`, and a `staging` -> `main` pull request has been the
+release: its merge has run the release workflow, which has picked the next N,
 built every target, and published them; the build number has reached the user
 via the archive filenames and the `--version` output:
 

@@ -167,8 +167,8 @@ reject.
 
 ## 7. Cut a release
 
-Merge to `main`, or run the **release** workflow manually with
-`dry_run` **unchecked**. Then:
+Merge the `staging` -> `main` pull request, or run the **release** workflow
+manually with `dry_run` **unchecked**. Then:
 
 1. `build-ios` has signed the `.ipa` and verified it is App Store-shaped.
 2. `publish` has tagged `release-N` and attached the artifacts.
