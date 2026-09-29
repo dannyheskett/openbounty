@@ -1,0 +1,50 @@
+{
+ "id": "8836974a-8c06-4fc1-abbb-c833b208e240",
+ "name": "grey alpine limestone rock, th",
+ "state_name": "base",
+ "prompt": "grey alpine limestone rock, the whole rock inside the frame, seen from above at a slight angle, lit from the north-west with a shaded front face on the south side, a little moss in its cracks, small shadow to the south-east, pixel art, transparent background",
+ "size": {
+  "width": 96,
+  "height": 96
+ },
+ "directions": 1,
+ "created_at": "2026-09-27T20:44:51.519121+00:00",
+ "view": null,
+ "rotation_urls": {
+  "south": null,
+  "west": null,
+  "east": null,
+  "north": null,
+  "south-east": null,
+  "south-west": null,
+  "north-east": null,
+  "north-west": null
+ },
+ "storage_urls": {
+  "frame_0": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/8836974a-8c06-4fc1-abbb-c833b208e240/rotations/frame_0.png",
+  "frame_1": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/8836974a-8c06-4fc1-abbb-c833b208e240/rotations/frame_1.png",
+  "frame_2": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/8836974a-8c06-4fc1-abbb-c833b208e240/rotations/frame_2.png",
+  "frame_3": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/8836974a-8c06-4fc1-abbb-c833b208e240/rotations/frame_3.png"
+ },
+ "frame_urls": [
+  "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/8836974a-8c06-4fc1-abbb-c833b208e240/rotations/frame_0.png",
+  "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/8836974a-8c06-4fc1-abbb-c833b208e240/rotations/frame_1.png",
+  "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/8836974a-8c06-4fc1-abbb-c833b208e240/rotations/frame_2.png",
+  "https://backblaze.pixellab.ai/file/pixellab-characters/objects/721d852a-4f3b-46c2-9d30-ffab9fcd8e63/8836974a-8c06-4fc1-abbb-c833b208e240/rotations/frame_3.png"
+ ],
+ "style_settings": {
+  "no_background": true,
+  "item_descriptions": [
+   "large angular grey crag with a sheer shaded cliff face at the front and a white snow cap",
+   "rounded grey limestone boulder with dark crevices and moss patches",
+   "broad rocky massif with a jagged top ridge, shaded cliff face at the front",
+   "tall grey rock spire with a small snow cap"
+  ]
+ },
+ "tags": [],
+ "status": "review",
+ "group_id": "adfb68f6-a02c-455f-a840-4248c7fa1435",
+ "progress_percent": 34,
+ "eta_seconds": 316,
+ "animations": []
+}

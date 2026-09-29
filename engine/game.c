@@ -88,6 +88,7 @@ static void game_free_tables(Game *g) {
         FogFree(&g->world.continent_fog[i]);
     free(g->world.continent_fog);
     free(g->consumed);
+    free(g->bridges);
     free(g->events_done);
     free(g->dwellings);
     free(g->placements);
@@ -155,6 +156,7 @@ static bool list_reserve(void **arr, int *cap, int need, size_t elem) {
 bool GameReserveFoes(Game *g, int need)       { return g && GAME_LIST_RESERVE(g, foes, foe_cap, need); }
 bool GameReservePlacements(Game *g, int need) { return g && GAME_LIST_RESERVE(g, placements, placement_cap, need); }
 bool GameReserveConsumed(Game *g, int need)   { return g && GAME_LIST_RESERVE(g, consumed, consumed_cap, need); }
+bool GameReserveBridges(Game *g, int need)    { return g && GAME_LIST_RESERVE(g, bridges, bridge_cap, need); }
 bool GameReserveEventsDone(Game *g, int need) { return g && GAME_LIST_RESERVE(g, events_done, events_done_cap, need); }
 bool GameReserveDwellings(Game *g, int need)  { return g && GAME_LIST_RESERVE(g, dwellings, dwelling_cap, need); }
 
@@ -204,6 +206,7 @@ bool GameCopy(Game *dst, const Game *src) {
     dst->world.orbs_found = keep.world.orbs_found;
     dst->world.continent_fog = keep.world.continent_fog;
     dst->consumed = keep.consumed;         dst->consumed_cap = keep.consumed_cap;
+    dst->bridges = keep.bridges;           dst->bridge_cap = keep.bridge_cap;
     dst->events_done = keep.events_done;   dst->events_done_cap = keep.events_done_cap;
     dst->dwellings = keep.dwellings;       dst->dwelling_cap = keep.dwelling_cap;
     dst->placements = keep.placements;     dst->placement_cap = keep.placement_cap;
@@ -238,6 +241,7 @@ bool GameCopy(Game *dst, const Game *src) {
                     i < src->world.zone_count; i++)
         if (!FogCopy(&dst->world.continent_fog[i], &src->world.continent_fog[i])) ok = false;
     COPY_LIST(consumed, consumed_count, consumed_cap);
+    COPY_LIST(bridges, bridge_count, bridge_cap);
     COPY_LIST(events_done, events_done_count, events_done_cap);
     COPY_LIST(dwellings, dwelling_count, dwelling_cap);
     COPY_LIST(placements, placement_count, placement_cap);
@@ -294,6 +298,7 @@ uint32_t GameFingerprint(const Game *g, uint32_t h) {
     flat.contract.max_contract = g->contract.max_contract;
     flat.boat = g->boat;                 flat.scepter = g->scepter;
     flat.consumed_count = g->consumed_count;
+    flat.bridge_count = g->bridge_count;
     flat.dwelling_count = g->dwelling_count;
     flat.placement_count = g->placement_count;
     flat.foe_count = g->foe_count;
@@ -319,6 +324,7 @@ uint32_t GameFingerprint(const Game *g, uint32_t h) {
         h = FNV_TABLE(h, f->seen, f->width * f->height);
     }
     h = FNV_TABLE(h, g->consumed, g->consumed_count);
+    h = FNV_TABLE(h, g->bridges, g->bridge_count);
     h = FNV_TABLE(h, g->dwellings, g->dwelling_count);
     h = FNV_TABLE(h, g->placements, g->placement_count);
     h = FNV_TABLE(h, g->foes, g->foe_count);
@@ -407,7 +413,12 @@ void GameInitSeeded(Game *g, const char *name, int pclass, int difficulty,
     // seed (saves restore g->seed and re-derive identical state).
     game_rng_seed(g->seed);
     g->scepter.key = game_rng_next(0, 255);
-    int scepter_continent = game_rng_next(0, 3);
+    // The scepter's zone is drawn from every zone the pack declares (#77):
+    // a four-zone pack draws 0..3 as it always did, so no shipped world
+    // re-maps; a pack with fewer zones no longer buries nothing, and one
+    // with more can use them all.
+    int zones = g->res->zone_count > 0 ? g->res->zone_count : 1;
+    int scepter_continent = game_rng_next(0, zones - 1);
     bury_scepter(g, scepter_continent);
 
     // Step 3 (play.c:390-400): Character name, class, difficulty, days, gold.
@@ -846,19 +857,43 @@ static const char *salt_pick_dwelling_troop(const Game *g, int continent,
 // chance distribution; the dwelling kind is rolled fresh each call and
 // indexes the troop pool independently. So Saharia (cont 3) skews to
 // the rarest slot regardless of kind, but kind itself is uniform.
-static void roll_hostile_garrison(const Game *g, int continent, Unit *out) {
+// The calm start (REQ-283, #69): true when a hostile foe at (x, y) lies within
+// spawn.calm_radius of its zone's hero_spawn. Radius 0 (the King's Bounty
+// pack) never calms, so the original roll runs unchanged.
+static bool foe_is_calm(const Game *g, int continent, int x, int y) {
+    const ResSpawn *sp = &g->res->spawn;
+    if (sp->calm_radius <= 0) return false;
+    if (continent < 0 || continent >= g->res->zone_count) return false;
+    const ResZone *z = &g->res->zones[continent];
+    int dx = x - z->hero_spawn_x, dy = y - z->hero_spawn_y;
+    if (dx < 0) dx = -dx;
+    if (dy < 0) dy = -dy;
+    return (dx > dy ? dx : dy) <= sp->calm_radius;
+}
+
+static void roll_hostile_garrison(const Game *g, int continent, int x, int y, Unit *out) {
     for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
         out[i].id[0] = '\0';
         out[i].count = 0;
     }
     if (!g || !g->res) return;
     int continent_tier = continent & 3;
-    int stacks = 1 + game_rng_next(0, 2);   // 1..3 stacks
+    const bool calm = foe_is_calm(g, continent, x, y);
+    const ResSpawn *sp = &g->res->spawn;
+    int max_stacks = calm ? (sp->calm_max_stacks > 0 ? sp->calm_max_stacks : 1) : 3;
+    int stacks = 1 + game_rng_next(0, max_stacks - 1);   // 1..3 stacks; calm: 1..calm_max_stacks
     if (stacks > GAME_ARMY_SLOTS) stacks = GAME_ARMY_SLOTS;
     for (int s = 0; s < stacks; s++) {
         int kind = game_rng_next(0, 3);     // dwelling = rand(0,3)
         int chance = game_rng_next(1, 100);
-        const char *tid = resources_spawn_troop(&g->res->spawn, kind, continent_tier, chance);
+        const char *tid;
+        if (calm) {
+            int slot = resources_spawn_slot(sp, kind, continent_tier, chance);
+            if (slot > sp->calm_max_slot) slot = sp->calm_max_slot;
+            tid = resources_spawn_troop_at(sp, kind, slot);
+        } else {
+            tid = resources_spawn_troop(sp, kind, continent_tier, chance);
+        }
         if (!tid || !tid[0]) continue;
         const TroopDef *td = troop_by_id(tid);
         if (!td) continue;
@@ -905,8 +940,16 @@ static void add_foe(Game *g, int continent, const char *zone, int x, int y,
             f->garrison[s].count = explicit_army->army_count[s];
         }
     } else {
-        roll_hostile_garrison(g, continent, f->garrison);
+        roll_hostile_garrison(g, continent, x, y, f->garrison);
     }
+}
+
+// True when a chest of the zone pins this artifact ("artifact": id).
+static bool chest_pins_artifact(const ResZone *z, const char *artifact_id) {
+    if (!z || !artifact_id || !artifact_id[0]) return false;
+    for (int i = 0; i < z->chest_count; i++)
+        if (strcmp(z->chests[i].artifact, artifact_id) == 0) return true;
+    return false;
 }
 
 void salt_continent(Game *g, int continent, int min_artifacts, int min_navmaps,
@@ -934,13 +977,26 @@ void salt_continent(Game *g, int continent, int min_artifacts, int min_navmaps,
                 a->is_static, a);
     }
 
+    // A chest that names an artifact ("artifact": id) is that artifact: it is
+    // placed here, before the salt draws, and counts against the zone's
+    // artifact quota, so the salt scatters only the rest.
+    int pinned = 0;
+    for (int i = 0; i < z->chest_count; i++) {
+        const ResZoneChest *c = &z->chests[i];
+        if (!c->artifact[0]) continue;
+        GameAddPlacement(g, z->id, c->x, c->y, INTERACT_ARTIFACT, c->artifact);
+        pinned++;
+    }
+    min_artifacts = (min_artifacts > pinned) ? min_artifacts - pinned : 0;
+
     // The barrel is every chest the salt may use: a "fixed" chest stays a
-    // chest (a prize at the end of a path), so it is left out.
+    // chest (a prize at the end of a path), and a pinned artifact is already
+    // placed, so both are left out.
     int *slots = (int *)calloc((size_t)(z->chest_count > 0 ? z->chest_count : 1), sizeof(int));
     if (!slots) return;
     int barrel_len = 0;
     for (int i = 0; i < z->chest_count; i++)
-        if (!z->chests[i].fixed) slots[barrel_len++] = i;
+        if (!z->chests[i].fixed && !z->chests[i].artifact[0]) slots[barrel_len++] = i;
     int min_len = min_artifacts + min_navmaps + min_orbs +
                   min_telecaves + min_dwellings + min_friendly;
 
@@ -999,17 +1055,26 @@ void salt_continent(Game *g, int continent, int min_artifacts, int min_navmaps,
                 // Each (continent, slot) is fixed by
                 // artifact_inversion[continent*2+slot]. We honour this by
                 // looking up the artifact whose `zone == z->id` and
-                // `local_idx == artifact_counter`.
+                // `local_idx == artifact_counter`, skipping any a chest has
+                // pinned (those are placed already, above).
                 int ac = g->res->artifacts_count;
                 int aidx = -1;
-                for (int j = 0; j < ac; j++) {
-                    const ArtifactDef *cand = artifact_by_index(j);
-                    if (cand &&
-                        strcmp(cand->zone, z->id) == 0 &&
-                        cand->local_idx == artifact_counter) {
-                        aidx = j;
-                        break;
+                while (aidx < 0 && artifact_counter < ac) {
+                    for (int j = 0; j < ac; j++) {
+                        const ArtifactDef *cand = artifact_by_index(j);
+                        if (cand &&
+                            strcmp(cand->zone, z->id) == 0 &&
+                            cand->local_idx == artifact_counter) {
+                            aidx = j;
+                            break;
+                        }
                     }
+                    if (aidx >= 0 && chest_pins_artifact(z, artifact_by_index(aidx)->id)) {
+                        aidx = -1;
+                        artifact_counter++;
+                        continue;
+                    }
+                    break;
                 }
                 if (aidx < 0) { artifact_counter++; break; }
                 const ArtifactDef *a = artifact_by_index(aidx);
@@ -1130,19 +1195,40 @@ void bury_scepter(Game *g, int continent) {
     if (total <= 0) { MapFree(m); free(m); return; }
     int target = game_rng_next(0, total - 1);
     int count = 0;
+    bool passing = false;   // the drawn tile was a bridge; take the next plain one
     for (int y = 0; y < m->height; y++) {
         for (int x = 0; x < m->width; x++) {
             const Tile *t = &MAP_TILE(m, x, y);
             if (t->terrain != TERRAIN_GRASS) continue;
             if (t->interactive != INTERACT_NONE) continue;
             if (t->blocks_foot) continue;
-            if (count == target) {
+            if (count == target || passing) {
+                // A bridge declares grass terrain over a river (#117): the
+                // scepter passes on to the next plain tile in the same walk,
+                // with no further draw, so the count and the draw above are
+                // untouched and no world that never drew a bridge moves.
+                if (t->is_bridge) { passing = true; continue; }
                 g->scepter.x = x;
                 g->scepter.y = y;
                 MapFree(m); free(m);
                 return;
             }
             count++;
+        }
+    }
+    if (passing) {
+        // The drawn bridge was the last tile of the walk: wrap to the first
+        // plain tile so a bridge never leaves the scepter unburied.
+        for (int y = 0; y < m->height; y++) {
+            for (int x = 0; x < m->width; x++) {
+                const Tile *t = &MAP_TILE(m, x, y);
+                if (t->terrain != TERRAIN_GRASS || t->interactive != INTERACT_NONE ||
+                    t->blocks_foot || t->is_bridge) continue;
+                g->scepter.x = x;
+                g->scepter.y = y;
+                MapFree(m); free(m);
+                return;
+            }
         }
     }
     MapFree(m); free(m);
@@ -1365,15 +1451,26 @@ static void end_day(Game *g, bool *week_ended, int *commission_paid) {
         // ghosts -> peasants when creature == peasants.
         GameApplyAstrology(g, astrology);
 
-        // Player castles do NOT auto-repopulate. The hero garrisons
-        // them by transferring troops in via the own_castle screen;
-        // empty player castles stay empty until the player visits and
-        // deposits a stack. The astrology growth block below correctly
-        // skips player- and special-owned castles for the same reason.
-        //
-        // (Earlier this loop called repopulate_castle() -- the monster
-        // spawner -- on empty player castles, which silently stuffed
-        // captured castles with random monster garrisons every week.)
+        // A castle the hero left without a garrison falls back to the
+        // monsters (OPENKB-SPEC section 16.11): a fresh monster garrison at the
+        // castle's difficulty, and it must be besieged again. The original
+        // tested stack 0 alone and kept the owner byte; here the whole
+        // garrison must be empty and the owner changes, so a garrisoned
+        // castle is never overwritten and a retaken one is the monsters' (#112).
+        // Before the growth below, as in the original, so it grows this week.
+        for (int i = 0; i < g->castle_count; i++) {
+            CastleRecord *cr = &g->castles[i];
+            if (!cr->id[0] || cr->owner_kind != CASTLE_OWNER_PLAYER) continue;
+            bool empty = true;
+            for (int s = 0; s < GAME_ARMY_SLOTS; s++)
+                if (cr->garrison[s].count > 0) { empty = false; break; }
+            if (!empty) continue;
+            cr->owner_kind = CASTLE_OWNER_MONSTERS;
+            cr->villain_id[0] = '\0';
+            repopulate_castle(g, i);
+            if (strcmp(g->position.own_castle, cr->id) == 0)
+                g->position.own_castle[0] = '\0';
+        }
 
         // : weekly astrology growth.
         // For every non-player-owned castle, stacks whose troop matches
@@ -1539,12 +1636,32 @@ void GameAddConsumed(Game *g, const char *zone, int x, int y) {
     m->y = y;
 }
 
+void GameAddBridge(Game *g, const char *zone, int x, int y, bool vertical) {
+    if (!g || !zone) return;
+    for (int i = 0; i < g->bridge_count; i++) {
+        if (g->bridges[i].x == x && g->bridges[i].y == y &&
+            strcmp(g->bridges[i].zone, zone) == 0) return;
+    }
+    if (!GameReserveBridges(g, g->bridge_count + 1)) return;
+    BuiltBridge *b = &g->bridges[g->bridge_count++];
+    copy_id(b->zone, sizeof(b->zone), zone);
+    b->x = x;
+    b->y = y;
+    b->vertical = vertical ? 1 : 0;
+}
+
 void GameApplyTileMutations(const Game *g, Map *map, const char *zone) {
     if (!g || !map || !zone) return;
     for (int i = 0; i < g->consumed_count; i++) {
         const TileMutation *m = &g->consumed[i];
         if (strcmp(m->zone, zone) != 0) continue;
         MapClearInteractive(map, m->x, m->y);
+    }
+    // Bridges the spell laid: the fresh map has the water back under each.
+    for (int i = 0; i < g->bridge_count; i++) {
+        const BuiltBridge *b = &g->bridges[i];
+        if (strcmp(b->zone, zone) != 0) continue;
+        MapLayBridge(map, b->x, b->y, b->vertical != 0);
     }
     // A vista that has played changed the map for good (its bridge, its cleared
     // pass): re-apply those tiles every time the zone loads.
@@ -1566,7 +1683,8 @@ void GameApplyTileMutations(const Game *g, Map *map, const char *zone) {
 bool GameReloadZoneMap(const Game *g, Map *map, const char *zone) {
     if (!g || !map || !zone || !zone[0]) return false;
     if (!MapLoadZoneWithPlacements(map, g->res, zone, g)) return false;
-    // Re-apply consumed tiles so picked-up artifacts / chests stay gone.
+    // Re-apply consumed tiles so picked-up artifacts / chests stay gone, and
+    // lay the spell's bridges again.
     GameApplyTileMutations(g, map, zone);
     return true;
 }
@@ -3059,6 +3177,80 @@ const char *GameNumberName(const Game *g, int count) {
             return r->number_name_labels[i];
     }
     return r->number_name_labels[r->number_name_count - 1];
+}
+
+// Append `frag` to `buf` at *off, never past `cap`.
+static void report_append(char *buf, size_t cap, size_t *off, const char *frag) {
+    if (*off + 1 >= cap) return;
+    int n = snprintf(buf + *off, cap - *off, "%s", frag);
+    if (n < 0) return;
+    if ((size_t)n >= cap - *off) { *off = cap - 1; return; }
+    *off += (size_t)n;
+}
+
+bool GameCastleReport(const Game *g, const char *castle_id, char *out, size_t cap) {
+    if (!out || cap == 0) return false;
+    out[0] = '\0';
+    if (!g || !g->res || !castle_id) return false;
+    const ResBanners *bn = &g->res->banners;
+    const ResCastle *rc = resources_castle_by_id(g->res, castle_id);
+    const CastleRecord *cr = GameFindCastleConst(g, castle_id);
+    if (!rc || !cr) return false;
+
+    char buf[512];
+    size_t off = 0;
+    char tmp[256];
+    buf[0] = '\0';
+    {
+        ResTemplateVar vars[] = { { "NAME", rc->name[0] ? rc->name : cr->id } };
+        resources_format_template(tmp, sizeof tmp, bn->town_intel_castle_under, vars, 1);
+        report_append(buf, sizeof buf, &off, tmp);
+    }
+    const char *owner = bn->town_intel_owner_none;
+    switch (cr->owner_kind) {
+        case CASTLE_OWNER_PLAYER:   owner = bn->town_intel_owner_player; break;
+        case CASTLE_OWNER_MONSTERS: owner = bn->town_intel_owner_none;   break;
+        case CASTLE_OWNER_VILLAIN: {
+            const VillainDef *v = villain_by_id(cr->villain_id);
+            owner = (v && v->name[0]) ? v->name : cr->villain_id;
+            break;
+        }
+        case CASTLE_OWNER_SPECIAL:  owner = bn->town_intel_owner_king;   break;
+    }
+    {
+        ResTemplateVar vars[] = { { "OWNER", owner } };
+        resources_format_template(tmp, sizeof tmp, bn->town_intel_owner_rule, vars, 1);
+        report_append(buf, sizeof buf, &off, tmp);
+    }
+    int stacks_shown = 0;
+    for (int i = 0; i < GAME_ARMY_SLOTS && off + 1 < sizeof(buf); i++) {
+        const Unit *u = &cr->garrison[i];
+        if (!u->id[0] || u->count == 0) continue;
+        const TroopDef *t = troop_by_id(u->id);
+        const char *tname = (t && t->name[0]) ? t->name : u->id;
+        const char *count_label = GameNumberName(g, u->count);
+        if (count_label[0]) {
+            ResTemplateVar vars[] = { { "LABEL", count_label }, { "TROOP", tname } };
+            resources_format_template(tmp, sizeof tmp, bn->town_intel_count_named, vars, 2);
+        } else {
+            char cbuf[16];
+            snprintf(cbuf, sizeof cbuf, "%d", u->count);
+            ResTemplateVar vars[] = { { "COUNT", cbuf }, { "TROOP", tname } };
+            resources_format_template(tmp, sizeof tmp, bn->town_intel_count_numeric, vars, 2);
+        }
+        report_append(buf, sizeof buf, &off, tmp);
+        stacks_shown++;
+    }
+    if (!stacks_shown && off + 1 < sizeof(buf)) {
+        // No garrison rolled: a monster castle reads as "various groups".
+        const char *src = (cr->owner_kind == CASTLE_OWNER_MONSTERS)
+            ? bn->town_intel_monsters_generic
+            : bn->town_intel_no_garrison;
+        resources_format_template(tmp, sizeof tmp, src, NULL, 0);
+        report_append(buf, sizeof buf, &off, tmp);
+    }
+    snprintf(out, cap, "%s", buf);
+    return true;
 }
 
 CastleRecord *GameFindCastle(Game *g, const char *castle_id) {

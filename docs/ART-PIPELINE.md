@@ -140,7 +140,8 @@ generated from.
 - **Location backdrops** — `figure: false`, `target [240, 102]`; the job has
   been `art/jobs/backdrop_castle.json`, and the others have differed only in
   id, prompt and seed.
-- **Base terrain** (grass, grass_variant, forest, mountain, desert, water) —
+- **Base terrain** (grass, grass_variant, forest, desert, water; the mountain
+  interior until 2026-09-27, see below) —
   `rd_tile__single_tile`, the API's purpose-built seamless tile style (cap 64;
   its craft guide sizes single tiles at 16 to 32), at **48x48**, laid 2x2 by
   `tools/romeart.py tile2x2` into the 96x96 pack tile at native pixel density,
@@ -154,6 +155,15 @@ generated from.
   terrain.
   - **Water** has been described flat, with no waves or bands: asked for
     waves, the tile style has drawn a block face with a lit top edge.
+  - **Mountain, Italia** — no longer a texture. The 48 px interior read as
+    rounded domes with a dark split (a tester: "a split Reese's cup", #67),
+    so on 2026-09-27 Italia's mountain has been rebuilt the way the other
+    continents' were: eight PixelLab rock sprites (`romeart.py sprites`,
+    `art/jobs/italia_o96_rocks.json`) composed by the lattice into the
+    interior and the 19 edges with a searched slot arrangement
+    (`romeart.py slots`, `art/primitives/italia/rock_slots.json`), and the
+    river bands carried onto the new interior (`romeart.py rebank`), all
+    recorded in `art/primitives/italia/BUILD.md`.
 - **Object tiles** (the per-zone towns, the castle, the four dwellings) —
   `rd_pro__topdown`, 96x96, `figure: false`, `remove_bg: true` with the
   magenta background named in the prompt, **no reference image**. Of
@@ -276,13 +286,37 @@ generated from.
 - **Field grid** (`art/combat/field/<zone>_<x>_<y>.png`, 30 cells at 96) —
   the ground of an open fight, one picture per continent (a zone's
   `field_grid`, REQ-165e). Italia's has come from a supplied 1254 x 1254
-  picture kept at `art/fields/italia.png`, a light meadow painted on white:
-  `tools/siegeslice.py --field` has taken the largest 6:5 rectangle of
-  content centred in it (726 x 605, the white kept out), scaled it to
-  576 x 480 with Lanczos and cut the thirty cells. The ground has been kept
-  lighter and plainer than the troops, which have to read against it. The
-  other three continents have no field picture yet and draw the hero's map
-  tile.
+  picture kept at `art/fields/italia.png`, a light meadow painted on white,
+  calmed first by `tools/fieldcalm.py --level strong` into
+  `art/fields/italia_calm.png`: colour and size thresholds have masked the
+  boulders, small rocks, ferns, dark clumps, clover rosettes, pale moss and
+  brown earth patches, and G'MIC's patch-based inpainting has filled them
+  from the painting's own grass, so the tufts, tiny flowers and tonal
+  mottling stay and nothing large distracts from the troops. That is
+  preparation of a supplied source, not post-processing of generated
+  terrain; the fill is not deterministic, so the calmed picture that shipped
+  is kept beside the source. `tools/siegeslice.py --field` has then taken
+  the largest 6:5 rectangle of content centred in it (726 x 605, the white
+  kept out), scaled it to 576 x 480 with Lanczos and cut the thirty cells.
+  Generating this ground has been tried and rejected (2026-09-27): Retro
+  Diffusion's tile styles have tiled seamlessly but drawn flat game-green,
+  its RD Pro top-down style has drawn the look but stops at 256 and its
+  joins have not blended, and variation tiles and pasted objects have read
+  as squares and stickers; the painting route has been the only one that
+  kept the look. Galliae, Africa and Oriens (2026-09-28, #64) have been
+  derived from the calmed Italia painting rather than painted: each is a
+  696 x 580 window of `art/fields/italia_calm.png` whose edge is all
+  content, taken off centre (top left, bottom right, top right), flipped,
+  and colour-graded for its land by `romeart.py fieldgrade` (Galliae hue
+  +6, saturation x1.2, value x0.86, a deeper cooler green for forest and
+  moor; Africa hue -12, saturation x0.9, value x1.05, 12% tan, dry coastal
+  grass against desert; Oriens hue -5, saturation x0.62, value x1.02, 10%
+  grey-beige, a sun-bleached plateau), kept as `art/fields/<zone>.png` and
+  sliced the same way. The exact calls are in `art/fields/BUILD.md`; the
+  grade is deterministic, so the kept paintings are what the calls produce.
+  One painting recoloured three ways shares its tufts across the four
+  fields; a painting per continent in the same style would replace a
+  derived one with no other change.
 - **The title screen** (`art/ui/splash_title.png`, 256x164) — the eagle has
   been generated (screen route, no border); the words have been drawn by
   `tools/splashtitle.py` from C059 Bold, gold with dark shading, title above

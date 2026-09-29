@@ -6,6 +6,10 @@
     zone <zone>            build a continent's whole tile set from its primitives
     install <zone>         copy a built set into the pack and list it in game.json
     sheet <zone>           a review page of every tile in a set, at 1:1
+    sprites <job> <out>    a PixelLab rock/tree sprite batch (--run to post)
+    slots <sprites> <out>  search rock-slot arrangements for a mountain lattice
+    rebank <old> <new> <dir> <prefix>  river bands carried onto a new interior
+    fieldgrade <src> <out> --window x,y,w,h ...  a field painting derived from another
     icon [outdir]          the launcher icon, from the title art (128/512/1024)
     prompts                rebuild docs/ROME-ART.md from art/jobs/*.json
 
@@ -2223,9 +2227,213 @@ def cmd_icon(argv):
     print(f"icon: {out}/icon_128.png, icon_512.png, icon_1024.png")
 
 
+
+def cmd_sprites(argv):
+    """Run a PixelLab sprite-batch job (rocks, trees) and keep its sprites.
+
+    python3 tools/romeart.py sprites art/jobs/<zone>_o96_rocks.json art/primitives/<zone>/rocks [--run]
+
+The job file is the repo's own record: "description" (the shared prompt),
+"batches" (lists of four item descriptions, one POST /create-1-direction-object
+per list) and "_note". Each call is size 96, view top-down, and costs 20-40
+subscription generations. For every batch this writes body<N>.json (what was
+posted), meta<N>.json (the object as GET /v2/objects returned it) and the
+candidate frames as tile_<NN>.png numbered across batches, as
+art/primitives/africa/rocks was kept. Token at ~/.config/pixellab/token.
+Nothing is posted without --run (2026-09-27, Italia rocks for #67; before that
+the batches were posted by hand).
+    """
+    import base64, io, time, urllib.request
+    if len(argv) < 2:
+        sys.exit("usage: romeart.py sprites <job.json> <out-dir> [--run]")
+    job_p, out = argv[0], argv[1]
+    RUN = "--run" in argv
+    job = json.load(open(job_p))
+    tok = open(os.path.expanduser("~/.config/pixellab/token")).read().strip()
+    H = {"Authorization": "Bearer " + tok, "Content-Type": "application/json"}
+    API = "https://api.pixellab.ai/v2"
+
+    def req(method, path, body=None):
+        r = urllib.request.Request(API + path, data=json.dumps(body).encode() if body is not None else None, headers=H, method=method)
+        try:
+            with urllib.request.urlopen(r, timeout=120) as f:
+                return f.status, json.loads(f.read())
+        except urllib.error.HTTPError as e:
+            return e.code, (e.read() or b"{}").decode()[:500]
+
+    bodies = [{"description": job["description"], "size": 96, "view": "top-down", "item_descriptions": b} for b in job["batches"]]
+    print(f"{len(bodies)} calls, {sum(len(b) for b in job['batches'])} sprites, 20-40 generations per call")
+    if not RUN:
+        for n, b in enumerate(bodies):
+            print(f"  call {n}: {b['item_descriptions']}")
+        sys.exit("dry run: add --run to post")
+    os.makedirs(out, exist_ok=True)
+    tile = 0
+    for n, body in enumerate(bodies):
+        json.dump(body, open(os.path.join(out, f"body{n}.json"), "w"), indent=1)
+        st, resp = req("POST", "/create-1-direction-object", body)
+        print(f"call {n}: HTTP {st} {str(resp)[:160]}")
+        if st not in (200, 202):
+            sys.exit("post failed")
+        oid = resp["object_id"]
+        meta = None
+        for _ in range(120):
+            time.sleep(10)
+            st, meta = req("GET", f"/objects/{oid}")
+            status = meta.get("status") if isinstance(meta, dict) else None
+            if status in ("completed", "review", "failed"):
+                break
+        json.dump(meta, open(os.path.join(out, f"meta{n}.json"), "w"), indent=1)
+        if not isinstance(meta, dict) or meta.get("status") == "failed":
+            sys.exit("generation failed")
+        urls = meta.get("frame_urls") or [u for k, u in sorted((meta.get("storage_urls") or {}).items())]
+        for u in urls:
+            dl = urllib.request.Request(u, headers={"User-Agent": "curl/8"})
+            with urllib.request.urlopen(dl, timeout=120) as f:
+                im = Image.open(io.BytesIO(f.read())).convert("RGBA")
+            im.save(os.path.join(out, f"tile_{tile:02d}.png")); print(f"  tile_{tile:02d}.png {im.size}"); tile += 1
+    st, bal = req("GET", "/balance"); print("balance:", str(bal)[:200])
+
+
+
+def cmd_slots(argv):
+    """Search rock-slot arrangements for a mountain lattice.
+
+    python3 tools/romeart.py slots <sprites-dir> <out-slots.json> [--tries N] [--seed S] [--straddle 4567]
+
+Which rock fits a slot depends on its ink box, so a new rock set needs its own
+rock_slots.json (Galliae, 2026-09-19: chosen by hand for seamcheck 0 and the fewest
+grass pixels showing). This draws N random arrangements, runs `lattice` and
+`seamcheck` on each, and writes the arrangement with zero violations and the fewest
+grass pixels showing; --straddle names the sprites allowed in the slots that
+straddle a border (the east straddlers and the lower rows), which must be small
+enough to cross one border only (Italia's rocks 4-7, 2026-09-27, #67). Prints the
+ten best. Nothing is generated; this only arranges sprites already kept.
+    """
+    import random, re, subprocess, tempfile
+    if len(argv) < 2:
+        sys.exit("usage: romeart.py slots <sprites-dir> <out-slots.json> [--tries N] [--seed S] [--straddle 4567]")
+    spr, out = argv[0], argv[1]
+    tries = int(argv[argv.index("--tries") + 1]) if "--tries" in argv else 300
+    rnd = random.Random(int(argv[argv.index("--seed") + 1]) if "--seed" in argv else 1)
+    n = len([f for f in os.listdir(spr) if f.startswith("tile_") and f.endswith(".png")])
+    ALL = list(range(n))
+    SMALL = [int(c) for c in argv[argv.index("--straddle") + 1]] if "--straddle" in argv else ALL
+    INS = [0, 4, 6, 8, 12, 14]
+    tmp = tempfile.mkdtemp(); lay = os.path.join(tmp, "lay.json"); sl = os.path.join(tmp, "slots.json")
+    res = []
+    for _ in range(tries):
+        slots = {"upper": [[rnd.choice(ALL), rnd.choice(SMALL)], [rnd.choice(ALL), rnd.choice(SMALL)]],
+                 "lower": [[rnd.choice(SMALL), rnd.choice(SMALL)], [rnd.choice(SMALL), rnd.choice(SMALL)]],
+                 "edge_w": [[rnd.choice(ALL), rnd.choice(INS), p] for p in ("top", "mid", "bottom")],
+                 "edge_e": [[rnd.choice(ALL), rnd.choice(INS), p] for p in ("top", "mid", "bottom")]}
+        json.dump(slots, open(sl, "w"))
+        r = subprocess.run([sys.executable, __file__, "lattice", lay, "--sprites", spr, "--terrain", "mountain", "--name", "mountain", "--slots", sl], capture_output=True, text=True)
+        m = re.search(r"grass showing in the plain tile: (\d+) px", r.stdout + r.stderr)
+        if not m:
+            continue
+        s = subprocess.run([sys.executable, __file__, "seamcheck", lay], capture_output=True, text=True)
+        v = re.search(r"violations: (\d+)", s.stdout + s.stderr)
+        res.append((int(v.group(1)) if v else 9999, int(m.group(1)), slots))
+    res.sort(key=lambda t: (t[0], t[1]))
+    print(f"tried {tries}, layouts {len(res)}, zero-violation {sum(1 for r in res if r[0] == 0)}")
+    for viol, grass, s in res[:10]:
+        print(f"  violations {viol:4d} grass {grass:4d}  upper {s['upper']} lower {s['lower']} w {[e[0] for e in s['edge_w']]} e {[e[0] for e in s['edge_e']]}")
+    if res and res[0][0] == 0:
+        json.dump(res[0][2], open(out, "w"), indent=1); print("wrote", out)
+    else:
+        sys.exit("no zero-violation arrangement found; raise --tries or change --straddle")
+
+
+
+def cmd_rebank(argv):
+    """Carry river bands onto a new ground: river_<terrain>_* tiles rebuilt from a new interior.
+
+    python3 tools/romeart.py rebank <old-ground.png> <new-ground.png> <tiles-dir> <prefix>
+
+A river-through-terrain tile is the terrain's interior with the river band
+swept over it (`sweep --grass <ground>`), so every pixel that differs from the
+old interior is band or rim. This keeps exactly those pixels and lays them on
+the new interior, for a set whose river primitives were never kept (Italia,
+2026-09-27, #67). Rewrites <tiles-dir>/<prefix>_*.png in place and prints the
+band pixel count of each.
+    """
+    if len(argv) < 4:
+        sys.exit("usage: romeart.py rebank <old-ground.png> <new-ground.png> <tiles-dir> <prefix>")
+    import numpy as np
+    old = np.array(Image.open(argv[0]).convert("RGBA")); new = np.array(Image.open(argv[1]).convert("RGBA"))
+    d, prefix = argv[2], argv[3]
+    for f in sorted(os.listdir(d)):
+        if not (f.startswith(prefix + "_") and f.endswith(".png")):
+            continue
+        t = np.array(Image.open(os.path.join(d, f)).convert("RGBA"))
+        band = np.any(t != old, axis=2)
+        out = new.copy(); out[band] = t[band]
+        Image.fromarray(out).save(os.path.join(d, f))
+        print(f"{f}: {int(band.sum())} band px")
+
+
+def cmd_fieldgrade(argv):
+    """Derive a continent's field painting from another's: a window, a flip, a colour grade.
+
+    python3 tools/romeart.py fieldgrade <src.png> <out.png> --window x,y,w,h [--flip h|v|180]
+                                        [--hue N] [--sat F] [--val F] [--tint R,G,B,W]
+
+Cuts the window (w:h should be 6:5 so `siegeslice.py --field` keeps all of
+it), flips it, shifts hue by N (OpenCV's 0..180 scale), scales saturation
+and value by F, and blends W of the tint colour over the result. The three
+non-Italian fields of Glory of Rome are windows of the calmed Italia
+painting graded this way (2026-09-28, #64; the exact calls are in
+art/fields/BUILD.md). Deterministic: the same call gives the same file.
+    """
+    if len(argv) < 2:
+        sys.exit("usage: romeart.py fieldgrade <src.png> <out.png> --window x,y,w,h [--flip h|v|180] [--hue N] [--sat F] [--val F] [--tint R,G,B,W]")
+    import numpy as np
+    import cv2
+    src, out = argv[0], argv[1]
+    opt = {"--window": None, "--flip": None, "--hue": "0", "--sat": "1", "--val": "1", "--tint": None}
+    i = 2
+    while i < len(argv):
+        if argv[i] in opt and i + 1 < len(argv):
+            opt[argv[i]] = argv[i + 1]; i += 2
+        else:
+            sys.exit(f"fieldgrade: bad argument {argv[i]}")
+    if not opt["--window"]:
+        sys.exit("fieldgrade: --window x,y,w,h is required")
+    x, y, w, h = [int(v) for v in opt["--window"].split(",")]
+    im = cv2.imread(src, cv2.IMREAD_UNCHANGED)
+    if im is None:
+        sys.exit(f"fieldgrade: cannot read {src}")
+    crop = im[y:y + h, x:x + w, :3].copy()
+    if opt["--flip"] == "h":
+        crop = crop[:, ::-1]
+    elif opt["--flip"] == "v":
+        crop = crop[::-1, :]
+    elif opt["--flip"] == "180":
+        crop = crop[::-1, ::-1]
+    elif opt["--flip"]:
+        sys.exit("fieldgrade: --flip takes h, v or 180")
+    hsv = cv2.cvtColor(np.ascontiguousarray(crop), cv2.COLOR_BGR2HSV).astype(np.float32)
+    hsv[:, :, 0] = (hsv[:, :, 0] + float(opt["--hue"])) % 180
+    hsv[:, :, 1] = np.clip(hsv[:, :, 1] * float(opt["--sat"]), 0, 255)
+    hsv[:, :, 2] = np.clip(hsv[:, :, 2] * float(opt["--val"]), 0, 255)
+    res = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2BGR).astype(np.float32)
+    if opt["--tint"]:
+        r, g, b, wt = [float(v) for v in opt["--tint"].split(",")]
+        res = res * (1 - wt) + np.array([b, g, r], np.float32) * wt
+    res = np.clip(res, 0, 255).astype(np.uint8)
+    cv2.imwrite(out, np.dstack([res, np.full((h, w), 255, np.uint8)]))
+    m = res.reshape(-1, 3).mean(axis=0)
+    print(f"{out}: {w}x{h} from ({x},{y}) flip {opt['--flip'] or 'none'}; mean RGB {int(m[2])},{int(m[1])},{int(m[0])}")
+
+
 COMMANDS = {
     "zone": cmd_zone, "install": cmd_install, "sheet": cmd_sheet,
     "icon": cmd_icon,
+    "sprites": cmd_sprites,
+    "slots": cmd_slots,
+    "rebank": cmd_rebank,
+    "fieldgrade": cmd_fieldgrade,
     "prompts": lambda a: _artprompts(["romeart"] + a),
     "grass": lambda a: _grassvar(["romeart"] + a),
     "stitch": lambda a: _stitch96(["romeart"] + a),

@@ -38,6 +38,7 @@
 #include "modern/page.h"
 #include "shell_actions.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 // mingw's mkdir takes one argument, as src/screenshot.c and src/recorder.c
@@ -183,6 +184,44 @@ static void reset(Gal *G) {
     views_set(VIEW_NONE);
     G->g->player_io.count = 0;
     G->g->player_io.head = 0;
+}
+
+// ---- the puzzle sweep -----------------------------------------------------------------
+//
+// --puzzle-sweep <dir>: the puzzle view of every catalog world of the pack,
+// the centre piece lifted, one PNG per world named by index, scepter zone and
+// tile. What a lifted piece shows can then be checked across all 256 worlds
+// at once rather than the one a tester happened to play (#108).
+
+int gallery_puzzle_sweep(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
+                         RenderTexture2D *rt, const char *dir) {
+    MKDIR(dir);
+    Gal G = { g, m, f, res, s, rt, dir, NULL, NULL };
+    ui_anim_freeze(true);   // the puzzle draws its lifted state under a held clock
+    int done = 0;
+    for (int idx = 0; idx < 256; idx++) {
+        GameFree(g);
+        GameInitSeeded(g, "Hero", 0, DIFFICULTY_NORMAL, NULL, idx);
+        const char *zone = g->position.zone[0] ? g->position.zone : res->world.starting_zone;
+        if (!GameReloadZoneMap(g, m, zone)) continue;
+        FogInit(f);
+        FogRevealFor(res, f, m, g->position.x, g->position.y);
+        int centre = puzzle_grid_entity(2, 2);
+        if (centre >= 0) {
+            if (centre < g->contract.villain_count) g->contract.villains_caught[centre] = true;
+        } else if (-centre - 1 < g->artifacts.count) {
+            g->artifacts.found[-centre - 1] = true;
+        }
+        reset(&G);
+        views_set(VIEW_PUZZLE);
+        char name[96];
+        snprintf(name, sizeof name, "puzzle_%03d_%s_%d_%d", idx, g->scepter.zone, g->scepter.x, g->scepter.y);
+        shot(&G, name);
+        done++;
+    }
+    ui_anim_freeze(false);
+    fprintf(stdout, "[puzzle-sweep] %d of 256 worlds in %s\n", done, dir);
+    return done == 256 ? 0 : 1;
 }
 
 // ---- the tap check -------------------------------------------------------------------
@@ -399,6 +438,25 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     prompt_yes_no_open(ui->dt_search, tb);
     shot(&G, "06_question_yes_no");
     reset(&G); prompt_yes_no_open(NULL, ui->quit_to_dos_prompt); shot(&G, "06b_quit_without_saving");
+    // A castle gate's report (#71): a villain's castle, as the gate words it
+    // without siege weapons, then above the siege question with them.
+    {
+        const ResCastle *gc = NULL;
+        for (int i = 0; i < g->castle_count && !gc; i++)
+            if (g->castles[i].owner_kind == CASTLE_OWNER_VILLAIN)
+                gc = resources_castle_by_id(g->res, g->castles[i].id);
+        char rb[PLAYER_IO_BODY_CAP], hb[128], qb[PLAYER_IO_BODY_CAP + RES_BANNER_LEN + 2];
+        if (gc && GameCastleReport(g, gc->id, rb, sizeof rb)) {
+            ResTemplateVar cv[] = { { "NAME", gc->name } };
+            resources_format_template(hb, sizeof hb, bn->castle_header, cv, 1);
+            reset(&G); open_dialog(hb, rb); shot(&G, "06c_castle_gate_report");
+            shot_pages(&G, "06c_castle_gate_report");
+            snprintf(qb, sizeof qb, "%s\n%s", rb,
+                     bn->castle_siege_ask[0] ? bn->castle_siege_ask : "Lay siege?");
+            reset(&G); prompt_yes_no_open(hb, qb); shot(&G, "06d_castle_gate_siege");
+            tap_yes_no("06d_castle_gate_siege", 0);
+        }
+    }
     reset(&G);
     {
         const char *labels[3] = { "Tirones (40)", "Velites (25)", "Hastati (12)" };
@@ -620,6 +678,23 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     views_contract_set_active(true);
     reset(&G); views_set(VIEW_CONTRACT); shot(&G, "22_contract_held");
     reset(&G); views_set(VIEW_PUZZLE); shot(&G, "23_puzzle");
+    {
+        // Every piece lifted: the land round the scepter with its objects
+        // blanked, and the scepter's own cell framed (#104).
+        int nv = g->contract.villain_count, na = g->artifacts.count;
+        bool *vc = calloc((size_t)(nv > 0 ? nv : 1), sizeof *vc);
+        bool *af = calloc((size_t)(na > 0 ? na : 1), sizeof *af);
+        if (vc && af) {
+            memcpy(vc, g->contract.villains_caught, (size_t)nv * sizeof *vc);
+            memcpy(af, g->artifacts.found, (size_t)na * sizeof *af);
+            for (int i = 0; i < nv; i++) g->contract.villains_caught[i] = true;
+            for (int i = 0; i < na; i++) g->artifacts.found[i] = true;
+            reset(&G); views_set(VIEW_PUZZLE); shot(&G, "23_puzzle_lifted");
+            memcpy(g->contract.villains_caught, vc, (size_t)nv * sizeof *vc);
+            memcpy(g->artifacts.found, af, (size_t)na * sizeof *af);
+        }
+        free(vc); free(af);
+    }
     {
         // Places visited on this continent, the orb's whole map, a boat.
         int zi = 0;

@@ -22,6 +22,8 @@
 	"world":	{
 		"language":	"en",
 		"max_army_slots":	5,
+		"clear_keeps_ground":	true,
+		"castle_gate_report":	true,
 		"starting_zone":	"italia",
 		"zone_noun":	"province",
 		"zone_noun_plural":	"provinces",
@@ -81,6 +83,7 @@
 		"search_cost_days":	10
 	},
 	"combat":	{
+		"morale_as_army_view":	true,
 		"morale_chart":	[["N", "N", "N", "N", "N"], ["N", "N", "N", "N", "N"], ["N", "N", "H", "N", "N"], ["L", "N", "L", "H", "N"], ["L", "L", "L", "N", "N"]],
 		"number_names":	[{
 				"min":	500,
@@ -215,6 +218,18 @@
 					"id":	"sign_italia_7",
 					"title":	"The Padus",
 					"body":	"The Padus, king of Italia's rivers, runs from the Alps to the Adriatic."
+				}, {
+					"x":	13,
+					"y":	84,
+					"id":	"sign_italia_8",
+					"title":	"The Guarded Road",
+					"body":	"Three gates hold this road, and no one has passed the third. What the Senate sent to Sardinia for safe keeping lies beyond it."
+				}, {
+					"x":	36,
+					"y":	37,
+					"id":	"sign_italia_9",
+					"title":	"The Coves",
+					"body":	"Fishermen speak of two coves south along this coast that no road reaches: one walled by the cliffs, one hidden in the wood. Only a keel finds them."
 				}],
 			"towns":	[{
 					"x":	30,
@@ -256,6 +271,10 @@
 					"x":	31,
 					"y":	57,
 					"id":	"roma"
+				}, {
+					"x":	17,
+					"y":	78,
+					"id":	"olbia"
 				}],
 			"castles":	[{
 					"x":	32,
@@ -400,7 +419,7 @@
 					"y":	74
 				}, {
 					"id":	"chest_26",
-					"x":	45,
+					"x":	43,
 					"y":	59
 				}, {
 					"id":	"chest_27",
@@ -436,7 +455,7 @@
 					"y":	82
 				}, {
 					"id":	"chest_35",
-					"x":	16,
+					"x":	14,
 					"y":	73
 				}, {
 					"id":	"chest_36",
@@ -458,6 +477,18 @@
 					"id":	"chest_sardinia_trail",
 					"x":	12,
 					"y":	95,
+					"fixed":	true,
+					"artifact":	"articles"
+				}, {
+					"id":	"chest_cove_mountain",
+					"x":	38,
+					"y":	54,
+					"fixed":	true,
+					"artifact":	"book"
+				}, {
+					"id":	"chest_cove_forest",
+					"x":	49,
+					"y":	60,
 					"fixed":	true
 				}],
 			"artifacts":	[],
@@ -469,19 +500,19 @@
 					"static":	true,
 					"army":	[{
 						"troop":	"barbarians",
-						"count":	30
+						"count":	4
 					}, {
 						"troop":	"trolls",
-						"count":	20
+						"count":	2
 					}, {
 						"troop":	"ogres",
-						"count":	12
+						"count":	2
 					}, {
 						"troop":	"knights",
-						"count":	8
+						"count":	1
 					}, {
-						"troop":	"dragons",
-						"count":	2
+						"troop":	"archers",
+						"count":	4
 					}]
 				}, {
 					"x":	12,
@@ -636,8 +667,8 @@
 					"y":	68,
 					"id":	"wandering_army_025"
 				}, {
-					"x":	8,
-					"y":	71,
+					"x":	15,
+					"y":	82,
 					"id":	"wandering_army_026"
 				}, {
 					"x":	15,
@@ -655,12 +686,12 @@
 					"x":	45,
 					"y":	122,
 					"id":	"wandering_army_030"
-				}],
-			"armies":	[]
+				}]
 		}, {
 			"id":	"galliae",
 			"name":	"Galliae",
 			"map":	"maps/galliae.dat",
+			"field_grid":	"art/combat/field/galliae",
 			"events":	[{
 					"id":	"sein",
 					"x":	17,
@@ -702,8 +733,8 @@
 				"telecaves":	2,
 				"dwellings":	10,
 				"friendly_foes":	5,
-				"preferred_troops":	["peasants", "sprites", "orcs", "skeletons", "wolves", "gnomes"],
-				"dwelling_range":	[0, 14]
+				"preferred_troops":	["dwarves", "zombies", "druids", "elves", "ogres", "elves"],
+				"dwelling_range":	[1, 14]
 			},
 			"chests":	[{
 					"id":	"chest_sein",
@@ -858,7 +889,6 @@
 				"body":	"The Emperor's wall runs from sea to sea. Beyond it, Caledonia answers to no one."
 			}],
 			"dwellings":	[],
-			"armies":	[],
 			"hero_spawn":	{
 				"x":	47,
 				"y":	41
@@ -1029,6 +1059,7 @@
 			"id":	"africa",
 			"name":	"Africa",
 			"map":	"maps/africa.dat",
+			"field_grid":	"art/combat/field/africa",
 			"events":	[{
 					"id":	"pharos",
 					"x":	55,
@@ -1059,8 +1090,8 @@
 				"telecaves":	2,
 				"dwellings":	10,
 				"friendly_foes":	5,
-				"preferred_troops":	["peasants", "sprites", "orcs", "skeletons", "wolves", "gnomes"],
-				"dwelling_range":	[0, 14]
+				"preferred_troops":	["ghosts", "barbarians", "trolls", "nomads"],
+				"dwelling_range":	[2, 14]
 			},
 			"chests":	[{
 					"id":	"chest_1",
@@ -1215,7 +1246,6 @@
 					"body":	"Alexander came this way to ask the god who his father was. The god's guardians still keep the pass."
 				}],
 			"dwellings":	[],
-			"armies":	[],
 			"hero_spawn":	{
 				"x":	24,
 				"y":	2
@@ -1390,6 +1420,7 @@
 			"id":	"oriens",
 			"name":	"Oriens",
 			"map":	"maps/oriens.dat",
+			"field_grid":	"art/combat/field/oriens",
 			"town_backdrop":	"art/ui/backdrop_town_oriens.png",
 			"tile_set":	"oriens",
 			"tile_set_arts":	["bridge_river_ew", "bridge_river_ns", "desert", "desert_edge_01", "desert_edge_02", "desert_edge_03", "desert_edge_04", "desert_edge_05", "desert_edge_06", "desert_edge_07", "desert_edge_08", "desert_edge_09", "desert_edge_10", "desert_edge_11", "desert_edge_12", "forest", "forest_edge_01", "forest_edge_02", "forest_edge_03", "forest_edge_04", "forest_edge_05", "forest_edge_06", "forest_edge_07", "forest_edge_08", "forest_edge_09", "forest_edge_10", "forest_edge_11", "forest_edge_12", "forest_edge_13", "forest_edge_14", "forest_edge_15", "forest_edge_16", "forest_edge_17", "forest_edge_18", "forest_edge_19", "grass", "grass_01", "grass_02", "grass_03", "grass_04", "grass_05", "grass_06", "grass_07", "grass_08", "grass_09", "grass_10", "grass_variant", "mountain", "mountain_edge_01", "mountain_edge_02", "mountain_edge_03", "mountain_edge_04", "mountain_edge_05", "mountain_edge_06", "mountain_edge_07", "mountain_edge_08", "mountain_edge_09", "mountain_edge_10", "mountain_edge_11", "mountain_edge_12", "mountain_edge_13", "mountain_edge_14", "mountain_edge_15", "mountain_edge_16", "mountain_edge_17", "mountain_edge_18", "mountain_edge_19", "river_c_ne", "river_c_nw", "river_c_se", "river_c_sw", "river_e", "river_e_nw", "river_e_sw", "river_es", "river_ew", "river_forest_c_ne", "river_forest_c_nw", "river_forest_c_se", "river_forest_c_sw", "river_forest_e", "river_forest_e_nw", "river_forest_e_sw", "river_forest_es", "river_forest_ew", "river_forest_n", "river_forest_n_se", "river_forest_n_sw", "river_forest_ne", "river_forest_nesw", "river_forest_ns", "river_forest_nwse", "river_forest_s", "river_forest_s_ne", "river_forest_s_nw", "river_forest_sw", "river_forest_w", "river_forest_w_ne", "river_forest_w_se", "river_forest_wn", "river_mountain_c_ne", "river_mountain_c_nw", "river_mountain_c_se", "river_mountain_c_sw", "river_mountain_e", "river_mountain_e_nw", "river_mountain_e_sw", "river_mountain_es", "river_mountain_ew", "river_mountain_n", "river_mountain_n_se", "river_mountain_n_sw", "river_mountain_ne", "river_mountain_nesw", "river_mountain_ns", "river_mountain_nwse", "river_mountain_s", "river_mountain_s_ne", "river_mountain_s_nw", "river_mountain_sw", "river_mountain_w", "river_mountain_w_ne", "river_mountain_w_se", "river_mountain_wn", "river_mouth_e", "river_mouth_w", "river_n", "river_n_se", "river_n_sw", "river_ne", "river_nesw", "river_ns", "river_nwse", "river_s", "river_s_ne", "river_s_nw", "river_sw", "river_w", "river_w_ne", "river_w_se", "river_wn", "road_c_ne", "road_c_nw", "road_c_se", "road_c_sw", "road_e", "road_e_nw", "road_e_sw", "road_es", "road_ew", "road_n", "road_n_se", "road_n_sw", "road_ne", "road_nesw", "road_ns", "road_nwse", "road_s", "road_s_ne", "road_s_nw", "road_sw", "road_w", "road_w_ne", "road_w_se", "road_wn", "water", "water_edge_00", "water_edge_01", "water_edge_02", "water_edge_03", "water_edge_04", "water_edge_05", "water_edge_06", "water_edge_07", "water_edge_08", "water_edge_09", "water_edge_10", "water_edge_11", "water_edge_12", "water_edge_13", "water_edge_18"],
@@ -1404,8 +1435,8 @@
 				"telecaves":	2,
 				"dwellings":	10,
 				"friendly_foes":	5,
-				"preferred_troops":	["peasants", "sprites", "orcs", "skeletons", "wolves", "gnomes"],
-				"dwelling_range":	[0, 14]
+				"preferred_troops":	["giants", "vampires", "archmages", "dragons", "demons"],
+				"dwelling_range":	[20, 26]
 			},
 			"chests":	[{
 					"id":	"chest_1",
@@ -1566,7 +1597,6 @@
 					"kind":	"plains",
 					"troop":	"elephants"
 				}],
-			"armies":	[],
 			"hero_spawn":	{
 				"x":	5,
 				"y":	15
@@ -2377,6 +2407,28 @@
 				"intel_castle":	"",
 				"intel_artifact":	true,
 				"pinned_spell":	""
+		}, {
+				"index":	26,
+				"id":	"olbia",
+				"headman":	"headman_italia",
+				"townhead":	"townhead_italia",
+				"invitations":	"olbia",
+				"informant":	"informant_market",
+				"name":	"Olbia",
+				"art":	"town_italia",
+				"x":	17,
+				"y":	78,
+				"boat":	{
+					"x":	18,
+					"y":	78
+				},
+				"gate":	{
+					"x":	16,
+					"y":	78
+				},
+				"zone":	"italia",
+				"intel_castle":	"castle_italia_9",
+				"pinned_spell":	""
 		}],
 	"castles":	[{
 			"index":	0,
@@ -2558,7 +2610,7 @@
 			"x":	24,
 			"y":	4,
 			"zone":	"africa",
-			"difficulty_tier":	1,
+			"difficulty_tier":	2,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
@@ -2567,7 +2619,7 @@
 			"x":	21,
 			"y":	2,
 			"zone":	"africa",
-			"difficulty_tier":	1,
+			"difficulty_tier":	2,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
@@ -2576,7 +2628,7 @@
 			"x":	2,
 			"y":	10,
 			"zone":	"africa",
-			"difficulty_tier":	1,
+			"difficulty_tier":	2,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
@@ -2585,7 +2637,7 @@
 			"x":	33,
 			"y":	17,
 			"zone":	"africa",
-			"difficulty_tier":	1,
+			"difficulty_tier":	2,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
@@ -2594,7 +2646,7 @@
 			"x":	51,
 			"y":	25,
 			"zone":	"africa",
-			"difficulty_tier":	1,
+			"difficulty_tier":	2,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
@@ -2603,7 +2655,7 @@
 			"x":	56,
 			"y":	21,
 			"zone":	"africa",
-			"difficulty_tier":	1,
+			"difficulty_tier":	2,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
@@ -2612,7 +2664,7 @@
 			"x":	34,
 			"y":	21,
 			"zone":	"oriens",
-			"difficulty_tier":	2,
+			"difficulty_tier":	3,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
@@ -2621,7 +2673,7 @@
 			"x":	61,
 			"y":	8,
 			"zone":	"oriens",
-			"difficulty_tier":	2,
+			"difficulty_tier":	3,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
@@ -2630,7 +2682,7 @@
 			"x":	62,
 			"y":	31,
 			"zone":	"oriens",
-			"difficulty_tier":	2,
+			"difficulty_tier":	3,
 			"footprint":	"1x1"
 		}, {
 			"index":	0,
@@ -2639,7 +2691,7 @@
 			"x":	41,
 			"y":	26,
 			"zone":	"oriens",
-			"difficulty_tier":	2,
+			"difficulty_tier":	3,
 			"footprint":	"1x1"
 		}],
 	"troops":	[{
@@ -4501,6 +4553,9 @@
 		"\\xcf":	{"art":	"river_mouth_w", "terrain":	"river"}
 	},
 	"spawn":	{
+		"calm_radius":	12,
+		"calm_max_slot":	1,
+		"calm_max_stacks":	2,
 		"kind_chance_curve":	[[[60, 90, 94, 98, 101], [20, 70, 82, 95, 99], [10, 20, 35, 50, 90], [3, 6, 8, 10, 40]], null, null, null],
 		"tier_chance_curve":	[[60, 90, 98, 101], [20, 70, 95, 99], [10, 20, 50, 90], [3, 6, 10, 40]],
 		"tier_troop_pool":	[["peasants", "wolves", "archers", "nomads", "barbarians", "archmages"], ["sprites", "gnomes", "elves", "trolls", "druids"], ["orcs", "dwarves", "ogres", "giants", "dragons"], ["skeletons", "zombies", "ghosts", "vampires", "demons"]]

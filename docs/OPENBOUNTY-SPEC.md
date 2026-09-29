@@ -504,6 +504,7 @@ flagged (§38).
   | `castles` + `castle_count` | `CastleRecord *` | Per-castle owner + garrison, parallel to `res->castles` |
   | `scepter` | `ScepterLocation` | Buried scepter zone + `(x,y)` |
   | `consumed` + `consumed_count` | `TileMutation *` | Permanently consumed tiles |
+  | `bridges` + `bridge_count` | `BuiltBridge *` | Decks the Bridge spell laid |
   | `events_done` + `events_done_count` | `EventFired *` | One-time vistas already played (zone + event id) |
   | `dwellings` + `dwelling_count` | `DwellingState *` | Per-dwelling recruit pools |
   | `placements` + `placement_count` | `SaltedPlacement *` | Salt-time placements |
@@ -557,11 +558,20 @@ flagged (§38).
   keeps the RNG call order of OpenKB's `spawn_game`).
 - **REQ-151.** `TownRecord`: `id[24]`, `visited`, `spell_for_sale[24]`.
   `CastleRecord`: `id[24]`, `visited`, `known` (revealed by Find Villain
-  etc.), `owner_kind`, `villain_id[24]` (when owner is a villain),
+  etc.), `taken` (the hero has won it at least once; set by both siege wins,
+  kept when an empty castle falls back to the monsters, REQ-302; a save
+  without it reads it from the owner), `owner_kind`, `villain_id[24]` (when owner is a villain),
   `garrison[5]`.
 - **REQ-152.** `TileMutation`: `zone[24]`, `x`, `y`, a tile permanently
   consumed (artifact picked up, chest opened). On load the caller has
   re-applied these so the tile renders and behaves as plain terrain.
+- **REQ-537.** `BuiltBridge`: `zone[24]`, `x`, `y`, `vertical`, one deck the
+  Bridge spell laid (`try_build_bridge` records each through `GameAddBridge`;
+  `MapLayBridge` in `engine/map.c` lays it). The map is rebuilt from the pack
+  on every zone load, so `GameReloadZoneMap` has laid every recorded deck of
+  the zone again: a bridge has stood after sailing away and back and after a
+  save was read into the game, as the original's world map kept its bridge
+  tiles. Saved as `bridges`; a save without the key has loaded none (#109).
 - **REQ-153.** `DwellingState`: `zone[24]`, `x`, `y`, `troop_id[32]`
   (deterministic, set on first visit), `count` (current available recruits),
   `max_population`.
@@ -1044,9 +1054,13 @@ flagged (§38).
   nothing per zone) and drawn the hero's zone's cells under the obstacles
   and troops in place of the combat ground (`src/combat_render.c`); a siege
   has kept the siege grid, and a zone with no grid the ground of REQ-165d.
-  `glory-of-rome` has shipped Italia's, thirty 96 px cells cut from the
+  `glory-of-rome` has shipped one per zone, thirty 96 px cells cut from the
   largest centred 6:5 rectangle of content in one picture, scaled to
-  576 × 480 (`art/fields/italia.png`, `tools/siegeslice.py --field`);
+  576 × 480 (`art/fields/italia_calm.png`, the supplied painting
+  `art/fields/italia.png` calmed by `tools/fieldcalm.py`, then
+  `tools/siegeslice.py --field`; Galliae, Africa and Oriens from windows
+  of that calmed painting, flipped and colour-graded by
+  `romeart.py fieldgrade`, 2026-09-28, #64);
   `kings-bounty` has declared none.
 - **REQ-165a.** When `sprites.ui.panel_frame` names a palette colour the
   legacy shell has drawn a frame round every panel slot
@@ -1183,7 +1197,11 @@ flagged (§38).
   goes, so a road or a grass variant survives a foe walking over it. Only
   grass-terrain ground has been restored: on any other ground (desert, a
   dwelling on a mountain edge) the cleared cell has become plain grass, and
-  water has stayed water.
+  water has stayed water. A pack that sets `world.clear_keeps_ground`
+  (2026-09-28, #107) has had any walkable ground restored, desert included,
+  so a fought foe, an opened chest or a fled army on sand has left sand;
+  unwalkable ground has still become grass and water has stayed water.
+  `glory-of-rome` sets it; `kings-bounty` does not and plays as the original.
 
 ### 9.9 Roads (grass-terrain tile codes)
 
@@ -1275,7 +1293,11 @@ flagged (§38).
   barrel and emitted a `SaltedPlacement` (or `FoeState`) per tagged slot.
   When the guard runs out early, the missing items have been silently
   skipped. Chests declared `fixed` have not entered the barrel, and a zone
-  with fewer placeholders than the budget has been skipped whole.
+  with fewer placeholders than the budget has been skipped whole. A chest
+  declaring `artifact` has been placed as that artifact before the draw
+  (`INTERACT_ARTIFACT` at the chest's cell), has counted against the
+  artifact quota and has stayed out of the barrel; the draw has then skipped
+  a pinned artifact when matching `local_idx` (REQ-232).
 
 ### 10.3 Slot semantics
 
@@ -1285,7 +1307,11 @@ flagged (§38).
   `<kind>_<n>`. `SALT_DWELLING` has picked a troop (zone `preferred_troops[]`
   first, else `dwelling_range`), derived the dwelling kind from the troop's
   `dwelling` field, placed `INTERACT_DWELLING_*`, and registered a pinned
-  `DwellingState`. `SALT_FRIENDLY` has created a `FoeState` with
+  `DwellingState`. The lists and ranges are per zone and rise with it:
+  `kings-bounty` carries the original's four; `glory-of-rome` carried
+  Continentia's on all four provinces until 2026-09-28 (#106), so every
+  province salted the same low lairs, and now carries its own (GLORY-OF-ROME
+  §10.7). `SALT_FRIENDLY` has created a `FoeState` with
   `friendly = true` and a placeholder garrison (re-rolled fresh on accept,
   §15.5).
 
@@ -1312,12 +1338,23 @@ flagged (§38).
 ### 10.6 Scepter burial
 
 - **REQ-235.** `bury_scepter` (`engine/game.c`) has taken the zone index
-  `GameInitSeeded` draws as `game_rng_next(0, 3)` (the four continents of
-  the reference world; a draw past the pack's zone count buries nothing),
-  loaded its map, counted all tiles whose terrain
+  `GameInitSeeded` draws as `game_rng_next(0, zone_count - 1)`, one draw
+  over every zone the pack declares (2026-09-28, #77; until then the draw
+  was a fixed `game_rng_next(0, 3)`, the four continents of the reference
+  world, so a pack with fewer zones buried nothing on the seeds that drew
+  past its count and a pack with more never used its later zones), loaded
+  its map, counted all tiles whose terrain
   is `TERRAIN_GRASS`, interactive is `INTERACT_NONE`, and `blocks_foot` is
-  false; picked the Nth such tile (N uniform in `[0, count-1]`); and stored
-  the tile's zone id, x, and y in `Game.scepter`. The scepter has not been
+  false; picked the Nth such tile (N uniform in `[0, count-1]`), passing
+  on to the next such tile when the Nth is a bridge (a bridge declares
+  grass terrain over a river; since 2026-09-28, #117, with no further draw
+  so the count and the draw are unchanged and no shipped world moved); and
+  stored
+  the tile's zone id, x, and y in `Game.scepter`. The draw's range is part
+  of catalog identity (REQ-181a): both shipped packs declare four zones, so
+  their draw is the same `0..3` it always was and no shipped world has
+  re-mapped; a pack that changes its zone count re-maps its own worlds.
+  The scepter has not been
   visible on the map; searching (key `S`) on the buried tile has triggered
   the win flow (§26).
 
@@ -1428,8 +1465,8 @@ flagged (§38).
 ### 13.1 Catalog
 
 - **REQ-260.** The troop catalog (`game.json:troops[]`; `TroopDef` in
-  `engine/include/tables.h`) has been sized by the pack: 25 entries in
-  `kings-bounty`, indexed 0..24 (§Appendix A), and 27 in `glory-of-rome`.
+  `engine/include/tables.h`) has been sized by the pack (`kings-bounty` has
+  indexed its troops 0..24, §Appendix A).
   Each troop has carried: `id`, `name`, `sprite`, `portrait` (modern still),
   `anim` (heap frame list), `skill_level`, `hit_points`, `move_rate`,
   `melee_min`/`melee_max`, `ranged_min`/`ranged_max`/`ranged_ammo`,
@@ -1491,7 +1528,9 @@ flagged (§38).
   Row = the troop whose morale is computed; column = another troop present.
 - **REQ-271.** Per-troop morale: a troop alone in the army has been High;
   otherwise each other non-empty slot has been consulted on the chart and the
-  results counted: any `L` → Low; all `H` (≥1) → High; else Normal.
+  results counted: any `L` → Low; all `H` (≥1) → High; else Normal. Whether
+  combat has applied this same rule or the ported one has depended on the
+  pack (REQ-385, item 3).
 
 ### 14.2 Out-of-control
 
@@ -1557,7 +1596,14 @@ flagged (§38).
   `roll_hostile_garrison` (the foe roll) has filled 1..3 slots
   (`1 + rng(0,2)`), each with its own `kind` and `chance` rolls through the
   same slot walk and `count = base + rng(0, base / 2)` where `base` is
-  `tier_counts[tier]` clamped to ≥ 2.
+  `tier_counts[tier]` clamped to ≥ 2. **The calm start** (2026-09-28, #69):
+  when the pack's `spawn.calm_radius` is positive, a hostile foe whose spawn
+  tile lies within that Chebyshev distance of its zone's `hero_spawn` has
+  rolled `1 + rng(0, calm_max_stacks - 1)` stacks and, for each, the same
+  `kind` and `chance` draws with the slot walk's result clamped to
+  `calm_max_slot`, so only the weakest troops of each kind have stood beside
+  the spawn. Radius 0 (`kings-bounty`, which declares none) has left the roll
+  as the original's; `glory-of-rome` has set 12 / 1 / 2.
 
 ### 15.4 Encounter flows
 
@@ -1598,8 +1644,8 @@ flagged (§38).
 ## 16. Towns
 
 - **REQ-290.** The town catalog (`game.json:towns[]`) has been sized by the
-  pack: 26 towns in both shipped packs, `kings-bounty` naming one per letter
-  A..Z. That naming has been a convention of that pack, not an engine
+  pack; `kings-bounty` has named one town per letter A..Z. That naming has
+  been a convention of that pack, not an engine
   requirement: a pack may declare any number and name them freely (REQ-322
   selects gate destinations from a list, not by first letter). Each town has
   carried id, name, zone, `(x,y)`, gate coords, boat coords, an intel castle,
@@ -1651,10 +1697,17 @@ flagged (§38).
 ### 17.3 Repopulation
 
 - **REQ-302.** At game init, every monster castle has been seeded by
-  `repopulate_castle`. A player-owned castle has never been repopulated: an
-  emptied garrison has stayed empty. Astrology growth
-  (§24.3) has applied weekly to non-player castle troops matching the
-  astrology creature.
+  `repopulate_castle`. At each week's end a player-owned castle with no
+  troops in any of its five slots has fallen back to the monsters:
+  `owner_kind = CASTLE_OWNER_MONSTERS` and a fresh `repopulate_castle`
+  garrison, so it has had to be besieged again, and it has no longer counted
+  among the hero's castles for the score. A castle holding any stack has
+  stayed the hero's untouched. The original (OPENKB-SPEC §16.11) tested stack
+  0 alone and kept the owner byte, so a castle with stack 0 moved out lost
+  the troops left in it; the whole-garrison test and the owner change are
+  this port's (#112). Astrology growth (§24.3) has applied weekly to
+  non-player castle troops matching the astrology creature, a castle retaken
+  that week included.
 
 ### 17.4 Visit / siege / own / audience
 
@@ -1664,7 +1717,13 @@ flagged (§38).
   has bounced the hero silently, as the original did (REQ-394). With them a
   siege flow has shown a yes/no prompt, deliberately without the garrison;
   Yes has entered combat, No has bounced back. Any visit has set a villain
-  castle `known`. A combat win has set
+  castle `known`, so the town contract scenes and the Contract view have
+  named it from then on. A pack that sets `world.castle_gate_report` (Glory
+  of Rome, #71) has told the hero what the gate sees, the town informant's
+  report (`GameCastleReport`: whose rule, then each stack in vague words):
+  without siege weapons in a message box headed "Castle <name>" before the
+  bounce, and with them above the siege question (`castle_siege_ask`) in
+  place of the plain prompt. A combat win has set
   `owner_kind = CASTLE_OWNER_PLAYER`; a villain-castle win has additionally
   fulfilled the contract (§21.3).
 - **REQ-304.** **Own Castle** (`src/screens/own_castle.c`) has shown the
@@ -1943,7 +2002,8 @@ flagged (§38).
   (4) `gold += commission_weekly`, `last_commission = commission_weekly`;
   (5) `gold -= sum(slot.count * (recruit_cost / 10))`; (6) if `boat.has_boat`,
   `gold -= GameBoatCost`, repossessing the boat on shortfall; (7) `gold =
-  max(0, gold)`; (8) astrology effects (§24).
+  max(0, gold)`; (8) astrology effects (§24), with empty player castles
+  retaken (REQ-302) after the dwellings and before castle and foe growth.
 
 ---
 
@@ -2053,11 +2113,22 @@ golden-digest regression tests have pinned the formulas.
      ceil(target.count / 2)` after the morale/artifact passes.
   3. **Morale** (attacker has hero and is in control): Low → `/2`; High →
      `×1.5`; Normal → unchanged. The combat rank
-     (`troop_morale_for_unit`) has been the lowest chart result over the
-     side's live units, the attacker itself included, each looked up as
-     `morale_result(other, self)`; the army view's label (REQ-271) has
-     looked the pairs up the other way round and left the troop itself out,
-     so the two have been able to differ where the chart is asymmetric.
+     (`troop_morale_for_unit`) has followed one of two rules, chosen by the
+     pack's `combat.morale_as_army_view` (PACK-FORMAT):
+     - **Ported** (the flag absent or false; the `kings-bounty` pack): the
+       lowest-ranked chart result over the side's live units, the attacker
+       itself included, each looked up as `morale_result(other, self)`, with
+       the ranks Normal 0, Low 1, High 2, so a mixed army has degraded to
+       Normal and reached Low only when Low was the only result. This is
+       the original game's behaviour, kept unchanged for the legacy pack;
+       there the army view's label (REQ-271) has looked the pairs up the
+       other way round and left the troop itself out, so label and
+       multiplier have been able to differ where the chart is asymmetric.
+     - **Army view** (the flag true; `glory-of-rome`, 2026-09-27, #75):
+       exactly REQ-271 -- alone High; every other live unit looked up as
+       `morale_result(self, other)`; any L Low, all H High, else Normal --
+       so the label the player reads and the multiplier the blow uses have
+       been the same.
   4. **Artifact attacker** `INCREASED_DAMAGE` → `×1.5`.
   5. **Artifact target** `QUARTER_PROTECTION` → `×0.75`.
   6. Accumulate `+= target.injury`; add the SCYTHE bonus.
@@ -2599,7 +2670,11 @@ every menu; this section has held the rules.
   `src/views.c` and drawn by `src/views_render.c`, with per-location screens
   in `src/screens/`. Toggle views: Army (`A`), Character (`V`), Contract
   (`I`), Puzzle (`P`, 5×5 grid derived from villains_caught +
-  artifacts_found), Worldmap (`M`), Controls (`C`), Options (`O`, legacy).
+  artifacts_found; a lifted piece has shown the scepter zone's land with
+  the ground alone where an object stands, as the original blanked its
+  objects, and the scepter's own cell has been framed, since the window is
+  clamped at the map's edge and the centre is not always the spot,
+  2026-09-28, #104), Worldmap (`M`), Controls (`C`), Options (`O`, legacy).
   Location views: Town, Home Castle, Own Castle, Dwelling, Alcove, Recruit
   Soldiers. Spell-driven view: Gate, the Town/Castle Gate destination picker
   opened by a cast rather than by a key (REQ-322). End views: Win, Lose.

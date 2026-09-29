@@ -111,7 +111,7 @@ static Page open_page(int w, int h, PageAnchor anchor, int tap_key, int exit_key
     // What the page is over: the page under it, or the base screen.
     ML_Rect behind = S.n > 0 ? S.stack[S.n - 1].outer : whole;
     ML_Rect area = in;
-    bool foot = false;
+    bool foot = false, on_field = false;
     if (anchor == PAGE_MAP_FOOT) {
         // The map runs the interior's full height, centred between the
         // columns: its foot is the interior's. Bare, the screen's foot.
@@ -119,6 +119,11 @@ static Page open_page(int w, int h, PageAnchor anchor, int tap_key, int exit_key
     } else if (anchor == PAGE_FIELD_FOOT && S.has_field) {
         area = S.field;
         foot = true;
+    } else if (anchor == PAGE_CENTER && S.has_field) {
+        // Over a fight a page floats centred on the battlefield, not the
+        // frame: the field sits beside the column, off the frame's centre.
+        // Kept inside the frame with its ring and a gap.
+        on_field = true;
     }
     Page p;
     memset(&p, 0, sizeof p);
@@ -132,6 +137,14 @@ static Page open_page(int w, int h, PageAnchor anchor, int tap_key, int exit_key
         if (h > mh) h = mh;
         int x = area.x + (area.w - w) / 2;
         int y = foot ? area.y + area.h - room - h : area.y + (area.h - h) / 2;
+        if (on_field) {
+            x = S.field.x + (S.field.w - w) / 2;
+            y = S.field.y + (S.field.h - h) / 2;
+            if (x > in.x + in.w - room - w) x = in.x + in.w - room - w;
+            if (y > in.y + in.h - room - h) y = in.y + in.h - room - h;
+            if (x < in.x + room) x = in.x + room;
+            if (y < in.y + room) y = in.y + room;
+        }
         p.r = (ML_Rect){ x, y, w, h };
         p.outer = (ML_Rect){ x - ring, y - ring, w + 2 * ring, h + 2 * ring };
         if (dims) dim(behind);
@@ -531,22 +544,32 @@ PageCombat page_combat(bool siege) {
     int spare  = pane_w - field_w;
     bool sides = spare >= 2 * (UK_BAND + CL_UI);
     int fx = sides ? pane_x + spare / 2 : pane_x;
-    c.wall  = (ML_Rect){ fx, CL_MAP_Y, field_w, wall_h };
-    c.field = (ML_Rect){ fx, CL_MAP_Y + wall_h, field_w, field_h };
+    // Down the interior the same rule: the field (with its wall row) is
+    // centred when there is room for a band and ground above and below,
+    // flush with the top otherwise.
+    int fh = field_h + wall_h;
+    int spare_h = CL_MAP_H - fh;
+    bool middle = spare_h >= 2 * (UK_BAND + CL_UI);
+    int fy = middle ? CL_MAP_Y + spare_h / 2 : CL_MAP_Y;
+    c.wall  = (ML_Rect){ fx, fy, field_w, wall_h };
+    c.field = (ML_Rect){ fx, fy + wall_h, field_w, field_h };
     // Round the field the interior is the column's dark ground, and a band
     // marks the field's edge wherever the ground shows.
-    int fy = c.wall.y, fh = field_h + wall_h;
-    bool below = fh < CL_MAP_H;
+    bool above = fy > CL_MAP_Y;
+    bool below = fy + fh < CL_MAP_Y + CL_MAP_H;
     lattice_ground(pane_x, CL_MAP_Y, pane_w, CL_MAP_H);
     if (sides) {
-        lattice_band_v(fx - UK_BAND, fy, UK_BAND, fh + (below ? UK_BAND : 0));
-        lattice_band_v(fx + field_w, fy, UK_BAND, fh + (below ? UK_BAND : 0));
+        int by = fy - (above ? UK_BAND : 0);
+        int bh = fh + (above ? UK_BAND : 0) + (below ? UK_BAND : 0);
+        lattice_band_v(fx - UK_BAND, by, UK_BAND, bh);
+        lattice_band_v(fx + field_w, by, UK_BAND, bh);
         lattice_band_v(c.column.x - CL_SIDEBAR_GAP, CL_MAP_Y, CL_SIDEBAR_GAP, CL_MAP_H);
     } else {
         lattice_band_v(fx + field_w, CL_MAP_Y, c.column.x - (fx + field_w), CL_MAP_H);
     }
-    if (below) lattice_band_h(fx - (sides ? UK_BAND : 0), fy + fh,
-                              field_w + (sides ? 2 * UK_BAND : 0), UK_BAND);
+    int bx = fx - (sides ? UK_BAND : 0), bw = field_w + (sides ? 2 * UK_BAND : 0);
+    if (above) lattice_band_h(bx, fy - UK_BAND, bw, UK_BAND);
+    if (below) lattice_band_h(bx, fy + fh, bw, UK_BAND);
     S.field = c.field;
     S.has_field = true;
     return c;

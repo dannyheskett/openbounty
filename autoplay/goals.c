@@ -224,8 +224,10 @@ bool planstep_is_done(const Game *g, const PlanStep *step) {
     case STEP_SIEGE_WEAPONS:
         return g->stats.siege_weapons != 0;
     case STEP_MONSTER_CASTLE: {
+        // Taken once: a castle left empty falls back to the monsters at the
+        // week's end (REQ-302), and winning it again is not a new objective.
         const CastleRecord *cr = GameFindCastleConst(g, step->handle);
-        return cr && cr->owner_kind == CASTLE_OWNER_PLAYER;
+        return cr && (cr->taken || cr->owner_kind == CASTLE_OWNER_PLAYER);
     }
     case STEP_VILLAIN: {
         const VillainDef *v = villain_by_id(step->handle);

@@ -412,6 +412,7 @@ static void fill_zone_chest(cJSON *j, void *dst) {
     c->gold = json_int(j, "gold", 0);
     cJSON *fx = cJSON_GetObjectItem(j, "fixed");
     c->fixed = cJSON_IsBool(fx) && cJSON_IsTrue(fx);
+    copy_str(c->artifact, sizeof(c->artifact), json_str(j, "artifact", ""));
 }
 static void fill_zone_artifact(cJSON *j, void *dst) {
     ResZoneArtifact *a = (ResZoneArtifact *)dst;
@@ -1289,7 +1290,9 @@ static void parse_combat(Resources *res, cJSON *obj) {
         for (int j = 0; j < 5; j++)
             res->morale_chart[i][j] = 'N';
     res->number_name_count = 0;
+    res->morale_as_army_view = false;
     if (!cJSON_IsObject(obj)) return;
+    res->morale_as_army_view = cJSON_IsTrue(cJSON_GetObjectItem(obj, "morale_as_army_view"));
 
     cJSON *mc = cJSON_GetObjectItem(obj, "morale_chart");
     if (cJSON_IsArray(mc)) {
@@ -1536,6 +1539,9 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(castle_header,            "castle_header");
     SET_BANNER(castle_siege_monsters,    "castle_siege_monsters");
     SET_BANNER(castle_uncharted,         "castle_uncharted");
+    // Optional: only a pack with world.castle_gate_report asks under a report.
+    copy_str(b->castle_siege_ask, sizeof b->castle_siege_ask,
+             cJSON_IsObject(obj) ? json_str(obj, "castle_siege_ask", "") : "");
     SET_BANNER(search_nothing,           "search_nothing");
     SET_BANNER(zone_unreachable,         "zone_unreachable");
     SET_BANNER(town_spell_unavailable,  "town_spell_unavailable");
@@ -2647,6 +2653,10 @@ bool resources_load(Resources *res, const char *manifest_path) {
     cJSON *jsp = cJSON_GetObjectItem(root, "spawn");
     if (cJSON_IsObject(jsp)) {
         ResSpawn *sp = &res->spawn;
+        // The calm start (REQ-283): absent radius = 0 = off.
+        sp->calm_radius     = json_int(jsp, "calm_radius", 0);
+        sp->calm_max_slot   = json_int(jsp, "calm_max_slot", 1);
+        sp->calm_max_stacks = json_int(jsp, "calm_max_stacks", 2);
         cJSON *jcc = cJSON_GetObjectItem(jsp, "tier_chance_curve");
         if (cJSON_IsArray(jcc)) {
             int ti = 0;
@@ -2825,6 +2835,8 @@ bool resources_load(Resources *res, const char *manifest_path) {
     copy_str(res->world.language, sizeof res->world.language,
              json_str(jw, "language", "en"));
     res->world.max_army_slots = json_int(jw, "max_army_slots", 5);
+    res->world.clear_keeps_ground = cJSON_IsTrue(cJSON_GetObjectItem(jw, "clear_keeps_ground"));
+    res->world.castle_gate_report = cJSON_IsTrue(cJSON_GetObjectItem(jw, "castle_gate_report"));
     cJSON *jdo = cJSON_GetObjectItem(jw, "default_options");
     // Fallback defaults: delay, sounds, walk_beep, anim, cga, music, volume.
     static const int default_options_fallback[7] = { 4, 1, 1, 1, 1, 0, 5 };
@@ -3172,6 +3184,12 @@ int resources_spawn_slot(const ResSpawn *sp, int kind, int tier, int chance) {
 const char *resources_spawn_troop(const ResSpawn *sp, int kind, int tier, int chance) {
     if (!sp) return "";
     int slot = resources_spawn_slot(sp, kind, tier, chance);
+    kind &= 3;
+    return (slot < sp->pool_count[kind] && sp->troop_pool[kind]) ? sp->troop_pool[kind][slot] : "";
+}
+
+const char *resources_spawn_troop_at(const ResSpawn *sp, int kind, int slot) {
+    if (!sp || slot < 0) return "";
     kind &= 3;
     return (slot < sp->pool_count[kind] && sp->troop_pool[kind]) ? sp->troop_pool[kind][slot] : "";
 }

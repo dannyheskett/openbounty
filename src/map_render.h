@@ -19,6 +19,10 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
 // its own), then the cell's art, in their cosmetic variants. The one way a
 // map cell is drawn -- the map, the gate's preview and the puzzle alike.
 void map_render_cell(const Map *m, int mx, int my, Rectangle dst);
+// The cell's ground alone: what an object stands on (Tile.ground, REQ-229f),
+// else its terrain's art. The puzzle view draws a lifted piece with this so a
+// chest, a lair or a fled army never shows where the original blanked objects.
+void map_render_cell_ground(const Map *m, int mx, int my, Rectangle dst);
 
 // The top-left corner of the hero's cell, in design pixels: where a tap's
 // direction is measured from.

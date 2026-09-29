@@ -476,6 +476,7 @@ cJSON *state_build_snapshot(const Game *g,
             cJSON_AddStringToObject(c, "id", g->castles[i].id);
             cJSON_AddBoolToObject  (c, "visited", g->castles[i].visited);
             cJSON_AddBoolToObject  (c, "known",   g->castles[i].known);
+            cJSON_AddBoolToObject  (c, "taken",   g->castles[i].taken);
             cJSON_AddStringToObject(c, "owner",
                 castle_owner_id(g->castles[i].owner_kind));
             if (g->castles[i].villain_id[0])
@@ -519,6 +520,20 @@ cJSON *state_build_snapshot(const Game *g,
             cJSON_AddItemToArray(arr, m);
         }
         cJSON_AddItemToObject(root, "consumed", arr);
+    }
+
+    // ---- Bridge-spell decks ----
+    {
+        cJSON *arr = cJSON_CreateArray();
+        for (int i = 0; i < g->bridge_count; i++) {
+            cJSON *m = cJSON_CreateObject();
+            cJSON_AddStringToObject(m, "zone", g->bridges[i].zone);
+            cJSON_AddNumberToObject(m, "x", g->bridges[i].x);
+            cJSON_AddNumberToObject(m, "y", g->bridges[i].y);
+            cJSON_AddBoolToObject(m, "vertical", g->bridges[i].vertical != 0);
+            cJSON_AddItemToArray(arr, m);
+        }
+        cJSON_AddItemToObject(root, "bridges", arr);
     }
 
     // ---- one-time vistas already played ----

@@ -57,6 +57,9 @@ typedef struct {
     // The zone's wandering-army art stem ("wandering_army" unless the zone
     // declares `army_art`); every foe stamp reads it from here.
     char army_art[TILE_ART_NAME_LEN];
+    // world.clear_keeps_ground: MapClearInteractive restores walkable
+    // non-grass ground (desert) instead of writing plain grass (REQ-229f).
+    bool clear_keeps_ground;
     // The string pool the tiles index (see Tile). Rebuilt by every load.
     int      str_count;                // strings in use, index 0 = ""
     int      pool_used;                // bytes of `pool` in use
@@ -129,6 +132,12 @@ bool MapWalkable(const Map *map, int x, int y);
 // etc.). Also clears `art` and `id` so the tile renders as plain terrain.
 // No-op if the coord is out of bounds.
 void MapClearInteractive(Map *map, int x, int y);
+
+// Lay one Bridge-spell deck at (x, y): a water or river tile becomes a walkable
+// grass tile flagged is_bridge, drawn as the river bridge over a river and the
+// plain bridge over the sea, running north-south when `vertical`. False (the
+// tile untouched) when (x, y) is off the map or is neither water nor river.
+bool MapLayBridge(Map *map, int x, int y, bool vertical);
 
 // Write the tile that `code` names in the pack's tile_codes at (x, y), the way
 // the map loader builds it. False when the code is not declared or (x, y) is

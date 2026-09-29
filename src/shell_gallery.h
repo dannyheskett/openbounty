@@ -15,6 +15,10 @@
 
 int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
                 RenderTexture2D *rt, const char *dir);
+// --puzzle-sweep <dir>: the puzzle view of all 256 catalog worlds, the centre
+// piece lifted, one PNG each (#108).
+int gallery_puzzle_sweep(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
+                         RenderTexture2D *rt, const char *dir);
 
 #else
 
@@ -24,6 +28,12 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
 static inline int gallery_run(Game *g, Map *m, Fog *f, const Resources *res,
                               const Sprites *s, RenderTexture2D *rt,
                               const char *dir) {
+    (void)g; (void)m; (void)f; (void)res; (void)s; (void)rt; (void)dir;
+    return 2;
+}
+static inline int gallery_puzzle_sweep(Game *g, Map *m, Fog *f, const Resources *res,
+                                       const Sprites *s, RenderTexture2D *rt,
+                                       const char *dir) {
     (void)g; (void)m; (void)f; (void)res; (void)s; (void)rt; (void)dir;
     return 2;
 }

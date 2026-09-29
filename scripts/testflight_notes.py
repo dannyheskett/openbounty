@@ -8,7 +8,8 @@ testers see next to the build -- without it they get a version number and no
 idea what changed. This fills it from the release notes.
 
 Runs on Linux (pure App Store Connect REST, no Xcode), so it can poll through
-Apple's 5-15 minute processing window without burning macOS runner minutes.
+Apple's processing window, minutes on a good day and well over an hour on a
+bad one, without burning macOS runner minutes.
 
 Environment:
   ASC_KEY_P8      the .p8 private key contents
@@ -17,7 +18,7 @@ Environment:
   BUNDLE_ID       app bundle id, e.g. com.danheskett.gloryofrome
   BUILD_VERSION   CFBundleVersion to wait for (the release number)
   NOTES           the "What to Test" text
-  TIMEOUT_MIN     how long to wait for processing (default 25)
+  TIMEOUT_MIN     how long to wait for processing (default 90)
 """
 import base64
 import json
@@ -73,7 +74,7 @@ def main():
     bundle = os.environ["BUNDLE_ID"]
     want = os.environ["BUILD_VERSION"]
     notes = os.environ["NOTES"].strip()[:4000]  # Apple caps whatsNew at 4000
-    timeout_min = int(os.environ.get("TIMEOUT_MIN", "25"))
+    timeout_min = int(os.environ.get("TIMEOUT_MIN", "90"))
 
     apps = call("GET", f"/v1/apps?filter[bundleId]={bundle}&limit=1")["data"]
     if not apps:

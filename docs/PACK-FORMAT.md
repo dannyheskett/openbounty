@@ -48,11 +48,11 @@ other absent block has parsed as empty or as its defaults.
 | `pack_kind`   | string   | `"base"` or `"mod"`. Informational. |
 | `title`       | string   | Window title. |
 | `version`     | int      | Pack schema version. Current: `1`. |
-| `world`       | object ✱ | Global world flags, including `language`, the base locale in `strings/` (default `en`). |
+| `world`       | object ✱ | Global world flags, including `language`, the base locale in `strings/` (default `en`), `clear_keeps_ground` (bool, default false): a cleared object restores walkable desert ground instead of plain grass (REQ-229f), and `castle_gate_report` (bool, default false): a castle gate shows the town informant's report on its castle, in a message box without siege weapons and above the siege question (string `castle_siege_ask`) with them (REQ-303). |
 | `time`        | object ✱ | Day/week/difficulty constants. |
 | `economy`     | object ✱ | Costs, chest tables, scoring. |
 | `tuning`      | object   | `instant_army_multiplier` (per rank), `search_cost_days`, and the temp-death army (`temp_death`: `{"troop": id, "count": n}`; defaults: the cheapest-recruit-cost troop, 20). |
-| `combat`      | object ✱ | Morale chart, number-name labels. |
+| `combat`      | object ✱ | Morale chart, number-name labels; `morale_as_army_view` (bool, default false): a unit's combat morale follows the army view's rule (REQ-271) instead of the behaviour ported from King's Bounty (REQ-385). Glory of Rome sets it; the King's Bounty pack omits it. |
 | `controls`    | object   | Settings-menu rows. |
 | `colors`      | object   | Difficulty-bar colors, minimap palette. |
 | `audio`       | object   | Music track list, SFX paths. |
@@ -68,7 +68,7 @@ other absent block has parsed as empty or as its defaults.
 | `castles`     | array  ✱ | Castle catalog. Each: `id`, `name`, `zone`, `x`, `y`, `difficulty_tier` (0..3), optional `footprint` (`3x2` or `1x1`, §6) and `art`; the King's castle carries `special` (`flow`, `dialog`, `audience`, `win_condition`, the `excluded_from_contract` / `_intel` / `_siege` flags and, for the modern screens, `portrait`, `figure`, `promotion`, `barracks_portrait`, `barracks_figure`, `greeter_figure` naming `portraits` ids). OPENBOUNTY-SPEC §17. |
 | `towns`       | array  ✱ | Town catalog. Each: `id`, `name`, `zone`, `x`, `y`, `gate` `{x, y}`, `boat` `{x, y}`, `intel_castle`, optional `intel_artifact` (the informant reports an artifact instead), optional `pinned_spell`, optional `art` and `backdrop` (§6), and the modern screen's `headman`, `informant`, `townhead` (`portraits` ids) and `invitations` (a `strings.town_invitations` block). OPENBOUNTY-SPEC §16. |
 | `zones`       | array  ✱ | Continent / map definitions. Each: `id`, `name`, `map`, `width`, `height`, `hero_spawn` `{x, y}`, optional `home_spawn` and `is_home` (exactly one zone), optional `magic_alcove`, `neighbors` (zone ids reachable by sea), `salt` (§6), and the object lists `towns`, `castles`, `signs`, `chests`, `artifacts`, `dwellings`, `wandering_armies`; a modern pack has added `events`, `arrivals`, `alcove_art`, `alcove_cost`, `army_art`, `field_grid`, `town_backdrop`, `tile_set`, `tile_set_arts` and the `boatmaster`, `pontifex`, `siegemaster` portrait ids (§6). OPENBOUNTY-SPEC §9–§10. |
-| `spawn`       | object   | Per-continent monster-spawn tables: `tier_chance_curve` (one threshold list per continent tier), `tier_troop_pool` (one troop list per dwelling kind, any length), and an optional `kind_chance_curve` (per kind, a curve set of its own or `null` to keep the tier curve; `glory-of-rome` uses it for its six-troop plains kind). |
+| `spawn`       | object   | Per-continent monster-spawn tables: `tier_chance_curve` (one threshold list per continent tier), `tier_troop_pool` (one troop list per dwelling kind, any length), the calm start `calm_radius` / `calm_max_slot` / `calm_max_stacks` (hostile foes within the radius of the zone's `hero_spawn` roll no pool slot above the max and no more stacks than the cap; radius 0 or absent disables it, REQ-283), and an optional `kind_chance_curve` (per kind, a curve set of its own or `null` to keep the tier curve; `glory-of-rome` uses it for its six-troop plains kind). |
 | `contract`    | object   | Contract cycle parameters. |
 | `audiences`   | object   | Modern home-castle audience pages (Promotion, Blessing, Tribute). |
 | `magic`       | object   | `rites_per_zone`: each zone's temple has taught spells only once that zone's rites are known (OPENBOUNTY-SPEC REQ-314a). |
@@ -459,9 +459,9 @@ own `field_grid` prefix, which has won for fights on that zone, so each
 continent can have its own ground. The shell has drawn each cell's own
 picture under the obstacles and troops, in place of `combat_ground`, when
 every cell of the zone's grid loaded; a siege has kept the siege grid.
-Absent, `combat_ground` has applied. `glory-of-rome` has shipped Italia's
-grid (`art/combat/field/italia_<x>_<y>.png`); `kings-bounty` has declared
-none.
+Absent, `combat_ground` has applied. `glory-of-rome` has shipped a grid per
+zone (`art/combat/field/<zone>_<x>_<y>.png`, each zone's own `field_grid`);
+`kings-bounty` has declared none.
 
 **Per-town art.** A town catalog entry has been able to declare
 `"art": "<stem>"`, a tile under `art/tiles/`, and the engine has stamped that
@@ -525,6 +525,12 @@ then always held exactly that, instead of rolling.
 **A fixed chest.** A zone chest has been able to carry `"fixed": true`: it
 has stayed out of the salt barrel (OPENBOUNTY-SPEC REQ-231) and always been
 a chest.
+
+**A pinned artifact.** A zone chest has been able to carry `"artifact": "<id>"`:
+it has then been that artifact, placed before the salt draws and counted
+against the zone's artifact quota, so the salt has scattered only the rest
+(OPENBOUNTY-SPEC REQ-231). It has stayed out of the barrel like a fixed chest.
+Glory of Rome's guarded trail on Sardinia has ended in one.
 
 **An explicit garrison.** A `wandering_armies` entry has been able to carry
 `army`, a list of `{"troop": id, "count": n}`, fielded verbatim instead of a

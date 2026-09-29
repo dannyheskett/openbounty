@@ -172,6 +172,14 @@ typedef struct {
     bool   kind_curve_set[RES_SPAWN_TIERS];
     int   *kind_curve[RES_SPAWN_TIERS][RES_SPAWN_TIERS];   // [kind][tier]
     int    kind_curve_len[RES_SPAWN_TIERS][RES_SPAWN_TIERS];
+    // The calm start (2026-09-28, #69): a hostile foe whose spawn tile lies
+    // within calm_radius (Chebyshev) of its zone's hero_spawn rolls no pool
+    // slot above calm_max_slot and no more than calm_max_stacks stacks.
+    // calm_radius 0 (absent) disables it: the King's Bounty pack rolls as
+    // the original did. Glory of Rome sets 12 / 1 / 2.
+    int    calm_radius;
+    int    calm_max_slot;
+    int    calm_max_stacks;
 } ResSpawn;
 
 // The pool slot a chance roll (1..100) picks in pool `kind` at difficulty
@@ -181,6 +189,8 @@ typedef struct {
 int resources_spawn_slot(const ResSpawn *sp, int kind, int tier, int chance);
 // The troop id that roll picks ("" when the slot names none).
 const char *resources_spawn_troop(const ResSpawn *sp, int kind, int tier, int chance);
+// The troop id at a pool slot directly ("" past the pool's end).
+const char *resources_spawn_troop_at(const ResSpawn *sp, int kind, int slot);
 
 // Render geometry, declared by the pack. There is no default: a pack must say
 // which mode it is authored for, because the two are not interchangeable --
@@ -234,6 +244,16 @@ typedef struct {
     char zone_noun_plural[RES_ID_LEN];
     char language[RES_ID_LEN];    // base locale code; strings load from strings/<language>.json
     int  max_army_slots;
+    // A cleared object (a fought foe, an opened chest, a fled army) gives the
+    // cell back its own walkable ground, desert included, instead of the
+    // original's plain grass (REQ-229f, #107). Absent or false, the cleared
+    // cell becomes grass as the original did: the King's Bounty pack.
+    bool clear_keeps_ground;
+    // A castle gate reports whose castle it is and its garrison in vague words,
+    // as a town's informant does: in a message box without siege weapons, and
+    // above the siege question with them (#71). Absent or false, a gate without
+    // siege weapons bounces the hero back in silence as the original did.
+    bool castle_gate_report;
     // Initial player state defaults, used by GameInit when no override exists.
     char default_name[RES_NAME_LEN];   // fallback when player enters no name
     int  default_options[7];           // delay, sounds, walk_beep, anim, cga, music, volume
@@ -380,6 +400,8 @@ typedef struct {
     char id[RES_ID_LEN];
     bool fixed;          // "fixed": true -- always a chest, never salted
     int  gold;           // "gold": N -- this chest always holds N, never rolled
+    char artifact[RES_ID_LEN]; // "artifact": id -- this chest is that artifact,
+                               // placed before the salt draws; "" = none
 } ResZoneChest;
 
 typedef struct {
@@ -547,6 +569,7 @@ typedef struct {
     char castle_header[RES_BANNER_LEN];
     char castle_siege_monsters[RES_BANNER_LEN];
     char castle_uncharted[RES_BANNER_LEN];
+    char castle_siege_ask[RES_BANNER_LEN];       // optional: the question under a gate report
     char search_nothing[RES_BANNER_LEN];
     char zone_unreachable[RES_BANNER_LEN];
     char town_spell_unavailable[RES_BANNER_LEN];
@@ -1392,6 +1415,12 @@ typedef struct {
     // Combat rules -- cross-group morale chart .
     // Indexed by (my_group - 'A', their_group - 'A'); values are 'N'/'L'/'H'.
     char morale_chart[5][5];
+    // combat.morale_as_army_view: true = a unit's combat morale is the
+    // army view's rule (REQ-271: alone High; each OTHER slot looked up as
+    // chart[mine][theirs]; any L Low, all H High, else Normal). Absent or
+    // false = the behaviour ported from King's Bounty (REQ-385), kept for
+    // the legacy pack. Glory of Rome sets it (2026-09-27, #75).
+    bool morale_as_army_view;
 
     // Fuzzy-number labels for intelligence / enemy-sight text
     // .

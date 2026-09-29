@@ -443,6 +443,12 @@ SaveResult SaveGameRead(const char *path,
             g->castles[i].known   = cJSON_IsBool(jk) ? cJSON_IsTrue(jk) : false;
             cJSON *jo = cJSON_GetObjectItem(it, "owner");
             g->castles[i].owner_kind = castle_owner_from_id(cJSON_IsString(jo) ? jo->valuestring : NULL);
+            // Absent in a save written before castles could be lost: a castle
+            // the hero holds there was taken.
+            cJSON *jt = cJSON_GetObjectItem(it, "taken");
+            g->castles[i].taken = cJSON_IsBool(jt)
+                ? cJSON_IsTrue(jt)
+                : g->castles[i].owner_kind == CASTLE_OWNER_PLAYER;
             copy_json_string(g->castles[i].villain_id, sizeof(g->castles[i].villain_id),
                              cJSON_GetObjectItem(it, "villain"));
             parse_unit_array(cJSON_GetObjectItem(it, "garrison"),
@@ -487,6 +493,26 @@ SaveResult SaveGameRead(const char *path,
             copy_json_string(tm->zone, sizeof(tm->zone), jz);
             tm->x = jx->valueint;
             tm->y = jy->valueint;
+        }
+    }
+    // Bridge-spell decks (absent in a save written before they were kept,
+    // which then loads as none).
+    g->bridge_count = 0;
+    cJSON *jbridges = cJSON_GetObjectItem(root, "bridges");
+    if (cJSON_IsArray(jbridges)) {
+        cJSON *m;
+        cJSON_ArrayForEach(m, jbridges) {
+            if (!GameReserveBridges(g, g->bridge_count + 1)) break;
+            cJSON *jz = cJSON_GetObjectItem(m, "zone");
+            cJSON *jx = cJSON_GetObjectItem(m, "x");
+            cJSON *jy = cJSON_GetObjectItem(m, "y");
+            if (!cJSON_IsString(jz) ||
+                !cJSON_IsNumber(jx) || !cJSON_IsNumber(jy)) continue;
+            BuiltBridge *b = &g->bridges[g->bridge_count++];
+            copy_json_string(b->zone, sizeof(b->zone), jz);
+            b->x = jx->valueint;
+            b->y = jy->valueint;
+            b->vertical = cJSON_IsTrue(cJSON_GetObjectItem(m, "vertical")) ? 1 : 0;
         }
     }
     // One-time vistas already played (absent in a save written before they

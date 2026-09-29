@@ -306,7 +306,9 @@ mover, recruiter, and their measurement layer.
 - **AP-042.** Completion has been a single uniform per-kind predicate
   `autoplay/goals.c planstep_is_done`: consumables → tile in `g->consumed`;
   alcove → `GameHasRites` for the alcove's zone (`knows_magic` without rites
-  per zone); siege weapons → `siege_weapons`; monster castle → player-owned;
+  per zone); siege weapons → `siege_weapons`; monster castle → taken once
+  (`CastleRecord.taken`, or player-owned; a castle left empty falls back to
+  the monsters at the week's end, REQ-302, and is not an objective again);
   villain → `villains_caught`; scepter → `stats.won`; foe → gone by
   `placement_id`+zone; vista → `GameEventFired`; muster → the demanded troop
   in the army.
@@ -487,8 +489,8 @@ mover, recruiter, and their measurement layer.
   rejected: `f = g + h` over elapsed days, and fewest-open-first. Both have
   turned the frontier into a swamp of near-identical siblings (segments cost
   0–2 days and successful reorderings collapse into states already seen), and
-  the descent has never committed (118k expansions at 14/280 done; 155k at
-  12/280). Determinism has followed from the key: same build and seed give
+  the descent has never committed (118k expansions at 14 objectives done; 155k at
+  12). Determinism has followed from the key: same build and seed give
   the same creation order, the same pops, the same plan.
 - **AP-203.** The DECLARED EXPANSION SET, the bounds that make NOT-SOLVED a
   statement about a capped search rather than about the seed (AP-016). Each
@@ -511,7 +513,7 @@ mover, recruiter, and their measurement layer.
     consecutive KEPT edges (world kept, nothing completed, the PREFOUGHT
     shape) have been capped at `SEARCH_MAX_KEPT_STREAK`, because an unbounded
     KEPT chain is a calendar-burning descent at constant progress (measured:
-    15k expansions pinned at 28/280, tip 385 days deep).
+    15k expansions pinned at 28 objectives, tip 385 days deep).
   - **Dead leaves.** A child born with the calendar exhausted and work still
     open can only fail every later attempt with `cause=time`, so it has not
     been inserted. Declared trade: a finish that would need every remaining
@@ -522,7 +524,7 @@ mover, recruiter, and their measurement layer.
 - **AP-209.** There has deliberately been NO GLOBAL duplicate-state set. A
   closed set without reopening has been unsound here: a state first reached
   by a sibling line that later dies would block the main line from ever
-  entering it (measured: the descent stalls at 28/280 behind exactly that).
+  entering it (measured: the descent stalls at 28 objectives behind exactly that).
   Cycle protection has been line-local instead (AP-203).
 - **AP-204.** A node has carried the FULL world (`WorldSnapshot`: Game + Map +
   Fog + RNG + ledger, about 1 MB), and memory has been paid for with a

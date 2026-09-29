@@ -114,52 +114,6 @@ void frame_host_display_size(int *w, int *h) {
     if (h) *h = GetMonitorHeight(mon);
 }
 
-#if !defined(__EMSCRIPTEN__) && !defined(PLATFORM_ANDROID)
-// raylib's desktop backend is GLFW (scripts/build_raylib_*.sh build it with
-// PLATFORM_DESKTOP_GLFW), and raylib has no call for a monitor's work area or
-// a window's decorations, so these come from GLFW directly.
-typedef struct GLFWmonitor GLFWmonitor;
-typedef struct GLFWwindow GLFWwindow;
-GLFWmonitor **glfwGetMonitors(int *count);
-void glfwGetMonitorWorkarea(GLFWmonitor *monitor, int *x, int *y, int *w, int *h);
-void glfwGetWindowFrameSize(GLFWwindow *window, int *l, int *t, int *r, int *b);
-// The game's window: its GL context is the current one. (raylib's
-// GetWindowHandle is the platform's own handle -- an HWND, an X11 id -- not
-// GLFW's.)
-GLFWwindow *glfwGetCurrentContext(void);
-
-static bool work_area(int *x, int *y, int *w, int *h, int *fl, int *ft, int *fr, int *fb) {
-    int count = 0;
-    GLFWmonitor **mons = glfwGetMonitors(&count);
-    int mon = GetCurrentMonitor();
-    if (!mons || mon < 0 || mon >= count || !IsWindowReady()) return false;
-    glfwGetMonitorWorkarea(mons[mon], x, y, w, h);
-    *fl = *ft = *fr = *fb = 0;
-    GLFWwindow *win = glfwGetCurrentContext();
-    if (win) glfwGetWindowFrameSize(win, fl, ft, fr, fb);
-    return *w > 0 && *h > 0;
-}
-
-bool frame_host_window_room(int *w, int *h) {
-    int ax, ay, aw, ah, l, t, r, b;
-    if (!work_area(&ax, &ay, &aw, &ah, &l, &t, &r, &b)) return false;
-    if (w) *w = aw - l - r;
-    if (h) *h = ah - t - b;
-    return true;
-}
-
-void frame_host_window_place(int w, int h) {
-    int ax, ay, aw, ah, l, t, r, b;
-    SetWindowSize(w, h);
-    s_set_w = w; s_set_h = h;
-    if (!work_area(&ax, &ay, &aw, &ah, &l, &t, &r, &b)) return;
-    SetWindowPosition(ax + (aw - (w + l + r)) / 2 + l, ay + (ah - (h + t + b)) / 2 + t);
-}
-#else
-bool frame_host_window_room(int *w, int *h) { (void)w; (void)h; return false; }
-void frame_host_window_place(int w, int h) { (void)w; (void)h; }
-#endif
-
 void frame_host_poll_events(void) { PollInputEvents(); }
 
 double frame_host_delta(void) { return (double)GetFrameTime(); }

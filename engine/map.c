@@ -134,6 +134,26 @@ static bool fill_tile_from_code(Map *map, Tile *t, const Resources *res,
 // A declared tile code written onto a live map (game.json `events` effects:
 // a bridge over a river, a cleared pass). The tile is built exactly as the
 // loader builds it, so it is a tile the .dat could have held.
+bool MapLayBridge(Map *map, int x, int y, bool vertical) {
+    if (!MapInBounds(map, x, y)) return false;
+    Tile *t = &MAP_TILE(map, x, y);
+    // The sea or a river: a bridge crosses either.
+    if (t->terrain != TERRAIN_WATER && t->terrain != TERRAIN_RIVER) return false;
+    // Over a river the deck is the river bridge: paving across the river's own
+    // piece, crossing north-south over a river running east-west, or the other
+    // way round.
+    const char *stem = (t->terrain == TERRAIN_RIVER)
+        ? (vertical ? "bridge_river_ns" : "bridge_river_ew")
+        : (vertical ? "bridge_v" : "bridge_h");
+    t->terrain = TERRAIN_GRASS;
+    t->interactive = INTERACT_NONE;
+    t->blocks_foot = false;
+    t->is_bridge = true;
+    char art[TILE_ART_NAME_LEN];
+    TileSetArt(map, t, MapTerrainArt(map, stem, art, sizeof art));
+    return true;
+}
+
 bool MapSetTileFromCode(Map *map, const Resources *res, int x, int y,
                         unsigned char code) {
     if (!map || !res || !MapInBounds(map, x, y)) return false;
@@ -190,6 +210,7 @@ static bool load_dat(Map *map, const Resources *res, const ResZone *zone) {
                 zone->army_art[0] ? zone->army_art : "wandering_army");
     map->hero_spawn_x = zone->hero_spawn_x;
     map->hero_spawn_y = zone->hero_spawn_y;
+    map->clear_keeps_ground = res->world.clear_keeps_ground;
     map->navmap_x = map->navmap_y = -1;
     map->orb_x    = map->orb_y    = -1;
 
@@ -544,11 +565,15 @@ void MapClearInteractive(Map *map, int x, int y) {
     // Only grass-terrain ground comes back (roads, grass variants): a
     // consumed object on desert or a mountain edge still leaves plain grass,
     // exactly as the original game did, so the legacy pack plays unchanged.
+    // A pack that sets world.clear_keeps_ground (#107) gets any walkable
+    // ground back, desert included, so a fight on Africa's sand leaves sand;
+    // unwalkable ground (a dwelling on a mountain edge) still becomes grass.
     const char *gname = TileGround(map, t);
     Terrain ground = gname[0] ? TerrainFromArt(art_stem(gname)) : TERRAIN_GRASS;
-    if (gname[0] && ground == TERRAIN_GRASS) {
+    if (gname[0] && (ground == TERRAIN_GRASS ||
+                     (map->clear_keeps_ground && TerrainWalkable(ground)))) {
         t->art = t->ground;
-        t->terrain = TERRAIN_GRASS;
+        t->terrain = (uint8_t)ground;
     } else {
         t->art = MapStrIntern(map, MapTerrainArt(map, "grass", art, sizeof art));
         t->ground = t->art;

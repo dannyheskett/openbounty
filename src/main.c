@@ -303,6 +303,7 @@ int shell_run_game(int argc, char **argv) {
     bool        movie_requested = false;
     const char *movie_path_arg  = NULL;
     const char *gallery_dir     = NULL;   // --gallery <dir>: capture every modern screen
+    const char *puzzle_sweep_dir = NULL;  // --puzzle-sweep <dir>: the puzzle view of all 256 worlds
     // --window WxH / --touch: the geometry a device has, on this desk. The
     // window size drives everything (present_refit derives the buffer from
     // it), and --touch turns on what only a finger turns on, so a capture at
@@ -447,6 +448,8 @@ int shell_run_game(int argc, char **argv) {
             }
         } else if (strcmp(a, "--gallery") == 0 && i + 1 < argc) {
             gallery_dir = argv[++i];
+        } else if (strcmp(a, "--puzzle-sweep") == 0 && i + 1 < argc) {
+            puzzle_sweep_dir = argv[++i];
         } else if (strcmp(a, "--window") == 0 && i + 1 < argc) {
             int w = 0, h = 0;
             if (sscanf(argv[++i], "%dx%d", &w, &h) == 2 && w > 0 && h > 0) {
@@ -773,9 +776,10 @@ int shell_run_game(int argc, char **argv) {
     // that declared no render.mode.
     layout_init((const struct Resources *)&res);
 
-    // The window opens at the smallest screen; once it exists it grows to the
-    // largest whole multiple of that the monitor has room for (below).
-    // --window WxH wins: it is the whole point of the flag.
+    // The window opens at the smallest screen and stays there: the zoom
+    // rises only when the player maximises it or goes full screen
+    // (present.c held_zoom). --window WxH wins: it is the whole point of
+    // the flag.
     int base_w = CL_WINDOW_W;
     int base_h = CL_WINDOW_H;
     if (want_win_w > 0 && want_win_h > 0) { base_w = want_win_w; base_h = want_win_h; }
@@ -790,17 +794,6 @@ int shell_run_game(int argc, char **argv) {
     // --touch: after the window, because the host clears its input state as it
     // opens. Everything a finger changes now draws on this desk.
     if (force_touch) input_host_force_touch();
-    // The room is known only now the window exists: the monitor's work area
-    // less the title bar and the taskbar. A declared buffer grows to the
-    // largest whole multiple of itself (3 at most) that the room holds.
-    if (CL_IS_MODERN && CL_IS_NATIVE && !(want_win_w > 0 && want_win_h > 0) &&
-        !want_fullscreen) {
-        int room_w = 0, room_h = 0;
-        if (frame_host_window_room(&room_w, &room_h)) {
-            int z = present_max_scale(room_w, room_h);
-            if (z > 1) frame_host_window_place(CL_SCREEN_W * z, CL_SCREEN_H * z);
-        }
-    }
     {
         int dw = 0, dh = 0;
         frame_host_display_size(&dw, &dh);
@@ -855,7 +848,7 @@ int shell_run_game(int argc, char **argv) {
     bool audio_started = false;
 title:;
     StartupChoice choice = { 0 };
-    if (demo_mode || autoplay_mode || gallery_dir) {
+    if (demo_mode || autoplay_mode || gallery_dir || puzzle_sweep_dir) {
         if (seed_index < 0)
             seed_index = autoplay_mode ? AUTOPLAY_DEFAULT_SEED_INDEX
                                        : DEMO_DEFAULT_SEED_INDEX;
@@ -1011,6 +1004,15 @@ title:;
     // Render target was allocated above (render_target_startup)
     // so the pre-game flow can draw into it; reuse here.
     RenderTexture2D render_target = render_target_startup;
+    if (puzzle_sweep_dir) {
+        // The puzzle view of every catalog world, then quit (#108).
+        int rc = gallery_puzzle_sweep(&game, &map, &fog, &res, &sprites, &render_target, puzzle_sweep_dir);
+        gfx_target_free(render_target);
+        sprites_unload(&sprites);
+        frame_host_window_close();
+        resources_free(&res);
+        return rc;
+    }
     if (gallery_dir) {
         // Layout audit: capture every modern screen, then quit.
         int rc = gallery_run(&game, &map, &fog, &res, &sprites, &render_target, gallery_dir);

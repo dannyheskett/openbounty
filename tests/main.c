@@ -25,6 +25,7 @@ SUITE_EXTERN(unit_garrison_partial_suite);
 SUITE_EXTERN(unit_audiences_suite);
 SUITE_EXTERN(unit_mlist_suite);
 SUITE_EXTERN(unit_foe_evade_suite);
+SUITE_EXTERN(unit_chest_pin_suite);
 SUITE_EXTERN(unit_fog_suite);
 SUITE_EXTERN(unit_tables_suite);
 SUITE_EXTERN(unit_tables_defensive_suite);
@@ -55,6 +56,14 @@ SUITE_EXTERN(unit_combat_rng_suite);
 SUITE_EXTERN(unit_combat_unit_suite);
 SUITE_EXTERN(unit_combat_geom_suite);
 SUITE_EXTERN(unit_combat_damage_suite);
+SUITE_EXTERN(unit_combat_morale_suite);
+SUITE_EXTERN(unit_spawn_calm_suite);
+SUITE_EXTERN(unit_scepter_zone_suite);
+SUITE_EXTERN(unit_map_clear_ground_suite);
+SUITE_EXTERN(unit_rome_salt_suite);
+SUITE_EXTERN(unit_castle_gate_report_suite);
+SUITE_EXTERN(unit_scepter_ground_suite);
+SUITE_EXTERN(unit_scepter_bridge_suite);
 SUITE_EXTERN(unit_combat_spells_suite);
 SUITE_EXTERN(unit_combat_ai_suite);
 
@@ -89,6 +98,7 @@ int main(int argc, char **argv) {
     RUN_SUITE(unit_audiences_suite);
     RUN_SUITE(unit_mlist_suite);
     RUN_SUITE(unit_foe_evade_suite);
+    RUN_SUITE(unit_chest_pin_suite);
     RUN_SUITE(unit_map_more_suite);
     RUN_SUITE(unit_map_overlay_suite);
     RUN_SUITE(unit_fog_suite);
@@ -121,6 +131,14 @@ int main(int argc, char **argv) {
     RUN_SUITE(unit_combat_unit_suite);
     RUN_SUITE(unit_combat_geom_suite);
     RUN_SUITE(unit_combat_damage_suite);
+    RUN_SUITE(unit_combat_morale_suite);
+    RUN_SUITE(unit_spawn_calm_suite);
+    RUN_SUITE(unit_scepter_zone_suite);
+    RUN_SUITE(unit_map_clear_ground_suite);
+    RUN_SUITE(unit_rome_salt_suite);
+    RUN_SUITE(unit_castle_gate_report_suite);
+    RUN_SUITE(unit_scepter_ground_suite);
+    RUN_SUITE(unit_scepter_bridge_suite);
     RUN_SUITE(unit_combat_spells_suite);
     RUN_SUITE(unit_combat_ai_suite);
 

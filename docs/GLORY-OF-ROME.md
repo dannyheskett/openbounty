@@ -121,8 +121,8 @@ Named for **real Roman cities**, with the count per zone set by what each
 map's geography supports rather than by a target number. The engine has sized
 both from the pack (§8), so there has been no filler obligation.
 
-Twenty-six towns: Ostia, Puteoli, Cumae, Tarracina, Pisae, Ancona, Ravenna,
-Mediolanum, Croton and Roma in Italia; Massilia, Lugdunum, Lutetia,
+The towns: Ostia, Puteoli, Cumae, Tarracina, Pisae, Ancona, Ravenna,
+Mediolanum, Croton, Roma and Olbia in Italia; Massilia, Lugdunum, Lutetia,
 Londinium, Tarraco and Emerita Augusta in Galliae; Utica, Cirta, Memphis,
 Hadrumetum, Oea and Ptolemais in Africa; Tarsus, Ephesus, Nicomedia and
 Damascus in Oriens.
@@ -173,7 +173,25 @@ from the zone's tier.
 
 What the zone tier *has* driven has been ambient danger only: monster-castle
 garrisons (`difficulty_tier` → `repopulate_castle`), wandering-foe strength
-(`tier_chance_curve`), and the chest tables.
+(`tier_chance_curve`), and the chest tables. One exception since 2026-09-28
+(#69, a tester met giants north of Roma and worse south of it on day one):
+hostile foes within 12 cells of a zone's `hero_spawn` have rolled only the
+two weakest troops of each kind in at most two stacks (`spawn.calm_radius`,
+`calm_max_slot`, `calm_max_stacks`, PACK-FORMAT); the King's Bounty pack
+declares none and rolls as the original did.
+
+The monster castles' `difficulty_tier` has stepped up with the province as
+the reference pack's does (Continentia 0, Forestria 1, Archipelia 2, Saharia
+3): Italia 0 and 1, Galliae 1, Africa 2, Oriens 3. Until #105 (2026-09-29)
+Africa sat at 1 with Galliae and Oriens at 2, so no Rome castle rolled from
+the top tier and the last sieges were easy; a castle left empty and retaken
+(REQ-302) refills at the same tier.
+
+A castle gate has reported on its castle (`world.castle_gate_report`, #71):
+without siege engines the hero learns whose rule it is under and what holds
+it in vague words, the town informant's report, before turning back; with
+them the same report stands above "Lay siege?". King's Bounty keeps the
+original's silent bounce.
 
 **The pacing lever has been catalog order.** The contract cycle has been
 seeded with the *first five villains in catalog order*, and `max_contract`
@@ -253,6 +271,11 @@ Two per zone, sited by theme (`local_idx` 0 and 1).
 | **Galliae** | Gladius of Mars, Anchor of Neptune | The Rhine frontier is Rome's endless war; the zone is also the sea-heaviest, holding the Atlantic, the Channel and Gibraltar |
 | **Africa** | Bulla of Jupiter, Anulus Aureus | Jupiter Ammon's oracle is at Siwa; the equestrian order's gold ring belongs with the grain wealth of the African provinces |
 | **Oriens** | Corona Triumphalis, Scutum of Aeneas | Eastern conquest is what Roman triumphs were awarded for, and Aeneas carried his shield out of burning Troy, which stands in Anatolia |
+
+The Senatus Consultum has not been salted: the chest at the end of Sardinia's
+guarded trail has pinned it (`"artifact"` on a zone chest, PACK-FORMAT), so
+the three guardians on that road have always kept an artifact, not a purse.
+The Sibylline Fragment has been pinned too since 2026-09-27, in the mountain cove (#66), so Italia's salt has scattered no artifact of its own.
 
 ---
 
@@ -536,11 +559,31 @@ moves 8-way with no corner rule and would step across a diagonal river.
 `tools/mapbuild.py place` has scattered the zone's chests and wandering
 armies from a fixed seed inside the region boxes in
 `art/maps/italia_regions.json`, and kept a static guardian where it says
-(`guardian_calabria` holds the one pass into the toe). `tools/mapbuild.py
+(`guardian_calabria` holds the one pass into the toe; `guardian_sardinia_1`
+to `_3` hold the three gates of Sardinia's southern trail, whose last chamber
+has held the pinned Senatus Consultum). Sardinia has had Olbia on its east
+coast facing Ostia, the Augur inland on the road between the town and the
+trail, a mountain ridge down its east side, a river from the ridge to the
+western sea, and a coast of wood and rock all round, so that a boat has
+landed only at Olbia's harbour, the two grass cells beside the town. A sign
+at the trail's head has said what the road guards. `tools/mapbuild.py
 check` has proved every object stands on walkable ground and every dock is on
 the open sea, and printed what the hero reaches from the spawn on foot and by
 boat -- a boat sails only the water it is rented on -- first with every river
 shut, then with them bridged.
+
+**The two coves** (2026-09-27, #66: sailing had had no purpose on the
+peninsula itself). Two pockets on the Adriatic coast have been reachable only
+from the water, rented at Ancona's harbour: a winding channel into the
+Apennine cliffs east of the spine (in at column 43 of row 52, three cells
+west, two south, two west), whose last chamber has held the pinned Sibylline
+Fragment, and a winding grass path inside a ring of wood on the headland
+south of it (in at column 51 of row 58, four west, two south, two east),
+ending in a fixed chest. Only the entry cell of each has touched the sea, so
+a boat has landed there and nowhere else along the channel; `check` has
+shown both ends unreachable on foot and reachable by boat, with every town
+and castle reached as before. A sign beside Ancona's harbour has said the
+coves exist.
 
 **The Rubicon gate.** The Po plain (Mediolanum, Verona, Ravenna) has been
 closed by the Alps, the Maritime Alps, the Ligurian and Tusco-Emilian
@@ -617,6 +660,17 @@ Real requirements, not guidelines:
   them (REQ-231): 2 artifacts + 1 navmap + 1 orb + 2 telecaves + 10 dwellings
   + 5 friendly foes. Anything above 21 has remained a real chest. Reference
   zones have carried 45–75; Rome's have carried 30–40.
+- **Lairs have risen with the province** (2026-09-28, #106). The ten salted
+  dwellings take the zone's `preferred_troops` first and roll the rest from
+  its `dwelling_range`, so each province carries its own, on the reference
+  pack's curve with the flavour swapped where Rome demands it: Italia the
+  Coloni, Lares, Baleares, Larvae, Lupi and Fauni from the catalog's first
+  fifteen; Galliae the Ligures, Lemures, Druidae, Silvani, Cyclopes and
+  Silvani again, range `[1, 14]`; Africa the Manes, Sarmatae, Antaei and
+  Numidae, range `[2, 14]`; Oriens the Gigantes, Striges, Furiae, Dracones
+  and Empusae, range `[20, 26]`, which reaches the Elephanti. Until then all
+  four provinces copied Italia's list, so the last province had peasants'
+  lairs and Baleares everywhere.
 - **More contract-eligible castles than villains, with margin.** Italia has
   hosted six and has had ten.
 - **Castles have been single tiles.** Every catalog entry has declared
