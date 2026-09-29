@@ -3179,6 +3179,80 @@ const char *GameNumberName(const Game *g, int count) {
     return r->number_name_labels[r->number_name_count - 1];
 }
 
+// Append `frag` to `buf` at *off, never past `cap`.
+static void report_append(char *buf, size_t cap, size_t *off, const char *frag) {
+    if (*off + 1 >= cap) return;
+    int n = snprintf(buf + *off, cap - *off, "%s", frag);
+    if (n < 0) return;
+    if ((size_t)n >= cap - *off) { *off = cap - 1; return; }
+    *off += (size_t)n;
+}
+
+bool GameCastleReport(const Game *g, const char *castle_id, char *out, size_t cap) {
+    if (!out || cap == 0) return false;
+    out[0] = '\0';
+    if (!g || !g->res || !castle_id) return false;
+    const ResBanners *bn = &g->res->banners;
+    const ResCastle *rc = resources_castle_by_id(g->res, castle_id);
+    const CastleRecord *cr = GameFindCastleConst(g, castle_id);
+    if (!rc || !cr) return false;
+
+    char buf[512];
+    size_t off = 0;
+    char tmp[256];
+    buf[0] = '\0';
+    {
+        ResTemplateVar vars[] = { { "NAME", rc->name[0] ? rc->name : cr->id } };
+        resources_format_template(tmp, sizeof tmp, bn->town_intel_castle_under, vars, 1);
+        report_append(buf, sizeof buf, &off, tmp);
+    }
+    const char *owner = bn->town_intel_owner_none;
+    switch (cr->owner_kind) {
+        case CASTLE_OWNER_PLAYER:   owner = bn->town_intel_owner_player; break;
+        case CASTLE_OWNER_MONSTERS: owner = bn->town_intel_owner_none;   break;
+        case CASTLE_OWNER_VILLAIN: {
+            const VillainDef *v = villain_by_id(cr->villain_id);
+            owner = (v && v->name[0]) ? v->name : cr->villain_id;
+            break;
+        }
+        case CASTLE_OWNER_SPECIAL:  owner = bn->town_intel_owner_king;   break;
+    }
+    {
+        ResTemplateVar vars[] = { { "OWNER", owner } };
+        resources_format_template(tmp, sizeof tmp, bn->town_intel_owner_rule, vars, 1);
+        report_append(buf, sizeof buf, &off, tmp);
+    }
+    int stacks_shown = 0;
+    for (int i = 0; i < GAME_ARMY_SLOTS && off + 1 < sizeof(buf); i++) {
+        const Unit *u = &cr->garrison[i];
+        if (!u->id[0] || u->count == 0) continue;
+        const TroopDef *t = troop_by_id(u->id);
+        const char *tname = (t && t->name[0]) ? t->name : u->id;
+        const char *count_label = GameNumberName(g, u->count);
+        if (count_label[0]) {
+            ResTemplateVar vars[] = { { "LABEL", count_label }, { "TROOP", tname } };
+            resources_format_template(tmp, sizeof tmp, bn->town_intel_count_named, vars, 2);
+        } else {
+            char cbuf[16];
+            snprintf(cbuf, sizeof cbuf, "%d", u->count);
+            ResTemplateVar vars[] = { { "COUNT", cbuf }, { "TROOP", tname } };
+            resources_format_template(tmp, sizeof tmp, bn->town_intel_count_numeric, vars, 2);
+        }
+        report_append(buf, sizeof buf, &off, tmp);
+        stacks_shown++;
+    }
+    if (!stacks_shown && off + 1 < sizeof(buf)) {
+        // No garrison rolled: a monster castle reads as "various groups".
+        const char *src = (cr->owner_kind == CASTLE_OWNER_MONSTERS)
+            ? bn->town_intel_monsters_generic
+            : bn->town_intel_no_garrison;
+        resources_format_template(tmp, sizeof tmp, src, NULL, 0);
+        report_append(buf, sizeof buf, &off, tmp);
+    }
+    snprintf(out, cap, "%s", buf);
+    return true;
+}
+
 CastleRecord *GameFindCastle(Game *g, const char *castle_id) {
     if (!g || !castle_id || !castle_id[0]) return NULL;
     for (int i = 0; i < g->castle_count; i++) {

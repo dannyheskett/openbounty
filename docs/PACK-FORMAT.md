@@ -48,7 +48,7 @@ other absent block has parsed as empty or as its defaults.
 | `pack_kind`   | string   | `"base"` or `"mod"`. Informational. |
 | `title`       | string   | Window title. |
 | `version`     | int      | Pack schema version. Current: `1`. |
-| `world`       | object ✱ | Global world flags, including `language`, the base locale in `strings/` (default `en`), and `clear_keeps_ground` (bool, default false): a cleared object restores walkable desert ground instead of plain grass (REQ-229f). |
+| `world`       | object ✱ | Global world flags, including `language`, the base locale in `strings/` (default `en`), `clear_keeps_ground` (bool, default false): a cleared object restores walkable desert ground instead of plain grass (REQ-229f), and `castle_gate_report` (bool, default false): a castle gate shows the town informant's report on its castle, in a message box without siege weapons and above the siege question (string `castle_siege_ask`) with them (REQ-303). |
 | `time`        | object ✱ | Day/week/difficulty constants. |
 | `economy`     | object ✱ | Costs, chest tables, scoring. |
 | `tuning`      | object   | `instant_army_multiplier` (per rank), `search_cost_days`, and the temp-death army (`temp_death`: `{"troop": id, "count": n}`; defaults: the cheapest-recruit-cost troop, 20). |

@@ -16,6 +16,27 @@
 // just emits via the signatures declared in ui_host.h.
 #include "ui_host.h"
 
+// world.castle_gate_report (#71): what a castle's gate tells the hero, the
+// town informant's report on it (GameCastleReport) headed "Castle <name>",
+// with `ask` under it when the gate asks a question. Without the pack flag
+// it leaves `header` and `body` as they came in, emptying them only when no
+// question follows (the original's silent bounce).
+static void gate_report(const Game *g, const Resources *res, const char *castle_id,
+                        const ResCastle *rc, char *header, size_t hcap,
+                        char *body, size_t bcap, const char *ask) {
+    if (!ask) { header[0] = '\0'; body[0] = '\0'; }
+    if (!res->world.castle_gate_report) return;
+    char report[PLAYER_IO_BODY_CAP];
+    if (!GameCastleReport(g, castle_id, report, sizeof report)) return;
+    if (ask) {
+        snprintf(body, bcap, "%s\n%s", report, ask);
+        return;
+    }
+    ResTemplateVar vars[] = { { "NAME", rc && rc->name[0] ? rc->name : castle_id } };
+    resources_format_template(header, hcap, res->banners.castle_header, vars, 1);
+    snprintf(body, bcap, "%s", report);
+}
+
 bool GameStep(Game *game, Map *map, Fog *fog,
               const Resources *res, int dx, int dy) {
     if (dx == 0 && dy == 0) return false;
@@ -223,9 +244,10 @@ bool GameStep(Game *game, Map *map, Fog *fog,
                 // The bounce_back flag is already set by adventure.c.
                 // openkb left this unenforced (spec section 34.14); we restore
                 // the original behavior so castles actually gate the
-                // purchase.
-                header[0] = '\0';
-                body[0]   = '\0';
+                // purchase. A pack with world.castle_gate_report tells the
+                // hero whose castle it is and what holds it instead (#71).
+                gate_report(game, res, ir.castle_id, rc, header, sizeof header,
+                            body, sizeof body, NULL);
             } else if (cr && cr->owner_kind == CASTLE_OWNER_MONSTERS) {
                 size_t k = 0;
                 while (k + 1 < sizeof(pending_castle_id) && ir.castle_id[k]) {
@@ -242,9 +264,14 @@ bool GameStep(Game *game, Map *map, Fog *fog,
                 // produced the doubled "(y/n)?" -- so the body ends at the verb.
                 // The question alone: the Yes/No rows are the buttons, so no
                 // hand-centred "Lay Siege" is baked into the words.
-                char prompt_body[320];
+                char prompt_body[PLAYER_IO_BODY_CAP];
                 snprintf(prompt_body, sizeof prompt_body, "%s",
                          res->banners.castle_siege_monsters);
+                // The gate report, the question under it (#71).
+                char ph[8];
+                gate_report(game, res, ir.castle_id, rc, ph, sizeof ph,
+                            prompt_body, sizeof prompt_body,
+                            res->banners.castle_siege_ask);
                 char prompt_header[64];
                 ResTemplateVar cv[] = { { "NAME", rc && rc->name[0] ? rc->name : ir.castle_id } };
                 resources_format_template(prompt_header, sizeof prompt_header,
@@ -257,9 +284,10 @@ bool GameStep(Game *game, Map *map, Fog *fog,
             } else if (cr && cr->owner_kind == CASTLE_OWNER_VILLAIN &&
                        !game->stats.siege_weapons) {
                 // See CASTLE_OWNER_MONSTERS branch above -- silent
-                // bounce-back without siege weapons (DOS KB faithful).
-                header[0] = '\0';
-                body[0]   = '\0';
+                // bounce-back without siege weapons (DOS KB faithful), or
+                // the gate report (#71).
+                gate_report(game, res, ir.castle_id, rc, header, sizeof header,
+                            body, sizeof body, NULL);
             } else if (cr && cr->owner_kind == CASTLE_OWNER_VILLAIN) {
                 const VillainDef *v = villain_by_id(cr->villain_id);
                 size_t k = 0;
@@ -272,12 +300,17 @@ bool GameStep(Game *game, Map *map, Fog *fog,
                 // above; the listing is the section 24.18 gather-info screen). The
                 // "(y/n)?" is drawn by the prompt chrome, not baked in here (see
                 // the monster branch -- baking it in doubled the hint).
-                char prompt_body[320];
+                char prompt_body[PLAYER_IO_BODY_CAP];
                 snprintf(prompt_body, sizeof(prompt_body),
                     "%s and\n"
                     "army occupy this castle.\n\n\n"
                     "                Lay Siege",
                     v ? v->name : cr->villain_id);
+                // The gate report, the question under it (#71).
+                char ph[8];
+                gate_report(game, res, ir.castle_id, rc, ph, sizeof ph,
+                            prompt_body, sizeof prompt_body,
+                            res->banners.castle_siege_ask);
                 char prompt_header[64];
                 snprintf(prompt_header, sizeof(prompt_header), "Castle %s",
                          rc && rc->name[0] ? rc->name : ir.castle_id);

@@ -1717,7 +1717,13 @@ flagged (§38).
   has bounced the hero silently, as the original did (REQ-394). With them a
   siege flow has shown a yes/no prompt, deliberately without the garrison;
   Yes has entered combat, No has bounced back. Any visit has set a villain
-  castle `known`. A combat win has set
+  castle `known`, so the town contract scenes and the Contract view have
+  named it from then on. A pack that sets `world.castle_gate_report` (Glory
+  of Rome, #71) has told the hero what the gate sees, the town informant's
+  report (`GameCastleReport`: whose rule, then each stack in vague words):
+  without siege weapons in a message box headed "Castle <name>" before the
+  bounce, and with them above the siege question (`castle_siege_ask`) in
+  place of the plain prompt. A combat win has set
   `owner_kind = CASTLE_OWNER_PLAYER`; a villain-castle win has additionally
   fulfilled the contract (§21.3).
 - **REQ-304.** **Own Castle** (`src/screens/own_castle.c`) has shown the

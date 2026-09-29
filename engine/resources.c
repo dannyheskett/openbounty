@@ -1539,6 +1539,9 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(castle_header,            "castle_header");
     SET_BANNER(castle_siege_monsters,    "castle_siege_monsters");
     SET_BANNER(castle_uncharted,         "castle_uncharted");
+    // Optional: only a pack with world.castle_gate_report asks under a report.
+    copy_str(b->castle_siege_ask, sizeof b->castle_siege_ask,
+             cJSON_IsObject(obj) ? json_str(obj, "castle_siege_ask", "") : "");
     SET_BANNER(search_nothing,           "search_nothing");
     SET_BANNER(zone_unreachable,         "zone_unreachable");
     SET_BANNER(town_spell_unavailable,  "town_spell_unavailable");
@@ -2833,6 +2836,7 @@ bool resources_load(Resources *res, const char *manifest_path) {
              json_str(jw, "language", "en"));
     res->world.max_army_slots = json_int(jw, "max_army_slots", 5);
     res->world.clear_keeps_ground = cJSON_IsTrue(cJSON_GetObjectItem(jw, "clear_keeps_ground"));
+    res->world.castle_gate_report = cJSON_IsTrue(cJSON_GetObjectItem(jw, "castle_gate_report"));
     cJSON *jdo = cJSON_GetObjectItem(jw, "default_options");
     // Fallback defaults: delay, sounds, walk_beep, anim, cga, music, volume.
     static const int default_options_fallback[7] = { 4, 1, 1, 1, 1, 0, 5 };

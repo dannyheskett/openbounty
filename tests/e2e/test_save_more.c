@@ -7,6 +7,7 @@
 #include "map.h"
 #include "tile.h"
 #include "spells_adventure.h"
+#include "adventure.h"
 
 #include <string.h>
 #include <stdlib.h>

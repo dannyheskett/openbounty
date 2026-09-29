@@ -845,15 +845,6 @@ static void town_do_boat(Game *g) {
 // Append `frag` to `buf` (NUL-terminated) starting at `*off`, advancing the
 // offset. No-op once the buffer is full. Used by town_do_info to compose
 // the multi-fragment intel banner.
-static void append_fragment(char *buf, size_t cap, size_t *off,
-                            const char *frag) {
-    if (*off + 1 >= cap) return;
-    int n = snprintf(buf + *off, cap - *off, "%s", frag);
-    if (n < 0) return;
-    if ((size_t)n >= cap - *off) { *off = cap - 1; return; }
-    *off += (size_t)n;
-}
-
 static void town_format_intel(const Game *g, char *buf, size_t cap);
 
 static void town_do_info(const Game *g) {
@@ -911,76 +902,7 @@ static void town_format_intel(const Game *g, char *out, size_t cap) {
         return;
     }
 
-    size_t off = 0;
-    char tmp[256];
-    const char *disp_name = rc->name[0] ? rc->name : cr->id;
-    {
-        ResTemplateVar vars[] = { { "NAME", disp_name } };
-        resources_format_template(tmp, sizeof tmp,
-                                  bn->town_intel_castle_under, vars, 1);
-        append_fragment(buf, sizeof buf, &off, tmp);
-    }
-
-    const char *owner = bn->town_intel_owner_none;
-    switch (cr->owner_kind) {
-        case CASTLE_OWNER_PLAYER:
-            owner = bn->town_intel_owner_player;
-            break;
-        case CASTLE_OWNER_MONSTERS:
-            owner = bn->town_intel_owner_none;
-            break;
-        case CASTLE_OWNER_VILLAIN: {
-            const VillainDef *v = villain_by_id(cr->villain_id);
-            owner = (v && v->name[0]) ? v->name : cr->villain_id;
-            break;
-        }
-        case CASTLE_OWNER_SPECIAL:
-            owner = bn->town_intel_owner_king;  // not reachable under normal intel
-            break;
-    }
-    {
-        ResTemplateVar vars[] = { { "OWNER", owner } };
-        resources_format_template(tmp, sizeof tmp,
-                                  bn->town_intel_owner_rule, vars, 1);
-        append_fragment(buf, sizeof buf, &off, tmp);
-    }
-
-    int stacks_shown = 0;
-    for (int i = 0; i < GAME_ARMY_SLOTS && off + 1 < sizeof(buf); i++) {
-        const Unit *u = &cr->garrison[i];
-        if (!u->id[0] || u->count == 0) continue;
-        const TroopDef *t = troop_by_id(u->id);
-        const char *tname = (t && t->name[0]) ? t->name : u->id;
-        const char *count_label = GameNumberName(g, u->count);
-        if (count_label[0]) {
-            ResTemplateVar vars[] = {
-                { "LABEL", count_label }, { "TROOP", tname },
-            };
-            resources_format_template(tmp, sizeof tmp,
-                                      bn->town_intel_count_named, vars, 2);
-        } else {
-            char cbuf[16];
-            snprintf(cbuf, sizeof cbuf, "%d", u->count);
-            ResTemplateVar vars[] = {
-                { "COUNT", cbuf }, { "TROOP", tname },
-            };
-            resources_format_template(tmp, sizeof tmp,
-                                      bn->town_intel_count_numeric, vars, 2);
-        }
-        append_fragment(buf, sizeof buf, &off, tmp);
-        stacks_shown++;
-    }
-    if (!stacks_shown && off + 1 < sizeof(buf)) {
-        // No specific stack data. For monster castles shows a
-        // generic "Various groups of monsters" line until the garrison
-        // is rolled (which happens the first time the castle is sieged).
-        const char *src = (cr->owner_kind == CASTLE_OWNER_MONSTERS)
-            ? bn->town_intel_monsters_generic
-            : bn->town_intel_no_garrison;
-        resources_format_template(tmp, sizeof tmp, src, NULL, 0);
-        append_fragment(buf, sizeof buf, &off, tmp);
-    }
-    snprintf(out, cap, "%s", buf);
+    GameCastleReport(g, rt->intel_castle, out, cap);
 }
 
 static void town_do_spell(Game *g) {
