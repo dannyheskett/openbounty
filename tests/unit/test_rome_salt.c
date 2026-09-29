@@ -20,26 +20,25 @@ TEST rome_lairs_rise_with_the_province(void) {
     ASSERT(p);
     pack_stack_push(p);
     Resources *r = calloc(1, sizeof *r);
-    ASSERT(r);
-    bool ok = resources_load(r, "game.json");
-    ASSERT(ok);
-    ASSERT_EQ(4, r->zone_count);
-
+    bool ok = r && resources_load(r, "game.json");
+    // Every check is read into these flags before any assert, so a failure
+    // never leaves the Rome pack on the stack for later suites.
+    int zones = ok ? r->zone_count : 0;
+    bool windows_ok = true, rising = true, troops_ok = true, lists_own = true;
     int prev_min = -1;
-    for (int zi = 0; zi < r->zone_count; zi++) {
+    for (int zi = 0; zi < zones; zi++) {
         const ResZone *z = &r->zones[zi];
         // The range is a real, rising window of the catalog.
-        ASSERT(z->salt.dwelling_range_min >= 0);
-        ASSERT(z->salt.dwelling_range_max >= z->salt.dwelling_range_min);
-        ASSERT(z->salt.dwelling_range_max < r->troops_count);
-        ASSERT(z->salt.dwelling_range_min > prev_min);
+        if (z->salt.dwelling_range_min < 0 ||
+            z->salt.dwelling_range_max < z->salt.dwelling_range_min ||
+            z->salt.dwelling_range_max >= r->troops_count) windows_ok = false;
+        if (z->salt.dwelling_range_min <= prev_min) rising = false;
         prev_min = z->salt.dwelling_range_min;
         // Every preferred troop is in the catalog and can host a dwelling.
-        ASSERT(z->salt.preferred_troop_count > 0);
+        if (z->salt.preferred_troop_count <= 0) troops_ok = false;
         for (int i = 0; i < z->salt.preferred_troop_count; i++) {
             int ti = troop_index(r, z->salt.preferred_troops[i]);
-            ASSERT(ti >= 0);
-            ASSERT(strcmp(r->troops[ti].dwelling, "castle") != 0);
+            if (ti < 0 || strcmp(r->troops[ti].dwelling, "castle") == 0) troops_ok = false;
         }
         // No province copies the first one's list (the bug: all four did).
         if (zi > 0) {
@@ -47,20 +46,27 @@ TEST rome_lairs_rise_with_the_province(void) {
             bool same = z->salt.preferred_troop_count == z0->salt.preferred_troop_count;
             for (int i = 0; same && i < z->salt.preferred_troop_count; i++)
                 same = strcmp(z->salt.preferred_troops[i], z0->salt.preferred_troops[i]) == 0;
-            ASSERT_FALSE(same);
+            if (same) lists_own = false;
         }
     }
     // The last province's window starts above the mid-catalog troops and
     // reaches the elephants.
-    const ResZone *last = &r->zones[r->zone_count - 1];
-    int elephants = troop_index(r, "elephants");
-    ASSERT(elephants >= 0);
-    ASSERT(last->salt.dwelling_range_min >= 20);
-    ASSERT(elephants >= last->salt.dwelling_range_min && elephants <= last->salt.dwelling_range_max);
-
-    resources_free(r);
+    int elephants = ok ? troop_index(r, "elephants") : -1;
+    int last_min = zones > 0 ? r->zones[zones - 1].salt.dwelling_range_min : -1;
+    int last_max = zones > 0 ? r->zones[zones - 1].salt.dwelling_range_max : -1;
+    if (r) resources_free(r);
     free(r);
     pack_stack_pop();
+
+    ASSERT(ok);
+    ASSERT_EQ(4, zones);
+    ASSERT(windows_ok);
+    ASSERT(rising);
+    ASSERT(troops_ok);
+    ASSERT(lists_own);
+    ASSERT(elephants >= 0);
+    ASSERT(last_min >= 20);
+    ASSERT(elephants >= last_min && elephants <= last_max);
     PASS();
 }
 
