@@ -23,6 +23,7 @@
 		"language":	"en",
 		"max_army_slots":	5,
 		"clear_keeps_ground":	true,
+		"castle_gate_report":	true,
 		"starting_zone":	"italia",
 		"zone_noun":	"province",
 		"zone_noun_plural":	"provinces",

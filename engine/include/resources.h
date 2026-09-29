@@ -249,6 +249,11 @@ typedef struct {
     // original's plain grass (REQ-229f, #107). Absent or false, the cleared
     // cell becomes grass as the original did: the King's Bounty pack.
     bool clear_keeps_ground;
+    // A castle gate reports whose castle it is and its garrison in vague words,
+    // as a town's informant does: in a message box without siege weapons, and
+    // above the siege question with them (#71). Absent or false, a gate without
+    // siege weapons bounces the hero back in silence as the original did.
+    bool castle_gate_report;
     // Initial player state defaults, used by GameInit when no override exists.
     char default_name[RES_NAME_LEN];   // fallback when player enters no name
     int  default_options[7];           // delay, sounds, walk_beep, anim, cga, music, volume
@@ -564,6 +569,7 @@ typedef struct {
     char castle_header[RES_BANNER_LEN];
     char castle_siege_monsters[RES_BANNER_LEN];
     char castle_uncharted[RES_BANNER_LEN];
+    char castle_siege_ask[RES_BANNER_LEN];       // optional: the question under a gate report
     char search_nothing[RES_BANNER_LEN];
     char zone_unreachable[RES_BANNER_LEN];
     char town_spell_unavailable[RES_BANNER_LEN];

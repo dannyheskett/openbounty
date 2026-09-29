@@ -30,6 +30,7 @@
 		"castle_header":	"Castle %NAME%",
 		"castle_siege_monsters":	"Various groups of monsters occupy this castle. Lay siege?",
 		"castle_uncharted":	"An uncharted castle.",
+		"castle_siege_ask":	"Lay siege?",
 		"search_nothing":	"Your search of this area has revealed nothing.",
 		"zone_unreachable":	"You cannot reach that province.",
 		"town_visit":	"Visit the town",

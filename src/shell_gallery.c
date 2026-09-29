@@ -438,6 +438,25 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     prompt_yes_no_open(ui->dt_search, tb);
     shot(&G, "06_question_yes_no");
     reset(&G); prompt_yes_no_open(NULL, ui->quit_to_dos_prompt); shot(&G, "06b_quit_without_saving");
+    // A castle gate's report (#71): a villain's castle, as the gate words it
+    // without siege weapons, then above the siege question with them.
+    {
+        const ResCastle *gc = NULL;
+        for (int i = 0; i < g->castle_count && !gc; i++)
+            if (g->castles[i].owner_kind == CASTLE_OWNER_VILLAIN)
+                gc = resources_castle_by_id(g->res, g->castles[i].id);
+        char rb[PLAYER_IO_BODY_CAP], hb[128], qb[PLAYER_IO_BODY_CAP + RES_BANNER_LEN + 2];
+        if (gc && GameCastleReport(g, gc->id, rb, sizeof rb)) {
+            ResTemplateVar cv[] = { { "NAME", gc->name } };
+            resources_format_template(hb, sizeof hb, bn->castle_header, cv, 1);
+            reset(&G); open_dialog(hb, rb); shot(&G, "06c_castle_gate_report");
+            shot_pages(&G, "06c_castle_gate_report");
+            snprintf(qb, sizeof qb, "%s\n%s", rb,
+                     bn->castle_siege_ask[0] ? bn->castle_siege_ask : "Lay siege?");
+            reset(&G); prompt_yes_no_open(hb, qb); shot(&G, "06d_castle_gate_siege");
+            tap_yes_no("06d_castle_gate_siege", 0);
+        }
+    }
     reset(&G);
     {
         const char *labels[3] = { "Tirones (40)", "Velites (25)", "Hastati (12)" };

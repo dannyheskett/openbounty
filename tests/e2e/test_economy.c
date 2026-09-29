@@ -323,7 +323,8 @@ TEST empty_player_castle_is_retaken_at_week_end(void) {
     ce->taken = ch->taken = true;
     memset(ce->garrison, 0, sizeof ce->garrison);
     memset(ch->garrison, 0, sizeof ch->garrison);
-    snprintf(ch->garrison[2].id, sizeof ch->garrison[2].id, "%s", g->army[0].id);
+    snprintf(ch->garrison[2].id, sizeof ch->garrison[2].id, "%.*s",
+             (int)sizeof ch->garrison[2].id - 1, g->army[0].id);
     ch->garrison[2].count = 7;
     snprintf(g->position.own_castle, sizeof g->position.own_castle, "%s", ce->id);
     int owned = GameCastlesOwned(g);
