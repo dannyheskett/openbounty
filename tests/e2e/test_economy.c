@@ -305,6 +305,45 @@ TEST cancel_boat_refused_at_sea(void) {
     PASS();
 }
 
+// At the week's end a castle the hero holds with no garrison falls back to the
+// monsters with a fresh garrison; one with a stack left in it stays the hero's
+// untouched (issue #112, OPENKB-SPEC section 16.11).
+TEST empty_player_castle_is_retaken_at_week_end(void) {
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, NULL, FIXTURE_SEED));
+    int empty = -1, held = -1;
+    for (int i = 0; i < g->castle_count; i++) {
+        if (g->castles[i].owner_kind != CASTLE_OWNER_MONSTERS) continue;
+        if (empty < 0) empty = i; else { held = i; break; }
+    }
+    ASSERT(empty >= 0 && held >= 0);
+    // Both taken, as a siege win leaves them; one gets a stack.
+    CastleRecord *ce = &g->castles[empty], *ch = &g->castles[held];
+    ce->owner_kind = ch->owner_kind = CASTLE_OWNER_PLAYER;
+    ce->taken = ch->taken = true;
+    memset(ce->garrison, 0, sizeof ce->garrison);
+    memset(ch->garrison, 0, sizeof ch->garrison);
+    snprintf(ch->garrison[2].id, sizeof ch->garrison[2].id, "%s", g->army[0].id);
+    ch->garrison[2].count = 7;
+    snprintf(g->position.own_castle, sizeof g->position.own_castle, "%s", ce->id);
+    int owned = GameCastlesOwned(g);
+    int paid = 0;
+    GameSpendWeek(g, &paid);
+    ASSERT_EQ(CASTLE_OWNER_MONSTERS, ce->owner_kind);
+    ASSERT(ce->taken);                              // still counts as won once
+    int stacks = 0;
+    for (int s = 0; s < GAME_ARMY_SLOTS; s++)
+        if (ce->garrison[s].count > 0 && ce->garrison[s].id[0]) stacks++;
+    ASSERT_EQ(5, stacks);
+    ASSERT_EQ('\0', g->position.own_castle[0]);   // no garrisoning a lost castle
+    ASSERT_EQ(CASTLE_OWNER_PLAYER, ch->owner_kind);
+    ASSERT_STR_EQ(g->army[0].id, ch->garrison[2].id);
+    ASSERT_EQ(7, ch->garrison[2].count);
+    ASSERT_EQ(owned - 1, GameCastlesOwned(g));
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
 SUITE(e2e_economy_suite) {
     RUN_TEST(rent_boat_deducts_gold_and_places);
     RUN_TEST(rent_boat_refuses_when_gold_equals_cost);
@@ -321,4 +360,5 @@ SUITE(e2e_economy_suite) {
     RUN_TEST(compact_army_collapses_gaps);
     RUN_TEST(compact_army_zero_count_treated_as_empty);
     RUN_TEST(compact_army_already_dense_unchanged);
+    RUN_TEST(empty_player_castle_is_retaken_at_week_end);
 }

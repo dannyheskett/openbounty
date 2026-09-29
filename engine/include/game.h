@@ -75,6 +75,8 @@ typedef struct {
     char             id[24];      // castle id
     bool             visited;
     bool             known;       // location known (revealed by Find Villain etc.)
+    bool             taken;       // the hero has won it at least once (kept when
+                                  // an empty castle falls back to the monsters)
     CastleOwnerKind  owner_kind;
     char             villain_id[24];  // set when owner_kind == CASTLE_OWNER_VILLAIN
     Unit             garrison[GAME_ARMY_SLOTS];

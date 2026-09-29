@@ -102,6 +102,7 @@ bool flow_apply_siege_monster(Game *g, const char *castle_id,
         if (cr) {
             cr->owner_kind = CASTLE_OWNER_PLAYER;
             cr->visited = true;
+            cr->taken = true;
             for (int s = 0; s < GAME_ARMY_SLOTS; s++) {
                 cr->garrison[s].id[0] = '\0';
                 cr->garrison[s].count = 0;
@@ -147,6 +148,7 @@ bool flow_apply_siege_villain(Game *g, const Resources *res,
     if (contract_match) {
         cr->owner_kind = CASTLE_OWNER_PLAYER;
         cr->visited = true;
+        cr->taken = true;
         cr->villain_id[0] = '\0';
         for (int s = 0; s < GAME_ARMY_SLOTS; s++) {
             cr->garrison[s].id[0] = '\0';
