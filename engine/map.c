@@ -134,6 +134,26 @@ static bool fill_tile_from_code(Map *map, Tile *t, const Resources *res,
 // A declared tile code written onto a live map (game.json `events` effects:
 // a bridge over a river, a cleared pass). The tile is built exactly as the
 // loader builds it, so it is a tile the .dat could have held.
+bool MapLayBridge(Map *map, int x, int y, bool vertical) {
+    if (!MapInBounds(map, x, y)) return false;
+    Tile *t = &MAP_TILE(map, x, y);
+    // The sea or a river: a bridge crosses either.
+    if (t->terrain != TERRAIN_WATER && t->terrain != TERRAIN_RIVER) return false;
+    // Over a river the deck is the river bridge: paving across the river's own
+    // piece, crossing north-south over a river running east-west, or the other
+    // way round.
+    const char *stem = (t->terrain == TERRAIN_RIVER)
+        ? (vertical ? "bridge_river_ns" : "bridge_river_ew")
+        : (vertical ? "bridge_v" : "bridge_h");
+    t->terrain = TERRAIN_GRASS;
+    t->interactive = INTERACT_NONE;
+    t->blocks_foot = false;
+    t->is_bridge = true;
+    char art[TILE_ART_NAME_LEN];
+    TileSetArt(map, t, MapTerrainArt(map, stem, art, sizeof art));
+    return true;
+}
+
 bool MapSetTileFromCode(Map *map, const Resources *res, int x, int y,
                         unsigned char code) {
     if (!map || !res || !MapInBounds(map, x, y)) return false;

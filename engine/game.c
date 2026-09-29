@@ -88,6 +88,7 @@ static void game_free_tables(Game *g) {
         FogFree(&g->world.continent_fog[i]);
     free(g->world.continent_fog);
     free(g->consumed);
+    free(g->bridges);
     free(g->events_done);
     free(g->dwellings);
     free(g->placements);
@@ -155,6 +156,7 @@ static bool list_reserve(void **arr, int *cap, int need, size_t elem) {
 bool GameReserveFoes(Game *g, int need)       { return g && GAME_LIST_RESERVE(g, foes, foe_cap, need); }
 bool GameReservePlacements(Game *g, int need) { return g && GAME_LIST_RESERVE(g, placements, placement_cap, need); }
 bool GameReserveConsumed(Game *g, int need)   { return g && GAME_LIST_RESERVE(g, consumed, consumed_cap, need); }
+bool GameReserveBridges(Game *g, int need)    { return g && GAME_LIST_RESERVE(g, bridges, bridge_cap, need); }
 bool GameReserveEventsDone(Game *g, int need) { return g && GAME_LIST_RESERVE(g, events_done, events_done_cap, need); }
 bool GameReserveDwellings(Game *g, int need)  { return g && GAME_LIST_RESERVE(g, dwellings, dwelling_cap, need); }
 
@@ -204,6 +206,7 @@ bool GameCopy(Game *dst, const Game *src) {
     dst->world.orbs_found = keep.world.orbs_found;
     dst->world.continent_fog = keep.world.continent_fog;
     dst->consumed = keep.consumed;         dst->consumed_cap = keep.consumed_cap;
+    dst->bridges = keep.bridges;           dst->bridge_cap = keep.bridge_cap;
     dst->events_done = keep.events_done;   dst->events_done_cap = keep.events_done_cap;
     dst->dwellings = keep.dwellings;       dst->dwelling_cap = keep.dwelling_cap;
     dst->placements = keep.placements;     dst->placement_cap = keep.placement_cap;
@@ -238,6 +241,7 @@ bool GameCopy(Game *dst, const Game *src) {
                     i < src->world.zone_count; i++)
         if (!FogCopy(&dst->world.continent_fog[i], &src->world.continent_fog[i])) ok = false;
     COPY_LIST(consumed, consumed_count, consumed_cap);
+    COPY_LIST(bridges, bridge_count, bridge_cap);
     COPY_LIST(events_done, events_done_count, events_done_cap);
     COPY_LIST(dwellings, dwelling_count, dwelling_cap);
     COPY_LIST(placements, placement_count, placement_cap);
@@ -294,6 +298,7 @@ uint32_t GameFingerprint(const Game *g, uint32_t h) {
     flat.contract.max_contract = g->contract.max_contract;
     flat.boat = g->boat;                 flat.scepter = g->scepter;
     flat.consumed_count = g->consumed_count;
+    flat.bridge_count = g->bridge_count;
     flat.dwelling_count = g->dwelling_count;
     flat.placement_count = g->placement_count;
     flat.foe_count = g->foe_count;
@@ -319,6 +324,7 @@ uint32_t GameFingerprint(const Game *g, uint32_t h) {
         h = FNV_TABLE(h, f->seen, f->width * f->height);
     }
     h = FNV_TABLE(h, g->consumed, g->consumed_count);
+    h = FNV_TABLE(h, g->bridges, g->bridge_count);
     h = FNV_TABLE(h, g->dwellings, g->dwelling_count);
     h = FNV_TABLE(h, g->placements, g->placement_count);
     h = FNV_TABLE(h, g->foes, g->foe_count);
@@ -1598,12 +1604,32 @@ void GameAddConsumed(Game *g, const char *zone, int x, int y) {
     m->y = y;
 }
 
+void GameAddBridge(Game *g, const char *zone, int x, int y, bool vertical) {
+    if (!g || !zone) return;
+    for (int i = 0; i < g->bridge_count; i++) {
+        if (g->bridges[i].x == x && g->bridges[i].y == y &&
+            strcmp(g->bridges[i].zone, zone) == 0) return;
+    }
+    if (!GameReserveBridges(g, g->bridge_count + 1)) return;
+    BuiltBridge *b = &g->bridges[g->bridge_count++];
+    copy_id(b->zone, sizeof(b->zone), zone);
+    b->x = x;
+    b->y = y;
+    b->vertical = vertical ? 1 : 0;
+}
+
 void GameApplyTileMutations(const Game *g, Map *map, const char *zone) {
     if (!g || !map || !zone) return;
     for (int i = 0; i < g->consumed_count; i++) {
         const TileMutation *m = &g->consumed[i];
         if (strcmp(m->zone, zone) != 0) continue;
         MapClearInteractive(map, m->x, m->y);
+    }
+    // Bridges the spell laid: the fresh map has the water back under each.
+    for (int i = 0; i < g->bridge_count; i++) {
+        const BuiltBridge *b = &g->bridges[i];
+        if (strcmp(b->zone, zone) != 0) continue;
+        MapLayBridge(map, b->x, b->y, b->vertical != 0);
     }
     // A vista that has played changed the map for good (its bridge, its cleared
     // pass): re-apply those tiles every time the zone loads.
@@ -1625,7 +1651,8 @@ void GameApplyTileMutations(const Game *g, Map *map, const char *zone) {
 bool GameReloadZoneMap(const Game *g, Map *map, const char *zone) {
     if (!g || !map || !zone || !zone[0]) return false;
     if (!MapLoadZoneWithPlacements(map, g->res, zone, g)) return false;
-    // Re-apply consumed tiles so picked-up artifacts / chests stay gone.
+    // Re-apply consumed tiles so picked-up artifacts / chests stay gone, and
+    // lay the spell's bridges again.
     GameApplyTileMutations(g, map, zone);
     return true;
 }

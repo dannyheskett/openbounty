@@ -69,36 +69,19 @@ static void cast_find_villain(Game *g) {
 
 int try_build_bridge(Game *g, Map *map, int dx, int dy) {
     // Build bridge in direction (dx, dy). Returns number of tiles placed.
-    const char *bridge_art = (dy != 0) ? "bridge_v" : "bridge_h";
-    // Over a river the deck is the river bridge: paving across the river's own
-    // piece, crossing north-south over a river running east-west, or the other
-    // way round.
-    const char *river_art = (dy != 0) ? "bridge_river_ns" : "bridge_river_ew";
-
+    bool vertical = (dy != 0);
     int built = 0;
     for (int i = 1; i <= 5; i++) {
         int nx = g->position.x + i * dx;
         int ny = g->position.y + i * dy;
-
-        if (!MapInBounds(map, nx, ny)) break;
-
-        const Tile *t = MapGetTile(map, nx, ny);
-        // The sea or a river: a bridge crosses either.
-        if (t->terrain != TERRAIN_WATER && t->terrain != TERRAIN_RIVER) break;
-
-        bool over_river = t->terrain == TERRAIN_RIVER;
-        MAP_TILE(map, nx, ny).terrain = TERRAIN_GRASS;
-        MAP_TILE(map, nx, ny).interactive = INTERACT_NONE;
-        MAP_TILE(map, nx, ny).blocks_foot = false;
-        MAP_TILE(map, nx, ny).is_bridge = true;
-        {
-            char art[TILE_ART_NAME_LEN];
-            TileSetArt(map, &MAP_TILE(map, nx, ny),
-                       MapTerrainArt(map, over_river ? river_art : bridge_art, art, sizeof art));
-        }
+        // The map edge, or a tile that is neither water nor river, stops it.
+        if (!MapLayBridge(map, nx, ny, vertical)) break;
+        // Recorded, so the deck is laid again whenever the zone reloads
+        // (sailing back, a save read into the game).
+        GameAddBridge(g, g->position.zone, nx, ny, vertical);
 
         built++;
-        // Two tiles at most. With the breaks above (the map edge, or a tile
+        // Two tiles at most. With the break above (the map edge, or a tile
         // that is neither water nor river) the walk never passes i == 2, so
         // the loop's bound of 5 is never what stops it.
         if (built >= 2) break;

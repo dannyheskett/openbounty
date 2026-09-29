@@ -108,6 +108,16 @@ typedef struct {
     int  x, y;
 } TileMutation;
 
+// One deck the Bridge spell laid. The map is rebuilt from the pack on every
+// zone load, so each is laid again from this record, the way the original's
+// world map kept its bridge tiles.
+typedef struct {
+    char zone[24];
+    int  x, y;
+    int  vertical;   // 1: runs north-south (bridge_v / bridge_river_ns); an int
+                     // so the record has no padding for the fingerprint to read
+} BuiltBridge;
+
 // A one-time vista the hero has already played (game.json `events`). Its tile
 // effects are re-applied whenever the zone loads, and it never fires again.
 typedef struct {
@@ -344,6 +354,10 @@ struct Game {
     TileMutation    *consumed;
     int              consumed_count, consumed_cap;
 
+    // Decks the Bridge spell laid.
+    BuiltBridge     *bridges;
+    int              bridge_count, bridge_cap;
+
     // One-time vistas already played.
     EventFired      *events_done;
     int              events_done_count, events_done_cap;
@@ -384,6 +398,7 @@ uint32_t GameFingerprint(const Game *g, uint32_t h);
 bool GameReserveFoes(Game *g, int need);
 bool GameReservePlacements(Game *g, int need);
 bool GameReserveConsumed(Game *g, int need);
+bool GameReserveBridges(Game *g, int need);
 bool GameReserveEventsDone(Game *g, int need);
 bool GameReserveDwellings(Game *g, int need);
 
@@ -711,8 +726,12 @@ bool GameHasPower(const Game *g, ArtifactPower power);
 // is already present.
 void GameAddConsumed(Game *g, const char *zone, int x, int y);
 
+// Record a Bridge-spell deck at (x, y) in `zone`. No-op if the entry is
+// already present or the list cannot grow.
+void GameAddBridge(Game *g, const char *zone, int x, int y, bool vertical);
+
 // Apply every consumed-tile record that matches the given zone id to
-// `map` by clearing its interactive overlay. Call once after loading
+// `map` by clearing its interactive overlay, and lay its recorded bridges. Call once after loading
 // the map for the hero's current zone (on new game, save load, or zone
 // switch).
 void GameApplyTileMutations(const Game *g, Map *map, const char *zone);
