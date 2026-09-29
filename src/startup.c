@@ -24,6 +24,7 @@
 #include "tables.h"
 #include "resources.h"
 #include "ob_types.h"
+#include "version.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -469,6 +470,15 @@ static void draw_title_menu(const Sprites *sprites, const char **labels, int cou
                             int cursor, int touch_list) {
     (void)sprites;
     page_title_menu(labels, count, cursor, touch_list);
+    // The build in the page's bottom-right corner, clear of the title art's
+    // lettering: v1.0.<release> (#127). A phone has no --version, so this is
+    // where a player reads which build to report.
+    char version[32];
+    snprintf(version, sizeof version, "v1.0.%s", OPENBOUNTY_VERSION);
+    int vx = CL_SCREEN_W - bfont_text_width(version) - 6;
+    int vy = CL_SCREEN_H - GH - 4;
+    bfont_draw(version, vx + 1, vy + 1, PAL_CLR(BLACK));
+    bfont_draw(version, vx, vy, PAL_CLR(WHITE));
 }
 
 // The class picker's confirm row. Hardcoded like the other shell-owned touch

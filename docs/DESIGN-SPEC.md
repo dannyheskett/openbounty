@@ -1535,6 +1535,10 @@ Source: `src/startup.c` `draw_title_sequence`, `draw_title_backdrop`,
   and web, Exit, the row Escape has pressed.
 - It has had no outside: a tap off it has done nothing.
 - Escape (Android Back) has quit.
+- The build has stood in the page's bottom-right corner, `v1.0.<N>` in white
+  with a black shadow, `N` the release number compiled into `build/version.h`
+  (`OPENBOUNTY_VERSION`), on every platform, so a player on a phone can name
+  the build they report (#127).
 Source: `src/modern/page.c` `page_title_menu`; `src/startup.c`
 `draw_title_menu`, `title_menu_labels`, `run_title_menu`.
 
