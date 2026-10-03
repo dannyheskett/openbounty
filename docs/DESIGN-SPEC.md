@@ -1240,9 +1240,7 @@ Source: `src/modern/overlay.c` `draw_message`, `note_face`.
 **DSGN-0127. A note as a scene.** A note drawn as a scene (temporary death,
 a one-time vista, a refused gate) has been a room of its own
 (`page_scene`): the title strip, then the scene's art **whole**, never
-trimmed, at 3× (the largest whole scale the page's width holds), stepping
-down to 2× and then 1× while its words would need more than one page beside
-it (`scene_geom`), the column
+trimmed, at 3× (the largest whole scale the page's width holds), the column
 bars either side as in the room; under the band the one Continue row in the
 rows column and the words beside it, **paged** like the message box: as
 many lines to a page as the room under the band holds, the last line of a

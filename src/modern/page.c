@@ -324,10 +324,8 @@ PagePlace page_place(const char *title, const char *right, Texture2D bd, int n_r
 
 // The scene note's room without drawing it: where the words go and how many
 // lines fit, so the pager and the drawer agree.
-// The picture stands at 3x where the words still fit one page beside it,
-// and steps down to 2x, then 1x, to make room for them.
 typedef struct { ML_Rect r; int top, scale, band, words_x, words_w, per; } SceneGeom;
-static SceneGeom scene_geom(const char *words) {
+static SceneGeom scene_geom(void) {
     SceneGeom G;
     memset(&G, 0, sizeof G);
     ML_Rect in = page_interior();
@@ -344,33 +342,28 @@ static SceneGeom scene_geom(const char *words) {
         G.r = (ML_Rect){ in.x + (in.w - w) / 2, in.y + (in.h - h) / 2, w, h };
     }
     G.top = G.r.y + uk_title_h() + UK_BAND;
-    int lw = 16 * GW + 2 * UK_INSET;
-    G.words_x = G.r.x + lw + UK_BAND + UK_INSET;
-    G.words_w = G.r.x + G.r.w - UK_INSET - G.words_x;
-    int n = uk_lines(words, G.words_w);
     G.scale = G.r.w / ML_BACKDROP_W;
     if (G.scale > 3) G.scale = 3;
     if (G.scale < 1) G.scale = 1;
-    for (;;) {
-        G.band = ML_BACKDROP_H * G.scale;
-        int words_h = G.r.y + G.r.h - (G.top + G.band + UK_BAND) - 2 * UK_INSET;
-        G.per = words_h / uk_line_h();
-        if (G.per < 1) G.per = 1;
-        if (n <= G.per || G.scale == 1) break;
-        G.scale--;
-    }
+    G.band = ML_BACKDROP_H * G.scale;
+    int lw = 16 * GW + 2 * UK_INSET;
+    G.words_x = G.r.x + lw + UK_BAND + UK_INSET;
+    G.words_w = G.r.x + G.r.w - UK_INSET - G.words_x;
+    int words_h = G.r.y + G.r.h - (G.top + G.band + UK_BAND) - 2 * UK_INSET;
+    G.per = words_h / uk_line_h();
+    if (G.per < 1) G.per = 1;
     return G;
 }
 
 int page_scene_pages(const char *words) {
-    SceneGeom G = scene_geom(words);
+    SceneGeom G = scene_geom();
     int n = uk_lines(words, G.words_w);
     int pages = (n + G.per - 1) / G.per;
     return pages < 1 ? 1 : pages;
 }
 
 PagePlace page_scene(const char *title, const char *right, Texture2D scene, const char *words, int page) {
-    SceneGeom G = scene_geom(words);
+    SceneGeom G = scene_geom();
     Page p = open_page(page_full_w(), page_full_h(), PAGE_CENTER, KEY_ENTER, KEY_ESCAPE, true, true);
     ML_Rect r = p.r;
     int top = uk_title(r.x, r.y, r.w, title, right, NULL);
