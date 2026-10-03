@@ -465,6 +465,55 @@ typedef struct {
     char (*anim)[CAT_PATH_LEN];     // heap, anim_count frames
 } ResPortrait;
 
+// ---- Introduction (game.json "intro" -> the pack's script file) -----------
+//
+// The animated opening, played only from the modern title menu. The script
+// is pure data (PACK-FORMAT section 2.4); resources_load resolves it to a flat list
+// of beats on one timeline, so the shell only ever asks "what plays at t".
+// Positions are backdrop art pixels; every table is heap, sized from the
+// script.
+
+typedef struct { int x, y; } ResIntroPt;
+
+typedef struct {
+    int    frame_count;
+    char (*frames)[RES_PATH_LEN];   // heap; portrait/villain ids resolved to paths
+    double fps;
+    ResIntroPt at, to;              // sprite top-left, in backdrop pixels
+    bool   mirror;
+} ResIntroActor;
+
+typedef struct {
+    double start, dur;              // seconds on the intro timeline
+    int    scene;                   // index into ResIntro.scenes
+    char   backdrop[RES_PATH_LEN];  // "" = black
+    ResIntroPt pan_from, pan_to;    // the frame window's top-left in the backdrop
+    bool   smooth;                  // eased pan and moves (else linear)
+    double dissolve;                // seconds to cross-fade from the previous beat
+    int    actor_count;
+    ResIntroActor *actors;          // heap, drawn in order
+    char  *caption;                 // heap, the line under the picture; NULL = none
+    char  *card;                    // heap, text centred in the picture; NULL = none
+    int    face_count;
+    char (*face)[RES_PATH_LEN];     // heap, the speaker's talking loop
+} ResIntroBeat;
+
+typedef struct {
+    char   id[RES_ID_LEN];
+    double start, dur, fade_in, fade_out;
+    int    first_beat, beat_count;
+} ResIntroScene;
+
+typedef struct {
+    int    frame_w, frame_h;        // the picture window, art pixels
+    double type_cps;                // caption typing speed, characters a second
+    int    scene_count;
+    ResIntroScene *scenes;          // heap
+    int    beat_count;
+    ResIntroBeat  *beats;           // heap, flat, in play order
+    double total;                   // seconds; 0 = the pack has no intro
+} ResIntro;
+
 typedef struct {
     char id[RES_ID_LEN];
     char text[RES_DOCK_TEXT_LEN];
@@ -1153,6 +1202,7 @@ typedef struct {
     char title_new_adventure[RES_UI_LABEL_LEN];
     char title_load_adventure[RES_UI_LABEL_LEN];
     char title_credits[RES_UI_LABEL_LEN];
+    char title_intro[RES_UI_LABEL_LEN];      // "" unless the pack has an intro
     char new_game_confirm[RES_UI_LABEL_LEN * 2];
     char hero_name_label[RES_UI_LABEL_LEN];
     char combat_act_wait[RES_UI_LABEL_LEN];
@@ -1657,6 +1707,7 @@ typedef struct {
     struct {
         char openworld_path[RES_PATH_LEN];
         char combat_path[RES_PATH_LEN];
+        char intro_path[RES_PATH_LEN];       // the Introduction's theme, or ""
         char tune_walk[RES_PATH_LEN];
         char tune_bump[RES_PATH_LEN];
         char tune_chest[RES_PATH_LEN];
@@ -1668,6 +1719,12 @@ typedef struct {
     // here (and printed) and makes resources_load() hard-fail. Never a silent
     // fallback.
     int  strings_missing;
+
+    // The Introduction (game.json "intro"); total 0 when the pack has none.
+    // A script that names an unknown id or has a malformed beat counts in
+    // intro_errors and, like a missing string, refuses the load.
+    ResIntro intro;
+    int      intro_errors;
 
 } Resources;
 
@@ -1714,6 +1771,11 @@ bool resources_tile_from_set(const Resources *res, const char *set, const char *
 // "arrivals" entry for that origin, else its hero_spawn.
 void resources_zone_arrival(const ResZone *z, const char *from, int *x, int *y);
 void resources_art_list_free(ResArtList *list);
+
+// Whether the pack has an Introduction, and the beat playing at `t` seconds
+// into it (NULL before 0 or from `total` on).
+bool resources_has_intro(const Resources *r);
+const ResIntroBeat *resources_intro_beat_at(const ResIntro *in, double t);
 // Override the locale used for the next resources_load. Strings load from
 // strings/<lang>.json in the pack; a locale file that is absent falls back to
 // the pack's base locale (world.language). Pass NULL or "" to clear the

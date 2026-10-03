@@ -2429,6 +2429,20 @@ golden-digest regression tests have pinned the formulas.
   engine has substituted a documented default. The engine has carried no text
   of its own: a pack missing any required string key has been refused at load,
   with every missing key printed.
+- **REQ-538.** A pack's Introduction (#154) has been a script file named by
+  `game.json:intro` (PACK-FORMAT §2.4), resolved at load by
+  `engine/resources.c parse_intro` into `Resources.intro`: a flat list of
+  beats laid end to end on one timeline, each with its backdrop, pan, actors
+  (portrait and villain ids resolved to frame lists), caption and card text
+  (keys in the strings' `intro` group, `%TOKEN%`s filled) and speaker's face.
+  A `for_each: "villain"` beat has become one beat per villain in catalog
+  order, so the wanted notices have followed the villain catalog. A missing
+  caption key or `ui.title_intro` has counted as a missing string; an unknown
+  id, an actor with no source or two, a beat with no length or a frame
+  outside 1..256 has counted in `intro_errors`; either has refused the load.
+  The intro's art has been listed in `resources_art_manifest`.
+  `resources_intro_beat_at` has answered which beat plays at a time. A pack
+  without `intro` has had none (`resources_has_intro` false).
 
 ### 28.2 Asset loading
 

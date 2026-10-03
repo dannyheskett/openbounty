@@ -1,0 +1,712 @@
+{
+  "version": 1,
+  "frame": [
+    240,
+    102
+  ],
+  "fps": 6.67,
+  "type_cps": 28,
+  "read_cps": 14,
+  "min_hold": 2.0,
+  "_note": "The Introduction (#154). Stand-in art in places until the intro art is generated: the forest, the Forum, the crier (informant_market, palace_usher), the hero (legatus walk) and the title card. See docs/PACK-FORMAT.md section 2.4.",
+  "scenes": [
+    {
+      "id": "eagle",
+      "fade_in": 2.0,
+      "fade_out": 1.0,
+      "beats": [
+        {
+          "backdrop": "art/ui/backdrop_forest.png",
+          "say": "eagle_1",
+          "ease": "smooth"
+        },
+        {
+          "backdrop": "art/ui/backdrop_forest.png",
+          "say": "eagle_2",
+          "actors": [
+            {
+              "frames": [
+                "art/troops/hastati_00.png",
+                "art/troops/hastati_01.png",
+                "art/troops/hastati_02.png",
+                "art/troops/hastati_03.png"
+              ],
+              "fps": 6.67,
+              "at": [
+                10,
+                8
+              ]
+            },
+            {
+              "frames": [
+                "art/troops/hastati_00.png",
+                "art/troops/hastati_01.png",
+                "art/troops/hastati_02.png",
+                "art/troops/hastati_03.png"
+              ],
+              "fps": 6.67,
+              "at": [
+                60,
+                8
+              ]
+            },
+            {
+              "frames": [
+                "art/troops/velites_00.png",
+                "art/troops/velites_01.png",
+                "art/troops/velites_02.png",
+                "art/troops/velites_03.png"
+              ],
+              "fps": 6.67,
+              "at": [
+                110,
+                8
+              ]
+            }
+          ]
+        },
+        {
+          "backdrop": "art/ui/backdrop_forest.png",
+          "say": "eagle_3",
+          "actors": [
+            {
+              "frames": [
+                "art/troops/hastati_00.png",
+                "art/troops/hastati_01.png",
+                "art/troops/hastati_02.png",
+                "art/troops/hastati_03.png"
+              ],
+              "fps": 6.67,
+              "at": [
+                10,
+                8
+              ]
+            },
+            {
+              "frames": [
+                "art/troops/hastati_00.png",
+                "art/troops/hastati_01.png",
+                "art/troops/hastati_02.png",
+                "art/troops/hastati_03.png"
+              ],
+              "fps": 6.67,
+              "at": [
+                60,
+                8
+              ]
+            },
+            {
+              "frames": [
+                "art/troops/ligures_00.png",
+                "art/troops/ligures_01.png",
+                "art/troops/ligures_02.png",
+                "art/troops/ligures_03.png"
+              ],
+              "fps": 6.67,
+              "at": [
+                240,
+                8
+              ],
+              "to": [
+                150,
+                8
+              ],
+              "mirror": true
+            },
+            {
+              "frames": [
+                "art/troops/ligures_00.png",
+                "art/troops/ligures_01.png",
+                "art/troops/ligures_02.png",
+                "art/troops/ligures_03.png"
+              ],
+              "fps": 6.67,
+              "at": [
+                -96,
+                8
+              ],
+              "to": [
+                -20,
+                8
+              ]
+            }
+          ]
+        },
+        {
+          "backdrop": "art/ui/backdrop_forest.png",
+          "say": "eagle_4",
+          "ease": "smooth",
+          "actors": [
+            {
+              "frames": [
+                "art/ui/title_eagle.png"
+              ],
+              "at": [
+                72,
+                -62
+              ],
+              "to": [
+                72,
+                30
+              ]
+            }
+          ]
+        },
+        {
+          "say": "eagle_5",
+          "duration": 5.0
+        },
+        {
+          "backdrop": "art/ui/title_battle.png",
+          "pan": [
+            [
+              8,
+              0
+            ],
+            [
+              8,
+              62
+            ]
+          ],
+          "ease": "smooth",
+          "card": "title_card",
+          "duration": 6.0,
+          "dissolve": 1.0
+        }
+      ]
+    },
+    {
+      "id": "forum",
+      "fade_in": 1.5,
+      "fade_out": 1.0,
+      "beats": [
+        {
+          "backdrop": "art/ui/backdrop_town_italia.png",
+          "say": "forum_1",
+          "face": "informant_market",
+          "actors": [
+            {
+              "portrait": "palace_usher",
+              "at": [
+                130,
+                6
+              ]
+            }
+          ]
+        },
+        {
+          "backdrop": "art/ui/backdrop_town_italia.png",
+          "say": "forum_2",
+          "face": "informant_market",
+          "actors": [
+            {
+              "portrait": "palace_usher",
+              "at": [
+                130,
+                6
+              ]
+            },
+            {
+              "frames": [
+                "art/troops/coloni_00.png",
+                "art/troops/coloni_01.png",
+                "art/troops/coloni_02.png",
+                "art/troops/coloni_03.png"
+              ],
+              "fps": 6.67,
+              "at": [
+                0,
+                14
+              ]
+            },
+            {
+              "frames": [
+                "art/troops/coloni_00.png",
+                "art/troops/coloni_01.png",
+                "art/troops/coloni_02.png",
+                "art/troops/coloni_03.png"
+              ],
+              "fps": 6.67,
+              "at": [
+                40,
+                16
+              ],
+              "mirror": true
+            }
+          ]
+        },
+        {
+          "backdrop": "art/ui/backdrop_town_italia.png",
+          "say": "forum_3",
+          "face": "informant_market",
+          "actors": [
+            {
+              "portrait": "palace_usher",
+              "at": [
+                130,
+                6
+              ]
+            },
+            {
+              "frames": [
+                "art/troops/coloni_00.png",
+                "art/troops/coloni_01.png",
+                "art/troops/coloni_02.png",
+                "art/troops/coloni_03.png"
+              ],
+              "fps": 6.67,
+              "at": [
+                0,
+                14
+              ]
+            },
+            {
+              "frames": [
+                "art/troops/coloni_00.png",
+                "art/troops/coloni_01.png",
+                "art/troops/coloni_02.png",
+                "art/troops/coloni_03.png"
+              ],
+              "fps": 6.67,
+              "at": [
+                40,
+                16
+              ],
+              "mirror": true
+            }
+          ]
+        },
+        {
+          "backdrop": "art/ui/backdrop_town_italia.png",
+          "say": "forum_4",
+          "face": "informant_market",
+          "actors": [
+            {
+              "portrait": "palace_usher",
+              "at": [
+                130,
+                6
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wanted",
+      "fade_in": 1.0,
+      "fade_out": 1.0,
+      "beats": [
+        {
+          "for_each": "villain",
+          "count": 4,
+          "backdrop": "%ZONE_SCENE%",
+          "dissolve": 0.4,
+          "actors": [
+            {
+              "villain": "*",
+              "at": [
+                72,
+                3
+              ]
+            }
+          ],
+          "say": "wanted_slow",
+          "face": "informant_market"
+        },
+        {
+          "for_each": "villain",
+          "from": 4,
+          "backdrop": "%ZONE_SCENE%",
+          "actors": [
+            {
+              "villain": "*",
+              "at": [
+                72,
+                3
+              ]
+            }
+          ],
+          "card": "wanted_fast",
+          "duration": 3.2
+        },
+        {
+          "backdrop": "art/scenes/treasure_italia.png",
+          "card": "province_italia",
+          "duration": 2.5,
+          "dissolve": 0.8
+        },
+        {
+          "backdrop": "art/scenes/treasure_galliae.png",
+          "card": "province_galliae",
+          "duration": 2.5,
+          "dissolve": 0.8
+        },
+        {
+          "backdrop": "art/scenes/treasure_africa.png",
+          "card": "province_africa",
+          "duration": 2.5,
+          "dissolve": 0.8
+        },
+        {
+          "backdrop": "art/scenes/treasure_oriens.png",
+          "card": "province_oriens",
+          "duration": 2.5,
+          "dissolve": 0.8
+        },
+        {
+          "backdrop": "art/ui/backdrop_town_italia.png",
+          "say": "wanted_close",
+          "face": "informant_market",
+          "dissolve": 0.8,
+          "actors": [
+            {
+              "portrait": "palace_usher",
+              "at": [
+                130,
+                6
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "palace",
+      "fade_in": 1.5,
+      "fade_out": 1.0,
+      "beats": [
+        {
+          "backdrop": "art/ui/backdrop_palace_welcome.png",
+          "say": "palace_1",
+          "actors": [
+            {
+              "frames": [
+                "art/classes/legatus_walk_00.png",
+                "art/classes/legatus_walk_01.png",
+                "art/classes/legatus_walk_02.png",
+                "art/classes/legatus_walk_03.png"
+              ],
+              "fps": 6.67,
+              "at": [
+                -90,
+                8
+              ],
+              "to": [
+                72,
+                4
+              ]
+            }
+          ]
+        },
+        {
+          "backdrop": "art/ui/backdrop_palace_throne.png",
+          "say": "palace_2",
+          "face": "emperor_traianus",
+          "dissolve": 1.0,
+          "actors": [
+            {
+              "portrait": "emperor_traianus_figure",
+              "at": [
+                72,
+                2
+              ]
+            }
+          ]
+        },
+        {
+          "backdrop": "art/ui/backdrop_palace_throne.png",
+          "say": "charge_eagle",
+          "face": "emperor_traianus",
+          "actors": [
+            {
+              "portrait": "emperor_traianus_figure",
+              "at": [
+                20,
+                2
+              ]
+            },
+            {
+              "frames": [
+                "art/ui/title_eagle.png"
+              ],
+              "at": [
+                130,
+                -30
+              ]
+            }
+          ]
+        },
+        {
+          "backdrop": "art/ui/backdrop_palace_throne.png",
+          "say": "charge_villains",
+          "face": "emperor_traianus",
+          "actors": [
+            {
+              "portrait": "emperor_traianus_figure",
+              "at": [
+                20,
+                2
+              ]
+            },
+            {
+              "frames": [
+                "art/tiles/castle.png"
+              ],
+              "at": [
+                130,
+                4
+              ]
+            }
+          ]
+        },
+        {
+          "backdrop": "art/ui/backdrop_palace_throne.png",
+          "say": "charge_map",
+          "face": "emperor_traianus",
+          "actors": [
+            {
+              "portrait": "emperor_traianus_figure",
+              "at": [
+                20,
+                2
+              ]
+            },
+            {
+              "frames": [
+                "art/tiles/artifact_chest.png"
+              ],
+              "at": [
+                130,
+                4
+              ]
+            }
+          ]
+        },
+        {
+          "backdrop": "art/ui/backdrop_palace_throne.png",
+          "say": "charge_search",
+          "face": "emperor_traianus",
+          "actors": [
+            {
+              "portrait": "emperor_traianus_figure",
+              "at": [
+                20,
+                2
+              ]
+            },
+            {
+              "frames": [
+                "art/ui/title_eagle.png"
+              ],
+              "at": [
+                130,
+                60
+              ],
+              "to": [
+                130,
+                -30
+              ]
+            }
+          ]
+        },
+        {
+          "backdrop": "art/ui/backdrop_palace_throne.png",
+          "say": "charge_pay",
+          "face": "emperor_traianus",
+          "actors": [
+            {
+              "portrait": "emperor_traianus_figure",
+              "at": [
+                20,
+                2
+              ]
+            },
+            {
+              "frames": [
+                "art/tiles/chest.png"
+              ],
+              "at": [
+                130,
+                4
+              ]
+            }
+          ]
+        },
+        {
+          "backdrop": "art/ui/backdrop_palace_throne.png",
+          "say": "charge_days",
+          "face": "emperor_traianus",
+          "actors": [
+            {
+              "portrait": "emperor_traianus_figure",
+              "at": [
+                72,
+                2
+              ]
+            }
+          ]
+        },
+        {
+          "backdrop": "art/ui/backdrop_palace_throne.png",
+          "say": "palace_go",
+          "face": "emperor_traianus",
+          "actors": [
+            {
+              "portrait": "emperor_traianus_figure",
+              "at": [
+                72,
+                2
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "decree",
+      "fade_in": 1.0,
+      "fade_out": 3.0,
+      "beats": [
+        {
+          "backdrop": "art/ui/backdrop_town_italia.png",
+          "say": "decree_1",
+          "face": "informant_market",
+          "actors": [
+            {
+              "portrait": "palace_usher",
+              "at": [
+                130,
+                6
+              ]
+            },
+            {
+              "frames": [
+                "art/troops/coloni_00.png",
+                "art/troops/coloni_01.png",
+                "art/troops/coloni_02.png",
+                "art/troops/coloni_03.png"
+              ],
+              "fps": 6.67,
+              "at": [
+                0,
+                14
+              ]
+            },
+            {
+              "frames": [
+                "art/troops/coloni_00.png",
+                "art/troops/coloni_01.png",
+                "art/troops/coloni_02.png",
+                "art/troops/coloni_03.png"
+              ],
+              "fps": 6.67,
+              "at": [
+                40,
+                16
+              ],
+              "mirror": true
+            }
+          ]
+        },
+        {
+          "backdrop": "art/ui/title_battle.png",
+          "pan": [
+            [
+              0,
+              62
+            ],
+            [
+              16,
+              62
+            ]
+          ],
+          "duration": 7.0,
+          "dissolve": 0.8,
+          "actors": [
+            {
+              "frames": [
+                "art/troops/hastati_00.png",
+                "art/troops/hastati_01.png",
+                "art/troops/hastati_02.png",
+                "art/troops/hastati_03.png"
+              ],
+              "fps": 6.67,
+              "at": [
+                -60,
+                72
+              ],
+              "to": [
+                40,
+                72
+              ]
+            },
+            {
+              "frames": [
+                "art/troops/hastati_00.png",
+                "art/troops/hastati_01.png",
+                "art/troops/hastati_02.png",
+                "art/troops/hastati_03.png"
+              ],
+              "fps": 6.67,
+              "at": [
+                -20,
+                74
+              ],
+              "to": [
+                80,
+                74
+              ]
+            },
+            {
+              "frames": [
+                "art/troops/velites_00.png",
+                "art/troops/velites_01.png",
+                "art/troops/velites_02.png",
+                "art/troops/velites_03.png"
+              ],
+              "fps": 6.67,
+              "at": [
+                -100,
+                70
+              ],
+              "to": [
+                0,
+                70
+              ]
+            }
+          ]
+        },
+        {
+          "backdrop": "art/scenes/rubicon.png",
+          "say": "decree_go",
+          "face": "informant_market",
+          "dissolve": 1.0,
+          "actors": [
+            {
+              "frames": [
+                "art/classes/legatus_walk_00.png",
+                "art/classes/legatus_walk_01.png",
+                "art/classes/legatus_walk_02.png",
+                "art/classes/legatus_walk_03.png"
+              ],
+              "fps": 6.67,
+              "at": [
+                150,
+                8
+              ],
+              "to": [
+                60,
+                8
+              ],
+              "mirror": true
+            }
+          ]
+        },
+        {
+          "duration": 3.0
+        }
+      ]
+    }
+  ]
+}
