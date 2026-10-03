@@ -3,7 +3,7 @@
 **Generated** by `tools/romeart.py prompts` from `art/jobs/*.json`. Do not
 edit by hand: change the job file and run the tool again.
 
-364 jobs. A job with a **Pack path** has produced that file in the pack; a
+368 jobs. A job with a **Pack path** has produced that file in the pack; a
 job without one has produced a step towards it (the still an animation starts
 from). The routes themselves -- which engine, which settings, and why -- have
 been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
@@ -1399,6 +1399,34 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Pack path:** `art/scenes/rubicon.png`
 - **prompt:** a Roman legion far in the distance marching in a long column over a low wooden bridge across a small river, standards raised, green hills and poplars of northern Italy, late afternoon light, seen from a hillside above, the river and the bridge small in a wide landscape
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=102`, `raw_only=true`, `seed=6501`, `style=rd_pro__default`, `target=[240, 102]`, `width=240`
+
+### scene_treasure_africa
+
+- **Engine:** Retro Diffusion rd_pro__default (240x102, seed 7905)
+- **Pack path:** `art/scenes/treasure_africa.png`
+- **prompt:** a hidden treasure cache uncovered in the sand among red sandstone rocks at the foot of a lone date palm, a half-buried wooden chest burst open with Roman gold coins and silver vessels spilling out, deep blue sky, long purple shadows, rich warm late-afternoon light, rolling orange dunes beyond, no people
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=102`, `raw_only=true`, `seed=7905`, `style=rd_pro__default`, `target=[240, 102]`, `width=240`
+
+### scene_treasure_galliae
+
+- **Engine:** Retro Diffusion rd_pro__default (240x102, seed 7902)
+- **Pack path:** `art/scenes/treasure_galliae.png`
+- **prompt:** a hidden treasure cache uncovered among mossy boulders and ferns at the foot of an old oak in a dark Gaulish forest, a half-buried wooden chest burst open with Roman gold coins and silver vessels spilling out, shafts of grey-green light, no people
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=102`, `raw_only=true`, `seed=7902`, `style=rd_pro__default`, `target=[240, 102]`, `width=240`
+
+### scene_treasure_italia
+
+- **Engine:** Retro Diffusion rd_pro__default (240x102, seed 7901)
+- **Pack path:** `art/scenes/treasure_italia.png`
+- **prompt:** a small hidden treasure cache uncovered among rocks and long grass at the foot of an old oak, a half-buried wooden chest burst open with Roman gold coins and a few silver vessels spilling out, dappled late afternoon light, a quiet Italian hillside beyond, no people
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=102`, `raw_only=true`, `seed=7901`, `style=rd_pro__default`, `target=[240, 102]`, `width=240`
+
+### scene_treasure_oriens
+
+- **Engine:** Retro Diffusion rd_pro__default (240x102, seed 7904)
+- **Pack path:** `art/scenes/treasure_oriens.png`
+- **prompt:** a hidden treasure cache uncovered among the fallen columns of a ruined eastern temple, a half-buried wooden chest burst open with Roman gold coins and silver vessels spilling out, dry hills and a distant walled city at dusk, no people
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=102`, `raw_only=true`, `seed=7904`, `style=rd_pro__default`, `target=[240, 102]`, `width=240`
 
 ## Screens and UI
 
