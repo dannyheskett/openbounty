@@ -16,7 +16,7 @@
 #define RES_ID_LEN            32
 #define RES_NAME_LEN          48
 #define RES_SIGN_TITLE_LEN    64
-#define RES_SIGN_BODY_LEN    128
+#define RES_SIGN_BODY_LEN    256   // Rome's longest is 147 (#135)
 #define RES_PATH_LEN         128
 // Indexed by raw map byte, so the table spans the whole byte range: a map
 // file's code can be any of 256 values and always indexes this table. It was
@@ -555,6 +555,7 @@ typedef struct {
     char town_intel_unavailable[RES_BANNER_LEN];
     char town_intel_castle_under[RES_BANNER_LEN];// %NAME%
     char town_intel_owner_rule[RES_BANNER_LEN];  // %OWNER%
+    char signpost_header[RES_BANNER_LEN];        // %TITLE%; optional: a sign's title as the header (#135)
     char castle_gate_owner[RES_BANNER_LEN];      // %OWNER%; optional: the gate's opening line (#139)
     char town_intel_owner_none[RES_BANNER_LEN];
     char town_intel_owner_player[RES_BANNER_LEN];

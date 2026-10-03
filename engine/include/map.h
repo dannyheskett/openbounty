@@ -9,8 +9,6 @@
 #define TILE_ART_NAME_LEN  48   // "<tile_set>/<terrain art>" must fit
 #define TILE_ID_LEN        24
 
-#define TILE_SIGN_TITLE_LEN 48
-#define TILE_SIGN_BODY_LEN  96
 
 // A tile's text (art names, ids, signpost text) lives once in its Map's string
 // pool; the tile holds small indices into it (0 = the empty string). A tile is

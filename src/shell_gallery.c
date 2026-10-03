@@ -449,6 +449,23 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     shot(&G, "04b_message_artifact");
     reset(&G); resources_format_template(tb, sizeof tb, bn->no_spell_banner, vars, 6);
     open_dialog(NULL, tb); shot(&G, "05_message_long");
+    {
+        // A road sign, worded as the map words it (adventure.c): the pack's
+        // longest, so a cut or a title run into the body shows (#135).
+        const ResSign *ls = NULL;
+        for (int zi = 0; zi < g->res->zone_count; zi++)
+            for (int i = 0; i < g->res->zones[zi].sign_count; i++) {
+                const ResSign *sg = &g->res->zones[zi].signs[i];
+                if (!ls || strlen(sg->body) > strlen(ls->body)) ls = sg;
+            }
+        if (ls) {
+            char sh[128] = "", sb[512];
+            ResTemplateVar sv[] = { { "TITLE", ls->title }, { "BODY", ls->body } };
+            if (bn->signpost_header[0]) resources_format_template(sh, sizeof sh, bn->signpost_header, sv, 1);
+            resources_format_template(sb, sizeof sb, bn->signpost_with_body, sv, 2);
+            reset(&G); open_dialog(sh[0] ? sh : NULL, sb); shot(&G, "05b_message_sign");
+        }
+    }
     reset(&G); resources_format_template(tb, sizeof tb, bn->body_search, vars, 6);
     prompt_yes_no_open(ui->dt_search, tb);
     shot(&G, "06_question_yes_no");

@@ -381,6 +381,11 @@ static void fill_sign(cJSON *j, void *dst) {
     copy_str(s->id,    sizeof(s->id),    json_str(j, "id", ""));
     copy_str(s->title, sizeof(s->title), json_str(j, "title", ""));
     copy_str(s->body,  sizeof(s->body),  json_str(j, "body", ""));
+    // A sign longer than its field was cut silently (#135): say so.
+    const char *t = json_str(j, "title", ""), *b = json_str(j, "body", "");
+    if (strlen(t) >= sizeof(s->title) || strlen(b) >= sizeof(s->body))
+        fprintf(stdout, "resources: sign '%s' cut to %zu/%zu characters\n",
+                s->id, sizeof(s->title) - 1, sizeof(s->body) - 1);
 }
 // Zone towns are resolved to indices into the authoritative res->towns[]
 // catalog in parse_zones; see resolve_zone_town_idx.
@@ -1527,6 +1532,10 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(town_intel_unavailable,  "town_intel_unavailable");
     SET_BANNER(town_intel_castle_under, "town_intel_castle_under");
     SET_BANNER(town_intel_owner_rule,   "town_intel_owner_rule");
+    {   // Optional: a sign's title as the message's header (#135).
+        const char *s = cJSON_IsObject(obj) ? json_str(obj, "signpost_header", NULL) : NULL;
+        copy_str(b->signpost_header, sizeof(b->signpost_header), s ? s : "");
+    }
     {   // Optional: a pack that reports at the castle gate (#139).
         const char *s = cJSON_IsObject(obj) ? json_str(obj, "castle_gate_owner", NULL) : NULL;
         copy_str(b->castle_gate_owner, sizeof(b->castle_gate_owner), s ? s : "");
