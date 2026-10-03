@@ -16,6 +16,7 @@ and community content without recompiling the engine.
 ```
 my-pack/
 ├── game.json          # All gameplay data + asset path manifest (required)
+├── intro.json         # The Introduction's script, named by game.json (optional, §2.4)
 ├── art/               # Sprites, tiles, fonts, UI chrome (PNG)
 ├── audio/             # Music + SFX (WAV / OGG)
 ├── maps/              # Zone tile-grid files (*.dat, ASCII)
@@ -38,7 +39,8 @@ All paths have been relative to the pack root. ✱ marks what a playable pack
 has supplied. The loader itself has refused only a manifest it cannot open or
 parse, a missing `render.mode`, a `font` block without a file or with a size
 outside 6..64, a tile size or buffer it cannot lay out, a villain with an
-invalid index, a bad `tuning.temp_death`, and missing string keys (§5); any
+invalid index, a bad `tuning.temp_death`, missing string keys (§5) and a
+malformed Introduction script (§2.4); any
 other absent block has parsed as empty or as its defaults.
 
 | Key | Type | Purpose |
@@ -55,7 +57,7 @@ other absent block has parsed as empty or as its defaults.
 | `combat`      | object ✱ | Morale chart, number-name labels; `morale_as_army_view` (bool, default false): a unit's combat morale follows the army view's rule (REQ-271) instead of the behaviour ported from King's Bounty (REQ-385). Glory of Rome sets it; the King's Bounty pack omits it. |
 | `controls`    | object   | Settings-menu rows. |
 | `colors`      | object   | Difficulty-bar colors, minimap palette. |
-| `audio`       | object   | Music track list, SFX paths. |
+| `audio`       | object   | Music track list (`tracks.openworld`, `tracks.combat`, and `tracks.intro`, the Introduction's theme), SFX paths. |
 | `render`      | object ✱ | Screen geometry: `mode`, tile size, viewport, `ui_scale`, optional fixed buffer (see §2.1). |
 | `font`        | object   | A TrueType/OpenType font rasterised at load into the glyph cell (see §2.2). Absent: the bitmap strip in `sprites.font`. |
 | `sprites`     | object ✱ | Texture-atlas paths (see §4). |
@@ -76,6 +78,7 @@ other absent block has parsed as empty or as its defaults.
 | `portraits`   | array    | The people of the modern place screens: each an `id` and an `anim` list of frames, named by a town's `headman` / `informant` / `townhead`, a zone's `boatmaster` / `pontifex` / `siegemaster` and a castle's `special` block. |
 | `credits`     | object   | Credits-screen lines. |
 | `ending`      | object   | Victory cartoon parameters. |
+| `intro`       | string   | The Introduction's script file (§2.4). Absent: the pack has no Introduction and the title menu no row for it. |
 
 ### 2.1 `render`
 
@@ -156,6 +159,69 @@ words, `type` `"bool"` (On and Off) or `"numeric"` (0 to `range` − 1),
 `default` its first value. `hidden` true has kept the setting and left it off
 the page. `audio` true has marked a sound setting, greyed when the machine has
 had no audio device.
+
+### 2.4 `intro`
+
+The Introduction has been an animated opening, played only from the modern
+title menu's Introduction row (OPENBOUNTY-SPEC REQ-430u). `game.json`'s
+`"intro"` has named its script, a file of its own because it is long and
+edited apart from the gameplay data:
+
+```json
+{
+  "version": 1, "frame": [240, 102], "fps": 6.67,
+  "type_cps": 28, "read_cps": 14, "min_hold": 2.0,
+  "scenes": [
+    { "id": "forum", "fade_in": 1.5, "fade_out": 1.0, "beats": [
+      { "backdrop": "art/ui/backdrop_town_italia.png", "say": "forum_1", "face": "informant_market",
+        "actors": [ { "portrait": "palace_usher", "at": [130, 6] } ] },
+      { "for_each": "villain", "count": 4, "backdrop": "%ZONE_SCENE%",
+        "actors": [ { "villain": "*", "at": [72, 3] } ], "say": "wanted_slow", "face": "informant_market" }
+    ]}
+  ]
+}
+```
+
+- **Top level.** `frame` has been the picture window in art pixels (1..256 a
+  side; default 240×102, a backdrop's size). `fps` has been the default actor
+  frame rate. `type_cps` has been the caption's typing speed and `read_cps`
+  the reading speed that sizes its hold, never shorter than `min_hold`
+  seconds.
+- **Scenes** have played in order, each faded in from black over `fade_in`
+  seconds and out over `fade_out` (defaults 1.0), the fades inside the
+  scene's length. `id` has named the scene in logs and captures.
+- **Beats** have played end to end on one timeline. Each has had:
+  - `backdrop`: the picture behind the beat, or none for black;
+  - `pan`: `[[x0, y0], [x1, y1]]`, the frame window's top-left in the
+    backdrop moving across the beat (a backdrop larger than `frame` has been
+    needed to move);
+  - `ease`: `"linear"` (the default) or `"smooth"`, for the pan and the moves;
+  - `dissolve`: seconds of cross-fade from the previous beat (default 0, a cut);
+  - `actors`: sprites drawn in order, each with exactly one of `frames` (a
+    list of paths), `portrait` (a `portraits` id) or `villain` (a villain id,
+    or `"*"` on a `for_each` beat), plus `fps`, `at` and an optional `to`
+    (the sprite's top-left in backdrop pixels, moving across the beat) and
+    `mirror`;
+  - `say`: a key in the strings' `intro` group, the caption typed on under
+    the picture, and `face`: a `portraits` id, the speaker's loop beside it;
+  - `card`: a key in the same group, text set in the middle of the picture;
+  - `duration`: seconds. Absent, a beat with a caption has lasted its typing
+    time plus its reading time; a beat with neither has been an error.
+- **`for_each: "villain"`** has repeated the beat once per villain in catalog
+  order, from catalog position `from` (default 0) for `count` villains
+  (default all). Its text and `backdrop` have taken `%NAME%`, `%ALIAS%` (from
+  `villain_descriptions`), `%REWARD%`, `%ZONE%` (the zone's name) and
+  `%ZONE_SCENE%` (the zone's `treasure_scene`). Every beat has taken
+  `%DAYS%`, the normal difficulty's day budget.
+
+The music has had no cues: `audio.tracks.intro` has started with the first
+beat and faded with the last scene.
+
+The loader has resolved the script at load, and refused the pack when a
+caption key was missing from `intro`, when `ui.title_intro` was missing, or
+when a beat named an unknown portrait or villain, gave an actor no source or
+two, had neither `duration` nor `say`, or the frame was out of range. Its
+art has been listed in the art manifest (§9) like every other path.
 
 ---
 
@@ -374,6 +440,8 @@ A few keys have been optional, each read by modern screens only:
   had no title and its rows have been A and B.
 - `banners.gmr_spell_in_fight`, `gmr_spell_on_map`: why a spell cannot be
   cast here, on the spells page.
+- `ui.title_intro` and the `intro` group: the Introduction's title-menu row
+  and its captions (§2.4), required of a pack that names an `intro`.
 
 A class's description on the class picker has been
 `banners.class_desc_<the class's id>`.

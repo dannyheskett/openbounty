@@ -61,6 +61,7 @@ SUITE_EXTERN(unit_spawn_calm_suite);
 SUITE_EXTERN(unit_scepter_zone_suite);
 SUITE_EXTERN(unit_map_clear_ground_suite);
 SUITE_EXTERN(unit_rome_salt_suite);
+SUITE_EXTERN(unit_intro_suite);
 SUITE_EXTERN(unit_castle_gate_report_suite);
 SUITE_EXTERN(unit_scepter_ground_suite);
 SUITE_EXTERN(unit_signs_suite);
@@ -137,6 +138,7 @@ int main(int argc, char **argv) {
     RUN_SUITE(unit_scepter_zone_suite);
     RUN_SUITE(unit_map_clear_ground_suite);
     RUN_SUITE(unit_rome_salt_suite);
+    RUN_SUITE(unit_intro_suite);
     RUN_SUITE(unit_castle_gate_report_suite);
     RUN_SUITE(unit_scepter_ground_suite);
     RUN_SUITE(unit_signs_suite);
