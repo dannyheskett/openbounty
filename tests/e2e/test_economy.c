@@ -345,6 +345,50 @@ TEST empty_player_castle_is_retaken_at_week_end(void) {
     PASS();
 }
 
+// The week's end records what it charged, so the budget screen adds up:
+// On Hand + Payment - Boat - Army = Balance, with each stack at a tenth of
+// its recruit cost rounded down per unit (issue #130, OPENKB-SPEC 16.7).
+TEST week_end_records_what_it_charged(void) {
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, NULL, FIXTURE_SEED));
+    // A troop whose cost is not a multiple of 10, where dividing the army's
+    // total by ten would disagree with the per-stack charge.
+    const TroopDef *odd = NULL;
+    for (int i = 0; i < troops_count() && !odd; i++) {
+        const TroopDef *t = troop_by_index(i);
+        if (t && t->recruit_cost > 10 && t->recruit_cost % 10) odd = t;
+    }
+    ASSERT(odd);
+    memset(g->army, 0, sizeof g->army);
+    snprintf(g->army[0].id, sizeof g->army[0].id, "%s", odd->id);
+    g->army[0].count = 30;
+    g->boat.has_boat = false;
+    int upkeep = 30 * (odd->recruit_cost / 10);
+    ASSERT_EQ(upkeep, GameArmyWeeklyUpkeep(g));
+
+    g->stats.gold = 2000;
+    int paid = 0;
+    GameSpendWeek(g, &paid);
+    ASSERT_EQ(2000, g->stats.last_week_on_hand);
+    ASSERT_EQ(upkeep, g->stats.last_week_army);
+    ASSERT_EQ(0, g->stats.last_week_boat);
+    ASSERT_EQ(g->stats.last_week_on_hand + g->stats.last_commission
+              - g->stats.last_week_boat - g->stats.last_week_army,
+              g->stats.gold);
+
+    // A wallet short of the upkeep pays what it holds, and still adds up.
+    g->army[0].count = 30000;
+    g->stats.gold = 0;
+    GameSpendWeek(g, &paid);
+    ASSERT_EQ(0, g->stats.gold);
+    ASSERT_EQ(g->stats.last_commission, g->stats.last_week_army);
+    ASSERT_EQ(g->stats.last_week_on_hand + g->stats.last_commission
+              - g->stats.last_week_boat - g->stats.last_week_army,
+              g->stats.gold);
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
 SUITE(e2e_economy_suite) {
     RUN_TEST(rent_boat_deducts_gold_and_places);
     RUN_TEST(rent_boat_refuses_when_gold_equals_cost);
@@ -362,4 +406,5 @@ SUITE(e2e_economy_suite) {
     RUN_TEST(compact_army_zero_count_treated_as_empty);
     RUN_TEST(compact_army_already_dense_unchanged);
     RUN_TEST(empty_player_castle_is_retaken_at_week_end);
+    RUN_TEST(week_end_records_what_it_charged);
 }

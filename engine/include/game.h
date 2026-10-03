@@ -238,6 +238,11 @@ typedef struct {
     bool             won;                 // set when the scepter is recovered (search on its tile)
     int              last_commission;     // amount paid at the most recent week-end (for UI)
     int              last_astrology_troop; // troop idx broadcast at last week-end (for UI)
+    // What the most recent week-end actually did, for the budget screen:
+    // gold before the commission, upkeep and boat fare really taken.
+    int              last_week_on_hand;
+    int              last_week_army;
+    int              last_week_boat;      // 0 when the boat was repossessed
     // economy.audiences: the Emperor's blessing received (once), tributes paid.
     bool             blessed;
     int              tributes;

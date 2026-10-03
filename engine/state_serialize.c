@@ -307,6 +307,9 @@ cJSON *state_build_snapshot(const Game *g,
         cJSON_AddBoolToObject  (s, "game_over", g->stats.game_over);
         cJSON_AddBoolToObject  (s, "won", g->stats.won);
         cJSON_AddNumberToObject(s, "last_commission", g->stats.last_commission);
+        cJSON_AddNumberToObject(s, "last_week_on_hand", g->stats.last_week_on_hand);
+        cJSON_AddNumberToObject(s, "last_week_army", g->stats.last_week_army);
+        cJSON_AddNumberToObject(s, "last_week_boat", g->stats.last_week_boat);
         if (g->res && g->res->economy.audiences) {
             cJSON_AddBoolToObject  (s, "blessed", g->stats.blessed);
             cJSON_AddNumberToObject(s, "tributes", g->stats.tributes);

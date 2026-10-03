@@ -1999,10 +1999,12 @@ flagged (§38).
 - **REQ-361.** End-of-week processing has run in this order (`engine/game.c`
   day/week rollover): (1) `time_stop = 0`; (2) `leadership_current =
   leadership_base`; (3) `astrology = GamePickAstrologyCreature(week_id)`;
-  (4) `gold += commission_weekly`, `last_commission = commission_weekly`;
-  (5) `gold -= sum(slot.count * (recruit_cost / 10))`; (6) if `boat.has_boat`,
-  `gold -= GameBoatCost`, repossessing the boat on shortfall; (7) `gold =
-  max(0, gold)`; (8) astrology effects (§24), with empty player castles
+  (4) `last_week_on_hand = gold`, `gold += commission_weekly`,
+  `last_commission = commission_weekly`; (5) `gold -= sum(slot.count *
+  (recruit_cost / 10))`, with `last_week_army` the part of it the wallet
+  covered (`min(upkeep, gold)`); (6) if `boat.has_boat`, `gold -=
+  GameBoatCost` and `last_week_boat` = that fare, repossessing the boat on
+  shortfall with `last_week_boat = 0`; (7) `gold = max(0, gold)`; (8) astrology effects (§24), with empty player castles
   retaken (REQ-302) after the dwellings and before castle and foe growth.
 
 ---
@@ -2031,9 +2033,13 @@ flagged (§38).
 
 - **REQ-372.** After processing, a two-phase dialog sequence has been queued
   (`src/shell_weekend.c`): **Phase 1 (Astrology)** has shown the new week's
-  creature; **Phase 2 (Budget)** has shown gold on hand, commission paid, boat
-  cost (if any), per-troop upkeep, and the final balance. Any key has
-  dismissed it.
+  creature; **Phase 2 (Budget)** has shown what the week did, from the
+  figures REQ-361 records: On Hand (`last_week_on_hand`), Payment
+  (`last_commission`), Boat (`last_week_boat`), Army (`last_week_army`) and
+  Balance (`gold`), so On Hand + Payment - Boat - Army = Balance. Each troop
+  row has shown that stack's weekly upkeep, `GameStackWeeklyUpkeep`, the same
+  figure as the army view's cost; openkb's full recruit price there was not
+  kept (OPENKB-SPEC §16.7). Any key has dismissed it.
 
 ---
 

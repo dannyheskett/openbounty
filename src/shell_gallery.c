@@ -83,6 +83,15 @@ static void cpy(char *d, size_t n, const char *src) {
     d[i] = '\0';
 }
 
+// The week-end figures end_day would record for the current army and gold,
+// so a budget shot adds up: On Hand + Payment - Army = Balance.
+static void week_figures(Game *g, int commission) {
+    g->stats.last_commission = commission;
+    g->stats.last_week_army  = GameArmyWeeklyUpkeep(g);
+    g->stats.last_week_boat  = 0;
+    g->stats.last_week_on_hand = g->stats.gold - commission + g->stats.last_week_army;
+}
+
 typedef struct {
     Game *g; Map *m; Fog *f; const Resources *res; const Sprites *s;
     RenderTexture2D *rt; const char *dir;
@@ -482,6 +491,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     pump_week_end_dialog(g); shell_pump_note(g);
     shot(&G, "09a_week_end_astrology");
     reset(&G);
+    week_figures(g, 1000);
     pending_week_phase = WK_PHASE_BUDGET;
     pump_week_end_dialog(g); shell_pump_note(g);
     shot(&G, "09b_week_end_budget");
@@ -490,9 +500,9 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         Game keep = { 0 };
         GameCopy(&keep, g);
         g->stats.gold = 279635;
-        pending_week_paid = 1000;
         for (int i = 0; i < GAME_ARMY_SLOTS; i++)
             if (g->army[i].id[0] && g->army[i].count > 0) g->army[i].count *= 40;
+        week_figures(g, 1000);
         reset(&G);
         pending_week_phase = WK_PHASE_BUDGET;
         pump_week_end_dialog(g); shell_pump_note(g);
