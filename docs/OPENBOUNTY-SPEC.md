@@ -1997,7 +1997,12 @@ flagged (§38).
   2↔3); stepping on one has teleported to its pair (an odd telecave is a
   one-way dead-end). **Signposts**: each sign tile has carried per-tile
   `sign_title` / `sign_body` shown in a dialog; there has been no global sign
-  index.
+  index. A sign has held a 63-character title and a 255-character body
+  (`RES_SIGN_TITLE_LEN`, `RES_SIGN_BODY_LEN`); a longer one has been cut
+  with a warning at load (#135). A pack that gives `signpost_header` (Glory
+  of Rome: "%TITLE%") has headed the dialog with the sign's title, so its
+  body (`signpost_with_body`) carries the words alone; without it the title
+  has been the body's first line, as the original.
 
 ---
 

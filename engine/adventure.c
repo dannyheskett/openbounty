@@ -81,8 +81,16 @@ InteractResult adventure_handle_interact(const Map *map, const Tile *t, const ch
         //    body line
         //    body line"
         const Resources *res = resources_current();
-        char body[TILE_SIGN_TITLE_LEN + TILE_SIGN_BODY_LEN + 32];
+        char body[sizeof r.dialog_body];
+        r.dialog_header[0] = '\0';
         if (res && TileSignBody(map, t)[0]) {
+            // A pack with signpost_header heads the message with the sign's
+            // title, so it does not read into the body (#135).
+            if (res->banners.signpost_header[0]) {
+                ResTemplateVar hv[] = { { "TITLE", TileSignTitle(map, t) } };
+                resources_format_template(r.dialog_header, sizeof r.dialog_header,
+                                          res->banners.signpost_header, hv, 1);
+            }
             ResTemplateVar vars[] = {
                 { "TITLE", TileSignTitle(map, t) },
                 { "BODY",  TileSignBody(map, t) },
@@ -107,7 +115,6 @@ InteractResult adventure_handle_interact(const Map *map, const Tile *t, const ch
         // Carry the sign text out in the result; the caller (step.c, which has a
         // Game*) raises it via player_io_message so it flows through the uniform
         // queue . adventure_handle_interact stays Game-free.
-        r.dialog_header[0] = '\0';
         snprintf(r.dialog_body, sizeof r.dialog_body, "%s", body);
         r.opened_dialog = true;
         return r;
