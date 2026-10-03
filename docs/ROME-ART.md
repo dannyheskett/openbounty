@@ -840,21 +840,21 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 ### siege_scene_dark
 
 - **Engine:** Retro Diffusion rd_plus__topdown_map (384x384, seed 8833)
-- **Pack path:** `art/combat/siege/cell_<x>_<y>.png (36 cells at 64, tools/siegeslice.py --grid)`
+- **Pack path:** `art/combat/siege/cell_<x>_<y>.png (36 cells at 64, romeart.py siegeslice --grid)`
 - **prompt:** an orthographic strategy game battlefield map seen from directly overhead, a castle courtyard of flat plain dark mossy green grass with nothing on it, thick grey stone battlement walls along the top edge, down the left and right edges and along the bottom, the bottom wall broken open in the middle where the gate was, a straight path of grey paving stones lined with stone kerbs running up from the breach into the courtyard, a moat of blue water below the bottom wall, everything square and aligned to the picture edges, no trees, no bushes, no rocks, no people, no text
 - **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `height=384`, `input_image_keep_alpha=false`, `input_image_path=build/art/siege_src_dark_384.png`, `raw_only=true`, `seed=8833`, `strength=0.55`, `style=rd_plus__topdown_map`, `target=[384, 384]`, `width=384`
 
 ### siege_scene_from_mock
 
 - **Engine:** Retro Diffusion rd_plus__topdown_map (384x384, seed 8832)
-- **Pack path:** `art/combat/siege/cell_<x>_<y>.png (36 cells at 64, tools/siegeslice.py --grid)`
+- **Pack path:** `art/combat/siege/cell_<x>_<y>.png (36 cells at 64, romeart.py siegeslice --grid)`
 - **prompt:** an orthographic strategy game battlefield map seen from directly overhead, a castle courtyard of flat plain green grass with nothing on it, thick grey stone battlement walls along the top edge, down the left and right edges and along the bottom, the bottom wall broken open in the middle where the gate was, a straight path of grey paving stones lined with stone kerbs running up from the breach into the courtyard, a moat of blue water below the bottom wall, everything square and aligned to the picture edges, no trees, no bushes, no rocks, no people, no text
 - **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `height=384`, `input_image_keep_alpha=false`, `input_image_path=build/art/siege_src_384x384.png`, `raw_only=true`, `seed=8832`, `strength=0.55`, `style=rd_plus__topdown_map`, `target=[384, 384]`, `width=384`
 
 ### siege_scene_grass_a
 
 - **Engine:** Retro Diffusion rd_plus__topdown_map (384x384, seed 8832)
-- **Pack path:** `art/combat/siege/cell_<x>_<y>.png (36 cells at 64, tools/siegeslice.py --grid)`
+- **Pack path:** `art/combat/siege/cell_<x>_<y>.png (36 cells at 32, romeart.py siegeslice --grid)`
 - **prompt:** an orthographic strategy game battlefield map seen from directly overhead, a castle courtyard of flat plain bright lush green grass with nothing on it, thick grey stone battlement walls along the top edge, down the left and right edges and along the bottom, the bottom wall broken open in the middle where the gate was, a straight path of grey paving stones lined with stone kerbs running up from the breach into the courtyard, a moat of blue water below the bottom wall, everything square and aligned to the picture edges, no trees, no bushes, no rocks, no people, no text
 - **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `height=384`, `input_image_keep_alpha=false`, `input_image_path=build/art/siege_src_grassA_384.png`, `raw_only=true`, `seed=8832`, `strength=0.55`, `style=rd_plus__topdown_map`, `target=[192, 192]`, `width=384`
 

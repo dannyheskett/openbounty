@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Rome art: one tool for every compositing step the pack's art goes through.
+"""Rome art: the one tool for every step the pack's art goes through.
 
     python3 tools/romeart.py <command> [args]
 
     zone <zone>            build a continent's whole tile set from its primitives
     install <zone>         copy a built set into the pack and list it in game.json
     sheet <zone>           a review page of every tile in a set, at 1:1
-    sprites <job> <out>    a PixelLab rock/tree sprite batch (--run to post)
     slots <sprites> <out>  search rock-slot arrangements for a mountain lattice
     rebank <old> <new> <dir> <prefix>  river bands carried onto a new interior
     fieldgrade <src> <out> --window x,y,w,h ...  a field painting derived from another
@@ -24,17 +23,38 @@
     mouth <coast> <river_ew> <grass> <sea> <out>
     tile2x2 <in> <out>                lay a 48 px tile 2x2 into 96
     mirror <in> <out> <half>          mirror half a tile over the other
-    crop <in> <out> [w h]             centre-crop a still to the pack size
+    crop <in> <out> [size] [top]      centre-crop a still to the pack size
 
-NOTHING HERE MAKES A PAID CALL. Generation lives in tools/rdgen.py (Retro
-Diffusion) and tools/pltileset.py / pltilespro.py (PixelLab); every prompt and
-setting they are given is recorded in docs/ROME-ART.md. This tool only
-composites what those calls returned: it may be re-run at any time, and the
-same inputs give the same tiles.
+    siegeslice <scene> <out> [--grid | --field <prefix>]
+                                      castle picture into siege pieces / cells
+    siegewalls [pack] [ref-pack]      the combat wall set from the original pieces
+    fieldcalm <painting> <out> <prefix> [--level ..] [--fill ..] [--mask ..]
+                                      calm a field painting and cut its cells
+    splashlogo <emblem> <out>         the publisher splash
+    splashtitle <eagle> <out> | --words <out>   the title screen
+    classpicker [pack]                the class-select carousel frames
 
-Each section below is one compositing step. Each encodes a contract set by
-measurement (the lattice border rule, the road sweep's joining pattern, the
-edge masks, the grass variants' shared border).
+    loopreview <run-dir> [--scale N]  review page for an animation run
+
+  Paid (network):
+    rdgen cost|run|reprocess <job>    Retro Diffusion generation
+    rdgen balance                     the Retro Diffusion credit left
+    pltileset <out> <request.json>    one PixelLab create-tileset call
+    pltilespro <body.json> <out>      one PixelLab Tiles Pro call
+    sprites <job> <out>               a PixelLab rock/tree sprite batch
+
+THE PAID COMMANDS ARE THE ONLY ONES THAT REACH THE NETWORK, and they live in
+the last section of this file. rdgen run, pltileset, pltilespro and sprites
+spend money: each prints what it would post and what that costs, and posts
+only when given --run. rdgen cost and balance, and rdgen reprocess's free
+downscale, charge nothing. Every prompt and setting a generation is given is
+recorded in art/jobs/*.json and docs/ROME-ART.md.
+
+Every other command only composites what generation returned: it may be
+re-run at any time, and the same inputs give the same output (fieldcalm's
+fill excepted -- see its notes). Each section below is one step, and each
+encodes a contract set by measurement (the lattice border rule, the road
+sweep's joining pattern, the edge masks, the grass variants' shared border).
 """
 import glob
 import json
@@ -653,7 +673,7 @@ The set is a PixelLab 16 px tileset whose lower terrain is the pack grass
 and whose upper is a detail (weeds, pebbles, flowers, dry grass). More
 sets, chained to the same grass, may be given with --set; each variant
 takes its patches from one or two of them at random. Each variant is a 96 px
-tile built like a terrain tile (tools/stitch96.py): a 7x7 vertex grid, the
+tile built like a terrain tile (romeart.py stitch): a 7x7 vertex grid, the
 set's corner tile per 2x2. The border vertices are always the lower grass,
 so every variant's edges are the plain grass and any two variants, or a
 variant and the plain tile, join without a seam. The patch is a random
@@ -824,7 +844,7 @@ def _forestlattice(argv):
     python3 tools/romeart.py lattice <out.json> --sprites DIR --crown N --name forest
     python3 tools/romeart.py lattice <out.json> --sprites DIR --terrain mountain --name mountain
 
-The contract (2026-09-10), checked mechanically by tools/seamcheck.py:
+The contract (2026-09-10), checked mechanically by romeart.py seamcheck:
 
   Every side of a tile is TERMINAL (grass beyond) or an INTERFACE (the
   same terrain beyond). A sprite may straddle at most ONE border, never a
@@ -864,7 +884,7 @@ Terminal sides:
 Codes 5..8 (diagonal-only) are plain lattice: nothing touches a corner.
 
 Codes are the engine's (OPENBOUNTY-SPEC REQ-229a). Output is a layout for
-tools/treetile.py with wrap off, every sprite listed, negatives included.
+romeart.py compose with wrap off, every sprite listed, negatives included.
     """
 
 
@@ -1323,7 +1343,7 @@ def _roadtile(argv):
     python3 tools/romeart.py sweep <set-dir> <out-dir> --sweep --fill PAVING.png --grass RIVER.png
         (a bridge deck: the band filled with a 96 px tile over another piece)
 
-A road piece is a 96 px tile built the way tools/stitch96.py builds a
+A road piece is a 96 px tile built the way romeart.py stitch builds a
 terrain tile: a 7x7 grid of vertices, each grass (l) or dirt (u), and the
 set's corner tile for every 2x2 of vertices. The vertices come from a
 pixel-space shape sampled every 16 px, so the shapes below ARE the pieces.
@@ -2223,74 +2243,6 @@ def cmd_icon(argv):
 
 
 
-def cmd_sprites(argv):
-    """Run a PixelLab sprite-batch job (rocks, trees) and keep its sprites.
-
-    python3 tools/romeart.py sprites art/jobs/<zone>_o96_rocks.json art/primitives/<zone>/rocks [--run]
-
-The job file is the repo's own record: "description" (the shared prompt),
-"batches" (lists of four item descriptions, one POST /create-1-direction-object
-per list) and "_note". Each call is size 96, view top-down, and costs 20-40
-subscription generations. For every batch this writes body<N>.json (what was
-posted), meta<N>.json (the object as GET /v2/objects returned it) and the
-candidate frames as tile_<NN>.png numbered across batches, as
-art/primitives/africa/rocks was kept. Token at ~/.config/pixellab/token.
-Nothing is posted without --run (2026-09-27, Italia rocks for #67; before that
-the batches were posted by hand).
-    """
-    import base64, io, time, urllib.request
-    if len(argv) < 2:
-        sys.exit("usage: romeart.py sprites <job.json> <out-dir> [--run]")
-    job_p, out = argv[0], argv[1]
-    RUN = "--run" in argv
-    job = json.load(open(job_p))
-    tok = open(os.path.expanduser("~/.config/pixellab/token")).read().strip()
-    H = {"Authorization": "Bearer " + tok, "Content-Type": "application/json"}
-    API = "https://api.pixellab.ai/v2"
-
-    def req(method, path, body=None):
-        r = urllib.request.Request(API + path, data=json.dumps(body).encode() if body is not None else None, headers=H, method=method)
-        try:
-            with urllib.request.urlopen(r, timeout=120) as f:
-                return f.status, json.loads(f.read())
-        except urllib.error.HTTPError as e:
-            return e.code, (e.read() or b"{}").decode()[:500]
-
-    bodies = [{"description": job["description"], "size": 96, "view": "top-down", "item_descriptions": b} for b in job["batches"]]
-    print(f"{len(bodies)} calls, {sum(len(b) for b in job['batches'])} sprites, 20-40 generations per call")
-    if not RUN:
-        for n, b in enumerate(bodies):
-            print(f"  call {n}: {b['item_descriptions']}")
-        sys.exit("dry run: add --run to post")
-    os.makedirs(out, exist_ok=True)
-    tile = 0
-    for n, body in enumerate(bodies):
-        json.dump(body, open(os.path.join(out, f"body{n}.json"), "w"), indent=1)
-        st, resp = req("POST", "/create-1-direction-object", body)
-        print(f"call {n}: HTTP {st} {str(resp)[:160]}")
-        if st not in (200, 202):
-            sys.exit("post failed")
-        oid = resp["object_id"]
-        meta = None
-        for _ in range(120):
-            time.sleep(10)
-            st, meta = req("GET", f"/objects/{oid}")
-            status = meta.get("status") if isinstance(meta, dict) else None
-            if status in ("completed", "review", "failed"):
-                break
-        json.dump(meta, open(os.path.join(out, f"meta{n}.json"), "w"), indent=1)
-        if not isinstance(meta, dict) or meta.get("status") == "failed":
-            sys.exit("generation failed")
-        urls = meta.get("frame_urls") or [u for k, u in sorted((meta.get("storage_urls") or {}).items())]
-        for u in urls:
-            dl = urllib.request.Request(u, headers={"User-Agent": "curl/8"})
-            with urllib.request.urlopen(dl, timeout=120) as f:
-                im = Image.open(io.BytesIO(f.read())).convert("RGBA")
-            im.save(os.path.join(out, f"tile_{tile:02d}.png")); print(f"  tile_{tile:02d}.png {im.size}"); tile += 1
-    st, bal = req("GET", "/balance"); print("balance:", str(bal)[:200])
-
-
-
 def cmd_slots(argv):
     """Search rock-slot arrangements for a mountain lattice.
 
@@ -2374,7 +2326,7 @@ def cmd_fieldgrade(argv):
     python3 tools/romeart.py fieldgrade <src.png> <out.png> --window x,y,w,h [--flip h|v|180]
                                         [--hue N] [--sat F] [--val F] [--tint R,G,B,W]
 
-Cuts the window (w:h should be 6:5 so `siegeslice.py --field` keeps all of
+Cuts the window (w:h should be 6:5 so `siegeslice --field` keeps all of
 it), flips it, shifts hue by N (OpenCV's 0..180 scale), scales saturation
 and value by F, and blends W of the tint colour over the result. The three
 non-Italian fields of Glory of Rome are windows of the calmed Italia
@@ -2499,10 +2451,2022 @@ pack's art/tiles for Italia, art/tiles/<zone> for the others). Deterministic.
     print(f"bridges a, b, c -> {out}")
 
 
+# ==========================================================================
+# siegeslice.py -- slice an overhead castle picture into the combat pieces and the siege screen
+# ==========================================================================
+
+def _siegeslice(argv):
+    """Slice a 384x384 overhead castle picture into the 96px combat pieces and
+compose the siege screen from them.
+
+    python3 tools/romeart.py siegeslice <scene.png> <out-dir>          (recipe mode)
+    python3 tools/romeart.py siegeslice <scene.png> <out-dir> --grid   (36 cells, untouched)
+    python3 tools/romeart.py siegeslice <field.png> <out-dir> --field <prefix>
+                                    (30 open-field cells: the largest centred 6:5 rectangle
+                                     of content, scaled to 576x480)
+
+The picture is a 4x4 grid of 96 cells: the top row is the back wall (with
+its two corners), the side columns are the left and right walls, the bottom
+row is the front wall with its two corners and the two broken ends either
+side of the breach.
+
+The straight runs are rebuilt from feature-free strips of the picture,
+because the generated walls carry a gatehouse, trees and torches that would
+repeat on every cell; the recipe below records which strips (settled on
+build/art/siege_scene_map/run02, 2026-09-07):
+
+  field_grass          cell (1,1), a plain interior cell
+  castle_wall_back     wall rows from x 224..296 and x 48..72 of the top
+                       wall (both have the wall at rows 22..69); the outside
+                       band above and the courtyard foot below are plain grass
+  castle_wall_04       left wall: x 0..48 of cell (0,2) over plain grass,
+                       the outside strip x 0..24 also plain grass
+  castle_wall_05       the left piece mirrored
+  corners, broken ends, back corners: the picture's own cells
+
+Pieces written (pack names, combat.c codes):
+  castle_wall_back_l, castle_wall_back, castle_wall_back_r   (band above row 0)
+  castle_wall_04 (left, 8), castle_wall_05 (right, 9)
+  castle_wall_01 (bottom-left corner, 5), castle_wall_03 (broken end left, 7),
+  castle_wall_06 (broken end right, 10), castle_wall_02 (bottom-right corner, 6)
+  field_grass
+
+Also writes siege_mock.png: the 6x5 grid plus the back band, laid out as
+combat.c's castle_omap lays it out, with a few troop sprites on the field.
+"""
+    import os
+    import sys
+    from PIL import Image
+
+    src = argv[1]
+    out = argv[2]
+    os.makedirs(out, exist_ok=True)
+    im = Image.open(src).convert("RGBA")
+
+    if "--field" in argv:
+        # Field mode: an open-field ground picture (sprites.ui.field_grid, or a
+        # zone's field_grid). The largest 6x5 rectangle of content centred in the
+        # picture -- a meadow painted on white keeps its white out -- is scaled
+        # down (Lanczos) to the 576x480 board and cut into the 6x5 grid of 96 px
+        # cells, <prefix>_<x>_<y>.png. A picture with no margin uses its whole
+        # width.
+        prefix = argv[argv.index("--field") + 1]
+        W, H, T = 6, 5, 96
+        bw, bh = W * T, H * T
+        px = im.load()
+        def content(x, y):
+            r, g, b, a = px[x, y]
+            return a > 16 and not (r > 235 and g > 235 and b > 235)
+        cx, cy = im.width // 2, im.height // 2
+        # Shrink a centred 6:5 rectangle until every pixel on its edge is content.
+        rw = min(im.width, im.height * W // H)
+        rh = rw * H // W
+        def edge_ok(rw, rh):
+            x0, y0 = cx - rw // 2, cy - rh // 2
+            x1, y1 = x0 + rw - 1, y0 + rh - 1
+            if x0 < 0 or y0 < 0 or x1 >= im.width or y1 >= im.height: return False
+            step = 4
+            for x in range(x0, x1 + 1, step):
+                if not content(x, y0) or not content(x, y1): return False
+            for y in range(y0, y1 + 1, step):
+                if not content(x0, y) or not content(x1, y): return False
+            return True
+        while rw > bw and not edge_ok(rw, rh):
+            rw -= 6; rh = rw * H // W
+        x0, y0 = cx - rw // 2, cy - rh // 2
+        board = im.crop((x0, y0, x0 + rw, y0 + rh)).resize((bw, bh), Image.LANCZOS)
+        for y in range(H):
+            for x in range(W):
+                board.crop((x * T, y * T, x * T + T, y * T + T)).save(
+                    os.path.join(out, f"{prefix}_{x}_{y}.png"))
+        print(f"{W * H} cells of {T}x{T}: the centre {rw}x{rh} of {im.size[0]}x{im.size[1]} scaled to {bw}x{bh}, in {out}")
+        return
+
+    if "--grid" in argv:
+        # Grid mode: the whole picture is the siege board plus its back band, a
+        # 6x6 grid of equal cells (sprites.ui.siege_grid). Every cell is written
+        # untouched as cell_<x>_<y>.png at the picture's own cell size; the shell
+        # scales each to the combat cell. No assembly, no mock.
+        W, H = 6, 6
+        assert im.width % W == 0 and im.height % H == 0, im.size
+        cw, ch = im.width // W, im.height // H
+        for y in range(H):
+            for x in range(W):
+                im.crop((x * cw, y * ch, x * cw + cw, y * ch + ch)).save(
+                    os.path.join(out, f"cell_{x}_{y}.png"))
+        print(f"{W * H} cells of {cw}x{ch} in {out}")
+        return
+
+    assert im.size == (384, 384), im.size
+    T = 96
+
+
+    def cell(cx, cy):
+        return im.crop((cx * T, cy * T, cx * T + T, cy * T + T))
+
+
+    grass = cell(1, 1)
+
+    back = grass.copy()
+    back.paste(im.crop((224, 0, 296, T)), (0, 0))
+    back.paste(im.crop((48, 0, 72, T)), (72, 0))
+    back.paste(grass.crop((0, 0, T, 22)), (0, 0))        # outside band above the wall
+    back.paste(grass.crop((0, 72, T, T)), (0, 72))       # courtyard foot below it
+
+    left = grass.copy()
+    left.paste(cell(0, 2).crop((0, 0, 48, T)), (0, 0))
+    left.paste(grass.crop((0, 0, 24, T)), (0, 0))        # outside strip
+    right = left.transpose(Image.FLIP_LEFT_RIGHT)
+
+    pieces = {
+        "castle_wall_back_l": cell(0, 0),
+        "castle_wall_back":   back,
+        "castle_wall_back_r": cell(3, 0),
+        "castle_wall_04":     left,
+        "castle_wall_05":     right,
+        "castle_wall_01":     cell(0, 3),
+        "castle_wall_03":     cell(1, 3),
+        "castle_wall_06":     cell(2, 3),
+        "castle_wall_02":     cell(3, 3),
+        "field_grass":        grass,
+    }
+    for name, p in pieces.items():
+        p.save(os.path.join(out, name + ".png"))
+
+    code = {8: "castle_wall_04", 9: "castle_wall_05", 5: "castle_wall_01",
+            7: "castle_wall_03", 10: "castle_wall_06", 6: "castle_wall_02"}
+    omap = [[8, 0, 0, 0, 0, 9]] * 4 + [[5, 7, 0, 0, 10, 6]]
+    W, H = 6, 5
+    mock = Image.new("RGBA", (W * T, (H + 1) * T))
+    for x in range(W):
+        name = "castle_wall_back_l" if x == 0 else "castle_wall_back_r" if x == W - 1 else "castle_wall_back"
+        mock.paste(pieces["field_grass"], (x * T, 0))
+        mock.paste(pieces[name], (x * T, 0), pieces[name])
+    for y in range(H):
+        for x in range(W):
+            mock.paste(pieces["field_grass"], (x * T, (y + 1) * T))
+            c = omap[y][x]
+            if c:
+                mock.paste(pieces[code[c]], (x * T, (y + 1) * T), pieces[code[c]])
+
+    # a few troops where combat.c's castle_umap puts them (defenders top, attackers bottom)
+    troops = "assets/glory-of-rome/art/troops"
+    placements = {(1, 0): "praetoriani_00", (2, 0): "hastati_00", (3, 0): "velites_00", (4, 0): "equites_00",
+                  (2, 1): "sarmatae_00", (1, 3): "ligures_00", (2, 3): "numidae_00", (3, 3): "gigantes_00",
+                  (2, 4): "lares_00", (3, 4): "tirones_00"}
+    for (x, y), n in placements.items():
+        p = os.path.join(troops, n + ".png")
+        if os.path.exists(p):
+            s = Image.open(p).convert("RGBA")
+            if x >= 1 and y <= 1:
+                s = s.transpose(Image.FLIP_LEFT_RIGHT)   # defenders face left
+            mock.paste(s, (x * T, (y + 1) * T), s)
+    mock.save(os.path.join(out, "siege_mock.png"))
+    print(f"{len(pieces)} pieces and siege_mock.png in {out}")
+
+
+# ==========================================================================
+# siegewalls.py -- remake the combat wall set from the original pieces
+# ==========================================================================
+
+def _siegewalls(argv):
+    """Remake the Rome pack's combat set at the 96x96 cell from the original
+48x34 pieces, programmatically: each original pixel is classified into a
+material, the material map is scaled to the new cell (2x across, 96/34
+down), and every material is re-rendered at pixel scale with the rules
+pixel artists use (grout first, bricks in a three-tone bevel, two-tone
+merlons over a black shadow band, a lighter top face, dithered banks,
+scattered rubble). Layout, proportions, the moat's wobble, the corner step
+and the breach diagonal therefore match the original exactly.
+
+Output, art/combat/:
+    castle_wall_01..06      as the engine's siege layout uses them
+    castle_wall_back, _back_l, _back_r   the top-down back wall band
+    castle_spike, obstacle_01..03, cursor_01..04, field_grass
+
+    python3 tools/romeart.py siegewalls [pack-dir] [reference-pack-dir]
+"""
+    import math
+    import os
+    import shutil
+    import sys
+    from PIL import Image, ImageDraw
+
+    PACK = argv[1] if len(argv) > 1 else "assets/glory-of-rome"
+    REF = argv[2] if len(argv) > 2 else "assets/kings-bounty"
+    OUT = os.path.join(PACK, "art", "combat")
+    RC = os.path.join(REF, "art", "combat")
+    N = 96
+    CLEAR = (0, 0, 0, 0)
+
+    # ---- palette (the original's stone, black and moat) ---------------------------
+    MOAT = (93, 97, 255, 255)
+    MOAT_DK = (0, 0, 154, 255)
+    MOAT_LT = (150, 152, 255, 255)
+    BLACK = (0, 0, 0, 255)
+    GROUT = (32, 32, 32, 255)
+    DARKLINE = (44, 44, 44, 255)
+    STONE = (105, 105, 105, 255)
+    STONE_DK = (77, 77, 77, 255)
+    GREY = (85, 85, 85, 255)
+    HILITE = (121, 121, 121, 255)
+    MER_BRIGHT = (223, 223, 223, 255)
+    MER_LIGHT = (178, 178, 178, 255)
+    OLIVE = (65, 65, 0, 255)
+    BROWN = (138, 89, 48, 255)
+    BROWN_DK = (40, 32, 12, 255)
+    CHAR = (60, 60, 60, 255)
+    TREE = (0, 89, 89, 255)
+    TREE_DK = (0, 65, 65, 255)
+    TRUNK = (130, 93, 0, 255)
+    POND_DK = (0, 93, 158, 255)
+
+
+    def lcg(seed):
+        s = seed & 0xFFFFFFFF
+        while True:
+            s = (s * 1103515245 + 12345) & 0x7FFFFFFF
+            yield s
+
+
+    # ---- classify the original --------------------------------------------------
+
+    def classify(p):
+        """Material code for one original pixel; an unknown opaque colour is
+    kept as itself (a tuple), so nothing the original drew is lost."""
+        r, g, b, a = p
+        if a == 0:
+            return "."
+        if (r, g, b) == (0, 0, 0):
+            return "#"
+        if b > 200 and r < 140:
+            return "W"                       # moat water
+        if (r, g, b) in ((0, 0, 154), (0, 125, 207), (0, 93, 158)):
+            return "w"                       # dark water edge
+        if g > 140 and r < 100 and b < 100:
+            return " "                       # grass
+        if (r, g, b) == (223, 223, 223):
+            return "M"
+        if (r, g, b) == (178, 178, 178):
+            return "m"
+        if (r, g, b) == (121, 121, 121):
+            return "h"
+        if (r, g, b) == (105, 105, 105):
+            return "S"
+        if (r, g, b) == (85, 85, 85):
+            return "s"
+        if (r, g, b) == (77, 77, 77):
+            return "d"
+        if (r, g, b) in ((32, 32, 32), (44, 44, 44)):
+            return "g"
+        if (r, g, b) == (65, 65, 0):
+            return "o"
+        if (r, g, b) == (60, 60, 60):
+            return "c"
+        if r > 100 and g < 100 and b < 80:
+            return "B"                       # brown rubble
+        if (r, g, b) == (0, 89, 89):
+            return "T"
+        if (r, g, b) == (0, 65, 65):
+            return "t"
+        if (r, g, b) == (130, 93, 0):
+            return "k"                       # trunk
+        return (r, g, b, 255)
+
+
+    def material_map(name):
+        im = Image.open(os.path.join(RC, name + ".png")).convert("RGBA")
+        px = im.load()
+        return [[classify(px[x, y]) for x in range(im.width)] for y in range(im.height)]
+
+
+    def scaled(mm):
+        """Nearest-neighbour scale of a material map to N x N."""
+        h, w = len(mm), len(mm[0])
+        return [[mm[min(h - 1, y * h // N)][min(w - 1, x * w // N)] for x in range(N)] for y in range(N)]
+
+
+    # ---- re-render materials ------------------------------------------------------
+
+    FLAT = {"#": BLACK, "M": MER_BRIGHT, "m": MER_LIGHT, "h": HILITE, "S": STONE, "s": GREY,
+            "d": STONE_DK, "g": GROUT, "o": OLIVE, "c": CHAR, "B": BROWN, "T": TREE, "t": TREE_DK,
+            "k": TRUNK, "?": None, ".": None, " ": None}
+
+
+    def render(mm, seed=1, relay_bricks=True):
+        """Draw a scaled material map at N x N with pixel-scale detail."""
+        sm = scaled(mm)
+        im = Image.new("RGBA", (N, N), CLEAR)
+        px = im.load()
+        r = lcg(seed)
+        # 1. flat pass
+        for y in range(N):
+            for x in range(N):
+                c = sm[y][x]
+                if isinstance(c, tuple):
+                    px[x, y] = c
+                elif c == "W":
+                    px[x, y] = MOAT
+                elif c == "w":
+                    px[x, y] = MOAT_DK
+                elif FLAT.get(c):
+                    px[x, y] = FLAT[c]
+        # 2. moat: ragged bank (dither the water/grass boundary) and ripples
+        for y in range(N):
+            for x in range(N):
+                if isinstance(sm[y][x], str) and sm[y][x] in "Ww":
+                    nb = [sm[yy][xx] for yy, xx in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1))
+                          if 0 <= yy < N and 0 <= xx < N]
+                    if " " in nb or "." in nb:
+                        px[x, y] = MOAT_DK if (x + y) % 2 == 0 else (CLEAR if next(r) % 3 == 0 else MOAT_DK)
+                    elif sm[y][x] == "W" and next(r) % 23 == 0:
+                        for k in range(3):
+                            if x + k < N and sm[y][x + k] == "W":
+                                px[x + k, y] = MOAT_LT
+        # 3. brick faces: re-lay courses inside the brick mask (S/d/g/o runs below a grout line)
+        if relay_bricks:
+            brick = [[isinstance(sm[y][x], str) and sm[y][x] in "Sdgo" and y >= 40 for x in range(N)] for y in range(N)]
+            course = 8
+            row = 0
+            for y0 in range(40, N, course):
+                off = 6 if row % 2 else 0
+                for x0 in range(-off, N, 12):
+                    for y in range(y0, min(y0 + course, N)):
+                        tone = STONE if y - y0 < 3 else (STONE_DK if y - y0 < 6 else GROUT)
+                        for x in range(x0, x0 + 12):
+                            if 0 <= x < N and brick[y][x]:
+                                if x == x0 + 11 or x == x0 + 10:
+                                    px[x, y] = GROUT
+                                else:
+                                    px[x, y] = tone
+                    # an olive stone now and then
+                    if next(r) % 7 == 0 and 0 <= x0 + 2 < N:
+                        for y in range(y0 + 3, min(y0 + 6, N)):
+                            for x in range(x0 + 2, x0 + 9):
+                                if 0 <= x < N and brick[y][x]:
+                                    px[x, y] = OLIVE
+                row += 1
+        return im
+
+
+
+    # ---- the moat as a shape ----------------------------------------------------
+    MOAT_A, MOAT_B = 8, 30          # the water band lies between these, from the outer edge
+    R_OUT = 38                      # rounded outer corner radius
+    R_IN = 14                       # rounded inner bank radius
+
+
+    def wobble(t, phase=0.0):
+        """Bank wander along a run. Period N, so neighbouring cells continue it."""
+        return round(2.5 * math.sin(2 * math.pi * t / N + phase) + 1.5 * math.sin(4 * math.pi * t / N + 2.1 + phase))
+
+
+    def water_side(xo, y):
+        """Water for a run along the left edge (xo measured from that edge)."""
+        return MOAT_A + wobble(y, 0.7) <= xo < MOAT_B + wobble(y, 2.9)
+
+
+    def water_top(x, y):
+        return MOAT_A + wobble(x, 1.3) <= y < MOAT_B + wobble(x, 4.0)
+
+
+    def water_corner(xo, y):
+        """The moat turning a corner: outside both outer banks, inside either
+    inner bank (or the fillet that rounds the inner corner), and inside the
+    arc that rounds the outer corner."""
+        if xo < MOAT_A + wobble(y, 0.7) or y < MOAT_A + wobble(xo, 1.3):
+            return False                                   # beyond an outer bank
+        if xo < R_OUT and y < R_OUT and (R_OUT - xo) ** 2 + (R_OUT - y) ** 2 > R_OUT * R_OUT:
+            return False                                   # the rounded outer corner
+        if xo < MOAT_B + wobble(y, 2.9) or y < MOAT_B + wobble(xo, 4.0):
+            return True                                    # inside an inner bank
+        cx = cy = MOAT_B + R_IN
+        return xo < cx and y < cy and (cx - xo) ** 2 + (cy - y) ** 2 > R_IN * R_IN   # the inner fillet
+
+
+    def paint_moat(im, member, left=True):
+        """Fill the member(xo, y) region with water and give it a clean two-pixel
+    dark bank, as the original: flat water, dark edge, the odd lighter fleck."""
+        px = im.load()
+        water = [[member(x if left else N - 1 - x, y) for x in range(N)] for y in range(N)]
+        r = lcg(5)
+        for y in range(N):
+            for x in range(N):
+                if not water[y][x]:
+                    continue
+                edge = False
+                for dy in (-2, -1, 0, 1, 2):
+                    for dx in (-2, -1, 0, 1, 2):
+                        xx, yy = x + dx, y + dy
+                        if 0 <= xx < N and 0 <= yy < N and not water[yy][xx] and abs(dx) + abs(dy) <= 2:
+                            edge = True
+                px[x, y] = MOAT_DK if edge else (POND_DK if next(r) % 41 == 0 else MOAT)
+        return im
+
+
+    def clear_moat_region(im, left=True):
+        """Remove the scaled original's moat pixels so the shaped moat replaces them."""
+        px = im.load()
+        for y in range(N):
+            for x in range(N):
+                if px[x, y] in (MOAT, MOAT_DK, MOAT_LT, POND_DK, CLEAR):
+                    px[x, y] = CLEAR
+        return im
+
+
+    def flip(im):
+        return im.transpose(Image.FLIP_LEFT_RIGHT)
+
+
+    def wall_piece(name, seed):
+        im = render(material_map(name), seed)
+        if name in ("castle_wall_04", "castle_wall_01"):
+            paint_moat(clear_moat_region(im), water_side, left=True)
+        if name in ("castle_wall_05", "castle_wall_02"):
+            paint_moat(clear_moat_region(im), water_side, left=False)
+        return im
+
+
+    def back_wall():
+        # the side wall turned so the moat lies along the top
+        im = render(material_map("castle_wall_04"), 21)
+        clear_moat_region(im)
+        im = im.transpose(Image.ROTATE_270)   # left edge to the top
+        return paint_moat(im, lambda xo, y: water_top(xo, y))
+
+
+    def back_corner(left):
+        """The band's end cell: the back wall across the top joined to the side
+    wall coming down, with the moat turning the corner on a curve: a rounded
+    outer corner at the cell's corner and a rounded inner bank, both with
+    the same ragged dithered edge as the straight runs."""
+        top = back_wall()
+        side = wall_piece("castle_wall_04" if left else "castle_wall_05", 23)
+        im = Image.new("RGBA", (N, N), CLEAR)
+        im.alpha_composite(side)
+        mask = Image.new("L", (N, N), 0)
+        ImageDraw.Draw(mask).rectangle((0, 0, N - 1, 67), fill=255)
+        im.paste(top, (0, 0), mask)
+        # the two wall bands meet on a mitre: in the corner square where both
+        # bands run (36..67 on each axis, measured from the outer edge), pixels
+        # below the diagonal belong to the side band, above it to the back band,
+        # so every stripe of one band turns the corner into the same stripe of
+        # the other.
+        sp, tp, ip = side.load(), top.load(), im.load()
+        for y in range(36, 68):
+            for xo in range(0, 68):
+                x = xo if left else N - 1 - xo
+                if xo < 36:
+                    ip[x, y] = sp[x, y]                       # outside the side wall: its moat gap
+                else:
+                    ip[x, y] = sp[x, y] if (y - 36) > (xo - 36) else tp[x, y]
+        clear_moat_region(im)
+        paint_moat(im, water_corner, left=left)
+        return im
+
+
+    def soften(im, seed=7):
+        """Dither the boundary between any two different colours so a scaled
+    piece does not read as 2x blocks: along each boundary, swap every other
+    pixel with its neighbour's colour."""
+        px = im.load()
+        r = lcg(seed)
+        src = im.copy().load()
+        for y in range(1, N - 1):
+            for x in range(1, N - 1):
+                here = src[x, y]
+                for nx, ny in ((x + 1, y), (x, y + 1)):
+                    there = src[nx, ny]
+                    if there != here and (x + y) % 2 == 0 and next(r) % 2 == 0:
+                        px[x, y] = there
+        return im
+
+
+    def obstacle(name, seed):
+        return soften(render(material_map(name), seed, relay_bricks=False), seed)
+
+
+
+    # ---- obstacles, drawn: rubble, bushes, a broken wall ----------------------------
+
+    BUSH = (34, 110, 40, 255)
+    BUSH_LT = (70, 150, 60, 255)
+    BUSH_DK = (18, 70, 28, 255)
+    SHADOW = (0, 0, 0, 90)
+
+
+    def cast_shadow(d, box):
+        x0, y0, x1, y1 = box
+        d.ellipse((x0, y0, x1, y1), fill=SHADOW)
+
+
+    def stone_block(d, box, seed, tones=(HILITE, STONE, STONE_DK)):
+        """One rounded rubble stone with a lit top, mid body, dark underside and an ink edge."""
+        x0, y0, x1, y1 = box
+        d.rounded_rectangle((x0, y0, x1, y1), radius=3, fill=tones[1], outline=GROUT)
+        d.line((x0 + 2, y0 + 1, x1 - 2, y0 + 1), fill=tones[0])
+        d.line((x0 + 2, y1 - 1, x1 - 2, y1 - 1), fill=tones[2])
+        d.line((x1 - 1, y0 + 2, x1 - 1, y1 - 2), fill=tones[2])
+
+
+    def rubble():
+        """A heap of fallen masonry: large blocks on top of small debris, olive
+    stones among them, a shadow underneath."""
+        im = Image.new("RGBA", (N, N), CLEAR)
+        d = ImageDraw.Draw(im)
+        r = lcg(51)
+        cast_shadow(d, (10, 58, 88, 90))
+        for _ in range(90):
+            x, y = 14 + next(r) % 68, 44 + next(r) % 42
+            if (x - 48) ** 2 / 36 ** 2 + (y - 68) ** 2 / 20 ** 2 < 1:
+                d.point((x, y), fill=(STONE_DK, GROUT, OLIVE, STONE)[next(r) % 4])
+        blocks = [(16, 62, 40, 78), (44, 66, 70, 82), (30, 48, 56, 64), (60, 52, 82, 66),
+                  (22, 74, 44, 86), (52, 76, 78, 88), (38, 36, 60, 50), (66, 42, 84, 54)]
+        for i, b in enumerate(blocks):
+            tone = (HILITE, STONE, STONE_DK) if i % 3 else (STONE, STONE_DK, GROUT)
+            if i == 4:
+                tone = (OLIVE, OLIVE, GROUT)
+            stone_block(d, b, seed=i, tones=tone)
+        return im
+
+
+    def bushes():
+        """A clump of rounded bushes with a lit crown, a dark underside, leaf
+    flecks, and a shadow on the ground."""
+        im = Image.new("RGBA", (N, N), CLEAR)
+        d = ImageDraw.Draw(im)
+        r = lcg(61)
+        cast_shadow(d, (12, 66, 84, 90))
+        for (cx, cy, rx, ry) in ((30, 60, 22, 18), (62, 56, 24, 20), (46, 44, 18, 15), (46, 70, 16, 12)):
+            d.ellipse((cx - rx, cy - ry, cx + rx, cy + ry), fill=BUSH, outline=BUSH_DK)
+            d.chord((cx - rx, cy - ry, cx + rx, cy + ry), 20, 160, fill=BUSH_DK)
+            d.ellipse((cx - rx + 4, cy - ry + 3, cx + rx - 8, cy - 2), fill=BUSH_LT)
+            for _ in range(40):
+                x, y = cx - rx + next(r) % (2 * rx), cy - ry + next(r) % (2 * ry)
+                if (x - cx) ** 2 / rx ** 2 + (y - cy) ** 2 / ry ** 2 < 0.8:
+                    d.point((x, y), fill=(BUSH_LT, BUSH_DK, BUSH)[next(r) % 3])
+        return im
+
+
+    def broken_wall():
+        """A stub of ruined wall: brick courses standing on a base, the top edge
+    broken to a jagged line, rubble at its feet."""
+        im = Image.new("RGBA", (N, N), CLEAR)
+        d = ImageDraw.Draw(im)
+        px = im.load()
+        r = lcg(71)
+        cast_shadow(d, (8, 70, 90, 92))
+        x0, x1 = 14, 82
+        tops = []
+        h = 40
+        for x in range(x0, x1):
+            if next(r) % 5 == 0:
+                h += (next(r) % 9) - 4
+            h = max(28, min(56, h))
+            tops.append(h)
+        course = 8
+        row = 0
+        for y in range(24, 86, course):
+            off = 6 if row % 2 else 0
+            for bx in range(x0 - off, x1, 12):
+                for x in range(bx, bx + 12):
+                    if not (x0 <= x < x1):
+                        continue
+                    for yy in range(max(y, tops[x - x0]), min(y + course, 84)):
+                        tone = HILITE if yy - y < 2 else (STONE if yy - y < 5 else STONE_DK)
+                        if x >= bx + 10 or yy >= y + course - 1:
+                            tone = GROUT
+                        px[x, yy] = tone
+            row += 1
+        for x in range(x0, x1):
+            t = tops[x - x0]
+            px[x, t] = GROUT
+            px[x, t + 1] = MER_LIGHT
+        d.line((x0, tops[0], x0, 84), fill=GROUT)
+        d.line((x1 - 1, tops[-1], x1 - 1, 84), fill=GROUT)
+        d.rectangle((x0, 84, x1 - 1, 87), fill=GROUT)
+        for _ in range(60):
+            x, y = 6 + next(r) % 84, 80 + next(r) % 12
+            px[x, y] = (STONE_DK, STONE, GROUT, OLIVE)[next(r) % 4]
+        for b in ((4, 78, 16, 86), (78, 80, 92, 88), (40, 84, 54, 92)):
+            stone_block(d, b, 1)
+        return im
+
+
+    def burst():
+        return soften(render(material_map("castle_spike"), 31, relay_bricks=False), 31)
+
+
+    def cursor(name):
+        im = Image.open(os.path.join(RC, name + ".png")).convert("RGBA")
+        # the ring, re-drawn at the new size from its bounding box
+        bb = im.getbbox()
+        col = None
+        px = im.load()
+        for y in range(im.height):
+            for x in range(im.width):
+                if px[x, y][3] and col is None:
+                    col = px[x, y]
+        out = Image.new("RGBA", (N, N), CLEAR)
+        d = ImageDraw.Draw(out)
+        w = (bb[2] - bb[0]) * 2
+        h = round((bb[3] - bb[1]) * N / 34)
+        rad = min(w, h) // 2
+        for k in range(3):
+            d.ellipse((48 - rad + k, 48 - rad + k, 48 + rad - k, 48 + rad - k), outline=col)
+        return out
+
+
+    def main():
+        os.makedirs(OUT, exist_ok=True)
+        pieces = {
+            "castle_wall_01": wall_piece("castle_wall_01", 1),
+            "castle_wall_02": wall_piece("castle_wall_02", 2),
+            "castle_wall_03": wall_piece("castle_wall_03", 3),
+            "castle_wall_04": wall_piece("castle_wall_04", 4),
+            "castle_wall_05": wall_piece("castle_wall_05", 5),
+            "castle_wall_06": wall_piece("castle_wall_06", 6),
+            "castle_wall_back": back_wall(),
+            "castle_wall_back_l": back_corner(True),
+            "castle_wall_back_r": back_corner(False),
+            "castle_spike": burst(),
+            # obstacle_01..03 are generated (art/jobs/obstacle_0N.json), not drawn
+            "cursor_01": cursor("cursor_01"),
+            "cursor_02": cursor("cursor_02"),
+            "cursor_03": cursor("cursor_03"),
+            "cursor_04": cursor("cursor_04"),
+        }
+        for name, im in pieces.items():
+            im.save(os.path.join(OUT, name + ".png"))
+        shutil.copy(os.path.join(PACK, "art", "tiles", "grass.png"), os.path.join(OUT, "field_grass.png"))
+        print("wrote", len(pieces) + 1, "pieces to", OUT)
+
+
+    main()
+
+
+# ==========================================================================
+# fieldcalm.py -- calm a field painting and cut its cells
+# ==========================================================================
+
+def _fieldcalm(argv):
+    """Calm a supplied field painting: mask its clutter, fill the mask from the
+painting's own texture, and cut the 6x5 field cells with siegeslice.
+
+    python3 tools/romeart.py fieldcalm <painting.png> <out-dir> <prefix> [--level light|medium|strong] [--fill patchmatch|lama] [--mask mask.png]
+
+Levels (what is repainted):
+  light   grey boulders and small rocks, dark clumps (ferns, dense clover)
+  medium  light + brown earth patches
+  strong  medium + mid-dark leaf clusters and pale yellow-green moss patches
+The mask is colour/size thresholds (OpenCV), written to <out-dir>/mask.png so a
+hand-edited copy can be passed back with --mask. Fill: G'MIC inpaint_matchpatch
+(native resolution) or LaMa on CPU (run at 1024 px). Writes <out-dir>/mask.png,
+<out-dir>/inpainted.png and the cells <out-dir>/cells/<prefix>_<x>_<y>.png.
+Needs: gmic, python3-opencv, python3-numpy (apt); for --fill lama: torch (cpu),
+torchvision, simple-lama-inpainting (pip --user).
+Neither fill is deterministic (patch matching is randomly initialised, LaMa is
+run at 1024 px), so the inpainted painting that shipped is kept beside the
+source; re-running gives an equivalent but not identical field.
+"""
+    import subprocess, argparse
+    import cv2, numpy as np
+
+    ap = argparse.ArgumentParser(prog="romeart.py fieldcalm")
+    ap.add_argument("painting"); ap.add_argument("out"); ap.add_argument("prefix")
+    ap.add_argument("--level", default="medium", choices=["light", "medium", "strong"])
+    ap.add_argument("--fill", default="patchmatch", choices=["patchmatch", "lama"])
+    ap.add_argument("--mask", help="use this mask instead of building one (white = repaint)")
+    ap.add_argument("--dilate", type=int, default=15)
+    a = ap.parse_args(argv[1:])
+    os.makedirs(a.out + "/cells", exist_ok=True)
+    src = cv2.imread(a.painting, cv2.IMREAD_UNCHANGED)
+    if src.shape[2] == 3: src = np.dstack([src, np.full(src.shape[:2], 255, np.uint8)])
+    bgr, alpha = src[:, :, :3], src[:, :, 3]
+    K = lambda n: cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (n, n))
+
+    def blobs(mask, min_area):
+        n, lab, stats, _ = cv2.connectedComponentsWithStats(mask.astype(np.uint8), 8); keep = np.zeros_like(mask)
+        for i in range(1, n):
+            if stats[i, cv2.CC_STAT_AREA] >= min_area: keep |= (lab == i)
+        return keep
+
+    if a.mask:
+        mask = cv2.imread(a.mask, cv2.IMREAD_GRAYSCALE)
+    else:
+        hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV); H, S, V = [hsv[:, :, i].astype(int) for i in range(3)]
+        content = (alpha > 16) & ~((bgr[:, :, 0] > 235) & (bgr[:, :, 1] > 235) & (bgr[:, :, 2] > 235))
+        rocks = blobs(content & (S < 0.20 * 255) & (V > 0.42 * 255), 120)
+        dark = blobs(content & (V < 0.40 * 255), 120)
+        m = rocks | dark
+        if a.level in ("medium", "strong"):
+            m |= blobs(content & (H >= 8) & (H <= 30) & (S > 0.25 * 255) & (V > 0.35 * 255) & (V < 0.75 * 255), 400)
+        if a.level == "strong":
+            leaf = cv2.morphologyEx((content & (V < 0.50 * 255) & (S > 0.30 * 255)).astype(np.uint8), cv2.MORPH_OPEN, K(7)).astype(bool)
+            moss = cv2.morphologyEx((content & (H >= 28) & (H <= 42) & (S > 0.35 * 255) & (V > 0.60 * 255)).astype(np.uint8), cv2.MORPH_OPEN, K(7)).astype(bool)
+            m |= blobs(leaf, 250) | blobs(moss, 400)
+        mask = cv2.dilate(m.astype(np.uint8) * 255, K(a.dilate)) & (content.astype(np.uint8) * 255)
+    cv2.imwrite(a.out + "/mask.png", mask)
+    print(f"mask: {(mask > 0).sum()} px repainted ({(mask > 0).sum() / max(1, (alpha > 16).sum()) * 100:.1f}% of the painting)")
+
+    if a.fill == "patchmatch":
+        rgb_p = a.out + "/inpainted_rgb.png"
+        r = subprocess.run(["gmic", a.painting, "-channels[0]", "0,2", a.out + "/mask.png", "-inpaint_matchpatch[0]", "[1],0,15,10,7,1", "-keep[0]", "-o", rgb_p], capture_output=True, text=True)
+        if r.returncode: sys.exit("gmic failed: " + r.stderr[-400:])
+        rgb = cv2.imread(rgb_p); out = np.dstack([rgb, alpha])
+    else:
+        from PIL import Image
+        from simple_lama_inpainting import SimpleLama
+        S = 1024
+        rgb_s = cv2.resize(cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB), (S, S), interpolation=cv2.INTER_AREA)
+        m_s = cv2.resize(mask, (S, S), interpolation=cv2.INTER_NEAREST)
+        res = np.array(SimpleLama()(Image.fromarray(rgb_s), Image.fromarray(m_s)).convert("RGB"))[:S, :S]
+        out = np.dstack([cv2.cvtColor(res, cv2.COLOR_RGB2BGR), cv2.resize(alpha, (S, S), interpolation=cv2.INTER_AREA)])
+    cv2.imwrite(a.out + "/inpainted.png", out)
+    _siegeslice(["romeart", a.out + "/inpainted.png", a.out + "/cells", "--field", a.prefix])
+
+
+# ==========================================================================
+# splashlogo.py -- compose the publisher splash
+# ==========================================================================
+
+def _splashlogo(argv):
+    """Compose the publisher splash (art/ui/splash_logo.png, 320x84, transparent)
+from locally rendered C059 Bold lettering and one generated 44x44 emblem.
+
+    python3 tools/romeart.py splashlogo build/art/splash_logo_emblem/run02/01_raw.png build/art/splash_logo_new.png
+"""
+    import sys
+    from PIL import Image, ImageDraw, ImageFont
+
+    FONT = "/usr/share/fonts/opentype/urw-base35/C059-Bold.otf"
+
+
+    def glyph_mask(text, size):
+        f = ImageFont.truetype(FONT, size)
+        m = Image.new("L", (400, 80), 0)
+        ImageDraw.Draw(m).text((4, 4), text, font=f, fill=255)
+        m = m.point(lambda v: 255 if v >= 128 else 0)
+        return m.crop(m.getbbox())
+
+
+    def bitmap_text(text, size):
+        m = glyph_mask(text, size)
+        w, h = m.size
+        out = Image.new("RGBA", (w + 3, h + 3), (0, 0, 0, 0))
+        for off in ((1, 1), (2, 2), (0, 2), (2, 0)):
+            out.paste(Image.new("RGBA", m.size, (180, 20, 20, 255)), off, m)
+        out.paste(Image.new("RGBA", m.size, (255, 255, 255, 255)), (0, 0), m)
+        return out
+
+
+    def coin(d, x, y, r):
+        d.ellipse((x - r, y - r, x + r, y + r), fill=(214, 160, 40, 255), outline=(120, 80, 10, 255))
+        d.ellipse((x - r + 2, y - r + 2, x - r + 4, y - r + 4), fill=(255, 236, 150, 255))
+
+
+    def star(d, x, y, c):
+        for i in range(-3, 4):
+            d.point((x + i, y), c)
+            d.point((x, y + i), c)
+
+
+    def compose(emblem_path):
+        canvas = Image.new("RGBA", (320, 84), (0, 0, 0, 0))
+        d = ImageDraw.Draw(canvas)
+        left = bitmap_text("Dan", 34)
+        right = bitmap_text("Heskett", 34)
+        presents = bitmap_text("Presents...", 24)
+        emb = Image.open(emblem_path).convert("RGBA")
+        gap = 6
+        total = left.width + gap + emb.width + gap + right.width
+        x0 = (320 - total) // 2
+        canvas.paste(left, (x0, 16), left)
+        ex = x0 + left.width + gap
+        canvas.alpha_composite(emb, (ex, 4))
+        canvas.paste(right, (ex + emb.width + gap, 16), right)
+        canvas.paste(presents, ((320 - presents.width) // 2, 58), presents)
+        coin(d, 60, 58, 7)
+        coin(d, 262, 52, 5)
+        coin(d, 292, 44, 4)
+        for (x, y, c) in ((88, 50, (90, 160, 255, 255)), (120, 60, (90, 160, 255, 255)),
+                          (226, 58, (255, 90, 220, 255)), (250, 36, (90, 160, 255, 255))):
+            star(d, x, y, c)
+        return canvas
+
+
+    compose(argv[1]).save(argv[2])
+    print("wrote", argv[2])
+
+
+# ==========================================================================
+# splashtitle.py -- compose the title screen
+# ==========================================================================
+
+def _splashtitle(argv):
+    """Compose the title screen (art/ui/splash_title.png, 256x164): the generated
+eagle standard (build/art/splash_title/run01/01_raw.png) with the title
+words rendered locally from C059 Bold at 1-bit, gold with a dark offset
+shading, in the empty band across the top. Same route as the publisher
+splash (romeart.py splashlogo): generated lettering garbles, drawn lettering
+does not.
+
+    python3 tools/romeart.py splashtitle <eagle.png> <out.png>
+    python3 tools/romeart.py splashtitle --words <out.png>
+
+--words writes only the lettering on a transparent 256x164 field: the modern
+title screen composites it over the purple, then the battle, in code.
+"""
+    import sys
+    from PIL import Image, ImageDraw, ImageFont
+
+    FONT = "/usr/share/fonts/opentype/urw-base35/C059-Bold.otf"
+    GOLD = (236, 200, 90, 255)
+    GOLD_DK = (150, 100, 20, 255)
+    INK = (60, 30, 70, 255)
+
+
+    def glyph_mask(text, size):
+        f = ImageFont.truetype(FONT, size)
+        m = Image.new("L", (400, 80), 0)
+        ImageDraw.Draw(m).text((4, 4), text, font=f, fill=255)
+        m = m.point(lambda v: 255 if v >= 128 else 0)
+        return m.crop(m.getbbox())
+
+
+    def bitmap_text(text, size, col, shade):
+        m = glyph_mask(text, size)
+        w, h = m.size
+        out = Image.new("RGBA", (w + 3, h + 3), (0, 0, 0, 0))
+        for off in ((1, 1), (2, 2)):
+            out.paste(Image.new("RGBA", m.size, shade), off, m)
+        out.paste(Image.new("RGBA", m.size, col), (0, 0), m)
+        return out
+
+
+    def compose(eagle_path):
+        base = (Image.new("RGBA", (256, 164), (0, 0, 0, 0)) if eagle_path is None
+                else Image.open(eagle_path).convert("RGBA"))
+        W, H = base.size
+        line1 = bitmap_text("OPEN BOUNTY", 20, GOLD, GOLD_DK)
+        line2 = bitmap_text("THE GLORY OF ROME", 13, GOLD, GOLD_DK)
+        # the title in the clear band above the eagle, the subtitle across the
+        # pole at the foot of the picture; a dark halo keeps both legible
+        for im, y in ((line1, 2), (line2, H - line2.height - 4)):
+            x = (W - im.width) // 2
+            halo = Image.new("RGBA", im.size, INK)
+            for off in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                base.paste(halo, (x + off[0], y + off[1]), im)
+            base.alpha_composite(im, (x, y))
+        return base
+
+
+    if argv[1] == "--words":
+        compose(None).save(argv[2])
+        print("wrote", argv[2])
+    else:
+        compose(argv[1]).save(argv[2])
+        print("wrote", argv[2])
+
+
+# ==========================================================================
+# classpicker.py -- pre-render the class-select carousel
+# ==========================================================================
+
+def _classpicker(argv):
+    """Pre-render the Rome class-select carousel.
+
+Writes art/ui/class_select_picker_0..3.png beside class_select_picker.png: the
+same painting with every figure but one dimmed, and that figure ringed in gold.
+The painting itself is read only, never changed.
+
+Which pixels belong to which figure: the landscape is found by scanning each
+column down from the top edge to the first dark outline pixel (plus short
+sideways steps under overhangs); the figures overlap, so three hand-placed
+dividing lines decide whose pixel is whose, and two small hand fixes remain.
+
+    python3 tools/romeart.py classpicker [pack dir]   (default assets/glory-of-rome)
+"""
+    import os, sys
+    from PIL import Image, ImageChops, ImageFilter
+
+    PACK = argv[1] if len(argv) > 1 else os.path.join(os.path.dirname(__file__), '..', 'assets', 'glory-of-rome')
+    SRC = os.path.join(PACK, 'art', 'ui', 'class_select_picker.png')
+    DIM = 150                  # black over the other figures, out of 255
+    GOLD = (255, 255, 85, 255) # the palette's yellow
+    LIMIT = 90                 # the landscape never reaches below this row
+    TH = 50                    # darker than this is an outline
+
+    im = Image.open(SRC).convert('RGB'); W, H = im.size; px = im.load()
+    def lum(c): return 0.299*c[0]+0.587*c[1]+0.114*c[2]
+    # 1) background: flood from the top edge through pixels that are not dark
+    #    outline, never below the landscape strip.
+    bg=[[False]*W for _ in range(H)]
+    for x in range(W):
+        for y in range(min(H,LIMIT)):
+            if lum(px[x,y])<TH: break
+            bg[y][x]=True
+    # hand-drawn dividers between neighbours: x as a polyline in y
+    DIV=[
+     [(60,0),(60,40),(68,48),(65,56),(62,64),(60,72),(58,80),(58,96),(57,120),(58,164)],
+     [(124,0),(124,20),(130,48),(140,56),(142,62),(140,72),(140,80),(134,96),(128,104),(120,116),(120,136),(128,142),(133,150),(136,164)],
+     [(186,0),(186,40),(190,52),(194,66),(199,80),(201,100),(201,140),(199,164)],
+    ]
+    def divx(poly,y):
+        for (x0,y0),(x1,y1) in zip(poly,poly[1:]):
+            if y0<=y<=y1: return x0+(x1-x0)*(y-y0)/max(1,y1-y0)
+        return poly[-1][0]
+    # narrow slivers of background (a gap in the outline) belong to the figure
+    for y in range(H):
+        x=0
+        while x<W:
+            if bg[y][x]:
+                e=x
+                while e<W and bg[y][e]: e+=1
+                if e-x<=4 and x>0 and e<W:
+                    for i in range(x,e): bg[y][i]=False
+                x=e
+            else: x+=1
+    # sideways: a few pixels past known background, for short overhangs (hair
+    # over a face) that a top-down scan cannot see under
+    ext=[row[:] for row in bg]
+    for y in range(min(H,LIMIT)):
+        for x in range(W):
+            if not bg[y][x]: continue
+            for d in (1,-1):
+                for i in range(1,5):
+                    nx=x+d*i
+                    if not (0<=nx<W) or bg[y][nx]: break
+                    if lum(px[nx,y])<70: break
+                    c0=px[x,y]; c1=px[nx,y]
+                    if sum(abs(c0[j]-c1[j]) for j in range(3))>90: break
+                    ext[y][nx]=True
+    bg=ext
+    # narrow slivers of background (a gap in the outline) belong to the figure
+    for y in range(H):
+        x=0
+        while x<W:
+            if bg[y][x]:
+                e=x
+                while e<W and bg[y][e]: e+=1
+                if e-x<=4 and x>0 and e<W:
+                    for i in range(x,e): bg[y][i]=False
+                x=e
+            else: x+=1
+    # hand fixes: (x0,y0,x1,y1) inclusive
+    FORCE_BG=[(22,33,26,39)]          # trees showing beside the Legatus's neck
+    FORCE_FIG=[(160,15,162,15),(152,16,162,16),(151,17,162,17),(150,18,162,18)]+[(149,y,162,y) for y in range(19,25)]
+                                      # the top of the Sibylla's veil and fillet
+    for x0,y0,x1,y1 in FORCE_BG:
+        for y in range(y0,y1+1):
+            for x in range(x0,x1+1):
+                if lum(px[x,y])>=70: bg[y][x]=True
+    for x0,y0,x1,y1 in FORCE_FIG:
+        for y in range(y0,y1+1):
+            for x in range(x0,x1+1): bg[y][x]=False
+
+    pic = im.convert('RGBA')
+    for k in range(4):
+        m = Image.new('L', (W, H), 0); mp = m.load()
+        for y in range(H):
+            lo = divx(DIV[k-1], y) if k > 0 else -1
+            hi = divx(DIV[k], y) if k < 3 else W + 1
+            for x in range(W):
+                if not bg[y][x] and lo <= x < hi: mp[x, y] = 255
+        out = Image.alpha_composite(pic, Image.new('RGBA', (W, H), (0, 0, 0, DIM)))
+        ring = ImageChops.subtract(m.filter(ImageFilter.MaxFilter(3)), m)
+        out.paste(GOLD, (0, 0), ring)
+        out.paste(pic, (0, 0), m)
+        dst = os.path.join(PACK, 'art', 'ui', 'class_select_picker_%d.png' % k)
+        out.convert('RGB').save(dst)
+        print(dst)
+
+
+# ==========================================================================
+# loopreview.py -- review page for an animation run
+# ==========================================================================
+
+def _loopreview(argv):
+    """Review page for an animation run: a gif that clears between frames,
+a 1x strip, a 5x strip, and per-frame checks.
+
+    python3 tools/romeart.py loopreview build/art/<id>/runNN [--scale 5]
+
+Writes preview.gif, strip1x.png, strip5x.png and review.html into the run
+dir and prints the checks:
+
+  size       every frame is the same size
+  clip       opaque pixels touching a canvas edge (a clipped limb or weapon)
+  halo       near-white opaque pixels next to transparency (flatten fringe)
+  opaque     opaque pixel count per frame (a redrawn figure jumps by a lot)
+  moved      pixels changed against frame 0 (motion) and, of those, how many
+             are in the bottom quarter (feet should stay planted)
+  gif        every decoded gif frame equals its source frame
+
+The gif is written with disposal 2 so each frame replaces the last; without
+it PIL paints frames over one another and a loop looks smeared.
+"""
+    import os
+    import sys
+    from PIL import Image, ImageChops, ImageDraw
+
+    run = argv[1].rstrip("/")
+    scale = int(argv[argv.index("--scale") + 1]) if "--scale" in argv else 5
+    names = sorted(f for f in os.listdir(run) if f.startswith("frame_") and f.endswith(".png"))
+    frames = [Image.open(os.path.join(run, f)).convert("RGBA") for f in names]
+    if not frames:
+        sys.exit(f"no frame_*.png in {run}")
+    w, h = frames[0].size
+
+
+    def opaque(im):
+        return im.getchannel("A").point(lambda v: 255 if v > 0 else 0)
+
+
+    def clip(im):
+        a = opaque(im)
+        bb = a.getbbox()
+        return [s for s, hit in (("top", bb[1] == 0), ("bottom", bb[3] == h),
+                                 ("left", bb[0] == 0), ("right", bb[2] == w)) if hit]
+
+
+    def halo(im):
+        px = im.load()
+        n = 0
+        for y in range(h):
+            for x in range(w):
+                r, g, b, a = px[x, y]
+                if a == 0 or min(r, g, b) < 200:
+                    continue
+                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    xx, yy = x + dx, y + dy
+                    if 0 <= xx < w and 0 <= yy < h and px[xx, yy][3] == 0:
+                        n += 1
+                        break
+        return n
+
+
+    def moved(im, ref):
+        d = ImageChops.difference(im, ref).convert("L").point(lambda v: 255 if v > 24 else 0)
+        px = d.load()
+        tot = feet = 0
+        for y in range(h):
+            for x in range(w):
+                if px[x, y]:
+                    tot += 1
+                    if y >= h * 3 // 4:
+                        feet += 1
+        return tot, feet
+
+
+    rows = []
+    for i, f in enumerate(frames):
+        o = sum(1 for v in opaque(f).getdata() if v)
+        t, ft = moved(f, frames[0])
+        rows.append((names[i], f.size, clip(f), halo(f), o, t, ft))
+
+    gif = os.path.join(run, "preview.gif")
+    big = [f.resize((w * 3, h * 3), Image.NEAREST) for f in frames]
+    big[0].save(gif, save_all=True, append_images=big[1:], duration=150, loop=0,
+                disposal=2, transparency=0)
+
+    # verify the gif clears: decode every frame and compare to its source
+    g = Image.open(gif)
+    gif_ok = True
+    for i in range(g.n_frames):
+        g.seek(i)
+        dec = g.convert("RGBA")
+        ref = big[i]
+        diff = ImageChops.difference(dec, ref).convert("L").point(lambda v: 255 if v > 40 else 0)
+        bad = sum(1 for v in diff.getdata() if v)
+        if bad > (w * h * 9) // 100:   # more than 1% of pixels off
+            gif_ok = False
+
+    for s, out in ((1, "strip1x.png"), (scale, f"strip{scale}x.png")):
+        strip = Image.new("RGB", (len(frames) * (w * s + 8) + 8, h * s + 16), (60, 60, 60))
+        d = ImageDraw.Draw(strip)
+        for i, f in enumerate(frames):
+            b = f.resize((w * s, h * s), Image.NEAREST)
+            strip.paste(b, (8 + i * (w * s + 8), 12), b)
+            d.text((8 + i * (w * s + 8), 0), f"frame {i}", fill=(230, 230, 230))
+        strip.save(os.path.join(run, out))
+
+    print(f"{run}: {len(frames)} frames {w}x{h}")
+    print(f"  gif clears between frames: {'yes' if gif_ok else 'NO'}")
+    for n, sz, c, hl, o, t, ft in rows:
+        print(f"  {n} size {sz} clip {c or 'none'} halo {hl} opaque {o} moved {t} (feet region {ft})")
+
+    html = f"""<!doctype html><meta charset=utf-8><title>{run}</title>
+<style>body{{background:#3c3c3c;color:#ddd;font:12px sans-serif;padding:16px}}img{{image-rendering:pixelated;display:block;margin-bottom:12px}}</style>
+<h2>{run}</h2>
+<img src="/{run}/preview.gif">
+<img src="/{run}/strip1x.png">
+<img src="/{run}/strip{scale}x.png" style="max-width:100%">
+<pre>{chr(10).join(f'{n} clip {c or "none"} halo {hl} opaque {o} moved {t} feet {ft}' for n, sz, c, hl, o, t, ft in rows)}
+gif clears between frames: {'yes' if gif_ok else 'NO'}</pre>
+"""
+    open(os.path.join(run, "review.html"), "w").write(html)
+    print(f"  page: {run}/review.html")
+
+
+# ==========================================================================
+# PAID (NETWORK) -- every call that leaves this machine
+# ==========================================================================
+#
+# Nothing above this line reaches the network. The commands below do, and
+# four of them spend: rdgen run, pltileset, pltilespro and sprites. Each
+# describes what it would post and what that costs, and posts only with --run
+# (#143). rdgen cost, rdgen balance and rdgen reprocess (its free downscale)
+# are network calls that charge nothing.
+
+PIXELLAB_API = "https://api.pixellab.ai/v2"
+PIXELLAB_TOKEN = "~/.config/pixellab/token"
+
+
+def _pixellab(method, path, body=None, timeout=120):
+    """One PixelLab request: (HTTP status, the JSON reply -- or its text when
+    the reply is not JSON). Token at ~/.config/pixellab/token."""
+    import urllib.error
+    import urllib.request
+    tok = open(os.path.expanduser(PIXELLAB_TOKEN)).read().strip()
+    r = urllib.request.Request(
+        PIXELLAB_API + path,
+        data=json.dumps(body).encode() if body is not None else None,
+        method=method,
+        headers={"Authorization": "Bearer " + tok,
+                 "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(r, timeout=timeout) as f:
+            return f.status, json.loads(f.read())
+    except urllib.error.HTTPError as e:
+        raw = e.read() or b"{}"
+        try:
+            return e.code, json.loads(raw)
+        except ValueError:
+            return e.code, raw.decode(errors="replace")[:500]
+
+
+def _download(url):
+    """A generated file from PixelLab's storage, which refuses urllib's own
+    user agent."""
+    import urllib.request
+    dl = urllib.request.Request(url, headers={"User-Agent": "curl/8"})
+    with urllib.request.urlopen(dl, timeout=120) as f:
+        return f.read()
+
+
+def _paid_gate(argv, what, body, cost="PixelLab quotes no price before a call"):
+    """True when argv carries --run. Otherwise print what would be posted,
+    its cost and the balance, post nothing, and return False."""
+    if "--run" in argv:
+        return True
+
+    def short(v):
+        if isinstance(v, str) and len(v) > 80:
+            return v[:40] + f"... ({len(v)} chars)"
+        if isinstance(v, dict):
+            return {k: short(x) for k, x in v.items()}
+        if isinstance(v, list):
+            return [short(x) for x in v]
+        return v
+    print(f"PAID: {what}")
+    print(json.dumps(short(body), indent=1))
+    print(f"cost: {cost}")
+    st, bal = _pixellab("GET", "/balance")
+    print("balance:", str(bal)[:200])
+    print("dry run; nothing posted (add --run to post and be charged)")
+    return False
+
+
+def cmd_sprites(argv):
+    """Run a PixelLab sprite-batch job (rocks, trees) and keep its sprites.
+
+    python3 tools/romeart.py sprites art/jobs/<zone>_o96_rocks.json art/primitives/<zone>/rocks [--run]   (PAID)
+
+The job file is the repo's own record: "description" (the shared prompt),
+"batches" (lists of four item descriptions, one POST /create-1-direction-object
+per list) and "_note". Each call is size 96, view top-down, and costs 20-40
+subscription generations. For every batch this writes body<N>.json (what was
+posted), meta<N>.json (the object as GET /v2/objects returned it) and the
+candidate frames as tile_<NN>.png numbered across batches, as
+art/primitives/africa/rocks was kept. Token at ~/.config/pixellab/token.
+Nothing is posted without --run (2026-09-27, Italia rocks for #67; before that
+the batches were posted by hand).
+    """
+    import io, time
+    if len(argv) < 2:
+        sys.exit("usage: romeart.py sprites <job.json> <out-dir> [--run]")
+    job_p, out = argv[0], argv[1]
+    job = json.load(open(job_p))
+    req = _pixellab
+
+    bodies = [{"description": job["description"], "size": 96, "view": "top-down", "item_descriptions": b} for b in job["batches"]]
+    print(f"{len(bodies)} calls, {sum(len(b) for b in job['batches'])} sprites, 20-40 generations per call")
+    if not _paid_gate(argv, f"{len(bodies)} x POST /create-1-direction-object", bodies,
+                      cost=f"20-40 subscription generations per call, {len(bodies)} calls"):
+        return
+    os.makedirs(out, exist_ok=True)
+    tile = 0
+    for n, body in enumerate(bodies):
+        json.dump(body, open(os.path.join(out, f"body{n}.json"), "w"), indent=1)
+        st, resp = req("POST", "/create-1-direction-object", body)
+        print(f"call {n}: HTTP {st} {str(resp)[:160]}")
+        if st not in (200, 202):
+            sys.exit("post failed")
+        oid = resp["object_id"]
+        meta = None
+        for _ in range(120):
+            time.sleep(10)
+            st, meta = req("GET", f"/objects/{oid}")
+            status = meta.get("status") if isinstance(meta, dict) else None
+            if status in ("completed", "review", "failed"):
+                break
+        json.dump(meta, open(os.path.join(out, f"meta{n}.json"), "w"), indent=1)
+        if not isinstance(meta, dict) or meta.get("status") == "failed":
+            sys.exit("generation failed")
+        urls = meta.get("frame_urls") or [u for k, u in sorted((meta.get("storage_urls") or {}).items())]
+        for u in urls:
+            im = Image.open(io.BytesIO(_download(u))).convert("RGBA")
+            im.save(os.path.join(out, f"tile_{tile:02d}.png")); print(f"  tile_{tile:02d}.png {im.size}"); tile += 1
+    st, bal = req("GET", "/balance"); print("balance:", str(bal)[:200])
+
+
+# ==========================================================================
+# pltileset.py -- one PixelLab create-tileset call
+# ==========================================================================
+
+def _pltileset(argv):
+    """Run one PixelLab create-tileset call and save its 16 tiles.
+
+    python3 tools/romeart.py pltileset <out-dir> <request.json> [--run]   (PAID)
+
+The request file is the JSON body (no images); keys starting with "_" are
+our own notes and are not sent. Token at ~/.config/pixellab/token.
+Writes submit.json, result.json, tile_NN.png, tiles_meta.json, sheet.png and
+a 7x6 mock (map_mock_1x.png / _3x.png) laid out by corner pattern, and prints
+the terrain ids (the lower id is what later sets chain to) and seam figures.
+"""
+    import base64, time
+    from PIL import ImageDraw, ImageChops, ImageStat
+
+    if len(argv) < 3:
+        sys.exit("usage: romeart.py pltileset <out-dir> <request.json> [--run]")
+    out, reqp = argv[1], argv[2]
+    body = json.load(open(reqp))
+    # A key starting with "_" is our own record, not part of the request -- the
+    # same convention rdgen uses. The API rejects an unknown field outright (422),
+    # so a job file's _note would make it unrunnable if it were posted.
+    body = {k: v for k, v in body.items() if not k.startswith("_")}
+    if not _paid_gate(argv, "POST /create-tileset", body):
+        return
+    os.makedirs(out, exist_ok=True)
+    json.dump(body, open(os.path.join(out, "request.json"), "w"), indent=1)
+    code, resp = _pixellab("POST", "/create-tileset", body)
+    print("HTTP", code, json.dumps(resp)[:300])
+    json.dump(resp, open(os.path.join(out, "submit.json"), "w"), indent=1)
+    tid = resp.get("tileset_id") if isinstance(resp, dict) else None
+    if not tid:
+        sys.exit("no tileset id")
+    s = None
+    for i in range(90):
+        time.sleep(10)
+        st, s = _pixellab("GET", f"/tilesets/{tid}", timeout=60)
+        if st == 200 and isinstance(s, dict) and s.get("tileset"):
+            print(f"done at {(i + 1) * 10}s"); break
+    json.dump(s, open(os.path.join(out, "result.json"), "w"), indent=1)
+    ts = s["tileset"]
+    print("terrain ids", s.get("metadata", {}).get("terrain_ids"))
+    imgs = []
+    for i, t in enumerate(ts["tiles"]):
+        data = base64.b64decode(t["image"]["base64"].split(",")[-1])
+        p = os.path.join(out, f"tile_{i:02d}.png"); open(p, "wb").write(data)
+        imgs.append((i, t, Image.open(p).convert("RGBA")))
+    json.dump([{k: v for k, v in t.items() if k != "image"} for _, t, _ in imgs], open(os.path.join(out, "tiles_meta.json"), "w"), indent=1)
+    T = imgs[0][2].width; S = 96 // T
+
+
+    def key(c):
+        return tuple({"upper": "u", "lower": "l"}.get(c[k], "t") for k in ("NW", "NE", "SW", "SE"))
+
+
+    by = {}
+    for _, t, im in imgs:
+        by.setdefault(key(t["corners"]), im)
+    grid = [["l"] * 8 for _ in range(7)]
+    for y in range(1, 4):
+        for x in range(1, 5):
+            grid[y][x] = "u"
+    grid[4][2] = "u"; grid[4][3] = "u"
+    mock = Image.new("RGB", (7 * T, 6 * T))
+    for cy in range(6):
+        for cx in range(7):
+            k = (grid[cy][cx], grid[cy][cx + 1], grid[cy + 1][cx], grid[cy + 1][cx + 1])
+            if k in by:
+                mock.paste(by[k].convert("RGB"), (cx * T, cy * T))
+    mock.save(os.path.join(out, "map_mock_1x.png"))
+    mock.resize((mock.width * S, mock.height * S), Image.NEAREST).save(os.path.join(out, "map_mock_3x.png"))
+
+
+    def diff(a, b):
+        return round(sum(ImageStat.Stat(ImageChops.difference(a, b)).mean) / 3, 1)
+
+
+    tiles = {"".join(k): im.convert("RGB") for k, im in by.items()}
+    rows = [diff(a.crop((T - 1, 0, T, T)), b.crop((0, 0, 1, T))) for ka, a in tiles.items() for kb, b in tiles.items() if ka[1] == kb[0] and ka[3] == kb[2]]
+    print("horizontal seam mean", round(sum(rows) / len(rows), 1), "max", max(rows))
+    if "uuuu" in tiles:
+        f = tiles["uuuu"]; print("upper self-seam v/h", diff(f.crop((0, 0, T, 1)), f.crop((0, T - 1, T, T))), diff(f.crop((0, 0, 1, T)), f.crop((T - 1, 0, T, T))))
+    cols = 4; rws = (len(imgs) + cols - 1) // cols
+    sheet = Image.new("RGB", (cols * (T * S + 8) + 8, rws * (T * S + 24) + 8), (40, 40, 40)); d = ImageDraw.Draw(sheet)
+    for n, (i, t, im) in enumerate(imgs):
+        x = 8 + (n % cols) * (T * S + 8); y = 8 + (n // cols) * (T * S + 24)
+        big = im.resize((T * S, T * S), Image.NEAREST); sheet.paste(big, (x, y + 16), big)
+        c = t["corners"]; d.text((x, y), f"{i} {c['NW'][0]}{c['NE'][0]}{c['SW'][0]}{c['SE'][0]}", fill=(230, 230, 230))
+    sheet.save(os.path.join(out, "sheet.png"))
+
+
+# ==========================================================================
+# pltilespro.py -- one PixelLab Tiles Pro call
+# ==========================================================================
+
+def _pltilespro(argv):
+    """One PixelLab Tiles Pro call (connectable terrain tileset) from a JSON body.
+
+    python3 tools/romeart.py pltilespro <body.json> <out-dir> [--run]   (PAID)
+
+Posts the body to /create-tiles-pro, polls /tiles-pro/{id}, downloads every
+tile as tile_<n>.png, writes meta.json (tile_rules, usage) and sheet.png.
+"""
+    import io, time
+
+    if len(argv) < 3:
+        sys.exit("usage: romeart.py pltilespro <body.json> <out-dir> [--run]")
+    req = _pixellab
+    body = json.load(open(argv[1]))
+    # "_"-prefixed keys are our own record, not part of the request (rdgen's
+    # convention). The API rejects unknown fields with a 422.
+    body = {k: v for k, v in body.items() if not k.startswith("_")}
+    out = argv[2]
+    if not _paid_gate(argv, "POST /create-tiles-pro", body):
+        return
+    os.makedirs(out, exist_ok=True)
+    st, resp = req("POST", "/create-tiles-pro", body)
+    print("post", st, json.dumps(resp)[:300])
+    if st != 202:
+        sys.exit(1)
+    tid = resp.get("tile_id") or resp.get("id") or resp.get("job_id")
+    if not tid:
+        print(resp); sys.exit(1)
+    while True:
+        time.sleep(10)
+        st, res = req("GET", f"/tiles-pro/{tid}")
+        print("poll", st, str(res)[:120])
+        if st == 200 and isinstance(res, dict) and res.get("storage_urls"):
+            break
+        if st not in (200, 423, 202):
+            sys.exit(1)
+    urls = res["storage_urls"]
+    tiles = {}
+    for name, url in urls.items():
+        im = Image.open(io.BytesIO(_download(url))).convert("RGBA")
+        im.save(os.path.join(out, name + ".png")); tiles[name] = im
+    json.dump({"tile_id": tid, "usage": res.get("usage"), "kind": res.get("kind"),
+               "tile_rules": res.get("tile_rules"), "body": body},
+              open(os.path.join(out, "meta.json"), "w"), indent=1)
+    names = sorted(tiles, key=lambda n: int(n.split("_")[-1]))
+    w, h = tiles[names[0]].size
+    cols = 4
+    rows = (len(names) + cols - 1) // cols
+    sheet = Image.new("RGBA", (cols * w, rows * h))
+    for i, n in enumerate(names):
+        sheet.paste(tiles[n], ((i % cols) * w, (i // cols) * h))
+    sheet.save(os.path.join(out, "sheet.png"))
+    print(len(names), "tiles", w, "x", h, "usage", res.get("usage"), "in", out)
+
+
+# ==========================================================================
+# rdgen.py -- the Retro Diffusion driver
+# ==========================================================================
+
+def _rdgen(argv):
+    """Retro Diffusion art pipeline driver.
+
+Drives one asset from a JSON job spec through generate -> transform -> QA,
+keeping every request and response on disk so a result is auditable rather
+than remembered. Written for ~116 assets, so the whole run is described by
+the job file and nothing lives in shell history.
+
+    python3 tools/romeart.py rdgen cost      art/jobs/hastati.json
+    python3 tools/romeart.py rdgen run       art/jobs/hastati.json [--run]   (PAID)
+    python3 tools/romeart.py rdgen reprocess art/jobs/hastati.json
+    python3 tools/romeart.py rdgen balance
+
+`run` quotes the cost and stops there; only `run --run` submits and is charged.
+
+Two rules this enforces, both learned the hard way:
+
+  * Every paid call goes out with async=true and its task id is written to
+    disk BEFORE any polling starts. A synchronous call once timed out after
+    the charge landed, and the result was unrecoverable because the id was
+    never captured.
+  * The token is read from a file, never from the environment and never from
+    a command line, so it stays out of process listings and shell history.
+    This project does not use environment variables anywhere.
+
+Outputs land under build/art/<id>/ (build/ is gitignored). Approved finals
+are copied into the pack by hand, deliberately -- nothing here writes to
+assets/.
+"""
+    import argparse
+    import base64
+    import io
+    import json
+    import os
+    import shutil
+    import sys
+    import time
+    import urllib.error
+    import urllib.request
+
+    API = "https://api.retrodiffusion.ai/v1"
+    DEFAULT_TOKEN_FILE = os.path.expanduser("~/.config/retrodiffusion/token")
+    OUT_ROOT = "build/art"
+
+    try:
+        from PIL import Image, ImageSequence
+    except ImportError:
+        sys.exit("rdgen: needs Pillow (pip install pillow)")
+
+
+    # ---- plumbing --------------------------------------------------------------
+
+    def read_token(path):
+        if not os.path.exists(path):
+            sys.exit(f"rdgen: no token at {path}\n"
+                     f"  write your rdpk- key there, chmod 600.")
+        tok = open(path).read().strip()
+        if not tok.startswith("rdpk-"):
+            sys.exit(f"rdgen: {path} does not look like an rdpk- key")
+        return tok
+
+
+    def api(token, method, path, payload=None, timeout=60):
+        url = f"{API}{path}"
+        data = json.dumps(payload).encode() if payload is not None else None
+        req = urllib.request.Request(url, data=data, method=method)
+        req.add_header("X-RD-Token", token)
+        if data:
+            req.add_header("Content-Type", "application/json")
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return json.loads(r.read().decode())
+        except urllib.error.HTTPError as e:
+            body = e.read().decode(errors="replace")
+            try:
+                return json.loads(body)
+            except Exception:
+                return {"detail": {"code": str(e.code), "message": body[:400]}}
+
+
+    def save_json(path, obj):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            json.dump(obj, f, indent=1)
+
+
+    def new_run_dir(job_id):
+        """A fresh numbered directory per run. Never reuse, never overwrite.
+
+    Generated art is paid for and is not reproducible -- the same prompt and
+    seed gave materially different results across runs. An earlier version of
+    this wrote every run to build/art/<id>/ and a re-run destroyed the
+    previous raw. Recovering it was only possible because the API retains
+    outputs for 24 hours and the request id had been saved.
+    """
+        base = os.path.join(OUT_ROOT, job_id)
+        os.makedirs(base, exist_ok=True)
+        n = 1
+        while os.path.exists(os.path.join(base, f"run{n:02d}")):
+            n += 1
+        d = os.path.join(base, f"run{n:02d}")
+        os.makedirs(d)
+        return d
+
+
+    def latest_run_dir(job_id):
+        base = os.path.join(OUT_ROOT, job_id)
+        runs = sorted(g for g in os.listdir(base)) if os.path.isdir(base) else []
+        runs = [r for r in runs if r.startswith("run")]
+        return os.path.join(base, runs[-1]) if runs else None
+
+
+    # ---- job spec --------------------------------------------------------------
+
+    # Every key a job may carry. Keys beginning with "_" are notes for the reader
+    # and are never sent. Anything else is refused rather than ignored: a job once
+    # carried return_non_bg_removed, which this file did not forward, and the run
+    # went out silently without it -- a paid call that could not answer the question
+    # it was made to answer.
+    JOB_KEYS = {
+        # rdgen's own controls
+        "id", "prompt", "style", "width", "height", "target",
+        "raw_only", "figure", "headroom_rows",
+        "input_image_path", "input_palette_path", "input_image_keep_alpha",
+        "reference_image_paths", "pad_to", "num_images",
+        # forwarded to the API by request_payload()
+        "seed", "remove_bg", "tile_x", "tile_y", "frames_duration",
+        "return_spritesheet", "input_palette", "strength",
+        "bypass_prompt_expansion", "return_non_bg_removed",
+    }
+
+
+    def load_job(path):
+        job = json.load(open(path))
+        for k in ("id", "prompt", "style", "width", "height", "target"):
+            if k not in job:
+                sys.exit(f"rdgen: job {path} missing required key '{k}'")
+        unknown = sorted(k for k in job if not k.startswith("_") and k not in JOB_KEYS)
+        if unknown:
+            sys.exit(f"rdgen: job {path} has unknown key(s): {', '.join(unknown)}\n"
+                     f"       rdgen would ignore them and submit a paid request that\n"
+                     f"       is not the one described by the job. Add each to\n"
+                     f"       JOB_KEYS (and to request_payload if the API takes it),\n"
+                     f"       or prefix it with '_' if it is only a note.")
+        job["_path"] = path
+        return job
+
+
+    def request_payload(job, *, check_cost=False):
+        p = {
+            "prompt": job["prompt"],
+            "prompt_style": job["style"],
+            "width": job["width"],
+            "height": job["height"],
+            "num_images": job.get("num_images", 1),
+        }
+        for k in ("seed", "remove_bg", "tile_x", "tile_y", "frames_duration",
+                  "return_spritesheet", "input_palette", "strength",
+                  "bypass_prompt_expansion", "return_non_bg_removed"):
+            if k in job:
+                p[k] = job[k]
+        # input_palette: DO NOT USE to "anchor" or "match" a colour. It HARD
+        # CONSTRAINS the entire output to the supplied palette, and it collapses
+        # structure along with it. Measured twice, a day apart, and forgotten in
+        # between because the first finding was only ever said out loud:
+        #   2026-08-15  on a figure: "forces flat limited colour but collapses the
+        #               face and structure"
+        #   2026-08-17  on two object tiles: passing grass.png (5 colours, all
+        #               green) returned 3-colour all-green images with the ring and
+        #               chest rendered in shades of grass. $0.076 wasted.
+        # To match a colour, name it in the prompt instead.
+        #
+        # img2img. The API wants RGB with no alpha, so a transparent source is
+        # flattened onto white first. Structure -- pose, proportion, framing,
+        # outline weight -- carries over from the input far more reliably than it
+        # can be described in words, which is the whole reason for using it.
+        if job.get("input_palette_path"):
+            pal = Image.open(job["input_palette_path"]).convert("RGB")
+            pb = io.BytesIO(); pal.save(pb, format="PNG")
+            p["input_palette"] = base64.b64encode(pb.getvalue()).decode()
+        # input_image_keep_alpha: send the PNG exactly as it is, alpha intact.
+        # The API reference says input_image must be RGB without transparency, but
+        # the animation docs say "a transparent start frame yields a transparent
+        # GIF" -- both cannot be true. Flattening onto white would guarantee opaque
+        # frames, and restoring alpha afterwards is post-processing, which is
+        # banned. A check_cost with an RGBA payload is accepted rather than
+        # rejected, so this lets the claim be tested for real.
+        if job.get("input_image_path"):
+            src = Image.open(job["input_image_path"]).convert("RGBA")
+            # pad_to: the vendor's motion-room rule -- "a sprite whose opaque
+            # pixels touch the canvas edge animates badly -- pad it onto a larger
+            # transparent canvas first". Every animation run before this one sent a
+            # figure filling its frame, and every one of them under-moved. Nothing
+            # is resampled: the still is composited into a bigger empty canvas,
+            # centred horizontally and standing on the bottom edge.
+            pad = job.get("pad_to")
+            if pad:
+                pw, ph = (pad, pad) if isinstance(pad, int) else pad
+                if pw < src.width or ph < src.height:
+                    sys.exit(f"rdgen: pad_to {pw}x{ph} is smaller than the source "
+                             f"{src.width}x{src.height}")
+                canvas = Image.new("RGBA", (pw, ph), (0, 0, 0, 0))
+                canvas.alpha_composite(src, ((pw - src.width) // 2,
+                                             ph - src.height))
+                src = canvas
+            if job.get("input_image_keep_alpha"):
+                out = src
+            else:
+                out = Image.new("RGB", src.size, (255, 255, 255))
+                out.paste(src, (0, 0), src)
+            buf = io.BytesIO()
+            out.save(buf, format="PNG")
+            p["input_image"] = base64.b64encode(buf.getvalue()).decode()
+        # reference_images: RD Pro and the prompt-driven rd_animation__* styles
+        # accept up to 9. Unlike input_image these are NOT redrawn -- they steer
+        # style and content, which is how one character stays the same character
+        # across separate generations.
+        if job.get("reference_image_paths"):
+            refs = []
+            for rp in job["reference_image_paths"]:
+                src = Image.open(rp).convert("RGBA")
+                buf = io.BytesIO()
+                src.save(buf, format="PNG")
+                refs.append(base64.b64encode(buf.getvalue()).decode())
+            p["reference_images"] = refs
+        if check_cost:
+            p["check_cost"] = True
+        else:
+            p["async"] = True
+        return p
+
+
+    # ---- transforms ------------------------------------------------------------
+
+    def content_bbox(im, alpha_floor=12):
+        """Tight bbox of non-transparent pixels; None when the image is empty."""
+        im = im.convert("RGBA")
+        px = im.load()
+        w, h = im.size
+        pts = [(x, y) for y in range(h) for x in range(w) if px[x, y][3] > alpha_floor]
+        if not pts:
+            return None
+        xs = [p[0] for p in pts]
+        ys = [p[1] for p in pts]
+        return min(xs), min(ys), max(xs) + 1, max(ys) + 1
+
+
+    def fill_to_target(im, tw, th, headroom=0):
+        """Crop to content, then scale so the figure fills the full target height.
+
+    The spec's fill rule: feet on the bottom row, head within a pixel of the
+    top. Generations come back with margin, and pasting them unscaled is why
+    earlier sprites read as small and floaty against the reference art.
+    """
+        bb = content_bbox(im)
+        if not bb:
+            return im.resize((tw, th), Image.NEAREST)
+        fig = im.convert("RGBA").crop(bb)
+        fw, fh = fig.size
+        # Reserve `headroom` rows at the top. The reference leaves row 0 clear and
+        # seats the figure on the bottom row; asking the model for that never
+        # worked, so it is imposed here instead.
+        avail = th - headroom
+        scale = avail / fh
+        nw = max(1, min(tw, round(fw * scale)))
+        fig = fig.resize((nw, avail), Image.LANCZOS)
+        out = Image.new("RGBA", (tw, th), (0, 0, 0, 0))
+        out.paste(fig, ((tw - nw) // 2, headroom))
+        return out
+
+
+    def k_centroid(token, im, tw, th, workdir):
+        """Area-weighted downscale via the free RD edit tool, with a local fallback.
+
+    A naive nearest resample of a 2x source turns to mush at 48x34; this is
+    what keeps it legible. Free, so it never needs a cost check.
+    """
+        tmp = os.path.join(workdir, "_kc_in.png")
+        im.save(tmp)
+        payload = {"input_image": base64.b64encode(open(tmp, "rb").read()).decode(),
+                   "width": tw, "height": th}
+        r = api(token, "POST", "/edit/tools/k_centroid_downscale", payload, timeout=90)
+        save_json(os.path.join(workdir, "kcentroid_response.json"),
+                  {k: v for k, v in r.items() if k != "base64_images"})
+        imgs = r.get("base64_images") or []
+        if not imgs:
+            print(f"  ! k_centroid failed ({str(r.get('detail'))[:80]}); "
+                  f"falling back to local LANCZOS")
+            return im.resize((tw, th), Image.LANCZOS)
+        out = os.path.join(workdir, "_kc_out.png")
+        open(out, "wb").write(base64.b64decode(imgs[0]))
+        return Image.open(out).convert("RGBA")
+
+
+    def threshold_alpha(im, cut=128):
+        """Binary alpha. Soft edges halo against unknown terrain at integer scale."""
+        im = im.convert("RGBA")
+        px = im.load()
+        w, h = im.size
+        for y in range(h):
+            for x in range(w):
+                r, g, b, a = px[x, y]
+                px[x, y] = (r, g, b, 255 if a >= cut else 0)
+        return im
+
+
+    # ---- QA --------------------------------------------------------------------
+
+    def qa(im, job):
+        """Measure the spec's done-criteria. Returns (rows, ok)."""
+        tw, th = job["target"]
+        im = im.convert("RGBA")
+        px = im.load()
+        w, h = im.size
+        opaque = [(x, y) for y in range(h) for x in range(w) if px[x, y][3] == 255]
+        partial = sum(1 for y in range(h) for x in range(w) if 0 < px[x, y][3] < 255)
+        colours = {px[x, y][:3] for (x, y) in opaque}
+        xs = [p[0] for p in opaque] or [0]
+        ys = [p[1] for p in opaque] or [0]
+        fw = max(xs) - min(xs) + 1
+        fh = max(ys) - min(ys) + 1
+        figure = job.get("figure", True)
+
+        rows = [
+            ("dimensions", f"{w}x{h}", (w, h) == (tw, th)),
+            ("partial-alpha px", partial, partial == 0),
+            ("unique colours", len(colours), 12 <= len(colours) <= 40),
+        ]
+        if figure:
+            top, bot = min(ys), max(ys)
+            # Headroom, not maximum fill. Requiring fh == th rewards a figure whose
+            # crest runs into the top edge and gets clipped -- which is exactly what
+            # the first Hastati did, and this check passed it. The reference art
+            # leaves row 0 empty and occupies rows 1..33.
+            rows += [
+                ("top row clear", f"starts row {top}", top >= 1),
+                ("fills height", f"{fh}/{th} rows", fh >= th - 3),
+                ("silhouette width", f"{fw}/{tw} cols", fw >= 30),
+                ("feet on bottom row", bot == h - 1, bot == h - 1),
+            ]
+        return rows, all(ok for _, _, ok in rows)
+
+
+    def contact_sheet(final, job, workdir, pack="assets/glory-of-rome"):
+        """The check that cannot be automated: the sprite over real terrain.
+
+    A metric once scored a floating object as a seamless tile because its
+    edges were uniform. Numbers get fooled; this gets looked at.
+    """
+        grounds = ["grass", "forest", "desert"]
+        tiles = []
+        for g in grounds:
+            p = os.path.join(pack, "art/tiles", f"{g}.png")
+            if os.path.exists(p):
+                tiles.append((g, Image.open(p).convert("RGBA")))
+        if not tiles:
+            return None
+        tw, th = job["target"]
+        zooms = (1, 3, 8)
+        pad = 10
+        W = sum(tw * z + pad for z in zooms) * len(tiles) + pad
+        H = th * max(zooms) + 30
+        sheet = Image.new("RGBA", (W, H), (24, 24, 28, 255))
+        x = pad
+        for name, ground in tiles:
+            for z in zooms:
+                cell = Image.new("RGBA", (tw, th), (0, 0, 0, 0))
+                cell.paste(ground.resize((tw, th), Image.NEAREST), (0, 0))
+                cell.alpha_composite(final)
+                sheet.paste(cell.resize((tw * z, th * z), Image.NEAREST), (x, 20))
+                x += tw * z + pad
+        out = os.path.join(workdir, "contact_sheet.png")
+        sheet.save(out)
+        return out
+
+
+    def transform(token, raw, job, work):
+        """No-op when the job is raw_only: the deliverable is the image exactly as
+    Retro Diffusion returned it. Anything done here is post-processing."""
+        if job.get("raw_only"):
+            p = os.path.join(work, "01_raw.png")
+            print("  raw_only: delivering the generated image untouched")
+            return p
+
+        """Raw -> final, resampling only when the source is genuinely larger.
+
+    A raw already at target size is passed through untouched apart from the
+    alpha threshold. Resampling it anyway -- which this did at first, by
+    always scaling to 2x target and downscaling back -- turned a clean 31
+    colour sprite into 779 colours of mush. Measured, not theorised.
+    """
+        tw, th = job["target"]
+        rw, rh = raw.size
+        stage = raw
+        if (rw, rh) != (tw, th):
+            if job.get("figure", True):
+                stage = fill_to_target(stage, min(rw, tw * 2), min(rh, th * 2),
+                                       headroom=job.get("headroom_rows", 0))
+                stage.save(os.path.join(work, "02_filled.png"))
+            stage = k_centroid(token, stage, tw, th, work)
+            stage.save(os.path.join(work, "03_downscaled.png"))
+        else:
+            print("  raw already at target size; no resample")
+        final = threshold_alpha(stage)
+        p = os.path.join(work, "04_final.png")
+        final.save(p)
+        return p
+
+
+    def cmd_reprocess(args):
+        """Redo transforms + QA from the saved raw. No generation, no charge."""
+        tok = read_token(args.token_file)
+        job = load_job(args.job)
+        work = latest_run_dir(job["id"])
+        if not work:
+            sys.exit(f"rdgen: no runs for {job['id']}")
+        raw_p = os.path.join(work, "01_raw.png")
+        if not os.path.exists(raw_p):
+            sys.exit(f"rdgen: no saved raw at {raw_p}; run it first")
+        raw = Image.open(raw_p).convert("RGBA")
+        print(f"reprocessing {job['id']} from raw {raw.size} (no charge)")
+        frames = write_frames(raw_p, job, work)
+        if frames:
+            widths, growth = motion_report(frames)
+            print(f"frames {len(frames)}  ->  {work}/frame_00..{len(frames)-1:02d}.png")
+            print(f"  silhouette widths {widths}")
+            print(f"  [{'PASS' if growth >= MOTION_GATE_PCT else 'FAIL'}] motion "
+                  f"{growth}% growth over frame 0 (gate {MOTION_GATE_PCT}%)")
+
+        final_p = transform(tok, raw, job, work)
+        final = Image.open(final_p).convert("RGBA")
+        rows, ok = qa(final, job)
+        print(f"\nQA  {job['id']}")
+        for name, val, good in rows:
+            print(f"  [{'PASS' if good else 'FAIL'}] {name:<20} {val}")
+        sheet = contact_sheet(final, job, work)
+        if sheet:
+            print(f"\ncontact sheet: {sheet}")
+        print(f"final: {final_p}")
+        print(f"\nverdict: {'PASS' if ok else 'NEEDS WORK'} "
+              f"(metrics only -- look at the contact sheet before accepting)")
+
+
+    # ---- commands --------------------------------------------------------------
+
+    def cmd_balance(args):
+        tok = read_token(args.token_file)
+        r = api(tok, "GET", "/inferences/credits")
+        print(json.dumps(r))
+
+
+    def cmd_cost(args):
+        tok = read_token(args.token_file)
+        job = load_job(args.job)
+        r = api(tok, "POST", "/inferences", request_payload(job, check_cost=True))
+        print(f"{job['id']}: ${r.get('balance_cost')}  "
+              f"(remaining ${r.get('remaining_balance')})")
+
+
+    def cmd_run(args):
+        tok = read_token(args.token_file)
+        job = load_job(args.job)
+        payload = request_payload(job)
+        cost = api(tok, "POST", "/inferences", request_payload(job, check_cost=True))
+        print(f"cost ${cost.get('balance_cost')}  balance ${cost.get('remaining_balance')}")
+        # Dry unless --run (#143). The run dir is made only for a real
+        # submission: an empty one would become reprocess's "latest run".
+        if not args.run:
+            print("dry run; nothing submitted (add --run to submit and be charged)")
+            return
+
+        work = new_run_dir(job["id"])
+        shutil.copy(job["_path"], os.path.join(work, "job.json"))
+        print(f"run dir {work}")
+        save_json(os.path.join(work, "request.json"),
+                  {k: v for k, v in payload.items() if k != "input_image"})
+
+        sub = api(tok, "POST", "/inferences", payload)
+        # Written before ANY polling: a lost task id means a paid result that
+        # cannot be retrieved.
+        save_json(os.path.join(work, "task.json"), sub)
+        task = sub.get("task_id")
+        if not task:
+            sys.exit(f"rdgen: submit failed: {json.dumps(sub)[:300]}")
+        print(f"task {task} (saved to {work}/task.json)")
+
+        result = None
+        for i in range(120):
+            time.sleep(4)
+            s = api(tok, "GET", f"/inferences/tasks/{task}")
+            st = s.get("status")
+            if st in ("succeeded", "failed"):
+                save_json(os.path.join(work, "poll.json"),
+                          {k: v for k, v in s.items() if k != "result"})
+                result = s
+                print(f"[{(i+1)*4}s] {st}")
+                break
+        if not result or result.get("status") != "succeeded":
+            sys.exit(f"rdgen: job did not succeed: {json.dumps(result)[:300]}")
+
+        res = result.get("result") or {}
+        imgs = res.get("base64_images") or []
+        if not imgs:
+            sys.exit(f"rdgen: no image returned: {json.dumps(res)[:300]}")
+        print(f"charged ${res.get('balance_cost')}  request {res.get('request_id')}")
+
+        # Write EVERY image the response carries, not just the first. Options like
+        # return_non_bg_removed and return_pre_palette return a second paid image in
+        # the same list, and keeping only imgs[0] silently destroys it.
+        raw_p = os.path.join(work, "01_raw.png")
+        open(raw_p, "wb").write(base64.b64decode(imgs[0]))
+        for i, extra in enumerate(imgs[1:], start=2):
+            extra_p = os.path.join(work, f"01_raw_{i}.png")
+            open(extra_p, "wb").write(base64.b64decode(extra))
+            print(f"also returned: {extra_p}")
+        raw = Image.open(raw_p).convert("RGBA")
+        print(f"raw {raw.size}  ({len(imgs)} image(s) returned)")
+
+        frames = write_frames(raw_p, job, work)
+        if frames:
+            widths, growth = motion_report(frames)
+            print(f"frames {len(frames)}  ->  {work}/frame_00..{len(frames)-1:02d}.png")
+            print(f"  silhouette widths {widths}")
+            print(f"  [{'PASS' if growth >= MOTION_GATE_PCT else 'FAIL'}] motion "
+                  f"{growth}% growth over frame 0 (gate {MOTION_GATE_PCT}%)")
+        final_p = transform(tok, raw, job, work)
+        final = Image.open(final_p).convert("RGBA")
+        rows, ok = qa(final, job)
+        print(f"\nQA  {job['id']}")
+        for name, val, good in rows:
+            print(f"  [{'PASS' if good else 'FAIL'}] {name:<20} {val}")
+        sheet = contact_sheet(final, job, work)
+        if sheet:
+            print(f"\ncontact sheet: {sheet}")
+        print(f"final: {final_p}")
+        print(f"\nverdict: {'PASS' if ok else 'NEEDS WORK'} "
+              f"(metrics only -- look at the contact sheet before accepting)")
+
+
+    # ---- animation frames ------------------------------------------------------
+
+    def write_frames(raw_p, job, work):
+        """Split an animation result into individual frames.
+
+    The grid is DERIVED from what came back, never assumed. A 4-frame sheet is
+    2x2 and a 6-frame sheet is 3x2; this was hardcoded to 2x2 by hand outside
+    this file, which sliced every 6-frame run through the middle of each frame.
+    Two good animations were discarded and the pipeline was locked at four
+    frames on the strength of that mistake.
+
+    A GIF response is authoritative about its own frame count, so nothing is
+    cut at all in that case.
+    """
+        im = Image.open(raw_p)
+        if getattr(im, "n_frames", 1) > 1:
+            frames = [f.convert("RGBA") for f in ImageSequence.Iterator(im)]
+        else:
+            w, h = job["width"], job["height"]
+            sw, sh = im.size
+            if sw % w or sh % h:
+                sys.exit(f"rdgen: sheet {sw}x{sh} is not a whole number of {w}x{h} "
+                         f"cells -- refusing to cut it into sliced frames")
+            cols, rows = sw // w, sh // h
+            if cols * rows < 2:
+                return []
+            im = im.convert("RGBA")
+            frames = [im.crop((c * w, r * h, c * w + w, r * h + h))
+                      for r in range(rows) for c in range(cols)]
+        out = []
+        for i, f in enumerate(frames):
+            fp = os.path.join(work, f"frame_{i:02d}.png")
+            f.save(fp)
+            out.append(fp)
+        return out
+
+
+    # The line between an animation that reads as an attack and one that reads as
+    # walking, measured across all 25 runs generated before this gate existed: real
+    # attacks grew the silhouette by 28-34% over the first frame, everything that
+    # looked like a walk grew it by under 7%.
+    MOTION_GATE_PCT = 25
+
+
+    def motion_report(frame_paths):
+        widths = []
+        for fp in frame_paths:
+            bb = Image.open(fp).convert("RGBA").getbbox()
+            widths.append(bb[2] - bb[0] if bb else 0)
+        base = widths[0] or 1
+        return widths, round(100 * (max(widths) - base) / base)
+
+
+    def main():
+        ap = argparse.ArgumentParser(prog="romeart.py rdgen",
+                                     description="Retro Diffusion art pipeline")
+        ap.add_argument("--token-file", default=DEFAULT_TOKEN_FILE,
+                        help=f"file holding the rdpk- key (default {DEFAULT_TOKEN_FILE})")
+        sub = ap.add_subparsers(dest="cmd", required=True)
+        b = sub.add_parser("balance"); b.set_defaults(fn=cmd_balance)
+        c = sub.add_parser("cost");    c.add_argument("job"); c.set_defaults(fn=cmd_cost)
+        r = sub.add_parser("run");     r.add_argument("job")
+        r.add_argument("--run", action="store_true",
+                       help="submit the request and be charged (PAID); without "
+                            "it, run only quotes the cost")
+        r.set_defaults(fn=cmd_run)
+        rp = sub.add_parser("reprocess"); rp.add_argument("job")
+        rp.set_defaults(fn=cmd_reprocess)
+        args = ap.parse_args(argv[1:])
+        args.fn(args)
+
+
+    main()
+
+
+
 COMMANDS = {
     "zone": cmd_zone, "install": cmd_install, "sheet": cmd_sheet,
     "icon": cmd_icon,
-    "sprites": cmd_sprites,
+    "sprites": cmd_sprites,   # paid (network)
     "slots": cmd_slots,
     "rebank": cmd_rebank,
     "fieldgrade": cmd_fieldgrade,
@@ -2519,6 +4483,17 @@ COMMANDS = {
     "tile2x2": lambda a: _tile2x2(["romeart"] + a),
     "mirror": lambda a: _mirrorhalf(["romeart"] + a),
     "crop": lambda a: _cropcentre(["romeart"] + a),
+    "siegeslice": lambda a: _siegeslice(["romeart"] + a),
+    "siegewalls": lambda a: _siegewalls(["romeart"] + a),
+    "fieldcalm": lambda a: _fieldcalm(["romeart"] + a),
+    "splashlogo": lambda a: _splashlogo(["romeart"] + a),
+    "splashtitle": lambda a: _splashtitle(["romeart"] + a),
+    "classpicker": lambda a: _classpicker(["romeart"] + a),
+    "loopreview": lambda a: _loopreview(["romeart"] + a),
+    # paid (network): see the last section
+    "rdgen": lambda a: _rdgen(["romeart"] + a),
+    "pltileset": lambda a: _pltileset(["romeart"] + a),
+    "pltilespro": lambda a: _pltilespro(["romeart"] + a),
 }
 
 

@@ -81,7 +81,7 @@ rectangle of content centred in it scaled to 576 x 480 and cut into 30 cells
 of 96 x 96 in `art/combat/field/` (PACK-FORMAT, "Field grid"). Italia's has
 shipped from `art/fields/italia_calm.png`, the supplied light meadow
 `art/fields/italia.png` with its boulders, ferns, clover and earth patches
-painted out (`tools/fieldcalm.py`), so the troops stand out on it; Galliae,
+painted out (`romeart.py fieldcalm`), so the troops stand out on it; Galliae,
 Africa and Oriens have shipped from windows of that calmed painting, flipped
 and colour-graded for each land (`romeart.py fieldgrade`, ART-PIPELINE).
 
