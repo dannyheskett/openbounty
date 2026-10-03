@@ -1652,6 +1652,10 @@ flagged (§38).
   shared the hero's tile, is stamped where it stands so it is drawn
   (`flow_apply_evade_bounce`; openKB `game.c`: `walk = !attack_foe(game)`
   swaps the hero back to `last_x, last_y`).
+  On a step that opened a gold chest, the chest's gold-or-leadership question
+  has come first: the foe's has been held (`pending_foe_held`) and raised
+  once the chest was answered, with the same bounce-back, so the chest's gold
+  has not been lost to the foe's question (#136).
 
 ---
 

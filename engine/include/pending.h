@@ -73,6 +73,18 @@ extern int  pending_foe_back_x, pending_foe_back_y;
 extern int  pending_foe_back_travel;
 extern int  pending_foe_back_boat_x, pending_foe_back_boat_y;
 
+// A foe that walked onto the hero on the step that raised the gold chest's
+// question (#136): its own question would evict the chest's, losing the gold,
+// so it is held and raised once the chest is answered (player_io_answer),
+// with the bounce-back of the step it caught the hero on.
+extern bool pending_foe_held;
+extern bool pending_foe_held_friendly;
+extern char pending_foe_held_id[32];
+extern int  pending_foe_held_x, pending_foe_held_y;
+extern int  pending_foe_held_back_x, pending_foe_held_back_y;
+extern int  pending_foe_held_back_travel;
+extern int  pending_foe_held_back_boat_x, pending_foe_held_back_boat_y;
+
 // Gold-chest choice prompt state .
 extern int pending_chest_gold;
 extern int pending_chest_leadership;
