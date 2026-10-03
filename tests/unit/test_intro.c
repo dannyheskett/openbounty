@@ -1,6 +1,6 @@
-// The Introduction (#154): Glory of Rome's script resolves to one contiguous
-// timeline whose captions, faces and art all exist; King's Bounty has none;
-// and a malformed script refuses the load like a missing string.
+// The Introduction (#154): a script resolves to one timeline (beats end to
+// end, for_each over the villain catalog); King's Bounty has none; and a
+// malformed script refuses the load like a missing string.
 
 #include "greatest.h"
 #include "cJSON.h"
@@ -13,103 +13,6 @@
 #include <string.h>
 
 #define INTRO_DIR "/tmp/ob_intro_pack"
-
-TEST rome_intro_resolves_to_one_timeline(void) {
-    Pack *p = pack_open("assets/glory-of-rome");
-    ASSERT(p);
-    pack_stack_push(p);
-    Resources *r = calloc(1, sizeof *r);
-    bool ok = r && resources_load(r, "game.json");
-    // Read everything into flags first, so a failure never leaves the Rome
-    // pack on the stack for later suites.
-    bool has = ok && resources_has_intro(r);
-    int scenes = ok ? r->intro.scene_count : 0;
-    bool label = ok && r->ui.title_intro[0];
-    bool contiguous = true, durations = true, fades = true, captions = true, faces = true;
-    double t = 0;
-    for (int i = 0; ok && i < r->intro.beat_count; i++) {
-        const ResIntroBeat *b = &r->intro.beats[i];
-        if (b->start < t - 1e-9 || b->start > t + 1e-9) contiguous = false;
-        if (b->dur <= 0) durations = false;
-        t = b->start + b->dur;
-        if (b->caption && (!b->caption[0] || strchr(b->caption, '%'))) captions = false;
-        if (b->card && (!b->card[0] || strchr(b->card, '%'))) captions = false;
-        if (strchr(b->backdrop, '%')) captions = false;
-        if (b->caption && b->face_count == 0 && b->face) faces = false;
-    }
-    for (int s = 0; ok && s < scenes; s++) {
-        const ResIntroScene *sc = &r->intro.scenes[s];
-        if (sc->fade_in + sc->fade_out > sc->dur) fades = false;
-        if (sc->beat_count <= 0) durations = false;
-    }
-    double total = ok ? r->intro.total : 0;
-    bool ends = ok && t > total - 1e-9 && t < total + 1e-9;
-
-    // The wanted notices: one beat per villain, in catalog order.
-    int wanted = 0;
-    bool order = true;
-    for (int i = 0; ok && i < r->intro.beat_count; i++) {
-        const ResIntroBeat *b = &r->intro.beats[i];
-        if (strcmp(r->intro.scenes[b->scene].id, "wanted") != 0) continue;
-        const char *text = b->caption ? b->caption : b->card;
-        if (wanted < r->villains_count && b->actor_count == 1) {
-            if (!text || !strstr(text, r->villains[wanted].name)) order = false;
-            wanted++;
-        }
-    }
-    int villains = ok ? r->villains_count : -1;
-
-    // Every intro path is listed in the art manifest and is in the pack.
-    bool listed = true, present = true;
-    ResArtList art = { 0 };
-    if (ok) resources_art_manifest(r, &art);
-    for (int i = 0; ok && i < r->intro.beat_count; i++) {
-        const ResIntroBeat *b = &r->intro.beats[i];
-        const char *paths[64];
-        int np = 0;
-        if (b->backdrop[0]) paths[np++] = b->backdrop;
-        for (int a = 0; a < b->actor_count && np < 60; a++)
-            for (int f = 0; f < b->actors[a].frame_count && np < 60; f++)
-                paths[np++] = b->actors[a].frames[f];
-        for (int f = 0; f < b->face_count && np < 63; f++) paths[np++] = b->face[f];
-        for (int k = 0; k < np; k++) {
-            bool in_list = false;
-            for (int m = 0; m < art.n && !in_list; m++) in_list = strcmp(art.path[m], paths[k]) == 0;
-            if (!in_list) listed = false;
-            size_t sz = 0;
-            const unsigned char *bytes = pack_stack_read(paths[k], &sz);
-            if (!bytes || sz == 0) { present = false; fprintf(stdout, "intro art missing: %s\n", paths[k]); }
-        }
-    }
-    resources_art_list_free(&art);
-
-    // The beat at the bounds of the timeline.
-    bool bounds = ok && resources_intro_beat_at(&r->intro, -0.1) == NULL &&
-                  resources_intro_beat_at(&r->intro, 0) == &r->intro.beats[0] &&
-                  resources_intro_beat_at(&r->intro, total) == NULL &&
-                  resources_intro_beat_at(&r->intro, r->intro.beats[1].start) == &r->intro.beats[1];
-
-    if (r) resources_free(r);
-    free(r);
-    pack_stack_pop();
-
-    ASSERT(ok);
-    ASSERT(has);
-    ASSERT_EQ(5, scenes);
-    ASSERT(label);
-    ASSERTm("beats lie end to end", contiguous && ends);
-    ASSERT(durations);
-    ASSERTm("a scene's fades fit inside it", fades);
-    ASSERTm("every caption resolved, no %TOKEN% left", captions);
-    ASSERT(faces);
-    ASSERTm("the intro runs two to ten minutes", total >= 120 && total <= 600);
-    ASSERT_EQ(villains, wanted);
-    ASSERTm("the wanted notices run in catalog order", order);
-    ASSERTm("every intro path is in the art manifest", listed);
-    ASSERTm("every intro path is in the pack", present);
-    ASSERT(bounds);
-    PASS();
-}
 
 TEST kings_bounty_has_no_intro(void) {
     Resources *r = fx_load_resources();
@@ -155,8 +58,11 @@ static bool write_json(const char *path, cJSON *j) {
 // result; *beats holds the beat count on success. Pushes and pops only its
 // own two packs: popping closes a pack, and the shared fixture pack may sit
 // below.
+static bool s_timeline_ok;   // the last good load: beats end to end, villains in order
+
 static bool load_with_intro(const char *script, bool with_label, int *beats) {
     *beats = -1;
+    s_timeline_ok = false;
     Pack *kb = pack_open(FIXTURE_PACK_DIR);
     if (!kb) return false;
     pack_stack_push(kb);
@@ -183,7 +89,27 @@ static bool load_with_intro(const char *script, bool with_label, int *beats) {
         pack_stack_push(overlay);
         Resources *r = calloc(1, sizeof *r);
         loaded = r && resources_load(r, "game.json");
-        if (loaded) *beats = r->intro.beat_count;
+        if (loaded) {
+            *beats = r->intro.beat_count;
+            // End to end, and each villain beat names its villain, in order.
+            bool ok = r->intro.total > 0;
+            double t = 0;
+            int v = 0;
+            for (int i = 0; i < r->intro.beat_count; i++) {
+                const ResIntroBeat *b = &r->intro.beats[i];
+                if (b->start < t - 1e-9 || b->start > t + 1e-9 || b->dur <= 0) ok = false;
+                t = b->start + b->dur;
+                if (b->actor_count == 1) {
+                    if (v >= r->villains_count || !b->caption ||
+                        !strstr(b->caption, r->villains[v].name)) ok = false;
+                    v++;
+                }
+            }
+            s_timeline_ok = ok && v == r->villains_count &&
+                            t > r->intro.total - 1e-9 && t < r->intro.total + 1e-9 &&
+                            resources_intro_beat_at(&r->intro, 0) == &r->intro.beats[0] &&
+                            resources_intro_beat_at(&r->intro, r->intro.total) == NULL;
+        }
         if (r) resources_free(r);
         // Load again: a freed intro leaves nothing behind.
         if (loaded) {
@@ -210,6 +136,7 @@ TEST a_well_formed_intro_loads_and_reloads(void) {
     if (kb) { resources_free(kb); free(kb); }
     ASSERT(ok);
     ASSERT_EQ(1 + villains, beats);
+    ASSERTm("beats end to end, the villains in catalog order", s_timeline_ok);
     PASS();
 }
 
@@ -238,7 +165,6 @@ TEST an_intro_without_its_menu_label_refuses_the_load(void) {
 }
 
 SUITE(unit_intro_suite) {
-    RUN_TEST(rome_intro_resolves_to_one_timeline);
     RUN_TEST(kings_bounty_has_no_intro);
     RUN_TEST(a_well_formed_intro_loads_and_reloads);
     RUN_TEST(an_unknown_caption_key_refuses_the_load);

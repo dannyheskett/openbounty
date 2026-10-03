@@ -412,7 +412,6 @@
 		"title_new_adventure":	"New Game",
 		"title_load_adventure":	"Load Saved Game",
 		"title_credits":	"Credits",
-		"title_intro":	"Introduction",
 		"new_game_confirm":	"Start a new game? Unsaved progress will be lost.",
 		"hero_name_label":	"Hero Name:",
 		"combat_act_wait":	"Wait",
@@ -986,35 +985,5 @@
 			"temple":	"The Temple of Artemis is one of the wonders of the world, %HERO%. Enter, and I will teach you a rite.",
 			"siege":	"Ephesus has changed masters a dozen times, %HERO%, and every one of them brought engineers. Come to the workshop."
 		}
-	},
-	"intro":	{
-		"eagle_1":	"The German frontier, in the autumn of the year of the disaster.",
-		"eagle_2":	"Three legions marched into the forest. Their general trusted a friend.",
-		"eagle_3":	"The friend was a traitor. Out of the trees came the tribes, from every side at once.",
-		"eagle_4":	"The eagle of the legion fell where the legion died...",
-		"eagle_5":	"...and it has never been found.",
-		"title_card":	"GLORY OF ROME",
-		"forum_1":	"CITIZENS OF ROME! Hear the news of the day!",
-		"forum_2":	"A legion lost in the northern forests! Its eagle taken, the Aquila, the soul of the legions! Rome is shamed, and leaderless without it!",
-		"forum_3":	"Yes, yes, citizen, I know. It gets worse.",
-		"forum_4":	"The enemies of Rome have risen, every one of them at once! Rebels, kings and traitors, holding castles from Italia to the East!",
-		"wanted_slow":	"WANTED! %NAME%, %ALIAS%! %REWARD% gold to whoever brings them in, in chains!",
-		"wanted_fast":	"WANTED: %NAME%\n%ALIAS%\n%REWARD% GOLD",
-		"province_italia":	"ITALIA",
-		"province_galliae":	"GALLIAE",
-		"province_africa":	"AFRICA",
-		"province_oriens":	"ORIENS",
-		"wanted_close":	"Each of them holds a castle. And each of them knows a piece of where the eagle lies!",
-		"palace_1":	"A general is recalled from the frontier, and summoned to the Palatium.",
-		"palace_2":	"General. Rome has need of you, and so do I.",
-		"charge_eagle":	"Bring the Aquila home. Without it the legions lose heart, and Rome falls with them.",
-		"charge_villains":	"Take my contracts at any town. Hunt the enemies of Rome, besiege their castles, and bring them to me in chains.",
-		"charge_map":	"Every enemy you capture knows a piece of where the eagle lies. So do the eight sacred relics hidden in the provinces.",
-		"charge_search":	"When the map is whole, go to that ground, search it, and raise the eagle.",
-		"charge_pay":	"The treasury pays your legions by the week. Pay them, or they will leave you.",
-		"charge_days":	"And my patience has a measure. You have %DAYS% days.",
-		"palace_go":	"Go, general. Rome is watching.",
-		"decree_1":	"BY DECREE OF THE EMPEROR! The enemies of Rome to be taken in chains! The eagle to come home! The legions to be paid! And all before the days run out!",
-		"decree_go":	"Go, general! And bring the eagle home!"
 	}
 }
