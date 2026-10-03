@@ -10,6 +10,7 @@
     slots <sprites> <out>  search rock-slot arrangements for a mountain lattice
     rebank <old> <new> <dir> <prefix>  river bands carried onto a new interior
     fieldgrade <src> <out> --window x,y,w,h ...  a field painting derived from another
+    bridge <tiles> <out>   river bridges from a set's installed road and river tiles
     icon [outdir]          the launcher icon, from the title art (128/512/1024)
     prompts                rebuild docs/ROME-ART.md from art/jobs/*.json
 
@@ -2090,18 +2091,12 @@ def cmd_zone(argv):
             if os.path.exists(p):
                 Image.open(p).save(os.path.join(out, f))
 
-    # 6. The two river bridges: the pack's own paving swept across a river piece.
-    for deck, over, name in (("bridge_v.png", "river_ew.png", "bridge_river_ns.png"),
-                             ("bridge_h.png", "river_ns.png", "bridge_river_ew.png")):
-        if not os.path.isdir(os.path.join(prim, "river")):
-            break
-        dst = os.path.join(stage, "bridge_" + name[14:16])
-        _roadtile(["romeart", os.path.join(prim, "river"), dst, "--sweep",
-                   "--fill", os.path.join(PACK, "art", "tiles", deck),
-                   "--grass", os.path.join(stage, "rivers", over),
-                   "--rim", "3", "--rim-shade", "0.7"])
-        piece = "road_ns.png" if name.endswith("ns.png") else "road_ew.png"
-        Image.open(os.path.join(dst, piece)).save(os.path.join(out, name))
+    # 6. The two river bridges: the road carried across the river between
+    #    parapets, its shadow on the water (cmd_bridge, style c).
+    if os.path.exists(os.path.join(out, "river_ns.png")) and os.path.exists(os.path.join(out, "road_ew.png")):
+        cmd_bridge([out, os.path.join(stage, "bridges")])
+        for name in ("bridge_river_ew.png", "bridge_river_ns.png"):
+            Image.open(os.path.join(stage, "bridges", "c", name)).save(os.path.join(out, name))
 
     # 7. The river mouths: east built, west its mirror (as Italia's were).
     if os.path.exists(os.path.join(out, "water_edge_02.png")):
@@ -2427,6 +2422,83 @@ art/fields/BUILD.md). Deterministic: the same call gives the same file.
     print(f"{out}: {w}x{h} from ({x},{y}) flip {opt['--flip'] or 'none'}; mean RGB {int(m[2])},{int(m[1])},{int(m[0])}")
 
 
+def cmd_bridge(argv):
+    """River bridges built from a set's installed road and river tiles.
+
+    python3 tools/romeart.py bridge <tiles-dir> <out-dir>
+
+Writes <out-dir>/<style>/bridge_river_ew.png and bridge_river_ns.png for
+three styles, each one step on from the last:
+  a  the road's own pixels laid over the river piece (road_ew over river_ns,
+     road_ns over river_ew), so the deck is the road's cobbles and its ends
+     are the road's edge: it joins the road by construction.
+  b  over the river, plus 4 px of bank each side, the road's ragged edge
+     gives way to a straight deck between two 5 px parapets on the road's
+     outer edge: the road's stone mixed 40/60 with pale travertine, a dark
+     outer line and a joint every 8 px.
+  c  b, and the deck's shadow on the water below it (right of it, crossing
+     north-south): 3 px at 0.6.
+Reads grass.png, road_ew/ns.png and river_ns/ew.png from <tiles-dir> (the
+pack's art/tiles for Italia, art/tiles/<zone> for the others). Deterministic.
+    """
+    if len(argv) < 2:
+        sys.exit("usage: romeart.py bridge <tiles-dir> <out-dir>")
+    import numpy as np
+    tiles, out = argv[0], argv[1]
+    load = lambda n: np.array(Image.open(os.path.join(tiles, n)).convert("RGBA")).astype(np.int32)
+    G = load("grass.png")
+    P, LINE, SHADOW, BANK = 5, 0.55, 0.6, 4
+    PALE = (196, 188, 168)    # a warm travertine, mixed 60/40 into the road's stone
+
+    def build(road, river, grass, style):
+        # Everything below is for a deck running east-west; north-south is
+        # built transposed and turned back.
+        on_road = (road[:, :, :3] != grass[:, :, :3]).any(axis=2)
+        wet = (river[:, :, :3] != grass[:, :, :3]).any(axis=2)
+        im = river.copy()
+        im[on_road] = road[on_road]
+        if style == "a":
+            return im
+        cols = np.where(wet.any(axis=0))[0]
+        x0, x1 = max(0, cols.min() - BANK), min(95, cols.max() + BANK)
+        tops = [np.where(on_road[:, x])[0].min() for x in range(x0, x1 + 1)]
+        bots = [np.where(on_road[:, x])[0].max() for x in range(x0, x1 + 1)]
+        # The parapets stand on the road's outer edge; between them the deck
+        # is the road's cobbles, borrowed from the road's solid middle where
+        # its ragged edge dipped.
+        t, b = min(tops) - 1, max(bots) + 1
+        mt, mb = max(tops), min(bots)
+        stone = road[on_road][:, :3].mean(axis=0)
+        light = np.clip(stone * 0.4 + np.array(PALE) * 0.6, 0, 255)
+        for x in range(x0, x1 + 1):
+            im[:t, x] = river[:t, x]
+            im[b + 1:, x] = river[b + 1:, x]
+            for y in range(t + P, b - P + 1):
+                if not on_road[y, x]:
+                    im[y, x] = road[min(max(y, mt), mb), x]
+            for y0, outer in ((t, t), (b - P + 1, b)):
+                for y in range(y0, y0 + P):
+                    c = light * (0.8 if x % 8 == 0 else 1.0)
+                    if y == outer:
+                        c = stone * LINE
+                    im[y, x, :3] = c.astype(np.int32)
+            if style == "c":
+                for y in range(b + 1, min(96, b + 4)):
+                    if wet[y, x]:
+                        im[y, x, :3] = (river[y, x, :3] * SHADOW).astype(np.int32)
+        return im
+
+    for style in "abc":
+        d = os.path.join(out, style)
+        os.makedirs(d, exist_ok=True)
+        ew = build(load("road_ew.png"), load("river_ns.png"), G, style)
+        tr = lambda a: a.transpose(1, 0, 2)
+        ns = tr(build(tr(load("road_ns.png")), tr(load("river_ew.png")), tr(G), style))
+        for name, a in (("bridge_river_ew.png", ew), ("bridge_river_ns.png", ns)):
+            Image.fromarray(a.astype(np.uint8), "RGBA").save(os.path.join(d, name))
+    print(f"bridges a, b, c -> {out}")
+
+
 COMMANDS = {
     "zone": cmd_zone, "install": cmd_install, "sheet": cmd_sheet,
     "icon": cmd_icon,
@@ -2434,6 +2506,7 @@ COMMANDS = {
     "slots": cmd_slots,
     "rebank": cmd_rebank,
     "fieldgrade": cmd_fieldgrade,
+    "bridge": cmd_bridge,
     "prompts": lambda a: _artprompts(["romeart"] + a),
     "grass": lambda a: _grassvar(["romeart"] + a),
     "stitch": lambda a: _stitch96(["romeart"] + a),

@@ -20,9 +20,10 @@ What `zone` has done with them, in order:
                        and the fewest grass pixels showing (36)
     road_*, river_*    romeart.py sweep --rim 2 --rim-shade 0.8 over grass.png; the rivers
                        again over forest.png and mountain.png (river_forest_*, river_mountain_*)
-    bridge_river_ns    sweep --fill the pack's bridge_v.png over river_ew.png, --rim 3
-                       --rim-shade 0.7, taking road_ns; bridge_river_ew is bridge_h.png over
-                       river_ns.png, taking road_ew
+    bridge_river_*     romeart.py bridge over the built road and river pieces, style c: the
+                       road's own cobbles across the river between pale parapets, a shadow
+                       on the water (2026-10-02; Africa and Oriens the same, Italia from
+                       its installed tiles)
     river_mouth_e      romeart.py mouth over water_edge_02.png; river_mouth_w is its mirror
 
 Galliae has had no desert, so the desert names have fallen back to the master set. The *_teal,
