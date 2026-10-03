@@ -12,7 +12,7 @@
 	"banners":	{
 		"chest_gold":	"After scouring the area, you fall upon a hidden treasure cache. You may:\nA) Take the %GOLD% gold.\nB) Distribute the gold to the plebeians, increasing your leadership by %LEADERSHIP%.",
 		"chest_gold_title":	"Treasure",
-		"chest_gold_found":	"After scouring the area, you fall upon a hidden treasure cache. You may:",
+		"chest_gold_found":	"You uncover a hidden treasure cache.",
 		"chest_gold_take":	"Take the %GOLD% gold.",
 		"chest_gold_share":	"Distribute the gold to the plebeians, increasing your leadership by %LEADERSHIP%.",
 		"chest_commission":	"After surveying the area, you discover that it is rich in mineral deposits.\n\nThe Emperor rewards you for your find by increasing your weekly income by %POINTS%",

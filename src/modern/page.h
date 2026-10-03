@@ -127,12 +127,23 @@ void    page_question(const char *title, const char *words, int cursor, MlRowFn 
 typedef struct { UkScene band; ML_Rect rows; ML_Rect words; } PagePlace;
 PagePlace page_place(const char *title, const char *right, Texture2D backdrop, int n_rows);
 PagePlace page_person(const char *title, const char *right, int n_rows);
-// A note drawn as a scene: the room with a single action, its picture whole
-// at 3x (the largest whole scale the page's width holds), never trimmed, and
-// its words paged in what is left beside the row, as many lines to a page as
-// the room holds; `page` is the page shown. The rows as page_place lays them.
-PagePlace page_scene(const char *title, const char *right, Texture2D scene, const char *words, int page);
-// How many pages those words take on that page.
+// A person's page that only answers (#140): the title strip, the words (and
+// the speaker's face) the full width, and its `n_answers` answers side by side
+// along the foot in `rows`, one row tall, for ml_hrow_draw. One answer is the
+// page's one action, a tap anywhere.
+PagePlace page_person_row(const char *title, const char *right, int n_answers);
+// A place picked from a row (#140): its picture at a scene note's scale, the
+// words the full width under it, and one row along the foot for the answers
+// side by side (ml_hrow_draw): the provinces and Cancel, or Yes and No.
+PagePlace page_place_row(const char *title, const char *right, Texture2D backdrop);
+// A note drawn as a scene: its picture whole at 3x (the largest whole scale
+// the page's width holds), never trimmed; its words the full width under it,
+// paged, as many lines to a page as the room holds (`page` is the one shown);
+// and `n_rows` rows' strip along the foot (#140): one row for Continue (the
+// page's one action, a tap anywhere), or stacked choices (the treasure).
+PagePlace page_scene(const char *title, const char *right, Texture2D scene, const char *words, int page,
+                     int n_rows);
+// How many pages those words take on a note's page (one row: Continue).
 int page_scene_pages(const char *words);
 
 // The foe on the plains: the same title strip, the plains as a band its

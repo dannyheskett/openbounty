@@ -1292,6 +1292,9 @@ typedef struct {
     // This zone's town-screen backdrop; empty falls back to the pack's
     // sprites.ui.town_backdrop (REQ-221d).
     char town_backdrop[RES_PATH_LEN];
+    // This zone's treasure-cache vista, for the chest's gold-or-leadership
+    // choice (#140); empty: the choice is a menu page.
+    char treasure_scene[RES_PATH_LEN];
     char tile_set[RES_ID_LEN];
     // Optional overrides ("tile_set_arts"): when listed, only these art names
     // come from the zone's folder and every other name from the master

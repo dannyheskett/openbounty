@@ -12,6 +12,8 @@
 #include "prompt.h"
 #include "prompt_impl.h"
 #include "modern/page.h"
+#include "modern/mlist.h"
+#include "input_host.h"
 #include "pack.h"
 #include <stdlib.h>
 #include <string.h>
@@ -147,7 +149,29 @@ TEST message_pages_fill_the_map(void) {
     PASS();
 }
 
+// A row of answers side by side (#140) moves with Left and Right as a column
+// moves with Up and Down, wrapping.
+TEST answer_row_moves_with_left_and_right(void) {
+    MlList l = { 0 };
+    l.n = 4;
+    l.cursor = 0;
+    input_host_clear_injected();
+    input_host_inject_key(KEY_RIGHT);
+    ASSERT_EQ(ML_EV_MOVED, ml_list_input(&l, 0, NULL));
+    ASSERT_EQ(1, l.cursor);
+    input_host_clear_injected();
+    input_host_inject_key(KEY_LEFT);
+    ml_list_input(&l, 0, NULL);
+    input_host_clear_injected();
+    input_host_inject_key(KEY_LEFT);
+    ml_list_input(&l, 0, NULL);
+    ASSERT_EQ(3, l.cursor);                      // wrapped to Cancel's column
+    input_host_clear_injected();
+    PASS();
+}
+
 SUITE(unit_modern_layout_suite) {
+    RUN_TEST(answer_row_moves_with_left_and_right);
     RUN_TEST(message_pages_fill_the_map);
     RUN_TEST(debug_row_only_with_debug_flag);
     RUN_TEST(menu_pages_drill_down);

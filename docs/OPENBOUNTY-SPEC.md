@@ -956,6 +956,12 @@ flagged (§38).
   has given each continent its own town street and kept the original picture
   for Roma alone; `kings-bounty` has declared neither and drawn the shared
   one.
+- **REQ-221e.** **Treasure vistas per continent.** The chest's
+  gold-or-leadership choice has been a scene page under the hero's zone's
+  `treasure_scene` when the zone names one (`treasure_scene`,
+  `src/modern/prompt.c`; DESIGN-SPEC DSGN-0129), and the menu page otherwise.
+  The vistas have been listed in the art manifest. `glory-of-rome` has given
+  each continent its own (#140); `kings-bounty` has declared none.
 - **REQ-221c.** **Sailing has been a scene, with a confirmation.** When a
   pack ships `sprites.ui.sail_backdrop` and the string
   `body_navigate_confirm`, the modern shell has drawn the sail-to decision,

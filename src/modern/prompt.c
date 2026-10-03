@@ -85,6 +85,17 @@ static Texture2D ask_face(void) {
     return s->troop_portrait[idx].id ? s->troop_portrait[idx] : s->troop_sprite[idx];
 }
 
+// The treasure-cache vista of the province the hero stands in (#140); none
+// when the pack names no zone.treasure_scene.
+static Texture2D treasure_scene(void) {
+    const Game *g = modern_overlay_game();
+    const Sprites *s = modern_overlay_sprites();
+    if (!g || !g->res || !s || !s->zone_treasure_scene) return (Texture2D){ 0 };
+    for (int i = 0; i < g->res->zone_count && i < s->zone_town_backdrop_count; i++)
+        if (strcmp(g->res->zones[i].id, g->position.zone) == 0) return s->zone_treasure_scene[i];
+    return (Texture2D){ 0 };
+}
+
 // A menu page's right-hand words: the hero's name.
 static const char *hero_name(void) {
     const Game *g = modern_overlay_game();
@@ -113,6 +124,17 @@ void modern_prompt_draw(const PromptView *p) {
         uk_count(c, NULL, NULL, NULL, p->step_value, p->step_max > 0 ? p->step_max : 0);
         ML_Rect rows = { b.x, b.y, b.w, b.h };
         ml_rows_draw(rows, 2, 2, 0, prompt_row, &ctx, TOUCH_LIST_PROMPT);
+        return;
+    }
+    // The treasure's two uses (#140): the province's treasure-cache vista,
+    // the find's words under it, and the two uses stacked the full width.
+    Texture2D vista = p->kind == PK_AB_CHOICE && pending_flow == FLOW_CHEST_CHOICE
+                    ? treasure_scene() : (Texture2D){ 0 };
+    if (vista.id) {
+        PagePlace P = page_scene(p->header, hero_name(), vista, p->lead, 0, p->choice_n);
+        ctx.max_w = P.rows.w - 2 * UK_INSET - 3 * BFONT_GLYPH_W;
+        ml_list_draw(P.rows.x, P.rows.y, P.rows.w, P.rows.h + ML_ROW_RULE, p->choice_n,
+                     p->choice_cursor, prompt_row, &ctx, TOUCH_LIST_PROMPT, uk_ink());
         return;
     }
     int n = p->choice_n + (p->kind == PK_NUMERIC ? 1 : 0);

@@ -648,8 +648,11 @@ step of it has been the one its kind has called for. Both have had the title
 strip, a rows column 16 × `GW` + 2 × `UK_INSET` wide at the left with a
 `UK_BAND` band beside it, and the words beside that, inset `UK_INSET`. One row
 has been a single action (a tap anywhere presses Enter); more rows a choice
-with Escape as the exit.
-Source: `src/modern/page.c` `page_place`, `page_person`.
+with Escape as the exit. A step that only answers -- one or two answers and
+no choice to scroll -- has had no column: its answers have stood side by side
+along the page's foot and its words the full width (DSGN-0069a, DSGN-0127,
+DSGN-0133; #140).
+Source: `src/modern/page.c` `page_place`, `page_person`, `foot_rows`.
 
 **DSGN-0067. The room (`page_place`).** The place itself: the backdrop band
 (DSGN-0059) under the strip, two tiles tall (2 × `TH`), trimmed from its top
@@ -676,6 +679,21 @@ said beside it in one column. Used for a town's services and each service, a
 question asked in a place, and every outcome.
 Source: `src/modern/page.c` `page_person`; `src/modern/overlay.c`
 `person_says`, `place_outcome`.
+
+**DSGN-0069a. The answer row.** A page that only answers (`page_person_row`,
+`page_place_row`, `page_scene`) has put its answers in one row along its
+foot, the page's full width, a `UK_BAND` band over it: equal columns a
+`UK_BAND` apart (the last taking the remainder), each drawn as a list row --
+lit at the cursor, its key at its right -- and each its own tap
+(`ml_hrow_draw`). Left and Right (keypad 4 and 6) have moved the cursor as
+Up and Down have, wrapping, on every list. Used for a question asked in a
+place and its result, every outcome (promotion, the audience's and the
+tribute's answers, a temple's or an alcove's lesson, troops joining), a note
+as a scene, and sailing. A town's services and their lists have kept the
+column (DSGN-0069).
+Source: `src/modern/page.c` `foot_rows`, `page_person_row`, `page_place_row`;
+`src/modern/mlist.c` `ml_hrow_draw`, `ml_list_input`; `src/modern/overlay.c`
+`place_outcome`, `modern_overlay_draw_sail`.
 
 **DSGN-0070. The foe (`page_foe`).** The foe's page has had the strip, the
 plains as a band min(`TH` + 2 × `UK_INSET`, the room left) tall and never
@@ -1241,9 +1259,10 @@ Source: `src/modern/overlay.c` `draw_message`, `note_face`.
 a one-time vista, a refused gate) has been a room of its own
 (`page_scene`): the title strip, then the scene's art **whole**, never
 trimmed, at 3× (the largest whole scale the page's width holds), the column
-bars either side as in the room; under the band the one Continue row in the
-rows column and the words beside it, **paged** like the message box: as
-many lines to a page as the room under the band holds, the last line of a
+bars either side as in the room; under the band the words the page's full
+width and Continue along the foot (DSGN-0069a), the words **paged** like the
+message box: as many lines to a page as the room between the band and the
+answer row holds, the last line of a
 page ending `..` when more follow, and
 Continue turning the page until the last closes the note
 (`page_scene_pages` is the pager's count). Without its scene art it has been
@@ -1269,7 +1288,10 @@ opener has named (`prompt_set_choices`, `prompt_set_lead`), or else the
 answers themselves, 1 to N or A and B; nothing has been read out of the words.
 A treasure chest's rows have come from `banners.chest_gold_take` and
 `chest_gold_share`, its words from `chest_gold_found` and its title from
-`chest_gold_title` (all optional). Each row has shown its digit or letter
+`chest_gold_title` (all optional). Where the hero's zone names a
+`treasure_scene`, the chest has been a scene page instead (`page_scene` with
+two rows): the vista whole at 3×, the find's words the full width under it,
+and the two uses stacked the full width along the foot (#140). Each row has shown its digit or letter
 while keys have been shown; digits and keypad digits (A and B on a lettered
 question) have answered, and Escape has answered Cancel.
 Source: `src/prompt.c` `default_choices`, `prompt_set_choices`,
@@ -1307,8 +1329,10 @@ Source: `src/modern/overlay.c` `modern_overlay_draw_foe`, `foe_row`;
 **DSGN-0133. Sailing.** Sailing has been the room with the sail backdrop,
 titled `dialog_titles.navigate`, from the first list on: the provinces
 (`shell_navigate_choices`, each with its digit while keys have been shown)
-from the rows column's top and Cancel on its foot, then the confirmation
-(`banners.body_navigate_confirm`) with Yes and No on the foot. No has returned
+and Cancel side by side in the answer row (DSGN-0069a) under the backdrop at
+a scene note's scale, then the confirmation
+(`banners.body_navigate_confirm`) the full width over Yes and No in the same
+row (`page_place_row`). No has returned
 to the provinces, and Escape or Cancel on the provinces has ended the sail.
 Source: `src/shell_actions.c` `shell_dispatch_action`,
 `shell_navigate_choices`; `src/shell_promptdispatch.c`

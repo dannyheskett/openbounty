@@ -299,6 +299,34 @@ void page_question(const char *title, const char *words, int cursor, MlRowFn fn,
 // The rows a place's room holds above its exit without scrolling.
 #define PAGE_PLACE_ROWS 3
 
+// The answers along a page's foot (#140): `n` rows' strip the page's full
+// width at its bottom, a band over it, and the words the full width between
+// `by` and the band. The rows stack in the strip (ml_list_draw) or stand side
+// by side when it is one row tall (ml_hrow_draw).
+static void foot_rows(ML_Rect r, int by, int n, PagePlace *P) {
+    int rh = ml_list_height(n) - ML_ROW_RULE;
+    P->rows = (ML_Rect){ r.x, r.y + r.h - rh, r.w, rh };
+    lattice_band_h(r.x, P->rows.y - UK_BAND, r.w, UK_BAND);
+    int wy = by + UK_INSET;
+    P->words = (ML_Rect){ r.x + UK_INSET, wy, r.w - 2 * UK_INSET, P->rows.y - UK_BAND - UK_INSET - wy };
+}
+
+PagePlace page_place_row(const char *title, const char *right, Texture2D bd) {
+    Page p = open_page(page_full_w(), page_full_h(), PAGE_CENTER, 0, KEY_ESCAPE, true, true);
+    ML_Rect r = p.r;
+    int top = uk_title(r.x, r.y, r.w, title, right, NULL);
+    PagePlace P;
+    memset(&P, 0, sizeof P);
+    // The picture at the scale a scene note's stands at, so the two pages of
+    // a step (the pick, then its question) and the notes match.
+    int scale = r.w / ML_BACKDROP_W;
+    if (scale > 3) scale = 3;
+    if (scale < 1) scale = 1;
+    P.band = uk_scene_band_at(r, top, bd, ML_BACKDROP_H * scale, scale);
+    foot_rows(r, P.band.scene.y + P.band.scene.h + UK_BAND, 1, &P);
+    return P;
+}
+
 PagePlace page_place(const char *title, const char *right, Texture2D bd, int n_rows) {
     Page p = open_page(page_full_w(), page_full_h(), PAGE_CENTER, n_rows == 1 ? KEY_ENTER : 0,
                        KEY_ESCAPE, true, true);
@@ -325,7 +353,7 @@ PagePlace page_place(const char *title, const char *right, Texture2D bd, int n_r
 // The scene note's room without drawing it: where the words go and how many
 // lines fit, so the pager and the drawer agree.
 typedef struct { ML_Rect r; int top, scale, band, words_x, words_w, per; } SceneGeom;
-static SceneGeom scene_geom(void) {
+static SceneGeom scene_geom(int n_rows) {
     SceneGeom G;
     memset(&G, 0, sizeof G);
     ML_Rect in = page_interior();
@@ -346,36 +374,36 @@ static SceneGeom scene_geom(void) {
     if (G.scale > 3) G.scale = 3;
     if (G.scale < 1) G.scale = 1;
     G.band = ML_BACKDROP_H * G.scale;
-    int lw = 16 * GW + 2 * UK_INSET;
-    G.words_x = G.r.x + lw + UK_BAND + UK_INSET;
-    G.words_w = G.r.x + G.r.w - UK_INSET - G.words_x;
-    int words_h = G.r.y + G.r.h - (G.top + G.band + UK_BAND) - 2 * UK_INSET;
+    // The words the full width under the picture, over the answers' strip
+    // and its band (foot_rows).
+    G.words_x = G.r.x + UK_INSET;
+    G.words_w = G.r.w - 2 * UK_INSET;
+    int rows_h = ml_list_height(n_rows) - ML_ROW_RULE + UK_BAND;
+    int words_h = G.r.y + G.r.h - rows_h - (G.top + G.band + UK_BAND) - 2 * UK_INSET;
     G.per = words_h / uk_line_h();
     if (G.per < 1) G.per = 1;
     return G;
 }
 
 int page_scene_pages(const char *words) {
-    SceneGeom G = scene_geom();
+    SceneGeom G = scene_geom(1);
     int n = uk_lines(words, G.words_w);
     int pages = (n + G.per - 1) / G.per;
     return pages < 1 ? 1 : pages;
 }
 
-PagePlace page_scene(const char *title, const char *right, Texture2D scene, const char *words, int page) {
-    SceneGeom G = scene_geom();
-    Page p = open_page(page_full_w(), page_full_h(), PAGE_CENTER, KEY_ENTER, KEY_ESCAPE, true, true);
+PagePlace page_scene(const char *title, const char *right, Texture2D scene, const char *words, int page,
+                     int n_rows) {
+    if (n_rows < 1) n_rows = 1;
+    SceneGeom G = scene_geom(n_rows);
+    Page p = open_page(page_full_w(), page_full_h(), PAGE_CENTER, n_rows == 1 ? KEY_ENTER : 0,
+                       KEY_ESCAPE, true, true);
     ML_Rect r = p.r;
     int top = uk_title(r.x, r.y, r.w, title, right, NULL);
     PagePlace P;
+    memset(&P, 0, sizeof P);
     P.band = uk_scene_band_at(r, top, scene, G.band, G.scale);
-    int by = P.band.scene.y + P.band.scene.h + UK_BAND;
-    int bh = r.y + r.h - by;
-    int lw = 16 * GW + 2 * UK_INSET;
-    P.rows = (ML_Rect){ r.x, by, lw, bh };
-    lattice_band_v(r.x + lw, by, UK_BAND, bh);
-    int wx = r.x + lw + UK_BAND + UK_INSET;
-    P.words = (ML_Rect){ wx, by + UK_INSET, r.x + r.w - UK_INSET - wx, bh - 2 * UK_INSET };
+    foot_rows(r, P.band.scene.y + P.band.scene.h + UK_BAND, n_rows, &P);
     // The page's lines: skip the pages before, draw this one, and end its
     // last line with ".." when more follow.
     const int lh = uk_line_h();
@@ -404,6 +432,17 @@ PagePlace page_person(const char *title, const char *right, int n_rows) {
     lattice_band_v(r.x + lw, top, UK_BAND, P.rows.h);
     int wx = r.x + lw + UK_BAND + UK_INSET;
     P.words = (ML_Rect){ wx, top + UK_INSET, r.x + r.w - UK_INSET - wx, r.y + r.h - UK_INSET - (top + UK_INSET) };
+    return P;
+}
+
+PagePlace page_person_row(const char *title, const char *right, int n_answers) {
+    Page p = open_page(page_full_w(), page_full_h(), PAGE_CENTER, n_answers == 1 ? KEY_ENTER : 0,
+                       KEY_ESCAPE, true, true);
+    ML_Rect r = p.r;
+    int top = uk_title(r.x, r.y, r.w, title, right, NULL);
+    PagePlace P;
+    memset(&P, 0, sizeof P);
+    foot_rows(r, top, 1, &P);
     return P;
 }
 
