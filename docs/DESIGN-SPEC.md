@@ -1177,22 +1177,23 @@ Source: `src/combat_loop.c` `combat_present`; `src/ui.c` `toast_show`.
 
 **DSGN-0118. Combat menu.** The combat menu has been menu pages (DSGN-0071)
 with the hero's name at the strip's right:
-- Actions (`menu.items.gm_actions`): Unit >, Hero >, Game >, and Close on
-  the foot.
+- Actions (`menu.items.gm_actions`): Unit >, Hero >, Game >, then Close and
+  Give up (G) on the foot (#133).
 - Unit: Shoot (S), Wait (W), Fly (F), Cast a spell > (U), and Back on the
   foot, always in that order, greyed with their reasons
   (`banners.gmr_no_shots`, `gmr_adjacent`, `gmr_cannot_fly`, `gmr_no_magic`,
   `gmr_one_spell`).
 - Hero: Army (A), Character (V), and Back on the foot.
-- Game: Controls (C), then Back and Give up (G) on the foot.
+- Game: Controls (C), and Back on the foot.
 - Spells: the spells page (DSGN-0138) with the path as its title and Back as
   its exit.
 Source: `src/combat_loop.c` `combat_menu_page`, `combat_action_menu_draw`.
 
 **DSGN-0119. Opening the combat menu.** The combat menu has opened on its
-Unit page with the cursor on the first command the unit has been able to use:
-with Enter, keypad Enter, a tap on the active unit, Escape when nothing has
-been armed on the player's turn, or the Menu tile. U or the Cast tile has
+top page, Actions, with the cursor on Unit (#133): with a tap on the active
+unit, Escape when nothing has been armed on the player's turn, or the Menu
+tile. Enter has not opened it: Enter confirms a shot or a flight, and a
+second press opened the menu by accident (#134). U or the Cast tile has
 opened the spells page directly, on the first spell held. Every page has
 opened on its first row that could be chosen. Escape, or a tap outside the
 menu, has gone back one page, closing at the top.
