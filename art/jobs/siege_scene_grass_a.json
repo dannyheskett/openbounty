@@ -16,5 +16,5 @@
     192
   ],
   "_note": "2026-09-10: the run02 scene with its grass pixels replaced by the pack's new grass texture (t32_grass_a), img2img at strength 0.55, k-centroid to 192 (32 per cell) for the pack's 32 px siege cells.",
-  "_pack_path": "art/combat/siege/cell_<x>_<y>.png (36 cells at 64, romeart.py siegeslice --grid)"
+  "_pack_path": "art/combat/siege/cell_<x>_<y>.png (36 cells at 32, romeart.py siegeslice --grid)"
 }

@@ -23,7 +23,7 @@
     mouth <coast> <river_ew> <grass> <sea> <out>
     tile2x2 <in> <out>                lay a 48 px tile 2x2 into 96
     mirror <in> <out> <half>          mirror half a tile over the other
-    crop <in> <out> [w h]             centre-crop a still to the pack size
+    crop <in> <out> [size] [top]      centre-crop a still to the pack size
 
     siegeslice <scene> <out> [--grid | --field <prefix>]
                                       castle picture into siege pieces / cells
@@ -37,7 +37,8 @@
     loopreview <run-dir> [--scale N]  review page for an animation run
 
   Paid (network):
-    rdgen cost|run|reprocess|balance <job>   Retro Diffusion generation
+    rdgen cost|run|reprocess <job>    Retro Diffusion generation
+    rdgen balance                     the Retro Diffusion credit left
     pltileset <out> <request.json>    one PixelLab create-tileset call
     pltilespro <body.json> <out>      one PixelLab Tiles Pro call
     sprites <job> <out>               a PixelLab rock/tree sprite batch
@@ -672,7 +673,7 @@ The set is a PixelLab 16 px tileset whose lower terrain is the pack grass
 and whose upper is a detail (weeds, pebbles, flowers, dry grass). More
 sets, chained to the same grass, may be given with --set; each variant
 takes its patches from one or two of them at random. Each variant is a 96 px
-tile built like a terrain tile (tools/stitch96.py): a 7x7 vertex grid, the
+tile built like a terrain tile (romeart.py stitch): a 7x7 vertex grid, the
 set's corner tile per 2x2. The border vertices are always the lower grass,
 so every variant's edges are the plain grass and any two variants, or a
 variant and the plain tile, join without a seam. The patch is a random
@@ -843,7 +844,7 @@ def _forestlattice(argv):
     python3 tools/romeart.py lattice <out.json> --sprites DIR --crown N --name forest
     python3 tools/romeart.py lattice <out.json> --sprites DIR --terrain mountain --name mountain
 
-The contract (2026-09-10), checked mechanically by tools/seamcheck.py:
+The contract (2026-09-10), checked mechanically by romeart.py seamcheck:
 
   Every side of a tile is TERMINAL (grass beyond) or an INTERFACE (the
   same terrain beyond). A sprite may straddle at most ONE border, never a
@@ -883,7 +884,7 @@ Terminal sides:
 Codes 5..8 (diagonal-only) are plain lattice: nothing touches a corner.
 
 Codes are the engine's (OPENBOUNTY-SPEC REQ-229a). Output is a layout for
-tools/treetile.py with wrap off, every sprite listed, negatives included.
+romeart.py compose with wrap off, every sprite listed, negatives included.
     """
 
 
@@ -1342,7 +1343,7 @@ def _roadtile(argv):
     python3 tools/romeart.py sweep <set-dir> <out-dir> --sweep --fill PAVING.png --grass RIVER.png
         (a bridge deck: the band filled with a 96 px tile over another piece)
 
-A road piece is a 96 px tile built the way tools/stitch96.py builds a
+A road piece is a 96 px tile built the way romeart.py stitch builds a
 terrain tile: a 7x7 grid of vertices, each grass (l) or dirt (u), and the
 set's corner tile for every 2x2 of vertices. The vertices come from a
 pixel-space shape sampled every 16 px, so the shapes below ARE the pieces.

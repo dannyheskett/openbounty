@@ -406,11 +406,13 @@ changed look against its neighbours.
 python3 tools/romeart.py rdgen cost      art/jobs/<id>.json        # the price, nothing submitted
 python3 tools/romeart.py rdgen run       art/jobs/<id>.json        # the price again; still nothing submitted
 python3 tools/romeart.py rdgen run       art/jobs/<id>.json --run  # submitted and charged
-python3 tools/romeart.py rdgen reprocess art/jobs/<id>.json        # re-cut and re-check, no new call
+python3 tools/romeart.py rdgen reprocess art/jobs/<id>.json        # re-cut and re-check, no new generation
 ```
 
 - Nothing has been charged without `--run` (#143): `run` alone has quoted the
   cost and stopped, and only `run --run` has made a run directory.
+- `reprocess` has made no generation call; a job that is not `raw_only` and
+  not at its target size has still called the free `k_centroid` downscale.
 
 - Every call has gone through rdgen, so the request has been saved beside the
   result.
