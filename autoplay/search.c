@@ -465,6 +465,8 @@ bool search_run(ExecCtx *ctx, int *out_best_done, int *out_total) {
     root->sig = sig_live(ctx);
     best = root;
     root->refcount++;                   // `best` holds a reference
+    root->refcount++;                   // and the search itself: the restart
+                                        //   re-lists the root after eviction
     baltree_insert(frontier, node_key(root), root);
 
     SearchNode *hit_node = NULL;
@@ -478,13 +480,18 @@ bool search_run(ExecCtx *ctx, int *out_best_done, int *out_total) {
             // Doomed region: prune the frontier back to the root and let its
             // next candidate open a fresh descent (see SEARCH_STAGNATION_CUT).
             long dropped = 0;
+            bool root_listed = false;
             for (;;) {
                 SearchNode *n2 = (SearchNode *)baltree_pop_min(frontier, NULL);
                 if (!n2) break;
-                if (n2 == root) continue;       // re-inserted below
+                if (n2 == root) { root_listed = true; continue; }  // re-inserted below
                 node_unref(n2);
                 dropped++;
             }
+            // The root is the oldest node, so the live-node cap evicts it
+            // first: re-listed after that, it needs a frontier reference of
+            // its own, or its descendants outlive it.
+            if (!root_listed) root->refcount++;
             baltree_insert(frontier, node_key(root), root);
             restarts++;
             last_best_x = expansions;
@@ -725,6 +732,7 @@ bool search_run(ExecCtx *ctx, int *out_best_done, int *out_total) {
     if (hit_node) node_unref(hit_node);
     if (best) node_unref(best);
     baltree_free(frontier, node_unref_cb);
+    node_unref(root);                   // the search's own reference
     free(scratch_run);
     planner_close();                    // the step core's attempt snapshot
     recruit_cache_enable(false);

@@ -534,7 +534,10 @@ mover, recruiter, and their measurement layer.
   at moved positions, cleared-tile residue), and the recording cannot
   reproduce a map the line did not derive from prims. Lifetime has been
   refcounted along the lineage, so discarding a branch frees it up to its
-  first still-referenced ancestor, and candidate lists have been priced
+  first still-referenced ancestor. The root has also been held by the search
+  itself for its whole run: as the oldest node it is the first the beam
+  evicts, and a stagnation cut that re-lists it then takes a fresh frontier
+  reference, so its descendants never outlive it. Candidate lists have been priced
   LAZILY at a node's first pop: about 40% of created nodes are never popped
   and never pay the pricing pass.
 - **AP-205.** Progress has been UNIVERSE-NORMALIZED. Each node's enumeration
