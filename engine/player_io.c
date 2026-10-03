@@ -16,6 +16,7 @@
 #include "game.h"          // full Game definition (PlayerIoQueue field)
 #include "pending.h"       // the decision scratch this queue mirrors
 #include "flow_resolve.h"  // flow_apply_* cores + RecruitParams/FriendlyParams
+#include "flows.h"        // start_foe_*_flow: a foe held behind the chest (#136)
 #include "combat.h"        // CombatResult
 #include "ui_host.h"       // the host prompt an ask opens
 
@@ -386,6 +387,26 @@ void player_io_answer(Game *g, Map *map, Fog *fog, const Resources *res,
     case FLOW_NAVIGATE:
         pending_nav_count = 0; break;
     default: break;
+    }
+
+    // A foe held behind this chest's question (#136) asks its own now, as it
+    // would have on the step it caught the hero on.
+    if (answered == FLOW_CHEST_CHOICE && pending_foe_held) {
+        pending_foe_held = false;
+        if (pending_foe_held_friendly) {
+            start_foe_friendly_flow(g, map, res, pending_foe_held_id,
+                                    pending_foe_held_x, pending_foe_held_y);
+        } else {
+            start_foe_hostile_flow(g, pending_foe_held_id,
+                                   pending_foe_held_x, pending_foe_held_y);
+            pending_foe_bounce = true;
+            pending_foe_back_x = pending_foe_held_back_x;
+            pending_foe_back_y = pending_foe_held_back_y;
+            pending_foe_back_travel = pending_foe_held_back_travel;
+            pending_foe_back_boat_x = pending_foe_held_back_boat_x;
+            pending_foe_back_boat_y = pending_foe_held_back_boat_y;
+            pending_foe_evade_blocked = map && !GameFoeCanEvade(g, map);
+        }
     }
 
     if (out_pres) *out_pres = pres;

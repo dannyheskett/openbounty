@@ -241,6 +241,54 @@ TEST evading_a_foe_that_walked_onto_the_hero_bounces_back(void) {
     PASS();
 }
 
+TEST a_foe_arriving_on_a_gold_chest_waits_for_the_chest(void) {
+    // A hostile foe that walks onto the hero on the step that opened a gold
+    // chest: the chest's gold-or-leadership question comes first, and its
+    // gold is paid; then the foe's Fight/Evade, whose Evade bounces back to
+    // where the step began (#136). Before, the foe's question evicted the
+    // chest's and the gold was lost with the chest already gone.
+    extern bool adventure_walkable_on_foot(const Tile *t);
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, "continentia", FIXTURE_SEED));
+    for (int z = 0; z < 4; z++) res->economy.chest.chance_gold[z] = 101;   // every chest is gold
+    FoeState *fo = NULL;
+    for (int i = 0; i < g->foe_count && !fo; i++) {
+        FoeState *c = &g->foes[i];
+        if (!c->alive || c->friendly || c->is_static || strcmp(c->zone, g->position.zone)) continue;
+        bool open = true;
+        for (int k = 1; k <= 2; k++) {
+            const Tile *t = MapGetTile(m, c->x + k, c->y);
+            if (!t || !adventure_walkable_on_foot(t) || t->interactive != INTERACT_NONE) open = false;
+        }
+        if (open) fo = c;
+    }
+    ASSERT(fo);
+    int fx = fo->x, fy = fo->y;
+    MAP_TILE(m, fx + 1, fy).interactive = INTERACT_TREASURE_CHEST;
+    g->position.x = g->position.last_x = fx + 2;
+    g->position.y = g->position.last_y = fy;
+    int gold = g->stats.gold;
+    GameStep(g, m, f, res, -1, 0);
+    ASSERT_EQ(fx + 1, fo->x);                       // the foe walked onto the hero
+    ASSERT_EQ(FLOW_CHEST_CHOICE, pending_flow);     // but the chest asks first
+    ASSERT(pending_foe_held);
+    int chest_gold = pending_chest_gold;
+    ASSERT(chest_gold > 0);
+    player_io_drain_messages(g);
+    player_io_answer(g, m, f, res, (FlowAnswer){ FLOW_ANS_1, 0 },
+                     PLAYER_IO_COMBAT_NOT_RUN, NULL);
+    ASSERT_EQ(gold + chest_gold, g->stats.gold);   // the gold was paid
+    ASSERT_EQ(FLOW_ATTACK_FOE, pending_flow);       // then the foe asks
+    ASSERT_FALSE(pending_foe_held);
+    player_io_drain_messages(g);
+    player_io_answer(g, m, f, res, (FlowAnswer){ FLOW_ANS_NO, 0 },
+                     PLAYER_IO_COMBAT_NOT_RUN, NULL);
+    ASSERT_EQ(fx + 2, g->position.x);               // Evade: back where the step began
+    ASSERT_EQ(fy, g->position.y);
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
 TEST a_vista_fires_once_and_changes_the_map(void) {
     // A one-time vista (game.json `events`): stepping onto its tile with every
     // precondition held plays the scene, spends what it consumes, changes the
@@ -592,6 +640,7 @@ SUITE(e2e_game_flow_suite) {
     RUN_TEST(switch_zone_preserves_fog_on_return);
     RUN_TEST(switch_zone_lands_at_the_arrival_for_its_origin);
     RUN_TEST(evading_a_foe_that_walked_onto_the_hero_bounces_back);
+    RUN_TEST(a_foe_arriving_on_a_gold_chest_waits_for_the_chest);
     RUN_TEST(a_vista_fires_once_and_changes_the_map);
     RUN_TEST(a_chest_may_carry_a_declared_purse);
     RUN_TEST(a_gate_army_demands_its_arm);

@@ -669,7 +669,20 @@ bool GameStep(Game *game, Map *map, Fog *fog,
                 fid[k] = cf->placement_id[k]; k++;
             }
             fid[k] = '\0';
-            if (cf->friendly) {
+            if (pending_flow == FLOW_CHEST_CHOICE) {
+                // This step opened a gold chest: its question stands first,
+                // and the foe's follows it (#136).
+                pending_foe_held = true;
+                pending_foe_held_friendly = cf->friendly;
+                snprintf(pending_foe_held_id, sizeof pending_foe_held_id, "%s", fid);
+                pending_foe_held_x = game->position.x;
+                pending_foe_held_y = game->position.y;
+                pending_foe_held_back_x = prev_x;
+                pending_foe_held_back_y = prev_y;
+                pending_foe_held_back_travel = (int)prev_travel_mode;
+                pending_foe_held_back_boat_x = prev_boat_x;
+                pending_foe_held_back_boat_y = prev_boat_y;
+            } else if (cf->friendly) {
                 start_foe_friendly_flow(game, map, res, fid,
                                         game->position.x, game->position.y);
             } else {
