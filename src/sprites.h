@@ -107,6 +107,7 @@ typedef struct {
     // an empty texture means "fall back".
     int        zone_town_backdrop_count;
     Texture2D *zone_town_backdrop;
+    Texture2D *zone_treasure_scene;   // zone_town_backdrop_count of them (#140)
     int        town_backdrop_count;
     Texture2D *town_backdrop_own;
     Texture2D scene_column[3];   // modern: capital, shaft, base (id 0: the lattice)

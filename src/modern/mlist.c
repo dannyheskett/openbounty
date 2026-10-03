@@ -140,6 +140,20 @@ void ml_rows_draw(ML_Rect a, int n, int foot, int cursor, MlRowFn fn, void *ctx,
                     fn, ctx, touch_list, uk_ink(), top_n);
 }
 
+void ml_hrow_draw(ML_Rect a, int n, int cursor, MlRowFn fn, void *ctx, int touch_list) {
+    if (n <= 0) return;
+    int cw = (a.w - (n - 1) * UK_BAND) / n;
+    for (int i = 0; i < n; i++) {
+        int x = a.x + i * (cw + UK_BAND);
+        int w = i == n - 1 ? a.x + a.w - x : cw;    // the last column takes the remainder
+        char label[96] = "", right[48] = "";
+        bool enabled = fn ? fn(ctx, i, label, right, (int)sizeof label) : true;
+        draw_row(x, a.y, w, a.h, label, right, i == cursor, enabled, uk_ink());
+        if (touch_list) ui_tile_row(x, a.y, w, a.h, touch_list, i);
+        if (i + 1 < n) lattice_band_v(x + w, a.y, UK_BAND, a.h);
+    }
+}
+
 // ---- the one reader --------------------------------------------------------------
 
 int ml_key_code(const char *name) {
@@ -176,11 +190,15 @@ MlEvent ml_list_input(MlList *l, int touch_list, int *row) {
         if (row) *row = i;
         return ML_EV_ACT;
     }
-    if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_KP_8)) {
+    // Left and Right move along a row of answers side by side (ml_hrow_draw)
+    // as Up and Down move down a column.
+    if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_KP_8) ||
+        input_key_pressed(KEY_LEFT) || input_key_pressed(KEY_KP_4)) {
         l->cursor = (l->cursor - 1 + l->n) % l->n;
         return ML_EV_MOVED;
     }
-    if (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2)) {
+    if (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2) ||
+        input_key_pressed(KEY_RIGHT) || input_key_pressed(KEY_KP_6)) {
         l->cursor = (l->cursor + 1) % l->n;
         return ML_EV_MOVED;
     }

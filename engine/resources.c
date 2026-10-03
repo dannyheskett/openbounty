@@ -474,6 +474,8 @@ static void parse_zones(Resources *res, cJSON *arr) {
         }
         copy_str(z->town_backdrop, sizeof(z->town_backdrop),
                  json_str(it, "town_backdrop", ""));
+        copy_str(z->treasure_scene, sizeof(z->treasure_scene),
+                 json_str(it, "treasure_scene", ""));
         copy_str(z->tile_set, sizeof(z->tile_set), json_str(it, "tile_set", ""));
         {
             cJSON *ov = cJSON_GetObjectItem(it, "tile_set_arts");
@@ -3356,6 +3358,8 @@ int resources_art_manifest(const Resources *res, ResArtList *out) {
     // A zone's own town backdrop, and a town's own (REQ-221d).
     for (int i = 0; i < res->zone_count; i++)
         art_add(out, cap, &n, res->zones[i].town_backdrop);
+    for (int i = 0; i < res->zone_count; i++)
+        art_add(out, cap, &n, res->zones[i].treasure_scene);
     for (int i = 0; i < res->town_count; i++)
         art_add(out, cap, &n, res->towns[i].backdrop);
     art_add(out, cap, &n, res->sprites.palace_welcome);
