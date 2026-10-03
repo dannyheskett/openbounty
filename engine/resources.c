@@ -1525,6 +1525,10 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(town_intel_unavailable,  "town_intel_unavailable");
     SET_BANNER(town_intel_castle_under, "town_intel_castle_under");
     SET_BANNER(town_intel_owner_rule,   "town_intel_owner_rule");
+    {   // Optional: a pack that reports at the castle gate (#139).
+        const char *s = cJSON_IsObject(obj) ? json_str(obj, "castle_gate_owner", NULL) : NULL;
+        copy_str(b->castle_gate_owner, sizeof(b->castle_gate_owner), s ? s : "");
+    }
     SET_BANNER(town_intel_owner_none,   "town_intel_owner_none");
     SET_BANNER(town_intel_owner_player, "town_intel_owner_player");
     SET_BANNER(town_intel_owner_king,   "town_intel_owner_king");

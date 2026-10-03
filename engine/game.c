@@ -3196,7 +3196,10 @@ static void report_append(char *buf, size_t cap, size_t *off, const char *frag) 
     *off += (size_t)n;
 }
 
-bool GameCastleReport(const Game *g, const char *castle_id, char *out, size_t cap) {
+// at_gate: the castle names itself in the page's title, so the report opens
+// with castle_gate_owner ("Under %OWNER%'s rule.") instead of naming it.
+static bool castle_report(const Game *g, const char *castle_id, char *out, size_t cap,
+                          bool at_gate) {
     if (!out || cap == 0) return false;
     out[0] = '\0';
     if (!g || !g->res || !castle_id) return false;
@@ -3209,7 +3212,8 @@ bool GameCastleReport(const Game *g, const char *castle_id, char *out, size_t ca
     size_t off = 0;
     char tmp[256];
     buf[0] = '\0';
-    {
+    bool short_form = at_gate && bn->castle_gate_owner[0];
+    if (!short_form) {
         ResTemplateVar vars[] = { { "NAME", rc->name[0] ? rc->name : cr->id } };
         resources_format_template(tmp, sizeof tmp, bn->town_intel_castle_under, vars, 1);
         report_append(buf, sizeof buf, &off, tmp);
@@ -3227,13 +3231,31 @@ bool GameCastleReport(const Game *g, const char *castle_id, char *out, size_t ca
     }
     {
         ResTemplateVar vars[] = { { "OWNER", owner } };
-        resources_format_template(tmp, sizeof tmp, bn->town_intel_owner_rule, vars, 1);
+        resources_format_template(tmp, sizeof tmp,
+                                  short_form ? bn->castle_gate_owner : bn->town_intel_owner_rule,
+                                  vars, 1);
         report_append(buf, sizeof buf, &off, tmp);
     }
-    int stacks_shown = 0;
-    for (int i = 0; i < GAME_ARMY_SLOTS && off + 1 < sizeof(buf); i++) {
+    // A pack that reports at the gate (#71) gives each troop one line, its
+    // stacks' counts summed (#139); the original listed every slot, so two
+    // stacks of one troop read twice, and King's Bounty keeps that.
+    Unit lines[GAME_ARMY_SLOTS];
+    int n_lines = 0;
+    bool merge = g->res->world.castle_gate_report;
+    for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
         const Unit *u = &cr->garrison[i];
         if (!u->id[0] || u->count == 0) continue;
+        int k = 0;
+        if (merge)
+            while (k < n_lines && strcmp(lines[k].id, u->id) != 0) k++;
+        else
+            k = n_lines;
+        if (k == n_lines) lines[n_lines++] = *u;
+        else              lines[k].count += u->count;
+    }
+    int stacks_shown = 0;
+    for (int i = 0; i < n_lines && off + 1 < sizeof(buf); i++) {
+        const Unit *u = &lines[i];
         const TroopDef *t = troop_by_id(u->id);
         const char *tname = (t && t->name[0]) ? t->name : u->id;
         const char *count_label = GameNumberName(g, u->count);
@@ -3259,6 +3281,14 @@ bool GameCastleReport(const Game *g, const char *castle_id, char *out, size_t ca
     }
     snprintf(out, cap, "%s", buf);
     return true;
+}
+
+bool GameCastleReport(const Game *g, const char *castle_id, char *out, size_t cap) {
+    return castle_report(g, castle_id, out, cap, false);
+}
+
+bool GameCastleGateReport(const Game *g, const char *castle_id, char *out, size_t cap) {
+    return castle_report(g, castle_id, out, cap, true);
 }
 
 CastleRecord *GameFindCastle(Game *g, const char *castle_id) {

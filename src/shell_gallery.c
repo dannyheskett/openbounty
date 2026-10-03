@@ -455,7 +455,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
             if (g->castles[i].owner_kind == CASTLE_OWNER_VILLAIN)
                 gc = resources_castle_by_id(g->res, g->castles[i].id);
         char rb[PLAYER_IO_BODY_CAP], hb[128], qb[PLAYER_IO_BODY_CAP + RES_BANNER_LEN + 2];
-        if (gc && GameCastleReport(g, gc->id, rb, sizeof rb)) {
+        if (gc && GameCastleGateReport(g, gc->id, rb, sizeof rb)) {
             ResTemplateVar cv[] = { { "NAME", gc->name } };
             resources_format_template(hb, sizeof hb, bn->castle_header, cv, 1);
             reset(&G); open_dialog(hb, rb); shot(&G, "06c_castle_gate_report");

@@ -1719,11 +1719,15 @@ flagged (§38).
   Yes has entered combat, No has bounced back. Any visit has set a villain
   castle `known`, so the town contract scenes and the Contract view have
   named it from then on. A pack that sets `world.castle_gate_report` (Glory
-  of Rome, #71) has told the hero what the gate sees, the town informant's
-  report (`GameCastleReport`: whose rule, then each stack in vague words):
-  without siege weapons in a message box headed "Castle <name>" before the
-  bounce, and with them above the siege question (`castle_siege_ask`) in
-  place of the plain prompt. A combat win has set
+  of Rome, #71) has told the hero what the gate sees, the report in its gate
+  form (`GameCastleGateReport`: whose rule, opening with `castle_gate_owner`
+  "Under <owner>'s rule." so the castle is not named again under its title,
+  then each troop in vague words, stacks of one troop on one line with their
+  counts summed, #139): without siege weapons in a message box headed
+  "Castle <name>" before the bounce, and with them above the siege question
+  (`castle_siege_ask`) in place of the plain prompt. In such a pack the town
+  informant's report (`GameCastleReport`) merges stacks the same way; King's
+  Bounty lists every slot, as the original did. A combat win has set
   `owner_kind = CASTLE_OWNER_PLAYER`; a villain-castle win has additionally
   fulfilled the contract (§21.3).
 - **REQ-304.** **Own Castle** (`src/screens/own_castle.c`) has shown the
