@@ -403,8 +403,8 @@ Source: `src/modern/rail.c` `a_page_is_open`, `rail_draw`; `src/hud.c`
   page less 4 × `ring` and never taller than `in.h` − 4 × `ring`
   (`page_menu_h`).
 - A message: the smallest screen's map width less 4 × `ring` (`page_msg_w`),
-  as tall as what it has held.
-- `PAGE_MSG_LINES` 6, `PAGE_FOE_CARD_LINES` 5.
+  as tall as what it has held, up to its area's height less 4 × `ring`.
+- `PAGE_MSG_MAX_LINES` 40, `PAGE_FOE_CARD_LINES` 5.
 Source: `src/modern/page.h`; `src/modern/page.c` `page_ring`, `page_full_w`,
 `page_full_h`, `page_menu_w`, `page_menu_h`, `page_msg_w`.
 
@@ -613,17 +613,24 @@ shared one box, `page_msg_w` wide:
   `ml_list_height`(rows) when there have been rows.
 Source: `src/modern/page.c` `ask`, `title_lines`.
 
-**DSGN-0063. `page_message`.** A message's words have been paged
-`PAGE_MSG_LINES` lines at a time, the last line of a page with more to come
-ending "..". It has had one Continue row (`banners.castle_continue`), the row
+**DSGN-0063. `page_message`.** A message's words have been paged as many
+lines at a time as the box holds at its tallest: its area (the interior for
+the map's foot, the battlefield's `COMBAT_H` × `TH` for the field's) less
+4 × `ring`, 2 × `UK_INSET`, its title lines and its Continue row, divided by
+`L`, at most `PAGE_MSG_MAX_LINES` (`msg_lines`). The pager
+(`page_message_pages`, given the title and anchor) and the drawer have used
+that one count. The last line of a page with more to come has ended "..".
+A fixed 6 lines paged short notes for a line or two (#132). It has had one Continue row (`banners.castle_continue`), the row
 Escape has pressed; a tap anywhere has pressed Enter, and any key has turned
 its page or closed it. Without a row (the bridge, DSGN-0125) it has had no
 action of its own.
 Source: `src/modern/page.c` `page_message`, `page_message_pages`,
 `page_message_text_w`; `src/main.c` `main`.
 
-**DSGN-0064. `page_question`.** A question with two answers has shown at most
-12 lines of words under an optional title, the last marked when cut; a
+**DSGN-0064. `page_question`.** A question with two answers has shown as many
+lines of words as the box holds at its tallest with its two answers
+(`msg_lines`, as DSGN-0063) under an optional title, the last marked when
+cut; a
 question with only a title has shown the title as `WHITE` words. Its answers
 have been Yes and No, No the row Escape has pressed, and a tap outside it has
 pressed Escape.
@@ -916,8 +923,8 @@ Source: `src/modern/uikit.c` `uk_line_h`; `src/modern/mlist.c` `draw_row`;
 `draw_difficulty_modern`, `draw_name_modern`.
 
 **DSGN-0096. How much text a block has held.** A message's title has held at
-most 3 lines and a page of words `PAGE_MSG_LINES`; a question's words at most
-12 lines; a choice at most 2 lines of its row; a menu description 2 lines; the
+most 3 lines and a page of words what the map's height holds (DSGN-0063); a
+question's words the same less a second answer; a choice at most 2 lines of its row; a menu description 2 lines; the
 battle column's name 2 lines; a count question's words 3 lines; a formatted
 block has been paged when given a pager and has shown its first page
 otherwise. Past those limits the last line shown has ended "..".
@@ -1233,7 +1240,9 @@ Source: `src/modern/overlay.c` `draw_message`, `note_face`.
 **DSGN-0127. A note as a scene.** A note drawn as a scene (temporary death,
 a one-time vista, a refused gate) has been a room of its own
 (`page_scene`): the title strip, then the scene's art **whole**, never
-trimmed, at 3× (the largest whole scale the page's width holds), the column
+trimmed, at 3× (the largest whole scale the page's width holds), stepping
+down to 2× and then 1× while its words would need more than one page beside
+it (`scene_geom`), the column
 bars either side as in the room; under the band the one Continue row in the
 rows column and the words beside it, **paged** like the message box: as
 many lines to a page as the room under the band holds, the last line of a

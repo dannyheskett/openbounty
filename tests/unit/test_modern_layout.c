@@ -11,6 +11,9 @@
 #include "modern/gamemenu.h"
 #include "prompt.h"
 #include "prompt_impl.h"
+#include "modern/page.h"
+#include "pack.h"
+#include <stdlib.h>
 #include <string.h>
 
 static Resources s_res;
@@ -106,7 +109,46 @@ TEST prompt_rows_are_named_not_parsed(void) {
     PASS();
 }
 
+// A message pages by the room the map leaves it, not a fixed six lines
+// (issue #132): Rome's mineral find, seven lines wrapped, is one page; a
+// body longer than the map holds still pages; the battlefield, shorter than
+// the map, never holds more. On Rome's own pack, font and screen.
+TEST message_pages_fill_the_map(void) {
+    Pack *p = pack_open("assets/glory-of-rome");
+    ASSERT(p);
+    pack_stack_push(p);
+    Resources *r = calloc(1, sizeof *r);
+    bool ok = r && resources_load(r, "game.json") && bfont_preload_metrics((const struct Resources *)r);
+    int mineral_lines = 0, mineral_pages = 0, titled_pages = 0, map_pages = 0, field_pages = 0;
+    if (ok) {
+        layout_init((const struct Resources *)r);
+        const char *mineral = "After surveying the area, you discover that it is rich in mineral "
+                              "deposits.\n\nThe Emperor rewards you for your find by increasing "
+                              "your weekly income by 23";
+        mineral_lines = uk_lines(mineral, page_message_text_w(false));
+        mineral_pages = page_message_pages(NULL, mineral, false, PAGE_MAP_FOOT);
+        titled_pages  = page_message_pages("Castle Beneventum", mineral, true, PAGE_MAP_FOOT);
+        char longer[2048] = "";
+        for (int i = 0; i < 60; i++) strcat(longer, "A few Coloni\n\n");
+        map_pages   = page_message_pages(NULL, longer, false, PAGE_MAP_FOOT);
+        field_pages = page_message_pages(NULL, longer, false, PAGE_FIELD_FOOT);
+    }
+    // Unwound before any assert, so a failure leaves no Rome state behind.
+    bfont_preload_metrics(NULL);
+    if (r) resources_free(r);
+    free(r);
+    pack_stack_pop();
+    ASSERT(ok);
+    ASSERT(mineral_lines > 6);
+    ASSERT_EQ(1, mineral_pages);
+    ASSERT_EQ(1, titled_pages);
+    ASSERT(map_pages > 1);
+    ASSERT(field_pages >= map_pages);
+    PASS();
+}
+
 SUITE(unit_modern_layout_suite) {
+    RUN_TEST(message_pages_fill_the_map);
     RUN_TEST(debug_row_only_with_debug_flag);
     RUN_TEST(menu_pages_drill_down);
     RUN_TEST(prompt_rows_are_named_not_parsed);

@@ -95,16 +95,18 @@ bool    page_field(ML_Rect *out);
 
 // A message: its title in gold, its words, and Continue along its foot (`row`
 // NULL: no answer -- the bridge waits for a square and lets the map take
-// taps round it). The words are paged, PAGE_MSG_LINES to a page; `page` is
-// the one shown. `face` (id 0: none) stands at the left at 1x.
-#define PAGE_MSG_LINES 6
+// taps round it). The words are paged, as many lines to a page as the box
+// holds when it stands as tall as its area allows (the map, or the
+// battlefield); `page` is the one shown. `face` (id 0: none) stands at the
+// left at 1x. The pager and the drawer share one count.
+#define PAGE_MSG_MAX_LINES 40
 int     page_message_text_w(bool face);
-int     page_message_pages(const char *body, bool face);
+int     page_message_pages(const char *title, const char *body, bool face, PageAnchor anchor);
 void    page_message(const char *title, const char *body, int page, const char *row,
                      Texture2D face, PageAnchor anchor);
 
 // A question with two answers (Yes and No): its title, its words and the two
-// answers along its foot. `face` as for a message.
+// answers along its foot, as tall as the map allows. `face` as for a message.
 void    page_question(const char *title, const char *words, int cursor, MlRowFn fn, void *ctx,
                       int touch_list, Texture2D face, PageAnchor anchor);
 
