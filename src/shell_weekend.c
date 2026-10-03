@@ -13,6 +13,32 @@
 #include "layout.h"
 #include "player_io.h"
 
+// The stacks the week could not pay, named in a list: "A", "A and B",
+// "A, B and C" (the pack's own and-word is not needed: the template carries
+// the sentence, the list only the names).
+static bool troops_left(const Game *g, char *out, size_t cap) {
+    const char *names[GAME_ARMY_SLOTS];
+    int n = 0;
+    for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+        const ArmyStack *u = &g->stats.last_week_left[i];
+        if (!u->id[0] || u->count <= 0) continue;
+        const TroopDef *t = troop_by_id(u->id);
+        names[n++] = t ? t->name : u->id;
+    }
+    out[0] = '\0';
+    size_t o = 0;
+    for (int i = 0; i < n && o + 1 < cap; i++) {
+        const char *sep = i == 0 ? "" : (i == n - 1 ? " and " : ", ");
+        o += (size_t)snprintf(out + o, cap - o, "%s%s", sep, names[i]);
+    }
+    return n > 0;
+}
+
+static void week_end_done(void) {
+    pending_week_phase = WK_PHASE_NONE;
+    pending_week_paid  = 0;
+}
+
 bool pump_week_end_dialog(const Game *g) {
     if (pending_week_phase == WK_PHASE_NONE)        return false;
     if (dialog_is_active() || prompt_is_active())   return false;
@@ -112,8 +138,7 @@ bool pump_week_end_dialog(const Game *g) {
                 if (bo >= (int)sizeof(body)) { bo = (int)sizeof(body) - 1; break; }
             }
             player_io_note((Game *)g, header, body);
-            pending_week_phase = WK_PHASE_NONE;
-            pending_week_paid  = 0;
+            pending_week_phase = WK_PHASE_LEFT;
             return true;
         }
         for (int i = 0; i < 5; i++) {
@@ -134,8 +159,22 @@ bool pump_week_end_dialog(const Game *g) {
                            "%-13s %s\n", left, right);
         }
         player_io_note((Game *)g, header, body);
-        pending_week_phase = WK_PHASE_NONE;
-        pending_week_paid  = 0;
+        pending_week_phase = WK_PHASE_LEFT;
+        return true;
+    }
+
+    if (pending_week_phase == WK_PHASE_LEFT) {
+        // The troops the week could not pay and that left (#141), named
+        // after the budget that shows what was paid.
+        char names[160], body[320];
+        if (!g->res->banners.week_troops_left[0] || !troops_left(g, names, sizeof names)) {
+            week_end_done();
+            return false;
+        }
+        ResTemplateVar vars[] = { { "TROOPS", names } };
+        resources_format_template(body, sizeof body, g->res->banners.week_troops_left, vars, 1);
+        player_io_note((Game *)g, "", body);
+        week_end_done();
         return true;
     }
 

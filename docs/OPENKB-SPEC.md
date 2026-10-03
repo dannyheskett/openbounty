@@ -5131,6 +5131,11 @@ If gold drops to 0, the remaining upkeep is silently skipped
 (no army loss); the player keeps the army for free until they
 spend more gold.
 
+The original's manual says otherwise: "If you do not have enough to pay a
+troop, it leaves your army." King's Bounty keeps openkb's free army; Glory of
+Rome follows the manual (`economy.unpaid_troops_leave`, OPENBOUNTY-SPEC
+REQ-264a).
+
 ### 16.14 Mid-week save
 
 The save format includes `days_left` and `steps_left` separately.

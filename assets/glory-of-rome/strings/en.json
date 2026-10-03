@@ -274,6 +274,7 @@
 		"budget_boat":	"Boat   ",
 		"budget_army":	"Army   ",
 		"budget_balance":	"Balance",
+		"week_troops_left":	"Unpaid, the %TROOPS% leave your service.",
 		"status_days_left":	" Options / Controls / Days Left:%DAYS% ",
 		"status_time_stop":	" Options / Controls / Time Stop:%STEPS% ",
 		"status_days_left_modern":	" Menu / Days Left:%DAYS% ",

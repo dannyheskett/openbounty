@@ -1750,6 +1750,10 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(budget_boat,                    "budget_boat");
     SET_BANNER(budget_army,                    "budget_army");
     SET_BANNER(budget_balance,                 "budget_balance");
+    {   // Optional: a pack whose unpaid troops leave (#141).
+        const char *s = cJSON_IsObject(obj) ? json_str(obj, "week_troops_left", NULL) : NULL;
+        copy_str(b->week_troops_left, sizeof(b->week_troops_left), s ? s : "");
+    }
     SET_BANNER(status_days_left,               "status_days_left");
     SET_BANNER(status_time_stop,               "status_time_stop");
     SET_BANNER(status_days_left_modern,        "status_days_left_modern");
@@ -2501,6 +2505,7 @@ bool resources_load(Resources *res, const char *manifest_path) {
     res->economy.boat_cost_normal = json_int(jec, "boat_cost_normal", 500);
     res->economy.boat_cost_cheap  = json_int(jec, "boat_cost_cheap",  100);
     res->economy.siege_cost       = json_int(jec, "siege_cost",      3000);
+    res->economy.unpaid_troops_leave = cJSON_IsTrue(cJSON_GetObjectItem(jec, "unpaid_troops_leave"));
 
     // Chest curves and value ranges --  defaults so
     // omitting the JSON block still produces parity-correct rolls.
