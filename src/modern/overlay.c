@@ -132,7 +132,8 @@ int modern_overlay_dialog_page_count(void) {
     // other note is the message box, paged.
     if (dialog_kind() == PIO_NOTE_SCENE && note_scene_texture().id)
         return page_scene_pages(dialog_body_text());
-    return page_message_pages(dialog_body_text(), note_face().id != 0);
+    PageAnchor at = dialog_kind() == PIO_NOTE_OVER_FIELD ? PAGE_FIELD_FOOT : PAGE_MAP_FOOT;
+    return page_message_pages(dialog_header_text(), dialog_body_text(), note_face().id != 0, at);
 }
 
 static void draw_message(void);
