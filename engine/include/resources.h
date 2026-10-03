@@ -1621,7 +1621,7 @@ typedef struct {
         char class_picker[RES_PATH_LEN];     // 288x184 A-D class portrait image
         char class_highlight[RES_PATH_LEN];  // 42x44 cursor glow for class picker
         // Modern class select: the picker with one figure picked out, per class
-        // in catalog order (tools/classpicker.py).
+        // in catalog order (tools/romeart.py classpicker).
         int  class_picker_selected_count;
         char (*class_picker_selected)[RES_PATH_LEN];   // heap, one per class
         // Palette colour name (e.g. "YELLOW") for the frame the shell draws

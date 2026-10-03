@@ -870,12 +870,11 @@ Packing a loose asset tree into a `.openbounty` zip has been done by the
 engine binary itself: `./build/debug/openbounty --pack-dir <src> <out_zip>`.
 
 The game and its build have used no Python. The rest of `tools/` has been
-the Glory of Rome authoring tools, which the build never runs: `romeart.py`
-(tile compositing, the art record, the launcher icon); `mapbuild.py`,
-`mapcheck.py` and `maprender.py` (maps); `classpicker.py`, `splashlogo.py`,
-`splashtitle.py`, `siegewalls.py` and `siegeslice.py` (screen and combat
-art); `loopreview.py` (animation review); and the paid-API drivers
-`rdgen.py`, `pltileset.py` and `pltilespro.py`. `capture.sh` and `walkthrough.sh` have
+the Glory of Rome authoring tools, which the build never runs: `romeart.py`,
+the one art pipeline script (tile compositing, screen and combat art,
+animation review, the art record, the launcher icon, and the paid-API calls,
+which post only with `--run`); and `mapbuild.py`, `mapcheck.py` and
+`maprender.py` (maps). `capture.sh` and `walkthrough.sh` have
 driven a running window for screenshots; `detcheck.sh` has checked
 determinism.
 

@@ -451,7 +451,7 @@ shipped 36 cells at 32).
 **Field grid.** `sprites.ui.field_grid` has named a path prefix for the
 ground of an open-field fight, one file per board cell:
 `<prefix>_<x>_<y>.png` for `x` in `0..5` and `y` in `0..4` (30 files), a
-6 × 5 picture cut into 96 px cells (`tools/siegeslice.py --field` takes the
+6 × 5 picture cut into 96 px cells (`romeart.py siegeslice --field` takes the
 largest 6:5 rectangle of content centred in a picture, so a meadow painted on
 white keeps its white out, scales it to 576 × 480 and cuts it). A zone has
 been able to declare its

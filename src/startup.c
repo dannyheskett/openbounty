@@ -609,7 +609,7 @@ static void draw_class_select(const Resources *res, const Sprites *sprites,
     if (sprites && sprites->class_picker.id && CL_IS_MODERN) {
         // Modern: the carousel frame for the picked figure, pre-rendered
         // with the others dimmed and the figure ringed in gold
-        // (tools/classpicker.py); the whole painting before anyone is
+        // (tools/romeart.py classpicker); the whole painting before anyone is
         // picked. Full-bleed art, at the largest whole multiple.
         bool picked = class_cursor >= 0;
         bool carousel = picked && class_cursor < sprites->class_picker_selected_count &&

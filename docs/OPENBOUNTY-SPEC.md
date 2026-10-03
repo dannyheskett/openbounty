@@ -1063,8 +1063,8 @@ flagged (§38).
   `glory-of-rome` has shipped one per zone, thirty 96 px cells cut from the
   largest centred 6:5 rectangle of content in one picture, scaled to
   576 × 480 (`art/fields/italia_calm.png`, the supplied painting
-  `art/fields/italia.png` calmed by `tools/fieldcalm.py`, then
-  `tools/siegeslice.py --field`; Galliae, Africa and Oriens from windows
+  `art/fields/italia.png` calmed by `romeart.py fieldcalm`, then
+  `romeart.py siegeslice --field`; Galliae, Africa and Oriens from windows
   of that calmed painting, flipped and colour-graded by
   `romeart.py fieldgrade`, 2026-09-28, #64);
   `kings-bounty` has declared none.
