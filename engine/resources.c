@@ -1807,6 +1807,10 @@ static void parse_combat_log(ResCombatLog *cl, cJSON *obj, Resources *res) {
     SET_CL(retaliate,        "retaliate");
     SET_CL(ranged_hit,       "ranged_hit");
     SET_CL(ranged_no_effect, "ranged_no_effect");
+    {   // Optional (#131).
+        const char *s = cJSON_IsObject(obj) ? json_str(obj, "melee_no_kill", NULL) : NULL;
+        copy_str(cl->melee_no_kill, sizeof(cl->melee_no_kill), s ? s : "");
+    }
     SET_CL(no_effect_msg,    "no_effect_msg");
     SET_CL(fly,              "fly");
     SET_CL(move,             "move");

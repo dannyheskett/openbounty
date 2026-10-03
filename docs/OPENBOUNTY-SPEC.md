@@ -2236,6 +2236,14 @@ golden-digest regression tests have pinned the formulas.
   then "<actor> vs <target> killing N". In modern the lines have also stood
   as cards in the battle column, newest first, as many as the column has
   held (`DESIGN-SPEC.md` DSGN-0115).
+- **REQ-392a.** A pack that gives the optional `combat_log.melee_no_kill`
+  (Glory of Rome, #131) has logged every troop attack: one that killed
+  nothing as `melee_no_kill` or, ranged, `ranged_no_effect`, and, after the
+  attack's own line, a retaliation that killed as `retaliate`
+  (`Combat.retaliation_kills`). Without it only kills have been logged, as
+  the original. Rome's lines have shared one form: "<attacker> attack
+  <target>: N die", "<attacker> shoot <target>: N die" (or "none die"),
+  "<target> strike back: N die".
 - **REQ-393.** **Win** (`result = 1`): all defenders dead; spoils =
   `sum(troop.spoils * 5 * count)` over killed enemies credited to gold;
   survivors written back to `g->army` with `GameCompactArmy`. **Loss / flee**

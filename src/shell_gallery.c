@@ -70,6 +70,12 @@ static void gallery_combat_log(Combat *c, const Game *g) {
     combat_log_template(c, cl->fly, v5, 1);
     ResTemplateVar v6[] = { { "COUNT", "12" }, { "TROOP", a2->name } };
     combat_log_template(c, cl->cloned, v6, 2);
+    // The newest cards: a volley that only wounds, then a blow and the
+    // retaliation that answered it (#131).
+    ResTemplateVar v7[] = { { "ATK", f1->name }, { "TGT", a0->name } };
+    combat_log_template(c, cl->ranged_no_effect, v7, 2);
+    combat_log_template(c, cl->melee_hit, v1, 3);
+    combat_log_template(c, cl->retaliate, v2, 2);
 }
 
 void combat_gallery_menu(bool open);
