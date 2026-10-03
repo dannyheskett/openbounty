@@ -31,6 +31,7 @@
     fieldcalm <painting> <out> <prefix> [--level ..] [--fill ..] [--mask ..]
                                       calm a field painting and cut its cells
     splashlogo <emblem> <out>         the publisher splash
+    splashtitle <eagle> <out> | --words <out>   the title screen
 
 THE PAID COMMANDS ARE THE ONLY ONES THAT REACH THE NETWORK, and they live in
 the last section of this file. rdgen run, pltileset, pltilespro and sprites
@@ -3316,6 +3317,76 @@ from locally rendered C059 Bold lettering and one generated 44x44 emblem.
     print("wrote", argv[2])
 
 
+# ==========================================================================
+# splashtitle.py -- compose the title screen
+# ==========================================================================
+
+def _splashtitle(argv):
+    """Compose the title screen (art/ui/splash_title.png, 256x164): the generated
+eagle standard (build/art/splash_title/run01/01_raw.png) with the title
+words rendered locally from C059 Bold at 1-bit, gold with a dark offset
+shading, in the empty band across the top. Same route as the publisher
+splash (romeart.py splashlogo): generated lettering garbles, drawn lettering
+does not.
+
+    python3 tools/romeart.py splashtitle <eagle.png> <out.png>
+    python3 tools/romeart.py splashtitle --words <out.png>
+
+--words writes only the lettering on a transparent 256x164 field: the modern
+title screen composites it over the purple, then the battle, in code.
+"""
+    import sys
+    from PIL import Image, ImageDraw, ImageFont
+
+    FONT = "/usr/share/fonts/opentype/urw-base35/C059-Bold.otf"
+    GOLD = (236, 200, 90, 255)
+    GOLD_DK = (150, 100, 20, 255)
+    INK = (60, 30, 70, 255)
+
+
+    def glyph_mask(text, size):
+        f = ImageFont.truetype(FONT, size)
+        m = Image.new("L", (400, 80), 0)
+        ImageDraw.Draw(m).text((4, 4), text, font=f, fill=255)
+        m = m.point(lambda v: 255 if v >= 128 else 0)
+        return m.crop(m.getbbox())
+
+
+    def bitmap_text(text, size, col, shade):
+        m = glyph_mask(text, size)
+        w, h = m.size
+        out = Image.new("RGBA", (w + 3, h + 3), (0, 0, 0, 0))
+        for off in ((1, 1), (2, 2)):
+            out.paste(Image.new("RGBA", m.size, shade), off, m)
+        out.paste(Image.new("RGBA", m.size, col), (0, 0), m)
+        return out
+
+
+    def compose(eagle_path):
+        base = (Image.new("RGBA", (256, 164), (0, 0, 0, 0)) if eagle_path is None
+                else Image.open(eagle_path).convert("RGBA"))
+        W, H = base.size
+        line1 = bitmap_text("OPEN BOUNTY", 20, GOLD, GOLD_DK)
+        line2 = bitmap_text("THE GLORY OF ROME", 13, GOLD, GOLD_DK)
+        # the title in the clear band above the eagle, the subtitle across the
+        # pole at the foot of the picture; a dark halo keeps both legible
+        for im, y in ((line1, 2), (line2, H - line2.height - 4)):
+            x = (W - im.width) // 2
+            halo = Image.new("RGBA", im.size, INK)
+            for off in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                base.paste(halo, (x + off[0], y + off[1]), im)
+            base.alpha_composite(im, (x, y))
+        return base
+
+
+    if argv[1] == "--words":
+        compose(None).save(argv[2])
+        print("wrote", argv[2])
+    else:
+        compose(argv[1]).save(argv[2])
+        print("wrote", argv[2])
+
+
 
 COMMANDS = {
     "zone": cmd_zone, "install": cmd_install, "sheet": cmd_sheet,
@@ -3341,6 +3412,7 @@ COMMANDS = {
     "siegewalls": lambda a: _siegewalls(["romeart"] + a),
     "fieldcalm": lambda a: _fieldcalm(["romeart"] + a),
     "splashlogo": lambda a: _splashlogo(["romeart"] + a),
+    "splashtitle": lambda a: _splashtitle(["romeart"] + a),
 }
 
 
