@@ -220,6 +220,9 @@ SaveResult SaveGameRead(const char *path,
         GS_INT(steps_left_today, "steps_left_today");
         GS_INT(days_left, "days_left");
         GS_INT(last_commission, "last_commission");
+        GS_INT(last_week_on_hand, "last_week_on_hand");
+        GS_INT(last_week_army, "last_week_army");
+        GS_INT(last_week_boat, "last_week_boat");
         GS_INT(tributes, "tributes");
         #undef GS_INT
         cJSON *jkm = cJSON_GetObjectItem(js, "knows_magic");

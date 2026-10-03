@@ -13,21 +13,6 @@
 #include "layout.h"
 #include "player_io.h"
 
-// End-of-week budget screen displays per-troop cost
-// as count * full recruit_cost and sums those for the "Army" total --
-// even though the actual gold deducted is /10. We match that display
-// semantic for parity. The real deduction happens in game.c end_day's
-// week boundary and uses /10.
-static int army_upkeep(const Game *g) {
-    int total = 0;
-    for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
-        if (!g->army[i].id[0] || g->army[i].count == 0) continue;
-        const TroopDef *t = troop_by_id(g->army[i].id);
-        if (t) total += g->army[i].count * t->recruit_cost;
-    }
-    return total;
-}
-
 bool pump_week_end_dialog(const Game *g) {
     if (pending_week_phase == WK_PHASE_NONE)        return false;
     if (dialog_is_active() || prompt_is_active())   return false;
@@ -52,16 +37,11 @@ bool pump_week_end_dialog(const Game *g) {
     }
 
     if (pending_week_phase == WK_PHASE_BUDGET) {
-        int upkeep_display = army_upkeep(g);   // full cost; shown as "Army"
-        int boat = g->boat.has_boat ? GameBoatCost(g) : 0;
-        // Reconstruct gold-on-hand *before* this week's deductions using
-        // the REAL deduction (recruit_cost/10), since that's what game.c
-        // end_day actually spent. The dialog is internally inconsistent
-        // (shows full-cost Army total but deducted /10); we preserve the
-        // "On Hand" math that reflects reality.
-        int upkeep_real = upkeep_display / 10;
-        int on_hand = g->stats.gold - pending_week_paid + upkeep_real + boat;
-        if (on_hand < 0) on_hand = 0;
+        // The figures end_day recorded as it charged the week (OPENKB-SPEC
+        // section 16.7), so On Hand + Payment - Boat - Army = Balance even
+        // when the gold floor cut the upkeep short or the boat was repossessed.
+        // openkb's screen showed full recruit cost here; the charge is a tenth.
+        int on_hand = g->stats.last_week_on_hand;
 
         // End-of-week budget screen. 28-column
         // bottom frame, two columns:
@@ -83,12 +63,12 @@ bool pump_week_end_dialog(const Game *g) {
             bn->budget_army,
             bn->budget_balance,
         };
-        int         left_values[5] = { on_hand, pending_week_paid, boat,
-                                       upkeep_display, g->stats.gold };
+        int         left_values[5] = { on_hand, g->stats.last_commission,
+                                       g->stats.last_week_boat,
+                                       g->stats.last_week_army, g->stats.gold };
 
         // Right column: up to 5 non-empty army stacks (break on
-        // the first empty slot). Cost = count * recruit_cost (full price,
-        // not the upkeep-adjusted /10 -- full recruit price).
+        // the first empty slot), each at its weekly upkeep.
         char rtroop[5][16] = { {0} };
         int  rcost[5] = { 0 };
         int  rn = 0;
@@ -101,7 +81,7 @@ bool pump_week_end_dialog(const Game *g) {
                 rtroop[rn][k] = t->name[k]; k++;
             }
             rtroop[rn][k] = '\0';
-            rcost[rn] = g->army[i].count * t->recruit_cost;
+            rcost[rn] = GameStackWeeklyUpkeep(t->id, g->army[i].count);
             rn++;
         }
 

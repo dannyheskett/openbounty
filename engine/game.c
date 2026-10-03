@@ -459,6 +459,7 @@ void GameInitSeeded(Game *g, const char *name, int pclass, int difficulty,
     g->stats.days_left = g->res ? g->res->time.days_per_difficulty[di] : 900;
     g->stats.steps_left_today = g->res ? g->res->time.day_steps : 40;
     g->stats.last_commission = 0;
+    g->stats.last_week_on_hand = g->stats.last_week_army = g->stats.last_week_boat = 0;
 
     // Step 4: Starting position (home continent, home_spawn). Look for
     // the zone flagged is_home; fall back to world.starting_zone +
@@ -1429,15 +1430,22 @@ static void end_day(Game *g, bool *week_ended, int *commission_paid) {
         int astrology = GamePickAstrologyCreature(g, week_id);
         g->stats.last_astrology_troop = astrology;
 
+        g->stats.last_week_on_hand = g->stats.gold;
         g->stats.gold += g->stats.commission_weekly;
         g->stats.last_commission = g->stats.commission_weekly;
 
-        g->stats.gold -= GameArmyWeeklyUpkeep(g);
+        // The gold floor below means a short wallet pays only what it holds.
+        int upkeep = GameArmyWeeklyUpkeep(g);
+        int wallet = g->stats.gold > 0 ? g->stats.gold : 0;
+        g->stats.last_week_army = upkeep < wallet ? upkeep : wallet;
+        g->stats.last_week_boat = 0;
+        g->stats.gold -= upkeep;
 
         if (g->boat.has_boat) {
             int boat_cost = GameBoatCost(g);
             if (g->stats.gold >= boat_cost) {
                 g->stats.gold -= boat_cost;
+                g->stats.last_week_boat = boat_cost;
             } else {
                 // Can't afford boat -- it's repossessed.
                 g->boat.has_boat = false;
