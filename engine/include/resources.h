@@ -551,6 +551,7 @@ typedef struct {
     char town_intel_unavailable[RES_BANNER_LEN];
     char town_intel_castle_under[RES_BANNER_LEN];// %NAME%
     char town_intel_owner_rule[RES_BANNER_LEN];  // %OWNER%
+    char castle_gate_owner[RES_BANNER_LEN];      // %OWNER%; optional: the gate's opening line (#139)
     char town_intel_owner_none[RES_BANNER_LEN];
     char town_intel_owner_player[RES_BANNER_LEN];
     char town_intel_owner_king[RES_BANNER_LEN];
