@@ -38,6 +38,7 @@
 
   Paid (network):
     pltileset <out> <request.json>    one PixelLab create-tileset call
+    pltilespro <body.json> <out>      one PixelLab Tiles Pro call
     sprites <job> <out>               a PixelLab rock/tree sprite batch
 
 THE PAID COMMANDS ARE THE ONLY ONES THAT REACH THE NETWORK, and they live in
@@ -3782,6 +3783,65 @@ the terrain ids (the lower id is what later sets chain to) and seam figures.
     sheet.save(os.path.join(out, "sheet.png"))
 
 
+# ==========================================================================
+# pltilespro.py -- one PixelLab Tiles Pro call
+# ==========================================================================
+
+def _pltilespro(argv):
+    """One PixelLab Tiles Pro call (connectable terrain tileset) from a JSON body.
+
+    python3 tools/romeart.py pltilespro <body.json> <out-dir> [--run]   (PAID)
+
+Posts the body to /create-tiles-pro, polls /tiles-pro/{id}, downloads every
+tile as tile_<n>.png, writes meta.json (tile_rules, usage) and sheet.png.
+"""
+    import io, time
+
+    if len(argv) < 3:
+        sys.exit("usage: romeart.py pltilespro <body.json> <out-dir> [--run]")
+    req = _pixellab
+    body = json.load(open(argv[1]))
+    # "_"-prefixed keys are our own record, not part of the request (rdgen's
+    # convention). The API rejects unknown fields with a 422.
+    body = {k: v for k, v in body.items() if not k.startswith("_")}
+    out = argv[2]
+    if not _paid_gate(argv, "POST /create-tiles-pro", body):
+        return
+    os.makedirs(out, exist_ok=True)
+    st, resp = req("POST", "/create-tiles-pro", body)
+    print("post", st, json.dumps(resp)[:300])
+    if st != 202:
+        sys.exit(1)
+    tid = resp.get("tile_id") or resp.get("id") or resp.get("job_id")
+    if not tid:
+        print(resp); sys.exit(1)
+    while True:
+        time.sleep(10)
+        st, res = req("GET", f"/tiles-pro/{tid}")
+        print("poll", st, str(res)[:120])
+        if st == 200 and isinstance(res, dict) and res.get("storage_urls"):
+            break
+        if st not in (200, 423, 202):
+            sys.exit(1)
+    urls = res["storage_urls"]
+    tiles = {}
+    for name, url in urls.items():
+        im = Image.open(io.BytesIO(_download(url))).convert("RGBA")
+        im.save(os.path.join(out, name + ".png")); tiles[name] = im
+    json.dump({"tile_id": tid, "usage": res.get("usage"), "kind": res.get("kind"),
+               "tile_rules": res.get("tile_rules"), "body": body},
+              open(os.path.join(out, "meta.json"), "w"), indent=1)
+    names = sorted(tiles, key=lambda n: int(n.split("_")[-1]))
+    w, h = tiles[names[0]].size
+    cols = 4
+    rows = (len(names) + cols - 1) // cols
+    sheet = Image.new("RGBA", (cols * w, rows * h))
+    for i, n in enumerate(names):
+        sheet.paste(tiles[n], ((i % cols) * w, (i // cols) * h))
+    sheet.save(os.path.join(out, "sheet.png"))
+    print(len(names), "tiles", w, "x", h, "usage", res.get("usage"), "in", out)
+
+
 
 COMMANDS = {
     "zone": cmd_zone, "install": cmd_install, "sheet": cmd_sheet,
@@ -3812,6 +3872,7 @@ COMMANDS = {
     "loopreview": lambda a: _loopreview(["romeart"] + a),
     # paid (network): see the last section
     "pltileset": lambda a: _pltileset(["romeart"] + a),
+    "pltilespro": lambda a: _pltilespro(["romeart"] + a),
 }
 
 
