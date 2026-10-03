@@ -622,8 +622,8 @@ flagged (§38).
 - **REQ-162.** **STARTUP** (`src/startup.c`). Legacy: publisher splash, title
   splash, then the credits when the pack supplies any, each 2.5 s or any key.
   Modern: the publisher splash, then the title menu of `DESIGN-SPEC.md`
-  DSGN-0146 to DSGN-0148 (New Game, Load Saved Game, Credits and, on desktop
-  and web, Exit).
+  DSGN-0146 to DSGN-0148 (New Game, Load Saved Game, Introduction when the
+  pack has one (REQ-430u), Credits and, on desktop and web, Exit).
 - **REQ-163.** **CLASS SELECT**. Legacy: four classes on `A`/`B`/`C`/`D`, `L`
   for Load, `Esc` to quit. Modern: the class painting, Left/Right or a tap
   picking a figure and Continue confirming (REQ-532); `Esc` has returned to
@@ -2681,6 +2681,20 @@ every menu; this section has held the rules.
   skipped to the end; the sequence has played once per run, and the credits,
   the load picker and a return to the title have shown the finished screen.
   Without all three the title has been `splash_title`, still.
+- **REQ-430u.** **Introduction (modern).** A pack with an intro (REQ-538)
+  has had an Introduction row on the title menu between Load Saved Game and
+  Credits, labelled `ui.title_intro`; it has never played by itself.
+  Choosing it has played the script end to end (`src/intro.c run_intro`) as
+  a film: each beat's backdrop through its moving frame window and its
+  actors' loops at a whole multiple, a black caption band below with the
+  speaker's face loop beside the caption typed on, cards centred in the
+  picture, dissolves between beats and each scene faded up from black and
+  down to it (DSGN-0161). Every frame has been a pure function of the time
+  into the intro. Any key or tap has ended it, as at the end of its last
+  beat, and returned to the title menu, nothing pressed carrying over; there
+  has been no key for the next scene, the theme being one track timed to the
+  whole intro. The intro's textures have loaded on entry and been freed on
+  exit.
 - **REQ-430q.** **Blessing and Tribute (modern home castle).** With
   `game.json` `audiences`, `GameSeekBlessing` has granted once, when every
   artifact is found (enemies left or not), leadership +
@@ -2809,6 +2823,15 @@ every menu; this section has held the rules.
   (`ios/audio_ios.mm`) there. Track and SFX paths have come from
   `game.json:audio`. Volume, ducking, and the sound on/off option have been
   handled shell-side; the engine has only emitted tune/sfx events.
+- **REQ-539.** The Introduction's theme (`game.json:audio.tracks.intro`) has
+  loaded when the intro begins and been freed when it ends
+  (`audio_intro_begin` / `audio_intro_end`), since iOS decodes a whole track
+  into memory. The intro has opened the device itself, the title running
+  before the game's own `audio_init`. The theme has played from the top
+  whatever the Music option, which has not yet been chosen at the title, at
+  the master volume, and faded with the last scene. A pack without one, or a
+  device answering more than 1.5 s late, has left the intro silent rather
+  than out of step. Ending it has restored the track that played before.
 
 ---
 
@@ -2983,7 +3006,10 @@ every menu; this section has held the rules.
   `--autoplay`
   (the winnability oracle, `AUTOPLAY-SPECS.md`) with its modifiers
   `--autoplay-hero=<class>`, `--autoplay-level=<easy|normal|hard|impossible>`
-  and `--autoplay-speed=<slow|normal|fast>`, `--validate-pack [LO [HI]]` (the
+  and `--autoplay-speed=<slow|normal|fast>`, `--intro-movie <out.mp4>` (the
+  Introduction rendered offline at 15 frames a second to a silent video,
+  with its cue sheet printed: each scene's start and length, REQ-430u),
+  `--validate-pack [LO [HI]]` (the
   pack-author winnability report), `--headless` (modifier for the agent
   modes), `--verbose` (agent diagnostics), `--extract`, `--out-dir <dir>`
   (modifier for `--extract`), `--pack-dir <src> <dst>`. Normal play has taken

@@ -5,6 +5,7 @@
 #include "greatest.h"
 #include "cJSON.h"
 #include "fixtures.h"
+#include "intro.h"
 #include "pack.h"
 #include "resources.h"
 
@@ -164,7 +165,36 @@ TEST an_intro_without_its_menu_label_refuses_the_load(void) {
     PASS();
 }
 
+// The film fits any screen: the picture at a whole multiple with room for
+// the caption band, centred; the face never runs into the text.
+TEST intro_layout_fits_the_screen(void) {
+    static const int screens[][2] = { { 800, 504 }, { 640, 400 }, { 1125, 553 }, { 320, 200 } };
+    for (size_t i = 0; i < sizeof screens / sizeof screens[0]; i++) {
+        int sw = screens[i][0], sh = screens[i][1];
+        IntroLayout l;
+        intro_layout(sw, sh, 240, 102, 16, &l);
+        ASSERT(l.scale >= 1);
+        ASSERT_EQ(240 * l.scale, l.pic_w);
+        ASSERT_EQ(102 * l.scale, l.pic_h);
+        ASSERT(l.pic_x >= 0 && l.pic_x + l.pic_w <= sw);
+        ASSERT(l.pic_y >= 0 && l.band_y + l.band_h <= sh);
+        ASSERT_EQ(l.pic_y + l.pic_h, l.band_y);
+        if (l.face_scale > 0) {
+            ASSERT(l.face_x + 96 * l.face_scale < l.text_x);
+            ASSERT(l.face_y + 96 * l.face_scale <= l.band_y + l.band_h);
+        }
+        ASSERT(l.text_w > 0);
+    }
+    // The reference screen: three times the art, a 96 px face beside the text.
+    IntroLayout l;
+    intro_layout(800, 504, 240, 102, 16, &l);
+    ASSERT_EQ(3, l.scale);
+    ASSERT_EQ(1, l.face_scale);
+    PASS();
+}
+
 SUITE(unit_intro_suite) {
+    RUN_TEST(intro_layout_fits_the_screen);
     RUN_TEST(kings_bounty_has_no_intro);
     RUN_TEST(a_well_formed_intro_loads_and_reloads);
     RUN_TEST(an_unknown_caption_key_refuses_the_load);

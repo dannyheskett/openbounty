@@ -26,9 +26,10 @@
 #include "minih264e.h"
 #include "minimp4.h"
 
-#define VID_W      320
-#define VID_H      208       // padded from 200 to next multiple of 16
-#define SRC_H      200       // actual content height
+// The video is the frames' own size, padded to whole 16 px macroblocks:
+// the game's 320x200 to 320x208, the Introduction's 800x504 to 800x512
+// (--intro-movie). Every frame has the first frame's size.
+#define MB_PAD(n)  (((n) + 15) & ~15)
 #define TIMESCALE  90000
 
 // ---------- manifest parsing ------------------------------------------------
@@ -102,39 +103,39 @@ static bool read_manifest(const char *dir, Manifest *out,
     return true;
 }
 
-// ---------- color conversion (RGBA -> I420), padded to VID_H ----------------
+// ---------- color conversion (RGBA -> I420), padded to the macroblocks -----
 //
-// BT.601 limited range. Source is 320x200 RGBA from raylib. Y plane is
-// 320x208, U/V planes are 160x104. The bottom 8 rows of Y and bottom 4
-// rows of U/V are filled with limited-range black.
+// BT.601 limited range. Source is sw x sh RGBA from raylib (sw, sh even); the
+// planes are vw x vh and vw/2 x vh/2, the padding rows and columns filled
+// with limited-range black (Y 16, chroma 128).
 
-static void rgba_to_i420_padded(const unsigned char *rgba,
+static void rgba_to_i420_padded(const unsigned char *rgba, int sw, int sh,
+                                int vw, int vh,
                                 unsigned char *y,
                                 unsigned char *u,
                                 unsigned char *v) {
-    const int W = VID_W;
+    memset(y, 16, (size_t)vw * vh);
+    memset(u, 128, (size_t)(vw / 2) * (vh / 2));
+    memset(v, 128, (size_t)(vw / 2) * (vh / 2));
     // Y plane.
-    for (int j = 0; j < SRC_H; j++) {
-        const unsigned char *row = rgba + (size_t)j * W * 4;
-        unsigned char *yrow = y + (size_t)j * W;
-        for (int i = 0; i < W; i++) {
+    for (int j = 0; j < sh; j++) {
+        const unsigned char *row = rgba + (size_t)j * sw * 4;
+        unsigned char *yrow = y + (size_t)j * vw;
+        for (int i = 0; i < sw; i++) {
             int r = row[4*i + 0], g = row[4*i + 1], b = row[4*i + 2];
             int yv = 16 + ((66*r + 129*g + 25*b + 128) >> 8);
             if (yv < 0) yv = 0; else if (yv > 255) yv = 255;
             yrow[i] = (unsigned char)yv;
         }
     }
-    // Y padding rows (limited-range black = 16).
-    memset(y + (size_t)SRC_H * W, 16, (size_t)(VID_H - SRC_H) * W);
-
-    // U/V planes (subsampled 2x2). Source rows 0..199 -> uv rows 0..99.
-    for (int j = 0; j < SRC_H; j += 2) {
-        const unsigned char *row0 = rgba + (size_t)j * W * 4;
-        const unsigned char *row1 = (j + 1 < SRC_H)
-            ? rgba + (size_t)(j + 1) * W * 4 : row0;
-        unsigned char *urow = u + (size_t)(j/2) * (W/2);
-        unsigned char *vrow = v + (size_t)(j/2) * (W/2);
-        for (int i = 0; i < W; i += 2) {
+    // U/V planes (subsampled 2x2).
+    for (int j = 0; j < sh; j += 2) {
+        const unsigned char *row0 = rgba + (size_t)j * sw * 4;
+        const unsigned char *row1 = (j + 1 < sh)
+            ? rgba + (size_t)(j + 1) * sw * 4 : row0;
+        unsigned char *urow = u + (size_t)(j/2) * (vw/2);
+        unsigned char *vrow = v + (size_t)(j/2) * (vw/2);
+        for (int i = 0; i < sw; i += 2) {
             int r0 = row0[4*i + 0],     g0 = row0[4*i + 1],     b0 = row0[4*i + 2];
             int r1 = row0[4*(i+1) + 0], g1 = row0[4*(i+1) + 1], b1 = row0[4*(i+1) + 2];
             int r2 = row1[4*i + 0],     g2 = row1[4*i + 1],     b2 = row1[4*i + 2];
@@ -150,10 +151,6 @@ static void rgba_to_i420_padded(const unsigned char *rgba,
             vrow[i/2] = (unsigned char)vv;
         }
     }
-    // U/V padding rows (centered chroma = 128).
-    int uv_pad_rows = (VID_H - SRC_H) / 2;   // 4
-    memset(u + (size_t)(SRC_H/2) * (W/2), 128, (size_t)uv_pad_rows * (W/2));
-    memset(v + (size_t)(SRC_H/2) * (W/2), 128, (size_t)uv_pad_rows * (W/2));
 }
 
 // ---------- minimp4 write callback ------------------------------------------
@@ -186,6 +183,23 @@ bool mp4_encode_dir(const char *src_dir, const char *out_path,
     Manifest mf = { 0 };
     if (!read_manifest(dir, &mf, err_buf, err_cap)) return false;
     prog.total = mf.count;
+
+    // The video's size: the first frame's, padded to the macroblocks.
+    int SRC_W = 0, SRC_H = 0;
+    {
+        char first[768];
+        snprintf(first, sizeof first, "%s/%s", dir, mf.items[0].png_name);
+        Image im = LoadImage(first);
+        SRC_W = im.width;
+        SRC_H = im.height;
+        UnloadImage(im);
+    }
+    if (SRC_W <= 0 || SRC_H <= 0 || (SRC_W & 1) || (SRC_H & 1)) {
+        snprintf(err_buf, err_cap, "first frame unreadable or of odd size (%dx%d)", SRC_W, SRC_H);
+        manifest_free(&mf);
+        return false;
+    }
+    const int VID_W = MB_PAD(SRC_W), VID_H = MB_PAD(SRC_H);
 
     // ---- minih264 init ----
     H264E_create_param_t cp = { 0 };
@@ -271,13 +285,13 @@ bool mp4_encode_dir(const char *src_dir, const char *out_path,
         if (im.format != PIXELFORMAT_UNCOMPRESSED_R8G8B8A8) {
             ImageFormat(&im, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
         }
-        if (im.width != VID_W || im.height != SRC_H) {
+        if (im.width != SRC_W || im.height != SRC_H) {
             UnloadImage(im);
             snprintf(err_buf, err_cap, "frame %s wrong size %dx%d",
                      e->png_name, im.width, im.height);
             ok = false; break;
         }
-        rgba_to_i420_padded((const unsigned char *)im.data,
+        rgba_to_i420_padded((const unsigned char *)im.data, SRC_W, SRC_H, VID_W, VID_H,
                             yuv.yuv[0], yuv.yuv[1], yuv.yuv[2]);
         UnloadImage(im);
 

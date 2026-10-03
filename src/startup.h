@@ -41,7 +41,7 @@ bool startup_flow(const Resources *res,
                           const Sprites   *sprites,
                           void            *chrome_target,   // RenderTexture2D *
                           StartupChoice   *out,
-                          bool             skip_intro);     // no splashes or credits (back to the title)
+                          bool             skip_splashes);     // no splashes or credits (back to the title)
 
 // The pre-game screens one at a time, for --gallery (src/shell_gallery.c).
 typedef enum {

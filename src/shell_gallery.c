@@ -37,6 +37,8 @@
 #include "present.h"
 #include "modern/page.h"
 #include "shell_actions.h"
+#include "intro.h"
+#include "encode_mp4.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -46,8 +48,11 @@
 #ifdef _WIN32
 #include <direct.h>
 #define MKDIR(p) _mkdir(p)
+#define RMDIR(p) _rmdir(p)
 #else
+#include <unistd.h>
 #define MKDIR(p) mkdir((p), 0755)
+#define RMDIR(p) rmdir(p)
 #endif
 
 // A few lines of log for the battle column's cards, through the pack's own
@@ -386,6 +391,25 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
                 }
             }
         }
+    }
+
+    // ---- the Introduction: the first, middle and last beat of each scene ----
+    if (intro_available(res)) {
+        const ResIntro *in = &res->intro;
+        for (int sc = 0; sc < in->scene_count; sc++) {
+            const ResIntroScene *S = &in->scenes[sc];
+            int pick[3] = { 0, S->beat_count / 2, S->beat_count - 1 };
+            for (int k = 0; k < 3; k++) {
+                if (k > 0 && pick[k] == pick[k - 1]) continue;
+                const ResIntroBeat *b = &in->beats[S->first_beat + pick[k]];
+                char nm[96];
+                snprintf(nm, sizeof nm, "00j_intro_%s_%02d", S->id, pick[k] + 1);
+                // Late in the beat: the caption typed, the move under way.
+                intro_gallery_draw(rt, res, b->start + 0.85 * b->dur);
+                save_target(&G, nm);
+            }
+        }
+        intro_release();
     }
 
     // ---- the map and its panels ----------------------------------------------
@@ -1074,4 +1098,61 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     fprintf(stdout, "[tapcheck] %d checks, %d failed\n", s_tap_checks, s_tap_fails);
     ui_anim_freeze(false);
     return s_tap_fails ? 1 : 0;
+}
+
+// --intro-movie <out.mp4>: the Introduction rendered offline at a fixed frame
+// rate (no input, no audio) and encoded with the recorder's encoder, for
+// review; prints the cue sheet, each scene's start and length, which is the
+// composer's brief. The video is silent: the theme is laid under it apart.
+#define INTRO_MOVIE_FPS 15
+int gallery_intro_movie(const Resources *res, RenderTexture2D *rt, const char *out_mp4) {
+    if (!intro_available(res)) {
+        fprintf(stdout, "[intro-movie] this pack has no Introduction\n");
+        return 2;
+    }
+    const ResIntro *in = &res->intro;
+    fprintf(stdout, "[intro-movie] cue sheet (%d scenes, %.1f s):\n", in->scene_count, in->total);
+    for (int i = 0; i < in->scene_count; i++)
+        fprintf(stdout, "  %-10s %6.1f s  +%5.1f s  (%d beats)\n", in->scenes[i].id,
+                in->scenes[i].start, in->scenes[i].dur, in->scenes[i].beat_count);
+
+    char dir[1100];
+    snprintf(dir, sizeof dir, "%s.frames", out_mp4);
+    MKDIR(dir);
+    char mpath[1200];
+    snprintf(mpath, sizeof mpath, "%s/manifest.ndjson", dir);
+    FILE *mf = fopen(mpath, "w");
+    if (!mf) { fprintf(stdout, "[intro-movie] cannot write %s\n", mpath); return 1; }
+    int frames = (int)(in->total * INTRO_MOVIE_FPS);
+    for (int i = 0; i <= frames; i++) {
+        intro_gallery_draw(rt, res, (double)i / INTRO_MOVIE_FPS);
+        Image img = LoadImageFromTexture(rt->texture);
+        ImageFlipVertical(&img);
+        char name[64], path[1300];
+        snprintf(name, sizeof name, "tick_%06d.qoi", i);   // QOI: quick to write
+        snprintf(path, sizeof path, "%s/%s", dir, name);
+        ExportImage(img, path);
+        UnloadImage(img);
+        fprintf(mf, "{\"seq\":%d,\"ms\":%lld,\"png\":\"%s\"}\n", i + 1,
+                (long long)i * 1000 / INTRO_MOVIE_FPS, name);
+        if (i % (INTRO_MOVIE_FPS * 10) == 0)
+            fprintf(stdout, "[intro-movie] %d / %d frames\n", i, frames);
+    }
+    fclose(mf);
+    intro_release();
+
+    char err[256] = "";
+    bool ok = mp4_encode_dir(dir, out_mp4, NULL, NULL, err, sizeof err);
+    // The frames were only the encoder's input.
+    for (int i = 0; i <= frames; i++) {
+        char path[1300];
+        snprintf(path, sizeof path, "%s/tick_%06d.qoi", dir, i);
+        remove(path);
+    }
+    remove(mpath);
+    RMDIR(dir);
+    if (!ok) { fprintf(stdout, "[intro-movie] encode failed: %s\n", err); return 1; }
+    fprintf(stdout, "[intro-movie] wrote %s (silent; add the theme with: "
+            "ffmpeg -i %s -i <intro.ogg> -c:v copy -shortest <out>)\n", out_mp4, out_mp4);
+    return 0;
 }

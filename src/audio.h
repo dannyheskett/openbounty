@@ -14,6 +14,7 @@ typedef enum {
     AUDIO_TRACK_NONE,
     AUDIO_TRACK_OPENWORLD,
     AUDIO_TRACK_COMBAT,
+    AUDIO_TRACK_INTRO,       // the Introduction's theme (audio_intro_begin)
 } AudioTrack;
 
 // Lifecycle. Opening the playback device can block for a long time -- tens
@@ -62,5 +63,15 @@ void audio_set_master_volume(int v);
 // Switch the background music track. Hard cut. Pass AUDIO_TRACK_NONE
 // to silence music without disabling the toggle.
 void audio_set_track(AudioTrack t);
+
+// The Introduction's theme (game.json audio.tracks.intro). Begin opens the
+// device if it is not yet open (the startup screens run before main's
+// audio_init), loads the track and plays it from the top, whatever the Music
+// option; it stays silent if the pack has none or the device answers more
+// than 1.5 s late. Gain scales it 0..1 for the closing fade. End frees it and
+// restores the track that played before. The caller pumps audio_tick.
+void audio_intro_begin(const Resources *res);
+void audio_intro_gain(float g);
+void audio_intro_end(void);
 
 #endif

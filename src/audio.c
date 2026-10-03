@@ -5,7 +5,9 @@
 // game.json's audio.tunes block.
 //
 // Music is two pre-loaded streams (openworld + combat). audio_set_track stops
-// the current and plays the new -- hard cut.
+// the current and plays the new -- hard cut. The Introduction's theme is a
+// third, loaded only while the intro plays (audio_intro_begin/_end): iOS
+// decodes a whole track into memory, so a long one is not kept resident.
 //
 // Playback itself is the platform's: this file holds the policy and calls
 // src/audio_backend.h, which raylib implements on desktop, web and Android
@@ -25,6 +27,7 @@
 #include "audio.h"
 #include "assets.h"
 #include "audio_backend.h"
+#include "frame_host.h"
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -71,15 +74,32 @@ static AudioTrack  s_active_track   = AUDIO_TRACK_NONE;
 static AudioTrack  s_wanted_track   = AUDIO_TRACK_NONE;
 static AudioStatus s_status         = AUDIO_PENDING;
 
+// The Introduction's theme (audio_intro_begin): loaded on entry, freed on
+// exit. It plays whatever the Music option says -- the title has no game
+// options yet -- but obeys the volume. Started only within INTRO_LATE_S of
+// the ask: a device that answers later leaves the intro silent rather than
+// out of step with its pictures.
+#define INTRO_LATE_S 1.5
+static AudioStreamId s_music_intro    = AUDIO_NONE;
+static bool          s_have_intro     = false;
+static bool          s_intro_wanted   = false;
+static double        s_intro_asked_at = 0;
+static float         s_intro_gain     = 1.0f;
+static AudioTrack    s_before_intro   = AUDIO_TRACK_NONE;
+static const Resources *s_intro_res   = NULL;
+
 // ---------- helpers ---------------------------------------------------------
 
 static AudioStreamId track_music(AudioTrack t) {
     if (t == AUDIO_TRACK_OPENWORLD && s_have_openworld) return s_music_openworld;
     if (t == AUDIO_TRACK_COMBAT    && s_have_combat)    return s_music_combat;
+    if (t == AUDIO_TRACK_INTRO     && s_have_intro)     return s_music_intro;
     return AUDIO_NONE;
 }
 
 static float effective_music_volume(void) {
+    if (s_active_track == AUDIO_TRACK_INTRO)
+        return s_master * MUSIC_HEADROOM * s_duck_level * s_intro_gain;
     if (!s_music_enabled) return 0.0f;
     return s_master * MUSIC_HEADROOM * s_duck_level;
 }
@@ -165,6 +185,18 @@ static void load_assets(const Resources *res) {
     s_inited = true;
 }
 
+// Load the intro's theme out of the pack and start it. A pack without one, or
+// a track that will not decode, leaves the intro silent.
+static void intro_load_and_play(void) {
+    if (!s_intro_res || !s_intro_res->audio.intro_path[0] || s_have_intro) return;
+    size_t sz = 0;
+    const unsigned char *bytes = LoadAssetBytes(s_intro_res->audio.intro_path, &sz);
+    if (!bytes || sz == 0) return;
+    s_music_intro = audio_backend_stream_load(".ogg", bytes, (int)sz, /*loop=*/false);
+    s_have_intro = (s_music_intro != AUDIO_NONE);
+    if (s_have_intro) audio_set_track(AUDIO_TRACK_INTRO);
+}
+
 // Finish once the device has answered: load, then start whatever track the
 // game has already asked for. Main thread only.
 static void finish_open(const Resources *res, bool ready) {
@@ -177,6 +209,11 @@ static void finish_open(const Resources *res, bool ready) {
     }
     load_assets(res);
     s_status = AUDIO_READY;
+    if (s_intro_wanted) {
+        // Asked for by the intro while the device was opening.
+        if (frame_host_time() - s_intro_asked_at < INTRO_LATE_S) intro_load_and_play();
+        return;
+    }
     if (s_wanted_track != AUDIO_TRACK_NONE) audio_set_track(s_wanted_track);
 }
 
@@ -252,6 +289,8 @@ void audio_shutdown(void) {
 
     if (s_have_openworld) audio_backend_stream_free(s_music_openworld);
     if (s_have_combat)    audio_backend_stream_free(s_music_combat);
+    if (s_have_intro)     audio_backend_stream_free(s_music_intro);
+    s_have_intro = s_intro_wanted = false;
     s_openworld_bytes = NULL;
     s_combat_bytes    = NULL;
     s_have_openworld = s_have_combat = false;
@@ -307,6 +346,7 @@ void audio_set_sounds_enabled(bool on) {
 void audio_set_music_enabled(bool on) {
     if (s_music_enabled == on) return;
     s_music_enabled = on;
+    if (s_active_track == AUDIO_TRACK_INTRO) return;   // the intro ignores the option
     AudioStreamId m = track_music(s_active_track);
     if (m == AUDIO_NONE) return;
     if (on) {
@@ -345,8 +385,38 @@ void audio_set_track(AudioTrack t) {
 
     s_active_track = t;
 
-    // Start the new (only if music toggle is on).
-    if (!s_music_enabled) return;
+    // Start the new (only if music toggle is on; the intro plays regardless).
+    if (!s_music_enabled && t != AUDIO_TRACK_INTRO) return;
     AudioStreamId m = track_music(t);
     if (m != AUDIO_NONE) audio_backend_stream_play(m);
+}
+
+void audio_intro_begin(const Resources *res) {
+    s_intro_res      = res;
+    s_before_intro   = s_inited ? s_active_track : s_wanted_track;
+    s_intro_wanted   = true;
+    s_intro_asked_at = frame_host_time();
+    s_intro_gain     = 1.0f;
+    audio_init(res);   // a no-op once the device is open or opening
+    if (s_inited) intro_load_and_play();
+}
+
+void audio_intro_gain(float g) {
+    s_intro_gain = g < 0 ? 0 : g > 1 ? 1 : g;
+}
+
+void audio_intro_end(void) {
+    s_intro_wanted = false;
+    s_intro_gain = 1.0f;
+    if (s_inited && s_active_track == AUDIO_TRACK_INTRO) {
+        if (s_have_intro && audio_backend_stream_playing(s_music_intro))
+            audio_backend_stream_stop(s_music_intro);
+        s_active_track = AUDIO_TRACK_NONE;
+    }
+    if (s_have_intro) audio_backend_stream_free(s_music_intro);
+    s_have_intro = false;
+    s_music_intro = AUDIO_NONE;
+    // Back to what played before (nothing, at first startup).
+    if (s_inited) audio_set_track(s_before_intro);
+    else s_wanted_track = s_before_intro;
 }
