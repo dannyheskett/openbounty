@@ -36,6 +36,9 @@
 
     loopreview <run-dir> [--scale N]  review page for an animation run
 
+  Paid (network):
+    sprites <job> <out>               a PixelLab rock/tree sprite batch
+
 THE PAID COMMANDS ARE THE ONLY ONES THAT REACH THE NETWORK, and they live in
 the last section of this file. rdgen run, pltileset, pltilespro and sprites
 spend money: each prints what it would post and what that costs, and posts
@@ -2236,74 +2239,6 @@ def cmd_icon(argv):
 
 
 
-def cmd_sprites(argv):
-    """Run a PixelLab sprite-batch job (rocks, trees) and keep its sprites.
-
-    python3 tools/romeart.py sprites art/jobs/<zone>_o96_rocks.json art/primitives/<zone>/rocks [--run]
-
-The job file is the repo's own record: "description" (the shared prompt),
-"batches" (lists of four item descriptions, one POST /create-1-direction-object
-per list) and "_note". Each call is size 96, view top-down, and costs 20-40
-subscription generations. For every batch this writes body<N>.json (what was
-posted), meta<N>.json (the object as GET /v2/objects returned it) and the
-candidate frames as tile_<NN>.png numbered across batches, as
-art/primitives/africa/rocks was kept. Token at ~/.config/pixellab/token.
-Nothing is posted without --run (2026-09-27, Italia rocks for #67; before that
-the batches were posted by hand).
-    """
-    import base64, io, time, urllib.request
-    if len(argv) < 2:
-        sys.exit("usage: romeart.py sprites <job.json> <out-dir> [--run]")
-    job_p, out = argv[0], argv[1]
-    RUN = "--run" in argv
-    job = json.load(open(job_p))
-    tok = open(os.path.expanduser("~/.config/pixellab/token")).read().strip()
-    H = {"Authorization": "Bearer " + tok, "Content-Type": "application/json"}
-    API = "https://api.pixellab.ai/v2"
-
-    def req(method, path, body=None):
-        r = urllib.request.Request(API + path, data=json.dumps(body).encode() if body is not None else None, headers=H, method=method)
-        try:
-            with urllib.request.urlopen(r, timeout=120) as f:
-                return f.status, json.loads(f.read())
-        except urllib.error.HTTPError as e:
-            return e.code, (e.read() or b"{}").decode()[:500]
-
-    bodies = [{"description": job["description"], "size": 96, "view": "top-down", "item_descriptions": b} for b in job["batches"]]
-    print(f"{len(bodies)} calls, {sum(len(b) for b in job['batches'])} sprites, 20-40 generations per call")
-    if not RUN:
-        for n, b in enumerate(bodies):
-            print(f"  call {n}: {b['item_descriptions']}")
-        sys.exit("dry run: add --run to post")
-    os.makedirs(out, exist_ok=True)
-    tile = 0
-    for n, body in enumerate(bodies):
-        json.dump(body, open(os.path.join(out, f"body{n}.json"), "w"), indent=1)
-        st, resp = req("POST", "/create-1-direction-object", body)
-        print(f"call {n}: HTTP {st} {str(resp)[:160]}")
-        if st not in (200, 202):
-            sys.exit("post failed")
-        oid = resp["object_id"]
-        meta = None
-        for _ in range(120):
-            time.sleep(10)
-            st, meta = req("GET", f"/objects/{oid}")
-            status = meta.get("status") if isinstance(meta, dict) else None
-            if status in ("completed", "review", "failed"):
-                break
-        json.dump(meta, open(os.path.join(out, f"meta{n}.json"), "w"), indent=1)
-        if not isinstance(meta, dict) or meta.get("status") == "failed":
-            sys.exit("generation failed")
-        urls = meta.get("frame_urls") or [u for k, u in sorted((meta.get("storage_urls") or {}).items())]
-        for u in urls:
-            dl = urllib.request.Request(u, headers={"User-Agent": "curl/8"})
-            with urllib.request.urlopen(dl, timeout=120) as f:
-                im = Image.open(io.BytesIO(f.read())).convert("RGBA")
-            im.save(os.path.join(out, f"tile_{tile:02d}.png")); print(f"  tile_{tile:02d}.png {im.size}"); tile += 1
-    st, bal = req("GET", "/balance"); print("balance:", str(bal)[:200])
-
-
-
 def cmd_slots(argv):
     """Search rock-slot arrangements for a mountain lattice.
 
@@ -3630,11 +3565,133 @@ gif clears between frames: {'yes' if gif_ok else 'NO'}</pre>
     print(f"  page: {run}/review.html")
 
 
+# ==========================================================================
+# PAID (NETWORK) -- every call that leaves this machine
+# ==========================================================================
+#
+# Nothing above this line reaches the network. The commands below do, and
+# four of them spend: rdgen run, pltileset, pltilespro and sprites. Each
+# describes what it would post and what that costs, and posts only with --run
+# (#143). rdgen cost, rdgen balance and rdgen reprocess (its free downscale)
+# are network calls that charge nothing.
+
+PIXELLAB_API = "https://api.pixellab.ai/v2"
+PIXELLAB_TOKEN = "~/.config/pixellab/token"
+
+
+def _pixellab(method, path, body=None, timeout=120):
+    """One PixelLab request: (HTTP status, the JSON reply -- or its text when
+    the reply is not JSON). Token at ~/.config/pixellab/token."""
+    import urllib.error
+    import urllib.request
+    tok = open(os.path.expanduser(PIXELLAB_TOKEN)).read().strip()
+    r = urllib.request.Request(
+        PIXELLAB_API + path,
+        data=json.dumps(body).encode() if body is not None else None,
+        method=method,
+        headers={"Authorization": "Bearer " + tok,
+                 "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(r, timeout=timeout) as f:
+            return f.status, json.loads(f.read())
+    except urllib.error.HTTPError as e:
+        raw = e.read() or b"{}"
+        try:
+            return e.code, json.loads(raw)
+        except ValueError:
+            return e.code, raw.decode(errors="replace")[:500]
+
+
+def _download(url):
+    """A generated file from PixelLab's storage, which refuses urllib's own
+    user agent."""
+    import urllib.request
+    dl = urllib.request.Request(url, headers={"User-Agent": "curl/8"})
+    with urllib.request.urlopen(dl, timeout=120) as f:
+        return f.read()
+
+
+def _paid_gate(argv, what, body, cost="PixelLab quotes no price before a call"):
+    """True when argv carries --run. Otherwise print what would be posted,
+    its cost and the balance, post nothing, and return False."""
+    if "--run" in argv:
+        return True
+
+    def short(v):
+        if isinstance(v, str) and len(v) > 80:
+            return v[:40] + f"... ({len(v)} chars)"
+        if isinstance(v, dict):
+            return {k: short(x) for k, x in v.items()}
+        if isinstance(v, list):
+            return [short(x) for x in v]
+        return v
+    print(f"PAID: {what}")
+    print(json.dumps(short(body), indent=1))
+    print(f"cost: {cost}")
+    st, bal = _pixellab("GET", "/balance")
+    print("balance:", str(bal)[:200])
+    print("dry run; nothing posted (add --run to post and be charged)")
+    return False
+
+
+def cmd_sprites(argv):
+    """Run a PixelLab sprite-batch job (rocks, trees) and keep its sprites.
+
+    python3 tools/romeart.py sprites art/jobs/<zone>_o96_rocks.json art/primitives/<zone>/rocks [--run]   (PAID)
+
+The job file is the repo's own record: "description" (the shared prompt),
+"batches" (lists of four item descriptions, one POST /create-1-direction-object
+per list) and "_note". Each call is size 96, view top-down, and costs 20-40
+subscription generations. For every batch this writes body<N>.json (what was
+posted), meta<N>.json (the object as GET /v2/objects returned it) and the
+candidate frames as tile_<NN>.png numbered across batches, as
+art/primitives/africa/rocks was kept. Token at ~/.config/pixellab/token.
+Nothing is posted without --run (2026-09-27, Italia rocks for #67; before that
+the batches were posted by hand).
+    """
+    import io, time
+    if len(argv) < 2:
+        sys.exit("usage: romeart.py sprites <job.json> <out-dir> [--run]")
+    job_p, out = argv[0], argv[1]
+    job = json.load(open(job_p))
+    req = _pixellab
+
+    bodies = [{"description": job["description"], "size": 96, "view": "top-down", "item_descriptions": b} for b in job["batches"]]
+    print(f"{len(bodies)} calls, {sum(len(b) for b in job['batches'])} sprites, 20-40 generations per call")
+    if not _paid_gate(argv, f"{len(bodies)} x POST /create-1-direction-object", bodies,
+                      cost=f"20-40 subscription generations per call, {len(bodies)} calls"):
+        return
+    os.makedirs(out, exist_ok=True)
+    tile = 0
+    for n, body in enumerate(bodies):
+        json.dump(body, open(os.path.join(out, f"body{n}.json"), "w"), indent=1)
+        st, resp = req("POST", "/create-1-direction-object", body)
+        print(f"call {n}: HTTP {st} {str(resp)[:160]}")
+        if st not in (200, 202):
+            sys.exit("post failed")
+        oid = resp["object_id"]
+        meta = None
+        for _ in range(120):
+            time.sleep(10)
+            st, meta = req("GET", f"/objects/{oid}")
+            status = meta.get("status") if isinstance(meta, dict) else None
+            if status in ("completed", "review", "failed"):
+                break
+        json.dump(meta, open(os.path.join(out, f"meta{n}.json"), "w"), indent=1)
+        if not isinstance(meta, dict) or meta.get("status") == "failed":
+            sys.exit("generation failed")
+        urls = meta.get("frame_urls") or [u for k, u in sorted((meta.get("storage_urls") or {}).items())]
+        for u in urls:
+            im = Image.open(io.BytesIO(_download(u))).convert("RGBA")
+            im.save(os.path.join(out, f"tile_{tile:02d}.png")); print(f"  tile_{tile:02d}.png {im.size}"); tile += 1
+    st, bal = req("GET", "/balance"); print("balance:", str(bal)[:200])
+
+
 
 COMMANDS = {
     "zone": cmd_zone, "install": cmd_install, "sheet": cmd_sheet,
     "icon": cmd_icon,
-    "sprites": cmd_sprites,
+    "sprites": cmd_sprites,   # paid (network)
     "slots": cmd_slots,
     "rebank": cmd_rebank,
     "fieldgrade": cmd_fieldgrade,
