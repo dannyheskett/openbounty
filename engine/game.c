@@ -1364,9 +1364,28 @@ int GameArmyWeeklyUpkeep(const Game *g) {
     return upkeep;
 }
 
+// What the week-end takes for the army from a wallet of `gold` (after the
+// commission). Where unpaid troops leave (#141), each stack in slot order is
+// paid in full or not at all, and `left` (may be NULL) marks the slots that
+// go; otherwise the whole upkeep is charged and the gold floor absorbs any
+// shortfall.
+static int week_army_charge(const Game *g, int gold, bool left[GAME_ARMY_SLOTS]) {
+    if (left) for (int i = 0; i < GAME_ARMY_SLOTS; i++) left[i] = false;
+    if (!g->res || !g->res->economy.unpaid_troops_leave) return GameArmyWeeklyUpkeep(g);
+    int paid = 0;
+    for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+        int cost = GameStackWeeklyUpkeep(g->army[i].id, g->army[i].count);
+        if (!g->army[i].id[0] || g->army[i].count <= 0) continue;
+        if (cost <= gold - paid) paid += cost;
+        else if (left) left[i] = true;
+    }
+    return paid;
+}
+
 int GameWeeklyNetGold(const Game *g) {
     if (!g) return 0;
-    int net = g->stats.commission_weekly - GameArmyWeeklyUpkeep(g);
+    int wallet = g->stats.gold + g->stats.commission_weekly;
+    int net = g->stats.commission_weekly - week_army_charge(g, wallet > 0 ? wallet : 0, NULL);
     if (g->boat.has_boat) {
         // Mirror end_day's order exactly: commission and upkeep land BEFORE
         // the fare check, so affordability is judged on the post-credit
@@ -1434,9 +1453,21 @@ static void end_day(Game *g, bool *week_ended, int *commission_paid) {
         g->stats.gold += g->stats.commission_weekly;
         g->stats.last_commission = g->stats.commission_weekly;
 
-        // The gold floor below means a short wallet pays only what it holds.
-        int upkeep = GameArmyWeeklyUpkeep(g);
+        // The gold floor below means a short wallet pays only what it holds;
+        // where unpaid troops leave, the stacks it cannot pay go instead.
         int wallet = g->stats.gold > 0 ? g->stats.gold : 0;
+        bool left[GAME_ARMY_SLOTS];
+        int upkeep = week_army_charge(g, wallet, left);
+        memset(g->stats.last_week_left, 0, sizeof g->stats.last_week_left);
+        bool any_left = false;
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+            if (!left[i]) continue;
+            g->stats.last_week_left[i] = g->army[i];
+            g->army[i].id[0] = '\0';
+            g->army[i].count = 0;
+            any_left = true;
+        }
+        if (any_left) GameCompactArmy(g);
         g->stats.last_week_army = upkeep < wallet ? upkeep : wallet;
         g->stats.last_week_boat = 0;
         g->stats.gold -= upkeep;

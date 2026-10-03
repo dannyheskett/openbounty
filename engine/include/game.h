@@ -243,6 +243,10 @@ typedef struct {
     int              last_week_on_hand;
     int              last_week_army;
     int              last_week_boat;      // 0 when the boat was repossessed
+    // The stacks the most recent week-end could not pay and that left
+    // (economy.unpaid_troops_leave, #141), for the report shown at once after
+    // it; not saved.
+    ArmyStack        last_week_left[GAME_ARMY_SLOTS];
     // economy.audiences: the Emperor's blessing received (once), tributes paid.
     bool             blessed;
     int              tributes;

@@ -510,6 +510,21 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         GameCopy(g, &keep);
         GameFree(&keep);
     }
+    {
+        // Where unpaid troops leave (#141): the note after the budget naming
+        // the stacks the week could not pay.
+        Game keep = { 0 };
+        GameCopy(&keep, g);
+        memset(g->stats.last_week_left, 0, sizeof g->stats.last_week_left);
+        for (int i = 0, n = 0; i < GAME_ARMY_SLOTS && n < 2; i++)
+            if (g->army[i].id[0] && g->army[i].count > 0) g->stats.last_week_left[n++] = g->army[i];
+        reset(&G);
+        pending_week_phase = WK_PHASE_LEFT;
+        pump_week_end_dialog(g); shell_pump_note(g);
+        shot(&G, "09b3_week_end_troops_left");
+        GameCopy(g, &keep);
+        GameFree(&keep);
+    }
     pending_week_phase = WK_PHASE_NONE;
 
     // A treasure chest: gold or leadership.

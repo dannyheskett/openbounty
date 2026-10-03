@@ -137,6 +137,10 @@ typedef struct {
     int  tribute_cost;              // gold per tribute; any number of times
     int  tribute_leadership_pct;
     int  tribute_magic_pct;         // spell power and spell capacity each
+    // game.json "economy.unpaid_troops_leave": at the week's end a stack the
+    // wallet cannot pay leaves the army, as the original's manual says
+    // (#141). Off by default: King's Bounty keeps openkb's free army.
+    bool unpaid_troops_leave;
     int boat_cost_normal;
     int boat_cost_cheap;
     int siege_cost;
@@ -804,6 +808,7 @@ typedef struct {
     char budget_boat[RES_BANNER_LEN];
     char budget_army[RES_BANNER_LEN];
     char budget_balance[RES_BANNER_LEN];
+    char week_troops_left[RES_BANNER_LEN];   // %TROOPS%; optional (#141)
 
     // Status bar (chrome.c). Substitutions: %DAYS%, %STEPS%.
     char status_days_left[RES_BANNER_LEN];
