@@ -863,6 +863,11 @@ typedef struct {
     char retaliate[RES_BANNER_LEN];          // %TGT% %COUNT%
     char ranged_hit[RES_BANNER_LEN];         // %ATK% %TGT% %COUNT%
     char ranged_no_effect[RES_BANNER_LEN];   // %ATK% %TGT%
+    // Optional (#131): a melee attack that kills nothing. A pack that gives
+    // it logs every attack -- ranged ones that kill nothing as
+    // ranged_no_effect -- and every retaliation that kills (retaliate);
+    // without it only kills are logged, as the original.
+    char melee_no_kill[RES_BANNER_LEN];      // %ATK% %TGT%
     char no_effect_msg[RES_BANNER_LEN];      // (no tokens)
     char fly[RES_BANNER_LEN];                // %TROOP%
     char move[RES_BANNER_LEN];               // %TROOP%

@@ -126,6 +126,9 @@ typedef struct Combat {
     // modern renderer plays the attacker's strip from it.
     int           attack_seq;
     int           attack_side, attack_x, attack_y;
+    // What the last attack's retaliation killed (combat_deal_damage), for its
+    // log line after the attack's own (#131); 0 when none.
+    int           retaliation_kills;
     int           spells_this_round;                    // <= 1
     int           side;                                 // currently acting side
     int           unit_id;                              // currently acting unit slot

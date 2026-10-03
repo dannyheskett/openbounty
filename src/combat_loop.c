@@ -478,16 +478,23 @@ static void combat_log_cards(const Combat *c, ML_Rect col, int y) {
     for (int i = c->log_count - 1, k = 0; i >= 0; i--, k++) {
         const char *line = c->log_lines[i];
         if (!line[0]) continue;
+        // A card as tall as its line wraps to, so no line is cut (#131);
+        // only the newest, if even it cannot stand whole, is cut to the room
+        // left, so the column never goes blank.
         int n = uk_lines(line, tw);
         if (n < 1) n = 1;
-        if (n > 3) n = 3;
         int h = 2 * pad + n * uk_line_h();
-        if (y + h > bottom) break;
+        if (y + h > bottom) {
+            int room = (bottom - y - 2 * pad) / uk_line_h();
+            if (k > 0 || room < 1) break;
+            n = room;
+            h = 2 * pad + n * uk_line_h();
+        }
         bool lit = (k == 0);
         gfx_rect(col.x, y, col.w, h, uk_fill());
         gfx_rect_lines(col.x, y, col.w, h, lit ? uk_edge() : uk_edge_dim());
         gfx_rect(col.x + 1, y + 1, bar, h - 2, lit ? uk_edge() : uk_edge_dim());
-        uk_lines_draw(line, tx, y + pad, tw, 3, lit ? PAL_CLR(YELLOW) : PAL_CLR(WHITE));
+        uk_lines_draw(line, tx, y + pad, tw, n, lit ? PAL_CLR(YELLOW) : PAL_CLR(WHITE));
         y += h + UK_BAND;
     }
 }
@@ -757,13 +764,8 @@ static void combat_present(const Combat *c, const Game *g, const Map *m, const F
                     !prompt_is_active() && !dialog_is_active() &&
                     !c->picker_active && c->cast_phase == COMBAT_CAST_NONE;
         combat_column_draw(c, g, sprites, pc.column, live);
-        // What just happened: a toast on the field's top edge, as a toast is
-        // on the map, for as long.
-        static char s_said[COMBAT_BANNER_LEN];
-        if (strcmp(s_said, c->banner) != 0) {
-            snprintf(s_said, sizeof s_said, "%s", c->banner);
-            if (c->banner[0]) toast_show(c->banner);
-        }
+        // What just happened is the newest card in the column's log, lit;
+        // no toast repeats it over the field (#131).
         // Then the pages, in the one order the map has too: the menu, an open
         // view, the question, the message, and the toast last.
         if (s_act_open && views_active() == VIEW_NONE) combat_action_menu_draw(c, g);

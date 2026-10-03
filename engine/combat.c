@@ -543,8 +543,8 @@ static const unsigned char castle_omap[COMBAT_H][COMBAT_W] = {
         // prevent infinite mutual swings.
         if (!retaliation && !t->retaliated && t->count > 0) {
             t->retaliated = true;
-            combat_deal_damage(c, t_side, t_id, a_side, a_id,
-                               false, false, 0, true);
+            c->retaliation_kills = combat_deal_damage(c, t_side, t_id, a_side, a_id,
+                                                      false, false, 0, true);
         }
     }
 
@@ -565,6 +565,7 @@ int combat_hit_unit(Combat *c, int a_side, int a_id,
     c->attack_side = a_side;
     c->attack_x = a->x;
     c->attack_y = a->y;
+    c->retaliation_kills = 0;
     int kills = combat_deal_damage(c, a_side, a_id, t_side, t_id,
                                    is_ranged, false, 0, false);
     // Damage burst over the target cell. Persists ~3 anim ticks
@@ -593,6 +594,24 @@ int combat_hit_unit(Combat *c, int a_side, int a_id,
     } else if (kills == -1) {
         const ResCombatLog *cl = combat_log_strings(c);
         combat_log_template(c, cl->no_effect_msg, NULL, 0);
+    }
+    // A pack that logs every attack (melee_no_kill, #131): one that killed
+    // nothing has its line too, so a first volley that only wounds is not
+    // silent; then the retaliation, after the attack it answered.
+    const ResCombatLog *cl = combat_log_strings(c);
+    if (cl->melee_no_kill[0]) {
+        const char *aname = troop_by_index(a->troop_idx)->name;
+        const char *tname = troop_by_index(t->troop_idx)->name;
+        if (kills == 0) {
+            ResTemplateVar vars[] = { { "ATK", aname }, { "TGT", tname } };
+            combat_log_template(c, is_ranged ? cl->ranged_no_effect : cl->melee_no_kill, vars, 2);
+        }
+        if (c->retaliation_kills > 0) {
+            char rbuf[16];
+            snprintf(rbuf, sizeof rbuf, "%d", c->retaliation_kills);
+            ResTemplateVar vars[] = { { "TGT", tname }, { "ATK", aname }, { "COUNT", rbuf } };
+            combat_log_template(c, cl->retaliate, vars, 3);
+        }
     }
     {
         char tag[64];

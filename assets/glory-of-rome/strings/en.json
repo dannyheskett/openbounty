@@ -305,10 +305,11 @@
 		"spell_unknown":	"Unknown spell."
 	},
 	"combat_log":	{
-		"melee_hit":	"%ATK% vs %TGT%, %COUNT% die",
-		"retaliate":	"%TGT% retaliate, killing %COUNT%",
-		"ranged_hit":	"%ATK% shoot %TGT% killing %COUNT%",
-		"ranged_no_effect":	"%ATK% shoot %TGT%",
+		"melee_hit":	"%ATK% attack %TGT%: %COUNT% die",
+		"retaliate":	"%TGT% strike back: %COUNT% die",
+		"ranged_hit":	"%ATK% shoot %TGT%: %COUNT% die",
+		"ranged_no_effect":	"%ATK% shoot %TGT%: none die",
+		"melee_no_kill":	"%ATK% attack %TGT%: none die",
 		"no_effect_msg":	"The spell seems to have no effect!",
 		"fly":	"%TROOP% fly",
 		"move":	"%TROOP% move",
