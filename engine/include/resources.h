@@ -481,6 +481,9 @@ typedef struct {
     double fps;
     ResIntroPt at, to;              // sprite top-left, in backdrop pixels
     bool   mirror;
+    double start, end;              // seconds into the beat it is on screen;
+                                    // the move runs across them
+    bool   loop;                    // false: the frames play once and hold the last
 } ResIntroActor;
 
 typedef struct {
@@ -496,6 +499,10 @@ typedef struct {
     char  *card;                    // heap, text centred in the picture; NULL = none
     int    face_count;
     char (*face)[RES_PATH_LEN];     // heap, the speaker's talking loop
+    bool   rain;                    // "weather": "rain", streaks drawn over the picture
+    int    flash_count;
+    double *flashes;                // heap, seconds into the beat of each lightning flash
+    char   still[RES_PATH_LEN];     // a picture drawn whole on the screen instead ("" = none)
 } ResIntroBeat;
 
 typedef struct {

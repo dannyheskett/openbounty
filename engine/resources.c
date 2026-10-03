@@ -2603,6 +2603,9 @@ static void intro_fill_beat(Resources *res, ResIntroBeat *b, const cJSON *jb,
             act->at     = json_pt(cJSON_GetObjectItem(a, "at"), (ResIntroPt){ 0, 0 });
             act->to     = json_pt(cJSON_GetObjectItem(a, "to"), act->at);
             act->mirror = cJSON_IsTrue(cJSON_GetObjectItem(a, "mirror"));
+            act->loop   = !cJSON_IsFalse(cJSON_GetObjectItem(a, "loop"));
+            act->start  = json_num(a, "start", 0);
+            act->end    = json_num(a, "end", -1);   // -1: to the beat's end (set below)
         }
     }
 
@@ -2613,6 +2616,17 @@ static void intro_fill_beat(Resources *res, ResIntroBeat *b, const cJSON *jb,
     const char *face = json_str(jb, "face", NULL);
     if (face && !intro_portrait_frames(res, face, &b->face, &b->face_count))
         intro_error(res, beat_no, "the face names an unknown portrait");
+
+    const char *weather = json_str(jb, "weather", NULL);
+    if (weather && strcmp(weather, "rain") == 0) b->rain = true;
+    else if (weather) intro_error(res, beat_no, "weather must be \"rain\"");
+    cJSON *jfl = cJSON_GetObjectItem(jb, "flashes");
+    int nfl = cJSON_IsArray(jfl) ? cJSON_GetArraySize(jfl) : 0;
+    if (nfl > 0 && (b->flashes = calloc((size_t)nfl, sizeof *b->flashes)) != NULL) {
+        cJSON *f;
+        cJSON_ArrayForEach(f, jfl) if (cJSON_IsNumber(f)) b->flashes[b->flash_count++] = f->valuedouble;
+    }
+    copy_str(b->still, sizeof b->still, json_str(jb, "still", ""));
 
     cJSON *jd = cJSON_GetObjectItem(jb, "duration");
     if (cJSON_IsNumber(jd)) {
@@ -2626,6 +2640,14 @@ static void intro_fill_beat(Resources *res, ResIntroBeat *b, const cJSON *jb,
         intro_error(res, beat_no, "a beat needs a duration or a caption");
     }
     if (b->dur <= 0 && cJSON_IsNumber(jd)) intro_error(res, beat_no, "a beat's duration must be positive");
+
+    // An actor's time on screen lies within the beat.
+    for (int i = 0; i < b->actor_count; i++) {
+        ResIntroActor *act = &b->actors[i];
+        if (act->end < 0) act->end = b->dur;
+        if (act->start < 0 || act->end <= act->start || act->start >= b->dur)
+            intro_error(res, beat_no, "an actor's start and end must lie within the beat, start before end");
+    }
 }
 
 // A for_each beat's villains: catalog positions [from, from + count), clamped.
@@ -2736,6 +2758,7 @@ static void intro_free(ResIntro *in) {
         free(b->face);
         free(b->caption);
         free(b->card);
+        free(b->flashes);
     }
     free(in->beats);
     free(in->scenes);
@@ -3801,6 +3824,7 @@ int resources_art_manifest(const Resources *res, ResArtList *out) {
     for (int i = 0; i < res->intro.beat_count; i++) {
         const ResIntroBeat *b = &res->intro.beats[i];
         art_add(out, cap, &n, b->backdrop);
+        art_add(out, cap, &n, b->still);
         for (int a = 0; a < b->actor_count; a++)
             for (int f = 0; f < b->actors[a].frame_count; f++)
                 art_add(out, cap, &n, b->actors[a].frames[f]);

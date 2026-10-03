@@ -200,8 +200,14 @@ edited apart from the gameplay data:
   - `actors`: sprites drawn in order, each with exactly one of `frames` (a
     list of paths), `portrait` (a `portraits` id) or `villain` (a villain id,
     or `"*"` on a `for_each` beat), plus `fps`, `at` and an optional `to`
-    (the sprite's top-left in backdrop pixels, moving across the beat) and
-    `mirror`;
+    (the sprite's top-left in backdrop pixels), `mirror`, `start` and `end`
+    (seconds into the beat the sprite is on screen, default the whole beat;
+    the move from `at` to `to` runs across them) and `loop` (default true;
+    false plays the frames once and holds the last, for a single action);
+  - `weather`: `"rain"`, streaks drawn over the picture, and `flashes`: the
+    seconds into the beat of each lightning flash;
+  - `still`: a picture drawn whole on the screen at the largest whole
+    multiple, instead of the frame (the title);
   - `say`: a key in the strings' `intro` group, the caption typed on under
     the picture, and `face`: a `portraits` id, the speaker's loop beside it;
   - `card`: a key in the same group, text set in the middle of the picture;
@@ -220,7 +226,8 @@ beat and faded with the last scene.
 The loader has resolved the script at load, and refused the pack when a
 caption key was missing from `intro`, when `ui.title_intro` was missing, or
 when a beat named an unknown portrait or villain, gave an actor no source or
-two, had neither `duration` nor `say`, or the frame was out of range. Its
+two or a time on screen outside the beat, had neither `duration` nor
+`say`, named a weather other than rain, or the frame was out of range. Its
 art has been listed in the art manifest (§9) like every other path.
 
 ---

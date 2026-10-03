@@ -90,6 +90,7 @@ static void intro_load_all(const Resources *res) {
     for (int i = 0; i < res->intro.beat_count; i++) {
         const ResIntroBeat *b = &res->intro.beats[i];
         intro_tex(b->backdrop);
+        intro_tex(b->still);
         for (int a = 0; a < b->actor_count; a++)
             for (int f = 0; f < b->actors[a].frame_count; f++) intro_tex(b->actors[a].frames[f]);
         for (int f = 0; f < b->face_count; f++) intro_tex(b->face[f]);
@@ -122,8 +123,27 @@ static void blit_tinted(Texture2D t, int x, int y, int scale, bool mirror, unsig
     gfx_texture_draw(t, src, dst, (Color){ 255, 255, 255, a });
 }
 
+// Rain: streaks falling across the picture, slanting a little, each its own
+// fixed column, speed and phase, so the drops are a pure function of time.
+#define INTRO_RAIN_DROPS 70
+#define INTRO_FLASH_S    0.25   // a lightning flash's length
+static void draw_rain(const ResIntro *in, double tb, const IntroLayout *l, unsigned char a) {
+    for (int i = 0; i < INTRO_RAIN_DROPS; i++) {
+        unsigned h = (unsigned)i * 2654435761u;
+        double speed = 90 + (h % 60);                       // art pixels a second
+        double fall = in->frame_h + 8;
+        double y = fmod(((h >> 8) % 1000) / 1000.0 * fall + tb * speed, fall) - 4;
+        int x = (int)((h >> 16) % (unsigned)in->frame_w) + (int)(y / 6);
+        x %= in->frame_w;
+        gfx_rect(l->pic_x + x * l->scale, l->pic_y + (int)y * l->scale,
+                 l->scale > 1 ? l->scale / 2 + 1 : 1, 3 * l->scale,
+                 (Color){ 190, 200, 225, (unsigned char)(a * 0.55) });
+    }
+}
+
 // One beat's picture at time t: the backdrop through the moving frame
-// window, then its actors, all at alpha a.
+// window, then its actors, each on screen from its start to its end, then
+// the weather, all at alpha a.
 static void draw_picture(const ResIntro *in, const ResIntroBeat *b, double t,
                          const IntroLayout *l, unsigned char a) {
     double k = b->dur > 0 ? clamp01((t - b->start) / b->dur) : 1;
@@ -139,15 +159,27 @@ static void draw_picture(const ResIntro *in, const ResIntroBeat *b, double t,
                                       (float)(sw * l->scale), (float)(sh * l->scale) },
                          (Color){ 255, 255, 255, a });
     }
+    double tb = t - b->start;   // seconds into the beat
     for (int i = 0; i < b->actor_count; i++) {
         const ResIntroActor *act = &b->actors[i];
-        if (act->frame_count <= 0) continue;
-        int f = (int)floor((t - b->start) * act->fps);
-        f = ((f % act->frame_count) + act->frame_count) % act->frame_count;
-        ResIntroPt p = lerp_pt(act->at, act->to, k);
+        if (act->frame_count <= 0 || tb < act->start || tb >= act->end) continue;
+        // The move runs across the actor's own time on screen.
+        double ka = clamp01((tb - act->start) / (act->end - act->start));
+        if (b->smooth) ka = smooth(ka);
+        int f = (int)floor((tb - act->start) * act->fps);
+        if (!act->loop) f = f < act->frame_count ? f : act->frame_count - 1;   // once, then hold
+        else f = ((f % act->frame_count) + act->frame_count) % act->frame_count;
+        ResIntroPt p = lerp_pt(act->at, act->to, ka);
         blit_tinted(intro_tex(act->frames[f]),
                     l->pic_x + (p.x - pan.x) * l->scale, l->pic_y + (p.y - pan.y) * l->scale,
                     l->scale, act->mirror, a);
+    }
+    if (b->rain) draw_rain(in, tb, l, a);
+    for (int i = 0; i < b->flash_count; i++) {
+        double since = tb - b->flashes[i];
+        if (since >= 0 && since < INTRO_FLASH_S)   // white, dying away
+            gfx_rect(l->pic_x, l->pic_y, l->pic_w, l->pic_h,
+                     (Color){ 255, 255, 255, (unsigned char)(a * 0.8 * (1 - since / INTRO_FLASH_S)) });
     }
 }
 
@@ -197,16 +229,28 @@ static void intro_draw(const Resources *res, double t) {
     int z = present_get_zoom();
     if (z < 1) z = 1;
 
+    if (b->still[0]) {
+        // A picture shown whole (the title), at the largest whole multiple.
+        Texture2D st = intro_tex(b->still);
+        if (st.id) {
+            int k = ui_fit_scale(st.width, st.height, CL_SCREEN_W, CL_SCREEN_H);
+            double a = b->dissolve > 0 ? clamp01((t - b->start) / b->dissolve) : 1;
+            blit_tinted(st, (CL_SCREEN_W - st.width * k) / 2, (CL_SCREEN_H - st.height * k) / 2,
+                        k, false, (unsigned char)(255 * a));
+        }
+    } else {
+
     gfx_clip_begin(l.pic_x * z, l.pic_y * z, l.pic_w * z, l.pic_h * z);
-    if (b->dissolve > 0 && t - b->start < b->dissolve && b > in->beats) {
+    if (b->dissolve > 0 && t - b->start < b->dissolve && b > in->beats && !b[-1].still[0]) {
         const ResIntroBeat *prev = b - 1;
-        draw_picture(in, prev, prev->start + prev->dur, &l, 255);
+        draw_picture(in, prev, prev->start + prev->dur - 1e-6, &l, 255);   // its last frame
         draw_picture(in, b, t, &l, (unsigned char)(255 * clamp01((t - b->start) / b->dissolve)));
     } else {
         draw_picture(in, b, t, &l, 255);
     }
     gfx_clip_end();
     if (b->card) draw_card(b->card, &l);
+    }
 
     if (b->caption) {
         int typed = (int)((t - b->start) * in->type_cps);
