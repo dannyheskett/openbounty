@@ -188,10 +188,11 @@ the top tier and the last sieges were easy; a castle left empty and retaken
 (REQ-302) refills at the same tier.
 
 A castle gate has reported on its castle (`world.castle_gate_report`, #71):
-without siege engines the hero learns whose rule it is under and what holds
-it in vague words, the town informant's report, before turning back; with
-them the same report stands above "Lay siege?". King's Bounty keeps the
-original's silent bounce.
+without siege engines the hero learns whose rule it is under ("Under
+Catiline's rule.", the castle already named in the title) and what holds it
+in vague words, each troop once, before turning back; with them the same
+report stands above "Lay siege?" (#139). King's Bounty keeps the original's
+silent bounce.
 
 **The pacing lever has been catalog order.** The contract cycle has been
 seeded with the *first five villains in catalog order*, and `max_contract`

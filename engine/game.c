@@ -1364,9 +1364,28 @@ int GameArmyWeeklyUpkeep(const Game *g) {
     return upkeep;
 }
 
+// What the week-end takes for the army from a wallet of `gold` (after the
+// commission). Where unpaid troops leave (#141), each stack in slot order is
+// paid in full or not at all, and `left` (may be NULL) marks the slots that
+// go; otherwise the whole upkeep is charged and the gold floor absorbs any
+// shortfall.
+static int week_army_charge(const Game *g, int gold, bool left[GAME_ARMY_SLOTS]) {
+    if (left) for (int i = 0; i < GAME_ARMY_SLOTS; i++) left[i] = false;
+    if (!g->res || !g->res->economy.unpaid_troops_leave) return GameArmyWeeklyUpkeep(g);
+    int paid = 0;
+    for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+        int cost = GameStackWeeklyUpkeep(g->army[i].id, g->army[i].count);
+        if (!g->army[i].id[0] || g->army[i].count <= 0) continue;
+        if (cost <= gold - paid) paid += cost;
+        else if (left) left[i] = true;
+    }
+    return paid;
+}
+
 int GameWeeklyNetGold(const Game *g) {
     if (!g) return 0;
-    int net = g->stats.commission_weekly - GameArmyWeeklyUpkeep(g);
+    int wallet = g->stats.gold + g->stats.commission_weekly;
+    int net = g->stats.commission_weekly - week_army_charge(g, wallet > 0 ? wallet : 0, NULL);
     if (g->boat.has_boat) {
         // Mirror end_day's order exactly: commission and upkeep land BEFORE
         // the fare check, so affordability is judged on the post-credit
@@ -1434,9 +1453,21 @@ static void end_day(Game *g, bool *week_ended, int *commission_paid) {
         g->stats.gold += g->stats.commission_weekly;
         g->stats.last_commission = g->stats.commission_weekly;
 
-        // The gold floor below means a short wallet pays only what it holds.
-        int upkeep = GameArmyWeeklyUpkeep(g);
+        // The gold floor below means a short wallet pays only what it holds;
+        // where unpaid troops leave, the stacks it cannot pay go instead.
         int wallet = g->stats.gold > 0 ? g->stats.gold : 0;
+        bool left[GAME_ARMY_SLOTS];
+        int upkeep = week_army_charge(g, wallet, left);
+        memset(g->stats.last_week_left, 0, sizeof g->stats.last_week_left);
+        bool any_left = false;
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+            if (!left[i]) continue;
+            g->stats.last_week_left[i] = g->army[i];
+            g->army[i].id[0] = '\0';
+            g->army[i].count = 0;
+            any_left = true;
+        }
+        if (any_left) GameCompactArmy(g);
         g->stats.last_week_army = upkeep < wallet ? upkeep : wallet;
         g->stats.last_week_boat = 0;
         g->stats.gold -= upkeep;
@@ -3196,7 +3227,10 @@ static void report_append(char *buf, size_t cap, size_t *off, const char *frag) 
     *off += (size_t)n;
 }
 
-bool GameCastleReport(const Game *g, const char *castle_id, char *out, size_t cap) {
+// at_gate: the castle names itself in the page's title, so the report opens
+// with castle_gate_owner ("Under %OWNER%'s rule.") instead of naming it.
+static bool castle_report(const Game *g, const char *castle_id, char *out, size_t cap,
+                          bool at_gate) {
     if (!out || cap == 0) return false;
     out[0] = '\0';
     if (!g || !g->res || !castle_id) return false;
@@ -3209,7 +3243,8 @@ bool GameCastleReport(const Game *g, const char *castle_id, char *out, size_t ca
     size_t off = 0;
     char tmp[256];
     buf[0] = '\0';
-    {
+    bool short_form = at_gate && bn->castle_gate_owner[0];
+    if (!short_form) {
         ResTemplateVar vars[] = { { "NAME", rc->name[0] ? rc->name : cr->id } };
         resources_format_template(tmp, sizeof tmp, bn->town_intel_castle_under, vars, 1);
         report_append(buf, sizeof buf, &off, tmp);
@@ -3227,13 +3262,31 @@ bool GameCastleReport(const Game *g, const char *castle_id, char *out, size_t ca
     }
     {
         ResTemplateVar vars[] = { { "OWNER", owner } };
-        resources_format_template(tmp, sizeof tmp, bn->town_intel_owner_rule, vars, 1);
+        resources_format_template(tmp, sizeof tmp,
+                                  short_form ? bn->castle_gate_owner : bn->town_intel_owner_rule,
+                                  vars, 1);
         report_append(buf, sizeof buf, &off, tmp);
     }
-    int stacks_shown = 0;
-    for (int i = 0; i < GAME_ARMY_SLOTS && off + 1 < sizeof(buf); i++) {
+    // A pack that reports at the gate (#71) gives each troop one line, its
+    // stacks' counts summed (#139); the original listed every slot, so two
+    // stacks of one troop read twice, and King's Bounty keeps that.
+    Unit lines[GAME_ARMY_SLOTS];
+    int n_lines = 0;
+    bool merge = g->res->world.castle_gate_report;
+    for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
         const Unit *u = &cr->garrison[i];
         if (!u->id[0] || u->count == 0) continue;
+        int k = 0;
+        if (merge)
+            while (k < n_lines && strcmp(lines[k].id, u->id) != 0) k++;
+        else
+            k = n_lines;
+        if (k == n_lines) lines[n_lines++] = *u;
+        else              lines[k].count += u->count;
+    }
+    int stacks_shown = 0;
+    for (int i = 0; i < n_lines && off + 1 < sizeof(buf); i++) {
+        const Unit *u = &lines[i];
         const TroopDef *t = troop_by_id(u->id);
         const char *tname = (t && t->name[0]) ? t->name : u->id;
         const char *count_label = GameNumberName(g, u->count);
@@ -3259,6 +3312,14 @@ bool GameCastleReport(const Game *g, const char *castle_id, char *out, size_t ca
     }
     snprintf(out, cap, "%s", buf);
     return true;
+}
+
+bool GameCastleReport(const Game *g, const char *castle_id, char *out, size_t cap) {
+    return castle_report(g, castle_id, out, cap, false);
+}
+
+bool GameCastleGateReport(const Game *g, const char *castle_id, char *out, size_t cap) {
+    return castle_report(g, castle_id, out, cap, true);
 }
 
 CastleRecord *GameFindCastle(Game *g, const char *castle_id) {

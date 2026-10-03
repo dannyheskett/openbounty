@@ -1512,6 +1512,14 @@ flagged (§38).
 - **REQ-264.** At each week boundary, each non-empty slot has paid `upkeep =
   count * (recruit_cost / 10)` gold (integer division), deducted after
   commission is credited.
+- **REQ-264a.** In a pack that sets `economy.unpaid_troops_leave` (Glory of
+  Rome, #141), the week has paid the stacks in slot order, each in full or
+  not at all, from the gold after the commission; a stack it could not pay
+  has left the army (recorded in `last_week_left`), and the stacks after it
+  have still been paid if they could be, then the army has closed up
+  (`GameCompactArmy`). The army may be left empty. King's Bounty has kept
+  openkb's rule: the whole upkeep charged, the gold floor taking any
+  shortfall, every troop staying (OPENKB-SPEC §16.13).
 
 ---
 
@@ -1725,11 +1733,15 @@ flagged (§38).
   Yes has entered combat, No has bounced back. Any visit has set a villain
   castle `known`, so the town contract scenes and the Contract view have
   named it from then on. A pack that sets `world.castle_gate_report` (Glory
-  of Rome, #71) has told the hero what the gate sees, the town informant's
-  report (`GameCastleReport`: whose rule, then each stack in vague words):
-  without siege weapons in a message box headed "Castle <name>" before the
-  bounce, and with them above the siege question (`castle_siege_ask`) in
-  place of the plain prompt. A combat win has set
+  of Rome, #71) has told the hero what the gate sees, the report in its gate
+  form (`GameCastleGateReport`: whose rule, opening with `castle_gate_owner`
+  "Under <owner>'s rule." so the castle is not named again under its title,
+  then each troop in vague words, stacks of one troop on one line with their
+  counts summed, #139): without siege weapons in a message box headed
+  "Castle <name>" before the bounce, and with them above the siege question
+  (`castle_siege_ask`) in place of the plain prompt. In such a pack the town
+  informant's report (`GameCastleReport`) merges stacks the same way; King's
+  Bounty lists every slot, as the original did. A combat win has set
   `owner_kind = CASTLE_OWNER_PLAYER`; a villain-castle win has additionally
   fulfilled the contract (§21.3).
 - **REQ-304.** **Own Castle** (`src/screens/own_castle.c`) has shown the
@@ -2008,7 +2020,8 @@ flagged (§38).
   (4) `last_week_on_hand = gold`, `gold += commission_weekly`,
   `last_commission = commission_weekly`; (5) `gold -= sum(slot.count *
   (recruit_cost / 10))`, with `last_week_army` the part of it the wallet
-  covered (`min(upkeep, gold)`); (6) if `boat.has_boat`, `gold -=
+  covered (`min(upkeep, gold)`), or, under REQ-264a, the stacks paid and
+  the rest gone; (6) if `boat.has_boat`, `gold -=
   GameBoatCost` and `last_week_boat` = that fare, repossessing the boat on
   shortfall with `last_week_boat = 0`; (7) `gold = max(0, gold)`; (8) astrology effects (§24), with empty player castles
   retaken (REQ-302) after the dwellings and before castle and foe growth.
@@ -2045,7 +2058,9 @@ flagged (§38).
   Balance (`gold`), so On Hand + Payment - Boat - Army = Balance. Each troop
   row has shown that stack's weekly upkeep, `GameStackWeeklyUpkeep`, the same
   figure as the army view's cost; openkb's full recruit price there was not
-  kept (OPENKB-SPEC §16.7). Any key has dismissed it.
+  kept (OPENKB-SPEC §16.7). Any key has dismissed it. Under REQ-264a, when
+  stacks left, **Phase 3** has named them (`week_troops_left`, "Unpaid, the
+  <troops> leave your service.").
 
 ---
 

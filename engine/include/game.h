@@ -243,6 +243,10 @@ typedef struct {
     int              last_week_on_hand;
     int              last_week_army;
     int              last_week_boat;      // 0 when the boat was repossessed
+    // The stacks the most recent week-end could not pay and that left
+    // (economy.unpaid_troops_leave, #141), for the report shown at once after
+    // it; not saved.
+    ArmyStack        last_week_left[GAME_ARMY_SLOTS];
     // economy.audiences: the Emperor's blessing received (once), tributes paid.
     bool             blessed;
     int              tributes;
@@ -703,10 +707,16 @@ const char *GameNumberName(const Game *g, int count);
 
 // The gather-information report on a castle (OPENKB-SPEC section 24.18): "Castle
 // <name> is under <owner>'s rule." then each garrison stack in vague words
-// (GameNumberName), as a town's informant gives it and, in a pack that sets
-// world.castle_gate_report, as the castle gate gives it (#71). False (out
-// empty) when the castle is unknown to the pack or the game.
+// (GameNumberName), as a town's informant gives it. In a pack that sets
+// world.castle_gate_report, stacks of one troop share a line, their counts
+// summed (#139). False (out empty) when the castle is unknown to the pack or
+// the game.
 bool GameCastleReport(const Game *g, const char *castle_id, char *out, size_t cap);
+// The same report as the castle's gate gives it (#71), under a title that
+// already names the castle: it opens with strings.castle_gate_owner ("Under
+// <owner>'s rule.") when the pack has one, and is GameCastleReport's
+// otherwise (#139).
+bool GameCastleGateReport(const Game *g, const char *castle_id, char *out, size_t cap);
 
 // True iff every occupied army stack contains a flying troop with
 // skill_level >= 2. Mirrors .

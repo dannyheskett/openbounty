@@ -57,6 +57,7 @@
 		"boat_cost_cheap":	100,
 		"boat_cost_normal":	500,
 		"siege_cost":	3000,
+		"unpaid_troops_leave":	true,
 		"chest":	{
 			"chance_gold":	[61, 66, 76, 71],
 			"chance_commission":	[81, 86, 86, 81],

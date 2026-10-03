@@ -455,7 +455,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
             if (g->castles[i].owner_kind == CASTLE_OWNER_VILLAIN)
                 gc = resources_castle_by_id(g->res, g->castles[i].id);
         char rb[PLAYER_IO_BODY_CAP], hb[128], qb[PLAYER_IO_BODY_CAP + RES_BANNER_LEN + 2];
-        if (gc && GameCastleReport(g, gc->id, rb, sizeof rb)) {
+        if (gc && GameCastleGateReport(g, gc->id, rb, sizeof rb)) {
             ResTemplateVar cv[] = { { "NAME", gc->name } };
             resources_format_template(hb, sizeof hb, bn->castle_header, cv, 1);
             reset(&G); open_dialog(hb, rb); shot(&G, "06c_castle_gate_report");
@@ -507,6 +507,21 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         pending_week_phase = WK_PHASE_BUDGET;
         pump_week_end_dialog(g); shell_pump_note(g);
         shot(&G, "09b2_week_end_budget_large");
+        GameCopy(g, &keep);
+        GameFree(&keep);
+    }
+    {
+        // Where unpaid troops leave (#141): the note after the budget naming
+        // the stacks the week could not pay.
+        Game keep = { 0 };
+        GameCopy(&keep, g);
+        memset(g->stats.last_week_left, 0, sizeof g->stats.last_week_left);
+        for (int i = 0, n = 0; i < GAME_ARMY_SLOTS && n < 2; i++)
+            if (g->army[i].id[0] && g->army[i].count > 0) g->stats.last_week_left[n++] = g->army[i];
+        reset(&G);
+        pending_week_phase = WK_PHASE_LEFT;
+        pump_week_end_dialog(g); shell_pump_note(g);
+        shot(&G, "09b3_week_end_troops_left");
         GameCopy(g, &keep);
         GameFree(&keep);
     }

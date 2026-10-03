@@ -17,7 +17,7 @@
 #include "ui_host.h"
 
 // world.castle_gate_report (#71): what a castle's gate tells the hero, the
-// town informant's report on it (GameCastleReport) headed "Castle <name>",
+// report on it in its gate form (GameCastleGateReport) headed "Castle <name>",
 // with `ask` under it when the gate asks a question. Without the pack flag
 // it leaves `header` and `body` as they came in, emptying them only when no
 // question follows (the original's silent bounce).
@@ -27,7 +27,7 @@ static void gate_report(const Game *g, const Resources *res, const char *castle_
     if (!ask) { header[0] = '\0'; body[0] = '\0'; }
     if (!res->world.castle_gate_report) return;
     char report[PLAYER_IO_BODY_CAP];
-    if (!GameCastleReport(g, castle_id, report, sizeof report)) return;
+    if (!GameCastleGateReport(g, castle_id, report, sizeof report)) return;
     if (ask) {
         snprintf(body, bcap, "%s\n%s", report, ask);
         return;

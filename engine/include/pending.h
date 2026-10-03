@@ -82,13 +82,15 @@ extern int pending_chest_leadership;
 // FLOW_DISCARD_SPELL dispatch.
 extern int pending_discard_spell_idx;
 
-// Week-end two-screen sequence .
+// Week-end sequence: astrology, budget, and -- where unpaid troops leave
+// (#141) and some did -- the troops that left.
 // Set by schedule_week_end (flows.c); drained before each frame's input
 // by pump_week_end_dialog (main.c) so the dialog cycles in order.
 typedef enum {
     WK_PHASE_NONE = 0,
     WK_PHASE_ASTROLOGY,
     WK_PHASE_BUDGET,
+    WK_PHASE_LEFT,
 } WeekPhase;
 extern WeekPhase pending_week_phase;
 extern int       pending_week_id;
