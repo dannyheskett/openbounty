@@ -2091,18 +2091,12 @@ def cmd_zone(argv):
             if os.path.exists(p):
                 Image.open(p).save(os.path.join(out, f))
 
-    # 6. The two river bridges: the pack's own paving swept across a river piece.
-    for deck, over, name in (("bridge_v.png", "river_ew.png", "bridge_river_ns.png"),
-                             ("bridge_h.png", "river_ns.png", "bridge_river_ew.png")):
-        if not os.path.isdir(os.path.join(prim, "river")):
-            break
-        dst = os.path.join(stage, "bridge_" + name[14:16])
-        _roadtile(["romeart", os.path.join(prim, "river"), dst, "--sweep",
-                   "--fill", os.path.join(PACK, "art", "tiles", deck),
-                   "--grass", os.path.join(stage, "rivers", over),
-                   "--rim", "3", "--rim-shade", "0.7"])
-        piece = "road_ns.png" if name.endswith("ns.png") else "road_ew.png"
-        Image.open(os.path.join(dst, piece)).save(os.path.join(out, name))
+    # 6. The two river bridges: the road carried across the river between
+    #    parapets, its shadow on the water (cmd_bridge, style c).
+    if os.path.exists(os.path.join(out, "river_ns.png")) and os.path.exists(os.path.join(out, "road_ew.png")):
+        cmd_bridge([out, os.path.join(stage, "bridges")])
+        for name in ("bridge_river_ew.png", "bridge_river_ns.png"):
+            Image.open(os.path.join(stage, "bridges", "c", name)).save(os.path.join(out, name))
 
     # 7. The river mouths: east built, west its mirror (as Italia's were).
     if os.path.exists(os.path.join(out, "water_edge_02.png")):

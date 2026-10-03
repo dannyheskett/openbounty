@@ -196,6 +196,14 @@ generated from.
   (`rd_pro__topdown`), no background removal, no water in the picture: the
   original tile has had none, and a transparent deck over water has not come
   back usable.
+- **River bridges** (`bridge_river_ew`, `bridge_river_ns`) — not generated.
+  `tools/romeart.py bridge <tiles-dir> <out>` has built them from a set's
+  installed `road_*`, `river_*` and `grass` tiles: the road's own pixels laid
+  across the river piece, so the deck joins the road by construction; over
+  the water a straight deck between two 5 px parapets (the road's stone mixed
+  40/60 with pale travertine, a dark outer line, a joint every 8 px); and the
+  deck's shadow on the water, 3 px at 0.6. Style `c` has been installed in
+  every province (2026-10-02); `zone` runs it as its sixth step.
 - **Terrain edges** — not generated. `tools/romeart.py edges` has
   composited each from the installed base and grass tiles: the original
   48x34 edge tile under `art/reference/edges/` has been read as a shape (each
