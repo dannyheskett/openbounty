@@ -1,0 +1,17 @@
+{
+ "id": "intro_crier_face",
+ "prompt": "a head-and-shoulders portrait, the face filling the frame, of a stout middle-aged Roman town crier, ruddy cheeks, receding hair, a broad booming grin, white toga, the Roman Forum behind him",
+ "style": "rd_pro__default",
+ "width": 128,
+ "height": 128,
+ "seed": 15523,
+ "bypass_prompt_expansion": false,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  128,
+  128
+ ],
+ "_pack_path": "art/portraits/intro_crier_00..07.png (via intro_crier_face_loop)",
+ "_note": "2026-10-03, Introduction (#154) scene 2: the crier's face for the caption band; the town-portrait still route at 128."
+}

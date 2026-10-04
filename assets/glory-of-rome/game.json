@@ -1853,6 +1853,9 @@
 			"id":	"praefectus_castrorum_figure",
 			"anim":	["art/ui/praefectus_castrorum_figure_00.png", "art/ui/praefectus_castrorum_figure_01.png", "art/ui/praefectus_castrorum_figure_02.png", "art/ui/praefectus_castrorum_figure_03.png", "art/ui/praefectus_castrorum_figure_04.png", "art/ui/praefectus_castrorum_figure_05.png", "art/ui/praefectus_castrorum_figure_06.png", "art/ui/praefectus_castrorum_figure_07.png"]
 		}, {
+			"id":	"intro_crier",
+			"anim":	["art/portraits/intro_crier_00.png", "art/portraits/intro_crier_01.png", "art/portraits/intro_crier_02.png", "art/portraits/intro_crier_03.png", "art/portraits/intro_crier_04.png", "art/portraits/intro_crier_05.png", "art/portraits/intro_crier_06.png", "art/portraits/intro_crier_07.png"]
+		}, {
 			"id":	"promotion_rank_1",
 			"anim":	["art/ui/promotion_rank_1.png"]
 		}, {

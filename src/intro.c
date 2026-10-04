@@ -21,7 +21,7 @@
 #include <string.h>
 
 #define INTRO_FACE_PX   96    // a portrait loop's frame
-#define INTRO_LINES     3     // the caption band's lines
+#define INTRO_LINES     5     // the caption band's lines
 #define INTRO_LINE_CAP  200
 
 bool intro_available(const Resources *res) {
@@ -209,7 +209,9 @@ static bool draw_caption(const char *text, const IntroLayout *l, int typed, bool
     char line[INTRO_LINE_CAP];
     int y = l->text_y;
     int w = centred ? l->pic_w - 2 * UK_INSET : l->text_w;
-    for (int n = 0; *p && n < INTRO_LINES + 1; n++) {
+    int fit = (l->band_h - 2 * UK_INSET) / uk_line_h();   // as many lines as the band holds
+    if (fit < INTRO_LINES) fit = INTRO_LINES;
+    for (int n = 0; *p && n < fit; n++) {
         if (bfont_take_line(&p, w, line, (int)sizeof line) <= 0) break;
         int len = (int)strlen(line);
         if (typed <= 0) return true;

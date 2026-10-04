@@ -317,6 +317,177 @@
      "duration": 6.0
     }
    ]
+  },
+  {
+   "id": "forum",
+   "fade_in": 1.5,
+   "fade_out": 1.0,
+   "beats": [
+    {
+     "backdrop": "art/intro/bg_forum.png",
+     "say": "forum_1",
+     "face": "intro_crier",
+     "actors": [
+      {
+       "frames": [
+        "art/intro/crier_00.png",
+        "art/intro/crier_01.png",
+        "art/intro/crier_02.png",
+        "art/intro/crier_03.png",
+        "art/intro/crier_04.png",
+        "art/intro/crier_05.png",
+        "art/intro/crier_06.png",
+        "art/intro/crier_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        72,
+        6
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png",
+        "art/intro/crowd_01.png",
+        "art/intro/crowd_02.png",
+        "art/intro/crowd_03.png",
+        "art/intro/crowd_04.png",
+        "art/intro/crowd_05.png",
+        "art/intro/crowd_06.png",
+        "art/intro/crowd_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        0,
+        46
+       ]
+      }
+     ]
+    },
+    {
+     "backdrop": "art/intro/bg_forum.png",
+     "say": "forum_2",
+     "face": "intro_crier",
+     "actors": [
+      {
+       "frames": [
+        "art/intro/crier_00.png",
+        "art/intro/crier_01.png",
+        "art/intro/crier_02.png",
+        "art/intro/crier_03.png",
+        "art/intro/crier_04.png",
+        "art/intro/crier_05.png",
+        "art/intro/crier_06.png",
+        "art/intro/crier_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        72,
+        6
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png",
+        "art/intro/crowd_01.png",
+        "art/intro/crowd_02.png",
+        "art/intro/crowd_03.png",
+        "art/intro/crowd_04.png",
+        "art/intro/crowd_05.png",
+        "art/intro/crowd_06.png",
+        "art/intro/crowd_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        0,
+        46
+       ]
+      }
+     ]
+    },
+    {
+     "backdrop": "art/intro/bg_forum.png",
+     "say": "forum_3",
+     "face": "intro_crier",
+     "actors": [
+      {
+       "frames": [
+        "art/intro/crier_00.png",
+        "art/intro/crier_01.png",
+        "art/intro/crier_02.png",
+        "art/intro/crier_03.png",
+        "art/intro/crier_04.png",
+        "art/intro/crier_05.png",
+        "art/intro/crier_06.png",
+        "art/intro/crier_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        72,
+        6
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png",
+        "art/intro/crowd_01.png",
+        "art/intro/crowd_02.png",
+        "art/intro/crowd_03.png",
+        "art/intro/crowd_04.png",
+        "art/intro/crowd_05.png",
+        "art/intro/crowd_06.png",
+        "art/intro/crowd_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        0,
+        46
+       ]
+      }
+     ]
+    },
+    {
+     "backdrop": "art/intro/bg_forum.png",
+     "say": "forum_4",
+     "face": "intro_crier",
+     "actors": [
+      {
+       "frames": [
+        "art/intro/crier_00.png",
+        "art/intro/crier_01.png",
+        "art/intro/crier_02.png",
+        "art/intro/crier_03.png",
+        "art/intro/crier_04.png",
+        "art/intro/crier_05.png",
+        "art/intro/crier_06.png",
+        "art/intro/crier_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        72,
+        6
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png",
+        "art/intro/crowd_01.png",
+        "art/intro/crowd_02.png",
+        "art/intro/crowd_03.png",
+        "art/intro/crowd_04.png",
+        "art/intro/crowd_05.png",
+        "art/intro/crowd_06.png",
+        "art/intro/crowd_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        0,
+        46
+       ]
+      }
+     ]
+    }
+   ]
   }
  ]
 }
