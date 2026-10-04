@@ -60,10 +60,13 @@ static bool write_json(const char *path, cJSON *j) {
 // own two packs: popping closes a pack, and the shared fixture pack may sit
 // below.
 static bool s_timeline_ok;   // the last good load: beats end to end, villains in order
+static int    s_sounds;       // the last good load: its sound count, and the first one's start and gain
+static double s_sound_at, s_sound_gain;
 
 static bool load_with_intro(const char *script, bool with_label, int *beats) {
     *beats = -1;
     s_timeline_ok = false;
+    s_sounds = 0;
     Pack *kb = pack_open(FIXTURE_PACK_DIR);
     if (!kb) return false;
     pack_stack_push(kb);
@@ -92,6 +95,13 @@ static bool load_with_intro(const char *script, bool with_label, int *beats) {
         loaded = r && resources_load(r, "game.json");
         if (loaded) {
             *beats = r->intro.beat_count;
+            for (int i = 0; i < r->intro.beat_count; i++)
+                for (int k = 0; k < r->intro.beats[i].sound_count; k++) {
+                    if (s_sounds++ == 0) {
+                        s_sound_at   = r->intro.beats[i].sounds[k].at;
+                        s_sound_gain = r->intro.beats[i].sounds[k].gain;
+                    }
+                }
             // End to end, and each villain beat names its villain, in order.
             bool ok = r->intro.total > 0;
             double t = 0;
@@ -151,6 +161,30 @@ TEST staged_actors_weather_and_stills_load(void) {
         " {\"still\": \"art/title.png\", \"duration\": 2}"), true, &beats);
     ASSERT(ok);
     ASSERT_EQ(2, beats);
+    PASS();
+}
+
+// Sound effects: a file, started some seconds into the beat, at a gain.
+TEST sounds_load(void) {
+    int beats = 0;
+    bool ok = load_with_intro(WRAP(
+        "{\"duration\": 2, \"sounds\": [{\"file\": \"audio/thunder.wav\", \"at\": 0.5, \"gain\": 0.6},"
+        "                              {\"file\": \"audio/crowd.wav\"}]}"), true, &beats);
+    ASSERT(ok);
+    ASSERT_EQ(2, s_sounds);
+    ASSERT_IN_RANGE(0.5, s_sound_at, 1e-9);
+    ASSERT_IN_RANGE(0.6, s_sound_gain, 1e-9);
+    PASS();
+}
+
+TEST a_malformed_sound_refuses_the_load(void) {
+    int beats = 0;
+    ASSERT_FALSE(load_with_intro(WRAP("{\"duration\": 2, \"sounds\": [{\"at\": 1}]}"), true, &beats));
+    ASSERT_FALSE(load_with_intro(WRAP(
+        "{\"duration\": 2, \"sounds\": [{\"file\": \"audio/t.wav\", \"at\": 2}]}"), true, &beats));
+    ASSERT_FALSE(load_with_intro(WRAP(
+        "{\"duration\": 2, \"sounds\": [{\"file\": \"audio/t.wav\", \"gain\": 2}]}"), true, &beats));
+    ASSERT_FALSE(load_with_intro(WRAP("{\"duration\": 2, \"sounds\": \"audio/t.wav\"}"), true, &beats));
     PASS();
 }
 
@@ -228,6 +262,8 @@ SUITE(unit_intro_suite) {
     RUN_TEST(kings_bounty_has_no_intro);
     RUN_TEST(a_well_formed_intro_loads_and_reloads);
     RUN_TEST(staged_actors_weather_and_stills_load);
+    RUN_TEST(sounds_load);
+    RUN_TEST(a_malformed_sound_refuses_the_load);
     RUN_TEST(an_actor_outside_its_beat_refuses_the_load);
     RUN_TEST(unknown_weather_refuses_the_load);
     RUN_TEST(an_unknown_caption_key_refuses_the_load);

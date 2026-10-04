@@ -1,0 +1,19 @@
+{
+ "id": "intro_map_piece_c",
+ "prompt": "a torn scrap of old parchment map with forests and a road drawn in brown ink, ragged edges, solid magenta background",
+ "style": "rd_pro__default",
+ "width": 40,
+ "height": 40,
+ "seed": 15547,
+ "remove_bg": true,
+ "return_non_bg_removed": true,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  40,
+  40
+ ],
+ "_pack_path": "art/intro/map_piece_c*.png",
+ "_note": "2026-10-03, Introduction (#154) scene 4: a map piece; rd_pro__default cut-out."
+}

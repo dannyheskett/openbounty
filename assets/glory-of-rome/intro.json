@@ -7,7 +7,7 @@
  "type_cps": 28,
  "read_cps": 14,
  "min_hold": 2.0,
- "_note": "The Introduction (#154): background art, animated sprites and text. Scene 1 so far.",
+ "_note": "The Introduction (#154): background art, animated sprites and text. Five scenes: the eagle falls, the Forum, wanted, the Emperor's charge, the decree.",
  "scenes": [
   {
    "id": "eagle",
@@ -208,6 +208,13 @@
        "mirror": true,
        "start": 1.2
       }
+     ],
+     "sounds": [
+      {
+       "file": "audio/intro_thunder.wav",
+       "gain": 0.6,
+       "at": 0.8
+      }
      ]
     },
     {
@@ -264,6 +271,13 @@
        ],
        "end": 1.6
       }
+     ],
+     "sounds": [
+      {
+       "file": "audio/intro_thunder.wav",
+       "gain": 0.6,
+       "at": 1.6
+      }
      ]
     },
     {
@@ -303,6 +317,13 @@
         8
        ]
       }
+     ],
+     "sounds": [
+      {
+       "file": "audio/intro_thunder.wav",
+       "gain": 0.6,
+       "at": 0.0
+      }
      ]
     }
    ]
@@ -330,6 +351,15 @@
      "actors": [
       {
        "frames": [
+        "art/intro/plinth.png"
+       ],
+       "at": [
+        96,
+        69
+       ]
+      },
+      {
+       "frames": [
         "art/intro/crier_00.png",
         "art/intro/crier_01.png",
         "art/intro/crier_02.png",
@@ -341,26 +371,301 @@
        ],
        "fps": 4,
        "at": [
-        72,
-        6
+        93,
+        15
        ]
       },
       {
        "frames": [
-        "art/intro/crowd_00.png",
-        "art/intro/crowd_01.png",
-        "art/intro/crowd_02.png",
-        "art/intro/crowd_03.png",
-        "art/intro/crowd_04.png",
-        "art/intro/crowd_05.png",
-        "art/intro/crowd_06.png",
-        "art/intro/crowd_07.png"
+        "art/intro/crowd_00.png"
        ],
-       "fps": 4,
        "at": [
         0,
+        57
+       ],
+       "crop": [
+        0,
+        0,
+        20,
+        45
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        20,
+        60
+       ],
+       "crop": [
+        20,
+        0,
+        18,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        38,
+        58
+       ],
+       "crop": [
+        38,
+        0,
+        8,
+        44
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        46,
+        61
+       ],
+       "crop": [
+        46,
+        0,
+        12,
+        41
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        58,
+        56
+       ],
+       "crop": [
+        58,
+        0,
+        11,
         46
        ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        69,
+        59
+       ],
+       "crop": [
+        69,
+        0,
+        8,
+        43
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        77,
+        61
+       ],
+       "crop": [
+        77,
+        0,
+        11,
+        41
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        88,
+        57
+       ],
+       "crop": [
+        88,
+        0,
+        12,
+        45
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        100,
+        60
+       ],
+       "crop": [
+        100,
+        0,
+        12,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        112,
+        58
+       ],
+       "crop": [
+        112,
+        0,
+        12,
+        44
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        124,
+        62
+       ],
+       "crop": [
+        124,
+        0,
+        8,
+        40
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        132,
+        59
+       ],
+       "crop": [
+        132,
+        0,
+        15,
+        43
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        147,
+        56
+       ],
+       "crop": [
+        147,
+        0,
+        13,
+        46
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        160,
+        60
+       ],
+       "crop": [
+        160,
+        0,
+        15,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        175,
+        58
+       ],
+       "crop": [
+        175,
+        0,
+        15,
+        44
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        190,
+        61
+       ],
+       "crop": [
+        190,
+        0,
+        19,
+        41
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        209,
+        57
+       ],
+       "crop": [
+        209,
+        0,
+        11,
+        45
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        220,
+        60
+       ],
+       "crop": [
+        220,
+        0,
+        13,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        233,
+        59
+       ],
+       "crop": [
+        233,
+        0,
+        7,
+        43
+       ]
+      }
+     ],
+     "sounds": [
+      {
+       "file": "audio/intro_crowd.wav",
+       "at": 0,
+       "gain": 0.1
       }
      ]
     },
@@ -371,6 +676,15 @@
      "actors": [
       {
        "frames": [
+        "art/intro/plinth.png"
+       ],
+       "at": [
+        96,
+        69
+       ]
+      },
+      {
+       "frames": [
         "art/intro/crier_00.png",
         "art/intro/crier_01.png",
         "art/intro/crier_02.png",
@@ -382,25 +696,293 @@
        ],
        "fps": 4,
        "at": [
-        72,
-        6
+        93,
+        15
        ]
       },
       {
        "frames": [
-        "art/intro/crowd_00.png",
-        "art/intro/crowd_01.png",
-        "art/intro/crowd_02.png",
-        "art/intro/crowd_03.png",
-        "art/intro/crowd_04.png",
-        "art/intro/crowd_05.png",
-        "art/intro/crowd_06.png",
-        "art/intro/crowd_07.png"
+        "art/intro/crowd_00.png"
        ],
-       "fps": 4,
        "at": [
         0,
+        57
+       ],
+       "crop": [
+        0,
+        0,
+        20,
+        45
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        20,
+        60
+       ],
+       "crop": [
+        20,
+        0,
+        18,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        38,
+        58
+       ],
+       "crop": [
+        38,
+        0,
+        8,
+        44
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        46,
+        61
+       ],
+       "crop": [
+        46,
+        0,
+        12,
+        41
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        58,
+        56
+       ],
+       "crop": [
+        58,
+        0,
+        11,
         46
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        69,
+        59
+       ],
+       "crop": [
+        69,
+        0,
+        8,
+        43
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        77,
+        61
+       ],
+       "crop": [
+        77,
+        0,
+        11,
+        41
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        88,
+        57
+       ],
+       "crop": [
+        88,
+        0,
+        12,
+        45
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        100,
+        60
+       ],
+       "crop": [
+        100,
+        0,
+        12,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        112,
+        58
+       ],
+       "crop": [
+        112,
+        0,
+        12,
+        44
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        124,
+        62
+       ],
+       "crop": [
+        124,
+        0,
+        8,
+        40
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        132,
+        59
+       ],
+       "crop": [
+        132,
+        0,
+        15,
+        43
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        147,
+        56
+       ],
+       "crop": [
+        147,
+        0,
+        13,
+        46
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        160,
+        60
+       ],
+       "crop": [
+        160,
+        0,
+        15,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        175,
+        58
+       ],
+       "crop": [
+        175,
+        0,
+        15,
+        44
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        190,
+        61
+       ],
+       "crop": [
+        190,
+        0,
+        19,
+        41
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        209,
+        57
+       ],
+       "crop": [
+        209,
+        0,
+        11,
+        45
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        220,
+        60
+       ],
+       "crop": [
+        220,
+        0,
+        13,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        233,
+        59
+       ],
+       "crop": [
+        233,
+        0,
+        7,
+        43
        ]
       }
      ]
@@ -412,6 +994,15 @@
      "actors": [
       {
        "frames": [
+        "art/intro/plinth.png"
+       ],
+       "at": [
+        96,
+        69
+       ]
+      },
+      {
+       "frames": [
         "art/intro/crier_00.png",
         "art/intro/crier_01.png",
         "art/intro/crier_02.png",
@@ -423,25 +1014,293 @@
        ],
        "fps": 4,
        "at": [
-        72,
-        6
+        93,
+        15
        ]
       },
       {
        "frames": [
-        "art/intro/crowd_00.png",
-        "art/intro/crowd_01.png",
-        "art/intro/crowd_02.png",
-        "art/intro/crowd_03.png",
-        "art/intro/crowd_04.png",
-        "art/intro/crowd_05.png",
-        "art/intro/crowd_06.png",
-        "art/intro/crowd_07.png"
+        "art/intro/crowd_00.png"
        ],
-       "fps": 4,
        "at": [
         0,
+        57
+       ],
+       "crop": [
+        0,
+        0,
+        20,
+        45
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        20,
+        60
+       ],
+       "crop": [
+        20,
+        0,
+        18,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        38,
+        58
+       ],
+       "crop": [
+        38,
+        0,
+        8,
+        44
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        46,
+        61
+       ],
+       "crop": [
+        46,
+        0,
+        12,
+        41
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        58,
+        56
+       ],
+       "crop": [
+        58,
+        0,
+        11,
         46
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        69,
+        59
+       ],
+       "crop": [
+        69,
+        0,
+        8,
+        43
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        77,
+        61
+       ],
+       "crop": [
+        77,
+        0,
+        11,
+        41
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        88,
+        57
+       ],
+       "crop": [
+        88,
+        0,
+        12,
+        45
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        100,
+        60
+       ],
+       "crop": [
+        100,
+        0,
+        12,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        112,
+        58
+       ],
+       "crop": [
+        112,
+        0,
+        12,
+        44
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        124,
+        62
+       ],
+       "crop": [
+        124,
+        0,
+        8,
+        40
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        132,
+        59
+       ],
+       "crop": [
+        132,
+        0,
+        15,
+        43
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        147,
+        56
+       ],
+       "crop": [
+        147,
+        0,
+        13,
+        46
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        160,
+        60
+       ],
+       "crop": [
+        160,
+        0,
+        15,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        175,
+        58
+       ],
+       "crop": [
+        175,
+        0,
+        15,
+        44
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        190,
+        61
+       ],
+       "crop": [
+        190,
+        0,
+        19,
+        41
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        209,
+        57
+       ],
+       "crop": [
+        209,
+        0,
+        11,
+        45
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        220,
+        60
+       ],
+       "crop": [
+        220,
+        0,
+        13,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        233,
+        59
+       ],
+       "crop": [
+        233,
+        0,
+        7,
+        43
        ]
       }
      ]
@@ -453,6 +1312,15 @@
      "actors": [
       {
        "frames": [
+        "art/intro/plinth.png"
+       ],
+       "at": [
+        96,
+        69
+       ]
+      },
+      {
+       "frames": [
         "art/intro/crier_00.png",
         "art/intro/crier_01.png",
         "art/intro/crier_02.png",
@@ -464,25 +1332,293 @@
        ],
        "fps": 4,
        "at": [
-        72,
-        6
+        93,
+        15
        ]
       },
       {
        "frames": [
-        "art/intro/crowd_00.png",
-        "art/intro/crowd_01.png",
-        "art/intro/crowd_02.png",
-        "art/intro/crowd_03.png",
-        "art/intro/crowd_04.png",
-        "art/intro/crowd_05.png",
-        "art/intro/crowd_06.png",
-        "art/intro/crowd_07.png"
+        "art/intro/crowd_00.png"
        ],
-       "fps": 4,
        "at": [
         0,
+        57
+       ],
+       "crop": [
+        0,
+        0,
+        20,
+        45
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        20,
+        60
+       ],
+       "crop": [
+        20,
+        0,
+        18,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        38,
+        58
+       ],
+       "crop": [
+        38,
+        0,
+        8,
+        44
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        46,
+        61
+       ],
+       "crop": [
+        46,
+        0,
+        12,
+        41
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        58,
+        56
+       ],
+       "crop": [
+        58,
+        0,
+        11,
         46
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        69,
+        59
+       ],
+       "crop": [
+        69,
+        0,
+        8,
+        43
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        77,
+        61
+       ],
+       "crop": [
+        77,
+        0,
+        11,
+        41
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        88,
+        57
+       ],
+       "crop": [
+        88,
+        0,
+        12,
+        45
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        100,
+        60
+       ],
+       "crop": [
+        100,
+        0,
+        12,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        112,
+        58
+       ],
+       "crop": [
+        112,
+        0,
+        12,
+        44
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        124,
+        62
+       ],
+       "crop": [
+        124,
+        0,
+        8,
+        40
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        132,
+        59
+       ],
+       "crop": [
+        132,
+        0,
+        15,
+        43
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        147,
+        56
+       ],
+       "crop": [
+        147,
+        0,
+        13,
+        46
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        160,
+        60
+       ],
+       "crop": [
+        160,
+        0,
+        15,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        175,
+        58
+       ],
+       "crop": [
+        175,
+        0,
+        15,
+        44
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        190,
+        61
+       ],
+       "crop": [
+        190,
+        0,
+        19,
+        41
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        209,
+        57
+       ],
+       "crop": [
+        209,
+        0,
+        11,
+        45
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        220,
+        60
+       ],
+       "crop": [
+        220,
+        0,
+        13,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        233,
+        59
+       ],
+       "crop": [
+        233,
+        0,
+        7,
+        43
        ]
       }
      ]
@@ -568,8 +1704,16 @@
      "backdrop": "art/intro/bg_forum.png",
      "say": "wanted_close",
      "face": "intro_crier",
-     "dissolve": 0.8,
      "actors": [
+      {
+       "frames": [
+        "art/intro/plinth.png"
+       ],
+       "at": [
+        96,
+        69
+       ]
+      },
       {
        "frames": [
         "art/intro/crier_00.png",
@@ -583,25 +1727,1480 @@
        ],
        "fps": 4,
        "at": [
-        72,
-        6
+        93,
+        15
        ]
       },
       {
        "frames": [
-        "art/intro/crowd_00.png",
-        "art/intro/crowd_01.png",
-        "art/intro/crowd_02.png",
-        "art/intro/crowd_03.png",
-        "art/intro/crowd_04.png",
-        "art/intro/crowd_05.png",
-        "art/intro/crowd_06.png",
-        "art/intro/crowd_07.png"
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        0,
+        57
+       ],
+       "crop": [
+        0,
+        0,
+        20,
+        45
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        20,
+        60
+       ],
+       "crop": [
+        20,
+        0,
+        18,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        38,
+        58
+       ],
+       "crop": [
+        38,
+        0,
+        8,
+        44
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        46,
+        61
+       ],
+       "crop": [
+        46,
+        0,
+        12,
+        41
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        58,
+        56
+       ],
+       "crop": [
+        58,
+        0,
+        11,
+        46
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        69,
+        59
+       ],
+       "crop": [
+        69,
+        0,
+        8,
+        43
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        77,
+        61
+       ],
+       "crop": [
+        77,
+        0,
+        11,
+        41
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        88,
+        57
+       ],
+       "crop": [
+        88,
+        0,
+        12,
+        45
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        100,
+        60
+       ],
+       "crop": [
+        100,
+        0,
+        12,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        112,
+        58
+       ],
+       "crop": [
+        112,
+        0,
+        12,
+        44
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        124,
+        62
+       ],
+       "crop": [
+        124,
+        0,
+        8,
+        40
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        132,
+        59
+       ],
+       "crop": [
+        132,
+        0,
+        15,
+        43
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        147,
+        56
+       ],
+       "crop": [
+        147,
+        0,
+        13,
+        46
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        160,
+        60
+       ],
+       "crop": [
+        160,
+        0,
+        15,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        175,
+        58
+       ],
+       "crop": [
+        175,
+        0,
+        15,
+        44
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        190,
+        61
+       ],
+       "crop": [
+        190,
+        0,
+        19,
+        41
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        209,
+        57
+       ],
+       "crop": [
+        209,
+        0,
+        11,
+        45
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        220,
+        60
+       ],
+       "crop": [
+        220,
+        0,
+        13,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        233,
+        59
+       ],
+       "crop": [
+        233,
+        0,
+        7,
+        43
+       ]
+      }
+     ],
+     "dissolve": 0.8
+    }
+   ]
+  },
+  {
+   "id": "charge",
+   "fade_in": 1.0,
+   "fade_out": 1.0,
+   "beats": [
+    {
+     "backdrop": "art/ui/backdrop_palace_welcome.png",
+     "say": "palace_1",
+     "actors": [
+      {
+       "frames": [
+        "art/intro/general_walk_00.png",
+        "art/intro/general_walk_01.png",
+        "art/intro/general_walk_02.png",
+        "art/intro/general_walk_03.png"
+       ],
+       "fps": 6,
+       "at": [
+        -44,
+        54
+       ],
+       "to": [
+        150,
+        54
+       ]
+      }
+     ]
+    },
+    {
+     "backdrop": "art/ui/backdrop_palace_throne.png",
+     "say": "trajan_1",
+     "face": "emperor_traianus",
+     "actors": [
+      {
+       "frames": [
+        "art/intro/trajan_seated_00.png",
+        "art/intro/trajan_seated_01.png",
+        "art/intro/trajan_seated_02.png",
+        "art/intro/trajan_seated_03.png",
+        "art/intro/trajan_seated_04.png",
+        "art/intro/trajan_seated_05.png",
+        "art/intro/trajan_seated_06.png",
+        "art/intro/trajan_seated_07.png"
        ],
        "fps": 4,
        "at": [
-        0,
+        103,
+        49
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/general_kneel_00.png",
+        "art/intro/general_kneel_01.png",
+        "art/intro/general_kneel_02.png",
+        "art/intro/general_kneel_03.png",
+        "art/intro/general_kneel_04.png",
+        "art/intro/general_kneel_05.png",
+        "art/intro/general_kneel_06.png",
+        "art/intro/general_kneel_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        68,
+        57
+       ]
+      }
+     ],
+     "dissolve": 0.8
+    },
+    {
+     "backdrop": "art/ui/backdrop_palace_throne.png",
+     "say": "trajan_2",
+     "face": "emperor_traianus",
+     "actors": [
+      {
+       "frames": [
+        "art/intro/trajan_seated_00.png",
+        "art/intro/trajan_seated_01.png",
+        "art/intro/trajan_seated_02.png",
+        "art/intro/trajan_seated_03.png",
+        "art/intro/trajan_seated_04.png",
+        "art/intro/trajan_seated_05.png",
+        "art/intro/trajan_seated_06.png",
+        "art/intro/trajan_seated_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        103,
+        49
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/general_kneel_00.png",
+        "art/intro/general_kneel_01.png",
+        "art/intro/general_kneel_02.png",
+        "art/intro/general_kneel_03.png",
+        "art/intro/general_kneel_04.png",
+        "art/intro/general_kneel_05.png",
+        "art/intro/general_kneel_06.png",
+        "art/intro/general_kneel_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        68,
+        57
+       ]
+      }
+     ]
+    },
+    {
+     "backdrop": "art/ui/backdrop_palace_throne.png",
+     "say": "trajan_3",
+     "face": "emperor_traianus",
+     "actors": [
+      {
+       "frames": [
+        "art/intro/trajan_seated_00.png",
+        "art/intro/trajan_seated_01.png",
+        "art/intro/trajan_seated_02.png",
+        "art/intro/trajan_seated_03.png",
+        "art/intro/trajan_seated_04.png",
+        "art/intro/trajan_seated_05.png",
+        "art/intro/trajan_seated_06.png",
+        "art/intro/trajan_seated_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        103,
+        49
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/general_kneel_00.png",
+        "art/intro/general_kneel_01.png",
+        "art/intro/general_kneel_02.png",
+        "art/intro/general_kneel_03.png",
+        "art/intro/general_kneel_04.png",
+        "art/intro/general_kneel_05.png",
+        "art/intro/general_kneel_06.png",
+        "art/intro/general_kneel_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        68,
+        57
+       ]
+      }
+     ]
+    },
+    {
+     "backdrop": "art/intro/bg_map_table.png",
+     "say": "trajan_4",
+     "face": "emperor_traianus",
+     "dissolve": 0.8,
+     "actors": [
+      {
+       "frames": [
+        "art/intro/map_piece_a.png"
+       ],
+       "at": [
+        76,
+        38
+       ],
+       "start": 0.6,
+       "fade_in": 0.6
+      },
+      {
+       "frames": [
+        "art/intro/map_piece_b.png"
+       ],
+       "at": [
+        102,
+        40
+       ],
+       "start": 2.1,
+       "fade_in": 0.6
+      },
+      {
+       "frames": [
+        "art/intro/map_piece_c.png"
+       ],
+       "at": [
+        88,
+        48
+       ],
+       "start": 3.6,
+       "fade_in": 0.6
+      },
+      {
+       "frames": [
+        "art/intro/eagle_mark_00.png",
+        "art/intro/eagle_mark_01.png",
+        "art/intro/eagle_mark_02.png",
+        "art/intro/eagle_mark_03.png",
+        "art/intro/eagle_mark_04.png",
+        "art/intro/eagle_mark_05.png",
+        "art/intro/eagle_mark_06.png",
+        "art/intro/eagle_mark_07.png"
+       ],
+       "fps": 8,
+       "at": [
+        100,
         46
+       ],
+       "start": 5.4,
+       "fade_in": 0.6
+      }
+     ]
+    },
+    {
+     "backdrop": "art/intro/bg_map_table.png",
+     "say": "trajan_5",
+     "face": "emperor_traianus",
+     "actors": [
+      {
+       "frames": [
+        "art/intro/map_piece_a.png"
+       ],
+       "at": [
+        76,
+        38
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/map_piece_b.png"
+       ],
+       "at": [
+        102,
+        40
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/map_piece_c.png"
+       ],
+       "at": [
+        88,
+        48
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/eagle_mark_00.png",
+        "art/intro/eagle_mark_01.png",
+        "art/intro/eagle_mark_02.png",
+        "art/intro/eagle_mark_03.png",
+        "art/intro/eagle_mark_04.png",
+        "art/intro/eagle_mark_05.png",
+        "art/intro/eagle_mark_06.png",
+        "art/intro/eagle_mark_07.png"
+       ],
+       "fps": 8,
+       "at": [
+        100,
+        46
+       ]
+      }
+     ]
+    },
+    {
+     "backdrop": "art/ui/backdrop_palace_throne.png",
+     "say": "trajan_6",
+     "face": "emperor_traianus",
+     "actors": [
+      {
+       "frames": [
+        "art/intro/trajan_seated_00.png",
+        "art/intro/trajan_seated_01.png",
+        "art/intro/trajan_seated_02.png",
+        "art/intro/trajan_seated_03.png",
+        "art/intro/trajan_seated_04.png",
+        "art/intro/trajan_seated_05.png",
+        "art/intro/trajan_seated_06.png",
+        "art/intro/trajan_seated_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        103,
+        49
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/general_kneel_00.png",
+        "art/intro/general_kneel_01.png",
+        "art/intro/general_kneel_02.png",
+        "art/intro/general_kneel_03.png",
+        "art/intro/general_kneel_04.png",
+        "art/intro/general_kneel_05.png",
+        "art/intro/general_kneel_06.png",
+        "art/intro/general_kneel_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        68,
+        57
+       ]
+      }
+     ],
+     "dissolve": 0.8
+    },
+    {
+     "backdrop": "art/intro/bg_map_table.png",
+     "say": "trajan_7",
+     "face": "emperor_traianus",
+     "dissolve": 0.8,
+     "actors": [
+      {
+       "frames": [
+        "art/intro/hourglass_00.png",
+        "art/intro/hourglass_01.png",
+        "art/intro/hourglass_02.png",
+        "art/intro/hourglass_03.png",
+        "art/intro/hourglass_04.png",
+        "art/intro/hourglass_05.png",
+        "art/intro/hourglass_06.png",
+        "art/intro/hourglass_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        14,
+        16
+       ]
+      }
+     ]
+    },
+    {
+     "backdrop": "art/ui/backdrop_palace_throne.png",
+     "say": "trajan_8",
+     "face": "emperor_traianus",
+     "actors": [
+      {
+       "frames": [
+        "art/intro/trajan_seated_00.png",
+        "art/intro/trajan_seated_01.png",
+        "art/intro/trajan_seated_02.png",
+        "art/intro/trajan_seated_03.png",
+        "art/intro/trajan_seated_04.png",
+        "art/intro/trajan_seated_05.png",
+        "art/intro/trajan_seated_06.png",
+        "art/intro/trajan_seated_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        103,
+        49
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/general_kneel_00.png",
+        "art/intro/general_kneel_01.png",
+        "art/intro/general_kneel_02.png",
+        "art/intro/general_kneel_03.png",
+        "art/intro/general_kneel_04.png",
+        "art/intro/general_kneel_05.png",
+        "art/intro/general_kneel_06.png",
+        "art/intro/general_kneel_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        68,
+        57
+       ]
+      }
+     ],
+     "dissolve": 0.8
+    }
+   ]
+  },
+  {
+   "id": "decree",
+   "fade_in": 1.0,
+   "fade_out": 2.5,
+   "beats": [
+    {
+     "backdrop": "art/intro/bg_forum.png",
+     "say": "decree_1",
+     "face": "intro_crier",
+     "actors": [
+      {
+       "frames": [
+        "art/intro/plinth.png"
+       ],
+       "at": [
+        96,
+        69
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crier_decree_00.png",
+        "art/intro/crier_decree_01.png",
+        "art/intro/crier_decree_02.png",
+        "art/intro/crier_decree_03.png",
+        "art/intro/crier_decree_04.png",
+        "art/intro/crier_decree_05.png",
+        "art/intro/crier_decree_06.png",
+        "art/intro/crier_decree_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        93,
+        15
+       ],
+       "loop": false
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        0,
+        57
+       ],
+       "crop": [
+        0,
+        0,
+        20,
+        45
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        20,
+        60
+       ],
+       "crop": [
+        20,
+        0,
+        18,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        38,
+        58
+       ],
+       "crop": [
+        38,
+        0,
+        8,
+        44
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        46,
+        61
+       ],
+       "crop": [
+        46,
+        0,
+        12,
+        41
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        58,
+        56
+       ],
+       "crop": [
+        58,
+        0,
+        11,
+        46
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        69,
+        59
+       ],
+       "crop": [
+        69,
+        0,
+        8,
+        43
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        77,
+        61
+       ],
+       "crop": [
+        77,
+        0,
+        11,
+        41
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        88,
+        57
+       ],
+       "crop": [
+        88,
+        0,
+        12,
+        45
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        100,
+        60
+       ],
+       "crop": [
+        100,
+        0,
+        12,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        112,
+        58
+       ],
+       "crop": [
+        112,
+        0,
+        12,
+        44
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        124,
+        62
+       ],
+       "crop": [
+        124,
+        0,
+        8,
+        40
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        132,
+        59
+       ],
+       "crop": [
+        132,
+        0,
+        15,
+        43
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        147,
+        56
+       ],
+       "crop": [
+        147,
+        0,
+        13,
+        46
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        160,
+        60
+       ],
+       "crop": [
+        160,
+        0,
+        15,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        175,
+        58
+       ],
+       "crop": [
+        175,
+        0,
+        15,
+        44
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        190,
+        61
+       ],
+       "crop": [
+        190,
+        0,
+        19,
+        41
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        209,
+        57
+       ],
+       "crop": [
+        209,
+        0,
+        11,
+        45
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        220,
+        60
+       ],
+       "crop": [
+        220,
+        0,
+        13,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        233,
+        59
+       ],
+       "crop": [
+        233,
+        0,
+        7,
+        43
+       ]
+      }
+     ],
+     "sounds": [
+      {
+       "file": "audio/intro_crowd.wav",
+       "at": 0,
+       "gain": 0.1
+      }
+     ]
+    },
+    {
+     "backdrop": "art/intro/bg_forum.png",
+     "say": "decree_2",
+     "face": "intro_crier",
+     "actors": [
+      {
+       "frames": [
+        "art/intro/plinth.png"
+       ],
+       "at": [
+        96,
+        69
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crier_decree_07.png"
+       ],
+       "at": [
+        93,
+        15
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        0,
+        57
+       ],
+       "crop": [
+        0,
+        0,
+        20,
+        45
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        20,
+        60
+       ],
+       "crop": [
+        20,
+        0,
+        18,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        38,
+        58
+       ],
+       "crop": [
+        38,
+        0,
+        8,
+        44
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        46,
+        61
+       ],
+       "crop": [
+        46,
+        0,
+        12,
+        41
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        58,
+        56
+       ],
+       "crop": [
+        58,
+        0,
+        11,
+        46
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        69,
+        59
+       ],
+       "crop": [
+        69,
+        0,
+        8,
+        43
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        77,
+        61
+       ],
+       "crop": [
+        77,
+        0,
+        11,
+        41
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        88,
+        57
+       ],
+       "crop": [
+        88,
+        0,
+        12,
+        45
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        100,
+        60
+       ],
+       "crop": [
+        100,
+        0,
+        12,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        112,
+        58
+       ],
+       "crop": [
+        112,
+        0,
+        12,
+        44
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        124,
+        62
+       ],
+       "crop": [
+        124,
+        0,
+        8,
+        40
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        132,
+        59
+       ],
+       "crop": [
+        132,
+        0,
+        15,
+        43
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        147,
+        56
+       ],
+       "crop": [
+        147,
+        0,
+        13,
+        46
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        160,
+        60
+       ],
+       "crop": [
+        160,
+        0,
+        15,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        175,
+        58
+       ],
+       "crop": [
+        175,
+        0,
+        15,
+        44
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        190,
+        61
+       ],
+       "crop": [
+        190,
+        0,
+        19,
+        41
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        209,
+        57
+       ],
+       "crop": [
+        209,
+        0,
+        11,
+        45
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        220,
+        60
+       ],
+       "crop": [
+        220,
+        0,
+        13,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        233,
+        59
+       ],
+       "crop": [
+        233,
+        0,
+        7,
+        43
+       ]
+      }
+     ]
+    },
+    {
+     "backdrop": "art/intro/bg_battlefield.png",
+     "duration": 7.0,
+     "dissolve": 0.8,
+     "actors": [
+      {
+       "frames": [
+        "art/intro/legionary_walk_00.png",
+        "art/intro/legionary_walk_01.png",
+        "art/intro/legionary_walk_02.png",
+        "art/intro/legionary_walk_03.png"
+       ],
+       "fps": 6,
+       "at": [
+        -60,
+        54
+       ],
+       "to": [
+        40,
+        54
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/legionary_walk_00.png",
+        "art/intro/legionary_walk_01.png",
+        "art/intro/legionary_walk_02.png",
+        "art/intro/legionary_walk_03.png"
+       ],
+       "fps": 6,
+       "at": [
+        -30,
+        52
+       ],
+       "to": [
+        70,
+        52
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/legionary_walk_00.png",
+        "art/intro/legionary_walk_01.png",
+        "art/intro/legionary_walk_02.png",
+        "art/intro/legionary_walk_03.png"
+       ],
+       "fps": 6,
+       "at": [
+        0,
+        54
+       ],
+       "to": [
+        100,
+        54
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/warrior_flee_00.png",
+        "art/intro/warrior_flee_01.png",
+        "art/intro/warrior_flee_02.png",
+        "art/intro/warrior_flee_03.png"
+       ],
+       "fps": 8,
+       "at": [
+        120,
+        46
+       ],
+       "to": [
+        260,
+        46
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/warrior_flee_00.png",
+        "art/intro/warrior_flee_01.png",
+        "art/intro/warrior_flee_02.png",
+        "art/intro/warrior_flee_03.png"
+       ],
+       "fps": 8,
+       "at": [
+        165,
+        48
+       ],
+       "to": [
+        290,
+        48
+       ]
+      }
+     ]
+    },
+    {
+     "backdrop": "art/intro/bg_city_gate.png",
+     "say": "decree_3",
+     "face": "intro_crier",
+     "duration": 8.0,
+     "dissolve": 0.8,
+     "actors": [
+      {
+       "frames": [
+        "art/intro/general_walk_00.png",
+        "art/intro/general_walk_01.png",
+        "art/intro/general_walk_02.png",
+        "art/intro/general_walk_03.png"
+       ],
+       "fps": 6,
+       "at": [
+        -20,
+        54
+       ],
+       "to": [
+        140,
+        54
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/legionary_walk_00.png",
+        "art/intro/legionary_walk_01.png",
+        "art/intro/legionary_walk_02.png",
+        "art/intro/legionary_walk_03.png"
+       ],
+       "fps": 6,
+       "at": [
+        -50,
+        50
+       ],
+       "to": [
+        110,
+        50
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/legionary_walk_00.png",
+        "art/intro/legionary_walk_01.png",
+        "art/intro/legionary_walk_02.png",
+        "art/intro/legionary_walk_03.png"
+       ],
+       "fps": 6,
+       "at": [
+        -80,
+        50
+       ],
+       "to": [
+        80,
+        50
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/legionary_walk_00.png",
+        "art/intro/legionary_walk_01.png",
+        "art/intro/legionary_walk_02.png",
+        "art/intro/legionary_walk_03.png"
+       ],
+       "fps": 6,
+       "at": [
+        -110,
+        50
+       ],
+       "to": [
+        50,
+        50
        ]
       }
      ]

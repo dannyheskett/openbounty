@@ -209,6 +209,10 @@ edited apart from the gameplay data:
     of each frame shown, for a portrait's head and shoulders);
   - `weather`: `"rain"`, streaks drawn over the picture, and `flashes`: the
     seconds into the beat of each lightning flash;
+  - `sounds`: sound effects, each a `file` (a .wav in the pack: iOS decodes
+    only WAV), `at` (seconds into the beat it starts, default 0) and `gain`
+    (0..1, default 1). Each has started as the timeline passed it, played to
+    its end across later beats, and stopped when the intro ended;
   - `still`: a picture drawn whole on the screen at the largest whole
     multiple, instead of the frame (the title);
   - `say`: a key in the strings' `intro` group, the caption typed on under
@@ -224,13 +228,15 @@ edited apart from the gameplay data:
   `%DAYS%`, the normal difficulty's day budget.
 
 The music has had no cues: `audio.tracks.intro` has started with the first
-beat and faded with the last scene.
+beat and faded with the last scene. Sound effects have been cued per beat
+(`sounds`); like the theme, they have ignored the Sounds option.
 
 The loader has resolved the script at load, and refused the pack when a
 caption key was missing from `intro`, when `ui.title_intro` was missing, or
 when a beat named an unknown portrait or villain, gave an actor no source or
 two or a time on screen outside the beat, had neither `duration` nor
-`say`, named a weather other than rain, or the frame was out of range. Its
+`say`, named a weather other than rain, gave a sound no file, a start
+outside its beat or a gain outside 0..1, or the frame was out of range. Its
 art has been listed in the art manifest (§9) like every other path.
 
 ---

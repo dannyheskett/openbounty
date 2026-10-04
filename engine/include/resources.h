@@ -489,6 +489,12 @@ typedef struct {
 } ResIntroActor;
 
 typedef struct {
+    char   path[RES_PATH_LEN];      // a .wav in the pack
+    double at;                      // seconds into the beat it starts
+    double gain;                    // 0..1
+} ResIntroSound;
+
+typedef struct {
     double start, dur;              // seconds on the intro timeline
     int    scene;                   // index into ResIntro.scenes
     char   backdrop[RES_PATH_LEN];  // "" = black
@@ -505,6 +511,8 @@ typedef struct {
     int    flash_count;
     double *flashes;                // heap, seconds into the beat of each lightning flash
     char   still[RES_PATH_LEN];     // a picture drawn whole on the screen instead ("" = none)
+    int    sound_count;
+    ResIntroSound *sounds;          // heap, sound effects started as the timeline passes them
 } ResIntroBeat;
 
 typedef struct {

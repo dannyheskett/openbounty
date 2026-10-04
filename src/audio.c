@@ -405,7 +405,35 @@ void audio_intro_gain(float g) {
     s_intro_gain = g < 0 ? 0 : g > 1 ? 1 : g;
 }
 
+// The intro's sound effects, loaded the first time each is asked for and
+// freed (which stops them) at audio_intro_end. Like the theme they ignore the
+// Sounds option, so the intro always plays the same.
+#define INTRO_SOUND_MAX 8
+static struct { char path[RES_PATH_LEN]; AudioSoundId id; } s_intro_sounds[INTRO_SOUND_MAX];
+static int s_intro_sound_count = 0;
+
+void audio_intro_sound(const char *path, float gain) {
+    if (!s_inited || !s_intro_wanted || !path || !path[0]) return;
+    int i = 0;
+    while (i < s_intro_sound_count && strcmp(s_intro_sounds[i].path, path) != 0) i++;
+    if (i == s_intro_sound_count) {
+        if (i == INTRO_SOUND_MAX) return;
+        size_t sz = 0;
+        const unsigned char *bytes = LoadAssetBytes(path, &sz);
+        if (!bytes || sz == 0) return;
+        AudioSoundId id = audio_backend_sound_load(".wav", bytes, (int)sz);
+        if (id == AUDIO_NONE) return;
+        snprintf(s_intro_sounds[i].path, sizeof s_intro_sounds[i].path, "%s", path);
+        s_intro_sounds[i].id = id;
+        s_intro_sound_count++;
+    }
+    audio_backend_sound_volume(s_intro_sounds[i].id, s_master * SFX_HEADROOM * gain * s_intro_gain);
+    audio_backend_sound_play(s_intro_sounds[i].id);
+}
+
 void audio_intro_end(void) {
+    for (int i = 0; i < s_intro_sound_count; i++) audio_backend_sound_free(s_intro_sounds[i].id);
+    s_intro_sound_count = 0;
     s_intro_wanted = false;
     s_intro_gain = 1.0f;
     if (s_inited && s_active_track == AUDIO_TRACK_INTRO) {

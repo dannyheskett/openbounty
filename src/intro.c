@@ -315,10 +315,20 @@ bool run_intro(RenderTexture2D *rt, const Resources *res) {
     const ResIntro *in = &res->intro;
     const ResIntroScene *last = &in->scenes[in->scene_count - 1];
     double t0 = frame_host_time();
+    double heard = -1;   // sounds up to here have been started
     bool closed = false;
     while (!(closed = frame_host_should_close())) {
         double t = frame_host_time() - t0;
         if (t >= in->total || ui_any_key_pressed()) break;
+        // Each sound starts as the timeline passes it.
+        for (int i = 0; i < in->beat_count; i++) {
+            const ResIntroBeat *b = &in->beats[i];
+            for (int s = 0; s < b->sound_count; s++) {
+                double at = b->start + b->sounds[s].at;
+                if (at > heard && at <= t) audio_intro_sound(b->sounds[s].path, (float)b->sounds[s].gain);
+            }
+        }
+        heard = t;
         // The theme fades with the last scene.
         double out = last->fade_out > 0 ? clamp01((in->total - t) / last->fade_out) : 1;
         audio_intro_gain((float)out);

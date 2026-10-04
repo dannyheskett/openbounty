@@ -1,0 +1,19 @@
+{
+ "id": "intro_eagle_mark",
+ "prompt": "a small golden Roman eagle emblem with spread wings, drawn in gold leaf, solid magenta background",
+ "style": "rd_pro__default",
+ "width": 32,
+ "height": 32,
+ "seed": 15548,
+ "remove_bg": true,
+ "return_non_bg_removed": true,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  32,
+  32
+ ],
+ "_pack_path": "art/intro/eagle_mark*.png",
+ "_note": "2026-10-03, Introduction (#154) scene 4: the mark where the eagle lies on the map; rd_pro__default cut-out."
+}

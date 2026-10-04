@@ -4732,7 +4732,8 @@
 	"audio":	{
 		"tracks":	{
 			"openworld":	"audio/openworld.ogg",
-			"combat":	"audio/combat.ogg"
+			"combat":	"audio/combat.ogg",
+			"intro":	"audio/intro_theme.ogg"
 		},
 		"tunes":	{
 			"walk":	"audio/tune_walk.wav",

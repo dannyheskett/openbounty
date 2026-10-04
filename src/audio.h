@@ -73,5 +73,9 @@ void audio_set_track(AudioTrack t);
 void audio_intro_begin(const Resources *res);
 void audio_intro_gain(float g);
 void audio_intro_end(void);
+// One of the intro's sound effects (an intro.json beat's "sounds"): a .wav in
+// the pack, played at gain 0..1 (times the master volume and the closing
+// fade), whatever the Sounds option. Freed, and so stopped, by audio_intro_end.
+void audio_intro_sound(const char *path, float gain);
 
 #endif

@@ -2832,6 +2832,11 @@ every menu; this section has held the rules.
   the master volume, and faded with the last scene. A pack without one, or a
   device answering more than 1.5 s late, has left the intro silent rather
   than out of step. Ending it has restored the track that played before.
+  The intro's sound effects (a beat's `sounds`, PACK-FORMAT §2.4) have started
+  as the timeline passed them (`audio_intro_sound`), at their gain times
+  the master volume and the closing fade, whatever the Sounds option; each
+  .wav has loaded the first time it was asked for and been freed, and so
+  stopped, when the intro ended.
 
 ---
 

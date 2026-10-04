@@ -1,0 +1,21 @@
+{
+ "id": "intro_eagle_mark_loop",
+ "prompt": "the golden eagle glinting, a bright shine sweeping across the gold, the eagle still, smooth loop",
+ "style": "rd_advanced_animation__custom_action",
+ "width": 32,
+ "height": 32,
+ "seed": 15604,
+ "frames_duration": 8,
+ "return_spritesheet": true,
+ "input_image_path": "build/art/intro_eagle_mark/run01/01_raw.png",
+ "input_image_keep_alpha": true,
+ "bypass_prompt_expansion": false,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  32,
+  32
+ ],
+ "_pack_path": "art/intro/eagle_mark_00..07.png",
+ "_note": "2026-10-04, Introduction (#154) scene 4: the eagle's mark glinting on the finished map."
+}

@@ -2638,6 +2638,20 @@ static void intro_fill_beat(Resources *res, ResIntroBeat *b, const cJSON *jb,
         cJSON_ArrayForEach(f, jfl) if (cJSON_IsNumber(f)) b->flashes[b->flash_count++] = f->valuedouble;
     }
     copy_str(b->still, sizeof b->still, json_str(jb, "still", ""));
+    cJSON *jsn = cJSON_GetObjectItem(jb, "sounds");
+    if (jsn && !cJSON_IsArray(jsn)) intro_error(res, beat_no, "sounds must be a list");
+    int nsn = cJSON_IsArray(jsn) ? cJSON_GetArraySize(jsn) : 0;
+    if (nsn > 0 && (b->sounds = calloc((size_t)nsn, sizeof *b->sounds)) != NULL) {
+        cJSON *s;
+        cJSON_ArrayForEach(s, jsn) {
+            ResIntroSound *snd = &b->sounds[b->sound_count++];
+            copy_str(snd->path, sizeof snd->path, json_str(s, "file", ""));
+            snd->at   = json_num(s, "at", 0);
+            snd->gain = json_num(s, "gain", 1);
+            if (!snd->path[0]) intro_error(res, beat_no, "a sound needs a file");
+            if (snd->gain < 0 || snd->gain > 1) intro_error(res, beat_no, "a sound's gain must be 0..1");
+        }
+    }
 
     cJSON *jd = cJSON_GetObjectItem(jb, "duration");
     if (cJSON_IsNumber(jd)) {
@@ -2659,6 +2673,9 @@ static void intro_fill_beat(Resources *res, ResIntroBeat *b, const cJSON *jb,
         if (act->start < 0 || act->end <= act->start || act->start >= b->dur)
             intro_error(res, beat_no, "an actor's start and end must lie within the beat, start before end");
     }
+    for (int i = 0; i < b->sound_count; i++)
+        if (b->sounds[i].at < 0 || b->sounds[i].at >= b->dur)
+            intro_error(res, beat_no, "a sound must start within the beat");
 }
 
 // A for_each beat's villains: catalog positions [from, from + count), clamped.
@@ -2770,6 +2787,7 @@ static void intro_free(ResIntro *in) {
         free(b->caption);
         free(b->card);
         free(b->flashes);
+        free(b->sounds);
     }
     free(in->beats);
     free(in->scenes);

@@ -1,19 +1,19 @@
 {
  "id": "intro_crier",
- "prompt": "a stout middle-aged Roman town crier in a white toga, ruddy face, receding hair, one arm raised high as he proclaims the news, a scroll in his other hand",
+ "prompt": "a stout older Roman herald with grey curly hair, a striped rust tunic and an embroidered mantle, both hands empty, one arm raised as he proclaims",
  "style": "user__glory_of_rome_troops_bac676cd",
- "width": 96,
- "height": 96,
- "seed": 15522,
+ "width": 64,
+ "height": 64,
+ "seed": 15591,
  "remove_bg": true,
  "return_non_bg_removed": true,
  "bypass_prompt_expansion": true,
  "raw_only": true,
  "figure": true,
  "target": [
-  96,
-  96
+  64,
+  64
  ],
  "_pack_path": "art/intro/crier_00..07.png (via intro_crier_gesture)",
- "_note": "2026-10-03, Introduction (#154) scene 2: the crier on the rostra; the figure route at 96, magenta removed."
+ "_note": "2026-10-03, Introduction (#154) scene 2, the crier reworked to Dan's reference (the HBO Rome newsreader in spirit): the figure route at 96, as the soldiers, magenta removed."
 }

@@ -1,0 +1,19 @@
+{
+ "id": "intro_plinth",
+ "prompt": "a wide squared stone speaker's platform, pale marble block with a moulded top and base, wider than a man, seen from the front, solid magenta background",
+ "style": "rd_pro__default",
+ "width": 48,
+ "height": 24,
+ "seed": 15592,
+ "remove_bg": true,
+ "return_non_bg_removed": true,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  48,
+  24
+ ],
+ "_pack_path": "art/intro/plinth.png",
+ "_note": "2026-10-03, Introduction (#154) scene 2: the crier's pedestal; rd_pro__default cut-out (magenta removed)."
+}

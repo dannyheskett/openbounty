@@ -1,0 +1,7 @@
+Glory of Rome audio sources
+
+intro_theme.ogg   Original, synthesised by tools/romeart.py introtheme. No licence needed.
+intro_thunder.wav "Thunderclap" by Fission9, https://freesound.org/people/Fission9/sounds/534023/
+                  CC0 1.0 (public domain). Trimmed to the crack and first rumble, mono.
+intro_crowd.wav   "Crowd talking / murmur" by trezz77, https://freesound.org/people/trezz77/sounds/546676/
+                  CC0 1.0 (public domain). 36 s taken from 0:05, faded in and out, mono.

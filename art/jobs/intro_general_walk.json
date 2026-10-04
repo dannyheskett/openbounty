@@ -1,0 +1,21 @@
+{
+ "id": "intro_general_walk",
+ "prompt": "walking to the right, steady steps, cloak swaying, smooth loop",
+ "style": "rd_advanced_animation__custom_action",
+ "width": 48,
+ "height": 48,
+ "seed": 15602,
+ "frames_duration": 4,
+ "return_spritesheet": true,
+ "input_image_path": "build/art/intro_general/run02/01_raw.png",
+ "input_image_keep_alpha": true,
+ "bypass_prompt_expansion": false,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  48,
+  48
+ ],
+ "_pack_path": "art/intro/general_walk_00..03.png",
+ "_note": "2026-10-04, Introduction (#154) scenes 4 and 5: the general's walk, drawn by the engine at 48 (about 43 px tall) for the palace hall and the road."
+}

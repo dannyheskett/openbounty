@@ -1,0 +1,17 @@
+{
+ "id": "intro_bg_city_gate",
+ "prompt": "the great stone gate of ancient Rome at dawn, a tall arched gateway in the city wall on the left, a wide empty paved Roman road in the foreground with grass verges, cypress trees and hills under a golden sunrise sky, no people anywhere, empty",
+ "style": "rd_pro__default",
+ "width": 240,
+ "height": 102,
+ "seed": 15612,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  240,
+  102
+ ],
+ "_pack_path": "art/intro/bg_city_gate.png",
+ "_note": "2026-10-04, Introduction (#154) scene 5: the city gate and the road at dawn, empty of people; the backdrop route."
+}
